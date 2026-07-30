@@ -5,7 +5,7 @@
 
 import { envState, triggerAutoSave } from '@/core/config';
 import { applyGroundCollision } from '../physics/ground-collision';
-import { setEnvState } from './env-bridge';
+import { setEnvState } from './_bridge/env-bridge';
 
 // ======== Collision (WASM Bullet) ========
 

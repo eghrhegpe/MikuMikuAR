@@ -21,7 +21,7 @@ vi.mock('../../scene/env/env-impl', () => {
     };
 });
 // env-particles.ts 从 env-context 而非 env-impl 获取 getScene，故需额外 mock
-vi.mock('../../scene/env/env-context', () => {
+vi.mock('../../scene/env/_shared/env-context', () => {
     if (!(globalThis as any).__particlesTestEnvSys) {
         (globalThis as any).__particlesTestEnvSys = {
             particles: { system: null as any, followObserver: null as any },

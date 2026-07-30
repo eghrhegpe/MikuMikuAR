@@ -270,7 +270,7 @@ const _PARTICLE_KEYS_M = [
     'particleSize',
     'particleSpeed',
     'particleEmitRate',
-    'particleSplash',
+    'particleSplashEnabled',
     'particleCustomTexture',
     'windEnabled',
     'windStrength',

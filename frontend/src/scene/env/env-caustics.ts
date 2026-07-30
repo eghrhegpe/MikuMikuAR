@@ -10,7 +10,7 @@
 // 这让水面与地面焦散方向/速度严格一致，水底光斑与水波光纹同步。
 
 import { Color3, Material, PBRMaterial, Scene, StandardMaterial, Texture } from '@babylonjs/core';
-import { createCanvasTexture } from './env-texture';
+import { createCanvasTexture } from './_shared/env-texture';
 import { hash2v } from '@/core/math/hash-noise';
 
 const CAUSTIC_TEX_SIZE = 256;

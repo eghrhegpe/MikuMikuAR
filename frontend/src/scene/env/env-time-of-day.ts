@@ -13,7 +13,7 @@ import { setKey } from '@/core/set-key';
 import { AUTO_LINK_THRESHOLD_DEG } from '@/core/ui-constants';
 import { deriveLighting, TIME_OF_DAY_PRESETS, type CategorizedEnvPreset } from './env-lighting';
 import { ensureEnvUpdateObserver } from './env-impl';
-import { dispatchEnvChange, registerSceneTickCallback } from './env-dispatcher';
+import { dispatchEnvChange, registerSceneTickCallback } from './_bridge/env-dispatcher';
 import {
     setLightState,
     getLightState,
@@ -27,8 +27,8 @@ import {
     setPresetAnimActive,
     registerEnvStateMiddleware,
     applyEnvStateFacade,
-} from './env-bridge';
-import { persistEnvState, cancelEnvPersistTimer } from './env-persist';
+} from './_bridge/env-bridge';
+import { persistEnvState, cancelEnvPersistTimer } from './_bridge/env-persist';
 
 // ======== Environment Sun Angle ========
 

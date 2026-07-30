@@ -10,21 +10,21 @@ import { envState, type EnvState, triggerAutoSave } from '@/core/config';
 import { logWarn } from '@/core/utils';
 import { ENV_LIGHT_MAX } from '@/core/ui-constants';
 import { col3FromTriple } from '@/core/color-helpers';
-import { deriveLighting } from './env-lighting';
+import { deriveLighting } from '../env-lighting';
 import { dispatchEnvChange } from './env-dispatcher';
-import { GROUND_PRESET_KEYS } from './env-ground-presets';
+import { GROUND_PRESET_KEYS } from '../env-ground-presets';
 import {
     setLightState,
     getLightState,
     getHemiLight,
     rebakeEnvBrightness,
-} from '../render/lighting';
-import { applyLightingPresetFromEnv } from '../render/lighting';
-import { registerCelGroundCoupling } from '../render/renderer';
-import { resolveQualityProfile, type QualityProfile } from '../render/quality-profile';
-import { scene } from '../scene';
-import { isAutoDegradingReflection, registerSetEnvState } from '../render/performance-env-bridge';
-import { setPerformanceMode, getPerformanceMode } from '../render/performance';
+} from '../../render/lighting';
+import { applyLightingPresetFromEnv } from '../../render/lighting';
+import { registerCelGroundCoupling } from '../../render/renderer';
+import { resolveQualityProfile, type QualityProfile } from '../../render/quality-profile';
+import { scene } from '../../scene';
+import { isAutoDegradingReflection, registerSetEnvState } from '../../render/performance-env-bridge';
+import { setPerformanceMode, getPerformanceMode } from '../../render/performance';
 import { schedulePersistEnvState } from './env-persist';
 
 // [doc:adr-132] 上一次 envBrightness 值，用于变化时 rebake 光照强度

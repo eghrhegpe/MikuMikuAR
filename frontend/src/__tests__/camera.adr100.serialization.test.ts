@@ -49,7 +49,7 @@ vi.mock('babylon-mmd/esm/Runtime/mmdCamera', () => ({ MmdCamera: MockMmdCam }));
 vi.mock('babylon-mmd/esm/Loader/Animation/mmdAnimation', () => ({}));
 vi.mock('@/core/config', () => mockConfigModule());
 vi.mock('@/scene/scene', () => mockSceneModule());
-vi.mock('../scene/env/env-persist', () => mockEnvPersist());
+vi.mock('../scene/env/_bridge/env-persist', () => mockEnvPersist());
 vi.mock('../scene/camera/camera', () => mockCameraModule());
 
 let cam: any;

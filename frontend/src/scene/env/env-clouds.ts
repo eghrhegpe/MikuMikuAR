@@ -14,9 +14,9 @@ import {
     Constants,
 } from '@babylonjs/core';
 import { EnvState } from '@/core/config';
-import { getScene } from './env-context';
+import { getScene } from './_shared/env-context';
 import { ensureEnvUpdateObserver } from './env';
-import { registerEnvCallback } from './env-dispatcher';
+import { registerEnvCallback } from './_bridge/env-dispatcher';
 import { getEnvKeys } from '@/core/env-state-schema';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
 import { safeDispose } from '@/core/dispose-helpers';
@@ -263,7 +263,7 @@ function _clearDebugVisuals(): void {
 /** 创建调试可视化对象（红色环 + 色标）。 */
 function _createDebugVisuals(state: EnvState, scene: Scene): void {
     _clearDebugVisuals();
-    if (!state.debugClouds) {
+    if (!state.debugCloudsEnabled) {
         return;
     }
     _debugCloudRing = MeshBuilder.CreateTorus(

@@ -131,7 +131,7 @@ export const ENV_STATE_SCHEMA = {
     groundNormalTexture: { type: 'string', default: '', group: 'ground' },
     groundNormalStrength: { type: 'number', default: 1, group: 'ground' },
     groundElevationColoring: { type: 'boolean', default: false, group: 'ground' },
-    groundInfinite: { type: 'boolean', default: false, group: 'ground' },
+    groundInfiniteEnabled: { type: 'boolean', default: false, group: 'ground' },
     groundPbrEnabled: { type: 'boolean', default: false, group: 'ground' },
     groundProceduralTexture: {
         type: 'enum',
@@ -169,7 +169,7 @@ export const ENV_STATE_SCHEMA = {
     particleEmitRate: { type: 'number', default: 1, group: 'particle' },
     particleSize: { type: 'number', default: 1, group: 'particle' },
     particleSpeed: { type: 'number', default: 1, group: 'particle' },
-    particleSplash: { type: 'boolean', default: false, group: 'particle' },
+    particleSplashEnabled: { type: 'boolean', default: false, group: 'particle' },
     particleCustomTexture: { type: 'string', default: '', group: 'particle' },
     particleQuality: {
         type: 'enum',
@@ -262,7 +262,7 @@ export const ENV_STATE_SCHEMA = {
 
     // --- Clouds ---
     cloudsEnabled: { type: 'boolean', default: false, group: 'cloud' },
-    debugClouds: { type: 'boolean', default: false, group: 'cloud' },
+    debugCloudsEnabled: { type: 'boolean', default: false, group: 'cloud' },
     cloudCover: { type: 'number', default: 0.5, group: 'cloud' },
     cloudScale: { type: 'number', default: 0.55, group: 'cloud' },
     cloudHeight: { type: 'number', default: 300, group: 'cloud' },

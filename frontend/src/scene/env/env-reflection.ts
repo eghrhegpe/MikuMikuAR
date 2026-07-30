@@ -21,8 +21,8 @@ import { safeDispose } from '@/core/dispose-helpers';
 import { logWarn } from '@/core/logger';
 import type { EnvState } from '@/core/config';
 import { envState } from '@/core/config';
-import { getScene } from './env-context';
-import { registerEnvCallback } from './env-dispatcher';
+import { getScene } from './_shared/env-context';
+import { registerEnvCallback } from './_bridge/env-dispatcher';
 import { getEnvKeys } from '@/core/env-state-schema';
 import { setSSRFromReflection, isSSRActive } from '../render/renderer';
 

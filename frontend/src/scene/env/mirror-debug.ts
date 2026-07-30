@@ -13,9 +13,9 @@ import {
     Plane,
     Matrix,
 } from '@babylonjs/core';
-import { getScene } from './env-context';
+import { getScene } from './_shared/env-context';
 import { envState } from '@/core/config';
-import { setEnvState } from './env-bridge';
+import { setEnvState } from './_bridge/env-bridge';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
 
 let _mirrorMesh: Mesh | null = null;

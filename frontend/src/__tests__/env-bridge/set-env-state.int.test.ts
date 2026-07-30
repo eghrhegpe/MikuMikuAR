@@ -37,7 +37,7 @@ import {
     mockImplUpdateWaterAnimSpeed,
     mockSetEnvState,
 } from './env-mocks';
-import { setEnvState } from '../../scene/env/env-bridge';
+import { setEnvState } from '../../scene/env/_bridge/env-bridge';
 
 // ──── setEnvState (central entry) ──────────────────────────────
 

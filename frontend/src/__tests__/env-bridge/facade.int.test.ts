@@ -44,7 +44,7 @@ import {
     mockImplDisposeWater,
     mockSceneInstance,
 } from './env-mocks';
-import { setEnvState } from '../../scene/env/env-bridge';
+import { setEnvState } from '../../scene/env/_bridge/env-bridge';
 
 // ──── envState facade (via setEnvState) ────────────────────────
 

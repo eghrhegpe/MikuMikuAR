@@ -17,7 +17,7 @@ import {
 import { EnvState, envState } from '@/core/config';
 import { col3FromTriple } from '@/core/color-helpers';
 import { logWarn } from '@/core/logger';
-import { _envSys, getScene, resolveStaticAsset } from './env-context';
+import { _envSys, getScene, resolveStaticAsset } from './_shared/env-context';
 import { ensureEnvUpdateObserver } from './env';
 import { _disposeSunDisc } from '../render/lighting';
 import { observe, type ObserverHandle } from '@/core/observer-handle';

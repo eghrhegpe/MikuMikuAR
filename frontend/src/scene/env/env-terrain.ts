@@ -10,7 +10,7 @@ import {
     VertexBuffer,
 } from '@babylonjs/core';
 import { EnvState } from '@/core/config';
-import { createCanvasDataURL, isCacheOwnedTexture } from './env-texture';
+import { createCanvasDataURL, isCacheOwnedTexture } from './_shared/env-texture';
 import { clamp01 } from '@/core/clamp';
 import { _effectiveBumpLevel } from './env-ground';
 

@@ -26,7 +26,7 @@ import {
 } from '../scene/scene';
 import { buildTransformCard } from './resource-detail-helpers';
 import { LIGHTING_PRESETS, PRESET_NAMES } from '../scene/render/lighting-presets';
-import { setEnvState } from '../scene/env/env-bridge';
+import { setEnvState } from '../scene/env/_bridge/env-bridge';
 import { reRenderSceneMenu, getSceneMenu } from './scene-menu-state';
 import { t } from '../core/i18n/t';
 import { renderMenu } from './render-menu';
