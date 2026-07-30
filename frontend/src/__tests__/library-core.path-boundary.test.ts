@@ -34,7 +34,7 @@ vi.mock('../core/config', () => configModuleFactory(mockState));
 vi.mock('../core/ui-helpers', () => ({ slideRow: vi.fn() }));
 
 import { getRelativePathUnderDir, splitSubdirSegments } from '../menus/library-core';
-import { isUnderRoot } from '../core/utils';
+import { isUnderRoot } from '../core/path';
 import { normPath } from '../core/fileservice';
 
 describe('path-boundary hardening', () => {

@@ -6,7 +6,7 @@ import { envState, cardContainer } from '../core/config';
 import type { PopupLevel } from '../core/config';
 import { addSectionTitle, addPresetChip } from '../core/ui-helpers';
 import { addActionRow } from '../core/ui-helpers';
-import { getBaseName } from '../core/utils';
+import { getBaseName } from '../core/path';
 import { tryCatchStatus } from '../core/status-helpers';
 import { safeCallAsync } from '../core/safe-call';
 import { showInfoToast } from '../core/toast';

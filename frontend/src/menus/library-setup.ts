@@ -25,13 +25,13 @@ import {
     allModels,
     setOverridePaths,
     LibraryModel,
-    normPath,
     setDisplayNamePriority,
     DisplayNamePriority,
     stackRegistry,
 } from '../core/config';
+import { normPath } from '../core/path';
 import { feedbackStatus } from '../core/feedback';
-import { isUnderRoot } from '../core/utils';
+import { isUnderRoot } from '../core/path';
 import { tryCatchStatus } from '../core/status-helpers';
 import { logWarn } from '../core/logger';
 import { safeCallAsync } from '../core/safe-call';

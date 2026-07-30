@@ -6,7 +6,6 @@ import {
     LibraryModel,
     PopupRow,
     PopupLevel,
-    normPath,
     thumbnailCache,
     modelMetaCache,
     setModelMetaCache,
@@ -16,20 +15,20 @@ import {
     cardContainer,
     librarySortMode,
     stackRegistry,
-    getBrowseDir,
-    getBaseName,
-    logWarn,
-    LoadingGuard,
     libraryRoot,
     BrowseOutcome,
 } from '../core/config';
+import { normPath, getBaseName } from '../core/path';
+import { logWarn } from '../core/logger';
+import { LoadingGuard } from '../core/async';
+import { getBrowseDir } from '../library/library-path';
 import { closeAllOverlays } from './menu-overlay';
 import { SlideMenu } from './menu';
 import { safeDispose } from '../core/dispose-helpers';
 import { slideRow, createResourcePanel, openFullscreen, closeFullscreen } from '../core/ui-helpers';
 import { notifyThumbnailUpdate } from '../core/ui-resource-panel';
 import type { ResourceItem, SlideRowExtra, ResourcePanelHandle } from '../core/ui-helpers';
-import { isUnderRoot, isStageLike, getDirPath } from '../core/utils';
+import { isUnderRoot, isStageLike, getDirPath } from '../core/path';
 import { libraryModelBaseKey, buildThumbnailKey } from '@/scene/manager/thumbnail-key';
 import { t } from '../core/i18n/t';
 import { getLang } from '../core/i18n/locale';

@@ -1,6 +1,6 @@
 // [doc:adr-101] P2 工具函数单测：lifecycle guards
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { LoadingGuard, DebouncedTimer, Abortable } from '../core/utils';
+import { LoadingGuard, DebouncedTimer, Abortable } from '../core/async';
 
 describe('ADR-101 P2: lifecycle guards', () => {
     afterEach(() => {

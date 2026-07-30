@@ -57,11 +57,11 @@ vi.mock('../core/wails-bindings', () => ({
     readFileBytes: vi.fn().mockResolvedValue(null),
 }));
 
-vi.mock('../core/utils', () => ({
+vi.mock('../core/path', () => ({
     getBaseName: (p: string) => p.split('/').pop() || p,
+}));
+vi.mock('../core/clamp', () => ({
     clamp01: (v: number) => Math.max(0, Math.min(1, v)),
-    swallowError: vi.fn(),
-    debounce: (fn: (...args: unknown[]) => unknown) => fn,
 }));
 
 vi.mock('../core/logger', () => ({

@@ -10,7 +10,7 @@ import {
     libraryModelBaseKey,
     buildThumbnailKey,
 } from '../scene/manager/thumbnail-key';
-import { isStageLike } from '../core/utils';
+import { isStageLike } from '../core/path';
 import type { LibraryModel } from '../core/types';
 
 function libModel(over: Partial<LibraryModel>): LibraryModel {

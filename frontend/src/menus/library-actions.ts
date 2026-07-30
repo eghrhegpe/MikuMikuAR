@@ -9,10 +9,10 @@ import {
     focusedModelId,
     recentModels,
     setRecentModels,
-    computeLibraryRef,
     cardContainer,
     stackRegistry,
 } from '../core/config';
+import { computeLibraryRef } from '../library/library-path';
 import { loadManager } from '../core/load-manager';
 import { closeAllOverlays } from './menu-overlay';
 import {
@@ -38,13 +38,8 @@ import {
     GetLastBrowseDir,
     SetLastBrowseDir,
 } from '../core/wails-bindings';
-import {
-    isUnderRoot,
-    getBaseName,
-    normPath,
-    isStageLike,
-    logWarn,
-} from '../core/utils';
+import { isUnderRoot, getBaseName, normPath, isStageLike } from '../core/path';
+import { logWarn } from '../core/logger';
 import { withLoadingStatus, withLoadingStatusTargeted } from '../core/status-helpers';
 import { safeCallAsync } from '@/core/safe-call';
 import { t } from '../core/i18n/t';

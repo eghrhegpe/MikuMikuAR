@@ -76,14 +76,15 @@ vi.mock('../core/state', async (importOriginal) => {
     };
 });
 
-// env-level-helpers.ts → ../core/utils
-vi.mock('../core/utils', async (importOriginal) => {
-    const actual = await importOriginal();
-    return {
-        ...(actual as any),
-        closeAllOverlays: vi.fn(),
-    };
-});
+// env-level-helpers.ts → ./menu-overlay
+vi.mock('./menu-overlay', () => ({
+    closeAllOverlays: vi.fn(),
+}));
+
+// env-level-helpers.ts → ../library/library-path
+vi.mock('../library/library-path', () => ({
+    getBrowseDir: vi.fn(() => 'environment'),
+}));
 
 // 全部 env-*-levels.ts + env-level-helpers.ts → ../core/config — 覆盖 envState 和 cardContainer 等
 vi.mock('../core/config', async (importOriginal) => {
@@ -197,7 +198,6 @@ vi.mock('../core/config', async (importOriginal) => {
         },
         cardContainer: vi.fn(),
         setStatus: vi.fn(),
-        getBrowseDir: vi.fn(() => 'environment'),
     };
 });
 

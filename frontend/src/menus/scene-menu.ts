@@ -19,11 +19,9 @@ import { showInfoToast } from '../core/toast';
 import { registerPopupMenu } from './menu-factory';
 import { serializeScene, isARModeActive, takeARScreenshot, setEnvState } from '../scene/scene';
 import { SelectDir, SaveScreenshot, SaveScenePreset } from '../core/wails-bindings';
-import {
-    waitForFrame,
-    showErrorToast,
-    cardContainer,
-} from '../core/utils';
+import { waitForFrame } from '../core/async';
+import { showErrorToast } from '../core/toast';
+import { cardContainer } from '../core/ui-helpers';
 import { tryCatchStatus } from '../core/status-helpers';
 import { closeAllOverlays } from './menu-overlay';
 import { registerLoadRefreshHook, registerLibraryScannedHook } from '../core/load-refresh-registry';

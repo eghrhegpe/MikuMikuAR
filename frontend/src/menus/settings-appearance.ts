@@ -13,7 +13,7 @@ import { cardContainer } from '../core/config';
 import { feedbackInfo, feedbackStatus } from '../core/feedback';
 import { showInfoToast } from '../core/toast';
 import { slideRow, addToggleRow, addSliderRow, addSectionTitle } from '../core/ui-helpers';
-import { swallowError } from '../core/utils';
+import { swallowError } from '../core/async';
 import { getCurrentRenderingMenu } from './menu';
 import { t } from '../core/i18n/t';
 import {

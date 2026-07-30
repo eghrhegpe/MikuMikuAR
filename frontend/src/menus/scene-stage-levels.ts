@@ -20,7 +20,7 @@ import { buildTransformCard, buildMaterialCard, buildDangerCard } from './resour
 import { buildPropDetailLevel } from './scene-prop-levels';
 import { t } from '../core/i18n/t';
 import { renderMenu } from './render-menu';
-import { isUnderRoot } from '../core/utils';
+import { isUnderRoot } from '../core/path';
 import type { MenuNode } from './menu-schema';
 
 // ======== 舞台根面板：舞台加载、灯光、道具 ========
@@ -64,7 +64,7 @@ function buildStageSchema(): MenuNode[] {
                     () => {
                         (async () => {
                             try {
-                                const { getBrowseDir } = await import('../core/utils');
+                                const { getBrowseDir } = await import('../library/library-path');
                                 const browseDir = getBrowseDir('stage');
                                 if (!browseDir) {
                                     feedbackStatus('scene.statusNoModelLib', undefined, false);
@@ -102,7 +102,7 @@ function buildStageSchema(): MenuNode[] {
                     () => {
                         (async () => {
                             try {
-                                const { getBrowseDir } = await import('../core/utils');
+                                const { getBrowseDir } = await import('../library/library-path');
                                 const browseDir = getBrowseDir('prop');
                                 if (!browseDir) {
                                     feedbackStatus('scene.statusNoPropLib', undefined, false);

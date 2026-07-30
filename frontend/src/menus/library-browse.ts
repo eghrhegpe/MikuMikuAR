@@ -6,15 +6,13 @@ import {
     setStatus,
     allModels,
     PopupRow,
-    normPath,
     modelRegistry,
     recentModels,
-    computeLibraryRef,
     stackRegistry,
-    getBrowseDir,
     libraryRoot,
-    isUnderRoot,
 } from '../core/config';
+import { normPath, isUnderRoot } from '../core/path';
+import { computeLibraryRef, getBrowseDir } from '../library/library-path';
 import { closeAllOverlays, getMenuWrapper } from './menu-overlay';
 import { feedbackInfo } from '../core/feedback';
 import { showInfoToast } from '../core/toast';

@@ -2,18 +2,17 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import {
     formatTime,
     formatError,
-    computeLibraryRef,
-    resolveLibraryRef,
     addRecentMotion,
     getRecentMotions,
     toggleExpandedFolder,
     expandedFolders,
     setLibraryRoot,
 } from '../core/config';
+import { computeLibraryRef, resolveLibraryRef } from '../library/library-path';
 import { toBase64 } from '../core/image';
 import { escapeHtml } from '../core/escape-html';
 import { normPath } from '../core/fileservice';
-import { getBaseName, getDirPath, isUnderRoot } from '../core/utils';
+import { getBaseName, getDirPath, isUnderRoot } from '../core/path';
 
 describe('config pure functions', () => {
     describe('formatTime', () => {
