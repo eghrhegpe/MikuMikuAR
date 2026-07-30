@@ -1223,6 +1223,7 @@ export const zhTW: Record<string, string> = {
     'env.foamThreshold': '泡沫閾值',
     'env.foamIntensity': '泡沫強度',
     'env.animSpeed': '動畫速度',
+    'env.waterDispersionEnabled': '物理波速（色散）',
     'env.range': '範圍',
     'env.edgeFade': '邊緣淡出',
     'env.groundEnhance': '地面增強',

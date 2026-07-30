@@ -1240,6 +1240,7 @@ export const ja: Record<string, string> = {
     'env.foamThreshold': '泡のしきい値',
     'env.foamIntensity': '泡の強度',
     'env.animSpeed': 'アニメーション速度',
+    'env.waterDispersionEnabled': '物理波速（分散）',
     'env.range': '範囲',
     'env.edgeFade': 'エッジフェード',
     'env.groundEnhance': '地面強化',

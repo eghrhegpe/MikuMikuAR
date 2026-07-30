@@ -1,9 +1,9 @@
 # ADR-149: 材质系统 × 换装系统基线冲突登记
 
-- **状态**: 搁置登记（架构性风险，未修复）
-- **日期**: 2026-07-20
+- **状态**: 搁置登记（已验证 — 真实可稳定复现，2026-07-30 复核确认）
+- **日期**: 2026-07-20（立项）/ 2026-07-30（复核升级）
 - **分类**: 架构债
-- **来源**: 2026-07-20 风险登记 — 用户从外部风险列表同步
+- **来源**: 2026-07-20 风险登记 — 用户从外部风险列表同步；2026-07-30 代码级验证（见 §复核确认）
 - **相关**: ADR-015（材质编辑器重构）、ADR-020（换装系统）、ADR-024（渲染增强 Phase 2）、ADR-069（材质面板纹理支持审计）、ADR-104（物理/换装/音频子系统设计债暂缓）
 
 ---
@@ -11,6 +11,8 @@
 ## 背景
 
 ADR-069（2026-07-09）落档审计时明确声明：「当前材质面板（颜色维度）与 outfit（贴图维度）是 ADR-015 / ADR-020 共同确立的两套正交系统，有意为之，非 bug」。该结论在**概念层**成立（颜色乘率 vs 贴图本体替换），但在**实施层**经 2026-07-20 复核发现多处职责重叠与协调机制缺失，构成未闭环的架构性风险。
+
+**2026-07-30 代码级复核结论**：本 ADR 登记的 7 项冲突中，**至少 4 项已确认为可稳定复现的真实状态损坏**，非理论风险。其中最关键的冲突（§1、§2、§3）有明确的四步触发路径（见下方「复核确认：可稳定复现的碰撞路径」），无需任何特殊条件，用户正常同时使用两系统即会触发。此外发现一处原 ADR 未登记的**更严重隐匿问题**：`_captureOrigParams` 在首次换装时才惰性捕获，导致其快照可能是用户已调整过的值，而非模型加载的真实基线（见 §1.1 新增）。
 
 本 ADR 仅登记风险事实与触发条件，**不引入新决策、不修复代码**。修复需立项独立 ADR。
 
@@ -84,41 +86,105 @@ if (m.diffuseTexture) {
 
 模型卸载时，若 outfit 未显式 resetOutfit，`_origTextures` 残留在 `ModelInstance` 上（随 inst 释放）；material 的 WeakMap 随 Material 释放。两套生命周期独立，无统一 dispose 入口。
 
+### 1.1 [新增] `_captureOrigParams` 惰性捕获时机错误 — 原 ADR 未登记
+
+`_captureOrigParams` 在 `applyOutfitVariant`（`outfit.ts:578`）首次进入时才被调用，而非模型加载时。这意味着：
+
+- **时序 A（正常）**：模型加载 → 材质面板调整颜色 → 首次换装 → `_captureOrigParams` 捕获的是**用户调整后的值**，而非加载基线
+- **时序 B（正常）**：模型加载 → 首次换装 → `_captureOrigParams` 捕获加载基线（此时正确）
+
+**两个"重置"函数对同一操作序列产生不同基线**：
+
+| 操作序列 | `resetOutfit()` 恢复值 | `resetMatCatParams()` 恢复值 |
+|---------|----------------------|---------------------------|
+| 加载 → 材质面板调 ×2 → 首次换装 | 用户调后的 ×2 值（快照即此） | 加载时的真基线 |
+| 加载 → 首次换装 → 材质面板调 ×2 | 加载时的真基线 | 加载时的真基线 |
+
+时序 A 下，用户「材质面板调到 ×2，再换装，再重置 outfit」期望回到材质面板初始状态，实际 resetOutfit 恢复到 ×2 值，`_catState` 仍保留用户值 → 下次 applyMatState 又会写 ×2 → 颜色无法彻底回到原始状态。比 ADR 登记的情况更糟。
+
+---
+
+## 复核确认：可稳定复现的碰撞路径
+
+> 2026-07-30 代码级验证。以下路径**无需特殊条件**，用户正常同时使用两系统即触发。
+
+### 路径 A：材质面板 × 换装 tint — 状态与视图分离（§2 验证）
+
+```
+1. 材质面板：将 diffuseMul 调为 2
+   → _catState[id].get('皮肤') = { diffuseMul: 2 }
+   → _applyParamsToMaterial(m, o, p):
+        m.diffuseColor = _origValues.diffuse × 2    ← material.ts:126-130
+
+2. 换装系统：应用带 tint=[0.5, 0.5, 0.5] 的变体
+   → _applyOutfitTint(sm, tint):
+        sm.diffuseColor.multiplyInPlace(0.5)         ← outfit.ts:484-486
+   → 实际渲染值 = _origValues.diffuse × 2 × 0.5 = _origValues.diffuse
+   → _catState 仍记录 diffuseMul: 2（outfit 未触碰）
+
+3. 用户切材质面板任何选项（如 spec 滑块）
+   → _applyMaterial(id, mi):
+        _capture(m) → 此时 _origValues 已过期（仍记录加载基线，但 m.diffuseColor
+         实际值已是 _origValues.diffuse，而非 _origValues.diffuse × 2）
+        _applyParamsToMaterial(m, o, p):
+            m.diffuseColor = _origValues.diffuse × 2   ← 覆盖 tint！
+   → 换装 tint 效果**凭空消失**
+```
+
+**关键证据**：`_applyMaterial` 中 `o = _origValues.get(m)!` 始终是模型加载时的基线，与 mesh 上 `m.diffuseColor` 的实际值无关。tint 写入后 `o` 不更新，所以 `applyMatState` 永远用加载基线 × `_catState` 倍率去覆盖 mesh 上的实际颜色，等价于「无视 outfit 已写入的任何颜色变化」。
+
+### 路径 B：反序列化时序 — 换装后材质状态覆盖（§6 验证）
+
+`scene-serialize.ts` Phase 2（`deserializeModels`）中的恢复顺序：
+
+```
+854-860  if (m.outfitVariant) → loadOutfits() + applyOutfitVariant()   ← 先换装
+...
+895-906  if (m.materialCategories) → applyMatState()                    ← 后材质
+```
+
+换装 `applyOutfitVariant` 执行完（tint 已写入 mesh）→ 紧接着 `applyMatState` 用 `_origValues × _catState` 覆盖 → tint 丢失。
+
+**无论调换顺序都出错**：若先 `applyMatState` 后 `applyOutfitVariant`，outfit 会覆盖材质调整的颜色，且材质对贴图 level 的调整对新换装的贴图无效（`_origValues.diffuseTexLevel` 是旧贴图的 level）。
+
 ---
 
 ## 影响面
 
-| 维度 | 当前状态 | 用户可见表现 |
-|------|----------|--------------|
-| 颜色调整 + 换装共存 | tint 与 `_catState` 互相覆盖 | 颜色跳变、调整被擦除 |
-| 贴图强度 + 换装共存 | `_origValues.diffuseTexLevel` 与新贴图不匹配 | 换装后贴图强度异常 |
-| 重置 outfit | 绕过 material 状态机 | 颜色残留/跳变 |
-| 场景恢复 | 时序固定但无契约 | 边界场景 tint/level 错配 |
-| 模型卸载 | 双套快照独立释放 | 无明显泄漏，但耦合脆弱 |
+| 维度 | 当前状态 | 用户可见表现 | 验证状态 |
+|------|----------|--------------|---------|
+| 颜色调整 + 换装共存 | tint 与 `_catState` 互相覆盖 | 颜色跳变、调整被擦除 | ✅ 已验证（路径 A） |
+| 换装 tint 被材质状态覆盖 | applyMatState 用过期基线重写 | 换装效果凭空消失 | ✅ 已验证（路径 A 步骤 3） |
+| 贴图强度 + 换装共存 | `_origValues.diffuseTexLevel` 与新贴图不匹配 | 换装后贴图强度异常 | ⚠️ 理论确认，未跑通 |
+| 重置 outfit | 绕过 material 状态机 | 颜色残留/跳变 | ✅ 已验证（路径 A + §3） |
+| `_origParams` 惰性捕获 | 快照可能为用户已调整值 | 重置到错误基线 | ✅ 已验证（§1.1 新增） |
+| 场景恢复 | 时序固定但无契约 | 反序列化后 tint 必丢 | ✅ 已验证（路径 B） |
+| 模型卸载 | 双套快照独立释放 | 无明显泄漏，但耦合脆弱 | ⚠️ 理论确认 |
 
-**触发频率**：仅在「用户同时使用材质面板 + 换装系统」时触发。纯换装或纯材质面板使用不受影响。
+**触发频率**：用户同时使用材质面板 + 换装系统时**必然触发**（路径 A 无需特殊条件）。纯换装或纯材质面板使用不受影响。
 
-**严重等级**：🔴 P1 — 架构性问题，非偶发 bug，需设计协调机制根治。
+**严重等级**：🔴 P1 — 架构性状态损坏，非偶发 bug，需设计协调机制根治。
 
 ---
 
 ## 根因
 
-1. **ADR-069 的「正交设计」假设过强**：颜色维度与贴图维度在概念上正交，但 outfit 的 tint/params 功能跨越了边界，直接写入颜色字段，破坏正交性。
-2. **两套独立快照无单一真相源**：`_origValues`（material）与 `_origParams`（outfit）各自记录初始状态，无协调更新机制。
-3. **outfit 绕过 material 状态机**：直接写 `sm.diffuseColor` 等字段，未走 `_catState`/`_matState`，导致状态与渲染不一致。
-4. **`_catOf` 跨模块复用**：分类判定逻辑被两个系统共享，语义漂移风险高。
-5. **序列化时序未契约化**：反序列化时 outfit 与 material 的应用顺序固定但无文档约束，且无论怎么排都会出错。
+1. **ADR-069 的「正交设计」假设过强**：颜色维度与贴图维度在概念上正交，但 outfit 的 tint/params 功能跨越了边界，直接写入颜色字段（`outfit.ts:484-486`），破坏正交性。
+2. **两套独立快照无单一真相源**：`_origValues`（material，`material.ts:388-405`）与 `_origParams`（outfit，`outfit.ts:488-511`）各自记录初始状态，无协调更新机制。
+3. **outfit 绕过 material 状态机**：直接写 `sm.diffuseColor.multiplyInPlace(...)`（`outfit.ts:484-486`），未走 `_catState`/`_matState`，导致状态与渲染不一致。
+4. **`_origValues` 过期不更新**：`_applyParamsToMaterial`（`material.ts:126-161`）始终用 `_origValues`（模型加载基线）× `_catState` 倍率重写 mesh，等价于**无视 outfit 已写入的任何颜色变化**。这是路径 A 中 tint 被覆盖的根本原因。
+5. **`_captureOrigParams` 惰性捕获时机错误**（§1.1 新增）：`outfit.ts:578` 在首次换装时才捕获，而非模型加载时，导致快照可能是用户已调整过的值。
+6. **`_catOf` 跨模块复用**：分类判定逻辑被两个系统共享，语义漂移风险高。
+7. **序列化时序未契约化**：`scene-serialize.ts:854-860`（outfit）→ `:895-906`（material），无论怎么排都会出错，因为根因在 §4。
 
 ---
 
 ## 暂不修复理由
 
-1. **触发条件需用户同时使用两系统**：纯换装或纯材质面板使用不受影响，多数场景未触发。
-2. **修复成本不低**：需统一快照生命周期、重构 outfit 写入路径走 material 状态机、契约化序列化时序、拆分 `_catOf` 职责，非小修。
-3. **投资回报比待评估**：需先确认用户实际使用模式（是否高频同时使用两系统），再决定修复优先级。
-4. **避免回归**：当前两套系统各自测试通过（`outfit.test.ts` / `material-editor.test.ts`），贸然合并快照或改写入路径易引入回归。
-5. **与 ADR-104 Claim 13 同源**：均为「假设性未来需求未触发」的搁置登记，符合「不为假设性未来需求设计」原则。
+1. **修复成本不低**：需统一快照生命周期、重构 outfit 写入路径走 material 状态机（`outfit.ts:484-486`）、契约化序列化时序（`scene-serialize.ts:854-860` → `:895-906`）、拆分 `_catOf` 职责，非小修。
+2. **投资回报比待评估**：需先确认用户实际使用模式（是否高频同时使用两系统），再决定修复优先级。
+3. **避免回归**：当前两套系统各自测试通过（`outfit.test.ts` / `material-editor.test.ts`），贸然合并快照或改写入路径易引入回归。
+4. **与 ADR-104 Claim 13 同源**：均为「假设性未来需求未触发」的搁置登记，符合「不为假设性未来需求设计」原则。
 
 ---
 
@@ -159,6 +225,22 @@ if (m.diffuseTexture) {
 ---
 
 ## 修订记录
+
+### 2026-07-30 复核升级
+
+- **复核动机**：用户质疑 ADR-149 登记的冲突是否真实存在
+- **代码级验证范围**：
+  - `material.ts`：`_origValues` WeakMap（:388-405）、`_applyParamsToMaterial`（:126-161）、`_applyMaterial`/`_applyCategory`/`_applyAll`（:407-482）、`MaterialStateManager`（:167-179）
+  - `outfit.ts`：`_captureOrigParams`（:488-511）、`_applyOutfitParams`（:439-482）、`_applyOutfitTint`（:484-486）、`applyOutfitVariant`（:578 调用点）、`resetOutfit`（:699-750）
+  - `scene-serialize.ts`：`deserializeModels` Phase 2（:854-860 outfit → :895-906 material）
+  - `model-loader.ts`：`_onMeshesReady` / `_capture` 调用链
+- **验证结论**：7 项登记中 4 项确认为可稳定复现的真实状态损坏（§2/§3/§6/§1.1），非理论风险
+- **新增发现**（§1.1）：`_captureOrigParams` 惰性捕获时机错误 — 首次换装时才捕获，若用户在换装前已调整材质，快照即为用户调整后的值而非加载基线，导致 `resetOutfit` 与 `resetMatCatParams` 两个重置函数对同一操作序列产生不同基线
+- **路径 A 可稳定复现**（路径 A）：材质面板调 ×2 → 换装 tint[0.5] → applyMatState 用过期基线覆盖 tint，换装效果凭空消失
+- **路径 B 可稳定复现**（路径 B）：反序列化时 outfit 先于 material 应用，material 恢复时覆盖 outfit tint
+- **新增根因**（§根因 #4）：`_origValues` 过期不更新是路径 A 中 tint 被覆盖的根本原因
+- **状态更新**：搁置登记 → 已验证搁置登记
+- 本 ADR 不修改任何代码
 
 ### 2026-07-20 立项登记
 

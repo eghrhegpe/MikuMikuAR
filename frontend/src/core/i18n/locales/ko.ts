@@ -1237,6 +1237,7 @@ export const ko: Record<string, string> = {
     'env.foamThreshold': '거품 임계값',
     'env.foamIntensity': '거품 강도',
     'env.animSpeed': '애니메이션 속도',
+    'env.waterDispersionEnabled': '물리 파속(분산)',
     'env.range': '범위',
     'env.edgeFade': '엣지 페이드',
     'env.groundEnhance': '지면 강화',

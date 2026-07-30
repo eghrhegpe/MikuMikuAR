@@ -80,6 +80,13 @@ export function buildWaterLevel(): PopupLevel {
                             },
                             icon: 'lucide:fast-forward',
                         },
+                        {
+                            id: 'env:water:dispersion',
+                            kind: 'toggle',
+                            label: 'env.waterDispersionEnabled',
+                            control: { bind: 'env.waterDispersionEnabled' },
+                            icon: 'lucide:activity',
+                        },
                     ],
                 },
                 {
