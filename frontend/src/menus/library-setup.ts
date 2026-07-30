@@ -31,7 +31,8 @@ import {
     stackRegistry,
 } from '../core/config';
 import { feedbackStatus } from '../core/feedback';
-import { tryCatchStatus, isUnderRoot } from '../core/utils';
+import { isUnderRoot } from '../core/utils';
+import { tryCatchStatus } from '../core/status-helpers';
 import { logWarn } from '../core/logger';
 import { safeCallAsync } from '../core/safe-call';
 import { showConfirm } from '../core/dialog';

@@ -5,7 +5,6 @@ import {
     allModels,
     LibraryModel,
     PopupLevel,
-    normPath,
     modelRegistry,
     focusedModelId,
     recentModels,
@@ -40,13 +39,13 @@ import {
     SetLastBrowseDir,
 } from '../core/wails-bindings';
 import {
-    withLoadingStatus,
-    withLoadingStatusTargeted,
     isUnderRoot,
     getBaseName,
-    logWarn,
+    normPath,
     isStageLike,
+    logWarn,
 } from '../core/utils';
+import { withLoadingStatus, withLoadingStatusTargeted } from '../core/status-helpers';
 import { safeCallAsync } from '@/core/safe-call';
 import { t } from '../core/i18n/t';
 import { createIconifyIcon } from '../core/icons';

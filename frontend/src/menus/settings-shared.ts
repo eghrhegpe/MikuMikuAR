@@ -4,7 +4,8 @@
 import { SetUIAccent } from '../core/wails-bindings';
 import { UIState } from '../core/config';
 import { showInfoToast } from '../core/toast';
-import { tryCatchStatus, clamp01 } from '../core/utils';
+import { clamp01 } from '../core/utils';
+import { tryCatchStatus } from '../core/status-helpers';
 import { hexToRgb, rgbToString } from '../core/color-helpers';
 import { t } from '../core/i18n/t';
 
