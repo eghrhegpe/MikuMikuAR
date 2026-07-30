@@ -40,7 +40,7 @@
 | ADR-194 | 风物理系统修复 — 从「假风」到真实风场 | 已完成（2026-07-27 — tsc 零错误，env-bridge 80 + wind-physics 1 + app.contract 17 全绿；P2 修复后全量 2174/2174 全绿）（2026-07-27（初版）/ 2026-07-27（P2 修复 — 水面 `uWindSpeed` 加 `windEnabled` 守卫）） |
 | ADR-193 | 模型稳定身份（inst.id = 持久化 uuid） | 已立项 · 已实现（2026-07-27 — tsc 零错误；resolve-model-id 5 + replace-model-inherit 16 + material-editor 50 + lighting-follow 8 + env-lighting 22 + scene-serialize-undo 6 全绿）（2026-07-27（初版）） |
 | ADR-192 | 上游适配层重构（MmdAdapter） | 已立项 · Phase 2 已完成（2026-07-27 — 条目 3 用公开 API 真正内化、条目 9 经调研确认能力内化不可行改为守卫式反射；tsc 零错误，契约测试 13 + wind-physics 1 + audio 48 全绿）（2026-07-27（初版）） |
-| ADR-191 | 神桶 `@/core/utils` 去桶化（零依赖叶下沉） | 已完成（2026-07-27）；**E 档追加** 2026-07-30（2026-07-27（初版），2026-07-30（E 档追记）） |
+| ADR-191 | 神桶 `@/core/utils` 去桶化（零依赖叶下沉） | 已完成（2026-07-27）；**E 档追加** 2026-07-30；**F 档收尾** 2026-07-31（2026-07-27（初版），2026-07-30（E 档追记），2026-07-31（F 档神桶删除）） |
 | ADR-190 | 端能力声明式收口（淘汰散落 isAndroidPlatform 分支） | 已完成（代码 + 测试 2026-07-26 落地；tsc --noEmit + vitest 全绿）（2026-07-26（初版）） |
 | ADR-189 | 纹理加载路径优化（并行读取 + basename 共享 + LRU + KTX2 基础设施） | 实施中（Phase 0 代码已落地，3 项运行时验证随 Phase 1 完成；Phase 1 代码已落地 2026-07-26 — 并行读取 + basename 共享 + LRU 接线，全量 2133/2133）（2026-07-26（初版）/ 2026-07-26（修订 — 方向调整）/ 2026-07-26（审核修订 — AbortSignal/LRU/数值一致性）/ 2026-07-26（修复 — LRU 接入 collectTextureFiles）） |
 | ADR-188 | PBRMaterialBuilder 材质系统迁移 — PBR 渲染升级 | 草案 · 待立项（P1 长期规划） |

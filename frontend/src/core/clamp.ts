@@ -1,7 +1,7 @@
-// [doc:adr-190-followup] 零依赖数学钳制叶子。
-// 刻意不导入 @/core/utils 桶，避免纯几何/物理模块拖入整套应用工具层
-// （@/core/utils 顶部会引入 dom/state/menus 等，曾在 vitest fork 下导致整桶加载挂起）。
-// 其他模块可从此处直接导入 clamp 系列，或从 @/core/utils 经 re-export 间接导入。
+// [doc:adr-190-followup][doc:adr-191] 零依赖数学钳制叶子。
+// 神桶 @/core/utils 曾会引入 dom/state/menus 等，纯几何/物理模块从桶导入会被拖起整套
+// 应用工具层，在 vitest fork 下导致整桶加载挂起（EXIT=124）。神桶已于 ADR-191 F 档删除。
+// 其他模块须从此处直接导入 clamp 系列。
 
 export function clamp(v: number, lo: number, hi: number): number {
     return Math.min(hi, Math.max(lo, v));

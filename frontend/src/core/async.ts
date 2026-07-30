@@ -1,7 +1,7 @@
 // 零依赖叶（仅引轻量 ./logger）：纯异步工具与生命周期守卫。
 // 下沉自 @/core/utils（god barrel）；去桶化纪律与根因见 ADR-191。
 // 注意：本叶不引入 dom/state/fileservice/status-bar/i18n/feedback/menus 等应用层，
-// 故纯模块可安全引用而无需拖起应用层（对比 @/core/utils 桶）。
+// 故纯模块可安全引用而无需拖起应用层（对比已删除的 @/core/utils 神桶）。
 
 import { logWarn } from './logger';
 

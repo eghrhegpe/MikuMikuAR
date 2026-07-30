@@ -713,7 +713,7 @@ export function transitionRenderState(
     // 枚举字段（动画结束时切换）
     const enumKeys: (keyof RenderState)[] = ['toneMapping'];
 
-    // lerp / lerpArray 已收敛至 @/core/utils
+    // lerp / lerpArray 已收敛至 @/core/clamp
 
     /**
      * 判断布尔字段是否应在当前插值进度 t 时切换。
