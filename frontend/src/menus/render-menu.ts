@@ -19,7 +19,7 @@ import { getModuleConflicts } from '../scene/motion/motion-modules/registry';
 import { createIconifyIcon } from '../core/icons';
 import { focusedModelId } from '../core/state';
 import { showInfoToast } from '../core/toast';
-import { closeAllOverlays } from '../core/utils';
+import { closeAllOverlays } from './menu-overlay';
 import { feedbackStatus } from '../core/feedback';
 
 /** 渲染一个 MenuNode 树到 container 中。返回 dispose 函数，调用时级联释放所有 renderCustom 资源 */

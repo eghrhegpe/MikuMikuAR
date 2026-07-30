@@ -3,7 +3,6 @@
 
 import {
     dom,
-    closeAllOverlays,
     setStatus,
     allModels,
     PopupRow,
@@ -12,11 +11,11 @@ import {
     recentModels,
     computeLibraryRef,
     stackRegistry,
-    getMenuWrapper,
     getBrowseDir,
     libraryRoot,
     isUnderRoot,
 } from '../core/config';
+import { closeAllOverlays, getMenuWrapper } from './menu-overlay';
 import { feedbackInfo } from '../core/feedback';
 import { showInfoToast } from '../core/toast';
 import { loadManager } from '../core/load-manager';

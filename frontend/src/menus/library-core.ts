@@ -20,10 +20,10 @@ import {
     getBaseName,
     logWarn,
     LoadingGuard,
-    closeAllOverlays,
     libraryRoot,
     BrowseOutcome,
 } from '../core/config';
+import { closeAllOverlays } from './menu-overlay';
 import { SlideMenu } from './menu';
 import { safeDispose } from '../core/dispose-helpers';
 import { slideRow, createResourcePanel, openFullscreen, closeFullscreen } from '../core/ui-helpers';

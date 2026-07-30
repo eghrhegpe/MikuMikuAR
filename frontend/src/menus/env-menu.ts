@@ -10,7 +10,7 @@ import { registerPopupMenu } from './menu-factory';
 import { slideRow, addClearRow, addPresetChip } from '../core/ui-helpers';
 import { setEnvState } from '../scene/scene';
 import { getLightState, setLightState as setLightingState } from '../scene/render/lighting';
-import { closeAllOverlays } from '../core/utils';
+import { closeAllOverlays } from './menu-overlay';
 import { t } from '../core/i18n/t';
 import { renderMenu } from './render-menu';
 import { registerLoadRefreshHook, registerLibraryScannedHook } from '../core/load-refresh-registry';

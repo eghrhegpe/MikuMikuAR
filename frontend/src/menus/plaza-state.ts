@@ -3,8 +3,8 @@
 
 import type { PlazaSite } from './plaza-sites';
 import type { PlazaCreator } from './plaza-creators';
-import { closeAllOverlays } from '../core/utils';
 import { swallowError } from '../core/utils';
+import { closeAllOverlays } from './menu-overlay';
 import { StopProxy } from '../core/wails-bindings';
 import { getCachedCapabilities } from '../core/backend';
 import { logWarn } from '../core/logger';

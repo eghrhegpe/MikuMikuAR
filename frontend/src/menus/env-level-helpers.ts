@@ -4,7 +4,8 @@
 
 import { cardContainer, getBrowseDir } from '../core/config';
 import type { PopupLevel } from '../core/config';
-import { closeAllOverlays, stackRegistry } from '../core/utils';
+import { stackRegistry } from '../core/utils';
+import { closeAllOverlays } from './menu-overlay';
 import { setEnvTextureBindingTarget } from './env-menu-state';
 import { getEnvMenu } from './env-menu-state';
 

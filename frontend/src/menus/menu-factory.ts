@@ -2,7 +2,8 @@
 // 将 4 个 showXxxMenu 的模板代码（class 清理 / dataset / 复用 / reset）压缩为 1 行调用
 // 参见 docs/menu-architecture.md §「showXxxMenu 入口模式」
 
-import { dom, closeAllOverlays, getMenuWrapper, PopupLevel, PopupRow } from '../core/config';
+import { dom, PopupLevel, PopupRow } from '../core/config';
+import { closeAllOverlays, getMenuWrapper } from './menu-overlay';
 import { SlideMenu } from './menu';
 import { safeDispose } from '../core/dispose-helpers';
 
