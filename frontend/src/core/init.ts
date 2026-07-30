@@ -378,11 +378,7 @@ async function restoreUIState(): Promise<void> {
     if (s.fpsLimit !== undefined) {
         uiState.fpsLimit = s.fpsLimit;
     }
-    // 迁移旧 vsync 字段 → frameCapEnabled（Go 端 JSON tag 仍为 "vsync" 兼容旧配置）
-    const vsyncLegacy = (s as Record<string, unknown>).vsync;
-    if (typeof vsyncLegacy === 'boolean') {
-        uiState.frameCapEnabled = vsyncLegacy;
-    }
+    // frameCapEnabled 由 Go UnmarshalJSON 兼容旧 "vsync" key
     if (s.defaultPhysicsEnabled !== undefined) {
         uiState.defaultPhysicsEnabled = s.defaultPhysicsEnabled;
     }

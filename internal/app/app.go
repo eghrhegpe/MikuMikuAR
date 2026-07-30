@@ -351,7 +351,7 @@ type UIState struct {
 
 	// --- 以下字段原为前端会话级，2026-07-07 新增持久化支持 ---
 	FpsLimit              int               `json:"fpsLimit,omitempty"`              // 帧率上限；0=不限
-	FrameCapEnabled        bool              `json:"vsync,omitempty"`                 // 帧率限制器（默认 true）；JSON tag 保留 "vsync" 兼容旧配置
+	FrameCapEnabled        bool              `json:"frameCapEnabled"`                 // 帧率限制器（默认 true）；旧配置使用 "vsync" key 由 UnmarshalJSON 兼容
 	DefaultPhysicsEnabled bool              `json:"defaultPhysicsEnabled,omitempty"` // 新加载 actor 默认物理开关
 	RenderScale           float64           `json:"renderScale,omitempty"`           // 渲染分辨率缩放；1.0=原生
 	CameraSensitivity     float64           `json:"cameraSensitivity,omitempty"`     // 相机灵敏度倍数；1.0=默认
@@ -385,6 +385,25 @@ type UIState struct {
 
 	// --- Android 屏幕方向（2026-07-20 新增，ADR-017 A1-05）---
 	ScreenOrientation string `json:"screenOrientation,omitempty"` // Android 屏幕方向："auto"|"portrait"|"landscape"；空=auto
+}
+
+// UnmarshalJSON reads UIState while tolerating the legacy field name
+// "vsync" → "frameCapEnabled" renamed in ADR-214 Phase 1.
+// Old config.json files persisted the legacy key; without this fallback
+// the frame cap setting would silently reset on old configs.
+func (u *UIState) UnmarshalJSON(data []byte) error {
+	type uiStateAlias UIState // avoid recursion
+	aux := struct {
+		*uiStateAlias
+		LegacyVsync *bool `json:"vsync"`
+	}{uiStateAlias: (*uiStateAlias)(u)}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	if !u.FrameCapEnabled && aux.LegacyVsync != nil {
+		u.FrameCapEnabled = *aux.LegacyVsync
+	}
+	return nil
 }
 
 // KeyBindingOverride stores a single custom key binding override.

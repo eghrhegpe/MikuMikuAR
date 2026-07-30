@@ -140,7 +140,7 @@ export interface EnvPresetEntry {
     "label": string;
 
     /**
-     * sky/ground/water/atmosphere；旧文件无此字段默认 "sky"
+     * env:sky/env:ground/env:water/env:atmosphere；旧文件无此字段默认 "env:sky"
      */
     "category": string;
     "createdAt": number;
@@ -661,9 +661,9 @@ export interface UIState {
     "fpsLimit"?: number;
 
     /**
-     * 帧率限制器（默认 true）；JSON tag 保留 "vsync" 兼容旧配置
+     * 帧率限制器（默认 true）；旧配置使用 "vsync" key 由 UnmarshalJSON 兼容
      */
-    "vsync"?: boolean;
+    "frameCapEnabled": boolean;
 
     /**
      * 新加载 actor 默认物理开关
