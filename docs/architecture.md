@@ -352,7 +352,7 @@ MikuMikuAR/
         │   │   ├── go-adapter.ts
         │   │   ├── idb.ts
         │   │   └── types.ts
-        │   ├── config.ts             # barrel re-export → types.ts / state.ts / dom.ts / utils.ts
+        │   ├── config.ts             # barrel re-export → types.ts / state.ts / dom.ts / format.ts / math-geometry.ts / collections.ts / auto-save.ts / menu-stack-registry.ts
         │   ├── dialog.ts             # 通用对话框
         │   ├── events.ts             # 应用事件总线
         │   ├── fileservice.ts        # resolveFileUrl 统一文件 URL 解析
@@ -378,8 +378,17 @@ MikuMikuAR/
         │   ├── types.ts              # 全局类型定义
         │   ├── ui-helpers.ts         # DOM 构建工具（slideRow / addToggleRow 等）
         │   ├── ui-resource-panel.ts  # 资源面板（目录记忆，ADR-090）
-        │   ├── utils.ts              # 工具函数
-        │   ├── wails-bindings.ts     # Wails Go binding 类型封装
+        │   ├── auto-save.ts          # 自动保存触发器
+        │   ├── collections.ts        # 集合与 Promise 工具
+        │   ├── escape-html.ts        # HTML 转义
+        │   ├── format.ts             # 文本格式化
+        │   ├── json-stringify.ts     # 安全 JSON 工具
+        │   ├── math-geometry.ts      # 数学/几何辅助
+        │   ├── status-helpers.ts     # 状态栏包装
+        │   ├── ui-card.ts            # UI 卡片容器
+        │   ├── ui-loading.ts         # 加载指示器
+        │   ├── uuid.ts               # UUID 生成
+        │   ├── wails-bindings.ts     # Wails binding 类型封装
         │   └── __tests__/            # 单元测试
         │
         ├── scene/                    # 3D 场景（Babylon.js）
@@ -672,7 +681,10 @@ core/main.ts
  └── Wails Runtime         OnFileDrop / EventsOn
 
 scene/scene.ts
- ├── core/state.ts + utils.ts    状态读写、工具函数
+ ├── core/state.ts               状态读写
+ ├── core/async.ts               异步工具
+ ├── core/auto-save.ts           自动保存触发
+ ├── core/format.ts              文本格式化
  ├── scene/camera/camera.ts      autoFrame / getCameraState / setCameraState / animateCameraVmd / ...
  ├── outfit/audio.ts             syncAudioPlayback / loadAudioFile / ...
  ├── core/fileservice.ts         resolveFileUrl
@@ -682,7 +694,9 @@ outfit/audio.ts
  └── core/fileservice.ts   resolveFileUrl
 
 menus/library.ts
- ├── core/state.ts + types.ts + utils.ts  状态、类型、工具
+ ├── core/state.ts + types.ts    状态、类型
+ ├── library/library-path.ts     图书馆路径工具
+ ├── core/async.ts               异步工具
  ├── scene/scene.ts        loadPMXFile / loadVMDFromPath / focusModel / removeModel
  ├── outfit/audio.ts       loadAudioFile / setAudioOffset
  ├── menus/menu.ts          MenuStack

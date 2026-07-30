@@ -90,7 +90,7 @@ export interface AttachmentFit {
     particleSpacing: number;
 }
 
-// clamp / clampInt 已收敛至 @/core/utils
+// clamp / clampInt 已收敛至 @/core/clamp
 
 /**
  * 从模型尺寸启发式推算挂件几何参数。

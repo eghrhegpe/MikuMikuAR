@@ -139,7 +139,7 @@ function edgeKey(a: number, b: number): string {
     return a < b ? `${a}_${b}` : `${b}_${a}`;
 }
 
-// clampInt 已收敛至 @/core/utils
+// clampInt 已收敛至 @/core/clamp
 
 // ============================================================================
 // 主分析函数

@@ -1,6 +1,6 @@
 # ADR-191: 神桶 `@/core/utils` 去桶化（零依赖叶下沉）
-> **状态**: 已完成（2026-07-27）；**E 档追加** 2026-07-30
-> **日期**: 2026-07-27（初版），2026-07-30（E 档追记）
+> **状态**: 已完成（2026-07-27）；**E 档追加** 2026-07-30；**F 档收尾** 2026-07-31
+> **日期**: 2026-07-27（初版），2026-07-30（E 档追记），2026-07-31（F 档神桶删除）
 > **关联**: ADR-177（Web Loader 统一路径 — 测试 EXIT=124 根因）、cf264937（clamp 叶抽取地基）
 > **来源**: `virtual-skirt.test.ts`「一改就炸」根因调查——纯几何模块 `skirt-analyzer.ts` 从 `@/core/utils` 桶导入 `clampInt`，整桶 ESM 组合求值留下 pending 微任务，致 vitest fork worker 永不退（EXIT=124）。
 
@@ -39,12 +39,12 @@
 | `debounce` | 纯函数 | ✅ 下沉为叶模块 | `@/core/debounce` |
 | `setKey` | 纯函数 | ✅ 下沉为叶模块 | `@/core/set-key` |
 | `formatTimestamp` | 纯函数 | ✅ 下沉为叶模块 | `@/core/format-timestamp` |
-| `triggerAutoSave` | app 耦合 | 保留桶内（依赖 `logWarn`）| `@/core/utils` |
+| `triggerAutoSave` | app 耦合 | 🆕 **F 档迁出**至 `@/core/auto-save` | `@/core/auto-save` |
 | `canvasToBase64` | app 耦合 | 🆕 **E 档迁出** | `@/core/image` |
-| `withLoadingIndicator` | app 耦合 | 保留桶内（依赖 `UI`）| `@/core/utils` |
-| `logWarn` | app 耦合 | 保留桶内（依赖 `Feedback`）| `@/core/utils` |
+| `withLoadingIndicator` | app 耦合 | 🆕 **F 档迁出**至 `@/core/ui-loading` | `@/core/ui-loading` |
+| `logWarn` | app 耦合 | 🆕 **E 档迁出**至 `@/core/logger` | `@/core/logger` |
 | `computeLibraryRef` | app 耦合 | 🆕 **E 档纯化迁出** | `@/core/path` |
-| `resolveLibraryRef` | app 耦合 | 保留桶内（依赖 `libraryRoot`）| `@/core/utils` |
+| `resolveLibraryRef` | app 耦合 | 🆕 **F 档迁出**至 `@/library/library-path` | `@/library/library-path` |
 
 ### D档实施说明
 
@@ -54,9 +54,10 @@
 3. 在 `utils.ts` 中移除对应导出
 4. 更新所有引用调用方的 `import` 为新路径
 
-对 app 耦合符号 **保留桶内**：
-- 这些函数依赖 `dom`、`state`、`feedback`、`i18n` 等应用层模块，无法作为纯叶存在
-- 但它们的调用方已明确识别（见下方混引模块表），后续可考虑进一步解耦
+对 app 耦合符号 **D 档保留桶内，E/F 档逐步迁出**：
+- D 档时这些函数依赖 `dom`、`state`、`feedback`、`i18n` 等应用层模块，暂留桶内
+- E 档将 `logWarn` 迁出至 `@/core/logger`，`canvasToBase64` 迁出至 `@/core/image`
+- F 档将 `triggerAutoSave` 迁出至 `@/core/auto-save`，`withLoadingIndicator` 迁出至 `@/core/ui-loading`，`resolveLibraryRef` 等迁出至 `@/library/library-path`
 
 ### 实施后验证
 
@@ -149,8 +150,58 @@
 | `core/init.ts` | `fireAndForget`/`swallowError` → `@/core/async` |
 | `core/ui-resource-panel.ts` | `thumbDataUrl` → `@/core/config` |
 
+---
+
+## F 档收尾：删除 `@/core/utils` 神桶（2026-07-31）
+
+### 新增叶模块与迁移符号
+
+本轮把 E 档中标注「定义在神桶本体、需先拆叶」的符号全部抽出，最终删除 `src/core/utils.ts`。
+
+| 叶模块 | 迁入符号 | 原位置 | 说明 |
+|--------|---------|--------|------|
+| `@/core/format.ts` | `formatTime`, `formatError` | `@/core/utils` | 格式化纯函数，零依赖 |
+| `@/core/math-geometry.ts` | `dist2d`, `dist3d`, `degToRad`, `radToDeg` | `@/core/utils` | 纯数学/几何辅助 |
+| `@/core/collections.ts` | `ensureArray`, `filterKeys`, `Cache`, `allSettledFilter` | `@/core/utils` | 集合与 Promise 工具 |
+| `@/core/escape-html.ts` | `escapeHtml` | `@/core/utils` | HTML 转义纯函数 |
+| `@/core/json-stringify.ts` | `jsonStringify`, `jsonParse` | `@/core/utils` | 安全 JSON 序列化/反序列化 |
+| `@/core/ui-card.ts` | `cardContainer` | `@/core/utils` | UI 卡片容器辅助；依赖 `dom`/`i18n`，属应用层叶 |
+| `@/core/ui-loading.ts` | `withLoadingIndicator` | `@/core/utils` | 加载指示器；依赖 `dom`/`i18n` |
+| `@/core/auto-save.ts` | `setTriggerAutoSave`, `triggerAutoSave` | `@/core/utils` | 自动保存触发器；解耦自 scene-serialize 的 impl |
+| `@/menus/menu-stack-registry.ts` | `stackRegistry` | `@/core/utils` | 菜单栈注册表；从 core 迁到 menus 域，破循环依赖 |
+| `@/core/status-helpers.ts` | `tryCatchStatus` | `@/core/utils` | 状态栏错误包装；依赖 `status-bar` |
+| `@/core/toast.ts` | `showErrorToast` | `@/core/utils` | 错误提示；toast 系统本已存在，归入同类 |
+| `@/menus/menu-overlay.ts` | `closeAllOverlays` | `@/core/utils` | 弹窗关闭；属于 menus 域 |
+| `@/library/library-path.ts` | `CATEGORY_DIR`, `computeLibraryRef`, `resolveLibraryRef`, `getBrowseDir` | `@/core/utils` / `@/core/path` | 图书馆路径工具；menus 用封装版读 `libraryRoot`，scene 用 `core/path` 参数化纯版 |
+
+### `menus/` 26 文件导入清理
+
+F 档前 `menus/` 仍有 26 个文件直接引用神桶。拆分上述叶模块后，全部改为具体叶导入：
+
+- 路径相关 → `@/library/library-path`（`CATEGORY_DIR`, `computeLibraryRef`, `getBrowseDir`, `resolveLibraryRef`）
+- 自动保存 → `@/core/auto-save`
+- 加载指示器 → `@/core/ui-loading`
+- 卡片容器 → `@/core/ui-card`
+- 状态包装 → `@/core/status-helpers`
+- 错误提示 → `@/core/toast`
+- 弹窗关闭 → `@/menus/menu-overlay`
+- HTML 转义 → `@/core/escape-html`
+- JSON 工具 → `@/core/json-stringify`
+- 集合/数学 → `@/core/collections`, `@/core/math-geometry`
+- 格式工具 → `@/core/format`
+- 菜单栈注册表 → `@/menus/menu-stack-registry`
+
+### 聚合层调整
+
+- `src/core/utils.ts` **已删除**。
+- `src/core/config.ts` 不再 `export * from './utils'`，改为显式导出新增叶模块（`format`, `math-geometry`, `collections`, `auto-save`）及 `menu-stack-registry`，保持通过 `@/core/config` 消费的代码兼容。
+
+### F 档验证
+
+- `npm run check` ✅（tsc + eslint + docs 校验）
+- `npm run test -- --run` ✅ **239 文件 / 2696 用例全绿**
+- `grep` 确认 `frontend/src` 已无 `@/core/utils` 或 `../core/utils` 导入
+
 ### 剩余技术债
 
-1. **`menus/`（26 文件）**: 仍从 `../core/utils` 导入符号。部分符号（`tryCatchStatus`/`closeAllOverlays`/`escapeHtml`/`jsonStringify`/`CATEGORY_DIR`/`showErrorToast`）定义在神桶本体中，需先拆叶模块方可迁移。
-2. **神桶自有的符号**（`tryCatchStatus`, `closeAllOverlays`, `escapeHtml`, `jsonStringify`, `CATEGORY_DIR`, `showErrorToast`）暂无法叶化——它们在神桶中定义且依赖应用层状态。
-3. 部分已修复文件（如 `bone-override.ts`、`registry.ts`、`vmd-loader.ts`）仅将导入从神桶改到 `@/core/config`（config 是应用层 barrel 而非叶模块），可进一步精化但优先级较低。
+无。`@/core/utils` 神桶已彻底移除，`frontend/src` 不再存在从该桶的导入。

@@ -31,7 +31,7 @@ export interface SolveFootOutput {
     grounded: boolean;
 }
 
-// clamp01 已收敛至 @/core/utils
+// clamp01 已收敛至 @/core/clamp
 
 /**
  * 解算单脚应处的世界 Y 坐标。
