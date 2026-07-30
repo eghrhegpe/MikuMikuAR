@@ -15,7 +15,7 @@ const defaultEnv: EnvState = {
     globalBrightness: 1,
     starsEnabled: false,
     starsTexture: '',
-    groundVisible: true,
+    groundVisibleEnabled: true,
     groundPreset: 'custom',
     groundType: 'flat',
     groundStyle: 'solid',
@@ -67,13 +67,14 @@ const defaultEnv: EnvState = {
     groundEdgeFade: 0,
     waterEnabled: false,
     waterLevel: 0,
-    waterFlip: false,
+    waterFlipEnabled: false,
     waterColor: [0.15, 0.4, 0.6],
     waterTransparency: 0.88,
     waterWaveHeight: 0.15,
     bigWaveHeight: 1.0,
     smallWaveHeight: 1.0,
     smallWaveEnabled: true,
+    bigWaveEnabled: true,
     waterAnimSpeed: 0.2,
     fresnelBias: 0.02,
     fresnelPower: 3.0,
@@ -88,11 +89,13 @@ const defaultEnv: EnvState = {
     waterHorizonFade: 0,
     waterSkyColorBlend: 0,
     causticIntensity: 0.1,
+    causticEnabled: true,
     causticColor1: [1.0, 0.9, 0.6],
     causticColor2: [1.0, 1.0, 0.8],
     causticScrollX: 0.1,
     causticScrollY: 0.15,
     fresnelAlphaInfluence: 0.35,
+    underwaterEnabled: true,
     waterFogColor: [0.5, 0.52, 0.62],
     waterFogStart: 150,
     waterFogEnd: 800,
@@ -151,7 +154,7 @@ describe('EnvState defaults', () => {
             'skyBrightness',
             'starsEnabled',
             'iblIntensity',
-            'groundVisible',
+            'groundVisibleEnabled',
             'groundType',
             'groundStyle',
             'groundColor',
@@ -194,7 +197,7 @@ describe('EnvState defaults', () => {
             'groundEdgeFade',
             'waterEnabled',
             'waterLevel',
-            'waterFlip',
+            'waterFlipEnabled',
             'waterColor',
             'waterTransparency',
             'waterWaveHeight',
@@ -274,7 +277,7 @@ describe('setEnvState partial merge', () => {
         });
         expect(updated.skyMode).toBe('procedural');
         expect(updated.skyBrightness).toBe(1.5);
-        expect(updated.groundVisible).toBe(true);
+        expect(updated.groundVisibleEnabled).toBe(true);
         expect(updated.iblIntensity).toBe(1);
     });
 });

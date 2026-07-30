@@ -56,7 +56,7 @@ export const ENV_STATE_SCHEMA = {
     globalBrightness: { type: 'number', default: 1, group: 'sky' },
 
     // --- Ground ---
-    groundVisible: { type: 'boolean', default: true, group: 'ground' },
+    groundVisibleEnabled: { type: 'boolean', default: true, group: 'ground' },
     // 当前生效的地面预设 key（顶部 chips 高亮判据）；用户手动微调任一 ground 字段时重置为 'custom'。
     // 无 group：纯 UI 标记，不得进 _GROUND_KEYS 驱动 applyGround 重渲染（参照 _WATER_KEYS 教训）。
     groundPreset: {
@@ -181,7 +181,7 @@ export const ENV_STATE_SCHEMA = {
     // --- Water ---
     waterEnabled: { type: 'boolean', default: false, group: 'water' },
     waterLevel: { type: 'number', default: 0, group: 'water' },
-    waterFlip: { type: 'boolean', default: false, group: 'water' },
+    waterFlipEnabled: { type: 'boolean', default: false, group: 'water' },
     waterColor: {
         type: 'tuple3',
         default: [0.15, 0.4, 0.6] as [number, number, number],
@@ -190,6 +190,7 @@ export const ENV_STATE_SCHEMA = {
     waterTransparency: { type: 'number', default: 0.88, group: 'water' },
     waterWaveHeight: { type: 'number', default: 0.15, group: 'water' },
     bigWaveHeight: { type: 'number', default: 1.0, group: 'water' },
+    bigWaveEnabled: { type: 'boolean', default: true, group: 'water' },
     smallWaveHeight: { type: 'number', default: 1.0, group: 'water' },
     smallWaveEnabled: { type: 'boolean', default: true, group: 'water' },
     waterAnimSpeed: { type: 'number', default: 0.2, group: 'water' },
@@ -239,6 +240,7 @@ export const ENV_STATE_SCHEMA = {
     // ADR-115 P5: 低频滚动法线层强度（0=关闭，默认 0.15）
     lowFreqNormalStrength: { type: 'number', default: 0.15, group: 'water' },
     causticIntensity: { type: 'number', default: 0.1, group: 'water' },
+    causticEnabled: { type: 'boolean', default: true, group: 'water' },
     causticColor1: {
         type: 'tuple3',
         default: [1.0, 0.9, 0.6] as [number, number, number],
@@ -254,6 +256,7 @@ export const ENV_STATE_SCHEMA = {
     fresnelAlphaInfluence: { type: 'number', default: 0.35, group: 'water' },
 
     // --- Underwater ---
+    underwaterEnabled: { type: 'boolean', default: true, group: 'water' },
     underwaterFogDensity: { type: 'number', default: 0.05, group: 'water' },
     underwaterChromaticAmount: { type: 'number', default: 20, group: 'water' },
     underwaterToneIntensity: { type: 'number', default: 0.5, group: 'water' },
@@ -332,7 +335,7 @@ const _groupCache = new Map<string, string[]>();
  *
  * @example
  *   const GROUND_KEYS = getEnvKeys('ground');
- *   // => ['groundVisible', 'groundType', ..., 'reflectionQuality', 'reflectionMode', ...]
+ *   // => ['groundVisibleEnabled', 'groundType', ..., 'reflectionQuality', 'reflectionMode', ...]
  */
 export function getEnvKeys(group: EnvDispatchGroup): string[] {
     const cached = _groupCache.get(group);

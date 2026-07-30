@@ -1121,7 +1121,7 @@ export function applyGround(state: EnvState): void {
     const keyChanged = typeKey !== _currentGroundKey;
 
     // 原地更新路径
-    if (_envSys.ground.mesh && state.groundVisible && !keyChanged) {
+    if (_envSys.ground.mesh && state.groundVisibleEnabled && !keyChanged) {
         const mat = _envSys.ground.mesh.material as GroundMat | null;
         if (mat && (mat instanceof StandardMaterial || mat instanceof PBRMaterial)) {
             // 仅 canvas 图案/纯色来源才在原地更新时重生成 canvas 纹理；
@@ -1192,7 +1192,7 @@ export function applyGround(state: EnvState): void {
         oldMesh.dispose();
         _envSys.ground.mesh = null;
     }
-    if (!state.groundVisible) {
+    if (!state.groundVisibleEnabled) {
         return;
     }
 

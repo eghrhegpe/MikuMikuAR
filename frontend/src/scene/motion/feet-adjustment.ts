@@ -31,15 +31,12 @@ import { solveFootTarget } from '@/motion-algos/feet-adjustment-math';
 import { detectFootLanding } from '@/motion-algos/footstep-detect';
 import { logWarn } from '../../core/logger';
 import { getMotionPipeline } from './motion-pipeline';
-import { isWasmRuntime } from './perception-shared';
+import { isWasmRuntime, feetDebug } from './perception-shared';
 export { solveFootTarget };
 export type { SolveFootInput, SolveFootOutput } from '@/motion-algos/feet-adjustment-math';
 
 // ======== WASM 调试开关 ========
-// 从控制台启用：__feetDebug.value = true （或 __feetDebug.value = false 关闭）
-// 本文件加载后自动挂到 window.__feetDebug
-export const feetDebug = { value: false };
-(window as unknown as Record<string, unknown>).__feetDebug = feetDebug;
+// feetDebug 已迁移至 perception-shared.ts（供 bone-override 守护共用，避免循环依赖）
 
 // ======== 引擎钩子 ========
 

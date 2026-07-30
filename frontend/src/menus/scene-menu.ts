@@ -197,9 +197,9 @@ function buildSceneRootItems(): PopupRow[] {
         icon: 'lucide:square',
         target: 'scene:ground',
         headerToggle: {
-            value: envState.groundVisible,
-            onChange: (v: boolean) => setEnvState({ groundVisible: v }),
-            bind: () => envState.groundVisible,
+            value: envState.groundVisibleEnabled,
+            onChange: (v: boolean) => setEnvState({ groundVisibleEnabled: v }),
+            bind: () => envState.groundVisibleEnabled,
         },
     });
     items.push({

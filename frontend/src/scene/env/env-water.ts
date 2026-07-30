@@ -590,8 +590,11 @@ function _syncWaterUniforms(state: EnvState, scene: Scene): void {
 
     // ——— 基础参数 ———
     mat.setFloat('waveHeight', state.waterWaveHeight);
-    // ADR-115 P4: 双层尺度 — 大波/小波独立振幅缩放，?? 1.0 兜底防 NaN
-    mat.setFloat('bigWaveHeight', state.bigWaveHeight ?? 1.0);
+    // ADR-115 P4 + ADR-211 Part3：大波受 bigWaveEnabled 门控，关闭时送 0 振幅（水面趋于平静镜面）
+    mat.setFloat(
+        'bigWaveHeight',
+        (state.bigWaveEnabled ?? true) ? (state.bigWaveHeight ?? 1.0) : 0
+    );
     // ADR-115 P4 + 功能开关试点：小波受 smallWaveEnabled 门控，关闭时送 0 振幅（水面呈纯净反射面）
     mat.setFloat(
         'smallWaveHeight',
@@ -602,7 +605,7 @@ function _syncWaterUniforms(state: EnvState, scene: Scene): void {
     mat.setColor3('waterColor', col3FromTriple(state.waterColor));
     mat.setFloat('waterTransparency', state.waterTransparency);
     mat.setFloat('waterLevel', state.waterLevel);
-    mat.setInt('uWaterFlip', state.waterFlip ? 1 : 0);
+    mat.setInt('uWaterFlip', state.waterFlipEnabled ? 1 : 0);
 
     const hasEnv = !!scene.environmentTexture;
     // envIntensity 随日照微缩放（与 per-frame 同公式）：高底线保留夕阳暖色
@@ -629,7 +632,8 @@ function _syncWaterUniforms(state: EnvState, scene: Scene): void {
     // ——— 焦散（共享 env-caustics controller 唯一实例，UV 滚动由 controller 推）——
     const causticTex = causticsController.getTexture(scene);
     mat.setTexture('uCausticTex', causticTex);
-    mat.setFloat('uCausticIntensity', state.causticIntensity);
+    // ADR-211 Part3：焦散受 causticEnabled 门控，关闭时送 0 强度（水底无光斑）
+    mat.setFloat('uCausticIntensity', (state.causticEnabled ?? true) ? state.causticIntensity : 0);
     // 焦散 UV 偏移（联动 causticScrollX/Y，经 causticsController 推 uOffset/vOffset）
     mat.setVector2('uCausticOffset', _causticOffset.set(causticTex.uOffset, causticTex.vOffset));
 
@@ -734,7 +738,7 @@ function _setupMirrorRT(scene: Scene, state: EnvState): void {
  */
 function _updateWaterMesh(state: EnvState): void {
     const scale = Math.max(1, state.groundSize / WATER_BASE_SIZE);
-    const rotX = state.waterFlip ? Math.PI : 0;
+    const rotX = state.waterFlipEnabled ? Math.PI : 0;
     const meshes: Mesh[] = [];
     if (_envSys.water.mesh) {
         meshes.push(_envSys.water.mesh);
@@ -1002,7 +1006,7 @@ export function createWater(state: EnvState): void {
     }
 
     const scale = Math.max(1, state.groundSize / WATER_BASE_SIZE);
-    const rotX = state.waterFlip ? Math.PI : 0;
+    const rotX = state.waterFlipEnabled ? Math.PI : 0;
     const makeGround = (name: string, subdivisions: number): Mesh => {
         const m = MeshBuilder.CreateGround(
             name,
@@ -1113,7 +1117,9 @@ export function updateUnderwaterTransition(scene: Scene, pipeline: DefaultRender
     }
 
     const camY = scene.activeCamera.globalPosition.y;
-    _underwaterTarget = camY < envState.waterLevel;
+    // ADR-211 Part3：水下效果受 underwaterEnabled 门控。关闭时无论相机是否潜入水下，
+    // 都视作非水下目标——复用现有过渡回退逻辑平滑退出（雾/色调/灯光归位），不硬切避免闪跳。
+    _underwaterTarget = (envState.underwaterEnabled ?? true) && camY < envState.waterLevel;
 
     if (_underwaterTarget && !_underwaterActive) {
         _underwaterActive = true;

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // ── hoisted mocks ──
 
-const mockEnvState = vi.hoisted(() => ({ groundVisible: true, waterEnabled: false }));
+const mockEnvState = vi.hoisted(() => ({ groundVisibleEnabled: true, waterEnabled: false }));
 const mockSetEnvState = vi.hoisted(() => vi.fn());
 const mockPush = vi.hoisted(() => vi.fn());
 const _mockCreateIconifyIcon = vi.hoisted(() =>
@@ -142,7 +142,7 @@ function _findToggleRow(
 
 describe('Stage level', () => {
     beforeEach(() => {
-        mockEnvState.groundVisible = true;
+        mockEnvState.groundVisibleEnabled = true;
         mockEnvState.waterEnabled = false;
         mockSetEnvState.mockReset();
         mockPush.mockReset();

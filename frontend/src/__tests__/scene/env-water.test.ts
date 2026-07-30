@@ -284,6 +284,42 @@ describe('Water 小波开关 — smallWaveEnabled 门控 shader 振幅', () => {
     });
 });
 
+// ──────────────── 大波 / 焦散开关门控（ADR-211 Part3）────────────────
+describe('Water 大波/焦散开关 — enabled 门控 shader uniform', () => {
+    // 捕获 createWater 内 _syncWaterUniforms 对指定 uniform 的最后一次写入
+    function captureUniform(uniform: string, state: Partial<typeof envState>): number | undefined {
+        const calls: Array<[string, number]> = [];
+        const spy = vi
+            .spyOn(ShaderMaterial.prototype, 'setFloat')
+            .mockImplementation(function (this: ShaderMaterial, name: string, value: number) {
+                calls.push([name, value]);
+                return this;
+            });
+        try {
+            createWater(makeWaterState({ waterLevel: 0, ...state }));
+        } finally {
+            spy.mockRestore();
+        }
+        return [...calls].reverse().find(([n]) => n === uniform)?.[1];
+    }
+
+    it('bigWaveEnabled=true 时 bigWaveHeight 送原振幅', () => {
+        expect(captureUniform('bigWaveHeight', { bigWaveEnabled: true, bigWaveHeight: 1.0 })).toBe(1.0);
+    });
+
+    it('bigWaveEnabled=false 时 bigWaveHeight 送 0', () => {
+        expect(captureUniform('bigWaveHeight', { bigWaveEnabled: false, bigWaveHeight: 1.0 })).toBe(0);
+    });
+
+    it('causticEnabled=true 时 uCausticIntensity 送原强度', () => {
+        expect(captureUniform('uCausticIntensity', { causticEnabled: true, causticIntensity: 0.3 })).toBe(0.3);
+    });
+
+    it('causticEnabled=false 时 uCausticIntensity 送 0', () => {
+        expect(captureUniform('uCausticIntensity', { causticEnabled: false, causticIntensity: 0.3 })).toBe(0);
+    });
+});
+
 // ──────────────── 波方向（风向联动）────────────────
 describe('Water 波方向 — 归一化', () => {
     it('零风向时回退到默认方向 [0,0,1]（不抛错）', () => {
@@ -397,6 +433,39 @@ describe('Water Underwater — 相机入水触发过渡', () => {
         const pipeline = makePipelineStub();
         updateUnderwaterTransition(scene, pipeline);
         expect(isUnderwaterActive()).toBe(true);
+    });
+
+    // ADR-211 Part3：水下效果开关门控
+    it('underwaterEnabled=false 时相机潜入水下也不激活水下效果', () => {
+        envState.waterEnabled = true;
+        envState.waterLevel = 0;
+        envState.underwaterEnabled = false;
+        camera.position.set(0, -3, 10); // 水下
+        camera.computeWorldMatrix();
+
+        const pipeline = makePipelineStub();
+        try {
+            updateUnderwaterTransition(scene, pipeline);
+            expect(isUnderwaterActive()).toBe(false);
+        } finally {
+            envState.underwaterEnabled = true; // 恢复共享状态，避免污染后续用例
+        }
+    });
+
+    it('underwaterEnabled 字段缺失时兜底为开启（?? true）', () => {
+        envState.waterEnabled = true;
+        envState.waterLevel = 0;
+        delete (envState as Record<string, unknown>).underwaterEnabled;
+        camera.position.set(0, -3, 10); // 水下
+        camera.computeWorldMatrix();
+
+        const pipeline = makePipelineStub();
+        try {
+            updateUnderwaterTransition(scene, pipeline);
+            expect(isUnderwaterActive()).toBe(true);
+        } finally {
+            envState.underwaterEnabled = true;
+        }
     });
 
     it('resetUnderwaterState 清除 _underwaterActive 和过渡进度', () => {

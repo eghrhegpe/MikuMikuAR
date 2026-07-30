@@ -75,7 +75,7 @@ describe('ADR-093 Menu Schema — StatePath 前缀与 set 链路', () => {
                 {
                     id: 't:light',
                     kind: 'toggle',
-                    label: 'env.groundVisible',
+                    label: 'env.groundVisibleEnabled',
                     control: { bind: 'light.shadowEnabled' },
                 },
             ];
@@ -93,7 +93,7 @@ describe('ADR-093 Menu Schema — StatePath 前缀与 set 链路', () => {
                 {
                     id: 't:perception',
                     kind: 'toggle',
-                    label: 'env.groundVisible',
+                    label: 'env.groundVisibleEnabled',
                     control: { bind: 'perception.eyeTrackingEnabled' },
                 },
             ];

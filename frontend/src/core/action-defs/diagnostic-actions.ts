@@ -42,7 +42,7 @@ export function registerDiagnosticActions(): void {
             return {
                 data: {
                     envPreset: envState.lightingPresetName,
-                    groundVisible: envState.groundVisible,
+                    groundVisibleEnabled: envState.groundVisibleEnabled,
                     skyMode: envState.skyMode,
                     modelCount: modelRegistry.size,
                     models: Array.from(modelRegistry.keys()),

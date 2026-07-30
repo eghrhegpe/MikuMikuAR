@@ -90,7 +90,7 @@ export function registerControlActions(): void {
         label: 'ai.actions.control.toggleGround',
         domain: 'env',
         params: [],
-        execute: () => setEnvState({ groundVisible: !envState.groundVisible }),
+        execute: () => setEnvState({ groundVisibleEnabled: !envState.groundVisibleEnabled }),
     });
 
     // model:load

@@ -121,7 +121,6 @@ use_when:
 | [水面系统](./env-water.md) | `scene/env/env-water.ts` | — |
 | [共享焦散纹理系统](./env-caustics.md) | `scene/env/env-caustics.ts` | ADR-115 |
 | [水下视觉系统](./env-underwater-fog.md) | `scene/env/env-underwater-fog.ts` | — |
-| [噪声 barrel 重导出](./env-noise.md) | `scene/env/env-noise.ts` | ADR-212 |
 | [粒子系统](./env-particles.md) | `scene/env/env-particles.ts` | — |
 | [环境灯光包装](./env-lighting.md) | `scene/env/env-lighting.ts` | — |
 

@@ -47,8 +47,8 @@ describe('ADR-093 Menu Schema — 各 kind 渲染 + modeRow', () => {
                 {
                     id: 't:toggle',
                     kind: 'toggle',
-                    label: 'env.groundVisible',
-                    control: { bind: 'env.groundVisible' },
+                    label: 'env.groundVisibleEnabled',
+                    control: { bind: 'env.groundVisibleEnabled' },
                     icon: 'lucide:infinity',
                 },
             ];
@@ -149,7 +149,7 @@ describe('ADR-093 Menu Schema — 各 kind 渲染 + modeRow', () => {
                     kind: 'folder',
                     label: 'env.ground',
                     defaultOpen: true,
-                    headerToggle: { bind: 'env.groundVisible' },
+                    headerToggle: { bind: 'env.groundVisibleEnabled' },
                     children: [
                         {
                             id: 't:htoggle:child',

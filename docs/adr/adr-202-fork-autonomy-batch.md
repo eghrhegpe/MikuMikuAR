@@ -204,3 +204,62 @@ bone-override 路径验证的是**被覆盖骨（如膝 `左ひざ`）** 有 `ik
 - 真机验证 `ikSolverIndex` 在 IK 目标骨上 >= 0（左右脚不同），且 `setWorldTranslation` 后 `mmdModelSolveIk` 正确读到新位置
 - debug 日志输出 `ikSolverIndex` 而非 `ikSolver`，无假阴性误导
 - ADR-085 方案A 状态更新为「已实施」
+
+### 6.7 时序分析：双调用路径的幂等性
+
+方案A 迁移后，`mmdModelSolveIk` 在一帧内可能被调用两次：
+
+| 调用点 | 管线位置 | 时机 | IK 目标骨位置 | 效果 |
+|--------|---------|------|--------------|------|
+| **bone-override `_solvePosSlotIkWasm`** | stage=bone-override, order=0 | 覆盖循环 + IK 保护恢复后 | 动画位置 + foot-modules slot.pos | 重解 IK 链（髋/膝/踝 rotation） |
+| **feet-adjustment** | stage=bone-override, order=5 | bone-override 之后 | setWorldTranslation(groundY) | 再次重解 IK 链（覆盖前一次结果） |
+
+#### 执行顺序全景
+
+```
+bone-override callback (order=0):
+  ① _runFrameHooks()           — FEET:0 帧钩子写 slot.pos 到 overrideMap
+  ② _snapshotProtectedPositions — 快照 IK 目标骨 worldMatrix
+  ③ 覆盖循环                   — _applyWasmOverride + _propagateChildrenWasm
+  ④ _restoreProtectedPositions — 恢复 IK 目标骨到「动画位置 + slot.pos」
+  ⑤ _solvePosSlotIkWasm        — 第一次 mmdModelSolveIk（读 ④ 的位置）
+  ⑥ _protectedIkBoneNames.clear()
+
+feet-adjustment callback (order=5):
+  ⑦ solveFootTarget            — 计算是否需要贴地（jumpThreshold 判断）
+  ⑧ setWorldTranslation        — 写 groundY 到 IK 目标骨 worldMatrix
+  ⑨ mmdModelSolveIk            — 第二次重解 IK 链（读 ⑧ 的位置）
+```
+
+#### 幂等性保证
+
+`mmdModelSolveIk` 是**幂等的**——每次调用都是「读 IK 目标骨当前 worldMatrix → 反解整条 IK 链 → 回写链骨骼 rotation」，不是增量修改。第二次调用会用新的目标位置重新解链，完全覆盖第一次的链骨骼 rotation。
+
+#### 冲突分析（编排层互斥）
+
+实际实现中，两条调用路径**互斥**，不会对同一 IK 链同帧双调用：
+
+- **IK 目标骨有 POS slot 覆盖**：步骤 ⑤ `_solvePosSlotIkWasm` 调 `mmdModelSolveIk`（读 slot.pos 偏移后的位置）。feet-adjustment 在步骤 ⑦ 前检查 `getOverride(cand)` 候选骨名，发现 `foundOverride=true` → 直接 `return`，步骤 ⑧⑨ 不执行。
+- **IK 目标骨无 POS slot 覆盖、脚需贴地（`skip=false`）**：步骤 ⑤ `slot?.enabled || !slot.pos` 为 false → 不调 `mmdModelSolveIk`。feet-adjustment 步骤 ⑧⑨ 执行（读 groundY）。
+- **脚在空中（`skip=true`）**：步骤 ⑤ 不调（无 slot），步骤 ⑧⑨ 也不调（`res.skip` → return）。两者都 no-op。
+
+互斥由 `feet-adjustment._adjustFoot` 的 `foundOverride` 检查保证，而非依赖 `mmdModelSolveIk` 的幂等性兜底。
+
+#### 运行时守护（feetDebug 模式）
+
+互斥是编排层不变量，但万一被破坏（重构、新模块插入、边界条件遗漏），需要在运行时能捕获。`bone-override.setWasmIkResolver` 注入时包装一层 `_guardedResolve`：
+
+- **检测**：`_ikResolveFrameLog` 记录本帧每个 `(modelId, ikSolverIndex)` 的调用次数。第二次同 key 调用即触发 warn。
+- **节流（不刷爆日志）**：双重节流——帧内 `_ikResolveWarnSuppressed`（每帧最多 1 条）+ 时间窗口 `_ikResolveLastWarnTime`（每 2 秒最多 1 条）。60fps 下持续异常每秒最多 0.5 条 warn。
+- **开关**：仅 `feetDebug.value=true` 时启用检测逻辑；关闭时守护 no-op（仅多一次 `Map.get`），无开销。
+- **不阻止调用**：守护只 warn，不阻止 `mmdModelSolveIk` 执行——避免误报阻断正常渲染。帧首 `_resetIkResolveGuard` 由 bone-override callback（order=0）调用，覆盖整个 bone-override stage（含 feet-adjustment order=5）。
+
+#### 冲突点：feet-adjustment 的 `setWorldTranslation` 踩掉 foot-modules 的位置覆盖
+
+步骤 ⑧ 的 `setWorldTranslation(groundY)` 直接写 IK 目标骨的 worldMatrix buffer，会覆盖步骤 ④ 恢复的「动画位置 + slot.pos」。这是方案C 时代就存在的问题（方案C 的 `_solveWasmLegIK` 也读同一 buffer），方案A 迁移不改变此行为。
+
+feet-adjustment 已有保护逻辑：在 `_adjustFoot` 中检查脚部模块（foot-modules）是否激活，有激活的非零参数时跳过自动贴地，避免冲突。
+
+#### 结论
+
+方案A 迁移**不引入新的时序问题**。编排层互斥保证同一 IK 链一帧内最多被 `mmdModelSolveIk` 重解一次；运行时守护（feetDebug 模式）作为断言兜底，双重节流避免日志刷爆。与方案C 时代行为一致，唯一差异是方案A 回写全链 rotation（含趾链），比方案C 更精确。

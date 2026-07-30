@@ -129,10 +129,10 @@ describe('ADR-177 Phase 2 A4：browser-adapter 数据链补齐', () => {
 
         it('重复写入合并而非覆盖', async () => {
             await ext.SetEnvState({ skyMode: 'sunset' });
-            await ext.SetEnvState({ groundVisible: false });
+            await ext.SetEnvState({ groundVisibleEnabled: false });
             const cfg = await browserAdapter.GetConfig();
             expect(cfg.env.skyMode).toBe('sunset');
-            expect(cfg.env.groundVisible).toBe(false);
+            expect(cfg.env.groundVisibleEnabled).toBe(false);
         });
     });
 
