@@ -8,7 +8,7 @@ import { feedbackInfo, feedbackStatus } from '@/core/feedback';
 import { t } from '@/core/i18n/t';
 import { getCachedCapabilities } from '@/core/backend';
 import { logWarn } from '@/core/logger';
-import { canvasToBase64 } from '@/core/utils';
+import { canvasToBase64 } from '@/core/image';
 
 // ======== Types ========
 export type CameraFacing = 'user' | 'environment';

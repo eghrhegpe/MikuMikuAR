@@ -7,7 +7,7 @@
 // 注册表仅作 releaseOwnedBones 的透传入口（claimBones 在 perception.ts 内部绕过本注册表）。
 
 import type { MotionModuleState, ParamValue } from '@/core/types';
-import { triggerAutoSave } from '@/core/utils';
+import { triggerAutoSave } from '@/core/config';
 import type { MotionOverrideModule, ModuleFactory, ModuleMeta } from './types';
 import { getBoneOverrideStore } from '../bone-override-store';
 import type { ModuleDef } from './types';

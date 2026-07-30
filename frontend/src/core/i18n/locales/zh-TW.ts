@@ -1676,6 +1676,11 @@ export const zhTW: Record<string, string> = {
     'motion.boneOverride.exportHierarchy': '匯出骨骼層級',
     'motion.boneOverride.exportCopied': '✓ 骨骼層級已複製到剪貼簿',
     'motion.boneOverride.exportFailed': '✕ 匯出失敗：無可用模型或骨骼',
+    // [doc:adr-186] 管線時序一覽 UI
+    'motion.boneOverride.pipelineOrder': '管線時序一覽',
+    'motion.boneOverride.pipelineEmpty': '暫無幀鉤子註冊（啟用模組後此處將顯示執行順序）',
+    'motion.boneOverride.pipelineNote':
+        '數字越小越早執行；後執行層可覆蓋前一層寫入。順序由聲明決定，與註冊先後無關。',
     // [doc:adr-116] 動作覆蓋模組化 UI
     'motion.override.title': '動作覆蓋',
     'motion.override.enabled': '✓ 已啟用模組',
