@@ -172,7 +172,7 @@
 | ADR-62 | 水面反射渲染目标与通用反射系统 | 已完成（2026-07-10）— P1 核心（MirrorCamera + RT + 着色器扩展 + UI）+ P2 增强（波浪 UV 偏移 + 泡沫衰减） |
 | ADR-61 | 高级骨骼操控与姿态工作室实现计划 | 已完成（2026-07-10，2026-07-16 对账修正）— Pose Studio ✅、Motion Override ✅、Accessory ✅、T-pose/A-pose ✅（并入 Pose Studio）。Ragdoll ❌ 永久废弃（随 XPBD 全栈移除 530af6e，不再恢复）。 |
 | ADR-60 | E2E 测试策略（Playwright + 双模式 Fixture + 场景数值钩子） | ✅ 已完成（Phase 0 / Phase 1 / Phase 2 / Phase 3，2026-07-07 提出并推进） |
-| ADR-59 | i18n 多语言切换框架 | 已完成（2026-07-10 全部 Phase 落地，奇偶校验脚本已接 CI；2026-07-22 废弃 Go UIState 持久化升级预留路径；剩余 ja/ko/zh-TW 翻译质量为人工/AI 走查任务，非框架范畴） |
+| ADR-59 | i18n 多语言切换框架 | 已完成（2026-07-10 全部 Phase 落地，奇偶校验脚本已接 CI；2026-07-22 废弃 Go UIState 持久化升级预留路径；2026-07-30 补齐首访系统语言自动识别；剩余 ja/ko/zh-TW 翻译质量为人工/AI 走查任务，非框架范畴） |
 | ADR-58 | 纹理路径字节级匹配 —— basenameFallbackFS 多编码兜底 | 已实施（2026-07-06） |
 | ADR-57 | Shift-JIS URL 乱码修复 —— Base64 查询参数方案（链路 A） | 已实施（2026-07-06） |
 | ADR-56 | WASM 运行时 Motion Layers 解锁 — JS 帧流合并 + 单图层兜底 | ✅ 已实施（2026-07-08 代码核实；wasm-layers-blender.ts 实现 + vmd-layers.ts:630 集成） |
