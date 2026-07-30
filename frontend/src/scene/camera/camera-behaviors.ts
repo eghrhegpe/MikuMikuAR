@@ -14,7 +14,6 @@ import { orbitInput } from '@/core/orbit-state';
 import { addDisposableListener, type Disposable } from '@/core/dom';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
 import { safeDispose } from '@/core/dispose-helpers';
-import { clamp } from '@/core/clamp';
 import {
     getCameraMode,
     getCameraPreset,
@@ -174,11 +173,15 @@ export function stopFreefly(): void {
     }
 }
 
-// ======== Orbit 键盘环绕 — 渲染循环连续积分（丝滑）========
+// ======== Orbit 键盘平移 — 渲染循环连续积分（自由飞行式）========
 // 仅 orbit 模式生效：读 events.ts 置位的 orbitInput 标记，每帧按帧率归一的
-// 角速度/缩放率积分 alpha/beta/radius。取代旧的 keydown 离散步进（每次跳 5°）。
-const _ORBIT_ANGULAR_SPEED = (90 * Math.PI) / 180; // 90°/s
-const _ORBIT_ZOOM_SPEED = 4; // radius 单位/s
+// 速度平移相机注视点（target），相机随 target 整体位移（alpha/beta/radius 不变）。
+// W/S = 沿视线水平投影前后，A/D = 沿右轴左右，Q/E = 注视点升降；缩放走鼠标滚轮原生。
+const _ORBIT_MOVE_SPEED = 8; // 世界单位/s（1 unit = 0.1m，约 0.8 m/s）
+// 每帧复用的临时向量，避免 GC 抖动
+const _orbitFwd = new Vector3();
+const _orbitRight = new Vector3();
+const _orbitMove = new Vector3();
 
 export function initOrbitUpdate(scene: Scene): void {
     if (_orbitUpdateHandle) {
@@ -193,38 +196,56 @@ export function initOrbitUpdate(scene: Scene): void {
             return;
         }
         // getAnimationRatio() ≈ 当前帧相对 60fps 的时长倍数，保证不同帧率下速度一致
-        const ratio = scene.getAnimationRatio();
-        const angStep = (_ORBIT_ANGULAR_SPEED / 60) * ratio;
-        const zoomStep = (_ORBIT_ZOOM_SPEED / 60) * ratio;
+        const step = (_ORBIT_MOVE_SPEED / 60) * scene.getAnimationRatio();
 
-        if (orbitInput.left) {
-            cam.alpha -= angStep;
+        // 前进方向 = 相机→target 视线在水平面的投影（y 归零后归一化），
+        // 避免俯视时按 W 往地里钻；右轴 = forward × up。
+        cam.getDirectionToRef(Vector3.Forward(), _orbitFwd);
+        _orbitFwd.y = 0;
+        const len = _orbitFwd.length();
+        if (len > 1e-4) {
+            _orbitFwd.scaleInPlace(1 / len);
+            Vector3.CrossToRef(_orbitFwd, Vector3.Up(), _orbitRight);
+            _orbitRight.normalize();
+        } else {
+            // 近乎正俯视/正仰视时，退回相机右轴的水平投影兜底
+            _orbitFwd.set(0, 0, 0);
+            _orbitRight.set(1, 0, 0);
+        }
+
+        _orbitMove.set(0, 0, 0);
+        if (orbitInput.forward) {
+            _orbitMove.addInPlace(_orbitFwd);
+        }
+        if (orbitInput.backward) {
+            _orbitMove.subtractInPlace(_orbitFwd);
         }
         if (orbitInput.right) {
-            cam.alpha += angStep;
+            _orbitMove.addInPlace(_orbitRight);
+        }
+        if (orbitInput.left) {
+            _orbitMove.subtractInPlace(_orbitRight);
         }
         if (orbitInput.up) {
-            cam.beta = clamp(cam.beta - angStep, 0.1, Math.PI - 0.1);
+            _orbitMove.y += 1;
         }
         if (orbitInput.down) {
-            cam.beta = clamp(cam.beta + angStep, 0.1, Math.PI - 0.1);
+            _orbitMove.y -= 1;
         }
-        if (orbitInput.zoomIn) {
-            cam.radius = Math.max(cam.lowerRadiusLimit ?? 0, cam.radius - zoomStep);
-        }
-        if (orbitInput.zoomOut) {
-            cam.radius = Math.min(cam.upperRadiusLimit ?? Infinity, cam.radius + zoomStep);
+        if (_orbitMove.lengthSquared() > 0) {
+            _orbitMove.normalize().scaleInPlace(step);
+            cam.target.addInPlace(_orbitMove);
         }
     });
 }
 
 export function stopOrbit(): void {
+    orbitInput.forward = false;
+    orbitInput.backward = false;
     orbitInput.left = false;
     orbitInput.right = false;
     orbitInput.up = false;
     orbitInput.down = false;
-    orbitInput.zoomIn = false;
-    orbitInput.zoomOut = false;
     if (_orbitUpdateHandle) {
         _orbitUpdateHandle = safeDispose(_orbitUpdateHandle);
     }

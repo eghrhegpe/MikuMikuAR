@@ -282,10 +282,10 @@ export function registerEventHandlers(): void {
         }
     });
 
-    // ======== orbit 模式 WSAD 环绕旋转（与 freefly WSAD 统一相机键位） ========
-    // W/S = 仰角 beta、A/D = 环绕 alpha、+/- = 缩放。丝滑：keydown/keyup 只置位，
-    // 实际积分由 camera-behaviors.ts 的 initOrbitUpdate 渲染循环逐帧推进（同 freefly）。
-    // 方向键从相机控制让出：菜单开 = 导航，菜单关 = 播放 seek。
+    // ======== orbit 模式 WSAD 平移（自由飞行式，与 freefly WSAD 统一相机键位） ========
+    // W/S = 沿视线水平投影前后、A/D = 沿右轴左右、Q/E = 注视点升降；缩放走鼠标滚轮原生。
+    // 丝滑：keydown/keyup 只置位，实际积分由 camera-behaviors.ts 的 initOrbitUpdate
+    // 渲染循环逐帧推进（同 freefly）。方向键从相机控制让出：菜单开 = 导航，菜单关 = 播放 seek。
     const _orbitKeyActive = (t: HTMLElement | null): boolean => {
         if (getCameraMode() !== 'orbit') {
             return false;
@@ -301,25 +301,23 @@ export function registerEventHandlers(): void {
     };
     const _orbitKeyFlag = (code: string, down: boolean): boolean => {
         switch (code) {
+            case 'KeyW':
+                orbitInput.forward = down;
+                return true;
+            case 'KeyS':
+                orbitInput.backward = down;
+                return true;
             case 'KeyA':
                 orbitInput.left = down;
                 return true;
             case 'KeyD':
                 orbitInput.right = down;
                 return true;
-            case 'KeyW':
+            case 'KeyQ':
                 orbitInput.up = down;
                 return true;
-            case 'KeyS':
+            case 'KeyE':
                 orbitInput.down = down;
-                return true;
-            case 'Equal':
-            case 'NumpadAdd':
-                orbitInput.zoomIn = down;
-                return true;
-            case 'Minus':
-            case 'NumpadSubtract':
-                orbitInput.zoomOut = down;
                 return true;
         }
         return false;

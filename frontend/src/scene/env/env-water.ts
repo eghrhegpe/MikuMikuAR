@@ -1,7 +1,7 @@
 import { Scene } from '@babylonjs/core/scene';
 import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { ColorCurves } from '@babylonjs/core/Materials/colorCurves';
-import { Vector3, Matrix } from '@babylonjs/core/Maths/math.vector';
+import { Vector3, Matrix, Vector2 } from '@babylonjs/core/Maths/math.vector';
 import { Texture } from '@babylonjs/core/Materials/Textures/texture';
 import { DynamicTexture } from '@babylonjs/core/Materials/Textures/dynamicTexture';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
@@ -580,9 +580,12 @@ function ensureDetailNormalTexture(scene: Scene): Texture {
 let _underwaterFog = {
     enabled: 0,
     color: new Color3(0.35, 0.58, 0.72),
-    start: 5,
-    end: 80,
+    start: 40,
+    end: 500,
 };
+
+// 复用的焦散 UV 偏移向量（每帧由 causticsController 推进的纹理 uOffset/vOffset 注入，避免每帧分配）
+const _causticOffset = new Vector2(0, 0);
 
 /** 由水下雾控制器同步水下雾参数到水面材质（含材质重建后的恢复由 _syncWaterUniforms 负责）。 */
 export function setUnderwaterFog(enabled: boolean, color: Color3, start: number, end: number): void {
@@ -645,8 +648,8 @@ function _syncWaterUniforms(state: EnvState, scene: Scene): void {
     const causticTex = causticsController.getTexture(scene);
     mat.setTexture('uCausticTex', causticTex);
     mat.setFloat('uCausticIntensity', state.causticIntensity);
-    mat.setFloat('uCausticSpeed', 0.5);
-    mat.setFloat('uCausticScale', 0.04);
+    // 焦散 UV 偏移（联动 causticScrollX/Y，经 causticsController 推 uOffset/vOffset）
+    mat.setVector2('uCausticOffset', _causticOffset.set(causticTex.uOffset, causticTex.vOffset));
 
     // ——— ADR-115 P1: 高频法线扰动层 + Sun Glitter（波浪联动）——
 
@@ -702,8 +705,6 @@ function _syncWaterUniforms(state: EnvState, scene: Scene): void {
         'causticColor2',
         new Vector3(state.causticColor2[0], state.causticColor2[1], state.causticColor2[2])
     );
-    mat.setFloat('causticScrollX', state.causticScrollX);
-    mat.setFloat('causticScrollY', state.causticScrollY);
     mat.setFloat('fresnelAlphaInfluence', state.fresnelAlphaInfluence);
     mat.setColor3('waterFogColor', col3FromTriple(state.waterFogColor));
     mat.setFloat('waterFogStart', state.waterFogStart);
@@ -826,8 +827,7 @@ const WATER_UNIFORMS = [
     'uRippleStrSpdLife',
     'uRippleCount',
     'uCausticIntensity',
-    'uCausticSpeed',
-    'uCausticScale',
+    'uCausticOffset',
     'fresnelBias',
     'fresnelPower',
     'diffuseStrength',
@@ -837,8 +837,6 @@ const WATER_UNIFORMS = [
     'rippleGlintStrength',
     'causticColor1',
     'causticColor2',
-    'causticScrollX',
-    'causticScrollY',
     'fresnelAlphaInfluence',
     'foamOpacity',
     'waterFogColor',
@@ -930,6 +928,9 @@ function _waterUpdateCallback(scene: Scene): void {
     _waterPhase += dt * _waterWaveSpeed;
     m.setFloat('time', now);
     m.setFloat('wavePhase', _waterPhase);
+    // 焦散 UV 偏移：每帧由 causticsController 推进的纹理 uOffset/vOffset 提供（联动 causticScrollX/Y）
+    const cTex = causticsController.getTexture(scene);
+    m.setVector2('uCausticOffset', _causticOffset.set(cTex.uOffset, cTex.vOffset));
     // P2: 每帧同步法线滚动速度（用户调整波速时实时响应）
     const [speed1, speed2] = computeDetailNormalSpeeds(envState.waterAnimSpeed ?? 1);
     m.setFloat('uDetailNormalSpeed1', speed1);
@@ -1517,9 +1518,8 @@ registerEnvCallback((changed, state) => {
 });
 
 // 焦散 UV 滚动由 controller 集中维护（共享给水面 + 水底地面）。
-// 速度按用户可调参数 causticScrollX/Y 推：从 shader-internal 时间项切换到 controller uOffset。
-// 注意：water frag 自身仍用 `time * causticScrollX` 算二级扰动，但纹理 uOffset/vOffset 推得略慢
-// 作为基线；这让水面与水底焦散节奏天然不同步，反倒有"水面在动、地底更深沉"的水感层次。
+// 速度按用户可调参数 causticScrollX/Y 推（缩放 0.5 避免过快），经纹理 uOffset/vOffset 每帧累加；
+// water frag 通过 uCausticOffset 读取该偏移，故水面焦散与用户滑块联动，且与水底地面共享同一节奏。
 let _causticsLastConfig: { sx: number; sy: number } = { sx: NaN, sy: NaN };
 registerEnvDtTickCallback((_dt) => {
     if (envState.causticScrollX !== _causticsLastConfig.sx ||
