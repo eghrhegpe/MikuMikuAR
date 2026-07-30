@@ -471,8 +471,8 @@ export function buildDiagnosticSchema(opts?: { withSessions?: boolean }): MenuNo
                         tabBtns[i].className = 'mode-btn' + (isActive ? ' active' : '');
                         tabBtns[i].setAttribute('aria-selected', String(isActive));
                     }
-                    chatPane.style.display = tabId === 'chat' ? '' : 'none';
-                    configPane.style.display = tabId === 'config' ? '' : 'none';
+                    chatPane.style.display = tabId === 'diagnostic:chat' ? '' : 'none';
+                    configPane.style.display = tabId === 'diagnostic:config' ? '' : 'none';
                 }
             },
         },

@@ -155,7 +155,7 @@ export const TIME_OF_DAY_PRESETS: Record<string, EnvPreset & DerivedLighting> = 
 export type EnvPresetCategory = 'env:sky' | 'env:ground' | 'env:water' | 'env:atmosphere';
 
 /** 旧版 category 值 → 新版 domain 前缀映射（ADR-214 零级 ID 治理）。 */
-const LEGACY_CATEGORY_MAP: Record<string, EnvPresetCategory> = {
+export const LEGACY_CATEGORY_MAP: Record<string, EnvPresetCategory> = {
     sky: 'env:sky',
     ground: 'env:ground',
     water: 'env:water',
@@ -228,7 +228,6 @@ export const ENV_PRESET_FIELDS: Record<EnvPresetCategory, (keyof EnvState)[]> = 
         'waterColor',
         'waterTransparency',
         'waterWaveHeight',
-        'waterSize',
         'waterAnimSpeed',
         'planarReflectionBlend',
         'reflectionQuality',
@@ -334,15 +333,16 @@ export function importCategorizedEnvPreset(json: string): CategorizedEnvPreset |
         if (!raw.label || typeof raw.label !== 'string') {
             return null;
         }
-        // version 3：有 fields + category
+        // version 3：有 fields + category（兼容旧版零级 category 值）
         if (raw.version === 3 && raw.fields && typeof raw.category === 'string') {
-            const cat = raw.category as EnvPresetCategory;
-            if (!['sky', 'ground', 'water', 'atmosphere'].includes(cat)) {
+            const resolved = LEGACY_CATEGORY_MAP[raw.category] ?? raw.category;
+            const validCats: string[] = ['env:sky', 'env:ground', 'env:water', 'env:atmosphere'];
+            if (!validCats.includes(resolved)) {
                 return null;
             }
             return {
                 version: 3,
-                category: cat,
+                category: resolved as EnvPresetCategory,
                 label: raw.label,
                 fields: raw.fields as Partial<EnvState>,
             };
@@ -356,7 +356,7 @@ export function importCategorizedEnvPreset(json: string): CategorizedEnvPreset |
             const azimuth = typeof raw.azimuth === 'number' ? raw.azimuth : DEFAULT_AZIMUTH_DEG;
             return {
                 version: 3,
-                category: 'sky',
+                category: 'env:sky',
                 label: raw.label,
                 fields: {
                     skyColorTop: [...raw.skyColorTop] as [number, number, number],
