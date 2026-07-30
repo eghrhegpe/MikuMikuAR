@@ -1,6 +1,6 @@
 # ADR-205: AI 工具体系全景 — 从写操作到读写闭环
 
-- **状态**: ✅ Phase 1 已完成 + 🟡 Phase 2+ 待实施
+- **状态**: ✅ 已完成（Phase 1+2 全部落地，2026-07-30）
 - **日期**: 2026-07-29
 - **相关**: ADR-155（NL 控场景，动作注册表消费者）、ADR-196（内置 AI 诊断助手，诊断 prompt 注入源）、ADR-197（统一动作注册表，动作定义规范）、ADR-203（AI 助手会话持久化，面板载体）、ADR-191（禁止神桶，模块导入规则）
 
@@ -149,9 +149,9 @@ interface ActionResult {
 | `menus/settings-diagnostic.ts` | readonly 结果自动执行 + tool 消息回填 | ✅ 已完成 |
 | `core/action-defs/diagnostic-actions.ts` | 新建，注册 2 个 readonly 工具 | ✅ 已完成 |
 | `core/action-registry-defs.ts` | 导入 `registerDiagnosticActions` | ✅ 已完成 |
-| `internal/app/ai_binding.go` | 新增 AiGetBackendLogs / AiGetBackendState | 🟡 Phase 2 |
-| `internal/app/llm/client.go` | 日志双写到 LogRing | 🟡 Phase 2 |
-| `core/action-defs/diagnostic-actions.ts` | getBackendLogs / getBackendState 工具 | 🟡 Phase 2 |
+| `internal/app/ai_binding.go` | 新增 AiGetBackendLogs / AiGetBackendState | ✅ 已完成（log_ring.go 实现） |
+| `internal/app/llm/client.go` | 日志双写到 LogRing | ✅ 已完成（slog → DualWriter → LogRing，app.go:161） |
+| `core/action-defs/diagnostic-actions.ts` | getBackendLogs / getBackendState 工具 | ✅ 已完成 |
 | `diagnostic:getFrontendState` | 聚合 envState + sceneState | 🟡 延后 |
 
 ---
@@ -171,3 +171,4 @@ interface ActionResult {
 |------|------|
 | 2026-07-29 | 初版：基于 ADR-196/197/155 现状分析 + 用户反馈，规划读写闭环 |
 | 2026-07-29 | Phase 1 实施完成：`readonly` 字段 + `ActionResult.data` + 2 个前端诊断工具注册 + `settings-diagnostic.ts` readonly 自动执行；同步 ADR-196 Phase 2 模式合并消除 system prompt 预注入 |
+| 2026-07-29 | Phase 2 实施完成：Go 后端 `AiGetBackendLogs` / `AiGetBackendState` 已实现（log_ring.go:124-152）；`slog` 经 `DualWriter` 双写到 LogRing（app.go:161）；TS 侧 `diagnostic:getBackendLogs` / `diagnostic:getBackendState` 注册（diagnostic-actions.ts:54-88）；Wails 绑定已生成；契约测试 17/17 通过 |
