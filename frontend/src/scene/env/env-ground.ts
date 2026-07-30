@@ -27,8 +27,8 @@ import { fbm, hash2 } from './env-terrain';
 import { createHeightmapGround, applyTerrainMaterial } from './env-terrain';
 import { PlanarReflection, registerReflectionSurface } from './planar-reflection';
 import { getPlanarQualityOverride } from './env-reflection';
-import { createCanvasTexture, getOrCreateCanvasTexture, isCacheOwnedTexture } from './env-texture';
-import { _envSys, getScene } from './env-context';
+import { createCanvasTexture, getOrCreateCanvasTexture, isCacheOwnedTexture } from './_shared/env-texture';
+import { _envSys, getScene } from './_shared/env-context';
 import { ensureEnvUpdateObserver } from './env';
 import { underwaterFogController } from './env-underwater-fog';
 import {
@@ -37,7 +37,7 @@ import {
     setGroundGeometryProvider,
     disposeGroundRipples,
 } from './env-water';
-import { getCanvasCtx } from './env-type-helpers';
+import { getCanvasCtx } from './_shared/env-type-helpers';
 import { GroundProceduralKind } from './env-ground-presets';
 
 // ======== ADR-114: 材质适配层（StandardMaterial ↔ PBRMaterial）========
@@ -1102,8 +1102,8 @@ function _syncPbrProperties(mat: PBRMaterial, state: EnvState): void {
 export function applyGround(state: EnvState): void {
     const scene = getScene();
     ensureEnvUpdateObserver();
-    // ADR-134: 加入 groundInfinite 标记
-    const infKey = `:inf:${state.groundInfinite}`;
+    // ADR-134: 加入 groundInfiniteEnabled 标记
+    const infKey = `:inf:${state.groundInfiniteEnabled}`;
 
     // ADR-114: typeKey 加入 PBR / 程序化字段
     // rough/metal/blur/distort 由 _syncPbrProperties 增量更新，不触发重建
@@ -1239,7 +1239,7 @@ export function applyGround(state: EnvState): void {
 
     // 平面模式
     // ADR-134: infinite 模式下使用固定大 mesh，groundSize 退化为视觉密度参数
-    const meshSize = state.groundInfinite ? INFINITE_GROUND_SIZE : state.groundSize;
+    const meshSize = state.groundInfiniteEnabled ? INFINITE_GROUND_SIZE : state.groundSize;
     const ground = MeshBuilder.CreateGround(
         'envGround',
         { width: meshSize, height: meshSize, subdivisions: 2 },

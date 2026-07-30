@@ -7,7 +7,7 @@ import {
     registerSceneTickCallback,
     clearSceneTickCallbacks,
     runSceneTickCallbacks,
-} from '../../scene/env/env-dispatcher';
+} from '../../scene/env/_bridge/env-dispatcher';
 
 const dummyState = {} as EnvState;
 

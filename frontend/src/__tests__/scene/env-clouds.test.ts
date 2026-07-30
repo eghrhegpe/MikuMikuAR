@@ -3,7 +3,7 @@ import { describe, it, expect, vi } from 'vitest';
 // 依赖桩：env-clouds 在模块加载时会 import 这些模块并向 env-dispatcher 注册回调、
 // 通过 getEnvKeys('cloud') 计算响应式键。全部桩掉以避免触发 Babylon 资源创建
 // （RawTexture3D 在 NullEngine 下不支持）以及真实的场景/渲染管线。
-vi.mock('../../scene/env/env-context', () => ({
+vi.mock('../../scene/env/_shared/env-context', () => ({
     getScene: () => null as any,
 }));
 vi.mock('../../scene/env/env-impl', () => ({
@@ -12,7 +12,7 @@ vi.mock('../../scene/env/env-impl', () => ({
 vi.mock('../../scene/env/env', () => ({
     ensureEnvUpdateObserver: () => {},
 }));
-vi.mock('../../scene/env/env-dispatcher', () => ({
+vi.mock('../../scene/env/_bridge/env-dispatcher', () => ({
     registerEnvCallback: vi.fn(),
 }));
 vi.mock('@/core/env-state-schema', async (importOriginal) => ({

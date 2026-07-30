@@ -4,11 +4,11 @@ import { getWindVector } from '@/core/wind-utils';
 import { logWarn } from '@/core/logger';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
 import { safeDispose } from '@/core/dispose-helpers';
-import { registerEnvCallback } from './env-dispatcher';
+import { registerEnvCallback } from './_bridge/env-dispatcher';
 import { getEnvKeys } from '@/core/env-state-schema';
 import { ensureEnvUpdateObserver, addRipple, addGroundRipple, getGroundHeightAt } from './env';
-import { _envSys, getScene } from './env-context';
-import { createCanvasTexture } from './env-texture';
+import { _envSys, getScene } from './_shared/env-context';
+import { createCanvasTexture } from './_shared/env-texture';
 import { applyWetnessToAllModels, removeWetnessFromAllModels } from './env-wetness';
 
 // ======== Particle System ========
@@ -671,7 +671,7 @@ function startCollisionDetection(ps: ParticleSystem, type: EnvState['particleTyp
                         1.5, // 速度
                         1.5 // 寿命1.5秒
                     );
-                    if (envState.particleSplash && Math.random() < splashProb) {
+                    if (envState.particleSplashEnabled && Math.random() < splashProb) {
                         spawnSplashAt(p.position.x, gh, p.position.z);
                     }
                 }
@@ -699,10 +699,10 @@ export function disposeSplash(): void {
     }
 }
 
-/** 溅射开关切换（由 env-impl 检测 particleSplash 变化时调用） */
+/** 溅射开关切换（由 env-impl 检测 particleSplashEnabled 变化时调用） */
 export function syncSplashState(): void {
     const shouldShow =
-        envState.particleSplash && isWeatherType(_currentParticleType) && envState.particleEnabled;
+        envState.particleSplashEnabled && isWeatherType(_currentParticleType) && envState.particleEnabled;
     if (shouldShow && !_splashPoolReady) {
         initSplashBurstPool();
     } else if (!shouldShow && _splashPoolReady) {

@@ -2,7 +2,7 @@ import { registerAction } from '../action-registry';
 import { setLightState } from '../../scene/render/lighting';
 import { setCameraMode } from '../../scene/camera/camera-state';
 import { applyEnvPreset } from '../../scene/env/env-time-of-day';
-import { setEnvState } from '../../scene/env/env-bridge';
+import { setEnvState } from '../../scene/env/_bridge/env-bridge';
 import { setPerformanceMode } from '../../scene/render/performance';
 import {
     replaceModel,

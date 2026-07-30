@@ -9,7 +9,7 @@ import {
     createCanvasTexture,
     getOrCreateCanvasTexture,
     disposeTextureCache,
-} from '../../scene/env/env-texture';
+} from '../../scene/env/_shared/env-texture';
 
 // happy-dom 无真实 2D canvas；为回退路径提供最小桩
 beforeAll(() => {

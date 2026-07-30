@@ -301,7 +301,7 @@ async function restoreEnvState(): Promise<void> {
             loaded.particleEmitRate = 1;
             loaded.particleSize = 1;
             loaded.particleSpeed = 1;
-            loaded.particleSplash = false;
+            loaded.particleSplashEnabled = false;
             loaded.particleCustomTexture = '';
         }
         // 用 setEnvState 替代 Object.assign + applyEnvState，确保：

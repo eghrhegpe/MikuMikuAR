@@ -9,7 +9,7 @@
 import { ArcRotateCamera } from '@babylonjs/core/Cameras/arcRotateCamera';
 
 import { uiState } from '@/core/config';
-import { schedulePersistUI } from '../env/env-persist';
+import { schedulePersistUI } from '../env/_bridge/env-persist';
 import { observe } from '@/core/observer-handle';
 import { getProcBeatDetector } from '../scene';
 import {

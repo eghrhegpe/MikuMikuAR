@@ -221,7 +221,7 @@ function buildParticleSchema(): MenuNode[] {
             kind: 'toggle',
             label: 'env.splash',
             icon: 'lucide:droplets',
-            control: { bind: 'env.particleSplash' },
+            control: { bind: 'env.particleSplashEnabled' },
         },
         {
             id: 'env:particle:texture',

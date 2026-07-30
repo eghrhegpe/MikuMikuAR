@@ -30,7 +30,7 @@ vi.mock('../../scene/render/lighting', async () => (await import('./env-mocks'))
 vi.mock('../../scene/scene', async () => (await import('./env-mocks')).sceneModule);
 
 import { mockApplyLightingPresetFromEnv, mockConfigEnvState, mockImplApplySky } from './env-mocks';
-import { setEnvState } from '../../scene/env/env-bridge';
+import { setEnvState } from '../../scene/env/_bridge/env-bridge';
 import { getEnvSunAngle } from '../../scene/env/env-time-of-day';
 
 // ──── ADR-173: setEnvState middleware ──────────────────────────

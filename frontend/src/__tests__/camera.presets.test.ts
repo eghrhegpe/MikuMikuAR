@@ -305,7 +305,7 @@ vi.mock('@/scene/scene', () => ({
     setARMode: vi.fn(),
     getProcBeatDetector: mockPBD,
 }));
-vi.mock('../scene/env/env-persist', () => ({ schedulePersistUI: vi.fn() }));
+vi.mock('../scene/env/_bridge/env-persist', () => ({ schedulePersistUI: vi.fn() }));
 vi.mock('../scene/camera/camera', () => ({
     initCameraSystem: vi.fn(),
     autoFrame: vi.fn(),

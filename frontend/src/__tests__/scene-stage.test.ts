@@ -46,7 +46,7 @@ vi.mock('../core/state', () => ({
     setUIPersistCallback: vi.fn(),
 }));
 
-vi.mock('../scene/env/env-bridge', () => ({
+vi.mock('../scene/env/_bridge/env-bridge', () => ({
     setEnvState: (...args: unknown[]) => mockSetEnvState(...args),
 }));
 

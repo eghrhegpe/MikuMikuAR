@@ -20,7 +20,7 @@ vi.mock('../../scene/env/env-impl', () => {
     };
 });
 // env-water.ts 从 env-context 而非 env-impl 获取 getScene，故需额外 mock
-vi.mock('../../scene/env/env-context', () => {
+vi.mock('../../scene/env/_shared/env-context', () => {
     if (!(globalThis as any).__waterTestEnvSys) {
         (globalThis as any).__waterTestEnvSys = {
             water: { mesh: null as any, material: null as any },

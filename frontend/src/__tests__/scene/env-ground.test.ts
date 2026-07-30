@@ -22,7 +22,7 @@ vi.mock('../../scene/env/env-impl', () => {
     };
 });
 // env-ground.ts 从 env-context 获取 getScene，故需额外 mock
-vi.mock('../../scene/env/env-context', () => {
+vi.mock('../../scene/env/_shared/env-context', () => {
     if (!(globalThis as any).__groundTestEnvSys) {
         (globalThis as any).__groundTestEnvSys = {
             ground: { mesh: null as any },

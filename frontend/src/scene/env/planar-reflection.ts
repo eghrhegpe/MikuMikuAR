@@ -25,7 +25,7 @@ import {
 } from '@babylonjs/core';
 import type { EnvState } from '@/core/config';
 import { logWarn } from '@/core/logger';
-import { REFRESHRATE_RENDER_ONCE, type FrozenCamera } from './env-type-helpers';
+import { REFRESHRATE_RENDER_ONCE, type FrozenCamera } from './_shared/env-type-helpers';
 
 const RT_REFRESH_ONCE = REFRESHRATE_RENDER_ONCE;
 

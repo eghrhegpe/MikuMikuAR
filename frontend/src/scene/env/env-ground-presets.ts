@@ -264,7 +264,7 @@ export const GROUND_PRESETS: Record<string, GroundPreset> = {
  * 预设「关心」的 EnvState 字段集合（单一真相源）。
  * - buildGroundPresetEnvState 据此映射预设 → patch；
  * - env-bridge 的 resetGroundPresetOnManualEdit middleware 据此判断「用户手动微调是否脱离预设」。
- * 刻意排除 groundCollisionEnabled、groundInfinite、groundType、groundLevel、groundSize、
+ * 刻意排除 groundCollisionEnabled、groundInfiniteEnabled、groundType、groundLevel、groundSize、
  * groundScrollSpeedX/Z、groundTerrain 系列等预设不管的字段，避免改这些时误清预设标记。
  */
 export const GROUND_PRESET_KEYS = [

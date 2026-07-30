@@ -32,7 +32,7 @@ import { showInfoToast } from '../core/toast';
 import { safeCallAsync } from '../core/safe-call';
 import { t } from '../core/i18n/t';
 import { translateGoError } from '../core/i18n/goerr';
-import { schedulePersistUI } from '../scene/env/env-persist';
+import { schedulePersistUI } from '../scene/env/_bridge/env-persist';
 import { setPerformanceMode } from '../scene/render/performance';
 import { engine, applyFrameControl } from '../scene/scene';
 import { calcHardwareScaling } from '../core/render-loop';
