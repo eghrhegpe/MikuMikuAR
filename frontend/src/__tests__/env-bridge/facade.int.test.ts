@@ -62,7 +62,7 @@ describe('_applyEnvStateFacade (via setEnvState)', () => {
             waterEnabled: false,
             particleEnabled: false,
             particleType: 'none',
-            cloudsEnabled: false,
+            cloudEnabled: false,
             windEnabled: true,
             fogEnabled: false,
         });
@@ -114,15 +114,15 @@ describe('_applyEnvStateFacade (via setEnvState)', () => {
         expect(mockImplCreateParticleEmitter).not.toHaveBeenCalled();
     });
 
-    it('creates clouds when cloudsEnabled is true', () => {
-        mockConfigEnvState.cloudsEnabled = true;
-        setEnvState({ cloudsEnabled: true });
+    it('creates clouds when cloudEnabled is true', () => {
+        mockConfigEnvState.cloudEnabled = true;
+        setEnvState({ cloudEnabled: true });
         expect(mockImplCreateClouds).toHaveBeenCalled();
         expect(mockImplDisposeClouds).not.toHaveBeenCalled();
     });
 
-    it('disposes clouds when cloudsEnabled is false', () => {
-        setEnvState({ cloudsEnabled: false });
+    it('disposes clouds when cloudEnabled is false', () => {
+        setEnvState({ cloudEnabled: false });
         expect(mockImplDisposeClouds).toHaveBeenCalled();
         expect(mockImplCreateClouds).not.toHaveBeenCalled();
     });

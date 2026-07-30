@@ -443,7 +443,7 @@ export function buildWaterLevel(): PopupLevel {
                                 kind: 'slider',
                                 label: 'env.reflectionIntensity',
                                 control: {
-                                    bind: 'env.planarReflectBlend',
+                                    bind: 'env.planarReflectionBlend',
                                     min: 0,
                                     max: 1,
                                     step: 0.05,

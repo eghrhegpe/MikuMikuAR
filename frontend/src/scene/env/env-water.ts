@@ -143,7 +143,7 @@ const waterReflection = new PlanarReflection({
         }
         return q;
     },
-    getBlend: (s) => s.planarReflectBlend ?? 0.5,
+    getBlend: (s) => s.planarReflectionBlend ?? 0.5,
     getSurfaceLevel: (s) => s.waterLevel,
     getMirrorCameraMatrix: (s, scene) => {
         const cam = scene.activeCamera;
@@ -175,7 +175,7 @@ const waterReflection = new PlanarReflection({
     setBlend: (b) => {
         const mat = _envSys.water.material as ShaderMaterial | null;
         if (mat) {
-            mat.setFloat('planarReflectBlend', b);
+            mat.setFloat('planarReflectionBlend', b);
         }
     },
     skipWhenUnderwater: true,
@@ -717,7 +717,7 @@ function _syncWaterUniforms(state: EnvState, scene: Scene): void {
     mat.setInt('uRippleCount', 0);
 
     // ——— 平面反射（ADR-062）———
-    mat.setFloat('planarReflectBlend', state.planarReflectBlend ?? 0.5);
+    mat.setFloat('planarReflectionBlend', state.planarReflectionBlend ?? 0.5);
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -827,7 +827,7 @@ const WATER_UNIFORMS = [
     'waterFogOpacityInfluence',
     'uWindDir',
     'uWindSpeed',
-    'planarReflectBlend',
+    'planarReflectionBlend',
     // ADR-115 P1: 高频法线扰动 + Sun Glitter
     'uDetailNormalStrength',
     'uDetailNormalTiling1',

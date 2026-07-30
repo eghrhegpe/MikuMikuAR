@@ -193,7 +193,7 @@ export const ENV_STATE_SCHEMA = {
     smallWaveHeight: { type: 'number', default: 1.0, group: 'water' },
     smallWaveEnabled: { type: 'boolean', default: true, group: 'water' },
     waterAnimSpeed: { type: 'number', default: 0.2, group: 'water' },
-    planarReflectBlend: { type: 'number', default: 0.5, group: 'water' },
+    planarReflectionBlend: { type: 'number', default: 0.5, group: 'water' },
     reflectionQuality: {
         type: 'enum',
         values: ['high', 'medium', 'low', 'off'] as const,
@@ -261,7 +261,7 @@ export const ENV_STATE_SCHEMA = {
     underwaterTintStrength: { type: 'number', default: 0.5, group: 'water' },
 
     // --- Clouds ---
-    cloudsEnabled: { type: 'boolean', default: false, group: 'cloud' },
+    cloudEnabled: { type: 'boolean', default: false, group: 'cloud' },
     debugCloudsEnabled: { type: 'boolean', default: false, group: 'cloud' },
     cloudCover: { type: 'number', default: 0.5, group: 'cloud' },
     cloudScale: { type: 'number', default: 0.55, group: 'cloud' },

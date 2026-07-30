@@ -56,11 +56,11 @@ export interface PlanarReflectionConfig {
     getMaterial: () => Material | null;
     /** 将 RT 挂到材质（rt 为 null 表示停用，清空材质反射引用） */
     mount: (rt: BaseTexture | null) => void;
-    /** 反射强度写入材质（ground: reflectionTexture.level / water: planarReflectBlend uniform） */
+    /** 反射强度写入材质（ground: reflectionTexture.level / water: planarReflectionBlend uniform） */
     setBlend: (blend: number) => void;
     /** 水面专用：相机入水时跳过反射渲染 */
     skipWhenUnderwater?: boolean;
-    /** 停用时的额外清理（如水面清零 planarReflectBlend uniform） */
+    /** 停用时的额外清理（如水面清零 planarReflectionBlend uniform） */
     onDisable?: () => void;
     /** ADR-114 Phase 2: 是否生成 mipmap（地面 PBR 反射模糊用，水面保持 false） */
     generateMipMaps?: boolean;
@@ -304,7 +304,7 @@ export class PlanarReflection {
         const mat = this.cfg.getMaterial();
         if (mat) {
             this.cfg.mount(null);
-            this.cfg.setBlend(0); // 清零反射强度（水面 planarReflectBlend / 地面 level）
+            this.cfg.setBlend(0); // 清零反射强度（水面 planarReflectionBlend / 地面 level）
         }
         this.cfg.onDisable?.();
         // P3-fix: 先恢复 backFaceCulling 再 dispose RT，避免渲染中途异常导致材质残留单面

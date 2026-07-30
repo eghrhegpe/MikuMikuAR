@@ -152,9 +152,9 @@ function buildEnvRootItems(): PopupRow[] {
         icon: 'lucide:cloud',
         target: 'env:cloud',
         headerToggle: {
-            value: envState.cloudsEnabled,
-            onChange: (v) => setEnvState({ cloudsEnabled: v }),
-            bind: () => envState.cloudsEnabled,
+            value: envState.cloudEnabled,
+            onChange: (v) => setEnvState({ cloudEnabled: v }),
+            bind: () => envState.cloudEnabled,
         },
     });
     return items;
