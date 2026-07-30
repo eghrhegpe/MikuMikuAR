@@ -6,10 +6,10 @@ import {
     PopupLevel,
     modelMetaCache,
     setModelMetaCache,
-    computeLibraryRef,
     dom,
     stackRegistry,
 } from '../core/config';
+import { computeLibraryRef, getBrowseDir } from '../library/library-path';
 import { escapeHtml } from '../core/escape-html';
 import { feedbackInfo, feedbackStatus } from '../core/feedback';
 import { showInfoToast } from '../core/toast';
@@ -77,7 +77,7 @@ import {
 import { DEFAULT_PROC_STATE } from '../motion-algos/procedural-motion';
 import { buildProcMotionLevel } from './motion-procmotion-levels';
 import { loadManager } from '../core/load-manager';
-import { getBrowseDir } from '../core/config';
+
 import type { ModelInstance, ModelMotionSlots } from '@/core/types';
 
 /** [doc:adr-167] 确保 inst.motionSlots 存在并返回（懒初始化；overlay 槽位已移除） */
