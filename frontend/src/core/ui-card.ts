@@ -1,0 +1,19 @@
+// [doc:architecture] Card container helper — UI layout leaf.
+// Extracted from @/core/utils as part of ADR-191 de-barreling.
+// Zero dependencies: only touches DOM, no app-state imports.
+
+/**
+ * Card container helper: removes render-card bg, wraps content in an lcard.
+ * Returns dispose callback from callback if provided.
+ */
+export function cardContainer(
+    container: HTMLElement,
+    fn: (c: HTMLElement) => (() => void) | void
+): (() => void) | void {
+    container.classList.remove('render-card');
+    const card = document.createElement('div');
+    card.className = 'lcard';
+    const dispose = fn(card);
+    container.appendChild(card);
+    return dispose;
+}

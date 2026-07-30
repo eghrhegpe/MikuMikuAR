@@ -36,6 +36,8 @@ export type { ResourcePanelOptions, ResourcePanelHandle, ResourceItem } from './
 export { createVirtualGrid } from './ui-virtual-grid';
 export type { VirtualGridOptions, VirtualGridHandle } from './ui-virtual-grid';
 export { createIconButton } from './icons';
+export { cardContainer } from './ui-card';
+export { withLoadingIndicator } from './ui-loading';
 export {
     openFullscreen,
     closeFullscreen,
