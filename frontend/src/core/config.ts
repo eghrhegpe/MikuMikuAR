@@ -19,6 +19,8 @@ export * from './utils';
 export * from './format';
 export * from './math-geometry';
 export * from './collections';
+export * from './auto-save';
+export * from '../menus/menu-stack-registry';
 export * from './ui-helpers';
 export * from './status-bar';
 export * from './toast';

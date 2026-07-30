@@ -2,9 +2,10 @@
 // 从 env-feature-levels.ts 拆分，被 env-menu.ts 和各种 env-*-levels.ts 共享
 // 循环依赖策略：依赖 env-menu-state.ts（纯状态模块）而非 env-menu.ts
 
-import { cardContainer, getBrowseDir } from '../core/config';
+import { cardContainer } from '../core/config';
 import type { PopupLevel } from '../core/config';
-import { stackRegistry } from '../core/utils';
+import { getBrowseDir } from '../library/library-path';
+import { stackRegistry } from './menu-stack-registry';
 import { closeAllOverlays } from './menu-overlay';
 import { setEnvTextureBindingTarget } from './env-menu-state';
 import { getEnvMenu } from './env-menu-state';
