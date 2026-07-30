@@ -1,7 +1,8 @@
 # ADR-212: 命名 vs 翻译 vs 实际功能错位系统审计与治理
 
-- **状态**: ✅ 已完成
+- **状态**: ✅ 已完成（P0-P3 全部落地；P4 CI 工具链待后续实施）
 - **日期**: 2026-07-30
+- **最后更新**: 2026-07-30（补充：P4 CI 检查、env-noise.ts 迁移、`animations/blurBg/invertYAxis` 裸 boolean 治理暂未纳入本 ADR 范围）
 - **相关**: ADR-029（物理 UI 重构）、ADR-035（设置差距分析）、ADR-120（环境预设分类化）、ADR-128（镜面重命名）、ADR-132（全局明暗基准）、ADR-137（EnvState 单一源 Schema）、ADR-138（env-dispatcher 破循环）、ADR-146（函数重复分类）、ADR-172（湿身效果）、ADR-195（下载文件夹统一）、ADR-209（月亮天体）、ADR-210（环境光照字段重命名）
 - **源码锚点**: `scene/env/env-gravity.ts`、`scene/env/env-wetness.ts`、`scene/env/env-noise.ts`、`scene/env/env-lighting.ts`、`scene/render/lighting-sun.ts`、`scene/env/env-bridge.ts`、`core/env-state-schema.ts`、`core/i18n/locales/zh-CN.ts`、`core/i18n/locales/en.ts`
 
