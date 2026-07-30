@@ -4,11 +4,11 @@
 
 import { Quaternion } from '@babylonjs/core/Maths/math.vector';
 import { TransformNode } from '@babylonjs/core/Meshes/transformNode';
-import { propRegistry, modelRegistry, triggerAutoSave } from '../../core/config';
-import { feedbackStatus } from '../../core/feedback';
-import { showInfoToast } from '../../core/toast';
-import { t } from '../../core/i18n/t';
-import { logWarn } from '../../core/logger';
+import { propRegistry, modelRegistry, triggerAutoSave } from '../../../core/config';
+import { feedbackStatus } from '../../../core/feedback';
+import { showInfoToast } from '../../../core/toast';
+import { t } from '../../../core/i18n/t';
+import { logWarn } from '../../../core/logger';
 
 /**
  * 将道具挂载到指定模型的骨骼上。

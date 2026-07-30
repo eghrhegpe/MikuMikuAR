@@ -9,15 +9,15 @@ import { col3FromTriple } from '@/core/color-helpers';
 import { logWarn } from '@/core/logger';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
 import { safeDispose } from '@/core/dispose-helpers';
-import { disposeTextureCache } from './env-texture';
-import { _envSys, getScene, getPipeline, isInitialized } from './env-context';
-import { clearSceneTickCallbacks, runSceneTickCallbacks } from './env-dispatcher';
-import { clearEnvDtTickCallbacks, runEnvDtTickCallbacks } from './env-dispatcher';
+import { disposeTextureCache } from './_shared/env-texture';
+import { _envSys, getScene, getPipeline, isInitialized } from './_shared/env-context';
+import { clearSceneTickCallbacks, runSceneTickCallbacks } from './_bridge/env-dispatcher';
+import { clearEnvDtTickCallbacks, runEnvDtTickCallbacks } from './_bridge/env-dispatcher';
 import { causticsController } from './env-caustics';
 import { underwaterFogController } from './env-underwater-fog';
 
 // Re-export shared context for backward compatibility
-export { _envSys, getScene } from './env-context';
+export { _envSys, getScene } from './_shared/env-context';
 
 // ======== Re-exports: Water / Clouds / MirrorDebug ========
 export {
@@ -69,13 +69,13 @@ import {
 export { createParticleEmitter, disposeParticles, updateParticleWind, updateParticleTexture };
 
 // ======== Scene Tick Callback Registry (re-export from env-dispatcher) ========
-export { registerSceneTickCallback } from './env-dispatcher';
+export { registerSceneTickCallback } from './_bridge/env-dispatcher';
 
 // ======== initEnvImpl (re-export from env-context) ========
-export { initEnvImpl } from './env-context';
+export { initEnvImpl } from './_shared/env-context';
 
 // [ADR-138] 注册 env-dispatcher 回调，响应 setEnvState 变化，破除 env-bridge → env-impl 循环依赖
-import { registerEnvCallback } from './env-dispatcher';
+import { registerEnvCallback } from './_bridge/env-dispatcher';
 
 // 从 Schema 自动派生 dispatch key 列表，新增字段无需手工维护
 const _SKY_KEYS = getEnvKeys('sky');
@@ -150,8 +150,8 @@ export function ensureEnvUpdateObserver(): void {
                 createParticleEmitter(getCurrentParticleType(), envState.windEnabled);
             }
         }
-        if (_prevSplash !== envState.particleSplash) {
-            _prevSplash = envState.particleSplash;
+        if (_prevSplash !== envState.particleSplashEnabled) {
+            _prevSplash = envState.particleSplashEnabled;
             syncSplashState();
         }
         if (_prevCustomTexture !== envState.particleCustomTexture) {
