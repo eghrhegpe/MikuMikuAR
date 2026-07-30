@@ -260,7 +260,10 @@ function createProceduralSky(state: EnvState): void {
 
     const envBrightness = state.envBrightness ?? 1;
     const effectiveSkyBrightness = state.skyBrightness * envBrightness;
-    const starsPhase = state.starsEnabled ? (state.sunAngle > 10 ? 'h' : 'l') : '';
+    // 过渡区量化 sunAngle 使 skyKey 在星星 alpha 连续变化时正确失效
+    const starsPhase = state.starsEnabled
+        ? (state.sunAngle > 10 ? 'h' : state.sunAngle < -5 ? 'l' : `t${Math.round(state.sunAngle)}`)
+        : '';
     _lastProceduralSkyKey = `${state.skyColorTop}|${state.skyColorMid}|${state.skyColorBot}|${effectiveSkyBrightness}|${state.starsEnabled}|${state.starsTexture}|${starsPhase}`;
 }
 
@@ -437,7 +440,10 @@ export function applySky(state: EnvState): void {
 
             const envBrightness = state.envBrightness ?? 1;
             const effectiveSkyBrightness = state.skyBrightness * envBrightness;
-            const starsPhase = state.starsEnabled ? (state.sunAngle > 10 ? 'h' : 'l') : '';
+            // 过渡区量化 sunAngle 使 skyKey 在星星 alpha 连续变化时正确失效
+            const starsPhase = state.starsEnabled
+                ? (state.sunAngle > 10 ? 'h' : state.sunAngle < -5 ? 'l' : `t${Math.round(state.sunAngle)}`)
+                : '';
             const skyKey = `${state.skyColorTop}|${state.skyColorMid}|${state.skyColorBot}|${effectiveSkyBrightness}|${state.starsEnabled}|${state.starsTexture}|${starsPhase}`;
             if (skyKey === _lastProceduralSkyKey && _envSys.sky.skyDynamicTex) {
                 return;
@@ -454,6 +460,8 @@ export function applySky(state: EnvState): void {
             }
 
             mat.emissiveTexture = updateSkyDynamicTexture(state);
+            // 同步更新程序化 IBL，使 PBR 材质反射颜色与天空一致
+            createProceduralEnvTexture(state, scene);
             return;
         }
         disposeSky();
