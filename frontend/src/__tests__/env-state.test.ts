@@ -76,6 +76,7 @@ const defaultEnv: EnvState = {
     smallWaveEnabled: true,
     bigWaveEnabled: true,
     waterAnimSpeed: 0.2,
+    waterDispersionEnabled: false,
     fresnelBias: 0.02,
     fresnelPower: 3.0,
     diffuseStrength: 0.15,

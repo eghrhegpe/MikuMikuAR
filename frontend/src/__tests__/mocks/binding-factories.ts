@@ -58,6 +58,7 @@ export function createMockUIState(overrides?: Partial<UIState>): UIState {
         autoCameraEnabled: false,
         autoCameraBeatsPerSwitch: 4,
         autoUpdateEnabled: false,
+        frameCapEnabled: true,
         ...overrides,
     };
 }
@@ -173,6 +174,7 @@ export function createMockEnvState(overrides?: Partial<EnvState>): EnvState {
         smallWaveEnabled: true,
         bigWaveEnabled: true,
         waterAnimSpeed: 1,
+        waterDispersionEnabled: false,
         planarReflectionBlend: 0,
         reflectionQuality: 'low',
         reflectionMode: 'planar',

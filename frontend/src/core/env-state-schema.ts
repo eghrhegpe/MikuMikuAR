@@ -194,6 +194,9 @@ export const ENV_STATE_SCHEMA = {
     smallWaveHeight: { type: 'number', default: 1.0, group: 'water' },
     smallWaveEnabled: { type: 'boolean', default: true, group: 'water' },
     waterAnimSpeed: { type: 'number', default: 0.2, group: 'water' },
+    // 水面色散关系开关（ADR-115 二轮增强）：false=旧硬编码 WAVE_SPEED（零回归），
+    // true=物理色散 ω=sqrt(g·k)，波速与波长自动耦合，长波快、短波慢，更接近真实水面
+    waterDispersionEnabled: { type: 'boolean', default: false, group: 'water' },
     planarReflectionBlend: { type: 'number', default: 0.5, group: 'water' },
     reflectionQuality: {
         type: 'enum',

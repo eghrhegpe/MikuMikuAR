@@ -162,7 +162,8 @@ export interface EnvState {
     "starsTexture": string;
     "iblIntensity": number;
     "globalBrightness": number;
-    "groundVisible": boolean;
+    "groundVisibleEnabled": boolean;
+    "groundPreset": string;
     "groundType": string;
     "groundStyle": string;
     "groundOverlay": string;
@@ -214,16 +215,20 @@ export interface EnvState {
     "particleSpeed": number;
     "particleSplashEnabled": boolean;
     "particleCustomTexture": string;
+    "particleQuality": string;
     "waterEnabled": boolean;
     "waterLevel": number;
-    "waterFlip": boolean;
+    "waterFlipEnabled": boolean;
     "waterColor": number[];
     "waterTransparency": number;
     "waterWaveHeight": number;
     "bigWaveHeight": number;
     "smallWaveHeight": number;
-    "waterSize": number;
+    "bigWaveEnabled": boolean;
+    "smallWaveEnabled": boolean;
     "waterAnimSpeed": number;
+    "waterDispersionEnabled": boolean;
+    "waterRippleSlots": number;
 
     /**
      * 水面平面反射质量：'high' | 'medium' | 'low' | 'off'
@@ -255,6 +260,7 @@ export interface EnvState {
     "waterHorizonFade": number;
     "waterSkyColorBlend": number;
     "causticIntensity": number;
+    "causticEnabled": boolean;
     "causticColor1": number[];
     "causticColor2": number[];
     "causticScrollX": number;
@@ -265,12 +271,15 @@ export interface EnvState {
      * 水面雾效（独立于全局雾）
      */
     "waterFogColor": number[];
+    "waterFogStart": number;
+    "waterFogEnd": number;
     "waterFogDensity": number;
     "waterFogOpacityInfluence": number;
 
     /**
      * 水下效果
      */
+    "underwaterEnabled": boolean;
     "underwaterFogDensity": number;
     "underwaterChromaticAmount": number;
     "underwaterToneIntensity": number;
