@@ -387,6 +387,16 @@ vec2 glitterUV = (vWorldPos.xz + vWaveOffset * 50.0) * uGlintScale + time * uGli
 float spark = hash12(floor(glitterUV + fract(time * 0.1)));
 ```
 
+**⚠ 与色散关系（P0）的隐性耦合（2026-07-30 补记）：**
+
+动态闪烁点落地后，Glitter 的漂移不再是孤立效果——它读 `vWaveOffset`（顶点着色器输出的波浪斜率），而 `vWaveOffset` 由 Gerstner 波相位 `omega * wavePhase` 推导。因此**开启 `waterDispersionEnabled` 会连带改变 Glitter 的星点漂移节奏**：色散把 `omega` 从硬编码 `WAVE_SPEED[i]` 换成 `sqrt(g·k)`，长波变快、短波变慢 → 波相位节奏变 → `vWaveOffset` 变 → 粼光漂移速度随之变。
+
+这是**良性耦合**（物理上"波快则粼光也快"符合直觉，非 bug），但需登记在案：
+
+- 调试 Glitter 漂移异常时，先确认色散开关状态，勿把色散引起的节奏变化误判为 Glitter bug。
+- 若未来为色散做默认值翻转或预设联动，需一并回归 Glitter 观感（两者共用 `vWaveOffset` 链路）。
+- 数值链路：`vWaveOffset` 在 vert 中 `* 0.01` 缩放输出，frag 中 `* 50.0` 放大，净系数 0.5，色散开启不会导致漂移量级失控。
+
 ### 6.8 涟漪系统：性能优化
 
 **自研涟漪** (`water.frag.glsl` L294-305)：
@@ -444,9 +454,9 @@ vec3 planarRefl = texture2DLodEXT(reflectionTexture, reflUV, mipLevel).rgb;
 
 | 优先级 | 功能 | 改进内容 | 改动范围 | 预期收益 | 代码量 | 状态 |
 |--------|------|---------|---------|---------|-------|------|
-| **P0** | Gerstner 色散关系 | 引入 `ω = sqrt(g·k)`，`uDispersionEnabled` 开关 | vert + TS 常量 + schema | 波物理真实感提升 | ~10 行 | ✅ 已实施 |
+| **P0** | Gerstner 色散关系 | 引入 `ω = sqrt(g·k)`，`uDispersionEnabled` 开关 | vert + TS 常量 + schema + 菜单 | 波物理真实感提升 | ~10 行 | ✅ 已实施（菜单开关已接入，默认 false；开启会联动 Glitter 漂移节奏，见 6.7） |
 | **P1** | 涟漪循环上限 | 数组从 256 收缩到 128 | frag + TS | 着色器编译/执行效率 | ~2 行 | 待办（默认已是 256） |
-| **P1** | Sun Glitter 动态 | glitterUV 叠加 `vWaveOffset * 50.0` | frag 2 行 | 闪烁更自然 | ~2 行 | ✅ 已实施 |
+| **P1** | Sun Glitter 动态 | glitterUV 叠加 `vWaveOffset * 50.0` | frag 2 行 | 闪烁更自然 | ~2 行 | ✅ 已实施（漂移节奏受色散开关联动，见 6.7） |
 | **P1** | 法线纹理质量 | 使用预制法线贴图或 2 张纹理 | TS 纹理生成 | 法线细节丰富度提升 | ~30 行 | 待办（需美术资源） |
 | **P2** | 反射 5→3 tap | 减少采样次数，可选 mipmap | frag + TS RT 配置 | 性能提升 ~40% 反射开销 | ~5 行 | 待办 |
 | **P2** | 焦散三层 | 增加第三层微焦散 | frag + TS | 焦散细节提升 | ~5 行 | 待办 |
