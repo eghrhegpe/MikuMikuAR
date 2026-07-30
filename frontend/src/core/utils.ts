@@ -104,16 +104,7 @@ export function formatError(err: unknown, maxLen = 120): string {
     }
 }
 
-export function toBase64(s: string): string {
-    const bytes = new TextEncoder().encode(s);
-    let binary = '';
-    for (let i = 0; i < bytes.length; i++) {
-        binary += String.fromCharCode(bytes[i]);
-    }
-    return btoa(binary);
-}
-
-export { canvasToBase64 } from './image';
+export { canvasToBase64, toBase64, thumbDataUrl } from './image';
 
 export { generateUuid } from './uuid';
 
@@ -493,18 +484,3 @@ export function getBrowseDir(category: string): string {
     return libraryRoot + '/' + subdir;
 }
 
-// [doc:adr-dep-graph] 从 scene/manager/thumbnail-capture.ts 迁移至此，消除 core → scene/manager 循环依赖
-/** base64 缩略图数据的 MIME 嗅探：PNG/JPEG/WebP 头部字节不同 */
-export function thumbDataUrl(base64: string): string {
-    if (base64.startsWith('iVBOR')) {
-        return `data:image/png;base64,${base64}`;
-    }
-    if (base64.startsWith('/9j/')) {
-        return `data:image/jpeg;base64,${base64}`;
-    }
-    if (base64.startsWith('UklGR')) {
-        return `data:image/webp;base64,${base64}`;
-    }
-    // 兜底：默认 PNG
-    return `data:image/png;base64,${base64}`;
-}
