@@ -29,12 +29,12 @@ import {
     DeleteModelPreset,
 } from '../core/wails-bindings';
 import {
-    tryCatchStatus,
     showErrorToast,
     getBaseName,
     normPath,
     logWarn,
 } from '../core/utils';
+import { tryCatchStatus } from '../core/status-helpers';
 import { jsonStringify } from '../core/json-stringify';
 import { t } from '../core/i18n/t';
 import { translateGoError } from '../core/i18n/goerr';

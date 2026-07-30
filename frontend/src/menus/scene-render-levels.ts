@@ -7,7 +7,8 @@ import { feedbackInfo, feedbackStatus } from '../core/feedback';
 import { showInfoToast } from '../core/toast';
 import type { PopupLevel } from '../core/config';
 import type { RenderState } from '../scene/scene';
-import { tryCatchStatus, swallowError, showErrorToast } from '../core/utils';
+import { swallowError, showErrorToast } from '../core/utils';
+import { tryCatchStatus } from '../core/status-helpers';
 import { addModeSlider, slideRow, addPresetChip } from '../core/ui-helpers';
 import { exportSceneBundle, importSceneBundle } from '../scene/scene-bundle';
 import {

@@ -52,7 +52,7 @@ import {
     ScanSoftwareDir,
 } from '../core/wails-bindings';
 import type { SoftwareEntry } from '../core/wails-bindings';
-import { tryCatchStatus } from '../core/utils';
+import { tryCatchStatus } from '../core/status-helpers';
 import { safeCallAsync } from '../core/safe-call';
 import { logWarn } from '../core/logger';
 import { GetModelMetaBatch } from '../core/wails-bindings';

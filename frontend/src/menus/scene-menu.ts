@@ -21,10 +21,10 @@ import { serializeScene, isARModeActive, takeARScreenshot, setEnvState } from '.
 import { SelectDir, SaveScreenshot, SaveScenePreset } from '../core/wails-bindings';
 import {
     waitForFrame,
-    tryCatchStatus,
     showErrorToast,
     cardContainer,
 } from '../core/utils';
+import { tryCatchStatus } from '../core/status-helpers';
 import { closeAllOverlays } from './menu-overlay';
 import { registerLoadRefreshHook, registerLibraryScannedHook } from '../core/load-refresh-registry';
 import { focusModel } from '../scene/scene';

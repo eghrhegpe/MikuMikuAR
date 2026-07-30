@@ -5,7 +5,8 @@ import { showInfoToast } from '../core/toast';
 import type { PopupLevel } from '../core/config';
 import type { RenderState } from '../scene/scene';
 import { showPrompt } from '../core/dialog';
-import { tryCatchStatus, showErrorToast } from '../core/utils';
+import { showErrorToast } from '../core/utils';
+import { tryCatchStatus } from '../core/status-helpers';
 import { slideRow, addPresetChip } from '../core/ui-helpers';
 import {
     getRenderState,
