@@ -43,7 +43,7 @@ const PERFORMANCE_MODES: Array<{
 function buildPresetSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[] {
     return [
         {
-            id: 'graphics:modes',
+            id: 'settings:graphics:modes',
             kind: 'custom',
             renderCustom: (c) => {
                 const current = getPerformanceMode();
@@ -98,7 +98,7 @@ function buildPresetSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[
 function buildFrameQualitySchema(): MenuNode[] {
     return [
         {
-            id: 'graphics:frame-cap',
+            id: 'settings:graphics:frame-cap',
             kind: 'toggle',
             label: 'settings.perf.frameCap',
             control: {
@@ -117,7 +117,7 @@ function buildFrameQualitySchema(): MenuNode[] {
             icon: 'lucide:monitor-check',
         },
         {
-            id: 'graphics:frame-cap-hint',
+            id: 'settings:graphics:frame-cap-hint',
             kind: 'custom',
             renderCustom: (c) => {
                 const hint = document.createElement('div');
@@ -130,7 +130,7 @@ function buildFrameQualitySchema(): MenuNode[] {
             },
         },
         {
-            id: 'graphics:fps',
+            id: 'settings:graphics:fps',
             kind: 'slider',
             label: 'settings.perf.fpsCap',
             control: {
@@ -152,7 +152,7 @@ function buildFrameQualitySchema(): MenuNode[] {
             icon: 'lucide:gauge',
         },
         {
-            id: 'graphics:fps-hint',
+            id: 'settings:graphics:fps-hint',
             kind: 'custom',
             renderCustom: (c) => {
                 const hint = document.createElement('div');
@@ -162,7 +162,7 @@ function buildFrameQualitySchema(): MenuNode[] {
             },
         },
         {
-            id: 'graphics:render-scale',
+            id: 'settings:graphics:render-scale',
             kind: 'slider',
             label: 'settings.perf.renderScale',
             control: {
@@ -184,7 +184,7 @@ function buildFrameQualitySchema(): MenuNode[] {
             icon: 'lucide:scan',
         },
         {
-            id: 'graphics:render-scale-hint',
+            id: 'settings:graphics:render-scale-hint',
             kind: 'custom',
             renderCustom: (c) => {
                 const hint = document.createElement('div');
@@ -200,7 +200,7 @@ function buildFrameQualitySchema(): MenuNode[] {
 function buildEffectsSchema(): MenuNode[] {
     return [
         {
-            id: 'graphics:toggles',
+            id: 'settings:graphics:toggles',
             kind: 'custom',
             renderCustom: (c) => {
                 resetPerformanceSnapshot();
@@ -263,7 +263,7 @@ function buildEffectsSchema(): MenuNode[] {
 function buildPhysicsHudSchema(): MenuNode[] {
     return [
         {
-            id: 'graphics:default-physics',
+            id: 'settings:graphics:default-physics',
             kind: 'toggle',
             label: 'settings.perf.defaultPhysics',
             control: {
@@ -282,7 +282,7 @@ function buildPhysicsHudSchema(): MenuNode[] {
             icon: 'lucide:atom',
         },
         {
-            id: 'graphics:default-physics-hint',
+            id: 'settings:graphics:default-physics-hint',
             kind: 'custom',
             renderCustom: (c) => {
                 const hint = document.createElement('div');
@@ -292,7 +292,7 @@ function buildPhysicsHudSchema(): MenuNode[] {
             },
         },
         {
-            id: 'graphics:show-fps-clock',
+            id: 'settings:graphics:show-fps-clock',
             kind: 'toggle',
             label: 'settings.perf.showFpsClock',
             control: {
@@ -312,7 +312,7 @@ function buildPhysicsHudSchema(): MenuNode[] {
             icon: 'lucide:gauge',
         },
         {
-            id: 'graphics:show-runtime-badge',
+            id: 'settings:graphics:show-runtime-badge',
             kind: 'toggle',
             label: 'settings.perf.showRuntimeBadge',
             control: {
@@ -338,7 +338,7 @@ function buildGraphicsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNod
     return [
         // 卡片 1：物理与 HUD（与性能模式无关，优先展示）
         {
-            id: 'graphics:physics-card',
+            id: 'settings:graphics:physics-card',
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
@@ -349,7 +349,7 @@ function buildGraphicsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNod
         },
         // 卡片 2：性能预设
         {
-            id: 'graphics:preset-card',
+            id: 'settings:graphics:preset-card',
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
@@ -360,7 +360,7 @@ function buildGraphicsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNod
         },
         // 卡片 3：帧率与画质
         {
-            id: 'graphics:frame-card',
+            id: 'settings:graphics:frame-card',
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
@@ -371,7 +371,7 @@ function buildGraphicsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNod
         },
         // 卡片 4：渲染效果（受性能预设影响最大，放最后方便调优）
         {
-            id: 'graphics:effects-card',
+            id: 'settings:graphics:effects-card',
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {

@@ -29,7 +29,7 @@ import type { MenuNode } from './menu-schema';
 function buildCameraSchema(): MenuNode[] {
     return [
         {
-            id: 'controls:cam-sens',
+            id: 'settings:perf:cam-sens',
             kind: 'slider',
             label: 'settings.perf.camSens',
             control: {
@@ -47,7 +47,7 @@ function buildCameraSchema(): MenuNode[] {
             icon: 'lucide:move',
         },
         {
-            id: 'controls:cam-sens-hint',
+            id: 'settings:perf:cam-sens-hint',
             kind: 'custom',
             renderCustom: (c) => {
                 const hint = document.createElement('div');
@@ -57,7 +57,7 @@ function buildCameraSchema(): MenuNode[] {
             },
         },
         {
-            id: 'controls:invert-y',
+            id: 'settings:perf:invert-y',
             kind: 'toggle',
             label: 'settings.perf.invertY',
             control: {
@@ -74,7 +74,7 @@ function buildCameraSchema(): MenuNode[] {
             icon: 'lucide:flip-vertical',
         },
         {
-            id: 'controls:invert-y-hint',
+            id: 'settings:perf:invert-y-hint',
             kind: 'custom',
             renderCustom: (c) => {
                 const hint = document.createElement('div');
@@ -84,7 +84,7 @@ function buildCameraSchema(): MenuNode[] {
             },
         },
         {
-            id: 'controls:auto-center',
+            id: 'settings:perf:auto-center',
             kind: 'toggle',
             label: 'settings.perf.autoCenter',
             control: {
@@ -102,7 +102,7 @@ function buildCameraSchema(): MenuNode[] {
             icon: 'lucide:crosshair',
         },
         {
-            id: 'controls:auto-center-hint',
+            id: 'settings:perf:auto-center-hint',
             kind: 'custom',
             renderCustom: (c) => {
                 const hint = document.createElement('div');
@@ -141,7 +141,7 @@ function _cancelRebinding(): void {
 function buildShortcutsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[] {
     return [
         {
-            id: 'controls:shortcut-groups',
+            id: 'settings:perf:shortcut-groups',
             kind: 'custom',
             renderCustom: (container) => {
                 _cancelRebinding();
@@ -288,7 +288,7 @@ function buildShortcutsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNo
             },
         },
         {
-            id: 'controls:shortcut-reset-all',
+            id: 'settings:perf:shortcut-reset-all',
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
@@ -308,7 +308,7 @@ function buildControlsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNod
     return [
         // 卡片 1：相机
         {
-            id: 'controls:camera-card',
+            id: 'settings:perf:camera-card',
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
