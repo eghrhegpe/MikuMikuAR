@@ -401,6 +401,7 @@ describe('Water Underwater — 相机入水触发过渡', () => {
         camera.position.set(0, 5, 10);
         camera.computeWorldMatrix();
         for (let i = 0; i < 60; i++) updateUnderwaterTransition(scene, pipeline);
+        expect(pipeline.imageProcessing.colorCurvesEnabled).toBe(false);
         expect(pipeline.imageProcessing.colorCurves.globalDensity).toBe(0);
     });
 });

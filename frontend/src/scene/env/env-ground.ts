@@ -30,6 +30,7 @@ import { getPlanarQualityOverride } from './env-reflection';
 import { createCanvasTexture, getOrCreateCanvasTexture, isCacheOwnedTexture } from './env-texture';
 import { _envSys, getScene } from './env-context';
 import { ensureEnvUpdateObserver } from './env';
+import { underwaterFogController } from './env-underwater-fog';
 import {
     getGroundRippleTexture,
     hasActiveGroundRipples,
@@ -1226,6 +1227,8 @@ export function applyGround(state: EnvState): void {
                 }
             }
             applyGroundEdgeFade(gm.material as GroundMat, state.groundEdgeFade, scene);
+            // 水下视觉修饰：焦散 emissive + 入水雾色（在 tickGround 中按相机深度统一驱动）
+            underwaterFogController.install(gm.material as GroundMat);
             _onTerrainReady?.();
         });
         _envSys.ground.mesh = hg;
@@ -1303,6 +1306,9 @@ export function applyGround(state: EnvState): void {
     ground.rotation.x = (state.groundPitch * Math.PI) / 180;
     ground.rotation.z = (state.groundRoll * Math.PI) / 180;
 
+    // 水下视觉修饰：焦散 emissive + 入水雾色（在 tickGround 中按相机深度统一驱动）
+    underwaterFogController.install(mat);
+
     // [adr-114] 时序修复：必须先赋值 mesh，再 buildGroundReflection。
     // groundReflection.mount 依赖 _envSys.ground.mesh.material，若 mesh 为 null 则 mount 静默跳过，
     // reflectionTexture 永远挂不上去（旧 bug：曾把 buildGroundReflection 放在赋值前）。
@@ -1313,6 +1319,10 @@ export function applyGround(state: EnvState): void {
 // ======== Per-frame ground updates (called by observer) ========
 
 export function tickGround(dt: number): void {
+    // 水下视觉同步：把当前 waterLevel 推给 controller，并按相机深度切换场景雾 + 焦散 emissive
+    underwaterFogController.setWaterLevel(envState.waterLevel);
+    underwaterFogController.update(dt, getScene());
+
     // Ground texture scroll
     if (
         _envSys.ground.mesh &&

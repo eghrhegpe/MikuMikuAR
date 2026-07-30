@@ -12,6 +12,9 @@ import { safeDispose } from '@/core/dispose-helpers';
 import { disposeTextureCache } from './env-texture';
 import { _envSys, getScene, getPipeline, isInitialized } from './env-context';
 import { clearSceneTickCallbacks, runSceneTickCallbacks } from './env-dispatcher';
+import { clearEnvDtTickCallbacks, runEnvDtTickCallbacks } from './env-dispatcher';
+import { causticsController } from './env-caustics';
+import { underwaterFogController } from './env-underwater-fog';
 
 // Re-export shared context for backward compatibility
 export { _envSys, getScene } from './env-context';
@@ -171,6 +174,9 @@ export function ensureEnvUpdateObserver(): void {
 
         // Scene tick callbacks
         runSceneTickCallbacks();
+
+        // Dt tick callbacks (caustics / time-of-day style)
+        runEnvDtTickCallbacks(dt);
     });
 }
 
@@ -188,6 +194,11 @@ export function disposeEnvUpdateObserver(): void {
     _envUpdateObserver = safeDispose(_envUpdateObserver);
     // 清理所有场景 tick 回调（如 time-of-day），避免 HMR 重入时泄漏
     clearSceneTickCallbacks();
+    clearEnvDtTickCallbacks();
+    // 释放共享焦散纹理（env-caustics controller 单例）
+    causticsController.dispose();
+    // 复位水下雾（关闭场景雾 + 清空注册材质）
+    underwaterFogController.reset(getScene());
     disposeTextureCache();
     _disposeGround();
     clearGroundTexCache();
