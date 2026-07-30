@@ -618,6 +618,7 @@ export const zhCN: Record<string, string> = {
     // ===== 相机 camera =====
     'motion.cameraMode': '相机模式',
     'motion.cameraLens': '镜头（景深）',
+    'motion.cameraCommon': '通用移动',
     'motion.cameraControl': '控制方案',
     'motion.cameraBehavior': '运动行为',
     'motion.behaviorNone': '静止（手动）',

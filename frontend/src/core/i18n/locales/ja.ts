@@ -661,6 +661,7 @@ export const ja: Record<string, string> = {
     // ===== カメラ camera =====
     'motion.cameraMode': 'カメラモード',
     'motion.cameraLens': 'レンズ(被写界深度)',
+    'motion.cameraCommon': '共通移動',
     'motion.cameraControl': 'カメラ制御',
     'motion.cameraBehavior': 'カメラ挙動',
     'motion.behaviorNone': '静止（手動）',

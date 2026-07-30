@@ -652,6 +652,7 @@ export const zhTW: Record<string, string> = {
     // ===== 相機 camera =====
     'motion.cameraMode': '相機模式',
     'motion.cameraLens': '鏡頭（景深）',
+    'motion.cameraCommon': '通用移動',
     'motion.cameraControl': '控制方案',
     'motion.cameraBehavior': '運動行為',
     'motion.behaviorNone': '静止（手動）',

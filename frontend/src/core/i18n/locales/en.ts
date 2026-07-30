@@ -615,6 +615,7 @@ export const en: Record<string, string> = {
     // ===== Camera =====
     'motion.cameraMode': 'Camera Mode',
     'motion.cameraLens': 'Lens (DoF)',
+    'motion.cameraCommon': 'Common Movement',
     'motion.cameraControl': 'Control Scheme',
     'motion.cameraBehavior': 'Motion Behavior',
     'motion.behaviorNone': 'Static (manual)',

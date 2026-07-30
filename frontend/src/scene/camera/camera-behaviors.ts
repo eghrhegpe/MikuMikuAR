@@ -32,6 +32,11 @@ let _surroundAngle = 0;
 // Cached target vector for concert/surround modes (avoids per-frame Vector3 allocation)
 const _concertTarget = new Vector3(0, 8, 0);
 
+// 移动速度映射系数：preset.freefly.speed 乘此为每帧位移（@60fps）。
+// 旧口径硬编码 0.3/帧 对应默认 speed=0.5，故 0.3/0.5=0.6；freefly 与 orbit 共用，
+// 使两种模式的「移动速度」滑块语义一致（默认约 18 unit/s ≈ 1.8 m/s）。
+const _FREEFLY_SPEED_SCALE = 0.6;
+
 // ======== Freefly ========
 
 export function initFreeflyUpdate(scene: Scene): void {
@@ -45,7 +50,9 @@ export function initFreeflyUpdate(scene: Scene): void {
         if (!cam || !(cam instanceof UniversalCamera)) {
             return;
         }
-        const speed = 0.3 * scene.getAnimationRatio();
+// preset.freefly.speed 为移动速度的单一真相源（滑块直写入）。
+        // 旧口径硬编码 0.3/帧 对应默认 speed=0.5，故映射系数 0.6 保持默认手感不变。
+        const speed = getCameraPreset().freefly.speed * _FREEFLY_SPEED_SCALE * scene.getAnimationRatio();
 
         // Read input state set by main.ts keydown/keyup
         // Use explicit temp variable for readability (getDirection returns a new Vector3 each call)
@@ -177,7 +184,7 @@ export function stopFreefly(): void {
 // 仅 orbit 模式生效：读 events.ts 置位的 orbitInput 标记，每帧按帧率归一的
 // 速度平移相机注视点（target），相机随 target 整体位移（alpha/beta/radius 不变）。
 // W/S = 沿视线水平投影前后，A/D = 沿右轴左右，Q/E = 注视点升降；缩放走鼠标滚轮原生。
-const _ORBIT_MOVE_SPEED = 8; // 世界单位/s（1 unit = 0.1m，约 0.8 m/s）
+// 移动速度与 freefly 共用 preset.freefly.speed（单一真相源），滑块即时生效。
 // 每帧复用的临时向量，避免 GC 抖动
 const _orbitFwd = new Vector3();
 const _orbitRight = new Vector3();
@@ -196,7 +203,7 @@ export function initOrbitUpdate(scene: Scene): void {
             return;
         }
         // getAnimationRatio() ≈ 当前帧相对 60fps 的时长倍数，保证不同帧率下速度一致
-        const step = (_ORBIT_MOVE_SPEED / 60) * scene.getAnimationRatio();
+        const step = getCameraPreset().freefly.speed * _FREEFLY_SPEED_SCALE * scene.getAnimationRatio();
 
         // 前进方向 = 相机→target 视线在水平面的投影（y 归零后归一化），
         // 避免俯视时按 W 往地里钻；右轴 = forward × up。
@@ -205,7 +212,8 @@ export function initOrbitUpdate(scene: Scene): void {
         const len = _orbitFwd.length();
         if (len > 1e-4) {
             _orbitFwd.scaleInPlace(1 / len);
-            Vector3.CrossToRef(_orbitFwd, Vector3.Up(), _orbitRight);
+            // 左手坐标系右轴 = up × forward；反过来（forward × up）会得到左轴，导致 A/D 反向。
+            Vector3.CrossToRef(Vector3.Up(), _orbitFwd, _orbitRight);
             _orbitRight.normalize();
         } else {
             // 近乎正俯视/正仰视时，退回相机右轴的水平投影兜底

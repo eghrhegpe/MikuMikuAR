@@ -663,6 +663,7 @@ export const ko: Record<string, string> = {
     // ===== 카메라 camera =====
     'motion.cameraMode': '카메라 모드',
     'motion.cameraLens': '렌즈(피사계심도)',
+    'motion.cameraCommon': '공통 이동',
     'motion.cameraControl': '카메라 제어',
     'motion.cameraBehavior': '카메라 동작',
     'motion.behaviorNone': '정지(수동)',
