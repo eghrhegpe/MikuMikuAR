@@ -26,8 +26,9 @@ import {
 import { InvertableArcRotateCameraPointersInput } from './invertablePointersInput';
 
 // ======== 用户相机输入设置（灵敏度 / 反 Y 轴）========
-// 基准值取自 Babylon 默认值与本项目既有设定；sens 越大越灵敏（数值越小=反应越快）
-const CAM_BASE = { angular: 2000, wheel: 3, pan: 50, speed: 0.5 };
+// 基准值取自 Babylon 默认值与本项目既有设定；sens 越大越灵敏（数值越小=反应越快）。
+// 移动速度不在此处管理：由 preset.freefly.speed 单源控制（见 camera-behaviors.ts）。
+const CAM_BASE = { angular: 2000, wheel: 3, pan: 50 };
 
 /** 跟踪每个 ArcRotate 相机实例对应的可反转指针输入，便于设置变更时实时同步 invertY。 */
 const _invertableInputs = new WeakMap<Camera, InvertableArcRotateCameraPointersInput>();
@@ -59,7 +60,6 @@ export function applyCameraUserSettings(cam: Camera): void {
         cam.panningSensibility = CAM_BASE.pan / sens;
     } else if (cam instanceof UniversalCamera) {
         cam.angularSensibility = CAM_BASE.angular / sens;
-        cam.speed = CAM_BASE.speed * sens;
     }
 }
 

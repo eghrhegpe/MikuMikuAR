@@ -263,6 +263,32 @@ function buildCameraSchema(): MenuNode[] {
                 });
             },
         },
+        // 卡片：通用移动 —— 移动速度为 orbit/freefly 键盘平移共用参数（preset.freefly.speed 单一真相源），
+        // 故不隐于某个模式，以独立卡片形式始终可见（对齐景深卡片的组织方式）。
+        {
+            id: 'camera:common',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    addCardTitle(inner, t('motion.cameraCommon'));
+                    addSliderRow(
+                        inner,
+                        t('motion.moveSpeed'),
+                        getFreeflyParams().speed,
+                        0.1,
+                        5,
+                        0.1,
+                        (v) => {
+                            setFreeflyParams({ speed: v });
+                            triggerAutoSave();
+                        },
+                        'lucide:move',
+                        undefined,
+                        { bind: () => getFreeflyParams().speed }
+                    );
+                });
+            },
+        },
         // 卡片：镜头（景深）—— 方案 C：DOF 编辑入口统一收口到相机面板（置于菜单底部，低频参数）
         {
             id: 'camera:lens',
@@ -433,28 +459,21 @@ function renderOrbitParams(container: HTMLElement): void {
 
 function renderFreeflyParams(container: HTMLElement): void {
     const p = getFreeflyParams();
-    addSliderRow(
-        container,
-        t('motion.moveSpeed'),
-        p.speed,
-        0.1,
-        5,
-        0.1,
-        (v) => {
-            setFreeflyParams({ speed: v });
-            triggerAutoSave();
-        },
-        'lucide:move'
-    );
+    // 移动速度不在此渲染：它为 orbit/freefly 共用参数，已移至独立「通用移动」卡片（始终可见）。
+    // 鼠标灵敏度仍留 freefly 面板：它只影响 freefly 转视角（orbit 转视角另由设置→相机灵敏度控制）。
+    // 鼠标灵敏度：Babylon 的 angularSensibility 是「转 1 弧度需多少像素」的分母，
+    // 数值越大越迟钝，反直觉。UI 层翻转为「灵敏度倍率」——越大越灵敏，
+    // 内部再转回分母。默认 angularSensibility=2000 → 倍率 1.0；范围 0.4(迟钝)~4(灵敏)。
+    const SENS_BASE = 2000;
     addSliderRow(
         container,
         t('motion.mouseSens'),
-        p.angularSensibility,
-        500,
-        5000,
-        100,
+        SENS_BASE / p.angularSensibility,
+        0.4,
+        4,
+        0.1,
         (v) => {
-            setFreeflyParams({ angularSensibility: v });
+            setFreeflyParams({ angularSensibility: SENS_BASE / v });
             triggerAutoSave();
         },
         'lucide:mouse-pointer'
