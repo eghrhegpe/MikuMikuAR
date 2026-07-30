@@ -267,16 +267,57 @@ return nil, fmt.Errorf("压缩包内未找到模型文件")
 | 清理 | `Clean{Target}` | `CleanOrphanCache` |
 | 隔离 | `Isolate{Target}` | `IsolateModelDir` |
 
-### 7.2 前端 target 命名
+### 7.3 Menu ID 命名
 
-| 模式 | 格式 | 示例 |
-|------|------|------|
-| 弹窗根菜单 | `{popup}:{feature}` | `models:browse`, `settings:display` |
-| 子菜单 | `{popup}:{feature}:{sub}` | `scene:render:postprocess` |
-| 操作 | `{popup}:{action}` | `set:clearcache`, `scene:save` |
-| 详情操作 | `detail:{action}:{id}` | `detail:focus:abc123` |
-| 保留/预留 | `reserved:{feature}` | `reserved:customize` |
-| 特殊 | `__{name}__` | `__favorites__`, `__tags__` |
+> **规则来源**：ADR-214（Menu ID 命名规范治理）
+
+#### 强制规则
+
+1. **格式**：所有 Menu ID 必须使用 `domain:topic:subtopic` 的冒号分隔层级格式，全小写 + 连字符（kebab-case）。
+2. **禁止零级 ID**：所有 Menu ID 必须至少含一个冒号（`:`），禁止 `id: 'sky'` 这类无 domain 前缀的 ID。
+3. **禁止驼峰**：禁止大写字母，所有单词用连字符连接。`autoCenter` → `auto-center`，`bigWaveHeight` → `big-wave-height`。
+4. **禁止点号**：分隔符统一为冒号（`:`），禁止点号（`.`）。`menu.scene.loadStage` → `menu:scene:load-stage`。
+
+#### i18n key 对齐公约
+
+> **Menu ID 的 `domain` 字段应尽量与对应 i18n key 的第一段保持一致**。
+> 从 `settings:perf:*` 到 `settings.perf.*` 可通过简单的分隔符替换（`:`→`.`）完成映射。
+
+| Menu ID domain | i18n key domain | 对齐状态 |
+|---------------|----------------|---------|
+| `env:*` | `env.*` | 已对齐 |
+| `plaza:*` | `plaza.*` | 已对齐 |
+| `model:*` | `model.*` | 已对齐 |
+| `perception:*` | `perception.*` | 已对齐 |
+| `motion:*` | `motion.*` | 已对齐 |
+| `about:*` | `about.*` | 已对齐 |
+| `graphics:*` | `settings.graphics.*` | 待对齐（menu 缺 `settings:` 前缀） |
+| `appearance:*` | `settings.appearance.*` | 待对齐（同上） |
+| `controls:*` | `settings.perf.*` | 严重错位（domain 名不同：`controls` vs `perf`） |
+
+#### 例外
+
+- 纯 UI 分组节点（无对应 i18n key）允许自定义 domain，但必须遵守格式规则（冒号分隔 + kebab-case）。
+- 历史遗留的不对齐 domain（如上表「待对齐」项）在后续 PR 中逐步迁移，不做一次性强制对齐。
+
+#### 禁止示例
+
+```
+id: 'sky'                          // 零级 ID，无 domain
+id: 'controls:autoCenter'          // 驼峰
+id: 'env.groundPresetCyberGrid'    // 点号分隔 + 驼峰
+id: 'menu.scene.loadProp'          // 点号分隔
+```
+
+#### 正确示例
+
+```
+id: 'env:sky'
+id: 'controls:auto-center'
+id: 'env:ground:preset:cyber-grid'
+id: 'menu:scene:load-prop'
+id: 'settings:graphics:frame-cap'
+```
 
 ---
 
