@@ -239,7 +239,10 @@ void main() {
         // 窄域 specular：微扰后 reflectDir 产生随机偏移的高光
         float spec = pow(max(dot(glintReflect, normalize(lightDir)), 0.0), uGlintPower);
         // 阈值化：只保留超过概率阈值的高光，其余丢弃（制造"星点"感而非整体泛光）
-        float glitter = step(0.7, spark) * spec * uGlintStrength * lightIntensity;
+        // 阈值 0.7→0.82：保留 18% 像素（更稀疏、更亮的"波光"），配合 uGlintStrength 提升到 0.4 默认
+        // 光强权重改写：原 *lightIntensity 让夕阳/夜晚 glint 消失；现 0.3~1.0 区间保底 30%，兼顾白天峰值
+        float glintWeight = 0.3 + 0.7 * lightIntensity;
+        float glitter = step(0.82, spark) * spec * uGlintStrength * glintWeight;
         color += lightColor * glitter;
     }
 

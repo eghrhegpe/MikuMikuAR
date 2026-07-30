@@ -1340,7 +1340,7 @@ export const WATER_PRESETS: Record<string, WaterPreset> = {
         fresnelAlphaInfluence: 0.35,
         causticIntensity: 0.1,
         waterNormalStrength: 0.35,
-        waterGlintStrength: 0.05,
+        waterGlintStrength: 0.3,
         // ADR-115 P3: 地平线淡出 + 天空联动（原缺失，补全）
         waterHorizonFade: 0.8,
         waterSkyColorBlend: 0.15,
@@ -1362,7 +1362,7 @@ export const WATER_PRESETS: Record<string, WaterPreset> = {
         fresnelAlphaInfluence: 0.4,
         causticIntensity: 0.15,
         waterNormalStrength: 0.5,
-        waterGlintStrength: 0.2,
+        waterGlintStrength: 0.6,
         waterHorizonFade: 0.85,
         waterSkyColorBlend: 0.2,
         // ADR-115 P5: 低频滚动法线层
@@ -1383,7 +1383,7 @@ export const WATER_PRESETS: Record<string, WaterPreset> = {
         fresnelAlphaInfluence: 0.5,
         causticIntensity: 0.2,
         waterNormalStrength: 0.6,
-        waterGlintStrength: 0.3,
+        waterGlintStrength: 0.8,
         waterHorizonFade: 0.9,
         waterSkyColorBlend: 0.6,
         // ADR-115 P5: 低频滚动法线层
@@ -1404,7 +1404,7 @@ export const WATER_PRESETS: Record<string, WaterPreset> = {
         fresnelAlphaInfluence: 0.6,
         causticIntensity: 0.25,
         waterNormalStrength: 0.65,
-        waterGlintStrength: 0.1,
+        waterGlintStrength: 0.5,
         waterHorizonFade: 0.9,
         waterSkyColorBlend: 0.15,
         // ADR-115 P5: 低频滚动法线层
@@ -1425,7 +1425,7 @@ export const WATER_PRESETS: Record<string, WaterPreset> = {
         fresnelAlphaInfluence: 0.42,
         causticIntensity: 0.2,
         waterNormalStrength: 0.55,
-        waterGlintStrength: 0.35,
+        waterGlintStrength: 1.0,
         waterHorizonFade: 0.85,
         waterSkyColorBlend: 0.55,
         // ADR-115 P5: 低频滚动法线层
