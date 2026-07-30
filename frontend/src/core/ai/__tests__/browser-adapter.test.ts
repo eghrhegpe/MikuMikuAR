@@ -332,6 +332,81 @@ describe('BrowserAiAdapter', () => {
             expect(chunks.length).toBeGreaterThanOrEqual(1);
             expect(chunks[chunks.length - 1].type).toBe('done');
         }, 10_000); // 给超时留足时间
+
+        it('finally 执行 ac.abort() 资源清理（外部 break 后）', async () => {
+            mockConfig.endpoint = 'https://api.deepseek.com/v1/chat/completions';
+            mockFetch.mockResolvedValue({
+                ok: true,
+                body: new ReadableStream(),
+            });
+            // parseSseStream 产出一条后永久挂起
+            let hangResolve: () => void;
+            const hangPromise = new Promise<void>((r) => { hangResolve = r; });
+            mockParseSseStream.mockImplementation(async function* () {
+                yield { type: 'text', content: '开始' };
+                await hangPromise; // 不 resolve → 永远不会 yield done
+            });
+
+            const abortSpy = vi.spyOn(AbortController.prototype, 'abort');
+
+            const gen = adapter.streamChat(req);
+            const iter = gen[Symbol.asyncIterator]();
+            // 取第一个 chunk 后 break
+            const first = await iter.next();
+            expect(first.value).toEqual({ type: 'text', content: '开始' });
+            // 不消费剩余 → generator 进入 finally → 调用 ac.abort()
+            await iter.return?.();
+
+            expect(abortSpy).toHaveBeenCalled();
+            abortSpy.mockRestore();
+        });
+
+        it('finally 执行 removeEventListener 清理', async () => {
+            mockConfig.endpoint = 'https://api.deepseek.com/v1/chat/completions';
+            mockFetch.mockResolvedValue({
+                ok: true,
+                body: new ReadableStream(),
+            });
+            mockParseSseStream.mockImplementation(async function* () {
+                yield { type: 'done' };
+            });
+
+            const externalAc = new AbortController();
+            const removeSpy = vi.spyOn(externalAc.signal, 'removeEventListener');
+
+            const reqWithSignal = { ...req, signal: externalAc.signal };
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            for await (const _ of adapter.streamChat(reqWithSignal)) {
+                // consume all
+            }
+            // 外部 signal 传入了 → finally 应调用 removeEventListener
+            expect(removeSpy).toHaveBeenCalled();
+            removeSpy.mockRestore();
+        });
+
+        it('req.signal 预中止 → 返回 done（AbortError 路径）', async () => {
+            mockConfig.endpoint = 'https://api.deepseek.com/v1/chat/completions';
+            // fetch 检测到 internal signal 已中止时抛 AbortError
+            mockFetch.mockImplementation(async (_url: string, opts: { signal?: AbortSignal }) => {
+                // 等待微任务队列（让 onAbort 从预中止 signal 被调度执行）
+                await new Promise((r) => setTimeout(r, 0));
+                if (opts.signal?.aborted) {
+                    throw new DOMException('The operation was aborted', 'AbortError');
+                }
+                return { ok: true, body: new ReadableStream() };
+            });
+
+            const preAborted = new AbortController();
+            preAborted.abort();
+
+            const reqWithAbortedSignal = { ...req, signal: preAborted.signal };
+            const chunks: ChatChunk[] = [];
+            for await (const chunk of adapter.streamChat(reqWithAbortedSignal)) {
+                chunks.push(chunk);
+            }
+            expect(chunks).toHaveLength(1);
+            expect(chunks[0].type).toBe('done');
+        });
     });
 
     // ── testConnection ──
