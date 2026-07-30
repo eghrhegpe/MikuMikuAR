@@ -34,6 +34,10 @@ vi.mock('../../scene/env/_shared/env-context', () => {
         initEnvImpl: () => {},
         isInitialized: () => true,
         getPipeline: () => null,
+        // ADR-217: 地水共享尺寸单源
+        INFINITE_GROUND_SIZE: 2000,
+        effectiveGroundSize: (groundSize: number, infiniteEnabled: boolean) =>
+            infiniteEnabled ? 2000 : groundSize,
     };
 });
 vi.mock('../../scene/env/env', () => ({
