@@ -106,7 +106,7 @@ vi.mock('../core/config', async (importOriginal) => {
             groundLevel: 0,
             groundSize: 100,
             groundEdgeFade: 0.1,
-            groundInfinite: false,
+            groundInfiniteEnabled: false,
             groundTextureEnabled: false,
             groundTexture: '',
             groundTextureScale: 1,

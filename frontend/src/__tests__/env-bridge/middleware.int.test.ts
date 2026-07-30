@@ -161,7 +161,7 @@ describe('ADR-173: setEnvState middleware', () => {
         mockConfigEnvState.groundPreset = 'woodStage';
         setEnvState({ groundCollisionEnabled: true });
         expect(mockConfigEnvState.groundPreset).toBe('woodStage');
-        setEnvState({ groundInfinite: true });
+        setEnvState({ groundInfiniteEnabled: true });
         expect(mockConfigEnvState.groundPreset).toBe('woodStage');
     });
 });

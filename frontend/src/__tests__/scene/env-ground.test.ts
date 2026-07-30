@@ -131,7 +131,7 @@ describe('applyGround 原地更新 — 程序化纹理防覆盖守卫', () => {
             groundVisible: true,
             groundPreset: 'metalStage',
             groundType: 'flat',
-            groundInfinite: false,
+            groundInfiniteEnabled: false,
             groundSize: 500,
             groundLevel: 0,
             reflectionQuality: 'off',
