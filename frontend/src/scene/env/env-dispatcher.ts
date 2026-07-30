@@ -74,3 +74,33 @@ export function runSceneTickCallbacks(): void {
         }
     }
 }
+
+// ======== Env Dt Tick Callback Registry ========
+// 区别于上面无参的 sceneTick：本注册表带 dt（秒），用于焦散/水波等需要时间累积的子系统。
+
+type EnvDtTickCallback = (dt: number) => void;
+const _envDtTickCallbacks = new Set<EnvDtTickCallback>();
+
+/** 注册每帧 dt 回调（env-impl 每帧推 dt）。 */
+export function registerEnvDtTickCallback(cb: EnvDtTickCallback): () => void {
+    _envDtTickCallbacks.add(cb);
+    return () => {
+        _envDtTickCallbacks.delete(cb);
+    };
+}
+
+/** 清空所有 dt 回调（场景销毁 / HMR 重入时清理）。 */
+export function clearEnvDtTickCallbacks(): void {
+    _envDtTickCallbacks.clear();
+}
+
+/** 执行所有 dt tick 回调（由 ensureEnvUpdateObserver 推 dt）。 */
+export function runEnvDtTickCallbacks(dt: number): void {
+    for (const cb of _envDtTickCallbacks) {
+        try {
+            cb(dt);
+        } catch (e) {
+            console.warn('[env-dispatcher] dt tick callback error:', e);
+        }
+    }
+}

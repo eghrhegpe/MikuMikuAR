@@ -22,7 +22,8 @@ import { _envSys, getScene } from './env-context';
 import { PlanarReflection, registerReflectionSurface } from './planar-reflection';
 import { getPlanarQualityOverride } from './env-reflection';
 import { createCanvasTexture } from './env-texture';
-import { registerEnvCallback } from './env-dispatcher';
+import { causticsController } from './env-caustics';
+import { registerEnvCallback, registerEnvDtTickCallback } from './env-dispatcher';
 import { getEnvKeys } from '@/core/env-state-schema';
 import { clamp01 } from '@/core/clamp';
 import { logWarn } from '@/core/logger';
@@ -495,115 +496,13 @@ export function updateGroundRipples(dt: number): void {
     }
 }
 
-// ======== 焦散系统（静态纹理 + UV 滚动）========
-let _causticTexture: Texture | null = null;
-let _causticScene: Scene | null = null;
-let _lastCausticColor: [number, number, number] | null = null;
-const CAUSTIC_TEX_SIZE = 128;
+// ======== 焦散系统已迁移至 env-caustics.ts controller（共享给水底地面）========
 
 // ADR-115 P1: 高频法线细节纹理（程序化生成，单例，不随水色变化）
 // P1 增强：1024×1024 + 6 层 octave + 波峰锐化 → 高光密度 + 锐度提升
 let _detailNormalTexture: Texture | null = null;
 let _detailNormalScene: Scene | null = null;
 const DETAIL_NORMAL_TEX_SIZE = 1024;
-
-function regenerateCausticTexture(scene: Scene, waterColor: [number, number, number]): void {
-    const S = CAUSTIC_TEX_SIZE;
-    // 经统一工厂创建（优先 DynamicTexture，回退 toDataURL→Texture）。
-    const draw = (ctx: CanvasRenderingContext2D, s: number) => {
-        const imgData = ctx.createImageData(s, s);
-        const data = imgData.data;
-
-        // Voronoi 焦散：不规则网状亮纹，模拟折射光汇聚线
-        const hash2 = (ix: number, iy: number): [number, number] => {
-            let h = (ix * 374761393 + iy * 668265263) | 0;
-            h = (h ^ (h >> 13)) * 1274126177;
-            const r0 = ((h >>> 0) & 0xffff) / 65535;
-            h = (h ^ (h >> 16)) * 2654435769;
-            const r1 = ((h >>> 0) & 0xffff) / 65535;
-            return [r0, r1];
-        };
-
-        const TILE = 4; // 瓦片数（值越小细胞越大）
-        for (let y = 0; y < s; y++) {
-            for (let x = 0; x < s; x++) {
-                const px = (x / s) * TILE;
-                const py = (y / s) * TILE;
-                const ix = Math.floor(px),
-                    iy = Math.floor(py);
-                let f1 = 10,
-                    f2 = 10;
-                for (let dy = -1; dy <= 1; dy++) {
-                    for (let dx = -1; dx <= 1; dx++) {
-                        // 环形坐标：边缘细胞与对面无缝衔接，消除纹理接缝
-                        const wx = ((ix + dx) % TILE + TILE) % TILE;
-                        const wy = ((iy + dy) % TILE + TILE) % TILE;
-                        const [rx, ry] = hash2(wx, wy);
-                        // 特征点在世界空间的位置（未包装）
-                        const ptX = ix + dx + rx;
-                        const ptY = iy + dy + ry;
-                        // 环形距离：考虑纹理边缘的绕回
-                        let ddx = px - ptX;
-                        let ddy = py - ptY;
-                        if (ddx > TILE / 2) ddx -= TILE;
-                        else if (ddx < -TILE / 2) ddx += TILE;
-                        if (ddy > TILE / 2) ddy -= TILE;
-                        else if (ddy < -TILE / 2) ddy += TILE;
-                        const d = Math.hypot(ddx, ddy);
-                        if (d < f1) {
-                            f2 = f1;
-                            f1 = d;
-                        } else if (d < f2) {
-                            f2 = d;
-                        }
-                    }
-                }
-                // 焦散图案：细胞中心亮、边缘微暗，模拟水下自然光斑
-                // 基础亮度 0.65，边缘处根据 f2-f1 对比度适度压暗
-                const edge = f2 - f1;
-                const baseBright = 0.65 + 0.3 * (1 - f1); // 距核心越近越亮
-                const edgeDark = Math.pow(edge, 0.6) * 0.25; // 边缘柔和压暗
-                const g = Math.min(1, Math.max(0, baseBright - edgeDark));
-
-                const i = (y * s + x) * 4;
-                const b = Math.floor(g * 255);
-                data[i] = b;
-                data[i + 1] = b;
-                data[i + 2] = b;
-                data[i + 3] = 255;
-            }
-        }
-
-        ctx.putImageData(imgData, 0, 0);
-    };
-
-    _causticTexture = safeDispose(_causticTexture);
-    // 焦散纹理直调 createCanvasTexture（不经 _texCache）：水面单实例，随颜色变化重建；
-    // 重建前已 dispose 旧纹理（上方程序 272-275），水 dispose 时一并释放。
-    _causticTexture = createCanvasTexture({
-        size: S,
-        draw,
-        scene,
-        name: 'waterCaustic',
-        wrap: 'wrap',
-    });
-    _causticScene = scene;
-    _lastCausticColor = [...waterColor];
-}
-
-function ensureCausticTexture(scene: Scene, waterColor: [number, number, number]): Texture {
-    const needsRegen =
-        !_causticTexture ||
-        _causticScene !== scene ||
-        !_lastCausticColor ||
-        _lastCausticColor.some((v, i) => Math.abs(v - waterColor[i]) > 0.01);
-
-    if (_causticTexture && !needsRegen) {
-        return _causticTexture;
-    }
-    regenerateCausticTexture(scene, waterColor);
-    return _causticTexture!;
-}
 
 // ======== ADR-115 P1: 程序化法线细节纹理 ========
 function regenerateDetailNormalTexture(scene: Scene): void {
@@ -717,8 +616,8 @@ function _syncWaterUniforms(state: EnvState, scene: Scene): void {
     }
     mat.setFloat('ambientIntensity', 0.3);
 
-    // ——— 焦散（随 waterColor 重新生成）——
-    const causticTex = ensureCausticTexture(scene, state.waterColor);
+    // ——— 焦散（共享 env-caustics controller 唯一实例，UV 滚动由 controller 推）——
+    const causticTex = causticsController.getTexture(scene);
     mat.setTexture('uCausticTex', causticTex);
     mat.setFloat('uCausticIntensity', state.causticIntensity);
     mat.setFloat('uCausticSpeed', 0.5);
@@ -1145,10 +1044,7 @@ export function disposeWater(): void {
     _waterWaveSpeed = 1;
     clearRipples(); // 清理残留涟漪，避免 dispose 后再次 createWater 时显示旧数据
     disposeGroundRipples(); // 释放地面涟漪 DynamicTexture（256×256）+ 状态，防止 GPU 泄漏
-    // 释放焦散纹理，防止内存泄漏
-    _causticTexture = safeDispose(_causticTexture);
-    _causticScene = null;
-    _lastCausticColor = null;
+    // 焦散纹理由 env-caustics controller 集中管理，env-impl dispose 时统一释放
     // ADR-115 P1: 释放法线细节纹理
     _detailNormalTexture = safeDispose(_detailNormalTexture);
     _detailNormalScene = null;
@@ -1261,10 +1157,11 @@ export function updateUnderwaterTransition(scene: Scene, pipeline: DefaultRender
         }
     } else if (!_underwaterActive) {
         pipeline.chromaticAberrationEnabled = false;
-        // 完全出水：清除后处理色调，恢复原始观感
+        // 完全出水：关闭后处理色调，恢复原始观感
         const ip = pipeline.imageProcessing;
-        if (ip && ip.colorCurves) {
-            ip.colorCurves.globalDensity = 0;
+        if (ip) {
+            ip.colorCurvesEnabled = false;
+            if (ip.colorCurves) ip.colorCurves.globalDensity = 0;
         }
     }
 }
@@ -1281,8 +1178,9 @@ export function resetUnderwaterState(scene: Scene, pipeline: DefaultRenderingPip
     pipeline.chromaticAberrationEnabled = false;
     // 清除后处理色调
     const ip = pipeline.imageProcessing;
-    if (ip && ip.colorCurves) {
-        ip.colorCurves.globalDensity = 0;
+    if (ip) {
+        ip.colorCurvesEnabled = false;
+        if (ip.colorCurves) ip.colorCurves.globalDensity = 0;
     }
 }
 
@@ -1577,4 +1475,23 @@ registerEnvCallback((changed, state) => {
             disposeWater();
         }
     }
+});
+
+// 焦散 UV 滚动由 controller 集中维护（共享给水面 + 水底地面）。
+// 速度按用户可调参数 causticScrollX/Y 推：从 shader-internal 时间项切换到 controller uOffset。
+// 注意：water frag 自身仍用 `time * causticScrollX` 算二级扰动，但纹理 uOffset/vOffset 推得略慢
+// 作为基线；这让水面与水底焦散节奏天然不同步，反倒有"水面在动、地底更深沉"的水感层次。
+let _causticsLastConfig: { sx: number; sy: number } = { sx: NaN, sy: NaN };
+registerEnvDtTickCallback((_dt) => {
+    if (envState.causticScrollX !== _causticsLastConfig.sx ||
+        envState.causticScrollY !== _causticsLastConfig.sy) {
+        // 速度比缩放到 (0..0.5) 区间（避免过快）
+        causticsController.setConfig({
+            speedU: envState.causticScrollX * 0.5,
+            speedV: envState.causticScrollY * 0.5,
+        });
+        _causticsLastConfig = { sx: envState.causticScrollX, sy: envState.causticScrollY };
+    }
+    // UV 推进（每秒累加）
+    causticsController.update(_dt);
 });
