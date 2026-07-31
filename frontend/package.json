@@ -17,6 +17,8 @@
     "check:boolean-naming": "node ../scripts/check-boolean-naming.mjs --strict",
     "gen:icons": "node ../scripts/gen-icon-bundle.mjs",
     "check:icons": "node ../scripts/gen-icon-bundle.mjs --check",
+    "gen:menumap": "node ../scripts/gen-menu-map.mjs",
+    "check:menumap": "node ../scripts/gen-menu-map.mjs --check",
     "preview": "vite preview",
     "test": "vitest run",
     "test:unit": "vitest run --exclude \"**/*.int.test.ts\"",
