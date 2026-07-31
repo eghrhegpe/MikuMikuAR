@@ -121,9 +121,7 @@ function renderAndroidStorage(
             }
         );
         const desc = document.createElement('div');
-        desc.className = 'storage-mode-desc';
-        desc.style.cssText =
-            'font-size:11px;color:var(--text-secondary);padding:2px 12px 8px;line-height:1.4';
+        desc.className = 'setting-hint';
         desc.textContent = t('settings.storageModeDesc');
         inner.appendChild(desc);
         const diag = document.createElement('div');
