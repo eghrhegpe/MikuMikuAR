@@ -341,11 +341,7 @@ function _buildProcLibraryItems(): PopupRow[] {
             label: PROC_LABELS[procId](),
             icon: isNone ? 'lucide:circle-slash' : 'lucide:wand-sparkles',
             target: '',
-            sublabel: isLoaded
-                ? isNone
-                    ? t('motion.proc.alwaysLoaded')
-                    : undefined
-                : undefined,
+            sublabel: isLoaded ? (isNone ? t('motion.proc.alwaysLoaded') : undefined) : undefined,
             rowKey: `proc-lib:${procId}:${isLoaded ? 'on' : 'off'}`,
             trailing: isLoaded
                 ? isNone

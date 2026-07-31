@@ -270,11 +270,7 @@ export function buildDangerCard(
             c,
             'lucide:trash-2',
             t('model-detail.unloadThis', {
-                kind: t(
-                    kind === 'stage'
-                        ? 'common.stage'
-                        : 'common.model'
-                ),
+                kind: t(kind === 'stage' ? 'common.stage' : 'common.model'),
             }),
             () => {
                 // [doc:adr-127] 场景级撤销保护：详情页卸载与列表路径行为一致（ADR-130 Phase 2.6 缺口 A）
@@ -320,17 +316,17 @@ function buildAttachmentSelectLevel(
                 return;
             }
             for (const c of candidates) {
-                slideRow(
-                    container,
-                    'lucide:user',
-                    c.name,
-                    true,
-                    () => {
-                        // 选择骨骼
-                        const boneLevel = buildBoneSelectLevel(childId, c.id, c.name, onDone, targetStack);
-                        targetStack?.push(boneLevel);
-                    }
-                );
+                slideRow(container, 'lucide:user', c.name, true, () => {
+                    // 选择骨骼
+                    const boneLevel = buildBoneSelectLevel(
+                        childId,
+                        c.id,
+                        c.name,
+                        onDone,
+                        targetStack
+                    );
+                    targetStack?.push(boneLevel);
+                });
             }
         },
     };
@@ -361,22 +357,16 @@ function buildBoneSelectLevel(
                 return;
             }
             for (const bone of bones) {
-                slideRow(
-                    container,
-                    'lucide:bone',
-                    bone.name,
-                    false,
-                    () => {
-                        const ok = modelManager.attachModelToBone(childId, parentId, bone.name);
-                        if (ok) {
-                            onDone();
-                            // 返回上一级（骨骼选择 → 父模型选择）
-                            targetStack?.pop();
-                        } else {
-                            showInfoToast(t('scene.accessory.attachFailed'));
-                        }
+                slideRow(container, 'lucide:bone', bone.name, false, () => {
+                    const ok = modelManager.attachModelToBone(childId, parentId, bone.name);
+                    if (ok) {
+                        onDone();
+                        // 返回上一级（骨骼选择 → 父模型选择）
+                        targetStack?.pop();
+                    } else {
+                        showInfoToast(t('scene.accessory.attachFailed'));
                     }
-                );
+                });
             }
         },
     };
@@ -398,7 +388,9 @@ export function buildAttachmentCard(
     const render = (): void => {
         container.innerHTML = '';
         const inst = modelRegistry.get(id);
-        if (!inst) return;
+        if (!inst) {
+            return;
+        }
 
         cardContainer(container, (c) => {
             addCardTitle(c, t('model-detail.attachment'));
@@ -425,10 +417,14 @@ export function buildAttachmentCard(
             } else {
                 // 未附属：显示附属入口
                 slideRow(c, 'lucide:link', t('model-detail.attachmentAttach'), true, () => {
-                    const level = buildAttachmentSelectLevel(id, () => {
-                        render();
-                        onRefresh();
-                    }, targetStack);
+                    const level = buildAttachmentSelectLevel(
+                        id,
+                        () => {
+                            render();
+                            onRefresh();
+                        },
+                        targetStack
+                    );
                     targetStack?.push(level);
                 });
             }

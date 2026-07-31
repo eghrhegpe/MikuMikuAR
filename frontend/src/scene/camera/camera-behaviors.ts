@@ -50,9 +50,10 @@ export function initFreeflyUpdate(scene: Scene): void {
         if (!cam || !(cam instanceof UniversalCamera)) {
             return;
         }
-// preset.freefly.speed 为移动速度的单一真相源（滑块直写入）。
+        // preset.freefly.speed 为移动速度的单一真相源（滑块直写入）。
         // 旧口径硬编码 0.3/帧 对应默认 speed=0.5，故映射系数 0.6 保持默认手感不变。
-        const speed = getCameraPreset().freefly.speed * _FREEFLY_SPEED_SCALE * scene.getAnimationRatio();
+        const speed =
+            getCameraPreset().freefly.speed * _FREEFLY_SPEED_SCALE * scene.getAnimationRatio();
 
         // Read input state set by main.ts keydown/keyup
         // Use explicit temp variable for readability (getDirection returns a new Vector3 each call)
@@ -203,7 +204,8 @@ export function initOrbitUpdate(scene: Scene): void {
             return;
         }
         // getAnimationRatio() ≈ 当前帧相对 60fps 的时长倍数，保证不同帧率下速度一致
-        const step = getCameraPreset().freefly.speed * _FREEFLY_SPEED_SCALE * scene.getAnimationRatio();
+        const step =
+            getCameraPreset().freefly.speed * _FREEFLY_SPEED_SCALE * scene.getAnimationRatio();
 
         // 前进方向 = 相机→target 视线在水平面的投影（y 归零后归一化），
         // 避免俯视时按 W 往地里钻；右轴 = forward × up。

@@ -4,15 +4,7 @@
 // that wires dev-hooks / render-loop / events modules together.
 // Pure Split-layer orchestrator: imports leaf/domain modules but is never
 // imported by them (no cycle).
-import {
-    dom,
-    setStatus,
-    initHints,
-    UIState,
-    EnvState,
-    formatError,
-    uiState,
-} from './config';
+import { dom, setStatus, initHints, UIState, EnvState, formatError, uiState } from './config';
 import { closeAllOverlays } from '../menus/menu-overlay';
 import { t } from './i18n/t';
 import { translateGoError } from './i18n/goerr';

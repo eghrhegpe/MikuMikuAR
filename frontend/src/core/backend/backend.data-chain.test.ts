@@ -5,8 +5,12 @@ import { idbStore, resetIdb } from './backend-mocks';
 vi.mock('./go-adapter', () => ({ goAdapter: {} }));
 vi.mock('./idb', () => ({
     idbGet: vi.fn(async (_store: string, key: string) => idbStore.get(key)),
-    idbSet: vi.fn(async (_store: string, key: string, val: unknown) => { idbStore.set(key, val); }),
-    idbDelete: vi.fn(async (_store: string, key: string) => { idbStore.delete(key); }),
+    idbSet: vi.fn(async (_store: string, key: string, val: unknown) => {
+        idbStore.set(key, val);
+    }),
+    idbDelete: vi.fn(async (_store: string, key: string) => {
+        idbStore.delete(key);
+    }),
     idbKeys: vi.fn(async (_store: string) => Array.from(idbStore.keys())),
     closeIDB: vi.fn(),
 }));

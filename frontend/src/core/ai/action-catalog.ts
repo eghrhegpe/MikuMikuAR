@@ -98,11 +98,7 @@ export function buildToolCatalogText(): string {
             }
             return `${p.name}:${p.type}`;
         });
-        const suffix = a.readonly
-            ? ' [只读，自动执行]'
-            : a.destructive
-              ? ' [需确认]'
-              : '';
+        const suffix = a.readonly ? ' [只读，自动执行]' : a.destructive ? ' [需确认]' : '';
         lines.push(`- ${a.id}: ${paramsDesc.length ? paramsDesc.join(', ') : '无参'}${suffix}`);
     }
     return lines.join('\n');

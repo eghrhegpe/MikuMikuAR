@@ -33,9 +33,7 @@ import { getBrowseDir } from '../../library/library-path';
 /** 按名称模糊搜索场景内已加载模型（供 entity resolve 消费）。 */
 async function findSceneModelByName(name: string): Promise<unknown> {
     return (
-        modelManager.getAll().find((m) =>
-            m.name.toLowerCase().includes(name.toLowerCase())
-        ) ?? null
+        modelManager.getAll().find((m) => m.name.toLowerCase().includes(name.toLowerCase())) ?? null
     );
 }
 

@@ -28,11 +28,8 @@ describe('ADR-093 Menu Schema — conflictHint 冲突标记', () => {
             const actual = await importOriginal<typeof import('../core/state')>();
             return { ...actual, focusedModelId: TEST_MID };
         });
-        const { getModuleConflicts: gmc } =
-            await import('../scene/motion/motion-modules/registry');
-        (gmc as ReturnType<typeof vi.fn>).mockReturnValue([
-            { bone: 'Head', byModule: 'breath' },
-        ]);
+        const { getModuleConflicts: gmc } = await import('../scene/motion/motion-modules/registry');
+        (gmc as ReturnType<typeof vi.fn>).mockReturnValue([{ bone: 'Head', byModule: 'breath' }]);
         const { renderMenu: rm } = await import('../menus/render-menu');
         const schema: Parameters<typeof rm>[0] = [
             {
@@ -57,8 +54,7 @@ describe('ADR-093 Menu Schema — conflictHint 冲突标记', () => {
             const actual = await importOriginal<typeof import('../core/state')>();
             return { ...actual, focusedModelId: TEST_MID };
         });
-        const { getModuleConflicts: gmc } =
-            await import('../scene/motion/motion-modules/registry');
+        const { getModuleConflicts: gmc } = await import('../scene/motion/motion-modules/registry');
         (gmc as ReturnType<typeof vi.fn>).mockReturnValue([]);
         const { renderMenu: rm } = await import('../menus/render-menu');
         const schema: Parameters<typeof rm>[0] = [

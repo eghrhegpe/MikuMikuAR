@@ -9,7 +9,13 @@ import {
     mockPlayback,
     mockAudio,
 } from './model-ops-mocks';
-import { makeInst, resetState, modelRegistry, setMmdRuntime, setIsPlaying } from './model-ops-helpers';
+import {
+    makeInst,
+    resetState,
+    modelRegistry,
+    setMmdRuntime,
+    setIsPlaying,
+} from './model-ops-helpers';
 import {
     focusModel,
     arrangeModels,

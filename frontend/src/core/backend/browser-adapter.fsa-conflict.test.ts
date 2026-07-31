@@ -5,14 +5,22 @@ import { mem, resetMem } from './browser-adapter-mocks';
 vi.mock('./idb', () => ({
     idbGet: async (store: string, key: string) => mem.get(store)?.get(key) ?? undefined,
     idbSet: async (store: string, key: string, value: unknown) => {
-        if (!mem.has(store)) mem.set(store, new Map());
+        if (!mem.has(store)) {
+            mem.set(store, new Map());
+        }
         mem.get(store)!.set(key, value);
     },
     idbKeys: async (store: string) => [...(mem.get(store)?.keys() ?? [])],
-    idbDelete: async (store: string, key: string) => { mem.get(store)?.delete(key); },
+    idbDelete: async (store: string, key: string) => {
+        mem.get(store)?.delete(key);
+    },
     idbBatchSet: async (store: string, entries: [string, unknown][]) => {
-        if (!mem.has(store)) mem.set(store, new Map());
-        for (const [k, v] of entries) mem.get(store)!.set(k, v);
+        if (!mem.has(store)) {
+            mem.set(store, new Map());
+        }
+        for (const [k, v] of entries) {
+            mem.get(store)!.set(k, v);
+        }
     },
     openDB: async () => ({}) as unknown,
     closeIDB: () => {},
@@ -37,7 +45,9 @@ function writeSimulatedImport(
     texBytes: Uint8Array,
     texName: string
 ): string {
-    if (!mem.has('models')) mem.set('models', new Map());
+    if (!mem.has('models')) {
+        mem.set('models', new Map());
+    }
     const store = mem.get('models')!;
     const stem = suffixN === 1 ? baseName : `${baseName} (${suffixN})`;
     const encStem = encodeURIComponent(stem);

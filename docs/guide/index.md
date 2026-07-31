@@ -16,8 +16,11 @@ hero:
 features:
   - title: 功能指南
     details: 按功能讲解入口路径与操作步骤（水面、天空、地面、动作、相机…），新功能持续建档。
+    link: /guide/import-model
   - title: 模型与动作
     details: 导入模型、分配 VMD 动作、控制相机视角，一站式完成舞台搭建与演出编排。
+    link: /guide/motion-playback
   - title: 快速上手
     details: 从「模型导入」开始，按侧栏顺序逐页探索，常见问题与解答持续更新。
+    link: /guide/env-water
 ---

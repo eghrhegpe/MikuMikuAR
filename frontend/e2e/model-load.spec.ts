@@ -1,15 +1,39 @@
 /**
  * E2E: 核心旅程 — 模型加载
  *
- * 走 wailsPage（WebView2 CDP，含真实 Go 后端），因为加载模型需要 Wails 文件访问。
- * 断言基于 window.__scene 数值钩子（见 ADR-060 Phase 0），不依赖像素截图。
+ * 双模式：
+ * - @dom (vitePage): seed model (createTestMesh) 验证 Babylon 场景基础健康度，
+ *   不依赖 Wails 文件访问，可在 CI 上稳定运行。
+ * - @webgl (wailsPage): 真实 PMX 模型加载，需要 Wails + WebView2。
  *
- * @requires 模型库已配置 resource_root 且至少含 1 个可加载模型（CI 用 seed model path）。
+ * 断言基于 window.__scene 数值钩子（见 ADR-060 Phase 0），不依赖像素截图。
  */
 import { test, expect } from "./wails-fixture";
 import { waitForSceneHook, loadFirstModel, loadSeedModel, clearSeedModel } from "./helpers";
 
-test.describe("核心旅程: 模型加载", { tag: ["@webgl"] }, () => {
+// ======== @dom: Seed model (programmatic mesh, no Wails needed) ========
+test.describe("核心旅程: Seed model (@dom, vitePage)", { tag: ["@dom"] }, () => {
+    test("createTestMesh adds mesh to scene", async ({ vitePage: page }) => {
+        await waitForSceneHook(page);
+        const meshCount = await loadSeedModel(page);
+        expect(meshCount).toBeGreaterThan(0);
+        await clearSeedModel(page);
+    });
+
+    test("clearTestMeshes removes seed meshes", async ({ vitePage: page }) => {
+        await waitForSceneHook(page);
+        const beforeCount = await page.evaluate(() => (window as any).__scene.meshCount);
+        await page.evaluate(async () => (window as any).__scene.createTestMesh());
+        const afterCreate = await page.evaluate(() => (window as any).__scene.meshCount);
+        expect(afterCreate).toBeGreaterThan(beforeCount);
+        await clearSeedModel(page);
+        const afterClear = await page.evaluate(() => (window as any).__scene.meshCount);
+        expect(afterClear).toBeLessThan(afterCreate);
+    });
+});
+
+// ======== @webgl: Real model loading (needs Wails + WebGL) ========
+test.describe("核心旅程: 真实模型加载 (@webgl, wailsPage)", { tag: ["@webgl"] }, () => {
     test("加载首个模型后，meshCount 显著增加且 FPS ≥ 30", async ({ wailsPage: page }) => {
         await waitForSceneHook(page);
         await loadFirstModel(page);
@@ -23,13 +47,10 @@ test.describe("核心旅程: 模型加载", { tag: ["@webgl"] }, () => {
 
     test("加载指定名称模型（确定性选择）", async ({ wailsPage: page }) => {
         await waitForSceneHook(page);
-        // 不从 spec 硬编码模型名(原 "示例模型" 在本地不存在必败):
-        // 从模型库首个真实条目动态取名,保证本地/CI 均可确定性加载。
         await page.click("#btnMainAction");
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
         await page.waitForSelector('[data-testid^="actor:model"]', { timeout: 5000 });
         const name = (await page.locator('[data-testid^="actor:model"]').first().innerText()).trim();
-        // 重新定位并点击该名称项完成加载(若首项是文件夹则此处进入子层级,非预期但可接受)。
         await page.locator('[data-testid^="actor:model"]', { hasText: name }).first().click();
         await page.waitForFunction(() => (window as any).__scene?.meshCount > 10, { timeout: 20000 });
         const meshCount = await page.evaluate(() => (window as any).__scene.meshCount);
@@ -37,12 +58,11 @@ test.describe("核心旅程: 模型加载", { tag: ["@webgl"] }, () => {
     });
 });
 
-// ======== CI Seed Model (no PMX file needed) ========
-test.describe("CI: Seed model (programmatic mesh)", { tag: ["@webgl"] }, () => {
-    test("createTestMesh adds mesh to scene and FPS ≥ 30", async ({ wailsPage: page }) => {
+// ======== CI Seed Model (@webgl only, for FPS validation) ========
+test.describe("CI: Seed model FPS validation (@webgl)", { tag: ["@webgl"] }, () => {
+    test("createTestMesh + FPS ≥ 30 (real WebGL rendering)", async ({ wailsPage: page }) => {
         const meshCount = await loadSeedModel(page);
         expect(meshCount).toBeGreaterThan(0);
-        // FPS proves real WebGL rendering is happening
         const fps = await page.evaluate(() => (window as any).__scene.fps);
         expect(fps).toBeGreaterThanOrEqual(30);
         await clearSeedModel(page);

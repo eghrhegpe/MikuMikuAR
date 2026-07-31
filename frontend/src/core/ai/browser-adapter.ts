@@ -173,7 +173,10 @@ export class BrowserAiAdapter implements AiService {
                 if (relayUrl) {
                     reqHeaders['X-Target-Url'] = url;
                 }
-                const res = await fetch(fetchUrl, { headers: reqHeaders, signal: AbortSignal.timeout(5000) });
+                const res = await fetch(fetchUrl, {
+                    headers: reqHeaders,
+                    signal: AbortSignal.timeout(5000),
+                });
                 if (!res.ok) {
                     lastErr = new Error(`HTTP ${res.status}: ${url}`);
                     continue;

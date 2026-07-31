@@ -107,16 +107,18 @@ describe('captureSceneSnapshot', () => {
     });
 
     it('已注册 bridge 时返回完整格式化快照', () => {
-        registerAiSnapshotBridge(makeBridge({
-            getFps: () => 59.9,
-            getModelCount: () => 3,
-            getMeshCount: () => 200,
-            getMaterialCount: () => 100,
-            getActiveMotions: () => ['dance.vmd', 'wave.vmd'],
-            getPerformanceMode: () => 'quality',
-            getRendererInfo: () => ({ vendor: 'AMD', renderer: 'Radeon RX 7900' }),
-            getKtx2Support: () => ({ supported: true, preferredFormat: 'bc7' }),
-        }));
+        registerAiSnapshotBridge(
+            makeBridge({
+                getFps: () => 59.9,
+                getModelCount: () => 3,
+                getMeshCount: () => 200,
+                getMaterialCount: () => 100,
+                getActiveMotions: () => ['dance.vmd', 'wave.vmd'],
+                getPerformanceMode: () => 'quality',
+                getRendererInfo: () => ({ vendor: 'AMD', renderer: 'Radeon RX 7900' }),
+                getKtx2Support: () => ({ supported: true, preferredFormat: 'bc7' }),
+            })
+        );
         const text = captureSceneSnapshot();
         expect(text).toContain('FPS: 59.9');
         expect(text).toContain('模型数: 3');
@@ -129,10 +131,12 @@ describe('captureSceneSnapshot', () => {
     });
 
     it('bridge 返回空动画列表时显示 (无)', () => {
-        registerAiSnapshotBridge(makeBridge({
-            getActiveMotions: () => [],
-            getKtx2Support: () => ({ supported: false, preferredFormat: undefined }),
-        }));
+        registerAiSnapshotBridge(
+            makeBridge({
+                getActiveMotions: () => [],
+                getKtx2Support: () => ({ supported: false, preferredFormat: undefined }),
+            })
+        );
         const text = captureSceneSnapshot();
         expect(text).toContain('活动动画: (无)');
         expect(text).toContain('KTX2: 不支持');

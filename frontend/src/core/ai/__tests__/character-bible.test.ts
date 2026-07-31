@@ -96,9 +96,7 @@ describe('parseDialogueLines', () => {
     });
 
     it('非法情绪归一为 neutral', () => {
-        const lines = parseDialogueLines(
-            '[{"line": "hello", "emotion": "invalid_emotion"}]'
-        );
+        const lines = parseDialogueLines('[{"line": "hello", "emotion": "invalid_emotion"}]');
         expect(lines).toHaveLength(1);
         expect(lines[0].emotion).toBe('neutral');
     });

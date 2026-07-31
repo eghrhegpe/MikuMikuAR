@@ -7,11 +7,7 @@ vi.mock('../core/icons', () => ({
 }));
 
 import { createIconifyIcon } from '../core/icons';
-import {
-    slideRow,
-    addToggleRow,
-    toggleRow as toggleRowFn,
-} from '../core/ui-helpers';
+import { slideRow, addToggleRow, toggleRow as toggleRowFn } from '../core/ui-helpers';
 
 const mockIconify = vi.mocked(createIconifyIcon);
 

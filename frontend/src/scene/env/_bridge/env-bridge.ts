@@ -23,7 +23,10 @@ import { applyLightingPresetFromEnv } from '../../render/lighting';
 import { registerCelGroundCoupling } from '../../render/renderer';
 import { resolveQualityProfile, type QualityProfile } from '../../render/quality-profile';
 import { scene } from '../../scene';
-import { isAutoDegradingReflection, registerSetEnvState } from '../../render/performance-env-bridge';
+import {
+    isAutoDegradingReflection,
+    registerSetEnvState,
+} from '../../render/performance-env-bridge';
 import { setPerformanceMode, getPerformanceMode } from '../../render/performance';
 import { schedulePersistEnvState } from './env-persist';
 
@@ -242,10 +245,7 @@ function migratePlanarReflectionBlend(
 /**
  * cloudsEnabled → cloudEnabled 迁移（ADR-212：单复数统一）
  */
-function migrateCloudEnabled(
-    raw: Record<string, unknown>,
-    out: Record<string, unknown>
-): boolean {
+function migrateCloudEnabled(raw: Record<string, unknown>, out: Record<string, unknown>): boolean {
     if (typeof raw.cloudsEnabled === 'boolean') {
         out.cloudEnabled = raw.cloudsEnabled;
         delete out.cloudsEnabled;

@@ -567,7 +567,12 @@ let _underwaterFog = {
 const _causticOffset = new Vector2(0, 0);
 
 /** 由水下雾控制器同步水下雾参数到水面材质（含材质重建后的恢复由 _syncWaterUniforms 负责）。 */
-export function setUnderwaterFog(enabled: boolean, color: Color3, start: number, end: number): void {
+export function setUnderwaterFog(
+    enabled: boolean,
+    color: Color3,
+    start: number,
+    end: number
+): void {
     _underwaterFog = { enabled: enabled ? 1 : 0, color: color.clone(), start, end };
     const mat = _envSys.water.material as ShaderMaterial | null;
     if (mat) {
@@ -750,7 +755,11 @@ function _setupMirrorRT(scene: Scene, state: EnvState): void {
  * 更新水面网格的位置和缩放（非破坏性）。所有 LOD 层同步变换。
  */
 function _updateWaterMesh(state: EnvState): void {
-    const scale = Math.max(1, effectiveGroundSize(state.groundSize, state.groundInfiniteEnabled ?? false) / WATER_BASE_SIZE);
+    const scale = Math.max(
+        1,
+        effectiveGroundSize(state.groundSize, state.groundInfiniteEnabled ?? false) /
+            WATER_BASE_SIZE
+    );
     const rotX = state.waterFlipEnabled ? Math.PI : 0;
     const meshes: Mesh[] = [];
     if (_envSys.water.mesh) {
@@ -1020,7 +1029,11 @@ export function createWater(state: EnvState): void {
         return;
     }
 
-    const scale = Math.max(1, effectiveGroundSize(state.groundSize, state.groundInfiniteEnabled ?? false) / WATER_BASE_SIZE);
+    const scale = Math.max(
+        1,
+        effectiveGroundSize(state.groundSize, state.groundInfiniteEnabled ?? false) /
+            WATER_BASE_SIZE
+    );
     const rotX = state.waterFlipEnabled ? Math.PI : 0;
     const makeGround = (name: string, subdivisions: number): Mesh => {
         const m = MeshBuilder.CreateGround(
@@ -1140,16 +1153,24 @@ export function updateUnderwaterTransition(scene: Scene, pipeline: DefaultRender
         _underwaterActive = true;
         // 保存原始灯光强度（入水首帧，灯光尚未被衰减）
         const dl0 = scene.getLightByName('dir');
-        if (dl0) _underwaterSavedDirIntensity = dl0.intensity;
+        if (dl0) {
+            _underwaterSavedDirIntensity = dl0.intensity;
+        }
         const hl0 = scene.getLightByName('hemi');
-        if (hl0) _underwaterSavedHemiIntensity = hl0.intensity;
+        if (hl0) {
+            _underwaterSavedHemiIntensity = hl0.intensity;
+        }
     } else if (!_underwaterTarget && _underwaterActive && _underwaterTransitionProgress < 0.001) {
         _underwaterActive = false;
         // 恢复原始灯光强度
         const dl = scene.getLightByName('dir');
-        if (dl) dl.intensity = _underwaterSavedDirIntensity;
+        if (dl) {
+            dl.intensity = _underwaterSavedDirIntensity;
+        }
         const hl = scene.getLightByName('hemi');
-        if (hl) hl.intensity = _underwaterSavedHemiIntensity;
+        if (hl) {
+            hl.intensity = _underwaterSavedHemiIntensity;
+        }
     }
 
     const dt = scene.deltaTime / 1000;
@@ -1170,7 +1191,8 @@ export function updateUnderwaterTransition(scene: Scene, pipeline: DefaultRender
         pipeline.chromaticAberrationEnabled = true;
         if (pipeline.chromaticAberration) {
             // 色差默认值从 20 降至 8，避免明显色散条纹（原 20 产生可见红蓝边）
-            pipeline.chromaticAberration.aberrationAmount = envState.underwaterChromaticAmount * t * 0.4;
+            pipeline.chromaticAberration.aberrationAmount =
+                envState.underwaterChromaticAmount * t * 0.4;
         }
 
         // 后处理色调叠加：用 imageProcessing.colorCurves 做蓝绿色相旋转（保亮度），
@@ -1188,15 +1210,13 @@ export function updateUnderwaterTransition(scene: Scene, pipeline: DefaultRender
         // 水下灯光衰减：从保存的原始值计算混合（微降，不再砍到 30%/40%）
         const dl = scene.getLightByName('dir');
         if (dl) {
-            dl.intensity = _underwaterSavedDirIntensity * (
-                (1 - t) + UNDERWATER_DIR_INTENSITY_SCALE * t
-            );
+            dl.intensity =
+                _underwaterSavedDirIntensity * (1 - t + UNDERWATER_DIR_INTENSITY_SCALE * t);
         }
         const hl = scene.getLightByName('hemi');
         if (hl) {
-            hl.intensity = _underwaterSavedHemiIntensity * (
-                (1 - t) + UNDERWATER_HEMI_INTENSITY_SCALE * t
-            );
+            hl.intensity =
+                _underwaterSavedHemiIntensity * (1 - t + UNDERWATER_HEMI_INTENSITY_SCALE * t);
         }
     } else if (!_underwaterActive) {
         pipeline.chromaticAberrationEnabled = false;
@@ -1204,7 +1224,9 @@ export function updateUnderwaterTransition(scene: Scene, pipeline: DefaultRender
         const ip = pipeline.imageProcessing;
         if (ip) {
             ip.colorCurvesEnabled = false;
-            if (ip.colorCurves) ip.colorCurves.globalDensity = 0;
+            if (ip.colorCurves) {
+                ip.colorCurves.globalDensity = 0;
+            }
         }
     }
 }
@@ -1213,9 +1235,13 @@ export function resetUnderwaterState(scene: Scene, pipeline: DefaultRenderingPip
     _underwaterActive = false;
     // 恢复灯光强度
     const dl = scene.getLightByName('dir');
-    if (dl) dl.intensity = _underwaterSavedDirIntensity;
+    if (dl) {
+        dl.intensity = _underwaterSavedDirIntensity;
+    }
     const hl = scene.getLightByName('hemi');
-    if (hl) hl.intensity = _underwaterSavedHemiIntensity;
+    if (hl) {
+        hl.intensity = _underwaterSavedHemiIntensity;
+    }
     _underwaterTransitionProgress = 0;
     _underwaterTarget = false;
     pipeline.chromaticAberrationEnabled = false;
@@ -1223,7 +1249,9 @@ export function resetUnderwaterState(scene: Scene, pipeline: DefaultRenderingPip
     const ip = pipeline.imageProcessing;
     if (ip) {
         ip.colorCurvesEnabled = false;
-        if (ip.colorCurves) ip.colorCurves.globalDensity = 0;
+        if (ip.colorCurves) {
+            ip.colorCurves.globalDensity = 0;
+        }
     }
 }
 
@@ -1525,8 +1553,10 @@ registerEnvCallback((changed, state) => {
 // water frag 通过 uCausticOffset 读取该偏移，故水面焦散与用户滑块联动，且与水底地面共享同一节奏。
 let _causticsLastConfig: { sx: number; sy: number } = { sx: NaN, sy: NaN };
 registerEnvDtTickCallback((_dt) => {
-    if (envState.causticScrollX !== _causticsLastConfig.sx ||
-        envState.causticScrollY !== _causticsLastConfig.sy) {
+    if (
+        envState.causticScrollX !== _causticsLastConfig.sx ||
+        envState.causticScrollY !== _causticsLastConfig.sy
+    ) {
         // 速度比缩放到 (0..0.5) 区间（避免过快）
         causticsController.setConfig({
             scrollX: envState.causticScrollX * 0.5,

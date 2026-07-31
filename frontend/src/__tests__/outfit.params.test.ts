@@ -44,14 +44,22 @@ vi.mock('@babylonjs/core/Lights/directionalLight', () => mockDirectionalLight())
 vi.mock('@babylonjs/core/Lights/light', () => mockLight());
 vi.mock('@babylonjs/core/Cameras/arcRotateCamera', () => mockArcRotateCamera());
 vi.mock('@babylonjs/core/Cameras/camera', () => mockCamera());
-vi.mock('@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline', () => mockDefaultRenderingPipeline());
+vi.mock('@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline', () =>
+    mockDefaultRenderingPipeline()
+);
 vi.mock('babylon-mmd/esm/Runtime/mmdCamera', () => mockMmdCamera());
 vi.mock('@babylonjs/core/Materials/Textures/Loaders/tgaTextureLoader', () => mockEmpty());
 vi.mock('babylon-mmd/esm/Loader/dynamic', () => mockRegisterMmdModelLoaders());
-vi.mock('babylon-mmd/esm/Loader/registerDxBmpTextureLoader', () => mockRegisterDxBmpTextureLoader());
-vi.mock('babylon-mmd/esm/Runtime/Optimized/InstanceType/singlePhysicsRelease', () => mockSinglePhysicsRelease());
+vi.mock('babylon-mmd/esm/Loader/registerDxBmpTextureLoader', () =>
+    mockRegisterDxBmpTextureLoader()
+);
+vi.mock('babylon-mmd/esm/Runtime/Optimized/InstanceType/singlePhysicsRelease', () =>
+    mockSinglePhysicsRelease()
+);
 vi.mock('babylon-mmd/esm/Runtime/Optimized/mmdWasmInstance', () => mockGetMmdWasmInstance());
-vi.mock('babylon-mmd/esm/Runtime/Optimized/Animation/mmdWasmRuntimeModelAnimation', () => mockEmpty());
+vi.mock('babylon-mmd/esm/Runtime/Optimized/Animation/mmdWasmRuntimeModelAnimation', () =>
+    mockEmpty()
+);
 vi.mock('babylon-mmd/esm/Runtime/mmdStandardMaterialProxy', () => mockMmdStandardMaterialProxy());
 vi.mock('babylon-mmd/esm/Runtime/mmdRuntimeShared', () => mockMmdRuntimeShared());
 vi.mock('babylon-mmd/esm/Loader/mmdModelLoader.default', () => mockEmpty());
@@ -60,7 +68,9 @@ vi.mock('babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.fragment', () => moc
 vi.mock('@babylonjs/core/Materials/Textures/texture', () => mockTexture());
 vi.mock('babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime', () => mockMmdWasmRuntime());
 vi.mock('babylon-mmd/esm/Loader/vmdLoader', () => mockVmdLoader());
-vi.mock('babylon-mmd/esm/Runtime/Optimized/Animation/mmdWasmAnimation', () => mockMmdWasmAnimation());
+vi.mock('babylon-mmd/esm/Runtime/Optimized/Animation/mmdWasmAnimation', () =>
+    mockMmdWasmAnimation()
+);
 vi.mock('../scene/scene', () => mockSceneModule());
 vi.mock('../core/i18n/t', () => mockT());
 vi.mock('../core/toast', () => mockToast());

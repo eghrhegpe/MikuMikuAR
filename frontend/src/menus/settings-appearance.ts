@@ -39,8 +39,10 @@ function _renderUISizeControls(
     const initialScale =
         parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui-scale')) || 1;
     const initialWidth =
-        parseInt(getComputedStyle(document.documentElement).getPropertyValue('--popup-width'), 10) ||
-        280;
+        parseInt(
+            getComputedStyle(document.documentElement).getPropertyValue('--popup-width'),
+            10
+        ) || 280;
 
     addSectionTitle(container, t('settings.uiSize'));
     addSliderRow(

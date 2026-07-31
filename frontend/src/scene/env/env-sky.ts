@@ -262,7 +262,11 @@ function createProceduralSky(state: EnvState): void {
     const effectiveSkyBrightness = state.skyBrightness * envBrightness;
     // 过渡区量化 sunAngle 使 skyKey 在星星 alpha 连续变化时正确失效
     const starsPhase = state.starsEnabled
-        ? (state.sunAngle > 10 ? 'h' : state.sunAngle < -5 ? 'l' : `t${Math.round(state.sunAngle)}`)
+        ? state.sunAngle > 10
+            ? 'h'
+            : state.sunAngle < -5
+              ? 'l'
+              : `t${Math.round(state.sunAngle)}`
         : '';
     _lastProceduralSkyKey = `${state.skyColorTop}|${state.skyColorMid}|${state.skyColorBot}|${effectiveSkyBrightness}|${state.starsEnabled}|${state.starsTexture}|${starsPhase}`;
 }
@@ -442,7 +446,11 @@ export function applySky(state: EnvState): void {
             const effectiveSkyBrightness = state.skyBrightness * envBrightness;
             // 过渡区量化 sunAngle 使 skyKey 在星星 alpha 连续变化时正确失效
             const starsPhase = state.starsEnabled
-                ? (state.sunAngle > 10 ? 'h' : state.sunAngle < -5 ? 'l' : `t${Math.round(state.sunAngle)}`)
+                ? state.sunAngle > 10
+                    ? 'h'
+                    : state.sunAngle < -5
+                      ? 'l'
+                      : `t${Math.round(state.sunAngle)}`
                 : '';
             const skyKey = `${state.skyColorTop}|${state.skyColorMid}|${state.skyColorBot}|${effectiveSkyBrightness}|${state.starsEnabled}|${state.starsTexture}|${starsPhase}`;
             if (skyKey === _lastProceduralSkyKey && _envSys.sky.skyDynamicTex) {

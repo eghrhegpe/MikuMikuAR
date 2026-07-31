@@ -68,7 +68,10 @@ function fireEvent(event: string, data: unknown): void {
 }
 
 /** 收集 streamChat 全部产出。 */
-async function collectStream(adapter: GoAiAdapter, req?: Parameters<GoAiAdapter['streamChat']>[0]): Promise<ChatChunk[]> {
+async function collectStream(
+    adapter: GoAiAdapter,
+    req?: Parameters<GoAiAdapter['streamChat']>[0]
+): Promise<ChatChunk[]> {
     const chunks: ChatChunk[] = [];
     const defaultReq = { messages: [{ role: 'user' as const, content: 'hi' }] };
     for await (const chunk of adapter.streamChat(req ?? defaultReq)) {
@@ -83,7 +86,11 @@ describe('GoAiAdapter', () => {
     beforeEach(() => {
         adapter = new GoAiAdapter();
         // 重置 mock 状态
-        mockState.llmConfig = { baseUrl: 'http://localhost:11434', model: 'llama3.2', aiKeyConfigured: false };
+        mockState.llmConfig = {
+            baseUrl: 'http://localhost:11434',
+            model: 'llama3.2',
+            aiKeyConfigured: false,
+        };
         mockState.testResult = { ok: true, kind: 'unknown', message: 'ok' };
         mockState.fetchModelsResult = ['llama3.2', 'mistral'];
         mockState.aiStreamChatReject = false;
@@ -180,7 +187,9 @@ describe('GoAiAdapter', () => {
 
         it('binding 抛出异常时返回可操作提示', async () => {
             const app = await import('@bindings/mikumikuar/internal/app/app');
-            vi.mocked(app.AiTestLLMConnection).mockRejectedValueOnce(new Error('connection refused'));
+            vi.mocked(app.AiTestLLMConnection).mockRejectedValueOnce(
+                new Error('connection refused')
+            );
             const r = await adapter.testConnection();
             expect(r.ok).toBe(false);
             expect(r.message).toContain('桌面端 AI 桥接不可用');
@@ -188,7 +197,9 @@ describe('GoAiAdapter', () => {
 
         it('非 connection 异常的 binding 错误', async () => {
             const app = await import('@bindings/mikumikuar/internal/app/app');
-            vi.mocked(app.AiTestLLMConnection).mockRejectedValueOnce(new Error('serialization failed'));
+            vi.mocked(app.AiTestLLMConnection).mockRejectedValueOnce(
+                new Error('serialization failed')
+            );
             const r = await adapter.testConnection();
             expect(r.ok).toBe(false);
             expect(r.message).toContain('桥接调用失败');
@@ -283,7 +294,11 @@ describe('GoAiAdapter', () => {
             const gen = adapter.streamChat({ messages: [{ role: 'user', content: '天气' }] });
             const iter = gen[Symbol.asyncIterator]();
             setTimeout(() => {
-                fireEvent('ai:tool_call', { toolName: 'get_weather', toolArgs: '{"city":"北京"}', toolId: 'call_1' });
+                fireEvent('ai:tool_call', {
+                    toolName: 'get_weather',
+                    toolArgs: '{"city":"北京"}',
+                    toolId: 'call_1',
+                });
                 fireEvent('ai:done', {});
             }, 0);
             const first = await iter.next();

@@ -8,7 +8,11 @@ import {
     mockMotionIntent,
     mockMotionHistory,
 } from './motion-modules-registry-mocks';
-import { makeModel, makeModelWithBones, setActiveMotionWithModules } from './motion-modules-registry-helpers';
+import {
+    makeModel,
+    makeModelWithBones,
+    setActiveMotionWithModules,
+} from './motion-modules-registry-helpers';
 import {
     initMotionModules,
     getRegisteredModules,

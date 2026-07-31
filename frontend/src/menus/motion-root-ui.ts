@@ -155,10 +155,8 @@ export function buildMotionRootItems(): PopupRow[] {
                     triggerAutoSave();
                     const name = _procLabel(procId);
                     // 单条带撤销的 toast 已足够告知，勿再 showInfoToast 造成重复弹窗
-                    offerSceneUndoAndRefresh(
-                        t('motion.defaultMotionSet', { name }),
-                        snap,
-                        () => getMotionMenu()?.reRender()
+                    offerSceneUndoAndRefresh(t('motion.defaultMotionSet', { name }), snap, () =>
+                        getMotionMenu()?.reRender()
                     );
                 },
             },

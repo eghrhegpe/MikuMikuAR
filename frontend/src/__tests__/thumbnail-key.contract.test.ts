@@ -73,8 +73,6 @@ describe('thumbnail key 双源对齐契约', () => {
     }
 });
 
-
-
 describe('thumbnailBaseKey 规则', () => {
     it('普通模型：libraryPath 优先且回退 filePath', () => {
         expect(thumbnailBaseKey({ libraryPath: '/lib/a.pmx', filePath: '/tmp/a.pmx' })).toBe(

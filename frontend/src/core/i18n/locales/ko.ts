@@ -78,7 +78,7 @@ export const ko: Record<string, string> = {
     'settings.library.matCat.eyes': '눈',
     'settings.library.matCat.clothing': '의상',
     'settings.library.matCat.accessory': '액세서리',
-    
+
     'settings.paths.modelCount': '모델 수: ',
     'settings.saveFailed': '저장 실패',
 
@@ -726,7 +726,7 @@ export const ko: Record<string, string> = {
     'scene.scene': '장면',
     'scene.renderPresets': '렌더 프리셋',
     'scene.stageLight': '무대 조명',
-    
+
     'scene.intensity': '강도',
     'scene.color': '색상',
     'scene.type': '유형',
@@ -820,11 +820,11 @@ export const ko: Record<string, string> = {
     'scene.loadStage': '무대 로드',
     'scene.statusNoModelLib': '✗ 먼저 설정에서 모델 라이브러리 디렉터리를 구성하세요',
     'scene.statusOpenStageLibFailed': '✗ 무대 라이브러리를 열지 못했습니다',
-    
+
     'scene.stageLabel': '무대: {name}',
-    
+
     'scene.transform': '변환',
-    
+
     'scene.custom': '사용자 정의',
     'scene.lightList': '조명 목록',
     'scene.addLight': '조명 추가',
@@ -1546,7 +1546,7 @@ export const ko: Record<string, string> = {
     'settings.paths.pmx': 'PMX 모델',
     'settings.paths.vmd': 'VMD 모션',
     'settings.paths.audio': '음악',
-    
+
     'settings.paths.stage': '씬',
     'settings.paths.environment': '환경',
     'settings.paths.mdDress': 'MD 의상',
@@ -1623,13 +1623,15 @@ export const ko: Record<string, string> = {
     'downloads.androidNotReady': 'Android: 공유 저장소 모드가 필요합니다',
     'downloads.permissionNeeded': '다운로드 폴더 읽기 권한이 필요합니다',
     'downloads.supportedHint': 'PMX / VMD / 오디오 / ZIP 지원, 하위 폴더 재귀적으로 스캔',
-    'downloads.scanConfirm': '{count}개 파일을 모델 라이브러리로 가져오려고 합니다(씬에 자동 로드되지 않음). 계속하시겠습니까?',
+    'downloads.scanConfirm':
+        '{count}개 파일을 모델 라이브러리로 가져오려고 합니다(씬에 자동 로드되지 않음). 계속하시겠습니까?',
     'downloads.canceled': '취소됨',
-    'downloads.androidNeedShared': 'Android에서 다운로드 폴더를 읽으려면 공유 저장소 모드를 활성화해야 합니다',
+    'downloads.androidNeedShared':
+        'Android에서 다운로드 폴더를 읽으려면 공유 저장소 모드를 활성화해야 합니다',
 
     // ===== i18n Phase 4 — missing keys =====
     'common.model': '모델',
-    
+
     'common.close': '닫기',
     'common.delete': '삭제',
     'common.items': '개',
@@ -1638,7 +1640,7 @@ export const ko: Record<string, string> = {
     'common.off': '꺼짐',
     'common.on': '켜짐',
     'common.stage': '무대',
-    
+
     'env.persistFailed': '✗ 설정 저장 실패 — 재시작 시 변경 사항이 손실됩니다',
     'model.materialReset': '✓ 재설정됨: {name}',
     'motion.boneOverride.title': '본 오버라이드',
@@ -1660,7 +1662,8 @@ export const ko: Record<string, string> = {
     'motion.boneOverride.exportFailed': '✕ 내보내기 실패: 모델 또는 본이 없습니다',
     // [doc:adr-186] 파이프라인 순서 UI
     'motion.boneOverride.pipelineOrder': '파이프라인 순서 개요',
-    'motion.boneOverride.pipelineEmpty': '등록된 프레임 훅이 없습니다 (모듈을 활성화하면 여기에 표시됩니다)',
+    'motion.boneOverride.pipelineEmpty':
+        '등록된 프레임 훅이 없습니다 (모듈을 활성화하면 여기에 표시됩니다)',
     'motion.boneOverride.pipelineNote':
         '숫자가 작을수록 먼저 실행됩니다. 이후 레이어가 이전 레이어를 덮어쓸 수 있습니다. 순서는 선언에 의해 결정되며 등록 순서와 무관합니다.',
     // [doc:adr-116] 모션 오버라이드 모듈 UI
@@ -1781,7 +1784,7 @@ export const ko: Record<string, string> = {
     'common.empty': '콘텐츠 없음',
     'common.apply': '적용',
     'settings.audio.offsetHint': '양수=오디오 먼저, 음수=오디오 나중(모든 음악에 전역 적용)',
-    
+
     'goerr.software.notFound': '{name}을(를) 찾을 수 없습니다. 설정에서 경로를 지정해 주세요.',
     'goerr.software.launchFailed': '{name} 실행에 실패했습니다.',
     'goerr.software.androidNotSupported': '{name}은(는) Android에서 실행할 수 없습니다.',
@@ -1829,7 +1832,8 @@ export const ko: Record<string, string> = {
     'ai.config.model': '모델',
     'ai.config.refreshModels': '모델 검색',
     'ai.config.modelsFound': '{n}개 모델을 찾았습니다',
-    'ai.config.modelsNone': '모델을 찾을 수 없습니다. 수동으로 입력하세요(예: sensenova-6.7-flash-lite)',
+    'ai.config.modelsNone':
+        '모델을 찾을 수 없습니다. 수동으로 입력하세요(예: sensenova-6.7-flash-lite)',
     'ai.config.showModels': '모델 목록 표시',
     'ai.config.keyConfigured': '구성됨(다시 입력하여 업데이트)',
     'ai.config.save': '저장',
@@ -1912,7 +1916,7 @@ export const ko: Record<string, string> = {
     'ai.actions.settings.path.pmx': 'PMX 덮어쓰기 경로 선택',
     'ai.actions.settings.path.vmd': 'VMD 덮어쓰기 경로 선택',
     'ai.actions.settings.path.audio': '오디오 덮어쓰기 경로 선택',
-    
+
     'ai.actions.settings.path.stage': '무대 덮어쓰기 경로 선택',
     'ai.actions.settings.path.environment': '환경 덮어쓰기 경로 선택',
     'ai.actions.settings.path.mdDress': 'MD 의상 덮어쓰기 경로 선택',
@@ -1980,8 +1984,10 @@ export const ko: Record<string, string> = {
     'ai.errorAdvice.notFound': '엔드포인트나 모델을 찾을 수 없습니다. 모델 이름을 확인하세요.',
     'ai.errorAdvice.rateLimit': '요청이 너무 많습니다. 잠시 후 다시 시도하세요.',
     'ai.errorAdvice.server': '서비스 제공자 서버 오류입니다. 잠시 후 다시 시도하세요.',
-    'ai.errorAdvice.network': '네트워크 연결에 실패했습니다. 엔드포인트 주소나 서비스 실행 상태를 확인하세요.',
-    'ai.errorAdvice.unknown': '알 수 없는 오류가 발생했습니다. 설정을 확인하거나 콘솔을 확인하세요.',
+    'ai.errorAdvice.network':
+        '네트워크 연결에 실패했습니다. 엔드포인트 주소나 서비스 실행 상태를 확인하세요.',
+    'ai.errorAdvice.unknown':
+        '알 수 없는 오류가 발생했습니다. 설정을 확인하거나 콘솔을 확인하세요.',
     'ai.errorAdvice.ollamaNotInstalled':
         '로컬 Ollama가 감지되지 않았습니다 — https://ollama.com 에서 다운로드하거나 원격 API 제공자를 구성하세요.',
     'ai.status.missingEndpoint': '엔드포인트 미설정',

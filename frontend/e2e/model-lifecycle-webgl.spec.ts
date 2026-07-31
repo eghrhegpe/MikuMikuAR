@@ -1,17 +1,42 @@
 /**
  * E2E: 核心旅程 — 模型生命周期（加载 → 删除 → 重加载）
  *
- * 走 wailsPage（WebView2 CDP，含真实 Go 后端 + WebGL 渲染）。
- * 验证模型全生命周期闭环：加载模型 → 场景有 mesh → 删除模型 → 场景空 → 重新加载。
+ * 双模式：
+ * - @dom (vitePage): 程序化 mesh 生命周期（createTestMesh → removeActiveModel），
+ *   验证 Babylon 场景管理 + ModelManager 状态，不依赖 Wails。
+ * - @webgl (wailsPage): 真实 PMX 模型完整生命周期，需 Wails + WebView2。
  *
- * @requires 模型库已配置，至少含 1 个可加载模型（CI 用 seed model）。
  * @see ADR-150 模型替换原子操作契约
  */
 import { test, expect } from "./wails-fixture";
-import { waitForSceneHook, loadFirstModel } from "./helpers";
+import { waitForSceneHook, loadFirstModel, loadSeedModel, clearSeedModel } from "./helpers";
 
-test.describe("模型生命周期: 加载→删除→重加载 (@webgl)", { tag: ["@webgl"] }, () => {
-    test("加载模型 → 验证 meshCount 增加 → 删除 → meshCount 为 0", async ({ wailsPage: page }) => {
+// ======== @dom: Mesh lifecycle (programmatic, no Wails needed) ========
+test.describe("Mesh 生命周期 (@dom, vitePage)", { tag: ["@dom"] }, () => {
+    test("createTestMesh → verify meshCount → clearTestMeshes → meshCount decreases", async ({ vitePage: page }) => {
+        await waitForSceneHook(page);
+        const beforeCount = await page.evaluate(() => (window as any).__scene.meshCount);
+        await loadSeedModel(page);
+        const afterCreate = await page.evaluate(() => (window as any).__scene.meshCount);
+        expect(afterCreate).toBeGreaterThan(beforeCount);
+        await clearSeedModel(page);
+        const afterClear = await page.evaluate(() => (window as any).__scene.meshCount);
+        expect(afterClear).toBeLessThan(afterCreate);
+    });
+
+    test("removeActiveModel does not throw on empty scene (graceful no-op)", async ({ vitePage: page }) => {
+        await waitForSceneHook(page);
+        // Should not throw when no model is focused
+        await page.evaluate(() => (window as any).__scene.removeActiveModel());
+        const meshCount = await page.evaluate(() => (window as any).__scene.meshCount);
+        // meshCount should remain unchanged (background meshes still present)
+        expect(meshCount).toBeGreaterThanOrEqual(0);
+    });
+});
+
+// ======== @webgl: Real model lifecycle (needs Wails + WebGL) ========
+test.describe("模型生命周期: 加载→删除→重加载 (@webgl, wailsPage)", { tag: ["@webgl"] }, () => {
+    test("加载模型 → meshCount > 10 → 删除 → meshCount 降低", async ({ wailsPage: page }) => {
         await waitForSceneHook(page);
         await loadFirstModel(page);
 

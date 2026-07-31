@@ -702,7 +702,9 @@ export function disposeSplash(): void {
 /** 溅射开关切换（由 env-impl 检测 particleSplashEnabled 变化时调用） */
 export function syncSplashState(): void {
     const shouldShow =
-        envState.particleSplashEnabled && isWeatherType(_currentParticleType) && envState.particleEnabled;
+        envState.particleSplashEnabled &&
+        isWeatherType(_currentParticleType) &&
+        envState.particleEnabled;
     if (shouldShow && !_splashPoolReady) {
         initSplashBurstPool();
     } else if (!shouldShow && _splashPoolReady) {

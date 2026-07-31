@@ -42,10 +42,7 @@ describe('enumAdapter', () => {
     });
 
     it('非法值返回错误', () => {
-        const r = enumAdapter(
-            def({ name: 'mode', type: 'enum', enum: ['a', 'b'] }),
-            'c'
-        );
+        const r = enumAdapter(def({ name: 'mode', type: 'enum', enum: ['a', 'b'] }), 'c');
         expect(r.ok).toBe(false);
         expect(errMsg(r)).toContain('不在可选范围');
     });
@@ -66,35 +63,23 @@ describe('enumAdapter', () => {
 
 describe('rangeAdapter', () => {
     it('合法数值通过', () => {
-        const r = rangeAdapter(
-            def({ name: 'val', type: 'range', min: 0, max: 1 }),
-            0.5
-        );
+        const r = rangeAdapter(def({ name: 'val', type: 'range', min: 0, max: 1 }), 0.5);
         expect(r).toEqual({ ok: true, value: 0.5 });
     });
 
     it('超过上限返回错误', () => {
-        const r = rangeAdapter(
-            def({ name: 'val', type: 'range', min: 0, max: 1 }),
-            2
-        );
+        const r = rangeAdapter(def({ name: 'val', type: 'range', min: 0, max: 1 }), 2);
         expect(r.ok).toBe(false);
         expect(errMsg(r)).toContain('超出范围');
     });
 
     it('低于下限返回错误', () => {
-        const r = rangeAdapter(
-            def({ name: 'val', type: 'range', min: 0, max: 1 }),
-            -1
-        );
+        const r = rangeAdapter(def({ name: 'val', type: 'range', min: 0, max: 1 }), -1);
         expect(r.ok).toBe(false);
     });
 
     it('NaN 返回错误', () => {
-        const r = rangeAdapter(
-            def({ name: 'val', type: 'range' }),
-            'abc'
-        );
+        const r = rangeAdapter(def({ name: 'val', type: 'range' }), 'abc');
         expect(r.ok).toBe(false);
         expect(errMsg(r)).toContain('不是有效数值');
     });
@@ -136,10 +121,7 @@ describe('colorAdapter', () => {
 describe('entityAdapter', () => {
     it('名称匹配时返回解析结果', async () => {
         const resolve = vi.fn(async (name: string) => ({ id: name, file_path: `${name}.pmx` }));
-        const r = await entityAdapter(
-            def({ name: 'name', type: 'entity', resolve }),
-            'miku'
-        );
+        const r = await entityAdapter(def({ name: 'name', type: 'entity', resolve }), 'miku');
         expect(r).toEqual({ ok: true, value: { id: 'miku', file_path: 'miku.pmx' } });
         expect(resolve).toHaveBeenCalledWith('miku');
     });
@@ -155,19 +137,13 @@ describe('entityAdapter', () => {
 
     it('resolve 返回 null 时返回未找到', async () => {
         const resolve = vi.fn(async () => null);
-        const r = await entityAdapter(
-            def({ name: 'name', type: 'entity', resolve }),
-            'nope'
-        );
+        const r = await entityAdapter(def({ name: 'name', type: 'entity', resolve }), 'nope');
         expect(r.ok).toBe(false);
         expect(errMsg(r)).toContain('未找到');
     });
 
     it('无 resolve 函数返回错误', async () => {
-        const r = await entityAdapter(
-            def({ name: 'name', type: 'entity' }),
-            'anything'
-        );
+        const r = await entityAdapter(def({ name: 'name', type: 'entity' }), 'anything');
         expect(r.ok).toBe(false);
         expect(errMsg(r)).toContain('不支持运行时解析');
     });
@@ -175,42 +151,36 @@ describe('entityAdapter', () => {
 
 describe('adaptParam', () => {
     it('enum 类型分发到 enumAdapter', () => {
-        const r = adaptParam(
-            def({ name: 'm', type: 'enum', enum: ['a', 'b'] }),
-            'a'
-        );
+        const r = adaptParam(def({ name: 'm', type: 'enum', enum: ['a', 'b'] }), 'a');
         expect(r).toEqual({ ok: true, value: 'a' });
     });
 
     it('string 类型直接透传', () => {
-        const r = adaptParam(
-            def({ name: 's', type: 'string' }),
-            'hello'
-        ) as { ok: true; value: string };
+        const r = adaptParam(def({ name: 's', type: 'string' }), 'hello') as {
+            ok: true;
+            value: string;
+        };
         expect(r.value).toBe('hello');
     });
 
     it('boolean 类型转换', () => {
-        const r = adaptParam(
-            def({ name: 'b', type: 'boolean' }),
-            true
-        ) as { ok: true; value: boolean };
+        const r = adaptParam(def({ name: 'b', type: 'boolean' }), true) as {
+            ok: true;
+            value: boolean;
+        };
         expect(r.value).toBe(true);
     });
 
     it('toggle 类型转换', () => {
-        const r = adaptParam(
-            def({ name: 't', type: 'toggle' }),
-            false
-        ) as { ok: true; value: boolean };
+        const r = adaptParam(def({ name: 't', type: 'toggle' }), false) as {
+            ok: true;
+            value: boolean;
+        };
         expect(r.value).toBe(false);
     });
 
     it('不支持的参数类型返回错误', () => {
-        const r = adaptParam(
-            { name: 'x', type: 'unsupported' as ParamDef['type'] },
-            'val'
-        );
+        const r = adaptParam({ name: 'x', type: 'unsupported' as ParamDef['type'] }, 'val');
         expect(r).toEqual({ ok: false, error: '不支持的参数类型: unsupported' });
     });
 });

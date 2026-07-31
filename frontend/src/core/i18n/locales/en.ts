@@ -78,7 +78,7 @@ export const en: Record<string, string> = {
     'settings.library.matCat.eyes': 'Eyes',
     'settings.library.matCat.clothing': 'Clothing',
     'settings.library.matCat.accessory': 'Accessory',
-    
+
     'settings.paths.modelCount': 'Models: ',
     'settings.saveFailed': 'Save failed',
 
@@ -527,7 +527,8 @@ export const en: Record<string, string> = {
     'motion.boneOverride.exportFailed': '✕ Export failed: no model or bones available',
     // [doc:adr-186] Pipeline order overview UI
     'motion.boneOverride.pipelineOrder': 'Pipeline Order Overview',
-    'motion.boneOverride.pipelineEmpty': 'No frame hooks registered (they will appear here once modules are enabled)',
+    'motion.boneOverride.pipelineEmpty':
+        'No frame hooks registered (they will appear here once modules are enabled)',
     'motion.boneOverride.pipelineNote':
         'Lower numbers execute first; later layers can override earlier ones. Order is determined by declaration, not registration sequence.',
     // [doc:adr-116] Motion override modular UI
@@ -679,7 +680,7 @@ export const en: Record<string, string> = {
     'scene.scene': 'Scene',
     'scene.renderPresets': 'Render Presets',
     'scene.stageLight': 'Stage Lights',
-    
+
     'scene.intensity': 'Intensity',
     'scene.color': 'Color',
     'scene.type': 'Type',
@@ -784,7 +785,7 @@ export const en: Record<string, string> = {
     'scene.loadStage': 'Load Stage',
     'scene.statusNoModelLib': '✗ Configure the model library directory in Settings first',
     'scene.statusOpenStageLibFailed': '✗ Failed to open stage library',
-    
+
     'scene.stageLabel': 'Stage: {name}',
 
     'scene.transform': 'Transform',
@@ -1479,7 +1480,7 @@ export const en: Record<string, string> = {
     'common.off': 'off',
     'common.stage': 'stage',
     'common.model': 'model',
-    
+
     'common.close': 'Close',
     'common.delete': 'Delete',
     'common.items': 'items',
@@ -1488,7 +1489,7 @@ export const en: Record<string, string> = {
     'status.loop': 'Loop: {state}',
     'status.error': 'Error: {message}',
     'status.done': '✓ Done',
-    
+
     'settings.softwareAdded': '✓ Added: {name}',
     'settings.softwareStarted': '✓ Started: {name}',
     'settings.softwareDeleted': '✓ Deleted: {name}',
@@ -1678,7 +1679,7 @@ export const en: Record<string, string> = {
     'settings.paths.pmx': 'PMX Models',
     'settings.paths.vmd': 'VMD Motions',
     'settings.paths.audio': 'Music',
-    
+
     'settings.paths.stage': 'Stage',
     'settings.paths.environment': 'Environment',
     'settings.paths.mdDress': 'MD Dress',
@@ -1769,7 +1770,6 @@ export const en: Record<string, string> = {
     'common.apply': 'Apply',
     'settings.audio.offsetHint':
         'Positive = audio leads, negative = audio lags (applies globally to all music)',
-    
 
     // ===== [doc:adr-117] Go-side user-visible errors (i18n) =====
     'goerr.software.notFound': 'Could not find {name}. Please set its path in Settings.',
@@ -1904,7 +1904,7 @@ export const en: Record<string, string> = {
     'ai.actions.settings.path.pmx': 'Select PMX override path',
     'ai.actions.settings.path.vmd': 'Select VMD override path',
     'ai.actions.settings.path.audio': 'Select audio override path',
-    
+
     'ai.actions.settings.path.stage': 'Select stage override path',
     'ai.actions.settings.path.environment': 'Select environment override path',
     'ai.actions.settings.path.mdDress': 'Select MD dress override path',
@@ -1945,7 +1945,8 @@ export const en: Record<string, string> = {
     'ai.config.corsWarning':
         '⚠ Remote endpoint may have CORS restrictions. For local Ollama, set OLLAMA_ORIGINS=* and restart.',
     'ai.config.relayActive': 'Relay proxy active ({url})',
-    'ai.config.relayNotConfigured': 'Configure a relay proxy in settings to bypass CORS restrictions',
+    'ai.config.relayNotConfigured':
+        'Configure a relay proxy in settings to bypass CORS restrictions',
     'ai.chat.clear': 'Clear',
     'ai.chat.clearConfirm': 'Clear chat history?',
     'ai.chat.pendingBlocked': 'Confirm or cancel the pending action first.',

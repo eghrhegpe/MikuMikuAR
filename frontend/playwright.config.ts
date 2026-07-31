@@ -1,5 +1,16 @@
 import { defineConfig } from "@playwright/test";
 
+/**
+ * E2E 测试配置 — 两阶段策略
+ *
+ * @dom (vitePage): Chromium → Vite dev server :5173, 稳定快速, CI 阻塞门禁。
+ *                  覆盖 DOM/UI 回归 + Babylon 程序化逻辑（createTestMesh 等）。
+ * @webgl (wailsPage): CDP → Wails WebView2 :9222, 需 Windows + Wails v3, CI 非阻塞。
+ *                     覆盖真实 PMX 加载、动作/换装、截图管线等深度集成。
+ * @web (vite preview): build → preview :4174, Web 入口能力门控。
+ *
+ * 详细策略见 e2e/README.md §7.5 两阶段测试策略。
+ */
 export default defineConfig({
     testDir: "./e2e",
     fullyParallel: true,

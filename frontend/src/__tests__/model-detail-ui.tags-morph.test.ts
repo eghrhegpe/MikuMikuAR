@@ -62,9 +62,8 @@ vi.mock('@babylonjs/core/Materials/material', () => mockMaterial());
 vi.mock('@babylonjs/core/Meshes/mesh', () => mockMesh());
 vi.mock('@babylonjs/core/Lights/Shadows/shadowGenerator', () => mockShadowGenerator());
 vi.mock('@babylonjs/core/Loading/sceneLoader', () => mockSceneLoader());
-vi.mock(
-    '@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline',
-    () => mockDefaultRenderingPipeline()
+vi.mock('@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline', () =>
+    mockDefaultRenderingPipeline()
 );
 vi.mock('@babylonjs/core/Particles/gpuParticleSystem', () => mockGpuParticleSystem());
 vi.mock('@babylonjs/core/Particles/particleSystem', () => mockParticleSystem());
@@ -73,21 +72,33 @@ vi.mock('@babylonjs/materials/grid/gridMaterial', () => mockGridMaterial());
 vi.mock('@babylonjs/core/Materials/Textures/baseTexture', () => mockBaseTexture());
 vi.mock('@babylonjs/core/Materials/Textures/texture', () => mockTexture());
 vi.mock('@babylonjs/core/Materials/Textures/cubeTexture', () => mockCubeTexture());
-vi.mock('@babylonjs/core/Materials/Textures/Loaders/tgaTextureLoader', () => mockTgaTextureLoader());
+vi.mock('@babylonjs/core/Materials/Textures/Loaders/tgaTextureLoader', () =>
+    mockTgaTextureLoader()
+);
 vi.mock('@babylonjs/core/Materials/Textures/Loaders/hdrTextureLoader', () => mockEmpty());
 vi.mock('@babylonjs/core/Materials/Textures/Loaders/exrTextureLoader', () => mockEmpty());
 vi.mock('babylon-mmd/esm/Runtime/mmdStandardMaterialProxy', () => mockMmdStandardMaterialProxy());
 vi.mock('babylon-mmd/esm/Runtime/mmdRuntimeShared', () => mockMmdRuntimeShared());
 vi.mock('babylon-mmd/esm/Loader/mmdModelLoader.default', () => mockMmdModelLoaderDefault());
-vi.mock('babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.vertex', () => mockTextureAlphaCheckerVertex());
-vi.mock('babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.fragment', () => mockTextureAlphaCheckerFragment());
+vi.mock('babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.vertex', () =>
+    mockTextureAlphaCheckerVertex()
+);
+vi.mock('babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.fragment', () =>
+    mockTextureAlphaCheckerFragment()
+);
 vi.mock('babylon-mmd/esm/Loader/dynamic', () => mockMmdDynamic());
 vi.mock('babylon-mmd/esm/Loader/registerDxBmpTextureLoader', () => mockDxBmpTextureLoader());
 vi.mock('babylon-mmd/esm/Runtime/Optimized/mmdWasmInstance', () => mockMmdWasmInstance());
-vi.mock('babylon-mmd/esm/Runtime/Optimized/InstanceType/singlePhysicsRelease', () => mockSinglePhysicsRelease());
+vi.mock('babylon-mmd/esm/Runtime/Optimized/InstanceType/singlePhysicsRelease', () =>
+    mockSinglePhysicsRelease()
+);
 vi.mock('babylon-mmd/esm/Loader/vmdLoader', () => mockVmdLoader());
-vi.mock('babylon-mmd/esm/Runtime/Optimized/Animation/mmdWasmAnimation', () => mockMmdWasmAnimation());
-vi.mock('babylon-mmd/esm/Runtime/Optimized/Animation/mmdWasmRuntimeModelAnimation', () => mockMmdWasmRuntimeModelAnimation());
+vi.mock('babylon-mmd/esm/Runtime/Optimized/Animation/mmdWasmAnimation', () =>
+    mockMmdWasmAnimation()
+);
+vi.mock('babylon-mmd/esm/Runtime/Optimized/Animation/mmdWasmRuntimeModelAnimation', () =>
+    mockMmdWasmRuntimeModelAnimation()
+);
 vi.mock('../scene/scene', () => mockSceneScene());
 vi.mock('../scene-menu', () => mockSceneMenu());
 vi.mock('../outfit/outfit', () => mockOutfitModule());

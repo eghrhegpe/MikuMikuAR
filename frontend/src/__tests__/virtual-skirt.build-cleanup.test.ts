@@ -12,16 +12,27 @@ import {
     resetHoisted,
 } from './virtual-skirt-mocks';
 
-vi.mock('babylon-mmd/esm/Runtime/Optimized/Physics/mmdWasmPhysicsRuntimeImpl', () => mockMmdWasmPhysicsRuntimeImpl());
+vi.mock('babylon-mmd/esm/Runtime/Optimized/Physics/mmdWasmPhysicsRuntimeImpl', () =>
+    mockMmdWasmPhysicsRuntimeImpl()
+);
 vi.mock('../../core/backend', () => mockBackend());
 vi.mock('babylon-mmd/esm/Runtime/Optimized/Physics/Bind/rigidBody', () => mockRigidBody());
-vi.mock('babylon-mmd/esm/Runtime/Optimized/Physics/Bind/rigidBodyConstructionInfo', () => mockRigidBodyConstructionInfo());
+vi.mock('babylon-mmd/esm/Runtime/Optimized/Physics/Bind/rigidBodyConstructionInfo', () =>
+    mockRigidBodyConstructionInfo()
+);
 vi.mock('babylon-mmd/esm/Runtime/Optimized/Physics/Bind/constraint', () => mockConstraint());
 vi.mock('babylon-mmd/esm/Runtime/Optimized/Physics/Bind/physicsShape', () => mockPhysicsShape());
 vi.mock('babylon-mmd/esm/Runtime/Optimized/Physics/Bind/motionType', () => mockMotionType());
 
 import { VirtualSkirtController } from '../scene/physics/virtual-skirt';
-import { createOpenBottomCylinder, makeModel, makeRuntime, makePhysics, makeScene, testConfig } from './virtual-skirt-helpers';
+import {
+    createOpenBottomCylinder,
+    makeModel,
+    makeRuntime,
+    makePhysics,
+    makeScene,
+    testConfig,
+} from './virtual-skirt-helpers';
 
 describe('VirtualSkirtController — P3a build 异常清理', () => {
     beforeEach(() => {
