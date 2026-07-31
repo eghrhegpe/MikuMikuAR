@@ -27,7 +27,11 @@ import { fbm, hash2 } from './env-terrain';
 import { createHeightmapGround, applyTerrainMaterial } from './env-terrain';
 import { PlanarReflection, registerReflectionSurface } from './planar-reflection';
 import { getPlanarQualityOverride } from './env-reflection';
-import { createCanvasTexture, getOrCreateCanvasTexture, isCacheOwnedTexture } from './_shared/env-texture';
+import {
+    createCanvasTexture,
+    getOrCreateCanvasTexture,
+    isCacheOwnedTexture,
+} from './_shared/env-texture';
 import { _envSys, getScene } from './_shared/env-context';
 import { ensureEnvUpdateObserver } from './env';
 import { underwaterFogController } from './env-underwater-fog';
@@ -517,16 +521,28 @@ function disposeGroundMaterial(mat: Material | null): void {
     }
     // Step 2: 脱离缓存贴图，防止 mat.dispose() 连带释放
     if (mat instanceof PBRMaterial) {
-        if (isCacheOwnedTexture(mat.albedoTexture)) mat.albedoTexture = null;
-        if (isCacheOwnedTexture(mat.metallicTexture)) mat.metallicTexture = null;
+        if (isCacheOwnedTexture(mat.albedoTexture)) {
+            mat.albedoTexture = null;
+        }
+        if (isCacheOwnedTexture(mat.metallicTexture)) {
+            mat.metallicTexture = null;
+        }
     }
     if (mat instanceof StandardMaterial) {
-        if (isCacheOwnedTexture(mat.diffuseTexture)) mat.diffuseTexture = null;
+        if (isCacheOwnedTexture(mat.diffuseTexture)) {
+            mat.diffuseTexture = null;
+        }
     }
     if (mat instanceof PBRMaterial || mat instanceof StandardMaterial) {
-        if (isCacheOwnedTexture(mat.bumpTexture)) mat.bumpTexture = null;
-        if (isCacheOwnedTexture(mat.opacityTexture)) mat.opacityTexture = null;
-        if (isCacheOwnedTexture(mat.reflectionTexture)) mat.reflectionTexture = null;
+        if (isCacheOwnedTexture(mat.bumpTexture)) {
+            mat.bumpTexture = null;
+        }
+        if (isCacheOwnedTexture(mat.opacityTexture)) {
+            mat.opacityTexture = null;
+        }
+        if (isCacheOwnedTexture(mat.reflectionTexture)) {
+            mat.reflectionTexture = null;
+        }
     }
     mat.dispose();
 }

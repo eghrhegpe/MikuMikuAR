@@ -144,8 +144,8 @@ npm run test                   # 或 npx vitest run
 
 | Job | Runner | 性质 | 命令 | 覆盖 |
 |-----|--------|------|------|------|
-| `e2e` | ubuntu-latest | **阻塞门禁** | 起 Vite → `npx playwright test --grep "@dom"` | `@dom` ×25（smoke + 面板全覆盖 + 能力门控） |
-| `e2e-wails` | windows-latest | **非阻塞**（`continue-on-error`） | 起 `wails3 dev`(带 9222) → `npx playwright test --grep "@webgl"` | `@webgl` ×10（模型生命周期 + 动作/换装 + 截图） |
+| `e2e` | ubuntu-latest | **阻塞门禁** | 起 Vite → `npx playwright test --grep "@dom"` | `@dom` ×30（smoke + 面板全覆盖 + 程序化 mesh + 生命周期） |
+| `e2e-wails` | windows-latest | **非阻塞**（`continue-on-error`） | 起 `wails3 dev`(带 9222) → `npx playwright test --grep "@webgl"` | `@webgl` ×11（真实模型加载 + 动作/换装 + 截图管线） |
 | `e2e-web-smoke` | ubuntu-latest | **阻塞门禁** | build + preview dist-web → `npx playwright test --grep "@web"` smoke only | `@web` ×9（首屏 + 能力门控 + 资源加载 + IDB CRUD） |
 | `e2e-web-full` | ubuntu-latest | **非阻塞**（`continue-on-error`） | build + preview dist-web → `npx playwright test --grep "@web"` (全量) | `@web` ×23（含 FSA 授权流 + 下载面板 + 能力声明） |
 
@@ -156,15 +156,36 @@ npm run test                   # 或 npx vitest run
 
 本地复刻 CI 行为即上述「1 / 2」两套命令。本地 `wails3 dev` 就绪时直接套用「3」一次跑全量，最接近 CI 的 `e2e + e2e-wails` 合并结果。
 
+### @webgl 本地开发注意事项
+
+`@webgl` 测试在 CI 上设为非阻塞，但本地开发时仍是验证 3D 集成的核心手段。为减少炸测：
+
+1. **启动前必杀残留 WebView2**：`Get-Process -Name msedgewebview2 -ErrorAction SilentlyContinue | Stop-Process -Force`
+2. **用 `MMCAR_DEBUG_PORT=9222` 而非 `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS`**：Wails v3 会屏蔽后者
+3. **验证端口**：`Invoke-WebRequest http://127.0.0.1:9222/json/version` 返回 JSON 后再跑测
+4. **最简启动脚本**：根目录 `.\start-e2e.ps1` 已内置以上三步
+
 ---
 
-## 7.5. 测试覆盖全景（2026-07-26）
+## 7.5. 测试覆盖全景（2026-07-31 更新）
 
-### @dom — 桌面 DOM 层（vitePage, 25 tests）
+### 两阶段测试策略
+
+本项目采用「**@dom 稳定门禁 + @webgl 可选深度**」的两阶段策略：
+
+| 阶段 | 标签 | 运行环境 | 稳定性 | 用途 |
+|------|------|----------|--------|------|
+| **基础门禁** | `@dom` | vitePage (Chromium → :5173) | ⭐⭐⭐⭐⭐ 稳定 | DOM/UI 回归 + Babylon 程序化逻辑验证 |
+| **深度集成** | `@webgl` | wailsPage (CDP → Wails WebView2 :9222) | ⭐⭐ 易受环境影响 | 真实 PMX 加载、动作播放、换装、截图管线 |
+| **网页入口** | `@web` | vite preview (:4174) | ⭐⭐⭐⭐ 较稳定 | Web 入口能力门控 + IndexedDB CRUD |
+
+**设计意图**：`@dom` 作为**阻塞门禁**（Linux CI），确保 95% 的回归覆盖；`@webgl` 作为**非阻塞**（Windows CI，`continue-on-error`），提供深度集成验证但不阻塞合并。
+
+### @dom — 桌面 DOM 层（vitePage, 30 tests）
 
 | Spec 文件 | 测试数 | 覆盖内容 |
 |-----------|--------|---------|
-| `smoke.spec.ts` | 3 | 首屏 canvas + nav 按钮 + Ctrl+1~5 快捷键切��� |
+| `smoke.spec.ts` | 3 | 首屏 canvas + nav 按钮 + Ctrl+1~5 快捷键切换 |
 | `a11y.spec.ts` | 1 | axe-core WCAG 无障碍扫描 |
 | `library-panel-dom.spec.ts` | 3 | 模型库按钮渲染 + 首次提示 + 关闭重开 |
 | `motion-panel-dom.spec.ts` | 3 | 动作弹窗标题/区段 + 相机模式交互 + 返回 |
@@ -178,16 +199,22 @@ npm run test                   # 或 npx vitest run
 | `env-cloud-dom.spec.ts` | 2 | 体积云参数滑块 + 光照区段 |
 | `settings-theme-lang-dom.spec.ts` | 7 | 主题/外观 + 路径 + 性能 + 渲染 + 音频 + 完整性 |
 | `desktop-capabilities-dom.spec.ts` | 6 | nav 全集 + 相机入口 + 导入/重扫 + library/paths 区段 |
+| `model-load.spec.ts` (DOM 部分) | 2 | createTestMesh + clearTestMeshes 程序化 mesh 生命周期 |
+| `export-screenshot.spec.ts` (DOM 部分) | 1 | 设置面板「截图」入口 DOM 断言 |
+| `model-lifecycle-webgl.spec.ts` (DOM 部分) | 2 | 程序化 mesh 生命周期 + removeActiveModel 空场景安全调用 |
 
-### @webgl — 桌面 3D 集成（wailsPage/CDP, 10 tests）
+### @webgl — 桌面 3D 集成（wailsPage/CDP, 11 tests）
 
 | Spec 文件 | 测试数 | 覆盖内容 |
 |-----------|--------|---------|
-| `model-load.spec.ts` | 3 | meshCount + 确定性加载 + seed model |
-| `action-play.spec.ts` | 2 | 动作切换 + 换装变体 |
-| `export-screenshot.spec.ts` | 2 | 截图 dataURL + 菜单入口 |
-| `env-sky.spec.ts` (WebGL 部分) | 2 | 夜景预设 + 截图基线 |
-| `model-lifecycle-webgl.spec.ts` | 3 | 加载→删除→重加载完整生命周期 |
+| `model-load.spec.ts` (WebGL 部分) | 3 | 真实 PMX 加载 meshCount + FPS + 确定性加载 |
+| `action-play.spec.ts` | 2 | 动作切换 + 换装变体（需带动作/换装的模型） |
+| `export-screenshot.spec.ts` (WebGL 部分) | 1 | __scene.capture() Babylon→PNG 管线 |
+| `env-sky.spec.ts` (WebGL 部分) | 2 | 夜景预设渲染 + 截图基线比对 |
+| `model-lifecycle-webgl.spec.ts` (WebGL 部分) | 3 | 真实模型加载→删除→重加载 + modelManager 状态验证 |
+
+> **注意**：`@webgl` 测试需要 Windows + Wails v3 + WebView2，且依赖本地模型库配置。
+> 若 `wails3 dev` 未启动或 CDP 端口未开，这些测试会快速失败并出现在报告中，**不会阻塞合并**。
 
 ### @web — 网页端全量（vite preview 4174, 23 tests）
 

@@ -288,7 +288,9 @@ describe('ADR-120 分类预设', () => {
         });
 
         it('数组字段是拷贝（修改原 state 不影响 preset）', () => {
-            const state = createMockEnvState({ skyColorTop: [1, 0, 0] }) as unknown as FrontendEnvState;
+            const state = createMockEnvState({
+                skyColorTop: [1, 0, 0],
+            }) as unknown as FrontendEnvState;
             const preset = snapshotEnvPresetByCategory('红天', 'env:sky', state);
             expect(preset.fields.skyColorTop).toEqual([1, 0, 0]);
             // 修改原 state

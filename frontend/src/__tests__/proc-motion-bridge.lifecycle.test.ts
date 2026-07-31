@@ -23,7 +23,9 @@ vi.mock('../scene/motion/perception', () => mockPerception(mockState));
 vi.mock('../scene/motion/motion-intent', () => mockMotionIntent(mockState));
 vi.mock('../motion-algos/beat-detector', () => mockBeatDetector(mockState));
 vi.mock('../motion-algos/proc-motion-idle', () => ({ generateIdleVmd: () => new ArrayBuffer(0) }));
-vi.mock('../motion-algos/proc-motion-autodance', () => ({ generateAutoDanceVmd: () => new ArrayBuffer(0) }));
+vi.mock('../motion-algos/proc-motion-autodance', () => ({
+    generateAutoDanceVmd: () => new ArrayBuffer(0),
+}));
 
 type Sut = typeof import('../scene/motion/proc-motion-bridge');
 let sut: Sut;

@@ -13,11 +13,7 @@ import {
     MockMatrix,
     MockStandardMaterial,
 } from './mocks/babylon-classes';
-import {
-    mockScene,
-    mockMathColor,
-    mockStandardMaterial,
-} from './mocks/babylon-factories';
+import { mockScene, mockMathColor, mockStandardMaterial } from './mocks/babylon-factories';
 
 // ---- vi.mock factories (passed by reference into each split file's vi.mock) ----
 

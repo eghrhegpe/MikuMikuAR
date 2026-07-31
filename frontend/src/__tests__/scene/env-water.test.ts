@@ -246,12 +246,14 @@ describe('Water 预设 — 扩展参数进入 envState', () => {
 describe('Water 小波开关 — smallWaveEnabled 门控 shader 振幅', () => {
     function captureSmallWave(state: Partial<typeof envState>): number | undefined {
         const calls: Array<[string, number]> = [];
-        const spy = vi
-            .spyOn(ShaderMaterial.prototype, 'setFloat')
-            .mockImplementation(function (this: ShaderMaterial, name: string, value: number) {
-                calls.push([name, value]);
-                return this;
-            });
+        const spy = vi.spyOn(ShaderMaterial.prototype, 'setFloat').mockImplementation(function (
+            this: ShaderMaterial,
+            name: string,
+            value: number
+        ) {
+            calls.push([name, value]);
+            return this;
+        });
         try {
             createWater(makeWaterState({ waterLevel: 0, smallWaveHeight: 1.0, ...state }));
         } finally {
@@ -274,12 +276,14 @@ describe('Water 小波开关 — smallWaveEnabled 门控 shader 振幅', () => {
         const s = makeWaterState({ waterLevel: 0, smallWaveHeight: 0.8 });
         delete (s as Record<string, unknown>).smallWaveEnabled;
         const calls: Array<[string, number]> = [];
-        const spy = vi
-            .spyOn(ShaderMaterial.prototype, 'setFloat')
-            .mockImplementation(function (this: ShaderMaterial, name: string, value: number) {
-                calls.push([name, value]);
-                return this;
-            });
+        const spy = vi.spyOn(ShaderMaterial.prototype, 'setFloat').mockImplementation(function (
+            this: ShaderMaterial,
+            name: string,
+            value: number
+        ) {
+            calls.push([name, value]);
+            return this;
+        });
         try {
             createWater(s);
         } finally {
@@ -295,12 +299,14 @@ describe('Water 大波/焦散开关 — enabled 门控 shader uniform', () => {
     // 捕获 createWater 内 _syncWaterUniforms 对指定 uniform 的最后一次写入
     function captureUniform(uniform: string, state: Partial<typeof envState>): number | undefined {
         const calls: Array<[string, number]> = [];
-        const spy = vi
-            .spyOn(ShaderMaterial.prototype, 'setFloat')
-            .mockImplementation(function (this: ShaderMaterial, name: string, value: number) {
-                calls.push([name, value]);
-                return this;
-            });
+        const spy = vi.spyOn(ShaderMaterial.prototype, 'setFloat').mockImplementation(function (
+            this: ShaderMaterial,
+            name: string,
+            value: number
+        ) {
+            calls.push([name, value]);
+            return this;
+        });
         try {
             createWater(makeWaterState({ waterLevel: 0, ...state }));
         } finally {
@@ -310,19 +316,27 @@ describe('Water 大波/焦散开关 — enabled 门控 shader uniform', () => {
     }
 
     it('bigWaveEnabled=true 时 bigWaveHeight 送原振幅', () => {
-        expect(captureUniform('bigWaveHeight', { bigWaveEnabled: true, bigWaveHeight: 1.0 })).toBe(1.0);
+        expect(captureUniform('bigWaveHeight', { bigWaveEnabled: true, bigWaveHeight: 1.0 })).toBe(
+            1.0
+        );
     });
 
     it('bigWaveEnabled=false 时 bigWaveHeight 送 0', () => {
-        expect(captureUniform('bigWaveHeight', { bigWaveEnabled: false, bigWaveHeight: 1.0 })).toBe(0);
+        expect(captureUniform('bigWaveHeight', { bigWaveEnabled: false, bigWaveHeight: 1.0 })).toBe(
+            0
+        );
     });
 
     it('causticEnabled=true 时 uCausticIntensity 送原强度', () => {
-        expect(captureUniform('uCausticIntensity', { causticEnabled: true, causticIntensity: 0.3 })).toBe(0.3);
+        expect(
+            captureUniform('uCausticIntensity', { causticEnabled: true, causticIntensity: 0.3 })
+        ).toBe(0.3);
     });
 
     it('causticEnabled=false 时 uCausticIntensity 送 0', () => {
-        expect(captureUniform('uCausticIntensity', { causticEnabled: false, causticIntensity: 0.3 })).toBe(0);
+        expect(
+            captureUniform('uCausticIntensity', { causticEnabled: false, causticIntensity: 0.3 })
+        ).toBe(0);
     });
 
     // ADR-217: 地水无限尺寸单源 — 水面地平线淡出距离据 effectiveGroundSize 派生
@@ -514,7 +528,9 @@ describe('Water Underwater — 相机入水触发过渡', () => {
         const pipeline = makePipelineStub();
         scene.deltaTime = 16.67; // ~60fps，使过渡进度递增
         // 过渡速度 0.8s，每帧步进 ≈ 0.0208，30 帧 ≈ 0.625 足以验证 density > 0
-        for (let i = 0; i < 30; i++) updateUnderwaterTransition(scene, pipeline);
+        for (let i = 0; i < 30; i++) {
+            updateUnderwaterTransition(scene, pipeline);
+        }
 
         expect(pipeline.imageProcessing.colorCurvesEnabled).toBe(true);
         expect(pipeline.imageProcessing.colorCurves).not.toBeNull();
@@ -525,7 +541,9 @@ describe('Water Underwater — 相机入水触发过渡', () => {
         camera.position.set(0, 5, 10);
         camera.computeWorldMatrix();
         // 出水需 ≥48 帧（过渡速度 0.8s ÷ 16.67ms/帧），用 55 帧保证 _underwaterActive 被完全重置
-        for (let i = 0; i < 55; i++) updateUnderwaterTransition(scene, pipeline);
+        for (let i = 0; i < 55; i++) {
+            updateUnderwaterTransition(scene, pipeline);
+        }
         expect(pipeline.imageProcessing.colorCurvesEnabled).toBe(false);
         expect(pipeline.imageProcessing.colorCurves.globalDensity).toBe(0);
     });
@@ -538,12 +556,8 @@ describe('Water Underwater — 相机入水触发过渡', () => {
 describe('Water 开关材质守卫 — 材质不存在时拨开关不崩', () => {
     it('setUnderwaterFog 在材质为 null 时安全早返回（水下雾写入路径）', () => {
         expect(_envSys.water.material).toBeNull();
-        expect(() =>
-            setUnderwaterFog(true, new Color3(0.2, 0.4, 0.6), 40, 500)
-        ).not.toThrow();
-        expect(() =>
-            setUnderwaterFog(false, new Color3(0.5, 0.52, 0.62), 40, 500)
-        ).not.toThrow();
+        expect(() => setUnderwaterFog(true, new Color3(0.2, 0.4, 0.6), 40, 500)).not.toThrow();
+        expect(() => setUnderwaterFog(false, new Color3(0.5, 0.52, 0.62), 40, 500)).not.toThrow();
     });
 
     it('underwaterEnabled 拨动时 updateUnderwaterTransition 不触碰材质、不崩', () => {

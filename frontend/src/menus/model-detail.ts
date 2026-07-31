@@ -16,7 +16,11 @@ import { showInfoToast } from '../core/toast';
 import { modelManager } from '../scene/scene';
 import { getModelMorphs, setModelMorphWeight, resetModelMorphs } from '../scene/manager/model-ops';
 import { removeModel } from '../scene/manager/model-ops';
-import { buildTransformCard, buildAttachmentCard, type ResourceHandle } from './resource-detail-helpers';
+import {
+    buildTransformCard,
+    buildAttachmentCard,
+    type ResourceHandle,
+} from './resource-detail-helpers';
 import { buildMatRootLevel } from './model-material';
 import { createIconifyIcon, softwareKindIcon } from '../core/icons';
 import { getCachedCapabilities } from '../core/backend';
@@ -492,7 +496,8 @@ export function buildMotionSlotLevel(id: string, inst: ModelInstance): PopupLeve
                 for (const procId of loadedProc) {
                     if (procId === 'none') {
                         // “无动作”= 取消程序化，回到 inherit
-                        const isNoneActive = slots0.primary.source === 'inherit' && !slots0.primary.sceneMotionId;
+                        const isNoneActive =
+                            slots0.primary.source === 'inherit' && !slots0.primary.sceneMotionId;
                         slideRow(
                             c,
                             'lucide:circle-slash',
@@ -509,7 +514,8 @@ export function buildMotionSlotLevel(id: string, inst: ModelInstance): PopupLeve
                     } else {
                         // idle / autodance
                         const isActive =
-                            slots0.primary.source === 'procedural' && slots0.primary.procRole === procId;
+                            slots0.primary.source === 'procedural' &&
+                            slots0.primary.procRole === procId;
                         const row = slideRow(
                             c,
                             'lucide:wand-sparkles',

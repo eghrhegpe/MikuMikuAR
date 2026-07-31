@@ -1,19 +1,44 @@
 // model-preset.stopvmd.test.ts — stopVMD（拆自 model-preset.test.ts）
 import { describe, it, expect, beforeEach, beforeAll, vi } from 'vitest';
-import { mockEngine, mockScene, mockNode, mockLight, mockHemisphericLight, mockDirectionalLight, mockArcRotateCamera, mockCamera, mockMathColor, mockMathVector, mockStandardMaterial, mockMaterial, mockMesh, mockPostProcess, mockSceneLoader, mockDefaultRenderingPipeline, mockPhysicsEngineComponent, mockTgaTextureLoader, mockMmdCamera, mockMmdDynamic, mockDxBmpTextureLoader, mockMmdWasmInstance, mockSinglePhysicsRelease, mockMmdWasmRuntime, mockVmdLoader, mockMmdWasmAnimation, mockMmdWasmRuntimeModelAnimation, mockMmdStandardMaterialProxy, mockMmdRuntimeShared, mockMmdModelLoaderDefault, mockTextureAlphaCheckerVertex, mockTextureAlphaCheckerFragment, mockToast, mockPlayback } from './model-preset-mocks';
+import {
+    mockEngine,
+    mockScene,
+    mockNode,
+    mockLight,
+    mockHemisphericLight,
+    mockDirectionalLight,
+    mockArcRotateCamera,
+    mockCamera,
+    mockMathColor,
+    mockMathVector,
+    mockStandardMaterial,
+    mockMaterial,
+    mockMesh,
+    mockPostProcess,
+    mockSceneLoader,
+    mockDefaultRenderingPipeline,
+    mockPhysicsEngineComponent,
+    mockTgaTextureLoader,
+    mockMmdCamera,
+    mockMmdDynamic,
+    mockDxBmpTextureLoader,
+    mockMmdWasmInstance,
+    mockSinglePhysicsRelease,
+    mockMmdWasmRuntime,
+    mockVmdLoader,
+    mockMmdWasmAnimation,
+    mockMmdWasmRuntimeModelAnimation,
+    mockMmdStandardMaterialProxy,
+    mockMmdRuntimeShared,
+    mockMmdModelLoaderDefault,
+    mockTextureAlphaCheckerVertex,
+    mockTextureAlphaCheckerFragment,
+    mockToast,
+    mockPlayback,
+} from './model-preset-mocks';
 import { stopVMD } from '../scene/scene';
-import {
-    modelRegistry,
-    setMmdRuntime,
-    setIsPlaying,
-    isPlaying,
-    mmdRuntime,
-} from '../core/config';
-import {
-    modelPresetBeforeEach,
-    setupDomRefs,
-    createModel,
-} from './model-preset-helpers';
+import { modelRegistry, setMmdRuntime, setIsPlaying, isPlaying, mmdRuntime } from '../core/config';
+import { modelPresetBeforeEach, setupDomRefs, createModel } from './model-preset-helpers';
 
 vi.hoisted(() => {
     const ids = [
@@ -57,12 +82,13 @@ vi.mock('@babylonjs/core/Materials/material', () => mockMaterial());
 vi.mock('@babylonjs/core/Meshes/mesh', () => mockMesh());
 vi.mock('@babylonjs/core/PostProcesses/postProcess', () => mockPostProcess());
 vi.mock('@babylonjs/core/Loading/sceneLoader', () => mockSceneLoader());
-vi.mock(
-    '@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline',
-    () => mockDefaultRenderingPipeline()
+vi.mock('@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline', () =>
+    mockDefaultRenderingPipeline()
 );
 vi.mock('@babylonjs/core/Physics/v2/physicsEngineComponent', () => mockPhysicsEngineComponent());
-vi.mock('@babylonjs/core/Materials/Textures/Loaders/tgaTextureLoader', () => mockTgaTextureLoader());
+vi.mock('@babylonjs/core/Materials/Textures/Loaders/tgaTextureLoader', () =>
+    mockTgaTextureLoader()
+);
 vi.mock('babylon-mmd/esm/Runtime/mmdCamera', () => mockMmdCamera());
 vi.mock('babylon-mmd/esm/Loader/dynamic', () => mockMmdDynamic());
 vi.mock('babylon-mmd/esm/Loader/registerDxBmpTextureLoader', () => mockDxBmpTextureLoader());
@@ -75,9 +101,8 @@ vi.mock('babylon-mmd/esm/Loader/vmdLoader', () => mockVmdLoader());
 vi.mock('babylon-mmd/esm/Runtime/Optimized/Animation/mmdWasmAnimation', () =>
     mockMmdWasmAnimation()
 );
-vi.mock(
-    'babylon-mmd/esm/Runtime/Optimized/Animation/mmdWasmRuntimeModelAnimation',
-    () => mockMmdWasmRuntimeModelAnimation()
+vi.mock('babylon-mmd/esm/Runtime/Optimized/Animation/mmdWasmRuntimeModelAnimation', () =>
+    mockMmdWasmRuntimeModelAnimation()
 );
 vi.mock('babylon-mmd/esm/Runtime/mmdStandardMaterialProxy', () => mockMmdStandardMaterialProxy());
 vi.mock('babylon-mmd/esm/Runtime/mmdRuntimeShared', () => mockMmdRuntimeShared());

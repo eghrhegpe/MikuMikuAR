@@ -3,11 +3,7 @@
 // Depends on libraryRoot/overridePaths state, so it lives in the library subsystem.
 
 import { libraryRoot, overridePaths } from '@/core/state';
-import {
-    normPath,
-    isUnderRoot,
-    computeLibraryRef as _pureComputeLibraryRef,
-} from '@/core/path';
+import { normPath, isUnderRoot, computeLibraryRef as _pureComputeLibraryRef } from '@/core/path';
 import { logWarn } from '@/core/logger';
 
 /** Backwards-compatible wrapper: reads libraryRoot and delegates to the pure path leaf. */

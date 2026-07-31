@@ -2,11 +2,7 @@
 // 依赖 Web Speech API（mock），验证情绪映射、朗读逻辑。
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import {
-    isSpeechSupported,
-    cancelSpeech,
-    speakLines,
-} from '../dialogue-speech';
+import { isSpeechSupported, cancelSpeech, speakLines } from '../dialogue-speech';
 
 // ── 模拟 SpeechSynthesis ──────────────────────────────────────────
 const mockSpeak = vi.fn();
@@ -36,7 +32,8 @@ beforeEach(() => {
         configurable: true,
     });
     // speakLines 中直接 new SpeechSynthesisUtterance()，需挂全局
-    globalThis.SpeechSynthesisUtterance = mockUtterance as unknown as typeof SpeechSynthesisUtterance;
+    globalThis.SpeechSynthesisUtterance =
+        mockUtterance as unknown as typeof SpeechSynthesisUtterance;
 });
 
 afterEach(() => {

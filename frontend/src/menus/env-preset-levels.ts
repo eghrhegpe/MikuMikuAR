@@ -80,9 +80,9 @@ function renderCategorizedPresets(
                         )) ?? [];
                     return entries
                         .filter((e) => {
-                        const resolved = LEGACY_CATEGORY_MAP[e.category] ?? e.category;
-                        return (resolved || 'env:sky') === category;
-                    })
+                            const resolved = LEGACY_CATEGORY_MAP[e.category] ?? e.category;
+                            return (resolved || 'env:sky') === category;
+                        })
                         .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
                 },
                 onApply: async (e) => {

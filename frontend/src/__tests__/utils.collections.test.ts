@@ -1,11 +1,6 @@
 // [doc:adr-101] P3 工具函数单测：pure collection & json helpers
 import { describe, it, expect } from 'vitest';
-import {
-    ensureArray,
-    filterKeys,
-    Cache,
-    allSettledFilter,
-} from '../core/collections';
+import { ensureArray, filterKeys, Cache, allSettledFilter } from '../core/collections';
 import { jsonStringify, jsonParse } from '../core/json-stringify';
 
 describe('ADR-101 P3: pure collection & json helpers', () => {

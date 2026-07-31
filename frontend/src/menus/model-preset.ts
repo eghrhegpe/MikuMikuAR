@@ -1,11 +1,6 @@
 // [doc:architecture] Model Preset — 预设序列化/库管理/自动应用
 
-import {
-    modelRegistry,
-    PopupLevel,
-    stackRegistry,
-    isPlaying,
-} from '../core/config';
+import { modelRegistry, PopupLevel, stackRegistry, isPlaying } from '../core/config';
 import { computeLibraryRef } from '../library/library-path';
 import { escapeHtml } from '../core/escape-html';
 import { feedbackInfo, feedbackStatus } from '../core/feedback';

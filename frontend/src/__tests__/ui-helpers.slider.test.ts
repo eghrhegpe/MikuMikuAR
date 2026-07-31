@@ -7,10 +7,7 @@ vi.mock('../core/icons', () => ({
 }));
 
 import { createIconifyIcon } from '../core/icons';
-import {
-    addSliderRow,
-    sliderRow as sliderRowFn,
-} from '../core/ui-helpers';
+import { addSliderRow, sliderRow as sliderRowFn } from '../core/ui-helpers';
 import { addColorSliderRow, addVector3SliderRow, addModeSlider } from '../core/ui-advanced-rows';
 
 const mockIconify = vi.mocked(createIconifyIcon);

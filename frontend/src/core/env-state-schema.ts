@@ -345,7 +345,15 @@ export type EnvStateSchema = typeof ENV_STATE_SCHEMA;
 
 /** 已定义的 dispatch 分组名称 */
 export type EnvDispatchGroup =
-    'sky' | 'ground' | 'fog' | 'water' | 'particle' | 'cloud' | 'reflection' | 'mirror' | 'collision';
+    | 'sky'
+    | 'ground'
+    | 'fog'
+    | 'water'
+    | 'particle'
+    | 'cloud'
+    | 'reflection'
+    | 'mirror'
+    | 'collision';
 
 const _groupCache = new Map<string, string[]>();
 

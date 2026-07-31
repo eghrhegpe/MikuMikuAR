@@ -90,24 +90,24 @@ describe('validateAiConfig', () => {
 describe('classifyAiError', () => {
     it.each([
         // [message, corsRisk, expected]
-        ['CORS error',              'none',     'cors'],
+        ['CORS error', 'none', 'cors'],
         ['Access-Control-Allow-Origin', 'none', 'cors'],
-        ['Failed to fetch',         'none',     'cors'],
-        ['401 Unauthorized',        'none',     'unauthorized'],
-        ['invalid authentication',  'none',     'unauthorized'],
-        ['Incorrect API key',       'none',     'unauthorized'],
-        ['404 Not Found',           'none',     'notFound'],
-        ['model not found',         'none',     'notFound'],
-        ['429 Too Many Requests',   'none',     'rateLimit'],
-        ['rate limit exceeded',     'none',     'rateLimit'],
-        ['500 Internal Server Error', 'none',  'server'],
-        ['502 Bad Gateway',         'none',     'server'],
-        ['503 Service Unavailable', 'none',     'server'],
-        ['dial tcp 127.0.0.1:11434','none',     'network'],
-        ['connection refused',      'none',     'network'],
-        ['ERR_CONNECTION_REFUSED',  'none',     'network'],
-        ['etimedout',               'none',     'network'],
-        ['some random error',       'none',     'unknown'],
+        ['Failed to fetch', 'none', 'cors'],
+        ['401 Unauthorized', 'none', 'unauthorized'],
+        ['invalid authentication', 'none', 'unauthorized'],
+        ['Incorrect API key', 'none', 'unauthorized'],
+        ['404 Not Found', 'none', 'notFound'],
+        ['model not found', 'none', 'notFound'],
+        ['429 Too Many Requests', 'none', 'rateLimit'],
+        ['rate limit exceeded', 'none', 'rateLimit'],
+        ['500 Internal Server Error', 'none', 'server'],
+        ['502 Bad Gateway', 'none', 'server'],
+        ['503 Service Unavailable', 'none', 'server'],
+        ['dial tcp 127.0.0.1:11434', 'none', 'network'],
+        ['connection refused', 'none', 'network'],
+        ['ERR_CONNECTION_REFUSED', 'none', 'network'],
+        ['etimedout', 'none', 'network'],
+        ['some random error', 'none', 'unknown'],
     ])('消息 "%s" corsRisk=%s → %s', (msg, risk, expected) => {
         expect(classifyAiError(msg, risk as 'none' | 'possible' | 'high')).toBe(expected);
     });
@@ -200,6 +200,8 @@ describe('DEFAULT_AI_CONFIG', () => {
         expect(DEFAULT_AI_CONFIG.provider).toBe('ollama');
         expect(DEFAULT_AI_CONFIG.apiKey).toBe('');
         expect(DEFAULT_AI_CONFIG.timeoutMs).toBe(DEFAULT_TIMEOUT_MS);
-        expect(DEFAULT_AI_CONFIG.relayUrl).toBe('https://mikumikuar-ai-relay.mikumikuar-app.workers.dev');
+        expect(DEFAULT_AI_CONFIG.relayUrl).toBe(
+            'https://mikumikuar-ai-relay.mikumikuar-app.workers.dev'
+        );
     });
 });

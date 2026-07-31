@@ -7,12 +7,7 @@ vi.mock('../core/icons', () => ({
 }));
 
 import { createIconifyIcon } from '../core/icons';
-import {
-    addCollapsible,
-    addPresetChip,
-    addSectionTitle,
-    addModeRow,
-} from '../core/ui-helpers';
+import { addCollapsible, addPresetChip, addSectionTitle, addModeRow } from '../core/ui-helpers';
 
 const mockIconify = vi.mocked(createIconifyIcon);
 

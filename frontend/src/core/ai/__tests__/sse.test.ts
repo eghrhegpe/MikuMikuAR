@@ -41,7 +41,7 @@ describe('parseSseStream', () => {
     it('多行文本块按序拼接', async () => {
         const stream = toStream(
             'data: {"choices":[{"delta":{"content":"Hello"}}]}\n\n' +
-            'data: {"choices":[{"delta":{"content":" World"}}]}\n\n'
+                'data: {"choices":[{"delta":{"content":" World"}}]}\n\n'
         );
         const chunks = await collect(parseSseStream(stream));
         expect(chunks).toHaveLength(3);
@@ -52,9 +52,7 @@ describe('parseSseStream', () => {
 
     it('分块传输（chunk 边界不在行尾）', async () => {
         const encoder = new TextEncoder();
-        const bytes = encoder.encode(
-            'data: {"choices":[{"delta":{"content":"Hello World"}}]}\n\n'
-        );
+        const bytes = encoder.encode('data: {"choices":[{"delta":{"content":"Hello World"}}]}\n\n');
         const half = Math.ceil(bytes.length / 2);
         const stream = new ReadableStream({
             start(controller) {
@@ -73,8 +71,7 @@ describe('parseSseStream', () => {
 
     it('data: [DONE] 终止流', async () => {
         const stream = toStream(
-            'data: {"choices":[{"delta":{"content":"Hi"}}]}\n\n' +
-            'data: [DONE]\n'
+            'data: {"choices":[{"delta":{"content":"Hi"}}]}\n\n' + 'data: [DONE]\n'
         );
         const chunks = await collect(parseSseStream(stream));
         expect(chunks).toHaveLength(2);
@@ -87,8 +84,8 @@ describe('parseSseStream', () => {
     it('tool_calls 增量聚合后 flush', async () => {
         const stream = toStream(
             'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call_1","function":{"name":"get_weather","arguments":""}}]}}]}\n\n' +
-            'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"arguments":"{\\"city\\":\\"北京\\"}"}}]}}]}\n\n' +
-            'data: {"choices":[{"finish_reason":"tool_calls","delta":{}}]}\n\n'
+                'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"arguments":"{\\"city\\":\\"北京\\"}"}}]}}]}\n\n' +
+                'data: {"choices":[{"finish_reason":"tool_calls","delta":{}}]}\n\n'
         );
         const chunks = await collect(parseSseStream(stream));
         expect(chunks).toHaveLength(2);
@@ -104,10 +101,10 @@ describe('parseSseStream', () => {
     it('多个 tool_calls 并行聚合', async () => {
         const stream = toStream(
             'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call_a","function":{"name":"fn_a","arguments":""}}]}}]}\n\n' +
-            'data: {"choices":[{"delta":{"tool_calls":[{"index":1,"id":"call_b","function":{"name":"fn_b","arguments":""}}]}}]}\n\n' +
-            'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"arguments":"{}"}}]}}]}\n\n' +
-            'data: {"choices":[{"delta":{"tool_calls":[{"index":1,"function":{"arguments":"{\\"x\\":1}"}}]}}]}\n\n' +
-            'data: {"choices":[{"finish_reason":"tool_calls","delta":{}}]}\n\n'
+                'data: {"choices":[{"delta":{"tool_calls":[{"index":1,"id":"call_b","function":{"name":"fn_b","arguments":""}}]}}]}\n\n' +
+                'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"arguments":"{}"}}]}}]}\n\n' +
+                'data: {"choices":[{"delta":{"tool_calls":[{"index":1,"function":{"arguments":"{\\"x\\":1}"}}]}}]}\n\n' +
+                'data: {"choices":[{"finish_reason":"tool_calls","delta":{}}]}\n\n'
         );
         const chunks = await collect(parseSseStream(stream));
         // 按 index 顺序 emit
@@ -136,8 +133,7 @@ describe('parseSseStream', () => {
 
     it('跳过注释行', async () => {
         const stream = toStream(
-            ':comment line\n\n' +
-            'data: {"choices":[{"delta":{"content":"ok"}}]}\n\n'
+            ':comment line\n\n' + 'data: {"choices":[{"delta":{"content":"ok"}}]}\n\n'
         );
         const chunks = await collect(parseSseStream(stream));
         expect(chunks).toHaveLength(2);
@@ -147,10 +143,7 @@ describe('parseSseStream', () => {
     // ── 空行跳过 ──
 
     it('空行/空白行跳过', async () => {
-        const stream = toStream(
-            '\n   \n' +
-            'data: {"choices":[{"delta":{"content":"x"}}]}\n\n'
-        );
+        const stream = toStream('\n   \n' + 'data: {"choices":[{"delta":{"content":"x"}}]}\n\n');
         const chunks = await collect(parseSseStream(stream));
         expect(chunks).toHaveLength(2);
     });
@@ -168,7 +161,9 @@ describe('parseSseStream', () => {
     // ── 畸形 JSON 回退 ──
 
     it('畸形 JSON 回退为文本（catch 降级）', async () => {
-        const stream = toStream('data: {invalid}\n\ndata: {"choices":[{"delta":{"content":"ok"}}]}\n\n');
+        const stream = toStream(
+            'data: {invalid}\n\ndata: {"choices":[{"delta":{"content":"ok"}}]}\n\n'
+        );
         const chunks = await collect(parseSseStream(stream));
         // 第一条 JSON.parse 失败 → catch 降级为纯文本
         expect(chunks[0]).toEqual({ type: 'text', content: '{invalid}' });
@@ -202,7 +197,11 @@ describe('parseSseStream', () => {
             pull(controller) {
                 readCount++;
                 if (readCount === 1) {
-                    controller.enqueue(new TextEncoder().encode('data: {"choices":[{"delta":{"content":"a"}}]}\n\n'));
+                    controller.enqueue(
+                        new TextEncoder().encode(
+                            'data: {"choices":[{"delta":{"content":"a"}}]}\n\n'
+                        )
+                    );
                 } else {
                     throw err;
                 }
@@ -221,9 +220,7 @@ describe('parseSseStream', () => {
     });
 
     it('reader.read() 抛出普通 Error → yield error 块', async () => {
-        const stream = streamThatThrowsAfterFirstChunk(
-            new Error('stream corrupted')
-        );
+        const stream = streamThatThrowsAfterFirstChunk(new Error('stream corrupted'));
         const chunks = await collect(parseSseStream(stream));
         expect(chunks).toHaveLength(2);
         expect(chunks[0]).toEqual({ type: 'text', content: 'a' });

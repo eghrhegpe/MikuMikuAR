@@ -4,10 +4,7 @@ import { Matrix, Vector3 } from '@babylonjs/core/Maths/math.vector';
 import type { Scene } from '@babylonjs/core/scene';
 import type { IMmdModel } from 'babylon-mmd/esm/Runtime/IMmdModel';
 import type { MmdWasmRuntime } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime';
-import {
-    defaultVirtualSkirtConfig,
-    type VirtualSkirtConfig,
-} from '../scene/physics/virtual-skirt';
+import { defaultVirtualSkirtConfig, type VirtualSkirtConfig } from '../scene/physics/virtual-skirt';
 
 export { Matrix, Vector3 };
 

@@ -82,7 +82,10 @@ export function isUnderRoot(base: string, child: string): boolean {
  * 返回的 ref 保留 filePath 的原始大小写，确保标签匹配不受影响。
  * 不自动读取 libraryRoot——由调用方传入，保证零依赖叶约束。
  */
-export function computeLibraryRef(filePath: string, root: string | null | undefined): string | null {
+export function computeLibraryRef(
+    filePath: string,
+    root: string | null | undefined
+): string | null {
     if (!root) {
         return null;
     }

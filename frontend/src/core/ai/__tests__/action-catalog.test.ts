@@ -68,9 +68,7 @@ describe('buildToolSchemas', () => {
             id: 'test:enum',
             label: '枚举测试',
             domain: 'scene',
-            params: [
-                { name: 'mode', type: 'enum', enum: ['a', 'b', 'c'] },
-            ],
+            params: [{ name: 'mode', type: 'enum', enum: ['a', 'b', 'c'] }],
             execute: () => {},
         });
         const schemas = buildToolSchemas();

@@ -10,16 +10,30 @@ const mmState = vi.hoisted(() => {
     return {
         _applied,
         modelManager: {
-            setVisibility: vi.fn((id: string, v: unknown) => { _applied.push({ visible: v }); }),
-            setOpacity: vi.fn((id: string, v: unknown) => { _applied.push({ opacity: v }); }),
-            setWireframe: vi.fn((id: string, v: unknown) => { _applied.push({ wireframe: v }); }),
+            setVisibility: vi.fn((id: string, v: unknown) => {
+                _applied.push({ visible: v });
+            }),
+            setOpacity: vi.fn((id: string, v: unknown) => {
+                _applied.push({ opacity: v });
+            }),
+            setWireframe: vi.fn((id: string, v: unknown) => {
+                _applied.push({ wireframe: v });
+            }),
             setBoneLinesVis: vi.fn(),
             setBoneJointsVis: vi.fn(),
-            setPhysics: vi.fn((id: string, v: unknown) => { _applied.push({ physicsEnabled: v }); }),
-            setScaling: vi.fn((id: string, v: unknown) => { _applied.push({ scaling: v }); }),
+            setPhysics: vi.fn((id: string, v: unknown) => {
+                _applied.push({ physicsEnabled: v });
+            }),
+            setScaling: vi.fn((id: string, v: unknown) => {
+                _applied.push({ scaling: v });
+            }),
             setRotation: vi.fn(),
-            setPosition: vi.fn((id: string, x: number, y: number, z: number) => { _applied.push({ position: [x, y, z] }); }),
-            setOrbit: vi.fn((id: string, az: number, el: number, dist: number) => { _applied.push({ orbit: [az, el, dist] }); }),
+            setPosition: vi.fn((id: string, x: number, y: number, z: number) => {
+                _applied.push({ position: [x, y, z] });
+            }),
+            setOrbit: vi.fn((id: string, az: number, el: number, dist: number) => {
+                _applied.push({ orbit: [az, el, dist] });
+            }),
             setPositionMode: vi.fn(),
             getMorphs: vi.fn(() => [{ name: '笑い', type: 0 }]),
         },

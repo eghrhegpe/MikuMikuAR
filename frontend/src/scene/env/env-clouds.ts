@@ -759,14 +759,20 @@ export function createClouds(state: EnvState): void {
             // slider and making clouds stop responding to sun past ~0.2.
             const brightness = Math.max(0.02, Math.min(1.5, dl.intensity * 1.5));
             mat.setFloat('brightness', brightness);
-            mat.setFloat('skyBrightness', (state.skyBrightness ?? 1) * (state.globalBrightness ?? 1));
+            mat.setFloat(
+                'skyBrightness',
+                (state.skyBrightness ?? 1) * (state.globalBrightness ?? 1)
+            );
         } else {
             mat.setVector3('sceneLightDir', new Vector3(-0.4, -1.0, -0.3));
             mat.setColor3('sceneLightColor', new Color3(1, 0.98, 0.92));
             mat.setVector3('sunDir', new Vector3(-0.4, -1.0, -0.3));
             mat.setColor3('cloudColor', new Color3(1, 0.98, 0.92));
             mat.setFloat('brightness', 1.0);
-            mat.setFloat('skyBrightness', (state.skyBrightness ?? 1) * (state.globalBrightness ?? 1));
+            mat.setFloat(
+                'skyBrightness',
+                (state.skyBrightness ?? 1) * (state.globalBrightness ?? 1)
+            );
         }
         mat.setColor3(
             'sceneFogColor',

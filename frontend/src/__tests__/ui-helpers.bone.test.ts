@@ -7,11 +7,7 @@ vi.mock('../core/icons', () => ({
 }));
 
 import { createIconifyIcon } from '../core/icons';
-import {
-    isIkBone,
-    buildBoneGroups,
-    addBoneSelectRow,
-} from '../core/ui-helpers';
+import { isIkBone, buildBoneGroups, addBoneSelectRow } from '../core/ui-helpers';
 
 const mockIconify = vi.mocked(createIconifyIcon);
 

@@ -9,13 +9,7 @@ import { translateGoError } from '../core/i18n/goerr';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 
-import {
-    libraryRoot,
-    envState,
-    EnvState,
-    modelRegistry,
-    showErrorToast,
-} from '../core/config';
+import { libraryRoot, envState, EnvState, modelRegistry, showErrorToast } from '../core/config';
 import { showInfoToast } from '../core/toast';
 import { feedbackError, feedbackInfo } from '../core/feedback';
 import { debounce } from '../core/debounce';
@@ -354,125 +348,125 @@ function serializeModel(inst: ModelInstance): SceneFile['models'][number] {
     // 使材质/outfit/个人灯等按此 id 落盘的状态可跨会话还原。
     const uuid = inst.id;
     return {
-            filePath: inst.filePath,
-            libraryRef: computeLibraryRef(inst.filePath, libraryRoot) || undefined,
-            uuid,
-            name: inst.name,
-            kind: inst.kind,
-            vmdPath: inst.vmdPath,
-            vmdLibraryRef: inst.vmdPath ? computeLibraryRef(inst.vmdPath, libraryRoot) || undefined : undefined,
-            vmdName: inst.vmdName,
-            vmdLayers:
-                inst.vmdLayers.length > 0
-                    ? inst.vmdLayers.map((l) => ({
-                          kind: l.kind,
-                          name: l.name,
-                          path: l.path,
-                          weight: l.weight,
-                          boneFilter: l.boneFilter,
-                          enabled: l.enabled,
-                      }))
-                    : undefined,
-            positionX: inst.meshes[0]?.position.x ?? 0,
-            positionY: inst.meshes[0]?.position.y ?? 0,
-            positionZ: inst.meshes[0]?.position.z ?? 0,
-            scaling: inst.scaling,
-            rotationY: inst.rotationY,
-            rotation: inst.rotation,
-            visible: inst.visible,
-            opacity: inst.opacity,
-            wireframe: inst.wireframe,
-            showBoneLines: inst.showBoneLines,
-            showBoneJoints: inst.showBoneJoints,
-            physicsEnabled: inst.physicsEnabled,
-            // [fix:physics-cat-persist] 落盘物理分类开关（仅存 false 项，避免默认值噪声）
-            ...(() => {
-                const pcs = getPhysicsCatState(inst.id);
-                if (!pcs) {
-                    return {};
+        filePath: inst.filePath,
+        libraryRef: computeLibraryRef(inst.filePath, libraryRoot) || undefined,
+        uuid,
+        name: inst.name,
+        kind: inst.kind,
+        vmdPath: inst.vmdPath,
+        vmdLibraryRef: inst.vmdPath
+            ? computeLibraryRef(inst.vmdPath, libraryRoot) || undefined
+            : undefined,
+        vmdName: inst.vmdName,
+        vmdLayers:
+            inst.vmdLayers.length > 0
+                ? inst.vmdLayers.map((l) => ({
+                      kind: l.kind,
+                      name: l.name,
+                      path: l.path,
+                      weight: l.weight,
+                      boneFilter: l.boneFilter,
+                      enabled: l.enabled,
+                  }))
+                : undefined,
+        positionX: inst.meshes[0]?.position.x ?? 0,
+        positionY: inst.meshes[0]?.position.y ?? 0,
+        positionZ: inst.meshes[0]?.position.z ?? 0,
+        scaling: inst.scaling,
+        rotationY: inst.rotationY,
+        rotation: inst.rotation,
+        visible: inst.visible,
+        opacity: inst.opacity,
+        wireframe: inst.wireframe,
+        showBoneLines: inst.showBoneLines,
+        showBoneJoints: inst.showBoneJoints,
+        physicsEnabled: inst.physicsEnabled,
+        // [fix:physics-cat-persist] 落盘物理分类开关（仅存 false 项，避免默认值噪声）
+        ...(() => {
+            const pcs = getPhysicsCatState(inst.id);
+            if (!pcs) {
+                return {};
+            }
+            const diff: Record<string, boolean> = {};
+            for (const [cat, enabled] of Object.entries(pcs)) {
+                if (!enabled) {
+                    diff[cat] = false;
                 }
-                const diff: Record<string, boolean> = {};
-                for (const [cat, enabled] of Object.entries(pcs)) {
-                    if (!enabled) {
-                        diff[cat] = false;
-                    }
+            }
+            return Object.keys(diff).length > 0 ? { physicsCategories: diff } : {};
+        })(),
+        outfitVariant: inst.activeVariant,
+        positionMode: inst.positionMode,
+        orbitAzimuth: inst.orbitAzimuth,
+        orbitElevation: inst.orbitElevation,
+        orbitDistance: inst.orbitDistance,
+        boneOverrides: inst.boneOverrides.length > 0 ? inst.boneOverrides : undefined,
+        // [doc:adr-116] 序列化模块语义状态（仅存 enabled + params 差异值，默认值不落盘）
+        motionOverrideModules:
+            inst.motionOverrideModules && inst.motionOverrideModules.length > 0
+                ? inst.motionOverrideModules
+                : undefined,
+        // [doc:adr-145] 序列化动作预设
+        motionPresets:
+            inst.motionPresets && inst.motionPresets.length > 0 ? inst.motionPresets : undefined,
+        // [doc:adr-121] 序列化 primary 槽位（仅 source==='pinned' 落盘）
+        // [doc:adr-167] overlay 槽位已移除（ADR-144 废弃）
+        motionSlots: (() => {
+            const primary =
+                inst.motionSlots?.primary.source === 'pinned'
+                    ? {
+                          source: 'pinned' as const,
+                          pinned: {
+                              vmdPath: inst.motionSlots.primary.pinned?.vmdPath ?? null,
+                              vmdName: inst.motionSlots.primary.pinned?.vmdName ?? '',
+                              vmdLayers:
+                                  inst.motionSlots.primary.pinned?.vmdLayers.map((l) => ({
+                                      kind: l.kind,
+                                      name: l.name,
+                                      path: l.path,
+                                      weight: l.weight,
+                                      boneFilter: l.boneFilter,
+                                      enabled: l.enabled,
+                                  })) ?? [],
+                              source: inst.motionSlots.primary.pinned?.source ?? 'vmd',
+                          },
+                      }
+                    : undefined;
+            if (!primary) {
+                return undefined;
+            }
+            return { primary };
+        })(),
+        // [fix:material-persist] 落盘材质状态（仅非 null 才写，避免默认值噪声）
+        ...(() => {
+            const ms = getMatState(inst.id);
+            if (!ms) {
+                return {};
+            }
+            return {
+                materialCategories: ms.categories,
+                materialOverrides: ms.overrides,
+                materialEnabled: ms.enabled,
+            };
+        })(),
+        // [doc:adr-168] 个人灯设置（仅 actor 且有差异时落盘）
+        ...(() => {
+            if (inst.kind !== 'actor') {
+                return {};
+            }
+            const pls = getPersonalLightState(inst.id);
+            if (!pls) {
+                return {};
+            }
+            // 只存与默认值不同的字段，减少噪声
+            const diff: Record<string, unknown> = {};
+            for (const key of Object.keys(pls) as Array<keyof typeof pls>) {
+                if (JSON.stringify(pls[key]) !== JSON.stringify(DEFAULT_PERSONAL_LIGHT[key])) {
+                    diff[key] = pls[key];
                 }
-                return Object.keys(diff).length > 0 ? { physicsCategories: diff } : {};
-            })(),
-            outfitVariant: inst.activeVariant,
-            positionMode: inst.positionMode,
-            orbitAzimuth: inst.orbitAzimuth,
-            orbitElevation: inst.orbitElevation,
-            orbitDistance: inst.orbitDistance,
-            boneOverrides: inst.boneOverrides.length > 0 ? inst.boneOverrides : undefined,
-            // [doc:adr-116] 序列化模块语义状态（仅存 enabled + params 差异值，默认值不落盘）
-            motionOverrideModules:
-                inst.motionOverrideModules && inst.motionOverrideModules.length > 0
-                    ? inst.motionOverrideModules
-                    : undefined,
-            // [doc:adr-145] 序列化动作预设
-            motionPresets:
-                inst.motionPresets && inst.motionPresets.length > 0
-                    ? inst.motionPresets
-                    : undefined,
-            // [doc:adr-121] 序列化 primary 槽位（仅 source==='pinned' 落盘）
-            // [doc:adr-167] overlay 槽位已移除（ADR-144 废弃）
-            motionSlots: (() => {
-                const primary =
-                    inst.motionSlots?.primary.source === 'pinned'
-                        ? {
-                              source: 'pinned' as const,
-                              pinned: {
-                                  vmdPath: inst.motionSlots.primary.pinned?.vmdPath ?? null,
-                                  vmdName: inst.motionSlots.primary.pinned?.vmdName ?? '',
-                                  vmdLayers:
-                                      inst.motionSlots.primary.pinned?.vmdLayers.map((l) => ({
-                                          kind: l.kind,
-                                          name: l.name,
-                                          path: l.path,
-                                          weight: l.weight,
-                                          boneFilter: l.boneFilter,
-                                          enabled: l.enabled,
-                                      })) ?? [],
-                                  source: inst.motionSlots.primary.pinned?.source ?? 'vmd',
-                              },
-                          }
-                        : undefined;
-                if (!primary) {
-                    return undefined;
-                }
-                return { primary };
-            })(),
-            // [fix:material-persist] 落盘材质状态（仅非 null 才写，避免默认值噪声）
-            ...(() => {
-                const ms = getMatState(inst.id);
-                if (!ms) {
-                    return {};
-                }
-                return {
-                    materialCategories: ms.categories,
-                    materialOverrides: ms.overrides,
-                    materialEnabled: ms.enabled,
-                };
-            })(),
-            // [doc:adr-168] 个人灯设置（仅 actor 且有差异时落盘）
-            ...(() => {
-                if (inst.kind !== 'actor') {
-                    return {};
-                }
-                const pls = getPersonalLightState(inst.id);
-                if (!pls) {
-                    return {};
-                }
-                // 只存与默认值不同的字段，减少噪声
-                const diff: Record<string, unknown> = {};
-                for (const key of Object.keys(pls) as Array<keyof typeof pls>) {
-                    if (JSON.stringify(pls[key]) !== JSON.stringify(DEFAULT_PERSONAL_LIGHT[key])) {
-                        diff[key] = pls[key];
-                    }
-                }
-                return Object.keys(diff).length > 0 ? { personalLight: diff } : {};
-            })(),
+            }
+            return Object.keys(diff).length > 0 ? { personalLight: diff } : {};
+        })(),
         // [doc:adr-215] 模型附属关系
         parentId: inst.parentId,
         attachedBone: inst.attachedBone,

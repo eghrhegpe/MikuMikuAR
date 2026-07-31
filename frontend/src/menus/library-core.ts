@@ -139,10 +139,7 @@ export function isLeafFlattenDir(
  * 若将"记忆地址"记为 /X，下次打开会因 onLevelEnter 早退而无法回到用户所见位置；
  * 故向上回退到第一个非叶子展平目录（通常为根目录），使其与用户视线一致。
  */
-export function resolveDisplayBrowseDir(
-    m: LibraryModel,
-    category: 'pmx' | 'stage'
-): string {
+export function resolveDisplayBrowseDir(m: LibraryModel, category: 'pmx' | 'stage'): string {
     const root = normPath(getBrowseDir(category));
     let cur = normPath(m.dir);
     if (!root || cur === root) {

@@ -174,8 +174,7 @@ function recordRecentModel(m: LibraryModel): void {
 
 /** 记忆浏览目录：使用户下次打开资源库能回到当前位置。 */
 function recordBrowseDir(m: LibraryModel): void {
-    const memCat: 'pmx' | 'stage' =
-        m.type === 'stage' || m.type === 'scene' ? 'stage' : 'pmx';
+    const memCat: 'pmx' | 'stage' = m.type === 'stage' || m.type === 'scene' ? 'stage' : 'pmx';
     void safeCallAsync('library-actions', 'SetLastBrowseDir failed:', () =>
         SetLastBrowseDir(memCat, resolveDisplayBrowseDir(m, memCat))
     );
@@ -421,8 +420,7 @@ function onModelRowClick(m: LibraryModel, jumpToDirModelId?: string): void {
 }
 
 function replaceModel(m: LibraryModel): void {
-    const _isActor =
-        m.format === 'pmx' && m.type !== 'stage' && m.type !== 'scene';
+    const _isActor = m.format === 'pmx' && m.type !== 'stage' && m.type !== 'scene';
     // [doc:adr-131] 传参取代 mutation of currentLevel.outcome
     onModelRowClick(m, focusedModelId ?? undefined);
 }

@@ -46,7 +46,10 @@ describe('BrowserAiAdapter', () => {
         const { saveAiConfig } = await import('../ai/config-store');
         const a = new BrowserAiAdapter();
 
-        await saveAiConfig({ endpoint: 'http://localhost:11434/v1/chat/completions', apiKey: 'sk-x' });
+        await saveAiConfig({
+            endpoint: 'http://localhost:11434/v1/chat/completions',
+            apiKey: 'sk-x',
+        });
         expect(a.capabilities().apiKeyConfigured).toBe(true);
     });
 });

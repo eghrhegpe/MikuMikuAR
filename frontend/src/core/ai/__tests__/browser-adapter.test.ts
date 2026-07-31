@@ -23,13 +23,36 @@ vi.mock('../config-store', () => ({
     normalizeEndpoint: vi.fn((e: string) => e),
     normalizeTimeout: vi.fn((t: number) => t),
     PROVIDER_PRESETS: {
-        ollama: { needsKey: false, endpoint: 'http://localhost:11434/v1/chat/completions', model: '' },
-        deepseek: { needsKey: true, endpoint: 'https://api.deepseek.com/v1/chat/completions', model: 'deepseek-chat' },
-        openai: { needsKey: true, endpoint: 'https://api.openai.com/v1/chat/completions', model: 'gpt-4o-mini' },
-        openrouter: { needsKey: true, endpoint: 'https://openrouter.ai/api/v1/chat/completions', model: 'auto' },
+        ollama: {
+            needsKey: false,
+            endpoint: 'http://localhost:11434/v1/chat/completions',
+            model: '',
+        },
+        deepseek: {
+            needsKey: true,
+            endpoint: 'https://api.deepseek.com/v1/chat/completions',
+            model: 'deepseek-chat',
+        },
+        openai: {
+            needsKey: true,
+            endpoint: 'https://api.openai.com/v1/chat/completions',
+            model: 'gpt-4o-mini',
+        },
+        openrouter: {
+            needsKey: true,
+            endpoint: 'https://openrouter.ai/api/v1/chat/completions',
+            model: 'auto',
+        },
         custom: { needsKey: false, endpoint: '', model: '' },
     },
-    DEFAULT_AI_CONFIG: { provider: 'ollama', endpoint: 'http://localhost:11434/v1/chat/completions', apiKey: '', model: '', timeoutMs: 30000, relayUrl: '' },
+    DEFAULT_AI_CONFIG: {
+        provider: 'ollama',
+        endpoint: 'http://localhost:11434/v1/chat/completions',
+        apiKey: '',
+        model: '',
+        timeoutMs: 30000,
+        relayUrl: '',
+    },
 }));
 
 // ── mock sse (parseSseStream) ─────────────────────────────────────
@@ -147,7 +170,10 @@ describe('BrowserAiAdapter', () => {
         it('models 优先使用 _fetchedModelsCache', () => {
             // 通过 fetchModels 失败后的缓存来验证
             // 直接访问私有属性来验证行为
-            (adapter as unknown as { _fetchedModelsCache: string[] })._fetchedModelsCache = ['gpt-4', 'gpt-3.5'];
+            (adapter as unknown as { _fetchedModelsCache: string[] })._fetchedModelsCache = [
+                'gpt-4',
+                'gpt-3.5',
+            ];
             const caps = adapter.capabilities();
             expect(caps.models).toEqual(['gpt-4', 'gpt-3.5']);
         });
@@ -170,9 +196,7 @@ describe('BrowserAiAdapter', () => {
         };
 
         /** 收集 streamChat 全部产出的辅助函数（消除 8 次重复的 for-await）。 */
-        async function collectStream(
-            r: typeof req = req
-        ): Promise<ChatChunk[]> {
+        async function collectStream(r: typeof req = req): Promise<ChatChunk[]> {
             const chunks: ChatChunk[] = [];
             for await (const chunk of adapter.streamChat(r)) {
                 chunks.push(chunk);
@@ -257,7 +281,9 @@ describe('BrowserAiAdapter', () => {
 
         it('fetch 抛出 AbortError → 返回 done 块', async () => {
             mockConfig.endpoint = 'https://api.deepseek.com/v1/chat/completions';
-            mockFetch.mockRejectedValue(new DOMException('The operation was aborted', 'AbortError'));
+            mockFetch.mockRejectedValue(
+                new DOMException('The operation was aborted', 'AbortError')
+            );
             const chunks = await collectStream();
             expect(chunks).toHaveLength(1);
             expect(chunks[0].type).toBe('done');
@@ -324,7 +350,9 @@ describe('BrowserAiAdapter', () => {
             mockFetch.mockResolvedValue(okResponse(new ReadableStream()));
             // parseSseStream 产出一条后永久挂起
             let hangResolve: () => void;
-            const hangPromise = new Promise<void>((r) => { hangResolve = r; });
+            const hangPromise = new Promise<void>((r) => {
+                hangResolve = r;
+            });
             mockParseSseStream.mockImplementation(async function* () {
                 yield { type: 'text', content: '开始' };
                 await hangPromise; // 不 resolve → 永远不会 yield done
@@ -355,7 +383,7 @@ describe('BrowserAiAdapter', () => {
             const removeSpy = vi.spyOn(externalAc.signal, 'removeEventListener');
 
             const reqWithSignal = { ...req, signal: externalAc.signal };
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
             for await (const _ of adapter.streamChat(reqWithSignal)) {
                 // consume all
             }
@@ -437,19 +465,20 @@ describe('BrowserAiAdapter', () => {
 
         it('OpenAI 兼容格式 → 解析并排序', async () => {
             mockConfig.endpoint = 'https://api.deepseek.com/v1/chat/completions';
-            mockFetch.mockResolvedValue(jsonResponse({
-                data: [
-                    { id: 'deepseek-chat' },
-                    { id: 'deepseek-reasoner' },
-                ],
-            }));
+            mockFetch.mockResolvedValue(
+                jsonResponse({
+                    data: [{ id: 'deepseek-chat' }, { id: 'deepseek-reasoner' }],
+                })
+            );
 
             const models = await adapter.fetchModels();
             expect(models).toEqual(['deepseek-chat', 'deepseek-reasoner']);
             // 应请求 {base}/models（method 为隐式的 GET）
             expect(mockFetch).toHaveBeenCalledWith(
                 'https://api.deepseek.com/v1/models',
-                expect.objectContaining({ headers: expect.objectContaining({ Accept: 'application/json' }) })
+                expect.objectContaining({
+                    headers: expect.objectContaining({ Accept: 'application/json' }),
+                })
             );
         });
 
@@ -459,12 +488,10 @@ describe('BrowserAiAdapter', () => {
                 if (url.includes('/api/tags')) {
                     return {
                         ok: true,
-                        json: () => Promise.resolve({
-                            models: [
-                                { name: 'llama3.2:3b' },
-                                { name: 'mistral:7b' },
-                            ],
-                        }),
+                        json: () =>
+                            Promise.resolve({
+                                models: [{ name: 'llama3.2:3b' }, { name: 'mistral:7b' }],
+                            }),
                     };
                 }
                 return { ok: false, status: 404 };
@@ -477,7 +504,9 @@ describe('BrowserAiAdapter', () => {
             expect(mockFetch).toHaveBeenNthCalledWith(
                 3,
                 'http://localhost:11434/api/tags',
-                expect.objectContaining({ headers: expect.objectContaining({ Accept: 'application/json' }) })
+                expect.objectContaining({
+                    headers: expect.objectContaining({ Accept: 'application/json' }),
+                })
             );
         });
 
@@ -491,13 +520,16 @@ describe('BrowserAiAdapter', () => {
 
         it('成功时缓存结果到 _fetchedModelsCache 并影响 capabilities()', async () => {
             mockConfig.endpoint = 'https://api.openai.com/v1/chat/completions';
-            mockFetch.mockResolvedValue(jsonResponse({
-                data: [{ id: 'gpt-4' }, { id: 'gpt-3.5' }],
-            }));
+            mockFetch.mockResolvedValue(
+                jsonResponse({
+                    data: [{ id: 'gpt-4' }, { id: 'gpt-3.5' }],
+                })
+            );
 
             await adapter.fetchModels();
             // 访问私有属性验证缓存
-            const cached = (adapter as unknown as { _fetchedModelsCache: string[] | null })._fetchedModelsCache;
+            const cached = (adapter as unknown as { _fetchedModelsCache: string[] | null })
+                ._fetchedModelsCache;
             expect(cached).toEqual(['gpt-3.5', 'gpt-4']);
 
             // capabilities() 优先使用缓存而非配置单模型
@@ -511,7 +543,8 @@ describe('BrowserAiAdapter', () => {
             mockFetch.mockResolvedValue(errResponse(404, 'Not Found'));
 
             await adapter.fetchModels();
-            const cached = (adapter as unknown as { _fetchedModelsCache: string[] | null })._fetchedModelsCache;
+            const cached = (adapter as unknown as { _fetchedModelsCache: string[] | null })
+                ._fetchedModelsCache;
             expect(cached).toBeNull();
 
             // capabilities 回退配置单模型

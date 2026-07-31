@@ -49,9 +49,7 @@ describe('ADR-093 Menu Schema — headerToggle get/set 映射', () => {
                 },
             ];
             renderMenu(schema, container);
-            const checkbox = container.querySelector(
-                'input[type="checkbox"]'
-            ) as HTMLInputElement;
+            const checkbox = container.querySelector('input[type="checkbox"]') as HTMLInputElement;
             expect(checkbox).toBeTruthy();
             expect(checkbox.checked).toBe(true);
         } finally {
@@ -85,9 +83,7 @@ describe('ADR-093 Menu Schema — headerToggle get/set 映射', () => {
                 },
             ];
             renderMenu(schema, container);
-            const checkbox = container.querySelector(
-                'input[type="checkbox"]'
-            ) as HTMLInputElement;
+            const checkbox = container.querySelector('input[type="checkbox"]') as HTMLInputElement;
             expect(checkbox).toBeTruthy();
             expect(checkbox.checked).toBe(false);
         } finally {

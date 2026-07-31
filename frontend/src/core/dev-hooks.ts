@@ -3,10 +3,11 @@
 // attaches helpers to `window` for Playwright numeric assertions; it has no
 // business logic shared with production paths, so it stays out of the Split
 // layer's hot import graph.
-import { scene, engine, focusedModel } from '../scene/scene';
+import { scene, engine, focusedModel, modelManager } from '../scene/scene';
 import { loadOutfits, applyOutfitVariant } from '../outfit/outfit';
 import { envState, mmdRuntime } from './config';
 import { isWindPhysicsActive } from '../physics/wind-physics';
+import { removeFocusedModel } from '../scene/manager/model-ops';
 import { logInfo } from './logger';
 
 export function setupE2ECapture(): void {
@@ -147,6 +148,16 @@ export function setupE2ECapture(): void {
                     m.dispose();
                 }
             }
+        },
+
+        // ======== Model Lifecycle Hooks (E2E @dom + @webgl) ========
+        /** Remove the currently focused model (delegates to removeFocusedModel). */
+        removeActiveModel: (): void => {
+            removeFocusedModel();
+        },
+        /** Direct reference to the ModelManager instance for state inspection. */
+        get modelManager() {
+            return modelManager;
         },
 
         // ======== 物理健康检查钩子 (E2E @webgl) ========

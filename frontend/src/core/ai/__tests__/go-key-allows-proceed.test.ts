@@ -6,10 +6,7 @@ import { goKeyAllowsProceed } from '../go-key-allows-proceed';
 import type { AiValidationResult } from '../types';
 
 /** 创建带 errors 的 validation 结果。 */
-function validation(
-    ok: boolean,
-    errors: { kind: string; message: string }[]
-): AiValidationResult {
+function validation(ok: boolean, errors: { kind: string; message: string }[]): AiValidationResult {
     // goKeyAllowsProceed 第一参数 = ReturnType<typeof validateAiConfig> = AiValidationResult
     // 用 as unknown 绕过 message/kind 可选性的差异，只关心运行时行为
     return { ok, errors } as unknown as AiValidationResult;
@@ -30,8 +27,8 @@ describe('goKeyAllowsProceed', () => {
                 message: 'API key 未配置',
                 errors: [{ kind: 'missingKey', message: 'API key 未配置' }],
             },
-            true,  // isGo
-            true   // keyConfigured
+            true, // isGo
+            true // keyConfigured
         );
         expect(r).toBe(true);
     });
@@ -47,8 +44,8 @@ describe('goKeyAllowsProceed', () => {
                     { kind: 'missingModel', message: '模型未选择' },
                 ],
             },
-            true,  // isGo
-            true   // keyConfigured
+            true, // isGo
+            true // keyConfigured
         );
         expect(r).toBe(false);
     });
@@ -62,7 +59,7 @@ describe('goKeyAllowsProceed', () => {
                 errors: [{ kind: 'missingKey', message: 'API key 未配置' }],
             },
             false, // isGo
-            true   // keyConfigured
+            true // keyConfigured
         );
         expect(r).toBe(false);
     });
@@ -75,18 +72,14 @@ describe('goKeyAllowsProceed', () => {
                 message: 'API key 未配置',
                 errors: [{ kind: 'missingKey', message: 'API key 未配置' }],
             },
-            true,  // isGo
-            false  // keyConfigured
+            true, // isGo
+            false // keyConfigured
         );
         expect(r).toBe(false);
     });
 
     it('Go 模式 + key 已配置 + 无 errors 数组（undefined）→ 放行（无额外错误）', () => {
-        const r = goKeyAllowsProceed(
-            { ok: false, kind: 'missingKey', message: 'x' },
-            true,
-            true
-        );
+        const r = goKeyAllowsProceed({ ok: false, kind: 'missingKey', message: 'x' }, true, true);
         // errors undefined → ?? [] 得空数组 → nonKey.length === 0 → true
         expect(r).toBe(true);
     });

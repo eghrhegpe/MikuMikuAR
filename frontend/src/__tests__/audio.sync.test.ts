@@ -1,7 +1,13 @@
 // [doc:adr-204] audio.test.ts 拆分：同步 / 节拍检测器
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createAudioMockState, createMockStreamPlayer, resetAudioMockState } from './audio-helpers';
-import { mockWailsBindings, mockState, mockConfig, mockBeatDetector, getTriggerAutoSave } from './audio-mocks';
+import {
+    mockWailsBindings,
+    mockState,
+    mockConfig,
+    mockBeatDetector,
+    getTriggerAutoSave,
+} from './audio-mocks';
 import {
     syncAudioPlayback,
     playAudio,

@@ -45,7 +45,10 @@ function makeWasmBone(
 ): IMmdRuntimeBone {
     // worldMatrix: 4×4 单位矩阵，translation 在 [12,13,14]
     const worldMatrix = new Float32Array(16);
-    worldMatrix[0] = 1; worldMatrix[5] = 1; worldMatrix[10] = 1; worldMatrix[15] = 1;
+    worldMatrix[0] = 1;
+    worldMatrix[5] = 1;
+    worldMatrix[10] = 1;
+    worldMatrix[15] = 1;
     worldMatrix[12] = translation[0];
     worldMatrix[13] = translation[1];
     worldMatrix[14] = translation[2];
@@ -117,16 +120,18 @@ describe('IK 重解双调用路径时序（ADR-202 §六）', () => {
         // 构造骨骼：左足IK 在 Y=1.8（高于 groundY=0，jumpThreshold=0.5 → skip=true）
         const ikBone = makeWasmBone('左足ＩＫ', [0, 1.8, 0], 0);
         // centerY=0 让 modelGroundY=max(0, 0-legLength)=0，
-    // 这样 jumpThreshold 判定只看 footY 相对地面，不被「模型中心高于地面」扭曲
-    const centerBone = makeWasmBone('センター', [0, 0, 0]);
+        // 这样 jumpThreshold 判定只看 footY 相对地面，不被「模型中心高于地面」扭曲
+        const centerBone = makeWasmBone('センター', [0, 0, 0]);
         const bones: IMmdRuntimeBone[] = [ikBone, centerBone];
 
         startBoneOverride(() => bones, scene);
-        startFeetAdjustment(() => [{
-            id: MODEL_ID,
-            feet: defaultFeet(),
-            runtimeBones: bones,
-        }]);
+        startFeetAdjustment(() => [
+            {
+                id: MODEL_ID,
+                feet: defaultFeet(),
+                runtimeBones: bones,
+            },
+        ]);
 
         // 设置 IK 目标骨的 POS 覆盖（触发 _solvePosSlotIkWasm）
         setBoneOverridePosition('左足ＩＫ', [0, -1.8, 0], 1, true, MODEL_ID);
@@ -147,16 +152,18 @@ describe('IK 重解双调用路径时序（ADR-202 §六）', () => {
         // 构造骨骼：左足IK 在 Y=0.1（低于 jumpThreshold=0.5 → skip=false → 贴地）
         const ikBone = makeWasmBone('左足ＩＫ', [0, 0.1, 0], 0);
         // centerY=0 让 modelGroundY=max(0, 0-legLength)=0，
-    // 这样 jumpThreshold 判定只看 footY 相对地面，不被「模型中心高于地面」扭曲
-    const centerBone = makeWasmBone('センター', [0, 0, 0]);
+        // 这样 jumpThreshold 判定只看 footY 相对地面，不被「模型中心高于地面」扭曲
+        const centerBone = makeWasmBone('センター', [0, 0, 0]);
         const bones: IMmdRuntimeBone[] = [ikBone, centerBone];
 
         startBoneOverride(() => bones, scene);
-        startFeetAdjustment(() => [{
-            id: MODEL_ID,
-            feet: defaultFeet(),
-            runtimeBones: bones,
-        }]);
+        startFeetAdjustment(() => [
+            {
+                id: MODEL_ID,
+                feet: defaultFeet(),
+                runtimeBones: bones,
+            },
+        ]);
 
         // 不设置任何覆盖
 
@@ -174,16 +181,18 @@ describe('IK 重解双调用路径时序（ADR-202 §六）', () => {
         // 构造骨骼：左足IK 在 Y=1.8（高于 jumpThreshold=0.5 → skip=true）
         const ikBone = makeWasmBone('左足ＩＫ', [0, 1.8, 0], 0);
         // centerY=0 让 modelGroundY=max(0, 0-legLength)=0，
-    // 这样 jumpThreshold 判定只看 footY 相对地面，不被「模型中心高于地面」扭曲
-    const centerBone = makeWasmBone('センター', [0, 0, 0]);
+        // 这样 jumpThreshold 判定只看 footY 相对地面，不被「模型中心高于地面」扭曲
+        const centerBone = makeWasmBone('センター', [0, 0, 0]);
         const bones: IMmdRuntimeBone[] = [ikBone, centerBone];
 
         startBoneOverride(() => bones, scene);
-        startFeetAdjustment(() => [{
-            id: MODEL_ID,
-            feet: defaultFeet(),
-            runtimeBones: bones,
-        }]);
+        startFeetAdjustment(() => [
+            {
+                id: MODEL_ID,
+                feet: defaultFeet(),
+                runtimeBones: bones,
+            },
+        ]);
 
         getMotionPipeline().runFrame({ scene });
 
@@ -202,11 +211,13 @@ describe('IK 重解双调用路径时序（ADR-202 §六）', () => {
         const bones: IMmdRuntimeBone[] = [ikBoneL, ikBoneR, centerBone];
 
         startBoneOverride(() => bones, scene);
-        startFeetAdjustment(() => [{
-            id: MODEL_ID,
-            feet: defaultFeet(),
-            runtimeBones: bones,
-        }]);
+        startFeetAdjustment(() => [
+            {
+                id: MODEL_ID,
+                feet: defaultFeet(),
+                runtimeBones: bones,
+            },
+        ]);
 
         // 跑 10 帧，每帧断言 resolver 调用 ≤1 次（左脚贴地 = 1 次，右脚空中 = 0 次）
         for (let i = 0; i < 10; i++) {

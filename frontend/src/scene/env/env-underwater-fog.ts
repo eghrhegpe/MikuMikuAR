@@ -36,7 +36,7 @@ const CAUSTIC_TINT = new Color3(0.78, 0.92, 1.0);
 //     - distance ≥ fogEnd   → fog ≤ 0 → 完全满雾（显示 fogColor）
 //     - 命名直觉相反：fogStart 实际是"无雾阈值"，fogEnd 实际是"满雾阈值"
 //   "近处清晰、远处雾" 是 fogStart < fogEnd 的常规方向。
-const FOG_NEAR_CLEAR = 40.0;  // 对应 Babylon fogStart：距离 ≤ 40 unit(4m) 完全无雾（角色约 2-3m 永远清晰）
+const FOG_NEAR_CLEAR = 40.0; // 对应 Babylon fogStart：距离 ≤ 40 unit(4m) 完全无雾（角色约 2-3m 永远清晰）
 const FOG_FAR_OPAQUE = 500.0; // 对应 Babylon fogEnd：距离 ≥ 500 unit(50m) 完全满雾（远景褪入深蓝，远处地面隐约可见）
 
 /** 计算水下雾色：基准浅青与天空底色（skyColorBot）混合，让雾色随天空变化（用户反馈"未察觉天空色影响"）。 */
@@ -72,8 +72,12 @@ class UnderwaterFogControllerImpl {
 
     /** 给一个地面材质注册水下修饰（焦散 emissive）。幂等：同一 mat 只存一次。 */
     install(mat: PBRMaterial | StandardMaterial | null | undefined): void {
-        if (!isCausticsHost(mat)) return;
-        if (this._installed.size > 0 && [...this._installed].some((x) => x.mat === mat)) return;
+        if (!isCausticsHost(mat)) {
+            return;
+        }
+        if (this._installed.size > 0 && [...this._installed].some((x) => x.mat === mat)) {
+            return;
+        }
         this._installed.add({
             mat,
             origEmissiveTex: mat.emissiveTexture,
@@ -87,11 +91,15 @@ class UnderwaterFogControllerImpl {
      *  焦散动感由 causticsController.update(dt) 推进纹理 uOffset 提供（改纹理 offset 不触发重编译）。 */
     update(_dt: number, scene: Scene): void {
         const cam = scene.activeCamera;
-        if (!cam) return;
+        if (!cam) {
+            return;
+        }
         const depth = this._waterLevel - cam.globalPosition.y;
         const isUnderwater = depth > 0;
 
-        if (isUnderwater === this._wasUnderwater) return; // 状态未变，无需任何操作
+        if (isUnderwater === this._wasUnderwater) {
+            return;
+        } // 状态未变，无需任何操作
         this._wasUnderwater = isUnderwater;
 
         if (isUnderwater) {
@@ -100,7 +108,7 @@ class UnderwaterFogControllerImpl {
             scene.fogMode = Scene.FOGMODE_LINEAR;
             scene.fogColor = fogColor;
             scene.fogStart = FOG_NEAR_CLEAR; // 距离 ≤ 40 unit(4m) 完全无雾
-            scene.fogEnd = FOG_FAR_OPAQUE;   // 距离 ≥ 500 unit(50m) 完全满雾
+            scene.fogEnd = FOG_FAR_OPAQUE; // 距离 ≥ 500 unit(50m) 完全满雾
             // 同步水下雾给水面对应的 ShaderMaterial（它不参与 Babylon scene.fog，需手动注入），
             // 让水面与地面/角色用同一套雾参数，远处水面也褪入雾色。
             setUnderwaterFog(true, fogColor, FOG_NEAR_CLEAR, FOG_FAR_OPAQUE);
@@ -134,7 +142,9 @@ class UnderwaterFogControllerImpl {
             entry.mat.emissiveColor = entry.origEmissiveColor;
         }
         this._installed.clear();
-        if (scene) scene.fogMode = Scene.FOGMODE_NONE;
+        if (scene) {
+            scene.fogMode = Scene.FOGMODE_NONE;
+        }
         setUnderwaterFog(false, UNDERWATER_FOG_BASE, FOG_NEAR_CLEAR, FOG_FAR_OPAQUE);
         this._wasUnderwater = false;
         this._waterLevel = 0;

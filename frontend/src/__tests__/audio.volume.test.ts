@@ -1,8 +1,22 @@
 // [doc:adr-204] audio.test.ts 拆分：音量 / 偏移 / gain
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createAudioMockState, createMockStreamPlayer, resetAudioMockState } from './audio-helpers';
-import { mockWailsBindings, mockState, mockConfig, mockBeatDetector, getTriggerAutoSave } from './audio-mocks';
-import { setVolume, getVolume, setAudioOffset, getAudioOffset, playAudio, attachBeatDetector, disposeAudio } from '../outfit/audio';
+import {
+    mockWailsBindings,
+    mockState,
+    mockConfig,
+    mockBeatDetector,
+    getTriggerAutoSave,
+} from './audio-mocks';
+import {
+    setVolume,
+    getVolume,
+    setAudioOffset,
+    getAudioOffset,
+    playAudio,
+    attachBeatDetector,
+    disposeAudio,
+} from '../outfit/audio';
 
 const m = createAudioMockState();
 let streamPlayer: Record<string, any> | null = null;

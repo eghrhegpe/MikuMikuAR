@@ -117,7 +117,7 @@ function _guardedResolve(
                     'bone-override',
                     `[守护] 同帧重复调用 mmdModelSolveIk: model=${modelId} ikIdx=${ikSolverIndex} ` +
                         `(第 ${prev + 1} 次)。互斥不变量被破坏：检查 bone-override POS slot 与 ` +
-                        `feet-adjustment 是否同时激活（应满足 POS slot 有覆盖 → feet-adjustment skip）`
+                        'feet-adjustment 是否同时激活（应满足 POS slot 有覆盖 → feet-adjustment skip）'
                 );
                 _ikResolveLastWarnTime = now;
             }

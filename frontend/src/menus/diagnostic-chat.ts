@@ -65,7 +65,10 @@ export function renderChat(): void {
 
         // ── 助手消息（可能含 tool_calls） ──
         const hasToolCalls =
-            msg.role === 'assistant' && 'tool_calls' in msg && Array.isArray(msg.tool_calls) && msg.tool_calls!.length > 0;
+            msg.role === 'assistant' &&
+            'tool_calls' in msg &&
+            Array.isArray(msg.tool_calls) &&
+            msg.tool_calls!.length > 0;
         const textContent = typeof msg.content === 'string' ? msg.content : '';
 
         // 纯文本助手消息（无 tool_calls）：正常渲染
@@ -108,7 +111,10 @@ export function renderChat(): void {
                 try {
                     const args = JSON.parse(tc.function.arguments);
                     const argText = Object.entries(args)
-                        .map(([k, v]) => `${k}: ${typeof v === 'string' && v.length > 40 ? v.slice(0, 40) + '…' : v}`)
+                        .map(
+                            ([k, v]) =>
+                                `${k}: ${typeof v === 'string' && v.length > 40 ? v.slice(0, 40) + '…' : v}`
+                        )
                         .join(', ');
                     if (argText) {
                         const argSpan = document.createElement('span');
@@ -341,11 +347,7 @@ export function buildSystemMessage(): ChatMessage {
     const catalog = buildToolCatalogText();
     return {
         role: 'system',
-        content: [
-            t('ai.system.control'),
-            catalog,
-            t('ai.system.controlFormat'),
-        ].join('\n\n'),
+        content: [t('ai.system.control'), catalog, t('ai.system.controlFormat')].join('\n\n'),
     };
 }
 

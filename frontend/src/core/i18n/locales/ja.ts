@@ -76,7 +76,7 @@ export const ja: Record<string, string> = {
     'settings.library.matCat.eyes': '目',
     'settings.library.matCat.clothing': '衣装',
     'settings.library.matCat.accessory': 'アクセサリー',
-    
+
     'settings.paths.modelCount': 'モデル数: ',
     'settings.saveFailed': '保存に失敗しました',
 
@@ -724,7 +724,7 @@ export const ja: Record<string, string> = {
     'scene.scene': 'シーン',
     'scene.renderPresets': 'レンダープリセット',
     'scene.stageLight': 'ステージライト',
-    
+
     'scene.intensity': '強度',
     'scene.color': '色',
     'scene.type': 'タイプ',
@@ -819,11 +819,11 @@ export const ja: Record<string, string> = {
     'scene.loadStage': 'ステージを読み込み',
     'scene.statusNoModelLib': '✗ 設定でモデルライブラリのディレクトリを先に設定してください',
     'scene.statusOpenStageLibFailed': '✗ ステージライブラリを開けませんでした',
-    
+
     'scene.stageLabel': 'ステージ: {name}',
-    
+
     'scene.transform': '変換',
-    
+
     'scene.custom': 'カスタム',
     'scene.lightList': 'ライト一覧',
     'scene.addLight': 'ライトを追加',
@@ -1548,7 +1548,7 @@ export const ja: Record<string, string> = {
     'settings.paths.pmx': 'PMX モデル',
     'settings.paths.vmd': 'VMD モーション',
     'settings.paths.audio': '音楽',
-    
+
     'settings.paths.stage': 'シーン',
     'settings.paths.environment': '環境',
     'settings.paths.mdDress': 'MD ドレス',
@@ -1610,7 +1610,8 @@ export const ja: Record<string, string> = {
     'downloads.stagingDir': 'ダウンロードフォルダ',
     'downloads.stagingSet': '選択済み: {dir}',
     'downloads.stagingNotSet': 'ダウンロードフォルダ未選択',
-    'downloads.androidStagingHint': 'Android：共有ストレージモードで /sdcard/Download を読み取ります',
+    'downloads.androidStagingHint':
+        'Android：共有ストレージモードで /sdcard/Download を読み取ります',
     'downloads.pickStagingDir': 'ダウンロードフォルダを選択',
     'downloads.scanImport': 'スキャンしてインポート',
     'downloads.scanAndImport': 'スキャンしてインポート',
@@ -1622,17 +1623,21 @@ export const ja: Record<string, string> = {
     'downloads.noNewFiles': '新しいファイルはありません',
     'downloads.manageImported': 'インポート記録',
     'downloads.clearImported': 'インポート記録をクリア',
-    'downloads.clearConfirm': 'すべてのインポート記録をクリアしますか？実際のファイルは削除されません。',
+    'downloads.clearConfirm':
+        'すべてのインポート記録をクリアしますか？実際のファイルは削除されません。',
     'downloads.androidNotReady': 'Android：共有ストレージモードが必要です',
     'downloads.permissionNeeded': 'ダウンロードフォルダの読み取り権限が必要です',
-    'downloads.supportedHint': 'PMX / VMD / 音声 / ZIP に対応、サブフォルダを再帰的にスキャンします',
-    'downloads.scanConfirm': '{count} 個のファイルをモデルライブラリにインポートしようとしています（シーンには自動読み込みされません）。続行しますか？',
+    'downloads.supportedHint':
+        'PMX / VMD / 音声 / ZIP に対応、サブフォルダを再帰的にスキャンします',
+    'downloads.scanConfirm':
+        '{count} 個のファイルをモデルライブラリにインポートしようとしています（シーンには自動読み込みされません）。続行しますか？',
     'downloads.canceled': 'キャンセルしました',
-    'downloads.androidNeedShared': 'Android でダウンロードフォルダを読み取るには共有ストレージモードを有効にする必要があります',
+    'downloads.androidNeedShared':
+        'Android でダウンロードフォルダを読み取るには共有ストレージモードを有効にする必要があります',
 
     // ===== i18n Phase 4 — missing keys =====
     'common.model': 'モデル',
-    
+
     'common.close': '閉じる',
     'common.delete': '削除',
     'common.items': '件',
@@ -1641,7 +1646,7 @@ export const ja: Record<string, string> = {
     'common.off': 'オフ',
     'common.on': 'オン',
     'common.stage': 'ステージ',
-    
+
     'env.persistFailed': '✗ 設定の保存に失敗しました — 再起動後に変更が失われます',
     'model.materialReset': '✓ リセットしました: {name}',
     'motion.boneOverride.title': 'ボーンオーバーライド',
@@ -1663,7 +1668,8 @@ export const ja: Record<string, string> = {
     'motion.boneOverride.exportFailed': '✕ エクスポート失敗：モデルまたはボーンがありません',
     // [doc:adr-186] パイプライン順序 UI
     'motion.boneOverride.pipelineOrder': 'パイプライン順序一覧',
-    'motion.boneOverride.pipelineEmpty': 'フレームフックが登録されていません（モジュールを有効にするとここに表示されます）',
+    'motion.boneOverride.pipelineEmpty':
+        'フレームフックが登録されていません（モジュールを有効にするとここに表示されます）',
     'motion.boneOverride.pipelineNote':
         '数字が小さいほど先に実行されます。後のレイヤーは前のレイヤーの書き込みを上書きできます。順序は宣言によって決まり、登録順ではありません。',
     // [doc:adr-116] モーションオーバーライド モジュールUI
@@ -1784,7 +1790,7 @@ export const ja: Record<string, string> = {
     'common.empty': 'コンテンツがありません',
     'common.apply': '適用',
     'settings.audio.offsetHint': '正=音声先行、負=音声遅れ（全楽曲に全局適用）',
-    
+
     'goerr.software.notFound': '{name} が見つかりません。設定でパスを指定してください。',
     'goerr.software.launchFailed': '{name} の起動に失敗しました。',
     'goerr.software.androidNotSupported': '{name} は Android では起動できません。',
@@ -1832,7 +1838,8 @@ export const ja: Record<string, string> = {
     'ai.config.model': 'モデル',
     'ai.config.refreshModels': 'モデルを検出',
     'ai.config.modelsFound': '{n} 個のモデルを検出しました',
-    'ai.config.modelsNone': 'モデルが見つかりませんでした。手動で入力してください（例：sensenova-6.7-flash-lite）',
+    'ai.config.modelsNone':
+        'モデルが見つかりませんでした。手動で入力してください（例：sensenova-6.7-flash-lite）',
     'ai.config.showModels': 'モデル一覧を表示',
     'ai.config.keyConfigured': '設定済み（再入力で更新）',
     'ai.config.save': '保存',
@@ -1916,7 +1923,7 @@ export const ja: Record<string, string> = {
     'ai.actions.settings.path.pmx': 'PMX 上書きパスを選択',
     'ai.actions.settings.path.vmd': 'VMD 上書きパスを選択',
     'ai.actions.settings.path.audio': 'オーディオ上書きパスを選択',
-    
+
     'ai.actions.settings.path.stage': 'ステージ上書きパスを選択',
     'ai.actions.settings.path.environment': '環境上書きパスを選択',
     'ai.actions.settings.path.mdDress': 'MD 衣装上書きパスを選択',
@@ -1957,7 +1964,8 @@ export const ja: Record<string, string> = {
     'ai.config.corsWarning':
         '⚠ リモートエンドポイントにCORS制限がある可能性があります。ローカルOllamaは OLLAMA_ORIGINS=* を設定して再起動してください。',
     'ai.config.relayActive': 'Relay プロキシが有効です（{url}）',
-    'ai.config.relayNotConfigured': 'CORS 制限を回避するには、設定で Relay プロキシを設定してください',
+    'ai.config.relayNotConfigured':
+        'CORS 制限を回避するには、設定で Relay プロキシを設定してください',
     'ai.chat.clear': 'クリア',
     'ai.chat.clearConfirm': 'チャット履歴をクリアしますか？',
     'ai.chat.pendingBlocked': '先に保留中の操作を確認またはキャンセルしてください。',
@@ -1976,17 +1984,21 @@ export const ja: Record<string, string> = {
     'ai.errors.resolveFailed':
         'AI サービスの初期化に失敗しました。詳細はコンソールを確認してください。',
     'ai.config.notResolved': 'AI サービスが準備できていません。お待ちください...',
-    'ai.errorAdvice.missingEndpoint': 'プロバイダを選択するか、APIエンドポイントを入力してください。',
+    'ai.errorAdvice.missingEndpoint':
+        'プロバイダを選択するか、APIエンドポイントを入力してください。',
     'ai.errorAdvice.missingKey': 'このプロバイダにはAPIキーが必要です。入力してください。',
     'ai.errorAdvice.missingModel': '会話を開始するにはモデル名を入力する必要があります。',
     'ai.errorAdvice.cors':
         'ローカルOllamaは OLLAMA_ORIGINS=* を設定して再起動してください。リモートAPIは同一オリジンプロキシの設定をお勧めします。',
     'ai.errorAdvice.unauthorized': 'APIキーが無効または期限切れです。確認してください。',
-    'ai.errorAdvice.notFound': 'エンドポイントまたはモデルが見つかりません。モデル名を確認してください。',
+    'ai.errorAdvice.notFound':
+        'エンドポイントまたはモデルが見つかりません。モデル名を確認してください。',
     'ai.errorAdvice.rateLimit': 'リクエストが多すぎます。しばらくしてから再試行してください。',
     'ai.errorAdvice.server': 'プロバイダサーバーエラーです。しばらくしてから再試行してください。',
-    'ai.errorAdvice.network': 'ネットワーク接続に失敗しました。エンドポイントアドレスまたはサービスの実行状況を確認してください。',
-    'ai.errorAdvice.unknown': '不明なエラーが発生しました。設定を確認するか、コンソールを確認してください。',
+    'ai.errorAdvice.network':
+        'ネットワーク接続に失敗しました。エンドポイントアドレスまたはサービスの実行状況を確認してください。',
+    'ai.errorAdvice.unknown':
+        '不明なエラーが発生しました。設定を確認するか、コンソールを確認してください。',
     'ai.errorAdvice.ollamaNotInstalled':
         'ローカルOllamaが検出されませんでした — https://ollama.com からダウンロードするか、リモートAPIプロバイダを設定してください。',
     'ai.status.missingEndpoint': 'エンドポイント未設定',

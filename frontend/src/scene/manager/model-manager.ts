@@ -1126,8 +1126,12 @@ export class ModelManager {
         const visited = new Set<string>();
         let currentId: string | undefined = startId;
         while (currentId) {
-            if (currentId === targetId) return true;
-            if (visited.has(currentId)) return false;
+            if (currentId === targetId) {
+                return true;
+            }
+            if (visited.has(currentId)) {
+                return false;
+            }
             visited.add(currentId);
             currentId = this.modelRegistry.get(currentId)?.parentId;
         }
@@ -1153,7 +1157,11 @@ export class ModelManager {
         }
         const parentInst = this.modelRegistry.get(parentId);
         if (!parentInst?.mmdModel) {
-            logWarn('model-manager', 'attachModelToBone: parent not found or no mmd runtime:', parentId);
+            logWarn(
+                'model-manager',
+                'attachModelToBone: parent not found or no mmd runtime:',
+                parentId
+            );
             return false;
         }
 
@@ -1180,7 +1188,9 @@ export class ModelManager {
             return false;
         }
 
-        const linkedBone = (rb as unknown as { linkedBone?: import('@babylonjs/core/Bones/bone').Bone }).linkedBone;
+        const linkedBone = (
+            rb as unknown as { linkedBone?: import('@babylonjs/core/Bones/bone').Bone }
+        ).linkedBone;
         if (!linkedBone) {
             logWarn('model-manager', 'attachModelToBone: bone has no linkedBone:', boneName);
             return false;
@@ -1213,7 +1223,9 @@ export class ModelManager {
      */
     detachModelFromBone(childId: string): void {
         const childInst = this.modelRegistry.get(childId);
-        if (!childInst) return;
+        if (!childInst) {
+            return;
+        }
 
         const target = childInst.rootMesh;
         const worldMat = target.getWorldMatrix().clone();
@@ -1239,7 +1251,11 @@ export class ModelManager {
         for (const [childId, inst] of this.modelRegistry) {
             if (inst.parentId && inst.attachedBone) {
                 const target = inst.rootMesh;
-                try { target.detachFromBone(); } catch { /* cleanup */ }
+                try {
+                    target.detachFromBone();
+                } catch {
+                    /* cleanup */
+                }
                 this.attachModelToBone(
                     childId,
                     inst.parentId,

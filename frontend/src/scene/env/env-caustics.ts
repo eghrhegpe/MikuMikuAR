@@ -38,23 +38,34 @@ function _drawCausticCanvas(ctx: CanvasRenderingContext2D, s: number): void {
             const py = (y / s) * TILE;
             const ix = Math.floor(px);
             const iy = Math.floor(py);
-            let f1 = 10, f2 = 10;
+            let f1 = 10,
+                f2 = 10;
             for (let dy = -1; dy <= 1; dy++) {
                 for (let dx = -1; dx <= 1; dx++) {
-                    const wx = ((ix + dx) % TILE + TILE) % TILE;
-                    const wy = ((iy + dy) % TILE + TILE) % TILE;
+                    const wx = (((ix + dx) % TILE) + TILE) % TILE;
+                    const wy = (((iy + dy) % TILE) + TILE) % TILE;
                     const [rx, ry] = hash2v(wx, wy);
                     const ptX = ix + dx + rx;
                     const ptY = iy + dy + ry;
                     let ddx = px - ptX;
                     let ddy = py - ptY;
-                    if (ddx > TILE / 2) ddx -= TILE;
-                    else if (ddx < -TILE / 2) ddx += TILE;
-                    if (ddy > TILE / 2) ddy -= TILE;
-                    else if (ddy < -TILE / 2) ddy += TILE;
+                    if (ddx > TILE / 2) {
+                        ddx -= TILE;
+                    } else if (ddx < -TILE / 2) {
+                        ddx += TILE;
+                    }
+                    if (ddy > TILE / 2) {
+                        ddy -= TILE;
+                    } else if (ddy < -TILE / 2) {
+                        ddy += TILE;
+                    }
                     const d = Math.hypot(ddx, ddy);
-                    if (d < f1) { f2 = f1; f1 = d; }
-                    else if (d < f2) { f2 = d; }
+                    if (d < f1) {
+                        f2 = f1;
+                        f1 = d;
+                    } else if (d < f2) {
+                        f2 = d;
+                    }
                 }
             }
             const edge = f2 - f1;
@@ -63,7 +74,10 @@ function _drawCausticCanvas(ctx: CanvasRenderingContext2D, s: number): void {
             const g = Math.min(1, Math.max(0, baseBright - edgeDark));
             const i = (y * s + x) * 4;
             const b = Math.floor(g * 255);
-            data[i] = b; data[i + 1] = b; data[i + 2] = b; data[i + 3] = 255;
+            data[i] = b;
+            data[i + 1] = b;
+            data[i + 2] = b;
+            data[i + 3] = 255;
         }
     }
     // 写入回 ctx

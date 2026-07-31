@@ -20,9 +20,21 @@ describe('ErrorRingBuffer', () => {
     /** 快速创建一条错误条目（tag/message 可覆盖）。 */
     function e(
         msg: string,
-        overrides: Partial<{ tag: string; timestamp: number; severity: ErrorEntry['severity']; kind: ErrorEntry['kind'] }> = {}
+        overrides: Partial<{
+            tag: string;
+            timestamp: number;
+            severity: ErrorEntry['severity'];
+            kind: ErrorEntry['kind'];
+        }> = {}
     ): Parameters<ErrorRingBuffer['push']>[0] {
-        return { kind: 'log', tag: 't', message: msg, timestamp: 1, severity: 'warn', ...overrides };
+        return {
+            kind: 'log',
+            tag: 't',
+            message: msg,
+            timestamp: 1,
+            severity: 'warn',
+            ...overrides,
+        };
     }
 
     it('构造容量必须为正整数', () => {

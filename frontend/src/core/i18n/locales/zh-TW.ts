@@ -76,7 +76,7 @@ export const zhTW: Record<string, string> = {
     'settings.library.matCat.eyes': '眼睛',
     'settings.library.matCat.clothing': '服裝',
     'settings.library.matCat.accessory': '配件',
-    
+
     'settings.paths.modelCount': '模型數量：',
     'settings.saveFailed': '儲存失敗',
 
@@ -717,7 +717,7 @@ export const zhTW: Record<string, string> = {
     'scene.scene': '場景',
     'scene.renderPresets': '渲染預設',
     'scene.stageLight': '舞台燈光',
-    
+
     'scene.intensity': '強度',
     'scene.color': '顏色',
     'scene.type': '類型',
@@ -816,11 +816,11 @@ export const zhTW: Record<string, string> = {
     'scene.loadStage': '載入舞台',
     'scene.statusNoModelLib': '✗ 請先在設定中配置模型庫目錄',
     'scene.statusOpenStageLibFailed': '✗ 開啟舞台庫失敗',
-    
+
     'scene.stageLabel': '舞台: {name}',
-    
+
     'scene.transform': '變換',
-    
+
     'scene.custom': '自訂',
     'scene.lightList': '燈光列表',
     'scene.addLight': '新增燈光',
@@ -1530,7 +1530,7 @@ export const zhTW: Record<string, string> = {
     'settings.paths.pmx': 'PMX 模型',
     'settings.paths.vmd': 'VMD 動作',
     'settings.paths.audio': '音樂',
-    
+
     'settings.paths.stage': '場景',
     'settings.paths.environment': '環境',
     'settings.paths.mdDress': 'MD 服裝',
@@ -1609,7 +1609,7 @@ export const zhTW: Record<string, string> = {
 
     // ===== i18n Phase 4 — missing keys =====
     'common.model': '模型',
-    
+
     'common.close': '關閉',
     'common.delete': '刪除',
     'common.items': '項',
@@ -1618,7 +1618,7 @@ export const zhTW: Record<string, string> = {
     'common.off': '關',
     'common.on': '開',
     'common.stage': '舞台',
-    
+
     'env.persistFailed': '✗ 儲存設定失敗，重啟後將丟失變更',
     'model.materialReset': '✓ 已重設: {name}',
     'motion.boneOverride.title': '骨骼覆蓋',
@@ -1755,7 +1755,7 @@ export const zhTW: Record<string, string> = {
     'common.empty': '暫無內容',
     'common.apply': '應用',
     'settings.audio.offsetHint': '正=音訊先播，負=音訊後播（對所有音樂全域生效）',
-    
+
     'goerr.software.notFound': '找不到 {name}，請在設定中配置路徑',
     'goerr.software.launchFailed': '啟動 {name} 失敗',
     'goerr.software.androidNotSupported': '{name} 無法在 Android 上啟動',
@@ -1880,7 +1880,7 @@ export const zhTW: Record<string, string> = {
     'ai.actions.settings.path.pmx': '選擇 PMX 覆蓋路徑',
     'ai.actions.settings.path.vmd': '選擇 VMD 覆蓋路徑',
     'ai.actions.settings.path.audio': '選擇音訊覆蓋路徑',
-    
+
     'ai.actions.settings.path.stage': '選擇舞台覆蓋路徑',
     'ai.actions.settings.path.environment': '選擇環境覆蓋路徑',
     'ai.actions.settings.path.mdDress': '選擇 MD 服裝覆蓋路徑',
