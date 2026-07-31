@@ -182,6 +182,9 @@ export default [
           caughtErrorsIgnorePattern: '^_',
         },
       ],
+      // 测试文件：一个 describe 块包一批 it 用例是声明式结构，行数多来自用例数量
+      // 而非逻辑分支，与 schema builder 同理，故豁免 max-lines-per-function。
+      'max-lines-per-function': 'off',
     },
   },
   {
@@ -190,6 +193,23 @@ export default [
     files: ['src/core/i18n/locales/*.ts', 'src/core/icons-bundle.ts'],
     rules: {
       'max-lines': 'off',
+    },
+  },
+  {
+    // 声明式菜单 schema builder：这些 build*Schema / build*Level 函数返回扁平的
+    // MenuNode[] 数据表（一张张 { id, kind, renderCustom } 卡片），行数多来自卡片
+    // 数量而非圈复杂度（故仅触发 max-lines-per-function、不触发 complexity）。
+    // 与 i18n 语言包同源——是声明式数据而非分支逻辑，拆分零安全收益、反破坏「菜单单源」，
+    // 故仅豁免 max-lines-per-function。complexity / max-lines 仍生效，真逻辑长函数照样拦截。
+    files: [
+      'src/menus/scene-stage-lights.ts',
+      'src/menus/env-water-levels.ts',
+      'src/menus/env-ground-levels.ts',
+      'src/menus/motion-override-levels.ts',
+      'src/menus/motion-camera-levels.ts',
+    ],
+    rules: {
+      'max-lines-per-function': 'off',
     },
   },
   {

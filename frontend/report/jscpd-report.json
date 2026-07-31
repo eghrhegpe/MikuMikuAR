@@ -380,18 +380,18 @@
       "fragment": "",
       "lines": 16,
       "secondFile": {
-        "end": 125,
+        "end": 124,
         "endLoc": {
           "column": 44,
-          "line": 125,
-          "position": 4024
+          "line": 124,
+          "position": 4001
         },
         "name": "scene\\motion\\motion-modules\\hand-modules.ts",
-        "start": 110,
+        "start": 109,
         "startLoc": {
           "column": 30,
-          "line": 110,
-          "position": 3578
+          "line": 109,
+          "position": 3555
         }
       },
       "tokens": 69
@@ -416,54 +416,54 @@
       "fragment": "",
       "lines": 16,
       "secondFile": {
-        "end": 173,
+        "end": 172,
         "endLoc": {
           "column": 25,
-          "line": 173,
-          "position": 6098
+          "line": 172,
+          "position": 6075
         },
         "name": "scene\\motion\\motion-modules\\hand-modules.ts",
-        "start": 159,
+        "start": 158,
         "startLoc": {
           "column": 31,
-          "line": 159,
-          "position": 5637
+          "line": 158,
+          "position": 5614
         }
       },
       "tokens": 61
     },
     {
       "firstFile": {
-        "end": 407,
+        "end": 406,
         "endLoc": {
           "column": 13,
-          "line": 407,
-          "position": 15237
+          "line": 406,
+          "position": 15214
         },
         "name": "scene\\motion\\motion-modules\\hand-modules.ts",
-        "start": 392,
+        "start": 391,
         "startLoc": {
           "column": 51,
-          "line": 392,
-          "position": 14894
+          "line": 391,
+          "position": 14871
         }
       },
       "format": "typescript",
       "fragment": "",
       "lines": 16,
       "secondFile": {
-        "end": 435,
+        "end": 434,
         "endLoc": {
           "column": 13,
-          "line": 435,
-          "position": 15933
+          "line": 434,
+          "position": 15910
         },
         "name": "scene\\motion\\motion-modules\\hand-modules.ts",
-        "start": 420,
+        "start": 419,
         "startLoc": {
           "column": 52,
-          "line": 420,
-          "position": 15590
+          "line": 419,
+          "position": 15567
         }
       },
       "tokens": 55
@@ -506,7 +506,7 @@
     }
   ],
   "statistics": {
-    "detectionDate": "2026-07-31T13:26:22.578Z",
+    "detectionDate": "2026-07-31T14:10:14.627Z",
     "formats": {
       "txt": {
         "clones": 0,
@@ -524,26 +524,26 @@
         "clones": 14,
         "duplicatedLines": 254,
         "duplicatedTokens": 1143,
-        "lines": 45687,
+        "lines": 45704,
         "newClones": 0,
         "newDuplicatedLines": 0,
-        "percentage": 0.5559568367369274,
-        "percentageTokens": 0.5208618144036747,
+        "percentage": 0.555750043759846,
+        "percentageTokens": 0.5206672558148009,
         "sources": 258,
-        "tokens": 219444
+        "tokens": 219526
       }
     },
     "total": {
       "clones": 14,
       "duplicatedLines": 254,
       "duplicatedTokens": 1143,
-      "lines": 45780,
+      "lines": 45797,
       "newClones": 0,
       "newDuplicatedLines": 0,
-      "percentage": 0.5548274355613806,
-      "percentageTokens": 0.5172975615054581,
+      "percentage": 0.5546214817564469,
+      "percentageTokens": 0.5171056560410427,
       "sources": 259,
-      "tokens": 220956
+      "tokens": 221038
     }
   }
 }
