@@ -169,7 +169,7 @@ export const zhCN: Record<string, string> = {
     'model-detail.attachmentDetach': '解除附属',
     'model-detail.attachmentAttach': '附属到模型…',
     'model-detail.attachmentSelectParent': '选择父模型',
-    'model-detail.attachmentSelectBone': '选择骨骼',
+    'model-detail.attachmentSelectBone': '{parent} — 选择骨骼',
     'model-detail.attachmentNoParent': '无可用父模型',
     'model-detail.attachmentNoBone': '该模型无可用骨骼',
     'model-detail.info': '信息',
