@@ -88,6 +88,22 @@ export function openExternalURL(url: string): boolean {
 }
 
 /**
+ * 打开外链的统一入口：先尝试 Android `<a>.click()` 方式，失败则回退 `window.open`。
+ * 桌面端 Wails 的 `window.open` 会被 WebView2 拦截并走系统浏览器，
+ * 与之前 `browser.openURL`（Wails Browser.OpenURL）行为一致。
+ * 修复安卓冷启动 `openExternalURL` 返回 false 后 `browser.openURL` 卡死的问题。
+ */
+export function openExternalLink(url: string): void {
+    if (openExternalURL(url)) {
+        return;
+    }
+    const win = window.open(url, '_blank', 'noopener,noreferrer');
+    if (!win) {
+        console.warn(`[platform] openExternalLink: popup blocked for ${url}`);
+    }
+}
+
+/**
  * Guards an external application action (Blender, MMD, etc.) that is
  * not available on Android or in a pure browser. Returns true if the
  * action should proceed, false if it was blocked.
