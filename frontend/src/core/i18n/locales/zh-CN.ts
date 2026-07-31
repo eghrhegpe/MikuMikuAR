@@ -1954,6 +1954,8 @@ export const zhCN: Record<string, string> = {
     'ai.control.undone': '↩️ 已撤销上一步操作。',
     'ai.config.corsWarning':
         '⚠ 远程端点可能存在 CORS 限制。本地 Ollama 请设置 OLLAMA_ORIGINS=* 后重启。',
+    'ai.config.relayActive': 'Relay 代理已启用（{url}）',
+    'ai.config.relayNotConfigured': '可在设置中配置 Relay 代理以绕过 CORS 限制',
     'ai.chat.clear': '清空',
     'ai.chat.clearConfirm': '清除聊天记录？',
     'ai.chat.pendingBlocked': '请先确认或取消待处理操作。',

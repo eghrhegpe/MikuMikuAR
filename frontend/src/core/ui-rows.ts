@@ -2,7 +2,7 @@
 // addToggleRow / addSliderRow / addModeRow / sliderRow / toggleRow
 
 import { createIconifyIcon } from './icons';
-import { getCurrentRenderingMenu } from '../menus/menu';
+import { getCurrentRenderingContext } from './render-context';
 import { ControlOptions } from './ui-types';
 import { slideRow } from './ui-slide-row';
 import { t } from './i18n/t';
@@ -132,7 +132,7 @@ export function initControl<T>(
             cached = v;
         }
     };
-    getCurrentRenderingMenu()?.registerControl(update, opts.pathHint);
+    getCurrentRenderingContext()?.registerControl(update, opts.pathHint);
     update();
 }
 

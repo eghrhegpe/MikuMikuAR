@@ -3,7 +3,7 @@
 // 复用点：menu.ts 弹窗标题 / ui-collapsible 折叠面板 / ui-slide-row 行 / model-material 材质行。
 // 统一双触发去重 + bind 自更新 + disabled。
 
-import { getCurrentRenderingMenu } from '../menus/menu';
+import { getCurrentRenderingContext } from './render-context';
 
 export interface HeaderToggleConfig {
     value: boolean;
@@ -68,7 +68,7 @@ export function createHeaderToggle(config: HeaderToggleConfig): HTMLLabelElement
             cached = v;
             input.checked = v;
         };
-        getCurrentRenderingMenu()?.registerControl(update);
+        getCurrentRenderingContext()?.registerControl(update);
     }
 
     return toggle;

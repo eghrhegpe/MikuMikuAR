@@ -100,7 +100,7 @@
 | ADR-136 | 缩略图流式加载 AbortSignal 协作式取消 | ✅ 已完成（P2.2 落地；`tsc` 零错误 + 单测 5/5 + 关联回归 118/118 + `build` 通过）（2026-07-19） |
 | ADR-135 | LibrarySessionStore — 资源库状态收敛基座 | ✅ 已完成（P0.1 ✅ / P0.3 ✅ / P1.2 ✅ / P1.3 ✅ / P2 ✅；P0.2 loadId trace 独立于本 store）（2026-07-19） |
 | ADR-134 | 无限地面方案修正 — 废弃相机跟随，扩大地面尺寸范围 | 已采纳（2026-07-19） |
-| ADR-133 | Android MPR 多线程物理缺失——构建门控与架构障碍 | ✅ 已完成（构建门控 + 架构障碍均已修复）（2026-07-30）（2026-07-18） |
+| ADR-133 | Android MPR 多线程物理缺失——构建门控与架构障碍 | ⚠️ 决策二证伪 — Android WebView 平台限制，SPR 单线程为 Android 终态（2026-07-31 真机验证）（2026-07-18） |
 | ADR-132 | 环境亮度统一标量（EnvBrightness Unification） | 已实施（2026-07-21 UI/i18n/预设层补齐闭环）（2026-07-18） |
 | ADR-131 | 资源浏览选中结果统一契约（BrowseOutcome） | ✅ 已完成（2026-07-27 更新：`jumpToDir` 模式已移除，模型替换合并至 `stay` 模式，详见下方 §变更记录）（2026-07-18） |
 | ADR-130 | 场景 UI 整体设计与前后端发展方向路线图 | 规划中（Phase 1 技术债 ✅1.1 已完成（实质达成，载体 ADR-138 + env 子系统大拆分；env-impl.ts 227 行、edgeFade 纹理独立接入 dispose、循环依赖破除、env 子系统 8 个测试文件 70+ it），✅1.2 已完成（popUndoSnapshot 已实现 + Ctrl+Z + 菜单撤销按钮接入 + 测试覆盖），✅1.3 已完成（ADR-128 首部 2026-07-20 标注 5 语种无残留）；Phase 2 ✅2.1/2.2/2.3/2.4/2.5 已完成，✅2.6 已完成（2026-07-27 核对确认：撤销保护已全覆盖——卸载舞台 scene-stage-levels.ts:188-196 + 卸载道具 scene-stage-levels.ts:247-259 + 加载列表统一组件 scene-prop-levels.ts 已接入 offerSceneUndo，共 10 处破坏性操作均有 pushUndoSnapshot + offerSceneUndo/AndRefresh；异步操作反馈统一用 feedbackStatus/feedbackInfo/feedbackError，覆盖 env-preset-levels.ts、library-setup.ts 等关键路径），✅2.7 已完成（ADR-176 收口传输/存储层统一；环境预设导入/导出已闭合；新增 core/preset-meta.ts 读侧 PresetMeta 信封 + listPresets() 归一，单元测试覆盖；写侧信封化待需求驱动）；Phase 3 能力扩展：3.1 基本完成（3 处扫尾）、3.2 ✅ 已完成、3.3 ✅ 已完成（打包/解包；env preset + URL 分享待需求驱动）、3.4 ✅ 已完成（ADR-017）、3.5 📋 已记录（ADR-054：PBR/SSS 上游阻塞，其余待需求驱动）；ADR-093 P3 已关闭（2026-07-27 裁定非死代码））（2026-07-18） |

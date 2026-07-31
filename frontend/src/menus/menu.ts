@@ -14,6 +14,12 @@ import { safeDispose } from '../core/dispose-helpers';
 import { addDisposableListener, type Disposable } from '../core/dom';
 import { createKeyboardNav } from '../core/ui-keyboard-nav';
 import {
+    getCurrentRenderingContext,
+    pushRenderingContext,
+    popRenderingContext,
+    type RenderContext,
+} from '../core/render-context';
+import {
     markNavItem,
     navFocusTarget,
     navHasHorizontalAdjust,
@@ -28,12 +34,9 @@ import {
 const TRANSITION_DURATION = '0.15s';
 const TRANSITION_DURATION_FAST = '0.12s';
 
-/** 渲染上下文栈 — 控件创建函数通过 getCurrentRenderingMenu() 获得当前菜单 */
-const _renderingStack: SlideMenu[] = [];
-
-/** 获取当前正在渲染的 SlideMenu 实例（供 ui-helpers 中的控件函数自动注册） */
+/** 获取当前正在渲染的 SlideMenu 实例（供 menus 层控件的自更新注册）。 */
 export function getCurrentRenderingMenu(): SlideMenu | null {
-    return _renderingStack[_renderingStack.length - 1] ?? null;
+    return (getCurrentRenderingContext() as SlideMenu | null) ?? null;
 }
 
 /** 存活（未 dispose）的 SlideMenu 实例集合 — 供全局返回逻辑（android:back）查询当前打开的菜单 */
@@ -44,7 +47,7 @@ export function getOpenMenus(): SlideMenu[] {
     return Array.from(_liveMenus);
 }
 
-export class SlideMenu {
+export class SlideMenu implements RenderContext {
     private levels: PopupLevel[] = [];
     private container: HTMLElement;
     private viewport: HTMLElement;
@@ -1012,7 +1015,7 @@ export class SlideMenu {
                     list.appendChild(el);
                 }
             }
-            _renderingStack.push(this);
+            pushRenderingContext(this);
             try {
                 const result = await level.renderCustom(list);
                 if (typeof result === 'function') {
@@ -1022,7 +1025,7 @@ export class SlideMenu {
                 console.error('[SlideMenu] renderCustom failed:', err);
                 list.innerHTML = `<div class="slide-empty" style="color:var(--danger);">加载失败: ${err instanceof Error ? err.message : '未知错误'}</div>`;
             } finally {
-                _renderingStack.pop();
+                popRenderingContext();
             }
         }
         // 只有最新的 build 才 appendChild，防止并发导致重复
