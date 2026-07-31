@@ -14,7 +14,6 @@ import {
     envState,
     EnvState,
     modelRegistry,
-    propRegistry,
     showErrorToast,
 } from '../core/config';
 import { showInfoToast } from '../core/toast';
@@ -90,7 +89,7 @@ import {
     disposeScene,
 } from './scene';
 import type { MaterialCategoryParams } from './manager/material';
-import { removeProp, loadProp, setPropTransform, setPropOrbit } from './env/props/props';
+
 import { setEnvState } from './env/_bridge/env-bridge';
 import { setEnvSunAngle } from './env/env-time-of-day';
 import { flushEnvState, flushUIState, cancelEnvPersistTimer } from './env/_bridge/env-persist';
@@ -278,29 +277,6 @@ export interface SceneFile {
               allEnabled?: boolean;
           };
     lipSync?: LipSyncStateType;
-    props?: Array<{
-        filePath: string;
-        libraryRef?: string;
-        /** Stable unique identifier for this prop. Persisted to survive re-load cycles. */
-        uuid?: string;
-        name: string;
-        positionX: number;
-        positionY: number;
-        positionZ: number;
-        rotationY: number;
-        scaling: number;
-        visible: boolean;
-        /** [doc:adr-049] 球面坐标轨道控制：坐标模式，缺省按 'cartesian' 处理 */
-        positionMode?: 'cartesian' | 'orbit';
-        orbitAzimuth?: number;
-        orbitElevation?: number;
-        orbitDistance?: number;
-        /** [doc:adr-061] Accessory 骨骼锚定 */
-        boneName?: string;
-        targetModelUuid?: string;
-        boneOffset?: [number, number, number];
-        boneRotation?: [number, number, number];
-    }>;
     gravityStrength?: number;
     /** [doc:adr-054] Active formation preset (re-computed on load). */
     formation?: {
@@ -360,10 +336,6 @@ export interface SceneFile {
 }
 
 // ======== Serialization ========
-
-// propUuidMap: runtime prop instance ID → persistent UUID（恢复 accessory 锚定时反查）。
-// 模型侧自 [doc:stable-identity] 起 runtime id 即稳定 uuid，不再需要中间映射。
-const propUuidMap = new Map<string, string>();
 
 export function serializeScene(): SceneFile {
     const procState = getProcMotionState();
@@ -535,33 +507,6 @@ export function serializeScene(): SceneFile {
             allEnabled: isAllPerceptionEnabled(),
         },
         lipSync: { ...lipState },
-        props: Array.from(propRegistry.values()).map((p) => {
-            let uuid = propUuidMap.get(p.id);
-            if (!uuid) {
-                uuid = generateUuid();
-                propUuidMap.set(p.id, uuid);
-            }
-            return {
-                filePath: p.filePath,
-                libraryRef: computeLibraryRef(p.filePath, libraryRoot) || undefined,
-                uuid,
-                name: p.name,
-                positionX: p.position[0],
-                positionY: p.position[1],
-                positionZ: p.position[2],
-                rotationY: p.rotationY,
-                scaling: p.scaling,
-                visible: p.visible,
-                positionMode: p.positionMode,
-                orbitAzimuth: p.orbitAzimuth,
-                orbitElevation: p.orbitElevation,
-                orbitDistance: p.orbitDistance,
-                boneName: p.boneName,
-                targetModelUuid: p.targetModelId ?? undefined,
-                boneOffset: p.boneOffset,
-                boneRotation: p.boneRotation,
-            };
-        }),
         gravityStrength: getGravityStrength(),
         formation: getActiveFormation()
             ? { type: getActiveFormation()!, spacing: getActiveFormationSpacing() }
@@ -626,10 +571,6 @@ async function deserializeModels(
     for (const id of Array.from(modelRegistry.keys())) {
         removeModel(id);
     }
-    for (const id of Array.from(propRegistry.keys())) {
-        removeProp(id);
-    }
-    propUuidMap.clear();
 
     // --- Phase 1: Load all models and record runtime IDs ---
     const modelIds: Array<string | null> = [];
@@ -1083,83 +1024,6 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
             }
         } catch (err) {
             logWarn('scene-serialize', '场景恢复: 音频加载失败:', err);
-        }
-    }
-
-    // --- Props ---
-    if (data.props && data.props.length > 0) {
-        for (const p of data.props) {
-            try {
-                const resolvedPath = resolvePathFromRef(p.filePath, p.libraryRef);
-                if (!resolvedPath) {
-                    continue;
-                }
-                const propId = await loadProp(resolvedPath);
-                if (propId) {
-                    if (p.uuid) {
-                        propUuidMap.set(propId, p.uuid);
-                    }
-                    if (
-                        p.positionMode === 'orbit' &&
-                        p.orbitAzimuth !== undefined &&
-                        p.orbitElevation !== undefined &&
-                        p.orbitDistance !== undefined
-                    ) {
-                        setPropTransform(propId, {
-                            rotationY: p.rotationY,
-                            scaling: p.scaling,
-                            visible: p.visible,
-                        });
-                        setPropOrbit(propId, p.orbitAzimuth, p.orbitElevation, p.orbitDistance);
-                    } else {
-                        setPropTransform(propId, {
-                            position: [p.positionX, p.positionY, p.positionZ],
-                            rotationY: p.rotationY,
-                            scaling: p.scaling,
-                            visible: p.visible,
-                        });
-                    }
-                }
-            } catch (err) {
-                logWarn('scene-serialize', `场景恢复: 道具 ${p.name} 加载失败:`, err);
-            }
-        }
-    }
-
-    // --- Accessory: 恢复道具骨骼锚定 ---
-    if (data.props && data.props.length > 0) {
-        for (const p of data.props) {
-            if (!p.boneName || !p.targetModelUuid) {
-                continue;
-            }
-            // [doc:stable-identity] runtime id 即稳定 uuid，targetModelUuid 直接等于目标模型运行 id
-            const targetModelId = p.targetModelUuid;
-            if (!targetModelId || !modelRegistry.has(targetModelId)) {
-                continue;
-            }
-            // 找到对应的 prop ID
-            let propId: string | undefined;
-            for (const [runtimeId, uuid] of propUuidMap) {
-                if (uuid === p.uuid) {
-                    propId = runtimeId;
-                    break;
-                }
-            }
-            if (!propId) {
-                continue;
-            }
-            try {
-                const { attachPropToBone } = await import('./env/props/accessory');
-                attachPropToBone(
-                    propId,
-                    p.boneName,
-                    targetModelId,
-                    p.boneOffset ?? [0, 0, 0],
-                    p.boneRotation ?? [0, 0, 0]
-                );
-            } catch (err) {
-                logWarn('scene-serialize', `场景恢复: 道具 ${p.name} 骨骼锚定失败:`, err);
-            }
         }
     }
 

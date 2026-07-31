@@ -145,17 +145,16 @@ describe('Stage level', () => {
         mockPush.mockReset();
     });
 
-    it('renders load stage and load prop buttons', () => {
+    it('renders load stage button', () => {
         const level = buildStageLevel();
         expect(level.renderCustom).toBeDefined();
         const container = document.createElement('div');
         level.renderCustom!(container);
-        expect(container.querySelectorAll('.slide-item').length).toBeGreaterThanOrEqual(2);
+        expect(container.querySelectorAll('.slide-item').length).toBeGreaterThanOrEqual(1);
         const labels = Array.from(container.querySelectorAll('.slide-label')).map(
             (el) => el.textContent
         );
         expect(labels).toContain('加载舞台');
-        expect(labels).toContain('加载道具');
     });
 
     it('shows empty state when no stages loaded', () => {

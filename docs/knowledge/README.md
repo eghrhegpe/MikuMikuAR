@@ -98,7 +98,6 @@ use_when:
 
 | 卡片 | 模块 | 关联 ADR |
 |------|------|----------|
-| [道具骨骼锚定系统](./accessory.md) | `scene/env/accessory.ts` | — |
 | [环境系统上下文](./env-context.md) | `scene/env/env-context.ts` | — |
 | [环境调度器](./env-dispatcher.md) | `scene/env/env-dispatcher.ts` | ADR-138 |
 | [地面系统](./env-ground.md) | `scene/env/env-ground.ts` | — |
@@ -143,9 +142,6 @@ use_when:
 | [模型生命周期操作](./model-ops.md) | `scene/manager/model-ops.ts` | ADR-116 |
 | [分类材质系统](./material.md) | `scene/manager/material.ts` | — |
 | [纹理 LRU 缓存](./texture-lru.md) | `scene/manager/texture-lru.ts` | ADR-189 |
-| [道具系统](./props.md) | `scene/env/props.ts` | — |
-| [道具模块 barrel 重导出](./props-index.md) | `scene/env/props/index.ts` | — |
-| [道具骨骼锚定系统](./accessory.md) | `scene/env/accessory.ts` | — |
 | [缩略图渲染](./thumbnail-capture.md) | `scene/manager/thumbnail-capture.ts` | — |
 | [缩略图缓存 key 推导](./thumbnail-key.md) | `scene/manager/thumbnail-key.ts` | — |
 | [姿势多角度预设系统](./camera-angle.md) | `scene/pose/camera-angle.ts` | — |
