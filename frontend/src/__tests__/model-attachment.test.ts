@@ -12,7 +12,6 @@ vi.mock('@/outfit/outfit-overlay', () => ({
     restoreMaterials: vi.fn(),
 }));
 vi.mock('@/scene/env/env-wetness', () => ({ applyWetnessToInst: vi.fn() }));
-vi.mock('./material', () => ({ disposeModelMaterialState: vi.fn() }), { virtual: false });
 vi.mock('../scene/manager/material', () => ({ disposeModelMaterialState: vi.fn() }));
 vi.mock('@/core/toast', () => ({ showInfoToast: vi.fn() }));
 vi.mock('@/core/feedback', () => ({ feedbackStatus: vi.fn() }));
