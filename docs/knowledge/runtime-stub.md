@@ -1,6 +1,6 @@
 ---
 kind: runtime_stub
-name: @wailsio/runtime 浏览器桩
+name: '@wailsio/runtime 浏览器桩'
 tier: leaf
 category: core
 scope:

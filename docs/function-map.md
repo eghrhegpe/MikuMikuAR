@@ -139,7 +139,7 @@
 | `delay()` | `core/async` | Promise 包装的延迟。 |
 | `fireAndForget()` | `core/async` | 启动一个异步操作但不等待，异常由 swallowError 兜底。 |
 | `makeLazyLoader()` | `core/async` | 创建惰性动态 import 加载器（带并发守卫 + 失败重试）。 |
-| `swallowError()` | `core/async` | 吞掉 promise 的异常并记录日志（比空 `.catch(() => {})` 可调试）。 |
+| `swallowError()` | `core/async` | 吞掉 promise 的异常并记录日志（比空 `.catch(() =&gt; {})` 可调试）。 |
 | `waitForFrame()` | `core/async` | Promise 包装的等待下一帧。 |
 | `PlaySfxOptions()` | `core/audio-bus` | — |
 | `disposeAudioBus()` | `core/audio-bus` | 释放总线资源（context 关闭、缓存清空）。 |
@@ -272,7 +272,7 @@
 | `t()` | `core/i18n/t` | 翻译一个 key。 |
 | `registerIconBundle()` | `core/icons-bundle` | — |
 | `createIconButton()` | `core/icons` | 创建图标按钮（默认 slide-action 样式）。 |
-| `createIconifyIcon()` | `core/icons` | Create an <iconify-icon> element for the given icon name. |
+| `createIconifyIcon()` | `core/icons` | Create an &lt;iconify-icon&gt; element for the given icon name. |
 | `softwareKindIcon()` | `core/icons` | Map software kind to an iconify icon name. |
 | `canvasToBase64()` | `core/image` | 将 Canvas 编码为 base64 字符串（剥离 data:image/...;base64, 前缀）。 |
 | `thumbDataUrl()` | `core/image` | Build a data URL from a base64 thumbnail, sniffing PNG/JPEG/WebP from the header. |
@@ -348,7 +348,7 @@
 | `observe()` | `core/observer-handle` | 订阅 Observable 并返回自动管理的句柄。 |
 | `observeOnce()` | `core/observer-handle` | 一次性订阅：回调执行后自动移除，等价于 observable.addOnce()。 |
 | `orbitInput()` | `core/orbit-state` | — |
-| `MIN_ORBIT_DISTANCE()` | `core/orbit` | 轨道距离下限：distance<=0 或非有限时钳制到此值，避免塌缩到原点或 NaN。 |
+| `MIN_ORBIT_DISTANCE()` | `core/orbit` | 轨道距离下限：distance&lt;=0 或非有限时钳制到此值，避免塌缩到原点或 NaN。 |
 | `OrbitCoords()` | `core/orbit` | — |
 | `cartesianToOrbit()` | `core/orbit` | 笛卡尔坐标 → 球面坐标。 |
 | `normalizeOrbit()` | `core/orbit` | 钳制一组原始轨道参数为合法值域。 |
@@ -364,7 +364,7 @@
 | `isAndroidPlatform()` | `core/platform` | Returns true when running inside the Android WebView (Wails v3). |
 | `isWebEntryMode()` | `core/platform` | [doc:adr-196/176] 运行时判定是否为 web 入口（短路标记或构建模式）。 |
 | `isWebPlatform()` | `core/platform` | Returns true when running in a pure browser (no Wails bridge). |
-| `openExternalLink()` | `core/platform` | 打开外链的统一入口：先尝试 Android `<a>.click()` 方式，失败则回退 `window.open`。 |
+| `openExternalLink()` | `core/platform` | 打开外链的统一入口：先尝试 Android `&lt;a&gt;.click()` 方式，失败则回退 `window.open`。 |
 | `openExternalURL()` | `core/platform` | Opens a URL in the system browser. |
 | `readDeclaredAdapter()` | `core/platform` | [doc:adr-196/176] 读取 globalThis 上声明的适配器身份（'go' | 'browser'）。 |
 | `autoLoop()` | `core/playback-state` | — |
@@ -516,7 +516,7 @@
 | `openFullscreen()` | `core/ui-fullscreen-overlay` | — |
 | `setCurrentState()` | `core/ui-fullscreen-overlay` | — |
 | `HeaderToggleConfig()` | `core/ui-header-toggle` | — |
-| `createHeaderToggle()` | `core/ui-header-toggle` | 创建标题栏小型开关。返回 `<label class="toggle header-toggle">`， 含双触发去重（跳过 target===input 的 synthetic |
+| `createHeaderToggle()` | `core/ui-header-toggle` | 创建标题栏小型开关。返回 `&lt;label class="toggle header-toggle"&gt;`， 含双触发去重（跳过 target===input 的 synthetic |
 | `addActionRow()` | `core/ui-helpers` | — |
 | `addBoneSelectRow()` | `core/ui-helpers` | — |
 | `addCardTitle()` | `core/ui-helpers` | — |
@@ -582,10 +582,10 @@
 | `addActionRow()` | `core/ui-rows` | 创建一个可点击的操作按钮行（替代手写 cs-row + button）。 |
 | `addBoneSelectRow()` | `core/ui-rows` | 创建骨骼选择行：label + 搜索框 + 分组下拉（含 IK 标记）。 |
 | `addCardTitle()` | `core/ui-rows` | 创建 card-title 标题行并追加到容器 |
-| `addDangerRow()` | `core/ui-rows` | 创建危险操作行（icon + red label），替代手动拼接 `div.slide-item > icon + label.danger-text` |
+| `addDangerRow()` | `core/ui-rows` | 创建危险操作行（icon + red label），替代手动拼接 `div.slide-item &gt; icon + label.danger-text` |
 | `addDisabledRow()` | `core/ui-rows` | 创建一个不可交互的提示行（替代手写 cs-row + opacity 0.4 + pointer-events none）。 |
 | `addEmptyRow()` | `core/ui-rows` | 创建空状态占位行（灰色文字，不可点击），替代手动 `el.style.opacity = '0.5'` 模式 |
-| `addFieldRow()` | `core/ui-rows` | 创建字段行（左 label + 右 value），替代手动拼接的 `div.slide-item > span.slide-label.field-label + span.fie |
+| `addFieldRow()` | `core/ui-rows` | 创建字段行（左 label + 右 value），替代手动拼接的 `div.slide-item &gt; span.slide-label.field-label + span.fie |
 | `addInfoCard()` | `core/ui-rows` | — |
 | `addInfoGrid()` | `core/ui-rows` | — |
 | `addInlineToggleRow()` | `core/ui-rows` | 创建一个内联 toggle 行（替代手写 toggle-row + toggle-label + toggle-switch）。 |
@@ -730,7 +730,7 @@
 | `WriteTextFile()` | `core/wails-bindings` | — |
 | `readFileBytes()` | `core/wails-bindings` | 读取文件为 Uint8Array（go：自动解码 Wails v3 base64；browser：IndexedDB/FSA 直读）。 |
 | `getWindVector()` | `core/wind-utils` | 返回当前风矢量（方向 × 速度），风未生效时返回零向量。 |
-| `isWindActive()` | `core/wind-utils` | 风向是否生效（windEnabled 且 windSpeed > 0.01，过滤浮点噪声 / 滑条零位残留）。 |
+| `isWindActive()` | `core/wind-utils` | 风向是否生效（windEnabled 且 windSpeed &gt; 0.01，过滤浮点噪声 / 滑条零位残留）。 |
 
 ## 3D 场景
 
@@ -1210,7 +1210,7 @@
 | `renderInstanceThumbnail()` | `scene/manager/thumbnail-capture` | 用离屏 RenderTargetTexture 渲染指定模型实例的「当前骨骼姿态」并保存为缩略图。 |
 | `ThumbnailBaseKeyInput()` | `scene/manager/thumbnail-key` | — |
 | `ThumbnailKeyInput()` | `scene/manager/thumbnail-key` | — |
-| `buildThumbnailKey()` | `scene/manager/thumbnail-key` | 唯一缓存 key 构造：`<baseKey>::<resolution>::<aspect>`。 |
+| `buildThumbnailKey()` | `scene/manager/thumbnail-key` | 唯一缓存 key 构造：`&lt;baseKey&gt;::&lt;resolution&gt;::&lt;aspect&gt;`。 |
 | `libraryModelBaseKey()` | `scene/manager/thumbnail-key` | 由 LibraryModel 推导 baseKey（读侧专用适配器）。 |
 | `thumbnailBaseKey()` | `scene/manager/thumbnail-key` | 由库引用路径 + 内部路径推导 baseKey。 |
 | `BoneMapPreset()` | `scene/motion/animation-retargeter` | — |
@@ -2154,7 +2154,7 @@
 | `setMMDPath()` | `menus/settings-system` | — |
 | `SETTINGS()` | `menus/settings-targets` | 设置菜单文件夹导航 target（ADR-157：7 分类信息架构） |
 | `SETTINGS_ACTION()` | `menus/settings-targets` | 设置菜单动作 target（点击后执行操作，不导航） |
-| `SOFTWARE_DETAIL_PREFIX()` | `menus/settings-targets` | 动态 target 前缀 —— 用于 `settings:software-detail:<path>` 模式 |
+| `SOFTWARE_DETAIL_PREFIX()` | `menus/settings-targets` | 动态 target 前缀 —— 用于 `settings:software-detail:&lt;path&gt;` 模式 |
 | `SettingsActionTarget()` | `menus/settings-targets` | 所有动作 target 的联合类型 |
 | `SettingsFolderTarget()` | `menus/settings-targets` | 所有文件夹 target 的联合类型 |
 | `generateTextColors()` | `menus/settings` | — |

@@ -15,7 +15,7 @@ symbols:
   - _resetKtx2CacheForTest
 invariants:
   - 探测结果缓存，避免重复创建 canvas + WebGL context
-  - Node.js 环境（测试）保守返回 { supported: false, preferredFormat: null }
+  - 'Node.js 环境（测试）保守返回 { supported: false, preferredFormat: null }'
   - 优先级：ASTC（移动端）> BC7（桌面）> ETC2（WebGL2 强制兜底）
 tests:
   - 间接覆盖：单测 mock WebGL context

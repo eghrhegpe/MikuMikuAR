@@ -18,8 +18,8 @@ symbols:
   - WebEvents
   - WailsRuntimeBridge
 invariants:
-  - 运行时动态选型：Web 走 WebRuntimeBridge（no-op），Wails/桌⾯走动态 import @wailsio/runtime
-  - @wailsio/runtime 的 value import 只允许出现在本文件，业务侧一律经 getRuntimeBridge() 访问
+  - 运行时动态选型：Web 走 WebRuntimeBridge（no-op），Wails/桌面走动态 import '@wailsio/runtime'
+  - '@wailsio/runtime 的 value import 只允许出现在本文件，业务侧一律经 getRuntimeBridge() 访问'
   - on() 返回 Unsubscribe 函数，业务侧必须保存并在 dispose 调用——这是主契约
   - off(...names) 按事件名移除会清掉所有模块的监听，谨慎使用
   - disposeAll() 仅供应用级 shutdown，不允许业务模块随意全局清理
