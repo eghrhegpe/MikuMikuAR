@@ -1343,7 +1343,6 @@ export const en: Record<string, string> = {
     'env.fogDensity': 'Fog density',
     'env.chromaticAmount': 'Chromatic amount',
     'env.toneIntensity': 'Tone intensity',
-    'env.fogMultiplier': 'Fog multiplier',
     'env.underwaterTintStrength': 'Underwater tint strength',
     'env.waveFresnel': 'Wave & Fresnel',
     'env.caustics': 'Caustics',
@@ -1421,12 +1420,7 @@ export const en: Record<string, string> = {
     'env.experimental': 'Experimental',
     'env.experimentalWarn':
         'The following features are performance-heavy and may affect framerate. Enable with caution.',
-    'env.volumetricCloud': 'Volumetric cloud',
-    'env.volumetricCloudNeedWebGL': 'Volumetric cloud requires WebGL 2.0',
-    'env.volumetricCloudUnsupported':
-        '(WebGL 2.0 is not supported on this device; volumetric cloud is unavailable)',
     'env.fog': 'Fog',
-    'env.enableFog': 'Enable fog',
     'env.fogMode': 'Fog mode',
     'env.exp2': 'Exp²',
     'env.exp': 'Exp',
@@ -1460,7 +1454,6 @@ export const en: Record<string, string> = {
     'env.advancedSky': 'Advanced sky settings',
     'env.presets': 'Environment Presets',
     'env.particle': 'Particles',
-    'env.particleType': 'Particle type',
     'env.sakura': 'Sakura',
     'env.rain': 'Rain',
     'env.snow': 'Snow',

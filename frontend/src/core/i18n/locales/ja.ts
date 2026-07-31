@@ -1230,7 +1230,6 @@ export const ja: Record<string, string> = {
     'env.fogDensity': 'フォグ密度',
     'env.chromaticAmount': '色収差量',
     'env.toneIntensity': '色調強度',
-    'env.fogMultiplier': 'フォグ倍率',
     'env.underwaterTintStrength': '水中ティント強度',
     'env.waveFresnel': '波浪とフレネル',
     'env.caustics': 'コースティクス',
@@ -1314,14 +1313,9 @@ export const ja: Record<string, string> = {
     'env.experimental': '実験的機能',
     'env.experimentalWarn':
         '以下の機能は処理負荷が高く、フレームレートに影響を与える可能性があります。慎重に有効にしてください。',
-    'env.volumetricCloud': 'ボリューメトリッククラウド',
-    'env.volumetricCloudNeedWebGL': 'ボリューメトリッククラウドには WebGL 2.0 が必要です',
-    'env.volumetricCloudUnsupported':
-        '（お使いの端末は WebGL 2.0 に対応していないため、ボリューメトリッククラウドは利用できません）',
 
     // —— Fog ——
     'env.fog': '霧',
-    'env.enableFog': 'フォグを有効化',
     'env.fogMode': 'フォグモード',
     'env.exp2': '指数二乗',
     'env.exp': '指数',
@@ -1358,7 +1352,6 @@ export const ja: Record<string, string> = {
 
     // —— Particles ——
     'env.particle': 'パーティクル',
-    'env.particleType': 'パーティクル種類',
     'env.sakura': '桜',
     'env.rain': '雨',
     'env.snow': '雪',
