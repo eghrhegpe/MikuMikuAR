@@ -20,10 +20,10 @@ import { uiState } from '@/core/state';
 import { isStageLike } from '@/core/path';
 import { canvasToBase64 } from '@/core/image';
 import { logWarn } from '@/core/logger';
-import { type PropInstance, type RuntimeModel } from '@/core/types';
+import { type RuntimeModel } from '@/core/types';
 import { buildThumbnailKey } from './thumbnail-key';
 
-// 缩略图渲染所需的最小实例形状：ModelInstance 与 PropInstance 均可适配。
+// 缩略图渲染所需的最小实例形状。
 // 仅消费三个字段：rootMesh（渲染根节点）、kind（宽高比判定）、mmdModel?（物理冻结，可选）。
 // 用 TransformNode 而非 Mesh：道具的渲染根是其父级容器（TransformNode），
 // 以便多网格道具的全部子网格入镜；模型 rootMesh 为 Mesh（TransformNode 子类）同样兼容。
@@ -59,34 +59,6 @@ export async function renderInstanceThumbnail(
     await prev;
     try {
         await _renderThumbnailImpl(scene, inst, key);
-    } finally {
-        release();
-    }
-}
-
-/**
- * 道具缩略图捕获（补闭环）：复用同一离屏 RT 渲染逻辑。
- * 道具 kind 视为 'prop' → isStageLike 命中 16:9，与 library-core 读侧 key 对齐。
- * 渲染根节点优先用 container（多网格父级容器），确保全部子网格入镜；单网格道具退化为 rootMesh。
- * 道具无 MMD 物理刚体，mmdModel 缺省 → 物理冻结分支自动跳过。
- */
-export async function renderPropThumbnail(
-    scene: Scene,
-    prop: PropInstance,
-    key: string
-): Promise<void> {
-    const prev = _thumbMutex;
-    let release!: () => void;
-    _thumbMutex = new Promise<void>((r) => {
-        release = r;
-    });
-    await prev;
-    try {
-        const src: ThumbnailSource = {
-            rootMesh: prop.container ?? prop.rootMesh,
-            kind: 'prop',
-        };
-        await _renderThumbnailImpl(scene, src, key);
     } finally {
         release();
     }

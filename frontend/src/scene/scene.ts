@@ -488,8 +488,8 @@ function _initModelManager(
             }
         }
 
-        // 三个清理均为 fire-and-forget：在 destroyMmdModel 之后（微任务）才真正执行。
-        // 显式契约：它们只操作各自独立的 registry（_blenderStates / propRegistry / controllers），
+        // 两个清理均为 fire-and-forget：在 destroyMmdModel 之后（微任务）才真正执行。
+        // 显式契约：它们只操作各自独立的 registry（_blenderStates / controllers），
         // 绝不访问已销毁的 mmdModel 或 modelRegistry.get(id)。
         // 若未来修改任一实现、新增对模型的访问，必须先加 modelRegistry.get(id) 守卫。
         // WASM 图层混合器 teardown（observer + evaluator 清理）
@@ -499,16 +499,6 @@ function _initModelManager(
                     return;
                 }
                 teardownWasmLayersBlender(id);
-            })
-        );
-
-        // 解除此模型上的所有骨骼锚定道具
-        swallowError(
-            import('./env/props/accessory').then(({ detachModelAccessories }) => {
-                if (scene.isDisposed) {
-                    return;
-                }
-                detachModelAccessories(id);
             })
         );
 
@@ -719,11 +709,10 @@ export {
     seekDragging,
     setSeekDragging,
     setModelRegistry,
-    propRegistry,
     envState,
 } from '../core/config';
 export { triggerAutoSave, setTriggerAutoSave } from '../core/auto-save';
-export type { EnvState, ModelInstance, PropInstance } from '../core/config';
+export type { EnvState, ModelInstance } from '../core/config';
 export { resolveFileUrl, normPath } from '../core/fileservice';
 export {
     pushUndoSnapshot,
@@ -736,7 +725,6 @@ export {
 export { applyEnvState } from './env/env';
 export * from './motion/proc-motion-bridge';
 export * from './motion/lipsync-bridge';
-export * from './env/props/props';
 export * from './scene-serialize';
 export * from './env/_bridge/env-bridge';
 export * from './env/env-gravity';

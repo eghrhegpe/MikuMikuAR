@@ -12,8 +12,6 @@ import {
     dom,
     setFocusedModelId,
     ModelInstance,
-    propRegistry,
-    overridePaths,
     libraryRoot,
     triggerAutoSave,
     formatError,
@@ -24,7 +22,7 @@ import { feedbackStatus } from '@/core/feedback';
 import { setStatus } from '@/core/status-bar';
 import { showInfoToast } from '@/core/toast';
 import type { ModelMotionSlots } from '@/core/types';
-import { getBaseName, isUnderRoot } from '@/core/path';
+import { getBaseName } from '@/core/path';
 import { swallowError } from '@/core/async';
 import { resolveModelId } from './model-id';
 import { logWarn } from '@/core/logger';
@@ -745,25 +743,6 @@ export async function loadPMXFile(
             }
         }
         setFocusedModelId(id);
-
-        // 道具路径下的模型同时注册到 propRegistry（兼容灯光/阴影/序列化）
-        const propDir = (
-            overridePaths.prop || (libraryRoot ? libraryRoot + '/prop' : '')
-        ).toLowerCase();
-        if (isUnderRoot(propDir, filePath)) {
-            const rootMesh = inst.meshes[0];
-            propRegistry.set(id, {
-                id,
-                name: displayName,
-                filePath,
-                meshes: inst.meshes,
-                rootMesh,
-                position: [0, 0, 0],
-                rotationY: 0,
-                scaling: 1.0,
-                visible: true,
-            });
-        }
 
         // [doc:adr-167] 应用场景级动作（按角色 sceneMotionId 解析；未指定则用默认动作）
         const vmdResult = await _applySceneMotion(inst, _mmdRuntime, effectiveSignal, registeredId);

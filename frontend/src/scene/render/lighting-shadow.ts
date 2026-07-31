@@ -7,20 +7,12 @@ import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { SpotLight } from '@babylonjs/core/Lights/spotLight';
 import { DirectionalLight } from '@babylonjs/core/Lights/directionalLight';
 import { lightingState } from './lighting-state';
-import { modelRegistry, propRegistry } from '@/core/config';
+import { modelRegistry } from '@/core/config';
 import { rebuildStageLightShadows } from './lighting-stage';
 
-/** 遍历所有模型/道具的 Mesh，加入阴影生成器。 */
+/** 遍历所有模型的 Mesh，加入阴影生成器。 */
 export function _addAllMeshesToShadow(gen: ShadowGenerator | CascadedShadowGenerator): void {
     for (const [, inst] of modelRegistry) {
-        for (const m of inst.meshes) {
-            if (m instanceof Mesh) {
-                gen.addShadowCaster(m);
-                m.receiveShadows = true;
-            }
-        }
-    }
-    for (const [, inst] of propRegistry) {
         for (const m of inst.meshes) {
             if (m instanceof Mesh) {
                 gen.addShadowCaster(m);
