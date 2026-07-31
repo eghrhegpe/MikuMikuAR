@@ -93,18 +93,6 @@ export function registerSettingsActions(): void {
     });
 
     registerAction({
-        id: 'settings:set:path:prop',
-        label: 'ai.actions.settings.path.prop',
-        domain: 'settings',
-        params: [],
-        destructive: false,
-        uiOnly: true,
-        execute: async () => {
-            await selectOverridePath('prop');
-        },
-    });
-
-    registerAction({
         id: 'settings:set:path:stage',
         label: 'ai.actions.settings.path.stage',
         domain: 'settings',

@@ -141,7 +141,7 @@ export function isLeafFlattenDir(
  */
 export function resolveDisplayBrowseDir(
     m: LibraryModel,
-    category: 'pmx' | 'stage' | 'prop'
+    category: 'pmx' | 'stage'
 ): string {
     const root = normPath(getBrowseDir(category));
     let cur = normPath(m.dir);
@@ -197,7 +197,7 @@ export function computeRestoreSegments(
 // ======== 缩略图 & 元数据 ========
 
 export function thumbnailKeyForModel(m: LibraryModel, resolution?: number): string {
-    // 统一经 thumbnail-key 模块构造，与写侧（model-loader / props）同源，杜绝双源拼接反弹。
+    // 统一经 thumbnail-key 模块构造，与写侧（model-loader）同源，杜绝双源拼接反弹。
     // 格式：`<baseKey>::<resolution>::<aspect>`，ZIP 内模型 baseKey 为 `file_path::zip_inner`。
     const baseKey = libraryModelBaseKey(m);
     const res = resolution ?? uiState.thumbnailResolution ?? 512;

@@ -1,56 +1,32 @@
 // [doc:architecture] Scene Stage Levels — 舞台管理/舞台变换弹窗层级
 // 从 scene-render-levels.ts 拆分
 
-import { cardContainer, modelRegistry, overridePaths, libraryRoot } from '../core/config';
+import { cardContainer, modelRegistry } from '../core/config';
 import { feedbackInfo, feedbackStatus } from '../core/feedback';
 import type { PopupLevel } from '../core/config';
 import { createIconifyIcon } from '../core/icons';
 import { slideRow, addSectionTitle, addCollapsible } from '../core/ui-helpers';
 import { removeModel, setModelVisibility } from '../scene/manager/model-ops';
 import {
-    getPropList,
-    removeProp,
-    modelManager,
     pushUndoSnapshot,
     offerSceneUndo,
 } from '../scene/scene';
 import { reRenderSceneMenu, getSceneMenu } from './scene-menu-state';
 import { buildTransformCard, buildMaterialCard, buildDangerCard } from './resource-detail-helpers';
-
-import { buildPropDetailLevel } from './scene-prop-levels';
 import { t } from '../core/i18n/t';
 import { renderMenu } from './render-menu';
-import { isUnderRoot } from '../core/path';
 import type { MenuNode } from './menu-schema';
 
-// ======== 舞台根面板：舞台加载、灯光、道具 ========
+// ======== 舞台根面板：舞台加载、灯光 ========
 
 function buildStageSchema(): MenuNode[] {
     const stageModels = Array.from(modelRegistry.entries()).filter(
         ([, inst]) => inst.kind === 'stage'
     );
-    const propDir = (
-        overridePaths.prop || (libraryRoot ? libraryRoot + '/prop' : '')
-    ).toLowerCase();
-    const propModels = Array.from(modelManager.modelRegistry.entries()).filter(
-        ([, inst]) => inst.kind === 'actor' && isUnderRoot(propDir, inst.filePath)
-    );
-    const propItems = [
-        ...getPropList().map((p) => ({
-            id: p.id,
-            name: p.name,
-            fromPropRegistry: true,
-        })),
-        ...propModels.map(([id, inst]) => ({
-            id,
-            name: inst.name,
-            fromPropRegistry: false,
-        })),
-    ];
 
     const nodes: MenuNode[] = [];
 
-    // 卡片 1：功能入口（加载舞台/加载道具）— CTA 上提，确保首次空状态也能直接看到操作入口
+    // 卡片 1：功能入口（加载舞台）— CTA 上提，确保首次空状态也能直接看到操作入口
     nodes.push({
         id: 'stage:actions',
         kind: 'custom',
@@ -93,44 +69,6 @@ function buildStageSchema(): MenuNode[] {
                     undefined,
                     undefined,
                     { testId: 'menu:scene:load-stage' }
-                );
-                slideRow(
-                    inner,
-                    'lucide:box',
-                    t('scene.loadProp'),
-                    true,
-                    () => {
-                        (async () => {
-                            try {
-                                const { getBrowseDir } = await import('../library/library-path');
-                                const browseDir = getBrowseDir('prop');
-                                if (!browseDir) {
-                                    feedbackStatus('scene.statusNoPropLib', undefined, false);
-                                    return;
-                                }
-                                const { buildLevel } = await import('./library-core');
-                                const sm = getSceneMenu();
-                                if (!sm) {
-                                    return;
-                                }
-                                const level = buildLevel(
-                                    browseDir,
-                                    t('scene.propLibrary'),
-                                    (m) => m.format === 'pmx',
-                                    sm
-                                );
-                                sm.push(level);
-                            } catch (err) {
-                                feedbackStatus('scene.statusOpenPropLibFailed', undefined, false);
-                                console.error('Prop library error:', err);
-                            }
-                        })();
-                    },
-                    undefined,
-                    undefined,
-                    undefined,
-                    undefined,
-                    { testId: 'menu:scene:load-prop' }
                 );
             });
         },
@@ -221,53 +159,6 @@ function buildStageSchema(): MenuNode[] {
                         `<div style="margin-bottom:4px;">${t('scene.noLoadedStages')}</div>` +
                         `<div style="font-size:11px;opacity:0.7;">${t('scene.noLoadedStagesHint')}</div>`;
                     inner.appendChild(emptyDiv);
-                });
-            },
-        });
-    }
-
-    // 卡片 2：已加载道具列表（空时隐藏）
-    if (propItems.length > 0) {
-        nodes.push({
-            id: 'stage:props',
-            kind: 'custom',
-            renderCustom: (c) => {
-                cardContainer(c, (inner) => {
-                    for (const item of propItems) {
-                        slideRow(
-                            inner,
-                            'lucide:box',
-                            item.name,
-                            false,
-                            () => getSceneMenu()?.push(buildPropDetailLevel(item.id)),
-                            undefined,
-                            undefined,
-                            false,
-                            undefined,
-                            {
-                                trailing: {
-                                    icon: '×',
-                                    title: t('scene.deleteProp'),
-                                    onClick: (e) => {
-                                        e.stopPropagation();
-                                        // [doc:adr-127] 场景级撤销保护：与其他 8 处破坏性操作一致
-                                        const snap = pushUndoSnapshot();
-                                        if (item.fromPropRegistry) {
-                                            removeProp(item.id);
-                                        } else {
-                                            removeModel(item.id);
-                                        }
-                                        reRenderSceneMenu();
-                                        offerSceneUndo(
-                                            t('scene.unloaded', { name: item.name }),
-                                            snap,
-                                            () => reRenderSceneMenu()
-                                        );
-                                    },
-                                },
-                            }
-                        );
-                    }
                 });
             },
         });

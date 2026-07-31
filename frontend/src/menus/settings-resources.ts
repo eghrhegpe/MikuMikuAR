@@ -61,7 +61,6 @@ const MATERIAL_CATEGORY_KEYS = [
     'settings.library.matCat.eyes',
     'settings.library.matCat.clothing',
     'settings.library.matCat.accessory',
-    'settings.library.matCat.prop',
 ] as const;
 
 /** 所有语言下合法的材质分类名集合（含历史中文值，向后兼容）。 */
@@ -395,12 +394,6 @@ function buildOverrideSchema(): MenuNode[] {
             labelKey: 'settings.paths.audio',
             action: SETTINGS_ACTION.PATH_AUDIO,
             key: 'audio',
-        },
-        {
-            icon: 'lucide:gem',
-            labelKey: 'settings.paths.prop',
-            action: SETTINGS_ACTION.PATH_PROP,
-            key: 'prop',
         },
         {
             icon: 'lucide:home',
