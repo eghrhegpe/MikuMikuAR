@@ -51,6 +51,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Restore Vite build cache
+        uses: actions/cache@v4
+        with:
+          path: frontend/node_modules/.vite
+          key: vite-web-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}-${{ hashFiles('frontend/vite.web.config.ts', 'frontend/src/**', 'frontend/bindings/**') }}
+          restore-keys: |
+            vite-web-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}-
+            vite-web-${{ runner.os }}-
+
       - name: Build web entry (production)
         # [doc:adr-177] Phase 3 主应用 web 入口生产构建
         # 不 externalize babylon / base=/MikuMikuAR/ / @wailsio/runtime stub
