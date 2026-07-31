@@ -38,6 +38,8 @@ outline: [2, 3]
 
 - 会话自动存本地（IndexedDB），可在会话列表**切换 / 新建 / 删除**。
 
+![AI 助手面板](img/ai-assistant-1.png)
+
 ## 常见问题
 
 **Q：AI 一直不回复？**

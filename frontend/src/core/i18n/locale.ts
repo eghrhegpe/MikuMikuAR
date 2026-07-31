@@ -1,5 +1,7 @@
 // [doc:adr-059] i18n 语言状态 —— signal + localStorage 持久化（镜像 setMmdRuntimeType）
+// [doc:perf] initI18n 改为异步，预加载当前语言包
 import { reactive, scheduleRefresh } from '../reactivity';
+import { loadLocale } from './t';
 
 export type LangCode = 'zh-CN' | 'en' | 'ja' | 'ko' | 'zh-TW';
 
@@ -81,6 +83,7 @@ export function getLang(): LangCode {
 }
 
 // [doc:adr-059] 切换语言 → 持久化 + 刷新所有已开菜单（scheduleRefresh）+ 更新 <html lang>
+// [doc:perf] 异步预加载目标语言包；若缓存已命中（如测试环境直接赋值）则同步返回。
 export function setLang(lang: LangCode): void {
     if (!SUPPORTED.includes(lang) || lang === state.lang) {
         return;
@@ -92,6 +95,8 @@ export function setLang(lang: LangCode): void {
         /* expected failure when localStorage is unavailable */
     }
     applyHtmlLang();
+    // 预加载目标语言包；缓存命中时不重复 fetch
+    loadLocale(lang);
     scheduleRefresh();
 }
 
@@ -105,6 +110,8 @@ function applyHtmlLang(): void {
 
 // [doc:adr-059] 启动期调用：在菜单渲染前确定语言并同步 <html lang>。
 // 语言已在模块加载期读取 localStorage，此处仅做 a11y 同步。
-export function initI18n(): void {
+// [doc:perf] 异步预加载当前语言包，使后续 t() 调用直接命中缓存。
+export async function initI18n(): Promise<void> {
     applyHtmlLang();
+    await loadLocale(state.lang);
 }

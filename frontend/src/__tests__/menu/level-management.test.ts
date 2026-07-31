@@ -1,8 +1,10 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi, beforeAll } from 'vitest';
 import type { SlideMenu } from '../../menus/menu';
 import { makeTestLevel, makeTestMenu } from '../fixtures/menu';
 import { setLang } from '../../core/i18n/locale';
-import { t } from '../../core/i18n/t';
+import { t, bundles } from '../../core/i18n/t';
+import { zhCN } from '../../core/i18n/locales/zh-CN';
+import { en } from '../../core/i18n/locales/en';
 import type { PopupLevel } from '../../core/config';
 
 // ─── SlideMenu 测试：层级管理 (getLevel/setLevel/updateRow/refreshHeader) ───
@@ -10,6 +12,12 @@ import type { PopupLevel } from '../../core/config';
 describe('SlideMenu — 层级管理 (getLevel/setLevel/updateRow/refreshHeader)', () => {
     let container: HTMLElement;
     let menu: SlideMenu;
+
+    beforeAll(() => {
+        // [doc:perf] 语言包改为运行时加载，测试环境直接预填缓存
+        bundles['zh-CN'] = zhCN;
+        bundles['en'] = en;
+    });
 
     beforeEach(() => {
         const m = makeTestMenu();

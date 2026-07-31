@@ -7,7 +7,7 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 122 | 713 |
+| 核心基础设施 | 122 | 714 |
 | 3D 场景 | 106 | 1062 |
 | 菜单 & UI | 74 | 360 |
 | 换装 & 音频 | 3 | 33 |
@@ -268,7 +268,8 @@
 | `zhCN()` | `core/i18n/locales/zh-CN` | — |
 | `zhTW()` | `core/i18n/locales/zh-TW` | — |
 | `AVAILABLE_LANGS()` | `core/i18n/t` | [doc:adr-059] 当前已补全语言包的语言列表。 |
-| `bundles()` | `core/i18n/t` | — |
+| `bundles()` | `core/i18n/t` | 运行时加载的语言包缓存。生产环境由 fetch 填充，测试环境可直接赋值。 |
+| `loadLocale()` | `core/i18n/t` | 异步加载指定语言包，从 public/locales/{lang}.json fetch。 |
 | `t()` | `core/i18n/t` | 翻译一个 key。 |
 | `registerIconBundle()` | `core/icons-bundle` | — |
 | `createIconButton()` | `core/icons` | 创建图标按钮（默认 slide-action 样式）。 |
@@ -2355,5 +2356,5 @@
 
 ---
 
-> 共 325 个文件，2313 个导出符号。
+> 共 325 个文件，2314 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。

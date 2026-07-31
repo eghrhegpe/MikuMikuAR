@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vitepress dev",
     "build": "vitepress build",
-    "preview": "vitepress preview"
+    "preview": "vitepress preview",
+    "check:shots": "node scripts/check-screenshots.mjs",
+    "prebuild": "node scripts/check-screenshots.mjs || echo \"⚠️  截图仍有缺口（见上方清单），不阻断构建\""
   },
   "devDependencies": {
     "vitepress": "^1.6.3"

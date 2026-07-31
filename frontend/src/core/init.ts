@@ -108,7 +108,7 @@ async function init(): Promise<void> {
         disposeStatusBar(); // 清理 status 定时器（HMR 幂等）
         // 注册本地图标 bundle，使 iconify 离线可用
         registerIconBundle();
-        initI18n(); // [doc:adr-059] 在菜单渲染前确定语言并同步 <html lang>
+        await initI18n(); // [doc:adr-059] 在菜单渲染前确定语言并同步 <html lang>；[doc:perf] 异步预加载语言包
         // 桌面/Android 侧强制加载 @wailsio/runtime 并绑定 events 实例，必须先于任何
         // events.on(...) 订阅——否则 events 回落到 no-op WebEvents，Wails 后端事件
         // （ai:chunk/ai:done/ai:error、android:* 等）全部收不到，AI 流式会永久挂起。
