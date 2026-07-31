@@ -1,6 +1,6 @@
 # ADR-220: Schema 完整性元测试 —— 不开浏览器，秒级捕获 schema 漂移
 
-> **状态**: 实施中（P0 精化完成：16 面板 1427 断言全绿 + 多语言包校验 + motionModule 动态校验 + folder 真空节点修复；P1 原型建成：16 面板 158 用例自动生成，分域导航已实现）
+> **状态**: 实施中（P0 精化完成：16 面板 1427 断言全绿 + 多语言包校验 + motionModule 动态校验 + folder 真空节点修复；P1 原型建成：16 面板 158 用例自动生成，分域导航已实现，settings 二级导航修复，mock 工厂扩展）
 >
 > **编号说明**: 本 ADR 原误编为 200，与 `adr-200-wind-physics-empty-bundle-map`（被 wind-physics.ts / mmd-adapter.ts 等 16 处代码 `[doc:adr-200]` 引用，为原生 200）撞车。因本 ADR 无任何代码 `[doc:adr-200]` 引用（测试文件挂接的是 ADR-093），故本 ADR 顺延改号为 220，wind-physics 保留 200，零破坏现有引用。
 
@@ -160,9 +160,10 @@ function isValidStatePath(path: string): boolean {
 | ~~**i18n 仅校 zh-CN 单包**~~ | ~~已修复：P0 精化引入 5 语言包（zh-CN/en/ja/ko/zh-TW）校验~~ | — | — |
 | ~~**motionModule.* 不校字段存在性**~~ | ~~已修复：P0 精化引入 `MOTION_MODULE_PARAMS` 映射表，动态校验 moduleId + paramKey~~ | — | — |
 | ~~**folder 仅查有 children 者**~~ | ~~已修复：P0 精化改为「children 非空 或 存在 renderCustom」~~ | — | — |
-| **schema 求值依赖渲染层→mock 膨胀** | 每推广一域需新增一批 `vi.mock`（当前已 20+ 个）隔断 Babylon/渲染初始化。`schema-snapshot.test.ts` 内联 mock 未复用 `menu-schema-mocks.ts` 中的共享工厂 | 测试维护成本随域数线性上涨；mock 与真实导出漂移时可能假绿 | 复用 `menu-schema-mocks.ts` 的 `mockScene()` / `mockLighting()` / `mockPerception()` 共享工厂；长期将 `getXxxSchema()` 内的渲染依赖延迟到渲染时 resolve，使 schema 回归纯数据 |
+| ~~**settings 域嵌套导航**~~ | ~~已修复：P1 二级导航——先进入一级 folder（操控/画质），用 `data-testid="folder:settings:<slug>"` 导航~~ | — | — |
+| ~~**mock 工厂复用**~~ | ~~已修复：`menu-schema-mocks.ts` 扩展 20+ 共享工厂（mockCoreConfig/mockRenderer/mockPerception 等），供其他测试文件复用~~ | — | — |
+| **schema 求值依赖渲染层→mock 膨胀** | `schema-snapshot.test.ts` 因需完整状态数据，mock 保持内联定义（避免 Vitest hoisting 冲突） | 测试维护成本略高 | 长期：将 `getXxxSchema()` 内的渲染依赖延迟到渲染时 resolve，使 schema 回归纯数据，快照生成也无需 mock |
 | **MOTION_MODULE_PARAMS 硬编码** | 新 motion 模块需手动更新测试中的映射表，否则 bind 路径判失败 | 新增模块时可能忘记同步更新 | 长期方案：直接 import `getBuiltinModuleDefs()` 动态提取，但需解决 Babylon 依赖副作用 |
-| **settings 域嵌套导航** | settings:camera/frame-quality/effects/physics-hud 位于 performance/rendering folder 下，需二次导航；当前用文本匹配回退 | settings 域 E2E 可能因导航问题假红 | 实现嵌套 folder 导航：`#btnSettings` → `folder:settings:performance` → 子面板 |
 | **P1 依赖 Vite dev server** | `schema-driven.spec.ts` 需要运行 `npm run dev` 才能执行 | CI 集成需额外启动 dev server | 长期：Playwright 直接启动 Vite（`webServer` 配置），纳入 CI 流水线 |
 
 > 说明：前两项局限已通过 P0 精化修复。剩余三项为当前可接受的权衡，不阻塞 1427 断言的价值。

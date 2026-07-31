@@ -11,14 +11,44 @@
  * - 新面板只需在 menu-schema-register.ts 加一行 registerSchema，E2E 自动覆盖
  * - 消除手工维护纯数据副本的漂移风险
  * - 秒级运行（vitest，不开浏览器）
+ *
+ * 注意: 本文件 mock 需求较重（需完整状态数据），故保持内联定义。
+ *       通用 mock 工厂见 menu-schema-mocks.ts。
  */
 import { describe, it, expect, beforeAll, vi } from 'vitest';
 import { writeFileSync, readFileSync, mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// Mock 所有可能的副作用依赖
-// 这些 mock 与 menu-schema.integrity.test.ts 保持一致
+// —— 通用默认值 ——
+const DEFAULT_RENDER_STATE = {
+    bloomEnabled: false, bloomWeight: 1, bloomThreshold: 0.7, bloomKernel: 'box',
+    outlineEnabled: false, outlineColor: '#000000',
+    fxaaEnabled: true, msaaSamples: 4,
+    toneMapping: 'aces', exposure: 1, contrast: 1,
+    dofEnabled: false, dofAperture: 0, dofFocusDistance: 1, dofFocalLength: 50,
+    vignetteEnabled: false, vignetteDarkness: 0,
+    chromaticAberrationEnabled: false, chromaticAberrationAmount: 0,
+    grainEnabled: false, grainIntensity: 0,
+    sharpenAmount: 0, glowEnabled: false, glowIntensity: 0,
+    ssaoEnabled: false, ssaoStrength: 1, ssaoRadius: 1, ssaoSamples: 8,
+    celShadingMode: 'none', celColorLevels: 4, celEdgeThreshold: 0.1, celEdgeStrength: 1,
+};
+
+const DEFAULT_PERCEPTION_STATE = {
+    gazeEnabled: false, gazeIntensity: 1, gazeSpeed: 1,
+    gazeHeadEnabled: false, gazeHeadIntensity: 1, gazeHeadSpeed: 1,
+    gazeEyeEnabled: false, gazeEyeIntensity: 1, gazeEyeSpeed: 1,
+    blinkEnabled: false, blinkRate: 30, blinkIntensity: 1, blinkSpeed: 1,
+    breathEnabled: false, breathRate: 0.2, breathIntensity: 1,
+    balanceEnabled: false, balanceIntensity: 1,
+    centerEnabled: false, centerIntensity: 1,
+    upperEnabled: false, upperIntensity: 1,
+    waistEnabled: false, waistIntensity: 1,
+    lipSyncEnabled: false, lipSyncMultiMorphEnabled: false,
+};
+
+// —— Mock 定义 ——
 vi.mock('@/core/config', () => ({
     envState: { value: {} },
     uiState: { value: {} },
@@ -31,32 +61,8 @@ vi.mock('@/core/config', () => ({
 vi.mock('@/scene/scene', () => ({
     setEnvState: vi.fn(),
     setRenderState: vi.fn(),
-    getRenderState: vi.fn(() => ({
-        bloomEnabled: false, bloomWeight: 1, bloomThreshold: 0.7, bloomKernel: 'box',
-        outlineEnabled: false, outlineColor: '#000000',
-        fxaaEnabled: true, msaaSamples: 4,
-        toneMapping: 'aces', exposure: 1, contrast: 1,
-        dofEnabled: false, dofAperture: 0, dofFocusDistance: 1, dofFocalLength: 50,
-        vignetteEnabled: false, vignetteDarkness: 0,
-        chromaticAberrationEnabled: false, chromaticAberrationAmount: 0,
-        grainEnabled: false, grainIntensity: 0,
-        sharpenAmount: 0, glowEnabled: false, glowIntensity: 0,
-        ssaoEnabled: false, ssaoStrength: 1, ssaoRadius: 1, ssaoSamples: 8,
-        celShadingMode: 'none', celColorLevels: 4, celEdgeThreshold: 0.1, celEdgeStrength: 1,
-    })),
-    defaultRenderState: vi.fn(() => ({
-        bloomEnabled: false, bloomWeight: 1, bloomThreshold: 0.7, bloomKernel: 'box',
-        outlineEnabled: false, outlineColor: '#000000',
-        fxaaEnabled: true, msaaSamples: 4,
-        toneMapping: 'aces', exposure: 1, contrast: 1,
-        dofEnabled: false, dofAperture: 0, dofFocusDistance: 1, dofFocalLength: 50,
-        vignetteEnabled: false, vignetteDarkness: 0,
-        chromaticAberrationEnabled: false, chromaticAberrationAmount: 0,
-        grainEnabled: false, grainIntensity: 0,
-        sharpenAmount: 0, glowEnabled: false, glowIntensity: 0,
-        ssaoEnabled: false, ssaoStrength: 1, ssaoRadius: 1, ssaoSamples: 8,
-        celShadingMode: 'none', celColorLevels: 4, celEdgeThreshold: 0.1, celEdgeStrength: 1,
-    })),
+    getRenderState: vi.fn(() => DEFAULT_RENDER_STATE),
+    defaultRenderState: vi.fn(() => DEFAULT_RENDER_STATE),
     transitionRenderState: vi.fn(),
     triggerAutoSave: vi.fn(),
     deserializeScene: vi.fn(),
@@ -69,7 +75,7 @@ vi.mock('@/core/async', () => ({
     fireAndForget: vi.fn(),
     delay: vi.fn(() => Promise.resolve()),
     waitForFrame: vi.fn(() => Promise.resolve()),
-    makeLazyLoader: vi.fn((loader: Function) => loader),
+    makeLazyLoader: vi.fn(<T>(loader: T) => loader),
     LoadingGuard: vi.fn(),
     DebouncedTimer: vi.fn(),
     Abortable: vi.fn(),
@@ -90,33 +96,9 @@ vi.mock('@/scene/render/performance', () => ({
     resetPerformanceSnapshot: vi.fn(),
 }));
 vi.mock('@/scene/render/renderer', () => ({
-    getRenderState: vi.fn(() => ({
-        bloomEnabled: false, bloomWeight: 1, bloomThreshold: 0.7, bloomKernel: 'box',
-        outlineEnabled: false, outlineColor: '#000000',
-        fxaaEnabled: true, msaaSamples: 4,
-        toneMapping: 'aces', exposure: 1, contrast: 1,
-        dofEnabled: false, dofAperture: 0, dofFocusDistance: 1, dofFocalLength: 50,
-        vignetteEnabled: false, vignetteDarkness: 0,
-        chromaticAberrationEnabled: false, chromaticAberrationAmount: 0,
-        grainEnabled: false, grainIntensity: 0,
-        sharpenAmount: 0, glowEnabled: false, glowIntensity: 0,
-        ssaoEnabled: false, ssaoStrength: 1, ssaoRadius: 1, ssaoSamples: 8,
-        celShadingMode: 'none', celColorLevels: 4, celEdgeThreshold: 0.1, celEdgeStrength: 1,
-    })),
+    getRenderState: vi.fn(() => DEFAULT_RENDER_STATE),
     setRenderState: vi.fn(),
-    defaultRenderState: vi.fn(() => ({
-        bloomEnabled: false, bloomWeight: 1, bloomThreshold: 0.7, bloomKernel: 'box',
-        outlineEnabled: false, outlineColor: '#000000',
-        fxaaEnabled: true, msaaSamples: 4,
-        toneMapping: 'aces', exposure: 1, contrast: 1,
-        dofEnabled: false, dofAperture: 0, dofFocusDistance: 1, dofFocalLength: 50,
-        vignetteEnabled: false, vignetteDarkness: 0,
-        chromaticAberrationEnabled: false, chromaticAberrationAmount: 0,
-        grainEnabled: false, grainIntensity: 0,
-        sharpenAmount: 0, glowEnabled: false, glowIntensity: 0,
-        ssaoEnabled: false, ssaoStrength: 1, ssaoRadius: 1, ssaoSamples: 8,
-        celShadingMode: 'none', celColorLevels: 4, celEdgeThreshold: 0.1, celEdgeStrength: 1,
-    })),
+    defaultRenderState: vi.fn(() => DEFAULT_RENDER_STATE),
     registerCelGroundCoupling: vi.fn(),
     initRenderer: vi.fn(),
     isRendererReady: vi.fn(() => true),
@@ -141,18 +123,7 @@ vi.mock('@/menus/menu', () => ({
     getCurrentRenderingMenu: vi.fn(() => null),
 }));
 vi.mock('@/scene/motion/perception', () => ({
-    getPerceptionState: vi.fn(() => ({
-        gazeEnabled: false, gazeIntensity: 1, gazeSpeed: 1,
-        gazeHeadEnabled: false, gazeHeadIntensity: 1, gazeHeadSpeed: 1,
-        gazeEyeEnabled: false, gazeEyeIntensity: 1, gazeEyeSpeed: 1,
-        blinkEnabled: false, blinkRate: 30, blinkIntensity: 1, blinkSpeed: 1,
-        breathEnabled: false, breathRate: 0.2, breathIntensity: 1,
-        balanceEnabled: false, balanceIntensity: 1,
-        centerEnabled: false, centerIntensity: 1,
-        upperEnabled: false, upperIntensity: 1,
-        waistEnabled: false, waistIntensity: 1,
-        lipSyncEnabled: false, lipSyncIntensity: 1, lipSyncMultiMorphEnabled: false,
-    })),
+    getPerceptionState: vi.fn(() => DEFAULT_PERCEPTION_STATE),
     setPerceptionState: vi.fn(),
     activatePerception: vi.fn(),
     pinPerception: vi.fn(),
@@ -176,7 +147,7 @@ vi.mock('@/menus/scene-render-presets', () => ({
     getFilterPreset: vi.fn(),
 }));
 vi.mock('@/core/status-helpers', () => ({
-    tryCatchStatus: vi.fn(async (fn: Function) => fn()),
+    tryCatchStatus: vi.fn(async (fn: () => unknown) => fn()),
 }));
 vi.mock('@/scene/scene-bundle', () => ({
     exportSceneBundle: vi.fn(),
@@ -192,7 +163,7 @@ vi.mock('@/core/wails-bindings', () => ({
 
 // 导入注册器
 import '../menus/menu-schema-register';
-import { collectAllSchemas, flattenNodes } from '../menus/menu-registry';
+import { collectAllSchemas } from '../menus/menu-registry';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -223,7 +194,6 @@ function cleanNode(node: any): any {
     if (node.children) {
         result.children = node.children.map(cleanNode);
     }
-    // 不序列化 renderCustom / visibleWhen / action 等函数
     return result;
 }
 
@@ -240,16 +210,13 @@ describe('Schema Snapshot Generator', () => {
             nodes: s.nodes.map(cleanNode),
         }));
 
-        // 确保目录存在
         mkdirSync(dirname(SNAPSHOT_PATH), { recursive: true });
         writeFileSync(SNAPSHOT_PATH, JSON.stringify(snapshot, null, 2), 'utf-8');
 
-        // 验证快照可被解析
         const read = JSON.parse(readFileSync(SNAPSHOT_PATH, 'utf-8'));
         expect(Array.isArray(read)).toBe(true);
         expect(read.length).toBeGreaterThan(0);
 
-        // 统计
         const totalNodes = read.reduce((acc: number, s: any) => acc + countNodes(s.nodes), 0);
         const totalBindPaths = read.reduce((acc: number, s: any) => acc + countBindPaths(s.nodes), 0);
         const totalLabels = read.reduce((acc: number, s: any) => acc + countLabels(s.nodes), 0);

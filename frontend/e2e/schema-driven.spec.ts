@@ -49,11 +49,13 @@ const KIND_SELECTOR_MAP: Record<string, string> = {
 };
 
 // 域 → 导航配置
-// domain:  'env' | 'motion' | 'settings' | 'scene'
-// subLevel: 子面板中文名（用于 helpers 中的 testId 映射）
+// domain:    'env' | 'motion' | 'settings' | 'scene'
+// subLevel:  一级子面板中文名（用于 helpers 中的 testId 映射）
+// subLevel2: settings 二级导航用的 testId 后缀（仅 settings 域需要）
 interface PanelNavConfig {
     domain: 'env' | 'motion' | 'settings' | 'scene';
     subLevel?: string;
+    subLevel2?: string;
 }
 
 const PANEL_NAV: Record<string, PanelNavConfig> = {
@@ -72,11 +74,13 @@ const PANEL_NAV: Record<string, PanelNavConfig> = {
     'scene:postprocess-color': { domain: 'env', subLevel: '后处理' },
     // motion 域 —— 使用 #btnMotionPopup + folder:motion:<slug>
     'motion:gaze':      { domain: 'motion', subLevel: '视线' },
-    // settings 域 —— 使用 #btnSettings，嵌套结构暂用文本匹配回退
-    'settings:camera':       { domain: 'settings', subLevel: '相机' },
-    'settings:frame-quality': { domain: 'settings', subLevel: '画质' },
-    'settings:effects':      { domain: 'settings', subLevel: '特效' },
-    'settings:physics-hud':  { domain: 'settings', subLevel: '物理' },
+    // settings 域 —— 二级导航：先进入一级 folder，节点直接渲染在该 folder 内
+    //   camera → 操控 (controls)
+    //   frame-quality / effects / physics-hud → 画质 (graphics)
+    'settings:camera':        { domain: 'settings', subLevel: '操控', subLevel2: 'controls' },
+    'settings:frame-quality': { domain: 'settings', subLevel: '画质', subLevel2: 'graphics' },
+    'settings:effects':       { domain: 'settings', subLevel: '画质', subLevel2: 'graphics' },
+    'settings:physics-hud':   { domain: 'settings', subLevel: '画质', subLevel2: 'graphics' },
 };
 
 /** 扁平化节点树，返回所有带 id 的节点 */
@@ -104,7 +108,12 @@ async function navigateToPanel(page: any, config: PanelNavConfig): Promise<void>
             break;
         case 'settings':
             await openSettingsPanel(page);
-            if (config.subLevel) await clickSettingsSubLevel(page, config.subLevel);
+            // settings 域需要二级导航：先进入一级 folder（如"操控"/"画质"）
+            if (config.subLevel2) {
+                await page.getByTestId(`folder:settings:${config.subLevel2}`).click();
+            } else if (config.subLevel) {
+                await clickSettingsSubLevel(page, config.subLevel);
+            }
             break;
         case 'scene':
             await openScenePanel(page);
