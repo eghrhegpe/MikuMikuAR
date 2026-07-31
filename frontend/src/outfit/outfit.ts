@@ -16,7 +16,7 @@ import { showInfoToast } from '../core/toast';
 import type { Scene } from '@babylonjs/core/scene';
 import { getBaseName, normPath, getDirPath } from '@/core/path';
 import { delay, LoadingGuard } from '@/core/async';
-import { logWarn } from '@/core/logger';
+import { logWarn, logInfo } from '@/core/logger';
 import { col3FromTriple } from '@/core/color-helpers';
 import { _catOf } from '../scene/manager/material';
 import { triggerAutoSave } from '../core/config';
@@ -368,10 +368,23 @@ async function _applySlot(
             if (newTex.isReady()) {
                 trySwap();
             } else {
+                // 兜底 observer 等待迟到的加载完成；但若贴图永不加载（既不 load 也不 error），
+                // observer + newTex + blobURL 会永不释放，故再加一次超时清理。
                 const handle = observe(newTex.onLoadObservable, () => {
                     handle.dispose();
                     trySwap();
                 });
+                setTimeout(() => {
+                    if (done) {
+                        return;
+                    }
+                    done = true;
+                    handle.dispose();
+                    if (!disposed) {
+                        newTex.dispose();
+                        URL.revokeObjectURL(url);
+                    }
+                }, 5000);
             }
         }
     } else {
@@ -597,7 +610,7 @@ async function _applyOutfitVariantCore(id: string, variantName: string): Promise
                 );
                 // token 过期：说明此期间已切换到其他变体，丢弃本次结果
                 if (inst._overlayLoadToken !== token) {
-                    console.info('[outfit] overlay load stale (token mismatch), discarding');
+                    logInfo('outfit', 'overlay load stale (token mismatch), discarding');
                     for (const m of meshes) {
                         try {
                             m.dispose();
