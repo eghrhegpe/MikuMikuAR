@@ -235,10 +235,12 @@ function checkKnowledgeCards() {
 }
 
 // ---------- 检查 8/9/10：知识卡 frontmatter 治理（ADR-218） ----------
-// 8 (ERROR) category 枚举校验；9 (ERROR) tier 枚举校验；10 (WARN) architecture 卡须含「## UI 入口」小节。
+// 8 (ERROR) category 枚举校验；9 (ERROR) tier 枚举校验；10 (WARN) architecture 卡须登记 UI 入口
+// （有「## UI 入口」小节，或引用集中式菜单地图 menu-map.md —— 避免双写漂移）。
 const CATEGORY_ENUM = ['rendering', 'env', 'motion', 'ui', 'core', 'backend', 'physics', 'scene'];
 const TIER_ENUM = ['architecture', 'leaf'];
 const UI_ENTRY_HEADING = '## UI 入口';
+const UI_ENTRY_REF = 'menu-map.md'; // 集中式菜单地图（scripts/gen-menu-map.mjs 自动生成）
 
 function parseFrontmatterField(text, key) {
   const fm = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
@@ -268,8 +270,8 @@ function checkKnowledgeMeta() {
     if (tier !== null && !TIER_ENUM.includes(tier)) {
       errors.push(`知识卡 ${cf} 的 tier 非法: ${tier}（应为 ${TIER_ENUM.join('|')} 之一）`);
     }
-    if (tier === 'architecture' && !text.includes(UI_ENTRY_HEADING)) {
-      warns.push(`architecture 卡 ${cf} 缺少「${UI_ENTRY_HEADING}」小节（ADR-218）`);
+    if (tier === 'architecture' && !text.includes(UI_ENTRY_HEADING) && !text.includes(UI_ENTRY_REF)) {
+      warns.push(`architecture 卡 ${cf} 缺少「${UI_ENTRY_HEADING}」小节且未引用 ${UI_ENTRY_REF}（ADR-218）`);
     }
   }
   return { errors, warns };
