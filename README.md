@@ -215,6 +215,7 @@ sudo apt-get install -y libgtk-4-dev libwebkitgtk-6.0-dev libglib2.0-dev \
 
 | 文档                                   | 内容                |
 | ------------------------------------ | ----------------- |
+| [知识库](docs/knowledge/README.md)      | 模块现状快照 + 卡片索引（某模块现在长啥样、去哪找） |
 | [架构方案](docs/architecture.md)         | 全功能汇总与技术细节        |
 | [设计决策](docs/adr/)                    | 210+ ADR 技术决策记录   |
 | [竞品分析](docs/competitive-analysis.md) | 23 个项目调研对比        |
@@ -237,7 +238,7 @@ MikuMikuAR/
 │   ├── motion-algos/       # 动作算法（无 Babylon 依赖，纯数学）
 │   ├── outfit/             # 换装 + 音频
 │   └── physics/            # 物理桥接 + 风场
-└── docs/                   # 架构 / ADR / 竞品 / 状态
+└── docs/                   # 知识库 / 架构 / ADR / 竞品 / 状态
 ```
 
 详见 [架构方案](docs/architecture.md)。

@@ -128,6 +128,7 @@
 | 문서 | 내용 |
 |------|------|
 | [프로젝트 현황](docs/status.md) | 현재 상태 + 완료된 기능 |
+| [지식 베이스](docs/knowledge/README.md) | 모듈 현황 스냅샷 + 카드 색인（각 모듈의 현재 모습·위치） |
 | [아키텍처](docs/architecture.md) | 전체 기능 요약 |
 | [설계 결정](docs/adr/) | 80+ ADR 기술 접근 방식 |
 | [요구사항 및 선정](docs/requirements.md) | P0-P4 우선순위 + 기술 선정 이유 |
