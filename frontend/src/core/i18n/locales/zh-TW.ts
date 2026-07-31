@@ -742,6 +742,7 @@ export const zhTW: Record<string, string> = {
     'scene.accessory.detached': '✓ 已解除 {name} 的附屬',
     'scene.accessory.cycleDetected': '✗ 附屬關係會產生循環',
     'scene.accessory.attachFailed': '✗ 附屬失敗',
+    'scene.accessory.boneNotFound': '✗ 父模型無此骨骼：{bone}',
     'scene.screenshotCurrent': '截圖目前模型',
     'scene.screenshotCurrentSub': '儲存焦點模型截圖',
     'scene.screenshotBatch': '批次截圖',

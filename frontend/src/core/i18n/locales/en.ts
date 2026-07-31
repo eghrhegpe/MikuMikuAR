@@ -714,6 +714,7 @@ export const en: Record<string, string> = {
     'scene.accessory.detached': '✓ Detached {name}',
     'scene.accessory.cycleDetected': '✗ Attachment would create a cycle',
     'scene.accessory.attachFailed': '✗ Attachment failed',
+    'scene.accessory.boneNotFound': '✗ Parent model has no bone: {bone}',
 
     // —— Scene menu ——
     'scene.screenshotCurrent': 'Screenshot Current Model',

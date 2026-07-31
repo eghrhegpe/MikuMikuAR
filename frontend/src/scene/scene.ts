@@ -124,8 +124,6 @@ export {
     resetPerMaterialParams,
     getMatState,
     applyMatState,
-    registerMaterialTarget,
-    unregisterMaterialTarget,
     isMatCategoryAllEnabled,
     setMatCategoryEnabled,
     DEFAULT_MAT_PARAMS,

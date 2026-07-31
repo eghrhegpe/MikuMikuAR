@@ -753,6 +753,7 @@ export const ko: Record<string, string> = {
     'scene.accessory.detached': '✓ {name}의 연결을 해제했습니다',
     'scene.accessory.cycleDetected': '✗ 연결이 순환됩니다',
     'scene.accessory.attachFailed': '✗ 연결에 실패했습니다',
+    'scene.accessory.boneNotFound': '✗ 부모 모델에 해당 본이 없습니다: {bone}',
     'scene.screenshotCurrent': '현재 모델 스크린샷',
     'scene.screenshotCurrentSub': '포커스된 모델 스크린샷 저장',
     'scene.screenshotBatch': '일괄 스크린샷',

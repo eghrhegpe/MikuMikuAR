@@ -712,6 +712,7 @@ export const zhCN: Record<string, string> = {
     'scene.accessory.detached': '✓ 已解除 {name} 的附属',
     'scene.accessory.cycleDetected': '✗ 附属关系会产生循环',
     'scene.accessory.attachFailed': '✗ 附属失败',
+    'scene.accessory.boneNotFound': '✗ 父模型无此骨骼：{bone}',
 
     // —— 场景菜单 scene-menu ——
     'scene.screenshotCurrent': '截图当前模型',
