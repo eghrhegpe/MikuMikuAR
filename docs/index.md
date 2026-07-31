@@ -21,10 +21,10 @@ features:
     details: architecture / design / terminology / function-map 等开发者文档。
     link: /architecture
   - title: 决策记录 (ADR)
-    details: 215 条架构决策日志（ADR-001 ~ ADR-218），按编号检索。
+    details: 架构决策日志（ADR-001 起，按编号递增），权威状态见各 ADR 首部状态行。
     link: /adr/adr-001-project-infrastructure
   - title: 知识卡
-    details: 228 张原子化知识卡，按 category 分组，面向 AI 与开发者。
+    details: 原子化知识卡，按 category 分组，面向 AI 与开发者。
     link: /knowledge/env
   - title: 开发运维
     details: Bug 日志（按日期倒序）+ 发版记录（按版本倒序）。
