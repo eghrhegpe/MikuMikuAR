@@ -114,18 +114,23 @@ export function normalizeEndpoint(endpoint: string): string {
     return `${base}/chat/completions`;
 }
 
-/** 同步保存：写内存缓存 + 异步落盘 IndexedDB（fire-and-forget）。返回合并后的配置。 */
-export function saveAiConfig(partial: Partial<AiConfig>): AiConfig {
+/** 保存配置：写内存缓存（同步即时生效）+ 异步落盘 IndexedDB。
+ *  返回 Promise<AiConfig>，调用方可 await 以捕获持久化错误（如 QuotaExceeded）。
+ *  若不 await，失败不会抛出，仅在 DEV 环境打印警告。 */
+export async function saveAiConfig(partial: Partial<AiConfig>): Promise<AiConfig> {
     const merged: AiConfig = { ...(_cache ?? DEFAULT_AI_CONFIG), ...partial };
     if (merged.endpoint) {
         merged.endpoint = normalizeEndpoint(merged.endpoint);
     }
     _cache = merged;
-    void idbSet(CONFIG_STORE, CONFIG_KEY, merged).catch((err) => {
+    try {
+        await idbSet(CONFIG_STORE, CONFIG_KEY, merged);
+    } catch (err) {
         if (import.meta.env.DEV) {
             console.warn('[ai-config] IndexedDB 写入失败', err);
         }
-    });
+        throw err;
+    }
     return merged;
 }
 
@@ -162,15 +167,24 @@ function migrateAiConfig(stored: Partial<AiConfig>): AiConfig {
 }
 
 async function _hydrate(): Promise<void> {
+    // 保存当前 _cache 引用，作为并发修改的哨兵值
+    // 若 saveAiConfig 在 _hydrate 等待期间修改了 _cache，完成后不应覆盖用户的新数据
+    const cacheSentinel = _cache;
     try {
         const stored = await idbGet<AiConfig>(CONFIG_STORE, CONFIG_KEY);
+        if (_cache !== cacheSentinel) {
+            // _cache 已被 saveAiConfig 等其他操作修改，放弃本次 hydrate 结果
+            return;
+        }
         _cache = stored ? migrateAiConfig(stored) : DEFAULT_AI_CONFIG;
         if (_cache.endpoint) {
             _cache.endpoint = normalizeEndpoint(_cache.endpoint);
         }
     } catch {
-        // IndexedDB 不可用（隐私模式 / 非浏览器环境）时静默回退默认
-        _cache = DEFAULT_AI_CONFIG;
+        if (_cache === cacheSentinel) {
+            // IndexedDB 不可用（隐私模式 / 非浏览器环境）时静默回退默认
+            _cache = DEFAULT_AI_CONFIG;
+        }
     }
 }
 
