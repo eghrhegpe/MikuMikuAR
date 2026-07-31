@@ -185,6 +185,14 @@ export default [
     },
   },
   {
+    // 纯数据文件（i18n 语言包字典、自动生成的图标 bundle）：内容是键值数据而非逻辑，
+    // 行数多是本分，max-lines 在此为误报。拆分会破坏「翻译单源」与生成器契约，故豁免。
+    files: ['src/core/i18n/locales/*.ts', 'src/core/icons-bundle.ts'],
+    rules: {
+      'max-lines': 'off',
+    },
+  },
+  {
     files: ['*.config.js', '*.config.cjs', '*.config.mjs', 'scripts/**/*.js'],
     languageOptions: {
       globals: {
