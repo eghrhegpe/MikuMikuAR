@@ -107,7 +107,7 @@ function highlightRow(root: HTMLElement, rowKey: string): void {
 
 export async function prepareModelRestore(
     browseDir: string,
-    category: 'pmx' | 'stage' | 'prop'
+    category: 'pmx' | 'stage'
 ): Promise<void> {
     // [fix] allModels 为空时跳过恢复：扫描未完成或扫描失败，restore 必然失败
     if (!allModels || allModels.length === 0) {
@@ -174,8 +174,8 @@ function recordRecentModel(m: LibraryModel): void {
 
 /** 记忆浏览目录：使用户下次打开资源库能回到当前位置。 */
 function recordBrowseDir(m: LibraryModel): void {
-    const memCat: 'pmx' | 'stage' | 'prop' =
-        m.type === 'prop' ? 'prop' : m.type === 'stage' || m.type === 'scene' ? 'stage' : 'pmx';
+    const memCat: 'pmx' | 'stage' =
+        m.type === 'stage' || m.type === 'scene' ? 'stage' : 'pmx';
     void safeCallAsync('library-actions', 'SetLastBrowseDir failed:', () =>
         SetLastBrowseDir(memCat, resolveDisplayBrowseDir(m, memCat))
     );
@@ -199,10 +199,8 @@ function startReplaceModel(m: LibraryModel, replaceId: string): void {
         const snapshot = oldInst ? captureInheritedState(oldInst) : null;
         const undoSnap = pushUndoSnapshot();
         feedbackStatus('library.loadingModel', getBaseName(m.file_path));
-        let loadKind: 'actor' | 'stage' | 'prop' = 'actor';
-        if (m.type === 'prop') {
-            loadKind = 'prop';
-        } else if (m.type === 'stage' || m.type === 'scene') {
+        let loadKind: 'actor' | 'stage' = 'actor';
+        if (m.type === 'stage' || m.type === 'scene') {
             loadKind = 'stage';
         }
 
@@ -424,7 +422,7 @@ function onModelRowClick(m: LibraryModel, jumpToDirModelId?: string): void {
 
 function replaceModel(m: LibraryModel): void {
     const _isActor =
-        m.format === 'pmx' && m.type !== 'stage' && m.type !== 'scene' && m.type !== 'prop';
+        m.format === 'pmx' && m.type !== 'stage' && m.type !== 'scene';
     // [doc:adr-131] 传参取代 mutation of currentLevel.outcome
     onModelRowClick(m, focusedModelId ?? undefined);
 }

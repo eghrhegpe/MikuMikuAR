@@ -1,9 +1,9 @@
 // [doc:architecture] Resource Detail Helpers — 资源详情面板公共区块构建器
 // 规范文档: docs/adr/adr-045-unified-loading-and-resource.md
-// 职责: 抽离 actor/stage/prop 详情面板的公共区块（变换/材质/危险）
-// 现状: stage/prop 详情面板改为薄壳调用本模块；model-detail 因结构差异大保持现状
+// 职责: 抽离 actor/stage 详情面板的公共区块（变换/材质/危险）
+// 现状: stage 详情面板改为薄壳调用本模块；model-detail 因结构差异大保持现状
 
-import { cardContainer, modelRegistry, propRegistry } from '../core/config';
+import { cardContainer, modelRegistry } from '../core/config';
 import { feedbackInfo, feedbackStatus } from '../core/feedback';
 import { showInfoToast } from '../core/toast';
 import { t } from '../core/i18n/t';
@@ -18,9 +18,8 @@ import {
 } from '../core/ui-helpers';
 import { Quaternion } from '@babylonjs/core/Maths/math.vector';
 import { resetModelTransform, removeModel } from '../scene/manager/model-ops';
-import { removeProp, pushUndoSnapshot, offerSceneUndo } from '../scene/scene';
+import { pushUndoSnapshot, offerSceneUndo } from '../scene/scene';
 import { reRenderSceneMenu } from './scene-menu-state';
-import { attachPropToBone, detachPropFromBone } from '../scene/env/props/accessory';
 import {
     attachGizmoForKind,
     getTransformAdapter,
@@ -272,204 +271,18 @@ export function buildDangerCard(
             'lucide:trash-2',
             t('model-detail.unloadThis', {
                 kind: t(
-                    kind === 'prop'
-                        ? 'common.prop'
-                        : kind === 'stage'
-                          ? 'common.stage'
-                          : 'common.model'
+                    kind === 'stage'
+                        ? 'common.stage'
+                        : 'common.model'
                 ),
             }),
             () => {
                 // [doc:adr-127] 场景级撤销保护：详情页卸载与列表路径行为一致（ADR-130 Phase 2.6 缺口 A）
                 const snap = pushUndoSnapshot();
-                if (kind === 'prop') {
-                    removeProp(id);
-                } else {
-                    removeModel(id);
-                }
+                removeModel(id);
                 onRemoved?.();
                 offerSceneUndo(t('settings.unloaded', { name }), snap, () => reRenderSceneMenu());
             }
         );
-    });
-}
-
-/** 骨骼挂载卡片：将道具挂载到指定模型骨骼上，支持偏移/旋转微调
- *  仅 prop 类型有效；actor/stage/light 返回空。
- *  [doc:adr-049] 位置/旋转由 Gizmo 承担粗调，骨骼偏移用于锚定后的精细对位。 */
-export function buildBoneAttachCard(
-    container: HTMLElement,
-    handle: ResourceHandle,
-    onStateChange?: () => void
-): void {
-    const { id, kind } = handle;
-    if (kind !== 'prop') {
-        return;
-    }
-
-    const p = propRegistry.get(id);
-    if (!p) {
-        return;
-    }
-
-    cardContainer(container, (c) => {
-        addCardTitle(c, t('scene.accessory.attachToBone'));
-
-        const render = (): void => {
-            c.innerHTML = '';
-            addCardTitle(c, t('scene.accessory.attachToBone'));
-
-            if (p.boneName && p.targetModelId) {
-                // —— 已挂载状态 ——
-                const info = document.createElement('div');
-                info.style.cssText = 'font-size:11px;padding:4px 0 8px;color:var(--text-dim);';
-                info.textContent = `${p.boneName} @ ${p.targetModelId.slice(0, 12)}...`;
-                c.appendChild(info);
-
-                // 骨骼偏移
-                addVector3SliderRow(
-                    c,
-                    t('scene.accessory.boneOffset'),
-                    p.boneOffset ?? [0, 0, 0],
-                    -5,
-                    5,
-                    0.05,
-                    (v) => {
-                        const target = p.container ?? p.rootMesh;
-                        if (target) {
-                            target.position.set(v[0], v[1], v[2]);
-                        }
-                    },
-                    undefined,
-                    'lucide:move-horizontal',
-                    (v) => {
-                        p.boneOffset = v;
-                        attachPropToBone(
-                            id,
-                            p.boneName!,
-                            p.targetModelId!,
-                            v,
-                            p.boneRotation ?? [0, 0, 0]
-                        );
-                        onStateChange?.();
-                    }
-                );
-
-                // 骨骼旋转
-                addVector3SliderRow(
-                    c,
-                    t('scene.accessory.boneRotation'),
-                    p.boneRotation ?? [0, 0, 0],
-                    -180,
-                    180,
-                    1,
-                    (v) => {
-                        const target = p.container ?? p.rootMesh;
-                        if (target) {
-                            target.rotationQuaternion = Quaternion.FromEulerAngles(
-                                (v[0] * Math.PI) / 180,
-                                (v[1] * Math.PI) / 180,
-                                (v[2] * Math.PI) / 180
-                            );
-                        }
-                    },
-                    ['Rx', 'Ry', 'Rz'],
-                    'lucide:rotate-3d',
-                    (v) => {
-                        p.boneRotation = v;
-                        attachPropToBone(
-                            id,
-                            p.boneName!,
-                            p.targetModelId!,
-                            p.boneOffset ?? [0, 0, 0],
-                            v
-                        );
-                        onStateChange?.();
-                    }
-                );
-
-                // 解除按钮
-                addPresetChip(
-                    c,
-                    t('scene.accessory.detachFromBone'),
-                    false,
-                    () => {
-                        detachPropFromBone(id);
-                        onStateChange?.();
-                        render();
-                    },
-                    { marginTop: 4 }
-                );
-            } else {
-                // —— 未挂载状态：选择模型 + 骨骼 ——
-                const modelSelect = document.createElement('select');
-                modelSelect.style.cssText =
-                    'width:100%;padding:6px 8px;margin:4px 0;border-radius:6px;' +
-                    'background:var(--surface2);color:var(--text);border:1px solid var(--border);font-size:12px;';
-                modelSelect.innerHTML =
-                    '<option value="">-- ' + t('scene.accessory.selectModel') + ' --</option>';
-                for (const [mid, inst] of modelRegistry) {
-                    if (inst.kind === 'actor') {
-                        const opt = document.createElement('option');
-                        opt.value = mid;
-                        opt.textContent = inst.name;
-                        modelSelect.appendChild(opt);
-                    }
-                }
-                c.appendChild(modelSelect);
-
-                const boneSelect = document.createElement('select');
-                boneSelect.style.cssText =
-                    'width:100%;padding:6px 8px;margin:4px 0;border-radius:6px;' +
-                    'background:var(--surface2);color:var(--text);border:1px solid var(--border);font-size:12px;';
-                boneSelect.innerHTML =
-                    '<option value="">-- ' + t('scene.accessory.selectBone') + ' --</option>';
-                modelSelect.addEventListener('change', () => {
-                    const mid = modelSelect.value;
-                    boneSelect.innerHTML =
-                        '<option value="">-- ' + t('scene.accessory.selectBone') + ' --</option>';
-                    if (!mid) {
-                        return;
-                    }
-                    const inst = modelRegistry.get(mid);
-                    if (inst?.mmdModel) {
-                        for (const b of inst.mmdModel.runtimeBones) {
-                            const opt = document.createElement('option');
-                            opt.value = b.name;
-                            opt.textContent = b.name;
-                            boneSelect.appendChild(opt);
-                        }
-                    }
-                });
-                c.appendChild(boneSelect);
-
-                addPresetChip(
-                    c,
-                    t('scene.accessory.attachToBone'),
-                    false,
-                    () => {
-                        const targetModelId = modelSelect.value;
-                        const boneName = boneSelect.value;
-                        if (!targetModelId || !boneName) {
-                            return;
-                        }
-                        const ok = attachPropToBone(
-                            id,
-                            boneName,
-                            targetModelId,
-                            [0, 0, 0],
-                            [0, 0, 0]
-                        );
-                        if (ok) {
-                            onStateChange?.();
-                            render();
-                        }
-                    },
-                    { marginTop: 4 }
-                );
-            }
-        };
-
-        render();
     });
 }
