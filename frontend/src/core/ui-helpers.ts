@@ -24,9 +24,10 @@ export {
     addBoneSelectRow,
     isIkBone,
     buildBoneGroups,
-    createHeaderToggle,
 } from './ui-rows';
-export type { BoneSelectOptions, HeaderToggleConfig } from './ui-rows';
+export type { BoneSelectOptions } from './ui-rows';
+export { createHeaderToggle } from './ui-header-toggle';
+export type { HeaderToggleConfig } from './ui-header-toggle';
 export { addColorSliderRow, addModeSlider, addVector3SliderRow } from './ui-advanced-rows';
 export { addCollapsible, addSectionTitle, addPresetChip } from './ui-collapsible';
 export { buildPresetChipGroup, addClearRow } from './ui-preset';

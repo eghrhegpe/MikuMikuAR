@@ -3,7 +3,7 @@
 
 import { createIconifyIcon } from './icons';
 import { getCurrentRenderingMenu } from '../menus/menu';
-import { createHeaderToggle } from './ui-rows';
+import { createHeaderToggle } from './ui-header-toggle';
 
 // ===================================================================
 // addCollapsible

@@ -1,14 +1,10 @@
 import { PopupLevel, PopupRow, showHint, hideHint } from '../core/config';
 import { createIconifyIcon } from '../core/icons';
-import {
-    slideRow,
-    addSliderRow,
-    addToggleRow,
-    addModeSlider,
-    addPresetChip,
-    createHeaderToggle,
-} from '../core/ui-helpers';
-import { createTrailingBtn, createLeadingBtn } from '../core/ui-slide-row';
+import { addSliderRow, addToggleRow } from '../core/ui-rows';
+import { addModeSlider } from '../core/ui-advanced-rows';
+import { addPresetChip } from '../core/ui-collapsible';
+import { createHeaderToggle } from '../core/ui-header-toggle';
+import { slideRow, createTrailingBtn, createLeadingBtn } from '../core/ui-slide-row';
 import { subscribe } from '../core/reactivity';
 import { t } from '../core/i18n/t';
 import { getLang } from '../core/i18n/locale';
