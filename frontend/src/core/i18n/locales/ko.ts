@@ -101,6 +101,7 @@ export const ko: Record<string, string> = {
     'settings.about.techStack': '기술 스택',
     'about.readme': '프로젝트 설명',
     'about.knowledge': '지식 베이스',
+    'about.guide': '사용 가이드',
     'settings.about.cache.counting': '집계 중…',
     'settings.about.update.checkHint': '"업데이트 확인"을 클릭하여 새 버전 확인',
     'settings.about.update.goDownload': '다운로드 →',

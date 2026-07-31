@@ -99,6 +99,7 @@ export const zhTW: Record<string, string> = {
     'settings.about.techStack': '技術棧',
     'about.readme': '專案說明',
     'about.knowledge': '知識庫',
+    'about.guide': '使用指南',
     'settings.about.cache.counting': '統計中…',
     'settings.about.update.checkHint': '點擊「檢查更新」查看是否有新版本',
     'settings.about.update.goDownload': '前往下載 →',

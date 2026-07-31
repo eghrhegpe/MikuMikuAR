@@ -99,6 +99,7 @@ export const ja: Record<string, string> = {
     'settings.about.techStack': '技術スタック',
     'about.readme': 'プロジェクト説明',
     'about.knowledge': 'ナレッジベース',
+    'about.guide': '使用ガイド',
     'settings.about.cache.counting': '集計中…',
     'settings.about.update.checkHint': '「アップデートを確認」をクリックして新バージョンを確認',
     'settings.about.update.goDownload': 'ダウンロードへ →',
