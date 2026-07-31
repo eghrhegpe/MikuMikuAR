@@ -292,7 +292,8 @@ export function buildDangerCard(
 /** 构建父模型选择子菜单：列出所有有 mmdModel 的其他模型（不含自身）。 */
 function buildAttachmentSelectLevel(
     childId: string,
-    onDone: () => void
+    onDone: () => void,
+    targetStack: SlideMenu | null
 ): PopupLevel {
     const childInst = modelRegistry.get(childId);
     const childName = childInst?.name ?? childId;
@@ -326,12 +327,8 @@ function buildAttachmentSelectLevel(
                     true,
                     () => {
                         // 选择骨骼
-                        const boneLevel = buildBoneSelectLevel(childId, c.id, c.name, onDone);
-                        // 通过全局 stackRegistry 推入（从 container 回溯 SlideMenu 不可行）
-                        const event = new CustomEvent('menu-push-level', {
-                            detail: { level: boneLevel },
-                        });
-                        document.dispatchEvent(event);
+                        const boneLevel = buildBoneSelectLevel(childId, c.id, c.name, onDone, targetStack);
+                        targetStack?.push(boneLevel);
                     }
                 );
             }
@@ -344,14 +341,15 @@ function buildBoneSelectLevel(
     childId: string,
     parentId: string,
     parentName: string,
-    onDone: () => void
+    onDone: () => void,
+    targetStack: SlideMenu | null
 ): PopupLevel {
     const parentInst = modelRegistry.get(parentId);
     const bones = parentInst?.mmdModel?.runtimeBones ?? [];
 
     return {
         dir: '',
-        label: t('model-detail.attachmentSelectBone', { parent: parentName } as any) || `${parentName} — ${t('model-detail.attachmentSelectBone')}`,
+        label: t('model-detail.attachmentSelectBone', { parent: parentName }),
         items: [],
         renderCustom: (container) => {
             container.innerHTML = '';
@@ -372,8 +370,8 @@ function buildBoneSelectLevel(
                         const ok = modelManager.attachModelToBone(childId, parentId, bone.name);
                         if (ok) {
                             onDone();
-                            // 关闭当前菜单层级
-                            document.dispatchEvent(new CustomEvent('menu-pop-to-root'));
+                            // 返回上一级（骨骼选择 → 父模型选择）
+                            targetStack?.pop();
                         } else {
                             showInfoToast(t('scene.accessory.attachFailed'));
                         }
@@ -430,7 +428,7 @@ export function buildAttachmentCard(
                     const level = buildAttachmentSelectLevel(id, () => {
                         render();
                         onRefresh();
-                    });
+                    }, targetStack);
                     targetStack?.push(level);
                 });
             }

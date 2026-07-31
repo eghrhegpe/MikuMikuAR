@@ -1,12 +1,12 @@
 # babylon-mmd -dist git 依赖产物三类 ESM 解析缺陷（build 绿但 vitest 全挂）
 
-> **状态**: 🔴 未修复（前两轮已修，第三轮 TS 装饰器残留待 -dist 侧解决）
+> **状态**: 🟢 已修复（三轮缺陷全部由 -dist 侧解决，消费侧三连全绿 tsc0/build/2704）
 
 **日期**: 2026-07-31
 **严重程度**: 🟠 P2
 **影响范围**: `frontend/node_modules/babylon-mmd/esm/**`（-dist 分支构建产物）、连带 `frontend` 全量 vitest 20 个 suite
 **发现方式**: 测试发现（切换 babylon-mmd 至 -dist git 依赖后 `npm run test` 20 suite 失败）
-**修复提交**: 前两轮 -dist `900cf29` / `12b4b85`；第三轮待 -dist 侧提交
+**修复提交**: -dist `900cf29`（R1）/ `12b4b85`（R2）/ R3 装饰器转译（tsconfig + build 脚本）；消费侧 `frontend/src/scene/scene.ts` + `frontend/package.json`
 
 ---
 
@@ -31,7 +31,7 @@ babylon-mmd 分发方案从官方 npm 1.2.0 切换到 fork 的 `-dist` 分支 gi
 后缀补全脚本对**目录 import** 也误加 `.js`：`../wasm/spr` → `../wasm/spr.js`，但 `wasm/spr` 是**目录**（入口 `wasm/spr/index.js`），加 `.js` 后找不到文件 → `Could not resolve "../wasm/spr.js"`（8 个 InstanceType 文件全中招）。
 修法：区分文件 import（补 `.js`）与目录 import（补 `/index.js`）。
 
-### 第三轮（🔴 待修）— `.pure.js` 产物残留未转译的 TS 装饰器
+### 第三轮（✅ 已修）— `.pure.js` 产物残留未转译的 TS 装饰器
 3 个文件含未编译的旧版 TS 装饰器语法，Node/vitest 原生 ESM 无法解析：
 
 | 文件 | 首个报错行 | 装饰器残留数 |
@@ -55,9 +55,10 @@ Get-ChildItem -Recurse -Filter "*.js" | ForEach-Object {
 
 ### -dist 侧（构建产物根治）
 - **第一/二轮**：`build-dist-branch.mjs` 后处理补全 `.js` 扩展名，分两阶段——相对 import 判断目录/文件（目录补 `/index.js`，文件补 `.js`），外部子路径直接补 `.js`。已落地（`12b4b85`，351 + 182 文件）。
-- **第三轮（待办）**：二选一——
-  1. 对含旧版装饰器的 `.pure.ts` 恢复 `experimentalDecorators` 编译（需同时处理当年的 TS1240）；
-  2. 或 `build-dist-branch.mjs` 增加一步 esbuild/babel 产物降级转译，把 `@serialize*` 转成 legacy 调用形式，产出纯净 JS。
+- **第三轮（已修）**：二选一，实际采纳组合方案——
+  1. `tsconfig.lib.json` 恢复 `experimentalDecorators: true`（`emitDecoratorMetadata` 保持 false 以避开当年的 TS1240）；
+  2. `build-dist-branch.mjs` 增加 `__decorate` helper 转译步骤，把 `@serialize*` 转成 ESM 严格模式兼容的调用形式，产出纯净 JS。
+  验证：3 个装饰器文件 `node --check` 全绿，全 esm 语法非法文件数归零。
 
 ### 主仓库侧（消费适配，已就绪）
 切换到 -dist 1.3.0 后的 app 侧适配（`frontend/src/scene/scene.ts`）：

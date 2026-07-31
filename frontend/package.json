@@ -5,7 +5,6 @@
   "type": "module",
   "sideEffects": false,
   "scripts": {
-    "postinstall": "node scripts/apply-vendored-wasm.mjs",
     "dev": "vite",
     "build": "tsc && vite build",
     "build:dev": "vite build",

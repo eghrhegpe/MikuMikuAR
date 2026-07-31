@@ -1160,7 +1160,13 @@ export class ModelManager {
         // DAG 校验：防止成环。
         // 从 parent 沿 parentId 链向上追溯，若能到达 child，说明 child 是 parent 的祖先，
         // 建立 child←parent 会成环（child 自身旧 parentId 指向别处不影响此追溯）。
-        if (childId === parentId || this._hasAncestor(parentId, childId)) {
+        // 反向也需检查：若 child 沿 parentId 链向上能到达 parent，说明 child 已为 parent 后代，
+        // 直接建立 child←parent 也会成环。但排除 child 已直接附属到此 parent 的情况（重挂载）。
+        const childIsDescendant =
+            childInst.parentId !== undefined &&
+            childInst.parentId !== parentId &&
+            this._hasAncestor(childInst.parentId, parentId);
+        if (childId === parentId || this._hasAncestor(parentId, childId) || childIsDescendant) {
             logWarn('model-manager', 'attachModelToBone: would create cycle');
             feedbackStatus('scene.accessory.cycleDetected', undefined, false);
             return false;
@@ -1250,10 +1256,11 @@ export class ModelManager {
      * 遍历 modelRegistry 中所有 parentId === parentId 的实例并移除。
      */
     detachChildModels(parentId: string): void {
-        for (const [childId, inst] of this.modelRegistry) {
-            if (inst.parentId === parentId) {
-                this.remove(childId);
-            }
+        const childIds = [...this.modelRegistry]
+            .filter(([, inst]) => inst.parentId === parentId)
+            .map(([id]) => id);
+        for (const cid of childIds) {
+            this.remove(cid);
         }
     }
 }
