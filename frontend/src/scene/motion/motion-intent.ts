@@ -163,21 +163,6 @@ export function removeSceneMotion(id: string): void {
 }
 
 /**
- * 更新场景库中某个主动作的数据（如改其 vmdLayers）。
- * - 保留原 id 不变
- * - 触发广播：引用该 id 的角色重建 composite animation
- */
-function updateSceneMotion(id: string, patch: Partial<SceneMotionIntent>): void {
-    const idx = _sceneMotions.findIndex((m) => m.id === id);
-    if (idx < 0) {
-        return;
-    }
-    _sceneMotions[idx] = { ..._sceneMotions[idx], ...patch, id }; // 保留 id
-    _motionGen++;
-    _broadcastCallback?.(getActiveMotion(), _motionGen, null);
-}
-
-/**
  * 设置默认动作 id。
  * - null = 清空默认（新角色静止，但场景库保留）
  * - 触发广播：所有 sceneMotionId===undefined 的 inherit 角色重新套用

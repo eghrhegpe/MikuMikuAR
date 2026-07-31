@@ -19,7 +19,7 @@ import {
     autoLoop,
     setIsPlaying,
 } from '@/core/config';
-import { feedbackInfo, feedbackStatus } from '@/core/feedback';
+import { feedbackStatus } from '@/core/feedback';
 import { switchAnimation } from '@/core/mmd-adapter';
 import { showInfoToast } from '@/core/toast';
 import { readFileBytes } from '@/core/wails-bindings';
@@ -163,49 +163,6 @@ export async function addVmdLayer(
     showInfoToast(t('scene.vmd.layerAdded', { name }));
     triggerAutoSave();
     return layer;
-}
-
-/** 从路径加载并添加 VMD 图层 */
-async function addVmdLayerFromPath(
-    path: string,
-    targetModelId?: string,
-    weight = 1.0,
-    boneFilter: string[] = []
-): Promise<VmdLayer | null> {
-    const targetId = targetModelId || focusedModelId;
-    if (!targetId) {
-        feedbackStatus('scene.vmd.noTargetModel', undefined, false);
-        return null;
-    }
-    const inst = modelRegistry.get(targetId);
-    if (inst?.vmdLayers?.some((l) => l.path === path)) {
-        setStatus(t('scene.vmd.layerExists', { name: getBaseName(path) }), false);
-        return null;
-    }
-    try {
-        const vmdData = await readFileBytes(path);
-        if (!vmdData) {
-            logWarn('vmd-layers', 'Failed to read VMD file:', path);
-            return null;
-        }
-        const data = vmdData.buffer as ArrayBuffer;
-        const vmdName = getBaseName(path) || '';
-        const layer = await addVmdLayer(
-            data,
-            vmdName.replace(/\.vmd$/i, ''),
-            targetId,
-            weight,
-            boneFilter
-        );
-        if (layer) {
-            layer.path = path;
-        }
-        return layer;
-    } catch (err) {
-        console.error('addVmdLayerFromPath:', err);
-        feedbackStatus('scene.vmd.layerLoadFailed', undefined, false);
-        return null;
-    }
 }
 
 /**
@@ -401,75 +358,6 @@ export async function setVmdLayerWeight(
         await _rebuildCompositeAnimation(inst.id);
     }
     triggerAutoSave();
-}
-
-/** 清除所有图层 */
-async function clearVmdLayers(targetModelId?: string): Promise<void> {
-    const targetId = targetModelId || focusedModelId;
-    if (!targetId) {
-        return;
-    }
-    const inst = modelRegistry.get(targetId);
-    if (!inst) {
-        return;
-    }
-
-    inst.vmdLayers = [];
-    await _rebuildCompositeAnimation(inst.id);
-    triggerAutoSave();
-}
-
-/**
- * 替换指定图层的 VMD（保留层 id / 权重 / 启用 / boneFilter，仅换动画数据）。
- * 对应「焦点动作替换」语义：只替换对应动作，不清旧 base / 其他图层。
- * @param layerId 目标图层 id
- * @param path 新 VMD 路径
- * @param targetModelId 目标模型 ID
- */
-async function replaceVmdLayerVmd(
-    layerId: string,
-    path: string,
-    targetModelId?: string
-): Promise<VmdLayer | null> {
-    const targetId = targetModelId || focusedModelId;
-    if (!targetId) {
-        feedbackStatus('scene.vmd.noTargetModel', undefined, false);
-        return null;
-    }
-    const inst = modelRegistry.get(targetId);
-    if (!inst?.mmdModel) {
-        feedbackStatus('scene.vmd.modelNoLayers', undefined, false);
-        return null;
-    }
-    const layer = inst.vmdLayers.find((l) => l.id === layerId);
-    if (!layer) {
-        feedbackStatus('scene.vmd.layerLoadFailed', undefined, false);
-        return null;
-    }
-    try {
-        const vmdData = await readFileBytes(path);
-        if (!vmdData) {
-            logWarn('vmd-layers', 'Failed to read VMD file:', path);
-            return null;
-        }
-        const data = vmdData.buffer as ArrayBuffer;
-        const vmdName = getBaseName(path) || '';
-        layer.data = data;
-        layer.path = path;
-        layer.name = vmdName.replace(/\.vmd$/i, '');
-        if (layer.kind === 'gaze') {
-            await _applyGazeLayers(inst.id);
-        } else {
-            await _rebuildCompositeAnimation(inst.id);
-        }
-        showInfoToast(t('scene.vmd.layerAdded', { name: layer.name }));
-        triggerAutoSave();
-        return layer;
-    } catch (err) {
-        console.error('replaceVmdLayerVmd:', err);
-        feedbackStatus('scene.vmd.layerLoadFailed', undefined, false);
-        return null;
-    }
 }
 
 /** 各模型上一次 gaze 激活状态，用于避免重复调用 setGazeLayerActive */

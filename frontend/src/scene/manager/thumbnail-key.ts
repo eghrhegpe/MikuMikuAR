@@ -9,7 +9,6 @@
 //   - resolution：缩略图长边像素（默认 512，运行时取 uiState.thumbnailResolution）。
 //   - aspect：'16/9'（舞台/场景/道具横屏）或 '2/3'（角色竖屏），由 isStageLike 决定。
 
-import { isStageLike } from '@/core/path';
 import type { LibraryModel } from '@/core/types';
 
 export interface ThumbnailBaseKeyInput {
@@ -56,19 +55,4 @@ export function buildThumbnailKey(input: ThumbnailKeyInput): string {
     const res = input.resolution ?? 512;
     const aspect = input.isStage ? '16/9' : '2/3';
     return `${input.baseKey}::${res}::${aspect}`;
-}
-
-/** 便捷：由 kind/type 字符串直接构造完整 key（isStage 判定仍走统一 isStageLike）。 */
-function thumbnailKeyForKind(input: {
-    libraryPath?: string;
-    filePath: string;
-    innerPath?: string;
-    kind: string;
-    resolution?: number;
-}): string {
-    return buildThumbnailKey({
-        baseKey: thumbnailBaseKey(input),
-        isStage: isStageLike(input.kind),
-        resolution: input.resolution,
-    });
 }

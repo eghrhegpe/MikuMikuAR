@@ -216,16 +216,6 @@ export function getConflictCount(modelId: string): number {
     return getBoneOverrideStore().getConflicts(modelId).length;
 }
 
-/**
- * [doc:adr-116 P3] 判定指定骨骼是否被「其他模块」占用（无副作用、不 warn）。
- * 用于时间驱动模块（sway/riding）的帧钩子做让位判定：
- * 若被高优先级模块占用则让位，否则可安全重新认领。区别于 claimBones（会触发 warn / 抢占副作用）。
- */
-function isBoneOwnedByOther(modelId: string, moduleId: string, bone: string): boolean {
-    const owner = getBoneOverrideStore().getBoneOwnerModule(modelId, bone);
-    return owner !== null && owner !== moduleId;
-}
-
 /** 释放模块的 ownedBones 记录并级联清引擎槽（由 store.releaseBones 负责清除） */
 export function releaseOwnedBones(modelId: string, moduleId: string): Set<string> {
     return getBoneOverrideStore().releaseBones(modelId, moduleId);

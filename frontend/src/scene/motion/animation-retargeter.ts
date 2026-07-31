@@ -20,7 +20,6 @@ import { Skeleton } from '@babylonjs/core/Bones/skeleton';
 import { modelRegistry } from '@/core/config';
 import { feedbackInfo, feedbackStatus } from '@/core/feedback';
 import { logWarn } from '@/core/logger';
-import { t } from '@/core/i18n/t';
 
 // ======== 类型导出 ========
 
@@ -65,15 +64,6 @@ const PRESET_BONE_MAPS: Record<Exclude<BoneMapPreset, 'custom'>, Record<string, 
     mixamo: MixamoMmdHumanoidBoneMap as unknown as Record<string, string>,
     vrm: VrmMmdHumanoidBoneMap as unknown as Record<string, string>,
 };
-
-/** 获取可用骨骼映射预设列表。 */
-function getBoneMapPresets(): Array<{ id: string; label: string }> {
-    return [
-        { id: 'mixamo', label: 'Mixamo' },
-        { id: 'vrm', label: 'VRM' },
-        { id: 'custom', label: t('motion.retarget.customMap') },
-    ];
-}
 
 /**
  * 从外部动画文件加载并重定向到 MMD 骨骼。

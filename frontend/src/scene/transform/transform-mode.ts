@@ -16,7 +16,3 @@ export function setDragModeEnabled(enabled: boolean): void {
     localStorage.setItem(STORAGE_KEY, enabled ? '1' : '0');
     scheduleRefresh();
 }
-
-function toggleDragMode(): void {
-    setDragModeEnabled(!_dragModeEnabled);
-}
