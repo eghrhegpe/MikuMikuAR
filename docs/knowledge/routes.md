@@ -14,7 +14,7 @@
 | 动作、骨骼、绑定、逐帧合成、物理裙摆 | [motion-pipeline.md](./motion-pipeline.md)、[bone-override-store.md](./bone-override-store.md) | [motion-binding-ui.md](./motion-binding-ui.md)、[virtual-skirt.md](./virtual-skirt.md)、[wind-physics.md](./wind-physics.md) |
 | 个人灯光、跟随灯 | [lighting-follow.md](./lighting-follow.md) | [lighting-state.md](./lighting-state.md)、[light-cone.md](./light-cone.md) |
 | 水印、截图、缩略图 | [watermark.md](./watermark.md)、[thumbnail-capture.md](./thumbnail-capture.md) | [thumbnail-key.md](./thumbnail-key.md) |
-| 换装、outfit、配饰 | [outfit-ui.md](./outfit-ui.md) | [props.md](./props.md)、[accessory.md](./accessory.md) |
+| 换装、outfit、配饰 | [outfit-ui.md](./outfit-ui.md) | [model-detail.md](./model-detail.md) |
 | 世界矩阵、骨骼矩阵、坐标系转换 | [mmd-adapter.md](./mmd-adapter.md)、[physics-bridge.md](./physics-bridge.md) | [core-orbit.md](./core-orbit.md)、[env-type-helpers.md](./env-type-helpers.md) |
 | 撤销、undo、redo、回退 | [scene-serialize.md](./scene-serialize.md)、[motion-history.md](./motion-history.md) | [action-registry.md](./action-registry.md)（scene:undo 动作） |
 | 场景保存、加载、迁移、序列化、场景菜单 | [scene.md](./scene.md)、[scene-serialize.md](./scene-serialize.md) | [scene-bundle.md](./scene-bundle.md)、[scene-migrate.md](./scene-migrate.md)、[scene-menu.md](./scene-menu.md) |
@@ -29,7 +29,7 @@
 | Toast、错误提示、复制详情、撤销按钮 | [toast.md](./toast.md) | [status-bar.md](./status-bar.md)、[goerr.md](./goerr.md) |
 | 状态栏、HUD、FPS、鼠标提示、加载反馈 | [status-bar.md](./status-bar.md) | [ui-state.md](./ui-state.md)、[ui-keyboard-nav.md](./ui-keyboard-nav.md) |
 | 性能、渲染循环、FPS、质量档位、资源释放 | [performance.md](./performance.md)、[render-loop.md](./render-loop.md)、[dispose-helpers.md](./dispose-helpers.md) | [quality-profile.md](./quality-profile.md)、[renderer.md](./renderer.md) |
-| 资源库、浏览、会话、预设、缩略图 | [library.md](./library.md)、[library-browse.md](./library-browse.md) | [library-session-store.md](./library-session-store.md)、[preset-manager.md](./preset-manager.md)、[thumbnail-key.md](./thumbnail-key.md) |
+| 资源库、浏览、会话、预设、缩略图 | [library.md](./library.md)、[library-browse.md](./library-browse.md) | [library-session-store.md](./library-session-store.md)、[preset-meta.md](./preset-meta.md)、[thumbnail-key.md](./thumbnail-key.md) |
 | 自然语言控场、NL 动作、动作注册、快捷键动作 | [action-registry.md](./action-registry.md)、[ai-intent-dispatcher.md](./ai-intent-dispatcher.md) | [ai-service.md](./ai-service.md)、[settings-diagnostic.md](./settings-diagnostic.md) |
 | 角色台词、大模型交流、人设、情绪、台词朗读 TTS | [character-bible.md](./character-bible.md) | [ai-service.md](./ai-service.md)、[lipsync-bridge.md](./lipsync-bridge.md) |
 

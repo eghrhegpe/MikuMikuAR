@@ -131,7 +131,6 @@ use_when:
 | [环境碰撞控制](./env-collision.md) | `scene/env/env-collision.ts` | ADR-212 |
 | [环境状态防抖持久化](./env-persist.md) | `scene/env/env-persist.ts` | ADR-148/176 |
 | [时间流转与太阳角系统](./env-time-of-day.md) | `scene/env/env-time-of-day.ts` | ADR-148 |
-| [统一预设系统接口](./preset-manager.md) | `scene/env/preset-manager.ts` | ADR-130 |
 | [统一平面反射引擎](./planar-reflection.md) | `scene/env/planar-reflection.ts` | ADR-092 |
 | [云层系统](./env-clouds.md) | `scene/env/env-clouds.ts` | — |
 | [水面系统](./env-water.md) | `scene/env/env-water.ts` | — |
@@ -306,7 +305,6 @@ use_when:
 | [预设面板复合组件](./ui-preset.md) | `core/ui-preset.ts` | — |
 | [滑块输入控制器](./ui-slider-controller.md) | `core/ui-slider-controller.ts` | — |
 | [UI 持久化状态](./ui-state.md) | `core/ui-state.ts` | ADR-141 |
-| [文件监控导入](./watch-import.md) | `core/watch-import.ts` | ADR-102 |
 | [拖拽导入逻辑层](./drop-import.md) | `core/drop-import.ts` | ADR-177 |
 | [统一文件服务层](./fileservice.md) | `core/fileservice.ts` | ADR-057 |
 | [后端适配层](./core-backend.md) | `core/backend/index.ts` | — |

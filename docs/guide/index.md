@@ -8,7 +8,7 @@ hero:
   actions:
     - theme: brand
       text: 开始使用
-      link: /env-water
+      link: /guide/env-water
     - theme: alt
       text: GitHub 仓库
       link: https://github.com/eghrhegpe/MikuMikuAR
