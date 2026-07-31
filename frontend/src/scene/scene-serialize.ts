@@ -22,6 +22,7 @@ import { debounce } from '../core/debounce';
 import { generateUuid } from '../core/uuid';
 import { swallowError } from '../core/async';
 import { computeLibraryRef } from '@/core/path';
+import type { ModelInstance } from '../core/types';
 import { resolveLibraryRef } from '../library/library-path';
 import { logWarn } from '../core/logger';
 import {
@@ -345,14 +346,14 @@ export interface SceneFile {
 
 // ======== Serialization ========
 
-export function serializeScene(): SceneFile {
-    const procState = getProcMotionState();
-    const lipState = getLipSyncState();
-    const models = Array.from(modelRegistry.values()).map((inst) => {
-        // [doc:stable-identity] runtime id 即稳定 uuid，直接持久化；恢复时以相同 uuid 重建实例，
-        // 使材质/outfit/个人灯等按此 id 落盘的状态可跨会话还原。
-        const uuid = inst.id;
-        return {
+/** [doc:adr-198] 单个模型条目的序列化——从 serializeScene 的 map 回调抽出，
+ *  使每个模型可被独立 try/catch 包裹：单个模型序列化抛错时跳过该条并记录，
+ *  而非让整次序列化崩溃导致本次自动保存整体丢失（能存多少存多少）。 */
+function serializeModel(inst: ModelInstance): SceneFile['models'][number] {
+    // [doc:stable-identity] runtime id 即稳定 uuid，直接持久化；恢复时以相同 uuid 重建实例，
+    // 使材质/outfit/个人灯等按此 id 落盘的状态可跨会话还原。
+    const uuid = inst.id;
+    return {
             filePath: inst.filePath,
             libraryRef: computeLibraryRef(inst.filePath, libraryRoot) || undefined,
             uuid,
@@ -472,13 +473,30 @@ export function serializeScene(): SceneFile {
                 }
                 return Object.keys(diff).length > 0 ? { personalLight: diff } : {};
             })(),
-            // [doc:adr-215] 模型附属关系
-            parentId: inst.parentId,
-            attachedBone: inst.attachedBone,
-            attachedOffset: inst.attachedOffset,
-            attachedRotation: inst.attachedRotation,
-        };
-    });
+        // [doc:adr-215] 模型附属关系
+        parentId: inst.parentId,
+        attachedBone: inst.attachedBone,
+        attachedOffset: inst.attachedOffset,
+        attachedRotation: inst.attachedRotation,
+    };
+}
+
+export function serializeScene(): SceneFile {
+    const procState = getProcMotionState();
+    const lipState = getLipSyncState();
+    // [doc:adr-198] 分段容错：逐个模型序列化，单条抛错时跳过 + 记录，
+    // 保证其余模型仍能落盘，而非整次序列化崩溃使本次保存全丢。
+    const models: SceneFile['models'] = [];
+    for (const inst of modelRegistry.values()) {
+        try {
+            models.push(serializeModel(inst));
+        } catch (err) {
+            logWarn(
+                'scene:serialize',
+                `model "${inst.name}" (${inst.id}) serialize failed, skipped: ${String(err)}`
+            );
+        }
+    }
     return {
         version: 1,
         models,
@@ -1330,7 +1348,18 @@ export async function saveSceneImmediate(suppressToast = false, force = false): 
     _saving = true;
     try {
         const _sStart = performance.now();
-        const data = serializeScene();
+        // [doc:adr-198] 区分序列化失败 vs 写盘失败：序列化在前（已分段容错，
+        // 正常不会整体抛错），如果仍崩溃则上报更明确的诊断，便于定位中间态问题。
+        let data: SceneFile;
+        try {
+            data = serializeScene();
+        } catch (serErr) {
+            logWarn('scene:serialize', `serializeScene() threw, save aborted: ${String(serErr)}`);
+            if (!suppressToast) {
+                feedbackError('scene.serialize.autosaveFailed', undefined, serErr);
+            }
+            return;
+        }
         const _sSerialize = performance.now() - _sStart;
         const json = JSON.stringify(data);
         const _sJson = performance.now() - _sStart - _sSerialize;
@@ -1348,7 +1377,8 @@ export async function saveSceneImmediate(suppressToast = false, force = false): 
         await SaveLastScene(json);
         console.info('[auto-save] SaveLastScene succeeded');
     } catch (_err) {
-        console.warn('[auto-save] SaveLastScene FAILED:', _err);
+        // 序列化已在上方单独捕获并 return，这里到达即写盘（SaveLastScene）失败。
+        console.warn('[auto-save] SaveLastScene FAILED (write):', _err);
         if (!suppressToast) {
             feedbackError('scene.serialize.autosaveFailed', undefined, _err);
         }
