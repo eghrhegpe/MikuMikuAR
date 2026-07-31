@@ -1,6 +1,6 @@
 # ADR-133: Android MPR 多线程物理缺失——构建门控与架构障碍
 
-- **状态**：✅ 已完成（构建门控 + 架构障碍均已修复）（2026-07-30）
+- **状态**：⚠️ 决策二证伪 — Android WebView 平台限制，SPR 单线程为 Android 终态（2026-07-31 真机验证）
 - **日期**：2026-07-18
 - **相关**：ADR-099（MPR/COOP/COEP 桌面端）、ADR-017（Android 平台适配）
 
@@ -34,21 +34,34 @@ Android 构建的 APK 始终无法启用 WASM 多线程物理（MPR），无论 
 
 **局限**：由于架构障碍未解决，运行时 `crossOriginIsolated` 仍为 `false`，`scene.ts` 的 `useMultiThread` 守卫依然走 else 分支 → SPR 回退。补门控是「表面功夫」——为将来架构修复铺路，不改变当前行为。
 
-### 决策二：架构障碍修复（✅ 已执行 2026-07-30）
+### 决策二：架构障碍修复（⚠️ 2026-07-31 真机证伪）
 
 架构障碍的根因是 **Android WebView 资源服务路径不经过 Go HTTP 中间件**。
 
 | 环节 | Windows（WebView2） | Android（WebView） |
 |------|--------------------|--------------------|
 | 主文档服务 | Go `AssetFileServerFS` → `CoopCoepMiddleware` 包裹 → 响应头带 COOP/COEP | Java `WebViewAssetLoader` + `WailsPathHandler` → `shouldInterceptRequest` 返回 `WebResourceResponse` |
-| COOP/COEP 注入 | ✅ `Cross-Origin-Opener-Policy: same-origin` + `Cross-Origin-Embedder-Policy: require-corp` | ✅ 在 `shouldInterceptRequest` 中对所有 `wails.localhost` 响应统一注入（2026-07-30） |
-| 运行时 `crossOriginIsolated` | `true` | `true`（待真机验证） |
-| `SharedArrayBuffer` 可用 | ✅ | ✅（待真机验证） |
-| WASM 物理模式 | MPR（多线程） | MPR（多线程，待真机验证） |
+| COOP/COEP 注入 | ✅ `Cross-Origin-Opener-Policy: same-origin` + `Cross-Origin-Embedder-Policy: require-corp` | ✅ 已在 `shouldInterceptRequest` 注入（代码层面） |
+| 运行时 `crossOriginIsolated` | `true` | **`false`（真机实测，注入无效）** |
+| `SharedArrayBuffer` 可用 | ✅ | **❌** |
+| WASM 物理模式 | MPR（多线程） | **SPR（单线程，强制回退）** |
 
-**修复方案**：方案 A — 在 `MainActivity.java` 的 `shouldInterceptRequest` 中，对所有 `wails.localhost` 响应统一追加 `Cross-Origin-Opener-Policy: same-origin` + `Cross-Origin-Embedder-Policy: require-corp` 响应头。
+**当时的修复方案（方案 A）**：在 `MainActivity.java` 的 `shouldInterceptRequest` 中，对所有 `wails.localhost` 响应统一追加 COOP/COEP 响应头。
 
-**安全性论证**：所有前端资源均从 `wails.localhost` 同源加载；模型文件经 `readFileBytes` + Blob URL（ADR-017 A0-01 根治后无 http:// 子资源）；模型广场经 Go 代理同源转发。`require-corp` 不会误伤任何现有资源加载路径。
+**✅ 真机验证结果（2026-07-31）——方案 A 的前提假设被证伪**：
+
+| 环境 | 徽标显示 | `crossOriginIsolated` | 结论 |
+|------|----------|----------------------|------|
+| Windows 桌面（WebView2） | `⚡MPR ×24` 🟢 | true | 正常 |
+| 电脑网页版（Chrome + SW 注入） | `⚡MPR ×24` 🟢 | true | 正常 |
+| eDog 内开安卓网页版（Chrome） | `⚡MPR ×8` 🟢 | true | 正常 |
+| **Android APK（WebView）** | **`⚠ MPR? COI✗` 🟡** | **false** | **注入无效** |
+
+**对照实验铁证**：同一份前端，在 eDog（真 Chrome）里加载安卓网页版即 `MPR×8` 绿，装进 APK（WebView）即 `COI✗` 黄。差别仅在**运行环境从 Chrome 换成 WebView**，证明前端代码/构建门控/注入代码均无误。
+
+**根因**（Chromium issue [40914606](https://issues.chromium.org/issues/40914606)：“SharedArrayBuffer is unavailable in Android WebView because crossOriginIsolated is false”）：`crossOriginIsolated` 是**渲染进程级的浏览上下文状态**，由浏览器在建立顶层文档时根据进程隔离 + Agent Cluster 策略确定。**Android WebView 的多进程隔离模型不完整**，即使在 `shouldInterceptRequest` 把 COOP/COEP 头塞进 `WebResourceResponse`，WebView 也不会据此把上下文提升为跨源隔离——**拦截式响应的这两个头被忽略**。
+
+**结论**：Android 端 MPR 不可达，SPR 单线程为该平台**终态**；`⚠ MPR? COI✗` 琥珀徽标为**预期显示**（非 bug，[scene.ts SPR 兜底]保障不崩窗、物理照跑）。`MainActivity.java` 的注入代码可保留（无害，且为未来 WebView 能力演进预留），但**不得再声称它使 COI 生效**。
 
 ---
 
@@ -64,8 +77,23 @@ Android 构建的 APK 始终无法启用 WASM 多线程物理（MPR），无论 
 
 - ✅ 构建验证：`npx vite build` 退出码 0，产出含 `workerHelpers-*.js` + 2x `index_bg-*.wasm`（`build-android.ps1` 触发）
 - ✅ Go 构建验证：`go build -tags "android,debug,mpr" -buildmode=c-shared` 退出码 0（`build-android-so.ps1` 触发）
-- ✅ 架构障碍修复：`MainActivity.java` `shouldInterceptRequest` 对所有 `wails.localhost` 响应注入 COOP/COEP（2026-07-30）
-- ⏳ 运行时验证（待真机）：Android WebView 内 `self.crossOriginIsolated === true` → `typeof SharedArrayBuffer !== 'undefined'` → 状态栏/右上角徽标显示 MPR
+- ✅ 代码层注入：`MainActivity.java` `shouldInterceptRequest` 对所有 `wails.localhost` 响应注入 COOP/COEP（2026-07-30）
+- ❌ **真机运行时验证（2026-07-31）**：Android APK 内 `crossOriginIsolated=false`，徽标显示 `⚠ MPR? COI✗` 琥珀 — 注入无效，方案 A 证伪（见决策二）
+
+---
+
+## 未来出路（Android 多线程物理）
+
+当前路径（WebView + `shouldInterceptRequest` 注入）已证伪。若未来要重提 Android 多线程，可选方向按成本排序：
+
+| 方向 | 思路 | 可行性 | 成本 |
+|------|------|--------|------|
+| **① 等 WebView 升级** | 关注 Chromium issue 40914606，待 Android System WebView 支持拦截式 COOP/COEP 或提供显式跨源隔离开关 | 不可控，无时间表 | 零（等） |
+| **② 内嵌自建 Chromium（GeckoView / Chromium Embedded）** | 抛开系统 WebView，打包完整渲染引擎，自己控制进程隔离策略 | 高（破坏 Wails v3 WebView 模型） | 极高，APK 膨胀 30MB+ |
+| **③ 将物理下沉到 Go/原生层** | 不依赖浏览器 SAB，在 Go 侧跑 Bullet 多线程，结果回写前端 | 中（需重构物理桥） | 高，与 babylon-mmd 耦合度低 |
+| **④ 接受 SPR 单线程（推荐）** | Android 移动端单人场景物理量有限，SPR 实测流畅；集中优化物理子步频率 | 即开即用 | 零 |
+
+**当前决策**：选④。Android 为移动单人展示场景，SPR 单线程已能支撑；①零成本但不可控，可长期观望。②③ 投产比不划算，除非 Android 成为重度多人/布料密集场景的主战场。
 
 ---
 
@@ -75,4 +103,4 @@ Android 构建的 APK 始终无法启用 WASM 多线程物理（MPR），无论 
 |------|------|
 | `scripts/build-android.ps1` | 第 77 行新增 `$env:VITE_MMD_WASM_MT = "1"` |
 | `scripts/build-android-so.ps1` | 第 67/69 行 `-tags` 追加 `mpr` |
-| `build/android/app/src/main/java/com/wails/app/MainActivity.java` | ✅ 已修复（`shouldInterceptRequest` 注入 COOP/COEP，2026-07-30） |
+| `build/android/app/src/main/java/com/wails/app/MainActivity.java` | ⚠️ 代码层已注入（`shouldInterceptRequest` 注入 COOP/COEP），但真机无效（WebView 忽略拦截式 COOP/COEP，见决策二） |
