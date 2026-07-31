@@ -51,7 +51,33 @@ function scanItems(relDir, exclude = []) {
 const guideItems = scanItems('guide', ['README.md', 'index.md']);
 
 // ---------- 2. 架构与规范（docs 根散 md，自动扫描，排除首页/AGENTS） ----------
-const archItems = scanItems('.', ['index.md', 'AGENTS.md']);
+// 语义排序权重：核心规范置顶，能力矩阵次之，参考资料沉底；
+// 表外文件按文件名字母序兜底（新增根 md 仍自动入列，无需回改此表）。
+const ARCH_ORDER = [
+  'architecture.md',
+  'design.md',
+  'terminology.md',
+  'menu-how-to.md',
+  'function-map.md',
+  'status.md',
+  'targets.md',
+  'multi-end-maturity-matrix.md',
+  'grand-blueprint.md',
+  'outfits-spec.md',
+  'dep-graph.md',
+  'competitive-analysis.md',
+  'security-audit-CVE.md',
+  'web-data-origin-isolation.md',
+];
+const archWeight = (rel) => {
+  const i = ARCH_ORDER.indexOf(path.basename(rel));
+  return i === -1 ? ARCH_ORDER.length : i; // 表外沉底
+};
+const archItems = scanItems('.', ['index.md', 'AGENTS.md']).sort((a, b) => {
+  const wa = archWeight(a.link);
+  const wb = archWeight(b.link);
+  return wa !== wb ? wa - wb : a.link.localeCompare(b.link);
+});
 
 // ---------- 3. 决策记录（adr/，按编号数字排序） ----------
 const adrItems = mdNames('adr')
