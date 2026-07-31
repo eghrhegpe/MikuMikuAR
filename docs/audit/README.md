@@ -86,6 +86,12 @@
 | ⑧ | 感知层拆分 | `perception.ts` (共10文件) | ✅ 通过 | [查看](round-8-perception-split.md) |
 | ⑨ | 镜面反射 | `env-water.ts`, `env-impl.ts`, `renderer.ts` | ⚠️ 有条件通过 | [查看](round-9-mirror-reflection.md) |
 
+### 补充轮次（非渲染链模块）
+
+| 日期 | 模块 | 文件 | 结论 | 报告 |
+|------|------|------|------|------|
+| 2026-07-31 | AI/安全 · 换装 · 物理桥 · Relay | `core/ai/*`, `outfit/outfit.ts`, `physics/physics-bridge.ts`, `relay/src/worker.js` | ✅ 通过（1×P2 待并入下轮） | [查看](2026-07-31-ai-outfit-physics-relay-audit.md) |
+
 ---
 
 ## 改进优先级建议
