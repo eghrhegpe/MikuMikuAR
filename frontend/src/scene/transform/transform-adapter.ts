@@ -4,7 +4,7 @@
 //        同构的 Gizmo 调度与滑杆渲染收敛到此，消除 buildTransformCard 的 9 段 if/else。
 //
 // 依赖方向（避免循环依赖）:
-//   本文件不 import 任何 kind 模块；由各 kind 模块（model-ops / props / lighting）
+//   本文件不 import 任何 kind 模块；由各 kind 模块（model-ops / lighting）
 //   反向调用 registerTransformAdapter 注册，载入即完成注册（ADR-121 依赖方向）。
 
 import type { Node } from '@babylonjs/core/node';
