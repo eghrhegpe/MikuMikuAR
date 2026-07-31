@@ -33,8 +33,11 @@ const link = (rel) => '/' + asPosix(rel).replace(/\.md$/, '');
 
 // ---------- 1. 用户指南（guide/，固定序，首页 index 独立） ----------
 const GUIDE_ORDER = [
-  'import-model', 'motion-playback', 'camera-control', 'props', 'stage-lights',
-  'sky', 'ground', 'env-water', 'env-presets', 'settings',
+  'import-model', 'motion-playback', 'proc-motion', 'camera-control',
+  'outfit', 'props', 'stage-lights',
+  'sky', 'ground', 'env-water', 'env-atmosphere', 'env-presets',
+  'wind-particles', 'physics', 'scene-save',
+  'ai-assistant', 'settings',
 ];
 const guideItems = GUIDE_ORDER.filter((n) => fs.existsSync(path.join(docsRoot, 'guide', n + '.md')))
   .map((n) => ({ text: n, link: link(`guide/${n}.md`) }));
