@@ -3,7 +3,7 @@
 // 职责: 抽离 actor/stage 详情面板的公共区块（变换/材质/危险）
 // 现状: stage 详情面板改为薄壳调用本模块；model-detail 因结构差异大保持现状
 
-import { cardContainer, modelRegistry } from '../core/config';
+import { cardContainer, modelRegistry, type PopupLevel } from '../core/config';
 import { feedbackInfo, feedbackStatus } from '../core/feedback';
 import { showInfoToast } from '../core/toast';
 import { t } from '../core/i18n/t';
@@ -18,7 +18,7 @@ import {
 } from '../core/ui-helpers';
 import { Quaternion } from '@babylonjs/core/Maths/math.vector';
 import { resetModelTransform, removeModel } from '../scene/manager/model-ops';
-import { pushUndoSnapshot, offerSceneUndo } from '../scene/scene';
+import { pushUndoSnapshot, offerSceneUndo, modelManager } from '../scene/scene';
 import { reRenderSceneMenu } from './scene-menu-state';
 import {
     attachGizmoForKind,
@@ -285,4 +285,157 @@ export function buildDangerCard(
             }
         );
     });
+}
+
+// ======== [doc:adr-215] 模型附属关系卡片 ========
+
+/** 构建父模型选择子菜单：列出所有有 mmdModel 的其他模型（不含自身）。 */
+function buildAttachmentSelectLevel(
+    childId: string,
+    onDone: () => void
+): PopupLevel {
+    const childInst = modelRegistry.get(childId);
+    const childName = childInst?.name ?? childId;
+
+    // 收集所有可作为父模型的候选（有 mmdModel 且非自身）
+    const candidates: Array<{ id: string; name: string }> = [];
+    for (const [id, inst] of modelRegistry) {
+        if (id !== childId && inst.mmdModel) {
+            candidates.push({ id, name: inst.name });
+        }
+    }
+
+    return {
+        dir: '',
+        label: t('model-detail.attachmentSelectParent'),
+        items: [],
+        renderCustom: (container) => {
+            container.innerHTML = '';
+            if (candidates.length === 0) {
+                const empty = document.createElement('div');
+                empty.className = 'menu-empty';
+                empty.textContent = t('model-detail.attachmentNoParent');
+                container.appendChild(empty);
+                return;
+            }
+            for (const c of candidates) {
+                slideRow(
+                    container,
+                    'lucide:user',
+                    c.name,
+                    true,
+                    () => {
+                        // 选择骨骼
+                        const boneLevel = buildBoneSelectLevel(childId, c.id, c.name, onDone);
+                        // 通过全局 stackRegistry 推入（从 container 回溯 SlideMenu 不可行）
+                        const event = new CustomEvent('menu-push-level', {
+                            detail: { level: boneLevel },
+                        });
+                        document.dispatchEvent(event);
+                    }
+                );
+            }
+        },
+    };
+}
+
+/** 构建骨骼选择子菜单：列出父模型所有 runtimeBones。 */
+function buildBoneSelectLevel(
+    childId: string,
+    parentId: string,
+    parentName: string,
+    onDone: () => void
+): PopupLevel {
+    const parentInst = modelRegistry.get(parentId);
+    const bones = parentInst?.mmdModel?.runtimeBones ?? [];
+
+    return {
+        dir: '',
+        label: t('model-detail.attachmentSelectBone', { parent: parentName } as any) || `${parentName} — ${t('model-detail.attachmentSelectBone')}`,
+        items: [],
+        renderCustom: (container) => {
+            container.innerHTML = '';
+            if (bones.length === 0) {
+                const empty = document.createElement('div');
+                empty.className = 'menu-empty';
+                empty.textContent = t('model-detail.attachmentNoBone');
+                container.appendChild(empty);
+                return;
+            }
+            for (const bone of bones) {
+                slideRow(
+                    container,
+                    'lucide:bone',
+                    bone.name,
+                    false,
+                    () => {
+                        const ok = modelManager.attachModelToBone(childId, parentId, bone.name);
+                        if (ok) {
+                            onDone();
+                            // 关闭当前菜单层级
+                            document.dispatchEvent(new CustomEvent('menu-pop-to-root'));
+                        } else {
+                            showInfoToast(t('scene.accessory.attachFailed'));
+                        }
+                    }
+                );
+            }
+        },
+    };
+}
+
+/**
+ * [doc:adr-215] 模型附属关系卡片。
+ * 将当前模型附属到其他模型（父模型选择 + 骨骼选择）。
+ * 取代原 buildBoneAttachCard（prop 专用）。
+ */
+export function buildAttachmentCard(
+    container: HTMLElement,
+    handle: ResourceHandle,
+    targetStack: SlideMenu | null,
+    onRefresh: () => void
+): void {
+    const { id } = handle;
+
+    const render = (): void => {
+        container.innerHTML = '';
+        const inst = modelRegistry.get(id);
+        if (!inst) return;
+
+        cardContainer(container, (c) => {
+            addCardTitle(c, t('model-detail.attachment'));
+
+            if (inst.parentId && inst.attachedBone) {
+                // 已附属：显示信息 + 解除按钮
+                const parentInst = modelRegistry.get(inst.parentId);
+                const parentName = parentInst?.name ?? inst.parentId;
+                slideRow(
+                    c,
+                    'lucide:link',
+                    t('model-detail.attachmentAttached', {
+                        parent: parentName,
+                        bone: inst.attachedBone,
+                    }),
+                    false,
+                    () => {}
+                );
+                slideRow(c, 'lucide:unlink', t('model-detail.attachmentDetach'), false, () => {
+                    modelManager.detachModelFromBone(id);
+                    render();
+                    onRefresh();
+                });
+            } else {
+                // 未附属：显示附属入口
+                slideRow(c, 'lucide:link', t('model-detail.attachmentAttach'), true, () => {
+                    const level = buildAttachmentSelectLevel(id, () => {
+                        render();
+                        onRefresh();
+                    });
+                    targetStack?.push(level);
+                });
+            }
+        });
+    };
+
+    render();
 }

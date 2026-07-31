@@ -10,7 +10,6 @@ source_files:
   - frontend/src/menus/scene-render-presets.ts
   - frontend/src/menus/scene-stage-levels.ts
   - frontend/src/menus/scene-stage-lights.ts
-  - frontend/src/menus/scene-prop-levels.ts
   - frontend/src/menus/scene-physics-levels.ts
   - frontend/src/menus/scene-drag-levels.ts
   - frontend/src/menus/resource-detail-helpers.ts

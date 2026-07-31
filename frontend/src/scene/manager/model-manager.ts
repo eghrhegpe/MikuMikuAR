@@ -12,7 +12,7 @@ import { Scene } from '@babylonjs/core/scene';
 import { LinesMesh } from '@babylonjs/core/Meshes/linesMesh';
 import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { MeshBuilder } from '@babylonjs/core/Meshes/meshBuilder';
-import { Vector3 } from '@babylonjs/core/Maths/math.vector';
+import { Vector3, Quaternion } from '@babylonjs/core/Maths/math.vector';
 import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
@@ -31,6 +31,9 @@ import { logWarn } from '@/core/logger';
 import { disposeModelMaterialState } from './material';
 import { applyWetnessToInst } from '@/scene/env/env-wetness';
 import { getOverrideType, type OverrideType } from '../motion/bone-override';
+import { showInfoToast } from '@/core/toast';
+import { t } from '@/core/i18n/t';
+import { feedbackStatus } from '@/core/feedback';
 
 // ======== Per-model state maps ========
 // (owned by ModelManager, not exported directly)
@@ -289,6 +292,9 @@ export class ModelManager {
         if (!inst) {
             return;
         }
+
+        // [doc:adr-215] 级联卸载附属子模型（先子后父，递归）
+        this.detachChildModels(id);
 
         disposeOverlay(inst);
         restoreMaterials(inst);
@@ -1106,6 +1112,145 @@ export class ModelManager {
         for (const [, inst] of this.modelRegistry) {
             disposeOverlay(inst);
             restoreMaterials(inst);
+        }
+    }
+
+    // ======== [doc:adr-215] 模型附属关系管理 ========
+
+    /**
+     * DAG 校验：检查 fromId 向上追溯是否可达 ancestorId（防止成环）。
+     */
+    private _isReachable(fromId: string, ancestorId: string): boolean {
+        const visited = new Set<string>();
+        let currentId: string | undefined = fromId;
+        while (currentId) {
+            if (visited.has(currentId)) return false;
+            visited.add(currentId);
+            const inst = this.modelRegistry.get(currentId);
+            if (inst?.parentId === ancestorId) return true;
+            currentId = inst?.parentId;
+        }
+        return false;
+    }
+
+    /**
+     * 将子模型（角色配件）附属到父模型的指定骨骼上。
+     * 含 DAG 校验、单父限制、骨骼名 guard。
+     * @returns 是否成功
+     */
+    attachModelToBone(
+        childId: string,
+        parentId: string,
+        boneName: string,
+        offset: [number, number, number] = [0, 0, 0],
+        rotation: [number, number, number] = [0, 0, 0]
+    ): boolean {
+        const childInst = this.modelRegistry.get(childId);
+        if (!childInst) {
+            logWarn('model-manager', 'attachModelToBone: child not found:', childId);
+            return false;
+        }
+        const parentInst = this.modelRegistry.get(parentId);
+        if (!parentInst?.mmdModel) {
+            logWarn('model-manager', 'attachModelToBone: parent not found or no mmd runtime:', parentId);
+            return false;
+        }
+
+        // DAG 校验：防止成环
+        if (childId === parentId || this._isReachable(childId, parentId)) {
+            logWarn('model-manager', 'attachModelToBone: would create cycle');
+            feedbackStatus('scene.accessory.cycleDetected', undefined, false);
+            return false;
+        }
+
+        // 骨骼名 guard
+        const rb = parentInst.mmdModel.runtimeBones.find((b) => b.name === boneName);
+        if (!rb) {
+            logWarn('model-manager', 'attachModelToBone: bone not found:', boneName);
+            feedbackStatus('scene.accessory.boneNotFound', undefined, false, { bone: boneName });
+            return false;
+        }
+
+        const linkedBone = (rb as unknown as { linkedBone?: import('@babylonjs/core/Bones/bone').Bone }).linkedBone;
+        if (!linkedBone) {
+            logWarn('model-manager', 'attachModelToBone: bone has no linkedBone:', boneName);
+            return false;
+        }
+
+        // 记录附属关系
+        childInst.parentId = parentId;
+        childInst.attachedBone = boneName;
+        childInst.attachedOffset = offset;
+        childInst.attachedRotation = rotation;
+
+        const target = childInst.rootMesh;
+        target.position.set(offset[0], offset[1], offset[2]);
+        const rotQ = Quaternion.FromEulerAngles(
+            (rotation[0] * Math.PI) / 180,
+            (rotation[1] * Math.PI) / 180,
+            (rotation[2] * Math.PI) / 180
+        );
+        target.rotationQuaternion = rotQ;
+        target.attachToBone(linkedBone, parentInst.rootMesh);
+
+        showInfoToast(t('scene.accessory.attached', { name: childInst.name, bone: boneName }));
+        this.triggerAutoSave();
+        return true;
+    }
+
+    /**
+     * 解除子模型的骨骼附属，回到场景坐标模式。
+     * 保留在 modelRegistry 中，可独立操作或重新挂载。
+     */
+    detachModelFromBone(childId: string): void {
+        const childInst = this.modelRegistry.get(childId);
+        if (!childInst) return;
+
+        const target = childInst.rootMesh;
+        const worldMat = target.getWorldMatrix().clone();
+        target.detachFromBone();
+
+        childInst.parentId = undefined;
+        childInst.attachedBone = undefined;
+        childInst.attachedOffset = undefined;
+        childInst.attachedRotation = undefined;
+
+        target.position = worldMat.getTranslation();
+        target.rotationQuaternion = Quaternion.FromRotationMatrix(worldMat.getRotationMatrix());
+
+        showInfoToast(t('scene.accessory.detached', { name: childInst.name }));
+        this.triggerAutoSave();
+    }
+
+    /**
+     * 重新挂载所有附属模型（场景恢复时调用）。
+     * 遍历 modelRegistry 中所有 parentId !== undefined 的实例。
+     */
+    reattachAllAttachments(): void {
+        for (const [childId, inst] of this.modelRegistry) {
+            if (inst.parentId && inst.attachedBone) {
+                const target = inst.rootMesh;
+                try { target.detachFromBone(); } catch { /* cleanup */ }
+                this.attachModelToBone(
+                    childId,
+                    inst.parentId,
+                    inst.attachedBone,
+                    inst.attachedOffset ?? [0, 0, 0],
+                    inst.attachedRotation ?? [0, 0, 0]
+                );
+            }
+        }
+    }
+
+    /**
+     * 卸载父模型时，级联卸载其附属子模型。
+     * 遍历 modelRegistry 中所有 parentId === parentId 的实例并移除。
+     */
+    detachChildModels(parentId: string): void {
+        for (const [childId, inst] of this.modelRegistry) {
+            if (inst.parentId === parentId) {
+                this.remove(childId);
+            }
         }
     }
 }

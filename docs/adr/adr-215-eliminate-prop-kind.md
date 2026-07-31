@@ -1,6 +1,6 @@
 # ADR-215: 取消「道具」资源类型 — 模型附属关系替代 prop + accessory 体系
 
-- **状态**: 📋 规划
+- **状态**: 🔄 实施中
 - **日期**: 2026-07-30
 - **相关**: ADR-045（统一加载架构）、ADR-048（变换系统统一）、ADR-049（轨道控制扩展）、ADR-061（骨骼挂载 Accessory）、ADR-212（命名审计）、ADR-193（稳定模型标识）
 - **源码锚点**: `frontend/src/scene/env/props/`（全目录）、`frontend/src/menus/scene-prop-levels.ts`、`frontend/src/menus/resource-detail-helpers.ts`、`frontend/src/core/scene-state.ts`（propRegistry）、`frontend/src/core/load-manager.ts`（`'prop'` 分支）、`frontend/src/scene/scene-serialize.ts`（props 序列化）、`frontend/src/menus/library-actions.ts`（`m.type === 'prop'` 分支）、`frontend/src/scene/render/lighting-shadow.ts`（propRegistry 阴影遍历）

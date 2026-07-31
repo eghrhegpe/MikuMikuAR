@@ -17,7 +17,7 @@
 |-----|------|------|
 | ADR-217 | 地水无限尺寸单源化 — 水面跟进 groundInfiniteEnabled | ✅ 已实施（2026-07-30） |
 | ADR-216 | 移除死状态字段 underwaterFogDensity / underwaterFogMultiplier | ✅ 已实施（2026-07-30） |
-| ADR-215 | 取消「道具」资源类型 — 模型附属关系替代 prop + accessory 体系 | 📋 规划（2026-07-30） |
+| ADR-215 | 取消「道具」资源类型 — 模型附属关系替代 prop + accessory 体系 | 🔄 实施中（2026-07-30） |
 | ADR-214 | Menu ID 命名规范治理 | ✅ 已完成（Phase 1/2/3 + domain 对齐全部完成）（2026-07-30） |
 | ADR-213 | Go 后端 EnvState 命名漂移修复与契约补全 | ✅ 已完成（Go struct 6 字段 + JSON tag 同步、UnmarshalJSON 6 条 fallback、契约测试补全、mock factory 同步全部落地）（2026-07-30） |
 | ADR-212 | 命名 vs 翻译 vs 实际功能错位系统审计与治理 | ✅ 已完成（P0-P3 全部落地；P4 CI 工具链待后续实施）（2026-07-30） |
