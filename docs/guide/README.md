@@ -14,6 +14,10 @@
 | [模型导入](./import-model.md) | 主界面 → 模型 | 🟢 已建档 |
 | [动作与播放](./motion-playback.md) | 动作面板 | 🟢 已建档 |
 | [换装](./outfit.md) | 模型详情 → 换装 | 🟢 已建档 |
+| [布料物理](./physics.md) | 场景菜单 → 物理（`scene:physics`） | 🟢 已建档 |
+| [风力与粒子](./wind-particles.md) | 环境弹窗 → 风 / 粒子 | 🟢 已建档 |
+| [环境氛围](./env-atmosphere.md) | 环境弹窗 → 雾 / 云 / 后处理 | 🟢 已建档 |
+| [AI 助手](./ai-assistant.md) | 设置 → AI 诊断 | 🟢 已建档 |
 | [相机操作](./camera-control.md) | 动作面板 → 相机 | 🟢 已建档 |
 | [道具](./props.md) | 场景菜单 → 道具 | 🟢 已建档 |
 | [舞台灯光](./stage-lights.md) | 场景菜单 → 舞台灯光 | 🟢 已建档 |
