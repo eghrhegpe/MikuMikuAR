@@ -22,7 +22,7 @@ import { freeflyInput } from './freefly-state';
 import { orbitInput } from './orbit-state';
 import { getCameraMode } from '../scene/camera/camera';
 import { t } from './i18n/t';
-import { openExternalURL } from './platform';
+import { openExternalLink } from './platform';
 import { getCachedCapabilities } from './backend';
 import { addDisposableListener } from './dom';
 
@@ -52,7 +52,6 @@ export function disposeEventHandlers(): void {
     }
 }
 
-import { browser } from './runtime-bridge';
 import { showModelPopup, showMotionPopup } from '../menus/library';
 import { showPlaza } from '../menus/plaza-browser';
 import { closePlaza } from '../menus/plaza-state';
@@ -482,9 +481,7 @@ export function showUpdateToast(latest: string, url: string, downloadUrl?: strin
         }
         btn.onclick = async () => {
             if (!hasDirectInstall) {
-                if (!openExternalURL(url)) {
-                    void browser.openURL(url);
-                }
+                openExternalLink(url);
             } else {
                 // Download APK and launch installer
                 btn.disabled = true;
@@ -499,9 +496,7 @@ export function showUpdateToast(latest: string, url: string, downloadUrl?: strin
                         // missing REQUEST_INSTALL_PACKAGES permission rejected).
                         const onInstallFailed = () => {
                             btn.textContent = t('settings.about.update.downloadFailed');
-                            if (!openExternalURL(url)) {
-                                void browser.openURL(url);
-                            }
+                            openExternalLink(url);
                         };
                         window.addEventListener('update:installFailed', onInstallFailed);
                         window.wails?.installApk?.(result.localPath);
@@ -512,15 +507,11 @@ export function showUpdateToast(latest: string, url: string, downloadUrl?: strin
                         }, 10000);
                     } else {
                         btn.textContent = t('settings.about.update.downloadFailed');
-                        if (!openExternalURL(url)) {
-                            void browser.openURL(url);
-                        }
+                        openExternalLink(url);
                     }
                 } catch {
                     btn.textContent = t('settings.about.update.downloadFailed');
-                    if (!openExternalURL(url)) {
-                        void browser.openURL(url);
-                    }
+                    openExternalLink(url);
                 } finally {
                     btn.disabled = false;
                 }

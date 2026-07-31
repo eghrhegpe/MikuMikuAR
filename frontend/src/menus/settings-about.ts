@@ -1,19 +1,19 @@
-// settings-about.ts — 关于页面（ADR-157 瘦身：仅版本信息 / 链接 / 更新）
-// 设置导入/导出/重置已迁移至 settings-system.ts；快捷键只读副本已删除（可编辑版在操控页）。
+// settings-about.ts — 关于页面
+// 卡片 1：版本 + 技术栈（替代 build/commit/go 等开发细节）
+// 卡片 2：链接（GitHub README + 知识库入口）
+// 卡片 3：更新（进入页面自动检测一次，无需手动按钮/开关）
 
 import {
     GetBuildInfo,
     CheckForUpdate,
-    SetUIAutoUpdate,
     DownloadApk,
     DownloadAndRunInstaller,
 } from '../core/wails-bindings';
-import { uiState, setUIState, cardContainer } from '../core/config';
-import { slideRow, addToggleRow, addSectionTitle } from '../core/ui-helpers';
-import { browser } from '../core/runtime-bridge';
+import { cardContainer } from '../core/config';
+import { slideRow, addSectionTitle } from '../core/ui-helpers';
 import { showInfoToast } from '../core/toast';
 import { t } from '../core/i18n/t';
-import { openExternalURL } from '../core/platform';
+import { openExternalLink } from '../core/platform';
 import { getCachedCapabilities } from '../core/backend';
 import { renderMenu } from './render-menu';
 import type { PopupLevel } from '../core/config';
@@ -21,9 +21,12 @@ import type { MenuNode } from './menu-schema';
 import type { SettingsMenuHandle } from './settings-shared';
 import { safeCallAsync } from '../core/safe-call';
 
+/** 防止每次进入关于页都触发更新检查——一次会话只检查一次。 */
+let _updateCheckedThisSession = false;
+
 function buildAboutSchema(_getSettingsMenu: () => SettingsMenuHandle): MenuNode[] {
     return [
-        // 卡片 1：版本信息
+        // 卡片 1：版本 + 技术栈
         {
             id: 'about:version',
             kind: 'custom',
@@ -45,6 +48,12 @@ function buildAboutSchema(_getSettingsMenu: () => SettingsMenuHandle): MenuNode[
                     appVersion.textContent = 'v…';
                     title.appendChild(appVersion);
 
+                    const techStack = document.createElement('div');
+                    techStack.style.cssText =
+                        'font-size:10px;color:var(--text-dim);margin-top:6px;line-height:1.6;';
+                    techStack.textContent = 'Wails v3 · Go · Babylon.js 9.x · babylon-mmd';
+                    title.appendChild(techStack);
+
                     inner.appendChild(title);
                     safeCallAsync('settings-about', '', () =>
                         GetBuildInfo().then((info) => {
@@ -52,22 +61,6 @@ function buildAboutSchema(_getSettingsMenu: () => SettingsMenuHandle): MenuNode[
                             if (el) {
                                 el.textContent = `v${info.version}`;
                             }
-                            const detail = document.createElement('div');
-                            detail.className = 'about-version-info';
-
-                            const buildRow = document.createElement('div');
-                            buildRow.textContent = `build: ${info.buildTime}`;
-                            detail.appendChild(buildRow);
-
-                            const commitRow = document.createElement('div');
-                            commitRow.textContent = `commit: ${info.commitHash}`;
-                            detail.appendChild(commitRow);
-
-                            const goRow = document.createElement('div');
-                            goRow.textContent = `go: ${info.goVersion}`;
-                            detail.appendChild(goRow);
-
-                            inner.appendChild(detail);
                         })
                     );
                 });
@@ -80,214 +73,143 @@ function buildAboutSchema(_getSettingsMenu: () => SettingsMenuHandle): MenuNode[
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
                     addSectionTitle(inner, t('settings.about.links'));
-                    slideRow(inner, 'lucide:github', t('about.github'), false, () => {
-                        if (!openExternalURL('https://github.com/eghrhegpe/MikuMikuAR')) {
-                            void browser.openURL('https://github.com/eghrhegpe/MikuMikuAR');
-                        }
+                    slideRow(inner, 'lucide:book-open', t('about.readme'), false, () => {
+                        openExternalLink('https://github.com/eghrhegpe/MikuMikuAR#readme');
                     });
-                    slideRow(inner, 'lucide:scroll', t('about.license'), false, () => {
-                        if (
-                            !openExternalURL(
-                                'https://github.com/eghrhegpe/MikuMikuAR/blob/main/LICENSE'
-                            )
-                        ) {
-                            void browser.openURL(
-                                'https://github.com/eghrhegpe/MikuMikuAR/blob/main/LICENSE'
-                            );
-                        }
-                    });
-                    slideRow(inner, 'lucide:bug', t('about.issues'), false, () => {
-                        if (!openExternalURL('https://github.com/eghrhegpe/MikuMikuAR/issues')) {
-                            void browser.openURL('https://github.com/eghrhegpe/MikuMikuAR/issues');
-                        }
+                    slideRow(inner, 'lucide:library', t('about.knowledge'), false, () => {
+                        openExternalLink(
+                            'https://github.com/eghrhegpe/MikuMikuAR/tree/main/docs/knowledge'
+                        );
                     });
                 });
             },
         },
-        // 卡片 3：社区工具
-        {
-            id: 'about:community-tools',
-            kind: 'custom',
-            renderCustom: (c) => {
-                cardContainer(c, (inner) => {
-                    addSectionTitle(inner, t('settings.about.communityTools'));
-                    slideRow(inner, 'lucide:github', t('about.nanoemCn'), false, () => {
-                        if (!openExternalURL('https://github.com/BesingBG/nanoem-cn')) {
-                            void browser.openURL('https://github.com/BesingBG/nanoem-cn');
-                        }
-                    });
-                });
-            },
-        },
-        // 卡片 4：更新
+        // 卡片 3：更新（自动检测）
         {
             id: 'about:update',
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
                     addSectionTitle(inner, t('settings.about.update'));
-                    addToggleRow(
-                        inner,
-                        t('settings.about.update.autoCheck'),
-                        uiState.autoUpdateEnabled === true,
-                        (v) => {
-                            setUIState({ autoUpdateEnabled: v });
-                            void SetUIAutoUpdate(v);
-                            showInfoToast(
-                                t('settings.autoUpdate', {
-                                    state: v ? t('common.on') : t('common.off'),
-                                })
-                            );
-                        }
-                    );
-                    const resultRow = document.createElement('div');
-                    resultRow.className = 'slide-item';
-                    resultRow.style.cssText =
-                        'flex-direction:column;align-items:stretch;gap:4px;padding:8px 14px;';
 
                     const updateStatus = document.createElement('div');
-                    updateStatus.dataset.updateStatus = '';
-                    updateStatus.style.cssText = 'font-size:12px;color:var(--text);';
-                    updateStatus.textContent = t('settings.about.update.checkHint');
-                    resultRow.appendChild(updateStatus);
+                    updateStatus.style.cssText =
+                        'font-size:12px;color:var(--text);padding:4px 14px 8px;';
+                    updateStatus.textContent = t('settings.about.update.checking');
+                    inner.appendChild(updateStatus);
 
                     const updateLink = document.createElement('a');
-                    updateLink.dataset.updateLink = '';
                     updateLink.href = '#';
                     updateLink.style.cssText =
-                        'display:none;font-size:12px;color:var(--accent);cursor:pointer;';
+                        'display:none;font-size:12px;color:var(--accent);cursor:pointer;padding:0 14px 10px;';
                     updateLink.textContent = t('settings.about.update.goDownload');
-                    resultRow.appendChild(updateLink);
+                    inner.appendChild(updateLink);
 
-                    inner.appendChild(resultRow);
-                    slideRow(
-                        inner,
-                        'lucide:download',
-                        t('settings.about.update.checkNow'),
-                        false,
-                        async () => {
-                            updateLink.style.display = 'none';
-                            updateStatus.textContent = t('settings.about.update.checking');
-                            try {
-                                const r = await CheckForUpdate();
-                                if (!r) {
-                                    updateStatus.textContent = t('settings.about.update.failed');
+                    // 进入关于页自动检测一次（每会话仅一次）
+                    if (_updateCheckedThisSession) {
+                        updateStatus.textContent = '';
+                        return;
+                    }
+                    _updateCheckedThisSession = true;
+
+                    safeCallAsync('settings-about', '', async () => {
+                        const r = await CheckForUpdate();
+                        if (!r) {
+                            updateStatus.textContent = t('settings.about.update.failed');
+                            return;
+                        }
+                        if (r.error) {
+                            updateStatus.textContent = t('settings.about.update.error', {
+                                err: r.error,
+                            });
+                            return;
+                        }
+                        updateStatus.textContent = r.available
+                            ? t('settings.about.update.available', {
+                                  latest: r.latest,
+                                  current: r.current,
+                              })
+                            : t('settings.about.update.latest', { current: r.current });
+                        if (r.available && r.url) {
+                            updateLink.style.display = 'inline';
+                            const hasDirectInstall =
+                                !!r.downloadUrl && getCachedCapabilities().installLocal;
+                            const isDesktopInstall =
+                                hasDirectInstall && !getCachedCapabilities().installApk;
+                            updateLink.textContent = hasDirectInstall
+                                ? t('settings.about.update.downloadInstall')
+                                : t('settings.about.update.goDownload');
+                            updateLink.onclick = async (e) => {
+                                e.preventDefault();
+                                if (!hasDirectInstall) {
+                                    openExternalLink(r.url);
                                     return;
                                 }
-                                if (r.error) {
-                                    updateStatus.textContent = t('settings.about.update.error', {
-                                        err: r.error,
-                                    });
-                                    return;
-                                }
-                                updateStatus.textContent = r.available
-                                    ? t('settings.about.update.available', {
-                                          latest: r.latest,
-                                          current: r.current,
-                                      })
-                                    : t('settings.about.update.latest', { current: r.current });
-                                if (r.available && r.url) {
-                                    updateLink.style.display = 'inline';
-                                    // [doc:adr-179] Android + direct APK link → "Download & Install"
-                                    // [doc:adr-179] Desktop/Android: direct install when downloadUrl is available
-                                    const hasDirectInstall =
-                                        !!r.downloadUrl && getCachedCapabilities().installLocal;
-                                    const isDesktopInstall =
-                                        hasDirectInstall && !getCachedCapabilities().installApk;
-                                    updateLink.textContent = hasDirectInstall
-                                        ? t('settings.about.update.downloadInstall')
-                                        : t('settings.about.update.goDownload');
-                                    updateLink.onclick = async (e) => {
-                                        e.preventDefault();
-                                        if (!hasDirectInstall) {
-                                            if (!openExternalURL(r.url)) {
-                                                void browser.openURL(r.url);
-                                            }
-                                            return;
-                                        }
-                                        updateLink.textContent = t(
-                                            'settings.about.update.downloading'
-                                        );
-                                        updateLink.style.pointerEvents = 'none';
-                                        try {
-                                            if (isDesktopInstall) {
-                                                // Desktop: download installer + launch (user clicks through OS wizard)
-                                                const result = await DownloadAndRunInstaller();
-                                                if (result && result.success) {
-                                                    updateLink.textContent = t(
-                                                        'settings.about.update.installLaunched'
-                                                    );
-                                                } else {
-                                                    const errMsg = result?.error || '';
-                                                    updateLink.textContent = t(
-                                                        'settings.about.update.downloadFailed'
-                                                    );
-                                                    showInfoToast(
-                                                        errMsg || t('settings.about.update.failed')
-                                                    );
-                                                    if (!openExternalURL(r.url)) {
-                                                        void browser.openURL(r.url);
-                                                    }
-                                                }
-                                            } else {
-                                                // Android: download APK then launch installer
-                                                const result = await DownloadApk();
-                                                if (result && result.success && result.localPath) {
-                                                    // [doc:adr-179] Register one-shot listener for install failures.
-                                                    const onInstallFailed = () => {
-                                                        updateLink.textContent = t(
-                                                            'settings.about.update.downloadFailed'
-                                                        );
-                                                        updateLink.style.pointerEvents = '';
-                                                        if (!openExternalURL(r.url)) {
-                                                            void browser.openURL(r.url);
-                                                        }
-                                                    };
-                                                    window.addEventListener(
-                                                        'update:installFailed',
-                                                        onInstallFailed
-                                                    );
-                                                    window.wails?.installApk?.(result.localPath);
-                                                    updateLink.textContent = t(
-                                                        'settings.about.update.installLaunched'
-                                                    );
-                                                    setTimeout(() => {
-                                                        window.removeEventListener(
-                                                            'update:installFailed',
-                                                            onInstallFailed
-                                                        );
-                                                    }, 10000);
-                                                } else {
-                                                    const errMsg = result?.error || '';
-                                                    updateLink.textContent = t(
-                                                        'settings.about.update.downloadFailed'
-                                                    );
-                                                    showInfoToast(
-                                                        errMsg || t('settings.about.update.failed')
-                                                    );
-                                                    // Fallback: open release page
-                                                    if (!openExternalURL(r.url)) {
-                                                        void browser.openURL(r.url);
-                                                    }
-                                                }
-                                            } // close Android else (isDesktopInstall)
-                                        } catch {
+                                updateLink.textContent = t('settings.about.update.downloading');
+                                updateLink.style.pointerEvents = 'none';
+                                try {
+                                    if (isDesktopInstall) {
+                                        const result = await DownloadAndRunInstaller();
+                                        if (result && result.success) {
+                                            updateLink.textContent = t(
+                                                'settings.about.update.installLaunched'
+                                            );
+                                        } else {
+                                            const errMsg = result?.error || '';
                                             updateLink.textContent = t(
                                                 'settings.about.update.downloadFailed'
                                             );
-                                            if (!openExternalURL(r.url)) {
-                                                void browser.openURL(r.url);
-                                            }
-                                        } finally {
-                                            updateLink.style.pointerEvents = '';
+                                            showInfoToast(
+                                                errMsg || t('settings.about.update.failed')
+                                            );
+                                            openExternalLink(r.url);
                                         }
-                                    };
+                                    } else {
+                                        const result = await DownloadApk();
+                                        if (result && result.success && result.localPath) {
+                                            const onInstallFailed = () => {
+                                                updateLink.textContent = t(
+                                                    'settings.about.update.downloadFailed'
+                                                );
+                                                updateLink.style.pointerEvents = '';
+                                                openExternalLink(r.url);
+                                            };
+                                            window.addEventListener(
+                                                'update:installFailed',
+                                                onInstallFailed
+                                            );
+                                            window.wails?.installApk?.(result.localPath);
+                                            updateLink.textContent = t(
+                                                'settings.about.update.installLaunched'
+                                            );
+                                            setTimeout(() => {
+                                                window.removeEventListener(
+                                                    'update:installFailed',
+                                                    onInstallFailed
+                                                );
+                                            }, 10000);
+                                        } else {
+                                            const errMsg = result?.error || '';
+                                            updateLink.textContent = t(
+                                                'settings.about.update.downloadFailed'
+                                            );
+                                            showInfoToast(
+                                                errMsg || t('settings.about.update.failed')
+                                            );
+                                            openExternalLink(r.url);
+                                        }
+                                    }
+                                } catch {
+                                    updateLink.textContent = t(
+                                        'settings.about.update.downloadFailed'
+                                    );
+                                    openExternalLink(r.url);
+                                } finally {
+                                    updateLink.style.pointerEvents = '';
                                 }
-                            } catch {
-                                updateStatus.textContent = t('settings.about.update.failed');
-                            }
+                            };
                         }
-                    );
+                    });
                 });
             },
         },
