@@ -1,6 +1,6 @@
 # ADR-219: 测试并发调优与 isolate 污染治理 — vitest 全量提速：maxWorkers 落地 + isolate=false 障碍清理
 
-> **状态**: 实施中（2026-07-31；Phase 1 已落地省 13%；Phase 2 方案经实测纠偏——「统一 mock 形状」证伪，改走「关键单例模块 mock 全局化」，待 idb spike 验证）
+> **状态**: 实施中（2026-07-31；Phase 1 已落地省 13%；Phase 2 idb 全局化已落地并修正存储回退，isolate=true 4135 全绿零回退；剩余 config/scene/babylon 同源类待推广，另发现 no-isolate 「收集期崩溃」顽疾）
 > **日期**: 2026-07-31
 
 ## 背景
@@ -96,7 +96,25 @@ Duration 37.56s (transform 34.72s, setup 9.32s, import 295.64s, tests 45.11s, en
 2. 文件级 `vi.mock` 优先级高于 setup → config-store（spy 断言）/ chat-store（独立桶）自动逃生，无需 `vi.unmock`。
 3. 全局化单模块即连锁清掉一大批失败（不止 idb 自己的 62 个，总数 246→113）。
 
-**结论**：「关键单例模块 mock 全局化」是正解。剩余 113 个失败为 config/scene/babylon 同源类，待推广同手法（`@/scene/scene` 已有共享 `mockScene()` helper，收敛更易）。
+**结论**：「关键单例模块 mock 全局化」是正解。剩余失败为 config/scene/babylon 同源类，待推广同手法。
+
+### Phase 2 回退发现与修正（2026-07-31）— 全局 mock 必须复用共享存储
+
+spike 初版用**自造双层 `__idbGlobalStore`** 作全局 mock 的内存实现，埋下回退：`browserAdapter` 单例在 no-isolate 下绑定到全局 mock 后，`backend.*` 测试往**另一套** `idbStore`（backend-mocks 的单例）播种的数据，全局 mock 读不到 → `readFileBytes` 回退为 `null`，backend 6 个文件在 no-isolate 全量下红（单独跑全绿，典型顺序污染）。
+
+**修正**：全局 mock 不自造存储，改为 `await import('@/core/backend/backend-mocks')` 复用单源工厂 `makeIdbMock()`（基于单例 `idbStore`）。如此无论 `browserAdapter` 单例绑定到全局 mock 还是文件级 `makeIdbMock()`，播种皆可见，backend 测试的 `resetIdb()` 也清的是同一份存储。修正后：
+
+| 指标 | 结果 |
+|------|------|
+| isolate=true 全量 | **243 文件 / 4135 全绿**（零回退，含 config-store/chat-store） |
+| backend 系列 no-isolate 单跑 | **11 文件 / 95 全绿** |
+| eslint（setup-wails.ts） | 通过 |
+
+**教训**：全局 mock 的内存实现若与文件级 mock 各用一套存储，单例绑定到全局 mock 后会切断文件级播种的可见性。**全局化必须复用既有单源工厂/共享存储，而非另起炉灶**——这与 AGENTS.md「通用化、统一、复用已有函数」的取向一致。
+
+### Phase 2 新顽疾（2026-07-31）— no-isolate 「收集期崩溃」致用例蒸发
+
+no-isolate 全量两次实测：文件数恒为 243，但**用例总数从 isolate=true 的 4135 掉到 ~2682（蒸发 ~1453）**。蒸发的用例既非 passed 也非 failed——前置文件污染共享 worker 的模块状态后，后续文件的 `describe`/顶层 import 在**收集期**就抛错，整批用例不计入报告。这意味着「no-isolate 失败数」是**不稳定指标**（部分失败滑成了未收集），不能单看失败数下降就判定进展。真正可靠的真相锚是 isolate=true 全量（稳定、当前 CI 模式）。收集期崩溃与单例穿透同源（共享 registry），但更深一层，需在推广全局化时一并观察是否缓解。
 
 ## 备选方案
 
