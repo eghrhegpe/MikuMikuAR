@@ -8,7 +8,7 @@
  */
 
 import type { IMmdRuntime } from 'babylon-mmd/esm/Runtime/IMmdRuntime';
-import type { ModelInstance, PropInstance, FeetState } from './types';
+import type { ModelInstance, FeetState } from './types';
 
 // ======== MMD Runtime ========
 
@@ -55,13 +55,6 @@ export function createDefaultFeetState(): FeetState {
         maxAngle: 30,
         reachAngle: 15,
     };
-}
-
-// ======== Prop Registry ========
-
-export let propRegistry = new Map<string, PropInstance>();
-export function setPropRegistry(m: Map<string, PropInstance>): void {
-    propRegistry = m;
 }
 
 // ======== Focused Model ========
