@@ -8,9 +8,9 @@ import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
 import { buildLevel } from './env-level-helpers';
 
-export function buildFogLevel(): PopupLevel {
-    return buildLevel(t('env.fog'), (c) => {
-        const fogSchema: MenuNode[] = [
+/** 导出 fog schema 供 menu-registry 静态分析（ADR-093 元测试） */
+export function getFogSchema(): MenuNode[] {
+    return [
             {
                 id: 'env:fog:mode',
                 kind: 'modeSlider',
@@ -65,7 +65,11 @@ export function buildFogLevel(): PopupLevel {
                 },
                 visibleWhen: () => envState.fogMode === 'linear',
             },
-        ];
-        return renderMenu(fogSchema, c);
+    ];
+}
+
+export function buildFogLevel(): PopupLevel {
+    return buildLevel(t('env.fog'), (c) => {
+        return renderMenu(getFogSchema(), c);
     });
 }

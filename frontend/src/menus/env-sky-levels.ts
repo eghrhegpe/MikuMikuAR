@@ -13,9 +13,9 @@ import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
 import { buildLevel, openTexturePicker } from './env-level-helpers';
 
-export function buildSkyLevel(): PopupLevel {
-    return buildLevel(t('env.sky'), (c) => {
-        const skySchema: MenuNode[] = [
+/** 导出 sky schema 供 menu-registry 静态分析（ADR-093 元测试） */
+export function getSkySchema(): MenuNode[] {
+    return [
             // 时光预设芯片（黎明/正午/夕阳/夜景/阴天/霓虹）
             {
                 id: 'env:sky:presets',
@@ -198,7 +198,11 @@ export function buildSkyLevel(): PopupLevel {
                     },
                 ],
             },
-        ];
-        return renderMenu(skySchema, c);
+    ];
+}
+
+export function buildSkyLevel(): PopupLevel {
+    return buildLevel(t('env.sky'), (c) => {
+        return renderMenu(getSkySchema(), c);
     });
 }

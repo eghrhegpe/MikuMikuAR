@@ -54,7 +54,7 @@ vi.mock('@bindings/mikumikuar/internal/app/app', () => ({
     AiCancelStream: vi.fn(async () => {}),
 }));
 
-import { GoAiAdapter, goAiAdapter } from '../go-adapter';
+import { GoAiAdapter } from '../go-adapter';
 import type { ChatChunk } from '../types';
 
 /** 触发一次 Wails 事件（模拟 Go 后端回发）。 */

@@ -168,8 +168,6 @@ describe('installLoggingPatch / uninstallLoggingPatch', () => {
     });
 
     it('patch 后 console.error 入环', () => {
-        const buf = new ErrorRingBuffer(10);
-        // 用自定义 buffer 验证
         const spy = vi.spyOn(errorBuffer, 'push');
 
         installLoggingPatch();

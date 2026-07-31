@@ -2,8 +2,6 @@
 // go-adapter 依赖 @bindings 运行时（Wails），测试中隔离为纯桩。
 // idb 在 Node/happy-dom 下无 IndexedDB 实现，注入内存 Map 桩隔离浏览器存储依赖。
 
-import { vi } from 'vitest';
-
 export const idbStore = new Map<string, unknown>();
 
 export function setWindow(w: unknown): void {

@@ -15,7 +15,6 @@ import {
     getModuleState,
     setTargetModel,
 } from '@/scene/motion/motion-modules/registry';
-import { applyModuleSnapshot } from '@/scene/motion/motion-modules/module-base';
 
 vi.mock('@/core/state', () => mockState());
 vi.mock('@/scene/motion/bone-override', () => mockBoneOverride());

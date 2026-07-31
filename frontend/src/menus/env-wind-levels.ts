@@ -8,9 +8,9 @@ import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
 import { buildLevel } from './env-level-helpers';
 
-export function buildWindLevel(): PopupLevel {
-    return buildLevel(t('env.wind'), (c) => {
-        const windSchema: MenuNode[] = [
+/** 导出 wind schema 供 menu-registry 静态分析（ADR-093 元测试） */
+export function getWindSchema(): MenuNode[] {
+    return [
             {
                 id: 'env:wind:angle',
                 kind: 'slider',
@@ -38,7 +38,11 @@ export function buildWindLevel(): PopupLevel {
                 control: { bind: 'env.windSpeed', min: 0, max: 10, step: 0.1 },
                 icon: 'lucide:gauge',
             },
-        ];
-        return renderMenu(windSchema, c);
+    ];
+}
+
+export function buildWindLevel(): PopupLevel {
+    return buildLevel(t('env.wind'), (c) => {
+        return renderMenu(getWindSchema(), c);
     });
 }

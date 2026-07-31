@@ -27,12 +27,10 @@ import type * as sprWasm from 'babylon-mmd/esm/Runtime/Optimized/wasm/spr';
 // ======== 全局 WASM 实例 ========
 let phys: MinimalPhysicsImpl;
 let api: typeof sprWasm;
-let memory: WebAssembly.Memory;
 
 beforeAll(() => {
     phys = createMinimalPhysicsImpl();
     api = phys.api;
-    memory = phys.memory;
 });
 
 // ======== 本地薄包装（保持调用代码不变，实现体共享） ========
@@ -46,9 +44,6 @@ const buildBundleInfoList = (shapePtr: number, count: number, masses?: number[])
 const readBundleLinearVelocity = (bundlePtr: number, index: number) =>
     _readBundleLinearVelocity(phys, bundlePtr, index);
 const readLinearVelocity = (bodyPtr: number) => _readLinearVelocity(phys, bodyPtr);
-
-// ======== 风力常量（对齐 wind-physics.ts） ========
-const WIND_FORCE_SCALE = 1.0;
 
 // ======== 测试套件 ========
 

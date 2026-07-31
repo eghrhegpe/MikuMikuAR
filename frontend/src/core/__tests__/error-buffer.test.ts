@@ -209,7 +209,7 @@ describe('installErrorCaptureOn（注入假 target）', () => {
     it('unhandledrejection 事件入环为 unhandledrejection（reason 为 Error）', () => {
         const buf = new ErrorRingBuffer(5);
         const target = fakeTarget();
-        const dispose = installErrorCaptureOn(target, buf);
+        installErrorCaptureOn(target, buf);
         target.dispatch('unhandledrejection', { reason: new Error('rejected') });
         expect(buf.size).toBe(1);
         expect(buf.newest?.kind).toBe('unhandledrejection');

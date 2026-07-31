@@ -3,14 +3,6 @@
 
 import { describe, it, expect } from 'vitest';
 import { goKeyAllowsProceed } from '../go-key-allows-proceed';
-import type { AiValidationResult } from '../types';
-
-/** 创建带 errors 的 validation 结果。 */
-function validation(ok: boolean, errors: { kind: string; message: string }[]): AiValidationResult {
-    // goKeyAllowsProceed 第一参数 = ReturnType<typeof validateAiConfig> = AiValidationResult
-    // 用 as unknown 绕过 message/kind 可选性的差异，只关心运行时行为
-    return { ok, errors } as unknown as AiValidationResult;
-}
 
 describe('goKeyAllowsProceed', () => {
     it('ok 验证直接放行（不论 isGo/keyConfigured）', () => {

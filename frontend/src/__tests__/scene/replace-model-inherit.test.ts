@@ -105,7 +105,6 @@ import { modelRegistry } from '../../core/config';
 import { setBoneOverride } from '../../scene/motion/bone-override';
 import { setPersonalLightState, attachPersonalLight } from '../../scene/render/lighting-follow';
 import { setOrbitBoneLock } from '../../scene/camera/camera';
-import { modelManager } from '../../scene/scene';
 
 // 最小可用的 ModelInstance mock
 function makeMockInst(overrides: Partial<ModelInstance> = {}): ModelInstance {
