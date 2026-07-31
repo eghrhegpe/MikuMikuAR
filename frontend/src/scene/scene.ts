@@ -72,16 +72,16 @@ if (!KhronosTextureContainer2.URLConfig) {
     console.warn('[scene] KhronosTextureContainer2.URLConfig 缺失，KTX2 自托管配置跳过');
 } else {
     KhronosTextureContainer2.URLConfig = {
-    jsDecoderModule: '/lib/ktx2decoder/babylon.ktx2Decoder.js',
-    wasmUASTCToASTC: '/lib/ktx2decoder/wasm/uastc_astc.wasm',
-    wasmUASTCToBC7: '/lib/ktx2decoder/wasm/uastc_bc7.wasm',
-    wasmUASTCToRGBA_UNORM: '/lib/ktx2decoder/wasm/uastc_rgba8_unorm_v2.wasm',
-    wasmUASTCToRGBA_SRGB: '/lib/ktx2decoder/wasm/uastc_rgba8_srgb_v2.wasm',
-    wasmUASTCToR8_UNORM: '/lib/ktx2decoder/wasm/uastc_r8_unorm.wasm',
-    wasmUASTCToRG8_UNORM: '/lib/ktx2decoder/wasm/uastc_rg8_unorm.wasm',
-    jsMSCTranscoder: null,
-    wasmMSCTranscoder: null,
-    wasmZSTDDecoder: null,
+        jsDecoderModule: '/lib/ktx2decoder/babylon.ktx2Decoder.js',
+        wasmUASTCToASTC: '/lib/ktx2decoder/wasm/uastc_astc.wasm',
+        wasmUASTCToBC7: '/lib/ktx2decoder/wasm/uastc_bc7.wasm',
+        wasmUASTCToRGBA_UNORM: '/lib/ktx2decoder/wasm/uastc_rgba8_unorm_v2.wasm',
+        wasmUASTCToRGBA_SRGB: '/lib/ktx2decoder/wasm/uastc_rgba8_srgb_v2.wasm',
+        wasmUASTCToR8_UNORM: '/lib/ktx2decoder/wasm/uastc_r8_unorm.wasm',
+        wasmUASTCToRG8_UNORM: '/lib/ktx2decoder/wasm/uastc_rg8_unorm.wasm',
+        jsMSCTranscoder: null,
+        wasmMSCTranscoder: null,
+        wasmZSTDDecoder: null,
     };
 }
 import 'babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.vertex';
