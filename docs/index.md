@@ -16,14 +16,20 @@ hero:
 features:
   - title: 用户指南
     details: 按功能讲解入口路径与操作步骤（水面、灯光、动作、环境…），新功能持续建档。
+    link: /guide/env-water
   - title: 架构与规范
     details: architecture / design / terminology / function-map 等开发者文档。
+    link: /architecture
   - title: 决策记录 (ADR)
     details: 215 条架构决策日志（ADR-001 ~ ADR-218），按编号检索。
+    link: /adr/adr-001-project-infrastructure
   - title: 知识卡
     details: 228 张原子化知识卡，按 category 分组，面向 AI 与开发者。
+    link: /knowledge/env
   - title: 开发运维
     details: Bug 日志（按日期倒序）+ 发版记录（按版本倒序）。
+    link: /buglog/2026-07-11-seven-rounds-summary
   - title: 菜单地图
     details: 菜单树 / 入口函数 / 快捷键由源码自动生成（menu-map.md）。
+    link: /knowledge/menu-map
 ---
