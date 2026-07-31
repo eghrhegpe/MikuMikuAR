@@ -55,7 +55,13 @@ jobs:
         # [doc:adr-177] Phase 3 主应用 web 入口生产构建
         # 不 externalize babylon / base=/MikuMikuAR/ / @wailsio/runtime stub
         # 产物输出到 frontend/dist-web/
+        # [doc:adr-099][doc:adr-133] VITE_MMD_WASM_MT=1 令 __MMD_ENABLE_MPR__=true，将 MPR
+        # 多线程物理 worker/wasm 编入包；配合 public/sw.js 注入的 COOP/COEP（crossOriginIsolated
+        # =true），网页端解锁 SharedArrayBuffer + 多线程物理。漏设则 esbuild 消除 MPR 分支 →
+        # useMultiThread=false → 降级 SPR 单线程（与 Android 构建门控同轴，见 ADR-133）。
         run: npx vite build --config vite.web.config.ts
+        env:
+          VITE_MMD_WASM_MT: '1'
 
       - name: Add index.html entry
         # GitHub Pages 默认入口是 index.html，复制 index.web.html 以支持根路径访问
