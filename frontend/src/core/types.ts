@@ -252,36 +252,6 @@ export type ModelInstance = {
     orbitDistance?: number;
 };
 
-/** [doc:architecture] PropInstance — 场景道具实例（独立于模型库，不参与 VMD/物理/排列） */
-export type PropInstance = {
-    id: string;
-    name: string;
-    filePath: string;
-    meshes: Mesh[];
-    rootMesh: Mesh;
-    container?: import('@babylonjs/core/Meshes/transformNode').TransformNode;
-    position: [number, number, number];
-    rotationY: number;
-    scaling: number;
-    visible: boolean;
-    /** [doc:adr-061] 骨骼锚定：目标骨骼名（非空=已锚定到骨骼） */
-    boneName?: string;
-    /** [doc:adr-061] 骨骼锚定：目标模型 ID */
-    targetModelId?: string;
-    /** [doc:adr-061] 骨骼锚定：相对骨骼的偏移 (x, y, z) */
-    boneOffset?: [number, number, number];
-    /** [doc:adr-061] 骨骼锚定：相对骨骼的旋转 (pitch, yaw, roll) */
-    boneRotation?: [number, number, number];
-    /** [doc:adr-049] 球面坐标轨道控制：坐标模式，默认 'cartesian' */
-    positionMode?: 'cartesian' | 'orbit';
-    /** [doc:adr-049] 水平方位角（度，-180~180），仅 positionMode==='orbit' 时生效 */
-    orbitAzimuth?: number;
-    /** [doc:adr-049] 垂直仰角（度，-90~90），仅 positionMode==='orbit' 时生效 */
-    orbitElevation?: number;
-    /** [doc:adr-049] 距原点距离（>0），仅 positionMode==='orbit' 时生效 */
-    orbitDistance?: number;
-};
-
 // ======== Outfit System Types ========
 
 export type OutfitSlot = {
