@@ -9,7 +9,7 @@
 |------|--------|-----------|
 | 核心基础设施 | 122 | 714 |
 | 3D 场景 | 106 | 1062 |
-| 菜单 & UI | 75 | 381 |
+| 菜单 & UI | 76 | 384 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 17 | 127 |
 | 物理系统 | 2 | 14 |
@@ -1959,6 +1959,9 @@
 | `collectAllSchemas()` | `menus/menu-registry` | 收集所有已注册 schema，执行 builder 返回快照 |
 | `flattenNodes()` | `menus/menu-registry` | 递归展开 schema 树（含 children），返回扁平节点列表 |
 | `registerSchema()` | `menus/menu-registry` | 注册一个面板的 schema 构建函数 |
+| `SKY_SCHEMA()` | `menus/menu-schema-export` | — |
+| `SchemaPanel()` | `menus/menu-schema-export` | — |
+| `flattenSchemaNodes()` | `menus/menu-schema-export` | 扁平化 MenuNode 树，返回所有节点 |
 | `ActionMenuCtx()` | `menus/menu-schema` | — |
 | `ControlSpec()` | `menus/menu-schema` | — |
 | `MenuKind()` | `menus/menu-schema` | — |
@@ -2377,5 +2380,5 @@
 
 ---
 
-> 共 326 个文件，2335 个导出符号。
+> 共 327 个文件，2338 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。

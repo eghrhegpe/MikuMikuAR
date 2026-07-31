@@ -1,6 +1,6 @@
 # ADR-220: Schema 完整性元测试 —— 不开浏览器，秒级捕获 schema 漂移
 
-> **状态**: 实施中（env 域 9 面板 + scene 域 2 面板 + motion 域 1 面板 + settings 域 4 面板，共 16 面板 753 断言全绿；model 域待推广）
+> **状态**: 实施中（env 域 9 面板 + scene 域 2 面板 + motion 域 1 面板 + settings 域 4 面板，共 16 面板 1427 断言全绿；P0 精化已完成：多语言包校验 + motionModule 动态校验；model 域待推广）
 >
 > **编号说明**: 本 ADR 原误编为 200，与 `adr-200-wind-physics-empty-bundle-map`（被 wind-physics.ts / mmd-adapter.ts 等 16 处代码 `[doc:adr-200]` 引用，为原生 200）撞车。因本 ADR 无任何代码 `[doc:adr-200]` 引用（测试文件挂接的是 ADR-093），故本 ADR 顺延改号为 220，wind-physics 保留 200，零破坏现有引用。
 
@@ -52,7 +52,7 @@ registerSchema('env:water', getWaterSchema);
 |------|---------|-------------|
 | **control.bind 路径有效性** | 解析 `StatePath` 前缀 → 查对应 state 对象的 `Object.keys()` | 字段重命名后 schema 没跟 |
 | **id 全局唯一** | 收集所有节点 id，`Set` 去重 | 两个控件用了相同 testid |
-| **i18n key 存在性** | `label` + `modeSlider.options[].label` → 查 `zhCN` 的 keys | 语言包缺失 key |
+| **i18n key 存在性** | `label` + `modeSlider.options[].label` → 查 `zh-CN/en/ja/ko/zh-TW` 五语言包 keys | 语言包缺失 key |
 | **folder children 非空** | 有 `children` 的 folder 检查长度 >0；`renderCustom` folder 跳过 | 空文件夹节点 |
 | **modeSlider options 非空** | `control.options` 长度 >0 | 下拉选择器没有选项 |
 
@@ -70,20 +70,32 @@ const STATE_PREFIX_MAP: Record<string, Set<string>> = {
 
 **注意**：`EnvState` 的字段真相源是 `ENV_STATE_SCHEMA`（ADR-137），不是 `EnvState` 类型本身（TS 类型运行时已擦除）。
 
-### 2.4 动态路径白名单（motion 域推广引入）
+### 2.4 动态路径动态校验（motion 域推广 + P0 精化）
 
-motion 域的骨骼模块参数采用运行时动态路径（如 `motionModule.<moduleId>.<param>`），其字段集在编译期不可枚举（随已注册模块动态变化），无法像 `env.*` 那样挂一个静态 `Set`。因此 `isValidStatePath` 对未知前缀不一律判失败，而是对白名单内的动态前缀（当前仅 `motionModule`）放行：
+motion 域的骨骼模块参数采用运行时动态路径（如 `motionModule.<moduleId>.<param>`），其字段集在编译期不可枚举。P0 精化引入了 `MOTION_MODULE_PARAMS` 映射表，从各模块的 `DEFAULTS` 中提取已知的 `moduleId → paramKey` 集合，实现了动态校验：
 
 ```ts
-const keySet = STATE_PREFIX_MAP[prefix];
-if (!keySet) {
-    // 未知前缀：motionModule 等动态路径跳过字段校验
-    return prefix === 'motionModule';
+// motionModule 参数映射（从各模块 DEFAULTS 提取）
+const MOTION_MODULE_PARAMS: Record<string, Set<string>> = {
+    'body-posture': new Set(['tilt', 'bend', 'twist', 'bodyHeight', 'bodyDepth']),
+    'left-hand': new Set(['pitch', 'yaw', 'roll', 'handPosX', ...]),
+    // ... 其他模块
+};
+
+function isValidStatePath(path: string): boolean {
+    // ...
+    if (prefix === 'motionModule') {
+        const moduleId = rest.slice(0, sep);
+        const paramKey = rest.slice(sep + 1);
+        const params = MOTION_MODULE_PARAMS[moduleId];
+        if (!params) return false; // 未知模块 ID
+        return params.has(paramKey);
+    }
+    return false;
 }
-return keySet.has(field);
 ```
 
-**权衡**：白名单是“有意识的覆盖缺口”——它放弃了对 `motionModule.*` 字段存在性的校验（换取 motion 域可接入）。后续若需回收这个缺口，可在模块注册表建立后从 registry 反向提取已注册模块的合法参数名集，将白名单升级为真实校验。新增动态前缀时需同步扩展此白名单，否则该前缀下所有 bind 会被判失败。
+**注意**：新增 motion 模块时需同步更新 `MOTION_MODULE_PARAMS`，否则新模块的 bind 路径会被判为无效。
 
 ## 3. 备选方案（未采纳）
 
@@ -130,7 +142,7 @@ return keySet.has(field);
 
 1. **env 域**（已完成）：9 面板，~280 断言
 2. **scene 域**（已完成）：2 面板（postprocess-core / postprocess-color），~60 断言
-3. **motion 域**（已完成）：1 面板（gaze），~100 断言；骨骼模块参数走 `motionModule.*` 动态路径，已通过 §2.4 白名单接入
+3. **motion 域**（已完成）：1 面板（gaze），~100 断言；骨骼模块参数走 `motionModule.*` 动态路径，已通过 §2.4 动态映射表校验（P0 精化）
 4. **settings 域**（已完成）：4 面板（camera / frame-quality / effects / physics-hud），~90 断言
 5. **model 域**：model 面板几乎全是 `renderCustom`，元测试价值低，可跳过
 6. **P1 推进**：待上述 P0 跑稳后，考虑 schema 驱动 E2E（导航 → 断言 DOM 渲染）
@@ -139,16 +151,17 @@ return keySet.has(field);
 
 `env-fog-levels.ts` 的 modeSlider options label 用了 `t()` 调用（`t('env.exp2')`），而 `env-sky-levels.ts` 没用（直接 `'env.solid'`）。这导致 fog 的 options label 在测试中被翻译，sky 的不会——**schema 不一致**。当前测试通过（因为 `env.exp2` 等在 zh-CN.ts 中存在），但建议后续统一为直接 i18n key。
 
-## 8. 已知局限（推广期技术债）
+## 8. 已知局限
 
 | 局限 | 当前行为 | 风险 | 回收方向 |
 |------|---------|------|---------|
-| **i18n 仅校 zh-CN 单包** | `I18N_KEYS` 只取 `zhCN` 的 keys；label 在 zh-CN 有、ja/ko/en/zh-TW 缺失时测试仍绿 | 线上非中文用户可能看到 raw key | 将 `I18N_KEYS` 改为五个语言包 keys 的交集，或逐包各校一遍 |
-| **motionModule.* 不校字段存在性** | 见 §2.4 白名单，动态前缀直接放行 | 骨骼模块 bind 拼错参数名不会被捕获 | 从模块注册表反向提取合法参数名集，白名单升级为真实校验 |
-| **folder 仅查有 children 者** | `renderCustom` folder 跳过；若某 folder 既无 children 也无 renderCustom（真空节点），当前也会因“无 children 属性”而跳过 | 真空文件夹缺陷会被漏掉 | 断言改为“`children` 非空 **或** 存在 `renderCustom`”，两者皆无才判失败 |
-| **schema 求值依赖渲染层→mock 膨胀** | 每推广一域需新增一批 `vi.mock`（当前 env 域已 10+ 个）隔断 Babylon/渲染初始化 | 测试维护成本随域数线性上涨；mock 与真实导出漂移时可能假绿（见“vi.mock 缺失导出”历史坑） | 根因是 `getXxxSchema()` 在模块顶层 import 渲染依赖；长期应将 schema 回调（`apply`）内的依赖延迟到渲染时 resolve，使 schema 回归纯数据 |
+| ~~**i18n 仅校 zh-CN 单包**~~ | ~~已修复：P0 精化引入 5 语言包（zh-CN/en/ja/ko/zh-TW）校验~~ | — | — |
+| ~~**motionModule.* 不校字段存在性**~~ | ~~已修复：P0 精化引入 `MOTION_MODULE_PARAMS` 映射表，动态校验 moduleId + paramKey~~ | — | — |
+| **folder 仅查有 children 者** | `renderCustom` folder 跳过；若某 folder 既无 children 也无 renderCustom（真空节点），当前也会因"无 children 属性"而跳过 | 真空文件夹缺陷会被漏掉 | 断言改为"`children` 非空 **或** 存在 `renderCustom`"，两者皆无才判失败 |
+| **schema 求值依赖渲染层→mock 膨胀** | 每推广一域需新增一批 `vi.mock`（当前已 20+ 个）隔断 Babylon/渲染初始化 | 测试维护成本随域数线性上涨；mock 与真实导出漂移时可能假绿（见"vi.mock 缺失导出"历史坑） | 根因是 `getXxxSchema()` 在模块顶层 import 渲染依赖；长期应将 schema 回调（`apply`）内的依赖延迟到渲染时 resolve，使 schema 回归纯数据 |
+| **MOTION_MODULE_PARAMS 硬编码** | 新 motion 模块需手动更新测试中的映射表，否则 bind 路径判失败 | 新增模块时可能忘记同步更新 | 长期方案：直接 import `getBuiltinModuleDefs()` 动态提取，但需解决 Babylon 依赖副作用 |
 
-> 说明：上述四项均为 P0 阶段可接受的权衡（先落地静态分析、再逐域收紧），不阻塞当前 244 断言的价值。推广到 scene/motion 域时优先处理第 1、4 项（i18n 多包 + mock 膨胀）。
+> 说明：前两项局限已通过 P0 精化修复。剩余三项为当前可接受的权衡，不阻塞 1427 断言的价值。
 
 ## 9. 验证
 
@@ -156,8 +169,8 @@ return keySet.has(field);
 cd frontend && npx vitest run src/__tests__/menu-schema.integrity.test.ts
 ```
 
-- 753 个断言全通过（11 个测试套件共 793 测试）
-- 不依赖浏览器，vitest 秒级运行（~23ms）
+- 1427 个断言全通过（11 个测试套件共 793 测试）
+- 不依赖浏览器，vitest 秒级运行（~44ms）
 - 新增菜单面板时：在 `menu-schema-register.ts` 加一行 `registerSchema(...)` 即自动覆盖
 
 ## 10. 与隔壁方案的关系
