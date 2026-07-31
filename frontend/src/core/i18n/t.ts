@@ -21,7 +21,9 @@ export const AVAILABLE_LANGS: string[] = ['zh-CN', 'en', 'ja', 'ko', 'zh-TW'];
  * 幂等：已加载过的语言不会重复 fetch。
  */
 export async function loadLocale(lang: string): Promise<void> {
-    if (bundles[lang]) return;
+    if (bundles[lang]) {
+        return;
+    }
     try {
         const resp = await fetch(`/locales/${lang}.json`);
         if (!resp.ok) {
