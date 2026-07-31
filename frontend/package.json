@@ -6,8 +6,8 @@
   "sideEffects": false,
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
-    "build:dev": "vite build",
+    "build": "node ../scripts/generate-locale-json.mjs && tsc && vite build",
+    "build:dev": "node ../scripts/generate-locale-json.mjs && vite build",
     "check": "tsc --noEmit && npm run check:lint",
     "check:lint": "npm run check:schema-groups && npm run check:boolean-naming && npm run check:i18n:report",
     "check:i18n": "node ../scripts/i18n-check.mjs --strict",

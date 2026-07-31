@@ -13,6 +13,9 @@ frontend/e2e/logs_*/
 # Model files — do NOT commit (copyrighted, large)
 text-model/
 
+# Generated locale JSON files (build artifacts from scripts/generate-locale-json.mjs)
+frontend/public/locales/
+
 # Dependencies
 node_modules/
 # 用户指南站（VitePress）：依赖与构建产物不入库（img/*.png 为构建硬依赖，必须入库）

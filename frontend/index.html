@@ -54,10 +54,9 @@
             }, true);
         })();
     </script>
-    <!-- Babylon.js 必须在主 bundle 之前加载 -->
-    <!-- TEMP: 注释掉验证闪退是否 babylon 加载导致 -->
-    <script src="/lib/babylon.js"></script>
-    <script src="/lib/babylonjs.materials.min.js"></script>
+    <!-- Babylon.js 用 defer 加载，不阻塞 HTML 解析；渲染循环依赖它，但首屏 DOM 不依赖 -->
+    <script defer src="/lib/babylon.js"></script>
+    <script defer src="/lib/babylonjs.materials.min.js"></script>
 </head>
 <body class="app-booting">
     <div id="app">

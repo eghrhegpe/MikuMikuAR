@@ -1,8 +1,11 @@
 // [doc:adr-117] translateGoError 单测 —— 验证 Wails 跨桥后（error stringify 成纯文本）
 // 前端仍能从哨兵信封提取 code/params 并翻译。
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, beforeAll } from 'vitest';
 import { translateGoError } from '../core/i18n/goerr';
 import { setLang } from '../core/i18n/locale';
+import { bundles } from '../core/i18n/t';
+import { zhCN } from '../core/i18n/locales/zh-CN';
+import { en } from '../core/i18n/locales/en';
 
 // node 环境下补齐 RAF：locale.setLang → scheduleRefresh → requestAnimationFrame。
 // localStorage/document 在 locale.ts 中已有 try/catch 守卫，无需补齐。
@@ -10,6 +13,12 @@ if (typeof globalThis.requestAnimationFrame !== 'function') {
     globalThis.requestAnimationFrame = ((cb: (t: number) => void) =>
         setTimeout(() => cb(0), 0)) as unknown as typeof globalThis.requestAnimationFrame;
 }
+
+// [doc:perf] 语言包改为运行时加载，测试环境直接预填缓存
+beforeAll(() => {
+    bundles['zh-CN'] = zhCN;
+    bundles['en'] = en;
+});
 
 // 模拟 Wails 跨桥后交付给前端的 Error：
 // "Binding call failed: failed to call binding: <msg>\n@@GOERR@@<json信封>"

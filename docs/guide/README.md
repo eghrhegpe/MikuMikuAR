@@ -13,6 +13,8 @@
 |------|------|------|
 | [模型导入](./import-model.md) | 主界面 → 模型 | 🟢 已建档 |
 | [动作与播放](./motion-playback.md) | 动作面板 | 🟢 已建档 |
+| [程序化动作](./proc-motion.md) | 动作面板 → 程序化动作（`motion:proc-library`） | 🟢 已建档 |
+| [场景保存与恢复](./scene-save.md) | 自动 / 场景菜单 → 预设场景 | 🟢 已建档 |
 | [换装](./outfit.md) | 模型详情 → 换装 | 🟢 已建档 |
 | [布料物理](./physics.md) | 场景菜单 → 物理（`scene:physics`） | 🟢 已建档 |
 | [风力与粒子](./wind-particles.md) | 环境弹窗 → 风 / 粒子 | 🟢 已建档 |

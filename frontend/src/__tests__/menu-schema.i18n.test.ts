@@ -1,5 +1,5 @@
 // menu-schema.i18n.test.ts — i18n 热切换（ADR-065 / ADR-093 §6.6，拆自 menu-schema.test.ts）
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, beforeAll } from 'vitest';
 import { mockScene, mockLighting, mockPerception, mockRegistry } from './menu-schema-mocks';
 
 vi.mock('@/scene/scene', () => mockScene());
@@ -11,10 +11,19 @@ import { renderMenu } from '../menus/render-menu';
 import type { MenuNode } from '../menus/menu-schema';
 import { setLang, getLang } from '../core/i18n/locale';
 import type { LangCode } from '../core/i18n/locale';
+import { bundles } from '../core/i18n/t';
+import { zhCN } from '../core/i18n/locales/zh-CN';
+import { en } from '../core/i18n/locales/en';
 
 describe('ADR-093 Menu Schema — i18n 热切换', () => {
     let container: HTMLElement;
     let savedLang: LangCode;
+
+    beforeAll(() => {
+        // [doc:perf] 语言包改为运行时加载，测试环境直接预填缓存
+        bundles['zh-CN'] = zhCN;
+        bundles['en'] = en;
+    });
 
     beforeEach(() => {
         container = document.createElement('div');

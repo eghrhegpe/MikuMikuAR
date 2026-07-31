@@ -1,20 +1,12 @@
 // [doc:adr-059] 翻译函数 —— 缺失 key 回退链：当前语言 → zh-CN 基准 → key 本身（开发期可见）
+// [doc:perf] 语言包不再静态导入（避免全部打包进主 bundle），改为运行时 fetch JSON。
+// 调用方需在启动时 await loadLocale(getLang()) 预加载当前语言。
 import { getLang } from './locale';
-import { zhCN } from './locales/zh-CN';
-import { en } from './locales/en';
-import { ja } from './locales/ja';
-import { ko } from './locales/ko';
-import { zhTW } from './locales/zh-TW';
 
 type Bundle = Record<string, string>;
 
-export const bundles: Record<string, Bundle> = {
-    'zh-CN': zhCN,
-    en,
-    ja,
-    ko,
-    'zh-TW': zhTW,
-};
+/** 运行时加载的语言包缓存。生产环境由 fetch 填充，测试环境可直接赋值。 */
+export const bundles: Record<string, Bundle> = {};
 
 /**
  * [doc:adr-059] 当前已补全语言包的语言列表。
@@ -22,7 +14,27 @@ export const bundles: Record<string, Bundle> = {
  * 但尚无 bundle 的语言，在 bundle 补齐前不得作为可选项，否则选中后
  * t() 静默回退中文，造成「切换无效」的误导。
  */
-export const AVAILABLE_LANGS: string[] = Object.keys(bundles);
+export const AVAILABLE_LANGS: string[] = ['zh-CN', 'en', 'ja', 'ko', 'zh-TW'];
+
+/**
+ * 异步加载指定语言包，从 public/locales/{lang}.json fetch。
+ * 幂等：已加载过的语言不会重复 fetch。
+ */
+export async function loadLocale(lang: string): Promise<void> {
+    if (bundles[lang]) return;
+    try {
+        const resp = await fetch(`/locales/${lang}.json`);
+        if (!resp.ok) {
+            console.warn(`[i18n] 加载语言包失败: ${lang} (HTTP ${resp.status})`);
+            bundles[lang] = {};
+            return;
+        }
+        bundles[lang] = await resp.json();
+    } catch (err) {
+        console.warn(`[i18n] 加载语言包失败: ${lang}`, err);
+        bundles[lang] = {};
+    }
+}
 
 /**
  * [doc:adr-059] dev-only 缺失 key 告警去重集合。
@@ -39,14 +51,15 @@ const _warnedMissing = new Set<string>();
  */
 export function t(key: string, params?: Record<string, string | number>): string {
     const lang = getLang();
+    const zhCNBundle = bundles['zh-CN'];
     const langBundle = bundles[lang];
     const hasLang = langBundle && key in langBundle;
-    const hasBase = key in zhCN;
+    const hasBase = zhCNBundle && key in zhCNBundle;
     let s: string;
     if (hasLang) {
         s = langBundle[key];
     } else if (hasBase) {
-        s = zhCN[key];
+        s = zhCNBundle[key];
     } else {
         s = key;
     }
