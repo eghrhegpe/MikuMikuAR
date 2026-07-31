@@ -48,6 +48,7 @@ import type { IMmdRuntime } from 'babylon-mmd/esm/Runtime/IMmdRuntime';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 import type { FeetState } from '@/core/types';
 import { createDefaultFeetState } from '@/core/scene-state';
+import { unsubscribeAll } from '@/core/reactivity';
 import 'babylon-mmd/esm/Runtime/Animation/mmdRuntimeModelAnimation';
 import 'babylon-mmd/esm/Loader/mmdModelLoader.default';
 import '@babylonjs/core/Materials/Textures/Loaders/tgaTextureLoader';
@@ -380,7 +381,7 @@ async function _reinitSceneForHMR(): Promise<void> {
     (await import('./motion/feet-adjustment')).stopFeetAdjustment();
     (await import('./motion/footstep')).stopFootstep();
     (await import('../core/audio-bus')).disposeAudioBus();
-    (await import('../core/reactivity')).unsubscribeAll();
+    unsubscribeAll();
     (await import('./env/_bridge/env-persist')).cancelEnvPersistTimer();
     (await import('./env/env')).stopTimeOfDay();
 }

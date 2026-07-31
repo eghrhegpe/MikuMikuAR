@@ -928,8 +928,6 @@ export const zhTW: Record<string, string> = {
     'scene.ar.enabled': '✓ AR 相機已開啟',
     'scene.ar.cameraDenied': '✗ 相機權限被拒，已切換為黑色背景',
     'scene.ar.cameraUnavailable': '✗ 相機不可用（環境未提供媒體能力，桌面端可能需授予權限）',
-    'scene.ar.switchedUser': '✓ 已切換至前置相機',
-    'scene.ar.switchedEnv': '✓ 已切換至後置相機',
     'scene.ar.webxrProbe': 'WebXR 探針',
     'scene.ar.webxrProbing': '探測中…',
     'scene.ar.webxrDeepProbe': '深度探針（觸發 AR 權限）',
@@ -1949,6 +1947,8 @@ export const zhTW: Record<string, string> = {
     'ai.control.undone': '↩️ 已撤銷上一步操作。',
     'ai.config.corsWarning':
         '⚠ 遠程端點可能存在 CORS 限制。本地 Ollama 請設置 OLLAMA_ORIGINS=* 後重啟。',
+    'ai.config.relayActive': 'Relay 代理已啟用（{url}）',
+    'ai.config.relayNotConfigured': '可在設定中設定 Relay 代理以繞過 CORS 限制',
     'ai.chat.clear': '清空',
     'ai.chat.clearConfirm': '清除聊天記錄？',
     'ai.chat.pendingBlocked': '請先確認或取消待處理操作。',

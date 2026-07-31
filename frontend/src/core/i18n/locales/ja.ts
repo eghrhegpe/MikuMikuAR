@@ -936,8 +936,6 @@ export const ja: Record<string, string> = {
     'scene.ar.cameraDenied': '✗ カメラの許可が拒否されました、黒背景に切り替えました',
     'scene.ar.cameraUnavailable':
         '✗ カメラが利用できません（環境がメディア機能を提供していません。デスクトップでは権限付与が必要な場合があります）',
-    'scene.ar.switchedUser': '✓ フロントカメラに切り替えました',
-    'scene.ar.switchedEnv': '✓ バックカメラに切り替えました',
     'scene.ar.webxrProbe': 'WebXR プローブ',
     'scene.ar.webxrProbing': '探测中…',
     'scene.ar.webxrDeepProbe': '深度プローブ（AR 権限をトリガー）',
@@ -1990,6 +1988,8 @@ export const ja: Record<string, string> = {
     'ai.control.undone': '↩️ 前の操作を元に戻しました。',
     'ai.config.corsWarning':
         '⚠ リモートエンドポイントにCORS制限がある可能性があります。ローカルOllamaは OLLAMA_ORIGINS=* を設定して再起動してください。',
+    'ai.config.relayActive': 'Relay プロキシが有効です（{url}）',
+    'ai.config.relayNotConfigured': 'CORS 制限を回避するには、設定で Relay プロキシを設定してください',
     'ai.chat.clear': 'クリア',
     'ai.chat.clearConfirm': 'チャット履歴をクリアしますか？',
     'ai.chat.pendingBlocked': '先に保留中の操作を確認またはキャンセルしてください。',

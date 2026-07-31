@@ -660,7 +660,6 @@ export async function loadPMXFile(
                     const valEl = commentCard.querySelector('.info-card-value');
                     const labelEl = commentCard.querySelector('.info-card-label');
                     if (labelEl) {
-                        const { t } = await import('@/core/i18n/t');
                         labelEl.textContent = t('model-detail.fComment');
                     }
                     if (valEl) {

@@ -995,8 +995,6 @@ export const en: Record<string, string> = {
     'scene.ar.cameraDenied': '✗ Camera permission denied, switched to black background',
     'scene.ar.cameraUnavailable':
         '✗ Camera unavailable (no media capability in this environment; desktop may need permission grant)',
-    'scene.ar.switchedUser': '✓ Switched to front camera',
-    'scene.ar.switchedEnv': '✓ Switched to back camera',
     'scene.ar.webxrProbe': 'WebXR Probe',
     'scene.ar.webxrProbing': 'Probing…',
     'scene.ar.webxrDeepProbe': 'Deep Probe (triggers AR permission)',
