@@ -33,6 +33,7 @@ export class DiagnosticState {
     chatContainer: HTMLElement | null = null;
     inputEl: HTMLTextAreaElement | null = null;
     corsWarningEl: HTMLElement | null = null;
+    relayStatusEl: HTMLElement | null = null;
     configEndpoint: HTMLInputElement | null = null;
     configApiKey: HTMLInputElement | null = null;
     configModel: HTMLInputElement | null = null;

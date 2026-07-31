@@ -2,7 +2,7 @@
 // addCollapsible / addPresetChip / addSectionTitle
 
 import { createIconifyIcon } from './icons';
-import { getCurrentRenderingMenu } from '../menus/menu';
+import { getCurrentRenderingContext } from './render-context';
 import { createHeaderToggle } from './ui-header-toggle';
 
 // ===================================================================
@@ -227,7 +227,7 @@ export function addPresetChip(
     // === 自更新支持 ===
     if (opts?.onUpdate) {
         const update = () => opts.onUpdate!(btn);
-        getCurrentRenderingMenu()?.registerControl(update);
+        getCurrentRenderingContext()?.registerControl(update);
         update();
     }
 

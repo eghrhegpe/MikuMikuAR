@@ -75,8 +75,7 @@ export interface AiConnectionResult {
     message: string;
 }
 
-/**
- * 持久化配置的回读结构，供诊断面板初始化时回填输入框。
+/** 持久化配置的回读结构，供诊断面板初始化时回填输入框。
  * 桌面端配置由 Go 持有，key 出于安全不回读（keyConfigured 仅告知是否已配置）。
  */
 export interface AiPersistedConfig {
@@ -86,6 +85,8 @@ export interface AiPersistedConfig {
     keyConfigured: boolean;
     /** 浏览器端可回读明文 key；go 端恒为空（不暴露） */
     apiKey?: string;
+    /** [doc:relay] CORS 同源代理 Worker 地址，仅浏览器端有意义 */
+    relayUrl?: string;
 }
 
 /** AI 服务统一抽象，镜像 BackendService 双适配器模式 */

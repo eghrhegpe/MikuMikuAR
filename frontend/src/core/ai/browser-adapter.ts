@@ -49,8 +49,12 @@ export class BrowserAiAdapter implements AiService {
         const endpoint = cfg.endpoint.trim();
         const available = endpoint.length > 0;
         // CORS 风险判定：localhost/127.0.0.1 → none；https 远程 → possible；http 远程 → high
+        // [doc:relay] 若 relay 已配置且网页端+远程端点，则 corsRisk 降为 none（relay 负责 CORS）
         let corsRisk: 'none' | 'possible' | 'high' = 'none';
-        if (endpoint) {
+        const relayActive = _relayTarget(cfg.relayUrl, endpoint) !== null;
+        if (relayActive) {
+            corsRisk = 'none';
+        } else if (endpoint) {
             const isLocal = /^https?:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/i.test(endpoint);
             if (isLocal) {
                 corsRisk = 'none';
@@ -213,6 +217,7 @@ export class BrowserAiAdapter implements AiService {
             model: cfg.model,
             keyConfigured: cfg.apiKey.length > 0,
             apiKey: cfg.apiKey,
+            relayUrl: cfg.relayUrl,
         };
     }
 

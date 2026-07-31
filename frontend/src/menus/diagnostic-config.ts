@@ -10,6 +10,7 @@ import {
     PROVIDER_PRESETS,
     validateAiConfig,
     normalizeEndpoint,
+    DEFAULT_RELAY_URL,
     type AiConfig,
     type AiConfigProvider,
 } from '../core/ai/config-store';
@@ -90,6 +91,7 @@ export async function loadInitialConfig(): Promise<void> {
                     endpoint: persisted.endpoint,
                     model: persisted.model,
                     apiKey: persisted.apiKey ?? diagState.localConfig.apiKey,
+                    relayUrl: persisted.relayUrl ?? diagState.localConfig.relayUrl,
                 };
             }
             if (diagState.ai.kind === 'go' && persisted.keyConfigured && !persisted.apiKey) {
@@ -184,11 +186,33 @@ function updateApiKeyVisibility(): void {
 }
 
 function updateCorsWarning(): void {
-    if (!diagState.corsWarningEl) {
+    if (!diagState.corsWarningEl || !diagState.relayStatusEl) {
         return;
     }
-    diagState.corsWarningEl.style.display =
-        diagState.caps && diagState.caps.corsRisk !== 'none' ? '' : 'none';
+    const caps = diagState.caps;
+    const cfg = diagState.localConfig;
+    if (!caps) {
+        diagState.corsWarningEl.style.display = 'none';
+        diagState.relayStatusEl.textContent = '';
+        return;
+    }
+
+    // [doc:relay] 若 relay 已配置且网页端+远程端点，显示 relay 状态，隐藏 CORS 警告
+    const isRemote = !/^https?:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/i.test(cfg.endpoint);
+    const relayConfigured = !!(cfg.relayUrl && isRemote);
+
+    if (relayConfigured) {
+        diagState.corsWarningEl.style.display = 'none';
+        diagState.relayStatusEl.textContent = t('ai.config.relayActive', { url: cfg.relayUrl });
+        diagState.relayStatusEl.className = 'diag-hint diag-hint--ok';
+    } else if (caps.corsRisk !== 'none') {
+        diagState.corsWarningEl.style.display = '';
+        diagState.relayStatusEl.textContent = t('ai.config.relayNotConfigured');
+        diagState.relayStatusEl.className = 'diag-hint';
+    } else {
+        diagState.corsWarningEl.style.display = 'none';
+        diagState.relayStatusEl.textContent = '';
+    }
 }
 
 export function persistConfig(partial: Partial<AiConfig>): void {
@@ -511,6 +535,10 @@ function renderConfigCard(c: HTMLElement): void {
     diagState.corsWarningEl.className = 'diag-warning';
     diagState.corsWarningEl.setAttribute('role', 'alert');
     c.appendChild(diagState.corsWarningEl);
+
+    diagState.relayStatusEl = document.createElement('div');
+    diagState.relayStatusEl.className = 'diag-hint';
+    c.appendChild(diagState.relayStatusEl);
 
     const createField = (
         label: string,

@@ -7,8 +7,8 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 120 | 708 |
-| 3D 场景 | 106 | 1066 |
+| 核心基础设施 | 122 | 712 |
+| 3D 场景 | 106 | 1062 |
 | 菜单 & UI | 74 | 360 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 17 | 127 |
@@ -382,6 +382,10 @@
 | `scheduleRefresh()` | `core/reactivity` | 安排一次刷新（RAF 去抖）。 |
 | `subscribe()` | `core/reactivity` | 注册一个刷新订阅者。返回取消订阅函数。 |
 | `unsubscribeAll()` | `core/reactivity` | 清空所有刷新订阅者。供 initScene 重入时调用（ADR-106 D3 HMR 清理入口）。 |
+| `RenderContext()` | `core/render-context` | 渲染期可注册自更新控件的最小上下文（由 SlideMenu 实现）。 |
+| `getCurrentRenderingContext()` | `core/render-context` | 获取当前正在渲染的上下文（供控件函数自动注册）。 |
+| `popRenderingContext()` | `core/render-context` | 退出当前渲染上下文（renderCustom 后调用，须在 finally 中配对）。 |
+| `pushRenderingContext()` | `core/render-context` | 进入一个渲染上下文（renderCustom 前调用）。 |
 | `calcHardwareScaling()` | `core/render-loop` | 根据 DPR + renderScale 计算安全的 hardwareScalingLevel， 钳位帧缓冲不超过 GL_MAX_TEXTURE_SIZE（防 DPR×render |
 | `startRenderLoop()` | `core/render-loop` | — |
 | `stopRenderLoop()` | `core/render-loop` | — |
@@ -510,6 +514,8 @@
 | `getCurrentState()` | `core/ui-fullscreen-overlay` | — |
 | `openFullscreen()` | `core/ui-fullscreen-overlay` | — |
 | `setCurrentState()` | `core/ui-fullscreen-overlay` | — |
+| `HeaderToggleConfig()` | `core/ui-header-toggle` | — |
+| `createHeaderToggle()` | `core/ui-header-toggle` | 创建标题栏小型开关。返回 `<label class="toggle header-toggle">`， 含双触发去重（跳过 target===input 的 synthetic |
 | `addActionRow()` | `core/ui-helpers` | — |
 | `addBoneSelectRow()` | `core/ui-helpers` | — |
 | `addCardTitle()` | `core/ui-helpers` | — |
@@ -572,7 +578,6 @@
 | `createResourcePanel()` | `core/ui-resource-panel` | — |
 | `notifyThumbnailUpdate()` | `core/ui-resource-panel` | — |
 | `BoneSelectOptions()` | `core/ui-rows` | — |
-| `HeaderToggleConfig()` | `core/ui-rows` | — |
 | `addActionRow()` | `core/ui-rows` | 创建一个可点击的操作按钮行（替代手写 cs-row + button）。 |
 | `addBoneSelectRow()` | `core/ui-rows` | 创建骨骼选择行：label + 搜索框 + 分组下拉（含 IK 标记）。 |
 | `addCardTitle()` | `core/ui-rows` | 创建 card-title 标题行并追加到容器 |
@@ -588,7 +593,6 @@
 | `addToggleRow()` | `core/ui-rows` | — |
 | `addWatchDirRow()` | `core/ui-rows` | — |
 | `buildBoneGroups()` | `core/ui-rows` | 按类别分组骨骼名，未匹配的归入「その他」。空组被剔除。 |
-| `createHeaderToggle()` | `core/ui-rows` | 创建标题栏小型开关。返回 `<label class="toggle header-toggle">`， 含双触发去重（跳过 target===input 的 synthetic |
 | `initControl()` | `core/ui-rows` | 封装 registerControl + immediate update 模式。 |
 | `isIkBone()` | `core/ui-rows` | [doc:adr-122 P3] 判断骨骼是否为 IK 相关骨骼 |
 | `sliderRow()` | `core/ui-rows` | — |
@@ -1142,7 +1146,6 @@
 | `getMatState()` | `scene/manager/material` | — |
 | `isMatCategoryAllEnabled()` | `scene/manager/material` | 检查指定分类的全部材质是否都已启用。 |
 | `isMatEnabled()` | `scene/manager/material` | — |
-| `registerMaterialTarget()` | `scene/manager/material` | 注册外部 meshes（如 prop）到材质系统，使其可用 id 调用所有材质 API。 |
 | `resetMatCatParams()` | `scene/manager/material` | — |
 | `resetPerMaterialParams()` | `scene/manager/material` | 重置所有逐材质覆盖（per-material），保留分类调整（皮肤/头发等）。 |
 | `resetSingleMatParams()` | `scene/manager/material` | — |
@@ -1150,7 +1153,6 @@
 | `setMatCategoryEnabled()` | `scene/manager/material` | 按分类批量切换材质可见性。 |
 | `setMatEnabled()` | `scene/manager/material` | — |
 | `setMatParams()` | `scene/manager/material` | — |
-| `unregisterMaterialTarget()` | `scene/manager/material` | 注销外部材质目标（资源卸载时调用）。 |
 | `resolveModelId()` | `scene/manager/model-id` | 解析模型运行时 id：优先复用存档 uuid（preferredId，由恢复路径传入）， 否则生成稳定 uuid。替代旧实现 `model_${Date.now()}_${Math |
 | `captureThumbnail()` | `scene/manager/model-loader` | Captures a screenshot after model load for thumbnail cache. |
 | `initLoader()` | `scene/manager/model-loader` | — |
@@ -1747,7 +1749,6 @@
 | `offerSceneUndoAndRefresh()` | `scene/scene` | — |
 | `popUndoSnapshot()` | `scene/scene` | — |
 | `pushUndoSnapshot()` | `scene/scene` | — |
-| `registerMaterialTarget()` | `scene/scene` | — |
 | `resetMatCatParams()` | `scene/scene` | — |
 | `resetPerMaterialParams()` | `scene/scene` | — |
 | `resetSingleMatParams()` | `scene/scene` | — |
@@ -1774,7 +1775,6 @@
 | `syncAudioPlayback()` | `scene/scene` | — |
 | `takeARScreenshot()` | `scene/scene` | — |
 | `triggerAutoSave()` | `scene/scene` | — |
-| `unregisterMaterialTarget()` | `scene/scene` | — |
 | `updatePlaybackUI()` | `scene/scene` | — |
 | `TransformAdapter()` | `scene/transform/transform-adapter` | — |
 | `TransformCapability()` | `scene/transform/transform-adapter` | — |
@@ -1953,7 +1953,7 @@
 | `setStateValue()` | `menus/menu-schema` | 按 StatePath 设置值 |
 | `stackRegistry()` | `menus/menu-stack-registry` | — |
 | `SlideMenu()` | `menus/menu` | — |
-| `getCurrentRenderingMenu()` | `menus/menu` | 获取当前正在渲染的 SlideMenu 实例（供 ui-helpers 中的控件函数自动注册） |
+| `getCurrentRenderingMenu()` | `menus/menu` | 获取当前正在渲染的 SlideMenu 实例（供 menus 层控件的自更新注册）。 |
 | `getOpenMenus()` | `menus/menu` | 获取所有当前存活的 SlideMenu 实例（已 dispose 的会自动移除，调用方仍需自行判断可见性） |
 | `buildBoneHierarchyLevel()` | `menus/model-detail` | — |
 | `buildModelInfoLevel()` | `menus/model-detail` | — |
@@ -2354,5 +2354,5 @@
 
 ---
 
-> 共 323 个文件，2312 个导出符号。
+> 共 325 个文件，2312 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。

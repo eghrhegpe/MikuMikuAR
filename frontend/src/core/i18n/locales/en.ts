@@ -1989,6 +1989,8 @@ export const en: Record<string, string> = {
     'ai.control.undone': '↩️ Last action undone.',
     'ai.config.corsWarning':
         '⚠ Remote endpoint may have CORS restrictions. For local Ollama, set OLLAMA_ORIGINS=* and restart.',
+    'ai.config.relayActive': 'Relay proxy active ({url})',
+    'ai.config.relayNotConfigured': 'Configure a relay proxy in settings to bypass CORS restrictions',
     'ai.chat.clear': 'Clear',
     'ai.chat.clearConfirm': 'Clear chat history?',
     'ai.chat.pendingBlocked': 'Confirm or cancel the pending action first.',
