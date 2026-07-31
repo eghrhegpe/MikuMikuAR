@@ -8,7 +8,7 @@
 
 ## 总体结论
 
-**✅ 通过（含 3 项建议改进）** — 这批模块工程质量显著高于平均水平：并发守护、资源回收、异常契约处理克制到位。无 P1，2 个 P3 + 1 个 P2 + 2 个 P4。
+**✅ 通过（含 2 项建议改进）** — 这批模块工程质量显著高于平均水平：并发守护、资源回收、异常契约处理克制到位。无 P1，1 个 P3（经复核不成立）+ 1 个 P2 + 2 个 P4。
 
 ---
 
@@ -74,7 +74,7 @@
 
 | 级别 | 文件:行 | 观察 | 建议 |
 |------|---------|------|------|
-| 🟡 中P3 | `physics-bridge.ts:56-65` | `getBoneWorldPosition` 每次 `new Vector3`，被 `virtual-skirt.ts`、`lighting-follow.ts:142` 在**每帧路径**调用，产生 GC 压力 | 增加 `getBoneWorldPositionToRef(model, name, ref)` 变体，热路径复用预分配 Vector3（同 README 已记录的 particles splash `new Vector3` 类问题） |
+| ⚪ 已核实不成立 | `physics-bridge.ts:56-65` | ~~`getBoneWorldPosition` 每帧 `new Vector3` 产生 GC 压力~~ → 复核：两处调用点均**非每帧热路径**。`virtual-skirt.ts:316` 在一次性 `_setup()`，其 `_update()`（L436）早已缓存 `_waistBone` + 复用 `_tmpVec`（P1/P3e）直读 `worldMatrix`；`lighting-follow.ts:142` 在跟随基准点计算，本就需返回新点 | 无需改动。若强加 `getBoneWorldPositionToRef` 将成无人调用的死代码 |
 
 ---
 
