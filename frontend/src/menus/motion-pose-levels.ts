@@ -22,12 +22,10 @@ import {
     addEmptyRow,
     addCardTitle,
     addPresetChip,
-    slideRow,
 } from '../core/ui-helpers';
 import { waitForFrame } from '../core/async';
 import { logWarn } from '../core/logger';
 import { getMotionMenu } from './motion-popup';
-import { buildCameraLevel } from './motion-camera-levels';
 import { ArcRotateCamera } from '@babylonjs/core/Cameras/arcRotateCamera';
 import { getRenderState } from '../scene/render/renderer';
 import { getGuideMode, setGuideMode } from '../scene/pose/composition-guide';
@@ -147,41 +145,7 @@ function buildPoseStudioSchema(): MenuNode[] {
                 });
             },
         },
-        // 卡片 3：景深（方案 C：编辑入口收口到相机面板，此处仅引导跳转）
-        {
-            id: 'pose:dof',
-            kind: 'custom',
-            renderCustom: (c) => {
-                cardContainer(c, (inner) => {
-                    addCardTitle(inner, t('motion.poseStudio.depthOfField'));
-
-                    const hint = document.createElement('div');
-                    hint.style.cssText =
-                        'font-size:12px;opacity:0.65;margin:2px 0 10px;line-height:1.5;';
-                    hint.textContent = t('motion.poseStudio.dofHint');
-                    inner.appendChild(hint);
-
-                    slideRow(
-                        inner,
-                        'lucide:camera',
-                        t('motion.poseStudio.openLensSettings'),
-                        false,
-                        () => {
-                            const menu = getMotionMenu();
-                            if (menu) {
-                                menu.push(buildCameraLevel());
-                            }
-                        },
-                        undefined,
-                        undefined,
-                        undefined,
-                        undefined,
-                        { testId: 'menu:pose:open-lens-settings' }
-                    );
-                });
-            },
-        },
-        // 卡片 4：相机角度预设 + 截图
+        // 卡片 3：相机角度预设 + 截图（景深控件收口至镜头菜单，此处不再重复引导）
         {
             id: 'pose:camera',
             kind: 'custom',
