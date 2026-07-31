@@ -101,6 +101,7 @@ export const zhCN: Record<string, string> = {
     'settings.about.techStack': '技术栈',
     'about.readme': '项目说明',
     'about.knowledge': '知识库',
+    'about.guide': '使用指南',
     'settings.about.cache.counting': '统计中…',
     'settings.about.update.checkHint': '点击「检查更新」查看是否有新版本',
     'settings.about.update.goDownload': '前往下载 →',

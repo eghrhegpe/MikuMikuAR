@@ -101,6 +101,7 @@ export const en: Record<string, string> = {
     'settings.about.techStack': 'Tech Stack',
     'about.readme': 'README',
     'about.knowledge': 'Knowledge Base',
+    'about.guide': 'User Guide',
     'settings.about.cache.counting': 'Counting…',
     'settings.about.update.checkHint':
         'Click "Check for updates" to see if a new version is available',
