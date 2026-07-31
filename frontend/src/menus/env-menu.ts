@@ -168,7 +168,7 @@ export function buildEnvLevel(): PopupLevel {
     };
 }
 
-function buildParticleSchema(): MenuNode[] {
+export function buildParticleSchema(): MenuNode[] {
     return [
         {
             id: 'env:particle:type',

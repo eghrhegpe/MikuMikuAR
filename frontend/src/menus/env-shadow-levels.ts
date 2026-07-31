@@ -11,9 +11,9 @@ import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
 import { buildLevel } from './env-level-helpers';
 
-export function buildShadowLevel(): PopupLevel {
-    return buildLevel(t('env.shadow'), (c) => {
-        const shadowSchema: MenuNode[] = [
+/** 导出 shadow schema 供 menu-registry 静态分析（ADR-093 元测试） */
+export function getShadowSchema(): MenuNode[] {
+    return [
             {
                 id: 'env:shadow:env',
                 kind: 'folder',
@@ -117,7 +117,11 @@ export function buildShadowLevel(): PopupLevel {
                     );
                 },
             },
-        ];
-        return renderMenu(shadowSchema, c);
+    ];
+}
+
+export function buildShadowLevel(): PopupLevel {
+    return buildLevel(t('env.shadow'), (c) => {
+        return renderMenu(getShadowSchema(), c);
     });
 }

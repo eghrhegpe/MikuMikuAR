@@ -7,9 +7,9 @@ import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
 import { buildLevel } from './env-level-helpers';
 
-export function buildCloudLevel(): PopupLevel {
-    return buildLevel(t('env.cloud'), (c) => {
-        const cloudSchema: MenuNode[] = [
+/** 导出 cloud schema 供 menu-registry 静态分析（ADR-093 元测试） */
+export function getCloudSchema(): MenuNode[] {
+    return [
             {
                 id: 'env:cloud:cover',
                 kind: 'slider',
@@ -132,7 +132,11 @@ export function buildCloudLevel(): PopupLevel {
                 },
                 icon: 'lucide:snowflake',
             },
-        ];
-        return renderMenu(cloudSchema, c);
+    ];
+}
+
+export function buildCloudLevel(): PopupLevel {
+    return buildLevel(t('env.cloud'), (c) => {
+        return renderMenu(getCloudSchema(), c);
     });
 }

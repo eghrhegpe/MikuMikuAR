@@ -7,9 +7,9 @@ import type { MenuNode } from './menu-schema';
 import type { PopupLevel } from '../core/config';
 import { buildLevel } from './env-level-helpers';
 
-export function buildExperimentalLevel(): PopupLevel {
-    return buildLevel(t('env.experimental'), (c) => {
-        const expSchema: MenuNode[] = [
+/** 导出 experimental schema 供 menu-registry 静态分析（ADR-093 元测试） */
+export function getExperimentalSchema(): MenuNode[] {
+    return [
             {
                 id: 'env:exp:warn',
                 kind: 'custom',
@@ -23,7 +23,11 @@ export function buildExperimentalLevel(): PopupLevel {
                     cc.appendChild(warning);
                 },
             },
-        ];
-        return renderMenu(expSchema, c);
+    ];
+}
+
+export function buildExperimentalLevel(): PopupLevel {
+    return buildLevel(t('env.experimental'), (c) => {
+        return renderMenu(getExperimentalSchema(), c);
     });
 }

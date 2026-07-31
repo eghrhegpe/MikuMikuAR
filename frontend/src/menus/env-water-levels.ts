@@ -27,12 +27,9 @@ const WATER_PRESET_I18N: Record<string, string> = {
     tropical: 'env.presetTropical',
 };
 
-export function buildWaterLevel(): PopupLevel {
-    return buildLevel(
-        t('env.water'),
-        (c) => {
-            // ===== 水面预设（顶部 chips，一键应用）=====
-            const waterSchema: MenuNode[] = [
+/** 导出 water schema 供 menu-registry 静态分析（ADR-093 元测试） */
+export function getWaterSchema(): MenuNode[] {
+    return [
                 {
                     id: 'env:water:presets',
                     kind: 'custom',
@@ -479,8 +476,14 @@ export function buildWaterLevel(): PopupLevel {
                         },
                     ],
                 },
-            ];
-            return renderMenu(waterSchema, c);
+    ];
+}
+
+export function buildWaterLevel(): PopupLevel {
+    return buildLevel(
+        t('env.water'),
+        (c) => {
+            return renderMenu(getWaterSchema(), c);
         },
         [
             // —— 质量档位（ADR-130 Phase 2.3）——
