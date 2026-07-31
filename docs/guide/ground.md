@@ -34,7 +34,7 @@ outline: [2, 3]
 
 - 阴影属于光照配置：场景 → 舞台灯光 → 阴影开关/强度（`scene:stageLight`）
 
-![地面设置](img/ground-1.png) *(截图占位)*
+![地面设置](img/ground-1.png)
 
 ## 常见问题
 
