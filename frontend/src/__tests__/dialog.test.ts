@@ -1,5 +1,12 @@
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, beforeAll } from 'vitest';
 import { showConfirm, showPrompt } from '../core/dialog';
+import { bundles } from '../core/i18n/t';
+import { zhCN } from '../core/i18n/locales/zh-CN';
+
+// [doc:perf] 语言包改为运行时加载，测试环境直接预填缓存
+beforeAll(() => {
+    bundles['zh-CN'] = zhCN;
+});
 
 describe('showConfirm', () => {
     afterEach(() => {

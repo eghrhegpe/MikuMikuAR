@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
 
 // ── hoisted mocks ──
 
@@ -78,6 +78,14 @@ vi.mock('../scene/scene', () => ({
     modelManager: { modelRegistry: new Map(), size: 0, focused: vi.fn(), get: vi.fn() },
     setEnvState: (...args: unknown[]) => mockSetEnvState(...args),
 }));
+
+import { bundles } from '../core/i18n/t';
+import { zhCN } from '../core/i18n/locales/zh-CN';
+
+// [doc:perf] 语言包改为运行时加载，测试环境直接预填缓存
+beforeAll(() => {
+    bundles['zh-CN'] = zhCN;
+});
 
 // ── SUT ──
 

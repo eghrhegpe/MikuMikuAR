@@ -1,5 +1,5 @@
 // menu-schema.kinds.test.ts — 各 kind 渲染 + modeRow kind 渲染（ADR-093 §6.1 / §6.11，拆自 menu-schema.test.ts）
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi, beforeAll } from 'vitest';
 import { mockScene, mockLighting, mockPerception, mockRegistry } from './menu-schema-mocks';
 
 vi.mock('@/scene/scene', () => mockScene());
@@ -10,6 +10,13 @@ vi.mock('@/scene/motion/motion-modules/registry', () => mockRegistry());
 import { renderMenu } from '../menus/render-menu';
 import type { MenuNode } from '../menus/menu-schema';
 import { setEnvState } from '../scene/scene';
+import { bundles } from '../core/i18n/t';
+import { zhCN } from '../core/i18n/locales/zh-CN';
+
+// [doc:perf] 语言包改为运行时加载，测试环境直接预填缓存
+beforeAll(() => {
+    bundles['zh-CN'] = zhCN;
+});
 
 describe('ADR-093 Menu Schema — 各 kind 渲染 + modeRow', () => {
     let container: HTMLElement;
