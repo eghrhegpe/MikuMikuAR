@@ -4,90 +4,39 @@
 // 新增面板时：在 menu-schema-register.ts 注册 getXxxSchema() 即自动覆盖。
 
 import { describe, it, expect, beforeAll, vi } from 'vitest';
+import {
+    mockScene,
+    mockCoreWailsBindings,
+    mockSceneBundle,
+    mockPresetListViewer,
+    mockSceneRenderPresets,
+    mockCoreStatusHelpers,
+    mockCoreAsync,
+    mockCoreToast,
+    mockCoreRenderLoop,
+    mockRenderPerformance,
+    mockSettingsMenuState,
+    mockSceneMenuState,
+    mockPerception,
+    mockMotionModuleRegistry,
+    mockMotionPopup,
+    mockCoreAutoSave,
+    mockMenu,
+    mockRenderer,
+} from './menu-schema-mocks';
 
 // mock 副作用模块，避免 Babylon Scene 初始化
-vi.mock('@/scene/scene', () => ({
-    setEnvState: vi.fn(),
-    setRenderState: vi.fn(),
-    getRenderState: vi.fn(() => ({
-        bloomEnabled: false, bloomWeight: 1, bloomThreshold: 0.7, bloomKernel: 'box',
-        outlineEnabled: false, outlineColor: '#000000',
-        fxaaEnabled: true, msaaSamples: 4,
-        toneMapping: 'aces', exposure: 1, contrast: 1,
-        dofEnabled: false, dofAperture: 0, dofFocusDistance: 1, dofFocalLength: 50,
-        vignetteEnabled: false, vignetteDarkness: 0,
-        chromaticAberrationEnabled: false, chromaticAberrationAmount: 0,
-        grainEnabled: false, grainIntensity: 0,
-        sharpenAmount: 0, glowEnabled: false, glowIntensity: 0,
-        ssaoEnabled: false, ssaoStrength: 1, ssaoRadius: 1, ssaoSamples: 8,
-        celShadingMode: 'none', celColorLevels: 4, celEdgeThreshold: 0.1, celEdgeStrength: 1,
-    })),
-    defaultRenderState: vi.fn(() => ({
-        bloomEnabled: false, bloomWeight: 1, bloomThreshold: 0.7, bloomKernel: 'box',
-        outlineEnabled: false, outlineColor: '#000000',
-        fxaaEnabled: true, msaaSamples: 4,
-        toneMapping: 'aces', exposure: 1, contrast: 1,
-        dofEnabled: false, dofAperture: 0, dofFocusDistance: 1, dofFocalLength: 50,
-        vignetteEnabled: false, vignetteDarkness: 0,
-        chromaticAberrationEnabled: false, chromaticAberrationAmount: 0,
-        grainEnabled: false, grainIntensity: 0,
-        sharpenAmount: 0, glowEnabled: false, glowIntensity: 0,
-        ssaoEnabled: false, ssaoStrength: 1, ssaoRadius: 1, ssaoSamples: 8,
-        celShadingMode: 'none', celColorLevels: 4, celEdgeThreshold: 0.1, celEdgeStrength: 1,
-    })),
-    transitionRenderState: vi.fn(),
-    triggerAutoSave: vi.fn(),
-    deserializeScene: vi.fn(),
-    serializeScene: vi.fn(),
-    popUndoSnapshot: vi.fn(),
-    restoreUndoSnapshot: vi.fn(),
-}));
-vi.mock('@/core/wails-bindings', () => ({
-    GetPresetScenes: vi.fn(),
-    GetPresetScenesDir: vi.fn(() => '/tmp/mock'),
-    DeletePresetScene: vi.fn(),
-    LoadSceneFile: vi.fn(),
-    SaveScenePreset: vi.fn(),
-}));
-vi.mock('@/scene/scene-bundle', () => ({
-    exportSceneBundle: vi.fn(),
-    importSceneBundle: vi.fn(),
-}));
-vi.mock('@/menus/preset-list-viewer', () => ({
-    presetListContent: vi.fn(),
-}));
-vi.mock('@/menus/scene-render-presets', () => ({
-    FILTER_PRESET_LABELS: {},
-    getFilterPreset: vi.fn(),
-}));
-vi.mock('@/core/status-helpers', () => ({
-    tryCatchStatus: vi.fn(async (fn: () => unknown) => fn()),
-}));
-vi.mock('@/core/async', () => ({
-    swallowError: vi.fn(),
-    fireAndForget: vi.fn(),
-    delay: vi.fn(() => Promise.resolve()),
-    waitForFrame: vi.fn(() => Promise.resolve()),
-    makeLazyLoader: vi.fn(<T>(loader: T) => loader),
-    LoadingGuard: vi.fn(),
-    DebouncedTimer: vi.fn(),
-    Abortable: vi.fn(),
-}));
-vi.mock('@/core/toast', () => ({
-    showInfoToast: vi.fn(),
-    showErrorToast: vi.fn(),
-}));
-vi.mock('@/core/render-loop', () => ({
-    calcHardwareScaling: vi.fn(() => 1),
-}));
-vi.mock('@/scene/render/performance', () => ({
-    setPerformanceMode: vi.fn(),
-    getPerformanceMode: vi.fn(() => 'auto'),
-    resetPerformanceSnapshot: vi.fn(),
-}));
-vi.mock('@/menus/settings-menu-state', () => ({
-    getSettingsMenu: vi.fn(() => null),
-}));
+vi.mock('@/scene/scene', () => mockScene());
+vi.mock('@/core/wails-bindings', () => mockCoreWailsBindings());
+vi.mock('@/scene/scene-bundle', () => mockSceneBundle());
+vi.mock('@/menus/preset-list-viewer', () => mockPresetListViewer());
+vi.mock('@/menus/scene-render-presets', () => mockSceneRenderPresets());
+vi.mock('@/core/status-helpers', () => mockCoreStatusHelpers());
+vi.mock('@/core/async', () => mockCoreAsync());
+vi.mock('@/core/toast', () => mockCoreToast());
+vi.mock('@/core/render-loop', () => mockCoreRenderLoop());
+vi.mock('@/scene/render/performance', () => mockRenderPerformance());
+vi.mock('@/menus/settings-menu-state', () => mockSettingsMenuState());
 vi.mock('@/scene/env/env-lighting', () => ({
     TIME_OF_DAY_PRESETS: {},
 }));
@@ -131,46 +80,12 @@ vi.mock('@/menus/env-level-helpers', () => ({
     })),
     openTexturePicker: vi.fn(),
 }));
-vi.mock('@/menus/scene-menu-state', () => ({
-    getSceneMenu: vi.fn(() => null),
-}));
-vi.mock('@/scene/motion/perception', () => ({
-    getPerceptionState: vi.fn(() => ({
-        gazeEnabled: false, gazeIntensity: 1, gazeSpeed: 1,
-        gazeHeadEnabled: false, gazeHeadIntensity: 1, gazeHeadSpeed: 1,
-        gazeEyeEnabled: false, gazeEyeIntensity: 1, gazeEyeSpeed: 1,
-        blinkEnabled: false, blinkRate: 30, blinkIntensity: 1, blinkSpeed: 1,
-        breathEnabled: false, breathRate: 0.2, breathIntensity: 1,
-        balanceEnabled: false, balanceIntensity: 1,
-        centerEnabled: false, centerIntensity: 1,
-        upperEnabled: false, upperIntensity: 1,
-        waistEnabled: false, waistIntensity: 1,
-        lipSyncEnabled: false, lipSyncIntensity: 1, lipSyncMultiMorphEnabled: false,
-    })),
-    setPerceptionState: vi.fn(),
-    activatePerception: vi.fn(),
-    pinPerception: vi.fn(),
-    unpinPerception: vi.fn(),
-    enableAllPerception: vi.fn(),
-    disableAllPerception: vi.fn(),
-    getPinnedModelIds: vi.fn(() => []),
-    getPerceptionPerfTier: vi.fn(() => 'medium'),
-    getPerceptionPerfManualTier: vi.fn(() => 'medium'),
-    setPerceptionPerfTier: vi.fn(),
-    isAllPerceptionEnabled: vi.fn(() => false),
-}));
-vi.mock('@/scene/motion/motion-modules/registry', () => ({
-    getModuleConflicts: vi.fn(() => []),
-}));
-vi.mock('@/menus/motion-popup', () => ({
-    getMotionMenu: vi.fn(() => null),
-}));
-vi.mock('@/core/auto-save', () => ({
-    triggerAutoSave: vi.fn(),
-}));
-vi.mock('@/menus/menu', () => ({
-    getCurrentRenderingMenu: vi.fn(() => null),
-}));
+vi.mock('@/menus/scene-menu-state', () => mockSceneMenuState());
+vi.mock('@/scene/motion/perception', () => mockPerception());
+vi.mock('@/scene/motion/motion-modules/registry', () => mockMotionModuleRegistry());
+vi.mock('@/menus/motion-popup', () => mockMotionPopup());
+vi.mock('@/core/auto-save', () => mockCoreAutoSave());
+vi.mock('@/menus/menu', () => mockMenu());
 vi.mock('@/core/config', () => ({
     uiState: { value: {} },
     cardContainer: vi.fn((container: HTMLElement, render: (c: HTMLElement) => void) => {
@@ -179,35 +94,7 @@ vi.mock('@/core/config', () => ({
     }),
     applyHudVisibility: vi.fn(),
 }));
-vi.mock('@/scene/render/renderer', () => ({
-    getRenderState: vi.fn(() => ({
-        bloomEnabled: false, bloomWeight: 1, bloomThreshold: 0.7, bloomKernel: 'box',
-        outlineEnabled: false, outlineColor: '#000000',
-        fxaaEnabled: true, msaaSamples: 4,
-        toneMapping: 'aces', exposure: 1, contrast: 1,
-        dofEnabled: false, dofAperture: 0, dofFocusDistance: 1, dofFocalLength: 50,
-        vignetteEnabled: false, vignetteDarkness: 0,
-        chromaticAberrationEnabled: false, chromaticAberrationAmount: 0,
-        grainEnabled: false, grainIntensity: 0,
-        sharpenAmount: 0, glowEnabled: false, glowIntensity: 0,
-        ssaoEnabled: false, ssaoStrength: 1, ssaoRadius: 1, ssaoSamples: 8,
-        celShadingMode: 'none', celColorLevels: 4, celEdgeThreshold: 0.1, celEdgeStrength: 1,
-    })),
-    setRenderState: vi.fn(),
-    defaultRenderState: vi.fn(() => ({
-        bloomEnabled: false, bloomWeight: 1, bloomThreshold: 0.7, bloomKernel: 'box',
-        outlineEnabled: false, outlineColor: '#000000',
-        fxaaEnabled: true, msaaSamples: 4,
-        toneMapping: 'aces', exposure: 1, contrast: 1,
-        dofEnabled: false, dofAperture: 0, dofFocusDistance: 1, dofFocalLength: 50,
-        vignetteEnabled: false, vignetteDarkness: 0,
-        chromaticAberrationEnabled: false, chromaticAberrationAmount: 0,
-        grainEnabled: false, grainIntensity: 0,
-        sharpenAmount: 0, glowEnabled: false, glowIntensity: 0,
-        ssaoEnabled: false, ssaoStrength: 1, ssaoRadius: 1, ssaoSamples: 8,
-        celShadingMode: 'none', celColorLevels: 4, celEdgeThreshold: 0.1, celEdgeStrength: 1,
-    })),
-}));
+vi.mock('@/scene/render/renderer', () => mockRenderer());
 
 // 触发集中注册（import 副作用）
 import '../menus/menu-schema-register';
