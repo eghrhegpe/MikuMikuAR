@@ -18,6 +18,7 @@ import {
 } from './config';
 import { closeAllOverlays, setOnCloseAllOverlays } from '../menus/menu-overlay';
 import { updatePlaybackUI, seekFromEvent, focusedMmdModel } from '../scene/scene';
+import { DownloadApk } from '../core/wails-bindings';
 import { freeflyInput } from './freefly-state';
 import { orbitInput } from './orbit-state';
 import { getCameraMode } from '../scene/camera/camera';
@@ -487,7 +488,6 @@ export function showUpdateToast(latest: string, url: string, downloadUrl?: strin
                 btn.disabled = true;
                 btn.textContent = t('settings.about.update.downloading');
                 try {
-                    const { DownloadApk } = await import('../core/wails-bindings');
                     const result = await DownloadApk();
                     if (result && result.success && result.localPath) {
                         // [doc:adr-179] Register one-shot listener for install failures.
