@@ -1,6 +1,6 @@
 // proc-motion-bridge 拆分 — regenerate 守卫 / triggerAutoSave 交互 / update 程序化保持生效（adr-129 回归）
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { DEFAULT_PROC_STATE, PROC_MOTION_BONE_CATEGORIES } from '../motion-algos/procedural-motion';
+import { DEFAULT_PROC_STATE } from '../motion-algos/procedural-motion';
 import {
     createProcMockState,
     resetProcMockState,

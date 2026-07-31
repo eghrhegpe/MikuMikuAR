@@ -161,7 +161,7 @@ export function statusBarFactory() {
 
 /** [fix:de-barreling] library-core 已从 core/config 改引 library/library-path，
  *  测试需同步 mock 该模块，否则 getBrowseDir / computeLibraryRef 读到真实空状态。 */
-export function libraryPathFactory(ms: any) {
+export function libraryPathFactory(_ms: any) {
     return {
         CATEGORY_DIR: {
             pmx: 'PMX',

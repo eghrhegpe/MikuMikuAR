@@ -1,6 +1,6 @@
 // proc-motion-bridge 拆分 — 状态读写 / 模式 / 强度 / 速度 / 拷贝语义
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { DEFAULT_PROC_STATE, PROC_MOTION_BONE_CATEGORIES } from '../motion-algos/procedural-motion';
+import { DEFAULT_PROC_STATE } from '../motion-algos/procedural-motion';
 import {
     createProcMockState,
     resetProcMockState,

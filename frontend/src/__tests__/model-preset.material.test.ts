@@ -37,7 +37,6 @@ import {
     mockPlayback,
 } from './model-preset-mocks';
 import { getMatState, applyMatState } from '../scene/scene';
-import { modelRegistry } from '../core/config';
 import { modelPresetBeforeEach, setupDomRefs, createModel } from './model-preset-helpers';
 
 vi.hoisted(() => {

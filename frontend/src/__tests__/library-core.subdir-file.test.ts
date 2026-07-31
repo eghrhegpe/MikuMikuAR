@@ -47,11 +47,11 @@ vi.mock('../core/ui-helpers', () => ({
     slideRow: vi.fn(
         (
             _card: any,
-            icon: string,
-            label: string,
+            _icon: string,
+            _label: string,
             _isFolder: boolean,
             _onClick: any,
-            sublabel?: string
+            _sublabel?: string
         ) => {}
     ),
 }));

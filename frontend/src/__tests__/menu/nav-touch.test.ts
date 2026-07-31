@@ -1,17 +1,14 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { SlideMenu } from '../../menus/menu';
-import type { PopupLevel } from '../../core/config';
 import { makeTestLevel, makeTestMenu } from '../fixtures/menu';
 
 // ─── SlideMenu 测试：键盘导航 + 触屏手势守卫与平台适配 ───
 
 describe('SlideMenu — 键盘导航', () => {
-    let container: HTMLElement;
     let menu: SlideMenu;
 
     beforeEach(() => {
         const m = makeTestMenu();
-        container = m.container;
         menu = m.menu;
     });
 
