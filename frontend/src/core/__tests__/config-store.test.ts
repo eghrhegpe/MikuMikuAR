@@ -33,8 +33,7 @@ describe('config-store（IndexedDB 持久化）', () => {
 
         // 再次读取命中内存缓存
         expect(loadAiConfig()).toEqual(saved);
-        const { apiKey: _k, ...expectedDb } = saved;
-        expect(idbSet).toHaveBeenCalledWith('config', 'ai', expectedDb);
+        expect(idbSet).toHaveBeenCalledWith('config', 'ai', saved);
     });
 
     it('ensureAiConfigLoaded 从 IndexedDB 回源并补默认缺失字段', async () => {
