@@ -1,6 +1,7 @@
 ---
 kind: color_helpers
 name: 颜色工具函数
+tier: leaf
 category: core
 scope:
   - frontend/src/core/**

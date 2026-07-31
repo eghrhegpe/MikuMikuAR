@@ -1,6 +1,7 @@
 ---
 kind: core_types
 name: 共享类型定义
+tier: leaf
 category: core
 scope:
   - frontend/src/core/types.ts

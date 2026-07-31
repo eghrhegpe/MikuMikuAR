@@ -1,6 +1,7 @@
 ---
 kind: dispose_helpers
 name: 安全释放工具
+tier: leaf
 category: core
 scope:
   - frontend/src/core/**

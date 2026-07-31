@@ -1,6 +1,7 @@
 ---
 kind: hash_noise
 name: 确定性哈希与值噪声
+tier: leaf
 category: core
 scope:
   - frontend/src/core/math/hash-noise.ts

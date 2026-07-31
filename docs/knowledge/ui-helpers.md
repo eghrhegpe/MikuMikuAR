@@ -1,6 +1,7 @@
 ---
 kind: ui_helpers
 name: UI 辅助函数聚合
+tier: leaf
 category: ui
 scope:
   - frontend/src/core/ui-helpers.ts

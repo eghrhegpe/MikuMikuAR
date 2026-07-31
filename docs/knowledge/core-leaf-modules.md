@@ -1,6 +1,7 @@
 ---
 kind: core_leaf_modules
 name: 核心零依赖叶模块
+tier: leaf
 category: core
 scope:
   - frontend/src/core/async.ts

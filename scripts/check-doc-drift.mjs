@@ -234,6 +234,47 @@ function checkKnowledgeCards() {
   return { cards: cardFiles.length, missingSources, coveredCount: covered.size };
 }
 
+// ---------- 检查 8/9/10：知识卡 frontmatter 治理（ADR-218） ----------
+// 8 (ERROR) category 枚举校验；9 (ERROR) tier 枚举校验；10 (WARN) architecture 卡须含「## UI 入口」小节。
+const CATEGORY_ENUM = ['rendering', 'env', 'motion', 'ui', 'core', 'backend', 'physics', 'scene'];
+const TIER_ENUM = ['architecture', 'leaf'];
+const UI_ENTRY_HEADING = '## UI 入口';
+
+function parseFrontmatterField(text, key) {
+  const fm = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if (!fm) return null;
+  const m = fm[1].match(new RegExp('^' + key + '\\s*:\\s*(\\S+)', 'm'));
+  return m ? m[1].replace(/#.*$/, '').trim() : null;
+}
+
+function checkKnowledgeMeta() {
+  const dir = path.join(ROOT, CONFIG.knowledgeDir);
+  if (!fs.existsSync(dir)) return { errors: [], warns: [] };
+  const errors = [];
+  const warns = [];
+  for (const cf of fs
+    .readdirSync(dir)
+    .filter((f) => f.endsWith('.md') && f.toLowerCase() !== 'readme.md')) {
+    const text = fs.readFileSync(path.join(dir, cf), 'utf8');
+    // 无 frontmatter 的非知识卡文件（如 routes.md 路由表）跳过治理检查
+    if (!/^---\r?\n/.test(text)) continue;
+    const category = parseFrontmatterField(text, 'category');
+    if (category === null) {
+      errors.push(`知识卡 ${cf} 缺少 category 字段（应为 ${CATEGORY_ENUM.join('|')} 之一）`);
+    } else if (!CATEGORY_ENUM.includes(category)) {
+      errors.push(`知识卡 ${cf} 的 category 非法: ${category}（应为 ${CATEGORY_ENUM.join('|')} 之一）`);
+    }
+    const tier = parseFrontmatterField(text, 'tier');
+    if (tier !== null && !TIER_ENUM.includes(tier)) {
+      errors.push(`知识卡 ${cf} 的 tier 非法: ${tier}（应为 ${TIER_ENUM.join('|')} 之一）`);
+    }
+    if (tier === 'architecture' && !text.includes(UI_ENTRY_HEADING)) {
+      warns.push(`architecture 卡 ${cf} 缺少「${UI_ENTRY_HEADING}」小节（ADR-218）`);
+    }
+  }
+  return { errors, warns };
+}
+
 // ---------- 检查 4b：知识卡反向覆盖（磁盘源文件 → 是否有卡片引用，INFO） ----------
 // 与检查 4（卡片 source_files 是否真实存在）互补：从「代码现实」出发，
 // 扫描 sourceRoots 下每个 .ts 源文件，确认至少有 1 张知识卡的 source_files 引用了它。
@@ -446,6 +487,12 @@ function main() {
     errors.push(`知识卡 ${ms.card} 的 source_files 指向不存在的文件：${ms.src}`);
   }
 
+  const km = checkKnowledgeMeta();
+  for (const e of km.errors) {
+    errors.push(`知识卡治理：${e}`);
+  }
+  const knowledgeMetaWarns = km.warns;
+
   const rev = checkKnowledgeCoverage();
 
   const globalIndex = buildGlobalExportIndex();
@@ -500,6 +547,8 @@ function main() {
   console.log(`架构树陈旧引用            : ${stale.length ? stale.length + ' 个 ❌' : '无 ✅'}`);
   console.log(`知识卡数 / source 覆盖   : ${kc.cards} 张 / ${kc.coveredCount} 个源文件`);
   console.log(`知识卡失效 source_files  : ${kc.missingSources.length ? kc.missingSources.length + ' 个 ❌' : '无 ✅'}`);
+  console.log(`知识卡治理 category/tier  : ${km.errors.length ? km.errors.length + ' 个 ❌' : '无 ✅'}`);
+  console.log(`architecture 卡缺 UI 入口 : ${knowledgeMetaWarns.length ? knowledgeMetaWarns.length + ' 张（WARN）' : '无 ✅'}`);
   console.log(`符号 0% 未文档化模块     : ${cov.undocumented}（INFO）`);
   console.log(`知识卡未覆盖源文件       : ${rev.total} 个（INFO）`);
   if (rev.total) {

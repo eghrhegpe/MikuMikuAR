@@ -1,6 +1,7 @@
 ---
 kind: env_type_helpers
 name: Babylon.js 类型逃逸封装
+tier: leaf
 category: env
 scope:
   - frontend/src/scene/env/**

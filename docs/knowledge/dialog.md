@@ -1,6 +1,7 @@
 ---
 kind: dialog
 name: 跨平台对话框
+tier: leaf
 category: core
 scope:
   - frontend/src/core/dialog.ts
