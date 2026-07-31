@@ -23,7 +23,7 @@ describe('config-store（IndexedDB 持久化）', () => {
         // 首次读取回退默认并触发（未阻塞的）异步回源
         expect(loadAiConfig()).toEqual(DEFAULT_AI_CONFIG);
 
-        const saved = saveAiConfig({
+        const saved = await saveAiConfig({
             endpoint: 'https://api.example.com/v1/chat/completions',
             apiKey: 'sk-x',
             model: 'gpt-4o',

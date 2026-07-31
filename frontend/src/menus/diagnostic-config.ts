@@ -233,12 +233,13 @@ async function doSaveConfig(): Promise<void> {
                     model: snapshot.model,
                     aiKey: snapshot.apiKey,
                 });
-                saveAiConfig({ ...snapshot, endpoint: normalizedEndpoint, apiKey: '' });
+                await saveAiConfig({ ...snapshot, endpoint: normalizedEndpoint, apiKey: '' });
             } else {
-                saveAiConfig(snapshot);
+                await saveAiConfig(snapshot);
             }
         } catch (err) {
             console.warn('[ai-config] 持久化失败', err);
+            throw err; // 重新抛出，让调用方（如保存按钮）能够捕获并反馈给用户
         }
     });
     return diagState.saveChain;

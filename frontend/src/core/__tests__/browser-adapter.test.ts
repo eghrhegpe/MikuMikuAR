@@ -19,13 +19,13 @@ describe('BrowserAiAdapter', () => {
         const { saveAiConfig } = await import('../ai/config-store');
         const a = new BrowserAiAdapter();
 
-        saveAiConfig({ endpoint: 'http://localhost:11434/v1/chat/completions' });
+        await saveAiConfig({ endpoint: 'http://localhost:11434/v1/chat/completions' });
         expect(a.capabilities().corsRisk).toBe('none');
 
-        saveAiConfig({ endpoint: 'https://api.openai.com/v1/chat/completions' });
+        await saveAiConfig({ endpoint: 'https://api.openai.com/v1/chat/completions' });
         expect(a.capabilities().corsRisk).toBe('possible');
 
-        saveAiConfig({ endpoint: 'http://example.com/v1/chat/completions' });
+        await saveAiConfig({ endpoint: 'http://example.com/v1/chat/completions' });
         expect(a.capabilities().corsRisk).toBe('high');
     });
 
@@ -35,7 +35,7 @@ describe('BrowserAiAdapter', () => {
         const { saveAiConfig } = await import('../ai/config-store');
         const a = new BrowserAiAdapter();
 
-        saveAiConfig({ endpoint: '' });
+        await saveAiConfig({ endpoint: '' });
         expect(a.capabilities().available).toBe(false);
         expect(a.capabilities().apiKeyConfigured).toBe(false);
     });
@@ -46,7 +46,7 @@ describe('BrowserAiAdapter', () => {
         const { saveAiConfig } = await import('../ai/config-store');
         const a = new BrowserAiAdapter();
 
-        saveAiConfig({ endpoint: 'http://localhost:11434/v1/chat/completions', apiKey: 'sk-x' });
+        await saveAiConfig({ endpoint: 'http://localhost:11434/v1/chat/completions', apiKey: 'sk-x' });
         expect(a.capabilities().apiKeyConfigured).toBe(true);
     });
 });
