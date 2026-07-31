@@ -76,7 +76,7 @@
     "@iconify/iconify": "^3.1.1",
     "@preact/signals-core": "^1.14.4",
     "@wailsio/runtime": "^3.0.0-alpha.95",
-    "babylon-mmd": "git+https://github.com/eghrhegpe/babylon-mmd.git#feat/p2-native-rigidbody-bundle-dist",
+    "babylon-mmd": "github:eghrhegpe/babylon-mmd#feat/p2-native-rigidbody-bundle-dist",
     "encoding-japanese": "^2.2.0",
     "fflate": "^0.8.3",
     "iconify-icon": "^3.0.2"
