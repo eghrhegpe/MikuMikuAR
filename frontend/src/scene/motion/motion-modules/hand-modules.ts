@@ -11,7 +11,6 @@ import { modelRegistry } from '@/core/state';
 import {
     setBoneOverride,
     setBoneOverridePosition,
-    clearBoneOverride,
     registerBoneOverrideFrameHook,
     FRAME_HOOK_ORDER,
 } from '../bone-override';

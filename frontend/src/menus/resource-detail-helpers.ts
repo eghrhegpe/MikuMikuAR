@@ -13,8 +13,6 @@ import {
     addToggleRow,
     addCardTitle,
     addDangerRow,
-    addVector3SliderRow,
-    addPresetChip,
 } from '../core/ui-helpers';
 import { Quaternion } from '@babylonjs/core/Maths/math.vector';
 import { resetModelTransform, removeModel } from '../scene/manager/model-ops';

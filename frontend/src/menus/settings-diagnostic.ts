@@ -35,7 +35,6 @@ import {
     finalizeStream,
     pruneHistory,
     buildSystemMessage,
-    updateSpeakToggle,
     updateSendButton,
     addAssistantMessage,
     buildChatSchema,
@@ -46,15 +45,12 @@ import {
     handleControlFallback,
     applyPendingAction,
     cancelPendingAction,
-    advancePendingQueue,
     finalizePendingBatch,
 } from './diagnostic-control';
 import {
-    loadInitialConfig,
     refreshCaps,
     persistConfig,
     buildConfigSchema,
-    refreshModelList,
     updateStatusBadge,
     goKeyAllowsProceed,
 } from './diagnostic-config';

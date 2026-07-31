@@ -10,7 +10,6 @@ import {
     PROVIDER_PRESETS,
     validateAiConfig,
     normalizeEndpoint,
-    DEFAULT_RELAY_URL,
     type AiConfig,
     type AiConfigProvider,
 } from '../core/ai/config-store';
