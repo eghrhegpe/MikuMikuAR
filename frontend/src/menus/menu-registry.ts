@@ -43,7 +43,9 @@ export function flattenNodes(nodes: MenuNode[]): MenuNode[] {
     function walk(list: MenuNode[]): void {
         for (const node of list) {
             result.push(node);
-            if (node.children) walk(node.children);
+            if (node.children) {
+                walk(node.children);
+            }
         }
     }
     walk(nodes);

@@ -1,7 +1,11 @@
 // settings-shared.ts — 设置子模块共享的工具函数与状态
 // 从 settings.ts 拆出，供各 settings-* 子模块引用。
 
-import { SetUIAccent, GetDownloadAutoImport, GetDownloadWatchEnabled } from '../core/wails-bindings';
+import {
+    SetUIAccent,
+    GetDownloadAutoImport,
+    GetDownloadWatchEnabled,
+} from '../core/wails-bindings';
 import { UIState } from '../core/config';
 import { showInfoToast } from '../core/toast';
 import { clamp01 } from '../core/clamp';
