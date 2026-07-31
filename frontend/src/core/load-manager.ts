@@ -1,7 +1,7 @@
 // [doc:architecture] Load Manager — 统一资源加载入口
 // 规范文档: docs/adr/adr-045-unified-loading-and-resource.md
 // 职责: 跨资源类型串行排队、统一 LoadRequest/ResourceHandle 类型
-// 现状: 菜单层已全部迁移至 loadManager.load()，底层加载器内部锁（isLoadingModel/isLoadingVmd/_propLoadQueue/_loadId）已随 ADR-046 移除，串行化由本队列统一保障。
+// 现状: 菜单层已全部迁移至 loadManager.load()，底层加载器内部锁（isLoadingModel/isLoadingVmd/_loadId）已随 ADR-046 移除，串行化由本队列统一保障。
 // [doc:adr-135] P0.2: loadId trace 链路 — 每次加载分配 loadId + phase 追踪，错误包装为 LibraryLoadError
 // 后续: 为 LoadManager 补并发排队/反序列化恢复（跳过队列）的单元测试覆盖（当前仅靠手动验证）。
 
@@ -9,14 +9,14 @@ import { translateGoError } from './i18n/goerr';
 import { runLoadRefreshHooks } from './load-refresh-registry';
 
 export type ResourceKind =
-    'actor' | 'stage' | 'prop' | 'vmd' | 'audio' | 'camera-vmd' | 'light' | 'personalLight';
+    'actor' | 'stage' | 'vmd' | 'audio' | 'camera-vmd' | 'light' | 'personalLight';
 
 /**
  * [doc:adr-135] P0.2 加载阶段标签。dispatch 内部按 phase 更新，
  * 错误时包装进 LibraryLoadError，便于 formatError 加 [loadId/phase] 前缀。
  *
  * - `'parse'`：解析文件 / 调底层加载器（loadPMXFile / loadVMDFromPath 等）
- * - `'register'`：写入 modelRegistry / propRegistry
+ * - `'register'`：写入 modelRegistry
  * - `'refresh'`：刷新依赖菜单（motion-popup 等）
  * - `'unknown'`：兜底，理论上 dispatch 内不会出现
  *
@@ -80,9 +80,8 @@ export interface ResourceHandle {
 /**
  * LoadManager — 跨资源类型串行队列。
  *
- * 现有 loadPMXFile/loadVMDFromPath/loadProp/loadAudioFile 各有内部锁，
- * LoadManager 在其之上提供统一入口，确保「道具加载中点击模型」会排队
- * 而非被底层锁拒绝。后续迁移完成后可移除底层锁。
+ * 现有 loadPMXFile/loadVMDFromPath/loadAudioFile 各有内部锁，
+ * LoadManager 在其之上提供统一入口，确保加载排队
  *
  * 使用 dynamic import 避免与 scene 模块的循环依赖。
  */
@@ -171,17 +170,6 @@ class LoadManager {
                     this._phase = 'refresh';
                     this._refreshMenus();
                     return { id, kind: req.kind, name: inst?.name ?? '', filePath: req.path };
-                }
-                case 'prop': {
-                    const { loadProp } = await import('../scene/env/props');
-                    const id = await loadProp(req.path, signal);
-                    if (!id) {
-                        return null;
-                    }
-                    this._phase = 'register';
-                    const { propRegistry } = await import('./config');
-                    const inst = propRegistry.get(id);
-                    return { id, kind: 'prop', name: inst?.name ?? '', filePath: req.path };
                 }
                 case 'vmd': {
                     const { loadVMDFromPath } = await import('../scene/motion/vmd-loader');
