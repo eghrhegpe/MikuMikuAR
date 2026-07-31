@@ -250,6 +250,14 @@ export type ModelInstance = {
     orbitElevation?: number;
     /** [doc:adr-049] 距原点距离（>0），仅 positionMode==='orbit' 时生效 */
     orbitDistance?: number;
+    /** [doc:adr-215] 如果此模型是其他模型的附属，记录父模型 ID（ADR-193 稳定标识） */
+    parentId?: string;
+    /** [doc:adr-215] 附属到的骨骼名（空表示场景级跟随，不 attachToBone） */
+    attachedBone?: string;
+    /** [doc:adr-215] 骨骼局部偏移 (x, y, z) */
+    attachedOffset?: [number, number, number];
+    /** [doc:adr-215] 骨骼局部旋转（欧拉角度）[pitch, yaw, roll] */
+    attachedRotation?: [number, number, number];
 };
 
 // ======== Outfit System Types ========
