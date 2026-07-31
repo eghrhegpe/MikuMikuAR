@@ -2,18 +2,18 @@
   "duplicates": [
     {
       "firstFile": {
-        "end": 41,
+        "end": 67,
         "endLoc": {
           "column": 28,
-          "line": 41,
-          "position": 1304
+          "line": 67,
+          "position": 2603
         },
         "name": "core\\backend\\backend-mocks.ts",
-        "start": 25,
+        "start": 51,
         "startLoc": {
           "column": 29,
-          "line": 25,
-          "position": 804
+          "line": 51,
+          "position": 2103
         }
       },
       "format": "typescript",
@@ -506,7 +506,7 @@
     }
   ],
   "statistics": {
-    "detectionDate": "2026-07-31T14:10:14.627Z",
+    "detectionDate": "2026-07-31T15:54:09.408Z",
     "formats": {
       "txt": {
         "clones": 0,
@@ -524,26 +524,26 @@
         "clones": 14,
         "duplicatedLines": 254,
         "duplicatedTokens": 1143,
-        "lines": 45704,
+        "lines": 46264,
         "newClones": 0,
         "newDuplicatedLines": 0,
-        "percentage": 0.555750043759846,
-        "percentageTokens": 0.5206672558148009,
-        "sources": 258,
-        "tokens": 219526
+        "percentage": 0.5490229984437143,
+        "percentageTokens": 0.5147535667963683,
+        "sources": 261,
+        "tokens": 222048
       }
     },
     "total": {
       "clones": 14,
       "duplicatedLines": 254,
       "duplicatedTokens": 1143,
-      "lines": 45797,
+      "lines": 46357,
       "newClones": 0,
       "newDuplicatedLines": 0,
-      "percentage": 0.5546214817564469,
-      "percentageTokens": 0.5171056560410427,
-      "sources": 259,
-      "tokens": 221038
+      "percentage": 0.5479215652436525,
+      "percentageTokens": 0.5112721417069244,
+      "sources": 262,
+      "tokens": 223560
     }
   }
 }

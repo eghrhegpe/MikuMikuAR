@@ -101,6 +101,23 @@ export const test = base.extend<WailsFixtures>({
                 attributeFilter: ["style"],
             });
         });
+        // [doc:e2e] vite-only 模式下 body.app-booting 让 #bottomNav 设为
+        // pointer-events:none，仅放行 AI/广场 按钮。其余导航按钮（环境/场景/动作等）
+        // 全部被阻断。强制移除 app-booting class 恢复全导航可交互。
+        await page.evaluate(() => {
+            const body = document.body;
+            if (!body) return;
+            const removeBooting = () => {
+                if (body.classList.contains("app-booting")) {
+                    body.classList.remove("app-booting");
+                }
+            };
+            removeBooting();
+            new MutationObserver(removeBooting).observe(body, {
+                attributes: true,
+                attributeFilter: ["class"],
+            });
+        });
         // [doc:e2e] vite-only 模式下 init() 失败后可能弹出 #mmd-dialog-overlay
         // 错误对话框，该 dialog 的 class mmd-dialog-visible 覆盖全屏拦截所有 click。
         // 强制隐藏它以让 nav 按钮可点击。
