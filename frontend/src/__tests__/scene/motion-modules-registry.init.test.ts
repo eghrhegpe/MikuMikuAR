@@ -8,26 +8,11 @@ import {
     mockMotionIntent,
     mockMotionHistory,
 } from './motion-modules-registry-mocks';
-import {
-    makeModel,
-    makeModelWithBones,
-    setActiveMotionWithModules,
-} from './motion-modules-registry-helpers';
+import {} from './motion-modules-registry-helpers';
 import {
     initMotionModules,
     getRegisteredModules,
-    createModule,
-    getModuleState,
-    setModuleParam,
-    setModuleEnabled,
-    claimBones,
-    getOwnedBones,
-    releaseOwnedBones,
-    getModuleConflicts,
-    getAllConflicts,
-    getConflictCount,
     setTargetModel,
-    clearAllModulesForModel,
     registerModule,
     unregisterModule,
 } from '@/scene/motion/motion-modules/registry';

@@ -92,7 +92,6 @@ import {
     _matEnabled,
     setMatCatParams,
     setMatParams,
-    resetSingleMatParams,
     _applyAll,
 } from '../scene/scene';
 

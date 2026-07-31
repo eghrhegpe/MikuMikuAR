@@ -12,7 +12,6 @@ import {
     dom,
     setFocusedModelId,
     ModelInstance,
-    libraryRoot,
     triggerAutoSave,
     formatError,
     uiState,

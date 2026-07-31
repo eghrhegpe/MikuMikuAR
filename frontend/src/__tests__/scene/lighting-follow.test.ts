@@ -32,7 +32,6 @@ vi.mock('../../physics/physics-bridge', () => ({
 import {
     initLighting,
     disposeLighting,
-    addStageLight,
     getStageLights,
     _defaultStageLightState,
 } from '../../scene/render/lighting';

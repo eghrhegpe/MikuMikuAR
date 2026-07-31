@@ -17,31 +17,11 @@ import {
     setIsPlaying,
 } from './model-ops-helpers';
 import {
-    focusModel,
-    arrangeModels,
-    setModelVisibility,
-    setModelOpacity,
-    setModelWireframe,
-    setModelBoneLinesVis,
-    setModelBoneJointsVis,
-    setModelPhysics,
-    getPhysicsCategories,
-    getPhysicsCatState,
-    isPhysicsCategoryEnabled,
-    setPhysicsCategory,
-    setModelScaling,
-    setModelRotationY,
-    setModelPosition,
-    getModelPosition,
-    resetModelTransform,
     stopVMD,
     getModelMorphs,
     setModelMorphWeight,
     getModelMorphWeight,
     resetModelMorphs,
-    applyVPDPose,
-    removeModel,
-    removeFocusedModel,
 } from '../scene/manager/model-ops';
 import * as cameraModule from '../scene/camera/camera';
 import * as playbackModule from '../scene/motion/playback';

@@ -10,7 +10,6 @@ import {
     iconsFactory,
     configModuleFactory,
     libraryPathFactory,
-    makeModel,
 } from './library-core-mocks';
 
 const mockState = vi.hoisted(() => ({

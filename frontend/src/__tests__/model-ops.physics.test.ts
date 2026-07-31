@@ -9,21 +9,8 @@ import {
     mockPlayback,
     mockAudio,
 } from './model-ops-mocks';
+import { resetState } from './model-ops-helpers';
 import {
-    makeInst,
-    resetState,
-    modelRegistry,
-    setMmdRuntime,
-    setIsPlaying,
-} from './model-ops-helpers';
-import {
-    focusModel,
-    arrangeModels,
-    setModelVisibility,
-    setModelOpacity,
-    setModelWireframe,
-    setModelBoneLinesVis,
-    setModelBoneJointsVis,
     setModelPhysics,
     getPhysicsCategories,
     getPhysicsCatState,
@@ -34,14 +21,6 @@ import {
     setModelPosition,
     getModelPosition,
     resetModelTransform,
-    stopVMD,
-    getModelMorphs,
-    setModelMorphWeight,
-    getModelMorphWeight,
-    resetModelMorphs,
-    applyVPDPose,
-    removeModel,
-    removeFocusedModel,
 } from '../scene/manager/model-ops';
 import * as cameraModule from '../scene/camera/camera';
 import * as playbackModule from '../scene/motion/playback';

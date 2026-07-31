@@ -89,10 +89,7 @@ import {
     startConcert,
     stopConcert,
 } from './camera-behaviors';
-import {
-    stopBoneLock,
-    restoreBoneLockIfEnabled,
-} from './camera-bone-lock';
+import { stopBoneLock, restoreBoneLockIfEnabled } from './camera-bone-lock';
 import {
     setAutoCameraEnabled,
     isAutoCameraEnabled,
