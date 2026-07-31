@@ -5,12 +5,10 @@ import { makeTestLevel, makeTestMenu } from '../fixtures/menu';
 // ─── SlideMenu 测试：创建行 (createRow DOM 类型) ───
 
 describe('SlideMenu — 创建行 (createRow DOM 类型)', () => {
-    let container: HTMLElement;
     let menu: SlideMenu;
 
     beforeEach(() => {
         const m = makeTestMenu();
-        container = m.container;
         menu = m.menu;
         // 确保有一个根层级，使 currentLevel 可用
         menu.reset(makeTestLevel('根'));

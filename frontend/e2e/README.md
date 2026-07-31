@@ -206,6 +206,7 @@ npm run test                   # 或 npx vitest run
 | `model-load.spec.ts` (DOM 部分) | 2 | createTestMesh + clearTestMeshes 程序化 mesh 生命周期 |
 | `export-screenshot.spec.ts` (DOM 部分) | 1 | 设置面板「截图」入口 DOM 断言 |
 | `model-lifecycle-webgl.spec.ts` (DOM 部分) | 2 | 程序化 mesh 生命周期 + removeActiveModel 空场景安全调用 |
+| `menu-declaration.spec.ts` | 6 | **声明式菜单引擎**：自动扫描 DOM 中所有 `data-testid` 节点，验证分类/层级/唯一性，零手写维护成本 |
 
 ### @webgl — 桌面 3D 集成（wailsPage/CDP, 11 tests）⚠️ 需 Windows + Wails
 
@@ -272,3 +273,35 @@ npx playwright test --grep "@web"
 - 走 3D：用 `wailsPage` + `window.__scene` 数值断言（`fps` / `meshCount` / `constraintCount` / `currentAnimation` / `fingerprint()`）；换装走 `__scene.applyOutfit()` 钩子，勿做 3-4 层菜单 DOM 导航。
 - 每个 spec 顶层 `test.describe` 标注 `@dom` 或 `@webgl` 标签，CI 据此切分。
 - 改动 `core/main.ts`（`window.__scene` 钩子）前，按项目多 AI 铁律先在当日 `memory/YYYY-MM-DD.md` 认领。
+
+---
+
+## 10. 声明式菜单测试引擎
+
+### 核心思想
+
+既然菜单系统本身是**声明式**的（`MenuNode` 数据 → 渲染 → DOM），测试也不应该硬编码 `page.click()` + `waitForSelector`。
+
+[menu-declaration.spec.ts](file:///C:/Users/zhujieling11/MikuMikuAR/frontend/e2e/menu-declaration.spec.ts) 实现了一个自动扫描引擎：
+
+1. **`scanMenuTree()`**：在浏览器中递归扫描所有 `[data-testid]` 元素
+2. **复合分类器**：基于 CSS class（`collapsible-wrapper`→folder, `slide-item`→tab, `cs-row`→slider 等）+ testid 前缀判断节点类型
+3. **树结构重建**：通过向上追溯最近 testid 祖先，确定 parent-child 关系
+4. **自动断言**：验证唯一性、深度限制、分类合理性、导航可达性
+
+### 优势
+
+| 维度 | 传统命令式测试 | 声明式引擎 |
+|------|---------------|-----------|
+| **新增菜单** | 手写 `page.click()` + `expect()` | 零成本，自动覆盖 |
+| **DOM 重构** | 所有测试可能断裂 | 仅需更新分类器（单点修改） |
+| **维护成本** | 每个菜单项需 2-3 个测试 | 6 个测试覆盖全量菜单 |
+| **CI 耗时** | 随菜单项线性增长 | 固定 ~9s |
+
+### 运行
+
+```bash
+npx playwright test --grep "@dom"  # 包含声明式引擎
+# 或单独跑：
+npx playwright test e2e/menu-declaration.spec.ts
+```

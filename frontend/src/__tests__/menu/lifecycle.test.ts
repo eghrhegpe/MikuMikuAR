@@ -5,12 +5,10 @@ import { makeTestLevel, makeTestMenu } from '../fixtures/menu';
 // ─── SlideMenu 测试：生命周期 (dispose / 动画) + 高阶功能 ───
 
 describe('SlideMenu — 生命周期 (dispose / 动画)', () => {
-    let container: HTMLElement;
     let menu: SlideMenu;
 
     beforeEach(() => {
         const m = makeTestMenu();
-        container = m.container;
         menu = m.menu;
     });
 

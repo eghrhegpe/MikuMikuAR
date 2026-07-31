@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type { SlideMenu } from '../../menus/menu';
 import type { PopupLevel, PopupRow } from '../../core/config';
-import { makeTestLevel, makeTestMenu } from '../fixtures/menu';
+import { makeTestMenu } from '../fixtures/menu';
 
 // ─── SlideMenu 测试：焦点全面（setupFocus/clearFocus/applyFocus/activateFocused） ───
 

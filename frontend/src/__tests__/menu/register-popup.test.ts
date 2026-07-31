@@ -1,5 +1,4 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import type { SlideMenu } from '../../menus/menu';
 import type { PopupRow } from '../../core/config';
 import { dom } from '../../core/config';
 import { registerPopupMenu } from '../../menus/menu-factory';

@@ -1,5 +1,5 @@
 // model-ops 拆分 — removeModel / removeFocusedModel
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
     modelOpsShared,
     mockSceneModule,
@@ -12,7 +12,6 @@ import {
 import { makeInst, resetState, modelRegistry, setFocusedModelId } from './model-ops-helpers';
 import { removeModel, removeFocusedModel } from '../scene/manager/model-ops';
 import * as cameraModule from '../scene/camera/camera';
-import * as playbackModule from '../scene/motion/playback';
 import * as materialModule from '../scene/manager/material';
 import * as envModule from '../scene/env/env';
 import * as audioModule from '../outfit/audio';
@@ -62,7 +61,6 @@ vi.mock('@babylonjs/core/Maths/math.vector', async () => {
     };
 });
 
-const updatePlaybackUI = vi.mocked(playbackModule.updatePlaybackUI);
 const _disposeModelMaterialState = vi.mocked(materialModule.disposeModelMaterialState);
 const refreshWaterRenderList = vi.mocked(envModule.refreshWaterRenderList);
 const disposeAudio = vi.mocked(audioModule.disposeAudio);

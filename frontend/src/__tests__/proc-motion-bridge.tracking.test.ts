@@ -1,6 +1,6 @@
 // proc-motion-bridge 拆分 — BPM 量化 / 眼球·头部追踪 / 停止
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { DEFAULT_PROC_STATE, PROC_MOTION_BONE_CATEGORIES } from '../motion-algos/procedural-motion';
+import { DEFAULT_PROC_STATE } from '../motion-algos/procedural-motion';
 import {
     createProcMockState,
     resetProcMockState,

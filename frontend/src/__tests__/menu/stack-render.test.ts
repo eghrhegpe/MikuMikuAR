@@ -8,12 +8,10 @@ import { makeTestLevel, makeTestMenu } from '../fixtures/menu';
 // 通过手动清除 transitioning 标志来测试同步状态变更。
 
 describe('SlideMenu — 层级栈管理', () => {
-    let container: HTMLElement;
     let menu: SlideMenu;
 
     beforeEach(() => {
         const m = makeTestMenu();
-        container = m.container;
         menu = m.menu;
     });
 
