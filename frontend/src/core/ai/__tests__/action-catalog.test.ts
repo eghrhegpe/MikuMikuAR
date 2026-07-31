@@ -19,7 +19,7 @@ vi.mock('../../i18n/t', () => ({
     },
 }));
 
-import { registerAction, _resetActionRegistry, listActions } from '../../action-registry';
+import { registerAction, _resetActionRegistry } from '../../action-registry';
 import { buildToolSchemas, buildToolCatalogText } from '../action-catalog';
 
 beforeEach(() => {

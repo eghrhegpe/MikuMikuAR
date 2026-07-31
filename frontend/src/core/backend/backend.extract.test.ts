@@ -15,7 +15,7 @@ vi.mock('./idb', () => ({
     closeIDB: vi.fn(),
 }));
 
-import { zipSync, strToU8 } from 'fflate';
+import { zipSync } from 'fflate';
 import { browserAdapter } from './browser-adapter';
 
 describe('ADR-177 Phase 2 A4 p2-5：虚拟目录 + 伴生文件加载（续）', () => {
@@ -245,7 +245,7 @@ describe('ADR-177 Phase 2 A4 p2-5：虚拟目录 + 伴生文件加载（续）',
             });
             idbStore.set('file:OutfitPack', zipBytes);
 
-            const result = await browserAdapter.ExtractZip('OutfitPack.zip', '');
+            await browserAdapter.ExtractZip('OutfitPack.zip', '');
             const ns = encodeURIComponent('OutfitPack/Miku');
 
             // 仅 char/outfits.json 写入命名空间

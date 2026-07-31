@@ -152,9 +152,8 @@ vi.mock('@/core/observer-handle', () => ({
     observe: mockObserve,
 }));
 
-import { getPhysicsImpl, getRigidBodyBundleMap, getRigidBodyMap } from '@/core/mmd-adapter';
+import { getPhysicsImpl, getRigidBodyBundleMap } from '@/core/mmd-adapter';
 import { observe } from '@/core/observer-handle';
-import { getWindVector, isWindActive } from '@/core/wind-utils';
 import {
     initWindPhysics,
     retryWindPhysicsSubscription,

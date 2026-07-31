@@ -1,7 +1,7 @@
 // [doc:adr-196] config-store 守护测试：配置校验、错误分类、端点归一、超时裁剪。
 // 纯函数测试，不依赖 IndexedDB（mock idb 避免 hydrate 副作用）。
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 
 // mock idb 兜底：确保 loadAiConfig 的 _hydrate 不会实际访问 IndexedDB
 vi.mock('../../backend/idb', () => ({

@@ -349,10 +349,7 @@ describe('BrowserAiAdapter', () => {
             mockConfig.endpoint = 'https://api.deepseek.com/v1/chat/completions';
             mockFetch.mockResolvedValue(okResponse(new ReadableStream()));
             // parseSseStream 产出一条后永久挂起
-            let hangResolve: () => void;
-            const hangPromise = new Promise<void>((r) => {
-                hangResolve = r;
-            });
+            const hangPromise = new Promise<void>(() => {}); // 永不 resolve
             mockParseSseStream.mockImplementation(async function* () {
                 yield { type: 'text', content: '开始' };
                 await hangPromise; // 不 resolve → 永远不会 yield done
