@@ -95,7 +95,7 @@ function buildPresetSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[
 }
 
 // ======== 卡片 2：帧率与画质（帧率限制器 / 帧率上限 / 渲染缩放） ========
-function buildFrameQualitySchema(): MenuNode[] {
+export function buildFrameQualitySchema(): MenuNode[] {
     return [
         {
             id: 'settings:graphics:frame-cap',
@@ -197,7 +197,7 @@ function buildFrameQualitySchema(): MenuNode[] {
 }
 
 // ======== 卡片 3：渲染效果（10 开关，原 settings-rendering） ========
-function buildEffectsSchema(): MenuNode[] {
+export function buildEffectsSchema(): MenuNode[] {
     return [
         {
             id: 'settings:graphics:toggles',
@@ -260,7 +260,7 @@ function buildEffectsSchema(): MenuNode[] {
 }
 
 // ======== 卡片 4：物理与显示 ========
-function buildPhysicsHudSchema(): MenuNode[] {
+export function buildPhysicsHudSchema(): MenuNode[] {
     return [
         {
             id: 'settings:graphics:default-physics',

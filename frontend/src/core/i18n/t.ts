@@ -25,7 +25,7 @@ export async function loadLocale(lang: string): Promise<void> {
         return;
     }
     try {
-        const resp = await fetch(`/locales/${lang}.json`);
+        const resp = await fetch(`${import.meta.env.BASE_URL}locales/${lang}.json`);
         if (!resp.ok) {
             console.warn(`[i18n] 加载语言包失败: ${lang} (HTTP ${resp.status})`);
             bundles[lang] = {};

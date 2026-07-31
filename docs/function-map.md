@@ -9,7 +9,7 @@
 |------|--------|-----------|
 | 核心基础设施 | 122 | 714 |
 | 3D 场景 | 106 | 1062 |
-| 菜单 & UI | 74 | 360 |
+| 菜单 & UI | 75 | 381 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 17 | 127 |
 | 物理系统 | 2 | 14 |
@@ -1849,9 +1849,13 @@
 | `PendingToolResult()` | `menus/diagnostic-state` | — |
 | `diagState()` | `menus/diagnostic-state` | — |
 | `buildCloudLevel()` | `menus/env-cloud-levels` | — |
+| `getCloudSchema()` | `menus/env-cloud-levels` | 导出 cloud schema 供 menu-registry 静态分析（ADR-093 元测试） |
 | `buildExperimentalLevel()` | `menus/env-experimental-levels` | — |
+| `getExperimentalSchema()` | `menus/env-experimental-levels` | 导出 experimental schema 供 menu-registry 静态分析（ADR-093 元测试） |
 | `buildFogLevel()` | `menus/env-fog-levels` | — |
+| `getFogSchema()` | `menus/env-fog-levels` | 导出 fog schema 供 menu-registry 静态分析（ADR-093 元测试） |
 | `buildGroundLevel()` | `menus/env-ground-levels` | — |
+| `getGroundSchema()` | `menus/env-ground-levels` | 导出 ground schema 供 menu-registry 静态分析（ADR-093 元测试） 合并 6 个子 schema 数组，返回完整 ground 面板的 schem |
 | `buildLevel()` | `menus/env-level-helpers` | 通用的环境功能层级构建器：包裹 cardContainer + renderMenu 模板 |
 | `openTexturePicker()` | `menus/env-level-helpers` | 打开环境贴图选择器 |
 | `EnvTextureBindingTarget()` | `menus/env-menu-state` | — |
@@ -1862,6 +1866,7 @@
 | `setEnvTextureBindingTarget()` | `menus/env-menu-state` | — |
 | `buildEnvLevel()` | `menus/env-menu` | — |
 | `buildParticleLevel()` | `menus/env-menu` | — |
+| `buildParticleSchema()` | `menus/env-menu` | — |
 | `clearEnvTextureBindingTarget()` | `menus/env-menu` | — |
 | `disposeEnvMenu()` | `menus/env-menu` | 释放 env-menu 模块资源（取消注册 hooks + HMR/清理时调用） |
 | `getEnvMenu()` | `menus/env-menu` | — |
@@ -1871,9 +1876,13 @@
 | `SCENE_PRESETS()` | `menus/env-preset-levels` | — |
 | `buildPresetLevel()` | `menus/env-preset-levels` | — |
 | `buildShadowLevel()` | `menus/env-shadow-levels` | — |
+| `getShadowSchema()` | `menus/env-shadow-levels` | 导出 shadow schema 供 menu-registry 静态分析（ADR-093 元测试） |
 | `buildSkyLevel()` | `menus/env-sky-levels` | — |
+| `getSkySchema()` | `menus/env-sky-levels` | 导出 sky schema 供 menu-registry 静态分析（ADR-093 元测试） |
 | `buildWaterLevel()` | `menus/env-water-levels` | — |
+| `getWaterSchema()` | `menus/env-water-levels` | 导出 water schema 供 menu-registry 静态分析（ADR-093 元测试） |
 | `buildWindLevel()` | `menus/env-wind-levels` | — |
+| `getWindSchema()` | `menus/env-wind-levels` | 导出 wind schema 供 menu-registry 静态分析（ADR-093 元测试） |
 | `buildTagDetailLevel()` | `menus/library-actions` | — |
 | `buildTagsOverviewLevel()` | `menus/library-actions` | — |
 | `findLibraryModelByName()` | `menus/library-actions` | 按名称模糊搜索模型（纯查询，不触发加载）。供 ADR-155/197 NL 控制 resolve 使用，避免 resolve 阶段误触发真实加载。 |
@@ -1945,6 +1954,11 @@
 | `disposeMenuWrapper()` | `menus/menu-overlay` | — |
 | `getMenuWrapper()` | `menus/menu-overlay` | — |
 | `setOnCloseAllOverlays()` | `menus/menu-overlay` | — |
+| `RegisteredSchema()` | `menus/menu-registry` | — |
+| `_clearRegistry()` | `menus/menu-registry` | 清空注册表（仅测试用） |
+| `collectAllSchemas()` | `menus/menu-registry` | 收集所有已注册 schema，执行 builder 返回快照 |
+| `flattenNodes()` | `menus/menu-registry` | 递归展开 schema 树（含 children），返回扁平节点列表 |
+| `registerSchema()` | `menus/menu-registry` | 注册一个面板的 schema 构建函数 |
 | `ActionMenuCtx()` | `menus/menu-schema` | — |
 | `ControlSpec()` | `menus/menu-schema` | — |
 | `MenuKind()` | `menus/menu-schema` | — |
@@ -1993,6 +2007,7 @@
 | `buildPlaybackSpeedLevel()` | `menus/motion-detail-ui` | — |
 | `syncPlaybackSpeedToRuntime()` | `menus/motion-detail-ui` | 将记忆中的播放速度同步到新的 mmdRuntime 实例（防状态漂移）。 |
 | `buildGazeTrackingLevel()` | `menus/motion-gaze-levels` | — |
+| `getGazeSchema()` | `menus/motion-gaze-levels` | 导出 gaze schema 供 menu-registry 静态分析（ADR-093 元测试） |
 | `renderPerceptionConflictBanners()` | `menus/motion-gaze-levels` | [doc:adr-166 P2-3] 渲染「焦点 + 全部 pinned」模型的感知层冲突 banner。 |
 | `updatePerceptionConflictBanner()` | `menus/motion-gaze-levels` | [doc:adr-163/adr-164/adr-166] 渲染指定模型的感知层骨骼冲突 banner |
 | `buildAdvancedBoneOverrideLevel()` | `menus/motion-override-levels` | — |
@@ -2109,6 +2124,8 @@
 | `buildPhysicsDebugLevel()` | `menus/scene-physics-levels` | 构建物理调试子页（材质线框/骨骼 — WASM 相关，由模型详情页调用） |
 | `buildPhysicsLevel()` | `menus/scene-physics-levels` | 构建 WASM 物理子页（Bullet 骨髁物理 — per-model） |
 | `buildWasmPhysicsLevel()` | `menus/scene-physics-levels` | 构建 WASM 物理子页（Bullet 骨髁物理信息 + 全局开关） |
+| `buildPostProcessColorSchema()` | `menus/scene-render-levels` | 后处理 schema — 色彩层（色调映射） |
+| `buildPostProcessCoreSchema()` | `menus/scene-render-levels` | 后处理 schema — 核心层（高频效果）+ 高级层（光学/环境效果） |
 | `buildPostProcessLevel()` | `menus/scene-render-levels` | — |
 | `buildPresetScenesLevel()` | `menus/scene-render-levels` | — |
 | `FILTER_PRESET_LABELS()` | `menus/scene-render-presets` | — |
@@ -2122,11 +2139,15 @@
 | `buildSettingsAboutLevel()` | `menus/settings-about` | — |
 | `handleSettingsAction()` | `menus/settings-actions` | 全局设置项点击分发：语言切换 + 动作表。settings.ts 的 onItemClick 使用。 |
 | `buildSettingsAppearanceLevel()` | `menus/settings-appearance` | — |
+| `buildCameraSchema()` | `menus/settings-controls` | — |
 | `buildSettingsControlsLevel()` | `menus/settings-controls` | — |
 | `buildDiagnosticSchema()` | `menus/settings-diagnostic` | — |
 | `buildSettingsDiagnosticLevel()` | `menus/settings-diagnostic` | — |
 | `renderDiagnosticPanel()` | `menus/settings-diagnostic` | — |
 | `buildSettingsDownloadsLevel()` | `menus/settings-downloads` | — |
+| `buildEffectsSchema()` | `menus/settings-graphics` | — |
+| `buildFrameQualitySchema()` | `menus/settings-graphics` | — |
+| `buildPhysicsHudSchema()` | `menus/settings-graphics` | — |
 | `buildSettingsGraphicsLevel()` | `menus/settings-graphics` | — |
 | `buildSettingsLanguageLevel()` | `menus/settings-language` | — |
 | `buildSettingsMediaLevel()` | `menus/settings-media` | — |
@@ -2356,5 +2377,5 @@
 
 ---
 
-> 共 325 个文件，2314 个导出符号。
+> 共 326 个文件，2335 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。
