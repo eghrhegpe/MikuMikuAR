@@ -79,39 +79,21 @@ if (typeof window !== 'undefined' && typeof (window as { wails?: unknown }).wail
     };
 }
 
-// ── [doc:adr-219] Phase 2 spike：idb 模块全局 mock ──
+// ── [doc:adr-219] Phase 2：idb 模块全局 mock ──
 // 根因：isolate=false 下 `./idb` 全 worker 只 mock 一次，browser-adapter 单例
-// 绑定首个加载者的 mock；文件级 vi.mock 无法重新绑定已加载单例→穿透
-// 真实 idb。在全局 setup mock 一次，使全 worker 共享同一 mock，从源头消除顺序
-// 敏感。内存实现用双层 store Map（与真实 idb 的 store 分桶语义一致）。
-// 有特殊语义的文件（如 config-store 用 spy 断言、chat-store 用自己的桶）可在
-// 文件内自己 vi.mock('.../idb') 覆盖——文件级 vi.mock 优先级高于 setup。
-const __idbGlobalStore = new Map<string, Map<string, unknown>>();
-function __idbBucket(store: string): Map<string, unknown> {
-    let b = __idbGlobalStore.get(store);
-    if (!b) {
-        b = new Map();
-        __idbGlobalStore.set(store, b);
-    }
-    return b;
-}
-vi.mock('@/core/backend/idb', () => ({
-    idbGet: vi.fn(async (store: string, key: string) => __idbBucket(store).get(key)),
-    idbSet: vi.fn(async (store: string, key: string, val: unknown) => {
-        __idbBucket(store).set(key, val);
-    }),
-    idbDelete: vi.fn(async (store: string, key: string) => {
-        __idbBucket(store).delete(key);
-    }),
-    idbBatchSet: vi.fn(async (store: string, entries: [string, unknown][]) => {
-        for (const [k, v] of entries) {
-            __idbBucket(store).set(k, v);
-        }
-    }),
-    idbKeys: vi.fn(async (store: string) => Array.from(__idbBucket(store).keys())),
-    openDB: vi.fn(async () => ({}) as unknown),
-    closeIDB: vi.fn(),
-}));
+// 绑定首个加载者的 mock；文件级 vi.mock 无法重新绑定已加载单例→穿透真实 idb。
+// 在全局 setup mock 一次，使全 worker 共享同一 mock，从源头消除顺序敏感。
+//
+// 关键：直接复用 backend-mocks 的单源工厂 makeIdbMock()（基于单例 idbStore），
+// 而非自造存储。否则 browser-adapter 单例绑定到全局 mock 后，backend.* 测试
+// 往 idbStore 播种的数据全局 mock 读不到（两套存储）→ 回退为 null。共享同一
+// idbStore 后，无论单例绑定到全局 mock 还是文件级 makeIdbMock()，播种皆可见。
+// 有特殊语义的文件（config-store 用 spy 断言、chat-store 用自己的桶）可在文件
+// 内自己 vi.mock('.../idb') 覆盖——文件级 vi.mock 优先级高于 setup。
+vi.mock('@/core/backend/idb', async () => {
+    const { makeIdbMock } = await import('@/core/backend/backend-mocks');
+    return makeIdbMock();
+});
 
 // ── Babylon.js Engine (root cause of _renderLoops parse error) ──
 // The real Engine class has _renderLoops as a class field that esbuild on CI
