@@ -859,8 +859,6 @@ export const zhCN: Record<string, string> = {
     'scene.lightPreset.propProduct': '道具产品',
     'scene.lightPreset.stageDrama': '舞台戏剧',
     'scene.lightPreset.dancePerformance': '舞蹈表演',
-    'scene.lightPreset.naturalDaylight': '自然日光',
-    'scene.lightPreset.nightScene': '夜间场景',
 
     // —— 物理层级 scene-physics-levels ——
     'scene.gravityStrength': '重力强度（WASM + 布料）',
@@ -1154,36 +1152,13 @@ export const zhCN: Record<string, string> = {
     'motion-preset.deleteFailed': '✗ 删除失败',
     'motion-preset.applyFailed': '✗ 应用预设失败',
 
-    // outfit — 服装变体 UI
-    'outfit.variant': '替换纹理',
-    'outfit.modelRemoved': '模型已移除',
-    'outfit.loadConfigFailed': '⚠ 加载服装配置失败',
-    'outfit.noOutfitsConfig':
-        '此模型无 outfits.json 配置。在模型所在目录创建 outfits.json 即可启用替换纹理。',
-    'outfit.default': '默认',
-    'outfit.switching': '⏳ 切换变体中…',
-    'outfit.switchFailed': '✗ 切换变体失败',
-    'outfit.switched': '✓ 已切换服装: {name}',
-    'outfit.resetAll': '重置全部',
-    'outfit.resetting': '⏳ 重置服装中…',
-    'outfit.resetFailed': '✗ 重置服装失败',
-    'outfit.resetDone': '✓ 服装已重置',
-
     // env-preset — 环境预设 UI
-    'env-preset.myPresets': '我的预设',
     'env-preset.noCustom': '（暂无自定义预设）',
     'env-preset.formatError': '✗ 预设文件格式错误',
-    'env-preset.loadFailed': '✗ 加载预设失败',
     'env-preset.applied': '✓ 已应用预设：{label}',
-    'env-preset.deletePreset': '删除预设',
-    'env-preset.deleteFailed': '✗ 删除预设失败',
     'env-preset.deleted': '✓ 已删除预设：{label}',
     'env-preset.confirmDelete': '确定删除「{label}」？',
-    'env-preset.saveCurrent': '＋ 保存当前为预设',
-    'env-preset.inputName': '请输入预设名称（用作文件名，仅限字母数字/_/-/中文）',
     'env-preset.saveFailed': '✗ 保存预设失败',
-    'env-preset.saveErrorToast': '保存环境预设失败',
-    'env-preset.saved': '✓ 已保存预设：{name}',
     'env-preset.title': '环境预设',
     'env-preset.sceneMood': '场景氛围',
     'env-preset.stageA': '舞台-A',

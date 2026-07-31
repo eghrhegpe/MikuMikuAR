@@ -6,8 +6,8 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript)
 ![Vite](https://img.shields.io/badge/Vite-6.4-646CFF?logo=vite)
 
-![CI](https://img.shields.io/github/actions/workflow/status/eghrhegpe/MikuMikuAR/ci.yml?logo=github)
-![Release](https://img.shields.io/github/v/release/eghrhegpe/MikuMikuAR?logo=github)
+[![CI](https://img.shields.io/github/actions/workflow/status/eghrhegpe/MikuMikuAR/ci.yml?logo=github)](https://github.com/eghrhegpe/MikuMikuAR/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/eghrhegpe/MikuMikuAR?logo=github)](https://github.com/eghrhegpe/MikuMikuAR/releases)
 ![License: MIT](https://img.shields.io/badge/license-MIT-blue)
 
 [简体中文](README.md) · [English](README.en.md) · [日本語](README.ja.md) · [한국어](README.ko.md) · [繁體中文](README.zh-TW.md)
@@ -19,7 +19,7 @@
 | 🪟 Windows      | ✅ 已验证                       |
 | 🤖 Android        | ✅ 已验证（c-shared + WebView）   |
 | 🍎 iOS / 🐧 Linux | 🟡 理论兼容（Wails v3 任务已配置，未实测） |
-| [🌐 网页版](https://eghrhegpe.github.io/MikuMikuAR/) | 🟡 还在折腾安卓端的edog浏览器 |
+| [🌐 网页版](https://eghrhegpe.github.io/MikuMikuAR/) | ✅ GitHub Pages 已上线（FSA 本地文件访问） |
 
 
 ---
@@ -29,7 +29,8 @@
 大多数 MMD 工具要么是单一查看器（只能看），要么是重型 DCC 插件（必须会 Blender）。MikuMikuAR 填补了中间地带：
 
 - **零门槛上手** — 不解压 zip 直接加载 PMX/VMD，拖进去就能看、就能播。
-- **程序化生命力** — 呼吸、眨眼、视线追踪、节拍驱动律动（动作覆盖还在修）
+- **程序化生命力** — 呼吸、眨眼、视线追踪、节拍驱动律动、自然语言控制
+- **AI 诊断助手** — 内置 LLM 面板，流式对话、错误诊断、角色台词生成
 - **AR 实拍合成** — 摄像头画面叠加 3D 模型，一键截图，手机也能用（大概）
 - **跨平台** — Windows 桌面 + Android 移动 + 浏览器，同一套代码，统一桥接读取路径。
 
@@ -54,7 +55,7 @@
 ### 💃 动作与音频
 
 - **VMD 播放** — 多模型独立绑定，进度拖拽 / 循环 / 键盘控制
-- **程序化动作** — Idle 呼吸眨眼、AutoDance 节拍律动、Lifelike 微动叠加
+- **程序化动作** — Idle 呼吸眨眼、AutoDance 节拍律动、Lifelike 微动叠加、集合驱动可加载化
 - **Motion 工具链** — 双槽位动作系统、Motion Override 逐骨骼覆写（IK 感知）、VPD 姿势导入、LipSync 口型同步
 - **动作重定向** — AnimationRetargeter 骨骼映射，跨骨架动作迁移
 - **动作预设** — 一键保存/应用动作快照，Go 端 CRUD + UI 卡片
@@ -66,7 +67,8 @@
 ### 🌍 环境与物理
 
 - **WASM Bullet 物理** — MMD 原生刚体/关节/柔体，时间轴同步，按类别开关（裙/胸/发/配件）
-- **风格化水体** — 波光粼粼（Sun Glitter + 高频法线扰动 + 焦散 + 双尺度波高 + 地平线淡出）
+- **风格化水体** — 波光粼粼（Sun Glitter + 高频法线扰动 + 焦散 + 色散 + 双尺度波高 + 地平线淡出）+ 水下雾 + 水底焦散投影
+- **风力物理** — 模型原生刚体风力（vendored WASM），风力状态机 + 粒子联动
 - **体积云** — 地平线延展 + 自适应步长 + 双瓣散射
 - **地面系统** — PBR 材质 + 程序化木纹 + 反射模糊 + 接触阴影
 - **环境预设** — 天空/地面/水面/大气四类分类预设，一键切换
@@ -88,11 +90,20 @@
 
 - 摄像头透传 + 模型叠加，前置/后置切换，Gaze 协同，一键截图合成
 
+### 🤖 AI 诊断助手
+
+- 内置 LLM 诊断面板：流式对话、Markdown 渲染、思考模式
+- 多服务商支持（OpenAI / Ollama / 自定义端点）
+- 自然语言控制：语音/文字驱动模型、动作、场景操作
+- 角色台词生成 + SpeechSynthesis 朗读 + 口型驱动
+- 错误分级展示 + 环形缓冲日志
+
 ### 📚 库与工具
 
 - **模型库管理** — 递归扫描、zip 内省、标签/收藏/搜索、下载监听自动导入
 - **模型广场浏览器** — 多站点聚合（Bowlroll/DeviantArt 等），内嵌浏览 + 下载代理 + 创作者模式
-- **zip 容器** — 不解压直接加载，SHA-256 cache 复用
+- **下载管理** — 下载面板 + 桌面端自动更新安装器
+- **zip 容器** — 不解压直接加载（fflate），SHA-256 cache 复用
 - **Scene Bundle** — 场景打包为 zip，跨设备导入/导出
 - **Blender 唤起** — 需 [mmd\_tools](https://github.com/powroupi/blender_mmd_tools) 插件
 
@@ -101,9 +112,11 @@
 - 5 种语言热切换：简体中文 / English / 日本語 / 한국어 / 繁體中文
 - Go 后端错误信息 i18n 化（信封方案 + CI 门禁）
 
-### ♿ 无障碍
+### ♿ 无障碍与键盘导航
 
 - 焦点环（`:focus-visible`）、Toast/状态栏 `aria-live`、Focus Trap + 焦点恢复
+- 全域方向键导航：折叠面板/菜单项/滑块/开关/chips 均可键盘操作
+- 相机 WSAD 连续积分控制
 
 ---
 
@@ -203,7 +216,7 @@ sudo apt-get install -y libgtk-4-dev libwebkitgtk-6.0-dev libglib2.0-dev \
 | 文档                                   | 内容                |
 | ------------------------------------ | ----------------- |
 | [架构方案](docs/architecture.md)         | 全功能汇总与技术细节        |
-| [设计决策](docs/adr/)                    | 160+ ADR 技术决策记录   |
+| [设计决策](docs/adr/)                    | 210+ ADR 技术决策记录   |
 | [竞品分析](docs/competitive-analysis.md) | 23 个项目调研对比        |
 | [项目现状](docs/status.md)               | 当前状态 + 已完成功能      |
 | [菜单指南](docs/menu-how-to.md)          | 声明式菜单 Schema 开发手册 |
@@ -220,7 +233,7 @@ MikuMikuAR/
 ├── frontend/src/
 │   ├── core/               # 入口 / 状态 / i18n / 响应式 / UI 组件库
 │   ├── scene/              # 3D 场景（AR / 相机 / 动作 / 感知层 / 环境 / 渲染 / 物理）
-│   ├── menus/              # 声明式菜单系统（57 面板 Schema 驱动）
+│   ├── menus/              # 声明式菜单系统（75 面板 Schema 驱动）
 │   ├── motion-algos/       # 动作算法（无 Babylon 依赖，纯数学）
 │   ├── outfit/             # 换装 + 音频
 │   └── physics/            # 物理桥接 + 风场
