@@ -104,6 +104,21 @@ export default defineConfig({
   // 取舍：忽略全部死链；新增 guide 页必须同步更新 sidebar（见 P1 维护约定）。
   ignoreDeadLinks: true,
 
+  // srcDir 指向 docs/ 后，页面模块位于 docs/adr/ 等子目录，Node 从页面目录向上找 node_modules
+  // 找不到（依赖只在 docs/guide/node_modules）→ vue/server-renderer 解析失败。
+  // 显式 alias 把 vue 相关解析指回 docs/guide/node_modules。
+  vite: {
+    resolve: {
+      alias: [
+        // 精确匹配 vue，避免前缀匹配把 vue/server-renderer 也替换成 vue.runtime.esm-bundler.js/server-renderer
+        { find: /^vue$/, replacement: path.resolve(__dirname, '../node_modules/vue/dist/vue.runtime.esm-bundler.js') },
+        { find: /^vue\/server-renderer$/, replacement: path.resolve(__dirname, '../node_modules/vue/server-renderer/index.mjs') },
+        { find: /^vitepress$/, replacement: path.resolve(__dirname, '../node_modules/vitepress/dist/client/index.js') },
+      ],
+    },
+    ssr: { noExternal: ['vue', 'vitepress'] },
+  },
+
   // 知识卡/ADR 里大量泛型写法（如 AsyncGenerator<ChatChunk>、ReadableStream<Uint8Array>）
   // 会被 Vue 编译器误当 HTML 标签解析报错。统一转义不在白名单内的裸 <tag>，
   // 白名单内的真实 HTML（details/code/span 等）保留。
