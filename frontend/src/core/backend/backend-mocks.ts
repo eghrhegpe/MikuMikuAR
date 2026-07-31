@@ -35,7 +35,9 @@ export function makeIdbMock() {
             idbStore.delete(key);
         }),
         idbBatchSet: vi.fn(async (_store: string, entries: [string, unknown][]) => {
-            for (const [k, v] of entries) idbStore.set(k, v);
+            for (const [k, v] of entries) {
+                idbStore.set(k, v);
+            }
         }),
         idbKeys: vi.fn(async (_store: string) => Array.from(idbStore.keys())),
         openDB: vi.fn(async () => ({}) as unknown),

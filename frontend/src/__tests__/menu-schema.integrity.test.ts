@@ -61,14 +61,14 @@ vi.mock('@/menus/scene-render-presets', () => ({
     getFilterPreset: vi.fn(),
 }));
 vi.mock('@/core/status-helpers', () => ({
-    tryCatchStatus: vi.fn(async (fn: Function) => fn()),
+    tryCatchStatus: vi.fn(async (fn: () => unknown) => fn()),
 }));
 vi.mock('@/core/async', () => ({
     swallowError: vi.fn(),
     fireAndForget: vi.fn(),
     delay: vi.fn(() => Promise.resolve()),
     waitForFrame: vi.fn(() => Promise.resolve()),
-    makeLazyLoader: vi.fn((loader: Function) => loader),
+    makeLazyLoader: vi.fn(<T>(loader: T) => loader),
     LoadingGuard: vi.fn(),
     DebouncedTimer: vi.fn(),
     Abortable: vi.fn(),
