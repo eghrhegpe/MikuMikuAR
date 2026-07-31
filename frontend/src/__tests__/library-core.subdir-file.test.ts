@@ -1,5 +1,5 @@
 // @ts-nocheck — vi.mock 运行时替换（见 ./library-core-mocks）
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi, beforeAll } from 'vitest';
 import {
     sceneFactory,
     wailsBindingsFactory,
@@ -11,6 +11,13 @@ import {
     configModuleFactory,
     libraryPathFactory,
 } from './library-core-mocks';
+import { bundles } from '../core/i18n/t';
+import { zhCN } from '../core/i18n/locales/zh-CN';
+
+// [doc:perf] 语言包改为运行时加载，测试环境直接预填缓存
+beforeAll(() => {
+    bundles['zh-CN'] = zhCN;
+});
 
 const mockState = vi.hoisted(() => ({
     allModels: [] as any[],

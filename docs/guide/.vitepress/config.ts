@@ -31,26 +31,27 @@ function fmField(text, key) {
 /** link 路径：相对 docs/ 根、去 .md 扩展。 */
 const link = (rel) => '/' + asPosix(rel).replace(/\.md$/, '');
 
-// ---------- 1. 用户指南（guide/，固定序，首页 index 独立） ----------
-const GUIDE_ORDER = [
-  'import-model', 'motion-playback', 'proc-motion', 'camera-control',
-  'outfit', 'props', 'stage-lights',
-  'sky', 'ground', 'env-water', 'env-atmosphere', 'env-presets',
-  'wind-particles', 'physics', 'scene-save',
-  'ai-assistant', 'settings',
-];
-const guideItems = GUIDE_ORDER.filter((n) => fs.existsSync(path.join(docsRoot, 'guide', n + '.md')))
-  .map((n) => ({ text: n, link: link(`guide/${n}.md`) }));
+/**
+ * 扫描目录生成 sidebar items（自动收录，无需手写数组）：
+ * - 取该目录下所有 .md（不含子目录），排除 exclude 列表
+ * - 显示名取页面首个 `# 标题`（读文件），回退文件名
+ * - 按文件名排序；新增页面自动入列，删除/归档后自动消失
+ */
+function scanItems(relDir, exclude = []) {
+  return mdNames(relDir)
+    .filter((f) => !exclude.includes(f))
+    .map((f) => {
+      const text = fs.readFileSync(path.join(docsRoot, relDir, f), 'utf8');
+      const title = (text.match(/^#\s+(.+)$/m) || [])[1] || f.replace(/\.md$/, '');
+      return { text: title, link: link(path.join(relDir, f)) };
+    });
+}
 
-// ---------- 2. 架构与规范（docs 根散 md，固定序） ----------
-const ARCH_ORDER = [
-  'architecture', 'design', 'terminology', 'menu-how-to', 'function-map',
-  'status', 'targets', 'dep-graph', 'grand-blueprint', 'maintenance-plan',
-  'competitive-analysis', 'multi-end-maturity-matrix', 'outfits-spec',
-  'security-audit-CVE', 'web-data-origin-isolation',
-];
-const archItems = ARCH_ORDER.filter((n) => fs.existsSync(path.join(docsRoot, n + '.md')))
-  .map((n) => ({ text: n, link: link(n + '.md') }));
+// ---------- 1. 用户指南（guide/，自动扫描，首页 index/README 独立） ----------
+const guideItems = scanItems('guide', ['README.md', 'index.md']);
+
+// ---------- 2. 架构与规范（docs 根散 md，自动扫描，排除首页/AGENTS） ----------
+const archItems = scanItems('.', ['index.md', 'AGENTS.md']);
 
 // ---------- 3. 决策记录（adr/，按编号数字排序） ----------
 const adrItems = mdNames('adr')

@@ -1,5 +1,5 @@
 // ui-helpers 拆分 — isIkBone / buildBoneGroups / addBoneSelectRow（骨骼选择）
-import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { vi, describe, it, expect, beforeEach, beforeAll } from 'vitest';
 
 // Mock createIconifyIcon so tests control whether it returns an element or null
 vi.mock('../core/icons', () => ({
@@ -8,6 +8,13 @@ vi.mock('../core/icons', () => ({
 
 import { createIconifyIcon } from '../core/icons';
 import { isIkBone, buildBoneGroups, addBoneSelectRow } from '../core/ui-helpers';
+import { bundles } from '../core/i18n/t';
+import { zhCN } from '../core/i18n/locales/zh-CN';
+
+// [doc:perf] 语言包改为运行时加载，测试环境直接预填缓存
+beforeAll(() => {
+    bundles['zh-CN'] = zhCN;
+});
 
 const mockIconify = vi.mocked(createIconifyIcon);
 

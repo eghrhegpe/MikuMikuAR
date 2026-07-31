@@ -1,5 +1,5 @@
 // [doc:adr-204] model-detail-ui.test.ts 拆分：buildModelTagsLevel + buildMorphPreviewLevel
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi, beforeAll } from 'vitest';
 
 import {
     mockEngine,
@@ -47,6 +47,13 @@ import {
     mockBeatDetectorModule,
     mockAudioModule,
 } from './model-detail-ui-mocks';
+import { bundles } from '../core/i18n/t';
+import { zhCN } from '../core/i18n/locales/zh-CN';
+
+// [doc:perf] 语言包改为运行时加载，测试环境直接预填缓存
+beforeAll(() => {
+    bundles['zh-CN'] = zhCN;
+});
 
 vi.mock('@babylonjs/core/Engines/engine', () => mockEngine());
 vi.mock('@babylonjs/core/scene', () => mockScene());
