@@ -78,7 +78,7 @@ export const ko: Record<string, string> = {
     'settings.library.matCat.eyes': '눈',
     'settings.library.matCat.clothing': '의상',
     'settings.library.matCat.accessory': '액세서리',
-    'settings.library.matCat.prop': '소품',
+    
     'settings.paths.modelCount': '모델 수: ',
     'settings.saveFailed': '저장 실패',
 
@@ -731,10 +731,7 @@ export const ko: Record<string, string> = {
     'scene.render': '렌더',
     'scene.renderPresets': '렌더 프리셋',
     'scene.stageLight': '무대 조명',
-    'scene.deleteProp': '소품 삭제',
-    'scene.noProps': '소품 없음',
-    'scene.prop': '소품',
-    'scene.propLibrary': '소품 라이브러리',
+    
     'scene.intensity': '강도',
     'scene.color': '색상',
     'scene.type': '유형',
@@ -823,14 +820,11 @@ export const ko: Record<string, string> = {
     'scene.loadStage': '무대 로드',
     'scene.statusNoModelLib': '✗ 먼저 설정에서 모델 라이브러리 디렉터리를 구성하세요',
     'scene.statusOpenStageLibFailed': '✗ 무대 라이브러리를 열지 못했습니다',
-    'scene.loadProp': '소품 로드',
-    'scene.statusNoPropLib': '✗ 먼저 설정에서 소품 라이브러리 디렉터리를 구성하세요',
-    'scene.statusOpenPropLibFailed': '✗ 소품 라이브러리를 열지 못했습니다',
+    
     'scene.stageLabel': '무대: {name}',
-    'scene.addPropFile': '소품 파일 추가',
-    'scene.propTransform': '소품 변환',
+    
     'scene.transform': '변환',
-    'scene.propNotFound': '소품이 존재하지 않습니다 (삭제되었을 수 있음)',
+    
     'scene.custom': '사용자 정의',
     'scene.lightList': '조명 목록',
     'scene.addLight': '조명 추가',
@@ -1592,7 +1586,7 @@ export const ko: Record<string, string> = {
     'settings.paths.pmx': 'PMX 모델',
     'settings.paths.vmd': 'VMD 모션',
     'settings.paths.audio': '음악',
-    'settings.paths.prop': '소품',
+    
     'settings.paths.stage': '씬',
     'settings.paths.environment': '환경',
     'settings.paths.mdDress': 'MD 의상',
@@ -1675,7 +1669,7 @@ export const ko: Record<string, string> = {
 
     // ===== i18n Phase 4 — missing keys =====
     'common.model': '모델',
-    'common.prop': '소품',
+    
     'common.close': '닫기',
     'common.delete': '삭제',
     'common.items': '개',
@@ -1684,9 +1678,7 @@ export const ko: Record<string, string> = {
     'common.off': '꺼짐',
     'common.on': '켜짐',
     'common.stage': '무대',
-    'env.propAdded': '✓ 소품: {name}',
-    'env.propExists': '소품이 이미 존재합니다: {name}',
-    'env.propRemoved': '✓ 소품 제거됨: {name}',
+    
     'env.persistFailed': '✗ 설정 저장 실패 — 재시작 시 변경 사항이 손실됩니다',
     'model.materialReset': '✓ 재설정됨: {name}',
     'motion.boneOverride.title': '본 오버라이드',
@@ -1845,7 +1837,7 @@ export const ko: Record<string, string> = {
     'common.empty': '콘텐츠 없음',
     'common.apply': '적용',
     'settings.audio.offsetHint': '양수=오디오 먼저, 음수=오디오 나중(모든 음악에 전역 적용)',
-    'props.loadingProgress': '프로프 로딩 {pct}%',
+    
     'goerr.software.notFound': '{name}을(를) 찾을 수 없습니다. 설정에서 경로를 지정해 주세요.',
     'goerr.software.launchFailed': '{name} 실행에 실패했습니다.',
     'goerr.software.androidNotSupported': '{name}은(는) Android에서 실행할 수 없습니다.',
@@ -1976,7 +1968,7 @@ export const ko: Record<string, string> = {
     'ai.actions.settings.path.pmx': 'PMX 덮어쓰기 경로 선택',
     'ai.actions.settings.path.vmd': 'VMD 덮어쓰기 경로 선택',
     'ai.actions.settings.path.audio': '오디오 덮어쓰기 경로 선택',
-    'ai.actions.settings.path.prop': '소품 덮어쓰기 경로 선택',
+    
     'ai.actions.settings.path.stage': '무대 덮어쓰기 경로 선택',
     'ai.actions.settings.path.environment': '환경 덮어쓰기 경로 선택',
     'ai.actions.settings.path.mdDress': 'MD 의상 덮어쓰기 경로 선택',

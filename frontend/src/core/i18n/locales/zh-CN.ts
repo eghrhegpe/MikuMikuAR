@@ -78,7 +78,7 @@ export const zhCN: Record<string, string> = {
     'settings.library.matCat.eyes': '眼睛',
     'settings.library.matCat.clothing': '服装',
     'settings.library.matCat.accessory': '配件',
-    'settings.library.matCat.prop': '道具',
+    
     'settings.paths.modelCount': '模型数量：',
     'settings.saveFailed': '保存失败',
 
@@ -690,10 +690,7 @@ export const zhCN: Record<string, string> = {
     'scene.render': '渲染',
     'scene.renderPresets': '渲染预设',
     'scene.stageLight': '舞台灯光',
-    'scene.deleteProp': '删除道具',
-    'scene.noProps': '暂无道具',
-    'scene.prop': '道具',
-    'scene.propLibrary': '道具库',
+    
     'scene.intensity': '强度',
     'scene.color': '颜色',
     'scene.type': '类型',
@@ -793,16 +790,10 @@ export const zhCN: Record<string, string> = {
     'scene.loadStage': '加载舞台',
     'scene.statusNoModelLib': '✗ 请先在设置中配置模型库目录',
     'scene.statusOpenStageLibFailed': '✗ 打开舞台库失败',
-    'scene.loadProp': '加载道具',
-    'scene.statusNoPropLib': '✗ 请先在设置中配置道具库目录',
-    'scene.statusOpenPropLibFailed': '✗ 打开道具库失败',
+    
     'scene.stageLabel': '舞台: {name}',
 
-    // —— 道具层级 scene-prop-levels ——
-    'scene.addPropFile': '添加道具文件',
-    'scene.propTransform': '道具变换',
     'scene.transform': '变换',
-    'scene.propNotFound': '道具不存在（可能已被删除）',
 
     // —— 舞台灯光 scene-stage-lights ——
     'scene.custom': '自定义',
@@ -1527,7 +1518,7 @@ export const zhCN: Record<string, string> = {
     'common.off': '关',
     'common.stage': '舞台',
     'common.model': '模型',
-    'common.prop': '道具',
+    
     'common.close': '关闭',
     'common.delete': '删除',
     'common.items': '项',
@@ -1536,9 +1527,7 @@ export const zhCN: Record<string, string> = {
     'status.loop': '循环: {state}',
     'status.error': '错误：{message}',
     'status.done': '✓ 完成',
-    'env.propExists': '道具已存在: {name}',
-    'env.propAdded': '✓ 道具: {name}',
-    'env.propRemoved': '✓ 已移除道具: {name}',
+    
     'settings.softwareAdded': '✓ 已添加: {name}',
     'settings.softwareStarted': '✓ 已启动: {name}',
     'settings.softwareDeleted': '✓ 已删除: {name}',
@@ -1725,7 +1714,7 @@ export const zhCN: Record<string, string> = {
     'settings.paths.pmx': 'PMX 模型',
     'settings.paths.vmd': 'VMD 动作',
     'settings.paths.audio': '音乐',
-    'settings.paths.prop': '道具',
+    
     'settings.paths.stage': '场景',
     'settings.paths.environment': '环境',
     'settings.paths.mdDress': 'MD 服装',
@@ -1812,7 +1801,7 @@ export const zhCN: Record<string, string> = {
     'common.empty': '暂无内容',
     'common.apply': '应用',
     'settings.audio.offsetHint': '正=音频先播，负=音频后播（对所有音乐全局生效）',
-    'props.loadingProgress': '加载道具 {pct}%',
+    
 
     // ===== [doc:adr-117] Go 端用户可见错误（i18n 化） =====
     'goerr.software.notFound': '未找到 {name}，请在设置中配置路径',
@@ -1939,7 +1928,7 @@ export const zhCN: Record<string, string> = {
     'ai.actions.settings.path.pmx': '选择 PMX 覆盖路径',
     'ai.actions.settings.path.vmd': '选择 VMD 覆盖路径',
     'ai.actions.settings.path.audio': '选择音频覆盖路径',
-    'ai.actions.settings.path.prop': '选择道具覆盖路径',
+    
     'ai.actions.settings.path.stage': '选择舞台覆盖路径',
     'ai.actions.settings.path.environment': '选择环境覆盖路径',
     'ai.actions.settings.path.mdDress': '选择 MD 服装覆盖路径',

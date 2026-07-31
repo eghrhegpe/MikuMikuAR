@@ -32,9 +32,9 @@ describe('transform-adapter registry (ADR-126)', () => {
     });
 
     it('funnels getScale/getOpacity through the registered adapter', () => {
-        const a = makeAdapter(['prop'], 3, 0);
+        const a = makeAdapter(['light'], 3, 0);
         registerTransformAdapter(a);
-        const got = getTransformAdapter('prop');
+        const got = getTransformAdapter('light');
         expect(got?.getScale?.('p1')).toBe(3);
         expect(got?.getOpacity?.('p1')).toBe(0);
         expect(got?.capabilities).toContain('slider-scale');

@@ -371,7 +371,6 @@ function _defaultConfig(): Config {
             vmd: '',
             audio: '',
             stage: '',
-            prop: '',
             environment: '',
             md_dress: '',
             setting: '',
@@ -750,7 +749,7 @@ interface FsaDirHandle extends FileSystemDirectoryHandle {
 // ======== 资源分类（对齐桌面端目录约定）========
 //
 // 桌面端靠子目录名分类（Go 端 GetPath / scanAllCategories）：
-//   PMX/ → 模型, VMD/ → 动作, audio/ → 音乐, prop/ → 道具, stage/ → 舞台 …
+//   PMX/ → 模型, VMD/ → 动作, audio/ → 音乐, stage/ → 舞台 …
 // 网页端 SelectDir 扫描时复用同一约定：
 //   1. 文件位于已知类别子目录下 → 按目录分类（结构化目录）
 //   2. 文件不在已知子目录下 → 按扩展名分类，映射到虚拟子目录（扁平目录兜底）
@@ -763,7 +762,6 @@ const _CATEGORY_BY_DIR: Record<string, { type: string; format: string }> = {
     'pmx': { type: 'actor', format: 'pmx' },
     'vmd': { type: 'motion', format: 'vmd' },
     'audio': { type: 'audio', format: 'audio' },
-    'prop': { type: 'prop', format: 'pmx' },
     'stage': { type: 'stage', format: 'pmx' },
     'environment': { type: 'environment', format: 'environment' },
     'md-dress': { type: 'outfit', format: 'pmx' },
