@@ -33,7 +33,7 @@ import {
 } from '../core/wails-bindings';
 import { NavigatePlazaWindow } from '@bindings/mikumikuar/internal/app/app';
 import { getCachedCapabilities } from '../core/backend';
-import { openExternalURL } from '../core/platform';
+import { openExternalLink } from '../core/platform';
 import { escapeHtml } from '../core/escape-html';
 import { logWarn } from '../core/logger';
 import { safeCallAsync } from '../core/safe-call';
@@ -313,14 +313,7 @@ export function openSiteByMode(site: PlazaSite, url?: string): void {
 }
 
 export function openExternal(site: PlazaSite, url?: string): void {
-    const target = url ?? site.url;
-    if (!openExternalURL(target)) {
-        // 网页端（非 Android）：openExternalURL 返回 false 时自己用 window.open
-        const win = window.open(target, '_blank', 'noopener,noreferrer');
-        if (!win) {
-            logWarn('plaza-browser', 'openExternal: popup blocked for', target);
-        }
-    }
+    openExternalLink(url ?? site.url);
 }
 
 export function openInWindow(site: PlazaSite, url?: string): void {
