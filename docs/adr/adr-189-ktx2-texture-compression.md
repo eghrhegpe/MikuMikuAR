@@ -252,6 +252,37 @@ babylon-mmd 内部走 Babylon.js `Texture` 同步解码路径，4K 纹理 ~50-10
 5. WASM 解码器自托管：从 `cdn.babylonjs.com` 下载 `babylon.ktx2Decoder.js` + 所有 WASM 资源到 `frontend/public/lib/ktx2decoder/`，配置 `KhronosTextureContainer2.URLConfig`
 6. Wails binding 同步：`npm run generate:bindings`
 
+### Phase 3 技术障碍分析（2026-07-31 修订）
+
+#### 3.1 Babylon.js 核心路径 vs babylon-mmd 路径
+
+项目当前将纹理以 `referenceFiles`（`TextureFile[]`）形式直传 babylon-mmd 的 `PmxLoader`，走的是 babylon-mmd 专属纹理管线，**与 Babylon.js 核心的 KTX2 loader 不在同一条车道上**：
+
+| | Babylon.js 核心 | babylon-mmd |
+|---|---|---|
+| 入口 | `new Texture("tex/face.png", scene)` | `MmdAsyncTextureLoader.loadFromArrayBuffer(arrayBuffer)` |
+| 数据源 | URL → 浏览器 `fetch` | 我们的 `referenceFiles`（`textureFiles` 数组） |
+| 构造方式 | 走 `scene._loadFile()` → 触发 texture loader 链，按后缀分发 | `new Texture("data:" + textureName, scene, { buffer, mimeType })` — 硬编码 `data:` Blob URL（见 `mmdAsyncTextureLoader.js:97`） |
+| KTX2 loader | ✅ 按 `.ktx2` 后缀拦截 → `KhronosTextureContainer2` 解析 → `gl.compressedTexImage2D()` → **GPU 直接采样，零软件解码** | ❌ `data:` Blob URL 不触发 loader 链 → 浏览器当普通图片字节丢给 `Image()` / `createImageBitmap()` 解码 → KTX2 字节 → 解码失败 |
+
+**关键代码**（`babylon-mmd/esm/Loader/mmdAsyncTextureLoader.js:97`）：
+```typescript
+const texture = new Texture("data:" + textureName, scene, textureCreationOptions);
+```
+`data:` 前缀意味着无论后缀是 `.ktx2` 还是 `.png`，Babylon.js 都不会触发 KTX2 loader。这是 KTX2 接入的根本障碍。
+
+#### 3.2 三条可行路线
+
+| 路线 | 方案 | 优点 | 风险 |
+|------|------|------|------|
+| **A. 改 babylon-mmd 源码**（fork） | `loadFromArrayBuffer` 内判断文件头/后缀：KTX2 数据走 `new Texture(url, scene, true)` URL 路径，非 KTX2 走现有 `data:` Blob 路径 | 最干净，KTX2 完全走 GPU 采样 | 需 fork babylon-mmd；texture cache key 逻辑依赖 URL，与现有 cache key（`data:` Blob）冲突；上游更新合并成本高 |
+| **B. 自定义 texture loader** | 不碰 babylon-mmd，在 `referenceFiles` 组装阶段把 KTX2 数据注入为 Blob URL（`URL.createObjectURL(new Blob([ktx2Data]))`），注册自定义 loader 拦截 | 不用 fork babylon-mmd | 需要绕过 babylon-mmd 的 `MmdAsyncTextureLoader` cache key 机制（cache key 依赖 URL，Blob URL 每次不同，cache 失效） |
+| **C. Phase 2（异步 PNG 解码，低优先）** | 不动纹理格式，用 `createImageBitmap()` 异步解码 PNG 绕过主线程卡顿（~50ms/纹理） | 零架构改动，低风险，立即收益 | 仅解决解码卡顿，不省显存 |
+
+#### 3.3 当前推荐
+
+**Phase 2（异步 PNG 解码）优先于 KTX2**：收益与风险比更优——`createImageBitmap()` 全平台兼容，无需动 babylon-mmd 架构，直接解决"4K 纹理 ~50-100ms 卡主线程"的问题。KTX2 维持暂缓状态，触发条件升级为「ADR-187 触发判据达成 **且** babylon-mmd fork POC 验证可行」。
+
 ### Phase 4 — 埋点数据消费（可选，延后）
 
 1. 设置菜单加"模型库统计"页，展示 PMX 体积直方图、纹理数分布、KTX2 节省字节数
