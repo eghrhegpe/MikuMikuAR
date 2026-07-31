@@ -74,3 +74,15 @@ Wails 原生      桌面应用 (go)          安卓应用 (go)        ← go-ada
 | ADR-017 | 安卓应用适配（platform 探测范式、A2-06 剪贴板） |
 | ADR-133 | 安卓应用 MPR 物理缺口（`crossOriginIsolated=false` 的根） |
 | ADR-178 | 宿主运行时键补全（本表 §二 第二组） |
+
+## 六、多端成熟度卡点（原 multi-end-maturity-matrix，2026-07-26 归档）
+
+> 多端统一的「骨架」已立（双 adapter + 统一 web 入口 + 能力层宿主感知），卡点集中在**更新闭环**与**权限协商协议化**两块：前者是单点交付缺口，后者是架构性预防负债。
+
+| 优先级 | 卡点 | 归属 | 建议动作 |
+|--------|------|------|----------|
+| 🔴 P1 | 桌面更新下载器 production 未实现 | ADR-179 阶段2 | 排期实现 `DownloadAndRunInstaller`，复用安卓 apk 拉起链路 |
+| 🔴 P1 | 端能力协商协议缺失 | ADR-176/178 | 抽 `getCapabilities()` 声明式清单，淘汰散落 `isAndroidPlatform()` 分支 |
+| 🟠 P2 | 跨端 E2E 一致性无自动守护 | ADR-177 | 补桌面/Web 双端 E2E，固化进 CI |
+| 🟠 P2 | FSA 多选同名 PMX 撞车 | ADR-182 范围外 | 导入期同名 entry 冲突检测 + 序号后缀 |
+| ✅ 已闭环 | IDB origin 隔离数据不共享 | ADR-180 | 已文档化（`docs/web-data-origin-isolation.md`）；导出/迁移工具待评估 |

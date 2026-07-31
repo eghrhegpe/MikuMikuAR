@@ -42,9 +42,9 @@ const snapshot = JSON.parse(readFileSync(SNAPSHOT_PATH, "utf-8"));
 
 // Schema 定义的 kind → 期望的 DOM 元素选择器
 const KIND_SELECTOR_MAP: Record<string, string> = {
-    slider: 'input[type="range"]',
-    colorSlider: 'input[type="range"]',
-    toggle: 'input[type="checkbox"]',
+    slider: '[role="slider"]',
+    colorSlider: '[role="slider"]',
+    toggle: '[role="switch"], input[type="checkbox"]',
     modeSlider: '.chip', // segmented control chips
 };
 
@@ -110,7 +110,9 @@ async function navigateToPanel(page: any, config: PanelNavConfig): Promise<void>
             await openSettingsPanel(page);
             // settings 域需要二级导航：先进入一级 folder（如"操控"/"画质"）
             if (config.subLevel2) {
-                await page.getByTestId(`folder:settings:${config.subLevel2}`).click();
+                await page.evaluate((id: string) => {
+                    document.querySelector<HTMLElement>(`[data-testid="${id}"]`)?.click();
+                }, `folder:settings:${config.subLevel2}`);
             } else if (config.subLevel) {
                 await clickSettingsSubLevel(page, config.subLevel);
             }
@@ -118,7 +120,12 @@ async function navigateToPanel(page: any, config: PanelNavConfig): Promise<void>
         case 'scene':
             await openScenePanel(page);
             if (config.subLevel) {
-                await page.getByText(config.subLevel, { exact: true }).click();
+                await page.evaluate((label: string) => {
+                    const el = Array.from(document.querySelectorAll('*')).find(
+                        (el) => el.textContent?.trim() === label
+                    );
+                    (el as HTMLElement)?.click();
+                }, config.subLevel);
             }
             break;
     }

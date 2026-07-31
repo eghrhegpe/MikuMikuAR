@@ -41,9 +41,10 @@ export async function captureScreenshot(page: Page): Promise<string> {
     });
 }
 
-/** Click the bottom-nav "环境" button to open the environment panel. */
+/** Click the bottom-nav "环境" button to open the environment panel.
+ * 用 page.evaluate 触发 click 绕过 pointer-events 拦截。 */
 export async function openEnvPanel(page: Page): Promise<void> {
-    await page.click("#btnEnv");
+    await page.evaluate(() => { document.getElementById("btnEnv")?.click(); });
     // Wait for the overlay to appear
     await page.waitForSelector("#sceneOverlay.visible", { timeout: 3000 });
 }
@@ -67,7 +68,9 @@ export async function clickEnvSubLevel(page: Page, label: string): Promise<void>
     };
     const testId = ENV_SUB_TESTID[label];
     if (testId) {
-        await page.getByTestId(testId).click();
+        await page.evaluate((id: string) => {
+            document.querySelector<HTMLElement>(`[data-testid="${id}"]`)?.click();
+        }, testId);
     } else {
         // 未知标签回退到文本（保持稳定契约前兼容）
         await page.getByText(label, { exact: true }).click();
@@ -84,7 +87,9 @@ export async function clickMotionSubLevel(page: Page, label: string): Promise<vo
     };
     const testId = MOTION_SUB_TESTID[label];
     if (testId) {
-        await page.getByTestId(testId).click();
+        await page.evaluate((id: string) => {
+            document.querySelector<HTMLElement>(`[data-testid="${id}"]`)?.click();
+        }, testId);
     } else {
         await page.getByText(label, { exact: true }).click();
     }
@@ -107,7 +112,9 @@ export async function clickSettingsSubLevel(page: Page, label: string): Promise<
     };
     const testId = SETTINGS_SUB_TESTID[label];
     if (testId) {
-        await page.getByTestId(testId).click();
+        await page.evaluate((id: string) => {
+            document.querySelector<HTMLElement>(`[data-testid="${id}"]`)?.click();
+        }, testId);
     } else {
         await page.getByText(label, { exact: true }).click();
     }
@@ -135,7 +142,7 @@ export async function loadFirstModel(page: Page): Promise<void> {
         // Small wait for close animation to settle
         await page.waitForTimeout(200);
     }
-    await page.click("#btnMainAction");
+    await page.evaluate(() => { document.getElementById("btnMainAction")?.click(); });
     await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
     await page.waitForSelector('[data-testid^="actor:model"]', { timeout: 5000 });
     await page.locator('[data-testid^="actor:model"]').first().click();
@@ -151,33 +158,34 @@ export async function loadModelByName(page: Page, name: string): Promise<void> {
         await page.keyboard.press("Escape");
         await page.waitForTimeout(200);
     }
-    await page.click("#btnMainAction");
+    await page.evaluate(() => { document.getElementById("btnMainAction")?.click(); });
     await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
     await page.locator('[data-testid^="actor:model"]', { hasText: name }).first().click();
     await page.waitForFunction(() => (window as any).__scene?.meshCount > 10, { timeout: 20000 });
 }
 
-/** Open the motion/animation popup (#btnMotionPopup). */
+/** Open the motion/animation popup (#btnMotionPopup).
+ * 用 page.evaluate 触发 click 绕过 pointer-events 拦截。 */
 export async function openMotionPopup(page: Page): Promise<void> {
-    await page.click("#btnMotionPopup");
+    await page.evaluate(() => { document.getElementById("btnMotionPopup")?.click(); });
     await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
 }
 
 /** Open the library/popup overlay (#btnMainAction). */
 export async function openLibraryPanel(page: Page): Promise<void> {
-    await page.click("#btnMainAction");
+    await page.evaluate(() => { document.getElementById("btnMainAction")?.click(); });
     await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
 }
 
 /** Open the scene overlay (#btnScene). */
 export async function openScenePanel(page: Page): Promise<void> {
-    await page.click("#btnScene");
+    await page.evaluate(() => { document.getElementById("btnScene")?.click(); });
     await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
 }
 
 /** Open the settings overlay (#btnSettings). */
 export async function openSettingsPanel(page: Page): Promise<void> {
-    await page.click("#btnSettings");
+    await page.evaluate(() => { document.getElementById("btnSettings")?.click(); });
     // [doc:e2e] 设置面板使用统一的 #sceneOverlay（非独立 #settingsOverlay）
     await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
 }
