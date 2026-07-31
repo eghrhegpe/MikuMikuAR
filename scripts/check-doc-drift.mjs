@@ -277,7 +277,30 @@ function checkKnowledgeMeta() {
   return { errors, warns };
 }
 
-// ---------- 检查 4b：知识卡反向覆盖（磁盘源文件 → 是否有卡片引用，INFO） ----------
+// ---------- 检查 11：知识索引（README 索引 / routes 路由表）链接存在性（ERROR） ----------
+// README 索引表与 routes 路由表是手写索引，链接指向 ./xxx.md 知识卡；
+// 卡被归档/删除后索引易残留断链（历史:preset-manager/watch-import 曾漏网）。
+// 扫描两份索引的所有 ./xxx.md 链接,目标卡不存在即报 ERROR。
+const KNOWLEDGE_INDEX_FILES = ['README.md', 'routes.md'];
+const INDEX_LINK_RE = /\]\(\.\/([a-zA-Z0-9-]+\.md)\)/g;
+
+function checkKnowledgeIndexLinks() {
+  const dir = path.join(ROOT, CONFIG.knowledgeDir);
+  if (!fs.existsSync(dir)) return { errors: [] };
+  const errors = [];
+  for (const idx of KNOWLEDGE_INDEX_FILES) {
+    const file = path.join(dir, idx);
+    if (!fs.existsSync(file)) continue;
+    const text = fs.readFileSync(file, 'utf8');
+    for (const m of text.matchAll(INDEX_LINK_RE)) {
+      const target = m[1];
+      if (!fs.existsSync(path.join(dir, target))) {
+        errors.push(`知识索引 ${idx} 链接指向不存在的卡：${target}`);
+      }
+    }
+  }
+  return { errors };
+}
 // 与检查 4（卡片 source_files 是否真实存在）互补：从「代码现实」出发，
 // 扫描 sourceRoots 下每个 .ts 源文件，确认至少有 1 张知识卡的 source_files 引用了它。
 // 列为 INFO（不阻断 CI），用于揭示「代码有模块、知识库无卡片」的盲区，指导持续补登。
@@ -495,6 +518,11 @@ function main() {
   }
   const knowledgeMetaWarns = km.warns;
 
+  const kix = checkKnowledgeIndexLinks();
+  for (const e of kix.errors) {
+    errors.push(`知识索引断链：${e}`);
+  }
+
   const rev = checkKnowledgeCoverage();
 
   const globalIndex = buildGlobalExportIndex();
@@ -551,6 +579,7 @@ function main() {
   console.log(`知识卡失效 source_files  : ${kc.missingSources.length ? kc.missingSources.length + ' 个 ❌' : '无 ✅'}`);
   console.log(`知识卡治理 category/tier  : ${km.errors.length ? km.errors.length + ' 个 ❌' : '无 ✅'}`);
   console.log(`architecture 卡缺 UI 入口 : ${knowledgeMetaWarns.length ? knowledgeMetaWarns.length + ' 张（WARN）' : '无 ✅'}`);
+  console.log(`知识索引断链(README/routes): ${kix.errors.length ? kix.errors.length + ' 个 ❌' : '无 ✅'}`);
   console.log(`符号 0% 未文档化模块     : ${cov.undocumented}（INFO）`);
   console.log(`知识卡未覆盖源文件       : ${rev.total} 个（INFO）`);
   if (rev.total) {
