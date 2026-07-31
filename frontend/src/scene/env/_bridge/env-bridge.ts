@@ -7,7 +7,6 @@
 import { Color3 } from '@babylonjs/core/Maths/math.color';
 
 import { envState, type EnvState, triggerAutoSave } from '@/core/config';
-import { logWarn } from '@/core/logger';
 import { ENV_LIGHT_MAX } from '@/core/ui-constants';
 import { col3FromTriple } from '@/core/color-helpers';
 import { deriveLighting } from '../env-lighting';

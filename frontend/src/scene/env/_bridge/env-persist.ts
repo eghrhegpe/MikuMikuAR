@@ -5,7 +5,7 @@
 
 import { resolveBackend } from '@/core/backend';
 import type { UIState } from '@/core/wails-bindings';
-import { envState, triggerAutoSave } from '@/core/config';
+import { envState } from '@/core/config';
 import { uiState, setUIPersistCallback } from '@/core/state';
 import { feedbackStatus } from '@/core/feedback';
 import { logWarn } from '@/core/logger';

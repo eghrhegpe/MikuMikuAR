@@ -5,7 +5,6 @@
 
 import { dom } from '@/core/config';
 import { feedbackInfo, feedbackStatus } from '@/core/feedback';
-import { t } from '@/core/i18n/t';
 import { getCachedCapabilities } from '@/core/backend';
 import { logWarn } from '@/core/logger';
 import { canvasToBase64 } from '@/core/image';
@@ -19,12 +18,6 @@ declare global {
         // after requestCameraPermission() (see ensureAndroidCameraPermission).
         __onArcCameraPermission?: (granted: boolean) => void;
     }
-}
-
-interface ARCameraState {
-    active: boolean;
-    facing: CameraFacing;
-    streamId: string | null;
 }
 
 // ======== Internal State ========

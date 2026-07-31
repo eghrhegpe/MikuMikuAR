@@ -343,11 +343,6 @@ export async function probeWebXRFeatures(): Promise<WebXRProbeResult> {
     return _cachedResult;
 }
 
-/** 清除缓存的探针结果（用于重新探测）。 */
-function resetProbeCache(): void {
-    _cachedResult = null;
-}
-
 /**
  * 格式化探针结果为人类可读的多行文本（用于 UI 展示或复制到剪贴板）。
  */

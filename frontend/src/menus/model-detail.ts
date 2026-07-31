@@ -71,7 +71,6 @@ import {
     getActiveMotionId,
     getLoadedProceduralMotions,
 } from '../scene/motion/motion-intent';
-import type { LoadableProcId } from '../scene/motion/motion-intent';
 import { applyIntentToModel } from './motion-popup';
 import {
     regenerateProcMotion,

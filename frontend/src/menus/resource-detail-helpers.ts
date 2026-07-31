@@ -14,7 +14,6 @@ import {
     addCardTitle,
     addDangerRow,
 } from '../core/ui-helpers';
-import { Quaternion } from '@babylonjs/core/Maths/math.vector';
 import { resetModelTransform, removeModel } from '../scene/manager/model-ops';
 import { pushUndoSnapshot, offerSceneUndo, modelManager } from '../scene/scene';
 import { reRenderSceneMenu } from './scene-menu-state';
@@ -289,9 +288,6 @@ function buildAttachmentSelectLevel(
     onDone: () => void,
     targetStack: SlideMenu | null
 ): PopupLevel {
-    const childInst = modelRegistry.get(childId);
-    const childName = childInst?.name ?? childId;
-
     // 收集所有可作为父模型的候选（有 mmdModel 且非自身）
     const candidates: Array<{ id: string; name: string }> = [];
     for (const [id, inst] of modelRegistry) {

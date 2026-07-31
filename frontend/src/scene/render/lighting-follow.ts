@@ -393,11 +393,6 @@ export function disposeAllPersonalLights(): void {
 
 // ======== Serialization (ADR-168) ========
 
-interface SerializedPersonalLight {
-    modelUuid: string;
-    settings: PersonalLightSettings;
-}
-
 /** 导出所有个人灯状态（仅非默认值差异落盘由调用方决定） */
 export function getAllPersonalLights(): Array<{
     modelId: string;

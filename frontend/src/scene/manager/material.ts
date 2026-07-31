@@ -18,11 +18,6 @@ function _getMeshesById(id: string): Mesh[] | undefined {
     return modelRegistry.get(id)?.meshes;
 }
 
-/** 供 UI 层（model-material.ts）按 id 拿 meshes，不依赖 modelRegistry。 */
-function getMaterialMeshes(id: string): Mesh[] | undefined {
-    return _getMeshesById(id);
-}
-
 export type MaterialCategoryParams = {
     diffuseMul: number;
     specularMul: number;

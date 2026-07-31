@@ -20,16 +20,11 @@ import { logWarn } from '@/core/logger';
 import { getScene } from '../env/env-impl';
 
 /** [doc:adr-164] medium 档最多保留的非焦点非 pinned 模型数（可配置） */
-let _mediumMaxOthers = 10;
+const _mediumMaxOthers = 10;
 
 /** 获取 medium 档非焦点模型上限 */
 export function getMediumMaxOthers(): number {
     return _mediumMaxOthers;
-}
-
-/** 设置 medium 档非焦点模型上限（最小 1） */
-function setMediumMaxOthers(v: number): void {
-    _mediumMaxOthers = Math.max(1, v);
 }
 
 /** [doc:adr-164] 根据 tier 返回应激活的 context 列表 */
