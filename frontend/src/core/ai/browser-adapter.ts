@@ -1,6 +1,10 @@
 // [doc:adr-196] 浏览器 AI 适配器 — 直接 fetch OpenAI 兼容端点
 // 零 key 默认路径：Ollama localhost:11434（大模型零 key，小模型零成本）
 // 配置经 config-store（IndexedDB）持久化，不再使用 Web Storage（FR-9 / AC-5）
+//
+// [doc:relay] 网页端远程 API 通过自建 Cloudflare Worker relay 转发以绕过 CORS。
+// relay 逻辑：当 isWebPlatform() && 端点非 localhost && relayUrl 已配置时，
+// 请求发往 relayUrl，带 X-Target-Url 头指向真实端点，由 Worker 补齐 CORS 头后转发。
 
 import type {
     AiService,
@@ -13,6 +17,26 @@ import type {
 import { parseSseStream } from './sse';
 import { loadAiConfig, classifyAiError } from './config-store';
 import { logWarn } from '../logger';
+import { isWebPlatform } from '../platform';
+
+/** 判定端点是否为远程 API（非 localhost/127.0.0.1），需要 relay 代理。 */
+function _isRemoteEndpoint(endpoint: string): boolean {
+    return !/^https?:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/i.test(endpoint);
+}
+
+/** 获取 relay 目标 URL：当网页端 + 远程端点 + relayUrl 已配置时返回 relayUrl，否则返回 null（直连）。 */
+function _relayTarget(relayUrl: string, endpoint: string): string | null {
+    if (!relayUrl || !endpoint) {
+        return null;
+    }
+    if (!isWebPlatform()) {
+        return null;
+    }
+    if (!_isRemoteEndpoint(endpoint)) {
+        return null;
+    }
+    return relayUrl;
+}
 
 export class BrowserAiAdapter implements AiService {
     readonly kind = 'browser' as const;
@@ -64,7 +88,13 @@ export class BrowserAiAdapter implements AiService {
             if (cfg.apiKey) {
                 headers['Authorization'] = `Bearer ${cfg.apiKey}`;
             }
-            const response = await fetch(cfg.endpoint, {
+            // [doc:relay] 网页端远程 API 经 relay 转发以绕过 CORS
+            const relayUrl = _relayTarget(cfg.relayUrl, cfg.endpoint);
+            const fetchUrl = relayUrl ?? cfg.endpoint;
+            if (relayUrl) {
+                headers['X-Target-Url'] = cfg.endpoint;
+            }
+            const response = await fetch(fetchUrl, {
                 method: 'POST',
                 headers,
                 body: JSON.stringify({
@@ -129,9 +159,17 @@ export class BrowserAiAdapter implements AiService {
         }
 
         let lastErr: unknown = null;
+        // [doc:relay] 网页端远程 API 经 relay 转发以绕过 CORS
+        const relayUrl = _relayTarget(cfg.relayUrl, cfg.endpoint);
         for (const url of candidates) {
             try {
-                const res = await fetch(url, { headers, signal: AbortSignal.timeout(5000) });
+                // relay 模式下所有候选 URL 发往 relayUrl，带 X-Target-Url 头
+                const fetchUrl = relayUrl ?? url;
+                const reqHeaders: Record<string, string> = { ...headers };
+                if (relayUrl) {
+                    reqHeaders['X-Target-Url'] = url;
+                }
+                const res = await fetch(fetchUrl, { headers: reqHeaders, signal: AbortSignal.timeout(5000) });
                 if (!res.ok) {
                     lastErr = new Error(`HTTP ${res.status}: ${url}`);
                     continue;
@@ -185,6 +223,10 @@ export class BrowserAiAdapter implements AiService {
             return;
         }
 
+        // [doc:relay] 网页端远程 API 通过 relay 转发以绕过 CORS
+        const relayUrl = _relayTarget(cfg.relayUrl, cfg.endpoint);
+        const fetchUrl = relayUrl ?? cfg.endpoint;
+
         const body: Record<string, unknown> = {
             model: req.model ?? cfg.model,
             messages: req.messages,
@@ -202,6 +244,10 @@ export class BrowserAiAdapter implements AiService {
         if (cfg.apiKey) {
             headers['Authorization'] = `Bearer ${cfg.apiKey}`;
         }
+        // relay 模式下通知 Worker 转发目标
+        if (relayUrl) {
+            headers['X-Target-Url'] = cfg.endpoint;
+        }
 
         // 内部 AbortController：转发 req.signal + 可配超时（[doc:adr-199 P2-3]，先前硬编码 30s），并在 generator 退出（break/return）时强制中止底层 fetch（FR-10 / AC-6）
         const ac = new AbortController();
@@ -210,7 +256,7 @@ export class BrowserAiAdapter implements AiService {
         const timeoutId = setTimeout(() => ac.abort(), cfg.timeoutMs);
 
         try {
-            const response = await fetch(cfg.endpoint, {
+            const response = await fetch(fetchUrl, {
                 method: 'POST',
                 headers,
                 body: JSON.stringify(body),

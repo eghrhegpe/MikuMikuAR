@@ -7,7 +7,7 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 120 | 707 |
+| 核心基础设施 | 120 | 708 |
 | 3D 场景 | 106 | 1066 |
 | 菜单 & UI | 74 | 360 |
 | 换装 & 音频 | 3 | 33 |
@@ -65,6 +65,7 @@
 | `setActiveId()` | `core/ai/chat-store` | 写当前活动会话 id。 |
 | `AiConfig()` | `core/ai/config-store` | — |
 | `DEFAULT_AI_CONFIG()` | `core/ai/config-store` | 零 key 默认路径：本地 Ollama（大模型零 key，小模型零成本）。见 ADR-196 开放问题 Q2 裁定。 |
+| `DEFAULT_RELAY_URL()` | `core/ai/config-store` | 网页端 CORS 同源代理 Worker 默认地址（部署时由 wrangler deploy 产出）。 |
 | `DEFAULT_TIMEOUT_MS()` | `core/ai/config-store` | 缺省超时。 |
 | `MAX_TIMEOUT_MS()` | `core/ai/config-store` | 超时上限（防误设导致挂死请求永不释放）。 |
 | `MIN_TIMEOUT_MS()` | `core/ai/config-store` | [doc:adr-199 P2-3] 超时下限（防误设过小掐断正常请求）。 |
@@ -2353,5 +2354,5 @@
 
 ---
 
-> 共 323 个文件，2311 个导出符号。
+> 共 323 个文件，2312 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。

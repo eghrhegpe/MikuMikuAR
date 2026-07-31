@@ -14,6 +14,9 @@ export interface AiConfig {
     model: string;
     /** [doc:adr-199 P2-3] 请求超时（毫秒）。本地 Ollama 冷启动可能 10–60s，故可配；缺省 30000。 */
     timeoutMs: number;
+    /** [doc:relay] CORS 同源代理 Worker 地址。网页端远程 API 请求经此转发以绕过 CORS。
+     *  空字符串表示不启用 relay。桌面端（Wails）直连 API 无需此配置。 */
+    relayUrl: string;
 }
 
 /** [doc:adr-199 P2-3] 超时下限（防误设过小掐断正常请求）。 */
@@ -70,6 +73,9 @@ export const PROVIDER_PRESETS: Record<AiConfigProvider, ProviderPreset> = {
     },
 };
 
+/** 网页端 CORS 同源代理 Worker 默认地址（部署时由 wrangler deploy 产出）。 */
+export const DEFAULT_RELAY_URL = 'https://mikumikuar-ai-relay.mikumikuar-app.workers.dev';
+
 /** 零 key 默认路径：本地 Ollama（大模型零 key，小模型零成本）。见 ADR-196 开放问题 Q2 裁定。 */
 export const DEFAULT_AI_CONFIG: AiConfig = {
     provider: 'ollama',
@@ -77,6 +83,7 @@ export const DEFAULT_AI_CONFIG: AiConfig = {
     apiKey: '',
     model: PROVIDER_PRESETS.ollama.model,
     timeoutMs: DEFAULT_TIMEOUT_MS,
+    relayUrl: DEFAULT_RELAY_URL,
 };
 
 const CONFIG_STORE: Store = 'config';

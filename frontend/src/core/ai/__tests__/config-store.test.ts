@@ -29,6 +29,7 @@ const VALID: AiConfig = {
     apiKey: 'sk-xxx',
     model: 'deepseek-chat',
     timeoutMs: 30000,
+    relayUrl: '',
 };
 
 describe('validateAiConfig', () => {
@@ -57,6 +58,7 @@ describe('validateAiConfig', () => {
             apiKey: '',
             model: 'llama3.2',
             timeoutMs: 30000,
+            relayUrl: '',
         });
         expect(r.ok).toBe(true);
     });
@@ -194,9 +196,10 @@ describe('PROVIDER_PRESETS', () => {
 });
 
 describe('DEFAULT_AI_CONFIG', () => {
-    it('默认 provider 为 ollama', () => {
+    it('默认 provider 为 ollama，relayUrl 为默认 relay 地址', () => {
         expect(DEFAULT_AI_CONFIG.provider).toBe('ollama');
         expect(DEFAULT_AI_CONFIG.apiKey).toBe('');
         expect(DEFAULT_AI_CONFIG.timeoutMs).toBe(DEFAULT_TIMEOUT_MS);
+        expect(DEFAULT_AI_CONFIG.relayUrl).toBe('https://mikumikuar-ai-relay.mikumikuar-app.workers.dev');
     });
 });
