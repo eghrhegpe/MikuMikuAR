@@ -128,6 +128,7 @@
 | 文件 | 內容 |
 |------|------|
 | [專案現狀](docs/status.md) | 當前狀態 + 已完成功能 |
+| [知識庫](docs/knowledge/README.md) | 模組現狀快照 + 卡片索引（某模組現在長啥樣、去哪找） |
 | [架構方案](docs/architecture.md) | 全功能彙總 |
 | [設計決策](docs/adr/) | 80+ ADR 技術思路 |
 | [需求與選型](docs/requirements.md) | P0-P4 優先級 + 技術選型理由 |
