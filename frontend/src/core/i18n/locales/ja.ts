@@ -730,7 +730,6 @@ export const ja: Record<string, string> = {
     'scene.stage': 'ステージ',
     'scene.physics': '物理',
     'scene.scene': 'シーン',
-    'scene.render': 'レンダー',
     'scene.renderPresets': 'レンダープリセット',
     'scene.stageLight': 'ステージライト',
     
@@ -1746,10 +1745,7 @@ export const ja: Record<string, string> = {
     'motion.poseStudio.cameraApplied': '✓ {name} アングルに切り替えました',
     'motion.poseStudio.cameraPresets': 'カメラアングルプリセット',
     'motion.poseStudio.composition': '構図補助',
-    'motion.poseStudio.depthOfField': '被写界深度',
     'motion.poseStudio.diagonal': '対角線',
-    'motion.poseStudio.dofHint': '被写界深度はレンズの属性です — カメラパネルで調整',
-    'motion.poseStudio.openLensSettings': 'カメラパネルで調整',
     'motion.poseStudio.goldenRatio': '黄金比',
     'motion.poseStudio.noModel': '⚠ 先にモデルを読み込んでください',
     'motion.poseStudio.off': 'オフ',

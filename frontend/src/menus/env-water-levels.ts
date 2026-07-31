@@ -369,7 +369,7 @@ export function buildWaterLevel(): PopupLevel {
                         {
                             id: 'env:water:flip',
                             kind: 'toggle',
-                            label: 'env.waterFlipEnabled',
+                            label: 'env.waterFlip',
                             control: { bind: 'env.waterFlipEnabled' },
                         },
                     ],
