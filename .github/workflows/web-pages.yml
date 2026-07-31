@@ -77,6 +77,18 @@ jobs:
         # （https://eghrhegpe.github.io/MikuMikuAR/ 自动打开）
         run: cp dist-web/index.web.html dist-web/index.html
 
+      - name: Build user guide (VitePress)
+        # 用户指南站：docs/guide（VitePress）→ dist-web/guide/ 子路径
+        # 主应用 base=/MikuMikuAR/ 不动，文档站 base=/MikuMikuAR/guide/
+        working-directory: docs/guide
+        run: |
+          npm ci
+          npm run build
+
+      - name: Copy guide into web dist
+        # 产物拷入主应用 dist-web/guide/，一次 artifact 一次部署
+        run: cp -r ../docs/guide/.vitepress/dist dist-web/guide
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
