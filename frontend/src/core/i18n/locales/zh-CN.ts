@@ -675,7 +675,6 @@ export const zhCN: Record<string, string> = {
     'scene.stage': '舞台',
     'scene.physics': '物理',
     'scene.scene': '场景',
-    'scene.render': '渲染',
     'scene.renderPresets': '渲染预设',
     'scene.stageLight': '舞台灯光',
     
@@ -1044,8 +1043,6 @@ export const zhCN: Record<string, string> = {
     'scene.serialize.modelError': '模型 {name}: {error}',
 
     // model-material — 材质调节 UI
-    'model-material.batchByPart': '按部位批量 — {name}',
-    'model-material.overrideHint': '⚠ {count} 个材质有单独覆盖（分类调整不影响已覆盖材质）',
     'model-material.diffuseMul': '漫反射倍率',
     'model-material.specularMul': '高光倍率',
     'model-material.shininess': '高光指数',
@@ -1057,8 +1054,6 @@ export const zhCN: Record<string, string> = {
     'model-material.sphereTexLevel': '球体贴图强度',
     'model-material.emissiveTexLevel': '自发光贴图强度',
     'model-material.texLevelGroup': '贴图强度',
-    'model-material.stackingHint': '覆盖分类设置，分类调整仍生效于其他材质',
-    'model-material.resetDone': '✓ 已重置: {name}',
     'model-material.materialAdjustTitle': '材质调节 — {name}',
     'model-material.noMaterialData': '此模型无材质数据',
     'model-material.modified': '已修改',
@@ -1071,12 +1066,9 @@ export const zhCN: Record<string, string> = {
         '此操作会让模型呈现"伪 unlit"状态：完全靠环境光与自发光呈现，不依赖方向光。\\n\\n效果：失去立体感但保证可见，适用于少数光照异常的模型。\\n\\n可随时通过"重置全部"恢复。',
     'model-material.unlitFallbackDone': '✓ 已应用光照兜底',
     'model-material.resetAllDone': '✓ 全部材质参数已重置',
-    'model-material.selectMaterialHint': '请从上方材质列表中选择一个材质进行微调',
     'model-material.unknownMaterial': '未知材质',
     'model-material.paramTuneTitle': '参数微调',
-    'model-material.paramTune': '参数微调 — {cat} › {matName}',
     'model-material.resetThis': '重置此材质',
-    'model-material.perMaterial': '逐材质 — {name}',
 
     // model-preset — 模型预设 UI
     'model-preset.formatError': '✗ 预设文件格式错误',

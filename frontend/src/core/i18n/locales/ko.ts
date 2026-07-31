@@ -304,9 +304,6 @@ export const ko: Record<string, string> = {
     'model-detail.hasPhysics': '물리 강체 있음',
 
     // ===== 재질 model-material =====
-    'model-material.batchByPart': '부위별 일괄 — {name}',
-    'model-material.overrideHint':
-        '⚠ {count}개 재질에 개별 오버라이드가 있습니다 (분류 조정은 오버라이드된 재질에 영향을 주지 않음)',
     'model-material.diffuseMul': '확산 배율',
     'model-material.specularMul': '반사 배율',
     'model-material.shininess': '광택 지수',
@@ -318,9 +315,6 @@ export const ko: Record<string, string> = {
     'model-material.sphereTexLevel': '스피어 텍스처 레벨',
     'model-material.emissiveTexLevel': '자체 발광 텍스처 레벨',
     'model-material.texLevelGroup': '텍스처 강도',
-    'model-material.stackingHint':
-        '분류 설정을 덮어씁니다. 분류 조정은 다른 재질에 계속 적용됩니다',
-    'model-material.resetDone': '✓ 재설정됨: {name}',
     'model-material.materialAdjustTitle': '재질 조정 — {name}',
     'model-material.noMaterialData': '이 모델에는 재질 데이터가 없습니다',
     'model-material.modified': '수정됨',
@@ -333,12 +327,9 @@ export const ko: Record<string, string> = {
         '모델을 "유사 Unlit" 상태로 만듭니다: 환경광과 발광으로만 렌더링하고 방향광에 의존하지 않습니다.\\n\\n효과: 입체감을 잃지만 항상 보입니다. 조명이 비정상인 소수 모델용.\\n\\n"모두 재설정"으로 언제든 되돌릴 수 있습니다.',
     'model-material.unlitFallbackDone': '✓ 라이팅 폴백 적용됨',
     'model-material.resetAllDone': '✓ 모든 재질 매개변수가 재설정됨',
-    'model-material.selectMaterialHint': '위 목록에서 재질을 선택하여 세부 조정하세요',
     'model-material.unknownMaterial': '알 수 없는 재질',
     'model-material.paramTuneTitle': '매개변수 조정',
-    'model-material.paramTune': '매개변수 조정 — {cat} › {matName}',
     'model-material.resetThis': '이 재질 재설정',
-    'model-material.perMaterial': '재질별 — {name}',
 
     // ===== 모델 프리셋 model-preset =====
     'model-preset.formatError': '✗ 프리셋 파일 형식 오류',
@@ -732,7 +723,6 @@ export const ko: Record<string, string> = {
     'scene.stage': '무대',
     'scene.physics': '물리',
     'scene.scene': '장면',
-    'scene.render': '렌더',
     'scene.renderPresets': '렌더 프리셋',
     'scene.stageLight': '무대 조명',
     
@@ -1743,10 +1733,7 @@ export const ko: Record<string, string> = {
     'motion.poseStudio.cameraApplied': '✓ {name} 각도로 전환됨',
     'motion.poseStudio.cameraPresets': '카메라 앵글 프리셋',
     'motion.poseStudio.composition': '구도 보조',
-    'motion.poseStudio.depthOfField': '피사계 심도',
     'motion.poseStudio.diagonal': '대각선',
-    'motion.poseStudio.dofHint': '피사계 심도는 렌즈 속성입니다 — 카메라 패널에서 조정하세요',
-    'motion.poseStudio.openLensSettings': '카메라 패널에서 조정',
     'motion.poseStudio.goldenRatio': '황금비',
     'motion.poseStudio.noModel': '⚠ 모델을 먼저 로드하세요',
     'motion.poseStudio.off': '꺼짐',

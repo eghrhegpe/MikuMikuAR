@@ -301,9 +301,6 @@ export const ja: Record<string, string> = {
     'model-detail.hasPhysics': '物理剛体あり',
 
     // ===== マテリアル model-material =====
-    'model-material.batchByPart': '部位一括 — {name}',
-    'model-material.overrideHint':
-        '⚠ {count} 個のマテリアルに個別オーバーライドがあります（カテゴリ調整はオーバーライド済みマテリアルに影響しません）',
     'model-material.diffuseMul': '拡散倍率',
     'model-material.specularMul': '鏡面倍率',
     'model-material.shininess': '光沢度',
@@ -315,9 +312,6 @@ export const ja: Record<string, string> = {
     'model-material.sphereTexLevel': 'スフィアテクスチャレベル',
     'model-material.emissiveTexLevel': 'エミッシブテクスチャレベル',
     'model-material.texLevelGroup': 'テクスチャ強度',
-    'model-material.stackingHint':
-        'カテゴリ設定を上書きします。カテゴリ調整は他のマテリアルに引き続き適用されます',
-    'model-material.resetDone': '✓ リセットしました: {name}',
     'model-material.materialAdjustTitle': 'マテリアル調整 — {name}',
     'model-material.noMaterialData': 'このモデルにはマテリアルデータがありません',
     'model-material.modified': '変更済み',
@@ -330,12 +324,9 @@ export const ja: Record<string, string> = {
         'モデルを「疑似 Unlit」状態にします：環境光とエミッシブのみで描画し、方向光に依存しません。\\n\\n効果：立体感を失いますが常に表示されます。照明が壊れた少数モデル用。\\n\\n「すべてリセット」でいつでも戻せます。',
     'model-material.unlitFallbackDone': '✓ ライティングフォールバックを適用しました',
     'model-material.resetAllDone': '✓ すべてのマテリアルパラメータをリセットしました',
-    'model-material.selectMaterialHint': '上部のリストからマテリアルを選択して微調整',
     'model-material.unknownMaterial': '不明なマテリアル',
     'model-material.paramTuneTitle': 'パラメータ調整',
-    'model-material.paramTune': 'パラメータ調整 — {cat} › {matName}',
     'model-material.resetThis': 'このマテリアルをリセット',
-    'model-material.perMaterial': 'マテリアル個別 — {name}',
 
     // ===== モデルプリセット model-preset =====
     'model-preset.formatError': '✗ プリセットファイル形式エラー',
