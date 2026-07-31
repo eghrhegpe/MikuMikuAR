@@ -1,6 +1,7 @@
 ---
 kind: scene_lighting
 name: 场景光照与阴影（barrel）
+tier: architecture
 category: rendering
 scope:
   - frontend/src/scene/render/lighting.ts
@@ -49,6 +50,9 @@ Scene Lighting：光照、阴影、太阳盘（barrel + 主光管理）。职责
 ## 关键约定
 - 子模块共享 `lightingState`，避免状态碎片
 - 阴影 bias 直接更新、补间跳帧保护（历史审计修复）
+
+## UI 入口
+- 场景菜单 → 灯光：入口 `buildStageLightLevel()`（`menus/scene-stage-lights.ts`），层级见 [menu-map.md](./menu-map.md) 的 scene-stage-lights.ts 节。
 
 ## 与其他子系统关系
 - 被 `env-bridge.ts`（预设/亮度）、`env-lighting.ts`、`renderer.ts` 调用

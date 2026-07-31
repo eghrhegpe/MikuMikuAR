@@ -1,6 +1,7 @@
 ---
 kind: motion_pipeline
 name: 动作管线（逐帧合成）
+tier: architecture
 category: motion
 scope:
   - frontend/src/scene/motion/**
@@ -40,6 +41,9 @@ use_when:
 - `interface PipelineLayer` — 一层动作来源（优先级 + 应用函数）。
 - `class MotionPipeline` — 管线主体（注册层、运行阶段）。
 - `getMotionPipeline()` — 取全局管线实例。
+
+## UI 入口
+- 动作菜单（加载/程序化动作/相机/姿势等）：入口 `buildMotionRootLevel()`（`menus/motion-root-ui.ts`），层级见 [menu-map.md](./menu-map.md) 的 motion-root-ui.ts 节。
 
 ## 与其他子系统关系
 - 上游接入 VMD 播放器、程序化动作生成器、感知层修正（`perception-observer` / `perception-lipsync`）。

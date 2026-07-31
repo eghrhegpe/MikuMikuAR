@@ -1,6 +1,7 @@
 ---
 kind: settings_menu
 name: 设置页路由与编排
+tier: architecture
 category: ui
 scope:
   - frontend/src/menus/settings.ts
@@ -39,6 +40,9 @@ Settings：设置页路由 + barrel re-export。ADR-157 信息架构重组为 7 
 ## 关键约定
 - 7 分类信息架构（ADR-157）作为路由表单一来源
 - re-export 保持外部 API 不变，子模块实现内聚
+
+## UI 入口
+- 设置页（外观/画面/操控/资源等）：入口 `buildSettingsLevel()`（`menus/settings.ts`），导航见 [menu-map.md](./menu-map.md) 的 settings.ts 节。
 
 ## 与其他子系统关系
 - 子页面实现：`settings-appearance/graphics/controls/resources/media/system/about.ts`

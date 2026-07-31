@@ -1,6 +1,7 @@
 ---
 kind: env_facade
 name: 环境系统门面（Facade）
+tier: architecture
 category: env
 scope:
   - frontend/src/scene/env/env.ts
@@ -49,6 +50,9 @@ Environment Facade（Phase 8）：环境系统的对外门面。所有环境调�
 
 ## 关键约定
 - 外部禁止直接 import `env-impl` / `env-bridge` 内部符号，统一走本门面
+
+## UI 入口
+- 场景菜单 → 环境设置：入口 `buildEnvLevel()`（`menus/env-menu.ts`），完整层级见 [menu-map.md](./menu-map.md) 的 env-menu.ts 节。
 
 ## 与其他子系统关系
 - 全部委托 `env-impl.ts`（实现）+ `env-bridge.ts`（时间流转/预设/重力）

@@ -1,6 +1,7 @@
 ---
 kind: scene_orchestrator
 name: 场景核心编排器（纯组装器）
+tier: architecture
 category: scene
 scope:
   - frontend/src/scene/**
@@ -34,6 +35,9 @@ use_when:
 - `initScene()` — 唯一初始化入口（启动期顺序装配各子系统）
 - 协调 `initEnvFacade` / `applyEnvState` / `initWindPhysics` / `applyGroundCollision` 等
 - 对外暴露 `mmdRuntime` / `_envSys` 等供其他模块引用
+
+## UI 入口
+- 场景菜单（舞台/水面/物理/预设等入口）：见 [menu-map.md](./menu-map.md) 的 scene-menu.ts 节。
 
 ## 与其他子系统关系
 - 依赖几乎全部 scene 子模块，是 scene 层的总装配点

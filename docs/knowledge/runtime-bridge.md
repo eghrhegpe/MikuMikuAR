@@ -1,6 +1,7 @@
 ---
 kind: runtime_bridge
 name: Runtime 隔离桥（Wails Events/Browser）
+tier: architecture
 category: core
 scope:
   - frontend/src/core/runtime-bridge.ts
@@ -49,6 +50,9 @@ use_when:
 - 业务侧优先保存 `on()` 返回的 `unsubscribe` 并在 dispose 调用——这是主契约
 - `off(...names)` 仅兼容能力，按事件名移除会清掉所有模块监听，需谨慎
 - `disposeAll()` 不允许业务模块随意全局清理
+
+## UI 入口
+- 无直接 UI：为 Wails 事件/后端调用桥，经各功能菜单间接生效（菜单全景见 [menu-map.md](./menu-map.md)）。
 
 ## 与其他子系统关系
 - `wails-bindings.ts` 经本桥的 `events` 透传（命名导出 `Events`）

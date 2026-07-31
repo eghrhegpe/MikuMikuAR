@@ -1,6 +1,7 @@
 ---
 kind: action_registry
 name: 统一动作注册表 — 菜单/NL/快捷键共享真相源
+tier: architecture
 category: core
 scope:
   - frontend/src/core/action-registry.ts
@@ -69,6 +70,9 @@ ADR-197 引入的统一动作注册表：把 settings/scene/motion/env/library �
 - `adaptParam(def, raw)` — 单参适配，返回 `{ ok, value } | { ok, error }`
 - `buildToolSchemas()` / `buildToolCatalogText()` — 生成 LLM 工具描述
 - `registerAllActions()` — 应用启动时批量注册全域动作
+
+## UI 入口
+- 无独立面板：经菜单项 / NL 意图 / 快捷键触发，快捷键登记见 [menu-map.md](./menu-map.md) 快捷键节。
 
 ## 与其他子系统关系
 - 上行：菜单系统、`ai/intent-dispatcher.ts`（NL 解析后 `executeAction`）、快捷键调用 `executeActionById`
