@@ -26,6 +26,12 @@ export default defineConfig({
         testTimeout: 10000,
         hookTimeout: 15000,
         forceExit: true,
+        // 并发上限：24 核机器上实测 12 路最优（32.6s），16/20 因每 worker 重复
+        // 编译 babylon-mmd 等重模块，边际收益转负。瓶颈是环境搭建+模块导入而非
+        // CPU 核数，故固定 12 而不吃满全核。isolate 保持默认 true（关掉会暴露
+        // 测试间状态污染，见 ADR/技术债），待清理污染后再评估 isolate=false。
+        maxWorkers: 12,
+        minWorkers: 12,
         exclude: [
             "e2e/**",
             "node_modules/**",
