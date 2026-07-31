@@ -89,6 +89,7 @@ export default defineConfig({
   srcDir: '..',
   srcExclude: [
     'guide/README.md',
+    'guide/index.md', // 旧首页残留(srcDir 扩展前);文档中心首页由 docs/index.md 承担
     'guide/img/**',
     'knowledge/.archive/**',
     'audit/**',
