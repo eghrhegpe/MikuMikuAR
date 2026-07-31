@@ -751,6 +751,7 @@ export const ja: Record<string, string> = {
     'scene.accessory.detached': '✓ {name} のアタッチを解除しました',
     'scene.accessory.cycleDetected': '✗ アタッチメントが循環します',
     'scene.accessory.attachFailed': '✗ アタッチに失敗しました',
+    'scene.accessory.boneNotFound': '✗ 親モデルにこのボーンがありません: {bone}',
     'scene.screenshotCurrent': '現在のモデルをスクリーンショット',
     'scene.screenshotCurrentSub': 'フォーカスモデルのスクリーンショットを保存',
     'scene.screenshotBatch': '一括スクリーンショット',

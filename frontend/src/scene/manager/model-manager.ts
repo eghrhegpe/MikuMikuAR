@@ -1118,17 +1118,18 @@ export class ModelManager {
     // ======== [doc:adr-215] 模型附属关系管理 ========
 
     /**
-     * DAG 校验：检查 fromId 向上追溯是否可达 ancestorId（防止成环）。
+     * DAG 校验：从 startId 沿 parentId 链向上追溯，是否能到达 targetId。
+     * 用于判断「把 child 附属到 parent」是否成环——若 parent 的祖先链中已含 child
+     * （即 child 是 parent 的祖先），则新建 child←parent 会成环。
      */
-    private _isReachable(fromId: string, ancestorId: string): boolean {
+    private _hasAncestor(startId: string, targetId: string): boolean {
         const visited = new Set<string>();
-        let currentId: string | undefined = fromId;
+        let currentId: string | undefined = startId;
         while (currentId) {
+            if (currentId === targetId) return true;
             if (visited.has(currentId)) return false;
             visited.add(currentId);
-            const inst = this.modelRegistry.get(currentId);
-            if (inst?.parentId === ancestorId) return true;
-            currentId = inst?.parentId;
+            currentId = this.modelRegistry.get(currentId)?.parentId;
         }
         return false;
     }
@@ -1156,8 +1157,10 @@ export class ModelManager {
             return false;
         }
 
-        // DAG 校验：防止成环
-        if (childId === parentId || this._isReachable(childId, parentId)) {
+        // DAG 校验：防止成环。
+        // 从 parent 沿 parentId 链向上追溯，若能到达 child，说明 child 是 parent 的祖先，
+        // 建立 child←parent 会成环（child 自身旧 parentId 指向别处不影响此追溯）。
+        if (childId === parentId || this._hasAncestor(parentId, childId)) {
             logWarn('model-manager', 'attachModelToBone: would create cycle');
             feedbackStatus('scene.accessory.cycleDetected', undefined, false);
             return false;

@@ -11,29 +11,11 @@ import { triggerAutoSave } from '@/core/config';
 import { logWarn } from '../../core/logger';
 import type { MmdStandardMaterial } from '../../core/types';
 
-// ======== 外部材质目标注册表 ========
-// 让 propRegistry 等 non-model 资源也能复用 id-based 材质 API。
-// modelRegistry 优先，外部表兜底。
-const _externalMeshes = new Map<string, Mesh[]>();
+// ======== 按 id 查询 meshes ========
 
-/** 注册外部 meshes（如 prop）到材质系统，使其可用 id 调用所有材质 API。 */
-export function registerMaterialTarget(id: string, meshes: Mesh[]): void {
-    _externalMeshes.set(id, meshes);
-}
-
-/** 注销外部材质目标（资源卸载时调用）。 */
-export function unregisterMaterialTarget(id: string): void {
-    _externalMeshes.delete(id);
-    disposeModelMaterialState(id);
-}
-
-/** 按 id 查询 meshes：先 modelRegistry，后外部注册表。 */
+/** 按 id 查询 meshes（modelRegistry 单源，ADR-215 后外部注册表已废弃）。 */
 function _getMeshesById(id: string): Mesh[] | undefined {
-    const inst = modelRegistry.get(id);
-    if (inst) {
-        return inst.meshes;
-    }
-    return _externalMeshes.get(id);
+    return modelRegistry.get(id)?.meshes;
 }
 
 /** 供 UI 层（model-material.ts）按 id 拿 meshes，不依赖 modelRegistry。 */
