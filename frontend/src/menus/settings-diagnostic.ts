@@ -506,7 +506,7 @@ export function renderDiagnosticPanel(
 }
 
 export function buildSettingsDiagnosticLevel(
-    getSettingsMenu: () => SettingsMenuHandle
+    _getSettingsMenu: () => SettingsMenuHandle
 ): PopupLevel {
     return {
         label: t('settings.diagnostic'),

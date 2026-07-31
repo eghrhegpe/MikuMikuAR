@@ -547,7 +547,7 @@ function _initModelManager(
 }
 
 /** 注入模型生命周期回调（聚焦 / 加载完成）。 */
-function _injectModelCallbacks(modelManager: ModelManager, runtime: IMmdRuntime): void {
+function _injectModelCallbacks(modelManager: ModelManager, _runtime: IMmdRuntime): void {
     // 5. 注入回调解耦：model-loader / model-manager 不再直接动态导入 renderer / proc-motion-bridge
     setOnMeshesReady((meshes) => onModelMeshesReady(meshes));
     const procMotionMod = import('./motion/proc-motion-bridge');
@@ -568,7 +568,7 @@ function _injectModelCallbacks(modelManager: ModelManager, runtime: IMmdRuntime)
 }
 
 /** 启动运动子系统（脚部跟随 / 脚步声 / 骨骼覆盖 / 程序化动作）。 */
-async function _initMotionSubsystems(scene: Scene, modelManager: ModelManager): Promise<void> {
+async function _initMotionSubsystems(scene: Scene, _modelManager: ModelManager): Promise<void> {
     // 7. 脚部地面跟随系统启动（ADR-085）
     // [doc:adr-116 重构] 地面跟随降为 always-on 基础设施，不再由动作覆盖模块控制。
     // 使用默认 FeetState（enabled=true, intensity=1），始终贴地修正。

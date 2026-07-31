@@ -16,6 +16,7 @@ import {
 } from '../core/config';
 import { feedbackInfo, feedbackStatus } from '../core/feedback';
 import { showInfoToast } from '../core/toast';
+import { SaveScreenshot, SelectDir } from '../core/wails-bindings';
 import {
     addToggleRow,
     addSliderRow,
@@ -344,7 +345,6 @@ async function _batchScreenshot(presets: CameraAnglePreset[], modelId: string): 
             base64 = await applyWatermark(base64, fmt, q);
 
             // 保存
-            const { SaveScreenshot, SelectDir } = await import('../core/wails-bindings');
             let dir = uiState.screenshotDir;
             if (!dir) {
                 dir = await SelectDir();

@@ -1776,7 +1776,7 @@ export const browserAdapter: BackendService = {
     },
     // [doc:adr-195] 网页端无法解析 PMX 文件头，始终返回空对象 {}。
     // 桌面端通过 Go 后端解析 PMX 二进制返回元数据。调用方不应依赖网页端返回非空。
-    async GetModelMetaBatch(paths: string[]): Promise<Record<string, ModelMeta>> {
+    async GetModelMetaBatch(_paths: string[]): Promise<Record<string, ModelMeta>> {
         // Web 模式下无法解析 PMX 文件头，返回空。
         // comment 由 loadActor 阶段通过 parsePmxComment 从 PMX 字节提取后填入缓存。
         return {};

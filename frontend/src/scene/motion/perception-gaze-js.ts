@@ -17,7 +17,7 @@ import {
 
 /** JS 路径头部写入策略：改 linkedBone.rotationQuaternion + _updateBoneChain 传播 */
 const _jsHeadStrategy: HeadGazeWriteStrategy = {
-    writeHead(headRuntime, finalQ, _headPos, _oldHeadMat, parentWorldQ): void {
+    writeHead(headRuntime, finalQ, _headPos, _oldHeadMat, _parentWorldQ): void {
         // localQ = invParentQ × finalQ（core 已算过一次，但 strategy 不知道；这里重算以保持策略自包含）
         const parentBone = headRuntime.parentBone;
         const parentWorldInv = _m();

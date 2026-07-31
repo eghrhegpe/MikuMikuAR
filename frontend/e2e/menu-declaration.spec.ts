@@ -32,9 +32,6 @@ function scanMenuTree(): { error: string | null; nodes: MenuNodeSnapshot[] } {
         text: string;
     }
 
-    const root = document.getElementById("sceneOverlay");
-    if (!root) return { error: "sceneOverlay not found", nodes: [] };
-
     const seen = new Set<string>();
     const nodes: MenuNodeSnapshot[] = [];
 
@@ -68,9 +65,20 @@ function scanMenuTree(): { error: string | null; nodes: MenuNodeSnapshot[] } {
         const text = (element.textContent || "").trim().substring(0, 50);
 
         const childEls = Array.from(
-            element.querySelectorAll<HTMLElement>(":scope > [data-testid]")
+            element.querySelectorAll<HTMLElement>("[data-testid]")
         );
-        const childTestIds = childEls.map((c) => c.getAttribute("data-testid") || "");
+        // 只取直接子级的 testid（去掉更深嵌套）
+        const directChildIds = new Set<string>();
+        for (const child of childEls) {
+            const childTestid = child.getAttribute("data-testid") || "";
+            // 检查这个 child 是不是被当前 element 的某个直接子元素包含
+            // 如果是 element 本身的直接子元素，那么它的 parentElement 的 testid 应该是当前 element
+            const parentTestid = child.parentElement?.getAttribute("data-testid");
+            if (parentTestid === testid || !child.parentElement?.closest("[data-testid]")) {
+                directChildIds.add(childTestid);
+            }
+        }
+        const childTestIds = Array.from(directChildIds).filter(Boolean);
 
         nodes.push({
             testid,
@@ -86,15 +94,27 @@ function scanMenuTree(): { error: string | null; nodes: MenuNodeSnapshot[] } {
         });
 
         for (const child of childEls) {
-            walk(child, depth + 1, path + " > " + testid);
+            const childTestid = child.getAttribute("data-testid") || "";
+            // 只递归那些不是更深层嵌套的直接子节点
+            const parentTestid = child.parentElement?.getAttribute("data-testid");
+            if (parentTestid === testid || !child.parentElement?.closest("[data-testid]")) {
+                walk(child, depth + 1, path + " > " + testid);
+            }
         }
     }
 
-    // 从直接子节点（depth 0）开始
-    const directChildren = Array.from(
-        root.querySelectorAll<HTMLElement>(":scope > [data-testid]")
+    // 扫描所有带 data-testid 的顶层节点（排除那些已经被其他节点包含的）
+    const allTestidEls = Array.from(
+        document.querySelectorAll<HTMLElement>("[data-testid]")
     );
-    for (const el of directChildren) {
+
+    // 过滤出「顶层」节点：其父元素的 data-testid 与自身不同，或其父元素没有 data-testid
+    const topLevelEls = allTestidEls.filter((el) => {
+        const parentTestid = el.parentElement?.getAttribute("data-testid");
+        return parentTestid !== el.getAttribute("data-testid");
+    });
+
+    for (const el of topLevelEls) {
         walk(el, 0, "root");
     }
 
@@ -106,10 +126,13 @@ test.describe("声明式菜单引擎 (@dom, vitePage)", { tag: ["@dom"] }, () =>
     let menuTree: ReturnType<typeof scanMenuTree>;
 
     test.beforeAll(async ({ vitePage: page }) => {
+        // 点击设置按钮，等菜单渲染完毕
         await page.evaluate(() => {
             document.getElementById("btnSettings")?.click();
         });
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
+        // 等一个渲染帧确保 DOM 稳定
+        await page.waitForTimeout(500);
         menuTree = await page.evaluate(scanMenuTree);
     });
 
