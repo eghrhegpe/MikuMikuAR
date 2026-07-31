@@ -1216,7 +1216,6 @@ export const zhTW: Record<string, string> = {
     'env.fogDensity': '霧密度',
     'env.chromaticAmount': '色差強度',
     'env.toneIntensity': '色調強度',
-    'env.fogMultiplier': '霧倍率',
     'env.underwaterTintStrength': '水下色彩強度',
     'env.waveFresnel': '波浪與菲涅爾',
     'env.caustics': '焦散',
@@ -1299,13 +1298,9 @@ export const zhTW: Record<string, string> = {
     // —— Experimental ——
     'env.experimental': '實驗功能',
     'env.experimentalWarn': '以下功能效能開銷較大，可能影響幀率，請謹慎開啟。',
-    'env.volumetricCloud': '體積雲',
-    'env.volumetricCloudNeedWebGL': '體積雲需要 WebGL 2.0',
-    'env.volumetricCloudUnsupported': '（目前裝置不支援 WebGL 2.0，體積雲不可用）',
 
     // —— Fog ——
     'env.fog': '霧',
-    'env.enableFog': '啟用霧',
     'env.fogMode': '霧模式',
     'env.exp2': '指數平方',
     'env.exp': '指數',
@@ -1342,7 +1337,6 @@ export const zhTW: Record<string, string> = {
 
     // —— Particles ——
     'env.particle': '粒子',
-    'env.particleType': '粒子類型',
     'env.sakura': '櫻花',
     'env.rain': '雨',
     'env.snow': '雪',

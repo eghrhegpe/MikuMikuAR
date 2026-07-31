@@ -1228,7 +1228,6 @@ export const ko: Record<string, string> = {
     'env.fogDensity': '안개 밀도',
     'env.chromaticAmount': '색수차 강도',
     'env.toneIntensity': '색조 강도',
-    'env.fogMultiplier': '안개 배율',
     'env.underwaterTintStrength': '수중 틴트 강도',
     'env.waveFresnel': '파도 & 프레넬',
     'env.caustics': '코스틱스',
@@ -1312,14 +1311,9 @@ export const ko: Record<string, string> = {
     'env.experimental': '실험 기능',
     'env.experimentalWarn':
         '다음 기능은 성능 부하가 크며 프레임율에 영향을 줄 수 있습니다. 신중하게 활성화하세요.',
-    'env.volumetricCloud': '볼류메트릭 구름',
-    'env.volumetricCloudNeedWebGL': '볼류메트릭 구름은 WebGL 2.0이 필요합니다',
-    'env.volumetricCloudUnsupported':
-        '(현재 기기에서 WebGL 2.0을 지원하지 않아 볼류메트릭 구름을 사용할 수 없습니다)',
 
     // —— Fog ——
     'env.fog': '안개',
-    'env.enableFog': '안개 활성화',
     'env.fogMode': '안개 모드',
     'env.exp2': '지수 제곱',
     'env.exp': '지수',
@@ -1356,7 +1350,6 @@ export const ko: Record<string, string> = {
 
     // —— Particles ——
     'env.particle': '파티클',
-    'env.particleType': '파티클 유형',
     'env.sakura': '벚꽃',
     'env.rain': '비',
     'env.snow': '눈',
