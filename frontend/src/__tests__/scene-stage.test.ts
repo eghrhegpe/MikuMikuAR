@@ -28,7 +28,6 @@ vi.mock('../core/config', async (importOriginal) => {
         overridePaths: {},
         libraryRoot: '',
         escapeHtml: (s: string) => s,
-        propRegistry: new Map(),
     };
 });
 
@@ -76,8 +75,6 @@ vi.mock('./env-water-levels', () => ({ buildWaterLevel: vi.fn(() => ({ label: 'w
 
 // 阻断 Babylon.js Scene 初始化（scene/scene.ts 模块级 new Scene()）
 vi.mock('../scene/scene', () => ({
-    getPropList: vi.fn(() => []),
-    removeProp: vi.fn(),
     modelManager: { modelRegistry: new Map(), size: 0, focused: vi.fn(), get: vi.fn() },
     setEnvState: (...args: unknown[]) => mockSetEnvState(...args),
 }));

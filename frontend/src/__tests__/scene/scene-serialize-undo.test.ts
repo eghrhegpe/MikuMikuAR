@@ -37,7 +37,6 @@ vi.mock('../../core/config', () => ({
     resolveLibraryRef: () => '',
     envState: {},
     modelRegistry: new Map(),
-    propRegistry: new Map(),
     showErrorToast: cfgState.showErrorToast,
     setStatus: cfgState.setStatus,
 }));

@@ -76,7 +76,7 @@ export const ja: Record<string, string> = {
     'settings.library.matCat.eyes': '目',
     'settings.library.matCat.clothing': '衣装',
     'settings.library.matCat.accessory': 'アクセサリー',
-    'settings.library.matCat.prop': '小道具',
+    
     'settings.paths.modelCount': 'モデル数: ',
     'settings.saveFailed': '保存に失敗しました',
 
@@ -729,10 +729,7 @@ export const ja: Record<string, string> = {
     'scene.render': 'レンダー',
     'scene.renderPresets': 'レンダープリセット',
     'scene.stageLight': 'ステージライト',
-    'scene.deleteProp': 'プロップを削除',
-    'scene.noProps': 'プロップなし',
-    'scene.prop': 'プロップ',
-    'scene.propLibrary': 'プロップライブラリ',
+    
     'scene.intensity': '強度',
     'scene.color': '色',
     'scene.type': 'タイプ',
@@ -822,14 +819,11 @@ export const ja: Record<string, string> = {
     'scene.loadStage': 'ステージを読み込み',
     'scene.statusNoModelLib': '✗ 設定でモデルライブラリのディレクトリを先に設定してください',
     'scene.statusOpenStageLibFailed': '✗ ステージライブラリを開けませんでした',
-    'scene.loadProp': 'プロップを読み込み',
-    'scene.statusNoPropLib': '✗ 設定でプロップライブラリのディレクトリを先に設定してください',
-    'scene.statusOpenPropLibFailed': '✗ プロップライブラリを開けませんでした',
+    
     'scene.stageLabel': 'ステージ: {name}',
-    'scene.addPropFile': 'プロップファイルを追加',
-    'scene.propTransform': 'プロップ変形',
+    
     'scene.transform': '変換',
-    'scene.propNotFound': 'プロップが存在しません（削除された可能性があります）',
+    
     'scene.custom': 'カスタム',
     'scene.lightList': 'ライト一覧',
     'scene.addLight': 'ライトを追加',
@@ -1595,7 +1589,7 @@ export const ja: Record<string, string> = {
     'settings.paths.pmx': 'PMX モデル',
     'settings.paths.vmd': 'VMD モーション',
     'settings.paths.audio': '音楽',
-    'settings.paths.prop': '小道具',
+    
     'settings.paths.stage': 'シーン',
     'settings.paths.environment': '環境',
     'settings.paths.mdDress': 'MD ドレス',
@@ -1679,7 +1673,7 @@ export const ja: Record<string, string> = {
 
     // ===== i18n Phase 4 — missing keys =====
     'common.model': 'モデル',
-    'common.prop': '小道具',
+    
     'common.close': '閉じる',
     'common.delete': '削除',
     'common.items': '件',
@@ -1688,9 +1682,7 @@ export const ja: Record<string, string> = {
     'common.off': 'オフ',
     'common.on': 'オン',
     'common.stage': 'ステージ',
-    'env.propAdded': '✓ プロップ: {name}',
-    'env.propExists': 'プロップは既に存在します: {name}',
-    'env.propRemoved': '✓ プロップを削除しました: {name}',
+    
     'env.persistFailed': '✗ 設定の保存に失敗しました — 再起動後に変更が失われます',
     'model.materialReset': '✓ リセットしました: {name}',
     'motion.boneOverride.title': 'ボーンオーバーライド',
@@ -1849,7 +1841,7 @@ export const ja: Record<string, string> = {
     'common.empty': 'コンテンツがありません',
     'common.apply': '適用',
     'settings.audio.offsetHint': '正=音声先行、負=音声遅れ（全楽曲に全局適用）',
-    'props.loadingProgress': 'プロップ読み込み {pct}%',
+    
     'goerr.software.notFound': '{name} が見つかりません。設定でパスを指定してください。',
     'goerr.software.launchFailed': '{name} の起動に失敗しました。',
     'goerr.software.androidNotSupported': '{name} は Android では起動できません。',
@@ -1981,7 +1973,7 @@ export const ja: Record<string, string> = {
     'ai.actions.settings.path.pmx': 'PMX 上書きパスを選択',
     'ai.actions.settings.path.vmd': 'VMD 上書きパスを選択',
     'ai.actions.settings.path.audio': 'オーディオ上書きパスを選択',
-    'ai.actions.settings.path.prop': '小道具上書きパスを選択',
+    
     'ai.actions.settings.path.stage': 'ステージ上書きパスを選択',
     'ai.actions.settings.path.environment': '環境上書きパスを選択',
     'ai.actions.settings.path.mdDress': 'MD 衣装上書きパスを選択',

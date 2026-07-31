@@ -72,13 +72,13 @@ export const en: Record<string, string> = {
     'settings.library.patternLabel': 'Pattern',
     'settings.library.patternPlaceholder': 'Regex, e.g. skirt',
     'settings.library.categoryLabel': 'Category',
-    'settings.library.categoryPlaceholder': 'Skin/Hair/Eyes/Clothing/Accessory/Prop',
+    'settings.library.categoryPlaceholder': 'Skin/Hair/Eyes/Clothing/Accessory',
     'settings.library.matCat.skin': 'Skin',
     'settings.library.matCat.hair': 'Hair',
     'settings.library.matCat.eyes': 'Eyes',
     'settings.library.matCat.clothing': 'Clothing',
     'settings.library.matCat.accessory': 'Accessory',
-    'settings.library.matCat.prop': 'Prop',
+    
     'settings.paths.modelCount': 'Models: ',
     'settings.saveFailed': 'Save failed',
 
@@ -692,10 +692,7 @@ export const en: Record<string, string> = {
     'scene.render': 'Render',
     'scene.renderPresets': 'Render Presets',
     'scene.stageLight': 'Stage Lights',
-    'scene.deleteProp': 'Delete prop',
-    'scene.noProps': 'No props',
-    'scene.prop': 'Prop',
-    'scene.propLibrary': 'Prop Library',
+    
     'scene.intensity': 'Intensity',
     'scene.color': 'Color',
     'scene.type': 'Type',
@@ -795,16 +792,10 @@ export const en: Record<string, string> = {
     'scene.loadStage': 'Load Stage',
     'scene.statusNoModelLib': '✗ Configure the model library directory in Settings first',
     'scene.statusOpenStageLibFailed': '✗ Failed to open stage library',
-    'scene.loadProp': 'Load Prop',
-    'scene.statusNoPropLib': '✗ Configure the prop library directory in Settings first',
-    'scene.statusOpenPropLibFailed': '✗ Failed to open prop library',
+    
     'scene.stageLabel': 'Stage: {name}',
 
-    // —— Prop levels ——
-    'scene.addPropFile': 'Add Prop File',
-    'scene.propTransform': 'Prop Transform',
     'scene.transform': 'Transform',
-    'scene.propNotFound': 'Prop does not exist (may have been deleted)',
 
     // —— Stage lights ——
     'scene.custom': 'Custom',
@@ -1546,7 +1537,7 @@ export const en: Record<string, string> = {
     'common.off': 'off',
     'common.stage': 'stage',
     'common.model': 'model',
-    'common.prop': 'prop',
+    
     'common.close': 'Close',
     'common.delete': 'Delete',
     'common.items': 'items',
@@ -1555,9 +1546,7 @@ export const en: Record<string, string> = {
     'status.loop': 'Loop: {state}',
     'status.error': 'Error: {message}',
     'status.done': '✓ Done',
-    'env.propExists': 'Prop already exists: {name}',
-    'env.propAdded': '✓ Prop: {name}',
-    'env.propRemoved': '✓ Prop removed: {name}',
+    
     'settings.softwareAdded': '✓ Added: {name}',
     'settings.softwareStarted': '✓ Started: {name}',
     'settings.softwareDeleted': '✓ Deleted: {name}',
@@ -1747,7 +1736,7 @@ export const en: Record<string, string> = {
     'settings.paths.pmx': 'PMX Models',
     'settings.paths.vmd': 'VMD Motions',
     'settings.paths.audio': 'Music',
-    'settings.paths.prop': 'Prop',
+    
     'settings.paths.stage': 'Stage',
     'settings.paths.environment': 'Environment',
     'settings.paths.mdDress': 'MD Dress',
@@ -1838,7 +1827,7 @@ export const en: Record<string, string> = {
     'common.apply': 'Apply',
     'settings.audio.offsetHint':
         'Positive = audio leads, negative = audio lags (applies globally to all music)',
-    'props.loadingProgress': 'Loading prop {pct}%',
+    
 
     // ===== [doc:adr-117] Go-side user-visible errors (i18n) =====
     'goerr.software.notFound': 'Could not find {name}. Please set its path in Settings.',
@@ -1973,7 +1962,7 @@ export const en: Record<string, string> = {
     'ai.actions.settings.path.pmx': 'Select PMX override path',
     'ai.actions.settings.path.vmd': 'Select VMD override path',
     'ai.actions.settings.path.audio': 'Select audio override path',
-    'ai.actions.settings.path.prop': 'Select prop override path',
+    
     'ai.actions.settings.path.stage': 'Select stage override path',
     'ai.actions.settings.path.environment': 'Select environment override path',
     'ai.actions.settings.path.mdDress': 'Select MD dress override path',
