@@ -13,6 +13,7 @@ const mockConfig = vi.hoisted(() => ({
     model: 'llama3.2',
     apiKey: '',
     timeoutMs: 30000,
+    relayUrl: '',
 }));
 
 vi.mock('../config-store', () => ({
@@ -28,7 +29,7 @@ vi.mock('../config-store', () => ({
         openrouter: { needsKey: true, endpoint: 'https://openrouter.ai/api/v1/chat/completions', model: 'auto' },
         custom: { needsKey: false, endpoint: '', model: '' },
     },
-    DEFAULT_AI_CONFIG: { provider: 'ollama', endpoint: 'http://localhost:11434/v1/chat/completions', apiKey: '', model: '', timeoutMs: 30000 },
+    DEFAULT_AI_CONFIG: { provider: 'ollama', endpoint: 'http://localhost:11434/v1/chat/completions', apiKey: '', model: '', timeoutMs: 30000, relayUrl: '' },
 }));
 
 // ── mock sse (parseSseStream) ─────────────────────────────────────
