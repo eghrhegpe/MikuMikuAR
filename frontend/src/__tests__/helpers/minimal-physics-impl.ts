@@ -24,10 +24,10 @@ import path from 'path';
 
 // initSync + init 从 babylon-mmd SPR 模块导入
 // 注意：这是同步路径，不触发 fetch / navigator.hardwareConcurrency
-import { initSync, init } from 'babylon-mmd/esm/Runtime/Optimized/wasm/spr';
+import { initSync, init } from 'babylon-mmd/esm/Runtime/Optimized/wasm/spr/index';
 
 // 导入整个 wasm 模块命名空间以访问所有导出的物理 API
-import * as sprWasm from 'babylon-mmd/esm/Runtime/Optimized/wasm/spr';
+import * as sprWasm from 'babylon-mmd/esm/Runtime/Optimized/wasm/spr/index';
 
 const WASM_PATH = path.resolve(
     __dirname,
