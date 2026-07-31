@@ -61,6 +61,13 @@ jobs:
             vite-web-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}-
             vite-web-${{ runner.os }}-
 
+      - name: Generate locale JSON (build artifact, gitignored)
+        # [doc:perf] 语言包为运行时 fetch JSON，由 scripts/generate-locale-json.mjs 从
+        # src/core/i18n/locales/*.ts 编译到 public/locales/（.gitignore 排除，不入库）。
+        # CI checkout 后该目录为空，必须先跑生成脚本，否则 dist-web 缺语言包 →
+        # 线上请求 locales/zh-CN.json 404 → t() 全部回退 key 字符串（界面文本挂死）。
+        run: node ../scripts/generate-locale-json.mjs
+
       - name: Build web entry (production)
         # [doc:adr-177] Phase 3 主应用 web 入口生产构建
         # 不 externalize babylon / base=/MikuMikuAR/ / @wailsio/runtime stub
