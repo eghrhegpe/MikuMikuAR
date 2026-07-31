@@ -1,6 +1,7 @@
 ---
 kind: model_loader
 name: PMX 模型加载与缩略图捕获
+tier: architecture
 category: scene
 scope:
   - frontend/src/scene/manager/model-loader.ts
@@ -40,6 +41,9 @@ PMX 模型加载器：模型文件解析、实例创建、缩略图生成、outf
 ## 关键约定
 - 加载锁 / 重复检测 / 清理由 `scene.ts` 编排器负责（见 scene 卡），本模块专注「解析→实例」
 - 资源释放走 `model-manager` 的 `remove`，缩略图 key 见 `thumbnail-key`
+
+## UI 入口
+- 模型库加载：入口 `showModelPopup()`（`menus/library-browse.ts`），导航见 [menu-map.md](./menu-map.md) 的 library-core.ts 节。
 
 ## 与其他子系统关系
 - 上游：`scene.ts` 编排调用

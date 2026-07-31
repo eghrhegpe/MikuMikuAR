@@ -1,6 +1,7 @@
 ---
 kind: library_menu
 name: 资源库入口与编排
+tier: architecture
 category: ui
 scope:
   - frontend/src/menus/library.ts
@@ -24,6 +25,9 @@ Library 入口：注册表初始化 + re-export，保持外部 API 不变。聚�
 ## 关键约定
 - barrel re-export 保持历史 import 路径零变化
 - 具体库逻辑内聚在各子模块，本文件仅做路由聚合
+
+## UI 入口
+- 模型/动作库弹窗：入口 `showModelPopup()`（`menus/library-browse.ts`），导航结构见 [menu-map.md](./menu-map.md) 的 library-core.ts 节。
 
 ## 与其他子系统关系
 - 依赖 `library-core.ts`（核心实现）、`library-browse.ts`（浏览弹窗）、`library-session-store.ts`（会话状态 ADR-135）

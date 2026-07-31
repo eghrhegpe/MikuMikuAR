@@ -1,6 +1,7 @@
 ---
 kind: env_state_schema
 name: EnvState 单一源 Schema
+tier: architecture
 category: core
 scope:
   - frontend/src/core/env-state-schema.ts
@@ -45,6 +46,9 @@ EnvState 全部字段的**类型 + 默认值 + dispatch 分组**单一来源。�
 ## 关键约定
 - `envBrightness`（ADR-132）作为天空/IBL/云/主光/环境光的全局明暗统一标量
 - 数组/tuple3 写入必须整体替换，不依赖内部索引赋值触发刷新（见 `reactivity.ts` Proxy 约定）
+
+## UI 入口
+- 无独立面板：经各环境菜单（env 菜单、场景菜单）间接读写，字段级 UI 见 [menu-map.md](./menu-map.md)。
 
 ## 与其他子系统关系
 - `state.ts` 的 `buildDefaultEnvState()` 从本 schema.default 构造初始 EnvState

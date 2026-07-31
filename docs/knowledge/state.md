@@ -1,6 +1,7 @@
 ---
 kind: global_state
 name: 全局状态与场景运行时 Store
+tier: architecture
 category: core
 scope:
   - frontend/src/core/state.ts
@@ -67,6 +68,9 @@ use_when:
 - 所有 `export let` 仅供读取，外部模块禁止直接赋值
 - 修改必须走对应 `setXxx()` 写入点，保证状态变更可追踪（单一写入点原则）
 - 引用类型变量（Map/Set/数组）**内容**可被 mutate，但**引用本身**替换必须走 setter
+
+## UI 入口
+- 无独立面板：全局状态由各菜单/动作读写（快捷键总览见 [menu-map.md](./menu-map.md) 快捷键节）。
 
 ## 与其他子系统关系
 - `env-state-schema.ts` 派生 EnvState 默认值与 dispatch 分组

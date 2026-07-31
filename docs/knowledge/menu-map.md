@@ -1,7 +1,59 @@
+---
+kind: menu_map
+name: 菜单层级地图（自动生成）
+tier: architecture
+category: ui
+scope:
+  - frontend/src/menus/*.ts
+source_files:
+  - frontend/src/menus/diagnostic-chat.ts
+  - frontend/src/menus/diagnostic-config.ts
+  - frontend/src/menus/diagnostic-session.ts
+  - frontend/src/menus/env-menu.ts
+  - frontend/src/menus/library-core.ts
+  - frontend/src/menus/model-detail.ts
+  - frontend/src/menus/model-material.ts
+  - frontend/src/menus/motion-binding-ui.ts
+  - frontend/src/menus/motion-camera-levels.ts
+  - frontend/src/menus/motion-cloth-levels.ts
+  - frontend/src/menus/motion-detail-ui.ts
+  - frontend/src/menus/motion-override-levels.ts
+  - frontend/src/menus/motion-pose-levels.ts
+  - frontend/src/menus/motion-procmotion-levels.ts
+  - frontend/src/menus/motion-root-ui.ts
+  - frontend/src/menus/outfit-ui.ts
+  - frontend/src/menus/scene-menu.ts
+  - frontend/src/menus/scene-physics-levels.ts
+  - frontend/src/menus/scene-render-levels.ts
+  - frontend/src/menus/scene-render-presets.ts
+  - frontend/src/menus/scene-stage-lights.ts
+  - frontend/src/menus/settings-controls.ts
+  - frontend/src/menus/settings-diagnostic.ts
+  - frontend/src/menus/settings-graphics.ts
+  - frontend/src/menus/settings-resources.ts
+  - frontend/src/menus/settings-system.ts
+  - frontend/src/menus/settings.ts
+adr:
+  - ADR-093
+  - ADR-218
+invariants:
+  - 由 scripts/gen-menu-map.mjs 自动生成，禁止手改（--check 守护一致性）
+  - renderCustom/custom 运行时行与 slideRow 行无法静态提取，缺口由对应知识卡 ## UI 入口 补足
+tests:
+  - npm run gen:menumap -- --check（一致性校验）
+use_when:
+  - 菜单层级
+  - 菜单有哪些项
+  - 菜单路由
+  - 菜单怎么扩展
+  - 菜单地图
+---
+
 # 菜单层级地图（自动生成）
 
 > 由 `scripts/gen-menu-map.mjs` 从 `frontend/src/menus/**/*.ts` 自动提取，**勿手改**。
 > 重新生成：`node scripts/gen-menu-map.mjs`（仓库根目录）。
+> 本文档 `menu-map.md` 为菜单 UI 入口的机器生成事实源（ADR-218），静态归此、动态归对应知识卡。
 
 覆盖三部分静态菜单骨架：
 1. **Schema 树**（ADR-093 声明式）：`build*Schema(): MenuNode[]` 的层级（folder 嵌套 children）。
@@ -11,6 +63,63 @@
 > ⚠ 局限：`renderCustom`/`custom` 内部运行时生成的行、命令式 `slideRow` 行无法静态提取。
 
 ---
+
+## 入口一览（怎么打开）
+
+| 入口函数 | 文件 |
+|----------|------|
+| `showPendingBubble()` | `diagnostic-chat.ts` |
+| `buildCloudLevel()` | `env-cloud-levels.ts` |
+| `buildExperimentalLevel()` | `env-experimental-levels.ts` |
+| `buildFogLevel()` | `env-fog-levels.ts` |
+| `buildGroundLevel()` | `env-ground-levels.ts` |
+| `buildEnvLevel()` | `env-menu.ts` |
+| `buildParticleLevel()` | `env-menu.ts` |
+| `buildPresetLevel()` | `env-preset-levels.ts` |
+| `buildShadowLevel()` | `env-shadow-levels.ts` |
+| `buildSkyLevel()` | `env-sky-levels.ts` |
+| `buildWaterLevel()` | `env-water-levels.ts` |
+| `buildWindLevel()` | `env-wind-levels.ts` |
+| `showModelPopup()` | `library-browse.ts` |
+| `buildModelFormationLevel()` | `library-core.ts` |
+| `buildCameraLevel()` | `motion-camera-levels.ts` |
+| `buildVirtualSkirtLevel()` | `motion-cloth-levels.ts` |
+| `buildPlaybackSpeedLevel()` | `motion-detail-ui.ts` |
+| `buildGazeTrackingLevel()` | `motion-gaze-levels.ts` |
+| `buildAdvancedBoneOverrideLevel()` | `motion-override-levels.ts` |
+| `buildPoseStudioLevel()` | `motion-pose-levels.ts` |
+| `buildProcLibraryLevel()` | `motion-procmotion-levels.ts` |
+| `buildMotionRootLevel()` | `motion-root-ui.ts` |
+| `buildRetargetLevel()` | `motion-root-ui.ts` |
+| `buildDragModeLevel()` | `scene-drag-levels.ts` |
+| `buildPhysicsLevel()` | `scene-physics-levels.ts` |
+| `buildWasmPhysicsLevel()` | `scene-physics-levels.ts` |
+| `buildPhysicsDebugLevel()` | `scene-physics-levels.ts` |
+| `buildPresetScenesLevel()` | `scene-render-levels.ts` |
+| `buildPostProcessLevel()` | `scene-render-levels.ts` |
+| `buildPresetsLevel()` | `scene-render-presets.ts` |
+| `buildStageLevel()` | `scene-stage-levels.ts` |
+| `buildStageLightLevel()` | `scene-stage-lights.ts` |
+| `buildSettingsLanguageLevel()` | `settings-language.ts` |
+
+## 快捷键（shortcut-app.ts）
+
+| id | label | 默认键 | Ctrl | 分组 |
+|----|-------|--------|------|------|
+| `toggle:model` | `shortcuts.label.models` | `Digit1` | ✓ | shortcuts.group.popupNav |
+| `toggle:motion` | `shortcuts.label.motion` | `Digit2` | ✓ | shortcuts.group.popupNav |
+| `toggle:scene` | `shortcuts.label.scene` | `Digit3` | ✓ | shortcuts.group.popupNav |
+| `toggle:env` | `shortcuts.label.env` | `Digit4` | ✓ | shortcuts.group.popupNav |
+| `toggle:settings` | `shortcuts.label.settings` | `Digit5` | ✓ | shortcuts.group.popupNav |
+| `toggle:plaza` | `shortcuts.label.plaza` | `Digit7` | ✓ | shortcuts.group.popupNav |
+| `toggle:assistant` | `shortcuts.label.assistant` | `Digit8` | ✓ | shortcuts.group.popupNav |
+| `playback:toggle` | `shortcuts.label.playPause` | `Space` | — | shortcuts.group.playbackControl |
+| `global:close` | `shortcuts.label.closePopup` | `Escape` | — | shortcuts.group.global |
+| `playback:seek-back` | `shortcuts.label.seekBack` | `ArrowLeft` | — | shortcuts.group.playbackControl |
+| `playback:seek-forward` | `shortcuts.label.seekForward` | `ArrowRight` | — | shortcuts.group.playbackControl |
+| `screenshot:current` | `shortcuts.label.screenshot` | `F2` | — | shortcuts.group.screenshot |
+| `motion:undo` | `shortcuts.label.motionUndo` | `KeyZ` | ✓ | shortcuts.group.motionUndoRedo |
+| `motion:redo` | `shortcuts.label.motionRedo` | `KeyZ` | ✓ | shortcuts.group.motionUndoRedo |
 
 ## diagnostic-chat.ts
 

@@ -284,6 +284,40 @@ function extractRoutes(text) {
   return routes;
 }
 
+/** 提取顶层入口函数：`export function showXxxMenu(...)` / `export function buildXxxLevel()`（无参）。 */
+function extractEntries(text) {
+  const entries = [];
+  const re = /export\s+function\s+(show\w+|build\w+Level)\s*\(\s*\)\s*:/g;
+  let m;
+  while ((m = re.exec(text))) entries.push(m[1]);
+  return [...new Set(entries)];
+}
+
+/** 从 shortcut-app.ts 提取 registerShortcuts([...]) 的快捷键登记（id/label/defaultKey/defaultCtrl/group）。 */
+function extractShortcuts() {
+  const file = path.join(ROOT, 'frontend', 'src', 'core', 'shortcut-app.ts');
+  if (!fs.existsSync(file)) return [];
+  const text = fs.readFileSync(file, 'utf8');
+  const start = text.indexOf('registerShortcuts([');
+  if (start === -1) return [];
+  const openIdx = text.indexOf('[', start);
+  const closeIdx = matchBracket(text, openIdx);
+  if (closeIdx === -1) return [];
+  const out = [];
+  for (const obj of splitTopLevel(text.slice(openIdx + 1, closeIdx))) {
+    const id = extractProp(obj, 'id');
+    if (!id) continue;
+    out.push({
+      id,
+      label: extractProp(obj, 'label'),
+      key: extractProp(obj, 'defaultKey'),
+      ctrl: extractProp(obj, 'defaultCtrl') === 'true',
+      group: extractProp(obj, 'group'),
+    });
+  }
+  return out;
+}
+
 // ---------------------------------------------------------------------------
 // Markdown 渲染
 // ---------------------------------------------------------------------------
@@ -316,12 +350,50 @@ function renderRow(row) {
   return `| ${kind} | ${label} | ${icon} | ${tgt} |`;
 }
 
+/**
+ * 生成 frontmatter（menu-map 转正为知识卡：tier: architecture / category: ui）。
+ * source_files 动态列出实际有输出内容的菜单文件，保证 check-doc-drift 磁盘存在性校验通过。
+ */
+function buildFrontmatter(files) {
+  const covered = files
+    .filter((f) => f.schemas.length || f.pushed.length || f.rootItems.length || f.routes.length)
+    .map((f) => `  - frontend/src/menus/${f.rel}`);
+  return [
+    '---',
+    'kind: menu_map',
+    'name: 菜单层级地图（自动生成）',
+    'tier: architecture',
+    'category: ui',
+    'scope:',
+    '  - frontend/src/menus/*.ts',
+    'source_files:',
+    ...covered,
+    'adr:',
+    '  - ADR-093',
+    '  - ADR-218',
+    'invariants:',
+    '  - 由 scripts/gen-menu-map.mjs 自动生成，禁止手改（--check 守护一致性）',
+    '  - renderCustom/custom 运行时行与 slideRow 行无法静态提取，缺口由对应知识卡 ## UI 入口 补足',
+    'tests:',
+    '  - npm run gen:menumap -- --check（一致性校验）',
+    'use_when:',
+    '  - 菜单层级',
+    '  - 菜单有哪些项',
+    '  - 菜单路由',
+    '  - 菜单怎么扩展',
+    '  - 菜单地图',
+    '---',
+    '',
+  ];
+}
+
 function buildMarkdown(files) {
-  const lines = [];
+  const lines = buildFrontmatter(files);
   lines.push('# 菜单层级地图（自动生成）');
   lines.push('');
   lines.push('> 由 `scripts/gen-menu-map.mjs` 从 `frontend/src/menus/**/*.ts` 自动提取，**勿手改**。');
   lines.push('> 重新生成：`node scripts/gen-menu-map.mjs`（仓库根目录）。');
+  lines.push('> 本文档 `menu-map.md` 为菜单 UI 入口的机器生成事实源（ADR-218），静态归此、动态归对应知识卡。');
   lines.push('');
   lines.push('覆盖三部分静态菜单骨架：');
   lines.push('1. **Schema 树**（ADR-093 声明式）：`build*Schema(): MenuNode[]` 的层级（folder 嵌套 children）。');
@@ -332,6 +404,31 @@ function buildMarkdown(files) {
   lines.push('');
   lines.push('---');
   lines.push('');
+
+  // ── 入口一览：顶层入口函数（人类可读「怎么打开」）+ 快捷键 ──
+  const entryRows = files
+    .filter((f) => f.entries.length > 0)
+    .flatMap((f) => f.entries.map((name) => ({ name, rel: f.rel })));
+  if (entryRows.length > 0) {
+    lines.push('## 入口一览（怎么打开）');
+    lines.push('');
+    lines.push('| 入口函数 | 文件 |');
+    lines.push('|----------|------|');
+    for (const e of entryRows) lines.push(`| \`${e.name}()\` | \`${e.rel}\` |`);
+    lines.push('');
+  }
+
+  const shortcuts = extractShortcuts();
+  if (shortcuts.length > 0) {
+    lines.push('## 快捷键（shortcut-app.ts）');
+    lines.push('');
+    lines.push('| id | label | 默认键 | Ctrl | 分组 |');
+    lines.push('|----|-------|--------|------|------|');
+    for (const s of shortcuts) {
+      lines.push(`| \`${s.id}\` | \`${s.label ?? '—'}\` | ${s.key ? '`' + s.key + '`' : '—'} | ${s.ctrl ? '✓' : '—'} | ${s.group ?? '—'} |`);
+    }
+    lines.push('');
+  }
 
   for (const f of files) {
     if (f.schemas.length === 0 && f.pushed.length === 0 && f.rootItems.length === 0 && f.routes.length === 0) continue;
@@ -384,6 +481,7 @@ function scanFile(rel, file) {
   const text = fs.readFileSync(file, 'utf8');
   return {
     rel,
+    entries: extractEntries(text),
     schemas: extractSchemas(text),
     pushed: extractPushedItems(text),
     rootItems: extractRootItems(text),
