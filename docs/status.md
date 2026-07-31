@@ -15,7 +15,7 @@
 
 | ADR | 主题 | 状态 |
 |-----|------|------|
-| ADR-220 | Schema 完整性元测试 —— 不开浏览器，秒级捕获 schema 漂移 | 实施中（env 域 9 面板 + scene 域 2 面板 + motion 域 1 面板 + settings 域 4 面板，共 16 面板 753 断言全绿；model 域待推广） |
+| ADR-220 | Schema 完整性元测试 —— 不开浏览器，秒级捕获 schema 漂移 | 实施中（env 域 9 面板 + scene 域 2 面板 + motion 域 1 面板 + settings 域 4 面板，共 16 面板 1427 断言全绿；P0 精化已完成：多语言包校验 + motionModule 动态校验；model 域待推广） |
 | ADR-219 | 测试并发调优与 isolate 污染治理 — vitest 全量提速：maxWorkers 落地 + isolate=false 障碍清理 | 实施中（2026-07-31） |
 | ADR-218 | 知识库（docs/knowledge）分层治理 — 痛点与方案 | 规划（2026-07-31） |
 | ADR-217 | 地水无限尺寸单源化 — 水面跟进 groundInfiniteEnabled | ✅ 已实施（2026-07-30） |

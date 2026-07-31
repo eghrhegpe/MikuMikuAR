@@ -224,6 +224,7 @@ import { zhCN } from '../core/i18n/locales/zh-CN';
 import { en } from '../core/i18n/locales/en';
 import { ja } from '../core/i18n/locales/ja';
 import { ko } from '../core/i18n/locales/ko';
+import { zhTW } from '../core/i18n/locales/zh-TW';
 import { bundles } from '../core/i18n/t';
 
 // 初始化 bundles，避免 t() 运行时警告
@@ -231,20 +232,22 @@ bundles['zh-CN'] = zhCN;
 bundles['en'] = en;
 bundles['ja'] = ja;
 bundles['ko'] = ko;
+bundles['zh-TW'] = zhTW;
 
 // 各语言包的 key 集合
 const ZH_CN_KEYS = new Set(Object.keys(zhCN));
 const EN_KEYS = new Set(Object.keys(en));
 const JA_KEYS = new Set(Object.keys(ja));
 const KO_KEYS = new Set(Object.keys(ko));
+const ZH_TW_KEYS = new Set(Object.keys(zhTW));
 
-// 所有语言包的 key 交集（必须在所有语言中都存在）
-const I18N_KEYS = ZH_CN_KEYS; // 复用变量名，实际校验多包
+// 所有语言包的 key 集合
 const I18N_ALL_PACKAGES = [
     { name: 'zh-CN', keys: ZH_CN_KEYS },
     { name: 'en', keys: EN_KEYS },
     { name: 'ja', keys: JA_KEYS },
     { name: 'ko', keys: KO_KEYS },
+    { name: 'zh-TW', keys: ZH_TW_KEYS },
 ];
 
 const ENV_KEYS = new Set(Object.keys(ENV_STATE_SCHEMA));
@@ -283,6 +286,17 @@ const LIGHT_KEYS = new Set([
     'shadowBias',
 ]);
 
+// motionModule 参数映射（从各模块 DEFAULTS 提取，用于动态校验）
+// 新增 motion 模块时需同步更新此表，否则 bind 路径将被判为无效
+const MOTION_MODULE_PARAMS: Record<string, Set<string>> = {
+    'body-posture': new Set(['tilt', 'bend', 'twist', 'bodyHeight', 'bodyDepth']),
+    'left-hand': new Set(['pitch', 'yaw', 'roll', 'handPosX', 'handPosY', 'handPosZ', 'fingerPreset', 'fingerIntensity']),
+    'right-hand': new Set(['pitch', 'yaw', 'roll', 'handPosX', 'handPosY', 'handPosZ', 'fingerPreset', 'fingerIntensity']),
+    'left-foot': new Set(['pitch', 'yaw', 'roll', 'footPosX', 'footPosY', 'footPosZ']),
+    'right-foot': new Set(['pitch', 'yaw', 'roll', 'footPosX', 'footPosY', 'footPosZ']),
+    'riding-model': new Set(['preset', 'saddleHeight', 'pedalAngle', 'autoPedal', 'pedalSpeed']),
+};
+
 /** StatePath 前缀 → 有效字段集合 */
 const STATE_PREFIX_MAP: Record<string, Set<string>> = {
     env: ENV_KEYS,
@@ -300,12 +314,22 @@ function isValidStatePath(path: string): boolean {
     }
     const prefix = path.slice(0, dot);
     const keySet = STATE_PREFIX_MAP[prefix];
-    if (!keySet) {
-        // 未知前缀：motionModule 等动态路径跳过校验
-        return prefix === 'motionModule';
+    if (keySet) {
+        const field = path.slice(dot + 1);
+        return keySet.has(field);
     }
-    const field = path.slice(dot + 1);
-    return keySet.has(field);
+    // motionModule 动态路径: motionModule.<moduleId>.<paramKey>
+    if (prefix === 'motionModule') {
+        const rest = path.slice(dot + 1);
+        const sep = rest.indexOf('.');
+        if (sep < 0) return false; // 至少需要 moduleId.paramKey
+        const moduleId = rest.slice(0, sep);
+        const paramKey = rest.slice(sep + 1);
+        const params = MOTION_MODULE_PARAMS[moduleId];
+        if (!params) return false; // 未知模块 ID
+        return params.has(paramKey);
+    }
+    return false; // 未知前缀
 }
 
 describe('ADR-093 Schema 完整性元测试', () => {
@@ -355,40 +379,35 @@ describe('ADR-093 Schema 完整性元测试', () => {
     });
 
     // ═══════════════════════════════════════════════════════
-    // §3 i18n key 存在性
+    // §3 i18n key 存在性（多语言包）
     // ═══════════════════════════════════════════════════════
-    describe('i18n key 存在性', () => {
+    describe('i18n key 存在性（zh-CN/en/ja/ko）', () => {
         const allNodes = schemas.flatMap((s) => flattenNodes(s.nodes));
         const nodesWithLabel = allNodes.filter((n) => n.label);
 
-        it.each(
-            nodesWithLabel.map((n) => ({
-                id: n.id,
-                label: n.label!,
-            }))
-        )('$id label "$label" 在 zh-CN 语言包中存在', ({ label }) => {
-            // 跳过非 i18n key 的 label（如直接文本，不含点号）
-            if (!label.includes('.')) {
-                return;
+        // 收集所有需要校验的 label（去重）
+        const allLabels = new Set<string>();
+        nodesWithLabel.forEach((n) => {
+            if (n.label && n.label.includes('.')) {
+                allLabels.add(n.label);
             }
-            expect(I18N_KEYS.has(label)).toBe(true);
+        });
+        // modeSlider options 的 label 也需校验
+        allNodes.filter((n) => n.kind === 'modeSlider' && n.control?.options).forEach((n) => {
+            n.control!.options!.forEach((opt) => {
+                if (opt.label && opt.label.includes('.')) {
+                    allLabels.add(opt.label);
+                }
+            });
         });
 
-        // modeSlider options 的 label 也需校验
-        const modeSliders = allNodes.filter((n) => n.kind === 'modeSlider' && n.control?.options);
-        it.each(
-            modeSliders.flatMap((n) =>
-                n.control!.options!.map((opt) => ({
-                    id: n.id,
-                    optLabel: opt.label,
-                }))
-            )
-        )('$id option "$optLabel" 在 zh-CN 语言包中存在', ({ optLabel }) => {
-            if (!optLabel || !optLabel.includes('.')) {
-                return;
-            }
-            expect(I18N_KEYS.has(optLabel)).toBe(true);
-        });
+        for (const pkg of I18N_ALL_PACKAGES) {
+            describe(`${pkg.name} 语言包`, () => {
+                it.each(Array.from(allLabels))('key "$s" 存在于 ' + pkg.name, (key) => {
+                    expect(pkg.keys.has(key)).toBe(true);
+                });
+            });
+        }
     });
 
     // ═══════════════════════════════════════════════════════
