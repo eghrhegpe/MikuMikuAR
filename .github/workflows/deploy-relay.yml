@@ -1,0 +1,35 @@
+# MikuMikuAR AI Relay — Cloudflare Worker 自动部署
+#
+# 每当 relay/ 下的文件变更（worker.js / wrangler.toml / package.json），
+# 自动用 wrangler deploy 推送到 Cloudflare Workers。
+# 需要 GitHub Secrets:
+#   CLOUDFLARE_API_TOKEN — Cloudflare API Token（Edit Cloudflare Workers 权限）
+#   CLOUDFLARE_ACCOUNT_ID — Cloudflare Account ID
+
+name: Deploy AI Relay (Cloudflare Worker)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'relay/**'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: relay
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: relay/package-lock.json
+      - run: npm ci
+      - run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
