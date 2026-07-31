@@ -8,6 +8,8 @@
 //   registerLoadRefreshHook(() => { if (getEnvMenu()) refreshEnvRoot(); });
 //   registerLibraryScannedHook(() => { if (getEnvMenu()) getEnvMenu()?.reRender(); });
 
+import { addDisposableListener } from './dom';
+
 /** 所有注册的加载后刷新回调 */
 const _hooks = new Set<() => void>();
 
@@ -56,16 +58,14 @@ export function registerLibraryScannedHook(hook: () => void): () => void {
     _scannedHooks.add(hook);
     if (!_scannedListenerInstalled) {
         _scannedListenerInstalled = true;
-        import('./dom').then(({ addDisposableListener }) => {
-            addDisposableListener(window, 'mmar:library-scanned', () => {
-                for (const h of _scannedHooks) {
-                    try {
-                        h();
-                    } catch (e) {
-                        console.error('[load-refresh] scanned hook error:', e);
-                    }
+        addDisposableListener(window, 'mmar:library-scanned', () => {
+            for (const h of _scannedHooks) {
+                try {
+                    h();
+                } catch (e) {
+                    console.error('[load-refresh] scanned hook error:', e);
                 }
-            });
+            }
         });
     }
     return () => {
