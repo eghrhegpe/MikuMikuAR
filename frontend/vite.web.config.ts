@@ -53,6 +53,8 @@ export default defineConfig({
         minify: 'esbuild',
         cssMinify: true,
         sourcemap: false,
+        // 启用持久化构建缓存（CI 通过 actions/cache 恢复，加速二次构建）
+        cache: true,
         // 主应用全量打包（Babylon + 菜单 + 场景），接受大 bundle 换取零外部依赖
         chunkSizeWarningLimit: 4000,
         // 产物输出到 dist-web/（主应用 web 入口独立产物目录）
