@@ -50,14 +50,17 @@ export async function openEnvPanel(page: Page): Promise<void> {
 
 /** Navigate into a sub-level of the environment menu by clicking its folder row. */
 export async function clickEnvSubLevel(page: Page, label: string): Promise<void> {
-    // Environment sub-menus (天空, 照明, 地面, etc.) emit a stable data-testid
+    // Environment sub-menus (天空, 云, 地面, etc.) emit a stable data-testid
     // (= `folder:env:<slug>`) via the PopupRow rowKey contract.
     const ENV_SUB_TESTID: Record<string, string> = {
         天空: "folder:env:sky",
+        云: "folder:env:cloud",
         粒子: "folder:env:particle",
         风: "folder:env:wind",
         雾: "folder:env:fog",
         阴影: "folder:env:shadow",
+        水: "folder:env:water",
+        地面: "folder:env:ground",
         实验: "folder:env:experimental",
         后处理: "folder:env:postprocess",
         预设: "folder:env:presets",
@@ -67,6 +70,45 @@ export async function clickEnvSubLevel(page: Page, label: string): Promise<void>
         await page.getByTestId(testId).click();
     } else {
         // 未知标签回退到文本（保持稳定契约前兼容）
+        await page.getByText(label, { exact: true }).click();
+    }
+}
+
+/** Navigate into a sub-level of the motion popup by clicking its folder row. */
+export async function clickMotionSubLevel(page: Page, label: string): Promise<void> {
+    const MOTION_SUB_TESTID: Record<string, string> = {
+        相机: "folder:motion:camera",
+        视线: "folder:motion:gaze",
+        程序化: "folder:motion:procmotion",
+        姿势库: "folder:motion:pose",
+    };
+    const testId = MOTION_SUB_TESTID[label];
+    if (testId) {
+        await page.getByTestId(testId).click();
+    } else {
+        await page.getByText(label, { exact: true }).click();
+    }
+}
+
+/** Navigate into a sub-level of the settings panel by clicking its folder row. */
+export async function clickSettingsSubLevel(page: Page, label: string): Promise<void> {
+    const SETTINGS_SUB_TESTID: Record<string, string> = {
+        外观: "folder:settings:appearance",
+        库: "folder:settings:library",
+        性能: "folder:settings:performance",
+        渲染: "folder:settings:rendering",
+        路径: "folder:settings:paths",
+        音频: "folder:settings:audio",
+        快捷键: "folder:settings:shortcuts",
+        相机: "folder:settings:camera",
+        画质: "folder:settings:frame-quality",
+        特效: "folder:settings:effects",
+        物理: "folder:settings:physics-hud",
+    };
+    const testId = SETTINGS_SUB_TESTID[label];
+    if (testId) {
+        await page.getByTestId(testId).click();
+    } else {
         await page.getByText(label, { exact: true }).click();
     }
 }

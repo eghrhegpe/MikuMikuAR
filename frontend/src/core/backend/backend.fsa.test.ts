@@ -1,19 +1,9 @@
 // [doc:test] FSA 目录扫描嵌套结构（拆自 backend.test.ts）
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { idbStore, resetIdb, setWindow } from './backend-mocks';
+import { idbStore, resetIdb, setWindow, makeIdbMock } from './backend-mocks';
 
 vi.mock('./go-adapter', () => ({ goAdapter: {} }));
-vi.mock('./idb', () => ({
-    idbGet: vi.fn(async (_store: string, key: string) => idbStore.get(key)),
-    idbSet: vi.fn(async (_store: string, key: string, val: unknown) => {
-        idbStore.set(key, val);
-    }),
-    idbDelete: vi.fn(async (_store: string, key: string) => {
-        idbStore.delete(key);
-    }),
-    idbKeys: vi.fn(async (_store: string) => Array.from(idbStore.keys())),
-    closeIDB: vi.fn(),
-}));
+vi.mock('./idb', () => makeIdbMock());
 
 import { browserAdapter } from './browser-adapter';
 

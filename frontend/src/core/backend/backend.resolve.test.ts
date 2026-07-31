@@ -1,15 +1,9 @@
 // [doc:test] resolveBackend 三路径（拆自 backend.test.ts）
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { setWindow, clearWebFlag, goAdapterMock } from './backend-mocks';
+import { setWindow, clearWebFlag, goAdapterMock, makeIdbMock } from './backend-mocks';
 
 vi.mock('./go-adapter', () => goAdapterMock);
-vi.mock('./idb', () => ({
-    idbGet: vi.fn(),
-    idbSet: vi.fn(),
-    idbDelete: vi.fn(),
-    idbKeys: vi.fn(),
-    closeIDB: vi.fn(),
-}));
+vi.mock('./idb', () => makeIdbMock());
 
 describe('resolveBackend 三路径（异步选型，Android 冷启动竞态防护）', () => {
     beforeEach(() => {

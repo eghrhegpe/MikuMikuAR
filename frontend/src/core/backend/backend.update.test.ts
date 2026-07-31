@@ -1,14 +1,9 @@
 // [doc:test] ADR-179 更新安装（拆自 backend.test.ts）
 import { describe, it, expect, vi } from 'vitest';
+import { makeIdbMock } from './backend-mocks';
 
 vi.mock('./go-adapter', () => ({ goAdapter: {} }));
-vi.mock('./idb', () => ({
-    idbGet: vi.fn(),
-    idbSet: vi.fn(),
-    idbDelete: vi.fn(),
-    idbKeys: vi.fn(),
-    closeIDB: vi.fn(),
-}));
+vi.mock('./idb', () => makeIdbMock());
 
 import { browserAdapter } from './browser-adapter';
 
