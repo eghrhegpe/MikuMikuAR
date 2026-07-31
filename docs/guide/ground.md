@@ -49,4 +49,4 @@ A：关闭「网格开关」，保持「地面颜色」为实心色即可。
 - 想加水面？见 [水面设置](./env-water.md)
 - 想调天空氛围？见 [天空设置](./sky.md)
 
-> 进阶（开发者/AI）：地面实现见 [env-ground 知识卡](../knowledge/env-ground-levels.md)。
+> 进阶（开发者/AI）：地面实现见 [env-ground 知识卡](../knowledge/env-ground.md)。

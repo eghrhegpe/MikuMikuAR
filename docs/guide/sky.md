@@ -47,4 +47,4 @@ A：确认文件为 .hdr / .dds / .exr 格式，且已开启「环境反射强�
 - 想调整地面配合天空？见 [地面设置](./ground.md)
 - 想加水面反射？见 [水面设置](./env-water.md)
 
-> 进阶（开发者/AI）：天空实现见 [env-sky 知识卡](../knowledge/env-sky-levels.md)。
+> 进阶（开发者/AI）：天空实现见 [env-sky 知识卡](../knowledge/env-sky.md)。

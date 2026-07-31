@@ -48,4 +48,4 @@ A：开启「反转 Y 轴」，或在设置 → 快捷键中查看/修改相机�
 - 想给模型换动作？见 [动作与播放](./motion-playback.md)
 - 想调舞台光效？见 [天空设置](./sky.md)
 
-> 进阶（开发者/AI）：相机行为双轴设计见 [motion-camera 知识卡](../knowledge/motion-camera-levels.md)。
+> 进阶（开发者/AI）：相机行为双轴设计见 [camera 知识卡](../knowledge/camera.md)。
