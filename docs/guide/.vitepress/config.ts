@@ -23,7 +23,14 @@ export default defineConfig({
     sidebar: [
       {
         text: '功能指南',
-        items: [{ text: '水面设置', link: '/env-water' }],
+        items: [
+          { text: '模型导入', link: '/import-model' },
+          { text: '动作与播放', link: '/motion-playback' },
+          { text: '相机操作', link: '/camera-control' },
+          { text: '天空设置', link: '/sky' },
+          { text: '地面设置', link: '/ground' },
+          { text: '水面设置', link: '/env-water' },
+        ],
       },
     ],
     outline: { label: '本页导航', level: [2, 3] },

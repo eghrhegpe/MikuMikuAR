@@ -35,7 +35,7 @@ outline: [2, 3]
 - 动作面板 →「程序化动作」→ 选择「待机呼吸」/「自动舞蹈」
 - 开启「口型同步」后模型嘴型随音频变化
 
-![动作面板](img/motion-playback-1.png) *(截图占位)*
+![动作面板](img/motion-playback-1.png)
 
 ### 4. 表情（Morph）
 
