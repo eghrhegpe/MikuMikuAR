@@ -887,8 +887,6 @@ export const ja: Record<string, string> = {
     'scene.lightPreset.propProduct': 'プロダクト',
     'scene.lightPreset.stageDrama': '舞台劇',
     'scene.lightPreset.dancePerformance': 'ダンスパフォーマンス',
-    'scene.lightPreset.naturalDaylight': '自然光',
-    'scene.lightPreset.nightScene': '夜景',
 
     'scene.preset.standard': '標準',
     'scene.preset.cinematic': 'シネマティック',
@@ -1106,37 +1104,13 @@ export const ja: Record<string, string> = {
     'library.listView': 'リスト表示',
     'library.expandPanel': 'リソースを展開',
 
-    // —— Outfit Variants ——
-    'outfit.variant': 'テクスチャ置換',
-    'outfit.modelRemoved': 'モデルが削除されました',
-    'outfit.loadConfigFailed': '⚠ 衣装設定の読み込みに失敗しました',
-    'outfit.noOutfitsConfig':
-        'このモデルに outfits.json がありません。モデルフォルダに outfits.json を作成するとテクスチャ置換が使用できます。',
-    'outfit.default': 'デフォルト',
-    'outfit.switching': '⏳ バリエーションを切り替え中...',
-    'outfit.switchFailed': '✗ バリエーションの切り替えに失敗しました',
-    'outfit.switched': '✓ 衣装を切替: {name}',
-    'outfit.resetAll': 'すべてリセット',
-    'outfit.resetting': '⏳ 衣装をリセット中...',
-    'outfit.resetFailed': '✗ 衣装のリセットに失敗しました',
-    'outfit.resetDone': '✓ 衣装をリセットしました',
-
     // —— Env Preset ——
-    'env-preset.myPresets': 'マイプリセット',
     'env-preset.noCustom': '（カスタムプリセットはまだありません）',
     'env-preset.formatError': '✗ プリセットファイルの形式エラー',
-    'env-preset.loadFailed': '✗ プリセットの読み込みに失敗しました',
     'env-preset.applied': '✓ プリセットを適用しました: {label}',
-    'env-preset.deletePreset': 'プリセットを削除',
-    'env-preset.deleteFailed': '✗ プリセットの削除に失敗しました',
     'env-preset.deleted': '✓ プリセットを削除しました: {label}',
     'env-preset.confirmDelete': '「{label}」を削除しますか？',
-    'env-preset.saveCurrent': '＋ 現在の設定をプリセットとして保存',
-    'env-preset.inputName':
-        'プリセット名を入力（ファイル名に使用されます。英数字/_/-/漢字が使用可能）',
     'env-preset.saveFailed': '✗ プリセットの保存に失敗しました',
-    'env-preset.saveErrorToast': '環境プリセットの保存に失敗しました',
-    'env-preset.saved': '✓ プリセットを保存しました: {name}',
     'env-preset.title': '環境プリセット',
     'env-preset.sceneMood': 'シーンムード',
     'env-preset.stageA': 'ステージ-A',

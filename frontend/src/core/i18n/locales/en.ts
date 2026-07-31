@@ -861,8 +861,6 @@ export const en: Record<string, string> = {
     'scene.lightPreset.propProduct': 'Product',
     'scene.lightPreset.stageDrama': 'Stage Drama',
     'scene.lightPreset.dancePerformance': 'Dance Performance',
-    'scene.lightPreset.naturalDaylight': 'Natural Daylight',
-    'scene.lightPreset.nightScene': 'Night Scene',
 
     // —— Physics levels ——
     'scene.gravityStrength': 'Gravity Strength (WASM + Cloth)',
@@ -1168,37 +1166,13 @@ export const en: Record<string, string> = {
     'motion-preset.deleteFailed': '✗ Delete failed',
     'motion-preset.applyFailed': '✗ Failed to apply preset',
 
-    // outfit — outfit variant UI
-    'outfit.variant': 'Replace Textures',
-    'outfit.modelRemoved': 'Model removed',
-    'outfit.loadConfigFailed': '⚠ Failed to load outfit config',
-    'outfit.noOutfitsConfig':
-        'This model has no outfits.json. Create outfits.json in the model folder to enable texture replacement.',
-    'outfit.default': 'Default',
-    'outfit.switching': '⏳ Switching variant...',
-    'outfit.switchFailed': '✗ Failed to switch variant',
-    'outfit.switched': '✓ Switched to outfit: {name}',
-    'outfit.resetAll': 'Reset All',
-    'outfit.resetting': '⏳ Resetting outfit...',
-    'outfit.resetFailed': '✗ Failed to reset outfit',
-    'outfit.resetDone': '✓ Outfit reset',
-
     // env-preset — environment preset UI
-    'env-preset.myPresets': 'My Presets',
     'env-preset.noCustom': '(No custom presets yet)',
     'env-preset.formatError': '✗ Preset file format error',
-    'env-preset.loadFailed': '✗ Failed to load preset',
     'env-preset.applied': '✓ Preset applied: {label}',
-    'env-preset.deletePreset': 'Delete preset',
-    'env-preset.deleteFailed': '✗ Failed to delete preset',
     'env-preset.deleted': '✓ Preset deleted: {label}',
     'env-preset.confirmDelete': 'Delete "{label}"?',
-    'env-preset.saveCurrent': '＋ Save current as preset',
-    'env-preset.inputName':
-        'Enter preset name (used as filename; letters/digits/_/-/Chinese allowed)',
     'env-preset.saveFailed': '✗ Failed to save preset',
-    'env-preset.saveErrorToast': 'Failed to save environment preset',
-    'env-preset.saved': '✓ Preset saved: {name}',
     'env-preset.title': 'Environment Presets',
     'env-preset.sceneMood': 'Scene Mood',
     'env-preset.stageA': 'Stage A',
