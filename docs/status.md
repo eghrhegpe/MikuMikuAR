@@ -15,6 +15,7 @@
 
 | ADR | 主题 | 状态 |
 |-----|------|------|
+| ADR-219 | 测试并发调优与 isolate 污染治理 — vitest 全量提速：maxWorkers 落地 + isolate=false 障碍清理 | 实施中（2026-07-31） |
 | ADR-218 | 知识库（docs/knowledge）分层治理 — 痛点与方案 | 规划（2026-07-31） |
 | ADR-217 | 地水无限尺寸单源化 — 水面跟进 groundInfiniteEnabled | ✅ 已实施（2026-07-30） |
 | ADR-216 | 移除死状态字段 underwaterFogDensity / underwaterFogMultiplier | ✅ 已实施（2026-07-30） |
