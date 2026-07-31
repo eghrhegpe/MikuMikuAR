@@ -24,7 +24,8 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
-      "@bindings/*": ["bindings/*"]
+      "@bindings/*": ["bindings/*"],
+      "babylon-mmd/esm/*": ["node_modules/babylon-mmd/esm/*"]
     }
   },
   "include": [
