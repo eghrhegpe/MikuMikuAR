@@ -61,13 +61,6 @@ function collectSceneAssets(scene: SceneFile): string[] {
         add(scene.audio.path, scene.audio.libraryRef);
     }
 
-    // Props
-    if (scene.props) {
-        for (const p of scene.props) {
-            add(p.filePath, p.libraryRef);
-        }
-    }
-
     return Array.from(paths);
 }
 
@@ -131,17 +124,6 @@ function rewriteRefsForBundle(scene: SceneFile, _libraryRoot: string): SceneFile
         if (aRef) {
             rewritten.audio.libraryRef = aRef;
             rewritten.audio.path = '';
-        }
-    }
-
-    // Props
-    if (rewritten.props) {
-        for (const p of rewritten.props) {
-            const pRef = rewritePath(p.filePath, p.libraryRef);
-            if (pRef) {
-                p.libraryRef = pRef;
-                p.filePath = '';
-            }
         }
     }
 
