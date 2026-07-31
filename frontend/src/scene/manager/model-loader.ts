@@ -245,7 +245,7 @@ interface TextureFile {
     readonly data: ArrayBuffer;
 }
 
-const TEXTURE_EXTS = /\.(png|jpg|jpeg|bmp|tga|dds|tif|tiff|sph|spa|toon)$/i;
+const TEXTURE_EXTS = /\.(png|jpg|jpeg|bmp|tga|dds|tif|tiff|sph|spa|toon|ktx2?)$/i;
 
 function getMimeType(name: string): string {
     const ext = name.split('.').pop()?.toLowerCase();
@@ -258,6 +258,8 @@ function getMimeType(name: string): string {
         dds: 'image/vnd-ms.dds',
         tif: 'image/tiff',
         tiff: 'image/tiff',
+        ktx: 'image/ktx',
+        ktx2: 'image/ktx2',
     };
     return map[ext ?? ''] ?? 'application/octet-stream';
 }

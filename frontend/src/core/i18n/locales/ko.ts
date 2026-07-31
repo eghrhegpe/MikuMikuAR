@@ -565,13 +565,6 @@ export const ko: Record<string, string> = {
 
     // ===== 모션 리타겟 motion.retarget =====
     'motion.retarget.customMap': '사용자 정의 본 매핑',
-    'motion.retarget.loading': '애니메이션 로딩 중...',
-    'motion.retarget.loadFailed': '애니메이션 로드 실패',
-    'motion.retarget.noAnimation': '애니메이션 그룹을 찾을 수 없습니다',
-    'motion.retarget.noSkeleton': '스켈레톤을 찾을 수 없습니다',
-    'motion.retarget.retargeting': '리타겟팅 중...',
-    'motion.retarget.failed': '리타겟 실패',
-    'motion.retarget.success': '리타겟 성공',
     'motion.retarget.noModel': '먼저 모델을 선택하세요',
     'motion.retarget.noBones': '뼈대 데이터가 없습니다',
     'motion.retarget.loaded': '외부 애니메이션 로드됨 ({preset})',
@@ -979,15 +972,9 @@ export const ko: Record<string, string> = {
     'scene.loader.loading': '로딩 중...',
     'scene.loader.loadingZero': '로딩 0%',
     'scene.loader.loadingProgress': '로딩 {pct}%',
-    'scene.loader.noMeshes': '✗ 로드된 메시 없음',
     'scene.loader.stageLoaded': '✓ {name} (스테이지)',
-    'scene.loader.vmdFailedModelLoaded': '⚠ VMD 로드 실패, 모델 로드됨: {name}',
     'scene.loader.actorLoaded': '✓ {name}',
     'scene.loader.actorLoadedWithVmd': '✓ {name} + {vmd}',
-    'scene.loader.loadFailed': '✗ 모델 로드 실패: {error}',
-    'scene.loader.vmdLoading': 'VMD 로딩 중...',
-    'scene.loader.cameraVmdLoading': '카메라 VMD 로딩 중...',
-    'scene.loader.vpdLoading': 'VPD 포즈 로딩 중...',
 
     // —— Scene VMD ——
     'scene.vmd.cachedWaiting': 'VMD 캐시됨, 모델 대기 중',

@@ -405,13 +405,6 @@ export const en: Record<string, string> = {
 
     // ===== Motion Retarget =====
     'motion.retarget.customMap': 'Custom Bone Map',
-    'motion.retarget.loading': 'Loading animation...',
-    'motion.retarget.loadFailed': 'Animation load failed',
-    'motion.retarget.noAnimation': 'No animation groups found',
-    'motion.retarget.noSkeleton': 'No skeleton found',
-    'motion.retarget.retargeting': 'Retargeting...',
-    'motion.retarget.failed': 'Retarget failed',
-    'motion.retarget.success': 'Retarget success',
     'motion.retarget.noModel': 'Please select a model first',
     'motion.retarget.noBones': 'No bone data',
     'motion.retarget.loaded': 'External animation loaded ({preset})',
@@ -1039,15 +1032,9 @@ export const en: Record<string, string> = {
     'scene.loader.loading': 'Loading...',
     'scene.loader.loadingZero': 'Loading 0%',
     'scene.loader.loadingProgress': 'Loading {pct}%',
-    'scene.loader.noMeshes': '✗ No meshes loaded',
     'scene.loader.stageLoaded': '✓ {name} (stage)',
-    'scene.loader.vmdFailedModelLoaded': '⚠ VMD failed, model loaded: {name}',
     'scene.loader.actorLoaded': '✓ {name}',
     'scene.loader.actorLoadedWithVmd': '✓ {name} + {vmd}',
-    'scene.loader.loadFailed': '✗ Model load failed: {error}',
-    'scene.loader.vmdLoading': 'VMD loading...',
-    'scene.loader.cameraVmdLoading': 'Camera VMD loading...',
-    'scene.loader.vpdLoading': 'VPD pose loading...',
 
     // scene.vmd — VMD/layer/pose loading status
     'scene.vmd.cachedWaiting': 'VMD cached, waiting for model',

@@ -57,6 +57,21 @@ import '@babylonjs/core/Materials/Textures/Loaders/exrTextureLoader';
 // 通过 KhronosTextureContainer2.IsValid() 自动分发。Phase 0 仅注册 loader，无代码路径触发 KTX2 加载；
 // Phase 1 落地 Go 端 toktx 转码后由 model-loader 透明接入。
 import '@babylonjs/core/Materials/Textures/Loaders/ktxTextureLoader';
+// [doc:adr-189] Phase 3: KTX2 解码器自托管配置
+// 默认从 cdn.babylonjs.com 加载 ktx2Decoder，离线环境需自托管
+import { KhronosTextureContainer2 } from '@babylonjs/core/Misc/khronosTextureContainer2';
+KhronosTextureContainer2.URLConfig = {
+    jsDecoderModule: '/lib/ktx2decoder/babylon.ktx2Decoder.js',
+    wasmUASTCToASTC: '/lib/ktx2decoder/wasm/uastc_astc.wasm',
+    wasmUASTCToBC7: '/lib/ktx2decoder/wasm/uastc_bc7.wasm',
+    wasmUASTCToRGBA_UNORM: '/lib/ktx2decoder/wasm/uastc_rgba8_unorm_v2.wasm',
+    wasmUASTCToRGBA_SRGB: '/lib/ktx2decoder/wasm/uastc_rgba8_srgb_v2.wasm',
+    wasmUASTCToR8_UNORM: '/lib/ktx2decoder/wasm/uastc_r8_unorm.wasm',
+    wasmUASTCToRG8_UNORM: '/lib/ktx2decoder/wasm/uastc_rg8_unorm.wasm',
+    jsMSCTranscoder: null,
+    wasmMSCTranscoder: null,
+    wasmZSTDDecoder: null,
+};
 import 'babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.vertex';
 import 'babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.fragment';
 
