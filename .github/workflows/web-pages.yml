@@ -17,7 +17,7 @@ on:
       - 'frontend/vite.web.config.ts'
       - 'frontend/src/**'
       - 'frontend/bindings/**'
-      - 'docs/guide/**'
+      - 'docs/**'
       - '.github/workflows/web-pages.yml'
   workflow_dispatch: # 允许手动触发
 

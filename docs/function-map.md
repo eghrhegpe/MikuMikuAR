@@ -76,7 +76,7 @@
 | `loadAiConfig()` | `core/ai/config-store` | 同步读取：优先内存缓存；未加载时回退默认并触发异步回源（不阻塞调用方）。 |
 | `normalizeEndpoint()` | `core/ai/config-store` | 补全 chat completions 路径：输入 `/v1` 自动补全为 `/v1/chat/completions`，已有完整路径则原样返回。 |
 | `normalizeTimeout()` | `core/ai/config-store` | [doc:adr-199 P2-3] 将超时值归一到 [MIN, MAX]；非法/缺失回落缺省。 |
-| `saveAiConfig()` | `core/ai/config-store` | 同步保存：写内存缓存 + 异步落盘 IndexedDB（fire-and-forget）。返回合并后的配置。 |
+| `saveAiConfig()` | `core/ai/config-store` | 保存配置：写内存缓存（同步即时生效）+ 异步落盘 IndexedDB。 |
 | `validateAiConfig()` | `core/ai/config-store` | 校验配置是否足够发起一次对话。全量收集所有错误，一次性返回。 |
 | `buildDialogueSystemPrompt()` | `core/ai/dialogue-session` | 转发：为当前角色构建台词 system prompt。 |
 | `getActiveBible()` | `core/ai/dialogue-session` | 当前选中的角色圣经。 |
