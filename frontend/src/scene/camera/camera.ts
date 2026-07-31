@@ -41,13 +41,9 @@ import {
     setCurrentCamera,
     getFocusCenterY,
     setFocusCenterY,
-    getConcertPaused,
-    setCameraVmdState,
-    clearCameraVmdState,
     setAutoCameraEnabledFlag,
     setAutoCameraBeatCount as _setAutoCameraBeatCount,
     setAutoCameraPresetIdx as _setAutoCameraPresetIdx,
-    isTouchDevice,
     getFov as getFovState,
     setFov as setFovState,
     setCameraScene,
@@ -69,9 +65,6 @@ import type {
     CameraPreset,
 } from './camera-state';
 import {
-    loadCameraVmd,
-    clearCameraVmd,
-    animateCameraVmd,
     createVmdCamera,
     hasCameraAnimationHandle,
     setSwitchCameraModeCallback,
@@ -82,8 +75,6 @@ import {
     createSurroundCamera,
     createConcertCamera,
     createOneshotCamera,
-    applyCameraUserSettings,
-    refreshCameraUserSettings,
     disposeViewMatrixHandle,
     setSchedulePersistCallback,
 } from './camera-factory';
@@ -99,11 +90,6 @@ import {
     stopConcert,
 } from './camera-behaviors';
 import {
-    setOrbitBoneLock,
-    getOrbitBoneLock,
-    setBoneLockDamping,
-    getBoneLockDamping,
-    getFocusedModelBoneNames,
     stopBoneLock,
     restoreBoneLockIfEnabled,
 } from './camera-bone-lock';
@@ -111,7 +97,6 @@ import {
     setAutoCameraEnabled,
     isAutoCameraEnabled,
     setAutoCameraBeatsPerSwitch,
-    getAutoCameraBeatsPerSwitch,
     restoreAutoCameraState,
     setSyncAxesCallback,
 } from './camera-auto';

@@ -254,36 +254,36 @@
     },
     {
       "firstFile": {
-        "end": 298,
+        "end": 300,
         "endLoc": {
           "column": 15,
-          "line": 298,
-          "position": 11054
+          "line": 300,
+          "position": 11086
         },
         "name": "scene\\camera\\camera-behaviors.ts",
-        "start": 281,
+        "start": 283,
         "startLoc": {
           "column": 30,
-          "line": 281,
-          "position": 10529
+          "line": 283,
+          "position": 10561
         }
       },
       "format": "typescript",
       "fragment": "",
       "lines": 18,
       "secondFile": {
-        "end": 343,
+        "end": 345,
         "endLoc": {
           "column": 15,
-          "line": 343,
-          "position": 12859
+          "line": 345,
+          "position": 12891
         },
         "name": "scene\\camera\\camera-behaviors.ts",
-        "start": 326,
+        "start": 328,
         "startLoc": {
           "column": 29,
-          "line": 326,
-          "position": 12334
+          "line": 328,
+          "position": 12366
         }
       },
       "tokens": 109
@@ -344,18 +344,18 @@
       "fragment": "",
       "lines": 18,
       "secondFile": {
-        "end": 385,
+        "end": 389,
         "endLoc": {
           "column": 7,
-          "line": 385,
-          "position": 14137
+          "line": 389,
+          "position": 14187
         },
         "name": "scene\\env\\env-sky.ts",
-        "start": 370,
+        "start": 374,
         "startLoc": {
           "column": 30,
-          "line": 370,
-          "position": 13557
+          "line": 374,
+          "position": 13607
         }
       },
       "tokens": 88
@@ -506,7 +506,7 @@
     }
   ],
   "statistics": {
-    "detectionDate": "2026-07-31T12:58:03.482Z",
+    "detectionDate": "2026-07-31T13:26:22.578Z",
     "formats": {
       "txt": {
         "clones": 0,
@@ -524,26 +524,26 @@
         "clones": 14,
         "duplicatedLines": 254,
         "duplicatedTokens": 1143,
-        "lines": 45662,
+        "lines": 45687,
         "newClones": 0,
         "newDuplicatedLines": 0,
-        "percentage": 0.5562612237746923,
-        "percentageTokens": 0.5209876430664886,
+        "percentage": 0.5559568367369274,
+        "percentageTokens": 0.5208618144036747,
         "sources": 258,
-        "tokens": 219391
+        "tokens": 219444
       }
     },
     "total": {
       "clones": 14,
       "duplicatedLines": 254,
       "duplicatedTokens": 1143,
-      "lines": 45755,
+      "lines": 45780,
       "newClones": 0,
       "newDuplicatedLines": 0,
-      "percentage": 0.5551305868211125,
-      "percentageTokens": 0.5174216737663137,
+      "percentage": 0.5548274355613806,
+      "percentageTokens": 0.5172975615054581,
       "sources": 259,
-      "tokens": 220903
+      "tokens": 220956
     }
   }
 }

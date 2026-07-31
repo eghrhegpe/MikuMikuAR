@@ -5,15 +5,13 @@
 
 import { SaveLastScene, LoadLastScene } from '../core/wails-bindings';
 import { t } from '../core/i18n/t';
-import { translateGoError } from '../core/i18n/goerr';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 
-import { libraryRoot, envState, EnvState, modelRegistry, showErrorToast } from '../core/config';
+import { libraryRoot, envState, EnvState, modelRegistry } from '../core/config';
 import { showInfoToast } from '../core/toast';
 import { feedbackError, feedbackInfo } from '../core/feedback';
 import { debounce } from '../core/debounce';
-import { generateUuid } from '../core/uuid';
 import { swallowError } from '../core/async';
 import { computeLibraryRef } from '@/core/path';
 import type { ModelInstance } from '../core/types';
@@ -918,7 +916,7 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
     _suppressAutoSave = true;
 
     // --- Load all models and apply post-load config ---
-    const [modelIds, errors] = await deserializeModels(data.models);
+    const [, errors] = await deserializeModels(data.models);
 
     // --- Formation: re-apply if saved ---
     if (data.formation && modelManager) {
