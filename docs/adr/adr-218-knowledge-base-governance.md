@@ -105,6 +105,12 @@ README 模板规定 `category` 枚举为 `<rendering|env|motion|ui|core|backend|
 
 **`ui_entry` 登记方式**：采用**正文标准小节 `## UI 入口`**（非 frontmatter 字段）——菜单路径/面板是人类可读多行内容，塞 YAML 会僵化；且复用 `env-water.md` 既有范式，不引入新字段类型。
 
+**UI 入口事实源（2026-07-31 补充）**：菜单层级全景由自动生成的 `docs/knowledge/menu-map.md`（`scripts/gen-menu-map.mjs`，ADR-093 声明式 Schema 静态提取）承担，覆盖 Schema 树 / 导航 items / target 路由。因此：
+
+- architecture 卡的 `## UI 入口` 小节**不重复抄菜单树**，只登记卡内运行时特有入口，或直接引用 `menu-map.md` 对应节，避免双写漂移。
+- 检查 10（WARN）语义放宽：architecture 卡**有 `## UI 入口` 小节 或 引用 `menu-map.md`** 即通过。
+- `menu-map.md` 局限（`renderCustom`/`custom` 运行时行、命令式 `slideRow` 行无法静态提取）由对应知识卡的 `## UI 入口` 小节补足——**静态归 menu-map，动态归卡**。
+
 ---
 
 ## 后果

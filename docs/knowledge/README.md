@@ -110,6 +110,8 @@ use_when:
 
 ## 卡片索引（226 张：architecture 平铺 + leaf 折叠计数）
 
+> 🌀 机器生成地图：[menu-map.md](./menu-map.md) —— 菜单层级全景（Schema 树 + 导航 items + target 路由），由 `scripts/gen-menu-map.mjs` 自动生成，**勿手改**；重跑 `npm run gen:menumap`。
+
 ### 环境系统（env）
 
 | 卡片 | 模块 | 关联 ADR |
