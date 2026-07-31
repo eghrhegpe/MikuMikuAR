@@ -141,7 +141,7 @@ type FileAccessor interface {
 
 | ID | 问题 | 影响 | 实际状态（2026-07-10 核对） |
 |----|------|------|------|
-| A1-01 | `Browser.OpenURL` 在 Android 上无文档保证 | "检查更新"/"查看许可证"等按钮静默无响应 | ✅ 已修复：`frontend/src/core/platform.ts` `openExternalURL()` 安卓走 `<a>` 兜底 |
+| A1-01 | `Browser.OpenURL` 在 Android 上无文档保证 | "检查更新"/"查看许可证"等按钮静默无响应 | ✅ 已修复：`frontend/src/core/platform.ts` `openExternalURL()` 安卓走 `<a>` 兜底 | **2026-07-31 变更**：桌面端外链已统一改用 `window.open`（经 `core/platform.ts` 的 `openExternalLink`），不再依赖 Wails `browser.openURL` 桥；`events.ts`、`plaza-browser.ts` 的 `browser.openURL` 兜底分支已移除。`openExternalURL` 仅保留为 Android 分支内部实现，被 `openExternalLink` 复用。 |
 | A1-02 | Blender/MMD/外部程序菜单项可见但点击报错 | 前端需隐藏或灰显这些入口 | ✅ 已修复：`platform.ts` `guardExternalAction()` 安卓返回 false（与决策点 5 一致） |
 | A1-03 | `isAndroidPlatform()` 调用时 `window.wails` bridge 未就绪 | 读到 `undefined !== 'android'` → 误判为桌面 | ✅ 已修复：`platform.ts` `isAndroidPlatform()` 改读 `window.wails.platform()` + `awaitWailsBridge()` 轮询待 bridge 就绪 |
 | A1-04 | 看舞蹈时屏幕随系统熄屏超时自动关闭（音频继续播放、画面黑屏） | 核心观看体验中断；USB 调试的「保持唤醒」开发者选项会掩盖该问题，真机用户必现 | ✅ 已修复（2026-07-20）：接线孤儿桥 `WailsBridge.setKeepAwake`——`WailsJSBridge` 暴露 `setKeepAwake` @JavascriptInterface；前端启动恢复设置时调用（undefined 视为开启），外观设置新增「屏幕→屏幕常亮」开关（仅 Android 展示，`keepAwake` 经 `SetUIState` 持久化到 `UIState`） |
