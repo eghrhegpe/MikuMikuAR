@@ -31,7 +31,7 @@ go install "github.com/wailsapp/wails/v3/cmd/wails3@$WAILS_VER"
 
 ---
 
-## 1. 快速 DOM 回归（无需 Wails）— `@dom`
+## 1. 快速 DOM 回归（无需 Wails）✅ CLI 友好 — `@dom`
 
 开两个终端：
 
@@ -55,7 +55,7 @@ npm run test:e2e -- --grep "@dom"
 
 ---
 
-## 2. 完整 3D 集成（需 Wails + WebView2）— `@webgl`
+## 2. 完整 3D 集成（需 Wails + WebView2）⚠️ 仅 Windows — `@webgl`
 
 > **推荐在 Windows 上跑**（原生 WebView2 才兼容 `connectOverCDP`）。
 
@@ -142,12 +142,12 @@ npm run test                   # 或 npx vitest run
 
 ## 7. CI 门禁对照
 
-| Job | Runner | 性质 | 命令 | 覆盖 |
-|-----|--------|------|------|------|
-| `e2e` | ubuntu-latest | **阻塞门禁** | 起 Vite → `npx playwright test --grep "@dom"` | `@dom` ×30（smoke + 面板全覆盖 + 程序化 mesh + 生命周期） |
-| `e2e-wails` | windows-latest | **非阻塞**（`continue-on-error`） | 起 `wails3 dev`(带 9222) → `npx playwright test --grep "@webgl"` | `@webgl` ×11（真实模型加载 + 动作/换装 + 截图管线） |
-| `e2e-web-smoke` | ubuntu-latest | **阻塞门禁** | build + preview dist-web → `npx playwright test --grep "@web"` smoke only | `@web` ×9（首屏 + 能力门控 + 资源加载 + IDB CRUD） |
-| `e2e-web-full` | ubuntu-latest | **非阻塞**（`continue-on-error`） | build + preview dist-web → `npx playwright test --grep "@web"` (全量) | `@web` ×23（含 FSA 授权流 + 下载面板 + 能力声明） |
+| Job | Runner | CLI 友好 | 性质 | 命令 | 覆盖 |
+|-----|--------|----------|------|------|------|
+| `e2e` | ubuntu-latest | ✅ | **阻塞门禁** | 起 Vite → `npx playwright test --grep "@dom"` | `@dom` ×30（smoke + 面板全覆盖 + 程序化 mesh + 生命周期） |
+| `e2e-wails` | windows-latest | ⚠️ | **非阻塞**（`continue-on-error`） | 起 `wails3 dev`(带 9222) → `npx playwright test --grep "@webgl"` | `@webgl` ×11（真实模型加载 + 动作/换装 + 截图管线） |
+| `e2e-web-smoke` | ubuntu-latest | ✅ | **阻塞门禁** | build + preview dist-web → `npx playwright test --grep "@web"` smoke only | `@web` ×9（首屏 + 能力门控 + 资源加载 + IDB CRUD） |
+| `e2e-web-full` | ubuntu-latest | ✅ | **非阻塞**（`continue-on-error`） | build + preview dist-web → `npx playwright test --grep "@web"` (全量) | `@web` ×23（含 FSA 授权流 + 下载面板 + 能力声明） |
 
 > **设计意图**：`e2e`（@dom，Ubuntu Chromium）和 `e2e-web-smoke`（@web smoke）快且稳，作为阻塞门禁。
 > `e2e-wails`（@webgl，需 Windows + WebView2/CDP）和 `e2e-web-full`（@web 全量，含 FSA/IndexedDB 探针）
@@ -173,15 +173,19 @@ npm run test                   # 或 npx vitest run
 
 本项目采用「**@dom 稳定门禁 + @webgl 可选深度**」的两阶段策略：
 
-| 阶段 | 标签 | 运行环境 | 稳定性 | 用途 |
-|------|------|----------|--------|------|
-| **基础门禁** | `@dom` | vitePage (Chromium → :5173) | ⭐⭐⭐⭐⭐ 稳定 | DOM/UI 回归 + Babylon 程序化逻辑验证 |
-| **深度集成** | `@webgl` | wailsPage (CDP → Wails WebView2 :9222) | ⭐⭐ 易受环境影响 | 真实 PMX 加载、动作播放、换装、截图管线 |
-| **网页入口** | `@web` | vite preview (:4174) | ⭐⭐⭐⭐ 较稳定 | Web 入口能力门控 + IndexedDB CRUD |
+| 阶段 | 标签 | 运行环境 | CI 兼容 | 用途 |
+|------|------|----------|---------|------|
+| **基础门禁** | `@dom` | vitePage (Chromium → :5173) | ✅ Linux/Mac/Windows 通用 | DOM/UI 回归 + Babylon 程序化逻辑验证 |
+| **深度集成** | `@webgl` | wailsPage (CDP → Wails WebView2 :9222) | ⚠️ 仅 Windows + Wails v3 | 真实 PMX 加载、动作播放、换装、截图管线 |
+| **网页入口** | `@web` | vite preview (:4174) | ✅ Linux/Mac/Windows 通用 | Web 入口能力门控 + IndexedDB CRUD |
 
-**设计意图**：`@dom` 作为**阻塞门禁**（Linux CI），确保 95% 的回归覆盖；`@webgl` 作为**非阻塞**（Windows CI，`continue-on-error`），提供深度集成验证但不阻塞合并。
+**设计意图**：`@dom` 和 `@web` 作为**阻塞门禁**（可在任意 OS 的 CI 上稳定运行），确保核心回归覆盖；`@webgl` 作为**非阻塞**（仅 Windows CI，`continue-on-error`），提供深度集成验证但不阻塞合并。
 
-### @dom — 桌面 DOM 层（vitePage, 30 tests）
+> **💡 快速判断标准**：
+> - ✅ **CLI 友好**：只依赖 Playwright 自带 Chromium，跑 `npm run test:e2e -- --grep "@dom"` (或 `@web`)
+> - ⚠️ **需桌面环境**：必须有 Wails 运行时，跑 `npm run test:e2e -- --grep "@webgl"` 前需先启动 `wails3 dev`
+
+### @dom — 桌面 DOM 层（vitePage, 30 tests）✅ CLI 友好
 
 | Spec 文件 | 测试数 | 覆盖内容 |
 |-----------|--------|---------|
@@ -203,7 +207,7 @@ npm run test                   # 或 npx vitest run
 | `export-screenshot.spec.ts` (DOM 部分) | 1 | 设置面板「截图」入口 DOM 断言 |
 | `model-lifecycle-webgl.spec.ts` (DOM 部分) | 2 | 程序化 mesh 生命周期 + removeActiveModel 空场景安全调用 |
 
-### @webgl — 桌面 3D 集成（wailsPage/CDP, 11 tests）
+### @webgl — 桌面 3D 集成（wailsPage/CDP, 11 tests）⚠️ 需 Windows + Wails
 
 | Spec 文件 | 测试数 | 覆盖内容 |
 |-----------|--------|---------|
@@ -215,8 +219,9 @@ npm run test                   # 或 npx vitest run
 
 > **注意**：`@webgl` 测试需要 Windows + Wails v3 + WebView2，且依赖本地模型库配置。
 > 若 `wails3 dev` 未启动或 CDP 端口未开，这些测试会快速失败并出现在报告中，**不会阻塞合并**。
+> 本地启动步骤：`Get-Process msedgewebview2 -ErrorAction SilentlyContinue | Stop-Process -Force` → `$env:MMCAR_DEBUG_PORT="9222"` → `wails3 dev` → `Invoke-WebRequest http://127.0.0.1:9222/json/version` 验证端口。
 
-### @web — 网页端全量（vite preview 4174, 23 tests）
+### @web — 网页端全量（vite preview 4174, 23 tests）✅ CLI 友好
 
 | Spec 文件 | 测试数 | 覆盖内容 |
 |-----------|--------|---------|
