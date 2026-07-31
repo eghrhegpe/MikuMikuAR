@@ -3,7 +3,7 @@
 你是本仓库的协作 AI。完整开发规范见根目录 `AGENTS.md`（CodeBuddy 入口）与 `docs/`。
 
 ## 一句话定位
-**前端优先的 Babylon.js 9.16（TypeScript + Vite）3D MMD 应用**：通过 Wails v3 包装为 Windows/Android 桌面与移动 App，同时通过 Vite web 构建发布为浏览器版（GitHub Pages）。同一套 `frontend/src` 代码，双形态交付。
+**前端优先的 Babylon.js 9.19（TypeScript + Vite）3D MMD 应用**：通过 Wails v3 包装为 Windows/Android 桌面与移动 App，同时通过 Vite web 构建发布为浏览器版（GitHub Pages）。同一套 `frontend/src` 代码，双形态交付。
 
 ## 关键事实（避免误判）
 - 这是 **TypeScript 前端项目**，不是 Go 项目。`main.go` 仅是 Wails 桌面壳入口；业务逻辑几乎全在 `frontend/src/`。

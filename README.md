@@ -1,6 +1,6 @@
 # 🎵 MikuMikuAR
 
-![Babylon.js](https://img.shields.io/badge/Babylon.js-9.16-AD1F23?logo=babylondotjs)
+![Babylon.js](https://img.shields.io/badge/Babylon.js-9.19-AD1F23?logo=babylondotjs)
 ![Go](https://img.shields.io/badge/Go-1.25-00ADD8?logo=go)
 ![Wails](https://img.shields.io/badge/Wails-v3-DF0000?logo=wails)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript)

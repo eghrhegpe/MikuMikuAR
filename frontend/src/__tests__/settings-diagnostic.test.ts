@@ -9,6 +9,7 @@ const VALID: AiConfig = {
     apiKey: 'sk-xxx',
     model: 'deepseek-chat',
     timeoutMs: 30000,
+    relayUrl: '',
 };
 
 /**
