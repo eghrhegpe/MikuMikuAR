@@ -1,15 +1,15 @@
 # 函数映射表
 
 > AI 找代码用。改前端功能时先 grep 此表定位文件。
-> **自动生成**（2026-07-30）— 由 `scripts/gen-funcmap.mjs` 生成。
+> **自动生成**（2026-07-31）— 由 `scripts/gen-funcmap.mjs` 生成。
 
 ## 总览
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 120 | 710 |
-| 3D 场景 | 108 | 1080 |
-| 菜单 & UI | 75 | 361 |
+| 核心基础设施 | 120 | 707 |
+| 3D 场景 | 106 | 1066 |
+| 菜单 & UI | 74 | 360 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 17 | 127 |
 | 物理系统 | 2 | 14 |
@@ -412,12 +412,10 @@
 | `getMmdRuntimeType()` | `core/scene-state` | — |
 | `mmdRuntime()` | `core/scene-state` | — |
 | `modelRegistry()` | `core/scene-state` | — |
-| `propRegistry()` | `core/scene-state` | — |
 | `setFocusedModelId()` | `core/scene-state` | — |
 | `setMmdRuntime()` | `core/scene-state` | — |
 | `setMmdRuntimeType()` | `core/scene-state` | — |
 | `setModelRegistry()` | `core/scene-state` | — |
-| `setPropRegistry()` | `core/scene-state` | — |
 | `setKey()` | `core/set-key` | 泛型键值写入工具，避免大量 `obj[key] = value` 重复。 |
 | `registerAppShortcuts()` | `core/shortcut-app` | — |
 | `KeyBindingOverride()` | `core/shortcut-registry` | — |
@@ -483,7 +481,6 @@
 | `PopupRow()` | `core/types` | — |
 | `PresetModuleState()` | `core/types` | [doc:adr-145] 单模块在预设中的状态快照 |
 | `ProcMotionConfig()` | `core/types` | [doc:adr-XX] 程序化动作配置（per-motion，随动作走） 参数存 SceneMotionIntent.procMotion（多角色共享）， 启用/分配权在每角色 |
-| `PropInstance()` | `core/types` | [doc:architecture] PropInstance — 场景道具实例（独立于模型库，不参与 VMD/物理/排列） |
 | `RecentMotion()` | `core/types` | — |
 | `RuntimeModel()` | `core/types` | IMmdModel 接口不含 setRuntimeAnimation / createRuntimeAnimation （这两个方法在 MmdModel 和 MmdWasmMode |
 | `SceneMotionIntent()` | `core/types` | 场景级动作意图（「场上在跳什么」） |
@@ -1124,18 +1121,6 @@
 | `ReflectionMode()` | `scene/env/planar-reflection` | — |
 | `registerReflectionSurface()` | `scene/env/planar-reflection` | — |
 | `resetReflectionSurfaces()` | `scene/env/planar-reflection` | ADR-114 Phase 2: 是否生成 mipmap（地面 PBR 反射模糊用，水面保持 false） generateMipMaps?: boolean; } // ==== |
-| `attachPropToBone()` | `scene/env/props/accessory` | 将道具挂载到指定模型的骨骼上。 |
-| `detachModelAccessories()` | `scene/env/props/accessory` | 移除指定模型的所有骨骼锚定道具（模型卸载时调用）。 |
-| `detachPropFromBone()` | `scene/env/props/accessory` | 从骨骼上解除道具挂载，回到场景坐标模式。 |
-| `reattachAllAccessories()` | `scene/env/props/accessory` | 重新挂载所有骨骼锚定的道具（场景恢复时调用）。 |
-| `getPropList()` | `scene/env/props/props` | — |
-| `getPropOrbit()` | `scene/env/props/props` | 读取道具当前球面坐标。orbit 模式下返回存储值，否则从当前笛卡尔位置反推。 |
-| `getPropPositionMode()` | `scene/env/props/props` | 读取道具当前坐标模式（默认 'cartesian'）。 |
-| `loadProp()` | `scene/env/props/props` | — |
-| `removeProp()` | `scene/env/props/props` | — |
-| `setPropOrbit()` | `scene/env/props/props` | 以球面坐标（方位角/仰角/距离）定位道具，等价于围绕原点旋转。 |
-| `setPropPositionMode()` | `scene/env/props/props` | 切换坐标模式。切到 orbit 时从当前笛卡尔位置反推球面参数（无跳变）；切回 cartesian 保留当前位置。 |
-| `setPropTransform()` | `scene/env/props/props` | — |
 | `DEFAULT_MAT_PARAMS()` | `scene/manager/material` | 材质参数默认值 — 所有新增字段在此维护，消除散落硬编码。 |
 | `MaterialCategory()` | `scene/manager/material` | — |
 | `MaterialCategoryParams()` | `scene/manager/material` | — |
@@ -1219,7 +1204,6 @@
 | `textureLRUSize()` | `scene/manager/texture-lru` | 返回当前缓存条目数（供测试使用）。 |
 | `ThumbnailSource()` | `scene/manager/thumbnail-capture` | — |
 | `renderInstanceThumbnail()` | `scene/manager/thumbnail-capture` | 用离屏 RenderTargetTexture 渲染指定模型实例的「当前骨骼姿态」并保存为缩略图。 |
-| `renderPropThumbnail()` | `scene/manager/thumbnail-capture` | 道具缩略图捕获（补闭环）：复用同一离屏 RT 渲染逻辑。 |
 | `ThumbnailBaseKeyInput()` | `scene/manager/thumbnail-key` | — |
 | `ThumbnailKeyInput()` | `scene/manager/thumbnail-key` | — |
 | `buildThumbnailKey()` | `scene/manager/thumbnail-key` | 唯一缓存 key 构造：`<baseKey>::<resolution>::<aspect>`。 |
@@ -1584,7 +1568,7 @@
 | `LightingPreset()` | `scene/render/lighting-presets` | — |
 | `LightingPresetLight()` | `scene/render/lighting-presets` | — |
 | `PRESET_NAMES()` | `scene/render/lighting-presets` | 预设名称列表（有序） |
-| `_addAllMeshesToShadow()` | `scene/render/lighting-shadow` | 遍历所有模型/道具的 Mesh，加入阴影生成器。 |
+| `_addAllMeshesToShadow()` | `scene/render/lighting-shadow` | 遍历所有模型的 Mesh，加入阴影生成器。 |
 | `_disposeStageShadow()` | `scene/render/lighting-shadow` | — |
 | `_ensureShadow()` | `scene/render/lighting-shadow` | — |
 | `_ensureStageShadow()` | `scene/render/lighting-shadow` | — |
@@ -1761,7 +1745,6 @@
 | `offerSceneUndo()` | `scene/scene` | — |
 | `offerSceneUndoAndRefresh()` | `scene/scene` | — |
 | `popUndoSnapshot()` | `scene/scene` | — |
-| `propRegistry()` | `scene/scene` | — |
 | `pushUndoSnapshot()` | `scene/scene` | — |
 | `registerMaterialTarget()` | `scene/scene` | — |
 | `resetMatCatParams()` | `scene/scene` | — |
@@ -2101,7 +2084,7 @@
 | `buildSchemaLevel()` | `menus/render-menu` | [doc:P6] 构建一个含增量 i18n 刷新的 schema 层级。 |
 | `renderMenu()` | `menus/render-menu` | 渲染一个 MenuNode 树到 container 中。返回 dispose 函数，调用时级联释放所有 renderCustom 资源 |
 | `ResourceHandle()` | `menus/resource-detail-helpers` | — |
-| `buildBoneAttachCard()` | `menus/resource-detail-helpers` | 骨骼挂载卡片：将道具挂载到指定模型骨骼上，支持偏移/旋转微调 仅 prop 类型有效；actor/stage/light 返回空。 |
+| `buildAttachmentCard()` | `menus/resource-detail-helpers` | [doc:adr-215] 模型附属关系卡片。 |
 | `buildDangerCard()` | `menus/resource-detail-helpers` | 危险区块：卸载资源（带确认对话框） onRemoved 可选回调，用于卸载后弹窗导航（如 pop 到上一级） |
 | `buildMaterialCard()` | `menus/resource-detail-helpers` | 材质区块：进入材质调节子层级 |
 | `buildSnapSettings()` | `menus/resource-detail-helpers` | — |
@@ -2123,7 +2106,6 @@
 | `buildPhysicsDebugLevel()` | `menus/scene-physics-levels` | 构建物理调试子页（材质线框/骨骼 — WASM 相关，由模型详情页调用） |
 | `buildPhysicsLevel()` | `menus/scene-physics-levels` | 构建 WASM 物理子页（Bullet 骨髁物理 — per-model） |
 | `buildWasmPhysicsLevel()` | `menus/scene-physics-levels` | 构建 WASM 物理子页（Bullet 骨髁物理信息 + 全局开关） |
-| `buildPropDetailLevel()` | `menus/scene-prop-levels` | — |
 | `buildPostProcessLevel()` | `menus/scene-render-levels` | — |
 | `buildPresetScenesLevel()` | `menus/scene-render-levels` | — |
 | `FILTER_PRESET_LABELS()` | `menus/scene-render-presets` | — |
@@ -2371,5 +2353,5 @@
 
 ---
 
-> 共 326 个文件，2329 个导出符号。
+> 共 323 个文件，2311 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。

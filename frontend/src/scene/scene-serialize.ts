@@ -245,6 +245,14 @@ export interface SceneFile {
         materialEnabled?: Record<number, boolean>;
         /** [doc:adr-168] 个人灯设置（仅 actor 类型模型；缺省 = 默认值） */
         personalLight?: Partial<import('./render/lighting-follow').PersonalLightSettings>;
+        /** [doc:adr-215] 附属到父模型的稳定标识（ADR-193 uuid） */
+        parentId?: string;
+        /** [doc:adr-215] 附属到的骨骼名 */
+        attachedBone?: string;
+        /** [doc:adr-215] 骨骼局部偏移 (x, y, z) */
+        attachedOffset?: [number, number, number];
+        /** [doc:adr-215] 骨骼局部旋转（欧拉角度）[pitch, yaw, roll] */
+        attachedRotation?: [number, number, number];
     }>;
     camera: CameraState;
     lights: LightState;
@@ -464,6 +472,11 @@ export function serializeScene(): SceneFile {
                 }
                 return Object.keys(diff).length > 0 ? { personalLight: diff } : {};
             })(),
+            // [doc:adr-215] 模型附属关系
+            parentId: inst.parentId,
+            attachedBone: inst.attachedBone,
+            attachedOffset: inst.attachedOffset,
+            attachedRotation: inst.attachedRotation,
         };
     });
     return {
@@ -854,7 +867,21 @@ async function deserializeModels(
                 logWarn('scene-serialize', `场景恢复: 模型 ${m.name} 个人灯恢复失败:`, err);
             }
         }
+        // [doc:adr-215] 恢复模型附属关系字段（写入 ModelInstance，deferred reattach 在 Phase 3）
+        if (m.parentId) {
+            const inst = modelRegistry.get(id);
+            if (inst) {
+                inst.parentId = m.parentId;
+                inst.attachedBone = m.attachedBone;
+                inst.attachedOffset = m.attachedOffset;
+                inst.attachedRotation = m.attachedRotation;
+            }
+        }
     }
+
+    // --- Phase 3: Deferred reattach — 所有模型加载完成后重建附属链 ---
+    // [doc:adr-215] 先全加载再统一重建附属关系，避免父模型尚未就绪的时序问题。
+    modelManager.reattachAllAttachments();
 
     return [modelIds, errors];
 }

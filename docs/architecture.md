@@ -453,8 +453,6 @@ MikuMikuAR/
         │   │   ├── env-type-helpers.ts  # 环境类型助手
         │   │   ├── env-reflection.ts    # 反射统一（ADR-151）
         │   │   ├── env-wetness.ts       # 湿身效果（ADR-172 雨天材质湿润感）
-        │   │   ├── accessory.ts       # 配件
-        │   │   ├── props.ts           # 道具
         │   │   └── planar-reflection.ts # 平面反射引擎（ADR-092）
         │   ├── ar/                   # AR 场景（ADR-055）
         │   │   ├── ar-camera.ts

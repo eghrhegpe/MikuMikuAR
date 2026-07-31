@@ -16,7 +16,7 @@ import { showInfoToast } from '../core/toast';
 import { modelManager } from '../scene/scene';
 import { getModelMorphs, setModelMorphWeight, resetModelMorphs } from '../scene/manager/model-ops';
 import { removeModel } from '../scene/manager/model-ops';
-import { buildTransformCard, type ResourceHandle } from './resource-detail-helpers';
+import { buildTransformCard, buildAttachmentCard, type ResourceHandle } from './resource-detail-helpers';
 import { buildMatRootLevel } from './model-material';
 import { createIconifyIcon, softwareKindIcon } from '../core/icons';
 import { getCachedCapabilities } from '../core/backend';
@@ -376,6 +376,18 @@ function buildModelSchema(id: string): MenuNode[] {
                                 }
                             );
                         }
+                    }
+
+                    // ── [doc:adr-215] 附属关系 ──
+                    {
+                        const attachmentDiv = document.createElement('div');
+                        c.appendChild(attachmentDiv);
+                        buildAttachmentCard(
+                            attachmentDiv,
+                            handle,
+                            stackRegistry.modelStack ?? null,
+                            () => {}
+                        );
                     }
 
                     // ── 模型信息 ──
