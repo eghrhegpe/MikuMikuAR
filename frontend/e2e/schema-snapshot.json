@@ -1,0 +1,2040 @@
+[
+  {
+    "panelId": "env:sky",
+    "nodes": [
+      {
+        "id": "env:sky:presets",
+        "kind": "custom"
+      },
+      {
+        "id": "env:sky:mode",
+        "kind": "modeSlider",
+        "label": "env.skyMode",
+        "icon": "lucide:sun",
+        "control": {
+          "bind": "env.skyMode",
+          "options": [
+            {
+              "value": "color",
+              "label": "env.solid"
+            },
+            {
+              "value": "texture",
+              "label": "env.texture"
+            },
+            {
+              "value": "procedural",
+              "label": "env.procedural"
+            }
+          ]
+        }
+      },
+      {
+        "id": "env:sky:color-top",
+        "kind": "colorSlider",
+        "label": "env.skyColorTop",
+        "control": {
+          "bind": "env.skyColorTop"
+        }
+      },
+      {
+        "id": "env:sky:zenith",
+        "kind": "colorSlider",
+        "label": "env.zenithColor",
+        "control": {
+          "bind": "env.skyColorTop"
+        }
+      },
+      {
+        "id": "env:sky:horizon",
+        "kind": "colorSlider",
+        "label": "env.horizonColor",
+        "control": {
+          "bind": "env.skyColorBot"
+        }
+      },
+      {
+        "id": "env:sky:texture-section",
+        "kind": "custom"
+      },
+      {
+        "id": "env:sky:rotation-speed",
+        "kind": "slider",
+        "label": "env.skyRotationSpeed",
+        "icon": "lucide:rotate-cw",
+        "control": {
+          "bind": "env.skyRotationSpeed",
+          "min": 0,
+          "max": 5,
+          "step": 0.1
+        }
+      },
+      {
+        "id": "env:sky:light",
+        "kind": "folder",
+        "label": "env.lightControl",
+        "icon": "lucide:sun",
+        "children": [
+          {
+            "id": "env:sky:sun-intensity",
+            "kind": "slider",
+            "label": "env.sunIntensity",
+            "icon": "lucide:sun",
+            "control": {
+              "bind": "light.dirIntensity",
+              "min": 0,
+              "max": 1,
+              "step": 0.05
+            }
+          },
+          {
+            "id": "env:sky:sky-lighting",
+            "kind": "slider",
+            "label": "env.skyLighting",
+            "icon": "lucide:sun",
+            "control": {
+              "bind": "env.iblIntensity",
+              "min": 0,
+              "max": 1,
+              "step": 0.05
+            }
+          },
+          {
+            "id": "env:sky:global-brightness",
+            "kind": "slider",
+            "label": "env.environmentBrightness",
+            "icon": "lucide:sun-dim",
+            "control": {
+              "bind": "env.globalBrightness",
+              "min": 0.1,
+              "max": 3,
+              "step": 0.05
+            }
+          },
+          {
+            "id": "env:sky:stars",
+            "kind": "toggle",
+            "label": "env.stars",
+            "control": {
+              "bind": "env.starsEnabled"
+            }
+          },
+          {
+            "id": "env:sky:brightness",
+            "kind": "slider",
+            "label": "env.brightness",
+            "icon": "lucide:sun",
+            "control": {
+              "bind": "env.skyBrightness",
+              "min": 0.1,
+              "max": 5,
+              "step": 0.1
+            }
+          },
+          {
+            "id": "env:sky:stars-texture",
+            "kind": "custom"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "panelId": "env:wind",
+    "nodes": [
+      {
+        "id": "env:wind:angle",
+        "kind": "slider",
+        "label": "env.windAngle",
+        "icon": "lucide:compass",
+        "control": {
+          "bind": "env.windDirection",
+          "min": 0,
+          "max": 360,
+          "step": 1
+        }
+      },
+      {
+        "id": "env:wind:speed",
+        "kind": "slider",
+        "label": "env.windSpeed",
+        "icon": "lucide:gauge",
+        "control": {
+          "bind": "env.windSpeed",
+          "min": 0,
+          "max": 10,
+          "step": 0.1
+        }
+      }
+    ]
+  },
+  {
+    "panelId": "env:fog",
+    "nodes": [
+      {
+        "id": "env:fog:mode",
+        "kind": "modeSlider",
+        "label": "env.fogMode",
+        "icon": "lucide:layers",
+        "control": {
+          "bind": "env.fogMode",
+          "options": [
+            {
+              "value": "exp2",
+              "label": "env.exp2"
+            },
+            {
+              "value": "exp",
+              "label": "env.exp"
+            },
+            {
+              "value": "linear",
+              "label": "env.linear"
+            }
+          ]
+        }
+      },
+      {
+        "id": "env:fog:color",
+        "kind": "colorSlider",
+        "label": "env.fogColor",
+        "control": {
+          "bind": "env.fogColor"
+        }
+      },
+      {
+        "id": "env:fog:density",
+        "kind": "slider",
+        "label": "env.fogDensity",
+        "icon": "lucide:droplets",
+        "control": {
+          "bind": "env.fogDensity",
+          "min": 0,
+          "max": 0.1,
+          "step": 0.001
+        }
+      },
+      {
+        "id": "env:fog:start",
+        "kind": "slider",
+        "label": "env.fogStart",
+        "control": {
+          "bind": "env.fogStart",
+          "min": 0,
+          "max": 200,
+          "step": 1
+        }
+      },
+      {
+        "id": "env:fog:end",
+        "kind": "slider",
+        "label": "env.fogEnd",
+        "control": {
+          "bind": "env.fogEnd",
+          "min": 0,
+          "max": 200,
+          "step": 1
+        }
+      }
+    ]
+  },
+  {
+    "panelId": "env:cloud",
+    "nodes": [
+      {
+        "id": "env:cloud:cover",
+        "kind": "slider",
+        "label": "env.cloudCover",
+        "icon": "lucide:cloud",
+        "control": {
+          "bind": "env.cloudCover",
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      },
+      {
+        "id": "env:cloud:gap",
+        "kind": "slider",
+        "label": "env.cloudGap",
+        "icon": "lucide:columns",
+        "control": {
+          "bind": "env.cloudGap",
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      },
+      {
+        "id": "env:cloud:section-detail",
+        "kind": "sectionTitle",
+        "label": "env.cloudDetail"
+      },
+      {
+        "id": "env:cloud:erosion",
+        "kind": "slider",
+        "label": "env.cloudErosion",
+        "icon": "lucide:wind",
+        "control": {
+          "bind": "env.cloudErosion",
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      },
+      {
+        "id": "env:cloud:weather",
+        "kind": "slider",
+        "label": "env.cloudWeatherStrength",
+        "icon": "lucide:cloud-sun",
+        "control": {
+          "bind": "env.cloudWeatherStrength",
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      },
+      {
+        "id": "env:cloud:height",
+        "kind": "slider",
+        "label": "env.height",
+        "icon": "lucide:arrow-up",
+        "control": {
+          "bind": "env.cloudHeight",
+          "min": 50,
+          "max": 3000,
+          "step": 5
+        }
+      },
+      {
+        "id": "env:cloud:scale",
+        "kind": "slider",
+        "label": "env.scale",
+        "icon": "lucide:maximize",
+        "control": {
+          "bind": "env.cloudScale",
+          "min": 0.1,
+          "max": 1,
+          "step": 0.05
+        }
+      },
+      {
+        "id": "env:cloud:thickness",
+        "kind": "slider",
+        "label": "env.thickness",
+        "icon": "lucide:move-vertical",
+        "control": {
+          "bind": "env.cloudThickness",
+          "min": 10,
+          "max": 200,
+          "step": 1
+        }
+      },
+      {
+        "id": "env:cloud:visibility",
+        "kind": "slider",
+        "label": "env.cloudVisibility",
+        "icon": "lucide:eye",
+        "control": {
+          "bind": "env.cloudVisibility",
+          "min": 500,
+          "max": 12000,
+          "step": 100
+        }
+      },
+      {
+        "id": "env:cloud:section-lighting",
+        "kind": "sectionTitle",
+        "label": "env.cloudLighting"
+      },
+      {
+        "id": "env:cloud:backlight",
+        "kind": "slider",
+        "label": "env.cloudBacklight",
+        "icon": "lucide:sun",
+        "control": {
+          "bind": "env.cloudBacklight",
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      },
+      {
+        "id": "env:cloud:powder",
+        "kind": "slider",
+        "label": "env.cloudPowder",
+        "icon": "lucide:snowflake",
+        "control": {
+          "bind": "env.cloudPowder",
+          "min": 0,
+          "max": 2,
+          "step": 0.05
+        }
+      }
+    ]
+  },
+  {
+    "panelId": "env:shadow",
+    "nodes": [
+      {
+        "id": "env:shadow:env",
+        "kind": "folder",
+        "label": "env.envShadow",
+        "icon": "lucide:cloud",
+        "children": [
+          {
+            "id": "env:shadow:type",
+            "kind": "modeSlider",
+            "label": "env.shadowType",
+            "icon": "lucide:cloud",
+            "control": {
+              "bind": "light.shadowType",
+              "options": [
+                {
+                  "value": "hard",
+                  "label": "env.hardShadow"
+                },
+                {
+                  "value": "soft",
+                  "label": "env.softShadow"
+                },
+                {
+                  "value": "pcf",
+                  "label": "env.pcf"
+                }
+              ]
+            }
+          },
+          {
+            "id": "env:shadow:quality",
+            "kind": "custom"
+          },
+          {
+            "id": "env:shadow:bias",
+            "kind": "slider",
+            "label": "env.shadowBias",
+            "icon": "lucide:move",
+            "control": {
+              "bind": "light.shadowBias",
+              "min": 0,
+              "max": 0.01,
+              "step": 0.0001
+            }
+          },
+          {
+            "id": "env:shadow:cascades",
+            "kind": "slider",
+            "label": "env.shadowCascades",
+            "icon": "lucide:layers",
+            "control": {
+              "bind": "light.shadowCascades",
+              "min": 2,
+              "max": 4,
+              "step": 1
+            }
+          }
+        ]
+      },
+      {
+        "id": "env:shadow:char-hint",
+        "kind": "custom"
+      },
+      {
+        "id": "env:shadow:stage-hint",
+        "kind": "custom"
+      }
+    ]
+  },
+  {
+    "panelId": "env:water",
+    "nodes": [
+      {
+        "id": "env:water:presets",
+        "kind": "custom"
+      },
+      {
+        "id": "env:water:basic",
+        "kind": "folder",
+        "label": "env.basicParams",
+        "icon": "lucide:sliders",
+        "children": [
+          {
+            "id": "env:water:level",
+            "kind": "slider",
+            "label": "env.height",
+            "icon": "lucide:arrow-up",
+            "control": {
+              "bind": "env.waterLevel",
+              "min": -10,
+              "max": 30,
+              "step": 0.1
+            }
+          },
+          {
+            "id": "env:water:anim-speed",
+            "kind": "slider",
+            "label": "env.animSpeed",
+            "icon": "lucide:fast-forward",
+            "control": {
+              "bind": "env.waterAnimSpeed",
+              "min": 0.1,
+              "max": 5,
+              "step": 0.1
+            }
+          },
+          {
+            "id": "env:water:dispersion",
+            "kind": "toggle",
+            "label": "env.waterDispersionEnabled",
+            "icon": "lucide:activity",
+            "control": {
+              "bind": "env.waterDispersionEnabled"
+            }
+          }
+        ]
+      },
+      {
+        "id": "env:water:bigWave",
+        "kind": "folder",
+        "label": "env.bigWaveHeight",
+        "icon": "lucide:mountain",
+        "headerToggle": {
+          "bind": "env.bigWaveEnabled"
+        },
+        "children": [
+          {
+            "id": "env:water:big-wave-height",
+            "kind": "slider",
+            "label": "env.bigWaveHeight",
+            "icon": "lucide:mountain",
+            "control": {
+              "bind": "env.bigWaveHeight",
+              "min": 0,
+              "max": 3,
+              "step": 0.1
+            }
+          }
+        ]
+      },
+      {
+        "id": "env:water:small-wave",
+        "kind": "folder",
+        "label": "env.smallWaveHeight",
+        "icon": "lucide:waves",
+        "headerToggle": {
+          "bind": "env.smallWaveEnabled"
+        },
+        "children": [
+          {
+            "id": "env:water:small-wave-height",
+            "kind": "slider",
+            "label": "env.smallWaveHeight",
+            "icon": "lucide:waves",
+            "control": {
+              "bind": "env.smallWaveHeight",
+              "min": 0,
+              "max": 3,
+              "step": 0.1
+            }
+          }
+        ]
+      },
+      {
+        "id": "env:water:color-fog",
+        "kind": "folder",
+        "label": "env.colorAndFog",
+        "icon": "lucide:palette",
+        "children": [
+          {
+            "id": "env:water:color",
+            "kind": "colorSlider",
+            "label": "env.waterColor",
+            "control": {
+              "bind": "env.waterColor"
+            }
+          },
+          {
+            "id": "env:water:transparency",
+            "kind": "slider",
+            "label": "env.opacity",
+            "icon": "lucide:eye",
+            "control": {
+              "bind": "env.waterTransparency",
+              "min": 0,
+              "max": 1,
+              "step": 0.05
+            }
+          },
+          {
+            "id": "env:water:fog-color",
+            "kind": "colorSlider",
+            "label": "env.waterFogColor",
+            "control": {
+              "bind": "env.waterFogColor"
+            }
+          },
+          {
+            "id": "env:water:fog-start",
+            "kind": "slider",
+            "label": "env.waterFogStart",
+            "icon": "lucide:cloud-fog",
+            "control": {
+              "bind": "env.waterFogStart",
+              "min": 0,
+              "max": 500,
+              "step": 10
+            }
+          },
+          {
+            "id": "env:water:fog-end",
+            "kind": "slider",
+            "label": "env.waterFogEnd",
+            "icon": "lucide:cloud-fog",
+            "control": {
+              "bind": "env.waterFogEnd",
+              "min": 50,
+              "max": 1000,
+              "step": 10
+            }
+          },
+          {
+            "id": "env:water:sky-color-blend",
+            "kind": "slider",
+            "label": "env.waterSkyColorBlend",
+            "icon": "lucide:cloud",
+            "control": {
+              "bind": "env.waterSkyColorBlend",
+              "min": 0,
+              "max": 1,
+              "step": 0.05
+            }
+          }
+        ]
+      },
+      {
+        "id": "env:water:wave-fresnel",
+        "kind": "folder",
+        "label": "env.waveFresnel",
+        "icon": "lucide:waves",
+        "children": [
+          {
+            "id": "env:water:fresnel-bias",
+            "kind": "slider",
+            "label": "env.fresnelBias",
+            "control": {
+              "bind": "env.fresnelBias",
+              "min": 0,
+              "max": 1,
+              "step": 0.01
+            }
+          },
+          {
+            "id": "env:water:fresnel-power",
+            "kind": "slider",
+            "label": "env.fresnelPower",
+            "control": {
+              "bind": "env.fresnelPower",
+              "min": 0.5,
+              "max": 8,
+              "step": 0.1
+            }
+          },
+          {
+            "id": "env:water:fresnel-alpha",
+            "kind": "slider",
+            "label": "env.fresnelAlpha",
+            "control": {
+              "bind": "env.fresnelAlphaInfluence",
+              "min": 0,
+              "max": 1,
+              "step": 0.05
+            }
+          },
+          {
+            "id": "env:water:diffuse-strength",
+            "kind": "slider",
+            "label": "env.diffuseStrength",
+            "control": {
+              "bind": "env.diffuseStrength",
+              "min": 0,
+              "max": 2,
+              "step": 0.05
+            }
+          },
+          {
+            "id": "env:water:ambient-strength",
+            "kind": "slider",
+            "label": "env.ambientStrength",
+            "control": {
+              "bind": "env.ambientStrength",
+              "min": 0,
+              "max": 2,
+              "step": 0.05
+            }
+          },
+          {
+            "id": "env:water:ripple-slots",
+            "kind": "slider",
+            "label": "env.waterRippleSlots",
+            "control": {
+              "bind": "env.waterRippleSlots",
+              "min": 16,
+              "max": 1024,
+              "step": 16
+            }
+          },
+          {
+            "id": "env:water:ripple-normal",
+            "kind": "slider",
+            "label": "env.rippleNormal",
+            "control": {
+              "bind": "env.rippleNormalStrength",
+              "min": 0,
+              "max": 2,
+              "step": 0.05
+            }
+          },
+          {
+            "id": "env:water:ripple-glint",
+            "kind": "slider",
+            "label": "env.rippleGlint",
+            "control": {
+              "bind": "env.rippleGlintStrength",
+              "min": 0,
+              "max": 2,
+              "step": 0.05
+            }
+          },
+          {
+            "id": "env:water:normal-strength",
+            "kind": "slider",
+            "label": "env.waterNormalStrength",
+            "control": {
+              "bind": "env.waterNormalStrength",
+              "min": 0,
+              "max": 1.5,
+              "step": 0.05
+            }
+          },
+          {
+            "id": "env:water:glint-strength",
+            "kind": "slider",
+            "label": "env.waterGlintStrength",
+            "control": {
+              "bind": "env.waterGlintStrength",
+              "min": 0,
+              "max": 2,
+              "step": 0.05
+            }
+          },
+          {
+            "id": "env:water:low-freq-normal",
+            "kind": "slider",
+            "label": "env.lowFreqNormalStrength",
+            "control": {
+              "bind": "env.lowFreqNormalStrength",
+              "min": 0,
+              "max": 0.5,
+              "step": 0.01
+            }
+          },
+          {
+            "id": "env:water:horizon-fade",
+            "kind": "slider",
+            "label": "env.waterHorizonFade",
+            "icon": "lucide:mountain",
+            "control": {
+              "bind": "env.waterHorizonFade",
+              "min": 0,
+              "max": 1,
+              "step": 0.05
+            }
+          }
+        ]
+      },
+      {
+        "id": "env:water:caustics",
+        "kind": "folder",
+        "label": "env.caustics",
+        "icon": "lucide:sun",
+        "headerToggle": {
+          "bind": "env.causticEnabled"
+        },
+        "children": [
+          {
+            "id": "env:water:caustic-intensity",
+            "kind": "slider",
+            "label": "env.causticIntensity",
+            "icon": "lucide:sun",
+            "control": {
+              "bind": "env.causticIntensity",
+              "min": 0,
+              "max": 0.5,
+              "step": 0.01
+            }
+          },
+          {
+            "id": "env:water:caustic-color-1",
+            "kind": "colorSlider",
+            "label": "env.causticColor1",
+            "control": {
+              "bind": "env.causticColor1"
+            }
+          },
+          {
+            "id": "env:water:caustic-color-2",
+            "kind": "colorSlider",
+            "label": "env.causticColor2",
+            "control": {
+              "bind": "env.causticColor2"
+            }
+          },
+          {
+            "id": "env:water:caustic-scroll-x",
+            "kind": "slider",
+            "label": "env.causticScrollX",
+            "control": {
+              "bind": "env.causticScrollX",
+              "min": -2,
+              "max": 2,
+              "step": 0.05
+            }
+          },
+          {
+            "id": "env:water:caustic-scroll-y",
+            "kind": "slider",
+            "label": "env.causticScrollY",
+            "control": {
+              "bind": "env.causticScrollY",
+              "min": -2,
+              "max": 2,
+              "step": 0.05
+            }
+          },
+          {
+            "id": "env:water:fog-opacity",
+            "kind": "slider",
+            "label": "env.waterFogOpacityInfluence",
+            "control": {
+              "bind": "env.waterFogOpacityInfluence",
+              "min": 0,
+              "max": 1,
+              "step": 0.05
+            }
+          },
+          {
+            "id": "env:water:flip",
+            "kind": "toggle",
+            "label": "env.waterFlip",
+            "control": {
+              "bind": "env.waterFlipEnabled"
+            }
+          }
+        ]
+      },
+      {
+        "id": "env:water:foam",
+        "kind": "folder",
+        "label": "env.foam",
+        "icon": "lucide:waves",
+        "headerToggle": {
+          "bind": "env.foamEnabled"
+        },
+        "children": [
+          {
+            "id": "env:water:foam-threshold",
+            "kind": "slider",
+            "label": "env.foamThreshold",
+            "control": {
+              "bind": "env.foamThreshold",
+              "min": 0,
+              "max": 2,
+              "step": 0.05
+            }
+          },
+          {
+            "id": "env:water:foam-intensity",
+            "kind": "slider",
+            "label": "env.foamIntensity",
+            "control": {
+              "bind": "env.foamIntensity",
+              "min": 0,
+              "max": 1,
+              "step": 0.05
+            }
+          },
+          {
+            "id": "env:water:foam-transition",
+            "kind": "slider",
+            "label": "env.foamTransition",
+            "control": {
+              "bind": "env.foamTransitionRange",
+              "min": 0,
+              "max": 1,
+              "step": 0.05
+            }
+          },
+          {
+            "id": "env:water:foam-opacity",
+            "kind": "slider",
+            "label": "env.foamOpacity",
+            "control": {
+              "bind": "env.foamOpacity",
+              "min": 0,
+              "max": 1,
+              "step": 0.05
+            }
+          },
+          {
+            "id": "env:water:foam-noise",
+            "kind": "slider",
+            "label": "env.foamNoise",
+            "control": {
+              "bind": "env.foamNoiseStrength",
+              "min": 0,
+              "max": 1,
+              "step": 0.05
+            }
+          },
+          {
+            "id": "env:water:foam-color",
+            "kind": "colorSlider",
+            "label": "env.foamColor",
+            "control": {
+              "bind": "env.foamColor"
+            }
+          }
+        ]
+      },
+      {
+        "id": "env:water:underwater",
+        "kind": "folder",
+        "label": "env.underwaterEffects",
+        "icon": "lucide:waves",
+        "headerToggle": {
+          "bind": "env.underwaterEnabled"
+        },
+        "children": [
+          {
+            "id": "env:water:tone-intensity",
+            "kind": "slider",
+            "label": "env.toneIntensity",
+            "icon": "lucide:palette",
+            "control": {
+              "bind": "env.underwaterToneIntensity",
+              "min": 0,
+              "max": 1,
+              "step": 0.05
+            }
+          },
+          {
+            "id": "env:water:tint-strength",
+            "kind": "slider",
+            "label": "env.underwaterTintStrength",
+            "icon": "lucide:palette",
+            "control": {
+              "bind": "env.underwaterTintStrength",
+              "min": 0,
+              "max": 1,
+              "step": 0.05
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "panelId": "env:ground",
+    "nodes": [
+      {
+        "id": "env:ground:presets",
+        "kind": "custom"
+      },
+      {
+        "id": "env:ground:base",
+        "kind": "folder",
+        "label": "env.baseSettings",
+        "icon": "lucide:settings-2",
+        "children": [
+          {
+            "id": "env:ground:color",
+            "kind": "colorSlider",
+            "label": "env.groundColor",
+            "control": {
+              "bind": "env.groundColor"
+            }
+          },
+          {
+            "id": "env:ground:opacity",
+            "kind": "slider",
+            "label": "env.opacity",
+            "icon": "lucide:eye",
+            "control": {
+              "bind": "env.groundAlpha",
+              "min": 0,
+              "max": 1,
+              "step": 0.05
+            }
+          },
+          {
+            "id": "env:ground:height",
+            "kind": "slider",
+            "label": "env.groundHeight",
+            "icon": "lucide:move-vertical",
+            "control": {
+              "bind": "env.groundLevel",
+              "min": -5,
+              "max": 5,
+              "step": 0.1
+            }
+          },
+          {
+            "id": "env:ground:size",
+            "kind": "slider",
+            "label": "env.range",
+            "icon": "lucide:maximize",
+            "control": {
+              "bind": "env.groundSize",
+              "min": 10,
+              "max": 1000,
+              "step": 10
+            }
+          },
+          {
+            "id": "env:ground:edge-fade",
+            "kind": "slider",
+            "label": "env.edgeFade",
+            "icon": "lucide:droplet",
+            "control": {
+              "bind": "env.groundEdgeFade",
+              "min": 0,
+              "max": 1,
+              "step": 0.01
+            }
+          }
+        ]
+      },
+      {
+        "id": "env:ground:texture",
+        "kind": "folder",
+        "label": "env.textureMode",
+        "icon": "lucide:image",
+        "headerToggle": {
+          "bind": "env.groundTextureEnabled"
+        }
+      },
+      {
+        "id": "env:ground:overlay",
+        "kind": "folder",
+        "label": "env.groundOverlay",
+        "icon": "lucide:grid-3x3",
+        "headerToggle": {
+          "bind": "env.groundOverlay"
+        },
+        "children": [
+          {
+            "id": "env:ground:overlay-style",
+            "kind": "custom"
+          },
+          {
+            "id": "env:ground:grid-size",
+            "kind": "slider",
+            "label": "env.gridSize",
+            "icon": "lucide:grid-3x3",
+            "control": {
+              "bind": "env.groundGridSize",
+              "min": 0.5,
+              "max": 5,
+              "step": 0.1
+            }
+          },
+          {
+            "id": "env:ground:line-color",
+            "kind": "colorSlider",
+            "label": "env.gridLineColor",
+            "control": {
+              "bind": "env.groundLineColor"
+            }
+          },
+          {
+            "id": "env:ground:pattern",
+            "kind": "modeSlider",
+            "label": "env.groundPattern",
+            "icon": "lucide:grid-3x3",
+            "control": {
+              "bind": "env.groundPattern",
+              "options": [
+                {
+                  "value": "checker",
+                  "label": "env.patternChecker"
+                },
+                {
+                  "value": "dots",
+                  "label": "env.patternDots"
+                },
+                {
+                  "value": "stripes",
+                  "label": "env.patternStripes"
+                },
+                {
+                  "value": "radial",
+                  "label": "env.patternRadial"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "env:ground:terrain",
+        "kind": "folder",
+        "label": "env.terrain",
+        "icon": "lucide:mountain",
+        "headerToggle": {
+          "bind": "env.groundType"
+        },
+        "children": [
+          {
+            "id": "env:ground:terrain-height",
+            "kind": "slider",
+            "label": "env.terrainHeight",
+            "icon": "lucide:mountain",
+            "control": {
+              "bind": "env.groundTerrainHeight",
+              "min": 0,
+              "max": 15,
+              "step": 0.1
+            }
+          },
+          {
+            "id": "env:ground:terrain-scale",
+            "kind": "slider",
+            "label": "env.terrainScale",
+            "icon": "lucide:ruler",
+            "control": {
+              "bind": "env.groundTerrainScale",
+              "min": 0.01,
+              "max": 5,
+              "step": 0.05
+            }
+          },
+          {
+            "id": "env:ground:terrain-seed",
+            "kind": "slider",
+            "label": "env.terrainSeed",
+            "icon": "lucide:hash",
+            "control": {
+              "bind": "env.groundTerrainSeed",
+              "min": 0,
+              "max": 9999,
+              "step": 1
+            }
+          },
+          {
+            "id": "env:ground:terrain-octaves",
+            "kind": "slider",
+            "label": "env.terrainOctaves",
+            "icon": "lucide:layers",
+            "control": {
+              "bind": "env.groundTerrainOctaves",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        ]
+      },
+      {
+        "id": "env:ground:enhance",
+        "kind": "folder",
+        "label": "env.groundEnhance",
+        "icon": "lucide:sliders-horizontal",
+        "children": [
+          {
+            "id": "env:ground:pitch",
+            "kind": "slider",
+            "label": "env.groundPitch",
+            "icon": "lucide:arrow-up-down",
+            "control": {
+              "bind": "env.groundPitch",
+              "min": -45,
+              "max": 45,
+              "step": 1
+            }
+          },
+          {
+            "id": "env:ground:roll",
+            "kind": "slider",
+            "label": "env.groundRoll",
+            "icon": "lucide:rotate-cw",
+            "control": {
+              "bind": "env.groundRoll",
+              "min": -45,
+              "max": 45,
+              "step": 1
+            }
+          },
+          {
+            "id": "env:ground:scroll-x",
+            "kind": "slider",
+            "label": "env.groundScrollX",
+            "icon": "lucide:move-right",
+            "control": {
+              "bind": "env.groundScrollSpeedX",
+              "min": -2,
+              "max": 2,
+              "step": 0.1
+            }
+          },
+          {
+            "id": "env:ground:scroll-z",
+            "kind": "slider",
+            "label": "env.groundScrollZ",
+            "icon": "lucide:move-down",
+            "control": {
+              "bind": "env.groundScrollSpeedZ",
+              "min": -2,
+              "max": 2,
+              "step": 0.1
+            }
+          },
+          {
+            "id": "env:ground:infinite",
+            "kind": "toggle",
+            "label": "env.groundInfiniteEnabled",
+            "icon": "lucide:infinity",
+            "control": {
+              "bind": "env.groundInfiniteEnabled"
+            }
+          }
+        ]
+      },
+      {
+        "id": "env:ground:material",
+        "kind": "folder",
+        "label": "env.groundMaterial",
+        "icon": "lucide:sparkles",
+        "headerToggle": {
+          "bind": "env.groundPbrEnabled"
+        },
+        "children": [
+          {
+            "id": "env:ground:metallic",
+            "kind": "slider",
+            "label": "env.metallic",
+            "icon": "lucide:circle-dot",
+            "control": {
+              "bind": "env.groundMetallic",
+              "min": 0,
+              "max": 1,
+              "step": 0.05
+            }
+          },
+          {
+            "id": "env:ground:roughness",
+            "kind": "slider",
+            "label": "env.roughness",
+            "icon": "lucide:grid-2x2",
+            "control": {
+              "bind": "env.groundRoughness",
+              "min": 0,
+              "max": 1,
+              "step": 0.05
+            }
+          },
+          {
+            "id": "env:ground:reflection-blur",
+            "kind": "slider",
+            "label": "env.reflectionBlur",
+            "icon": "lucide:droplets",
+            "control": {
+              "bind": "env.groundReflectionBlur",
+              "min": 0,
+              "max": 1,
+              "step": 0.05
+            }
+          },
+          {
+            "id": "env:ground:reflection-distort",
+            "kind": "slider",
+            "label": "env.reflectionDistort",
+            "icon": "lucide:waves",
+            "control": {
+              "bind": "env.groundReflectionDistort",
+              "min": 0,
+              "max": 1,
+              "step": 0.05
+            }
+          },
+          {
+            "id": "env:ground:reflect-blend",
+            "kind": "slider",
+            "label": "env.groundReflectBlend",
+            "icon": "lucide:blend",
+            "control": {
+              "bind": "env.groundReflectionBlend",
+              "min": 0,
+              "max": 1,
+              "step": 0.05
+            }
+          },
+          {
+            "id": "env:ground:normal-strength",
+            "kind": "slider",
+            "label": "env.groundNormalStrength",
+            "icon": "lucide:layers",
+            "control": {
+              "bind": "env.groundNormalStrength",
+              "min": 0,
+              "max": 2,
+              "step": 0.05
+            }
+          },
+          {
+            "id": "env:ground:elevation-coloring",
+            "kind": "toggle",
+            "label": "env.groundElevationColoringEnabled",
+            "icon": "lucide:mountain-snow",
+            "control": {
+              "bind": "env.groundElevationColoringEnabled"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "panelId": "env:experimental",
+    "nodes": [
+      {
+        "id": "env:exp:warn",
+        "kind": "custom"
+      }
+    ]
+  },
+  {
+    "panelId": "env:particle",
+    "nodes": [
+      {
+        "id": "env:particle:type",
+        "kind": "custom"
+      },
+      {
+        "id": "env:particle:density",
+        "kind": "slider",
+        "label": "env.density",
+        "icon": "lucide:layers",
+        "control": {
+          "bind": "env.particleEmitRate",
+          "min": 0,
+          "max": 3,
+          "step": 0.1
+        }
+      },
+      {
+        "id": "env:particle:size",
+        "kind": "slider",
+        "label": "env.size",
+        "icon": "lucide:maximize",
+        "control": {
+          "bind": "env.particleSize",
+          "min": 0.1,
+          "max": 3,
+          "step": 0.1
+        }
+      },
+      {
+        "id": "env:particle:speed",
+        "kind": "slider",
+        "label": "env.speed",
+        "icon": "lucide:gauge",
+        "control": {
+          "bind": "env.particleSpeed",
+          "min": 0.1,
+          "max": 5,
+          "step": 0.1
+        }
+      },
+      {
+        "id": "env:particle:splash",
+        "kind": "toggle",
+        "label": "env.splash",
+        "icon": "lucide:droplets",
+        "control": {
+          "bind": "env.particleSplashEnabled"
+        }
+      },
+      {
+        "id": "env:particle:texture",
+        "kind": "custom"
+      }
+    ]
+  },
+  {
+    "panelId": "scene:postprocess-core",
+    "nodes": [
+      {
+        "id": "postprocess:bloom",
+        "kind": "folder",
+        "label": "scene.bloom",
+        "icon": "lucide:sun",
+        "headerToggle": {
+          "bind": "render.bloomEnabled"
+        },
+        "children": [
+          {
+            "id": "postprocess:bloom:weight",
+            "kind": "slider",
+            "label": "scene.intensity",
+            "icon": "lucide:sun",
+            "control": {
+              "bind": "render.bloomWeight",
+              "min": 0,
+              "max": 1,
+              "step": 0.05
+            }
+          },
+          {
+            "id": "postprocess:bloom:threshold",
+            "kind": "slider",
+            "label": "scene.threshold",
+            "icon": "lucide:sliders",
+            "control": {
+              "bind": "render.bloomThreshold",
+              "min": 0,
+              "max": 1,
+              "step": 0.05
+            }
+          },
+          {
+            "id": "postprocess:bloom:kernel",
+            "kind": "slider",
+            "label": "scene.kernelSize",
+            "icon": "lucide:circle",
+            "control": {
+              "bind": "render.bloomKernel",
+              "min": 16,
+              "max": 256,
+              "step": 2
+            }
+          },
+          {
+            "id": "postprocess:bloom:outline",
+            "kind": "toggle",
+            "label": "scene.outline",
+            "icon": "lucide:square",
+            "control": {
+              "bind": "render.outlineEnabled"
+            }
+          }
+        ]
+      },
+      {
+        "id": "postprocess:vignette",
+        "kind": "slider",
+        "label": "scene.vignette",
+        "icon": "lucide:circle-dot",
+        "control": {
+          "bind": "render.vignetteDarkness",
+          "min": 0,
+          "max": 1,
+          "step": 0.05
+        }
+      },
+      {
+        "id": "postprocess:sharpen",
+        "kind": "slider",
+        "label": "scene.sharpen",
+        "icon": "lucide:focus",
+        "control": {
+          "bind": "render.sharpenAmount",
+          "min": 0,
+          "max": 1,
+          "step": 0.05
+        }
+      },
+      {
+        "id": "postprocess:optical",
+        "kind": "folder",
+        "label": "scene.opticalEffects",
+        "icon": "lucide:sparkles",
+        "children": [
+          {
+            "id": "postprocess:optical:aa",
+            "kind": "custom"
+          },
+          {
+            "id": "postprocess:optical:grain",
+            "kind": "slider",
+            "label": "scene.grain",
+            "icon": "lucide:grid-3x3",
+            "control": {
+              "bind": "render.grainIntensity",
+              "min": 0,
+              "max": 1,
+              "step": 0.05
+            }
+          },
+          {
+            "id": "postprocess:optical:chromatic",
+            "kind": "slider",
+            "label": "scene.chromatic",
+            "icon": "lucide:rainbow",
+            "control": {
+              "bind": "render.chromaticAberrationAmount",
+              "min": 0,
+              "max": 1,
+              "step": 0.05
+            }
+          },
+          {
+            "id": "postprocess:optical:glow",
+            "kind": "slider",
+            "label": "scene.glow",
+            "icon": "lucide:sparkles",
+            "control": {
+              "bind": "render.glowIntensity",
+              "min": 0,
+              "max": 1,
+              "step": 0.05
+            }
+          }
+        ]
+      },
+      {
+        "id": "postprocess:env",
+        "kind": "folder",
+        "label": "scene.environmentEffects",
+        "icon": "lucide:box",
+        "children": [
+          {
+            "id": "postprocess:env:ssao",
+            "kind": "toggle",
+            "label": "scene.ssao",
+            "icon": "lucide:box",
+            "control": {
+              "bind": "render.ssaoEnabled"
+            }
+          },
+          {
+            "id": "postprocess:env:ssao:strength",
+            "kind": "slider",
+            "label": "scene.ssaoStrength",
+            "icon": "lucide:contrast",
+            "control": {
+              "bind": "render.ssaoStrength",
+              "min": 0,
+              "max": 1,
+              "step": 0.05
+            }
+          },
+          {
+            "id": "postprocess:env:ssao:radius",
+            "kind": "slider",
+            "label": "scene.ssaoRadius",
+            "icon": "lucide:circle-dot",
+            "control": {
+              "bind": "render.ssaoRadius",
+              "min": 0,
+              "max": 1,
+              "step": 0.05
+            }
+          },
+          {
+            "id": "postprocess:env:ssao:samples",
+            "kind": "slider",
+            "label": "scene.ssaoSamples",
+            "icon": "lucide:grid-3x3",
+            "control": {
+              "bind": "render.ssaoSamples",
+              "min": 4,
+              "max": 32,
+              "step": 1
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "panelId": "scene:postprocess-color",
+    "nodes": [
+      {
+        "id": "postprocess:tonemapping",
+        "kind": "folder",
+        "label": "scene.toneMapping",
+        "icon": "lucide:palette",
+        "children": [
+          {
+            "id": "postprocess:tonemapping:mode",
+            "kind": "custom"
+          },
+          {
+            "id": "postprocess:tonemapping:exposure",
+            "kind": "slider",
+            "label": "scene.exposure",
+            "icon": "lucide:lightbulb",
+            "control": {
+              "bind": "render.exposure",
+              "min": 0,
+              "max": 4,
+              "step": 0.05
+            }
+          },
+          {
+            "id": "postprocess:tonemapping:contrast",
+            "kind": "slider",
+            "label": "scene.contrast",
+            "icon": "lucide:contrast",
+            "control": {
+              "bind": "render.contrast",
+              "min": 0,
+              "max": 4,
+              "step": 0.05
+            }
+          },
+          {
+            "id": "postprocess:tonemapping:cel",
+            "kind": "toggle",
+            "label": "scene.celShading",
+            "icon": "lucide:droplet",
+            "control": {
+              "bind": "render.celShadingMode"
+            }
+          },
+          {
+            "id": "postprocess:tonemapping:cel-levels",
+            "kind": "slider",
+            "label": "scene.celColorLevels",
+            "icon": "lucide:layers",
+            "control": {
+              "bind": "render.celColorLevels",
+              "min": 2,
+              "max": 8,
+              "step": 1
+            }
+          },
+          {
+            "id": "postprocess:tonemapping:cel-edge-threshold",
+            "kind": "slider",
+            "label": "scene.celEdgeThreshold",
+            "icon": "lucide:scan-line",
+            "control": {
+              "bind": "render.celEdgeThreshold",
+              "min": 0,
+              "max": 1,
+              "step": 0.01
+            }
+          },
+          {
+            "id": "postprocess:tonemapping:cel-edge-strength",
+            "kind": "slider",
+            "label": "scene.celEdgeStrength",
+            "icon": "lucide:pen-line",
+            "control": {
+              "bind": "render.celEdgeStrength",
+              "min": 0,
+              "max": 1,
+              "step": 0.01
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "panelId": "motion:gaze",
+    "nodes": [
+      {
+        "id": "perception:enable-all",
+        "kind": "toggle",
+        "label": "motion.perceptionEnableAll",
+        "control": {
+          "bind": "perception.allEnabled"
+        }
+      },
+      {
+        "id": "perception:tier-override",
+        "kind": "custom"
+      },
+      {
+        "id": "perception:head-follow",
+        "kind": "folder",
+        "label": "motion.headFollow",
+        "icon": "lucide:mouse-pointer-2",
+        "headerToggle": {
+          "bind": "perception.headTrackingEnabled"
+        },
+        "children": [
+          {
+            "id": "perception:head-yaw-range",
+            "kind": "slider",
+            "label": "perception.headYawRange",
+            "control": {
+              "bind": "perception.headGazeMaxYaw",
+              "min": 0,
+              "max": 90,
+              "step": 1
+            }
+          },
+          {
+            "id": "perception:head-pitch-range",
+            "kind": "slider",
+            "label": "perception.headPitchRange",
+            "control": {
+              "bind": "perception.headGazeMaxPitch",
+              "min": 0,
+              "max": 90,
+              "step": 1
+            }
+          }
+        ]
+      },
+      {
+        "id": "perception:eye-follow",
+        "kind": "folder",
+        "label": "motion.eyeFollow",
+        "icon": "lucide:eye",
+        "headerToggle": {
+          "bind": "perception.eyeTrackingEnabled"
+        },
+        "children": [
+          {
+            "id": "perception:eye-yaw-range",
+            "kind": "slider",
+            "label": "perception.eyeYawRange",
+            "control": {
+              "bind": "perception.eyeGazeMaxYaw",
+              "min": 0,
+              "max": 15,
+              "step": 0.5
+            }
+          },
+          {
+            "id": "perception:eye-pitch-range",
+            "kind": "slider",
+            "label": "perception.eyePitchRange",
+            "control": {
+              "bind": "perception.eyeGazeMaxPitch",
+              "min": 0,
+              "max": 15,
+              "step": 0.5
+            }
+          },
+          {
+            "id": "perception:eye-smooth",
+            "kind": "slider",
+            "label": "perception.eyeSmooth",
+            "control": {
+              "bind": "perception.eyeGazeSmooth",
+              "min": 0,
+              "max": 1,
+              "step": 0.05
+            }
+          }
+        ]
+      },
+      {
+        "id": "perception:breath",
+        "kind": "folder",
+        "label": "motion.perceptionBreath",
+        "icon": "lucide:wind",
+        "headerToggle": {
+          "bind": "perception.breathEnabled"
+        },
+        "children": [
+          {
+            "id": "perception:breath-freq",
+            "kind": "slider",
+            "label": "perception.breathFreq",
+            "control": {
+              "bind": "perception.breathFrequency",
+              "min": 0.1,
+              "max": 1,
+              "step": 0.05
+            }
+          },
+          {
+            "id": "perception:breath-amp",
+            "kind": "slider",
+            "label": "perception.breathAmp",
+            "control": {
+              "bind": "perception.breathAmplitude",
+              "min": 0,
+              "max": 0.05,
+              "step": 0.005
+            }
+          }
+        ]
+      },
+      {
+        "id": "perception:blink",
+        "kind": "folder",
+        "label": "motion.perceptionBlink",
+        "icon": "lucide:eye",
+        "headerToggle": {
+          "bind": "perception.blinkEnabled"
+        },
+        "children": [
+          {
+            "id": "perception:blink-freq",
+            "kind": "slider",
+            "label": "perception.blinkFreq",
+            "control": {
+              "bind": "perception.blinkFrequency",
+              "min": 0.05,
+              "max": 0.5,
+              "step": 0.05
+            }
+          },
+          {
+            "id": "perception:blink-amp",
+            "kind": "slider",
+            "label": "perception.blinkAmp",
+            "control": {
+              "bind": "perception.blinkAmplitude",
+              "min": 0,
+              "max": 1,
+              "step": 0.05
+            }
+          }
+        ]
+      },
+      {
+        "id": "perception:micro-expr",
+        "kind": "folder",
+        "label": "motion.microExpression",
+        "icon": "lucide:smile",
+        "headerToggle": {
+          "bind": "perception.microExpressionEnabled"
+        },
+        "children": [
+          {
+            "id": "perception:emotion",
+            "kind": "custom"
+          }
+        ]
+      },
+      {
+        "id": "perception:balance-sway",
+        "kind": "folder",
+        "label": "motion.balanceSway",
+        "icon": "lucide:move-3d",
+        "headerToggle": {
+          "bind": "perception.balanceSwayEnabled"
+        },
+        "children": [
+          {
+            "id": "perception:balance-sway-period",
+            "kind": "slider",
+            "label": "motion.balanceSwayPeriod",
+            "control": {
+              "bind": "perception.balanceSwayPeriod",
+              "min": 0.5,
+              "max": 5,
+              "step": 0.1
+            }
+          },
+          {
+            "id": "perception:balance-sway-amplitude",
+            "kind": "slider",
+            "label": "motion.balanceSwayAmplitude",
+            "control": {
+              "bind": "perception.balanceSwayAmplitude",
+              "min": 0,
+              "max": 2,
+              "step": 0.05
+            }
+          }
+        ]
+      },
+      {
+        "id": "perception:pin-model",
+        "kind": "custom"
+      },
+      {
+        "id": "perception:lipsync",
+        "kind": "folder",
+        "label": "motion.lipSync",
+        "icon": "lucide:mic",
+        "headerToggle": {
+          "bind": "perception.lipSyncEnabled"
+        },
+        "children": [
+          {
+            "id": "perception:lip-sync-sens",
+            "kind": "slider",
+            "label": "motion.lipSyncSensitivity",
+            "control": {
+              "bind": "perception.lipSyncSensitivity",
+              "min": 0,
+              "max": 1,
+              "step": 0.01
+            }
+          },
+          {
+            "id": "perception:lip-sync-int",
+            "kind": "slider",
+            "label": "motion.lipSyncIntensity",
+            "control": {
+              "bind": "perception.lipSyncIntensity",
+              "min": 0,
+              "max": 1,
+              "step": 0.01
+            }
+          },
+          {
+            "id": "perception:lip-sync-multi",
+            "kind": "toggle",
+            "label": "motion.lipSyncMultiMorph",
+            "control": {
+              "bind": "perception.lipSyncMultiMorphEnabled"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "panelId": "settings:camera",
+    "nodes": [
+      {
+        "id": "settings:perf:cam-sens",
+        "kind": "slider",
+        "label": "settings.perf.camSens",
+        "icon": "lucide:move",
+        "control": {
+          "bind": "ui.cameraSensitivity",
+          "min": 0.2,
+          "max": 3,
+          "step": 0.1
+        }
+      },
+      {
+        "id": "settings:perf:cam-sens-hint",
+        "kind": "custom"
+      },
+      {
+        "id": "settings:perf:invert-y",
+        "kind": "toggle",
+        "label": "settings.perf.invertY",
+        "icon": "lucide:flip-vertical",
+        "control": {
+          "bind": "ui.invertYAxis"
+        }
+      },
+      {
+        "id": "settings:perf:invert-y-hint",
+        "kind": "custom"
+      },
+      {
+        "id": "settings:perf:auto-center",
+        "kind": "toggle",
+        "label": "settings.perf.autoCenter",
+        "icon": "lucide:crosshair",
+        "control": {
+          "bind": "ui.autoCenterModel"
+        }
+      },
+      {
+        "id": "settings:perf:auto-center-hint",
+        "kind": "custom"
+      }
+    ]
+  },
+  {
+    "panelId": "settings:frame-quality",
+    "nodes": [
+      {
+        "id": "settings:graphics:frame-cap",
+        "kind": "toggle",
+        "label": "settings.perf.frameCap",
+        "icon": "lucide:monitor-check",
+        "control": {
+          "bind": "ui.frameCapEnabled"
+        }
+      },
+      {
+        "id": "settings:graphics:frame-cap-hint",
+        "kind": "custom"
+      },
+      {
+        "id": "settings:graphics:fps",
+        "kind": "slider",
+        "label": "settings.perf.fpsCap",
+        "icon": "lucide:gauge",
+        "control": {
+          "bind": "ui.fpsLimit",
+          "min": 0,
+          "max": 144,
+          "step": 1
+        }
+      },
+      {
+        "id": "settings:graphics:fps-hint",
+        "kind": "custom"
+      },
+      {
+        "id": "settings:graphics:render-scale",
+        "kind": "slider",
+        "label": "settings.perf.renderScale",
+        "icon": "lucide:scan",
+        "control": {
+          "bind": "ui.renderScale",
+          "min": 0.5,
+          "max": 2,
+          "step": 0.05
+        }
+      },
+      {
+        "id": "settings:graphics:render-scale-hint",
+        "kind": "custom"
+      }
+    ]
+  },
+  {
+    "panelId": "settings:effects",
+    "nodes": [
+      {
+        "id": "settings:graphics:toggles",
+        "kind": "custom"
+      }
+    ]
+  },
+  {
+    "panelId": "settings:physics-hud",
+    "nodes": [
+      {
+        "id": "settings:graphics:default-physics",
+        "kind": "toggle",
+        "label": "settings.perf.defaultPhysics",
+        "icon": "lucide:atom",
+        "control": {
+          "bind": "ui.defaultPhysicsEnabled"
+        }
+      },
+      {
+        "id": "settings:graphics:default-physics-hint",
+        "kind": "custom"
+      },
+      {
+        "id": "settings:graphics:show-fps-clock",
+        "kind": "toggle",
+        "label": "settings.perf.showFpsClock",
+        "icon": "lucide:gauge",
+        "control": {
+          "bind": "ui.showFpsClock"
+        }
+      },
+      {
+        "id": "settings:graphics:show-runtime-badge",
+        "kind": "toggle",
+        "label": "settings.perf.showRuntimeBadge",
+        "icon": "lucide:cpu",
+        "control": {
+          "bind": "ui.showRuntimeBadge"
+        }
+      }
+    ]
+  }
+]

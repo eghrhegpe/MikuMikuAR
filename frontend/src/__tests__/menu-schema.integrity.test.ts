@@ -411,18 +411,18 @@ describe('ADR-093 Schema 完整性元测试', () => {
     });
 
     // ═══════════════════════════════════════════════════════
-    // §4 folder children 非空
+    // §4 folder children 非空 (或 renderCustom)
     // ═══════════════════════════════════════════════════════
-    describe('folder children 非空', () => {
+    describe('folder children 非空（或 renderCustom）', () => {
         const allNodes = schemas.flatMap((s) => flattenNodes(s.nodes));
         const folders = allNodes.filter((n) => n.kind === 'folder');
 
-        it.each(folders.map((n) => ({ id: n.id })))('$id folder 有子节点', ({ id }) => {
+        it.each(folders.map((n) => ({ id: n.id })))('$id folder 有子节点或 renderCustom', ({ id }) => {
             const folder = allNodes.find((n) => n.id === id)!;
-            // folder 可能用 children 或 renderCustom；有 children 的才检查非空
-            if (folder.children !== undefined) {
-                expect(folder.children.length).toBeGreaterThan(0);
-            }
+            // 检查是否有效：要么有非空 children，要么有 renderCustom，两者皆无为真空节点
+            const hasChildren = !!(folder.children && folder.children.length > 0);
+            const hasRenderCustom = !!folder.renderCustom;
+            expect(hasChildren || hasRenderCustom).toBe(true);
         });
     });
 
