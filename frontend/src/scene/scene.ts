@@ -50,7 +50,12 @@ import type { FeetState } from '@/core/types';
 import { createDefaultFeetState } from '@/core/scene-state';
 import { unsubscribeAll } from '@/core/reactivity';
 import 'babylon-mmd/esm/Runtime/Animation/mmdRuntimeModelAnimation';
-import 'babylon-mmd/esm/Loader/mmdModelLoader.default';
+// [doc:adr-202] babylon-mmd 1.3.0（-dist）纯/非纯模块拆分：createRuntimeCameraAnimation /
+// createRuntimeModelAnimation 的原型 augmentation 需显式 import 对应副作用入口才生效
+// （1.2.0 时随 .d.ts 全局附带，1.3.0 后拆为 .pure + .types，须走非纯入口注册）。
+import 'babylon-mmd/esm/Runtime/Animation/mmdRuntimeCameraAnimation';
+import 'babylon-mmd/esm/Runtime/Animation/mmdCompositeRuntimeModelAnimation';
+import 'babylon-mmd/esm/Loader/mmdModelLoader';
 import '@babylonjs/core/Materials/Textures/Loaders/tgaTextureLoader';
 import '@babylonjs/core/Materials/Textures/Loaders/hdrTextureLoader';
 import '@babylonjs/core/Materials/Textures/Loaders/exrTextureLoader';

@@ -105,7 +105,7 @@ KTX2 转码路线图保留，但暂缓实施。触发条件：
 1. **能力探测**：扩展 `getCachedCapabilities()`（[backend/index.ts:122](file:///c:/Users/zhujieling11/MikuMikuAR/frontend/src/core/backend/index.ts)），新增 `ktx2Supported` / `ktx2PreferredFormat` 字段。探测项：
    - WebGL2: `gl.getExtension('WEBGL_compressed_texture_astc')` / `('EXT_texture_compression_bptc')` / `('WEBGL_compressed_texture_etc')`
 2. **PMX 体积埋点**：扩展 [internal/util/pmx.go](file:///c:/Users/zhujieling11/MikuMikuAR/internal/util/pmx.go) 的 `PMXMeta.FileSize`，扫描入库时 `safeLogInfo("pmx_scan: path=%s size=%d name=%s", ...)`，为 ADR-187 触发判据提供数据源
-3. **KTX2 loader 注册**：[scene.ts](file:///c:/Users/zhujieling11/MikuMikuAR/frontend/src/scene/scene.ts) 加 `import '@babylonjs/core/Materials/Textures/Loaders/ktxTextureLoader'`（Babylon.js 9.16 中此 loader 同时处理 KTX1 和 KTX2，通过 `KhronosTextureContainer2.IsValid()` 自动分发）
+3. **KTX2 loader 注册**：[scene.ts](file:///c:/Users/zhujieling11/MikuMikuAR/frontend/src/scene/scene.ts) 加 `import '@babylonjs/core/Materials/Textures/Loaders/ktxTextureLoader'`（Babylon.js 9.19 中此 loader 同时处理 KTX1 和 KTX2，通过 `KhronosTextureContainer2.IsValid()` 自动分发）
 
 **验证标准**（已通过）：tsc 0 错；2090/2090 测试通过；go build 通过；check:docs 无漂移；funcmap 同步。
 
@@ -238,7 +238,7 @@ export function clearTextureLRU(): void {
 babylon-mmd 内部走 Babylon.js `Texture` 同步解码路径，4K 纹理 ~50-100ms 卡主线程。**2026-07-31 源码核查修正了原「零架构改动」的乐观判断**（见 §3.2/§3.3）：`createImageBitmap` 无法在项目侧无侵入注入，必须 fork babylon-mmd 改 `_createTexture`。调研结论（源码为准）：
 
 - babylon-mmd 未暴露任何 `textureLoader` / 解码回调钩子；解码入口硬编码在 `mmdAsyncTextureLoader.js:97` 的 `new Texture("data:" + textureName, scene, { buffer, mimeType })`
-- Babylon.js 9.16 的 `Texture` 构造器**不接受 `ImageBitmap` 输入**，也**无全局开关**（不存在 `Engine.CreateImageBitmap` / `useImageBitmaps` 之类）让这条路径改走 `createImageBitmap()`
+- Babylon.js 9.19 的 `Texture` 构造器**不接受 `ImageBitmap` 输入**，也**无全局开关**（不存在 `Engine.CreateImageBitmap` / `useImageBitmaps` 之类）让这条路径改走 `createImageBitmap()`
 - `createImageBitmap` 本身全平台兼容（Android WebView 4.4+ 支持），瓶颈不在兼容性，而在「解码发生在 babylon-mmd → Babylon.js 内部，项目传进去的只是 ArrayBuffer」
 - 若 fork 成本过高，可退化为等 Phase 3 KTX2 落地后由压缩纹理直接送 GPU，绕过 PNG 解码
 
@@ -280,13 +280,13 @@ const texture = new Texture("data:" + textureName, scene, textureCreationOptions
 |------|------|------|------|
 | **A. 改 babylon-mmd 源码**（fork） | `loadFromArrayBuffer` 内判断文件头/后缀：KTX2 数据走 `new Texture(url, scene, true)` URL 路径，非 KTX2 走现有 `data:` Blob 路径 | 最干净，KTX2 完全走 GPU 采样 | 需 fork babylon-mmd；texture cache key 逻辑依赖 URL，与现有 cache key（`data:` Blob）冲突；上游更新合并成本高 |
 | **B. 自定义 texture loader** | 不碰 babylon-mmd，在 `referenceFiles` 组装阶段把 KTX2 数据注入为 Blob URL（`URL.createObjectURL(new Blob([ktx2Data]))`），注册自定义 loader 拦截 | 不用 fork babylon-mmd | 需要绕过 babylon-mmd 的 `MmdAsyncTextureLoader` cache key 机制（cache key 依赖 URL，Blob URL 每次不同，cache 失效） |
-| **C. Phase 2（异步 PNG 解码）** | 不动纹理格式，fork babylon-mmd 在 `_createTexture` 内用 `createImageBitmap(new Blob([buffer]))` 异步解码 → `RawTexture.CreateRGBATexture` 上传，绕过主线程卡顿（~50ms/纹理） | 收益直接（解码不卡主线程），全平台 `createImageBitmap` 兼容 | **需 fork babylon-mmd**（非零架构改动，2026-07-31 源码核查修正）；Babylon 9.16 `Texture` 不接受 ImageBitmap，无全局开关；仅解决解码卡顿，不省显存；需处理 `_createTextureCacheKey` 与 async 生命周期 |
+| **C. Phase 2（异步 PNG 解码）** | 不动纹理格式，fork babylon-mmd 在 `_createTexture` 内用 `createImageBitmap(new Blob([buffer]))` 异步解码 → `RawTexture.CreateRGBATexture` 上传，绕过主线程卡顿（~50ms/纹理） | 收益直接（解码不卡主线程），全平台 `createImageBitmap` 兼容 | **需 fork babylon-mmd**（非零架构改动，2026-07-31 源码核查修正）；Babylon 9.19 `Texture` 不接受 ImageBitmap，无全局开关；仅解决解码卡顿，不省显存；需处理 `_createTextureCacheKey` 与 async 生命周期 |
 
 #### 3.3 当前推荐
 
 **Phase 2（异步 PNG 解码）优先于 KTX2**：收益与风险比仍优于 KTX2——不动纹理格式、`createImageBitmap()` 全平台兼容、直接解决"4K 纹理 ~50-100ms 卡主线程"的问题。
 
-**但需修正原判断**（2026-07-31 源码核查）：Phase 2 **并非「零架构改动」**。babylon-mmd 在 `mmdAsyncTextureLoader.js:97` 硬编码 `new Texture("data:" + textureName, ...)` 走 Babylon 内部同步图片解码；Babylon 9.16 `Texture` 不接受 `ImageBitmap`，也无全局解码开关。因此 `createImageBitmap()` 无法在项目侧无侵入注入，**Phase 2 与 KTX2（路线 A）一样需要 fork babylon-mmd**——区别仅在改动范围（Phase 2 只改解码方式，KTX2 还要改格式分发 + cache key + WASM 解码器）。
+**但需修正原判断**（2026-07-31 源码核查）：Phase 2 **并非「零架构改动」**。babylon-mmd 在 `mmdAsyncTextureLoader.js:97` 硬编码 `new Texture("data:" + textureName, ...)` 走 Babylon 内部同步图片解码；Babylon 9.19 `Texture` 不接受 `ImageBitmap`，也无全局解码开关。因此 `createImageBitmap()` 无法在项目侧无侵入注入，**Phase 2 与 KTX2（路线 A）一样需要 fork babylon-mmd**——区别仅在改动范围（Phase 2 只改解码方式，KTX2 还要改格式分发 + cache key + WASM 解码器）。
 
 KTX2 维持暂缓状态，触发条件仍为「ADR-187 触发判据达成 **且** babylon-mmd fork POC 验证可行」。
 
