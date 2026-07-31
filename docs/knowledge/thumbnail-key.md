@@ -1,6 +1,7 @@
 ---
 kind: thumbnail_key
 name: 缩略图缓存 key 推导
+tier: leaf
 category: scene
 scope:
   - frontend/src/scene/manager/**

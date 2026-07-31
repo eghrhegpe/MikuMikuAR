@@ -1,6 +1,7 @@
 ---
 kind: zh_tw
 name: 繁体中文语言包
+tier: leaf
 category: core
 scope:
   - frontend/src/core/i18n/locales/**

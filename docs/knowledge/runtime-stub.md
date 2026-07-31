@@ -1,6 +1,7 @@
 ---
 kind: runtime_stub
 name: @wailsio/runtime 浏览器桩
+tier: leaf
 category: core
 scope:
   - frontend/src/core/runtime-stub.ts

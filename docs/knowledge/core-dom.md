@@ -1,6 +1,7 @@
 ---
 kind: core_dom
 name: DOM 工具
+tier: leaf
 category: core
 scope:
   - frontend/src/core/dom.ts

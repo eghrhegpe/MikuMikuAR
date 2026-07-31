@@ -1,6 +1,7 @@
 ---
 kind: invertable_pointers_input
 name: 反 Y 轴指针输入
+tier: leaf
 category: rendering
 scope:
   - frontend/src/scene/camera/**

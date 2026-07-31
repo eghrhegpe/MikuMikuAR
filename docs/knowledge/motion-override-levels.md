@@ -1,7 +1,7 @@
 ---
 kind: motion_override_levels
 name: 动作覆盖 UI 层级（模块化覆盖 + 高级骨骼覆盖）
-category: menus
+category: ui
 scope:
   - frontend/src/menus/motion-override-levels.ts
 source_files:

@@ -1,6 +1,7 @@
 ---
 kind: wind_utils
 name: 统一风场辅助函数
+tier: leaf
 category: core
 scope:
   - frontend/src/core/**

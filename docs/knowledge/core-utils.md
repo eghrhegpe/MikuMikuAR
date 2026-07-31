@@ -1,6 +1,7 @@
 ---
 kind: core_utils
 name: 工具函数叶模块群
+tier: leaf
 category: core
 scope:
   - frontend/src/core/format.ts

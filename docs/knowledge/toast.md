@@ -1,6 +1,7 @@
 ---
 kind: toast
 name: Toast 通知系统
+tier: leaf
 category: core
 scope:
   - frontend/src/core/toast.ts

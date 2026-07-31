@@ -1,6 +1,7 @@
 ---
 kind: ui_constants
 name: UI 与场景常量
+tier: leaf
 category: core
 scope:
   - frontend/src/core/**

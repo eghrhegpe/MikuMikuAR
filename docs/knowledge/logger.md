@@ -1,6 +1,7 @@
 ---
 kind: logger
 name: 轻量日志工具（无依赖）
+tier: leaf
 category: core
 scope:
   - frontend/src/core/logger.ts

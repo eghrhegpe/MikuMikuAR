@@ -1,6 +1,7 @@
 ---
 kind: status_bar
 name: 状态栏与提示系统
+tier: leaf
 category: core
 scope:
   - frontend/src/core/status-bar.ts

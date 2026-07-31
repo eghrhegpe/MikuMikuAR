@@ -1,6 +1,7 @@
 ---
 kind: config_barrel
 name: 配置聚合层
+tier: leaf
 category: core
 scope:
   - frontend/src/core/config.ts

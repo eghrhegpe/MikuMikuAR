@@ -1,6 +1,7 @@
 ---
 kind: icons_bundle
 name: 图标聚合
+tier: leaf
 category: core
 scope:
   - frontend/src/core/icons.ts
