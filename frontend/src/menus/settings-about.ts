@@ -84,6 +84,19 @@ function buildAboutSchema(_getSettingsMenu: () => SettingsMenuHandle): MenuNode[
                 });
             },
         },
+        // 卡片 3：社区工具
+        {
+            id: 'about:community-tools',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    addSectionTitle(inner, t('settings.about.communityTools'));
+                    slideRow(inner, 'lucide:github', t('about.nanoemCn'), false, () => {
+                        openExternalLink('https://github.com/BesingBG/nanoem-cn');
+                    });
+                });
+            },
+        },
         // 卡片 3：更新（自动检测）
         {
             id: 'about:update',

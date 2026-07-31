@@ -563,13 +563,6 @@ export const ja: Record<string, string> = {
 
     // ===== モーションリターゲット motion.retarget =====
     'motion.retarget.customMap': 'カスタム骨マップ',
-    'motion.retarget.loading': 'アニメーション読み込み中...',
-    'motion.retarget.loadFailed': 'アニメーション読み込み失敗',
-    'motion.retarget.noAnimation': 'アニメーショングループが見つかりません',
-    'motion.retarget.noSkeleton': 'スケルトンが見つかりません',
-    'motion.retarget.retargeting': 'リターゲット中...',
-    'motion.retarget.failed': 'リターゲット失敗',
-    'motion.retarget.success': 'リターゲット成功',
     'motion.retarget.noModel': '先にモデルを選択してください',
     'motion.retarget.noBones': 'ボーンデータがありません',
     'motion.retarget.loaded': '外部アニメーションを読み込みました（{preset}）',
@@ -980,15 +973,9 @@ export const ja: Record<string, string> = {
     'scene.loader.loading': '読み込み中...',
     'scene.loader.loadingZero': '読み込み中 0%',
     'scene.loader.loadingProgress': '読み込み中 {pct}%',
-    'scene.loader.noMeshes': '✗ メッシュが読み込まれていません',
     'scene.loader.stageLoaded': '✓ {name}（ステージ）',
-    'scene.loader.vmdFailedModelLoaded': '⚠ VMD の読み込みに失敗、モデルは読み込まれました: {name}',
     'scene.loader.actorLoaded': '✓ {name}',
     'scene.loader.actorLoadedWithVmd': '✓ {name} + {vmd}',
-    'scene.loader.loadFailed': '✗ モデルの読み込みに失敗しました: {error}',
-    'scene.loader.vmdLoading': 'VMD 読み込み中...',
-    'scene.loader.cameraVmdLoading': 'カメラ VMD 読み込み中...',
-    'scene.loader.vpdLoading': 'VPD ポーズ読み込み中...',
 
     // —— Scene VMD ——
     'scene.vmd.cachedWaiting': 'VMD がキャッシュされました、モデルを待機中',

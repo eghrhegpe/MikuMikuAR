@@ -556,13 +556,6 @@ export const zhTW: Record<string, string> = {
 
     // ===== 動作重定向 motion.retarget =====
     'motion.retarget.customMap': '自訂骨骼對應',
-    'motion.retarget.loading': '載入動畫中...',
-    'motion.retarget.loadFailed': '動畫載入失敗',
-    'motion.retarget.noAnimation': '未找到動畫組',
-    'motion.retarget.noSkeleton': '未找到骨骼',
-    'motion.retarget.retargeting': '重定向中...',
-    'motion.retarget.failed': '重定向失敗',
-    'motion.retarget.success': '重定向成功',
     'motion.retarget.noModel': '請先選擇一個模型',
     'motion.retarget.noBones': '模型無骨骼數據',
     'motion.retarget.loaded': '外部動作已載入（{preset}）',
@@ -972,15 +965,9 @@ export const zhTW: Record<string, string> = {
     'scene.loader.loading': '載入中……',
     'scene.loader.loadingZero': '載入 0%',
     'scene.loader.loadingProgress': '載入 {pct}%',
-    'scene.loader.noMeshes': '✗ 未載入任何網格',
     'scene.loader.stageLoaded': '✓ {name}（舞台）',
-    'scene.loader.vmdFailedModelLoaded': '⚠ VMD 失敗，模型已載入：{name}',
     'scene.loader.actorLoaded': '✓ {name}',
     'scene.loader.actorLoadedWithVmd': '✓ {name} + {vmd}',
-    'scene.loader.loadFailed': '✗ 模型載入失敗：{error}',
-    'scene.loader.vmdLoading': 'VMD 載入中……',
-    'scene.loader.cameraVmdLoading': '相機 VMD 載入中……',
-    'scene.loader.vpdLoading': 'VPD 姿勢載入中……',
 
     // —— Scene VMD ——
     'scene.vmd.cachedWaiting': 'VMD 已快取，正在等待模型',
