@@ -299,8 +299,6 @@ export const zhTW: Record<string, string> = {
     'model-detail.hasPhysics': '有物理剛體',
 
     // ===== 材質 model-material =====
-    'model-material.batchByPart': '按部位批量 — {name}',
-    'model-material.overrideHint': '⚠ {count} 個材質有單獨覆蓋（分類調整不影響已覆蓋材質）',
     'model-material.diffuseMul': '漫反射倍率',
     'model-material.specularMul': '高光倍率',
     'model-material.shininess': '高光指數',
@@ -312,8 +310,6 @@ export const zhTW: Record<string, string> = {
     'model-material.sphereTexLevel': '球體貼圖強度',
     'model-material.emissiveTexLevel': '自發光貼圖強度',
     'model-material.texLevelGroup': '貼圖強度',
-    'model-material.stackingHint': '覆蓋分類設定，分類調整仍生效於其他材質',
-    'model-material.resetDone': '✓ 已重設: {name}',
     'model-material.materialAdjustTitle': '材質調節 — {name}',
     'model-material.noMaterialData': '此模型無材質資料',
     'model-material.modified': '已修改',
@@ -326,12 +322,9 @@ export const zhTW: Record<string, string> = {
         '此操作會讓模型呈現「偽 unlit」狀態：完全靠環境光與自發光呈現，不依賴方向光。\\n\\n效果：失去立體感但保證可見，適用於少數光照異常的模型。\\n\\n可隨時透過「重設全部」恢復。',
     'model-material.unlitFallbackDone': '✓ 已套用光照兜底',
     'model-material.resetAllDone': '✓ 全部材質參數已重設',
-    'model-material.selectMaterialHint': '請從上方材質清單中選擇一個材質進行微調',
     'model-material.unknownMaterial': '未知材質',
     'model-material.paramTuneTitle': '參數微調',
-    'model-material.paramTune': '參數微調 — {cat} › {matName}',
     'model-material.resetThis': '重設此材質',
-    'model-material.perMaterial': '逐材質 — {name}',
 
     // ===== 模型預設 model-preset =====
     'model-preset.formatError': '✗ 預設檔案格式錯誤',
@@ -721,7 +714,6 @@ export const zhTW: Record<string, string> = {
     'scene.stage': '舞台',
     'scene.physics': '物理',
     'scene.scene': '場景',
-    'scene.render': '渲染',
     'scene.renderPresets': '渲染預設',
     'scene.stageLight': '舞台燈光',
     

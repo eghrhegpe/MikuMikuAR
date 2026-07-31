@@ -676,7 +676,6 @@ export const en: Record<string, string> = {
     'scene.stage': 'Stage',
     'scene.physics': 'Physics',
     'scene.scene': 'Scene',
-    'scene.render': 'Render',
     'scene.renderPresets': 'Render Presets',
     'scene.stageLight': 'Stage Lights',
     
@@ -1055,9 +1054,6 @@ export const en: Record<string, string> = {
     'scene.serialize.modelError': 'Model {name}: {error}',
 
     // model-material — material adjust UI
-    'model-material.batchByPart': 'Batch by part — {name}',
-    'model-material.overrideHint':
-        '⚠ {count} materials have individual overrides (category adjustments do not affect overridden materials)',
     'model-material.diffuseMul': 'Diffuse Multiplier',
     'model-material.specularMul': 'Specular Multiplier',
     'model-material.shininess': 'Shininess',
@@ -1069,9 +1065,6 @@ export const en: Record<string, string> = {
     'model-material.sphereTexLevel': 'Sphere Texture Level',
     'model-material.emissiveTexLevel': 'Emissive Texture Level',
     'model-material.texLevelGroup': 'Texture Levels',
-    'model-material.stackingHint':
-        'Overrides category settings; category adjustments still apply to other materials',
-    'model-material.resetDone': '✓ Reset: {name}',
     'model-material.materialAdjustTitle': 'Material Adjust — {name}',
     'model-material.noMaterialData': 'This model has no material data',
     'model-material.modified': 'Modified',
@@ -1084,12 +1077,9 @@ export const en: Record<string, string> = {
         'This will make the model appear "pseudo-unlit": rendered entirely via ambient and emissive, ignoring directional lights.\\n\\nEffect: Loses 3D shading but stays visible. For models with broken lighting.\\n\\nYou can revert anytime via "Reset All".',
     'model-material.unlitFallbackDone': '✓ Lighting fallback applied',
     'model-material.resetAllDone': '✓ All material params reset',
-    'model-material.selectMaterialHint': 'Select a material from the list above to fine-tune',
     'model-material.unknownMaterial': 'Unknown material',
     'model-material.paramTuneTitle': 'Param Tune',
-    'model-material.paramTune': 'Param Tune — {cat} › {matName}',
     'model-material.resetThis': 'Reset This Material',
-    'model-material.perMaterial': 'Per Material — {name}',
 
     // model-preset — model preset UI
     'model-preset.formatError': '✗ Preset file format error',
