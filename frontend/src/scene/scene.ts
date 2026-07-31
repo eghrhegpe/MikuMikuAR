@@ -65,8 +65,13 @@ import '@babylonjs/core/Materials/Textures/Loaders/exrTextureLoader';
 import '@babylonjs/core/Materials/Textures/Loaders/ktxTextureLoader';
 // [doc:adr-189] Phase 3: KTX2 解码器自托管配置
 // 默认从 cdn.babylonjs.com 加载 ktx2Decoder，离线环境需自托管
+// 适用版本：@babylonjs/core 9.x（KhronosTextureContainer2.URLConfig 字段名随版本稳定；
+// 升级若报 URLConfig 不存在，先核对该版本是否仍暴露此静态字段再删此段）。
 import { KhronosTextureContainer2 } from '@babylonjs/core/Misc/khronosTextureContainer2';
-KhronosTextureContainer2.URLConfig = {
+if (!KhronosTextureContainer2.URLConfig) {
+    console.warn('[scene] KhronosTextureContainer2.URLConfig 缺失，KTX2 自托管配置跳过');
+} else {
+    KhronosTextureContainer2.URLConfig = {
     jsDecoderModule: '/lib/ktx2decoder/babylon.ktx2Decoder.js',
     wasmUASTCToASTC: '/lib/ktx2decoder/wasm/uastc_astc.wasm',
     wasmUASTCToBC7: '/lib/ktx2decoder/wasm/uastc_bc7.wasm',
@@ -77,7 +82,8 @@ KhronosTextureContainer2.URLConfig = {
     jsMSCTranscoder: null,
     wasmMSCTranscoder: null,
     wasmZSTDDecoder: null,
-};
+    };
+}
 import 'babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.vertex';
 import 'babylon-mmd/esm/Loader/Shaders/textureAlphaChecker.fragment';
 

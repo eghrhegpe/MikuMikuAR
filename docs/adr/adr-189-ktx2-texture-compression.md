@@ -253,6 +253,7 @@ babylon-mmd 内部走 Babylon.js `Texture` 同步解码路径，4K 纹理 ~50-10
 3. WASM 兜底评估：Android/Web 用 `ktx2-encoder` npm 包（基于 basis_universal WASM），转码慢 2-3x 但全平台可用
 4. 集成到 `ExtractZip` 流程：解压后扫描 `tex/` 目录批量转码，输出到 `<zipCacheName>/textures_ktx/`
 5. WASM 解码器自托管：从 `cdn.babylonjs.com` 下载 `babylon.ktx2Decoder.js` + 所有 WASM 资源到 `frontend/public/lib/ktx2decoder/`，配置 `KhronosTextureContainer2.URLConfig`
+   - **已落地（2026-07-31）**：`frontend/src/scene/scene.ts:74` 已注入 `URLConfig` 指向 `/lib/ktx2decoder/`（wasm 资源随 `bf15e8d` 入库 `frontend/public/lib/ktx2decoder/`）；并加 `URLConfig` 缺失守卫，babylon 升级改字段名时不会静默失效。离线环境可正常解码 KTX2，不再请求 `cdn.babylonjs.com`。
 6. Wails binding 同步：`npm run generate:bindings`
 
 ### Phase 3 技术障碍分析（2026-07-31 修订）
