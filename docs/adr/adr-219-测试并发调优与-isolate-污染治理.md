@@ -1,6 +1,6 @@
 # ADR-219: 测试并发调优与 isolate 污染治理 — vitest 全量提速：maxWorkers 落地 + isolate=false 障碍清理
 
-> **状态**: 实施中（2026-07-31）
+> **状态**: 实施中（2026-07-31；Phase 1 已落地省 13%；Phase 2 方案经实测纠偏——「统一 mock 形状」证伪，改走「关键单例模块 mock 全局化」，待 idb spike 验证）
 > **日期**: 2026-07-31
 
 ## 背景
@@ -49,16 +49,35 @@ Duration 37.56s (transform 34.72s, setup 9.32s, import 295.64s, tests 45.11s, en
 
 单独 `--no-isolate` 跑失败文件（如 `audio.volume.test.ts` + `backend.extract.test.ts`）为 **0 失败**，证明失败是**执行顺序相关的状态污染**，而非文件自身缺陷。
 
-失败根因四类（全量 `reporter=json` 聚合，共 46 个文件受影响）：
+失败根因四类（全量 `reporter=json` 聚合，共 46 个文件受影响）——**注：下表为最初假设，最后一列「修复方向」已被 Phase 2 实测推翻，见后文**：
 
-| 数量 | 报错特征 | 根因 | 修复方向 |
+| 数量 | 报错特征 | 根因 | ~~最初设想的修复方向（已证伪）~~ |
 |------|---------|------|---------|
-| 43 | `Cannot read properties of undefined (reading 'mockReset')` | mock 顺序依赖：对象在别处被提前 reset | `afterEach` 内还原，或改 `vi.hoisted` |
-| 48 | `No "envState"/"modelManager"/"mmdRuntime" export is defined on the mock` | 同模块被多文件 `vi.mock` 成不同形状，共享后注册表串了 | 统一 mock 形状 / `vi.resetModules` |
-| 53 | `IndexedDB 不可用` / `window is not defined` / `window.removeEventListener is not a function` / `SpeechSynthesisUtterance is not defined` | happy-dom 环境残留：`delete window.xxx` 后不还原 | `afterEach` 恢复 window 全局 |
-| 16 | `Quaternion.FromEulerAngles is not a function` / `createMaterialContext` null | Babylon 全局 mock 被某文件覆写未恢复 | 集中 mock + 还原 |
+| 43 | `Cannot read properties of undefined (reading 'mockReset')` | mock 顺序依赖：对象在别处被提前 reset | ~~`afterEach` 内还原，或改 `vi.hoisted`~~ |
+| 48 | `No "envState"/"modelManager"/"mmdRuntime" export is defined on the mock` | 同模块被多文件 `vi.mock` 成不同形状 | ~~统一 mock 形状 / `vi.resetModules`~~ |
+| 53 | `IndexedDB 不可用` / `window is not defined` / `window.removeEventListener is not a function` / `SpeechSynthesisUtterance is not defined` | 误判为 happy-dom 环境残留；实为**模块单例 mock 穿透**（见下） | ~~`afterEach` 恢复 window 全局~~ |
+| 16 | `Quaternion.FromEulerAngles is not a function` / `createMaterialContext` null | Babylon 全局 mock 被某文件覆写未恢复 | ~~集中 mock + 还原~~ |
 
-推进策略：**先做污染最集中的一类（happy-dom 环境残留，53 个）作为试点**，验证修复模式跑通、收益可量化后再铺开其余三类。全部清理后开启 `isolate: false`，目标 **32.6s → ~24s（相对原始 37.5s 累计省 ~36%）**。
+### Phase 2 实测纠错（2026-07-31）— 「统一 mock 形状」被证伪，真根因是模块单例穿透
+
+以 `IndexedDB 不可用` 一类（原判为「happy-dom 环境残留」）作试点下钻，得到**推翻上表修复方向**的硬证据：
+
+1. **形状收口无效**：`backend-mocks.ts` 早已提供单源 `makeIdbMock()` 工厂、11 个 backend 文件也已收口到统一形状（HEAD 基线即如此）。但在此完整收口的前提下，`--no-isolate` 下 `IndexedDB 不可用` 失败**不减反增**（20→62）。
+2. **stack trace 铁证穿透**：失败调用栈显示 `at .../backend/idb.ts:63 → openDB → 抛 IndexedDB 不可用`——即调用穿透到了**真实 `idb.ts`**，而非命中任何 mock。
+3. **机制还原**：`isolate: false` 下 `./idb` 模块全 worker **只解析/ mock 一次**；`browser-adapter.ts` 顶层静态 `import ... from './idb'` 且 `browserAdapter` 是 `export const` 单例，**绑定的是首个加载它的文件所注册的 mock**。后续文件无论把自己的 `vi.mock('./idb')` 写成什么形状，都无法让已加载的单例重新绑定 → 谁没「赢」谁就穿透到真实模块。
+
+**结论**：文件级 `vi.mock` + `afterEach` 还原 + 统一形状，这套方案对「模块级单例被顶层静态 import」的依赖**根本无效**——形状对不对都不影响穿透。这解释了为何 `isolate: true` 全绿（每文件独立 registry）而 `isolate: false` 崩（共享 registry 只 mock 一次）。
+
+### Phase 2 修正后方案 — 关键单例模块的 mock 必须全局化
+
+真正的解法是**把关键单例模块的 mock 从「每个文件各自 `vi.mock`」上移到全局 setup（`src/__tests__/setup-wails.ts`）做一次**，使全 worker 共享同一份 mock 实例，从源头消除「首个加载者绑定」的顺序敏感性。
+
+- **候选全局化模块**（被顶层静态 import 的单例、且被多文件 mock）：`@/core/backend/idb`、`@/core/config`、`@/scene/scene`。
+- **前置 spike**：先在 `setup-wails.ts` 试 `vi.mock('@/core/backend/idb', ...)` 一个模块，`--no-isolate` 验证其 IndexedDB 类失败清零、且不破坏 `isolate: true` 现状，再决定是否推广其余两个。
+- **风险**：全局 mock 会影响**所有**测试文件（包括需要真实实现的少数）；spike 需确认这类文件可用 `vi.unmock` / `importActual` 局部逃生。
+- **形状收口仍保留**：`makeIdbMock()` 等单源工厂对 `isolate: true`（当前 CI 模式）是纯卫生增益，且为全局化提供现成形状，不回退。
+
+原「先做 happy-dom 残留 53 个」的试点计划**作废**（该分类本身是误判）。新试点：**idb 模块全局化 spike**。目标不变：全部落地后开 `isolate: false`，**32.6s → ~24s（相对原始 37.5s 累计省 ~36%）**。
 
 ## 备选方案
 
