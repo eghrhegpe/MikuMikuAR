@@ -79,6 +79,25 @@ Duration 37.56s (transform 34.72s, setup 9.32s, import 295.64s, tests 45.11s, en
 
 原「先做 happy-dom 残留 53 个」的试点计划**作废**（该分类本身是误判）。新试点：**idb 模块全局化 spike**。目标不变：全部落地后开 `isolate: false`，**32.6s → ~24s（相对原始 37.5s 累计省 ~36%）**。
 
+### Phase 2 spike 结果（2026-07-31，commit 0cc64abe）— 方向成立，超预期
+
+在 `setup-wails.ts` 全局 mock **单个** idb 模块（`vi.mock('@/core/backend/idb', ...)`，双层 store Map 实现），实测：
+
+| 指标 | spike 前 | spike 后 | 结果 |
+|------|---------|---------|------|
+| IndexedDB 类失败（no-isolate） | 62 | **0** | 清零 |
+| 总失败（no-isolate） | 246 | **113** | 腰斩 54% |
+| isolate=true 全量 | 全绿 | **4135 全绿** | 零回退 |
+| config-store / chat-store | — | **20/20** | 本地 mock 覆盖生效 |
+| lint + tsc | — | 通过 | — |
+
+**三个关键假设全部验证成立**：
+1. `@/core/backend/idb` 与 backend 文件的相对路径 `./idb` 被 vitest 视为同一模块 → 全局 mock 成功覆盖。
+2. 文件级 `vi.mock` 优先级高于 setup → config-store（spy 断言）/ chat-store（独立桶）自动逃生，无需 `vi.unmock`。
+3. 全局化单模块即连锁清掉一大批失败（不止 idb 自己的 62 个，总数 246→113）。
+
+**结论**：「关键单例模块 mock 全局化」是正解。剩余 113 个失败为 config/scene/babylon 同源类，待推广同手法（`@/scene/scene` 已有共享 `mockScene()` helper，收敛更易）。
+
 ## 备选方案
 
 - **`pool: 'threads'`（隔离保留）**：实测 34.9s，收益仅 ~7%；且部分 Babylon/WASM 场景在线程池下不如进程稳。不选。
