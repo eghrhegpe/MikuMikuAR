@@ -302,8 +302,6 @@ use_when:
 | [统一文件服务层](./fileservice.md) | `core/fileservice.ts` | ADR-057 |
 | [配置聚合层](./config-barrel.md) | `core/config.ts` | — |
 | [后端适配层](./core-backend.md) | `core/backend/index.ts` | — |
-| [后端测试共享 Mock 工厂](./backend-mocks.md) | `core/backend/backend-mocks.ts` | ADR-206 |
-| [浏览器适配器测试共享 Mock 工厂](./browser-adapter-mocks.md) | `core/backend/browser-adapter-mocks.ts` | ADR-206 |
 | [音频总线](./audio-bus.md) | `core/audio-bus.ts` | — |
 | [快捷键注册表](./shortcut-registry.md) | `core/shortcut-registry.ts` | — |
 | [图标聚合](./icons-bundle.md) | `core/icons.ts` | — |
