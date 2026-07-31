@@ -162,7 +162,7 @@ export default defineConfig({
     sidebar: [
       { text: '用户指南', items: guideItems },
       { text: '架构与规范', items: archItems },
-      { text: '决策记录 (ADR)', items: adrItems },
+      { text: '决策记录 (ADR)', collapsed: true, items: adrItems },
       { text: '知识卡', items: knowledgeItems },
       { text: '开发运维', items: [
         { text: 'Bug 日志', collapsed: true, items: buglogItems },
