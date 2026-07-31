@@ -7,7 +7,7 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 122 | 712 |
+| 核心基础设施 | 122 | 713 |
 | 3D 场景 | 106 | 1062 |
 | 菜单 & UI | 74 | 360 |
 | 换装 & 音频 | 3 | 33 |
@@ -364,6 +364,7 @@
 | `isAndroidPlatform()` | `core/platform` | Returns true when running inside the Android WebView (Wails v3). |
 | `isWebEntryMode()` | `core/platform` | [doc:adr-196/176] 运行时判定是否为 web 入口（短路标记或构建模式）。 |
 | `isWebPlatform()` | `core/platform` | Returns true when running in a pure browser (no Wails bridge). |
+| `openExternalLink()` | `core/platform` | 打开外链的统一入口：先尝试 Android `<a>.click()` 方式，失败则回退 `window.open`。 |
 | `openExternalURL()` | `core/platform` | Opens a URL in the system browser. |
 | `readDeclaredAdapter()` | `core/platform` | [doc:adr-196/176] 读取 globalThis 上声明的适配器身份（'go' | 'browser'）。 |
 | `autoLoop()` | `core/playback-state` | — |
@@ -2354,5 +2355,5 @@
 
 ---
 
-> 共 325 个文件，2312 个导出符号。
+> 共 325 个文件，2313 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。

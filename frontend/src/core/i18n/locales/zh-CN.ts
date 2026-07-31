@@ -984,8 +984,6 @@ export const zhCN: Record<string, string> = {
     'scene.ar.enabled': '✓ AR 相机已开启',
     'scene.ar.cameraDenied': '✗ 摄像头权限被拒绝，已切换黑底模式',
     'scene.ar.cameraUnavailable': '✗ 摄像头不可用（环境未提供媒体能力，可能需在桌面端授予权限）',
-    'scene.ar.switchedUser': '✓ 已切换到前置摄像头',
-    'scene.ar.switchedEnv': '✓ 已切换到后置摄像头',
     'scene.ar.webxrProbe': 'WebXR 探针',
     'scene.ar.webxrProbing': '探测中…',
     'scene.ar.webxrDeepProbe': '深度探针（触发 AR 权限）',

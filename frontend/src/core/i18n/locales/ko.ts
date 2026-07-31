@@ -935,8 +935,6 @@ export const ko: Record<string, string> = {
     'scene.ar.cameraDenied': '✗ 카메라 권한 거부됨, 검은 배경으로 전환됨',
     'scene.ar.cameraUnavailable':
         '✗ 카메라를 사용할 수 없음(환경에서 미디어 기능을 제공하지 않음, 데스크톱은 권한 부여가 필요할 수 있음)',
-    'scene.ar.switchedUser': '✓ 전면 카메라로 전환됨',
-    'scene.ar.switchedEnv': '✓ 후면 카메라로 전환됨',
     'scene.ar.webxrProbe': 'WebXR 프로브',
     'scene.ar.webxrProbing': '탐지 중…',
     'scene.ar.webxrDeepProbe': '심층 프로브 (AR 권한 트리거)',
@@ -1986,6 +1984,8 @@ export const ko: Record<string, string> = {
     'ai.control.undone': '↩️ 이전 작업을 되돌렸습니다.',
     'ai.config.corsWarning':
         '⚠ 원격 엔드포인트에 CORS 제한이 있을 수 있습니다. 로컬 Ollama는 OLLAMA_ORIGINS=*를 설정하고 다시 시작하세요.',
+    'ai.config.relayActive': 'Relay 프록시 활성화됨（{url}）',
+    'ai.config.relayNotConfigured': 'CORS 제한을 우회하려면 설정에서 Relay 프록시를 구성하세요',
     'ai.chat.clear': '지우기',
     'ai.chat.clearConfirm': '채팅 기록을 지우시겠습니까?',
     'ai.chat.pendingBlocked': '보류 중인 작업을 먼저 확인하거나 취소하세요.',
