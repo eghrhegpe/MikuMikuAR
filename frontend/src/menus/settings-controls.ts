@@ -26,7 +26,7 @@ import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
 
 // ======== 卡片 1：相机 ========
-function buildCameraSchema(): MenuNode[] {
+export function buildCameraSchema(): MenuNode[] {
     return [
         {
             id: 'settings:perf:cam-sens',

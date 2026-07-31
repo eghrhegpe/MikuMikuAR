@@ -237,7 +237,7 @@ function _renderToneMappingControl(container: HTMLElement): void {
 }
 
 /** 后处理 schema — 核心层（高频效果）+ 高级层（光学/环境效果） */
-function buildPostProcessCoreSchema(): MenuNode[] {
+export function buildPostProcessCoreSchema(): MenuNode[] {
     return [
         // ===== Bloom 折叠头（强度/阈值/核大小 + 边缘高亮） =====
         {
@@ -463,7 +463,7 @@ function buildPostProcessCoreSchema(): MenuNode[] {
 }
 
 /** 后处理 schema — 色彩层（色调映射） */
-function buildPostProcessColorSchema(): MenuNode[] {
+export function buildPostProcessColorSchema(): MenuNode[] {
     return [
         {
             id: 'postprocess:tonemapping',

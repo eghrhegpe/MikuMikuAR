@@ -51,7 +51,9 @@ function withSaveOnlyLight(_v: unknown): void {
     triggerAutoSave();
 }
 
-const gazeSchema: MenuNode[] = [
+/** 导出 gaze schema 供 menu-registry 静态分析（ADR-093 元测试） */
+export function getGazeSchema(): MenuNode[] {
+    return [
     // ── [doc:adr-164] 全员感知开关 ──
     {
         id: 'perception:enable-all',
@@ -423,6 +425,7 @@ const gazeSchema: MenuNode[] = [
         ],
     },
 ];
+}
 
 /** [doc:adr-163/adr-164/adr-166] 渲染指定模型的感知层骨骼冲突 banner */
 export function updatePerceptionConflictBanner(el: HTMLElement, modelId: string | null): void {
@@ -503,14 +506,14 @@ export function buildGazeTrackingLevel(): PopupLevel {
                 banner.className = 'conflict-banner';
                 renderPerceptionConflictBanners(banner);
                 c.appendChild(banner);
-                return renderMenu(gazeSchema, c);
+                return renderMenu(getGazeSchema(), c);
             });
         },
         onLangChange: () => {
             const c = containerRef[0];
             if (c) {
                 c.innerHTML = '';
-                renderMenu(gazeSchema, c);
+                renderMenu(getGazeSchema(), c);
             }
         },
     };
