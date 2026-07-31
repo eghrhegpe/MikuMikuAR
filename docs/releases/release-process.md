@@ -101,7 +101,7 @@ if PKG_VER != TAG_VER → ::error::Version mismatch → 中断
 
 | 平台 | 注入方式 | 代码位置 |
 |------|----------|----------|
-| Windows | 构建前同步 `build/config.yml` 的 `version` + `build/windows/Taskfile.yml` 的 `{{.APP_VERSION}}`/`{{.BUILD_TIME}}`/`{{.COMMIT_HASH}}` 占位符 → `wails3 build` 读取；失败时降级 `go build -ldflags "-X main.AppVersion=..."` | `scripts/build-windows.ps1`（§39–60、§117–119） |
+| Windows | 构建前同步 `build/config.yml` 的 `version` + `build/windows/Taskfile.yml` 的 <code v-pre>{{.APP_VERSION}}</code>/<code v-pre>{{.BUILD_TIME}}</code>/<code v-pre>{{.COMMIT_HASH}}</code> 占位符 → `wails3 build` 读取；失败时降级 `go build -ldflags "-X main.AppVersion=..."` | `scripts/build-windows.ps1`（§39–60、§117–119） |
 | Linux | `go build -ldflags="-X main.AppVersion=$VER -X main.BuildTime=... -X main.CommitHash=... -s -w"` | `release.yml` `build-linux` 步（§190–192） |
 | Android | `go build -buildmode=c-shared -ldflags "-X main.AppVersion=... -X main.BuildTime=... -X main.CommitHash=..."` | `scripts/build-android-so.ps1`（§73–74） |
 

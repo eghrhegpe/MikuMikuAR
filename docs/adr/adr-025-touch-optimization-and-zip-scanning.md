@@ -74,7 +74,7 @@ Android 端进入发版测试阶段后暴露两大类问题：
 
 | 问题 | 修复 |
 |------|------|
-| Taskfile.yml 缺少 ARCH 默认值 → 构建出 ARM64 EXE 无法在 x86_64 Windows 运行 | `build/windows/Taskfile.yml` 加 `ARCH: '{{.ARCH \| default "amd64"}}'` |
+| Taskfile.yml 缺少 ARCH 默认值 → 构建出 ARM64 EXE 无法在 x86_64 Windows 运行 | `build/windows/Taskfile.yml` 加 <code>ARCH: '&#123;&#123;.ARCH \| default "amd64"&#125;&#125;'</code> |
 | `body` 上 `user-select: none` 导致搜索框/输入框文字无法选中 | 补 `input, textarea, [contenteditable] { user-select: text }` 覆写 |
 | `scanDirByExt` 重构后残留孤儿 `scanRoot` 结构体（209-213 行） | 删除死代码 |
 

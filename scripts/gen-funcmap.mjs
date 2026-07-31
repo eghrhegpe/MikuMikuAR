@@ -157,7 +157,10 @@ function renderMarkdown(groups, entries, scope) {
       const displayPath = file.rel.replace(/\.ts$/, '');
       for (const sym of file.syms) {
         const doc = extractDocSummary(file.file, sym);
-        lines.push(`| \`${sym}()\` | \`${displayPath}\` | ${doc || '—'} |`);
+        // [doc:vitepress] JSDoc 摘要可能含 HTML 尖括号（如 <iconify-icon> / <label>），
+        // 文档站全量渲染时会被 Vue 编译器当标签解析导致构建失败，须转义。
+        const escaped = doc ? doc.replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
+        lines.push(`| \`${sym}()\` | \`${displayPath}\` | ${escaped || '—'} |`);
       }
     }
     lines.push(``);
