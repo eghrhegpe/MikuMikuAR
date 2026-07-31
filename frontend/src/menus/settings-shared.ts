@@ -1,7 +1,7 @@
 // settings-shared.ts — 设置子模块共享的工具函数与状态
 // 从 settings.ts 拆出，供各 settings-* 子模块引用。
 
-import { SetUIAccent } from '../core/wails-bindings';
+import { SetUIAccent, GetDownloadAutoImport, GetDownloadWatchEnabled } from '../core/wails-bindings';
 import { UIState } from '../core/config';
 import { showInfoToast } from '../core/toast';
 import { clamp01 } from '../core/clamp';
@@ -16,9 +16,7 @@ let autoImportCached = false;
 /** 启动时预加载自动导入开关状态。在 main.ts init 中调用。 */
 export async function preloadAutoImportState(): Promise<void> {
     try {
-        autoImportCached = await import('../core/wails-bindings').then((m) =>
-            m.GetDownloadAutoImport()
-        );
+        autoImportCached = await GetDownloadAutoImport();
     } catch {
         autoImportCached = false;
     }
@@ -39,9 +37,7 @@ let downloadWatchEnabledCached = false;
 /** 启动时预加载下载监听开关状态。在 main.ts init 中调用。 */
 export async function preloadDownloadWatchState(): Promise<void> {
     try {
-        downloadWatchEnabledCached = await import('../core/wails-bindings').then((m) =>
-            m.GetDownloadWatchEnabled()
-        );
+        downloadWatchEnabledCached = await GetDownloadWatchEnabled();
     } catch {
         downloadWatchEnabledCached = false;
     }

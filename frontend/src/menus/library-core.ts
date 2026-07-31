@@ -32,7 +32,7 @@ import { isUnderRoot, isStageLike, getDirPath } from '../core/path';
 import { libraryModelBaseKey, buildThumbnailKey } from '@/scene/manager/thumbnail-key';
 import { t } from '../core/i18n/t';
 import { getLang } from '../core/i18n/locale';
-import { GetThumbnail, GetModelMetaBatch } from '../core/wails-bindings';
+import { GetThumbnail, GetModelMetaBatch, SetUIState, type UIState } from '../core/wails-bindings';
 import { loadManager } from '../core/load-manager';
 import { focusModel } from '../scene/scene';
 import { buildModelToolsLevel } from './model-detail';
@@ -49,10 +49,8 @@ export function getResourceViewMode(): ResourceViewMode {
 }
 export function setResourceViewMode(mode: ResourceViewMode): void {
     resourceViewMode = mode;
-    import('../core/wails-bindings').then(({ SetUIState }) =>
-        SetUIState({ resourceViewMode: mode } as import('../core/wails-bindings').UIState).catch(
-            (err) => logWarn('library-core', 'SetUIState failed:', err)
-        )
+    SetUIState({ resourceViewMode: mode } as UIState).catch((err) =>
+        logWarn('library-core', 'SetUIState failed:', err)
     );
 }
 
