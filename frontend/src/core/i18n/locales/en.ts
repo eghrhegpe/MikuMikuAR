@@ -594,10 +594,6 @@ export const en: Record<string, string> = {
     'motion.poseStudio.restApplied': '✓ Pose reset',
     'motion.poseStudio.poseApplied': '✓ {pose} applied',
     'motion.poseStudio.poseFailed': '✗ Pose apply failed',
-    'motion.poseStudio.depthOfField': 'Depth of Field',
-    'motion.poseStudio.dofHint':
-        'Depth of field is a lens property — adjust it in the Camera panel',
-    'motion.poseStudio.openLensSettings': 'Adjust DoF in Camera panel',
     'motion.poseStudio.cameraPresets': 'Camera Angle Presets',
     'motion.poseStudio.cameraApplied': '✓ Switched to {name} angle',
     'motion.poseStudio.screenshot': 'Screenshot',
