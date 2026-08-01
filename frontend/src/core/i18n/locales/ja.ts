@@ -314,6 +314,7 @@ export const ja: Record<string, string> = {
     'model-material.toonTexLevel': 'トゥーンテクスチャレベル',
     'model-material.sphereTexLevel': 'スフィアテクスチャレベル',
     'model-material.emissiveTexLevel': 'エミッシブテクスチャレベル',
+    'model-material.alphaMul': '不透明度',
     'model-material.texLevelGroup': 'テクスチャ強度',
     'model-material.materialAdjustTitle': 'マテリアル調整 — {name}',
     'model-material.noMaterialData': 'このモデルにはマテリアルデータがありません',

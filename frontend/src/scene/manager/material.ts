@@ -8,8 +8,14 @@ import type { Mesh } from '@babylonjs/core/Meshes/mesh';
 
 import { modelRegistry, uiState } from '@/core/config';
 import { triggerAutoSave } from '@/core/config';
+import { clamp01 } from '@/core/clamp';
 import { logWarn } from '../../core/logger';
 import type { MmdStandardMaterial } from '../../core/types';
+
+export interface AlphaCtx {
+    opacity: number;
+    origAlpha: number[];
+}
 
 // ======== 按 id 查询 meshes ========
 
@@ -29,6 +35,7 @@ export type MaterialCategoryParams = {
     toonTexLevel: number;
     sphereTexLevel: number;
     emissiveTexLevel: number;
+    alphaMul: number;
 };
 
 const CATEGORIES = ['皮肤', '头发', '眼睛', '服装', '配件', '道具'] as const;
@@ -46,6 +53,7 @@ interface _OrigMat {
     toonTexLevel: number;
     sphereTexLevel: number;
     emissiveTexLevel: number;
+    alpha: number;
 }
 
 /** 材质参数默认值 — 所有新增字段在此维护，消除散落硬编码。 */
@@ -60,6 +68,7 @@ export const DEFAULT_MAT_PARAMS: MaterialCategoryParams = {
     toonTexLevel: 1,
     sphereTexLevel: 1,
     emissiveTexLevel: 1,
+    alphaMul: 1,
 };
 
 /** 各参数的 clamp 规则：[min, max, round] */
@@ -74,6 +83,7 @@ const CLAMP_RULES: Record<keyof MaterialCategoryParams, [number, number, boolean
     toonTexLevel: [0, 3, false],
     sphereTexLevel: [0, 3, false],
     emissiveTexLevel: [0, 3, false],
+    alphaMul: [0, 1, false],
 };
 
 /** 将 Partial 参数 clamp 后写入 target — 消除 setMatCatParams / setMatParams 的重复 clamp 逻辑。 */
@@ -98,7 +108,8 @@ function _applyParamsToMaterial(
     m: StandardMaterial,
     mmdMat: MmdStandardMaterial,
     o: _OrigMat,
-    p: MaterialCategoryParams
+    p: MaterialCategoryParams,
+    alphaCtx?: AlphaCtx
 ): void {
     m.diffuseColor.set(
         o.diffuse.r * p.diffuseMul,
@@ -135,6 +146,17 @@ function _applyParamsToMaterial(
     }
     if (m.emissiveTexture) {
         m.emissiveTexture.level = o.emissiveTexLevel * p.emissiveTexLevel;
+    }
+    if (alphaCtx) {
+        const finalAlpha = clamp01(o.alpha * alphaCtx.opacity * p.alphaMul);
+        m.alpha = finalAlpha;
+        if (finalAlpha < 1) {
+            if (m.transparencyMode === Material.MATERIAL_OPAQUE) {
+                m.transparencyMode = Material.MATERIAL_ALPHABLEND;
+            }
+        } else {
+            m.transparencyMode = Material.MATERIAL_OPAQUE;
+        }
     }
 }
 
@@ -362,7 +384,7 @@ function categoryOfMaterial(mat: Material): MaterialCategory {
 }
 
 /** @internal exported for testing + pre-capture in scene-loader */
-export function _capture(mat: Material): void {
+export function _capture(mat: Material, mi = 0, origAlpha: number[] = []): void {
     if (_origValues.has(mat) || !(mat instanceof StandardMaterial)) {
         return;
     }
@@ -378,10 +400,11 @@ export function _capture(mat: Material): void {
         toonTexLevel: mmdMat.toonTexture?.level ?? 1,
         sphereTexLevel: mmdMat.sphereTexture?.level ?? 1,
         emissiveTexLevel: mat.emissiveTexture?.level ?? 1,
+        alpha: origAlpha[mi] ?? 1,
     });
 }
 
-function _applyMaterial(id: string, mi: number): void {
+function _applyMaterial(id: string, mi: number, alphaCtx?: AlphaCtx): void {
     const meshes = _getMeshesById(id);
     if (!meshes || mi < 0 || mi >= meshes.length) {
         return;
@@ -391,25 +414,31 @@ function _applyMaterial(id: string, mi: number): void {
         return;
     }
     const mmdMat = m as MmdStandardMaterial;
-    _capture(m);
+    _capture(m, mi, alphaCtx?.origAlpha ?? []);
     const o = _origValues.get(m)!;
+    let applied = false;
     const state = _catState.get(id);
     if (state) {
         const p = state.get(categoryOfMaterial(m));
         if (p) {
-            _applyParamsToMaterial(m, mmdMat, o, p);
+            _applyParamsToMaterial(m, mmdMat, o, p, alphaCtx);
+            applied = true;
         }
     }
     const perMat = _matState.get(id);
     if (perMat) {
         const mp = perMat.get(mi);
         if (mp) {
-            _applyParamsToMaterial(m, mmdMat, o, mp);
+            _applyParamsToMaterial(m, mmdMat, o, mp, alphaCtx);
+            applied = true;
         }
+    }
+    if (!applied && alphaCtx) {
+        _applyParamsToMaterial(m, mmdMat, o, DEFAULT_MAT_PARAMS, alphaCtx);
     }
 }
 
-function _applyCategory(id: string, cat: string): void {
+function _applyCategory(id: string, cat: string, alphaCtx?: AlphaCtx): void {
     const meshes = _getMeshesById(id);
     if (!meshes) {
         return;
@@ -432,30 +461,36 @@ function _applyCategory(id: string, cat: string): void {
             continue;
         }
         const mmdMat = m as MmdStandardMaterial;
-        _capture(m);
+        _capture(m, mi, alphaCtx?.origAlpha ?? []);
         const o = _origValues.get(m)!;
-        _applyParamsToMaterial(m, mmdMat, o, p);
+        _applyParamsToMaterial(m, mmdMat, o, p, alphaCtx);
         const mp = perMat.get(mi);
         if (mp) {
-            _applyParamsToMaterial(m, mmdMat, o, mp);
+            _applyParamsToMaterial(m, mmdMat, o, mp, alphaCtx);
         }
     }
 }
 
 /** @internal exported for testing */
-export function _applyAll(id: string): void {
+export function _applyAll(id: string, alphaCtx?: AlphaCtx): void {
     const meshes = _getMeshesById(id);
     if (!meshes) {
         return;
     }
     const state = _catState.get(id);
-    if (!state) {
+    if (!state && !alphaCtx) {
         return;
     }
     const _perMat = _matState.get(id) ?? new Map();
     for (let mi = 0; mi < meshes.length; mi++) {
-        _applyMaterial(id, mi);
+        _applyMaterial(id, mi, alphaCtx);
     }
+}
+
+function _alphaCtxFor(id: string): AlphaCtx | undefined {
+    const inst = modelRegistry.get(id);
+    if (!inst) return undefined;
+    return { opacity: inst.opacity, origAlpha: inst._origAlpha ?? [] };
 }
 
 function _ensureState(id: string): Map<string, MaterialCategoryParams> {
@@ -537,47 +572,15 @@ export function setMatCatParams(
     }
     const target = _ensureState(id).get(cat)!;
     _clampAndAssign(target, params);
-    _applyCategory(id, cat);
+    _applyCategory(id, cat, _alphaCtxFor(id));
     triggerAutoSave();
 }
 
 export function resetMatCatParams(id: string): void {
     _catState.delete(id);
-    _matState.delete(id); // 同时清理逐材质覆盖，避免残留状态在下次 _applyAll 中复现
-    const meshes = _getMeshesById(id);
-    if (!meshes) {
-        return;
-    }
-    for (const mesh of meshes) {
-        const m = mesh.material;
-        if (!m || !(m instanceof StandardMaterial)) {
-            continue;
-        }
-        const mmdMat = m as MmdStandardMaterial;
-        const o = _origValues.get(m);
-        if (o) {
-            m.diffuseColor.copyFrom(o.diffuse);
-            m.specularColor.copyFrom(o.specular);
-            m.specularPower = o.specularPower;
-            m.ambientColor.copyFrom(o.ambient);
-            m.emissiveColor.copyFrom(o.emissive);
-            if (m.diffuseTexture) {
-                m.diffuseTexture.level = o.diffuseTexLevel;
-            }
-            if (m.bumpTexture) {
-                m.bumpTexture.level = o.bumpTexLevel;
-            }
-            if (mmdMat.toonTexture) {
-                mmdMat.toonTexture.level = o.toonTexLevel;
-            }
-            if (mmdMat.sphereTexture) {
-                mmdMat.sphereTexture.level = o.sphereTexLevel;
-            }
-            if (m.emissiveTexture) {
-                m.emissiveTexture.level = o.emissiveTexLevel;
-            }
-        }
-    }
+    _matState.delete(id);
+    _ensureState(id);
+    _applyAll(id, _alphaCtxFor(id));
     triggerAutoSave();
 }
 
@@ -608,13 +611,12 @@ export function applyUnlitFallback(id: string): void {
         emissiveTexLevel: 2,
         // shininess / bumpTexLevel / diffuseTexLevel 保留默认，不影响"伪 unlit"效果
     };
-    // 清理逐材质覆盖，避免局部参数干扰全局兜底
     _matState.delete(id);
     const state = _ensureState(id);
     for (const cat of CATEGORIES) {
         _clampAndAssign(state.get(cat)!, fallback);
     }
-    _applyAll(id);
+    _applyAll(id, _alphaCtxFor(id));
     triggerAutoSave();
 }
 
@@ -683,7 +685,7 @@ export function setMatParams(
         state.set(matIndex, entry);
     }
     _clampAndAssign(entry, params);
-    _applyMaterial(id, matIndex);
+    _applyMaterial(id, matIndex, _alphaCtxFor(id));
     triggerAutoSave();
 }
 
@@ -700,7 +702,7 @@ export function resetSingleMatParams(id: string, matIndex: number): void {
     if (modelState) {
         modelState.delete(matIndex);
     }
-    _applyAll(id);
+    _applyAll(id, _alphaCtxFor(id));
     triggerAutoSave();
 }
 
@@ -782,7 +784,7 @@ export function setMatCategoryEnabled(id: string, cat: string, enabled: boolean)
  *  如需完整恢复材质到原始状态请先调用 resetMatCatParams。 */
 export function resetPerMaterialParams(id: string): void {
     _matState.delete(id);
-    _applyAll(id);
+    _applyAll(id, _alphaCtxFor(id));
     triggerAutoSave();
 }
 

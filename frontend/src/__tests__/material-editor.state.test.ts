@@ -267,6 +267,7 @@ describe('per-material parameter state management', () => {
                 toonTexLevel: 1,
                 sphereTexLevel: 1,
                 emissiveTexLevel: 1,
+                alphaMul: 1,
             });
             expect(getMatParams('model_rm', 0)).toBeNull();
         });
@@ -325,6 +326,7 @@ describe('applyMatState MaterialCategory cast', () => {
                     toonTexLevel: 1,
                     sphereTexLevel: 1,
                     emissiveTexLevel: 1,
+                    alphaMul: 1,
                 },
             },
         });
@@ -346,6 +348,7 @@ describe('applyMatState MaterialCategory cast', () => {
                     toonTexLevel: 1,
                     sphereTexLevel: 1,
                     emissiveTexLevel: 1,
+                    alphaMul: 1,
                 },
             },
         });

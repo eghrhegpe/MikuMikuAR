@@ -1056,6 +1056,7 @@ export const zhCN: Record<string, string> = {
     'model-material.toonTexLevel': '卡通贴图强度',
     'model-material.sphereTexLevel': '球体贴图强度',
     'model-material.emissiveTexLevel': '自发光贴图强度',
+    'model-material.alphaMul': '透明度',
     'model-material.texLevelGroup': '贴图强度',
     'model-material.materialAdjustTitle': '材质调节 — {name}',
     'model-material.noMaterialData': '此模型无材质数据',

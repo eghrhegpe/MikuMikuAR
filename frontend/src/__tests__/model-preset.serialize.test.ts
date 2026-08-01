@@ -201,6 +201,7 @@ describe('serializeModelPreset', () => {
                     toonTexLevel: 1,
                     sphereTexLevel: 1,
                     emissiveTexLevel: 1,
+                    alphaMul: 1,
                 },
             },
             overrides: {
@@ -215,6 +216,7 @@ describe('serializeModelPreset', () => {
                     toonTexLevel: 1,
                     sphereTexLevel: 1,
                     emissiveTexLevel: 1,
+                    alphaMul: 1,
                 },
             },
         });

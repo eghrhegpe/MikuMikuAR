@@ -312,6 +312,7 @@ export const zhTW: Record<string, string> = {
     'model-material.toonTexLevel': '卡通貼圖強度',
     'model-material.sphereTexLevel': '球體貼圖強度',
     'model-material.emissiveTexLevel': '自發光貼圖強度',
+    'model-material.alphaMul': '透明度',
     'model-material.texLevelGroup': '貼圖強度',
     'model-material.materialAdjustTitle': '材質調節 — {name}',
     'model-material.noMaterialData': '此模型無材質資料',

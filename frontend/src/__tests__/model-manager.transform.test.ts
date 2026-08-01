@@ -15,7 +15,7 @@ import {
     makeObservableScene,
 } from './model-manager-mocks';
 import { mockMaterial } from './mocks/babylon-factories';
-import { setFocusedModelId } from '../core/config';
+import { setFocusedModelId, setModelRegistry } from '../core/config';
 import { ModelManager } from '../scene/manager/model-manager';
 
 vi.mock('@babylonjs/core/scene', () => babylonSceneModule());
@@ -35,6 +35,7 @@ describe('ModelManager visibility / opacity / wireframe', function () {
         onChange = vi.fn();
         scene = makeObservableScene();
         mgr = new ModelManager(scene, onChange, vi.fn());
+        setModelRegistry(mgr.modelRegistry);
 
         mat = createTestMaterial('test_mat');
         mesh = createTestMesh('root', mat);

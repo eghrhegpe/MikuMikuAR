@@ -156,7 +156,7 @@ export {
     DEFAULT_MAT_PARAMS,
     applyUnlitFallback,
 } from './manager/material';
-export type { MaterialCategoryParams, MaterialCategory } from './manager/material';
+export type { MaterialCategoryParams, MaterialCategory, AlphaCtx } from './manager/material';
 
 import { ModelManager } from './manager/model-manager';
 import {

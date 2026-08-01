@@ -209,6 +209,7 @@ describe('applyModelPreset', () => {
                     toonTexLevel: 1,
                     sphereTexLevel: 1,
                     emissiveTexLevel: 1,
+                    alphaMul: 1,
                 },
             },
             materialOverrides: {
@@ -223,6 +224,7 @@ describe('applyModelPreset', () => {
                     toonTexLevel: 1,
                     sphereTexLevel: 1,
                     emissiveTexLevel: 1,
+                    alphaMul: 1,
                 },
             },
         };
@@ -256,6 +258,7 @@ describe('applyModelPreset', () => {
                     toonTexLevel: 1,
                     sphereTexLevel: 1,
                     emissiveTexLevel: 1,
+                    alphaMul: 1,
                 },
             },
             materialOverrides: {
@@ -270,6 +273,7 @@ describe('applyModelPreset', () => {
                     toonTexLevel: 1,
                     sphereTexLevel: 1,
                     emissiveTexLevel: 1,
+                    alphaMul: 1,
                 },
             },
         };
