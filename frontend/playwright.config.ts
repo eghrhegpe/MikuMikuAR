@@ -31,15 +31,17 @@ export default defineConfig({
             command: "npm run dev",
             url: "http://localhost:5173",
             reuseExistingServer: true,
-            // Vite 首次编译 babylon-mmd 等重模块常需 30-60s，15s 会误判超时。
-            timeout: 60000,
+            // Vite 首次编译 babylon-mmd 等重模块常需 30-60s，CI 中可能更慢。
+            // CI 日志显示 120s 默认超时仍不够，扩展到 180s。
+            timeout: 180000,
         },
         // [doc:adr-177] Phase 4 web 入口生产构建预览（vite.web.config.ts → index.web.html）
         // 需先构建 dist-web/ 再 preview；@web 测试用。port 与 dev 分离避免冲突。
         // CI 中 @web 专属 job（e2e-web-smoke / e2e-web-full）设置 RUN_WEB_E2E=1 激活此 server，
         // 其他 job（@dom）不启动，避免 70s 不必要的构建等待。
         ...(process.env.RUN_WEB_E2E ? [{
-            command: "npx vite build --config vite.web.config.ts && npx vite preview --config vite.web.config.ts --port 4174 --strictPort",
+            // 先杀掉残留的 4174 进程（CI runner 上前一个 workflow 遗留），再构建+预览
+            command: "fuser -k 4174/tcp 2>/dev/null; npx vite build --config vite.web.config.ts && npx vite preview --config vite.web.config.ts --port 4174 --strictPort",
             url: "http://localhost:4174/MikuMikuAR/",
             reuseExistingServer: true,
             timeout: 120000, // 构建需 70s + preview 启动

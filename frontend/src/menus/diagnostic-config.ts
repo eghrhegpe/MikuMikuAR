@@ -1,5 +1,6 @@
 // Core
 import { t } from '../core/i18n/t';
+import { translateGoError } from '../core/i18n/goerr';
 import { logWarn } from '../core/logger';
 import { DebouncedTimer } from '../core/async';
 import { captureError } from '../core/ai/error-buffer';
@@ -164,7 +165,7 @@ async function runAutoTest(): Promise<void> {
     } catch (err) {
         diagState.lastConnectionOk = false;
         diagState.lastConnectionKind = 'unknown';
-        captureError('ai-connection', err instanceof Error ? err.message : String(err), err);
+        captureError('ai-connection', translateGoError(err), err);
         renderAdvice('unknown');
     } finally {
         diagState.autoTesting = false;
@@ -454,7 +455,7 @@ async function flushAndSave(): Promise<{ ok: boolean; error?: string }> {
         void refreshCaps();
         return { ok: true };
     } catch (err) {
-        return { ok: false, error: err instanceof Error ? err.message : String(err) };
+        return { ok: false, error: translateGoError(err) };
     }
 }
 
@@ -803,7 +804,7 @@ async function testConnection(statusEl: HTMLElement): Promise<void> {
             diagState.lastConnectionOk = false;
         }
     } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
+        const msg = translateGoError(err);
         const display = isLocalOllama ? t('ai.errorAdvice.ollamaNotInstalled') + ' ' + msg : msg;
         statusEl.textContent = display;
         statusEl.style.color = 'var(--danger)';

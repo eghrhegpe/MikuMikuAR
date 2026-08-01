@@ -1,6 +1,8 @@
 // [doc:adr-196] 错误环形缓冲 — 全局错误捕获 + 缓冲队列
 // 供 AI 诊断助手读取上下文。测试契约见 __tests__/error-buffer.test.ts
 
+import { translateGoError } from '../i18n/goerr';
+
 export interface ErrorEntry {
     kind: 'log' | 'uncaught' | 'unhandledrejection';
     tag: string;
@@ -259,7 +261,7 @@ export function installErrorCaptureOn(
         const reason = event.reason;
         captureError(
             reason instanceof Error ? reason.name : 'unhandled',
-            reason instanceof Error ? reason.message : String(reason),
+            translateGoError(reason),
             reason,
             'unhandledrejection',
             { buffer }
