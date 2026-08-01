@@ -2,23 +2,22 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
-  <title>页面迁移</title>
+  <title>页面不存在</title>
   <script>
     (function () {
       var p = window.location.pathname;
       // 旧文档站路径 /MikuMikuAR/docs/... 已上提至 Pages 根 /MikuMikuAR/。
-      // 旧 /docs/ 深层链接（README、书签、外链）缺失文件 → 剥离 /docs/ 段后跳回根（文档首页）；
-      // 其余未知 404（含主应用 /app/ 之外的异常路径）兜底回根（文档站）。
+      // 命中遗留 /docs/ 段：剥离后跳回根（文档首页），一跳到位。
+      // 其余 404：不跳转，保留 404 语义——既避免掩盖坏链，也避免根 index.html
+      // 缺失时 404 → 跳根 → 再 404 的无限重定向。
       if (p.indexOf('/MikuMikuAR/docs/') !== -1) {
-        var next = p.replace(/\/MikuMikuAR\/docs\//, '/MikuMikuAR/');
-        window.location.replace(next);
-      } else {
-        window.location.replace('/MikuMikuAR/');
+        window.location.replace(p.replace(/\/MikuMikuAR\/docs\//, '/MikuMikuAR/'));
       }
     })();
   </script>
 </head>
 <body>
-  <p>文档站已迁移至站点根路径。若未自动跳转，请访问 <a href="/MikuMikuAR/">文档中心</a>。</p>
+  <h1>404 — 页面不存在</h1>
+  <p>请访问 <a href="/MikuMikuAR/">文档中心</a> 或 <a href="/MikuMikuAR/app/">在线应用</a>。</p>
 </body>
 </html>
