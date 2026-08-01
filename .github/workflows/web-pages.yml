@@ -19,6 +19,7 @@ on:
       - 'frontend/bindings/**'
       - 'docs/**'
       - '.github/workflows/web-pages.yml'
+      - 'scripts/redirect-stubs/**'
   workflow_dispatch: # 允许手动触发
 
 permissions:
@@ -97,12 +98,17 @@ jobs:
 
       - name: Copy guide into web dist (root)
         # 产物拷入 dist-web/（根），与 /app/ 子路径共存，一次 artifact 一次部署
-        run: cp -r ../docs/guide/.vitepress/dist dist-web
+        # 注意尾部 /. ：dist-web 已由上一步 vite 构建创建，直接 `cp -r src dst`
+        # 会拷成 dist-web/dist/（POSIX 语义：目标存在则拷进去），导致根 index.html
+        # 缺失 → 整站 404 + stub 死循环。必须拷「目录内容」而非目录本身。
+        run: cp -r ../docs/guide/.vitepress/dist/. dist-web/
 
       - name: Add legacy /docs/ redirect stub
         # 旧文档站路径 /MikuMikuAR/docs/ 已上提至 Pages 根 /MikuMikuAR/。
         # 旧链接落到 /docs/ 目录 → 自动跳转根；深层旧链接（/docs/...）缺失文件
         # → 由 dist-web/404.html（同 stub）剥离 /docs/ 段后兜底跳转根。
+        # 非遗留路径的 404 不跳转，保留 404 语义（覆盖 VitePress 自带 404 页，
+        # 换取「根缺失时不会死循环」的安全性，见 ADR-225 审核 P2）。
         run: |
           mkdir -p dist-web/docs
           cp ../scripts/redirect-stubs/docs-404-redirect.html dist-web/docs/index.html
