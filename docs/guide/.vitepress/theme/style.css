@@ -1,0 +1,9 @@
+/* 压缩章节标题（## / h2）上方空白。
+ * 默认主题 .vp-doc h2: margin-top 48px + border-top 1px + padding-top 24px ≈ 64~73px，
+ * 在限宽横屏 + 稀疏内容下显得空旷。改为 margin-top 24px + padding-top 12px ≈ 37px，
+ * 保留 border-top 轻分隔线以维持章节导航语义。
+ * 全局作用于 .vp-doc（含知识卡页），不触碰默认主题其余排版。 */
+.vp-doc h2 {
+  margin-top: 24px;
+  padding-top: 12px;
+}
