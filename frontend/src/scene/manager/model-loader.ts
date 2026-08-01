@@ -575,9 +575,9 @@ export async function loadPMXFile(
             registeredId = id;
             setTransformMetadata(inst.rootMesh, 'stage', id);
             // Pre-capture material original values for reset functionality
-            for (const mesh of meshes) {
-                if (mesh.material) {
-                    _capture(mesh.material);
+            for (let i = 0; i < meshes.length; i++) {
+                if (meshes[i].material) {
+                    _capture(meshes[i].material!, i, inst._origAlpha ?? []);
                 }
             }
             // 绑定 Reflection Probe 到新材料（如果探针已启用）
@@ -725,9 +725,9 @@ export async function loadPMXFile(
             );
         }
         // Pre-capture material original values for reset functionality
-        for (const mesh of meshes) {
-            if (mesh.material) {
-                _capture(mesh.material);
+        for (let i = 0; i < meshes.length; i++) {
+            if (meshes[i].material) {
+                _capture(meshes[i].material!, i, inst._origAlpha ?? []);
             }
         }
         // 绑定 Reflection Probe 到新材料（如果探针已启用）

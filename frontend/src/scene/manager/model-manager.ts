@@ -14,7 +14,6 @@ import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { MeshBuilder } from '@babylonjs/core/Meshes/meshBuilder';
 import { Vector3, Quaternion } from '@babylonjs/core/Maths/math.vector';
 import { Color3 } from '@babylonjs/core/Maths/math.color';
-import { Material } from '@babylonjs/core/Materials/material';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
 import {
@@ -29,7 +28,7 @@ import { disposeOverlay, restoreMaterials } from '@/outfit/outfit-overlay';
 import { clamp01 } from '@/core/clamp';
 import { swallowError } from '@/core/async';
 import { logWarn } from '@/core/logger';
-import { disposeModelMaterialState } from './material';
+import { disposeModelMaterialState, _applyAll, type AlphaCtx } from './material';
 import { applyWetnessToInst } from '@/scene/env/env-wetness';
 import { getOverrideType, type OverrideType } from '../motion/bone-override';
 import { showInfoToast } from '@/core/toast';
@@ -95,23 +94,15 @@ function _buildRigidBodyCatMap(mmdModel: RuntimeModel): Map<number, PhysicsCateg
 }
 
 function syncModelVisibility(inst: ModelInstance): void {
-    inst.meshes.forEach((m, i) => {
+    inst.meshes.forEach((m) => {
         m.setEnabled(inst.visible);
         const mat = m.material;
-        if (!mat) return;
-        const base = inst._origAlpha?.[i] ?? 1;
-        mat.alpha = clamp01(base * inst.opacity);
-        if (inst.opacity < 1) {
-            if (mat.transparencyMode === Material.MATERIAL_OPAQUE) {
-                mat.transparencyMode = Material.MATERIAL_ALPHABLEND;
-            }
-        } else {
-            mat.transparencyMode = Material.MATERIAL_OPAQUE;
-        }
         if (mat instanceof StandardMaterial) {
             mat.wireframe = inst.wireframe;
         }
     });
+    const alphaCtx: AlphaCtx = { opacity: inst.opacity, origAlpha: inst._origAlpha ?? [] };
+    _applyAll(inst.id, alphaCtx);
 }
 
 /** Apply the current scaling and rotation state to the root mesh. */

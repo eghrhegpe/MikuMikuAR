@@ -93,6 +93,14 @@ const MAT_PARAM_DEFS: Array<{
         step: 0.1,
         icon: 'lucide:sparkles',
     },
+    {
+        key: 'alphaMul',
+        labelKey: 'model-material.alphaMul',
+        min: 0,
+        max: 1,
+        step: 0.01,
+        icon: '💧',
+    },
 ];
 
 /** 用 MAT_PARAM_DEFS 批量渲染滑块；withIcons 区分 batch 详情两种 UI */

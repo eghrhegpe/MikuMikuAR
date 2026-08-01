@@ -143,6 +143,7 @@ describe('getMatState / applyMatState', () => {
                     toonTexLevel: 1,
                     sphereTexLevel: 1,
                     emissiveTexLevel: 1,
+                    alphaMul: 1,
                 },
                 头发: {
                     diffuseMul: 1,
@@ -155,6 +156,7 @@ describe('getMatState / applyMatState', () => {
                     toonTexLevel: 1,
                     sphereTexLevel: 1,
                     emissiveTexLevel: 1,
+                    alphaMul: 1,
                 },
             },
         });
@@ -180,6 +182,7 @@ describe('getMatState / applyMatState', () => {
                     toonTexLevel: 1,
                     sphereTexLevel: 1,
                     emissiveTexLevel: 1,
+                    alphaMul: 1,
                 },
                 7: {
                     diffuseMul: 0.8,
@@ -192,6 +195,7 @@ describe('getMatState / applyMatState', () => {
                     toonTexLevel: 1,
                     sphereTexLevel: 1,
                     emissiveTexLevel: 1,
+                    alphaMul: 1,
                 },
             },
         });

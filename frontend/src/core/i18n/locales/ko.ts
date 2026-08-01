@@ -317,6 +317,7 @@ export const ko: Record<string, string> = {
     'model-material.toonTexLevel': '툰 텍스처 레벨',
     'model-material.sphereTexLevel': '스피어 텍스처 레벨',
     'model-material.emissiveTexLevel': '자체 발광 텍스처 레벨',
+    'model-material.alphaMul': '불투명도',
     'model-material.texLevelGroup': '텍스처 강도',
     'model-material.materialAdjustTitle': '재질 조정 — {name}',
     'model-material.noMaterialData': '이 모델에는 재질 데이터가 없습니다',

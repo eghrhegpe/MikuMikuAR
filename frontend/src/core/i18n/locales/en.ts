@@ -1068,6 +1068,7 @@ export const en: Record<string, string> = {
     'model-material.toonTexLevel': 'Toon Texture Level',
     'model-material.sphereTexLevel': 'Sphere Texture Level',
     'model-material.emissiveTexLevel': 'Emissive Texture Level',
+    'model-material.alphaMul': 'Opacity',
     'model-material.texLevelGroup': 'Texture Levels',
     'model-material.materialAdjustTitle': 'Material Adjust — {name}',
     'model-material.noMaterialData': 'This model has no material data',

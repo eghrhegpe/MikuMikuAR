@@ -81,7 +81,7 @@ import {
     setModelFormation,
     disposeScene,
 } from './scene';
-import type { MaterialCategoryParams } from './manager/material';
+import { _applyAll, type AlphaCtx, type MaterialCategoryParams } from './manager/material';
 
 import { setEnvState } from './env/_bridge/env-bridge';
 import { setEnvSunAngle } from './env/env-time-of-day';
@@ -743,13 +743,16 @@ async function deserializeModels(
             }
             if (inst.opacity < 1.0 || inst.wireframe) {
                 for (const mesh of inst.meshes) {
-                    if (mesh.material) {
-                        mesh.material.alpha = inst.opacity;
-                        if (mesh.material instanceof StandardMaterial) {
-                            mesh.material.wireframe = inst.wireframe;
-                        }
+                    const mat = mesh.material;
+                    if (mat instanceof StandardMaterial) {
+                        mat.wireframe = inst.wireframe;
                     }
                 }
+                const alphaCtx: AlphaCtx = {
+                    opacity: inst.opacity,
+                    origAlpha: inst._origAlpha ?? [],
+                };
+                _applyAll(loadedId, alphaCtx);
             }
         } catch (err) {
             errors.push(
