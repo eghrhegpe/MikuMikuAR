@@ -683,11 +683,15 @@ function main() {
   } else {
     console.log('✅ 未检测到 ERROR 级漂移。');
   }
-  if (cov.undocumented > 0) {
-    console.log(`📋 INFO: 符号 0% 未文档化模块 ${cov.undocumented} 个为参考项，不阻断；补登 architecture.md 树 / function-map.md 即可消除。`);
-  }
-  if (rev.total > 0) {
-    console.log(`📋 INFO: ${rev.total} 个源文件尚无知识卡覆盖为参考项，不阻断；为其建立 docs/knowledge/ 知识卡并登记 source_files 即可消除。`);
+  // 兜底提示：仅当上方未输出「INFO 基线变更」详情块时（首次无基线/基线未变更），
+  // 才单独提示消除缺口的方式，避免同一信息重复三遍。
+  if (infoWarnings.length === 0) {
+    if (cov.undocumented > 0) {
+      console.log(`📋 INFO: 符号 0% 未文档化模块 ${cov.undocumented} 个为参考项，不阻断；补登 architecture.md 树 / function-map.md 即可消除。`);
+    }
+    if (rev.total > 0) {
+      console.log(`📋 INFO: ${rev.total} 个源文件尚无知识卡覆盖为参考项，不阻断；为其建立 docs/knowledge/ 知识卡并登记 source_files 即可消除。`);
+    }
   }
 
   process.exit(errors.length ? 1 : 0);
