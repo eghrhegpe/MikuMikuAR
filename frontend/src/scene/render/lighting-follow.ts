@@ -43,11 +43,15 @@ export interface PersonalLightSettings {
     coneSoftness: number;
     /** [doc:adr-168] 跟随骨骼名（null = 自动匹配腰骨候选） */
     boneName: string | null;
+    /** [doc:个人灯阴影开关] 是否生成阴影（默认 true，向后兼容既有常开行为） */
+    shadowEnabled: boolean;
+    /** [doc:个人灯阴影开关] 阴影贴图分辨率 */
+    shadowResolution: number;
 }
 
 interface PersonalLightEntry {
     light: SpotLight;
-    shadowGen: ShadowGenerator;
+    shadowGen: ShadowGenerator | null;
     settings: PersonalLightSettings;
     currentPos: Vector3;
     cone: LightConeEntry | null;
@@ -78,6 +82,8 @@ export const DEFAULT_PERSONAL_LIGHT: PersonalLightSettings = {
     coneLength: 30,
     coneSoftness: 0.5,
     boneName: null,
+    shadowEnabled: true,
+    shadowResolution: 512,
 };
 
 // ======== 用户个人灯默认值（localStorage 持久化） ========
@@ -192,23 +198,13 @@ export function attachPersonalLight(
     light.specular = new Color3(0.3, 0.3, 0.3);
     light.range = settings.height * 3;
 
-    const shadowGen = new ShadowGenerator(512, light);
-    shadowGen.usePercentageCloserFiltering = true;
-    shadowGen.bias = 0.001;
-    for (const m of model.meshes) {
-        if (m instanceof Mesh) {
-            shadowGen.addShadowCaster(m);
-            m.receiveShadows = true;
-        }
-    }
-
     const indicator = _createPersonalLightIndicator(settings);
     setTransformMetadata(indicator, 'personalLight', modelId);
     indicator.position.copyFrom(startPos);
 
     _entries.set(modelId, {
         light,
-        shadowGen,
+        shadowGen: null,
         settings,
         currentPos: startPos.clone(),
         cone: null,
@@ -216,7 +212,38 @@ export function attachPersonalLight(
         waistName,
     });
 
+    _ensurePersonalShadow(modelId);
     _ensurePersonalCone(modelId);
+}
+
+/** [doc:个人灯阴影开关] 个人灯阴影生成器：受 shadowEnabled 控制按需创建/重建，dispose 旧生成器避免泄漏 */
+function _ensurePersonalShadow(modelId: string): void {
+    const entry = _entries.get(modelId);
+    if (!entry) {
+        return;
+    }
+    // 先释放旧的（分辨率变化或开关变化时重建）
+    if (entry.shadowGen) {
+        entry.shadowGen.dispose();
+        entry.shadowGen = null;
+    }
+    if (!entry.settings.shadowEnabled) {
+        return;
+    }
+    const model = modelRegistry.get(modelId);
+    if (!model) {
+        return;
+    }
+    const gen = new ShadowGenerator(entry.settings.shadowResolution, entry.light);
+    gen.usePercentageCloserFiltering = true;
+    gen.bias = 0.001;
+    for (const m of model.meshes) {
+        if (m instanceof Mesh) {
+            gen.addShadowCaster(m);
+            m.receiveShadows = true;
+        }
+    }
+    entry.shadowGen = gen;
 }
 
 function _createPersonalLightIndicator(_settings: PersonalLightSettings): Mesh {
@@ -275,6 +302,7 @@ export function setPersonalLightState(
         return;
     }
     const boneChanged = 'boneName' in partial && partial.boneName !== entry.settings.boneName;
+    const shadowChanged = 'shadowEnabled' in partial || 'shadowResolution' in partial;
     Object.assign(entry.settings, partial);
     if (boneChanged) {
         // 重新解析跟随骨骼
@@ -295,6 +323,9 @@ export function setPersonalLightState(
     light.angle = settings.angle;
     light.range = settings.height * 3;
     _updatePersonalLightIndicator(modelId);
+    if (shadowChanged) {
+        _ensurePersonalShadow(modelId);
+    }
     _ensurePersonalCone(modelId);
 }
 

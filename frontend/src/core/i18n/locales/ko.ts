@@ -235,6 +235,8 @@ export const ko: Record<string, string> = {
     'model-detail.personalLightConeIntensity': '콘 밝기',
     'model-detail.personalLightConeLength': '콘 길이',
     'model-detail.personalLightConeSoftness': '콘 부드러움',
+    'model-detail.personalLightShadow': '그림자',
+    'model-detail.personalLightShadowResolution': '그림자 해상도',
     'model-detail.personalLightBone': '추적 본',
     'model-detail.personalLightBoneAuto': '자동 (허리)',
     'model-detail.personalLightSetDefault': '기본값으로 설정',

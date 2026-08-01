@@ -7,8 +7,8 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 122 | 715 |
-| 3D 场景 | 106 | 1062 |
+| 核心基础设施 | 122 | 716 |
+| 3D 场景 | 107 | 1068 |
 | 菜单 & UI | 75 | 381 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 17 | 127 |
@@ -691,6 +691,7 @@
 | `SaveLastScene()` | `core/wails-bindings` | — |
 | `SaveModelPreset()` | `core/wails-bindings` | — |
 | `SaveModelPresetToLibAuto()` | `core/wails-bindings` | — |
+| `SavePlazaConfig()` | `core/wails-bindings` | — |
 | `SaveRenderPreset()` | `core/wails-bindings` | — |
 | `SaveScenePreset()` | `core/wails-bindings` | — |
 | `SaveScreenshot()` | `core/wails-bindings` | — |
@@ -1800,6 +1801,12 @@
 | `pickTransformTarget()` | `scene/transform/transform-pick` | — |
 | `setTransformMetadata()` | `scene/transform/transform-pick` | — |
 | `tryAttachGizmoFromPick()` | `scene/transform/transform-pick` | — |
+| `TransformTarget()` | `scene/transform/transform-selection` | — |
+| `clearSelectedTransformTarget()` | `scene/transform/transform-selection` | 清除选中并卸载 Gizmo（面板关闭/切换时调用）。 |
+| `getSelectedTransformTarget()` | `scene/transform/transform-selection` | — |
+| `retryPendingAttachment()` | `scene/transform/transform-selection` | 节点就绪后重试：面板渲染时若适配器节点尚未就绪（attachGizmoForKind 返回 false）， 已记录的选中物在节点就绪后调用本函数补挂一次（交叉审核 P3 节点就绪时 |
+| `setSelectedTransformTarget()` | `scene/transform/transform-selection` | 声明当前选中物（面板详情渲染时调用）。若拖拽开关开则立即挂 Gizmo。 |
+| `syncDragMode()` | `scene/transform/transform-selection` | 拖拽开关状态变化后同步：开→挂当前选中物；关→卸载。 |
 
 ## 菜单 & UI
 
@@ -1950,8 +1957,9 @@
 | `RegisteredPopupMenuConfig()` | `menus/menu-factory` | 注册式菜单配置——工厂内部维护引用，返回 handle |
 | `registerPopupMenu()` | `menus/menu-factory` | 注册弹窗菜单——工厂内部维护引用，返回统一的 handle。 |
 | `showPopupMenu()` | `menus/menu-factory` | — |
+| `addOnCloseAllOverlays()` | `menus/menu-overlay` | 追加注册关闭回调（不覆盖主回调，供面板化拖拽卸载等场景用） |
 | `clearAllMenuWrappers()` | `menus/menu-overlay` | — |
-| `closeAllOverlays()` | `menus/menu-overlay` | Close all visible overlays, reset popup state, and invoke the registered callback. |
+| `closeAllOverlays()` | `menus/menu-overlay` | Close all visible overlays, reset popup state, and invoke the registered callbacks. |
 | `disposeMenuWrapper()` | `menus/menu-overlay` | — |
 | `getMenuWrapper()` | `menus/menu-overlay` | — |
 | `setOnCloseAllOverlays()` | `menus/menu-overlay` | — |
@@ -2039,9 +2047,7 @@
 | `buildToolbar()` | `menus/plaza-browser` | — |
 | `ensureSitesLoaded()` | `menus/plaza-browser` | — |
 | `getCustomPresets()` | `menus/plaza-browser` | — |
-| `loadCachedConfig()` | `menus/plaza-browser` | — |
-| `loadCustomSites()` | `menus/plaza-browser` | — |
-| `loadPlazaCache()` | `menus/plaza-browser` | 从本地缓存文件读取站点 + 创作者。缓存不存在时返回 null。 |
+| `loadPlazaCache()` | `menus/plaza-browser` | 从 Go 用户目录缓存（plaza-cache/creators.json + workshop_sites.json）读取站点 + 创作者。缓存不存在时返回 null。 |
 | `mergeSites()` | `menus/plaza-browser` | — |
 | `normalizeCreator()` | `menus/plaza-browser` | — |
 | `normalizeSite()` | `menus/plaza-browser` | — |
@@ -2053,7 +2059,7 @@
 | `renderHome()` | `menus/plaza-browser` | — |
 | `renderSiteContent()` | `menus/plaza-browser` | — |
 | `saveCustomPresets()` | `menus/plaza-browser` | — |
-| `savePlazaCache()` | `menus/plaza-browser` | 将当前站点 + 创作者写入本地缓存文件。 |
+| `savePlazaCache()` | `menus/plaza-browser` | 将当前站点 + 创作者持久化到 Go 用户目录缓存（plaza-cache/）。 |
 | `showActionsMenu()` | `menus/plaza-browser` | — |
 | `showPlaza()` | `menus/plaza-browser` | — |
 | `PLAZA_CREATORS()` | `menus/plaza-creators` | — |
@@ -2108,6 +2114,7 @@
 | `buildMaterialCard()` | `menus/resource-detail-helpers` | 材质区块：进入材质调节子层级 |
 | `buildSnapSettings()` | `menus/resource-detail-helpers` | — |
 | `buildTransformCard()` | `menus/resource-detail-helpers` | 拖拽操控卡片：Gizmo 拖拽 + 缩放倍率 + 透明度 [doc:adr-049] 位置/旋转由 3D Gizmo 实时拖拽取代，不再显示滑块。 |
+| `reconcileTransformSelection()` | `menus/resource-detail-helpers` | 面板关闭/切换即卸载（ADR-171 面板化）：菜单 onAfterRender 时调用。 |
 | `buildDragModeLevel()` | `menus/scene-drag-levels` | — |
 | `getSceneMenu()` | `menus/scene-menu-state` | — |
 | `reRenderSceneMenu()` | `menus/scene-menu-state` | — |
@@ -2378,5 +2385,5 @@
 
 ---
 
-> 共 326 个文件，2336 个导出符号。
+> 共 327 个文件，2343 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。
