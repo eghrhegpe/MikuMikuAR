@@ -168,7 +168,6 @@ function renderMarkdown(groups, entries, scope) {
 
   lines.push(`---`);
   lines.push(``);
-  lines.push(`> 共 ${entries.length} 个文件，${entries.reduce((s, e) => s + e.syms.length, 0)} 个导出符号。`);
   lines.push(`> 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。`);
 
   return lines.join('\n');
