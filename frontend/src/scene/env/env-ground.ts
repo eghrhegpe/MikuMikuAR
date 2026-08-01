@@ -42,7 +42,12 @@ import {
 } from './env-water';
 import { getCanvasCtx } from './_shared/env-type-helpers';
 import { GroundProceduralKind } from './env-ground-presets';
-import { createGroundMeshFromSpec, applyGroundMaterialSpec, specKey, buildGroundMaterialSpec } from './env-ground-spec';
+import {
+    createGroundMeshFromSpec,
+    applyGroundMaterialSpec,
+    specKey,
+    buildGroundMaterialSpec,
+} from './env-ground-spec';
 
 // ======== ADR-114: 材质适配层（StandardMaterial ↔ PBRMaterial）========
 
@@ -571,7 +576,10 @@ let _groundScrollV = 0;
 let _groundRipples: BaseTexture | null = null;
 let _groundRippleApplied = false;
 
-export function _syncGroundRippleTexture(mat: GroundMat, scene: import('@babylonjs/core').Scene): void {
+export function _syncGroundRippleTexture(
+    mat: GroundMat,
+    scene: import('@babylonjs/core').Scene
+): void {
     const tex = getGroundRippleTexture(scene);
     if (tex) {
         // 暂存用户的 normalTexture，用 ripple 纹理覆盖 bumpTexture
@@ -1147,7 +1155,8 @@ function _applyGroundInplaceLegacy(mat: GroundMat, state: EnvState, scene: Scene
     }
     const albedoTex = _getAlbedoTex(mat);
     if (albedoTex && albedoTex instanceof Texture) {
-        albedoTex.uScale = albedoTex.vScale = _groundActualSize / 10 / Math.max(0.1, state.groundTextureScale);
+        albedoTex.uScale = albedoTex.vScale =
+            _groundActualSize / 10 / Math.max(0.1, state.groundTextureScale);
         _syncAllTextureOffsets(mat, state);
     }
     if (

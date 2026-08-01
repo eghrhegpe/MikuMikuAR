@@ -11,7 +11,17 @@
 //   Phase 2  applyGround 原地路径改调 applyGroundMaterialSpec
 //   Phase 4  删除旧双路径 + 手拼 typeKey
 
-import { Scene, Mesh, GroundMesh, Color3, Material, StandardMaterial, PBRMaterial, Texture, MeshBuilder } from '@babylonjs/core';
+import {
+    Scene,
+    Mesh,
+    GroundMesh,
+    Color3,
+    Material,
+    StandardMaterial,
+    PBRMaterial,
+    Texture,
+    MeshBuilder,
+} from '@babylonjs/core';
 import { EnvState } from '@/core/config';
 
 import {
@@ -136,7 +146,11 @@ export function buildGroundMaterialSpec(state: EnvState): GroundMaterialSpec {
 
     const structural: GroundStructuralSpec = {
         geometry,
-        size: isTerrain ? state.groundSize : state.groundInfiniteEnabled ? INFINITE_GROUND_SIZE : state.groundSize,
+        size: isTerrain
+            ? state.groundSize
+            : state.groundInfiniteEnabled
+              ? INFINITE_GROUND_SIZE
+              : state.groundSize,
         terrainHeight: state.groundTerrainHeight,
         terrainScale: state.groundTerrainScale,
         terrainSeed: state.groundTerrainSeed,
@@ -236,7 +250,10 @@ export function specKey(spec: GroundMaterialSpec): string {
 }
 
 /** diffSpec 的结构性结论：是否需要重建。 */
-export function groundSpecNeedsRebuild(prev: GroundMaterialSpec, next: GroundMaterialSpec): boolean {
+export function groundSpecNeedsRebuild(
+    prev: GroundMaterialSpec,
+    next: GroundMaterialSpec
+): boolean {
     return specKey(prev) !== specKey(next);
 }
 

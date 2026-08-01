@@ -30,452 +30,452 @@ const WATER_PRESET_I18N: Record<string, string> = {
 /** 导出 water schema 供 menu-registry 静态分析（ADR-093 元测试） */
 export function getWaterSchema(): MenuNode[] {
     return [
+        {
+            id: 'env:water:presets',
+            kind: 'custom',
+            renderCustom: (cc) => {
+                buildPresetChipGroup(
+                    cc,
+                    Object.entries(WATER_PRESETS).map(([key, wp]) => ({
+                        label: t(WATER_PRESET_I18N[key] ?? wp.label),
+                        onClick: () => {
+                            setEnvState({
+                                ...buildWaterPresetEnvState(wp),
+                                waterEnabled: true,
+                            });
+                            applyWaterPresetToCurrent(wp);
+                            getEnvMenu()?.reRender();
+                        },
+                    }))
+                );
+            },
+        },
+        {
+            id: 'env:water:basic',
+            kind: 'folder',
+            label: 'env.basicParams',
+            icon: 'lucide:sliders',
+            defaultOpen: true,
+            children: [
                 {
-                    id: 'env:water:presets',
-                    kind: 'custom',
-                    renderCustom: (cc) => {
-                        buildPresetChipGroup(
-                            cc,
-                            Object.entries(WATER_PRESETS).map(([key, wp]) => ({
-                                label: t(WATER_PRESET_I18N[key] ?? wp.label),
-                                onClick: () => {
-                                    setEnvState({
-                                        ...buildWaterPresetEnvState(wp),
-                                        waterEnabled: true,
-                                    });
-                                    applyWaterPresetToCurrent(wp);
-                                    getEnvMenu()?.reRender();
-                                },
-                            }))
-                        );
+                    id: 'env:water:level',
+                    kind: 'slider',
+                    label: 'env.height',
+                    control: { bind: 'env.waterLevel', min: -10, max: 30, step: 0.1 },
+                    icon: 'lucide:arrow-up',
+                },
+                {
+                    id: 'env:water:anim-speed',
+                    kind: 'slider',
+                    label: 'env.animSpeed',
+                    control: {
+                        bind: 'env.waterAnimSpeed',
+                        min: 0.1,
+                        max: 5,
+                        step: 0.1,
+                        get: (v) => (v as number) ?? 1,
+                    },
+                    icon: 'lucide:fast-forward',
+                },
+                {
+                    id: 'env:water:dispersion',
+                    kind: 'toggle',
+                    label: 'env.waterDispersionEnabled',
+                    control: { bind: 'env.waterDispersionEnabled' },
+                    icon: 'lucide:activity',
+                },
+            ],
+        },
+        {
+            id: 'env:water:bigWave',
+            kind: 'folder',
+            label: 'env.bigWaveHeight',
+            icon: 'lucide:mountain',
+            defaultOpen: false,
+            headerToggle: { bind: 'env.bigWaveEnabled' },
+            children: [
+                {
+                    id: 'env:water:big-wave-height',
+                    kind: 'slider',
+                    label: 'env.bigWaveHeight',
+                    control: { bind: 'env.bigWaveHeight', min: 0, max: 3, step: 0.1 },
+                    icon: 'lucide:mountain',
+                },
+            ],
+        },
+        {
+            id: 'env:water:small-wave',
+            kind: 'folder',
+            label: 'env.smallWaveHeight',
+            icon: 'lucide:waves',
+            defaultOpen: false,
+            headerToggle: { bind: 'env.smallWaveEnabled' },
+            children: [
+                {
+                    id: 'env:water:small-wave-height',
+                    kind: 'slider',
+                    label: 'env.smallWaveHeight',
+                    control: { bind: 'env.smallWaveHeight', min: 0, max: 3, step: 0.1 },
+                    icon: 'lucide:waves',
+                },
+            ],
+        },
+        {
+            id: 'env:water:color-fog',
+            kind: 'folder',
+            label: 'env.colorAndFog',
+            icon: 'lucide:palette',
+            defaultOpen: false,
+            children: [
+                {
+                    id: 'env:water:color',
+                    kind: 'colorSlider',
+                    label: 'env.waterColor',
+                    control: { bind: 'env.waterColor' },
+                },
+                {
+                    id: 'env:water:transparency',
+                    kind: 'slider',
+                    label: 'env.opacity',
+                    control: {
+                        bind: 'env.waterTransparency',
+                        min: 0,
+                        max: 1,
+                        step: 0.05,
+                    },
+                    icon: 'lucide:eye',
+                },
+                {
+                    id: 'env:water:fog-color',
+                    kind: 'colorSlider',
+                    label: 'env.waterFogColor',
+                    control: { bind: 'env.waterFogColor' },
+                },
+                {
+                    id: 'env:water:fog-start',
+                    kind: 'slider',
+                    label: 'env.waterFogStart',
+                    control: {
+                        bind: 'env.waterFogStart',
+                        min: 0,
+                        max: 500,
+                        step: 10,
+                    },
+                    icon: 'lucide:cloud-fog',
+                },
+                {
+                    id: 'env:water:fog-end',
+                    kind: 'slider',
+                    label: 'env.waterFogEnd',
+                    control: {
+                        bind: 'env.waterFogEnd',
+                        min: 50,
+                        max: 1000,
+                        step: 10,
+                    },
+                    icon: 'lucide:cloud-fog',
+                },
+                {
+                    id: 'env:water:sky-color-blend',
+                    kind: 'slider',
+                    label: 'env.waterSkyColorBlend',
+                    control: {
+                        bind: 'env.waterSkyColorBlend',
+                        min: 0,
+                        max: 1,
+                        step: 0.05,
+                    },
+                    icon: 'lucide:cloud',
+                },
+            ],
+        },
+        // —— 波浪与菲涅尔（从原"高级参数"拆出）——
+        {
+            id: 'env:water:wave-fresnel',
+            kind: 'folder',
+            label: 'env.waveFresnel',
+            icon: 'lucide:waves',
+            defaultOpen: false,
+            children: [
+                {
+                    id: 'env:water:fresnel-bias',
+                    kind: 'slider',
+                    label: 'env.fresnelBias',
+                    control: { bind: 'env.fresnelBias', min: 0, max: 1, step: 0.01 },
+                },
+                {
+                    id: 'env:water:fresnel-power',
+                    kind: 'slider',
+                    label: 'env.fresnelPower',
+                    control: { bind: 'env.fresnelPower', min: 0.5, max: 8, step: 0.1 },
+                },
+                {
+                    id: 'env:water:fresnel-alpha',
+                    kind: 'slider',
+                    label: 'env.fresnelAlpha',
+                    control: {
+                        bind: 'env.fresnelAlphaInfluence',
+                        min: 0,
+                        max: 1,
+                        step: 0.05,
                     },
                 },
                 {
-                    id: 'env:water:basic',
-                    kind: 'folder',
-                    label: 'env.basicParams',
-                    icon: 'lucide:sliders',
-                    defaultOpen: true,
-                    children: [
-                        {
-                            id: 'env:water:level',
-                            kind: 'slider',
-                            label: 'env.height',
-                            control: { bind: 'env.waterLevel', min: -10, max: 30, step: 0.1 },
-                            icon: 'lucide:arrow-up',
-                        },
-                        {
-                            id: 'env:water:anim-speed',
-                            kind: 'slider',
-                            label: 'env.animSpeed',
-                            control: {
-                                bind: 'env.waterAnimSpeed',
-                                min: 0.1,
-                                max: 5,
-                                step: 0.1,
-                                get: (v) => (v as number) ?? 1,
-                            },
-                            icon: 'lucide:fast-forward',
-                        },
-                        {
-                            id: 'env:water:dispersion',
-                            kind: 'toggle',
-                            label: 'env.waterDispersionEnabled',
-                            control: { bind: 'env.waterDispersionEnabled' },
-                            icon: 'lucide:activity',
-                        },
-                    ],
+                    id: 'env:water:diffuse-strength',
+                    kind: 'slider',
+                    label: 'env.diffuseStrength',
+                    control: { bind: 'env.diffuseStrength', min: 0, max: 2, step: 0.05 },
                 },
                 {
-                    id: 'env:water:bigWave',
-                    kind: 'folder',
-                    label: 'env.bigWaveHeight',
+                    id: 'env:water:ambient-strength',
+                    kind: 'slider',
+                    label: 'env.ambientStrength',
+                    control: { bind: 'env.ambientStrength', min: 0, max: 2, step: 0.05 },
+                },
+                {
+                    id: 'env:water:ripple-slots',
+                    kind: 'slider',
+                    label: 'env.waterRippleSlots',
+                    control: { bind: 'env.waterRippleSlots', min: 16, max: 1024, step: 16 },
+                },
+                {
+                    id: 'env:water:ripple-normal',
+                    kind: 'slider',
+                    label: 'env.rippleNormal',
+                    control: {
+                        bind: 'env.rippleNormalStrength',
+                        min: 0,
+                        max: 2,
+                        step: 0.05,
+                    },
+                },
+                {
+                    id: 'env:water:ripple-glint',
+                    kind: 'slider',
+                    label: 'env.rippleGlint',
+                    control: {
+                        bind: 'env.rippleGlintStrength',
+                        min: 0,
+                        max: 2,
+                        step: 0.05,
+                    },
+                },
+                {
+                    id: 'env:water:normal-strength',
+                    kind: 'slider',
+                    label: 'env.waterNormalStrength',
+                    control: {
+                        bind: 'env.waterNormalStrength',
+                        min: 0,
+                        max: 1.5,
+                        step: 0.05,
+                    },
+                },
+                {
+                    id: 'env:water:glint-strength',
+                    kind: 'slider',
+                    label: 'env.waterGlintStrength',
+                    control: {
+                        bind: 'env.waterGlintStrength',
+                        min: 0,
+                        max: 2,
+                        step: 0.05,
+                    },
+                },
+                {
+                    id: 'env:water:low-freq-normal',
+                    kind: 'slider',
+                    label: 'env.lowFreqNormalStrength',
+                    control: {
+                        bind: 'env.lowFreqNormalStrength',
+                        min: 0,
+                        max: 0.5,
+                        step: 0.01,
+                    },
+                },
+                {
+                    id: 'env:water:horizon-fade',
+                    kind: 'slider',
+                    label: 'env.waterHorizonFade',
                     icon: 'lucide:mountain',
-                    defaultOpen: false,
-                    headerToggle: { bind: 'env.bigWaveEnabled' },
-                    children: [
-                        {
-                            id: 'env:water:big-wave-height',
-                            kind: 'slider',
-                            label: 'env.bigWaveHeight',
-                            control: { bind: 'env.bigWaveHeight', min: 0, max: 3, step: 0.1 },
-                            icon: 'lucide:mountain',
-                        },
-                    ],
+                    control: {
+                        bind: 'env.waterHorizonFade',
+                        min: 0,
+                        max: 1,
+                        step: 0.05,
+                    },
                 },
+            ],
+        },
+        // —— 焦散（密度 + 颜色 + 滚动 + 翻转）——
+        {
+            id: 'env:water:caustics',
+            kind: 'folder',
+            label: 'env.caustics',
+            icon: 'lucide:sun',
+            defaultOpen: false,
+            headerToggle: { bind: 'env.causticEnabled' },
+            children: [
                 {
-                    id: 'env:water:small-wave',
-                    kind: 'folder',
-                    label: 'env.smallWaveHeight',
-                    icon: 'lucide:waves',
-                    defaultOpen: false,
-                    headerToggle: { bind: 'env.smallWaveEnabled' },
-                    children: [
-                        {
-                            id: 'env:water:small-wave-height',
-                            kind: 'slider',
-                            label: 'env.smallWaveHeight',
-                            control: { bind: 'env.smallWaveHeight', min: 0, max: 3, step: 0.1 },
-                            icon: 'lucide:waves',
-                        },
-                    ],
-                },
-                {
-                    id: 'env:water:color-fog',
-                    kind: 'folder',
-                    label: 'env.colorAndFog',
-                    icon: 'lucide:palette',
-                    defaultOpen: false,
-                    children: [
-                        {
-                            id: 'env:water:color',
-                            kind: 'colorSlider',
-                            label: 'env.waterColor',
-                            control: { bind: 'env.waterColor' },
-                        },
-                        {
-                            id: 'env:water:transparency',
-                            kind: 'slider',
-                            label: 'env.opacity',
-                            control: {
-                                bind: 'env.waterTransparency',
-                                min: 0,
-                                max: 1,
-                                step: 0.05,
-                            },
-                            icon: 'lucide:eye',
-                        },
-                        {
-                            id: 'env:water:fog-color',
-                            kind: 'colorSlider',
-                            label: 'env.waterFogColor',
-                            control: { bind: 'env.waterFogColor' },
-                        },
-                        {
-                            id: 'env:water:fog-start',
-                            kind: 'slider',
-                            label: 'env.waterFogStart',
-                            control: {
-                                bind: 'env.waterFogStart',
-                                min: 0,
-                                max: 500,
-                                step: 10,
-                            },
-                            icon: 'lucide:cloud-fog',
-                        },
-                        {
-                            id: 'env:water:fog-end',
-                            kind: 'slider',
-                            label: 'env.waterFogEnd',
-                            control: {
-                                bind: 'env.waterFogEnd',
-                                min: 50,
-                                max: 1000,
-                                step: 10,
-                            },
-                            icon: 'lucide:cloud-fog',
-                        },
-                        {
-                            id: 'env:water:sky-color-blend',
-                            kind: 'slider',
-                            label: 'env.waterSkyColorBlend',
-                            control: {
-                                bind: 'env.waterSkyColorBlend',
-                                min: 0,
-                                max: 1,
-                                step: 0.05,
-                            },
-                            icon: 'lucide:cloud',
-                        },
-                    ],
-                },
-                // —— 波浪与菲涅尔（从原"高级参数"拆出）——
-                {
-                    id: 'env:water:wave-fresnel',
-                    kind: 'folder',
-                    label: 'env.waveFresnel',
-                    icon: 'lucide:waves',
-                    defaultOpen: false,
-                    children: [
-                        {
-                            id: 'env:water:fresnel-bias',
-                            kind: 'slider',
-                            label: 'env.fresnelBias',
-                            control: { bind: 'env.fresnelBias', min: 0, max: 1, step: 0.01 },
-                        },
-                        {
-                            id: 'env:water:fresnel-power',
-                            kind: 'slider',
-                            label: 'env.fresnelPower',
-                            control: { bind: 'env.fresnelPower', min: 0.5, max: 8, step: 0.1 },
-                        },
-                        {
-                            id: 'env:water:fresnel-alpha',
-                            kind: 'slider',
-                            label: 'env.fresnelAlpha',
-                            control: {
-                                bind: 'env.fresnelAlphaInfluence',
-                                min: 0,
-                                max: 1,
-                                step: 0.05,
-                            },
-                        },
-                        {
-                            id: 'env:water:diffuse-strength',
-                            kind: 'slider',
-                            label: 'env.diffuseStrength',
-                            control: { bind: 'env.diffuseStrength', min: 0, max: 2, step: 0.05 },
-                        },
-                        {
-                            id: 'env:water:ambient-strength',
-                            kind: 'slider',
-                            label: 'env.ambientStrength',
-                            control: { bind: 'env.ambientStrength', min: 0, max: 2, step: 0.05 },
-                        },
-                        {
-                            id: 'env:water:ripple-slots',
-                            kind: 'slider',
-                            label: 'env.waterRippleSlots',
-                            control: { bind: 'env.waterRippleSlots', min: 16, max: 1024, step: 16 },
-                        },
-                        {
-                            id: 'env:water:ripple-normal',
-                            kind: 'slider',
-                            label: 'env.rippleNormal',
-                            control: {
-                                bind: 'env.rippleNormalStrength',
-                                min: 0,
-                                max: 2,
-                                step: 0.05,
-                            },
-                        },
-                        {
-                            id: 'env:water:ripple-glint',
-                            kind: 'slider',
-                            label: 'env.rippleGlint',
-                            control: {
-                                bind: 'env.rippleGlintStrength',
-                                min: 0,
-                                max: 2,
-                                step: 0.05,
-                            },
-                        },
-                        {
-                            id: 'env:water:normal-strength',
-                            kind: 'slider',
-                            label: 'env.waterNormalStrength',
-                            control: {
-                                bind: 'env.waterNormalStrength',
-                                min: 0,
-                                max: 1.5,
-                                step: 0.05,
-                            },
-                        },
-                        {
-                            id: 'env:water:glint-strength',
-                            kind: 'slider',
-                            label: 'env.waterGlintStrength',
-                            control: {
-                                bind: 'env.waterGlintStrength',
-                                min: 0,
-                                max: 2,
-                                step: 0.05,
-                            },
-                        },
-                        {
-                            id: 'env:water:low-freq-normal',
-                            kind: 'slider',
-                            label: 'env.lowFreqNormalStrength',
-                            control: {
-                                bind: 'env.lowFreqNormalStrength',
-                                min: 0,
-                                max: 0.5,
-                                step: 0.01,
-                            },
-                        },
-                        {
-                            id: 'env:water:horizon-fade',
-                            kind: 'slider',
-                            label: 'env.waterHorizonFade',
-                            icon: 'lucide:mountain',
-                            control: {
-                                bind: 'env.waterHorizonFade',
-                                min: 0,
-                                max: 1,
-                                step: 0.05,
-                            },
-                        },
-                    ],
-                },
-                // —— 焦散（密度 + 颜色 + 滚动 + 翻转）——
-                {
-                    id: 'env:water:caustics',
-                    kind: 'folder',
-                    label: 'env.caustics',
+                    id: 'env:water:caustic-intensity',
+                    kind: 'slider',
+                    label: 'env.causticIntensity',
+                    control: {
+                        bind: 'env.causticIntensity',
+                        min: 0,
+                        max: 0.5,
+                        step: 0.01,
+                    },
                     icon: 'lucide:sun',
-                    defaultOpen: false,
-                    headerToggle: { bind: 'env.causticEnabled' },
-                    children: [
-                        {
-                            id: 'env:water:caustic-intensity',
-                            kind: 'slider',
-                            label: 'env.causticIntensity',
-                            control: {
-                                bind: 'env.causticIntensity',
-                                min: 0,
-                                max: 0.5,
-                                step: 0.01,
-                            },
-                            icon: 'lucide:sun',
-                        },
-                        {
-                            id: 'env:water:caustic-color-1',
-                            kind: 'colorSlider',
-                            label: 'env.causticColor1',
-                            control: { bind: 'env.causticColor1' },
-                        },
-                        {
-                            id: 'env:water:caustic-color-2',
-                            kind: 'colorSlider',
-                            label: 'env.causticColor2',
-                            control: { bind: 'env.causticColor2' },
-                        },
-                        {
-                            id: 'env:water:caustic-scroll-x',
-                            kind: 'slider',
-                            label: 'env.causticScrollX',
-                            control: { bind: 'env.causticScrollX', min: -2, max: 2, step: 0.05 },
-                        },
-                        {
-                            id: 'env:water:caustic-scroll-y',
-                            kind: 'slider',
-                            label: 'env.causticScrollY',
-                            control: { bind: 'env.causticScrollY', min: -2, max: 2, step: 0.05 },
-                        },
-                        {
-                            id: 'env:water:fog-opacity',
-                            kind: 'slider',
-                            label: 'env.waterFogOpacityInfluence',
-                            control: {
-                                bind: 'env.waterFogOpacityInfluence',
-                                min: 0,
-                                max: 1,
-                                step: 0.05,
-                            },
-                        },
-                        {
-                            id: 'env:water:flip',
-                            kind: 'toggle',
-                            label: 'env.waterFlip',
-                            control: { bind: 'env.waterFlipEnabled' },
-                        },
-                    ],
                 },
                 {
-                    id: 'env:water:foam',
-                    kind: 'folder',
-                    label: 'env.foam',
-                    icon: 'lucide:waves',
-                    defaultOpen: false,
-                    headerToggle: { bind: 'env.foamEnabled' },
-                    children: [
-                        {
-                            id: 'env:water:foam-threshold',
-                            kind: 'slider',
-                            label: 'env.foamThreshold',
-                            control: {
-                                bind: 'env.foamThreshold',
-                                min: 0,
-                                max: 2,
-                                step: 0.05,
-                            },
-                        },
-                        {
-                            id: 'env:water:foam-intensity',
-                            kind: 'slider',
-                            label: 'env.foamIntensity',
-                            control: {
-                                bind: 'env.foamIntensity',
-                                min: 0,
-                                max: 1,
-                                step: 0.05,
-                            },
-                        },
-                        {
-                            id: 'env:water:foam-transition',
-                            kind: 'slider',
-                            label: 'env.foamTransition',
-                            control: {
-                                bind: 'env.foamTransitionRange',
-                                min: 0,
-                                max: 1,
-                                step: 0.05,
-                            },
-                        },
-                        {
-                            id: 'env:water:foam-opacity',
-                            kind: 'slider',
-                            label: 'env.foamOpacity',
-                            control: {
-                                bind: 'env.foamOpacity',
-                                min: 0,
-                                max: 1,
-                                step: 0.05,
-                            },
-                        },
-                        {
-                            id: 'env:water:foam-noise',
-                            kind: 'slider',
-                            label: 'env.foamNoise',
-                            control: {
-                                bind: 'env.foamNoiseStrength',
-                                min: 0,
-                                max: 1,
-                                step: 0.05,
-                            },
-                        },
-                        {
-                            id: 'env:water:foam-color',
-                            kind: 'colorSlider',
-                            label: 'env.foamColor',
-                            control: { bind: 'env.foamColor' },
-                        },
-                    ],
+                    id: 'env:water:caustic-color-1',
+                    kind: 'colorSlider',
+                    label: 'env.causticColor1',
+                    control: { bind: 'env.causticColor1' },
                 },
                 {
-                    id: 'env:water:underwater',
-                    kind: 'folder',
-                    label: 'env.underwaterEffects',
-                    icon: 'lucide:waves',
-                    defaultOpen: false,
-                    headerToggle: { bind: 'env.underwaterEnabled' },
-                    children: [
-                        {
-                            id: 'env:water:tone-intensity',
-                            kind: 'slider',
-                            label: 'env.toneIntensity',
-                            control: {
-                                bind: 'env.underwaterToneIntensity',
-                                min: 0,
-                                max: 1,
-                                step: 0.05,
-                            },
-                            icon: 'lucide:palette',
-                        },
-                        {
-                            id: 'env:water:tint-strength',
-                            kind: 'slider',
-                            label: 'env.underwaterTintStrength',
-                            control: {
-                                bind: 'env.underwaterTintStrength',
-                                min: 0,
-                                max: 1,
-                                step: 0.05,
-                            },
-                            icon: 'lucide:palette',
-                        },
-                    ],
+                    id: 'env:water:caustic-color-2',
+                    kind: 'colorSlider',
+                    label: 'env.causticColor2',
+                    control: { bind: 'env.causticColor2' },
                 },
+                {
+                    id: 'env:water:caustic-scroll-x',
+                    kind: 'slider',
+                    label: 'env.causticScrollX',
+                    control: { bind: 'env.causticScrollX', min: -2, max: 2, step: 0.05 },
+                },
+                {
+                    id: 'env:water:caustic-scroll-y',
+                    kind: 'slider',
+                    label: 'env.causticScrollY',
+                    control: { bind: 'env.causticScrollY', min: -2, max: 2, step: 0.05 },
+                },
+                {
+                    id: 'env:water:fog-opacity',
+                    kind: 'slider',
+                    label: 'env.waterFogOpacityInfluence',
+                    control: {
+                        bind: 'env.waterFogOpacityInfluence',
+                        min: 0,
+                        max: 1,
+                        step: 0.05,
+                    },
+                },
+                {
+                    id: 'env:water:flip',
+                    kind: 'toggle',
+                    label: 'env.waterFlip',
+                    control: { bind: 'env.waterFlipEnabled' },
+                },
+            ],
+        },
+        {
+            id: 'env:water:foam',
+            kind: 'folder',
+            label: 'env.foam',
+            icon: 'lucide:waves',
+            defaultOpen: false,
+            headerToggle: { bind: 'env.foamEnabled' },
+            children: [
+                {
+                    id: 'env:water:foam-threshold',
+                    kind: 'slider',
+                    label: 'env.foamThreshold',
+                    control: {
+                        bind: 'env.foamThreshold',
+                        min: 0,
+                        max: 2,
+                        step: 0.05,
+                    },
+                },
+                {
+                    id: 'env:water:foam-intensity',
+                    kind: 'slider',
+                    label: 'env.foamIntensity',
+                    control: {
+                        bind: 'env.foamIntensity',
+                        min: 0,
+                        max: 1,
+                        step: 0.05,
+                    },
+                },
+                {
+                    id: 'env:water:foam-transition',
+                    kind: 'slider',
+                    label: 'env.foamTransition',
+                    control: {
+                        bind: 'env.foamTransitionRange',
+                        min: 0,
+                        max: 1,
+                        step: 0.05,
+                    },
+                },
+                {
+                    id: 'env:water:foam-opacity',
+                    kind: 'slider',
+                    label: 'env.foamOpacity',
+                    control: {
+                        bind: 'env.foamOpacity',
+                        min: 0,
+                        max: 1,
+                        step: 0.05,
+                    },
+                },
+                {
+                    id: 'env:water:foam-noise',
+                    kind: 'slider',
+                    label: 'env.foamNoise',
+                    control: {
+                        bind: 'env.foamNoiseStrength',
+                        min: 0,
+                        max: 1,
+                        step: 0.05,
+                    },
+                },
+                {
+                    id: 'env:water:foam-color',
+                    kind: 'colorSlider',
+                    label: 'env.foamColor',
+                    control: { bind: 'env.foamColor' },
+                },
+            ],
+        },
+        {
+            id: 'env:water:underwater',
+            kind: 'folder',
+            label: 'env.underwaterEffects',
+            icon: 'lucide:waves',
+            defaultOpen: false,
+            headerToggle: { bind: 'env.underwaterEnabled' },
+            children: [
+                {
+                    id: 'env:water:tone-intensity',
+                    kind: 'slider',
+                    label: 'env.toneIntensity',
+                    control: {
+                        bind: 'env.underwaterToneIntensity',
+                        min: 0,
+                        max: 1,
+                        step: 0.05,
+                    },
+                    icon: 'lucide:palette',
+                },
+                {
+                    id: 'env:water:tint-strength',
+                    kind: 'slider',
+                    label: 'env.underwaterTintStrength',
+                    control: {
+                        bind: 'env.underwaterTintStrength',
+                        min: 0,
+                        max: 1,
+                        step: 0.05,
+                    },
+                    icon: 'lucide:palette',
+                },
+            ],
+        },
     ];
 }
 

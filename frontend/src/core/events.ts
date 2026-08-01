@@ -63,7 +63,7 @@ setOnCloseAllOverlays(() => {
 });
 let seekWasPlaying = false;
 let _pointerDownPos = { x: 0, y: 0 };
-let _lastTapTime = 0;
+const _lastTapTime = 0;
 let _activePointerCount = 0; // 活跃指针计数；仅单指时执行 click/toggle
 export const navLabels: Record<number, string> = {};
 

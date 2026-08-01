@@ -44,7 +44,9 @@ const _sssState = new Map<string, Map<string, SssParams>>();
  */
 export function getMatSssParams(id: string, cat: string): SssParams {
     const catMap = _sssState.get(id);
-    if (!catMap) return { ...DEFAULT_SSS_PARAMS };
+    if (!catMap) {
+        return { ...DEFAULT_SSS_PARAMS };
+    }
     const p = catMap.get(cat);
     return p ? { ...p } : { ...DEFAULT_SSS_PARAMS };
 }
@@ -55,11 +57,7 @@ export function getMatSssParams(id: string, cat: string): SssParams {
  * @param cat 材质分类（如'皮肤'、'服装'）
  * @param params SSS 参数（partial，未提供的字段保留现有值）
  */
-export function setMatSssParams(
-    id: string,
-    cat: string,
-    params: Partial<SssParams>
-): void {
+export function setMatSssParams(id: string, cat: string, params: Partial<SssParams>): void {
     let catMap = _sssState.get(id);
     if (!catMap) {
         catMap = new Map();
@@ -121,12 +119,14 @@ function applySssToMaterial(mat: Material, params: SssParams): void {
 
     // 直接操作 PBRSubSurfaceConfiguration 插件（PBRMaterial 内部已注册）
     const ss = (mat as any).plugins?.find(
-        (pl: unknown) =>
-            pl && typeof (pl as any).isTranslucencyEnabled === 'boolean'
+        (pl: unknown) => pl && typeof (pl as any).isTranslucencyEnabled === 'boolean'
     ) as any;
 
     if (!ss) {
-        logWarn('sss', `applySssToMaterial: no PBRSubSurfaceConfiguration plugin found on "${mat.name}"`);
+        logWarn(
+            'sss',
+            `applySssToMaterial: no PBRSubSurfaceConfiguration plugin found on "${mat.name}"`
+        );
         return;
     }
 

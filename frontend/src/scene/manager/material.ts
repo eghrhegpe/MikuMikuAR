@@ -634,7 +634,9 @@ export function _applyAll(id: string, alphaCtx?: AlphaCtx): void {
 
 function _alphaCtxFor(id: string): AlphaCtx | undefined {
     const inst = modelRegistry.get(id);
-    if (!inst) return undefined;
+    if (!inst) {
+        return undefined;
+    }
     return { opacity: inst.opacity, origAlpha: inst._origAlpha ?? [] };
 }
 

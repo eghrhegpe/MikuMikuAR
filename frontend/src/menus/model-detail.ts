@@ -1287,30 +1287,30 @@ export function buildPersonalLightLevel(id: string): PopupLevel {
                         0,
                         1,
                         0.05,
-                    (v) => setPersonalLightState(id, { coneSoftness: v }),
-                    'lucide:haze'
-                );
-            }
-            addToggleRow(
-                inner,
-                t('model-detail.personalLightShadow'),
-                pls.shadowEnabled,
-                (v) => setPersonalLightState(id, { shadowEnabled: v }),
-                'lucide:moon'
-            );
-            if (pls.shadowEnabled) {
-                addSliderRow(
+                        (v) => setPersonalLightState(id, { coneSoftness: v }),
+                        'lucide:haze'
+                    );
+                }
+                addToggleRow(
                     inner,
-                    t('model-detail.personalLightShadowResolution'),
-                    pls.shadowResolution,
-                    512,
-                    2048,
-                    512,
-                    (v) => setPersonalLightState(id, { shadowResolution: v }),
-                    'lucide:scan'
+                    t('model-detail.personalLightShadow'),
+                    pls.shadowEnabled,
+                    (v) => setPersonalLightState(id, { shadowEnabled: v }),
+                    'lucide:moon'
                 );
-            }
-            // 设为默认 / 重置默认按钮行
+                if (pls.shadowEnabled) {
+                    addSliderRow(
+                        inner,
+                        t('model-detail.personalLightShadowResolution'),
+                        pls.shadowResolution,
+                        512,
+                        2048,
+                        512,
+                        (v) => setPersonalLightState(id, { shadowResolution: v }),
+                        'lucide:scan'
+                    );
+                }
+                // 设为默认 / 重置默认按钮行
                 const defaultRow = document.createElement('div');
                 defaultRow.style.cssText = 'display:flex;gap:8px;margin-top:8px;';
                 const setDefBtn = document.createElement('button');

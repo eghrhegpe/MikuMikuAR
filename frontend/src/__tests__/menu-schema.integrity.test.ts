@@ -143,16 +143,36 @@ const PERCEPTION_KEYS = new Set(Object.keys(DEFAULT_PERCEPTION_STATE));
 
 // UI 状态字段（硬编码自 init.ts 赋值，保持与 UIState 类型同步）
 const UI_KEYS = new Set([
-    'autoUpdateEnabled', 'keepAwake', 'screenOrientation',
-    'fpsLimit', 'defaultPhysicsEnabled', 'renderScale',
-    'cameraSensitivity', 'invertYAxis', 'autoScaleModel',
-    'autoCenterModel', 'materialCategoryMap',
-    'screenshotFormat', 'screenshotQuality', 'thumbnailResolution', 'screenshotDir',
-    'resourceViewMode', 'volume', 'audioOffset', 'bpmQuantizeEnabled',
-    'autoLoadCompanionAudio', 'sfxEnabled', 'sfxVolume',
-    'footstepEnabled', 'footstepVolume', 'keyBindings',
-    'showFpsClock', 'showRuntimeBadge', 'frameCapEnabled',
-    'windowWidth', 'windowHeight',
+    'autoUpdateEnabled',
+    'keepAwake',
+    'screenOrientation',
+    'fpsLimit',
+    'defaultPhysicsEnabled',
+    'renderScale',
+    'cameraSensitivity',
+    'invertYAxis',
+    'autoScaleModel',
+    'autoCenterModel',
+    'materialCategoryMap',
+    'screenshotFormat',
+    'screenshotQuality',
+    'thumbnailResolution',
+    'screenshotDir',
+    'resourceViewMode',
+    'volume',
+    'audioOffset',
+    'bpmQuantizeEnabled',
+    'autoLoadCompanionAudio',
+    'sfxEnabled',
+    'sfxVolume',
+    'footstepEnabled',
+    'footstepVolume',
+    'keyBindings',
+    'showFpsClock',
+    'showRuntimeBadge',
+    'frameCapEnabled',
+    'windowWidth',
+    'windowHeight',
 ]);
 const I18N_KEYS = new Set(Object.keys(zhCN));
 
@@ -177,8 +197,26 @@ const LIGHT_KEYS = new Set([
 // 新增 motion 模块时需同步更新此表，否则 bind 路径将被判为无效
 const MOTION_MODULE_PARAMS: Record<string, Set<string>> = {
     'body-posture': new Set(['tilt', 'bend', 'twist', 'bodyHeight', 'bodyDepth']),
-    'left-hand': new Set(['pitch', 'yaw', 'roll', 'handPosX', 'handPosY', 'handPosZ', 'fingerPreset', 'fingerIntensity']),
-    'right-hand': new Set(['pitch', 'yaw', 'roll', 'handPosX', 'handPosY', 'handPosZ', 'fingerPreset', 'fingerIntensity']),
+    'left-hand': new Set([
+        'pitch',
+        'yaw',
+        'roll',
+        'handPosX',
+        'handPosY',
+        'handPosZ',
+        'fingerPreset',
+        'fingerIntensity',
+    ]),
+    'right-hand': new Set([
+        'pitch',
+        'yaw',
+        'roll',
+        'handPosX',
+        'handPosY',
+        'handPosZ',
+        'fingerPreset',
+        'fingerIntensity',
+    ]),
     'left-foot': new Set(['pitch', 'yaw', 'roll', 'footPosX', 'footPosY', 'footPosZ']),
     'right-foot': new Set(['pitch', 'yaw', 'roll', 'footPosX', 'footPosY', 'footPosZ']),
     'riding-model': new Set(['preset', 'saddleHeight', 'pedalAngle', 'autoPedal', 'pedalSpeed']),
@@ -209,11 +247,15 @@ function isValidStatePath(path: string): boolean {
     if (prefix === 'motionModule') {
         const rest = path.slice(dot + 1);
         const sep = rest.indexOf('.');
-        if (sep < 0) return false; // 至少需要 moduleId.paramKey
+        if (sep < 0) {
+            return false;
+        } // 至少需要 moduleId.paramKey
         const moduleId = rest.slice(0, sep);
         const paramKey = rest.slice(sep + 1);
         const params = MOTION_MODULE_PARAMS[moduleId];
-        if (!params) return false; // 未知模块 ID
+        if (!params) {
+            return false;
+        } // 未知模块 ID
         return params.has(paramKey);
     }
     return false; // 未知前缀
@@ -242,7 +284,9 @@ describe('ADR-093 Schema 完整性元测试', () => {
             }))
         )('$id → bind "$bind" 指向有效 state 字段', ({ bind, hasCustomAccessor }) => {
             // 有自定义 get/set 的控件，bind 路径是逻辑标识，不要求映射到真实 state 字段
-            if (hasCustomAccessor) return;
+            if (hasCustomAccessor) {
+                return;
+            }
             expect(isValidStatePath(bind)).toBe(true);
         });
     });
@@ -280,13 +324,15 @@ describe('ADR-093 Schema 完整性元测试', () => {
             }
         });
         // modeSlider options 的 label 也需校验
-        allNodes.filter((n) => n.kind === 'modeSlider' && n.control?.options).forEach((n) => {
-            n.control!.options!.forEach((opt) => {
-                if (opt.label && opt.label.includes('.')) {
-                    allLabels.add(opt.label);
-                }
+        allNodes
+            .filter((n) => n.kind === 'modeSlider' && n.control?.options)
+            .forEach((n) => {
+                n.control!.options!.forEach((opt) => {
+                    if (opt.label && opt.label.includes('.')) {
+                        allLabels.add(opt.label);
+                    }
+                });
             });
-        });
 
         for (const pkg of I18N_ALL_PACKAGES) {
             describe(`${pkg.name} 语言包`, () => {
@@ -304,13 +350,16 @@ describe('ADR-093 Schema 完整性元测试', () => {
         const allNodes = schemas.flatMap((s) => flattenNodes(s.nodes));
         const folders = allNodes.filter((n) => n.kind === 'folder');
 
-        it.each(folders.map((n) => ({ id: n.id })))('$id folder 有子节点或 renderCustom', ({ id }) => {
-            const folder = allNodes.find((n) => n.id === id)!;
-            // 检查是否有效：要么有非空 children，要么有 renderCustom，两者皆无为真空节点
-            const hasChildren = !!(folder.children && folder.children.length > 0);
-            const hasRenderCustom = !!folder.renderCustom;
-            expect(hasChildren || hasRenderCustom).toBe(true);
-        });
+        it.each(folders.map((n) => ({ id: n.id })))(
+            '$id folder 有子节点或 renderCustom',
+            ({ id }) => {
+                const folder = allNodes.find((n) => n.id === id)!;
+                // 检查是否有效：要么有非空 children，要么有 renderCustom，两者皆无为真空节点
+                const hasChildren = !!(folder.children && folder.children.length > 0);
+                const hasRenderCustom = !!folder.renderCustom;
+                expect(hasChildren || hasRenderCustom).toBe(true);
+            }
+        );
     });
 
     // ═══════════════════════════════════════════════════════
@@ -370,9 +419,7 @@ describe('ADR-093 Schema 完整性元测试', () => {
     // ═══════════════════════════════════════════════════════
     describe('modeSlider option values 唯一', () => {
         const allNodes = schemas.flatMap((s) => flattenNodes(s.nodes));
-        const modeSliders = allNodes.filter(
-            (n) => n.kind === 'modeSlider' && n.control?.options
-        );
+        const modeSliders = allNodes.filter((n) => n.kind === 'modeSlider' && n.control?.options);
 
         it.each(
             modeSliders.map((n) => ({
@@ -383,7 +430,9 @@ describe('ADR-093 Schema 完整性元测试', () => {
             const seen = new Set<string>();
             const dupes: string[] = [];
             for (const v of values) {
-                if (seen.has(v)) dupes.push(v);
+                if (seen.has(v)) {
+                    dupes.push(v);
+                }
                 seen.add(v);
             }
             expect(dupes).toEqual([]);
@@ -412,9 +461,7 @@ describe('ADR-093 Schema 完整性元测试', () => {
             expect(min).toBeLessThanOrEqual(max);
         });
 
-        const slidersWithStep = allNodes.filter(
-            (n) => n.control?.step !== undefined
-        );
+        const slidersWithStep = allNodes.filter((n) => n.control?.step !== undefined);
         it.each(
             slidersWithStep.map((n) => ({
                 id: n.id,
@@ -431,15 +478,10 @@ describe('ADR-093 Schema 完整性元测试', () => {
     describe('非 custom 节点 label 存在', () => {
         const allNodes = schemas.flatMap((s) => flattenNodes(s.nodes));
         const nodesNeedingLabel = allNodes.filter(
-            (n) =>
-                !n.renderCustom &&
-                n.kind !== 'sectionTitle' &&
-                n.kind !== 'divider'
+            (n) => !n.renderCustom && n.kind !== 'sectionTitle' && n.kind !== 'divider'
         );
 
-        it.each(
-            nodesNeedingLabel.map((n) => ({ id: n.id }))
-        )('$id 有 label', ({ id }) => {
+        it.each(nodesNeedingLabel.map((n) => ({ id: n.id })))('$id 有 label', ({ id }) => {
             const node = allNodes.find((n) => n.id === id)!;
             expect(node.label).toBeDefined();
         });

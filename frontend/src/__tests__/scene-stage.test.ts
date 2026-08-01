@@ -40,9 +40,7 @@ vi.mock('../core/icons', () => ({
     },
 }));
 
-vi.mock('../core/state', () =>
-    stateMockSuperset({ envState: mockEnvState })
-);
+vi.mock('../core/state', () => stateMockSuperset({ envState: mockEnvState }));
 
 vi.mock('../scene/env/_bridge/env-bridge', () => ({
     setEnvState: (...args: unknown[]) => mockSetEnvState(...args),
