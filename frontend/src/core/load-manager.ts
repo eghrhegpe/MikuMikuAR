@@ -9,7 +9,7 @@ import { translateGoError } from './i18n/goerr';
 import { runLoadRefreshHooks } from './load-refresh-registry';
 
 export type ResourceKind =
-    'actor' | 'stage' | 'vmd' | 'audio' | 'camera-vmd' | 'light' | 'personalLight';
+    'actor' | 'stage' | 'vmd' | 'audio' | 'camera-vmd' | 'light' | 'personalLight' | 'mirror';
 
 /**
  * [doc:adr-135] P0.2 加载阶段标签。dispatch 内部按 phase 更新，

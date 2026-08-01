@@ -17,6 +17,15 @@ import { getScene } from './_shared/env-context';
 import { envState } from '@/core/config';
 import { setEnvState } from './_bridge/env-bridge';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
+import { setTransformMetadata } from '../transform/transform-pick';
+import {
+    registerTransformAdapter,
+    getGizmoTargetId,
+    onGizmoDragObservable,
+} from '../transform/transform-adapter';
+
+/** 镜面在 TransformAdapter 注册表中的唯一 ID（镜面为单例）。 */
+const MIRROR_ID = 'mirror';
 
 let _mirrorMesh: Mesh | null = null;
 let _mirrorRT: MirrorTexture | null = null;
@@ -24,6 +33,8 @@ let _mirrorMat: StandardMaterial | null = null;
 // 场景网格增删观察者：镜面激活期间自动刷新反射列表（新加载的 MMD 角色等）
 let _meshAddedObserver: ObserverHandle | null = null;
 let _meshRemovedObserver: ObserverHandle | null = null;
+// Gizmo 拖拽中实时刷新反射平面（位置/朝向联动）
+let _gizmoDragObserver: ObserverHandle | null = null;
 
 // 可调参数（通过 API 修改，下次 create 时生效）
 let _mirrorWidth = 18;
@@ -83,7 +94,9 @@ export function createMirror(): void {
     _mirrorMesh.bakeTransformIntoVertices(Matrix.Translation(0, _mirrorHeight / 2, 0));
     _mirrorMesh.position = new Vector3(_mirrorPosition[0], _mirrorPosition[1], _mirrorPosition[2]);
     _mirrorMesh.rotation.y = _mirrorRotationY;
-    _mirrorMesh.isPickable = false;
+    // 挂 transform metadata + 可拾取，接入场景拖拽模式（ADR-171 / ADR-126）
+    _mirrorMesh.isPickable = true;
+    setTransformMetadata(_mirrorMesh, 'mirror', MIRROR_ID);
 
     // MirrorTexture：反射全部 mesh
     const resolution = RESOLUTION_MAP[envState.reflectionQuality] ?? 512;
@@ -98,6 +111,13 @@ export function createMirror(): void {
 
     // 镜面法线随 mesh 位置/旋转联动，从世界矩阵实时计算
     _updateMirrorPlane();
+
+    // Gizmo 拖拽中实时刷新反射平面（拖拽结束由 adapter 回写参数）
+    _gizmoDragObserver = observe(onGizmoDragObservable, () => {
+        if (getGizmoTargetId() === MIRROR_ID) {
+            _updateMirrorPlane();
+        }
+    });
 
     // 渲染列表：全部 mesh 排除自身
     _mirrorRT.renderList = scene.meshes.filter((m) => m !== _mirrorMesh);
@@ -120,6 +140,10 @@ export function createMirror(): void {
 /** 销毁镜面 */
 export function disposeMirror(): void {
     const _scene = getScene();
+    if (_gizmoDragObserver) {
+        _gizmoDragObserver.dispose();
+        _gizmoDragObserver = null;
+    }
     if (_meshAddedObserver) {
         _meshAddedObserver.dispose();
         _meshAddedObserver = null;
@@ -231,3 +255,22 @@ export function getMirrorInfo(): {
         meshCount: _mirrorRT?.renderList?.length ?? 0,
     };
 }
+
+// ======== Transform Adapter (ADR-126: 场景拖拽模式接入) ========
+// 位置/水平旋转由 3D Gizmo 实时拖拽（场景拖拽模式），拖拽结束回写模块参数。
+// 反射平面已由 _gizmoDragObserver 在拖拽中实时联动，无需在此刷新。
+
+registerTransformAdapter({
+    kinds: ['mirror'],
+    getNode: (id) => (id === MIRROR_ID ? _mirrorMesh : null),
+    gizmoTypes: () => ['position', 'rotation'],
+    onPositionDragEnd: (_id, n) => {
+        const v = (n as unknown as { position: Vector3 }).position;
+        setMirrorPosition(v.x, v.y, v.z);
+    },
+    onRotationDragEnd: (_id, n) => {
+        const v = (n as unknown as { rotation: Vector3 }).rotation;
+        setMirrorRotationY(v.y);
+    },
+    capabilities: [],
+});
