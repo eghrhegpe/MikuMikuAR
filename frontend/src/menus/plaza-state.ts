@@ -18,12 +18,12 @@ export const SITE_GROUPS: { label: string; icon: string; ids: string[] }[] = [
     {
         label: '国内',
         icon: 'lucide:map-pin',
-        ids: ['plaza:mzhouse', 'bilibili', 'afdian', 'github', 'cms-blueprint'],
+        ids: ['mzhouse', 'bilibili', 'afdian', 'github', 'cms-blueprint'],
     },
     {
         label: '海外',
         icon: 'lucide:globe-2',
-        ids: ['plaza:bowlroll', 'plaza:booth', 'nicovideo', 'deviantart', 'vroid'],
+        ids: ['bowlroll', 'booth', 'nicovideo', 'deviantart', 'vroid'],
     },
 ];
 

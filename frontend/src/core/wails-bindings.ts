@@ -118,6 +118,7 @@ export const SaveEnvPresetAuto = _p('SaveEnvPresetAuto');
 export const SaveLastScene = _p('SaveLastScene');
 export const SaveModelPreset = _p('SaveModelPreset');
 export const SaveModelPresetToLibAuto = _p('SaveModelPresetToLibAuto');
+export const SavePlazaConfig = _p('SavePlazaConfig');
 export const SaveRenderPreset = _p('SaveRenderPreset');
 export const SaveScenePreset = _p('SaveScenePreset');
 export const SaveScreenshot = _p('SaveScreenshot');

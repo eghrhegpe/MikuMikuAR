@@ -18,7 +18,6 @@ symbols:
   - showActionsMenu
   - normalizeSite
   - normalizeCreator
-  - loadCustomSites
   - ensureSitesLoaded
   - openSiteByMode
   - openExternal
@@ -27,7 +26,7 @@ symbols:
 invariants:
   - 广场状态集中在 plaza-state.ts，不分散到各子模块
   - showPlaza 为统一打开入口，closePlaza 在 plaza-state.ts 中
-  - 自定义站点经 loadCustomSites / savePlazaCache 持久化
+  - 自定义站点经 savePlazaCache / loadPlazaCache 持久化（Go 用户目录 plaza-cache/，不依赖 CWD 仓库文件）
 tests: []
 use_when:
   - 模型广场
