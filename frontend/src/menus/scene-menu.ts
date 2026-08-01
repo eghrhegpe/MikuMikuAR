@@ -24,6 +24,7 @@ import { showErrorToast } from '../core/toast';
 import { cardContainer } from '../core/ui-helpers';
 import { tryCatchStatus } from '../core/status-helpers';
 import { closeAllOverlays } from './menu-overlay';
+import { reconcileTransformSelection } from './resource-detail-helpers';
 import { registerLoadRefreshHook, registerLibraryScannedHook } from '../core/load-refresh-registry';
 import { focusModel } from '../scene/scene';
 import { t } from '../core/i18n/t';
@@ -85,7 +86,7 @@ import { getEnvTextureBindingTarget, clearEnvTextureBindingTarget } from './env-
 import { setSceneMenu, setRefreshSceneRoot, reRenderSceneMenu } from './scene-menu-state';
 import { setMirrorSize, getMirrorInfo, toggleMirror, isMirrorActive } from '../scene/env/env';
 import { isDragModeEnabled, setDragModeEnabled } from '../scene/transform/transform-mode';
-import { attachGizmoForKind, detachGizmo } from '../scene/transform/transform-adapter';
+import { syncDragMode } from '../scene/transform/transform-selection';
 import { addSliderRow } from '../core/ui-helpers';
 import { executeActionById } from '../core/action-executor';
 import { registerSceneActions } from '../core/action-defs/scene-actions';
@@ -108,6 +109,8 @@ const {
     handlers: {
         onItemClick: (row) => handleSceneAction(row),
         onFolderEnter: sceneOnFolderEnter,
+        // 面板切换/关闭即卸载 Gizmo（ADR-171 面板化）
+        onAfterRender: () => reconcileTransformSelection(),
     },
     onShow: (menu) => setSceneMenu(menu),
     onClose: () => setSceneMenu(null),
@@ -220,18 +223,9 @@ function buildSceneRootItems(): PopupRow[] {
             value: isDragModeEnabled(),
             onChange: (v: boolean) => {
                 setDragModeEnabled(v);
-                if (v) {
-                    closeAllOverlays();
-                    feedbackStatus('scene.dragModeHint', undefined, false);
-                    const id = focusedModelId;
-                    const inst = id ? modelRegistry.get(id) : undefined;
-                    if (inst) {
-                        attachGizmoForKind(inst.kind, inst.id);
-                    }
-                } else {
-                    detachGizmo();
-                    feedbackStatus('scene.statusExitDrag', undefined, false);
-                }
+                // 总闸联动：开→挂当前选中物；关→卸载（ADR-171 面板化）
+                syncDragMode();
+                feedbackStatus(v ? 'scene.dragModeHint' : 'scene.statusExitDrag', undefined, false);
             },
             bind: () => isDragModeEnabled(),
         },

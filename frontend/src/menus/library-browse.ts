@@ -14,6 +14,7 @@ import {
 import { normPath, isUnderRoot } from '../core/path';
 import { computeLibraryRef, getBrowseDir } from '../library/library-path';
 import { closeAllOverlays, getMenuWrapper } from './menu-overlay';
+import { reconcileTransformSelection } from './resource-detail-helpers';
 import { feedbackInfo } from '../core/feedback';
 import { showInfoToast } from '../core/toast';
 import { loadManager } from '../core/load-manager';
@@ -134,6 +135,7 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
     return new SlideMenu({
         container,
         onClose: closeAllOverlays,
+        onAfterRender: () => reconcileTransformSelection(),
         onFolderEnter: async (row) => {
             if (row.target === '__recent__') {
                 const recentMap = new Map<string, number>();

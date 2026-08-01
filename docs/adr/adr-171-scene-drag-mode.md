@@ -228,3 +228,27 @@ export function buildDragModeLevel(): PopupLevel {
 - **不做拖拽历史/撤销**：场景撤销（ADR-065 体系）已有独立机制，不在此扩展
 - **不替换详情页卡片**：旧路径保留，场景级入口是**增量**而非替代
 - **不做快捷键**（如 D 切换）：可后续 ADR 扩展，本期聚焦菜单入口
+
+## 7. 面板化演进（ADR-171 修订）
+
+> 移动端误触痛点（难以精确点击场景小物体如灯光）触发本修订。用户定案：**以面板为主**，Gizmo 生成由全局开关统一控制，只给当前选中物挂载，面板关闭/切换即卸载。
+
+### 7.1 变更内容
+
+| 变更 | 前后对比 |
+|------|---------|
+| 详情卡片「拖拽定位/退出」按钮 | **移除**（`resource-detail-helpers.ts` `buildTransformCard`），保留重置/吸附/scale/opacity 滑块 |
+| 场景开关 onChange | 原 `closeAllOverlays() + focusedModelId 模型特判` → 现 `setDragModeEnabled(v); syncDragMode()`（开关不关面板） |
+| 选中态统一 | 新增 `scene/transform/transform-selection.ts`（`TransformTarget{kind,id}` 单状态源），统一模型/灯光/镜子三套分散选中源 |
+| 卸载时机 | 面板关闭/切换即 `clearSelectedTransformTarget()` → `detachGizmo()`；双保险 = 菜单 `onAfterRender` 调 `reconcileTransformSelection()`（`_activeCardEl.isConnected` 检测）+ `menu-overlay.closeAllOverlays()` 的 `_extraCloseAllOverlays` 追加通道 |
+
+### 7.2 新状态源 API
+
+- `getSelectedTransformTarget()` / `setSelectedTransformTarget(target)` / `clearSelectedTransformTarget()` / `syncDragMode()`
+- `buildTransformCard` 渲染即 `setSelectedTransformTarget({kind,id})`（声明当前选中物）
+- `reconcileTransformSelection()`：卡片 DOM 脱离（`!isConnected`）→ 清理选中并卸载；挂于 scene-menu 与 library-browse modelStack 的 `onAfterRender` 及 `addOnCloseAllOverlays`
+
+### 7.3 不变项
+
+- 场景点击拖拽入口（`scene.ts` `tryAttachGizmoFromPick`）保留，与面板选中走同一 `attachGizmoForKind`，机制并存
+- 单 Gizmo 原则（ADR-126）不变；吸附设置、scale/opacity 滑块不变

@@ -4,7 +4,6 @@
 // 现状: stage 详情面板改为薄壳调用本模块；model-detail 因结构差异大保持现状
 
 import { cardContainer, modelRegistry, type PopupLevel } from '../core/config';
-import { feedbackInfo, feedbackStatus } from '../core/feedback';
 import { showInfoToast } from '../core/toast';
 import { t } from '../core/i18n/t';
 import {
@@ -18,20 +17,23 @@ import { resetModelTransform, removeModel } from '../scene/manager/model-ops';
 import { pushUndoSnapshot, offerSceneUndo, modelManager } from '../scene/scene';
 import { reRenderSceneMenu } from './scene-menu-state';
 import {
-    attachGizmoForKind,
     getTransformAdapter,
-    detachGizmo,
-    isGizmoActive,
-    getGizmoTargetId,
     onGizmoDragObservable,
     getGizmoNode,
+    getGizmoTargetId,
+    isGizmoActive,
     getActiveGizmoTypes,
     setGizmoSnapDistance,
     getGizmoSnapConfig,
 } from '../scene/transform/transform-adapter';
+import {
+    setSelectedTransformTarget,
+    clearSelectedTransformTarget,
+} from '../scene/transform/transform-selection';
 import { buildMatRootLevel } from './model-material';
 import type { SlideMenu } from './menu';
 import type { ResourceKind } from '../core/load-manager';
+import { addOnCloseAllOverlays } from './menu-overlay';
 
 export interface ResourceHandle {
     id: string;
@@ -41,6 +43,23 @@ export interface ResourceHandle {
 
 /** 当前生效的拖拽实时同步订阅（模块级，保证全局唯一，避免多卡叠加泄漏） */
 let _activeDragObs: ReturnType<typeof onGizmoDragObservable.add> | null = null;
+
+/** 当前渲染的变换卡片元素 — 供「面板关闭/切换即卸载」检测（ADR-171 面板化） */
+let _activeCardEl: HTMLElement | null = null;
+
+/**
+ * 面板关闭/切换即卸载（ADR-171 面板化）：菜单 onAfterRender 时调用。
+ * 卡片元素脱离 DOM（面板 pop/关闭重建 panel）则清除选中并卸载 Gizmo。
+ */
+export function reconcileTransformSelection(): void {
+    if (_activeCardEl && !_activeCardEl.isConnected) {
+        _activeCardEl = null;
+        clearSelectedTransformTarget();
+    }
+}
+
+// 关闭所有弹窗（ESC / 外部关闭）时兜底卸载（Set 去重，幂等）
+addOnCloseAllOverlays(reconcileTransformSelection);
 
 /** 局部更新滑杆显示（不触发 onChange），用于 Gizmo 拖拽中实时同步数值（ADR-126 Phase 2）。
  *  显示格式与 ui-rows.ts addSliderRow 内部 updateDisplay 保持一致。 */
@@ -109,6 +128,10 @@ export function buildTransformCard(container: HTMLElement, handle: ResourceHandl
     const { id, kind } = handle;
     const adapter = getTransformAdapter(kind);
 
+    // [doc:adr-171] 面板化：渲染即声明当前选中物，是否挂 Gizmo 由全局拖拽开关决定
+    _activeCardEl = container;
+    setSelectedTransformTarget({ kind, id });
+
     // 双模态（ADR-126 Phase 2）：拖拽进行中实时同步数值滑杆显示。
     // 清理上一卡片遗留的订阅，保证全局唯一，避免泄漏/叠加。
     if (_activeDragObs) {
@@ -124,25 +147,6 @@ export function buildTransformCard(container: HTMLElement, handle: ResourceHandl
             return;
         }
         cardContainer(container, (c) => {
-            const gizmoActive = isGizmoActive() && getGizmoTargetId() === id;
-            slideRow(
-                c,
-                gizmoActive ? 'lucide:x' : 'lucide:move-3d',
-                t(gizmoActive ? 'scene.exitDrag' : 'scene.dragPosition'),
-                false,
-                () => {
-                    if (gizmoActive) {
-                        detachGizmo();
-                        _activeDragObs?.remove();
-                        _activeDragObs = null;
-                        feedbackInfo('scene.statusExitDrag', undefined);
-                    } else {
-                        attachGizmoForKind(kind, id);
-                        feedbackStatus('scene.statusDragHint', undefined, false);
-                    }
-                    render();
-                }
-            );
             slideRow(
                 c,
                 'lucide:rotate-ccw',
