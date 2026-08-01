@@ -36,7 +36,7 @@ type ExtractResult struct {
 	Cached   bool   `json:"cached"`    // Whether cache was hit (no re-extract)
 }
 
-const extractCacheVersion = 6
+const extractCacheVersion = 7
 
 // maxZipEntries limits the number of files extracted from a single zip archive
 // to prevent ZIP bombs with millions of tiny entries from exhausting disk inodes
@@ -183,6 +183,23 @@ func (a *App) extractZipUnsafe(zipPath, innerPath string) (*ExtractResult, error
 		if copyErr != nil {
 			a.safeLogError("ExtractZip: copy error for %s: %v", entryName, copyErr)
 		}
+	}
+
+	// [ADR-189] KTX2 transcode: after extraction, transcode PNG/JPG/BMP/TGA
+	// textures in-place to KTX2.  Only runs if toktx binary is found;
+	// otherwise proceeds without transcoding (non-blocking).
+	// Cache version bumped to 7 to force re-extraction + re-transcode on
+	// existing caches.
+	if _, findErr := findToktx(); findErr == nil {
+		transcoded, tErrs := transcodeTexturesInDir(destAbs)
+		a.safeLogInfo("ExtractZip: KTX2 transcode done, %d textures", transcoded)
+		if len(tErrs) > 0 {
+			for _, e := range tErrs {
+				a.safeLogWarning("ExtractZip: KTX2 transcode error: %v", e)
+			}
+		}
+	} else {
+		a.safeLogWarning("ExtractZip: toktx not found, skipping KTX2 transcode")
 	}
 
 	// Write manifest

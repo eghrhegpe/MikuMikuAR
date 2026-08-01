@@ -45,7 +45,7 @@
 | 写大语言模型小说 | `根目录/adr/` |
 | 完整发版、更新流程 | `docs/releases/release-process.md` |
 | MCP 扩展（Context7 / Serena） | 根目录 `.mcp.json` + 下方「MCP 扩展」小节 |
-| 查babmmd的源代码 | `frontend/node_modules` |
+| 查babymmd的源代码 | `frontend/node_modules`；**修改指南**见 ADR-189 §3.5 |
 
 ## MCP 扩展（Context7 / Serena）
 

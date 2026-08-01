@@ -237,18 +237,33 @@ function checkKnowledgeCards() {
 // ---------- 检查 8/9/10：知识卡 frontmatter 治理（ADR-218） ----------
 // 8 (ERROR) category 枚举校验；9 (ERROR) tier 枚举校验；10 (WARN) architecture 卡须登记 UI 入口
 // （有「## UI 入口」小节，或引用集中式菜单地图 menu-map.md —— 避免双写漂移）。
+// 另含（ERROR）必填字段齐全（kind/name/category）、模板占位符 <...> 未填充、kind 为 snake_case。
 const CATEGORY_ENUM = ['rendering', 'env', 'motion', 'ui', 'core', 'backend', 'physics', 'scene'];
 const TIER_ENUM = ['architecture', 'leaf'];
 const UI_ENTRY_HEADING = '## UI 入口';
 const UI_ENTRY_REF = 'menu-map.md'; // 集中式菜单地图（scripts/gen-menu-map.mjs 自动生成）
 
-function parseFrontmatterField(text, key) {
+// 解析 frontmatter 全部标量字段（key -> 值字符串；块列表的 key 记为空串，行内数组也记为存在）
+function parseFrontmatterFields(text) {
   const fm = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
-  if (!fm) return null;
-  const m = fm[1].match(new RegExp('^' + key + '\\s*:\\s*(\\S+)', 'm'));
-  return m ? m[1].replace(/#.*$/, '').trim() : null;
+  const map = {};
+  if (!fm) return map;
+  for (const line of fm[1].split(/\r?\n/)) {
+    const m = line.match(/^([A-Za-z_][\w-]*)\s*:\s*(.*)$/);
+    if (m) map[m[1]] = m[2].trim();
+  }
+  return map;
 }
 
+const PLACEHOLDER_RE = /^<.*>$/;
+const KIND_RE = /^[a-z][a-z0-9_]*$/;
+const REQUIRED_FIELDS = ['kind', 'name', 'category'];
+
+// （ADR-218 痛点）frontmatter 结构治理
+//  - 必填字段齐全（kind / name / category）
+//  - 模板占位符 <...> 未填充（如把 README 模板直接粘进真卡忘改）
+//  - kind 为 snake_case 自由标识符（非固定枚举）
+//  - category / tier 枚举（沿用既有逻辑）
 function checkKnowledgeMeta() {
   const dir = path.join(ROOT, CONFIG.knowledgeDir);
   if (!fs.existsSync(dir)) return { errors: [], warns: [] };
@@ -260,14 +275,37 @@ function checkKnowledgeMeta() {
     const text = fs.readFileSync(path.join(dir, cf), 'utf8');
     // 无 frontmatter 的非知识卡文件（如 routes.md 路由表）跳过治理检查
     if (!/^---\r?\n/.test(text)) continue;
-    const category = parseFrontmatterField(text, 'category');
-    if (category === null) {
-      errors.push(`知识卡 ${cf} 缺少 category 字段（应为 ${CATEGORY_ENUM.join('|')} 之一）`);
-    } else if (!CATEGORY_ENUM.includes(category)) {
+    const fields = parseFrontmatterFields(text);
+
+    // 必填字段
+    for (const key of REQUIRED_FIELDS) {
+      const v = fields[key];
+      if (v === undefined || v === '') {
+        errors.push(`知识卡 ${cf} 缺少必填字段 ${key}`);
+      }
+    }
+
+    // 模板占位符（未填充的 <...>）
+    for (const [k, v] of Object.entries(fields)) {
+      if (v !== '' && PLACEHOLDER_RE.test(v)) {
+        errors.push(`知识卡 ${cf} 的 ${k} 含未填充模板占位符: ${v}`);
+      }
+    }
+
+    // kind 格式（自由 snake_case 标识符，非固定枚举）
+    const kind = fields['kind'];
+    if (kind && kind !== '' && !KIND_RE.test(kind)) {
+      errors.push(`知识卡 ${cf} 的 kind 非法: ${kind}（应为 snake_case，如 camera_angle）`);
+    }
+
+    // category 枚举
+    const category = fields['category'];
+    if (category !== undefined && category !== '' && !CATEGORY_ENUM.includes(category)) {
       errors.push(`知识卡 ${cf} 的 category 非法: ${category}（应为 ${CATEGORY_ENUM.join('|')} 之一）`);
     }
-    const tier = parseFrontmatterField(text, 'tier');
-    if (tier !== null && !TIER_ENUM.includes(tier)) {
+    // tier 枚举
+    const tier = fields['tier'];
+    if (tier !== undefined && tier !== '' && !TIER_ENUM.includes(tier)) {
       errors.push(`知识卡 ${cf} 的 tier 非法: ${tier}（应为 ${TIER_ENUM.join('|')} 之一）`);
     }
     if (tier === 'architecture' && !text.includes(UI_ENTRY_HEADING) && !text.includes(UI_ENTRY_REF)) {

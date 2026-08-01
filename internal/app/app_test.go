@@ -120,8 +120,8 @@ func TestZipCacheName(t *testing.T) {
 }
 
 func TestExtractCacheVersion(t *testing.T) {
-	if extractCacheVersion != 6 {
-		t.Errorf("extractCacheVersion = %d, want 6", extractCacheVersion)
+	if extractCacheVersion != 7 {
+		t.Errorf("extractCacheVersion = %d, want 7", extractCacheVersion)
 	}
 }
 
