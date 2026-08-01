@@ -118,6 +118,7 @@ use_when:
 |------|------|----------|
 | [环境调度器](./env-dispatcher.md) | `scene/env/env-dispatcher.ts` | ADR-138 |
 | [地面系统](./env-ground.md) | `scene/env/env-ground.ts` | — |
+| [地面材质单一事实源](./env-ground-spec.md) | `scene/env/env-ground-spec.ts` | ADR-226 |
 | [环境系统门面](./env.md) | `scene/env/env.ts` | — |
 | [环境系统实现核心](./env-impl.md) | `scene/env/env-impl.ts` | — |
 | [环境状态写入入口（setEnvState + 中间件链）](./env-bridge.md) | `scene/env/env-bridge.ts` | ADR-138/148 |
