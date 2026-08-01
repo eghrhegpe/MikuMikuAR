@@ -6,6 +6,7 @@
 > 生成日期基线：2026-07-23（覆盖 ADR-166~175 引入的子系统）；同日扩展「物理系统（physics）」分组，补录 ADR-081/084/104 的 WASM Bullet 物理子系统（physics-bridge / wind-physics / skirt-analyzer / virtual-skirt / ground-collision）。
 > 2026-07-25 扩展：新建 41 张卡片覆盖 motion/env/menus/core 四大集群，修正 16 张符号警告，补录 22 张 ADR 关联。
 > 2026-07-25 二次扩展：新建 38 张高价值源文件卡片（含感知层子模块/动作模块基类/广场/设置/工具等），修正 13 张符号警告，补录 22 张 ADR 关联。
+> 2026-08-02 新增检索视图：`index.md` 尾部生成「ADR 反查表」（决策 → 关联卡片），并新增机器生成的[知识卡关联图](./graph.md)（`npm run gen:knowgraph`，架构卡按分类分组连到所引用的 ADR）。
 
 ## 它解决什么
 
