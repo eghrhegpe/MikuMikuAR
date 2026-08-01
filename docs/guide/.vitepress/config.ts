@@ -129,6 +129,7 @@ export default defineConfig({
     'upstream/**',
     '_writetest.txt',
     'AGENTS.md',
+    'dep-graph.md', // 开发自查产物（全量依赖图 252 节点/1444 边），非用户手册内容，不发布到 /guide/
   ],
   // 全量进站后：正文大量相对链接（../../AGENTS、./adr/xxx 等）是 GitHub 仓库浏览用途，
   // 在 VitePress 站内按路由解析必然死链；站内导航由 sidebar 数组保证。
