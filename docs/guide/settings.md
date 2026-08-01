@@ -1,6 +1,6 @@
 ---
 title: 设置
-description: 性能、外观、路径、快捷键、语言等全局配置的总览
+description: 画面、外观、资源、操控、语言等全局配置的总览
 outline: [2, 3]
 ---
 
