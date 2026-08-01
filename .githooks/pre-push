@@ -121,8 +121,9 @@ if [ "$GO_CHANGED" = "true" ]; then
 fi
 
 # ── check:status（可自动修复，amend 进当前 commit） ──
+# 成功静默（末尾摘要已聚合状态），仅未同步/修复时输出
 echo "[pre-push] check:status"
-cd "$ROOT" && node scripts/gen-status-index.mjs --reverse --check || {
+cd "$ROOT" && node scripts/gen-status-index.mjs --reverse --check >/dev/null 2>&1 || {
   echo "⚠️  status.md 未同步，自动修复中..."
   cd "$ROOT" && node scripts/gen-status-index.mjs --reverse
   git add docs/status.md 2>/dev/null || true
@@ -132,8 +133,9 @@ cd "$ROOT" && node scripts/gen-status-index.mjs --reverse --check || {
 note_check "✅ check:status 索引同步"
 
 # ── check:funcmap（可自动修复，amend 进当前 commit） ──
+# 成功静默（末尾摘要已聚合状态），仅未同步/修复时输出
 echo "[pre-push] check:funcmap"
-cd "$ROOT" && node scripts/gen-funcmap.mjs --check || {
+cd "$ROOT" && node scripts/gen-funcmap.mjs --check >/dev/null 2>&1 || {
   echo "⚠️  function-map.md 未同步，自动修复中..."
   cd "$ROOT" && node scripts/gen-funcmap.mjs
   git add docs/function-map.md 2>/dev/null || true
@@ -166,10 +168,10 @@ fi
 
 # ── test:coverage（仅 TS/JS 变更时；不可自动修复） ──
 # 纯 Go 变更有 Go 测试覆盖，纯文档变更无逻辑可测，均跳过前端测试
-# npm 不可用时跳过
+# npm 不可用时跳过；成功静默（coverage summary 大表由 CI 门禁兜底），失败打印详情
 if [ "$TS_CHANGED" = "true" ] && [ "$NPM_AVAILABLE" = "true" ]; then
   echo "[pre-push] test:coverage（门禁: lines≥35% functions≥30%）"
-  cd "$ROOT/frontend" && npm run test:coverage || {
+  cd "$ROOT/frontend" && npm run test:coverage >/dev/null 2>&1 || {
     echo "❌ 测试失败或覆盖率低于阈值。修复: npm run test:coverage 查看详情"
     exit 1
   }
@@ -180,9 +182,10 @@ else
 fi
 
 # ── P7: deadcode 基线（可自动修复，amend 进当前 commit） ──
+# 成功静默（15 行对比表只在未回退时展示数字，摘要已含结论），超基线才展开修复
 if [ "$TS_CHANGED" = "true" ] && [ "$NPM_AVAILABLE" = "true" ]; then
   echo "[pre-push] deadcode（基线治理：knip + jscpd）"
-  cd "$ROOT/frontend" && node ../scripts/check-deadcode-baseline.mjs || {
+  cd "$ROOT/frontend" && node ../scripts/check-deadcode-baseline.mjs >/dev/null 2>&1 || {
     echo "⚠️  死代码/重复代码超过基线，自动更新基线..."
     node ../scripts/check-deadcode-baseline.mjs --update
     git add ../docs/.deadcode-baseline.json 2>/dev/null || true
@@ -198,8 +201,9 @@ fi
 
 # ── check:docs（ERROR 阻断；INFO 基线自动修复 + amend） ──
 # 漂移分级：ERROR（架构树/ADR 失效等）必须人工修复；INFO（符号覆盖率缺口）可自动更新基线
+# 成功静默（24 行报告冗余，摘要已聚合 INFO；ERROR 详情在失败分支展开）
 run_check_docs() {
-  cd "$ROOT" && node scripts/check-doc-drift.mjs --baseline
+  cd "$ROOT" && node scripts/check-doc-drift.mjs --baseline >/dev/null 2>&1
 }
 if [ "$DOCS_ONLY" = "false" ]; then
   echo "[pre-push] check:docs（ERROR 阻断；INFO 基线自动修复）"
@@ -215,11 +219,13 @@ if [ "$DOCS_ONLY" = "false" ]; then
       note_fixed "doc 漂移 INFO 基线已更新"
       # 重新跑确认是否只剩 ERROR
       if ! run_check_docs; then
-        echo "❌ 文档漂移 ERROR，需人工修复。用 'node scripts/check-doc-drift.mjs --baseline' 查看详情"
+        echo "❌ 文档漂移 ERROR，需人工修复。详情："
+        cd "$ROOT" && node scripts/check-doc-drift.mjs --baseline 2>&1 | tail -30
         exit 1
       fi
     else
-      echo "❌ 文档漂移 ERROR，需人工修复。用 'node scripts/check-doc-drift.mjs --baseline' 查看详情"
+      echo "❌ 文档漂移 ERROR，需人工修复。详情："
+      cd "$ROOT" && node scripts/check-doc-drift.mjs --baseline 2>&1 | tail -30
       exit 1
     fi
   fi
