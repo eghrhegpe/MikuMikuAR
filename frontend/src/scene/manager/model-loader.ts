@@ -6,7 +6,7 @@ import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { ImportMeshAsync } from '@babylonjs/core/Loading/sceneLoader';
 import type { ISceneLoaderAsyncResult } from '@babylonjs/core/Loading/sceneLoader';
 // ADR-188: 材质代理解析器（运行时 materialProxyConstructor）
-import { getMaterialMode, getStandardMaterialProxy } from './material-proxy-resolver';
+import { getStandardMaterialProxy } from './material-proxy-resolver';
 import { renderInstanceThumbnail } from './thumbnail-capture';
 import { thumbnailBaseKey } from './thumbnail-key';
 import {

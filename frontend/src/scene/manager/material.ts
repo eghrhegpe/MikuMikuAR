@@ -17,7 +17,9 @@ import type { MmdStandardMaterial } from '../../core/types';
 export type SssMaterial = PBRMaterial;
 export const SSS_MATERIAL_MARKER = 'SssPBRMaterial';
 export function isSssMaterial(mat: Material): boolean {
-    return (mat as any)[SSS_MATERIAL_MARKER] === true;
+    // SssPBRMaterial 在实例上挂 SSS_MATERIAL_MARKER 标记属性（运行时鸭子类型），
+    // 以索引签名桥接访问，避免 any。
+    return (mat as unknown as { [key: string]: unknown })[SSS_MATERIAL_MARKER] === true;
 }
 
 export interface AlphaCtx {

@@ -265,12 +265,12 @@ describe('Schema Snapshot Generator', () => {
         );
         const totalLabels = read.reduce((acc: number, s: any) => acc + countLabels(s.nodes), 0);
 
-        console.log('\n📊 Schema 快照统计:');
-        console.log(`   面板: ${read.length}`);
-        console.log(`   节点: ${totalNodes}`);
-        console.log(`   bind 路径: ${totalBindPaths}`);
-        console.log(`   i18n label: ${totalLabels}`);
-        console.log(`   输出: ${SNAPSHOT_PATH}`);
+        console.info('\n📊 Schema 快照统计:');
+        console.info(`   面板: ${read.length}`);
+        console.info(`   节点: ${totalNodes}`);
+        console.info(`   bind 路径: ${totalBindPaths}`);
+        console.info(`   i18n label: ${totalLabels}`);
+        console.info(`   输出: ${SNAPSHOT_PATH}`);
     });
 });
 

@@ -40,10 +40,16 @@ export class SssPBRMaterial extends PBRMaterial {
         // 自动创建 SSS 插件并接入底层 PBRSubSurfaceConfiguration
         // 注：PBRMaterial 构造函数内部已自动注册 PBRSubSurfaceConfiguration 插件，
         // 此处通过 plugins 数组查找引用，避免重复创建。
-        const plugins = (this as any).plugins;
+        // 注：Babylon 9.x 未公开 plugins 访问器，此处以结构化桥接类型访问私有数组，
+        //     运行时行为与历史实现一致。
+        const plugins = (this as unknown as { plugins?: unknown[] }).plugins;
         if (Array.isArray(plugins)) {
             for (const p of plugins) {
-                if (p && (typeof p.isTranslucencyEnabled === 'boolean') !== false) {
+                if (
+                    p &&
+                    typeof (p as { isTranslucencyEnabled?: unknown }).isTranslucencyEnabled ===
+                        'boolean'
+                ) {
                     this._subSurface = p as PBRSubSurfaceConfiguration;
                     break;
                 }
