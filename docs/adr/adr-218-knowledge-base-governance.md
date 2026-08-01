@@ -1,6 +1,6 @@
 # ADR-218: 知识库（docs/knowledge）分层治理 — 痛点与方案
 
-> **状态**: 部分实施（P2 工具侧校验已落地；P3/P4 结构层待做）
+> **状态**: 已实施（P1~P5 全部落地，2026-08-01 收尾）
 > **日期**: 2026-07-31
 > **关联**: ADR-191（神桶去桶化，同一「分层/去重」治理哲学）、docs/knowledge/README.md（知识卡层规范）、scripts/check-doc-drift.mjs（漂移守护）
 > **来源**: 知识卡层已膨胀至 231 张平铺卡片，人读不过来；同时 `category` 字段存在占位符漏网（未被脚本校验），`ui_entry` 登记无规范（仅 env-water.md 自发手写「菜单入口」小节）。
@@ -141,12 +141,20 @@ README 模板规定 `category` 枚举为 `<rendering|env|motion|ui|core|backend|
 
 | 阶段 | 动作 | 产出 | 状态 |
 |------|------|------|------|
-| P1 | README 模板加 `tier` + 「立卡判据」段 + `## UI 入口` 小节规范 | docs/knowledge/README.md 修订 | ⏸ 待做 |
+| P1 | README 模板加 `tier` + 「立卡判据」段 + `## UI 入口` 小节规范 | docs/knowledge/README.md 修订 | ✅ 已落地 |
 | P2 | `check-doc-drift.mjs` 加检查 8/9/10（category/tier 枚举 ERROR，UI 入口 WARN） | scripts/check-doc-drift.mjs 修订 | ✅ 已落地 |
 | P2+ | 2026-08 扩展：占位符 `<...>` 扫描 + `kind` snake_case + 必填字段齐全（均 ERROR） | scripts/check-doc-drift.mjs 修订 | ✅ 已落地 |
-| P3 | codemod 批量标 `tier`（按 invariants/use_when 缺失度初判）+ 人工复核边界卡 | 234 张卡 frontmatter 更新（当前仅 ~37 张已标） | ❌ 未做 |
-| P4 | README 索引改为分层折叠（architecture 优先 + leaf 计数行） | 索引可读性提升 | ❌ 未做 |
-| P5 | 运行 `npm run check:docs` 验证，提交 | 守护生效 | ⏸ 待 P3/P4 |
+| P3 | 批量标 `tier`（**2026-08 改判据**：`gen-tier.mjs` 按反向 import 广度 ≥2 初判 architecture + 人工复核，见下方实施记录） | 234 张卡 frontmatter 全部标注（93 architecture + 141 leaf） | ✅ 已落地 |
+| P4 | README 索引改为分层折叠（architecture 优先 + leaf 计数行） | 索引可读性提升（233 卡：93 平铺 + 140 折叠） | ✅ 已落地 |
+| P5 | 运行 `npm run check:docs` 验证（`gen-tier --check` 已接入），提交 | 守护生效 | ✅ 已落地 |
+
+### 实施记录（2026-08-01）
+
+- **P3 判据修订**：原计划用 `invariants`/`use_when` 缺失度初判——实测 215 张卡有这两个 key、**0 张非空**（纯桩），不可判别，弃用。改为 `scripts/gen-tier.mjs`（复用 `_lib/source-graph.mjs` 的 `scanSourceGraph` 建反向 import 图）按「被 ≥2 个顶层目录引用」自动判 architecture；leaf 判定保留人工（机器只建议不写入）。
+- **分层结果**：36 张种子（已标信任跳过）+ 76 张机器自动 architecture + 122 张人工复核（11 张按语义核心提升为 architecture：ai-intent-dispatcher/ar-scene/bone-override-store/env-dispatcher/events/fileservice/init/model-manager/physics-bridge/render-menu/virtual-skirt；110 张标 leaf；tier-review.md 自身排除）。终态 234 卡 = 93 architecture + 141 leaf。
+- **已知启发式缺陷（人工复核已纠正）**：广度 ≥2 会把被广泛引用的纯工具误提为 architecture——safe-call/observer-handle/i18n-t/goerr/reactivity/platform 已在复核时降为 leaf。
+- **P4 索引重构**：README 索引由 344 行手写平铺改为 tier 分流（arch 平铺 + leaf 折叠计数行），补录 36 张此前缺索引的卡，修复含大写文件名（zh-CN/zh-TW/invertablePointersInput）被大小写正则误丢的问题。
+- **P5 CI 兜底**：`gen-tier --check` 追加进 `package.json` 的 `check:docs`，新增卡忘标 tier 即 CI 变红。
 
 ---
 
