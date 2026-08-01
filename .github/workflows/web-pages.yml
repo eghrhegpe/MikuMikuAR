@@ -71,8 +71,8 @@ jobs:
 
       - name: Build web entry (production)
         # [doc:adr-177] Phase 3 主应用 web 入口生产构建
-        # 不 externalize babylon / base=/MikuMikuAR/ / @wailsio/runtime stub
-        # 产物输出到 frontend/dist-web/
+        # 不 externalize babylon / base=/MikuMikuAR/app/ / @wailsio/runtime stub
+        # 产物输出到 frontend/dist-web/app/
         # [doc:adr-099][doc:adr-133] VITE_MMD_WASM_MT=1 令 __MMD_ENABLE_MPR__=true，将 MPR
         # 多线程物理 worker/wasm 编入包；配合 public/sw.js 注入的 COOP/COEP（crossOriginIsolated
         # =true），网页端解锁 SharedArrayBuffer + 多线程物理。漏设则 esbuild 消除 MPR 分支 →
@@ -113,6 +113,13 @@ jobs:
           mkdir -p dist-web/docs
           cp ../scripts/redirect-stubs/docs-404-redirect.html dist-web/docs/index.html
           cp ../scripts/redirect-stubs/docs-404-redirect.html dist-web/404.html
+
+      - name: Add tombstone service worker at root
+        # [doc:adr-225] 主应用 SW 作用域已由根收缩至 /app/，但存量访客浏览器中
+        # 仍注册着 scope=/MikuMikuAR/ 的旧 SW，离线回退会吐出旧 app 外壳。
+        # 在根投放墓碑 SW（清 cache + unregister），使旧注册确定性注销。
+        # 必须置于 VitePress 产物拷贝之后，避免被覆盖。
+        run: cp ../scripts/redirect-stubs/sw-tombstone.js dist-web/sw.js
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

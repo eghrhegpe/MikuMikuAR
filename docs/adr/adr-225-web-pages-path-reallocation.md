@@ -15,9 +15,11 @@
 
 1. **文档站占根**：VitePress `base` 由 `/MikuMikuAR/docs/` 改为 `/MikuMikuAR/`（`docs/guide/.vitepress/config.ts`）；产物由 `web-pages.yml` 拷入 `dist-web/`（根）。`/MikuMikuAR/` 即文档中心首页。
 2. **主应用降子路径**：web 入口 `base` 由 `/MikuMikuAR/` 改为 `/MikuMikuAR/app/`、`build.outDir` 由 `dist-web` 改为 `dist-web/app`（`frontend/vite.web.config.ts`）；`web-pages.yml` 将其 index.web.html 复制为 `dist-web/app/index.html` 作为 /app/ 入口。主应用线上地址变为 `https://eghrhegpe.github.io/MikuMikuAR/app/`。
-3. **旧 /docs/ 链接兜底**：根 `404.html`（docs-404-redirect.html）逻辑改为——路径含 `/MikuMikuAR/docs/` → 剥离该段跳回根（文档首页）；其余未知 404（含 /app/ 之外的异常路径）兜底回根。保留对历史 `/docs/...` 外链的兼容。
+3. **旧 /docs/ 链接兜底**：根 `404.html`（docs-404-redirect.html）逻辑为——**仅当**路径含 `/MikuMikuAR/docs/` 时剥离该段跳回根（文档首页）；其余未知 404 **不跳转**，静态显示 404 页（内含「文档中心 / 在线应用」双入口链接）。
+   - 取舍理由：无条件兜底回根会在根 `index.html` 缺失时形成**无限重定向**，且掩盖真实坏链。代价是覆盖了 VitePress 自带 404 页，换取确定性安全。（见审核 P2）
 4. **移除 /guide/ stub**：删除 `scripts/redirect-stubs/guide-redirect.html` 及其在 `web-pages.yml` 的拷贝步骤；`/guide/`（及 `/knowledge/`、`/adr/` 等）现为真实文档路由，旧 `/guide/...` 外链仍可直接命中真实页面。
 5. **入口链接同步**：`settings-about.ts` 文档链接、`README.md` 网页版/知识库链接、`CLAUDE.md`、`docs/web-data-origin-isolation.md`、`docs/guide/README.md` 注释中的 Pages URL 全部对齐新路径。
+6. **墓碑 Service Worker**：主应用 SW 作用域由根收缩至 `/app/` 后，存量访客浏览器中仍残留 scope=`/MikuMikuAR/` 的旧注册，离线回退会吐出旧 app 外壳。故在 Pages 根投放 `sw.js` 墓碑（`scripts/redirect-stubs/sw-tombstone.js`），仅执行 `caches` 清理 + `self.registration.unregister()` + 受控页重导航，使旧注册在下次更新检查时确定性注销，消除自愈窗口期。墓碑**不注册 fetch 监听器**，不拦截文档站请求。
 
 ## 备选方案
 
@@ -29,6 +31,7 @@
 
 - **修改**：`docs/guide/.vitepress/config.ts`（base→根）、`frontend/vite.web.config.ts`（base→/app/、outDir→dist-web/app）、`frontend/index.web.html`（注释）、`frontend/src/menus/settings-about.ts`（文档链接→根）、`README.md`（网页版→/app/、知识库→根）、`CLAUDE.md`、`docs/web-data-origin-isolation.md`、`docs/guide/README.md`（注释）、`.github/workflows/web-pages.yml`（路径段重分配 + stub 改 /docs/）。
 - **删除**：`scripts/redirect-stubs/guide-redirect.html`。
+- **新增**：`scripts/redirect-stubs/sw-tombstone.js`（根墓碑 SW，由 `web-pages.yml` 拷为 `dist-web/sw.js`）。
 - **服务 worker 范围变化**：app 的 `sw.js`（COOP/COEP 注入）作用域由根收缩为 `/MikuMikuAR/app/`，更精确；文档站不需要该 worker。
 - **验证**：base/outDir 已 grep 确认；docs 目录（排除 upstream）无残留 `/docs/`、`/guide/` 绝对链接。完整 GitHub Pages 构建因沙箱 safe-delete 阈值未在本地跑完，逻辑经配置对齐校验。
 
