@@ -61,7 +61,7 @@
 | `listSessions()` | `core/ai/chat-store` | 列出全部会话元信息，按 updatedAt 倒序（最近的在前）。降级返回空数组。 |
 | `loadSession()` | `core/ai/chat-store` | 加载完整会话（元信息 + 消息）。缺失或损坏返回 undefined。 |
 | `newSessionId()` | `core/ai/chat-store` | 生成新会话 id。crypto.randomUUID 在 WebView2 / 现代浏览器均可用。 |
-| `saveSession()` | `core/ai/chat-store` | 保存完整会话（元信息 + 消息，单事务批量写）。降级静默失败。 |
+| `saveSession()` | `core/ai/chat-store` | 保存完整会话（元信息 + 消息，单事务批量写）。降级不阻断 UI，但写失败需留日志便于排查丢失。 |
 | `setActiveId()` | `core/ai/chat-store` | 写当前活动会话 id。 |
 | `AiConfig()` | `core/ai/config-store` | — |
 | `DEFAULT_AI_CONFIG()` | `core/ai/config-store` | 零 key 默认路径：本地 Ollama（大模型零 key，小模型零成本）。见 ADR-196 开放问题 Q2 裁定。 |
@@ -965,7 +965,7 @@
 | `GroundStructuralSpec()` | `scene/env/env-ground-spec` | 结构性字段：任一变化都要求重建几何/材质（取代手拼 typeKey 的判别符集合）。 |
 | `applyGroundMaterialSpec()` | `scene/env/env-ground-spec` | 统一「填材质」逻辑。 |
 | `buildGroundMaterialSpec()` | `scene/env/env-ground-spec` | 由 EnvState 派生完整 Spec。新增材质相关字段只需在此赋值，specKey 自动纳入。 |
-| `createGroundMeshFromSpec()` | `scene/env/env-ground-spec` | 创建地面 mesh 并落好材质。当前未被 applyGround 调用（Phase 1 接入口）。 |
+| `createGroundMeshFromSpec()` | `scene/env/env-ground-spec` | 创建地面 mesh 并落好材质。Phase 1 已接入：applyGround 非 terrain 重建路径调用本函数。 |
 | `groundSpecNeedsRebuild()` | `scene/env/env-ground-spec` | diffSpec 的结构性结论：是否需要重建。 |
 | `specKey()` | `scene/env/env-ground-spec` | 稳定 key：仅序列化结构性字段。新增结构性字段自动纳入，无遗漏风险。 |
 | `GROUND_PRESETS()` | `scene/env/env-ground` | — |

@@ -2,7 +2,7 @@
 
 # 知识卡索引
 
-> 原子化架构知识层，共 **233** 张卡：记录「某个子系统**现在**长啥样、去哪找」。与 ADR（为什么这么决定）互补——知识卡引用而不复制 ADR 结论。
+> 原子化架构知识层，共 **234** 张卡：记录「某个子系统**现在**长啥样、去哪找」。与 ADR（为什么这么决定）互补——知识卡引用而不复制 ADR 结论。
 
 > 卡片格式规范、立卡判据、`source_files` 铁律见 [知识卡层导读](./README.md)；AI 检索入口见 [路由表](./routes.md)；菜单全景见 [menu-map](./menu-map.md)（机器生成）。
 
@@ -10,7 +10,7 @@
 
 | 分类 | 卡片数 | 说明 |
 |------|--------|------|
-| [env](#env) | 23 | 环境系统 |
+| [env](#env) | 24 | 环境系统 |
 | [scene](#scene) | 28 | 场景编排 |
 | [physics](#physics) | 5 | 物理系统 |
 | [rendering](#rendering) | 18 | 渲染系统 |
@@ -29,6 +29,7 @@
 | [环境碰撞控制](./env-collision.md) | - ADR-212 |
 | [环境变更分发回调（破循环依赖）](./env-dispatcher.md) | - ADR-138 |
 | [环境重力控制](./env-gravity.md) | - ADR-148 |
+| [地面材质单一事实源（GroundMaterialSpec）](./env-ground-spec.md) | - ADR-226 |
 | [地面系统](./env-ground.md) | - ADR-114 |
 | [环境系统实现核心（barrel + observer + fog）](./env-impl.md) | — |
 | [环境灯光包装](./env-lighting.md) | [] |
