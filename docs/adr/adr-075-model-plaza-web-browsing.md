@@ -50,7 +50,7 @@
   - `StartProxy(target string) (string, error)`：启动 `httputil.ReverseProxy`，返回 `http://127.0.0.1:<port>/` 本地 URL；剥离响应头 `X-Frame-Options` 与 CSP 的 `frame-ancestors`；改写页面内相对 URL / 重定向 `Location` 为代理绝对 URL。
   - `StopProxy()`：关闭并清理代理 server。
   - 复用 `zipextract.go` 的 `a.httpSrvMu` / `httpServerInfo` / `shutdownServers` 框架挂载生命周期。
-- **站点元数据**：首版用前端常量 `frontend/src/menus/plaza-sites.ts`（`{ name, url, mode: 'embed'|'window'|'external' }`，三模式独立、无自动选路）；后续可下沉到 Go config 做用户配置。
+- **站点元数据**：首版用前端常量 `frontend/src/menus/plaza-sites.ts`（`{ name, url, mode: 'embed'|'window'|'external' }`，三模式独立、无自动选路）。**2026-08-01 演进（见 ADR-224）**：站点/创作者数据改为「GitHub 远程配置（`creators.json` + `workshop_sites.json`，三源 fetch）+ Go 用户目录缓存（`plaza-cache/`）+ 前端内置常量兜底」三层结构；内置三站 id 去 `plaza:` 前缀与远程站统一，经 `mergeSites` 按 id 融合；`SavePlazaConfig`/`GetCachedPlazaConfig` 绑定负责持久化，不再经 CWD 相对路径。
 - **前端新增 `frontend/src/menus/plaza.ts`**：全屏 `#webviewLayer` 视图层（非 SlideMenu 弹窗），根级卡片网格列站点；内嵌站启动反向代理 + iframe，外链站直接 `Browser.OpenURL`。
 - **入口绑定**：`frontend/src/core/main.ts` 用 `dom.btnPlaza.addEventListener('click', ...)` + `Ctrl+7` 快捷键接入。
 - **事件**：无新增前端事件；`StartProxy` 同步返回本地 URL。
