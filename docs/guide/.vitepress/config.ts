@@ -64,7 +64,6 @@ const ARCH_ORDER = [
   'multi-end-maturity-matrix.md',
   'grand-blueprint.md',
   'outfits-spec.md',
-  'dep-graph.md',
   'competitive-analysis.md',
   'security-audit-CVE.md',
   'web-data-origin-isolation.md',
@@ -73,7 +72,10 @@ const archWeight = (rel) => {
   const i = ARCH_ORDER.indexOf(path.basename(rel));
   return i === -1 ? ARCH_ORDER.length : i; // 表外沉底
 };
-const archItems = scanItems('.', ['index.md', 'AGENTS.md']).sort((a, b) => {
+// 排除项必须与下方 srcExclude 中的 docs 根级条目保持一致：
+// srcExclude 只阻止「页面构建」，sidebar 是独立扫描，漏排会生成指向不存在路由的死链条目。
+const ARCH_EXCLUDE = ['index.md', 'AGENTS.md', 'dep-graph.md'];
+const archItems = scanItems('.', ARCH_EXCLUDE).sort((a, b) => {
   const wa = archWeight(a.link);
   const wb = archWeight(b.link);
   return wa !== wb ? wa - wb : a.link.localeCompare(b.link);
