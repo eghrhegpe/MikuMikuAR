@@ -54,7 +54,7 @@
 | ADR-191 | 神桶 `@/core/utils` 去桶化（零依赖叶下沉） | 已完成（2026-07-27）；**E 档追加** 2026-07-30；**F 档收尾** 2026-07-31（2026-07-27（初版），2026-07-30（E 档追记），2026-07-31（F 档神桶删除）） |
 | ADR-190 | 端能力声明式收口（淘汰散落 isAndroidPlatform 分支） | 已完成（代码 + 测试 2026-07-26 落地；tsc --noEmit + vitest 全绿）（2026-07-26（初版）） |
 | ADR-189 | 纹理加载路径优化（并行读取 + basename 共享 + LRU + KTX2 基础设施） | 实施中 — Phase 0/1 全量 2133/2133 通过；babylon-mmd fork KTX2 分发已内置（§3.5）；Phase 3 转码管线待推进（剩余卡点仅 ADR-187 触发判据）（2026-07-26（初版）/ 2026-07-26（修订 — 方向调整）/ 2026-07-26（审核修订 — AbortSignal/LRU/数值一致性）/ 2026-07-26（修复 — LRU 接入 collectTextureFiles）/ 2026-08-01（修订 — babylon-mmd fork KTX2 分发已就位，更新 §3.1-§3.4，新增 §3.5）） |
-| ADR-188 | PBRMaterialBuilder 材质系统迁移 — PBR 渲染升级 | 草案 · 待立项（P1 长期规划） |
+| ADR-188 | PBRMaterialBuilder 材质系统迁移 — PBR 渲染升级 | 草案 · 待立项（P1 长期规划；2026-07-27 阻塞解除：babylon-mmd fork 新增 PBRMaterialProxy，PBR material morph 通路已打通，不再依赖上游） |
 | ADR-187 | babylon-mmd 剩余高价值功能综合分析 | 草案 · 待立项（2026-07-26 — 系统性调研 + 落地优先级评估） |
 | ADR-186 | bone-override 帧内时序图 | accepted |
 | ADR-185 | 网页端 ZIP 内子目录 PMX 贴图路径维度对齐 | 已完成（2026-07-26） |
@@ -217,7 +217,7 @@
 | ADR-27 | 菜单响应式系统 — 控件自更新 + Proxy 自动触发 | 已实现 — Proxy 拦截 envState + 控件自更新机制 + scheduleRefresh 去抖（2026-07-05） |
 | ADR-26 | 环境系统增强 — 纹理地面、粒子系统、粒子溅射、水下后处理联动 | 已完成 — Phase A 纹理地面 + Phase B 粒子系统+溅射 + Phase C 水下后处理全部完成（2026-07-04） |
 | ADR-25 | 触屏交互优化与 ZIP 模型扫描通用化 | 已完成 — P0/P1/P2 全部实现（含双击聚焦、滑动返回、安全区适配）（2026-07-04） |
-| ADR-24 | 渲染增强 Phase 2（精简版） | ✅ 部分完成 — SSR/ReflectionProbe/SSAO 已实施，SSS 阻塞未实施（2026-07-04） |
+| ADR-24 | 渲染增强 Phase 2（精简版） | ✅ SSR/ReflectionProbe/SSAO 已完成，SSS 阻塞已解除（2026-07-27 babylon-mmd fork 新增 PBRMaterialProxy，PBR material morph 通路打通，SSS 着色器可自实现）（2026-07-04） |
 | ADR-22 | 预设治理 — 统一管理范围与分级架构 | 已实现 — 8 项改动全完成：EnvPreset 精简 + L2 环境预设扩展 + 用户预设快照迁移（2026-07-04） |
 | ADR-21 | 程序化动作系统（Idle/Auto Dance + LipSync + 视线追踪） | 已完成 — Idle/AutoDance/LipSync/VPD/VMD-writer 5 套测试全通过（2026-07-03） |
 | ADR-20 | 换装系统（服装变体/纹理替换） | 已完成 — Phase 8 完成，outfit.ts 加载/应用/重置 + 自动发现 + 序列化（2026-06-28） |

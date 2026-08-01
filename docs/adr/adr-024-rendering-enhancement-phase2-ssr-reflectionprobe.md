@@ -1,6 +1,6 @@
 # ADR-024: 渲染增强 Phase 2（精简版）
 
-> **状态**: ✅ 部分完成 — SSR/ReflectionProbe/SSAO 已实施，SSS 阻塞未实施
+> **状态**: ✅ SSR/ReflectionProbe/SSAO 已完成，SSS 阻塞已解除（2026-07-27 babylon-mmd fork 新增 PBRMaterialProxy，PBR material morph 通路打通，SSS 着色器可自实现）
 > **日期**: 2026-07-04
 
 ---
@@ -49,9 +49,11 @@ Phase 1（Motion Blur / Sharpen / GlowLayer）已完成，管线从 10 类后处
 
 ---
 
-## SSS（次表面散射）❌ — 阻塞
+## SSS（次表面散射）✅ — 阻塞已解除
 
-**阻塞原因**：依赖 babylon-mmd 支持 PBR 材质，上游未支持 StandardMaterial 以外的 morph 目标。**上游阻塞，非本项目范畴。**
+**原阻塞原因（已解决）**：依赖 babylon-mmd 支持 PBR 材质的 material morph。2026-07-27 babylon-mmd fork 新增 `PBRMaterialProxy` / `MmdPBRMaterialProxy`（IMmdMaterialProxy 注册表 + per-material 自动查找），PBR material morph 通路已打通。
+
+**现策略**：SSS 着色器逻辑由项目自行实现（路径B），基于 PBRMaterialBuilder 加载的 PBRMaterial 编写次表面散射效果，无需上游阻塞。待 ADR-188 PBR 迁移完成后即可启动。
 
 ---
 
