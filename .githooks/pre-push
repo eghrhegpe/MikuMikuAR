@@ -145,12 +145,19 @@ note_check "✅ check:funcmap 已同步"
 # ── lint（仅 TS/JS 变更时；不可自动修复） ──
 # 纯 Go / 纯文档变更不触发前端 lint（Go 有 go vet，文档无 lint 必要）
 # npm 不可用时跳过（环境问题不该阻断代码推送）
+# 警告多为结构性指标（complexity/max-lines 等，无 --fix），成功时只输出计数摘要，避免刷屏
 if [ "$TS_CHANGED" = "true" ] && [ "$NPM_AVAILABLE" = "true" ]; then
   echo "[pre-push] lint（0 errors 放行）"
-  cd "$ROOT/frontend" && npm run lint || {
+  LINT_OUT="$(cd "$ROOT/frontend" && npm run lint 2>&1)" || {
+    printf '%s\n' "$LINT_OUT" | tail -40
     echo "❌ ESLint 检出 error。修复: npm run lint 查看详情"
     exit 1
   }
+  WARN_COUNT="$(printf '%s\n' "$LINT_OUT" | grep -oE '[0-9]+ warnings?' | tail -1 | grep -oE '[0-9]+')"
+  [ -z "$WARN_COUNT" ] && WARN_COUNT=0
+  if [ "$WARN_COUNT" -gt 0 ] 2>/dev/null; then
+    echo "⚠️  lint 通过（${WARN_COUNT} 个结构性 warnings，不阻断）"
+  fi
   note_check "✅ lint"
 else
   echo "[pre-push] lint（跳过：未涉及 TS/JS 源码 或 npm 不可用）"
