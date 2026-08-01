@@ -781,6 +781,15 @@ export function triggerTerrainReady(): void {
     _onTerrainReady?.();
 }
 
+/** ADR-226: 供 env-ground-spec.ts 在建地面后同步模块局部状态（_envSys.ground.mesh / _groundActualSize）。 */
+export function setGroundMesh(mesh: Mesh | null): void {
+    _envSys.ground.mesh = mesh;
+}
+
+export function setGroundActualSize(v: number): void {
+    _groundActualSize = v;
+}
+
 export function setOnGroundChanged(cb: (() => void) | null): void {
     _onGroundChanged = cb;
 }
@@ -1170,7 +1179,15 @@ export function applyGround(state: EnvState): void {
                     _groundActualSize / 10 / Math.max(0.1, state.groundTextureScale);
                 _syncAllTextureOffsets(mat, state);
             }
-            _syncGroundNormalTexture(mat, state);
+            // ADR-226: 程序化来源自带法线贴图，原地变更（改 roughness/alpha 等）时
+            // 不应清掉程序化 normal；仅显式设置外部法线贴图才覆盖。修复历史 bug：
+            // 原地路径会清掉程序化地面的法线贴图，使其原地编辑后失去立体感。
+            if (
+                !(state.groundProceduralTexture !== 'none' && !state.groundTextureEnabled) ||
+                state.groundNormalTexture
+            ) {
+                _syncGroundNormalTexture(mat, state);
+            }
             // [doc:adr-160] 地面涟漪法线纹理叠加
             if (hasActiveGroundRipples()) {
                 _syncGroundRippleTexture(mat, scene);

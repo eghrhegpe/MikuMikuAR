@@ -118,7 +118,7 @@ export interface GroundMaterialSpec {
 | 0 | 落地 `env-ground-spec.ts`（spec/key/diff/apply/create）+ 导出 env-ground 必要内部 helper（仅加 `export`，无逻辑改动） | 无（新模块本回合未被 applyGround 引用） |
 | 1 | `applyGround` 重建路径改为调 `createGroundMeshFromSpec` | 等价替换（需 tsc + 手动渲染验证） |
 | 2 | `applyGround` 原地路径改为调 `applyGroundMaterialSpec` | 等价替换 |
-| 3 | 补 contract 测试：断言「重建产物 == 原地产物」（同 state 下 mesh.material 等价），CI 锁死双路径分叉 | 无 |
+| 3 | 补 contract 测试：断言「重建产物 == 原地产物」（同 state 下 mesh.material 等价），CI 锁死双路径分叉 | 已落地（23 例全绿）；并修复 legacy 程序化 normal 被原地路径清掉的不一致 bug（见下） |
 | 4 | 删除旧双路径 + 手拼 `typeKey`；`applyGround` 退化为 `if (groundSpecNeedsRebuild(prev,next)) createGroundMeshFromSpec else applyGroundMaterialSpec` | 结构性收敛完成 |
 
 ## 对比方案
@@ -150,3 +150,29 @@ export interface GroundMaterialSpec {
 - **Phase 0 导出 helper 属非行为改动**，但若误改签名会影响编译；以 tsc 校验。
 - **Phase 1/2 等价替换**存在逐字段语义偏差风险，必须以 Phase 3 一致性测试 + 手动渲染双重验证，禁止「信任摘要」直接合入。
 - 地形 `onReady` 回调含 `_onTerrainReady` 等模块局部状态，迁移时须保持回调触发时机不变。
+
+## Phase 3 执行记录（2026-08-01）
+
+### 交付物
+
+- 测试：`frontend/src/__tests__/scene/env-ground-spec.contract.test.ts`（**23 例全绿**，tsc 全项目 0 错）。
+- 双重护栏：
+  - **A. spec 内部契约**（`Suite 3`）：同结构性 spec 下，重建 `stateB` 必须 == 原地 `A→B`。覆盖 solid/canvas/procedural/texture × flat/infinite 共 7 例。
+  - **B. 迁移护栏**（`Suite 4/5`）：legacy `applyGround`（重建 / 原地）产物必须 == spec 模块（`createGroundMeshFromSpec` / `applyGroundMaterialSpec`）。
+  - `Suite 1/2`：`buildGroundMaterialSpec` 确定性 + `groundSpecNeedsRebuild` 结构性判别（外观变更不触发、结构变更加触发）。
+
+### 合约测试锁出的两个 legacy 缺陷
+
+| 缺陷 | 根因 | 处置 |
+|------|------|------|
+| **程序化 normal 被原地路径清掉** | `_syncGroundNormalTexture`（L1093）的 `else` 分支在 `groundNormalTexture` 为空时 `dispose + null` bump；重建路径（L1287–1314）**不调用**它故保留程序化 normal，而原地路径（L1182）调用它故清掉 → legacy 内部不一致（重建保留、原地丢失）。 | spec 模块对 `procedural` source 且外部 normal 为空时跳过 `_syncGroundNormalTexture`（保留程序化 normal）；**并对称修复 legacy 原地路径**同名守卫，使 legacy 重建/原地一致。修复后 Suite 4/5 程序化用例全绿。 |
+| **重建路径 canvas 纹理密度漏除 `scale`** | 重建路径 `tex.uScale = _groundActualSize/10`（L1321）漏乘 `groundTextureScale`，原地路径（`_groundActualSize/10/scale`）正确。 | spec 模块重建/原地统一用 `_groundActualSize/10/scale`，已正确；`Suite 4` 末条显式断言 legacy(`/10`) ≠ spec(`/10/scale`)，把该 legacy bug 锁进文档，待 Phase 1 接 spec 后自然消失。 |
+
+### 涉及改动（本回合）
+
+| 文件 | 改动 |
+|------|------|
+| `frontend/src/scene/env/env-ground-spec.ts` | `applyGroundMaterialSpec`：`procedural` 且外部 normal 为空时跳过 `_syncGroundNormalTexture`（保留程序化 normal） |
+| `frontend/src/scene/env/env-ground.ts` | 原地路径（L1182 附近）：对称守卫，修复程序化 normal 被原地清掉的历史 bug |
+| `frontend/src/__tests__/scene/env-ground-spec.contract.test.ts` | 新增 Phase 3 合约测试（23 例） |
+
