@@ -199,4 +199,24 @@ else
   echo "[pre-push] check:docs（跳过：纯文档变更）"
 fi
 
+# ── check:md-links（Python 契约测试；不可自动修复） ──
+# 校验 docs/AGENTS.md 内部 Markdown 链接有效性（CI 同脚本同步执行）。
+# 无条件运行：链接有效性随文档变更而变，DOCS_ONLY 时 check:docs 跳过但本项不跳；
+# 脚本崩溃（如 embedded null byte）即阻断，broken 链接仅 INFO 不阻断。
+PYTHON_AVAILABLE=true
+command -v python >/dev/null 2>&1 || {
+  echo "⚠️  hook 环境中 python 不可用，check:md-links 跳过。"
+  PYTHON_AVAILABLE=false
+}
+if [ "$PYTHON_AVAILABLE" = "true" ]; then
+  echo "[pre-push] check:md-links"
+  cd "$ROOT" && python tests/test_markdown_links.py >/dev/null 2>&1 || {
+    echo "❌ Markdown 链接契约测试执行失败（脚本崩溃）。"
+    echo "   手动运行: python tests/test_markdown_links.py 查看详情"
+    exit 1
+  }
+else
+  echo "[pre-push] check:md-links（跳过：python 不可用）"
+fi
+
 echo "[pre-push] ✅ 全部通过"
