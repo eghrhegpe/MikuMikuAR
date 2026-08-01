@@ -22,6 +22,8 @@ node_modules/
 docs/guide/node_modules/
 docs/guide/.vitepress/dist/
 docs/guide/.vitepress/dist-verify/
+docs/guide/.vitepress/dist-test/
+docs/guide/.vitepress/.temp/
 docs/guide/.vitepress/cache/
 
 # Reasonix internal state
