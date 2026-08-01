@@ -43,6 +43,7 @@
 
 | ADR | 主题 | 状态 |
 |-----|------|------|
+| [ADR-228](./adr-228-ui-rows-round3.md) | UI 行控件公共化第三轮 + 命名去 `_` 前缀 | 已完成 |
 | [ADR-227](./adr-227-personal-light-shadow-toggle.md) | 个人灯阴影按需开关与分辨率可调 | 已完成 |
 | [ADR-226](./adr-226-ground-material-spec-single-source.md) | 地面材质单一事实源重构（GroundMaterialSpec） | 已落地 |
 | [ADR-225](./adr-225-web-pages-path-reallocation.md) | Web 部署路径重分配 — 文档站占 Pages 根、主应用降 /app/ 子路径 | 已实施 |
@@ -88,7 +89,6 @@
 | [ADR-175](./adr-175-light-intensity-multi-entry-ruling.md) | 光照强度多入口设计意图裁决 | ✅ 已裁决 |
 | [ADR-174](./adr-174-quality-dimension-registry.md) | 质量维度注册表 — 统一 qualityProfile 扩展点 | 已完成 |
 | [ADR-173](./adr-173-env-bridge-middleware.md) | env-bridge setEnvState 中间件化重构 | 已完成 |
-| [ADR-173](./adr-173-ui-rows-round3.md) | UI 行控件公共化第三轮 + 命名去 `_` 前缀 | 已完成 |
 | [ADR-172](./adr-172-wet-body-effect.md) | 湿身效果：雨天角色材质湿润感 | 已完成 |
 | [ADR-171](./adr-171-scene-drag-mode.md) | 场景级拖拽模式：快捷开关 + 收纳文件夹 | 已完成 |
 | [ADR-170](./adr-170-motion-selection-paradigm.md) | 动作库选中范式 —— 将「默认」暴露为逐行「选中」（对齐模型焦点范式） | 已实施 |
