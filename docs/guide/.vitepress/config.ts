@@ -190,8 +190,8 @@ export default defineConfig({
       { text: 'GitHub', link: 'https://github.com/eghrhegpe/MikuMikuAR' },
     ],
     sidebar: [
-      { text: '用户指南', items: guideItems },
-      { text: '架构与规范', items: archItems },
+      { text: '用户指南', collapsed: true, items: guideItems },
+      { text: '架构与规范', collapsed: true, items: archItems },
       { text: '决策记录 (ADR)', collapsed: true, items: adrItems },
       { text: '知识卡', items: knowledgeItems },
       { text: '开发运维', items: [
