@@ -8,6 +8,7 @@
 |---|---|---|
 | 环境初始化、环境切换、雾、observer、scene tick、环境销毁 | [env.md](./env.md)、[env-impl.md](./env-impl.md) | [env-context.md](./env-context.md)、[env-dispatcher.md](./env-dispatcher.md)、[observer-handle.md](./observer-handle.md) |
 | 天空、地面、地形、湿身、反射、水面、云、水面设置 | [env-sky.md](./env-sky.md)、[env-ground.md](./env-ground.md)、[env-wetness.md](./env-wetness.md)、[planar-reflection.md](./planar-reflection.md)、[env-water.md](./env-water.md) | [env-texture.md](./env-texture.md)、[env-state-schema.md](./env-state-schema.md) |
+| 地面材质、地面重建、GroundMaterialSpec、地面 typeKey、地面材质单一来源 | [env-ground-spec.md](./env-ground-spec.md) | [env-ground.md](./env-ground.md)、[env.md](./env.md) |
 | 灯光、太阳、阴影、跟随灯、灯光渐变 | [lighting.md](./lighting.md)、[lighting-state.md](./lighting-state.md) | [lighting-sun.md](./lighting-sun.md)、[lighting-shadow.md](./lighting-shadow.md)、[lighting-tween.md](./lighting-tween.md) |
 | 模型加载、模型管理、模型替换、模型操作 | [model-loader.md](./model-loader.md)、[model-manager.md](./model-manager.md)、[model-ops.md](./model-ops.md) | [model-detail.md](./model-detail.md)、[scene.md](./scene.md) |
 | 拖拽、Gizmo、变换 | [transform-mode.md](./transform-mode.md)、[transform-adapter.md](./transform-adapter.md) | [transform-gizmo.md](./transform-gizmo.md)、[transform-pick.md](./transform-pick.md) |
