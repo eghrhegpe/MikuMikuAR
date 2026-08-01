@@ -9,6 +9,11 @@ source_files:
   - frontend/src/scene/manager/thumbnail-key.ts
 adr:
   - ADR-119
+use_when:
+  - 缩略图
+  - 缓存 key
+  - thumbnail key
+  - 缩略图缓存
 ---
 
 ## 系统概览

@@ -10,6 +10,11 @@ source_files:
 adr:
   - ADR-126
   - ADR-121
+use_when:
+  - 变换适配
+  - transform adapter
+  - 双模态
+  - 拖拽适配
 ---
 
 ## 系统概览

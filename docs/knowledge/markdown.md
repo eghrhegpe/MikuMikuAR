@@ -21,4 +21,8 @@ use_when:
   - Markdown 渲染
   - DOM 构建
   - 聊天消息格式化
+  - markdown 渲染
+  - md 转 dom
+  - AI 回复渲染
+  - 轻量渲染
 ---

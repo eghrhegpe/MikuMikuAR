@@ -8,6 +8,12 @@ scope:
 source_files:
   - frontend/src/core/color-helpers.ts
 adr: []
+use_when:
+  - 颜色转换
+  - hex
+  - rgb
+  - 颜色工具
+  - 颜色计算
 ---
 
 ## 系统概览

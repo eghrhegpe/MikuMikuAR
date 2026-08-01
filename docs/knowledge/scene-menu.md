@@ -7,6 +7,11 @@ scope:
   - frontend/src/menus/scene-menu.ts
 source_files:
   - frontend/src/menus/scene-menu.ts
+use_when:
+  - 场景弹窗
+  - 场景菜单
+  - 场景设置入口
+  - 场景路由
 ---
 
 ## 系统概览

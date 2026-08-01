@@ -7,6 +7,11 @@ scope:
   - frontend/src/scene/transform/transform-pick.ts
 source_files:
   - frontend/src/scene/transform/transform-pick.ts
+use_when:
+  - 拾取
+  - 选中目标
+  - 变换拾取
+  - pick 目标
 ---
 
 ## 系统概览

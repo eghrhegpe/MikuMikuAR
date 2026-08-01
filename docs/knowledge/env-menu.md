@@ -7,6 +7,11 @@ scope:
   - frontend/src/menus/env-menu.ts
 source_files:
   - frontend/src/menus/env-menu.ts
+use_when:
+  - 环境弹窗
+  - 环境菜单
+  - 环境设置入口
+  - env 菜单
 ---
 
 ## 系统概览

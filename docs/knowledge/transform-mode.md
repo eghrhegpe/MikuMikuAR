@@ -7,6 +7,11 @@ scope:
   - frontend/src/scene/transform/transform-mode.ts
 source_files:
   - frontend/src/scene/transform/transform-mode.ts
+use_when:
+  - 变换模式
+  - 拖拽模式
+  - 位移旋转
+  - transform mode
 ---
 
 ## 系统概览

@@ -9,6 +9,11 @@ source_files:
   - frontend/src/core/ui-constants.ts
 adr:
   - ADR-143
+use_when:
+  - UI 常量
+  - 场景常量
+  - 尺寸常量
+  - 布局常量
 ---
 
 ## 系统概览

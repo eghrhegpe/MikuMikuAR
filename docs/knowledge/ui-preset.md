@@ -8,6 +8,11 @@ scope:
 source_files:
   - frontend/src/core/ui-preset.ts
 adr: []
+use_when:
+  - 预设面板
+  - 预设 UI
+  - preset panel
+  - 预设组件
 ---
 
 ## 系统概览
