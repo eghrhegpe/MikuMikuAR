@@ -28,7 +28,7 @@
 
 | 文档                                   | 内容                |
 | ------------------------------------ | ----------------- |
-| [知识库](docs/knowledge/README.md)      | 模块现状快照 + 卡片索引（某模块现在长啥样、去哪找） |
+| [知识库](https://eghrhegpe.github.io/MikuMikuAR/guide/knowledge/README.html)（[源码](docs/knowledge/README.md)） | 模块现状快照 + 卡片索引（静态网页版，某模块现在长啥样、去哪找） |
 | [架构方案](docs/architecture.md)         | 全功能汇总与技术细节        |
 | [设计决策](docs/adr/)                    | 220+ ADR 技术决策记录   |
 | [竞品分析](docs/competitive-analysis.md) | 23 个项目调研对比        |
