@@ -28,6 +28,23 @@ symbols:
   - applyVPDPose
   - captureInheritedState
   - applyInheritedState
+  - getActiveFormation
+  - getActiveFormationSpacing
+  - getFormationLabels
+  - setModelBoneLinesVis
+  - setModelBoneJointsVis
+  - setModelRotationY
+  - getModelPosition
+  - setModelOrbit
+  - getModelOrbit
+  - setModelPositionMode
+  - getModelPositionMode
+  - getPhysicsCategories
+  - getPhysicsCatState
+  - isPhysicsCategoryEnabled
+  - setPhysicsCategory
+  - getModelMorphWeight
+  - resetModelMorphs
 invariants:
   - removeModel 删除后刷新水面渲染列表；模型清空时复位播放态（setIsPlaying(false) / setAutoLoop(true)）
   - 最后一个模型移除且处于 concert 模式时退回 orbit
@@ -51,10 +68,17 @@ use_when:
 - 相机模式联动：最后一个模型移除且处于 `concert` 模式时退回 `orbit`
 - 注册 `registerTransformAdapter`（见 `transform-adapter.ts`），使模型支持 Gizmo 拖拽/数值滑杆
 - VPD 应用：`VPDBoneData` / `VPDMorphData` 解析后写回模型姿态
+- 阵型：`setModelFormation(type, spacing?)` / `arrangeModels()`；取值器 `getActiveFormation()` / `getActiveFormationSpacing()` / `getFormationLabels`
+- 骨骼调试显隐：`setModelBoneLinesVis(id, show)` / `setModelBoneJointsVis(id, show)`
+- 物理分类开关：`setModelPhysics(id, enabled)` 总闸；`getPhysicsCategories(id)` / `getPhysicsCatState(id)` / `isPhysicsCategoryEnabled(id, cat)` / `setPhysicsCategory(id, cat, enabled)` 按分类精细控制
+- 变换（薄封装委托 `modelManager`）：`setModelScaling` / `setModelRotationY` / `setModelRotation` / `setModelPosition` / `getModelPosition`（缺省 `[0,0,0]` 兜底）
+- 球面轨道位姿（ADR-049）：`setModelOrbit(id, azimuth, elevation, distance)` / `getModelOrbit(id)` / `setModelPositionMode(id, 'cartesian'|'orbit')` / `getModelPositionMode(id)`（缺省 `cartesian`）
+- 表情：`getModelMorphs(id)` / `setModelMorphWeight(id, name, w)` / `getModelMorphWeight(id, name)`（缺省 `0`） / `resetModelMorphs(id)`
 
 ## 对外 API（节选）
 - `removeModel(id)` / `removeFocusedModel()`
 - VPD 姿态应用（bone + morph 写回）
+- 阵型 / 骨骼显隐 / 物理分类开关 / 双位模式（cartesian↔orbit）/ 表情取值器 —— 全套委托 `modelManager` 的薄封装，含缺省兜底
 - 经 `modelManager`、播放态 store、`camera/camera`、`motion/playback` 协同
 
 ## 关键约定
