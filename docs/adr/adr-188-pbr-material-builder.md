@@ -1,22 +1,21 @@
 # ADR-188: PBRMaterialBuilder 材质系统迁移 — PBR 渲染升级
 
-> **状态**: Phase 0 POC 完成 + Phase 1 大部分已落地（2026-08-01）
+> **状态**: Phase 1 基本完成（2026-08-01）
 >
-> Phase 0 成果（commit fa27e54e + 后续）：
-> - `material-proxy-resolver.ts` — VITE_MMD_MATERIAL 环境变量驱动
-> - `material-sss.ts` — SSS 参数应用层（getMatSssParams/setMatSssParams/applySss）
-> - `material.ts` — 7 处 instanceof StandardMaterial 新增 PBRMaterial 分支 + PBR 参数映射
-> - `model-manager.ts` — wireframe sync 兼容 PBRMaterial
-> - `scene.ts` — PMX 加载阶段 PBRMaterialBuilder 注册（VITE_MMD_MATERIAL=pbr）
-> - `model-material.ts` — PBR 专属 UI（metallic/roughness） + SSS UI（sssPower/sssColor/sssDistance）
-> - `vite-env.d.ts` — VITE_MMD_MATERIAL 声明
-> - i18n: zh-CN + en 新增 PBR/SSS 翻译键
-> - 全量 246 文件 / 4206 测试全绿，tsc 零错误
+> Phase 0 + Phase 1 成果（commits fa27e54e → f20c60b3）：
+> - PMX 加载阶段 PBRMaterialBuilder 注册（VITE_MMD_MATERIAL=pbr）
+> - 7 处 instanceof StandardMaterial 新增 PBRMaterial 分支 + PBR 参数映射
+> - SSS 参数应用层 + 序列化（getMatSssState/applyMatSssState）
+> - scene-serialize: materialSssCategories 字段 + 保存/恢复
+> - PBR/SSS UI 面板（model-material.ts: metallic/roughness/sssPower/sssColor/sssDistance）
+> - scene-serialize: PBRMaterial wireframe 兼容
+> - i18n: zh-CN + en（zh-TW/ko/ja 非阻塞）
+> - 全量 246 文件 / 4206 测试全绿
 >
 > 待推进：
-> 1. zh-TW/ko/ja 翻译补全（非阻塞，非严格模式）
-> 2. 场景预设系统 PBR/SSS 字段序列化
-> 3. PMX 加载阶段实测验证（需 VITE_MMD_MATERIAL=pbr 构建 + 加载 PMX 模型）
+> 1. zh-TW/ko/ja 翻译补全（非阻塞）
+> 2. 实测验证（VITE_MMD_MATERIAL=pbr 构建 + 加载 PMX 模型）
+> 3. Phase 2: 旧预设迁移脚本、性能基准测试
 
 **决策者**: Riku（联邦首席架构师 AI）、Jieling（人类侧首席架构师）
 
