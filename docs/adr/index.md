@@ -74,7 +74,7 @@
 | [ADR-192](./adr-192-upstream-adapter-layer.md) | 上游适配层重构（MmdAdapter） | 已立项 · Phase 2 已完成 |
 | [ADR-191](./adr-191-god-barrel-debarreling.md) | 神桶 `@/core/utils` 去桶化（零依赖叶下沉） | 已完成 |
 | [ADR-190](./adr-190-capability-declarative-consolidation.md) | 端能力声明式收口（淘汰散落 isAndroidPlatform 分支） | 已完成 |
-| [ADR-188](./adr-188-pbr-material-builder.md) | PBRMaterialBuilder 材质系统迁移 — PBR 渲染升级 | Phase 0 POC 已完成 |
+| [ADR-188](./adr-188-pbr-material-builder.md) | PBRMaterialBuilder 材质系统迁移 — PBR 渲染升级 | Phase 1 基本完成 |
 | [ADR-186](./adr-186-bone-override-frame-timing.md) | bone-override 帧内时序图 | accepted |
 | [ADR-185](./adr-185-web-zip-pmx-subdir-relpath.md) | 网页端 ZIP 内子目录 PMX 贴图路径维度对齐 | 已完成 |
 | [ADR-184](./adr-184-web-zip-encoding-and-bomb-guard.md) | 网页端 ZIP 嵌套识别能力补齐（多编码检测 + 炸弹防护对齐 Go 端） | 已完成 |

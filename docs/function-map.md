@@ -8,7 +8,7 @@
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
 | 核心基础设施 | 122 | 716 |
-| 3D 场景 | 110 | 1124 |
+| 3D 场景 | 111 | 1130 |
 | 菜单 & UI | 75 | 380 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 17 | 127 |
@@ -1167,11 +1167,14 @@
 | `getStandardMaterialProxy()` | `scene/manager/material-proxy-resolver` | 返回标准材质代理（MmdStandardMaterialProxy）— 用于 Lambert + Blinn-Phong 渲染 |
 | `resolveMaterialProxy()` | `scene/manager/material-proxy-resolver` | 返回当前材质的代理构造函数（同步） （PBR 模式下的材质代理仍使用标准代理，因 PMX 加载阶段已由 PBRMaterialBuilder 构建材质， MmdStandardMa |
 | `DEFAULT_SSS_PARAMS()` | `scene/manager/material-sss` | SSS 默认参数 |
+| `SssColorInput()` | `scene/manager/material-sss` | — |
 | `SssParams()` | `scene/manager/material-sss` | SSS 参数 |
+| `applyMatSssState()` | `scene/manager/material-sss` | 反序列化 SSS 状态并应用到模型 |
 | `applySss()` | `scene/manager/material-sss` | 应用 SSS 参数到指定分类的所有 PBRMaterial 材质 内部实现： 1. |
 | `disposeModelSssState()` | `scene/manager/material-sss` | 重置指定模型的所有 SSS 状态 |
 | `getMatSssParams()` | `scene/manager/material-sss` | 获取指定分类的 SSS 参数 |
-| `setMatSssParams()` | `scene/manager/material-sss` | 设置指定分类的 SSS 参数并立即应用到所有该分类材质 |
+| `getMatSssState()` | `scene/manager/material-sss` | 序列化指定模型的 SSS 状态为 JSON 兼容结构 用于场景/预设保存。仅返回非默认值，避免默认值噪声。 |
+| `setMatSssParams()` | `scene/manager/material-sss` | 设置指定分类的 SSS 参数并立即应用到所有该分类材质 sssColor 可传入 Color3 或 { r, g, b } 形式 |
 | `AlphaCtx()` | `scene/manager/material` | — |
 | `DEFAULT_MAT_PARAMS()` | `scene/manager/material` | 材质参数默认值 — 所有新增字段在此维护，消除散落硬编码。 |
 | `MaterialCategory()` | `scene/manager/material` | — |
@@ -1254,6 +1257,7 @@
 | `setModelWireframe()` | `scene/manager/model-ops` | — |
 | `setPhysicsCategory()` | `scene/manager/model-ops` | — |
 | `stopVMD()` | `scene/manager/model-ops` | — |
+| `tryApplyPbrMaterialBuilder()` | `scene/manager/pbr-builder-init` | 动态导入 PBRMaterialBuilder 并覆盖 MmdModelLoader.SharedMaterialBuilder。 |
 | `_resetTextureLRUForTest()` | `scene/manager/texture-lru` | 仅供测试：重置缓存状态。 |
 | `clearTextureLRU()` | `scene/manager/texture-lru` | 清空 LRU 缓存。在 disposeRenderer 中调用，释放所有缓存的纹理 ArrayBuffer。 |
 | `readTextureWithLRU()` | `scene/manager/texture-lru` | 带 LRU 缓存的纹理读取。命中直接返回 ArrayBuffer，未命中则 readFileBytes 后缓存。 |
@@ -1751,6 +1755,7 @@
 | `animateCameraVmd()` | `scene/scene` | — |
 | `applyEnvState()` | `scene/scene` | — |
 | `applyFrameControl()` | `scene/scene` | 统一应用帧率控制：帧率限制器开关 + 帧率上限。 |
+| `applyMatSssState()` | `scene/scene` | — |
 | `applyMatState()` | `scene/scene` | — |
 | `applySss()` | `scene/scene` | — |
 | `applyUnlitFallback()` | `scene/scene` | — |
@@ -1779,6 +1784,7 @@
 | `getMatDetailList()` | `scene/scene` | — |
 | `getMatParams()` | `scene/scene` | — |
 | `getMatSssParams()` | `scene/scene` | — |
+| `getMatSssState()` | `scene/scene` | — |
 | `getMatState()` | `scene/scene` | — |
 | `getScene()` | `scene/scene` | — |
 | `hasCameraVmd()` | `scene/scene` | — |

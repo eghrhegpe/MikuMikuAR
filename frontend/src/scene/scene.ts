@@ -38,6 +38,7 @@ import 'babylon-mmd/esm/Runtime/Optimized/Animation/mmdWasmRuntimeModelAnimation
 // ADR-188: 材质代理解析器（PBR 模式下仍用 MmdStandardMaterialProxy 做运行时 morph，
 //         因 MmdStandardMaterialProxy 仅操作 diffuse/shininess，对 PBRMaterial 也兼容）
 import { getMaterialMode, getStandardMaterialProxy } from './manager/material-proxy-resolver';
+import { tryApplyPbrMaterialBuilder } from './manager/pbr-builder-init';
 import { initWindPhysics, disposeWindPhysics } from '../physics/wind-physics';
 import { applyGroundCollision } from './physics/ground-collision';
 import { swallowError } from '../core/async';
@@ -658,18 +659,7 @@ async function _initMmdRuntime(): Promise<IMmdRuntime> {
     // 默认 'babylon-mmd/esm/Loader/mmdModelLoader' import 已注册 MmdStandardMaterialBuilder
     // PBR 模式下需动态导入 PBRMaterialBuilder 覆盖 SharedMaterialBuilder
     if (materialMode === 'pbr') {
-        try {
-            const { MmdModelLoader } = await import('babylon-mmd/esm/Loader/mmdModelLoader.pure');
-            const { PBRMaterialBuilder } =
-                await import('babylon-mmd/esm/Loader/pbrMaterialBuilder');
-            MmdModelLoader.SharedMaterialBuilder = new PBRMaterialBuilder();
-            logWarn(
-                'scene',
-                'PBR 模式已启用：MmdModelLoader.SharedMaterialBuilder = PBRMaterialBuilder'
-            );
-        } catch (e) {
-            logWarn('scene', 'PBRMaterialBuilder 加载失败，回退 StandardMaterial：', e);
-        }
+        await tryApplyPbrMaterialBuilder();
     }
     // 运行时切换：默认 WASM（含物理），可在程序化动作菜单切换到 JS 版（调试专用，无物理）
     // JS 版保留作为 gaze 行为对比排查与 WASM 兼容性回退，勿删除

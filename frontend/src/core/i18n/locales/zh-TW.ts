@@ -329,6 +329,13 @@ export const zhTW: Record<string, string> = {
     'model-material.unknownMaterial': '未知材質',
     'model-material.paramTuneTitle': '參數微調',
     'model-material.resetThis': '重設此材質',
+    'model-material.pbrGroupTitle': 'PBR 材質參數',
+    'model-material.pbrMetallic': '金屬度',
+    'model-material.pbrRoughness': '粗糙度',
+    'model-material.sssTitle': 'SSS 次表面散射',
+    'model-material.sssPower': 'SSS 強度',
+    'model-material.sssColor': 'SSS 散射色',
+    'model-material.sssDistance': 'SSS 散射距離',
 
     // ===== 模型預設 model-preset =====
     'model-preset.formatError': '✗ 預設檔案格式錯誤',

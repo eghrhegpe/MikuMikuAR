@@ -60,7 +60,7 @@ vi.mock('../../scene/scene', () => ({
     getPhysicsCatState: () => null,
     setPhysicsCategory: vi.fn(),
     loadVMDFromPath: vi.fn(),
-    getMatState: () => null,
+    getMatState: vi.fn(() => null),
     applyMatState: vi.fn(),
     getActiveFormation: () => null,
     getActiveFormationSpacing: () => 0,
@@ -151,7 +151,10 @@ vi.mock('../../core/feedback', () => ({ feedbackError: vi.fn(), feedbackInfo: vi
 vi.mock('../../core/logger', () => ({ logWarn: vi.fn() }));
 vi.mock('../../core/async', () => ({ swallowError: vi.fn() }));
 vi.mock('../../library/library-path', () => ({ resolveLibraryRef: () => '' }));
-vi.mock('../../scene/manager/material', () => ({ _applyAll: vi.fn() }));
+vi.mock('../../scene/manager/material', () => ({
+    _applyAll: vi.fn(),
+    getMatCatGroups: vi.fn(() => new Map()),
+}));
 vi.mock('../../scene/env/env-time-of-day', () => ({ setEnvSunAngle: vi.fn() }));
 vi.mock('../../scene/env/_bridge/env-persist', () => ({
     flushEnvState: vi.fn(),
@@ -164,6 +167,14 @@ vi.mock('../../motion-algos/lipsync', () => ({ DEFAULT_LIPSYNC_STATE: {} }));
 
 import { serializeScene, deserializeScene, triggerAutoSaveImpl } from '../../scene/scene-serialize';
 import { setCameraState } from '../../scene/camera/camera';
+import { getMatState, applyMatState, loadPMXFile } from '../../scene/scene';
+import {
+    setMatSssParams,
+    disposeModelSssState,
+    getMatSssState,
+} from '../../scene/manager/material-sss';
+import { Color3 } from '@babylonjs/core/Maths/math.color';
+import { PBRMaterial } from '@babylonjs/core/Materials/PBR/pbrMaterial';
 
 /** 构造序列化所需的最小 ModelInstance；未读到的字段用 as 断言省略。 */
 function makeModel(id: string, name: string, filePath: string): ModelInstance {
@@ -223,6 +234,37 @@ describe('serializeScene — 分段容错（ADR-198 方向①）', () => {
         expect(scene.models).toEqual([]);
         expect(scene.version).toBe(1);
     });
+
+    it('包含 SSS 状态时序列化到 materialSssCategories', () => {
+        registry.set('a', makeModel('a', '模型甲', '/models/a.pmx'));
+        setMatSssParams('a', '皮肤', {
+            sssPower: 0.8,
+            sssColor: new Color3(1, 0.6, 0.4),
+            sssDistance: 0.3,
+        });
+
+        // 覆盖 getMatState mock：serializeModel 通过 getMatState(inst.id) 读取 SSS 数据，
+        // 但顶层 mock 固定返回 null。此处用 mockImplementationOnce 从真实 _sssState 取数。
+        vi.mocked(getMatState).mockImplementationOnce((id: string) => {
+            const sssState = getMatSssState(id);
+            if (!sssState) return null;
+            return { categories: {}, overrides: {}, enabled: {}, ...sssState };
+        });
+
+        const scene = serializeScene();
+        expect(scene.models).toHaveLength(1);
+        expect(scene.models[0].materialSssCategories).toBeDefined();
+        expect(scene.models[0].materialSssCategories!['皮肤'].sssPower).toBe(0.8);
+        expect(scene.models[0].materialSssCategories!['皮肤'].sssDistance).toBe(0.3);
+
+        disposeModelSssState('a');
+    });
+
+    it('无 SSS 状态时 materialSssCategories 不出现在序列化中', () => {
+        registry.set('a', makeModel('a', '模型甲', '/models/a.pmx'));
+        const scene = serializeScene();
+        expect(scene.models[0].materialSssCategories).toBeUndefined();
+    });
 });
 
 describe('deserializeScene — suppress 泄漏防护（fix:suppress-leak）', () => {
@@ -247,5 +289,58 @@ describe('deserializeScene — suppress 泄漏防护（fix:suppress-leak）', ()
         expect(logs.some((l) => l.includes('suppressed'))).toBe(false);
         info.mockRestore();
         vi.mocked(setCameraState).mockReset();
+    });
+
+    it('deserializeScene 恢复 SSS materialSssCategories', async () => {
+        vi.mocked(loadPMXFile).mockResolvedValueOnce('test-sss-id');
+        registry.set('test-sss-id', makeModel('test-sss-id', '模型SSS', '/models/sss.pmx'));
+
+        const data = {
+            version: 1,
+            models: [{
+                name: '模型SSS',
+                filePath: '/models/sss.pmx',
+                kind: 'actor' as const,
+                materialSssCategories: {
+                    '皮肤': { sssPower: 0.8, sssColor: { r: 1, g: 0.6, b: 0.4 }, sssDistance: 0.3 },
+                },
+            }],
+            camera: {},
+        } as never;
+
+        await deserializeScene(data);
+
+        expect(vi.mocked(applyMatState)).toHaveBeenCalledWith(
+            'test-sss-id',
+            expect.objectContaining({
+                sssCategories: { '皮肤': { sssPower: 0.8, sssColor: { r: 1, g: 0.6, b: 0.4 }, sssDistance: 0.3 } },
+            }),
+        );
+    });
+
+    it('deserializeScene PBRMaterial wireframe 恢复', async () => {
+        vi.mocked(loadPMXFile).mockResolvedValueOnce('test-pbr-id');
+        // 用 Object.create 绕过 PBRMaterial 构造函数（需要 Babylon.js Engine），
+        // 再用 defineProperty 覆盖 wireframe setter（继承自 Material，调用 markAsDirty 依赖 _scene）
+        const pbrMat = Object.create(PBRMaterial.prototype) as PBRMaterial;
+        Object.defineProperty(pbrMat, 'wireframe', { value: false, writable: true, configurable: true });
+        const model = makeModel('test-pbr-id', '模型PBR', '/models/pbr.pmx');
+        model.meshes = [{ position: { x: 0, y: 0, z: 0 }, material: pbrMat }] as never;
+        registry.set('test-pbr-id', model);
+
+        const data = {
+            version: 1,
+            models: [{
+                name: '模型PBR',
+                filePath: '/models/pbr.pmx',
+                kind: 'actor' as const,
+                wireframe: true,
+            }],
+            camera: {},
+        } as never;
+
+        await deserializeScene(data);
+
+        expect(pbrMat.wireframe).toBe(true);
     });
 });
