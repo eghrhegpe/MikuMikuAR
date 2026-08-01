@@ -155,7 +155,9 @@ interface MatFingerprint {
 }
 
 function fingerprint(mat: Material | null): MatFingerprint {
-    if (!mat) throw new Error('fingerprint: material is null');
+    if (!mat) {
+        throw new Error('fingerprint: material is null');
+    }
     const isPBR = mat instanceof PBRMaterial;
     const sm = mat as StandardMaterial;
     const pm = mat as PBRMaterial;
@@ -231,7 +233,11 @@ function inplaceLegacy(stateA: EnvState, stateB: EnvState): MatFingerprint {
 // ──────────────── Suite 1 — Spec 单一性 / 确定性 ────────────────
 describe('ADR-226 buildGroundMaterialSpec — 单一性与确定性', () => {
     it('同输入两次调用 deep-equal（无隐式随机/副作用）', () => {
-        const s = makeState({ groundStyle: 'checker', groundProceduralTexture: 'wood', groundPbrEnabled: true });
+        const s = makeState({
+            groundStyle: 'checker',
+            groundProceduralTexture: 'wood',
+            groundPbrEnabled: true,
+        });
         expect(buildGroundMaterialSpec(s)).toEqual(buildGroundMaterialSpec(s));
     });
     it('specKey 对结构性字段敏感、对纯外观字段稳定', () => {
@@ -263,7 +269,10 @@ describe('ADR-226 groundSpecNeedsRebuild — diffSpec 契约', () => {
         ];
         for (const ov of appearanceOnly) {
             const next = buildGroundMaterialSpec(makeState({ groundStyle: 'checker', ...ov }));
-            expect(groundSpecNeedsRebuild(baseSpec, next), `外观变更 ${JSON.stringify(ov)} 不应触发重建`).toBe(false);
+            expect(
+                groundSpecNeedsRebuild(baseSpec, next),
+                `外观变更 ${JSON.stringify(ov)} 不应触发重建`
+            ).toBe(false);
         }
     });
 
@@ -279,13 +288,21 @@ describe('ADR-226 groundSpecNeedsRebuild — diffSpec 契约', () => {
         ];
         for (const ov of structural) {
             const next = buildGroundMaterialSpec(makeState({ groundStyle: 'checker', ...ov }));
-            expect(groundSpecNeedsRebuild(baseSpec, next), `结构变更 ${JSON.stringify(ov)} 应触发重建`).toBe(true);
+            expect(
+                groundSpecNeedsRebuild(baseSpec, next),
+                `结构变更 ${JSON.stringify(ov)} 应触发重建`
+            ).toBe(true);
         }
     });
 
     it('无限+texture/canvas 改 groundSize 不触发重建（specKey 用 INF 常量，消除 spurious 重建）', () => {
         const infiniteModes: Partial<EnvState>[] = [
-            { groundTextureEnabled: true, groundTexture: TINY_PNG, groundStyle: 'texture', groundInfiniteEnabled: true },
+            {
+                groundTextureEnabled: true,
+                groundTexture: TINY_PNG,
+                groundStyle: 'texture',
+                groundInfiniteEnabled: true,
+            },
             { groundStyle: 'checker', groundInfiniteEnabled: true },
         ];
         for (const mode of infiniteModes) {
@@ -297,9 +314,15 @@ describe('ADR-226 groundSpecNeedsRebuild — diffSpec 契约', () => {
             ).toBe(false);
         }
         // 对照：非无限（flat）改 groundSize 必须触发重建
-        const flatBase = buildGroundMaterialSpec(makeState({ groundStyle: 'checker', groundSize: 500 }));
-        const flatNext = buildGroundMaterialSpec(makeState({ groundStyle: 'checker', groundSize: 800 }));
-        expect(groundSpecNeedsRebuild(flatBase, flatNext), 'flat 改 groundSize 应触发重建').toBe(true);
+        const flatBase = buildGroundMaterialSpec(
+            makeState({ groundStyle: 'checker', groundSize: 500 })
+        );
+        const flatNext = buildGroundMaterialSpec(
+            makeState({ groundStyle: 'checker', groundSize: 800 })
+        );
+        expect(groundSpecNeedsRebuild(flatBase, flatNext), 'flat 改 groundSize 应触发重建').toBe(
+            true
+        );
     });
 });
 
@@ -312,13 +335,51 @@ describe('ADR-226 重建产物 == 原地产物（spec 内部）', () => {
         b: Partial<EnvState>; // 仅外观差异
     }
     const cases: Case[] = [
-        { name: 'solid/flat', a: { groundStyle: 'solid' }, b: { groundAlpha: 0.2, groundRoughness: 0.3, groundEdgeFade: 0.4 } },
-        { name: 'canvas/flat', a: { groundStyle: 'checker' }, b: { groundAlpha: 0.9, groundTextureScale: 0.5, groundNormalStrength: 0.4, groundEdgeFade: 0.3 } },
-        { name: 'procedural/flat', a: { groundProceduralTexture: 'wood', groundPbrEnabled: true, groundStyle: 'texture' }, b: { groundAlpha: 0.3, groundRoughness: 0.2, groundMetallic: 0.7 } },
-        { name: 'texture/flat', a: { groundTextureEnabled: true, groundTexture: TINY_PNG, groundStyle: 'texture' }, b: { groundAlpha: 0.5, groundTextureScale: 0.5, groundRoughness: 0.4 } },
-        { name: 'solid/infinite', a: { groundStyle: 'solid', groundInfiniteEnabled: true }, b: { groundAlpha: 0.2, groundEdgeFade: 0.5 } },
-        { name: 'canvas/infinite', a: { groundStyle: 'checker', groundInfiniteEnabled: true }, b: { groundTextureScale: 0.5, groundNormalStrength: 0.6 } },
-        { name: 'procedural/infinite', a: { groundProceduralTexture: 'metal', groundPbrEnabled: true, groundInfiniteEnabled: true, groundStyle: 'texture' }, b: { groundRoughness: 0.1, groundMetallic: 0.9 } },
+        {
+            name: 'solid/flat',
+            a: { groundStyle: 'solid' },
+            b: { groundAlpha: 0.2, groundRoughness: 0.3, groundEdgeFade: 0.4 },
+        },
+        {
+            name: 'canvas/flat',
+            a: { groundStyle: 'checker' },
+            b: {
+                groundAlpha: 0.9,
+                groundTextureScale: 0.5,
+                groundNormalStrength: 0.4,
+                groundEdgeFade: 0.3,
+            },
+        },
+        {
+            name: 'procedural/flat',
+            a: { groundProceduralTexture: 'wood', groundPbrEnabled: true, groundStyle: 'texture' },
+            b: { groundAlpha: 0.3, groundRoughness: 0.2, groundMetallic: 0.7 },
+        },
+        {
+            name: 'texture/flat',
+            a: { groundTextureEnabled: true, groundTexture: TINY_PNG, groundStyle: 'texture' },
+            b: { groundAlpha: 0.5, groundTextureScale: 0.5, groundRoughness: 0.4 },
+        },
+        {
+            name: 'solid/infinite',
+            a: { groundStyle: 'solid', groundInfiniteEnabled: true },
+            b: { groundAlpha: 0.2, groundEdgeFade: 0.5 },
+        },
+        {
+            name: 'canvas/infinite',
+            a: { groundStyle: 'checker', groundInfiniteEnabled: true },
+            b: { groundTextureScale: 0.5, groundNormalStrength: 0.6 },
+        },
+        {
+            name: 'procedural/infinite',
+            a: {
+                groundProceduralTexture: 'metal',
+                groundPbrEnabled: true,
+                groundInfiniteEnabled: true,
+                groundStyle: 'texture',
+            },
+            b: { groundRoughness: 0.1, groundMetallic: 0.9 },
+        },
     ];
 
     for (const c of cases) {
@@ -326,8 +387,13 @@ describe('ADR-226 重建产物 == 原地产物（spec 内部）', () => {
             const stateA = makeState(c.a);
             const stateB = makeState({ ...c.a, ...c.b });
             // 结构性必须一致，否则不是有效原地迁移
-            expect(groundSpecNeedsRebuild(buildGroundMaterialSpec(stateA), buildGroundMaterialSpec(stateB)),
-                'A→B 必须是同结构性 spec（否则测试无效）').toBe(false);
+            expect(
+                groundSpecNeedsRebuild(
+                    buildGroundMaterialSpec(stateA),
+                    buildGroundMaterialSpec(stateB)
+                ),
+                'A→B 必须是同结构性 spec（否则测试无效）'
+            ).toBe(false);
             expect(rebuildSpec(stateB)).toEqual(inplaceSpec(stateA, stateB));
         });
     }
@@ -338,11 +404,25 @@ describe('ADR-226 迁移护栏 — legacy 重建 == spec 重建', () => {
     const cases: { name: string; ov: Partial<EnvState> }[] = [
         { name: 'solid/flat', ov: { groundStyle: 'solid' } },
         { name: 'canvas/flat', ov: { groundStyle: 'checker' } },
-        { name: 'procedural/flat', ov: { groundProceduralTexture: 'wood', groundPbrEnabled: true, groundStyle: 'texture' } },
-        { name: 'texture/flat', ov: { groundTextureEnabled: true, groundTexture: TINY_PNG, groundStyle: 'texture' } },
+        {
+            name: 'procedural/flat',
+            ov: { groundProceduralTexture: 'wood', groundPbrEnabled: true, groundStyle: 'texture' },
+        },
+        {
+            name: 'texture/flat',
+            ov: { groundTextureEnabled: true, groundTexture: TINY_PNG, groundStyle: 'texture' },
+        },
         { name: 'solid/infinite', ov: { groundStyle: 'solid', groundInfiniteEnabled: true } },
         { name: 'canvas/infinite', ov: { groundStyle: 'checker', groundInfiniteEnabled: true } },
-        { name: 'procedural/infinite', ov: { groundProceduralTexture: 'metal', groundPbrEnabled: true, groundInfiniteEnabled: true, groundStyle: 'texture' } },
+        {
+            name: 'procedural/infinite',
+            ov: {
+                groundProceduralTexture: 'metal',
+                groundPbrEnabled: true,
+                groundInfiniteEnabled: true,
+                groundStyle: 'texture',
+            },
+        },
     ];
 
     for (const c of cases) {
@@ -354,7 +434,9 @@ describe('ADR-226 迁移护栏 — legacy 重建 == spec 重建', () => {
 
     it('canvas + textureScale≠1：Phase 1 后 legacy 重建改调 spec，漏除 scale 的 bug 已消除（legacy==spec）', () => {
         const scale = 3;
-        const legacy = rebuildLegacy(makeState({ groundStyle: 'checker', groundTextureScale: scale }));
+        const legacy = rebuildLegacy(
+            makeState({ groundStyle: 'checker', groundTextureScale: scale })
+        );
         const spec = rebuildSpec(makeState({ groundStyle: 'checker', groundTextureScale: scale }));
         const meshSize = 500;
         // Phase 1 前：legacy 重建路径 uScale = meshSize/10（漏除 scale，bug）；spec 修正为 meshSize/10/scale。
@@ -368,22 +450,42 @@ describe('ADR-226 迁移护栏 — legacy 重建 == spec 重建', () => {
 // ──────────────── Suite 5 — 迁移护栏：legacy 原地 == spec 原地 ────────────────
 describe('ADR-226 迁移护栏 — legacy 原地 == spec 原地', () => {
     const cases: { name: string; a: Partial<EnvState>; b: Partial<EnvState> }[] = [
-        { name: 'solid/flat', a: { groundStyle: 'solid' }, b: { groundAlpha: 0.2, groundRoughness: 0.3 } },
-        { name: 'canvas/flat', a: { groundStyle: 'checker' }, b: { groundAlpha: 0.9, groundNormalStrength: 0.4 } },
-        { name: 'procedural/flat', a: { groundProceduralTexture: 'wood', groundPbrEnabled: true, groundStyle: 'texture' }, b: { groundAlpha: 0.3, groundRoughness: 0.2 } },
-        { name: 'texture/flat', a: { groundTextureEnabled: true, groundTexture: TINY_PNG, groundStyle: 'texture' }, b: { groundAlpha: 0.5, groundRoughness: 0.4 } },
+        {
+            name: 'solid/flat',
+            a: { groundStyle: 'solid' },
+            b: { groundAlpha: 0.2, groundRoughness: 0.3 },
+        },
+        {
+            name: 'canvas/flat',
+            a: { groundStyle: 'checker' },
+            b: { groundAlpha: 0.9, groundNormalStrength: 0.4 },
+        },
+        {
+            name: 'procedural/flat',
+            a: { groundProceduralTexture: 'wood', groundPbrEnabled: true, groundStyle: 'texture' },
+            b: { groundAlpha: 0.3, groundRoughness: 0.2 },
+        },
+        {
+            name: 'texture/flat',
+            a: { groundTextureEnabled: true, groundTexture: TINY_PNG, groundStyle: 'texture' },
+            b: { groundAlpha: 0.5, groundRoughness: 0.4 },
+        },
     ];
 
     for (const c of cases) {
         it(`[${c.name}] legacy 原地(A→B) == spec 原地(A→B)`, () => {
             const stateA = makeState({ ...c.a, groundTextureScale: 1 });
             const stateB = makeState({ ...c.a, ...c.b, groundTextureScale: 1 });
-            expect(groundSpecNeedsRebuild(buildGroundMaterialSpec(stateA), buildGroundMaterialSpec(stateB)),
-                'A→B 必须同结构性 spec').toBe(false);
+            expect(
+                groundSpecNeedsRebuild(
+                    buildGroundMaterialSpec(stateA),
+                    buildGroundMaterialSpec(stateB)
+                ),
+                'A→B 必须同结构性 spec'
+            ).toBe(false);
             expect(inplaceLegacy(stateA, stateB)).toEqual(inplaceSpec(stateA, stateB));
         });
     }
 });
 
 // ──────────────── Suite 4/5 结束 ────────────────
-

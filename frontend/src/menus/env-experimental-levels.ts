@@ -10,19 +10,19 @@ import { buildLevel } from './env-level-helpers';
 /** 导出 experimental schema 供 menu-registry 静态分析（ADR-093 元测试） */
 export function getExperimentalSchema(): MenuNode[] {
     return [
-            {
-                id: 'env:exp:warn',
-                kind: 'custom',
-                renderCustom: (cc) => {
-                    const warning = document.createElement('div');
-                    warning.className = 'experimental-warning';
-                    warning.innerHTML =
-                        '<iconify-icon icon="lucide:alert-triangle" style="margin-right:6px;"></iconify-icon><span>' +
-                        t('env.experimentalWarn') +
-                        '</span>';
-                    cc.appendChild(warning);
-                },
+        {
+            id: 'env:exp:warn',
+            kind: 'custom',
+            renderCustom: (cc) => {
+                const warning = document.createElement('div');
+                warning.className = 'experimental-warning';
+                warning.innerHTML =
+                    '<iconify-icon icon="lucide:alert-triangle" style="margin-right:6px;"></iconify-icon><span>' +
+                    t('env.experimentalWarn') +
+                    '</span>';
+                cc.appendChild(warning);
             },
+        },
     ];
 }
 

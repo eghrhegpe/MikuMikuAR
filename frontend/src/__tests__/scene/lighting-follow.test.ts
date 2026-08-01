@@ -87,14 +87,14 @@ describe('PersonalLightSettings 默认值', () => {
             'height',
             'offsetX',
             'offsetZ',
-        'coneEnabled',
-        'coneIntensity',
-        'coneLength',
-        'coneSoftness',
-        'boneName',
-        'shadowEnabled',
-        'shadowResolution',
-    ];
+            'coneEnabled',
+            'coneIntensity',
+            'coneLength',
+            'coneSoftness',
+            'boneName',
+            'shadowEnabled',
+            'shadowResolution',
+        ];
         for (const k of keys) {
             expect(DEFAULT_PERSONAL_LIGHT).toHaveProperty(k);
         }

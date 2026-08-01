@@ -156,7 +156,10 @@ describe('SssPBRMaterial — property defaults & setters', () => {
     describe('dispose', () => {
         it('is idempotent', () => {
             const mat = new SssPBRMaterial('test');
-            expect(() => { mat.dispose(); mat.dispose(); }).not.toThrow();
+            expect(() => {
+                mat.dispose();
+                mat.dispose();
+            }).not.toThrow();
         });
     });
 });

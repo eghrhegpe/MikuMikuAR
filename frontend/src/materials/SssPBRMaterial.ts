@@ -43,7 +43,7 @@ export class SssPBRMaterial extends PBRMaterial {
         const plugins = (this as any).plugins;
         if (Array.isArray(plugins)) {
             for (const p of plugins) {
-                if (p && typeof p.isTranslucencyEnabled === 'boolean' !== false) {
+                if (p && (typeof p.isTranslucencyEnabled === 'boolean') !== false) {
                     this._subSurface = p as PBRSubSurfaceConfiguration;
                     break;
                 }
@@ -57,7 +57,9 @@ export class SssPBRMaterial extends PBRMaterial {
         return this._sssEnabled;
     }
     public set isSssEnabled(value: boolean) {
-        if (this._sssEnabled === value) return;
+        if (this._sssEnabled === value) {
+            return;
+        }
         this._sssEnabled = value;
         this._syncSubSurface();
         this.markDirty();
@@ -70,7 +72,9 @@ export class SssPBRMaterial extends PBRMaterial {
         return this._sssPower;
     }
     public set sssPower(value: number) {
-        if (this._sssPower === value) return;
+        if (this._sssPower === value) {
+            return;
+        }
         this._sssPower = Math.max(0.0, Math.min(2.0, value));
         this._syncSubSurface();
         this.markDirty();
@@ -83,7 +87,9 @@ export class SssPBRMaterial extends PBRMaterial {
         return this._sssColor;
     }
     public set sssColor(value: Color3) {
-        if (this._sssColor.equals(value)) return;
+        if (this._sssColor.equals(value)) {
+            return;
+        }
         this._sssColor = value.clone();
         this._syncSubSurface();
         this.markDirty();
@@ -96,7 +102,9 @@ export class SssPBRMaterial extends PBRMaterial {
         return this._sssDistance;
     }
     public set sssDistance(value: number) {
-        if (this._sssDistance === value) return;
+        if (this._sssDistance === value) {
+            return;
+        }
         this._sssDistance = Math.max(0.0, Math.min(1.0, value));
         this._syncSubSurface();
         this.markDirty();
@@ -109,7 +117,9 @@ export class SssPBRMaterial extends PBRMaterial {
         return this._sssDiffusion;
     }
     public set sssDiffusion(value: Color3) {
-        if (this._sssDiffusion.equals(value)) return;
+        if (this._sssDiffusion.equals(value)) {
+            return;
+        }
         this._sssDiffusion = value.clone();
         this._syncSubSurface();
         this.markDirty();
@@ -135,7 +145,9 @@ export class SssPBRMaterial extends PBRMaterial {
     }
     public set sssMinThickness(value: number) {
         const ss = this._getSubSurface();
-        if (!ss) return;
+        if (!ss) {
+            return;
+        }
         ss.minimumThickness = Math.max(0.0, value);
         this.markDirty();
     }
@@ -146,7 +158,9 @@ export class SssPBRMaterial extends PBRMaterial {
     }
     public set sssMaxThickness(value: number) {
         const ss = this._getSubSurface();
-        if (!ss) return;
+        if (!ss) {
+            return;
+        }
         ss.maximumThickness = Math.max(0.001, value);
         this.markDirty();
     }
@@ -202,13 +216,12 @@ export class SssPBRMaterial extends PBRMaterial {
 
     // ========== 克隆 ==========
 
-    public clone(
-        name: string,
-        cloneTexturesOnlyOnce?: boolean,
-        rootUrl?: string
-    ): SssPBRMaterial {
+    public clone(name: string, cloneTexturesOnlyOnce?: boolean, rootUrl?: string): SssPBRMaterial {
         const clone = super.clone(name, cloneTexturesOnlyOnce, rootUrl);
-        const result = new SssPBRMaterial(name, clone?.getScene?.() || this.getScene?.() || undefined);
+        const result = new SssPBRMaterial(
+            name,
+            clone?.getScene?.() || this.getScene?.() || undefined
+        );
 
         // 复制 PBRMaterial 属性
         result.albedoColor = this.albedoColor.clone();

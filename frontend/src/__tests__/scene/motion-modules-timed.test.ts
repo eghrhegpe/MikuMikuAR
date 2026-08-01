@@ -28,9 +28,7 @@ const data = vi.hoisted(() => {
     };
 });
 
-vi.mock('@/core/state', () =>
-    stateMockSuperset({ modelRegistry: data.mockModelRegistry })
-);
+vi.mock('@/core/state', () => stateMockSuperset({ modelRegistry: data.mockModelRegistry }));
 
 vi.mock('@/scene/motion/bone-override', () => ({
     setBoneOverride: data.setBoneOverrideSpy,

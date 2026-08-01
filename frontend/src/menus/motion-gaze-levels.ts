@@ -54,377 +54,382 @@ function withSaveOnlyLight(_v: unknown): void {
 /** 导出 gaze schema 供 menu-registry 静态分析（ADR-093 元测试） */
 export function getGazeSchema(): MenuNode[] {
     return [
-    // ── [doc:adr-164] 全员感知开关 ──
-    {
-        id: 'perception:enable-all',
-        kind: 'toggle',
-        label: 'motion.perceptionEnableAll',
-        control: {
-            bind: 'perception.allEnabled',
-            get: () => isAllPerceptionEnabled(),
-            set: (v: unknown) => {
-                const enabled = Boolean(v);
-                if (enabled) {
-                    enableAllPerception();
-                } else {
-                    disableAllPerception();
-                }
-                return enabled;
-            },
-            onChange: () => {
-                triggerAutoSave();
-                refreshMotionMenu();
-            },
-        },
-    },
-    // ── [doc:adr-164] 性能档位（手动覆盖 + 降级警示合并为一行） ──
-    {
-        id: 'perception:tier-override',
-        kind: 'custom',
-        renderCustom: (c) => {
-            const row = document.createElement('div');
-            row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 14px;';
-            const label = document.createElement('span');
-            label.className = 'slider-label';
-            label.textContent = t('motion.perceptionTier');
-            const select = document.createElement('select');
-            select.className = 'setting-select';
-            const options = [
-                { value: 'auto', label: 'motion.perceptionTierAuto' },
-                { value: 'high', label: 'motion.perceptionTierHigh' },
-                { value: 'medium', label: 'motion.perceptionTierMedium' },
-                { value: 'low', label: 'motion.perceptionTierLow' },
-            ];
-            for (const opt of options) {
-                const o = document.createElement('option');
-                o.value = opt.value;
-                o.textContent = t(opt.label);
-                select.appendChild(o);
-            }
-            // 读取当前手动设置（getPerceptionPerfManualTier 暴露存储态）
-            select.value = getPerceptionPerfManualTier();
-            select.onchange = () => {
-                setPerceptionPerfTier(select.value as 'auto' | 'high' | 'medium' | 'low');
-                triggerAutoSave();
-                refreshMotionMenu();
-            };
-            // 降级警示：实际档位被自动降到节能时显示 ⚠️
-            const warn = document.createElement('span');
-            warn.style.cssText = 'font-size:12px;flex-shrink:0;';
-            const updateWarn = () => {
-                warn.textContent = getPerceptionPerfTier() === 'low' ? '⚠️' : '';
-            };
-            updateWarn();
-            // 注册自更新，tier 变化（包括自动降级）时刷新警示，不重建 DOM
-            const menu = getMotionMenu();
-            if (menu) {
-                menu.registerControl(updateWarn);
-            }
-            row.appendChild(label);
-            row.appendChild(select);
-            row.appendChild(warn);
-            c.appendChild(row);
-        },
-    },
-    // ── 头部跟随：开关在 header，参数在 folder 内 ──
-    {
-        id: 'perception:head-follow',
-        kind: 'folder',
-        label: 'motion.headFollow',
-        icon: 'lucide:mouse-pointer-2',
-        headerToggle: { bind: 'perception.headTrackingEnabled', onChange: withActivate },
-        children: [
-            {
-                id: 'perception:head-yaw-range',
-                kind: 'slider',
-                label: 'perception.headYawRange',
-                conflictHint: 'perception.gaze.head',
-                control: {
-                    bind: 'perception.headGazeMaxYaw',
-                    min: 0,
-                    max: 90,
-                    step: 1,
-                    onChange: withActivateLight,
-                },
-            },
-            {
-                id: 'perception:head-pitch-range',
-                kind: 'slider',
-                label: 'perception.headPitchRange',
-                control: {
-                    bind: 'perception.headGazeMaxPitch',
-                    min: 0,
-                    max: 90,
-                    step: 1,
-                    onChange: withActivateLight,
-                },
-            },
-        ],
-    },
-    // ── 眼部跟随 ──
-    {
-        id: 'perception:eye-follow',
-        kind: 'folder',
-        label: 'motion.eyeFollow',
-        icon: 'lucide:eye',
-        headerToggle: { bind: 'perception.eyeTrackingEnabled', onChange: withActivate },
-        children: [
-            {
-                id: 'perception:eye-yaw-range',
-                kind: 'slider',
-                label: 'perception.eyeYawRange',
-                control: {
-                    bind: 'perception.eyeGazeMaxYaw',
-                    min: 0,
-                    max: 15,
-                    step: 0.5,
-                    onChange: withActivateLight,
-                },
-            },
-            {
-                id: 'perception:eye-pitch-range',
-                kind: 'slider',
-                label: 'perception.eyePitchRange',
-                control: {
-                    bind: 'perception.eyeGazeMaxPitch',
-                    min: 0,
-                    max: 15,
-                    step: 0.5,
-                    onChange: withActivateLight,
-                },
-            },
-            {
-                id: 'perception:eye-smooth',
-                kind: 'slider',
-                label: 'perception.eyeSmooth',
-                control: {
-                    bind: 'perception.eyeGazeSmooth',
-                    min: 0,
-                    max: 1,
-                    step: 0.05,
-                    onChange: withActivateLight,
-                },
-            },
-        ],
-    },
-    // ── 呼吸 ──
-    {
-        id: 'perception:breath',
-        kind: 'folder',
-        label: 'motion.perceptionBreath',
-        icon: 'lucide:wind',
-        headerToggle: { bind: 'perception.breathEnabled', onChange: withSaveOnly },
-        children: [
-            {
-                id: 'perception:breath-freq',
-                kind: 'slider',
-                label: 'perception.breathFreq',
-                control: {
-                    bind: 'perception.breathFrequency',
-                    min: 0.1,
-                    max: 1.0,
-                    step: 0.05,
-                    onChange: withActivateLight,
-                },
-            },
-            {
-                id: 'perception:breath-amp',
-                kind: 'slider',
-                label: 'perception.breathAmp',
-                conflictHint: 'perception.breath',
-                control: {
-                    bind: 'perception.breathAmplitude',
-                    min: 0,
-                    max: 0.05,
-                    step: 0.005,
-                    onChange: withActivateLight,
-                },
-            },
-        ],
-    },
-    // ── 眨眼 ──
-    {
-        id: 'perception:blink',
-        kind: 'folder',
-        label: 'motion.perceptionBlink',
-        icon: 'lucide:eye',
-        headerToggle: { bind: 'perception.blinkEnabled', onChange: withSaveOnly },
-        children: [
-            {
-                id: 'perception:blink-freq',
-                kind: 'slider',
-                label: 'perception.blinkFreq',
-                control: {
-                    bind: 'perception.blinkFrequency',
-                    min: 0.05,
-                    max: 0.5,
-                    step: 0.05,
-                    onChange: withActivateLight,
-                },
-            },
-            {
-                id: 'perception:blink-amp',
-                kind: 'slider',
-                label: 'perception.blinkAmp',
-                control: {
-                    bind: 'perception.blinkAmplitude',
-                    min: 0,
-                    max: 1,
-                    step: 0.05,
-                    onChange: withActivateLight,
-                },
-            },
-        ],
-    },
-    // ── 微表情 + 情绪（合并为一个 folder） ──
-    {
-        id: 'perception:micro-expr',
-        kind: 'folder',
-        label: 'motion.microExpression',
-        icon: 'lucide:smile',
-        headerToggle: { bind: 'perception.microExpressionEnabled', onChange: withActivate },
-        children: [
-            {
-                id: 'perception:emotion',
-                kind: 'custom',
-                renderCustom: (c) => {
-                    const group = document.createElement('div');
-                    group.className = 'preset-group';
-                    const emotions = [
-                        { value: 'neutral', label: 'motion.emotionNeutral' },
-                        { value: 'happy', label: 'motion.emotionHappy' },
-                        { value: 'sad', label: 'motion.emotionSad' },
-                        { value: 'surprised', label: 'motion.emotionSurprised' },
-                        { value: 'angry', label: 'motion.emotionAngry' },
-                    ];
-                    const current = getPerceptionState().emotion;
-                    for (const e of emotions) {
-                        addPresetChip(group, t(e.label), current === e.value, () => {
-                            activatePerception();
-                            setPerceptionState({
-                                emotion: e.value as
-                                    'neutral' | 'happy' | 'sad' | 'surprised' | 'angry',
-                            });
-                            triggerAutoSave();
-                            refreshMotionMenu();
-                        });
+        // ── [doc:adr-164] 全员感知开关 ──
+        {
+            id: 'perception:enable-all',
+            kind: 'toggle',
+            label: 'motion.perceptionEnableAll',
+            control: {
+                bind: 'perception.allEnabled',
+                get: () => isAllPerceptionEnabled(),
+                set: (v: unknown) => {
+                    const enabled = Boolean(v);
+                    if (enabled) {
+                        enableAllPerception();
+                    } else {
+                        disableAllPerception();
                     }
-                    c.appendChild(group);
+                    return enabled;
                 },
-            },
-        ],
-    },
-    // ── 重心微动（[doc:adr-079] Phase 2，从 idle 躯干微晃迁入） ──
-    {
-        id: 'perception:balance-sway',
-        kind: 'folder',
-        label: 'motion.balanceSway',
-        icon: 'lucide:move-3d',
-        headerToggle: { bind: 'perception.balanceSwayEnabled', onChange: withActivate },
-        children: [
-            {
-                id: 'perception:balance-sway-period',
-                kind: 'slider',
-                label: 'motion.balanceSwayPeriod',
-                control: {
-                    bind: 'perception.balanceSwayPeriod',
-                    min: 0.5,
-                    max: 5.0,
-                    step: 0.1,
-                    onChange: withActivateLight,
-                },
-            },
-            {
-                id: 'perception:balance-sway-amplitude',
-                kind: 'slider',
-                label: 'motion.balanceSwayAmplitude',
-                conflictHint: 'perception.balance.center',
-                control: {
-                    bind: 'perception.balanceSwayAmplitude',
-                    min: 0,
-                    max: 2.0,
-                    step: 0.05,
-                    onChange: withActivateLight,
-                },
-            },
-        ],
-    },
-    // ── Pin / Unpin 当前模型（[doc:adr-162] Phase 3；[doc:adr-166] 加 unpin 按钮） ──
-    {
-        id: 'perception:pin-model',
-        kind: 'custom',
-        renderCustom: (c) => {
-            const wrap = document.createElement('div');
-            wrap.style.cssText = 'display:flex;gap:8px;padding:6px 14px;';
-            const pinBtn = document.createElement('button');
-            pinBtn.className = 'btn btn-sm btn-primary';
-            pinBtn.textContent = t('motion.pinModel');
-            pinBtn.onclick = () => {
-                if (focusedModelId) {
-                    pinPerception(focusedModelId);
+                onChange: () => {
                     triggerAutoSave();
                     refreshMotionMenu();
+                },
+            },
+        },
+        // ── [doc:adr-164] 性能档位（手动覆盖 + 降级警示合并为一行） ──
+        {
+            id: 'perception:tier-override',
+            kind: 'custom',
+            renderCustom: (c) => {
+                const row = document.createElement('div');
+                row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 14px;';
+                const label = document.createElement('span');
+                label.className = 'slider-label';
+                label.textContent = t('motion.perceptionTier');
+                const select = document.createElement('select');
+                select.className = 'setting-select';
+                const options = [
+                    { value: 'auto', label: 'motion.perceptionTierAuto' },
+                    { value: 'high', label: 'motion.perceptionTierHigh' },
+                    { value: 'medium', label: 'motion.perceptionTierMedium' },
+                    { value: 'low', label: 'motion.perceptionTierLow' },
+                ];
+                for (const opt of options) {
+                    const o = document.createElement('option');
+                    o.value = opt.value;
+                    o.textContent = t(opt.label);
+                    select.appendChild(o);
                 }
-            };
-            wrap.appendChild(pinBtn);
-            const pinned = focusedModelId ? getPinnedModelIds().includes(focusedModelId) : false;
-            if (pinned) {
-                const unpinBtn = document.createElement('button');
-                unpinBtn.className = 'btn btn-sm btn-ghost';
-                unpinBtn.textContent = t('motion.unpinModel');
-                unpinBtn.onclick = () => {
+                // 读取当前手动设置（getPerceptionPerfManualTier 暴露存储态）
+                select.value = getPerceptionPerfManualTier();
+                select.onchange = () => {
+                    setPerceptionPerfTier(select.value as 'auto' | 'high' | 'medium' | 'low');
+                    triggerAutoSave();
+                    refreshMotionMenu();
+                };
+                // 降级警示：实际档位被自动降到节能时显示 ⚠️
+                const warn = document.createElement('span');
+                warn.style.cssText = 'font-size:12px;flex-shrink:0;';
+                const updateWarn = () => {
+                    warn.textContent = getPerceptionPerfTier() === 'low' ? '⚠️' : '';
+                };
+                updateWarn();
+                // 注册自更新，tier 变化（包括自动降级）时刷新警示，不重建 DOM
+                const menu = getMotionMenu();
+                if (menu) {
+                    menu.registerControl(updateWarn);
+                }
+                row.appendChild(label);
+                row.appendChild(select);
+                row.appendChild(warn);
+                c.appendChild(row);
+            },
+        },
+        // ── 头部跟随：开关在 header，参数在 folder 内 ──
+        {
+            id: 'perception:head-follow',
+            kind: 'folder',
+            label: 'motion.headFollow',
+            icon: 'lucide:mouse-pointer-2',
+            headerToggle: { bind: 'perception.headTrackingEnabled', onChange: withActivate },
+            children: [
+                {
+                    id: 'perception:head-yaw-range',
+                    kind: 'slider',
+                    label: 'perception.headYawRange',
+                    conflictHint: 'perception.gaze.head',
+                    control: {
+                        bind: 'perception.headGazeMaxYaw',
+                        min: 0,
+                        max: 90,
+                        step: 1,
+                        onChange: withActivateLight,
+                    },
+                },
+                {
+                    id: 'perception:head-pitch-range',
+                    kind: 'slider',
+                    label: 'perception.headPitchRange',
+                    control: {
+                        bind: 'perception.headGazeMaxPitch',
+                        min: 0,
+                        max: 90,
+                        step: 1,
+                        onChange: withActivateLight,
+                    },
+                },
+            ],
+        },
+        // ── 眼部跟随 ──
+        {
+            id: 'perception:eye-follow',
+            kind: 'folder',
+            label: 'motion.eyeFollow',
+            icon: 'lucide:eye',
+            headerToggle: { bind: 'perception.eyeTrackingEnabled', onChange: withActivate },
+            children: [
+                {
+                    id: 'perception:eye-yaw-range',
+                    kind: 'slider',
+                    label: 'perception.eyeYawRange',
+                    control: {
+                        bind: 'perception.eyeGazeMaxYaw',
+                        min: 0,
+                        max: 15,
+                        step: 0.5,
+                        onChange: withActivateLight,
+                    },
+                },
+                {
+                    id: 'perception:eye-pitch-range',
+                    kind: 'slider',
+                    label: 'perception.eyePitchRange',
+                    control: {
+                        bind: 'perception.eyeGazeMaxPitch',
+                        min: 0,
+                        max: 15,
+                        step: 0.5,
+                        onChange: withActivateLight,
+                    },
+                },
+                {
+                    id: 'perception:eye-smooth',
+                    kind: 'slider',
+                    label: 'perception.eyeSmooth',
+                    control: {
+                        bind: 'perception.eyeGazeSmooth',
+                        min: 0,
+                        max: 1,
+                        step: 0.05,
+                        onChange: withActivateLight,
+                    },
+                },
+            ],
+        },
+        // ── 呼吸 ──
+        {
+            id: 'perception:breath',
+            kind: 'folder',
+            label: 'motion.perceptionBreath',
+            icon: 'lucide:wind',
+            headerToggle: { bind: 'perception.breathEnabled', onChange: withSaveOnly },
+            children: [
+                {
+                    id: 'perception:breath-freq',
+                    kind: 'slider',
+                    label: 'perception.breathFreq',
+                    control: {
+                        bind: 'perception.breathFrequency',
+                        min: 0.1,
+                        max: 1.0,
+                        step: 0.05,
+                        onChange: withActivateLight,
+                    },
+                },
+                {
+                    id: 'perception:breath-amp',
+                    kind: 'slider',
+                    label: 'perception.breathAmp',
+                    conflictHint: 'perception.breath',
+                    control: {
+                        bind: 'perception.breathAmplitude',
+                        min: 0,
+                        max: 0.05,
+                        step: 0.005,
+                        onChange: withActivateLight,
+                    },
+                },
+            ],
+        },
+        // ── 眨眼 ──
+        {
+            id: 'perception:blink',
+            kind: 'folder',
+            label: 'motion.perceptionBlink',
+            icon: 'lucide:eye',
+            headerToggle: { bind: 'perception.blinkEnabled', onChange: withSaveOnly },
+            children: [
+                {
+                    id: 'perception:blink-freq',
+                    kind: 'slider',
+                    label: 'perception.blinkFreq',
+                    control: {
+                        bind: 'perception.blinkFrequency',
+                        min: 0.05,
+                        max: 0.5,
+                        step: 0.05,
+                        onChange: withActivateLight,
+                    },
+                },
+                {
+                    id: 'perception:blink-amp',
+                    kind: 'slider',
+                    label: 'perception.blinkAmp',
+                    control: {
+                        bind: 'perception.blinkAmplitude',
+                        min: 0,
+                        max: 1,
+                        step: 0.05,
+                        onChange: withActivateLight,
+                    },
+                },
+            ],
+        },
+        // ── 微表情 + 情绪（合并为一个 folder） ──
+        {
+            id: 'perception:micro-expr',
+            kind: 'folder',
+            label: 'motion.microExpression',
+            icon: 'lucide:smile',
+            headerToggle: { bind: 'perception.microExpressionEnabled', onChange: withActivate },
+            children: [
+                {
+                    id: 'perception:emotion',
+                    kind: 'custom',
+                    renderCustom: (c) => {
+                        const group = document.createElement('div');
+                        group.className = 'preset-group';
+                        const emotions = [
+                            { value: 'neutral', label: 'motion.emotionNeutral' },
+                            { value: 'happy', label: 'motion.emotionHappy' },
+                            { value: 'sad', label: 'motion.emotionSad' },
+                            { value: 'surprised', label: 'motion.emotionSurprised' },
+                            { value: 'angry', label: 'motion.emotionAngry' },
+                        ];
+                        const current = getPerceptionState().emotion;
+                        for (const e of emotions) {
+                            addPresetChip(group, t(e.label), current === e.value, () => {
+                                activatePerception();
+                                setPerceptionState({
+                                    emotion: e.value as
+                                        'neutral' | 'happy' | 'sad' | 'surprised' | 'angry',
+                                });
+                                triggerAutoSave();
+                                refreshMotionMenu();
+                            });
+                        }
+                        c.appendChild(group);
+                    },
+                },
+            ],
+        },
+        // ── 重心微动（[doc:adr-079] Phase 2，从 idle 躯干微晃迁入） ──
+        {
+            id: 'perception:balance-sway',
+            kind: 'folder',
+            label: 'motion.balanceSway',
+            icon: 'lucide:move-3d',
+            headerToggle: { bind: 'perception.balanceSwayEnabled', onChange: withActivate },
+            children: [
+                {
+                    id: 'perception:balance-sway-period',
+                    kind: 'slider',
+                    label: 'motion.balanceSwayPeriod',
+                    control: {
+                        bind: 'perception.balanceSwayPeriod',
+                        min: 0.5,
+                        max: 5.0,
+                        step: 0.1,
+                        onChange: withActivateLight,
+                    },
+                },
+                {
+                    id: 'perception:balance-sway-amplitude',
+                    kind: 'slider',
+                    label: 'motion.balanceSwayAmplitude',
+                    conflictHint: 'perception.balance.center',
+                    control: {
+                        bind: 'perception.balanceSwayAmplitude',
+                        min: 0,
+                        max: 2.0,
+                        step: 0.05,
+                        onChange: withActivateLight,
+                    },
+                },
+            ],
+        },
+        // ── Pin / Unpin 当前模型（[doc:adr-162] Phase 3；[doc:adr-166] 加 unpin 按钮） ──
+        {
+            id: 'perception:pin-model',
+            kind: 'custom',
+            renderCustom: (c) => {
+                const wrap = document.createElement('div');
+                wrap.style.cssText = 'display:flex;gap:8px;padding:6px 14px;';
+                const pinBtn = document.createElement('button');
+                pinBtn.className = 'btn btn-sm btn-primary';
+                pinBtn.textContent = t('motion.pinModel');
+                pinBtn.onclick = () => {
                     if (focusedModelId) {
-                        unpinPerception(focusedModelId);
+                        pinPerception(focusedModelId);
                         triggerAutoSave();
                         refreshMotionMenu();
                     }
                 };
-                wrap.appendChild(unpinBtn);
-            }
-            c.appendChild(wrap);
+                wrap.appendChild(pinBtn);
+                const pinned = focusedModelId
+                    ? getPinnedModelIds().includes(focusedModelId)
+                    : false;
+                if (pinned) {
+                    const unpinBtn = document.createElement('button');
+                    unpinBtn.className = 'btn btn-sm btn-ghost';
+                    unpinBtn.textContent = t('motion.unpinModel');
+                    unpinBtn.onclick = () => {
+                        if (focusedModelId) {
+                            unpinPerception(focusedModelId);
+                            triggerAutoSave();
+                            refreshMotionMenu();
+                        }
+                    };
+                    wrap.appendChild(unpinBtn);
+                }
+                c.appendChild(wrap);
+            },
         },
-    },
-    // ── Lip-sync（已有 headerToggle 模式） ──
-    {
-        id: 'perception:lipsync',
-        kind: 'folder',
-        label: 'motion.lipSync',
-        icon: 'lucide:mic',
-        headerToggle: { bind: 'perception.lipSyncEnabled', onChange: withActivate },
-        children: [
-            {
-                id: 'perception:lip-sync-sens',
-                kind: 'slider',
-                label: 'motion.lipSyncSensitivity',
-                control: {
-                    bind: 'perception.lipSyncSensitivity',
-                    min: 0,
-                    max: 1,
-                    step: 0.01,
-                    onChange: withSaveOnlyLight,
+        // ── Lip-sync（已有 headerToggle 模式） ──
+        {
+            id: 'perception:lipsync',
+            kind: 'folder',
+            label: 'motion.lipSync',
+            icon: 'lucide:mic',
+            headerToggle: { bind: 'perception.lipSyncEnabled', onChange: withActivate },
+            children: [
+                {
+                    id: 'perception:lip-sync-sens',
+                    kind: 'slider',
+                    label: 'motion.lipSyncSensitivity',
+                    control: {
+                        bind: 'perception.lipSyncSensitivity',
+                        min: 0,
+                        max: 1,
+                        step: 0.01,
+                        onChange: withSaveOnlyLight,
+                    },
                 },
-            },
-            {
-                id: 'perception:lip-sync-int',
-                kind: 'slider',
-                label: 'motion.lipSyncIntensity',
-                control: {
-                    bind: 'perception.lipSyncIntensity',
-                    min: 0,
-                    max: 1,
-                    step: 0.01,
-                    onChange: withSaveOnlyLight,
+                {
+                    id: 'perception:lip-sync-int',
+                    kind: 'slider',
+                    label: 'motion.lipSyncIntensity',
+                    control: {
+                        bind: 'perception.lipSyncIntensity',
+                        min: 0,
+                        max: 1,
+                        step: 0.01,
+                        onChange: withSaveOnlyLight,
+                    },
                 },
-            },
-            {
-                id: 'perception:lip-sync-multi',
-                kind: 'toggle',
-                label: 'motion.lipSyncMultiMorph',
-                control: { bind: 'perception.lipSyncMultiMorphEnabled', onChange: withSaveOnly },
-            },
-        ],
-    },
-];
+                {
+                    id: 'perception:lip-sync-multi',
+                    kind: 'toggle',
+                    label: 'motion.lipSyncMultiMorph',
+                    control: {
+                        bind: 'perception.lipSyncMultiMorphEnabled',
+                        onChange: withSaveOnly,
+                    },
+                },
+            ],
+        },
+    ];
 }
 
 /** [doc:adr-163/adr-164/adr-166] 渲染指定模型的感知层骨骼冲突 banner */

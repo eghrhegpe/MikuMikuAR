@@ -22,30 +22,67 @@ import { fileURLToPath } from 'node:url';
 
 // —— 通用默认值 ——
 const DEFAULT_RENDER_STATE = {
-    bloomEnabled: false, bloomWeight: 1, bloomThreshold: 0.7, bloomKernel: 'box',
-    outlineEnabled: false, outlineColor: '#000000',
-    fxaaEnabled: true, msaaSamples: 4,
-    toneMapping: 'aces', exposure: 1, contrast: 1,
-    dofEnabled: false, dofAperture: 0, dofFocusDistance: 1, dofFocalLength: 50,
-    vignetteEnabled: false, vignetteDarkness: 0,
-    chromaticAberrationEnabled: false, chromaticAberrationAmount: 0,
-    grainEnabled: false, grainIntensity: 0,
-    sharpenAmount: 0, glowEnabled: false, glowIntensity: 0,
-    ssaoEnabled: false, ssaoStrength: 1, ssaoRadius: 1, ssaoSamples: 8,
-    celShadingMode: 'none', celColorLevels: 4, celEdgeThreshold: 0.1, celEdgeStrength: 1,
+    bloomEnabled: false,
+    bloomWeight: 1,
+    bloomThreshold: 0.7,
+    bloomKernel: 'box',
+    outlineEnabled: false,
+    outlineColor: '#000000',
+    fxaaEnabled: true,
+    msaaSamples: 4,
+    toneMapping: 'aces',
+    exposure: 1,
+    contrast: 1,
+    dofEnabled: false,
+    dofAperture: 0,
+    dofFocusDistance: 1,
+    dofFocalLength: 50,
+    vignetteEnabled: false,
+    vignetteDarkness: 0,
+    chromaticAberrationEnabled: false,
+    chromaticAberrationAmount: 0,
+    grainEnabled: false,
+    grainIntensity: 0,
+    sharpenAmount: 0,
+    glowEnabled: false,
+    glowIntensity: 0,
+    ssaoEnabled: false,
+    ssaoStrength: 1,
+    ssaoRadius: 1,
+    ssaoSamples: 8,
+    celShadingMode: 'none',
+    celColorLevels: 4,
+    celEdgeThreshold: 0.1,
+    celEdgeStrength: 1,
 };
 
 const DEFAULT_PERCEPTION_STATE = {
-    gazeEnabled: false, gazeIntensity: 1, gazeSpeed: 1,
-    gazeHeadEnabled: false, gazeHeadIntensity: 1, gazeHeadSpeed: 1,
-    gazeEyeEnabled: false, gazeEyeIntensity: 1, gazeEyeSpeed: 1,
-    blinkEnabled: false, blinkRate: 30, blinkIntensity: 1, blinkSpeed: 1,
-    breathEnabled: false, breathRate: 0.2, breathIntensity: 1,
-    balanceEnabled: false, balanceIntensity: 1,
-    centerEnabled: false, centerIntensity: 1,
-    upperEnabled: false, upperIntensity: 1,
-    waistEnabled: false, waistIntensity: 1,
-    lipSyncEnabled: false, lipSyncMultiMorphEnabled: false,
+    gazeEnabled: false,
+    gazeIntensity: 1,
+    gazeSpeed: 1,
+    gazeHeadEnabled: false,
+    gazeHeadIntensity: 1,
+    gazeHeadSpeed: 1,
+    gazeEyeEnabled: false,
+    gazeEyeIntensity: 1,
+    gazeEyeSpeed: 1,
+    blinkEnabled: false,
+    blinkRate: 30,
+    blinkIntensity: 1,
+    blinkSpeed: 1,
+    breathEnabled: false,
+    breathRate: 0.2,
+    breathIntensity: 1,
+    balanceEnabled: false,
+    balanceIntensity: 1,
+    centerEnabled: false,
+    centerIntensity: 1,
+    upperEnabled: false,
+    upperIntensity: 1,
+    waistEnabled: false,
+    waistIntensity: 1,
+    lipSyncEnabled: false,
+    lipSyncMultiMorphEnabled: false,
 };
 
 // —— Mock 定义 ——
@@ -175,8 +212,12 @@ function cleanNode(node: any): any {
         id: node.id,
         kind: node.kind,
     };
-    if (node.label) result.label = node.label;
-    if (node.icon) result.icon = node.icon;
+    if (node.label) {
+        result.label = node.label;
+    }
+    if (node.icon) {
+        result.icon = node.icon;
+    }
     if (node.control) {
         result.control = {
             bind: node.control.bind,
@@ -205,7 +246,7 @@ describe('Schema Snapshot Generator', () => {
     });
 
     it(`生成 schema-snapshot.json (${SNAPSHOT_PATH})`, () => {
-        const snapshot = schemas.map(s => ({
+        const snapshot = schemas.map((s) => ({
             panelId: s.panelId,
             nodes: s.nodes.map(cleanNode),
         }));
@@ -218,10 +259,13 @@ describe('Schema Snapshot Generator', () => {
         expect(read.length).toBeGreaterThan(0);
 
         const totalNodes = read.reduce((acc: number, s: any) => acc + countNodes(s.nodes), 0);
-        const totalBindPaths = read.reduce((acc: number, s: any) => acc + countBindPaths(s.nodes), 0);
+        const totalBindPaths = read.reduce(
+            (acc: number, s: any) => acc + countBindPaths(s.nodes),
+            0
+        );
         const totalLabels = read.reduce((acc: number, s: any) => acc + countLabels(s.nodes), 0);
 
-        console.log(`\n📊 Schema 快照统计:`);
+        console.log('\n📊 Schema 快照统计:');
         console.log(`   面板: ${read.length}`);
         console.log(`   节点: ${totalNodes}`);
         console.log(`   bind 路径: ${totalBindPaths}`);
@@ -239,9 +283,15 @@ function countNodes(nodes: any[]): number {
 function countBindPaths(nodes: any[]): number {
     return nodes.reduce((acc: number, n: any) => {
         let count = 0;
-        if (n.control?.bind) count++;
-        if (n.headerToggle?.bind) count++;
-        if (n.children) count += countBindPaths(n.children);
+        if (n.control?.bind) {
+            count++;
+        }
+        if (n.headerToggle?.bind) {
+            count++;
+        }
+        if (n.children) {
+            count += countBindPaths(n.children);
+        }
         return acc + count;
     }, 0);
 }
@@ -249,9 +299,15 @@ function countBindPaths(nodes: any[]): number {
 function countLabels(nodes: any[]): number {
     return nodes.reduce((acc: number, n: any) => {
         let count = 0;
-        if (n.label && n.label.includes('.')) count++;
-        if (n.control?.options) count += n.control.options.filter((o: any) => o.label?.includes('.')).length;
-        if (n.children) count += countLabels(n.children);
+        if (n.label && n.label.includes('.')) {
+            count++;
+        }
+        if (n.control?.options) {
+            count += n.control.options.filter((o: any) => o.label?.includes('.')).length;
+        }
+        if (n.children) {
+            count += countLabels(n.children);
+        }
         return acc + count;
     }, 0);
 }

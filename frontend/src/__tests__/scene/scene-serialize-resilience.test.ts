@@ -116,7 +116,10 @@ vi.mock('../../scene/motion/motion-intent', () => ({
     clearAllSceneMotions: vi.fn(),
     setLoadedProceduralMotions: vi.fn(),
 }));
-vi.mock('../../scene/env/env-gravity', () => ({ getGravityStrength: () => 1, setGravityStrength: vi.fn() }));
+vi.mock('../../scene/env/env-gravity', () => ({
+    getGravityStrength: () => 1,
+    setGravityStrength: vi.fn(),
+}));
 vi.mock('../../outfit/audio', () => ({
     getAudioName: () => '',
     getAudioPath: () => '',
@@ -130,9 +133,14 @@ vi.mock('../../outfit/audio', () => ({
 }));
 
 // 其余重依赖：空 mock（序列化路径不触发）。
-vi.mock('../../core/wails-bindings', () => ({ SaveLastScene: vi.fn(() => Promise.resolve()), LoadLastScene: vi.fn(() => Promise.resolve(null)) }));
+vi.mock('../../core/wails-bindings', () => ({
+    SaveLastScene: vi.fn(() => Promise.resolve()),
+    LoadLastScene: vi.fn(() => Promise.resolve(null)),
+}));
 vi.mock('../../core/i18n/goerr', () => ({}));
-vi.mock('../../scene/motion/vmd-loader', () => ({ loadCameraVmdFromPath: vi.fn(() => Promise.resolve()) }));
+vi.mock('../../scene/motion/vmd-loader', () => ({
+    loadCameraVmdFromPath: vi.fn(() => Promise.resolve()),
+}));
 vi.mock('../../scene/scene-migrate', () => ({
     migratePerceptionData: (p: unknown) => p ?? null,
     migratePerceptionFromProcMotion: () => ({}),
@@ -225,13 +233,17 @@ describe('deserializeScene — suppress 泄漏防护（fix:suppress-leak）', ()
         });
         const data = { version: 1, models: [], camera: {} } as never;
 
-        await expect(deserializeScene(data)).rejects.toThrow('simulated mid-deserialize setter failure');
+        await expect(deserializeScene(data)).rejects.toThrow(
+            'simulated mid-deserialize setter failure'
+        );
 
         // suppress 应已复位：triggerAutoSaveImpl 走正常分支（调度防抖），而非 suppressed 分支。
         const info = vi.spyOn(console, 'info').mockImplementation(() => {});
         triggerAutoSaveImpl();
         const logs = info.mock.calls.map((c) => String(c[0]));
-        expect(logs.some((l) => l.includes('triggerAutoSaveImpl() called — debounce scheduled'))).toBe(true);
+        expect(
+            logs.some((l) => l.includes('triggerAutoSaveImpl() called — debounce scheduled'))
+        ).toBe(true);
         expect(logs.some((l) => l.includes('suppressed'))).toBe(false);
         info.mockRestore();
         vi.mocked(setCameraState).mockReset();
