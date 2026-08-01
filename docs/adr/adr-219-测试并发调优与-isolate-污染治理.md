@@ -185,6 +185,12 @@ no-isolate 全量两次实测：文件数恒为 243，但**用例总数从 isola
 - **no-isolate 全量验证：失败 230→229，几乎无变化，No-export 反增 28→35**（漏网：`mmar-globals.test.ts` 内联 mock scene/scene 仅 3 导出；core/config mock 缺 envState×10 / setIsPlaying×7；scene/scene mock 缺 modelManager×4 / setModelWireframe / applyMatState）。漏网内联 mock 缺任一导出、一旦被其他文件源码单例绑定即崩 → 打地鼠；断言类失败（行为/返回值不对）无法靠形状修。
 - **结论：isolate=false 结构性不可修二次证实**（idb 统一形状无效 + scene 超集无效）。超集改动**保留**为测试卫生增益（isolate=true 更健壮、未来可再评估 isolate=false），no-isolate 治理**收手**，残余 229 执行期失败为「模块级单例 mock 穿透」债，持续挂测试卫生清单。
 
+**Phase 2 三次证伪（2026-08-01，core/state 全局化实验）：**
+
+- 尝试把 core/state 全局化到 setup-wails.ts（`vi.mock('@/core/state', async () => vi.importActual('@/core/state'))`，原样返回真实 namespace 以保留 `export let focusedModelId` 的活绑定——实测 `{...actual}` spread 会断开活绑定，isolate=true 回归 22 用例）。
+- **isolate=true 243 文件 / 4135 用例全绿零回归；但 no-isolate 全量失败 229 不变** → 全局 mock 只兜底「未写文件级 mock 的文件」，而 229 失败**全部来自文件级 mock 缺导出**（文件级 vi.mock 覆盖全局 mock；isolate=false 下模块身份由首个 import 它的文件的文件级 mock 决定）→ 无兜底对象、零收益。实验改动已回滚（setup-wails.ts 恢复基线）。
+- **结论：isolate=false 结构性不可修三次证实**（idb 统一形状 + scene 超集 + core/state 全局化均无效）。文件级 mock 形状差异即炸弹（谁成首加载者谁崩），断言类无法形状修——no-isolate 治理彻底收手，残余 229 执行期失败挂测试卫生清单。
+
 ## 备选方案
 
 - **`pool: 'threads'`（隔离保留）**：实测 34.9s，收益仅 ~7%；且部分 Babylon/WASM 场景在线程池下不如进程稳。不选。
