@@ -1,15 +1,15 @@
 # MikuMikuAR 项目现状
 
-> 最后更新：2026-07-23
+> 最后更新：2026-08-01
 > 本文件记录当前状态，可随项目进展维护。
 > **⚠️ 非权威状态源**：ADR 状态以 `docs/adr/` 各文件首部状态行为准（见项目铁律）。本文件仅作里程碑摘要，不作为 ADR 状态的判定依据。
 
 ---
 
-## ADR 索引（权威全量）
+## ADR 索引（带日期附表）
 
-> 本表由 `scripts/gen-status-index.mjs` 自动生成。修改状态请在 ADR 文件首部 `> **状态**: xxx` 进行，然后重新运行脚本。
-> 状态以各 ADR 源文件为准。
+> 本表为 ADR 索引的**带日期附表**，非规范导航入口。规范索引（按状态分组、可锚点跳转）见 [`docs/adr/index.md`](./adr/index.md)。
+> 由 `scripts/gen-status-index.mjs` 自动生成；修改状态请改 ADR 文件首部 `> **状态**: xxx` 后重跑 `npm run gen:status`。
 
 <!-- GEN:ADR_INDEX start -->
 
@@ -244,4 +244,4 @@
 
 ## Bug 记录
 
-详见 git history。
+Bug 历史统一维护在 [`docs/buglog/`](./buglog/)（按状态分类：🟢已修复 / 🔴未修复 / 🟡搁置 / ⚪已确认不修）。本文件不再冗余维护。
