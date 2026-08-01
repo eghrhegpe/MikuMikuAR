@@ -3,6 +3,7 @@
 
 import { getAction } from './action-registry';
 import { adaptParam } from './ai/param-adapters';
+import { translateGoError } from './i18n/goerr';
 
 export interface ActionResult {
     success: boolean;
@@ -52,7 +53,7 @@ export async function executeActionById(
     } catch (err) {
         return {
             success: false,
-            message: `执行失败: ${err instanceof Error ? err.message : String(err)}`,
+            message: `执行失败: ${translateGoError(err)}`,
         };
     }
 }

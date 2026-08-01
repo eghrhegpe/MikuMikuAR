@@ -10,6 +10,7 @@ import type {
 import { AI_ERROR_KINDS } from './types';
 import { makeLazyLoader } from '../async';
 import { logInfo, logWarn } from '../logger';
+import { translateGoError } from '../i18n/goerr';
 import type { LLMConfig } from '@bindings/mikumikuar/internal/app/models';
 import type { ChatRequest as LLMChatRequest } from '@bindings/mikumikuar/internal/app/llm/models';
 
@@ -119,7 +120,7 @@ export class GoAiAdapter implements AiService {
             };
         } catch (err) {
             // Wails IPC 断开/binding 未注册时给出可操作提示，而非笼统的"未知错误"
-            const msg = err instanceof Error ? err.message : String(err);
+            const msg = translateGoError(err);
             logWarn('ai-connection', 'Go AiTestLLMConnection binding 调用失败:', err);
             return {
                 ok: false,
@@ -314,7 +315,7 @@ export class GoAiAdapter implements AiService {
                 );
             } catch (submitErr) {
                 // binding 调用本身失败（IPC/序列化）：直接注入 error 收尾，不干等看门狗。
-                const msg = submitErr instanceof Error ? submitErr.message : String(submitErr);
+                const msg = translateGoError(submitErr);
                 logWarn('ai-stream', `AiStreamChat 提交失败: ${msg}`);
                 err = `请求提交失败：${msg}`;
                 done = true;

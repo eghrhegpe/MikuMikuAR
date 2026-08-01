@@ -1,4 +1,5 @@
 import type { ParamDef } from '../action-registry';
+import { translateGoError } from '../i18n/goerr';
 
 export type AdapterResult<T = unknown> = { ok: true; value: T } | { ok: false; error: string };
 
@@ -63,7 +64,7 @@ export async function entityAdapter<T>(def: ParamDef, raw: unknown): Promise<Ada
         }
         return { ok: true, value: resolved as T };
     } catch (err) {
-        return { ok: false, error: err instanceof Error ? err.message : String(err) };
+        return { ok: false, error: translateGoError(err) };
     }
 }
 

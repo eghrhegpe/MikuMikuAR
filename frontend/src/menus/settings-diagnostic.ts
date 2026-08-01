@@ -1,5 +1,6 @@
 // settings-diagnostic.ts — AI 助手面板入口（协调各子模块）
 import { t } from '../core/i18n/t';
+import { translateGoError } from '../core/i18n/goerr';
 import { resolveAi } from '../core/ai';
 import type { ChatMessage } from '../core/ai/types';
 import { validateAiConfig } from '../core/ai/config-store';
@@ -235,7 +236,7 @@ async function runStream(opts?: { allowTools?: boolean }): Promise<void> {
             interruptMessage = t('ai.errors.aborted');
         } else {
             streamErrorSeen = true;
-            const errMsg = err instanceof Error ? err.message : String(err);
+            const errMsg = translateGoError(err);
             captureError('ai-stream', errMsg, err);
             showErrorToast(t('ai.errors.apiError', { msg: errMsg }));
             interruptMessage = t('ai.errors.apiError', { msg: errMsg });

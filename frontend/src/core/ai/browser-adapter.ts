@@ -18,6 +18,7 @@ import { parseSseStream } from './sse';
 import { loadAiConfig, classifyAiError } from './config-store';
 import { logWarn } from '../logger';
 import { isWebPlatform } from '../platform';
+import { translateGoError } from '../i18n/goerr';
 
 /** 判定端点是否为远程 API（非 localhost/127.0.0.1），需要 relay 代理。 */
 function _isRemoteEndpoint(endpoint: string): boolean {
@@ -298,7 +299,7 @@ export class BrowserAiAdapter implements AiService {
 
 /** CORS / 网络错误友好提示（FR-13）：本地 Ollama 需 OLLAMA_ORIGINS=*；远程 API 建议自建同源 relay。 */
 function _friendlyError(err: unknown): string {
-    const msg = err instanceof Error ? err.message : String(err);
+    const msg = translateGoError(err);
     const isTypeError = err instanceof TypeError;
     const isNetwork = isTypeError || /Failed to fetch|NetworkError/i.test(msg);
     if (!isNetwork) {

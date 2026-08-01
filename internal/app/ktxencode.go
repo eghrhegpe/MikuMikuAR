@@ -1,7 +1,7 @@
 package app
 
 import (
-	"fmt"
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -33,7 +33,7 @@ func ktx2Encode(srcPath string) (string, error) {
 	name := filepath.Base(srcPath)
 	ext := strings.ToLower(filepath.Ext(srcPath))
 	if !isKtx2SourceExt(ext) {
-		return "", util.WrapErrorf("KTX2Transcode", "跳过非纹理格式: %s", fmt.Errorf("%s", ext))
+		return "", util.WrapErrorf("KTX2Transcode", "跳过非纹理格式: %s", errors.New(ext))
 	}
 
 	// Decide encoding mode by filename
@@ -69,7 +69,7 @@ func ktx2Encode(srcPath string) (string, error) {
 	cmd.Env = os.Environ()
 	_, cmdErr := cmd.CombinedOutput()
 	if cmdErr != nil {
-		return "", util.WrapErrorf("KTX2Transcode", "toktx 转码失败: %s", fmt.Errorf("%s", name))
+		return "", util.WrapErrorf("KTX2Transcode", "toktx 转码失败: %s", errors.New(name))
 	}
 
 	// Verify output has KTX2 magic bytes before replacing the source
@@ -78,7 +78,7 @@ func ktx2Encode(srcPath string) (string, error) {
 		return "", util.WrapErrorf("KTX2Transcode", "读取转码输出失败", err)
 	}
 	if len(data) < 12 || data[0] != 0xAB || data[1] != 0x4B || data[2] != 0x54 || data[3] != 0x58 {
-		return "", util.WrapErrorf("KTX2Transcode", "转码输出无 KTX2 魔数头: %s", fmt.Errorf("%s", name))
+		return "", util.WrapErrorf("KTX2Transcode", "转码输出无 KTX2 魔数头: %s", errors.New(name))
 	}
 
 	// Atomic replace: rename tmp → src (same filesystem)

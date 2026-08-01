@@ -12,6 +12,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"mikumikuar/internal/i18nerr"
 )
 
 type ToolCall struct {
@@ -401,7 +403,7 @@ func TestConnection(ctx context.Context, cfg Config) ConnectionResult {
 // 全部失败返回最后一个错误。
 func FetchModels(ctx context.Context, cfg Config) ([]string, error) {
 	if cfg.BaseURL == "" {
-		return nil, fmt.Errorf("端点为空")
+		return nil, i18nerr.New("llm.endpointEmpty", "端点为空")
 	}
 	base := strings.TrimSuffix(cfg.BaseURL, "/chat/completions")
 	candidates := []string{base + "/models"}
@@ -426,7 +428,7 @@ func FetchModels(ctx context.Context, cfg Config) ([]string, error) {
 		if len(models) > 0 {
 			return models, nil
 		}
-		lastErr = fmt.Errorf("响应无有效模型列表")
+		lastErr = i18nerr.New("llm.noModels", "响应无有效模型列表")
 	}
 	return nil, lastErr
 }
@@ -486,7 +488,7 @@ func fetchModelsFrom(ctx context.Context, client *http.Client, url, apiKey strin
 		}
 		return models, nil
 	}
-	return nil, fmt.Errorf("响应不是 OpenAI 或 Ollama 格式")
+	return nil, i18nerr.New("llm.unexpectedFormat", "响应不是 OpenAI 或 Ollama 格式")
 }
 
 // isLocalhost 判断 URL 是否指向本机（localhost / 127.0.0.1）。

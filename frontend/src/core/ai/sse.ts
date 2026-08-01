@@ -4,6 +4,7 @@
 // 终止符：data: [DONE]
 
 import type { ChatChunk } from './types';
+import { translateGoError } from '../i18n/goerr';
 
 interface ToolCallAcc {
     id: string;
@@ -125,7 +126,7 @@ export async function* parseSseStream(
             yield { type: 'done' };
             return;
         }
-        yield { type: 'error', error: err instanceof Error ? err.message : String(err) };
+        yield { type: 'error', error: translateGoError(err) };
         return;
     } finally {
         reader.releaseLock();
