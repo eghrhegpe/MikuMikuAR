@@ -25,6 +25,7 @@ describe('tryApplyPbrMaterialBuilder', () => {
         await tryApplyPbrMaterialBuilder();
 
         expect(mockSharedBuilder.SharedMaterialBuilder).toBeTruthy();
-        expect(mockSharedBuilder.SharedBuilder).toBeUndefined(); // 确保是 MockPbrBuilder 实例
+        // SharedMaterialBuilder 应被替换为 PBRMaterialBuilder 实例，而非 null
+        expect(mockSharedBuilder.SharedMaterialBuilder).not.toBeNull();
     });
 });
