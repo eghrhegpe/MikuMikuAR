@@ -9,8 +9,8 @@
 | 状态 | 数量 | 含义 |
 |------|------|------|
 | [推进中](#推进中) | 5 | 已开工，尚未收口（含部分实施） |
-| [规划中](#规划中) | 8 | 已立项，等待实施 |
-| [已落地](#已落地) | 190 | 实施完成，代码已合入 |
+| [规划中](#规划中) | 7 | 已立项，等待实施 |
+| [已落地](#已落地) | 191 | 实施完成，代码已合入 |
 | [已归档](#已归档) | 18 | 被取代、放弃、过时或搁置，保留供追溯 |
 | [其他](#其他) | 1 | 状态行缺失或表述不可归类 |
 
@@ -33,7 +33,6 @@
 | [ADR-223](./adr-223-water-surface-overhaul.md) | 水面视觉效果整顿 —— 法线混合、深度泡沫、折射扭曲、SSS、渐变颜色 | 规划 |
 | [ADR-222](./adr-222-water-depth-fog.md) | 水面深度差雾（Depth-Difference Fog）—— 从相机距离雾迁移至水柱厚度雾 | 规划 |
 | [ADR-209](./adr-209-lunar-celestial-body.md) | 月亮 —— 第二天体的渐进式设计（复用太阳骨架） | 📝 规划 |
-| [ADR-188](./adr-188-pbr-material-builder.md) | PBRMaterialBuilder 材质系统迁移 — PBR 渲染升级 | 草案 · 待立项 |
 | [ADR-187](./adr-187-babylon-mmd-remaining-apis-analysis.md) | babylon-mmd 剩余高价值功能综合分析 | 草案 · 待立项 |
 | [ADR-110](./adr-110-immdmodel-upstream-pr.md) | IMmdModel 接口类型补全 — 上游 PR 计划 | 草案 · 待立项 |
 | [ADR-073](./adr-073-native-arcore-arkit.md) | AR 地形识别 —— 原生 ARCore / ARKit 桥接 | 提案 |
@@ -75,6 +74,7 @@
 | [ADR-192](./adr-192-upstream-adapter-layer.md) | 上游适配层重构（MmdAdapter） | 已立项 · Phase 2 已完成 |
 | [ADR-191](./adr-191-god-barrel-debarreling.md) | 神桶 `@/core/utils` 去桶化（零依赖叶下沉） | 已完成 |
 | [ADR-190](./adr-190-capability-declarative-consolidation.md) | 端能力声明式收口（淘汰散落 isAndroidPlatform 分支） | 已完成 |
+| [ADR-188](./adr-188-pbr-material-builder.md) | PBRMaterialBuilder 材质系统迁移 — PBR 渲染升级 | Phase 0 POC 已完成 |
 | [ADR-186](./adr-186-bone-override-frame-timing.md) | bone-override 帧内时序图 | accepted |
 | [ADR-185](./adr-185-web-zip-pmx-subdir-relpath.md) | 网页端 ZIP 内子目录 PMX 贴图路径维度对齐 | 已完成 |
 | [ADR-184](./adr-184-web-zip-encoding-and-bomb-guard.md) | 网页端 ZIP 嵌套识别能力补齐（多编码检测 + 炸弹防护对齐 Go 端） | 已完成 |
