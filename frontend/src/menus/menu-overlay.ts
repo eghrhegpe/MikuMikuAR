@@ -6,12 +6,18 @@ import { dom } from '@/core/dom';
 import { setPopupOpen } from '@/core/state';
 
 let _onCloseAllOverlays: (() => void) | null = null;
+const _extraCloseAllOverlays = new Set<() => void>();
 
 export function setOnCloseAllOverlays(fn: (() => void) | null): void {
     _onCloseAllOverlays = fn;
 }
 
-/** Close all visible overlays, reset popup state, and invoke the registered callback. */
+/** 追加注册关闭回调（不覆盖主回调，供面板化拖拽卸载等场景用） */
+export function addOnCloseAllOverlays(fn: () => void): void {
+    _extraCloseAllOverlays.add(fn);
+}
+
+/** Close all visible overlays, reset popup state, and invoke the registered callbacks. */
 export function closeAllOverlays(): void {
     document.querySelectorAll<HTMLElement>('[data-overlay].visible').forEach((el) => {
         el.classList.remove('visible', 'overlay-fade-out');
@@ -28,6 +34,7 @@ export function closeAllOverlays(): void {
         dialogOverlay.style.pointerEvents = '';
     }
     _onCloseAllOverlays?.();
+    _extraCloseAllOverlays.forEach((fn) => fn());
 }
 
 const _menuWrapperRegistry = new Map<string, HTMLElement>();
