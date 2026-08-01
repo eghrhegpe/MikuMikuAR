@@ -127,12 +127,22 @@ def collect_md_files() -> list[Path]:
 
 
 def resolve_target(link_url: str, source_file: Path) -> Path | None:
-    """尝试解析链接目标到实际文件/目录。返回真实路径或 None。"""
+    """尝试解析链接目标到实际文件/目录。返回真实路径或 None。
+
+    防御：路径含 null byte（strip_code 占位符残留等）时 Path.resolve()
+    在部分平台抛 ValueError: embedded null byte，此处兜底视为不可解析，
+    避免单条畸形链接拖垮整个契约测试。
+    """
     path_part = link_url.split("#")[0].strip()
     if not path_part:
         return None
+    if "\x00" in path_part:
+        return None
     for base in (source_file.parent, ROOT, DOCS):
-        candidate = (base / path_part).resolve()
+        try:
+            candidate = (base / path_part).resolve()
+        except (ValueError, OSError):
+            continue
         if _exists(candidate):
             return candidate
     return None
@@ -181,7 +191,9 @@ def main():
             # 避免 null byte 残留进 Path.resolve() 导致 embedded null byte 崩溃。
             path_part = restore_ph(path_part, placeholders)
 
-            if resolve_target(url, fp) is None:
+            # 关键：必须传还原后的 path_part（而非原始 url），
+            # resolve_target 内部会再 split("#")，传 url 会让还原失效。
+            if resolve_target(path_part, fp) is None:
                 ctx = snippet.replace("\n", "\\n")
                 broken.append(
                     f"[{fp}] target not found: '{url}' "
