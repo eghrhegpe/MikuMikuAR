@@ -145,6 +145,31 @@ describe('transform-selection (ADR-171 面板化选中态)', () => {
         expect(attachGizmoForKind).not.toHaveBeenCalled();
     });
 
+    it('retryPendingAttachment：gizmo 已挂在 pending 目标本身时不重复 attach（清 pending 防闪烁）', () => {
+        isDragModeEnabled.mockReturnValue(true);
+        attachGizmoForKind.mockReturnValue(false);
+        setSelectedTransformTarget({ kind: 'actor', id: 'a' });
+        // 场景点击把 gizmo 挂到了 pending 目标 a（getGizmoTargetId 返回 a）
+        getGizmoTargetId.mockReturnValue('a');
+        attachGizmoForKind.mockClear();
+        retryPendingAttachment();
+        expect(attachGizmoForKind).not.toHaveBeenCalled();
+    });
+
+    it('syncDragMode：同目标跳过时同时清空 pending（不残留待重试）', () => {
+        isDragModeEnabled.mockReturnValue(true);
+        attachGizmoForKind.mockReturnValue(false);
+        setSelectedTransformTarget({ kind: 'actor', id: 'a' });
+        // 场景点击把 gizmo 挂到 a，随后 setSelected 同步选中态 → syncDragMode 同目标跳过
+        getGizmoTargetId.mockReturnValue('a');
+        attachGizmoForKind.mockClear();
+        setSelectedTransformTarget({ kind: 'actor', id: 'a' });
+        expect(attachGizmoForKind).not.toHaveBeenCalled();
+        // pending 已清：随后 retry 不再补挂
+        retryPendingAttachment();
+        expect(attachGizmoForKind).not.toHaveBeenCalled();
+    });
+
     it('registerLoadRefreshHook 注册了 retryPendingAttachment', () => {
         expect(registerLoadRefreshHook).toHaveBeenCalledWith(retryPendingAttachment);
     });
