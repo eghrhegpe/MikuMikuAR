@@ -47,8 +47,9 @@ Settings：设置页路由 + barrel re-export。ADR-157 信息架构重组为 7 
 - re-export 保持外部 API 不变，子模块实现内聚
 
 ## UI 入口
-- 设置页（外观/画面/操控/资源等）：入口 `showSettings()`（`menus/settings.ts`，由 `registerPopupMenu` 解构导出），导航见 [menu-map.md](./menu-map.md) 的 settings.ts 节。
 
+- 菜单层级 / 入口函数 / 快捷键统一由 [menu-map.md](./menu-map.md) 机器生成（勿手改）。
+- 运行时动态生成的菜单项（renderCustom / slideRow 等）无法静态提取，缺口由本卡正文说明。
 ## 与其他子系统关系
 - 子页面实现：`settings-appearance/graphics/controls/resources/media/system/about.ts`
 - 依赖 `menu-factory.ts`（注册）、`settings-targets.ts`（SETTINGS 路由表）、`settings-shared.ts`

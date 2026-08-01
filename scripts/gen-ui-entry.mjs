@@ -80,6 +80,16 @@ function insertSection(text, section) {
   return before + '\n\n' + section + after;
 }
 
+/** 替换已有「## UI 入口」小节（到下一个二级标题或文末），返回 null 表示没有该小节。 */
+function replaceSection(text, section) {
+  const start = text.indexOf(UI_ENTRY_HEADING);
+  if (start === -1) return null;
+  const rest = text.slice(start + UI_ENTRY_HEADING.length);
+  const next = rest.search(/^## /m);
+  const end = next === -1 ? text.length : start + UI_ENTRY_HEADING.length + next;
+  return text.slice(0, start).replace(/\s*$/, '') + '\n\n' + section + text.slice(end);
+}
+
 function main() {
   const args = parseArgs(process.argv.slice(2), {
     bools: ['check'],
@@ -94,11 +104,16 @@ function main() {
   }
   const entryTable = parseEntryTable(fs.readFileSync(MENU_MAP, 'utf8'));
 
+  // 非知识卡文件（与 gen-docs-index.mjs 保持一致），防止误改机器生成物
+  const NON_CARDS = new Set([
+    'README.md', 'index.md', 'routes.md', 'menu-map.md', 'graph.md', 'tier-review.md',
+  ]);
+
   // 扫描 source_files 含 menus/ 或 ui/ 的 architecture 卡：
   // 缺 UI 入口的插入，已有旧格式（入口函数明细）的统一重写为一行引用。
   const targets = [];
   for (const f of fs.readdirSync(KNOW_DIR).filter((f) => f.endsWith('.md'))) {
-    if (f === 'README.md' || f === 'index.md') continue;
+    if (NON_CARDS.has(f)) continue;
     const text = fs.readFileSync(path.join(KNOW_DIR, f), 'utf8');
     const fmText = fmBlock(text);
     if (!fmText) continue; // 非知识卡（routes/graph 等）
@@ -111,26 +126,34 @@ function main() {
   }
 
   if (isCheck) {
-    if (targets.length) {
-      console.error(`❌ ${targets.length} 张 architecture 卡缺 UI 入口，请运行：npm run gen:ui-entry`);
-      for (const t of targets) console.error(`   - ${t.file}`);
+    // 只有「会被改写」的卡（缺 UI 入口，或已是旧格式而非一行引用）才算未同步
+    const stale = targets.filter((t) => {
+      const section = buildEntrySection(t, entryTable);
+      const replaced = replaceSection(t.text, section);
+      const newText = replaced !== null ? replaced : insertSection(t.text, section);
+      return newText !== t.text;
+    });
+    if (stale.length) {
+      console.error(`❌ ${stale.length} 张 architecture 卡 UI 入口未同步为一行引用，请运行：npm run gen:ui-entry`);
+      for (const t of stale) console.error(`   - ${t.file}`);
       process.exit(1);
     }
-    console.log('✅ 所有 architecture 卡均已登记 UI 入口');
+    console.log('✅ 所有 architecture 卡均已登记一行引用的 UI 入口');
     return;
   }
 
   let written = 0;
   for (const t of targets) {
     const section = buildEntrySection(t, entryTable);
-    const newText = insertSection(t.text, section);
+    // 已有旧格式小节 → 替换；缺失 → 插入
+    const replaced = replaceSection(t.text, section);
+    const newText = replaced !== null ? replaced : insertSection(t.text, section);
     if (newText === t.text) continue;
     fs.writeFileSync(path.join(KNOW_DIR, t.file), newText, 'utf8');
     written++;
-    const fns = [...new Set(t.menuSources.flatMap((s) => entryTable.get(path.basename(s)) || []))];
-    console.log(`✍️  ${t.file}${fns.length ? ' → ' + fns.join(', ') : ' → 引用 menu-map.md'}`);
+    console.log(`✍️  ${t.file} → 一行引用 menu-map.md`);
   }
-  console.log(written ? `✅ 已补齐 ${written} 张卡的 UI 入口` : '✅ 无需补齐');
+  console.log(written ? `✅ 已统一 ${written} 张卡的 UI 入口` : '✅ 无需补齐');
 }
 
 main();

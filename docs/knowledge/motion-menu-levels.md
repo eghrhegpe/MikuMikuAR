@@ -83,15 +83,8 @@ use_when:
 
 ## UI 入口
 
-- 入口函数：`buildCameraLevel()`（菜单文件见 [menu-map.md](./menu-map.md) 入口一览）
-- 入口函数：`buildVirtualSkirtLevel()`（菜单文件见 [menu-map.md](./menu-map.md) 入口一览）
-- 入口函数：`buildGazeTrackingLevel()`（菜单文件见 [menu-map.md](./menu-map.md) 入口一览）
-- 入口函数：`buildAdvancedBoneOverrideLevel()`（菜单文件见 [menu-map.md](./menu-map.md) 入口一览）
-- 入口函数：`buildPoseStudioLevel()`（菜单文件见 [menu-map.md](./menu-map.md) 入口一览）
-- 入口函数：`buildProcLibraryLevel()`（菜单文件见 [menu-map.md](./menu-map.md) 入口一览）
-- 入口函数：`buildMotionRootLevel()`（菜单文件见 [menu-map.md](./menu-map.md) 入口一览）
-- 入口函数：`buildRetargetLevel()`（菜单文件见 [menu-map.md](./menu-map.md) 入口一览）
-- 菜单层级 / 静态骨架由 [menu-map.md](./menu-map.md) 机器生成（勿手改）；运行时动态入口以本节为准。
+- 菜单层级 / 入口函数 / 快捷键统一由 [menu-map.md](./menu-map.md) 机器生成（勿手改）。
+- 运行时动态生成的菜单项（renderCustom / slideRow 等）无法静态提取，缺口由本卡正文说明。
 ## 不变量
 - Schema 驱动 UI：所有控件定义在 `MenuNode[]` 中。
 - 感知层（ADR-071）与程序化动作解耦，独立文件。

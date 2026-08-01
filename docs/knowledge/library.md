@@ -35,8 +35,9 @@ Library 入口：注册表初始化 + re-export，保持外部 API 不变。聚�
 - 具体库逻辑内聚在各子模块，本文件仅做路由聚合
 
 ## UI 入口
-- 模型/动作库弹窗：入口 `showModelPopup()`（`menus/library-browse.ts`），导航结构见 [menu-map.md](./menu-map.md) 的 library-core.ts 节。
 
+- 菜单层级 / 入口函数 / 快捷键统一由 [menu-map.md](./menu-map.md) 机器生成（勿手改）。
+- 运行时动态生成的菜单项（renderCustom / slideRow 等）无法静态提取，缺口由本卡正文说明。
 ## 与其他子系统关系
 - 依赖 `library-core.ts`（核心实现）、`library-browse.ts`（浏览弹窗）、`library-session-store.ts`（会话状态 ADR-135）
 - 模型预设依赖 `model-preset.ts`
