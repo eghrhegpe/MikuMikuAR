@@ -5,7 +5,7 @@ import { cardContainer, modelRegistry } from '../core/config';
 import { feedbackInfo, feedbackStatus } from '../core/feedback';
 import type { PopupLevel } from '../core/config';
 import { createIconifyIcon } from '../core/icons';
-import { slideRow, addSectionTitle, addCollapsible } from '../core/ui-helpers';
+import { slideRow, addSectionTitle, addCollapsible, addEmptyRow } from '../core/ui-helpers';
 import { removeModel, setModelVisibility } from '../scene/manager/model-ops';
 import { pushUndoSnapshot, offerSceneUndo } from '../scene/scene';
 import { reRenderSceneMenu, getSceneMenu } from './scene-menu-state';
@@ -149,13 +149,7 @@ function buildStageSchema(): MenuNode[] {
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
-                    const emptyDiv = document.createElement('div');
-                    emptyDiv.style.cssText =
-                        'padding:12px 14px;text-align:center;font-size:var(--font-ui);color:var(--text-dim);';
-                    emptyDiv.innerHTML =
-                        `<div style="margin-bottom:4px;">${t('scene.noLoadedStages')}</div>` +
-                        `<div style="font-size:11px;opacity:0.7;">${t('scene.noLoadedStagesHint')}</div>`;
-                    inner.appendChild(emptyDiv);
+                    addEmptyRow(inner, t('scene.noLoadedStages'), t('scene.noLoadedStagesHint'));
                 });
             },
         });

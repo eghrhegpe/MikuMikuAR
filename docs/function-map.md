@@ -8,7 +8,7 @@
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
 | 核心基础设施 | 122 | 716 |
-| 3D 场景 | 107 | 1068 |
+| 3D 场景 | 107 | 1088 |
 | 菜单 & UI | 75 | 380 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 17 | 127 |
@@ -959,17 +959,36 @@
 | `GroundProceduralKind()` | `scene/env/env-ground-presets` | 程序化地面纹理类型 |
 | `buildGroundPresetEnvState()` | `scene/env/env-ground-presets` | 预设 → EnvState 字段映射，供 UI chip handler 调用并持久化。 |
 | `GROUND_PRESETS()` | `scene/env/env-ground` | — |
+| `GroundMat()` | `scene/env/env-ground` | — |
+| `INFINITE_GROUND_SIZE()` | `scene/env/env-ground` | — |
 | `_disableGroundRippleTexture()` | `scene/env/env-ground` | — |
 | `_effectiveBumpLevel()` | `scene/env/env-ground` | ADR-114 Phase 2: 法线扭曲映射到 bumpTexture.level 增强（distort=1 时额外 +2.0）；低质量模式自动关闭 |
 | `_effectiveRoughness()` | `scene/env/env-ground` | ADR-114 Phase 2: 反射模糊映射到 roughness 偏移（blur=1 最多增加 0.4）；低质量模式自动关闭 |
+| `_generateGroundTexture()` | `scene/env/env-ground` | — |
+| `_getAlbedoColor()` | `scene/env/env-ground` | — |
+| `_getAlbedoTex()` | `scene/env/env-ground` | — |
+| `_needAlphaBlend()` | `scene/env/env-ground` | 判断地面是否需要 alpha blend 渲染（alpha &lt; 1 或边缘淡出）。 |
+| `_setAlbedoColor()` | `scene/env/env-ground` | — |
+| `_setAlbedoTex()` | `scene/env/env-ground` | — |
+| `_syncAllTextureOffsets()` | `scene/env/env-ground` | — |
+| `_syncGroundNormalTexture()` | `scene/env/env-ground` | — |
+| `_syncGroundRippleTexture()` | `scene/env/env-ground` | — |
+| `_syncPbrProperties()` | `scene/env/env-ground` | PBR 增量更新：roughness / metallic / 程序化纹理无需重建材质的属性 |
+| `_syncTextureGroundTexture()` | `scene/env/env-ground` | — |
+| `_updateGroundTexture()` | `scene/env/env-ground` | — |
 | `applyGround()` | `scene/env/env-ground` | — |
+| `applyGroundEdgeFade()` | `scene/env/env-ground` | — |
 | `buildGroundPresetEnvState()` | `scene/env/env-ground` | — |
+| `buildGroundReflection()` | `scene/env/env-ground` | — |
 | `clearGroundTexCache()` | `scene/env/env-ground` | — |
+| `createGroundMaterial()` | `scene/env/env-ground` | — |
 | `disposeGround()` | `scene/env/env-ground` | — |
+| `generateProceduralGroundTextures()` | `scene/env/env-ground` | — |
 | `getGroundHeightAt()` | `scene/env/env-ground` | — |
 | `setOnGroundChanged()` | `scene/env/env-ground` | — |
 | `setOnTerrainReady()` | `scene/env/env-ground` | — |
 | `tickGround()` | `scene/env/env-ground` | — |
+| `triggerTerrainReady()` | `scene/env/env-ground` | ADR-226: 供 env-ground-spec.ts 的地形 onReady 回调触发已注册监听（避免直接访问模块局部 _onTerrainReady）。 |
 | `_envSys()` | `scene/env/env-impl` | — |
 | `addGroundRipple()` | `scene/env/env-impl` | — |
 | `addRipple()` | `scene/env/env-impl` | — |
@@ -1130,6 +1149,7 @@
 | `ReflectionMode()` | `scene/env/planar-reflection` | — |
 | `registerReflectionSurface()` | `scene/env/planar-reflection` | — |
 | `resetReflectionSurfaces()` | `scene/env/planar-reflection` | ADR-114 Phase 2: 是否生成 mipmap（地面 PBR 反射模糊用，水面保持 false） generateMipMaps?: boolean; } // ==== |
+| `AlphaCtx()` | `scene/manager/material` | — |
 | `DEFAULT_MAT_PARAMS()` | `scene/manager/material` | 材质参数默认值 — 所有新增字段在此维护，消除散落硬编码。 |
 | `MaterialCategory()` | `scene/manager/material` | — |
 | `MaterialCategoryParams()` | `scene/manager/material` | — |
@@ -2384,5 +2404,5 @@
 
 ---
 
-> 共 327 个文件，2342 个导出符号。
+> 共 327 个文件，2362 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。

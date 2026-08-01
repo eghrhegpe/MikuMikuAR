@@ -46,7 +46,7 @@ import { GroundProceduralKind } from './env-ground-presets';
 
 // ======== ADR-114: 材质适配层（StandardMaterial ↔ PBRMaterial）========
 
-type GroundMat = StandardMaterial | PBRMaterial;
+export type GroundMat = StandardMaterial | PBRMaterial;
 
 // P3-fix: 反射 mount 前保存 StandardMaterial 原始 Fresnel/specular，unmount 时恢复
 // 避免 mount/unmount 用硬编码值覆盖用户自定义材质参数
@@ -84,26 +84,26 @@ function _restoreGroundMatOriginal(mat: StandardMaterial): void {
     }
 }
 
-function _getAlbedoTex(mat: GroundMat): Texture | null {
+export function _getAlbedoTex(mat: GroundMat): Texture | null {
     if (mat instanceof PBRMaterial) {
         return mat.albedoTexture as Texture | null;
     }
     return mat.diffuseTexture as Texture | null;
 }
-function _setAlbedoTex(mat: GroundMat, tex: Texture | null): void {
+export function _setAlbedoTex(mat: GroundMat, tex: Texture | null): void {
     if (mat instanceof PBRMaterial) {
         mat.albedoTexture = tex;
         return;
     }
     mat.diffuseTexture = tex;
 }
-function _getAlbedoColor(mat: GroundMat): Color3 {
+export function _getAlbedoColor(mat: GroundMat): Color3 {
     if (mat instanceof PBRMaterial) {
         return mat.albedoColor;
     }
     return mat.diffuseColor;
 }
-function _setAlbedoColor(mat: GroundMat, color: Color3): void {
+export function _setAlbedoColor(mat: GroundMat, color: Color3): void {
     if (mat instanceof PBRMaterial) {
         mat.albedoColor = color;
         return;
@@ -131,7 +131,7 @@ export function _effectiveBumpLevel(state: EnvState): number {
     return state.groundNormalStrength + state.groundReflectionDistort * 2.0;
 }
 
-function createGroundMaterial(state: EnvState, scene: Scene): GroundMat {
+export function createGroundMaterial(state: EnvState, scene: Scene): GroundMat {
     if (!state.groundPbrEnabled) {
         return new StandardMaterial('envGroundMat', scene);
     }
@@ -154,7 +154,7 @@ function createGroundMaterial(state: EnvState, scene: Scene): GroundMat {
 }
 
 /** 判断地面是否需要 alpha blend 渲染（alpha < 1 或边缘淡出）。 */
-function _needAlphaBlend(state: EnvState): boolean {
+export function _needAlphaBlend(state: EnvState): boolean {
     return state.groundAlpha < 1 || state.groundEdgeFade > 0;
 }
 
@@ -456,7 +456,7 @@ interface ProceduralTextures {
     normal: Texture;
 }
 
-function generateProceduralGroundTextures(
+export function generateProceduralGroundTextures(
     type: Exclude<GroundProceduralKind, 'none'>,
     seed: number,
     scene: Scene,
@@ -550,7 +550,7 @@ function disposeGroundMaterial(mat: Material | null): void {
 // ======== ADR-134: Infinite ground constants ========
 // 相机追踪 lerp 跟随方案已废弃（_groundInfinitePrevX/Z 从未被使用），
 // 无限地面改为固定大 mesh + 纹理世界空间平铺，不再跟随相机移动。
-const INFINITE_GROUND_SIZE = 2000; // 无限地面 mesh 固定尺寸（匹配碰撞体范围）
+export const INFINITE_GROUND_SIZE = 2000; // 无限地面 mesh 固定尺寸（匹配碰撞体范围）
 let _groundActualSize = 60; // 当前 mesh 实际尺寸（用于 UV 补偿计算）
 
 // [doc:adr-160] 向 env-water 注入地面几何，供涟漪世界坐标→UV 映射。
@@ -571,7 +571,7 @@ let _groundScrollV = 0;
 let _groundRipples: BaseTexture | null = null;
 let _groundRippleApplied = false;
 
-function _syncGroundRippleTexture(mat: GroundMat, scene: import('@babylonjs/core').Scene): void {
+export function _syncGroundRippleTexture(mat: GroundMat, scene: import('@babylonjs/core').Scene): void {
     const tex = getGroundRippleTexture(scene);
     if (tex) {
         // 暂存用户的 normalTexture，用 ripple 纹理覆盖 bumpTexture
@@ -691,7 +691,7 @@ registerReflectionSurface('ground', groundReflection, () =>
     groundReflection.update(envState, getScene())
 );
 
-function buildGroundReflection(state: EnvState): void {
+export function buildGroundReflection(state: EnvState): void {
     groundReflection.markRenderListDirty();
     groundReflection.update(state, getScene());
 }
@@ -776,13 +776,18 @@ export function setOnTerrainReady(cb: (() => void) | null): void {
     _onTerrainReady = cb;
 }
 
+/** ADR-226: 供 env-ground-spec.ts 的地形 onReady 回调触发已注册监听（避免直接访问模块局部 _onTerrainReady）。 */
+export function triggerTerrainReady(): void {
+    _onTerrainReady?.();
+}
+
 export function setOnGroundChanged(cb: (() => void) | null): void {
     _onGroundChanged = cb;
 }
 
 // ======== 纹理生成 ========
 
-function _generateGroundTexture(state: EnvState, scene: Scene): Texture {
+export function _generateGroundTexture(state: EnvState, scene: Scene): Texture {
     const c0 = rgbString(col3FromTriple(state.groundColor));
     const c1 = rgbString(col3FromTriple(state.groundLineColor));
 
@@ -944,7 +949,7 @@ function _ensureTextureGroundImage(url: string, onReady: (img: HTMLImageElement)
     img.src = url;
 }
 
-function _syncTextureGroundTexture(mat: GroundMat, state: EnvState, scene: Scene): void {
+export function _syncTextureGroundTexture(mat: GroundMat, state: EnvState, scene: Scene): void {
     const url = state.groundTexture
         ? new URL(state.groundTexture, window.location.origin).href
         : null;
@@ -1010,7 +1015,7 @@ function getGroundEdgeFadeTexture(fade: number, scene: Scene): Texture | null {
     });
 }
 
-function applyGroundEdgeFade(mat: GroundMat, fade: number, scene: Scene): void {
+export function applyGroundEdgeFade(mat: GroundMat, fade: number, scene: Scene): void {
     mat.opacityTexture = getGroundEdgeFadeTexture(fade, scene);
 }
 
@@ -1048,7 +1053,7 @@ function _syncGroundTextureOffset(mat: GroundMat, state: EnvState): void {
     tex.vOffset = v;
 }
 
-function _syncAllTextureOffsets(mat: GroundMat, state: EnvState): void {
+export function _syncAllTextureOffsets(mat: GroundMat, state: EnvState): void {
     const { u, v } = _getScrollUV(state);
     const apply = (tex: BaseTexture | null) => {
         if (tex instanceof Texture) {
@@ -1063,7 +1068,7 @@ function _syncAllTextureOffsets(mat: GroundMat, state: EnvState): void {
     }
 }
 
-function _updateGroundTexture(mat: GroundMat, state: EnvState): void {
+export function _updateGroundTexture(mat: GroundMat, state: EnvState): void {
     const scene = getScene();
     const newTex = _generateGroundTexture(state, scene);
     const oldTex = _getAlbedoTex(mat);
@@ -1076,7 +1081,7 @@ function _updateGroundTexture(mat: GroundMat, state: EnvState): void {
     }
 }
 
-function _syncGroundNormalTexture(mat: GroundMat, state: EnvState): void {
+export function _syncGroundNormalTexture(mat: GroundMat, state: EnvState): void {
     const scene = getScene();
     if (state.groundNormalTexture) {
         if (!mat.bumpTexture || (mat.bumpTexture as Texture).name !== state.groundNormalTexture) {
@@ -1098,7 +1103,7 @@ function _syncGroundNormalTexture(mat: GroundMat, state: EnvState): void {
 }
 
 /** PBR 增量更新：roughness / metallic / 程序化纹理无需重建材质的属性 */
-function _syncPbrProperties(mat: PBRMaterial, state: EnvState): void {
+export function _syncPbrProperties(mat: PBRMaterial, state: EnvState): void {
     // ADR-114 Phase 2: roughness 含反射模糊偏移
     mat.roughness = _effectiveRoughness(state);
     mat.metallic = state.groundMetallic;
