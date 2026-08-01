@@ -5,7 +5,7 @@
 // 依赖方向: 本模块 import transform-adapter/transform-mode，无反向依赖。
 
 import type { ResourceKind } from '@/core/load-manager';
-import { attachGizmoForKind, detachGizmo } from './transform-adapter';
+import { attachGizmoForKind, detachGizmo, getGizmoTargetId } from './transform-adapter';
 import { isDragModeEnabled } from './transform-mode';
 import { registerLoadRefreshHook } from '@/core/load-refresh-registry';
 
@@ -53,6 +53,11 @@ export function syncDragMode(): void {
         return;
     }
     if (_selected) {
+        // 已挂在同一目标则跳过（场景点击 tryAttachGizmoFromPick 先挂载、随后 setSelected 同步选中态，
+        // 此时 gizmo 已指向该目标，重复 attach 会 detach+重建造成闪烁）
+        if (getGizmoTargetId() === _selected.id) {
+            return;
+        }
         _pendingRetry = _selected;
         if (!attachGizmoForKind(_selected.kind, _selected.id)) {
             // 节点未就绪：记录待重试目标，等待 retryPendingAttachment（本模块重试接口）
@@ -69,6 +74,12 @@ export function syncDragMode(): void {
 export function retryPendingAttachment(): void {
     const target = _pendingRetry;
     if (!target || !isDragModeEnabled()) {
+        return;
+    }
+    // 若当前 gizmo 已挂在别的目标（场景点击挂载了另一个物体），不覆盖用户意图，直接放弃重试
+    const currentTargetId = getGizmoTargetId();
+    if (currentTargetId !== null && currentTargetId !== target.id) {
+        _pendingRetry = null;
         return;
     }
     if (attachGizmoForKind(target.kind, target.id)) {

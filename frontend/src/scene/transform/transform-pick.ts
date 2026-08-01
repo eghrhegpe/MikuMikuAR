@@ -2,6 +2,7 @@ import type { Scene } from '@babylonjs/core/scene';
 import type { Node } from '@babylonjs/core/node';
 import type { ResourceKind } from '@/core/load-manager';
 import { attachGizmoForKind, getGizmoTargetId } from './transform-adapter';
+import { setSelectedTransformTarget } from './transform-selection';
 
 export interface TransformPickResult {
     kind: ResourceKind;
@@ -58,5 +59,11 @@ export function tryAttachGizmoFromPick(scene: Scene, x: number, y: number): bool
     if (getGizmoTargetId() === result.id) {
         return true;
     }
-    return attachGizmoForKind(result.kind, result.id);
+    const ok = attachGizmoForKind(result.kind, result.id);
+    // 同步选中态：场景点击挂载成功后，让面板选中态与当前 gizmo 目标一致
+    // （否则 clearSelectedTransformTarget / retryPendingAttachment 会基于过期的面板选中误操作）
+    if (ok) {
+        setSelectedTransformTarget(result);
+    }
+    return ok;
 }
