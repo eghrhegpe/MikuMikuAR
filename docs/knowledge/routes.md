@@ -57,6 +57,7 @@
 | 拖拽导入、drop、文件拖入 | [drop-import.md](./drop-import.md) | [library-actions.md](./library-actions.md)、[fileservice.md](./fileservice.md) |
 | 配置 barrel、工具函数、core 叶子模块 | [core-leaf-modules.md](./core-leaf-modules.md)、[config-barrel.md](./config-barrel.md) | [core-utils.md](./core-utils.md)、[core-dom.md](./core-dom.md)、[core-types.md](./core-types.md) |
 | 图标、图标 bundle、icon 加载 | [icons-bundle.md](./icons-bundle.md) | [core-utils.md](./core-utils.md)、[ui-constants.md](./ui-constants.md) |
+| 决策反查、某 ADR 影响哪些子系统、知识卡关联图 | [知识卡索引（ADR 反查表）](./index.md#adr-反查) | [知识卡关联图](./graph.md)、[决策记录索引](../adr/index.md) |
 
 ## 标准执行模板
 
