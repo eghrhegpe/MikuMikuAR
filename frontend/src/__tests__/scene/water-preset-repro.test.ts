@@ -59,6 +59,21 @@ vi.mock('../../scene/env/planar-reflection', () => ({
     registerReflectionSurface: () => {},
 }));
 
+// 细节法线 1024×1024（6-octave valueNoise ≈ 25M hash2）与焦散 512×512 Voronoi
+// 在每次 createWater 时 CPU 重生成；关闭→再开循环会在单用例内生成 2 次，
+// CI 高负载下超 10s testTimeout 假失败。本测试只关心材质/网格生命周期，
+// 桩掉 createCanvasTexture（不执行 draw 回调）以跳过重纹理生成。
+vi.mock('../../scene/env/_shared/env-texture', () => {
+    const makeTex = () => ({ uOffset: 0, vOffset: 0, dispose: () => {} });
+    return {
+        createCanvasTexture: () => makeTex(),
+        getOrCreateCanvasTexture: () => makeTex(),
+        isCacheOwnedTexture: () => false,
+        disposeTextureCache: () => {},
+        createCanvasDataURL: () => '',
+    };
+});
+
 import { _envSys } from '../../scene/env/env-impl';
 import { envState } from '../../core/config';
 import {
