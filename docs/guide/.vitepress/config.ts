@@ -3,8 +3,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 // ============================================================
-// MikuMikuAR 文档站（docs/ 全量）—— 部署于 /MikuMikuAR/guide/
-// 主应用 web 入口保持根路径不动；本站产物由 web-pages.yml 拷入 dist-web/guide/。
+// MikuMikuAR 文档站（docs/ 全量）—— 部署于 /MikuMikuAR/docs/
+// 主应用 web 入口保持根路径不动；本站产物由 web-pages.yml 拷入 dist-web/docs/。
 // ============================================================
 
 const docsRoot = path.resolve(__dirname, '../..'); // docs/（srcDir 根）
@@ -110,8 +110,8 @@ const releasesItems = mdNames('releases')
   .map((f) => ({ text: f.replace(/\.md$/, ''), link: link('releases/' + f) }));
 
 export default defineConfig({
-  // 子路径部署：与主应用 base=/MikuMikuAR/ 保持一致，仅追加 /guide/
-  base: '/MikuMikuAR/guide/',
+  // 子路径部署：与主应用 base=/MikuMikuAR/ 保持一致，仅追加 /docs/
+  base: '/MikuMikuAR/docs/',
   lang: 'zh-CN',
   title: 'MikuMikuAR 文档',
   description: 'MikuMikuAR 用户指南 + 架构文档 + 决策记录 + 知识卡',
@@ -129,7 +129,7 @@ export default defineConfig({
     'upstream/**',
     '_writetest.txt',
     'AGENTS.md',
-    'dep-graph.md', // 开发自查产物（全量依赖图 252 节点/1444 边），非用户手册内容，不发布到 /guide/
+    'dep-graph.md', // 开发自查产物（全量依赖图 252 节点/1444 边），非用户手册内容，不发布到 /docs/
   ],
   // 全量进站后：正文大量相对链接（../../AGENTS、./adr/xxx 等）是 GitHub 仓库浏览用途，
   // 在 VitePress 站内按路由解析必然死链；站内导航由 sidebar 数组保证。

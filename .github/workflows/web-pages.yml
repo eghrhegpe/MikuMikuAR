@@ -86,16 +86,25 @@ jobs:
         run: cp dist-web/index.web.html dist-web/index.html
 
       - name: Build user guide (VitePress)
-        # 用户指南站：docs/guide（VitePress）→ dist-web/guide/ 子路径
-        # 主应用 base=/MikuMikuAR/ 不动，文档站 base=/MikuMikuAR/guide/
+        # 文档中心站：docs/guide（VitePress）→ dist-web/docs/ 子路径
+        # 主应用 base=/MikuMikuAR/ 不动，文档站 base=/MikuMikuAR/docs/
         working-directory: docs/guide
         run: |
           npm ci
           npm run build
 
       - name: Copy guide into web dist
-        # 产物拷入主应用 dist-web/guide/，一次 artifact 一次部署
-        run: cp -r ../docs/guide/.vitepress/dist dist-web/guide
+        # 产物拷入主应用 dist-web/docs/，一次 artifact 一次部署
+        run: cp -r ../docs/guide/.vitepress/dist dist-web/docs
+
+      - name: Add legacy /guide/ redirect stub
+        # 旧文档站路径 /MikuMikuAR/guide/ 已迁移至 /MikuMikuAR/docs/。
+        # 旧链接（README、书签、外链）落到 dist-web/guide/ → 自动跳转 /docs/；
+        # 深层旧链接（/guide/knowledge/...）缺失文件 → 由 dist-web/404.html 兜底跳转。
+        run: |
+          mkdir -p dist-web/guide
+          cp ../scripts/redirect-stubs/guide-redirect.html dist-web/guide/index.html
+          cp ../scripts/redirect-stubs/docs-404-redirect.html dist-web/404.html
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
