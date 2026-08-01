@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: motion_feet_adjustment
 name: 脚部地面跟随（MMD-native IK）
 category: motion

@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: locale
 name: 国际化语言状态
 category: core

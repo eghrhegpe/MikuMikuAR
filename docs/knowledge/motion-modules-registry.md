@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: motion_modules_registry
 name: 动作模块注册表
 category: motion

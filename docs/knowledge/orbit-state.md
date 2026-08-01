@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: orbit_state
 name: 轨道相机键盘输入状态叶子
 category: core

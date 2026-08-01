@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: env_time_of_day
 name: 时间流转与太阳角系统
 category: env

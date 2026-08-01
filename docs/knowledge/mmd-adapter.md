@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: mmd_adapter
 name: babylon-mmd 适配边界
 category: core

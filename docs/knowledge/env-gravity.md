@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: env_gravity
 name: 环境重力控制
 category: env

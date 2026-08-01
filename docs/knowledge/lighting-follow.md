@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: lighting_follow
 name: 个人灯光跟随
 category: rendering

@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: library_setup
 name: 资源库初始化
 category: ui

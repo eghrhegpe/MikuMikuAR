@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: env_water
 name: 水面系统
 category: env

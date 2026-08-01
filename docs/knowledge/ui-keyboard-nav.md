@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: ui_keyboard_nav
 name: 键盘导航工具
 category: core

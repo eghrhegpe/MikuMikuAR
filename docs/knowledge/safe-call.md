@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: safe_call
 name: 安全调用工具
 category: core

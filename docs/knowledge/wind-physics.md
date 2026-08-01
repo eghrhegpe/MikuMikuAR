@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: wind_physics
 name: 风力物理注入（WASM Bullet）
 category: physics

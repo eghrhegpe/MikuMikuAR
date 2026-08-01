@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: motion_history
 name: 动作历史管理
 category: motion

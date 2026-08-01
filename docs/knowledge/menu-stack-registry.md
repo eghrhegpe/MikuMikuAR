@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: menu_stack_registry
 name: 菜单栈共享指针（stackRegistry）
 category: ui

@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: motion_binding_ui
 name: 动作绑定 UI
 category: ui

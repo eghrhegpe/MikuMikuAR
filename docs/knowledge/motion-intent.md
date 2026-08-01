@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: motion_intent
 name: 场景级动作意图库
 category: motion

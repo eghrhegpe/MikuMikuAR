@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: animation_retargeter
 name: 外部动作重定向桥
 category: motion

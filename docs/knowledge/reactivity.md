@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: reactivity
 name: 轻量响应式刷新系统
 category: core

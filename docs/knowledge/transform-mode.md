@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: transform_mode
 name: 拖拽变换模式开关
 category: scene

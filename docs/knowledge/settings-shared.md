@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: settings_shared
 name: 设置共享工具
 category: ui

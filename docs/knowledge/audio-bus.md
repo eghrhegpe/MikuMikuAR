@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: audio_bus
 name: 音频总线
 category: core

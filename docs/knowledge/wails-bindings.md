@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: wails_bindings
 name: 后端绑定聚合层（backend 代理化）
 category: core

@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: scene_menu
 name: 场景弹窗（编排 + 路由）
 category: ui

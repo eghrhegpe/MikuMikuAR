@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: transform_adapter
 name: 变换适配器注册表（双模态去重）
 category: scene

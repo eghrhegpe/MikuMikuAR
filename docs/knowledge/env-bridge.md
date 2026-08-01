@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: env_bridge
 name: 环境状态写入入口（setEnvState + 中间件链）
 category: env

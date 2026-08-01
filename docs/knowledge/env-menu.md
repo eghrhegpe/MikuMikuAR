@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: env_menu
 name: 环境弹窗（编排 + barrel）
 category: ui

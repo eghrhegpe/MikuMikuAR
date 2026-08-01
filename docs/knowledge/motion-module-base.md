@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: motion_module_base
 name: 动作模块基类
 category: motion

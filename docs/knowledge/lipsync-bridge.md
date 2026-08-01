@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: lipsync_bridge
 name: 口型同步桥
 category: motion

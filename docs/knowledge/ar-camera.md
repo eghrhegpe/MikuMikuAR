@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: ar_camera
 name: AR 摄像头视频透传
 category: scene

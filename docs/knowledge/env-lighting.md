@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: env_lighting_wrapper
 name: 环境灯光包装
 category: env

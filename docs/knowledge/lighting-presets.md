@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: lighting_presets
 name: 灯光预设系统
 category: rendering

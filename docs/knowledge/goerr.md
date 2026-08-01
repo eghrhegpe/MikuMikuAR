@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: goerr
 name: Go 错误翻译
 category: core

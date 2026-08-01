@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: menu_schema
 name: 声明式菜单 Schema
 category: ui

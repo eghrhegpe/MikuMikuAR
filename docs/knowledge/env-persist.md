@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: env_persist
 name: 环境状态防抖持久化
 category: env

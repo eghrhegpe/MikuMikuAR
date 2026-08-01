@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: proc_motion_bridge
 name: 程序化动作系统
 category: motion

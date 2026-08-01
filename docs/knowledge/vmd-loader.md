@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: vmd_loader
 name: VMD 动作加载器
 category: motion

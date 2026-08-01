@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: observer_handle
 name: Observer 生命周期管理
 category: core
