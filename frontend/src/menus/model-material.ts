@@ -22,6 +22,7 @@ import {
     addSliderRow,
     addCollapsible,
     addSectionTitle,
+    addEmptyRow,
     createHeaderToggle,
 } from '../core/ui-helpers';
 import type { SlideMenu } from './menu';
@@ -177,10 +178,7 @@ function buildMatRootSchema(
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
                     if (groups.size === 0) {
-                        const empty = document.createElement('div');
-                        empty.className = 'empty-hint';
-                        empty.textContent = t('model-material.noMaterialData');
-                        inner.appendChild(empty);
+                        addEmptyRow(inner, t('model-material.noMaterialData'));
                         return;
                     }
                     for (const [cat, mats] of groups) {

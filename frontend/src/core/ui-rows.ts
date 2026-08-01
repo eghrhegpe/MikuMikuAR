@@ -315,11 +315,26 @@ export function addModeRow<T extends string | number>(
 
 /**
  * 创建空状态占位行（灰色文字，不可点击），替代手动 `el.style.opacity = '0.5'` 模式
+ * @param hint 可选第二行小字提示（居中双行引导场景），省略时保持单行行为
  */
-export function addEmptyRow(parent: HTMLElement, text: string): HTMLElement {
+export function addEmptyRow(parent: HTMLElement, text: string, hint?: string): HTMLElement {
     const el = document.createElement('div');
     el.className = 'slide-item slide-item-muted';
-    el.textContent = text;
+    if (hint) {
+        el.style.flexDirection = 'column';
+        el.style.alignItems = 'center';
+        el.style.textAlign = 'center';
+        const main = document.createElement('div');
+        main.textContent = text;
+        const sub = document.createElement('div');
+        sub.style.fontSize = '11px';
+        sub.style.opacity = '0.7';
+        sub.style.marginTop = '4px';
+        sub.textContent = hint;
+        el.append(main, sub);
+    } else {
+        el.textContent = text;
+    }
     parent.appendChild(el);
     return el;
 }
