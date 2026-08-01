@@ -1,6 +1,6 @@
 # ADR-218: 知识库（docs/knowledge）分层治理 — 痛点与方案
 
-> **状态**: 规划（2026-07-31）
+> **状态**: 部分实施（P2 工具侧校验已落地；P3/P4 结构层待做）
 > **日期**: 2026-07-31
 > **关联**: ADR-191（神桶去桶化，同一「分层/去重」治理哲学）、docs/knowledge/README.md（知识卡层规范）、scripts/check-doc-drift.mjs（漂移守护）
 > **来源**: 知识卡层已膨胀至 231 张平铺卡片，人读不过来；同时 `category` 字段存在占位符漏网（未被脚本校验），`ui_entry` 登记无规范（仅 env-water.md 自发手写「菜单入口」小节）。
@@ -31,7 +31,14 @@
 
 ### 痛点 2：`category` 枚举无校验，占位符漏网
 
-README 模板规定 `category` 枚举为 `<rendering|env|motion|ui|core|backend|physics|scene>`，但 `check-doc-drift.mjs` **只校验 `source_files` 是否存在，完全不校验 `category` 取值**。实测存在 `category: <rendering|env|...>` 这类模板占位符未被检出——说明「写卡规范」与「机器守护」之间已有裂隙。
+> **2026-08 修订（漂移修正）**：本痛点描述截至 2026-07-31 的旧状态，已被工具演进推翻。现状如下：
+> - `check-doc-drift.mjs` 的 `checkKnowledgeMeta()` **早已校验 `category`/`tier` 枚举**（检查 8/9，ERROR），且对 architecture 卡缺 `## UI 入口` 小节给出 WARN（检查 10）。
+> - 2026-08 在 `checkKnowledgeMeta()` 内**新增**三项（均 ERROR）：模板占位符 `<...>` 未填充、`kind` 须为 snake_case、必填字段 `kind`/`name`/`category` 齐全。
+> - 原「`category: <rendering|env|...>` 占位符漏网」的实测样本只出现在 **README.md 格式模板**（被循环显式豁免，非真实卡），并非治理缺口。
+>
+> 故本痛点**核心前提已不成立**——`category`/`tier` 校验与占位符扫描均已落地。剩余未做的是 P3（给全量卡批量标 `tier`）+ P4（README 索引分层折叠），即结构层而非校验层。原痛点保留作历史决策记录。
+
+README 模板规定 `category` 枚举为 `<rendering|env|motion|ui|core|backend|physics|scene>`。截至 2026-07-31 起草时，`check-doc-drift.mjs` 仅校验 `source_files` 是否存在、未校验 `category` 取值；该裂隙已于 P2 阶段通过 `checkKnowledgeMeta()` 闭合（见上方修订说明）。
 
 ### 痛点 3：UI 入口登记无规范
 
@@ -132,13 +139,14 @@ README 模板规定 `category` 枚举为 `<rendering|env|motion|ui|core|backend|
 
 ## 落地计划（分阶段）
 
-| 阶段 | 动作 | 产出 |
-|------|------|------|
-| P1 | README 模板加 `tier` + 「立卡判据」段 + `## UI 入口` 小节规范 | docs/knowledge/README.md 修订 |
-| P2 | `check-doc-drift.mjs` 加检查 8/9/10（category/tier 枚举 ERROR，UI 入口 WARN） | scripts/check-doc-drift.mjs 修订 |
-| P3 | codemod 批量标 `tier`（按 invariants/use_when 缺失度初判）+ 人工复核边界卡 | 231 张卡 frontmatter 更新 |
-| P4 | README 索引改为分层折叠（architecture 优先 + leaf 计数行） | 索引可读性提升 |
-| P5 | 运行 `npm run check:docs` 验证，提交 | 守护生效 |
+| 阶段 | 动作 | 产出 | 状态 |
+|------|------|------|------|
+| P1 | README 模板加 `tier` + 「立卡判据」段 + `## UI 入口` 小节规范 | docs/knowledge/README.md 修订 | ⏸ 待做 |
+| P2 | `check-doc-drift.mjs` 加检查 8/9/10（category/tier 枚举 ERROR，UI 入口 WARN） | scripts/check-doc-drift.mjs 修订 | ✅ 已落地 |
+| P2+ | 2026-08 扩展：占位符 `<...>` 扫描 + `kind` snake_case + 必填字段齐全（均 ERROR） | scripts/check-doc-drift.mjs 修订 | ✅ 已落地 |
+| P3 | codemod 批量标 `tier`（按 invariants/use_when 缺失度初判）+ 人工复核边界卡 | 234 张卡 frontmatter 更新（当前仅 ~37 张已标） | ❌ 未做 |
+| P4 | README 索引改为分层折叠（architecture 优先 + leaf 计数行） | 索引可读性提升 | ❌ 未做 |
+| P5 | 运行 `npm run check:docs` 验证，提交 | 守护生效 | ⏸ 待 P3/P4 |
 
 ---
 
