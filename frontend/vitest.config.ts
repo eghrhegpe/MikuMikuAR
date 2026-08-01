@@ -40,7 +40,7 @@ export default defineConfig({
         setupFiles: ["./src/__tests__/setup-wails.ts"],
         coverage: {
             provider: "v8",
-            reporter: ["text-summary", "html"],
+            reporter: ["text-summary", "html", "json"],
             include: ["src/**/*.ts"],
             exclude: [
                 "src/**/*.test.ts",
