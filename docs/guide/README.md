@@ -3,7 +3,7 @@
 > **读者**：最终用户 / 新上手开发者。回答「怎么用」——功能入口、操作步骤、效果截图。
 > **与 docs/knowledge 的关系**：guide 讲「怎么用」，knowledge 讲「怎么改、守什么不变量」。
 > 本目录不参与 `check-doc-drift` 知识卡治理（无 frontmatter，同 routes.md 范式），由人维护。
-> **目标形态**：渲染为 VitePress 网站（`docs/guide/` 为文档源，`base: /MikuMikuAR/docs/`），当前先按网站格式书写内容。
+> **目标形态**：渲染为 VitePress 网站（`docs/guide/` 为文档源，`base: /MikuMikuAR/` 即 Pages 根；主应用降为 `/app/` 子路径），当前先按网站格式书写内容。
 
 ---
 

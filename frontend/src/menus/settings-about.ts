@@ -77,7 +77,7 @@ function buildAboutSchema(_getSettingsMenu: () => SettingsMenuHandle): MenuNode[
                         openExternalLink('https://github.com/eghrhegpe/MikuMikuAR#readme');
                     });
                     slideRow(inner, 'lucide:map', t('about.guide'), false, () => {
-                        openExternalLink('https://eghrhegpe.github.io/MikuMikuAR/docs/');
+                        openExternalLink('https://eghrhegpe.github.io/MikuMikuAR/');
                     });
                     slideRow(inner, 'lucide:library', t('about.knowledge'), false, () => {
                         openExternalLink(

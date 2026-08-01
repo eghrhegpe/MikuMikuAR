@@ -7,7 +7,7 @@
 ## 一句话结论
 
 网页端（浏览器形态）的**全部本地数据都存放在浏览器的 IndexedDB 里，且严格按 origin 隔离**。
-因此 `localhost:5173`（本地开发）与线上 GitHub Pages（`eghrhegpe.github.io/MikuMikuAR/`）是
+因此 `localhost:5173`（本地开发）与线上 GitHub Pages（`eghrhegpe.github.io/MikuMikuAR/app/`，文档站占根 `eghrhegpe.github.io/MikuMikuAR/`）是
 **两个互不连通的数据库**——在 dev 导入的模型、授权的目录，切到线上一个都看不到，反之亦然。
 
 这是浏览器同源策略的**硬约束**，不是 Bug，也不是我们可绕过的实现缺陷。
@@ -19,7 +19,7 @@
 | 形态 | origin | 数据互通？ |
 |------|--------|-----------|
 | 本地开发（`wails dev` / `vite` 调试） | `http://localhost:5173` | 自成一体 |
-| GitHub Pages 线上版 | `https://eghrhegpe.github.io/MikuMikuAR/` | 自成一体 |
+| GitHub Pages 线上版（主应用） | `https://eghrhegpe.github.io/MikuMikuAR/app/` | 自成一体（文档站占根 `https://eghrhegpe.github.io/MikuMikuAR/`，同源） |
 | 桌面端（Wails 打包） | 非浏览器环境 | 走 Go 后端磁盘存储，与 IDB 无关 |
 
 > 提示：端口不同的两个 localhost（如 `5173` 与 `5174`）也是不同 origin，同样不互通。

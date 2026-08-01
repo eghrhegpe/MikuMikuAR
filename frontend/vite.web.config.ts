@@ -8,8 +8,8 @@
 //   2. 不 externalize @babylonjs/* —— web 入口无 babylon UMD script 标签，必须打进 bundle
 //   3. @wailsio/runtime → no-op stub（隔离 @bindings/app.ts 的 Call value import；
 //      业务侧 Events/Browser 已走 runtime-bridge 动态 import，web 入口短路不加载）
-//   4. base = '/MikuMikuAR/' — GitHub Pages 仓库名前缀
-//   5. 产物输出到 dist-web/（主应用 web 入口独立产物目录）
+//   4. base = '/MikuMikuAR/app/' — GitHub Pages 仓库名前缀 + /app/ 子路径（文档站占根）
+//   5. 产物输出到 dist-web/app/（主应用 web 入口独立子路径产物）
 //
 // 构建：npx vite build --config vite.web.config.ts
 // 预览：npx vite preview --config vite.web.config.ts
@@ -18,8 +18,8 @@ import { defineConfig } from 'vite';
 import path from 'path';
 
 export default defineConfig({
-    // GitHub Pages 仓库名前缀（eghrhegpe.github.io/MikuMikuAR/）
-    base: '/MikuMikuAR/',
+    // GitHub Pages 仓库名前缀（eghrhegpe.github.io/MikuMikuAR/app/，文档站占根 /MikuMikuAR/）
+    base: '/MikuMikuAR/app/',
     resolve: {
         alias: {
             '@': path.resolve(__dirname, 'src'),
@@ -57,8 +57,8 @@ export default defineConfig({
         cache: true,
         // 主应用全量打包（Babylon + 菜单 + 场景），接受大 bundle 换取零外部依赖
         chunkSizeWarningLimit: 4000,
-        // 产物输出到 dist-web/（主应用 web 入口独立产物目录）
-        outDir: 'dist-web',
+        // 产物输出到 dist-web/app/（主应用 web 入口独立子路径产物）
+        outDir: 'dist-web/app',
         rollupOptions: {
             // 主应用 web 入口
             input: path.resolve(__dirname, 'index.web.html'),

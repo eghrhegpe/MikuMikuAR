@@ -9,7 +9,7 @@
 - 这是 **TypeScript 前端项目**，不是 Go 项目。`main.go` 仅是 Wails 桌面壳入口；业务逻辑几乎全在 `frontend/src/`。
 - 后端能力（文件 IO / 扫描 / HTTP / 缩略图 / i18n）由 Go（`internal/`）提供，但已通过 `BackendService` 接口抽象，前端有 `go-adapter`（桌面）与 `browser-adapter`（网页，IndexedDB）双实现（ADR-176）。**网页版不依赖 Go 运行时**。
 - 平台：桌面 Windows ✅ / Android ✅（c-shared + WebView）；iOS / Linux 🟡 理论兼容未实测。网页版可在任意现代浏览器运行（含 iOS / Linux）。
-- 网页版地址：https://eghrhegpe.github.io/MikuMikuAR/ （构建配置 `frontend/vite.web.config.ts`，产物 `dist-web/`）。
+- 网页版地址：https://eghrhegpe.github.io/MikuMikuAR/app/ （构建配置 `frontend/vite.web.config.ts`，产物 `dist-web/app/`；文档站占根 `https://eghrhegpe.github.io/MikuMikuAR/`）。
 
 ## 仓库结构
 - `main.go` / `main_android.gen.go` — Wails 入口（桌面 + Android）
