@@ -6,7 +6,9 @@
 - **参考文献**:
   - Ref A — CSDN `2301_81522229`（保姆级水体 Shader，2026-05-29）：深度 / 泡沫 / 折射扭曲 / 法线扰动 / 高光 / 反射 / 菲涅耳 / 焦散 / Ramp 渐变纹理
   - Ref B — CSDN `misaka12807`（水下透视效果，2023-09-06）：深度差雾（GrabPass + CameraDepthTexture）→ 水柱厚度驱动颜色与透明度
-  - Ref C — Yuumu 博客（水体渲染，2025-04-26）：屏幕空间法线投影折射 / 深度遮罩折射修正 / SSS 次表面散射 / Blinn-Phong 高光 / 顶点位移贴图
+  - Ref C — 系日博客 xiri04（水体渲染，2025-04-26）：屏幕空间法线投影折射 / 深度遮罩折射修正 / SSS 次表面散射 / Blinn-Phong 高光 / 顶点位移贴图 / `_CameraOpaqueTexture` 抓屏折射
+  - Ref D — Yuumu 知乎（FFT 海洋水体渲染学习笔记二，2020-12-13）：SSS 的 Jacobian 遮罩修正 / 法线贴图叠加高光 / 物理折射率 Fresnel / 白沫生成方法论 / Dual Blur
+  - Ref F — GDC 2011 Colin Barré-Brisebois & Marc Bouchard（Approximating Translucency, Frostbite 2 / Battlefield 3）：**SSS 原始算法** — `H = normalize(L + Nδ)` + 局部厚度贴图 + `_Attenuation * (VdotH + _Ambient) * thickness`
 - **源码锚点**: `frontend/src/scene/env/shaders/water.frag.glsl`、`frontend/src/scene/env/shaders/water.vert.glsl`、`frontend/src/scene/env/env-water.ts`、`frontend/src/core/env-state-schema.ts`
 
 ---
@@ -261,57 +263,79 @@ if (uRefractionStrength > 0.0) {
 
 **目标**：模拟光线穿透薄水层（浅滩、波峰）的透光效果，水体看起来不再是一张不透明的"彩色玻璃"。
 
-**参考**：Ref C 第 3 节（次表面散射模拟）+ [GDC 2011 — Approximating Translucency](https://colinbarrebrisebois.com/2011/03/07/gdc-2011-approximating-translucency-for-a-fast-cheap-and-convincing-subsurface-scattering-look/)。
+**参考**：
+- Ref F（GDC 2011 原始论文 — **权威源**）：`H = normalize(L + N * _Distortion)` + `I = pow(dot(V, -H), _Power) * _Scale`
+- Ref C 第 3 节（忠实复现 GDC 2011 原公式）：`H = normalize(lightDir + normal * _Distortion)`
+- Ref D 第 1 节（Yuumu **修改版**，`-lightDir` 非原始公式）：`H = normalize(-lightDir + normal * _Distortion)` — 此为变体，背光感知方向与原版相反
+- [GDC 2011 原始演讲](https://colinbarrebrisebois.com/2011/03/07/gdc-2011-approximating-translucency-for-a-fast-cheap-and-convincing-subsurface-scattering-look/)
+- Alan Zucconi Part 1（理论推导）+ Part 2（完整 Unity shader 实现）
 
-**Ref C 完整实现**：
+**GDC 2011 原始公式（权威源）**：
 
 ```hlsl
-// Ref C: SSS 模拟
-// 思路：水越薄（waveHeight 越大）→ 透光越强
-// H = normalize(lightDir + normal * _Distortion) — 光包裹（light wrapping）
-// I = pow(saturate(dot(viewDir, -H)), _Power) * _SSSscale * waveHeight
-// SSSColor = _SSSColor * I
+// Ref F: GDC 2011 原始 — Frostbite 2 / Battlefield 3
+// H = normalize(L + N * _Distortion)
+// I = pow(saturate(dot(V, -H)), _Power) * _Scale
+// 完整版（含局部厚度贴图）:
+// I = _Attenuation * (pow(saturate(dot(V, -H)), _Power) * _Scale + _Ambient) * thickness
 
-float waveHeight = saturate(i.worldPos.y / _waveMaxHeight);
-float3 H = normalize(lightDir + normal * _Distortion);
-float I = pow(saturate(dot(viewDir, -H)), _Power) * _SSSscale * waveHeight;
-half4 SSSColor = _SSSColor * I;
+float3 L = gi.light.dir;    // 光源方向（指向光源）
+float3 V = viewDir;         // 视线方向（指向相机）
+float3 N = s.Normal;        // 表面法线
 
-// 最终混合：加法（直接叠加到折射颜色上）
-half4 color = lerp(underwaterColor, depthColor, DepthGap) + SSSColor;
+float3 H = normalize(L + N * _Distortion);
+float VdotH = pow(saturate(dot(V, -H)), _Power) * _Scale;
+float3 I = _Attenuation * (VdotH + _Ambient) * thickness;
 ```
 
-**算法解析**：
+**算法解析（对照原始论文）**：
 
-| 分量 | 含义 | 作用 |
+| 分量 | 公式 | 含义 |
 |------|------|------|
-| `lightDir + normal * _Distortion` | 光源方向向法线弯曲 | 模拟光在介质内散射扩散（light wrapping） |
-| `dot(viewDir, -H)` | 视线与包裹后的反向半程向量夹角 | 背光面视角下透光最亮（光穿透到观察者） |
-| `pow(..., _Power)` | 锐度控制 | 高 `_Power` → 窄透光锥；低 → 宽泛透光 |
-| `* waveHeight` | 厚度权重 | 波峰处薄 → 透光强；波谷处厚 → 透光弱 |
-| `_SSSscale` | 全局强度 | 0=关闭零回归 |
+| H 向量 | `normalize(L + N * _Distortion)` | 光包裹（light wrapping）— 法线将光源方向向自身弯曲 |
+| `dot(V, -H)` | 视线与包裹后反向 H 的点积 | 背光面视角下光穿透最强；正面视角为零 |
+| `_Distortion` (δ) | 0→1 线性插值 | 0=纯背面光（无视法线），1=法线完全偏转背光方向 |
+| `_Power` (p) | 锐度 | 高p→窄透光锥（硬边缘），低p→宽泛透光 |
+| `_Scale` (s) | 直接透光强度 | 背光面透光亮度的基础倍率 |
+| `_Ambient` | 环境透光 | 即使无直接背光（VdotH=0），薄区仍透环境光 |
+| `_Attenuation` | 厚度衰减 | 控制厚度对透光的影响倍率 |
+| `thickness` | 局部厚度 | 薄区(≈1)→强透光；厚区(≈0)→不透光 |
 
-**为什么用 `waveHeight` 近似厚度**：Ref C 明确指出——"海水越高就越薄，所以通过高度比例来模拟物体薄厚"。在我们的系统中，`vHeight - waterLevel` 可以直接作为厚度代理。
+**Ref D (Yuumu) 修改版 vs 原版对比**：
 
-**我们的实现（适配 Babymmd unit）**：
+| 版本 | H 公式 | 背光方向 | 效果差异 |
+|------|--------|---------|---------|
+| **Ref F (GDC 2011 原版)** | `normalize(L + N * δ)` | 光源偏法线方向 | 背光从"光源-法线之间"的方向射出 |
+| Ref C (xiri04) | `normalize(lightDir + normal * δ)` | 同原版 | **忠实复现** ✅ |
+| Ref D (Yuumu) | `normalize(-lightDir + normal * δ)` | 光源反向偏法线方向 | **修改版** — 背光感知方向相反 |
+
+**决策**：Phase 3 基础版使用 **Ref F 原始公式**（与 Ref C 一致）。Ref D 的 `-lightDir` 变体仅在将来 A/B 对比后如有优势才考虑采纳。
+
+**我们的实现（GDC 2011 原版公式，适配 Babymmd unit + Gerstner 波）**：
 
 ```glsl
 // ======== ADR-223 P3: SSS 次表面散射 ========
-// 参考 Ref C + GDC 2011 Translucency Approximation
+// 参考 Ref F (GDC 2011 原始): H = normalize(L + N * _Distortion)
+//        I = _Attenuation * (pow(dot(V, -H), _Power) * _Scale + _Ambient) * thickness
 // uSSSIntensity=0 时零回归
-uniform float uSSSIntensity;    // 默认 0（零回归）
-uniform float uSSSDistortion;   // 默认 0.5（光包裹弯曲程度，Ref C 的 _Distortion）
-uniform float uSSSPower;        // 默认 4.0（透光锥锐度，Ref C 的 _Power）
+uniform float uSSSIntensity;    // 默认 0（零回归）= Ref F 的 _Scale * _Attenuation
+uniform float uSSSDistortion;   // 默认 0.5（Ref F 的 _Distortion / δ）
+uniform float uSSSPower;        // 默认 2.0（Ref F 的 _Power）
+uniform float uSSSAmbient;      // 默认 0.0（Ref F 的 _Ambient）
 uniform vec3 uSSSColor;         // 默认 warm white vec3(1.0, 0.95, 0.8)
 
 if (uSSSIntensity > 0.0) {
     // 厚度代理：波高偏离水面水平面越大 → 水越薄
     float thicknessProxy = saturate((vHeight - waterLevel) / max(waveHeight, 0.1));
-    // Ref C: H = normalize(lightDir + normal * _Distortion)
+
+    // Ref F (GDC 2011 original): H = normalize(L + N * _Distortion)
     vec3 sssH = normalize(normalize(lightDir) + normal * uSSSDistortion);
-    // Ref C: I = pow(saturate(dot(viewDir, -H)), _Power) * _SSSscale * waveHeight
-    float sssI = pow(saturate(dot(viewDir, -sssH)), uSSSPower) * uSSSIntensity * thicknessProxy;
-    // 加法叠加（同 Ref C）
+
+    // Ref F: I = _Attenuation * (pow(dot(V, -H), _Power) * _Scale + _Ambient) * thickness
+    float sssVdotH = pow(saturate(dot(viewDir, -sssH)), uSSSPower);
+    float sssI = (sssVdotH + uSSSAmbient) * uSSSIntensity * thicknessProxy;
+
+    // 加法叠加（Ref F 原版: pbr.rgb + gi.light.color * I）
     color += uSSSColor * sssI * lightExposure;
 }
 ```
@@ -321,12 +345,17 @@ if (uSSSIntensity > 0.0) {
 | 字段 | 类型 | 默认值 | 分组 | 说明 |
 |------|------|--------|------|------|
 | `sssEnabled` | `boolean` | `false` | `water` | 总开关 |
-| `sssIntensity` | `number` | `0.5` | `water` | 全局强度（shader 中 `uSSSIntensity` = enabled ? value : 0） |
-| `sssDistortion` | `number` | `0.5` | `water` | 光包裹弯曲度 |
-| `sssPower` | `number` | `4.0` | `water` | 透光锥锐度 |
+| `sssIntensity` | `number` | `0.5` | `water` | 全局强度（= Ref F 的 `_Scale * _Attenuation` 合并） |
+| `sssDistortion` | `number` | `0.5` | `water` | 光包裹弯曲度（Ref F 的 δ） |
+| `sssPower` | `number` | `2.0` | `water` | 透光锥锐度（Ref F 的 `_Power`） |
+| `sssAmbient` | `number` | `0.0` | `water` | 环境透光（Ref F 的 `_Ambient`，薄区即使在侧面也透光） |
 | `sssColor` | `tuple3` | `[1.0, 0.95, 0.8]` | `water` | 透光色 |
 
-**已知局限**（Ref C 原文指出）："这个实现对于很大的波浪会有问题，同时对于一个波上会有一些深色的点"。建议 Phase 3 先落地基础版本，后续可用模糊泡沫纹理 RT 作为更精确的厚度参考（在本 ADR 中标记为未来增强项，不阻塞 P3 落地）。
+**已知局限**（Ref D 原文）：
+
+> "直接用波高算的 SSS 效果也还可以，但是会存在一些问题，比如风强一旦大了，会有很厚一片海水被吹的鼓起来，这种情况下 SSS 就会很不准确。"
+
+Phase 3+ 路线图：生成 Jacobian whitecap mask → Dual Blur 模糊 → 注入为 `uSSSMask` uniform → 替换 `thicknessProxy` 为 `thicknessProxy * uSSSMask`。
 
 ---
 
@@ -373,15 +402,113 @@ vec3 gradientColor = mix(shallowColor, deepColor, depthColorNorm);
 
 ---
 
-## 三、与现有系统的共存策略
+## 三、Ref D (Yuumu FFT) 补充洞察
 
-### 3.1 Gerstner 波浪 vs 顶点位移贴图
+以下技术点来自 Ref D，值得记录但不纳入本 ADR 的独立 Phase：
+
+### 3.1 物理 Fresnel（折射率法）
+
+Ref D 使用物理折射率公式替代 Schlick 近似：
+
+```hlsl
+// Ref D §4: 物理 Fresnel
+float R_0 = (_AirRefractiveIndex - _WaterRefractiveIndex) / (_AirRefractiveIndex + _WaterRefractiveIndex);
+R_0 *= R_0;
+return R_0 + (1.0 - R_0) * pow((1.0 - saturate(dot(I, N))), _FresnelPower);
+```
+
+我们当前使用 `fresnelBias + (1-fresnelBias) * pow(1-dot, fresnelPower)`（L200），其中 `fresnelBias=0.02` 作为最低反射率。Ref D 的公式用空气/水的物理折射率（1.0 / 1.33）自动计算 R₀ ≈ 0.02，语义更清晰。这是一个**可选微调**，不单独列为 Phase。
+
+### 3.2 法线贴图叠加高光
+
+Ref D 的核心发现——FFT 直接算出的法线"过于粗糙，高光一圈一圈"。解决方案是在 specular 计算时叠加一张预烘焙的法线贴图：
+
+> "海水法线贴图只是用来改变高光形状和提升精度的，只参与镜面反射的计算，漫反射的话并不需要法线贴图。"
+
+这与我们 Phase 0 的思路一致（乘法混合产生精细织网），但方向相反：我们是从全局法线中提取细节，Ref D 是在 specular 计算时额外叠加。两种方案互补——Phase 0 落地后如果高光细节仍不足，可借鉴此思路加一层 specular-only normal overlay。
+
+### 3.3 白沫生成的完整管线
+
+Ref D 的白沫方法论（非本 ADR 当前范围，但记录为知识参考）：
+
+1. **生成**：Compute Shader 计算 Jacobian 行列式 → 确定浪尖破碎位置
+2. **模糊**：Dual Blur（CommandBuffer）→ 柔化 mask 边缘
+3. **高度裁剪**：乘 `saturate(worldPos.y / maxHeight)` → 低处不产生白沫
+4. **阈值控制**：`Jacobian - threshold` → 控制白沫范围宽窄
+
+我们当前没有 Jacobian 计算管线（Gerstner 波非 FFT），白沫只能依赖 Phase 1 的深度差岸线泡沫 + 现有波高泡沫。纯 Jacobian 白沫是未来增强项。
+
+---
+
+## 四、Ref E (麒麟子 MrKylin) 补充洞察
+
+以下技术点来自 Ref E，值得记录但不纳入独立 Phase：
+
+### 3.1 视线方向水厚公式（替代深度缓冲采样）
+
+Ref E 给出了一种**不需要深度纹理**的水厚计算方法——利用视线方向与水面/水底的几何关系直接求解：
+
+```hlsl
+// Ref E §6: 视线方向水厚 — 不需要深度纹理
+// 推导: P1 + viewDir * depth = P2 → depth = (P2.y - P1.y) / viewDir.y
+vec3 viewDir = normalize(v_position.xyz - cc_cameraPos.xyz);
+float depth = (v_position.y - g_waterLevel) / viewDir.y;
+depth = clamp(depth * depthScale, 0.0, 1.0);
+```
+
+**与 ADR-222 深度纹理方案的关系**：此公式是 ADR-222 深度纹理方案的**轻量替代**——不需要 `scene.depthRenderer`，仅依赖顶点世界坐标 + 水面高度。代价是精度低于深度纹理（假设水底是平面，不支持复杂地形）。适用于：
+
+- 纯水平面下的简单场景
+- 移动端/WebGL1 不支持深度纹理时
+
+**不为本 ADR 的独立 Phase**。若 ADR-222 深度纹理接入受阻，可回退到此公式作为后备方案。
+
+### 3.2 水岸柔边（深度抑制 Fresnel）
+
+Ref E §6（水岸柔边）的核心技巧——靠近岸边时抑制 Fresnel 反射因子，消除水面与物体交接处的生硬边界：
+
+```hlsl
+// Ref E §6: 水岸柔边 — 深度调制 Fresnel
+// diffDepth 靠近岸边时 → 0，远离岸边时 → 1
+float diffDepth = pow(depth, 2.0);  // 非线性衰减（pow 2.0）
+fresnel = mix(fresnel, 0.0, diffDepth);  // 岸边反射弱 → 透底
+```
+
+**原理**：岸边水薄 → `diffDepth` 小 → Fresnel 被抑制 → 反射弱、折射强 → 看到水底而非镜面倒影 → 边界自然融合。
+
+**这是可以直接加的改动**——不依赖任何新 uniform，纯 shader 逻辑。在现有 Fresnel 计算（L200）之后插入 2 行即可：
+
+```glsl
+// 植入点：L200 fresnel 计算之后
+// Ref E: 岸边抑制 Fresnel（消除水面-物体交接处的镜面断层）
+float shoreFade = pow(saturate(waterThickness / uWaterColorRange), 2.0); // nonlinear
+float softFresnel = mix(0.0, fresnel, shoreFade);
+// 后续用 softFresnel 替代 fresnel
+```
+
+此改动**零回归**（当 `waterThickness` 足够大时 `shoreFade → 1` → `softFresnel = fresnel`），建议作为 Phase 0 或 Phase 1 的附属改动一起落地。
+
+### 3.3 折射 RT Alpha 通道存深度（性能优化参考）
+
+Ref E 提出将深度信息存入折射 RT 的 Alpha 通道，减少一次独立深度 pass：
+
+> "由于这里的深度图只是和折射搭配使用，8 位精度足够用了，我们可以考虑借用折射图中的 Alpha 通道来存储深度信息。"
+
+这对应我们的 Phase 2（折射 RT）——如果在创建 `uRefractionTex` 时同时向 Alpha 通道写入线性深度（`gl_FragColor.a = linearDepth / farPlane`），则 Phase 1 的深度读取可以与 Phase 2 的折射读取**合并为一次纹理采样**，节省一个 sampler 槽位。
+
+**记录为 Phase 2 的性能优化子项**，不阻塞 P2 基础版落地。
+
+---
+
+## 五、与现有系统的共存策略
+
+### 4.1 Gerstner 波浪 vs 顶点位移贴图
 
 Ref C 使用 `SAMPLE_TEXTURE2D_LOD(_DisplaceTex, ...)` 做顶点位移，而我们用 4 层 Gerstner 波（`water.vert.glsl` L42-59）。Gerstner 方案在物理正确性上更优（方向性、色散关系、风向联动），不做替换。
 
 但 Ref C 的位移贴图思路可作为一个**可选的额外细节层**（未来增强项），叠加在 Gerstner 之上产生高频微扰动。本 ADR 不涉及。
 
-### 3.2 高光系统
+### 4.2 高光系统
 
 我们已有 Blinn-Phong 高光（L273-275）+ Sun Glitter（L282-299）。Ref A 的高光（第 6 节）和 Ref C 的高光（第 4 节）都是标准 Blinn-Phong：
 
@@ -398,7 +525,7 @@ half4 specular = _specularColor * pow(max(0, dot(halfDir, normal)), _gloss);
 
 我们的实现已覆盖此功能，但 Phase 0 的乘法法线混合会改变 `normal` 的分布 → 高光位置/强度变化。需要验证。
 
-### 3.3 焦散梯度法线偏移的去留
+### 4.3 焦散梯度法线偏移的去留
 
 Phase 0 完成后 A/B 对比：
 - A: 焦散梯度法线偏移保留（L258-264 `causticNormalOffset` → `normal +=`）
@@ -406,7 +533,7 @@ Phase 0 完成后 A/B 对比：
 
 预期 B 为优胜（乘法混合已产生类似焦散的织网图案）。若 B 确认，移除 `causticNormalOffset` 计算。Ref A 的焦散（第 9 节）是投射到水底的深度贴花方案，不影响此决策。
 
-### 3.4 ripple 系统审查
+### 4.4 ripple 系统审查
 
 `calcRipple` 的径向正弦环在乘法法线下游叠加。Phase 0 后验证：
 - 若仍可见且自然 → 保留
@@ -415,7 +542,7 @@ Phase 0 完成后 A/B 对比：
 
 ---
 
-## 四、实施顺序与依赖图
+## 六、实施顺序与依赖图
 
 ```
 Phase 0: 法线混合乘法 ─────────── 无依赖，即刻动工
@@ -437,7 +564,7 @@ Phase 0: 法线混合乘法 ─────────── 无依赖，即刻
 
 ---
 
-## 五、零回归矩阵
+## 七、零回归矩阵
 
 | Phase | 零回归条件 | 验证方法 |
 |-------|-----------|---------|
@@ -449,7 +576,7 @@ Phase 0: 法线混合乘法 ─────────── 无依赖，即刻
 
 ---
 
-## 六、风险与未决项
+## 八、风险与未决项
 
 | 风险 | 等级 | 缓解 |
 |------|------|------|
@@ -461,21 +588,27 @@ Phase 0: 法线混合乘法 ─────────── 无依赖，即刻
 
 ---
 
-## 七、参考代码索引
+## 九、参考代码索引
 
-| 技术点 | Ref A 节/行 | Ref C 节/行 |
-|--------|-----------|-----------|
-| 法线乘法混合 | §5: `DisNormal.xyz *= DisNormal01.xyz * 4` | — |
-| 深度偏移 UV 泡沫 | §3: `step(foamRange, foamTex)` | — |
-| 屏幕空间法线投影 | — | §1: `screenRight/screenUp` + `dot(normal, ...)` |
-| 折射深度遮罩 | §4: `waterDepth01 < 0 ? screenUV : distortUV` | §2: `lerp(screenUV, refractionUV, step(0, DepthGap))` |
-| SSS 光包裹 | — | §3: `H = normalize(lightDir + normal * _Distortion)` |
-| 深度颜色 lerp | §2: `saturate(waterDepth / _WaterColorRange)` → RampTex | §2: `lerp(_ShallowColor, _DeepColor, DepthGap)` |
-| Blinn-Phong 高光 | §6: `pow(max(0, dot(N, H)), _Smoothness)` | §4: `pow(max(0, dot(halfDir, normal)), _gloss)` |
+| 技术点 | Ref A 节/行 | Ref C 节/行 | Ref D 节/行 | Ref E 节/行 |
+|--------|-----------|-----------|-----------|-----------|
+| 法线乘法混合 | §5: `DisNormal.xyz *= DisNormal01.xyz * 4` | — | — | — |
+| 深度偏移 UV 泡沫 | §3: `step(foamRange, foamTex)` | — | — | — |
+| 屏幕空间法线投影 | — | §1: `screenRight/screenUp` + `dot(normal, ...)` | — | — |
+| 折射深度遮罩 | §4: `waterDepth01 < 0 ? screenUV : distortUV` | §2: `lerp(screenUV, refractionUV, step(0, DepthGap))` | — | — |
+| SSS 光包裹 | — | §3: `H = normalize(lightDir + normal * _Distortion)` (复现原版) | §1: `H = normalize(-lightDir + ...)` (**修改版**) | — | **Ref F:** `H = normalize(L + N * _Distortion)` (**权威源**), 完整版含 `_Ambient` + `_Attenuation * thickness` |
+| SSS 厚度修正 | — | §3: 纯 `waveHeight` | §1: `waveHeight * SSSMask`（Jacobian blur RT） | — |
+| 深度颜色 lerp | §2: `saturate(waterDepth / _WaterColorRange)` → RampTex | §2: `lerp(_ShallowColor, _DeepColor, DepthGap)` | — | — |
+| Blinn-Phong 高光 | §6: `pow(max(0, dot(N, H)), _Smoothness)` | §4: `pow(max(0, dot(halfDir, normal)), _gloss)` | §2: FFT 法线 + 预烘焙法线贴图叠加 | — |
+| Fresnel | — | — | §4: `((n1-n2)/(n1+n2))² + (1-R₀)*(1-dot)ⁿ` 物理折射率 | §5: `mix(refractionColor, reflectionColor, fresnel)` |
+| 白沫生成 | §3: step + pow 裁剪 | §5: R 通道采样 + 加法 | §3: Jacobian 行列式 + Dual Blur + 高度遮罩 | — |
+| **视线方向水厚** | — | — | — | §6: **`depth = (v.y - waterLevel) / viewDir.y`**（无需深度纹理） |
+| **水岸柔边** | — | — | — | §6: **`fresnel = mix(fresnel, 0.0, pow(depth, 2.0))`** |
+| 折射 RT 优化 | — | — | — | §8: 深度存 Alpha 通道（合并采样） |
 
 ---
 
-## 八、验收标准
+## 十、验收标准
 
 1. `npx tsc --noEmit` 零错误
 2. `vitest run env-state / scene/env-water` 全通过
