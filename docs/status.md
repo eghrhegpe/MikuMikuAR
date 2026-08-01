@@ -23,7 +23,7 @@
 | ADR-221 | 逐材质透明度（alphaMul）—— 材质编辑器第 11 参数 | 已完成 |
 | ADR-220 | Schema 完整性元测试 —— 不开浏览器，秒级捕获 schema 漂移 | 实施中（P0 精化完成：16 面板 1427 断言全绿 + 多语言包校验 + motionModule 动态校验 + folder 真空节点修复；P1 原型建成：16 面板 158 用例自动生成，分域导航已实现，settings 二级导航修复，mock 工厂扩展） |
 | ADR-219 | 测试并发调优与 isolate 污染治理 — vitest 全量提速：maxWorkers 落地 + isolate=false 障碍清理 | 已完成（2026-08-01 决策 C 收口。Phase 1 maxWorkers 落地省 13%；Phase 2 idb 全局化落地，isolate=true 4135 全绿零回退；有界诊断判定「收集期蒸发」与「执行期污染」两债同土壤、不同修法，isolate=false 存在结构性风险 → 降级为非目标不采纳；剩余执行期污染债入测试卫生清单）（2026-07-31） |
-| ADR-218 | 知识库（docs/knowledge）分层治理 — 痛点与方案 | 规划（2026-07-31） |
+| ADR-218 | 知识库（docs/knowledge）分层治理 — 痛点与方案 | 部分实施（P2 工具侧校验已落地；P3/P4 结构层待做）（2026-07-31） |
 | ADR-217 | 地水无限尺寸单源化 — 水面跟进 groundInfiniteEnabled | ✅ 已实施（2026-07-30） |
 | ADR-216 | 移除死状态字段 underwaterFogDensity / underwaterFogMultiplier | ✅ 已实施（2026-07-30） |
 | ADR-215 | 取消「道具」资源类型 — 模型附属关系替代 prop + accessory 体系 | 🔄 实施中（2026-07-30） |
