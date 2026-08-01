@@ -24,6 +24,20 @@
 
 ---
 
+## 📖 文档
+
+| 文档                                   | 内容                |
+| ------------------------------------ | ----------------- |
+| [知识库](docs/knowledge/README.md)      | 模块现状快照 + 卡片索引（某模块现在长啥样、去哪找） |
+| [架构方案](docs/architecture.md)         | 全功能汇总与技术细节        |
+| [设计决策](docs/adr/)                    | 220+ ADR 技术决策记录   |
+| [竞品分析](docs/competitive-analysis.md) | 23 个项目调研对比        |
+| [项目现状](docs/status.md)               | 当前状态 + 已完成功能      |
+| [菜单指南](docs/menu-how-to.md)          | 声明式菜单 Schema 开发手册 |
+| [编码奇谭](novel/README.md)              | 代码演化叙事            |
+
+---
+
 ## 关于 MikuMikuAR
 
 大多数 MMD 工具要么是单一查看器（只能看），要么是重型 DCC 插件（必须会 Blender）。MikuMikuAR 填补了中间地带：
@@ -208,20 +222,6 @@ sudo apt-get install -y libgtk-4-dev libwebkitgtk-6.0-dev libglib2.0-dev \
 ```
 
 </details>
-
----
-
-## 📖 文档
-
-| 文档                                   | 内容                |
-| ------------------------------------ | ----------------- |
-| [知识库](docs/knowledge/README.md)      | 模块现状快照 + 卡片索引（某模块现在长啥样、去哪找） |
-| [架构方案](docs/architecture.md)         | 全功能汇总与技术细节        |
-| [设计决策](docs/adr/)                    | 210+ ADR 技术决策记录   |
-| [竞品分析](docs/competitive-analysis.md) | 23 个项目调研对比        |
-| [项目现状](docs/status.md)               | 当前状态 + 已完成功能      |
-| [菜单指南](docs/menu-how-to.md)          | 声明式菜单 Schema 开发手册 |
-| [编码奇谭](novel/README.md)              | 代码演化叙事            |
 
 ---
 
