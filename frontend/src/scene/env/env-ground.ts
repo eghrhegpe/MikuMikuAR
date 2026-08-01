@@ -12,7 +12,6 @@ import {
     FresnelParameters,
     Material,
     Mesh,
-    MeshBuilder,
     GroundMesh,
     MirrorTexture,
     Plane,
@@ -43,6 +42,7 @@ import {
 } from './env-water';
 import { getCanvasCtx } from './_shared/env-type-helpers';
 import { GroundProceduralKind } from './env-ground-presets';
+import { createGroundMeshFromSpec } from './env-ground-spec';
 
 // ======== ADR-114: 材质适配层（StandardMaterial ↔ PBRMaterial）========
 
@@ -1275,83 +1275,12 @@ export function applyGround(state: EnvState): void {
         return;
     }
 
-    // 平面模式
-    // ADR-134: infinite 模式下使用固定大 mesh，groundSize 退化为视觉密度参数
-    const meshSize = state.groundInfiniteEnabled ? INFINITE_GROUND_SIZE : state.groundSize;
-    const ground = MeshBuilder.CreateGround(
-        'envGround',
-        { width: meshSize, height: meshSize, subdivisions: 2 },
-        scene
-    );
-    _groundActualSize = meshSize;
-    ground.isPickable = false;
-    ground.position.y = state.groundLevel;
-
-    const mat = createGroundMaterial(state, scene);
-    mat.alpha = state.groundAlpha;
-    mat.backFaceCulling = false;
-    ground.material = mat;
-
-    if (state.groundProceduralTexture !== 'none' && !state.groundTextureEnabled) {
-        // ADR-114: 程序化纹理模式（PBR 专属）
-        const texs = generateProceduralGroundTextures(
-            state.groundProceduralTexture,
-            state.groundProceduralSeed,
-            scene,
-            state
-        );
-        // [fix] 纹理密度与 mesh 尺寸成正比，避免拉伸模糊
-        const scale = _groundActualSize / 10 / Math.max(0.1, state.groundProceduralScale);
-        texs.albedo.uScale = texs.albedo.vScale = scale;
-        texs.roughness.uScale = texs.roughness.vScale = scale;
-        texs.normal.uScale = texs.normal.vScale = scale;
-        _setAlbedoTex(mat, texs.albedo);
-        _setAlbedoColor(mat, new Color3(1, 1, 1));
-        if (mat instanceof PBRMaterial) {
-            mat.bumpTexture = texs.normal;
-            // ADR-114 Phase 2: 法线扭曲增强 bumpTexture.level
-            mat.bumpTexture.level = _effectiveBumpLevel(state);
-            // ADR-114: 接通粗糙度贴图（此前生成后未赋给材质，逐像素粗糙度被丢弃）。
-            // Babylon 9.x 默认从 metallicTexture 的 Alpha 通道读粗糙度，而程序化贴图为
-            // RGB 灰度（alpha 恒为 1），须改读 Green 通道；Blue（金属度）/Red（AO）通道
-            // 保持关闭——金属度走标量 groundMetallic。标量 roughness 与贴图相乘（Babylon
-            // 约定 “scale the roughness values of the metallic texture”），groundRoughness 滑杆依旧生效。
-            mat.metallicTexture = texs.roughness;
-            mat.useRoughnessFromMetallicTextureAlpha = false;
-            mat.useRoughnessFromMetallicTextureGreen = true;
-        }
-    } else if (state.groundStyle !== 'texture') {
-        // canvas 程序化图案（grid/checker/dots 等）
-        const tex = _generateGroundTexture(state, scene);
-        _setAlbedoTex(mat, tex);
-        _setAlbedoColor(mat, new Color3(1, 1, 1));
-        // [fix] 纹理密度与 mesh 尺寸成正比，避免拉伸模糊
-        tex.uScale = tex.vScale = _groundActualSize / 10;
-    } else if (state.groundTextureEnabled && state.groundTexture) {
-        // 外部贴图模式
-        _setAlbedoColor(mat, new Color3(1, 1, 1));
-        _syncTextureGroundTexture(mat, state, scene);
-        _syncGroundNormalTexture(mat, state);
-    } else {
-        // 纯色模式
-        _setAlbedoColor(
-            mat,
-            new Color3(state.groundColor[0], state.groundColor[1], state.groundColor[2])
-        );
-    }
-
-    applyGroundEdgeFade(mat, state.groundEdgeFade, scene);
-    ground.rotation.x = (state.groundPitch * Math.PI) / 180;
-    ground.rotation.z = (state.groundRoll * Math.PI) / 180;
-
-    // 水下视觉修饰：焦散 emissive + 入水雾色（在 tickGround 中按相机深度统一驱动）
-    underwaterFogController.install(mat);
-
-    // [adr-114] 时序修复：必须先赋值 mesh，再 buildGroundReflection。
-    // groundReflection.mount 依赖 _envSys.ground.mesh.material，若 mesh 为 null 则 mount 静默跳过，
-    // reflectionTexture 永远挂不上去（旧 bug：曾把 buildGroundReflection 放在赋值前）。
-    _envSys.ground.mesh = ground;
-    buildGroundReflection(state);
+    // ADR-226 Phase 1: 非地形（平面/无限）地面改调 spec 单源 createGroundMeshFromSpec，
+    // 消除重建路径手拼 typeKey 双路径分叉。terrain 保留下方 legacy 分支
+    // （含 _onTerrainReady / elevationColoring 语义），待 Phase 2 收敛——
+    // 避免未受合约测试覆盖的 elevationColoring 行为变更。
+    createGroundMeshFromSpec(state, scene);
+    return;
 }
 
 // ======== Per-frame ground updates (called by observer) ========

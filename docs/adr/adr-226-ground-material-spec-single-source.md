@@ -116,7 +116,7 @@ export interface GroundMaterialSpec {
 | Phase | 动作 | 行为变化 |
 |-------|------|----------|
 | 0 | 落地 `env-ground-spec.ts`（spec/key/diff/apply/create）+ 导出 env-ground 必要内部 helper（仅加 `export`，无逻辑改动） | 无（新模块本回合未被 applyGround 引用） |
-| 1 | `applyGround` 重建路径改为调 `createGroundMeshFromSpec` | 等价替换（需 tsc + 手动渲染验证） |
+| 1 | `applyGround` 重建路径（平面/无限）改调 `createGroundMeshFromSpec`；terrain 保留 legacy 分支（含 elevationColoring / `_onTerrainReady` 语义） | ✅ 已实现（2026-08-01）：等价替换，tsc 0 错 + 合约测试 23/23 + env-ground.test 19/19 不回归；terrain 因 elevationColoring 行为差未受合约测试覆盖，留待 Phase 2 收敛 |
 | 2 | `applyGround` 原地路径改为调 `applyGroundMaterialSpec` | 等价替换 |
 | 3 | 补 contract 测试：断言「重建产物 == 原地产物」（同 state 下 mesh.material 等价），CI 锁死双路径分叉 | 已落地（23 例全绿）；并修复 legacy 程序化 normal 被原地路径清掉的不一致 bug（见下） |
 | 4 | 删除旧双路径 + 手拼 `typeKey`；`applyGround` 退化为 `if (groundSpecNeedsRebuild(prev,next)) createGroundMeshFromSpec else applyGroundMaterialSpec` | 结构性收敛完成 |
@@ -175,4 +175,22 @@ export interface GroundMaterialSpec {
 | `frontend/src/scene/env/env-ground-spec.ts` | `applyGroundMaterialSpec`：`procedural` 且外部 normal 为空时跳过 `_syncGroundNormalTexture`（保留程序化 normal） |
 | `frontend/src/scene/env/env-ground.ts` | 原地路径（L1182 附近）：对称守卫，修复程序化 normal 被原地清掉的历史 bug |
 | `frontend/src/__tests__/scene/env-ground-spec.contract.test.ts` | 新增 Phase 3 合约测试（23 例） |
+
+## Phase 1 执行记录（2026-08-01）
+
+### 范围决策
+- **收敛对象**：`applyGround` 重建路径的**平面 / 无限**分支（solid/canvas/texture/procedural × flat/infinite），改为调用 `createGroundMeshFromSpec`，消除手拼 `typeKey` 双路径分叉。
+- **暂留 legacy**：`terrain` 分支保留原实现。原因：terrain 程序化分支依赖 `!groundElevationColoringEnabled`（原 L1243）条件套用三件套，而 spec 的 `applyGroundMaterialSpec` 对 procedural 无条件套用；该行为差**未受合约测试覆盖**（Suite 4 仅覆盖平面 7 例 + bug 用例），贸然收敛会改变 elevationColoring 语义且缺测试护栏。留待 Phase 2 单独收敛，并补 terrain 合约测试。
+
+### 改动
+| 文件 | 改动 |
+|------|------|
+| `frontend/src/scene/env/env-ground.ts` | 重建路径平面/无限分支整段（原 L1278–1354）替换为 `createGroundMeshFromSpec(state, scene); return;`；新增 `import { createGroundMeshFromSpec } from './env-ground-spec'`；移除因删除平面分支而变为未引用的 `MeshBuilder` import |
+| `frontend/src/__tests__/scene/env-ground-spec.contract.test.ts` | `Suite 4` bug 用例由「断言 legacy≠spec（bug 存在）」改为「断言 legacy==spec（bug 已消除，Phase 1 收敛成果）」——legacy 重建路径现也走 spec，原漏除 `scale` 的 bug 自然消失 |
+
+### 验证
+- `tsc --noEmit` 全项目 **0 错误**
+- 合约测试 **23/23 全绿**（legacy 重建 == spec 重建的护栏在 Phase 1 后更强：legacy 重建路径本身即收敛到 spec）
+- 既有 `env-ground.test.ts` **19/19** 不回归
+- 循环依赖安全：`env-ground` ↔ `env-ground-spec` 双向 import 均为函数级延迟调用，无模块顶层执行，ESM/TS 下安全
 
