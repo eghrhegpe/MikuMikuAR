@@ -13,6 +13,7 @@
     "check:circular": "node scripts/check-circular.mjs",
     "gen:funcmap": "node scripts/gen-funcmap.mjs",
     "check:funcmap": "node scripts/gen-funcmap.mjs --check",
+    "gen:knowledge-symbols": "node scripts/gen-knowledge-symbols.mjs",
     "test:scripts": "node --test scripts/_lib/source-graph.test.mjs",
     "codemod": "cd frontend && node ../scripts/codemod.mjs",
     "diagnose": "node scripts/diagnose.mjs",

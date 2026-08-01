@@ -1089,7 +1089,7 @@ public class MainActivity extends AppCompatActivity {
         // The JS handler should call menuStack.pop() if possible, or
         // return false to fall through to the default behavior.
         if (bridge != null) {
-            bridge.emitSystemEvent("android:back", "{}");
+            bridge.emitEvent("android:back", "{}");
             return;
         }
         // Fallback: WebView history navigation
