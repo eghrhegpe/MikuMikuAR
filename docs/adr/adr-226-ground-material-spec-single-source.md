@@ -1,7 +1,7 @@
 # ADR-226: 地面材质单一事实源重构（GroundMaterialSpec）
 
 > **日期**: 2026-08-01
-> **状态**: 规划
+> **状态**: 实施中
 > **关联**：ADR-052（地面模式）、ADR-114（PBR 材质适配层）、ADR-134（无限地面）、ADR-160（地面涟漪）、ADR-208（地面预设 sourceKind）
 
 ---
@@ -119,7 +119,7 @@ export interface GroundMaterialSpec {
 | 1 | `applyGround` 重建路径（平面/无限）改调 `createGroundMeshFromSpec`；terrain 保留 legacy 分支（含 elevationColoring / `_onTerrainReady` 语义） | ✅ 已实现（2026-08-01）：等价替换，tsc 0 错 + 合约测试 23/23 + env-ground.test 19/19 不回归；terrain 因 elevationColoring 行为差未受合约测试覆盖，留待 Phase 2 收敛 |
 | 2 | `applyGround` 原地路径（平面/无限）改调 `applyGroundMaterialSpec`；terrain 原地暂留 legacy（`_applyGroundInplaceLegacy`，elevationColoring 行为差未受合约测试覆盖） | ✅ 已实现（2026-08-01）：等价替换，tsc 0 错 + 合约 23/23 + env-ground.test 19/19 不回归 |
 | 3 | 补 contract 测试：断言「重建产物 == 原地产物」（同 state 下 mesh.material 等价），CI 锁死双路径分叉 | 已落地（23 例全绿）；并修复 legacy 程序化 normal 被原地路径清掉的不一致 bug（见下） |
-| 4 | 删除旧双路径 + 手拼 `typeKey`；`applyGround` 退化为 `if (groundSpecNeedsRebuild(prev,next)) createGroundMeshFromSpec else applyGroundMaterialSpec` | 结构性收敛完成 |
+| 4 | 删除旧双路径 + 手拼 `typeKey`；`applyGround` 重建/原地决策统一走 `specKey(buildGroundMaterialSpec(state))`，手拼 `typeKey` 死代码整体删除 | ✅ 已实现（2026-08-01）：等价替换（含无限模式 spurious 重建消除，见下），tsc 0 错 + 合约 24/24 + env-ground.test 19/19 |
 
 ## 对比方案
 
@@ -209,4 +209,38 @@ export interface GroundMaterialSpec {
 - `tsc --noEmit` 全项目 **0 错误**
 - 合约测试 **23/23 全绿**
 - 既有 `env-ground.test.ts` **19/19** 不回归
+
+## 代码审查发现与处置（2026-08-01，Phase 4 收尾）
+
+Phase 1–3 落库后，对地面系统做一次专项代码审查，发现 3 处缺陷，均在 Phase 4 一并修复：
+
+| # | 文件:行 | 缺陷 | 风险 | 处置 |
+|---|---------|------|------|------|
+| D1 | `env-ground-spec.ts:160-162` | `alpha: isTerrain ? state.groundAlpha : state.groundAlpha` 三元左右值相同（历史遗留 no-op），误导维护者以为存在 terrain 特定分支 | 🟡 P3 — 不影响正确性（`specKey` 仅 terrain 分支纳入 alpha/level，已正确）；违反「alpha/level 仅 terrain 进结构性」的清晰表达 | 改为直接赋值 `alpha: state.groundAlpha` / `level: state.groundLevel`，注释说明取舍权在 `specKey` |
+| D2 | `env-ground.ts:1176-1191` | `typeKey` 仍手拼，与 `specKey` 重复，加字段需改 2 处 | 🟠 P2 — Phase 4 未完成遗留风险 | 删除 `infKey/pbrKey/proceduralKey/typeKey` 手拼块，改用 `specKey(buildGroundMaterialSpec(state))` 单源 |
+| D3 | `env-ground.ts:1192` | `keyChanged` 仍基于 `typeKey` 而非 `groundSpecNeedsRebuild` | 🟠 P2 — 双比较路径并存 | `keyChanged = nextKey !== _currentGroundKey`，重建路径 `_currentGroundKey = nextKey` 同步改走 specKey |
+
+### 行为变更说明（必须知悉）
+
+`typeKey` 与 `specKey` 曾在 **非 terrain 的 texture/canvas + 无限模式** 下存在分叉：
+- legacy `typeKey`：size 用 `state.groundSize`（=500）
+- `specKey`：`s.size` 在无限模式用 `INFINITE_GROUND_SIZE`（=2000，env-ground.ts:553）
+
+改为 `specKey` 后，**无限 + 贴图 / 画布地面改 `groundSize` 不再触发重建**。该重建本就是 spurious——无限模式 mesh 恒为 2000，纹理密度由 `groundTextureScale` 控制，`groundSize` 无视觉影响。属**严格改进且视觉等价**。
+
+为锁死该改进、杜绝回归，在合约测试 `Suite 2` 新增断言：无限+texture/canvas 改 `groundSize` 不触发 `groundSpecNeedsRebuild`（对照 flat 模式改 `groundSize` 必须触发）。合约测试由 23 → **24 例**。
+
+### 改动文件
+| 文件 | 改动 |
+|------|------|
+| `frontend/src/scene/env/env-ground-spec.ts` | D1：`buildGroundMaterialSpec` 去掉 no-op 三元，注释说明 alpha/level 取舍权在 `specKey` |
+| `frontend/src/scene/env/env-ground.ts` | D2/D3：`applyGround` 顶部决策改走 `specKey(buildGroundMaterialSpec(state))`；删除 `infKey/pbrKey/proceduralKey/typeKey`；重建路径 `_currentGroundKey = nextKey`；补 `import { specKey, buildGroundMaterialSpec }`；更新 Phase 1 时代过时注释 |
+| `frontend/src/__tests__/scene/env-ground-spec.contract.test.ts` | `Suite 2` 新增无限模式 `groundSize` 不触发重建护栏（24 例） |
+
+### 验证
+- `tsc --noEmit` 全项目 **0 错误**
+- 合约测试 **24/24 全绿**
+- 既有 `env-ground.test.ts` **19/19** 不回归
+- `npm run check:docs` 通过（无漂移）
+
 
