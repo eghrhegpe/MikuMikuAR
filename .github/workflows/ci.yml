@@ -207,20 +207,11 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Start Vite + run @dom E2E
-        run: |
-          npm run dev -- --host 127.0.0.1 --port 5173 &
-          VITE_PID=$!
-          for i in $(seq 1 30); do
-            if curl -s http://127.0.0.1:5173 >/dev/null; then
-              echo "Vite dev server is up"; break
-            fi
-            sleep 2
-          done
-          npx playwright test --grep @dom --reporter=line
-          TEST_EXIT=$?
-          kill $VITE_PID 2>/dev/null || true
-          exit $TEST_EXIT
+      - name: Run @dom E2E
+        # Playwright 的 config.webServer 自动管理 Vite dev server（:5173），
+        # CI 下已跳过 4174 preview server 避免不必要的构建等待。
+        # 详见 playwright.config.ts webServer 条件逻辑。
+        run: npx playwright test --grep @dom --reporter=line
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v5
@@ -353,23 +344,22 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Build web entry + start preview server
+      - name: Build web entry + run @web E2E smoke
+        # CI 下 playwright.config.ts 已跳过 4174 webServer 自动管理，
+        # 此处手动构建并启动 preview server，测试完成后清理。
         run: |
           npx vite build --config vite.web.config.ts
           npx vite preview --config vite.web.config.ts --port 4174 --strictPort &
+          VITE_PID=$!
           for i in $(seq 1 30); do
             if curl -s http://127.0.0.1:4174/MikuMikuAR/ >/dev/null; then
               echo "Web preview server is up"; break
             fi
             sleep 2
           done
-
-      - name: Run @web E2E smoke
-        run: |
           npx playwright test --grep "@web" --reporter=line
           TEST_EXIT=$?
-          # Kill preview server (non-blocking)
-          pkill -f "vite preview" || true
+          kill $VITE_PID 2>/dev/null || true
           exit $TEST_EXIT
 
       - name: Upload Playwright report
@@ -410,22 +400,22 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Build web entry + start preview server
+      - name: Build web entry + run all @web E2E tests
+        # CI 下 playwright.config.ts 已跳过 4174 webServer 自动管理，
+        # 此处手动构建并启动 preview server，测试完成后清理。
         run: |
           npx vite build --config vite.web.config.ts
           npx vite preview --config vite.web.config.ts --port 4174 --strictPort &
+          VITE_PID=$!
           for i in $(seq 1 30); do
             if curl -s http://127.0.0.1:4174/MikuMikuAR/ >/dev/null; then
               echo "Web preview server is up"; break
             fi
             sleep 2
           done
-
-      - name: Run all @web E2E tests
-        run: |
           npx playwright test --grep "@web" --reporter=line
           TEST_EXIT=$?
-          pkill -f "vite preview" || true
+          kill $VITE_PID 2>/dev/null || true
           exit $TEST_EXIT
 
       - name: Upload Playwright report

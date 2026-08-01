@@ -22,7 +22,9 @@ export default defineConfig({
     reporter: "html",
 
     // [doc:adr-177] Phase 4 双 webServer：5173 桌面 dev（@dom/@webgl）+ 4174 web preview（@web）
-    // Playwright 支持数组形式并行启动多 server，各自 reuseExistingServer 避免重复启动。
+    // Playwright 支持数组形式并行启动多 server。
+    // 注意：CI 中 @web 相关 job 自己管理 4174 preview server，此处跳过避免端口冲突
+    // （Serve 工作流先启动 server，Playwright 再启同一端口 → --strictPort 报错退出）。
     webServer: [
         {
             // 主应用桌面入口（vite.config.ts → index.html），@dom/@webgl 测试用
@@ -32,14 +34,16 @@ export default defineConfig({
             // Vite 首次编译 babylon-mmd 等重模块常需 30-60s，15s 会误判超时。
             timeout: 60000,
         },
-        {
+        // CI 环境下 @web job 手动管理 preview server，不依赖 playwright 自动启动。
+        // 同时避免 @dom 门禁因 4174 构建耗时（~70s）而延长等待。
+        ...(process.env.CI ? [] : [{
             // [doc:adr-177] Phase 4 web 入口生产构建预览（vite.web.config.ts → index.web.html）
             // 需先构建 dist-web/ 再 preview；@web 测试用。port 与 dev 分离避免冲突。
             command: "npx vite build --config vite.web.config.ts && npx vite preview --config vite.web.config.ts --port 4174 --strictPort",
             url: "http://localhost:4174/MikuMikuAR/",
             reuseExistingServer: true,
             timeout: 120000, // 构建需 70s + preview 启动
-        },
+        }]),
     ],
 
     use: {

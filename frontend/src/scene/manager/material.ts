@@ -12,6 +12,7 @@ import { triggerAutoSave } from '@/core/config';
 import { clamp01 } from '@/core/clamp';
 import { logWarn } from '../../core/logger';
 import type { MmdStandardMaterial } from '../../core/types';
+import { getMatSssState, applyMatSssState, type SssParams } from './material-sss';
 
 // [ADR-188] SSS 材质类型定义（PBRMaterial 子类，由材料系统识别）
 export type SssMaterial = PBRMaterial;
@@ -941,6 +942,7 @@ export function getMatState(id: string): {
     categories: Record<string, MaterialCategoryParams>;
     overrides: Record<number, MaterialCategoryParams>;
     enabled: Record<number, boolean>;
+    sssCategories?: Record<string, SssParams>;
 } | null {
     const catState = _catState.get(id);
     const matState = _matState.get(id);
@@ -975,15 +977,25 @@ export function getMatState(id: string): {
             enabled[idx] = val;
         }
     }
+    // ADR-188: 序列化 SSS 参数
+    const sssState = getMatSssState(id);
+    const sssCategories = sssState?.sssCategories ?? {};
+
     // 全部为默认值时返回 null（与「无调整」语义一致）
     if (
         Object.keys(categories).length === 0 &&
         Object.keys(overrides).length === 0 &&
-        Object.keys(enabled).length === 0
+        Object.keys(enabled).length === 0 &&
+        Object.keys(sssCategories).length === 0
     ) {
         return null;
     }
-    return { categories, overrides, enabled };
+    return {
+        categories,
+        overrides,
+        enabled,
+        ...(Object.keys(sssCategories).length > 0 ? { sssCategories } : {}),
+    };
 }
 
 export function applyMatState(
@@ -992,6 +1004,7 @@ export function applyMatState(
         categories?: Record<string, MaterialCategoryParams>;
         overrides?: Record<number, MaterialCategoryParams>;
         enabled?: Record<number, boolean>;
+        sssCategories?: Record<string, SssParams>;
     }
 ): void {
     if (state.categories) {
@@ -1011,4 +1024,6 @@ export function applyMatState(
             setMatEnabled(id, idx, val);
         }
     }
+    // ADR-188: 恢复 SSS 参数
+    applyMatSssState(id, { sssCategories: state.sssCategories });
 }
