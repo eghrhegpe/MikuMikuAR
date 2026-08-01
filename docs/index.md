@@ -35,4 +35,7 @@ features:
   - title: 菜单地图
     details: 菜单树 / 入口函数 / 快捷键由源码自动生成（menu-map.md）。
     link: /knowledge/menu-map
+  - title: 内部文档
+    details: 代码审核 / 技术调研 / AI 周记等过程性文档（仓库可见 · 站点隐藏），附访问路径与提升为对外文档的流程。
+    link: /internal
 ---

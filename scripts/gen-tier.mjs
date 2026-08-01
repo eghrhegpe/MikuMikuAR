@@ -99,7 +99,7 @@ const reverse = buildReverseGraph();
 // 收集所有卡
 const cardFiles = fs
   .readdirSync(KDIR)
-  .filter((f) => f.endsWith('.md') && f.toLowerCase() !== 'readme.md' && f !== 'routes.md' && f !== 'tier-review.md' && f !== 'index.md');
+  .filter((f) => f.endsWith('.md') && f.toLowerCase() !== 'readme.md' && f !== 'routes.md' && f !== 'tier-review.md' && f !== 'index.md' && f !== 'menu-map.md' && f !== 'graph.md');
 
 const seeds = []; // 已标卡（信任跳过）
 const untagged = []; // 待定

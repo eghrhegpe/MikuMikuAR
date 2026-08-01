@@ -119,7 +119,7 @@ const adrItems = mdNames('adr')
 // 绝不静默丢卡（旧的白名单投影实现曾吞掉 knowledge/README.md 与 routes.md 两张入口卡）。
 const KNOWLEDGE_ORDER = ['env', 'scene', 'physics', 'rendering', 'motion', 'ui', 'core', 'backend'];
 // 非知识卡目录成员（分区枢纽索引 / 导读 / 路由表），不参与按 category 分组
-const KNOWLEDGE_NON_CARDS = new Set(['index.md', 'README.md', 'routes.md', 'menu-map.md', 'graph.md']);
+const KNOWLEDGE_NON_CARDS = new Set(['index.md', 'README.md', 'routes.md', 'menu-map.md', 'graph.md', 'tier-review.md']);
 const UNCATEGORIZED = '其他';
 const knowledgeGroups = new Map();
 for (const f of mdNames('knowledge')) {

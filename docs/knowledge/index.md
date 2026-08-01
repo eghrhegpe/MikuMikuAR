@@ -2,7 +2,7 @@
 
 # 知识卡索引
 
-> 原子化架构知识层，共 **234** 张卡：记录「某个子系统**现在**长啥样、去哪找」。与 ADR（为什么这么决定）互补——知识卡引用而不复制 ADR 结论。
+> 原子化架构知识层，共 **233** 张卡：记录「某个子系统**现在**长啥样、去哪找」。与 ADR（为什么这么决定）互补——知识卡引用而不复制 ADR 结论。
 
 > 卡片格式规范、立卡判据、`source_files` 铁律见 [知识卡层导读](./README.md)；AI 检索入口见 [路由表](./routes.md)；菜单全景见 [menu-map](./menu-map.md)（机器生成）。
 
@@ -17,7 +17,6 @@
 | [motion](#motion) | 34 | 动作系统 |
 | [ui](#ui) | 55 | UI / 菜单 |
 | [core](#core) | 69 | 核心基础设施 |
-| [未分类](#未分类) | 1 | 未标注 category（待补） |
 
 ## env
 
@@ -175,14 +174,6 @@
 
 > 叶子模块 / 工具函数（43 张）：[ai-sse](./ai-sse.md) · [character-bible](./character-bible.md) · [chat-store](./chat-store.md) · [color-helpers](./color-helpers.md) · [config-barrel](./config-barrel.md) · [core-dom](./core-dom.md) · [core-leaf-modules](./core-leaf-modules.md) · [core-orbit](./core-orbit.md) · [core-types](./core-types.md) · [core-utils](./core-utils.md) · [dev-hooks](./dev-hooks.md) · [diagnostic-actions](./diagnostic-actions.md) · [dialog](./dialog.md) · [dispose-helpers](./dispose-helpers.md) · [drop-import](./drop-import.md) · [goerr](./goerr.md) · [hash-noise](./hash-noise.md) · [i18n-t](./i18n-t.md) · [icons-bundle](./icons-bundle.md) · [logger](./logger.md) · [markdown](./markdown.md) · [mmar-globals](./mmar-globals.md) · [observer-handle](./observer-handle.md) · [platform](./platform.md) · [pmx-meta](./pmx-meta.md) · [preset-meta](./preset-meta.md) · [reactivity](./reactivity.md) · [render-context](./render-context.md) · [runtime-stub](./runtime-stub.md) · [safe-call](./safe-call.md) · [shortcut-app](./shortcut-app.md) · [status-bar](./status-bar.md) · [toast](./toast.md) · [ui-constants](./ui-constants.md) · [ui-focus-trap](./ui-focus-trap.md) · [ui-header-toggle](./ui-header-toggle.md) · [ui-nav-item](./ui-nav-item.md) · [ui-preset](./ui-preset.md) · [ui-slider-controller](./ui-slider-controller.md) · [ui-state](./ui-state.md) · [wind-utils](./wind-utils.md) · [zh-CN](./zh-CN.md) · [zh-TW](./zh-TW.md)
 
-## 未分类
-
-**未标注 `category` 字段**——补齐 frontmatter 后会自动归入对应分类。
-
-| 卡片 | 关联 ADR |
-|------|----------|
-| [tier-review](./tier-review.md) | — |
-
 ## ADR 反查
 
 > 从卡片 `adr:` 字段**反向聚合**：某条决策影响了哪些子系统。正向导航见 [决策记录索引](../adr/index.md)。
@@ -286,3 +277,4 @@
 - [菜单层级地图（自动生成）](./menu-map.md)
 - [知识卡层（Knowledge Cards）](./README.md)
 - [AI 知识库路由表](./routes.md)
+- [知识卡 tier 标注复核队列（ADR-218 P3）](./tier-review.md)

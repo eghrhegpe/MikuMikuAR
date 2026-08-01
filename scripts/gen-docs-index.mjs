@@ -235,7 +235,7 @@ const CATEGORY_LABEL = {
   backend: '后端',
 };
 /** 非知识卡的目录成员（索引 / 路由表 / 机器生成地图），单列不参与分类统计。 */
-const KNOWLEDGE_NON_CARDS = new Set(['index.md', 'README.md', 'routes.md', 'menu-map.md', 'graph.md']);
+const KNOWLEDGE_NON_CARDS = new Set(['index.md', 'README.md', 'routes.md', 'menu-map.md', 'graph.md', 'tier-review.md']);
 
 function buildKnowledgeIndex() {
   const cards = [];
