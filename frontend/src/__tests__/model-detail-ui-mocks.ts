@@ -13,6 +13,7 @@ import {
     MockTexture,
     MockCubeTexture,
 } from './mocks/babylon-classes';
+import { sceneMockSuperset } from './mocks/scene-superset';
 
 // ---- babylon.js 补缺工厂（model-preset-mocks 未覆盖的部分） ----
 export const mockShadowGenerator = () => ({ ShadowGenerator: MockShadowGenerator });
@@ -57,6 +58,7 @@ export const mockModelManager = {
 };
 
 export const mockSceneScene = () => ({
+    ...sceneMockSuperset({ modelManager: mockModelManager }),
     get modelManager() {
         return mockModelManager;
     },

@@ -9,6 +9,7 @@
 //  - babylon math 用 vi.importActual 加载本地 mock 类，特殊性保留在各测试文件内联 vi.mock。
 //  - 其余 6 个 vi.mock 工厂在此收敛为同步函数，mocks 导入须排在 SUT/helpers 之前。
 import { vi } from 'vitest';
+import { sceneMockSuperset } from './mocks/scene-superset';
 
 export function createMockModelManager() {
     return {
@@ -47,6 +48,7 @@ export const modelOpsShared = {
 
 export function mockSceneModule(mm: ReturnType<typeof createMockModelManager>) {
     return {
+        ...sceneMockSuperset({ modelManager: mm }),
         get modelManager() {
             return mm;
         },

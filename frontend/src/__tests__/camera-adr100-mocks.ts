@@ -4,6 +4,7 @@
 // vi.mock 工厂延迟到彼时才执行，故这里改为普通导出类 + 同步工厂（imported 绑定，无 TDZ）。
 // Mock 类为 camera SUT 定制（setTarget 拷贝、_panningMouseButton 等），不复用 mocks/babylon-classes。
 import { vi } from 'vitest';
+import { sceneMockSuperset } from './mocks/scene-superset';
 
 export const MockCamera = class {
     fov = 0.8;
@@ -271,6 +272,7 @@ export const mockConfigModule = () => ({
 });
 
 export const mockSceneModule = () => ({
+    ...sceneMockSuperset(),
     focusModel: vi.fn(),
     reattachPipeline: vi.fn(),
     setARMode: vi.fn(),

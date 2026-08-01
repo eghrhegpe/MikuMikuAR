@@ -18,6 +18,7 @@
 // 拆分文件位于 src/__tests__/perception/，相对前缀为 '../../'（= src/）。
 
 import { vi } from 'vitest';
+import { sceneMockSuperset } from '../mocks/scene-superset';
 
 export function createMockState() {
     return {
@@ -58,6 +59,7 @@ export function createMockPipeline() {
 
 export function sceneModuleFactory(ms: any) {
     return {
+        ...sceneMockSuperset(),
         get focusedModelId() {
             return ms.focusedModelId;
         },
