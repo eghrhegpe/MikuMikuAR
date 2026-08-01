@@ -57,28 +57,18 @@ function fm(text, key) {
   return m ? m[1].trim() : undefined;
 }
 
-/** 生成 UI 入口小节文本。 */
+/** 生成 UI 入口小节文本（方案 A：统一一键引用 menu-map.md，不做入口函数细节双写）。 */
 function buildEntrySection(card, entryTable) {
-  const bases = card.menuSources.map((s) => path.basename(s));
-  const fns = [];
-  for (const b of bases) {
-    const hit = entryTable.get(b);
-    if (hit) for (const fn of hit) if (!fns.includes(fn)) fns.push(fn);
-  }
-
-  const lines = [UI_ENTRY_HEADING, ''];
-  if (fns.length) {
-    // 反查命中：列出入口函数 + 源文件
-    for (const fn of fns) {
-      lines.push(`- 入口函数：\`${fn}()\`（菜单文件见 [${UI_ENTRY_REF}](./${UI_ENTRY_REF}) 入口一览）`);
-    }
-    lines.push(`- 菜单层级 / 静态骨架由 [${UI_ENTRY_REF}](./${UI_ENTRY_REF}) 机器生成（勿手改）；运行时动态入口以本节为准。`);
-  } else {
-    // 未命中：菜单基础设施卡，无独立入口函数，引用集中式菜单地图即可（满足 ADR-218）
-    lines.push(`- 无独立入口函数（菜单基础设施卡）：菜单层级 / 入口一览见 [${UI_ENTRY_REF}](./${UI_ENTRY_REF})（机器生成）。`);
-    lines.push(`- 运行时动态生成的菜单项（renderCustom / slideRow 等）由对应源码 UI 卡补充说明。`);
-  }
-  return lines.join('\n') + '\n';
+  // menu-map.md 是机器生成的菜单事实源（菜单层级 / 入口函数 / 快捷键），
+  // 知识卡仅引用而不复制，避免双写漂移（ADR-218 静态归 menu-map、动态归知识卡）。
+  void entryTable; // 不再反查入口函数
+  return (
+    UI_ENTRY_HEADING +
+    '\n' +
+    '\n' +
+    `- 菜单层级 / 入口函数 / 快捷键统一由 [${UI_ENTRY_REF}](./${UI_ENTRY_REF}) 机器生成（勿手改）。\n` +
+    `- 运行时动态生成的菜单项（renderCustom / slideRow 等）无法静态提取，缺口由本卡正文说明。\n`
+  );
 }
 
 /** 把小节插入正文：优先插到「## 不变量」前，否则追加末尾。 */
@@ -104,7 +94,8 @@ function main() {
   }
   const entryTable = parseEntryTable(fs.readFileSync(MENU_MAP, 'utf8'));
 
-  // 扫描缺 UI 入口的 architecture 卡（source_files 含 menus/ 或 ui/）
+  // 扫描 source_files 含 menus/ 或 ui/ 的 architecture 卡：
+  // 缺 UI 入口的插入，已有旧格式（入口函数明细）的统一重写为一行引用。
   const targets = [];
   for (const f of fs.readdirSync(KNOW_DIR).filter((f) => f.endsWith('.md'))) {
     if (f === 'README.md' || f === 'index.md') continue;
@@ -113,7 +104,6 @@ function main() {
     if (!fmText) continue; // 非知识卡（routes/graph 等）
     const tier = fm(text, 'tier');
     if (tier !== 'architecture') continue;
-    if (text.includes(UI_ENTRY_HEADING) || text.includes(UI_ENTRY_REF)) continue;
     const sources = [...fmText.matchAll(/^\s*-\s*(frontend\/\S+)\s*$/gm)].map((m) => m[1]);
     const menuSources = sources.filter((s) => /\/menus\/|\/ui\//.test(s));
     if (!menuSources.length) continue;
