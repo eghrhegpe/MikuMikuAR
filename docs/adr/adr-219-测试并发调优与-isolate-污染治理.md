@@ -148,6 +148,37 @@ no-isolate 全量两次实测：文件数恒为 243，但**用例总数从 isola
 4. **ADR-219 收口为「已完成」**：Phase 1 + Phase 2 idb 全局化已落地，isolate=false 经判定不采纳——不是「债没还完」，而是「这个目标被判定不值得要」，明确写下防止后人再踩。
 5. 诊断产物（`zz-*` 探针、`crash-nocache.log`、全量对拍 json）为一次性证据，**不入库**。
 
+### Phase 2 收口修订（2026-08-01）— 污染源全部定位并修复，收集期崩溃清零
+
+上文「判定收口」对收集期崩溃的定性**部分被硬证据推翻**，本小节为准：
+
+**污染源修正（二分定位 + 单文件复现，`zz-probe-window` 为检测器，`--no-cache` 稳定顺序）：**
+
+- **`browser-adapter.fsa-auth.test.ts` 不是污染源**（上文误判）——它有顶层 `realWindow` 捕获 + afterEach 恢复（line 37-45），单跑 10/10 全过；且排第 139 位，晚于崩溃起点。列为**受害者**而非污染源。
+- **真凶共 4 个文件**（均为「裸改 window 无 afterEach 恢复」）：
+  1. `src/core/ai/__tests__/dialogue-speech.test.ts` — afterEach `delete globalThis.window`（4 处），`window is not defined` 直接根因；
+  2. `src/core/backend/backend.fsa.test.ts` — `setWindow({showDirectoryPicker,...})` 替换 window 无恢复；
+  3. `src/core/backend/backend.capabilities.test.ts` — `setWindow(undefined)` / `setWindow({})` 无恢复；
+  4. `src/core/backend/backend.resolve.test.ts` — `setWindow(undefined)` 无恢复。
+- `setWindow` 实现（`backend-mocks.ts:9-11`）直接 `globalThis.window = w`；isolate=false 单 worker 下 `window === 共享 globalThis`（vitest `populateGlobal` 设 `global.window = global`，line 274），裸写后永久残留。
+
+**修复**（commit dcf32da8）：4 文件统一改为 fsa-auth 模式——顶层捕获 `realWindow`，afterEach `if (realWindow===undefined) delete window else window = realWindow`，并保留其余清理。
+
+**修复后验证（硬数据）：**
+
+| 指标 | 修复前 | 修复后 |
+|------|--------|--------|
+| no-isolate 0-test 收集期崩溃 | 23 | **0** |
+| no-isolate 用例总数 | 4000（蒸发 138） | **4138（= isolate=true 基线，零蒸发）** |
+| isolate=true 全量 | 4135 全绿 | **246 文件 / 4138 用例全绿，零回归** |
+| `npm run check` | — | EXIT=0 |
+
+**判定修订：**
+
+- 「收集期崩溃是结构性不兼容、ROI 为负」**不成立**——收集期崩溃就是这 4 个文件的 window 污染 bug，修完即清零，非「再清几个文件也拦不住」。
+- `isolate=false` **仍不采纳**，但理由更新：剩余 **230 个执行期失败全是 vi.mock 跨文件泄漏**（19+ 文件 `vi.mock core/state`/`scene/scene` 形状各异，单例穿透，isolate=false 固有特性，vitest 官方亦警告）。这是「模块级单例 mock 穿透」债（上文「判定收口」中已定性），与 window 污染**不同源**：收集期崩已根治，执行期污染债 ROI 低（需形状收口 + 全局化组合拳），入测试卫生清单待后续增量清偿。
+- 真相锚不变：isolate=true 全量（4138 全绿）是唯一可信指标。
+
 ## 备选方案
 
 - **`pool: 'threads'`（隔离保留）**：实测 34.9s，收益仅 ~7%；且部分 Babylon/WASM 场景在线程池下不如进程稳。不选。
