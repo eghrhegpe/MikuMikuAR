@@ -46,4 +46,4 @@ A：环境预设只管环境参数（天空/水面/粒子等）；场景预设�
 - 想先调好天空再保存？见 [天空设置](./sky.md)
 - 想整体保存舞台布局？见 [场景保存与恢复](./scene-save.md)（预设场景）
 
-> 进阶（开发者/AI）：预设实现见 [env-preset 知识卡](../knowledge/env-preset-levels.md)。
+> 进阶（开发者/AI）：预设实现见 [env 菜单知识卡](../knowledge/env-menu-levels.md)。
