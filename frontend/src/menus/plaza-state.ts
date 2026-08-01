@@ -11,7 +11,6 @@ import { logWarn } from '../core/logger';
 
 // ======== 常量 ========
 
-export const CUSTOM_SITES_PATH = 'workshop_sites.json';
 export const GLOBAL_MODE_KEY = 'miku.plaza.globalMode';
 
 export const SITE_GROUPS: { label: string; icon: string; ids: string[] }[] = [

@@ -9,7 +9,7 @@
 |------|--------|-----------|
 | 核心基础设施 | 122 | 716 |
 | 3D 场景 | 107 | 1068 |
-| 菜单 & UI | 75 | 381 |
+| 菜单 & UI | 75 | 380 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 17 | 127 |
 | 物理系统 | 2 | 14 |
@@ -2071,7 +2071,6 @@
 | `installShortcuts()` | `menus/plaza-download` | — |
 | `PLAZA_SITES()` | `menus/plaza-sites` | — |
 | `PlazaSite()` | `menus/plaza-sites` | — |
-| `CUSTOM_SITES_PATH()` | `menus/plaza-state` | — |
 | `GLOBAL_MODE_KEY()` | `menus/plaza-state` | — |
 | `OpenMode()` | `menus/plaza-state` | — |
 | `SITE_GROUPS()` | `menus/plaza-state` | — |
@@ -2385,5 +2384,5 @@
 
 ---
 
-> 共 327 个文件，2343 个导出符号。
+> 共 327 个文件，2342 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。
