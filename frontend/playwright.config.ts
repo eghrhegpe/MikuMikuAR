@@ -40,8 +40,10 @@ export default defineConfig({
         // CI 中 @web 专属 job（e2e-web-smoke / e2e-web-full）设置 RUN_WEB_E2E=1 激活此 server，
         // 其他 job（@dom）不启动，避免 70s 不必要的构建等待。
         ...(process.env.RUN_WEB_E2E ? [{
-            // 先杀掉残留的 4174 进程（CI runner 上前一个 workflow 遗留），再构建+预览
-            command: "fuser -k 4174/tcp 2>/dev/null; npx vite build --config vite.web.config.ts && npx vite preview --config vite.web.config.ts --port 4174 --strictPort",
+            // 先杀掉残留的 4174 进程（CI runner 上前一个 workflow 遗留），再构建+预览。
+            // sudo 是必要的：CI runner 上前一个 workflow 的 preview server 可能属不同用户，
+            // 普通 fuser 无权限杀掉。用 || true 而非 2>/dev/null 以便排错时可见 stderr。
+            command: "sudo fuser -k 4174/tcp 2>/dev/null || true; npx vite build --config vite.web.config.ts && npx vite preview --config vite.web.config.ts --port 4174 --strictPort",
             url: "http://localhost:4174/MikuMikuAR/",
             reuseExistingServer: true,
             timeout: 120000, // 构建需 70s + preview 启动
