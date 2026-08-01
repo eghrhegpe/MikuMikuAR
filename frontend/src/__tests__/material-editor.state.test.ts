@@ -35,6 +35,7 @@ import {
     mmdTextureAlphaFragmentMock,
 } from './material-editor-mocks';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
+import { Material } from '@babylonjs/core/Materials/material';
 import { modelRegistry } from '../core/config';
 
 vi.mock('@babylonjs/core/Engines/engine', () => engineModuleFactory());
@@ -97,16 +98,22 @@ import {
     getMatCatParams,
     setMatCatParams,
     getMatDetailList,
+    getMatState,
     applyMatState,
 } from '../scene/scene';
 
-function regModel(id: string, meshCount: number, names?: string[]): void {
+function regModel(
+    id: string,
+    meshCount: number,
+    names?: string[],
+    inst?: Partial<{ opacity: number; _origAlpha: number[] }>
+): void {
     const meshes = Array.from({ length: meshCount }, (_, i) => {
         const mat = new StandardMaterial((names && names[i]) ?? `mat${i}`);
         return { material: mat };
     });
     // @ts-expect-error duck-typed mock meshes
-    modelRegistry.set(id, { meshes });
+    modelRegistry.set(id, { meshes, opacity: 1, ...inst });
 }
 
 function cleanupModels(): void {
@@ -361,5 +368,143 @@ describe('applyMatState MaterialCategory cast', () => {
         const list = getMatDetailList('model_as');
         expect(list.length).toBeGreaterThan(0);
         expect(list.every((e) => !e.modified)).toBe(true);
+    });
+});
+
+describe('alphaMul 逐材质透明度公式（ADR-221）', () => {
+    beforeEach(() => {
+        _catState.clear();
+        _matState.clear();
+        _matEnabled.clear();
+        regModel('model_alpha', 1);
+    });
+    afterEach(() => {
+        cleanupModels();
+    });
+
+    it('alphaMul=0.5 × _origAlpha=0.8 × opacity=1 → mat.alpha ≈ 0.4', () => {
+        const inst = modelRegistry.get('model_alpha');
+        inst._origAlpha = [0.8];
+        inst.opacity = 1;
+        const mat = inst.meshes[0].material;
+        setMatParams('model_alpha', 0, { alphaMul: 0.5 });
+        expect(mat.alpha).toBeCloseTo(0.4);
+    });
+
+    it('alphaMul=1 × _origAlpha=0.8 × opacity=1 → 保持原始 alpha', () => {
+        const inst = modelRegistry.get('model_alpha');
+        inst._origAlpha = [0.8];
+        inst.opacity = 1;
+        const mat = inst.meshes[0].material;
+        setMatParams('model_alpha', 0, { alphaMul: 1 });
+        expect(mat.alpha).toBeCloseTo(0.8);
+    });
+
+    it('三层组合: _origAlpha=0.8 × opacity=0.5 × alphaMul=0.5 → mat.alpha ≈ 0.2', () => {
+        const inst = modelRegistry.get('model_alpha');
+        inst._origAlpha = [0.8];
+        inst.opacity = 0.5;
+        const mat = inst.meshes[0].material;
+        setMatParams('model_alpha', 0, { alphaMul: 0.5 });
+        expect(mat.alpha).toBeCloseTo(0.2);
+    });
+
+    it('alphaMul=0.5（finalAlpha<1）→ transparencyMode 切到 ALPHABLEND', () => {
+        const mat = modelRegistry.get('model_alpha').meshes[0].material;
+        mat.transparencyMode = Material.MATERIAL_OPAQUE;
+        setMatParams('model_alpha', 0, { alphaMul: 0.5 });
+        expect(mat.transparencyMode).toBe(Material.MATERIAL_ALPHABLEND);
+    });
+
+    it('alphaMul 从 0.5 恢复为 1 → transparencyMode 回到 OPAQUE', () => {
+        const mat = modelRegistry.get('model_alpha').meshes[0].material;
+        setMatParams('model_alpha', 0, { alphaMul: 0.5 });
+        expect(mat.transparencyMode).toBe(Material.MATERIAL_ALPHABLEND);
+        setMatParams('model_alpha', 0, { alphaMul: 1 });
+        expect(mat.transparencyMode).toBe(Material.MATERIAL_OPAQUE);
+    });
+
+    it('finalAlpha=1 + 已是 ALPHABLEND 的材质会被强转 OPAQUE（ADR-221 §7 局限#1）', () => {
+        const mat = modelRegistry.get('model_alpha').meshes[0].material;
+        mat.transparencyMode = Material.MATERIAL_ALPHABLEND;
+        setMatParams('model_alpha', 0, { alphaMul: 1 });
+        expect(mat.transparencyMode).toBe(Material.MATERIAL_OPAQUE);
+    });
+
+    it('alphaMul 超范围被钳到 [0,1]', () => {
+        const inst = modelRegistry.get('model_alpha');
+        inst._origAlpha = [1];
+        inst.opacity = 1;
+        const mat = inst.meshes[0].material;
+        setMatParams('model_alpha', 0, { alphaMul: 5 });
+        expect(mat.alpha).toBe(1);
+        setMatParams('model_alpha', 0, { alphaMul: -1 });
+        expect(mat.alpha).toBe(0);
+    });
+
+    it('resetSingleMatParams 恢复 alpha 基线（DEFAULT_MAT_PARAMS alphaMul=1）', () => {
+        const inst = modelRegistry.get('model_alpha');
+        inst._origAlpha = [0.8];
+        inst.opacity = 1;
+        const mat = inst.meshes[0].material;
+        setMatParams('model_alpha', 0, { alphaMul: 0.5 });
+        expect(mat.alpha).toBeCloseTo(0.4);
+        resetSingleMatParams('model_alpha', 0);
+        expect(mat.alpha).toBeCloseTo(0.8);
+    });
+});
+
+describe('alphaMul 序列化（ADR-221 §5 用例 8/9）', () => {
+    beforeEach(() => {
+        _catState.clear();
+        _matState.clear();
+        _matEnabled.clear();
+        regModel('model_as2', 5);
+    });
+    afterEach(() => {
+        cleanupModels();
+    });
+
+    it('alphaMul 默认值 1 不产生序列化体积', () => {
+        applyMatState('model_as2', {
+            overrides: { 2: { alphaMul: 1 } },
+        });
+        expect(getMatState('model_as2')).toBeNull();
+    });
+
+    it('alphaMul 非默认值随 override 序列化/恢复 roundtrip', () => {
+        applyMatState('model_as2', {
+            overrides: { 2: { alphaMul: 0.4 } },
+        });
+        const s = getMatState('model_as2');
+        expect(s).not.toBeNull();
+        expect(s!.overrides[2].alphaMul).toBe(0.4);
+
+        _catState.clear();
+        _matState.clear();
+        _matEnabled.clear();
+        regModel('model_as2', 5);
+        applyMatState('model_as2', s!);
+        expect(getMatParams('model_as2', 2)!.alphaMul).toBe(0.4);
+    });
+
+    it('旧存档无 alphaMul 字段 → 加载后默认 1，无报错', () => {
+        applyMatState('model_as2', {
+            overrides: {
+                3: {
+                    diffuseMul: 1.5,
+                    specularMul: 1,
+                    shininess: 50,
+                    ambientMul: 1,
+                    emissiveMul: 1,
+                    diffuseTexLevel: 1,
+                    bumpTexLevel: 1,
+                    toonTexLevel: 1,
+                    sphereTexLevel: 1,
+                    emissiveTexLevel: 1,
+                },
+            },
+        });
+        expect(getMatParams('model_as2', 3)!.alphaMul).toBe(1);
     });
 });
