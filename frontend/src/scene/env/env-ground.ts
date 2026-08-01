@@ -42,7 +42,7 @@ import {
 } from './env-water';
 import { getCanvasCtx } from './_shared/env-type-helpers';
 import { GroundProceduralKind } from './env-ground-presets';
-import { createGroundMeshFromSpec } from './env-ground-spec';
+import { createGroundMeshFromSpec, applyGroundMaterialSpec } from './env-ground-spec';
 
 // ======== ADR-114: 材质适配层（StandardMaterial ↔ PBRMaterial）========
 
@@ -1129,6 +1129,47 @@ export function _syncPbrProperties(mat: PBRMaterial, state: EnvState): void {
 
 // ======== applyGround (public) ========
 
+/** ADR-226 Phase 2: terrain 原地材质更新（暂留 legacy，待补 terrain 合约测试后收敛到 applyGroundMaterialSpec）。 */
+function _applyGroundInplaceLegacy(mat: GroundMat, state: EnvState, scene: Scene): void {
+    // 仅 canvas 图案/纯色来源才在原地更新时重生成 canvas 纹理；
+    // 程序化(proc≠none)与文件贴图来源须跳过，否则程序化 PBR 三件套会被 canvas 纯色覆盖
+    if (
+        state.groundStyle !== 'texture' &&
+        state.groundProceduralTexture === 'none' &&
+        !(state.groundTextureEnabled && state.groundTexture)
+    ) {
+        _updateGroundTexture(mat, state);
+    }
+    mat.alpha = state.groundAlpha;
+    if (mat instanceof PBRMaterial) {
+        const needAlpha = _needAlphaBlend(state);
+        mat.transparencyMode = needAlpha ? Material.MATERIAL_ALPHABLEND : Material.MATERIAL_OPAQUE;
+    }
+    const albedoTex = _getAlbedoTex(mat);
+    if (albedoTex && albedoTex instanceof Texture) {
+        albedoTex.uScale = albedoTex.vScale = _groundActualSize / 10 / Math.max(0.1, state.groundTextureScale);
+        _syncAllTextureOffsets(mat, state);
+    }
+    if (
+        !(state.groundProceduralTexture !== 'none' && !state.groundTextureEnabled) ||
+        state.groundNormalTexture
+    ) {
+        _syncGroundNormalTexture(mat, state);
+    }
+    if (hasActiveGroundRipples()) {
+        _syncGroundRippleTexture(mat, scene);
+    } else if (_groundRippleApplied) {
+        _disableGroundRippleTexture(mat);
+    }
+    if (state.groundStyle === 'texture') {
+        _syncTextureGroundTexture(mat, state, scene);
+    }
+    if (mat instanceof PBRMaterial) {
+        _syncPbrProperties(mat, state);
+    }
+    applyGroundEdgeFade(mat, state.groundEdgeFade, scene);
+}
+
 export function applyGround(state: EnvState): void {
     const scene = getScene();
     ensureEnvUpdateObserver();
@@ -1154,53 +1195,13 @@ export function applyGround(state: EnvState): void {
     if (_envSys.ground.mesh && state.groundVisibleEnabled && !keyChanged) {
         const mat = _envSys.ground.mesh.material as GroundMat | null;
         if (mat && (mat instanceof StandardMaterial || mat instanceof PBRMaterial)) {
-            // 仅 canvas 图案/纯色来源才在原地更新时重生成 canvas 纹理；
-            // 程序化(proc≠none)与文件贴图来源须跳过，否则程序化 PBR 三件套会被 canvas 纯色覆盖
-            // （典型触发：改 groundRoughness/groundAlpha 走原地路径，见 ADR）。
-            if (
-                state.groundStyle !== 'texture' &&
-                state.groundProceduralTexture === 'none' &&
-                !(state.groundTextureEnabled && state.groundTexture)
-            ) {
-                _updateGroundTexture(mat, state);
+            // ADR-226 Phase 2: 平面/无限原地改调 spec 单源 applyGroundMaterialSpec；
+            // terrain 暂留 legacy 原逻辑（elevationColoring 行为差未受合约测试覆盖）。
+            if (state.groundType === 'terrain') {
+                _applyGroundInplaceLegacy(mat, state, scene);
+            } else {
+                applyGroundMaterialSpec(mat, state, scene, false);
             }
-            mat.alpha = state.groundAlpha;
-            // ADR-114: 透明模式同步（PBRMaterial 需显式，StandardMaterial 自动处理）
-            if (mat instanceof PBRMaterial) {
-                const needAlpha = _needAlphaBlend(state);
-                mat.transparencyMode = needAlpha
-                    ? Material.MATERIAL_ALPHABLEND
-                    : Material.MATERIAL_OPAQUE;
-            }
-            const albedoTex = _getAlbedoTex(mat);
-            if (albedoTex && albedoTex instanceof Texture) {
-                // [fix] 纹理密度与 mesh 尺寸成正比，避免拉伸模糊
-                albedoTex.uScale = albedoTex.vScale =
-                    _groundActualSize / 10 / Math.max(0.1, state.groundTextureScale);
-                _syncAllTextureOffsets(mat, state);
-            }
-            // ADR-226: 程序化来源自带法线贴图，原地变更（改 roughness/alpha 等）时
-            // 不应清掉程序化 normal；仅显式设置外部法线贴图才覆盖。修复历史 bug：
-            // 原地路径会清掉程序化地面的法线贴图，使其原地编辑后失去立体感。
-            if (
-                !(state.groundProceduralTexture !== 'none' && !state.groundTextureEnabled) ||
-                state.groundNormalTexture
-            ) {
-                _syncGroundNormalTexture(mat, state);
-            }
-            // [doc:adr-160] 地面涟漪法线纹理叠加
-            if (hasActiveGroundRipples()) {
-                _syncGroundRippleTexture(mat, scene);
-            } else if (_groundRippleApplied) {
-                _disableGroundRippleTexture(mat);
-            }
-            if (state.groundStyle === 'texture') {
-                _syncTextureGroundTexture(mat, state, scene);
-            }
-            if (mat instanceof PBRMaterial) {
-                _syncPbrProperties(mat, state);
-            }
-            applyGroundEdgeFade(mat, state.groundEdgeFade, scene);
         }
         _envSys.ground.mesh.position.y = state.groundLevel;
         _envSys.ground.mesh.rotation.x = (state.groundPitch * Math.PI) / 180;
