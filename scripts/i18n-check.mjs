@@ -9,7 +9,7 @@
 //   node ../scripts/i18n-check.mjs            # 默认 warning 模式（列缺口，exit 0）
 //   node ../scripts/i18n-check.mjs --strict   # 任何缺失即 exit 1（CI 阻塞）
 //
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
@@ -162,5 +162,40 @@ if (untranslated.length > 0) {
     console.log('  (warning mode — non-blocking.)');
 } else {
     console.log('\n✅ zh-CN 基准包无漏译（所有条目均含中文字符）。');
+}
+
+// ======== AVAILABLE_LANGS 与 locales/*.ts 文件集一致性校验 ========
+// t.ts 的 AVAILABLE_LANGS 是「有 bundle 的语言」权威清单，语言菜单据此过滤。
+// 若与 locales/*.ts 实际文件集漂移：多列 → 菜单出现但 bundle 缺失（fetch 404 → 静默回退中文）；
+// 少列 → 已补全 bundle 的语言不显示。两者都是静默漂移，故在此守一道 CI 护栏。
+const T_TS_PATH = resolve(__dirname, '..', 'frontend', 'src', 'core', 'i18n', 't.ts');
+const T_TS = readFileSync(T_TS_PATH, 'utf8');
+const availMatch = T_TS.match(/AVAILABLE_LANGS\s*:\s*string\[\]\s*=\s*\[([^\]]*)\]/);
+const availableLangs = availMatch
+    ? availMatch[1]
+          .split(',')
+          .map((s) => s.trim().replace(/['"]/g, ''))
+          .filter(Boolean)
+    : [];
+const langFiles = readdirSync(LOCALES_DIR)
+    .filter((f) => f.endsWith('.ts'))
+    .map((f) => f.replace(/\.ts$/, ''));
+const availSet = new Set(availableLangs);
+const fileSet = new Set(langFiles);
+const inAvailNotFile = availableLangs.filter((l) => !fileSet.has(l));
+const inFileNotAvail = langFiles.filter((f) => !availSet.has(f));
+
+if (inAvailNotFile.length || inFileNotAvail.length) {
+    console.log('\n⚠ AVAILABLE_LANGS (t.ts) 与 locales/*.ts 文件集不一致:');
+    if (inAvailNotFile.length) console.log('  仅声明于 AVAILABLE_LANGS 但无 bundle 文件: ' + inAvailNotFile.join(', '));
+    if (inFileNotAvail.length) console.log('  存在 bundle 文件但未列入 AVAILABLE_LANGS: ' + inFileNotAvail.join(', '));
+    console.log('  请同步 frontend/src/core/i18n/t.ts 与 frontend/src/core/i18n/locales/。');
+    if (strict) {
+        console.error('\n[i18n-check] --strict: AVAILABLE_LANGS 与文件集不一致 → CI fails.');
+        process.exit(1);
+    }
+    console.log('  (warning mode — non-blocking.)');
+} else {
+    console.log(`\n✅ AVAILABLE_LANGS (${availableLangs.length}) 与 locales/*.ts 文件集完全一致。`);
 }
 process.exit(0);

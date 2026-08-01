@@ -38,30 +38,71 @@ vi.mock('../../core/i18n/t', () => ({ t: (k: string) => k }));
 // 顶层各字段 getter：返回安全默认值，使 serializeScene 的非模型部分不抛错。
 vi.mock('../../scene/scene', () => ({
     getLightState: () => ({}),
+    setLightState: vi.fn(),
     getStageLights: () => [],
+    loadStageLights: vi.fn(),
     getRenderState: () => ({}),
+    setRenderState: vi.fn(),
+    removeModel: vi.fn(),
+    loadPMXFile: vi.fn(),
+    modelManager: {
+        setPosition: vi.fn(),
+        setOrbit: vi.fn(),
+        setScaling: vi.fn(),
+        setRotation: vi.fn(),
+        setRotationY: vi.fn(),
+        reattachAllAttachments: vi.fn(),
+        focused: vi.fn(() => null),
+    },
+    setModelBoneLinesVis: vi.fn(),
+    setModelBoneJointsVis: vi.fn(),
+    setModelPhysics: vi.fn(),
+    getPhysicsCatState: () => null,
+    setPhysicsCategory: vi.fn(),
+    loadVMDFromPath: vi.fn(),
+    getMatState: () => null,
+    applyMatState: vi.fn(),
     getActiveFormation: () => null,
     getActiveFormationSpacing: () => 0,
-    getPhysicsCatState: () => null,
-    getMatState: () => null,
+    setModelFormation: vi.fn(),
+    disposeScene: vi.fn(),
 }));
 vi.mock('../../scene/camera/camera', () => ({
     getCameraState: () => ({}),
+    setCameraState: vi.fn(),
     hasCameraVmd: () => false,
     getCameraVmdPath: () => '',
     getCameraVmdName: () => '',
     getCameraMode: () => 'orbit',
+    setFov: vi.fn(),
+    switchCameraMode: vi.fn(),
+    logCameraAlpha: vi.fn(),
 }));
-vi.mock('../../scene/motion/proc-motion-bridge', () => ({ getProcMotionState: () => ({}) }));
-vi.mock('../../scene/motion/lipsync-bridge', () => ({ getLipSyncState: () => ({}) }));
+vi.mock('../../scene/motion/proc-motion-bridge', () => ({
+    getProcMotionState: () => ({}),
+    regenerateProcMotion: vi.fn(),
+    setProcMotionState: vi.fn(),
+}));
+vi.mock('../../scene/motion/lipsync-bridge', () => ({
+    getLipSyncState: () => ({}),
+    setLipSyncState: vi.fn(),
+}));
 vi.mock('../../scene/motion/perception', () => ({
     getPerceptionState: () => ({}),
     getPinnedModelIds: () => [],
     getPerceptionStateFor: () => ({}),
     getPerceptionPerfManualTier: () => null,
     isAllPerceptionEnabled: () => false,
+    setPerceptionState: vi.fn(),
+    pinPerception: vi.fn(),
+    setPerceptionPerfTier: vi.fn(),
+    enableAllPerception: vi.fn(),
+    activatePerception: vi.fn(),
 }));
-vi.mock('../../scene/motion/animation-retargeter', () => ({ getRetargetPlayState: () => null }));
+vi.mock('../../scene/motion/animation-retargeter', () => ({
+    getRetargetPlayState: () => null,
+    restoreRetargetAnimation: vi.fn(() => Promise.resolve()),
+}));
 vi.mock('../../scene/render/lighting-follow', () => ({
     getPersonalLightState: () => null,
     DEFAULT_PERSONAL_LIGHT: {},
@@ -70,28 +111,51 @@ vi.mock('../../scene/motion/motion-intent', () => ({
     getActiveMotionId: () => null,
     getSceneMotions: () => [],
     getLoadedProceduralMotions: () => [],
+    addSceneMotion: vi.fn(() => 'id'),
+    setDefaultMotion: vi.fn(),
+    clearAllSceneMotions: vi.fn(),
+    setLoadedProceduralMotions: vi.fn(),
 }));
-vi.mock('../../scene/env/env-gravity', () => ({ getGravityStrength: () => 1 }));
-vi.mock('../../outfit/audio', () => ({ getAudioName: () => '' }));
+vi.mock('../../scene/env/env-gravity', () => ({ getGravityStrength: () => 1, setGravityStrength: vi.fn() }));
+vi.mock('../../outfit/audio', () => ({
+    getAudioName: () => '',
+    getAudioPath: () => '',
+    getVolume: () => 0,
+    getAudioOffset: () => 0,
+    isAudioPlaying: () => false,
+    loadAudioFile: vi.fn(() => Promise.resolve()),
+    setVolume: vi.fn(),
+    setAudioOffset: vi.fn(),
+    resumeAudio: vi.fn(),
+}));
 
 // 其余重依赖：空 mock（序列化路径不触发）。
-vi.mock('../../core/wails-bindings', () => ({}));
+vi.mock('../../core/wails-bindings', () => ({ SaveLastScene: vi.fn(() => Promise.resolve()), LoadLastScene: vi.fn(() => Promise.resolve(null)) }));
 vi.mock('../../core/i18n/goerr', () => ({}));
-vi.mock('../../scene/motion/vmd-loader', () => ({}));
-vi.mock('../../scene/scene-migrate', () => ({}));
-vi.mock('../../outfit/outfit', () => ({}));
-vi.mock('../../scene/env/_bridge/env-bridge', () => ({ setEnvState: vi.fn() }));
-vi.mock('../../scene/env/env-time-of-day', () => ({}));
+vi.mock('../../scene/motion/vmd-loader', () => ({ loadCameraVmdFromPath: vi.fn(() => Promise.resolve()) }));
+vi.mock('../../scene/scene-migrate', () => ({
+    migratePerceptionData: (p: unknown) => p ?? null,
+    migratePerceptionFromProcMotion: () => ({}),
+}));
+vi.mock('../../outfit/outfit', () => ({ loadOutfits: vi.fn(), applyOutfitVariant: vi.fn() }));
+vi.mock('../../core/toast', () => ({ showInfoToast: vi.fn() }));
+vi.mock('../../core/feedback', () => ({ feedbackError: vi.fn(), feedbackInfo: vi.fn() }));
+vi.mock('../../core/logger', () => ({ logWarn: vi.fn() }));
+vi.mock('../../core/async', () => ({ swallowError: vi.fn() }));
+vi.mock('../../library/library-path', () => ({ resolveLibraryRef: () => '' }));
+vi.mock('../../scene/manager/material', () => ({ _applyAll: vi.fn() }));
+vi.mock('../../scene/env/env-time-of-day', () => ({ setEnvSunAngle: vi.fn() }));
 vi.mock('../../scene/env/_bridge/env-persist', () => ({
     flushEnvState: vi.fn(),
     flushUIState: vi.fn(),
     cancelEnvPersistTimer: vi.fn(),
 }));
-vi.mock('../../scene/physics/ground-collision', () => ({}));
+vi.mock('../../scene/physics/ground-collision', () => ({ applyGroundCollision: vi.fn() }));
 vi.mock('../../motion-algos/procedural-motion', () => ({ DEFAULT_PROC_STATE: {} }));
 vi.mock('../../motion-algos/lipsync', () => ({ DEFAULT_LIPSYNC_STATE: {} }));
 
-import { serializeScene } from '../../scene/scene-serialize';
+import { serializeScene, deserializeScene, triggerAutoSaveImpl } from '../../scene/scene-serialize';
+import { setCameraState } from '../../scene/camera/camera';
 
 /** 构造序列化所需的最小 ModelInstance；未读到的字段用 as 断言省略。 */
 function makeModel(id: string, name: string, filePath: string): ModelInstance {
@@ -150,5 +214,26 @@ describe('serializeScene — 分段容错（ADR-198 方向①）', () => {
         const scene = serializeScene();
         expect(scene.models).toEqual([]);
         expect(scene.version).toBe(1);
+    });
+});
+
+describe('deserializeScene — suppress 泄漏防护（fix:suppress-leak）', () => {
+    it('中途抛异常后 auto-save suppress 复位（finally 防泄漏）', async () => {
+        // 让恢复过程中的一个 setter 抛错，模拟数据损坏导致的中途异常。
+        vi.mocked(setCameraState).mockImplementationOnce(() => {
+            throw new Error('simulated mid-deserialize setter failure');
+        });
+        const data = { version: 1, models: [], camera: {} } as never;
+
+        await expect(deserializeScene(data)).rejects.toThrow('simulated mid-deserialize setter failure');
+
+        // suppress 应已复位：triggerAutoSaveImpl 走正常分支（调度防抖），而非 suppressed 分支。
+        const info = vi.spyOn(console, 'info').mockImplementation(() => {});
+        triggerAutoSaveImpl();
+        const logs = info.mock.calls.map((c) => String(c[0]));
+        expect(logs.some((l) => l.includes('triggerAutoSaveImpl() called — debounce scheduled'))).toBe(true);
+        expect(logs.some((l) => l.includes('suppressed'))).toBe(false);
+        info.mockRestore();
+        vi.mocked(setCameraState).mockReset();
     });
 });

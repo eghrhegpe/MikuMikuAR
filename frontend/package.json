@@ -5,7 +5,7 @@
   "type": "module",
   "sideEffects": false,
   "scripts": {
-    "dev": "vite",
+    "dev": "node ../scripts/generate-locale-json.mjs && vite",
     "build": "node ../scripts/generate-locale-json.mjs && tsc && vite build",
     "build:dev": "node ../scripts/generate-locale-json.mjs && vite build",
     "check": "tsc --noEmit && npm run check:lint",
