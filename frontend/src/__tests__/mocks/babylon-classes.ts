@@ -472,6 +472,8 @@ export class MockMatrix {
 
 // ===== Materials =====
 export class MockMaterial {
+    static MATERIAL_OPAQUE = 0;
+    static MATERIAL_ALPHABLEND = 2;
     name = '';
     constructor(name: string) {
         this.name = name;
@@ -492,6 +494,7 @@ export class MockMaterial {
 export class MockStandardMaterial {
     name = '';
     alpha = 1;
+    transparencyMode = 0;
     specularPower = 50;
     wireframe = false;
     backFaceCulling = true;
