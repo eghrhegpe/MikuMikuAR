@@ -11,6 +11,7 @@ export interface ActionResult {
     data?: unknown;
 }
 
+/** 按 ID 执行 AI 动作（含参数校验与结果结构化返回）。 */
 export async function executeActionById(
     id: string,
     rawParams: Record<string, unknown>

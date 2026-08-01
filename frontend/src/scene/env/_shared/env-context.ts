@@ -21,6 +21,7 @@ export function initEnvImpl(scene: Scene, pipeline: DefaultRenderingPipeline): v
     _pipeline = pipeline;
 }
 
+/** 取当前 Babylon 场景；未初始化时抛错（env 子系统内部使用）。 */
 export function getScene(): Scene {
     if (!_scene) {
         throw new Error('[env-context] Scene not initialized');

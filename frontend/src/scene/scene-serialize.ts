@@ -473,6 +473,7 @@ function serializeModel(inst: ModelInstance): SceneFile['models'][number] {
     };
 }
 
+/** 序列化当前场景为 SceneFile（分段容错，单模型失败跳过并记录）。 */
 export function serializeScene(): SceneFile {
     const procState = getProcMotionState();
     const lipState = getLipSyncState();

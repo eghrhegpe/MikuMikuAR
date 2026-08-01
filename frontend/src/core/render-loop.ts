@@ -51,6 +51,7 @@ function applyScaling(): void {
     engine.setHardwareScalingLevel(calcHardwareScaling(dpr, effectiveScale));
 }
 
+/** 启动渲染循环（幂等：先停旧实例，避免 setInterval / render-loop 泄漏）。 */
 export function startRenderLoop(): void {
     // 幂等：HMR 或重复调用前先清理旧实例，避免 setInterval / render-loop 泄漏
     stopRenderLoop();
@@ -136,6 +137,7 @@ export function startRenderLoop(): void {
     startFpsClock();
 }
 
+/** 停止渲染循环并清理 FPS 时钟。 */
 export function stopRenderLoop(): void {
     if (_fpsClockId !== null) {
         clearInterval(_fpsClockId);

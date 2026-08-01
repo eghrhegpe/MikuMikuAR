@@ -311,6 +311,7 @@ function migrateEnvState(input: Partial<EnvState>): Partial<EnvState> {
     return migrated ? (out as Partial<EnvState>) : input;
 }
 
+/** 环境状态唯一写入入口（ADR-173 中间件链），可选跳过自动保存。 */
 export function setEnvState(partial: Partial<EnvState>, skipAutoSave = false): void {
     if (import.meta.env.DEV) {
         const keys = Object.keys(partial).join(', ');

@@ -18,6 +18,7 @@ export interface RuntimeMode {
 
 const STORAGE_KEY = 'mmcar.runtimeMode.v1';
 
+/** 探测运行时模式（COOP/COEP + SharedArrayBuffer + MPR 构建标志）。 */
 export function detectRuntimeMode(): RuntimeMode {
     const coi = typeof crossOriginIsolated !== 'undefined' && crossOriginIsolated === true;
     const sab = typeof SharedArrayBuffer === 'function';

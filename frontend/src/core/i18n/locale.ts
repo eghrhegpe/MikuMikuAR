@@ -78,6 +78,7 @@ function loadLang(): LangCode {
 // 模块加载即确定语言，确保菜单首帧即正确；reactive 使任意赋值自动触发刷新
 const state = reactive({ lang: loadLang() });
 
+/** 当前语言代码（响应式，切换语言后自动更新）。 */
 export function getLang(): LangCode {
     return state.lang;
 }
@@ -111,6 +112,7 @@ function applyHtmlLang(): void {
 // [doc:adr-059] 启动期调用：在菜单渲染前确定语言并同步 <html lang>。
 // 语言已在模块加载期读取 localStorage，此处仅做 a11y 同步。
 // [doc:perf] 异步预加载当前语言包，使后续 t() 调用直接命中缓存。
+/** 启动期语言初始化：同步 <html lang> 并预加载当前语言包。 */
 export async function initI18n(): Promise<void> {
     applyHtmlLang();
     await loadLocale(state.lang);
