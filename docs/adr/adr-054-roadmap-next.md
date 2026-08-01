@@ -68,10 +68,10 @@
 
 ### 🟡 上游阻塞（卡 `babylon-mmd`，不独立启动）
 
-- **PBR 材质**：全量迁移会破坏 morph 管线。
-- **SSS 次表面散射**：依赖 PBR proxy。
+- **SSS 次表面散射**：✅ 阻塞已解除（2026-07-27 PBRMaterialProxy 实现），待 ADR-188 PBR 迁移完成后启动。
+- ~~**PBR 材质**：全量迁移会破坏 morph 管线。~~ ✅ 阻塞已解除（PBRMaterialProxy 已就绪，material morph 通路打通）。
 - **光线追踪 / 全局光照 GI**。
-- 策略：只能等 / 推动上游贡献。
+- 策略：SSS 可自主推进；其余仍需等 / 推动上游贡献。
 
 ---
 
@@ -103,7 +103,7 @@
 10. AR 相机模式 Phase 3 / WebXR（[ADR-072](adr/adr-072-webxr-plane-detection.md)，待探针）
 11. 原生 ARCore/ARKit（[ADR-073](adr/adr-073-native-arcore-arkit.md)，远期兜底）
 12. iOS 端
-13. SSS（待上游 PBR proxy）
+13. ~~SSS（待上游 PBR proxy）~~ ✅ 阻塞已解除（PBRMaterialProxy 实现），待 ADR-188 PBR 迁移后启动
 14. Lua / JS 脚本层（自动化工作流）
 15. Alembic / glTF 导出
 
@@ -111,7 +111,7 @@
 
 ## 四、风险提醒
 
-- **`babylon-mmd` 单点故障**：SSS / PBR 全部卡在上游，需评估是否参与上游贡献。
+- **`babylon-mmd` 单点故障**：~~SSS / PBR 全部卡在上游~~ → 2026-07-27 PBRMaterialProxy 实现，SSS/PBR morph 通路已打通。仍需关注其他上游 API（光线追踪等）。
 - ~~WASM / JS 分裂~~ ✅ 已关闭（ADR-056 解决 + JS 调试运行时废弃，所有功能仅面向 WASM）。
 
 ---

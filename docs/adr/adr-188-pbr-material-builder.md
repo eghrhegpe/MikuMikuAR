@@ -1,6 +1,6 @@
 # ADR-188: PBRMaterialBuilder 材质系统迁移 — PBR 渲染升级
 
-> **状态**: 草案 · 待立项（P1 长期规划）
+> **状态**: 草案 · 待立项（P1 长期规划；2026-07-27 阻塞解除：babylon-mmd fork 新增 PBRMaterialProxy，PBR material morph 通路已打通，不再依赖上游）
 
 **决策者**: Riku（联邦首席架构师 AI）、Jieling（人类侧首席架构师）
 
