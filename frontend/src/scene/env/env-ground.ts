@@ -42,7 +42,7 @@ import {
 } from './env-water';
 import { getCanvasCtx } from './_shared/env-type-helpers';
 import { GroundProceduralKind } from './env-ground-presets';
-import { createGroundMeshFromSpec, applyGroundMaterialSpec } from './env-ground-spec';
+import { createGroundMeshFromSpec, applyGroundMaterialSpec, specKey, buildGroundMaterialSpec } from './env-ground-spec';
 
 // ======== ADR-114: 材质适配层（StandardMaterial ↔ PBRMaterial）========
 
@@ -1173,23 +1173,11 @@ function _applyGroundInplaceLegacy(mat: GroundMat, state: EnvState, scene: Scene
 export function applyGround(state: EnvState): void {
     const scene = getScene();
     ensureEnvUpdateObserver();
-    // ADR-134: 加入 groundInfiniteEnabled 标记
-    const infKey = `:inf:${state.groundInfiniteEnabled}`;
-
-    // ADR-114: typeKey 加入 PBR / 程序化字段
-    // rough/metal/blur/distort 由 _syncPbrProperties 增量更新，不触发重建
-    const pbrKey = `:pbr:${state.groundPbrEnabled}`;
-    const proceduralKey =
-        state.groundProceduralTexture !== 'none' && !state.groundTextureEnabled
-            ? `:proc:${state.groundProceduralTexture}:${state.groundProceduralSeed}:${state.groundProceduralScale}:overlay:${state.groundOverlay}`
-            : '';
-    const typeKey =
-        state.groundType === 'terrain'
-            ? `heightmap:${state.groundTerrainHeight}:${state.groundTerrainScale}:${state.groundTerrainSeed}:${state.groundTerrainOctaves}:${state.groundLevel}:${state.groundSize}:${state.groundColor.join(',')}:${state.groundAlpha}:${state.groundTextureEnabled}:${state.groundTexture}:${state.groundTextureScale}:${state.groundTextureRotation}${pbrKey}${proceduralKey}${infKey}`
-            : state.groundTextureEnabled && state.groundTexture
-              ? `texture:${state.groundTexture}:${state.groundSize}:${state.reflectionQuality}${pbrKey}${infKey}`
-              : `canvas:${state.groundStyle}:${state.groundGridSize}:${state.groundColor.join(',')}:${state.groundLineColor.join(',')}:${state.groundSize}:${state.reflectionQuality}${pbrKey}${proceduralKey}${infKey}`;
-    const keyChanged = typeKey !== _currentGroundKey;
+    // ADR-226 Phase 4: 用 spec 单源 specKey 取代手拼 typeKey，消除双比较路径。
+    // 新增结构性字段只需在 buildGroundMaterialSpec 赋值，specKey 自动纳入，
+    // 无需再到此处同步手拼（历史上加字段需改 2 处，易遗漏）。
+    const nextKey = specKey(buildGroundMaterialSpec(state));
+    const keyChanged = nextKey !== _currentGroundKey;
 
     // 原地更新路径
     if (_envSys.ground.mesh && state.groundVisibleEnabled && !keyChanged) {
@@ -1221,7 +1209,7 @@ export function applyGround(state: EnvState): void {
     }
 
     // 重建路径
-    _currentGroundKey = typeKey;
+    _currentGroundKey = nextKey;
     _groundScrollU = 0;
     _groundScrollV = 0;
     disposeGroundReflection();
@@ -1276,9 +1264,10 @@ export function applyGround(state: EnvState): void {
         return;
     }
 
-    // ADR-226 Phase 1: 非地形（平面/无限）地面改调 spec 单源 createGroundMeshFromSpec，
-    // 消除重建路径手拼 typeKey 双路径分叉。terrain 保留下方 legacy 分支
-    // （含 _onTerrainReady / elevationColoring 语义），待 Phase 2 收敛——
+    // ADR-226 Phase 1+4: 非地形（平面/无限）重建改调 spec 单源 createGroundMeshFromSpec，
+    // 重建/原地双路径及手拼 typeKey 已统一收敛到 spec 单源（见 applyGround 顶部 specKey 决策）。
+    // terrain 重建仍保留下方 legacy 分支（含 _onTerrainReady / elevationColoring 语义），
+    // 待补 terrain 合约测试（覆盖 elevationColoring）后再收敛——
     // 避免未受合约测试覆盖的 elevationColoring 行为变更。
     createGroundMeshFromSpec(state, scene);
     return;

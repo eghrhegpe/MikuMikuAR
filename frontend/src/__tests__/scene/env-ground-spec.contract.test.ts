@@ -282,6 +282,25 @@ describe('ADR-226 groundSpecNeedsRebuild — diffSpec 契约', () => {
             expect(groundSpecNeedsRebuild(baseSpec, next), `结构变更 ${JSON.stringify(ov)} 应触发重建`).toBe(true);
         }
     });
+
+    it('无限+texture/canvas 改 groundSize 不触发重建（specKey 用 INF 常量，消除 spurious 重建）', () => {
+        const infiniteModes: Partial<EnvState>[] = [
+            { groundTextureEnabled: true, groundTexture: TINY_PNG, groundStyle: 'texture', groundInfiniteEnabled: true },
+            { groundStyle: 'checker', groundInfiniteEnabled: true },
+        ];
+        for (const mode of infiniteModes) {
+            const base = buildGroundMaterialSpec(makeState({ ...mode, groundSize: 500 }));
+            const next = buildGroundMaterialSpec(makeState({ ...mode, groundSize: 800 }));
+            expect(
+                groundSpecNeedsRebuild(base, next),
+                `无限模式改 groundSize 不应触发重建: ${JSON.stringify(mode)}`
+            ).toBe(false);
+        }
+        // 对照：非无限（flat）改 groundSize 必须触发重建
+        const flatBase = buildGroundMaterialSpec(makeState({ groundStyle: 'checker', groundSize: 500 }));
+        const flatNext = buildGroundMaterialSpec(makeState({ groundStyle: 'checker', groundSize: 800 }));
+        expect(groundSpecNeedsRebuild(flatBase, flatNext), 'flat 改 groundSize 应触发重建').toBe(true);
+    });
 });
 
 // ──────────────── Suite 3 — 核心契约：spec 重建产物 == spec 原地产物 ────────────────

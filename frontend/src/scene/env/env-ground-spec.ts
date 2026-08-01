@@ -1,6 +1,7 @@
 // env-ground-spec.ts — ADR-226: 地面材质单一事实源（GroundMaterialSpec）
 //
-// 本模块是「结构收敛」骨架，当前**未被 applyGround 引用**：它把「地面材质应该
+// 本模块是「结构收敛」骨架，Phase 1（重建路径）与 Phase 2（原地路径）已接入 applyGround。
+// 它把「地面材质应该
 // 长什么样」描述为一个纯数据结构 GroundMaterialSpec，由 buildGroundMaterialSpec
 // 单一生成；重建 / 原地两条路径都从这份 spec 派生，杜绝 env-ground.ts 中
 // 手拼 typeKey + 双路径平行逻辑导致的「加功能即材质错乱」脆弱性。
@@ -156,9 +157,10 @@ export function buildGroundMaterialSpec(state: EnvState): GroundMaterialSpec {
         textureScale: state.groundTextureScale,
         textureRotation: state.groundTextureRotation,
         reflectionQuality: state.reflectionQuality,
-        // 历史一致性：alpha/level 仅在 terrain 模式进结构性（原 typeKey 分支差异）
-        alpha: isTerrain ? state.groundAlpha : state.groundAlpha,
-        level: isTerrain ? state.groundLevel : state.groundLevel,
+        // alpha/level 仅 terrain 模式的 specKey 才纳入结构性（见 specKey terrain 分支，L207/L210）；
+        // 非 terrain 由原地路径增量更新，不触发重建。此处统一存值，specKey 负责取舍。
+        alpha: state.groundAlpha,
+        level: state.groundLevel,
     };
 
     const appearance: GroundAppearanceSpec = {
@@ -346,7 +348,7 @@ export function applyGroundMaterialSpec(
 // 5. createGroundMeshFromSpec — 建几何 + 基础材质 + 填材质（取代重建路径 if/else）
 // ===================================================================
 
-/** 创建地面 mesh 并落好材质。当前未被 applyGround 调用（Phase 1 接入口）。 */
+/** 创建地面 mesh 并落好材质。Phase 1 已接入：applyGround 非 terrain 重建路径调用本函数。 */
 export function createGroundMeshFromSpec(state: EnvState, scene: Scene): Mesh {
     const spec = buildGroundMaterialSpec(state);
 
