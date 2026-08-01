@@ -108,7 +108,7 @@ use_when:
 
 跑法：`node scripts/check-doc-drift.mjs`（或 `--json`）。可接 CI 卡点。
 
-## 卡片索引（226 张：architecture 平铺 + leaf 折叠计数）
+## 卡片索引（232 张：architecture 平铺 + leaf 折叠计数）
 
 > 🌀 机器生成地图：[menu-map.md](./menu-map.md) —— 菜单层级全景（Schema 树 + 导航 items + target 路由），由 `scripts/gen-menu-map.mjs` 自动生成，**勿手改**；重跑 `npm run gen:menumap`。
 
@@ -244,6 +244,10 @@ use_when:
 |------|------|----------|
 | [滑出式菜单引擎](./menu.md) | `menus/menu.ts` | — |
 | [声明式菜单 Schema](./menu-schema.md) | `menus/menu-schema.ts` | ADR-093 |
+| [菜单 Schema 注册表](./menu-registry.md) | `menus/menu-registry.ts` | ADR-093 |
+| [菜单 Schema 集中注册聚合器](./menu-schema-register.md) | `menus/menu-schema-register.ts` | ADR-093 |
+| [菜单 Overlay 与 Wrapper 管理](./menu-overlay.md) | `menus/menu-overlay.ts` | ADR-191 |
+| [菜单栈共享指针](./menu-stack-registry.md) | `menus/menu-stack-registry.ts` | ADR-191 |
 | [设置页路由与编排](./settings.md) | `menus/settings.ts` | ADR-157 |
 | [资源库入口与编排](./library.md) | `menus/library.ts` | — |
 | [环境弹窗（编排 + barrel）](./env-menu.md) | `menus/env-menu.ts` | — |
@@ -323,7 +327,7 @@ use_when:
 | [诊断用动作注册](./diagnostic-actions.md) | `core/action-defs/diagnostic-actions.ts` | ADR-197/196 |
 | [菜单导航项契约](./ui-nav-item.md) | `core/ui-nav-item.ts` | ADR-153 |
 
-> 🍃 叶子模块 / 工具函数（16 张）：[dialog](./dialog.md) [toast](./toast.md) [status-bar](./status-bar.md) [color-helpers](./color-helpers.md) [hash-noise](./hash-noise.md) [dispose-helpers](./dispose-helpers.md) [logger](./logger.md) [ui-constants](./ui-constants.md) [wind-utils](./wind-utils.md) [zh-CN](./zh-CN.md) [zh-TW](./zh-TW.md) [ui-helpers](./ui-helpers.md) [config-barrel](./config-barrel.md) [icons-bundle](./icons-bundle.md) [runtime-stub](./runtime-stub.md) [core-leaf-modules](./core-leaf-modules.md)
+> 🍃 叶子模块 / 工具函数（18 张）：[dialog](./dialog.md) [toast](./toast.md) [status-bar](./status-bar.md) [color-helpers](./color-helpers.md) [hash-noise](./hash-noise.md) [dispose-helpers](./dispose-helpers.md) [logger](./logger.md) [ui-constants](./ui-constants.md) [wind-utils](./wind-utils.md) [zh-CN](./zh-CN.md) [zh-TW](./zh-TW.md) [ui-helpers](./ui-helpers.md) [config-barrel](./config-barrel.md) [icons-bundle](./icons-bundle.md) [runtime-stub](./runtime-stub.md) [core-leaf-modules](./core-leaf-modules.md) [render-context](./render-context.md) [ui-header-toggle](./ui-header-toggle.md)
 
 ### 内置 AI 诊断助手（ai，ADR-196）
 
