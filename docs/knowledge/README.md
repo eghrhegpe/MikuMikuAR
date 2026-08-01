@@ -107,23 +107,17 @@ use_when:
 - 报告额外输出「知识卡数 / source 覆盖数」，`--json` 模式含 `knowledge: { cards, missingSources, coveredCount }`。
 
 跑法：`node scripts/check-doc-drift.mjs`（或 `--json`）。可接 CI 卡点。
-
-## 卡片索引（232 张：architecture 平铺 + leaf 折叠计数）
+## 卡片索引（233 张：architecture 平铺 + leaf 折叠计数）
 
 > 🌀 机器生成地图：[menu-map.md](./menu-map.md) —— 菜单层级全景（Schema 树 + 导航 items + target 路由），由 `scripts/gen-menu-map.mjs` 自动生成，**勿手改**；重跑 `npm run gen:menumap`。
+
 
 ### 环境系统（env）
 
 | 卡片 | 模块 | 关联 ADR |
 |------|------|----------|
-| [环境系统上下文](./env-context.md) | `scene/env/env-context.ts` | — |
 | [环境调度器](./env-dispatcher.md) | `scene/env/env-dispatcher.ts` | ADR-138 |
 | [地面系统](./env-ground.md) | `scene/env/env-ground.ts` | — |
-| [反射系统](./env-reflection.md) | `scene/env/env-reflection.ts` | ADR-151/152 |
-| [天空系统](./env-sky.md) | `scene/env/env-sky.ts` | — |
-| [地形生成器](./env-terrain.md) | `scene/env/env-terrain.ts` | — |
-| [统一贴图工厂](./env-texture.md) | `scene/env/env-texture.ts` | ADR-092 |
-| [湿身效果系统](./env-wetness.md) | `scene/env/env-wetness.ts` | ADR-172 |
 | [环境系统门面](./env.md) | `scene/env/env.ts` | — |
 | [环境系统实现核心](./env-impl.md) | `scene/env/env-impl.ts` | — |
 | [环境状态写入入口（setEnvState + 中间件链）](./env-bridge.md) | `scene/env/env-bridge.ts` | ADR-138/148 |
@@ -131,25 +125,20 @@ use_when:
 | [环境碰撞控制](./env-collision.md) | `scene/env/env-collision.ts` | ADR-212 |
 | [环境状态防抖持久化](./env-persist.md) | `scene/env/env-persist.ts` | ADR-148/176 |
 | [时间流转与太阳角系统](./env-time-of-day.md) | `scene/env/env-time-of-day.ts` | ADR-148 |
-| [统一平面反射引擎](./planar-reflection.md) | `scene/env/planar-reflection.ts` | ADR-092 |
-| [云层系统](./env-clouds.md) | `scene/env/env-clouds.ts` | — |
 | [水面系统](./env-water.md) | `scene/env/env-water.ts` | — |
-| [共享焦散纹理系统](./env-caustics.md) | `scene/env/env-caustics.ts` | ADR-115 |
-| [水下视觉系统](./env-underwater-fog.md) | `scene/env/env-underwater-fog.ts` | — |
-| [粒子系统](./env-particles.md) | `scene/env/env-particles.ts` | — |
 | [环境灯光包装](./env-lighting.md) | `scene/env/env-lighting.ts` | — |
 
-> 🍃 叶子模块 / 工具函数（1 张）：[env-type-helpers](./env-type-helpers.md)
+> 🍃 叶子模块 / 工具函数（12 张）：[env-caustics](./env-caustics.md) [env-clouds](./env-clouds.md) [env-context](./env-context.md) [env-particles](./env-particles.md) [env-reflection](./env-reflection.md) [env-sky](./env-sky.md) [env-terrain](./env-terrain.md) [env-texture](./env-texture.md) [env-type-helpers](./env-type-helpers.md) [env-underwater-fog](./env-underwater-fog.md) [env-wetness](./env-wetness.md) [planar-reflection](./planar-reflection.md)
 
 ### 场景编排（scene）
 
 | 卡片 | 模块 | 关联 ADR |
 |------|------|----------|
 | [场景核心编排器](./scene.md) | `scene/scene.ts` | — |
-| [场景打包/解包](./scene-bundle.md) | `scene/scene-bundle.ts` | — |
-| [场景存档迁移](./scene-migrate.md) | `scene/scene-migrate.ts` | ADR-166 |
 | [场景序列化与自动保存](./scene-serialize.md) | `scene/scene-serialize.ts` | — |
 | [相机模式管理系统](./camera.md) | `scene/camera/camera.ts` | ADR-035 |
+
+> 🍃 叶子模块 / 工具函数（2 张）：[scene-bundle](./scene-bundle.md) [scene-migrate](./scene-migrate.md)
 
 ### 场景子系统（scene）
 
@@ -159,22 +148,13 @@ use_when:
 | [模型注册表与生命周期管理](./model-manager.md) | `scene/manager/model-manager.ts` | — |
 | [模型生命周期操作](./model-ops.md) | `scene/manager/model-ops.ts` | ADR-116 |
 | [分类材质系统](./material.md) | `scene/manager/material.ts` | — |
-| [纹理 LRU 缓存](./texture-lru.md) | `scene/manager/texture-lru.ts` | ADR-189 |
-| [缩略图渲染](./thumbnail-capture.md) | `scene/manager/thumbnail-capture.ts` | — |
-| [姿势多角度预设系统](./camera-angle.md) | `scene/pose/camera-angle.ts` | — |
 | [AR 摄像头视频透传](./ar-camera.md) | `scene/ar/ar-camera.ts` | ADR-055 |
 | [AR 模式场景级协调](./ar-scene.md) | `scene/ar/ar-scene.ts` | ADR-055 |
 | [拖拽变换模式开关](./transform-mode.md) | `scene/transform/transform-mode.ts` | — |
 | [相机状态管理](./camera-state.md) | `scene/camera/camera-state.ts` | — |
-| [相机创建工厂](./camera-factory.md) | `scene/camera/camera-factory.ts` | ADR-148 |
-| [VMD 相机动画](./camera-vmd.md) | `scene/camera/camera-vmd.ts` | ADR-148 |
-| [节拍驱动自动运镜](./camera-auto.md) | `scene/camera/camera-auto.ts` | ADR-148 |
-| [相机行为（Freefly/Surround/Concert）](./camera-behaviors.md) | `scene/camera/camera-behaviors.ts` | ADR-148 |
-| [轨道相机骨骼锁定](./camera-bone-lock.md) | `scene/camera/camera-bone-lock.ts` | ADR-148 |
-| [构图指南](./composition-guide.md) | `scene/pose/composition-guide.ts` | — |
-| [水印系统](./watermark.md) | `scene/pose/watermark.ts` | — |
+| [变换选中物状态源](./transform-selection.md) | `- src/scene/transform/transform-selection.ts` | — |
 
-> 🍃 叶子模块 / 工具函数（1 张）：[thumbnail-key](./thumbnail-key.md)
+> 🍃 叶子模块 / 工具函数（12 张）：[camera-angle](./camera-angle.md) [camera-auto](./camera-auto.md) [camera-behaviors](./camera-behaviors.md) [camera-bone-lock](./camera-bone-lock.md) [camera-factory](./camera-factory.md) [camera-vmd](./camera-vmd.md) [composition-guide](./composition-guide.md) [texture-lru](./texture-lru.md) [thumbnail-capture](./thumbnail-capture.md) [thumbnail-key](./thumbnail-key.md) [watermark](./watermark.md) [model-id](./model-id.md)
 
 ### 物理系统（physics）
 
@@ -182,35 +162,23 @@ use_when:
 |------|------|----------|
 | [物理骨骼桥与每帧注册表](./physics-bridge.md) | `physics/physics-bridge.ts` | ADR-081 |
 | [风力物理注入](./wind-physics.md) | `physics/wind-physics.ts` | ADR-104 |
-| [裙摆拓扑分析](./skirt-analyzer.md) | `scene/physics/skirt-analyzer.ts` | ADR-084 |
 | [虚拟裙骨物理控制器](./virtual-skirt.md) | `scene/physics/virtual-skirt.ts` | ADR-081/084 |
-| [地面碰撞体](./ground-collision.md) | `scene/physics/ground-collision.ts` | — |
+
+> 🍃 叶子模块 / 工具函数（2 张）：[ground-collision](./ground-collision.md) [skirt-analyzer](./skirt-analyzer.md)
 
 ### 渲染系统（rendering）
 
 | 卡片 | 模块 | 关联 ADR |
 |------|------|----------|
-| [WebXR 能力探测](./ar-webxr-probe.md) | `scene/ar/ar-webxr-probe.ts` | — |
-| [光锥网格](./light-cone.md) | `scene/render/light-cone.ts` | ADR-152 |
 | [个人灯光跟随](./lighting-follow.md) | `scene/render/lighting-follow.ts` | ADR-168 |
-| [阴影生成器](./lighting-shadow.md) | `scene/render/lighting-shadow.ts` | — |
-| [舞台灯光系统](./lighting-stage.md) | `scene/render/lighting-stage.ts` | — |
-| [灯光模块状态对象](./lighting-state.md) | `scene/render/lighting-state.ts` | ADR-159 |
-| [太阳圆盘可视化](./lighting-sun.md) | `scene/render/lighting-sun.ts` | — |
-| [灯光预设过渡动画](./lighting-tween.md) | `scene/render/lighting-tween.ts` | — |
-| [性能降级 — 环境桥接](./performance-env-bridge.md) | `scene/render/performance-env-bridge.ts` | ADR-130 |
-| [质量维度与配置系统](./quality-profile.md) | `scene/render/quality-profile.ts` | ADR-130/174 |
-| [镜面道具](./mirror-debug.md) | `scene/env/mirror-debug.ts` | ADR-128 |
 | [变换适配器注册表](./transform-adapter.md) | `scene/transform/transform-adapter.ts` | ADR-121/126 |
-| [变换拾取系统](./transform-pick.md) | `scene/transform/transform-pick.ts` | — |
 | [场景渲染管线与后处理](./renderer.md) | `scene/render/renderer.ts` | — |
 | [场景光照与阴影](./lighting.md) | `scene/render/lighting.ts` | — |
 | [性能监控与自动降级](./performance.md) | `scene/render/performance.ts` | ADR-159 |
-| [3D 拖拽 Gizmo 统一抽象](./transform-gizmo.md) | `scene/render/transform-gizmo.ts` | ADR-048/126 |
 | [灯光预设系统](./lighting-presets.md) | `scene/render/lighting-presets.ts` | — |
 | [GPU 压缩纹理能力探测](./gpu-capabilities.md) | `core/gpu-capabilities.ts` | ADR-189 |
 
-> 🍃 叶子模块 / 工具函数（1 张）：[invertablePointersInput](./invertablePointersInput.md)
+> 🍃 叶子模块 / 工具函数（13 张）：[ar-webxr-probe](./ar-webxr-probe.md) [invertablePointersInput](./invertablePointersInput.md) [light-cone](./light-cone.md) [lighting-shadow](./lighting-shadow.md) [lighting-stage](./lighting-stage.md) [lighting-state](./lighting-state.md) [lighting-sun](./lighting-sun.md) [lighting-tween](./lighting-tween.md) [mirror-debug](./mirror-debug.md) [performance-env-bridge](./performance-env-bridge.md) [quality-profile](./quality-profile.md) [transform-gizmo](./transform-gizmo.md) [transform-pick](./transform-pick.md)
 
 ### 动作系统（motion）
 
@@ -219,10 +187,7 @@ use_when:
 | [骨骼覆盖存储（多模块仲裁）](./bone-override-store.md) | `scene/motion/bone-override-store.ts` | ADR-084 |
 | [动作管线（逐帧合成）](./motion-pipeline.md) | `scene/motion/motion-pipeline.ts` | ADR-129 |
 | [感知层主控](./perception.md) | `scene/motion/perception.ts` | ADR-071/162/166 |
-| [感知层共享类型](./perception-shared.md) | `scene/motion/perception-shared.ts` | ADR-071/162 |
-| [视线追踪主模块](./perception-gaze.md) | `scene/motion/perception-gaze.ts` | ADR-071/162/166 |
 | [骨骼覆盖核心 API](./bone-override.md) | `scene/motion/bone-override.ts` | ADR-061/116/123/126/186 |
-| [动作覆盖 UI 层级](./motion-override-levels.md) | `menus/motion-override-levels.ts` | ADR-061/116/145/186 |
 | [动作播放控制](./motion-playback.md) | `scene/motion/playback.ts` | — |
 | [外部动作重定向桥](./animation-retargeter.md) | `scene/motion/animation-retargeter.ts` | — |
 | [多 VMD 叠加系统](./vmd-layers.md) | `scene/motion/vmd-layers.ts` | — |
@@ -230,13 +195,12 @@ use_when:
 | [场景级动作意图库](./motion-intent.md) | `scene/motion/motion-intent.ts` | ADR-121/167 |
 | [程序化动作系统](./proc-motion-bridge.md) | `scene/motion/proc-motion-bridge.ts` | — |
 | [脚部地面跟随（MMD-native IK）](./motion-feet-adjustment.md) | `scene/motion/feet-adjustment.ts` | ADR-085 |
-| [脚步声控制器](./motion-footstep.md) | `scene/motion/footstep.ts` | ADR-088 |
 | [口型同步桥](./lipsync-bridge.md) | `scene/motion/lipsync-bridge.ts` | — |
 | [动作模块注册表](./motion-modules-registry.md) | `scene/motion/motion-modules/registry.ts` | — |
-| [脚部独立控制模块（左脚/右脚）](./motion-modules-feet.md) | `scene/motion/motion-modules/foot-modules.ts` | ADR-116 |
-| [手部独立控制模块（左手/右手）](./hand-symmetry.md) | `scene/motion/motion-modules/hand-modules.ts` | ADR-116 |
-| [动作模块 — 身体姿势](./motion-modules-body-posture.md) | `scene/motion/motion-modules/body-posture.ts` | — |
-| [动作模块 — 骑乘模型](./motion-modules-riding.md) | `scene/motion/motion-modules/riding-model.ts` | — |
+| [动作历史管理](./motion-history.md) | `- src/scene/motion/motion-modules/motion-history.ts` | — |
+| [动作模块基类](./motion-module-base.md) | `- src/scene/motion/motion-modules/module-base.ts` | ADR-116/ADR-126 |
+
+> 🍃 叶子模块 / 工具函数（20 张）：[hand-symmetry](./hand-symmetry.md) [motion-footstep](./motion-footstep.md) [motion-modules-body-posture](./motion-modules-body-posture.md) [motion-modules-feet](./motion-modules-feet.md) [motion-modules-riding](./motion-modules-riding.md) [motion-override-levels](./motion-override-levels.md) [perception-gaze](./perception-gaze.md) [perception-shared](./perception-shared.md) [motion-math](./motion-math.md) [motion-module-types](./motion-module-types.md) [motion-preset-types](./motion-preset-types.md) [perception-balance](./perception-balance.md) [perception-blinking](./perception-blinking.md) [perception-breathing](./perception-breathing.md) [perception-expression](./perception-expression.md) [perception-gaze-js](./perception-gaze-js.md) [perception-gaze-wasm](./perception-gaze-wasm.md) [perception-lipsync](./perception-lipsync.md) [perception-observer](./perception-observer.md) [wasm-layers-blender](./wasm-layers-blender.md)
 
 ### UI/菜单（ui）
 
@@ -244,45 +208,24 @@ use_when:
 |------|------|----------|
 | [滑出式菜单引擎](./menu.md) | `menus/menu.ts` | — |
 | [声明式菜单 Schema](./menu-schema.md) | `menus/menu-schema.ts` | ADR-093 |
-| [菜单 Schema 注册表](./menu-registry.md) | `menus/menu-registry.ts` | ADR-093 |
-| [菜单 Schema 集中注册聚合器](./menu-schema-register.md) | `menus/menu-schema-register.ts` | ADR-093 |
 | [菜单 Overlay 与 Wrapper 管理](./menu-overlay.md) | `menus/menu-overlay.ts` | ADR-191 |
 | [菜单栈共享指针](./menu-stack-registry.md) | `menus/menu-stack-registry.ts` | ADR-191 |
 | [设置页路由与编排](./settings.md) | `menus/settings.ts` | ADR-157 |
 | [资源库入口与编排](./library.md) | `menus/library.ts` | — |
 | [环境弹窗（编排 + barrel）](./env-menu.md) | `menus/env-menu.ts` | — |
 | [场景弹窗（编排 + 路由）](./scene-menu.md) | `menus/scene-menu.ts` | — |
-| [模型子菜单构建](./model-detail.md) | `menus/model-detail.ts` | — |
-| [资源库浏览弹窗](./library-browse.md) | `menus/library-browse.ts` | — |
-| [资源库会话状态单例](./library-session-store.md) | `menus/library-session-store.ts` | ADR-135 |
 | [动作绑定 UI](./motion-binding-ui.md) | `menus/motion-binding-ui.ts` | — |
 | [动作详情 UI](./motion-detail-ui.md) | `menus/motion-detail-ui.ts` | — |
-| [模型广场创作者列表](./plaza-creators.md) | `menus/plaza-creators.ts` | — |
-| [模型广场 UI 辅助函数](./plaza-thumbnail.md) | `menus/plaza-thumbnail.ts` | — |
-| [场景拖拽层级菜单](./scene-drag-levels.md) | `menus/scene-drag-levels.ts` | ADR-171 |
-| [场景菜单共享状态](./scene-menu-state.md) | `menus/scene-menu-state.ts` | — |
-| [设置 — 关于页面](./settings-about.md) | `menus/settings-about.ts` | ADR-157 |
-| [设置动作映射表](./settings-actions.md) | `menus/settings-actions.ts` | ADR-157 |
-| [设置 — 操控页面](./settings-controls.md) | `menus/settings-controls.ts` | ADR-157 |
-| [设置 — 画面页面](./settings-graphics.md) | `menus/settings-graphics.ts` | ADR-157 |
-| [设置 — 媒体页面](./settings-media.md) | `menus/settings-media.ts` | ADR-157 |
-| [设置 — 资源页面](./settings-resources.md) | `menus/settings-resources.ts` | ADR-157 |
-| [设置 — 系统页面](./settings-system.md) | `menus/settings-system.ts` | ADR-157 |
-| [环境菜单层级系统](./env-menu-levels.md) | `menus/env-level-helpers.ts` | — |
 | [动作菜单层级系统](./motion-menu-levels.md) | `menus/motion-popup.ts` | — |
-| [场景菜单层级系统](./scene-menu-levels.md) | `menus/scene-menu-state.ts` | ADR-171 |
 | [菜单渲染引擎](./render-menu.md) | `menus/render-menu.ts` | ADR-093 |
-| [菜单工厂](./menu-factory.md) | `menus/menu-factory.ts` | — |
 | [资源库操作](./library-actions.md) | `menus/library-actions.ts` | — |
 | [资源库核心](./library-core.md) | `menus/library-core.ts` | — |
 | [资源库初始化](./library-setup.md) | `menus/library-setup.ts` | — |
-| [AI 诊断助手面板](./settings-diagnostic.md) | `menus/settings-diagnostic.ts` | ADR-196/093 |
-| [AI 助手独立面板入口](./assistant-panel.md) | `menus/assistant-panel.ts` | ADR-203/093 |
-| [诊断助手 → 聊天 UI（子模块）](./diagnostic-chat.md) | `menus/diagnostic-chat.ts` | ADR-196/203 |
-| [诊断助手 → 配置 UI（子模块）](./diagnostic-config.md) | `menus/diagnostic-config.ts` | ADR-196/203 |
-| [诊断助手 → tool call 控制（子模块）](./diagnostic-control.md) | `menus/diagnostic-control.ts` | ADR-197/155/203 |
-| [诊断助手 → 会话管理（子模块）](./diagnostic-session.md) | `menus/diagnostic-session.ts` | ADR-203 |
-| [诊断助手 → 单例状态（子模块）](./diagnostic-state.md) | `menus/diagnostic-state.ts` | ADR-196/203 |
+| [模型预设管理 UI](./model-preset-ui.md) | `- src/menus/model-preset.ts` | ADR-145 |
+| [广场状态管理](./plaza-state.md) | `- src/menus/plaza-state.ts` | ADR-087 |
+| [设置共享工具](./settings-shared.md) | `- src/menus/settings-shared.ts` | ADR-157 |
+
+> 🍃 叶子模块 / 工具函数（35 张）：[assistant-panel](./assistant-panel.md) [diagnostic-chat](./diagnostic-chat.md) [diagnostic-config](./diagnostic-config.md) [diagnostic-control](./diagnostic-control.md) [diagnostic-session](./diagnostic-session.md) [diagnostic-state](./diagnostic-state.md) [env-menu-levels](./env-menu-levels.md) [library-browse](./library-browse.md) [library-session-store](./library-session-store.md) [menu-factory](./menu-factory.md) [menu-registry](./menu-registry.md) [menu-schema-register](./menu-schema-register.md) [model-detail](./model-detail.md) [plaza-creators](./plaza-creators.md) [plaza-thumbnail](./plaza-thumbnail.md) [scene-drag-levels](./scene-drag-levels.md) [scene-menu-levels](./scene-menu-levels.md) [scene-menu-state](./scene-menu-state.md) [settings-about](./settings-about.md) [settings-actions](./settings-actions.md) [settings-controls](./settings-controls.md) [settings-diagnostic](./settings-diagnostic.md) [settings-graphics](./settings-graphics.md) [settings-media](./settings-media.md) [settings-resources](./settings-resources.md) [settings-system](./settings-system.md) [model-material-ui](./model-material-ui.md) [outfit-ui](./outfit-ui.md) [plaza-browser](./plaza-browser.md) [plaza-download](./plaza-download.md) [plaza-sites](./plaza-sites.md) [preset-list-viewer](./preset-list-viewer.md) [settings-appearance](./settings-appearance.md) [settings-language](./settings-language.md) [settings-targets](./settings-targets.md)
 
 ### 核心基础设施（core）
 
@@ -292,42 +235,25 @@ use_when:
 | [EnvState 单一源 Schema](./env-state-schema.md) | `core/env-state-schema.ts` | ADR-137/132 |
 | [Runtime 隔离桥](./runtime-bridge.md) | `core/runtime-bridge.ts` | ADR-177 |
 | [后端绑定聚合层](./wails-bindings.md) | `core/wails-bindings.ts` | ADR-176 |
-| [平台能力探测](./platform.md) | `core/platform.ts` | ADR-176 |
 | [统一资源加载队列](./load-manager.md) | `core/load-manager.ts` | ADR-045/135 |
-| [Observer 生命周期管理](./observer-handle.md) | `core/observer-handle.ts` | — |
-| [轻量响应式刷新系统](./reactivity.md) | `core/reactivity.ts` | — |
 | [渲染循环与 FPS 时钟](./render-loop.md) | `core/render-loop.ts` | ADR-102 |
-| [开发环境 E2E 钩子](./dev-hooks.md) | `core/dev-hooks.ts` | ADR-102 |
 | [事件处理与导航系统](./events.md) | `core/events.ts` | — |
-| [Go 错误翻译](./goerr.md) | `core/i18n/goerr.ts` | ADR-117 |
 | [应用启动引导](./init.md) | `core/init.ts` | — |
 | [国际化语言状态](./locale.md) | `core/i18n/locale.ts` | ADR-059 |
-| [安全调用工具](./safe-call.md) | `core/safe-call.ts` | ADR-146 |
-| [应用快捷键定义](./shortcut-app.md) | `core/shortcut-app.ts` | ADR-102 |
-| [焦点陷阱工具](./ui-focus-trap.md) | `core/ui-focus-trap.ts` | ADR-153 |
 | [键盘导航工具](./ui-keyboard-nav.md) | `core/ui-keyboard-nav.ts` | ADR-153 |
-| [预设面板复合组件](./ui-preset.md) | `core/ui-preset.ts` | — |
-| [滑块输入控制器](./ui-slider-controller.md) | `core/ui-slider-controller.ts` | — |
-| [UI 持久化状态](./ui-state.md) | `core/ui-state.ts` | ADR-141 |
-| [拖拽导入逻辑层](./drop-import.md) | `core/drop-import.ts` | ADR-177 |
 | [统一文件服务层](./fileservice.md) | `core/fileservice.ts` | ADR-057 |
 | [后端适配层](./core-backend.md) | `core/backend/index.ts` | — |
 | [音频总线](./audio-bus.md) | `core/audio-bus.ts` | — |
 | [快捷键注册表](./shortcut-registry.md) | `core/shortcut-registry.ts` | — |
-| [PMX 元数据提取](./pmx-meta.md) | `core/pmx-meta.ts` | — |
 | [运行模式检测](./runtime-mode.md) | `core/runtime-mode.ts` | — |
 | [结构化反馈 API](./feedback.md) | `core/feedback.ts` | — |
 | [模型加载/库扫描完成后菜单刷新注册表](./load-refresh-registry.md) | `core/load-refresh-registry.ts` | — |
 | [babylon-mmd 适配边界](./mmd-adapter.md) | `core/mmd-adapter.ts` | ADR-192 |
-| [预设元数据归一化](./preset-meta.md) | `core/preset-meta.ts` | ADR-130 |
 | [安卓文件访问（shared 模式）](./android-file-access.md) | `internal/app/fileaccess_android.go` 等 | ADR-017/180/183/194 |
-| [window.__mmar 状态暴露](./mmar-globals.md) | `core/mmar-globals.ts` | — |
 | [统一动作注册表](./action-registry.md) | `core/action-registry.ts` + `action-executor`/`action-defs/*`/`ai/{param-adapters,action-catalog,action-registry-defs}` | ADR-197/155 |
 | [轨道相机键盘输入状态](./orbit-state.md) | `core/orbit-state.ts` | — |
-| [诊断用动作注册](./diagnostic-actions.md) | `core/action-defs/diagnostic-actions.ts` | ADR-197/196 |
-| [菜单导航项契约](./ui-nav-item.md) | `core/ui-nav-item.ts` | ADR-153 |
 
-> 🍃 叶子模块 / 工具函数（18 张）：[dialog](./dialog.md) [toast](./toast.md) [status-bar](./status-bar.md) [color-helpers](./color-helpers.md) [hash-noise](./hash-noise.md) [dispose-helpers](./dispose-helpers.md) [logger](./logger.md) [ui-constants](./ui-constants.md) [wind-utils](./wind-utils.md) [zh-CN](./zh-CN.md) [zh-TW](./zh-TW.md) [ui-helpers](./ui-helpers.md) [config-barrel](./config-barrel.md) [icons-bundle](./icons-bundle.md) [runtime-stub](./runtime-stub.md) [core-leaf-modules](./core-leaf-modules.md) [render-context](./render-context.md) [ui-header-toggle](./ui-header-toggle.md)
+> 🍃 叶子模块 / 工具函数（40 张）：[color-helpers](./color-helpers.md) [config-barrel](./config-barrel.md) [core-leaf-modules](./core-leaf-modules.md) [dev-hooks](./dev-hooks.md) [diagnostic-actions](./diagnostic-actions.md) [dialog](./dialog.md) [dispose-helpers](./dispose-helpers.md) [drop-import](./drop-import.md) [goerr](./goerr.md) [hash-noise](./hash-noise.md) [icons-bundle](./icons-bundle.md) [logger](./logger.md) [mmar-globals](./mmar-globals.md) [observer-handle](./observer-handle.md) [platform](./platform.md) [pmx-meta](./pmx-meta.md) [preset-meta](./preset-meta.md) [reactivity](./reactivity.md) [render-context](./render-context.md) [runtime-stub](./runtime-stub.md) [safe-call](./safe-call.md) [shortcut-app](./shortcut-app.md) [status-bar](./status-bar.md) [toast](./toast.md) [ui-constants](./ui-constants.md) [ui-focus-trap](./ui-focus-trap.md) [ui-header-toggle](./ui-header-toggle.md) [ui-helpers](./ui-helpers.md) [ui-nav-item](./ui-nav-item.md) [ui-preset](./ui-preset.md) [ui-slider-controller](./ui-slider-controller.md) [ui-state](./ui-state.md) [wind-utils](./wind-utils.md) [core-dom](./core-dom.md) [core-orbit](./core-orbit.md) [core-types](./core-types.md) [core-utils](./core-utils.md) [i18n-t](./i18n-t.md) [zh-CN](./zh-CN.md) [zh-TW](./zh-TW.md)
 
 ### 内置 AI 诊断助手（ai，ADR-196）
 
@@ -337,8 +263,6 @@ use_when:
 | [AI 配置持久化](./ai-config-store.md) | `core/ai/config-store.ts` | ADR-196 |
 | [错误环形缓冲与全局捕获](./ai-error-buffer.md) | `core/ai/error-buffer.ts` | ADR-196 |
 | [场景运行时快照](./ai-scene-snapshot.md) | `core/ai/scene-snapshot.ts` | ADR-196 |
-| [SSE 流式解析器](./ai-sse.md) | `core/ai/sse.ts` | ADR-196 |
-| [角色台词生成（人设/情绪/TTS）](./character-bible.md) | `core/ai/{character-bible,dialogue-session,dialogue-speech}.ts` | ADR-156 |
 | [NL 意图解析（LLM→动作）](./ai-intent-dispatcher.md) | `core/ai/intent-dispatcher.ts` | ADR-155/197 |
-| [AI 会话 IndexedDB 存储](./chat-store.md) | `core/ai/chat-store.ts` | ADR-203 |
-| [轻量 Markdown→DOM 渲染器](./markdown.md) | `core/ai/markdown.ts` | ADR-196 |
+
+> 🍃 叶子模块 / 工具函数（4 张）：[ai-sse](./ai-sse.md) [character-bible](./character-bible.md) [chat-store](./chat-store.md) [markdown](./markdown.md)
