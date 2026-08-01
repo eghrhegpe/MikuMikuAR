@@ -24,10 +24,14 @@ export {
     mockMmdRuntimeShared,
     mockSinglePhysicsRelease,
 } from './mocks/babylon-factories';
+import { sceneMockSuperset } from './mocks/scene-superset';
 
 export { mockToast } from './model-preset-mocks';
 
 // ---- 换装特有 helper ----
 export const mockEmpty = () => ({});
-export const mockSceneModule = () => ({ scene: {} });
+export const mockSceneModule = () => ({
+    ...sceneMockSuperset(),
+    scene: {},
+});
 export const mockT = () => ({ t: (key: string) => key });

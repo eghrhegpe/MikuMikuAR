@@ -2,6 +2,7 @@
 // 工厂函数供各测试文件以 `vi.mock('...', () => factory())` 引用，避免重复书写。
 // 仅 mock 渲染链路依赖的副作用模块；@/core/state 保持真实（部分用例直接断言其 getter/setter）。
 import { vi } from 'vitest';
+import { sceneMockSuperset } from './mocks/scene-superset';
 
 // —— 通用默认值 ——
 const DEFAULT_RENDER_STATE = {
@@ -33,6 +34,7 @@ const DEFAULT_PERCEPTION_STATE = {
 
 // —— 现有工厂（保持兼容，同时扩展以支持快照生成需求） ——
 export const mockScene = () => ({
+    ...sceneMockSuperset(),
     setEnvState: vi.fn(),
     setRenderState: vi.fn(),
     getRenderState: vi.fn(() => DEFAULT_RENDER_STATE),

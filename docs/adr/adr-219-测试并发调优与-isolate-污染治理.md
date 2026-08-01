@@ -179,6 +179,12 @@ no-isolate 全量两次实测：文件数恒为 243，但**用例总数从 isola
 - `isolate=false` **仍不采纳**，但理由更新：剩余 **230 个执行期失败全是 vi.mock 跨文件泄漏**（19+ 文件 `vi.mock core/state`/`scene/scene` 形状各异，单例穿透，isolate=false 固有特性，vitest 官方亦警告）。这是「模块级单例 mock 穿透」债（上文「判定收口」中已定性），与 window 污染**不同源**：收集期崩已根治，执行期污染债 ROI 低（需形状收口 + 全局化组合拳），入测试卫生清单待后续增量清偿。
 - 真相锚不变：isolate=true 全量（4138 全绿）是唯一可信指标。
 
+**Phase 2 二次证伪（2026-08-01，scene 超集实验）：**
+
+- 对剩余 vi.mock 泄漏做「形状超集化」尝试：新建 `frontend/src/__tests__/mocks/scene-superset.ts`（`mockModelManagerBase` 30 方法 + `sceneMockSuperset` 核心导出超集，`modelManager` 闭包稳定单实例），改造 7 个 scene mock 工厂（camera-adr100 / outfit / library-core / model-ops / perception / menu-schema / model-detail-ui）统一 spread 超集。`npm run check` EXIT=0；isolate=true 243 文件 / 4135 用例全绿零回归。
+- **no-isolate 全量验证：失败 230→229，几乎无变化，No-export 反增 28→35**（漏网：`mmar-globals.test.ts` 内联 mock scene/scene 仅 3 导出；core/config mock 缺 envState×10 / setIsPlaying×7；scene/scene mock 缺 modelManager×4 / setModelWireframe / applyMatState）。漏网内联 mock 缺任一导出、一旦被其他文件源码单例绑定即崩 → 打地鼠；断言类失败（行为/返回值不对）无法靠形状修。
+- **结论：isolate=false 结构性不可修二次证实**（idb 统一形状无效 + scene 超集无效）。超集改动**保留**为测试卫生增益（isolate=true 更健壮、未来可再评估 isolate=false），no-isolate 治理**收手**，残余 229 执行期失败为「模块级单例 mock 穿透」债，持续挂测试卫生清单。
+
 ## 备选方案
 
 - **`pool: 'threads'`（隔离保留）**：实测 34.9s，收益仅 ~7%；且部分 Babylon/WASM 场景在线程池下不如进程稳。不选。

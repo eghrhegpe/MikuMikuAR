@@ -1,6 +1,7 @@
 // @ts-nocheck — vi.mock 工厂 + 共享 helper（library-core 拆分测试用）
 // mock 类均直接内联（无外部依赖），vi.hoisted mockState 由各测试文件提供。
 import { vi } from 'vitest';
+import { sceneMockSuperset } from './mocks/scene-superset';
 
 // ---- vi.hoisted state 工厂（由各测试文件通过 vi.hoisted(() => createMockState()) 调用）----
 
@@ -20,6 +21,7 @@ export function createMockState() {
 
 export function sceneFactory() {
     return {
+        ...sceneMockSuperset(),
         loadPMXFile: vi.fn(),
         loadVMDFromPath: vi.fn(),
         removeModel: vi.fn(),
