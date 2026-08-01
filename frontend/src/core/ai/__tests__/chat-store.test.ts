@@ -38,7 +38,7 @@ import {
     deriveTitle,
     type ChatSessionFull,
 } from '../chat-store';
-import { idbSet } from '../../backend/idb';
+import { idbSet, idbBatchSet, idbDelete } from '../../backend/idb';
 import type { ChatMessage } from '../types';
 
 function mkSession(id: string, updatedAt: number, msgs: ChatMessage[] = []): ChatSessionFull {
@@ -139,5 +139,33 @@ describe('chat-store', () => {
         expect(await getActiveId()).toBe('sess-1');
         await clearActiveId();
         expect(await getActiveId()).toBeUndefined();
+    });
+
+    // —— 写失败降级路径：不抛错 + 留 warn 日志（防「保存了却丢了」无声数据丢失）——
+    it('saveSession 写失败 → 不抛错且 console.warn 记录', async () => {
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        vi.mocked(idbBatchSet).mockRejectedValueOnce(new Error('QuotaExceededError'));
+        await expect(saveSession(mkSession('a', 100))).resolves.toBeUndefined();
+        expect(warnSpy).toHaveBeenCalledTimes(1);
+        expect(warnSpy.mock.calls[0][0]).toContain('saveSession');
+        warnSpy.mockRestore();
+    });
+
+    it('deleteSession 写失败 → 不抛错且 console.warn 记录', async () => {
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        vi.mocked(idbDelete).mockRejectedValueOnce(new Error('transaction aborted'));
+        await expect(deleteSession('ghost')).resolves.toBeUndefined();
+        expect(warnSpy).toHaveBeenCalledTimes(1);
+        expect(warnSpy.mock.calls[0][0]).toContain('deleteSession');
+        warnSpy.mockRestore();
+    });
+
+    it('setActiveId 写失败 → 不抛错且 console.warn 记录', async () => {
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        vi.mocked(idbSet).mockRejectedValueOnce(new Error('IDB unavailable'));
+        await expect(setActiveId('sess-1')).resolves.toBeUndefined();
+        expect(warnSpy).toHaveBeenCalledTimes(1);
+        expect(warnSpy.mock.calls[0][0]).toContain('setActiveId');
+        warnSpy.mockRestore();
     });
 });

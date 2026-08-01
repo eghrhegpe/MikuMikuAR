@@ -64,6 +64,9 @@ export function resolveAi(): Promise<AiService> {
         if (ready && typeof window.wails === 'object') {
             _resolved = await _getGoAdapter();
         } else {
+            console.warn(
+                `[ai] resolveAi: ${timeout}ms 内未探测到 window.wails，降级 browserAiAdapter`
+            );
             _resolved = browserAiAdapter;
         }
         return _resolved;

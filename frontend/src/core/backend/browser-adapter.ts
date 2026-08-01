@@ -52,6 +52,9 @@ function _stripExt(name: string): string {
     return name.replace(/\.[^.]+$/, '');
 }
 
+/** file:<stem> 扁平兜底命中时的 warn 去重集（合法跨模型共享也会命中，避免每帧刷屏稀释警惕）。 */
+const _flatFallbackWarned = new Set<string>();
+
 /**
  * [doc:adr-177] 将模型 stem（可能含 `/`，如 `A/miku`）编码为 URL/键安全的单 token。
  *
@@ -1399,10 +1402,13 @@ export const browserAdapter: BackendService = {
             const stem = _stripExt(baseName);
             const fallback = (await idbGet<Uint8Array>('models', `file:${stem}`)) ?? null;
             if (fallback) {
-                console.warn(
-                    `[readFileBytes] ${path} 未命中 dir: 命名空间键，` +
-                        `经 file:${stem} 兜底返回数据——该数据可能来自其他 ZIP 的同名文件，非期望来源`
-                );
+                if (!_flatFallbackWarned.has(stem)) {
+                    _flatFallbackWarned.add(stem);
+                    console.warn(
+                        `[readFileBytes] ${path} 未命中 dir: 命名空间键，` +
+                            `经 file:${stem} 兜底返回数据——该数据可能来自其他 ZIP 的同名文件，非期望来源`
+                    );
+                }
                 return fallback;
             }
         }

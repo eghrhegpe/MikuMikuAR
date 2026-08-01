@@ -67,6 +67,9 @@ export function resolveBackend(): Promise<BackendService> {
         if (ready && typeof window.wails === 'object') {
             _resolved = await _getGoAdapter();
         } else {
+            console.warn(
+                `[backend] resolveBackend: ${timeout}ms 内未探测到 window.wails，降级 browserAdapter`
+            );
             _resolved = browserAdapter;
         }
         return _resolved;
