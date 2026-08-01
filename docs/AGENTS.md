@@ -1,6 +1,7 @@
 # docs/ — 项目文档索引
 
 ```
+index.md             🏠 文档中心首页（VitePress）
 status.md            📊 项目现状（非权威状态源，以 adr/ 首部状态行为准）
 architecture.md      🏗️ 架构与技术方案
 design.md            🎨 UI 组件规范（唯一来源）
@@ -10,6 +11,10 @@ function-map.md      🗺️ 函数映射表（部分过时，见 frontend/AGENT
 competitive-analysis.md 🔍 竞品分析
 outfits-spec.md      👗 换装系统规格
 security-audit-CVE.md 🔒 安全审计 CVE 记录
+targets.md           🎯 四端目标能力矩阵（能力真相源 SSOT）
+dep-graph.md         🕸️ 模块依赖图（自动生成，npm run dep:graph）
+grand-blueprint.md   🧭 联邦大统一蓝图（历史规划快照，非当前真相源）
+web-data-origin-isolation.md 🛡️ 网页端数据存储与 Origin 隔离说明
 adr/                 📜 架构决策记录（权威状态源，见各 ADR 首部状态行）
 audit/               🔍 代码审计报告（round-1~9 + 专项审计）
 buglog/              🐛 Bug 修复记录
@@ -39,5 +44,6 @@ superpowers/         📋 ADR 实施计划（plans/）
 | `horizon-volumetric-clouds.md` | 体积云调研 |
 | `Wails v3-*.md` | Wails v3 源码分析系列（architecture/binding/events/android） |
 | `Android 环境下 Wails v3 隐患清单.md` | Android 适配隐患 |
+| `multi-end-maturity-matrix.md` | 多端统一成熟度矩阵（已归档 2026-07-26，内容并入 targets.md §六） |
 
 > research/ 为调研归档，非当前工作文件。完整清单见目录。
