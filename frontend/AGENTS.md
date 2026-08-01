@@ -63,6 +63,12 @@ npm run check                                          # 确认未新增错误
 - **不要新增 `any` 逃生** —— 即使 `strict: false` 允许，新代码仍要避免 `as any` / `@ts-ignore` / `@ts-expect-error`。需要时加注释说明业务理由。
 - **binding 自动生成（禁手写 `bindings/`）** —— `frontend/bindings/` 由 `npm run generate:bindings` 自动产出 .ts 绑定（含 FNV-1a 32-bit method ID，生成器自动算）。新增/删除 Go 方法后重跑生成器即可，禁止手维护 `bindings/` 下 .ts。`src/core/wails-bindings.ts`（model 类型登记 + re-export 聚合）**不归生成器管、保持手维护**。**唯一真陷阱：`-clean` 默认 true 会先清空输出目录** —— 脚本已带 `-d frontend/bindings` 故安全；切勿裸跑 `wails3 generate bindings -dry`（仍会清空默认目录）。TS 侧统一通过 `src/core/wails-bindings.ts` re-export 引入。`app.contract.test.ts` 动态校验导出函数存在性 + FNV-1a ID，仅作生成器输出一致性护栏。
 
+### 2.3 测试卫生铁律（ADR-219 教训固化，2026-08-01）
+- **禁止裸删/裸替换 `window`** —— `delete globalThis.window` 或顶层 `globalThis.window = {...}` 会污染共享环境（isolate=true 每文件重建环境被掩盖，isolate=false 下引爆后置文件收集期崩溃）。必须顶层捕获 `const realWindow = (globalThis as { window?: unknown }).window`，`afterEach` 恢复（`realWindow === undefined ? delete window : window = realWindow`）。参考 `browser-adapter.fsa-auth.test.ts`。
+- **核心模块 mock 优先复用共享工厂** —— idb 用 `makeIdbMock`（setup-wails.ts 全局化）、scene/scene 用 `sceneMockSuperset`（`src/__tests__/mocks/scene-superset.ts`）、core/state 用 `stateMockSuperset`（`src/__tests__/mocks/state-superset.ts`）。同模块 mock 形状保持超集一致，禁止各自内联出差异化形状。
+- **`async importOriginal` spread 禁静态化** —— god-barrel（如 core/config）依赖活绑定（`export let`），静态超集 spread 会断开活绑定致读写分离（isolate=true 22 用例回归教训）。此类 mock 必须保留 `...(await importOriginal())` 原样。
+- **vi.mock 工厂只可引用 hoisted/import 绑定** —— 工厂体引用模块级运行期变量会命中 hoist 期 TDZ；需要共享状态用 `vi.hoisted()` 或 `globalThis` 约定键。
+
 ---
 
 ## 三、「去哪里查」指针（本文件不手列事实索引）
