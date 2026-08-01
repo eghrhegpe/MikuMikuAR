@@ -45,6 +45,20 @@ vi.mock('../../scene/env/env-reflection', () => ({
     getPlanarQualityOverride: () => null,
 }));
 
+// ADR-env water preset NaN regression: 本测试只关心水面预设生命周期（材质/网格不丢），
+// PlanarReflection 的 RenderTargetTexture(2048) 构造在 NullEngine/happy-dom 下过重，
+// 易在 CI 超时（10s）。桩掉以避免虚假超时。
+vi.mock('../../scene/env/planar-reflection', () => ({
+    PlanarReflection: class {
+        update() {}
+        dispose() {}
+        markRenderListDirty() {}
+        enabled = false;
+        _mutexDisabled = false;
+    },
+    registerReflectionSurface: () => {},
+}));
+
 import { _envSys } from '../../scene/env/env-impl';
 import { envState } from '../../core/config';
 import {
