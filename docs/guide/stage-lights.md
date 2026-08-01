@@ -53,6 +53,6 @@ A：阴影质量与开关在「舞台灯光 → 阴影」分区；阴影模式�
 ## 相关功能
 
 - 想调背景氛围？见 [天空设置](./sky.md)
-- 想调画面整体亮度？见 [渲染后处理](./render-effects.md)（规划中）
+- 想调画面整体亮度与后处理？见 [环境氛围](./env-atmosphere.md)
 
 > 进阶（开发者/AI）：灯光实现见 [scene-stage-lights 知识卡](../knowledge/scene-stage-lights.md)。
