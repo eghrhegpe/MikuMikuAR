@@ -15,6 +15,10 @@ function lastUtterance(): UtteranceLike {
     return mockUtterance.mock.instances[0] as UtteranceLike;
 }
 
+// no-isolate（vitest isolate=false）下 window 是 worker 级共享单点，
+// 必须捕获真实 window 并在 afterEach 恢复，而非 delete 后指望环境重建。
+const realWindow = (globalThis as { window?: unknown }).window;
+
 beforeEach(() => {
     mockSpeak.mockClear();
     mockCancel.mockClear();
@@ -38,7 +42,11 @@ beforeEach(() => {
 
 afterEach(() => {
     // 还原 window 和全局构造函数，避免影响其他测试
-    delete (globalThis as Record<string, unknown>).window;
+    if (realWindow === undefined) {
+        delete (globalThis as Record<string, unknown>).window;
+    } else {
+        (globalThis as { window?: unknown }).window = realWindow;
+    }
     delete (globalThis as Record<string, unknown>).SpeechSynthesisUtterance;
 });
 

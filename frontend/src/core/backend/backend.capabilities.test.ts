@@ -1,5 +1,5 @@
 // [doc:test] ADR-176 backend 能力矩阵 + 降级契约（拆自 backend.test.ts）
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { setWindow, clearWebFlag, makeIdbMock } from './backend-mocks';
 
 vi.mock('./go-adapter', () => ({ goAdapter: {} }));
@@ -7,6 +7,17 @@ vi.mock('./idb', () => makeIdbMock());
 
 import { browserAdapter } from './browser-adapter';
 import { isWebPlatform, isAndroidPlatform, guardExternalAction } from '../platform';
+
+// setWindow 会把全局 window 换成桩对象，no-isolate 单 worker 下 window 跨文件共享，
+// 必须 afterEach 恢复，否则污染其后收集期（ADR-219 治理）。
+const realWindow = (globalThis as { window?: unknown }).window;
+afterEach(() => {
+    if (realWindow === undefined) {
+        delete (globalThis as { window?: unknown }).window;
+    } else {
+        (globalThis as { window?: unknown }).window = realWindow;
+    }
+});
 
 describe('browserAdapter 能力矩阵', () => {
     it('ar / externalApps / plazaWindow 等原生独占为 false', () => {
