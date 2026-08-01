@@ -83,7 +83,7 @@ export async function loadSession(id: string): Promise<ChatSessionFull | undefin
     }
 }
 
-/** 保存完整会话（元信息 + 消息，单事务批量写）。降级静默失败。 */
+/** 保存完整会话（元信息 + 消息，单事务批量写）。降级不阻断 UI，但写失败需留日志便于排查丢失。 */
 export async function saveSession(session: ChatSessionFull): Promise<void> {
     try {
         const meta: ChatSession = {
@@ -97,8 +97,8 @@ export async function saveSession(session: ChatSessionFull): Promise<void> {
             [_metaKey(session.id), meta],
             [_msgsKey(session.id), session.messages],
         ]);
-    } catch {
-        /* 持久化失败不阻断 UI */
+    } catch (err) {
+        console.warn('[chat-store] saveSession 失败，会话历史可能未持久化', err);
     }
 }
 
@@ -107,8 +107,8 @@ export async function deleteSession(id: string): Promise<void> {
     try {
         await idbDelete('chats', _metaKey(id));
         await idbDelete('chats', _msgsKey(id));
-    } catch {
-        /* 忽略 */
+    } catch (err) {
+        console.warn('[chat-store] deleteSession 失败', err);
     }
 }
 
@@ -125,8 +125,8 @@ export async function getActiveId(): Promise<string | undefined> {
 export async function setActiveId(id: string): Promise<void> {
     try {
         await idbSet('meta', _ACTIVE_KEY, id);
-    } catch {
-        /* 忽略 */
+    } catch (err) {
+        console.warn('[chat-store] setActiveId 失败', err);
     }
 }
 
@@ -134,7 +134,7 @@ export async function setActiveId(id: string): Promise<void> {
 export async function clearActiveId(): Promise<void> {
     try {
         await idbDelete('meta', _ACTIVE_KEY);
-    } catch {
-        /* 忽略 */
+    } catch (err) {
+        console.warn('[chat-store] clearActiveId 失败', err);
     }
 }
