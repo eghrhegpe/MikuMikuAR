@@ -333,16 +333,16 @@ describe('ADR-226 迁移护栏 — legacy 重建 == spec 重建', () => {
         });
     }
 
-    it('canvas + textureScale≠1：spec 修正 legacy 重建漏除 scale 的 bug（legacy≠spec，spec 正确）', () => {
+    it('canvas + textureScale≠1：Phase 1 后 legacy 重建改调 spec，漏除 scale 的 bug 已消除（legacy==spec）', () => {
         const scale = 3;
         const legacy = rebuildLegacy(makeState({ groundStyle: 'checker', groundTextureScale: scale }));
         const spec = rebuildSpec(makeState({ groundStyle: 'checker', groundTextureScale: scale }));
         const meshSize = 500;
-        // legacy 重建：uScale = meshSize/10（漏除 scale）
-        expect(legacy.uScale).toBeCloseTo(meshSize / 10);
-        // spec 重建：uScale = meshSize/10/scale（修正）
+        // Phase 1 前：legacy 重建路径 uScale = meshSize/10（漏除 scale，bug）；spec 修正为 meshSize/10/scale。
+        // Phase 1 后 legacy 重建路径改调 createGroundMeshFromSpec，该 bug 自然消失，legacy 与 spec 一致。
+        expect(legacy.uScale).toBeCloseTo(meshSize / 10 / scale);
         expect(spec.uScale).toBeCloseTo(meshSize / 10 / scale);
-        expect(legacy.uScale).not.toBeCloseTo(spec.uScale as number);
+        expect(legacy.uScale).toBeCloseTo(spec.uScale as number);
     });
 });
 
