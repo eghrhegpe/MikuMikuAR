@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: fileservice
 name: 统一文件服务层
 category: core

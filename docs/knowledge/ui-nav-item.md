@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: ui_nav_item
 name: 菜单导航项契约
 category: core

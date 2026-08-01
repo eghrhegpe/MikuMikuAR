@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: character_dialogue
 name: 角色台词生成 — 人设约束 + 情绪解析 + TTS 朗读
 category: core

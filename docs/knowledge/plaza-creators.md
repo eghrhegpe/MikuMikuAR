@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: plaza_creators
 name: 模型广场创作者列表
 category: ui

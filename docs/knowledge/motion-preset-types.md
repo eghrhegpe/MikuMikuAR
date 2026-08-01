@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: motion_preset_types
 name: 动作预设类型
 category: motion

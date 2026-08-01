@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: dev_hooks
 name: 开发环境 E2E 钩子
 category: core

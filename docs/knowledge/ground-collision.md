@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: ground_collision
 name: 地面碰撞体（WASM Bullet 静态刚体）
 category: physics

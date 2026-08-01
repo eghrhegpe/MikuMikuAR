@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: env_particles
 name: 粒子系统
 category: env

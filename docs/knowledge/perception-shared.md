@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: perception_shared
 name: 感知层共享类型
 category: motion

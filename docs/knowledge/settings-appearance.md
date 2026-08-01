@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: settings_appearance
 name: 外观设置
 category: ui

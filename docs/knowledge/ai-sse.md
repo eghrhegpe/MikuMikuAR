@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: ai_sse
 name: SSE 流式解析器
 category: core

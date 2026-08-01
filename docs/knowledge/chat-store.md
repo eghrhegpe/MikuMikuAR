@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: chat_store
 name: AI 会话 IndexedDB 存储
 category: core

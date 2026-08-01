@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: env_menu_levels
 name: 环境菜单层级系统
 category: ui

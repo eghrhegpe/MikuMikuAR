@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: events
 name: 事件处理与导航系统
 category: core

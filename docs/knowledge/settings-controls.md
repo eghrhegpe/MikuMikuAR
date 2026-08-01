@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: settings_controls
 name: 设置 — 操控页面
 category: ui

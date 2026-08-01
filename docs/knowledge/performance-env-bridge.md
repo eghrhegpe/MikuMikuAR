@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: performance_env_bridge
 name: 性能降级 — 环境桥接
 category: rendering

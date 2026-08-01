@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: shortcut_app
 name: 应用快捷键定义
 category: core

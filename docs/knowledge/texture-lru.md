@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: texture_lru
 name: 纹理 LRU 缓存
 category: scene

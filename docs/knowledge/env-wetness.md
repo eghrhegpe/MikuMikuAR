@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: env_wetness
 name: 湿身效果系统
 category: env

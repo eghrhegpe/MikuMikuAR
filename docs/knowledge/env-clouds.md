@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: env_clouds
 name: 云层系统
 category: env

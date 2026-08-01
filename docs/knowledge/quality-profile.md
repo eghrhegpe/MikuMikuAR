@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: quality_profile
 name: 统一质量档位解析器
 category: rendering

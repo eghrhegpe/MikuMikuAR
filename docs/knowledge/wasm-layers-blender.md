@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: wasm_layers_blender
 name: WASM 图层混合器
 category: motion

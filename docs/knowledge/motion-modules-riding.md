@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: motion_modules_riding
 name: 动作模块 — 骑乘模型
 category: motion

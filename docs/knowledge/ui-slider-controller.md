@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: ui_slider_controller
 name: 滑块输入控制器
 category: core

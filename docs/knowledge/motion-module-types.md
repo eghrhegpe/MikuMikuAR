@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: motion_module_types
 name: 动作模块类型定义
 category: motion

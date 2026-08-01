@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: plaza_download
 name: 广场下载拦截器
 category: ui

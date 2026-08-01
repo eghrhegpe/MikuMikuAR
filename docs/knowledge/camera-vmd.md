@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: camera_vmd
 name: 相机 VMD 动画
 category: scene

@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: preset_meta
 name: 预设元数据归一化
 category: core

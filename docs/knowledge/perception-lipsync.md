@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: perception_lipsync
 name: 感知口型同步
 category: motion

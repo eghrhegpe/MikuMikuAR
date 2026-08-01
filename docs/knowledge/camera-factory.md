@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: camera_factory
 name: 相机工厂 + 用户输入
 category: scene

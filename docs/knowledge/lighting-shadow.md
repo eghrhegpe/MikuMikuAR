@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: lighting_shadow
 name: 阴影生成器
 category: rendering

@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: scene_migrate
 name: 场景存档迁移（纯函数）
 category: scene

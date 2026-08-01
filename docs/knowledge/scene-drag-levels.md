@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: scene_drag_levels
 name: 场景拖拽层级菜单
 category: ui

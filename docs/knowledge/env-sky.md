@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: env_sky
 name: 天空系统
 category: env

@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: ar_scene
 name: AR 模式场景级协调
 category: scene

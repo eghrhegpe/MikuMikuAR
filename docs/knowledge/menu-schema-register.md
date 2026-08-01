@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: menu_schema_register_aggregator
 name: 声明式菜单 Schema 集中注册聚合器
 category: ui

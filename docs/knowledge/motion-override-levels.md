@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: motion_override_levels
 name: 动作覆盖 UI 层级（模块化覆盖 + 高级骨骼覆盖）
 category: ui

@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: camera_angle
 name: 姿势多角度预设系统
 category: scene

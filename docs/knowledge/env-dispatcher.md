@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: env_dispatcher
 name: 环境变更分发回调（破循环依赖）
 category: env

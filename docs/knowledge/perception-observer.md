@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: perception_observer
 name: 感知观察者（感知层）
 category: motion

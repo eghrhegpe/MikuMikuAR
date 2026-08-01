@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: perception_gaze
 name: 视线追踪主模块
 category: motion

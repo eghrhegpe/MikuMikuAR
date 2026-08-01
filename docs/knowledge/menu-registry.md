@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: menu_schema_registry
 name: 声明式菜单 Schema 注册表
 category: ui

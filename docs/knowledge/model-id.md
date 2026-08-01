@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: model_id
 name: 模型运行时 ID 解析
 category: scene

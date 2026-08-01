@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: diagnostic_session
 name: 诊断助手 → 会话管理（子模块）
 category: ui

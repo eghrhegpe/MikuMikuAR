@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: scene_menu_levels
 name: 场景菜单层级系统
 category: ui

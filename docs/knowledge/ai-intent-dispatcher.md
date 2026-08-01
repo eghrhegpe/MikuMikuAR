@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: ai_intent_dispatcher
 name: NL 意图解析 — LLM 文本 → 动作执行
 category: core

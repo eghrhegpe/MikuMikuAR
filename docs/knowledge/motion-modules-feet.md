@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: foot_modules
 name: 脚部独立控制模块（左脚/右脚）
 category: motion

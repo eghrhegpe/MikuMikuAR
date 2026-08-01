@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: watermark
 name: 水印系统
 category: scene

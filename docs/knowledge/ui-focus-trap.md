@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: ui_focus_trap
 name: 焦点陷阱工具
 category: core

@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: settings_diagnostic
 name: AI 诊断助手面板（协调入口）
 category: ui

@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: env_texture
 name: 统一贴图工厂
 category: env

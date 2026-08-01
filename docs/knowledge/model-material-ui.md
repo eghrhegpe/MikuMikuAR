@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: model_material_ui
 name: 材质编辑 UI
 category: ui

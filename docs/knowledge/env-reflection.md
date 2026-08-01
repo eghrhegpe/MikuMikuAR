@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: env_reflection
 name: 反射系统
 category: env

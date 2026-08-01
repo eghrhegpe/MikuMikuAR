@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: mirror_debug
 name: 镜面道具
 category: rendering

@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: hand_modules
 name: 手部独立控制模块（左手/右手）
 category: motion

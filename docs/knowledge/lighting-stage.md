@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: lighting_stage
 name: 舞台灯光系统
 category: rendering

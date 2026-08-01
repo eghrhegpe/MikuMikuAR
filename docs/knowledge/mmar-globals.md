@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: mmar_globals
 name: window.__mmar 运行时状态暴露
 category: core

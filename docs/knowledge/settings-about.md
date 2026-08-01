@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: settings_about
 name: 设置 — 关于页面
 category: ui

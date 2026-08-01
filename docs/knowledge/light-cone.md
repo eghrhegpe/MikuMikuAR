@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: light_cone
 name: 光锥网格
 category: rendering
