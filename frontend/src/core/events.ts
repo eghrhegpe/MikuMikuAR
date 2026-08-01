@@ -12,8 +12,6 @@ import {
     setSeekDragging,
     mmdRuntime,
     setPopupOpen,
-    focusedModelId,
-    stackRegistry,
     setStatus,
 } from './config';
 import { closeAllOverlays, setOnCloseAllOverlays } from '../menus/menu-overlay';
@@ -46,10 +44,6 @@ export function disposeEventHandlers(): void {
         d.dispose();
     }
     _eventDisposables.length = 0;
-    if (_longPressTimer) {
-        clearTimeout(_longPressTimer);
-        _longPressTimer = null;
-    }
     _activePointerCount = 0;
 }
 
@@ -57,7 +51,6 @@ import { showModelPopup, showMotionPopup } from '../menus/library';
 import { showPlaza } from '../menus/plaza-browser';
 import { closePlaza } from '../menus/plaza-state';
 import { handleDroppedFile } from './drop-import';
-import { focusModel } from '../scene/manager/model-ops';
 import { getAllShortcuts, getAriaKeyshortcuts } from './shortcut-registry';
 
 // ======== Module-level state ========
@@ -70,9 +63,8 @@ setOnCloseAllOverlays(() => {
 });
 let seekWasPlaying = false;
 let _pointerDownPos = { x: 0, y: 0 };
-let _longPressTimer: ReturnType<typeof setTimeout> | null = null;
 let _lastTapTime = 0;
-let _activePointerCount = 0; // [doc:fix] 活跃指针计数；长按/双击仅在单指时生效
+let _activePointerCount = 0; // 活跃指针计数；仅单指时执行 click/toggle
 export const navLabels: Record<number, string> = {};
 
 // ======== Nav / overlay helpers ========
@@ -373,35 +365,24 @@ export function registerEventHandlers(): void {
     });
 
     // ======== Click canvas to toggle overlays ========
+    // ======== Canvas click to toggle overlays (single finger only) ========
     _reg(window, 'pointerdown', (e) => {
         _activePointerCount++;
-        _pointerDownPos = { x: e.clientX, y: e.clientY };
-        // 仅单指时启动长按定时器，避免双指缩放/平移时误触模型详情
+        // 仅单指时做点按判定；多指交给相机缩放/平移
         if (_activePointerCount !== 1) {
             return;
         }
-        _longPressTimer = setTimeout(() => {
-            if (!dom.canvas.contains(e.target as Node)) {
-                return;
-            }
-            const id = focusedModelId;
-            if (!id) {
-                return;
-            }
-            showModelPopup();
-            import('../menus/model-detail').then(({ buildModelLevel }) => {
-                if (stackRegistry?.modelStack) {
-                    stackRegistry.modelStack.push(buildModelLevel(id));
-                }
-            });
-            _longPressTimer = null;
-        }, 500);
+        _pointerDownPos = { x: e.clientX, y: e.clientY };
     });
 
     _reg(window, 'pointerup', (e) => {
-        clearTimeout(_longPressTimer as ReturnType<typeof setTimeout>);
-        _longPressTimer = null;
+        const wasMulti = _activePointerCount > 1;
         _activePointerCount = Math.max(0, _activePointerCount - 1);
+        if (wasMulti) {
+            return;
+        }
+
+        // 检查移动距离，避免拖拽时被误判为 click
         const dx = e.clientX - _pointerDownPos.x;
         const dy = e.clientY - _pointerDownPos.y;
         if (Math.sqrt(dx * dx + dy * dy) > 5) {
@@ -412,45 +393,7 @@ export function registerEventHandlers(): void {
             return;
         }
 
-        const now = Date.now();
-        if (now - _lastTapTime < 300 && focusedModelId) {
-            focusModel(focusedModelId);
-            _lastTapTime = 0;
-            return;
-        }
-        _lastTapTime = now;
-
         _toggleOverlays();
-    });
-
-    _reg(window, 'pointermove', (e) => {
-        clearTimeout(_longPressTimer as ReturnType<typeof setTimeout>);
-        _longPressTimer = null;
-        const dx = e.clientX - _pointerDownPos.x;
-        const dy = e.clientY - _pointerDownPos.y;
-        if (Math.sqrt(dx * dx + dy * dy) > 10) {
-            return;
-        }
-        // 恢复：移动距离不足阈值 → 重新计时
-        _longPressTimer = setTimeout(() => {
-            if (_activePointerCount !== 1) {
-                return;
-            }
-            if (!dom.canvas.contains(e.target as Node)) {
-                return;
-            }
-            const id = focusedModelId;
-            if (!id) {
-                return;
-            }
-            showModelPopup();
-            import('../menus/model-detail').then(({ buildModelLevel }) => {
-                if (stackRegistry?.modelStack) {
-                    stackRegistry.modelStack.push(buildModelLevel(id));
-                }
-            });
-            _longPressTimer = null;
-        }, 500);
     });
 }
 
