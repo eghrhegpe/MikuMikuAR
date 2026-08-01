@@ -129,7 +129,7 @@ export function buildLayerLevel(layerId: string, id: string): PopupLevel {
 
 /**
  * [doc:adr-167] 动作详情子页 schema——某个主动作的统一管理入口。
- * 拆分为多卡片：动作信息 / 图层 / 动作覆盖（核心）/ 动作预设 / 播放速度。
+ * 拆分为多卡片：动作信息 / 播放速度 / 图层 / 动作覆盖（核心）/ 动作预设。
  * [doc:adr-116/125/145] 覆盖卡复用 renderOverrideCard（撤销/重做/历史/冲突 banner），
  * 预设卡复用 renderPresetCard——原死路由 motion:boneOverride 的沉没功能由此重新可达。
  * @param sceneMotionId 指定主动作 id；undefined 时回退到当前默认动作（兼容旧调用）
@@ -169,9 +169,34 @@ function buildMotionDetailSchema(sceneMotionId?: string): MenuNode[] {
                 });
             },
         },
+        // ── 卡片 2：播放速度 ──
+        {
+            id: 'detail:speed',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    addSectionTitle(inner, t('motion.playbackSpeed'));
+                    addSliderRow(
+                        inner,
+                        t('motion.playbackSpeed'),
+                        _playbackSpeed,
+                        0.1,
+                        2.0,
+                        0.05,
+                        (v) => {
+                            _playbackSpeed = v;
+                            if (mmdRuntime) {
+                                mmdRuntime.timeScale = v;
+                            }
+                        },
+                        'lucide:gauge'
+                    );
+                });
+            },
+        },
     ];
 
-    // ── 卡片 2：该主动作内部的图层 ──
+    // ── 卡片 3：该主动作内部的图层 ──
     // [doc:adr-170] 删除动作已移入动作工具页（buildMotionToolsLevel），
     // 详情页只保留图层与覆盖模块——对齐模型「详情 vs 工具」分层
     if (motion && motion.vmdLayers.length > 0) {
@@ -213,7 +238,7 @@ function buildMotionDetailSchema(sceneMotionId?: string): MenuNode[] {
         });
     }
 
-    // ── 卡片 3：动作覆盖（核心）+ 卡片 4：动作预设 ──
+    // ── 卡片 4：动作覆盖（核心）+ 卡片 5：动作预设 ──
     // [doc:pose-debug] 无 VMD 时仍显示覆盖/预设面板，用于姿势调整和骨骼调试
     if (modelId) {
         nodes.push({
@@ -233,32 +258,6 @@ function buildMotionDetailSchema(sceneMotionId?: string): MenuNode[] {
             },
         });
     }
-
-    // ── 卡片 5：播放速度 ──
-    nodes.push({
-        id: 'detail:speed',
-        kind: 'custom',
-        renderCustom: (c) => {
-            cardContainer(c, (inner) => {
-                addSectionTitle(inner, t('motion.playbackSpeed'));
-                addSliderRow(
-                    inner,
-                    t('motion.playbackSpeed'),
-                    _playbackSpeed,
-                    0.1,
-                    2.0,
-                    0.05,
-                    (v) => {
-                        _playbackSpeed = v;
-                        if (mmdRuntime) {
-                            mmdRuntime.timeScale = v;
-                        }
-                    },
-                    'lucide:gauge'
-                );
-            });
-        },
-    });
 
     return nodes;
 }
