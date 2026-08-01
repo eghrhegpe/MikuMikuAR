@@ -20,6 +20,8 @@ use_when:
   - 材质调整
 ---
 
+# 材质编辑 UI
+
 ## 系统概览
 **材质编辑 UI 根层级**。提供模型的材质编辑菜单（颜色、透明度、发光、贴图偏移等），
 是 model-detail 和 resource-detail-helpers 的材质面板入口。

@@ -31,6 +31,8 @@ use_when:
   - 视角变化持久化
 ---
 
+# 相机工厂 + 用户输入
+
 ## 系统概览
 **相机工厂 + 用户输入模块**（ADR-148 阶段 3 续拆，2026-07-26）。从 camera.ts 抽出相机实例化逻辑：根据模式创建对应 Babylon Camera（ArcRotateCamera / UniversalCamera），配置输入参数（键盘 / 鼠标 / 触摸），并绑定 viewMatrix observer 触发防抖保存。
 

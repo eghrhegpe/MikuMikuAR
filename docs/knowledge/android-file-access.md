@@ -42,6 +42,8 @@ use_when:
   - SelectDir 在安卓弹 SAF 建树 ACTION_OPEN_DOCUMENT_TREE
 ---
 
+# 安卓文件访问（shared 模式）
+
 ## 系统概览
 
 安卓端文件访问已**废弃 Storage Access Framework（SAF，`ACTION_OPEN_DOCUMENT_TREE` / `content://` 树 URI）**，改为 **shared 模式**：在 `MANAGE_EXTERNAL_STORAGE` 权限授权后，Go 后端用标准 `os.*` 直读 `/sdcard/...` 真实路径（如 `/sdcard/Download`、`/sdcard/MMD`）。网页端则使用 **FSA（File System Access API）**，二者是**不同平台、不同机制**，检索与讨论时务必区分——"SAF"仅指安卓，"FSA"仅指网页。

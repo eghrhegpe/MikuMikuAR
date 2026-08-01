@@ -29,6 +29,8 @@ use_when:
   - SpotLight 可视化
 ---
 
+# 光锥网格
+
 ## 系统概览
 为 SpotLight 生成可见锥形光柱（替代 ADR-152 的屏幕后处理假体积光）。使用锥体 Mesh + 自定义 ShaderMaterial（additive blending、距离衰减 + Fresnel 边缘辉光）。支持运行时更新 transform、uniforms、重建几何。
 

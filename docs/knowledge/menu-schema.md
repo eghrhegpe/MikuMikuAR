@@ -31,6 +31,8 @@ use_when:
   - 菜单节点
 ---
 
+# 声明式菜单 Schema
+
 ## 系统概览
 Menu Declarative Schema（ADR-093）：单一数据源 + 单渲染器，消除命令式 builder 膨胀。当前状态 P0+P1+P2 全量落地（57 面板），P3 类型化增强中。
 

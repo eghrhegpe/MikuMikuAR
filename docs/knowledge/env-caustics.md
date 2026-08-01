@@ -28,6 +28,8 @@ use_when:
   - caustics
 ---
 
+# 共享焦散纹理系统
+
 ## 系统概览
 **共享焦散纹理系统**（ADR-115 P5 跨场景复用）。水面与水底地面共用同一张 Voronoi 焦散纹理与同一组 UV 滚动状态，解决此前焦散在 `env-water.ts` 私有、且重建条件耦合 `waterColor` 造成"颜色微变就重建"的问题。滚动由 `causticsController` 每帧集中推进一次。
 

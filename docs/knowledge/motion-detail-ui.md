@@ -24,6 +24,8 @@ use_when:
   - 播放速度
 ---
 
+# 动作详情 UI
+
 ## 系统概览
 场景级动作的详情 UI 层。构建动作详情层级（`buildMotionDetailLevel`）、图层层级（`buildLayerLevel`）、工具层级（`buildMotionToolsLevel`）以及播放速度层级（`buildPlaybackSpeedLevel`）。管理场景动作的播放状态、图层参数、删除等操作。
 

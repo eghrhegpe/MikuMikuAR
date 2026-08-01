@@ -28,6 +28,8 @@ use_when:
   - scheduleRefresh
 ---
 
+# 轻量响应式刷新系统
+
 ## 系统概览
 轻量响应式系统：`Proxy` 拦截 set → `requestAnimationFrame` 去抖 → 通知所有订阅者（通常是 `SlideMenu.updateControls()`）。替代手动在状态变更处逐一调用刷新，是 UI 与全局状态解耦的刷新总线。
 

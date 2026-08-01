@@ -36,6 +36,8 @@ use_when:
   - 撤销/重做
 ---
 
+# 场景序列化与自动保存
+
 ## 系统概览
 场景序列化与自动保存（[doc:architecture]）。定义 `SceneFile` 结构、serialize/deserialize、auto-save debounce、last-scene restore。从 `scene.ts` 静态导入但仅在函数体内访问（ES module live binding 保证安全）。
 

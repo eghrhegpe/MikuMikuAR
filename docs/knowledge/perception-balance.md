@@ -24,6 +24,8 @@ use_when:
   - 躯干微晃
 ---
 
+# 重心微动
+
 ## 系统概览
 **重心微动模块**（ADR-161）。为躯干骨骼提供自然的平衡微晃（balanceSway），
 被 perception-observer/perception 约 2 个模块引用。

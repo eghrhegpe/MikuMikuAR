@@ -21,6 +21,8 @@ use_when:
   - 重力控制
   - WASM 物理重力
 ---
+
+# 环境重力控制
 ## 系统概览
 Env Gravity：从 env-bridge 拆出的重力强度模块（ADR-148 Phase 5 瘦身）。ADR-212 将碰撞功能迁至 `env-collision.ts`，本模块只保留重力向量写入 WASM 物理引擎。
 

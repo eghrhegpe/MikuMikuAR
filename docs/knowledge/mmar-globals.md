@@ -30,6 +30,8 @@ use_when:
   - 外置 LLM 读取
 ---
 
+# window.__mmar 运行时状态暴露
+
 ## 系统概览
 将运行时结构化状态挂载到 `window.__mmar`，供外置 AI（LLM）直接读取快照。幂等初始化 + 周期轮询刷新场景 FPS/模型数/GPU/质量档位等，动态 import 避免循环依赖。
 

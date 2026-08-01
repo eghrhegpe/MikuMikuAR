@@ -27,6 +27,8 @@ use_when:
   - locale
 ---
 
+# 国际化语言状态
+
 ## 系统概览
 i18n 语言状态管理层（ADR-059）：signal + localStorage 持久化。模块加载时即从 localStorage 读取语言偏好，确保菜单首帧即正确。`reactive` 使任意赋值自动触发菜单刷新。
 

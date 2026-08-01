@@ -33,6 +33,8 @@ use_when:
   - 动作优先级
 ---
 
+# 多 VMD 叠加系统
+
 ## 系统概览
 **多层 VMD 动画叠加系统**。通过 `MmdCompositeAnimation` 将多个 VMD 图层按优先级混合播放，
 支持动态添加/移除图层、Shift-JIS 编码解析（VMD 骨骼名），并在层变更时自动重建复合动画。

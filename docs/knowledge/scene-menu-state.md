@@ -23,6 +23,8 @@ use_when:
   - 场景菜单实例
 ---
 
+# 场景菜单共享状态
+
 ## 系统概览
 场景菜单的共享状态模块，从 `scene-menu.ts` 拆分而来，切断 `scene-menu` ↔ `env-ground-levels` 的双向 import 依赖。对标 `env-menu-state.ts`，纯状态模块，零 UI 依赖。
 

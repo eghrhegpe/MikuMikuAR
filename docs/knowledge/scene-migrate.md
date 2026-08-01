@@ -23,6 +23,8 @@ use_when:
   - 格式升级
 ---
 
+# 场景存档迁移（纯函数）
+
 ## 系统概览
 旧存档 → 新状态迁移函数集合（纯函数，无 scene 依赖），从 `scene-serialize.ts` 拆分。负责把历史存档字段映射到当前 `PerceptionState` / `ProcMotion` 等状态结构。
 

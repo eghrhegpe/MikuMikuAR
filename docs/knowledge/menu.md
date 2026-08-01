@@ -25,6 +25,8 @@ use_when:
   - 键盘导航
 ---
 
+# 滑出式菜单引擎（SlideMenu）
+
 ## 系统概览
 核心菜单引擎：`SlideMenu` 类。管理弹窗的层级栈（PopupLevel）、容器/视口/面板/头部，处理键盘导航、触屏滑动手势、过渡动画与 dispose 清理。所有 UI 控件（`slideRow`/`addSliderRow` 等）在渲染时经 `getCurrentRenderingMenu()` 自动注册到当前菜单实例。
 

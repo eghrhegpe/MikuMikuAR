@@ -27,6 +27,8 @@ use_when:
   - 模块定义
 ---
 
+# 动作模块类型定义
+
 ## 系统概览
 **动作模块类型定义**（ADR-116/126/145）。定义 ModuleMeta、MotionOverrideModule、ModuleDef 等
 核心类型，被所有 motion-module 子模块引用。

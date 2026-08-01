@@ -24,6 +24,8 @@ use_when:
   - 平台检测
 ---
 
+# WebXR 能力探测
+
 ## 系统概览
 WebXR 能力探测模块：检测当前设备/浏览器是否支持 WebXR、支持哪些特性（local-floor / hit-test / plane-detection / mesh-detection 等）。支持结果缓存（`resetProbeCache` 可重置），提供格式化报告输出。
 

@@ -21,6 +21,8 @@ use_when:
   - 错误国际化
 ---
 
+# Go 错误翻译
+
 ## 系统概览
 将 Go 端返回的 UserError 翻译为当前语言（ADR-117）。Go 端将错误编码为 `<可读msg>\n@@GOERR@@<json信封>` 格式，前端按哨兵 `@@GOERR@@` 提取 JSON 信封（含 code / params / msg），用 `t('goerr.<code>', params)` 翻译；无法解析时回退原始文本。
 

@@ -25,6 +25,8 @@ use_when:
   - 循环依赖桥接
 ---
 
+# 性能降级 — 环境桥接
+
 ## 系统概览
 打破 `performance.ts` ↔ `env-bridge.ts` 循环依赖的桥接模块（ADR-130 Phase 2.3）。`performance.ts` 设置自动降级标志，`env-bridge.ts` 读取标志识别自动降级 vs 用户手动操作。同时提供 `setEnvState` 的延迟绑定，避免循环导入。
 

@@ -135,6 +135,8 @@ use_when:
   - Wails bindings
 ---
 
+# 后端绑定聚合层（backend 代理化）
+
 ## 系统概览
 Wails 生成绑定的手维护聚合层（ADR-176 Phase 2：backend 代理化）。本文件是业务层**唯一后端入口**（43 个消费文件），106 个真实业务调用经 `resolveBackend()` 路由的显式代理导出——桌面/安卓走 `go-adapter`，浏览器走 `browser-adapter`（IndexedDB/FSA/显式降级），业务代码零改动完成切换。
 

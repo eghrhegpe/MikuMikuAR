@@ -36,6 +36,8 @@ use_when:
   - SSR / SSAO
 ---
 
+# 场景渲染管线与后处理
+
 ## 系统概览
 Scene Renderer：渲染管线、后处理、渲染状态。职责：`DefaultRenderingPipeline` 管理、后处理开关、场景背景色、边缘高亮。从 `scene.ts` 静态导入但仅函数体内访问（ES module live binding 安全）。ADR-151：ReflectionProbe 已迁移至 `env-reflection.ts` 统一管理。
 

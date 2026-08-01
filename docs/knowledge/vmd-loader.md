@@ -28,6 +28,8 @@ use_when:
   - 动作播放开始
 ---
 
+# VMD 动作加载器
+
 ## 系统概览
 **VMD 动作文件加载与播放入口**。负责读取 VMD 文件、校验签名、加载到 MMD runtime，
 启动播放并关联伴音。使用 per-model generation counter 防止多模型同时加载时的异步竞态。

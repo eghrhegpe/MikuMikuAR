@@ -25,6 +25,8 @@ use_when:
   - 视线方向
 ---
 
+# JS 端视线追踪
+
 ## 系统概览
 **JS 端视线追踪**（ADR-071/162）。提供基于 JavaScript 的视线追踪实现，
 被 perception-gaze 调度。

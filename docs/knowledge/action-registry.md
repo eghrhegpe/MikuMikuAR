@@ -74,6 +74,8 @@ use_when:
   - action registry
 ---
 
+# 统一动作注册表 — 菜单/NL/快捷键共享真相源
+
 ## 系统概览
 ADR-197 引入的统一动作注册表：把 settings/scene/motion/env/library 各域的功能型动作集中定义为 `ActionDef`，供菜单渲染、自然语言控场（ADR-155）、快捷键、E2E testid 共享同一真相源。`action-executor` 负责参数适配后执行；`action-catalog` 把注册表转成 LLM 可消费的工具 schema / 文本目录。
 

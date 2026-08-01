@@ -23,6 +23,8 @@ use_when:
   - 确认框、输入框、删除确认、错误详情、Android prompt
 ---
 
+# 跨平台对话框
+
 ## 系统概览
 用 CSS 模态框替代 `window.confirm` / `window.prompt`，为桌面和 Android WebView 提供统一交互。overlay 延迟创建为单例，按钮监听通过替换节点清理旧回调。
 

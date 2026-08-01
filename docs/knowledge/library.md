@@ -15,6 +15,8 @@ use_when:
   - library
 ---
 
+# 资源库入口与编排
+
 ## 系统概览
 Library 入口：注册表初始化 + re-export，保持外部 API 不变。聚合模型库与动作库的弹窗入口，具体实现拆分到 `library-core.ts` / `library-browse.ts` / `library-session-store.ts` / `motion-popup.ts` / `model-preset.ts` 等子模块。
 

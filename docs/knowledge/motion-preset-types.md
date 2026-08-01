@@ -23,6 +23,8 @@ use_when:
   - PresetModuleState
 ---
 
+# 动作预设类型
+
 ## 系统概览
 **动作预设类型**（ADR-145）。定义 MotionPreset、PresetModuleState 等预设相关类型，
 被 registry/ui-preset 引用。

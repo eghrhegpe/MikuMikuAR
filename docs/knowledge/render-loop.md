@@ -26,6 +26,8 @@ use_when:
   - 渲染启停
 ---
 
+# 渲染循环与 FPS 时钟
+
 ## 系统概览
 渲染主循环 + FPS 时钟（ADR-102，从 main.ts 拆分）。负责驱动 `scene.render()`、`applyFrameControl()`、按 DPR + renderScale 计算并钳位 `hardwareScalingLevel`、以及每 60 帧采样的 DEV-only 性能日志。所有模块级句柄支持**幂等 stop**，防止 Vite HMR 重复运行 bootstrap 时泄漏 `setInterval` / render-loop。
 

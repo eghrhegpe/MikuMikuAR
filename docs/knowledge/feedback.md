@@ -24,6 +24,8 @@ use_when:
   - status
 ---
 
+# 结构化反馈 API
+
 ## 系统概览
 结构化反馈 API，统一「动作 + 目标 + 结果」三要素。替代旧模式 showToast(t('scene.saveFailed'), msg)，保证每条反馈回答三个问题：做了什么 / 对谁做 / 结果如何。
 

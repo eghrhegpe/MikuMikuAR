@@ -24,6 +24,8 @@ use_when:
   - AR 截图
 ---
 
+# AR 模式场景级协调
+
 ## 系统概览
 AR Scene：切换 AR 模式时同步调整场景状态（清屏颜色、天空可见性、视线追踪）。依赖 `ar-camera.ts`（摄像头流）+ `scene`（清屏色）+ `env-impl`（天空网格）+ `proc-motion-bridge`（视线追踪）。
 

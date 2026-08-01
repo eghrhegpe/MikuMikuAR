@@ -14,6 +14,8 @@ use_when:
   - selection 状态
 ---
 
+# 变换选中物状态源
+
 ## 系统概览
 统一「当前选中物」状态源（ADR-171 面板化核心）：记录当前面板选中的变换目标 `{kind, id}`，并据全局拖拽开关（`transform-mode.ts`）联动挂载/卸载 Gizmo。解决此前模型（`focusedModelId`）、灯光（`activeStageLightId`）、镜子（无选中态）三套分散状态源无法统一驱动 Gizmo 的问题。
 

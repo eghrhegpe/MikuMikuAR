@@ -26,6 +26,8 @@ use_when:
   - core↔menus 依赖反转
 ---
 
+# 菜单渲染上下文栈（RenderContext）
+
 ## 系统概览
 菜单渲染上下文栈（零依赖叶子）。从 `menus/menu.ts` 抽出，断开 `core → menus` 反向边：core 层控件（`ui-rows` / `ui-collapsible` / `ui-header-toggle`）渲染期需注册自更新控件，过去经 `menu.ts` 的 `getCurrentRenderingMenu` 取得 `SlideMenu` 形成双向环；此处以最小 `RenderContext` 接口反转依赖——core 只认接口，`menus/menu.ts` 单向 push/pop `SlideMenu` 实例。
 

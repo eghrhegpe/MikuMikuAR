@@ -24,6 +24,8 @@ use_when:
   - 生命周期
 ---
 
+# Observer 生命周期管理
+
 ## 系统概览
 统一封装 Babylon.js `Observable.add/remove`，确保每次订阅都返回可 dispose 的句柄、支持批量清理、且 dispose 幂等。消除「手动在 metadata 中存储 observer 引用」的脆弱写法，是 AGENTS.md「资源配对」审核维度的标准基础设施。
 

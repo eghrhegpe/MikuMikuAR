@@ -25,6 +25,8 @@ use_when:
   - DOM 引用
 ---
 
+# DOM 工具
+
 ## 系统概览
 **DOM 工具函数**。提供 `dom` 全局引用集合和 `addDisposableListener` 可清理事件监听，
 被 events/init/shortcut-registry/menu/plaza 等约 15 个模块引用，是最核心的基础设施之一。

@@ -22,6 +22,8 @@ use_when:
   - resolveModelId
 ---
 
+# 模型运行时 ID 解析
+
 ## 系统概览
 
 模型运行时 id 的解析与分配模块。替代旧实现 `model_${Date.now()}_${Math.random()}`，保证每次加载同一模型时 id 稳定，避免材质、outfit、个人灯光等按 id 落盘的数据跨会话丢失。

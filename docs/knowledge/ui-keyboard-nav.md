@@ -25,6 +25,8 @@ use_when:
   - 箭头键导航
 ---
 
+# 键盘导航工具
+
 ## 系统概览
 从 `menu.ts` / `ui-fullscreen-overlay.ts` 抽取的共享列表键盘导航逻辑（ADR-153 Phase 3）。支持 Arrow 键方向导航、Enter 激活、Escape 回退、循环 wrap。返回 `Disposable` 用于移除监听。
 

@@ -25,6 +25,8 @@ use_when:
   - 缩略图捕获
 ---
 
+# PMX 模型加载与缩略图捕获
+
 ## 系统概览
 PMX 模型加载器：模型文件解析、实例创建、缩略图生成、outfit 预加载。从 `scene.ts` 静态导入但在函数体内访问（ES module live binding 保证安全）。是模型进入 `modelRegistry` 的入口。
 

@@ -21,6 +21,8 @@ use_when:
   - 新增面板登记
 ---
 
+# 声明式菜单 Schema 集中注册聚合器
+
 ## 系统概览
 ADR-093 元测试基础设施的集中注册聚合器。各 `*-levels.ts` 只导出 `getXxxSchema()`，不依赖 registry；此文件集中调用 `registerSchema`，供测试 import 触发全量注册。
 

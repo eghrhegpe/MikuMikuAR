@@ -31,6 +31,8 @@ use_when:
   - 帧钩子管理
 ---
 
+# 动作模块基类
+
 ## 系统概览
 **动作模块基类**（ADR-116/126）。提供所有 motion-module 的骨架代码，包括模块创建、
 状态管理、帧钩子注册、烘焙准备等。子模块（body-posture/hand-modules/foot-modules/riding-model）

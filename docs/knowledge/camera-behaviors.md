@@ -32,6 +32,8 @@ use_when:
   - 触摸输入
 ---
 
+# 相机行为循环（freefly/surround/concert）
+
 ## 系统概览
 **相机行为循环模块**（ADR-148 阶段 3 续拆，2026-07-26）。从 camera.ts 抽出 freefly / surround / concert 三种相机的"每帧更新"逻辑：注册 `onBeforeRenderObservable` 回调，停止时显式 dispose observer 句柄。
 

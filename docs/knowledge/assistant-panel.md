@@ -22,3 +22,5 @@ use_when:
   - 独立弹窗入口
   - showAssistant
 ---
+
+# AI 助手独立面板入口

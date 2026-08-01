@@ -29,6 +29,8 @@ use_when:
   - time-of-day 预设
 ---
 
+# UI 持久化状态
+
 ## 系统概览
 UI 持久化存储（ADR-141 从 `core/state.ts` 拆分）。管理弹窗状态（`popupOpen`）、UI 状态对象（`uiState`）及持久化回调。`uiState` 通过 `setUIState` 写入并触发持久化；`activeTimeOfDayPreset` 为预设芯片高亮提供唯一来源，在 env-menu 顶层与 sky 子菜单间共享。
 

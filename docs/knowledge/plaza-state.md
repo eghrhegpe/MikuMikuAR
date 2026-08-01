@@ -52,6 +52,8 @@ use_when:
   - 广场层级
 ---
 
+# 广场状态管理
+
 ## 系统概览
 **广场状态管理**（ADR-087）。管理广场的全局状态（开启/关闭、站点列表、当前层级等），
 被 plaza-browser/plaza-download/events/init 约 5 个模块引用。

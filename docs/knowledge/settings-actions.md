@@ -16,6 +16,8 @@ use_when:
   - 设置执行
 ---
 
+# 设置动作映射表
+
 ## 系统概览
 设置动作映射表（ADR-157：从 `settings-paths` 抽出）。集中管理 target→handler 映射，替代原 `handleSettingsAction` 的 switch 链。各设置页直接调用 `SETTINGS_ACTIONS[target]()`，不再构造假 PopupRow 套娃。
 

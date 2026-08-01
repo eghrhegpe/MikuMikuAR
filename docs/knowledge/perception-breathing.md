@@ -25,6 +25,8 @@ use_when:
   - 呼吸动画
 ---
 
+# 呼吸模拟
+
 ## 系统概览
 **呼吸模拟模块**（ADR-071/162）。为模型提供自然的呼吸动画（胸腔起伏），
 被 perception-gaze-js/perception-observer 约 2 个模块引用。

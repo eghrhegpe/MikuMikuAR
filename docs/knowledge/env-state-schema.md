@@ -29,6 +29,8 @@ use_when:
   - dispatch group
 ---
 
+# EnvState 单一源 Schema
+
 ## 系统概览
 EnvState 全部字段的**类型 + 默认值 + dispatch 分组**单一来源。新增字段只需在此追加一处（type + default + group），`types.ts` / `state.ts` 自动派生，各子系统通过 `getEnvKeys(group)` 自动获取 key 列表，无需再手工维护 `_SKY_KEYS` / `_GROUND_KEYS` / `_WATER_KEYS` 等数组。
 

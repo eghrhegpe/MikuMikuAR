@@ -47,6 +47,8 @@ use_when:
   - barrel 重导出
 ---
 
+# 环境系统实现核心（barrel + observer + fog）
+
 ## 系统概览
 环境系统实现核心（从原 env-impl 拆分而来）。本文件保留：observer、fog、barrel re-export。天空→`env-sky.ts`、地面→`env-ground.ts`、共享上下文→`env-context.ts`，各子系统经本文件 barrel 汇聚。
 

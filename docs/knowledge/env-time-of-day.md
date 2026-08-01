@@ -35,6 +35,8 @@ use_when:
   - 环境预设
 ---
 
+# 时间流转与太阳角系统
+
 ## 系统概览
 Env Time-of-Day：从 env-bridge 拆出的时间流转 + 太阳角 + 环境预设动画模块（ADR-148 Phase 5 瘦身）。核心职责：`envSunAngle` 缓存（消除双源漂移）、time-of-day 帧 tick、预设动画过渡（2 秒 lerp）、分类预设应用。
 

@@ -22,6 +22,8 @@ use_when:
   - 资源清理
 ---
 
+# 安全释放工具
+
 ## 系统概览
 统一「dispose 并置空」的模板函数（ADR-146 主题3），替代项目中大量 `if (x) { x.dispose(); x = null; }` 手写重复（env/render 子系统累计 60-80 处）。与手写模板语义严格等价：`obj?.dispose(...args)` 仅在 obj 非空时调用，始终返回 null。
 

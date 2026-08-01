@@ -47,6 +47,8 @@ use_when:
   - 程序化 VMD
 ---
 
+# 程序化动作系统
+
 ## 系统概览
 **程序化动作生成与调度系统**（ADR-021）。负责 Idle（待机）和 Auto Dance（自动跳舞）的 VMD
 生成调度、节拍联动检测、参数管理。VMD 生成器来自 `@/motion-algos/procedural-motion`，

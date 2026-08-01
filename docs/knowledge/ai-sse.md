@@ -21,6 +21,8 @@ use_when:
   - parseSseStream
 ---
 
+# SSE 流式解析器
+
 ## 系统概览
 ADR-196 的 SSE（Server-Sent Events）行解析纯函数，从 `ReadableStream&lt;Uint8Array&gt;` 逐行解析 OpenAI 兼容格式（`data: {...}` / `data: [DONE]`），yield `ChatChunk`。
 

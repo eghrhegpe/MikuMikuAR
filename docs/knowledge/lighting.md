@@ -34,6 +34,8 @@ use_when:
   - 灯光补间
 ---
 
+# 场景光照与阴影（barrel）
+
 ## 系统概览
 Scene Lighting：光照、阴影、太阳盘（barrel + 主光管理）。职责：方向光/半球光管理、阴影生成器、太阳圆盘可视化。子文件（lighting-stage/-shadow/-sun/-tween/-follow）通过单一 `lightingState` 共享全部模块状态。
 

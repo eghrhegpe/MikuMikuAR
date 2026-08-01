@@ -36,6 +36,8 @@ use_when:
   - transform adapter
 ---
 
+# 镜面道具
+
 ## 系统概览
 镜面反射道具：直接在场景中放置竖直平面 + `MirrorTexture` 反射，独立于 `PlanarReflection` 引擎。最初为调试反射问题而创建（ADR-128），现已升级为常态化场景道具。反射列表包含场景全部 mesh，并通过 `onNewMeshAddedObservable` / `onMeshRemovedObservable` 自动刷新。镜面 mesh 挂 `transformKind='mirror'` metadata 且 `isPickable=true`，接入场景拖拽模式（ADR-171）：点击镜面附加 Gizmo，位置/水平旋转可实时拖拽，拖拽结束经 adapter 回写模块参数。
 

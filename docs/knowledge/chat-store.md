@@ -33,3 +33,5 @@ use_when:
   - 聊天历史
   - 多会话
 ---
+
+# AI 会话 IndexedDB 存储

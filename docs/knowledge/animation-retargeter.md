@@ -33,6 +33,8 @@ use_when:
   - 人形动画导入
 ---
 
+# 外部动作重定向桥
+
 ## 系统概览
 外部人形动画（Mixamo / VRM / GLB / FBX / GLTF）到 **MMD 骨骼的重定向桥**。将外部动画加载为
 Babylon.js `AnimationGroup`，通过预设的骨骼映射表（`MixamoMmdHumanoidBoneMap` / `VrmMmdHumanoidBoneMap`）

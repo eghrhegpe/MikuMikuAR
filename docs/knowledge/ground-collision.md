@@ -26,6 +26,8 @@ use_when:
   - WASM Bullet
 ---
 
+# 地面碰撞体（WASM Bullet 静态刚体）
+
 ## 系统概览
 通过 `MmdWasmPhysicsRuntimeImpl.addRigidBodyToGlobal` 把一块静态地板刚体注入所有模型的物理世界，使头发/裙子等 Dynamic 刚体在重力下落到地面时获得支撑，不再无限下坠。由 `env-bridge.setGroundCollisionEnabled` 驱动；运行时就绪 / 场景加载后由 `applyGroundCollision()` 还原持久化状态。
 

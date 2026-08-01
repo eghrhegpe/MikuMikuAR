@@ -28,6 +28,8 @@ use_when:
   - VMD 相机动画
 ---
 
+# 相机 VMD 动画
+
 ## 系统概览
 **VMD 相机动画模块**（ADR-148 阶段 3 续拆，2026-07-26）。从 camera.ts 抽出 VMD 相机相关逻辑：加载 VMD 文件 → 创建 MmdCamera → 启动动画 → 清除（含 dispose 释放）。
 

@@ -29,6 +29,8 @@ use_when:
   - ADR-130
 ---
 
+# 预设元数据归一化
+
 ## 系统概览
 
 预设元数据跨系统归一模块（ADR-130 Phase 2.7 收敛）。四类预设系统（env/render/scene/model）经 ADR-176 的 backend 代理统一走 `resolveBackend()`，存储共享 `presets` IDB store，但返回形状不统一。本模块提供读侧归一，将四类 list 结果统一为 `PresetMeta[]`，供未来跨类浏览/排序/标签筛选/搜索复用。

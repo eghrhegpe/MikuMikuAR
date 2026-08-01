@@ -27,6 +27,8 @@ use_when:
   - quality profile
 ---
 
+# 统一质量档位解析器
+
 ## 系统概览
 质量档位解析器（ADR-130，ADR-174 注册表驱动）。职责：`qualityProfile`（high/medium/low）→ 各域质量设置映射。性能系统写入 `qualityProfile` 作为单一聚合源，各域从此解析派生产出。
 

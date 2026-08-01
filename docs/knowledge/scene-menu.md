@@ -14,6 +14,8 @@ use_when:
   - 场景路由
 ---
 
+# 场景弹窗（编排 + 路由）
+
 ## 系统概览
 Scene Menu：场景弹窗（核心 + barrel export）。职责：MenuStack 场景弹窗路由/入口，拆分后只保留根级 + 路由 + 动作处理。子文件：`scene-render-levels.ts`。程序化动作/LipSync 归位 `motion-procmotion-levels.ts`（动作弹窗域）；环境功能归位 `env-menu.ts`（环境弹窗域）。
 

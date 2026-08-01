@@ -23,6 +23,8 @@ use_when:
   - 跨菜单导航
 ---
 
+# 菜单栈共享指针（stackRegistry）
+
 ## 系统概览
 共享菜单栈指针。从 `@/core/utils` 抽出（ADR-191），置于 `menus/` 因其持有 `SlideMenu` 引用。
 

@@ -26,6 +26,8 @@ use_when:
   - 几何拓扑
 ---
 
+# 裙摆拓扑分析（ADR-084 Phase 1）
+
 ## 系统概览
 纯几何模块（无 Babylon.js / babylon-mmd / WASM 依赖），输入 mesh 顶点+索引，输出虚拟裙骨链结构。是 ADR-084 虚拟裙骨方案的 Phase 1：识别裙摆区域 → 生成骨节链与顶点权重，供 `virtual-skirt.ts` 注入 WASM Bullet。
 

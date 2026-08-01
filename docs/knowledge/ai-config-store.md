@@ -36,6 +36,8 @@ use_when:
   - Ollama 端点
 ---
 
+# AI 配置持久化（IndexedDB）
+
 ## 系统概览
 ADR-196 浏览器端 AI 配置持久化层，复用 `backend/idb.ts` IndexedDB，取代 Web Storage（FR-9/AC-5）。提供同步读（`loadAiConfig`）与同步写（`saveAiConfig`）+ 异步落盘。
 

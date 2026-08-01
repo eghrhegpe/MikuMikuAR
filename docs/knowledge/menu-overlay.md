@@ -28,6 +28,8 @@ use_when:
   - 关闭所有浮层
 ---
 
+# 菜单 Overlay 与 Wrapper 管理
+
 ## 系统概览
 管理菜单 overlay 浮层与 `.menu-wrapper` 容器。从 `@/core/utils` 抽出（ADR-191 去桶化），因依赖 DOM 与 popup 状态而置于 menus 子系统而非 core。
 

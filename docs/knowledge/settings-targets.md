@@ -27,6 +27,8 @@ use_when:
   - 设置操作
 ---
 
+# 设置目标常量
+
 ## 系统概览
 **设置目标常量**（ADR-157）。定义 SETTINGS_ACTION/SETTINGS/SETTINGS_RESOURCE 等设置操作常量，
 被 settings-actions/settings-resources/settings-system/settings 约 4 个模块引用。

@@ -22,6 +22,8 @@ use_when:
   - 键盘步进
 ---
 
+# 滑块输入控制器
+
 ## 系统概览
 统一滑块输入控制器，封装 mousedown→mousemove→mouseup 拖拽、键盘方向键步进（支持 Ctrl/Shift 倍数加速）、游标点击跳转逻辑。供 `addSliderRow` / `addColorSliderRow` / `addVector3SliderRow` / `addModeSlider` 共用。
 

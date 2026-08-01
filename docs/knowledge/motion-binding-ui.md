@@ -27,6 +27,8 @@ use_when:
   - 模块切换列表
 ---
 
+# 动作绑定 UI
+
 ## 系统概览
 动作绑定与模型动作管理的 UI 层。管理动作槽位（`ensureMotionSlots`）、意图应用（`applyIntentToModel`）、动作广播（`initMotionBroadcast`）、模块切换列表渲染（`renderModuleToggleList`）以及动作绑定层级构建（`buildActionBindingLevel`）。
 

@@ -27,6 +27,8 @@ use_when:
   - MirrorTexture
 ---
 
+# 统一平面反射引擎
+
 ## 系统概览
 统一平面反射引擎（ADR-092）。水面（screenSpace：RenderTargetTexture + 镜像相机 + ShaderMaterial 屏空采样）与地面（mirrorTexture：MirrorTexture 引擎自动投影）共用同一套基础设施：RT 创建、BFC 存取、renderList 脏标记、帧跳过、try/catch 渲染、dispose、可恢复互斥。
 
