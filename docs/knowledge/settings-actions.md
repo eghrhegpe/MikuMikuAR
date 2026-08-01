@@ -9,6 +9,11 @@ source_files:
   - frontend/src/menus/settings-actions.ts
 adr:
   - ADR-157
+use_when:
+  - 设置动作
+  - 设置映射
+  - settings action
+  - 设置执行
 ---
 
 ## 系统概览

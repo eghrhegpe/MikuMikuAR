@@ -7,11 +7,11 @@
 | 用户意图或关键词 | 首选知识卡 | 其次阅读 |
 |---|---|---|
 | 环境初始化、环境切换、雾、observer、scene tick、环境销毁 | [env.md](./env.md)、[env-impl.md](./env-impl.md) | [env-context.md](./env-context.md)、[env-dispatcher.md](./env-dispatcher.md)、[observer-handle.md](./observer-handle.md) |
-| 天空、地面、地形、湿身、反射、水面、云 | [env-sky.md](./env-sky.md)、[env-ground.md](./env-ground.md)、[env-wetness.md](./env-wetness.md)、[planar-reflection.md](./planar-reflection.md) | [env-texture.md](./env-texture.md)、[env-state-schema.md](./env-state-schema.md) |
+| 天空、地面、地形、湿身、反射、水面、云、水面设置 | [env-sky.md](./env-sky.md)、[env-ground.md](./env-ground.md)、[env-wetness.md](./env-wetness.md)、[planar-reflection.md](./planar-reflection.md)、[env-water.md](./env-water.md) | [env-texture.md](./env-texture.md)、[env-state-schema.md](./env-state-schema.md) |
 | 灯光、太阳、阴影、跟随灯、灯光渐变 | [lighting.md](./lighting.md)、[lighting-state.md](./lighting-state.md) | [lighting-sun.md](./lighting-sun.md)、[lighting-shadow.md](./lighting-shadow.md)、[lighting-tween.md](./lighting-tween.md) |
 | 模型加载、模型管理、模型替换、模型操作 | [model-loader.md](./model-loader.md)、[model-manager.md](./model-manager.md)、[model-ops.md](./model-ops.md) | [model-detail.md](./model-detail.md)、[scene.md](./scene.md) |
 | 拖拽、Gizmo、变换 | [transform-mode.md](./transform-mode.md)、[transform-adapter.md](./transform-adapter.md) | [transform-gizmo.md](./transform-gizmo.md)、[transform-pick.md](./transform-pick.md) |
-| 动作、骨骼、绑定、逐帧合成、物理裙摆 | [motion-pipeline.md](./motion-pipeline.md)、[bone-override-store.md](./bone-override-store.md) | [motion-binding-ui.md](./motion-binding-ui.md)、[virtual-skirt.md](./virtual-skirt.md)、[wind-physics.md](./wind-physics.md) |
+| 动作、骨骼、绑定、逐帧合成、物理裙摆、动作菜单层级 | [motion-pipeline.md](./motion-pipeline.md)、[bone-override-store.md](./bone-override-store.md)、[motion-menu-levels.md](./motion-menu-levels.md) | [motion-binding-ui.md](./motion-binding-ui.md)、[virtual-skirt.md](./virtual-skirt.md)、[wind-physics.md](./wind-physics.md) |
 | 个人灯光、跟随灯 | [lighting-follow.md](./lighting-follow.md) | [lighting-state.md](./lighting-state.md)、[light-cone.md](./light-cone.md) |
 | 水印、截图、缩略图 | [watermark.md](./watermark.md)、[thumbnail-capture.md](./thumbnail-capture.md) | [thumbnail-key.md](./thumbnail-key.md) |
 | 换装、outfit、配饰 | [outfit-ui.md](./outfit-ui.md) | [model-detail.md](./model-detail.md) |
@@ -32,6 +32,30 @@
 | 资源库、浏览、会话、预设、缩略图 | [library.md](./library.md)、[library-browse.md](./library-browse.md) | [library-session-store.md](./library-session-store.md)、[preset-meta.md](./preset-meta.md)、[thumbnail-key.md](./thumbnail-key.md) |
 | 自然语言控场、NL 动作、动作注册、快捷键动作 | [action-registry.md](./action-registry.md)、[ai-intent-dispatcher.md](./ai-intent-dispatcher.md) | [ai-service.md](./ai-service.md)、[settings-diagnostic.md](./settings-diagnostic.md) |
 | 角色台词、大模型交流、人设、情绪、台词朗读 TTS | [character-bible.md](./character-bible.md) | [ai-service.md](./ai-service.md)、[lipsync-bridge.md](./lipsync-bridge.md) |
+| 相机、相机模式、轨道、自由飞行、镜头、视角 | [camera.md](./camera.md)、[camera-state.md](./camera-state.md) | [orbit-state.md](./orbit-state.md)、[camera-factory.md](./camera-factory.md)、[camera-behaviors.md](./camera-behaviors.md) |
+| 相机行为、自动运镜、VMD 相机、环绕、演唱会运镜 | [camera-behaviors.md](./camera-behaviors.md)、[camera-auto.md](./camera-auto.md) | [camera-vmd.md](./camera-vmd.md)、[camera-bone-lock.md](./camera-bone-lock.md) |
+| 感知、视线、眨眼、呼吸、表情、口型、活人感 | [perception.md](./perception.md) | [perception-gaze.md](./perception-gaze.md)、[perception-blinking.md](./perception-blinking.md)、[perception-lipsync.md](./perception-lipsync.md) |
+| VMD 动作加载、图层、动作播放、动作详情 | [vmd-loader.md](./vmd-loader.md)、[vmd-layers.md](./vmd-layers.md) | [motion-playback.md](./motion-playback.md)、[motion-detail-ui.md](./motion-detail-ui.md) |
+| 动作意图、动作绑定、脚部跟随、动作重定向 | [motion-intent.md](./motion-intent.md)、[animation-retargeter.md](./animation-retargeter.md) | [motion-feet-adjustment.md](./motion-feet-adjustment.md)、[motion-module-base.md](./motion-module-base.md)、[bone-override.md](./bone-override.md) |
+| 材质、贴图、材质调整、材质编辑器 | [material.md](./material.md) | [model-preset-ui.md](./model-preset-ui.md)、[model-material-ui.md](./model-material-ui.md) |
+| 音频、音乐、声音、音频总线 | [audio-bus.md](./audio-bus.md) | [motion-playback.md](./motion-playback.md)、[lipsync-bridge.md](./lipsync-bridge.md) |
+| AI 配置、端点、错误缓冲、场景快照 | [ai-config-store.md](./ai-config-store.md)、[ai-error-buffer.md](./ai-error-buffer.md) | [ai-scene-snapshot.md](./ai-scene-snapshot.md)、[ai-service.md](./ai-service.md) |
+| AR、摄像头、WebXR、增强现实 | [ar-camera.md](./ar-camera.md)、[ar-scene.md](./ar-scene.md) | [ar-webxr-probe.md](./ar-webxr-probe.md)、[camera.md](./camera.md) |
+| 文件服务、文件读写、路径、文件系统 | [fileservice.md](./fileservice.md) | [core-backend.md](./core-backend.md)、[android-file-access.md](./android-file-access.md) |
+| 事件、导航、全局反馈、启动初始化 | [events.md](./events.md)、[init.md](./init.md) | [feedback.md](./feedback.md)、[runtime-mode.md](./runtime-mode.md)、[core-backend.md](./core-backend.md) |
+| 环境持久化、时间流转、太阳角、环境重力 | [env-persist.md](./env-persist.md)、[env-time-of-day.md](./env-time-of-day.md) | [env-gravity.md](./env-gravity.md)、[env-collision.md](./env-collision.md)、[env-lighting.md](./env-lighting.md) |
+| 环境菜单、环境弹窗、灯光预设 | [env-menu.md](./env-menu.md)、[env-lighting.md](./env-lighting.md) | [lighting-presets.md](./lighting-presets.md)、[env-bridge.md](./env-bridge.md) |
+| 资源库操作、库扫描、加载刷新 | [library-actions.md](./library-actions.md)、[library-core.md](./library-core.md) | [library-setup.md](./library-setup.md)、[load-refresh-registry.md](./load-refresh-registry.md) |
+| 菜单 overlay、菜单栈、菜单渲染、菜单地图 | [menu-overlay.md](./menu-overlay.md)、[menu-stack-registry.md](./menu-stack-registry.md) | [render-menu.md](./render-menu.md)、[menu-map.md](./menu-map.md) |
+| 模型预设、模型工具、模型保存 | [model-preset-ui.md](./model-preset-ui.md) | [model-detail.md](./model-detail.md)、[library-session-store.md](./library-session-store.md) |
+| 模型广场、plaza、广场下载 | [plaza-state.md](./plaza-state.md) | [plaza-browser.md](./plaza-browser.md)、[plaza-sites.md](./plaza-sites.md)、[plaza-download.md](./plaza-download.md) |
+| 语言、locale、i18n、翻译 | [locale.md](./locale.md) | [zh-CN.md](./zh-CN.md)、[zh-TW.md](./zh-TW.md)、[ui-preset.md](./ui-preset.md) |
+| GPU 能力、压缩纹理、能力探测 | [gpu-capabilities.md](./gpu-capabilities.md) | [core-backend.md](./core-backend.md)、[renderer.md](./renderer.md) |
+| 设置共享、设置动作、设置持久化 | [settings-shared.md](./settings-shared.md)、[settings-actions.md](./settings-actions.md) | [settings.md](./settings.md)、[ui-state.md](./ui-state.md) |
+| 变换选择、选中状态、拾取元数据 | [transform-selection.md](./transform-selection.md) | [transform-pick.md](./transform-pick.md)、[transform-mode.md](./transform-mode.md) |
+| 拖拽导入、drop、文件拖入 | [drop-import.md](./drop-import.md) | [library-actions.md](./library-actions.md)、[fileservice.md](./fileservice.md) |
+| 配置 barrel、工具函数、core 叶子模块 | [core-leaf-modules.md](./core-leaf-modules.md)、[config-barrel.md](./config-barrel.md) | [core-utils.md](./core-utils.md)、[core-dom.md](./core-dom.md)、[core-types.md](./core-types.md) |
+| 图标、图标 bundle、icon 加载 | [icons-bundle.md](./icons-bundle.md) | [core-utils.md](./core-utils.md)、[ui-constants.md](./ui-constants.md) |
 
 ## 标准执行模板
 

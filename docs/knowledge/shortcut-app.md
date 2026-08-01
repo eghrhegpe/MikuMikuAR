@@ -9,6 +9,11 @@ source_files:
   - frontend/src/core/shortcut-app.ts
 adr:
   - ADR-102
+use_when:
+  - 快捷键
+  - 快捷方式
+  - 键位
+  - shortcut 定义
 ---
 
 ## 系统概览

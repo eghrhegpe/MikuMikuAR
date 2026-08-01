@@ -10,6 +10,11 @@ source_files:
 adr:
   - ADR-048
   - ADR-126
+use_when:
+  - 拖拽 gizmo
+  - 变换手柄
+  - 3D 拖拽
+  - 移动旋转缩放
 ---
 
 ## 系统概览

@@ -7,6 +7,12 @@ scope:
   - frontend/src/menus/library.ts
 source_files:
   - frontend/src/menus/library.ts
+use_when:
+  - 模型库
+  - 资源库
+  - 模型浏览
+  - 加载模型
+  - library
 ---
 
 ## 系统概览

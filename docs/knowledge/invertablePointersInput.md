@@ -9,6 +9,11 @@ source_files:
   - frontend/src/scene/camera/invertablePointersInput.ts
 adr:
   - ADR-035
+use_when:
+  - 反转 Y 轴
+  - 指针输入
+  - 鼠标反转
+  - 垂直拖拽方向
 ---
 
 ## 系统概览

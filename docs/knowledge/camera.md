@@ -17,6 +17,14 @@ adr:
   - ADR-035
   - ADR-100
   - ADR-148
+use_when:
+  - 相机模式
+  - 轨道相机
+  - 自由飞行
+  - 相机控制
+  - 视角切换
+  - ArcRotate
+  - Freefly
 ---
 
 ## 系统概览

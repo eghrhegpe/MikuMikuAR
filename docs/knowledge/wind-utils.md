@@ -9,6 +9,11 @@ source_files:
   - frontend/src/core/wind-utils.ts
 adr:
   - ADR-028
+use_when:
+  - 风场
+  - 风向量
+  - wind utils
+  - 风向计算
 ---
 
 ## 系统概览

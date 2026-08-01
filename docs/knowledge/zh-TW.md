@@ -9,6 +9,11 @@ source_files:
   - frontend/src/core/i18n/locales/zh-TW.ts
 adr:
   - ADR-059
+use_when:
+  - 繁体中文
+  - 中文翻译
+  - zh-TW
+  - i18n 繁体
 ---
 
 ## 系统概览
