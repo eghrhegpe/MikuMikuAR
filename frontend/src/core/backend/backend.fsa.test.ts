@@ -1,11 +1,22 @@
 // [doc:test] FSA 目录扫描嵌套结构（拆自 backend.test.ts）
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { idbStore, resetIdb, setWindow, makeIdbMock } from './backend-mocks';
 
 vi.mock('./go-adapter', () => ({ goAdapter: {} }));
 vi.mock('./idb', () => makeIdbMock());
 
 import { browserAdapter } from './browser-adapter';
+
+// setWindow 会把全局 window 换成无 addEventListener 的桩对象，no-isolate 单 worker 下
+// window 是跨文件共享单点，必须 afterEach 恢复，否则污染其后的收集期（ADR-219 治理）。
+const realWindow = (globalThis as { window?: unknown }).window;
+afterEach(() => {
+    if (realWindow === undefined) {
+        delete (globalThis as { window?: unknown }).window;
+    } else {
+        (globalThis as { window?: unknown }).window = realWindow;
+    }
+});
 
 // [doc:test] P1 修复回归：FSA 目录扫描需保留嵌套层级，且不同子目录的同名文件互不覆盖
 describe('FSA 目录扫描嵌套结构（保留目录层级 + 同名不覆盖）', () => {

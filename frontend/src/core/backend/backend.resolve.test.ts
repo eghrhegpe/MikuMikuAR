@@ -1,9 +1,20 @@
 // [doc:test] resolveBackend 三路径（拆自 backend.test.ts）
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { setWindow, clearWebFlag, goAdapterMock, makeIdbMock } from './backend-mocks';
 
 vi.mock('./go-adapter', () => goAdapterMock);
 vi.mock('./idb', () => makeIdbMock());
+
+// setWindow 会把全局 window 换成桩对象，no-isolate 单 worker 下 window 跨文件共享，
+// 必须 afterEach 恢复，否则污染其后收集期（ADR-219 治理）。
+const realWindow = (globalThis as { window?: unknown }).window;
+afterEach(() => {
+    if (realWindow === undefined) {
+        delete (globalThis as { window?: unknown }).window;
+    } else {
+        (globalThis as { window?: unknown }).window = realWindow;
+    }
+});
 
 describe('resolveBackend 三路径（异步选型，Android 冷启动竞态防护）', () => {
     beforeEach(() => {
