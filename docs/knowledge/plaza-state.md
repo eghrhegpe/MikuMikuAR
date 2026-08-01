@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: plaza_state
 name: 广场状态管理
 category: ui

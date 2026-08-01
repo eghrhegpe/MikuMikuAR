@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: library_core
 name: 资源库核心
 category: ui

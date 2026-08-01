@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: perception
 name: 感知层主控
 category: motion

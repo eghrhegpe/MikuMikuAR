@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: motion_menu_levels
 name: 动作菜单层级系统
 category: ui

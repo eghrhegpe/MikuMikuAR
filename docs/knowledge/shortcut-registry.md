@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: shortcut_registry
 name: 快捷键注册表
 category: core

@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: runtime_mode
 name: 运行模式检测
 category: core

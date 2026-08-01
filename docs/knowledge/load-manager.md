@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: load_manager
 name: 统一资源加载队列
 category: core

@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: ai_config_store
 name: AI 配置持久化（IndexedDB）
 category: core

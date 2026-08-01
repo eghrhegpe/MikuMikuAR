@@ -1,8 +1,8 @@
 # 知识卡 tier 标注复核队列（ADR-218 P3）
 
-> 生成时间：2026-08-01 ｜ 模式：preview
+> 生成时间：2026-08-01 ｜ 模式：apply
 > 机器自动判 architecture（import 广度 ≥ 2 顶层目录）：**76 张**（--apply 已写入 / 待写入）
-> 需人工复核：**121 张**
+> 需人工复核：**122 张**
 
 ## 一、机器已自动标 architecture（广度 ≥ 2）
 
@@ -200,6 +200,7 @@
 | skirt-analyzer.md | 1 | scene | leaf | 仅被 1 个顶层目录引用（scene），单调用方倾向 → 建议 leaf |
 | texture-lru.md | 1 | scene | leaf | 仅被 1 个顶层目录引用（scene），单调用方倾向 → 建议 leaf |
 | thumbnail-capture.md | 1 | scene | leaf | 仅被 1 个顶层目录引用（scene），单调用方倾向 → 建议 leaf |
+| tier-review.md | 0 | — | leaf | 无 source_files，无法算广度，建议 leaf 或补 source_files |
 | transform-gizmo.md | 1 | scene | leaf | 仅被 1 个顶层目录引用（scene），单调用方倾向 → 建议 leaf |
 | transform-pick.md | 1 | scene | leaf | 仅被 1 个顶层目录引用（scene），单调用方倾向 → 建议 leaf |
 | ui-focus-trap.md | 1 | core | leaf | 仅被 1 个顶层目录引用（core），单调用方倾向 → 建议 leaf |

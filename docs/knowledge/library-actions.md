@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: library_actions
 name: 资源库操作
 category: ui

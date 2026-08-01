@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: bone_override
 name: 骨骼覆盖核心 API
 category: motion

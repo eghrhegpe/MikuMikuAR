@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: core_backend
 name: 后端适配层
 category: core

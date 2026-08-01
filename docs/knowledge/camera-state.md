@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: camera_state
 name: 相机状态管理 + 运行时上下文
 category: scene

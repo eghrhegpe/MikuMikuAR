@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: i18n_t
 name: 国际化翻译函数
 category: core

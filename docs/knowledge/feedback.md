@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: feedback
 name: 结构化反馈 API
 category: core

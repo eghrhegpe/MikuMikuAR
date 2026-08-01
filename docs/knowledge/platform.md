@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: platform_detection
 name: 平台能力探测
 category: core

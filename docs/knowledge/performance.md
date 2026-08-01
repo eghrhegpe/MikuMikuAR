@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: performance_monitor
 name: 性能监控与自动降级
 category: rendering

@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: env_collision
 name: 环境碰撞控制
 category: env

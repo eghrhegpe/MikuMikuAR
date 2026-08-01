@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: vmd_layers
 name: 多 VMD 叠加系统
 category: motion

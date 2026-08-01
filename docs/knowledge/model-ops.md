@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: model_ops
 name: 模型生命周期操作
 category: scene

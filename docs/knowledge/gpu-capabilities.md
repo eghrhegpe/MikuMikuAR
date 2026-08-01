@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: gpu_capabilities
 name: GPU 压缩纹理能力探测
 category: rendering

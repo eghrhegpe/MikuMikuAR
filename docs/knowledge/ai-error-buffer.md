@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: ai_error_buffer
 name: 错误环形缓冲与全局捕获
 category: core

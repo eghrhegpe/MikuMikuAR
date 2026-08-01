@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: slide_menu
 name: 滑出式菜单引擎（SlideMenu）
 category: ui

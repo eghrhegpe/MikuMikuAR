@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: load_refresh_registry
 name: 模型加载/库扫描完成后菜单刷新注册表
 category: core

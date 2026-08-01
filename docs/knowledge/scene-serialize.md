@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: scene_serialize
 name: 场景序列化与自动保存
 category: scene

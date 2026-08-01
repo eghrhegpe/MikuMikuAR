@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: transform_selection
 name: 变换选中物状态源
 category: scene

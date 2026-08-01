@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: menu_overlay
 name: 菜单 Overlay 与 Wrapper 管理
 category: ui

@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: env_impl
 name: 环境系统实现核心（barrel + observer + fog）
 category: env

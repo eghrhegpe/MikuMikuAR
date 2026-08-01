@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: motion_playback
 name: 动作播放控制
 category: motion

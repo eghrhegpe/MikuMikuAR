@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: model_preset_ui
 name: 模型预设管理 UI
 category: ui

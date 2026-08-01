@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: android_file_access
 name: 安卓文件访问（shared 模式）
 category: core

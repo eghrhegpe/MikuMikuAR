@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: camera_mode_manager
 name: 相机模式管理系统（MmdCamera）
 category: scene

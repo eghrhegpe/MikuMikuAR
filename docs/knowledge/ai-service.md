@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: ai_service
 name: 内置 AI 诊断助手 — 双适配器服务层
 category: core

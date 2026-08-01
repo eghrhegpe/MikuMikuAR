@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: ai_scene_snapshot
 name: 场景运行时快照（AI 上下文）
 category: core

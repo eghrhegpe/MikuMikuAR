@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: render_loop
 name: 渲染循环与 FPS 时钟
 category: core

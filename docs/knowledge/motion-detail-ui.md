@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: motion_detail_ui
 name: 动作详情 UI
 category: ui
