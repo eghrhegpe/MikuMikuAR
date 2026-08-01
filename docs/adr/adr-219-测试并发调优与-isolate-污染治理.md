@@ -1,6 +1,6 @@
 # ADR-219: 测试并发调优与 isolate 污染治理 — vitest 全量提速：maxWorkers 落地 + isolate=false 障碍清理
 
-> **状态**: 实施中（2026-07-31；Phase 1 已落地省 13%；Phase 2 idb 全局化已落地并修正存储回退，isolate=true 4135 全绿零回退；剩余 config/scene/babylon 同源类待推广，另发现 no-isolate 「收集期崩溃」顽疾）
+> **状态**: 已完成（2026-08-01 决策 C 收口。Phase 1 maxWorkers 落地省 13%；Phase 2 idb 全局化落地，isolate=true 4135 全绿零回退；有界诊断判定「收集期蒸发」与「执行期污染」两债同土壤、不同修法，isolate=false 存在结构性风险 → 降级为非目标不采纳；剩余执行期污染债入测试卫生清单）
 > **日期**: 2026-07-31
 
 ## 背景
@@ -116,6 +116,38 @@ spike 初版用**自造双层 `__idbGlobalStore`** 作全局 mock 的内存实�
 
 no-isolate 全量两次实测：文件数恒为 243，但**用例总数从 isolate=true 的 4135 掉到 ~2682（蒸发 ~1453）**。蒸发的用例既非 passed 也非 failed——前置文件污染共享 worker 的模块状态后，后续文件的 `describe`/顶层 import 在**收集期**就抛错，整批用例不计入报告。这意味着「no-isolate 失败数」是**不稳定指标**（部分失败滑成了未收集），不能单看失败数下降就判定进展。真正可靠的真相锚是 isolate=true 全量（稳定、当前 CI 模式）。收集期崩溃与单例穿透同源（共享 registry），但更深一层，需在推广全局化时一并观察是否缓解。
 
+### Phase 2 判定收口（2026-08-01）— 决策 C：两债不同源，isolate=false 结构性降级
+
+「收集期崩溃」顽疾触发了一次**有界诊断**（时间盒：单次诊断会话，产出 `crash-nocache.log` + `zz-*` 探针 + 两次全量对拍），目标是回答唯一 gate 问题：**收集期崩溃与单例穿透是否同源、按 B 全局化推广后是否仍会发生**。结论如下。
+
+**探针铁证（`crash-nocache.log`，2026-08-01）：**
+
+- `PROBE_EVAL_A/B: 1`：`zz-marker-a/b` 两文件同读共享模块 `zz-src-mod`，顶层 eval 计数恒为 1 → 共享 worker 内模块只解析一次，单例穿透机制实锤。
+- `PROBE_COLLECT_WINDOW_BROKEN typeof=object addEventListener=undefined`：`zz-probe-window` 在**收集期**发现 `window` 存在但 `addEventListener` 被掏空 → 「用例蒸发」的直接根因：后续文件顶层 import 链（`dom.ts:74 addDisposableListener` ← `load-refresh-registry.ts:61` ← `env-menu.ts:70` ← `menu-schema-register.ts:16`；以及 `scene-serialize.ts:1428`）在收集期调用 `window.addEventListener` 即抛错，整文件 0 test 蒸发。
+- 全量对拍不稳定实锤：两次 no-isolate 全量用例数 **2590 vs 4113**（isolate=true 基线 4135）——蒸发量跑两次都不一样，「no-isolate 失败数不可信」从推断升级为实测。
+
+**污染源归属（grep 定位）：** 测试文件对 `window` 的**裸全局修改**未还原泄漏进共享 worker：
+
+- `browser-adapter.fsa-auth.test.ts`：`globalThis.window = { showDirectoryPicker, showOpenFilePicker }` —— **形状与探针报错完全吻合**（无 `addEventListener`）；
+- `dialogue-speech.test.ts`：`delete globalThis.window`。
+
+**判定：两债不同源，B 救不了收集期蒸发。**
+
+| 债 | 特征 | 全局化（B）能否解决 |
+|----|------|--------------------|
+| 执行期污染（~287 失败：audio/model-ops/playback/env-* 等） | 模块单例穿透 + 状态残留 | ✅ 能继续压（idb 已验证路径） |
+| 收集期蒸发（0-test 文件：schema-snapshot、model-preset.serialize、scene-serialize 系列） | 测试裸改 `window` → 共享 worker 泄漏 → 后续文件顶层副作用收集期抛错 | ❌ **不能**——全局化 config/scene/babylon mock 拦不住测试对 `window` 的裸写 |
+
+**结构性结论**：no-isolate 下 `window` 是单点故障——任何一个测试的裸全局修改，都能让后续所有顶层碰 window 的文件（`scene-serialize.ts:1428`、`env-menu.ts:70` 的顶层副作用）整批蒸发。这不是「再清几个文件」的卫生债，而是「共享 worker + 裸全局修改 + 生产模块顶层副作用」三者的结构性不兼容。要根治需同时满足「所有测试严格还原 window」+「生产模块去顶层副作用」两件事，而收益仅省 ~37% 且随时可被新测试重新引爆，**ROI 为负**。
+
+**收口决定：**
+
+1. **isolate=false 降级为「非目标」，不采纳**：不写入 `vitest.config.ts`；Phase 1 的 `maxWorkers: 12` 收益（37.5s→32.6s）保留。
+2. **B 降级为执行期污染的增量清偿**：config/scene/babylon 全局化可继续推进以压低 no-isolate 执行期失败（亦是 isolate=true 模式下的卫生增益），但**不再作为 isolate=false 的前置承诺**；config 的 god-barrel（6 种 mock 形状 + 4 个状态 store）ROI 存疑，暂缓。
+3. **真相锚不变**：isolate=true 全量（4135 全绿）是唯一可信指标；no-isolate 失败数/蒸发量均不作为进展度量。
+4. **ADR-219 收口为「已完成」**：Phase 1 + Phase 2 idb 全局化已落地，isolate=false 经判定不采纳——不是「债没还完」，而是「这个目标被判定不值得要」，明确写下防止后人再踩。
+5. 诊断产物（`zz-*` 探针、`crash-nocache.log`、全量对拍 json）为一次性证据，**不入库**。
+
 ## 备选方案
 
 - **`pool: 'threads'`（隔离保留）**：实测 34.9s，收益仅 ~7%；且部分 Babylon/WASM 场景在线程池下不如进程稳。不选。
@@ -126,7 +158,7 @@ no-isolate 全量两次实测：文件数恒为 243，但**用例总数从 isola
 
 - `frontend/vitest.config.ts`：Phase 1 已加 `maxWorkers: 12` / `minWorkers: 12` + 决策注释。
 - Phase 2 涉及约 46 个测试文件（`src/__tests__/` + `src/core/backend/` + `src/scene/` 下），补 `afterEach` 还原 mock/window/单例；试点先改 happy-dom 环境残留类。
-- Phase 2 完成后再改 `vitest.config.ts` 加 `isolate: false`，并更新本 ADR 状态与收益数据。
+- ~~Phase 2 完成后再改 `vitest.config.ts` 加 `isolate: false`，并更新本 ADR 状态与收益数据。~~（2026-08-01 收口：isolate=false 经判定降级为「非目标」，不采纳，见上文「Phase 2 判定收口」）
 - CI（`process.env.CI`）沿用同一配置；固定 worker 数在 CI 单核/双核环境需复核（当前 e2e workers 已按 CI 降级，单测未区分，Phase 2 一并评估）。
 
 ## 相关文档
