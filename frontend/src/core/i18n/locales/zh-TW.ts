@@ -1004,7 +1004,7 @@ export const zhTW: Record<string, string> = {
     'library.noRecentHint': '載入模型後會顯示在這裡',
     'library.title': '模型庫',
     'library.noRootDir': '尚未設定模型庫目錄',
-    'library.noRootDirHint': '請前往 設定 → 系統 中設定',
+    'library.noRootDirHint': '請前往 設定 → 資源 中設定',
     'library.noModels': '此目錄暫無資源，可透過匯入或拖曳新增',
     'library.browseHint': '瀏覽和載入 PMX 模型',
     'library.importHint': '從檔案選擇器匯入 PMX/ZIP/VMD 檔案',

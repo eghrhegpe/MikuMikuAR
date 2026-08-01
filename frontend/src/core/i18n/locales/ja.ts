@@ -1012,7 +1012,7 @@ export const ja: Record<string, string> = {
     'library.noRecentHint': 'モデルを読み込むとここに表示されます',
     'library.title': 'モデルライブラリ',
     'library.noRootDir': 'モデルライブラリのディレクトリが設定されていません',
-    'library.noRootDirHint': '設定 → システムで設定してください',
+    'library.noRootDirHint': '設定 → リソースで設定してください',
     'library.noModels': 'ここにはリソースがありません。インポートまたはドラッグで追加',
     'library.browseHint': 'PMX モデルを閲覧・読み込み',
     'library.importHint': 'ファイル選択から PMX/ZIP/VMD をインポート',

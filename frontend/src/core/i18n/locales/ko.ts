@@ -1010,7 +1010,7 @@ export const ko: Record<string, string> = {
     'library.noRecentHint': '모델을 로드하면 여기에 표시됩니다',
     'library.title': '모델 라이브러리',
     'library.noRootDir': '모델 라이브러리 디렉터리가 설정되지 않음',
-    'library.noRootDirHint': '설정 → 시스템에서 구성해 주세요',
+    'library.noRootDirHint': '설정 → 리소스에서 구성해 주세요',
     'library.noModels': '리소스가 없습니다. 가져오거나 드래그하여 추가',
     'library.browseHint': 'PMX 모델 찾기 및 로드',
     'library.importHint': '파일 선택기에서 PMX/ZIP/VMD 가져오기',

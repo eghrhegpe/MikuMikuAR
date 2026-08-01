@@ -897,7 +897,7 @@ export const en: Record<string, string> = {
     'library.noRecentHint': 'Appears here after loading a model',
     'library.title': 'Model Library',
     'library.noRootDir': 'Model library directory not set',
-    'library.noRootDirHint': 'Go to Settings → System to configure',
+    'library.noRootDirHint': 'Go to Settings → Resources to configure',
     'library.noModels': 'No resources here. Import or drag files to add',
     'library.browseHint': 'Browse and load PMX models',
     'library.importHint': 'Import PMX/ZIP/VMD from file picker',
