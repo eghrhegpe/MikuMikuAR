@@ -7,6 +7,9 @@ hero:
   tagline: 用户指南 · 架构文档 · 决策记录 · 知识卡 —— 桌面端 + Web 端的 MMD 舞台与模型编辑器
   actions:
     - theme: brand
+      text: 打开应用
+      link: /app/
+    - theme: alt
       text: 用户指南
       link: /guide/
     - theme: alt

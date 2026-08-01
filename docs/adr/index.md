@@ -8,8 +8,8 @@
 
 | 状态 | 数量 | 含义 |
 |------|------|------|
-| [推进中](#推进中) | 5 | 已开工，尚未收口（含部分实施） |
-| [规划中](#规划中) | 9 | 已立项，等待实施 |
+| [推进中](#推进中) | 6 | 已开工，尚未收口（含部分实施） |
+| [规划中](#规划中) | 8 | 已立项，等待实施 |
 | [已落地](#已落地) | 189 | 实施完成，代码已合入 |
 | [已归档](#已归档) | 18 | 被取代、放弃、过时或搁置，保留供追溯 |
 | [其他](#其他) | 1 | 状态行缺失或表述不可归类 |
@@ -20,6 +20,7 @@
 
 | ADR | 主题 | 状态 |
 |-----|------|------|
+| [ADR-226](./adr-226-ground-material-spec-single-source.md) | 地面材质单一事实源重构（GroundMaterialSpec） | 实施中 |
 | [ADR-220](./adr-220-schema-integrity-metatest.md) | Schema 完整性元测试 —— 不开浏览器，秒级捕获 schema 漂移 | 实施中 |
 | [ADR-215](./adr-215-eliminate-prop-kind.md) | 取消「道具」资源类型 — 模型附属关系替代 prop + accessory 体系 | 🔄 实施中 |
 | [ADR-204](./adr-204-unit-test-layering-and-hygiene.md) | 单测分层与治理规范（拆上帝文件 · 降 mock 密度 · fixtures 复用 · unit/integration 分层） | 🟢 实施中 |
@@ -30,7 +31,6 @@
 
 | ADR | 主题 | 状态 |
 |-----|------|------|
-| [ADR-226](./adr-226-ground-material-spec-single-source.md) | 地面材质单一事实源重构（GroundMaterialSpec） | 规划 |
 | [ADR-223](./adr-223-water-surface-overhaul.md) | 水面视觉效果整顿 —— 法线混合、深度泡沫、折射扭曲、SSS、渐变颜色 | 规划 |
 | [ADR-222](./adr-222-water-depth-fog.md) | 水面深度差雾（Depth-Difference Fog）—— 从相机距离雾迁移至水柱厚度雾 | 规划 |
 | [ADR-209](./adr-209-lunar-celestial-body.md) | 月亮 —— 第二天体的渐进式设计（复用太阳骨架） | 📝 规划 |
