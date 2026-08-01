@@ -391,6 +391,7 @@ function loadSkyCube(path: string, rotationY: number, intensity: number): void {
 
 // ======== Public API ========
 
+/** 释放天空盒并移除相机跟随观察者（幂等）。 */
 export function disposeSky(): void {
     const scene = getScene();
     // 移除相机跟随观察者，避免泄漏

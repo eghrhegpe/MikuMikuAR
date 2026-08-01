@@ -99,6 +99,7 @@ export const errorBuffer = new ErrorRingBuffer(50);
 
 // ======== captureError 归一化 ========
 
+/** 捕获错误并写入环形缓冲（统一错误上报入口）。 */
 export function captureError(
     tag: string,
     message: string,
@@ -226,6 +227,7 @@ export function uninstallLoggingPatch(): void {
 
 // ======== 便捷存取 ========
 
+/** 取缓冲内的全部错误条目。 */
 export function getErrors(): ErrorEntry[] {
     return errorBuffer.toArray();
 }

@@ -608,6 +608,7 @@ events.on('update:installFailed', (ev: unknown) => {
 
 // ======== Bootstrap ========
 // Wires dev-hooks / render-loop / events modules and starts the app.
+/** 应用启动入口：接线 dev-hooks / render-loop / events 并启动渲染循环。 */
 export function bootstrap(): void {
     // Initialize hover hints for static [data-hint] elements
     initHints();

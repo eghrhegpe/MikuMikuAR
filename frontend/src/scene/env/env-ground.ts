@@ -1317,6 +1317,7 @@ export function tickGround(dt: number): void {
 export type { GroundPreset } from './env-ground-presets';
 export { GROUND_PRESETS, buildGroundPresetEnvState } from './env-ground-presets';
 
+/** 释放地面网格、材质与反射资源（幂等）。 */
 export function disposeGround(): void {
     disposeGroundReflection();
     if (_envSys.ground.mesh) {

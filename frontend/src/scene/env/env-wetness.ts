@@ -82,6 +82,7 @@ function _restoreMaterialState(mat: Material): void {
     _originalMaterialState.delete(mat.uniqueId);
 }
 
+/** 对所有已加载模型应用湿身材质效果（幂等）。 */
 export function applyWetnessToAllModels(): void {
     if (_wetnessActive) {
         return;
@@ -102,6 +103,7 @@ export function applyWetnessToAllModels(): void {
     }
 }
 
+/** 移除所有模型的湿身材质效果（幂等）。 */
 export function removeWetnessFromAllModels(): void {
     if (!_wetnessActive) {
         return;

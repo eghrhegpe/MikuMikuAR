@@ -19,6 +19,7 @@ import { registerEnvActions } from '../action-defs/env-actions';
 import { registerLibraryActions } from '../action-defs/library-actions-def';
 import { registerDiagnosticActions } from '../action-defs/diagnostic-actions';
 
+/** 注册全部 AI 动作定义（控制/诊断/设置/库/动作/环境/场景各域）。 */
 export function registerAllActions(): void {
     registerControlActions();
     registerDiagnosticActions();
