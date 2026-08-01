@@ -62,5 +62,6 @@ A：选择包含模型文件夹的父目录即可；模型库会递归扫描子�
 
 - 设置影响所有功能页：配好路径后见 [模型导入](./import-model.md)
 - 想调舞台外观？见 [天空设置](./sky.md)
+- 想让 AI 帮忙排查问题？见 [AI 助手](./ai-assistant.md)
 
 > 进阶（开发者/AI）：设置实现见 [settings 知识卡](../knowledge/settings.md)。
