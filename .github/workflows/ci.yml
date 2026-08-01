@@ -344,23 +344,13 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Build web entry + run @web E2E smoke
-        # CI 下 playwright.config.ts 已跳过 4174 webServer 自动管理，
-        # 此处手动构建并启动 preview server，测试完成后清理。
-        run: |
-          npx vite build --config vite.web.config.ts
-          npx vite preview --config vite.web.config.ts --port 4174 --strictPort &
-          VITE_PID=$!
-          for i in $(seq 1 30); do
-            if curl -s http://127.0.0.1:4174/MikuMikuAR/ >/dev/null; then
-              echo "Web preview server is up"; break
-            fi
-            sleep 2
-          done
-          npx playwright test --grep "@web" --reporter=line
-          TEST_EXIT=$?
-          kill $VITE_PID 2>/dev/null || true
-          exit $TEST_EXIT
+      - name: Run @web E2E smoke
+        # Playwright 的 config.webServer 在 RUN_WEB_E2E=1 时自动管理 4174 preview server，
+        # 含构建 + 启动 + 等待就绪，测试完成后自动清理。
+        # 无需手动启动/停止 server，避免端口冲突。
+        env:
+          RUN_WEB_E2E: '1'
+        run: npx playwright test --grep "@web" --reporter=line
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v5
@@ -400,23 +390,13 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Build web entry + run all @web E2E tests
-        # CI 下 playwright.config.ts 已跳过 4174 webServer 自动管理，
-        # 此处手动构建并启动 preview server，测试完成后清理。
-        run: |
-          npx vite build --config vite.web.config.ts
-          npx vite preview --config vite.web.config.ts --port 4174 --strictPort &
-          VITE_PID=$!
-          for i in $(seq 1 30); do
-            if curl -s http://127.0.0.1:4174/MikuMikuAR/ >/dev/null; then
-              echo "Web preview server is up"; break
-            fi
-            sleep 2
-          done
-          npx playwright test --grep "@web" --reporter=line
-          TEST_EXIT=$?
-          kill $VITE_PID 2>/dev/null || true
-          exit $TEST_EXIT
+      - name: Run all @web E2E tests
+        # Playwright 的 config.webServer 在 RUN_WEB_E2E=1 时自动管理 4174 preview server，
+        # 含构建 + 启动 + 等待就绪，测试完成后自动清理。
+        # 无需手动启动/停止 server，避免端口冲突。
+        env:
+          RUN_WEB_E2E: '1'
+        run: npx playwright test --grep "@web" --reporter=line
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v5

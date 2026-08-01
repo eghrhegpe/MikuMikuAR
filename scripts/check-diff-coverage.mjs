@@ -77,7 +77,45 @@ function getChangedFiles(base, head, uncommitted) {
     return [...out];
 }
 
-/** 仅保留应纳入 diff 门禁的源码：frontend/src 下、非测试、非 index/wailsjs。 */
+/** 解析 --unified=0 diff 输出，提取新增行号。 */
+function addLinesFromDiff(out, diff) {
+    if (!diff) return;
+    const lines = diff.split("\n");
+    let currentLine = 0;
+    for (const line of lines) {
+        const hdr = line.match(/^@@\s+-\d+(?:,\d+)?\s+\+(\d+)(?:,(\d+))?\s+@@/);
+        if (hdr) {
+            currentLine = parseInt(hdr[1], 10);
+            continue;
+        }
+        if (currentLine === 0) continue;
+        if (line.startsWith("+")) {
+            out.add(currentLine);
+            currentLine++;
+        } else if (line.startsWith(" ")) {
+            // 上下文行（未变更），仍计入行号
+            currentLine++;
+        }
+        // '-' 行在新文件中不存在，不递增行号
+    }
+}
+
+/** 获取变更文件的具体行号集合（新文件行号）。 */
+function getChangedLines(file, base, head, uncommitted) {
+    const out = new Set();
+    addLinesFromDiff(out, git(["diff", "--unified=0", `${base}...${head}`, "--", file]));
+    // 兜底：直推 main 时三圆点可能为空
+    if (out.size === 0) {
+        addLinesFromDiff(out, git(["diff", "--unified=0", `${head}~1...${head}`, "--", file]));
+    }
+    if (uncommitted) {
+        addLinesFromDiff(out, git(["diff", "--unified=0", "--", file]));
+        addLinesFromDiff(out, git(["diff", "--cached", "--unified=0", "--", file]));
+    }
+    return out;
+}
+
+/** 仅保留应纳入 diff 门禁的源码：frontend/src 下、非测试、非 index/wailsjs、非 menus（UI builder）。 */
 function isSourceFile(f) {
     return (
         f.endsWith(".ts") &&
@@ -85,7 +123,8 @@ function isSourceFile(f) {
         !f.endsWith(".test.ts") &&
         !f.includes("__tests__/") &&
         !f.endsWith("/index.ts") &&
-        !f.includes("wailsjs/")
+        !f.includes("wailsjs/") &&
+        !f.includes("/menus/") // UI builder 允许无测试（项目约定）
     );
 }
 
@@ -102,14 +141,32 @@ function matchCoverageKey(rel, covKeys) {
     return null;
 }
 
-/** 语句（行）覆盖率百分比。无语句的文件视为 100%（如纯类型文件）。 */
-function statementPct(entry) {
+/** 变更行相关的语句覆盖率百分比。 */
+function statementPctForChangedLines(entry, changedLines) {
     const s = entry?.s || {};
+    const sm = entry?.statementMap || {};
     const ids = Object.keys(s);
     if (ids.length === 0) return 100;
+
+    // 找出落在变更行范围内的 statement ID
+    const relevantIds = ids.filter((id) => {
+        const loc = sm[id];
+        if (!loc) return false;
+        const startLine = loc.start.line;
+        const endLine = loc.end?.line ?? startLine;
+        for (let line = startLine; line <= endLine; line++) {
+            if (changedLines.has(line)) return true;
+        }
+        return false;
+    });
+
+    if (relevantIds.length === 0) return 100; // 变更行上无语句（纯注释/格式变动）
+
     let covered = 0;
-    for (const id of ids) if ((s[id] || 0) > 0) covered++;
-    return (covered / ids.length) * 100;
+    for (const id of relevantIds) {
+        if ((s[id] || 0) > 0) covered++;
+    }
+    return (covered / relevantIds.length) * 100;
 }
 
 function main() {
@@ -142,15 +199,30 @@ function main() {
 
     const rows = [];
     const failures = [];
+    const useFilesMode = Boolean(args.files); // --files 模式无 git 上下文，回退到全文件检查
     for (const f of srcFiles) {
         const key = matchCoverageKey(f, covKeys);
-        const pct = key ? statementPct(cov[key]) : 0;
+        let pct;
+        if (!key) {
+            pct = 0; // 无覆盖率条目 → 视为 0% 未覆盖
+        } else if (useFilesMode) {
+            pct = statementPctForChangedLines(cov[key], new Set(Object.keys(cov[key].statementMap).flatMap(id => {
+                const loc = cov[key].statementMap[id];
+                if (!loc) return [];
+                const lines = [];
+                for (let l = loc.start.line; l <= (loc.end?.line ?? loc.start.line); l++) lines.push(l);
+                return lines;
+            }))); // --files 模式：视所有行均为变更行 = 全文件检查
+        } else {
+            const changedLines = getChangedLines(f, base, head, uncommitted);
+            pct = statementPctForChangedLines(cov[key], changedLines);
+        }
         const missing = !key; // 无覆盖率条目 → 视为 0% 未覆盖
         rows.push({ file: f, pct, missing });
         if (pct < threshold) failures.push({ file: f, pct });
     }
 
-    console.log(`\n[diff-coverage] 变更源码 ${srcFiles.length} 个，阈值 ${threshold}%（行覆盖率）：`);
+    console.log(`\n[diff-coverage] 变更源码 ${srcFiles.length} 个，阈值 ${threshold}%（变更行覆盖率）：`);
     console.log("  " + "文件".padEnd(70) + "覆盖%");
     console.log("  " + "-".repeat(70) + "------");
     for (const r of rows) {

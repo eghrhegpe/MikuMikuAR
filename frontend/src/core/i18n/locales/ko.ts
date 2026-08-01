@@ -334,6 +334,13 @@ export const ko: Record<string, string> = {
     'model-material.unknownMaterial': '알 수 없는 재질',
     'model-material.paramTuneTitle': '매개변수 조정',
     'model-material.resetThis': '이 재질 재설정',
+    'model-material.pbrGroupTitle': 'PBR 재질 매개변수',
+    'model-material.pbrMetallic': '금속도',
+    'model-material.pbrRoughness': '거칠기',
+    'model-material.sssTitle': 'SSS 서브서페이스 산란',
+    'model-material.sssPower': 'SSS 강도',
+    'model-material.sssColor': 'SSS 산란색',
+    'model-material.sssDistance': 'SSS 산란 거리',
 
     // ===== 모델 프리셋 model-preset =====
     'model-preset.formatError': '✗ 프리셋 파일 형식 오류',

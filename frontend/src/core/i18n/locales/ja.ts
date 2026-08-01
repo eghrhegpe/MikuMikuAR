@@ -331,6 +331,13 @@ export const ja: Record<string, string> = {
     'model-material.unknownMaterial': '不明なマテリアル',
     'model-material.paramTuneTitle': 'パラメータ調整',
     'model-material.resetThis': 'このマテリアルをリセット',
+    'model-material.pbrGroupTitle': 'PBR マテリアルパラメータ',
+    'model-material.pbrMetallic': 'メタリック',
+    'model-material.pbrRoughness': '粗さ',
+    'model-material.sssTitle': 'SSS サブサーフェス散乱',
+    'model-material.sssPower': 'SSS 強度',
+    'model-material.sssColor': 'SSS 散乱色',
+    'model-material.sssDistance': 'SSS 散乱距離',
 
     // ===== モデルプリセット model-preset =====
     'model-preset.formatError': '✗ プリセットファイル形式エラー',

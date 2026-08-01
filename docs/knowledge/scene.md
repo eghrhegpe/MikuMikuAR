@@ -24,6 +24,7 @@ symbols:
   - animateCameraVmd
   - applyEnvState
   - applyFrameControl
+  - applyMatSssState
   - applyMatState
   - applySss
   - applyUnlitFallback
@@ -52,6 +53,7 @@ symbols:
   - getMatDetailList
   - getMatParams
   - getMatSssParams
+  - getMatSssState
   - getMatState
   - getScene
   - hasCameraVmd
