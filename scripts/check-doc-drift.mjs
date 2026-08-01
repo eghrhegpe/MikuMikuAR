@@ -308,8 +308,15 @@ function checkKnowledgeMeta() {
     if (tier !== undefined && tier !== '' && !TIER_ENUM.includes(tier)) {
       errors.push(`知识卡 ${cf} 的 tier 非法: ${tier}（应为 ${TIER_ENUM.join('|')} 之一）`);
     }
+    // UI 入口要求（ADR-218）：仅对 source_files 含 menus/ 或 ui/ 的 architecture 卡强制——
+    // 纯逻辑卡（env 系统 / motion 管道 / physics 等）本就无菜单入口，豁免。
     if (tier === 'architecture' && !text.includes(UI_ENTRY_HEADING) && !text.includes(UI_ENTRY_REF)) {
-      warns.push(`architecture 卡 ${cf} 缺少「${UI_ENTRY_HEADING}」小节且未引用 ${UI_ENTRY_REF}（ADR-218）`);
+      const fmBlock = (text.match(/^---\r?\n([\s\S]*?)\r?\n---/) || [])[1] || '';
+      const sources = [...fmBlock.matchAll(/^\s*-\s*(frontend\/\S+)\s*$/gm)].map((m) => m[1]);
+      const hasUiSource = sources.some((s) => /\/menus\/|\/ui\//.test(s));
+      if (hasUiSource) {
+        warns.push(`architecture 卡 ${cf} 缺少「${UI_ENTRY_HEADING}」小节且未引用 ${UI_ENTRY_REF}（ADR-218）`);
+      }
     }
   }
   return { errors, warns };

@@ -79,6 +79,17 @@ use_when:
 - 动作注册表：`../scene/motion/motion-modules/registry.ts`。
 - 渲染：`render-menu.ts`。
 
+## UI 入口
+
+- 入口函数：`buildCameraLevel()`（菜单文件见 [menu-map.md](./menu-map.md) 入口一览）
+- 入口函数：`buildVirtualSkirtLevel()`（菜单文件见 [menu-map.md](./menu-map.md) 入口一览）
+- 入口函数：`buildGazeTrackingLevel()`（菜单文件见 [menu-map.md](./menu-map.md) 入口一览）
+- 入口函数：`buildAdvancedBoneOverrideLevel()`（菜单文件见 [menu-map.md](./menu-map.md) 入口一览）
+- 入口函数：`buildPoseStudioLevel()`（菜单文件见 [menu-map.md](./menu-map.md) 入口一览）
+- 入口函数：`buildProcLibraryLevel()`（菜单文件见 [menu-map.md](./menu-map.md) 入口一览）
+- 入口函数：`buildMotionRootLevel()`（菜单文件见 [menu-map.md](./menu-map.md) 入口一览）
+- 入口函数：`buildRetargetLevel()`（菜单文件见 [menu-map.md](./menu-map.md) 入口一览）
+- 菜单层级 / 静态骨架由 [menu-map.md](./menu-map.md) 机器生成（勿手改）；运行时动态入口以本节为准。
 ## 不变量
 - Schema 驱动 UI：所有控件定义在 `MenuNode[]` 中。
 - 感知层（ADR-071）与程序化动作解耦，独立文件。

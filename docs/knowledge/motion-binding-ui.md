@@ -48,3 +48,8 @@ use_when:
 - 依赖 `motion-popup` 的动作菜单。
 - 依赖 `render-menu` 渲染菜单。
 - 依赖 `load-manager` 获取模型加载状态。
+
+## UI 入口
+
+- 无独立入口函数（菜单基础设施卡）：菜单层级 / 入口一览见 [menu-map.md](./menu-map.md)（机器生成）。
+- 运行时动态生成的菜单项（renderCustom / slideRow 等）由对应源码 UI 卡补充说明。

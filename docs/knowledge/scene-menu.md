@@ -34,3 +34,8 @@ Scene Menu：场景弹窗（核心 + barrel export）。职责：MenuStack 场�
 - 依赖 `scene/scene.ts`（序列化/聚焦/撤销）、`core/wails-bindings`（backend 调用）
 - 子面板：`scene-render-levels.ts`、`scene-*-levels.ts`
 - 错误翻译：`core/i18n/goerr`
+
+## UI 入口
+
+- 无独立入口函数（菜单基础设施卡）：菜单层级 / 入口一览见 [menu-map.md](./menu-map.md)（机器生成）。
+- 运行时动态生成的菜单项（renderCustom / slideRow 等）由对应源码 UI 卡补充说明。

@@ -36,3 +36,9 @@ Env Menu：环境弹窗（核心 + barrel export）。拆分后保留导航/统�
 - 子面板实现：`env-*-levels.ts` / `env-level-helpers.ts`
 - 状态写入：`scene/scene.ts`（`setEnvState`）、`scene/render/lighting.ts`（`setLightState`）
 - 渲染：`render-menu.ts`；纹理绑定：`env-menu-state.ts`
+
+## UI 入口
+
+- 入口函数：`buildEnvLevel()`（菜单文件见 [menu-map.md](./menu-map.md) 入口一览）
+- 入口函数：`buildParticleLevel()`（菜单文件见 [menu-map.md](./menu-map.md) 入口一览）
+- 菜单层级 / 静态骨架由 [menu-map.md](./menu-map.md) 机器生成（勿手改）；运行时动态入口以本节为准。

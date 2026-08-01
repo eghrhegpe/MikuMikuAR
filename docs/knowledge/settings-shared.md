@@ -57,6 +57,10 @@ use_when:
 - 被 settings-about/settings-actions/settings-controls/settings-graphics/settings-media/settings-resources/settings-system 全部引用。
 - UI 状态：`@/core/state.uiState`。
 
+## UI 入口
+
+- 无独立入口函数（菜单基础设施卡）：菜单层级 / 入口一览见 [menu-map.md](./menu-map.md)（机器生成）。
+- 运行时动态生成的菜单项（renderCustom / slideRow 等）由对应源码 UI 卡补充说明。
 ## 不变量
 - 默认值与 `ui-state.ts` 的默认值保持一致。
 - 主题默认值变更时需同步更新 `settings-graphics.ts` 的预设列表。

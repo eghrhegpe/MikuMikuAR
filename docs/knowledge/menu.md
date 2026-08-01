@@ -47,3 +47,8 @@ use_when:
 - 控件函数来自 `core/ui-helpers`（自动注册到当前 SlideMenu）
 - 状态订阅经 `core/reactivity`（`subscribe`）
 - 由 `menu-factory.ts` / `menu-schema.ts` 创建的菜单实例驱动
+
+## UI 入口
+
+- 无独立入口函数（菜单基础设施卡）：菜单层级 / 入口一览见 [menu-map.md](./menu-map.md)（机器生成）。
+- 运行时动态生成的菜单项（renderCustom / slideRow 等）由对应源码 UI 卡补充说明。

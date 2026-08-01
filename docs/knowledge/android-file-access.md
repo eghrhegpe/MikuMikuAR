@@ -78,6 +78,10 @@ ADR-194 落地时，安卓下载/监听目录应直接走系统 `/sdcard/Downloa
 - 能力矩阵 `go-adapter.ts` 是平台能力的唯一真相源；`fsSelectDir` 决定前端是否弹目录选择。
 - 网页 FSA 见 `browser-adapter.ts` + `docs/web-data-origin-isolation.md`，与安卓 shared 模式正交。
 
+## UI 入口
+
+- 无独立入口函数（菜单基础设施卡）：菜单层级 / 入口一览见 [menu-map.md](./menu-map.md)（机器生成）。
+- 运行时动态生成的菜单项（renderCustom / slideRow 等）由对应源码 UI 卡补充说明。
 ## 不变量
 
 - 安卓读文件必须走真实 `/sdcard` 路径，**禁止引入 `content://` 依赖**（后端已 `ErrContentUriNotSupported` 兜底）。

@@ -40,3 +40,8 @@ use_when:
 ## 与其他子系统关系
 - 引用 `menus/menu` 的 `SlideMenu` 类型
 - 被菜单栈导航 / 模型浏览逻辑消费
+
+## UI 入口
+
+- 无独立入口函数（菜单基础设施卡）：菜单层级 / 入口一览见 [menu-map.md](./menu-map.md)（机器生成）。
+- 运行时动态生成的菜单项（renderCustom / slideRow 等）由对应源码 UI 卡补充说明。
