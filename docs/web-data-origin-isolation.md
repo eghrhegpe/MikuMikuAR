@@ -1,7 +1,7 @@
 # 网页端数据存储与 Origin 隔离说明
 
 > 关联：ADR-176 / ADR-180 / ADR-182 / ADR-183
-> 来源：多端成熟度矩阵 `docs/multi-end-maturity-matrix.md`「存储维度弱点②」与 🟡 P3 卡点
+> 来源：多端能力真相源 [`docs/targets.md`](./targets.md) §六「多端成熟度卡点」存储维度弱点②与 🟡 P3 卡点（原 `docs/multi-end-maturity-matrix.md`，2026-07-26 已归档并入）
 > 校准日期：2026-07-26
 
 ## 一句话结论
