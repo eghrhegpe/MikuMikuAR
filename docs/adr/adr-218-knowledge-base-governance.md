@@ -1,6 +1,6 @@
 # ADR-218: 知识库（docs/knowledge）分层治理 — 痛点与方案
 
-> **状态**: 已实施（P1~P5 全部落地，2026-08-01 收尾）
+> **状态**: 已实施（工具治理线闭环：P1~P5 全部落地，2026-08-01）；剩余缺口在内容层 use_when 空桩 / routes 36% 覆盖（独立后续项，非本 ADR 范围）
 > **日期**: 2026-07-31
 > **关联**: ADR-191（神桶去桶化，同一「分层/去重」治理哲学）、docs/knowledge/README.md（知识卡层规范）、scripts/check-doc-drift.mjs（漂移守护）
 > **来源**: 知识卡层已膨胀至 231 张平铺卡片，人读不过来；同时 `category` 字段存在占位符漏网（未被脚本校验），`ui_entry` 登记无规范（仅 env-water.md 自发手写「菜单入口」小节）。
@@ -155,6 +155,16 @@ README 模板规定 `category` 枚举为 `<rendering|env|motion|ui|core|backend|
 - **已知启发式缺陷（人工复核已纠正）**：广度 ≥2 会把被广泛引用的纯工具误提为 architecture——safe-call/observer-handle/i18n-t/goerr/reactivity/platform 已在复核时降为 leaf。
 - **P4 索引重构**：README 索引由 344 行手写平铺改为 tier 分流（arch 平铺 + leaf 折叠计数行），补录 36 张此前缺索引的卡，修复含大写文件名（zh-CN/zh-TW/invertablePointersInput）被大小写正则误丢的问题。
 - **P5 CI 兜底**：`gen-tier --check` 追加进 `package.json` 的 `check:docs`，新增卡忘标 tier 即 CI 变红。
+
+### 收尾：治理工具线闭环，剩余在内容层（2026-08-01 复核）
+
+本 ADR（方案 A 主体 + 痛点 2）已闭环：`tier` 分层、`category` 枚举校验、占位符 `<...>` 扫描均已进 `check:docs` CI 且绿，**无新增 checker 需求**。痛点 3（`ui_entry`）已有 WARN 级守卫（architecture 卡须含 `## UI 入口` 或引 `menu-map.md`），未升级 ERROR、无结构化 `ui_entry:` 字段——属低 ROI 打磨，暂不推进。
+
+**真正剩余缺口在内容层，非工具层**：
+- `use_when` 字段全为空桩（141 张 leaf 卡无检索关键词），AI 检索未命中时缺乏兜底信号；
+- `routes.md` 仅覆盖 83/234 卡（≈36%），大量卡无自然语言入口。
+
+两者均为「写卡」任务（批量补 `use_when`、扩 `routes`），非「写检查器」任务。若要加强 AI 检索兜底，下一步应投**内容填充**，而非新增 checker——避免重复建设已在 CI 中闭环的守护。
 
 ---
 
