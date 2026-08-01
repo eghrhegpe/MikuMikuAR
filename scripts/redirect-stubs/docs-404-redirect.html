@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>页面迁移</title>
+  <script>
+    (function () {
+      var p = window.location.pathname;
+      // 旧文档站深层链接（/MikuMikuAR/guide/...）缺失文件时落此兜底，
+      // 将 /guide/ 段替换为 /docs/ 后跳转。非 /guide/ 的 404 不处理。
+      if (p.indexOf('/MikuMikuAR/guide/') !== -1) {
+        var next = p.replace(/\/MikuMikuAR\/guide\//, '/MikuMikuAR/docs/');
+        window.location.replace(next);
+      }
+    })();
+  </script>
+</head>
+<body>
+  <p>该文档路径已迁移至 <code>/docs/</code>。若未自动跳转，请访问 <a href="/MikuMikuAR/docs/">文档中心</a>。</p>
+</body>
+</html>
