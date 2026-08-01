@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: perception_gaze_wasm
 name: WASM 端视线追踪
 category: motion

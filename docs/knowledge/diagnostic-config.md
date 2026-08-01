@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: diagnostic_config
 name: 诊断助手 → 配置 UI（子模块）
 category: ui

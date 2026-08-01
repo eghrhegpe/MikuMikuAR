@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: render_menu
 name: 菜单渲染引擎
 category: ui

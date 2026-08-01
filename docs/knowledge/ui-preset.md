@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: ui_preset
 name: 预设面板复合组件
 category: core

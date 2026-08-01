@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: planar_reflection
 name: 统一平面反射引擎
 category: env

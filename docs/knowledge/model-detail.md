@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: model_detail
 name: 模型子菜单构建
 category: ui

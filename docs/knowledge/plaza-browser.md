@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: plaza_browser
 name: 模型广场浏览器
 category: ui

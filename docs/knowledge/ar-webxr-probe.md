@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: ar_webxr_probe
 name: WebXR 能力探测
 category: rendering

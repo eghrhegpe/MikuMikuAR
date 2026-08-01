@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: diagnostic_state
 name: 诊断助手 → 单例状态（子模块）
 category: ui

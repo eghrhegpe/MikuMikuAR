@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: transform_gizmo
 name: 3D 拖拽 Gizmo 统一抽象
 category: rendering

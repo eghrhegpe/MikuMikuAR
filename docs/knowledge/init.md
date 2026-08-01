@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: init
 name: 应用启动引导
 category: core

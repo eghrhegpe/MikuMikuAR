@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: menu_factory
 name: 菜单工厂
 category: ui

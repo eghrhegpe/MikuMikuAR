@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: pmx_meta
 name: PMX 元数据提取
 category: core

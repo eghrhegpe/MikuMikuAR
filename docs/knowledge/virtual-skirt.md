@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: virtual_skirt
 name: 虚拟裙骨物理控制器（ADR-084 Phase 2-3）
 category: physics

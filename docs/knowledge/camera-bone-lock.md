@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: camera_bone_lock
 name: 相机骨骼锁定
 category: scene

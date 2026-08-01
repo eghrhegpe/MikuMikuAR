@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: perception_blinking
 name: 眨眼模拟
 category: motion

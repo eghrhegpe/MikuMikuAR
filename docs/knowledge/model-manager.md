@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: model_manager
 name: 模型注册表与生命周期管理
 category: scene

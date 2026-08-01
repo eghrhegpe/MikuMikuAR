@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: physics_bridge
 name: 物理骨骼桥与每帧注册表
 category: physics

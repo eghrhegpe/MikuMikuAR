@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: skirt_analyzer
 name: 裙摆拓扑分析（ADR-084 Phase 1）
 category: physics

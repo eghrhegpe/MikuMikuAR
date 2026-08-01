@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: scene_menu_state
 name: 场景菜单共享状态
 category: ui

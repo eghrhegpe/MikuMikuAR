@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: drop_import
 name: 拖拽导入逻辑层
 category: core

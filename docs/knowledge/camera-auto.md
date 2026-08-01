@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: camera_auto
 name: 节拍驱动自动运镜（beatcut）
 category: scene

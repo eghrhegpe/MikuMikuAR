@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: camera_behaviors
 name: 相机行为循环（freefly/surround/concert）
 category: scene

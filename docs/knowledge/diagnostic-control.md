@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: diagnostic_control
 name: 诊断助手 → tool call 控制（子模块）
 category: ui

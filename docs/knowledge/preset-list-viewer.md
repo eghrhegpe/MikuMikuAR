@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: preset_list_viewer
 name: 预设列表查看器
 category: ui

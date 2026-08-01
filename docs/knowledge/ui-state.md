@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: ui_state
 name: UI 持久化状态
 category: core

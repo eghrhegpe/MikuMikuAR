@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: perception_gaze_js
 name: JS 端视线追踪
 category: motion

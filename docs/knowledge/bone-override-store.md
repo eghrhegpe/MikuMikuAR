@@ -1,4 +1,5 @@
 ---
+tier: architecture
 kind: bone_override_store
 name: 骨骼覆盖存储（多模块仲裁）
 category: motion

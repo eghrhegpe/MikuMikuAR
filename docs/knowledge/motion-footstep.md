@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: motion_footstep
 name: 脚步声控制器
 category: motion

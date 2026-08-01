@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: library_browse
 name: 资源库浏览弹窗
 category: ui

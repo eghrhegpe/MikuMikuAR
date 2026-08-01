@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: settings_resources
 name: 设置 — 资源页面
 category: ui

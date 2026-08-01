@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: transform_pick
 name: 变换目标拾取与元数据
 category: scene

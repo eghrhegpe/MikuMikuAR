@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: diagnostic_actions
 name: 诊断用动作注册
 category: core

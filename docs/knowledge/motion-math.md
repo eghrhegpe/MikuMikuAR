@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: motion_math
 name: 动作数学工具
 category: motion

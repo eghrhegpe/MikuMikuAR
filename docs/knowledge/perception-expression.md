@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: perception_expression
 name: 微表情
 category: motion

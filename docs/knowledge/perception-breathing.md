@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: perception_breathing
 name: 呼吸模拟
 category: motion

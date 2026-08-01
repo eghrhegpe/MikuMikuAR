@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: settings_targets
 name: 设置目标常量
 category: ui

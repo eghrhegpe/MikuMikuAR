@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: outfit_ui
 name: 换装 UI 构建器
 category: ui

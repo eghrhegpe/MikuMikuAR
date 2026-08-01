@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: env_caustics
 name: 共享焦散纹理系统
 category: env

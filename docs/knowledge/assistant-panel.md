@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: assistant_panel
 name: AI 助手独立面板入口
 category: ui

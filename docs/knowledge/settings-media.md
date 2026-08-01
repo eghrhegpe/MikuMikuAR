@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: settings_media
 name: 设置 — 媒体页面
 category: ui

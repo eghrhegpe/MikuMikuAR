@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: scene_bundle
 name: 场景打包/解包
 category: scene

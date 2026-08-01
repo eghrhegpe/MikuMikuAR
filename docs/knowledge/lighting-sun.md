@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: lighting_sun
 name: 太阳圆盘可视化
 category: rendering

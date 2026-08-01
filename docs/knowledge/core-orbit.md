@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: core_orbit
 name: 轨道坐标系转换
 category: core

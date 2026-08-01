@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: lighting_state
 name: 灯光模块状态对象
 category: rendering

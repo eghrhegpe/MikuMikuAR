@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: perception_balance
 name: 重心微动
 category: motion

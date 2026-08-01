@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: settings_actions
 name: 设置动作映射表
 category: ui

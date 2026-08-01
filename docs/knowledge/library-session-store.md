@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: library_session_store
 name: 资源库会话状态单例
 category: ui

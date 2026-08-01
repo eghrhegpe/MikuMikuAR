@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: thumbnail_capture
 name: 缩略图渲染
 category: scene

@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: plaza_sites
 name: 广场站点配置
 category: ui

@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: ai_markdown
 name: 轻量 Markdown→DOM 渲染器
 category: core

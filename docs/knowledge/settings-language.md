@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: settings_language
 name: 语言设置
 category: ui

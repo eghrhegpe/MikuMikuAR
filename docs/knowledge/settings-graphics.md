@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: settings_graphics
 name: 设置 — 画面页面
 category: ui

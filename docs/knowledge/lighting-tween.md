@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: lighting_tween
 name: 灯光预设过渡动画
 category: rendering

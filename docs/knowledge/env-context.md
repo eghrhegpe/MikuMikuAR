@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: env_context
 name: 环境系统上下文
 category: env

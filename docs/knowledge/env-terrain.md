@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: env_terrain
 name: 地形生成器
 category: env

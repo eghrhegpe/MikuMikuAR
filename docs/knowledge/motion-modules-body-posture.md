@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: motion_modules_body_posture
 name: 动作模块 — 身体姿势
 category: motion

@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: plaza_thumbnail
 name: 模型广场 UI 辅助函数
 category: ui

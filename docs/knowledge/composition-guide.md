@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: composition_guide
 name: 构图指南
 category: scene

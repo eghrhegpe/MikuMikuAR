@@ -1,4 +1,5 @@
 ---
+tier: leaf
 kind: env_underwater_fog
 name: 水下视觉系统
 category: env
