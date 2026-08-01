@@ -4,12 +4,14 @@ const mocks = vi.hoisted(() => ({
     attachGizmoForKind: vi.fn(),
     detachGizmo: vi.fn(),
     isDragModeEnabled: vi.fn(),
+    getGizmoTargetId: vi.fn(),
     registerLoadRefreshHook: vi.fn(),
 }));
 
 vi.mock('./transform-adapter', () => ({
     attachGizmoForKind: mocks.attachGizmoForKind,
     detachGizmo: mocks.detachGizmo,
+    getGizmoTargetId: mocks.getGizmoTargetId,
 }));
 
 vi.mock('./transform-mode', () => ({
@@ -28,7 +30,13 @@ import {
     retryPendingAttachment,
 } from './transform-selection';
 
-const { attachGizmoForKind, detachGizmo, isDragModeEnabled, registerLoadRefreshHook } = mocks;
+const {
+    attachGizmoForKind,
+    detachGizmo,
+    isDragModeEnabled,
+    getGizmoTargetId,
+    registerLoadRefreshHook,
+} = mocks;
 
 describe('transform-selection (ADR-171 面板化选中态)', () => {
     beforeEach(() => {
@@ -36,6 +44,7 @@ describe('transform-selection (ADR-171 面板化选中态)', () => {
         attachGizmoForKind.mockClear();
         detachGizmo.mockClear();
         isDragModeEnabled.mockReset();
+        getGizmoTargetId.mockReset();
     });
 
     it('开关关时 setSelected 只记录，不挂 Gizmo', () => {
@@ -115,5 +124,28 @@ describe('transform-selection (ADR-171 面板化选中态)', () => {
         attachGizmoForKind.mockClear();
         retryPendingAttachment();
         expect(attachGizmoForKind).not.toHaveBeenCalled();
+    });
+
+    it('syncDragMode：gizmo 已挂在同一目标时跳过（场景点击同步选中态不重复 attach）', () => {
+        isDragModeEnabled.mockReturnValue(true);
+        getGizmoTargetId.mockReturnValue('l1');
+        setSelectedTransformTarget({ kind: 'light', id: 'l1' });
+        expect(attachGizmoForKind).not.toHaveBeenCalled();
+        expect(getSelectedTransformTarget()).toEqual({ kind: 'light', id: 'l1' });
+    });
+
+    it('retryPendingAttachment：gizmo 已挂在别的目标时不覆盖（放弃重试）', () => {
+        isDragModeEnabled.mockReturnValue(true);
+        attachGizmoForKind.mockReturnValue(false);
+        setSelectedTransformTarget({ kind: 'actor', id: 'a' });
+        // 场景点击把 gizmo 挂到了另一个目标 b
+        getGizmoTargetId.mockReturnValue('b');
+        attachGizmoForKind.mockClear();
+        retryPendingAttachment();
+        expect(attachGizmoForKind).not.toHaveBeenCalled();
+    });
+
+    it('registerLoadRefreshHook 注册了 retryPendingAttachment', () => {
+        expect(registerLoadRefreshHook).toHaveBeenCalledWith(retryPendingAttachment);
     });
 });

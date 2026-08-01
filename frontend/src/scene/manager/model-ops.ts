@@ -26,6 +26,10 @@ import { setBoneOverride } from '../motion/bone-override'; // [doc:adr-150]
 import type { FormationType } from './model-manager';
 import { getFormationLabels } from './model-manager';
 import { registerTransformAdapter } from '../transform/transform-adapter';
+import {
+    clearSelectedTransformTarget,
+    getSelectedTransformTarget,
+} from '../transform/transform-selection';
 import { Vector3, Quaternion } from '@babylonjs/core/Maths/math.vector';
 import type { VPDBoneData, VPDMorphData } from '@/motion-algos/vpd-parser';
 import { t } from '@/core/i18n/t';
@@ -40,6 +44,10 @@ import {
 // ======== Model Lifecycle ========
 
 export function removeModel(id: string): void {
+    // 删除的正是当前选中物时同步清理选中态与 Gizmo，避免残留（交叉审核 P4）
+    if (getSelectedTransformTarget()?.id === id) {
+        clearSelectedTransformTarget();
+    }
     modelManager?.remove(id);
     dom.canvas.setAttribute('aria-label', t('menu.canvasLabel'));
     refreshWaterRenderList();
