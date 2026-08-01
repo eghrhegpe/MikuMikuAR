@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
+import { stateMockSuperset } from './mocks/state-superset';
 
 // ── hoisted mocks ──
 
@@ -39,11 +40,9 @@ vi.mock('../core/icons', () => ({
     },
 }));
 
-vi.mock('../core/state', () => ({
-    envState: mockEnvState,
-    setThumbnailUpdateCallback: vi.fn(),
-    setUIPersistCallback: vi.fn(),
-}));
+vi.mock('../core/state', () =>
+    stateMockSuperset({ envState: mockEnvState })
+);
 
 vi.mock('../scene/env/_bridge/env-bridge', () => ({
     setEnvState: (...args: unknown[]) => mockSetEnvState(...args),

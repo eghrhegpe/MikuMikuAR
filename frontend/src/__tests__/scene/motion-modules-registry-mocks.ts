@@ -6,6 +6,7 @@
 //  - mockModelRegistry / mockActiveMotion / pushHistorySpy 必须是**跨工厂共享的单例**：
 //    state 模块导出的 modelRegistry 与 SUT 操作的、测试写入的是同一个 Map 实例。
 import { vi } from 'vitest';
+import { stateMockSuperset } from '../mocks/state-superset';
 
 // 跨用例 / 跨文件共享的单例状态（注册表 + spy）
 export const shared = {
@@ -26,11 +27,7 @@ export const shared = {
 };
 
 export function mockState(): Record<string, any> {
-    return {
-        modelRegistry: shared.mockModelRegistry,
-        setUIPersistCallback: vi.fn(),
-        setThumbnailUpdateCallback: vi.fn(),
-    };
+    return stateMockSuperset({ modelRegistry: shared.mockModelRegistry });
 }
 
 export function mockBoneOverride(): Record<string, any> {

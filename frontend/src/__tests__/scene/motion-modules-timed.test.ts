@@ -1,6 +1,7 @@
 // [doc:adr-116 P3] 时间驱动模块接线单测 — 验证 riding 的每帧钩子真正写入骨骼覆盖。
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { stateMockSuperset } from '../mocks/state-superset';
 
 const data = vi.hoisted(() => {
     const mockModelRegistry = new Map<string, any>();
@@ -27,11 +28,9 @@ const data = vi.hoisted(() => {
     };
 });
 
-vi.mock('@/core/state', () => ({
-    modelRegistry: data.mockModelRegistry,
-    setUIPersistCallback: vi.fn(),
-    setThumbnailUpdateCallback: vi.fn(),
-}));
+vi.mock('@/core/state', () =>
+    stateMockSuperset({ modelRegistry: data.mockModelRegistry })
+);
 
 vi.mock('@/scene/motion/bone-override', () => ({
     setBoneOverride: data.setBoneOverrideSpy,
