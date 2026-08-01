@@ -31,6 +31,10 @@ command -v npm >/dev/null 2>&1 || {
   }
 }
 
+# ── 结论摘要累积（末尾输出，避免 AI 只读最后几行漏掉中间 WARN/INFO） ──
+SUMMARY_FIXED=""
+note_fixed() { SUMMARY_FIXED="${SUMMARY_FIXED}${SUMMARY_FIXED:+ · }$1"; }
+
 # ── 解析推送范围（从 stdin 读取 pre-push refs，支持多 ref 推送） ──
 # 输入格式：<local-ref> <local-sha> <remote-ref> <remote-sha>
 # 策略：对所有非删除 ref 取变更并集，RANGE 用空格分隔供后续 grep 遍历
@@ -118,6 +122,7 @@ cd "$ROOT" && node scripts/gen-status-index.mjs --reverse --check || {
   cd "$ROOT" && node scripts/gen-status-index.mjs --reverse
   git add docs/status.md 2>/dev/null || true
   git commit --amend --no-edit 2>/dev/null && echo "⚠️  已自动更新 docs/status.md 并 amend 进当前 commit。" || echo "⚠️  已 stage docs/status.md（无 HEAD 可 amend，请手动 commit）。"
+  note_fixed "status.md 已同步"
 }
 
 # ── check:funcmap（可自动修复，amend 进当前 commit） ──
@@ -127,6 +132,7 @@ cd "$ROOT" && node scripts/gen-funcmap.mjs --check || {
   cd "$ROOT" && node scripts/gen-funcmap.mjs
   git add docs/function-map.md 2>/dev/null || true
   git commit --amend --no-edit 2>/dev/null && echo "⚠️  已自动更新 docs/function-map.md 并 amend 进当前 commit。" || echo "⚠️  已 stage docs/function-map.md（无 HEAD 可 amend，请手动 commit）。"
+  note_fixed "function-map.md 已同步"
 }
 
 # ── lint（仅 TS/JS 变更时；不可自动修复） ──
@@ -163,6 +169,7 @@ if [ "$TS_CHANGED" = "true" ] && [ "$NPM_AVAILABLE" = "true" ]; then
     node ../scripts/check-deadcode-baseline.mjs --update
     git add ../docs/.deadcode-baseline.json 2>/dev/null || true
     git commit --amend --no-edit 2>/dev/null && echo "⚠️  deadcode 基线已更新并 amend 进当前 commit。" || echo "⚠️  deadcode 基线已 stage（无 HEAD 可 amend，请手动 commit）。"
+    note_fixed "deadcode 基线已更新"
     echo "⚠️  如有新增死代码，考虑后续清理。"
   }
 elif [ "$TS_CHANGED" = "true" ]; then
@@ -185,6 +192,7 @@ if [ "$DOCS_ONLY" = "false" ]; then
       echo "⚠️  INFO 基线已自动更新，amend 进当前 commit..."
       git add docs/.doc-check-baseline.json 2>/dev/null || true
       git commit --amend --no-edit 2>/dev/null && echo "⚠️  已 amend。" || echo "⚠️  已 stage（无 HEAD 可 amend）。"
+      note_fixed "doc 漂移 INFO 基线已更新"
       # 重新跑确认是否只剩 ERROR
       if ! run_check_docs; then
         echo "❌ 文档漂移 ERROR，需人工修复。用 'node scripts/check-doc-drift.mjs --baseline' 查看详情"
@@ -219,4 +227,23 @@ else
   echo "[pre-push] check:md-links（跳过：python 不可用）"
 fi
 
+# ── 结论摘要（AI 友好：末尾聚合关键结果，避免只读最后几行漏掉中间 WARN/INFO） ──
+echo ""
+echo "════════ [pre-push] 结论摘要 ════════"
+if [ -n "$SUMMARY_FIXED" ]; then
+  echo "🔧 自动修复并 amend: $SUMMARY_FIXED"
+fi
+if [ -f "$ROOT/docs/.doc-check-last.json" ] && command -v node >/dev/null 2>&1; then
+  node -e '
+    const fs = require("fs");
+    const j = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+    const notes = [];
+    if (j.errors && j.errors.length) notes.push(`❌ ERROR 漂移 ${j.errors.length} 条（阻断，见上方详情）`);
+    if (j.reverse && j.reverse.total > 0) notes.push(`⚠️ 知识卡未覆盖源文件 ${j.reverse.total} 个: ${j.reverse.files.join(", ")}`);
+    if (j.coverage && j.coverage.undocumented > 0) notes.push(`ℹ️ 符号 0% 未文档化模块 ${j.coverage.undocumented} 个`);
+    if (j.agentsWarns && j.agentsWarns.length) notes.push(`⚠️ AGENTS 手写事实索引 ${j.agentsWarns.length} 项`);
+    if (notes.length) console.log(notes.join("\n"));
+  ' "$ROOT/docs/.doc-check-last.json" 2>/dev/null || true
+fi
+echo "════════════════════════════════════"
 echo "[pre-push] ✅ 全部通过"
