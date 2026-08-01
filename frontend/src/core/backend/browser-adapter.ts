@@ -660,7 +660,7 @@ export async function ingestModelFiles(
     return files.length;
 }
 
-const TEXTURE_EXTS_RE = /\.(png|jpg|jpeg|bmp|tga|dds|tif|tiff)$/i;
+const TEXTURE_EXTS_RE = /\.(png|jpg|jpeg|bmp|tga|dds|tif|tiff|ktx2?)$/i;
 
 /** 写入 .pmx + 伴生纹理文件到 IndexedDB。
  *  PMX → file:<encStem> + entry:<encStem>（含 dir/file_path，模型库可见）
