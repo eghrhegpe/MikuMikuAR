@@ -293,6 +293,12 @@ function ResolveForcedExtension(buffer, mimeType, forcedExtension, textureName) 
 
 **结论**：`data:` Blob URL 的障碍**已消除**。只要 referenceFiles 里的 ArrayBuffer 内容是 KTX2 字节（无论文件名是 `.png` 还是 `.ktx2`），fork 的 `ResolveForcedExtension` 就会自动检出并注入 `forcedExtension: ".ktx2"`，触发 GPU 直采路径。
 
+**⚠️ KTX 2.0 vs 2.1 魔数差异**（2026-08-01 实测修正）：
+- KTX 2.0 规范：byte 6 = `0x20`（空格）
+- KTX 2.1 规范：byte 6 = `0x30`（ASCII '0'）
+- toktx v4.4.2 输出 **KTX 2.1** 格式（byte 6 = `0x30`）
+- fork 的 `ResolveForcedExtension` 需同时接受两个版本，已添加 `Ktx21Magic` 常量（`0x30`）实现双版本兼容
+
 #### 3.2 三条可行路线（2026-08-01 更新）
 
 | 路线 | 方案 | 优点 | 风险 | 状态 |
@@ -349,8 +355,10 @@ _loadTextureInternalAsync 接收 arrayBufferOrBlob
 
 ```typescript
 // 模式 1：扩展魔数检测（在 mmdAsyncTextureLoader.js 中）
-const Ktx2Magic = new Uint8Array([0xAB, 0x4B, 0x54, 0x58, 0x20, 0x32, 0x20, 0xBB, 0x0D, 0x0A, 0x1A, 0x0A]);
-// 如需支持其他格式（如 BC7 header），添加新 magic 常量并扩展 ResolveForcedExtension
+// KTX 2.0: byte 6 = 0x20（空格），KTX 2.1 (toktx v4.4.2): byte 6 = 0x30（'0'）
+const Ktx2Magic  = new Uint8Array([0xAB, 0x4B, 0x54, 0x58, 0x20, 0x32, 0x20, 0xBB, 0x0D, 0x0A, 0x1A, 0x0A]);
+const Ktx21Magic = new Uint8Array([0xAB, 0x4B, 0x54, 0x58, 0x20, 0x32, 0x30, 0xBB, 0x0D, 0x0A, 0x1A, 0x0A]);
+// ResolveForcedExtension 中：if (MagicMatches(view, Ktx2Magic) || MagicMatches(view, Ktx21Magic)) return ".ktx2";
 
 // 模式 2：Phase 2 异步 PNG 解码（在 _createTexture 中替换同步解码）
 // 将 `new Texture("data:"+name, scene, textureCreationOptions)` 
