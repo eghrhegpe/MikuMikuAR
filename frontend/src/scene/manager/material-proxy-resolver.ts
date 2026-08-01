@@ -6,7 +6,6 @@
 // 注意: PBR 模式下 toonTexLevel / sphereTexLevel 参数静默忽略，UI 需置灰提示
 
 import { MmdStandardMaterialProxy } from 'babylon-mmd/esm/Runtime/mmdStandardMaterialProxy';
-import type { MmdStandardMaterialProxy as T_MmdStandardMaterialProxy } from 'babylon-mmd/esm/Runtime/mmdStandardMaterialProxy';
 
 export type MaterialMode = 'standard' | 'pbr';
 

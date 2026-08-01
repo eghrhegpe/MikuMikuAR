@@ -17,7 +17,6 @@ import {
     GroundMesh,
     Color3,
     Material,
-    StandardMaterial,
     PBRMaterial,
     Texture,
     MeshBuilder,

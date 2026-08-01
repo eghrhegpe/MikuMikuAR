@@ -104,7 +104,6 @@ import { collectAllSchemas, flattenNodes } from '../menus/menu-registry';
 import { ENV_STATE_SCHEMA } from '../core/env-state-schema';
 import { defaultRenderState } from '../scene/render/renderer';
 import { DEFAULT_PERCEPTION_STATE } from '../scene/motion/perception-shared';
-import { uiState } from '../core/state';
 
 // i18n 基准语言包（多语言包校验，确保所有支持的语言都有对应 key）
 import { zhCN } from '../core/i18n/locales/zh-CN';
@@ -174,7 +173,6 @@ const UI_KEYS = new Set([
     'windowWidth',
     'windowHeight',
 ]);
-const I18N_KEYS = new Set(Object.keys(zhCN));
 
 // LightState 字段（从 lighting.ts 类型定义硬编码，字段变化时测试失败暴露漂移）
 const LIGHT_KEYS = new Set([
