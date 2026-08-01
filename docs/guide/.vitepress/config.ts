@@ -3,8 +3,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 // ============================================================
-// MikuMikuAR 文档站（docs/ 全量）—— 部署于 /MikuMikuAR/docs/
-// 主应用 web 入口保持根路径不动；本站产物由 web-pages.yml 拷入 dist-web/docs/。
+// MikuMikuAR 文档站（docs/ 全量）—— 部署于 /MikuMikuAR/（Pages 根）
+// 主应用 web 入口降为 /MikuMikuAR/app/ 子路径；本站产物由 web-pages.yml 拷入 dist-web/（根）。
 // ============================================================
 
 const docsRoot = path.resolve(__dirname, '../..'); // docs/（srcDir 根）
@@ -110,8 +110,8 @@ const releasesItems = mdNames('releases')
   .map((f) => ({ text: f.replace(/\.md$/, ''), link: link('releases/' + f) }));
 
 export default defineConfig({
-  // 子路径部署：与主应用 base=/MikuMikuAR/ 保持一致，仅追加 /docs/
-  base: '/MikuMikuAR/docs/',
+  // 根路径部署：文档站即 Pages 根；主应用降为 /MikuMikuAR/app/ 子路径（ADR-177 路径重分配）
+  base: '/MikuMikuAR/',
   lang: 'zh-CN',
   title: 'MikuMikuAR 文档',
   description: 'MikuMikuAR 用户指南 + 架构文档 + 决策记录 + 知识卡',

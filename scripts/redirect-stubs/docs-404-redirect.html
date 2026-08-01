@@ -6,16 +6,19 @@
   <script>
     (function () {
       var p = window.location.pathname;
-      // 旧文档站深层链接（/MikuMikuAR/guide/...）缺失文件时落此兜底，
-      // 将 /guide/ 段替换为 /docs/ 后跳转。非 /guide/ 的 404 不处理。
-      if (p.indexOf('/MikuMikuAR/guide/') !== -1) {
-        var next = p.replace(/\/MikuMikuAR\/guide\//, '/MikuMikuAR/docs/');
+      // 旧文档站路径 /MikuMikuAR/docs/... 已上提至 Pages 根 /MikuMikuAR/。
+      // 旧 /docs/ 深层链接（README、书签、外链）缺失文件 → 剥离 /docs/ 段后跳回根（文档首页）；
+      // 其余未知 404（含主应用 /app/ 之外的异常路径）兜底回根（文档站）。
+      if (p.indexOf('/MikuMikuAR/docs/') !== -1) {
+        var next = p.replace(/\/MikuMikuAR\/docs\//, '/MikuMikuAR/');
         window.location.replace(next);
+      } else {
+        window.location.replace('/MikuMikuAR/');
       }
     })();
   </script>
 </head>
 <body>
-  <p>该文档路径已迁移至 <code>/docs/</code>。若未自动跳转，请访问 <a href="/MikuMikuAR/docs/">文档中心</a>。</p>
+  <p>文档站已迁移至站点根路径。若未自动跳转，请访问 <a href="/MikuMikuAR/">文档中心</a>。</p>
 </body>
 </html>

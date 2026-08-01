@@ -1,7 +1,7 @@
 # ADR-177 Phase 3: 主应用 Web 入口 → GitHub Pages 自动部署
 #
 # 将主应用 web 入口（index.web.html，完整菜单 + 场景 + 模型加载）构建并部署到 GitHub Pages。
-# 仓库 eghrhegpe/MikuMikuAR → 访问地址 https://eghrhegpe.github.io/MikuMikuAR/
+# 仓库 eghrhegpe/MikuMikuAR → 根路径(文档站) https://eghrhegpe.github.io/MikuMikuAR/ ；主应用 https://eghrhegpe.github.io/MikuMikuAR/app/
 #
 # 触发条件：main 分支 push 且 web 入口相关文件改动时。
 # 部署方式：官方 actions/deploy-pages（artifact 上传，无需 gh-pages 分支）。
@@ -80,30 +80,32 @@ jobs:
         env:
           VITE_MMD_WASM_MT: '1'
 
-      - name: Add index.html entry
-        # GitHub Pages 默认入口是 index.html，复制 index.web.html 以支持根路径访问
-        # （https://eghrhegpe.github.io/MikuMikuAR/ 自动打开）
-        run: cp dist-web/index.web.html dist-web/index.html
+      - name: Add app index.html entry
+        # GitHub Pages 默认入口是 index.html；主应用 web 入口降为 /app/ 子路径
+        # （https://eghrhegpe.github.io/MikuMikuAR/app/ 自动打开）
+        run: |
+          mkdir -p dist-web/app
+          cp dist-web/app/index.web.html dist-web/app/index.html
 
       - name: Build user guide (VitePress)
-        # 文档中心站：docs/guide（VitePress）→ dist-web/docs/ 子路径
-        # 主应用 base=/MikuMikuAR/ 不动，文档站 base=/MikuMikuAR/docs/
+        # 文档中心站：docs/guide（VitePress）→ dist-web/（Pages 根）
+        # 主应用降为 /app/ 子路径，文档站 base=/MikuMikuAR/ 占根
         working-directory: docs/guide
         run: |
           npm ci
           npm run build
 
-      - name: Copy guide into web dist
-        # 产物拷入主应用 dist-web/docs/，一次 artifact 一次部署
-        run: cp -r ../docs/guide/.vitepress/dist dist-web/docs
+      - name: Copy guide into web dist (root)
+        # 产物拷入 dist-web/（根），与 /app/ 子路径共存，一次 artifact 一次部署
+        run: cp -r ../docs/guide/.vitepress/dist dist-web
 
-      - name: Add legacy /guide/ redirect stub
-        # 旧文档站路径 /MikuMikuAR/guide/ 已迁移至 /MikuMikuAR/docs/。
-        # 旧链接（README、书签、外链）落到 dist-web/guide/ → 自动跳转 /docs/；
-        # 深层旧链接（/guide/knowledge/...）缺失文件 → 由 dist-web/404.html 兜底跳转。
+      - name: Add legacy /docs/ redirect stub
+        # 旧文档站路径 /MikuMikuAR/docs/ 已上提至 Pages 根 /MikuMikuAR/。
+        # 旧链接落到 /docs/ 目录 → 自动跳转根；深层旧链接（/docs/...）缺失文件
+        # → 由 dist-web/404.html（同 stub）剥离 /docs/ 段后兜底跳转根。
         run: |
-          mkdir -p dist-web/guide
-          cp ../scripts/redirect-stubs/guide-redirect.html dist-web/guide/index.html
+          mkdir -p dist-web/docs
+          cp ../scripts/redirect-stubs/docs-404-redirect.html dist-web/docs/index.html
           cp ../scripts/redirect-stubs/docs-404-redirect.html dist-web/404.html
 
       - name: Setup Pages
