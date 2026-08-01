@@ -124,3 +124,12 @@ if (finalAlpha < 1) {
 | P3 | ADR-150 替换后 `alphaMul` 按 index 错位 | 替换时清空目标模型 matState override（与现有颜色参数行为一致） |
 | — | MMD runtime 每帧覆写 alpha | 已验证（Fix A 阶段）：babylon-mmd 不逐帧写 `material.alpha` |
 | — | 性能：每次 `setOpacity` 触发全量 `_applyAll` | 模型 mesh 数通常 < 50，开销可忽略 |
+
+## 7. 已知局限性
+
+| # | 局限 | 影响 | 后续方向 |
+|---|------|------|----------|
+| 1 | `finalAlpha >= 1` 时强制 `MATERIAL_OPAQUE`（`material.ts:157-158`） | PMX 材质若故意以 alpha=1 + ALPHABLEND 实现 cutout/alpha-test 效果，会被覆盖为 OPAQUE 导致镂空失效 | 引入 `_origTransparencyMode` 基线或检查 `mat.needAlphaBlending()`；当前无用户报告，不阻塞 |
+| 2 | `_applyCategory` 无 `!applied && alphaCtx` 兜底路径 | 首次 `setMatCatParams` 只更新目标分类 mesh 的 alpha，其余分类 mesh 不被触碰 | 实际无害（未触碰 mesh 保持 PMX 原始 alpha ≡ `o.alpha × 1 × 1`）；若未来 `_applyCategory` 承担更多职责需重新评估 |
+| 3 | `scene-serialize.ts:744` 条件 `opacity < 1 \|\| wireframe` 控制是否调 `_applyAll` | opacity=1 且无 wireframe 时跳过，依赖后续 `applyMatState` 路径补写 alpha | 正确但隐式——`applyMatState` → `setMatCatParams`/`setMatParams` 内部 `_alphaCtxFor(id)` 补写；无 material state 时 alpha 保持 PMX 原值亦正确 |
+| 4 | ADR-149 双基线冲突未解决 | outfit 写颜色绕过 material 系统，`_applyParamsToMaterial` 从 `_origValues` 重算时会覆盖 outfit 色调 | ADR-149 已登记为搁置 P1；本 ADR 不加剧也不修复 |
