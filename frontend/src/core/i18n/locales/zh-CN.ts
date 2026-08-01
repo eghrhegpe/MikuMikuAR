@@ -894,7 +894,7 @@ export const zhCN: Record<string, string> = {
     'library.noRecentHint': '加载模型后会出现在这里',
     'library.title': '模型库',
     'library.noRootDir': '尚未设置模型库目录',
-    'library.noRootDirHint': '请前往 设置 → 系统 中设置',
+    'library.noRootDirHint': '请前往 设置 → 资源 中设置',
     'library.noModels': '该目录暂无资源，可通过导入或拖拽添加',
     'library.browseHint': '浏览和加载 PMX 模型',
     'library.importHint': '从文件选择器导入 PMX/ZIP/VMD 文件',
