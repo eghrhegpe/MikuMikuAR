@@ -6,7 +6,7 @@
 ## 硬约束
 
 > 500 行文件先 grep 定位再读。
-> 按需读取 `docs/knowledge/README.md` 索引 + grep 卡正文定位功能作用，充实上下文。
+> 按需读取 `docs/knowledge/index.md` 枢纽索引（按 category 聚合的卡清单，自动生成）+ grep 卡正文定位功能作用，充实上下文。
 > Grep `> \*\*状态\*\*:.*(规划|实施中|部分实现)` in docs\adr，看是否已有类似实现。
 > 编号只允许给 ADR、novel 写。
 > 信任本机改动，提交代码：git add <通过测试的路径...> && git commit.会有GitHub PR review 审核，别怕错误。
@@ -26,7 +26,7 @@
 | 查模块依赖图 | `npm run dep:graph`（Mermaid 图） / `npm run dep:graph:list`（缩进列表） |
 | 查某模块「现在长啥样、去哪找」的现状快照 | `docs/knowledge/`（先读 `README.md` 索引定位卡片，grep 卡正文锁定符号，再按 `source_files` 跳源码；比直接 grep 全量 .ts 省上下文） |
 | 查/更新函数索引 | `docs/function-map.md`（由 `npm run gen:funcmap` 自动生成，改动后运行 `npm run check:funcmap` 校验） |
-| 校验文档漂移 | `npm run check:docs`（根目录运行，ADR 索引同步 + 架构树完整性 + 知识卡 source_files 有效性） |
+| 校验文档漂移 | `npm run check:docs`（根目录运行，ADR 索引同步 + 架构树完整性 + 知识卡 source_files 有效性）；`git push` 后 pre-push hook 自动落 `docs/.doc-check-next-steps.md`（AI 可读的下一步建议简报，含知识卡缺口/architecture 路由缺口/AGENTS 手写事实 WARN），读它即可拿精准下一步 |
 | 查项目技术 | `docs/architecture.md` |
 | 查函数大全 | `grep docs/function-map.md` |
 | 加 菜单 | `docs/menu-how-to.md` |
@@ -65,8 +65,8 @@
 处理代码任务时，不得把 `docs/knowledge/` 当作源码替代品；按以下顺序检索，避免无目标通读仓库：
 
 1. 先判断用户意图与所属模块；可先查 `docs/knowledge/routes.md`。
-2. 阅读 `docs/knowledge/README.md`，定位相关知识卡，再按卡片的 `source_files` 跳转源码。
-3. 用 `grep docs/adr/` 查找相关决策、状态和历史坑点；ADR 是决策真相源。
+2. 阅读 `docs/knowledge/index.md` 枢纽索引，定位相关知识卡，再按卡片的 `source_files` 跳转源码。
+3. 用 `docs/adr/index.md` 枢纽（按状态分桶）或 `grep docs/adr/` 查找相关决策、状态和历史坑点；ADR 是决策真相源。
 4. **修 bug 或排查问题时**：先查 `docs/buglog/README.md` 了解格式，再用 `ls docs/buglog/` 列出相关 bug，读取对应文件查看状态（🟢已修复/🔴未修复/🟡搁置/⚪已确认不修）。只读状态为 🔴 未修复 或 🟡 搁置 的 bug 内容。
 5. 以当前源码为最终事实来源，核对知识卡中的 API、依赖、不变量和资源生命周期。
 6. 修改后运行最小相关测试；若模块职责、公共 API、状态流、依赖或不变量变化，同步更新知识卡。
