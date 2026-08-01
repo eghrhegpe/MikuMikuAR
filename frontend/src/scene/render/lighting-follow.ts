@@ -43,9 +43,9 @@ export interface PersonalLightSettings {
     coneSoftness: number;
     /** [doc:adr-168] 跟随骨骼名（null = 自动匹配腰骨候选） */
     boneName: string | null;
-    /** [doc:个人灯阴影开关] 是否生成阴影（默认 true，向后兼容既有常开行为） */
+    /** [doc:adr-227] 是否生成阴影（默认 true，向后兼容既有常开行为） */
     shadowEnabled: boolean;
-    /** [doc:个人灯阴影开关] 阴影贴图分辨率 */
+    /** [doc:adr-227] 阴影贴图分辨率 */
     shadowResolution: number;
 }
 
@@ -216,7 +216,7 @@ export function attachPersonalLight(
     _ensurePersonalCone(modelId);
 }
 
-/** [doc:个人灯阴影开关] 个人灯阴影生成器：受 shadowEnabled 控制按需创建/重建，dispose 旧生成器避免泄漏 */
+/** [doc:adr-227] 个人灯阴影生成器：受 shadowEnabled 控制按需创建/重建，dispose 旧生成器避免泄漏 */
 function _ensurePersonalShadow(modelId: string): void {
     const entry = _entries.get(modelId);
     if (!entry) {
