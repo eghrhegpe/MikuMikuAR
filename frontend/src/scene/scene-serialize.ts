@@ -6,6 +6,7 @@
 import { SaveLastScene, LoadLastScene } from '../core/wails-bindings';
 import { t } from '../core/i18n/t';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
+import { PBRMaterial } from '@babylonjs/core/Materials/PBR/pbrMaterial';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 
 import { libraryRoot, envState, EnvState, modelRegistry } from '../core/config';
@@ -82,6 +83,11 @@ import {
     disposeScene,
 } from './scene';
 import { _applyAll, type AlphaCtx, type MaterialCategoryParams } from './manager/material';
+import {
+    getMatSssState,
+    applyMatSssState,
+    type SssParams,
+} from './manager/material-sss';
 
 import { setEnvState } from './env/_bridge/env-bridge';
 import { setEnvSunAngle } from './env/env-time-of-day';
@@ -236,6 +242,8 @@ export interface SceneFile {
         materialCategories?: Record<string, MaterialCategoryParams>;
         materialOverrides?: Record<number, MaterialCategoryParams>;
         materialEnabled?: Record<number, boolean>;
+        /** ADR-188: SSS 次表面散射参数（按分类索引） */
+        materialSssCategories?: Record<string, SssParams>;
         /** [doc:adr-168] 个人灯设置（仅 actor 类型模型；缺省 = 默认值） */
         personalLight?: Partial<import('./render/lighting-follow').PersonalLightSettings>;
         /** [doc:adr-215] 附属到父模型的稳定标识（ADR-193 uuid） */
@@ -445,6 +453,9 @@ function serializeModel(inst: ModelInstance): SceneFile['models'][number] {
                 materialCategories: ms.categories,
                 materialOverrides: ms.overrides,
                 materialEnabled: ms.enabled,
+                ...(Object.keys(ms.sssCategories ?? {}).length > 0
+                    ? { materialSssCategories: ms.sssCategories }
+                    : {}),
             };
         })(),
         // [doc:adr-168] 个人灯设置（仅 actor 且有差异时落盘）
@@ -745,7 +756,7 @@ async function deserializeModels(
             if (inst.opacity < 1.0 || inst.wireframe) {
                 for (const mesh of inst.meshes) {
                     const mat = mesh.material;
-                    if (mat instanceof StandardMaterial) {
+                    if (mat instanceof StandardMaterial || mat instanceof PBRMaterial) {
                         mat.wireframe = inst.wireframe;
                     }
                 }
@@ -860,14 +871,15 @@ async function deserializeModels(
                 logWarn('scene-serialize', `场景恢复: 模型 ${m.name} 动作覆盖模块恢复失败:`, err);
             }
         }
-        // [fix:material-persist] 恢复材质状态（categories + overrides + enabled）
+        // [fix:material-persist] 恢复材质状态（categories + overrides + enabled + SSS）
         // _capture 已在 model-loader.ts 加载时调用，_origValues 就绪，可安全 apply
-        if (m.materialCategories || m.materialOverrides || m.materialEnabled) {
+        if (m.materialCategories || m.materialOverrides || m.materialEnabled || m.materialSssCategories) {
             try {
                 applyMatState(id, {
                     categories: m.materialCategories,
                     overrides: m.materialOverrides,
                     enabled: m.materialEnabled,
+                    sssCategories: m.materialSssCategories,
                 });
             } catch (err) {
                 logWarn('scene-serialize', `场景恢复: 模型 ${m.name} 材质状态恢复失败:`, err);

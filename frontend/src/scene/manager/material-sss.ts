@@ -11,7 +11,7 @@ import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { clamp01 } from '@/core/clamp';
 import { logWarn } from '@/core/logger';
 import { modelRegistry } from '@/core/config';
-import { getMatCatGroups } from '@/scene/scene';
+import { getMatCatGroups } from './material';
 import type { PBRSubSurfaceConfiguration } from '@babylonjs/core/Materials/PBR/pbrSubSurfaceConfiguration';
 
 /** SSS 参数 */
@@ -183,3 +183,47 @@ function applySssToMaterial(mat: Material, params: SssParams): void {
 export function disposeModelSssState(id: string): void {
     _sssState.delete(id);
 }
+
+/**
+ * 序列化指定模型的 SSS 状态为 JSON 兼容结构
+ * 用于场景/预设保存。仅返回非默认值，避免默认值噪声。
+ */
+export function getMatSssState(id: string): {
+    sssCategories?: Record<string, SssParams>;
+} | null {
+    const catMap = _sssState.get(id);
+    if (!catMap) {
+        return null;
+    }
+    const defaultJson = JSON.stringify(DEFAULT_SSS_PARAMS);
+    const sssCategories: Record<string, SssParams> = {};
+    for (const [cat, params] of catMap) {
+        if (JSON.stringify(params) === defaultJson) {
+            continue;
+        }
+        sssCategories[cat] = { ...params };
+    }
+    if (Object.keys(sssCategories).length === 0) {
+        return null;
+    }
+    return { sssCategories };
+}
+
+/**
+ * 反序列化 SSS 状态并应用到模型
+ */
+export function applyMatSssState(
+    id: string,
+    state: { sssCategories?: Record<string, SssParams> }
+): void {
+    if (!state.sssCategories) {
+        return;
+    }
+    for (const [cat, params] of Object.entries(state.sssCategories)) {
+        const catParams = { ...params } as Partial<SssParams> & {
+            sssColor?: SssColorInput;
+        };
+        setMatSssParams(id, cat, catParams);
+    }
+}
+

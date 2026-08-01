@@ -165,6 +165,8 @@ export {
     setMatSssParams,
     applySss,
     disposeModelSssState,
+    getMatSssState,
+    applyMatSssState,
     type SssParams,
 } from './manager/material-sss';
 
