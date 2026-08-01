@@ -104,6 +104,7 @@ const archItems = scanItems('.', ARCH_EXCLUDE).sort((a, b) => {
 
 // ---------- 3. 决策记录（adr/，按编号数字排序） ----------
 const adrItems = mdNames('adr')
+  .filter((f) => f !== 'index.md')
   .map((f) => ({ f, num: Number((f.match(/^adr-(\d+)/) || [])[1] || 0) }))
   .sort((a, b) => a.num - b.num)
   .map(({ f }) => {
@@ -117,9 +118,12 @@ const adrItems = mdNames('adr')
 // 白名单仅决定分组「顺序」，表外/缺失/占位符 category 的卡落入「其他」组并告警，
 // 绝不静默丢卡（旧的白名单投影实现曾吞掉 knowledge/README.md 与 routes.md 两张入口卡）。
 const KNOWLEDGE_ORDER = ['env', 'scene', 'physics', 'rendering', 'motion', 'ui', 'core', 'backend'];
+// 非知识卡目录成员（分区枢纽索引 / 导读 / 路由表），不参与按 category 分组
+const KNOWLEDGE_NON_CARDS = new Set(['index.md', 'README.md', 'routes.md', 'menu-map.md']);
 const UNCATEGORIZED = '其他';
 const knowledgeGroups = new Map();
 for (const f of mdNames('knowledge')) {
+  if (KNOWLEDGE_NON_CARDS.has(f)) continue;
   const raw = fmField(readMd(path.join(docsRoot, 'knowledge', f)), 'category');
   // 模板占位符（<rendering|env|...>）与空值一律视为未分类
   const cat = raw && !raw.startsWith('<') ? raw : UNCATEGORIZED;
@@ -146,9 +150,11 @@ const knowledgeItems = [...knowledgeGroups.entries()]
 
 // ---------- 5. 开发运维（buglog/ 日期倒序 + releases/ 版本倒序） ----------
 const buglogItems = mdNames('buglog')
+  .filter((f) => f !== 'README.md' && f !== 'index.md')
   .sort((a, b) => b.localeCompare(a)) // 日期倒序（文件名以 YYYY-MM-DD 开头）
   .map((f) => ({ text: f.replace(/\.md$/, ''), link: link('buglog/' + f) }));
 const releasesItems = mdNames('releases')
+  .filter((f) => f !== 'index.md')
   .sort((a, b) => b.localeCompare(a))
   .map((f) => ({ text: f.replace(/\.md$/, ''), link: link('releases/' + f) }));
 
@@ -161,8 +167,7 @@ export default defineConfig({
   // 内容源 = docs/ 根（全量文档）；排除内部/未定稿目录
   srcDir: '..',
   srcExclude: [
-    'guide/README.md',
-    'guide/index.md', // 旧首页残留(srcDir 扩展前);文档中心首页由 docs/index.md 承担
+    'guide/README.md', // 编写规范/目录,落在 /guide/README;用户指南枢纽由 guide/index.md 承担
     'guide/img/**',
     'knowledge/.archive/**',
     'audit/**',
@@ -229,18 +234,20 @@ export default defineConfig({
   themeConfig: {
     nav: [
       { text: '首页', link: '/' },
-      { text: '用户指南', link: '/guide/env-water' },
-      { text: '决策记录', link: '/adr/adr-001-project-infrastructure' },
+      { text: '用户指南', link: '/guide/' },
+      { text: '知识卡', link: '/knowledge/' },
+      { text: '决策记录', link: '/adr/' },
+      { text: '开发运维', link: '/buglog/' },
       { text: 'GitHub', link: 'https://github.com/eghrhegpe/MikuMikuAR' },
     ],
     sidebar: [
-      { text: '用户指南', collapsed: true, items: guideItems },
-      { text: '架构与规范', collapsed: true, items: archItems },
-      { text: '决策记录 (ADR)', collapsed: true, items: adrItems },
-      { text: '知识卡', items: knowledgeItems },
+      { text: '用户指南', link: '/guide/', collapsed: true, items: guideItems },
+      { text: '架构与规范', link: '/architecture', collapsed: true, items: archItems },
+      { text: '决策记录 (ADR)', link: '/adr/', collapsed: true, items: adrItems },
+      { text: '知识卡', link: '/knowledge/', items: knowledgeItems },
       { text: '开发运维', items: [
-        { text: 'Bug 日志', collapsed: true, items: buglogItems },
-        { text: '发版记录', collapsed: true, items: releasesItems },
+        { text: 'Bug 日志', link: '/buglog/', collapsed: true, items: buglogItems },
+        { text: '发版记录', link: '/releases/', collapsed: true, items: releasesItems },
       ] },
     ],
     outline: { label: '本页导航', level: [2, 3] },

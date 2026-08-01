@@ -676,7 +676,12 @@ function main() {
   } else {
     console.log('✅ 未检测到 ERROR 级漂移。');
   }
-  console.log('📋 INFO: 符号覆盖率缺口为参考项，不阻断；补登 architecture.md 树 / function-map.md 即可消除。');
+  if (cov.undocumented > 0) {
+    console.log(`📋 INFO: 符号 0% 未文档化模块 ${cov.undocumented} 个为参考项，不阻断；补登 architecture.md 树 / function-map.md 即可消除。`);
+  }
+  if (rev.total > 0) {
+    console.log(`📋 INFO: ${rev.total} 个源文件尚无知识卡覆盖为参考项，不阻断；为其建立 docs/knowledge/ 知识卡并登记 source_files 即可消除。`);
+  }
 
   process.exit(errors.length ? 1 : 0);
 }

@@ -8,7 +8,7 @@ hero:
   actions:
     - theme: brand
       text: 用户指南
-      link: /guide/env-water
+      link: /guide/
     - theme: alt
       text: 架构文档
       link: /architecture
@@ -16,19 +16,19 @@ hero:
 features:
   - title: 用户指南
     details: 按功能讲解入口路径与操作步骤（水面、灯光、动作、环境…），新功能持续建档。
-    link: /guide/env-water
+    link: /guide/
   - title: 架构与规范
     details: architecture / design / terminology / function-map 等开发者文档。
     link: /architecture
   - title: 决策记录 (ADR)
     details: 架构决策日志（ADR-001 起，按编号递增），权威状态见各 ADR 首部状态行。
-    link: /adr/adr-001-project-infrastructure
+    link: /adr/
   - title: 知识卡
     details: 原子化知识卡，按 category 分组，面向 AI 与开发者。
-    link: /knowledge/env
+    link: /knowledge/
   - title: 开发运维
     details: Bug 日志（按日期倒序）+ 发版记录（按版本倒序）。
-    link: /buglog/2026-07-11-seven-rounds-summary
+    link: /buglog/
   - title: 菜单地图
     details: 菜单树 / 入口函数 / 快捷键由源码自动生成（menu-map.md）。
     link: /knowledge/menu-map

@@ -176,6 +176,9 @@ run_check_docs() {
 }
 if [ "$DOCS_ONLY" = "false" ]; then
   echo "[pre-push] check:docs（ERROR 阻断；INFO 基线自动修复）"
+  # AI 可读快照：全量 JSON（含 ERROR/INFO）+ 下一步建议简报（均非阻断）
+  cd "$ROOT" && node scripts/check-doc-drift.mjs --json > docs/.doc-check-last.json 2>/dev/null || true
+  cd "$ROOT" && node scripts/doc-check-next-steps.mjs 2>/dev/null || true
   if ! run_check_docs; then
     # 先尝试自动更新 INFO 基线
     if cd "$ROOT" && node scripts/check-doc-drift.mjs --baseline-update 2>/dev/null; then

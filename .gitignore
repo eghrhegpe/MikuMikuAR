@@ -109,3 +109,7 @@ setting/
 nul
 docs/_writetest.txt
 frontend/report/jscpd-report.json
+
+# 文档漂移检查 · 推送后 AI 快照（非提交物，由 pre-push hook 生成）
+docs/.doc-check-last.json
+docs/.doc-check-next-steps.md

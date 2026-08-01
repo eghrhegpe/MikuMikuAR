@@ -135,7 +135,7 @@ function main() {
   }
   const cards = fs
     .readdirSync(KNOWLEDGE_DIR)
-    .filter((f) => f.endsWith('.md') && f.toLowerCase() !== 'readme.md');
+    .filter((f) => f.endsWith('.md') && f.toLowerCase() !== 'readme.md' && f.toLowerCase() !== 'index.md');
 
   let updated = 0;
   let drift = 0;
