@@ -22,7 +22,7 @@
 | 要做什么 | 去哪里 |
 |----------|--------|
 | 查当前决策 + 坑点| `grep docs/adr/` |
-| 查/更新项目状态 | `docs/status.md`（ADR 索引表由 `npm run gen:status -- --reverse` 自动生成，改状态只需改 ADR 文件首部） |
+| 查/更新项目状态 | ADR 规范索引：`docs/adr/index.md`（分组导航·锚点跳转）；带日期全量附表：`docs/status.md`（由 `npm run gen:status` 生成，改状态改 ADR 首部即可） |
 | 查模块依赖图 | `npm run dep:graph`（Mermaid 图） / `npm run dep:graph:list`（缩进列表） |
 | 查某模块「现在长啥样、去哪找」的现状快照 | `docs/knowledge/`（先读 `README.md` 索引定位卡片，grep 卡正文锁定符号，再按 `source_files` 跳源码；比直接 grep 全量 .ts 省上下文） |
 | 查/更新函数索引 | `docs/function-map.md`（由 `npm run gen:funcmap` 自动生成，改动后运行 `npm run check:funcmap` 校验） |

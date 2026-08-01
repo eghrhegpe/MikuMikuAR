@@ -7,7 +7,7 @@
  * （如 /adr/adr-001-...、/buglog/2026-07-11-...），语义脆弱且随时间漂移。
  *
  * 本脚本为四个规模化目录生成 index.md 分区枢纽：
- *   - docs/adr/index.md       决策记录（按状态分桶 + 全量表）
+ *   - docs/adr/index.md       规范索引（按状态分桶导航）
  *   - docs/knowledge/index.md 知识卡（按 category 聚合，leaf 折叠计数）
  *   - docs/buglog/index.md    Bug 日志（按年月倒序分组）
  *   - docs/releases/index.md  发版记录（版本号语义化倒序）
@@ -173,7 +173,7 @@ function buildAdrIndex() {
   }
   out.push('');
   out.push(
-    '> 全量状态表（含日期）另见 [项目现状 · ADR 索引](../status.md)，由 `scripts/gen-status-index.mjs` 生成。'
+    '> 本文件为 ADR **规范索引**（按状态分组导航，可锚点跳转）。带日期的全量列表见 [项目现状 · ADR 索引](../status.md)（附表，由 `scripts/gen-status-index.mjs` 生成）。'
   );
   out.push('');
 
