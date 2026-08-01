@@ -25,23 +25,59 @@ source_files:
   - frontend/src/core/ui-virtual-grid.ts
 adr: []
 symbols:
-  - slideRow
-  - initControl
-  - addToggleRow
-  - addSliderRow
-  - addModeRow
-  - addDangerRow
-  - addCollapsible
-  - addSectionTitle
-  - addPresetChip
+  - BoneSelectOptions
+  - ControlOptions
+  - FullscreenOverlayHandle
+  - FullscreenOverlayOptions
+  - OverlayState
+  - ResourceItem
+  - ResourcePanelHandle
+  - ResourcePanelOptions
+  - SlideRowExtra
+  - TrailingAction
+  - VirtualGridHandle
+  - VirtualGridOptions
+  - addActionRow
   - addBoneSelectRow
-  - createHeaderToggle
-  - isIkBone
+  - addCardTitle
+  - addClearRow
+  - addCollapsible
+  - addColorSliderRow
+  - addDangerRow
+  - addDisabledRow
+  - addEmptyRow
+  - addFieldRow
+  - addInfoCard
+  - addInfoGrid
+  - addInlineToggleRow
+  - addModeRow
+  - addModeSlider
+  - addPresetChip
+  - addSectionTitle
+  - addSliderRow
+  - addToggleRow
+  - addVector3SliderRow
+  - addWatchDirRow
   - buildBoneGroups
-  - createResourcePanel
-  - createVirtualGrid
-  - openFullscreen
+  - buildPresetChipGroup
+  - cardContainer
   - closeFullscreen
+  - createHeaderToggle
+  - createIconButton
+  - createLeadingBtn
+  - createResourcePanel
+  - createTrailingBtn
+  - createVirtualGrid
+  - getCurrentState
+  - initControl
+  - isIkBone
+  - notifyThumbnailUpdate
+  - openFullscreen
+  - setCurrentState
+  - slideRow
+  - sliderRow
+  - toggleRow
+  - withLoadingIndicator
 invariants:
   - Barrel re-export，调用方无需改 import
   - 控件创建函数返回 DOM 元素，需调用方管理生命周期

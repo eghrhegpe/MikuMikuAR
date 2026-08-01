@@ -11,12 +11,19 @@ adr:
 symbols:
   - AiConfig
   - DEFAULT_AI_CONFIG
-  - loadAiConfig
-  - saveAiConfig
-  - ensureAiConfigLoaded
-  - normalizeEndpoint
-  - validateAiConfig
+  - DEFAULT_RELAY_URL
+  - DEFAULT_TIMEOUT_MS
+  - MAX_TIMEOUT_MS
+  - MIN_TIMEOUT_MS
+  - PROVIDER_PRESETS
+  - ProviderPreset
   - classifyAiError
+  - ensureAiConfigLoaded
+  - loadAiConfig
+  - normalizeEndpoint
+  - normalizeTimeout
+  - saveAiConfig
+  - validateAiConfig
 invariants:
   - 仅服务浏览器适配器；桌面端配置由 Go 侧持有，前端不暴露 key
   - 默认零 key 路径：本地 Ollama（http://localhost:11434/v1/chat/completions，model llama3.2）

@@ -10,10 +10,39 @@ adr:
   - ADR-071
   - ADR-162
 symbols:
+  - BalanceSwayState
+  - DEFAULT_PERCEPTION_STATE
+  - Emotion
+  - GazeCache
+  - GazeConfig
+  - MeshMetadata
+  - MmdModelLike
   - PerceptionContext
+  - PerceptionPerfMonitor
+  - PerceptionPool
+  - PerceptionState
   - PerceptionTier
-  - BONE_GAZE_CANDIDATES
-  - BONE_LOOK_AT_CANDIDATES
+  - _createPerceptionPool
+  - _gazeAlpha
+  - _gazeLog
+  - _incGazeLogFrame
+  - _isWasmRuntime
+  - _m
+  - _propagateChildrenWasm
+  - _q
+  - _qAngleDeg
+  - _resetContextPool
+  - _setContextPool
+  - _v3
+  - _writeMatToBuffer
+  - feetDebug
+  - getEyeGazeMaxPitch
+  - getEyeGazeMaxYaw
+  - getEyeGazeSmooth
+  - getHeadGazeMaxPitch
+  - getHeadGazeMaxYaw
+  - isWasmRuntime
+  - setGazeAngles
 invariants:
   - 被所有 perception-* 子模块引用
 tests: []

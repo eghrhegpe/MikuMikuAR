@@ -8,21 +8,41 @@ scope:
 source_files:
   - frontend/src/scene/env/env.ts
 symbols:
-  - initEnvFacade
+  - _envSys
+  - addGroundRipple
+  - addRipple
   - applyEnvState
-  - applySky
   - applyGround
-  - createWater
-  - disposeWater
+  - applySky
+  - applyWindToParticles
+  - clearGroundRipples
+  - clearRipples
   - createClouds
+  - createParticleEmitter
+  - createWater
   - disposeClouds
+  - disposeEnvUpdateObserver
+  - disposeParticles
+  - disposeWater
+  - ensureEnvUpdateObserver
+  - getGroundHeightAt
+  - getMirrorInfo
+  - getTimeOfDaySpeed
+  - initEnvFacade
+  - isMirrorActive
+  - isTimeOfDayActive
+  - refreshMirrorRenderList
+  - refreshWaterRenderList
+  - registerSceneTickCallback
+  - setMirrorPosition
+  - setMirrorResolution
+  - setMirrorRotationY
+  - setMirrorSize
+  - setTimeOfDaySpeed
   - startTimeOfDay
   - stopTimeOfDay
-  - isTimeOfDayActive
-  - getTimeOfDaySpeed
-  - setTimeOfDaySpeed
-  - addRipple
-  - createParticleEmitter
+  - toggleMirror
+  - updateWaterAnimSpeed
 invariants:
   - 外部禁止直接 import env-impl/env-bridge 内部符号，统一走本门面
   - initEnvFacade 由 scene.ts 调用一次，全部委托给 env-impl

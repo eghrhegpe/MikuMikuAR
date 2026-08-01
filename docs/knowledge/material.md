@@ -7,20 +7,34 @@ scope:
 source_files:
   - frontend/src/scene/manager/material.ts
 symbols:
+  - AlphaCtx
+  - DEFAULT_MAT_PARAMS
+  - MaterialCategory
+  - MaterialCategoryParams
   - MaterialStateManager
+  - _applyAll
   - _capture
-  - isMatEnabled
-  - setMatEnabled
-  - getMatCatParams
-  - setMatCatParams
-  - resetMatCatParams
-  - getMatParams
-  - setMatParams
-  - getMatDetailList
+  - _catOf
+  - _catState
+  - _matEnabled
+  - _matState
   - applyMatState
-  - getMatState
-  - disposeModelMaterialState
   - applyUnlitFallback
+  - disposeModelMaterialState
+  - getMatCatGroups
+  - getMatCatParams
+  - getMatDetailList
+  - getMatParams
+  - getMatState
+  - isMatCategoryAllEnabled
+  - isMatEnabled
+  - resetMatCatParams
+  - resetPerMaterialParams
+  - resetSingleMatParams
+  - setMatCatParams
+  - setMatCategoryEnabled
+  - setMatEnabled
+  - setMatParams
 invariants:
   - 资源卸载必须 disposeModelMaterialState(id) 释放按 id 的材质状态映射，避免模型材质泄漏
   - 写入触发 triggerAutoSave

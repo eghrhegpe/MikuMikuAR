@@ -7,44 +7,45 @@ scope:
 source_files:
   - frontend/src/scene/manager/model-ops.ts
 symbols:
-  - removeModel
-  - removeFocusedModel
-  - focusModel
-  - focusedModel
-  - focusedMmdModel
-  - arrangeModels
-  - setModelFormation
-  - setModelVisibility
-  - setModelOpacity
-  - setModelWireframe
-  - setModelPhysics
-  - setModelScaling
-  - setModelRotation
-  - setModelPosition
-  - resetModelTransform
-  - stopVMD
-  - getModelMorphs
-  - setModelMorphWeight
-  - applyVPDPose
-  - captureInheritedState
+  - ReplaceSnapshot
   - applyInheritedState
+  - applyVPDPose
+  - arrangeModels
+  - captureInheritedState
+  - focusModel
+  - focusedMmdModel
+  - focusedModel
   - getActiveFormation
   - getActiveFormationSpacing
   - getFormationLabels
-  - setModelBoneLinesVis
-  - setModelBoneJointsVis
-  - setModelRotationY
-  - getModelPosition
-  - setModelOrbit
-  - getModelOrbit
-  - setModelPositionMode
-  - getModelPositionMode
-  - getPhysicsCategories
-  - getPhysicsCatState
-  - isPhysicsCategoryEnabled
-  - setPhysicsCategory
   - getModelMorphWeight
+  - getModelMorphs
+  - getModelOrbit
+  - getModelPosition
+  - getModelPositionMode
+  - getPhysicsCatState
+  - getPhysicsCategories
+  - isPhysicsCategoryEnabled
+  - removeFocusedModel
+  - removeModel
   - resetModelMorphs
+  - resetModelTransform
+  - setModelBoneJointsVis
+  - setModelBoneLinesVis
+  - setModelFormation
+  - setModelMorphWeight
+  - setModelOpacity
+  - setModelOrbit
+  - setModelPhysics
+  - setModelPosition
+  - setModelPositionMode
+  - setModelRotation
+  - setModelRotationY
+  - setModelScaling
+  - setModelVisibility
+  - setModelWireframe
+  - setPhysicsCategory
+  - stopVMD
 invariants:
   - removeModel 删除后刷新水面渲染列表；模型清空时复位播放态（setIsPlaying(false) / setAutoLoop(true)）
   - 最后一个模型移除且处于 concert 模式时退回 orbit

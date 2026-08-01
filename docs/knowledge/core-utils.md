@@ -32,29 +32,34 @@ source_files:
 adr:
   - adr-191-god-barrel-debarreling
 symbols:
-  - formatTime
-  - formatError
-  - dist2d
-  - dist3d
-  - degToRad
-  - radToDeg
-  - ensureArray
-  - filterKeys
+  - CATEGORY_DIR
   - Cache
   - allSettledFilter
-  - escapeHtml
-  - jsonStringify
-  - jsonParse
-  - setTriggerAutoSave
-  - triggerAutoSave
-  - cardContainer
-  - withLoadingIndicator
-  - tryCatchStatus
-  - generateUuid
   - canvasToBase64
+  - cardContainer
   - computeLibraryRef
+  - degToRad
+  - dist2d
+  - dist3d
+  - ensureArray
+  - escapeHtml
+  - filterKeys
+  - formatError
+  - formatTime
+  - generateUuid
+  - getBrowseDir
+  - jsonParse
+  - jsonStringify
+  - radToDeg
   - resolveLibraryRef
-  - CATEGORY_DIR
+  - setTriggerAutoSave
+  - thumbDataUrl
+  - toBase64
+  - triggerAutoSave
+  - tryCatchStatus
+  - withLoadingIndicator
+  - withLoadingStatus
+  - withLoadingStatusTargeted
 invariants:
   - 零依赖叶模块只 import 自身或同类叶模块
   - 应用层叶模块（ui-card/ui-loading/status-helpers/auto-save）可依赖 core/dom/i18n 等应用层，但不反向依赖场景/菜单

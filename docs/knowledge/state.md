@@ -18,20 +18,45 @@ adr:
   - ADR-141
   - ADR-137
 symbols:
-  - setMmdRuntime
-  - setModelRegistry
-  - setPropRegistry
-  - setFocusedModelId
-  - getMmdRuntimeType
-  - setMmdRuntimeType
+  - addRecentMotion
+  - allModels
+  - autoLoop
   - createDefaultFeetState
-  - setIsPlaying
-  - setAutoLoop
-  - setSeekDragging
-  - setLibraryRoot
-  - setResourceRoot
+  - displayNamePriority
+  - envState
+  - expandedFolders
+  - focusedModelId
+  - getMmdRuntimeType
+  - getRecentMotions
+  - isPlaying
+  - libraryRoot
+  - librarySortMode
+  - mmdRuntime
+  - modelMetaCache
+  - modelRegistry
+  - overridePaths
+  - recentModels
+  - resourceRoot
+  - seekDragging
   - setAllModels
+  - setAutoLoop
+  - setDisplayNamePriority
+  - setFocusedModelId
+  - setIsPlaying
+  - setLibraryRoot
+  - setLibrarySortMode
+  - setMmdRuntime
+  - setMmdRuntimeType
+  - setModelMetaCache
+  - setModelRegistry
+  - setOverridePaths
+  - setRecentModels
+  - setResourceRoot
+  - setSeekDragging
   - setThumbnailCache
+  - setThumbnailUpdateCallback
+  - thumbnailCache
+  - toggleExpandedFolder
 invariants:
   - 所有 export let 仅供读取，外部模块禁止直接赋值
   - 修改必须走对应 setXxx() 写入点，保证状态变更可追踪（单一写入点原则）

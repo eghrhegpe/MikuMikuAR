@@ -9,23 +9,35 @@ source_files:
 adr: []
 symbols:
   - ResourceViewMode
-  - getResourceViewMode
-  - setResourceViewMode
-  - isModelDirTarget
-  - getPendingMetaGuard
-  - splitSubdirSegments
-  - isLeafFlattenDir
-  - resolveDisplayBrowseDir
-  - computeRestoreSegments
-  - thumbnailKeyForModel
-  - loadThumbnailsStreaming
   - abortThumbnailStreaming
-  - modelToRow
-  - modelToResourceItem
-  - buildResourceItemsForDir
   - buildLevel
+  - buildModelFormationLevel
   - buildModelRootItems
+  - buildResourceItemsForDir
+  - computeRestoreSegments
+  - getPendingMetaGuard
+  - getRelativePathUnderDir
+  - getResourceViewMode
+  - importFile
+  - initLibrary
+  - isLeafFlattenDir
+  - isModelDirTarget
+  - loadThumbnailsStreaming
+  - modelToResourceItem
+  - modelToRow
+  - prepareModelRestore
+  - refreshLibrary
   - refreshModelRoot
+  - reloadConfig
+  - rescanAndSync
+  - resolveDisplayBrowseDir
+  - selectOverridePath
+  - selectResourceRoot
+  - setResourceViewMode
+  - showModelPopup
+  - splitSubdirSegments
+  - switchStorageMode
+  - thumbnailKeyForModel
 invariants:
   - 视图模式在 list/grid 之间切换
   - 资源索引在后台构建，避免阻塞 UI

@@ -11,10 +11,10 @@ adr:
   - ADR-126
   - ADR-145
 symbols:
+  - ModuleDef
+  - ModuleFactory
   - ModuleMeta
   - MotionOverrideModule
-  - ModuleDef
-  - ModuleParam
 invariants:
   - 被所有 motion-module 子模块引用（约 9 次）
 tests: []

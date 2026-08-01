@@ -10,12 +10,15 @@ source_files:
   - frontend/src/scene/motion/wasm-layers-config.ts
 adr: []
 symbols:
+  - DEFAULT_LAYER_BONE_FILTER
+  - WasmLayerConfig
+  - addWasmLayer
   - initWasmLayersBlender
-  - teardownWasmLayersBlender
   - isWasmLayersBlenderActive
   - removeWasmLayer
+  - setupWasmLayersBlender
+  - teardownWasmLayersBlender
   - updateWasmLayerWeight
-  - WasmLayerConfig
 invariants:
   - 混合引擎
 tests: []

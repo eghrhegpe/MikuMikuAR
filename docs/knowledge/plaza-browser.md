@@ -9,20 +9,25 @@ source_files:
 adr:
   - ADR-087
 symbols:
-  - showPlaza
   - buildSiteTabs
-  - renderSiteContent
-  - renderHome
-  - renderEmbed
   - buildToolbar
-  - showActionsMenu
-  - normalizeSite
-  - normalizeCreator
   - ensureSitesLoaded
-  - openSiteByMode
+  - getCustomPresets
+  - loadPlazaCache
+  - mergeSites
+  - normalizeCreator
+  - normalizeSite
   - openExternal
   - openInWindow
-  - mergeSites
+  - openSiteByMode
+  - preserveBuiltinRouting
+  - renderEmbed
+  - renderHome
+  - renderSiteContent
+  - saveCustomPresets
+  - savePlazaCache
+  - showActionsMenu
+  - showPlaza
 invariants:
   - 广场状态集中在 plaza-state.ts，不分散到各子模块
   - showPlaza 为统一打开入口，closePlaza 在 plaza-state.ts 中

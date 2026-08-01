@@ -9,14 +9,15 @@ source_files:
 adr:
   - ADR-055
 symbols:
+  - CameraFacing
+  - captureARScreenshot
+  - getARFacing
+  - isARActive
+  - isARMirrored
+  - setARMirror
   - startARCamera
   - stopARCamera
-  - captureARScreenshot
-  - isARActive
-  - getARFacing
   - switchARCameraFacing
-  - setARMirror
-  - isARMirrored
 invariants:
   - 代数令牌 _arGen 防止幽灵 AR（getUserMedia 后检测代数变化即丢弃流）
   - 防重入 _starting 避免并发双 getUserMedia 泄漏摄像头流

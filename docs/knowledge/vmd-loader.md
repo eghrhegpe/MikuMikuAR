@@ -9,11 +9,10 @@ source_files:
 adr:
   - ADR-051
 symbols:
-  - loadVMDMotion
-  - loadVMDFromPath
   - loadCameraVmdFromPath
+  - loadVMDFromPath
+  - loadVMDMotion
   - loadVPDPose
-  - isValidVmd
 invariants:
   - per-model generation counter 防止异步竞态
   - VMD 签名前缀校验防止损坏文件

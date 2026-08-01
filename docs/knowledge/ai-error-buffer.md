@@ -9,16 +9,19 @@ source_files:
 adr:
   - ADR-196
 symbols:
+  - ErrorEntry
   - ErrorRingBuffer
-  - errorBuffer
+  - GlobalErrorTarget
   - captureError
-  - installLoggingPatch
-  - uninstallLoggingPatch
-  - installGlobalErrorCapture
-  - installErrorCaptureOn
-  - getErrors
   - clearErrors
+  - errorBuffer
+  - getErrors
+  - inferSeverity
+  - installErrorCaptureOn
+  - installGlobalErrorCapture
+  - installLoggingPatch
   - toDiagnosticContext
+  - uninstallLoggingPatch
 invariants:
   - ErrorRingBuffer 容量必须为正整数（构造期校验），默认单例容量 50
   - installLoggingPatch 幂等（_loggingPatched 守卫），patch 后所有 console.error 自动入环，保留原始行为

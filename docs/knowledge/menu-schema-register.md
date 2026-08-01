@@ -9,7 +9,6 @@ source_files:
 adr:
   - ADR-093
 symbols:
-  - registerSchema
 invariants:
   - 纯副作用模块：被 integrity 测试 import 触发，一次性注册所有 schema
   - 自身无导出 API，不可被业务模块直接 import

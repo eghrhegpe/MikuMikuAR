@@ -8,12 +8,14 @@ source_files:
   - frontend/src/core/events.ts
 adr: []
 symbols:
-  - registerEventHandlers
-  - disposeEventHandlers
-  - toggleOverlay
   - buildNavMaps
-  - showUpdateToast
+  - disposeEventHandlers
   - initDropHandler
+  - navActions
+  - navLabels
+  - registerEventHandlers
+  - showUpdateToast
+  - toggleOverlay
 invariants:
   - disposeEventHandlers 释放所有已注册的事件处理器，防止 HMR/重入泄漏
   - toggleOverlay 含过渡动画等待（waitForTransition），避免动画竞态

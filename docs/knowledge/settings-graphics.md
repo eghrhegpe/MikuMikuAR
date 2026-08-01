@@ -9,6 +9,9 @@ source_files:
 adr:
   - ADR-157
 symbols:
+  - buildEffectsSchema
+  - buildFrameQualitySchema
+  - buildPhysicsHudSchema
   - buildSettingsGraphicsLevel
 invariants:
   - 性能预设 Schema 支持自动/质量优先/平衡/性能优先/自定义五档

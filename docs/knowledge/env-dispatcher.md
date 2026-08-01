@@ -9,11 +9,14 @@ source_files:
 adr:
   - ADR-138
 symbols:
-  - registerEnvCallback
   - clearAllEnvCallbacks
-  - dispatchEnvChange
-  - registerSceneTickCallback
+  - clearEnvDtTickCallbacks
   - clearSceneTickCallbacks
+  - dispatchEnvChange
+  - registerEnvCallback
+  - registerEnvDtTickCallback
+  - registerSceneTickCallback
+  - runEnvDtTickCallbacks
   - runSceneTickCallbacks
 invariants:
   - 纯调度、无状态——env-bridge 只 import dispatcher，不 import env-impl/env-water，破除循环依赖

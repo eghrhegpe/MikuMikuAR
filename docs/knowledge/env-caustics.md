@@ -9,10 +9,11 @@ source_files:
 adr:
   - ADR-115
 symbols:
+  - CAUSTIC_WORLD_SCALE
+  - CausticsHostMat
+  - CausticsScrollConfig
   - causticsController
   - isCausticsHost
-  - CausticsScrollConfig
-  - CausticsHostMat
 invariants:
   - 焦散纹理场景内只生成一次（单实例），由 causticsController 集中维护 UV 滚动
   - 消费者（水面 Shader / 地面 emissiveTexture）共享同一张纹理的 uOffset/vOffset，水底光斑与水波光纹严格同步

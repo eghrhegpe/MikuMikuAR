@@ -9,11 +9,12 @@ source_files:
 adr:
   - ADR-191
 symbols:
-  - setOnCloseAllOverlays
-  - closeAllOverlays
-  - getMenuWrapper
-  - disposeMenuWrapper
+  - addOnCloseAllOverlays
   - clearAllMenuWrappers
+  - closeAllOverlays
+  - disposeMenuWrapper
+  - getMenuWrapper
+  - setOnCloseAllOverlays
 invariants:
   - disposeMenuWrapper 必须同时移除 DOM 节点并从 _menuWrapperRegistry 删除，避免泄漏
   - getMenuWrapper 切换时仅显示当前 menuId 的 wrapper，其余 display:none

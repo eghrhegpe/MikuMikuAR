@@ -10,10 +10,9 @@ adr:
   - ADR-162
   - ADR-166
 symbols:
-  - getMediumMaxOthers
-  - setMediumMaxOthers
-  - _getActiveContextsByTier
   - _applyPerceptionForContext
+  - _getActiveContextsByTier
+  - getMediumMaxOthers
 invariants:
   - 感知修正按层级（tier）收集活跃上下文，逐层施加
   - 单模型外最多可见其他实例数由 setMediumMaxOthers 管控

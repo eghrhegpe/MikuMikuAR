@@ -9,14 +9,15 @@ source_files:
 adr:
   - ADR-084
 symbols:
-  - BoneOverrideStore
-  - InMemoryBoneOverrideStore
-  - getBoneOverrideStore
-  - OverrideSlot
-  - BoneOwnership
   - BoneConflict
+  - BoneOverrideStore
+  - BoneOverrideStoreOptions
+  - BoneOwnership
+  - InMemoryBoneOverrideStore
   - ModuleRuntimeState
+  - OverrideSlot
   - ReleaseListener
+  - getBoneOverrideStore
 invariants:
   - 骨骼所有权按模块隔离，claimBones 记录哪个模块占用了哪些骨骼
   - 冲突检测：同一骨骼被两模块同时占用时记录到 conflicts map，不上抛异常

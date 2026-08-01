@@ -11,22 +11,36 @@ source_files:
 adr:
   - ADR-062
 symbols:
-  - createWater
-  - disposeWater
-  - refreshWaterRenderList
-  - updateWaterAnimSpeed
-  - addRipple
-  - clearRipples
+  - WATER_PRESETS
+  - WaterPreset
+  - _applyWaterLOD
   - addGroundRipple
-  - clearGroundRipples
-  - updateUnderwaterTransition
-  - resetUnderwaterState
-  - isUnderwaterActive
-  - selectWaterLOD
-  - getWaterPhase
-  - computeWaveDirs
-  - buildWaterPresetEnvState
+  - addRipple
   - applyWaterPresetToCurrent
+  - buildWaterLevel
+  - buildWaterPresetEnvState
+  - clearGroundRipples
+  - clearRipples
+  - computeWaveDirs
+  - createWater
+  - disposeGroundRipples
+  - disposeWater
+  - getGroundRippleTexture
+  - getWaterPhase
+  - getWaterSchema
+  - hasActiveGroundRipples
+  - hash2
+  - hash2v
+  - isUnderwaterActive
+  - refreshWaterRenderList
+  - resetUnderwaterState
+  - selectWaterLOD
+  - setGroundGeometryProvider
+  - setUnderwaterFog
+  - updateGroundRipples
+  - updateUnderwaterTransition
+  - updateWaterAnimSpeed
+  - valueNoise
 invariants:
   - disposeWater 级联释放水面 RT + 材质 + 镜像相机
   - 涟漪（ripple）独立于水面主体

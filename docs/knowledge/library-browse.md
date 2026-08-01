@@ -8,6 +8,7 @@ source_files:
   - frontend/src/menus/library-browse.ts
 adr: []
 symbols:
+  - makeModelMenu
   - showModelPopup
 invariants:
   - 延迟恢复上次浏览位置（deferRestore 轮询等待 allModels 就绪）

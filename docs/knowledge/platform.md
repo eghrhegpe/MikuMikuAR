@@ -9,12 +9,13 @@ source_files:
 adr:
   - ADR-176
 symbols:
-  - isAndroidPlatform
-  - isWebPlatform
   - awaitWailsBridge
-  - openExternalURL
   - guardExternalAction
+  - isAndroidPlatform
   - isWebEntryMode
+  - isWebPlatform
+  - openExternalLink
+  - openExternalURL
   - readDeclaredAdapter
 invariants:
   - 平台探测函数保持无副作用；启动期桥接选择必须使用 awaitWailsBridge 或 resolveBackend

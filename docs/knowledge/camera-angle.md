@@ -7,10 +7,11 @@ scope:
 source_files:
   - frontend/src/scene/pose/camera-angle.ts
 symbols:
+  - CAMERA_PRESETS
   - CameraAnglePreset
   - applyCameraPreset
-  - presetCameraAlpha
   - getAllPresets
+  - presetCameraAlpha
 invariants:
   - 预设方位角相对模型朝向（FRONT_BASE_RAD = -π/2），再减去模型当前偏航
   - 切换经 setOrbitParams 驱动相机

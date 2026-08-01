@@ -9,6 +9,7 @@ source_files:
 adr:
   - ADR-087
 symbols:
+  - PLAZA_CREATORS
   - PlazaCreator
 invariants:
   - PLAZA_CREATORS 当前为空列表，预留供后续填充

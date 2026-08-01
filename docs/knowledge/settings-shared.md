@@ -9,13 +9,22 @@ source_files:
 adr:
   - ADR-157
 symbols:
+  - FONT_MAP
+  - SETTINGS_FONT_RESTORE
+  - SettingsMenuHandle
+  - THEME_PRESETS
   - applyUIAppearanceDom
   - formatBytes
-  - truncatePath
-  - setTheme
   - generateTextColors
+  - getAutoImportCached
+  - getDownloadWatchEnabledCached
   - preloadAutoImportState
   - preloadDownloadWatchState
+  - setAutoImportCached
+  - setAutoLoadCompanionAudio
+  - setDownloadWatchEnabledCached
+  - setTheme
+  - truncatePath
 invariants:
   - 默认值与 ui-state.ts 的默认值保持一致
   - applyUIAppearanceDom 将外观配置应用到 DOM（CSS 变量）

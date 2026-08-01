@@ -11,14 +11,55 @@ adr:
   - ADR-162
   - ADR-166
 symbols:
-  - PerceptionContext
-  - PerceptionState
+  - __testOnlyGetContext
+  - _clampEyeGazeTarget
+  - _clampHeadGazeTarget
+  - _getGazeResetTick
+  - _isWasmRuntime
+  - _propagateChildrenWasm
+  - _resetGazeState
+  - _writeMatToBuffer
   - activatePerception
+  - applyGazeWasm
   - deactivatePerception
-  - pinPerception
-  - unpinPerception
+  - disableAllPerception
+  - enableAllPerception
+  - getPerceptionPerfManualTier
+  - getPerceptionPerfTier
   - getPerceptionState
+  - getPerceptionStateFor
+  - getPinnedModelIds
+  - isAllPerceptionEnabled
+  - onPerceptionModelRemoved
+  - pinPerception
+  - setAllPerceptionEnabled
+  - setBalanceSwayAmplitude
+  - setBalanceSwayEnabled
+  - setBalanceSwayPeriod
+  - setBlinkAmplitude
+  - setBlinkEnabled
+  - setBlinkFrequency
+  - setBreathAmplitude
+  - setBreathEnabled
+  - setBreathFrequency
+  - setEmotion
+  - setEyeGazeMaxPitch
+  - setEyeGazeMaxYaw
+  - setEyeGazeSmooth
+  - setEyeTrackingEnabled
+  - setGazeConfig
+  - setHeadGazeMaxPitch
+  - setHeadGazeMaxYaw
+  - setHeadTrackingEnabled
+  - setLipSyncEnabled
+  - setLipSyncIntensity
+  - setLipSyncMultiMorphEnabled
+  - setLipSyncSensitivity
+  - setMicroExpressionEnabled
+  - setPerceptionPerfTier
   - setPerceptionState
+  - setPerceptionStateFor
+  - unpinPerception
 invariants:
   - 感知层统一入口（ADR-071）
   - 活跃上下文数据存储在 Map<modelId, Context> + pin API

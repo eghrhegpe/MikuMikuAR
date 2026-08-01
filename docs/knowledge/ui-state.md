@@ -9,11 +9,14 @@ source_files:
 adr:
   - ADR-141
 symbols:
+  - activeTimeOfDayPreset
+  - isAutoLoadCompanionAudioEnabled
+  - popupOpen
+  - setActiveTimeOfDayPreset
   - setPopupOpen
   - setUIPersistCallback
   - setUIState
-  - setActiveTimeOfDayPreset
-  - isAutoLoadCompanionAudioEnabled
+  - uiState
 invariants:
   - setUIState 合并写入并触发持久化；持久化异常不阻塞 UI 更新
   - 持久化回调由 env-bridge 在初始化时注册，避免循环依赖

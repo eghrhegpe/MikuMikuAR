@@ -10,13 +10,15 @@ source_files:
 adr:
   - ADR-177
 symbols:
+  - EventCallback
+  - RuntimeBridge
+  - RuntimeBrowser
+  - RuntimeEvents
+  - Unsubscribe
+  - browser
+  - events
   - getRuntimeBridge
   - initRuntimeBridge
-  - RuntimeBridge
-  - RuntimeEvents
-  - RuntimeBrowser
-  - WebEvents
-  - WailsRuntimeBridge
 invariants:
   - 运行时动态选型：Web 走 WebRuntimeBridge（no-op），Wails/桌面走动态 import '@wailsio/runtime'
   - '@wailsio/runtime 的 value import 只允许出现在本文件，业务侧一律经 getRuntimeBridge() 访问'

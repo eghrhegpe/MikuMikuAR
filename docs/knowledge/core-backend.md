@@ -16,16 +16,49 @@ adr:
   - ADR-176
   - ADR-206
 symbols:
-  - BackendAdapter
-  - IndexedDBStore
-  - BrowserAdapter
-  - GoAdapter
-  - idbStore
-  - goAdapterMock
-  - mem
-  - setStore
+  - BackendCapabilities
+  - BackendService
+  - FsaAuthState
+  - GoApp
+  - NotSupportedError
+  - STORES
+  - Store
+  - WebModelEntry
+  - browserAdapter
+  - clearWebFlag
+  - closeIDB
+  - dismissFsaAuthPrompt
   - eqBytes
+  - getCachedCapabilities
+  - getCapabilities
+  - getFsaAuthState
+  - getFsaDownloadAuthState
+  - getFsaDownloadHandle
+  - goAdapter
+  - goAdapterMock
+  - idbBatchSet
+  - idbDelete
+  - idbGet
+  - idbKeys
+  - idbSet
+  - idbStore
+  - ingestModelBytes
+  - ingestModelFile
+  - ingestModelFiles
+  - isFsaAuthPromptDismissed
+  - makeIdbMock
+  - mem
+  - openDB
+  - reauthorizeFsaDownload
+  - reauthorizeFsaRoot
+  - resetIdb
   - resetMem
+  - resolveBackend
+  - saveModel
+  - selectFsaDownloadDir
+  - setScanProgressCallback
+  - setStore
+  - setWindow
 invariants:
   - 浏览器和桌面后端通过适配器接口统一
   - IndexedDB 操作异步非阻塞

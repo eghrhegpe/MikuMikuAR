@@ -9,24 +9,29 @@ source_files:
 adr:
   - ADR-021
 symbols:
-  - updateProcMotion
-  - setProcMotionState
-  - getProcMotionState
-  - setProcMotionMode
-  - setProcMotionIntensity
-  - setProcMotionSpeed
-  - setProcMotionBoneToggle
-  - setProcMotionVpdApplyEnabled
-  - setBpmQuantizeEnabled
   - activateGazeTracking
-  - setGazeLayerActive
-  - regenerateProcMotion
-  - stopProcMotion
-  - disposeProcMotion
-  - onModelRemoved
-  - isProcVmdActive
-  - getProcBeatDetector
   - createProcBeatDetector
+  - disposeProcMotion
+  - getBpmQuantizeEnabled
+  - getProcBeatDetector
+  - getProcMotionState
+  - isProcVmdActive
+  - onModelRemoved
+  - regenerateProcMotion
+  - setBpmQuantizeEnabled
+  - setGazeLayerActive
+  - setProcMotionBoneToggle
+  - setProcMotionBoneToggles
+  - setProcMotionEyeTrackingEnabled
+  - setProcMotionHeadTrackingEnabled
+  - setProcMotionIntensity
+  - setProcMotionInterpOverride
+  - setProcMotionMode
+  - setProcMotionSpeed
+  - setProcMotionState
+  - setProcMotionVpdApplyEnabled
+  - stopProcMotion
+  - updateProcMotion
 invariants:
   - 内部使用 `ProcMotionController` 类（模块内，不导出）收口状态，替代 8 个模块级 let
   - disposeProcMotion() 一键清零全部状态并销毁单例

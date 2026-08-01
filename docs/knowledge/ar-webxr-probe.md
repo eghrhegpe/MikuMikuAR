@@ -9,10 +9,10 @@ source_files:
 adr:
   - ADR-072
 symbols:
+  - WebXRProbeResult
+  - formatProbeReport
   - probeWebXR
   - probeWebXRFeatures
-  - formatProbeReport
-  - resetProbeCache
 invariants:
   - 探测结果缓存，resetProbeCache 可重置
   - 按平台 + session 支持检查 + 特性探测三级进行

@@ -9,10 +9,10 @@ source_files:
 adr:
   - ADR-135
 symbols:
-  - LibrarySessionStore
-  - LibraryRestoreStatus
-  - LibraryRestoreState
   - LibraryLoadingState
+  - LibraryRestoreState
+  - LibraryRestoreStatus
+  - librarySessionStore
 invariants:
   - 收敛 library-core / library-actions / library-browse 三模块散落的隐式状态，提供唯一权威读写入口
   - 恢复状态机：'idle' → 'polling' → 'ready' / 'timeout'

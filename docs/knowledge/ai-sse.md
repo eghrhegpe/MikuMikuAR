@@ -9,7 +9,6 @@ source_files:
 adr:
   - ADR-196
 symbols:
-  - parseSseStream
 invariants:
   - 纯函数、零依赖，兼容 OpenAI / Ollama / 任意 OpenAI 兼容端点
   - 中止信号（signal.aborted）统一归并为 done，不渲染为 error（FR-10）

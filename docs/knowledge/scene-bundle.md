@@ -11,7 +11,6 @@ adr:
 symbols:
   - exportSceneBundle
   - importSceneBundle
-  - collectSceneAssets
 invariants:
   - collectSceneAssets 收集模型/VMD/相机VMD/道具引用资源的绝对路径并去重
   - 打包时调用 Go 后端 BundleScene/SelectBundleSaveFile；解包调用 ExtractZip/SelectSceneOpenFile/LoadSceneFile

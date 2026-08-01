@@ -19,19 +19,32 @@ source_files:
 adr:
   - ADR-111
 symbols:
-  - PopupLevel
-  - buildLevel
+  - EnvTextureBindingTarget
+  - SCENE_PRESETS
   - buildCloudLevel
+  - buildExperimentalLevel
   - buildFogLevel
   - buildGroundLevel
+  - buildLevel
+  - buildPresetLevel
+  - buildShadowLevel
   - buildSkyLevel
   - buildWaterLevel
   - buildWindLevel
-  - EnvTextureBindingTarget
-  - setEnvTextureBindingTarget
   - clearEnvTextureBindingTarget
+  - getCloudSchema
   - getEnvMenu
-  - reRenderEnvMenu
+  - getEnvTextureBindingTarget
+  - getExperimentalSchema
+  - getFogSchema
+  - getGroundSchema
+  - getShadowSchema
+  - getSkySchema
+  - getWaterSchema
+  - getWindSchema
+  - openTexturePicker
+  - setEnvMenu
+  - setEnvTextureBindingTarget
 invariants:
   - Schema 驱动 UI，数据绑定到 envState
   - 菜单实例注册表在 env-menu.ts 中注册

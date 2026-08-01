@@ -15,14 +15,42 @@ adr:
   - ADR-167
 symbols:
   - BoneOverrideEntry
-  - ParamValue
-  - MotionModuleState
-  - PresetModuleState
-  - MotionPreset
-  - ModelInstance
-  - VmdLayer
+  - BrowseOutcome
+  - CameraBehavior
+  - CameraControl
+  - CameraMode
+  - DisplayNamePriority
   - EnvState
+  - FeetState
+  - LibraryModel
+  - LibrarySortMode
+  - MmdRuntimeBoneExtended
+  - MmdStandardMaterial
+  - ModelInstance
+  - ModelKind
+  - ModelMotionSlots
+  - MotionModuleState
+  - MotionPreset
+  - MotionSlotConfig
+  - MotionSource
+  - OutfitFile
+  - OutfitSlot
+  - OutfitVariant
+  - OverridePaths
+  - ParamValue
+  - PendingVmd
+  - PhysicsCategory
+  - PopupLevel
+  - PopupRow
+  - PresetModuleState
+  - ProcMotionConfig
+  - RecentMotion
+  - RuntimeModel
+  - SceneMotionIntent
+  - ScriptedSubMode
+  - SlotSource
   - UIState
+  - VmdLayer
 invariants:
   - 纯类型定义，零运行时代码
   - 通过 config.ts barrel re-export 提供

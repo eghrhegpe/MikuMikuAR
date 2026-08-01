@@ -10,15 +10,16 @@ adr:
   - ADR-151
   - ADR-152
 symbols:
+  - ReflectionMode
+  - ResolvedReflectionMode
+  - applyReflection
+  - bindProbeToMeshes
+  - disposeReflection
+  - getPlanarQualityOverride
+  - getQualityPreset
+  - onModelMeshesReady
   - resolveReflectionMode
   - setReflectionARSuspended
-  - getQualityPreset
-  - getPlanarQualityOverride
-  - bindProbeToMeshes
-  - onModelMeshesReady
-  - applyReflection
-  - disposeReflection
-  - ReflectionMode
 invariants:
   - 反射模式五态：none / planar / ssr / probe / hybrid
   - 反射探针需与模型加载时序对齐（onModelMeshesReady），避免网格未就绪时绑定失败
