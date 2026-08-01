@@ -117,7 +117,7 @@ export interface GroundMaterialSpec {
 |-------|------|----------|
 | 0 | 落地 `env-ground-spec.ts`（spec/key/diff/apply/create）+ 导出 env-ground 必要内部 helper（仅加 `export`，无逻辑改动） | 无（新模块本回合未被 applyGround 引用） |
 | 1 | `applyGround` 重建路径（平面/无限）改调 `createGroundMeshFromSpec`；terrain 保留 legacy 分支（含 elevationColoring / `_onTerrainReady` 语义） | ✅ 已实现（2026-08-01）：等价替换，tsc 0 错 + 合约测试 23/23 + env-ground.test 19/19 不回归；terrain 因 elevationColoring 行为差未受合约测试覆盖，留待 Phase 2 收敛 |
-| 2 | `applyGround` 原地路径改为调 `applyGroundMaterialSpec` | 等价替换 |
+| 2 | `applyGround` 原地路径（平面/无限）改调 `applyGroundMaterialSpec`；terrain 原地暂留 legacy（`_applyGroundInplaceLegacy`，elevationColoring 行为差未受合约测试覆盖） | ✅ 已实现（2026-08-01）：等价替换，tsc 0 错 + 合约 23/23 + env-ground.test 19/19 不回归 |
 | 3 | 补 contract 测试：断言「重建产物 == 原地产物」（同 state 下 mesh.material 等价），CI 锁死双路径分叉 | 已落地（23 例全绿）；并修复 legacy 程序化 normal 被原地路径清掉的不一致 bug（见下） |
 | 4 | 删除旧双路径 + 手拼 `typeKey`；`applyGround` 退化为 `if (groundSpecNeedsRebuild(prev,next)) createGroundMeshFromSpec else applyGroundMaterialSpec` | 结构性收敛完成 |
 
@@ -193,4 +193,20 @@ export interface GroundMaterialSpec {
 - 合约测试 **23/23 全绿**（legacy 重建 == spec 重建的护栏在 Phase 1 后更强：legacy 重建路径本身即收敛到 spec）
 - 既有 `env-ground.test.ts` **19/19** 不回归
 - 循环依赖安全：`env-ground` ↔ `env-ground-spec` 双向 import 均为函数级延迟调用，无模块顶层执行，ESM/TS 下安全
+
+## Phase 2 执行记录（2026-08-01）
+
+### 范围决策
+- **收敛对象**：`applyGround` 原地区间的**平面 / 无限**材质更新，改为调用 `applyGroundMaterialSpec(mat, state, scene, false)`；terrain 原地暂留 legacy（抽 `_applyGroundInplaceLegacy` 搬运原材质逻辑），因 terrain 程序化分支依赖 `!groundElevationColoringEnabled` 且未受合约测试覆盖（Suite 5 仅测平面 4 例）。
+- **等价性护栏**：Suite 5 已锁「legacy 原地 == spec 原地」（solid/canvas/procedural/texture × flat 共 4 例）；Phase 2 后非 terrain 原地即走 spec，与原已验证的 spec 原地一致，行为不变。
+
+### 改动
+| 文件 | 改动 |
+|------|------|
+| `frontend/src/scene/env/env-ground.ts` | 原地区间材质块（约 L1157–1203）替换为 `if (terrain) _applyGroundInplaceLegacy else applyGroundMaterialSpec(...,false)`；新增模块级 `_applyGroundInplaceLegacy`（纯搬运原材质逻辑：_updateGroundTexture 守卫/alpha/UV/normal/ripple/texture/pbr/edge）；`import` 补 `applyGroundMaterialSpec` |
+
+### 验证
+- `tsc --noEmit` 全项目 **0 错误**
+- 合约测试 **23/23 全绿**
+- 既有 `env-ground.test.ts` **19/19** 不回归
 
