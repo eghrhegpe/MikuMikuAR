@@ -136,8 +136,31 @@ function extractKeyValues(file) {
 }
 
 const zhCNEntries = extractKeyValues(resolve(LOCALES_DIR, `${BASE_LANG}.ts`));
+// 设计如此豁免：值为品牌名 / 技术术语 / 符号占位符模板，无需中文翻译。
+// 新增此类 key 时须同时登记于此，否则 strict 模式会误报。
+const KNOWN_INTENTIONAL = new Set([
+    'lang.en', // 语言自名
+    'lang.ko', // 语言自名（韩文）
+    'model-detail.morphTypeUV', // 技术缩写
+    'motion.retarget.mixamo', // 品牌名
+    'motion.retarget.vrm', // 技术名
+    'motion.poseStudio.tPose', // 姿势名
+    'motion.poseStudio.aPose', // 姿势名
+    'motion.ikTag', // 缩写
+    'scene.loader.actorLoaded', // 符号 + 占位符模板
+    'scene.loader.actorLoadedWithVmd', // 符号 + 占位符模板
+    'scene.vmd.loaded', // 符号 + 占位符模板
+    'settings.error', // 符号 + 占位符模板
+    'settings.toggleState', // 符号 + 占位符模板
+    'ai.config.httpError', // HTTP 错误码模板
+    'ai.provider.ollama', // 品牌名
+    'ai.provider.deepseek', // 品牌名
+    'ai.provider.openai', // 品牌名
+    'ai.provider.openrouter', // 品牌名
+]);
 const untranslated = [];
 for (const [key, value] of zhCNEntries) {
+    if (KNOWN_INTENTIONAL.has(key)) continue;
     // 检测是否包含中文字符（CJK 统一表意文字范围）
     if (!/[\u4e00-\u9fff\u3400-\u4dbf]/.test(value) && value.length > 0) {
         untranslated.push({ key, value });
