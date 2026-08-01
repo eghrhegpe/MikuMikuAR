@@ -33,7 +33,11 @@ command -v npm >/dev/null 2>&1 || {
 
 # ── 结论摘要累积（末尾输出，避免 AI 只读最后几行漏掉中间 WARN/INFO） ──
 SUMMARY_FIXED=""
+SUMMARY_CHECKS=""
 note_fixed() { SUMMARY_FIXED="${SUMMARY_FIXED}${SUMMARY_FIXED:+ · }$1"; }
+# 记录每个检查项的最终状态（✅ 通过 / 🔧 自动修复 / ⏭️ 跳过），末尾摘要统一展示
+note_check() { SUMMARY_CHECKS="${SUMMARY_CHECKS}
+  $1"; }
 
 # ── 解析推送范围（从 stdin 读取 pre-push refs，支持多 ref 推送） ──
 # 输入格式：<local-ref> <local-sha> <remote-ref> <remote-sha>
@@ -113,6 +117,7 @@ if [ "$GO_CHANGED" = "true" ]; then
     echo "     git add frontend/bindings/ && git commit --amend --no-edit"
     exit 1
   fi
+  note_check "✅ check:bindings 同步性"
 fi
 
 # ── check:status（可自动修复，amend 进当前 commit） ──
@@ -124,6 +129,7 @@ cd "$ROOT" && node scripts/gen-status-index.mjs --reverse --check || {
   git commit --amend --no-edit 2>/dev/null && echo "⚠️  已自动更新 docs/status.md 并 amend 进当前 commit。" || echo "⚠️  已 stage docs/status.md（无 HEAD 可 amend，请手动 commit）。"
   note_fixed "status.md 已同步"
 }
+note_check "✅ check:status 索引同步"
 
 # ── check:funcmap（可自动修复，amend 进当前 commit） ──
 echo "[pre-push] check:funcmap"
@@ -134,6 +140,7 @@ cd "$ROOT" && node scripts/gen-funcmap.mjs --check || {
   git commit --amend --no-edit 2>/dev/null && echo "⚠️  已自动更新 docs/function-map.md 并 amend 进当前 commit。" || echo "⚠️  已 stage docs/function-map.md（无 HEAD 可 amend，请手动 commit）。"
   note_fixed "function-map.md 已同步"
 }
+note_check "✅ check:funcmap 已同步"
 
 # ── lint（仅 TS/JS 变更时；不可自动修复） ──
 # 纯 Go / 纯文档变更不触发前端 lint（Go 有 go vet，文档无 lint 必要）
@@ -144,8 +151,10 @@ if [ "$TS_CHANGED" = "true" ] && [ "$NPM_AVAILABLE" = "true" ]; then
     echo "❌ ESLint 检出 error。修复: npm run lint 查看详情"
     exit 1
   }
+  note_check "✅ lint"
 else
   echo "[pre-push] lint（跳过：未涉及 TS/JS 源码 或 npm 不可用）"
+  note_check "⏭️ lint（未涉及 TS 或 npm 不可用）"
 fi
 
 # ── test:coverage（仅 TS/JS 变更时；不可自动修复） ──
@@ -157,8 +166,10 @@ if [ "$TS_CHANGED" = "true" ] && [ "$NPM_AVAILABLE" = "true" ]; then
     echo "❌ 测试失败或覆盖率低于阈值。修复: npm run test:coverage 查看详情"
     exit 1
   }
+  note_check "✅ test:coverage"
 else
   echo "[pre-push] test:coverage（跳过：纯 Go / 纯文档变更 / npm 不可用）"
+  note_check "⏭️ test:coverage（未涉及 TS 或 npm 不可用）"
 fi
 
 # ── P7: deadcode 基线（可自动修复，amend 进当前 commit） ──
@@ -172,8 +183,10 @@ if [ "$TS_CHANGED" = "true" ] && [ "$NPM_AVAILABLE" = "true" ]; then
     note_fixed "deadcode 基线已更新"
     echo "⚠️  如有新增死代码，考虑后续清理。"
   }
+  note_check "✅ deadcode 基线"
 elif [ "$TS_CHANGED" = "true" ]; then
   echo "[pre-push] deadcode（跳过：npm 不可用）"
+  note_check "⏭️ deadcode（npm 不可用）"
 fi
 
 # ── check:docs（ERROR 阻断；INFO 基线自动修复 + amend） ──
@@ -203,8 +216,10 @@ if [ "$DOCS_ONLY" = "false" ]; then
       exit 1
     fi
   fi
+  note_check "✅ check:docs 漂移"
 else
   echo "[pre-push] check:docs（跳过：纯文档变更）"
+  note_check "⏭️ check:docs（纯文档变更）"
 fi
 
 # ── check:md-links（Python 契约测试；不可自动修复） ──
@@ -223,15 +238,23 @@ if [ "$PYTHON_AVAILABLE" = "true" ]; then
     echo "   手动运行: python tests/test_markdown_links.py 查看详情"
     exit 1
   }
+  note_check "✅ check:md-links"
 else
   echo "[pre-push] check:md-links（跳过：python 不可用）"
+  note_check "⏭️ check:md-links（python 不可用）"
 fi
 
 # ── 结论摘要（AI 友好：末尾聚合关键结果，避免只读最后几行漏掉中间 WARN/INFO） ──
 echo ""
 echo "════════ [pre-push] 结论摘要 ════════"
+echo "  检查项:"
+if [ -n "$SUMMARY_CHECKS" ]; then
+  echo "$SUMMARY_CHECKS"
+else
+  echo "    （无检查项记录）"
+fi
 if [ -n "$SUMMARY_FIXED" ]; then
-  echo "🔧 自动修复并 amend: $SUMMARY_FIXED"
+  echo "  🔧 自动修复并 amend: $SUMMARY_FIXED"
 fi
 if [ -f "$ROOT/docs/.doc-check-last.json" ] && command -v node >/dev/null 2>&1; then
   node -e '
