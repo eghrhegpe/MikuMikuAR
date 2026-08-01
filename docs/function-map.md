@@ -8,7 +8,7 @@
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
 | 核心基础设施 | 122 | 716 |
-| 3D 场景 | 107 | 1088 |
+| 3D 场景 | 108 | 1100 |
 | 菜单 & UI | 75 | 380 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 17 | 127 |
@@ -958,6 +958,16 @@
 | `GroundPreset()` | `scene/env/env-ground-presets` | — |
 | `GroundProceduralKind()` | `scene/env/env-ground-presets` | 程序化地面纹理类型 |
 | `buildGroundPresetEnvState()` | `scene/env/env-ground-presets` | 预设 → EnvState 字段映射，供 UI chip handler 调用并持久化。 |
+| `GroundAppearanceSpec()` | `scene/env/env-ground-spec` | 外观性字段：可增量 mutate，不触发重建。 |
+| `GroundGeometryKind()` | `scene/env/env-ground-spec` | — |
+| `GroundMaterialSpec()` | `scene/env/env-ground-spec` | — |
+| `GroundSourceKind()` | `scene/env/env-ground-spec` | — |
+| `GroundStructuralSpec()` | `scene/env/env-ground-spec` | 结构性字段：任一变化都要求重建几何/材质（取代手拼 typeKey 的判别符集合）。 |
+| `applyGroundMaterialSpec()` | `scene/env/env-ground-spec` | 统一「填材质」逻辑。 |
+| `buildGroundMaterialSpec()` | `scene/env/env-ground-spec` | 由 EnvState 派生完整 Spec。新增材质相关字段只需在此赋值，specKey 自动纳入。 |
+| `createGroundMeshFromSpec()` | `scene/env/env-ground-spec` | 创建地面 mesh 并落好材质。当前未被 applyGround 调用（Phase 1 接入口）。 |
+| `groundSpecNeedsRebuild()` | `scene/env/env-ground-spec` | diffSpec 的结构性结论：是否需要重建。 |
+| `specKey()` | `scene/env/env-ground-spec` | 稳定 key：仅序列化结构性字段。新增结构性字段自动纳入，无遗漏风险。 |
 | `GROUND_PRESETS()` | `scene/env/env-ground` | — |
 | `GroundMat()` | `scene/env/env-ground` | — |
 | `INFINITE_GROUND_SIZE()` | `scene/env/env-ground` | — |
@@ -985,6 +995,8 @@
 | `disposeGround()` | `scene/env/env-ground` | — |
 | `generateProceduralGroundTextures()` | `scene/env/env-ground` | — |
 | `getGroundHeightAt()` | `scene/env/env-ground` | — |
+| `setGroundActualSize()` | `scene/env/env-ground` | — |
+| `setGroundMesh()` | `scene/env/env-ground` | ADR-226: 供 env-ground-spec.ts 在建地面后同步模块局部状态（_envSys.ground.mesh / _groundActualSize）。 |
 | `setOnGroundChanged()` | `scene/env/env-ground` | — |
 | `setOnTerrainReady()` | `scene/env/env-ground` | — |
 | `tickGround()` | `scene/env/env-ground` | — |
@@ -2404,5 +2416,5 @@
 
 ---
 
-> 共 327 个文件，2362 个导出符号。
+> 共 328 个文件，2374 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。
