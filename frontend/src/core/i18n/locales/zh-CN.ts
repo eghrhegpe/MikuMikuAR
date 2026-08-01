@@ -1074,6 +1074,17 @@ export const zhCN: Record<string, string> = {
     'model-material.paramTuneTitle': '参数微调',
     'model-material.resetThis': '重置此材质',
 
+    // ADR-188: PBR 专属参数
+    'model-material.pbrGroupTitle': 'PBR 材质参数',
+    'model-material.pbrMetallic': '金属度 (Metallic)',
+    'model-material.pbrRoughness': '粗糙度 (Roughness)',
+
+    // ADR-188: SSS 次表面散射
+    'model-material.sssTitle': 'SSS 次表面散射',
+    'model-material.sssPower': 'SSS 强度',
+    'model-material.sssColor': 'SSS 散射色',
+    'model-material.sssDistance': 'SSS 散射距离',
+
     // model-preset — 模型预设 UI
     'model-preset.formatError': '✗ 预设文件格式错误',
     'model-preset.unsupportedVersion': '✗ 不支持的预设版本',
