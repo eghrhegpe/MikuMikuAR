@@ -69,6 +69,10 @@ use_when:
 - 参数来源：`envState.water`。
 - 反射：可能使用 `env-reflection.ts` 的反射技术。
 
+## UI 入口
+
+- 入口函数：`buildWaterLevel()`（菜单文件见 [menu-map.md](./menu-map.md) 入口一览）
+- 菜单层级 / 静态骨架由 [menu-map.md](./menu-map.md) 机器生成（勿手改）；运行时动态入口以本节为准。
 ## 不变量
 - 水面反射 RT（RenderTexture）在 `disposeWater` 中释放。
 - 水面对象在场景 dispose 时级联释放。

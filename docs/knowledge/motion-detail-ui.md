@@ -41,3 +41,8 @@ use_when:
 - 依赖 `motion-intent` 获取场景动作列表。
 - 依赖 `render-menu` 渲染菜单 Schema。
 - 依赖 `motion-popup` 获取动作菜单引用。
+
+## UI 入口
+
+- 入口函数：`buildPlaybackSpeedLevel()`（菜单文件见 [menu-map.md](./menu-map.md) 入口一览）
+- 菜单层级 / 静态骨架由 [menu-map.md](./menu-map.md) 机器生成（勿手改）；运行时动态入口以本节为准。

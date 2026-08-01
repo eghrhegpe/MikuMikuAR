@@ -53,3 +53,8 @@ Menu Declarative Schema（ADR-093）：单一数据源 + 单渲染器，消除�
 - 被 `env-menu.ts` / `scene-menu.ts` / `settings.ts` 等消费的菜单声明
 - 状态源来自 `core/config`（`envState`/`uiState`）、`scene/render/lighting`、`scene/motion/perception`、`motion-modules/registry`
 - 渲染经 `render-menu.ts`
+
+## UI 入口
+
+- 无独立入口函数（菜单基础设施卡）：菜单层级 / 入口一览见 [menu-map.md](./menu-map.md)（机器生成）。
+- 运行时动态生成的菜单项（renderCustom / slideRow 等）由对应源码 UI 卡补充说明。

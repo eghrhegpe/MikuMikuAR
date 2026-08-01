@@ -95,3 +95,8 @@ use_when:
 - 路由归属：**场景菜单**（`scene-menu.ts`），target = `scene:ground`（注意文件名前缀 `env-` 与路由域 `scene:` 名实错位，历史遗留）。
 - schema 节点 id 以 `env:ground:*` 为前缀（如 `env:ground:presets`/`env:ground:texture`/`env:ground:overlay`）。
 - 添加/修改地面菜单行的规范流程见 [menu-how-to.md](../menu-how-to.md)。
+
+## UI 入口
+
+- 入口函数：`buildGroundLevel()`（菜单文件见 [menu-map.md](./menu-map.md) 入口一览）
+- 菜单层级 / 静态骨架由 [menu-map.md](./menu-map.md) 机器生成（勿手改）；运行时动态入口以本节为准。

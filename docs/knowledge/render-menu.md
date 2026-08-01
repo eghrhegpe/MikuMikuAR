@@ -40,6 +40,10 @@ use_when:
 - 数据绑定：`envState` / `uiState` / `sceneState`。
 - Schema 类型：`menu-schema.ts`。
 
+## UI 入口
+
+- 无独立入口函数（菜单基础设施卡）：菜单层级 / 入口一览见 [menu-map.md](./menu-map.md)（机器生成）。
+- 运行时动态生成的菜单项（renderCustom / slideRow 等）由对应源码 UI 卡补充说明。
 ## 不变量
 - Schema 驱动渲染：所有 UI 由 `MenuNode[]` 定义，不硬编码 DOM。
 - `bind` 属性实现双向数据绑定，数据变化自动更新 UI，UI 变化自动更新数据。

@@ -44,6 +44,10 @@ use_when:
 - 资源库核心：`library-core.ts`。
 - 配置：`@/core/config`。
 
+## UI 入口
+
+- 无独立入口函数（菜单基础设施卡）：菜单层级 / 入口一览见 [menu-map.md](./menu-map.md)（机器生成）。
+- 运行时动态生成的菜单项（renderCustom / slideRow 等）由对应源码 UI 卡补充说明。
 ## 不变量
 - 初始化在应用启动时执行一次。
 - 初始化失败时降级为最小可用状态。
