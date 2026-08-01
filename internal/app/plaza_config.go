@@ -38,6 +38,16 @@ func (a *App) GetCachedPlazaConfig() (creators string, sites string) {
 	return string(cr), string(st)
 }
 
+// SavePlazaConfig persists the current plaza config (creators.json + workshop_sites.json)
+// into the user cache directory (plaza-cache/), so the desktop app no longer depends on
+// CWD-relative files in the repo root.
+func (a *App) SavePlazaConfig(creators string, sites string) error {
+	if err := writePlazaCache("creators.json", []byte(creators)); err != nil {
+		return err
+	}
+	return writePlazaCache("workshop_sites.json", []byte(sites))
+}
+
 // ── internal ──
 
 const (

@@ -14,7 +14,7 @@ export interface PlazaSite {
 
 export const PLAZA_SITES: PlazaSite[] = [
     {
-        id: 'plaza:mzhouse',
+        id: 'mzhouse',
         name: '模之屋',
         url: 'https://www.aplaybox.com/',
         mode: 'window',
@@ -33,7 +33,7 @@ export const PLAZA_SITES: PlazaSite[] = [
         ],
     },
     {
-        id: 'plaza:bowlroll',
+        id: 'bowlroll',
         name: 'Bowlroll',
         url: 'https://bowlroll.net/',
         mode: 'window',
@@ -50,7 +50,7 @@ export const PLAZA_SITES: PlazaSite[] = [
         ],
     },
     {
-        id: 'plaza:booth',
+        id: 'booth',
         name: 'BOOTH',
         url: 'https://booth.pm/zh-cn/browse/3D%20Models',
         mode: 'window',

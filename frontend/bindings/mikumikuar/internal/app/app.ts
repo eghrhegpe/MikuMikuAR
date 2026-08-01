@@ -786,6 +786,15 @@ export function SaveMotionPresetToLibAuto(jsonStr: string): $CancellablePromise<
 }
 
 /**
+ * SavePlazaConfig persists the current plaza config (creators.json + workshop_sites.json)
+ * into the user cache directory (plaza-cache/), so the desktop app no longer depends on
+ * CWD-relative files in the repo root.
+ */
+export function SavePlazaConfig(creators: string, sites: string): $CancellablePromise<void> {
+    return $Call.ByID(1279246186, creators, sites);
+}
+
+/**
  * SaveRenderPreset saves or updates a named render preset.
  * params is a JSON string of the RenderState fields.
  */

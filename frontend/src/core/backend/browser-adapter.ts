@@ -2290,10 +2290,28 @@ export const browserAdapter: BackendService = {
         ]);
         return [creators, sites];
     },
-    // [doc:adr-177] 网页端无 Go 风格 plaza-cache/ 目录；返回空串让 loadCachedConfig 跳过，
-    // 由 ensureSitesLoaded 走 plaza_cache.json（savePlazaCache 写出）或硬编码兜底。
+    // [doc:adr-177] 网页端无 Go 风格 plaza-cache/ 目录；读 IndexedDB 的 plaza_cache.json 作为持久化缓存。
+    // 返回顺序对齐 Go 端 GetCachedPlazaConfig：(creators, sites)。
     async GetCachedPlazaConfig(): Promise<[string, string]> {
-        return ['', ''];
+        try {
+            const raw = await this.ReadTextFile('plaza_cache.json');
+            if (!raw) {
+                return ['', ''];
+            }
+            const parsed = JSON.parse(raw) as { sites?: unknown[]; creators?: unknown[] };
+            const sites = Array.isArray(parsed.sites) ? parsed.sites : [];
+            const creators = Array.isArray(parsed.creators) ? parsed.creators : [];
+            return [JSON.stringify(creators), JSON.stringify(sites)];
+        } catch {
+            return ['', ''];
+        }
+    },
+    async SavePlazaConfig(creators: string, sites: string): Promise<void> {
+        const data = {
+            sites: JSON.parse(sites || '[]'),
+            creators: JSON.parse(creators || '[]'),
+        };
+        await this.WriteTextFile('plaza_cache.json', JSON.stringify(data, null, 2));
     },
     async LaunchSoftware(_path: string, _args: string): Promise<void> {
         throw new NotSupportedError('LaunchSoftware');
