@@ -32,8 +32,12 @@ def _exists(path: Path) -> bool:
     return _exists_cache[p]
 
 
-def strip_code(text: str) -> str:
-    """用占位符替换代码块、行内代码和 HTML 标签，防止误匹配。"""
+def strip_code(text: str) -> tuple[str, list[str]]:
+    """用占位符替换代码块、行内代码和 HTML 标签，防止误匹配。
+
+    返回 (处理后的文本, 占位符列表)。占位符形如 `\x00CODE{n}\x00`；
+    调用方提取链接后需用 restore_ph 还原，避免 null byte 残留进路径解析。
+    """
     placeholders: list[str] = []
     def _ph(m):
         placeholders.append(m.group(0))
@@ -43,7 +47,12 @@ def strip_code(text: str) -> str:
     text = re.sub(r'(?s)~~~.*?~~~', _ph, text)
     # 剥离 HTML 标签（<tag>...</tag> 或 <tag/>），避免 </span> 被误判为路径
     text = re.sub(r'</?[a-zA-Z][^>]*>', _ph, text)
-    return text
+    return text, placeholders
+
+
+def restore_ph(url: str, placeholders: list[str]) -> str:
+    """把链接 URL 中的 `\x00CODE{n}\x00` 占位符还原为原始代码段。"""
+    return re.sub(r"\x00CODE(\d+)\x00", lambda m: placeholders[int(m.group(1))], url)
 
 
 def looks_like_path(s: str) -> bool:
@@ -149,7 +158,7 @@ def main():
     broken: list[str] = []
 
     for fp, raw in contents:
-        cleaned = strip_code(raw)
+        cleaned, placeholders = strip_code(raw)
         links = extract_links(cleaned)
 
         for snippet, label, url in links:
@@ -167,6 +176,10 @@ def main():
             if not path_part:
                 skip_anchor += 1
                 continue
+
+            # 还原 strip_code 占位符（文件名/路径中可能内嵌反引号或 HTML 片段），
+            # 避免 null byte 残留进 Path.resolve() 导致 embedded null byte 崩溃。
+            path_part = restore_ph(path_part, placeholders)
 
             if resolve_target(url, fp) is None:
                 ctx = snippet.replace("\n", "\\n")
