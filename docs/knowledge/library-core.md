@@ -73,8 +73,8 @@ use_when:
 
 ## UI 入口
 
-- 入口函数：`buildModelFormationLevel()`（菜单文件见 [menu-map.md](./menu-map.md) 入口一览）
-- 菜单层级 / 静态骨架由 [menu-map.md](./menu-map.md) 机器生成（勿手改）；运行时动态入口以本节为准。
+- 菜单层级 / 入口函数 / 快捷键统一由 [menu-map.md](./menu-map.md) 机器生成（勿手改）。
+- 运行时动态生成的菜单项（renderCustom / slideRow 等）无法静态提取，缺口由本卡正文说明。
 ## 不变量
 - 资源索引在后台线程构建，避免阻塞 UI。
 - 索引文件变化时自动更新索引。
