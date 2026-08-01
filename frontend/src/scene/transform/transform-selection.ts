@@ -54,8 +54,10 @@ export function syncDragMode(): void {
     }
     if (_selected) {
         // 已挂在同一目标则跳过（场景点击 tryAttachGizmoFromPick 先挂载、随后 setSelected 同步选中态，
-        // 此时 gizmo 已指向该目标，重复 attach 会 detach+重建造成闪烁）
+        // 此时 gizmo 已指向该目标，重复 attach 会 detach+重建造成闪烁）。
+        // 同时清空 pending：gizmo 已挂目标即视为达成，避免后续 retryPendingAttachment 重复 attach。
         if (getGizmoTargetId() === _selected.id) {
+            _pendingRetry = null;
             return;
         }
         _pendingRetry = _selected;
@@ -76,9 +78,11 @@ export function retryPendingAttachment(): void {
     if (!target || !isDragModeEnabled()) {
         return;
     }
-    // 若当前 gizmo 已挂在别的目标（场景点击挂载了另一个物体），不覆盖用户意图，直接放弃重试
+    // 只要当前已挂任何 gizmo 目标（无论是否 pending 本身）即视为已达成：
+    // retry 唯一目的是「当前无 gizmo 时补挂」，已有目标（场景点击挂载或其他路径）则放弃重试，
+    // 避免 attachGizmoForKind 对同一目标重复 detach+重建造成闪烁。
     const currentTargetId = getGizmoTargetId();
-    if (currentTargetId !== null && currentTargetId !== target.id) {
+    if (currentTargetId !== null) {
         _pendingRetry = null;
         return;
     }

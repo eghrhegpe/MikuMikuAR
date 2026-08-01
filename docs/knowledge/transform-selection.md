@@ -15,8 +15,8 @@ source_files:
 - 维护 `TransformTarget { kind: ResourceKind; id: string } | null`（模块级 `_selected`）
 - `setSelectedTransformTarget(target)`：记录选中并 `syncDragMode()`（面板渲染 `buildTransformCard` 时声明）。**同 kind+id 重复声明跳过 syncDragMode**（避免面板无关重渲染触发独占式 gizmo 重建抖动）
 - `clearSelectedTransformTarget()`：清空选中并 `detachGizmo()`（面板关闭/切换时卸载）
-- `syncDragMode()`：开关关→`detachGizmo()`；开且有选中→若 `getGizmoTargetId() === _selected.id` 则跳过重复 attach（防场景点击 setSelected 后 detach+重建闪烁），否则 `attachGizmoForKind(kind,id)`；开但无选中→静默
-- `retryPendingAttachment()`：`attachGizmoForKind` 返回 false（节点未就绪）时记录 `_pendingRetry`，模型加载完成（`registerLoadRefreshHook`）后补挂。**守卫：`getGizmoTargetId()` 已指向别的目标（非 null 且不等于 pending）时放弃重试**——gizmo 已被场景点击挂了另一物体时，不覆盖用户意图（P2 修复）
+- `syncDragMode()`：开关关→`detachGizmo()`；开且有选中→若 `getGizmoTargetId() === _selected.id` 则跳过重复 attach（防场景点击 setSelected 后 detach+重建闪烁）**并清空 pending**，否则 `attachGizmoForKind(kind,id)`；开但无选中→静默
+- `retryPendingAttachment()`：`attachGizmoForKind` 返回 false（节点未就绪）时记录 `_pendingRetry`，模型加载完成（`registerLoadRefreshHook`）后补挂。**守卫：只要当前已挂任何 gizmo 目标（`getGizmoTargetId() !== null`，无论是否 pending 本身）即视为达成并放弃重试**——retry 唯一目的是「当前无 gizmo 时补挂」，已有目标（场景点击挂载或其他路径）则避免重复 detach+重建闪烁（P2 修复）
 
 ## 对外 API
 - `getSelectedTransformTarget(): TransformTarget | null`
