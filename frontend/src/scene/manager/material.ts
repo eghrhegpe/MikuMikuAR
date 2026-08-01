@@ -4,6 +4,7 @@
 import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { Material } from '@babylonjs/core/Materials/material';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
+import { PBRMaterial } from '@babylonjs/core/Materials/PBR/pbrMaterial';
 import type { Mesh } from '@babylonjs/core/Meshes/mesh';
 
 import { modelRegistry, uiState } from '@/core/config';
@@ -11,6 +12,13 @@ import { triggerAutoSave } from '@/core/config';
 import { clamp01 } from '@/core/clamp';
 import { logWarn } from '../../core/logger';
 import type { MmdStandardMaterial } from '../../core/types';
+
+// [ADR-188] SSS 材质类型定义（PBRMaterial 子类，由材料系统识别）
+export type SssMaterial = PBRMaterial;
+export const SSS_MATERIAL_MARKER = 'SssPBRMaterial';
+export function isSssMaterial(mat: Material): boolean {
+    return (mat as any)[SSS_MATERIAL_MARKER] === true;
+}
 
 export interface AlphaCtx {
     opacity: number;
@@ -404,13 +412,132 @@ export function _capture(mat: Material, mi = 0, origAlpha: number[] = []): void 
     });
 }
 
+// ======== ADR-188: PBRMaterial 分支 ========
+
+/** PBRMaterial 原始值缓存（与 _OrigMat 对应的 PBR 版） */
+interface _OrigPbr {
+    albedo: Color3;
+    reflection: Color3;
+    roughness: number;
+    metallic: number;
+    ambient: Color3;
+    emissive: Color3;
+    albedoTexLevel: number;
+    bumpTexLevel: number;
+    emissiveTexLevel: number;
+    alpha: number;
+}
+
+const _origPbrValues = new WeakMap<PBRMaterial, _OrigPbr>();
+
+export function _isPbrMaterial(mat: Material): mat is PBRMaterial {
+    return mat instanceof PBRMaterial;
+}
+
+/** 公开 type guard — 供外部模块（如 SSS、材质编辑器）使用 */
+export { _isPbrMaterial as isPbrMaterial };
+
+/** PBRMaterial 参数捕获（对应 _capture 的 PBR 版） */
+export function _capturePbr(mat: PBRMaterial, mi = 0, origAlpha: number[] = []): void {
+    if (_origPbrValues.has(mat)) {
+        return;
+    }
+    _origPbrValues.set(mat, {
+        albedo: mat.albedoColor.clone(),
+        reflection: mat.reflectionColor.clone(),
+        roughness: mat.roughness,
+        metallic: mat.metallic,
+        ambient: mat.ambientColor.clone(),
+        emissive: mat.emissiveColor.clone(),
+        albedoTexLevel: mat.albedoTexture?.level ?? 1,
+        bumpTexLevel: mat.bumpTexture?.level ?? 1,
+        emissiveTexLevel: mat.emissiveTexture?.level ?? 1,
+        alpha: origAlpha[mi] ?? 1,
+    });
+}
+
+/** 将 MaterialCategoryParams 映射为 PBRMaterial 属性
+ *  映射关系（与 StandardMaterial 语义对齐）：
+ *  - diffuseMul   → albedoColor 乘率
+ *  - specularMul  → reflectionColor 乘率
+ *  - shininess    → roughness = (200 - shininess) / 200（反比，50→0.75）
+ *  - ambientMul   → ambientColor 乘率
+ *  - emissiveMul  → emissiveColor 乘率
+ *  - diffuseTexLevel → albedoTexture.level
+ *  - bumpTexLevel   → bumpTexture.level（语义一致）
+ *  - emissiveTexLevel → emissiveTexture.level（语义一致）
+ *  - alphaMul     → alpha
+ *  - toonTexLevel / sphereTexLevel → 静默忽略（PBR 不支持）
+ */
+function _applyPbrMatParams(
+    mat: PBRMaterial,
+    orig: _OrigPbr,
+    p: MaterialCategoryParams,
+    alphaCtx?: AlphaCtx
+): void {
+    // albedo（对应 diffuse）
+    mat.albedoColor = orig.albedo.scale(p.diffuseMul);
+    // reflection（对应 specular）
+    mat.reflectionColor = orig.reflection.scale(p.specularMul);
+    // roughness（shininess 反比：0=极光滑，200=极粗糙 → 0=极粗糙，1=极光滑）
+    mat.roughness = clamp01((200 - p.shininess) / 200);
+    // ambient
+    mat.ambientColor = orig.ambient.scale(p.ambientMul);
+    // emissive
+    mat.emissiveColor = orig.emissive.scale(p.emissiveMul);
+    // 纹理级别
+    if (mat.albedoTexture) {
+        mat.albedoTexture.level = orig.albedoTexLevel * p.diffuseTexLevel;
+    }
+    if (mat.bumpTexture) {
+        mat.bumpTexture.level = orig.bumpTexLevel * p.bumpTexLevel;
+    }
+    if (mat.emissiveTexture) {
+        mat.emissiveTexture.level = orig.emissiveTexLevel * p.emissiveTexLevel;
+    }
+    // alpha
+    if (alphaCtx && p.alphaMul !== 1) {
+        mat.alpha = orig.alpha * p.alphaMul;
+    }
+}
+
 function _applyMaterial(id: string, mi: number, alphaCtx?: AlphaCtx): void {
     const meshes = _getMeshesById(id);
     if (!meshes || mi < 0 || mi >= meshes.length) {
         return;
     }
     const m = meshes[mi].material;
-    if (!m || !(m instanceof StandardMaterial)) {
+    if (!m) {
+        return;
+    }
+    // PBR 分支（ADR-188）
+    if (m instanceof PBRMaterial) {
+        _capturePbr(m, mi, alphaCtx?.origAlpha ?? []);
+        const o = _origPbrValues.get(m)!;
+        let applied = false;
+        const state = _catState.get(id);
+        if (state) {
+            const p = state.get(categoryOfMaterial(m));
+            if (p) {
+                _applyPbrMatParams(m, o, p, alphaCtx);
+                applied = true;
+            }
+        }
+        const perMat = _matState.get(id);
+        if (perMat) {
+            const mp = perMat.get(mi);
+            if (mp) {
+                _applyPbrMatParams(m, o, mp, alphaCtx);
+                applied = true;
+            }
+        }
+        if (!applied && alphaCtx) {
+            _applyPbrMatParams(m, o, DEFAULT_MAT_PARAMS, alphaCtx);
+        }
+        return;
+    }
+    // StandardMaterial 分支
+    if (!(m instanceof StandardMaterial)) {
         return;
     }
     const mmdMat = m as MmdStandardMaterial;
@@ -454,7 +581,25 @@ function _applyCategory(id: string, cat: string, alphaCtx?: AlphaCtx): void {
     const perMat = _matState.get(id) ?? new Map();
     for (let mi = 0; mi < meshes.length; mi++) {
         const m = meshes[mi].material;
-        if (!m || !(m instanceof StandardMaterial)) {
+        if (!m) {
+            continue;
+        }
+        // PBR 分支（ADR-188）
+        if (m instanceof PBRMaterial) {
+            if (categoryOfMaterial(m) !== cat) {
+                continue;
+            }
+            _capturePbr(m, mi, alphaCtx?.origAlpha ?? []);
+            const o = _origPbrValues.get(m)!;
+            _applyPbrMatParams(m, o, p, alphaCtx);
+            const mp = perMat.get(mi);
+            if (mp) {
+                _applyPbrMatParams(m, o, mp, alphaCtx);
+            }
+            continue;
+        }
+        // StandardMaterial 分支
+        if (!(m instanceof StandardMaterial)) {
             continue;
         }
         if (categoryOfMaterial(m) !== cat) {
@@ -541,7 +686,7 @@ export function getMatCatGroups(id: string): Map<string, { name: string; mat: Ma
     }
     for (const mesh of meshes) {
         const m = mesh.material;
-        if (!m || !(m instanceof StandardMaterial)) {
+        if (!m || !(m instanceof StandardMaterial || m instanceof PBRMaterial)) {
             continue;
         }
         const cat = categoryOfMaterial(m);
@@ -646,7 +791,7 @@ export function getMatDetailList(
     const perMat = _matState.get(id) ?? new Map();
     for (let mi = 0; mi < meshes.length; mi++) {
         const m = meshes[mi].material;
-        if (!m || !(m instanceof StandardMaterial)) {
+        if (!m || !(m instanceof StandardMaterial || m instanceof PBRMaterial)) {
             continue;
         }
         const mp = perMat.get(mi);
@@ -727,7 +872,7 @@ export function isMatCategoryAllEnabled(id: string, cat: string): boolean {
     }
     for (let mi = 0; mi < meshes.length; mi++) {
         const m = meshes[mi].material;
-        if (!m || !(m instanceof StandardMaterial)) {
+        if (!m || !(m instanceof StandardMaterial || m instanceof PBRMaterial)) {
             continue;
         }
         if (categoryOfMaterial(m) !== cat) {
@@ -755,7 +900,7 @@ export function setMatCategoryEnabled(id: string, cat: string, enabled: boolean)
     }
     for (let mi = 0; mi < meshes.length; mi++) {
         const m = meshes[mi].material;
-        if (!m || !(m instanceof StandardMaterial)) {
+        if (!m || !(m instanceof StandardMaterial || m instanceof PBRMaterial)) {
             continue;
         }
         if (categoryOfMaterial(m) !== cat) {

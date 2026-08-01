@@ -8,7 +8,7 @@
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
 | 核心基础设施 | 122 | 716 |
-| 3D 场景 | 108 | 1100 |
+| 3D 场景 | 110 | 1124 |
 | 菜单 & UI | 75 | 380 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 17 | 127 |
@@ -25,7 +25,7 @@
 | `registerSceneActions()` | `core/action-defs/scene-actions` | — |
 | `registerSettingsActions()` | `core/action-defs/settings-actions` | — |
 | `ActionResult()` | `core/action-executor` | — |
-| `executeActionById()` | `core/action-executor` | — |
+| `executeActionById()` | `core/action-executor` | 按 ID 执行 AI 动作（含参数校验与结果结构化返回）。 |
 | `ActionDef()` | `core/action-registry` | — |
 | `ParamDef()` | `core/action-registry` | — |
 | `ParamType()` | `core/action-registry` | — |
@@ -40,7 +40,7 @@
 | `ToolSchema()` | `core/ai/action-catalog` | — |
 | `buildToolCatalogText()` | `core/ai/action-catalog` | — |
 | `buildToolSchemas()` | `core/ai/action-catalog` | — |
-| `registerAllActions()` | `core/ai/action-registry-defs` | — |
+| `registerAllActions()` | `core/ai/action-registry-defs` | 注册全部 AI 动作定义（控制/诊断/设置/库/动作/环境/场景各域）。 |
 | `registerControlActions()` | `core/ai/action-registry-defs` | — |
 | `BrowserAiAdapter()` | `core/ai/browser-adapter` | — |
 | `browserAiAdapter()` | `core/ai/browser-adapter` | — |
@@ -89,10 +89,10 @@
 | `ErrorEntry()` | `core/ai/error-buffer` | — |
 | `ErrorRingBuffer()` | `core/ai/error-buffer` | — |
 | `GlobalErrorTarget()` | `core/ai/error-buffer` | — |
-| `captureError()` | `core/ai/error-buffer` | — |
+| `captureError()` | `core/ai/error-buffer` | 捕获错误并写入环形缓冲（统一错误上报入口）。 |
 | `clearErrors()` | `core/ai/error-buffer` | — |
 | `errorBuffer()` | `core/ai/error-buffer` | — |
-| `getErrors()` | `core/ai/error-buffer` | — |
+| `getErrors()` | `core/ai/error-buffer` | 取缓冲内的全部错误条目。 |
 | `inferSeverity()` | `core/ai/error-buffer` | 根据 ErrorEntry 的 kind + tag 推导严重级别。 |
 | `installErrorCaptureOn()` | `core/ai/error-buffer` | — |
 | `installGlobalErrorCapture()` | `core/ai/error-buffer` | — |
@@ -260,8 +260,8 @@
 | `LangCode()` | `core/i18n/locale` | — |
 | `SUPPORTED_LANGS()` | `core/i18n/locale` | 规划支持的语言清单（与竞品 DanceXR 对齐：简/繁中、英、日、韩）。 |
 | `detectSystemLang()` | `core/i18n/locale` | [doc:adr-059] 从浏览器/WebView 语言偏好推断首选语言。 |
-| `getLang()` | `core/i18n/locale` | — |
-| `initI18n()` | `core/i18n/locale` | — |
+| `getLang()` | `core/i18n/locale` | 当前语言代码（响应式，切换语言后自动更新）。 |
+| `initI18n()` | `core/i18n/locale` | 启动期语言初始化：同步 &lt;html lang&gt; 并预加载当前语言包。 |
 | `setLang()` | `core/i18n/locale` | — |
 | `en()` | `core/i18n/locales/en` | — |
 | `ja()` | `core/i18n/locales/ja` | — |
@@ -279,7 +279,7 @@
 | `canvasToBase64()` | `core/image` | 将 Canvas 编码为 base64 字符串（剥离 data:image/...;base64, 前缀）。 |
 | `thumbDataUrl()` | `core/image` | Build a data URL from a base64 thumbnail, sniffing PNG/JPEG/WebP from the header. |
 | `toBase64()` | `core/image` | Encode a string as base64 (UTF-8 safe). |
-| `bootstrap()` | `core/init` | — |
+| `bootstrap()` | `core/init` | 应用启动入口：接线 dev-hooks / render-loop / events 并启动渲染循环。 |
 | `jsonParse()` | `core/json-stringify` | Safely parse JSON; returns null on failure instead of throwing. |
 | `jsonStringify()` | `core/json-stringify` | Format a value as pretty-printed JSON (2-space indent). |
 | `addRecentMotion()` | `core/library-state` | — |
@@ -390,8 +390,8 @@
 | `popRenderingContext()` | `core/render-context` | 退出当前渲染上下文（renderCustom 后调用，须在 finally 中配对）。 |
 | `pushRenderingContext()` | `core/render-context` | 进入一个渲染上下文（renderCustom 前调用）。 |
 | `calcHardwareScaling()` | `core/render-loop` | 根据 DPR + renderScale 计算安全的 hardwareScalingLevel， 钳位帧缓冲不超过 GL_MAX_TEXTURE_SIZE（防 DPR×render |
-| `startRenderLoop()` | `core/render-loop` | — |
-| `stopRenderLoop()` | `core/render-loop` | — |
+| `startRenderLoop()` | `core/render-loop` | 启动渲染循环（幂等：先停旧实例，避免 setInterval / render-loop 泄漏）。 |
+| `stopRenderLoop()` | `core/render-loop` | 停止渲染循环并清理 FPS 时钟。 |
 | `EventCallback()` | `core/runtime-bridge` | — |
 | `RuntimeBridge()` | `core/runtime-bridge` | — |
 | `RuntimeBrowser()` | `core/runtime-bridge` | — |
@@ -402,7 +402,7 @@
 | `getRuntimeBridge()` | `core/runtime-bridge` | — |
 | `initRuntimeBridge()` | `core/runtime-bridge` | bootstrap 早期调用：桌面/Android 侧强制加载 @wailsio/runtime 并绑定 events 实例。 |
 | `RuntimeMode()` | `core/runtime-mode` | — |
-| `detectRuntimeMode()` | `core/runtime-mode` | — |
+| `detectRuntimeMode()` | `core/runtime-mode` | 探测运行时模式（COOP/COEP + SharedArrayBuffer + MPR 构建标志）。 |
 | `initRuntimeBadge()` | `core/runtime-mode` | bootstrap 早期调用：立即渲染上次持久化的模式，刷新后不丢失 |
 | `loadPersistedRuntimeMode()` | `core/runtime-mode` | — |
 | `persistRuntimeMode()` | `core/runtime-mode` | — |
@@ -900,7 +900,7 @@
 | `InvertableArcRotateCameraPointersInput()` | `scene/camera/invertablePointersInput` | 可反转 Y 轴的 ArcRotate 相机指针输入。 |
 | `applyEnvStateFacade()` | `scene/env/_bridge/env-bridge` | 等同于 scene-env.ts 的 applyEnvState，但避免循环依赖。 |
 | `registerEnvStateMiddleware()` | `scene/env/_bridge/env-bridge` | 注册 setEnvState 中间件（供 env-time-of-day/env-gravity 等子模块调用） |
-| `setEnvState()` | `scene/env/_bridge/env-bridge` | — |
+| `setEnvState()` | `scene/env/_bridge/env-bridge` | 环境状态唯一写入入口（ADR-173 中间件链），可选跳过自动保存。 |
 | `setPresetAnimActive()` | `scene/env/_bridge/env-bridge` | 标记预设动画是否运行中（供 _applyEnvStateFacade 跳过方向光同步） |
 | `clearAllEnvCallbacks()` | `scene/env/_bridge/env-dispatcher` | 清空所有已注册的 env 回调（场景销毁 / HMR 重入时兜底清理）。 |
 | `clearEnvDtTickCallbacks()` | `scene/env/_bridge/env-dispatcher` | 清空所有 dt 回调（场景销毁 / HMR 重入时清理）。 |
@@ -922,7 +922,7 @@
 | `_envSys()` | `scene/env/_shared/env-context` | — |
 | `effectiveGroundSize()` | `scene/env/_shared/env-context` | 当前生效的地面尺寸：开启无限地面时为固定大尺寸，否则为 groundSize。 |
 | `getPipeline()` | `scene/env/_shared/env-context` | — |
-| `getScene()` | `scene/env/_shared/env-context` | — |
+| `getScene()` | `scene/env/_shared/env-context` | 取当前 Babylon 场景；未初始化时抛错（env 子系统内部使用）。 |
 | `initEnvImpl()` | `scene/env/_shared/env-context` | — |
 | `isInitialized()` | `scene/env/_shared/env-context` | — |
 | `resolveStaticAsset()` | `scene/env/_shared/env-context` | — |
@@ -992,7 +992,7 @@
 | `buildGroundReflection()` | `scene/env/env-ground` | — |
 | `clearGroundTexCache()` | `scene/env/env-ground` | — |
 | `createGroundMaterial()` | `scene/env/env-ground` | — |
-| `disposeGround()` | `scene/env/env-ground` | — |
+| `disposeGround()` | `scene/env/env-ground` | 释放地面网格、材质与反射资源（幂等）。 |
 | `generateProceduralGroundTextures()` | `scene/env/env-ground` | — |
 | `getGroundHeightAt()` | `scene/env/env-ground` | — |
 | `setGroundActualSize()` | `scene/env/env-ground` | — |
@@ -1062,7 +1062,7 @@
 | `setReflectionARSuspended()` | `scene/env/env-reflection` | AR 模式联动：挂起/恢复反射子系统。 |
 | `applySky()` | `scene/env/env-sky` | — |
 | `clearStarsTexCache()` | `scene/env/env-sky` | — |
-| `disposeSky()` | `scene/env/env-sky` | — |
+| `disposeSky()` | `scene/env/env-sky` | 释放天空盒并移除相机跟随观察者（幂等）。 |
 | `applyTerrainMaterial()` | `scene/env/env-terrain` | 地形材质（与其他地面模式一致：纯色或半透明/纹理）。 |
 | `createHeightmapGround()` | `scene/env/env-terrain` | 用程序化 FBM 高度图创建可拾取地形网格（CreateGroundFromHeightMap）。 |
 | `fbm()` | `scene/env/env-terrain` | — |
@@ -1106,10 +1106,10 @@
 | `updateGroundRipples()` | `scene/env/env-water` | 每帧更新地面涟漪纹理（由 env-ground 的 update observer 驱动） |
 | `updateUnderwaterTransition()` | `scene/env/env-water` | — |
 | `updateWaterAnimSpeed()` | `scene/env/env-water` | — |
-| `applyWetnessToAllModels()` | `scene/env/env-wetness` | — |
+| `applyWetnessToAllModels()` | `scene/env/env-wetness` | 对所有已加载模型应用湿身材质效果（幂等）。 |
 | `applyWetnessToInst()` | `scene/env/env-wetness` | — |
 | `isWetnessActive()` | `scene/env/env-wetness` | — |
-| `removeWetnessFromAllModels()` | `scene/env/env-wetness` | — |
+| `removeWetnessFromAllModels()` | `scene/env/env-wetness` | 移除所有模型的湿身材质效果（幂等）。 |
 | `_envSys()` | `scene/env/env` | — |
 | `addGroundRipple()` | `scene/env/env` | — |
 | `addRipple()` | `scene/env/env` | — |
@@ -1161,15 +1161,30 @@
 | `ReflectionMode()` | `scene/env/planar-reflection` | — |
 | `registerReflectionSurface()` | `scene/env/planar-reflection` | — |
 | `resetReflectionSurfaces()` | `scene/env/planar-reflection` | ADR-114 Phase 2: 是否生成 mipmap（地面 PBR 反射模糊用，水面保持 false） generateMipMaps?: boolean; } // ==== |
+| `MaterialMode()` | `scene/manager/material-proxy-resolver` | — |
+| `getMaterialMode()` | `scene/manager/material-proxy-resolver` | 从 VITE_MMD_MATERIAL 环境变量读取材质模式（构建期常量，未定义时走默认值） |
+| `getPBRMaterialBuilder()` | `scene/manager/material-proxy-resolver` | 动态导入 PBRMaterialBuilder（PBR 材质构建器） 注意: PBRMaterialBuilder 在 PMX 加载阶段构建 PBRMaterial， 与 MmdS |
+| `getStandardMaterialProxy()` | `scene/manager/material-proxy-resolver` | 返回标准材质代理（MmdStandardMaterialProxy）— 用于 Lambert + Blinn-Phong 渲染 |
+| `resolveMaterialProxy()` | `scene/manager/material-proxy-resolver` | 返回当前材质的代理构造函数（同步） （PBR 模式下的材质代理仍使用标准代理，因 PMX 加载阶段已由 PBRMaterialBuilder 构建材质， MmdStandardMa |
+| `DEFAULT_SSS_PARAMS()` | `scene/manager/material-sss` | SSS 默认参数 |
+| `SssParams()` | `scene/manager/material-sss` | SSS 参数 |
+| `applySss()` | `scene/manager/material-sss` | 应用 SSS 参数到指定分类的所有 PBRMaterial 材质 内部实现： 1. |
+| `disposeModelSssState()` | `scene/manager/material-sss` | 重置指定模型的所有 SSS 状态 |
+| `getMatSssParams()` | `scene/manager/material-sss` | 获取指定分类的 SSS 参数 |
+| `setMatSssParams()` | `scene/manager/material-sss` | 设置指定分类的 SSS 参数并立即应用到所有该分类材质 |
 | `AlphaCtx()` | `scene/manager/material` | — |
 | `DEFAULT_MAT_PARAMS()` | `scene/manager/material` | 材质参数默认值 — 所有新增字段在此维护，消除散落硬编码。 |
 | `MaterialCategory()` | `scene/manager/material` | — |
 | `MaterialCategoryParams()` | `scene/manager/material` | — |
 | `MaterialStateManager()` | `scene/manager/material` | 材质状态管理器 — 集中管理分类/逐材质/可见性状态，便于测试 mock 和未来扩展。 |
-| `_applyAll()` | `scene/manager/material` | Per-material category cache. |
+| `SSS_MATERIAL_MARKER()` | `scene/manager/material` | — |
+| `SssMaterial()` | `scene/manager/material` | — |
+| `_applyAll()` | `scene/manager/material` | 将 MaterialCategoryParams 映射为 PBRMaterial 属性 映射关系（与 StandardMaterial 语义对齐）： - diffuseMul |
 | `_capture()` | `scene/manager/material` | Per-material category cache. |
+| `_capturePbr()` | `scene/manager/material` | PBRMaterial 参数捕获（对应 _capture 的 PBR 版） |
 | `_catOf()` | `scene/manager/material` | 材质分类关键词表（按优先级排序）。 |
 | `_catState()` | `scene/manager/material` | 材质状态管理器 — 集中管理分类/逐材质/可见性状态，便于测试 mock 和未来扩展。 |
+| `_isPbrMaterial()` | `scene/manager/material` | — |
 | `_matEnabled()` | `scene/manager/material` | 材质状态管理器 — 集中管理分类/逐材质/可见性状态，便于测试 mock 和未来扩展。 |
 | `_matState()` | `scene/manager/material` | 材质状态管理器 — 集中管理分类/逐材质/可见性状态，便于测试 mock 和未来扩展。 |
 | `applyMatState()` | `scene/manager/material` | — |
@@ -1182,6 +1197,8 @@
 | `getMatState()` | `scene/manager/material` | — |
 | `isMatCategoryAllEnabled()` | `scene/manager/material` | 检查指定分类的全部材质是否都已启用。 |
 | `isMatEnabled()` | `scene/manager/material` | — |
+| `isPbrMaterial()` | `scene/manager/material` | — |
+| `isSssMaterial()` | `scene/manager/material` | — |
 | `resetMatCatParams()` | `scene/manager/material` | — |
 | `resetPerMaterialParams()` | `scene/manager/material` | 重置所有逐材质覆盖（per-material），保留分类调整（皮肤/头发等）。 |
 | `resetSingleMatParams()` | `scene/manager/material` | — |
@@ -1715,12 +1732,13 @@
 | `resolvePathFromRef()` | `scene/scene-serialize` | Resolve a file path from either a libraryRef or a raw absolute path. |
 | `restoreUndoSnapshot()` | `scene/scene-serialize` | 恢复特定快照到整场景。返回是否成功恢复。 |
 | `saveSceneImmediate()` | `scene/scene-serialize` | — |
-| `serializeScene()` | `scene/scene-serialize` | — |
+| `serializeScene()` | `scene/scene-serialize` | 序列化当前场景为 SceneFile（分段容错，单模型失败跳过并记录）。 |
 | `setSuppressAutoSave()` | `scene/scene-serialize` | — |
 | `triggerAutoSaveImpl()` | `scene/scene-serialize` | — |
 | `tryRestoreLastScene()` | `scene/scene-serialize` | — |
 | `DEFAULT_MAT_PARAMS()` | `scene/scene` | — |
 | `LoadLastScene()` | `scene/scene` | — |
+| `SSS_MATERIAL_MARKER()` | `scene/scene` | — |
 | `SaveLastScene()` | `scene/scene` | — |
 | `SaveThumbnail()` | `scene/scene` | — |
 | `SetEnvState()` | `scene/scene` | — |
@@ -1734,6 +1752,7 @@
 | `applyEnvState()` | `scene/scene` | — |
 | `applyFrameControl()` | `scene/scene` | 统一应用帧率控制：帧率限制器开关 + 帧率上限。 |
 | `applyMatState()` | `scene/scene` | — |
+| `applySss()` | `scene/scene` | — |
 | `applyUnlitFallback()` | `scene/scene` | — |
 | `attachBeatDetector()` | `scene/scene` | — |
 | `autoFrame()` | `scene/scene` | — |
@@ -1742,6 +1761,7 @@
 | `captureThumbnail()` | `scene/scene` | — |
 | `clearCameraVmd()` | `scene/scene` | — |
 | `disposeAudio()` | `scene/scene` | — |
+| `disposeModelSssState()` | `scene/scene` | — |
 | `disposeScene()` | `scene/scene` | 级联释放 Scene → Engine 及其所有子资源。 |
 | `dom()` | `scene/scene` | — |
 | `engine()` | `scene/scene` | — |
@@ -1758,6 +1778,7 @@
 | `getMatCatParams()` | `scene/scene` | — |
 | `getMatDetailList()` | `scene/scene` | — |
 | `getMatParams()` | `scene/scene` | — |
+| `getMatSssParams()` | `scene/scene` | — |
 | `getMatState()` | `scene/scene` | — |
 | `getScene()` | `scene/scene` | — |
 | `hasCameraVmd()` | `scene/scene` | — |
@@ -1769,7 +1790,9 @@
 | `isAudioPlaying()` | `scene/scene` | — |
 | `isMatCategoryAllEnabled()` | `scene/scene` | — |
 | `isMatEnabled()` | `scene/scene` | — |
+| `isPbrMaterial()` | `scene/scene` | — |
 | `isPlaying()` | `scene/scene` | — |
+| `isSssMaterial()` | `scene/scene` | — |
 | `loadAudioFile()` | `scene/scene` | — |
 | `loadCameraVmd()` | `scene/scene` | — |
 | `loadCameraVmdFromPath()` | `scene/scene` | — |
@@ -1802,6 +1825,7 @@
 | `setMatCategoryEnabled()` | `scene/scene` | — |
 | `setMatEnabled()` | `scene/scene` | — |
 | `setMatParams()` | `scene/scene` | — |
+| `setMatSssParams()` | `scene/scene` | — |
 | `setMmdRuntime()` | `scene/scene` | — |
 | `setModelRegistry()` | `scene/scene` | — |
 | `setSeekDragging()` | `scene/scene` | — |
@@ -2416,5 +2440,4 @@
 
 ---
 
-> 共 328 个文件，2374 个导出符号。
 > 说明列由 gen-funcmap 自动提取导出符号紧邻 JSDoc 的首句摘要（无 JSDoc 则留 —）。

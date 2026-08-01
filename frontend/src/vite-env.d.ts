@@ -36,6 +36,10 @@ declare global {
         // 定义时前端拉入 MmdWasmInstanceTypeMPR（依赖 SharedArrayBuffer + COOP/COEP），
         // 与 Go 端 CoopCoepMiddleware 同轴门控。
         readonly VITE_MMD_WASM_MT?: string;
+        // ADR-188: MMD 材质模式切换（Phase 0 POC）
+        // 'standard'（默认）→ MmdStandardMaterialProxy + MmdStandardMaterial（Lambert/Blinn-Phong）
+        // 'pbr'              → PBRMaterialBuilder + PBRMaterial（Cook-Torrance PBR）
+        readonly VITE_MMD_MATERIAL?: string;
     }
 
     interface ImportMeta {

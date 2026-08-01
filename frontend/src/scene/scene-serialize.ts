@@ -918,170 +918,225 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
     // 抑制恢复过程中的 auto-save，防止 setCameraState/setLightState/setRenderState
     // 等函数触发级联保存覆盖 last_scene.json。
     _suppressAutoSave = true;
+    // [fix:suppress-leak] 主体任何一步抛异常（数据损坏致 setter throw）也必须复位
+    // suppress，否则 auto-save 永久失效、last_scene.json 不再更新。
+    try {
+        // --- Load all models and apply post-load config ---
+        const [, errors] = await deserializeModels(data.models);
 
-    // --- Load all models and apply post-load config ---
-    const [, errors] = await deserializeModels(data.models);
-
-    // --- Formation: re-apply if saved ---
-    if (data.formation && modelManager) {
-        try {
-            setModelFormation(data.formation.type, data.formation.spacing);
-        } catch (err) {
-            logWarn('scene-serialize', '场景恢复: 队形恢复失败:', err);
-        }
-    }
-
-    // --- Camera, Lights, Render ---
-    if (data.camera) {
-        setCameraState(data.camera);
-    }
-    if (data.lights) {
-        setLightState(data.lights);
-    }
-    if (data.render) {
-        setRenderState(data.render);
-    }
-    // Backward compat: old scene files store FOV in render.fov (pre-Phase 9)
-    if (data.render && 'fov' in data.render) {
-        setFov((data.render as unknown as Record<string, number>).fov);
-    }
-
-    // --- Environment ---
-    // [fix:ghost-state] setEnvState 现在会反向同步 envSunAngle 模块缓存，
-    // 显式 setEnvSunAngle 调用保留为前置 clamp（确保 sunAngle 在 [-15, 90] 范围内），
-    // 顺序不再敏感（两者都会写入双源）。
-    if (data.env && !skipEnv) {
-        if (data.env.sunAngle !== undefined) {
-            setEnvSunAngle(data.env.sunAngle);
-        }
-        setEnvState(data.env, true);
-    }
-    if (data.gravityStrength !== undefined) {
-        setGravityStrength(data.gravityStrength);
-    }
-    // [adr:ground] envState 已恢复（含 groundCollisionEnabled），注入/移除地面刚体
-    applyGroundCollision();
-    // 舞台灯光：优先新格式 stageLights，兼容旧格式 stageLight
-    if (data.stageLights && data.stageLights.length > 0) {
-        loadStageLights(data.stageLights);
-    } else if (data.stageLight) {
-        const sl = {
-            id: 'light-1',
-            name: '主光',
-            type: 'spot' as const,
-            range: 50,
-            ...data.stageLight,
-        };
-        loadStageLights([sl]);
-    }
-
-    // --- Procedural Motion ---
-    // regenerateProcMotion() is needed because procedural motion is driven by
-    // per-frame callbacks that get reset when models are cleared/reloaded.
-    // Simply restoring state won't re-register these callbacks.
-    if (data.procMotion) {
-        const s = { ...DEFAULT_PROC_STATE, ...(data.procMotion as Partial<ProcMotionState>) };
-        setProcMotionState(s);
-        regenerateProcMotion();
-    }
-
-    // --- Perception Layer --- [doc:adr-071]
-    // 优先读 data.perception（兼容旧格式 PerceptionState 与新格式 { focused, pinned, tier, allEnabled }）
-    const perceptionData = migratePerceptionData(data.perception);
-    if (perceptionData) {
-        setPerceptionState(perceptionData.focused);
-        for (const p of perceptionData.pinned) {
-            pinPerception(p.modelId, p.state);
-        }
-        // [doc:adr-164/adr-166] 恢复性能档位与全员感知开关（通过 migratePerceptionData 安全取值）
-        if (perceptionData.tier && perceptionData.tier !== 'auto') {
-            setPerceptionPerfTier(perceptionData.tier);
-        }
-        if (perceptionData.allEnabled === true) {
-            enableAllPerception();
-        }
-    } else if (data.procMotion) {
-        setPerceptionState(
-            migratePerceptionFromProcMotion(data.procMotion as Partial<ProcMotionState>)
-        );
-    }
-    activatePerception();
-
-    // --- LipSync ---
-    if (data.lipSync) {
-        setLipSyncState({
-            ...DEFAULT_LIPSYNC_STATE,
-            ...(data.lipSync as Partial<LipSyncStateType>),
-        });
-    } else {
-        setLipSyncState({ ...DEFAULT_LIPSYNC_STATE });
-    }
-
-    // --- Camera VMD ---
-    if (data.cameraVmd && data.cameraVmd.path) {
-        try {
-            const resolvedPath = resolvePathFromRef(data.cameraVmd.path, data.cameraVmd.libraryRef);
-            if (resolvedPath) {
-                await loadCameraVmdFromPath(resolvedPath);
-                if (data.cameraVmd.active) {
-                    switchCameraMode('vmd');
-                }
+        // --- Formation: re-apply if saved ---
+        if (data.formation && modelManager) {
+            try {
+                setModelFormation(data.formation.type, data.formation.spacing);
+            } catch (err) {
+                logWarn('scene-serialize', '场景恢复: 队形恢复失败:', err);
             }
-        } catch (err) {
-            logWarn('scene-serialize', '场景恢复: 相机 VMD 加载失败:', err);
         }
-    }
 
-    // --- Audio ---
-    if (data.audio && data.audio.path) {
-        try {
-            const resolvedPath = resolvePathFromRef(data.audio.path, data.audio.libraryRef);
-            if (resolvedPath) {
-                await loadAudioFile(resolvedPath);
-                setVolume(data.audio.volume ?? 1);
-                setAudioOffset(data.audio.offset ?? 0);
-                if (data.audio.playing) {
-                    // In Wails desktop environments, AudioContext.resume() works without
-                    // user gesture. But to be safe in any environment, check state first.
-                    try {
-                        const ctx = window.AudioContext ? new window.AudioContext() : null;
-                        if (ctx && ctx.state === 'suspended') {
-                            logWarn(
-                                'scene-serialize',
-                                '场景恢复: 音频上下文已暂停，跳过自动播放（需用户交互后手动播放）'
-                            );
-                        } else {
-                            resumeAudio();
-                        }
-                    } catch (e) {
-                        logWarn(
-                            'scene-serialize',
-                            '场景恢复: AudioContext 创建失败，尝试直接 resume:',
-                            e
-                        );
-                        resumeAudio();
+        // --- Camera, Lights, Render ---
+        if (data.camera) {
+            setCameraState(data.camera);
+        }
+        if (data.lights) {
+            setLightState(data.lights);
+        }
+        if (data.render) {
+            setRenderState(data.render);
+        }
+        // Backward compat: old scene files store FOV in render.fov (pre-Phase 9)
+        if (data.render && 'fov' in data.render) {
+            setFov((data.render as unknown as Record<string, number>).fov);
+        }
+
+        // --- Environment ---
+        // [fix:ghost-state] setEnvState 现在会反向同步 envSunAngle 模块缓存，
+        // 显式 setEnvSunAngle 调用保留为前置 clamp（确保 sunAngle 在 [-15, 90] 范围内），
+        // 顺序不再敏感（两者都会写入双源）。
+        if (data.env && !skipEnv) {
+            if (data.env.sunAngle !== undefined) {
+                setEnvSunAngle(data.env.sunAngle);
+            }
+            setEnvState(data.env, true);
+        }
+        if (data.gravityStrength !== undefined) {
+            setGravityStrength(data.gravityStrength);
+        }
+        // [adr:ground] envState 已恢复（含 groundCollisionEnabled），注入/移除地面刚体
+        applyGroundCollision();
+        // 舞台灯光：优先新格式 stageLights，兼容旧格式 stageLight
+        if (data.stageLights && data.stageLights.length > 0) {
+            loadStageLights(data.stageLights);
+        } else if (data.stageLight) {
+            const sl = {
+                id: 'light-1',
+                name: '主光',
+                type: 'spot' as const,
+                range: 50,
+                ...data.stageLight,
+            };
+            loadStageLights([sl]);
+        }
+
+        // --- Procedural Motion ---
+        // regenerateProcMotion() is needed because procedural motion is driven by
+        // per-frame callbacks that get reset when models are cleared/reloaded.
+        // Simply restoring state won't re-register these callbacks.
+        if (data.procMotion) {
+            const s = { ...DEFAULT_PROC_STATE, ...(data.procMotion as Partial<ProcMotionState>) };
+            setProcMotionState(s);
+            regenerateProcMotion();
+        }
+
+        // --- Perception Layer --- [doc:adr-071]
+        // 优先读 data.perception（兼容旧格式 PerceptionState 与新格式 { focused, pinned, tier, allEnabled }）
+        const perceptionData = migratePerceptionData(data.perception);
+        if (perceptionData) {
+            setPerceptionState(perceptionData.focused);
+            for (const p of perceptionData.pinned) {
+                pinPerception(p.modelId, p.state);
+            }
+            // [doc:adr-164/adr-166] 恢复性能档位与全员感知开关（通过 migratePerceptionData 安全取值）
+            if (perceptionData.tier && perceptionData.tier !== 'auto') {
+                setPerceptionPerfTier(perceptionData.tier);
+            }
+            if (perceptionData.allEnabled === true) {
+                enableAllPerception();
+            }
+        } else if (data.procMotion) {
+            setPerceptionState(
+                migratePerceptionFromProcMotion(data.procMotion as Partial<ProcMotionState>)
+            );
+        }
+        activatePerception();
+
+        // --- LipSync ---
+        if (data.lipSync) {
+            setLipSyncState({
+                ...DEFAULT_LIPSYNC_STATE,
+                ...(data.lipSync as Partial<LipSyncStateType>),
+            });
+        } else {
+            setLipSyncState({ ...DEFAULT_LIPSYNC_STATE });
+        }
+
+        // --- Camera VMD ---
+        if (data.cameraVmd && data.cameraVmd.path) {
+            try {
+                const resolvedPath = resolvePathFromRef(
+                    data.cameraVmd.path,
+                    data.cameraVmd.libraryRef
+                );
+                if (resolvedPath) {
+                    await loadCameraVmdFromPath(resolvedPath);
+                    if (data.cameraVmd.active) {
+                        switchCameraMode('vmd');
                     }
                 }
+            } catch (err) {
+                logWarn('scene-serialize', '场景恢复: 相机 VMD 加载失败:', err);
             }
-        } catch (err) {
-            logWarn('scene-serialize', '场景恢复: 音频加载失败:', err);
         }
-    }
 
-    // [doc:adr-167] 恢复场景级动作库（新格式优先；旧格式单例迁移）
-    // 注意：motion 恢复在模型加载完成后执行，此时各模型 vmdPath 已由旧序列化恢复
-    if (data.motion) {
-        // 先清空运行时场景库（防止残留旧数据）
-        clearAllSceneMotions();
-        if (data.motion.sceneMotions && data.motion.sceneMotions.length > 0) {
-            // 新格式：多主动作平等共存
-            let firstId: string | null = null;
-            for (const m of data.motion.sceneMotions) {
-                const id = addSceneMotion({
-                    id: m.id,
-                    vmdPath: m.vmdPath,
-                    vmdName: m.vmdName,
-                    vmdLayers: m.vmdLayers.map((l) => ({
+        // --- Audio ---
+        if (data.audio && data.audio.path) {
+            try {
+                const resolvedPath = resolvePathFromRef(data.audio.path, data.audio.libraryRef);
+                if (resolvedPath) {
+                    await loadAudioFile(resolvedPath);
+                    setVolume(data.audio.volume ?? 1);
+                    setAudioOffset(data.audio.offset ?? 0);
+                    if (data.audio.playing) {
+                        // In Wails desktop environments, AudioContext.resume() works without
+                        // user gesture. But to be safe in any environment, check state first.
+                        try {
+                            const ctx = window.AudioContext ? new window.AudioContext() : null;
+                            if (ctx && ctx.state === 'suspended') {
+                                logWarn(
+                                    'scene-serialize',
+                                    '场景恢复: 音频上下文已暂停，跳过自动播放（需用户交互后手动播放）'
+                                );
+                            } else {
+                                resumeAudio();
+                            }
+                        } catch (e) {
+                            logWarn(
+                                'scene-serialize',
+                                '场景恢复: AudioContext 创建失败，尝试直接 resume:',
+                                e
+                            );
+                            resumeAudio();
+                        }
+                    }
+                }
+            } catch (err) {
+                logWarn('scene-serialize', '场景恢复: 音频加载失败:', err);
+            }
+        }
+
+        // [doc:adr-167] 恢复场景级动作库（新格式优先；旧格式单例迁移）
+        // 注意：motion 恢复在模型加载完成后执行，此时各模型 vmdPath 已由旧序列化恢复
+        if (data.motion) {
+            // 先清空运行时场景库（防止残留旧数据）
+            clearAllSceneMotions();
+            if (data.motion.sceneMotions && data.motion.sceneMotions.length > 0) {
+                // 新格式：多主动作平等共存
+                let firstId: string | null = null;
+                for (const m of data.motion.sceneMotions) {
+                    const id = addSceneMotion({
+                        id: m.id,
+                        vmdPath: m.vmdPath,
+                        vmdName: m.vmdName,
+                        vmdLayers: m.vmdLayers.map((l) => ({
+                            id: '',
+                            kind: l.kind ?? 'vmd',
+                            name: l.name,
+                            data: new ArrayBuffer(0),
+                            path: l.path,
+                            weight: l.weight,
+                            boneFilter: l.boneFilter,
+                            enabled: l.enabled ?? true,
+                        })),
+                        source: m.source,
+                        motionModules: m.motionModules,
+                        procMotion: m.procMotion
+                            ? ({
+                                  ...DEFAULT_PROC_STATE,
+                                  ...(m.procMotion as Partial<ProcMotionState>),
+                              } as ProcMotionConfig)
+                            : undefined,
+                    });
+                    if (firstId === null) {
+                        firstId = id;
+                    }
+                }
+                // 设置默认动作（若存档中明确为 null，则保留 null=无默认；否则用 activeMotionId 或首项）
+                const desired = data.motion.activeMotionId ?? firstId;
+                setDefaultMotion(desired);
+            } else if (
+                data.motion.vmdPath !== undefined ||
+                data.motion.vmdName !== undefined ||
+                (data.motion.vmdLayers && data.motion.vmdLayers.length > 0)
+            ) {
+                // 旧格式：单例迁移到新场景库
+                const legacy = data.motion as {
+                    vmdPath: string | null;
+                    vmdName: string;
+                    vmdLayers: Array<{
+                        name: string;
+                        path: string | null;
+                        weight: number;
+                        boneFilter: string[];
+                        kind?: 'vmd' | 'gaze';
+                        enabled?: boolean;
+                    }>;
+                    source: 'vmd' | 'retargeted';
+                    motionModules?: MotionModuleState[];
+                    procMotion?: Partial<ProcMotionState>;
+                };
+                addSceneMotion({
+                    vmdPath: legacy.vmdPath,
+                    vmdName: legacy.vmdName,
+                    vmdLayers: legacy.vmdLayers.map((l) => ({
                         id: '',
                         kind: l.kind ?? 'vmd',
                         name: l.name,
@@ -1091,112 +1146,67 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
                         boneFilter: l.boneFilter,
                         enabled: l.enabled ?? true,
                     })),
-                    source: m.source,
-                    motionModules: m.motionModules,
-                    procMotion: m.procMotion
+                    source: legacy.source,
+                    motionModules: legacy.motionModules,
+                    procMotion: legacy.procMotion
                         ? ({
                               ...DEFAULT_PROC_STATE,
-                              ...(m.procMotion as Partial<ProcMotionState>),
+                              ...(legacy.procMotion as Partial<ProcMotionState>),
                           } as ProcMotionConfig)
                         : undefined,
                 });
-                if (firstId === null) {
-                    firstId = id;
+                // addSceneMotion 首次添加自动设为默认
+            }
+            // 否则（motion 存在但字段全空）= 显式清空状态，保持 clearAllSceneMotions 结果
+            // [doc:adr-207] 恢复程序化动作可加载集合
+            if (data.motion.loadedProceduralMotions) {
+                setLoadedProceduralMotions(data.motion.loadedProceduralMotions as LoadableProcId[]);
+            }
+        } else {
+            // 旧场景文件无 motion 块 → 保持已有 vmdPath 缓存（与当前行为一致）
+            // 不调用 clearAllSceneMotions 避免覆盖每模型独立 VMD
+        }
+
+        // [doc:adr-108] 恢复 retarget 动画状态（在模型加载完成后执行）
+        if (data.retarget && data.retarget.filePath) {
+            const resolvedPath = resolvePathFromRef(
+                data.retarget.filePath,
+                data.retarget.libraryRef
+            );
+            if (resolvedPath) {
+                const foc = modelManager.focused();
+                if (foc) {
+                    const preset = data.retarget.boneMapPreset as 'mixamo' | 'vrm' | 'custom';
+                    await restoreRetargetAnimation(resolvedPath, preset, foc.id).catch((err) => {
+                        logWarn('scene-serialize', 'retarget 动画恢复失败:', err);
+                    });
                 }
             }
-            // 设置默认动作（若存档中明确为 null，则保留 null=无默认；否则用 activeMotionId 或首项）
-            const desired = data.motion.activeMotionId ?? firstId;
-            setDefaultMotion(desired);
-        } else if (
-            data.motion.vmdPath !== undefined ||
-            data.motion.vmdName !== undefined ||
-            (data.motion.vmdLayers && data.motion.vmdLayers.length > 0)
-        ) {
-            // 旧格式：单例迁移到新场景库
-            const legacy = data.motion as {
-                vmdPath: string | null;
-                vmdName: string;
-                vmdLayers: Array<{
-                    name: string;
-                    path: string | null;
-                    weight: number;
-                    boneFilter: string[];
-                    kind?: 'vmd' | 'gaze';
-                    enabled?: boolean;
-                }>;
-                source: 'vmd' | 'retargeted';
-                motionModules?: MotionModuleState[];
-                procMotion?: Partial<ProcMotionState>;
-            };
-            addSceneMotion({
-                vmdPath: legacy.vmdPath,
-                vmdName: legacy.vmdName,
-                vmdLayers: legacy.vmdLayers.map((l) => ({
-                    id: '',
-                    kind: l.kind ?? 'vmd',
-                    name: l.name,
-                    data: new ArrayBuffer(0),
-                    path: l.path,
-                    weight: l.weight,
-                    boneFilter: l.boneFilter,
-                    enabled: l.enabled ?? true,
-                })),
-                source: legacy.source,
-                motionModules: legacy.motionModules,
-                procMotion: legacy.procMotion
-                    ? ({
-                          ...DEFAULT_PROC_STATE,
-                          ...(legacy.procMotion as Partial<ProcMotionState>),
-                      } as ProcMotionConfig)
-                    : undefined,
-            });
-            // addSceneMotion 首次添加自动设为默认
         }
-        // 否则（motion 存在但字段全空）= 显式清空状态，保持 clearAllSceneMotions 结果
-        // [doc:adr-207] 恢复程序化动作可加载集合
-        if (data.motion.loadedProceduralMotions) {
-            setLoadedProceduralMotions(data.motion.loadedProceduralMotions as LoadableProcId[]);
-        }
-    } else {
-        // 旧场景文件无 motion 块 → 保持已有 vmdPath 缓存（与当前行为一致）
-        // 不调用 clearAllSceneMotions 避免覆盖每模型独立 VMD
-    }
 
-    // [doc:adr-108] 恢复 retarget 动画状态（在模型加载完成后执行）
-    if (data.retarget && data.retarget.filePath) {
-        const resolvedPath = resolvePathFromRef(data.retarget.filePath, data.retarget.libraryRef);
-        if (resolvedPath) {
-            const foc = modelManager.focused();
-            if (foc) {
-                const preset = data.retarget.boneMapPreset as 'mixamo' | 'vrm' | 'custom';
-                await restoreRetargetAnimation(resolvedPath, preset, foc.id).catch((err) => {
-                    logWarn('scene-serialize', 'retarget 动画恢复失败:', err);
-                });
+        // --- Report loading errors ---
+        if (errors.length > 0) {
+            logWarn(
+                'scene-serialize',
+                `场景恢复: ${errors.length}/${data.models.length} 个模型加载失败`
+            );
+            for (const err of errors) {
+                logWarn('scene-serialize', `  - ${err}`);
+            }
+            // Emit a user-visible warning via a DOM event so the UI can show a toast
+            if (typeof document !== 'undefined') {
+                document.dispatchEvent(
+                    new CustomEvent('scene-restore-errors', {
+                        detail: { errors, total: data.models.length },
+                    })
+                );
             }
         }
+        // 恢复完成，允许 auto-save 再次触发
+        return errors.length;
+    } finally {
+        _suppressAutoSave = false;
     }
-
-    // --- Report loading errors ---
-    if (errors.length > 0) {
-        logWarn(
-            'scene-serialize',
-            `场景恢复: ${errors.length}/${data.models.length} 个模型加载失败`
-        );
-        for (const err of errors) {
-            logWarn('scene-serialize', `  - ${err}`);
-        }
-        // Emit a user-visible warning via a DOM event so the UI can show a toast
-        if (typeof document !== 'undefined') {
-            document.dispatchEvent(
-                new CustomEvent('scene-restore-errors', {
-                    detail: { errors, total: data.models.length },
-                })
-            );
-        }
-    }
-    // 恢复完成，允许 auto-save 再次触发
-    _suppressAutoSave = false;
-    return errors.length;
 }
 
 // ======== Auto-save Debounce ========

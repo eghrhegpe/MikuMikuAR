@@ -5,7 +5,8 @@
 import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { ImportMeshAsync } from '@babylonjs/core/Loading/sceneLoader';
 import type { ISceneLoaderAsyncResult } from '@babylonjs/core/Loading/sceneLoader';
-import { MmdStandardMaterialProxy } from 'babylon-mmd/esm/Runtime/mmdStandardMaterialProxy';
+// ADR-188: 材质代理解析器（运行时 materialProxyConstructor）
+import { getMaterialMode, getStandardMaterialProxy } from './material-proxy-resolver';
 import { renderInstanceThumbnail } from './thumbnail-capture';
 import { thumbnailBaseKey } from './thumbnail-key';
 import {
@@ -611,7 +612,7 @@ export async function loadPMXFile(
         // Actor: create MMD model from the loaded mesh via the runtime
         const rootMesh = meshes[0];
         wasmModel = _mmdRuntime.createMmdModel(rootMesh, {
-            materialProxyConstructor: MmdStandardMaterialProxy,
+            materialProxyConstructor: getStandardMaterialProxy(),
         });
 
         // [adr-104] 模型创建后 physics impl 已就绪，显式重试风力订阅，

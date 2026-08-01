@@ -15,6 +15,7 @@ import { MeshBuilder } from '@babylonjs/core/Meshes/meshBuilder';
 import { Vector3, Quaternion } from '@babylonjs/core/Maths/math.vector';
 import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
+import { PBRMaterial } from '@babylonjs/core/Materials/PBR/pbrMaterial';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
 import {
     ModelInstance,
@@ -97,7 +98,7 @@ function syncModelVisibility(inst: ModelInstance): void {
     inst.meshes.forEach((m) => {
         m.setEnabled(inst.visible);
         const mat = m.material;
-        if (mat instanceof StandardMaterial) {
+        if (mat instanceof StandardMaterial || mat instanceof PBRMaterial) {
             mat.wireframe = inst.wireframe;
         }
     });
