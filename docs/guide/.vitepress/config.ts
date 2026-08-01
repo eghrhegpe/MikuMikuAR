@@ -8,7 +8,29 @@ import path from 'node:path';
 // ============================================================
 
 const docsRoot = path.resolve(__dirname, '../..'); // docs/（srcDir 根）
+
+/**
+ * docs 根级「不发布」清单 —— 单一真相源。
+ * 下方 srcExclude（阻止页面构建）与 ARCH_EXCLUDE（阻止 sidebar 收录）均从此派生，
+ * 避免两处手工同步漏排（dep-graph 曾因此生成指向不存在路由的死链条目）。
+ */
+const ROOT_NOBUILD = ['AGENTS.md', 'dep-graph.md'];
 const asPosix = (p) => p.split(path.sep).join('/');
+
+/**
+ * 文件内容缓存：sidebar 构建期多个分组会反复读同一批文件
+ * （知识卡尤甚：原实现为 O(分类数 × 卡片数) 次 readFileSync，实测 235 卡 / 8 分类 = 1880 次 / 243ms）。
+ * 单遍缓存后降为 O(N)，实测 235 次 / 29ms。
+ */
+const fileCache = new Map();
+function readMd(absPath) {
+  let text = fileCache.get(absPath);
+  if (text === undefined) {
+    text = fs.readFileSync(absPath, 'utf8');
+    fileCache.set(absPath, text);
+  }
+  return text;
+}
 
 /** 读某目录下所有 .md 文件名（不含子目录），按文件名排序。 */
 function mdNames(relDir) {
@@ -41,7 +63,7 @@ function scanItems(relDir, exclude = []) {
   return mdNames(relDir)
     .filter((f) => !exclude.includes(f))
     .map((f) => {
-      const text = fs.readFileSync(path.join(docsRoot, relDir, f), 'utf8');
+      const text = readMd(path.join(docsRoot, relDir, f));
       const title = (text.match(/^#\s+(.+)$/m) || [])[1] || f.replace(/\.md$/, '');
       return { text: title, link: link(path.join(relDir, f)) };
     });
@@ -72,9 +94,8 @@ const archWeight = (rel) => {
   const i = ARCH_ORDER.indexOf(path.basename(rel));
   return i === -1 ? ARCH_ORDER.length : i; // 表外沉底
 };
-// 排除项必须与下方 srcExclude 中的 docs 根级条目保持一致：
-// srcExclude 只阻止「页面构建」，sidebar 是独立扫描，漏排会生成指向不存在路由的死链条目。
-const ARCH_EXCLUDE = ['index.md', 'AGENTS.md', 'dep-graph.md'];
+// index.md 是文档中心首页（要构建、但不入「架构与规范」列表），其余从 ROOT_NOBUILD 派生。
+const ARCH_EXCLUDE = ['index.md', ...ROOT_NOBUILD];
 const archItems = scanItems('.', ARCH_EXCLUDE).sort((a, b) => {
   const wa = archWeight(a.link);
   const wb = archWeight(b.link);
@@ -86,22 +107,42 @@ const adrItems = mdNames('adr')
   .map((f) => ({ f, num: Number((f.match(/^adr-(\d+)/) || [])[1] || 0) }))
   .sort((a, b) => a.num - b.num)
   .map(({ f }) => {
-    const text = fs.readFileSync(path.join(docsRoot, 'adr', f), 'utf8');
+    const text = readMd(path.join(docsRoot, 'adr', f));
     const title = (text.match(/^#\s+(.+)$/m) || [])[1] || f.replace(/\.md$/, '');
     return { text: title, link: link('adr/' + f) };
   });
 
-// ---------- 4. 知识卡（knowledge/，按 category 分组折叠） ----------
-const KNOWLEDGE_CATEGORIES = ['env', 'scene', 'physics', 'rendering', 'motion', 'ui', 'core', 'backend'];
-const knowledgeItems = KNOWLEDGE_CATEGORIES.map((cat) => {
-  const items = mdNames('knowledge')
-    .filter((f) => {
-      const text = fs.readFileSync(path.join(docsRoot, 'knowledge', f), 'utf8');
-      return fmField(text, 'category') === cat;
-    })
-    .map((f) => ({ text: f.replace(/\.md$/, ''), link: link('knowledge/' + f) }));
-  return items.length ? { text: cat, collapsed: true, items } : null;
-}).filter(Boolean);
+// ---------- 4. 知识卡（knowledge/，按 category 聚合分组折叠） ----------
+// 设计：从卡片聚合分类（groupBy），而非遍历白名单过滤卡片。
+// 白名单仅决定分组「顺序」，表外/缺失/占位符 category 的卡落入「其他」组并告警，
+// 绝不静默丢卡（旧的白名单投影实现曾吞掉 knowledge/README.md 与 routes.md 两张入口卡）。
+const KNOWLEDGE_ORDER = ['env', 'scene', 'physics', 'rendering', 'motion', 'ui', 'core', 'backend'];
+const UNCATEGORIZED = '其他';
+const knowledgeGroups = new Map();
+for (const f of mdNames('knowledge')) {
+  const raw = fmField(readMd(path.join(docsRoot, 'knowledge', f)), 'category');
+  // 模板占位符（<rendering|env|...>）与空值一律视为未分类
+  const cat = raw && !raw.startsWith('<') ? raw : UNCATEGORIZED;
+  if (cat === UNCATEGORIZED) {
+    console.warn(`[sidebar] knowledge/${f} 缺少有效 category，已归入「${UNCATEGORIZED}」组`);
+  } else if (!KNOWLEDGE_ORDER.includes(cat)) {
+    console.warn(`[sidebar] knowledge/${f} 使用了 KNOWLEDGE_ORDER 表外分类「${cat}」，已按字母序排在表内分组之后`);
+  }
+  if (!knowledgeGroups.has(cat)) knowledgeGroups.set(cat, []);
+  knowledgeGroups.get(cat).push({ text: f.replace(/\.md$/, ''), link: link('knowledge/' + f) });
+}
+const knowledgeWeight = (cat) => {
+  if (cat === UNCATEGORIZED) return KNOWLEDGE_ORDER.length + 1; // 未分类永远沉底
+  const i = KNOWLEDGE_ORDER.indexOf(cat);
+  return i === -1 ? KNOWLEDGE_ORDER.length : i; // 表外分类排在表内之后、未分类之前
+};
+const knowledgeItems = [...knowledgeGroups.entries()]
+  .sort(([a], [b]) => {
+    const wa = knowledgeWeight(a);
+    const wb = knowledgeWeight(b);
+    return wa !== wb ? wa - wb : a.localeCompare(b);
+  })
+  .map(([cat, items]) => ({ text: cat, collapsed: true, items }));
 
 // ---------- 5. 开发运维（buglog/ 日期倒序 + releases/ 版本倒序） ----------
 const buglogItems = mdNames('buglog')
@@ -130,8 +171,8 @@ export default defineConfig({
     'ai-new/**',
     'upstream/**',
     '_writetest.txt',
-    'AGENTS.md',
-    'dep-graph.md', // 开发自查产物（全量依赖图 252 节点/1444 边），非用户手册内容，不发布到 /docs/
+    // AGENTS.md（AI 协作约定）+ dep-graph.md（开发自查产物，252 节点/1444 边依赖图）
+    ...ROOT_NOBUILD,
   ],
   // 全量进站后：正文大量相对链接（../../AGENTS、./adr/xxx 等）是 GitHub 仓库浏览用途，
   // 在 VitePress 站内按路由解析必然死链；站内导航由 sidebar 数组保证。
