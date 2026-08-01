@@ -13,24 +13,32 @@ adr:
   - ADR-126
   - ADR-186
 symbols:
+  - BoneHierarchyDump
+  - BoneHierarchyNode
   - BoneOverrideEntry
-  - computeOverride
-  - setBoneOverride
+  - FRAME_HOOK_ORDER
+  - FrameHookSnapshot
+  - OverrideSlotLike
+  - OverrideType
   - applyBoneOverrideIK
-  - setBoneOverrideQuat
-  - setBoneOverridePosition
+  - clearAllOverrides
   - clearBoneOverride
+  - computeOverride
+  - dumpBoneHierarchy
+  - getAllOverrides
+  - getFrameHooksSnapshot
   - getOverride
   - getOverrideType
-  - clearAllOverrides
+  - getWasmIkResolver
   - protectIkPosition
   - registerBoneOverrideFrameHook
-  - getFrameHooksSnapshot
-  - getAllOverrides
   - restoreOverrides
+  - setBoneOverride
+  - setBoneOverridePosition
+  - setBoneOverrideQuat
+  - setWasmIkResolver
   - startBoneOverride
   - stopBoneOverride
-  - dumpBoneHierarchy
 invariants:
   - 被 6 个 motion-modules 子模块引用
   - 与 bone-override-store 协作（所有权仲裁）

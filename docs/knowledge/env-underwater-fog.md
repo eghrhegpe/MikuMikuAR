@@ -9,7 +9,6 @@ source_files:
 adr: []
 symbols:
   - underwaterFogController
-  - computeUnderwaterFogColor
 invariants:
   - 仅在"穿越水面边界"（isUnderwater 状态翻转）时切换一次材质/fogMode，绝不每帧赋值（避免 Babylon 着色器重编译）
   - 焦散动感由 causticsController.update(dt) 推进纹理 uOffset 提供（改 offset 不触发重编译）

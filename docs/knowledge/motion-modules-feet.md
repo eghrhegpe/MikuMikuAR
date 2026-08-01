@@ -12,7 +12,6 @@ adr:
 symbols:
   - LEFT_FOOT_DEF
   - RIGHT_FOOT_DEF
-  - createFootModuleFactory
 invariants:
   - 左右脚完全独立，可分别调节旋转和位置偏移
   - 旋转通过 setBoneOverride 写入足 IK 骨骼

@@ -7,18 +7,21 @@ scope:
 source_files:
   - frontend/src/scene/render/renderer.ts
 symbols:
-  - initRenderer
-  - disposeRenderer
-  - isRendererReady
-  - getRenderState
-  - setRenderState
+  - RenderState
+  - ToneMappingMode
   - defaultRenderState
-  - transitionRenderState
-  - reattachPipeline
+  - disposeRenderer
+  - getRenderState
+  - initRenderer
+  - isRendererReady
   - isSSRActive
-  - setSSRFromReflection
+  - pipeline
+  - reattachPipeline
   - rebuildOutlineState
   - registerCelGroundCoupling
+  - setRenderState
+  - setSSRFromReflection
+  - transitionRenderState
 invariants:
   - disposeRenderer 级联释放 DefaultRenderingPipeline / 后处理 / GlowLayer / 模块级 observer
   - RenderState 通过 setRenderState patch 合并，而非整体替换

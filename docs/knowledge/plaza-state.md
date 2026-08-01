@@ -9,18 +9,34 @@ source_files:
 adr:
   - ADR-087
 symbols:
+  - GLOBAL_MODE_KEY
+  - OpenMode
+  - SITE_GROUPS
+  - allCreators
+  - allSites
   - closePlaza
-  - setAllSites
-  - setAllCreators
-  - setCurrentSiteId
+  - currentSiteId
+  - downloadListenerInstalled
+  - effectiveMode
+  - eventListenersInstalled
   - getCurrentSite
   - getLayer
+  - layer
   - loadGlobalMode
+  - observer
+  - plazaIframe
+  - plazaProxyActive
   - saveGlobalMode
-  - effectiveMode
-  - setPlazaProxyActive
+  - setAllCreators
+  - setAllSites
+  - setCurrentSiteId
+  - setDownloadListenerInstalled
+  - setEventListenersInstalled
   - setObserver
   - setPlazaIframe
+  - setPlazaProxyActive
+  - setShortcutsRegistered
+  - shortcutsRegistered
   - stopProxy
 invariants:
   - 广场状态在关闭时重置为初始值

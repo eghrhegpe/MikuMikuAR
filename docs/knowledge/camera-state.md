@@ -11,18 +11,61 @@ adr:
   - ADR-100
   - ADR-148
 symbols:
-  - CameraState
-  - getCameraState
-  - setCameraState
-  - CameraMode
-  - CameraControl
   - CameraBehavior
+  - CameraControl
+  - CameraMode
   - CameraPreset
-  - getCameraScene
-  - setCameraScene
-  - getCameraCanvas
-  - setCameraCanvas
+  - ConcertParams
+  - FreeflyParams
+  - OrbitParams
+  - ScriptedSubMode
+  - SurroundParams
+  - clearCameraVmdState
+  - defaultCameraPreset
   - freeflyInput
+  - getAutoCameraBeatCount
+  - getAutoCameraPresetIdx
+  - getCameraBehavior
+  - getCameraCanvas
+  - getCameraControl
+  - getCameraMode
+  - getCameraPreset
+  - getCameraScene
+  - getCameraVmdName
+  - getCameraVmdPath
+  - getConcertParams
+  - getConcertPaused
+  - getCurrentCamera
+  - getFocusCenterY
+  - getFov
+  - getFreeflyParams
+  - getOrbitParams
+  - getPreviousMode
+  - getScriptedSubMode
+  - getSurroundParams
+  - getSurroundPaused
+  - getViewMatrixHandle
+  - hasCameraVmd
+  - isAutoCameraEnabled
+  - isTouchDevice
+  - setAutoCameraBeatCount
+  - setAutoCameraEnabledFlag
+  - setAutoCameraPresetIdx
+  - setCameraBehavior
+  - setCameraCanvas
+  - setCameraControl
+  - setCameraMode
+  - setCameraPreset
+  - setCameraScene
+  - setCameraVmdState
+  - setConcertPaused
+  - setCurrentCamera
+  - setFocusCenterY
+  - setFov
+  - setPreviousMode
+  - setScriptedSubMode
+  - setSurroundPaused
+  - setViewMatrixHandle
 invariants:
   - 相机状态在模型切换时保持
   - scene/canvas 引用是运行时上下文（非纯状态），下沉到此处的目的是切断 camera 子模块间的循环依赖

@@ -16,14 +16,35 @@ source_files:
 adr:
   - ADR-071
 symbols:
-  - getMotionMenu
-  - refreshMotionRoot
-  - showMotionPopup
-  - disposeMotionPopup
-  - buildGazeLevel
-  - buildOverrideLevel
-  - buildPoseLevel
+  - applyIntentToModel
+  - buildAdvancedBoneOverrideLevel
+  - buildCameraLevel
+  - buildGazeTrackingLevel
+  - buildModuleParamLevel
+  - buildMotionRootItems
+  - buildMotionRootLevel
+  - buildPoseStudioLevel
+  - buildProcLibraryLevel
   - buildProcMotionLevel
+  - buildRetargetLevel
+  - buildVirtualSkirtLevel
+  - disposeAllVirtualSkirts
+  - disposeMotionPopup
+  - disposeVirtualSkirtForModel
+  - getGazeSchema
+  - getMotionMenu
+  - hideMotionPopup
+  - importExternalAnimation
+  - initMotionBroadcast
+  - refreshMotionRoot
+  - renderModuleToggleList
+  - renderOverrideCard
+  - renderPerceptionConflictBanners
+  - renderPresetCard
+  - showMotionPopup
+  - syncOverrideToInstance
+  - syncPlaybackSpeedToRuntime
+  - updatePerceptionConflictBanner
 invariants:
   - Schema 驱动 UI，数据绑定到 motionState
   - 感知层（ADR-071）与程序化动作解耦，独立文件

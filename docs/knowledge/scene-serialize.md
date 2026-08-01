@@ -8,19 +8,20 @@ source_files:
   - frontend/src/scene/scene-serialize.ts
 adr: []
 symbols:
-  - serializeScene
-  - deserializeScene
-  - saveSceneImmediate
-  - tryRestoreLastScene
-  - triggerAutoSaveImpl
-  - setSuppressAutoSave
-  - pushUndoSnapshot
-  - popUndoSnapshot
-  - restoreUndoSnapshot
+  - SceneFile
   - canUndo
+  - deserializeScene
   - offerSceneUndo
   - offerSceneUndoAndRefresh
+  - popUndoSnapshot
+  - pushUndoSnapshot
   - resolvePathFromRef
+  - restoreUndoSnapshot
+  - saveSceneImmediate
+  - serializeScene
+  - setSuppressAutoSave
+  - triggerAutoSaveImpl
+  - tryRestoreLastScene
 invariants:
   - 自动保存防抖由 scene.ts 的 viewMatrix observer/change observer 触发 scheduleAutoSave
   - undo/redo 使用栈式快照（pushUndoSnapshot → popUndoSnapshot），栈满丢弃最旧

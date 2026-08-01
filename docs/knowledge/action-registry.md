@@ -26,14 +26,36 @@ adr:
   - ADR-197
   - ADR-155
 symbols:
-  - registerAction
-  - listActions
-  - getAction
-  - executeActionById
+  - ActionDef
+  - ActionResult
+  - AdapterResult
+  - ParamDef
+  - ParamType
+  - ToolFunction
+  - ToolSchema
+  - _resetActionRegistry
+  - _setStrictMode
   - adaptParam
-  - buildToolSchemas
   - buildToolCatalogText
+  - buildToolSchemas
+  - colorAdapter
+  - entityAdapter
+  - enumAdapter
+  - executeActionById
+  - getAction
+  - listActions
+  - rangeAdapter
+  - registerAction
+  - registerActions
   - registerAllActions
+  - registerControlActions
+  - registerDiagnosticActions
+  - registerEnvActions
+  - registerLibraryActions
+  - registerMotionActions
+  - registerSceneActions
+  - registerSettingsActions
+  - unregisterAction
 invariants:
   - action-registry.ts 为零依赖纯叶子；ActionDef.label 当前为硬编码中文（非 i18n key），消费端原样使用，NL 国际化为待办
   - executeActionById 先经 adaptParam 校验/转换所有参数，缺参（非 boolean/toggle）即失败短路，execute 异常被捕获转为 ActionResult

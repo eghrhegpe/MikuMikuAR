@@ -9,15 +9,17 @@ source_files:
 adr:
   - ADR-026
 symbols:
+  - applyWetnessToInst
+  - applyWindToParticles
   - createParticleEmitter
   - disposeParticles
+  - disposeSplash
   - getCurrentParticleType
-  - updateParticleWind
+  - isWetnessActive
+  - syncSplashState
   - updateParticleParams
   - updateParticleTexture
-  - syncSplashState
-  - applyWindToParticles
-  - disposeSplash
+  - updateParticleWind
 invariants:
   - disposeParticles 可选保留湿身效果（keepWetness）
   - 粒子数量根据性能等级动态调整

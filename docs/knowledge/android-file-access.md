@@ -21,12 +21,16 @@ adr:
   - ADR-183
   - ADR-194
 symbols:
-  - fsSelectDir
-  - SelectDir
-  - openDocumentTree
-  - androidDirNotSupported
-  - getFsaAuthState
-  - reauthorizeFsaRoot
+  - buildSettingsDownloadsLevel
+  - buildSettingsResourcesLevel
+  - goAdapter
+  - initLibrary
+  - refreshLibrary
+  - reloadConfig
+  - rescanAndSync
+  - selectOverridePath
+  - selectResourceRoot
+  - switchStorageMode
 invariants:
   - 安卓文件访问走 shared 模式（MANAGE_EXTERNAL_STORAGE 授权后 os.ReadDir 直读 /sdcard），不依赖 SAF content:// 树
   - 安卓能力矩阵 fsSelectDir = false，前端不应对安卓调用 SelectDir() 弹目录选择

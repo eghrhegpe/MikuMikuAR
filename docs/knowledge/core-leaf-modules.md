@@ -23,29 +23,30 @@ adr:
   - ADR-191
   - ADR-190
 symbols:
-  - swallowError
-  - fireAndForget
-  - delay
-  - waitForFrame
-  - LoadingGuard
-  - DebouncedTimer
   - Abortable
-  - makeLazyLoader
+  - DebouncedTimer
+  - LoadingGuard
   - clamp
   - clamp01
   - clampInt
-  - lerp
-  - lerpArray
   - clampPct
+  - computeLibraryRef
   - debounce
   - deepClone
+  - delay
+  - fireAndForget
   - formatTimestamp
-  - normPath
   - getBaseName
   - getDirPath
-  - isUnderRoot
   - isStageLike
+  - isUnderRoot
+  - lerp
+  - lerpArray
+  - makeLazyLoader
+  - normPath
   - setKey
+  - swallowError
+  - waitForFrame
 invariants:
   - 所有模块不引入 dom/state/fileservice/status-bar/i18n/feedback/menus 等应用层；async.ts 仅依赖同属叶层的 logger
   - 从这些模块导入不会拖起应用层，避免 vitest fork worker 挂死（ADR-191）

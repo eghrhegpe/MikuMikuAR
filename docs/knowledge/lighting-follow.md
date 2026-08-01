@@ -9,18 +9,20 @@ source_files:
 adr:
   - ADR-168
 symbols:
+  - DEFAULT_PERSONAL_LIGHT
+  - PersonalLightSettings
   - attachPersonalLight
   - detachPersonalLight
-  - setPersonalLightState
-  - getPersonalLightState
-  - setPersonalLightDefault
-  - getPersonalLightDefault
-  - resetPersonalLightDefault
-  - tickPersonalLights
-  - tickStageLightFollow
   - disposeAllPersonalLights
   - getAllPersonalLights
+  - getPersonalLightDefault
+  - getPersonalLightState
+  - resetPersonalLightDefault
   - restorePersonalLights
+  - setPersonalLightDefault
+  - setPersonalLightState
+  - tickPersonalLights
+  - tickStageLightFollow
 invariants:
   - 个人灯光跟随模型腰部骨骼，每帧由 tickPersonalLights 更新位置
   - disposeAllPersonalLights 释放所有个人灯光及其光锥

@@ -11,10 +11,11 @@ adr:
 symbols:
   - SceneSnapshotBridge
   - SceneSnapshotData
-  - registerAiSnapshotBridge
-  - formatSceneSnapshot
-  - captureSceneSnapshotData
+  - _resetAiSnapshotBridge
   - captureSceneSnapshot
+  - captureSceneSnapshotData
+  - formatSceneSnapshot
+  - registerAiSnapshotBridge
 invariants:
   - 采用 bridge 模式（对齐 performance.ts 的 registerRenderBridge），scene.ts 在 initScene() 注入引擎引用
   - 避免 ai → scene 静态依赖（保持零循环依赖）；未注册 bridge 时 captureSceneSnapshot 返回占位文本

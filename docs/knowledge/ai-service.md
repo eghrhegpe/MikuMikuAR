@@ -14,11 +14,26 @@ adr:
   - ADR-196
   - ADR-176
 symbols:
+  - AI_ERROR_KINDS
+  - AiCapabilities
+  - AiConfigProvider
+  - AiConnectionResult
+  - AiErrorKind
+  - AiPersistedConfig
   - AiService
-  - resolveAi
+  - AiValidationError
+  - AiValidationResult
+  - BrowserAiAdapter
+  - ChatChunk
+  - ChatMessage
+  - ChatRequest
+  - GoAiAdapter
+  - ToolCall
+  - ToolSchema
   - browserAiAdapter
   - goAiAdapter
   - goKeyAllowsProceed
+  - resolveAi
 invariants:
   - resolveAi() 为惰性单例，模块顶层禁止同步求值（避免 Android 冷启动 window.wails 未注入而误降级）
   - go-adapter 必须动态 import（桌面/安卓路径按需），不得进入纯浏览器 bundle

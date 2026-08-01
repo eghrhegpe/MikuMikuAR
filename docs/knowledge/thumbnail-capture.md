@@ -10,7 +10,6 @@ adr: []
 symbols:
   - ThumbnailSource
   - renderInstanceThumbnail
-  - renderPropThumbnail
 invariants:
   - 缩略图使用独立场景（FreeCamera + RenderTargetTexture）渲染，不影响主场景
   - 支持 PNG 与 JPEG 格式，分辨率和质量由 uiState 控制

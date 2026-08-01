@@ -10,10 +10,12 @@ source_files:
 adr:
   - ADR-153
 symbols:
+  - DialogOptions
+  - Prompt2Options
+  - disposeOverlay2
   - showConfirm
   - showPrompt
   - showPrompt2
-  - disposeOverlay2
 invariants:
   - 对话框请求串行排队，不能因并发调用覆盖 DOM 导致 Promise 永不结束
   - 关闭时恢复焦点陷阱、overlay 状态和当前 Promise

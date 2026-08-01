@@ -10,9 +10,12 @@ source_files:
 adr:
   - ADR-157
 symbols:
+  - generateTextColors
   - getSettingsMenu
+  - preloadAutoImportState
+  - preloadDownloadWatchState
+  - refreshSettingsRoot
   - showSettings
-  - handleSettingsAction
 invariants:
   - 7 分类信息架构（ADR-157）作为路由表单一来源：外观/画面/操控/资源/媒体/系统/关于
   - 子页面实现在 settings-*.ts 子模块，本文件仅负责菜单注册、路由表、re-export

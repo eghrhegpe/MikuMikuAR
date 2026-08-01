@@ -8,9 +8,11 @@ source_files:
   - frontend/src/core/orbit.ts
 adr: []
 symbols:
-  - orbitToCartesian
+  - MIN_ORBIT_DISTANCE
+  - OrbitCoords
   - cartesianToOrbit
   - normalizeOrbit
+  - orbitToCartesian
 invariants:
   - 坐标转换使用右手坐标系（与 Babylon.js 一致）
   - 球面坐标范围：pitch [-90, 90]、yaw [-180, 180]、distance [0, +∞)

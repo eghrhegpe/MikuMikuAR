@@ -9,12 +9,13 @@ source_files:
 adr:
   - ADR-021
 symbols:
+  - getLipSyncState
   - initLipSync
+  - resetLipSyncOnFocusChange
   - setLipSyncEnabled
-  - setLipSyncSensitivity
   - setLipSyncIntensity
   - setLipSyncMultiMorphEnabled
-  - getLipSyncState
+  - setLipSyncSensitivity
   - setLipSyncState
   - updateLipSync
 invariants:

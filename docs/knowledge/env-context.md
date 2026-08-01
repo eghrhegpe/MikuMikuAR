@@ -8,12 +8,14 @@ source_files:
   - frontend/src/scene/env/_shared/env-context.ts
 adr: []
 symbols:
-  - initEnvImpl
-  - getScene
+  - INFINITE_GROUND_SIZE
+  - _envSys
+  - effectiveGroundSize
   - getPipeline
+  - getScene
+  - initEnvImpl
   - isInitialized
   - resolveStaticAsset
-  - _envSys
 invariants:
   - 初始化顺序须在场景与渲染管线就绪后调用，否则 getScene() 返回未定义
   - _envSys 为环境系统内部聚合对象，各 env 子模块运行时句柄集中于此

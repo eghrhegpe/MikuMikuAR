@@ -11,6 +11,9 @@ adr:
 symbols:
   - SETTINGS
   - SETTINGS_ACTION
+  - SOFTWARE_DETAIL_PREFIX
+  - SettingsActionTarget
+  - SettingsFolderTarget
 invariants:
   - 常量与设置主菜单的路由保持一致
   - 新设置页面需同步添加常量

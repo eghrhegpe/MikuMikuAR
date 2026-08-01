@@ -10,6 +10,7 @@ adr:
   - ADR-177
 symbols:
   - handleDropFile
+  - handleDroppedFile
 invariants:
   - 桌面：File.path 绝对路径 → Go ImportZip/loadManager
   - 浏览器：File 无 path → 读 arrayBuffer → IndexedDB → ExtractZip

@@ -10,9 +10,11 @@ adr: []
 symbols:
   - RuntimeMode
   - detectRuntimeMode
-  - persistRuntimeMode
+  - initRuntimeBadge
   - loadPersistedRuntimeMode
+  - persistRuntimeMode
   - renderRuntimeBadge
+  - setBackendBadge
 invariants:
   - 运行模式在启动时确定
 tests: []

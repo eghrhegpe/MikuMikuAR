@@ -11,8 +11,9 @@ source_files:
   - frontend/src/core/icons-bundle.ts
 adr: []
 symbols:
-  - createIconifyIcon
   - createIconButton
+  - createIconifyIcon
+  - registerIconBundle
   - softwareKindIcon
 invariants:
   - 图标按需加载，只在需要时加载图标数据

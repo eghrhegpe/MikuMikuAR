@@ -9,8 +9,9 @@ source_files:
 adr:
   - ADR-059
 symbols:
-  - bundles
   - AVAILABLE_LANGS
+  - bundles
+  - loadLocale
   - t
 invariants:
   - 单例，无状态

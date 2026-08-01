@@ -8,16 +8,19 @@ scope:
 source_files:
   - frontend/src/scene/render/lighting.ts
 symbols:
-  - initLighting
-  - disposeLighting
-  - getLightState
-  - setLightState
-  - transitionLighting
-  - getHemiLight
-  - getDirLight
-  - setSkipLightAutoSave
-  - rebakeEnvBrightness
   - LightState
+  - StageLightState
+  - StageLightType
+  - _defaultStageLightState
+  - disposeLighting
+  - getDirLight
+  - getHemiLight
+  - getLightState
+  - initLighting
+  - rebakeEnvBrightness
+  - setLightState
+  - setSkipLightAutoSave
+  - transitionLighting
 invariants:
   - setLightState 为光照唯一写入入口，被 env-bridge 调用 applyLightingPresetFromEnv
   - 切换预设时 _cancelAllLightingTweens 取消旧补间防冲突

@@ -10,11 +10,12 @@ adr:
   - ADR-045
   - ADR-135
 symbols:
-  - LoadManager
-  - LoadRequest
-  - ResourceHandle
   - LibraryLoadError
   - LoadPhase
+  - LoadRequest
+  - ResourceHandle
+  - ResourceKind
+  - loadManager
 invariants:
   - 所有资源请求经单一 Promise 队列串行执行
   - 每个请求拥有 loadId，失败时保留 phase 与原始 cause

@@ -8,10 +8,11 @@ source_files:
   - frontend/src/scene/pose/watermark.ts
 adr: []
 symbols:
+  - DEFAULT_WATERMARK
   - WatermarkConfig
+  - applyWatermark
   - getWatermarkConfig
   - setWatermarkConfig
-  - applyWatermark
 invariants:
   - 水印在渲染后处理阶段添加，不影响场景渲染
   - 水印可配置为可选（默认关闭）

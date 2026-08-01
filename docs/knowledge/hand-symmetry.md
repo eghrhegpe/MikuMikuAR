@@ -13,7 +13,6 @@ adr:
 symbols:
   - LEFT_HAND_DEF
   - RIGHT_HAND_DEF
-  - createHandModuleFactory
 invariants:
   - 左右手完全独立，不再强制镜像
   - 合并原 hand-symmetry（手腕旋转+位置偏移）与 finger-pose（手指预设）

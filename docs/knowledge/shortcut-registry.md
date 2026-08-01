@@ -9,9 +9,21 @@ source_files:
 adr:
   - ADR-036
 symbols:
-  - ShortcutRegistry
+  - KeyBindingOverride
+  - ShortcutDef
+  - ShortcutWithBinding
+  - _resetShortcutRegistry
+  - exportKeyBindings
+  - formatKeyBinding
+  - getAllShortcuts
+  - getAriaKeyshortcuts
+  - initShortcutDispatcher
+  - loadKeyBindings
   - registerShortcut
-  - unregisterShortcut
+  - registerShortcuts
+  - resetAllKeyBindings
+  - resetKeyBinding
+  - setKeyBinding
 invariants:
   - 快捷键 ID 唯一，由 shortcut-app.ts 定义
   - 快捷键注册映射到 action-registry 动作 ID

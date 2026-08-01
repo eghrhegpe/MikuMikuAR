@@ -8,10 +8,11 @@ scope:
 source_files:
   - frontend/src/core/toast.ts
 symbols:
-  - showToast
+  - ToastAction
+  - ToastVariant
   - showErrorToast
   - showInfoToast
-  - ToastAction
+  - showToast
 invariants:
   - 同时最多显示 5 条通知，淘汰最早项并清理定时器
   - 错误通知使用 assertive aria live；详情文本使用 textContent

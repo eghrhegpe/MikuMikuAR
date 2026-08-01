@@ -16,16 +16,34 @@ source_files:
 adr:
   - ADR-171
 symbols:
+  - FILTER_PRESET_LABELS
+  - ResourceHandle
+  - USER_FILTER_PRESETS
+  - buildAttachmentCard
+  - buildDangerCard
+  - buildDragModeLevel
+  - buildMaterialCard
+  - buildPhysicsDebugLevel
+  - buildPhysicsLevel
+  - buildPostProcessColorSchema
+  - buildPostProcessCoreSchema
+  - buildPostProcessLevel
+  - buildPresetScenesLevel
+  - buildPresetsLevel
+  - buildSnapSettings
+  - buildStageLevel
+  - buildStageLightLevel
+  - buildStageTransformLevel
+  - buildTransformCard
+  - buildWasmPhysicsLevel
+  - getFilterPreset
   - getSceneMenu
   - reRenderSceneMenu
-  - buildRenderLevel
-  - buildStageLevel
-  - buildPhysicsLevel
-  - buildPropDetailLevel
-  - buildDragLevels
-  - buildTransformCard
-  - buildMaterialCard
-  - buildDangerCard
+  - reconcileTransformSelection
+  - refreshSceneRoot
+  - setRefreshSceneRoot
+  - setSceneMenu
+  - showPresetSaveDialog
 invariants:
   - Schema 驱动 UI，数据绑定到 sceneState
   - 场景菜单状态在 scene-menu-state.ts 中管理

@@ -9,11 +9,15 @@ source_files:
 adr:
   - ADR-081
 symbols:
+  - AttachmentAnchors
+  - AttachmentFit
+  - AttachmentTopology
+  - FrameUpdateFn
+  - PerFrameUpdateRegistry
+  - autoFitAttachment
   - findRuntimeBone
   - getBoneLocalMatrix
   - getBoneWorldPosition
-  - autoFitAttachment
-  - PerFrameUpdateRegistry
 invariants:
   - 本模块不被任何启动期代码 eager 导入，仅作为将来挂载布料/ragdoll/attachment 时的基础设施备用
   - PerFrameUpdateRegistry 为单一 onBeforeRenderObservable 调度多个按 key 注册的每帧回调

@@ -9,10 +9,11 @@ source_files:
 adr:
   - ADR-113
 symbols:
+  - FRAG_SRC
+  - buildJitterSource
   - createClouds
   - disposeClouds
   - resolveCloudShaderParams
-  - buildJitterSource
 invariants:
   - disposeClouds 释放云层所有资源
   - 云层使用程序化噪声纹理驱动形状，非静态 mesh

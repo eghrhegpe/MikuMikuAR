@@ -9,6 +9,7 @@ source_files:
 adr:
   - ADR-157
 symbols:
+  - buildCameraSchema
   - buildSettingsControlsLevel
 invariants:
   - 快捷键编辑支持可交互式按键绑定，显示冲突检测

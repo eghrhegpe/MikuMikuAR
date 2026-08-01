@@ -11,10 +11,11 @@ adr:
   - ADR-192
   - ADR-194
 symbols:
-  - initWindPhysics
-  - retryWindPhysicsSubscription
+  - _getBundles
   - disposeWindPhysics
+  - initWindPhysics
   - isWindPhysicsActive
+  - retryWindPhysicsSubscription
 invariants:
   - 仅 WASM 运行时生效；Kinematic 刚体不受力
   - initWindPhysics 幂等；physics impl 延迟就绪时由 retry 补齐

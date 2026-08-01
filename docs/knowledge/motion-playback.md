@@ -8,9 +8,10 @@ source_files:
   - frontend/src/scene/motion/playback.ts
 adr: []
 symbols:
+  - PlaybackObservablesDispose
   - initPlaybackObservables
-  - updatePlaybackUI
   - seekFromEvent
+  - updatePlaybackUI
 invariants:
   - _disposed 双清理防护：dispose 后不再执行任何回调
   - _manager 引用在 initPlaybackObservables 中注入，dispose 后清零

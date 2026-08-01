@@ -7,6 +7,7 @@ scope:
 source_files:
   - frontend/src/scene/manager/model-manager.ts
 symbols:
+  - FormationType
   - ModelManager
   - getFormationLabels
 invariants:

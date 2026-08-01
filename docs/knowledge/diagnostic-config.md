@@ -10,15 +10,14 @@ adr:
   - ADR-196
   - ADR-203
 symbols:
+  - applyProvider
+  - buildConfigSchema
   - goKeyAllowsProceed
   - loadInitialConfig
-  - refreshCaps
   - persistConfig
-  - applyProvider
+  - refreshCaps
   - refreshModelList
   - updateStatusBadge
-  - buildConfigSchema
-  - testConnection
 invariants:
   - Go 桌面端 key 不可回读时（isGo=true && keyConfigured=true），missingKey 不阻止请求发起
   - 配置写回经 saveChain 串行化（链式 Promise），避免并发持久化竞争

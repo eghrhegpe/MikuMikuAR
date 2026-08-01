@@ -7,9 +7,32 @@ scope:
 source_files:
   - frontend/src/scene/env/env-impl.ts
 symbols:
-  - ensureEnvUpdateObserver
-  - disposeEnvUpdateObserver
+  - _envSys
+  - addGroundRipple
+  - addRipple
   - applyFog
+  - applyGround
+  - applySky
+  - clearGroundRipples
+  - clearRipples
+  - createClouds
+  - createParticleEmitter
+  - createWater
+  - disposeClouds
+  - disposeEnvUpdateObserver
+  - disposeParticles
+  - disposeWater
+  - ensureEnvUpdateObserver
+  - getGroundHeightAt
+  - getScene
+  - initEnvImpl
+  - refreshWaterRenderList
+  - registerSceneTickCallback
+  - setOnGroundChanged
+  - setOnTerrainReady
+  - updateParticleTexture
+  - updateParticleWind
+  - updateWaterAnimSpeed
 invariants:
   - 本文件为 barrel 重导出枢纽：汇聚 env-water/env-clouds/env-sky/env-ground/env-terrain/env-context/env-dispatcher 的各子系统符号
   - dispose 链路级联释放 water/clouds/mirror 子资源；observer 句柄经 observer-handle 管理

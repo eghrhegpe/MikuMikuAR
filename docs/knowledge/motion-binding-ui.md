@@ -8,13 +8,14 @@ source_files:
   - frontend/src/menus/motion-binding-ui.ts
 adr: []
 symbols:
+  - DEFAULT_MOTION_SLOTS
+  - applyIntentToModel
+  - buildActionBindingLevel
+  - ensureMotionSlots
+  - handleModelAction
+  - initMotionBroadcast
   - renderModuleToggleList
   - resetFocusedLayerId
-  - ensureMotionSlots
-  - applyIntentToModel
-  - initMotionBroadcast
-  - buildActionBindingLevel
-  - handleModelAction
 invariants:
   - applyIntentToModel 含 generation 防过期机制
   - 动作槽位经 ensureMotionSlots 确保模型实例具有动作槽位

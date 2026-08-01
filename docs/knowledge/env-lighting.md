@@ -8,17 +8,18 @@ source_files:
   - frontend/src/scene/env/env-lighting.ts
 adr: []
 symbols:
-  - EnvPreset
-  - DerivedLighting
-  - EnvPresetCategory
   - CategorizedEnvPreset
+  - DerivedLighting
   - ENV_PRESET_FIELDS
+  - EnvPreset
+  - EnvPresetCategory
+  - LEGACY_CATEGORY_MAP
+  - TIME_OF_DAY_PRESETS
   - calcLuminance
   - deriveLighting
-  - TIME_OF_DAY_PRESETS
-  - snapshotEnvPresetByCategory
   - exportCategorizedEnvPreset
   - importCategorizedEnvPreset
+  - snapshotEnvPresetByCategory
 invariants:
   - 灯光预设参数在合理范围内
 tests: []

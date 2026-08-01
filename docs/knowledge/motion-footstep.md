@@ -9,8 +9,6 @@ source_files:
 adr:
   - ADR-088
 symbols:
-  - GroundSfxKind
-  - SynthCfg
   - resolveGroundSfxKind
   - startFootstep
   - stopFootstep

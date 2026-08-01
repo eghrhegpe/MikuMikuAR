@@ -11,15 +11,23 @@ source_files:
 adr:
   - ADR-114
 symbols:
-  - applyGround
-  - tickGround
-  - getGroundHeightAt
-  - disposeGround
-  - clearGroundTexCache
-  - setOnTerrainReady
-  - setOnGroundChanged
-  - _effectiveRoughness
+  - GROUND_PRESETS
+  - GROUND_PRESET_KEYS
+  - GroundPreset
+  - GroundProceduralKind
+  - _disableGroundRippleTexture
   - _effectiveBumpLevel
+  - _effectiveRoughness
+  - applyGround
+  - buildGroundLevel
+  - buildGroundPresetEnvState
+  - clearGroundTexCache
+  - disposeGround
+  - getGroundHeightAt
+  - getGroundSchema
+  - setOnGroundChanged
+  - setOnTerrainReady
+  - tickGround
 invariants:
   - disposeGround 释放地面材质、网格、反射与涟漪资源，经 safeDispose 安全清理
   - 程序化纹理 6 种预设（木材/大理石/混凝土/瓷砖/地毯/金属），每类含 albedo + roughness + normal 三通道

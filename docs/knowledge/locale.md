@@ -9,10 +9,12 @@ source_files:
 adr:
   - ADR-059
 symbols:
-  - getLang
-  - setLang
-  - initI18n
   - LangCode
+  - SUPPORTED_LANGS
+  - detectSystemLang
+  - getLang
+  - initI18n
+  - setLang
 invariants:
   - 模块加载时即从 localStorage 读取语言偏好，确保菜单首帧即正确
   - setLang 持久化到 localStorage + 更新 <html lang> + scheduleRefresh() 刷新菜单

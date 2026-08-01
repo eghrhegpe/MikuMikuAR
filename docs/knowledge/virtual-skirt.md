@@ -10,11 +10,14 @@ adr:
   - ADR-084
   - ADR-081
 symbols:
-  - VirtualSkirtController
-  - resolveVirtualSkirtQuality
-  - localToWorld
-  - worldDeltaToLocal
   - QUALITY_PRESETS
+  - VirtualSkirtConfig
+  - VirtualSkirtController
+  - VirtualSkirtQuality
+  - defaultVirtualSkirtConfig
+  - localToWorld
+  - resolveVirtualSkirtQuality
+  - worldDeltaToLocal
 invariants:
   - 不被 scene.ts 启动期 eager 导入，仅由用户显式开启虚拟裙骨时按需 await import()
   - build 中途异常时安全释放半初始化资源，通过 addRigidBody/addConstraint 返回 false 时 logWarn+dispose+return false

@@ -15,16 +15,21 @@ adr:
   - ADR-196
   - ADR-079
 symbols:
-  - CharacterBible
   - BUILTIN_BIBLES
-  - getBible
+  - CharacterBible
+  - DIALOGUE_EMOTIONS
+  - DialogueEmotion
+  - DialogueLine
+  - SpeakLine
   - buildDialogueSystemPrompt
-  - parseDialogueLines
+  - cancelSpeech
   - getActiveBible
+  - getBible
+  - isSpeechSupported
+  - listBibles
+  - parseDialogueLines
   - setActiveBible
   - speakLines
-  - cancelSpeech
-  - isSpeechSupported
 invariants:
   - character-bible.ts 为纯数据+纯函数叶子，零副作用、零应用层依赖；人设内建，不从 novel/ 抽取（novel/ 是开发编年史非角色人设）
   - parseDialogueLines 容错：非法情绪归一到 neutral，解析失败时整段文本兜底为单条 neutral，保证 UI 永远有内容
