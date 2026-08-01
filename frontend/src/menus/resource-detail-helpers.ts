@@ -49,7 +49,10 @@ let _activeCardEl: HTMLElement | null = null;
 
 /**
  * 面板关闭/切换即卸载（ADR-171 面板化）：菜单 onAfterRender 时调用。
- * 卡片元素脱离 DOM（面板 pop/关闭重建 panel）则清除选中并卸载 Gizmo。
+ * 卡片元素脱离 DOM（面板 pop 回根层时 panel 重建、旧卡片脱离）则清除选中并卸载 Gizmo。
+ * 注意：仅捕「DOM 移除」场景（isConnected=false）。
+ * 「关闭但隐藏未移除」场景（ESC/closeAllOverlays 只去 .visible，DOM 仍挂载）由下方
+ * addOnCloseAllOverlays 无条件清理通道负责——勿把两通道合并，勿依赖 isConnected 捕关闭。
  */
 export function reconcileTransformSelection(): void {
     if (_activeCardEl && !_activeCardEl.isConnected) {
@@ -58,8 +61,13 @@ export function reconcileTransformSelection(): void {
     }
 }
 
-// 关闭所有弹窗（ESC / 外部关闭）时兜底卸载（Set 去重，幂等）
-addOnCloseAllOverlays(reconcileTransformSelection);
+// 关闭所有弹窗（ESC / 外部关闭）时无条件清理：closeAllOverlays 仅移除 .visible class，
+// 面板 DOM 仍挂载 document（isConnected 仍为 true），reconcile 的 isConnected 分支捕不到，
+// 故此处直接清选中并卸载（closeAllOverlays 语义即「全部面板已关闭」）。Set 去重幂等。
+addOnCloseAllOverlays(() => {
+    _activeCardEl = null;
+    clearSelectedTransformTarget();
+});
 
 /** 局部更新滑杆显示（不触发 onChange），用于 Gizmo 拖拽中实时同步数值（ADR-126 Phase 2）。
  *  显示格式与 ui-rows.ts addSliderRow 内部 updateDisplay 保持一致。 */

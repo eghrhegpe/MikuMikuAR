@@ -4,6 +4,7 @@ const mocks = vi.hoisted(() => ({
     attachGizmoForKind: vi.fn(),
     detachGizmo: vi.fn(),
     isDragModeEnabled: vi.fn(),
+    registerLoadRefreshHook: vi.fn(),
 }));
 
 vi.mock('./transform-adapter', () => ({
@@ -15,14 +16,19 @@ vi.mock('./transform-mode', () => ({
     isDragModeEnabled: mocks.isDragModeEnabled,
 }));
 
+vi.mock('@/core/load-refresh-registry', () => ({
+    registerLoadRefreshHook: mocks.registerLoadRefreshHook,
+}));
+
 import {
     getSelectedTransformTarget,
     setSelectedTransformTarget,
     clearSelectedTransformTarget,
     syncDragMode,
+    retryPendingAttachment,
 } from './transform-selection';
 
-const { attachGizmoForKind, detachGizmo, isDragModeEnabled } = mocks;
+const { attachGizmoForKind, detachGizmo, isDragModeEnabled, registerLoadRefreshHook } = mocks;
 
 describe('transform-selection (ADR-171 面板化选中态)', () => {
     beforeEach(() => {
@@ -69,5 +75,45 @@ describe('transform-selection (ADR-171 面板化选中态)', () => {
         clearSelectedTransformTarget();
         expect(getSelectedTransformTarget()).toBeNull();
         expect(detachGizmo).toHaveBeenCalledTimes(1);
+    });
+
+    it('sameTarget：同 kind+id 重复声明跳过 syncDragMode（避免重渲染抖动）', () => {
+        isDragModeEnabled.mockReturnValue(true);
+        setSelectedTransformTarget({ kind: 'light', id: 'l1' });
+        attachGizmoForKind.mockClear();
+        setSelectedTransformTarget({ kind: 'light', id: 'l1' });
+        expect(attachGizmoForKind).not.toHaveBeenCalled();
+        expect(getSelectedTransformTarget()).toEqual({ kind: 'light', id: 'l1' });
+    });
+
+    it('sameTarget：不同 kind+id 声明触发重挂', () => {
+        isDragModeEnabled.mockReturnValue(true);
+        setSelectedTransformTarget({ kind: 'light', id: 'l1' });
+        attachGizmoForKind.mockClear();
+        setSelectedTransformTarget({ kind: 'actor', id: 'm2' });
+        expect(attachGizmoForKind).toHaveBeenCalledWith('actor', 'm2');
+    });
+
+    it('节点未就绪（attach 返回 false）记录 pending，retryPendingAttachment 补挂', () => {
+        isDragModeEnabled.mockReturnValue(true);
+        attachGizmoForKind.mockReturnValue(false);
+        setSelectedTransformTarget({ kind: 'actor', id: 'late' });
+        expect(attachGizmoForKind).toHaveBeenCalledWith('actor', 'late');
+        // 节点就绪后重试成功
+        attachGizmoForKind.mockReturnValue(true);
+        retryPendingAttachment();
+        expect(attachGizmoForKind).toHaveBeenCalledWith('actor', 'late');
+    });
+
+    it('节点未就绪后开关关闭则 pending 被清空，不再重试', () => {
+        isDragModeEnabled.mockReturnValue(true);
+        attachGizmoForKind.mockReturnValue(false);
+        setSelectedTransformTarget({ kind: 'actor', id: 'late' });
+        // 开关关闭 → syncDragMode 清 pending
+        isDragModeEnabled.mockReturnValue(false);
+        syncDragMode();
+        attachGizmoForKind.mockClear();
+        retryPendingAttachment();
+        expect(attachGizmoForKind).not.toHaveBeenCalled();
     });
 });

@@ -13,21 +13,24 @@ source_files:
 
 ## 核心职责
 - 维护 `TransformTarget { kind: ResourceKind; id: string } | null`（模块级 `_selected`）
-- `setSelectedTransformTarget(target)`：记录选中并 `syncDragMode()`（面板渲染 `buildTransformCard` 时声明）
+- `setSelectedTransformTarget(target)`：记录选中并 `syncDragMode()`（面板渲染 `buildTransformCard` 时声明）。**同 kind+id 重复声明跳过 syncDragMode**（避免面板无关重渲染触发独占式 gizmo 重建抖动）
 - `clearSelectedTransformTarget()`：清空选中并 `detachGizmo()`（面板关闭/切换时卸载）
 - `syncDragMode()`：开关关→`detachGizmo()`；开且有选中→`attachGizmoForKind(kind,id)`；开但无选中→静默
+- `retryPendingAttachment()`：`attachGizmoForKind` 返回 false（节点未就绪）时记录 `_pendingRetry`，模型加载完成（`registerLoadRefreshHook`）后补挂
 
 ## 对外 API
 - `getSelectedTransformTarget(): TransformTarget | null`
 - `setSelectedTransformTarget(target: TransformTarget)`
 - `clearSelectedTransformTarget()`
 - `syncDragMode()`
+- `retryPendingAttachment()`
 
 ## 关键约定
 - 类型 `TransformTarget`：`{ kind: ResourceKind; id: string }`
-- 卸载双保险：
-  - `reconcileTransformSelection()`（`resource-detail-helpers.ts` 导出）：检测 `_activeCardEl` 是否仍挂载于 DOM（`isConnected`），否则 `clearSelectedTransformTarget()`；经菜单 `onAfterRender`（scene-menu 与 library-browse modelStack 均已挂）与 `addOnCloseAllOverlays`（menu-overlay 追加通道）触发
-  - `menu-overlay.ts` 的 `closeAllOverlays()` 调用 `_extraCloseAllOverlays`（`addOnCloseAllOverlays` 追加注册的 Set，与 `setOnCloseAllOverlays` 单回调通道分离，避免与 events.ts 的 import 顺序依赖）
+- 同目标去重：`sameTarget(a,b)` 比较 kind+id，未变则不重挂
+- 卸载双保险（**两条通道互补，勿合并**）：
+  - `reconcileTransformSelection()`（`resource-detail-helpers.ts` 导出）：检测 `_activeCardEl` 是否仍挂载于 DOM（`isConnected`）——**仅捕「DOM 移除」场景**（面板 pop 回根层 panel 重建）。ESC/closeAllOverlays 只去 `.visible` class、DOM 仍挂载，此分支捕不到
+  - `closeAllOverlays()`（ESC / 外部关闭）经 `addOnCloseAllOverlays` 注册的**无条件清理**回调（`_activeCardEl = null; clearSelectedTransformTarget()`）——`menu-overlay.ts` 的 `_extraCloseAllOverlays` Set 通道（与 `setOnCloseAllOverlays` 单回调通道分离，避免与 events.ts 的 import 顺序依赖）
 
 ## 与其他子系统关系
 - 依赖 `transform-mode.ts`（`isDragModeEnabled`）、`transform-adapter.ts`（`attachGizmoForKind`/`detachGizmo`）、`core/load-manager`（`ResourceKind`）
