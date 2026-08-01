@@ -14,6 +14,7 @@ import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { MeshBuilder } from '@babylonjs/core/Meshes/meshBuilder';
 import { Vector3, Quaternion } from '@babylonjs/core/Maths/math.vector';
 import { Color3 } from '@babylonjs/core/Maths/math.color';
+import { Material } from '@babylonjs/core/Materials/material';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
 import {
@@ -93,17 +94,24 @@ function _buildRigidBodyCatMap(mmdModel: RuntimeModel): Map<number, PhysicsCateg
     return map;
 }
 
-/** Apply the current visibility, opacity, and wireframe state to meshes. */
 function syncModelVisibility(inst: ModelInstance): void {
-    for (const m of inst.meshes) {
+    inst.meshes.forEach((m, i) => {
         m.setEnabled(inst.visible);
-        if (m.material) {
-            m.material.alpha = inst.opacity;
-            if (m.material instanceof StandardMaterial) {
-                m.material.wireframe = inst.wireframe;
+        const mat = m.material;
+        if (!mat) return;
+        const base = inst._origAlpha?.[i] ?? 1;
+        mat.alpha = clamp01(base * inst.opacity);
+        if (inst.opacity < 1) {
+            if (mat.transparencyMode === Material.MATERIAL_OPAQUE) {
+                mat.transparencyMode = Material.MATERIAL_ALPHABLEND;
             }
+        } else {
+            mat.transparencyMode = Material.MATERIAL_OPAQUE;
         }
-    }
+        if (mat instanceof StandardMaterial) {
+            mat.wireframe = inst.wireframe;
+        }
+    });
 }
 
 /** Apply the current scaling and rotation state to the root mesh. */

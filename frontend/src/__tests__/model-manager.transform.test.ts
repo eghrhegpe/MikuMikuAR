@@ -14,6 +14,7 @@ import {
     instSet,
     makeObservableScene,
 } from './model-manager-mocks';
+import { mockMaterial } from './mocks/babylon-factories';
 import { setFocusedModelId } from '../core/config';
 import { ModelManager } from '../scene/manager/model-manager';
 
@@ -24,6 +25,7 @@ vi.mock('@babylonjs/core/Misc/observable', () => babylonObservableModule());
 vi.mock('@babylonjs/core/Maths/math.vector', () => babylonMathVectorModule());
 vi.mock('@babylonjs/core/Maths/math.color', () => babylonMathColorModule());
 vi.mock('@babylonjs/core/Materials/standardMaterial', () => babylonStandardMaterialModule());
+vi.mock('@babylonjs/core/Materials/material', () => mockMaterial());
 
 describe('ModelManager visibility / opacity / wireframe', function () {
     let mgr, scene, onChange, mesh, mat;
@@ -96,6 +98,31 @@ describe('ModelManager visibility / opacity / wireframe', function () {
         expect(function () {
             mgr.setWireframe('nope', true);
         }).not.toThrow();
+    });
+
+    it('setOpacity multiplies with _origAlpha base', function () {
+        instSet(mgr, 'm1', { _origAlpha: [0.8] });
+        mgr.setOpacity('m1', 0.5);
+        expect(mat.alpha).toBeCloseTo(0.4);
+    });
+
+    it('setOpacity < 1 switches transparencyMode to ALPHABLEND', function () {
+        mat.transparencyMode = 0;
+        mgr.setOpacity('m1', 0.5);
+        expect(mat.transparencyMode).toBe(2);
+    });
+
+    it('setOpacity back to 1 restores transparencyMode to OPAQUE', function () {
+        mgr.setOpacity('m1', 0.5);
+        expect(mat.transparencyMode).toBe(2);
+        mgr.setOpacity('m1', 1);
+        expect(mat.transparencyMode).toBe(0);
+    });
+
+    it('setOpacity with _origAlpha base and opacity=1 keeps original alpha', function () {
+        instSet(mgr, 'm1', { _origAlpha: [0.8] });
+        mgr.setOpacity('m1', 1);
+        expect(mat.alpha).toBeCloseTo(0.8);
     });
 });
 

@@ -226,6 +226,7 @@ export type ModelInstance = {
             ambientB: number;
         }
     >;
+    _origAlpha?: number[];
     /** FBX overlay mesh 列表（切换变体时加载/释放） */
     _overlayMeshes?: Mesh[];
     /** overlay 加载 token：防止快速切换变体时旧 loadOverlay 完成后覆盖新状态 */

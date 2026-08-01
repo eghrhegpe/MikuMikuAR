@@ -568,6 +568,7 @@ export async function loadPMXFile(
                 rotationY: 0,
                 rotation: [0, 0, 0],
                 boneOverrides: [],
+                _origAlpha: meshes.map((m) => m.material?.alpha ?? 1),
             };
             // Register via ModelManager only — it owns the registry
             _modelManager.register(inst);
@@ -642,6 +643,7 @@ export async function loadPMXFile(
             rotationY: 0,
             rotation: [0, 0, 0],
             boneOverrides: [],
+            _origAlpha: meshes.map((m) => m.material?.alpha ?? 1),
         };
         // 从 PMX 字节中提取 comment 写入 modelMetaCache
         const metaComment = parsePmxComment(pmxBytes);
