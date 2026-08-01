@@ -133,7 +133,9 @@ for (const f of mdNames('knowledge')) {
     console.warn(`[sidebar] knowledge/${f} 使用了 KNOWLEDGE_ORDER 表外分类「${cat}」，已按字母序排在表内分组之后`);
   }
   if (!knowledgeGroups.has(cat)) knowledgeGroups.set(cat, []);
-  knowledgeGroups.get(cat).push({ text: f.replace(/\.md$/, ''), link: link('knowledge/' + f) });
+  // 显示名优先取 frontmatter name（卡片标题），无则回退文件名
+  const cardName = fmField(readMd(path.join(docsRoot, 'knowledge', f)), 'name') || f.replace(/\.md$/, '');
+  knowledgeGroups.get(cat).push({ text: cardName, link: link('knowledge/' + f) });
 }
 const knowledgeWeight = (cat) => {
   if (cat === UNCATEGORIZED) return KNOWLEDGE_ORDER.length + 1; // 未分类永远沉底
