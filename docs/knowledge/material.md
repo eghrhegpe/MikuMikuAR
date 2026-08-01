@@ -13,10 +13,14 @@ symbols:
   - MaterialCategory
   - MaterialCategoryParams
   - MaterialStateManager
+  - SSS_MATERIAL_MARKER
+  - SssMaterial
   - _applyAll
   - _capture
+  - _capturePbr
   - _catOf
   - _catState
+  - _isPbrMaterial
   - _matEnabled
   - _matState
   - applyMatState
@@ -29,6 +33,8 @@ symbols:
   - getMatState
   - isMatCategoryAllEnabled
   - isMatEnabled
+  - isPbrMaterial
+  - isSssMaterial
   - resetMatCatParams
   - resetPerMaterialParams
   - resetSingleMatParams

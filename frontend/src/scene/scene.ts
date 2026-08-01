@@ -35,7 +35,9 @@ import { MmdWasmInstanceTypeSPR } from 'babylon-mmd/esm/Runtime/Optimized/Instan
 import { MmdWasmRuntime } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime';
 import { MmdWasmPhysics } from 'babylon-mmd/esm/Runtime/Optimized/Physics/mmdWasmPhysics';
 import 'babylon-mmd/esm/Runtime/Optimized/Animation/mmdWasmRuntimeModelAnimation';
-import { MmdStandardMaterialProxy } from 'babylon-mmd/esm/Runtime/mmdStandardMaterialProxy';
+// ADR-188: 材质代理解析器（PBR 模式下仍用 MmdStandardMaterialProxy 做运行时 morph，
+//         因 MmdStandardMaterialProxy 仅操作 diffuse/shininess，对 PBRMaterial 也兼容）
+import { getMaterialMode, getStandardMaterialProxy } from './manager/material-proxy-resolver';
 import { initWindPhysics, disposeWindPhysics } from '../physics/wind-physics';
 import { applyGroundCollision } from './physics/ground-collision';
 import { swallowError } from '../core/async';
@@ -157,6 +159,14 @@ export {
     applyUnlitFallback,
 } from './manager/material';
 export type { MaterialCategoryParams, MaterialCategory, AlphaCtx } from './manager/material';
+export { SSS_MATERIAL_MARKER, isSssMaterial, isPbrMaterial } from './manager/material';
+export {
+    getMatSssParams,
+    setMatSssParams,
+    applySss,
+    disposeModelSssState,
+    type SssParams,
+} from './manager/material-sss';
 
 import { ModelManager } from './manager/model-manager';
 import {
@@ -638,7 +648,10 @@ async function _initMmdRuntime(): Promise<IMmdRuntime> {
     // 1. MMD 运行时初始化
     RegisterMmdModelLoaders();
     RegisterDxBmpTextureLoader();
-    MmdRuntimeShared.MaterialProxyConstructor = MmdStandardMaterialProxy;
+    // [ADR-188] 材质模式日志
+    const materialMode = getMaterialMode();
+    logWarn('scene', `MMD 材质模式: ${materialMode}`);
+    MmdRuntimeShared.MaterialProxyConstructor = getStandardMaterialProxy();
     // 运行时切换：默认 WASM（含物理），可在程序化动作菜单切换到 JS 版（调试专用，无物理）
     // JS 版保留作为 gaze 行为对比排查与 WASM 兼容性回退，勿删除
     const useJsRuntime = getMmdRuntimeType() === 'js';

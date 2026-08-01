@@ -11,6 +11,7 @@ adr: []
 symbols:
   - DEFAULT_MAT_PARAMS
   - LoadLastScene
+  - SSS_MATERIAL_MARKER
   - SaveLastScene
   - SaveThumbnail
   - SetEnvState
@@ -24,6 +25,7 @@ symbols:
   - applyEnvState
   - applyFrameControl
   - applyMatState
+  - applySss
   - applyUnlitFallback
   - attachBeatDetector
   - autoFrame
@@ -32,6 +34,7 @@ symbols:
   - captureThumbnail
   - clearCameraVmd
   - disposeAudio
+  - disposeModelSssState
   - disposeScene
   - dom
   - engine
@@ -48,6 +51,7 @@ symbols:
   - getMatCatParams
   - getMatDetailList
   - getMatParams
+  - getMatSssParams
   - getMatState
   - getScene
   - hasCameraVmd
@@ -59,7 +63,9 @@ symbols:
   - isAudioPlaying
   - isMatCategoryAllEnabled
   - isMatEnabled
+  - isPbrMaterial
   - isPlaying
+  - isSssMaterial
   - loadAudioFile
   - loadCameraVmd
   - loadCameraVmdFromPath
@@ -92,6 +98,7 @@ symbols:
   - setMatCategoryEnabled
   - setMatEnabled
   - setMatParams
+  - setMatSssParams
   - setMmdRuntime
   - setModelRegistry
   - setSeekDragging

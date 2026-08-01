@@ -1,6 +1,17 @@
 # ADR-188: PBRMaterialBuilder 材质系统迁移 — PBR 渲染升级
 
-> **状态**: 草案 · 待立项（P1 长期规划；2026-07-27 阻塞解除：babylon-mmd fork 新增 PBRMaterialProxy，PBR material morph 通路已打通，不再依赖上游）
+> **状态**: Phase 0 POC 已完成（2026-08-01）；Phase 1 待立项
+>
+> Phase 0 成果（commit 4f3b07d9 + 后续）：
+> - `material-proxy-resolver.ts` — VITE_MMD_MATERIAL 环境变量驱动的材质代理解析器
+> - `scene.ts` / `model-loader.ts` — 已使用 resolver，日志记录材质模式
+> - `material.ts` — 7 处 `instanceof StandardMaterial` 新增 `PBRMaterial` 分支（_applyMaterial/_applyCategory/getMatCatGroups/getMatDetailList/isMatCategoryAllEnabled/setMatCategoryEnabled）
+> - `material.ts` — PBR 参数映射：diffuseMul→albedoColor, specularMul→reflectionColor, shininess→roughness(反比)
+> - `material-sss.ts` — SSS 参数应用层（getMatSssParams/setMatSssParams/applySss）
+> - `SssPBRMaterial` — SSS 材质封装（PBRMaterial + PBRSubSurfaceConfiguration）
+> - 全量 246 文件 / 4194 测试全绿，tsc 零错误，check:docs 通过
+>
+> 待推进 Phase 1：PBRMaterialBuilder 在 PMX 加载阶段的注册（babylon-mmd PMXLoader 配置），UI 面板 PBR 专属控件（metallic/roughness/sss），模型预设系统 PBR 字段
 
 **决策者**: Riku（联邦首席架构师 AI）、Jieling（人类侧首席架构师）
 
