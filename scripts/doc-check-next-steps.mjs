@@ -37,6 +37,39 @@ function byDirStr(map) {
     .join('，');
 }
 
+// architecture 卡必须有路由入口（用户决策：改为非阻断 AI 提示，不进 CI 红线）
+// 扫描 docs/knowledge/*.md 的 tier: architecture 卡，核对是否出现在 routes.md 链接中。
+function checkArchRoutes() {
+  const knDir = path.join(ROOT, 'docs', 'knowledge');
+  const routesPath = path.join(knDir, 'routes.md');
+  const routesSet = new Set();
+  if (fs.existsSync(routesPath)) {
+    const rt = fs.readFileSync(routesPath, 'utf8');
+    for (const m of rt.matchAll(/\]\(\.\/([A-Za-z0-9_-]+\.md)\)/g)) routesSet.add(m[1]);
+  }
+  let archTotal = 0;
+  const missing = [];
+  if (fs.existsSync(knDir)) {
+    for (const f of fs.readdirSync(knDir)) {
+      if (!f.endsWith('.md') || f.toLowerCase() === 'readme.md' || f === 'routes.md') continue;
+      const t = fs.readFileSync(path.join(knDir, f), 'utf8');
+      if (!/^---\r?\n/.test(t)) continue;
+      const fm = t.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+      if (!fm) continue;
+      let tier = '';
+      for (const l of fm[1].split(/\r?\n/)) {
+        const mm = l.match(/^tier\s*:\s*(.*)$/);
+        if (mm) { tier = mm[1].trim(); break; }
+      }
+      if (tier === 'architecture') {
+        archTotal++;
+        if (!routesSet.has(f)) missing.push(f.replace(/\.md$/, ''));
+      }
+    }
+  }
+  return { archTotal, missing };
+}
+
 function main() {
   const ts = new Date().toISOString().slice(0, 19).replace('T', ' ');
   const d = load();
@@ -56,6 +89,8 @@ function main() {
   const rev = d.reverse || { total: 0, byDir: {}, files: [] };
   const api = d.apiSymbols || { flagged: [] };
   const agentsWarns = d.agentsWarns || [];
+  // 与 JSON 快照无关，独立扫描（即便 JSON 缺失也能给出路由提示）
+  const archRoutes = checkArchRoutes();
 
   const L = [];
   L.push('# 文档漂移 · 推送后下一步建议');
@@ -72,6 +107,7 @@ function main() {
   L.push('- 符号 0% 未文档化模块: **' + cov.undocumented + '**（INFO）');
   L.push('- 知识卡 API 符号可疑: **' + api.flagged.length + '** 张（INFO）');
   L.push('- AGENTS.md 手写事实索引 WARN: **' + agentsWarns.length + '** 项');
+  L.push('- architecture 卡未登记路由: **' + archRoutes.missing.length + '**（INFO）');
   L.push('');
 
   // ── ERROR ──
@@ -141,6 +177,20 @@ function main() {
     L.push('');
   }
 
+  // ── architecture 卡路由登记（INFO，不阻断；用户决策：A 改为 AI 提示，不进 CI 红线） ──
+  L.push('## 🟡 architecture 卡未登记路由（INFO，不阻断）');
+  L.push('');
+  if (archRoutes.missing.length > 0) {
+    L.push(archRoutes.missing.length + ' 张 architecture 卡未出现在 routes.md（AI 检索首跳可能漏接）：');
+    L.push('');
+    for (const name of archRoutes.missing) {
+      L.push('- `' + name + '` → 建议在 `docs/knowledge/routes.md` 增加对应意图行并链接 `./' + name + '.md`');
+    }
+  } else {
+    L.push('无（' + archRoutes.archTotal + ' 张 architecture 卡均已登记路由）。');
+  }
+  L.push('');
+
   // ── AI 下一步建议（最高优先级单条） ──
   L.push('## AI 下一步建议');
   L.push('');
@@ -149,6 +199,8 @@ function main() {
     advice = '存在 ' + errors.length + ' 处 ERROR 级漂移，需人工修复后再推送（运行 `node scripts/check-doc-drift.mjs --baseline` 查看详情）。';
   } else if (rev.total > 0) {
     advice = '为 ' + rev.files.length + ' 个尚无知识卡的源文件补建知识卡（见上方「建议补登知识卡」清单），登记 source_files 即可消除覆盖缺口。';
+  } else if (archRoutes.missing.length > 0) {
+    advice = '为 ' + archRoutes.missing.length + ' 张 architecture 卡补登 routes.md 路由入口（见上方「architecture 卡未登记路由」），避免 AI 检索首跳漏接。';
   } else if (cov.undocumented > 0) {
     advice = '将 ' + cov.undocumented + ' 个 0% 未文档化模块补登进 `docs/architecture.md` 树 / `docs/function-map.md`。';
   } else if (api.flagged.length > 0) {

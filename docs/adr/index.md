@@ -8,9 +8,9 @@
 
 | 状态 | 数量 | 含义 |
 |------|------|------|
-| [推进中](#推进中) | 6 | 已开工，尚未收口（含部分实施） |
+| [推进中](#推进中) | 5 | 已开工，尚未收口（含部分实施） |
 | [规划中](#规划中) | 8 | 已立项，等待实施 |
-| [已落地](#已落地) | 189 | 实施完成，代码已合入 |
+| [已落地](#已落地) | 190 | 实施完成，代码已合入 |
 | [已归档](#已归档) | 18 | 被取代、放弃、过时或搁置，保留供追溯 |
 | [其他](#其他) | 1 | 状态行缺失或表述不可归类 |
 
@@ -20,7 +20,6 @@
 
 | ADR | 主题 | 状态 |
 |-----|------|------|
-| [ADR-226](./adr-226-ground-material-spec-single-source.md) | 地面材质单一事实源重构（GroundMaterialSpec） | 实施中 |
 | [ADR-220](./adr-220-schema-integrity-metatest.md) | Schema 完整性元测试 —— 不开浏览器，秒级捕获 schema 漂移 | 实施中 |
 | [ADR-215](./adr-215-eliminate-prop-kind.md) | 取消「道具」资源类型 — 模型附属关系替代 prop + accessory 体系 | 🔄 实施中 |
 | [ADR-204](./adr-204-unit-test-layering-and-hygiene.md) | 单测分层与治理规范（拆上帝文件 · 降 mock 密度 · fixtures 复用 · unit/integration 分层） | 🟢 实施中 |
@@ -45,6 +44,7 @@
 | ADR | 主题 | 状态 |
 |-----|------|------|
 | [ADR-227](./adr-227-personal-light-shadow-toggle.md) | 个人灯阴影按需开关与分辨率可调 | 已完成 |
+| [ADR-226](./adr-226-ground-material-spec-single-source.md) | 地面材质单一事实源重构（GroundMaterialSpec） | 已落地 |
 | [ADR-225](./adr-225-web-pages-path-reallocation.md) | Web 部署路径重分配 — 文档站占 Pages 根、主应用降 /app/ 子路径 | 已实施 |
 | [ADR-224](./adr-224-plaza-广场数据源统一与持久化.md) | Plaza 广场数据源统一与持久化 — GitHub 远程配置 + Go 用户目录缓存 + 内置兜底 + id 统一 | 已实施 |
 | [ADR-221](./adr-221-per-material-alpha.md) | 逐材质透明度（alphaMul）—— 材质编辑器第 11 参数 | 已完成 |
