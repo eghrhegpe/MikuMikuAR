@@ -1,7 +1,7 @@
 # ADR-130: 场景 UI 整体设计与前后端发展方向路线图
 
 > **日期**: 2026-07-18
-> **状态**: 规划中（Phase 1 技术债 ✅1.1 已完成（实质达成，载体 ADR-138 + env 子系统大拆分；env-impl.ts 227 行、edgeFade 纹理独立接入 dispose、循环依赖破除、env 子系统 8 个测试文件 70+ it），✅1.2 已完成（popUndoSnapshot 已实现 + Ctrl+Z + 菜单撤销按钮接入 + 测试覆盖），✅1.3 已完成（ADR-128 首部 2026-07-20 标注 5 语种无残留）；Phase 2 ✅2.1/2.2/2.3/2.4/2.5 已完成，✅2.6 已完成（2026-07-27 核对确认：撤销保护已全覆盖——卸载舞台 scene-stage-levels.ts:188-196 + 卸载道具 scene-stage-levels.ts:247-259 + 加载列表统一组件 scene-prop-levels.ts 已接入 offerSceneUndo，共 10 处破坏性操作均有 pushUndoSnapshot + offerSceneUndo/AndRefresh；异步操作反馈统一用 feedbackStatus/feedbackInfo/feedbackError，覆盖 env-preset-levels.ts、library-setup.ts 等关键路径），✅2.7 已完成（ADR-176 收口传输/存储层统一；环境预设导入/导出已闭合；新增 core/preset-meta.ts 读侧 PresetMeta 信封 + listPresets() 归一，单元测试覆盖；写侧信封化待需求驱动）；Phase 3 能力扩展：3.1 基本完成（3 处扫尾）、3.2 ✅ 已完成、3.3 ✅ 已完成（打包/解包；env preset + URL 分享待需求驱动）、3.4 ✅ 已完成（ADR-017）、3.5 📋 已记录（ADR-054：PBR/SSS 上游阻塞，其余待需求驱动）；ADR-093 P3 已关闭（2026-07-27 裁定非死代码））
+> **状态**: 规划中（Phase 1 技术债 ✅1.1 已完成（实质达成，载体 ADR-138 + env 子系统大拆分；env-impl.ts 227 行、edgeFade 纹理独立接入 dispose、循环依赖破除、env 子系统 8 个测试文件 70+ it），✅1.2 已完成（popUndoSnapshot 已实现 + Ctrl+Z + 菜单撤销按钮接入 + 测试覆盖），✅1.3 已完成（ADR-128 首部 2026-07-20 标注 5 语种无残留）；Phase 2 ✅2.1/2.2/2.3/2.4/2.5 已完成，✅2.6 已完成（2026-07-27 核对确认：撤销保护已全覆盖——卸载舞台 scene-stage-levels.ts:188-196 + 卸载道具 scene-stage-levels.ts:247-259 + 加载列表统一组件 scene-prop-levels.ts 已接入 offerSceneUndo，共 10 处破坏性操作均有 pushUndoSnapshot + offerSceneUndo/AndRefresh；异步操作反馈统一用 feedbackStatus/feedbackInfo/feedbackError，覆盖 env-preset-levels.ts、library-setup.ts 等关键路径），✅2.7 已完成（ADR-176 收口传输/存储层统一；环境预设导入/导出已闭合；新增 core/preset-meta.ts 读侧 PresetMeta 信封 + listPresets() 归一，单元测试覆盖；写侧信封化待需求驱动）；Phase 3 能力扩展：3.1 ✅ 已完成（2026-08-01 扫尾 2 处手写空状态：scene-stage-levels 舞台空状态与 model-material 材质空状态统一接入 addEmptyRow（含新增 hint 双行参数）；scene-prop-levels 处已随 ADR-215 删除道具菜单而不复存在）、3.2 ✅ 已完成、3.3 ✅ 已完成（打包/解包；env preset + URL 分享待需求驱动）、3.4 ✅ 已完成（ADR-017）、3.5 📋 已记录（ADR-054：PBR/SSS 上游阻塞，其余待需求驱动）；ADR-093 P3 已关闭（2026-07-27 裁定非死代码））
 
 ## 背景
 
@@ -142,7 +142,7 @@ const migrators: Migrator[] = [
 
 #### 3.1 空状态与首次引导
 
-- ✅ 统一空状态组件：`addEmptyRow` 已存在于 `ui-rows.ts:319`，`model-detail` / `motion-binding-ui` / `motion-override-levels` / `motion-pose-levels` 共 6 处已接入。**残余**：`scene-stage-levels.ts:211-216`（手写 innerHTML）、`model-material.ts:246-248`（手写 `empty-hint` class）、`scene-prop-levels.ts:24-27`（手写 `empty-hint` class）3 处扫尾
+- ✅ 统一空状态组件：`addEmptyRow` 已存在于 `ui-rows.ts:319`（2026-08-01 新增可选 hint 参数支持双行引导），`model-detail` / `motion-binding-ui` / `motion-override-levels` / `motion-pose-levels` 共 6 处已接入；2026-08-01 扫尾：`scene-stage-levels.ts`（原 211-216 手写 innerHTML → addEmptyRow 双行）、`model-material.ts`（原 246-248 手写 `empty-hint` → addEmptyRow 单行）已统一；原 `scene-prop-levels.ts:24-27` 随 ADR-215 删除道具菜单而不复存在
 - 首次使用引导：`library.firstUseHint` 已在 4 语种就绪，`library-setup.ts` 3 处反馈调用；`firstUseScene` 标志不存在
 
 #### 3.2 视觉系统一致性
@@ -184,7 +184,7 @@ const migrators: Migrator[] = [
 | Phase 2.5 菜单扁平化 | P2 | 小 | 决策岔路 3 | ✅ 完成（「高级」folder 已拆解，预设场景/镜像/撤销/保存场景提至根级，scene-menu.ts:257 注释标注；渲染预设留场景、环境预设留环境归属明确） |
 | Phase 2.6 交互模式统一 | P2 | 中 | 无 | ✅ 已完成（2026-07-27 核对：10 处破坏性操作全量接入 pushUndoSnapshot + offerSceneUndo/AndRefresh；异步反馈统一用 feedbackStatus/Info/Error） |
 | Phase 2.7 预设系统统一 | P2 | 大 | 决策岔路 2 | ✅ 已完成（ADR-176 收口传输/存储层统一；环境预设导入/导出已闭合；新增 `core/preset-meta.ts` 读侧 `PresetMeta` 信封 + `listPresets()` 归一，单元测试覆盖；写侧信封化待需求驱动） |
-| Phase 3.1 空状态组件 | P3 | 小 | 无 | ✅ 基本完成（`addEmptyRow` 已接入 6 处，3 处手写扫尾 + `firstUseScene` 标志待建） |
+| Phase 3.1 空状态组件 | P3 | 小 | 无 | ✅ 已完成（2026-08-01 扫尾：`addEmptyRow` 新增可选 hint 参数；scene-stage-levels 舞台空状态 + model-material 材质空状态统一接入；scene-prop-levels 处随 ADR-215 删除道具菜单而不复存在） |
 | Phase 3.2 CSS 变量迁移 | P3 | 小 | 无 | ✅ 已完成（`style.color`/`background` 已全部 `var(--xxx)`，剩余 inline 均为动态交互） |
 | Phase 3.3 Scene Bundle 增强 | P3 | 小 | ADR-037 | ✅ 已完成（打包/解包全链路；env preset + URL 分享待需求驱动） |
 | Phase 3.4 localStorage 治理 | P3 | 小 | ADR-017 | ✅ 已完成（`SaveLastScene(json)` 文件持久化，localStorage 仅存小数据） |
