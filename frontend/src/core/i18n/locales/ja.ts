@@ -233,6 +233,8 @@ export const ja: Record<string, string> = {
     'model-detail.personalLightConeIntensity': 'コーン輝度',
     'model-detail.personalLightConeLength': 'コーン長さ',
     'model-detail.personalLightConeSoftness': 'コーン柔らかさ',
+    'model-detail.personalLightShadow': 'シャドウ',
+    'model-detail.personalLightShadowResolution': 'シャドウ解像度',
     'model-detail.personalLightBone': '追従ボーン',
     'model-detail.personalLightBoneAuto': '自動（腰部）',
     'model-detail.personalLightSetDefault': 'デフォルトに設定',

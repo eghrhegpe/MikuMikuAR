@@ -160,6 +160,8 @@ export const en: Record<string, string> = {
     'model-detail.personalLightConeIntensity': 'Cone Intensity',
     'model-detail.personalLightConeLength': 'Cone Length',
     'model-detail.personalLightConeSoftness': 'Cone Softness',
+    'model-detail.personalLightShadow': 'Shadow',
+    'model-detail.personalLightShadowResolution': 'Shadow Resolution',
     'model-detail.personalLightBone': 'Follow Bone',
     'model-detail.personalLightBoneAuto': 'Auto (Waist)',
     'model-detail.personalLightSetDefault': 'Set as Default',

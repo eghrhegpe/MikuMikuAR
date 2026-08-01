@@ -159,6 +159,8 @@ export const zhCN: Record<string, string> = {
     'model-detail.personalLightConeIntensity': '光锥亮度',
     'model-detail.personalLightConeLength': '光锥长度',
     'model-detail.personalLightConeSoftness': '光锥柔和度',
+    'model-detail.personalLightShadow': '阴影',
+    'model-detail.personalLightShadowResolution': '阴影分辨率',
     'model-detail.personalLightBone': '跟随骨骼',
     'model-detail.personalLightBoneAuto': '自动（腰部）',
     'model-detail.personalLightSetDefault': '设为默认',

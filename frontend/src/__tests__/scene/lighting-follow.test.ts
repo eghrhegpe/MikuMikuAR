@@ -10,6 +10,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { NullEngine } from '@babylonjs/core/Engines/nullEngine';
 import { Scene } from '@babylonjs/core/scene';
+import { Mesh } from '@babylonjs/core/Meshes/mesh';
 
 vi.mock('../../scene/render/performance', () => ({
     resetPerformanceSnapshot: () => {},
@@ -28,6 +29,14 @@ vi.mock('../../scene/transform/transform-adapter', () => ({
 vi.mock('../../physics/physics-bridge', () => ({
     getBoneWorldPosition: () => null,
 }));
+vi.mock('../../scene/render/light-cone', () => ({
+    createLightCone: () => null,
+    updateLightConeTransform: () => {},
+    updateLightConeUniforms: () => {},
+    rebuildLightConeGeometry: () => {},
+    setLightConeEnabled: () => {},
+    disposeLightCone: () => {},
+}));
 
 import {
     initLighting,
@@ -37,12 +46,17 @@ import {
 } from '../../scene/render/lighting';
 import {
     DEFAULT_PERSONAL_LIGHT,
+    attachPersonalLight,
+    detachPersonalLight,
+    setPersonalLightState,
+    getPersonalLightState,
     getAllPersonalLights,
     restorePersonalLights,
     tickStageLightFollow,
     type PersonalLightSettings,
 } from '../../scene/render/lighting-follow';
 import { lightingState } from '../../scene/render/lighting-state';
+import { modelRegistry } from '@/core/config';
 
 let engine: NullEngine;
 let scene: Scene;
@@ -73,12 +87,14 @@ describe('PersonalLightSettings 默认值', () => {
             'height',
             'offsetX',
             'offsetZ',
-            'coneEnabled',
-            'coneIntensity',
-            'coneLength',
-            'coneSoftness',
-            'boneName',
-        ];
+        'coneEnabled',
+        'coneIntensity',
+        'coneLength',
+        'coneSoftness',
+        'boneName',
+        'shadowEnabled',
+        'shadowResolution',
+    ];
         for (const k of keys) {
             expect(DEFAULT_PERSONAL_LIGHT).toHaveProperty(k);
         }
@@ -148,5 +164,49 @@ describe('tickStageLightFollow', () => {
         expect(() => tickStageLightFollow()).not.toThrow();
         const after = getStageLights()[0];
         expect(after.targetX).toBe(tx);
+    });
+});
+
+describe('PersonalLight 阴影开关', () => {
+    function _fakeModel(id: string) {
+        return {
+            rootMesh: new Mesh(`root_${id}`, scene),
+            meshes: [new Mesh(`m_${id}`, scene)],
+            mmdModel: undefined,
+        };
+    }
+
+    it('DEFAULT_PERSONAL_LIGHT 默认 shadowEnabled=true / shadowResolution=512', () => {
+        expect(DEFAULT_PERSONAL_LIGHT.shadowEnabled).toBe(true);
+        expect(DEFAULT_PERSONAL_LIGHT.shadowResolution).toBe(512);
+    });
+
+    it('attach 默认开启阴影；切换 shadowEnabled 不抛错且 settings 同步', () => {
+        const modelId = 'test-pl-shadow';
+        (modelRegistry as Map<string, unknown>).set(modelId, _fakeModel(modelId));
+
+        attachPersonalLight(modelId);
+        expect(getPersonalLightState(modelId)?.shadowEnabled).toBe(true);
+
+        expect(() => setPersonalLightState(modelId, { shadowEnabled: false })).not.toThrow();
+        expect(getPersonalLightState(modelId)?.shadowEnabled).toBe(false);
+
+        expect(() => setPersonalLightState(modelId, { shadowEnabled: true })).not.toThrow();
+        expect(getPersonalLightState(modelId)?.shadowEnabled).toBe(true);
+
+        detachPersonalLight(modelId);
+        (modelRegistry as Map<string, unknown>).delete(modelId);
+    });
+
+    it('shadowResolution 变化触发重建且不抛错', () => {
+        const modelId = 'test-pl-res';
+        (modelRegistry as Map<string, unknown>).set(modelId, _fakeModel(modelId));
+
+        attachPersonalLight(modelId);
+        expect(() => setPersonalLightState(modelId, { shadowResolution: 1024 })).not.toThrow();
+        expect(getPersonalLightState(modelId)?.shadowResolution).toBe(1024);
+
+        detachPersonalLight(modelId);
+        (modelRegistry as Map<string, unknown>).delete(modelId);
     });
 });

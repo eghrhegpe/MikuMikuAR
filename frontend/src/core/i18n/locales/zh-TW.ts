@@ -231,6 +231,8 @@ export const zhTW: Record<string, string> = {
     'model-detail.personalLightConeIntensity': '光錐亮度',
     'model-detail.personalLightConeLength': '光錐長度',
     'model-detail.personalLightConeSoftness': '光錐柔和度',
+    'model-detail.personalLightShadow': '陰影',
+    'model-detail.personalLightShadowResolution': '陰影解析度',
     'model-detail.personalLightBone': '跟隨骨骼',
     'model-detail.personalLightBoneAuto': '自動（腰部）',
     'model-detail.personalLightSetDefault': '設為預設',
