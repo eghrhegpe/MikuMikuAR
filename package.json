@@ -17,6 +17,8 @@
     "gen:tier": "node scripts/gen-tier.mjs",
     "gen:docsindex": "node scripts/gen-docs-index.mjs",
     "check:docsindex": "node scripts/gen-docs-index.mjs --check",
+    "gen:knowgraph": "node scripts/gen-knowledge-graph.mjs --file docs/knowledge/graph.md",
+    "check:knowgraph": "node scripts/gen-knowledge-graph.mjs --check --file docs/knowledge/graph.md",
     "test:scripts": "node --test scripts/_lib/source-graph.test.mjs",
     "codemod": "cd frontend && node ../scripts/codemod.mjs",
     "diagnose": "node scripts/diagnose.mjs",

@@ -77,6 +77,36 @@ function fm(text, key) {
   return v.startsWith('<') ? undefined : v;
 }
 
+/**
+ * 提取 frontmatter 列表字段的全部项（`key:` 后逐行 `- 项`）。
+ * 兼容单行形式（`key: 值`）；忽略 `#` 注释与模板占位符 `<...>`。
+ */
+function fmList(text, key) {
+  const m = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if (!m) return [];
+  const lines = m[1].split(/\r?\n/);
+  const out = [];
+  let inList = false;
+  for (const line of lines) {
+    const head = line.match(new RegExp('^' + key + '\\s*:\\s*(.*)$'));
+    if (head) {
+      inList = true;
+      const inline = head[1].replace(/#.*$/, '').trim();
+      if (inline && !inline.startsWith('<')) out.push(inline);
+      continue;
+    }
+    if (!inList) continue;
+    const item = line.match(/^\s*-\s*(.+)$/);
+    if (item) {
+      const v = item[1].replace(/#.*$/, '').trim();
+      if (v && !v.startsWith('<')) out.push(v);
+    } else if (/^\S/.test(line)) {
+      inList = false; // 遇到下一个顶层键，列表结束
+    }
+  }
+  return out;
+}
+
 // ── 1. ADR 索引 ───────────────────────────────────────────
 
 /**
@@ -205,7 +235,7 @@ const CATEGORY_LABEL = {
   backend: '后端',
 };
 /** 非知识卡的目录成员（索引 / 路由表 / 机器生成地图），单列不参与分类统计。 */
-const KNOWLEDGE_NON_CARDS = new Set(['index.md', 'README.md', 'routes.md', 'menu-map.md']);
+const KNOWLEDGE_NON_CARDS = new Set(['index.md', 'README.md', 'routes.md', 'menu-map.md', 'graph.md']);
 
 function buildKnowledgeIndex() {
   const cards = [];
@@ -222,6 +252,7 @@ function buildKnowledgeIndex() {
       category: fm(text, 'category') || '未分类',
       tier: fm(text, 'tier') || 'architecture',
       adr: fm(text, 'adr'),
+      adrList: fmList(text, 'adr'),
     });
   }
 
@@ -286,6 +317,43 @@ function buildKnowledgeIndex() {
       out.push(`> 叶子模块 / 工具函数（${leaf.length} 张）：${links}`);
       out.push('');
     }
+  }
+
+  // ── ADR 反查（从卡片 frontmatter 的 adr: 列表反向聚合） ──
+  const adrMeta = new Map(); // 编号 → { file, title }
+  for (const f of mdFiles('adr').filter((f) => /^adr-\d+-.+\.md$/.test(f))) {
+    const h = parseAdrHead(f);
+    if (h) adrMeta.set(h.num, { file: f, title: h.title });
+  }
+  const adrRefs = new Map(); // 编号 → [卡片]
+  for (const c of cards) {
+    for (const a of c.adrList || []) {
+      const m = String(a).match(/ADR-(\d+)/i);
+      if (!m) continue;
+      const num = parseInt(m[1], 10);
+      if (!adrRefs.has(num)) adrRefs.set(num, []);
+      adrRefs.get(num).push(c);
+    }
+  }
+  if (adrRefs.size) {
+    out.push('## ADR 反查');
+    out.push('');
+    out.push(
+      '> 从卡片 `adr:` 字段**反向聚合**：某条决策影响了哪些子系统。' +
+        '正向导航见 [决策记录索引](../adr/index.md)。'
+    );
+    out.push('');
+    out.push('| ADR | 主题 | 关联卡片 |');
+    out.push('|-----|------|----------|');
+    for (const [num, list] of [...adrRefs.entries()].sort((a, b) => a[0] - b[0])) {
+      const meta = adrMeta.get(num);
+      const id = `ADR-${String(num).padStart(3, '0')}`;
+      const link = meta ? `[${id}](${href('../adr/' + meta.file)})` : id;
+      const title = meta ? cell(meta.title) : '—';
+      const cardsLink = list.map((c) => `[${cell(c.name)}](./${c.file})`).join(' · ');
+      out.push(`| ${link} | ${title} | ${cardsLink} |`);
+    }
+    out.push('');
   }
 
   if (extras.length) {
