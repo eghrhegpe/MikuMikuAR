@@ -1,6 +1,6 @@
 // [doc:architecture] Model Material — 材质调节 UI 层（batch/per-mat/root/list）
 
-import { cardContainer, PopupLevel, stackRegistry } from '../core/config';
+import { cardContainer, PopupLevel, stackRegistry, modelRegistry } from '../core/config';
 import { feedbackInfo } from '../core/feedback';
 import { showInfoToast } from '../core/toast';
 import {
@@ -16,17 +16,21 @@ import {
     setMatCategoryEnabled,
     DEFAULT_MAT_PARAMS,
     applyUnlitFallback,
+    isPbrMaterial,
 } from '../scene/scene';
+import { getMatSssParams, setMatSssParams } from '../scene/scene';
 import {
     slideRow,
     addSliderRow,
     addCollapsible,
     addSectionTitle,
     addEmptyRow,
+    addColorSliderRow,
     createHeaderToggle,
 } from '../core/ui-helpers';
 import type { SlideMenu } from './menu';
 import { t } from '../core/i18n/t';
+import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
 import { showConfirm } from '../core/dialog';
@@ -103,6 +107,122 @@ const MAT_PARAM_DEFS: Array<{
         icon: '💧',
     },
 ];
+
+// ======== ADR-188: PBR 专属材质参数（metallic / roughness / SSS）========
+
+/** PBR 专属参数定义（仅 PBRMaterial 可用；StandardMaterial 无此段） */
+const PBR_PARAM_DEFS: Array<{
+    key: string;
+    labelKey: string;
+    min: number;
+    max: number;
+    step: number;
+    icon?: string;
+    dividerBefore?: string;
+}> = [
+    {
+        key: 'metallic',
+        labelKey: 'model-material.pbrMetallic',
+        min: 0,
+        max: 1,
+        step: 0.01,
+        icon: 'lucide:zap',
+    },
+    {
+        key: 'roughness',
+        labelKey: 'model-material.pbrRoughness',
+        min: 0,
+        max: 1,
+        step: 0.01,
+        icon: 'lucide:contrast',
+    },
+];
+
+/** 渲染 PBR 专属参数滑块（metallic / roughness） */
+function _renderPbrParamSliders(container: HTMLElement, id: string, matIndex: number): void {
+    const inst = modelRegistry.get(id);
+    if (!inst?.meshes) {
+        return;
+    }
+    const mat = inst.meshes[matIndex]?.material;
+    if (!isPbrMaterial(mat)) {
+        return;
+    }
+
+    _addGroupSeparator(container, t('model-material.pbrGroupTitle'));
+
+    for (const def of PBR_PARAM_DEFS) {
+        const currentValue = mat[def.key] ?? 0;
+        addSliderRow(
+            container,
+            t(def.labelKey),
+            currentValue,
+            def.min,
+            def.max,
+            def.step,
+            (v) => {
+                mat[def.key] = v;
+                mat.markDirty();
+            },
+            def.icon
+        );
+    }
+}
+
+/** 渲染 SSS 参数卡片（sssPower / sssColor / sssDistance） */
+function _renderSssParamCard(container: HTMLElement, id: string, cat: string): void {
+    // 检查该分类是否有 PBRMaterial 可用
+    const groups = getMatCatGroups(id);
+    const materialsInCat = groups.get(cat) ?? [];
+    const hasPbr = materialsInCat.some(({ mat }) => isPbrMaterial(mat));
+    if (!hasPbr) {
+        return;
+    }
+
+    addCollapsible(container, {
+        title: t('model-material.sssTitle'),
+        icon: 'lucide:diamond',
+        defaultOpen: false,
+        renderContent: (panel) => {
+            const sssParams = getMatSssParams(id, cat);
+
+            addSliderRow(
+                panel,
+                t('model-material.sssPower'),
+                sssParams.sssPower,
+                0,
+                1.5,
+                0.05,
+                (v) => setMatSssParams(id, cat, { sssPower: v }),
+                'lucide:diamond'
+            );
+
+            addColorSliderRow(
+                panel,
+                t('model-material.sssColor'),
+                [
+                    sssParams.sssColor?.r ?? 1,
+                    sssParams.sssColor?.g ?? 1,
+                    sssParams.sssColor?.b ?? 1,
+                ],
+                ([r, g, b]) => setMatSssParams(id, cat, { sssColor: { r, g, b } as any }),
+                undefined,
+                'sss-color'
+            );
+
+            addSliderRow(
+                panel,
+                t('model-material.sssDistance'),
+                sssParams.sssDistance ?? 0.5,
+                0,
+                1,
+                0.01,
+                (v) => setMatSssParams(id, cat, { sssDistance: v }),
+                'lucide:gauge'
+            );
+        },
+    });
+}
 
 /** 用 MAT_PARAM_DEFS 批量渲染滑块；withIcons 区分 batch 详情两种 UI */
 function _renderMatParamSliders(
@@ -376,6 +496,12 @@ function _renderParamCard(
             addSectionTitle(panel, `${cat} > ${matName}`);
 
             _renderMatParamSliders(panel, id, index, params, true);
+
+            // ADR-188: PBR 专属参数
+            _renderPbrParamSliders(panel, id, index);
+
+            // ADR-188: SSS 次表面散射参数
+            _renderSssParamCard(panel, id, cat);
 
             if (current !== null) {
                 slideRow(panel, 'lucide:rotate-ccw', t('model-material.resetThis'), false, () => {

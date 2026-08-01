@@ -1086,6 +1086,17 @@ export const en: Record<string, string> = {
     'model-material.paramTuneTitle': 'Param Tune',
     'model-material.resetThis': 'Reset This Material',
 
+    // ADR-188: PBR specific params
+    'model-material.pbrGroupTitle': 'PBR Material Params',
+    'model-material.pbrMetallic': 'Metallic',
+    'model-material.pbrRoughness': 'Roughness',
+
+    // ADR-188: SSS subsurface scattering
+    'model-material.sssTitle': 'SSS Subsurface Scattering',
+    'model-material.sssPower': 'SSS Power',
+    'model-material.sssColor': 'SSS Color',
+    'model-material.sssDistance': 'SSS Distance',
+
     // model-preset — model preset UI
     'model-preset.formatError': '✗ Preset file format error',
     'model-preset.unsupportedVersion': '✗ Unsupported preset version',

@@ -652,6 +652,23 @@ async function _initMmdRuntime(): Promise<IMmdRuntime> {
     const materialMode = getMaterialMode();
     logWarn('scene', `MMD 材质模式: ${materialMode}`);
     MmdRuntimeShared.MaterialProxyConstructor = getStandardMaterialProxy();
+    // [ADR-188] PMX 加载阶段材质构建器切换
+    // 默认 'babylon-mmd/esm/Loader/mmdModelLoader' import 已注册 MmdStandardMaterialBuilder
+    // PBR 模式下需动态导入 PBRMaterialBuilder 覆盖 SharedMaterialBuilder
+    if (materialMode === 'pbr') {
+        try {
+            const { MmdModelLoader } = await import('babylon-mmd/esm/Loader/mmdModelLoader.pure');
+            const { PBRMaterialBuilder } =
+                await import('babylon-mmd/esm/Loader/pbrMaterialBuilder');
+            MmdModelLoader.SharedMaterialBuilder = new PBRMaterialBuilder();
+            logWarn(
+                'scene',
+                'PBR 模式已启用：MmdModelLoader.SharedMaterialBuilder = PBRMaterialBuilder'
+            );
+        } catch (e) {
+            logWarn('scene', 'PBRMaterialBuilder 加载失败，回退 StandardMaterial：', e);
+        }
+    }
     // 运行时切换：默认 WASM（含物理），可在程序化动作菜单切换到 JS 版（调试专用，无物理）
     // JS 版保留作为 gaze 行为对比排查与 WASM 兼容性回退，勿删除
     const useJsRuntime = getMmdRuntimeType() === 'js';
