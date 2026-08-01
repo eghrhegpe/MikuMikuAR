@@ -13,6 +13,9 @@ frontend/e2e/logs_*/
 # Model files — do NOT commit (copyrighted, large)
 text-model/
 
+# Plaza 本地缓存（客户端运行时写入用户目录 plaza-cache/ 或 IndexedDB；仓库根仅保留云端源 creators.json + workshop_sites.json）
+plaza_cache.json
+
 # Generated locale JSON files (build artifacts from scripts/generate-locale-json.mjs)
 frontend/public/locales/
 
