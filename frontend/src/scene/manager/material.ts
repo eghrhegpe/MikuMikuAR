@@ -959,6 +959,9 @@ export function getMatState(id: string): {
     const overrides: Record<number, MaterialCategoryParams> = {};
     if (matState) {
         for (const [idx, params] of matState) {
+            if (JSON.stringify(params) === defaultJson) {
+                continue;
+            }
             overrides[idx] = { ...params };
         }
     }
