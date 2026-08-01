@@ -491,9 +491,44 @@ function buildReleasesIndex() {
   return out.join('\n');
 }
 
+// ── 5. 用户指南索引 ────────────────────────────────────────
+
+/**
+ * guide/ 首页索引：与其他分区（adr/knowledge/buglog/releases）保持一致——
+ * 文档索引表格形态，替代原来的 layout: home 营销大首页（hero + features）。
+ */
+function buildGuideIndex() {
+  const entries = [];
+  for (const f of mdFiles('guide').sort((a, b) => a.localeCompare(b))) {
+    if (f === 'README.md' || f === 'index.md') continue;
+    const text = read('guide', f);
+    entries.push({
+      file: f,
+      title: fm(text, 'title') || h1(text, f),
+      desc: fm(text, 'description') || '',
+    });
+  }
+
+  const out = [];
+  out.push(BANNER('gen-docs-index.mjs'));
+  out.push('');
+  out.push('# 用户指南');
+  out.push('');
+  out.push(`> 按功能讲解入口路径与操作步骤，共 **${entries.length}** 篇。新功能持续建档，重跑 \`npm run gen:docsindex\` 自动入列。`);
+  out.push('');
+  out.push('| 指南页 | 说明 |');
+  out.push('|--------|------|');
+  for (const e of entries) {
+    out.push(`| [${cell(e.title)}](${href('./' + e.file)}) | ${cell(e.desc) || '—'} |`);
+  }
+  out.push('');
+  return out.join('\n');
+}
+
 // ── 主流程 ────────────────────────────────────────────────
 
 const TARGETS = [
+  { rel: 'guide/index.md', build: buildGuideIndex, label: '用户指南' },
   { rel: 'adr/index.md', build: buildAdrIndex, label: '决策记录' },
   { rel: 'knowledge/index.md', build: buildKnowledgeIndex, label: '知识卡' },
   { rel: 'buglog/index.md', build: buildBuglogIndex, label: 'Bug 日志' },

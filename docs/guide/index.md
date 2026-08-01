@@ -1,26 +1,25 @@
----
-layout: home
+<!-- 本文件由 scripts/gen-docs-index.mjs 自动生成，请勿手改。重跑：npm run gen:docsindex -->
 
-hero:
-  name: MikuMikuAR
-  text: 用户指南
-  tagline: 桌面端 + Web 端的 MMD 舞台与模型编辑器 —— 怎么打开、怎么操作、常见问题
-  actions:
-    - theme: brand
-      text: 开始使用
-      link: /guide/env-water
-    - theme: alt
-      text: GitHub 仓库
-      link: https://github.com/eghrhegpe/MikuMikuAR
+# 用户指南
 
-features:
-  - title: 功能指南
-    details: 按功能讲解入口路径与操作步骤（水面、天空、地面、动作、相机…），新功能持续建档。
-    link: /guide/import-model
-  - title: 模型与动作
-    details: 导入模型、分配 VMD 动作、控制相机视角，一站式完成舞台搭建与演出编排。
-    link: /guide/motion-playback
-  - title: 快速上手
-    details: 从「模型导入」开始，按侧栏顺序逐页探索，常见问题与解答持续更新。
-    link: /guide/env-water
----
+> 按功能讲解入口路径与操作步骤，共 **17** 篇。新功能持续建档，重跑 `npm run gen:docsindex` 自动入列。
+
+| 指南页 | 说明 |
+|--------|------|
+| [AI 助手](./ai-assistant.md) | 内置 AI 诊断助手：对话答疑、自然语言控场、配置与会话管理 |
+| [相机操作](./camera-control.md) | 轨道/自由飞行相机切换，旋转/缩放/平移，以及相机参数微调 |
+| [环境氛围](./env-atmosphere.md) | 雾、云与画面后处理（Bloom/暗角/锐化/SSAO），微调整体观感 |
+| [环境预设](./env-presets.md) | 一键保存/复用环境参数组合（天空、水面、粒子等）的场景氛围方案 |
+| [水面设置](./env-water.md) | 舞台水面：波纹、反射、涟漪与水下过渡的一站式设置 |
+| [地面设置](./ground.md) | 地面网格/样式/高度调整，阴影开关与地面跟随 |
+| [模型导入](./import-model.md) | 从模型库加载 PMX/PMD 模型到舞台，附导入路径与常见问题 |
+| [动作与播放](./motion-playback.md) | 给模型分配 VMD 动作、控制播放/暂停/循环，以及程序化动作 |
+| [换装](./outfit.md) | 给模型切换服装变体、FBX 叠加服饰，以及一键重置回默认外观 |
+| [布料物理](./physics.md) | 全局重力与地面碰撞，让裙摆、头发随动作自然摆动 |
+| [程序化动作](./proc-motion.md) | 无需 VMD 也能让角色待机呼吸、自动跳舞，随音乐节拍联动 |
+| [道具](./props.md) | 加载麦克风、椅子、手持物等配件模型，调整位置/大小/旋转，或绑定到角色骨骼 |
+| [场景保存与恢复](./scene-save.md) | 自动保存、启动恢复上次场景、撤销/重做，以及预设场景一键切换 |
+| [设置](./settings.md) | 画面、外观、资源、操控、语言等全局配置的总览 |
+| [天空设置](./sky.md) | 天空模式（纯色/贴图/HDR）、太阳与光照氛围调整 |
+| [舞台灯光](./stage-lights.md) | 添加舞台灯、调整颜色/强度/阴影，以及舞台灯光预设 |
+| [风力与粒子](./wind-particles.md) | 风向/风速控制布料飘动，天气粒子（雨雪等）营造氛围 |
