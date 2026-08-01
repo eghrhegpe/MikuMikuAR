@@ -7,8 +7,6 @@ scope:
 source_files:
   - frontend/src/scene/manager/material.ts
 symbols:
-  - registerMaterialTarget
-  - unregisterMaterialTarget
   - MaterialStateManager
   - _capture
   - isMatEnabled
@@ -24,10 +22,9 @@ symbols:
   - disposeModelMaterialState
   - applyUnlitFallback
 invariants:
-  - 资源卸载必须 unregisterMaterialTarget 以释放 _externalMeshes 与材质状态
+  - 资源卸载必须 disposeModelMaterialState(id) 释放按 id 的材质状态映射，避免模型材质泄漏
   - 写入触发 triggerAutoSave
-  - _getMeshesById 先查 modelRegistry，后查外部注册表兜底
-  - 材质分类参数按网格/材质名归类批量调参
+  - 材质分类参数按网格/材质名归类批量调参，由 MaterialStateManager 统一管理
 tests: []
 use_when:
   - 材质系统
@@ -37,24 +34,23 @@ use_when:
 ---
 
 ## 系统概览
-MikuMikuAR 材质系统：分类（category-based）与逐材质参数调整。从 `scene.ts` L1674-1978 抽取。让 prop/non-model 资源也能复用 id-based 材质 API。
+MikuMikuAR 材质系统：分类（category-based）与逐材质参数调整，沉淀为独立 `scene/manager/material.ts` 模块（原从 `scene.ts` 抽取）。以 `MaterialStateManager` 单例 + id-based 自由函数提供按模型 / 分类的材质状态管理。
 
 ## 核心职责
-- 外部材质目标注册表 `_externalMeshes`（propRegistry 等经 `registerMaterialTarget` 注册，卸载时 `unregisterMaterialTarget` 释放并 `disposeModelMaterialState`）
-- `_getMeshesById` — 先 `modelRegistry`，后外部注册表兜底
+- `MaterialStateManager` 单例（L163 `_stateMgr`）管理按 id 的材质状态：`catState`（分类参数映射）/ `matState`（逐材质参数映射）/ `matEnabled`（启用开关映射）
+- `disposeModelMaterialState(id)` 卸载时释放按 id 的材质状态映射，避免模型切换时的材质泄漏
 - 材质分类参数 `MaterialCategoryParams`（diffuseMul 等），按网格/材质名归类批量调参
-- 提供 `_capture`（供 `model-loader` 在实例创建时捕获初始材质状态）
+- 提供 `_capture(mat)`（供 `model-loader` 在实例创建时捕获初始材质状态）
 
 ## 对外 API（节选）
-- `registerMaterialTarget(id, meshes)` / `unregisterMaterialTarget(id)`
-- `getMaterialMeshes(id)` — UI 层（model-material.ts）按 id 拿 meshes，不依赖 modelRegistry
-- 分类调参 / 逐材质 setter（被 UI 面板调用）
+- `MaterialStateManager` 实例状态 + id-based 自由函数：`isMatEnabled` / `setMatEnabled` / `getMatCatParams` / `setMatCatParams` / `resetMatCatParams` / `getMatParams` / `setMatParams` / `getMatDetailList` / `applyMatState` / `getMatState` / `disposeModelMaterialState` / `applyUnlitFallback`
+- `_capture(mat)` — 供 `model-loader` 在实例创建时捕获初始材质状态
 
 ## 关键约定
-- 资源卸载必须 `unregisterMaterialTarget` 以释放 `_externalMeshes` 与材质状态，避免 prop 材质泄漏
+- 资源卸载必须 `disposeModelMaterialState(id)` 释放按 id 的材质状态映射，避免模型材质泄漏
 - 写入触发 `triggerAutoSave`
 
 ## 与其他子系统关系
 - 上游：`model-loader.ts`（`_capture`）、UI 面板（model-material.ts）
 - 下游：`model-manager.ts`（`disposeModelMaterialState`）、`core/state`（`uiState` / `triggerAutoSave`）
-- 状态源：`modelRegistry` + 外部注册表
+- 状态源：`modelRegistry`（按 id 查找模型）
