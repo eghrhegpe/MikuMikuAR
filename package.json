@@ -5,7 +5,7 @@
   "scripts": {
     "gen:status": "node scripts/gen-status-index.mjs --reverse",
     "check:status": "node scripts/gen-status-index.mjs --reverse --check",
-    "check:docs": "npm run check:status && node scripts/check-doc-drift.mjs && node scripts/check-schema-groups.mjs && node scripts/i18n-check.mjs && node scripts/gen-knowledge-symbols.mjs --check && node scripts/gen-tier.mjs --check && node scripts/gen-docs-index.mjs --check && npm run check:knowgraph && npm run check:ui-entry && npm run check:md-links",
+    "check:docs": "npm run check:status && node scripts/check-doc-drift.mjs && node scripts/check-schema-groups.mjs && node scripts/i18n-check.mjs && node scripts/gen-knowledge-symbols.mjs --check && node scripts/gen-tier.mjs --check && node scripts/gen-docs-index.mjs --check && npm run check:knowgraph && npm run check:ui-entry && npm run check:knowledge-h1 && npm run check:md-links",
     "check:md-links": "python tests/test_markdown_links.py",
     "check:schema-groups": "node scripts/check-schema-groups.mjs --strict",
     "check:i18n": "node scripts/i18n-check.mjs",
@@ -22,6 +22,8 @@
     "check:knowgraph": "node scripts/gen-knowledge-graph.mjs --check --file docs/knowledge/graph.md",
     "gen:ui-entry": "node scripts/gen-ui-entry.mjs",
     "check:ui-entry": "node scripts/gen-ui-entry.mjs --check",
+    "gen:knowledge-h1": "node scripts/gen-knowledge-h1.mjs",
+    "check:knowledge-h1": "node scripts/gen-knowledge-h1.mjs --check",
     "test:scripts": "node --test scripts/_lib/source-graph.test.mjs",
     "codemod": "cd frontend && node ../scripts/codemod.mjs",
     "diagnose": "node scripts/diagnose.mjs",

@@ -28,6 +28,8 @@ use_when:
   - 脚部调整引擎
 ---
 
+# 脚部地面跟随（MMD-native IK）
+
 ## 系统概览
 **脚部地面跟随引擎（MMD-native IK）**。每帧驱动左/右足 IK 骨骼到地面高度，重解该腿 IK。
 注册为 MotionPipeline bone-override 层（order=5），在帧钩子之前执行。脚 IK 为自动约束基础，

@@ -25,6 +25,8 @@ use_when:
   - 物理分类
 ---
 
+# 模型注册表与生命周期管理
+
 ## 系统概览
 Model Manager：封装 `modelRegistry`、`focusedModelId`、per-model 状态 map，提供模型 CRUD、属性设置、骨骼覆盖、物理类别、Morph 操作。消费者为 `scene.ts`（编排器）、`model-detail.ts`（UI）、serialization。
 

@@ -14,6 +14,8 @@ use_when:
   - pick 目标
 ---
 
+# 变换目标拾取与元数据
+
 ## 系统概览
 变换拾取与元数据：在节点树中沿 parent 链向上查找 `transformKind` / `transformId` 元数据，把任意 mesh 关联到它所属的「可变换资源」（model/prop/light 等），并支持屏幕坐标拾取。ADR-171 面板化后，场景点击拾取挂载成功后同步 `transform-selection` 的面板选中态。
 

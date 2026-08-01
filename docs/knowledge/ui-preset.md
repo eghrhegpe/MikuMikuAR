@@ -15,6 +15,8 @@ use_when:
   - 预设组件
 ---
 
+# 预设面板复合组件
+
 ## 系统概览
 收敛 env 面板中 5 处手写 chip 组与 3 处手写清除行的重复拼接逻辑。提供 `buildPresetChipGroup` 渲染一组预设芯片，`addClearRow` 渲染一行右对齐清除按钮。
 

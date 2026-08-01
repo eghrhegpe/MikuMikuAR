@@ -29,6 +29,8 @@ use_when:
   - 头发/裙子物理
 ---
 
+# 风力物理注入（WASM Bullet）
+
 ## 系统概览
 通过 `MmdWasmPhysicsRuntimeImpl.onSyncObservable`，在每次 Bullet 物理步进前对所有 Dynamic 刚体施加风力，使头发/裙子等物理部件受风影响。仅 WASM 运行时生效（JS 运行时无 Bullet 物理）；Kinematic 刚体（骨骼跟随）不受力，Bullet 自动忽略。
 

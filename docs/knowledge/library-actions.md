@@ -44,6 +44,8 @@ use_when:
   - 模型行点击
 ---
 
+# 资源库操作
+
 ## 系统概览
 资源库交互的执行层：把用户在资源浏览层（library-browse）的点击 / 导入 / 替换动作，翻译成对 `loadManager`、模型注册表与撤销系统的调用。所有对外能力均为纯函数式导出，UI 层（library-browse / library-setup）按需引用；内部替换 / 普通加载逻辑（`startReplaceModel` / `loadModelNormal`）为模块私有，不对外暴露。
 

@@ -29,6 +29,8 @@ use_when:
   - ADR-189
 ---
 
+# 纹理 LRU 缓存
+
 ## 系统概览
 
 纹理 LRU 缓存模块（ADR-189 Phase 1.3），按键 `<modelDir>\x00<relativePath>` 缓存纹理 ArrayBuffer，避免跨模型切换时重复读取文件。使用基于 Map 插入顺序的近似 LRU 驱逐策略，O(1) 驱逐，无需双向链表。

@@ -23,6 +23,8 @@ use_when:
   - vite.web.config
 ---
 
+# '@wailsio/runtime 浏览器桩'
+
 ## 系统概览
 @wailsio/runtime 浏览器桩 — ADR-176/177 Web 构建。Web 构建（vite.web.config.ts / vite.spike.config.ts）时替换 @wailsio/runtime，避免 @bindings/app.ts 的 value import `import { Call } from "@wailsio/runtime"` 把整个 Wails 运行时打进浏览器 bundle。
 

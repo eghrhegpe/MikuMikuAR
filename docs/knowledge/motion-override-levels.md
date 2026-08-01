@@ -35,6 +35,8 @@ use_when:
   - 帧钩子时序一览（ADR-186）
 ---
 
+# 动作覆盖 UI 层级（模块化覆盖 + 高级骨骼覆盖）
+
 ## 系统概览
 **动作覆盖 UI 层级模块**（ADR-116 P3-3 + ADR-145）。提供两类可复用卡片渲染器（`renderPresetCard` / `renderOverrideCard`）供 `motion-detail-ui.ts` 消费，以及两个独立子页入口（`buildModuleParamLevel` / `buildAdvancedBoneOverrideLevel`）。原独立的 `motion:boneOverride` 死路由已移除，UI 入口统一收口到动作详情页。
 

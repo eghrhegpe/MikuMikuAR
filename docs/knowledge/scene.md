@@ -121,6 +121,8 @@ use_when:
   - 场景生命周期
 ---
 
+# 场景核心编排器（纯组装器）
+
 ## 系统概览
 3D 场景核心模块，纯组装器（[doc:architecture]）。导入所有子系统并按正确顺序装配，对外提供唯一 `initScene()` 入口。具体逻辑已拆分到各子模块（env / motion / camera / physics / render），本文件仅负责组合与启动期副作用挂载：MMD 原生描边补丁、`SdefInjector` 球面变形改写 `engine.createEffect`、WASM 物理运行时（SPR 单线程，MPR 多线程仅在 `VITE_MMD_WASM_MT` 定义时动态拉入）、风力/地面碰撞注入。
 

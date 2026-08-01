@@ -36,6 +36,8 @@ use_when:
   - 诊断上下文
 ---
 
+# 错误环形缓冲与全局捕获
+
 ## 系统概览
 ADR-196 的诊断上下文采集底座：固定容量环形缓冲（`ErrorRingBuffer`）+ 全局 `errorBuffer` 单例，配合 `console.error` 补丁与 window error/unhandledrejection 捕获，将错误归一化为 `ErrorEntry` 供 AI 诊断助手读取。
 

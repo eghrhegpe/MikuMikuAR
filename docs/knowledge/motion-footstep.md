@@ -24,6 +24,8 @@ use_when:
   - 地面材质音色
 ---
 
+# 脚步声控制器
+
 ## 系统概览
 **脚步声控制器（ADR-088）**。消费 `feet-adjustment` 的落地事件（`FootLandEvent`），
 程序化合成音效（零音频资源）通过 SFX 总线发声。状态为全局配置（uiState），

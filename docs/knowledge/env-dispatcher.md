@@ -30,6 +30,8 @@ use_when:
   - dispatch
 ---
 
+# 环境变更分发回调（破循环依赖）
+
 ## 系统概览
 环境变更调度层：**纯调度、无状态**（ADR-138）。目的是破除 `env-bridge ↔ env-impl/env-water` 的循环依赖——`env-bridge` 只 import dispatcher，不 import env-impl/env-water。各子系统通过 `registerEnvCallback` 注册响应回调，变化发生时由 `dispatchEnvChange` 统一调度。
 

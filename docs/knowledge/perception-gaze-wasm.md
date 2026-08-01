@@ -25,6 +25,8 @@ use_when:
   - 视线方向
 ---
 
+# WASM 端视线追踪
+
 ## 系统概览
 **WASM 端视线追踪**（ADR-071/162）。提供基于 WASM 的高性能视线追踪实现，
 被 perception-gaze 调度。

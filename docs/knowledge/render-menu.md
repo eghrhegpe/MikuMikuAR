@@ -23,6 +23,8 @@ use_when:
   - 数据绑定
 ---
 
+# 菜单渲染引擎
+
 ## 系统概览
 **菜单渲染引擎**（ADR-093 Schema 驱动）。将 `MenuNode[]` schema 渲染为实际的 DOM UI 控件，
 支持 slider、toggle、dropdown、color 等多种控件类型，通过 `bind` 属性实现数据双向绑定。

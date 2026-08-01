@@ -96,6 +96,8 @@ use_when:
   - 虚拟网格
 ---
 
+# UI 辅助函数聚合
+
 ## 系统概览
 **UI 辅助函数聚合层**（barrel re-export）。提供声明式 UI 控件创建函数（slider、toggle、dropdown、
 collapsible 等），统一返回 DOM 元素。`ui-helpers.ts` 为聚合入口，各组件在独立文件中实现。

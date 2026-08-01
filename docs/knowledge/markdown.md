@@ -26,3 +26,5 @@ use_when:
   - AI 回复渲染
   - 轻量渲染
 ---
+
+# 轻量 Markdown→DOM 渲染器

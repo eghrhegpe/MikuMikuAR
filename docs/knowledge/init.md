@@ -25,6 +25,8 @@ use_when:
   - bootstrap
 ---
 
+# 应用启动引导
+
 ## 系统概览
 MikuMikuAR 前端应用的启动引导入口。`bootstrap()` 在 Wails 就绪后执行完整的初始化流水线：加载配置、初始化场景/渲染、注册快捷键、恢复环境状态与 UI 状态、检查更新、启动渲染循环。浏览器模式下额外注册 Service Worker（`registerServiceWorker`）提供离线缓存能力。
 

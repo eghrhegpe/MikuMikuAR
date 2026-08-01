@@ -27,6 +27,8 @@ use_when:
   - 面板 schema 收集
 ---
 
+# 声明式菜单 Schema 注册表
+
 ## 系统概览
 ADR-093 元测试基础设施。收集各面板的 `MenuNode[]` schema，供 `menu-schema.integrity.test.ts` 做静态分析。注册是自愿的：各 `*-levels.ts` 导出 `getXxxSchema()` 后在此注册。
 

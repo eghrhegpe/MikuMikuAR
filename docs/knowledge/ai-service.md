@@ -48,6 +48,8 @@ use_when:
   - streamChat / testConnection
 ---
 
+# 内置 AI 诊断助手 — 双适配器服务层
+
 ## 系统概览
 ADR-196 内置 AI 诊断助手的核心服务抽象，镜像 BackendService（ADR-176）双适配器模式。定义统一 `AiService` 契约，并提供 `BrowserAiAdapter`（直接 fetch OpenAI 兼容端点）与 `GoAiAdapter`（经 Wails events 订阅 Go 侧 LLM 流）两种实现；`resolveAi()` 按 Tier 分层策略惰性选型。
 

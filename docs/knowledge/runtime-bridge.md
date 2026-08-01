@@ -33,6 +33,8 @@ use_when:
   - runtime-bridge
 ---
 
+# Runtime 隔离桥（Wails Events/Browser）
+
 ## 系统概览
 `@wailsio/runtime` 的隔离层（ADR-177，绞杀者模式）。运行时动态选型：Web 走 no-op 实现，Wails 走真实的 `@wailsio/runtime`（动态 import，避免静态依赖）。生产代码中 `@wailsio/runtime` 的 value import **只允许出现在本文件**，业务侧一律经 `getRuntimeBridge()` 访问。
 

@@ -32,6 +32,8 @@ use_when:
   - 灯光派生
 ---
 
+# 环境灯光包装
+
 ## 系统概览
 **环境灯光派生层**。纯计算模块，将 envState 的 sky/ground/water/atmosphere 参数派生为
 `DerivedLighting`（方向光强度/颜色、半球光、阴影参数、groundColor），不直接操作任何

@@ -28,6 +28,8 @@ use_when:
   - 手指姿势
 ---
 
+# 手部独立控制模块（左手/右手）
+
 ## 系统概览
 **左手/右手独立控制模块**。每侧提供手腕旋转（pitch/yaw/roll）、手臂位置偏移（handPosX/Y/Z）、手指预设（fingerPreset + fingerIntensity）三组参数。
 

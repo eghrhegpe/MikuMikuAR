@@ -31,6 +31,8 @@ use_when:
   - WASM 层
 ---
 
+# WASM 图层混合器
+
 ## 系统概览
 **WASM 图层混合器**。将多个 WASM 动作图层按权重混合，提供 `BlenderDeps` 注入式的初始化与销毁。
 

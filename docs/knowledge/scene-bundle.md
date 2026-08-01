@@ -23,6 +23,8 @@ use_when:
   - 资产收集
 ---
 
+# 场景打包/解包
+
 ## 系统概览
 场景打包/解包（[doc:architecture]）。收集场景引用资源、重写 `libraryRef`、调用 Go 后端 `BundleScene` / `ExtractZip` / `LoadSceneFile` 等绑定完成打包与解包。依赖 `scene-serialize.ts` 与 `config.ts` / wails bindings。
 

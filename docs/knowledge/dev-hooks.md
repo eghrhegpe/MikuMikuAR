@@ -22,6 +22,8 @@ use_when:
   - 截图断言
 ---
 
+# 开发环境 E2E 钩子
+
 ## 系统概览
 DEV 仅有的 E2E capture + scene inspection 钩子，从 `main.ts` 拆分而来。在 `window` 上挂载 `__capture` 截图函数与 `__scene` 检查对象，供 Playwright 数值断言使用，避免脆弱的像素截图对比。生产构建下默认不注入（设 `VITE_E2E_MODE=true` 后可编入）。
 

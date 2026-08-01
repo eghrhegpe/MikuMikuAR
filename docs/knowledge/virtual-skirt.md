@@ -33,6 +33,8 @@ use_when:
   - skirt analyzer
 ---
 
+# 虚拟裙骨物理控制器（ADR-084 Phase 2-3）
+
 ## 系统概览
 ADR-084 Phase 2-3：将 `skirt-analyzer` 得到的虚拟裙骨链注入 WASM Bullet 物理世界——链头 Kinematic 盒子锚定体（跟随腰骨）+ 链身 Dynamic 球体 + `Generic6DofSpringConstraint` 弹簧链，每帧读刚体位移按权重写回 mesh 顶点。遵循 ADR-081 教训：不被 `scene.ts` 启动期 eager 导入，仅由用户显式开启虚拟裙骨时按需 `await import()`。
 

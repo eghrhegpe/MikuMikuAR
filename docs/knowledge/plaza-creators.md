@@ -20,6 +20,8 @@ use_when:
   - 模型广场创作者
 ---
 
+# 模型广场创作者列表
+
 ## 系统概览
 模型广场的创作者（创作者/社团）声明清单。定义 `PlazaCreator` 接口（name / desc / tag / tier / site），当前为空列表（`PLAZA_CREATORS: []`），预留供后续填充。
 

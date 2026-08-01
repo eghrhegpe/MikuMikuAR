@@ -55,6 +55,8 @@ use_when:
   - env facade
 ---
 
+# 环境系统门面（Facade）
+
 ## 系统概览
 Environment Facade（Phase 8）：环境系统的对外门面。所有环境调用委托给 `env-impl.ts`，外部模块**只应从此文件 import**。Time-of-Day 实际用 `env-bridge.ts` 的实现（统一 scene observer）。
 

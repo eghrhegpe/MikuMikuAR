@@ -29,6 +29,8 @@ use_when:
   - 预设动画状态
 ---
 
+# 环境状态写入入口（setEnvState + 中间件链）
+
 ## 系统概览
 Env Bridge：环境系统核心调度层。ADR-148 Phase 5 拆分后聚焦于 `setEnvState`、中间件注册、`applyEnvStateFacade` 轻量应用。重力/持久化/时间流转已分别拆到 `env-gravity.ts`、`env-persist.ts`、`env-time-of-day.ts`，本模块仅保留调度核心。
 

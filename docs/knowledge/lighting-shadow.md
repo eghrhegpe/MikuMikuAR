@@ -25,6 +25,8 @@ use_when:
   - 阴影投射者
 ---
 
+# 阴影生成器
+
 ## 系统概览
 阴影生成器管理模块：为环境主光（DirectionalLight）创建 `CascadedShadowGenerator`，为舞台灯光创建 `ShadowGenerator`。管理阴影投射者列表（遍历 modelRegistry + propRegistry 的所有 Mesh），支持阴影类型（hard / soft / pcf）、分辨率、级联数、偏移参数。
 

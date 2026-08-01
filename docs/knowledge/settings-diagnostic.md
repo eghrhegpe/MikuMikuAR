@@ -28,6 +28,8 @@ use_when:
   - 聊天对话
 ---
 
+# AI 诊断助手面板（协调入口）
+
 ## 系统概览
 ADR-196 的 AI 诊断助手 UI 面板，经 ADR-203 重构为协调入口模式。采用双标签页布局（chat/config），状态统一寄存在 `diagState` 单例，各子模块负责各自 UI 区域。声明式菜单 Schema（ADR-093）挂载于设置页；亦可经 `assistant-panel.ts` 以独立 overlay 打开（withSessions:true）。
 

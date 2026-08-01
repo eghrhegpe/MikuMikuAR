@@ -33,6 +33,8 @@ use_when:
   - 灯光 CRUD
 ---
 
+# 舞台灯光系统
+
 ## 系统概览
 舞台灯光（Stage Light）管理：创建/删除/参数调节/序列化/反序列化。支持 SpotLight / PointLight / DirectionalLight 三种类型，每盏灯含轨道定位（orbitAzimuth/Elevation/Distance）、指示器网格、光锥、阴影。通过 `lightingState.stageLights` 统一管理状态。
 

@@ -24,6 +24,8 @@ use_when:
   - 导入逻辑
 ---
 
+# 拖拽导入逻辑层
+
 ## 系统概览
 **拖拽导入纯逻辑层**（ADR-177）。将 dropped File / 路径落地为模型/动作加载请求。
 不含 DOM 事件注册（仍在 `events.ts` 的 `initDropHandler`），只暴露纯异步函数，便于单测 mock

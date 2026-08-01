@@ -30,6 +30,8 @@ use_when:
   - 前后摄切换
 ---
 
+# AR 摄像头视频透传
+
 ## 系统概览
 AR Camera：摄像头视频流管理（ADR-055）。提供 `start` / `stop` / `switchFacing` 接口，维护 `<video>` 元素。渲染合成策略为透明 canvas + CSS `<video>` 底层（S2 方案，性能最优）。
 

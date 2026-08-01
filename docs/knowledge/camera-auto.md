@@ -29,6 +29,8 @@ use_when:
   - 镜头预设池
 ---
 
+# 节拍驱动自动运镜（beatcut）
+
 ## 系统概览
 **节拍驱动自动运镜（beatcut）模块**（ADR-148 阶段 3 续拆，2026-07-26）。从 camera.ts 抽出 beatcut 行为的实现：每 N 拍从 `AUTO_CAMERA_PRESETS` 池中切换一个镜头预设（alpha/beta/radius），叠加在 orbit 基底行为上。ADR-100 双轴派生时，beatcut 作为运行时叠加行为，与 concert/turntable/scripted 互斥。
 

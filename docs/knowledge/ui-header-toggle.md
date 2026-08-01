@@ -24,6 +24,8 @@ use_when:
   - 折叠面板 / 材质行开关
 ---
 
+# 标题栏小型开关（createHeaderToggle）
+
 ## 系统概览
 标题栏小型开关（`toggle.header-toggle`）。从 `ui-rows` 抽出的零依赖叶子（ADR-191），断开 `ui-rows ⇄ ui-slide-row` 文件级双向环。复用点：`menu.ts` 弹窗标题 / `ui-collapsible` 折叠面板 / `ui-slide-row` 行 / `model-material` 材质行。统一双触发去重 + bind 自更新 + disabled。
 

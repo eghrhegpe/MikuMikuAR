@@ -14,6 +14,8 @@ use_when:
   - transform mode
 ---
 
+# 拖拽变换模式开关
+
 ## 系统概览
 变换拖拽模式开关：控制是否启用 Gizmo 拖拽粗调。状态持久在 `localStorage`（`miku.dragModeEnabled`），切换经 `reactivity.scheduleRefresh()` 触发 UI 刷新。
 

@@ -26,6 +26,8 @@ use_when:
   - 地形 FBM
   - 程序化纹理
 ---
+
+# 确定性哈希与值噪声
 ## 系统概览
 Hash Noise：从 `scene/env/env-noise.ts` 迁入 `core/math/` 的确定性哈希与值噪声纯函数族（ADR-212 命名 vs 功能审计）。原 `env-noise.ts` 降级为过渡期 re-export barrel。此模块无状态、零依赖，属纯叶子。
 

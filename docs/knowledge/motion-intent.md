@@ -45,6 +45,8 @@ use_when:
   - 场景动作
 ---
 
+# 场景级动作意图库
+
 ## 系统概览
 **场景级动作意图库（Scene Motion Library）**。管理多主动作平等共存（ADR-167）：场景级
 `_sceneMotions` 动作库 + `_activeMotionId` 默认动作 + 每实例继承/覆盖 + 广播/兼容性解析。

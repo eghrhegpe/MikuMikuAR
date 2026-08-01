@@ -27,6 +27,8 @@ use_when:
   - 播放控制栏
 ---
 
+# 动作播放控制
+
 ## 系统概览
 动作播放的 **UI 控制与进度管理模块**。负责播放/暂停按钮、进度条拖动（seek）、时间显示格式、
 自动循环（auto-loop）状态维护，以及 MMD runtime observable 回调的聚合。与 `vmd-loader.ts` 协作，

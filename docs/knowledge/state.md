@@ -71,6 +71,8 @@ use_when:
   - scene-state / playback-state / library-state
 ---
 
+# 全局状态与场景运行时 Store
+
 ## 系统概览
 全局可变状态的唯一来源（single source of truth）。原 `state.ts` 在 ADR-141 拆分为 `scene-state` / `playback-state` / `library-state` / `ui-state` 四个独立 store，`state.ts` 本身仅作为 barrel re-export，保证 `from '@/core/state'` 与 `from '@/core/config'` 的外部 import 路径零变化。环境状态（EnvState）的字段定义另见 `env-state-schema.ts`（ADR-137）。
 

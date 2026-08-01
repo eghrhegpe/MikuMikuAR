@@ -27,6 +27,8 @@ use_when:
   - 地面碰撞
   - WASM 物理碰撞
 ---
+
+# 环境碰撞控制
 ## 系统概览
 Env Collision：从 `env-gravity.ts` 拆出的碰撞开关模块（ADR-212 命名 vs 功能审计）。控制 WASM Bullet 物理引擎的碰撞总开关、身体碰撞、地面碰撞三种独立开关。
 

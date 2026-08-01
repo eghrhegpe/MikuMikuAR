@@ -16,6 +16,8 @@ use_when:
   - 垂直拖拽方向
 ---
 
+# 反 Y 轴指针输入
+
 ## 系统概览
 继承 babylon-mmd 使用的 `ArcRotateCameraPointersInput`，覆写垂直拖拽方向以支持反转 Y 轴（invertY）。Babylon 的 `ArcRotateCamera` 原生无 invertY flag，故在此覆写 `onTouch` 与 `_computeMultiTouchPanning` 两个 Y 偏移入口。通过 `invertY` 标志切换，不破坏默认行为（默认 false）。
 

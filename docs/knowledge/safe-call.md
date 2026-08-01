@@ -24,6 +24,8 @@ use_when:
   - 安全执行
 ---
 
+# 安全调用工具
+
 ## 系统概览
 统一「吞错并 logWarn」的散点模式（ADR-146 主题2），替代项目中大量 `try { fn() } catch (err) { logWarn(tag, msg, err) }` 与 `promise.catch(...)` 手写重复。与 `utils.ts` 的 `swallowError` 区别：保留调用方传入的 tag/msg 上下文，便于按模块聚合排查。
 

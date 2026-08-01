@@ -82,6 +82,8 @@ use_when:
   - freefly 输入状态
 ---
 
+# 相机状态管理 + 运行时上下文
+
 ## 系统概览
 **相机纯状态 + 运行时上下文模块**。承担两类职责：
 1. 纯状态变量：`_currentPreset` / `_fov` / `_cameraMode` / `_cameraControl` / `_cameraBehavior` / `_scriptedSubMode` / `_currentCamera` / `_focusCenterY` / `_concertPaused` / `_surroundPaused` / `_cameraVmdName` / `_cameraVmdPath` / `_autoCameraEnabled` / `_autoCameraBeatCount` / `_autoCameraPresetIdx`

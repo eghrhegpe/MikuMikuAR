@@ -88,6 +88,8 @@ use_when:
   - mock
 ---
 
+# 后端适配层
+
 ## 系统概览
 **后端适配层**。提供统一的后端接口，支持浏览器（IndexedDB）和桌面（Go）两种后端。
 `idb.ts` 封装 IndexedDB 操作，`browser-adapter.ts` 和 `go-adapter.ts` 分别为两种后端实现。

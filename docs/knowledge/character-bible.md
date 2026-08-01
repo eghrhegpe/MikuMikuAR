@@ -49,6 +49,8 @@ use_when:
   - dialogue
 ---
 
+# 角色台词生成 — 人设约束 + 情绪解析 + TTS 朗读
+
 ## 系统概览
 ADR-156 创意路线的台词生成子系统（Step 1 + Step 2a 已落地）。以内建「角色圣经」约束 LLM 用固定人设产出带情绪标签的结构化对白，解析后可用浏览器原生 `SpeechSynthesis` 朗读。台词模式挂在 `settings-diagnostic.ts` 的 `dialogue` tab，底座为 ADR-196 的 AiService 传输层。
 

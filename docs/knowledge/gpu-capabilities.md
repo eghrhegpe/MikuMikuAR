@@ -29,6 +29,8 @@ use_when:
   - ADR-189
 ---
 
+# GPU 压缩纹理能力探测
+
 ## 系统概览
 
 GPU 压缩纹理（KTX2）能力探测模块（ADR-189 Phase 0 基础设施）。通过临时 canvas 创建 WebGL2 context 探测 GPU 扩展支持，结果缓存避免重复探测。探测优先级：ASTC（移动端现代 GPU）> BC7（桌面）> ETC2（WebGL2 强制兜底）。

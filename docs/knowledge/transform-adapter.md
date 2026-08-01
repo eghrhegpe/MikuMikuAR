@@ -17,6 +17,8 @@ use_when:
   - 拖拽适配
 ---
 
+# 变换适配器注册表（双模态去重）
+
 ## 系统概览
 Transform Adapter Registry（ADR-126）：把「某 kind 支持哪些变换能力 + 如何读写」抽象为 `TransformAdapter` 接口，同构的 Gizmo 调度与滑杆渲染收敛到此，消除 `buildTransformCard` 的 9 段 if/else。
 

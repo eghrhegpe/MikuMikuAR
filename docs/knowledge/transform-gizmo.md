@@ -17,6 +17,8 @@ use_when:
   - 移动旋转缩放
 ---
 
+# 3D 拖拽 Gizmo 统一抽象
+
 ## 系统概览
 Transform Gizmo（ADR-048）：模型/道具/灯光 3D 拖拽 Gizmo 统一抽象。封装 PositionGizmo / RotationGizmo / ScaleGizmo 生命周期，**一次只允许一个实体激活 Gizmo（独占策略）**。调用方：lighting.ts / model-ops.ts / scene-prop-levels.ts。
 

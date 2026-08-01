@@ -22,6 +22,8 @@ use_when:
   - orbit input
 ---
 
+# 轨道相机键盘输入状态叶子
+
 ## 系统概览
 轨道相机的键盘输入状态叶子（仿 freefly-state）。持有 WSAD + 缩放的按键标记，供 `camera-behaviors` 每帧连续积分、`events` 在键盘事件中置位。零 import 设计打断 camera↔events 循环依赖。
 

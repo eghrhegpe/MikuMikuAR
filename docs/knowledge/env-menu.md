@@ -14,6 +14,8 @@ use_when:
   - env 菜单
 ---
 
+# 环境弹窗（编排 + barrel）
+
 ## 系统概览
 Env Menu：环境弹窗（核心 + barrel export）。拆分后保留导航/统一面板/环境光照/粒子/入口 + barrel re-export。子文件：`env-sky-levels` / `env-ground-levels` / `env-water-levels` / `env-wind-levels` / `env-cloud-levels` / `env-fog-levels` / `env-shadow-levels` / `env-experimental-levels` / `env-preset-levels`。道具已迁移到 `scene-prop-levels.ts`（舞台域）。
 

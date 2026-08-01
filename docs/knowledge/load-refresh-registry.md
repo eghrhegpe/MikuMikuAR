@@ -22,6 +22,8 @@ use_when:
   - 注册表
 ---
 
+# 模型加载/库扫描完成后菜单刷新注册表
+
 ## 系统概览
 Load-Refresh Registry — 模型加载/库扫描完成后菜单刷新注册表。替代 load-manager.ts 中硬编码的动态 import 列表和各菜单文件独立注册的 mmar:library-scanned 监听器。
 

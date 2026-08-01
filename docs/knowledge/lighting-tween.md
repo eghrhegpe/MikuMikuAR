@@ -25,6 +25,8 @@ use_when:
   - 灯光 tween
 ---
 
+# 灯光预设过渡动画
+
 ## 系统概览
 灯光预设过渡动画（tween）引擎：为灯光预设切换提供平滑的数值/颜色过渡。支持 `_tweenValue`（数值过渡，ease-out quad 缓动）与 `_tweenColor3`（颜色过渡）。`applyLightingPresetFromEnv` 是入口：补齐/删除灯光数量后，对各灯的位置（orbit）、强度、颜色进行并行 tween，动画期间抑制自动保存。
 

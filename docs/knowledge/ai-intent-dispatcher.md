@@ -26,6 +26,8 @@ use_when:
   - intent dispatcher
 ---
 
+# NL 意图解析 — LLM 文本 → 动作执行
+
 ## 系统概览
 ADR-155 自然语言控场管线的解析层：把 LLM 的自由文本响应解析为 `{ action, params }`，再委托统一动作注册表（ADR-197）执行。三级回退提取策略容忍 LLM 用代码块或前后缀文本包裹 JSON。
 

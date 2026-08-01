@@ -27,6 +27,8 @@ use_when:
   - Freefly
 ---
 
+# 相机模式管理系统（MmdCamera）
+
 ## 系统概览
 相机模式管理系统（[doc:architecture]）。负责相机模式切换（orbit / freefly / surround / concert / oneshot / vmd / ar）、自动构图、自由飞行输入、VMD 相机动画、骨骼锁定、节拍驱动自动运镜。封装 babylon-mmd 的 `MmdCamera` 并管理其生命周期（含 `dispose` 释放，避免卸载泄漏）。复用 `invertablePointersInput` 实现反 Y 轴指针。
 

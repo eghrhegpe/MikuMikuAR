@@ -29,6 +29,8 @@ use_when:
   - envState 持久化
 ---
 
+# 环境状态防抖持久化
+
 ## 系统概览
 Env Persist：从 env-bridge 拆出的 envState / uiState 防抖持久化模块（ADR-148 Phase 5 瘦身）。职责单一：防抖调度（500ms）+ 立即 flush + HMR 清理，经 `resolveBackend()` 路由到 Go 后端。仅依赖 core 层，无 env-bridge 反向依赖。
 

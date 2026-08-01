@@ -29,6 +29,8 @@ use_when:
   - 高度图 URL
 ---
 
+# 统一贴图工厂
+
 ## 系统概览
 环境子系统内所有 canvas 生成贴图的统一工厂。消除散点 `getContext→toDataURL→new Texture` 模式，优先使用 `DynamicTexture`（无 PNG 编码开销），任意环节失败回退普通 canvas → toDataURL → Texture。提供缓存层，支持按 key 复用，避免拖动滑块时反复生成。
 

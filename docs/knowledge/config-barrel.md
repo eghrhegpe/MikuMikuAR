@@ -21,6 +21,8 @@ use_when:
   - 向后兼容
 ---
 
+# 配置聚合层
+
 ## 系统概览
 **配置聚合层**（barrel re-export）。保持 `@/core/config` 的向后兼容，聚合各子模块的导出。
 拆分后各子模块在独立文件中实现，`config.ts` 仅负责 re-export。

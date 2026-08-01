@@ -22,6 +22,8 @@ use_when:
   - 道具缩略图
 ---
 
+# 缩略图渲染
+
 ## 系统概览
 缩略图渲染模块：用独立场景（FreeCamera + RenderTargetTexture）为模型或道具渲染缩略图，保存为 base64 并缓存。支持 PNG 与 JPEG 格式，分辨率和质量由 `uiState` 控制。
 

@@ -54,6 +54,8 @@ use_when:
   - 材质状态管理
 ---
 
+# 分类材质系统
+
 ## 系统概览
 MikuMikuAR 材质系统：分类（category-based）与逐材质参数调整，沉淀为独立 `scene/manager/material.ts` 模块（原从 `scene.ts` 抽取）。以 `MaterialStateManager` 单例 + id-based 自由函数提供按模型 / 分类的材质状态管理。
 
