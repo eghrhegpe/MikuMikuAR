@@ -46,11 +46,11 @@ export function disposeEventHandlers(): void {
         d.dispose();
     }
     _eventDisposables.length = 0;
-    // 清理可能残留的长按定时器
     if (_longPressTimer) {
         clearTimeout(_longPressTimer);
         _longPressTimer = null;
     }
+    _activePointerCount = 0;
 }
 
 import { showModelPopup, showMotionPopup } from '../menus/library';
@@ -72,6 +72,7 @@ let seekWasPlaying = false;
 let _pointerDownPos = { x: 0, y: 0 };
 let _longPressTimer: ReturnType<typeof setTimeout> | null = null;
 let _lastTapTime = 0;
+let _activePointerCount = 0; // [doc:fix] 活跃指针计数；长按/双击仅在单指时生效
 export const navLabels: Record<number, string> = {};
 
 // ======== Nav / overlay helpers ========
@@ -373,8 +374,12 @@ export function registerEventHandlers(): void {
 
     // ======== Click canvas to toggle overlays ========
     _reg(window, 'pointerdown', (e) => {
+        _activePointerCount++;
         _pointerDownPos = { x: e.clientX, y: e.clientY };
-        // 长按检测：500ms 后弹出模型面板
+        // 仅单指时启动长按定时器，避免双指缩放/平移时误触模型详情
+        if (_activePointerCount !== 1) {
+            return;
+        }
         _longPressTimer = setTimeout(() => {
             if (!dom.canvas.contains(e.target as Node)) {
                 return;
@@ -383,7 +388,6 @@ export function registerEventHandlers(): void {
             if (!id) {
                 return;
             }
-            // 打开模型弹窗并 push 模型层级
             showModelPopup();
             import('../menus/model-detail').then(({ buildModelLevel }) => {
                 if (stackRegistry?.modelStack) {
@@ -395,22 +399,19 @@ export function registerEventHandlers(): void {
     });
 
     _reg(window, 'pointerup', (e) => {
-        if (_longPressTimer) {
-            clearTimeout(_longPressTimer);
-            _longPressTimer = null;
-        }
+        clearTimeout(_longPressTimer as ReturnType<typeof setTimeout>);
+        _longPressTimer = null;
+        _activePointerCount = Math.max(0, _activePointerCount - 1);
         const dx = e.clientX - _pointerDownPos.x;
         const dy = e.clientY - _pointerDownPos.y;
         if (Math.sqrt(dx * dx + dy * dy) > 5) {
             return;
         }
 
-        // Only toggle when clicking on the 3D canvas
         if (!dom.canvas.contains(e.target as Node)) {
             return;
         }
 
-        // 双击聚焦：300ms 内两次点击同一位置 → 自动构图聚焦模型
         const now = Date.now();
         if (now - _lastTapTime < 300 && focusedModelId) {
             focusModel(focusedModelId);
@@ -423,14 +424,33 @@ export function registerEventHandlers(): void {
     });
 
     _reg(window, 'pointermove', (e) => {
-        if (_longPressTimer) {
-            const dx = e.clientX - _pointerDownPos.x;
-            const dy = e.clientY - _pointerDownPos.y;
-            if (Math.sqrt(dx * dx + dy * dy) > 10) {
-                clearTimeout(_longPressTimer);
-                _longPressTimer = null;
-            }
+        clearTimeout(_longPressTimer as ReturnType<typeof setTimeout>);
+        _longPressTimer = null;
+        const dx = e.clientX - _pointerDownPos.x;
+        const dy = e.clientY - _pointerDownPos.y;
+        if (Math.sqrt(dx * dx + dy * dy) > 10) {
+            return;
         }
+        // 恢复：移动距离不足阈值 → 重新计时
+        _longPressTimer = setTimeout(() => {
+            if (_activePointerCount !== 1) {
+                return;
+            }
+            if (!dom.canvas.contains(e.target as Node)) {
+                return;
+            }
+            const id = focusedModelId;
+            if (!id) {
+                return;
+            }
+            showModelPopup();
+            import('../menus/model-detail').then(({ buildModelLevel }) => {
+                if (stackRegistry?.modelStack) {
+                    stackRegistry.modelStack.push(buildModelLevel(id));
+                }
+            });
+            _longPressTimer = null;
+        }, 500);
     });
 }
 
