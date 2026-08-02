@@ -515,6 +515,12 @@ type EnvState struct {
 	GroundLevel           float64    `json:"groundLevel"`
 	GroundSize            float64    `json:"groundSize"`
 	GroundEdgeFade        float64    `json:"groundEdgeFade"`
+	// [doc:adr-230] 自发光地屏：对齐 TS env-state-schema groundEmissive* 组
+	// （值类型即可：默认 [0,0,0] / 0 即关闭，零值=缺省，无指针区分必要）。
+	GroundEmissiveColor      [3]float64 `json:"groundEmissiveColor"`
+	GroundEmissiveStrength   float64    `json:"groundEmissiveStrength"`
+	GroundEmissiveReflectMix float64    `json:"groundEmissiveReflectMix"`
+	GroundEmissiveTexture    string     `json:"groundEmissiveTexture"`
 
 	WindEnabled   bool       `json:"windEnabled"`
 	WindDirection [3]float64 `json:"windDirection"`
