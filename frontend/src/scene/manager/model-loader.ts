@@ -37,6 +37,7 @@ import { resolveModelDir } from '@/core/fileservice';
 import { readFileBytes, ListDirRecursive } from '@/core/wails-bindings';
 import { readTextureWithLRU } from './texture-lru';
 import { auditMissingTextures } from './pmx-texture-audit';
+import { textureFallbackCandidates } from './texture-fallback';
 import { reportResourceWarning } from '@/core/resource-warning-sink';
 
 // [temp:diagnose-eye] 临时诊断：复现「第二个角色看不见眼睛」时查看 dev 控制台（搜索 diagnose-eye）。
@@ -354,19 +355,21 @@ async function collectTextureFiles(modelDir: string, signal?: AbortSignal): Prom
     } catch (err) {
         logWarn('model-loader', 'texture scan failed, falling back to HTTP:', err);
     }
-    // basename fallback: 为带目录前缀的贴图注册裸文件名副本，
-    // 这样 PMX 引用 "face.png" 也能匹配到 "tex/face.png"
+    // fallback: 为带目录前缀的贴图注册多候选路径副本（裸名 + 去首段 + 首段+裸名），
+    // 使 PMX 声明路径（含目录前缀/反斜杠）能命中磁盘实际位置（可能深一层子目录）。
+    // 例：声明 "textures\xxx.png" 可匹配到实际文件 "textures/Normalmap/xxx.png"。
     // [doc:adr-189] 共享引用替代 .slice(0)：babylon-mmd 走 new Blob([data]) 路径不 detach ArrayBuffer
-    const hasBasename = new Set<string>();
+    const hasCandidate = new Set<string>();
     const fallbacks: TextureFile[] = [];
     for (const tf of files) {
         const rel = tf.relativePath.replace(/\\/g, '/');
-        const base = rel.split('/').pop() ?? rel;
-        if (base === rel || hasBasename.has(base)) {
-            continue;
+        for (const cand of textureFallbackCandidates(rel)) {
+            if (cand === rel || hasCandidate.has(cand)) {
+                continue;
+            }
+            hasCandidate.add(cand);
+            fallbacks.push({ ...tf, relativePath: cand, data: tf.data }); // 共享引用
         }
-        hasBasename.add(base);
-        fallbacks.push({ ...tf, relativePath: base, data: tf.data }); // 共享引用
     }
     files.push(...fallbacks);
     return files;
