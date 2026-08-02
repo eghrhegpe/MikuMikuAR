@@ -1394,12 +1394,23 @@ export const browserAdapter: BackendService = {
                 }
             }
         }
-        // 兜底 2：dir:<stem>:<relPath> 未命中时，按 ExtractZip 扁平键 file:<stem>（去扩展名）再查一次
-        // ⚠️ [doc:adr-182] file:<stem> 是裸文件名键，不同 ZIP 的同名文件会互相覆盖。
-        // 此处若命中可能是「错的纹理被误返回」(静默错渲染)，加 warn 使排查可追踪。
         const baseName = _baseName(path);
         if (baseName && baseName !== path) {
             const stem = _stripExt(baseName);
+            // 兜底 2：模型作用域扁平键 file:<modelStem>:<裸stem>。
+            // [doc:adr-182] ExtractZip 为 zip 内全部资源写了带命名空间的副本，
+            // 故同名纹理跨 ZIP 不再互相覆盖——必须先于裸键尝试，否则拿到的是别的模型的字节。
+            const info = _classifyPath(path);
+            if (info.kind === 'model-dir' || info.kind === 'model-stem') {
+                const scoped =
+                    (await idbGet<Uint8Array>('models', `file:${info.stem}:${stem}`)) ?? null;
+                if (scoped) {
+                    return scoped;
+                }
+            }
+            // 兜底 3：裸文件名键 file:<stem>（旧数据 / 非 zip 来源）。
+            // ⚠️ 不同 ZIP 的同名文件会互相覆盖，此处若命中可能是「错的纹理被误返回」
+            // (静默错渲染)，加 warn 使排查可追踪。
             const fallback = (await idbGet<Uint8Array>('models', `file:${stem}`)) ?? null;
             if (fallback) {
                 if (!_flatFallbackWarned.has(stem)) {
@@ -1569,9 +1580,15 @@ export const browserAdapter: BackendService = {
                 const stem = _stripExt(baseName);
                 const relPath = name.replace(/\\/g, '/');
                 if (ASSET_RE.test(baseName)) {
-                    // file:<裸stem> 扁平键：保留（向后兼容 + readFileBytes 兜底2 + 跨模型共享）
+                    // file:<裸stem> 扁平键：保留（向后兼容 + readFileBytes 兜底3 + 跨模型共享）
                     await idbSet('models', `file:${stem}`, bytes);
                     if (nsStem) {
+                        // [doc:adr-182] 模型作用域扁平键 file:<nsStem>:<裸stem>。
+                        // 裸 file:<stem> 每次 ExtractZip 都无条件重写，多个 zip 含同名纹理时
+                        // 归属随加载顺序翻转，readFileBytes 兜底会拿到其他 zip 的同名文件（静默错渲染）。
+                        // 这里对 zip 内**全部**资源（含不在 mainPmx 子目录下的）写一份带命名空间的副本，
+                        // 使兜底能先按模型命中自己的字节。
+                        await idbSet('models', `file:${nsStem}:${stem}`, bytes);
                         // [bugfix:zip-pmx-subdir] 仅写属于 mainPmx 同子目录下的资源到命名空间，
                         // 避免多 PMX zip 中其他子目录的贴图污染 mainPmx 的命名空间。
                         // relPath 剥掉 pmxPrefix 使其相对 PMX 文件，与 babylon-mmd 拼接的 URL 维度一致。
@@ -1579,13 +1596,14 @@ export const browserAdapter: BackendService = {
                             const relToPmx = pmxPrefix ? relPath.slice(pmxPrefix.length) : relPath;
                             await idbSet('models', `dir:${nsStem}:${relToPmx}`, bytes);
                             // [doc:adr-182] PMX 主文件额外写命名空间扁平键 file:<nsStem>，
-                            // 使返回的 web://model/<nsStem> 加载路径经 readFileBytes 兜底2 命中正确字节。
+                            // 使返回的 web://model/<nsStem> 加载路径经 readFileBytes 兜底3 命中正确字节。
                             if (baseName === mainPmxName) {
                                 await idbSet('models', `file:${nsStem}`, bytes);
                             }
                         }
                         // 不属于 mainPmx 子目录的文件（如其他 PMX 子目录的贴图）：
-                        // 仅写 file:<裸stem> 扁平键（跨模型兜底），不写 dir: 命名空间键避免污染。
+                        // 仅写 file:<裸stem> + file:<nsStem>:<裸stem> 扁平键，
+                        // 不写 dir: 命名空间键避免污染 mainPmx 的相对路径维度。
                     }
                     baseNames.push(baseName);
                 }
