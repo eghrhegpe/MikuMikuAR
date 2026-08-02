@@ -12,11 +12,12 @@
 import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parseArgs } from './_lib/parse-args.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SCHEMA_FILE = resolve(__dirname, '..', 'frontend', 'src', 'core', 'env-state-schema.ts');
 
-const strict = process.argv.includes('--strict');
+const { strict } = parseArgs(process.argv.slice(2), { bools: ['strict'] });
 
 const text = readFileSync(SCHEMA_FILE, 'utf8');
 
