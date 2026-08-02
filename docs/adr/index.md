@@ -10,8 +10,8 @@
 |------|------|------|
 | [推进中](#推进中) | 5 | 已开工，尚未收口（含部分实施） |
 | [规划中](#规划中) | 8 | 已立项，等待实施 |
-| [已落地](#已落地) | 190 | 实施完成，代码已合入 |
-| [已归档](#已归档) | 19 | 被取代、放弃、过时或搁置，保留供追溯 |
+| [已落地](#已落地) | 199 | 实施完成，代码已合入 |
+| [已归档](#已归档) | 10 | 被取代、放弃、过时或搁置，保留供追溯 |
 | [其他](#其他) | 1 | 状态行缺失或表述不可归类 |
 
 > 本文件为 ADR **规范索引**（按状态分组导航，可锚点跳转）。带日期的全量列表见 [项目现状 · ADR 索引](../status.md)（附表，由 `scripts/gen-status-index.mjs` 生成）。
@@ -94,11 +94,13 @@
 | [ADR-171](./adr-171-scene-drag-mode.md) | 场景级拖拽模式：快捷开关 + 收纳文件夹 | 已完成 |
 | [ADR-170](./adr-170-motion-selection-paradigm.md) | 动作库选中范式 —— 将「默认」暴露为逐行「选中」（对齐模型焦点范式） | 已实施 |
 | [ADR-169](./adr-169-motion-load-replace-default.md) | 动作装载语义统一 —— 原位替换默认动作（replaceDefaultMotion） | 已实施 |
+| [ADR-168](./adr-168-dynamic-light-tracking.md) | 动态追光：舞台灯跟随角色/骨骼 | 已实现 |
 | [ADR-167](./adr-167-scene-motion-library.md) | 场景级动作库（Scene Motion Library）— 多主动作平等共存 | 已完成 |
 | [ADR-166](./adr-166-perception-permodel-rework.md) | 感知层 per-model 上下文真实隔离（ADR-162/163 返工） | 已完成 |
 | [ADR-165](./adr-165-perception-performance-benchmark.md) | 感知层性能基准 — 为 ADR-164 全员感知降级提供阈值依据 | 已完成 |
 | [ADR-164](./adr-164-perception-permodel-phase2.md) | 感知层 per-model 实例化 — Phase 2（全员感知 + 性能降级） | 已实现 |
 | [ADR-163](./adr-163-perception-conflict-visibility.md) | 感知层冲突可视化 — 闭环「左右脑互博」用户层可见性 | 已完成 |
+| [ADR-162](./adr-162-perception-permodel-phase1.md) | 感知层 per-model 实例化 — Phase 1（pinned 模型支持） | 已完成 |
 | [ADR-161](./adr-161-balancesway-params-exposure.md) | balanceSway 独立参数暴露 — 补齐感知层 UI 可调性 | 已完成 |
 | [ADR-160](./adr-160-gaze-delta-exponential-decay.md) | Gaze Delta 指数衰减 — 闭环「左右脑互博」物理根因最后一环 | 已完成 |
 | [ADR-159](./adr-159-render-dedup-and-refactor.md) | 渲染模块重复收口 + 关键补测 + 两项结构性重构决策 | 已实施 |
@@ -150,6 +152,7 @@
 | [ADR-107](./adr-107-stream-audio-player.md) | StreamAudioPlayer 接入 — 替换自建音频管线 | 已完成 |
 | [ADR-106](./adr-106-timing-audit-and-async-lifecycle.md) | 时序审核与异步生命周期规范 | ✅ 全部完成 |
 | [ADR-105](./adr-105-abort-signal-and-async-error-handling.md) | AbortSignal 传递规范与异步异常处理基线 | ✅ Phase 1 + Phase 2 完成 |
+| [ADR-104](./adr-104-physics-outfit-design-debt-deferral.md) | 物理/换装/音频子系统设计债暂缓登记 | 已完成 |
 | [ADR-103](./adr-103-settings-store-persistence.md) | SettingsStore 接入 setUIState 持久化链路 | 已完成 |
 | [ADR-102](./adr-102-main-ts-split.md) | main.ts 拆分（init / events / render-loop / dev-hooks） | 已完成 |
 | [ADR-101](./adr-101-utility-logic-consolidation-wave2.md) | 通用逻辑模式收敛（第二波） | 已完成 |
@@ -165,8 +168,10 @@
 | [ADR-091](./adr-091-ground-texture-unification.md) | 地面纹理统一 —— 4 种样式合并为单一 canvas + StandardMaterial 路径 | 已完成 |
 | [ADR-090](./adr-090-dialog-last-dir.md) | 对话框默认目录记忆（按资源类型）—— 双端可用 | 已完成 |
 | [ADR-089](./adr-089-ground-mode-split.md) | 地面模式分类重构 —— 拆分为几何类型(groundType) + 外观样式(groundStyle) | 已完成 |
+| [ADR-088](./adr-088-audio-sfx-footstep.md) | 音效系统 — 脚步声与 SFX 总线 | Phase A + Phase B 已完成；Ph… |
 | [ADR-087](./adr-087-plaza-browser-experience.md) | 模型广场 · 浏览器体验增强路线图 | 已完成 |
 | [ADR-086](./adr-086-catwalk-procedural-motion.md) | 猫步走秀程序化动作（Catwalk Procedural Motion） | 通过 |
+| [ADR-085](./adr-085-feet-adjustment.md) | 脚部地面跟随（Feet Adjustment） | Phase A 已完成；Phase B/C 降级… |
 | [ADR-084](./adr-084-mesh-to-cloth-virtual-skirt-bones.md) | Mesh-to-Cloth 虚拟裙骨生成 —— WASM Bullet 运行时刚体注入 | 已完成 |
 | [ADR-083](./adr-083-ground-enhancement-expansion.md) | 地面功能扩展 —— 反射/倾斜/纹理滚动/高程着色/跟随网格/图案扩展/法线贴图 | 已交付 — Phase A + Phase B … |
 | [ADR-082](./adr-082-ci-cross-tag-cache-warm.md) | 跨发版 CI 缓存预热（cache-warm 落盘 main 作用域） | 已实施 |
@@ -185,11 +190,14 @@
 | [ADR-064](./adr-064-scene-cycle-and-dir-wrappers.md) | 技术债清偿（续）—— *Dir 包装维持现状 + scene.ts 业务循环依赖破除 | 已实施 |
 | [ADR-063](./adr-063-architecture-debt-paydown.md) | 架构债务清偿（精简版） | ✅ 已实施 |
 | [ADR-062](./adr-062-water-reflection-render-target.md) | 水面反射渲染目标与通用反射系统 | 已完成 |
+| [ADR-061](./adr-061-advanced-bone-systems.md) | 高级骨骼操控与姿态工作室实现计划 | 已完成 |
 | [ADR-060](./adr-060-e2e-testing-strategy.md) | E2E 测试策略（Playwright + 双模式 Fixture + 场景数值钩子） | ✅ 已完成 |
+| [ADR-059](./adr-059-i18n-framework.md) | i18n 多语言切换框架 | 已完成 |
 | [ADR-058](./adr-058-basenameFallbackFS.md) | 纹理路径字节级匹配 —— basenameFallbackFS 多编码兜底 | 已实施 |
 | [ADR-057](./adr-057-shift-jis-url-base64.md) | Shift-JIS URL 乱码修复 —— Base64 查询参数方案（链路 A） | 已实施 |
 | [ADR-056](./adr-056-wasm-runtime-motion-layers.md) | WASM 运行时 Motion Layers 解锁 — JS 帧流合并 + 单图层兜底 | ✅ 已实施 |
 | [ADR-055](./adr-055-ar-camera-mode.md) | AR 相机模式 —— 摄像头视频透传与模型叠加 | 已实施 |
+| [ADR-054](./adr-054-roadmap-next.md) | 后续开发方向路线图 | 规划 |
 | [ADR-053](./adr-053-gaze-layer-integration.md) | Gaze 图层集成 —— 视线追踪作为图层类型 | 已完成 |
 | [ADR-052](./adr-052-ground-mode-enhancement.md) | 地面模式增强 —— 网格大小/第二颜色/高度/纹理旋转 | 已完成 |
 | [ADR-051](./adr-051-vmd-layers-bonefilter.md) | VMD 图层系统与骨骼级过滤 | 已完成 |
@@ -221,6 +229,7 @@
 | [ADR-021](./adr-021-procedural-motion.md) | 程序化动作系统（Idle/Auto Dance + LipSync + 视线追踪） | 已完成 — Idle/AutoDance/Lip… |
 | [ADR-020](./adr-020-outfit-system.md) | 换装系统（服装变体/纹理替换） | 已完成 — Phase 8 完成，outfit.… |
 | [ADR-018](./adr-018-path-manager-abstraction.md) | PathManager 平台抽象层 + 文件 I/O 审计 | 已完成 — PathManager 接口 + t… |
+| [ADR-017](./adr-017-android-adaptation.md) | Android 平台适配（精简版） | 主体已完成 |
 | [ADR-016](./adr-016-gaze-tracking-architecture.md) | 视线追踪子系统架构 | 已完成 — 双路径方案已实施 |
 | [ADR-015](./adr-015-material-editor-refactor.md) | 材质编辑器 UI 重构 + 逐材质开关 | 已完成 — buildMatRootLevel/… |
 | [ADR-014](./adr-014-model-preset-library.md) | 模型加载预设库（角色设置快照） | 已完成 — 保存/加载/库管理/自动匹配/try… |
@@ -239,23 +248,14 @@
 | ADR | 主题 | 状态 |
 |-----|------|------|
 | [ADR-199](./adr-199-llm-capability-boundaries.md) | LLM 能力边界与缓解策略（归档） | 📋 归档登记 |
-| [ADR-168](./adr-168-dynamic-light-tracking.md) | 动态追光：舞台灯跟随角色/骨骼 | 已实现 |
-| [ADR-162](./adr-162-perception-permodel-phase1.md) | 感知层 per-model 实例化 — Phase 1（pinned 模型支持） | 已完成 |
 | [ADR-154](./adr-154-llm-chat-panel-route.md) | 引入大模型交流能力 — 推荐路线（聊天面板打底） | 🗑️ 已被 ADR-196 取代 |
 | [ADR-149](./adr-149-material-outfit-baseline-conflict.md) | 材质系统 × 换装系统基线冲突登记 | 搁置登记 |
 | [ADR-144](./adr-144-per-model-overlay-motion.md) | Per-model Overlay Motion（动作2 叠加层） | 已废弃 |
-| [ADR-104](./adr-104-physics-outfit-design-debt-deferral.md) | 物理/换装/音频子系统设计债暂缓登记 | 已完成 |
-| [ADR-088](./adr-088-audio-sfx-footstep.md) | 音效系统 — 脚步声与 SFX 总线 | Phase A + Phase B 已完成；Ph… |
-| [ADR-085](./adr-085-feet-adjustment.md) | 脚部地面跟随（Feet Adjustment） | Phase A 已完成；Phase B/C 降级… |
 | [ADR-074](./adr-074-cubemap-rt-spherical-reflection.md) | 动态 Cubemap RT 球面反射 | 🗑️ 已放弃 |
 | [ADR-069](./adr-069-material-texture-support-audit.md) | 材质面板纹理支持审计与推进路线 | 调研落档 — 材质面板当前仅支持 4 标量乘率，… |
-| [ADR-061](./adr-061-advanced-bone-systems.md) | 高级骨骼操控与姿态工作室实现计划 | 已完成 |
-| [ADR-059](./adr-059-i18n-framework.md) | i18n 多语言切换框架 | 已完成 |
-| [ADR-054](./adr-054-roadmap-next.md) | 后续开发方向路线图 | 规划 |
 | [ADR-044](./adr-044-competitive-analysis.md) | MMD 生态竞品分析 | 已完成 — 调研归档 |
 | [ADR-043](./adr-043-dancexr-gap-analysis.md) | DanceXR 功能差距挖掘 | 已完成 — 调研归档 |
 | [ADR-019](./adr-019-xpbd-cloth-simulation.md) | XPBD 布料模拟引擎选型与架构 | 已完成 — xpbd-solver/collid… |
-| [ADR-017](./adr-017-android-adaptation.md) | Android 平台适配（精简版） | 主体已完成 |
 | [ADR-012](./adr-012-cloud-rendering.md) | 云渲染改进 — Perlin 噪声 + 双分层 | ⚠️ 已过时 — 被 **[ADR-113] |
 
 ## 其他
