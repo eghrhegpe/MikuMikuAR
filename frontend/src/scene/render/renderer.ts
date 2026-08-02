@@ -636,11 +636,41 @@ export function isRenderReady(): boolean {
     return !!pipeline && !!_scene && !!_modelRegistry && !!_triggerAutoSave;
 }
 
+// ======== 守卫拒绝日志去重 ========
+// [fix:P3] 治理下沉到守卫本身，而非逐个调用点：过渡/预设动画每帧调 setRenderState，
+// 未就绪时旧实现每帧刷一条 warn。此处按「函数 + 未就绪组合」为 key 去重，
+// 首次仍告警（不丢首发）；守卫通过（就绪）即清空，下一轮未就绪重新可见。
+const _guardWarnedKeys = new Set<string>();
+
+function _warnGuardBlocked(key: string, msg: string): void {
+    if (_guardWarnedKeys.has(key)) {
+        return;
+    }
+    _guardWarnedKeys.add(key);
+    logWarn('renderer', msg);
+}
+
+/** 守卫通过时复位去重状态。 */
+function _clearGuardWarn(): void {
+    if (_guardWarnedKeys.size > 0) {
+        _guardWarnedKeys.clear();
+    }
+}
+
+/** 未就绪组合指纹，用于区分不同失败原因。 */
+function _renderGuardKey(fn: string): string {
+    return `${fn}:${!!pipeline}${!!_scene}${!!_modelRegistry}${!!_triggerAutoSave}`;
+}
+
 export function setRenderState(s: Partial<RenderState>): boolean {
     if (!pipeline || !_scene || !_modelRegistry || !_triggerAutoSave) {
-        logWarn('renderer', 'setRenderState: pipeline/scene 未初始化，状态更新被忽略（守卫拦截，返回 false）');
+        _warnGuardBlocked(
+            _renderGuardKey('setRenderState'),
+            'setRenderState: pipeline/scene 未初始化，状态更新被忽略（守卫拦截，返回 false；同组合仅告警一次）'
+        );
         return false;
     }
+    _clearGuardWarn();
 
     _applyRenderState(s);
 
@@ -675,12 +705,13 @@ export function transitionRenderState(
     onComplete?: () => void
 ): boolean {
     if (!pipeline || !_scene || !_modelRegistry || !_triggerAutoSave) {
-        logWarn(
-            'renderer',
-            `transitionRenderState 被守卫拦截：渲染未就绪（pipeline=${!!pipeline}, _scene=${!!_scene}, _modelRegistry=${!!_modelRegistry}, _triggerAutoSave=${!!_triggerAutoSave}），过渡未启动`
+        _warnGuardBlocked(
+            _renderGuardKey('transitionRenderState'),
+            `transitionRenderState 被守卫拦截：渲染未就绪（pipeline=${!!pipeline}, _scene=${!!_scene}, _modelRegistry=${!!_modelRegistry}, _triggerAutoSave=${!!_triggerAutoSave}），过渡未启动（同组合仅告警一次）`
         );
         return false;
     }
+    _clearGuardWarn();
 
     // 取消上一次过渡动画，避免多个动画循环互相覆盖
     _cancelRenderTransition();

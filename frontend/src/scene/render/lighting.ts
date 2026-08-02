@@ -287,18 +287,46 @@ export function isLightingReady(): boolean {
     return !!lightingState.hemiLight && !!lightingState.dirLight && !!lightingState.triggerAutoSave;
 }
 
+// ======== 守卫拒绝日志去重 ========
+// [fix:P3] 治理下沉到守卫本身，而非逐个调用点：预设动画/时间轴每帧调 setLightState，
+// 未就绪时旧实现每帧刷一条 warn。此处按「函数 + 未就绪组合」为 key 去重，
+// 首次仍告警（不丢首发），组合变化会再告警一次；守卫通过（就绪）即清空，
+// 保证下一轮未就绪重新可见。key 空间有界（2 函数 × 8 组合）。
+const _guardWarnedKeys = new Set<string>();
+
+function _warnGuardBlocked(key: string, msg: string): void {
+    if (_guardWarnedKeys.has(key)) {
+        return;
+    }
+    _guardWarnedKeys.add(key);
+    logWarn('lighting', msg);
+}
+
+/** 守卫通过时复位去重状态。 */
+function _clearGuardWarn(): void {
+    if (_guardWarnedKeys.size > 0) {
+        _guardWarnedKeys.clear();
+    }
+}
+
+/** 未就绪组合指纹，用于区分不同失败原因（如仅缺 dirLight vs 全缺）。 */
+function _lightGuardKey(fn: string): string {
+    return `${fn}:${!!lightingState.hemiLight}${!!lightingState.dirLight}${!!lightingState.triggerAutoSave}${!!lightingState.scene}`;
+}
+
 /**
  * 写入灯光状态。守卫未就绪时 logWarn + 返回 false（不再静默吞写），
  * 使「UI 可操作但 state 未生效」可被观测（@dom 测试环境无灯光对象时会命中）。
  */
 export function setLightState(s: Partial<LightState>): boolean {
     if (!lightingState.hemiLight || !lightingState.dirLight || !lightingState.triggerAutoSave) {
-        logWarn(
-            'lighting',
-            `setLightState 被守卫拦截：灯光未就绪（hemiLight=${!!lightingState.hemiLight}, dirLight=${!!lightingState.dirLight}, triggerAutoSave=${!!lightingState.triggerAutoSave}），写入未生效`
+        _warnGuardBlocked(
+            _lightGuardKey('setLightState'),
+            `setLightState 被守卫拦截：灯光未就绪（hemiLight=${!!lightingState.hemiLight}, dirLight=${!!lightingState.dirLight}, triggerAutoSave=${!!lightingState.triggerAutoSave}），写入未生效（同组合仅告警一次）`
         );
         return false;
     }
+    _clearGuardWarn();
 
     const envBrightness = Math.max(0.01, envState.globalBrightness ?? 1);
     if (s.hemiIntensity !== undefined) {
@@ -376,16 +404,20 @@ export function transitionLighting(
     onComplete?: () => void
 ): boolean {
     if (!lightingState.hemiLight || !lightingState.dirLight || !lightingState.triggerAutoSave) {
-        logWarn(
-            'lighting',
-            `transitionLighting 被守卫拦截：灯光未就绪（hemiLight=${!!lightingState.hemiLight}, dirLight=${!!lightingState.dirLight}, triggerAutoSave=${!!lightingState.triggerAutoSave}），过渡未启动`
+        _warnGuardBlocked(
+            _lightGuardKey('transitionLighting'),
+            `transitionLighting 被守卫拦截：灯光未就绪（hemiLight=${!!lightingState.hemiLight}, dirLight=${!!lightingState.dirLight}, triggerAutoSave=${!!lightingState.triggerAutoSave}），过渡未启动（同组合仅告警一次）`
         );
         return false;
     }
     if (!lightingState.scene) {
-        logWarn('lighting', 'transitionLighting 被守卫拦截：scene 未就绪，过渡未启动');
+        _warnGuardBlocked(
+            _lightGuardKey('transitionLighting'),
+            'transitionLighting 被守卫拦截：scene 未就绪，过渡未启动（同组合仅告警一次）'
+        );
         return false;
     }
+    _clearGuardWarn();
     const source = getLightState(); // 当前完整状态
     const startTime = performance.now();
     // 需要重建阴影生成器的参数 — 动画进行中跳，仅结束时一次性应用
