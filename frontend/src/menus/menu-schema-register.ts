@@ -27,23 +27,51 @@ import {
 } from './settings-graphics';
 
 // 一次性注册所有已导出的 schema
-// env 域
+// env 域 —— 常规面板零 nav 声明（快照生成器默认推导：folder:env:<slug>）
 registerSchema('env:sky', getSkySchema);
 registerSchema('env:wind', getWindSchema);
 registerSchema('env:fog', getFogSchema);
 registerSchema('env:cloud', getCloudSchema);
 registerSchema('env:shadow', getShadowSchema);
-registerSchema('env:water', getWaterSchema);
-registerSchema('env:ground', getGroundSchema);
+// 特例 [ADR-229 §2.1]：地面/水面已迁至场景菜单（scene-menu.ts target 'scene:ground'/'scene:water'），
+// panelId 前缀 env 不可信，需显式覆写 domain + 一级 folder testid
+registerSchema('env:water', getWaterSchema, {
+    domain: 'scene',
+    subLevelTestId: 'folder:scene:water',
+    subLevelLabel: '水',
+});
+registerSchema('env:ground', getGroundSchema, {
+    domain: 'scene',
+    subLevelTestId: 'folder:scene:ground',
+    subLevelLabel: '地面',
+});
 registerSchema('env:experimental', getExperimentalSchema);
 registerSchema('env:particle', buildParticleSchema);
-// scene 域
-registerSchema('scene:postprocess-core', buildPostProcessCoreSchema);
-registerSchema('scene:postprocess-color', buildPostProcessColorSchema);
-// motion 域
+// scene 域 —— 特例：postprocess 实际挂 env 域的"后处理"folder 下
+registerSchema('scene:postprocess-core', buildPostProcessCoreSchema, {
+    domain: 'env',
+    subLevelTestId: 'folder:env:postprocess',
+});
+registerSchema('scene:postprocess-color', buildPostProcessColorSchema, {
+    domain: 'env',
+    subLevelTestId: 'folder:env:postprocess',
+});
+// motion 域 —— 常规面板零 nav 声明（默认推导：folder:motion:<slug>）
 registerSchema('motion:gaze', getGazeSchema);
-// settings 域
-registerSchema('settings:camera', buildCameraSchema);
-registerSchema('settings:frame-quality', buildFrameQualitySchema);
-registerSchema('settings:effects', buildEffectsSchema);
-registerSchema('settings:physics-hud', buildPhysicsHudSchema);
+// settings 域 —— 特例：需二级 folder testid（节点 id 前缀与导航 folder 无映射，不可推导）
+registerSchema('settings:camera', buildCameraSchema, {
+    domain: 'settings',
+    subLevel2TestId: 'folder:settings:controls',
+});
+registerSchema('settings:frame-quality', buildFrameQualitySchema, {
+    domain: 'settings',
+    subLevel2TestId: 'folder:settings:graphics',
+});
+registerSchema('settings:effects', buildEffectsSchema, {
+    domain: 'settings',
+    subLevel2TestId: 'folder:settings:graphics',
+});
+registerSchema('settings:physics-hud', buildPhysicsHudSchema, {
+    domain: 'settings',
+    subLevel2TestId: 'folder:settings:graphics',
+});

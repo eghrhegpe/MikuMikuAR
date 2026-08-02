@@ -10,11 +10,12 @@ source_files:
 adr:
   - ADR-093
 symbols:
+  - PanelNav
   - RegisteredSchema
-  - registerSchema
+  - _clearRegistry
   - collectAllSchemas
   - flattenNodes
-  - _clearRegistry
+  - registerSchema
 invariants:
   - registerSchema 允许覆盖（DEV 告警），建议 panelId 唯一
   - collectAllSchemas 的 builder 可能依赖运行时状态（envState 等），失败仅 DEV warn 并跳过，不抛

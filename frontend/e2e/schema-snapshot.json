@@ -1,6 +1,11 @@
 [
   {
     "panelId": "env:sky",
+    "nav": {
+      "domain": "env",
+      "entryTestId": "btnEnv",
+      "subLevelTestId": "folder:env:sky"
+    },
     "nodes": [
       {
         "id": "env:sky:presets",
@@ -141,6 +146,11 @@
   },
   {
     "panelId": "env:wind",
+    "nav": {
+      "domain": "env",
+      "entryTestId": "btnEnv",
+      "subLevelTestId": "folder:env:wind"
+    },
     "nodes": [
       {
         "id": "env:wind:angle",
@@ -170,6 +180,11 @@
   },
   {
     "panelId": "env:fog",
+    "nav": {
+      "domain": "env",
+      "entryTestId": "btnEnv",
+      "subLevelTestId": "folder:env:fog"
+    },
     "nodes": [
       {
         "id": "env:fog:mode",
@@ -240,6 +255,11 @@
   },
   {
     "panelId": "env:cloud",
+    "nav": {
+      "domain": "env",
+      "entryTestId": "btnEnv",
+      "subLevelTestId": "folder:env:cloud"
+    },
     "nodes": [
       {
         "id": "env:cloud:cover",
@@ -375,6 +395,11 @@
   },
   {
     "panelId": "env:shadow",
+    "nav": {
+      "domain": "env",
+      "entryTestId": "btnEnv",
+      "subLevelTestId": "folder:env:shadow"
+    },
     "nodes": [
       {
         "id": "env:shadow:env",
@@ -447,6 +472,12 @@
   },
   {
     "panelId": "env:water",
+    "nav": {
+      "domain": "scene",
+      "entryTestId": "btnScene",
+      "subLevelTestId": "folder:scene:water",
+      "subLevelLabel": "水"
+    },
     "nodes": [
       {
         "id": "env:water:presets",
@@ -945,6 +976,12 @@
   },
   {
     "panelId": "env:ground",
+    "nav": {
+      "domain": "scene",
+      "entryTestId": "btnScene",
+      "subLevelTestId": "folder:scene:ground",
+      "subLevelLabel": "地面"
+    },
     "nodes": [
       {
         "id": "env:ground:presets",
@@ -1305,6 +1342,11 @@
   },
   {
     "panelId": "env:experimental",
+    "nav": {
+      "domain": "env",
+      "entryTestId": "btnEnv",
+      "subLevelTestId": "folder:env:experimental"
+    },
     "nodes": [
       {
         "id": "env:exp:warn",
@@ -1314,6 +1356,11 @@
   },
   {
     "panelId": "env:particle",
+    "nav": {
+      "domain": "env",
+      "entryTestId": "btnEnv",
+      "subLevelTestId": "folder:env:particle"
+    },
     "nodes": [
       {
         "id": "env:particle:type",
@@ -1372,6 +1419,11 @@
   },
   {
     "panelId": "scene:postprocess-core",
+    "nav": {
+      "domain": "env",
+      "entryTestId": "btnEnv",
+      "subLevelTestId": "folder:env:postprocess"
+    },
     "nodes": [
       {
         "id": "postprocess:bloom",
@@ -1558,6 +1610,11 @@
   },
   {
     "panelId": "scene:postprocess-color",
+    "nav": {
+      "domain": "env",
+      "entryTestId": "btnEnv",
+      "subLevelTestId": "folder:env:postprocess"
+    },
     "nodes": [
       {
         "id": "postprocess:tonemapping",
@@ -1644,6 +1701,11 @@
   },
   {
     "panelId": "motion:gaze",
+    "nav": {
+      "domain": "motion",
+      "entryTestId": "btnMotionPopup",
+      "subLevelTestId": "folder:motion:gaze"
+    },
     "nodes": [
       {
         "id": "perception:enable-all",
@@ -1897,6 +1959,11 @@
   },
   {
     "panelId": "settings:camera",
+    "nav": {
+      "domain": "settings",
+      "entryTestId": "btnSettings",
+      "subLevel2TestId": "folder:settings:controls"
+    },
     "nodes": [
       {
         "id": "settings:perf:cam-sens",
@@ -1944,6 +2011,11 @@
   },
   {
     "panelId": "settings:frame-quality",
+    "nav": {
+      "domain": "settings",
+      "entryTestId": "btnSettings",
+      "subLevel2TestId": "folder:settings:graphics"
+    },
     "nodes": [
       {
         "id": "settings:graphics:frame-cap",
@@ -1994,6 +2066,11 @@
   },
   {
     "panelId": "settings:effects",
+    "nav": {
+      "domain": "settings",
+      "entryTestId": "btnSettings",
+      "subLevel2TestId": "folder:settings:graphics"
+    },
     "nodes": [
       {
         "id": "settings:graphics:toggles",
@@ -2003,6 +2080,11 @@
   },
   {
     "panelId": "settings:physics-hud",
+    "nav": {
+      "domain": "settings",
+      "entryTestId": "btnSettings",
+      "subLevel2TestId": "folder:settings:graphics"
+    },
     "nodes": [
       {
         "id": "settings:graphics:default-physics",
