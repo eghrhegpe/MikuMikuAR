@@ -257,3 +257,46 @@ cd frontend && npx playwright test e2e/schema-driven.spec.ts --grep "@dom"
 ```
 
 - 新增 `env:foo` 面板 → 在 `menu-schema-register.ts` 注册 schema（默认推导自动得 nav，零声明）→ 跑 schema-snapshot.test.ts → 跑 schema-driven → 自动覆盖；仅特例面板（跨域挂载/二级 folder）补一行 nav 覆写
+
+## 8. 实施回顾与教训（2026-08-02 落地 Phase 1 + 修复既有断言缺陷后）
+
+Phase 1 落地后，schema-driven E2E 从「4 面板失败 + 全量 35 分钟超时」修复到「30/30 全绿，2.7 分钟」。复盘暴露的缺陷按归属分类：
+
+| 缺陷 | 根因（源码实证） | 归属 |
+|------|-----------------|------|
+| `PANEL_NAV` 过期（Water/Ground 迁至 scene 菜单后未同步） | 手工维护的第二副本随 UI 重构漂移 | 产品侧流程债（本 ADR 治本） |
+| modeSlider 断言 `.chip` 落空 | `KIND_SELECTOR_MAP` 期望 `.chip`，`addModeSlider`（ui-advanced-rows.ts:303）实际渲染 `[role="listbox"]` + `aria-valuemax` | 测试臆造 DOM 契约 |
+| slider 断言 `input[type=range]` 落空 | `addSliderRow`（ui-rows.ts:201-204）渲染 `div[role="slider"]` + aria-valuemin/max（ADR-140 DragSliderController），非原生 range；默认 5s 全局 timeout 等不存在的元素，38 节点累积 ≈190s 直接打爆 test timeout | 测试臆造 DOM 契约 |
+| visibleWhen 条件节点缺失 | `renderNode` 条件不满足时节点**完全不在 DOM**（如 `env:ground:pattern` 需 `groundOverlay==='checker'`），快照无标记 → 完整性断言强制要求存在 | 产品设计合理，测试未感知语义 |
+
+**教训**：schema 只描述**逻辑**（kind/bind/min/max），不描述**渲染成什么 DOM**；而 schema-driven 测试要断言 DOM，只能凭记忆猜选择器——猜错就静默超时，超时吞掉真实信号。核心矛盾是「schema 与渲染层之间缺一份显式 DOM 契约」，产品代码质量本身有 ADR 支撑、非主因。
+
+## 9. DOM 契约统一决策（从源码处统一，消除"测试猜渲染"）
+
+### 9.1 现状
+
+DOM 契约（role/class/testid）**无集中定义**：散落在 `ui-rows.ts` / `ui-advanced-rows.ts` / `ui-collapsible.ts` 等渲染函数内，且源码内部已多处重复手写（`menu.ts:715-721` 键盘导航聚焦选择器、`resource-detail-helpers.ts:86` 等），测试侧 `KIND_SELECTOR_MAP` 再手写一份——共 **三处漂移源**。
+
+### 9.2 约束（决定方案选型）
+
+- **e2e 侧无法 import 前端源码**：Playwright 无 TS transform，现有 e2e 全部通过 `readFileSync` 读 JSON 快照传递数据（`schema-driven.spec.ts`、`helpers.ts` 均只 import playwright/node 内置模块）。「源码导出常量 + e2e import」不可行。
+- 渲染层是应用层，e2e 直接 import 也违反纯叶子模块约束（AGENTS.md）。
+
+### 9.3 决策：契约上移快照，渲染层与测试同读一份
+
+```
+渲染层（ui-rows/ui-advanced-rows/ui-collapsible）   ← 唯一事实源：role/class/testid 由渲染代码产生
+    ↓ vitest（schema-snapshot.test.ts，能 import 源码）
+schema-snapshot.json                                ← 快照携带 DOM 契约（nodes[].kind → 实际选择器）
+    ↓ e2e（schema-driven.spec.ts 读 JSON，不 import 源码）
+断言选择器                                          ← 从快照读，不再手写 KIND_SELECTOR_MAP
+```
+
+落地步骤（并入 Phase 2）：
+
+1. **源码侧**：新建零依赖叶子模块 `src/menus/dom-contract.ts`，集中定义 `KIND_DOM_SELECTOR: Record<MenuKind, string>`（`slider → '[role="slider"]'`、`modeSlider → '[role="listbox"]'`、`toggle → '[role="switch"], input[type="checkbox"]'` 等），并让 `ui-rows.ts`/`ui-advanced-rows.ts` 等渲染函数**引用**它产出 role/class（消除源码内部重复手写）。
+2. **快照侧**：`schema-snapshot.test.ts` 生成快照时，为每个 kind 写入 `dom` 字段（= `KIND_DOM_SELECTOR[kind]`），并断言其与渲染层实际产出一致（元测试，ADR-220 同款模式）。
+3. **e2e 侧**：`schema-driven.spec.ts` 删除手写 `KIND_SELECTOR_MAP`，改为从快照读 `node.dom` / kind 映射；slider 断言直接读快照中的 aria 属性名。
+4. **漂移兜底**：渲染层若改 role/class 而未同步 `dom-contract.ts`，CI 的「快照重生成 + `git diff --exit-code`」门禁（§2.4）会直接红——与导航门禁同一条防线。
+
+**不采纳备选**：e2e 侧维护独立契约文件 + grep 源码比对（元测试抓漂移）——可行但契约仍有两份副本，不如「渲染层引用 + 快照携带」的单源方案干净；完全自动推导选择器（扫描 DOM 反推）——脆弱且依赖运行时环境。
