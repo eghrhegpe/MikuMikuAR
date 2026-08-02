@@ -27,10 +27,6 @@ invariants:
   - releaseBones 时触发所有 ReleaseListener，供感知层/虚拟裙骨响应式释放
   - disposeModel 级联释放该模型所有骨骼所有权
 
-  - frontend/src/__tests__/scene/bone-override-store.test.ts
-  - frontend/src/__tests__/scene/bone-override-store.test.ts
-  - frontend/src/__tests__/scene/bone-override-store.test.ts
-  - frontend/src/__tests__/scene/bone-override-store.test.ts
 use_when:
   - 骨骼覆盖存储
   - 骨骼仲裁

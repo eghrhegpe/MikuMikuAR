@@ -32,10 +32,6 @@ invariants:
   - tickStageLightFollow 每帧更新舞台灯光跟随（舞台目标骨骼跟随）
   - 个人灯光附加时自动创建光锥（_ensurePersonalCone）
 
-  - frontend/src/__tests__/scene/lighting-follow.test.ts
-  - frontend/src/__tests__/scene/lighting-follow.test.ts
-  - frontend/src/__tests__/scene/lighting-follow.test.ts
-  - frontend/src/__tests__/scene/lighting-follow.test.ts
 use_when:
   - 个人灯光
   - 灯光跟随

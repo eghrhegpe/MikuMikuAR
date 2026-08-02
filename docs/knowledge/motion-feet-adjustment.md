@@ -23,10 +23,6 @@ invariants:
   - 脚 IK 为自动约束基础，手动 Override 叠加其上
   - 注册为 MotionPipeline bone-override 层（order=5）
 
-  - frontend/src/__tests__/feet-adjustment.test.ts
-  - frontend/src/__tests__/feet-adjustment.test.ts
-  - frontend/src/__tests__/feet-adjustment.test.ts
-  - frontend/src/__tests__/feet-adjustment.test.ts
 use_when:
   - 脚部跟随
   - 脚 IK

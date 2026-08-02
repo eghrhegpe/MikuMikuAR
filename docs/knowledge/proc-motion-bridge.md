@@ -43,22 +43,6 @@ invariants:
   - disposeProcMotion() 一键清零全部状态并销毁单例
   - 参数存储优先级：activeMotion.procMotion > _fallbackProcState
 
-  - frontend/src/__tests__/proc-motion-bridge.lifecycle.test.ts
-  - frontend/src/__tests__/proc-motion-bridge.state.test.ts
-  - frontend/src/__tests__/proc-motion-bridge.toggles.test.ts
-  - frontend/src/__tests__/proc-motion-bridge.tracking.test.ts
-  - frontend/src/__tests__/proc-motion-bridge.lifecycle.test.ts
-  - frontend/src/__tests__/proc-motion-bridge.state.test.ts
-  - frontend/src/__tests__/proc-motion-bridge.toggles.test.ts
-  - frontend/src/__tests__/proc-motion-bridge.tracking.test.ts
-  - frontend/src/__tests__/proc-motion-bridge.lifecycle.test.ts
-  - frontend/src/__tests__/proc-motion-bridge.state.test.ts
-  - frontend/src/__tests__/proc-motion-bridge.toggles.test.ts
-  - frontend/src/__tests__/proc-motion-bridge.tracking.test.ts
-  - frontend/src/__tests__/proc-motion-bridge.lifecycle.test.ts
-  - frontend/src/__tests__/proc-motion-bridge.state.test.ts
-  - frontend/src/__tests__/proc-motion-bridge.toggles.test.ts
-  - frontend/src/__tests__/proc-motion-bridge.tracking.test.ts
 use_when:
   - 程序化动作
   - idle 动作

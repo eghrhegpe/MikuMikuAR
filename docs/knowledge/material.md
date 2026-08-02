@@ -72,10 +72,6 @@ invariants:
   - 写入触发 triggerAutoSave
   - 材质分类参数按网格/材质名归类批量调参，由 MaterialStateManager 统一管理
 
-  - frontend/src/__tests__/material-sss.state.test.ts
-  - frontend/src/__tests__/material-sss.state.test.ts
-  - frontend/src/__tests__/material-sss.state.test.ts
-  - frontend/src/__tests__/material-sss.state.test.ts
 use_when:
   - 材质系统
   - 分类材质
