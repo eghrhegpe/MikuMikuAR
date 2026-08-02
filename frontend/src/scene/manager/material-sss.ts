@@ -64,7 +64,7 @@ export type SssColorInput = Color3 | { r: number; g: number; b: number };
 export function setMatSssParams(
     id: string,
     cat: string,
-    params: Partial<SssParams> & { sssColor?: SssColorInput }
+    params: Omit<Partial<SssParams>, 'sssColor'> & { sssColor?: SssColorInput }
 ): void {
     let catMap = _sssState.get(id);
     if (!catMap) {
@@ -87,7 +87,6 @@ export function setMatSssParams(
     if (colorInput instanceof Color3) {
         merged.sssColor = colorInput.clone();
     } else if (colorInput && typeof colorInput === 'object') {
-        // @ts-expect-error — UI 传入 { r, g, b } 形状，类型收窄为 Color3 | { r, g, b }
         merged.sssColor = new Color3(colorInput.r, colorInput.g, colorInput.b);
     }
 
@@ -221,10 +220,8 @@ export function applyMatSssState(
         return;
     }
     for (const [cat, params] of Object.entries(state.sssCategories)) {
-        const catParams = { ...params } as Partial<SssParams> & {
-            sssColor?: SssColorInput;
-        };
-        setMatSssParams(id, cat, catParams);
+        // 反序列化后 sssColor 实际是 JSON 的 { r, g, b } 平对象，setMatSssParams 已兼容
+        setMatSssParams(id, cat, { ...params });
     }
 }
 
