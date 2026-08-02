@@ -475,6 +475,8 @@ export const zhTW: Record<string, string> = {
     'motion.proc.load': '載入',
     'motion.proc.unload': '移除',
     'motion.proc.alwaysLoaded': '系統保底，不可移除',
+    // [audit] 點擊列僅查看該程序化動作詳情時，未啟用狀態提示
+    'motion.procNotActive': '未啟用（僅檢視設定）',
     'motion.undoApplied': '✓ 已撤銷',
     'motion.undo.appliedPreset': '撤銷：套用預設「{name}」',
     'motion.music': '音樂',
