@@ -135,7 +135,8 @@ export function buildMotionRootItems(): PopupRow[] {
             kind: 'action',
             label: _procLabel(procId),
             icon: radioIcon,
-            target: '',
+            // [audit] 'none' 无详情页（无参数可调），行体点击不路由；其余 proc 行体点击 → 激活并进统一详情页
+            target: isNone ? '' : '__proc_detail__:' + procId,
             sublabel: isSelected ? t('motion.defaultMotion') : undefined,
             rowKey: 'proc:' + procId + (isSelected ? ':on' : ':off'),
             leading: {
@@ -145,19 +146,7 @@ export function buildMotionRootItems(): PopupRow[] {
                     if (isSelected) {
                         return;
                     }
-                    const snap = pushUndoSnapshot();
-                    // [doc:adr-207] 单一指针互斥：选中程序化行须清除 VMD 默认，
-                    // 否则 activeId 残留使程序化选中态被 hasVmdDefault 压制、视觉跳回 VMD。
-                    setDefaultMotion(null);
-                    setProcMotionMode(mode);
-                    regenerateProcMotion();
-                    getMotionMenu()?.reRender();
-                    triggerAutoSave();
-                    const name = _procLabel(procId);
-                    // 单条带撤销的 toast 已足够告知，勿再 showInfoToast 造成重复弹窗
-                    offerSceneUndoAndRefresh(t('motion.defaultMotionSet', { name }), snap, () =>
-                        getMotionMenu()?.reRender()
-                    );
+                    _selectProcMotion(procId);
                 },
             },
             // 'none'（无动作）无参数可调，不提供设置页入口
@@ -306,6 +295,37 @@ function _procLabel(id: LoadableProcId): string {
 /** [doc:adr-207] 程序化动作 ID → 全局 ProcMotionState.mode（'none' ↔ 'off'） */
 function _procIdToMode(id: LoadableProcId): ProcMotionMode {
     return id === 'none' ? 'off' : id;
+}
+
+/** [doc:adr-207] 选中程序化动作（行首按钮）：单一指针互斥，清除 VMD 默认并激活程序化模式。
+ *  行体点击与行首选中共用；含撤销快照 + 自动保存 + 菜单刷新。 */
+function _selectProcMotion(procId: LoadableProcId): void {
+    const mode = _procIdToMode(procId);
+    const snap = pushUndoSnapshot();
+    // [doc:adr-207] 单一指针互斥：选中程序化行须清除 VMD 默认，
+    // 否则 activeId 残留使程序化选中态被 hasVmdDefault 压制、视觉跳回 VMD。
+    setDefaultMotion(null);
+    setProcMotionMode(mode);
+    regenerateProcMotion();
+    getMotionMenu()?.reRender();
+    triggerAutoSave();
+    const name = _procLabel(procId);
+    // 单条带撤销的 toast 已足够告知，勿再 showInfoToast 造成重复弹窗
+    offerSceneUndoAndRefresh(t('motion.defaultMotionSet', { name }), snap, () =>
+        getMotionMenu()?.reRender()
+    );
+}
+
+/** [doc:adr-207] 行体点击进入程序化统一详情页：未选中则先激活，再 push 详情页。
+ *  供 motion-popup 的 target 分发调用（__proc_detail__:id）。 */
+export function openProcDetail(procId: LoadableProcId): void {
+    const curProcMode = getProcMotionState().mode;
+    const hasVmdDefault = getActiveMotionId() != null;
+    const isSelected = !hasVmdDefault && _procIdToMode(procId) === curProcMode;
+    if (!isSelected) {
+        _selectProcMotion(procId);
+    }
+    getMotionMenu()?.push(buildMotionDetailLevel());
 }
 
 // ═══════════════════════════════════════════════════════════
