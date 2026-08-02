@@ -27,3 +27,6 @@ use_when:
 ---
 
 # 诊断用动作注册
+
+## 系统概览
+注册诊断相关 ActionDef（ADR-196/197）：前端错误收集（`getFrontendState`）、场景运行时快照、后端日志/状态读取（经 `@bindings` 懒加载）。全部为 readonly 动作（不修改场景状态），可安全自动执行；一次 `registerDiagnosticActions()` 注册整组，适合 AI 助手初始化时调用。

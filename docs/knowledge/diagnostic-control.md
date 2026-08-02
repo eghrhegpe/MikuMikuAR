@@ -36,3 +36,6 @@ use_when:
 ---
 
 # 诊断助手 → tool call 控制（子模块）
+
+## 系统概览
+诊断助手 tool call 控制（ADR-197/155/203，纯 tool call UI）：LLM 意图解析 → 待确认队列 → 批处理执行 → tool 消息回填 → 继续 stream。`parseActionFromLLM` 三级容错提取 JSON；破坏性操作（`action.destructive`）前置 `showConfirm`；undo 委托 `scene:undo` 而非本地回滚。

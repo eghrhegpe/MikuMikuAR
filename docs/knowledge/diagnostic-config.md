@@ -34,3 +34,6 @@ use_when:
 ---
 
 # 诊断助手 → 配置 UI（子模块）
+
+## 系统概览
+诊断助手 AI 配置 UI（ADR-196/203）：端点 / API key / 模型列表 / 连接测试。配置写回经 `saveChain` 串行化防并发竞争；provider 切换自动填充对应默认端点/模型/文档；`testConnection` 先 flushAndSave 再验证；Go 桌面端 key 不可回读时（isGo + keyConfigured）不阻止请求发起。
