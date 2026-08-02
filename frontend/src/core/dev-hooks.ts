@@ -81,7 +81,7 @@ export function setupE2ECapture(): void {
     };
 
     // ======== E2E Scene Inspection Hook (DEV only) ========
-    // Exposes live Babylon.js / XPBD state for Playwright numeric assertions.
+    // Exposes live Babylon.js scene state for Playwright numeric assertions.
     // Avoids fragile pixel-screenshot comparison for 3D correctness.
     (window as unknown as Record<string, unknown>).__scene = {
         get fps(): number {
