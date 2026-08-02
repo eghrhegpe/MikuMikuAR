@@ -102,11 +102,11 @@ const archItems = scanItems('.', ARCH_EXCLUDE).sort((a, b) => {
   return wa !== wb ? wa - wb : a.link.localeCompare(b.link);
 });
 
-// ---------- 3. 决策记录（adr/，按编号数字排序） ----------
+// ---------- 3. 决策记录（adr/，按编号数字倒序：最新决策置顶，凸显时效性，与 index.md 分组内排序一致） ----------
 const adrItems = mdNames('adr')
   .filter((f) => f !== 'index.md')
   .map((f) => ({ f, num: Number((f.match(/^adr-(\d+)/) || [])[1] || 0) }))
-  .sort((a, b) => a.num - b.num)
+  .sort((a, b) => b.num - a.num)
   .map(({ f }) => {
     const text = readMd(path.join(docsRoot, 'adr', f));
     const title = (text.match(/^#\s+(.+)$/m) || [])[1] || f.replace(/\.md$/, '');
