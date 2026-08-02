@@ -38,7 +38,8 @@ use_when:
 - 写：`events.ts`（WSAD keydown/keyup 置标记）
 
 ## 不变量
-- 见 frontmatter `invariants`
+- 零 import 纯叶子：camera-behaviors（读，每帧积分）与 events（写，WSAD keydown/keyup）两侧同源引入，打断 camera↔events 循环依赖
+- orbitInput 为共享可变标记对象，唯一实例，写入点仅键盘事件处理
 
 ## 验证入口
 - 测试：`frontend/src/__tests__/orbit.test.ts`

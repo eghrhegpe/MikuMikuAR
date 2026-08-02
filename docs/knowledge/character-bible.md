@@ -71,7 +71,11 @@ ADR-156 创意路线的台词生成子系统（Step 1 + Step 2a 已落地）。�
 - 口型：Step 2b 待评估，需与 ADR-079 感知层 LipSync 独立对接（当前 TTS 不驱动口型）
 
 ## 不变量
-- 见 frontmatter `invariants`
+- character-bible.ts 为纯数据+纯函数叶子，零副作用、零应用层依赖；人设内建，不从 novel/ 抽取（novel/ 是开发编年史非角色人设）
+- parseDialogueLines 容错：非法情绪归一到 neutral，解析失败时整段文本兜底为单条 neutral，保证 UI 永远有内容
+- dialogue-session 的 _activeBibleId 为唯一模块级状态，唯一写入点 setActiveBible，非法 id 经 getBible 兜底到首个内置角色
+- SpeechSynthesis 走浏览器独立音频输出，不经 AudioContext，无法被 LipSync BeatDetector 采样，TTS 口型闭环需独立方案（ADR-156 Step 2b）
+- speakLines 先 cancel 既有队列避免叠加重播；环境不支持时静默 no-op
 
 ## 验证入口
 - 决策见 ADR-156；暂无专门单测（纯函数 `parseDialogueLines` 为后续补测优先项）

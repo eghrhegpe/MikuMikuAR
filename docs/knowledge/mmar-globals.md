@@ -46,4 +46,7 @@ use_when:
 - 被 AI 诊断 / 外部 LLM 集成读取
 
 ## 不变量
-- 见 frontmatter
+- 轻量叶子模块：仅依赖普通 JS 全局与动态 import，无静态内部模块耦合
+- 模块加载即幂等 ensureMmar()，保证 window.__mmar 始终就绪（读取方无需 `!` 断言）
+- refreshSceneSnapshot 使用动态 import 避免与 scene/ 的循环依赖；引擎/配置未就绪时字段静默保持零值不抛错
+- 周期轮询（startSceneSnapshotPolling）幂等，重复注册安全

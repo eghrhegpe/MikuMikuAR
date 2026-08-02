@@ -53,4 +53,7 @@ ADR-196 的诊断上下文采集底座：固定容量环形缓冲（`ErrorRingBu
 - 由应用初始化入口 install 后供 AI 上下文
 
 ## 不变量
-- 见 frontmatter
+- ErrorRingBuffer 容量必须为正整数（构造期校验），默认单例容量 50
+- installLoggingPatch 幂等（_loggingPatched 守卫），patch 后所有 console.error 自动入环，保留原始行为
+- 全局捕获单例（installGlobalErrorCapture）去重注册；dispose 时需移除 listener
+- toDiagnosticContext 从最新向旧拼接并截断到 maxBytes（默认 4096），供 AI 上下文注入
