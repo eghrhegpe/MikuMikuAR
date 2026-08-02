@@ -33,11 +33,13 @@ const SNAPSHOT_PATH = resolve(__dirname, "schema-snapshot.json");
 const snapshot = JSON.parse(readFileSync(SNAPSHOT_PATH, "utf-8"));
 
 // Schema 定义的 kind → 期望的 DOM 元素选择器
+// [ADR-229 §2.2 审核修正] modeSlider 由 addModeSlider 渲染（ui-advanced-rows.ts:303），
+// 实际类名是 .cs-top + role="listbox"，并非 .chip（历史断言漂移，已修正）。
 const KIND_SELECTOR_MAP: Record<string, string> = {
     slider: '[role="slider"]',
     colorSlider: '[role="slider"]',
     toggle: '[role="switch"], input[type="checkbox"]',
-    modeSlider: '.chip', // segmented control chips
+    modeSlider: '[role="listbox"]', // addModeSlider 渲染的 segmented control
 };
 
 // 导航配置（ADR-229 §2.1）—— 由快照生成器从注册处推导写入 panel.nav，无第二副本：
@@ -85,6 +87,15 @@ async function navigateToPanel(page: any, nav: PanelNav): Promise<void> {
             document.querySelector<HTMLElement>(`[data-testid="${id}"]`)?.click();
         }, nav.subLevel2TestId);
     }
+
+    // 4. 展开所有 collapsible folder：收起时子节点仍在 DOM（renderContent 立即执行）
+    //    但 maxHeight:0 + inert → toBeVisible 失败。点击 header 展开（headerToggle 有
+    //    stopPropagation，不会误触开关）。[ADR-229 §2.2 审核修正]
+    await page.evaluate(() => {
+        document
+            .querySelectorAll<HTMLElement>('.collapsible-header:not(.open)')
+            .forEach((h) => h.click());
+    });
 }
 
 // 遍历快照中所有面板
@@ -120,6 +131,10 @@ function describeSchemaPanel(
     // 之前每个节点一个 test() + beforeEach 导航，158 个节点 → 158 次导航 → 2h+。
     // 改为每个面板一个 test() + 一次导航，16 个面板 → 16 次导航 → ~15min。
     test(`Schema 驱动 E2E — ${panel.panelId}: 所有节点渲染正确`, { tag: ["@dom"] }, async ({ vitePage: page }) => {
+        // [ADR-229 §2.2] 每面板一个 test 聚合全部节点断言 + vitePage fixture 初始化
+        // （goto/init 守卫最长可达 ~50s），默认 30s test timeout 不够——显式放宽，
+        // 避免超时误报掩盖真实断言失败（曾因 60s 超时误判 env:cloud 失败）。
+        test.setTimeout(120_000);
         await navigateToPanel(page, nav);
 
         for (const node of interactiveNodes) {
@@ -127,6 +142,15 @@ function describeSchemaPanel(
 
             await test.step(`${node.id} (kind: ${node.kind})`, async () => {
                 const el = page.getByTestId(node.id);
+
+                // [ADR-229 §2.2] visibleWhen 条件节点：条件不满足时 renderNode 直接不渲染
+                // （快照 conditional 标记），属正常——存在则断言、缺失则跳过。
+                if (node.conditional) {
+                    const cnt = await el.count();
+                    if (cnt === 0) {
+                        return;
+                    }
+                }
 
                 // 1. 断言元素可见
                 await expect(el).toBeVisible({ timeout: 2000 });
@@ -143,13 +167,16 @@ function describeSchemaPanel(
                     }
                 }
 
-                // 3. modeSlider: 验证 options 数量
+                // 3. modeSlider: 验证 options 数量（addModeSlider 渲染 role="listbox"，
+                // aria-valuemax = options.length - 1；无 .chip 类）
                 if (node.kind === 'modeSlider' && node.control?.options?.length) {
-                    const expectedCount = node.control.options.length;
-                    const chips = el.locator('.chip, [class*="chip"]');
-                    const chipCount = await chips.count();
-                    if (chipCount > 0) {
-                        await expect(chips).toHaveCount(expectedCount);
+                    const listbox = el.locator('[role="listbox"]').first();
+                    const cnt = await listbox.count();
+                    if (cnt > 0) {
+                        await expect(listbox).toHaveAttribute(
+                            'aria-valuemax',
+                            String(node.control.options.length - 1)
+                        );
                     }
                 }
 
@@ -179,6 +206,7 @@ test.describe("Schema 完整性总览", { tag: ["@dom"] }, () => {
         if (!nav) continue;
 
         test(`${panel.panelId}: 所有节点均有 testId`, async ({ vitePage: page }) => {
+            test.setTimeout(120_000);
             await navigateToPanel(page, nav);
 
             const allNodes = flattenNodes(panel.nodes);
@@ -186,6 +214,13 @@ test.describe("Schema 完整性总览", { tag: ["@dom"] }, () => {
 
             for (const node of nonCustomNodes) {
                 const el = page.getByTestId(node.id);
+                // [ADR-229 §2.2] visibleWhen 条件节点：条件不满足时不渲染属正常，缺失则跳过
+                if (node.conditional) {
+                    const cnt = await el.count();
+                    if (cnt === 0) {
+                        continue;
+                    }
+                }
                 // 某些节点可能因 visibleWhen 条件不满足而不可见
                 // 只检查是否至少存在于 DOM 中
                 await expect(el.first()).toHaveCount(1, { timeout: 2000 });

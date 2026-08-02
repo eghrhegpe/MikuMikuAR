@@ -9,11 +9,13 @@
     "nodes": [
       {
         "id": "env:sky:presets",
-        "kind": "custom"
+        "kind": "custom",
+        "conditional": false
       },
       {
         "id": "env:sky:mode",
         "kind": "modeSlider",
+        "conditional": false,
         "label": "env.skyMode",
         "icon": "lucide:sun",
         "control": {
@@ -37,6 +39,7 @@
       {
         "id": "env:sky:color-top",
         "kind": "colorSlider",
+        "conditional": true,
         "label": "env.skyColorTop",
         "control": {
           "bind": "env.skyColorTop"
@@ -45,6 +48,7 @@
       {
         "id": "env:sky:zenith",
         "kind": "colorSlider",
+        "conditional": true,
         "label": "env.zenithColor",
         "control": {
           "bind": "env.skyColorTop"
@@ -53,6 +57,7 @@
       {
         "id": "env:sky:horizon",
         "kind": "colorSlider",
+        "conditional": true,
         "label": "env.horizonColor",
         "control": {
           "bind": "env.skyColorBot"
@@ -60,11 +65,13 @@
       },
       {
         "id": "env:sky:texture-section",
-        "kind": "custom"
+        "kind": "custom",
+        "conditional": true
       },
       {
         "id": "env:sky:rotation-speed",
         "kind": "slider",
+        "conditional": false,
         "label": "env.skyRotationSpeed",
         "icon": "lucide:rotate-cw",
         "control": {
@@ -77,12 +84,14 @@
       {
         "id": "env:sky:light",
         "kind": "folder",
+        "conditional": false,
         "label": "env.lightControl",
         "icon": "lucide:sun",
         "children": [
           {
             "id": "env:sky:sun-intensity",
             "kind": "slider",
+            "conditional": false,
             "label": "env.sunIntensity",
             "icon": "lucide:sun",
             "control": {
@@ -95,6 +104,7 @@
           {
             "id": "env:sky:sky-lighting",
             "kind": "slider",
+            "conditional": false,
             "label": "env.skyLighting",
             "icon": "lucide:sun",
             "control": {
@@ -107,6 +117,7 @@
           {
             "id": "env:sky:global-brightness",
             "kind": "slider",
+            "conditional": false,
             "label": "env.environmentBrightness",
             "icon": "lucide:sun-dim",
             "control": {
@@ -119,6 +130,7 @@
           {
             "id": "env:sky:stars",
             "kind": "toggle",
+            "conditional": true,
             "label": "env.stars",
             "control": {
               "bind": "env.starsEnabled"
@@ -127,6 +139,7 @@
           {
             "id": "env:sky:brightness",
             "kind": "slider",
+            "conditional": true,
             "label": "env.brightness",
             "icon": "lucide:sun",
             "control": {
@@ -138,7 +151,8 @@
           },
           {
             "id": "env:sky:stars-texture",
-            "kind": "custom"
+            "kind": "custom",
+            "conditional": true
           }
         ]
       }
@@ -155,6 +169,7 @@
       {
         "id": "env:wind:angle",
         "kind": "slider",
+        "conditional": false,
         "label": "env.windAngle",
         "icon": "lucide:compass",
         "control": {
@@ -167,6 +182,7 @@
       {
         "id": "env:wind:speed",
         "kind": "slider",
+        "conditional": false,
         "label": "env.windSpeed",
         "icon": "lucide:gauge",
         "control": {
@@ -189,6 +205,7 @@
       {
         "id": "env:fog:mode",
         "kind": "modeSlider",
+        "conditional": false,
         "label": "env.fogMode",
         "icon": "lucide:layers",
         "control": {
@@ -212,6 +229,7 @@
       {
         "id": "env:fog:color",
         "kind": "colorSlider",
+        "conditional": false,
         "label": "env.fogColor",
         "control": {
           "bind": "env.fogColor"
@@ -220,6 +238,7 @@
       {
         "id": "env:fog:density",
         "kind": "slider",
+        "conditional": true,
         "label": "env.fogDensity",
         "icon": "lucide:droplets",
         "control": {
@@ -232,6 +251,7 @@
       {
         "id": "env:fog:start",
         "kind": "slider",
+        "conditional": true,
         "label": "env.fogStart",
         "control": {
           "bind": "env.fogStart",
@@ -243,6 +263,7 @@
       {
         "id": "env:fog:end",
         "kind": "slider",
+        "conditional": true,
         "label": "env.fogEnd",
         "control": {
           "bind": "env.fogEnd",
@@ -264,6 +285,7 @@
       {
         "id": "env:cloud:cover",
         "kind": "slider",
+        "conditional": false,
         "label": "env.cloudCover",
         "icon": "lucide:cloud",
         "control": {
@@ -276,6 +298,7 @@
       {
         "id": "env:cloud:gap",
         "kind": "slider",
+        "conditional": false,
         "label": "env.cloudGap",
         "icon": "lucide:columns",
         "control": {
@@ -288,11 +311,13 @@
       {
         "id": "env:cloud:section-detail",
         "kind": "sectionTitle",
+        "conditional": false,
         "label": "env.cloudDetail"
       },
       {
         "id": "env:cloud:erosion",
         "kind": "slider",
+        "conditional": false,
         "label": "env.cloudErosion",
         "icon": "lucide:wind",
         "control": {
@@ -305,6 +330,7 @@
       {
         "id": "env:cloud:weather",
         "kind": "slider",
+        "conditional": false,
         "label": "env.cloudWeatherStrength",
         "icon": "lucide:cloud-sun",
         "control": {
@@ -317,6 +343,7 @@
       {
         "id": "env:cloud:height",
         "kind": "slider",
+        "conditional": false,
         "label": "env.height",
         "icon": "lucide:arrow-up",
         "control": {
@@ -329,6 +356,7 @@
       {
         "id": "env:cloud:scale",
         "kind": "slider",
+        "conditional": false,
         "label": "env.scale",
         "icon": "lucide:maximize",
         "control": {
@@ -341,6 +369,7 @@
       {
         "id": "env:cloud:thickness",
         "kind": "slider",
+        "conditional": false,
         "label": "env.thickness",
         "icon": "lucide:move-vertical",
         "control": {
@@ -353,6 +382,7 @@
       {
         "id": "env:cloud:visibility",
         "kind": "slider",
+        "conditional": false,
         "label": "env.cloudVisibility",
         "icon": "lucide:eye",
         "control": {
@@ -365,11 +395,13 @@
       {
         "id": "env:cloud:section-lighting",
         "kind": "sectionTitle",
+        "conditional": false,
         "label": "env.cloudLighting"
       },
       {
         "id": "env:cloud:backlight",
         "kind": "slider",
+        "conditional": false,
         "label": "env.cloudBacklight",
         "icon": "lucide:sun",
         "control": {
@@ -382,6 +414,7 @@
       {
         "id": "env:cloud:powder",
         "kind": "slider",
+        "conditional": false,
         "label": "env.cloudPowder",
         "icon": "lucide:snowflake",
         "control": {
@@ -404,12 +437,14 @@
       {
         "id": "env:shadow:env",
         "kind": "folder",
+        "conditional": false,
         "label": "env.envShadow",
         "icon": "lucide:cloud",
         "children": [
           {
             "id": "env:shadow:type",
             "kind": "modeSlider",
+            "conditional": false,
             "label": "env.shadowType",
             "icon": "lucide:cloud",
             "control": {
@@ -432,11 +467,13 @@
           },
           {
             "id": "env:shadow:quality",
-            "kind": "custom"
+            "kind": "custom",
+            "conditional": false
           },
           {
             "id": "env:shadow:bias",
             "kind": "slider",
+            "conditional": false,
             "label": "env.shadowBias",
             "icon": "lucide:move",
             "control": {
@@ -449,6 +486,7 @@
           {
             "id": "env:shadow:cascades",
             "kind": "slider",
+            "conditional": false,
             "label": "env.shadowCascades",
             "icon": "lucide:layers",
             "control": {
@@ -462,11 +500,13 @@
       },
       {
         "id": "env:shadow:char-hint",
-        "kind": "custom"
+        "kind": "custom",
+        "conditional": false
       },
       {
         "id": "env:shadow:stage-hint",
-        "kind": "custom"
+        "kind": "custom",
+        "conditional": false
       }
     ]
   },
@@ -481,17 +521,20 @@
     "nodes": [
       {
         "id": "env:water:presets",
-        "kind": "custom"
+        "kind": "custom",
+        "conditional": false
       },
       {
         "id": "env:water:basic",
         "kind": "folder",
+        "conditional": false,
         "label": "env.basicParams",
         "icon": "lucide:sliders",
         "children": [
           {
             "id": "env:water:level",
             "kind": "slider",
+            "conditional": false,
             "label": "env.height",
             "icon": "lucide:arrow-up",
             "control": {
@@ -504,6 +547,7 @@
           {
             "id": "env:water:anim-speed",
             "kind": "slider",
+            "conditional": false,
             "label": "env.animSpeed",
             "icon": "lucide:fast-forward",
             "control": {
@@ -516,6 +560,7 @@
           {
             "id": "env:water:dispersion",
             "kind": "toggle",
+            "conditional": false,
             "label": "env.waterDispersionEnabled",
             "icon": "lucide:activity",
             "control": {
@@ -527,6 +572,7 @@
       {
         "id": "env:water:bigWave",
         "kind": "folder",
+        "conditional": false,
         "label": "env.bigWaveHeight",
         "icon": "lucide:mountain",
         "headerToggle": {
@@ -536,6 +582,7 @@
           {
             "id": "env:water:big-wave-height",
             "kind": "slider",
+            "conditional": false,
             "label": "env.bigWaveHeight",
             "icon": "lucide:mountain",
             "control": {
@@ -550,6 +597,7 @@
       {
         "id": "env:water:small-wave",
         "kind": "folder",
+        "conditional": false,
         "label": "env.smallWaveHeight",
         "icon": "lucide:waves",
         "headerToggle": {
@@ -559,6 +607,7 @@
           {
             "id": "env:water:small-wave-height",
             "kind": "slider",
+            "conditional": false,
             "label": "env.smallWaveHeight",
             "icon": "lucide:waves",
             "control": {
@@ -573,12 +622,14 @@
       {
         "id": "env:water:color-fog",
         "kind": "folder",
+        "conditional": false,
         "label": "env.colorAndFog",
         "icon": "lucide:palette",
         "children": [
           {
             "id": "env:water:color",
             "kind": "colorSlider",
+            "conditional": false,
             "label": "env.waterColor",
             "control": {
               "bind": "env.waterColor"
@@ -587,6 +638,7 @@
           {
             "id": "env:water:transparency",
             "kind": "slider",
+            "conditional": false,
             "label": "env.opacity",
             "icon": "lucide:eye",
             "control": {
@@ -599,6 +651,7 @@
           {
             "id": "env:water:fog-color",
             "kind": "colorSlider",
+            "conditional": false,
             "label": "env.waterFogColor",
             "control": {
               "bind": "env.waterFogColor"
@@ -607,6 +660,7 @@
           {
             "id": "env:water:fog-start",
             "kind": "slider",
+            "conditional": false,
             "label": "env.waterFogStart",
             "icon": "lucide:cloud-fog",
             "control": {
@@ -619,6 +673,7 @@
           {
             "id": "env:water:fog-end",
             "kind": "slider",
+            "conditional": false,
             "label": "env.waterFogEnd",
             "icon": "lucide:cloud-fog",
             "control": {
@@ -631,6 +686,7 @@
           {
             "id": "env:water:sky-color-blend",
             "kind": "slider",
+            "conditional": false,
             "label": "env.waterSkyColorBlend",
             "icon": "lucide:cloud",
             "control": {
@@ -645,12 +701,14 @@
       {
         "id": "env:water:wave-fresnel",
         "kind": "folder",
+        "conditional": false,
         "label": "env.waveFresnel",
         "icon": "lucide:waves",
         "children": [
           {
             "id": "env:water:fresnel-bias",
             "kind": "slider",
+            "conditional": false,
             "label": "env.fresnelBias",
             "control": {
               "bind": "env.fresnelBias",
@@ -662,6 +720,7 @@
           {
             "id": "env:water:fresnel-power",
             "kind": "slider",
+            "conditional": false,
             "label": "env.fresnelPower",
             "control": {
               "bind": "env.fresnelPower",
@@ -673,6 +732,7 @@
           {
             "id": "env:water:fresnel-alpha",
             "kind": "slider",
+            "conditional": false,
             "label": "env.fresnelAlpha",
             "control": {
               "bind": "env.fresnelAlphaInfluence",
@@ -684,6 +744,7 @@
           {
             "id": "env:water:diffuse-strength",
             "kind": "slider",
+            "conditional": false,
             "label": "env.diffuseStrength",
             "control": {
               "bind": "env.diffuseStrength",
@@ -695,6 +756,7 @@
           {
             "id": "env:water:ambient-strength",
             "kind": "slider",
+            "conditional": false,
             "label": "env.ambientStrength",
             "control": {
               "bind": "env.ambientStrength",
@@ -706,6 +768,7 @@
           {
             "id": "env:water:ripple-slots",
             "kind": "slider",
+            "conditional": false,
             "label": "env.waterRippleSlots",
             "control": {
               "bind": "env.waterRippleSlots",
@@ -717,6 +780,7 @@
           {
             "id": "env:water:ripple-normal",
             "kind": "slider",
+            "conditional": false,
             "label": "env.rippleNormal",
             "control": {
               "bind": "env.rippleNormalStrength",
@@ -728,6 +792,7 @@
           {
             "id": "env:water:ripple-glint",
             "kind": "slider",
+            "conditional": false,
             "label": "env.rippleGlint",
             "control": {
               "bind": "env.rippleGlintStrength",
@@ -739,6 +804,7 @@
           {
             "id": "env:water:normal-strength",
             "kind": "slider",
+            "conditional": false,
             "label": "env.waterNormalStrength",
             "control": {
               "bind": "env.waterNormalStrength",
@@ -750,6 +816,7 @@
           {
             "id": "env:water:glint-strength",
             "kind": "slider",
+            "conditional": false,
             "label": "env.waterGlintStrength",
             "control": {
               "bind": "env.waterGlintStrength",
@@ -761,6 +828,7 @@
           {
             "id": "env:water:low-freq-normal",
             "kind": "slider",
+            "conditional": false,
             "label": "env.lowFreqNormalStrength",
             "control": {
               "bind": "env.lowFreqNormalStrength",
@@ -772,6 +840,7 @@
           {
             "id": "env:water:horizon-fade",
             "kind": "slider",
+            "conditional": false,
             "label": "env.waterHorizonFade",
             "icon": "lucide:mountain",
             "control": {
@@ -786,6 +855,7 @@
       {
         "id": "env:water:caustics",
         "kind": "folder",
+        "conditional": false,
         "label": "env.caustics",
         "icon": "lucide:sun",
         "headerToggle": {
@@ -795,6 +865,7 @@
           {
             "id": "env:water:caustic-intensity",
             "kind": "slider",
+            "conditional": false,
             "label": "env.causticIntensity",
             "icon": "lucide:sun",
             "control": {
@@ -807,6 +878,7 @@
           {
             "id": "env:water:caustic-color-1",
             "kind": "colorSlider",
+            "conditional": false,
             "label": "env.causticColor1",
             "control": {
               "bind": "env.causticColor1"
@@ -815,6 +887,7 @@
           {
             "id": "env:water:caustic-color-2",
             "kind": "colorSlider",
+            "conditional": false,
             "label": "env.causticColor2",
             "control": {
               "bind": "env.causticColor2"
@@ -823,6 +896,7 @@
           {
             "id": "env:water:caustic-scroll-x",
             "kind": "slider",
+            "conditional": false,
             "label": "env.causticScrollX",
             "control": {
               "bind": "env.causticScrollX",
@@ -834,6 +908,7 @@
           {
             "id": "env:water:caustic-scroll-y",
             "kind": "slider",
+            "conditional": false,
             "label": "env.causticScrollY",
             "control": {
               "bind": "env.causticScrollY",
@@ -845,6 +920,7 @@
           {
             "id": "env:water:fog-opacity",
             "kind": "slider",
+            "conditional": false,
             "label": "env.waterFogOpacityInfluence",
             "control": {
               "bind": "env.waterFogOpacityInfluence",
@@ -856,6 +932,7 @@
           {
             "id": "env:water:flip",
             "kind": "toggle",
+            "conditional": false,
             "label": "env.waterFlip",
             "control": {
               "bind": "env.waterFlipEnabled"
@@ -866,6 +943,7 @@
       {
         "id": "env:water:foam",
         "kind": "folder",
+        "conditional": false,
         "label": "env.foam",
         "icon": "lucide:waves",
         "headerToggle": {
@@ -875,6 +953,7 @@
           {
             "id": "env:water:foam-threshold",
             "kind": "slider",
+            "conditional": false,
             "label": "env.foamThreshold",
             "control": {
               "bind": "env.foamThreshold",
@@ -886,6 +965,7 @@
           {
             "id": "env:water:foam-intensity",
             "kind": "slider",
+            "conditional": false,
             "label": "env.foamIntensity",
             "control": {
               "bind": "env.foamIntensity",
@@ -897,6 +977,7 @@
           {
             "id": "env:water:foam-transition",
             "kind": "slider",
+            "conditional": false,
             "label": "env.foamTransition",
             "control": {
               "bind": "env.foamTransitionRange",
@@ -908,6 +989,7 @@
           {
             "id": "env:water:foam-opacity",
             "kind": "slider",
+            "conditional": false,
             "label": "env.foamOpacity",
             "control": {
               "bind": "env.foamOpacity",
@@ -919,6 +1001,7 @@
           {
             "id": "env:water:foam-noise",
             "kind": "slider",
+            "conditional": false,
             "label": "env.foamNoise",
             "control": {
               "bind": "env.foamNoiseStrength",
@@ -930,6 +1013,7 @@
           {
             "id": "env:water:foam-color",
             "kind": "colorSlider",
+            "conditional": false,
             "label": "env.foamColor",
             "control": {
               "bind": "env.foamColor"
@@ -940,6 +1024,7 @@
       {
         "id": "env:water:underwater",
         "kind": "folder",
+        "conditional": false,
         "label": "env.underwaterEffects",
         "icon": "lucide:waves",
         "headerToggle": {
@@ -949,6 +1034,7 @@
           {
             "id": "env:water:tone-intensity",
             "kind": "slider",
+            "conditional": false,
             "label": "env.toneIntensity",
             "icon": "lucide:palette",
             "control": {
@@ -961,6 +1047,7 @@
           {
             "id": "env:water:tint-strength",
             "kind": "slider",
+            "conditional": false,
             "label": "env.underwaterTintStrength",
             "icon": "lucide:palette",
             "control": {
@@ -985,17 +1072,20 @@
     "nodes": [
       {
         "id": "env:ground:presets",
-        "kind": "custom"
+        "kind": "custom",
+        "conditional": false
       },
       {
         "id": "env:ground:base",
         "kind": "folder",
+        "conditional": false,
         "label": "env.baseSettings",
         "icon": "lucide:settings-2",
         "children": [
           {
             "id": "env:ground:color",
             "kind": "colorSlider",
+            "conditional": false,
             "label": "env.groundColor",
             "control": {
               "bind": "env.groundColor"
@@ -1004,6 +1094,7 @@
           {
             "id": "env:ground:opacity",
             "kind": "slider",
+            "conditional": false,
             "label": "env.opacity",
             "icon": "lucide:eye",
             "control": {
@@ -1016,6 +1107,7 @@
           {
             "id": "env:ground:height",
             "kind": "slider",
+            "conditional": false,
             "label": "env.groundHeight",
             "icon": "lucide:move-vertical",
             "control": {
@@ -1028,6 +1120,7 @@
           {
             "id": "env:ground:size",
             "kind": "slider",
+            "conditional": true,
             "label": "env.range",
             "icon": "lucide:maximize",
             "control": {
@@ -1040,6 +1133,7 @@
           {
             "id": "env:ground:edge-fade",
             "kind": "slider",
+            "conditional": false,
             "label": "env.edgeFade",
             "icon": "lucide:droplet",
             "control": {
@@ -1054,6 +1148,7 @@
       {
         "id": "env:ground:texture",
         "kind": "folder",
+        "conditional": false,
         "label": "env.textureMode",
         "icon": "lucide:image",
         "headerToggle": {
@@ -1063,6 +1158,7 @@
       {
         "id": "env:ground:overlay",
         "kind": "folder",
+        "conditional": false,
         "label": "env.groundOverlay",
         "icon": "lucide:grid-3x3",
         "headerToggle": {
@@ -1071,11 +1167,13 @@
         "children": [
           {
             "id": "env:ground:overlay-style",
-            "kind": "custom"
+            "kind": "custom",
+            "conditional": false
           },
           {
             "id": "env:ground:grid-size",
             "kind": "slider",
+            "conditional": false,
             "label": "env.gridSize",
             "icon": "lucide:grid-3x3",
             "control": {
@@ -1088,6 +1186,7 @@
           {
             "id": "env:ground:line-color",
             "kind": "colorSlider",
+            "conditional": false,
             "label": "env.gridLineColor",
             "control": {
               "bind": "env.groundLineColor"
@@ -1096,6 +1195,7 @@
           {
             "id": "env:ground:pattern",
             "kind": "modeSlider",
+            "conditional": true,
             "label": "env.groundPattern",
             "icon": "lucide:grid-3x3",
             "control": {
@@ -1125,6 +1225,7 @@
       {
         "id": "env:ground:terrain",
         "kind": "folder",
+        "conditional": false,
         "label": "env.terrain",
         "icon": "lucide:mountain",
         "headerToggle": {
@@ -1134,6 +1235,7 @@
           {
             "id": "env:ground:terrain-height",
             "kind": "slider",
+            "conditional": false,
             "label": "env.terrainHeight",
             "icon": "lucide:mountain",
             "control": {
@@ -1146,6 +1248,7 @@
           {
             "id": "env:ground:terrain-scale",
             "kind": "slider",
+            "conditional": false,
             "label": "env.terrainScale",
             "icon": "lucide:ruler",
             "control": {
@@ -1158,6 +1261,7 @@
           {
             "id": "env:ground:terrain-seed",
             "kind": "slider",
+            "conditional": false,
             "label": "env.terrainSeed",
             "icon": "lucide:hash",
             "control": {
@@ -1170,6 +1274,7 @@
           {
             "id": "env:ground:terrain-octaves",
             "kind": "slider",
+            "conditional": false,
             "label": "env.terrainOctaves",
             "icon": "lucide:layers",
             "control": {
@@ -1184,12 +1289,14 @@
       {
         "id": "env:ground:enhance",
         "kind": "folder",
+        "conditional": false,
         "label": "env.groundEnhance",
         "icon": "lucide:sliders-horizontal",
         "children": [
           {
             "id": "env:ground:pitch",
             "kind": "slider",
+            "conditional": false,
             "label": "env.groundPitch",
             "icon": "lucide:arrow-up-down",
             "control": {
@@ -1202,6 +1309,7 @@
           {
             "id": "env:ground:roll",
             "kind": "slider",
+            "conditional": false,
             "label": "env.groundRoll",
             "icon": "lucide:rotate-cw",
             "control": {
@@ -1214,6 +1322,7 @@
           {
             "id": "env:ground:scroll-x",
             "kind": "slider",
+            "conditional": true,
             "label": "env.groundScrollX",
             "icon": "lucide:move-right",
             "control": {
@@ -1226,6 +1335,7 @@
           {
             "id": "env:ground:scroll-z",
             "kind": "slider",
+            "conditional": true,
             "label": "env.groundScrollZ",
             "icon": "lucide:move-down",
             "control": {
@@ -1238,6 +1348,7 @@
           {
             "id": "env:ground:infinite",
             "kind": "toggle",
+            "conditional": false,
             "label": "env.groundInfiniteEnabled",
             "icon": "lucide:infinity",
             "control": {
@@ -1249,6 +1360,7 @@
       {
         "id": "env:ground:material",
         "kind": "folder",
+        "conditional": false,
         "label": "env.groundMaterial",
         "icon": "lucide:sparkles",
         "headerToggle": {
@@ -1258,6 +1370,7 @@
           {
             "id": "env:ground:metallic",
             "kind": "slider",
+            "conditional": true,
             "label": "env.metallic",
             "icon": "lucide:circle-dot",
             "control": {
@@ -1270,6 +1383,7 @@
           {
             "id": "env:ground:roughness",
             "kind": "slider",
+            "conditional": true,
             "label": "env.roughness",
             "icon": "lucide:grid-2x2",
             "control": {
@@ -1282,6 +1396,7 @@
           {
             "id": "env:ground:reflection-blur",
             "kind": "slider",
+            "conditional": true,
             "label": "env.reflectionBlur",
             "icon": "lucide:droplets",
             "control": {
@@ -1294,6 +1409,7 @@
           {
             "id": "env:ground:reflection-distort",
             "kind": "slider",
+            "conditional": true,
             "label": "env.reflectionDistort",
             "icon": "lucide:waves",
             "control": {
@@ -1306,6 +1422,7 @@
           {
             "id": "env:ground:reflect-blend",
             "kind": "slider",
+            "conditional": false,
             "label": "env.groundReflectBlend",
             "icon": "lucide:blend",
             "control": {
@@ -1318,6 +1435,7 @@
           {
             "id": "env:ground:normal-strength",
             "kind": "slider",
+            "conditional": false,
             "label": "env.groundNormalStrength",
             "icon": "lucide:layers",
             "control": {
@@ -1330,6 +1448,7 @@
           {
             "id": "env:ground:elevation-coloring",
             "kind": "toggle",
+            "conditional": true,
             "label": "env.groundElevationColoringEnabled",
             "icon": "lucide:mountain-snow",
             "control": {
@@ -1350,7 +1469,8 @@
     "nodes": [
       {
         "id": "env:exp:warn",
-        "kind": "custom"
+        "kind": "custom",
+        "conditional": false
       }
     ]
   },
@@ -1364,11 +1484,13 @@
     "nodes": [
       {
         "id": "env:particle:type",
-        "kind": "custom"
+        "kind": "custom",
+        "conditional": false
       },
       {
         "id": "env:particle:density",
         "kind": "slider",
+        "conditional": false,
         "label": "env.density",
         "icon": "lucide:layers",
         "control": {
@@ -1381,6 +1503,7 @@
       {
         "id": "env:particle:size",
         "kind": "slider",
+        "conditional": false,
         "label": "env.size",
         "icon": "lucide:maximize",
         "control": {
@@ -1393,6 +1516,7 @@
       {
         "id": "env:particle:speed",
         "kind": "slider",
+        "conditional": false,
         "label": "env.speed",
         "icon": "lucide:gauge",
         "control": {
@@ -1405,6 +1529,7 @@
       {
         "id": "env:particle:splash",
         "kind": "toggle",
+        "conditional": false,
         "label": "env.splash",
         "icon": "lucide:droplets",
         "control": {
@@ -1413,7 +1538,8 @@
       },
       {
         "id": "env:particle:texture",
-        "kind": "custom"
+        "kind": "custom",
+        "conditional": false
       }
     ]
   },
@@ -1428,6 +1554,7 @@
       {
         "id": "postprocess:bloom",
         "kind": "folder",
+        "conditional": false,
         "label": "scene.bloom",
         "icon": "lucide:sun",
         "headerToggle": {
@@ -1437,6 +1564,7 @@
           {
             "id": "postprocess:bloom:weight",
             "kind": "slider",
+            "conditional": false,
             "label": "scene.intensity",
             "icon": "lucide:sun",
             "control": {
@@ -1449,6 +1577,7 @@
           {
             "id": "postprocess:bloom:threshold",
             "kind": "slider",
+            "conditional": false,
             "label": "scene.threshold",
             "icon": "lucide:sliders",
             "control": {
@@ -1461,6 +1590,7 @@
           {
             "id": "postprocess:bloom:kernel",
             "kind": "slider",
+            "conditional": false,
             "label": "scene.kernelSize",
             "icon": "lucide:circle",
             "control": {
@@ -1473,6 +1603,7 @@
           {
             "id": "postprocess:bloom:outline",
             "kind": "toggle",
+            "conditional": false,
             "label": "scene.outline",
             "icon": "lucide:square",
             "control": {
@@ -1484,6 +1615,7 @@
       {
         "id": "postprocess:vignette",
         "kind": "slider",
+        "conditional": false,
         "label": "scene.vignette",
         "icon": "lucide:circle-dot",
         "control": {
@@ -1496,6 +1628,7 @@
       {
         "id": "postprocess:sharpen",
         "kind": "slider",
+        "conditional": false,
         "label": "scene.sharpen",
         "icon": "lucide:focus",
         "control": {
@@ -1508,16 +1641,19 @@
       {
         "id": "postprocess:optical",
         "kind": "folder",
+        "conditional": false,
         "label": "scene.opticalEffects",
         "icon": "lucide:sparkles",
         "children": [
           {
             "id": "postprocess:optical:aa",
-            "kind": "custom"
+            "kind": "custom",
+            "conditional": false
           },
           {
             "id": "postprocess:optical:grain",
             "kind": "slider",
+            "conditional": false,
             "label": "scene.grain",
             "icon": "lucide:grid-3x3",
             "control": {
@@ -1530,6 +1666,7 @@
           {
             "id": "postprocess:optical:chromatic",
             "kind": "slider",
+            "conditional": false,
             "label": "scene.chromatic",
             "icon": "lucide:rainbow",
             "control": {
@@ -1542,6 +1679,7 @@
           {
             "id": "postprocess:optical:glow",
             "kind": "slider",
+            "conditional": false,
             "label": "scene.glow",
             "icon": "lucide:sparkles",
             "control": {
@@ -1556,12 +1694,14 @@
       {
         "id": "postprocess:env",
         "kind": "folder",
+        "conditional": false,
         "label": "scene.environmentEffects",
         "icon": "lucide:box",
         "children": [
           {
             "id": "postprocess:env:ssao",
             "kind": "toggle",
+            "conditional": false,
             "label": "scene.ssao",
             "icon": "lucide:box",
             "control": {
@@ -1571,6 +1711,7 @@
           {
             "id": "postprocess:env:ssao:strength",
             "kind": "slider",
+            "conditional": true,
             "label": "scene.ssaoStrength",
             "icon": "lucide:contrast",
             "control": {
@@ -1583,6 +1724,7 @@
           {
             "id": "postprocess:env:ssao:radius",
             "kind": "slider",
+            "conditional": true,
             "label": "scene.ssaoRadius",
             "icon": "lucide:circle-dot",
             "control": {
@@ -1595,6 +1737,7 @@
           {
             "id": "postprocess:env:ssao:samples",
             "kind": "slider",
+            "conditional": true,
             "label": "scene.ssaoSamples",
             "icon": "lucide:grid-3x3",
             "control": {
@@ -1619,16 +1762,19 @@
       {
         "id": "postprocess:tonemapping",
         "kind": "folder",
+        "conditional": false,
         "label": "scene.toneMapping",
         "icon": "lucide:palette",
         "children": [
           {
             "id": "postprocess:tonemapping:mode",
-            "kind": "custom"
+            "kind": "custom",
+            "conditional": false
           },
           {
             "id": "postprocess:tonemapping:exposure",
             "kind": "slider",
+            "conditional": false,
             "label": "scene.exposure",
             "icon": "lucide:lightbulb",
             "control": {
@@ -1641,6 +1787,7 @@
           {
             "id": "postprocess:tonemapping:contrast",
             "kind": "slider",
+            "conditional": false,
             "label": "scene.contrast",
             "icon": "lucide:contrast",
             "control": {
@@ -1653,6 +1800,7 @@
           {
             "id": "postprocess:tonemapping:cel",
             "kind": "toggle",
+            "conditional": false,
             "label": "scene.celShading",
             "icon": "lucide:droplet",
             "control": {
@@ -1662,6 +1810,7 @@
           {
             "id": "postprocess:tonemapping:cel-levels",
             "kind": "slider",
+            "conditional": true,
             "label": "scene.celColorLevels",
             "icon": "lucide:layers",
             "control": {
@@ -1674,6 +1823,7 @@
           {
             "id": "postprocess:tonemapping:cel-edge-threshold",
             "kind": "slider",
+            "conditional": true,
             "label": "scene.celEdgeThreshold",
             "icon": "lucide:scan-line",
             "control": {
@@ -1686,6 +1836,7 @@
           {
             "id": "postprocess:tonemapping:cel-edge-strength",
             "kind": "slider",
+            "conditional": true,
             "label": "scene.celEdgeStrength",
             "icon": "lucide:pen-line",
             "control": {
@@ -1710,6 +1861,7 @@
       {
         "id": "perception:enable-all",
         "kind": "toggle",
+        "conditional": false,
         "label": "motion.perceptionEnableAll",
         "control": {
           "bind": "perception.allEnabled"
@@ -1717,11 +1869,13 @@
       },
       {
         "id": "perception:tier-override",
-        "kind": "custom"
+        "kind": "custom",
+        "conditional": false
       },
       {
         "id": "perception:head-follow",
         "kind": "folder",
+        "conditional": false,
         "label": "motion.headFollow",
         "icon": "lucide:mouse-pointer-2",
         "headerToggle": {
@@ -1731,6 +1885,7 @@
           {
             "id": "perception:head-yaw-range",
             "kind": "slider",
+            "conditional": false,
             "label": "perception.headYawRange",
             "control": {
               "bind": "perception.headGazeMaxYaw",
@@ -1742,6 +1897,7 @@
           {
             "id": "perception:head-pitch-range",
             "kind": "slider",
+            "conditional": false,
             "label": "perception.headPitchRange",
             "control": {
               "bind": "perception.headGazeMaxPitch",
@@ -1755,6 +1911,7 @@
       {
         "id": "perception:eye-follow",
         "kind": "folder",
+        "conditional": false,
         "label": "motion.eyeFollow",
         "icon": "lucide:eye",
         "headerToggle": {
@@ -1764,6 +1921,7 @@
           {
             "id": "perception:eye-yaw-range",
             "kind": "slider",
+            "conditional": false,
             "label": "perception.eyeYawRange",
             "control": {
               "bind": "perception.eyeGazeMaxYaw",
@@ -1775,6 +1933,7 @@
           {
             "id": "perception:eye-pitch-range",
             "kind": "slider",
+            "conditional": false,
             "label": "perception.eyePitchRange",
             "control": {
               "bind": "perception.eyeGazeMaxPitch",
@@ -1786,6 +1945,7 @@
           {
             "id": "perception:eye-smooth",
             "kind": "slider",
+            "conditional": false,
             "label": "perception.eyeSmooth",
             "control": {
               "bind": "perception.eyeGazeSmooth",
@@ -1799,6 +1959,7 @@
       {
         "id": "perception:breath",
         "kind": "folder",
+        "conditional": false,
         "label": "motion.perceptionBreath",
         "icon": "lucide:wind",
         "headerToggle": {
@@ -1808,6 +1969,7 @@
           {
             "id": "perception:breath-freq",
             "kind": "slider",
+            "conditional": false,
             "label": "perception.breathFreq",
             "control": {
               "bind": "perception.breathFrequency",
@@ -1819,6 +1981,7 @@
           {
             "id": "perception:breath-amp",
             "kind": "slider",
+            "conditional": false,
             "label": "perception.breathAmp",
             "control": {
               "bind": "perception.breathAmplitude",
@@ -1832,6 +1995,7 @@
       {
         "id": "perception:blink",
         "kind": "folder",
+        "conditional": false,
         "label": "motion.perceptionBlink",
         "icon": "lucide:eye",
         "headerToggle": {
@@ -1841,6 +2005,7 @@
           {
             "id": "perception:blink-freq",
             "kind": "slider",
+            "conditional": false,
             "label": "perception.blinkFreq",
             "control": {
               "bind": "perception.blinkFrequency",
@@ -1852,6 +2017,7 @@
           {
             "id": "perception:blink-amp",
             "kind": "slider",
+            "conditional": false,
             "label": "perception.blinkAmp",
             "control": {
               "bind": "perception.blinkAmplitude",
@@ -1865,6 +2031,7 @@
       {
         "id": "perception:micro-expr",
         "kind": "folder",
+        "conditional": false,
         "label": "motion.microExpression",
         "icon": "lucide:smile",
         "headerToggle": {
@@ -1873,13 +2040,15 @@
         "children": [
           {
             "id": "perception:emotion",
-            "kind": "custom"
+            "kind": "custom",
+            "conditional": false
           }
         ]
       },
       {
         "id": "perception:balance-sway",
         "kind": "folder",
+        "conditional": false,
         "label": "motion.balanceSway",
         "icon": "lucide:move-3d",
         "headerToggle": {
@@ -1889,6 +2058,7 @@
           {
             "id": "perception:balance-sway-period",
             "kind": "slider",
+            "conditional": false,
             "label": "motion.balanceSwayPeriod",
             "control": {
               "bind": "perception.balanceSwayPeriod",
@@ -1900,6 +2070,7 @@
           {
             "id": "perception:balance-sway-amplitude",
             "kind": "slider",
+            "conditional": false,
             "label": "motion.balanceSwayAmplitude",
             "control": {
               "bind": "perception.balanceSwayAmplitude",
@@ -1912,11 +2083,13 @@
       },
       {
         "id": "perception:pin-model",
-        "kind": "custom"
+        "kind": "custom",
+        "conditional": false
       },
       {
         "id": "perception:lipsync",
         "kind": "folder",
+        "conditional": false,
         "label": "motion.lipSync",
         "icon": "lucide:mic",
         "headerToggle": {
@@ -1926,6 +2099,7 @@
           {
             "id": "perception:lip-sync-sens",
             "kind": "slider",
+            "conditional": false,
             "label": "motion.lipSyncSensitivity",
             "control": {
               "bind": "perception.lipSyncSensitivity",
@@ -1937,6 +2111,7 @@
           {
             "id": "perception:lip-sync-int",
             "kind": "slider",
+            "conditional": false,
             "label": "motion.lipSyncIntensity",
             "control": {
               "bind": "perception.lipSyncIntensity",
@@ -1948,6 +2123,7 @@
           {
             "id": "perception:lip-sync-multi",
             "kind": "toggle",
+            "conditional": false,
             "label": "motion.lipSyncMultiMorph",
             "control": {
               "bind": "perception.lipSyncMultiMorphEnabled"
@@ -1968,6 +2144,7 @@
       {
         "id": "settings:perf:cam-sens",
         "kind": "slider",
+        "conditional": false,
         "label": "settings.perf.camSens",
         "icon": "lucide:move",
         "control": {
@@ -1979,11 +2156,13 @@
       },
       {
         "id": "settings:perf:cam-sens-hint",
-        "kind": "custom"
+        "kind": "custom",
+        "conditional": false
       },
       {
         "id": "settings:perf:invert-y",
         "kind": "toggle",
+        "conditional": false,
         "label": "settings.perf.invertY",
         "icon": "lucide:flip-vertical",
         "control": {
@@ -1992,11 +2171,13 @@
       },
       {
         "id": "settings:perf:invert-y-hint",
-        "kind": "custom"
+        "kind": "custom",
+        "conditional": false
       },
       {
         "id": "settings:perf:auto-center",
         "kind": "toggle",
+        "conditional": false,
         "label": "settings.perf.autoCenter",
         "icon": "lucide:crosshair",
         "control": {
@@ -2005,7 +2186,8 @@
       },
       {
         "id": "settings:perf:auto-center-hint",
-        "kind": "custom"
+        "kind": "custom",
+        "conditional": false
       }
     ]
   },
@@ -2020,6 +2202,7 @@
       {
         "id": "settings:graphics:frame-cap",
         "kind": "toggle",
+        "conditional": false,
         "label": "settings.perf.frameCap",
         "icon": "lucide:monitor-check",
         "control": {
@@ -2028,11 +2211,13 @@
       },
       {
         "id": "settings:graphics:frame-cap-hint",
-        "kind": "custom"
+        "kind": "custom",
+        "conditional": false
       },
       {
         "id": "settings:graphics:fps",
         "kind": "slider",
+        "conditional": false,
         "label": "settings.perf.fpsCap",
         "icon": "lucide:gauge",
         "control": {
@@ -2044,11 +2229,13 @@
       },
       {
         "id": "settings:graphics:fps-hint",
-        "kind": "custom"
+        "kind": "custom",
+        "conditional": false
       },
       {
         "id": "settings:graphics:render-scale",
         "kind": "slider",
+        "conditional": false,
         "label": "settings.perf.renderScale",
         "icon": "lucide:scan",
         "control": {
@@ -2060,7 +2247,8 @@
       },
       {
         "id": "settings:graphics:render-scale-hint",
-        "kind": "custom"
+        "kind": "custom",
+        "conditional": false
       }
     ]
   },
@@ -2074,7 +2262,8 @@
     "nodes": [
       {
         "id": "settings:graphics:toggles",
-        "kind": "custom"
+        "kind": "custom",
+        "conditional": false
       }
     ]
   },
@@ -2089,6 +2278,7 @@
       {
         "id": "settings:graphics:default-physics",
         "kind": "toggle",
+        "conditional": false,
         "label": "settings.perf.defaultPhysics",
         "icon": "lucide:atom",
         "control": {
@@ -2097,11 +2287,13 @@
       },
       {
         "id": "settings:graphics:default-physics-hint",
-        "kind": "custom"
+        "kind": "custom",
+        "conditional": false
       },
       {
         "id": "settings:graphics:show-fps-clock",
         "kind": "toggle",
+        "conditional": false,
         "label": "settings.perf.showFpsClock",
         "icon": "lucide:gauge",
         "control": {
@@ -2111,6 +2303,7 @@
       {
         "id": "settings:graphics:show-runtime-badge",
         "kind": "toggle",
+        "conditional": false,
         "label": "settings.perf.showRuntimeBadge",
         "icon": "lucide:cpu",
         "control": {

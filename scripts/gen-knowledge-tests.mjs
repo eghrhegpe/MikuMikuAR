@@ -61,9 +61,9 @@ function matchTests(cardName, sourceBases, testFiles) {
     const tb = testBase(tf);
     const rel = 'frontend/src/__tests__/' + tf;
     if (tb === cardName) { hit.push(rel); continue; }
-    // source_files basename 前缀匹配（如 env-water → env-water.contract / env-water.test）
+    // source_files basename 前缀匹配（支持点分隔与破折号分隔：env-water → env-water.contract / performance → performance-reflection）
     for (const sb of sourceBases) {
-      if (tb === sb || (tb.startsWith(sb + '.') && tb.includes(sb))) {
+      if (tb === sb || tb.startsWith(sb + '.') || tb.startsWith(sb + '-')) {
         hit.push(rel);
         break;
       }
