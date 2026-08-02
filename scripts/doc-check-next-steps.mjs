@@ -39,6 +39,10 @@ function byDirStr(map) {
 
 // architecture 卡必须有路由入口（用户决策：改为非阻断 AI 提示，不进 CI 红线）
 // 扫描 docs/knowledge/*.md 的 tier: architecture 卡，核对是否出现在 routes.md 链接中。
+// 非知识卡文件（机器生成的索引/地图，有 frontmatter 但非卡）须排除，避免 menu-map 等误判为「缺路由」。
+const KNOWLEDGE_NON_CARDS = new Set([
+  'README.md', 'index.md', 'routes.md', 'menu-map.md', 'graph.md', 'tier-review.md',
+]);
 function checkArchRoutes() {
   const knDir = path.join(ROOT, 'docs', 'knowledge');
   const routesPath = path.join(knDir, 'routes.md');
@@ -51,7 +55,7 @@ function checkArchRoutes() {
   const missing = [];
   if (fs.existsSync(knDir)) {
     for (const f of fs.readdirSync(knDir)) {
-      if (!f.endsWith('.md') || f.toLowerCase() === 'readme.md' || f === 'routes.md') continue;
+      if (!f.endsWith('.md') || KNOWLEDGE_NON_CARDS.has(f)) continue;
       const t = fs.readFileSync(path.join(knDir, f), 'utf8');
       if (!/^---\r?\n/.test(t)) continue;
       const fm = t.match(/^---\r?\n([\s\S]*?)\r?\n---/);

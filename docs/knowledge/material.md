@@ -5,15 +5,21 @@ name: 分类材质系统
 category: scene
 scope:
   - frontend/src/scene/manager/material.ts
+  - frontend/src/scene/manager/material-sss.ts
+  - frontend/src/scene/manager/material-proxy-resolver.ts
+  - frontend/src/scene/manager/pbr-builder-init.ts
 source_files:
   - frontend/src/scene/manager/material.ts
   - frontend/src/scene/manager/material-sss.ts
+  - frontend/src/scene/manager/material-proxy-resolver.ts
+  - frontend/src/scene/manager/pbr-builder-init.ts
 symbols:
   - AlphaCtx
   - DEFAULT_MAT_PARAMS
   - DEFAULT_SSS_PARAMS
   - MaterialCategory
   - MaterialCategoryParams
+  - MaterialMode
   - MaterialStateManager
   - SSS_MATERIAL_MARKER
   - SssColorInput
@@ -40,6 +46,9 @@ symbols:
   - getMatSssParams
   - getMatSssState
   - getMatState
+  - getMaterialMode
+  - getPBRMaterialBuilder
+  - getStandardMaterialProxy
   - isMatCategoryAllEnabled
   - isMatEnabled
   - isPbrMaterial
@@ -47,11 +56,13 @@ symbols:
   - resetMatCatParams
   - resetPerMaterialParams
   - resetSingleMatParams
+  - resolveMaterialProxy
   - setMatCatParams
   - setMatCategoryEnabled
   - setMatEnabled
   - setMatParams
   - setMatSssParams
+  - tryApplyPbrMaterialBuilder
 invariants:
   - 资源卸载必须 disposeModelMaterialState(id) 释放按 id 的材质状态映射，避免模型材质泄漏
   - 写入触发 triggerAutoSave
@@ -90,6 +101,11 @@ MikuMikuAR 材质系统：分类（category-based）与逐材质参数调整，�
 - 应用：`applySss(id, cat, params)` 按分类应用到模型材质；`getMatSssParams(id, cat)` 读取；`disposeModelSssState(id)` 卸载释放
 - 序列化：material.ts 的 `getMatSssState` / `applyMatSssState` 将 SSS 参数随材质状态持久化
 - 前提：材质经 PBRMaterialBuilder 加载（`VITE_MMD_MATERIAL=pbr`），`SssPBRMaterial` 由 PMX 加载时构建
+
+## 材质构建模式（standard / pbr，ADR-188）
+- `material-proxy-resolver.ts`：按 `VITE_MMD_MATERIAL` 环境变量返回材质代理构造函数——`standard`（默认）→ MmdStandardMaterialProxy（Lambert + Blinn-Phong，toon/sphere 原生支持）；`pbr` → PBRMaterialBuilder（Cook-Torrance PBR，metallic/roughness，无 toon/sphere）
+- `pbr-builder-init.ts`：动态导入 PBRMaterialBuilder 并覆盖 `MmdModelLoader.SharedMaterialBuilder`（`tryApplyPbrMaterialBuilder`），把加载器从默认 StandardMaterial 切到 PBR；失败时回退并告警
+- 注意：PBR 模式下 `toonTexLevel` / `sphereTexLevel` 参数静默忽略，UI 需置灰提示
 
 ## 与其他子系统关系
 - 上游：`model-loader.ts`（`_capture`）、UI 面板（model-material.ts）
