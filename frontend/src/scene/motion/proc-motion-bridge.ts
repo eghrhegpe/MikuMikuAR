@@ -102,7 +102,11 @@ class ProcMotionController {
 
     /** [adr-XX per-motion] 写入程序化配置：同步写入 activeMotion（若存在）+ fallback。
      *  保证无动作时的本地状态也与最新设置一致，切换动作后参数不丢失。
-     *  [audit] per-mode：patch 写入指定模式的 params（idle / autodance 各自独立）。 */
+     *  [audit] per-mode：patch 写入指定模式的 params（idle / autodance 各自独立）。
+     *  [audit] 写入边界：bridge setter 族（setProcMotionIntensity/Speed/BoneToggle/BoneToggles/
+     *  VpdApplyEnabled/InterpOverride）均无 modelId 参数，仅服务全局路径（activeMotion + fallback）；
+     *  per-model 写入由菜单层 motion-procmotion-levels.ts 的 _setProcParams/_applyProcParam 直写
+     *  modelRegistry（经 _refProcState(modelId) 读取），勿在 bridge 侧另开 per-model 写入口。 */
     private _writeProcState(mode: ProcModeKey, patch: Partial<ProcMotionParams>): void {
         const intent = getActiveMotion();
         if (intent) {
