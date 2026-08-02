@@ -1012,11 +1012,12 @@ function _drawTextureGroundCanvas(
     ctx: CanvasRenderingContext2D,
     size: number,
     img: HTMLImageElement,
-    state: EnvState
+    state: EnvState,
+    scanPhase = 0
 ): void {
     ctx.clearRect(0, 0, size, size);
     ctx.drawImage(img, 0, 0, size, size);
-    _drawOverlayPattern(ctx, size, state, 0);
+    _drawOverlayPattern(ctx, size, state, scanPhase);
 }
 
 function _ensureTextureGroundImage(url: string, onReady: (img: HTMLImageElement) => void): void {
@@ -1081,7 +1082,8 @@ export function _syncTextureGroundTexture(mat: GroundMat, state: EnvState, scene
         if (!ctx) {
             return;
         }
-        _drawTextureGroundCanvas(ctx, _TEX_GROUND_SIZE, img, state);
+        // 用当前扫描相位合成，避免 scan 动画中途重建纹理时环位置跳变
+        _drawTextureGroundCanvas(ctx, _TEX_GROUND_SIZE, img, state, _scanRingPhase);
         cur.update(false);
     });
 }
@@ -1439,17 +1441,25 @@ export function tickGround(dt: number): void {
     // Ground reflection
     groundReflection.update(envState, getScene());
 
-    // [doc:adr-230] scan 叠加脉冲环动画：仅 canvas 来源地面（'envGround' 动态纹理）每帧重绘。
-    // 仅 scan 时启用，避免常驻重绘开销（与现有 scroll 重绘机制一致）。
+    // [doc:adr-230] scan 叠加脉冲环动画：canvas 来源地面（'envGround'）与贴图地面（'envGroundTex'）
+    // 共用同一相位累加器逐帧重绘。仅 scan 时启用，避免常驻重绘开销（与现有 scroll 重绘机制一致）。
     if (_envSys.ground.mesh && envState.groundOverlay === 'scan') {
         const mat = _envSys.ground.mesh.material;
         if (mat && (mat instanceof StandardMaterial || mat instanceof PBRMaterial)) {
             const tex = _getAlbedoTex(mat as GroundMat);
-            if (tex instanceof DynamicTexture && tex.name === 'envGround') {
+            if (tex instanceof DynamicTexture && tex.name.startsWith('envGround')) {
                 const ctx = getCanvasCtx(tex);
-                if (ctx) {
+                // 贴图地面须先合成底图再叠 scan 环；底图未就绪时跳过，避免程序化背景覆盖贴图
+                const img = tex.name === 'envGroundTex' ? _texGroundImg : null;
+                const notReady = tex.name === 'envGroundTex' && !img?.complete;
+                if (ctx && !notReady) {
                     _scanRingPhase = (_scanRingPhase + dt * GROUND_SCAN_SPEED) % 1;
-                    _drawGroundCanvas(ctx, tex.getSize().width, envState, _scanRingPhase);
+                    const size = tex.getSize().width;
+                    if (img) {
+                        _drawTextureGroundCanvas(ctx, size, img, envState, _scanRingPhase);
+                    } else {
+                        _drawGroundCanvas(ctx, size, envState, _scanRingPhase);
+                    }
                     tex.update(false);
                 }
             }

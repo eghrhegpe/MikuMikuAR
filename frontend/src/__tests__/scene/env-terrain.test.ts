@@ -1,5 +1,10 @@
-import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, vi } from 'vitest';
 import { Scene } from '@babylonjs/core/scene';
+import { NullEngine } from '@babylonjs/core/Engines/nullEngine';
+import { MeshBuilder } from '@babylonjs/core/Meshes/meshBuilder';
+import { GroundMesh } from '@babylonjs/core/Meshes/groundMesh';
+import { PBRMaterial } from '@babylonjs/core/Materials/PBR/pbrMaterial';
+import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 
 // 隔离全局 scene 单例：env-terrain.ts 从 env-ground.ts 导入 _effectiveBumpLevel，
 // 后者传递性拉起 scene/render/performance.ts → scene/scene.ts。scene.ts 模块顶层
@@ -12,7 +17,9 @@ vi.mock('../../scene/scene', () => ({
     scene: {} as unknown as Scene,
 }));
 
-import { hash2, valueNoise, fbm, generateTerrainHeightmapURL } from '../../scene/env/env-terrain';
+import { hash2, valueNoise, fbm, generateTerrainHeightmapURL, applyTerrainMaterial } from '../../scene/env/env-terrain';
+import { envState } from '@/core/config';
+import { underwaterFogController } from '../../scene/env/env-underwater-fog';
 
 // happy-dom 无真实 2D canvas；为 generateTerrainHeightmapURL 提供最小桩：
 // createImageData 返回真实 Uint8ClampedArray（FBM 像素写入），putImageData 捕获它，
@@ -112,5 +119,54 @@ describe('env-terrain FBM（确定性函数输出锁定）', () => {
         });
         expect(urlSeed).toBe('data:image/png;base64,5ecd5e91');
         expect(urlSeed).not.toBe(url);
+    });
+});
+
+// ======== applyTerrainMaterial 集成测试 ========
+
+describe('applyTerrainMaterial — P1 uninstall 守卫', () => {
+    let engine: NullEngine;
+    let scene: Scene;
+
+    beforeEach(() => {
+        engine = new NullEngine();
+        scene = new Scene(engine);
+    });
+
+    afterEach(() => {
+        scene.dispose();
+        engine.dispose();
+    });
+
+    it('PBRMaterial 旧材质销毁前调用 underwaterFogController.uninstall', () => {
+        const spy = vi.spyOn(underwaterFogController, 'uninstall');
+        const ground = MeshBuilder.CreateGround('g', { width: 10, height: 10 }, scene) as GroundMesh;
+        ground.material = new PBRMaterial('oldPBR', scene);
+
+        applyTerrainMaterial(ground, envState, scene);
+
+        expect(spy).toHaveBeenCalledTimes(1);
+        spy.mockRestore();
+    });
+
+    it('StandardMaterial 旧材质销毁前调用 underwaterFogController.uninstall', () => {
+        const spy = vi.spyOn(underwaterFogController, 'uninstall');
+        const ground = MeshBuilder.CreateGround('g', { width: 10, height: 10 }, scene) as GroundMesh;
+        ground.material = new StandardMaterial('oldStd', scene);
+
+        applyTerrainMaterial(ground, envState, scene);
+
+        expect(spy).toHaveBeenCalledTimes(1);
+        spy.mockRestore();
+    });
+
+    it('无旧材质时不调用 uninstall', () => {
+        const spy = vi.spyOn(underwaterFogController, 'uninstall');
+        const ground = MeshBuilder.CreateGround('g', { width: 10, height: 10 }, scene) as GroundMesh;
+
+        applyTerrainMaterial(ground, envState, scene);
+
+        expect(spy).not.toHaveBeenCalled();
+        spy.mockRestore();
     });
 });
