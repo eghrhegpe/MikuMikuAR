@@ -37,6 +37,7 @@ symbols:
   - hideMotionPopup
   - importExternalAnimation
   - initMotionBroadcast
+  - openProcDetail
   - procLabel
   - refreshMotionRoot
   - renderModuleToggleList

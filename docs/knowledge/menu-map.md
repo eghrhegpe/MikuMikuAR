@@ -282,7 +282,7 @@ use_when:
 | action | `motion.vmdName` | radioIcon | `__motion_detail__:${motion.id ?? ''}` |
 | divider | — | — | — |
 | sectionTitle | `motion.section.loadedProc` | — | — |
-| action | `_procLabel` | radioIcon | — |
+| action | `_procLabel` | radioIcon | `isNone` |
 | divider | — | — | — |
 | sectionTitle | `motion.section.library` | — | — |
 | action | `motion.browseMotionLibrary` | lucide:folder-search | `__scene_motion_browse__` |
