@@ -390,8 +390,11 @@ export function createGroundMeshFromSpec(state: EnvState, scene: Scene): Mesh {
         const hg = createHeightmapGround(state, scene, (gm: GroundMesh) => {
             const mat = gm.material as GroundMat;
             applyTerrainMaterial(gm, state, scene);
-            applyGroundMaterialSpec(mat, state, scene, true);
+            // [adr-230 P1] 先 install 再 applyGroundMaterialSpec：install 捕获初始快照后，
+            // _syncGroundEmissive 内的 noteGroundEmissiveChanged 会把 orig 刷新为当前用户态
+            // emissive（避免水下重建时 orig 误捕获焦散纹理，出水后残留焦散）。
             underwaterFogController.install(mat);
+            applyGroundMaterialSpec(mat, state, scene, true);
             triggerTerrainReady();
         });
         setGroundMesh(hg);
@@ -417,8 +420,10 @@ export function createGroundMeshFromSpec(state: EnvState, scene: Scene): Mesh {
     ground.material = mat;
 
     setGroundActualSize(meshSize);
-    applyGroundMaterialSpec(mat, state, scene, true);
+    // [adr-230 P1] 先 install 再 applyGroundMaterialSpec（理由同上：避免水下重建
+    // 时 orig 误捕获焦散纹理）。
     underwaterFogController.install(mat);
+    applyGroundMaterialSpec(mat, state, scene, true);
     setGroundMesh(ground);
     buildGroundReflection(state);
     return ground;
