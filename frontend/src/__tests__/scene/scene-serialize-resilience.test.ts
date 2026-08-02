@@ -268,6 +268,28 @@ describe('serializeScene — 分段容错（ADR-198 方向①）', () => {
         const scene = serializeScene();
         expect(scene.models[0].materialSssCategories).toBeUndefined();
     });
+
+    it('P2#3 回归：serializeScene 序列化 per-model procMotion（per-mode 参数落盘）', () => {
+        const model = makeModel('a', '模型甲', '/models/a.pmx');
+        (model as any).procMotion = {
+            mode: 'idle',
+            bpmQuantizeEnabled: true,
+            eyeTrackingEnabled: true,
+            headTrackingEnabled: true,
+            params: {
+                idle: { intensity: 0.9, speed: 0.7 },
+                autodance: { intensity: 0.3, speed: 1.6 },
+            },
+        };
+        registry.set('a', model);
+
+        const scene = serializeScene();
+        expect(scene.models).toHaveLength(1);
+        expect(scene.models[0].procMotion).toBeDefined();
+        expect((scene.models[0].procMotion as any).mode).toBe('idle');
+        expect((scene.models[0].procMotion as any).params.idle.intensity).toBe(0.9);
+        expect((scene.models[0].procMotion as any).params.autodance.speed).toBe(1.6);
+    });
 });
 
 describe('deserializeScene — suppress 泄漏防护（fix:suppress-leak）', () => {
@@ -319,6 +341,38 @@ describe('deserializeScene — suppress 泄漏防护（fix:suppress-leak）', ()
                 sssCategories: { '皮肤': { sssPower: 0.8, sssColor: { r: 1, g: 0.6, b: 0.4 }, sssDistance: 0.3 } },
             }),
         );
+    });
+
+    it('P2#3 回归：deserializeScene 恢复 per-model procMotion（挂载到 inst，走 migrateProcState 入口）', async () => {
+        vi.mocked(loadPMXFile).mockResolvedValueOnce('test-proc-id');
+        const inst = makeModel('test-proc-id', '模型Proc', '/models/proc.pmx');
+        registry.set('test-proc-id', inst);
+
+        const data = {
+            version: 1,
+            models: [{
+                name: '模型Proc',
+                filePath: '/models/proc.pmx',
+                kind: 'actor' as const,
+                // 嵌套结构（migrateProcState 在本测试被 mock 为恒等透传；迁移细节见 proc-motion-migrate.test.ts）
+                procMotion: {
+                    mode: 'idle',
+                    params: {
+                        idle: { intensity: 0.9, speed: 1.4 },
+                        autodance: { intensity: 0.3 },
+                    },
+                },
+            }],
+            camera: {},
+        } as never;
+
+        await deserializeScene(data);
+
+        const restored = (inst as any).procMotion;
+        expect(restored).toBeDefined();
+        expect(restored.mode).toBe('idle');
+        expect(restored.params.idle.intensity).toBe(0.9);
+        expect(restored.params.autodance.intensity).toBe(0.3);
     });
 
     it('deserializeScene PBRMaterial wireframe 恢复', async () => {

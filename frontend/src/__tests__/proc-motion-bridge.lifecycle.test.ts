@@ -22,9 +22,11 @@ vi.mock('../scene/motion/vmd-layers', () => mockVmdLayers());
 vi.mock('../scene/motion/perception', () => mockPerception(mockState));
 vi.mock('../scene/motion/motion-intent', () => mockMotionIntent(mockState));
 vi.mock('../motion-algos/beat-detector', () => mockBeatDetector(mockState));
-vi.mock('../motion-algos/proc-motion-idle', () => ({ generateIdleVmd: () => new ArrayBuffer(0) }));
+vi.mock('../motion-algos/proc-motion-idle', () => ({
+    generateIdleVmd: (...args: unknown[]) => (mockState.generateIdleVmd as any)(...args),
+}));
 vi.mock('../motion-algos/proc-motion-autodance', () => ({
-    generateAutoDanceVmd: () => new ArrayBuffer(0),
+    generateAutoDanceVmd: (...args: unknown[]) => (mockState.generateAutoDanceVmd as any)(...args),
 }));
 
 type Sut = typeof import('../scene/motion/proc-motion-bridge');
@@ -136,5 +138,68 @@ describe('updateProcMotion — 程序化动作保持生效', () => {
 
         // 用户/场景 VMD 应优先：程序化被停止（vmdData 因 userVmdPresent 不被清空，属预期行为）
         expect(sut.isProcVmdActive()).toBe(false);
+    });
+});
+
+describe('P2#1 回归 — updateProcMotion 自动重生成使用 per-model 参数', () => {
+    it('per-model procMotion 存在时，自动触发的 idle 生成用该模型参数而非全局默认', async () => {
+        const mmdModel = { morph: { morphs: [] }, runtimeBones: [] };
+        const inst: any = {
+            vmdData: null,
+            vmdPath: null,
+            mmdModel,
+            vmdLayers: [],
+            procMotion: {
+                mode: 'idle',
+                bpmQuantizeEnabled: true,
+                eyeTrackingEnabled: true,
+                headTrackingEnabled: true,
+                params: {
+                    idle: { ...DEFAULT_PROC_STATE.params.idle, intensity: 0.9 },
+                    autodance: { ...DEFAULT_PROC_STATE.params.autodance },
+                },
+            },
+        };
+        mockState.focusedModelId = 'm1';
+        mockState.focusedMmdModel.mockReturnValue(mmdModel);
+        mockState.focusedModel.mockReturnValue(inst);
+        mockState.modelManager.get.mockImplementation((id: string) =>
+            id === 'm1' ? inst : undefined
+        );
+
+        await sut.updateProcMotion();
+
+        expect(sut.isProcVmdActive()).toBe(true);
+        expect(mockState.generateIdleVmd).toHaveBeenCalled();
+        // 生成器应收到 per-model 参数（intensity 0.9），而非全局 fallback 默认 0.5
+        const params = (mockState.generateIdleVmd as any).mock.calls[0][0] as {
+            intensity: number;
+        };
+        expect(params.intensity).toBe(0.9);
+    });
+});
+
+describe('P2#2 回归 — autodance BPM 无效时不锁死 _starting', () => {
+    it('bpm=0 时第一次生成抛错被吞，恢复有效 BPM 后仍能重新生成', async () => {
+        const mmdModel = { morph: { morphs: [] }, runtimeBones: [] };
+        const inst: any = { vmdData: null, vmdPath: null, mmdModel, vmdLayers: [] };
+        mockState.focusedModelId = 'm1';
+        mockState.focusedMmdModel.mockReturnValue(mmdModel);
+        mockState.focusedModel.mockReturnValue(inst);
+        mockState.modelManager.get.mockImplementation((id: string) =>
+            id === 'm1' ? inst : undefined
+        );
+        sut.createProcBeatDetector();
+        // beatDetectorInst.getBPM 默认 mockReturnValue(0) = 无效 BPM
+        sut.setProcMotionMode('autodance');
+
+        // 第一次：BPM 无效 → 抛错被 catch（修复前会在 try 外 throw 且 _starting 永不复位）
+        await expect(sut.updateProcMotion()).resolves.toBeUndefined();
+        expect(sut.isProcVmdActive()).toBe(false);
+
+        // BPM 恢复有效后应能重新生成（若 _starting 泄漏则 updateProcMotion 永远空转）
+        mockState.beatDetectorInst.getBPM.mockReturnValue(120);
+        await sut.updateProcMotion();
+        expect(sut.isProcVmdActive()).toBe(true);
     });
 });

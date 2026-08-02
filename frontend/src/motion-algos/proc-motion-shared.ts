@@ -113,11 +113,18 @@ export function migrateProcState(raw: unknown): ProcMotionState {
         headTrackingEnabled: r.headTrackingEnabled ?? true,
     };
     if (r.params) {
+        // [fix:P3#1] 深合并 boneToggles：逐类别补默认（缺键用默认 true，防部分覆盖静默关闭其他类别），
+        // 且不共享 _fallbackParams.boneToggles 引用（与旧扁平分支的拷贝行为对齐，防两模式互相污染）。
+        const mergeParams = (p?: Partial<ProcMotionParams>): ProcMotionParams => ({
+            ..._fallbackParams,
+            ...p,
+            boneToggles: { ..._fallbackParams.boneToggles, ...(p?.boneToggles ?? {}) },
+        });
         return {
             ...base,
             params: {
-                idle: { ..._fallbackParams, ...r.params.idle },
-                autodance: { ..._fallbackParams, ...r.params.autodance },
+                idle: mergeParams(r.params.idle),
+                autodance: mergeParams(r.params.autodance),
             },
         };
     }
