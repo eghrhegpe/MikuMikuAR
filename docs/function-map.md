@@ -8,7 +8,7 @@
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
 | 核心基础设施 | 124 | 723 |
-| 3D 场景 | 113 | 1137 |
+| 3D 场景 | 113 | 1138 |
 | 菜单 & UI | 75 | 386 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 17 | 130 |
@@ -1809,6 +1809,7 @@
 | `initScene()` | `scene/scene` | 场景初始化入口。首次调用时创建 Scene/Engine/运行时； HMR 重入时先调用 _reinitSceneForHMR() 清理旧资源再重建。 |
 | `isARModeActive()` | `scene/scene` | — |
 | `isAudioPlaying()` | `scene/scene` | — |
+| `isHeadless()` | `scene/scene` | — |
 | `isMatCategoryAllEnabled()` | `scene/scene` | — |
 | `isMatEnabled()` | `scene/scene` | — |
 | `isPbrMaterial()` | `scene/scene` | — |

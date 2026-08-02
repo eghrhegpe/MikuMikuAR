@@ -47,8 +47,11 @@ export default defineConfig({
             // 先杀掉残留的 4174 进程（CI runner 上前一个 workflow 遗留），再构建+预览。
             // sudo 是必要的：CI runner 上前一个 workflow 的 preview server 可能属不同用户，
             // 普通 fuser 无权限杀掉。用 || true 而非 2>/dev/null 以便排错时可见 stderr。
-            command: "sudo fuser -k 4174/tcp 2>/dev/null || true; npx vite build --config vite.web.config.ts && npx vite preview --config vite.web.config.ts --port 4174 --strictPort",
-            url: "http://localhost:4174/MikuMikuAR/",
+            // [doc:e2e-web] 与 web-pages.yml 部署对齐：构建后把 index.web.html 复制为 index.html，
+            // 否则 vite preview 目录索引找不到 index.html → 404 → 健康检查超时（「4174 起不来」根因）。
+            command: "sudo fuser -k 4174/tcp 2>/dev/null || true; npx vite build --config vite.web.config.ts && cp dist-web/app/index.web.html dist-web/app/index.html && npx vite preview --config vite.web.config.ts --port 4174 --strictPort",
+            // base = '/MikuMikuAR/app/'，preview 实际服务在 /MikuMikuAR/app/（web-smoke.spec 的 WEB_URL 同步）。
+            url: "http://localhost:4174/MikuMikuAR/app/",
             reuseExistingServer: true,
             // CI 中构建需 ~300-420s（babylon-mmd 等重模块 + CI runner 负载波动剧烈），
             // 420s 仍不够（实测 423s 刚超），CI runner 负载波动导致构建时间翻倍。
