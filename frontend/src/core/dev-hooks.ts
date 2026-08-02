@@ -11,6 +11,10 @@ import { removeFocusedModel } from '../scene/manager/model-ops';
 import { logInfo } from './logger';
 // [doc:adr-229] 通用状态读取器：window.__state 复用 menu-schema 的 getStateValue（含 modelId）
 import { getStateValue, type StatePath } from '../menus/menu-schema';
+// [fix:P1] 守卫域就绪探测：@dom 环境无灯光/管线时写入被拦截（setLightState/setRenderState
+// 守卫），e2e 需预检跳过 light./render. 域的动作断言，避免「UI 可操作但 state 未生效」误报。
+import { isLightingReady } from '../scene/render/lighting';
+import { isRenderReady } from '../scene/render/renderer';
 
 export function setupE2ECapture(): void {
     // [doc:e2e] 生产构建下默认不注入 E2E 钩子（DEV 为 false），
@@ -59,6 +63,14 @@ export function setupE2ECapture(): void {
     // 只读快照，不暴露 setter——交互写入走真实 DOM 事件（addSliderRow 等 onChange）。
     (window as unknown as Record<string, unknown>).__state = {
         get: (path: string, modelId?: string): unknown => getStateValue(path as StatePath, modelId),
+        // [fix:P1] 守卫域就绪探测：light./render. 域在 @dom 环境（无灯光/管线）写入被守卫
+        // 拦截，e2e 动作断言前先探测，未就绪则整域跳过（避免「UI 可操作但 state 未生效」误报）
+        get isLightingReady(): boolean {
+            return isLightingReady();
+        },
+        get isRenderReady(): boolean {
+            return isRenderReady();
+        },
     };
 
     // ======== E2E Scene Inspection Hook (DEV only) ========
