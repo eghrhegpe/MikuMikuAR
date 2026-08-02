@@ -140,10 +140,13 @@ export function buildLayerLevel(layerId: string, id: string): PopupLevel {
  * [doc:adr-116/125/145] 覆盖卡复用 renderOverrideCard（撤销/重做/历史/冲突 banner），
  * 预设卡复用 renderPresetCard——原死路由 motion:boneOverride 的沉没功能由此重新可达。
  * @param sceneMotionId 指定主动作 id；undefined 时回退到当前默认动作（兼容旧调用）
+ * @param modelIdOverride 覆盖/预设按该模型存储（供模型面板 per-model 编辑）
+ * @param procId 指定查看的程序化动作 id；即使该 proc 未激活也强制展示程序化卡片（行体点击查看）
  */
 function buildMotionDetailSchema(
     sceneMotionId?: string,
-    modelIdOverride?: string
+    modelIdOverride?: string,
+    procId?: LoadableProcId
 ): MenuNode[] {
     // [doc:adr-167] 按 id 解析指定主动作；未传或找不到则回退到默认动作
     const sceneMotions = getSceneMotions();
@@ -161,6 +164,18 @@ function buildMotionDetailSchema(
     const procActive = procState.mode !== 'off';
     const procLabelId: LoadableProcId =
         procState.mode === 'off' ? 'none' : (procState.mode as LoadableProcId);
+    // [audit-fix] 行体点击仅查看：procId 指定「查看哪个程序化动作」，未激活时也强制展示程序化卡片，
+    // 但不改变选中态、不打断当前播放。
+    const viewingProc = procId != null;
+    const viewingInactiveProc = viewingProc && !procActive;
+    const currentIcon =
+        procActive || viewingProc ? 'lucide:wand-sparkles' : motion ? 'lucide:clapperboard' : 'lucide:circle-slash';
+    const currentLabel = viewingInactiveProc
+        ? procLabel(procId!)
+        : procActive
+          ? procLabel(procLabelId)
+          : motion?.vmdName || t('motion.intent.none');
+    const currentSublabel = viewingInactiveProc ? t('motion.procNotActive') : undefined;
 
     // [audit] 覆盖/预设按模型存储，运行时仅对聚焦模型生效；经模型面板编辑非聚焦模型时提示，
     // 避免「UI 显示已设置但运行时静默无效」的误导。
@@ -193,17 +208,11 @@ function buildMotionDetailSchema(
                     addSectionTitle(inner, t('motion.currentMotion'));
                     slideRow(
                         inner,
-                        procActive
-                            ? 'lucide:wand-sparkles'
-                            : motion
-                              ? 'lucide:clapperboard'
-                              : 'lucide:circle-slash',
-                        procActive
-                            ? procLabel(procLabelId)
-                            : motion?.vmdName || t('motion.intent.none'),
+                        currentIcon,
+                        currentLabel,
                         false,
                         () => {},
-                        undefined,
+                        currentSublabel,
                         undefined,
                         undefined,
                         undefined,
@@ -304,7 +313,8 @@ function buildMotionDetailSchema(
 
     // [doc:adr-207] 程序化激活时，把参数卡并入统一详情页：模式切换/强度/速度/骨骼微动/插值。
     // 覆盖/预设本就 model-scoped 始终可达，至此程序化动作与 VMD 共享全部动作功能。
-    if (procActive) {
+    // [audit-fix] 行体点击查看某 proc（viewingProc）时即使未激活也显示参数卡（仅查看/预配置）。
+    if (procActive || viewingProc) {
         nodes.push(...buildProcMotionSchema(modelId));
     }
 
@@ -317,14 +327,15 @@ function buildMotionDetailSchema(
  */
 export function buildMotionDetailLevel(
     sceneMotionId?: string,
-    modelId?: string
+    modelId?: string,
+    procId?: LoadableProcId
 ): PopupLevel {
     return {
         label: t('motion.detail.title'),
         dir: '',
         items: [],
         renderCustom: (container) => {
-            return renderMenu(buildMotionDetailSchema(sceneMotionId, modelId), container);
+            return renderMenu(buildMotionDetailSchema(sceneMotionId, modelId, procId), container);
         },
     };
 }

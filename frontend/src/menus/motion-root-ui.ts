@@ -157,8 +157,8 @@ export function buildMotionRootItems(): PopupRow[] {
                       title: t('motion.motionTools'),
                       onClick: () => {
                           // [doc:adr-207] 程序化动作统一进动作详情页（含覆盖/预设/参数），
-                          // 与 VMD 共享全部动作功能；删除旧独立 buildProcMotionLevel 入口。
-                          getMotionMenu()?.push(buildMotionDetailLevel());
+                          // 与 VMD 共享全部动作功能；传 procId 使未激活时也可查看程序化设置。
+                          getMotionMenu()?.push(buildMotionDetailLevel(undefined, undefined, procId));
                       },
                   },
         });
@@ -316,16 +316,12 @@ function _selectProcMotion(procId: LoadableProcId): void {
     );
 }
 
-/** [doc:adr-207] 行体点击进入程序化统一详情页：未选中则先激活，再 push 详情页。
+/** [doc:adr-207] 行体点击进入程序化统一详情页。
+ *  [audit-fix] 仅查看，不改变选中态、不打断当前播放——选中态只由行首按钮触发。
+ *  传 procId 使详情页在「该 proc 未激活」时也强制展示程序化卡片（查看/预配置设置）。
  *  供 motion-popup 的 target 分发调用（__proc_detail__:id）。 */
 export function openProcDetail(procId: LoadableProcId): void {
-    const curProcMode = getProcMotionState().mode;
-    const hasVmdDefault = getActiveMotionId() != null;
-    const isSelected = !hasVmdDefault && _procIdToMode(procId) === curProcMode;
-    if (!isSelected) {
-        _selectProcMotion(procId);
-    }
-    getMotionMenu()?.push(buildMotionDetailLevel());
+    getMotionMenu()?.push(buildMotionDetailLevel(undefined, undefined, procId));
 }
 
 // ═══════════════════════════════════════════════════════════

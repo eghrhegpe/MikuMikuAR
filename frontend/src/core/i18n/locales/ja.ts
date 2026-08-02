@@ -480,6 +480,8 @@ export const ja: Record<string, string> = {
     'motion.proc.load': '読み込み',
     'motion.proc.unload': '削除',
     'motion.proc.alwaysLoaded': 'システム保証、削除不可',
+    // [audit] 行クリックで未アクティブの手続き型モーション詳細を閲覧するときのヒント
+    'motion.procNotActive': '未アクティブ（設定閲覧のみ）',
     'motion.undoApplied': '✓ 元に戻しました',
     'motion.undo.appliedPreset': '元に戻す：プリセット「{name}」を適用',
     'motion.music': '音楽',

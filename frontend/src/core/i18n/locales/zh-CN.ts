@@ -321,6 +321,8 @@ export const zhCN: Record<string, string> = {
     'motion.proc.load': '加载',
     'motion.proc.unload': '卸载',
     'motion.proc.alwaysLoaded': '系统保底，不可卸载',
+    // [audit] 行体点击仅查看该程序化动作详情时，未激活态提示
+    'motion.procNotActive': '未激活（仅查看设置）',
     'motion.undoApplied': '✓ 已撤销',
     'motion.undo.appliedPreset': '撤销：应用预设「{name}」',
     'motion.music': '音乐',

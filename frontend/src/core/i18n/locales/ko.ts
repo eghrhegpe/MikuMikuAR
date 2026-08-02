@@ -482,6 +482,8 @@ export const ko: Record<string, string> = {
     'motion.proc.load': '불러오기',
     'motion.proc.unload': '제거',
     'motion.proc.alwaysLoaded': '시스템 보장, 제거 불가',
+    // [audit] 행 클릭으로 비활성 절차적 모션 상세를 볼 때의 힌트
+    'motion.procNotActive': '비활성 (설정 보기 전용)',
     'motion.undoApplied': '✓ 실행 취소됨',
     'motion.undo.appliedPreset': '실행 취소: 프리셋 "{name}" 적용',
     'motion.music': '음악',

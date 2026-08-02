@@ -323,6 +323,8 @@ export const en: Record<string, string> = {
     'motion.proc.load': 'Load',
     'motion.proc.unload': 'Unload',
     'motion.proc.alwaysLoaded': 'System default, cannot unload',
+    // [audit] View-only hint when opening a procedural action detail that is not active
+    'motion.procNotActive': 'Not active (settings view only)',
     'motion.undoApplied': '✓ Undone',
     'motion.undo.appliedPreset': 'Undo: Apply preset "{name}"',
     'motion.music': 'Music',
