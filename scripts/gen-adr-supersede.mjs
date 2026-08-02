@@ -15,7 +15,8 @@
  *
  * 用法:
  *   node scripts/gen-adr-supersede.mjs         # 打印取代关系清单(0 = 正常)
- *   node scripts/gen-adr-supersede.mjs --check # 存在漏标/废弃未指明时退出码 1(供 check:docs 用)
+ *   node scripts/gen-adr-supersede.mjs --check # 仅 ②(漏标)失败时退出码 1(供 check:docs 用);
+ *                                              # ③/④/⑤ 只提示不拦截,详见文末 --check 分支注释
  *
  * 零依赖(仅 node:fs / node:path)。
  */
@@ -35,7 +36,13 @@ import {
   RE_TABLE_FIRST_COL,
   RE_TABLE_VERB,
   RE_TABLE_NEGATED,
+  globalOf,
 } from './_lib/supersede-regex.mjs';
+
+// matchAll 强制要求 g 标志;共享常量刻意无 g(避免 lastIndex 状态串味),这里各建一份带 g 的副本。
+// matchAll 内部自带克隆,不会污染这两个副本的 lastIndex,可安全跨行复用。
+const RE_CLAIM_A_G = globalOf(RE_CLAIM_A);
+const RE_CLAIM_B_G = globalOf(RE_CLAIM_B);
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -64,8 +71,8 @@ function main() {
   for (const file of files) {
     const parsed = parseAdrHeader(path.join(ADR_DIR, file));
     if (parsed && !parsed.error && parsed.num !== null) {
-      const { num, title, status } = parsed;
-      adrList.push({ num, file, title, status });
+      const { num, title, status, statusLine } = parsed;
+      adrList.push({ num, file, title, status, statusLine });
       adrNums.add(num);
     }
   }
@@ -93,14 +100,18 @@ function main() {
     }
 
     // ② / ④ 正文扫描(跳过首部状态行)
-    const headerEnd = Math.min(lines.length, 20);
+    // 首部边界 = 状态行之后一行:多数 ADR 首部只有 6 行,旧的固定 20 行会把正文第 6–20 行整段吞掉,
+    // 那段落里的宣称永远扫不到 ②。statusLine 缺失时(理论上不会,首部解析成功即有状态行)退回旧上限。
+    const headerEnd = meta.statusLine >= 0
+      ? Math.min(lines.length, meta.statusLine + 1)
+      : Math.min(lines.length, 20);
     for (let i = headerEnd; i < lines.length; i++) {
       const line = lines[i];
 
       // ② 明确宣称结构:行内「取代/替代…ADR-NNN」或「ADR-NNN…已废弃」,抽取全部目标
       const targets = [];
-      for (const m of line.matchAll(RE_CLAIM_A)) targets.push(parseInt(m[1], 10));
-      for (const m of line.matchAll(RE_CLAIM_B)) targets.push(parseInt(m[1], 10));
+      for (const m of line.matchAll(RE_CLAIM_A_G)) targets.push(parseInt(m[1], 10));
+      for (const m of line.matchAll(RE_CLAIM_B_G)) targets.push(parseInt(m[1], 10));
 
       const claimedThisLine = [];
       for (const target of targets) {
@@ -147,10 +158,13 @@ function main() {
       //    目标状态行已回标宣称方(如 ADR-019 状态行含 ADR-084)则不再提示
       const mTable = line.match(RE_TABLE_FIRST_COL);
       if (mTable && RE_TABLE_VERB.test(line) && !RE_TABLE_NEGATED.test(line)) {
-        const target = parseInt(mTable[1], 10);
+        // 子编号(ADR-061.1)用 parseFloat,parseInt 会把它截成 61 张冠李戴到 ADR-061
+        const target = parseFloat(mTable[1]);
         if (target !== num && adrNums.has(target)) {
           const tMeta = adrList.find(e => e.num === target);
-          const alreadyBackMarked = tMeta && new RegExp(`ADR-0*${num}(?!\\d)`).test(tMeta.status);
+          // 内插进正则前转义小数点,否则 `ADR-0*61.1` 的 `.` 会当通配符匹配 ADR-061X
+          const numPat = String(num).replace('.', '\\.');
+          const alreadyBackMarked = tMeta && new RegExp(`ADR-0*${numPat}(?!\\d)`).test(tMeta.status);
           if (!alreadyBackMarked) {
             tableClaims.push({ num, target, line: line.trim().slice(0, 120) });
           }

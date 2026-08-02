@@ -25,7 +25,6 @@ symbols:
   - MaterialCategoryParams
   - MaterialMode
   - MaterialStateManager
-  - SSS_MATERIAL_MARKER
   - SssColorInput
   - SssMaterial
   - SssParams
@@ -56,7 +55,6 @@ symbols:
   - isMatCategoryAllEnabled
   - isMatEnabled
   - isPbrMaterial
-  - isSssMaterial
   - resetMatCatParams
   - resetPerMaterialParams
   - resetSingleMatParams
@@ -100,7 +98,7 @@ MikuMikuAR 材质系统：分类（category-based）与逐材质参数调整，�
 
 ## SSS 次表面散射（ADR-188）
 - 职责：在 PBR 材质上应用 SSS（次表面散射）参数到指定分类的材质，`material-sss.ts` 为参数应用层，`material.ts` 负责类型标记与守卫
-- 类型：`SssMaterial` = `PBRMaterial` 类型别名；`SSS_MATERIAL_MARKER = 'SssPBRMaterial'` 运行时鸭子类型标记；`isSssMaterial(mat)` 判断材质是否挂 SSS 标记
+- 类型：`SssMaterial` = `PBRMaterial` 类型别名；SSS 分支统一走 `isPbrMaterial(mat)` 判定（原 `SSS_MATERIAL_MARKER` / `isSssMaterial` 鸭子标记无人挂载、恒 false，已移除）
 - 参数：`SssParams`（sssPower 开关+强度 0.1~1.5 / sssColor 散射色 / sssDistance 深度 / sssMin/MaxThickness 厚度），默认值见 `DEFAULT_SSS_PARAMS`
 - 应用：`applySss(id, cat, params)` 按分类应用到模型材质；`getMatSssParams(id, cat)` 读取；`disposeModelSssState(id)` 卸载释放
 - 序列化：material.ts 的 `getMatSssState` / `applyMatSssState` 将 SSS 参数随材质状态持久化

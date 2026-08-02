@@ -7,8 +7,8 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 123 | 721 |
-| 3D 场景 | 111 | 1136 |
+| 核心基础设施 | 124 | 723 |
+| 3D 场景 | 112 | 1133 |
 | 菜单 & UI | 75 | 386 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 17 | 130 |
@@ -227,6 +227,7 @@
 | `KIND_CONTROL_SELECTOR()` | `core/dom-contract` | MenuKind → 交互控件选择器（e2e 断言用；folder/custom/action 等无标准交互控件） |
 | `ROLE()` | `core/dom-contract` | 渲染层 role 常量——产出 role 属性时引用，勿手写字符串（ADR-229 §9） |
 | `SLIDER_BAR_CLASS()` | `core/dom-contract` | 滑动条本体 class（slider / colorSlider / modeSlider 共用 .cs-bar） |
+| `TOGGLE_INPUT_SELECTOR()` | `core/dom-contract` | toggle 的原生输入元素选择器（e2e 需点击/读 checked，故单列一份） |
 | `Disposable()` | `core/dom` | — |
 | `DomRefs()` | `core/dom` | — |
 | `addDisposableListener()` | `core/dom` | 添加事件监听器并返回 Disposable，便于在 dispose 链路中统一释放。 |
@@ -397,6 +398,7 @@
 | `calcHardwareScaling()` | `core/render-loop` | 根据 DPR + renderScale 计算安全的 hardwareScalingLevel， 钳位帧缓冲不超过 GL_MAX_TEXTURE_SIZE（防 DPR×render |
 | `startRenderLoop()` | `core/render-loop` | 启动渲染循环（幂等：先停旧实例，避免 setInterval / render-loop 泄漏）。 |
 | `stopRenderLoop()` | `core/render-loop` | 停止渲染循环并清理 FPS 时钟。 |
+| `reportResourceWarning()` | `core/resource-warning-sink` | 上报一条资源加载警告（自动去重）。 |
 | `EventCallback()` | `core/runtime-bridge` | — |
 | `RuntimeBridge()` | `core/runtime-bridge` | — |
 | `RuntimeBrowser()` | `core/runtime-bridge` | — |
@@ -1187,7 +1189,6 @@
 | `MaterialCategory()` | `scene/manager/material` | — |
 | `MaterialCategoryParams()` | `scene/manager/material` | — |
 | `MaterialStateManager()` | `scene/manager/material` | 材质状态管理器 — 集中管理分类/逐材质/可见性状态，便于测试 mock 和未来扩展。 |
-| `SSS_MATERIAL_MARKER()` | `scene/manager/material` | — |
 | `SssMaterial()` | `scene/manager/material` | — |
 | `_applyAll()` | `scene/manager/material` | 将 MaterialCategoryParams 映射为 PBRMaterial 属性 映射关系（与 StandardMaterial 语义对齐）： - diffuseMul |
 | `_capture()` | `scene/manager/material` | Per-material category cache. |
@@ -1208,7 +1209,6 @@
 | `isMatCategoryAllEnabled()` | `scene/manager/material` | 检查指定分类的全部材质是否都已启用。 |
 | `isMatEnabled()` | `scene/manager/material` | — |
 | `isPbrMaterial()` | `scene/manager/material` | — |
-| `isSssMaterial()` | `scene/manager/material` | — |
 | `resetMatCatParams()` | `scene/manager/material` | — |
 | `resetPerMaterialParams()` | `scene/manager/material` | 重置所有逐材质覆盖（per-material），保留分类调整（皮肤/头发等）。 |
 | `resetSingleMatParams()` | `scene/manager/material` | — |
@@ -1265,6 +1265,7 @@
 | `setPhysicsCategory()` | `scene/manager/model-ops` | — |
 | `stopVMD()` | `scene/manager/model-ops` | — |
 | `tryApplyPbrMaterialBuilder()` | `scene/manager/pbr-builder-init` | 动态导入 PBRMaterialBuilder 并覆盖 MmdModelLoader.SharedMaterialBuilder。 |
+| `auditMissingTextures()` | `scene/manager/pmx-texture-audit` | 识别 PMX 声明但目录中缺失的纹理。 |
 | `_resetTextureLRUForTest()` | `scene/manager/texture-lru` | 仅供测试：重置缓存状态。 |
 | `clearTextureLRU()` | `scene/manager/texture-lru` | 清空 LRU 缓存。在 disposeRenderer 中调用，释放所有缓存的纹理 ArrayBuffer。 |
 | `readTextureWithLRU()` | `scene/manager/texture-lru` | 带 LRU 缓存的纹理读取。命中直接返回 ArrayBuffer，未命中则 readFileBytes 后缓存。 |
@@ -1753,7 +1754,6 @@
 | `tryRestoreLastScene()` | `scene/scene-serialize` | — |
 | `DEFAULT_MAT_PARAMS()` | `scene/scene` | — |
 | `LoadLastScene()` | `scene/scene` | — |
-| `SSS_MATERIAL_MARKER()` | `scene/scene` | — |
 | `SaveLastScene()` | `scene/scene` | — |
 | `SaveThumbnail()` | `scene/scene` | — |
 | `SetEnvState()` | `scene/scene` | — |
@@ -1809,7 +1809,6 @@
 | `isMatEnabled()` | `scene/scene` | — |
 | `isPbrMaterial()` | `scene/scene` | — |
 | `isPlaying()` | `scene/scene` | — |
-| `isSssMaterial()` | `scene/scene` | — |
 | `loadAudioFile()` | `scene/scene` | — |
 | `loadCameraVmd()` | `scene/scene` | — |
 | `loadCameraVmdFromPath()` | `scene/scene` | — |
@@ -2043,7 +2042,7 @@
 | `_clearRegistry()` | `menus/menu-registry` | 清空注册表（仅测试用） |
 | `collectAllSchemas()` | `menus/menu-registry` | 收集所有已注册 schema，执行 builder 返回快照（失败面板跳过，失败列表见 collectAllSchemasWithFailures） |
 | `collectAllSchemasWithFailures()` | `menus/menu-registry` | 收集所有已注册 schema，同时返回 builder 失败列表。 |
-| `flattenNodes()` | `menus/menu-registry` | 递归展开 schema 树（含 children），返回扁平节点列表 |
+| `flattenNodes()` | `menus/menu-registry` | 递归展开 schema 树（含 children），返回扁平节点列表。 |
 | `registerSchema()` | `menus/menu-registry` | 注册一个面板的 schema 构建函数（nav 可选，特例面板覆写导航元数据） |
 | `ActionMenuCtx()` | `menus/menu-schema` | — |
 | `ControlSpec()` | `menus/menu-schema` | — |
@@ -2414,7 +2413,7 @@
 | `closingFrame()` | `motion-algos/proc-motion-shared` | 循环末尾的 identity 闭合帧（确保动画无缝循环） |
 | `getProcMotionBoneCategories()` | `motion-algos/proc-motion-shared` | — |
 | `matchBone()` | `motion-algos/proc-motion-shared` | — |
-| `migrateProcState()` | `motion-algos/proc-motion-shared` | [audit] 旧扁平 ProcMotionState → per-mode 嵌套迁移。 |
+| `migrateProcState()` | `motion-algos/proc-motion-shared` | — |
 | `quatW()` | `motion-algos/proc-motion-shared` | 四元数 w 分量：sqrt(max(0, 1 - x² - y² - z²)) |
 | `generateAutoDanceVmd()` | `motion-algos/procedural-motion` | — |
 | `generateIdleVmd()` | `motion-algos/procedural-motion` | — |
