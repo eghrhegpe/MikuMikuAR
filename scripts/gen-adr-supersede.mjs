@@ -9,6 +9,8 @@
  *   ③ 废弃未指明:状态行含「废弃」但未指明取代者(可能是放弃,不一定是被取代)
  *   ④ 可疑信号:正文提及「废弃/过时/退役/推翻」且同时出现其他 ADR 编号,
  *      措辞不规整,需人工确认(判别方法第四层:语义冲突)
+ *   ⑤ 表格弱宣称:表格行首列为 ADR-NNN、其他列含「本 ADR…(完全)替代/取代/推翻」,
+ *      跨列自指替代关系(动词与编号被表格列分隔,紧邻正则抓不到,如 ADR-084 → ADR-019)
  *
  * 用法:
  *   node scripts/gen-adr-supersede.mjs         # 打印取代关系清单(0 = 正常)
@@ -82,6 +84,11 @@ const RE_CLAIM_B = /ADR-(\d+)\s*[）)]?\s*(?:已\s*(?:废弃|过时|放弃|搁�
 const RE_DEPRECATED_WORD = /(推翻|已过时)/;
 // ④ 否定语境过滤:「非推翻/不推翻/未推翻」等明确否认,不算冲突信号
 const RE_NEGATED = /(非|不|未|无|没有)\s*推翻/;
+// ⑤ 表格弱宣称:行首列为 ADR-NNN、其他列含「本 ADR…(完全)替代/取代/推翻」(跨列自指)
+const RE_TABLE_FIRST_COL = /^\|\s*ADR-(\d+)/;
+const RE_TABLE_VERB = /本\s*ADR[^|]{0,30}(?:完全)?(?:替代|取代|推翻)/;
+// ⑤ 否定语境过滤:「不替代/不取代」等明确否认
+const RE_TABLE_NEGATED = /(非|不|未|无|没有)\s*(?:替代|取代|推翻)/;
 
 // ── 主流程 ──
 
@@ -95,6 +102,7 @@ function main() {
   const unmarked = [];    // ② 漏标告警: 正文宣称取代 target,但 target 状态行未回标
   const unpointed = [];   // ③ 废弃未指明取代者
   const suspicious = [];  // ④ 可疑信号(措辞不规整)
+  const tableClaims = []; // ⑤ 表格弱宣称(行首 ADR 编号 + 行内「本 ADR…替代/取代」)
 
   // 第一遍:解析全部首部
   for (const file of files) {
@@ -152,6 +160,16 @@ function main() {
           }
         }
       }
+
+      // ⑤ 表格弱宣称:行首列为 ADR-NNN、行内含「本 ADR…替代/取代/推翻」
+      //    (跨列自指:动词与编号被表格列分隔,紧邻正则抓不到,如 ADR-084 → ADR-019)
+      const mTable = line.match(RE_TABLE_FIRST_COL);
+      if (mTable && RE_TABLE_VERB.test(line) && !RE_TABLE_NEGATED.test(line)) {
+        const target = parseInt(mTable[1], 10);
+        if (target !== num && adrs.has(target)) {
+          tableClaims.push({ num, target, line: line.trim().slice(0, 120) });
+        }
+      }
     }
   }
 
@@ -177,6 +195,11 @@ function main() {
     console.log(`\n④ 可疑信号 — 措辞不规整,对方未标记,需人工确认(${suspicious.length}):`);
     for (const s of suspicious) {
       console.log(`   ADR-${s.num} 提及 ADR-${s.target} [${s.line}]`);
+    }
+
+    console.log(`\n⑤ 表格弱宣称 — 行首 ADR 编号 + 「本 ADR…替代/取代」跨列关系(${tableClaims.length}):`);
+    for (const t of tableClaims) {
+      console.log(`   ADR-${t.num} 声称替代 ADR-${t.target} [${t.line}]`);
     }
     console.log(`\n扫描 ${adrs.size} 篇 ADR 完成。`);
   }
