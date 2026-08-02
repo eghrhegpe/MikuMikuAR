@@ -4,7 +4,6 @@ import { refreshLibrary } from '../../menus/library-setup';
 import { importFile } from '../../menus/library-actions';
 import { feedbackInfo } from '../feedback';
 import { allModels } from '../config';
-import { getBaseName } from '@/core/path';
 
 export function registerLibraryActions(): void {
     registerAction({
@@ -57,7 +56,16 @@ export function registerLibraryActions(): void {
         execute: async () => {
             const models = allModels
                 .filter((m) => m.format !== 'vmd')
-                .map((m) => getBaseName(m.file_path));
+                .map((m) => ({
+                    path: m.file_path,
+                    dir: m.dir,
+                    format: m.format,
+                    comment: m.comment,
+                    container: m.container,
+                    zipInner: m.zip_inner,
+                    category: m.category,
+                    source: m.source,
+                }));
             return { data: { models, count: models.length } };
         },
     });
