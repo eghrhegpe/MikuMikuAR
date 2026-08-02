@@ -36,3 +36,48 @@ export function textureFallbackCandidates(rel: string): string[] {
     }
     return candidates;
 }
+
+/**
+ * 按 PMX 声明路径反向注册别名（[fix:decl-alias]）。
+ *
+ * 背景：PMX 声明的纹理目录名可能与磁盘实际目录名异写（如声明 `tex\xxx.png`，
+ * 磁盘实际 `Texture/xxx.png`）——fallback 候选路径无法枚举这种差异。此时以
+ * PMX 声明为准：若磁盘文件中有同名（basename 一致）文件，注册「声明完整路径」
+ * 别名（共享同一 data），使 babylon-mmd 按声明路径 resolve 时能命中。
+ *
+ * @param files 磁盘扫描出的纹理文件（含既有 fallback 候选）
+ * @param declaredPaths PMX 声明的纹理路径清单（parsePmxTexturePaths 返回）
+ * @returns 追加声明别名后的完整列表（无匹配时不新增）
+ */
+export function registerDeclaredAliases(
+    files: ReadonlyArray<{ readonly relativePath: string; readonly data: ArrayBuffer }>,
+    declaredPaths: readonly string[]
+): Array<{ relativePath: string; data: ArrayBuffer }> {
+    if (declaredPaths.length === 0 || files.length === 0) {
+        return files as Array<{ relativePath: string; data: ArrayBuffer }>;
+    }
+    // basename → 磁盘文件（首个匹配；同 basename 多文件时以第一个为准）
+    const byBasename = new Map<string, (typeof files)[number]>();
+    for (const f of files) {
+        const base = f.relativePath.replace(/\\/g, '/').split('/').pop() ?? '';
+        if (base && !byBasename.has(base)) {
+            byBasename.set(base, f);
+        }
+    }
+    const extra: Array<{ relativePath: string; data: ArrayBuffer }> = [];
+    const seen = new Set(files.map((f) => f.relativePath.replace(/\\/g, '/')));
+    for (const decl of declaredPaths) {
+        const norm = decl.replace(/\\/g, '/').replace(/\/+/g, '/').trim();
+        if (!norm || seen.has(norm)) {
+            continue; // 已有同路径（磁盘真实路径或既有候选）
+        }
+        const base = norm.split('/').pop() ?? '';
+        const src = byBasename.get(base);
+        if (!src) {
+            continue; // 磁盘无同名文件 → 真缺失，不注册
+        }
+        seen.add(norm);
+        extra.push({ relativePath: norm, data: src.data }); // 共享 data
+    }
+    return extra.length > 0 ? [...files, ...extra] : (files as Array<{ relativePath: string; data: ArrayBuffer }>);
+}

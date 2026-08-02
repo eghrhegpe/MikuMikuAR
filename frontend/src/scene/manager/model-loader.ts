@@ -36,39 +36,52 @@ import {
 import { resolveModelDir } from '@/core/fileservice';
 import { readFileBytes, ListDirRecursive } from '@/core/wails-bindings';
 import { readTextureWithLRU } from './texture-lru';
-import { auditMissingTextures } from './pmx-texture-audit';
-import { textureFallbackCandidates } from './texture-fallback';
+import { auditMissingTextures, parsePmxTexturePaths } from './pmx-texture-audit';
+import { textureFallbackCandidates, registerDeclaredAliases } from './texture-fallback';
 import { reportResourceWarning } from '@/core/resource-warning-sink';
 
 // [temp:diagnose-eye] 临时诊断：复现「第二个角色看不见眼睛」时查看 dev 控制台（搜索 diagnose-eye）。
-// 确诊根因后删除本函数及其调用点。
-function _diagnoseEyeMaterials(meshes: Mesh[]): void {
+// 遍历场景内所有已加载模型，带 modelId 标签，便于对照双模型共存态。确诊根因后删除本函数及其调用点。
+function _diagnoseEyeMaterials(): void {
+    const models = _modelManager ? _modelManager.getAll() : [];
     const rows: Record<string, unknown>[] = [];
-    for (const mesh of meshes) {
-        const mat = mesh.material as
-            | (import('@babylonjs/core/Materials/standardMaterial').StandardMaterial & {
-                  sphereTexture?: unknown;
-              })
-            | null;
-        if (!mat) {
-            continue;
+    for (const inst of models) {
+        const modelTag = `${inst.id} (visible=${inst.visible}, opacity=${inst.opacity})`;
+        for (const mesh of inst.meshes) {
+            const mat = mesh.material as
+                | (import('@babylonjs/core/Materials/standardMaterial').StandardMaterial & {
+                      sphereTexture?: unknown;
+                  })
+                | null;
+            if (!mat) {
+                continue;
+            }
+            const nm = (mat.name || mesh.name || '').toLowerCase();
+            if (!/眼|目|eye|iris|瞳|pupil|eyelash|眉|lash|白目|泪|表情/.test(nm)) {
+                continue;
+            }
+            const morph = mesh.morphTargetManager;
+            rows.push({
+                model: modelTag,
+                mesh: mesh.name,
+                mat: mat.name,
+                cls:
+                    mat.getClassName?.() ??
+                    (mat as { constructor?: { name?: string } }).constructor?.name,
+                meshVisible: mesh.isVisible,
+                meshVisibility: mesh.visibility,
+                matAssigned: mesh.material === mat,
+                matAlpha: mat.alpha,
+                backFaceCulling: mat.backFaceCulling,
+                alphaMode: mat.alphaMode,
+                needAlphaBlending: mat.needAlphaBlending(),
+                hasSphere: !!(mat as { sphereTexture?: unknown }).sphereTexture,
+                hasDiffuse: !!mat.diffuseTexture,
+                morphTargets: morph ? (morph as { numTargets: number }).numTargets : 0,
+            });
         }
-        const nm = (mat.name || mesh.name || '').toLowerCase();
-        if (!/眼|目|eye|iris|瞳|pupil|eyelash|眉|lash|白目|泪|表情/.test(nm)) {
-            continue;
-        }
-        rows.push({
-            mesh: mesh.name,
-            mat: mat.name,
-            cls: mat.getClassName?.() ?? (mat as { constructor?: { name?: string } }).constructor?.name,
-            meshVisible: mesh.isVisible,
-            meshVisibility: mesh.visibility,
-            matAlpha: mat.alpha,
-            hasSphere: !!(mat as { sphereTexture?: unknown }).sphereTexture,
-            hasDiffuse: !!mat.diffuseTexture,
-        });
     }
-    logWarn('diagnose-eye', `eye-like materials: ${rows.length}`, rows);
+    logWarn('diagnose-eye', `loaded models=${models.length}, eye-like materials=${rows.length}`, rows);
 }
 import { t } from '@/core/i18n/t';
 import type { IMmdRuntime } from 'babylon-mmd/esm/Runtime/IMmdRuntime';
@@ -528,11 +541,17 @@ export async function loadPMXFile(
         if (!pmxBytes || effectiveSignal.aborted) {
             return null;
         }
+        // [fix:decl-alias] 按 PMX 声明路径反向注册别名：PMX 声明的目录名可能与磁盘实际
+        // 目录名异写（如声明 tex\xxx.png，磁盘实际 Texture/xxx.png），候选路径无法枚举，
+        // 以声明为准：磁盘有同名 basename 文件即注册「声明完整路径」别名（共享 data）。
+        // 真缺失（磁盘无同名文件）不注册，audit 差集仍会如实提示。
+        const declaredPaths = await parsePmxTexturePaths(pmxBytes);
+        const finalTextureFiles = registerDeclaredAliases(textureFiles, declaredPaths);
         const result = await importMeshFromBytes(pmxBytes, _scene, {
             pluginExtension: '.pmx',
             pluginOptions: {
                 mmdmodel: {
-                    referenceFiles: textureFiles as unknown as File[],
+                    referenceFiles: finalTextureFiles as unknown as File[],
                 },
             },
             onProgress: (evt) => {
@@ -559,10 +578,10 @@ export async function loadPMXFile(
         loadedMeshes = result.meshes.filter((m) => m instanceof Mesh) as Mesh[];
 
         // [feature:missing-texture-audit] 识别 PMX 声明但目录缺失的纹理并提示用户。
-        // 不阻塞主加载：异步解析 PMX 纹理清单，与已提供的纹理文件（含 basename fallback）做差集；
-        // textureFiles 的相对路径集合在此捕获副本，后续会被清空释放，不影响本审计。
+        // 不阻塞主加载：异步解析 PMX 纹理清单，与已提供的纹理文件（含 basename fallback
+        // 与声明别名 finalTextureFiles）做差集；路径集合在此捕获副本，后续会被清空释放。
         if (loadedMeshes.length > 0) {
-            const _declaredTexturePaths = textureFiles.map((f) => f.relativePath);
+            const _declaredTexturePaths = finalTextureFiles.map((f) => f.relativePath);
             fireAndForget(() =>
                 auditMissingTextures(pmxBytes, _declaredTexturePaths).then((missing) => {
                     for (const name of missing) {
@@ -834,7 +853,7 @@ export async function loadPMXFile(
             );
         }
         // [temp:diagnose-eye] 复现「第二个角色看不见眼睛」时查看 console（确诊后删除）
-        swallowError(Promise.resolve(_diagnoseEyeMaterials(inst.meshes)));
+        swallowError(Promise.resolve(_diagnoseEyeMaterials()));
         // Pre-load outfit file for UI entry availability
         swallowError(_loadOutfits(id));
 
