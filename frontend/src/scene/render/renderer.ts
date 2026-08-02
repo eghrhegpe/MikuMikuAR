@@ -658,7 +658,7 @@ export function setRenderState(s: Partial<RenderState>): boolean {
 
 /** 取消当前渲染过渡动画（若有）。 */
 function _cancelRenderTransition(): void {
-    if (_renderTransitionObserver && _scene) {
+    if (_renderTransitionObserver) {
         _renderTransitionObserver = safeDispose(_renderTransitionObserver);
     }
 }
@@ -775,6 +775,11 @@ export function transitionRenderState(
     }
 
     const animLoop = () => {
+        // [fix P1] 过渡进行中若管线/场景已被销毁，立即取消，避免对已释放对象调用
+        if (!pipeline || !_scene) {
+            _cancelRenderTransition();
+            return;
+        }
         const elapsed = performance.now() - startTime;
         const t = Math.min(elapsed / duration, 1.0);
         const interp: Partial<RenderState> = {};
@@ -818,12 +823,15 @@ export function transitionRenderState(
             if (onComplete) {
                 onComplete();
             }
+            _cancelRenderTransition();
         } else {
             _applyRenderState(interp);
         }
     };
 
-    _renderTransitionObserver = observeOnce(_scene.onBeforeRenderObservable, animLoop);
+    // [fix P1] observeOnce 只跑首帧，永远到不了 t>=1，导致目标值/onComplete/自动保存全不执行；
+    // 改用持续 observe，在 t>=1 分支内自取消（见 _cancelRenderTransition）
+    _renderTransitionObserver = observe(_scene.onBeforeRenderObservable, animLoop);
     return true;
 }
 

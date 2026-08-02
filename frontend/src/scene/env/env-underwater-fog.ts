@@ -122,6 +122,15 @@ class UnderwaterFogControllerImpl {
         });
     }
 
+    /** [fix P1] 材质销毁时移除已安装条目，避免 update() 对已 dispose 材质写 emissive（泄漏 + 僵尸写入）。 */
+    uninstall(mat: PBRMaterial | StandardMaterial): void {
+        for (const entry of this._installed) {
+            if (entry.mat === mat) {
+                this._installed.delete(entry);
+            }
+        }
+    }
+
     /** 每帧调用：根据相机 Y 与水面关系切换场景雾 + 焦散 emissive。
      *  关键性能约束：仅在"穿越水面边界"时切换一次材质（set emissiveColor / fogMode），
      *  绝不每帧赋值——否则 Babylon 会因材质脏标记每帧重编译着色器。
@@ -131,8 +140,11 @@ class UnderwaterFogControllerImpl {
         if (!cam) {
             return;
         }
+        // [fix P1] 仅相机低于水面不足以触发水下效果：须受 waterEnabled / underwaterEnabled 门控
+        // （与 env-water.ts:1150 一致），否则关闭水面后相机潜入仍注入蓝雾 + 焦散 emissive。
+        const gate = envState.waterEnabled && (envState.underwaterEnabled ?? true);
         const depth = this._waterLevel - cam.globalPosition.y;
-        const isUnderwater = depth > 0;
+        const isUnderwater = gate && depth > 0;
 
         if (isUnderwater === this._wasUnderwater) {
             return;

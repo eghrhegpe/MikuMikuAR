@@ -947,7 +947,9 @@ export function getMatState(id: string): {
     const catState = _catState.get(id);
     const matState = _matState.get(id);
     const enabledState = _matEnabled.get(id);
-    if (!catState && !matState && !enabledState) {
+    // ADR-188: 仅调 SSS 时三个 Map 皆空，需把 SSS 状态纳入守卫，否则 SSS 不落盘
+    const sssState = getMatSssState(id);
+    if (!catState && !matState && !enabledState && !sssState) {
         return null;
     }
     // 过滤默认值噪声：_ensureState 会种入 6 类默认值供 UI 读取，
@@ -977,8 +979,7 @@ export function getMatState(id: string): {
             enabled[idx] = val;
         }
     }
-    // ADR-188: 序列化 SSS 参数
-    const sssState = getMatSssState(id);
+    // ADR-188: 序列化 SSS 参数（sssState 已在上方守卫处计算）
     const sssCategories = sssState?.sssCategories ?? {};
 
     // 全部为默认值时返回 null（与「无调整」语义一致）

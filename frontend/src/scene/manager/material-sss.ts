@@ -10,7 +10,7 @@ import type { Material } from '@babylonjs/core/Materials/material';
 import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { clamp01 } from '@/core/clamp';
 import { logWarn } from '@/core/logger';
-import { modelRegistry } from '@/core/config';
+import { modelRegistry, triggerAutoSave } from '@/core/config';
 import { getMatCatGroups } from './material';
 import type { PBRSubSurfaceConfiguration } from '@babylonjs/core/Materials/PBR/pbrSubSurfaceConfiguration';
 
@@ -93,6 +93,7 @@ export function setMatSssParams(
 
     catMap.set(cat, merged);
     applySss(id, cat);
+    triggerAutoSave();
 }
 
 /**

@@ -553,6 +553,10 @@ function disposeGroundMaterial(mat: Material | null): void {
         // 无条件脱离，避免 mat.dispose(force=true) 连带释放缓存贴图或共享焦散纹理。
         mat.emissiveTexture = null;
     }
+    // [fix P1] 移除水下焦散安装条目，避免对已销毁地面材质残留引用（update 写 emissive 僵尸写入）
+    if (mat instanceof PBRMaterial || mat instanceof StandardMaterial) {
+        underwaterFogController.uninstall(mat);
+    }
     mat.dispose();
 }
 
