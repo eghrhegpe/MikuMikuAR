@@ -41,6 +41,15 @@ import { getActiveMotion } from './motion-intent';
 import { rebuildCompositeAnimation } from './vmd-layers';
 import type { ProcMotionConfig } from '@/core/types';
 
+/** [fix:P3] per-mode 兜底参数的独立副本（含 boneToggles 深拷贝）。
+ *  兜底不可用 `{}`：patch 后会得到缺 boneToggles 的残缺 params，下游
+ *  `params.boneToggles.center` 直接 TypeError；也不可直接复用 DEFAULT_PROC_STATE
+ *  的 boneToggles 引用，否则调用方原地写入会穿透污染模块级默认常量。 */
+function _defaultParamsFor(mode: ProcModeKey): ProcMotionParams {
+    const d = DEFAULT_PROC_STATE.params[mode];
+    return { ...d, boneToggles: { ...d.boneToggles } };
+}
+
 /** 清除模型上的 vmdData/vmdName（纯工具函数，无状态依赖）。 */
 function _clearVmdData(inst: import('../../core/config').ModelInstance | null | undefined): void {
     if (inst) {
@@ -105,7 +114,7 @@ class ProcMotionController {
                 ...cur,
                 params: {
                     ...cur.params,
-                    [mode]: { ...(cur.params?.[mode] ?? {}), ...patch },
+                    [mode]: { ..._defaultParamsFor(mode), ...(cur.params?.[mode] ?? {}), ...patch },
                 },
             } as ProcMotionConfig;
         }
@@ -113,7 +122,11 @@ class ProcMotionController {
             ...this._fallbackProcState,
             params: {
                 ...this._fallbackProcState.params,
-                [mode]: { ...(this._fallbackProcState.params?.[mode] ?? {}), ...patch },
+                [mode]: {
+                    ..._defaultParamsFor(mode),
+                    ...(this._fallbackProcState.params?.[mode] ?? {}),
+                    ...patch,
+                },
             },
         };
     }

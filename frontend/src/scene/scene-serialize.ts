@@ -418,7 +418,9 @@ function serializeModel(inst: ModelInstance): SceneFile['models'][number] {
         motionPresets:
             inst.motionPresets && inst.motionPresets.length > 0 ? inst.motionPresets : undefined,
         // [doc:adr-233] 序列化 per-model 程序化动作状态（per-mode 独立参数，仅非默认时落盘）
-        procMotion: inst.procMotion ? { ...inst.procMotion } : undefined,
+        // [fix:P3] 深拷贝：浅拷贝会让快照的 params.*.boneToggles 与运行时状态共引用，
+        // 快照若驻留内存（undo）会被后续编辑回写污染。
+        procMotion: inst.procMotion ? structuredClone(inst.procMotion) : undefined,
         // [doc:adr-121] 序列化 primary 槽位（仅 source==='pinned' 落盘）
         // [doc:adr-167] overlay 槽位已移除（ADR-144 废弃）
         motionSlots: (() => {
@@ -534,7 +536,8 @@ export function serializeScene(): SceneFile {
                   playing: isAudioPlaying(),
               }
             : undefined,
-        procMotion: { ...procState },
+        // [fix:P3] 与 serializeModel 一致：深拷贝防嵌套 params 与运行时状态共引用
+        procMotion: structuredClone(procState),
         perception: {
             focused: { ...getPerceptionState() },
             pinned: getPinnedModelIds().map((id) => ({
@@ -573,7 +576,8 @@ export function serializeScene(): SceneFile {
                     })),
                     source: m.source,
                     motionModules: m.motionModules,
-                    procMotion: m.procMotion,
+                    // [fix:P3] 深拷贝：此前直接引用 activeMotion 上的运行时对象
+                    procMotion: m.procMotion ? structuredClone(m.procMotion) : undefined,
                 })),
                 activeMotionId,
                 // [doc:adr-207] 程序化动作可加载集合
