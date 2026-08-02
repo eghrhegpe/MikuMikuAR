@@ -55,12 +55,19 @@ export const test = base.extend<WailsFixtures>({
         // [doc:e2e] CI runner (ubuntu-latest) 默认 /dev/shm ≈ 64MB，renderer 易因内存压力崩溃，
         // 表现为 beforeEach 中 "Target page, context or browser has been closed"（run 30743044142: 35 failed）。
         // --disable-dev-shm-usage 改用 /tmp 规避；--no-sandbox 兼容 root 容器。
-        // 关键：headless Chromium ≥ ~121 默认不再提供软件 WebGL，Babylon 的 init() 拿不到
-        // WebGL 上下文会崩溃页面（同现象），故用 --enable-unsafe-swiftshader 显式开启软件渲染；
+        // 关键：点开设置/场景面板会渲染 WebGL canvas，headless Chromium 需显式指定软件渲染后端，
+        // 否则 Babylon 拿不到 WebGL 上下文会崩溃页面。--use-gl=angle + --use-angle=swiftshader
+        // + --enable-unsafe-swiftshader 是 CI 下 headless WebGL 的标准可用组合（缺一不可）。
         // 绝不可用 --disable-gpu——那会直接禁用 WebGL 导致同样的崩溃。本地 Windows 下这些参数无害。
         const browser = await chromium.launch({
             headless: true,
-            args: ["--no-sandbox", "--disable-dev-shm-usage", "--enable-unsafe-swiftshader"],
+            args: [
+                "--no-sandbox",
+                "--disable-dev-shm-usage",
+                "--use-gl=angle",
+                "--use-angle=swiftshader",
+                "--enable-unsafe-swiftshader",
+            ],
         });
         // [doc:e2e] axe-core playwright 适配器要求 page 来自 browser.newContext()，
         // browser.newPage() 会报 "Please use browser.newContext()"，故显式建 context 再 newPage。
