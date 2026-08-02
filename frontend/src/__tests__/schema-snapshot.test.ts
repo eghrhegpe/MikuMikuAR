@@ -201,6 +201,8 @@ vi.mock('@/core/wails-bindings', () => ({
 // 导入注册器
 import '../menus/menu-schema-register';
 import { collectAllSchemas, type PanelNav } from '../menus/menu-registry';
+// [ADR-229 §9] DOM 契约单源：快照携带 kind → 选择器映射，e2e 从快照读，不手写
+import { KIND_CONTROL_SELECTOR } from '../core/dom-contract';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -245,6 +247,11 @@ function cleanNode(node: any): any {
         // [ADR-229 §2.2] visibleWhen 条件节点：条件不满足时不渲染（renderNode 直接 return
         // undefined），E2E 断言须降级（存在则断言、缺失则跳过），故快照标记 conditional
         conditional: !!node.visibleWhen,
+        // [ADR-229 §9] DOM 契约单源：写入 kind → 控件选择器，e2e 从快照读（不手写
+        // KIND_SELECTOR_MAP）；契约变更时快照 diff 触发 CI 门禁
+        ...(KIND_CONTROL_SELECTOR[node.kind]
+            ? { dom: KIND_CONTROL_SELECTOR[node.kind] }
+            : {}),
     };
     if (node.label) {
         result.label = node.label;
@@ -298,6 +305,21 @@ describe('Schema Snapshot Generator', () => {
             }
         }
 
+        // [ADR-229 §9] DOM 契约完整性断言：所有 kind 在 KIND_CONTROL_SELECTOR 中的节点
+        // 必须携带 dom 字段（缺失 → 渲染层改 role/class 后契约漂移未同步 → 立即失败）。
+        const domKinds = Object.keys(KIND_CONTROL_SELECTOR);
+        for (const s of snapshot) {
+            const flat = flattenNodes(s.nodes);
+            for (const n of flat) {
+                if (domKinds.includes(n.kind)) {
+                    expect(
+                        n.dom,
+                        `${s.panelId}/${n.id} kind=${n.kind} 缺 dom 字段（KIND_CONTROL_SELECTOR 未同步）`
+                    ).toBe(KIND_CONTROL_SELECTOR[n.kind]);
+                }
+            }
+        }
+
         mkdirSync(dirname(SNAPSHOT_PATH), { recursive: true });
         writeFileSync(SNAPSHOT_PATH, JSON.stringify(snapshot, null, 2), 'utf-8');
 
@@ -325,6 +347,18 @@ function countNodes(nodes: any[]): number {
     return nodes.reduce((acc: number, n: any) => {
         return acc + 1 + (n.children ? countNodes(n.children) : 0);
     }, 0);
+}
+
+/** 递归展开 schema 树（含 children），返回扁平节点列表（供 dom 契约断言用） */
+function flattenNodes(nodes: any[]): any[] {
+    const result: any[] = [];
+    for (const n of nodes) {
+        result.push(n);
+        if (n.children) {
+            result.push(...flattenNodes(n.children));
+        }
+    }
+    return result;
 }
 
 function countBindPaths(nodes: any[]): number {

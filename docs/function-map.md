@@ -7,7 +7,7 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 122 | 716 |
+| 核心基础设施 | 123 | 721 |
 | 3D 场景 | 111 | 1130 |
 | 菜单 & UI | 75 | 381 |
 | 换装 & 音频 | 3 | 33 |
@@ -222,6 +222,11 @@
 | `showPrompt()` | `core/dialog` | Show a prompt dialog. |
 | `showPrompt2()` | `core/dialog` | 双字段输入对话框。返回 [value1, value2] 或 null（取消）。 |
 | `safeDispose()` | `core/dispose-helpers` | 安全释放对象并置空。 |
+| `ARIA_ATTR()` | `core/dom-contract` | aria 属性名常量（ARIA_ATTR.valuemin 等） |
+| `COLLAPSIBLE()` | `core/dom-contract` | collapsible（folder）组件契约（ui-collapsible.ts 与 e2e 展开逻辑共用） |
+| `KIND_CONTROL_SELECTOR()` | `core/dom-contract` | MenuKind → 交互控件选择器（e2e 断言用；folder/custom/action 等无标准交互控件） |
+| `ROLE()` | `core/dom-contract` | 渲染层 role 常量——产出 role 属性时引用，勿手写字符串（ADR-229 §9） |
+| `SLIDER_BAR_CLASS()` | `core/dom-contract` | 滑动条本体 class（slider / colorSlider / modeSlider 共用 .cs-bar） |
 | `Disposable()` | `core/dom` | — |
 | `DomRefs()` | `core/dom` | — |
 | `addDisposableListener()` | `core/dom` | 添加事件监听器并返回 Disposable，便于在 dispose 链路中统一释放。 |

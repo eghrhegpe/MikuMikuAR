@@ -7,6 +7,8 @@ import { initControl } from './ui-rows';
 import { clampPct } from '@/core/clamp';
 import { col3FromTriple, rgbString } from './color-helpers';
 import { DragSliderController } from './ui-slider-controller';
+// [doc:adr-229] DOM 契约单源：role/class 由 dom-contract 提供，禁止手写字符串
+import { ROLE, SLIDER_BAR_CLASS } from './dom-contract';
 
 // ===================================================================
 // addColorSliderRow
@@ -56,9 +58,9 @@ export function addColorSliderRow(
         val.textContent = color[ci].toFixed(2);
 
         const bar = document.createElement('div');
-        bar.className = 'cs-bar';
+        bar.className = SLIDER_BAR_CLASS;
         bar.tabIndex = 0;
-        bar.setAttribute('role', 'slider');
+        bar.setAttribute('role', ROLE.slider);
         bar.setAttribute('aria-label', `${label} ${['Red', 'Green', 'Blue'][ci]} channel`);
         bar.setAttribute('aria-valuemin', '0');
         bar.setAttribute('aria-valuemax', '1');
@@ -215,9 +217,9 @@ export function addVector3SliderRow(
         valEls[ai] = val;
 
         const bar = document.createElement('div');
-        bar.className = 'cs-bar';
+        bar.className = SLIDER_BAR_CLASS;
         bar.tabIndex = 0;
-        bar.setAttribute('role', 'slider');
+        bar.setAttribute('role', ROLE.slider);
         bar.setAttribute('aria-label', `${label} ${axes[ai]}`);
         bar.setAttribute('aria-valuenow', String(current[ai]));
         bar.setAttribute('aria-valuemin', String(min));
@@ -330,7 +332,7 @@ export function addModeSlider<T extends string | number>(
     const top = document.createElement('div');
     top.className = 'cs-top';
     top.tabIndex = 0;
-    top.setAttribute('role', 'listbox');
+    top.setAttribute('role', ROLE.listbox);
     top.setAttribute('aria-label', label);
     top.setAttribute('aria-valuenow', String(currentIndex));
     top.setAttribute('aria-valuemin', '0');
@@ -363,7 +365,7 @@ export function addModeSlider<T extends string | number>(
     top.appendChild(val);
 
     const bar = document.createElement('div');
-    bar.className = 'cs-bar';
+    bar.className = SLIDER_BAR_CLASS;
 
     const fill = document.createElement('div');
     fill.className = 'cs-fill';

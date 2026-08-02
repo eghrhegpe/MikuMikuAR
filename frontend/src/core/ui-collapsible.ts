@@ -4,6 +4,8 @@
 import { createIconifyIcon } from './icons';
 import { getCurrentRenderingContext } from './render-context';
 import { createHeaderToggle } from './ui-header-toggle';
+// [doc:adr-229] DOM 契约单源：role/class 由 dom-contract 提供，禁止手写字符串
+import { ROLE, COLLAPSIBLE } from './dom-contract';
 
 // ===================================================================
 // addCollapsible
@@ -39,16 +41,16 @@ export function addCollapsible(
 ): void {
     const variant = config.variant ?? 'default';
     const wrapper = document.createElement('div');
-    wrapper.className = 'collapsible-wrapper';
+    wrapper.className = COLLAPSIBLE.wrapperClass;
     if (config.testId) {
         wrapper.setAttribute('data-testid', config.testId);
     }
 
     // Header
     const header = document.createElement('div');
-    header.className = 'collapsible-header' + (variant === 'mat' ? ' collapsible-mat' : '');
+    header.className = COLLAPSIBLE.headerClass + (variant === 'mat' ? ' collapsible-mat' : '');
     header.tabIndex = 0;
-    header.role = 'button';
+    header.role = ROLE.button;
 
     if (config.icon) {
         const iconSpan = document.createElement('span');
