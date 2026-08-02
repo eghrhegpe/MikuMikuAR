@@ -1157,6 +1157,8 @@ export function _syncGroundEmissive(mat: GroundMat, state: EnvState): void {
     } else if ((mat as StandardMaterial).emissiveTexture && !state.groundEmissiveTexture) {
         (mat as StandardMaterial).emissiveTexture = null;
     }
+    // [adr-230 P1-fix] 刷新水下控制器的还原快照，避免出水时还原到陈旧 emissive。
+    underwaterFogController.noteGroundEmissiveChanged(mat);
 }
 
 function _getScrollUV(state: EnvState): { u: number; v: number } {
@@ -1300,6 +1302,12 @@ function _applyGroundInplaceLegacy(mat: GroundMat, state: EnvState, scene: Scene
         _syncPbrProperties(mat, state);
     }
     applyGroundEdgeFade(mat, state.groundEdgeFade, scene);
+    // [adr-230] 自发光增量同步（terrain 原地路径；此前仅重建/平面原地生效）
+    _syncGroundEmissive(mat, state);
+    // [adr-230 P1-fix] 水下焦散优先：同步完自发光后若在水下，重放焦散避免覆盖
+    if (underwaterFogController.isCausticsActive()) {
+        underwaterFogController.applyCausticsTo(mat, scene);
+    }
 }
 
 export function applyGround(state: EnvState): void {

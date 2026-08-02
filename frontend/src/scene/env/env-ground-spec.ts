@@ -370,6 +370,11 @@ export function applyGroundMaterialSpec(
     applyGroundEdgeFade(mat, ap.edgeFade, scene);
     // [doc:adr-230] 自发光增量同步（外观性，不触发重建）。
     _syncGroundEmissive(mat, state);
+    // [adr-230 P1-fix] 水下焦散优先：同步完自发光后若在水下，重放焦散避免覆盖
+    // （underwaterFogController 仅在边界穿越时写 emissive，此处必须显式重放）。
+    if (underwaterFogController.isCausticsActive()) {
+        underwaterFogController.applyCausticsTo(mat, scene);
+    }
 }
 
 // ===================================================================

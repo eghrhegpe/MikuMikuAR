@@ -6,6 +6,7 @@ import { NullEngine } from '@babylonjs/core/Engines/nullEngine';
 import { Scene } from '@babylonjs/core/scene';
 import { MeshBuilder } from '@babylonjs/core/Meshes/meshBuilder';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
+import { DynamicTexture } from '@babylonjs/core/Materials/Textures/dynamicTexture';
 
 // 隔离 env-impl，避免其重型依赖（clouds/particles/sky 等）干扰；
 // _envSys 通过 globalThis 共享同对象，与 env-context mock 一致。
@@ -60,6 +61,7 @@ import {
     buildGroundPresetEnvState,
     disposeGround,
     applyGround,
+    _syncGroundEmissive,
 } from '../../scene/env/env-ground';
 import type { EnvState } from '../../core/types';
 
@@ -254,6 +256,63 @@ describe('disposeGround — 幂等与资源释放', () => {
 
         expect(() => disposeGround()).not.toThrow();
         expect(_envSys.ground.mesh).toBeNull();
+    });
+});
+
+// ──────────────── _syncGroundEmissive — ADR-230 自发光地屏增量同步 ────────────────
+describe('_syncGroundEmissive — 自发光增量同步', () => {
+    function mockState(overrides: Record<string, unknown> = {}): any {
+        return {
+            groundEmissiveColor: [0, 0, 0],
+            groundEmissiveStrength: 0,
+            groundEmissiveReflectMix: 0.5,
+            groundEmissiveTexture: '',
+            ...overrides,
+        };
+    }
+
+    it('es=0 → emissiveColor 黑、无 emissiveTexture（零回归）', () => {
+        const mat = new StandardMaterial('envGroundMat', scene);
+        _syncGroundEmissive(mat, mockState());
+        expect(mat.emissiveColor.r).toBe(0);
+        expect(mat.emissiveColor.g).toBe(0);
+        expect(mat.emissiveColor.b).toBe(0);
+        expect(mat.emissiveTexture).toBeNull();
+        mat.dispose();
+    });
+
+    it('es>0 → emissiveColor = color * es', () => {
+        const mat = new StandardMaterial('envGroundMat', scene);
+        _syncGroundEmissive(
+            mat,
+            mockState({ groundEmissiveColor: [1, 0.5, 0.25], groundEmissiveStrength: 2 })
+        );
+        expect(mat.emissiveColor.r).toBeCloseTo(2, 5);
+        expect(mat.emissiveColor.g).toBeCloseTo(1, 5);
+        expect(mat.emissiveColor.b).toBeCloseTo(0.5, 5);
+        mat.dispose();
+    });
+
+    it('groundEmissiveTexture=reuse 且存在 albedo → emissiveTexture 复用 albedo', () => {
+        const mat = new StandardMaterial('envGroundMat', scene);
+        const albedo = new DynamicTexture('albedoTest', 8, scene, false);
+        mat.diffuseTexture = albedo;
+        _syncGroundEmissive(mat, mockState({ groundEmissiveTexture: 'reuse' }));
+        expect(mat.emissiveTexture).toBe(albedo);
+        mat.dispose();
+    });
+
+    it('关闭 groundEmissiveTexture → emissiveTexture 置空（不误释放 albedo）', () => {
+        const mat = new StandardMaterial('envGroundMat', scene);
+        const albedo = new DynamicTexture('albedoTest', 8, scene, false);
+        mat.diffuseTexture = albedo;
+        _syncGroundEmissive(mat, mockState({ groundEmissiveTexture: 'reuse' }));
+        expect(mat.emissiveTexture).toBe(albedo);
+        _syncGroundEmissive(mat, mockState());
+        expect(mat.emissiveTexture).toBeNull();
+        // albedo 仍挂载（emissive 置空不误释放 diffuse）
+        expect(mat.diffuseTexture).toBe(albedo);
+        mat.dispose();
     });
 });
 
