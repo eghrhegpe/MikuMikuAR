@@ -30,6 +30,7 @@ symbols:
   - _setAlbedoColor
   - _setAlbedoTex
   - _syncAllTextureOffsets
+  - _syncGroundEmissive
   - _syncGroundNormalTexture
   - _syncGroundRippleTexture
   - _syncPbrProperties

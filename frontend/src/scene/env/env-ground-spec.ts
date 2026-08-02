@@ -40,6 +40,7 @@ import {
     _syncAllTextureOffsets,
     _updateGroundTexture,
     _syncGroundNormalTexture,
+    _syncGroundEmissive,
     _syncPbrProperties,
     _effectiveBumpLevel,
     triggerTerrainReady,
@@ -103,6 +104,11 @@ export interface GroundAppearanceSpec {
     scrollSpeedZ: number;
     pitch: number;
     roll: number;
+    // [doc:adr-230] 自发光地屏（外观性，增量同步，不进 specKey）。
+    emissiveColor: [number, number, number];
+    emissiveStrength: number;
+    emissiveReflectMix: number;
+    emissiveTexture: string; // 非空 = 复用 albedo 纹理作发光源
 }
 
 export interface GroundMaterialSpec {
@@ -192,6 +198,10 @@ export function buildGroundMaterialSpec(state: EnvState): GroundMaterialSpec {
         scrollSpeedZ: state.groundScrollSpeedZ,
         pitch: state.groundPitch,
         roll: state.groundRoll,
+        emissiveColor: state.groundEmissiveColor,
+        emissiveStrength: state.groundEmissiveStrength,
+        emissiveReflectMix: state.groundEmissiveReflectMix,
+        emissiveTexture: state.groundEmissiveTexture,
     };
 
     return { structural, appearance };
@@ -358,6 +368,8 @@ export function applyGroundMaterialSpec(
         _syncPbrProperties(mat, state);
     }
     applyGroundEdgeFade(mat, ap.edgeFade, scene);
+    // [doc:adr-230] 自发光增量同步（外观性，不触发重建）。
+    _syncGroundEmissive(mat, state);
 }
 
 // ===================================================================

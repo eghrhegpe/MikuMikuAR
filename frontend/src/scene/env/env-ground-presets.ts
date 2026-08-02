@@ -13,10 +13,15 @@ export interface GroundPreset {
     sourceKind: 'solid' | 'canvas' | 'texture' | 'procedural';
     // Style
     groundStyle: 'solid' | 'grid' | 'checker' | 'texture';
-    groundOverlay: 'none' | 'grid' | 'checker';
+    groundOverlay: 'none' | 'grid' | 'checker' | 'scan' | 'glowEdge';
     groundColor: [number, number, number];
     groundAlpha: number;
     groundPattern: 'checker' | 'dots' | 'stripes' | 'radial';
+    // [doc:adr-230] 自发光地屏（默认关闭）
+    groundEmissiveColor: [number, number, number];
+    groundEmissiveStrength: number;
+    groundEmissiveReflectMix: number;
+    groundEmissiveTexture: string;
     // Texture
     groundTexture: string;
     groundTextureEnabled: boolean;
@@ -77,6 +82,11 @@ export const GROUND_PRESETS: Record<string, GroundPreset> = {
         groundEdgeFade: 0,
         groundPitch: 0,
         groundRoll: 0,
+        // [doc:adr-230] 自发光地屏默认全关（零回归）
+        groundEmissiveColor: [0, 0, 0],
+        groundEmissiveStrength: 0,
+        groundEmissiveReflectMix: 0.5,
+        groundEmissiveTexture: '',
     },
     mirrorStage: {
         label: '镜面舞台',
@@ -107,6 +117,11 @@ export const GROUND_PRESETS: Record<string, GroundPreset> = {
         groundEdgeFade: 0,
         groundPitch: 0,
         groundRoll: 0,
+        // [doc:adr-230] 自发光地屏默认全关（零回归）
+        groundEmissiveColor: [0, 0, 0],
+        groundEmissiveStrength: 0,
+        groundEmissiveReflectMix: 0.5,
+        groundEmissiveTexture: '',
     },
     grass: {
         label: '草地',
@@ -137,6 +152,11 @@ export const GROUND_PRESETS: Record<string, GroundPreset> = {
         groundEdgeFade: 0.3,
         groundPitch: 0,
         groundRoll: 0,
+        // [doc:adr-230] 自发光地屏默认全关（零回归）
+        groundEmissiveColor: [0, 0, 0],
+        groundEmissiveStrength: 0,
+        groundEmissiveReflectMix: 0.5,
+        groundEmissiveTexture: '',
     },
     stoneTile: {
         label: '石板',
@@ -167,6 +187,11 @@ export const GROUND_PRESETS: Record<string, GroundPreset> = {
         groundEdgeFade: 0,
         groundPitch: 0,
         groundRoll: 0,
+        // [doc:adr-230] 自发光地屏默认全关（零回归）
+        groundEmissiveColor: [0, 0, 0],
+        groundEmissiveStrength: 0,
+        groundEmissiveReflectMix: 0.5,
+        groundEmissiveTexture: '',
     },
     woodStage: {
         label: '木纹舞台',
@@ -197,6 +222,11 @@ export const GROUND_PRESETS: Record<string, GroundPreset> = {
         groundEdgeFade: 0,
         groundPitch: 0,
         groundRoll: 0,
+        // [doc:adr-230] 自发光地屏默认全关（零回归）
+        groundEmissiveColor: [0, 0, 0],
+        groundEmissiveStrength: 0,
+        groundEmissiveReflectMix: 0.5,
+        groundEmissiveTexture: '',
     },
     cyberGrid: {
         label: '赛博网格',
@@ -227,6 +257,11 @@ export const GROUND_PRESETS: Record<string, GroundPreset> = {
         groundEdgeFade: 0,
         groundPitch: 0,
         groundRoll: 0,
+        // [doc:adr-230] 自发光地屏默认全关（零回归）
+        groundEmissiveColor: [0, 0, 0],
+        groundEmissiveStrength: 0,
+        groundEmissiveReflectMix: 0.5,
+        groundEmissiveTexture: '',
     },
     metalStage: {
         label: '金属舞台',
@@ -257,6 +292,11 @@ export const GROUND_PRESETS: Record<string, GroundPreset> = {
         groundEdgeFade: 0,
         groundPitch: 0,
         groundRoll: 0,
+        // [doc:adr-230] 自发光地屏默认全关（零回归）
+        groundEmissiveColor: [0, 0, 0],
+        groundEmissiveStrength: 0,
+        groundEmissiveReflectMix: 0.5,
+        groundEmissiveTexture: '',
     },
 };
 
@@ -294,6 +334,10 @@ export const GROUND_PRESET_KEYS = [
     'groundEdgeFade',
     'groundPitch',
     'groundRoll',
+    'groundEmissiveColor',
+    'groundEmissiveStrength',
+    'groundEmissiveReflectMix',
+    'groundEmissiveTexture',
 ] as const satisfies readonly (keyof EnvState)[];
 
 /** 预设 → EnvState 字段映射，供 UI chip handler 调用并持久化。 */
@@ -325,5 +369,9 @@ export function buildGroundPresetEnvState(preset: GroundPreset): Partial<EnvStat
         groundEdgeFade: preset.groundEdgeFade,
         groundPitch: preset.groundPitch,
         groundRoll: preset.groundRoll,
+        groundEmissiveColor: preset.groundEmissiveColor,
+        groundEmissiveStrength: preset.groundEmissiveStrength,
+        groundEmissiveReflectMix: preset.groundEmissiveReflectMix,
+        groundEmissiveTexture: preset.groundEmissiveTexture,
     };
 }
