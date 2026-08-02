@@ -101,7 +101,7 @@ import {
 } from './motion/proc-motion-bridge';
 import { getLipSyncState, setLipSyncState } from './motion/lipsync-bridge';
 
-import { DEFAULT_PROC_STATE } from '../motion-algos/procedural-motion';
+import { migrateProcState } from '../motion-algos/procedural-motion';
 import { DEFAULT_LIPSYNC_STATE } from '../motion-algos/lipsync';
 import type { ProcMotionState } from '../motion-algos/procedural-motion';
 import type { LipSyncState as LipSyncStateType } from '../motion-algos/lipsync';
@@ -993,9 +993,9 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
         // regenerateProcMotion() is needed because procedural motion is driven by
         // per-frame callbacks that get reset when models are cleared/reloaded.
         // Simply restoring state won't re-register these callbacks.
+        // [audit] per-mode：加载统一过 migrateProcState，兼容旧扁平与新嵌套存档。
         if (data.procMotion) {
-            const s = { ...DEFAULT_PROC_STATE, ...(data.procMotion as Partial<ProcMotionState>) };
-            setProcMotionState(s);
+            setProcMotionState(migrateProcState(data.procMotion));
             regenerateProcMotion();
         }
 
@@ -1111,10 +1111,7 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
                         source: m.source,
                         motionModules: m.motionModules,
                         procMotion: m.procMotion
-                            ? ({
-                                  ...DEFAULT_PROC_STATE,
-                                  ...(m.procMotion as Partial<ProcMotionState>),
-                              } as ProcMotionConfig)
+                            ? (migrateProcState(m.procMotion) as ProcMotionConfig)
                             : undefined,
                     });
                     if (firstId === null) {
@@ -1161,10 +1158,7 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
                     source: legacy.source,
                     motionModules: legacy.motionModules,
                     procMotion: legacy.procMotion
-                        ? ({
-                              ...DEFAULT_PROC_STATE,
-                              ...(legacy.procMotion as Partial<ProcMotionState>),
-                          } as ProcMotionConfig)
+                        ? (migrateProcState(legacy.procMotion) as ProcMotionConfig)
                         : undefined,
                 });
                 // addSceneMotion 首次添加自动设为默认

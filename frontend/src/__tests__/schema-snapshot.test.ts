@@ -252,6 +252,9 @@ function cleanNode(node: any): any {
         ...(KIND_CONTROL_SELECTOR[node.kind]
             ? { dom: KIND_CONTROL_SELECTOR[node.kind] }
             : {}),
+        // [ADR-229 §2.2] action 交互策略描述（非静态目标值——运行时初始值不可预知，
+        // 目标由 spec 运行时计算；colorSlider 值域是 [r,g,b] 三元组，首轮跳过）
+        ...(deriveAction(node) ? { action: deriveAction(node) } : {}),
     };
     if (node.label) {
         result.label = node.label;
@@ -277,6 +280,26 @@ function cleanNode(node: any): any {
         result.children = node.children.map(cleanNode);
     }
     return result;
+}
+
+/**
+ * [ADR-229 §2.2] 生成交互 action 策略描述（运行时计算目标值）。
+ * - slider → drag：spec 运行时取 (min+max)/2 对齐 step，与当前值相等则改用端点
+ * - toggle → toggle：读初始 state → 点击 → 断言翻转
+ * - modeSlider → selectChip：选第一个 ≠ 当前值的 option
+ * - colorSlider 无 action（值域 [r,g,b] 三元组，DOM 为颜色条，拖拽模拟不稳定）
+ */
+function deriveAction(node: any): { type: string; target?: string } | undefined {
+    switch (node.kind) {
+        case 'slider':
+            return { type: 'drag', target: 'midpoint' };
+        case 'toggle':
+            return { type: 'toggle' };
+        case 'modeSlider':
+            return { type: 'selectChip', target: 'non-current' };
+        default:
+            return undefined;
+    }
 }
 
 describe('Schema Snapshot Generator', () => {
@@ -316,6 +339,21 @@ describe('Schema Snapshot Generator', () => {
                         n.dom,
                         `${s.panelId}/${n.id} kind=${n.kind} 缺 dom 字段（KIND_CONTROL_SELECTOR 未同步）`
                     ).toBe(KIND_CONTROL_SELECTOR[n.kind]);
+                }
+            }
+        }
+
+        // [ADR-229 §2.2] action 完整性断言：slider/toggle/modeSlider 必须有 action 策略
+        // （缺失 → deriveAction 漏分支 → e2e 交互断言无法执行，立即失败）。
+        const actionKinds = ['slider', 'toggle', 'modeSlider'];
+        for (const s of snapshot) {
+            const flat = flattenNodes(s.nodes);
+            for (const n of flat) {
+                if (actionKinds.includes(n.kind)) {
+                    expect(
+                        n.action,
+                        `${s.panelId}/${n.id} kind=${n.kind} 缺 action 字段（deriveAction 未覆盖）`
+                    ).toBeTruthy();
                 }
             }
         }

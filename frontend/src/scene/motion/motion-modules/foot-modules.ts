@@ -18,6 +18,7 @@ import {
     createModuleShell,
     prepareBake,
     createFrameHookManager,
+    createEnsureActive,
 } from './module-base';
 
 // ── 共享帧钩子管理器（左右脚共用一个 Map，按 modelId 注册一次）──
@@ -69,37 +70,34 @@ function createFootModuleFactory(cfg: FootSideConfig) {
             }
         }
 
-        /** 启用时注册帧钩子，每帧写入位置偏移（在 feet-adjustment 之前执行） */
-        function ensureActive(modelId: string): void {
-            if (_footFrameHooks.has(modelId)) {
-                return;
-            }
-            bake(modelId);
+        /** 启用时：每帧按当前参数重烤脚旋转覆盖 + 幂等注册位置偏移帧钩子 */
+        const ensureActive = createEnsureActive(
+            bake,
+            _footFrameHooks,
+            (mid) =>
+                registerBoneOverrideFrameHook(
+                    (_t, m) => {
+                        if (m !== mid) {
+                            return;
+                        }
+                        const st = getModuleState(mid, cfg.moduleId);
+                        if (!st.enabled) {
+                            return;
+                        }
 
-            const unregister = registerBoneOverrideFrameHook(
-                (_t, mid) => {
-                    if (mid !== modelId) {
-                        return;
-                    }
-                    const st = getModuleState(modelId, cfg.moduleId);
-                    if (!st.enabled) {
-                        return;
-                    }
+                        const fx = (st.params.footPosX as number) ?? 0;
+                        const fy = (st.params.footPosY as number) ?? 0;
+                        const fz = (st.params.footPosZ as number) ?? 0;
+                        if (fx === 0 && fy === 0 && fz === 0) {
+                            return;
+                        }
 
-                    const fx = (st.params.footPosX as number) ?? 0;
-                    const fy = (st.params.footPosY as number) ?? 0;
-                    const fz = (st.params.footPosZ as number) ?? 0;
-                    if (fx === 0 && fy === 0 && fz === 0) {
-                        return;
-                    }
-
-                    setBoneOverridePosition(cfg.ikBone, [fx, fy, fz], 1, true, modelId);
-                },
-                FRAME_HOOK_ORDER.FEET,
-                cfg.moduleId
-            );
-            _footFrameHooks.set(modelId, unregister);
-        }
+                        setBoneOverridePosition(cfg.ikBone, [fx, fy, fz], 1, true, mid);
+                    },
+                    FRAME_HOOK_ORDER.FEET,
+                    cfg.moduleId
+                )
+        );
 
         const base = createModuleBase(modelId, cfg.moduleId, DEFAULTS, bake, {
             action: ensureActive,

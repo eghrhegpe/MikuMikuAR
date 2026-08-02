@@ -14,7 +14,7 @@ import {
 } from '../scene/scene';
 import { setProcMotionBoneToggle } from '../scene/motion/proc-motion-bridge';
 import { getProcMotionBoneCategories } from '../motion-algos/procedural-motion';
-import type { ProcMotionState } from '../motion-algos/procedural-motion';
+import type { ProcMotionState, ProcModeKey, ProcMotionParams } from '../motion-algos/procedural-motion';
 import { DEFAULT_PROC_STATE } from '../motion-algos/procedural-motion';
 import { t } from '../core/i18n/t'; // [doc:adr-059]
 import type { MenuNode } from './menu-schema';
@@ -25,7 +25,7 @@ import {
     unloadProceduralMotion,
 } from '../scene/motion/motion-intent';
 import type { LoadableProcId } from '../scene/motion/motion-intent';
-import { getMotionMenu } from './motion-popup';
+import { getMotionMenu, refreshMotionRoot } from './motion-popup';
 
 // [doc:adr-059] 骨骼微动类别 → i18n key（模块级，运行时 t() 支持热切换）
 const BONE_LABEL_KEYS: Record<string, string> = {
@@ -56,16 +56,36 @@ function _getProcState(modelId?: string): ProcMotionState {
     return getProcMotionState();
 }
 
-/** 写入 per-model 程序化状态 */
-function _setProcState(modelId: string, patch: Partial<ProcMotionState>): void {
-    const inst = modelRegistry.get(modelId);
-    if (inst) {
-        inst.procMotion = { ...(inst.procMotion ?? DEFAULT_PROC_STATE), ...patch };
+/** [audit] per-mode：读取指定程序化模式的参数（无则回退默认）。 */
+function _getProcParams(modelId: string | undefined, mode: ProcModeKey): ProcMotionParams {
+    const st = _getProcState(modelId);
+    return { ...(st.params?.[mode] ?? DEFAULT_PROC_STATE.params[mode]) };
+}
+
+/** [audit] per-mode：写入 per-model 指定模式的参数（modelId 路径；全局路径由 bridge setter 处理）。 */
+function _setProcParams(
+    modelId: string | undefined,
+    mode: ProcModeKey,
+    patch: Partial<ProcMotionParams>
+): void {
+    if (modelId) {
+        const inst = modelRegistry.get(modelId);
+        if (inst) {
+            const cur = inst.procMotion ?? DEFAULT_PROC_STATE;
+            inst.procMotion = {
+                ...cur,
+                params: {
+                    ...cur.params,
+                    [mode]: { ...(cur.params?.[mode] ?? DEFAULT_PROC_STATE.params[mode]), ...patch },
+                },
+            };
+        }
     }
 }
 
-export function buildProcMotionSchema(modelId?: string): MenuNode[] {
+export function buildProcMotionSchema(modelId?: string, mode: ProcModeKey = 'idle'): MenuNode[] {
     const st = _getProcState(modelId);
+    const prm = _getProcParams(modelId, mode);
 
     return [
         // 卡片 1：主开关
@@ -85,7 +105,13 @@ export function buildProcMotionSchema(modelId?: string): MenuNode[] {
                         st.mode,
                         (v) => {
                             if (modelId) {
-                                _setProcState(modelId, { mode: v });
+                                const inst = modelRegistry.get(modelId);
+                                if (inst) {
+                                    inst.procMotion = {
+                                        ...(inst.procMotion ?? DEFAULT_PROC_STATE),
+                                        mode: v,
+                                    };
+                                }
                                 regenerateProcMotion(modelId);
                             } else {
                                 setProcMotionMode(v);
@@ -103,7 +129,7 @@ export function buildProcMotionSchema(modelId?: string): MenuNode[] {
                 });
             },
         },
-        // 卡片 2：强度/速度
+        // 卡片 2：强度/速度（per-mode：绑定 mode 专属参数）
         {
             id: 'procmotion:params',
             kind: 'custom',
@@ -112,45 +138,45 @@ export function buildProcMotionSchema(modelId?: string): MenuNode[] {
                     addSliderRow(
                         inner,
                         t('motion.intensity'),
-                        st.intensity,
+                        prm.intensity,
                         0,
                         1,
                         0.05,
                         (v) => {
                             if (modelId) {
-                                _setProcState(modelId, { intensity: v });
+                                _setProcParams(modelId, mode, { intensity: v });
                                 regenerateProcMotion(modelId);
                             } else {
-                                setProcMotionIntensity(v);
+                                setProcMotionIntensity(mode, v);
                                 regenerateProcMotion();
                             }
                         },
                         'lucide:activity',
                         undefined,
                         {
-                            bind: () => _getProcState(modelId).intensity,
+                            bind: () => _getProcParams(modelId, mode).intensity,
                         }
                     );
                     addSliderRow(
                         inner,
                         t('motion.speed'),
-                        st.speed,
+                        prm.speed,
                         0.5,
                         2,
                         0.05,
                         (v) => {
                             if (modelId) {
-                                _setProcState(modelId, { speed: v });
+                                _setProcParams(modelId, mode, { speed: v });
                                 regenerateProcMotion(modelId);
                             } else {
-                                setProcMotionSpeed(v);
+                                setProcMotionSpeed(mode, v);
                                 regenerateProcMotion();
                             }
                         },
                         'lucide:fast-forward',
                         undefined,
                         {
-                            bind: () => _getProcState(modelId).speed,
+                            bind: () => _getProcParams(modelId, mode).speed,
                         }
                     );
                 });
@@ -187,13 +213,13 @@ export function buildProcMotionSchema(modelId?: string): MenuNode[] {
                             };
                             const toggleBone = (cat: (typeof cats)[number], v: boolean) => {
                                 if (modelId) {
-                                    const cur = _getProcState(modelId);
-                                    _setProcState(modelId, {
+                                    const cur = _getProcParams(modelId, mode);
+                                    _setProcParams(modelId, mode, {
                                         boneToggles: { ...cur.boneToggles, [cat]: v },
                                     });
                                     regenerateProcMotion(modelId);
                                 } else {
-                                    setProcMotionBoneToggle(cat, v);
+                                    setProcMotionBoneToggle(mode, cat, v);
                                     regenerateProcMotion();
                                 }
                             };
@@ -203,11 +229,11 @@ export function buildProcMotionSchema(modelId?: string): MenuNode[] {
                                     addToggleRow(
                                         inner,
                                         t(BONE_LABEL_KEYS[cat] || cat),
-                                        st.boneToggles[cat],
+                                        prm.boneToggles[cat],
                                         (v) => toggleBone(cat, v),
                                         icons[cat] ?? 'lucide:circle',
                                         {
-                                            bind: () => _getProcState(modelId).boneToggles[cat],
+                                            bind: () => _getProcParams(modelId, mode).boneToggles[cat],
                                         }
                                     );
                                 }
@@ -218,11 +244,11 @@ export function buildProcMotionSchema(modelId?: string): MenuNode[] {
                                     addToggleRow(
                                         inner,
                                         t(BONE_LABEL_KEYS[cat] || cat),
-                                        st.boneToggles[cat],
+                                        prm.boneToggles[cat],
                                         (v) => toggleBone(cat, v),
                                         icons[cat] ?? 'lucide:circle',
                                         {
-                                            bind: () => _getProcState(modelId).boneToggles[cat],
+                                            bind: () => _getProcParams(modelId, mode).boneToggles[cat],
                                         }
                                     );
                                 }
@@ -233,11 +259,11 @@ export function buildProcMotionSchema(modelId?: string): MenuNode[] {
                                     addToggleRow(
                                         inner,
                                         t(BONE_LABEL_KEYS[cat] || cat),
-                                        st.boneToggles[cat],
+                                        prm.boneToggles[cat],
                                         (v) => toggleBone(cat, v),
                                         icons[cat] ?? 'lucide:circle',
                                         {
-                                            bind: () => _getProcState(modelId).boneToggles[cat],
+                                            bind: () => _getProcParams(modelId, mode).boneToggles[cat],
                                         }
                                     );
                                 }
@@ -248,11 +274,11 @@ export function buildProcMotionSchema(modelId?: string): MenuNode[] {
                                     addToggleRow(
                                         inner,
                                         t(BONE_LABEL_KEYS[cat] || cat),
-                                        st.boneToggles[cat],
+                                        prm.boneToggles[cat],
                                         (v) => toggleBone(cat, v),
                                         icons[cat] ?? 'lucide:circle',
                                         {
-                                            bind: () => _getProcState(modelId).boneToggles[cat],
+                                            bind: () => _getProcParams(modelId, mode).boneToggles[cat],
                                         }
                                     );
                                 }
@@ -277,20 +303,20 @@ export function buildProcMotionSchema(modelId?: string): MenuNode[] {
                             { value: 'ease-in-out' as const, label: t('motion.interpEaseInOut') },
                             { value: 'ease-out' as const, label: t('motion.interpEaseOut') },
                         ],
-                        st.interpOverride,
+                        prm.interpOverride,
                         (v) => {
                             if (modelId) {
-                                _setProcState(modelId, { interpOverride: v });
+                                _setProcParams(modelId, mode, { interpOverride: v });
                                 regenerateProcMotion(modelId);
                             } else {
-                                setProcMotionInterpOverride(v);
+                                setProcMotionInterpOverride(mode, v);
                                 regenerateProcMotion();
                             }
                         },
                         'lucide:sliders',
                         undefined,
                         {
-                            bind: () => _getProcState(modelId).interpOverride,
+                            bind: () => _getProcParams(modelId, mode).interpOverride,
                         }
                     );
                 });
@@ -346,7 +372,9 @@ function _buildProcLibraryItems(): PopupRow[] {
                           danger: true,
                           onClick: () => {
                               unloadProceduralMotion(procId);
-                              getMotionMenu()?.reRender();
+                              // [fix:proc-refresh] 刷新根层：reRender 只重建当前层（库页），
+                              // 返回根层时「已加载程序化动作」区仍读旧 items 快照
+                              refreshMotionRoot();
                           },
                       }
                 : {
@@ -354,7 +382,9 @@ function _buildProcLibraryItems(): PopupRow[] {
                       title: t('motion.proc.load'),
                       onClick: () => {
                           loadProceduralMotion(procId);
-                          getMotionMenu()?.reRender();
+                          // [fix:proc-refresh] 刷新根层：reRender 只重建当前层（库页），
+                          // 返回根层时「已加载程序化动作」区仍读旧 items 快照
+                          refreshMotionRoot();
                       },
                   },
         });

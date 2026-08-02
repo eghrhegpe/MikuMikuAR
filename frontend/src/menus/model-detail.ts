@@ -534,8 +534,11 @@ export function buildMotionSlotLevel(id: string, inst: ModelInstance): PopupLeve
                                 () => {
                                 _setProcForModel(id, inst, procId);
                                 // [doc:adr-207] procEdit 统一进动作详情页（含覆盖/预设/参数），
-                                // 与场景级入口一致；按该模型 id 取 model-scoped 覆盖/预设。
-                                stackRegistry.modelStack?.push(buildMotionDetailLevel(undefined, id));
+                                // 与场景级入口一致；按该模型 id 取 model-scoped 覆盖/预设，
+                                // 传 procId 绑定该模式专属参数。
+                                stackRegistry.modelStack?.push(
+                                    buildMotionDetailLevel(undefined, id, procId)
+                                );
                                 },
                                 { marginLeft: 'auto', stopPropagation: true }
                             );

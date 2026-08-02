@@ -392,6 +392,14 @@ export class SlideMenu implements RenderContext {
         this.levels.pop();
         const prevLevel = this.levels[this.levels.length - 1];
 
+        // [fix:return-refresh] 统一「返回即刷新」：纯 items 层返回时经 itemBuilder 重建 items，
+        // 使子层操作（如程序化动作加载/卸载）返回上级时列表即新。
+        // renderCustom 层（模型库文件列表）豁免——其 renderCustom 每次渲染实时重算自愈，
+        // 强制重建会丢失滚动位置（半记忆位置效果）。
+        if (prevLevel.itemBuilder && !prevLevel.renderCustom) {
+            prevLevel.items = prevLevel.itemBuilder();
+        }
+
         this.panel.style.transition = `opacity ${TRANSITION_DURATION_FAST} ease, transform ${TRANSITION_DURATION_FAST} ease`;
         this.panel.style.opacity = '0';
         this.panel.style.transform = 'translateX(8px)';
@@ -455,6 +463,11 @@ export class SlideMenu implements RenderContext {
         this._cancelAnim();
         this.levels = this.levels.slice(0, index + 1);
         const level = this.currentLevel!;
+        // [fix:return-refresh] 与 pop() 同语义：纯 items 层跳回时经 itemBuilder 重建，
+        // renderCustom 层（模型库文件列表）豁免，保留滚动位置。
+        if (level.itemBuilder && !level.renderCustom) {
+            level.items = level.itemBuilder();
+        }
         this.panel.style.transition = 'none';
         this.panel.style.opacity = '1';
         this.panel.style.transform = 'translateX(0)';

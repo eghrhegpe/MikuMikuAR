@@ -4,6 +4,9 @@ import { logWarn } from '@/core/logger';
 
 export type ProcMotionMode = 'off' | 'idle' | 'autodance';
 
+/** 可编辑参数的程序化模式（'off' 无参数）。每个模式独立一套 ProcMotionParams。 */
+export type ProcModeKey = Exclude<ProcMotionMode, 'off'>;
+
 export const PROC_VMD_NAME_IDLE = 'IdleMotion';
 export const PROC_VMD_NAME_AUTODANCE = 'AutoDance';
 
@@ -29,17 +32,26 @@ export function getProcMotionBoneCategories(): ProcMotionBoneCategory[] {
     return [...PROC_MOTION_BONE_CATEGORIES];
 }
 
-export interface ProcMotionState {
-    mode: ProcMotionMode;
+/** [audit] per-mode 可调参数：待机呼吸 / 自动舞蹈 各自独立一套 */
+export interface ProcMotionParams {
     intensity: number;
     speed: number;
     boneToggles: Record<ProcMotionBoneCategory, boolean>;
-    bpmQuantizeEnabled: boolean;
     vpdApplyEnabled: boolean;
     interpOverride: 'auto' | 'sharp' | 'ease-in-out' | 'ease-out';
-    multiMorphEnabled: boolean;
+}
+
+export interface ProcMotionState {
+    /** 当前激活的程序化模式（与 VMD 互斥的单一指针） */
+    mode: ProcMotionMode;
+    /** 节拍量化（全局运行时设置，仅 autodance 消费） */
+    bpmQuantizeEnabled: boolean;
+    /** 感知层：眼部跟随（全局，不随程序化动作切换） */
     eyeTrackingEnabled: boolean;
+    /** 感知层：头部跟随（全局） */
     headTrackingEnabled: boolean;
+    /** [audit] per-mode 参数：idle / autodance 各自独立 */
+    params: Record<ProcModeKey, ProcMotionParams>;
 }
 
 const _defaultBoneToggles: Record<ProcMotionBoneCategory, boolean> = {
@@ -58,18 +70,72 @@ const _defaultBoneToggles: Record<ProcMotionBoneCategory, boolean> = {
     emotion: true,
 };
 
-export const DEFAULT_PROC_STATE: ProcMotionState = {
-    mode: 'off',
+const _defaultParams: ProcMotionParams = {
     intensity: 0.5,
     speed: 1.0,
     boneToggles: { ..._defaultBoneToggles },
-    bpmQuantizeEnabled: true,
     vpdApplyEnabled: false,
     interpOverride: 'auto',
-    multiMorphEnabled: false,
+};
+
+export const DEFAULT_PROC_STATE: ProcMotionState = {
+    mode: 'off',
+    bpmQuantizeEnabled: true,
     eyeTrackingEnabled: true,
     headTrackingEnabled: true,
+    params: {
+        idle: { ..._defaultParams, boneToggles: { ..._defaultBoneToggles } },
+        autodance: { ..._defaultParams, boneToggles: { ..._defaultBoneToggles } },
+    },
 };
+
+/** 迁移兜底默认（不依赖 DEFAULT_PROC_STATE，避免测试 mock 为 {} 时崩溃） */
+const _fallbackParams: ProcMotionParams = {
+    intensity: 0.5,
+    speed: 1.0,
+    boneToggles: { ..._defaultBoneToggles },
+    vpdApplyEnabled: false,
+    interpOverride: 'auto',
+};
+
+/**
+ * [audit] 旧扁平 ProcMotionState → per-mode 嵌套迁移。
+ * 旧值（intensity/speed/boneToggles/...）拆到 params.idle 与 params.autodance（两边同值，等价旧行为）；
+ * 新结构（含 params）原样归一。对 Partial / 测试 mock 的缺失字段取默认。
+ */
+export function migrateProcState(raw: unknown): ProcMotionState {
+    const r = (raw ?? {}) as Partial<ProcMotionState> &
+        Partial<ProcMotionParams> & { params?: Record<ProcModeKey, Partial<ProcMotionParams>> };
+    const base = {
+        mode: r.mode ?? 'off',
+        bpmQuantizeEnabled: r.bpmQuantizeEnabled ?? true,
+        eyeTrackingEnabled: r.eyeTrackingEnabled ?? true,
+        headTrackingEnabled: r.headTrackingEnabled ?? true,
+    };
+    if (r.params) {
+        return {
+            ...base,
+            params: {
+                idle: { ..._fallbackParams, ...r.params.idle },
+                autodance: { ..._fallbackParams, ...r.params.autodance },
+            },
+        };
+    }
+    const per = {
+        intensity: r.intensity ?? _fallbackParams.intensity,
+        speed: r.speed ?? _fallbackParams.speed,
+        boneToggles: r.boneToggles ?? _fallbackParams.boneToggles,
+        vpdApplyEnabled: r.vpdApplyEnabled ?? _fallbackParams.vpdApplyEnabled,
+        interpOverride: r.interpOverride ?? _fallbackParams.interpOverride,
+    };
+    return {
+        ...base,
+        params: {
+            idle: { ...per, boneToggles: { ...per.boneToggles } },
+            autodance: { ...per, boneToggles: { ...per.boneToggles } },
+        },
+    };
+}
 
 export const BONE_CENTER_CANDIDATES = ['センター', '全ての親', 'center', 'Center', 'Root', 'root'];
 export const BONE_UPPER_CANDIDATES = ['上半身', 'upper', 'Upper', '上半', '上半身2'];

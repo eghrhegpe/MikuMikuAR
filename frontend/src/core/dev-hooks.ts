@@ -9,6 +9,8 @@ import { envState, mmdRuntime } from './config';
 import { isWindPhysicsActive } from '../physics/wind-physics';
 import { removeFocusedModel } from '../scene/manager/model-ops';
 import { logInfo } from './logger';
+// [doc:adr-229] 通用状态读取器：window.__state 复用 menu-schema 的 getStateValue（含 modelId）
+import { getStateValue, type StatePath } from '../menus/menu-schema';
 
 export function setupE2ECapture(): void {
     // [doc:e2e] 生产构建下默认不注入 E2E 钩子（DEV 为 false），
@@ -49,6 +51,14 @@ export function setupE2ECapture(): void {
         // Force a render frame so Babylon writes to the backbuffer
         scene.render();
         return CreateScreenshotAsync(engine, scene.activeCamera!, 512);
+    };
+
+    // ======== E2E State Hook (DEV only) ========
+    // [doc:adr-229] 通用状态读取器：schema-driven 交互断言（拖滑块/点开关后验证
+    // state 生效）复用 menu-schema 的 getStateValue（含 modelId 透传）。
+    // 只读快照，不暴露 setter——交互写入走真实 DOM 事件（addSliderRow 等 onChange）。
+    (window as unknown as Record<string, unknown>).__state = {
+        get: (path: string, modelId?: string): unknown => getStateValue(path as StatePath, modelId),
     };
 
     // ======== E2E Scene Inspection Hook (DEV only) ========

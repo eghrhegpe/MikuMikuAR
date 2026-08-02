@@ -186,6 +186,44 @@ export function createFrameHookManager() {
     };
 }
 
+/** 帧钩子管理器的返回类型（供 createEnsureActive 复用） */
+export type FrameHookManager = ReturnType<typeof createFrameHookManager>;
+
+/**
+ * [doc:adr-146 P3] ensureActive 公共工厂 — 消除 body-posture/foot/hand 复制粘贴的
+ * 「先 bake 重烤、再幂等注册帧钩子」模式。
+ *
+ * 该模式是 91dbe42a 同源 bug 的根因：早期实现把 `if (hooks.has) return;` 写在 `bake` 之前，
+ * 导致首次启用后静态参数（旋转/预设）永远冻结、拖滑块无效果。本工厂把**正确顺序固化**：
+ *   1. 每次 setParam / enable 都先 `bake(modelId)` 按当前参数重烤静态覆盖；
+ *   2. 仅对帧钩子注册做幂等保护（已注册则跳过，避免重复注册）。
+ *
+ * 用法:
+ *   const ensureActive = createEnsureActive(
+ *     bake,                                       // 写静态骨骼覆盖（旋转/预设）
+ *     _frameHooks,                                // 模块自身的 createFrameHookManager() 实例
+ *     (modelId) => registerBoneOverrideFrameHook(hookFn, ORDER, SRC)  // 返回 unregister
+ *   );
+ *   // onDisable 仍由模块负责幂等清理：onDisable: (mid) => _frameHooks.unregister(mid)
+ *
+ * 注意：riding-model 因 autoPedal 需动态注册/注销钩子，逻辑特殊，不套用本工厂。
+ */
+export function createEnsureActive(
+    bake: (modelId: string) => void,
+    hookManager: FrameHookManager,
+    registerHook: (modelId: string) => () => void
+): (modelId: string) => void {
+    return (modelId: string) => {
+        const hadHook = hookManager.has(modelId);
+        // 每次都按当前参数重烤静态覆盖（旋转/预设）；帧钩子注册才需幂等保护。
+        bake(modelId);
+        if (hadHook) {
+            return;
+        }
+        hookManager.set(modelId, registerHook(modelId));
+    };
+}
+
 /**
  * [doc:adr-146 P3 主题12] 模块实例外壳 — 消除 6 个工厂末尾重复的
  * `id/meta/priority/managedBones/buildSchema + getState/setState/setParam/enable/disable` spread。

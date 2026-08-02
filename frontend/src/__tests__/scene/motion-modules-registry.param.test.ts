@@ -122,3 +122,69 @@ describe('getState / setState 对称', () => {
         expect(lhState.params.pitch).toBe(30); // 未被影响
     });
 });
+
+describe('setParam 触发 re-bake（回归 91dbe42a / 2026-08-02）', () => {
+    // 根因：ensureActive 早期 return 跳过 bake，导致首次启用后拖滑块不重烤，
+    // 静态参数（旋转/预设）永远停在启用时刻。本组测试断言「启用后改参数 → setBoneOverride 被用新值重调」。
+    // 任一模块若回到早退写法，此处断言即失败。
+    function lastBoneCall(bone: string): readonly unknown[] | undefined {
+        const calls = shared.setBoneOverrideSpy.mock.calls.filter((c) => c[0] === bone);
+        return calls.length ? calls[calls.length - 1] : undefined;
+    }
+
+    it('body-posture: 启用后改 bend 重烤 上半身 覆盖', () => {
+        shared.mockModelRegistry.set('m1', makeModel('m1'));
+        initMotionModules();
+        setActiveMotionWithModules();
+        const mod = createModule('body-posture', 'm1')!;
+        mod.enable();
+        shared.setBoneOverrideSpy.mockClear(); // 清掉启用时的初始 bake
+        mod.setParam('bend', 30);
+        const call = lastBoneCall('上半身');
+        expect(call).toBeDefined();
+        expect(call![1]).toEqual([30, 0, 0]); // tilt+bend=30，复用当前参数重烤
+        expect(call![4]).toBe('m1');
+    });
+
+    it('left-foot: 启用后改 pitch 重烤 左足IK 覆盖', () => {
+        shared.mockModelRegistry.set('m1', makeModel('m1'));
+        initMotionModules();
+        setActiveMotionWithModules();
+        const mod = createModule('left-foot', 'm1')!;
+        mod.enable();
+        shared.setBoneOverrideSpy.mockClear();
+        mod.setParam('pitch', 45);
+        const call = lastBoneCall('左足IK');
+        expect(call).toBeDefined();
+        expect(call![1]).toEqual([45, 0, 0]);
+    });
+
+    it('left-hand: 启用后改 pitch 重烤 左手首 覆盖', () => {
+        shared.mockModelRegistry.set('m1', makeModel('m1'));
+        initMotionModules();
+        setActiveMotionWithModules();
+        const mod = createModule('left-hand', 'm1')!;
+        mod.enable();
+        shared.setBoneOverrideSpy.mockClear();
+        mod.setParam('pitch', 20);
+        const call = lastBoneCall('左手首');
+        expect(call).toBeDefined();
+        expect(call![1]).toEqual([20, 0, 0]);
+    });
+
+    it('left-hand: 启用后改 fingerPreset 重烤手指骨骼覆盖', () => {
+        shared.mockModelRegistry.set('m1', makeModel('m1'));
+        initMotionModules();
+        setActiveMotionWithModules();
+        const mod = createModule('left-hand', 'm1')!;
+        mod.enable();
+        shared.setBoneOverrideSpy.mockClear();
+        mod.setParam('fingerPreset', 'fist');
+        const fingerCalls = shared.setBoneOverrideSpy.mock.calls.filter(
+            (c) => typeof c[0] === 'string' && /^左.+[０１２第一第二第三]$/.test(c[0])
+        );
+        expect(fingerCalls.length).toBeGreaterThan(0);
+        // fist 预设下手指应有明显弯曲（euler[0] ≠ 0），证明预设参数被重烤
+        expect(fingerCalls.some((c) => (c[1] as number[])[0] !== 0)).toBe(true);
+    });
+});
