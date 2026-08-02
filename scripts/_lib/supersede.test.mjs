@@ -4,6 +4,17 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { parseAdrHeader, parseSourceFiles } from '../_lib/frontmatter.mjs';
+import {
+  RE_SUPERSEDED_BY,
+  RE_SELF_DEPRECATED,
+  RE_CLAIM_A,
+  RE_CLAIM_B,
+  RE_DEPRECATED_WORD,
+  RE_NEGATED,
+  RE_TABLE_FIRST_COL,
+  RE_TABLE_VERB,
+  RE_TABLE_NEGATED,
+} from './supersede-regex.mjs';
 
 // Helper: write temp ADR files and return paths
 function createTempAdr(filename, content) {
@@ -138,7 +149,6 @@ body...
 // ── Supersede regex patterns (gen-adr-supersede core logic) ──
 
 // ① RE_SUPERSEDED_BY: 状态行声明「被 ADR-NNN 取代」
-const RE_SUPERSEDED_BY = /被\s*\[?ADR-(\d+)\]?[^)\]]*\)?\s*(?:取代|替代|推翻|退役)/;
 
 test('RE_SUPERSEDED_BY: matched — 标准形式', () => {
   assert.ok(RE_SUPERSEDED_BY.test('被 ADR-113 取代'));
@@ -169,7 +179,6 @@ test('RE_SUPERSEDED_BY: not matched — 自身', () => {
 });
 
 // ③ RE_SELF_DEPRECATED: 状态行自身废弃
-const RE_SELF_DEPRECATED = /(?:⚠️|🗑️)\s*\**(?:已废弃|已过时|已放弃|已搁置|已退役)|^(?:已废弃|已过时|已放弃|已搁置|已退役|搁置|废弃)/;
 
 test('RE_SELF_DEPRECATED: matched — emoji 前缀', () => {
   assert.ok(RE_SELF_DEPRECATED.test('⚠️ 已废弃（未指明取代者）'));
@@ -191,7 +200,6 @@ test('RE_SELF_DEPRECATED: not matched — 正常状态', () => {
 });
 
 // ② RE_CLAIM_A: 正文「取代/替代了 ADR-NNN」
-const RE_CLAIM_A = /(?:取代|替代|推翻|废弃|废除)\s*了?\s*\[?ADR-(\d+)\]?/g;
 
 test('RE_CLAIM_A: matched — 取代了', () => {
   RE_CLAIM_A.lastIndex = 0;
@@ -218,7 +226,6 @@ test('RE_CLAIM_A: case-insensitive — Chinese OK', () => {
 });
 
 // ② RE_CLAIM_B: 「ADR-NNN 已废弃」
-const RE_CLAIM_B = /ADR-(\d+)\s*[）)]?\s*(?:已\s*(?:废弃|过时|放弃|搁置|退役)|被\s*(?:取代|推翻|替代))/g;
 
 test('RE_CLAIM_B: matched — 已废弃', () => {
   RE_CLAIM_B.lastIndex = 0;
@@ -250,8 +257,6 @@ test('RE_CLAIM_B: not matched — 正常提及', () => {
 });
 
 // ④ RE_DEPRECATED_WORD + RE_NEGATED: 可疑信号
-const RE_DEPRECATED_WORD = /(推翻|已过时)/;
-const RE_NEGATED = /(非|不|未|无|没有)\s*推翻/;
 
 test('RE_DEPRECATED_WORD: matched — 推翻', () => {
   assert.ok(RE_DEPRECATED_WORD.test('推翻 ADR-192'));
@@ -278,9 +283,6 @@ test('RE_NEGATED: not matched — 非否定语境', () => {
 });
 
 // ⑤ 表格弱宣称
-const RE_TABLE_FIRST_COL = /^\|\s*ADR-(\d+)/;
-const RE_TABLE_VERB = /本\s*ADR[^|]{0,30}(?:完全)?(?:替代|取代|推翻)/;
-const RE_TABLE_NEGATED = /(非|不|未|无|没有)\s*(?:替代|取代|推翻)/;
 
 test('RE_TABLE_FIRST_COL: matched', () => {
   const m = RE_TABLE_FIRST_COL.exec('| ADR-019 | 标题 |');
