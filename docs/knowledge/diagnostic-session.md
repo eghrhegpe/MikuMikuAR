@@ -33,3 +33,6 @@ use_when:
 ---
 
 # 诊断助手 → 会话管理（子模块）
+
+## 系统概览
+诊断助手会话管理 UI（ADR-203）：列表 / 新建 / 切换 / 删除。持久化经 `DebouncedTimer` 500ms 防抖，`flushSession` 强制完成未落盘写入；`switchSession` 先 flush 当前会话再加载目标；删除当前会话自动切换到最近会话，无剩余则 `clearActiveId`；IndexedDB 损坏时降级为空会话。

@@ -28,3 +28,6 @@ use_when:
 ---
 
 # 轻量 Markdown→DOM 渲染器
+
+## 系统概览
+LLM 回复专用轻量 Markdown 渲染器（ADR-196）。纯 DOM 构建（`createElement` + `textContent`），不用 innerHTML 拼字符串，从根上免疫 XSS、无需 marked/dompurify 重依赖。只覆盖常用子集（标题/加粗/斜体/行内代码/代码块/列表/水平线/段落）；流式结束时一次性渲染（container 清空重建），避免逐字符重排闪烁。

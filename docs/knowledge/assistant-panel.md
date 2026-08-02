@@ -24,3 +24,6 @@ use_when:
 ---
 
 # AI 助手独立面板入口
+
+## 系统概览
+从设置菜单拆出的主窗口内独立 overlay 面板入口（ADR-203）。复用 `registerPopupMenu` + `buildDiagnosticSchema`，以更宽的 `overlayClass('sceneOverlay-assistant')` 承载会话历史 + 对话，不新开 WebView 窗口；设置菜单入口与此共用同一 schema。

@@ -28,3 +28,6 @@ use_when:
 ---
 
 # 诊断助手 → 单例状态（子模块）
+
+## 系统概览
+诊断助手共享单例状态 `diagState`（ADR-196/203）：chat / config / control / session 四个子模块的共享状态源。callbacks 注册表由 entry point 接线，避免子模块间循环依赖；`pendingQueue` + `pendingToolResults` 支持多 tool_call 批处理；`saveChain` 链式防并发持久化竞争。

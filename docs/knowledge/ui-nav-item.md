@@ -35,3 +35,6 @@ use_when:
 ---
 
 # 菜单导航项契约
+
+## 系统概览
+方向键导航项数据契约（ADR-153，leaf module）。以 `data-nav-item` / `data-nav-focus` / `data-nav-adjust` / `data-nav-group` 统一标记可导航行，menu.ts 只认标记（不再按类名枚举），控件工厂创建行后调用 `markNavItem` 一次即可接入，无需回改 menu.ts 的 selector/聚焦目标/调值让位三处。

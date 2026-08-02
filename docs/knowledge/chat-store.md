@@ -35,3 +35,6 @@ use_when:
 ---
 
 # AI 会话 IndexedDB 存储
+
+## 系统概览
+AI 助手多会话历史存储——IndexedDB `chats` store 封装（ADR-203）。桌面（WebView2）与网页统一走 IndexedDB（不新增 Go binding、不落 config.json）。每会话拆两键：`meta:<id>`（元信息，列表快速枚举）+ `msgs:<id>`（消息数组懒加载），活动会话 id 存 `chat:activeId`；读操作对损坏/缺失数据降级返回，不向上抛。

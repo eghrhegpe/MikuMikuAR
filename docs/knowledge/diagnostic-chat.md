@@ -37,3 +37,6 @@ use_when:
 ---
 
 # 诊断助手 → 聊天 UI（子模块）
+
+## 系统概览
+诊断助手聊天 UI 渲染（ADR-196/203，纯渲染无业务协调）。流式三步：`showPendingBubble`（占位）→ `renderStreamingChunk`（逐块追加）→ `finalizeStream`（定格 + 后处理）；`pruneHistory` 按 maxPairs=10 裁减历史；`buildSystemMessage` 每次发送前重建，注入 tool catalog + 场景快照；dialogueCards 模式渲染角色台词卡。
