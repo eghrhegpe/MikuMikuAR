@@ -65,8 +65,11 @@ const PANEL_NAV: Record<string, PanelNavConfig> = {
     'env:fog':          { domain: 'env', subLevel: '雾' },
     'env:cloud':        { domain: 'env', subLevel: '云' },
     'env:shadow':       { domain: 'env', subLevel: '阴影' },
-    'env:water':        { domain: 'env', subLevel: '水' },
-    'env:ground':       { domain: 'env', subLevel: '地面' },
+    // env:water/env:ground 已迁至场景菜单（scene-menu.ts:199,210），
+    // 不再属于环境菜单。走 scene 域导航。
+    // 见 docs/knowledge/env-ground.md, docs/knowledge/env-water.md
+    'scene:water':      { domain: 'scene', subLevel: '水' },
+    'scene:ground':     { domain: 'scene', subLevel: '地面' },
     'env:experimental': { domain: 'env', subLevel: '实验' },
     'env:particle':     { domain: 'env', subLevel: '粒子' },
     // scene 域 —— postprocess 实际位于 env 域的"后处理"子面板下
