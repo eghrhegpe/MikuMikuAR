@@ -74,66 +74,66 @@ describe('setProcMotionMode', () => {
 
 describe('setProcMotionIntensity', () => {
     it('stores the given value', () => {
-        sut.setProcMotionIntensity(0.3);
-        expect(sut.getProcMotionState().intensity).toBe(0.3);
+        sut.setProcMotionIntensity('idle', 0.3);
+        expect(sut.getProcMotionState().params.idle.intensity).toBe(0.3);
     });
 
     it('clamps negative values to 0', () => {
-        sut.setProcMotionIntensity(-0.1);
-        expect(sut.getProcMotionState().intensity).toBe(0);
+        sut.setProcMotionIntensity('idle', -0.1);
+        expect(sut.getProcMotionState().params.idle.intensity).toBe(0);
     });
 
     it('clamps values above 1 to 1', () => {
-        sut.setProcMotionIntensity(1.5);
-        expect(sut.getProcMotionState().intensity).toBe(1);
+        sut.setProcMotionIntensity('idle', 1.5);
+        expect(sut.getProcMotionState().params.idle.intensity).toBe(1);
     });
 
     it('accepts boundary values 0 and 1', () => {
-        sut.setProcMotionIntensity(0);
-        expect(sut.getProcMotionState().intensity).toBe(0);
-        sut.setProcMotionIntensity(1);
-        expect(sut.getProcMotionState().intensity).toBe(1);
+        sut.setProcMotionIntensity('idle', 0);
+        expect(sut.getProcMotionState().params.idle.intensity).toBe(0);
+        sut.setProcMotionIntensity('idle', 1);
+        expect(sut.getProcMotionState().params.idle.intensity).toBe(1);
     });
 
-    it('defaults to DEFAULT_PROC_STATE.intensity', () => {
-        expect(sut.getProcMotionState().intensity).toBe(DEFAULT_PROC_STATE.intensity);
+    it('defaults to DEFAULT_PROC_STATE.params.idle.intensity', () => {
+        expect(sut.getProcMotionState().params.idle.intensity).toBe(DEFAULT_PROC_STATE.params.idle.intensity);
     });
 
     it('calls triggerAutoSave', () => {
-        sut.setProcMotionIntensity(0.7);
+        sut.setProcMotionIntensity('idle', 0.7);
         expect(mockState.triggerAutoSave).toHaveBeenCalledOnce();
     });
 });
 
 describe('setProcMotionSpeed', () => {
     it('stores the given value', () => {
-        sut.setProcMotionSpeed(0.8);
-        expect(sut.getProcMotionState().speed).toBe(0.8);
+        sut.setProcMotionSpeed('idle', 0.8);
+        expect(sut.getProcMotionState().params.idle.speed).toBe(0.8);
     });
 
     it('clamps below 0.5 to 0.5', () => {
-        sut.setProcMotionSpeed(0.1);
-        expect(sut.getProcMotionState().speed).toBe(0.5);
+        sut.setProcMotionSpeed('idle', 0.1);
+        expect(sut.getProcMotionState().params.idle.speed).toBe(0.5);
     });
 
     it('clamps above 2 to 2', () => {
-        sut.setProcMotionSpeed(3);
-        expect(sut.getProcMotionState().speed).toBe(2);
+        sut.setProcMotionSpeed('idle', 3);
+        expect(sut.getProcMotionState().params.idle.speed).toBe(2);
     });
 
     it('accepts boundary values 0.5 and 2', () => {
-        sut.setProcMotionSpeed(0.5);
-        expect(sut.getProcMotionState().speed).toBe(0.5);
-        sut.setProcMotionSpeed(2);
-        expect(sut.getProcMotionState().speed).toBe(2);
+        sut.setProcMotionSpeed('idle', 0.5);
+        expect(sut.getProcMotionState().params.idle.speed).toBe(0.5);
+        sut.setProcMotionSpeed('idle', 2);
+        expect(sut.getProcMotionState().params.idle.speed).toBe(2);
     });
 
-    it('defaults to DEFAULT_PROC_STATE.speed', () => {
-        expect(sut.getProcMotionState().speed).toBe(DEFAULT_PROC_STATE.speed);
+    it('defaults to DEFAULT_PROC_STATE.params.idle.speed', () => {
+        expect(sut.getProcMotionState().params.idle.speed).toBe(DEFAULT_PROC_STATE.params.idle.speed);
     });
 
     it('calls triggerAutoSave', () => {
-        sut.setProcMotionSpeed(1.5);
+        sut.setProcMotionSpeed('idle', 1.5);
         expect(mockState.triggerAutoSave).toHaveBeenCalledOnce();
     });
 });
@@ -141,8 +141,10 @@ describe('setProcMotionSpeed', () => {
 describe('getProcMotionState', () => {
     it('returns a copy — mutating the result does not affect internal state', () => {
         const state = sut.getProcMotionState();
-        state.intensity = 0.99;
-        expect(sut.getProcMotionState().intensity).toBe(DEFAULT_PROC_STATE.intensity);
+        state.params.idle.intensity = 0.99;
+        expect(sut.getProcMotionState().params.idle.intensity).toBe(
+            DEFAULT_PROC_STATE.params.idle.intensity
+        );
     });
 
     it('returns a new object each call', () => {
@@ -153,25 +155,23 @@ describe('getProcMotionState', () => {
 
     it('reflects changes made by setters', () => {
         sut.setProcMotionMode('idle');
-        sut.setProcMotionIntensity(0.7);
-        sut.setProcMotionSpeed(1.2);
+        sut.setProcMotionIntensity('idle', 0.7);
+        sut.setProcMotionSpeed('idle', 1.2);
 
         const s = sut.getProcMotionState();
         expect(s.mode).toBe('idle');
-        expect(s.intensity).toBe(0.7);
-        expect(s.speed).toBe(1.2);
+        expect(s.params.idle.intensity).toBe(0.7);
+        expect(s.params.idle.speed).toBe(1.2);
     });
 
     it('defaults match DEFAULT_PROC_STATE', () => {
         const s = sut.getProcMotionState();
         expect(s.mode).toBe(DEFAULT_PROC_STATE.mode);
-        expect(s.intensity).toBe(DEFAULT_PROC_STATE.intensity);
-        expect(s.speed).toBe(DEFAULT_PROC_STATE.speed);
-        expect(s.boneToggles).toEqual(DEFAULT_PROC_STATE.boneToggles);
+        expect(s.params.idle.intensity).toBe(DEFAULT_PROC_STATE.params.idle.intensity);
+        expect(s.params.idle.speed).toBe(DEFAULT_PROC_STATE.params.idle.speed);
+        expect(s.params.idle.boneToggles).toEqual(DEFAULT_PROC_STATE.params.idle.boneToggles);
+        expect(s.params.autodance).toEqual(DEFAULT_PROC_STATE.params.autodance);
         expect(s.bpmQuantizeEnabled).toBe(DEFAULT_PROC_STATE.bpmQuantizeEnabled);
-        expect(s.vpdApplyEnabled).toBe(DEFAULT_PROC_STATE.vpdApplyEnabled);
-        expect(s.interpOverride).toBe(DEFAULT_PROC_STATE.interpOverride);
-        expect(s.multiMorphEnabled).toBe(DEFAULT_PROC_STATE.multiMorphEnabled);
         expect(s.eyeTrackingEnabled).toBe(DEFAULT_PROC_STATE.eyeTrackingEnabled);
         expect(s.headTrackingEnabled).toBe(DEFAULT_PROC_STATE.headTrackingEnabled);
     });
@@ -181,17 +181,43 @@ describe('setProcMotionState', () => {
     it('replaces the entire state', () => {
         sut.setProcMotionMode('idle');
 
-        const newState = { ...DEFAULT_PROC_STATE, mode: 'autodance' as const, intensity: 0.9 };
+        const newState = {
+            ...DEFAULT_PROC_STATE,
+            mode: 'autodance' as const,
+            params: {
+                idle: { ...DEFAULT_PROC_STATE.params.idle, intensity: 0.9 },
+                autodance: { ...DEFAULT_PROC_STATE.params.autodance },
+            },
+        };
         sut.setProcMotionState(newState);
 
         const s = sut.getProcMotionState();
         expect(s.mode).toBe('autodance');
-        expect(s.intensity).toBe(0.9);
-        expect(s.speed).toBe(DEFAULT_PROC_STATE.speed);
+        expect(s.params.idle.intensity).toBe(0.9);
+        expect(s.params.idle.speed).toBe(DEFAULT_PROC_STATE.params.idle.speed);
     });
 
     it('does not call triggerAutoSave', () => {
         sut.setProcMotionState({ ...DEFAULT_PROC_STATE });
         expect(mockState.triggerAutoSave).not.toHaveBeenCalled();
+    });
+});
+
+describe('per-mode 独立参数（audit）', () => {
+    it('idle 与 autodance 的强度/速度互不影响', () => {
+        sut.setProcMotionIntensity('idle', 0.3);
+        sut.setProcMotionIntensity('autodance', 0.9);
+        sut.setProcMotionSpeed('idle', 0.6);
+        sut.setProcMotionSpeed('autodance', 1.8);
+        const s = sut.getProcMotionState();
+        expect(s.params.idle.intensity).toBe(0.3);
+        expect(s.params.autodance.intensity).toBe(0.9);
+        expect(s.params.idle.speed).toBe(0.6);
+        expect(s.params.autodance.speed).toBe(1.8);
+    });
+
+    it('两模式参数引用独立（改一个不影响另一个）', () => {
+        const s = sut.getProcMotionState();
+        expect(s.params.idle).not.toBe(s.params.autodance);
     });
 });

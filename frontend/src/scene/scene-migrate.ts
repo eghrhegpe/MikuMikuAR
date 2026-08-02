@@ -78,7 +78,10 @@ export function migratePerceptionFromProcMotion(
         };
     }
 ): Partial<PerceptionState> {
-    const t = old.boneToggles;
+    const t =
+        (old as unknown as { boneToggles?: Record<string, boolean> }).boneToggles ??
+        old.params?.idle?.boneToggles ??
+        old.params?.autodance?.boneToggles;
     const lipSync = migrateLipSyncFromOldState(old);
     // 旧存档 boneToggles 任一躯干微动开关为 true → balanceSwayEnabled=true；
     // 否则默认 true（与 DEFAULT_PERCEPTION_STATE 一致，always-on 语义）

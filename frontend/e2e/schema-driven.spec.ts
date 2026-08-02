@@ -207,7 +207,112 @@ function describeSchemaPanel(
                 }
             });
         }
+
+        // [ADR-229 §2.2] 交互行为自动化：存在性断言全部通过后，执行每个节点的 action
+        // （拖滑块/点开关/选 chip）并经 window.__state 断言 state 值生效。
+        // 仅对已渲染节点执行（conditional 缺失时跳过，与存在性断言一致）。
+        for (const node of interactiveNodes) {
+            if (!node.action) continue;
+            await test.step(`${node.id} action: ${node.action.type}`, async () => {
+                if (node.conditional) {
+                    const cnt = await page.getByTestId(node.id).count();
+                    if (cnt === 0) return; // visibleWhen 不满足，未渲染 → 跳过交互
+                }
+                await executeAction(page, node);
+            });
+        }
     });
+}
+
+// ======== [ADR-229 §2.2] 交互 action 执行 ========
+
+/** 经 window.__state 读取控件对应的 state 值（只读，@dom 模式可用） */
+async function readState(page: any, bind: string, modelId?: string): Promise<unknown> {
+    return page.evaluate(
+        (args: { bind: string; modelId?: string }) =>
+            (window as any).__state?.get(args.bind, args.modelId),
+        { bind, modelId }
+    );
+}
+
+/**
+ * 执行单个节点的 action 并断言 state 生效。
+ * 不做回滚：[ADR-229 §2.2] vitePage 每 test 全新浏览器实例（无跨 test 持久化污染），
+ * Phase 3 视觉基线另有「基线先于交互」顺序约束（§2.3），故无需恢复 state。
+ */
+async function executeAction(page: any, node: any): Promise<void> {
+    const el = page.getByTestId(node.id);
+    const bind = node.control?.bind;
+    if (!bind) {
+        return;
+    }
+    const modelId = node.modelId;
+    const dom = node.dom as string | undefined;
+
+    switch (node.action?.type) {
+        case 'drag': {
+            // slider：键盘驱动（DragSliderController：Home→min，ArrowRight 步进 step）
+            const { min, max, step } = node.control ?? {};
+            if (min === undefined || max === undefined || !step) {
+                return;
+            }
+            const current = Number(await readState(page, bind, modelId));
+            // mid-point 对齐 step；与当前值相等则改用端点（保证值发生变化）
+            let target = Math.round(((min + max) / 2 - min) / step) * step + min;
+            if (Math.abs(target - current) < step / 2) {
+                target = target === min ? Math.min(min + step, max) : min;
+            }
+            const slider = el.locator(dom).first();
+            await slider.focus();
+            await page.keyboard.press('Home'); // 跳到 min
+            const steps = Math.round((target - min) / step);
+            for (let i = 0; i < steps; i++) {
+                await page.keyboard.press('ArrowRight');
+            }
+            const after = Number(await readState(page, bind, modelId));
+            // 数值容差：step 粒度比较，容忍浮点误差
+            expect(Math.abs(after - target), `${node.id} drag: 期望 ${target}, 实际 ${after}`).toBeLessThanOrEqual(step + 1e-9);
+            break;
+        }
+        case 'toggle': {
+            // toggle：点击 checkbox，断言 state 翻转
+            const before = await readState(page, bind, modelId);
+            const toggle = el.locator('input[type="checkbox"]').first();
+            await toggle.click();
+            const after = await readState(page, bind, modelId);
+            if (typeof before === 'boolean') {
+                expect(after, `${node.id} toggle: 期望翻转 ${!before}, 实际 ${after}`).toBe(!before);
+            } else {
+                // headerToggle 等经 set/get 变换的值：断言值发生变化即可
+                expect(after, `${node.id} toggle: 值未变化`).not.toBe(before);
+            }
+            break;
+        }
+        case 'selectChip': {
+            // modeSlider：选第一个 ≠ 当前值的 option（键盘方向键循环切换）
+            const opts = node.control?.options ?? [];
+            if (opts.length < 2) {
+                return;
+            }
+            const current = await readState(page, bind, modelId);
+            const target = opts.find((o: any) => o.value !== current)?.value ?? opts[0].value;
+            const targetIdx = opts.findIndex((o: any) => o.value === target);
+            const currentIdx = Math.max(0, opts.findIndex((o: any) => o.value === current));
+            const listbox = el.locator(dom).first();
+            await listbox.focus();
+            // 循环步进到目标 index（左半/右半点击或方向键均可，统一用 ArrowRight）
+            const delta = (targetIdx - currentIdx + opts.length) % opts.length;
+            for (let i = 0; i < delta; i++) {
+                await page.keyboard.press('ArrowRight');
+            }
+            const after = await readState(page, bind, modelId);
+            expect(after, `${node.id} selectChip: 期望 ${target}, 实际 ${after}`).toBe(target);
+            break;
+        }
+        default:
+            // colorSlider 等无 action 策略：跳过
+            break;
+    }
 }
 
 // 总结性测试：验证所有面板的所有节点均有 testId

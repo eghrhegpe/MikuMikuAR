@@ -66,12 +66,12 @@ describe('triggerAutoSave interaction', () => {
     });
 
     it('setProcMotionIntensity triggers auto-save', () => {
-        sut.setProcMotionIntensity(0.5);
+        sut.setProcMotionIntensity('idle', 0.5);
         expect(mockState.triggerAutoSave).toHaveBeenCalled();
     });
 
     it('setProcMotionSpeed triggers auto-save', () => {
-        sut.setProcMotionSpeed(1.0);
+        sut.setProcMotionSpeed('idle', 1.0);
         expect(mockState.triggerAutoSave).toHaveBeenCalled();
     });
 

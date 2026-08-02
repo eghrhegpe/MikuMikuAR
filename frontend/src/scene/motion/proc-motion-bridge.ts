@@ -403,7 +403,19 @@ class ProcMotionController {
     }
 
     getProcMotionState(): ProcMotionState {
-        return { ...this._refProcState() };
+        const st = this._refProcState();
+        // [audit] 深层拷贝 params（idle/autodance + 各自 boneToggles），
+        // 防调用方 mutate 返回对象污染内部状态（浅拷贝会共享 params 引用）。
+        return {
+            ...st,
+            params: {
+                idle: { ...st.params.idle, boneToggles: { ...st.params.idle.boneToggles } },
+                autodance: {
+                    ...st.params.autodance,
+                    boneToggles: { ...st.params.autodance.boneToggles },
+                },
+            },
+        };
     }
 
     /** 设置程序化动作状态（从存储恢复时使用，不触发自动保存以免干扰反序列化）。

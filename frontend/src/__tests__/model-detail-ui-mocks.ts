@@ -100,7 +100,52 @@ export const mockLipsync = () => ({
 export const mockProceduralMotion = () => ({
     ProcMotionState: {},
     ProcMotionMode: {},
-    DEFAULT_PROC_STATE: { mode: 'off', intensity: 0.5, speed: 1 },
+    ProcModeKey: {},
+    ProcMotionParams: {},
+    DEFAULT_PROC_STATE: {
+        mode: 'off',
+        bpmQuantizeEnabled: true,
+        eyeTrackingEnabled: true,
+        headTrackingEnabled: true,
+        params: {
+            idle: {
+                intensity: 0.5,
+                speed: 1,
+                boneToggles: {},
+                vpdApplyEnabled: false,
+                interpOverride: 'auto',
+            },
+            autodance: {
+                intensity: 0.5,
+                speed: 1,
+                boneToggles: {},
+                vpdApplyEnabled: false,
+                interpOverride: 'auto',
+            },
+        },
+    },
+    migrateProcState: (raw: Record<string, unknown>) => ({
+        mode: 'off',
+        bpmQuantizeEnabled: true,
+        eyeTrackingEnabled: true,
+        headTrackingEnabled: true,
+        params: {
+            idle: {
+                intensity: (raw?.intensity as number) ?? 0.5,
+                speed: (raw?.speed as number) ?? 1,
+                boneToggles: {},
+                vpdApplyEnabled: false,
+                interpOverride: 'auto',
+            },
+            autodance: {
+                intensity: (raw?.intensity as number) ?? 0.5,
+                speed: (raw?.speed as number) ?? 1,
+                boneToggles: {},
+                vpdApplyEnabled: false,
+                interpOverride: 'auto',
+            },
+        },
+    }),
     generateIdleVmd: () => new ArrayBuffer(100),
     generateAutoDanceVmd: () => new ArrayBuffer(100),
     shouldAutoDance: () => false,
