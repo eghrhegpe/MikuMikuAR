@@ -15,11 +15,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
+import { parseArgs } from './_lib/parse-args.mjs';
 
 const ADR_DIR = path.resolve(process.cwd(), 'docs/adr');
-const title = process.argv[2];
-const subtitle = process.argv[3] || '';
-const status = process.argv[4] || '提案';
+// 位置参数（标题/副标题/状态）走 parseArgs 的 `_` 收集，统一参数解析
+const { _: positional } = parseArgs(process.argv.slice(2), { bools: [], strings: [], defaults: {} });
+const title = positional[0];
+const subtitle = positional[1] || '';
+const status = positional[2] || '提案';
 
 if (!title) {
   console.error('用法: node scripts/new-adr.mjs "标题" ["副标题"] ["状态"]');

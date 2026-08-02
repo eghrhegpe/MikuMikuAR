@@ -12,13 +12,14 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
+import { parseArgs } from './_lib/parse-args.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const LOCALES_DIR = resolve(__dirname, '..', 'frontend', 'src', 'core', 'i18n', 'locales');
 const BASE_LANG = 'zh-CN';
 const REFERENCE_LANGS = ['en', 'ja', 'ko', 'zh-TW'];
 
-const strict = process.argv.includes('--strict');
+const { strict } = parseArgs(process.argv.slice(2), { bools: ['strict'], strings: [], defaults: {} });
 
 // 抽取 bundle 对象里的所有 key（形如 `  'some.key': '...'` 或 `"some.key": "..."`），
 // 排除方法定义（`'x': (...) =>`）——bundle 均为纯字符串值，故可安全过滤。
