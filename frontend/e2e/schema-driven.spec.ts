@@ -32,15 +32,10 @@ const __dirname = dirname(__filename);
 const SNAPSHOT_PATH = resolve(__dirname, "schema-snapshot.json");
 const snapshot = JSON.parse(readFileSync(SNAPSHOT_PATH, "utf-8"));
 
-// Schema 定义的 kind → 期望的 DOM 元素选择器
-// [ADR-229 §2.2 审核修正] modeSlider 由 addModeSlider 渲染（ui-advanced-rows.ts:303），
-// 实际类名是 .cs-top + role="listbox"，并非 .chip（历史断言漂移，已修正）。
-const KIND_SELECTOR_MAP: Record<string, string> = {
-    slider: '[role="slider"]',
-    colorSlider: '[role="slider"]',
-    toggle: '[role="switch"], input[type="checkbox"]',
-    modeSlider: '[role="listbox"]', // addModeSlider 渲染的 segmented control
-};
+// [ADR-229 §9] DOM 契约单源：kind → 控件选择器由快照携带（nodes[].dom），
+// 由 schema-snapshot.test.ts 从 src/core/dom-contract.ts 写入——e2e 不再手写
+// KIND_SELECTOR_MAP（历史曾因 .chip / input[type=range] 断言漂移静默超时）。
+// 渲染层改 role/class 而未同步 dom-contract → 快照 diff 触发 CI 门禁。
 
 // 导航配置（ADR-229 §2.1）—— 由快照生成器从注册处推导写入 panel.nav，无第二副本：
 //   domain:          'env' | 'motion' | 'settings' | 'scene'
@@ -141,7 +136,8 @@ function describeSchemaPanel(
         await navigateToPanel(page, nav);
 
         for (const node of interactiveNodes) {
-            const selector = KIND_SELECTOR_MAP[node.kind];
+            // [ADR-229 §9] 选择器从快照读（dom 字段），不再本地维护映射
+            const selector = node.dom as string | undefined;
 
             await test.step(`${node.id} (kind: ${node.kind})`, async () => {
                 const el = page.getByTestId(node.id);
@@ -172,8 +168,8 @@ function describeSchemaPanel(
 
                 // 3. modeSlider: 验证 options 数量（addModeSlider 渲染 role="listbox"，
                 // aria-valuemax = options.length - 1；无 .chip 类）
-                if (node.kind === 'modeSlider' && node.control?.options?.length) {
-                    const listbox = el.locator('[role="listbox"]').first();
+                if (node.kind === 'modeSlider' && node.control?.options?.length && node.dom) {
+                    const listbox = el.locator(node.dom).first();
                     const cnt = await listbox.count();
                     if (cnt > 0) {
                         await expect(listbox).toHaveAttribute(
@@ -188,8 +184,8 @@ function describeSchemaPanel(
                 //    div[role="slider"] + aria-valuemin/max（ADR-140 DragSliderController），
                 //    并非 input[type=range]——旧断言等不存在的元素，默认 5s 全局 timeout
                 //    逐个累积（38 节点 ≈ 190s）直接打爆 test timeout。改用 aria 属性 + 短超时。
-                if (node.kind === 'slider' && node.control) {
-                    const slider = el.locator('[role="slider"]').first();
+                if (node.kind === 'slider' && node.control && node.dom) {
+                    const slider = el.locator(node.dom).first();
                     if (node.control.min !== undefined) {
                         try {
                             await expect(slider).toHaveAttribute(

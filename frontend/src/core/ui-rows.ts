@@ -10,6 +10,8 @@ import { clamp01, clampPct } from '@/core/clamp';
 import { swallowError } from '@/core/async';
 import { DragSliderController } from './ui-slider-controller';
 import { SLIDER_QUARTER_LARGE_STEP, SLIDER_QUARTER_SMALL_STEP } from './ui-constants';
+// [doc:adr-229] DOM 契约单源：role/class 由 dom-contract 提供，禁止手写字符串
+import { ROLE, SLIDER_BAR_CLASS } from './dom-contract';
 
 // ===================================================================
 // addToggleRow
@@ -62,7 +64,7 @@ export function addToggleRow(
     const toggle = document.createElement('input');
     toggle.type = 'checkbox';
     toggle.checked = value;
-    toggle.setAttribute('role', 'switch');
+    toggle.setAttribute('role', ROLE.switch);
     toggle.setAttribute('aria-label', label);
     toggle.setAttribute('aria-checked', String(value));
     toggle.setAttribute('aria-labelledby', lbl.id);
@@ -196,9 +198,9 @@ export function addSliderRow(
     top.appendChild(val);
 
     const bar = document.createElement('div');
-    bar.className = 'cs-bar';
+    bar.className = SLIDER_BAR_CLASS;
     bar.tabIndex = 0;
-    bar.setAttribute('role', 'slider');
+    bar.setAttribute('role', ROLE.slider);
     bar.setAttribute('aria-label', label);
     bar.setAttribute('aria-valuemin', String(min));
     bar.setAttribute('aria-valuemax', String(max));

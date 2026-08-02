@@ -5,6 +5,8 @@ import { addModeSlider } from '../core/ui-advanced-rows';
 import { addPresetChip } from '../core/ui-collapsible';
 import { createHeaderToggle } from '../core/ui-header-toggle';
 import { slideRow, createTrailingBtn, createLeadingBtn } from '../core/ui-slide-row';
+// [doc:adr-229] DOM 契约单源：键盘导航聚焦选择器由 dom-contract 提供，禁止手写字符串
+import { ROLE, SLIDER_BAR_CLASS } from '../core/dom-contract';
 import { subscribe } from '../core/reactivity';
 import { t } from '../core/i18n/t';
 import { getLang } from '../core/i18n/locale';
@@ -715,10 +717,10 @@ export class SlideMenu implements RenderContext {
         // 控件行 .cs-row：滑块聚焦 .cs-bar、模式切换器聚焦 .cs-top[role="listbox"]，
         // 二者 ←→ 均让给控件自身调值；无控件的提示行（都不含）跳过不标记。
         this.panel.querySelectorAll<HTMLElement>('.cs-row').forEach((el) => {
-            if (el.querySelector('.cs-bar')) {
-                mark(el, { focusSelector: '.cs-bar', horizontalAdjust: true });
-            } else if (el.querySelector('.cs-top[role="listbox"]')) {
-                mark(el, { focusSelector: '.cs-top[role="listbox"]', horizontalAdjust: true });
+            if (el.querySelector(`.${SLIDER_BAR_CLASS}`)) {
+                mark(el, { focusSelector: `.${SLIDER_BAR_CLASS}`, horizontalAdjust: true });
+            } else if (el.querySelector(`.cs-top[role="${ROLE.listbox}"]`)) {
+                mark(el, { focusSelector: `.cs-top[role="${ROLE.listbox}"]`, horizontalAdjust: true });
             }
         });
         // 模式切换行 .type-row：一排 .mode-btn 按钮 → 二维组导航（←→ 组内移动、Enter 触发）。
@@ -1217,7 +1219,7 @@ export class SlideMenu implements RenderContext {
         const el = document.createElement('div');
         el.className = 'slide-item' + (row.focused ? ' slide-focused' : '');
         el.tabIndex = 0;
-        el.role = 'button';
+        el.role = ROLE.button;
         el.dataset.rowKey = this.rowKey(row);
         el.dataset.testid = this.rowKey(row);
         const hint = row.sublabel || (row.model ? t('menu.noDesc') : t('menu.noHint'));

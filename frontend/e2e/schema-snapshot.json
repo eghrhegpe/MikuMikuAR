@@ -16,6 +16,7 @@
         "id": "env:sky:mode",
         "kind": "modeSlider",
         "conditional": false,
+        "dom": "[role=\"listbox\"]",
         "label": "env.skyMode",
         "icon": "lucide:sun",
         "control": {
@@ -40,6 +41,7 @@
         "id": "env:sky:color-top",
         "kind": "colorSlider",
         "conditional": true,
+        "dom": "[role=\"slider\"]",
         "label": "env.skyColorTop",
         "control": {
           "bind": "env.skyColorTop"
@@ -49,6 +51,7 @@
         "id": "env:sky:zenith",
         "kind": "colorSlider",
         "conditional": true,
+        "dom": "[role=\"slider\"]",
         "label": "env.zenithColor",
         "control": {
           "bind": "env.skyColorTop"
@@ -58,6 +61,7 @@
         "id": "env:sky:horizon",
         "kind": "colorSlider",
         "conditional": true,
+        "dom": "[role=\"slider\"]",
         "label": "env.horizonColor",
         "control": {
           "bind": "env.skyColorBot"
@@ -72,6 +76,7 @@
         "id": "env:sky:rotation-speed",
         "kind": "slider",
         "conditional": false,
+        "dom": "[role=\"slider\"]",
         "label": "env.skyRotationSpeed",
         "icon": "lucide:rotate-cw",
         "control": {
@@ -92,6 +97,7 @@
             "id": "env:sky:sun-intensity",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.sunIntensity",
             "icon": "lucide:sun",
             "control": {
@@ -105,6 +111,7 @@
             "id": "env:sky:sky-lighting",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.skyLighting",
             "icon": "lucide:sun",
             "control": {
@@ -118,6 +125,7 @@
             "id": "env:sky:global-brightness",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.environmentBrightness",
             "icon": "lucide:sun-dim",
             "control": {
@@ -131,6 +139,7 @@
             "id": "env:sky:stars",
             "kind": "toggle",
             "conditional": true,
+            "dom": "[role=\"switch\"], input[type=\"checkbox\"]",
             "label": "env.stars",
             "control": {
               "bind": "env.starsEnabled"
@@ -140,6 +149,7 @@
             "id": "env:sky:brightness",
             "kind": "slider",
             "conditional": true,
+            "dom": "[role=\"slider\"]",
             "label": "env.brightness",
             "icon": "lucide:sun",
             "control": {
@@ -170,6 +180,7 @@
         "id": "env:wind:angle",
         "kind": "slider",
         "conditional": false,
+        "dom": "[role=\"slider\"]",
         "label": "env.windAngle",
         "icon": "lucide:compass",
         "control": {
@@ -183,6 +194,7 @@
         "id": "env:wind:speed",
         "kind": "slider",
         "conditional": false,
+        "dom": "[role=\"slider\"]",
         "label": "env.windSpeed",
         "icon": "lucide:gauge",
         "control": {
@@ -206,6 +218,7 @@
         "id": "env:fog:mode",
         "kind": "modeSlider",
         "conditional": false,
+        "dom": "[role=\"listbox\"]",
         "label": "env.fogMode",
         "icon": "lucide:layers",
         "control": {
@@ -230,6 +243,7 @@
         "id": "env:fog:color",
         "kind": "colorSlider",
         "conditional": false,
+        "dom": "[role=\"slider\"]",
         "label": "env.fogColor",
         "control": {
           "bind": "env.fogColor"
@@ -239,6 +253,7 @@
         "id": "env:fog:density",
         "kind": "slider",
         "conditional": true,
+        "dom": "[role=\"slider\"]",
         "label": "env.fogDensity",
         "icon": "lucide:droplets",
         "control": {
@@ -252,6 +267,7 @@
         "id": "env:fog:start",
         "kind": "slider",
         "conditional": true,
+        "dom": "[role=\"slider\"]",
         "label": "env.fogStart",
         "control": {
           "bind": "env.fogStart",
@@ -264,6 +280,7 @@
         "id": "env:fog:end",
         "kind": "slider",
         "conditional": true,
+        "dom": "[role=\"slider\"]",
         "label": "env.fogEnd",
         "control": {
           "bind": "env.fogEnd",
@@ -286,6 +303,7 @@
         "id": "env:cloud:cover",
         "kind": "slider",
         "conditional": false,
+        "dom": "[role=\"slider\"]",
         "label": "env.cloudCover",
         "icon": "lucide:cloud",
         "control": {
@@ -299,6 +317,7 @@
         "id": "env:cloud:gap",
         "kind": "slider",
         "conditional": false,
+        "dom": "[role=\"slider\"]",
         "label": "env.cloudGap",
         "icon": "lucide:columns",
         "control": {
@@ -318,6 +337,7 @@
         "id": "env:cloud:erosion",
         "kind": "slider",
         "conditional": false,
+        "dom": "[role=\"slider\"]",
         "label": "env.cloudErosion",
         "icon": "lucide:wind",
         "control": {
@@ -331,6 +351,7 @@
         "id": "env:cloud:weather",
         "kind": "slider",
         "conditional": false,
+        "dom": "[role=\"slider\"]",
         "label": "env.cloudWeatherStrength",
         "icon": "lucide:cloud-sun",
         "control": {
@@ -344,6 +365,7 @@
         "id": "env:cloud:height",
         "kind": "slider",
         "conditional": false,
+        "dom": "[role=\"slider\"]",
         "label": "env.height",
         "icon": "lucide:arrow-up",
         "control": {
@@ -357,6 +379,7 @@
         "id": "env:cloud:scale",
         "kind": "slider",
         "conditional": false,
+        "dom": "[role=\"slider\"]",
         "label": "env.scale",
         "icon": "lucide:maximize",
         "control": {
@@ -370,6 +393,7 @@
         "id": "env:cloud:thickness",
         "kind": "slider",
         "conditional": false,
+        "dom": "[role=\"slider\"]",
         "label": "env.thickness",
         "icon": "lucide:move-vertical",
         "control": {
@@ -383,6 +407,7 @@
         "id": "env:cloud:visibility",
         "kind": "slider",
         "conditional": false,
+        "dom": "[role=\"slider\"]",
         "label": "env.cloudVisibility",
         "icon": "lucide:eye",
         "control": {
@@ -402,6 +427,7 @@
         "id": "env:cloud:backlight",
         "kind": "slider",
         "conditional": false,
+        "dom": "[role=\"slider\"]",
         "label": "env.cloudBacklight",
         "icon": "lucide:sun",
         "control": {
@@ -415,6 +441,7 @@
         "id": "env:cloud:powder",
         "kind": "slider",
         "conditional": false,
+        "dom": "[role=\"slider\"]",
         "label": "env.cloudPowder",
         "icon": "lucide:snowflake",
         "control": {
@@ -445,6 +472,7 @@
             "id": "env:shadow:type",
             "kind": "modeSlider",
             "conditional": false,
+            "dom": "[role=\"listbox\"]",
             "label": "env.shadowType",
             "icon": "lucide:cloud",
             "control": {
@@ -474,6 +502,7 @@
             "id": "env:shadow:bias",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.shadowBias",
             "icon": "lucide:move",
             "control": {
@@ -487,6 +516,7 @@
             "id": "env:shadow:cascades",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.shadowCascades",
             "icon": "lucide:layers",
             "control": {
@@ -535,6 +565,7 @@
             "id": "env:water:level",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.height",
             "icon": "lucide:arrow-up",
             "control": {
@@ -548,6 +579,7 @@
             "id": "env:water:anim-speed",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.animSpeed",
             "icon": "lucide:fast-forward",
             "control": {
@@ -561,6 +593,7 @@
             "id": "env:water:dispersion",
             "kind": "toggle",
             "conditional": false,
+            "dom": "[role=\"switch\"], input[type=\"checkbox\"]",
             "label": "env.waterDispersionEnabled",
             "icon": "lucide:activity",
             "control": {
@@ -583,6 +616,7 @@
             "id": "env:water:big-wave-height",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.bigWaveHeight",
             "icon": "lucide:mountain",
             "control": {
@@ -608,6 +642,7 @@
             "id": "env:water:small-wave-height",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.smallWaveHeight",
             "icon": "lucide:waves",
             "control": {
@@ -630,6 +665,7 @@
             "id": "env:water:color",
             "kind": "colorSlider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.waterColor",
             "control": {
               "bind": "env.waterColor"
@@ -639,6 +675,7 @@
             "id": "env:water:transparency",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.opacity",
             "icon": "lucide:eye",
             "control": {
@@ -652,6 +689,7 @@
             "id": "env:water:fog-color",
             "kind": "colorSlider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.waterFogColor",
             "control": {
               "bind": "env.waterFogColor"
@@ -661,6 +699,7 @@
             "id": "env:water:fog-start",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.waterFogStart",
             "icon": "lucide:cloud-fog",
             "control": {
@@ -674,6 +713,7 @@
             "id": "env:water:fog-end",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.waterFogEnd",
             "icon": "lucide:cloud-fog",
             "control": {
@@ -687,6 +727,7 @@
             "id": "env:water:sky-color-blend",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.waterSkyColorBlend",
             "icon": "lucide:cloud",
             "control": {
@@ -709,6 +750,7 @@
             "id": "env:water:fresnel-bias",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.fresnelBias",
             "control": {
               "bind": "env.fresnelBias",
@@ -721,6 +763,7 @@
             "id": "env:water:fresnel-power",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.fresnelPower",
             "control": {
               "bind": "env.fresnelPower",
@@ -733,6 +776,7 @@
             "id": "env:water:fresnel-alpha",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.fresnelAlpha",
             "control": {
               "bind": "env.fresnelAlphaInfluence",
@@ -745,6 +789,7 @@
             "id": "env:water:diffuse-strength",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.diffuseStrength",
             "control": {
               "bind": "env.diffuseStrength",
@@ -757,6 +802,7 @@
             "id": "env:water:ambient-strength",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.ambientStrength",
             "control": {
               "bind": "env.ambientStrength",
@@ -769,6 +815,7 @@
             "id": "env:water:ripple-slots",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.waterRippleSlots",
             "control": {
               "bind": "env.waterRippleSlots",
@@ -781,6 +828,7 @@
             "id": "env:water:ripple-normal",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.rippleNormal",
             "control": {
               "bind": "env.rippleNormalStrength",
@@ -793,6 +841,7 @@
             "id": "env:water:ripple-glint",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.rippleGlint",
             "control": {
               "bind": "env.rippleGlintStrength",
@@ -805,6 +854,7 @@
             "id": "env:water:normal-strength",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.waterNormalStrength",
             "control": {
               "bind": "env.waterNormalStrength",
@@ -817,6 +867,7 @@
             "id": "env:water:glint-strength",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.waterGlintStrength",
             "control": {
               "bind": "env.waterGlintStrength",
@@ -829,6 +880,7 @@
             "id": "env:water:low-freq-normal",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.lowFreqNormalStrength",
             "control": {
               "bind": "env.lowFreqNormalStrength",
@@ -841,6 +893,7 @@
             "id": "env:water:horizon-fade",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.waterHorizonFade",
             "icon": "lucide:mountain",
             "control": {
@@ -866,6 +919,7 @@
             "id": "env:water:caustic-intensity",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.causticIntensity",
             "icon": "lucide:sun",
             "control": {
@@ -879,6 +933,7 @@
             "id": "env:water:caustic-color-1",
             "kind": "colorSlider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.causticColor1",
             "control": {
               "bind": "env.causticColor1"
@@ -888,6 +943,7 @@
             "id": "env:water:caustic-color-2",
             "kind": "colorSlider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.causticColor2",
             "control": {
               "bind": "env.causticColor2"
@@ -897,6 +953,7 @@
             "id": "env:water:caustic-scroll-x",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.causticScrollX",
             "control": {
               "bind": "env.causticScrollX",
@@ -909,6 +966,7 @@
             "id": "env:water:caustic-scroll-y",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.causticScrollY",
             "control": {
               "bind": "env.causticScrollY",
@@ -921,6 +979,7 @@
             "id": "env:water:fog-opacity",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.waterFogOpacityInfluence",
             "control": {
               "bind": "env.waterFogOpacityInfluence",
@@ -933,6 +992,7 @@
             "id": "env:water:flip",
             "kind": "toggle",
             "conditional": false,
+            "dom": "[role=\"switch\"], input[type=\"checkbox\"]",
             "label": "env.waterFlip",
             "control": {
               "bind": "env.waterFlipEnabled"
@@ -954,6 +1014,7 @@
             "id": "env:water:foam-threshold",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.foamThreshold",
             "control": {
               "bind": "env.foamThreshold",
@@ -966,6 +1027,7 @@
             "id": "env:water:foam-intensity",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.foamIntensity",
             "control": {
               "bind": "env.foamIntensity",
@@ -978,6 +1040,7 @@
             "id": "env:water:foam-transition",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.foamTransition",
             "control": {
               "bind": "env.foamTransitionRange",
@@ -990,6 +1053,7 @@
             "id": "env:water:foam-opacity",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.foamOpacity",
             "control": {
               "bind": "env.foamOpacity",
@@ -1002,6 +1066,7 @@
             "id": "env:water:foam-noise",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.foamNoise",
             "control": {
               "bind": "env.foamNoiseStrength",
@@ -1014,6 +1079,7 @@
             "id": "env:water:foam-color",
             "kind": "colorSlider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.foamColor",
             "control": {
               "bind": "env.foamColor"
@@ -1035,6 +1101,7 @@
             "id": "env:water:tone-intensity",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.toneIntensity",
             "icon": "lucide:palette",
             "control": {
@@ -1048,6 +1115,7 @@
             "id": "env:water:tint-strength",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.underwaterTintStrength",
             "icon": "lucide:palette",
             "control": {
@@ -1086,6 +1154,7 @@
             "id": "env:ground:color",
             "kind": "colorSlider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.groundColor",
             "control": {
               "bind": "env.groundColor"
@@ -1095,6 +1164,7 @@
             "id": "env:ground:opacity",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.opacity",
             "icon": "lucide:eye",
             "control": {
@@ -1108,6 +1178,7 @@
             "id": "env:ground:height",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.groundHeight",
             "icon": "lucide:move-vertical",
             "control": {
@@ -1121,6 +1192,7 @@
             "id": "env:ground:size",
             "kind": "slider",
             "conditional": true,
+            "dom": "[role=\"slider\"]",
             "label": "env.range",
             "icon": "lucide:maximize",
             "control": {
@@ -1134,6 +1206,7 @@
             "id": "env:ground:edge-fade",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.edgeFade",
             "icon": "lucide:droplet",
             "control": {
@@ -1174,6 +1247,7 @@
             "id": "env:ground:grid-size",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.gridSize",
             "icon": "lucide:grid-3x3",
             "control": {
@@ -1187,6 +1261,7 @@
             "id": "env:ground:line-color",
             "kind": "colorSlider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.gridLineColor",
             "control": {
               "bind": "env.groundLineColor"
@@ -1196,6 +1271,7 @@
             "id": "env:ground:pattern",
             "kind": "modeSlider",
             "conditional": true,
+            "dom": "[role=\"listbox\"]",
             "label": "env.groundPattern",
             "icon": "lucide:grid-3x3",
             "control": {
@@ -1236,6 +1312,7 @@
             "id": "env:ground:terrain-height",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.terrainHeight",
             "icon": "lucide:mountain",
             "control": {
@@ -1249,6 +1326,7 @@
             "id": "env:ground:terrain-scale",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.terrainScale",
             "icon": "lucide:ruler",
             "control": {
@@ -1262,6 +1340,7 @@
             "id": "env:ground:terrain-seed",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.terrainSeed",
             "icon": "lucide:hash",
             "control": {
@@ -1275,6 +1354,7 @@
             "id": "env:ground:terrain-octaves",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.terrainOctaves",
             "icon": "lucide:layers",
             "control": {
@@ -1297,6 +1377,7 @@
             "id": "env:ground:pitch",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.groundPitch",
             "icon": "lucide:arrow-up-down",
             "control": {
@@ -1310,6 +1391,7 @@
             "id": "env:ground:roll",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.groundRoll",
             "icon": "lucide:rotate-cw",
             "control": {
@@ -1323,6 +1405,7 @@
             "id": "env:ground:scroll-x",
             "kind": "slider",
             "conditional": true,
+            "dom": "[role=\"slider\"]",
             "label": "env.groundScrollX",
             "icon": "lucide:move-right",
             "control": {
@@ -1336,6 +1419,7 @@
             "id": "env:ground:scroll-z",
             "kind": "slider",
             "conditional": true,
+            "dom": "[role=\"slider\"]",
             "label": "env.groundScrollZ",
             "icon": "lucide:move-down",
             "control": {
@@ -1349,6 +1433,7 @@
             "id": "env:ground:infinite",
             "kind": "toggle",
             "conditional": false,
+            "dom": "[role=\"switch\"], input[type=\"checkbox\"]",
             "label": "env.groundInfiniteEnabled",
             "icon": "lucide:infinity",
             "control": {
@@ -1371,6 +1456,7 @@
             "id": "env:ground:metallic",
             "kind": "slider",
             "conditional": true,
+            "dom": "[role=\"slider\"]",
             "label": "env.metallic",
             "icon": "lucide:circle-dot",
             "control": {
@@ -1384,6 +1470,7 @@
             "id": "env:ground:roughness",
             "kind": "slider",
             "conditional": true,
+            "dom": "[role=\"slider\"]",
             "label": "env.roughness",
             "icon": "lucide:grid-2x2",
             "control": {
@@ -1397,6 +1484,7 @@
             "id": "env:ground:reflection-blur",
             "kind": "slider",
             "conditional": true,
+            "dom": "[role=\"slider\"]",
             "label": "env.reflectionBlur",
             "icon": "lucide:droplets",
             "control": {
@@ -1410,6 +1498,7 @@
             "id": "env:ground:reflection-distort",
             "kind": "slider",
             "conditional": true,
+            "dom": "[role=\"slider\"]",
             "label": "env.reflectionDistort",
             "icon": "lucide:waves",
             "control": {
@@ -1423,6 +1512,7 @@
             "id": "env:ground:reflect-blend",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.groundReflectBlend",
             "icon": "lucide:blend",
             "control": {
@@ -1436,6 +1526,7 @@
             "id": "env:ground:normal-strength",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "env.groundNormalStrength",
             "icon": "lucide:layers",
             "control": {
@@ -1449,6 +1540,7 @@
             "id": "env:ground:elevation-coloring",
             "kind": "toggle",
             "conditional": true,
+            "dom": "[role=\"switch\"], input[type=\"checkbox\"]",
             "label": "env.groundElevationColoringEnabled",
             "icon": "lucide:mountain-snow",
             "control": {
@@ -1491,6 +1583,7 @@
         "id": "env:particle:density",
         "kind": "slider",
         "conditional": false,
+        "dom": "[role=\"slider\"]",
         "label": "env.density",
         "icon": "lucide:layers",
         "control": {
@@ -1504,6 +1597,7 @@
         "id": "env:particle:size",
         "kind": "slider",
         "conditional": false,
+        "dom": "[role=\"slider\"]",
         "label": "env.size",
         "icon": "lucide:maximize",
         "control": {
@@ -1517,6 +1611,7 @@
         "id": "env:particle:speed",
         "kind": "slider",
         "conditional": false,
+        "dom": "[role=\"slider\"]",
         "label": "env.speed",
         "icon": "lucide:gauge",
         "control": {
@@ -1530,6 +1625,7 @@
         "id": "env:particle:splash",
         "kind": "toggle",
         "conditional": false,
+        "dom": "[role=\"switch\"], input[type=\"checkbox\"]",
         "label": "env.splash",
         "icon": "lucide:droplets",
         "control": {
@@ -1565,6 +1661,7 @@
             "id": "postprocess:bloom:weight",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "scene.intensity",
             "icon": "lucide:sun",
             "control": {
@@ -1578,6 +1675,7 @@
             "id": "postprocess:bloom:threshold",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "scene.threshold",
             "icon": "lucide:sliders",
             "control": {
@@ -1591,6 +1689,7 @@
             "id": "postprocess:bloom:kernel",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "scene.kernelSize",
             "icon": "lucide:circle",
             "control": {
@@ -1604,6 +1703,7 @@
             "id": "postprocess:bloom:outline",
             "kind": "toggle",
             "conditional": false,
+            "dom": "[role=\"switch\"], input[type=\"checkbox\"]",
             "label": "scene.outline",
             "icon": "lucide:square",
             "control": {
@@ -1616,6 +1716,7 @@
         "id": "postprocess:vignette",
         "kind": "slider",
         "conditional": false,
+        "dom": "[role=\"slider\"]",
         "label": "scene.vignette",
         "icon": "lucide:circle-dot",
         "control": {
@@ -1629,6 +1730,7 @@
         "id": "postprocess:sharpen",
         "kind": "slider",
         "conditional": false,
+        "dom": "[role=\"slider\"]",
         "label": "scene.sharpen",
         "icon": "lucide:focus",
         "control": {
@@ -1654,6 +1756,7 @@
             "id": "postprocess:optical:grain",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "scene.grain",
             "icon": "lucide:grid-3x3",
             "control": {
@@ -1667,6 +1770,7 @@
             "id": "postprocess:optical:chromatic",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "scene.chromatic",
             "icon": "lucide:rainbow",
             "control": {
@@ -1680,6 +1784,7 @@
             "id": "postprocess:optical:glow",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "scene.glow",
             "icon": "lucide:sparkles",
             "control": {
@@ -1702,6 +1807,7 @@
             "id": "postprocess:env:ssao",
             "kind": "toggle",
             "conditional": false,
+            "dom": "[role=\"switch\"], input[type=\"checkbox\"]",
             "label": "scene.ssao",
             "icon": "lucide:box",
             "control": {
@@ -1712,6 +1818,7 @@
             "id": "postprocess:env:ssao:strength",
             "kind": "slider",
             "conditional": true,
+            "dom": "[role=\"slider\"]",
             "label": "scene.ssaoStrength",
             "icon": "lucide:contrast",
             "control": {
@@ -1725,6 +1832,7 @@
             "id": "postprocess:env:ssao:radius",
             "kind": "slider",
             "conditional": true,
+            "dom": "[role=\"slider\"]",
             "label": "scene.ssaoRadius",
             "icon": "lucide:circle-dot",
             "control": {
@@ -1738,6 +1846,7 @@
             "id": "postprocess:env:ssao:samples",
             "kind": "slider",
             "conditional": true,
+            "dom": "[role=\"slider\"]",
             "label": "scene.ssaoSamples",
             "icon": "lucide:grid-3x3",
             "control": {
@@ -1775,6 +1884,7 @@
             "id": "postprocess:tonemapping:exposure",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "scene.exposure",
             "icon": "lucide:lightbulb",
             "control": {
@@ -1788,6 +1898,7 @@
             "id": "postprocess:tonemapping:contrast",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "scene.contrast",
             "icon": "lucide:contrast",
             "control": {
@@ -1801,6 +1912,7 @@
             "id": "postprocess:tonemapping:cel",
             "kind": "toggle",
             "conditional": false,
+            "dom": "[role=\"switch\"], input[type=\"checkbox\"]",
             "label": "scene.celShading",
             "icon": "lucide:droplet",
             "control": {
@@ -1811,6 +1923,7 @@
             "id": "postprocess:tonemapping:cel-levels",
             "kind": "slider",
             "conditional": true,
+            "dom": "[role=\"slider\"]",
             "label": "scene.celColorLevels",
             "icon": "lucide:layers",
             "control": {
@@ -1824,6 +1937,7 @@
             "id": "postprocess:tonemapping:cel-edge-threshold",
             "kind": "slider",
             "conditional": true,
+            "dom": "[role=\"slider\"]",
             "label": "scene.celEdgeThreshold",
             "icon": "lucide:scan-line",
             "control": {
@@ -1837,6 +1951,7 @@
             "id": "postprocess:tonemapping:cel-edge-strength",
             "kind": "slider",
             "conditional": true,
+            "dom": "[role=\"slider\"]",
             "label": "scene.celEdgeStrength",
             "icon": "lucide:pen-line",
             "control": {
@@ -1862,6 +1977,7 @@
         "id": "perception:enable-all",
         "kind": "toggle",
         "conditional": false,
+        "dom": "[role=\"switch\"], input[type=\"checkbox\"]",
         "label": "motion.perceptionEnableAll",
         "control": {
           "bind": "perception.allEnabled"
@@ -1886,6 +2002,7 @@
             "id": "perception:head-yaw-range",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "perception.headYawRange",
             "control": {
               "bind": "perception.headGazeMaxYaw",
@@ -1898,6 +2015,7 @@
             "id": "perception:head-pitch-range",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "perception.headPitchRange",
             "control": {
               "bind": "perception.headGazeMaxPitch",
@@ -1922,6 +2040,7 @@
             "id": "perception:eye-yaw-range",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "perception.eyeYawRange",
             "control": {
               "bind": "perception.eyeGazeMaxYaw",
@@ -1934,6 +2053,7 @@
             "id": "perception:eye-pitch-range",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "perception.eyePitchRange",
             "control": {
               "bind": "perception.eyeGazeMaxPitch",
@@ -1946,6 +2066,7 @@
             "id": "perception:eye-smooth",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "perception.eyeSmooth",
             "control": {
               "bind": "perception.eyeGazeSmooth",
@@ -1970,6 +2091,7 @@
             "id": "perception:breath-freq",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "perception.breathFreq",
             "control": {
               "bind": "perception.breathFrequency",
@@ -1982,6 +2104,7 @@
             "id": "perception:breath-amp",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "perception.breathAmp",
             "control": {
               "bind": "perception.breathAmplitude",
@@ -2006,6 +2129,7 @@
             "id": "perception:blink-freq",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "perception.blinkFreq",
             "control": {
               "bind": "perception.blinkFrequency",
@@ -2018,6 +2142,7 @@
             "id": "perception:blink-amp",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "perception.blinkAmp",
             "control": {
               "bind": "perception.blinkAmplitude",
@@ -2059,6 +2184,7 @@
             "id": "perception:balance-sway-period",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "motion.balanceSwayPeriod",
             "control": {
               "bind": "perception.balanceSwayPeriod",
@@ -2071,6 +2197,7 @@
             "id": "perception:balance-sway-amplitude",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "motion.balanceSwayAmplitude",
             "control": {
               "bind": "perception.balanceSwayAmplitude",
@@ -2100,6 +2227,7 @@
             "id": "perception:lip-sync-sens",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "motion.lipSyncSensitivity",
             "control": {
               "bind": "perception.lipSyncSensitivity",
@@ -2112,6 +2240,7 @@
             "id": "perception:lip-sync-int",
             "kind": "slider",
             "conditional": false,
+            "dom": "[role=\"slider\"]",
             "label": "motion.lipSyncIntensity",
             "control": {
               "bind": "perception.lipSyncIntensity",
@@ -2124,6 +2253,7 @@
             "id": "perception:lip-sync-multi",
             "kind": "toggle",
             "conditional": false,
+            "dom": "[role=\"switch\"], input[type=\"checkbox\"]",
             "label": "motion.lipSyncMultiMorph",
             "control": {
               "bind": "perception.lipSyncMultiMorphEnabled"
@@ -2145,6 +2275,7 @@
         "id": "settings:perf:cam-sens",
         "kind": "slider",
         "conditional": false,
+        "dom": "[role=\"slider\"]",
         "label": "settings.perf.camSens",
         "icon": "lucide:move",
         "control": {
@@ -2163,6 +2294,7 @@
         "id": "settings:perf:invert-y",
         "kind": "toggle",
         "conditional": false,
+        "dom": "[role=\"switch\"], input[type=\"checkbox\"]",
         "label": "settings.perf.invertY",
         "icon": "lucide:flip-vertical",
         "control": {
@@ -2178,6 +2310,7 @@
         "id": "settings:perf:auto-center",
         "kind": "toggle",
         "conditional": false,
+        "dom": "[role=\"switch\"], input[type=\"checkbox\"]",
         "label": "settings.perf.autoCenter",
         "icon": "lucide:crosshair",
         "control": {
@@ -2203,6 +2336,7 @@
         "id": "settings:graphics:frame-cap",
         "kind": "toggle",
         "conditional": false,
+        "dom": "[role=\"switch\"], input[type=\"checkbox\"]",
         "label": "settings.perf.frameCap",
         "icon": "lucide:monitor-check",
         "control": {
@@ -2218,6 +2352,7 @@
         "id": "settings:graphics:fps",
         "kind": "slider",
         "conditional": false,
+        "dom": "[role=\"slider\"]",
         "label": "settings.perf.fpsCap",
         "icon": "lucide:gauge",
         "control": {
@@ -2236,6 +2371,7 @@
         "id": "settings:graphics:render-scale",
         "kind": "slider",
         "conditional": false,
+        "dom": "[role=\"slider\"]",
         "label": "settings.perf.renderScale",
         "icon": "lucide:scan",
         "control": {
@@ -2279,6 +2415,7 @@
         "id": "settings:graphics:default-physics",
         "kind": "toggle",
         "conditional": false,
+        "dom": "[role=\"switch\"], input[type=\"checkbox\"]",
         "label": "settings.perf.defaultPhysics",
         "icon": "lucide:atom",
         "control": {
@@ -2294,6 +2431,7 @@
         "id": "settings:graphics:show-fps-clock",
         "kind": "toggle",
         "conditional": false,
+        "dom": "[role=\"switch\"], input[type=\"checkbox\"]",
         "label": "settings.perf.showFpsClock",
         "icon": "lucide:gauge",
         "control": {
@@ -2304,6 +2442,7 @@
         "id": "settings:graphics:show-runtime-badge",
         "kind": "toggle",
         "conditional": false,
+        "dom": "[role=\"switch\"], input[type=\"checkbox\"]",
         "label": "settings.perf.showRuntimeBadge",
         "icon": "lucide:cpu",
         "control": {

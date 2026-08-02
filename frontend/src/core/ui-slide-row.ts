@@ -3,6 +3,8 @@
 
 import { createIconifyIcon } from './icons';
 import { createHeaderToggle, type HeaderToggleConfig } from './ui-header-toggle';
+// [doc:adr-229] DOM 契约单源：role/class 由 dom-contract 提供，禁止手写字符串
+import { ROLE, COLLAPSIBLE } from './dom-contract';
 
 export type { HeaderToggleConfig };
 
@@ -112,9 +114,9 @@ export function slideRow(
 
     if (headerToggle) {
         // 使用 addCollapsible 的 header 样式：图标 + label + toggle + 箭头
-        row.className = 'collapsible-header';
+        row.className = COLLAPSIBLE.headerClass;
         row.tabIndex = 0;
-        row.role = 'button';
+        row.role = ROLE.button;
 
         const iconSpan = document.createElement('span');
         iconSpan.className = 'collapsible-icon';
@@ -170,7 +172,7 @@ export function slideRow(
         const variant = extra?.variant ?? 'default';
         row.className = 'slide-item' + (focused ? ' slide-focused' : '');
         row.tabIndex = 0;
-        row.role = 'button';
+        row.role = ROLE.button;
 
         // === 统一左侧行为区：leading 优先于纯展示 .slide-icon（互斥）===
         // leading 存在时，左侧图标被渲染为可点击按钮（保持 radio 指示视觉），

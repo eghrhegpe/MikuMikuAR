@@ -6,6 +6,8 @@
 import { cardContainer, modelRegistry, type PopupLevel } from '../core/config';
 import { showInfoToast } from '../core/toast';
 import { t } from '../core/i18n/t';
+// [doc:adr-229] DOM 契约单源：role 选择器由 dom-contract 提供，禁止手写字符串
+import { ROLE } from '../core/dom-contract';
 import {
     slideRow,
     addSliderRow,
@@ -83,7 +85,7 @@ function updateSliderDisplay(
     const val = row.querySelector('.cs-value');
     const fill = row.querySelector('.cs-fill');
     const thumb = row.querySelector('.cs-thumb');
-    const slider = row.querySelector('[role="slider"]');
+    const slider = row.querySelector(`[role="${ROLE.slider}"]`);
     if (val) {
         val.textContent = step < 1 ? v.toFixed(2) : String(Math.round(v));
     }
