@@ -3,6 +3,7 @@
 // 注册是自愿的：各 *-levels.ts 提取 getXxxSchema() 后在此注册。
 
 import type { MenuNode } from './menu-schema';
+import { translateGoError } from '../core/i18n/goerr';
 
 /**
  * 面板导航元数据（ADR-229 §2.1）。
@@ -71,7 +72,7 @@ export function collectAllSchemasWithFailures(): SchemaCollectResult {
         try {
             schemas.push({ panelId, nodes: entry.builder(), nav: entry.nav });
         } catch (e) {
-            failed.push({ panelId, error: e instanceof Error ? e.message : String(e) });
+            failed.push({ panelId, error: translateGoError(e) });
             if (import.meta.env.DEV) {
                 console.warn(`[menu-registry] panelId "${panelId}" builder 失败:`, e);
             }
