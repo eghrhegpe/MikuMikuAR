@@ -52,7 +52,15 @@ async function ensureCDPReady(endpoint: string, timeout = 30000): Promise<void> 
 export const test = base.extend<WailsFixtures>({
     /** Page connected to a local Playwright-managed Chromium pointed at Vite dev server. */
     vitePage: async ({}, use) => {
-        const browser = await chromium.launch({ headless: true });
+        // [doc:e2e] CI runner (ubuntu-latest) 默认 /dev/shm ≈ 64MB，Babylon 重页面在无头
+        // Chromium 下 renderer 易因内存压力崩溃，表现为 beforeEach 中
+        // "Target page, context or browser has been closed"（run 30743044142: 35 failed）。
+        // --disable-dev-shm-usage 改用 /tmp 规避；--no-sandbox 兼容 root 容器；
+        // --disable-gpu 走软件渲染，DOM 断言无需真实 WebGL。本地 Windows 下这些参数无害。
+        const browser = await chromium.launch({
+            headless: true,
+            args: ["--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu"],
+        });
         const page = await browser.newPage();
         // waitUntil:"commit" 早返回（DOM 一开始解析就放行），避免多 worker 并发打 Vite 时
         // babylon-mmd 等重模块阻塞 HTML parser 触发 10s goto 超时。

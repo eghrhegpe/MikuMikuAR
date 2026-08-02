@@ -16,6 +16,10 @@ export default defineConfig({
     fullyParallel: true,
     forbidOnly: !!process.env.CI,
     retries: process.env.CI ? 2 : 0,
+    // [doc:e2e] 系统级红（如前端在 CI 起不来）时 fail-fast：一旦累计 10 个 spec 失败即中止，
+    // 避免 81 个 spec × retries=2 把 1.2h 全烧在重复超时上（run 30743044142 教训）。
+    // 正常零星失败不会触发；触发即代表环境/共享 fixture 崩了，先修根因而非看完所有失败。
+    maxFailures: process.env.CI ? 10 : 0,
     // 限制并发避免多 worker 同时打 Vite 5173 触发 babylon-mmd 重模块重复编译，
     // 该场景会导致 page.goto 在 10s 内达不到 domcontentloaded（实测 14/16 失败的根因）。
     workers: process.env.CI ? 1 : 2,
