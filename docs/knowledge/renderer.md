@@ -10,6 +10,8 @@ scope:
   - frontend/src/scene/render/renderer.ts
 source_files:
   - frontend/src/scene/render/renderer.ts
+tests:
+  - frontend/src/__tests__/scene/renderer-transition.test.ts
 symbols:
   - RenderState
   - ToneMappingMode
@@ -32,7 +34,6 @@ invariants:
   - RenderState 通过 setRenderState patch 合并，而非整体替换
   - SSR / SSAO / bloom 等后处理在 pipeline 重建后重新附着（reattachPipeline）
   - 接触阴影与 cel-ground 通过 registerCelGroundCoupling 解耦，由 env-bridge 注入
-tests: []
 use_when:
   - 渲染管线
   - 后处理
