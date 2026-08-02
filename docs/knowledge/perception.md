@@ -1,13 +1,13 @@
 ---
 tier: architecture
+source_files:
+  - frontend/src/scene/motion/perception.ts
+tests:
+  - frontend/src/__tests__/perception.perf.test.ts
 kind: perception
 name: 感知层主控
 category: motion
 scope:
-  - frontend/src/scene/motion/perception.ts
-source_files:tests:
-  - frontend/src/__tests__/perception.perf.test.ts
-
   - frontend/src/scene/motion/perception.ts
 adr:
   - ADR-071

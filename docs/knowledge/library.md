@@ -7,6 +7,15 @@ scope:
   - frontend/src/menus/library.ts
 source_files:
   - frontend/src/menus/library.ts
+tests:
+  - frontend/src/__tests__/library-core.build-level.test.ts
+  - frontend/src/__tests__/library-core.model-to-resource.test.ts
+  - frontend/src/__tests__/library-core.model-to-row.test.ts
+  - frontend/src/__tests__/library-core.path-boundary.test.ts
+  - frontend/src/__tests__/library-core.resource-items.test.ts
+  - frontend/src/__tests__/library-core.subdir-file.test.ts
+  - frontend/src/__tests__/library-session-store.test.ts
+  - frontend/src/__tests__/library-thumbnail-streaming.test.ts
 adr:
   - ADR-045
 invariants:

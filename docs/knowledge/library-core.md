@@ -1,5 +1,14 @@
 ---
 tier: architecture
+source_files:
+  - frontend/src/menus/library-core.ts
+tests:
+  - frontend/src/__tests__/library-core.build-level.test.ts
+  - frontend/src/__tests__/library-core.model-to-resource.test.ts
+  - frontend/src/__tests__/library-core.model-to-row.test.ts
+  - frontend/src/__tests__/library-core.path-boundary.test.ts
+  - frontend/src/__tests__/library-core.resource-items.test.ts
+  - frontend/src/__tests__/library-core.subdir-file.test.ts
 adr:
   - ADR-131
   - ADR-135
@@ -8,15 +17,6 @@ kind: library_core
 name: 资源库核心
 category: ui
 scope:
-  - frontend/src/menus/library-core.ts
-source_files:tests:
-  - frontend/src/__tests__/library-core.build-level.test.ts
-  - frontend/src/__tests__/library-core.model-to-resource.test.ts
-  - frontend/src/__tests__/library-core.model-to-row.test.ts
-  - frontend/src/__tests__/library-core.path-boundary.test.ts
-  - frontend/src/__tests__/library-core.resource-items.test.ts
-  - frontend/src/__tests__/library-core.subdir-file.test.ts
-
   - frontend/src/menus/library-core.ts
 symbols:
   - ResourceViewMode

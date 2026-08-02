@@ -1,16 +1,16 @@
 ---
 tier: architecture
-kind: proc_motion_bridge
-name: 程序化动作系统
-category: motion
-scope:
+source_files:
   - frontend/src/scene/motion/proc-motion-bridge.ts
-source_files:tests:
+tests:
   - frontend/src/__tests__/proc-motion-bridge.lifecycle.test.ts
   - frontend/src/__tests__/proc-motion-bridge.state.test.ts
   - frontend/src/__tests__/proc-motion-bridge.toggles.test.ts
   - frontend/src/__tests__/proc-motion-bridge.tracking.test.ts
-
+kind: proc_motion_bridge
+name: 程序化动作系统
+category: motion
+scope:
   - frontend/src/scene/motion/proc-motion-bridge.ts
 adr:
   - ADR-021

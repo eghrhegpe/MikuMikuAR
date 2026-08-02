@@ -17,6 +17,12 @@ scope:
   - frontend/src/scene/**
 source_files:
   - frontend/src/scene/scene.ts
+tests:
+  - frontend/src/__tests__/scene-model.test.ts
+  - frontend/src/__tests__/scene-stage.test.ts
+  - frontend/src/__tests__/scene/scene-pbr-init.test.ts
+  - frontend/src/__tests__/scene/scene-serialize-resilience.test.ts
+  - frontend/src/__tests__/scene/scene-serialize-undo.test.ts
 symbols:
   - DEFAULT_MAT_PARAMS
   - LoadLastScene
@@ -125,7 +131,6 @@ invariants:
   - disposeScene 负责级联释放各子系统；HMR 时调用 _reinitSceneForHMR 重建
   - MMD 运行时初始化含原生描边补丁 + SdefInjector 球面变形改写 engine.createEffect
   - WASM 物理运行时 SPR/MPR 由 VITE_MMD_WASM_MT 编译时标记决定
-tests: []
 use_when:
   - 场景初始化
   - 场景编排

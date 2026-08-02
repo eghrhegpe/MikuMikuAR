@@ -1,13 +1,13 @@
 ---
 tier: architecture
+source_files:
+  - frontend/src/core/fileservice.ts
+tests:
+  - frontend/src/__tests__/fileservice.test.ts
 kind: fileservice
 name: 统一文件服务层
 category: core
 scope:
-  - frontend/src/core/fileservice.ts
-source_files:tests:
-  - frontend/src/__tests__/fileservice.test.ts
-
   - frontend/src/core/fileservice.ts
 adr:
   - ADR-057

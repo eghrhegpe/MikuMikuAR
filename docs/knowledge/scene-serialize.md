@@ -24,6 +24,9 @@ scope:
   - frontend/src/scene/**
 source_files:
   - frontend/src/scene/scene-serialize.ts
+tests:
+  - frontend/src/__tests__/scene/scene-serialize-resilience.test.ts
+  - frontend/src/__tests__/scene/scene-serialize-undo.test.ts
 symbols:
   - SceneFile
   - canUndo
@@ -44,7 +47,6 @@ invariants:
   - undo/redo 使用栈式快照（pushUndoSnapshot → popUndoSnapshot），栈满丢弃最旧
   - deserializeScene 调用 scene-migrate 处理旧档格式迁移
   - tryRestoreLastScene 在启动时经 Go 后端 LoadLastScene 恢复上次关闭场景
-tests: []
 use_when:
   - 场景序列化
   - 场景保存

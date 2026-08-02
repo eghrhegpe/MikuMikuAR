@@ -1,14 +1,14 @@
 ---
 tier: architecture
+source_files:
+  - frontend/src/physics/wind-physics.ts
+tests:
+  - frontend/src/__tests__/wind-physics.test.ts
 kind: wind_physics
 name: 风力物理注入（WASM Bullet）
 category: physics
 scope:
   - frontend/src/physics/**
-source_files:tests:
-  - frontend/src/__tests__/wind-physics.test.ts
-
-  - frontend/src/physics/wind-physics.ts
 adr:
   - ADR-104
   - ADR-192

@@ -11,6 +11,9 @@ scope:
   - frontend/src/scene/render/lighting.ts
 source_files:
   - frontend/src/scene/render/lighting.ts
+tests:
+  - frontend/src/__tests__/scene/lighting-follow.test.ts
+  - frontend/src/__tests__/scene/lighting-stage.test.ts
 symbols:
   - LightState
   - StageLightState
@@ -30,7 +33,6 @@ invariants:
   - 切换预设时 _cancelAllLightingTweens 取消旧补间防冲突
   - disposeLighting 级联释放方向光、半球光、舞台灯、阴影、太阳盘、光锥等全部子资源
   - 子模块共享 lightingState 单例，避免状态碎片
-tests: []
 use_when:
   - 场景光照
   - 方向光/半球光

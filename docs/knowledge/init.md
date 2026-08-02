@@ -1,5 +1,11 @@
 ---
 tier: architecture
+source_files:
+  - frontend/src/core/init.ts
+  - frontend/src/core/main.ts
+  - frontend/src/core/sw-register.ts
+tests:
+  - frontend/src/__tests__/sw-register.test.ts
 adr:
   - ADR-008
   - ADR-059
@@ -15,12 +21,6 @@ name: 应用启动引导
 category: core
 scope:
   - frontend/src/core/**
-source_files:tests:
-  - frontend/src/__tests__/sw-register.test.ts
-
-  - frontend/src/core/init.ts
-  - frontend/src/core/main.ts
-  - frontend/src/core/sw-register.ts
 symbols:
   - bootstrap
   - registerServiceWorker

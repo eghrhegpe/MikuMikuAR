@@ -7,6 +7,8 @@ scope:
   - frontend/src/scene/motion/vmd-loader.ts
 source_files:
   - frontend/src/scene/motion/vmd-loader.ts
+tests:
+  - frontend/src/__tests__/vmd-loader-race.test.ts
 adr:
   - ADR-051
 symbols:
@@ -18,7 +20,6 @@ invariants:
   - per-model generation counter 防止异步竞态
   - VMD 签名前缀校验防止损坏文件
   - 同名伴音缓存避免重复加载
-tests: []
 use_when:
   - VMD 加载
   - 动作文件导入

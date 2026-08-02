@@ -14,6 +14,8 @@ source_files:
   - frontend/src/core/scene-state.ts
   - frontend/src/core/playback-state.ts
   - frontend/src/core/library-state.ts
+tests:
+  - frontend/src/__tests__/perception/state-lifecycle.int.test.ts
 adr:
   - ADR-141
   - ADR-137
@@ -62,7 +64,6 @@ invariants:
   - 修改必须走对应 setXxx() 写入点，保证状态变更可追踪（单一写入点原则）
   - 引用类型变量（Map/Set/数组）内容可被 mutate，但引用本身替换必须走 setter
   - state.ts 作为 barrel re-export 保持向后兼容 import 路径
-tests: []
 use_when:
   - 全局状态
   - 场景状态

@@ -1,16 +1,16 @@
 ---
 tier: architecture
+source_files:
+  - frontend/src/menus/env-ground-levels.ts
+  - frontend/src/scene/env/env-ground-presets.ts
+  - frontend/src/scene/env/env-ground.ts
+tests:
+  - frontend/src/__tests__/scene/env-ground.test.ts
 kind: env_ground
 name: 地面系统
 category: env
 scope:
   - frontend/src/scene/env/**
-source_files:tests:
-  - frontend/src/__tests__/scene/env-ground.test.ts
-
-  - frontend/src/scene/env/env-ground.ts
-  - frontend/src/scene/env/env-ground-presets.ts
-  - frontend/src/menus/env-ground-levels.ts
 adr:
   - ADR-114
 symbols:

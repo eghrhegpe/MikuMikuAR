@@ -1,13 +1,13 @@
 ---
 tier: architecture
+source_files:
+  - frontend/src/scene/motion/lipsync-bridge.ts
+tests:
+  - frontend/src/__tests__/lipsync-bridge.test.ts
 kind: lipsync_bridge
 name: 口型同步桥
 category: motion
 scope:
-  - frontend/src/scene/motion/lipsync-bridge.ts
-source_files:tests:
-  - frontend/src/__tests__/lipsync-bridge.test.ts
-
   - frontend/src/scene/motion/lipsync-bridge.ts
 adr:
   - ADR-021

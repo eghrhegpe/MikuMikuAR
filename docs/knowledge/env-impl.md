@@ -1,13 +1,13 @@
 ---
 tier: architecture
+source_files:
+  - frontend/src/scene/env/env-impl.ts
+tests:
+  - frontend/src/__tests__/scene/env-impl.test.ts
 kind: env_impl
 name: 环境系统实现核心（barrel + observer + fog）
 category: env
 scope:
-  - frontend/src/scene/env/env-impl.ts
-source_files:tests:
-  - frontend/src/__tests__/scene/env-impl.test.ts
-
   - frontend/src/scene/env/env-impl.ts
 adr:
   - ADR-138

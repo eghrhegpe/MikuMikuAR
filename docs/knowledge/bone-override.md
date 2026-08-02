@@ -1,13 +1,13 @@
 ---
 tier: architecture
+source_files:
+  - frontend/src/scene/motion/bone-override.ts
+tests:
+  - frontend/src/__tests__/scene/bone-override.test.ts
 kind: bone_override
 name: 骨骼覆盖核心 API
 category: motion
 scope:
-  - frontend/src/scene/motion/bone-override.ts
-source_files:tests:
-  - frontend/src/__tests__/scene/bone-override.test.ts
-
   - frontend/src/scene/motion/bone-override.ts
 adr:
   - ADR-061
