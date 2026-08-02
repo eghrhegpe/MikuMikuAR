@@ -8,7 +8,7 @@
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
 | 核心基础设施 | 124 | 723 |
-| 3D 场景 | 113 | 1134 |
+| 3D 场景 | 113 | 1136 |
 | 菜单 & UI | 75 | 386 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 17 | 130 |
@@ -1266,6 +1266,8 @@
 | `stopVMD()` | `scene/manager/model-ops` | — |
 | `tryApplyPbrMaterialBuilder()` | `scene/manager/pbr-builder-init` | 动态导入 PBRMaterialBuilder 并覆盖 MmdModelLoader.SharedMaterialBuilder。 |
 | `auditMissingTextures()` | `scene/manager/pmx-texture-audit` | 识别 PMX 声明但目录中缺失的纹理。 |
+| `parsePmxTexturePaths()` | `scene/manager/pmx-texture-audit` | 解析 PMX 声明的纹理路径清单（相对路径，原样保留目录前缀与分隔符）。 |
+| `registerDeclaredAliases()` | `scene/manager/texture-fallback` | 按 PMX 声明路径反向注册别名（[fix:decl-alias]）。 |
 | `textureFallbackCandidates()` | `scene/manager/texture-fallback` | 生成给定相对路径的 fallback 候选列表（不含原始路径本身）。 |
 | `_resetTextureLRUForTest()` | `scene/manager/texture-lru` | 仅供测试：重置缓存状态。 |
 | `clearTextureLRU()` | `scene/manager/texture-lru` | 清空 LRU 缓存。在 disposeRenderer 中调用，释放所有缓存的纹理 ArrayBuffer。 |

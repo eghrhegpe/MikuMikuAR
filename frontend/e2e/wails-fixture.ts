@@ -56,17 +56,19 @@ export const test = base.extend<WailsFixtures>({
         // 表现为 beforeEach 中 "Target page, context or browser has been closed"（run 30743044142: 35 failed）。
         // --disable-dev-shm-usage 改用 /tmp 规避；--no-sandbox 兼容 root 容器。
         // 点开设置/场景面板会渲染 WebGL overlay；headless 无 GPU 须走软件渲染。
-        // run 30749335098 DEBUG 日志定位：--use-gl=angle --use-angle=swiftshader 会触发
-        // SharedImageManager::ProduceSkia "non-existent mailbox" 的 GPU 共享内存 bug，
-        // 合成 overlay 时崩溃页面。改走 --use-gl=swiftshader（绕过 ANGLE 的共享内存路径）
-        // + --enable-unsafe-swiftshader 保底软件 WebGL。绝不可用 --disable-gpu（会禁用 WebGL）。
-        // 本地 Windows 下这些参数无害。
+        // 经 DEBUG 诊断（run 30750286147）：本环境 GPU 进程无法初始化
+        // （ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer），
+        // --use-gl=swiftshader 更被拒绝（只允许 gl=egl-angle）。故软件 WebGL 依赖
+        // --use-gl=angle --use-angle=swiftshader + --enable-unsafe-swiftshader 尽力而为；
+        // 若 CI runner 无可用 GPU/软件渲染，开 overlay 的 spec 仍会失败——属环境硬伤，非测试 bug。
+        // 绝不可用 --disable-gpu（会直接禁用 WebGL）。本地 Windows 下这些参数无害。
         const browser = await chromium.launch({
             headless: true,
             args: [
                 "--no-sandbox",
                 "--disable-dev-shm-usage",
-                "--use-gl=swiftshader",
+                "--use-gl=angle",
+                "--use-angle=swiftshader",
                 "--enable-unsafe-swiftshader",
             ],
         });
