@@ -1028,6 +1028,7 @@ export const en: Record<string, string> = {
     'resource.textureMissing': 'Model texture missing: {name}',
     'resource.outfitTextureMissing': 'Outfit texture missing: {name}',
     'resource.outfitNoMesh': 'FBX has no mesh: {name}',
+    'resource.outfitLoadFailed': 'Outfit file load failed: {name}',
     'resource.audioLoadFailed': 'Audio load failed: {name}',
     'scene.loader.actorLoaded': '✓ {name}',
     'scene.loader.actorLoadedWithVmd': '✓ {name} + {vmd}',

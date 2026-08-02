@@ -1016,6 +1016,7 @@ export const zhCN: Record<string, string> = {
     'resource.textureMissing': '模型纹理缺失：{name}',
     'resource.outfitTextureMissing': '换装贴图缺失：{name}',
     'resource.outfitNoMesh': 'FBX 无网格：{name}',
+    'resource.outfitLoadFailed': '换装文件读取失败：{name}',
     'resource.audioLoadFailed': '音频读取失败：{name}',
     'scene.loader.actorLoaded': '✓ {name}',
     'scene.loader.actorLoadedWithVmd': '✓ {name} + {vmd}',

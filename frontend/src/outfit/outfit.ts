@@ -5,6 +5,7 @@ import { observe } from '@/core/observer-handle';
 import { Texture } from '@babylonjs/core/Materials/Textures/texture';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { LoadOutfitFile, ListSubDirs, readFileBytes, FileExists } from '../core/wails-bindings';
+import { readTextureWithLRU } from '../scene/manager/texture-lru';
 import {
     modelRegistry,
     OutfitFile,
@@ -280,15 +281,21 @@ async function _applySlot(
     slot: TextureSlotKey,
     newPath: string | null,
     origTex: Texture | null,
-    modelDir: string
+    modelDir: string,
+    inst: ModelInstance,
+    token?: symbol
 ): Promise<void> {
     const mmdSm = sm as MmdStandardMaterial & Record<TextureSlotKey, Texture | null>;
     const cur = mmdSm[slot];
+    // [fix:p2-texture-token] 代次守卫：token 过期（变体已切换）时丢弃本次结果，
+    // 避免慢加载的旧变体纹理覆盖新变体已设置的槽位（快速切换 A→B 竞态）
+    const isStale = (): boolean => token !== undefined && inst._textureLoadToken !== token;
     if (newPath) {
         const scene = await _getScene();
-        // ReadFileBytes → base64 → Blob URL（替换 HTTP 中转）
-        const bytes = await readFileBytes(modelDir + '/' + normPath(newPath));
-        if (!bytes) {
+        // [fix:p3-outfit-lru] 换装纹理走 readTextureWithLRU：与模型纹理共享 LRU 缓存，
+        // 反复切换变体不重复读盘（键 modelDir\x00relativePath 与 collectTextureFiles 一致）
+        const texData = await readTextureWithLRU(modelDir, normPath(newPath));
+        if (!texData) {
             logWarn('outfit', '_applySlot: failed to read texture', newPath);
             reportResourceWarning(t('resource.outfitTextureMissing', { name: newPath }));
             return;
@@ -304,7 +311,7 @@ async function _applySlot(
             spa: 'image/png',
             sph: 'image/png',
         };
-        const blob = new Blob([bytes.buffer as ArrayBuffer], {
+        const blob = new Blob([texData], {
             type: mimeMap[ext] || 'application/octet-stream',
         });
         const url = URL.createObjectURL(blob);
@@ -341,6 +348,12 @@ async function _applySlot(
             }, 5000);
         });
         if (loaded) {
+            // [fix:p2-texture-token] 变体已切换：丢弃本次加载的纹理，不覆盖新槽位
+            if (isStale()) {
+                newTex.dispose();
+                URL.revokeObjectURL(url);
+                return;
+            }
             if (cur && cur !== origTex) {
                 cur.dispose();
             }
@@ -355,6 +368,12 @@ async function _applySlot(
                 done = true;
                 if (disposed) {
                     return; // 已因加载失败被清理
+                }
+                // [fix:p2-texture-token] 变体已切换：丢弃（done 已置位，后续超时清理不会再 dispose）
+                if (isStale()) {
+                    newTex.dispose();
+                    URL.revokeObjectURL(url);
+                    return;
                 }
                 if (mmdSm[slot] === cur) {
                     if (cur && cur !== origTex) {
@@ -598,6 +617,8 @@ async function _applyOutfitVariantCore(id: string, variantName: string): Promise
     // token 守卫：防止快速切换变体时，旧 loadOverlay 完成后覆盖新状态导致孤儿 mesh 泄漏
     const token = Symbol('overlay');
     inst._overlayLoadToken = token;
+    // [fix:p2-texture-token] 纹理槽位共用同一代次 token：旧变体 _applySlot 完成后检测过期即丢弃
+    inst._textureLoadToken = token;
     promises.push(
         (async () => {
             if (inst._overlayMeshes) {
@@ -654,7 +675,9 @@ async function _applyOutfitVariantCore(id: string, variantName: string): Promise
                 'diffuseTexture',
                 _getSlotFor(variant, sm.name, cat, 'diffuse'),
                 origTex.diffuse,
-                inst.modelDir
+                inst.modelDir,
+                inst,
+                token
             )
         );
         promises.push(
@@ -663,7 +686,9 @@ async function _applyOutfitVariantCore(id: string, variantName: string): Promise
                 'toonTexture',
                 _getSlotFor(variant, sm.name, cat, 'toon'),
                 origTex.toon,
-                inst.modelDir
+                inst.modelDir,
+                inst,
+                token
             )
         );
         promises.push(
@@ -672,7 +697,9 @@ async function _applyOutfitVariantCore(id: string, variantName: string): Promise
                 'sphereTexture',
                 _getSlotFor(variant, sm.name, cat, 'spa'),
                 origTex.spa,
-                inst.modelDir
+                inst.modelDir,
+                inst,
+                token
             )
         );
         promises.push(
@@ -681,7 +708,9 @@ async function _applyOutfitVariantCore(id: string, variantName: string): Promise
                 'bumpTexture',
                 _getSlotFor(variant, sm.name, cat, 'normal'),
                 origTex.normal,
-                inst.modelDir
+                inst.modelDir,
+                inst,
+                token
             )
         );
         promises.push(
@@ -690,7 +719,9 @@ async function _applyOutfitVariantCore(id: string, variantName: string): Promise
                 'emissiveTexture',
                 _getSlotFor(variant, sm.name, cat, 'emissive'),
                 origTex.emissive,
-                inst.modelDir
+                inst.modelDir,
+                inst,
+                token
             )
         );
 
@@ -727,11 +758,11 @@ export async function resetOutfit(id: string): Promise<void> {
             if (!orig) {
                 continue;
             }
-            promises.push(_applySlot(sm, 'diffuseTexture', null, orig.diffuse, inst.modelDir));
-            promises.push(_applySlot(sm, 'toonTexture', null, orig.toon, inst.modelDir));
-            promises.push(_applySlot(sm, 'sphereTexture', null, orig.spa, inst.modelDir));
-            promises.push(_applySlot(sm, 'bumpTexture', null, orig.normal, inst.modelDir));
-            promises.push(_applySlot(sm, 'emissiveTexture', null, orig.emissive, inst.modelDir));
+            promises.push(_applySlot(sm, 'diffuseTexture', null, orig.diffuse, inst.modelDir, inst));
+            promises.push(_applySlot(sm, 'toonTexture', null, orig.toon, inst.modelDir, inst));
+            promises.push(_applySlot(sm, 'sphereTexture', null, orig.spa, inst.modelDir, inst));
+            promises.push(_applySlot(sm, 'bumpTexture', null, orig.normal, inst.modelDir, inst));
+            promises.push(_applySlot(sm, 'emissiveTexture', null, orig.emissive, inst.modelDir, inst));
         }
     }
     await Promise.all(promises);
@@ -752,8 +783,9 @@ export async function resetOutfit(id: string): Promise<void> {
         }
     }
     // 清理 overlay mesh 并恢复被隐藏的 PMX 材质
-    // token 失效，使进行中的 loadOverlay 完成后丢弃结果
+    // token 失效，使进行中的 loadOverlay / _applySlot 完成后丢弃结果（防止 reset 与切换竞态）
     inst._overlayLoadToken = undefined;
+    inst._textureLoadToken = undefined;
     disposeOverlay(inst);
     restoreMaterials(inst);
 
