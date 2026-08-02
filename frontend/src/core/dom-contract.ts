@@ -6,11 +6,14 @@
 //   3. e2e schema-driven.spec.ts 从快照读取断言选择器（不再手写 KIND_SELECTOR_MAP）
 // 若渲染层改 role/class 而未同步本文件 → CI「快照重生成 + git diff」门禁直接红。
 
+/** toggle 的原生输入元素选择器（e2e 需点击/读 checked，故单列一份） */
+export const TOGGLE_INPUT_SELECTOR = 'input[type="checkbox"]';
+
 /** MenuKind → 交互控件选择器（e2e 断言用；folder/custom/action 等无标准交互控件） */
 export const KIND_CONTROL_SELECTOR: Record<string, string> = {
     slider: '[role="slider"]',
     colorSlider: '[role="slider"]',
-    toggle: '[role="switch"], input[type="checkbox"]',
+    toggle: `[role="switch"], ${TOGGLE_INPUT_SELECTOR}`,
     modeSlider: '[role="listbox"]',
 };
 

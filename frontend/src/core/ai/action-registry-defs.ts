@@ -1,5 +1,7 @@
 import { registerAction } from '../action-registry';
 import { setLightState } from '../../scene/render/lighting';
+import { showToast } from '../toast';
+import { t } from '../i18n/t';
 import { setCameraMode } from '../../scene/camera/camera-state';
 import { applyEnvPreset } from '../../scene/env/env-time-of-day';
 import { setEnvState } from '../../scene/env/_bridge/env-bridge';
@@ -30,6 +32,14 @@ export function registerAllActions(): void {
     registerLibraryActions();
 }
 
+/** [fix:P3] 守卫返回 false 时给出用户可见反馈：此前花括号吞掉返回值，
+ *  灯光未就绪（启动早期 / AR 会话切换）AI 动作仍报"执行成功"，用户只见画面无变化。 */
+function _reportLightWrite(ok: boolean): void {
+    if (!ok) {
+        showToast(t('toast.lightNotReady'));
+    }
+}
+
 export function registerControlActions(): void {
     // light:dirIntensity
     registerAction({
@@ -38,7 +48,7 @@ export function registerControlActions(): void {
         domain: 'scene',
         params: [{ name: 'dirIntensity', type: 'range', min: 0, max: 1, step: 0.05 }],
         execute: (p) => {
-            setLightState({ dirIntensity: p.dirIntensity as number });
+            _reportLightWrite(setLightState({ dirIntensity: p.dirIntensity as number }));
         },
     });
 
@@ -49,7 +59,7 @@ export function registerControlActions(): void {
         domain: 'scene',
         params: [{ name: 'dirColor', type: 'color' }],
         execute: (p) => {
-            setLightState({ dirColor: p.dirColor as [number, number, number] });
+            _reportLightWrite(setLightState({ dirColor: p.dirColor as [number, number, number] }));
         },
     });
 

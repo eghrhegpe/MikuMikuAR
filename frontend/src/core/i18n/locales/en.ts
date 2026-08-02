@@ -1503,6 +1503,7 @@ export const en: Record<string, string> = {
     // toast — Toast component
     'toast.copy': 'Copy',
     'toast.copied': 'Copied ✓',
+    'toast.lightNotReady': 'Lighting is not ready yet — this change was not applied',
 
     // about — links section
     'about.license': 'Open Source License',

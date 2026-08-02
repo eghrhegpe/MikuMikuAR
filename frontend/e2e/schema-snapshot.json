@@ -6,6 +6,11 @@
       "entryTestId": "btnEnv",
       "subLevelTestId": "folder:env:sky"
     },
+    "meta": {
+      "collapsibleHeader": "collapsible-header",
+      "collapsibleOpen": "open",
+      "toggleInput": "input[type=\"checkbox\"]"
+    },
     "nodes": [
       {
         "id": "env:sky:presets",
@@ -212,6 +217,11 @@
       "entryTestId": "btnEnv",
       "subLevelTestId": "folder:env:wind"
     },
+    "meta": {
+      "collapsibleHeader": "collapsible-header",
+      "collapsibleOpen": "open",
+      "toggleInput": "input[type=\"checkbox\"]"
+    },
     "nodes": [
       {
         "id": "env:wind:angle",
@@ -259,6 +269,11 @@
       "domain": "env",
       "entryTestId": "btnEnv",
       "subLevelTestId": "folder:env:fog"
+    },
+    "meta": {
+      "collapsibleHeader": "collapsible-header",
+      "collapsibleOpen": "open",
+      "toggleInput": "input[type=\"checkbox\"]"
     },
     "nodes": [
       {
@@ -365,6 +380,11 @@
       "domain": "env",
       "entryTestId": "btnEnv",
       "subLevelTestId": "folder:env:cloud"
+    },
+    "meta": {
+      "collapsibleHeader": "collapsible-header",
+      "collapsibleOpen": "open",
+      "toggleInput": "input[type=\"checkbox\"]"
     },
     "nodes": [
       {
@@ -578,6 +598,11 @@
       "entryTestId": "btnEnv",
       "subLevelTestId": "folder:env:shadow"
     },
+    "meta": {
+      "collapsibleHeader": "collapsible-header",
+      "collapsibleOpen": "open",
+      "toggleInput": "input[type=\"checkbox\"]"
+    },
     "nodes": [
       {
         "id": "env:shadow:env",
@@ -680,6 +705,11 @@
       "entryTestId": "btnScene",
       "subLevelTestId": "folder:scene:water",
       "subLevelLabel": "水"
+    },
+    "meta": {
+      "collapsibleHeader": "collapsible-header",
+      "collapsibleOpen": "open",
+      "toggleInput": "input[type=\"checkbox\"]"
     },
     "nodes": [
       {
@@ -1438,6 +1468,11 @@
       "subLevelTestId": "folder:scene:ground",
       "subLevelLabel": "地面"
     },
+    "meta": {
+      "collapsibleHeader": "collapsible-header",
+      "collapsibleOpen": "open",
+      "toggleInput": "input[type=\"checkbox\"]"
+    },
     "nodes": [
       {
         "id": "env:ground:presets",
@@ -2043,6 +2078,11 @@
       "entryTestId": "btnEnv",
       "subLevelTestId": "folder:env:experimental"
     },
+    "meta": {
+      "collapsibleHeader": "collapsible-header",
+      "collapsibleOpen": "open",
+      "toggleInput": "input[type=\"checkbox\"]"
+    },
     "nodes": [
       {
         "id": "env:exp:warn",
@@ -2057,6 +2097,11 @@
       "domain": "env",
       "entryTestId": "btnEnv",
       "subLevelTestId": "folder:env:particle"
+    },
+    "meta": {
+      "collapsibleHeader": "collapsible-header",
+      "collapsibleOpen": "open",
+      "toggleInput": "input[type=\"checkbox\"]"
     },
     "nodes": [
       {
@@ -2149,6 +2194,11 @@
       "domain": "env",
       "entryTestId": "btnEnv",
       "subLevelTestId": "folder:env:postprocess"
+    },
+    "meta": {
+      "collapsibleHeader": "collapsible-header",
+      "collapsibleOpen": "open",
+      "toggleInput": "input[type=\"checkbox\"]"
     },
     "nodes": [
       {
@@ -2429,6 +2479,11 @@
       "entryTestId": "btnEnv",
       "subLevelTestId": "folder:env:postprocess"
     },
+    "meta": {
+      "collapsibleHeader": "collapsible-header",
+      "collapsibleOpen": "open",
+      "toggleInput": "input[type=\"checkbox\"]"
+    },
     "nodes": [
       {
         "id": "postprocess:tonemapping",
@@ -2562,6 +2617,11 @@
       "domain": "motion",
       "entryTestId": "btnMotionPopup",
       "subLevelTestId": "folder:motion:gaze"
+    },
+    "meta": {
+      "collapsibleHeader": "collapsible-header",
+      "collapsibleOpen": "open",
+      "toggleInput": "input[type=\"checkbox\"]"
     },
     "nodes": [
       {
@@ -2934,6 +2994,11 @@
       "entryTestId": "btnSettings",
       "subLevel2TestId": "folder:settings:controls"
     },
+    "meta": {
+      "collapsibleHeader": "collapsible-header",
+      "collapsibleOpen": "open",
+      "toggleInput": "input[type=\"checkbox\"]"
+    },
     "nodes": [
       {
         "id": "settings:perf:cam-sens",
@@ -3007,6 +3072,11 @@
       "domain": "settings",
       "entryTestId": "btnSettings",
       "subLevel2TestId": "folder:settings:graphics"
+    },
+    "meta": {
+      "collapsibleHeader": "collapsible-header",
+      "collapsibleOpen": "open",
+      "toggleInput": "input[type=\"checkbox\"]"
     },
     "nodes": [
       {
@@ -3086,6 +3156,11 @@
       "entryTestId": "btnSettings",
       "subLevel2TestId": "folder:settings:graphics"
     },
+    "meta": {
+      "collapsibleHeader": "collapsible-header",
+      "collapsibleOpen": "open",
+      "toggleInput": "input[type=\"checkbox\"]"
+    },
     "nodes": [
       {
         "id": "settings:graphics:toggles",
@@ -3100,6 +3175,11 @@
       "domain": "settings",
       "entryTestId": "btnSettings",
       "subLevel2TestId": "folder:settings:graphics"
+    },
+    "meta": {
+      "collapsibleHeader": "collapsible-header",
+      "collapsibleOpen": "open",
+      "toggleInput": "input[type=\"checkbox\"]"
     },
     "nodes": [
       {

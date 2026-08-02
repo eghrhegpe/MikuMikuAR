@@ -1393,6 +1393,7 @@ export const ja: Record<string, string> = {
     // toast — Toast コンポーネント
     'toast.copy': 'コピー',
     'toast.copied': 'コピー済み ✓',
+    'toast.lightNotReady': 'ライトが未準備のため、今回の設定は反映されませんでした',
 
     // about — リンクセクション
     'about.license': 'オープンソースライセンス',
