@@ -242,6 +242,9 @@ function cleanNode(node: any): any {
     const result: any = {
         id: node.id,
         kind: node.kind,
+        // [ADR-229 §2.2] visibleWhen 条件节点：条件不满足时不渲染（renderNode 直接 return
+        // undefined），E2E 断言须降级（存在则断言、缺失则跳过），故快照标记 conditional
+        conditional: !!node.visibleWhen,
     };
     if (node.label) {
         result.label = node.label;

@@ -25,8 +25,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parseArgs } from './_lib/parse-args.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const args = parseArgs(process.argv.slice(2), { bools: ['reverse', 'check'], strings: [], defaults: {} });
 const ROOT = path.resolve(__dirname, '..');
 const ADR_DIR = path.join(ROOT, 'docs', 'adr');
 const STATUS_FILE = path.join(ROOT, 'docs', 'status.md');
@@ -167,7 +169,7 @@ function main() {
     process.exit(1);
   }
 
-  const isReverse = process.argv.includes('--reverse');
+  const isReverse = args.reverse;
 
   // 按编号排序
   entries.sort((a, b) => a.num - b.num);
@@ -196,7 +198,7 @@ function main() {
     process.exit(1);
   }
 
-  if (process.argv.includes('--check')) {
+  if (args.check) {
     if (expected !== statusMd) {
       console.error('❌ docs/status.md 的 ADR 索引未同步，请运行：npm run gen:status');
       process.exit(1);
