@@ -26,24 +26,9 @@ import { parseArgs } from './_lib/parse-args.mjs';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const KNOW_DIR = path.join(ROOT, 'docs', 'knowledge');
-const MENU_MAP = path.join(KNOW_DIR, 'menu-map.md');
 
 const UI_ENTRY_HEADING = '## UI 入口';
 const UI_ENTRY_REF = 'menu-map.md';
-
-/** 解析 menu-map.md「入口一览」表：文件 basename → [入口函数…] */
-function parseEntryTable(text) {
-  const map = new Map();
-  const re = /^\| `(\w+)\(\)` \| `([\w.-]+\.ts)` \|$/gm;
-  let m;
-  while ((m = re.exec(text))) {
-    const fn = m[1];
-    const file = m[2];
-    if (!map.has(file)) map.set(file, []);
-    if (!map.get(file).includes(fn)) map.get(file).push(fn);
-  }
-  return map;
-}
 
 /** 提取 frontmatter 块（首个 --- 之间）。 */
 function fmBlock(text) {
@@ -58,10 +43,9 @@ function fm(text, key) {
 }
 
 /** 生成 UI 入口小节文本（方案 A：统一一键引用 menu-map.md，不做入口函数细节双写）。 */
-function buildEntrySection(card, entryTable) {
+function buildEntrySection() {
   // menu-map.md 是机器生成的菜单事实源（菜单层级 / 入口函数 / 快捷键），
   // 知识卡仅引用而不复制，避免双写漂移（ADR-218 静态归 menu-map、动态归知识卡）。
-  void entryTable; // 不再反查入口函数
   return (
     UI_ENTRY_HEADING +
     '\n' +
@@ -102,7 +86,6 @@ function main() {
     console.error('❌ docs/knowledge/ 不存在，请确认在仓库根目录运行');
     process.exit(1);
   }
-  const entryTable = parseEntryTable(fs.readFileSync(MENU_MAP, 'utf8'));
 
   // 非知识卡文件（与 gen-docs-index.mjs 保持一致），防止误改机器生成物
   const NON_CARDS = new Set([
@@ -128,7 +111,7 @@ function main() {
   if (isCheck) {
     // 只有「会被改写」的卡（缺 UI 入口，或已是旧格式而非一行引用）才算未同步
     const stale = targets.filter((t) => {
-      const section = buildEntrySection(t, entryTable);
+      const section = buildEntrySection();
       const replaced = replaceSection(t.text, section);
       const newText = replaced !== null ? replaced : insertSection(t.text, section);
       return newText !== t.text;
@@ -144,7 +127,7 @@ function main() {
 
   let written = 0;
   for (const t of targets) {
-    const section = buildEntrySection(t, entryTable);
+    const section = buildEntrySection();
     // 已有旧格式小节 → 替换；缺失 → 插入
     const replaced = replaceSection(t.text, section);
     const newText = replaced !== null ? replaced : insertSection(t.text, section);

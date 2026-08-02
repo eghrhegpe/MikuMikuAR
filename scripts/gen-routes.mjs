@@ -186,6 +186,27 @@ function main() {
   // 按文件名排序（稳定输出）
   routable.sort((a, b) => a.file.localeCompare(b.file));
 
+  // 3. use_when 关键词冲突检测：同一关键词被 ≥2 张卡使用时，AI 路由有歧义，告警提示消歧
+  const kwToCards = new Map(); // 关键词 → [卡]
+  for (const c of routable) {
+    for (const kw of c.useWhen) {
+      if (!kwToCards.has(kw)) kwToCards.set(kw, []);
+      kwToCards.get(kw).push(c);
+    }
+  }
+  const conflicts = [...kwToCards.entries()]
+    .filter(([, list]) => list.length > 1)
+    .sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]));
+  if (conflicts.length) {
+    console.warn(`⚠️  ${conflicts.length} 个 use_when 关键词被多张卡共用（路由有歧义，建议人工消歧）:`);
+    for (const [kw, list] of conflicts.slice(0, 15)) {
+      console.warn(`   - 「${kw}」→ ${list.map((c) => c.file).join(', ')}`);
+    }
+    if (conflicts.length > 15) console.warn(`   … 其余 ${conflicts.length - 15} 个省略`);
+  } else {
+    console.error('✅ use_when 关键词无冲突');
+  }
+
   const output = renderRoutes(routable);
   console.error(`📄 ${routable.length} 张 architecture 卡可路由（${cards.length - routable.length} 张无 use_when 关键词）`);
 
