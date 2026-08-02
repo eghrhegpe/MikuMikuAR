@@ -975,6 +975,7 @@ export const zhTW: Record<string, string> = {
     'resource.textureMissing': '模型紋理缺失：{name}',
     'resource.outfitTextureMissing': '換裝貼圖缺失：{name}',
     'resource.outfitNoMesh': 'FBX 無網格：{name}',
+    'resource.outfitLoadFailed': '換裝檔案讀取失敗：{name}',
     'resource.audioLoadFailed': '音訊讀取失敗：{name}',
     'scene.loader.actorLoaded': '✓ {name}',
     'scene.loader.actorLoadedWithVmd': '✓ {name} + {vmd}',

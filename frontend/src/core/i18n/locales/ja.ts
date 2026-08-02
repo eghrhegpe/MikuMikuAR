@@ -981,6 +981,7 @@ export const ja: Record<string, string> = {
     'resource.textureMissing': 'モデルテクスチャ欠落：{name}',
     'resource.outfitTextureMissing': '衣装テクスチャ欠落：{name}',
     'resource.outfitNoMesh': 'FBX にメッシュなし: {name}',
+    'resource.outfitLoadFailed': '衣装ファイル読込失敗：{name}',
     'resource.audioLoadFailed': '音声読み込み失敗: {name}',
     'scene.loader.actorLoaded': '✓ {name}',
     'scene.loader.actorLoadedWithVmd': '✓ {name} + {vmd}',

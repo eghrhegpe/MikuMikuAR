@@ -980,6 +980,7 @@ export const ko: Record<string, string> = {
     'resource.textureMissing': '모델 텍스처 누락: {name}',
     'resource.outfitTextureMissing': '의상 텍스처 누락: {name}',
     'resource.outfitNoMesh': 'FBX 메시 없음: {name}',
+    'resource.outfitLoadFailed': '의상 파일 로드 실패: {name}',
     'resource.audioLoadFailed': '오디오 로드 실패: {name}',
     'scene.loader.actorLoaded': '✓ {name}',
     'scene.loader.actorLoadedWithVmd': '✓ {name} + {vmd}',

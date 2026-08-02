@@ -231,6 +231,9 @@ export type ModelInstance = {
     _overlayMeshes?: Mesh[];
     /** overlay 加载 token：防止快速切换变体时旧 loadOverlay 完成后覆盖新状态 */
     _overlayLoadToken?: symbol;
+    /** [fix:p2-texture-token] 纹理槽位代次 token：与 _overlayLoadToken 同源，
+     *  快速切换变体时旧 _applySlot 完成后检测到 token 过期则丢弃新纹理，防止覆盖新变体槽位 */
+    _textureLoadToken?: symbol;
     /** 原始材质可见性快照（hideMaterials 前保存，用于 restore） */
     _origMaterialVisibility?: Map<number, boolean>;
     /** [doc:adr-061] Motion Override — 逐骨骼覆盖条目 */

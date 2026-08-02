@@ -232,6 +232,7 @@ export async function loadOverlay(
         const fbxBytes = await readFileBytes(fullPath);
         if (!fbxBytes) {
             logWarn('outfit-overlay', 'Failed to read FBX file:', fullPath);
+            reportResourceWarning(t('resource.outfitLoadFailed', { name: meshFile }));
             return { meshes: [], retargetOk: false };
         }
         const result = await ImportMeshAsync(fbxBytes, scene);
