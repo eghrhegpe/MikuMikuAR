@@ -104,7 +104,7 @@
 | [动作模块基类](./motion-module-base.md) | - ADR-116 |
 | [动作模块注册表](./motion-modules-registry.md) | - ADR-116 |
 | [动作管线（逐帧合成）](./motion-pipeline.md) | - ADR-147 |
-| [动作播放控制](./motion-playback.md) | [] |
+| [动作播放控制](./motion-playback.md) | - ADR-204 |
 | [感知层主控](./perception.md) | - ADR-071 |
 | [程序化动作系统](./proc-motion-bridge.md) | - ADR-021 |
 | [多 VMD 叠加系统](./vmd-layers.md) | - ADR-051 |
@@ -281,6 +281,7 @@
 | [ADR-198](../adr/adr-198-场景序列化异常的保存韧性.md) | 场景序列化异常的保存韧性 | [场景序列化与自动保存](./scene-serialize.md) |
 | [ADR-202](../adr/adr-202-fork-autonomy-batch.md) | fork 自治改动批次 — 一次回灌批量根治可改 fork 的上游缺口 | [场景核心编排器（纯组装器）](./scene.md) |
 | [ADR-203](../adr/adr-203-ai-assistant-sessions-and-panel.md) | AI 助手会话持久化与独立面板 | [AI 助手独立面板入口](./assistant-panel.md) · [AI 会话 IndexedDB 存储](./chat-store.md) · [诊断助手 → 聊天 UI（子模块）](./diagnostic-chat.md) · [诊断助手 → 配置 UI（子模块）](./diagnostic-config.md) · [诊断助手 → tool call 控制（子模块）](./diagnostic-control.md) · [诊断助手 → 会话管理（子模块）](./diagnostic-session.md) · [诊断助手 → 单例状态（子模块）](./diagnostic-state.md) · [AI 诊断助手面板（协调入口）](./settings-diagnostic.md) |
+| [ADR-204](../adr/adr-204-unit-test-layering-and-hygiene.md) | 单测分层与治理规范（拆上帝文件 · 降 mock 密度 · fixtures 复用 · unit/integration 分层） | [动作播放控制](./motion-playback.md) |
 | [ADR-206](../adr/adr-206-test-infra-consolidation-and-assertion-quality.md) | 测试基础设施收敛与断言质量治理 | [后端适配层](./core-backend.md) |
 | [ADR-207](../adr/adr-207-motion-menu-restructure.md) | 动作菜单重构 —— 程序化动作可加载化 + 双面板对称 | [场景序列化与自动保存](./scene-serialize.md) |
 | [ADR-212](../adr/adr-212-naming-vs-functionality-audit.md) | 命名 vs 翻译 vs 实际功能错位系统审计与治理 | [环境碰撞控制](./env-collision.md) · [环境重力控制](./env-gravity.md) · [确定性哈希与值噪声](./hash-noise.md) |

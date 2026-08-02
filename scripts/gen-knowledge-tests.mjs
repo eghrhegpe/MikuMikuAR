@@ -1,0 +1,145 @@
+#!/usr/bin/env node
+/**
+ * gen-knowledge-tests.mjs
+ * 知识卡 `tests:` 字段自动登记 —— 扫描 frontend/src/__tests__/ 下测试文件，
+ * 按卡名/source_files basename 匹配，为「tests 为空但实际有测试文件」的卡补登测试路径。
+ *
+ * 背景：内容层审计发现 35 张 architecture 卡 tests 为空，但 __tests__ 下存在对应测试文件
+ * （登记缺口，非"无测试"）。本脚本按名匹配自动补登，消除「有测试却不进验证入口」的断链。
+ *
+ * 用法：
+ *   node scripts/gen-knowledge-tests.mjs            # 补登并写入
+ *   node scripts/gen-knowledge-tests.mjs --check    # 只校验不写入（CI）
+ *
+ * 零依赖（仅 node:fs / node:path）。
+ */
+
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { parseArgs } from './_lib/parse-args.mjs';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const ROOT = path.resolve(__dirname, '..');
+const KNOW_DIR = path.join(ROOT, 'docs', 'knowledge');
+const TEST_DIR = path.join(ROOT, 'frontend', 'src', '__tests__');
+
+const NON_CARDS = new Set([
+  'README.md', 'index.md', 'routes.md', 'menu-map.md', 'graph.md', 'tier-review.md',
+]);
+
+/** 递归收集测试文件相对仓库路径（.test.ts / .spec.ts）。 */
+function collectTestFiles() {
+  const out = [];
+  const walk = (dir, rel) => {
+    for (const f of fs.readdirSync(dir)) {
+      const abs = path.join(dir, f);
+      const relPath = rel ? `${rel}/${f}` : f;
+      if (fs.statSync(abs).isDirectory()) walk(abs, relPath);
+      else if (/\.(test|spec)\.ts$/.test(f)) out.push(relPath);
+    }
+  };
+  if (fs.existsSync(TEST_DIR)) walk(TEST_DIR, '');
+  return out;
+}
+
+/** 提取 frontmatter 块。 */
+function fmBlock(text) {
+  const m = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  return m ? m[1] : '';
+}
+
+/** 测试文件 basename（去 .test.ts/.spec.ts 后缀）。 */
+function testBase(rel) {
+  return rel.replace(/\.(test|spec)\.ts$/, '').split('/').pop();
+}
+
+/** 卡与测试的匹配判定：测试 basename 含卡名，或卡 source_files basename 含测试 basename 前缀。 */
+function matchTests(cardName, sourceBases, testFiles) {
+  const hit = [];
+  for (const tf of testFiles) {
+    const tb = testBase(tf);
+    const rel = 'frontend/src/__tests__/' + tf;
+    if (tb === cardName) { hit.push(rel); continue; }
+    // source_files basename 前缀匹配（如 env-water → env-water.contract / env-water.test）
+    for (const sb of sourceBases) {
+      if (tb === sb || (tb.startsWith(sb + '.') && tb.includes(sb))) {
+        hit.push(rel);
+        break;
+      }
+    }
+  }
+  return [...new Set(hit)].sort();
+}
+
+/** 把 tests 列表写入 frontmatter：替换 `tests: []` / 空块，或 frontmatter 无 tests 字段时在 source_files 后插入。 */
+function writeTests(text, tests) {
+  const fm = fmBlock(text);
+  if (!fm) return text;
+  const lines = tests.map((t) => `  - ${t}`).join('\n');
+  let newFm;
+  if (/^tests\s*:\s*\[\]\s*$/m.test(fm) || /^tests\s*:\s*$/m.test(fm)) {
+    // 已有空 tests 字段 → 替换
+    newFm = fm
+      .replace(/^tests\s*:\s*\[\]\s*$/m, `tests:\n${lines}`)
+      .replace(/^tests\s*:\s*$/m, `tests:\n${lines}`);
+  } else {
+    // 完全无 tests 字段 → 在 source_files 块结束后插入
+    const sfEnd = fm.match(/^(source_files:[\s\S]*?)(?=^[a-z_]+:)/m);
+    if (!sfEnd) return text;
+    newFm = fm.replace(sfEnd[1], `${sfEnd[1]}tests:\n${lines}\n`);
+  }
+  return text.replace(/^---\r?\n[\s\S]*?\r?\n---/, `---\n${newFm}\n---`);
+}
+
+function main() {
+  const args = parseArgs(process.argv.slice(2), { bools: ['check'], strings: [], defaults: {} });
+  const isCheck = args.check;
+
+  if (!fs.existsSync(KNOW_DIR)) {
+    console.error('❌ docs/knowledge/ 不存在，请确认在仓库根目录运行');
+    process.exit(1);
+  }
+  const testFiles = collectTestFiles();
+  console.error(`📄 __tests__ 下测试文件 ${testFiles.length} 个`);
+
+  // 收集「architecture 卡 + tests 为空」
+  const targets = [];
+  for (const f of fs.readdirSync(KNOW_DIR).filter((f) => f.endsWith('.md'))) {
+    if (NON_CARDS.has(f)) continue;
+    const text = fs.readFileSync(path.join(KNOW_DIR, f), 'utf8');
+    const fmTxt = fmBlock(text);
+    if (!fmTxt) continue;
+    const tier = (fmTxt.match(/^tier\s*:\s*(.+)$/m) || [])[1]?.trim();
+    if (tier !== 'architecture') continue;
+    const testsEmpty = /^tests:\s*\[\]$/m.test(fmTxt) || !fmTxt.includes('tests');
+    if (!testsEmpty) continue;
+    const cardName = f.replace(/\.md$/, '');
+    const sources = [...fmTxt.matchAll(/^\s*-\s*(frontend\/\S+\.ts)\s*$/gm)].map((m) => m[1]);
+    const sourceBases = sources.map((s) => path.basename(s).replace(/\.ts$/, ''));
+    const tests = matchTests(cardName, sourceBases, testFiles);
+    if (tests.length) targets.push({ file: f, text, tests });
+  }
+
+  if (isCheck) {
+    if (targets.length) {
+      console.error(`❌ ${targets.length} 张卡 tests 未登记（存在对应测试文件），请运行：npm run gen:knowledge-tests`);
+      for (const t of targets.slice(0, 10)) console.error(`   - ${t.file} → ${t.tests.join(', ')}`);
+      process.exit(1);
+    }
+    console.log('✅ 所有有测试文件的卡均已登记 tests');
+    return;
+  }
+
+  let written = 0;
+  for (const t of targets) {
+    const newText = writeTests(t.text, t.tests);
+    if (newText === t.text) continue;
+    fs.writeFileSync(path.join(KNOW_DIR, t.file), newText, 'utf8');
+    written++;
+    console.log(`✍️  ${t.file} → ${t.tests.length} 个测试`);
+  }
+  console.log(written ? `✅ 已登记 ${written} 张卡的 tests` : '✅ 无需登记');
+}
+
+main();

@@ -206,6 +206,7 @@ graph TD;
         a197["ADR-197"]
         a198["ADR-198"]
         a202["ADR-202"]
+        a204["ADR-204"]
         a206["ADR-206"]
         a207["ADR-207"]
         a212["ADR-212"]
@@ -337,6 +338,7 @@ graph TD;
     c42 --> a166;
     c43 --> a147;
     c43 --> a116;
+    c44 --> a204;
     c85 --> a49;
     c45 --> a71;
     c45 --> a162;
@@ -474,6 +476,7 @@ graph TD;
     click a197 href "../adr/adr-197-unified-action-registry.md"
     click a198 href "../adr/adr-198-场景序列化异常的保存韧性.md"
     click a202 href "../adr/adr-202-fork-autonomy-batch.md"
+    click a204 href "../adr/adr-204-unit-test-layering-and-hygiene.md"
     click a206 href "../adr/adr-206-test-infra-consolidation-and-assertion-quality.md"
     click a207 href "../adr/adr-207-motion-menu-restructure.md"
     click a212 href "../adr/adr-212-naming-vs-functionality-audit.md"

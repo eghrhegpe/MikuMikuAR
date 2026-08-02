@@ -18,7 +18,9 @@ invariants:
   - Enter 触发 click 或自定义 onEnter 回调
   - Escape 触发 onEscape 回调
   - createKeyboardNav 返回 Disposable 用于移除监听
-tests: []
+tests:
+  - frontend/src/__tests__/ui-keyboard-nav.test.ts
+  - frontend/src/__tests__/ui-keyboard-nav.test.ts
 use_when:
   - 键盘导航
   - 列表导航

@@ -64,7 +64,9 @@ symbols:
 invariants:
   - 感知层统一入口（ADR-071）
   - 活跃上下文数据存储在 Map<modelId, Context> + pin API
-tests: []
+tests:
+  - frontend/src/__tests__/perception.perf.test.ts
+  - frontend/src/__tests__/perception.perf.test.ts
 use_when:
   - 感知层
   - 视线追踪
