@@ -152,9 +152,69 @@ test('parseSourceFiles skips empty items', () => {
   assert.deepEqual(parseSourceFiles(fm), ['frontend/src/scene/index.ts']);
 });
 
-test('parseSourceFiles ends at next top-level key', () => {
+// ── parseFrontmatter: edge cases ──
+
+test('parseFrontmatter CRLF line endings', () => {
+  const text = '---\r\nname: foo\r\ncategory: env\r\n---\r\nbody';
+  assert.equal(parseFrontmatter(text), 'name: foo\r\ncategory: env');
+});
+
+test('parseFrontmatter content contains --- code fence', () => {
+  const text = `---
+name: test
+category: env
+---
+body
+
+\`\`\`yaml
+---
+nested: true
+---
+\`\`\`
+
+more body`;
+  // Should only capture the first --- block
+  assert.ok(parseFrontmatter(text).includes('name: test'));
+  assert.ok(!parseFrontmatter(text).includes('nested:'));
+});
+
+test('getScalar null input', () => {
+  assert.equal(getScalar(null, 'name'), undefined);
+});
+
+test('getScalar key with hyphens', () => {
+  const fm = 'my-key: hyphen-value';
+  assert.equal(getScalar(fm, 'my-key'), 'hyphen-value');
+});
+
+// ── parseFrontmatter: parseSourceFiles extra edge cases ──
+
+test('parseSourceFiles inline array + block list mixed (inline takes priority)', () => {
+  const fm = `source_files: [a.ts, b.ts]
+  - c.ts
+  - d.ts
+name: test`;
+  // Inline array [a, b] should be returned; block items c, d should be IGNORED
+  // (inline indicates complete list, block list should not be appended)
+  assert.deepEqual(parseSourceFiles(fm), ['a.ts', 'b.ts']);
+});
+
+test('parseSourceFiles empty inline array', () => {
+  const fm = `source_files: []
+name: test`;
+  assert.deepEqual(parseSourceFiles(fm), []);
+});
+
+test('parseSourceFiles inline array with spaces', () => {
+  const fm = `source_files: [ a.ts ,  b.ts , c.ts ]
+name: test`;
+  assert.deepEqual(parseSourceFiles(fm), ['a.ts', 'b.ts', 'c.ts']);
+});
+
+test('parseSourceFiles block list with mixed whitespace', () => {
   const fm = `source_files:
-  - frontend/src/a.ts
-name: foo`;
-  assert.deepEqual(parseSourceFiles(fm), ['frontend/src/a.ts']);
+ - a.ts
+   - b.ts
+name: test`;
+  assert.deepEqual(parseSourceFiles(fm), ['a.ts', 'b.ts']);
 });
