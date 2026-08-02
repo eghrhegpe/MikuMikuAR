@@ -316,6 +316,15 @@ export const ENV_STATE_SCHEMA = {
 
     // --- Mirror ---
     mirrorEnabled: { type: 'boolean', default: false, group: 'mirror' },
+    // 镜面几何参数：迁入 envState 以便随场景持久化（serializeScene env 全量落盘）
+    mirrorWidth: { type: 'number', default: 18, group: 'mirror' },
+    mirrorHeight: { type: 'number', default: 21, group: 'mirror' },
+    mirrorPosition: {
+        type: 'tuple3',
+        default: [0, 1.5, 8] as [number, number, number],
+        group: 'mirror',
+    },
+    mirrorRotationY: { type: 'number', default: 0, group: 'mirror' },
 
     // --- Fog ---
     fogEnabled: { type: 'boolean', default: false, group: 'fog' },

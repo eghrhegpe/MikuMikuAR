@@ -14,7 +14,7 @@ import {
     Matrix,
 } from '@babylonjs/core';
 import { getScene } from './_shared/env-context';
-import { envState } from '@/core/config';
+import { envState, triggerAutoSave } from '@/core/config';
 import { setEnvState } from './_bridge/env-bridge';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
 import { setTransformMetadata } from '../transform/transform-pick';
@@ -36,11 +36,8 @@ let _meshRemovedObserver: ObserverHandle | null = null;
 // Gizmo 拖拽中实时刷新反射平面（位置/朝向联动）
 let _gizmoDragObserver: ObserverHandle | null = null;
 
-// 可调参数（通过 API 修改，下次 create 时生效）
-let _mirrorWidth = 18;
-let _mirrorHeight = 21;
-let _mirrorPosition: [number, number, number] = [0, 1.5, 8];
-let _mirrorRotationY = 0; // 水平旋转（弧度）
+// 几何参数现驻留 envState（ADR: mirror 持久化收口），模块内不再持有副本；
+// 默认值与 env-state-schema.ts 中 mirrorWidth/mirrorHeight/mirrorPosition/mirrorRotationY 一致。
 
 /** 统一反射分辨率映射：envState.reflectionQuality → 实际像素 */
 const RESOLUTION_MAP: Record<string, number> = { high: 2048, medium: 1024, low: 512, off: 0 };
@@ -84,16 +81,20 @@ export function createMirror(): void {
     }
     const scene = getScene();
 
-    // 创建竖直平面
+    // 创建竖直平面（几何参数取自 envState，保证持久化恢复后按存档尺寸重建）
     _mirrorMesh = MeshBuilder.CreatePlane(
         'mirror',
-        { width: _mirrorWidth, height: _mirrorHeight },
+        { width: envState.mirrorWidth, height: envState.mirrorHeight },
         scene
     );
     // Pivot 移到底边：平面默认 y 从 -h/2 到 +h/2，bakeTransform 上移 h/2 后底边在 y=0
-    _mirrorMesh.bakeTransformIntoVertices(Matrix.Translation(0, _mirrorHeight / 2, 0));
-    _mirrorMesh.position = new Vector3(_mirrorPosition[0], _mirrorPosition[1], _mirrorPosition[2]);
-    _mirrorMesh.rotation.y = _mirrorRotationY;
+    _mirrorMesh.bakeTransformIntoVertices(Matrix.Translation(0, envState.mirrorHeight / 2, 0));
+    _mirrorMesh.position = new Vector3(
+        envState.mirrorPosition[0],
+        envState.mirrorPosition[1],
+        envState.mirrorPosition[2]
+    );
+    _mirrorMesh.rotation.y = envState.mirrorRotationY;
     // 挂 transform metadata + 可拾取，接入场景拖拽模式（ADR-171 / ADR-126）
     _mirrorMesh.isPickable = true;
     setTransformMetadata(_mirrorMesh, 'mirror', MIRROR_ID);
@@ -173,9 +174,13 @@ export function isMirrorActive(): boolean {
 export function toggleMirror(): boolean {
     if (_mirrorMesh) {
         disposeMirror();
+        setEnvState({ mirrorEnabled: false }, true);
+        triggerAutoSave();
         return false;
     }
     createMirror();
+    setEnvState({ mirrorEnabled: true }, true);
+    triggerAutoSave();
     return true;
 }
 
@@ -190,8 +195,11 @@ export function refreshMirrorRenderList(): void {
 // ======== 参数设置 API ========
 
 export function setMirrorSize(width: number, height: number): void {
-    _mirrorWidth = Math.max(0.5, width);
-    _mirrorHeight = Math.max(0.5, height);
+    setEnvState(
+        { mirrorWidth: Math.max(0.5, width), mirrorHeight: Math.max(0.5, height) },
+        true
+    );
+    triggerAutoSave();
     // pivot 由 bakeTransform 写入顶点，改尺寸需重建
     if (_mirrorMesh) {
         disposeMirror();
@@ -200,7 +208,8 @@ export function setMirrorSize(width: number, height: number): void {
 }
 
 export function setMirrorPosition(x: number, y: number, z: number): void {
-    _mirrorPosition = [x, y, z];
+    setEnvState({ mirrorPosition: [x, y, z] }, true);
+    triggerAutoSave();
     if (_mirrorMesh) {
         _mirrorMesh.position.set(x, y, z);
         _updateMirrorPlane();
@@ -208,7 +217,8 @@ export function setMirrorPosition(x: number, y: number, z: number): void {
 }
 
 export function setMirrorRotationY(rad: number): void {
-    _mirrorRotationY = rad;
+    setEnvState({ mirrorRotationY: rad }, true);
+    triggerAutoSave();
     if (_mirrorMesh) {
         _mirrorMesh.rotation.y = rad;
         _updateMirrorPlane();
@@ -248,9 +258,9 @@ export function getMirrorInfo(): {
 } {
     return {
         active: isMirrorActive(),
-        position: _mirrorPosition,
-        width: _mirrorWidth,
-        height: _mirrorHeight,
+        position: envState.mirrorPosition,
+        width: envState.mirrorWidth,
+        height: envState.mirrorHeight,
         resolution: RESOLUTION_MAP[envState.reflectionQuality] ?? 512,
         meshCount: _mirrorRT?.renderList?.length ?? 0,
     };
