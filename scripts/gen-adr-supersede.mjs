@@ -49,7 +49,8 @@ function main() {
     .filter(f => /^adr-\d+.*\.md$/.test(f))
     .sort();
 
-  const adrs = new Map(); // num -> { file, title, status }
+  const adrList = [];     // { num, file, title, status } 全量,允许同 num(子编号 061.1 两篇)
+  const adrNums = new Set(); // 所有 num(去重,用于正文引用存在性判断)
   const registered = [];  // ① 已登记取代: oldNum -> { by, status }
   const unmarked = [];    // ② 漏标告警: 正文宣称取代 target,但 target 状态行未回标
   const unpointed = [];   // ③ 废弃未指明取代者
@@ -61,12 +62,16 @@ function main() {
     const parsed = parseAdrHeader(path.join(ADR_DIR, file));
     if (parsed && !parsed.error && parsed.num !== null) {
       const { num, title, status } = parsed;
-      adrs.set(num, { file, title, status });
+      adrList.push({ num, file, title, status });
+      adrNums.add(num);
     }
   }
+  // 按编号排序(同 num 子编号按文件名保持稳定顺序)
+  adrList.sort((a, b) => a.num - b.num || a.file.localeCompare(b.file));
 
   // 第二遍:逐篇判定
-  for (const [num, meta] of [...adrs.entries()].sort((a, b) => a[0] - b[0])) {
+  for (const meta of adrList) {
+    const num = meta.num;
     const text = fs.readFileSync(path.join(ADR_DIR, meta.file), 'utf8');
     const lines = text.split(/\r?\n/);
 
@@ -93,9 +98,9 @@ function main() {
 
       const claimedThisLine = [];
       for (const target of targets) {
-        if (target !== num && adrs.has(target)) {
+        if (target !== num && adrNums.has(target)) {
           claimedThisLine.push(target);
-          const tMeta = adrs.get(target);
+          const tMeta = adrList.find(e => e.num === target);
           const tMarked = RE_SUPERSEDED_BY.test(tMeta.status) || RE_SELF_DEPRECATED.test(tMeta.status);
           if (!tMarked) {
             unmarked.push({ claimedBy: num, target, line: line.trim().slice(0, 120) });
@@ -106,9 +111,9 @@ function main() {
       // ④ 可疑信号:行内含其他 ADR 编号 + 强词(推翻/已过时),但无明确宣称结构,且对方未标记 → 人工确认
       if (claimedThisLine.length === 0 && RE_DEPRECATED_WORD.test(line) && !RE_NEGATED.test(line)) {
         const others = [...new Set([...line.matchAll(/ADR-(\d+)/g)].map(m => parseInt(m[1], 10)))]
-          .filter(n => n !== num && adrs.has(n));
+          .filter(n => n !== num && adrNums.has(n));
         for (const other of others) {
-          const tMeta = adrs.get(other);
+          const tMeta = adrList.find(e => e.num === other);
           const tMarked = RE_SUPERSEDED_BY.test(tMeta.status) || RE_SELF_DEPRECATED.test(tMeta.status);
           if (!tMarked) {
             suspicious.push({ num, target: other, line: line.trim().slice(0, 120) });
@@ -121,7 +126,7 @@ function main() {
       const mTable = line.match(RE_TABLE_FIRST_COL);
       if (mTable && RE_TABLE_VERB.test(line) && !RE_TABLE_NEGATED.test(line)) {
         const target = parseInt(mTable[1], 10);
-        if (target !== num && adrs.has(target)) {
+        if (target !== num && adrNums.has(target)) {
           tableClaims.push({ num, target, line: line.trim().slice(0, 120) });
         }
       }
@@ -156,7 +161,7 @@ function main() {
     for (const t of tableClaims) {
       console.log(`   ADR-${t.num} 声称替代 ADR-${t.target} [${t.line}]`);
     }
-    console.log(`\n扫描 ${adrs.size} 篇 ADR 完成。`);
+    console.log(`\n扫描 ${adrList.length} 篇 ADR 完成。`);
   }
 
   // --check 模式:存在漏标或废弃未指明 → 退出码 1

@@ -120,17 +120,17 @@ export function parseAdrHeader(filePath) {
   for (let i = 0; i < Math.min(lines.length, 20); i++) {
     const line = lines[i];
 
-    // # ADR-NNN: Title 或 # ADR-NNN Title
-    const mTitle = line.match(/^#\s+ADR-(\d+):\s*(.+)/);
+    // # ADR-NNN: Title 或 # ADR-NNN Title(支持子编号,如 ADR-061.1)
+    const mTitle = line.match(/^#\s+ADR-([\d.]+):\s*(.+)/);
     if (mTitle) {
-      num = parseInt(mTitle[1], 10);
+      num = parseFloat(mTitle[1]);
       title = mTitle[2].trim();
       continue;
     }
     // 兼容无冒号：# ADR-NNN Title
-    const mTitleNoColon = line.match(/^#\s+ADR-(\d+)\s+(.+)/);
+    const mTitleNoColon = line.match(/^#\s+ADR-([\d.]+)\s+(.+)/);
     if (mTitleNoColon && !mTitle) {
-      num = parseInt(mTitleNoColon[1], 10);
+      num = parseFloat(mTitleNoColon[1]);
       title = mTitleNoColon[2].trim();
       continue;
     }
