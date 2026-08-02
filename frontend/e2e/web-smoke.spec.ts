@@ -9,7 +9,7 @@
  */
 import { test, expect, type Page } from "@playwright/test";
 
-const WEB_URL = process.env.WEB_URL || "http://localhost:4174/MikuMikuAR/";
+const WEB_URL = process.env.WEB_URL || "http://localhost:4174/MikuMikuAR/app/";
 
 /**
  * 导航到 web 入口并等待 init() 完成。
