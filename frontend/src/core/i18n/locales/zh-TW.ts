@@ -971,7 +971,11 @@ export const zhTW: Record<string, string> = {
     'scene.loader.loadingZero': '載入 0%',
     'scene.loader.loadingProgress': '載入 {pct}%',
     'scene.loader.stageLoaded': '✓ {name}（舞台）',
-    'scene.loader.textureMissing': '部分紋理未載入（{count} 個）',
+    'resource.warnSummary': '部分資源載入異常（{count} 個）',
+    'resource.textureMissing': '模型紋理缺失：{name}',
+    'resource.outfitTextureMissing': '換裝貼圖缺失：{name}',
+    'resource.outfitNoMesh': 'FBX 無網格：{name}',
+    'resource.audioLoadFailed': '音訊讀取失敗：{name}',
     'scene.loader.actorLoaded': '✓ {name}',
     'scene.loader.actorLoadedWithVmd': '✓ {name} + {vmd}',
 

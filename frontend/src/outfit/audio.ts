@@ -12,6 +12,8 @@ import { readFileBytes } from '../core/wails-bindings';
 import { triggerAutoSave, setUIState } from '../core/config';
 import { clamp01 } from '@/core/clamp';
 import { logWarn } from '@/core/logger';
+import { t } from '@/core/i18n/t';
+import { reportResourceWarning } from '@/core/resource-warning-sink';
 import { safeCallAsync, safeCallVoid } from '@/core/safe-call';
 import { safeDispose } from '@/core/dispose-helpers';
 import type { BeatDetector } from '../motion-algos/beat-detector';
@@ -270,6 +272,7 @@ export async function loadAudioFile(filePath: string, signal?: AbortSignal): Pro
     const bytes = await readFileBytes(filePath);
     if (!bytes) {
         logWarn('audio', 'loadAudioFile: failed to read', filePath);
+        reportResourceWarning(t('resource.audioLoadFailed', { name: filePath }));
         return;
     }
     const blob = new Blob([bytes.buffer as ArrayBuffer], { type: 'audio/mpeg' });

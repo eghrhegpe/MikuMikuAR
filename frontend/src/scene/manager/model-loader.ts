@@ -37,6 +37,7 @@ import { resolveModelDir } from '@/core/fileservice';
 import { readFileBytes, ListDirRecursive } from '@/core/wails-bindings';
 import { readTextureWithLRU } from './texture-lru';
 import { auditMissingTextures } from './pmx-texture-audit';
+import { reportResourceWarning } from '@/core/resource-warning-sink';
 import { t } from '@/core/i18n/t';
 import type { IMmdRuntime } from 'babylon-mmd/esm/Runtime/IMmdRuntime';
 import type { IMmdModel } from 'babylon-mmd/esm/Runtime/IMmdModel';
@@ -530,14 +531,9 @@ export async function loadPMXFile(
             const _declaredTexturePaths = textureFiles.map((f) => f.relativePath);
             fireAndForget(() =>
                 auditMissingTextures(pmxBytes, _declaredTexturePaths).then((missing) => {
-                    if (missing.length === 0) {
-                        return;
+                    for (const name of missing) {
+                        reportResourceWarning(t('resource.textureMissing', { name }));
                     }
-                    showInfoToast(
-                        t('scene.loader.textureMissing', { count: missing.length }),
-                        missing.slice(0, 8).join('、') +
-                            (missing.length > 8 ? ` …+${missing.length - 8}` : '')
-                    );
                 })
             );
         }

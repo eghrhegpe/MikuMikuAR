@@ -12,6 +12,8 @@ import { readFileBytes } from '../core/wails-bindings';
 import { normPath } from '@/core/path';
 import { logWarn } from '../core/logger';
 import { safeCallVoid } from '../core/safe-call';
+import { t } from '@/core/i18n/t';
+import { reportResourceWarning } from '@/core/resource-warning-sink';
 
 // Skeleton retargeting
 // ============================================================
@@ -237,6 +239,7 @@ export async function loadOverlay(
 
         if (meshes.length === 0) {
             logWarn('outfit-overlay', 'FBX loaded but no meshes found');
+            reportResourceWarning(t('resource.outfitNoMesh', { name: meshFile }));
             // 清理已加载到 scene 的 mesh（虽然 filter 为空，但 ImportMeshAsync 可能添加了非 Mesh 资源）
             for (const m of result.meshes) {
                 try {

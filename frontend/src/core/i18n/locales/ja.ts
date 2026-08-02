@@ -977,7 +977,11 @@ export const ja: Record<string, string> = {
     'scene.loader.loadingZero': '読み込み中 0%',
     'scene.loader.loadingProgress': '読み込み中 {pct}%',
     'scene.loader.stageLoaded': '✓ {name}（ステージ）',
-    'scene.loader.textureMissing': '一部のテクスチャが読み込めませんでした（{count} 個）',
+    'resource.warnSummary': '一部のリソースが読み込めませんでした（{count} 個）',
+    'resource.textureMissing': 'モデルテクスチャ欠落：{name}',
+    'resource.outfitTextureMissing': '衣装テクスチャ欠落：{name}',
+    'resource.outfitNoMesh': 'FBX にメッシュなし: {name}',
+    'resource.audioLoadFailed': '音声読み込み失敗: {name}',
     'scene.loader.actorLoaded': '✓ {name}',
     'scene.loader.actorLoadedWithVmd': '✓ {name} + {vmd}',
 

@@ -17,6 +17,7 @@ import type { Scene } from '@babylonjs/core/scene';
 import { getBaseName, normPath, getDirPath } from '@/core/path';
 import { delay, LoadingGuard } from '@/core/async';
 import { logWarn, logInfo } from '@/core/logger';
+import { reportResourceWarning } from '@/core/resource-warning-sink';
 import { col3FromTriple } from '@/core/color-helpers';
 import { _catOf } from '../scene/manager/material';
 import { triggerAutoSave } from '../core/config';
@@ -289,6 +290,7 @@ async function _applySlot(
         const bytes = await readFileBytes(modelDir + '/' + normPath(newPath));
         if (!bytes) {
             logWarn('outfit', '_applySlot: failed to read texture', newPath);
+            reportResourceWarning(t('resource.outfitTextureMissing', { name: newPath }));
             return;
         }
         const ext = newPath.split('.').pop()?.toLowerCase() || 'png';
