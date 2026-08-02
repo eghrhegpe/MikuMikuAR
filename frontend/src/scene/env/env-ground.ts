@@ -1374,6 +1374,12 @@ export function applyGround(state: EnvState): void {
             applyGroundEdgeFade(gm.material as GroundMat, state.groundEdgeFade, scene);
             // 水下视觉修饰：焦散 emissive + 入水雾色（在 tickGround 中按相机深度统一驱动）
             underwaterFogController.install(gm.material as GroundMat);
+            // [adr-230] terrain 重建走 legacy（无 applyGroundMaterialSpec），需补自发光同步；
+            // install 在先，_syncGroundEmissive 内的 noteGroundEmissiveChanged 会刷新 orig 快照。
+            _syncGroundEmissive(gm.material as GroundMat, state);
+            if (underwaterFogController.isCausticsActive()) {
+                underwaterFogController.applyCausticsTo(gm.material as GroundMat, scene);
+            }
             _onTerrainReady?.();
         });
         _envSys.ground.mesh = hg;
