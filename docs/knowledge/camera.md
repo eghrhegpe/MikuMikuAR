@@ -17,6 +17,10 @@ adr:
   - ADR-035
   - ADR-100
   - ADR-148
+invariants:
+  - _syncAxesFromMode 是双轴状态唯一写入点（switchCameraMode / setCameraControl / setCameraBehavior / setCameraState 均经此派生）
+  - camera.ts 作为 barrel 入口，对外暴露全部公开符号；下游消费者禁止直接 import 子模块
+  - 子模块之间禁止互相 import，共享状态走 camera-state.ts
 use_when:
   - 相机模式
   - 轨道相机
