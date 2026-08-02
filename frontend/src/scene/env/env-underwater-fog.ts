@@ -70,6 +70,43 @@ class UnderwaterFogControllerImpl {
         this._waterLevel = level;
     }
 
+    /** [adr-230 P1-fix] 当前是否处于水下（焦散已注入状态）。
+     *  applyGroundMaterialSpec / _applyGroundInplaceLegacy 据此判断：emissive 同步后
+     *  是否需要重放焦散，避免 _syncGroundEmissive 覆盖焦散（见 ADR-231 §3.2）。 */
+    isCausticsActive(): boolean {
+        return this._wasUnderwater;
+    }
+
+    /** [adr-230 P1-fix] 给单个已安装材质重放焦散 emissive。仅当当前在水下时生效；
+     *  供 _syncGroundEmissive 之后的调用方使用。与 update 入水分支同一逻辑——
+     *  重复调用幂等（重复设置同值 emissive 不触发着色器重编译）。 */
+    applyCausticsTo(mat: PBRMaterial | StandardMaterial, scene: Scene): void {
+        if (!this._wasUnderwater || !isCausticsHost(mat)) {
+            return;
+        }
+        const causticTex = causticsController.getTexture(scene);
+        // 给 causticTex 在地面上设置与水面同尺度的 UV 缩放（从 groundSize 派生，
+        // 锚定世界空间）。水面 shader 用 camXZ 世界坐标自采样，不读 Babylon Texture.uScale，
+        // 所以在共享纹理上改 uScale 只影响地面。
+        const groundCausticScale = (envState.groundSize ?? 500) * CAUSTIC_WORLD_SCALE;
+        causticTex.uScale = groundCausticScale;
+        causticTex.vScale = groundCausticScale;
+        mat.emissiveTexture = causticTex;
+        mat.emissiveColor = CAUSTIC_TINT;
+    }
+
+    /** [adr-230 P1-fix] 自发光同步后调用：刷新已安装材质的还原快照，避免出水时还原到
+     *  安装时刻的陈旧 emissive（用户在水下改过发光设置的情形）。 */
+    noteGroundEmissiveChanged(mat: PBRMaterial | StandardMaterial): void {
+        for (const entry of this._installed) {
+            if (entry.mat === mat) {
+                entry.origEmissiveTex = mat.emissiveTexture;
+                entry.origEmissiveColor = mat.emissiveColor.clone();
+                return;
+            }
+        }
+    }
+
     /** 给一个地面材质注册水下修饰（焦散 emissive）。幂等：同一 mat 只存一次。 */
     install(mat: PBRMaterial | StandardMaterial | null | undefined): void {
         if (!isCausticsHost(mat)) {
@@ -112,16 +149,8 @@ class UnderwaterFogControllerImpl {
             // 同步水下雾给水面对应的 ShaderMaterial（它不参与 Babylon scene.fog，需手动注入），
             // 让水面与地面/角色用同一套雾参数，远处水面也褪入雾色。
             setUnderwaterFog(true, fogColor, FOG_NEAR_CLEAR, FOG_FAR_OPAQUE);
-            const causticTex = causticsController.getTexture(scene);
-            // 给 causticTex 在地面上设置与水面同尺度的 UV 缩放（从 groundSize 派生，
-            // 锚定世界空间）。水面 shader 用 camXZ 世界坐标自采样，不读 Babylon Texture.uScale，
-            // 所以在共享纹理上改 uScale 只影响地面。
-            const groundCausticScale = (envState.groundSize ?? 500) * CAUSTIC_WORLD_SCALE;
-            causticTex.uScale = groundCausticScale;
-            causticTex.vScale = groundCausticScale;
             for (const entry of this._installed) {
-                entry.mat.emissiveTexture = causticTex;
-                entry.mat.emissiveColor = CAUSTIC_TINT;
+                this.applyCausticsTo(entry.mat, scene);
             }
         } else {
             // 出水：关闭场景雾 + 还原地面原始 emissive
