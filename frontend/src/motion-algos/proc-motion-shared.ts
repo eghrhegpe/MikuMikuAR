@@ -103,11 +103,15 @@ const _fallbackParams: ProcMotionParams = {
  * 旧值（intensity/speed/boneToggles/...）拆到 params.idle 与 params.autodance（两边同值，等价旧行为）；
  * 新结构（含 params）原样归一。对 Partial / 测试 mock 的缺失字段取默认。
  */
+const PROC_MOTION_MODES = ['off', 'idle', 'autodance'] as const;
+
 export function migrateProcState(raw: unknown): ProcMotionState {
     const r = (raw ?? {}) as Partial<ProcMotionState> &
         Partial<ProcMotionParams> & { params?: Record<ProcModeKey, Partial<ProcMotionParams>> };
     const base = {
-        mode: r.mode ?? 'off',
+        // [fix:P3] 校验枚举而非仅 `?? 'off'`：脏存档里的任意字符串会被 UI 断言直达
+        // params[mode]，取到 undefined 后经双 `??` 退化成 {}，参数静默全丢。
+        mode: PROC_MOTION_MODES.includes(r.mode as ProcMotionMode) ? r.mode! : 'off',
         bpmQuantizeEnabled: r.bpmQuantizeEnabled ?? true,
         eyeTrackingEnabled: r.eyeTrackingEnabled ?? true,
         headTrackingEnabled: r.headTrackingEnabled ?? true,

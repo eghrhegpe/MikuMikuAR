@@ -59,7 +59,10 @@ function _getProcState(modelId?: string): ProcMotionState {
 /** [audit] per-mode：读取指定程序化模式的参数（无则回退默认）。 */
 function _getProcParams(modelId: string | undefined, mode: ProcModeKey): ProcMotionParams {
     const st = _getProcState(modelId);
-    return { ...(st.params?.[mode] ?? DEFAULT_PROC_STATE.params[mode]) };
+    const src = st.params?.[mode] ?? DEFAULT_PROC_STATE.params[mode];
+    // [fix:P4] boneToggles 同步深拷贝：浅拷贝会与 modelRegistry 内真值 / 模块级默认常量
+    // 共引用，调用方原地写入将穿透污染 per-model 状态或全局默认。
+    return { ...src, boneToggles: { ...src.boneToggles } };
 }
 
 /** [audit] per-mode：写入 per-model 指定模式的参数（modelId 路径；全局路径由 bridge setter 处理）。 */
