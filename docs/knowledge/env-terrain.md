@@ -10,12 +10,13 @@ source_files:
 adr:
   - ADR-073
 symbols:
-  - hash2
-  - valueNoise
+  - applyTerrainMaterial
+  - clearTerrainGeneration
+  - createHeightmapGround
   - fbm
   - generateTerrainHeightmapURL
-  - createHeightmapGround
-  - applyTerrainMaterial
+  - hash2
+  - valueNoise
 invariants:
   - 确定性整数哈希，相同 seed 产生相同地形
   - fbm 使用分形布朗运动叠加，返回 ~[-1,1] 范围

@@ -223,11 +223,9 @@ export class SssPBRMaterial extends PBRMaterial {
     // ========== 克隆 ==========
 
     public clone(name: string, cloneTexturesOnlyOnce?: boolean, rootUrl?: string): SssPBRMaterial {
-        const clone = super.clone(name, cloneTexturesOnlyOnce, rootUrl);
-        const result = new SssPBRMaterial(
-            name,
-            clone?.getScene?.() || this.getScene?.() || undefined
-        );
+        // 不再 super.clone，避免创建一个 PBRMaterial 注册到 scene 却永不 dispose（泄漏）。
+        // 直接构造并拷贝当前实例属性，行为与原本一致。
+        const result = new SssPBRMaterial(name, this.getScene?.() || undefined);
 
         // 复制 PBRMaterial 属性
         result.albedoColor = this.albedoColor.clone();

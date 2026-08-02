@@ -199,33 +199,32 @@ class ProcMotionController {
         );
         let buf: ArrayBuffer;
 
-        // Issue #2: bpm 无效时直接抛错，保持状态一致（throw 移入 try 内，见下）
-        const bpmValid = bpm !== null && bpm !== undefined && bpm > 0 && Number.isFinite(bpm);
-        if (targetMode === 'autodance' && bpmValid) {
-            // [audit] per-mode：生成用 autodance 专属参数
-            buf = generateAutoDanceVmd(
-                this._refProcState(modelIdOverride).params.autodance,
-                bpm!,
-                morphNames,
-                boneNames
-            );
-            this._lastBeatBpm = bpm!;
-            this._activeKind = 'autodance';
-        } else {
-            // [audit] per-mode：生成用 idle 专属参数
-            buf = generateIdleVmd(this._refProcState(modelIdOverride).params.idle, boneNames);
-            this._activeKind = targetMode;
-        }
-
         // [P5 per-slot] 显式指定目标时跳过焦点校验：调用方已决定目标，焦点切换不应取消该模型的程序化
         // [fix] _procVmdActive/procModelId 移至成功分支内赋值（P1: 防止 early return 后状态泄漏）
         const isExplicitTarget = modelIdOverride !== undefined;
+        const bpmValid = bpm !== null && bpm !== undefined && bpm > 0 && Number.isFinite(bpm);
         try {
-            // [fix:P2#2] bpm 校验 throw 移入 try 内：throw 后 finally 仍会复位 _starting，
-            // 避免 try 外 throw 导致 _starting 永久为 true、程序化动作锁死（此前 L204 在 try 外抛错）。
+            // [fix:P2#2] bpm 校验 + VMD 生成全部移入 try：任一环节抛错时 finally 仍复位 _starting，
+            // 避免 try 外抛错导致 _starting 永久为 true、程序化动作锁死无法复现。
             if (targetMode === 'autodance' && !bpmValid) {
                 throw new Error('proc-motion: autodance 模式需要有效 BPM，当前 BPM 无效');
             }
+            if (targetMode === 'autodance' && bpmValid) {
+                // [audit] per-mode：生成用 autodance 专属参数
+                buf = generateAutoDanceVmd(
+                    this._refProcState(modelIdOverride).params.autodance,
+                    bpm!,
+                    morphNames,
+                    boneNames
+                );
+                this._lastBeatBpm = bpm!;
+                this._activeKind = 'autodance';
+            } else {
+                // [audit] per-mode：生成用 idle 专属参数
+                buf = generateIdleVmd(this._refProcState(modelIdOverride).params.idle, boneNames);
+                this._activeKind = targetMode;
+            }
+
             // D4: 仅在未显式指定目标时检查焦点切换，避免无意义的 VMD 生成
             if (!isExplicitTarget && focusedModelId !== modelIdAtStart) {
                 logWarn('proc-motion', '焦点已在生成期间切换，取消本次程序化动作');

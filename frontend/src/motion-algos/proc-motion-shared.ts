@@ -131,7 +131,9 @@ export function migrateProcState(raw: unknown): ProcMotionState {
     const per = {
         intensity: r.intensity ?? _fallbackParams.intensity,
         speed: r.speed ?? _fallbackParams.speed,
-        boneToggles: r.boneToggles ?? _fallbackParams.boneToggles,
+        // [fix:P2#1] 与新结构分支对称：逐类别补默认，防旧存档缺 emotion/wrist/footIk 键时
+        // 消费侧 `if (params.boneToggles.wrist)` 读到 undefined 而静默关闭该类别。
+        boneToggles: { ..._fallbackParams.boneToggles, ...(r.boneToggles ?? {}) },
         vpdApplyEnabled: r.vpdApplyEnabled ?? _fallbackParams.vpdApplyEnabled,
         interpOverride: r.interpOverride ?? _fallbackParams.interpOverride,
     };

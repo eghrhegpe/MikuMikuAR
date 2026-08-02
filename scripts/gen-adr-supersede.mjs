@@ -4,6 +4,7 @@
  * 扫描 docs/adr/ 全部 ADR,输出「取代关系」判定结果:
  *
  *   ① 已登记:旧 ADR 首部状态行明确声明「被 [ADR-NNN] 取代」
+ *   ①b 部分推翻:声明带局部限定词(部分/§N/条目 N),只有该章节失效,整篇不归档
  *   ② 漏标告警:某 ADR 正文宣称「取代/废弃了 ADR-NNN」,但被取代方首部状态行未回标
  *      (即「反向引用」存在而「直接声明」缺失 —— 判别方法第二层证据)
  *   ③ 废弃未指明:状态行含「废弃」但未指明取代者(可能是放弃,不一定是被取代)
@@ -25,6 +26,7 @@ import { fileURLToPath } from 'node:url';
 import { parseAdrHeader } from './_lib/frontmatter.mjs';
 import {
   RE_SUPERSEDED_BY,
+  RE_PARTIAL,
   RE_SELF_DEPRECATED,
   RE_CLAIM_A,
   RE_CLAIM_B,
@@ -52,6 +54,7 @@ function main() {
   const adrList = [];     // { num, file, title, status } 全量,允许同 num(子编号 061.1 两篇)
   const adrNums = new Set(); // 所有 num(去重,用于正文引用存在性判断)
   const registered = [];  // ① 已登记取代: oldNum -> { by, status }
+  const partial = [];     // ①b 部分推翻/部分取代: 状态行带局部限定词(部分/§N/条目 N),不算整篇被取代
   const unmarked = [];    // ② 漏标告警: 正文宣称取代 target,但 target 状态行未回标
   const unpointed = [];   // ③ 废弃未指明取代者
   const suspicious = [];  // ④ 可疑信号(措辞不规整)
@@ -76,9 +79,12 @@ function main() {
     const lines = text.split(/\r?\n/);
 
     // ① 状态行声明「被 ADR-NNN 取代」
+    //    带局部限定词(部分/§N/条目 N)的只推翻了某几节,分流到 ①b「部分推翻」而非整篇归档
     const mBy = meta.status.match(RE_SUPERSEDED_BY);
+    const isPartial = Boolean(mBy) && RE_PARTIAL.test(meta.status);
     if (mBy && parseInt(mBy[1], 10) !== num) {
-      registered.push({ old: num, by: parseInt(mBy[1], 10), source: meta.status });
+      const entry = { old: num, by: parseInt(mBy[1], 10), source: meta.status };
+      (isPartial ? partial : registered).push(entry);
     }
 
     // ③ 状态行自身废弃(⚠️/🗑️ 强调或开头即废弃类词)但未指明取代者(且未被①覆盖)
@@ -111,9 +117,11 @@ function main() {
       // ④ 可疑信号:行内含其他 ADR 编号 + 强词(推翻/已过时),但无明确宣称结构,且对方未标记 → 人工确认
       //    「提及方自身已标记」或「行内被提及编号任一已标记」(如 ADR-162 §6 已过时)时,
       //    该行多为已处理勘误的交叉引用(文档维护历史),不再报为可疑
-      const selfMarked = RE_SUPERSEDED_BY.test(meta.status)
-        || RE_SELF_DEPRECATED.test(meta.status)
-        || RE_DEPRECATED_WORD.test(meta.status);
+      //    豁免只认「整篇已登记被取代」或「整篇自身废弃」两种硬标记:
+      //      - 状态行光含「推翻/已过时」字样不算(否则 ADR-192/194 整篇正文被静默);
+      //      - 部分推翻(①b)也不算,未被推翻的章节仍需体检。
+      const selfMarked = (RE_SUPERSEDED_BY.test(meta.status) && !isPartial)
+        || RE_SELF_DEPRECATED.test(meta.status);
       if (claimedThisLine.length === 0 && !selfMarked && RE_DEPRECATED_WORD.test(line) && !RE_NEGATED.test(line)) {
         const others = [...new Set([...line.matchAll(/ADR-(\d+)/g)].map(m => parseInt(m[1], 10)))]
           .filter(n => n !== num && adrNums.has(n));
@@ -158,6 +166,11 @@ function main() {
     console.log(`① 已登记取代(${registered.length}):`);
     for (const r of registered) {
       console.log(`   ADR-${r.old} → ADR-${r.by}   [状态行: ${r.source.slice(0, 80)}]`);
+    }
+
+    console.log(`\n①b 部分推翻/部分取代 — 仅限定章节被推翻,整篇仍有效(${partial.length}):`);
+    for (const p of partial) {
+      console.log(`   ADR-${p.old} 部分被 ADR-${p.by} 推翻   [状态行: ${p.source.slice(0, 80)}]`);
     }
 
     console.log(`\n③ 状态行含废弃/放弃但未指明取代者(${unpointed.length}):`);

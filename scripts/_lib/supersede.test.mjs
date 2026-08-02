@@ -6,6 +6,7 @@ import test from 'node:test';
 import { parseAdrHeader, parseSourceFiles } from '../_lib/frontmatter.mjs';
 import {
   RE_SUPERSEDED_BY,
+  RE_PARTIAL,
   RE_SELF_DEPRECATED,
   RE_CLAIM_A,
   RE_CLAIM_B,
@@ -189,9 +190,44 @@ test('RE_SUPERSEDED_BY: not matched — 无动词', () => {
   assert.ok(!RE_SUPERSEDED_BY.test('被 ADR-019'));
 });
 
+test('RE_SUPERSEDED_BY: not matched — 贪婪误判(编号与动词间夹整句)', () => {
+  // 回归：旧版 [^)\]]* 无界贪婪会把「被 ADR-100 …新方案取代」误读成「被 ADR-100 取代」
+  assert.ok(!RE_SUPERSEDED_BY.test('被 ADR-100 影响的部分已由新方案取代'));
+  assert.ok(!RE_SUPERSEDED_BY.test('被 ADR-019 启发的思路后来被推翻'));
+});
+
+test('RE_SUPERSEDED_BY: matched — 长链接目标仍可识别', () => {
+  const m = RE_SUPERSEDED_BY.exec('被 [ADR-200](adr-200-wind-physics-empty-bundle-map.md) 推翻');
+  assert.ok(m);
+  assert.equal(m[1], '200');
+});
+
 test('RE_SUPERSEDED_BY: not matched — 自身', () => {
   // 自身不应 match（后续代码有额外判断，正则本身可能 match，这里只测匹配性）
   assert.ok(RE_SUPERSEDED_BY.test('被 ADR-001 取代'));
+});
+
+// ①b RE_PARTIAL: 局部限定词 → 「部分推翻」而非整篇被取代
+
+test('RE_PARTIAL: matched — 部分被推翻(ADR-071 真实状态行)', () => {
+  const status = '已实施（方案 B 全部落地）⚠️ **部分被 ADR-079 推翻**（lifelike/idle 保留定位）';
+  assert.ok(RE_SUPERSEDED_BY.test(status));
+  assert.ok(RE_PARTIAL.test(status));
+});
+
+test('RE_PARTIAL: matched — §N 前提被推翻(ADR-194 真实状态行)', () => {
+  const status = '已完成（2026-07-27）⚠️ **§4 风力系数前提被 [ADR-200](adr-200-wind.md) 推翻**';
+  assert.ok(RE_SUPERSEDED_BY.test(status));
+  assert.ok(RE_PARTIAL.test(status));
+});
+
+test('RE_PARTIAL: matched — 条目 N 被推翻(ADR-192 真实状态行)', () => {
+  assert.ok(RE_PARTIAL.test('⚠️ **条目 3 隐含假设被 [ADR-200](adr-200-wind.md) 推翻**'));
+});
+
+test('RE_PARTIAL: not matched — 整篇被取代', () => {
+  assert.ok(!RE_PARTIAL.test('已废弃（被 ADR-167 取代）'));
+  assert.ok(!RE_PARTIAL.test('🗑️ 已被 ADR-196 取代（Superseded）'));
 });
 
 // ③ RE_SELF_DEPRECATED: 状态行自身废弃
@@ -393,6 +429,15 @@ test('Scenario: self-deprecated without pointing successor', () => {
   const status = '⚠️ 已废弃（无替代方案）';
   assert.ok(RE_SELF_DEPRECATED.test(status));
   assert.ok(!RE_SUPERSEDED_BY.test(status));
+});
+
+test('Scenario: 状态行仅含「已过时」不构成 ④ 豁免的硬标记', () => {
+  // 回归：selfMarked 曾把 RE_DEPRECATED_WORD 算作豁免，导致 ADR-162 这类
+  // 「§6 验收标准已过时」的 ADR 整篇正文被静默。豁免只认①整篇被取代/③自身废弃。
+  const status = '已完成（2026-07-21）⚠️ **§6 验收标准已过时** — pin 功能已随 ADR-164/166 整合';
+  assert.ok(RE_DEPRECATED_WORD.test(status));
+  assert.ok(!RE_SUPERSEDED_BY.test(status));
+  assert.ok(!RE_SELF_DEPRECATED.test(status));
 });
 
 test('Scenario: suspicious signal with negation — should NOT flag', () => {

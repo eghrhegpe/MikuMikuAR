@@ -349,7 +349,6 @@ use_when:
 - **slider** `postprocess:vignette` · `scene.vignette` lucide:circle-dot
 - **slider** `postprocess:sharpen` · `scene.sharpen` lucide:focus
 - **folder** `postprocess:optical` · `scene.opticalEffects` lucide:sparkles
-  - **custom** `postprocess:optical:aa` · —
   - **slider** `postprocess:optical:grain` · `scene.grain` lucide:grid-3x3
   - **slider** `postprocess:optical:chromatic` · `scene.chromatic` lucide:rainbow
   - **slider** `postprocess:optical:glow` · `scene.glow` lucide:sparkles
