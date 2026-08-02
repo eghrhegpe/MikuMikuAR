@@ -15,6 +15,7 @@ import {
   RE_TABLE_FIRST_COL,
   RE_TABLE_VERB,
   RE_TABLE_NEGATED,
+  globalOf,
 } from './supersede-regex.mjs';
 
 // Helper: write temp ADR files and return paths
@@ -45,6 +46,8 @@ body...
     assert.equal(h.title, 'Title One');
     assert.ok(h.status.includes('已实施'));
     assert.equal(h.date, '2026-01-01');
+    // 状态行行号（0-based）供调用方界定首部边界，此处状态在第 3 行
+    assert.equal(h.statusLine, 2);
   } finally { cleanup(dir); }
 });
 
@@ -254,57 +257,48 @@ test('RE_SELF_DEPRECATED: not matched — 正常状态', () => {
 // ② RE_CLAIM_A: 正文「取代/替代了 ADR-NNN」
 
 test('RE_CLAIM_A: matched — 取代了', () => {
-  RE_CLAIM_A.lastIndex = 0;
   const m = RE_CLAIM_A.exec('取代 ADR-019');
   assert.ok(m);
   assert.equal(m[1], '019');
 });
 
 test('RE_CLAIM_A: matched — 替代了', () => {
-  RE_CLAIM_A.lastIndex = 0;
   const m = RE_CLAIM_A.exec('替代了 ADR-123');
   assert.ok(m);
   assert.equal(m[1], '123');
 });
 
 test('RE_CLAIM_A: not matched — 无动词', () => {
-  RE_CLAIM_A.lastIndex = 0;
   assert.ok(!RE_CLAIM_A.test('ADR-019 是相关的'));
 });
 
 test('RE_CLAIM_A: case-insensitive — Chinese OK', () => {
-  RE_CLAIM_A.lastIndex = 0;
   assert.ok(RE_CLAIM_A.test('推翻 ADR-001'));
 });
 
 // ② RE_CLAIM_B: 「ADR-NNN 已废弃」
 
 test('RE_CLAIM_B: matched — 已废弃', () => {
-  RE_CLAIM_B.lastIndex = 0;
   const m = RE_CLAIM_B.exec('ADR-144 已废弃');
   assert.ok(m);
   assert.equal(m[1], '144');
 });
 
 test('RE_CLAIM_B: matched — 已过时', () => {
-  RE_CLAIM_B.lastIndex = 0;
   assert.equal(RE_CLAIM_B.exec('ADR-019 已过时')[1], '019');
 });
 
 test('RE_CLAIM_B: matched — 被取代', () => {
-  RE_CLAIM_B.lastIndex = 0;
   const m = RE_CLAIM_B.exec('ADR-012 被取代');
   assert.ok(m);
   assert.equal(m[1], '012');
 });
 
 test('RE_CLAIM_B: matched — 已退役', () => {
-  RE_CLAIM_B.lastIndex = 0;
   assert.equal(RE_CLAIM_B.exec('ADR-200 已退役')[1], '200');
 });
 
 test('RE_CLAIM_B: not matched — 正常提及', () => {
-  RE_CLAIM_B.lastIndex = 0;
   assert.ok(!RE_CLAIM_B.test('ADR-001 是好的'));
 });
 
@@ -341,6 +335,12 @@ test('RE_TABLE_FIRST_COL: matched', () => {
   assert.equal(m[1], '019');
 });
 
+test('RE_TABLE_FIRST_COL: matched — 子编号 061.1 不被截断', () => {
+  const m = RE_TABLE_FIRST_COL.exec('| ADR-061.1 | 标题 |');
+  assert.equal(m[1], '061.1');
+  assert.equal(parseFloat(m[1]), 61.1);
+});
+
 test('RE_TABLE_VERB: matched — 本ADR替代', () => {
   assert.ok(RE_TABLE_VERB.test('本ADR完全替代'));
   assert.ok(RE_TABLE_VERB.test('本 ADR 替代'));
@@ -363,23 +363,28 @@ test('RE_TABLE_VERB: not matched — 无本ADR', () => {
 // ── RE_CLAIM_A 补充：缺失的边缘 ──
 
 test('RE_CLAIM_A: matched — 废除', () => {
-  RE_CLAIM_A.lastIndex = 0;
   const m = RE_CLAIM_A.exec('废除 ADR-088');
   assert.ok(m);
   assert.equal(m[1], '088');
 });
 
 test('RE_CLAIM_A: matched — multiple targets in one line', () => {
+  // 与生产同款用法：共享常量无 g，抓多目标须经 globalOf() 派生带 g 的副本
   const line = '取代 ADR-001 替代了 ADR-012';
-  RE_CLAIM_A.lastIndex = 0;
-  const matches = [];
-  let m;
-  while ((m = RE_CLAIM_A.exec(line))) matches.push(m[1]);
+  const matches = [...line.matchAll(globalOf(RE_CLAIM_A))].map((m) => m[1]);
   assert.deepEqual(matches, ['001', '012']);
 });
 
+test('globalOf: 派生副本带 g，且不污染原常量的无状态语义', () => {
+  const g = globalOf(RE_CLAIM_A);
+  assert.ok(g.global);
+  assert.ok(!RE_CLAIM_A.global);
+  // 无 g 的常量连续 .test() 恒定从头匹配，不会因 lastIndex 漂移而漏判
+  assert.ok(RE_CLAIM_A.test('取代 ADR-001'));
+  assert.ok(RE_CLAIM_A.test('取代 ADR-001'));
+});
+
 test('RE_CLAIM_A: matched — link form [ADR-NNN]', () => {
-  RE_CLAIM_A.lastIndex = 0;
   const m = RE_CLAIM_A.exec('替代了 [ADR-019](adr-019-foo.md)');
   assert.ok(m);
   assert.equal(m[1], '019');
@@ -388,7 +393,6 @@ test('RE_CLAIM_A: matched — link form [ADR-NNN]', () => {
 // ── RE_CLAIM_B 补充：中文括号变体 ──
 
 test('RE_CLAIM_B: matched — 中文右括号', () => {
-  RE_CLAIM_B.lastIndex = 0;
   const m = RE_CLAIM_B.exec('ADR-019）已废弃');
   assert.ok(m);
   assert.equal(m[1], '019');
@@ -412,14 +416,12 @@ test('Scenario: full supersede chain detected', () => {
 
   // RE_CLAIM_A: verb BEFORE target ADR
   const bodyA = '替代 ADR-012';
-  RE_CLAIM_A.lastIndex = 0;
   let m = RE_CLAIM_A.exec(bodyA);
   assert.ok(m);
   assert.equal(m[1], '012');
 
   // RE_CLAIM_B: ADR BEFORE verb
   const bodyB = 'ADR-012 已废弃';
-  RE_CLAIM_B.lastIndex = 0;
   m = RE_CLAIM_B.exec(bodyB);
   assert.ok(m);
   assert.equal(m[1], '012');

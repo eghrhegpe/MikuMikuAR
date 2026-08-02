@@ -26,7 +26,6 @@ tests:
 symbols:
   - DEFAULT_MAT_PARAMS
   - LoadLastScene
-  - SSS_MATERIAL_MARKER
   - SaveLastScene
   - SaveThumbnail
   - SetEnvState
@@ -82,7 +81,6 @@ symbols:
   - isMatEnabled
   - isPbrMaterial
   - isPlaying
-  - isSssMaterial
   - loadAudioFile
   - loadCameraVmd
   - loadCameraVmdFromPath

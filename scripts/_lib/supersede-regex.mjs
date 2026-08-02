@@ -31,8 +31,15 @@ export const RE_SELF_DEPRECATED = /(?:⚠️|🗑️)\s*\**(?:已废弃|已过�
 // ② 正文「取代/废弃了 ADR-NNN」类宣称,紧邻式(间隔 ≤8 个非字母数字字符),避免宽词误报:
 //   A. 宣称方在前:「取代 ADR-019」「替代了 ADR-123」
 //   B. 被废弃方在前:「ADR-144 已废弃」「ADR-019(已废弃)」
-export const RE_CLAIM_A = /(?:取代|替代|推翻|废弃|废除)\s*了?\s*\[?ADR-(\d+)\]?/g;
-export const RE_CLAIM_B = /ADR-(\d+)\s*[）)]?\s*(?:已\s*(?:废弃|过时|放弃|搁置|退役)|被\s*(?:取代|推翻|替代))/g;
+// 刻意不带 g:全局正则的 lastIndex 有状态,共享单例被 .test() 调用后会让下一次匹配从半截开始跳行。
+// 需要一行内抓多个目标时,调用方用 globalOf() 自建带 g 的副本(见下)。
+export const RE_CLAIM_A = /(?:取代|替代|推翻|废弃|废除)\s*了?\s*\[?ADR-(\d+)\]?/;
+export const RE_CLAIM_B = /ADR-(\d+)\s*[）)]?\s*(?:已\s*(?:废弃|过时|放弃|搁置|退役)|被\s*(?:取代|推翻|替代))/;
+
+/** 由无状态正则派生一个带 g 的副本,供 String.prototype.matchAll 使用(matchAll 强制要求 g)。 */
+export function globalOf(re) {
+  return new RegExp(re.source, re.flags.includes('g') ? re.flags : re.flags + 'g');
+}
 
 // ④ 可疑信号强词:仅「推翻」与「过时」值得人工确认(决策冲突/文档漂移)
 export const RE_DEPRECATED_WORD = /(推翻|已过时)/;
@@ -40,7 +47,8 @@ export const RE_DEPRECATED_WORD = /(推翻|已过时)/;
 export const RE_NEGATED = /(非|不|未|无|没有)\s*推翻/;
 
 // ⑤ 表格弱宣称:行首列为 ADR-NNN、其他列含「本 ADR…(完全)替代/取代/推翻」(跨列自指)
-export const RE_TABLE_FIRST_COL = /^\|\s*ADR-(\d+)/;
+// 编号含子编号(ADR-061.1),否则 parseFloat 拿到的只是被截断的父编号
+export const RE_TABLE_FIRST_COL = /^\|\s*ADR-(\d+(?:\.\d+)?)/;
 export const RE_TABLE_VERB = /本\s*ADR[^|]{0,30}(?:完全)?(?:替代|取代|推翻)/;
 // ⑤ 否定语境过滤:「不替代/不取代」等明确否认
 export const RE_TABLE_NEGATED = /(非|不|未|无|没有)\s*(?:替代|取代|推翻)/;

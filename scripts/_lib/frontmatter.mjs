@@ -104,7 +104,9 @@ function escapeRe(s) {
 }
 
 /**
- * 解析 ADR 文件首部，返回 { num, title, status, date }。
+ * 解析 ADR 文件首部，返回 { num, title, status, date, statusLine }。
+ * `statusLine` 为状态行的 0-based 行号，调用方据此界定「首部到哪结束」
+ * （gen-adr-supersede.mjs 用它作为正文扫描起点，替代 20 行魔法数）。
  * 复用 gen-status-index.mjs / gen-adr-supersede.mjs 的解析契约。
  * 支持 blockquote / list / table 三种首部格式，兼容中文冒号。
  */
@@ -116,6 +118,7 @@ export function parseAdrHeader(filePath) {
   let title = '';
   let status = '';
   let date = '';
+  let statusLine = -1;
 
   for (let i = 0; i < Math.min(lines.length, 20); i++) {
     const line = lines[i];
@@ -142,6 +145,7 @@ export function parseAdrHeader(filePath) {
       || line.match(/^\|\s*\*\*状态\*\*\s*\|\s*(.+?)\s*\|\s*$/);
     if (mStatus) {
       status = mStatus[1].trim();
+      statusLine = i;
       continue;
     }
 
@@ -164,5 +168,5 @@ export function parseAdrHeader(filePath) {
   if (!title) return { error: '未找到 ADR 标题' };
   if (date && !/^\d{4}-\d{2}-\d{2}/.test(date)) return { error: `日期格式不可识别：${date}` };
 
-  return { num, title, status, date };
+  return { num, title, status, date, statusLine };
 }
