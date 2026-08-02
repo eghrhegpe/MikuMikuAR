@@ -7,6 +7,9 @@ scope:
   - frontend/src/scene/transform/transform-mode.ts
 source_files:
   - frontend/src/scene/transform/transform-mode.ts
+invariants:
+  - 拖拽模式开关经 localStorage（miku.dragModeEnabled）持久化，setDragModeEnabled 值不变时短路不重复写
+  - 仅作总闸：开关决定是否挂 Gizmo，选中物声明见 transform-selection
 use_when:
   - 变换模式
   - 拖拽模式

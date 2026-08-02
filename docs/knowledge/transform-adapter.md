@@ -10,6 +10,8 @@ source_files:
 adr:
   - ADR-126
   - ADR-121
+invariants:
+  - 本文件不 import 任何 kind 模块；由各 kind 模块（model-ops / lighting）反向调用 registerTransformAdapter 注册，载入即完成注册（ADR-121 依赖方向）
 use_when:
   - 变换适配
   - transform adapter

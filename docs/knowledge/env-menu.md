@@ -10,6 +10,9 @@ scope:
   - frontend/src/menus/env-menu.ts
 source_files:
   - frontend/src/menus/env-menu.ts
+invariants:
+  - 环境弹窗核心 + barrel export：子文件（env-sky/ground/water/wind/cloud/fog/shadow/experimental/preset-levels）经本文件 re-export，调用方 import 路径不变
+  - 道具已迁移至 scene-prop-levels.ts（舞台域），本文件不再承担道具入口
 use_when:
   - 环境弹窗
   - 环境菜单
