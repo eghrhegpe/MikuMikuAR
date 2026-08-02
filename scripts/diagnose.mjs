@@ -98,6 +98,10 @@ if (!slowOnly) {
 
     SECTION.fast("文档漂移");
     runTask("文档检查", "check-doc-drift.mjs") && passed++;
+
+    SECTION.fast("ADR 健康");
+    runTask("ADR 健康检查", "check-adr-health.mjs", { critical: false }) && passed++;
+    runTask("ADR 技术债务", "check-adr-technical-debt.mjs", { critical: false }) && passed++;
 }
 
 if (!fastOnly) {
