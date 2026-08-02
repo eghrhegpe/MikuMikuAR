@@ -1,5 +1,7 @@
 ---
 tier: architecture
+adr:
+  - ADR-132
 kind: env_lighting_wrapper
 name: 环境灯光包装
 category: env
@@ -7,7 +9,6 @@ scope:
   - frontend/src/scene/env/env-lighting.ts
 source_files:
   - frontend/src/scene/env/env-lighting.ts
-adr: []
 symbols:
   - CategorizedEnvPreset
   - DerivedLighting

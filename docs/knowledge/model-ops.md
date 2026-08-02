@@ -1,5 +1,11 @@
 ---
 tier: architecture
+adr:
+  - ADR-049
+  - ADR-116
+  - ADR-150
+  - ADR-167
+  - ADR-168
 kind: model_ops
 name: 模型生命周期操作
 category: scene

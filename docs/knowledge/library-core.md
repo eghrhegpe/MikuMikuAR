@@ -1,5 +1,9 @@
 ---
 tier: architecture
+adr:
+  - ADR-131
+  - ADR-135
+  - ADR-195
 kind: library_core
 name: 资源库核心
 category: ui
@@ -7,7 +11,6 @@ scope:
   - frontend/src/menus/library-core.ts
 source_files:
   - frontend/src/menus/library-core.ts
-adr: []
 symbols:
   - ResourceViewMode
   - abortThumbnailStreaming

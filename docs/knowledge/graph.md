@@ -128,23 +128,30 @@ graph TD;
     end
 
     subgraph adr_group["决策（ADR）"]
+        a8["ADR-008"]
         a17["ADR-017"]
         a21["ADR-021"]
         a35["ADR-035"]
         a36["ADR-036"]
         a45["ADR-045"]
+        a49["ADR-049"]
         a51["ADR-051"]
+        a54["ADR-054"]
         a55["ADR-055"]
         a57["ADR-057"]
         a59["ADR-059"]
         a61["ADR-061"]
         a62["ADR-062"]
+        a65["ADR-065"]
         a71["ADR-071"]
+        a76["ADR-076"]
         a81["ADR-081"]
         a84["ADR-084"]
         a85["ADR-085"]
         a87["ADR-087"]
+        a88["ADR-088"]
         a93["ADR-093"]
+        a99["ADR-099"]
         a100["ADR-100"]
         a102["ADR-102"]
         a104["ADR-104"]
@@ -153,7 +160,10 @@ graph TD;
         a116["ADR-116"]
         a121["ADR-121"]
         a123["ADR-123"]
+        a124["ADR-124"]
+        a125["ADR-125"]
         a126["ADR-126"]
+        a129["ADR-129"]
         a131["ADR-131"]
         a132["ADR-132"]
         a135["ADR-135"]
@@ -170,16 +180,21 @@ graph TD;
         a157["ADR-157"]
         a159["ADR-159"]
         a162["ADR-162"]
+        a164["ADR-164"]
         a166["ADR-166"]
         a167["ADR-167"]
         a168["ADR-168"]
         a169["ADR-169"]
+        a170["ADR-170"]
+        a171["ADR-171"]
         a176["ADR-176"]
         a177["ADR-177"]
+        a179["ADR-179"]
         a180["ADR-180"]
         a182["ADR-182"]
         a183["ADR-183"]
         a186["ADR-186"]
+        a188["ADR-188"]
         a189["ADR-189"]
         a191["ADR-191"]
         a192["ADR-192"]
@@ -187,8 +202,12 @@ graph TD;
         a195["ADR-195"]
         a196["ADR-196"]
         a197["ADR-197"]
+        a198["ADR-198"]
+        a202["ADR-202"]
         a206["ADR-206"]
+        a207["ADR-207"]
         a212["ADR-212"]
+        a215["ADR-215"]
         a226["ADR-226"]
     end
 
@@ -208,6 +227,7 @@ graph TD;
     c34 --> a108;
     c12 --> a55;
     c13 --> a55;
+    c74 --> a88;
     c35 --> a84;
     c36 --> a61;
     c36 --> a116;
@@ -229,14 +249,28 @@ graph TD;
     c3 --> a212;
     c4 --> a226;
     c5 --> a114;
+    c7 --> a132;
+    c49 --> a65;
+    c49 --> a155;
     c8 --> a148;
     c8 --> a176;
     c76 --> a137;
     c76 --> a132;
     c9 --> a148;
     c10 --> a62;
+    c77 --> a102;
+    c77 --> a179;
     c79 --> a57;
     c28 --> a189;
+    c80 --> a8;
+    c80 --> a59;
+    c80 --> a99;
+    c80 --> a102;
+    c80 --> a153;
+    c80 --> a176;
+    c80 --> a177;
+    c80 --> a179;
+    c80 --> a196;
     c50 --> a131;
     c50 --> a135;
     c50 --> a143;
@@ -245,25 +279,59 @@ graph TD;
     c50 --> a169;
     c50 --> a182;
     c50 --> a195;
+    c51 --> a131;
+    c51 --> a135;
+    c51 --> a195;
+    c52 --> a17;
+    c52 --> a180;
+    c52 --> a183;
     c29 --> a168;
+    c30 --> a168;
+    c31 --> a132;
+    c31 --> a168;
+    c31 --> a192;
     c37 --> a21;
     c81 --> a45;
     c81 --> a135;
     c83 --> a59;
+    c16 --> a188;
     c54 --> a191;
     c55 --> a93;
     c56 --> a191;
+    c57 --> a65;
+    c57 --> a129;
     c84 --> a192;
     c84 --> a71;
+    c17 --> a124;
+    c17 --> a167;
+    c17 --> a182;
+    c17 --> a189;
+    c18 --> a49;
+    c18 --> a126;
+    c18 --> a215;
+    c19 --> a49;
+    c19 --> a116;
+    c19 --> a150;
+    c19 --> a167;
+    c19 --> a168;
     c58 --> a145;
+    c59 --> a129;
+    c59 --> a167;
+    c60 --> a167;
+    c60 --> a170;
     c38 --> a85;
+    c39 --> a125;
     c40 --> a121;
     c40 --> a167;
     c61 --> a71;
     c41 --> a116;
     c41 --> a126;
+    c42 --> a116;
+    c42 --> a129;
+    c42 --> a166;
     c43 --> a147;
     c43 --> a116;
+    c85 --> a49;
     c45 --> a71;
     c45 --> a162;
     c45 --> a166;
@@ -273,7 +341,38 @@ graph TD;
     c46 --> a21;
     c86 --> a102;
     c63 --> a93;
+    c33 --> a76;
+    c33 --> a189;
     c87 --> a177;
+    c88 --> a99;
+    c88 --> a176;
+    c64 --> a65;
+    c64 --> a155;
+    c20 --> a49;
+    c20 --> a54;
+    c20 --> a61;
+    c20 --> a71;
+    c20 --> a108;
+    c20 --> a116;
+    c20 --> a121;
+    c20 --> a126;
+    c20 --> a145;
+    c20 --> a162;
+    c20 --> a164;
+    c20 --> a167;
+    c20 --> a168;
+    c20 --> a198;
+    c20 --> a207;
+    c20 --> a215;
+    c21 --> a99;
+    c21 --> a116;
+    c21 --> a121;
+    c21 --> a164;
+    c21 --> a168;
+    c21 --> a171;
+    c21 --> a189;
+    c21 --> a196;
+    c21 --> a202;
     c65 --> a157;
     c66 --> a157;
     c89 --> a36;
@@ -296,18 +395,24 @@ graph TD;
     click a35 href "../adr/adr-035-settings-gap-analysis.md"
     click a36 href "../adr/adr-036-shortcut-registry.md"
     click a45 href "../adr/adr-045-unified-loading.md"
+    click a49 href "../adr/adr-049-orbit-control-extension.md"
     click a51 href "../adr/adr-051-vmd-layers-bonefilter.md"
+    click a54 href "../adr/adr-054-roadmap-next.md"
     click a55 href "../adr/adr-055-ar-camera-mode.md"
     click a57 href "../adr/adr-057-shift-jis-url-base64.md"
     click a59 href "../adr/adr-059-i18n-framework.md"
     click a61 href "../adr/adr-061-advanced-bone-systems.md"
     click a62 href "../adr/adr-062-water-reflection-render-target.md"
+    click a65 href "../adr/adr-065-pure-items-hot-render.md"
     click a71 href "../adr/adr-071-proc-vs-perception-boundary.md"
+    click a76 href "../adr/adr-076-cel-shading-postprocess-mode.md"
     click a81 href "../adr/adr-081-xpbd-removal.md"
     click a84 href "../adr/adr-084-mesh-to-cloth-virtual-skirt-bones.md"
     click a85 href "../adr/adr-085-feet-adjustment.md"
     click a87 href "../adr/adr-087-plaza-browser-experience.md"
+    click a88 href "../adr/adr-088-audio-sfx-footstep.md"
     click a93 href "../adr/adr-093-menu-declarative-schema.md"
+    click a99 href "../adr/adr-099-mpr-coop-coep-poc.md"
     click a100 href "../adr/adr-100-camera-control-behavior-dual-axis.md"
     click a102 href "../adr/adr-102-main-ts-split.md"
     click a104 href "../adr/adr-104-physics-outfit-design-debt-deferral.md"
@@ -316,7 +421,10 @@ graph TD;
     click a116 href "../adr/adr-116-bone-override-ui-redesign.md"
     click a121 href "../adr/adr-121-global-motion-intent.md"
     click a123 href "../adr/adr-123-compute-override-semantics.md"
+    click a124 href "../adr/adr-124-filesystem-architecture.md"
+    click a125 href "../adr/adr-125-motion-undo-redo.md"
     click a126 href "../adr/adr-126-transform-adapter.md"
+    click a129 href "../adr/adr-129-scene-level-motion-ui.md"
     click a131 href "../adr/adr-131-resource-browse-selection-outcome.md"
     click a132 href "../adr/adr-132-env-brightness-unification.md"
     click a135 href "../adr/adr-135-library-session-store.md"
@@ -333,16 +441,21 @@ graph TD;
     click a157 href "../adr/adr-157-settings-ia-restructure.md"
     click a159 href "../adr/adr-159-render-dedup-and-refactor.md"
     click a162 href "../adr/adr-162-perception-permodel-phase1.md"
+    click a164 href "../adr/adr-164-perception-permodel-phase2.md"
     click a166 href "../adr/adr-166-perception-permodel-rework.md"
     click a167 href "../adr/adr-167-scene-motion-library.md"
     click a168 href "../adr/adr-168-dynamic-light-tracking.md"
     click a169 href "../adr/adr-169-motion-load-replace-default.md"
+    click a170 href "../adr/adr-170-motion-selection-paradigm.md"
+    click a171 href "../adr/adr-171-scene-drag-mode.md"
     click a176 href "../adr/adr-176-frontend-backend-adapter.md"
     click a177 href "../adr/adr-177-web-loader-main-app-unification.md"
+    click a179 href "../adr/adr-179-update-install-launch-platform-tiered.md"
     click a180 href "../adr/adr-180-fsa-handle-persistence.md"
     click a182 href "../adr/adr-182-web-zip-keyspace-namespacing.md"
     click a183 href "../adr/adr-183-fsa-auth-guidance.md"
     click a186 href "../adr/adr-186-bone-override-frame-timing.md"
+    click a188 href "../adr/adr-188-pbr-material-builder.md"
     click a189 href "../adr/adr-189-ktx2-texture-compression.md"
     click a191 href "../adr/adr-191-god-barrel-debarreling.md"
     click a192 href "../adr/adr-192-upstream-adapter-layer.md"
@@ -350,7 +463,11 @@ graph TD;
     click a195 href "../adr/adr-195-download-folder-unification.md"
     click a196 href "../adr/adr-196-llm-diagnostic-assistant.md"
     click a197 href "../adr/adr-197-unified-action-registry.md"
+    click a198 href "../adr/adr-198-场景序列化异常的保存韧性.md"
+    click a202 href "../adr/adr-202-fork-autonomy-batch.md"
     click a206 href "../adr/adr-206-test-infra-consolidation-and-assertion-quality.md"
+    click a207 href "../adr/adr-207-motion-menu-restructure.md"
     click a212 href "../adr/adr-212-naming-vs-functionality-audit.md"
+    click a215 href "../adr/adr-215-eliminate-prop-kind.md"
     click a226 href "../adr/adr-226-ground-material-spec-single-source.md"
 ```

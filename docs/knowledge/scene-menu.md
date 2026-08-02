@@ -1,5 +1,8 @@
 ---
 tier: architecture
+adr:
+  - ADR-065
+  - ADR-155
 kind: scene_menu
 name: 场景弹窗（编排 + 路由）
 category: ui

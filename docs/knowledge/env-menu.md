@@ -1,5 +1,8 @@
 ---
 tier: architecture
+adr:
+  - ADR-065
+  - ADR-155
 kind: env_menu
 name: 环境弹窗（编排 + barrel）
 category: ui

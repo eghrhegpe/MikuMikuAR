@@ -1,5 +1,7 @@
 ---
 tier: architecture
+adr:
+  - ADR-125
 kind: motion_history
 name: 动作历史管理
 category: motion
@@ -7,7 +9,6 @@ scope:
   - frontend/src/scene/motion/motion-modules/motion-history.ts
 source_files:
   - frontend/src/scene/motion/motion-modules/motion-history.ts
-adr: []
 symbols:
   - MotionHistoryEntry
   - SnapshotBuilder

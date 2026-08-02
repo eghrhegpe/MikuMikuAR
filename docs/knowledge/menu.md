@@ -1,5 +1,8 @@
 ---
 tier: architecture
+adr:
+  - ADR-065
+  - ADR-129
 kind: slide_menu
 name: 滑出式菜单引擎（SlideMenu）
 category: ui

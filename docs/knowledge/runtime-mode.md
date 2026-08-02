@@ -1,5 +1,8 @@
 ---
 tier: architecture
+adr:
+  - ADR-099
+  - ADR-176
 kind: runtime_mode
 name: 运行模式检测
 category: core
@@ -7,7 +10,6 @@ scope:
   - frontend/src/core/runtime-mode.ts
 source_files:
   - frontend/src/core/runtime-mode.ts
-adr: []
 symbols:
   - RuntimeMode
   - detectRuntimeMode

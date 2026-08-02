@@ -2,6 +2,11 @@
 kind: model_loader
 name: PMX 模型加载与缩略图捕获
 tier: architecture
+adr:
+  - ADR-124
+  - ADR-167
+  - ADR-182
+  - ADR-189
 category: scene
 scope:
   - frontend/src/scene/manager/model-loader.ts
