@@ -1,6 +1,6 @@
 # ADR-229: E2E 自动化推进 —— 从 schema 到测试零映射
 
-> **状态**: 📝 规划
+> **状态**: 部分实施 — Phase 1（导航自动化 + CI 快照门禁）与 Phase 2 主体（action 交互 + `__state` + DOM 契约统一）已落地（2026-08-02，schema-driven E2E 30/30 全绿）；Phase 3（视觉回归 + WebGL 推广）待做
 > **日期**: 2026-08-02
 >
 > **编号**: 229
@@ -40,7 +40,7 @@ menu-schema-register.ts（声明式 schema）
 
 **现状问题**：`PANEL_NAV` 是 schema 数据的"第二副本"，schema 注册后还需人工同步此表。
 
-**解决方案**：导航路径**不能**从 schema 节点结构自动推导——6/16 面板存在特例（`scene:postprocess-*` 实际挂在 env 域的 `folder:env:postprocess` 下；`settings:*` 需二级 folder `controls`/`graphics`，且其节点 id 前缀是 `settings:perf:*`，与导航 folder 无任何映射关系）。故将导航元数据**显式声明**到 schema 注册处（`menu-schema-register.ts`）：消灭 spec 侧 `PANEL_NAV` 第二副本；常规面板由快照生成器**默认推导**（零声明），仅 6 个特例面板补一行覆写。`schema-snapshot.test.ts` 生成快照时并入 `nav` 字段，spec 直接消费。
+**解决方案**：导航路径**不能**从 schema 节点结构自动推导——8/16 面板存在特例（`scene:postprocess-*` 实际挂在 env 域的 `folder:env:postprocess` 下；`settings:*` 需二级 folder `controls`/`graphics`，且其节点 id 前缀是 `settings:perf:*`，与导航 folder 无任何映射关系；`env:water`/`env:ground` 已迁至 scene 菜单，panelId 前缀不可信）。故将导航元数据**显式声明**到 schema 注册处（`menu-schema-register.ts`）：消灭 spec 侧 `PANEL_NAV` 第二副本；常规面板由快照生成器**默认推导**（零声明），仅 8 个特例面板补一行覆写。`schema-snapshot.test.ts` 生成快照时并入 `nav` 字段，spec 直接消费。
 
 声明规则（注册处每面板一行）：
 
@@ -48,6 +48,8 @@ menu-schema-register.ts（声明式 schema）
 // env:*    → domain = "env"，subLevelTestId = `folder:env:<slug>`（slug = panelId 冒号后段）
 // motion:* → domain = "motion"，subLevelTestId = `folder:motion:<slug>`
 // scene:postprocess-* → domain 覆写为 "env"，subLevelTestId = "folder:env:postprocess"（panelId 前缀不可信）
+// env:water / env:ground → domain 覆写为 "scene"，subLevelTestId = "folder:scene:water" / "folder:scene:ground"
+//              （Water/Ground 已迁至 scene 菜单，见 §8）
 // settings:* → domain = "settings"，subLevel2TestId 显式声明
 //              （"folder:settings:controls" / "folder:settings:graphics"，节点 id 前缀与导航 folder 无映射，不可推导）
 ```
@@ -56,7 +58,7 @@ menu-schema-register.ts（声明式 schema）
 
 - `menu-registry.ts`：`registerSchema(panelId, builder, nav?)` 新增**可选第三参** `PanelNav`；现有 16 个调用点不传参，行为不变。
 - **默认推导**（快照生成器内完成，无需声明）：`env:*` → `{ domain:'env', entryTestId:'btnEnv', subLevelTestId:'folder:env:<slug>' }`；`motion:*` → `{ domain:'motion', entryTestId:'btnMotionPopup', subLevelTestId:'folder:motion:<slug>' }`。`entryTestId` 由 domain 映射表推导（env→btnEnv / motion→btnMotionPopup / settings→btnSettings / scene→btnScene），不手写。
-- **特例显式覆写**（仅 6 个）：`scene:postprocess-core`、`scene:postprocess-color` → `{ domain:'env', subLevelTestId:'folder:env:postprocess' }`；`settings:camera` → `{ subLevel2TestId:'folder:settings:controls' }`；`settings:frame-quality`、`settings:effects`、`settings:physics-hud` → `{ subLevel2TestId:'folder:settings:graphics' }`。
+- **特例显式覆写**（落地 8 个）：`scene:postprocess-core`、`scene:postprocess-color` → `{ domain:'env', subLevelTestId:'folder:env:postprocess' }`；`settings:camera` → `{ subLevel2TestId:'folder:settings:controls' }`；`settings:frame-quality`、`settings:effects`、`settings:physics-hud` → `{ subLevel2TestId:'folder:settings:graphics' }`；`env:water`、`env:ground` → `{ domain:'scene', subLevelTestId:'folder:scene:water'/'folder:scene:ground' }`（Water/Ground 迁至 scene 菜单后 panelId 前缀不可信，见 §8）。
 
 ```ts
 // menu-schema-register.ts（仅特例加第三参）
@@ -114,6 +116,8 @@ registerSchema('settings:camera', buildCameraSchema,
 
 **交互后状态回滚**：拖滑块/点开关会经 `setStateValue` 写真实 state 并触发 auto-save（`schema-snapshot.test.ts:104` 的 mock 可见），不回滚会污染持久化与 Phase 3 视觉基线。每个面板交互断言**前**记录各节点 `bind` 初值（经 `__state`），断言**后**还原；Phase 3 基线捕获必须发生在交互之前。
 
+> **落地修正（2026-08-02）**：回滚实现最终**省略**——vitePage 模式下每个 test 都是全新浏览器实例（无跨 test 持久化污染），且 Phase 3 视觉基线另有「基线先于交互」顺序约束（§2.3），故无需恢复 state（见 `schema-driven.spec.ts` §2.2 注释）。若未来引入共享实例的测试模式需恢复回滚。
+
 **落地 API**（Phase 2，action 是"策略描述"而非静态目标值——运行时初始值不可预知，静态 target 会与当前值撞车导致断言失真）：
 
 - **快照 `cleanNode` 为交互节点生成 `action` 元数据**（`schema-snapshot.test.ts` 内）：
@@ -122,7 +126,7 @@ registerSchema('settings:camera', buildCameraSchema,
   - `modeSlider` → `{ action:'selectChip', target:'non-current' }`：运行时选第一个 ≠ 当前值的 option 的 chip。
   - `colorSlider`：**首轮不生成 action**（值为 `[r,g,b]` 三元组、DOM 是颜色条而非数值 range，拖拽模拟不稳定），仅保留存在断言，交互策略后续单独设计。
 - **`window.__state` 挂载**：`core/dev-hooks.ts` 追加 `window.__state = { get: (path) => getStateValue(path) }`——复用 `menu-schema.ts` 现成解析器（含 `modelId` 参数透传），只读不暴露 setter。
-- **回滚实现**：断言前经 `__state` 记录各节点 bind 初值（含 `modelId`），断言后 `setStateValue(bind, 初值, modelId)` 还原。
+- **回滚实现**（落地修正：已省略，理由见「交互后状态回滚」落地修正）：原设计为断言前经 `__state` 记录各节点 bind 初值（含 `modelId`），断言后 `setStateValue(bind, 初值, modelId)` 还原。
 
 ### 2.3 视觉回归自动发现（P1，消除瓶颈 ③）
 
@@ -172,7 +176,7 @@ registerSchema('settings:camera', buildCameraSchema,
 
 | 步骤 | 工作 | 验收标准 |
 |------|------|---------|
-| 1.1 | `menu-registry.ts` 给 `registerSchema` 加可选第三参 `nav?`；`menu-schema-register.ts` 6 个特例补 nav 覆写；`schema-snapshot.test.ts` 生成 `nav` 字段（默认推导 + 特例合并）并断言完整性 | 16 面板的 `nav` 字段全部生成，默认推导与特例覆写错误时 vitest 失败 |
+| 1.1 | `menu-registry.ts` 给 `registerSchema` 加可选第三参 `nav?`；`menu-schema-register.ts` 8 个特例补 nav 覆写；`schema-snapshot.test.ts` 生成 `nav` 字段（默认推导 + 特例合并）并断言完整性 | 16 面板的 `nav` 字段全部生成，默认推导与特例覆写错误时 vitest 失败 |
 | 1.2 | `schema-driven.spec.ts` 消费 `nav`，删除 `PANEL_NAV` 表 | `PANEL_NAV` 完全删除，新增 env 面板零声明即覆盖（仅特例补覆写） |
 | 1.3 | `ci.yml` e2e job 在 playwright 前插入「快照重生成 + `git diff --exit-code` 漂移门禁」两步 | schema 变更未提交新快照时 CI 失败（diff 非空即红） |
 | 1.4 | 本地/CI 验证 `npx playwright test --grep @dom`（webServer 已自动拉起） | GitHub Actions 通过 |
@@ -220,7 +224,7 @@ registerSchema('settings:camera', buildCameraSchema,
 | 文件 | 变更 |
 |------|------|
 | `frontend/src/menus/menu-registry.ts` | 改：`registerSchema` 增加可选第三参 `nav?: PanelNav`（向后兼容） |
-| `frontend/src/menus/menu-schema-register.ts` | 改：6 个特例面板（scene:postprocess-* ×2、settings:* ×4）补 nav 覆写 |
+| `frontend/src/menus/menu-schema-register.ts` | 改：8 个特例面板（scene:postprocess-* ×2、settings:* ×4、env:water/env:ground ×2）补 nav 覆写 |
 | `frontend/src/__tests__/schema-snapshot.test.ts` | 改：生成 `nav` 字段（默认推导 + 特例合并）并断言完整性（Phase 1）；生成 `action` 字段（Phase 2） |
 | `frontend/e2e/schema-driven.spec.ts` | 改：删除 `PANEL_NAV`，消费 `nav`；新增交互 action 执行 + 回滚（Phase 2）；新增视觉捕获（Phase 3） |
 | `frontend/e2e/helpers.ts` | 改：`navigateToPanel` 函数接受 `nav` 对象而非 `PANEL_NAV` 表 |
@@ -294,8 +298,8 @@ schema-snapshot.json                                ← 快照携带 DOM 契约�
 
 落地步骤（并入 Phase 2）：
 
-1. **源码侧**：新建零依赖叶子模块 `src/menus/dom-contract.ts`，集中定义 `KIND_DOM_SELECTOR: Record<MenuKind, string>`（`slider → '[role="slider"]'`、`modeSlider → '[role="listbox"]'`、`toggle → '[role="switch"], input[type="checkbox"]'` 等），并让 `ui-rows.ts`/`ui-advanced-rows.ts` 等渲染函数**引用**它产出 role/class（消除源码内部重复手写）。
-2. **快照侧**：`schema-snapshot.test.ts` 生成快照时，为每个 kind 写入 `dom` 字段（= `KIND_DOM_SELECTOR[kind]`），并断言其与渲染层实际产出一致（元测试，ADR-220 同款模式）。
+1. **源码侧**：新建零依赖叶子模块 `src/core/dom-contract.ts`，集中定义 `KIND_CONTROL_SELECTOR: Record<MenuKind, string>`（`slider → '[role="slider"]'`、`modeSlider → '[role="listbox"]'`、`toggle → '[role="switch"], input[type="checkbox"]'` 等），并让 `ui-rows.ts`/`ui-advanced-rows.ts` 等渲染函数**引用**它产出 role/class（消除源码内部重复手写）。
+2. **快照侧**：`schema-snapshot.test.ts` 生成快照时，为每个 kind 写入 `dom` 字段（= `KIND_CONTROL_SELECTOR[kind]`），并断言其与渲染层实际产出一致（元测试，ADR-220 同款模式）。
 3. **e2e 侧**：`schema-driven.spec.ts` 删除手写 `KIND_SELECTOR_MAP`，改为从快照读 `node.dom` / kind 映射；slider 断言直接读快照中的 aria 属性名。
 4. **漂移兜底**：渲染层若改 role/class 而未同步 `dom-contract.ts`，CI 的「快照重生成 + `git diff --exit-code`」门禁（§2.4）会直接红——与导航门禁同一条防线。
 
