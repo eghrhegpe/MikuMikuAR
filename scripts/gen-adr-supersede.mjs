@@ -22,6 +22,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parseAdrHeader } from './_lib/frontmatter.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -29,44 +30,6 @@ const ADR_DIR = path.join(ROOT, 'docs', 'adr');
 
 const FLAG_CHECK = process.argv.includes('--check');
 const FLAG_QUIET = process.argv.includes('--quiet');
-
-// ── 解析单个 ADR 文件首部(与 gen-status-index.mjs 保持同一契约) ──
-
-function parseAdrHeader(filePath) {
-  const lines = fs.readFileSync(filePath, 'utf8').split(/\r?\n/);
-  let num = null;
-  let title = '';
-  let status = '';
-  let date = '';
-
-  for (let i = 0; i < Math.min(lines.length, 20); i++) {
-    const line = lines[i];
-    const mTitle = line.match(/^#\s+ADR-(\d+):\s*(.+)/);
-    if (mTitle) {
-      num = parseInt(mTitle[1], 10);
-      title = mTitle[2].trim();
-      continue;
-    }
-    const mStatus = line.match(/^>\s*\*\*状态\*\*\s*[：:]\s*(.+)/)
-      || line.match(/^[-*]\s*\*\*状态\*\*\s*[：:]\s*(.+)/)
-      || line.match(/^\s*\*\*状态\*\*\s*[：:]\s*(.+)/)
-      || line.match(/^\|\s*\*\*状态\*\*\s*\|\s*(.+?)\s*\|\s*$/);
-    if (mStatus) {
-      status = mStatus[1].trim();
-      continue;
-    }
-    const mDate = line.match(/^>\s*\*\*日期\*\*\s*[：:]\s*(.+)/)
-      || line.match(/^[-*]\s*\*\*日期\*\*\s*[：:]\s*(.+)/)
-      || line.match(/^\s*\*\*日期\*\*\s*[：:]\s*(.+)/)
-      || line.match(/^\|\s*\*\*日期\*\*\s*\|\s*(.+?)\s*\|\s*$/);
-    if (mDate) {
-      date = mDate[1].trim();
-      continue;
-    }
-    if (line.startsWith('---') && status) break; // 首部 blockquote 结束
-  }
-  return { num, title, status, date };
-}
 
 // ── 正则 ──
 
@@ -106,8 +69,11 @@ function main() {
 
   // 第一遍:解析全部首部
   for (const file of files) {
-    const { num, title, status } = parseAdrHeader(path.join(ADR_DIR, file));
-    if (num !== null) adrs.set(num, { file, title, status });
+    const parsed = parseAdrHeader(path.join(ADR_DIR, file));
+    if (parsed && !parsed.error && parsed.num !== null) {
+      const { num, title, status } = parsed;
+      adrs.set(num, { file, title, status });
+    }
   }
 
   // 第二遍:逐篇判定

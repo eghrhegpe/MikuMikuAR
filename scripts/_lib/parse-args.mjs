@@ -27,8 +27,13 @@ export function parseArgs(argv, { bools = [], strings = [], defaults = {} } = {}
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (!arg.startsWith('--') || arg === '--') {
-      // 位置参数
+      // 位置参数（-- 作为分隔符，后续所有参数均为位置参数）
       result._.push(arg);
+      if (arg === '--') {
+        // 把剩余所有参数都当作位置参数
+        for (let j = i + 1; j < argv.length; j++) result._.push(argv[j]);
+        break;
+      }
       continue;
     }
 
