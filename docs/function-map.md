@@ -9,9 +9,9 @@
 |------|--------|-----------|
 | 核心基础设施 | 123 | 721 |
 | 3D 场景 | 111 | 1133 |
-| 菜单 & UI | 75 | 382 |
+| 菜单 & UI | 75 | 383 |
 | 换装 & 音频 | 3 | 33 |
-| 动作算法 | 17 | 127 |
+| 动作算法 | 17 | 130 |
 | 物理系统 | 2 | 14 |
 
 ## 核心基础设施
@@ -2114,6 +2114,7 @@
 | `buildRetargetLevel()` | `menus/motion-root-ui` | — |
 | `hideMotionPopup()` | `menus/motion-root-ui` | — |
 | `importExternalAnimation()` | `menus/motion-root-ui` | 外部动作导入：选文件 → 重定向骨骼 → 播放。 |
+| `openProcDetail()` | `menus/motion-root-ui` | [doc:adr-207] 行体点击进入程序化统一详情页。 |
 | `buildOutfitLevel()` | `menus/outfit-ui` | — |
 | `buildSiteTabs()` | `menus/plaza-browser` | — |
 | `buildToolbar()` | `menus/plaza-browser` | — |
@@ -2366,7 +2367,7 @@
 | `generateEmotionMorphs()` | `motion-algos/proc-motion-autodance-emotion` | 生成全部情绪 morph 帧 |
 | `scoreMorph()` | `motion-algos/proc-motion-autodance-emotion` | 计算 morph 名称对一组关键词的匹配得分 - 含关键词 +10 分（大小写不敏感） - 含黑名单模式 -10 分 ⚠️ P3: 使用字符串包含匹配精度较低，建议后续用正则或语义 |
 | `generateAutoDanceVmd()` | `motion-algos/proc-motion-autodance` | 生成 AutoDance VMD |
-| `generateIdleVmd()` | `motion-algos/proc-motion-idle` | — |
+| `generateIdleVmd()` | `motion-algos/proc-motion-idle` | [audit] 待机呼吸生成：params 为 idle 模式专属参数；尊重 boneToggles，关闭的骨类别不生成。 |
 | `BONE_ALLPARENT_CANDIDATES()` | `motion-algos/proc-motion-shared` | — |
 | `BONE_ARM_IK_L_CANDIDATES()` | `motion-algos/proc-motion-shared` | — |
 | `BONE_ARM_IK_R_CANDIDATES()` | `motion-algos/proc-motion-shared` | — |
@@ -2398,13 +2399,16 @@
 | `PROC_MOTION_BONE_CATEGORIES()` | `motion-algos/proc-motion-shared` | — |
 | `PROC_VMD_NAME_AUTODANCE()` | `motion-algos/proc-motion-shared` | — |
 | `PROC_VMD_NAME_IDLE()` | `motion-algos/proc-motion-shared` | — |
+| `ProcModeKey()` | `motion-algos/proc-motion-shared` | 可编辑参数的程序化模式（'off' 无参数）。每个模式独立一套 ProcMotionParams。 |
 | `ProcMotionBoneCategory()` | `motion-algos/proc-motion-shared` | — |
 | `ProcMotionMode()` | `motion-algos/proc-motion-shared` | — |
+| `ProcMotionParams()` | `motion-algos/proc-motion-shared` | [audit] per-mode 可调参数：待机呼吸 / 自动舞蹈 各自独立一套 |
 | `ProcMotionState()` | `motion-algos/proc-motion-shared` | — |
 | `clamp1()` | `motion-algos/proc-motion-shared` | — |
 | `closingFrame()` | `motion-algos/proc-motion-shared` | 循环末尾的 identity 闭合帧（确保动画无缝循环） |
 | `getProcMotionBoneCategories()` | `motion-algos/proc-motion-shared` | — |
 | `matchBone()` | `motion-algos/proc-motion-shared` | — |
+| `migrateProcState()` | `motion-algos/proc-motion-shared` | [audit] 旧扁平 ProcMotionState → per-mode 嵌套迁移。 |
 | `quatW()` | `motion-algos/proc-motion-shared` | 四元数 w 分量：sqrt(max(0, 1 - x² - y² - z²)) |
 | `generateAutoDanceVmd()` | `motion-algos/procedural-motion` | — |
 | `generateIdleVmd()` | `motion-algos/procedural-motion` | — |
