@@ -1024,7 +1024,11 @@ export const en: Record<string, string> = {
     'scene.loader.loadingZero': 'Loading 0%',
     'scene.loader.loadingProgress': 'Loading {pct}%',
     'scene.loader.stageLoaded': '✓ {name} (stage)',
-    'scene.loader.textureMissing': 'Some textures failed to load ({count})',
+    'resource.warnSummary': 'Some resources failed to load ({count})',
+    'resource.textureMissing': 'Model texture missing: {name}',
+    'resource.outfitTextureMissing': 'Outfit texture missing: {name}',
+    'resource.outfitNoMesh': 'FBX has no mesh: {name}',
+    'resource.audioLoadFailed': 'Audio load failed: {name}',
     'scene.loader.actorLoaded': '✓ {name}',
     'scene.loader.actorLoadedWithVmd': '✓ {name} + {vmd}',
 

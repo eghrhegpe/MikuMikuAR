@@ -1012,7 +1012,11 @@ export const zhCN: Record<string, string> = {
     'scene.loader.loadingZero': '加载中 0%',
     'scene.loader.loadingProgress': '加载中 {pct}%',
     'scene.loader.stageLoaded': '✓ {name} (场景)',
-    'scene.loader.textureMissing': '部分纹理未加载（{count} 个）',
+    'resource.warnSummary': '部分资源加载异常（{count}）',
+    'resource.textureMissing': '模型纹理缺失：{name}',
+    'resource.outfitTextureMissing': '换装贴图缺失：{name}',
+    'resource.outfitNoMesh': 'FBX 无网格：{name}',
+    'resource.audioLoadFailed': '音频读取失败：{name}',
     'scene.loader.actorLoaded': '✓ {name}',
     'scene.loader.actorLoadedWithVmd': '✓ {name} + {vmd}',
 

@@ -976,7 +976,11 @@ export const ko: Record<string, string> = {
     'scene.loader.loadingZero': '로딩 0%',
     'scene.loader.loadingProgress': '로딩 {pct}%',
     'scene.loader.stageLoaded': '✓ {name} (스테이지)',
-    'scene.loader.textureMissing': '일부 텍스처를 불러오지 못했습니다（{count}개）',
+    'resource.warnSummary': '일부 리소스를 불러오지 못했습니다（{count}개）',
+    'resource.textureMissing': '모델 텍스처 누락: {name}',
+    'resource.outfitTextureMissing': '의상 텍스처 누락: {name}',
+    'resource.outfitNoMesh': 'FBX 메시 없음: {name}',
+    'resource.audioLoadFailed': '오디오 로드 실패: {name}',
     'scene.loader.actorLoaded': '✓ {name}',
     'scene.loader.actorLoadedWithVmd': '✓ {name} + {vmd}',
 
