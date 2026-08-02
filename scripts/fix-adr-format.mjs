@@ -27,8 +27,8 @@ const ADR_DIR = path.resolve(process.cwd(), 'docs/adr');
 const targets = process.argv.slice(2);
 
 let files = targets.length > 0
-  ? targets.filter(f => /^adr-\d+-.+\.md$/.test(f))
-  : fs.readdirSync(ADR_DIR).filter(f => /^adr-\d+-.+\.md$/.test(f)).sort();
+  ? targets.filter(f => /^adr-[\d.]+-.+\.md$/.test(f))
+  : fs.readdirSync(ADR_DIR).filter(f => /^adr-[\d.]+-.+\.md$/.test(f)).sort();
 
 let fixed = 0;
 let unchanged = 0;
