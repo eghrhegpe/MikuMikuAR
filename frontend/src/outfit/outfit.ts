@@ -116,8 +116,6 @@ function _collectSlotMappings(inst: ModelInstance): _SlotMapping[] {
     return result;
 }
 
-// _encodePath 已改为复用 normPath（@/core/utils）
-
 export async function loadOutfits(id: string, signal?: AbortSignal): Promise<OutfitFile | null> {
     if (!_loadingOutfitsGuard.tryEnter(id)) {
         return null;
