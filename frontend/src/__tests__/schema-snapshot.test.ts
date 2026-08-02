@@ -223,7 +223,7 @@ const ENTRY_TESTID: Record<string, string> = {
 /** 从 panelId + 可选 nav 覆写推导完整导航元数据 */
 function deriveNav(panelId: string, nav?: PanelNav): PanelNav {
     const [domainRaw, ...rest] = panelId.split(':');
-    const domain = nav?.domain ?? domainRaw;
+    const domain: 'env' | 'motion' | 'settings' | 'scene' = nav?.domain ?? domainRaw as 'env' | 'motion' | 'settings' | 'scene';
     const slug = rest.join(':');
     // settings 域无一级子面板（走二级 folder），不推导 subLevelTestId
     const subLevelTestId =
