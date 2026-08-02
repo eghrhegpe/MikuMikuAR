@@ -53,17 +53,17 @@ ADR-052 / 083 / 089 / 091 / 114 / 134 / 208 / 226 已把地面从模式拆分、
 - 脉冲扫描环（从中心 / 角色脚下扩散的扫描波）
 - 辉光边（地面边界发光描边）
 
-技术实现：地面当前走 Babylon 内置材质（StandardMaterial / PBR）。为注入 pattern 且不破坏 226 单源约束，采用 **`CustomMaterial` 包裹内置 shader**（Babylon 支持在 built-in shader 的 fragment 注入），新增 uniform：`groundPatternType`、`groundPatternColor`、`groundPatternScale`、`groundPatternSpeed`、`groundPatternPhase`。pattern 函数输出叠加到 emissive 或 albedo。
+技术实现（落地修订）：地面图案已部分走 **CPU canvas 纹理**路径（`_generateGroundTexture` / `_drawOverlayPattern`，已实现 grid / checker / dots / stripes / radial），本方向 **延续该路径**，仅扩展 `groundOverlay` 枚举 `+ 'scan' | 'glowEdge'`，**不引入 `CustomMaterial`**（无 shader 注入、无新增 uniform）。`scan`（脉冲扫描环）由 `tickGround` 按相位逐帧重绘 albedo 动态纹理实现动画（复用现有 scroll 重绘机制，仅 scan 启用）；`glowEdge` 为静态边界辉光描边。密度 / 颜色复用现有 `groundGridSize` / `groundLineColor`。
 
 ### 2.3 方案取舍表
 
 | 维度 | 方向 A 自发光地屏 | 方向 E 程序化图案 |
 |------|------------------|------------------|
-| 主要 uniform | `groundEmissive*`（color / strength / reflectMix） | `groundPattern*`（type / color / scale / speed） |
-| 数据来源 | emissiveColor + emissiveTexture（复用 091 纹理） | 纯数学（shader 内） |
-| 与 091 / 114 关系 | 叠加 emissive，反射权重视强度衰减 | 注入 pattern 到 fragment，与反射 / 纹理相乘或相加 |
-| 默认 | 关闭（零回归） | 关闭（零回归） |
-| 性能 | 仅多一个 texture sample（若用纹理） | 仅数行 GLSL，可忽略 |
+| 主要字段 | `groundEmissive*`（color / strength / reflectMix / texture） | `groundOverlay` 枚举扩展（scan / glowEdge） |
+| 数据来源 | 内置 emissiveColor + emissiveTexture（复用 091 纹理） | CPU canvas 绘制（复用现有图案管线） |
+| 与 091 / 114 关系 | 叠加 emissive，反射权重视强度衰减 | overlay 层叠在 albedo canvas 上，与反射无耦合 |
+| 默认 | 关闭（零回归） | `'none'`（零回归） |
+| 性能 | 仅多一个 texture sample（若用纹理） | 仅 scan 逐帧重绘 512 canvas，glowEdge 静态 |
 
 ---
 
@@ -71,30 +71,30 @@ ADR-052 / 083 / 089 / 091 / 114 / 134 / 208 / 226 已把地面从模式拆分、
 
 ### 3.1 状态单源（env-ground-spec.ts，ADR-226）
 
-`env-state-schema` 的 `ground` 分组新增两组字段，均带零回归默认值：
+`env-state-schema` 的 `ground` 分组新增一组 emissive 字段 + 扩展 `groundOverlay` 枚举，均带零回归默认值：
 
 | 字段 | 类型 | 默认 | 说明 |
 |------|------|------|------|
-| `groundEmissiveColor` | `Color3` | 黑（关闭） | 地屏自发光颜色 |
+| `groundEmissiveColor` | `tuple3` | `[0,0,0]`（黑=关闭） | 地屏自发光颜色 |
 | `groundEmissiveStrength` | `number` | `0` | 发光强度（0 = 关） |
 | `groundEmissiveReflectMix` | `number` | `0.5` | 发光 / 反射合成比 |
-| `groundEmissiveTexture` | `string?` | 无 | 复用 091 纹理管线作发光源 |
-| `groundPatternType` | `'none' \| 'grid' \| 'scan' \| 'glowEdge'` | `'none'` | 图案类型 |
-| `groundPatternColor` | `Color3` | 霓虹青 | 图案颜色 |
-| `groundPatternScale` | `number` | `1` | 网格密度 / 图案尺度 |
-| `groundPatternSpeed` | `number` | `0.2` | 扫描 / 动画速度（0 = 静止） |
+| `groundEmissiveTexture` | `string` | `''` | 非空 = 复用当前 albedo 纹理作发光源（不新建上传路径） |
+| `groundOverlay` 扩展 | `enum` | `'none'` | 原 `none/grid/checker` → `+ 'scan' \| 'glowEdge'` |
+| scan 动画 | 常量 `GROUND_SCAN_SPEED` | — | 相位累加器在 `tickGround` 推进，仅 scan 启用 |
+
+> 落地修订：`groundPatternColor / Scale / Speed` 不作为独立字段新增——密度复用 `groundGridSize`、颜色复用 `groundLineColor`，动画速度为常量。
 
 ### 3.2 材质层（env-ground.ts）
 
-- 地面材质切到 `CustomMaterial`（保留现有 StandardMaterial / PBR 基底，注入 fragment）。
-- 注入 emissive 合成（A）与 pattern 函数（E），受上述 uniform 控制。
-- `groundEmissiveStrength = 0 且 groundPatternType = 'none'` → 注入分支跳过 → 视觉完全回归当前。
+- emissive 走 Babylon 内置 `emissiveColor` / `emissiveTexture` 通道，新增 `_syncGroundEmissive` 在 `applyGroundMaterialSpec` 增量同步（外观性字段，不触发重建）。
+- 图案扩展走 `_generateGroundTexture` / `_drawOverlayPattern` 的 canvas 分支（`scan` / `glowEdge`），`scan` 由 `tickGround` 按 `GROUND_SCAN_SPEED` 相位逐帧重绘 albedo 动态纹理。
+- 反射随发光强度衰减并入 planar-reflection 的 `getBlend`（每帧被 `groundReflection.update` 调用，避免仅写一次被覆盖）：`es = 0` → 衰减 1 → 反射不变（零回归）。
 
 ### 3.3 菜单暴露（ground-levels，对应 ADR-091 / 208 预设体系）
 
-- 环境 → 地面 → 新增「自发光地屏」分组：颜色 / 强度 / 反射合成 / 可选纹理。
-- 新增「程序化图案」分组：类型（网格 / 扫描 / 辉光边）/ 颜色 / 密度 / 速度。
-- 预设（env-ground-presets）可保存这两组新字段（ADR-208 sourceKind 治理已就位）。
+- 环境 → 地面 → 「装饰」folder 的 overlay chips 扩展 `扫描环 / 辉光边`（`scan` / `glowEdge`）。
+- 新增「自发光地屏」folder（`defaultOpen:false`）：颜色 / 强度 / 发光-反射合成 / 「用地面纹理作发光源」toggle。
+- 预设（env-ground-presets）新增 emissive 四字段（ADR-208 sourceKind 治理已就位，默认全关）。
 - i18n 新增对应 key（项目 5 语言体系）。
 
 ---
@@ -103,7 +103,7 @@ ADR-052 / 083 / 089 / 091 / 114 / 134 / 208 / 226 已把地面从模式拆分、
 
 | 项 | 保证 |
 |----|------|
-| 零回归 | 所有新 uniform 默认关闭；`CustomMaterial` 注入分支在关闭时 `return` 原逻辑，画面与当前一致 |
+| 零回归 | 新字段默认 `es=0` / `overlay∉{scan,glowEdge}` → emissive 黑、无逐帧重绘、反射衰减 1，画面与当前一致 |
 | 与 091 纹理统一 | emissiveTexture 复用现有地面纹理管线，不新建纹理路径 |
 | 与 114 反射 | `groundEmissiveReflectMix` 显式控制合成，不抢占反射通道 |
 | 与 226 单源 | 新字段全部经 `env-ground-spec` 单源读写，不引入分叉 |
@@ -115,7 +115,7 @@ ADR-052 / 083 / 089 / 091 / 114 / 134 / 208 / 226 已把地面从模式拆分、
 
 | 风险 | 等级 | 缓解 |
 |------|------|------|
-| `CustomMaterial` 包裹内置 shader 与 Babylon 9.x 内置 shader 升级不兼容 | P2 | 锁定注入 hook（Babylon `CustomMaterial` 稳定 point），升级时回归测试 |
+| ~~`CustomMaterial` 包裹内置 shader 升级风险~~ | — | 已取消该方案（改走 canvas 纹理路径 + 内置 emissive 通道），无 shader 升级耦合 |
 | 发光地屏 + 反射同时高权重导致过曝 | P3 | `groundEmissiveReflectMix` 默认 0.5，且发光强时自动衰减反射 |
 | 程序化图案在无限地面（ADR-134）下 tiling 接缝 | P3 | pattern 用世界坐标 `vWorldPos.xz` 取模，天然无缝；远处随无限延展淡出 |
 | 视频纹理发光（emissiveTexture 动态）性能 | P3 | 仅 sample 一次，复用现有动态纹理机制 |
@@ -124,11 +124,11 @@ ADR-052 / 083 / 089 / 091 / 114 / 134 / 208 / 226 已把地面从模式拆分、
 
 ## 六、验收标准
 
-1. `npx tsc --noEmit` 零错误（schema 新字段 + CustomMaterial uniform 声明一致）。
+1. `npx tsc --noEmit` 零错误（schema 新字段 + overlay 枚举一致）。
 2. `vitest run` 地面相关（env-ground / env-ground-spec / ground-levels contract）全通过。
-3. 视觉回归：所有新 uniform 默认值时，画面与当前**逐像素一致**（截图 delta ≤ 1%）。
+3. 视觉回归：所有新字段默认值时，画面与当前**逐像素一致**（截图 delta ≤ 1%）。
 4. 方向 A：地面显示指定颜色 / 纹理自发光；`groundEmissiveStrength = 0` 时无任何发光。
-5. 方向 E：网格 / 扫描 / 辉光边按 uniform 正确渲染；`type = 'none'` 时无图案。
+5. 方向 E：`scan` 显示脉冲扫描环动画；`glowEdge` 显示边界辉光环；`overlay = 'none'` 时无图案。
 6. 预设存取：新字段随地面预设保存 / 恢复（ADR-208 路径）。
 
 ---

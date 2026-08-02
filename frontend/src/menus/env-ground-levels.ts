@@ -230,6 +230,8 @@ export function getGroundSchema(): MenuNode[] {
                         const overlayPresets = [
                             { value: 'grid', label: t('env.grid') },
                             { value: 'checker', label: t('env.overlayPattern') },
+                            { value: 'scan', label: t('env.overlayScan') },
+                            { value: 'glowEdge', label: t('env.overlayGlowEdge') },
                         ] as const;
                         buildPresetChipGroup(
                             cc,
@@ -274,6 +276,48 @@ export function getGroundSchema(): MenuNode[] {
                     },
                     icon: 'lucide:grid-3x3',
                     visibleWhen: () => envState.groundOverlay === 'checker',
+                },
+            ],
+        },
+        // ===== 自发光地屏（ADR-230）=====
+        {
+            id: 'env:ground:emissive',
+            kind: 'folder',
+            label: 'env.groundEmissive',
+            icon: 'lucide:lightbulb',
+            defaultOpen: false,
+            children: [
+                {
+                    id: 'env:ground:emissive-color',
+                    kind: 'colorSlider',
+                    label: 'env.groundEmissiveColor',
+                    control: { bind: 'env.groundEmissiveColor' },
+                    icon: 'lucide:palette',
+                },
+                {
+                    id: 'env:ground:emissive-strength',
+                    kind: 'slider',
+                    label: 'env.groundEmissiveStrength',
+                    control: { bind: 'env.groundEmissiveStrength', min: 0, max: 2, step: 0.05 },
+                    icon: 'lucide:sun',
+                },
+                {
+                    id: 'env:ground:emissive-reflect-mix',
+                    kind: 'slider',
+                    label: 'env.groundEmissiveReflectMix',
+                    control: { bind: 'env.groundEmissiveReflectMix', min: 0, max: 1, step: 0.05 },
+                    icon: 'lucide:scale',
+                },
+                {
+                    id: 'env:ground:emissive-use-texture',
+                    kind: 'toggle',
+                    label: 'env.groundEmissiveUseTexture',
+                    control: {
+                        bind: 'env.groundEmissiveTexture',
+                        get: (v) => v !== '',
+                        set: (on) => (on ? 'reuse' : ''),
+                    },
+                    icon: 'lucide:image',
                 },
             ],
         },

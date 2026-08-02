@@ -87,7 +87,7 @@ export const ENV_STATE_SCHEMA = {
     },
     groundOverlay: {
         type: 'enum',
-        values: ['none', 'grid', 'checker'] as const,
+        values: ['none', 'grid', 'checker', 'scan', 'glowEdge'] as const,
         default: 'none' as const,
         group: 'ground',
     },
@@ -150,6 +150,17 @@ export const ENV_STATE_SCHEMA = {
     groundLevel: { type: 'number', default: 0, group: 'ground' },
     groundSize: { type: 'number', default: 500, group: ['ground', 'water'] },
     groundEdgeFade: { type: 'number', default: 0, group: 'ground' },
+    // [doc:adr-230] 自发光地屏：复用 Babylon 内置 emissiveColor/emissiveTexture 通道，
+    // 不引入新材质体系。es=0 / 黑 = 关闭（零回归）。
+    groundEmissiveColor: {
+        type: 'tuple3',
+        default: [0, 0, 0] as [number, number, number],
+        group: 'ground',
+    },
+    groundEmissiveStrength: { type: 'number', default: 0, group: 'ground' },
+    groundEmissiveReflectMix: { type: 'number', default: 0.5, group: 'ground' },
+    // 非空 = 复用当前 albedo（groundTexture）纹理作为发光源；空 = 仅纯色发光。不新建上传路径（见 ADR-230 §1）。
+    groundEmissiveTexture: { type: 'string', default: '', group: 'ground' },
 
     // --- Wind ---
     windEnabled: { type: 'boolean', default: true, group: ['particle', 'water'] },

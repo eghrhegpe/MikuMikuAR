@@ -250,6 +250,35 @@ describe('ADR-226 buildGroundMaterialSpec — 单一性与确定性', () => {
         const c = makeState({ groundStyle: 'solid' });
         expect(specKey(buildGroundMaterialSpec(c))).not.toBe(keyA);
     });
+    it('[adr-230] emissive 四字段进外观性（不进 structural/specKey）', () => {
+        const base = makeState({ groundStyle: 'checker' });
+        const keyA = specKey(buildGroundMaterialSpec(base));
+        const spec = buildGroundMaterialSpec(
+            makeState({
+                groundStyle: 'checker',
+                groundEmissiveColor: [1, 0, 0],
+                groundEmissiveStrength: 1.2,
+                groundEmissiveReflectMix: 0.8,
+                groundEmissiveTexture: 'reuse',
+            })
+        );
+        // 外观性：specKey 不变 → 改 emissive 走原地增量，不触发重建
+        expect(specKey(spec)).toBe(keyA);
+        expect(spec.appearance.emissiveColor).toEqual([1, 0, 0]);
+        expect(spec.appearance.emissiveStrength).toBe(1.2);
+        expect(spec.appearance.emissiveReflectMix).toBe(0.8);
+        expect(spec.appearance.emissiveTexture).toBe('reuse');
+    });
+    it('[adr-230] overlay scan/glowEdge 进结构性字段；canvas 路径 specKey 不变（原地重绘即可）', () => {
+        const base = makeState({ groundStyle: 'checker' });
+        const keyA = specKey(buildGroundMaterialSpec(base));
+        for (const ov of ['scan', 'glowEdge'] as const) {
+            const spec = buildGroundMaterialSpec(makeState({ groundStyle: 'checker', groundOverlay: ov }));
+            expect(spec.structural.overlay).toBe(ov);
+            // canvas 来源：overlay 由 _updateGroundTexture 原地重绘，无需重建几何
+            expect(specKey(spec)).toBe(keyA);
+        }
+    });
 });
 
 // ──────────────── Suite 2 — groundSpecNeedsRebuild（diffSpec 契约） ────────────────
@@ -266,6 +295,11 @@ describe('ADR-226 groundSpecNeedsRebuild — diffSpec 契约', () => {
             { groundEdgeFade: 0.4 },
             { groundScrollSpeedX: 0.1 },
             { groundTextureScale: 0.5 },
+            // [adr-230] 自发光四字段均为外观性
+            { groundEmissiveColor: [1, 0, 0] },
+            { groundEmissiveStrength: 1.5 },
+            { groundEmissiveReflectMix: 1 },
+            { groundEmissiveTexture: 'reuse' },
         ];
         for (const ov of appearanceOnly) {
             const next = buildGroundMaterialSpec(makeState({ groundStyle: 'checker', ...ov }));

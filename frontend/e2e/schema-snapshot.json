@@ -1299,6 +1299,65 @@
         ]
       },
       {
+        "id": "env:ground:emissive",
+        "kind": "folder",
+        "conditional": false,
+        "label": "env.groundEmissive",
+        "icon": "lucide:lightbulb",
+        "children": [
+          {
+            "id": "env:ground:emissive-color",
+            "kind": "colorSlider",
+            "conditional": false,
+            "dom": "[role=\"slider\"]",
+            "label": "env.groundEmissiveColor",
+            "icon": "lucide:palette",
+            "control": {
+              "bind": "env.groundEmissiveColor"
+            }
+          },
+          {
+            "id": "env:ground:emissive-strength",
+            "kind": "slider",
+            "conditional": false,
+            "dom": "[role=\"slider\"]",
+            "label": "env.groundEmissiveStrength",
+            "icon": "lucide:sun",
+            "control": {
+              "bind": "env.groundEmissiveStrength",
+              "min": 0,
+              "max": 2,
+              "step": 0.05
+            }
+          },
+          {
+            "id": "env:ground:emissive-reflect-mix",
+            "kind": "slider",
+            "conditional": false,
+            "dom": "[role=\"slider\"]",
+            "label": "env.groundEmissiveReflectMix",
+            "icon": "lucide:scale",
+            "control": {
+              "bind": "env.groundEmissiveReflectMix",
+              "min": 0,
+              "max": 1,
+              "step": 0.05
+            }
+          },
+          {
+            "id": "env:ground:emissive-use-texture",
+            "kind": "toggle",
+            "conditional": false,
+            "dom": "[role=\"switch\"], input[type=\"checkbox\"]",
+            "label": "env.groundEmissiveUseTexture",
+            "icon": "lucide:image",
+            "control": {
+              "bind": "env.groundEmissiveTexture"
+            }
+          }
+        ]
+      },
+      {
         "id": "env:ground:terrain",
         "kind": "folder",
         "conditional": false,
