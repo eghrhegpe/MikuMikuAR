@@ -55,17 +55,18 @@ export const test = base.extend<WailsFixtures>({
         // [doc:e2e] CI runner (ubuntu-latest) 默认 /dev/shm ≈ 64MB，renderer 易因内存压力崩溃，
         // 表现为 beforeEach 中 "Target page, context or browser has been closed"（run 30743044142: 35 failed）。
         // --disable-dev-shm-usage 改用 /tmp 规避；--no-sandbox 兼容 root 容器。
-        // 关键：点开设置/场景面板会渲染 WebGL canvas，headless Chromium 需显式指定软件渲染后端，
-        // 否则 Babylon 拿不到 WebGL 上下文会崩溃页面。--use-gl=angle + --use-angle=swiftshader
-        // + --enable-unsafe-swiftshader 是 CI 下 headless WebGL 的标准可用组合（缺一不可）。
-        // 绝不可用 --disable-gpu——那会直接禁用 WebGL 导致同样的崩溃。本地 Windows 下这些参数无害。
+        // 点开设置/场景面板会渲染 WebGL overlay；headless 无 GPU 须走软件渲染。
+        // run 30749335098 DEBUG 日志定位：--use-gl=angle --use-angle=swiftshader 会触发
+        // SharedImageManager::ProduceSkia "non-existent mailbox" 的 GPU 共享内存 bug，
+        // 合成 overlay 时崩溃页面。改走 --use-gl=swiftshader（绕过 ANGLE 的共享内存路径）
+        // + --enable-unsafe-swiftshader 保底软件 WebGL。绝不可用 --disable-gpu（会禁用 WebGL）。
+        // 本地 Windows 下这些参数无害。
         const browser = await chromium.launch({
             headless: true,
             args: [
                 "--no-sandbox",
                 "--disable-dev-shm-usage",
-                "--use-gl=angle",
-                "--use-angle=swiftshader",
+                "--use-gl=swiftshader",
                 "--enable-unsafe-swiftshader",
             ],
         });
