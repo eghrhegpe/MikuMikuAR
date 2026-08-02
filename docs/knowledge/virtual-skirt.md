@@ -5,7 +5,16 @@ name: 虚拟裙骨物理控制器（ADR-084 Phase 2-3）
 category: physics
 scope:
   - frontend/src/scene/physics/**
-source_files:
+source_files:tests:
+  - frontend/src/__tests__/virtual-skirt.build-cleanup.test.ts
+  - frontend/src/__tests__/virtual-skirt.coord.test.ts
+  - frontend/src/__tests__/virtual-skirt.coordspace.test.ts
+  - frontend/src/__tests__/virtual-skirt.dispose.test.ts
+  - frontend/src/__tests__/virtual-skirt.inject.test.ts
+  - frontend/src/__tests__/virtual-skirt.quality.test.ts
+  - frontend/src/__tests__/virtual-skirt.update.test.ts
+  - frontend/src/__tests__/virtual-skirt.waist-cache.test.ts
+
   - frontend/src/scene/physics/virtual-skirt.ts
 adr:
   - ADR-084
@@ -25,7 +34,23 @@ invariants:
   - 坐标转换纯函数 localToWorld / worldDeltaToLocal 处理 WASM 世界坐标↔mesh 局部顶点
   - 使用专用 worldId（不与 PMX 刚体同 world，规避坐标系/碰撞干扰）
   - dispose 每项独立 try/catch（impl 可能已被 WASM runtime 销毁），移除失败 logWarn 不阻断后续
-tests:
+
+  - frontend/src/__tests__/virtual-skirt.build-cleanup.test.ts
+  - frontend/src/__tests__/virtual-skirt.coord.test.ts
+  - frontend/src/__tests__/virtual-skirt.coordspace.test.ts
+  - frontend/src/__tests__/virtual-skirt.dispose.test.ts
+  - frontend/src/__tests__/virtual-skirt.inject.test.ts
+  - frontend/src/__tests__/virtual-skirt.quality.test.ts
+  - frontend/src/__tests__/virtual-skirt.update.test.ts
+  - frontend/src/__tests__/virtual-skirt.waist-cache.test.ts
+  - frontend/src/__tests__/virtual-skirt.build-cleanup.test.ts
+  - frontend/src/__tests__/virtual-skirt.coord.test.ts
+  - frontend/src/__tests__/virtual-skirt.coordspace.test.ts
+  - frontend/src/__tests__/virtual-skirt.dispose.test.ts
+  - frontend/src/__tests__/virtual-skirt.inject.test.ts
+  - frontend/src/__tests__/virtual-skirt.quality.test.ts
+  - frontend/src/__tests__/virtual-skirt.update.test.ts
+  - frontend/src/__tests__/virtual-skirt.waist-cache.test.ts
   - frontend/src/__tests__/virtual-skirt.build-cleanup.test.ts
   - frontend/src/__tests__/virtual-skirt.coord.test.ts
   - frontend/src/__tests__/virtual-skirt.coordspace.test.ts

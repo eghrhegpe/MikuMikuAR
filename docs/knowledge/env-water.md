@@ -5,7 +5,9 @@ name: 水面系统
 category: env
 scope:
   - frontend/src/scene/env/env-water.ts
-source_files:
+source_files:tests:
+  - frontend/src/__tests__/scene/env-water.test.ts
+
   - frontend/src/scene/env/env-water.ts
   - frontend/src/core/math/hash-noise.ts
   - frontend/src/menus/env-water-levels.ts
@@ -46,7 +48,9 @@ invariants:
   - disposeWater 级联释放水面 RT + 材质 + 镜像相机
   - 涟漪（ripple）独立于水面主体
   - 水下过渡效果与水面可见性联动
-tests:
+
+  - frontend/src/__tests__/scene/env-water.test.ts
+  - frontend/src/__tests__/scene/env-water.test.ts
   - frontend/src/__tests__/scene/env-water.test.ts
   - frontend/src/__tests__/scene/env-water.test.ts
 use_when:

@@ -5,7 +5,12 @@ name: 程序化动作系统
 category: motion
 scope:
   - frontend/src/scene/motion/proc-motion-bridge.ts
-source_files:
+source_files:tests:
+  - frontend/src/__tests__/proc-motion-bridge.lifecycle.test.ts
+  - frontend/src/__tests__/proc-motion-bridge.state.test.ts
+  - frontend/src/__tests__/proc-motion-bridge.toggles.test.ts
+  - frontend/src/__tests__/proc-motion-bridge.tracking.test.ts
+
   - frontend/src/scene/motion/proc-motion-bridge.ts
 adr:
   - ADR-021
@@ -37,7 +42,15 @@ invariants:
   - 内部使用 `ProcMotionController` 类（模块内，不导出）收口状态，替代 8 个模块级 let
   - disposeProcMotion() 一键清零全部状态并销毁单例
   - 参数存储优先级：activeMotion.procMotion > _fallbackProcState
-tests:
+
+  - frontend/src/__tests__/proc-motion-bridge.lifecycle.test.ts
+  - frontend/src/__tests__/proc-motion-bridge.state.test.ts
+  - frontend/src/__tests__/proc-motion-bridge.toggles.test.ts
+  - frontend/src/__tests__/proc-motion-bridge.tracking.test.ts
+  - frontend/src/__tests__/proc-motion-bridge.lifecycle.test.ts
+  - frontend/src/__tests__/proc-motion-bridge.state.test.ts
+  - frontend/src/__tests__/proc-motion-bridge.toggles.test.ts
+  - frontend/src/__tests__/proc-motion-bridge.tracking.test.ts
   - frontend/src/__tests__/proc-motion-bridge.lifecycle.test.ts
   - frontend/src/__tests__/proc-motion-bridge.state.test.ts
   - frontend/src/__tests__/proc-motion-bridge.toggles.test.ts

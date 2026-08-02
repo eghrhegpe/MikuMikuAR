@@ -5,7 +5,9 @@ name: 脚部地面跟随（MMD-native IK）
 category: motion
 scope:
   - frontend/src/scene/motion/feet-adjustment.ts
-source_files:
+source_files:tests:
+  - frontend/src/__tests__/feet-adjustment.test.ts
+
   - frontend/src/scene/motion/feet-adjustment.ts
 adr:
   - ADR-085
@@ -20,7 +22,9 @@ symbols:
 invariants:
   - 脚 IK 为自动约束基础，手动 Override 叠加其上
   - 注册为 MotionPipeline bone-override 层（order=5）
-tests:
+
+  - frontend/src/__tests__/feet-adjustment.test.ts
+  - frontend/src/__tests__/feet-adjustment.test.ts
   - frontend/src/__tests__/feet-adjustment.test.ts
   - frontend/src/__tests__/feet-adjustment.test.ts
 use_when:

@@ -5,7 +5,9 @@ name: 骨骼覆盖核心 API
 category: motion
 scope:
   - frontend/src/scene/motion/bone-override.ts
-source_files:
+source_files:tests:
+  - frontend/src/__tests__/scene/bone-override.test.ts
+
   - frontend/src/scene/motion/bone-override.ts
 adr:
   - ADR-061
@@ -45,7 +47,9 @@ invariants:
   - 与 bone-override-store 协作（所有权仲裁）
   - 覆盖数据按模型 ID 隔离
   - 帧钩子按 order 升序执行（顺序由声明决定，与注册时序解耦）
-tests:
+
+  - frontend/src/__tests__/scene/bone-override.test.ts
+  - frontend/src/__tests__/scene/bone-override.test.ts
   - frontend/src/__tests__/scene/bone-override.test.ts
   - frontend/src/__tests__/scene/bone-override.test.ts
 use_when:

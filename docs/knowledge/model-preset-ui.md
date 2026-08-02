@@ -5,7 +5,12 @@ name: 模型预设管理 UI
 category: ui
 scope:
   - frontend/src/menus/model-preset.ts
-source_files:
+source_files:tests:
+  - frontend/src/__tests__/model-preset.apply.test.ts
+  - frontend/src/__tests__/model-preset.material.test.ts
+  - frontend/src/__tests__/model-preset.serialize.test.ts
+  - frontend/src/__tests__/model-preset.stopvmd.test.ts
+
   - frontend/src/menus/model-preset.ts
 adr:
   - ADR-145
@@ -21,7 +26,15 @@ symbols:
 invariants:
   - Schema 驱动 UI
   - 动作预设管理
-tests:
+
+  - frontend/src/__tests__/model-preset.apply.test.ts
+  - frontend/src/__tests__/model-preset.material.test.ts
+  - frontend/src/__tests__/model-preset.serialize.test.ts
+  - frontend/src/__tests__/model-preset.stopvmd.test.ts
+  - frontend/src/__tests__/model-preset.apply.test.ts
+  - frontend/src/__tests__/model-preset.material.test.ts
+  - frontend/src/__tests__/model-preset.serialize.test.ts
+  - frontend/src/__tests__/model-preset.stopvmd.test.ts
   - frontend/src/__tests__/model-preset.apply.test.ts
   - frontend/src/__tests__/model-preset.material.test.ts
   - frontend/src/__tests__/model-preset.serialize.test.ts

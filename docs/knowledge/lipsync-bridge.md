@@ -5,7 +5,9 @@ name: 口型同步桥
 category: motion
 scope:
   - frontend/src/scene/motion/lipsync-bridge.ts
-source_files:
+source_files:tests:
+  - frontend/src/__tests__/lipsync-bridge.test.ts
+
   - frontend/src/scene/motion/lipsync-bridge.ts
 adr:
   - ADR-021
@@ -23,7 +25,9 @@ invariants:
   - 口型同步开关可运行时切换
   - 口型参数在 [-1, 1] 范围内
   - 音频信号驱动口型，非 VMD 动作覆盖
-tests:
+
+  - frontend/src/__tests__/lipsync-bridge.test.ts
+  - frontend/src/__tests__/lipsync-bridge.test.ts
   - frontend/src/__tests__/lipsync-bridge.test.ts
   - frontend/src/__tests__/lipsync-bridge.test.ts
 use_when:

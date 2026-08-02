@@ -5,7 +5,9 @@ name: 键盘导航工具
 category: core
 scope:
   - frontend/src/core/**
-source_files:
+source_files:tests:
+  - frontend/src/__tests__/ui-keyboard-nav.test.ts
+
   - frontend/src/core/ui-keyboard-nav.ts
 adr:
   - ADR-153
@@ -18,7 +20,9 @@ invariants:
   - Enter 触发 click 或自定义 onEnter 回调
   - Escape 触发 onEscape 回调
   - createKeyboardNav 返回 Disposable 用于移除监听
-tests:
+
+  - frontend/src/__tests__/ui-keyboard-nav.test.ts
+  - frontend/src/__tests__/ui-keyboard-nav.test.ts
   - frontend/src/__tests__/ui-keyboard-nav.test.ts
   - frontend/src/__tests__/ui-keyboard-nav.test.ts
 use_when:

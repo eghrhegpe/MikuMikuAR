@@ -9,7 +9,14 @@ name: 资源库核心
 category: ui
 scope:
   - frontend/src/menus/library-core.ts
-source_files:
+source_files:tests:
+  - frontend/src/__tests__/library-core.build-level.test.ts
+  - frontend/src/__tests__/library-core.model-to-resource.test.ts
+  - frontend/src/__tests__/library-core.model-to-row.test.ts
+  - frontend/src/__tests__/library-core.path-boundary.test.ts
+  - frontend/src/__tests__/library-core.resource-items.test.ts
+  - frontend/src/__tests__/library-core.subdir-file.test.ts
+
   - frontend/src/menus/library-core.ts
 symbols:
   - ResourceViewMode
@@ -47,7 +54,19 @@ invariants:
   - 资源索引在后台构建，避免阻塞 UI
   - isLeafFlattenDir 递归判定目录是否为纯叶子目录
   - buildResourceItemsForDir 使用 RAF 分批渲染避免长列表卡顿
-tests:
+
+  - frontend/src/__tests__/library-core.build-level.test.ts
+  - frontend/src/__tests__/library-core.model-to-resource.test.ts
+  - frontend/src/__tests__/library-core.model-to-row.test.ts
+  - frontend/src/__tests__/library-core.path-boundary.test.ts
+  - frontend/src/__tests__/library-core.resource-items.test.ts
+  - frontend/src/__tests__/library-core.subdir-file.test.ts
+  - frontend/src/__tests__/library-core.build-level.test.ts
+  - frontend/src/__tests__/library-core.model-to-resource.test.ts
+  - frontend/src/__tests__/library-core.model-to-row.test.ts
+  - frontend/src/__tests__/library-core.path-boundary.test.ts
+  - frontend/src/__tests__/library-core.resource-items.test.ts
+  - frontend/src/__tests__/library-core.subdir-file.test.ts
   - frontend/src/__tests__/library-core.build-level.test.ts
   - frontend/src/__tests__/library-core.model-to-resource.test.ts
   - frontend/src/__tests__/library-core.model-to-row.test.ts

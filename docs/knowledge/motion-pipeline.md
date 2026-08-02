@@ -5,7 +5,9 @@ tier: architecture
 category: motion
 scope:
   - frontend/src/scene/motion/**
-source_files:
+source_files:tests:
+  - frontend/src/__tests__/scene/motion-pipeline.test.ts
+
   - frontend/src/scene/motion/motion-pipeline.ts
 adr:
   - ADR-147
@@ -21,7 +23,9 @@ invariants:
   - 阶段常量：vmd-base / vmd-layers / proc-motion / bone-override / perception（Ragdoll 已永久移除）
   - 骨骼占用经 bone-override-store 仲裁，避免多动作源写同一骨骼
   - register 返回 unregister 函数，用于 HMR/测试 teardown
-tests:
+
+  - frontend/src/__tests__/scene/motion-pipeline.test.ts
+  - frontend/src/__tests__/scene/motion-pipeline.test.ts
   - frontend/src/__tests__/scene/motion-pipeline.test.ts
   - frontend/src/__tests__/scene/motion-pipeline.test.ts
 use_when:

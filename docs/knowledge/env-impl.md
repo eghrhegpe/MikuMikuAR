@@ -5,7 +5,9 @@ name: 环境系统实现核心（barrel + observer + fog）
 category: env
 scope:
   - frontend/src/scene/env/env-impl.ts
-source_files:
+source_files:tests:
+  - frontend/src/__tests__/scene/env-impl.test.ts
+
   - frontend/src/scene/env/env-impl.ts
 adr:
   - ADR-138
@@ -42,7 +44,9 @@ invariants:
   - dispose 链路级联释放 water/clouds/mirror 子资源；observer 句柄经 observer-handle 管理
   - disposeEnvUpdateObserver 中调用 clearSceneTickCallbacks 清除所有 tick 回调
   - 外部模块只应经 env.ts 门面访问本文件导出的符号
-tests:
+
+  - frontend/src/__tests__/scene/env-impl.test.ts
+  - frontend/src/__tests__/scene/env-impl.test.ts
   - frontend/src/__tests__/scene/env-impl.test.ts
   - frontend/src/__tests__/scene/env-impl.test.ts
 use_when:

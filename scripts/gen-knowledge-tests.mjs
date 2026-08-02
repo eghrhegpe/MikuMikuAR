@@ -72,22 +72,28 @@ function matchTests(cardName, sourceBases, testFiles) {
   return [...new Set(hit)].sort();
 }
 
-/** 把 tests 列表写入 frontmatter：替换 `tests: []` / 空块，或 frontmatter 无 tests 字段时在 source_files 后插入。 */
+/** 把 tests 列表写入 frontmatter：移除旧 tests 块（无论空/非空）→ 与已有条目合并去重 → 在 source_files 后插入。 */
 function writeTests(text, tests) {
   const fm = fmBlock(text);
   if (!fm) return text;
-  const lines = tests.map((t) => `  - ${t}`).join('\n');
-  let newFm;
-  if (/^tests\s*:\s*\[\]\s*$/m.test(fm) || /^tests\s*:\s*$/m.test(fm)) {
-    // 已有空 tests 字段 → 替换
-    newFm = fm
-      .replace(/^tests\s*:\s*\[\]\s*$/m, `tests:\n${lines}`)
-      .replace(/^tests\s*:\s*$/m, `tests:\n${lines}`);
+  // 解析已有 tests 块内的条目（仅 tests: 字段，排除 source_files 等其它列表）
+  const testsBlock = fm.match(/^tests:\s*\n([\s\S]*?)(?=^[a-z_]+:|\s*$)/m);
+  const existing = testsBlock
+    ? [...testsBlock[1].matchAll(/^\s*-\s*(frontend\/\S+\.ts)\s*$/gm)].map((m) => m[1])
+    : [];
+  const merged = [...new Set([...existing, ...tests])].sort();
+  const lines = merged.map((t) => `  - ${t}`).join('\n');
+
+  // 移除旧 tests 字段（覆盖 `tests: []` / `tests:` 空块 / 非空列表 / 完全无字段四种情况）
+  let newFm = fm.replace(/^tests:[\s\S]*?(?=^[a-z_]+:|\s*$)/m, '').replace(/\n{3,}/g, '\n\n');
+
+  // 在 source_files 块结束后插入新的 tests 块
+  const sfEnd = newFm.match(/^(source_files:[\s\S]*?)(?=^[a-z_]+:|\s*$)/m);
+  if (sfEnd) {
+    newFm = newFm.replace(sfEnd[1], `${sfEnd[1]}tests:\n${lines}\n`);
   } else {
-    // 完全无 tests 字段 → 在 source_files 块结束后插入
-    const sfEnd = fm.match(/^(source_files:[\s\S]*?)(?=^[a-z_]+:)/m);
-    if (!sfEnd) return text;
-    newFm = fm.replace(sfEnd[1], `${sfEnd[1]}tests:\n${lines}\n`);
+    // 无 source_files（罕见）→ 在 tier 行后插入
+    newFm = newFm.replace(/^(tier:.*)$/m, `$1\ntests:\n${lines}`);
   }
   return text.replace(/^---\r?\n[\s\S]*?\r?\n---/, `---\n${newFm}\n---`);
 }
@@ -113,7 +119,13 @@ function main() {
     const tier = (fmTxt.match(/^tier\s*:\s*(.+)$/m) || [])[1]?.trim();
     if (tier !== 'architecture') continue;
     const testsEmpty = /^tests:\s*\[\]$/m.test(fmTxt) || !fmTxt.includes('tests');
-    if (!testsEmpty) continue;
+    // tests 非空但含重复条目（历史重复登记）也需清理
+    const testsBlock = fmTxt.match(/^tests:\s*\n([\s\S]*?)(?=^[a-z_]+:)/m);
+    const existingTests = testsBlock
+      ? [...testsBlock[1].matchAll(/^\s*-\s*(frontend\/\S+\.ts)\s*$/gm)].map((m) => m[1])
+      : [];
+    const testsHasDup = existingTests.length !== new Set(existingTests).size;
+    if (!testsEmpty && !testsHasDup) continue;
     const cardName = f.replace(/\.md$/, '');
     const sources = [...fmTxt.matchAll(/^\s*-\s*(frontend\/\S+\.ts)\s*$/gm)].map((m) => m[1]);
     const sourceBases = sources.map((s) => path.basename(s).replace(/\.ts$/, ''));

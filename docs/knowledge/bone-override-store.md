@@ -5,7 +5,9 @@ name: 骨骼覆盖存储（多模块仲裁）
 category: motion
 scope:
   - frontend/src/scene/motion/**
-source_files:
+source_files:tests:
+  - frontend/src/__tests__/scene/bone-override-store.test.ts
+
   - frontend/src/scene/motion/bone-override-store.ts
 adr:
   - ADR-084
@@ -24,7 +26,9 @@ invariants:
   - 冲突检测：同一骨骼被两模块同时占用时记录到 conflicts map，不上抛异常
   - releaseBones 时触发所有 ReleaseListener，供感知层/虚拟裙骨响应式释放
   - disposeModel 级联释放该模型所有骨骼所有权
-tests:
+
+  - frontend/src/__tests__/scene/bone-override-store.test.ts
+  - frontend/src/__tests__/scene/bone-override-store.test.ts
   - frontend/src/__tests__/scene/bone-override-store.test.ts
   - frontend/src/__tests__/scene/bone-override-store.test.ts
 use_when:
