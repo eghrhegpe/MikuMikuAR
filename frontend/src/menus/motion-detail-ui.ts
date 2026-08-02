@@ -11,6 +11,7 @@ import {
     triggerAutoSave,
     pushUndoSnapshot,
     offerSceneUndoAndRefresh,
+    getProcMotionState,
 } from '../scene/scene';
 import {
     getVmdLayers,
@@ -18,7 +19,12 @@ import {
     setVmdLayerWeight,
     removeVmdLayer,
 } from '../scene/motion/vmd-layers';
-import { getActiveMotion, getSceneMotions, removeSceneMotion } from '../scene/motion/motion-intent';
+import {
+    getActiveMotion,
+    getSceneMotions,
+    removeSceneMotion,
+} from '../scene/motion/motion-intent';
+import type { LoadableProcId } from '../scene/motion/motion-intent';
 import { showInfoToast } from '../core/toast';
 import { t } from '../core/i18n/t';
 import type { MenuNode } from './menu-schema';
@@ -28,6 +34,7 @@ import {
     renderOverrideCard,
     renderPresetCard,
 } from './motion-override-levels';
+import { buildProcMotionSchema, procLabel } from './motion-procmotion-levels';
 // 循环依赖安全：getMotionMenu 仅在函数体内调用
 import { getMotionMenu } from './motion-popup';
 
@@ -134,7 +141,10 @@ export function buildLayerLevel(layerId: string, id: string): PopupLevel {
  * 预设卡复用 renderPresetCard——原死路由 motion:boneOverride 的沉没功能由此重新可达。
  * @param sceneMotionId 指定主动作 id；undefined 时回退到当前默认动作（兼容旧调用）
  */
-function buildMotionDetailSchema(sceneMotionId?: string): MenuNode[] {
+function buildMotionDetailSchema(
+    sceneMotionId?: string,
+    modelIdOverride?: string
+): MenuNode[] {
     // [doc:adr-167] 按 id 解析指定主动作；未传或找不到则回退到默认动作
     const sceneMotions = getSceneMotions();
     const active = getActiveMotion();
@@ -144,7 +154,13 @@ function buildMotionDetailSchema(sceneMotionId?: string): MenuNode[] {
     const foc = modelManager.focused();
     const target =
         foc ?? [...modelManager.modelRegistry.values()].find((m) => m.kind === 'actor') ?? null;
-    const modelId = focusedModelId;
+    const modelId = modelIdOverride ?? focusedModelId;
+    // [doc:adr-207] 程序化动作与 VMD 互斥：proc mode 非 off 即视为程序化当前生效，
+    // 统一详情页据此显示程序化名 + 追加参数卡（覆盖/预设本就 model-scoped，始终可达）。
+    const procState = getProcMotionState();
+    const procActive = procState.mode !== 'off';
+    const procLabelId: LoadableProcId =
+        procState.mode === 'off' ? 'none' : (procState.mode as LoadableProcId);
 
     const nodes: MenuNode[] = [
         // ── 卡片 1：当前主动作 ──
@@ -156,8 +172,14 @@ function buildMotionDetailSchema(sceneMotionId?: string): MenuNode[] {
                     addSectionTitle(inner, t('motion.currentMotion'));
                     slideRow(
                         inner,
-                        motion ? 'lucide:clapperboard' : 'lucide:circle-slash',
-                        motion?.vmdName || t('motion.intent.none'),
+                        procActive
+                            ? 'lucide:wand-sparkles'
+                            : motion
+                              ? 'lucide:clapperboard'
+                              : 'lucide:circle-slash',
+                        procActive
+                            ? procLabel(procLabelId)
+                            : motion?.vmdName || t('motion.intent.none'),
                         false,
                         () => {},
                         undefined,
@@ -259,6 +281,12 @@ function buildMotionDetailSchema(sceneMotionId?: string): MenuNode[] {
         });
     }
 
+    // [doc:adr-207] 程序化激活时，把参数卡并入统一详情页：模式切换/强度/速度/骨骼微动/插值。
+    // 覆盖/预设本就 model-scoped 始终可达，至此程序化动作与 VMD 共享全部动作功能。
+    if (procActive) {
+        nodes.push(...buildProcMotionSchema(modelId));
+    }
+
     return nodes;
 }
 
@@ -266,13 +294,16 @@ function buildMotionDetailSchema(sceneMotionId?: string): MenuNode[] {
  * [doc:adr-167] 构建动作详情页 level。
  * @param sceneMotionId 主动作 id；undefined 时回退到当前默认动作
  */
-export function buildMotionDetailLevel(sceneMotionId?: string): PopupLevel {
+export function buildMotionDetailLevel(
+    sceneMotionId?: string,
+    modelId?: string
+): PopupLevel {
     return {
         label: t('motion.detail.title'),
         dir: '',
         items: [],
         renderCustom: (container) => {
-            return renderMenu(buildMotionDetailSchema(sceneMotionId), container);
+            return renderMenu(buildMotionDetailSchema(sceneMotionId, modelId), container);
         },
     };
 }

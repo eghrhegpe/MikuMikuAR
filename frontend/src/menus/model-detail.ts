@@ -78,7 +78,7 @@ import {
     stopProcMotion,
 } from '../scene/motion/proc-motion-bridge';
 import { DEFAULT_PROC_STATE } from '../motion-algos/procedural-motion';
-import { buildProcMotionLevel } from './motion-procmotion-levels';
+import { buildMotionDetailLevel } from './motion-detail-ui';
 import { loadManager } from '../core/load-manager';
 
 import type { ModelInstance, ModelMotionSlots } from '@/core/types';
@@ -532,8 +532,10 @@ export function buildMotionSlotLevel(id: string, inst: ModelInstance): PopupLeve
                                 t('model-detail.procEdit'),
                                 false,
                                 () => {
-                                    _setProcForModel(id, inst, procId);
-                                    stackRegistry.modelStack?.push(buildProcMotionLevel(id));
+                                _setProcForModel(id, inst, procId);
+                                // [doc:adr-207] procEdit 统一进动作详情页（含覆盖/预设/参数），
+                                // 与场景级入口一致；按该模型 id 取 model-scoped 覆盖/预设。
+                                stackRegistry.modelStack?.push(buildMotionDetailLevel(undefined, id));
                                 },
                                 { marginLeft: 'auto', stopPropagation: true }
                             );

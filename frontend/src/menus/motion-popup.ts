@@ -7,7 +7,7 @@ import { registerPopupMenu } from './menu-factory';
 import { registerLoadRefreshHook, registerLibraryScannedHook } from '../core/load-refresh-registry';
 import { executeActionById } from '../core/action-executor';
 import { registerMotionActions } from '../core/action-defs/motion-actions';
-import { buildProcMotionLevel, buildProcLibraryLevel } from './motion-procmotion-levels';
+import { buildProcLibraryLevel } from './motion-procmotion-levels';
 import { buildGazeTrackingLevel } from './motion-gaze-levels';
 import { buildCameraLevel } from './motion-camera-levels';
 import { buildPoseStudioLevel } from './motion-pose-levels';
@@ -78,7 +78,6 @@ export function disposeMotionPopup(): void {
 const MOTION_FOLDER_ROUTES: Record<string, () => PopupLevel> = {
     'motion:camera': buildCameraLevel,
     'motion:playbackSpeed': buildPlaybackSpeedLevel,
-    'motion:procmotion': buildProcMotionLevel,
     'motion:proc-library': buildProcLibraryLevel,
     'motion:gaze': buildGazeTrackingLevel,
     'motion:poseStudio': buildPoseStudioLevel,

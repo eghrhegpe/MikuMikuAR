@@ -25,7 +25,7 @@ import {
 } from '../scene/motion/motion-intent';
 import type { LoadableProcId } from '../scene/motion/motion-intent';
 // [doc:adr-170] 行尾「动作工具」推进独立工具页；循环依赖安全：仅在函数体内调用
-import { buildMotionToolsLevel } from './motion-detail-ui';
+import { buildMotionToolsLevel, buildMotionDetailLevel } from './motion-detail-ui';
 import { clearAudio, getAudioName } from '../outfit/audio';
 import { t } from '../core/i18n/t';
 import { SelectRetargetFile } from '../core/wails-bindings';
@@ -167,10 +167,9 @@ export function buildMotionRootItems(): PopupRow[] {
                       icon: 'lucide:settings-2',
                       title: t('motion.motionTools'),
                       onClick: () => {
-                          // 循环依赖安全：函数体内动态引入 buildProcMotionLevel
-                          void import('./motion-procmotion-levels').then((m) => {
-                              getMotionMenu()?.push(m.buildProcMotionLevel());
-                          });
+                          // [doc:adr-207] 程序化动作统一进动作详情页（含覆盖/预设/参数），
+                          // 与 VMD 共享全部动作功能；删除旧独立 buildProcMotionLevel 入口。
+                          getMotionMenu()?.push(buildMotionDetailLevel());
                       },
                   },
         });
