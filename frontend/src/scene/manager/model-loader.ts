@@ -42,6 +42,39 @@ import { reportResourceWarning } from '@/core/resource-warning-sink';
 
 // [temp:diagnose-eye] 临时诊断：复现「第二个角色看不见眼睛」时查看 dev 控制台（搜索 diagnose-eye）。
 // 遍历场景内所有已加载模型，带 modelId 标签，便于对照双模型共存态。确诊根因后删除本函数及其调用点。
+// [temp:diagnose-eye] 纹理级探针：hasDiffuse 只证明对象存在，不证明像素就绪/未释放
+function _texState(tex: unknown): Record<string, unknown> | null {
+    if (!tex) {
+        return null;
+    }
+    const t = tex as {
+        isReady?: () => boolean;
+        url?: string;
+        name?: string;
+        hasAlpha?: boolean;
+        uniqueId?: number;
+        getSize?: () => { width: number; height: number };
+        isDisposed?: () => boolean;
+        _isDisposed?: boolean;
+        dispose?: () => void;
+    };
+    let size: unknown = null;
+    try {
+        const s = t.getSize?.();
+        size = s ? { w: (s as { width: number }).width, h: (s as { height: number }).height } : null;
+    } catch {
+        size = 'getSize-threw';
+    }
+    return {
+        ready: t.isReady ? t.isReady() : 'no-isReady',
+        url: t.url ?? t.name ?? '?',
+        uniqueId: t.uniqueId ?? '?',
+        hasAlpha: t.hasAlpha,
+        size,
+        disposed: t.isDisposed ? t.isDisposed() : t._isDisposed ?? 'unknown',
+    };
+}
+
 function _diagnoseEyeMaterials(): void {
     const models = _modelManager ? _modelManager.getAll() : [];
     const rows: Record<string, unknown>[] = [];
@@ -61,6 +94,28 @@ function _diagnoseEyeMaterials(): void {
                 continue;
             }
             const morph = mesh.morphTargetManager;
+            const vtx = (mesh as { getTotalVertices?: () => number }).getTotalVertices?.() ?? -1;
+            const parentEnabled = mesh.parent ? (mesh.parent as { isEnabled?: () => boolean }).isEnabled?.() : true;
+            // 决定性探针：眼睛 mesh 是否真的进入本帧渲染列表（被剔除/禁用则不在）
+            const inRenderList = _scene ? _scene.getActiveMeshes().indexOf(mesh) !== -1 : null;
+            const worldPos = (() => {
+                try {
+                    const p = mesh.getAbsolutePosition();
+                    return { x: +p.x.toFixed(3), y: +p.y.toFixed(3), z: +p.z.toFixed(3) };
+                } catch {
+                    return 'err';
+                }
+            })();
+            const bbox = (() => {
+                try {
+                    const b = mesh.getBoundingInfo().boundingBox;
+                    const c = b.centerWorld;
+                    return { x: +c.x.toFixed(3), y: +c.y.toFixed(3), z: +c.z.toFixed(3) };
+                } catch {
+                    return 'err';
+                }
+            })();
+            const sceneVisible = mesh.isVisible && mesh.isEnabled() && mesh.visibility > 0;
             rows.push({
                 model: modelTag,
                 mesh: mesh.name,
@@ -70,6 +125,13 @@ function _diagnoseEyeMaterials(): void {
                     (mat as { constructor?: { name?: string } }).constructor?.name,
                 meshVisible: mesh.isVisible,
                 meshVisibility: mesh.visibility,
+                meshEnabled: mesh.isEnabled(),
+                parentEnabled,
+                isReady: mesh.isReady(),
+                inRenderList,
+                sceneVisible,
+                worldPos,
+                bbox,
                 matAssigned: mesh.material === mat,
                 matAlpha: mat.alpha,
                 backFaceCulling: mat.backFaceCulling,
@@ -77,7 +139,16 @@ function _diagnoseEyeMaterials(): void {
                 needAlphaBlending: mat.needAlphaBlending(),
                 hasSphere: !!(mat as { sphereTexture?: unknown }).sphereTexture,
                 hasDiffuse: !!mat.diffuseTexture,
+                diffuseColor: mat.diffuseColor
+                    ? { r: +mat.diffuseColor.r.toFixed(2), g: +mat.diffuseColor.g.toFixed(2), b: +mat.diffuseColor.b.toFixed(2) }
+                    : null,
+                diffuseTex: _texState(mat.diffuseTexture),
                 morphTargets: morph ? (morph as { numTargets: number }).numTargets : 0,
+                verts: vtx,
+                renderOutline: (mesh as { renderOutline?: boolean }).renderOutline,
+                outlineWidth: (mesh as { outlineWidth?: number }).outlineWidth,
+                renderingGroupId: (mesh as { renderingGroupId?: number }).renderingGroupId,
+                wireframe: mat.wireframe,
             });
         }
     }
@@ -854,6 +925,8 @@ export async function loadPMXFile(
         }
         // [temp:diagnose-eye] 复现「第二个角色看不见眼睛」时查看 console（确诊后删除）
         swallowError(Promise.resolve(_diagnoseEyeMaterials()));
+        // 延迟 dump：此时替换流程的 removeModel(旧) 已执行，捕获「最终态」眼睛是否崩
+        setTimeout(() => swallowError(Promise.resolve(_diagnoseEyeMaterials())), 1200);
         // Pre-load outfit file for UI entry availability
         swallowError(_loadOutfits(id));
 
