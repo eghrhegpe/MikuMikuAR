@@ -977,6 +977,7 @@ export const ja: Record<string, string> = {
     'scene.loader.loadingZero': '読み込み中 0%',
     'scene.loader.loadingProgress': '読み込み中 {pct}%',
     'scene.loader.stageLoaded': '✓ {name}（ステージ）',
+    'scene.loader.textureMissing': '一部のテクスチャが読み込めませんでした（{count} 個）',
     'scene.loader.actorLoaded': '✓ {name}',
     'scene.loader.actorLoadedWithVmd': '✓ {name} + {vmd}',
 

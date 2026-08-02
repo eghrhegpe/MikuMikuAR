@@ -1024,6 +1024,7 @@ export const en: Record<string, string> = {
     'scene.loader.loadingZero': 'Loading 0%',
     'scene.loader.loadingProgress': 'Loading {pct}%',
     'scene.loader.stageLoaded': '✓ {name} (stage)',
+    'scene.loader.textureMissing': 'Some textures failed to load ({count})',
     'scene.loader.actorLoaded': '✓ {name}',
     'scene.loader.actorLoadedWithVmd': '✓ {name} + {vmd}',
 

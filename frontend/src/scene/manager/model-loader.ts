@@ -23,7 +23,7 @@ import { setStatus } from '@/core/status-bar';
 import { showInfoToast } from '@/core/toast';
 import type { ModelMotionSlots } from '@/core/types';
 import { getBaseName } from '@/core/path';
-import { swallowError } from '@/core/async';
+import { swallowError, fireAndForget } from '@/core/async';
 import { resolveModelId } from './model-id';
 import { logWarn } from '@/core/logger';
 import { parsePmxComment } from '@/core/pmx-meta';
@@ -36,6 +36,7 @@ import {
 import { resolveModelDir } from '@/core/fileservice';
 import { readFileBytes, ListDirRecursive } from '@/core/wails-bindings';
 import { readTextureWithLRU } from './texture-lru';
+import { auditMissingTextures } from './pmx-texture-audit';
 import { t } from '@/core/i18n/t';
 import type { IMmdRuntime } from 'babylon-mmd/esm/Runtime/IMmdRuntime';
 import type { IMmdModel } from 'babylon-mmd/esm/Runtime/IMmdModel';
@@ -521,6 +522,25 @@ export async function loadPMXFile(
             return null;
         }
         loadedMeshes = result.meshes.filter((m) => m instanceof Mesh) as Mesh[];
+
+        // [feature:missing-texture-audit] 识别 PMX 声明但目录缺失的纹理并提示用户。
+        // 不阻塞主加载：异步解析 PMX 纹理清单，与已提供的纹理文件（含 basename fallback）做差集；
+        // textureFiles 的相对路径集合在此捕获副本，后续会被清空释放，不影响本审计。
+        if (loadedMeshes.length > 0) {
+            const _declaredTexturePaths = textureFiles.map((f) => f.relativePath);
+            fireAndForget(() =>
+                auditMissingTextures(pmxBytes, _declaredTexturePaths).then((missing) => {
+                    if (missing.length === 0) {
+                        return;
+                    }
+                    showInfoToast(
+                        t('scene.loader.textureMissing', { count: missing.length }),
+                        missing.slice(0, 8).join('、') +
+                            (missing.length > 8 ? ` …+${missing.length - 8}` : '')
+                    );
+                })
+            );
+        }
 
         // [fix:gpu-texture-leak] 释放纹理文件引用，让 GC 尽早回收 ArrayBuffer（可达数百 MB）。
         // textureFiles 在闭包中存活直到 loadPMXFile 返回；后续 VMD 加载 + 缩略图渲染耗时较长，
