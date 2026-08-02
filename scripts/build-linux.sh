@@ -50,7 +50,10 @@ export VITE_MMD_WASM_MT=1
 echo "[build-linux] 构建前端..."
 cd frontend
 npm ci --quiet
-npx vite build
+# [doc:adr-059/2026-08-01-web-locale-404] 必须走 npm run build:dev（= generate-locale-json && vite build），
+# 不能裸 npx vite build——locales/*.json 是预构建产物且被 .gitignore 排除，
+# 裸构建会导致 dist 缺语言包、i18n 全显示 key（同网页版/安卓 buglog 根因）。
+npm run build:dev
 cd "$PROJECT_DIR"
 
 # Go 编译
