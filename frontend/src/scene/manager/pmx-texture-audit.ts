@@ -23,6 +23,21 @@ function _toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
 }
 
 /**
+ * 解析 PMX 声明的纹理路径清单（相对路径，原样保留目录前缀与分隔符）。
+ * 解析失败返回空数组（不阻塞主流程）。
+ * [fix:decl-alias] 供 collectTextureFiles 反向注册「声明路径别名」：PMX 声明的目录名与磁盘
+ * 实际目录名可能异写（如 tex\ vs Texture\），候选路径无法枚举，须以声明为准注册别名。
+ */
+export async function parsePmxTexturePaths(pmxBytes: Uint8Array): Promise<string[]> {
+    try {
+        const pmx = await PmxReader.ParseAsync(_toArrayBuffer(pmxBytes));
+        return [...pmx.textures];
+    } catch {
+        return [];
+    }
+}
+
+/**
  * 识别 PMX 声明但目录中缺失的纹理。
  * @param pmxBytes PMX 文件字节（readFileBytes 返回）
  * @param availableRelativePaths collectTextureFiles 提供的相对路径集合（已含 basename fallback）
