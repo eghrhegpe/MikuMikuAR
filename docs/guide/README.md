@@ -21,26 +21,21 @@
 | [环境氛围](./env-atmosphere.md) | 环境弹窗 → 雾 / 云 / 后处理 | 🟢 已建档 |
 | [AI 助手](./ai-assistant.md) | 主界面 → AI 助手（Ctrl+8） | 🟢 已建档 |
 | [相机操作](./camera-control.md) | 动作面板 → 相机 | 🟢 已建档 |
+| [姿势工作室](./pose-studio.md) | 动作面板 → 更多 → 姿势工作室（`motion:poseStudio`） | 🟢 已建档 |
+| [视线追踪](./gaze-tracking.md) | 动作面板 → 更多 → 视线追踪（`motion:gaze`） | 🟢 已建档 |
+| [外部动作导入](./external-import.md) | 动作面板 → 更多 → 外部动作导入（`motion:retarget`） | 🟢 已建档 |
 | [道具](./props.md) | 模型库加载 → 骨骼附属（原独立面板已取消） | 🟢 已建档 |
+| [拖拽模式](./drag-mode.md) | 场景菜单 → 拖拽模式（`scene:dragMode`） | 🟢 已建档 |
+| [舞台渲染](./stage.md) | 场景菜单 → 舞台（`scene:render:stage`） | 🟢 已建档 |
 | [舞台灯光](./stage-lights.md) | 场景菜单 → 舞台灯光 | 🟢 已建档 |
 | [天空设置](./sky.md) | 环境弹窗 → 天空 | 🟢 已建档 |
 | [地面设置](./ground.md) | 场景菜单 → 地面 | 🟢 已建档 |
 | [水面设置](./env-water.md) | 场景菜单 → 水面（`scene:water`） | 🟢 已建档 |
 | [环境预设](./env-presets.md) | 环境弹窗 → 预设 | 🟢 已建档 |
 | [设置](./settings.md) | 主界面 → 设置 | 🟢 已建档 |
+| [实验功能](./experimental.md) | 环境弹窗 → 实验（`env:experimental`） | 🟢 已建档 |
 
-> 以下功能已上线但暂无独立指南页（入口见列）：
->
-> | 功能 | 入口 |
-> |------|------|
-> | 拖拽模式 | 场景菜单 → 拖拽模式（`scene:dragMode`） |
-> | 镜子 | 场景菜单 → 镜子（`scene:mirror`） |
-> | 舞台（渲染） | 场景菜单 → 舞台（`scene:render:stage`） |
-> | 环境阴影 | 环境弹窗 → 阴影（`env:shadow`） |
-> | 姿势工作室 | 动作面板 → 姿势 |
-> | 视线追踪 | 动作面板 → 视线追踪 |
-> | 外部动作导入 | 动作面板 → 外部导入（重定向） |
-> | 实验功能 | 环境弹窗 → 实验 |
+> ✅ 全部已上线功能均有独立指南页（镜子见[镜面反射](./mirror.md)，阴影见[阴影设置](./shadow.md)）。
 
 ## 网站格式规范（VitePress）
 
