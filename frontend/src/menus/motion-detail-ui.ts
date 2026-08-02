@@ -162,7 +162,28 @@ function buildMotionDetailSchema(
     const procLabelId: LoadableProcId =
         procState.mode === 'off' ? 'none' : (procState.mode as LoadableProcId);
 
+    // [audit] 覆盖/预设按模型存储，运行时仅对聚焦模型生效；经模型面板编辑非聚焦模型时提示，
+    // 避免「UI 显示已设置但运行时静默无效」的误导。
+    const editingNonFocused = modelIdOverride != null && modelId !== focusedModelId;
+
     const nodes: MenuNode[] = [
+        ...(editingNonFocused
+            ? [
+                  {
+                      id: 'detail:nonfocused-hint',
+                      kind: 'custom' as const,
+                      renderCustom: (c: HTMLElement) => {
+                          cardContainer(c, (inner) => {
+                              const hint = document.createElement('div');
+                              hint.style.cssText =
+                                  'font-size:12px;color:var(--warn);padding:2px 14px;line-height:1.5;';
+                              hint.textContent = t('motion.override.nonFocusedHint');
+                              inner.appendChild(hint);
+                          });
+                      },
+                  },
+              ]
+            : []),
         // ── 卡片 1：当前主动作 ──
         {
             id: 'detail:info',

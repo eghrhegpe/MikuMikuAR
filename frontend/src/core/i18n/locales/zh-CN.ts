@@ -530,6 +530,8 @@ export const zhCN: Record<string, string> = {
         '数字越小越早执行；后执行层可覆盖前一层写入。顺序由声明决定，与注册先后无关。',
     // [doc:adr-116] 动作覆盖模块化 UI
     'motion.override.title': '动作覆盖',
+    // [audit] 覆盖/预设按模型存储，运行时仅应用到聚焦模型；编辑非聚焦模型时提示
+    'motion.override.nonFocusedHint': '覆盖/预设按模型存储，运行时仅对当前聚焦模型生效。',
     'motion.override.enabled': '✓ 已启用模块',
     'motion.override.disabled': '✕ 已禁用模块',
     'motion.override.redoApplied': '✓ 已重做',
@@ -1316,6 +1318,13 @@ export const zhCN: Record<string, string> = {
     'env.groundReflection': '地面反射与材质',
     'env.groundMaterial': '材质与反射（写实，可选）',
     'env.overlayPattern': '覆盖图案',
+    'env.overlayScan': '脉冲扫描环',
+    'env.overlayGlowEdge': '边界辉光环',
+    'env.groundEmissive': '自发光地屏',
+    'env.groundEmissiveColor': '发光颜色',
+    'env.groundEmissiveStrength': '发光强度',
+    'env.groundEmissiveReflectMix': '发光/反射合成',
+    'env.groundEmissiveUseTexture': '用地面纹理作发光源',
     'env.groundReflectQuality': '反射质量',
     'env.groundReflectBlend': '反射混合度',
     'env.groundNormalStrength': '法线强度',

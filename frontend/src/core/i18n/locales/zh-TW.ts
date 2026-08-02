@@ -1198,6 +1198,13 @@ export const zhTW: Record<string, string> = {
     'env.groundReflection': '地面反射與材質',
     'env.groundMaterial': '材質與反射（寫實，可選）',
     'env.overlayPattern': '覆蓋圖案',
+    'env.overlayScan': '脈衝掃描環',
+    'env.overlayGlowEdge': '邊界輝光環',
+    'env.groundEmissive': '自發光地屏',
+    'env.groundEmissiveColor': '發光顏色',
+    'env.groundEmissiveStrength': '發光強度',
+    'env.groundEmissiveReflectMix': '發光/反射合成',
+    'env.groundEmissiveUseTexture': '用地面紋理作發光源',
     'env.groundReflectQuality': '反射品質',
     'env.groundReflectBlend': '反射混合度',
     'env.groundNormalStrength': '法線強度',
@@ -1654,6 +1661,9 @@ export const zhTW: Record<string, string> = {
         '數字越小越早執行；後執行層可覆蓋前一層寫入。順序由聲明決定，與註冊先後無關。',
     // [doc:adr-116] 動作覆蓋模組化 UI
     'motion.override.title': '動作覆蓋',
+    // [audit] 覆蓋/預設按模型儲存，執行時僅套用到目前聚焦的模型
+    'motion.override.nonFocusedHint':
+        '覆蓋與預設按模型儲存，執行時僅對目前聚焦的模型生效。',
     'motion.override.enabled': '✓ 已啟用模組',
     'motion.override.disabled': '✕ 已停用模組',
     'motion.override.redoApplied': '✓ 已重做',

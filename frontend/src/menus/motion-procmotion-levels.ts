@@ -91,6 +91,8 @@ export function buildProcMotionSchema(modelId?: string): MenuNode[] {
                                 setProcMotionMode(v);
                                 regenerateProcMotion();
                             }
+                            // [audit] 模式切换后刷新详情页「当前动作」标签（proc 名跟随 mode）
+                            getMotionMenu()?.reRender();
                         },
                         'lucide:wind',
                         undefined,
