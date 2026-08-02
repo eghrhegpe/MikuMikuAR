@@ -9,7 +9,7 @@
 |------|--------|-----------|
 | 核心基础设施 | 122 | 716 |
 | 3D 场景 | 111 | 1130 |
-| 菜单 & UI | 75 | 380 |
+| 菜单 & UI | 75 | 381 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 17 | 127 |
 | 物理系统 | 2 | 14 |
@@ -2025,11 +2025,12 @@
 | `disposeMenuWrapper()` | `menus/menu-overlay` | — |
 | `getMenuWrapper()` | `menus/menu-overlay` | — |
 | `setOnCloseAllOverlays()` | `menus/menu-overlay` | — |
+| `PanelNav()` | `menus/menu-registry` | 面板导航元数据（ADR-229 §2.1）。 |
 | `RegisteredSchema()` | `menus/menu-registry` | — |
 | `_clearRegistry()` | `menus/menu-registry` | 清空注册表（仅测试用） |
 | `collectAllSchemas()` | `menus/menu-registry` | 收集所有已注册 schema，执行 builder 返回快照 |
 | `flattenNodes()` | `menus/menu-registry` | 递归展开 schema 树（含 children），返回扁平节点列表 |
-| `registerSchema()` | `menus/menu-registry` | 注册一个面板的 schema 构建函数 |
+| `registerSchema()` | `menus/menu-registry` | 注册一个面板的 schema 构建函数（nav 可选，特例面板覆写导航元数据） |
 | `ActionMenuCtx()` | `menus/menu-schema` | — |
 | `ControlSpec()` | `menus/menu-schema` | — |
 | `MenuKind()` | `menus/menu-schema` | — |

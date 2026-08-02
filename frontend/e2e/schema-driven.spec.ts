@@ -6,30 +6,22 @@
  *
  * 运行方式:
  *   1. 先生成快照: npx vitest run src/__tests__/schema-snapshot.test.ts
- *   2. 启动 Vite:   npm run dev
- *   3. 跑 E2E:      npx playwright test e2e/schema-driven.spec.ts --grep "@dom"
+ *   2. 跑 E2E:      npx playwright test e2e/schema-driven.spec.ts --grep "@dom"
+ *      （webServer 由 playwright.config.ts 自动拉起）
  *
  * 优势:
  *   - 新面板自动覆盖（只需在 menu-schema-register.ts 注册）
  *   - 零手写 E2E 断言成本
  *   - 从 schema 反推测试路径，而非扫描 DOM
  *
- * 导航策略:
- *   - env 域:     #btnEnv → folder:env:<slug>
- *   - motion 域:  #btnMotionPopup → folder:motion:<slug>
- *   - settings 域: #btnSettings → (嵌套结构，暂用文本匹配回退)
- *   - scene:postprocess: 实际位于 env 域 folder:env:postprocess 下
+ * 导航策略（ADR-229 §2.1）:
+ *   - nav 元数据由快照生成器从注册处推导（常规面板零声明，
+ *     特例面板注册处显式覆写 domain/subLevelTestId/subLevel2TestId）
+ *   - entryTestId: 入口按钮 id（btnEnv/btnMotionPopup/btnSettings/btnScene）
+ *   - subLevelTestId: 一级 folder testid（folder:env:sky 等）
+ *   - subLevel2TestId: settings 域二级 folder testid（folder:settings:controls 等）
  */
 import { test, expect } from "./wails-fixture";
-import {
-    openEnvPanel,
-    openMotionPopup,
-    openSettingsPanel,
-    openScenePanel,
-    clickEnvSubLevel,
-    clickMotionSubLevel,
-    clickSettingsSubLevel,
-} from "./helpers";
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -48,43 +40,17 @@ const KIND_SELECTOR_MAP: Record<string, string> = {
     modeSlider: '.chip', // segmented control chips
 };
 
-// 域 → 导航配置
-// domain:    'env' | 'motion' | 'settings' | 'scene'
-// subLevel:  一级子面板中文名（用于 helpers 中的 testId 映射）
-// subLevel2: settings 二级导航用的 testId 后缀（仅 settings 域需要）
-interface PanelNavConfig {
+// 导航配置（ADR-229 §2.1）—— 由快照生成器从注册处推导写入 panel.nav，无第二副本：
+//   domain:          'env' | 'motion' | 'settings' | 'scene'
+//   entryTestId:     入口按钮 id（btnEnv/btnMotionPopup/btnSettings/btnScene）
+//   subLevelTestId:  一级 folder testid（folder:env:sky 等；settings 域无）
+//   subLevel2TestId: settings 域二级 folder testid（folder:settings:controls 等）
+interface PanelNav {
     domain: 'env' | 'motion' | 'settings' | 'scene';
-    subLevel?: string;
-    subLevel2?: string;
+    entryTestId: string;
+    subLevelTestId?: string;
+    subLevel2TestId?: string;
 }
-
-const PANEL_NAV: Record<string, PanelNavConfig> = {
-    // env 域 —— 使用 #btnEnv + folder:env:<slug>
-    'env:sky':          { domain: 'env', subLevel: '天空' },
-    'env:wind':         { domain: 'env', subLevel: '风' },
-    'env:fog':          { domain: 'env', subLevel: '雾' },
-    'env:cloud':        { domain: 'env', subLevel: '云' },
-    'env:shadow':       { domain: 'env', subLevel: '阴影' },
-    // env:water/env:ground 已迁至场景菜单（scene-menu.ts:199,210），
-    // 不再属于环境菜单。走 scene 域导航。
-    // 见 docs/knowledge/env-ground.md, docs/knowledge/env-water.md
-    'scene:water':      { domain: 'scene', subLevel: '水' },
-    'scene:ground':     { domain: 'scene', subLevel: '地面' },
-    'env:experimental': { domain: 'env', subLevel: '实验' },
-    'env:particle':     { domain: 'env', subLevel: '粒子' },
-    // scene 域 —— postprocess 实际位于 env 域的"后处理"子面板下
-    'scene:postprocess-core':  { domain: 'env', subLevel: '后处理' },
-    'scene:postprocess-color': { domain: 'env', subLevel: '后处理' },
-    // motion 域 —— 使用 #btnMotionPopup + folder:motion:<slug>
-    'motion:gaze':      { domain: 'motion', subLevel: '视线' },
-    // settings 域 —— 二级导航：先进入一级 folder，节点直接渲染在该 folder 内
-    //   camera → 操控 (controls)
-    //   frame-quality / effects / physics-hud → 画质 (graphics)
-    'settings:camera':        { domain: 'settings', subLevel: '操控', subLevel2: 'controls' },
-    'settings:frame-quality': { domain: 'settings', subLevel: '画质', subLevel2: 'graphics' },
-    'settings:effects':       { domain: 'settings', subLevel: '画质', subLevel2: 'graphics' },
-    'settings:physics-hud':   { domain: 'settings', subLevel: '画质', subLevel2: 'graphics' },
-};
 
 /** 扁平化节点树，返回所有带 id 的节点 */
 function flattenNodes(nodes: any[]): any[] {
@@ -98,45 +64,32 @@ function flattenNodes(nodes: any[]): any[] {
     return result;
 }
 
-/** 根据面板配置执行导航 */
-async function navigateToPanel(page: any, config: PanelNavConfig): Promise<void> {
-    switch (config.domain) {
-        case 'env':
-            await openEnvPanel(page);
-            if (config.subLevel) await clickEnvSubLevel(page, config.subLevel);
-            break;
-        case 'motion':
-            await openMotionPopup(page);
-            if (config.subLevel) await clickMotionSubLevel(page, config.subLevel);
-            break;
-        case 'settings':
-            await openSettingsPanel(page);
-            // settings 域需要二级导航：先进入一级 folder（如"操控"/"画质"）
-            if (config.subLevel2) {
-                await page.evaluate((id: string) => {
-                    document.querySelector<HTMLElement>(`[data-testid="${id}"]`)?.click();
-                }, `folder:settings:${config.subLevel2}`);
-            } else if (config.subLevel) {
-                await clickSettingsSubLevel(page, config.subLevel);
-            }
-            break;
-        case 'scene':
-            await openScenePanel(page);
-            if (config.subLevel) {
-                await page.evaluate((label: string) => {
-                    const el = Array.from(document.querySelectorAll('*')).find(
-                        (el) => el.textContent?.trim() === label
-                    );
-                    (el as HTMLElement)?.click();
-                }, config.subLevel);
-            }
-            break;
+/** 根据 nav 元数据执行导航（ADR-229 §2.1：entryTestId → 一级/二级 folder testid） */
+async function navigateToPanel(page: any, nav: PanelNav): Promise<void> {
+    // 1. 打开入口按钮（btnEnv / btnMotionPopup / btnSettings / btnScene）
+    await page.evaluate((id: string) => {
+        document.getElementById(id)?.click();
+    }, nav.entryTestId);
+    await page.waitForSelector("#sceneOverlay.visible", { timeout: 3000 });
+
+    // 2. 一级子面板（folder:env:sky 等；settings 域无一级，跳过）
+    if (nav.subLevelTestId) {
+        await page.evaluate((id: string) => {
+            document.querySelector<HTMLElement>(`[data-testid="${id}"]`)?.click();
+        }, nav.subLevelTestId);
+    }
+
+    // 3. settings 域二级 folder（folder:settings:controls 等）
+    if (nav.subLevel2TestId) {
+        await page.evaluate((id: string) => {
+            document.querySelector<HTMLElement>(`[data-testid="${id}"]`)?.click();
+        }, nav.subLevel2TestId);
     }
 }
 
 // 遍历快照中所有面板
 for (const panel of snapshot) {
-    const nav = PANEL_NAV[panel.panelId];
+    const nav = panel.nav as PanelNav | undefined;
     if (!nav) {
         console.warn(`[schema-driven] 跳过 ${panel.panelId}: 无导航路径映射`);
         continue;
@@ -160,7 +113,7 @@ for (const panel of snapshot) {
 /** 为单个面板生成 E2E 测试套件 */
 function describeSchemaPanel(
     panel: { panelId: string; nodes: any[] },
-    nav: PanelNavConfig,
+    nav: PanelNav,
     interactiveNodes: any[],
 ) {
     // ⚡ 优化：每个面板只导航一次，用 test.step() 聚合所有节点断言。
@@ -222,7 +175,7 @@ function describeSchemaPanel(
 // 总结性测试：验证所有面板的所有节点均有 testId
 test.describe("Schema 完整性总览", { tag: ["@dom"] }, () => {
     for (const panel of snapshot) {
-        const nav = PANEL_NAV[panel.panelId];
+        const nav = panel.nav as PanelNav | undefined;
         if (!nav) continue;
 
         test(`${panel.panelId}: 所有节点均有 testId`, async ({ vitePage: page }) => {

@@ -200,11 +200,42 @@ vi.mock('@/core/wails-bindings', () => ({
 
 // 导入注册器
 import '../menus/menu-schema-register';
-import { collectAllSchemas } from '../menus/menu-registry';
+import { collectAllSchemas, type PanelNav } from '../menus/menu-registry';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const SNAPSHOT_PATH = resolve(__dirname, '../../e2e/schema-snapshot.json');
+
+// ======== 导航元数据推导（ADR-229 §2.1）========
+// 常规面板：domain = panelId 前缀，subLevelTestId = folder:<domain>:<slug>（零声明）；
+// 特例面板：注册处显式 nav 覆写优先（跨域挂载 / settings 二级 folder）。
+
+/** 入口按钮 testid：由 domain 映射表推导，不手写 */
+const ENTRY_TESTID: Record<string, string> = {
+    env: 'btnEnv',
+    motion: 'btnMotionPopup',
+    settings: 'btnSettings',
+    scene: 'btnScene',
+};
+
+/** 从 panelId + 可选 nav 覆写推导完整导航元数据 */
+function deriveNav(panelId: string, nav?: PanelNav): PanelNav {
+    const [domainRaw, ...rest] = panelId.split(':');
+    const domain = nav?.domain ?? domainRaw;
+    const slug = rest.join(':');
+    // settings 域无一级子面板（走二级 folder），不推导 subLevelTestId
+    const subLevelTestId =
+        nav?.subLevelTestId ??
+        (domain === 'settings' ? undefined : `folder:${domain}:${slug}`);
+    const result: PanelNav = {
+        domain,
+        entryTestId: ENTRY_TESTID[domain],
+        ...(subLevelTestId ? { subLevelTestId } : {}),
+        ...(nav?.subLevel2TestId ? { subLevel2TestId: nav.subLevel2TestId } : {}),
+        ...(nav?.subLevelLabel ? { subLevelLabel: nav.subLevelLabel } : {}),
+    };
+    return result;
+}
 
 /** 清理节点为纯数据（去除函数/副作用），用于 JSON 序列化 */
 function cleanNode(node: any): any {
@@ -248,8 +279,21 @@ describe('Schema Snapshot Generator', () => {
     it(`生成 schema-snapshot.json (${SNAPSHOT_PATH})`, () => {
         const snapshot = schemas.map((s) => ({
             panelId: s.panelId,
+            nav: deriveNav(s.panelId, s.nav),
             nodes: s.nodes.map(cleanNode),
         }));
+
+        // [ADR-229 §2.1] nav 完整性断言：16 面板全部有可导航元数据，
+        // 缺失（如新增面板忘了特例覆写）→ 立即失败，不静默进 E2E。
+        for (const s of snapshot) {
+            expect(s.nav.domain, `${s.panelId} nav.domain 缺失`).toBeDefined();
+            expect(s.nav.entryTestId, `${s.panelId} nav.entryTestId 缺失`).toBeTruthy();
+            if (s.nav.domain === 'settings') {
+                expect(s.nav.subLevel2TestId, `${s.panelId} settings 域缺 subLevel2TestId`).toBeTruthy();
+            } else {
+                expect(s.nav.subLevelTestId, `${s.panelId} 缺 subLevelTestId`).toBeTruthy();
+            }
+        }
 
         mkdirSync(dirname(SNAPSHOT_PATH), { recursive: true });
         writeFileSync(SNAPSHOT_PATH, JSON.stringify(snapshot, null, 2), 'utf-8');

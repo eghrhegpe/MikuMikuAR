@@ -207,6 +207,14 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
+      # [ADR-229 §2.4] 快照新鲜度门禁：先重生成 schema-snapshot.json（vitest 秒级），
+      # 再与已入库版本比对——schema 变更未提交新快照 → diff 非空 → CI 红，
+      # 防 schema-driven E2E 测过期数据（此前曾因 PANEL_NAV 过期静默失败 35 分钟）。
+      - name: Regenerate schema snapshot
+        run: npx vitest run src/__tests__/schema-snapshot.test.ts
+      - name: Snapshot freshness gate
+        run: git diff --exit-code -- e2e/schema-snapshot.json
+
       - name: Run @dom E2E
         # Playwright 的 config.webServer 自动管理 Vite dev server（:5173），
         # CI 下已跳过 4174 preview server 避免不必要的构建等待。
