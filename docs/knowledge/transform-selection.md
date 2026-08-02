@@ -9,6 +9,9 @@ source_files:
   - frontend/src/scene/transform/transform-selection.ts
 adr:
   - ADR-171
+invariants:
+  - 三个详情面板（模型/舞台/灯光）共用 buildTransformCard，渲染即声明选中；场景开关 scene:dragMode 只做总闸（ADR-171）
+  - 依赖方向：本模块 import transform-adapter/transform-mode，无反向依赖
 use_when:
   - 选中状态
   - 选中物

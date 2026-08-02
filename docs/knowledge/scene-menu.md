@@ -10,6 +10,9 @@ scope:
   - frontend/src/menus/scene-menu.ts
 source_files:
   - frontend/src/menus/scene-menu.ts
+invariants:
+  - 场景弹窗（编排 + 路由）：MenuStack 场景弹窗路由/入口，拆分后只保留根级 + 路由 + 动作处理
+  - 程序化动作/LipSync 归位 motion-procmotion-levels.ts（动作弹窗域），环境功能归位 env-menu.ts（环境弹窗域）
 use_when:
   - 场景弹窗
   - 场景菜单
