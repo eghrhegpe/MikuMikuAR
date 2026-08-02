@@ -182,10 +182,11 @@ function main() {
     console.log(`\n扫描 ${adrList.length} 篇 ADR 完成。`);
   }
 
-  // --check 模式:存在漏标或废弃未指明 → 退出码 1
-  if (FLAG_CHECK && (unmarked.length > 0 || unpointed.length > 0)) {
+  // --check 模式:仅漏标(②)是流程错误 → 退出码 1;
+  // 废弃未指明(③)可能是合法登记(放弃/搁置本就无取代者),降级为提示不拦截。
+  if (FLAG_CHECK && unmarked.length > 0) {
     if (!FLAG_QUIET) {
-      console.error(`\n⚠️ 存在 ${unmarked.length} 处漏标、${unpointed.length} 处废弃未指明,请补标首部状态行。`);
+      console.error(`\n⚠️ 存在 ${unmarked.length} 处漏标(正文宣称取代但首部未回标),请补标首部状态行。`);
     }
     process.exit(1);
   }
