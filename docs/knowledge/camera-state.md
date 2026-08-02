@@ -76,7 +76,6 @@ tests:
   - frontend/src/__tests__/camera.test.ts
 use_when:
   - 相机状态
-  - 相机模式
   - 相机位置保存
   - scene/canvas 引用共享
   - freefly 输入状态

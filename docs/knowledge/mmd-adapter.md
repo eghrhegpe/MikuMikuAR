@@ -38,7 +38,6 @@ use_when:
   - MmdRuntime
   - 骨骼矩阵
   - 动作切换
-  - 物理桥
   - 音频
   - ADR-192
 ---
