@@ -33,6 +33,14 @@ const EXEMPT = new Set([
   'loadModel', // 模型加载（guide 已有 import-model 覆盖，按页面名不匹配豁免？→ 见下）
 ]);
 
+/** settings.* 子域（about/appearance/controls/downloads/graphics/media/resources/system）由 settings.md 总览页覆盖，豁免 */
+const SETTINGS_OVERRIDDEN = new Set([
+  'about', 'appearance', 'controls', 'downloads', 'graphics', 'media', 'resources', 'system',
+]);
+
+/** 被其他 guide 页覆盖的别名域（如 tags → import-model / library） */
+const ALIAS_COVERED = new Set(['tags']);
+
 function main() {
   const args = parseArgs(process.argv.slice(2), { bools: ['strict'], strings: [], defaults: {} });
   const strict = args.strict;
@@ -59,6 +67,8 @@ function main() {
   const missing = [];
   for (const folder of uniqueFolders) {
     if (EXEMPT.has(folder)) continue;
+    if (SETTINGS_OVERRIDDEN.has(folder)) continue; // settings.md 总览页已覆盖
+    if (ALIAS_COVERED.has(folder)) continue; // 被其他 guide 页别名覆盖
     const hit = guidePages.filter((p) => p.includes(folder) || folder.includes(p));
     if (!hit.length) missing.push(folder);
   }
