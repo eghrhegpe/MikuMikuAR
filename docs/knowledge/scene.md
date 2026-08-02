@@ -77,6 +77,7 @@ symbols:
   - initScene
   - isARModeActive
   - isAudioPlaying
+  - isHeadless
   - isMatCategoryAllEnabled
   - isMatEnabled
   - isPbrMaterial

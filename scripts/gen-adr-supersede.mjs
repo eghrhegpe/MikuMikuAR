@@ -51,6 +51,14 @@ const ADR_DIR = path.join(ROOT, 'docs', 'adr');
 const FLAG_CHECK = process.argv.includes('--check');
 const FLAG_QUIET = process.argv.includes('--quiet');
 
+// ── 已知勘误注记白名单（人工核对后登记，非取代关系，不再报 ④） ──
+// 判别：被提及方并非被「取代」，而是被勘误/引用/整合，状态行无废弃词属正常。
+//   56-54    ADR-56 背景勘误 ADR-054「gaze 仅 JS 生效」描述已过时 → 修正为双路径已实施（正文 §修改 ADR-054 §二）
+//   56-16    ADR-56 引用 ADR-016 双路径 gaze 佐证勘误，非取代
+//   162-166  ADR-162 状态行自标「§6 验收标准已过时」（pin 整合入 tier 系统），勘误注记非取代
+//   162-164  ADR-162 §六勘误：pin 功能已随 ADR-164/166 整合入 tier，勘误注记非取代
+const KNOWN_ERRATA = new Set(['56-54', '56-16', '162-166', '162-164']);
+
 // ── 主流程 ──
 
 function main() {
@@ -146,7 +154,7 @@ function main() {
           for (const other of others) {
             const tMeta = adrList.find(e => e.num === other);
             const tMarked = RE_SUPERSEDED_BY.test(tMeta.status) || RE_SELF_DEPRECATED.test(tMeta.status);
-            if (!tMarked) {
+            if (!tMarked && !KNOWN_ERRATA.has(`${num}-${other}`)) {
               suspicious.push({ num, target: other, line: line.trim().slice(0, 120) });
             }
           }
