@@ -38,6 +38,37 @@ import { readFileBytes, ListDirRecursive } from '@/core/wails-bindings';
 import { readTextureWithLRU } from './texture-lru';
 import { auditMissingTextures } from './pmx-texture-audit';
 import { reportResourceWarning } from '@/core/resource-warning-sink';
+
+// [temp:diagnose-eye] 临时诊断：复现「第二个角色看不见眼睛」时查看 dev 控制台（搜索 diagnose-eye）。
+// 确诊根因后删除本函数及其调用点。
+function _diagnoseEyeMaterials(meshes: Mesh[]): void {
+    const rows: Record<string, unknown>[] = [];
+    for (const mesh of meshes) {
+        const mat = mesh.material as
+            | (import('@babylonjs/core/Materials/standardMaterial').StandardMaterial & {
+                  sphereTexture?: unknown;
+              })
+            | null;
+        if (!mat) {
+            continue;
+        }
+        const nm = (mat.name || mesh.name || '').toLowerCase();
+        if (!/眼|目|eye|iris|瞳|pupil|eyelash|眉|lash|白目|泪|表情/.test(nm)) {
+            continue;
+        }
+        rows.push({
+            mesh: mesh.name,
+            mat: mat.name,
+            cls: mat.getClassName?.() ?? (mat as { constructor?: { name?: string } }).constructor?.name,
+            meshVisible: mesh.isVisible,
+            meshVisibility: mesh.visibility,
+            matAlpha: mat.alpha,
+            hasSphere: !!(mat as { sphereTexture?: unknown }).sphereTexture,
+            hasDiffuse: !!mat.diffuseTexture,
+        });
+    }
+    logWarn('diagnose-eye', `eye-like materials: ${rows.length}`, rows);
+}
 import { t } from '@/core/i18n/t';
 import type { IMmdRuntime } from 'babylon-mmd/esm/Runtime/IMmdRuntime';
 import type { IMmdModel } from 'babylon-mmd/esm/Runtime/IMmdModel';
@@ -799,6 +830,8 @@ export async function loadPMXFile(
                 logWarn('model-loader', 'auto-apply preset:', err)
             );
         }
+        // [temp:diagnose-eye] 复现「第二个角色看不见眼睛」时查看 console（确诊后删除）
+        swallowError(Promise.resolve(_diagnoseEyeMaterials(inst.meshes)));
         // Pre-load outfit file for UI entry availability
         swallowError(_loadOutfits(id));
 
