@@ -74,3 +74,14 @@ curl http://127.0.0.1:4199/MikuMikuAR/app/   # → 404（目录索引找不到 i
 1. **构建产物文件名是隐性契约**：`input` 文件名直接决定输出 HTML 名，静态服务器/Pages/预览三套消费的「索引文件名」假设必须一致。任何一处「只拷贝不统一」的临时补丁（如 Pages 的 `cp`）都可能让其他消费方（E2E preview）踩坑。
 2. **base 路径要三处对齐**：`vite.web.config.ts` 的 `base`、Playwright 的 `webServer.url`、测试里的 `WEB_URL` 必须同一路径。新增子路径部署时，最容易漏改测试侧。
 3. **「起不来」优先怀疑目录索引/路径**：preview server 进程其实正常启动（日志明确打印 `Local: .../MikuMikuAR/app/`），失败在健康检查 URL 的 404，而非 server 没起。排障时应直接 `curl` 各路径确认 200/404，而非假设 server 崩溃。
+
+## 进展（2026-08-02）
+
+已应用最小修复：`playwright.config.ts` 的 webServer `command` 加 `cp dist-web/app/index.web.html dist-web/app/index.html` 步骤、`url` 改为 `/MikuMikuAR/app/`；`web-smoke.spec.ts` 的 `WEB_URL` 同步。
+
+验证结果：
+- web 构建成功（`vite build --config vite.web.config.ts` EXIT=0，产物 `dist-web/app/index.web.html`）。
+- 修复后 preview 在 `http://localhost:4174/MikuMikuAR/app/` 返回 **HTTP 200**（修复前同路径 404）；原 `/MikuMikuAR/` 仍 404，印证路径修正必要。
+- 端到端 `RUN_WEB_E2E=1 npx playwright test --grep "@web"`：webServer 健康检查已通过（server 能 ready），但**所有 @web 用例仍失败**，统一报 `waitForSelector("#btnMainAction") timeout`。
+
+结论：本 bug 的「preview 4174 起不来」根因（index.web.html vs index.html + 路径错配）**已修复**；但 @web 测试仍失败暴露出**第二个独立问题**——web 入口页面加载后未渲染 `#btnMainAction`（疑似 web 入口 JS 运行时崩溃）。该崩溃与本次修复无关；当前工作区存在未提交的 src 改动（`browser-adapter.ts` / `texture-fallback.ts` 等），疑为其所致。建议：先 stash/提交这些改动排除干扰，再单独排查 web 入口运行时崩溃（必要时立新 bug）。
