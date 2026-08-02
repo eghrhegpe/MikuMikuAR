@@ -548,6 +548,10 @@ function disposeGroundMaterial(mat: Material | null): void {
         if (isCacheOwnedTexture(mat.reflectionTexture)) {
             mat.reflectionTexture = null;
         }
+        // [adr-230] emissiveTexture 始终与 albedo/diffuse（自发光复用，见 _syncGroundEmissive）
+        // 或共享焦散纹理（见 env-underwater-fog）同引用，非独立持有：
+        // 无条件脱离，避免 mat.dispose(force=true) 连带释放缓存贴图或共享焦散纹理。
+        mat.emissiveTexture = null;
     }
     mat.dispose();
 }
