@@ -48,10 +48,10 @@ function parseAdr(filePath) {
   for (let i = 0; i < Math.min(lines.length, 20); i++) {
     const line = lines[i];
 
-    // # ADR-NNN: Title
-    const mTitle = line.match(/^#\s+ADR-(\d+):\s*(.+)/);
+    // # ADR-NNN: Title(支持子编号,如 ADR-061.1;parseFloat 保持 61.1 与 61 不冲突)
+    const mTitle = line.match(/^#\s+ADR-([\d.]+):\s*(.+)/);
     if (mTitle) {
-      num = parseInt(mTitle[1], 10);
+      num = parseFloat(mTitle[1]);
       title = mTitle[2].trim();
       continue;
     }
@@ -147,7 +147,7 @@ function main() {
   }
 
   const files = fs.readdirSync(ADR_DIR)
-    .filter((f) => /^adr-\d+-.+\.md$/.test(f))
+    .filter((f) => /^adr-[\d.]+-.+\.md$/.test(f))
     .sort(); // 按文件名排序本质就是按编号排序
 
   const entries = [];

@@ -8,12 +8,13 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { TECHNICAL_DEBT_KEYWORDS } from './_lib/adr-status-categories.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ADR_DIR = path.join(__dirname, '..', 'docs', 'adr');
 
-const DEBT_KEYWORDS = ['已废弃', '已放弃', '已搁置', '搁置', '废弃', '待立项', '草案', '提案', 'Proposed', '规划中', '部分实现', '待推进'];
+const DEBT_KEYWORDS = TECHNICAL_DEBT_KEYWORDS;
 
 function extractStatus(content) {
   for (const line of content.split('\n')) {

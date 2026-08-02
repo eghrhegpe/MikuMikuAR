@@ -182,6 +182,8 @@
 | ADR-64 | 技术债清偿（续）—— *Dir 包装维持现状 + scene.ts 业务循环依赖破除 | 已实施（2026-07-08 起草并落地，循环依赖审计确认零残留——两条业务型环已通过动态 `import()` 破除，`*Dir` 包装保持现状） |
 | ADR-63 | 架构债务清偿（精简版） | ✅ 已实施（2026-07-08，build+1128 tests 通过） |
 | ADR-62 | 水面反射渲染目标与通用反射系统 | 已完成（2026-07-10）— P1 核心（MirrorCamera + RT + 着色器扩展 + UI）+ P2 增强（波浪 UV 偏移 + 泡沫衰减） |
+| ADR-61.1 | Ragdoll 保真度补齐（球面关节 + 旋转求解 + 暂停/过渡仲裁 + 关节参数化） | 已交付（2026-07-10）— ①④③ 全部实施完成，14 个 TDD Task 全绿（1351 测试 + tsc 零错误）。③ 方案修订：boneFilter 不可运行时暂停基础 VMD，改用 blendWeight Slerp 混合。 ⚠️ **整篇废弃**（XPBD 移除，见 ADR-081；源码 xpbd-ragdoll/ragdoll-manager 已删） |
+| ADR-61.1 | Ragdoll 保真度补齐 实施计划 | 已交付（2026-07-10）— 见 [adr-061.1-ragdoll-fidelity.md](adr-061.1-ragdoll-fidelity.md)；①④③ 全部实施完成，14 个 TDD Task 全绿 ⚠️ **整篇废弃**（XPBD 移除，见 ADR-081） |
 | ADR-61 | 高级骨骼操控与姿态工作室实现计划 | 已完成（2026-07-10，2026-07-16 对账修正）— Pose Studio ✅、Motion Override ✅、Accessory ✅、T-pose/A-pose ✅（并入 Pose Studio）。Ragdoll ❌ 永久废弃（随 XPBD 全栈移除 530af6e，不再恢复）。 |
 | ADR-60 | E2E 测试策略（Playwright + 双模式 Fixture + 场景数值钩子） | ✅ 已完成（Phase 0 / Phase 1 / Phase 2 / Phase 3，2026-07-07 提出并推进） |
 | ADR-59 | i18n 多语言切换框架 | 已完成（2026-07-10 全部 Phase 落地，奇偶校验脚本已接 CI；2026-07-22 废弃 Go UIState 持久化升级预留路径；2026-07-30 补齐首访系统语言自动识别；剩余 ja/ko/zh-TW 翻译质量为人工/AI 走查任务，非框架范畴） |

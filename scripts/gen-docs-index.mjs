@@ -141,9 +141,10 @@ function parseAdrHead(file) {
   let title = '';
   let status = '';
   for (const line of lines) {
-    const mT = line.match(/^#\s+ADR-(\d+):\s*(.+)/);
+    // 支持子编号,如 ADR-061.1(parseFloat 保持 61.1 与 61 不冲突)
+    const mT = line.match(/^#\s+ADR-([\d.]+):\s*(.+)/);
     if (mT) {
-      num = parseInt(mT[1], 10);
+      num = parseFloat(mT[1]);
       title = mT[2].trim();
       continue;
     }
@@ -166,7 +167,7 @@ function shortStatus(s) {
 
 function buildAdrIndex() {
   const entries = mdFiles('adr')
-    .filter((f) => /^adr-\d+-.+\.md$/.test(f))
+    .filter((f) => /^adr-[\d.]+-.+\.md$/.test(f))
     .map(parseAdrHead)
     .filter(Boolean)
     .sort((a, b) => b.num - a.num);
