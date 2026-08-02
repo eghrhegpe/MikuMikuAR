@@ -1,5 +1,9 @@
 ---
 tier: architecture
+adr:
+  - ADR-017
+  - ADR-180
+  - ADR-183
 kind: library_setup
 name: 资源库初始化
 category: ui
@@ -7,7 +11,6 @@ scope:
   - frontend/src/menus/library-setup.ts
 source_files:
   - frontend/src/menus/library-setup.ts
-adr: []
 symbols:
   - initLibrary
   - selectResourceRoot

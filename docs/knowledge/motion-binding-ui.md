@@ -1,5 +1,8 @@
 ---
 tier: architecture
+adr:
+  - ADR-129
+  - ADR-167
 kind: motion_binding_ui
 name: 动作绑定 UI
 category: ui
@@ -7,7 +10,6 @@ scope:
   - frontend/src/menus/**
 source_files:
   - frontend/src/menus/motion-binding-ui.ts
-adr: []
 symbols:
   - DEFAULT_MOTION_SLOTS
   - applyIntentToModel

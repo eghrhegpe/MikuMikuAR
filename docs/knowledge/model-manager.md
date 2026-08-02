@@ -1,5 +1,9 @@
 ---
 tier: architecture
+adr:
+  - ADR-049
+  - ADR-126
+  - ADR-215
 kind: model_manager
 name: 模型注册表与生命周期管理
 category: scene

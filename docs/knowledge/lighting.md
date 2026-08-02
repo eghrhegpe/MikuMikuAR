@@ -2,6 +2,10 @@
 kind: scene_lighting
 name: 场景光照与阴影（barrel）
 tier: architecture
+adr:
+  - ADR-132
+  - ADR-168
+  - ADR-192
 category: rendering
 scope:
   - frontend/src/scene/render/lighting.ts

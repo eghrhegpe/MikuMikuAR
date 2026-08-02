@@ -1,5 +1,8 @@
 ---
 tier: architecture
+adr:
+  - ADR-167
+  - ADR-170
 kind: motion_detail_ui
 name: 动作详情 UI
 category: ui
@@ -7,7 +10,6 @@ scope:
   - frontend/src/menus/**
 source_files:
   - frontend/src/menus/motion-detail-ui.ts
-adr: []
 symbols:
   - buildLayerLevel
   - buildMotionDetailLevel

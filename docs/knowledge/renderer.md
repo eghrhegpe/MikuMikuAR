@@ -1,5 +1,8 @@
 ---
 tier: architecture
+adr:
+  - ADR-076
+  - ADR-189
 kind: scene_renderer
 name: 场景渲染管线与后处理
 category: rendering

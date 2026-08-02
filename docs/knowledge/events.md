@@ -1,5 +1,8 @@
 ---
 tier: architecture
+adr:
+  - ADR-102
+  - ADR-179
 kind: events
 name: 事件处理与导航系统
 category: core
@@ -7,7 +10,6 @@ scope:
   - frontend/src/core/**
 source_files:
   - frontend/src/core/events.ts
-adr: []
 symbols:
   - buildNavMaps
   - disposeEventHandlers

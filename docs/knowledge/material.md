@@ -1,5 +1,7 @@
 ---
 tier: architecture
+adr:
+  - ADR-188
 kind: material_system
 name: 分类材质系统
 category: scene

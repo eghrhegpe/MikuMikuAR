@@ -1,5 +1,15 @@
 ---
 tier: architecture
+adr:
+  - ADR-008
+  - ADR-059
+  - ADR-099
+  - ADR-102
+  - ADR-153
+  - ADR-176
+  - ADR-177
+  - ADR-179
+  - ADR-196
 kind: init
 name: 应用启动引导
 category: core
@@ -9,7 +19,6 @@ source_files:
   - frontend/src/core/init.ts
   - frontend/src/core/main.ts
   - frontend/src/core/sw-register.ts
-adr: []
 symbols:
   - bootstrap
   - registerServiceWorker

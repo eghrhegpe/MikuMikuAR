@@ -1,5 +1,7 @@
 ---
 tier: architecture
+adr:
+  - ADR-049
 kind: orbit_state
 name: 轨道相机键盘输入状态叶子
 category: core
@@ -7,7 +9,6 @@ scope:
   - frontend/src/core/orbit-state.ts
 source_files:
   - frontend/src/core/orbit-state.ts
-adr: []
 symbols:
   - orbitInput
 invariants:

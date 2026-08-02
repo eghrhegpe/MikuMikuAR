@@ -1,5 +1,7 @@
 ---
 tier: architecture
+adr:
+  - ADR-168
 kind: lighting_presets
 name: 灯光预设系统
 category: rendering
@@ -7,7 +9,6 @@ scope:
   - frontend/src/scene/render/lighting-presets.ts
 source_files:
   - frontend/src/scene/render/lighting-presets.ts
-adr: []
 symbols:
   - LightingPresetLight
   - LightingPreset

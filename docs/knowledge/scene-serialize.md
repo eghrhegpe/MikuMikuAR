@@ -1,5 +1,22 @@
 ---
 tier: architecture
+adr:
+  - ADR-049
+  - ADR-054
+  - ADR-061
+  - ADR-071
+  - ADR-108
+  - ADR-116
+  - ADR-121
+  - ADR-126
+  - ADR-145
+  - ADR-162
+  - ADR-164
+  - ADR-167
+  - ADR-168
+  - ADR-198
+  - ADR-207
+  - ADR-215
 kind: scene_serialize
 name: 场景序列化与自动保存
 category: scene
@@ -7,7 +24,6 @@ scope:
   - frontend/src/scene/**
 source_files:
   - frontend/src/scene/scene-serialize.ts
-adr: []
 symbols:
   - SceneFile
   - canUndo

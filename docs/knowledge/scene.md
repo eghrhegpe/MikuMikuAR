@@ -2,12 +2,21 @@
 kind: scene_orchestrator
 name: 场景核心编排器（纯组装器）
 tier: architecture
+adr:
+  - ADR-099
+  - ADR-116
+  - ADR-121
+  - ADR-164
+  - ADR-168
+  - ADR-171
+  - ADR-189
+  - ADR-196
+  - ADR-202
 category: scene
 scope:
   - frontend/src/scene/**
 source_files:
   - frontend/src/scene/scene.ts
-adr: []
 symbols:
   - DEFAULT_MAT_PARAMS
   - LoadLastScene

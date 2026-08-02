@@ -1,5 +1,7 @@
 ---
 tier: architecture
+adr:
+  - ADR-088
 kind: audio_bus
 name: 音频总线
 category: core
@@ -7,7 +9,6 @@ scope:
   - frontend/src/core/audio-bus.ts
 source_files:
   - frontend/src/core/audio-bus.ts
-adr: []
 symbols:
   - PlaySfxOptions
   - disposeAudioBus
