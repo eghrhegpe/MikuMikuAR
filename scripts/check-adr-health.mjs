@@ -14,6 +14,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { parseArgs } from './_lib/parse-args.mjs';
+import { STATUS_CATEGORIES } from './_lib/adr-status-categories.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -25,15 +26,6 @@ const _args = parseArgs(process.argv.slice(2), {
 });
 const VERBOSE = _args.verbose;
 const JSON_OUTPUT = _args.json;
-
-// 状态分类
-const STATUS_CATEGORIES = {
-  completed: ['已完成', '已实施', '已落地', '已批准', '已采纳', '已实现', '已交付', '通过', '✅', 'accepted', '调研落档', '已修复', '完成', '实施完成'],
-  // 「部分实现/部分落地」属推进中而非已废弃（与 gen-docs-index.mjs 的 ADR_BUCKETS 口径一致）
-  inProgress: ['实施中', '规划中', '草案', '提议', 'Proposed', '部分落地', '部分实现'],
-  deprecated: ['已废弃', '已放弃', '已搁置', '搁置', '废弃'],
-  unknown: []
-};
 
 // 技术过时关键词
 const TECHNICAL_DEBT_KEYWORDS = [
