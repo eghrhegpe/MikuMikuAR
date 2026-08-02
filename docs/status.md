@@ -97,7 +97,7 @@
 | ADR-152 | 舞台灯光光锥（Light Cone） | ✅ 已实施（v2 — 真实光锥网格）（2026-07-20） |
 | ADR-151 | 反射系统统一架构（SSR/Probe 统一入口 + Planar 协调） | ✅ 已实施（2026-07-20） |
 | ADR-150 | 模型替换原子操作契约（Model Replace Contract） | ✅ 已完成（决策二完整落地：`captureInheritedState` + `applyInheritedState` + `startReplaceModel` 集成 + undo 保护 + toast 治理；2026-07-26 审核通过）（2026-07-20） |
-| ADR-149 | 材质系统 × 换装系统基线冲突登记 | 搁置登记（已验证 — 真实可稳定复现，2026-07-30 复核确认）（2026-07-20（立项）/ 2026-07-30（复核升级）） |
+| ADR-149 | 材质系统 × 换装系统基线冲突登记 | 已登记（搁置待修复立项；已验证 — 真实可稳定复现，2026-07-30 复核确认）（2026-07-20（立项）/ 2026-07-30（复核升级）） |
 | ADR-148 | 过载文件拆分工程 | ✅ 已完成（5/5 阶段全部落地，2026-07-21 收口）（2026-07-20（收口 2026-07-21）） |
 | ADR-147 | 动作管线显式调度器 + 集中骨骼覆盖状态 | 已完成（Phase 1 + Phase 2 运行时接入全部落地，R1/R2/R3/R4 根治；Phase 3 在 motion 子系统范围内已完成，见 §八 说明）（2026-07-20） |
 | ADR-146 | 函数级重复摸排与收敛（第二波） | ✅ 已完成（P1 主题 1–5 / P2 主题 6–11 / P3 主题 12–14 全量落地；全量回归 `vitest run` 76 文件/1700 用例全绿；`npm run build` 0 错误）（2026-07-19） |
@@ -172,7 +172,7 @@
 | ADR-77 | 模型广场 · Cookie 中继（登录态代理） | 已实施（2026-07-09） |
 | ADR-76 | 卡通化渲染后处理模式 | ✅ 已实施（2026-07-10）（2026-07-09） |
 | ADR-75 | 模型广场 · 网页浏览（内嵌代理 + 外链闭环） | 已采纳 · 已实施（Phase 1 基础代理 + 导航接入）（2026-07-09） |
-| ADR-74 | 动态 Cubemap RT 球面反射 | 🗑️ 已放弃（2026-07-19，stash 内容已清理。Stash 中的 cubemap 代码与当前 HEAD 架构冲突——水反射已改用统一 `PlanarReflection` 引擎（ADR-092），model-loader 传参方式也不同（二进制 vs URL）。材料诊断工具等附属代码一并移除。后续若重新评估此方案，需基于当前 HEAD 重写。） |
+| ADR-74 | 动态 Cubemap RT 球面反射 | 🗑️ 已放弃（被 [ADR-092](adr-092-unified-texture-reflection.md) 取代；2026-07-19，stash 内容已清理。Stash 中的 cubemap 代码与当前 HEAD 架构冲突——水反射已改用统一 `PlanarReflection` 引擎（ADR-092），model-loader 传参方式也不同（二进制 vs URL）。材料诊断工具等附属代码一并移除。后续若重新评估此方案，需基于当前 HEAD 重写。） |
 | ADR-73 | AR 地形识别 —— 原生 ARCore / ARKit 桥接 | 提案（Proposed）—— ADR-055 §3.1 方案 C「平台原生 ARCore / ARKit 桥接」的细化，远期可 reconsider（2026-07-09） |
 | ADR-72 | AR 平面检测 —— WebXR hit-test + plane detection | 提案（Proposed）—— ADR-055 Phase 3「WebXR 升级」的细化，待 P1 探针结果后批准（2026-07-09） |
 | ADR-71 | 程序化动作与角色感知边界重构 | 已实施（方案 B 全部落地；2026-07-09 创建，2026-07-10 核实代码已落地） ⚠️ **部分被 ADR-079 推翻**（lifelike/idle 保留定位） |
@@ -226,7 +226,7 @@
 | ADR-22 | 预设治理 — 统一管理范围与分级架构 | 已实现 — 8 项改动全完成：EnvPreset 精简 + L2 环境预设扩展 + 用户预设快照迁移（2026-07-04） |
 | ADR-21 | 程序化动作系统（Idle/Auto Dance + LipSync + 视线追踪） | 已完成 — Idle/AutoDance/LipSync/VPD/VMD-writer 5 套测试全通过（2026-07-03） |
 | ADR-20 | 换装系统（服装变体/纹理替换） | 已完成 — Phase 8 完成，outfit.ts 加载/应用/重置 + 自动发现 + 序列化（2026-06-28） |
-| ADR-19 | XPBD 布料模拟引擎选型与架构 | 已完成 — xpbd-solver/collider/cloth/renderer + 20 tests 全通过 ⚠️ **已废弃**（XPBD 全栈移除，见 ADR-081；源码 xpbd-solver/collider/cloth 等已删；布料功能替代见 ADR-084）（2026-06-28） |
+| ADR-19 | XPBD 布料模拟引擎选型与架构 | 已完成 — xpbd-solver/collider/cloth/renderer + 20 tests 全通过 ⚠️ **已废弃**（XPBD 全栈移除，被 [ADR-081](adr-081-xpbd-removal.md) 取代；源码 xpbd-solver/collider/cloth 等已删；布料功能替代见 ADR-084）（2026-06-28） |
 | ADR-18 | PathManager 平台抽象层 + 文件 I/O 审计 | 已完成 — PathManager 接口 + trustedRoots 修复 + copyDir 流式复制 + zipextract 句柄关闭修正（2026-07-04） |
 | ADR-17 | Android 平台适配（精简版） | 主体已完成（Phase A/B/C ✅）；P0(A0-01/A0-02) 与 P1(A1-01~05) ✅ 全部已实施；P2 七项 ✅ 全部已落地（A2-04 于 2026-07-22 完成全路径 `toBlob` 迁移）；P3 四项 ✅ 全部已修复（A3-01/04 于 2026-07-22 完成事件总线消费）。A0-01 已于 2026-07-24 根治：模型文件改经 `readFileBytes` + Blob URL 加载（复用 ADR-176 浏览器端路径，见 frontend/src/core/fileservice.ts `resolveFileUrl`），移除 `MainActivity.java` 的 `MIXED_CONTENT_ALWAYS_ALLOW`；不再依赖 PathHandler 代理方案（ADR-133 方案 B 不再必要）。§四 SAF 目录选择方案已放弃，改用 `MANAGE_EXTERNAL_STORAGE` 授权 `/sdcard/MMD`（2026-07-22 核对）。 |
 | ADR-16 | 视线追踪子系统架构 | 已完成 — 双路径方案已实施（WASM frontBuffer 直写 + JS linkedBone + updateWorldMatrix），手动计时方案（方案 A）为优化项，需上游 babylon-mmd 暴露 beforePhysics/afterPhysics API（2026-07-03） |
