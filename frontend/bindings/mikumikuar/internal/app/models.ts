@@ -757,6 +757,11 @@ export interface UIState {
     "sfxEnabled"?: boolean;
 
     /**
+     * KTX2 转码开关（ADR-189 Phase 3，默认关）
+     */
+    "ktx2Transcode"?: boolean;
+
+    /**
      * SFX 音量 0-1
      */
     "sfxVolume"?: number;

@@ -33,7 +33,7 @@ func ktx2Encode(srcPath string) (string, error) {
 	name := filepath.Base(srcPath)
 	ext := strings.ToLower(filepath.Ext(srcPath))
 	if !isKtx2SourceExt(ext) {
-		return "", util.WrapErrorf("KTX2Transcode", "跳过非纹理格式: %s", errors.New(ext))
+		return "", util.WrapErrorf("KTX2Transcode", "跳过非纹理格式", errors.New(ext))
 	}
 
 	// Decide encoding mode by filename
@@ -45,31 +45,31 @@ func ktx2Encode(srcPath string) (string, error) {
 	tmpFile := filepath.Join(dir, ".ktx2_tmp_"+filepath.Base(srcPath))
 	tmpLog := tmpFile + ".log"
 
-	cmd := exec.Command(toktxBin,
-		"--i", srcPath,
-		"--o", tmpFile,
-	)
-
+	// toktx v4.4.2 syntax: `toktx [options] <outfile> <infile>`.
+	// Output (tmpFile) MUST precede input (srcPath). There is no --i/--o flag;
+	// passing one makes toktx exit non-zero on the unknown option.
+	var encodeArgs []string
 	switch encodeMode {
-	case "etc1s":
-		cmd.Args = append(cmd.Args,
-			"--t2", "--encode", "etc1s",
-			"--clevel", "5", "--qlevel", "255",
-			"--genmipmap",
-		)
 	case "uastc":
-		cmd.Args = append(cmd.Args,
+		encodeArgs = []string{
 			"--t2", "--encode", "uastc",
 			"--uastc_quality", "4",
 			"--assign_oetf", "linear", "--assign_primaries", "none",
 			"--zcmp", "22", "--genmipmap",
-		)
+		}
+	default: // etc1s (and any unknown mode → safe default)
+		encodeArgs = []string{
+			"--t2", "--encode", "etc1s",
+			"--clevel", "5", "--qlevel", "255",
+			"--genmipmap",
+		}
 	}
+	cmd := exec.Command(toktxBin, append(encodeArgs, tmpFile, srcPath)...)
 
 	cmd.Env = os.Environ()
 	_, cmdErr := cmd.CombinedOutput()
 	if cmdErr != nil {
-		return "", util.WrapErrorf("KTX2Transcode", "toktx 转码失败: %s", errors.New(name))
+		return "", util.WrapErrorf("KTX2Transcode", "toktx 转码失败", errors.New(name))
 	}
 
 	// Verify output has KTX2 magic bytes before replacing the source
@@ -78,7 +78,7 @@ func ktx2Encode(srcPath string) (string, error) {
 		return "", util.WrapErrorf("KTX2Transcode", "读取转码输出失败", err)
 	}
 	if len(data) < 12 || data[0] != 0xAB || data[1] != 0x4B || data[2] != 0x54 || data[3] != 0x58 {
-		return "", util.WrapErrorf("KTX2Transcode", "转码输出无 KTX2 魔数头: %s", errors.New(name))
+		return "", util.WrapErrorf("KTX2Transcode", "转码输出无 KTX2 魔数头", errors.New(name))
 	}
 
 	// Atomic replace: rename tmp → src (same filesystem)
