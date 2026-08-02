@@ -12,9 +12,14 @@ import {
     regenerateProcMotion,
     setProcMotionInterpOverride,
 } from '../scene/scene';
-import { setProcMotionBoneToggle } from '../scene/motion/proc-motion-bridge';
+import { setProcMotionBoneToggles } from '../scene/motion/proc-motion-bridge';
 import { getProcMotionBoneCategories } from '../motion-algos/procedural-motion';
-import type { ProcMotionState, ProcModeKey, ProcMotionParams } from '../motion-algos/procedural-motion';
+import type {
+    ProcMotionState,
+    ProcModeKey,
+    ProcMotionParams,
+    ProcMotionBoneCategory,
+} from '../motion-algos/procedural-motion';
 import { DEFAULT_PROC_STATE } from '../motion-algos/procedural-motion';
 import { t } from '../core/i18n/t'; // [doc:adr-059]
 import type { MenuNode } from './menu-schema';
@@ -65,11 +70,16 @@ function _getProcParams(modelId: string | undefined, mode: ProcModeKey): ProcMot
     return { ...src, boneToggles: { ...src.boneToggles } };
 }
 
+/** per-mode 参数补丁：boneToggles 允许部分键（骨骼微动逐键 toggle 场景）。 */
+type ProcParamsPatch = Partial<Omit<ProcMotionParams, 'boneToggles'>> & {
+    boneToggles?: Partial<Record<ProcMotionBoneCategory, boolean>>;
+};
+
 /** [audit] per-mode：写入 per-model 指定模式的参数（modelId 路径；全局路径由 bridge setter 处理）。 */
 function _setProcParams(
     modelId: string | undefined,
     mode: ProcModeKey,
-    patch: Partial<ProcMotionParams>
+    patch: ProcParamsPatch
 ): void {
     if (modelId) {
         const inst = modelRegistry.get(modelId);
@@ -84,6 +94,34 @@ function _setProcParams(
             };
         }
     }
+}
+
+/**
+ * [audit] per-mode 参数统一写入入口：收口 intensity / speed / boneToggles / interpOverride
+ * 四处重复的 `if (modelId) {...} else {...}` 双分支。
+ * - modelId 路径：直写 per-model 状态 + 按模型重生成；
+ * - 全局路径：委托 bridge setter（内部自带 triggerAutoSave + regenerateProcMotion，勿重复调用）。
+ */
+function _applyProcParam(
+    modelId: string | undefined,
+    mode: ProcModeKey,
+    patch: ProcParamsPatch
+): void {
+    if (modelId) {
+        // boneToggles 需与现有值逐键合并：_setProcParams 是浅合并，直接覆盖会整体替换
+        const full: ProcParamsPatch = { ...patch };
+        if (patch.boneToggles) {
+            const cur = _getProcParams(modelId, mode).boneToggles;
+            full.boneToggles = { ...cur, ...patch.boneToggles };
+        }
+        _setProcParams(modelId, mode, full);
+        regenerateProcMotion(modelId);
+        return;
+    }
+    if (patch.intensity !== undefined) setProcMotionIntensity(mode, patch.intensity);
+    if (patch.speed !== undefined) setProcMotionSpeed(mode, patch.speed);
+    if (patch.boneToggles !== undefined) setProcMotionBoneToggles(mode, patch.boneToggles);
+    if (patch.interpOverride !== undefined) setProcMotionInterpOverride(mode, patch.interpOverride);
 }
 
 export function buildProcMotionSchema(modelId?: string, mode: ProcModeKey = 'idle'): MenuNode[] {
@@ -145,15 +183,7 @@ export function buildProcMotionSchema(modelId?: string, mode: ProcModeKey = 'idl
                         0,
                         1,
                         0.05,
-                        (v) => {
-                            if (modelId) {
-                                _setProcParams(modelId, mode, { intensity: v });
-                                regenerateProcMotion(modelId);
-                            } else {
-                                setProcMotionIntensity(mode, v);
-                                regenerateProcMotion();
-                            }
-                        },
+                        (v) => _applyProcParam(modelId, mode, { intensity: v }),
                         'lucide:activity',
                         undefined,
                         {
@@ -167,15 +197,7 @@ export function buildProcMotionSchema(modelId?: string, mode: ProcModeKey = 'idl
                         0.5,
                         2,
                         0.05,
-                        (v) => {
-                            if (modelId) {
-                                _setProcParams(modelId, mode, { speed: v });
-                                regenerateProcMotion(modelId);
-                            } else {
-                                setProcMotionSpeed(mode, v);
-                                regenerateProcMotion();
-                            }
-                        },
+                        (v) => _applyProcParam(modelId, mode, { speed: v }),
                         'lucide:fast-forward',
                         undefined,
                         {
@@ -215,16 +237,7 @@ export function buildProcMotionSchema(modelId?: string, mode: ProcModeKey = 'idl
                                 emotion: 'lucide:smile',
                             };
                             const toggleBone = (cat: (typeof cats)[number], v: boolean) => {
-                                if (modelId) {
-                                    const cur = _getProcParams(modelId, mode);
-                                    _setProcParams(modelId, mode, {
-                                        boneToggles: { ...cur.boneToggles, [cat]: v },
-                                    });
-                                    regenerateProcMotion(modelId);
-                                } else {
-                                    setProcMotionBoneToggle(mode, cat, v);
-                                    regenerateProcMotion();
-                                }
+                                _applyProcParam(modelId, mode, { boneToggles: { [cat]: v } });
                             };
                             addSectionTitle(inner, t('motion.secTorso'));
                             for (const cat of ['center', 'allParent', 'waist', 'groove'] as const) {
@@ -307,15 +320,7 @@ export function buildProcMotionSchema(modelId?: string, mode: ProcModeKey = 'idl
                             { value: 'ease-out' as const, label: t('motion.interpEaseOut') },
                         ],
                         prm.interpOverride,
-                        (v) => {
-                            if (modelId) {
-                                _setProcParams(modelId, mode, { interpOverride: v });
-                                regenerateProcMotion(modelId);
-                            } else {
-                                setProcMotionInterpOverride(mode, v);
-                                regenerateProcMotion();
-                            }
-                        },
+                        (v) => _applyProcParam(modelId, mode, { interpOverride: v }),
                         'lucide:sliders',
                         undefined,
                         {
