@@ -22,12 +22,12 @@ import { clearTextureLRU } from '../manager/texture-lru';
 
 // ======== Tone Mapping Modes ========
 
+// 对齐 Babylon ImageProcessingConfiguration.toneMappingType 官方枚举：
+// 0=STANDARD 1=ACES 2=KHR_PBR_NEUTRAL（官方仅此 3 值，无 Reinhard/Cineon）
 export const ToneMappingMode = {
     OFF: 0,
     ACES: 1,
-    REINHARD: 2,
-    CINEON: 3,
-    NEUTRAL: 4,
+    NEUTRAL: 2,
 } as const;
 
 // ======== Render State ========
@@ -43,7 +43,7 @@ export interface RenderState {
     fxaaEnabled: boolean;
     msaaSamples: number; // MSAA 采样数（1=关闭，2/4/8=开启）
     // Stage / imageProcessing
-    toneMapping: number; // 0=OFF 1=ACES 2=Reinhard 3=Cineon 4=Neutral
+    toneMapping: number; // 0=OFF(标准) 1=ACES 2=Neutral(KHR PBR)，官方仅 0-2
     exposure: number; // 0-4, default 1
     contrast: number; // 0-4, default 1
     // Phase 8 — DOF + Vignette
@@ -180,7 +180,7 @@ export function getRenderState(): RenderState {
         outlineColor: _outlineColor,
         fxaaEnabled: pipeline.fxaaEnabled,
         msaaSamples: pipeline.samples ?? 1,
-        toneMapping: pipeline.imageProcessing.toneMappingType ?? 0,
+        toneMapping: clamp(pipeline.imageProcessing.toneMappingType ?? 0, 0, 2),
         exposure: pipeline.imageProcessing.exposure ?? 1,
         contrast: pipeline.imageProcessing.contrast ?? 1,
         dofEnabled: pipeline.depthOfFieldEnabled,
@@ -191,10 +191,11 @@ export function getRenderState(): RenderState {
         dofFocusDistance: pipeline.depthOfField ? pipeline.depthOfField.focusDistance : 22,
         dofFocalLength: pipeline.depthOfField ? pipeline.depthOfField.focalLength : 50,
         vignetteEnabled: pipeline.imageProcessing.vignetteEnabled ?? false,
-        vignetteDarkness: pipeline.imageProcessing.vignetteWeight ?? 0,
+        // 官方默认 vignetteWeight=1.5，归一化 0~1.5 → 0~1
+        vignetteDarkness: clamp((pipeline.imageProcessing.vignetteWeight ?? 0) / 1.5, 0, 1),
         chromaticAberrationEnabled: pipeline.chromaticAberrationEnabled ?? false,
         chromaticAberrationAmount: pipeline.chromaticAberration
-            ? clamp(pipeline.chromaticAberration.aberrationAmount / 8, 0, 1)
+            ? clamp(pipeline.chromaticAberration.aberrationAmount / 30, 0, 1)
             : 0,
         grainEnabled: pipeline.grainEnabled ?? false,
         grainIntensity: pipeline.grain ? clamp(pipeline.grain.intensity / 50, 0, 1) : 0,
@@ -362,15 +363,15 @@ function _applyRenderState(s: Partial<RenderState>): void {
         pipeline.imageProcessing.vignetteEnabled = s.vignetteEnabled;
     }
     if (vd !== undefined && pipeline.imageProcessing) {
-        pipeline.imageProcessing.vignetteWeight = vd;
+        pipeline.imageProcessing.vignetteWeight = vd * 1.5;
     }
 
-    // Chromatic Aberration（0-1 → 0~8）
+    // Chromatic Aberration（0-1 → 0~30，对齐官方默认 aberrationAmount=30）
     if (s.chromaticAberrationEnabled !== undefined) {
         pipeline.chromaticAberrationEnabled = s.chromaticAberrationEnabled;
     }
     if (ca !== undefined && pipeline.chromaticAberration) {
-        pipeline.chromaticAberration.aberrationAmount = ca * 8;
+        pipeline.chromaticAberration.aberrationAmount = ca * 30;
     }
 
     // Grain（0-1 → 0~50）
@@ -451,7 +452,7 @@ function _applyRenderState(s: Partial<RenderState>): void {
     // Stage / imageProcessing
     if (pipeline.imageProcessing) {
         if (s.toneMapping !== undefined) {
-            pipeline.imageProcessing.toneMappingType = s.toneMapping;
+            pipeline.imageProcessing.toneMappingType = clamp(s.toneMapping, 0, 2);
         }
         if (e !== undefined) {
             pipeline.imageProcessing.exposure = e;

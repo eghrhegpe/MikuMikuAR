@@ -276,7 +276,7 @@ export const SCENE_PRESETS: Record<string, EnvPresetConfig> = {
             dirColor: [0.6, 0.65, 0.7],
             shadowEnabled: false,
         },
-        render: { exposure: 0.7, toneMapping: 4 },
+        render: { exposure: 0.7, toneMapping: 2 },
     },
     '樱花季': {
         labelKey: 'env-preset.sakuraSeason',
@@ -317,7 +317,7 @@ export const SCENE_PRESETS: Record<string, EnvPresetConfig> = {
             dirColor: [0.2, 0.5, 1],
             shadowEnabled: false,
         },
-        render: { exposure: 0.9, toneMapping: 4 },
+        render: { exposure: 0.9, toneMapping: 2 },
     },
 };
 

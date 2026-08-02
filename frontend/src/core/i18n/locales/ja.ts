@@ -898,9 +898,9 @@ export const ja: Record<string, string> = {
     'scene.presetDesc.standard': '標準トーンマッピング・基準参照',
     'scene.presetDesc.cinematic':
         'ACESトーンマッピング・フィルムカーブ・自然なハイライトロールオフ',
-    'scene.presetDesc.cartoon': 'Reinhardトーンマッピング・高彩度/高コントラスト・黒アウトライン',
+    'scene.presetDesc.cartoon': 'Neutralトーンマッピング・高彩度/高コントラスト・黒アウトライン',
     'scene.presetDesc.realistic': 'ACESトーンマッピング・浅い被写界深度・シネマティックビネット',
-    'scene.presetDesc.warm': 'Cineonトーンマッピング・暖色背景・フィルム調',
+    'scene.presetDesc.warm': 'ACESトーンマッピング・暖色背景・フィルム調',
     'scene.presetDesc.cyberpunk':
         'Neutralトーンマッピング・ハイライトブルーム・極端なポストプロセス',
     'scene.presetDesc.anime': 'ソフト調色 + 黒アウトライン · ワンクリックでアニメ風',

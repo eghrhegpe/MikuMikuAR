@@ -62,7 +62,7 @@ const FILTER_PRESETS: Record<string, Partial<RenderState>> = {
         ssaoStrength: 0.6,
         ssaoRadius: 0.5,
     },
-    // --- Reinhard — 高饱和·高对比·边缘线框 = 卡通风格 ---
+    // --- Neutral(KHR PBR) — 高饱和·高对比·边缘线框 = 卡通风格 ---
     cartoon: {
         bloomEnabled: true,
         bloomWeight: 0.5,
@@ -94,7 +94,7 @@ const FILTER_PRESETS: Record<string, Partial<RenderState>> = {
         ssaoStrength: 0.5,
         ssaoRadius: 0.4,
     },
-    // --- Cineon 胶片曲线 + 暖色调背景 ---
+    // --- ACES 电影曲线 + 暖色调背景 ---
     warm: {
         bloomEnabled: true,
         bloomWeight: 0.45,
@@ -102,11 +102,11 @@ const FILTER_PRESETS: Record<string, Partial<RenderState>> = {
         bloomKernel: 96,
         fxaaEnabled: true,
         outlineEnabled: false,
-        toneMapping: 3,
+        toneMapping: 1,
         exposure: 2.2,
         contrast: 1.3,
     },
-    // --- Neutral + 极端后处理 — 赛博朋克风格 ---
+    // --- Neutral(KHR PBR) + 极端后处理 — 赛博朋克风格 ---
     cyberpunk: {
         bloomEnabled: true,
         bloomWeight: 0.7,
@@ -115,7 +115,7 @@ const FILTER_PRESETS: Record<string, Partial<RenderState>> = {
         fxaaEnabled: true,
         outlineEnabled: true,
         outlineColor: [1, 0, 1],
-        toneMapping: 4,
+        toneMapping: 2,
         exposure: 3.0,
         contrast: 1.6,
         vignetteEnabled: true,

@@ -221,9 +221,7 @@ function _renderToneMappingControl(container: HTMLElement): void {
         [
             { value: 0, label: t('scene.off') },
             { value: 1, label: 'ACES' },
-            { value: 2, label: 'Reinhard' },
-            { value: 3, label: 'Cineon' },
-            { value: 4, label: 'Neutral' },
+            { value: 2, label: 'Neutral' },
         ],
         state.toneMapping,
         (v) => {

@@ -24,17 +24,15 @@ describe('ToneMappingMode 常量', () => {
         ToneMappingMode = mod.ToneMappingMode;
     });
 
-    it('5 种模式定义正确', () => {
+    it('3 种模式定义正确（对齐官方枚举）', () => {
         expect(ToneMappingMode.OFF).toBe(0);
         expect(ToneMappingMode.ACES).toBe(1);
-        expect(ToneMappingMode.REINHARD).toBe(2);
-        expect(ToneMappingMode.CINEON).toBe(3);
-        expect(ToneMappingMode.NEUTRAL).toBe(4);
+        expect(ToneMappingMode.NEUTRAL).toBe(2);
     });
 
     it('所有值都是只读整数', () => {
         const values = Object.values(ToneMappingMode);
-        expect(values).toHaveLength(5);
+        expect(values).toHaveLength(3);
         for (const v of values) {
             expect(typeof v).toBe('number');
             expect(Number.isInteger(v)).toBe(true);
