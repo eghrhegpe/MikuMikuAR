@@ -44,4 +44,12 @@ describe('auditMissingTextures', () => {
         const missing = await auditMissingTextures(new Uint8Array([1]), ['a.png']);
         expect(missing).toEqual([]);
     });
+
+    it('abort: 加载取消后丢弃审计，不报缺失（避免对新场景误报）', async () => {
+        const aborted = new AbortController();
+        aborted.abort();
+        const missing = await auditMissingTextures(new Uint8Array([1]), ['a.png'], aborted.signal);
+        expect(missing).toEqual([]);
+        expect(PmxReader.ParseAsync).not.toHaveBeenCalled();
+    });
 });

@@ -2,7 +2,11 @@
 // 覆盖：深子目录文件可被带目录前缀的 PMX 声明命中；裸名/反斜杠/去重边界；
 //      声明路径与磁盘目录名异写时按声明注册别名（tex\ vs Texture\）。
 import { describe, it, expect } from 'vitest';
-import { textureFallbackCandidates, registerDeclaredAliases } from './texture-fallback';
+import {
+    textureFallbackCandidates,
+    registerDeclaredAliases,
+    expandFallbackCandidates,
+} from './texture-fallback';
 
 describe('textureFallbackCandidates', () => {
     it('深子目录文件：生成 首段+裸名 / 去首段 / 裸名 三类候选', () => {
@@ -70,5 +74,53 @@ describe('registerDeclaredAliases（声明路径 ↔ 磁盘目录名异写兜底
     it('空声明 / 空文件列表返回原列表', () => {
         expect(registerDeclaredAliases(files, [])).toEqual(files);
         expect(registerDeclaredAliases([], ['tex/a.png'])).toEqual([]);
+    });
+
+    it('声明目录异写 + 大小写异写组合场景仍按声明注册别名（大小写不敏感 basename）', () => {
+        const out = registerDeclaredAliases(files, ['TEX\\FACE_D.PNG']);
+        const alias = out.find((f) => f.relativePath === 'TEX/FACE_D.PNG');
+        expect(alias).toBeDefined();
+        expect(alias!.data).toBe(files[0].data); // 命中磁盘 Texture/face_d.png
+    });
+});
+
+describe('expandFallbackCandidates（批量候选展开 + 候选 vs 真实路径冲突去重）', () => {
+    const mk = (relativePath: string, n: number) => ({ relativePath, data: new ArrayBuffer(n) });
+
+    it('深子目录文件展开三类候选（共享同一 data 引用）', () => {
+        const src = mk('textures/Normalmap/face.png', 4);
+        const out = expandFallbackCandidates([src]);
+        const paths = out.map((f) => f.relativePath);
+        expect(paths).toEqual(['textures/Normalmap/face.png', 'face.png', 'textures/face.png', 'Normalmap/face.png']);
+        for (const f of out) {
+            expect(f.data).toBe(src.data); // 全部共享引用，无复制
+        }
+    });
+
+    it('候选与真实路径冲突：同名根目录文件存在时不生成重复条目', () => {
+        // 根目录 face.png（真实）+ tex/face.png（真实）并存 → tex/face.png 的裸名候选
+        // 与真实 face.png 冲突，不得注册重复条目（否则 resolver 按 key 覆盖会错配贴图）
+        const root = mk('face.png', 1);
+        const tex = mk('tex/face.png', 2);
+        const out = expandFallbackCandidates([root, tex]);
+        const paths = out.map((f) => f.relativePath);
+        expect(paths.filter((p) => p === 'face.png')).toHaveLength(1); // 仅真实根文件，无候选副本
+        expect(paths).toContain('tex/face.png');
+        expect(out.find((f) => f.relativePath === 'face.png')!.data).toBe(root.data); // 未被 tex 候选覆盖
+    });
+
+    it('多个真实文件共享同一 basename 时，各自的目录前缀候选互不冲突', () => {
+        const a = mk('body/eye.png', 1);
+        const b = mk('face/eye.png', 2);
+        const out = expandFallbackCandidates([a, b]);
+        const paths = out.map((f) => f.relativePath);
+        expect(paths).toContain('body/eye.png');
+        expect(paths).toContain('face/eye.png');
+        // 裸名 eye.png 只出现一次（首个文件的候选），不产生重复
+        expect(paths.filter((p) => p === 'eye.png')).toHaveLength(1);
+    });
+
+    it('空列表返回空数组', () => {
+        expect(expandFallbackCandidates([])).toEqual([]);
     });
 });

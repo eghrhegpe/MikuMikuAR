@@ -56,12 +56,13 @@ export function registerDeclaredAliases(
     if (declaredPaths.length === 0 || files.length === 0) {
         return files as Array<{ relativePath: string; data: ArrayBuffer }>;
     }
-    // basename → 磁盘文件（首个匹配；同 basename 多文件时以第一个为准）
+    // basename（大小写不敏感，与 resolver/audit 的 toUpperCase 归一一致）→ 磁盘文件
+    // （首个匹配；同 basename 多文件时以第一个为准）
     const byBasename = new Map<string, (typeof files)[number]>();
     for (const f of files) {
         const base = f.relativePath.replace(/\\/g, '/').split('/').pop() ?? '';
-        if (base && !byBasename.has(base)) {
-            byBasename.set(base, f);
+        if (base && !byBasename.has(base.toUpperCase())) {
+            byBasename.set(base.toUpperCase(), f);
         }
     }
     const extra: Array<{ relativePath: string; data: ArrayBuffer }> = [];
@@ -72,7 +73,7 @@ export function registerDeclaredAliases(
             continue; // 已有同路径（磁盘真实路径或既有候选）
         }
         const base = norm.split('/').pop() ?? '';
-        const src = byBasename.get(base);
+        const src = byBasename.get(base.toUpperCase());
         if (!src) {
             continue; // 磁盘无同名文件 → 真缺失，不注册
         }
@@ -80,4 +81,32 @@ export function registerDeclaredAliases(
         extra.push({ relativePath: norm, data: src.data }); // 共享 data
     }
     return extra.length > 0 ? [...files, ...extra] : (files as Array<{ relativePath: string; data: ArrayBuffer }>);
+}
+
+/**
+ * 批量展开 fallback 候选条目（共享 data 引用），并对「候选 vs 真实路径」冲突去重。
+ *
+ * [fix:p2-candidate-collision] hasCandidate 预置所有真实路径：候选与磁盘真实文件同名
+ * （如根目录 face.png 与 tex/face.png 并存）时不生成重复条目，避免 referenceFiles
+ * 出现同 relativePath 双条目导致 babylon-mmd resolver 按 key 覆盖时错配贴图。
+ */
+export function expandFallbackCandidates<T extends { readonly relativePath: string; readonly data: ArrayBuffer }>(
+    files: readonly T[]
+): T[] {
+    if (files.length === 0) {
+        return [];
+    }
+    const hasCandidate = new Set(files.map((f) => f.relativePath.replace(/\\/g, '/')));
+    const fallbacks: T[] = [];
+    for (const tf of files) {
+        const rel = tf.relativePath.replace(/\\/g, '/');
+        for (const cand of textureFallbackCandidates(rel)) {
+            if (cand === rel || hasCandidate.has(cand)) {
+                continue;
+            }
+            hasCandidate.add(cand);
+            fallbacks.push({ ...tf, relativePath: cand } as T); // 共享 data 引用
+        }
+    }
+    return [...files, ...fallbacks];
 }
