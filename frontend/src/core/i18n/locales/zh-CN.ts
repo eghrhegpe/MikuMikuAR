@@ -1012,6 +1012,7 @@ export const zhCN: Record<string, string> = {
     'scene.loader.loadingZero': '加载中 0%',
     'scene.loader.loadingProgress': '加载中 {pct}%',
     'scene.loader.stageLoaded': '✓ {name} (场景)',
+    'scene.loader.textureMissing': '部分纹理未加载（{count} 个）',
     'scene.loader.actorLoaded': '✓ {name}',
     'scene.loader.actorLoadedWithVmd': '✓ {name} + {vmd}',
 

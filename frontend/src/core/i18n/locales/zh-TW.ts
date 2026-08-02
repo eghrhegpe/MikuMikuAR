@@ -971,6 +971,7 @@ export const zhTW: Record<string, string> = {
     'scene.loader.loadingZero': '載入 0%',
     'scene.loader.loadingProgress': '載入 {pct}%',
     'scene.loader.stageLoaded': '✓ {name}（舞台）',
+    'scene.loader.textureMissing': '部分紋理未載入（{count} 個）',
     'scene.loader.actorLoaded': '✓ {name}',
     'scene.loader.actorLoadedWithVmd': '✓ {name} + {vmd}',
 
