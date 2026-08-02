@@ -14,7 +14,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { parseArgs } from './_lib/parse-args.mjs';
-import { STATUS_CATEGORIES } from './_lib/adr-status-categories.mjs';
+import { STATUS_CATEGORIES, TECHNICAL_DEBT_KEYWORDS } from './_lib/adr-status-categories.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -26,14 +26,6 @@ const _args = parseArgs(process.argv.slice(2), {
 });
 const VERBOSE = _args.verbose;
 const JSON_OUTPUT = _args.json;
-
-// 技术过时关键词
-const TECHNICAL_DEBT_KEYWORDS = [
-  '已废弃', '已放弃', '已搁置', '搁置', '废弃',
-  '待立项', '草案', '提案', 'Proposed',
-  '规划中', '部分实现', '待推进',
-  '已过时', '已淘汰', '已替换', '已取代'
-];
 
 // 检查文件是否存在
 function fileExists(filePath) {
