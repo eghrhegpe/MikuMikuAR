@@ -5,7 +5,9 @@ name: 统一文件服务层
 category: core
 scope:
   - frontend/src/core/fileservice.ts
-source_files:
+source_files:tests:
+  - frontend/src/__tests__/fileservice.test.ts
+
   - frontend/src/core/fileservice.ts
 adr:
   - ADR-057
@@ -17,7 +19,9 @@ symbols:
 invariants:
   - base64url（无填充）编码文件名，避免 URL 路径段编码歧义
   - 文件服务器端口复用，同一目录不重复启动
-tests:
+
+  - frontend/src/__tests__/fileservice.test.ts
+  - frontend/src/__tests__/fileservice.test.ts
   - frontend/src/__tests__/fileservice.test.ts
   - frontend/src/__tests__/fileservice.test.ts
 use_when:

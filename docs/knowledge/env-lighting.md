@@ -7,7 +7,9 @@ name: 环境灯光包装
 category: env
 scope:
   - frontend/src/scene/env/env-lighting.ts
-source_files:
+source_files:tests:
+  - frontend/src/__tests__/env-lighting.test.ts
+
   - frontend/src/scene/env/env-lighting.ts
 symbols:
   - CategorizedEnvPreset
@@ -24,7 +26,9 @@ symbols:
   - snapshotEnvPresetByCategory
 invariants:
   - 灯光预设参数在合理范围内
-tests:
+
+  - frontend/src/__tests__/env-lighting.test.ts
+  - frontend/src/__tests__/env-lighting.test.ts
   - frontend/src/__tests__/env-lighting.test.ts
   - frontend/src/__tests__/env-lighting.test.ts
 use_when:

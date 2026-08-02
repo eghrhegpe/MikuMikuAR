@@ -5,7 +5,9 @@ name: 地面系统
 category: env
 scope:
   - frontend/src/scene/env/**
-source_files:
+source_files:tests:
+  - frontend/src/__tests__/scene/env-ground.test.ts
+
   - frontend/src/scene/env/env-ground.ts
   - frontend/src/scene/env/env-ground-presets.ts
   - frontend/src/menus/env-ground-levels.ts
@@ -55,7 +57,9 @@ invariants:
   - 程序化纹理 6 种预设（木材/大理石/混凝土/瓷砖/地毯/金属），每类含 albedo + roughness + normal 三通道
   - UV 滚动动画每帧由 tickGround(dt) 驱动
   - 高度查询 getGroundHeightAt 含倾斜平面插值
-tests:
+
+  - frontend/src/__tests__/scene/env-ground.test.ts
+  - frontend/src/__tests__/scene/env-ground.test.ts
   - frontend/src/__tests__/scene/env-ground.test.ts
   - frontend/src/__tests__/scene/env-ground.test.ts
 use_when:

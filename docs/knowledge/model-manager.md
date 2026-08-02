@@ -9,7 +9,15 @@ name: 模型注册表与生命周期管理
 category: scene
 scope:
   - frontend/src/scene/manager/model-manager.ts
-source_files:
+source_files:tests:
+  - frontend/src/__tests__/model-manager.bone-overlay.test.ts
+  - frontend/src/__tests__/model-manager.constructor.test.ts
+  - frontend/src/__tests__/model-manager.focus.test.ts
+  - frontend/src/__tests__/model-manager.physics-categories.test.ts
+  - frontend/src/__tests__/model-manager.physics.test.ts
+  - frontend/src/__tests__/model-manager.transform.test.ts
+  - frontend/src/__tests__/model-manager.vmd-morph.test.ts
+
   - frontend/src/scene/manager/model-manager.ts
 symbols:
   - FormationType
@@ -20,7 +28,21 @@ invariants:
   - 物理分类规则 PHYSICS_CAT_RULES（skirt/chest/hair/accessory 多语言关键词），可被 uiState.physicsCategoryMap 覆盖
   - 不直接 import triggerAutoSave / scene.ts → 经构造函数注入回调，防循环依赖
   - dispose 级联释放所有模型实例、骨骼覆盖 observer、清除 VMD 数据
-tests:
+
+  - frontend/src/__tests__/model-manager.bone-overlay.test.ts
+  - frontend/src/__tests__/model-manager.constructor.test.ts
+  - frontend/src/__tests__/model-manager.focus.test.ts
+  - frontend/src/__tests__/model-manager.physics-categories.test.ts
+  - frontend/src/__tests__/model-manager.physics.test.ts
+  - frontend/src/__tests__/model-manager.transform.test.ts
+  - frontend/src/__tests__/model-manager.vmd-morph.test.ts
+  - frontend/src/__tests__/model-manager.bone-overlay.test.ts
+  - frontend/src/__tests__/model-manager.constructor.test.ts
+  - frontend/src/__tests__/model-manager.focus.test.ts
+  - frontend/src/__tests__/model-manager.physics-categories.test.ts
+  - frontend/src/__tests__/model-manager.physics.test.ts
+  - frontend/src/__tests__/model-manager.transform.test.ts
+  - frontend/src/__tests__/model-manager.vmd-morph.test.ts
   - frontend/src/__tests__/model-manager.bone-overlay.test.ts
   - frontend/src/__tests__/model-manager.constructor.test.ts
   - frontend/src/__tests__/model-manager.focus.test.ts

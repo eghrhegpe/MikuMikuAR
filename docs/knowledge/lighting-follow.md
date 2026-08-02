@@ -5,7 +5,9 @@ name: 个人灯光跟随
 category: rendering
 scope:
   - frontend/src/scene/render/**
-source_files:
+source_files:tests:
+  - frontend/src/__tests__/scene/lighting-follow.test.ts
+
   - frontend/src/scene/render/lighting-follow.ts
 adr:
   - ADR-168
@@ -29,7 +31,9 @@ invariants:
   - disposeAllPersonalLights 释放所有个人灯光及其光锥
   - tickStageLightFollow 每帧更新舞台灯光跟随（舞台目标骨骼跟随）
   - 个人灯光附加时自动创建光锥（_ensurePersonalCone）
-tests:
+
+  - frontend/src/__tests__/scene/lighting-follow.test.ts
+  - frontend/src/__tests__/scene/lighting-follow.test.ts
   - frontend/src/__tests__/scene/lighting-follow.test.ts
   - frontend/src/__tests__/scene/lighting-follow.test.ts
 use_when:

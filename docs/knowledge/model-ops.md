@@ -11,7 +11,13 @@ name: 模型生命周期操作
 category: scene
 scope:
   - frontend/src/scene/manager/model-ops.ts
-source_files:
+source_files:tests:
+  - frontend/src/__tests__/model-ops.focus.test.ts
+  - frontend/src/__tests__/model-ops.morph.test.ts
+  - frontend/src/__tests__/model-ops.physics.test.ts
+  - frontend/src/__tests__/model-ops.remove.test.ts
+  - frontend/src/__tests__/model-ops.vpd.test.ts
+
   - frontend/src/scene/manager/model-ops.ts
 symbols:
   - ReplaceSnapshot
@@ -59,7 +65,17 @@ invariants:
   - 模型清空时强制复位播放态，避免「无模型仍显示播放条」的幽灵 UI
   - applyVPDPose 解析 VPDBoneData / VPDMorphData 后写回模型姿态
   - captureInheritedState / applyInheritedState 用于场景打包时继承模型状态
-tests:
+
+  - frontend/src/__tests__/model-ops.focus.test.ts
+  - frontend/src/__tests__/model-ops.morph.test.ts
+  - frontend/src/__tests__/model-ops.physics.test.ts
+  - frontend/src/__tests__/model-ops.remove.test.ts
+  - frontend/src/__tests__/model-ops.vpd.test.ts
+  - frontend/src/__tests__/model-ops.focus.test.ts
+  - frontend/src/__tests__/model-ops.morph.test.ts
+  - frontend/src/__tests__/model-ops.physics.test.ts
+  - frontend/src/__tests__/model-ops.remove.test.ts
+  - frontend/src/__tests__/model-ops.vpd.test.ts
   - frontend/src/__tests__/model-ops.focus.test.ts
   - frontend/src/__tests__/model-ops.morph.test.ts
   - frontend/src/__tests__/model-ops.physics.test.ts

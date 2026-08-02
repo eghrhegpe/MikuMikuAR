@@ -10,7 +10,9 @@ scope:
   - frontend/src/scene/manager/material-sss.ts
   - frontend/src/scene/manager/material-proxy-resolver.ts
   - frontend/src/scene/manager/pbr-builder-init.ts
-source_files:
+source_files:tests:
+  - frontend/src/__tests__/material-sss.state.test.ts
+
   - frontend/src/scene/manager/material.ts
   - frontend/src/scene/manager/material-sss.ts
   - frontend/src/scene/manager/material-proxy-resolver.ts
@@ -69,7 +71,9 @@ invariants:
   - 资源卸载必须 disposeModelMaterialState(id) 释放按 id 的材质状态映射，避免模型材质泄漏
   - 写入触发 triggerAutoSave
   - 材质分类参数按网格/材质名归类批量调参，由 MaterialStateManager 统一管理
-tests:
+
+  - frontend/src/__tests__/material-sss.state.test.ts
+  - frontend/src/__tests__/material-sss.state.test.ts
   - frontend/src/__tests__/material-sss.state.test.ts
   - frontend/src/__tests__/material-sss.state.test.ts
 use_when:

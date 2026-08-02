@@ -15,7 +15,9 @@ name: 应用启动引导
 category: core
 scope:
   - frontend/src/core/**
-source_files:
+source_files:tests:
+  - frontend/src/__tests__/sw-register.test.ts
+
   - frontend/src/core/init.ts
   - frontend/src/core/main.ts
   - frontend/src/core/sw-register.ts
@@ -27,7 +29,9 @@ invariants:
   - init 内部按序执行：配置加载 → i18n → 图标 → 场景创建 → 环境恢复 → UI 恢复 → 快捷键 → 渲染循环
   - restoreEnvState / restoreUIState 从持久化配置恢复状态，异常时降级不阻塞启动
   - Service Worker 只在浏览器模式下注册（sw-register.ts）
-tests:
+
+  - frontend/src/__tests__/sw-register.test.ts
+  - frontend/src/__tests__/sw-register.test.ts
   - frontend/src/__tests__/sw-register.test.ts
   - frontend/src/__tests__/sw-register.test.ts
 use_when:

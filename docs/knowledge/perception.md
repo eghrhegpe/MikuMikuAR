@@ -5,7 +5,9 @@ name: 感知层主控
 category: motion
 scope:
   - frontend/src/scene/motion/perception.ts
-source_files:
+source_files:tests:
+  - frontend/src/__tests__/perception.perf.test.ts
+
   - frontend/src/scene/motion/perception.ts
 adr:
   - ADR-071
@@ -64,7 +66,9 @@ symbols:
 invariants:
   - 感知层统一入口（ADR-071）
   - 活跃上下文数据存储在 Map<modelId, Context> + pin API
-tests:
+
+  - frontend/src/__tests__/perception.perf.test.ts
+  - frontend/src/__tests__/perception.perf.test.ts
   - frontend/src/__tests__/perception.perf.test.ts
   - frontend/src/__tests__/perception.perf.test.ts
 use_when:
