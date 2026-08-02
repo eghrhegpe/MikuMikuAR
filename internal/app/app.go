@@ -367,6 +367,7 @@ type UIState struct {
 	BpmQuantizeEnabled     bool                         `json:"bpmQuantizeEnabled,omitempty"`     // BPM 量化开关
 	AutoLoadCompanionAudio bool                         `json:"autoLoadCompanionAudio,omitempty"` // 自动加载伴音
 	SfxEnabled             bool                         `json:"sfxEnabled,omitempty"`             // SFX 开关
+	Ktx2Transcode          bool                         `json:"ktx2Transcode,omitempty"`          // KTX2 转码开关（ADR-189 Phase 3，默认关）
 	SfxVolume              float64                      `json:"sfxVolume,omitempty"`              // SFX 音量 0-1
 	FootstepEnabled        bool                         `json:"footstepEnabled,omitempty"`        // 脚步声开关
 	FootstepVolume         float64                      `json:"footstepVolume,omitempty"`         // 脚步声音量 0-1

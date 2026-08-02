@@ -36,7 +36,7 @@ type ExtractResult struct {
 	Cached   bool   `json:"cached"`    // Whether cache was hit (no re-extract)
 }
 
-const extractCacheVersion = 7
+const extractCacheVersion = 8
 
 // maxZipEntries limits the number of files extracted from a single zip archive
 // to prevent ZIP bombs with millions of tiny entries from exhausting disk inodes
@@ -185,21 +185,25 @@ func (a *App) extractZipUnsafe(zipPath, innerPath string) (*ExtractResult, error
 		}
 	}
 
-	// [ADR-189] KTX2 transcode: after extraction, transcode PNG/JPG/BMP/TGA
-	// textures in-place to KTX2.  Only runs if toktx binary is found;
-	// otherwise proceeds without transcoding (non-blocking).
-	// Cache version bumped to 7 to force re-extraction + re-transcode on
-	// existing caches.
-	if _, findErr := findToktx(); findErr == nil {
-		transcoded, tErrs := transcodeTexturesInDir(destAbs)
-		a.safeLogInfo("ExtractZip: KTX2 transcode done, %d textures", transcoded)
-		if len(tErrs) > 0 {
-			for _, e := range tErrs {
-				a.safeLogWarning("ExtractZip: KTX2 transcode error: %v", e)
+	// [ADR-189] KTX2 transcode is gated behind the KTX2Transcode setting
+	// (default off, per ADR-189 Phase 3 "suspended"). When enabled AND the
+	// toktx binary is present, transcode PNG/JPG/BMP/TGA textures in-place to
+	// KTX2 after extraction. Otherwise proceed without transcoding.
+	// Cache version bumped to 8 to force re-extraction on existing caches.
+	if cfg, cerr := a.GetConfig(); cerr == nil && cfg != nil && cfg.UIState.Ktx2Transcode {
+		if _, findErr := findToktx(); findErr == nil {
+			transcoded, tErrs := transcodeTexturesInDir(destAbs)
+			a.safeLogInfo("ExtractZip: KTX2 transcode done, %d textures", transcoded)
+			if len(tErrs) > 0 {
+				for _, e := range tErrs {
+					a.safeLogWarning("ExtractZip: KTX2 transcode error: %v", e)
+				}
 			}
+		} else {
+			a.safeLogWarning("ExtractZip: KTX2 transcode enabled but toktx not found, skipping")
 		}
 	} else {
-		a.safeLogWarning("ExtractZip: toktx not found, skipping KTX2 transcode")
+		a.safeLogInfo("ExtractZip: KTX2 transcode disabled (settings.ktx2Transcode=false), skipping")
 	}
 
 	// Write manifest
