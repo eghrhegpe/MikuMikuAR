@@ -57,41 +57,42 @@ export function getList(fm, key) {
   return out;
 }
 
-/** 解析 source_files 字段（兼容行内数组 [a, b] 与块列表）。 */
+/** 解析 source_files 字段（兼容行内数组 [a, b] 与块列表）。
+ *
+ * 单遍解析：行内数组匹配后直接返回，避免两遍解析累加。
+ */
 export function parseSourceFiles(fm) {
   if (!fm) return [];
   const lines = fm.split(/\r?\n/);
   const out = [];
-  let inBlock = false;
+
+  // 逐行扫描
+  let seenKey = false;
   for (const line of lines) {
     const head = line.match(/^source_files\s*:\s*(.*)$/);
-    if (!head) continue;
-    inBlock = true;
-    // 行内数组: source_files: [a.ts, b.ts]
-    const inline = head[1].match(/\[([^\]]*)\]/);
-    if (inline) {
-      inline[1].split(',').forEach((s) => {
-        const v = s.trim().replace(/^['"]|['"]$/g, '');
-        if (v) out.push(v);
-      });
-      inBlock = false;
-      continue;
+    if (head) {
+      seenKey = true;
+      // 行内数组: source_files: [a.ts, b.ts]
+      const inline = head[1].match(/\[([^\]]*)\]/);
+      if (inline) {
+        inline[1].split(',').forEach((s) => {
+          const v = s.trim().replace(/^['"]|['"]$/g, '');
+          if (v) out.push(v);
+        });
+        return out;
+      }
+      continue; // source_files: 行本身，进入块列表模式
     }
-  }
-  // 块列表
-  let inBlock2 = false;
-  for (const line of lines) {
-    if (/^source_files\s*:\s*$/.test(line) || /^source_files\s*:\s*\[/.test(line)) {
-      inBlock2 = true;
-      continue;
-    }
-    if (inBlock2) {
+
+    // 遇到另一个顶格 key → 块结束
+    if (seenKey && /^\S/.test(line)) break;
+
+    // 块列表项: - frontend/src/xxx.ts
+    if (seenKey) {
       const item = line.match(/^\s*-\s*(.+?)\s*$/);
       if (item) {
         const v = item[1].replace(/^['"]|['"]$/g, '').trim();
         if (v) out.push(v);
-      } else if (/^\S/.test(line)) {
-        inBlock2 = false;
       }
     }
   }

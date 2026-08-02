@@ -89,3 +89,27 @@ test('parseArgs -- is treated as positional arg', () => {
   assert.equal(args.strict, false);
   assert.deepEqual(args._, ['--', 'foo', '--strict']);
 });
+
+test('parseArgs -- as sole argument', () => {
+  const args = parseArgs(['--'], {
+    bools: ['strict'], strings: [], defaults: {},
+  });
+  assert.deepEqual(args._, ['--']);
+  assert.equal(args.strict, false);
+});
+
+test('parseArgs string flag with string value that looks like flag', () => {
+  const args = parseArgs(['--scope', 'core'], {
+    bools: [], strings: ['scope'], defaults: { scope: null },
+  });
+  assert.equal(args.scope, 'core');
+});
+
+test('parseArgs multiple string flags', () => {
+  const args = parseArgs(['--scope', 'core', '--format', 'json'], {
+    bools: [], strings: ['scope', 'format'], defaults: { scope: null, format: null },
+  });
+  assert.equal(args.scope, 'core');
+  assert.equal(args.format, 'json');
+  assert.deepEqual(args._, []);
+});

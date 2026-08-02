@@ -242,3 +242,114 @@ test('getModule: edge cases', () => {
   assert.equal(getModule('utils.ts'), 'core');
   assert.equal(getModule('menus/index.ts'), 'menus');
 });
+
+// ── 补充边缘 ──
+
+test('Module graph: 3-node cycle A→B→C→A', () => {
+  const { root } = createFixtureDir();
+  fs.mkdirSync(path.join(root, 'a'));
+  fs.mkdirSync(path.join(root, 'b'));
+  fs.mkdirSync(path.join(root, 'c'));
+  fs.writeFileSync(path.join(root, 'a', 'index.ts'), "import '../b/index.js';\nexport const a = 1;\n", 'utf8');
+  fs.writeFileSync(path.join(root, 'b', 'index.ts'), "import '../c/index.js';\nexport const b = 1;\n", 'utf8');
+  fs.writeFileSync(path.join(root, 'c', 'index.ts'), "import '../a/index.js';\nexport const c = 1;\n", 'utf8');
+  try {
+    const entries = walkSourceFiles(root);
+    const g = new Map(entries.map(({ rel }) => [rel, new Set()]));
+    for (const { file, rel } of entries) {
+      for (const imp of parseSourceImports(file, root)) {
+        g.get(rel)?.add(imp.path);
+      }
+    }
+    const moduleGraph = new Map();
+    for (const [file, deps] of g) {
+      const parts = file.split('/');
+      const mod = parts.length > 0 ? parts[0] : 'root';
+      if (!moduleGraph.has(mod)) moduleGraph.set(mod, new Set());
+      for (const d of deps) {
+        const dParts = d.split('/');
+        const dMod = dParts.length > 0 ? dParts[0] : 'root';
+        if (dMod !== mod) moduleGraph.get(mod).add(dMod);
+      }
+    }
+
+    const cycles = [];
+    const visited = new Set();
+    const inStack = new Set();
+    const pathArr = [];
+    function dfs(node) {
+      if (inStack.has(node)) {
+        const start = pathArr.indexOf(node);
+        if (start !== -1) cycles.push([...pathArr.slice(start), node]);
+        return;
+      }
+      if (visited.has(node)) return;
+      visited.add(node);
+      inStack.add(node);
+      pathArr.push(node);
+      for (const dep of moduleGraph.get(node) || new Set()) dfs(dep);
+      pathArr.pop();
+      inStack.delete(node);
+    }
+    for (const n of moduleGraph.keys()) dfs(n);
+    assert.ok(cycles.length >= 1);
+    // Cycle should be a → b → c → a
+    const first = cycles[0];
+    assert.ok(first[0] === 'a' || first[0] === 'b' || first[0] === 'c');
+    assert.equal(first.length, 4); // a → b → c → a
+  } finally { cleanup(root); }
+});
+
+test('Module graph: isolated module (zero deps) → no edges', () => {
+  const { root } = createFixtureDir();
+  fs.mkdirSync(path.join(root, 'leaf'));
+  fs.writeFileSync(path.join(root, 'leaf', 'solo.ts'), 'export const x = 1;\n', 'utf8');
+  try {
+    const entries = walkSourceFiles(root);
+    const g = new Map(entries.map(({ rel }) => [rel, new Set()]));
+    for (const { file, rel } of entries) {
+      for (const imp of parseSourceImports(file, root)) {
+        g.get(rel)?.add(imp.path);
+      }
+    }
+    const moduleGraph = new Map();
+    for (const [file, deps] of g) {
+      const parts = file.split('/');
+      const mod = parts.length > 0 ? parts[0] : 'root';
+      if (!moduleGraph.has(mod)) moduleGraph.set(mod, new Set());
+      for (const d of deps) {
+        const dParts = d.split('/');
+        const dMod = dParts.length > 0 ? dParts[0] : 'root';
+        if (dMod !== mod) moduleGraph.get(mod).add(dMod);
+      }
+    }
+    assert.ok(moduleGraph.has('leaf'));
+    assert.equal(moduleGraph.get('leaf').size, 0);
+  } finally { cleanup(root); }
+});
+
+test('parseSourceImports: import with comment before', () => {
+  const { root } = createFixtureDir();
+  const file = path.join(root, 'commented.ts');
+  fs.writeFileSync(file, '// this is a comment\nimport "./real.js";\n', 'utf8');
+  fs.writeFileSync(path.join(root, 'real.ts'), 'export const x = 1;\n', 'utf8');
+  try {
+    const imports = parseSourceImports(file, root);
+    assert.equal(imports.length, 1);
+    assert.equal(imports[0].path, 'real.ts');
+  } finally { cleanup(root); }
+});
+
+test('parseSourceImports: import type before actual import', () => {
+  const { root } = createFixtureDir();
+  const file = path.join(root, 'mixed-types.ts');
+  fs.writeFileSync(file, 'import type "./types.js";\nimport "./real.js";\n', 'utf8');
+  fs.writeFileSync(path.join(root, 'types.ts'), 'export type T = string;\n', 'utf8');
+  fs.writeFileSync(path.join(root, 'real.ts'), 'export const x = 1;\n', 'utf8');
+  try {
+    const imports = parseSourceImports(file, root);
+    // type-only import should not appear in runtime graph
+    assert.equal(imports.length, 1);
+    assert.equal(imports[0].path, 'real.ts');
+  } finally { cleanup(root); }
+});

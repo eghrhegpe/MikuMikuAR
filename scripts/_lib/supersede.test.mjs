@@ -308,6 +308,52 @@ test('RE_TABLE_VERB: not matched — 无本ADR', () => {
 
 // ── Combined scenario: supersede relationship detection ──
 
+// ── RE_CLAIM_A 补充：缺失的边缘 ──
+
+test('RE_CLAIM_A: matched — 废除', () => {
+  RE_CLAIM_A.lastIndex = 0;
+  const m = RE_CLAIM_A.exec('废除 ADR-088');
+  assert.ok(m);
+  assert.equal(m[1], '088');
+});
+
+test('RE_CLAIM_A: matched — multiple targets in one line', () => {
+  const line = '取代 ADR-001 替代了 ADR-012';
+  RE_CLAIM_A.lastIndex = 0;
+  const matches = [];
+  let m;
+  while ((m = RE_CLAIM_A.exec(line))) matches.push(m[1]);
+  assert.deepEqual(matches, ['001', '012']);
+});
+
+test('RE_CLAIM_A: matched — link form [ADR-NNN]', () => {
+  RE_CLAIM_A.lastIndex = 0;
+  const m = RE_CLAIM_A.exec('替代了 [ADR-019](adr-019-foo.md)');
+  assert.ok(m);
+  assert.equal(m[1], '019');
+});
+
+// ── RE_CLAIM_B 补充：中文括号变体 ──
+
+test('RE_CLAIM_B: matched — 中文右括号', () => {
+  RE_CLAIM_B.lastIndex = 0;
+  const m = RE_CLAIM_B.exec('ADR-019）已废弃');
+  assert.ok(m);
+  assert.equal(m[1], '019');
+});
+
+// ── RE_SELF_DEPRECATED 补充：裸词 ──
+
+test('RE_SELF_DEPRECATED: matched — 裸搁置（不带"已"）', () => {
+  assert.ok(RE_SELF_DEPRECATED.test('搁置'));
+});
+
+test('RE_SELF_DEPRECATED: matched — 裸废弃（不带"已"）', () => {
+  assert.ok(RE_SELF_DEPRECATED.test('废弃'));
+});
+
+// ── 综合场景 ──
+
 test('Scenario: full supersede chain detected', () => {
   const oldStatus = '被 [ADR-113](adr-113-test.md) 取代';
   assert.ok(RE_SUPERSEDED_BY.test(oldStatus));
