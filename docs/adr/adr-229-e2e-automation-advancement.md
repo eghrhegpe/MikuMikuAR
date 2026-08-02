@@ -304,3 +304,23 @@ schema-snapshot.json                                ← 快照携带 DOM 契约�
 4. **漂移兜底**：渲染层若改 role/class 而未同步 `dom-contract.ts`，CI 的「快照重生成 + `git diff --exit-code`」门禁（§2.4）会直接红——与导航门禁同一条防线。
 
 **不采纳备选**：e2e 侧维护独立契约文件 + grep 源码比对（元测试抓漂移）——可行但契约仍有两份副本，不如「渲染层引用 + 快照携带」的单源方案干净；完全自动推导选择器（扫描 DOM 反推）——脆弱且依赖运行时环境。
+
+## 10. @dom 无 GPU 启动（2026-08-02，方案 A 治本）
+
+**问题**：`@dom` 在 headless 无 GPU 的 CI（ubuntu-latest）必然崩——`scene.ts` 启动即 `new Engine(dom.canvas, true, …)`（Babylon WebGL 引擎），WebGL2 上下文创建失败 → GPU 进程 `ContextResult::kTransientFailure`（CreateCommandBuffer 失败）→ 整个浏览器/页面关闭（"Target page, context or browser has been closed"）。4 轮浏览器参数（`--use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader` 等）+ `DEBUG=pw:browser` 均无效，`--use-gl=swiftshader` 被 Chromium 拒绝（仅允许 `gl=egl-angle`）。属环境硬伤，非测试 bug；`@dom` 此前连红 20+ 次。
+
+**决策**：app 检测到 headless e2e 模式时改用 Babylon `NullEngine`（项目已在 `vmd-evaluator.ts:276` 运行时使用，类型兼容 `Engine`），**不创建 WebGL 上下文**，使 app 在 headless 无 GPU 的 CI 也能启动。DOM overlay 是 HTML/CSS，不依赖 canvas 像素，照常渲染；纯 DOM 断言（`__state`/面板导航/交互）即可跑。
+
+**信号机制**：URL 参数 `?e2e=1`（`vitePage` fixture 导航时注入 `http://localhost:5173/?e2e=1`）。`scene.ts` 内 `_isHeadless = !_isTestEnv && location.search 含 'e2e'`（vitest MODE==='test' 永不触发；`@webgl` 走真实 WebView2 URL 无此参数）。
+
+**落地（`frontend/src/scene/scene.ts` 中央文件，已按铁律在 `.workbuddy/memory/2026-08-02.md` 认领）**：
+- `createEngine()` 工厂：headless → `new NullEngine({ renderingCanvas: dom.canvas, renderWidth, renderHeight })`；否则原 WebGL Engine。替换模块级与 HMR 重入两处。
+- Sdef 守卫加 `!_isHeadless`（NullEngine 不需要 SDEF 蒙皮注入）。
+- `_initMmdRuntime`：`useJsRuntime = getMmdRuntimeType()==='js' || _isHeadless` → 走既有 JS 运行时 `new MmdRuntime(scene, null)`（纯 CPU，无 WASM/物理/GPU），**保留** `RegisterMmdModelLoaders()` 等注册调用。
+- `dev-hooks.ts`：`__capture` headless 返回 `''`（NullEngine 无 backbuffer）；`isLightingReady`/`isRenderReady` getter headless 返回 false（避免唤醒 schema-driven 的 `light.*`/`render.*` 域断言）。
+
+**已知边界**：`__scene.fps`/`meshCount` 在 NullEngine 下无意义（仅 `@webgl` 数值断言用）；GPUParticleSystem（粒子）NullEngine 不支持 transform feedback，@dom spec 勿开启；DefaultRenderingPipeline（HDR）为最高不确定性，已 plan 兜底（headless 下跳过后处理管线）。
+
+**配套**：此前已把 `@dom` step 标 `continue-on-error: true`（非阻塞止血），首跑验证通过率后议是否翻回 ADR-060 原定阻塞门禁。后续独立 commit 可移除 `vitePage` 的 swiftshader 启动参数（NullEngine 不碰 GPU，已无意义）。
+
+**对齐**：本决策是 ADR-060「@dom 为 DOM 门禁、@webgl 为 3D 集成门禁」分层的可执行化——@dom 在无 GPU 下靠 NullEngine 跑 DOM 回归，@webgl 在真实 WebView2 跑视觉/3D。视觉断言仅 @webgl 跑（§2.3 既定）。
