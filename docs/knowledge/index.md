@@ -30,12 +30,12 @@
 | [环境重力控制](./env-gravity.md) | - ADR-148 |
 | [地面材质单一事实源（GroundMaterialSpec）](./env-ground-spec.md) | - ADR-226 |
 | [地面系统](./env-ground.md) | - ADR-114 |
-| [环境系统实现核心（barrel + observer + fog）](./env-impl.md) | — |
+| [环境系统实现核心（barrel + observer + fog）](./env-impl.md) | - ADR-138 |
 | [环境灯光包装](./env-lighting.md) | - ADR-132 |
 | [环境状态防抖持久化](./env-persist.md) | - ADR-148 |
 | [时间流转与太阳角系统](./env-time-of-day.md) | - ADR-148 |
 | [水面系统](./env-water.md) | - ADR-062 |
-| [环境系统门面（Facade）](./env.md) | — |
+| [环境系统门面（Facade）](./env.md) | - ADR-128 |
 
 > 叶子模块 / 工具函数（12 张）：[env-caustics](./env-caustics.md) · [env-clouds](./env-clouds.md) · [env-context](./env-context.md) · [env-particles](./env-particles.md) · [env-reflection](./env-reflection.md) · [env-sky](./env-sky.md) · [env-terrain](./env-terrain.md) · [env-texture](./env-texture.md) · [env-type-helpers](./env-type-helpers.md) · [env-underwater-fog](./env-underwater-fog.md) · [env-wetness](./env-wetness.md) · [planar-reflection](./planar-reflection.md)
 
@@ -57,7 +57,7 @@
 | [场景核心编排器（纯组装器）](./scene.md) | - ADR-099 |
 | [变换适配器注册表（双模态去重）](./transform-adapter.md) | - ADR-126 |
 | [拖拽变换模式开关](./transform-mode.md) | — |
-| [变换选中物状态源](./transform-selection.md) | — |
+| [变换选中物状态源](./transform-selection.md) | - ADR-171 |
 
 > 叶子模块 / 工具函数（15 张）：[camera-angle](./camera-angle.md) · [camera-auto](./camera-auto.md) · [camera-behaviors](./camera-behaviors.md) · [camera-bone-lock](./camera-bone-lock.md) · [camera-factory](./camera-factory.md) · [camera-vmd](./camera-vmd.md) · [composition-guide](./composition-guide.md) · [model-id](./model-id.md) · [scene-bundle](./scene-bundle.md) · [scene-migrate](./scene-migrate.md) · [texture-lru](./texture-lru.md) · [thumbnail-capture](./thumbnail-capture.md) · [thumbnail-key](./thumbnail-key.md) · [transform-pick](./transform-pick.md) · [watermark](./watermark.md)
 
@@ -122,7 +122,7 @@
 | [资源库操作](./library-actions.md) | - ADR-131 |
 | [资源库核心](./library-core.md) | - ADR-131 |
 | [资源库初始化](./library-setup.md) | - ADR-017 |
-| [资源库入口与编排](./library.md) | — |
+| [资源库入口与编排](./library.md) | - ADR-045 |
 | [菜单 Overlay 与 Wrapper 管理](./menu-overlay.md) | - ADR-191 |
 | [声明式菜单 Schema](./menu-schema.md) | - ADR-093 |
 | [菜单栈共享指针（stackRegistry）](./menu-stack-registry.md) | - ADR-191 |
@@ -188,7 +188,7 @@
 | [ADR-035](../adr/adr-035-settings-gap-analysis.md) | 设置面板功能缺口评估 | [相机 VMD 动画](./camera-vmd.md) · [相机模式管理系统（MmdCamera）](./camera.md) · [反 Y 轴指针输入](./invertablePointersInput.md) |
 | [ADR-036](../adr/adr-036-shortcut-registry.md) | ShortcutRegistry — 可配置快捷键系统 | [快捷键注册表](./shortcut-registry.md) |
 | [ADR-037](../adr/adr-037-session-ui-improvements.md) | P2 功能批量交付 — Lifelike / Formation / Auto Camera / Scene Bundle | [场景打包/解包](./scene-bundle.md) |
-| [ADR-045](../adr/adr-045-unified-loading.md) | 统一加载与资源管理（精简版） | [统一资源加载队列](./load-manager.md) |
+| [ADR-045](../adr/adr-045-unified-loading.md) | 统一加载与资源管理（精简版） | [资源库入口与编排](./library.md) · [统一资源加载队列](./load-manager.md) |
 | [ADR-048](../adr/adr-048-transform-unification.md) | 变换系统统一 — 模型/灯光/道具移动一致性 | [3D 拖拽 Gizmo 统一抽象](./transform-gizmo.md) |
 | [ADR-049](../adr/adr-049-orbit-control-extension.md) | 轨道控制统一 — 球面坐标扩展到模型/道具 | [模型注册表与生命周期管理](./model-manager.md) · [模型生命周期操作](./model-ops.md) · [轨道相机键盘输入状态叶子](./orbit-state.md) · [场景序列化与自动保存](./scene-serialize.md) |
 | [ADR-051](../adr/adr-051-vmd-layers-bonefilter.md) | VMD 图层系统与骨骼级过滤 | [多 VMD 叠加系统](./vmd-layers.md) · [VMD 动作加载器](./vmd-loader.md) |
@@ -215,7 +215,7 @@
 | [ADR-100](../adr/adr-100-camera-control-behavior-dual-axis.md) | 相机系统「控制方案 × 运动行为」双轴拆分 | [节拍驱动自动运镜（beatcut）](./camera-auto.md) · [相机状态管理 + 运行时上下文](./camera-state.md) · [相机模式管理系统（MmdCamera）](./camera.md) |
 | [ADR-102](../adr/adr-102-main-ts-split.md) | main.ts 拆分（init / events / render-loop / dev-hooks） | [开发环境 E2E 钩子](./dev-hooks.md) · [事件处理与导航系统](./events.md) · [应用启动引导](./init.md) · [渲染循环与 FPS 时钟](./render-loop.md) · [应用快捷键定义](./shortcut-app.md) |
 | [ADR-104](../adr/adr-104-physics-outfit-design-debt-deferral.md) | 物理/换装/音频子系统设计债暂缓登记 | [风力物理注入（WASM Bullet）](./wind-physics.md) |
-| [ADR-106](../adr/adr-106-timing-audit-and-async-lifecycle.md) | 时序审核与异步生命周期规范 | [轻量响应式刷新系统](./reactivity.md) |
+| [ADR-106](../adr/adr-106-timing-audit-and-async-lifecycle.md) | 时序审核与异步生命周期规范 | [环境系统实现核心（barrel + observer + fog）](./env-impl.md) · [轻量响应式刷新系统](./reactivity.md) |
 | [ADR-108](../adr/adr-108-animation-retargeter.md) | AnimationRetargeter + HumanoidMmd 接入 — 扩展动作来源 | [外部动作重定向桥](./animation-retargeter.md) · [场景序列化与自动保存](./scene-serialize.md) |
 | [ADR-111](../adr/adr-111-scene-env-menu-restructuring.md) | 场景/环境菜单按用户直觉重新划分 | [环境菜单层级系统](./env-menu-levels.md) |
 | [ADR-113](../adr/adr-113-horizon-volumetric-clouds.md) | 体积云延展地平线与画质/性能升级 | [云层系统](./env-clouds.md) |
@@ -229,14 +229,14 @@
 | [ADR-124](../adr/adr-124-filesystem-architecture.md) | 文件服务架构审计 —— 从 HTTP 中转到 ArrayBuffer 直传 | [PMX 模型加载与缩略图捕获](./model-loader.md) |
 | [ADR-125](../adr/adr-125-motion-undo-redo.md) | 动作覆盖撤销/重做 — 模块层 `setParam` 历史栈 | [动作历史管理](./motion-history.md) |
 | [ADR-126](../adr/adr-126-transform-adapter.md) | 变换适配器统一（TransformAdapter Registry）— 跨 kind 拖拽/数值双模态去重 | [骨骼覆盖核心 API](./bone-override.md) · [手部独立控制模块（左手/右手）](./hand-symmetry.md) · [镜面道具](./mirror-debug.md) · [模型注册表与生命周期管理](./model-manager.md) · [动作模块基类](./motion-module-base.md) · [动作模块类型定义](./motion-module-types.md) · [动作覆盖 UI 层级（模块化覆盖 + 高级骨骼覆盖）](./motion-override-levels.md) · [场景序列化与自动保存](./scene-serialize.md) · [变换适配器注册表（双模态去重）](./transform-adapter.md) · [3D 拖拽 Gizmo 统一抽象](./transform-gizmo.md) |
-| [ADR-128](../adr/adr-128-mirror-prop-rename.md) | 镜面道具化重命名（debugMirror → mirror） | [镜面道具](./mirror-debug.md) |
+| [ADR-128](../adr/adr-128-mirror-prop-rename.md) | 镜面道具化重命名（debugMirror → mirror） | [环境系统门面（Facade）](./env.md) · [镜面道具](./mirror-debug.md) |
 | [ADR-129](../adr/adr-129-scene-level-motion-ui.md) | 动作菜单场景级重设计（Scene-level Motion UI） | [手部独立控制模块（左手/右手）](./hand-symmetry.md) · [滑出式菜单引擎（SlideMenu）](./menu.md) · [动作绑定 UI](./motion-binding-ui.md) · [脚部独立控制模块（左脚/右脚）](./motion-modules-feet.md) · [动作模块注册表](./motion-modules-registry.md) |
 | [ADR-130](../adr/adr-130-scene-ui-roadmap.md) | 场景 UI 整体设计与前后端发展方向路线图 | [性能降级 — 环境桥接](./performance-env-bridge.md) · [预设元数据归一化](./preset-meta.md) · [统一质量档位解析器](./quality-profile.md) |
 | [ADR-131](../adr/adr-131-resource-browse-selection-outcome.md) | 资源浏览选中结果统一契约（BrowseOutcome） | [资源库操作](./library-actions.md) · [资源库核心](./library-core.md) |
 | [ADR-132](../adr/adr-132-env-brightness-unification.md) | 环境亮度统一标量（EnvBrightness Unification） | [环境灯光包装](./env-lighting.md) · [EnvState 单一源 Schema](./env-state-schema.md) · [场景光照与阴影（barrel）](./lighting.md) |
 | [ADR-135](../adr/adr-135-library-session-store.md) | LibrarySessionStore — 资源库状态收敛基座 | [资源库操作](./library-actions.md) · [资源库核心](./library-core.md) · [资源库会话状态单例](./library-session-store.md) · [统一资源加载队列](./load-manager.md) |
 | [ADR-137](../adr/adr-137-envstate-single-source-schema.md) | EnvState 单一源 Schema | [EnvState 单一源 Schema](./env-state-schema.md) · [全局状态与场景运行时 Store](./state.md) |
-| [ADR-138](../adr/adr-138-env-dispatcher-decouple.md) | env-dispatcher 破循环依赖 | [环境状态写入入口（setEnvState + 中间件链）](./env-bridge.md) · [环境变更分发回调（破循环依赖）](./env-dispatcher.md) |
+| [ADR-138](../adr/adr-138-env-dispatcher-decouple.md) | env-dispatcher 破循环依赖 | [环境状态写入入口（setEnvState + 中间件链）](./env-bridge.md) · [环境变更分发回调（破循环依赖）](./env-dispatcher.md) · [环境系统实现核心（barrel + observer + fog）](./env-impl.md) |
 | [ADR-141](../adr/adr-141-state-split.md) | state.ts 拆分 — 状态基座重构 | [配置聚合层](./config-barrel.md) · [轻量日志工具（无依赖）](./logger.md) · [全局状态与场景运行时 Store](./state.md) · [UI 持久化状态](./ui-state.md) |
 | [ADR-143](../adr/adr-143-unification-remaining.md) | 可统一代码收敛（P1 之外剩余项） | [资源库操作](./library-actions.md) · [UI 与场景常量](./ui-constants.md) |
 | [ADR-145](../adr/adr-145-motion-presets.md) | 多模块协同预设 — 一键启用组合姿态 | [共享类型定义](./core-types.md) · [模型预设管理 UI](./model-preset-ui.md) · [动作模块类型定义](./motion-module-types.md) · [动作覆盖 UI 层级（模块化覆盖 + 高级骨骼覆盖）](./motion-override-levels.md) · [动作预设类型](./motion-preset-types.md) · [场景序列化与自动保存](./scene-serialize.md) |
@@ -259,7 +259,7 @@
 | [ADR-168](../adr/adr-168-dynamic-light-tracking.md) | 动态追光：舞台灯跟随角色/骨骼 | [个人灯光跟随](./lighting-follow.md) · [灯光预设系统](./lighting-presets.md) · [场景光照与阴影（barrel）](./lighting.md) · [模型生命周期操作](./model-ops.md) · [场景序列化与自动保存](./scene-serialize.md) · [场景核心编排器（纯组装器）](./scene.md) |
 | [ADR-169](../adr/adr-169-motion-load-replace-default.md) | 动作装载语义统一 —— 原位替换默认动作（replaceDefaultMotion） | [资源库操作](./library-actions.md) |
 | [ADR-170](../adr/adr-170-motion-selection-paradigm.md) | 动作库选中范式 —— 将「默认」暴露为逐行「选中」（对齐模型焦点范式） | [动作详情 UI](./motion-detail-ui.md) |
-| [ADR-171](../adr/adr-171-scene-drag-mode.md) | 场景级拖拽模式：快捷开关 + 收纳文件夹 | [场景拖拽层级菜单](./scene-drag-levels.md) · [场景菜单层级系统](./scene-menu-levels.md) · [场景核心编排器（纯组装器）](./scene.md) |
+| [ADR-171](../adr/adr-171-scene-drag-mode.md) | 场景级拖拽模式：快捷开关 + 收纳文件夹 | [场景拖拽层级菜单](./scene-drag-levels.md) · [场景菜单层级系统](./scene-menu-levels.md) · [场景核心编排器（纯组装器）](./scene.md) · [变换选中物状态源](./transform-selection.md) |
 | [ADR-172](../adr/adr-172-wet-body-effect.md) | 湿身效果：雨天角色材质湿润感 | [湿身效果系统](./env-wetness.md) |
 | [ADR-174](../adr/adr-174-quality-dimension-registry.md) | 质量维度注册表 — 统一 qualityProfile 扩展点 | [统一质量档位解析器](./quality-profile.md) |
 | [ADR-176](../adr/adr-176-frontend-backend-adapter.md) | 前端 Backend 适配器双实现（Web/Desktop 通杀） | [内置 AI 诊断助手 — 双适配器服务层](./ai-service.md) · [后端适配层](./core-backend.md) · [环境状态防抖持久化](./env-persist.md) · [应用启动引导](./init.md) · [平台能力探测](./platform.md) · [运行模式检测](./runtime-mode.md) · [后端绑定聚合层（backend 代理化）](./wails-bindings.md) |

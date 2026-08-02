@@ -28,11 +28,11 @@
 | 后端适配、浏览器后端、Go 后端、IndexedDB、存储适配、后端测试、测试桩、mock | [后端适配层](./core-backend.md) | [内置 AI 诊断助手 — 双适配器服务层](./ai-service.md)、[环境状态防抖持久化](./env-persist.md)、[应用启动引导](./init.md) |
 | setEnvState、环境状态写入、中间件注册、预设动画状态 | [环境状态写入入口（setEnvState + 中间件链）](./env-bridge.md) | [相机状态管理 + 运行时上下文](./camera-state.md)、[相机模式管理系统（MmdCamera）](./camera.md)、[环境变更分发回调（破循环依赖）](./env-dispatcher.md) |
 | 碰撞开关、身体碰撞、地面碰撞、WASM 物理碰撞 | [环境碰撞控制](./env-collision.md) | [环境重力控制](./env-gravity.md) |
-| 环境调度、破循环依赖、dispatch | [环境变更分发回调（破循环依赖）](./env-dispatcher.md) | [环境状态写入入口（setEnvState + 中间件链）](./env-bridge.md) |
+| 环境调度、破循环依赖、dispatch | [环境变更分发回调（破循环依赖）](./env-dispatcher.md) | [环境状态写入入口（setEnvState + 中间件链）](./env-bridge.md)、[环境系统实现核心（barrel + observer + fog）](./env-impl.md) |
 | 重力控制、WASM 物理重力 | [环境重力控制](./env-gravity.md) | [相机状态管理 + 运行时上下文](./camera-state.md)、[相机模式管理系统（MmdCamera）](./camera.md)、[环境状态写入入口（setEnvState + 中间件链）](./env-bridge.md) |
 | 地面材质、GroundMaterialSpec、地面重建、地面材质单一来源、地面 typeKey、ADR-226 | [地面材质单一事实源（GroundMaterialSpec）](./env-ground-spec.md) | — |
 | 地面系统、程序化纹理、涟漪、地面高度查询 | [地面系统](./env-ground.md) | — |
-| 环境实现、observer、fog、barrel 重导出 | [环境系统实现核心（barrel + observer + fog）](./env-impl.md) | — |
+| 环境实现、observer、fog、barrel 重导出 | [环境系统实现核心（barrel + observer + fog）](./env-impl.md) | [环境状态写入入口（setEnvState + 中间件链）](./env-bridge.md)、[环境变更分发回调（破循环依赖）](./env-dispatcher.md) |
 | 环境灯光、灯光包装、灯光与场景集成、时间预设、灯光派生 | [环境灯光包装](./env-lighting.md) | [EnvState 单一源 Schema](./env-state-schema.md)、[场景光照与阴影（barrel）](./lighting.md) |
 | 环境弹窗、环境菜单、环境设置入口、env 菜单 | [环境弹窗（编排 + barrel）](./env-menu.md) | [场景弹窗（编排 + 路由）](./scene-menu.md)、[统一动作注册表 — 菜单/NL/快捷键共享真相源](./action-registry.md)、[NL 意图解析 — LLM 文本 → 动作执行](./ai-intent-dispatcher.md) |
 | 环境持久化、防抖保存、envState 持久化 | [环境状态防抖持久化](./env-persist.md) | [内置 AI 诊断助手 — 双适配器服务层](./ai-service.md)、[相机状态管理 + 运行时上下文](./camera-state.md)、[相机模式管理系统（MmdCamera）](./camera.md) |
@@ -48,12 +48,12 @@
 | 资源库操作、导入模型、替换模型、替换动作、标签浏览、模型行点击 | [资源库操作](./library-actions.md) | [资源库核心](./library-core.md)、[统一动作注册表 — 菜单/NL/快捷键共享真相源](./action-registry.md)、[NL 意图解析 — LLM 文本 → 动作执行](./ai-intent-dispatcher.md) |
 | 资源库核心、资源扫描、资源索引、资源管理核心 | [资源库核心](./library-core.md) | [资源库操作](./library-actions.md)、[统一资源加载队列](./load-manager.md) |
 | 资源库初始化、资源库设置、资源库启动 | [资源库初始化](./library-setup.md) | [安卓文件访问（shared 模式）](./android-file-access.md) |
-| 模型库、资源库、模型浏览、加载模型、library | [资源库入口与编排](./library.md) | — |
+| 模型库、资源库、模型浏览、加载模型、library | [资源库入口与编排](./library.md) | [统一资源加载队列](./load-manager.md) |
 | 个人灯光、灯光跟随、跟随聚光灯 | [个人灯光跟随](./lighting-follow.md) | [灯光预设系统](./lighting-presets.md)、[场景光照与阴影（barrel）](./lighting.md)、[模型生命周期操作](./model-ops.md) |
 | 灯光预设、预设灯光、灯光配置 | [灯光预设系统](./lighting-presets.md) | [个人灯光跟随](./lighting-follow.md)、[场景光照与阴影（barrel）](./lighting.md)、[模型生命周期操作](./model-ops.md) |
 | 场景光照、方向光/半球光、灯光状态、灯光补间 | [场景光照与阴影（barrel）](./lighting.md) | [环境灯光包装](./env-lighting.md)、[EnvState 单一源 Schema](./env-state-schema.md)、[个人灯光跟随](./lighting-follow.md) |
 | 口型同步、lipsync、音频驱动口型 | [口型同步桥](./lipsync-bridge.md) | [程序化动作系统](./proc-motion-bridge.md) |
-| 模型加载、动作加载、道具加载、音频加载、加载排队、加载进度、loadId | [统一资源加载队列](./load-manager.md) | [资源库操作](./library-actions.md)、[资源库核心](./library-core.md) |
+| 模型加载、动作加载、道具加载、音频加载、加载排队、加载进度、loadId | [统一资源加载队列](./load-manager.md) | [资源库操作](./library-actions.md)、[资源库核心](./library-core.md)、[资源库入口与编排](./library.md) |
 | 加载后刷新、库扫描完成、菜单刷新、注册表 | [模型加载/库扫描完成后菜单刷新注册表](./load-refresh-registry.md) | — |
 | 语言切换、国际化、locale | [国际化语言状态](./locale.md) | [应用启动引导](./init.md) |
 | 材质系统、分类材质、材质参数调节、材质状态管理 | [分类材质系统](./material.md) | — |
@@ -96,7 +96,7 @@
 | 全局状态、场景状态、播放控制状态、资源库状态、scene-state / playback-state / library-state | [全局状态与场景运行时 Store](./state.md) | [EnvState 单一源 Schema](./env-state-schema.md) |
 | 变换适配、transform adapter、双模态、拖拽适配 | [变换适配器注册表（双模态去重）](./transform-adapter.md) | [场景序列化与自动保存](./scene-serialize.md)、[骨骼覆盖核心 API](./bone-override.md)、[模型注册表与生命周期管理](./model-manager.md) |
 | 变换模式、拖拽模式、位移旋转、transform mode | [拖拽变换模式开关](./transform-mode.md) | — |
-| 选中状态、选中物、变换选择、selection 状态 | [变换选中物状态源](./transform-selection.md) | — |
+| 选中状态、选中物、变换选择、selection 状态 | [变换选中物状态源](./transform-selection.md) | [场景核心编排器（纯组装器）](./scene.md) |
 | 键盘导航、列表导航、箭头键导航 | [键盘导航工具](./ui-keyboard-nav.md) | [应用启动引导](./init.md) |
 | 虚拟裙骨、物理裙摆、Bullet 弹簧链、skirt analyzer | [虚拟裙骨物理控制器（ADR-084 Phase 2-3）](./virtual-skirt.md) | [骨骼覆盖存储（多模块仲裁）](./bone-override-store.md)、[物理骨骼桥与每帧注册表](./physics-bridge.md) |
 | 多层动作、动作叠加、VMD 混合、composite animation、动作图层、动作优先级 | [多 VMD 叠加系统](./vmd-layers.md) | [VMD 动作加载器](./vmd-loader.md) |

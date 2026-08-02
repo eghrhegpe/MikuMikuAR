@@ -7,6 +7,8 @@ scope:
   - frontend/src/scene/env/env.ts
 source_files:
   - frontend/src/scene/env/env.ts
+adr:
+  - ADR-128
 symbols:
   - _envSys
   - addGroundRipple
