@@ -4,6 +4,7 @@
 // 注意: 具体逻辑已拆分到子模块，此文件仅负责组合。
 
 import { Engine } from '@babylonjs/core/Engines/engine';
+import { NullEngine } from '@babylonjs/core/Engines/nullEngine';
 import { Scene } from '@babylonjs/core/scene';
 import { RenderingManager } from '@babylonjs/core/Rendering/renderingManager';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
@@ -191,15 +192,40 @@ import { triggerAutoSaveImpl } from './scene-serialize';
 // 并跳过相机初始化，使 scene.ts 可零成本导入。生产路径（MODE !== 'test'）完全不变。
 const _isTestEnv = import.meta.env.MODE === 'test';
 
-export let engine = new Engine(dom.canvas, true, {
-    preserveDrawingBuffer: true,
-    stencil: true,
-    alpha: true,
-});
+// [doc:adr-229] Headless E2E 模式：URL 带 ?e2e=1（vitePage fixture 导航时注入）即走 NullEngine，
+// 不创建 WebGL 上下文，使 app 在 headless 无 GPU 的 CI 也能启动（DOM overlay 为 HTML/CSS，照常渲染）。
+// 视觉断言（__capture/fingerprint）按 ADR-229 §2.3 仅 @webgl（真实 WebView2）跑。
+// _isTestEnv 在前短路：vitest MODE==='test' 永不触发，@webgl 走真实 WebView2 URL 无 ?e2e=1 亦不触发。
+const _isHeadless =
+    !_isTestEnv &&
+    typeof location !== 'undefined' &&
+    new URLSearchParams(location.search).has('e2e');
+export const isHeadless = _isHeadless;
+
+/**
+ * 创建渲染引擎。headless 模式返回 NullEngine（无 GPU/WebGL 依赖，纯 DOM 回归可用）；
+ * 否则返回真实 WebGL Engine。NullEngine 沿用项目既有用法（vmd-evaluator 运行时同款），
+ * 传入 renderingCanvas 以保持相机输入绑定、renderWidth/Height 避免固定 512 视口。
+ */
+function createEngine(): Engine {
+    if (_isHeadless) {
+        // [doc:adr-229] NullEngine 无 WebGL 依赖；项目既有用法（vmd-evaluator、各 __tests__）均用无参构造，
+        // 相机输入经 engine.getInputElement() 取 canvas，Babylon 在 null 时忽略，DOM 回归无需真实交互。
+        return new NullEngine();
+    }
+    return new Engine(dom.canvas, true, {
+        preserveDrawingBuffer: true,
+        stencil: true,
+        alpha: true,
+    });
+}
+
+export let engine = createEngine();
 // 启用 SDEF 球面变形：改写 engine.createEffect，为含骨骼(mBones)的着色器注入球面变形顶点代码。
 // 须在模型加载前、ShadowGenerator/后处理管线创建前调用，覆盖所有蒙皮材质。
 // 测试态下 engine 为不完整的 mock（无 createEffect），跳过以避免 TypeError；生产路径始终挂载。
-if (!_isTestEnv) {
+// headless（NullEngine）下 DOM 回归不需要 SDEF 蒙皮注入，且规避 createEffect 意外，同样跳过。
+if (!_isTestEnv && !_isHeadless) {
     SdefInjector.OverrideEngineCreateEffect(engine);
 }
 // 扩展渲染组下限至 -2：天空盒(Group -2)先于体积云(Group -1)先于 Group 0（地面/角色）。
@@ -389,12 +415,8 @@ async function _reinitSceneForHMR(): Promise<void> {
     disposeScene();
     _sceneDisposed = false;
 
-    engine = new Engine(dom.canvas, true, {
-        preserveDrawingBuffer: true,
-        stencil: true,
-        alpha: true,
-    });
-    if (!_isTestEnv) {
+    engine = createEngine();
+    if (!_isTestEnv && !_isHeadless) {
         SdefInjector.OverrideEngineCreateEffect(engine);
     }
     scene = new Scene(engine);
@@ -663,7 +685,7 @@ async function _initMmdRuntime(): Promise<IMmdRuntime> {
     }
     // 运行时切换：默认 WASM（含物理），可在程序化动作菜单切换到 JS 版（调试专用，无物理）
     // JS 版保留作为 gaze 行为对比排查与 WASM 兼容性回退，勿删除
-    const useJsRuntime = getMmdRuntimeType() === 'js';
+    const useJsRuntime = getMmdRuntimeType() === 'js' || _isHeadless;
     let runtime: IMmdRuntime;
     if (useJsRuntime) {
         runtime = new MmdRuntime(scene, null);

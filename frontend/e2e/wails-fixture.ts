@@ -78,7 +78,9 @@ export const test = base.extend<WailsFixtures>({
         const page = await context.newPage();
         // waitUntil:"commit" 早返回（DOM 一开始解析就放行），避免多 worker 并发打 Vite 时
         // babylon-mmd 等重模块阻塞 HTML parser 触发 10s goto 超时。
-        await page.goto(VITE_URL, { waitUntil: "commit", timeout: 30000 });
+        // [doc:adr-229] 带 ?e2e=1 让 app 走 NullEngine 无 GPU 启动（DOM overlay 仍渲染），
+        // 规避 headless 无 GPU 下 WebGL 上下文创建失败把整个浏览器进程搞崩。
+        await page.goto(`${VITE_URL}/?e2e=1`, { waitUntil: "commit", timeout: 30000 });
         // 守卫 1: nav 按钮静态渲染（index.html 写死，不证明 init() 跑完）
         await page.waitForSelector("#btnMainAction", { timeout: 20000 });
         // 守卫 2: 等 init() 完成。init() 成功 → dom.showApp() 把 #loading display:none；

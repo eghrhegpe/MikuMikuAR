@@ -3,7 +3,7 @@
 // attaches helpers to `window` for Playwright numeric assertions; it has no
 // business logic shared with production paths, so it stays out of the Split
 // layer's hot import graph.
-import { scene, engine, focusedModel, modelManager } from '../scene/scene';
+import { scene, engine, focusedModel, modelManager, isHeadless } from '../scene/scene';
 import { loadOutfits, applyOutfitVariant } from '../outfit/outfit';
 import { envState, mmdRuntime } from './config';
 import { isWindPhysicsActive } from '../physics/wind-physics';
@@ -51,6 +51,11 @@ export function setupE2ECapture(): void {
     };
 
     window.__capture = async (): Promise<string> => {
+        // [doc:adr-229] headless（NullEngine）无 backbuffer，截图必失败；
+        // 视觉断言本就只在 @webgl（真实 WebView2）跑，此处返回空串让 fingerprint/capture 兜底。
+        if (isHeadless) {
+            return '';
+        }
         const { CreateScreenshotAsync } = await import('@babylonjs/core/Misc/screenshotTools');
         // Force a render frame so Babylon writes to the backbuffer
         scene.render();
@@ -66,10 +71,12 @@ export function setupE2ECapture(): void {
         // [fix:P1] 守卫域就绪探测：light./render. 域在 @dom 环境（无灯光/管线）写入被守卫
         // 拦截，e2e 动作断言前先探测，未就绪则整域跳过（避免「UI 可操作但 state 未生效」误报）
         get isLightingReady(): boolean {
-            return isLightingReady();
+            // [doc:adr-229] headless（NullEngine）无真实灯光/渲染管线，保持 false，
+            // 使 schema-driven 的 light./render. 域断言继续跳过，避免「UI 可操作但 state 未生效」误报。
+            return !isHeadless && isLightingReady();
         },
         get isRenderReady(): boolean {
-            return isRenderReady();
+            return !isHeadless && isRenderReady();
         },
     };
 
