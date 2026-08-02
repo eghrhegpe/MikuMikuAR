@@ -12,13 +12,16 @@ adr:
 symbols:
   - PanelNav
   - RegisteredSchema
+  - SchemaCollectFailure
+  - SchemaCollectResult
   - _clearRegistry
   - collectAllSchemas
+  - collectAllSchemasWithFailures
   - flattenNodes
   - registerSchema
 invariants:
   - registerSchema 允许覆盖（DEV 告警），建议 panelId 唯一
-  - collectAllSchemas 的 builder 可能依赖运行时状态（envState 等），失败仅 DEV warn 并跳过，不抛
+  - collectAllSchemas 的 builder 可能依赖运行时状态（envState 等），失败跳过该面板且不抛；失败清单经 collectAllSchemasWithFailures().failed 暴露，schema-snapshot.test.ts 断言其为空（防快照静默缩水）
   - flattenNodes 递归展开含 children 的树为扁平节点列表
   - _clearRegistry 仅测试用
 tests: []
@@ -37,16 +40,19 @@ ADR-093 元测试基础设施。收集各面板的 `MenuNode[]` schema，供 `me
 - `registry: Map<panelId, () => MenuNode[]>`
 - `registerSchema(panelId, builder)` — 注册面板 schema 构建函数（重复覆盖并 DEV 告警）
 - `collectAllSchemas()` — 执行所有 builder 返回 `{ panelId, nodes }[]` 快照（失败跳过）
+- `collectAllSchemasWithFailures()` — 同上，另返回 `failed: { panelId, error }[]`
 - `flattenNodes(nodes)` — 递归展开声明式树为扁平 `MenuNode[]`
 
 ## 对外 API（节选）
 - `registerSchema(panelId, builder)`
 - `collectAllSchemas()`
+- `collectAllSchemasWithFailures()`
 - `flattenNodes(nodes)`
 - `_clearRegistry()`（仅测试）
 
 ## 关键约定
-- builder 可能依赖运行时状态，失败仅 DEV 告警跳过，不抛异常
+- builder 可能依赖运行时状态，失败跳过该面板并 DEV 告警，不抛异常
+- 失败不得静默：`failed` 由 `schema-snapshot.test.ts` 断言为空，否则面板从 E2E 快照消失仍全绿
 - panelId 重复时覆盖并告警，建议唯一
 
 ## 与其他子系统关系

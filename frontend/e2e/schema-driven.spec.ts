@@ -218,6 +218,11 @@ function describeSchemaPanel(
                     const cnt = await page.getByTestId(node.id).count();
                     if (cnt === 0) return; // visibleWhen 不满足，未渲染 → 跳过交互
                 }
+                // [ADR-229 审核修正] action 串行不回滚：前序 action 写全局 state 会改变
+                // 后续节点的 visibleWhen；conditional 折叠后节点仍在 DOM（maxHeight:0 +
+                // inert），count>0 通过但 dispatchEvent 打到 inert 元素无效 → 断言误报。
+                // 派发前加可交互性守卫（元素缺失时 isVisible 亦返回 false）。
+                if (!(await page.getByTestId(node.id).first().isVisible())) return;
                 await executeAction(page, node);
             });
         }
@@ -272,6 +277,14 @@ function controlSelector(node: any): string {
     return `[data-testid="${node.id}"] ${node.dom}`;
 }
 
+/** 读取控件当前 aria-valuenow（守卫域退化断言用；元素缺失返回 null） */
+async function readAriaNow(page: any, selector: string): Promise<string | null> {
+    return page.evaluate(
+        (s: string) => document.querySelector(s)?.getAttribute('aria-valuenow') ?? null,
+        selector
+    );
+}
+
 /**
  * 执行单个节点的 action 并断言 state 生效。
  * 不做回滚：[ADR-229 §2.2] vitePage 每 test 全新浏览器实例（无跨 test 持久化污染），
@@ -317,6 +330,10 @@ async function executeAction(page: any, node: any): Promise<void> {
             if (Number.isFinite(beforeNum) && Math.abs(target - beforeNum) < step / 2) {
                 target = target === min ? Math.min(min + step, max) : min;
             }
+            // [ADR-229 审核修正] 守卫域退化断言需「键前 → 键后」对比：aria-valuenow
+            // 属性恒存在，非空断言与「值是否变化」无关（键盘事件全程没生效也判绿），
+            // 故在派发 Home 前先取基线值。
+            const ariaBefore = await readAriaNow(page, sel);
             await dispatchKeys(page, sel, 'Home', 1); // 跳到 min
             const steps = Math.round((target - min) / step);
             await dispatchKeys(page, sel, 'ArrowRight', steps);
@@ -336,11 +353,11 @@ async function executeAction(page: any, node: any): Promise<void> {
                 ).toBeLessThanOrEqual(step + 1e-9);
             } else {
                 // light/render 守卫域：state 可能未写，退化为「DOM 层变化」断言
-                const ariaNow = await page.evaluate(
-                    (s: string) => document.querySelector(s)?.getAttribute('aria-valuenow'),
-                    sel
-                );
-                expect(ariaNow, `${node.id} drag: DOM 层无变化（state=${after}）`).not.toBeNull();
+                const ariaNow = await readAriaNow(page, sel);
+                expect(
+                    ariaNow,
+                    `${node.id} drag: DOM 层无变化（state=${after}, aria ${ariaBefore} → ${ariaNow}）`
+                ).not.toBe(ariaBefore);
             }
             break;
         }
@@ -401,10 +418,7 @@ async function executeAction(page: any, node: any): Promise<void> {
                 // 变换控件：state 存变换后值，值变化即通过
                 expect(after, `${node.id} selectChip: 值未变化（before=${before}, after=${after}）`).not.toBe(before);
             } else {
-                const ariaNow = await page.evaluate(
-                    (s: string) => document.querySelector(s)?.getAttribute('aria-valuenow'),
-                    sel
-                );
+                const ariaNow = await readAriaNow(page, sel);
                 expect(
                     ariaNow,
                     `${node.id} selectChip: DOM 层无变化（state=${after}, aria=${ariaNow}）`

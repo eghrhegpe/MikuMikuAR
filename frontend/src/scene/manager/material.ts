@@ -12,7 +12,7 @@ import { triggerAutoSave } from '@/core/config';
 import { clamp01 } from '@/core/clamp';
 import { logWarn } from '../../core/logger';
 import type { MmdStandardMaterial } from '../../core/types';
-import { getMatSssState, applyMatSssState, type SssParams } from './material-sss';
+import { getMatSssState, applyMatSssState, disposeModelSssState, type SssParams } from './material-sss';
 
 // [ADR-188] SSS 材质类型定义（PBRMaterial 子类，由材料系统识别）
 export type SssMaterial = PBRMaterial;
@@ -860,6 +860,7 @@ export function resetSingleMatParams(id: string, matIndex: number): void {
  *  供模型移除时统一调用，替代外部直接操作内部 Map。 */
 export function disposeModelMaterialState(id: string): void {
     _stateMgr.dispose(id);
+    disposeModelSssState(id);
 }
 
 /**

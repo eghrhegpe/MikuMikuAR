@@ -17,6 +17,7 @@ symbols:
   - disposeRenderer
   - getRenderState
   - initRenderer
+  - isRenderReady
   - isRendererReady
   - isSSRActive
   - pipeline

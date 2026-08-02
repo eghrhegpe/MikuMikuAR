@@ -70,6 +70,16 @@ export function generateTerrainHeightmapURL(opts: {
 
 const TERRAIN_SUBDIVISIONS = 200;
 
+// [adr-231] 地形重建代际计数器（对齐 env-ground 的 _texGroundGeneration 模式）：
+// 快速连切地面类型时，旧 heightmap 的 onReady 仍会异步触发，而 mesh/material 已被销毁；
+// 回调首行比对代际，过期直接放弃，避免对僵尸材质做 install / _syncGroundEmissive。
+let _terrainGen = 0;
+
+/** 测试/场景重置用：清零地形代际计数器。 */
+export function clearTerrainGeneration(): void {
+    _terrainGen = 0;
+}
+
 /**
  * 用程序化 FBM 高度图创建可拾取地形网格（CreateGroundFromHeightMap）。
  * 几何体在 onReady 触发前为空；onReady 由 env-impl 提供，负责材质/重贴地。
@@ -88,6 +98,7 @@ export function createHeightmapGround(
     });
     const half = state.groundTerrainHeight / 2;
     const size = Math.max(1, state.groundSize);
+    const gen = ++_terrainGen;
     const ground = MeshBuilder.CreateGroundFromHeightMap(
         'envGround',
         url,
@@ -99,6 +110,9 @@ export function createHeightmapGround(
             maxHeight: half,
             updatable: false,
             onReady: (mesh) => {
+                if (gen !== _terrainGen) {
+                    return; // 已被更新的地形重建取代，旧回调放弃
+                }
                 const gm = mesh as GroundMesh;
                 gm.isPickable = true; // 碰撞/拾取：模型可站上去
                 gm.position.y = state.groundLevel;
@@ -141,6 +155,34 @@ export function applyTerrainMaterial(ground: GroundMesh, state: EnvState, scene:
             disposeTex(oldMat.bumpTexture);
             disposeTex(oldMat.opacityTexture);
             disposeTex(oldMat.reflectionTexture);
+        }
+        // Step 2: 脱离缓存贴图，防止 oldMat.dispose() 连带释放（对齐 env-ground.disposeGroundMaterial）
+        if (oldMat instanceof PBRMaterial) {
+            if (isCacheOwnedTexture(oldMat.albedoTexture)) {
+                oldMat.albedoTexture = null;
+            }
+            if (isCacheOwnedTexture(oldMat.metallicTexture)) {
+                oldMat.metallicTexture = null;
+            }
+        }
+        if (oldMat instanceof StandardMaterial) {
+            if (isCacheOwnedTexture(oldMat.diffuseTexture)) {
+                oldMat.diffuseTexture = null;
+            }
+        }
+        if (oldMat instanceof PBRMaterial || oldMat instanceof StandardMaterial) {
+            if (isCacheOwnedTexture(oldMat.bumpTexture)) {
+                oldMat.bumpTexture = null;
+            }
+            if (isCacheOwnedTexture(oldMat.opacityTexture)) {
+                oldMat.opacityTexture = null;
+            }
+            if (isCacheOwnedTexture(oldMat.reflectionTexture)) {
+                oldMat.reflectionTexture = null;
+            }
+            // [adr-231] emissiveTexture 与 albedo/diffuse（自发光复用）或共享焦散纹理同引用，
+            // 非独立持有：无条件脱离，避免 dispose 连带释放缓存/共享纹理。
+            oldMat.emissiveTexture = null;
         }
         // [fix P1] 移除水下焦散安装条目，避免对已销毁地形材质残留引用
         if (oldMat instanceof PBRMaterial || oldMat instanceof StandardMaterial) {

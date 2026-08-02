@@ -8,8 +8,8 @@
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
 | 核心基础设施 | 123 | 721 |
-| 3D 场景 | 111 | 1135 |
-| 菜单 & UI | 75 | 383 |
+| 3D 场景 | 111 | 1136 |
+| 菜单 & UI | 75 | 386 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 17 | 130 |
 | 物理系统 | 2 | 14 |
@@ -1070,6 +1070,7 @@
 | `clearStarsTexCache()` | `scene/env/env-sky` | — |
 | `disposeSky()` | `scene/env/env-sky` | 释放天空盒并移除相机跟随观察者（幂等）。 |
 | `applyTerrainMaterial()` | `scene/env/env-terrain` | 地形材质（与其他地面模式一致：纯色或半透明/纹理）。 |
+| `clearTerrainGeneration()` | `scene/env/env-terrain` | 测试/场景重置用：清零地形代际计数器。 |
 | `createHeightmapGround()` | `scene/env/env-terrain` | 用程序化 FBM 高度图创建可拾取地形网格（CreateGroundFromHeightMap）。 |
 | `fbm()` | `scene/env/env-terrain` | — |
 | `generateTerrainHeightmapURL()` | `scene/env/env-terrain` | 程序化生成灰度高度图（data URL），亮=高峰、暗=低谷。经统一工厂创建（受约束环境返回 ''）。 |
@@ -2037,8 +2038,11 @@
 | `setOnCloseAllOverlays()` | `menus/menu-overlay` | — |
 | `PanelNav()` | `menus/menu-registry` | 面板导航元数据（ADR-229 §2.1）。 |
 | `RegisteredSchema()` | `menus/menu-registry` | — |
+| `SchemaCollectFailure()` | `menus/menu-registry` | builder 执行失败记录（ADR-229 审核修正：失败不得静默） |
+| `SchemaCollectResult()` | `menus/menu-registry` | — |
 | `_clearRegistry()` | `menus/menu-registry` | 清空注册表（仅测试用） |
-| `collectAllSchemas()` | `menus/menu-registry` | 收集所有已注册 schema，执行 builder 返回快照 |
+| `collectAllSchemas()` | `menus/menu-registry` | 收集所有已注册 schema，执行 builder 返回快照（失败面板跳过，失败列表见 collectAllSchemasWithFailures） |
+| `collectAllSchemasWithFailures()` | `menus/menu-registry` | 收集所有已注册 schema，同时返回 builder 失败列表。 |
 | `flattenNodes()` | `menus/menu-registry` | 递归展开 schema 树（含 children），返回扁平节点列表 |
 | `registerSchema()` | `menus/menu-registry` | 注册一个面板的 schema 构建函数（nav 可选，特例面板覆写导航元数据） |
 | `ActionMenuCtx()` | `menus/menu-schema` | — |

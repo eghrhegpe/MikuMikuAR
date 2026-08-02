@@ -200,7 +200,12 @@ vi.mock('@/core/wails-bindings', () => ({
 
 // 导入注册器
 import '../menus/menu-schema-register';
-import { collectAllSchemas, type PanelNav } from '../menus/menu-registry';
+import {
+    collectAllSchemasWithFailures,
+    type PanelNav,
+    type SchemaCollectFailure,
+    type RegisteredSchema,
+} from '../menus/menu-registry';
 // [ADR-229 §9] DOM 契约单源：快照携带 kind → 选择器映射，e2e 从快照读，不手写
 import { KIND_CONTROL_SELECTOR } from '../core/dom-contract';
 
@@ -307,10 +312,17 @@ function deriveAction(node: any): { type: string; target?: string } | undefined 
 }
 
 describe('Schema Snapshot Generator', () => {
-    let schemas: ReturnType<typeof collectAllSchemas>;
+    let schemas: RegisteredSchema[];
+    let failed: SchemaCollectFailure[];
 
     beforeAll(() => {
-        schemas = collectAllSchemas();
+        ({ schemas, failed } = collectAllSchemasWithFailures());
+    });
+
+    // [ADR-229 审核修正] builder 抛错原本仅 DEV warn 后跳过：面板从快照消失，
+    // 而 E2E 只遍历快照 → 覆盖静默缩水仍全绿。此处让失败直接红，不进 E2E。
+    it('所有面板 builder 执行成功（无静默跳过）', () => {
+        expect(failed).toEqual([]);
     });
 
     it(`生成 schema-snapshot.json (${SNAPSHOT_PATH})`, () => {

@@ -24,6 +24,7 @@ symbols:
   - getHemiLight
   - getLightState
   - initLighting
+  - isLightingReady
   - rebakeEnvBrightness
   - setLightState
   - setSkipLightAutoSave

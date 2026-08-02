@@ -46,20 +46,43 @@ export function registerSchema(
     registry.set(panelId, { builder, nav });
 }
 
-/** 收集所有已注册 schema，执行 builder 返回快照 */
-export function collectAllSchemas(): RegisteredSchema[] {
-    const result: RegisteredSchema[] = [];
+/** builder 执行失败记录（ADR-229 审核修正：失败不得静默） */
+export interface SchemaCollectFailure {
+    panelId: string;
+    error: string;
+}
+
+export interface SchemaCollectResult {
+    schemas: RegisteredSchema[];
+    /** builder 抛错的面板；元测试断言其为空，避免快照静默缩水 */
+    failed: SchemaCollectFailure[];
+}
+
+/**
+ * 收集所有已注册 schema，同时返回 builder 失败列表。
+ * builder 可能依赖运行时状态（envState 等）；失败时该面板不进快照，
+ * 若只 DEV warn 则面板从快照消失而 E2E 仍全绿（覆盖静默缩水），
+ * 故失败必须显式返回，由 schema-snapshot.test.ts 断言为空。
+ */
+export function collectAllSchemasWithFailures(): SchemaCollectResult {
+    const schemas: RegisteredSchema[] = [];
+    const failed: SchemaCollectFailure[] = [];
     for (const [panelId, entry] of registry) {
         try {
-            result.push({ panelId, nodes: entry.builder(), nav: entry.nav });
+            schemas.push({ panelId, nodes: entry.builder(), nav: entry.nav });
         } catch (e) {
-            // builder 可能依赖运行时状态（envState 等），失败时跳过
+            failed.push({ panelId, error: e instanceof Error ? e.message : String(e) });
             if (import.meta.env.DEV) {
                 console.warn(`[menu-registry] panelId "${panelId}" builder 失败:`, e);
             }
         }
     }
-    return result;
+    return { schemas, failed };
+}
+
+/** 收集所有已注册 schema，执行 builder 返回快照（失败面板跳过，失败列表见 collectAllSchemasWithFailures） */
+export function collectAllSchemas(): RegisteredSchema[] {
+    return collectAllSchemasWithFailures().schemas;
 }
 
 /** 递归展开 schema 树（含 children），返回扁平节点列表 */
