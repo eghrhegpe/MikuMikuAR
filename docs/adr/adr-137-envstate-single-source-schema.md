@@ -3,6 +3,8 @@
 > **日期**: 2026-07-19
 > **状态**: 已实施
 > **关联**: ADR-130 Phase 2.1
+>
+> **补记（2026-08-02）**: §3.4 承诺的「字段级 parity 契约测试」由 [ADR-234](adr-234-env-state-parity-guard.md) 落地（`scripts/check-env-parity.mjs` 双向 key diff，挂 `check:docs` 链）。期间再次暴露 4 个字段漂移（mirror 几何 + groundEmissive*），验证了 §3.4 未落地即防线缺失的判断。非取代——本 ADR 单一源决策保持成立。
 
 ---
 

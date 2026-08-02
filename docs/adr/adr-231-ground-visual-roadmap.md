@@ -2,7 +2,7 @@
 
 - **状态**: 📝 规划
 - **日期**: 2026-08-02
-- **相关**: ADR-091（地面纹理统一）、ADR-114（地面反射增强）、ADR-083（terrain 倾斜）、ADR-226（地面材质规格单源）、ADR-208（地面预设 sourceKind）、ADR-054（总路线图，地面方向补充）、ADR-072/073（AR Phase 3 / 原生 ARCore·ARKit，地面为 AR 落地载体）
+- **相关**: ADR-091（地面纹理统一）、ADR-114（地面反射增强）、ADR-083（terrain 倾斜）、ADR-226（地面材质规格单源）、ADR-208（地面预设 sourceKind）、ADR-054（总路线图，地面方向补充）、ADR-072/073（AR Phase 3 / 原生 ARCore·ARKit，地面为 AR 落地载体）、ADR-234（`groundEmissive*` 字段落地时 Go 结构体未同步产生的漂移已由其 parity 防线修复）
 - **参考**: VR-Stage-Lighting / LTCGI（VRChat 发光地屏与舞台 GI）、VRChat 舞台 shader 生态（霓虹网格、脉冲扫描、辉光边）
 - **源码锚点**: `frontend/src/scene/env/env-ground.ts`（地面材质创建与 uniform 同步）、`frontend/src/scene/env/env-ground-spec.ts`（材质规格单源，ADR-226）、`frontend/src/scene/env/env-ground-presets.ts`（预设治理，ADR-208）
 
