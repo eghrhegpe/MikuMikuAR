@@ -8,7 +8,7 @@
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
 | 核心基础设施 | 123 | 721 |
-| 3D 场景 | 111 | 1133 |
+| 3D 场景 | 111 | 1135 |
 | 菜单 & UI | 75 | 383 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 17 | 130 |
@@ -1676,10 +1676,11 @@
 | `getHemiLight()` | `scene/render/lighting` | 主半球光（未初始化时为 null）。导出 getter 替代原 `export let`，消除导出可变绑定。 |
 | `getLightState()` | `scene/render/lighting` | — |
 | `initLighting()` | `scene/render/lighting` | — |
+| `isLightingReady()` | `scene/render/lighting` | [fix:P1] 灯光运行时是否就绪（@dom/e2e 环境无灯光/管线时返回 false，供 UI/测试预检跳过守卫域）。 |
 | `rebakeEnvBrightness()` | `scene/render/lighting` | [doc:adr-132] 当 envBrightness 变化时 rebake 存储的光照强度 |
-| `setLightState()` | `scene/render/lighting` | — |
+| `setLightState()` | `scene/render/lighting` | 写入灯光状态。守卫未就绪时 logWarn + 返回 false（不再静默吞写）， 使「UI 可操作但 state 未生效」可被观测（@dom 测试环境无灯光对象时会命中）。 |
 | `setSkipLightAutoSave()` | `scene/render/lighting` | 预设动画期间临时抑制 setLightState 内的自动保存，由 applyEnvPreset 控制 |
-| `transitionLighting()` | `scene/render/lighting` | 平滑过渡当前灯光到目标灯光参数，默认 2 秒 |
+| `transitionLighting()` | `scene/render/lighting` | 平滑过渡当前灯光到目标灯光参数，默认 2 秒。 |
 | `isAutoDegradingReflection()` | `scene/render/performance-env-bridge` | env-bridge.ts 调用此函数检查当前是否处于自动降级反射质量变更中 |
 | `registerSetEnvState()` | `scene/render/performance-env-bridge` | env-bridge.ts 初始化时注册 setEnvState 函数 |
 | `setAutoDegradingReflection()` | `scene/render/performance-env-bridge` | performance.ts 调用此函数通知 env-bridge 当前反射质量变更来自自动降级 |
@@ -1706,6 +1707,7 @@
 | `disposeRenderer()` | `scene/render/renderer` | 释放渲染管线及相关资源。在场景销毁时调用。 |
 | `getRenderState()` | `scene/render/renderer` | — |
 | `initRenderer()` | `scene/render/renderer` | — |
+| `isRenderReady()` | `scene/render/renderer` | [fix:P1] 渲染管线是否就绪（@dom/e2e 环境无 pipeline/scene 时返回 false，供 UI/测试预检跳过守卫域）。 |
 | `isRendererReady()` | `scene/render/renderer` | 检查渲染器是否已初始化。外部代码在调用 setRenderState 前可先检查。 |
 | `isSSRActive()` | `scene/render/renderer` | SSR 管线当前是否激活（供 env-reflection 检查，尊重用户手动关闭）。 |
 | `pipeline()` | `scene/render/renderer` | — |
