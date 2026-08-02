@@ -7,6 +7,19 @@ scope:
   - frontend/src/scene/env/env.ts
 source_files:
   - frontend/src/scene/env/env.ts
+tests:
+  - frontend/src/__tests__/env-feature-levels.contract.test.ts
+  - frontend/src/__tests__/env-lighting.test.ts
+  - frontend/src/__tests__/env-state.test.ts
+  - frontend/src/__tests__/scene/env-clouds.test.ts
+  - frontend/src/__tests__/scene/env-ground-spec.contract.test.ts
+  - frontend/src/__tests__/scene/env-ground.test.ts
+  - frontend/src/__tests__/scene/env-impl.test.ts
+  - frontend/src/__tests__/scene/env-particles.test.ts
+  - frontend/src/__tests__/scene/env-reflection.test.ts
+  - frontend/src/__tests__/scene/env-terrain.test.ts
+  - frontend/src/__tests__/scene/env-texture.test.ts
+  - frontend/src/__tests__/scene/env-water.test.ts
 adr:
   - ADR-128
 symbols:
@@ -50,7 +63,6 @@ invariants:
   - initEnvFacade 由 scene.ts 调用一次，全部委托给 env-impl
   - Time-of-Day 实际使用 env-bridge 的 observer 实现，经本模块透传
   - applyEnvState 为批量应用入口，遍历 envState 依次调度 applySky/applyGround 等
-tests: []
 use_when:
   - 环境系统
   - 环境门面

@@ -1,16 +1,16 @@
 ---
 tier: architecture
+source_files:
+  - frontend/src/core/math/hash-noise.ts
+  - frontend/src/menus/env-water-levels.ts
+  - frontend/src/scene/env/env-water.ts
+tests:
+  - frontend/src/__tests__/scene/env-water.test.ts
 kind: env_water
 name: 水面系统
 category: env
 scope:
   - frontend/src/scene/env/env-water.ts
-source_files:tests:
-  - frontend/src/__tests__/scene/env-water.test.ts
-
-  - frontend/src/scene/env/env-water.ts
-  - frontend/src/core/math/hash-noise.ts
-  - frontend/src/menus/env-water-levels.ts
 adr:
   - ADR-062
 symbols:

@@ -2,13 +2,13 @@
 kind: motion_pipeline
 name: 动作管线（逐帧合成）
 tier: architecture
+source_files:
+  - frontend/src/scene/motion/motion-pipeline.ts
+tests:
+  - frontend/src/__tests__/scene/motion-pipeline.test.ts
 category: motion
 scope:
   - frontend/src/scene/motion/**
-source_files:tests:
-  - frontend/src/__tests__/scene/motion-pipeline.test.ts
-
-  - frontend/src/scene/motion/motion-pipeline.ts
 adr:
   - ADR-147
   - ADR-116

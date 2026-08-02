@@ -7,6 +7,9 @@ scope:
   - frontend/src/scene/motion/vmd-layers.ts
 source_files:
   - frontend/src/scene/motion/vmd-layers.ts
+tests:
+  - frontend/src/__tests__/vmd-layers-dispose.test.ts
+  - frontend/src/__tests__/vmd-layers-filter.test.ts
 adr:
   - ADR-051
 symbols:
@@ -23,7 +26,6 @@ invariants:
   - MmdCompositeAnimation 在每次层变更时重建
   - 层 ID 唯一（crypto.randomUUID 前缀）
   - VMD 字节需 Shift-JIS 解码（骨骼名）
-tests: []
 use_when:
   - 多层动作
   - 动作叠加

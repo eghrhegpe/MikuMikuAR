@@ -1,13 +1,13 @@
 ---
 tier: architecture
+source_files:
+  - frontend/src/scene/motion/feet-adjustment.ts
+tests:
+  - frontend/src/__tests__/feet-adjustment.test.ts
 kind: motion_feet_adjustment
 name: 脚部地面跟随（MMD-native IK）
 category: motion
 scope:
-  - frontend/src/scene/motion/feet-adjustment.ts
-source_files:tests:
-  - frontend/src/__tests__/feet-adjustment.test.ts
-
   - frontend/src/scene/motion/feet-adjustment.ts
 adr:
   - ADR-085

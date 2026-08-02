@@ -1,16 +1,16 @@
 ---
 tier: architecture
-kind: model_preset_ui
-name: 模型预设管理 UI
-category: ui
-scope:
+source_files:
   - frontend/src/menus/model-preset.ts
-source_files:tests:
+tests:
   - frontend/src/__tests__/model-preset.apply.test.ts
   - frontend/src/__tests__/model-preset.material.test.ts
   - frontend/src/__tests__/model-preset.serialize.test.ts
   - frontend/src/__tests__/model-preset.stopvmd.test.ts
-
+kind: model_preset_ui
+name: 模型预设管理 UI
+category: ui
+scope:
   - frontend/src/menus/model-preset.ts
 adr:
   - ADR-145

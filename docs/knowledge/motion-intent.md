@@ -7,6 +7,8 @@ scope:
   - frontend/src/scene/motion/motion-intent.ts
 source_files:
   - frontend/src/scene/motion/motion-intent.ts
+tests:
+  - frontend/src/__tests__/scene/motion-intent-replace-default.test.ts
 adr:
   - ADR-121
   - ADR-167
@@ -34,7 +36,6 @@ invariants:
   - _sceneMotions 为场景级动作库，多主动作平等共存（ADR-167）
   - _motionGen 每次变更递增，守护异步广播竞态
   - 轻量 singleton（非 EnvState），规避 Go struct 同步成本
-tests: []
 use_when:
   - 动作意图
   - 多主动作

@@ -10,6 +10,18 @@ scope:
   - frontend/src/menus/menu.ts
 source_files:
   - frontend/src/menus/menu.ts
+tests:
+  - frontend/src/__tests__/menu-schema.conflict.test.ts
+  - frontend/src/__tests__/menu-schema.controlspec.test.ts
+  - frontend/src/__tests__/menu-schema.dispose.test.ts
+  - frontend/src/__tests__/menu-schema.guards.test.ts
+  - frontend/src/__tests__/menu-schema.header-toggle.test.ts
+  - frontend/src/__tests__/menu-schema.i18n.test.ts
+  - frontend/src/__tests__/menu-schema.integrity.test.ts
+  - frontend/src/__tests__/menu-schema.kinds.test.ts
+  - frontend/src/__tests__/menu-schema.modelid.test.ts
+  - frontend/src/__tests__/menu-schema.motion-module.test.ts
+  - frontend/src/__tests__/menu-schema.statepath.test.ts
 symbols:
   - SlideMenu
   - getCurrentRenderingMenu
@@ -20,7 +32,6 @@ invariants:
   - RAF 去抖 _reRenderPending 避免连续 reRender 重复构建面板
   - 键盘导航经 data-nav-* 标记统一处理（ui-nav-item.ts 契约），menu.ts 只认标记不靠类名枚举
   - 控件自动注册：ui-helpers 控件函数通过 getCurrentRenderingMenu() 获取当前菜单实例
-tests: []
 use_when:
   - 菜单引擎
   - SlideMenu

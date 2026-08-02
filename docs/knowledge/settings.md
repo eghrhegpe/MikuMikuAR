@@ -7,6 +7,8 @@ scope:
   - frontend/src/menus/settings.ts
 source_files:
   - frontend/src/menus/settings.ts
+tests:
+  - frontend/src/__tests__/settings-diagnostic.test.ts
 adr:
   - ADR-157
 symbols:
@@ -20,7 +22,6 @@ invariants:
   - 7 分类信息架构（ADR-157）作为路由表单一来源：外观/画面/操控/资源/媒体/系统/关于
   - 子页面实现在 settings-*.ts 子模块，本文件仅负责菜单注册、路由表、re-export
   - re-export 保持外部 API 不变，子模块实现内聚
-tests: []
 use_when:
   - 设置页
   - 设置路由

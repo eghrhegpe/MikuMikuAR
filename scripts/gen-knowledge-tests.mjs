@@ -77,7 +77,8 @@ function writeTests(text, tests) {
   const fm = fmBlock(text);
   if (!fm) return text;
   // 解析已有 tests 块内的条目（仅 tests: 字段，排除 source_files 等其它列表）
-  const testsBlock = fm.match(/^tests:\s*\n([\s\S]*?)(?=^[a-z_]+:|\s*$)/m);
+  // 注意：块边界用 `\n\s*$`（空行/文件尾）而非 `\s*$`——后者在 m 模式下匹配任意行尾，会把块截断在首行
+  const testsBlock = fm.match(/^tests:\s*\n([\s\S]*?)(?=^[a-z_]+:|\n\s*$)/m);
   const existing = testsBlock
     ? [...testsBlock[1].matchAll(/^\s*-\s*(frontend\/\S+\.ts)\s*$/gm)].map((m) => m[1])
     : [];
@@ -85,10 +86,10 @@ function writeTests(text, tests) {
   const lines = merged.map((t) => `  - ${t}`).join('\n');
 
   // 移除旧 tests 字段（覆盖 `tests: []` / `tests:` 空块 / 非空列表 / 完全无字段四种情况）
-  let newFm = fm.replace(/^tests:[\s\S]*?(?=^[a-z_]+:|\s*$)/m, '').replace(/\n{3,}/g, '\n\n');
+  let newFm = fm.replace(/^tests:[\s\S]*?(?=^[a-z_]+:|\n\s*$)/m, '').replace(/\n{3,}/g, '\n\n');
 
   // 在 source_files 块结束后插入新的 tests 块
-  const sfEnd = newFm.match(/^(source_files:[\s\S]*?)(?=^[a-z_]+:|\s*$)/m);
+  const sfEnd = newFm.match(/^(source_files:[\s\S]*?)(?=^[a-z_]+:|\n\s*$)/m);
   if (sfEnd) {
     newFm = newFm.replace(sfEnd[1], `${sfEnd[1]}tests:\n${lines}\n`);
   } else {

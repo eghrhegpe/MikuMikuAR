@@ -1,17 +1,17 @@
 ---
 tier: architecture
+source_files:
+  - frontend/src/scene/motion/playback.ts
+tests:
+  - frontend/src/__tests__/playback.observables.test.ts
+  - frontend/src/__tests__/playback.seek.test.ts
+  - frontend/src/__tests__/playback.ui.test.ts
 adr:
   - ADR-204
 kind: motion_playback
 name: 动作播放控制
 category: motion
 scope:
-  - frontend/src/scene/motion/playback.ts
-source_files:tests:
-  - frontend/src/__tests__/playback.observables.test.ts
-  - frontend/src/__tests__/playback.seek.test.ts
-  - frontend/src/__tests__/playback.ui.test.ts
-
   - frontend/src/scene/motion/playback.ts
 symbols:
   - PlaybackObservablesDispose

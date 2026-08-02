@@ -1,14 +1,14 @@
 ---
 tier: architecture
+source_files:
+  - frontend/src/physics/physics-bridge.ts
+tests:
+  - frontend/src/__tests__/physics-bridge.test.ts
 kind: physics_bridge
 name: 物理骨骼桥与每帧注册表
 category: physics
 scope:
   - frontend/src/physics/**
-source_files:tests:
-  - frontend/src/__tests__/physics-bridge.test.ts
-
-  - frontend/src/physics/physics-bridge.ts
 adr:
   - ADR-081
 symbols:

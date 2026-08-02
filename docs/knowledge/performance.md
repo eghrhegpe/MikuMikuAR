@@ -7,6 +7,10 @@ scope:
   - frontend/src/scene/render/performance.ts
 source_files:
   - frontend/src/scene/render/performance.ts
+tests:
+  - frontend/src/__tests__/scene/performance-reflection.test.ts
+  - frontend/src/__tests__/scene/performance-refresh-rate.test.ts
+  - frontend/src/__tests__/scene/performance-snapshot.test.ts
 adr:
   - ADR-159
 symbols:
@@ -26,7 +30,6 @@ invariants:
   - 自动降级按 DegradeLevel 阶梯（0-3），低帧率时经 bridge 调 setRenderState / setLightState
   - getPerfRenderScaleMul（Level 2/3 时降至 0.7）被 render-loop 用于 applyScaling
   - resetPerformanceSnapshot 被 renderer/lighting 引用，确保降级前后状态一致
-tests: []
 use_when:
   - FPS 监控
   - 自动降级

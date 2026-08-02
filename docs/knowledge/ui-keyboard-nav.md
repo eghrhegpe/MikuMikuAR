@@ -1,14 +1,14 @@
 ---
 tier: architecture
+source_files:
+  - frontend/src/core/ui-keyboard-nav.ts
+tests:
+  - frontend/src/__tests__/ui-keyboard-nav.test.ts
 kind: ui_keyboard_nav
 name: 键盘导航工具
 category: core
 scope:
   - frontend/src/core/**
-source_files:tests:
-  - frontend/src/__tests__/ui-keyboard-nav.test.ts
-
-  - frontend/src/core/ui-keyboard-nav.ts
 adr:
   - ADR-153
 symbols:

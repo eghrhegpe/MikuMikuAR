@@ -1,11 +1,8 @@
 ---
 tier: architecture
-kind: menu_schema
-name: 声明式菜单 Schema
-category: ui
-scope:
+source_files:
   - frontend/src/menus/menu-schema.ts
-source_files:tests:
+tests:
   - frontend/src/__tests__/menu-schema.conflict.test.ts
   - frontend/src/__tests__/menu-schema.controlspec.test.ts
   - frontend/src/__tests__/menu-schema.dispose.test.ts
@@ -17,7 +14,10 @@ source_files:tests:
   - frontend/src/__tests__/menu-schema.modelid.test.ts
   - frontend/src/__tests__/menu-schema.motion-module.test.ts
   - frontend/src/__tests__/menu-schema.statepath.test.ts
-
+kind: menu_schema
+name: 声明式菜单 Schema
+category: ui
+scope:
   - frontend/src/menus/menu-schema.ts
 adr:
   - ADR-093

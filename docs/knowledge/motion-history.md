@@ -1,15 +1,15 @@
 ---
 tier: architecture
+source_files:
+  - frontend/src/scene/motion/motion-modules/motion-history.ts
+tests:
+  - frontend/src/__tests__/scene/motion-history.test.ts
 adr:
   - ADR-125
 kind: motion_history
 name: 动作历史管理
 category: motion
 scope:
-  - frontend/src/scene/motion/motion-modules/motion-history.ts
-source_files:tests:
-  - frontend/src/__tests__/scene/motion-history.test.ts
-
   - frontend/src/scene/motion/motion-modules/motion-history.ts
 symbols:
   - MotionHistoryEntry

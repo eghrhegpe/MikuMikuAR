@@ -1,14 +1,14 @@
 ---
 tier: architecture
+source_files:
+  - frontend/src/scene/render/lighting-follow.ts
+tests:
+  - frontend/src/__tests__/scene/lighting-follow.test.ts
 kind: lighting_follow
 name: 个人灯光跟随
 category: rendering
 scope:
   - frontend/src/scene/render/**
-source_files:tests:
-  - frontend/src/__tests__/scene/lighting-follow.test.ts
-
-  - frontend/src/scene/render/lighting-follow.ts
 adr:
   - ADR-168
 symbols:

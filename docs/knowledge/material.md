@@ -1,18 +1,18 @@
 ---
 tier: architecture
+source_files:
+  - frontend/src/scene/manager/material-proxy-resolver.ts
+  - frontend/src/scene/manager/material-sss.ts
+  - frontend/src/scene/manager/material.ts
+  - frontend/src/scene/manager/pbr-builder-init.ts
+tests:
+  - frontend/src/__tests__/material-sss.state.test.ts
 adr:
   - ADR-188
 kind: material_system
 name: 分类材质系统
 category: scene
 scope:
-  - frontend/src/scene/manager/material.ts
-  - frontend/src/scene/manager/material-sss.ts
-  - frontend/src/scene/manager/material-proxy-resolver.ts
-  - frontend/src/scene/manager/pbr-builder-init.ts
-source_files:tests:
-  - frontend/src/__tests__/material-sss.state.test.ts
-
   - frontend/src/scene/manager/material.ts
   - frontend/src/scene/manager/material-sss.ts
   - frontend/src/scene/manager/material-proxy-resolver.ts
