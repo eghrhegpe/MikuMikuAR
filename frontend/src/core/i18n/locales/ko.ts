@@ -1210,6 +1210,13 @@ export const ko: Record<string, string> = {
     'env.groundReflection': '지면 반사와 재질',
     'env.groundMaterial': '재질 및 반사 (사실적, 선택)',
     'env.overlayPattern': '오버레이 패턴',
+    'env.overlayScan': '펄스 스캔 링',
+    'env.overlayGlowEdge': '글로우 엣지 링',
+    'env.groundEmissive': '자발광 바닥',
+    'env.groundEmissiveColor': '발광 색상',
+    'env.groundEmissiveStrength': '발광 강도',
+    'env.groundEmissiveReflectMix': '발광/반사 합성',
+    'env.groundEmissiveUseTexture': '바닥 텍스처를 발광원으로 사용',
     'env.groundReflectQuality': '반사 품질',
     'env.groundReflectBlend': '반사 블렌드',
     'env.groundNormalStrength': '노멀 강도',
@@ -1678,6 +1685,9 @@ export const ko: Record<string, string> = {
         '숫자가 작을수록 먼저 실행됩니다. 이후 레이어가 이전 레이어를 덮어쓸 수 있습니다. 순서는 선언에 의해 결정되며 등록 순서와 무관합니다.',
     // [doc:adr-116] 모션 오버라이드 모듈 UI
     'motion.override.title': '모션 오버라이드',
+    // [audit] 오버라이드/프리셋은 모델별로 저장되며 런타임 시 포커스된 모델에만 적용됩니다
+    'motion.override.nonFocusedHint':
+        '오버라이드와 프리셋은 모델별로 저장되며 런타임 시 현재 포커스된 모델에만 적용됩니다.',
     'motion.override.enabled': '✓ 모듈 활성화됨',
     'motion.override.disabled': '✕ 모듈 비활성화됨',
     'motion.override.redoApplied': '✓ 다시 실행됨',

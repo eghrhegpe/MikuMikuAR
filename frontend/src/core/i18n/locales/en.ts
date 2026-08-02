@@ -535,6 +535,9 @@ export const en: Record<string, string> = {
         'Lower numbers execute first; later layers can override earlier ones. Order is determined by declaration, not registration sequence.',
     // [doc:adr-116] Motion override modular UI
     'motion.override.title': 'Motion Override',
+    // [audit] Overrides/presets are stored per-model and applied to the focused model at runtime
+    'motion.override.nonFocusedHint':
+        'Overrides and presets are stored per model and only affect the currently focused model at runtime.',
     'motion.override.enabled': '✓ Module enabled',
     'motion.override.disabled': '✕ Module disabled',
     'motion.override.redoApplied': '✓ Redone',
@@ -1330,6 +1333,13 @@ export const en: Record<string, string> = {
     'env.groundReflection': 'Ground Reflection & Material',
     'env.groundMaterial': 'Material & Reflection (realistic, optional)',
     'env.overlayPattern': 'Overlay Pattern',
+    'env.overlayScan': 'Pulse Scan Ring',
+    'env.overlayGlowEdge': 'Glow Edge Ring',
+    'env.groundEmissive': 'Self-Emissive Floor',
+    'env.groundEmissiveColor': 'Emissive color',
+    'env.groundEmissiveStrength': 'Emissive strength',
+    'env.groundEmissiveReflectMix': 'Emissive/reflection mix',
+    'env.groundEmissiveUseTexture': 'Use ground texture as emissive source',
     'env.groundReflectQuality': 'Reflection Quality',
     'env.groundReflectBlend': 'Reflection Blend',
     'env.groundNormalStrength': 'Normal Strength',

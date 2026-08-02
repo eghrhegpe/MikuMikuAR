@@ -1212,6 +1212,13 @@ export const ja: Record<string, string> = {
     'env.groundReflection': '地面反射とマテリアル',
     'env.groundMaterial': 'マテリアルと反射（写実・オプション）',
     'env.overlayPattern': 'オーバーレイパターン',
+    'env.overlayScan': 'パルススキャンリング',
+    'env.overlayGlowEdge': 'グローエッジリング',
+    'env.groundEmissive': '自発光フロア',
+    'env.groundEmissiveColor': '発光色',
+    'env.groundEmissiveStrength': '発光強度',
+    'env.groundEmissiveReflectMix': '発光/反射合成',
+    'env.groundEmissiveUseTexture': '地面テクスチャを発光源に使用',
     'env.groundReflectQuality': '反射品質',
     'env.groundReflectBlend': '反射ブレンド',
     'env.groundNormalStrength': '法線強度',
@@ -1684,6 +1691,9 @@ export const ja: Record<string, string> = {
         '数字が小さいほど先に実行されます。後のレイヤーは前のレイヤーの書き込みを上書きできます。順序は宣言によって決まり、登録順ではありません。',
     // [doc:adr-116] モーションオーバーライド モジュールUI
     'motion.override.title': 'モーションオーバーライド',
+    // [audit] オーバーライド/プリセットはモデル単位で保存され、実行時はフォーカス中のモデルにのみ適用
+    'motion.override.nonFocusedHint':
+        'オーバーライドとプリセットはモデル単位で保存され、実行時はフォーカス中のモデルにのみ適用されます。',
     'motion.override.enabled': '✓ モジュール有効',
     'motion.override.disabled': '✕ モジュール無効',
     'motion.override.redoApplied': '✓ 元に戻しました（やり直し）',
