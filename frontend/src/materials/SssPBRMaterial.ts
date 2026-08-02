@@ -33,7 +33,6 @@ export class SssPBRMaterial extends PBRMaterial {
 
     // 底层 PBRSubSurfaceConfiguration 实例引用
     private _subSurface: Nullable<PBRSubSurfaceConfiguration> = null;
-    private _subSurfaceAutoCreated: boolean = false;
 
     constructor(name: string, scene?: Scene, forceGLSL?: boolean) {
         super(name, scene, forceGLSL);

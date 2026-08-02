@@ -205,7 +205,7 @@ function _renderSssParamCard(container: HTMLElement, id: string, cat: string): v
                     sssParams.sssColor?.g ?? 1,
                     sssParams.sssColor?.b ?? 1,
                 ],
-                ([r, g, b]) => setMatSssParams(id, cat, { sssColor: { r, g, b } as any }),
+                ([r, g, b]) => setMatSssParams(id, cat, { sssColor: { r, g, b } }),
                 undefined,
                 'sss-color'
             );

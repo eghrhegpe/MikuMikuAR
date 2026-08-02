@@ -160,7 +160,7 @@ export {
     applyUnlitFallback,
 } from './manager/material';
 export type { MaterialCategoryParams, MaterialCategory, AlphaCtx } from './manager/material';
-export { SSS_MATERIAL_MARKER, isSssMaterial, isPbrMaterial } from './manager/material';
+export { isPbrMaterial } from './manager/material';
 export {
     getMatSssParams,
     setMatSssParams,
