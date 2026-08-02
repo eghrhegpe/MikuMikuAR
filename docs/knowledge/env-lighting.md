@@ -24,7 +24,9 @@ symbols:
   - snapshotEnvPresetByCategory
 invariants:
   - 灯光预设参数在合理范围内
-tests: []
+tests:
+  - frontend/src/__tests__/env-lighting.test.ts
+  - frontend/src/__tests__/env-lighting.test.ts
 use_when:
   - 环境灯光
   - 灯光包装

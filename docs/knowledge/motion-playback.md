@@ -1,5 +1,7 @@
 ---
 tier: architecture
+adr:
+  - ADR-204
 kind: motion_playback
 name: 动作播放控制
 category: motion
@@ -7,7 +9,6 @@ scope:
   - frontend/src/scene/motion/playback.ts
 source_files:
   - frontend/src/scene/motion/playback.ts
-adr: []
 symbols:
   - PlaybackObservablesDispose
   - initPlaybackObservables
@@ -17,7 +18,13 @@ invariants:
   - _disposed 双清理防护：dispose 后不再执行任何回调
   - _manager 引用在 initPlaybackObservables 中注入，dispose 后清零
   - autoLoop 期间 _loopPending 为 true，防止 UI 闪烁
-tests: []
+tests:
+  - frontend/src/__tests__/playback.observables.test.ts
+  - frontend/src/__tests__/playback.seek.test.ts
+  - frontend/src/__tests__/playback.ui.test.ts
+  - frontend/src/__tests__/playback.observables.test.ts
+  - frontend/src/__tests__/playback.seek.test.ts
+  - frontend/src/__tests__/playback.ui.test.ts
 use_when:
   - 播放进度 UI
   - seek 拖动

@@ -46,7 +46,9 @@ invariants:
   - disposeWater 级联释放水面 RT + 材质 + 镜像相机
   - 涟漪（ripple）独立于水面主体
   - 水下过渡效果与水面可见性联动
-tests: []
+tests:
+  - frontend/src/__tests__/scene/env-water.test.ts
+  - frontend/src/__tests__/scene/env-water.test.ts
 use_when:
   - 水面
   - 水池

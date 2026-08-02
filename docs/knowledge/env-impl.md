@@ -42,7 +42,9 @@ invariants:
   - dispose 链路级联释放 water/clouds/mirror 子资源；observer 句柄经 observer-handle 管理
   - disposeEnvUpdateObserver 中调用 clearSceneTickCallbacks 清除所有 tick 回调
   - 外部模块只应经 env.ts 门面访问本文件导出的符号
-tests: []
+tests:
+  - frontend/src/__tests__/scene/env-impl.test.ts
+  - frontend/src/__tests__/scene/env-impl.test.ts
 use_when:
   - 环境实现
   - observer

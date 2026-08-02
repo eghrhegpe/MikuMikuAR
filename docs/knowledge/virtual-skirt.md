@@ -25,7 +25,23 @@ invariants:
   - 坐标转换纯函数 localToWorld / worldDeltaToLocal 处理 WASM 世界坐标↔mesh 局部顶点
   - 使用专用 worldId（不与 PMX 刚体同 world，规避坐标系/碰撞干扰）
   - dispose 每项独立 try/catch（impl 可能已被 WASM runtime 销毁），移除失败 logWarn 不阻断后续
-tests: []
+tests:
+  - frontend/src/__tests__/virtual-skirt.build-cleanup.test.ts
+  - frontend/src/__tests__/virtual-skirt.coord.test.ts
+  - frontend/src/__tests__/virtual-skirt.coordspace.test.ts
+  - frontend/src/__tests__/virtual-skirt.dispose.test.ts
+  - frontend/src/__tests__/virtual-skirt.inject.test.ts
+  - frontend/src/__tests__/virtual-skirt.quality.test.ts
+  - frontend/src/__tests__/virtual-skirt.update.test.ts
+  - frontend/src/__tests__/virtual-skirt.waist-cache.test.ts
+  - frontend/src/__tests__/virtual-skirt.build-cleanup.test.ts
+  - frontend/src/__tests__/virtual-skirt.coord.test.ts
+  - frontend/src/__tests__/virtual-skirt.coordspace.test.ts
+  - frontend/src/__tests__/virtual-skirt.dispose.test.ts
+  - frontend/src/__tests__/virtual-skirt.inject.test.ts
+  - frontend/src/__tests__/virtual-skirt.quality.test.ts
+  - frontend/src/__tests__/virtual-skirt.update.test.ts
+  - frontend/src/__tests__/virtual-skirt.waist-cache.test.ts
 use_when:
   - 虚拟裙骨
   - 物理裙摆

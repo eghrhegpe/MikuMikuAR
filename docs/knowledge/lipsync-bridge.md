@@ -23,7 +23,9 @@ invariants:
   - 口型同步开关可运行时切换
   - 口型参数在 [-1, 1] 范围内
   - 音频信号驱动口型，非 VMD 动作覆盖
-tests: []
+tests:
+  - frontend/src/__tests__/lipsync-bridge.test.ts
+  - frontend/src/__tests__/lipsync-bridge.test.ts
 use_when:
   - 口型同步
   - lipsync

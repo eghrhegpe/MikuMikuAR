@@ -22,7 +22,9 @@ invariants:
   - initWindPhysics 幂等；physics impl 延迟就绪时由 retry 补齐
   - disposeWindPhysics 仅移除自身 observer，不影响其他 onSyncObservable 订阅者
   - 经 mmd-adapter 公开 API 访问骨架，不依赖私有字段反射
-tests: []
+tests:
+  - frontend/src/__tests__/wind-physics.test.ts
+  - frontend/src/__tests__/wind-physics.test.ts
 use_when:
   - 风力物理
   - 风力注入

@@ -7,6 +7,8 @@ scope:
   - frontend/src/scene/env/env-ground-spec.ts
 source_files:
   - frontend/src/scene/env/env-ground-spec.ts
+tests:
+  - frontend/src/__tests__/scene/env-ground-spec.contract.test.ts
 adr:
   - ADR-226
 symbols:

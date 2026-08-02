@@ -23,7 +23,29 @@ invariants:
   - getStateValue/setStateValue 经 get/set 衍生转换（如 windDirection→角度），避免硬编码转换逻辑散落
   - onChange 副作用需幂等（重复触发安全）
   - MenuNode 构成声明式树，由 renderMenu（render-menu.ts）统一渲染，本模块只定义类型与解析
-tests: []
+tests:
+  - frontend/src/__tests__/menu-schema.conflict.test.ts
+  - frontend/src/__tests__/menu-schema.controlspec.test.ts
+  - frontend/src/__tests__/menu-schema.dispose.test.ts
+  - frontend/src/__tests__/menu-schema.guards.test.ts
+  - frontend/src/__tests__/menu-schema.header-toggle.test.ts
+  - frontend/src/__tests__/menu-schema.i18n.test.ts
+  - frontend/src/__tests__/menu-schema.integrity.test.ts
+  - frontend/src/__tests__/menu-schema.kinds.test.ts
+  - frontend/src/__tests__/menu-schema.modelid.test.ts
+  - frontend/src/__tests__/menu-schema.motion-module.test.ts
+  - frontend/src/__tests__/menu-schema.statepath.test.ts
+  - frontend/src/__tests__/menu-schema.conflict.test.ts
+  - frontend/src/__tests__/menu-schema.controlspec.test.ts
+  - frontend/src/__tests__/menu-schema.dispose.test.ts
+  - frontend/src/__tests__/menu-schema.guards.test.ts
+  - frontend/src/__tests__/menu-schema.header-toggle.test.ts
+  - frontend/src/__tests__/menu-schema.i18n.test.ts
+  - frontend/src/__tests__/menu-schema.integrity.test.ts
+  - frontend/src/__tests__/menu-schema.kinds.test.ts
+  - frontend/src/__tests__/menu-schema.modelid.test.ts
+  - frontend/src/__tests__/menu-schema.motion-module.test.ts
+  - frontend/src/__tests__/menu-schema.statepath.test.ts
 use_when:
   - 菜单声明
   - 控件配置
