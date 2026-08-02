@@ -817,6 +817,70 @@ export function setOnGroundChanged(cb: (() => void) | null): void {
 
 // ======== 纹理生成 ========
 
+// [adr-230] 网格/扫描环/辉光边公共绘制辅助：_drawGroundCanvas（整幅画布）
+// 与 _drawOverlayPattern（文件贴图叠加层）共用，避免两处复制粘贴。
+
+function _drawGridLines(
+    ctx: CanvasRenderingContext2D,
+    size: number,
+    tileSize: number,
+    strokeStyle: string
+): void {
+    ctx.strokeStyle = strokeStyle;
+    ctx.lineWidth = Math.max(1, Math.round(tileSize / 24));
+    for (let x = tileSize; x < size; x += tileSize) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, size);
+        ctx.stroke();
+    }
+    for (let y = tileSize; y < size; y += tileSize) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(size, y);
+        ctx.stroke();
+    }
+}
+
+function _drawScanRings(
+    ctx: CanvasRenderingContext2D,
+    size: number,
+    tileSize: number,
+    rgba: (a: number) => string,
+    scanPhase = 0
+): void {
+    const cx = size / 2;
+    const cy = size / 2;
+    const maxR = size / 2;
+    const rings = 3;
+    for (let i = 0; i < rings; i++) {
+        const ph = (scanPhase + i / rings) % 1;
+        const radius = Math.max(1, ph * maxR);
+        const alpha = 1 - ph;
+        ctx.strokeStyle = rgba(alpha);
+        ctx.lineWidth = Math.max(2, Math.round(tileSize / 8));
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+}
+
+function _drawGlowEdge(
+    ctx: CanvasRenderingContext2D,
+    size: number,
+    tileSize: number,
+    color: string
+): void {
+    ctx.save();
+    ctx.shadowColor = color;
+    ctx.shadowBlur = Math.max(4, tileSize / 4);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = Math.max(2, Math.round(tileSize / 16));
+    const inset = tileSize / 2;
+    ctx.strokeRect(inset, inset, size - 2 * inset, size - 2 * inset);
+    ctx.restore();
+}
+
 /**
  * 统一地面画布绘制（canvas 来源 + 程序化/纯色兜底纹理）。
  * @param scanPhase 0–1 扫描环动画相位；仅 groundOverlay==='scan' 时生效，静态纹理传 0。
@@ -829,31 +893,17 @@ function _drawGroundCanvas(
     scanPhase = 0
 ): void {
     const c0 = rgbString(col3FromTriple(state.groundColor));
-    const lr = Math.round(state.groundLineColor[0] * 255);
-    const lg = Math.round(state.groundLineColor[1] * 255);
-    const lb = Math.round(state.groundLineColor[2] * 255);
-    const c1 = `rgb(${lr},${lg},${lb})`;
-    const c1a = (a: number) => `rgba(${lr},${lg},${lb},${Math.max(0, Math.min(1, a))})`;
+    const line = col3FromTriple(state.groundLineColor);
+    const c1 = rgbString(line);
+    const c1a = (a: number) =>
+        `rgba(${Math.round(line.r * 255)},${Math.round(line.g * 255)},${Math.round(line.b * 255)},${Math.max(0, Math.min(1, a))})`;
     const tileSize = Math.max(8, Math.round(64 * state.groundGridSize));
 
     ctx.fillStyle = c0;
     ctx.fillRect(0, 0, size, size);
 
     if (state.groundOverlay === 'grid') {
-        ctx.strokeStyle = c1;
-        ctx.lineWidth = Math.max(1, Math.round(tileSize / 24));
-        for (let x = tileSize; x < size; x += tileSize) {
-            ctx.beginPath();
-            ctx.moveTo(x, 0);
-            ctx.lineTo(x, size);
-            ctx.stroke();
-        }
-        for (let y = tileSize; y < size; y += tileSize) {
-            ctx.beginPath();
-            ctx.moveTo(0, y);
-            ctx.lineTo(size, y);
-            ctx.stroke();
-        }
+        _drawGridLines(ctx, size, tileSize, c1);
     } else if (state.groundOverlay === 'checker') {
         switch (state.groundPattern) {
             case 'checker':
@@ -901,44 +951,11 @@ function _drawGroundCanvas(
         }
     } else if (state.groundOverlay === 'scan') {
         // 底层霓虹网格（半透明），扫描环在其上脉冲扩散
-        ctx.strokeStyle = c1a(0.35);
-        ctx.lineWidth = Math.max(1, Math.round(tileSize / 24));
-        for (let x = tileSize; x < size; x += tileSize) {
-            ctx.beginPath();
-            ctx.moveTo(x, 0);
-            ctx.lineTo(x, size);
-            ctx.stroke();
-        }
-        for (let y = tileSize; y < size; y += tileSize) {
-            ctx.beginPath();
-            ctx.moveTo(0, y);
-            ctx.lineTo(size, y);
-            ctx.stroke();
-        }
-        const cx = size / 2;
-        const cy = size / 2;
-        const maxR = size / 2;
-        const rings = 3;
-        for (let i = 0; i < rings; i++) {
-            const ph = (scanPhase + i / rings) % 1;
-            const radius = Math.max(1, ph * maxR);
-            const alpha = 1 - ph;
-            ctx.strokeStyle = c1a(alpha);
-            ctx.lineWidth = Math.max(2, Math.round(tileSize / 8));
-            ctx.beginPath();
-            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-            ctx.stroke();
-        }
+        _drawGridLines(ctx, size, tileSize, c1a(0.35));
+        _drawScanRings(ctx, size, tileSize, c1a, scanPhase);
     } else if (state.groundOverlay === 'glowEdge') {
         // 边界辉光环（静态），gridSize 控制环密度/间距
-        ctx.save();
-        ctx.shadowColor = c1;
-        ctx.shadowBlur = Math.max(4, tileSize / 4);
-        ctx.strokeStyle = c1;
-        ctx.lineWidth = Math.max(2, Math.round(tileSize / 16));
-        const inset = tileSize / 2;
-        ctx.strokeRect(inset, inset, size - 2 * inset, size - 2 * inset);
-        ctx.restore();
+        _drawGlowEdge(ctx, size, tileSize, c1);
     }
 }
 
@@ -959,28 +976,14 @@ function _drawOverlayPattern(
     if (state.groundOverlay === 'none') {
         return;
     }
-    const r = Math.round(state.groundLineColor[0] * 255);
-    const g = Math.round(state.groundLineColor[1] * 255);
-    const b = Math.round(state.groundLineColor[2] * 255);
-    const lineColor = `rgb(${r},${g},${b})`;
-    const lineColorA = (a: number) => `rgba(${r},${g},${b},${Math.max(0, Math.min(1, a))})`;
+    const line = col3FromTriple(state.groundLineColor);
+    const lineColor = rgbString(line);
+    const lineColorA = (a: number) =>
+        `rgba(${Math.round(line.r * 255)},${Math.round(line.g * 255)},${Math.round(line.b * 255)},${Math.max(0, Math.min(1, a))})`;
     const tileSize = Math.max(8, Math.round(64 * state.groundGridSize));
 
     if (state.groundOverlay === 'grid') {
-        ctx.strokeStyle = lineColor;
-        ctx.lineWidth = Math.max(1, Math.round(tileSize / 24));
-        for (let x = tileSize; x < size; x += tileSize) {
-            ctx.beginPath();
-            ctx.moveTo(x, 0);
-            ctx.lineTo(x, size);
-            ctx.stroke();
-        }
-        for (let y = tileSize; y < size; y += tileSize) {
-            ctx.beginPath();
-            ctx.moveTo(0, y);
-            ctx.lineTo(size, y);
-            ctx.stroke();
-        }
+        _drawGridLines(ctx, size, tileSize, lineColor);
     } else if (state.groundOverlay === 'checker') {
         ctx.fillStyle = lineColor;
         for (let y = 0; y < size; y += tileSize) {
@@ -992,42 +995,10 @@ function _drawOverlayPattern(
         }
     } else if (state.groundOverlay === 'scan') {
         // 底层半透明网格 + 脉冲扫描环（静态相位，逐帧动画由 tickGround 驱动）
-        ctx.strokeStyle = lineColorA(0.35);
-        ctx.lineWidth = Math.max(1, Math.round(tileSize / 24));
-        for (let x = tileSize; x < size; x += tileSize) {
-            ctx.beginPath();
-            ctx.moveTo(x, 0);
-            ctx.lineTo(x, size);
-            ctx.stroke();
-        }
-        for (let y = tileSize; y < size; y += tileSize) {
-            ctx.beginPath();
-            ctx.moveTo(0, y);
-            ctx.lineTo(size, y);
-            ctx.stroke();
-        }
-        const cx = size / 2;
-        const cy = size / 2;
-        const maxR = size / 2;
-        const rings = 3;
-        for (let i = 0; i < rings; i++) {
-            const ph = (scanPhase + i / rings) % 1;
-            const radius = Math.max(1, ph * maxR);
-            ctx.strokeStyle = lineColorA(1 - ph);
-            ctx.lineWidth = Math.max(2, Math.round(tileSize / 8));
-            ctx.beginPath();
-            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-            ctx.stroke();
-        }
+        _drawGridLines(ctx, size, tileSize, lineColorA(0.35));
+        _drawScanRings(ctx, size, tileSize, lineColorA, scanPhase);
     } else if (state.groundOverlay === 'glowEdge') {
-        ctx.save();
-        ctx.shadowColor = lineColor;
-        ctx.shadowBlur = Math.max(4, tileSize / 4);
-        ctx.strokeStyle = lineColor;
-        ctx.lineWidth = Math.max(2, Math.round(tileSize / 16));
-        const inset = tileSize / 2;
-        ctx.strokeRect(inset, inset, size - 2 * inset, size - 2 * inset);
-        ctx.restore();
+        _drawGlowEdge(ctx, size, tileSize, lineColor);
     }
 }
 
@@ -1151,15 +1122,18 @@ export function applyGroundEdgeFade(mat: GroundMat, fade: number, scene: Scene):
 export function _syncGroundEmissive(mat: GroundMat, state: EnvState): void {
     const ec = state.groundEmissiveColor;
     const es = state.groundEmissiveStrength;
-    // 标准/PBR 均有 emissiveColor；用 Color3.scale 控制强度（0=关）
-    (mat as StandardMaterial).emissiveColor = new Color3(ec[0], ec[1], ec[2]).scale(es);
+    // 标准/PBR 均有 emissiveColor/emissiveTexture；用结构类型避免对 PBR 材质做
+    // StandardMaterial 下转型（运行时安全，类型上更精确）。
+    const em = mat as { emissiveColor: Color3; emissiveTexture: BaseTexture | null };
+    // 用 Color3.scale 控制强度（0=关）
+    em.emissiveColor = new Color3(ec[0], ec[1], ec[2]).scale(es);
 
     // 可选发光纹理：复用当前 albedo 纹理作为发光源；空 = 仅纯色发光。
     const albedo = _getAlbedoTex(mat);
     if (state.groundEmissiveTexture && albedo) {
-        (mat as StandardMaterial).emissiveTexture = albedo;
-    } else if ((mat as StandardMaterial).emissiveTexture && !state.groundEmissiveTexture) {
-        (mat as StandardMaterial).emissiveTexture = null;
+        em.emissiveTexture = albedo;
+    } else if (em.emissiveTexture && !state.groundEmissiveTexture) {
+        em.emissiveTexture = null;
     }
     // [adr-230 P1-fix] 刷新水下控制器的还原快照，避免出水时还原到陈旧 emissive。
     underwaterFogController.noteGroundEmissiveChanged(mat);
@@ -1489,6 +1463,7 @@ export function disposeGround(): void {
     _currentGroundKey = '';
     _groundScrollU = 0;
     _groundScrollV = 0;
+    _scanRingPhase = 0; // [adr-230] 复位扫描环相位，避免场景重建后相位延续
     // 补全状态重置：回调引用 / 纹理缓存 / diff 哨兵值，避免场景重建后脏值泄漏
     _onTerrainReady = null;
     _onGroundChanged = null;
