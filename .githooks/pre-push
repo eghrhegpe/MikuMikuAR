@@ -144,6 +144,21 @@ cd "$ROOT" && node scripts/gen-funcmap.mjs --check >/dev/null 2>&1 || {
 }
 note_check "✅ check:funcmap 已同步"
 
+# ── check:docsindex（可自动修复，amend 进当前 commit） ──
+# gen-docs-index 生成 5 个分区索引（guide/adr/knowledge/buglog/releases）：
+# 新增 ADR/buglog/发版记录后未同步索引 → --check 检出 stale。
+# 无条件运行（含 DOCS_ONLY）：纯文档变更恰是最易漏索引的场景
+# （2026-08-02 v1.8.0 发版记录漏 index 即实证），与 status/funcmap 同模式。
+echo "[pre-push] check:docsindex"
+cd "$ROOT" && node scripts/gen-docs-index.mjs --check >/dev/null 2>&1 || {
+  echo "⚠️  分区索引（guide/adr/knowledge/buglog/releases）未同步，自动修复中..."
+  cd "$ROOT" && node scripts/gen-docs-index.mjs
+  git add docs/guide/index.md docs/adr/index.md docs/knowledge/index.md docs/buglog/index.md docs/releases/index.md 2>/dev/null || true
+  git commit --amend --no-edit 2>/dev/null && echo "⚠️  已自动更新分区索引并 amend 进当前 commit。" || echo "⚠️  已 stage 分区索引（无 HEAD 可 amend，请手动 commit）。"
+  note_fixed "分区索引已同步"
+}
+note_check "✅ check:docsindex 分区索引同步"
+
 # ── lint（仅 TS/JS 变更时；不可自动修复） ──
 # 纯 Go / 纯文档变更不触发前端 lint（Go 有 go vet，文档无 lint 必要）
 # npm 不可用时跳过（环境问题不该阻断代码推送）

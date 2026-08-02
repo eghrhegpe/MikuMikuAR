@@ -73,6 +73,13 @@ jobs:
         # 路径以仓库根为基准，与 cwd 无关（从 frontend/ 跑 ../scripts/ 亦可）。
         run: node ../scripts/check-doc-drift.mjs
 
+      - name: Docs index sync check (gen-docs-index --check)
+        # 分区索引（guide/adr/knowledge/buglog/releases）必须与文件系统同步：
+        # 新增 ADR/buglog/发版记录后未同步索引 → --check 检出 stale → exit 1 阻塞 CI。
+        # 修复: 运行 npm run gen:docsindex 后随 PR 提交生成物（pre-push 同名门禁）。
+        # 曾漏网：2026-08-02 v1.8.0 发版记录只提交 v1.8.0.md、漏同步 releases/index.md。
+        run: node ../scripts/gen-docs-index.mjs --check
+
       - name: Build
         run: npx vite build
 
