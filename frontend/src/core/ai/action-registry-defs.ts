@@ -37,7 +37,9 @@ export function registerControlActions(): void {
         label: 'ai.actions.control.setLightIntensity',
         domain: 'scene',
         params: [{ name: 'dirIntensity', type: 'range', min: 0, max: 1, step: 0.05 }],
-        execute: (p) => setLightState({ dirIntensity: p.dirIntensity as number }),
+        execute: (p) => {
+            setLightState({ dirIntensity: p.dirIntensity as number });
+        },
     });
 
     // light:color
@@ -46,7 +48,9 @@ export function registerControlActions(): void {
         label: 'ai.actions.control.setLightColor',
         domain: 'scene',
         params: [{ name: 'dirColor', type: 'color' }],
-        execute: (p) => setLightState({ dirColor: p.dirColor as [number, number, number] }),
+        execute: (p) => {
+            setLightState({ dirColor: p.dirColor as [number, number, number] });
+        },
     });
 
     // camera:mode

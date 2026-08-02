@@ -15,6 +15,7 @@ import { onBoneMatricesUpdated } from '@/core/mmd-adapter';
 import { initTransformGizmo } from './transform-gizmo';
 import { scheduleRefresh } from '@/core/reactivity';
 import { resetPerformanceSnapshot, isSnapshotResetSuppressed } from './performance';
+import { logWarn } from '@/core/logger';
 import { setKey } from '@/core/set-key';
 import { safeDispose } from '@/core/dispose-helpers';
 import { col3FromTriple } from '@/core/color-helpers';
@@ -278,9 +279,25 @@ export function getLightState(): LightState {
     };
 }
 
-export function setLightState(s: Partial<LightState>): void {
+/**
+ * [fix:P1] 灯光运行时是否就绪（@dom/e2e 环境无灯光/管线时返回 false，供 UI/测试预检跳过守卫域）。
+ * 与 setLightState 的守卫条件保持一致（hemiLight/dirLight/triggerAutoSave 三者齐备）。
+ */
+export function isLightingReady(): boolean {
+    return !!lightingState.hemiLight && !!lightingState.dirLight && !!lightingState.triggerAutoSave;
+}
+
+/**
+ * 写入灯光状态。守卫未就绪时 logWarn + 返回 false（不再静默吞写），
+ * 使「UI 可操作但 state 未生效」可被观测（@dom 测试环境无灯光对象时会命中）。
+ */
+export function setLightState(s: Partial<LightState>): boolean {
     if (!lightingState.hemiLight || !lightingState.dirLight || !lightingState.triggerAutoSave) {
-        return;
+        logWarn(
+            'lighting',
+            `setLightState 被守卫拦截：灯光未就绪（hemiLight=${!!lightingState.hemiLight}, dirLight=${!!lightingState.dirLight}, triggerAutoSave=${!!lightingState.triggerAutoSave}），写入未生效`
+        );
+        return false;
     }
 
     const envBrightness = Math.max(0.01, envState.globalBrightness ?? 1);
@@ -345,6 +362,7 @@ export function setLightState(s: Partial<LightState>): void {
         }
     }
     scheduleRefresh();
+    return true;
 }
 
 /** 平滑过渡当前灯光到目标灯光参数，默认 2 秒 */

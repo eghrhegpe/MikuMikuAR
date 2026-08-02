@@ -285,6 +285,24 @@ async function executeAction(page: any, node: any): Promise<void> {
     const modelId = node.modelId;
     const sel = controlSelector(node);
 
+    // [fix:P1] 守卫域整域跳过：light./render. 域在 @dom 环境（无灯光/管线）写入被
+    // setLightState/setRenderState 守卫拦截（state 层静默不生效），动作断言必然误报。
+    // 探测 __state.isLightingReady/isRenderReady，未就绪则跳过该节点动作（DOM 渲染断言
+    // 已在上一个循环完成；真实灯光环境 @webgl 下 ready=true 仍会执行完整断言）。
+    if (bind.startsWith('light.')) {
+        const ready = await page.evaluate(
+            () => (window as any).__state?.isLightingReady ?? false
+        );
+        if (!ready) {
+            return;
+        }
+    } else if (bind.startsWith('render.')) {
+        const ready = await page.evaluate(() => (window as any).__state?.isRenderReady ?? false);
+        if (!ready) {
+            return;
+        }
+    }
+
     switch (node.action?.type) {
         case 'drag': {
             // slider：键盘驱动（DragSliderController：Home→min，ArrowRight 步进 step）

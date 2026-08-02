@@ -628,10 +628,18 @@ function _ensureCelPostProcess(enabled: boolean): void {
 
 // ======== 对外状态设置（含自动保存） ========
 
-export function setRenderState(s: Partial<RenderState>): void {
+/**
+ * [fix:P1] 渲染管线是否就绪（@dom/e2e 环境无 pipeline/scene 时返回 false，供 UI/测试预检跳过守卫域）。
+ * 与 setRenderState 的守卫条件保持一致。
+ */
+export function isRenderReady(): boolean {
+    return !!pipeline && !!_scene && !!_modelRegistry && !!_triggerAutoSave;
+}
+
+export function setRenderState(s: Partial<RenderState>): boolean {
     if (!pipeline || !_scene || !_modelRegistry || !_triggerAutoSave) {
-        logWarn('renderer', 'setRenderState: pipeline/scene 未初始化，状态更新被忽略');
-        return;
+        logWarn('renderer', 'setRenderState: pipeline/scene 未初始化，状态更新被忽略（守卫拦截，返回 false）');
+        return false;
     }
 
     _applyRenderState(s);
@@ -643,6 +651,7 @@ export function setRenderState(s: Partial<RenderState>): void {
     if (!isSnapshotResetSuppressed()) {
         resetPerformanceSnapshot();
     }
+    return true;
 }
 
 // ======== 平滑过渡 ========
