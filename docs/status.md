@@ -15,6 +15,7 @@
 
 | ADR | 主题 | 状态 |
 |-----|------|------|
+| ADR-230 | 文档自动化工具链决策 —— 从手写索引到机器守护的完整闭环 | 已落地（2026-08-02，十轮抽样迭代后收口） |
 | ADR-229 | E2E 自动化推进 —— 从 schema 到测试零映射 | 📝 规划（2026-08-02） |
 | ADR-228 | UI 行控件公共化第三轮 + 命名去 `_` 前缀 | 已完成（2026-07-24 执行）（2026-07-22） |
 | ADR-227 | 个人灯阴影按需开关与分辨率可调 | 已完成（2026-08-01） |
@@ -224,7 +225,7 @@
 | ADR-22 | 预设治理 — 统一管理范围与分级架构 | 已实现 — 8 项改动全完成：EnvPreset 精简 + L2 环境预设扩展 + 用户预设快照迁移（2026-07-04） |
 | ADR-21 | 程序化动作系统（Idle/Auto Dance + LipSync + 视线追踪） | 已完成 — Idle/AutoDance/LipSync/VPD/VMD-writer 5 套测试全通过（2026-07-03） |
 | ADR-20 | 换装系统（服装变体/纹理替换） | 已完成 — Phase 8 完成，outfit.ts 加载/应用/重置 + 自动发现 + 序列化（2026-06-28） |
-| ADR-19 | XPBD 布料模拟引擎选型与架构 | 已完成 — xpbd-solver/collider/cloth/renderer + 20 tests 全通过 ⚠️ **已废弃**（XPBD 全栈移除，见 ADR-081；源码 xpbd-solver/collider/cloth 等已删）（2026-06-28） |
+| ADR-19 | XPBD 布料模拟引擎选型与架构 | 已完成 — xpbd-solver/collider/cloth/renderer + 20 tests 全通过 ⚠️ **已废弃**（XPBD 全栈移除，见 ADR-081；源码 xpbd-solver/collider/cloth 等已删；布料功能替代见 ADR-084）（2026-06-28） |
 | ADR-18 | PathManager 平台抽象层 + 文件 I/O 审计 | 已完成 — PathManager 接口 + trustedRoots 修复 + copyDir 流式复制 + zipextract 句柄关闭修正（2026-07-04） |
 | ADR-17 | Android 平台适配（精简版） | 主体已完成（Phase A/B/C ✅）；P0(A0-01/A0-02) 与 P1(A1-01~05) ✅ 全部已实施；P2 七项 ✅ 全部已落地（A2-04 于 2026-07-22 完成全路径 `toBlob` 迁移）；P3 四项 ✅ 全部已修复（A3-01/04 于 2026-07-22 完成事件总线消费）。A0-01 已于 2026-07-24 根治：模型文件改经 `readFileBytes` + Blob URL 加载（复用 ADR-176 浏览器端路径，见 frontend/src/core/fileservice.ts `resolveFileUrl`），移除 `MainActivity.java` 的 `MIXED_CONTENT_ALWAYS_ALLOW`；不再依赖 PathHandler 代理方案（ADR-133 方案 B 不再必要）。§四 SAF 目录选择方案已放弃，改用 `MANAGE_EXTERNAL_STORAGE` 授权 `/sdcard/MMD`（2026-07-22 核对）。 |
 | ADR-16 | 视线追踪子系统架构 | 已完成 — 双路径方案已实施（WASM frontBuffer 直写 + JS linkedBone + updateWorldMatrix），手动计时方案（方案 A）为优化项，需上游 babylon-mmd 暴露 beforePhysics/afterPhysics API（2026-07-03） |
