@@ -19,7 +19,9 @@ import {
     buildMotionRootItems,
     buildRetargetLevel,
     hideMotionPopup,
+    openProcDetail,
 } from './motion-root-ui';
+import type { LoadableProcId } from '../scene/motion/motion-intent';
 
 // ═══════════════════════════════════════════════════════════
 // Barrel Re-Exports（外部调用方继续从 ./motion-popup 导入）
@@ -180,6 +182,14 @@ function motionOnItemClick(row: PopupRow): void {
         void executeActionById('motion:open-detail', {
             sceneMotionId: row.target.split(':')[1] || undefined,
         });
+        return;
+    }
+    // [audit] proc 行体点击：激活并进入程序化统一详情页（与 VMD 行体点击进详情对齐）
+    if (row.target && row.target.startsWith('__proc_detail__:')) {
+        const procId = row.target.split(':')[1] as LoadableProcId;
+        if (procId) {
+            openProcDetail(procId);
+        }
         return;
     }
     // 清除场景级动作（ADR-167：清空整个场景库 + 默认动作）
