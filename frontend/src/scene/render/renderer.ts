@@ -667,14 +667,19 @@ function _cancelRenderTransition(): void {
  * 平滑过渡渲染状态到目标值，默认 2 秒。
  * 数值/颜色字段做 lerp 插值；布尔字段按阈值提前启用；枚举字段在动画结束时切换。
  * 中间帧不触发自动保存，仅最终帧保存一次。
+ * [fix:P2] 守卫与 setRenderState/isRenderReady 对齐（补 _modelRegistry），拦截时 logWarn + 返回 false。
  */
 export function transitionRenderState(
     target: Partial<RenderState>,
     duration: number = 2000,
     onComplete?: () => void
-): void {
-    if (!pipeline || !_scene || !_triggerAutoSave) {
-        return;
+): boolean {
+    if (!pipeline || !_scene || !_modelRegistry || !_triggerAutoSave) {
+        logWarn(
+            'renderer',
+            `transitionRenderState 被守卫拦截：渲染未就绪（pipeline=${!!pipeline}, _scene=${!!_scene}, _modelRegistry=${!!_modelRegistry}, _triggerAutoSave=${!!_triggerAutoSave}），过渡未启动`
+        );
+        return false;
     }
 
     // 取消上一次过渡动画，避免多个动画循环互相覆盖
@@ -819,6 +824,7 @@ export function transitionRenderState(
     };
 
     _renderTransitionObserver = observeOnce(_scene.onBeforeRenderObservable, animLoop);
+    return true;
 }
 
 // ======== 相机重挂接 ========

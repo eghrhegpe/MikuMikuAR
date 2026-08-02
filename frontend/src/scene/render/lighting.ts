@@ -365,19 +365,26 @@ export function setLightState(s: Partial<LightState>): boolean {
     return true;
 }
 
-/** 平滑过渡当前灯光到目标灯光参数，默认 2 秒 */
+/**
+ * 平滑过渡当前灯光到目标灯光参数，默认 2 秒。
+ * [fix:P2] 守卫与 isLightingReady 同口径（hemiLight/dirLight/triggerAutoSave 三条件），
+ * 拦截时 logWarn + 返回 false；scene 缺失单独在注册 observer 前防御（animLoop 内亦有防御）。
+ */
 export function transitionLighting(
     target: Partial<LightState>,
     duration: number = 2000,
     onComplete?: () => void
-): void {
-    if (
-        !lightingState.hemiLight ||
-        !lightingState.dirLight ||
-        !lightingState.triggerAutoSave ||
-        !lightingState.scene
-    ) {
-        return;
+): boolean {
+    if (!lightingState.hemiLight || !lightingState.dirLight || !lightingState.triggerAutoSave) {
+        logWarn(
+            'lighting',
+            `transitionLighting 被守卫拦截：灯光未就绪（hemiLight=${!!lightingState.hemiLight}, dirLight=${!!lightingState.dirLight}, triggerAutoSave=${!!lightingState.triggerAutoSave}），过渡未启动`
+        );
+        return false;
+    }
+    if (!lightingState.scene) {
+        logWarn('lighting', 'transitionLighting 被守卫拦截：scene 未就绪，过渡未启动');
+        return false;
     }
     const source = getLightState(); // 当前完整状态
     const startTime = performance.now();
@@ -443,6 +450,7 @@ export function transitionLighting(
         lightingState.scene.onBeforeRenderObservable,
         animLoop
     );
+    return true;
 }
 
 /** 整体清理光照模块（场景销毁时调用） */
