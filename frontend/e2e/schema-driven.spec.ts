@@ -183,17 +183,29 @@ function describeSchemaPanel(
                     }
                 }
 
-                // 4. slider/colorSlider: 验证 min/max/step 属性
-                if ((node.kind === 'slider' || node.kind === 'colorSlider') && node.control) {
-                    const slider = el.locator('input[type="range"]').first();
+                // 4. slider: 验证 min/max 属性
+                //    [ADR-229 §2.2 审核修正] addSliderRow（ui-rows.ts:201-204）渲染的是
+                //    div[role="slider"] + aria-valuemin/max（ADR-140 DragSliderController），
+                //    并非 input[type=range]——旧断言等不存在的元素，默认 5s 全局 timeout
+                //    逐个累积（38 节点 ≈ 190s）直接打爆 test timeout。改用 aria 属性 + 短超时。
+                if (node.kind === 'slider' && node.control) {
+                    const slider = el.locator('[role="slider"]').first();
                     if (node.control.min !== undefined) {
                         try {
-                            await expect(slider).toHaveAttribute('min', String(node.control.min));
+                            await expect(slider).toHaveAttribute(
+                                'aria-valuemin',
+                                String(node.control.min),
+                                { timeout: 500 }
+                            );
                         } catch { /* 某些自定义 slider 可能不设 min */ }
                     }
                     if (node.control.max !== undefined) {
                         try {
-                            await expect(slider).toHaveAttribute('max', String(node.control.max));
+                            await expect(slider).toHaveAttribute(
+                                'aria-valuemax',
+                                String(node.control.max),
+                                { timeout: 500 }
+                            );
                         } catch { /* 某些自定义 slider 可能不设 max */ }
                     }
                 }
