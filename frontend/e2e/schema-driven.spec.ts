@@ -91,6 +91,9 @@ async function navigateToPanel(page: any, nav: PanelNav): Promise<void> {
     // 4. 展开所有 collapsible folder：收起时子节点仍在 DOM（renderContent 立即执行）
     //    但 maxHeight:0 + inert → toBeVisible 失败。点击 header 展开（headerToggle 有
     //    stopPropagation，不会误触开关）。[ADR-229 §2.2 审核修正]
+    //    ⚠️ 点击 subLevel 后面板内容可能异步挂载（实测 env:water 9 个 folder 分批渲染），
+    //    立即 querySelectorAll 会漏掉未挂载的 header → 先等一帧再展开。
+    await page.waitForTimeout(250);
     await page.evaluate(() => {
         document
             .querySelectorAll<HTMLElement>('.collapsible-header:not(.open)')
