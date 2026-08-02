@@ -109,14 +109,27 @@ function main() {
       }
 
       // ④ 可疑信号:行内含其他 ADR 编号 + 强词(推翻/已过时),但无明确宣称结构,且对方未标记 → 人工确认
-      if (claimedThisLine.length === 0 && RE_DEPRECATED_WORD.test(line) && !RE_NEGATED.test(line)) {
+      //    「提及方自身已标记」或「行内被提及编号任一已标记」(如 ADR-162 §6 已过时)时,
+      //    该行多为已处理勘误的交叉引用(文档维护历史),不再报为可疑
+      const selfMarked = RE_SUPERSEDED_BY.test(meta.status)
+        || RE_SELF_DEPRECATED.test(meta.status)
+        || RE_DEPRECATED_WORD.test(meta.status);
+      if (claimedThisLine.length === 0 && !selfMarked && RE_DEPRECATED_WORD.test(line) && !RE_NEGATED.test(line)) {
         const others = [...new Set([...line.matchAll(/ADR-(\d+)/g)].map(m => parseInt(m[1], 10)))]
           .filter(n => n !== num && adrNums.has(n));
-        for (const other of others) {
-          const tMeta = adrList.find(e => e.num === other);
-          const tMarked = RE_SUPERSEDED_BY.test(tMeta.status) || RE_SELF_DEPRECATED.test(tMeta.status);
-          if (!tMarked) {
-            suspicious.push({ num, target: other, line: line.trim().slice(0, 120) });
+        const anyOtherMarked = others.some((o) => {
+          const t = adrList.find(e => e.num === o);
+          return t && (RE_SUPERSEDED_BY.test(t.status)
+            || RE_SELF_DEPRECATED.test(t.status)
+            || RE_DEPRECATED_WORD.test(t.status));
+        });
+        if (!anyOtherMarked) {
+          for (const other of others) {
+            const tMeta = adrList.find(e => e.num === other);
+            const tMarked = RE_SUPERSEDED_BY.test(tMeta.status) || RE_SELF_DEPRECATED.test(tMeta.status);
+            if (!tMarked) {
+              suspicious.push({ num, target: other, line: line.trim().slice(0, 120) });
+            }
           }
         }
       }
