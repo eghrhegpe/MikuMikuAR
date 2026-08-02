@@ -123,11 +123,16 @@ function main() {
 
       // ⑤ 表格弱宣称:行首列为 ADR-NNN、行内含「本 ADR…替代/取代/推翻」
       //    (跨列自指:动词与编号被表格列分隔,紧邻正则抓不到,如 ADR-084 → ADR-019)
+      //    目标状态行已回标宣称方(如 ADR-019 状态行含 ADR-084)则不再提示
       const mTable = line.match(RE_TABLE_FIRST_COL);
       if (mTable && RE_TABLE_VERB.test(line) && !RE_TABLE_NEGATED.test(line)) {
         const target = parseInt(mTable[1], 10);
         if (target !== num && adrNums.has(target)) {
-          tableClaims.push({ num, target, line: line.trim().slice(0, 120) });
+          const tMeta = adrList.find(e => e.num === target);
+          const alreadyBackMarked = tMeta && new RegExp(`ADR-0*${num}(?!\\d)`).test(tMeta.status);
+          if (!alreadyBackMarked) {
+            tableClaims.push({ num, target, line: line.trim().slice(0, 120) });
+          }
         }
       }
     }

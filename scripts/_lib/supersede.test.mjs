@@ -78,6 +78,22 @@ body...
   } finally { cleanup(dir); }
 });
 
+test('parseAdrHeader: sub-number ADR-061.1', () => {
+  const { dir, fp } = createTempAdr('adr-061.1-test.md', `# ADR-061.1: Ragdoll 保真度补齐 实施计划
+
+> **状态**: 已交付
+> **日期**: 2026-07-10
+
+body...
+`);
+  try {
+    const h = parseAdrHeader(fp);
+    assert.equal(h.num, 61.1);
+    assert.ok(h.title.includes('Ragdoll'));
+    assert.ok(h.status.includes('已交付'));
+  } finally { cleanup(dir); }
+});
+
 test('parseAdrHeader: missing title → error', () => {
   const { dir, fp } = createTempAdr('adr-100-test.md', `> **状态**: Done
 
