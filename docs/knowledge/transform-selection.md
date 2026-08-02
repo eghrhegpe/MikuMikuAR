@@ -7,6 +7,8 @@ scope:
   - frontend/src/scene/transform/transform-selection.ts
 source_files:
   - frontend/src/scene/transform/transform-selection.ts
+adr:
+  - ADR-171
 use_when:
   - 选中状态
   - 选中物

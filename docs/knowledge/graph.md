@@ -155,6 +155,7 @@ graph TD;
         a100["ADR-100"]
         a102["ADR-102"]
         a104["ADR-104"]
+        a106["ADR-106"]
         a108["ADR-108"]
         a114["ADR-114"]
         a116["ADR-116"]
@@ -163,6 +164,7 @@ graph TD;
         a124["ADR-124"]
         a125["ADR-125"]
         a126["ADR-126"]
+        a128["ADR-128"]
         a129["ADR-129"]
         a131["ADR-131"]
         a132["ADR-132"]
@@ -249,6 +251,8 @@ graph TD;
     c3 --> a212;
     c4 --> a226;
     c5 --> a114;
+    c6 --> a138;
+    c6 --> a106;
     c7 --> a132;
     c49 --> a65;
     c49 --> a155;
@@ -258,6 +262,7 @@ graph TD;
     c76 --> a132;
     c9 --> a148;
     c10 --> a62;
+    c11 --> a128;
     c77 --> a102;
     c77 --> a179;
     c79 --> a57;
@@ -285,6 +290,7 @@ graph TD;
     c52 --> a17;
     c52 --> a180;
     c52 --> a183;
+    c53 --> a45;
     c29 --> a168;
     c30 --> a168;
     c31 --> a132;
@@ -380,6 +386,7 @@ graph TD;
     c90 --> a137;
     c22 --> a126;
     c22 --> a121;
+    c24 --> a171;
     c91 --> a153;
     c26 --> a84;
     c26 --> a81;
@@ -416,6 +423,7 @@ graph TD;
     click a100 href "../adr/adr-100-camera-control-behavior-dual-axis.md"
     click a102 href "../adr/adr-102-main-ts-split.md"
     click a104 href "../adr/adr-104-physics-outfit-design-debt-deferral.md"
+    click a106 href "../adr/adr-106-timing-audit-and-async-lifecycle.md"
     click a108 href "../adr/adr-108-animation-retargeter.md"
     click a114 href "../adr/adr-114-ground-reflection-enhancement.md"
     click a116 href "../adr/adr-116-bone-override-ui-redesign.md"
@@ -424,6 +432,7 @@ graph TD;
     click a124 href "../adr/adr-124-filesystem-architecture.md"
     click a125 href "../adr/adr-125-motion-undo-redo.md"
     click a126 href "../adr/adr-126-transform-adapter.md"
+    click a128 href "../adr/adr-128-mirror-prop-rename.md"
     click a129 href "../adr/adr-129-scene-level-motion-ui.md"
     click a131 href "../adr/adr-131-resource-browse-selection-outcome.md"
     click a132 href "../adr/adr-132-env-brightness-unification.md"
