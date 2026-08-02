@@ -1,6 +1,7 @@
 # ADR-119: 缩略图缓存键单一源治理
 
 > **状态**: Phase 1 + Phase 2 已完成（模型 + 道具写侧收口至 `thumbnail-key.ts`；VMD 缩略图死路径已删除；meta 缓存错位已修复）。后续审计曾将 `thumbnailCache` 内存缓存与 `GetModelMeta.thumbnail` 列为待清理 deferred，经核实二者均**无需清理**（`thumbnailCache` 为活跃 UI 缩略图数据源；`ModelMeta` 本无 `thumbnail` 字段，先前误将 `DanceSet.Thumbnail` 归错）。治理已闭环。契约测试 `thumbnail-key.contract.test.ts` 已作防反弹熔断丝（16 例全过）
+> **日期**: 2026-07-16
 > **背景**: 「截角色图」经 12 轮修改反复反弹。根因不是渲染逻辑（`thumbnail-capture.ts` 的并发互斥 / 物理冻结 / 投影冻结 / 翻转均正确），而是**缓存键（cache key）被两套独立代码、从两套不同数据模型各推导一次**——写侧（`ModelInstance`/运行时 `filePath` + `kind`）与读侧（`LibraryModel`/库元数据 `file_path` + `type`）各自用字符串拼接构造 `<baseKey>::<resolution>::<aspect>`，任何一侧微调即导致缓存 miss → 缩略图"消失/重生"。这是典型的"状态来源不唯一"，修一处裂另一处。
 > **关联**: [ADR-100](adr-100-camera-control-behavior-dual-axis.md)（渲染收尾）、thumbnail 物理冻结修复、[ADR-105](adr-105-abort-signal-and-async-error-handling.md)（加载流程 AbortSignal）
 

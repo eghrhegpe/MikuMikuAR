@@ -1,6 +1,7 @@
 # ADR-017: Android 平台适配（精简版）
 
 > **状态**: 主体已完成（Phase A/B/C ✅）；P0(A0-01/A0-02) 与 P1(A1-01~05) ✅ 全部已实施；P2 七项 ✅ 全部已落地（A2-04 于 2026-07-22 完成全路径 `toBlob` 迁移）；P3 四项 ✅ 全部已修复（A3-01/04 于 2026-07-22 完成事件总线消费）。A0-01 已于 2026-07-24 根治：模型文件改经 `readFileBytes` + Blob URL 加载（复用 ADR-176 浏览器端路径，见 frontend/src/core/fileservice.ts `resolveFileUrl`），移除 `MainActivity.java` 的 `MIXED_CONTENT_ALWAYS_ALLOW`；不再依赖 PathHandler 代理方案（ADR-133 方案 B 不再必要）。§四 SAF 目录选择方案已放弃，改用 `MANAGE_EXTERNAL_STORAGE` 授权 `/sdcard/MMD`（2026-07-22 核对）。
+> **日期**: 2026-07-22
 > **关联**: [ADR-058](adr-058-basenameFallbackFS.md)（basenameFallbackFS）、[ADR-133](adr-133-android-mpr-gap.md)（Android MPR 缺口）
 > **来源**: ADR-017 + ADR-067（+ 原 ADR-023、ADR-068 已并入本 ADR）四合一（2026-07-08）
 

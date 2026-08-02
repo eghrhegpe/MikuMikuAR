@@ -1,6 +1,7 @@
 # ADR-080: 预设动画 observer 级联暴涨——addOnce 自注册陷阱
 
 > **状态**: 已修复（2026-07-10）
+> **日期**: 2026-07-10
 > **关联**: ADR-072（WebXR 平面检测）、`frontend/src/scene/env/env-bridge.ts`
 
 ---

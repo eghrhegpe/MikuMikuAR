@@ -10,6 +10,7 @@ superseded-by: null
 # ADR-186: bone-override 帧内时序图
 
 > **状态**: accepted
+> **日期**: 2026-07-26
 > **背景**: IK 位置保护（body-posture 平移センター）引入后，发现 foot-modules 的脚部位置偏移被保护机制抹掉。根因是 `_propagateChildrenWasm` 的传播时序 + IK 保护恢复时机未在文档中固化，导致改动者无法预见冲突。本 ADR 将 bone-override stage 内部的完整帧内时序以 Mermaid 时序图 + 文字约束固化，防止后续改动踩雷。
 > **决策**: 将 bone-override stage 内部的 7 步时序作为架构约束文档化，任何新增帧钩子或覆盖循环后处理步骤必须遵守此序列。
 > **2026-07-26 核实补充**: 确认 foot-modules 走「bake 写旋转 + frameHook 写位置」双路径；IK 保护仅 WASM 路径生效（JS 路径跳过 `_snapshotProtectedPositions`/`_restoreProtectedPositions`，与 ADR-186 时序图中步骤③⑤一致）。

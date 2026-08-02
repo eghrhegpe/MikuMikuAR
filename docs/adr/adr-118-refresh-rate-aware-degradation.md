@@ -1,6 +1,7 @@
 # ADR-118: 刷新率感知的自动降级阈值
 
 > **状态**: ✅ 已完成（Phase 1 刷新率相对阈值 + Phase 2 运行时峰值校准全量落地）
+> **日期**: 2026-07-16
 > **背景**: 自动降级系统（`performance.ts` 的 `DEGRADE_THRESHOLDS` / `RECOVERY_THRESHOLDS`）使用**绝对 FPS 阈值**（28/20/14 降级、32/24/18 恢复），隐含假设基线为 60Hz。在 90/120/144Hz 高刷设备上，绝对阈值严重失准：120Hz 下 45fps 已明显卡顿（仅 37% 刷新率），但因 45 > 28 不触发降级，用户以为"没降级=没问题"，实际在掉帧。该问题由 ADR-DPR 修复（高 DPI 渲染清晰度修复）**直接激化**——修复后渲染缓冲区放大 9×，GPU 开始干真活，FPS 可能下滑，高刷设备的阈值失准从"理论"变"现实"。
 > **关联**: 高 DPI 渲染清晰化修复（同轮 `render-loop.ts` 的 `calcHardwareScaling` + DPR 纳入）、[ADR-100](adr-100-camera-control-behavior-dual-axis.md)（性能相关收尾）
 

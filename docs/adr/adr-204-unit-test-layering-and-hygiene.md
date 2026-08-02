@@ -1,6 +1,7 @@
 # ADR-204: 单测分层与治理规范（拆上帝文件 · 降 mock 密度 · fixtures 复用 · unit/integration 分层）
 
 > **状态**: 🟢 实施中
+> **日期**: 2026-07-29
 > **关联**: [ADR-060](adr-060-e2e-testing-strategy.md)（E2E 策略，本 ADR 补齐其下方的单元/集成层）、[AGENTS.md](../../AGENTS.md)（测试路由、代码审核七维、`npm run test` 入口）、[frontend/AGENTS.md](../../frontend/AGENTS.md)（前端子模块纪律）
 > **背景**: 单测已达 **131 个文件 / ~2000 用例**（`frontend/src/**/*.test.ts`，grep 实测）。总量本身不致命，致命的是**结构未分层**：用例挤在少数「上帝测试文件」里，mock 密度畸高，且已有的共享 mock 基础设施几乎无人复用。本 ADR 锁定单测层的分层模型、拆分阈值、mock 治理与 fixtures 复用规范，供多 AI 协同渐进落地——**只治理结构，不推倒重来**。
 

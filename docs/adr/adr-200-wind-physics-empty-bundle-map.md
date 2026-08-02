@@ -1,6 +1,7 @@
 # ADR-200: 风力对模型自带刚体无效 — 遍历 map 恒空的架构误解
 
 > **状态**: ✅ 已定性（2026-07-28 — WASM 内建物理下 JS 侧根本无模型物理对象（`_physicsModel === null`），施力方案为死路已回退；保留 lazy impl 订阅修复（对自建刚体有效））
+> **日期**: 2026-07-28
 > **关联**: ADR-192（条目 3「rigidBody 索引内化」，本 ADR 推翻其等价性假设）、ADR-194（风力系数 0.15→1.0，建立在同一错误假设上）、ADR-084（虚拟裙骨 — 仅对无裙骨模型生效）
 > **诚实纠正**：本 ADR 中途曾误判「可经守卫式反射 `_physicsModel._bundle` 施力」并实施，实测触发 `_bundle 缺失` 警告后经源码复核发现——**WASM 内建物理下 `_physicsModel` 恒为 null**（详见 §3.1-3.2），反射对象根本不存在。已回退施力改动，保留 lazy impl 修复。
 > **症状**: WASM 物理运行完全正常，粒子/水面随风飘动明显，但对角色施加 10× 风力，头发/裙子纹丝不动。`window.__scene.rigidBodyBundleCount === 0`、`windPhysicsActive === false`。

@@ -1,6 +1,7 @@
 # ADR-061: 高级骨骼操控与姿态工作室实现计划
 
 > **状态**: 已完成（2026-07-10，2026-07-16 对账修正）— Pose Studio ✅、Motion Override ✅、Accessory ✅、T-pose/A-pose ✅（并入 Pose Studio）。Ragdoll ❌ 永久废弃（随 XPBD 全栈移除 530af6e，不再恢复）。
+> **日期**: 2026-07-10
 > **背景**: 本域五项功能已在 ADR-054 路线图中零散记录（道具挂载 P2、T-pose/A-pose P1、Ragdoll P3、Pose Studio P2），但缺集中式技术方案与代码事实核实；「Motion Override（逐骨骼）」仅见于 ADR-043 gap-analysis，未进任一路线图。本 ADR 补此空白，给出现状核实、技术路线与分期细化。
 > **范围**: 仅规划，不实现。落地时各子项应单独立项（可沿用本 ADR 编号作前缀，如 ADR-061.1）。
 > **排除**: Playback Modes（列表播放/随机/顺序）已评估后移除——MMD 工作流是单模型+单VMD精调，非批量播放场景，边际效益低。
