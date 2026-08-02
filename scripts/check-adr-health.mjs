@@ -13,16 +13,18 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { parseArgs } from './_lib/parse-args.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const ADR_DIR = path.join(__dirname, '..', 'docs', 'adr');
 
-// 解析命令行参数
-const args = process.argv.slice(2);
-const VERBOSE = args.includes('--verbose');
-const JSON_OUTPUT = args.includes('--json');
+const _args = parseArgs(process.argv.slice(2), {
+  bools: ['verbose', 'json'],
+});
+const VERBOSE = _args.verbose;
+const JSON_OUTPUT = _args.json;
 
 // 状态分类
 const STATUS_CATEGORIES = {
@@ -311,6 +313,8 @@ function main() {
   // 基于加权问题数计算健康分数
   results.healthScore = Math.max(0, Math.round(100 - (weightedIssues * 0.5)));
   
+  const totalIssues = formatIssueCount + debtIssueCount + relatedIssueCount;
+
   // 检查编号连续性
   const sortedIds = [...new Set(adrIds)].sort((a, b) => a - b);
   const missingIds = [];
