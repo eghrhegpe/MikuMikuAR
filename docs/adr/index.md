@@ -2,16 +2,16 @@
 
 # 决策记录（ADR）
 
-> 架构决策日志，共 **222** 篇（ADR-001 起按编号递增）。决策一旦写下即不可变；状态变化以各 ADR 文件首部「状态」行为准。
+> 架构决策日志，共 **223** 篇（ADR-001 起按编号递增）。决策一旦写下即不可变；状态变化以各 ADR 文件首部「状态」行为准。
 
 ## 按状态分布
 
 | 状态 | 数量 | 含义 |
 |------|------|------|
 | [推进中](#推进中) | 5 | 已开工，尚未收口（含部分实施） |
-| [规划中](#规划中) | 7 | 已立项，等待实施 |
-| [已落地](#已落地) | 191 | 实施完成，代码已合入 |
-| [已归档](#已归档) | 18 | 被取代、放弃、过时或搁置，保留供追溯 |
+| [规划中](#规划中) | 8 | 已立项，等待实施 |
+| [已落地](#已落地) | 190 | 实施完成，代码已合入 |
+| [已归档](#已归档) | 19 | 被取代、放弃、过时或搁置，保留供追溯 |
 | [其他](#其他) | 1 | 状态行缺失或表述不可归类 |
 
 > 本文件为 ADR **规范索引**（按状态分组导航，可锚点跳转）。带日期的全量列表见 [项目现状 · ADR 索引](../status.md)（附表，由 `scripts/gen-status-index.mjs` 生成）。
@@ -30,6 +30,7 @@
 
 | ADR | 主题 | 状态 |
 |-----|------|------|
+| [ADR-229](./adr-229-e2e-automation-advancement.md) | E2E 自动化推进 —— 从 schema 到测试零映射 | 📝 规划 |
 | [ADR-223](./adr-223-water-surface-overhaul.md) | 水面视觉效果整顿 —— 法线混合、深度泡沫、折射扭曲、SSS、渐变颜色 | 规划 |
 | [ADR-222](./adr-222-water-depth-fog.md) | 水面深度差雾（Depth-Difference Fog）—— 从相机距离雾迁移至水柱厚度雾 | 规划 |
 | [ADR-209](./adr-209-lunar-celestial-body.md) | 月亮 —— 第二天体的渐进式设计（复用太阳骨架） | 📝 规划 |
@@ -98,7 +99,6 @@
 | [ADR-165](./adr-165-perception-performance-benchmark.md) | 感知层性能基准 — 为 ADR-164 全员感知降级提供阈值依据 | 已完成 |
 | [ADR-164](./adr-164-perception-permodel-phase2.md) | 感知层 per-model 实例化 — Phase 2（全员感知 + 性能降级） | 已实现 |
 | [ADR-163](./adr-163-perception-conflict-visibility.md) | 感知层冲突可视化 — 闭环「左右脑互博」用户层可见性 | 已完成 |
-| [ADR-162](./adr-162-perception-permodel-phase1.md) | 感知层 per-model 实例化 — Phase 1（pinned 模型支持） | 已完成 |
 | [ADR-161](./adr-161-balancesway-params-exposure.md) | balanceSway 独立参数暴露 — 补齐感知层 UI 可调性 | 已完成 |
 | [ADR-160](./adr-160-gaze-delta-exponential-decay.md) | Gaze Delta 指数衰减 — 闭环「左右脑互博」物理根因最后一环 | 已完成 |
 | [ADR-159](./adr-159-render-dedup-and-refactor.md) | 渲染模块重复收口 + 关键补测 + 两项结构性重构决策 | 已实施 |
@@ -240,6 +240,7 @@
 |-----|------|------|
 | [ADR-199](./adr-199-llm-capability-boundaries.md) | LLM 能力边界与缓解策略（归档） | 📋 归档登记 |
 | [ADR-168](./adr-168-dynamic-light-tracking.md) | 动态追光：舞台灯跟随角色/骨骼 | 已实现 |
+| [ADR-162](./adr-162-perception-permodel-phase1.md) | 感知层 per-model 实例化 — Phase 1（pinned 模型支持） | 已完成 |
 | [ADR-154](./adr-154-llm-chat-panel-route.md) | 引入大模型交流能力 — 推荐路线（聊天面板打底） | 🗑️ 已被 ADR-196 取代 |
 | [ADR-149](./adr-149-material-outfit-baseline-conflict.md) | 材质系统 × 换装系统基线冲突登记 | 搁置登记 |
 | [ADR-144](./adr-144-per-model-overlay-motion.md) | Per-model Overlay Motion（动作2 叠加层） | 已废弃 |

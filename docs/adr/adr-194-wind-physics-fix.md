@@ -1,6 +1,6 @@
 # ADR-194: 风物理系统修复 — 从「假风」到真实风场
 
-> **状态**: 已完成（2026-07-27 — tsc 零错误，env-bridge 80 + wind-physics 1 + app.contract 17 全绿；P2 修复后全量 2174/2174 全绿）
+> **状态**: 已完成（2026-07-27 — tsc 零错误，env-bridge 80 + wind-physics 1 + app.contract 17 全绿；P2 修复后全量 2174/2174 全绿）⚠️ **§4 风力系数前提被 [ADR-200](adr-200-wind-physics-empty-bundle-map.md) 推翻**（见下方勘误）
 > **⚠️ 后续勘误（ADR-200）**: 本 ADR §4「Bullet 物理风力系数 0.15→1.0」建立在错误假设上——风力遍历的 `rigidBodyBundleReferenceCountMap` **不含角色原生刚体**，当时调大系数对模型头发/裙子无效。**ADR-200 已通过守卫式反射扩展风力至模型原生真物理刚体**，并修复 lazy impl 订阅；风力系数需按实测重新标定。详见 ADR-200。
 > **日期**: 2026-07-27（初版）/ 2026-07-27（P2 修复 — 水面 `uWindSpeed` 加 `windEnabled` 守卫）
 > **关联**: ADR-028（风场系统统一）、ADR-138（env-dispatcher 破循环依赖）、ADR-192（wind-physics.ts 私有字段反射经 Phase 2 内化为 mmd-adapter 公开 API，本 ADR 的 `WIND_FORCE_SCALE` 修改在同一文件）
