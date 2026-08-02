@@ -27,8 +27,9 @@ const JSON_OUTPUT = args.includes('--json');
 // 状态分类
 const STATUS_CATEGORIES = {
   completed: ['已完成', '已实施', '已落地', '已批准', '已采纳', '已实现', '已交付', '通过', '✅', 'accepted', '调研落档', '已修复', '完成', '实施完成'],
-  inProgress: ['实施中', '规划中', '草案', '提议', 'Proposed', '部分落地'],
-  deprecated: ['已废弃', '已放弃', '已搁置', '搁置', '废弃', '部分实现'],
+  // 「部分实现/部分落地」属推进中而非已废弃（与 gen-docs-index.mjs 的 ADR_BUCKETS 口径一致）
+  inProgress: ['实施中', '规划中', '草案', '提议', 'Proposed', '部分落地', '部分实现'],
+  deprecated: ['已废弃', '已放弃', '已搁置', '搁置', '废弃'],
   unknown: []
 };
 
