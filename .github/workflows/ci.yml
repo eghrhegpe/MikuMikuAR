@@ -219,10 +219,7 @@ jobs:
         # Playwright 的 config.webServer 自动管理 Vite dev server（:5173），
         # CI 下已跳过 4174 preview server 避免不必要的构建等待。
         # 详见 playwright.config.ts webServer 条件逻辑。
-        # [DIAG] 临时：单 spec + DEBUG=pw:browser 抓浏览器崩溃栈，诊断后回滚。
-        env:
-          DEBUG: pw:browser
-        run: npx playwright test e2e/ai-control.spec.ts --reporter=line
+        run: npx playwright test --grep @dom --reporter=line
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v5
