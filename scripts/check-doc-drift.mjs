@@ -308,6 +308,30 @@ function checkKnowledgeMeta() {
     if (tier !== undefined && tier !== '' && !TIER_ENUM.includes(tier)) {
       errors.push(`知识卡 ${cf} 的 tier 非法: ${tier}（应为 ${TIER_ENUM.join('|')} 之一）`);
     }
+    // frontmatter 字段语义校验（ADR-230）：路径类值（frontend/...）只允许出现在
+    // source_files / tests / scope 三个字段内；其余字段（invariants/use_when 等）混入路径
+    // 说明脚本重建 frontmatter 时污染了字段（历史事故：gen-knowledge-tests 曾把 tests 路径
+    // 残留在 invariants 块内，26 张卡受影响）。
+    {
+      const fmBlock = (text.match(/^---\r?\n([\s\S]*?)\r?\n---/) || [])[1] || '';
+      const PATH_FIELDS = new Set(['source_files', 'tests', 'scope']);
+      let curField = null;
+      for (const line of fmBlock.split(/\r?\n/)) {
+        const fieldMatch = line.match(/^([a-z_]+):/);
+        if (fieldMatch) {
+          curField = fieldMatch[1];
+          continue;
+        }
+        if (
+          curField &&
+          !PATH_FIELDS.has(curField) &&
+          /^\s*-\s*(frontend\/\S+\.ts)\s*$/.test(line)
+        ) {
+          errors.push(`知识卡 ${cf} 的 ${curField} 字段混入 frontend/ 路径行（仅 source_files/tests/scope 允许）: ${line.trim()}`);
+          break;
+        }
+      }
+    }
     // UI 入口要求（ADR-218）：仅对 source_files 含 menus/ 或 ui/ 的 architecture 卡强制——
     // 纯逻辑卡（env 系统 / motion 管道 / physics 等）本就无菜单入口，豁免。
     if (tier === 'architecture' && !text.includes(UI_ENTRY_HEADING) && !text.includes(UI_ENTRY_REF)) {
