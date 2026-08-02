@@ -43,7 +43,7 @@ use_when:
 
 ## 与其他子系统关系
 - 文件服务器：`StartFileServer` / `IsolateModelDir`（`./wails-bindings`）。
-- 路径归一化：`normPath`（`./utils`）。
+- 路径归一化：`normPath`（`@/core/path`，零依赖叶，ADR-191 下沉；此处仅 re-export 维持既有引用）。
 - 被 `model-loader.ts` / `vmd-loader.ts` 调用。
 
 ## 不变量
