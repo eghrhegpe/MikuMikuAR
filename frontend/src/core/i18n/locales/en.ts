@@ -883,9 +883,9 @@ export const en: Record<string, string> = {
     'scene.preset.anime': 'Anime',
     'scene.presetDesc.standard': 'Standard tone mapping · baseline reference',
     'scene.presetDesc.cinematic': 'ACES tone mapping · film curve · natural highlight rolloff',
-    'scene.presetDesc.cartoon': 'Reinhard tone mapping · high saturation/contrast · black outline',
+    'scene.presetDesc.cartoon': 'Neutral tone mapping · high saturation/contrast · black outline',
     'scene.presetDesc.realistic': 'ACES tone mapping · shallow DoF · cinematic vignette',
-    'scene.presetDesc.warm': 'Cineon tone mapping · warm background · filmic',
+    'scene.presetDesc.warm': 'ACES tone mapping · warm background · filmic',
     'scene.presetDesc.cyberpunk':
         'Neutral tone mapping · highlight bloom · extreme post-processing',
     'scene.presetDesc.anime': 'Soft toning + black outline · one-click anime look',
