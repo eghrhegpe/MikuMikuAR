@@ -46,10 +46,10 @@ export default defineConfig({
             command: "sudo fuser -k 4174/tcp 2>/dev/null || true; npx vite build --config vite.web.config.ts && npx vite preview --config vite.web.config.ts --port 4174 --strictPort",
             url: "http://localhost:4174/MikuMikuAR/",
             reuseExistingServer: true,
-            // CI 中构建需 ~110-300s（babylon-mmd 等重模块 + CI runner 负载波动），
-            // preview 启动需 ~10s。300s 仍不够（实测 302s 刚好超），
-            // 扩展到 420s 留足余量（7min 应覆盖所有负载波动）。
-            timeout: 420000,
+            // CI 中构建需 ~300-420s（babylon-mmd 等重模块 + CI runner 负载波动剧烈），
+            // 420s 仍不够（实测 423s 刚超），CI runner 负载波动导致构建时间翻倍。
+            // 直接拉到 600s（10min），在一切负载波动下留足余量。
+            timeout: 600000,
         }] : []),
     ],
 
