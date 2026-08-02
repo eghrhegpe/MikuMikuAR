@@ -37,7 +37,7 @@ import { resolveModelDir } from '@/core/fileservice';
 import { readFileBytes, ListDirRecursive } from '@/core/wails-bindings';
 import { readTextureWithLRU } from './texture-lru';
 import { auditMissingTextures, parsePmxTexturePaths } from './pmx-texture-audit';
-import { textureFallbackCandidates, registerDeclaredAliases } from './texture-fallback';
+import { textureFallbackCandidates, registerDeclaredAliases, expandFallbackCandidates } from './texture-fallback';
 import { reportResourceWarning } from '@/core/resource-warning-sink';
 
 // [temp:diagnose-eye] 临时诊断：复现「第二个角色看不见眼睛」时查看 dev 控制台（搜索 diagnose-eye）。
@@ -142,6 +142,13 @@ function _diagnoseEyeMaterials(): void {
                 diffuseColor: mat.diffuseColor
                     ? { r: +mat.diffuseColor.r.toFixed(2), g: +mat.diffuseColor.g.toFixed(2), b: +mat.diffuseColor.b.toFixed(2) }
                     : null,
+                emissiveColor: mat.emissiveColor
+                    ? { r: +mat.emissiveColor.r.toFixed(2), g: +mat.emissiveColor.g.toFixed(2), b: +mat.emissiveColor.b.toFixed(2) }
+                    : null,
+                disableLighting: mat.disableLighting,
+                linkEmissiveWithDiffuse: (mat as { linkEmissiveWithDiffuse?: boolean }).linkEmissiveWithDiffuse,
+                hasEmissiveTex: !!mat.emissiveTexture,
+                emissiveTex: _texState(mat.emissiveTexture),
                 diffuseTex: _texState(mat.diffuseTexture),
                 morphTargets: morph ? (morph as { numTargets: number }).numTargets : 0,
                 verts: vtx,
@@ -443,20 +450,8 @@ async function collectTextureFiles(modelDir: string, signal?: AbortSignal): Prom
     // 使 PMX 声明路径（含目录前缀/反斜杠）能命中磁盘实际位置（可能深一层子目录）。
     // 例：声明 "textures\xxx.png" 可匹配到实际文件 "textures/Normalmap/xxx.png"。
     // [doc:adr-189] 共享引用替代 .slice(0)：babylon-mmd 走 new Blob([data]) 路径不 detach ArrayBuffer
-    const hasCandidate = new Set<string>();
-    const fallbacks: TextureFile[] = [];
-    for (const tf of files) {
-        const rel = tf.relativePath.replace(/\\/g, '/');
-        for (const cand of textureFallbackCandidates(rel)) {
-            if (cand === rel || hasCandidate.has(cand)) {
-                continue;
-            }
-            hasCandidate.add(cand);
-            fallbacks.push({ ...tf, relativePath: cand, data: tf.data }); // 共享引用
-        }
-    }
-    files.push(...fallbacks);
-    return files;
+    // [fix:p2-candidate-collision] 候选 vs 真实路径冲突去重已内置于 expandFallbackCandidates（纯函数，可单测）
+    return expandFallbackCandidates(files);
 }
 
 /**
@@ -603,12 +598,11 @@ export async function loadPMXFile(
 
         // [doc:adr-124] Phase 2: 递归收集模型目录下纹理 → referenceFiles 直传 babylon-mmd
         // [doc:adr-189] 传入 effectiveSignal，模型切换时 abort 并行读取
-        const textureFiles = await collectTextureFiles(modelDir, effectiveSignal);
-        if (effectiveSignal.aborted) {
-            return null;
-        }
-
-        const pmxBytes = await readFileBytes(filePath);
+        // [fix:p2-parallel-pmx] 纹理扫描（多文件慢）与 PMX 读取（单文件快）并行，省一次串行等待
+        const [textureFiles, pmxBytes] = await Promise.all([
+            collectTextureFiles(modelDir, effectiveSignal),
+            readFileBytes(filePath),
+        ]);
         if (!pmxBytes || effectiveSignal.aborted) {
             return null;
         }
@@ -654,7 +648,7 @@ export async function loadPMXFile(
         if (loadedMeshes.length > 0) {
             const _declaredTexturePaths = finalTextureFiles.map((f) => f.relativePath);
             fireAndForget(() =>
-                auditMissingTextures(pmxBytes, _declaredTexturePaths).then((missing) => {
+                auditMissingTextures(pmxBytes, _declaredTexturePaths, effectiveSignal).then((missing) => {
                     for (const name of missing) {
                         reportResourceWarning(t('resource.textureMissing', { name }));
                     }

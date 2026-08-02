@@ -45,10 +45,17 @@ export async function parsePmxTexturePaths(pmxBytes: Uint8Array): Promise<string
  */
 export async function auditMissingTextures(
     pmxBytes: Uint8Array,
-    availableRelativePaths: string[]
+    availableRelativePaths: string[],
+    signal?: AbortSignal
 ): Promise<string[]> {
     try {
+        if (signal?.aborted) {
+            return []; // 加载已取消：丢弃审计，避免对新场景误报缺失
+        }
         const pmx = await PmxReader.ParseAsync(_toArrayBuffer(pmxBytes));
+        if (signal?.aborted) {
+            return []; // 解析期间被取消：同样丢弃
+        }
         const available = new Set(availableRelativePaths.map(_normalizeTexturePath));
         const missing: string[] = [];
         for (const tex of pmx.textures) {
