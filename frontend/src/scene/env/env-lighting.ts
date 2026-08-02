@@ -276,6 +276,10 @@ export const ENV_PRESET_FIELDS: Record<EnvPresetCategory, (keyof EnvState)[]> = 
         'fogStart',
         'fogEnd',
         'mirrorEnabled',
+        'mirrorWidth',
+        'mirrorHeight',
+        'mirrorPosition',
+        'mirrorRotationY',
     ],
 };
 
