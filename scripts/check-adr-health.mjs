@@ -61,10 +61,10 @@ function readAdrFile(filePath) {
       else if (statusMatch2) status = statusMatch2[1].trim();
       else if (statusMatch3) status = statusMatch3[1].trim();
       
-      // 提取标题
-      const titleMatch = line.match(/^#\s+ADR-(\d+):\s*(.+)/);
+      // 提取标题(支持子编号,如 ADR-061.1 —— ADR-061 §范围约定子项沿用父编号作前缀)
+      const titleMatch = line.match(/^#\s+ADR-([\d.]+):\s*(.+)/);
       if (titleMatch) {
-        id = parseInt(titleMatch[1]);
+        id = parseFloat(titleMatch[1]);
         title = titleMatch[2].trim();
       }
       
@@ -308,6 +308,15 @@ function main() {
   const totalIssues = formatIssueCount + debtIssueCount + relatedIssueCount;
 
   // 检查编号连续性
+  // 已知空洞:编号已删除或并入其他 ADR,不应报为缺失
+  //   ADR-007 已删除(场景菜单设计参考,见 ADR-027 关联)
+  //   ADR-008 并入 ADR-003(来源行)
+  //   ADR-010 无记录
+  //   ADR-023 并入 ADR-017(Phase A/B 修复)
+  //   ADR-040 无记录
+  //   ADR-068 并入 ADR-017(追加修复)
+  const KNOWN_MISSING_IDS = new Set([7, 8, 10, 23, 40, 68]);
+
   const sortedIds = [...new Set(adrIds)].sort((a, b) => a - b);
   const missingIds = [];
   
@@ -317,7 +326,7 @@ function main() {
     
     if (next - current > 1) {
       for (let j = current + 1; j < next; j++) {
-        missingIds.push(j);
+        if (!KNOWN_MISSING_IDS.has(j)) missingIds.push(j);
       }
     }
   }
