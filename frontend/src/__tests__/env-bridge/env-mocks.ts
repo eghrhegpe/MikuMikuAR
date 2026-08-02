@@ -347,6 +347,9 @@ export const lightingModule = {
     setLightState: mockSetLightState,
     getLightState: mockGetLightState,
     setSkipLightAutoSave: mockSetSkipLightAutoSave,
+    // [fix:P3] env-time-of-day 动画起点新增 isLightingReady 探测（@dom 未就绪时跳过
+    // 灯光插值写入）。测试 mock 模拟「灯光就绪」，保留动画期间 setLightState 调用断言。
+    isLightingReady: () => true,
     getHemiLight: () => hemiLight,
     _updateSunDisc: mockUpdateSunDisc,
     applyLightingPresetFromEnv: mockApplyLightingPresetFromEnv,

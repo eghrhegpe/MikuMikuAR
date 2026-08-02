@@ -19,6 +19,9 @@ import {
     getLightState,
     setSkipLightAutoSave,
     _updateSunDisc,
+    // [fix:P3] 动画起点探测灯光就绪：@dom 环境未就绪时跳过灯光插值写入，
+    // 避免 _presetAnimLoop 每帧 setLightState 命中守卫 logWarn 造成日志风暴
+    isLightingReady,
 } from '../render/lighting';
 import type { LightState } from '../render/lighting';
 import { scene } from '../scene';
@@ -223,7 +226,11 @@ function _presetAnimLoop(ctx: PresetAnimCtx, handle: ObserverHandle): void {
             setKey(interpLight, key, lerpArray(a, b, t) as LightState[typeof key]);
         }
     }
-    setLightState(interpLight);
+    // [fix:P3] 灯光未就绪（@dom 无灯光/管线）时跳过灯光插值写入：setLightState 命中
+    // 守卫会每帧 logWarn 造成日志风暴；天空/环境动画（上方 setEnvState）不受影响。
+    if (isLightingReady()) {
+        setLightState(interpLight);
+    }
 
     if (t >= 1) {
         handle.dispose();
