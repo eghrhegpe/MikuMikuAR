@@ -571,6 +571,9 @@ let _prevGroundPitch = NaN;
 let _prevGroundRoll = NaN;
 let _groundScrollU = 0;
 let _groundScrollV = 0;
+// [doc:adr-230] scan 叠加脉冲环相位累加器（0–1 循环）；仅 overlay==='scan' 时推进，避免常驻开销。
+let _scanRingPhase = 0;
+const GROUND_SCAN_SPEED = 0.4; // 每秒相位推进量（环扩张一次 ≈ 2.5s）
 
 // ======== 地面涟漪状态 ========
 let _groundRipples: BaseTexture | null = null;
@@ -638,7 +641,13 @@ const groundReflection = new PlanarReflection({
         }
         return q;
     },
-    getBlend: (s) => s.groundReflectionBlend,
+    // [doc:adr-230] 自发光随强度衰减镜面反射：es↑ → 反射↓（reflectMix 越高保留越多）。
+    // 衰减并入 getBlend（每帧被 groundReflection.update 调用），否则只会写一次被覆盖。
+    getBlend: (s) => {
+        const es = s.groundEmissiveStrength;
+        const decay = 1 - es * (1 - s.groundEmissiveReflectMix);
+        return s.groundReflectionBlend * Math.max(0, decay);
+    },
     getSurfaceLevel: (s) => s.groundLevel,
     getMirrorPlane: (_s, _scene) => {
         const mesh = _envSys.ground.mesh;
@@ -804,92 +813,145 @@ export function setOnGroundChanged(cb: (() => void) | null): void {
 
 // ======== 纹理生成 ========
 
-export function _generateGroundTexture(state: EnvState, scene: Scene): Texture {
+/**
+ * 统一地面画布绘制（canvas 来源 + 程序化/纯色兜底纹理）。
+ * @param scanPhase 0–1 扫描环动画相位；仅 groundOverlay==='scan' 时生效，静态纹理传 0。
+ * [doc:adr-230] 新增 scan（脉冲扫描环）/ glowEdge（边界辉光环）两种叠加。
+ */
+function _drawGroundCanvas(
+    ctx: CanvasRenderingContext2D,
+    size: number,
+    state: EnvState,
+    scanPhase = 0
+): void {
     const c0 = rgbString(col3FromTriple(state.groundColor));
-    const c1 = rgbString(col3FromTriple(state.groundLineColor));
+    const lr = Math.round(state.groundLineColor[0] * 255);
+    const lg = Math.round(state.groundLineColor[1] * 255);
+    const lb = Math.round(state.groundLineColor[2] * 255);
+    const c1 = `rgb(${lr},${lg},${lb})`;
+    const c1a = (a: number) => `rgba(${lr},${lg},${lb},${Math.max(0, Math.min(1, a))})`;
+    const tileSize = Math.max(8, Math.round(64 * state.groundGridSize));
 
-    const size = 512;
-    const draw = (ctx: CanvasRenderingContext2D, s: number) => {
-        ctx.fillStyle = c0;
-        ctx.fillRect(0, 0, s, s);
+    ctx.fillStyle = c0;
+    ctx.fillRect(0, 0, size, size);
 
-        if (state.groundOverlay === 'grid') {
-            const tileSize = Math.max(8, Math.round(64 * state.groundGridSize));
-            ctx.strokeStyle = c1;
-            ctx.lineWidth = Math.max(1, Math.round(tileSize / 24));
-            for (let x = tileSize; x < s; x += tileSize) {
-                ctx.beginPath();
-                ctx.moveTo(x, 0);
-                ctx.lineTo(x, s);
-                ctx.stroke();
-            }
-            for (let y = tileSize; y < s; y += tileSize) {
-                ctx.beginPath();
-                ctx.moveTo(0, y);
-                ctx.lineTo(s, y);
-                ctx.stroke();
-            }
-        } else if (state.groundOverlay === 'checker') {
-            const tileSize = Math.max(8, Math.round(64 * state.groundGridSize));
-            switch (state.groundPattern) {
-                case 'checker':
-                    for (let y = 0; y < s; y += tileSize) {
-                        for (let x = 0; x < s; x += tileSize) {
-                            ctx.fillStyle = (x / tileSize + y / tileSize) % 2 === 0 ? c0 : c1;
-                            ctx.fillRect(x, y, tileSize, tileSize);
-                        }
-                    }
-                    break;
-                case 'dots':
-                    ctx.fillStyle = c0;
-                    ctx.fillRect(0, 0, s, s);
-                    ctx.fillStyle = c1;
-                    for (let y = 0; y < s; y += tileSize) {
-                        for (let x = 0; x < s; x += tileSize) {
-                            ctx.beginPath();
-                            ctx.arc(
-                                x + tileSize / 2,
-                                y + tileSize / 2,
-                                tileSize / 3,
-                                0,
-                                Math.PI * 2
-                            );
-                            ctx.fill();
-                        }
-                    }
-                    break;
-                case 'stripes':
-                    for (let x = 0; x < s; x += tileSize) {
-                        ctx.fillStyle = (x / tileSize) % 2 === 0 ? c0 : c1;
-                        ctx.fillRect(x, 0, tileSize, s);
-                    }
-                    break;
-                case 'radial': {
-                    const grad = ctx.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2);
-                    grad.addColorStop(0, c0);
-                    grad.addColorStop(1, c1);
-                    ctx.fillStyle = grad;
-                    ctx.fillRect(0, 0, s, s);
-                    break;
-                }
-                default:
-                    for (let y = 0; y < s; y += tileSize) {
-                        for (let x = 0; x < s; x += tileSize) {
-                            ctx.fillStyle = (x / tileSize + y / tileSize) % 2 === 0 ? c0 : c1;
-                            ctx.fillRect(x, y, tileSize, tileSize);
-                        }
-                    }
-                    break;
-            }
+    if (state.groundOverlay === 'grid') {
+        ctx.strokeStyle = c1;
+        ctx.lineWidth = Math.max(1, Math.round(tileSize / 24));
+        for (let x = tileSize; x < size; x += tileSize) {
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, size);
+            ctx.stroke();
         }
-    };
+        for (let y = tileSize; y < size; y += tileSize) {
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(size, y);
+            ctx.stroke();
+        }
+    } else if (state.groundOverlay === 'checker') {
+        switch (state.groundPattern) {
+            case 'checker':
+                for (let y = 0; y < size; y += tileSize) {
+                    for (let x = 0; x < size; x += tileSize) {
+                        ctx.fillStyle = (x / tileSize + y / tileSize) % 2 === 0 ? c0 : c1;
+                        ctx.fillRect(x, y, tileSize, tileSize);
+                    }
+                }
+                break;
+            case 'dots':
+                ctx.fillStyle = c0;
+                ctx.fillRect(0, 0, size, size);
+                ctx.fillStyle = c1;
+                for (let y = 0; y < size; y += tileSize) {
+                    for (let x = 0; x < size; x += tileSize) {
+                        ctx.beginPath();
+                        ctx.arc(x + tileSize / 2, y + tileSize / 2, tileSize / 3, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+                break;
+            case 'stripes':
+                for (let x = 0; x < size; x += tileSize) {
+                    ctx.fillStyle = (x / tileSize) % 2 === 0 ? c0 : c1;
+                    ctx.fillRect(x, 0, tileSize, size);
+                }
+                break;
+            case 'radial': {
+                const grad = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+                grad.addColorStop(0, c0);
+                grad.addColorStop(1, c1);
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, size, size);
+                break;
+            }
+            default:
+                for (let y = 0; y < size; y += tileSize) {
+                    for (let x = 0; x < size; x += tileSize) {
+                        ctx.fillStyle = (x / tileSize + y / tileSize) % 2 === 0 ? c0 : c1;
+                        ctx.fillRect(x, y, tileSize, tileSize);
+                    }
+                }
+                break;
+        }
+    } else if (state.groundOverlay === 'scan') {
+        // 底层霓虹网格（半透明），扫描环在其上脉冲扩散
+        ctx.strokeStyle = c1a(0.35);
+        ctx.lineWidth = Math.max(1, Math.round(tileSize / 24));
+        for (let x = tileSize; x < size; x += tileSize) {
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, size);
+            ctx.stroke();
+        }
+        for (let y = tileSize; y < size; y += tileSize) {
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(size, y);
+            ctx.stroke();
+        }
+        const cx = size / 2;
+        const cy = size / 2;
+        const maxR = size / 2;
+        const rings = 3;
+        for (let i = 0; i < rings; i++) {
+            const ph = (scanPhase + i / rings) % 1;
+            const radius = Math.max(1, ph * maxR);
+            const alpha = 1 - ph;
+            ctx.strokeStyle = c1a(alpha);
+            ctx.lineWidth = Math.max(2, Math.round(tileSize / 8));
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+    } else if (state.groundOverlay === 'glowEdge') {
+        // 边界辉光环（静态），gridSize 控制环密度/间距
+        ctx.save();
+        ctx.shadowColor = c1;
+        ctx.shadowBlur = Math.max(4, tileSize / 4);
+        ctx.strokeStyle = c1;
+        ctx.lineWidth = Math.max(2, Math.round(tileSize / 16));
+        const inset = tileSize / 2;
+        ctx.strokeRect(inset, inset, size - 2 * inset, size - 2 * inset);
+        ctx.restore();
+    }
+}
 
+export function _generateGroundTexture(state: EnvState, scene: Scene, scanPhase = 0): Texture {
+    const size = 512;
+    const draw = (ctx: CanvasRenderingContext2D, s: number) => _drawGroundCanvas(ctx, s, state, scanPhase);
     return createCanvasTexture({ size, draw, scene, name: 'envGround', wrap: 'clamp' });
 }
 
-// ======== Overlay pattern (grid/checker) for any canvas context ========
+// ======== Overlay pattern (grid/checker/scan/glowEdge) for any canvas context ========
 
-function _drawOverlayPattern(ctx: CanvasRenderingContext2D, size: number, state: EnvState): void {
+function _drawOverlayPattern(
+    ctx: CanvasRenderingContext2D,
+    size: number,
+    state: EnvState,
+    scanPhase = 0
+): void {
     if (state.groundOverlay === 'none') {
         return;
     }
@@ -897,6 +959,7 @@ function _drawOverlayPattern(ctx: CanvasRenderingContext2D, size: number, state:
     const g = Math.round(state.groundLineColor[1] * 255);
     const b = Math.round(state.groundLineColor[2] * 255);
     const lineColor = `rgb(${r},${g},${b})`;
+    const lineColorA = (a: number) => `rgba(${r},${g},${b},${Math.max(0, Math.min(1, a))})`;
     const tileSize = Math.max(8, Math.round(64 * state.groundGridSize));
 
     if (state.groundOverlay === 'grid') {
@@ -923,6 +986,44 @@ function _drawOverlayPattern(ctx: CanvasRenderingContext2D, size: number, state:
                 }
             }
         }
+    } else if (state.groundOverlay === 'scan') {
+        // 底层半透明网格 + 脉冲扫描环（静态相位，逐帧动画由 tickGround 驱动）
+        ctx.strokeStyle = lineColorA(0.35);
+        ctx.lineWidth = Math.max(1, Math.round(tileSize / 24));
+        for (let x = tileSize; x < size; x += tileSize) {
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, size);
+            ctx.stroke();
+        }
+        for (let y = tileSize; y < size; y += tileSize) {
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(size, y);
+            ctx.stroke();
+        }
+        const cx = size / 2;
+        const cy = size / 2;
+        const maxR = size / 2;
+        const rings = 3;
+        for (let i = 0; i < rings; i++) {
+            const ph = (scanPhase + i / rings) % 1;
+            const radius = Math.max(1, ph * maxR);
+            ctx.strokeStyle = lineColorA(1 - ph);
+            ctx.lineWidth = Math.max(2, Math.round(tileSize / 8));
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+    } else if (state.groundOverlay === 'glowEdge') {
+        ctx.save();
+        ctx.shadowColor = lineColor;
+        ctx.shadowBlur = Math.max(4, tileSize / 4);
+        ctx.strokeStyle = lineColor;
+        ctx.lineWidth = Math.max(2, Math.round(tileSize / 16));
+        const inset = tileSize / 2;
+        ctx.strokeRect(inset, inset, size - 2 * inset, size - 2 * inset);
+        ctx.restore();
     }
 }
 
@@ -936,7 +1037,7 @@ function _drawTextureGroundCanvas(
 ): void {
     ctx.clearRect(0, 0, size, size);
     ctx.drawImage(img, 0, 0, size, size);
-    _drawOverlayPattern(ctx, size, state);
+    _drawOverlayPattern(ctx, size, state, 0);
 }
 
 function _ensureTextureGroundImage(url: string, onReady: (img: HTMLImageElement) => void): void {
@@ -1034,6 +1135,28 @@ function getGroundEdgeFadeTexture(fade: number, scene: Scene): Texture | null {
 
 export function applyGroundEdgeFade(mat: GroundMat, fade: number, scene: Scene): void {
     mat.opacityTexture = getGroundEdgeFadeTexture(fade, scene);
+}
+
+/**
+ * [doc:adr-230] 自发光地屏增量同步：复用 Babylon 内置 emissiveColor/emissiveTexture 通道，
+ * 不引入新材质体系。es=0 / 黑 = 关闭（零回归）。
+ * 反射随发光强度衰减由 planar-reflection 的 getBlend 统一处理（见 buildGroundReflection），
+ * 因 groundReflection.update 每帧覆盖 reflectionTexture.level，衰减不能只在本函数设一次。
+ * @param mat 地面材质（StandardMaterial 或 PBRMaterial）
+ */
+export function _syncGroundEmissive(mat: GroundMat, state: EnvState): void {
+    const ec = state.groundEmissiveColor;
+    const es = state.groundEmissiveStrength;
+    // 标准/PBR 均有 emissiveColor；用 Color3.scale 控制强度（0=关）
+    (mat as StandardMaterial).emissiveColor = new Color3(ec[0], ec[1], ec[2]).scale(es);
+
+    // 可选发光纹理：复用当前 albedo 纹理作为发光源；空 = 仅纯色发光。
+    const albedo = _getAlbedoTex(mat);
+    if (state.groundEmissiveTexture && albedo) {
+        (mat as StandardMaterial).emissiveTexture = albedo;
+    } else if ((mat as StandardMaterial).emissiveTexture && !state.groundEmissiveTexture) {
+        (mat as StandardMaterial).emissiveTexture = null;
+    }
 }
 
 function _getScrollUV(state: EnvState): { u: number; v: number } {
@@ -1319,6 +1442,23 @@ export function tickGround(dt: number): void {
 
     // Ground reflection
     groundReflection.update(envState, getScene());
+
+    // [doc:adr-230] scan 叠加脉冲环动画：仅 canvas 来源地面（'envGround' 动态纹理）每帧重绘。
+    // 仅 scan 时启用，避免常驻重绘开销（与现有 scroll 重绘机制一致）。
+    if (_envSys.ground.mesh && envState.groundOverlay === 'scan') {
+        const mat = _envSys.ground.mesh.material;
+        if (mat && (mat instanceof StandardMaterial || mat instanceof PBRMaterial)) {
+            const tex = _getAlbedoTex(mat as GroundMat);
+            if (tex instanceof DynamicTexture && tex.name === 'envGround') {
+                const ctx = getCanvasCtx(tex);
+                if (ctx) {
+                    _scanRingPhase = (_scanRingPhase + dt * GROUND_SCAN_SPEED) % 1;
+                    _drawGroundCanvas(ctx, tex.getSize().width, envState, _scanRingPhase);
+                    tex.update(false);
+                }
+            }
+        }
+    }
 }
 
 // ======== Ground Presets (moved to env-ground-presets.ts) ========

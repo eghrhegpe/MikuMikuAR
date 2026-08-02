@@ -12,6 +12,8 @@ import type { MenuNode } from './menu-schema';
 export interface PanelNav {
     /** 导航域：env/motion/settings/scene。特例覆写用（如 scene:postprocess-* 实际挂 env 域） */
     domain?: 'env' | 'motion' | 'settings' | 'scene';
+    /** 入口按钮 testid，由 deriveNav 从 domain 映射表推导 */
+    entryTestId?: string;
     /** 一级子面板 testid，如 folder:env:postprocess */
     subLevelTestId?: string;
     /** settings 域二级 folder testid，如 folder:settings:controls */

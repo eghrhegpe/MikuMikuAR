@@ -8,8 +8,8 @@
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
 | 核心基础设施 | 123 | 721 |
-| 3D 场景 | 111 | 1130 |
-| 菜单 & UI | 75 | 381 |
+| 3D 场景 | 111 | 1133 |
+| 菜单 & UI | 75 | 382 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 17 | 127 |
 | 物理系统 | 2 | 14 |
@@ -986,6 +986,7 @@
 | `_setAlbedoColor()` | `scene/env/env-ground` | — |
 | `_setAlbedoTex()` | `scene/env/env-ground` | — |
 | `_syncAllTextureOffsets()` | `scene/env/env-ground` | — |
+| `_syncGroundEmissive()` | `scene/env/env-ground` | [doc:adr-230] 自发光地屏增量同步：复用 Babylon 内置 emissiveColor/emissiveTexture 通道， 不引入新材质体系。es=0 / 黑 |
 | `_syncGroundNormalTexture()` | `scene/env/env-ground` | — |
 | `_syncGroundRippleTexture()` | `scene/env/env-ground` | — |
 | `_syncPbrProperties()` | `scene/env/env-ground` | PBR 增量更新：roughness / metallic / 程序化纹理无需重建材质的属性 |
@@ -1361,10 +1362,12 @@
 | `RIGHT_FOOT_DEF()` | `scene/motion/motion-modules/foot-modules` | — |
 | `LEFT_HAND_DEF()` | `scene/motion/motion-modules/hand-modules` | — |
 | `RIGHT_HAND_DEF()` | `scene/motion/motion-modules/hand-modules` | — |
+| `FrameHookManager()` | `scene/motion/motion-modules/module-base` | 帧钩子管理器的返回类型（供 createEnsureActive 复用） |
 | `ModuleBaseMethods()` | `scene/motion/motion-modules/module-base` | createModuleBase 返回的方法子集（与 MotionOverrideModule 对应方法签名一致） |
 | `ModuleBaseOverrides()` | `scene/motion/motion-modules/module-base` | 模块基础行为覆盖 |
 | `ModuleShellConfig()` | `scene/motion/motion-modules/module-base` | [doc:adr-146 P3 主题12] 模块实例外壳 — 消除 6 个工厂末尾重复的 `id/meta/priority/managedBones/buildSchema + |
 | `applyModuleSnapshot()` | `scene/motion/motion-modules/module-base` | [doc:adr-125] 将快照应用到指定模型的所有模块。 |
+| `createEnsureActive()` | `scene/motion/motion-modules/module-base` | [doc:adr-146 P3] ensureActive 公共工厂 — 消除 body-posture/foot/hand 复制粘贴的 「先 bake 重烤、再幂等注册帧钩子」模 |
 | `createFrameHookManager()` | `scene/motion/motion-modules/module-base` | [doc:adr-116 P3] 帧钩子管理器 — 消除 sway/riding 的 _xxxFrameHooks Map 重复模式。 |
 | `createModuleBase()` | `scene/motion/motion-modules/module-base` | 创建模块通用方法，减少 7 个模块间 ~105 行重复 boilerplate。 |
 | `createModuleShell()` | `scene/motion/motion-modules/module-base` | — |
@@ -2104,7 +2107,8 @@
 | `syncPlaybackSpeedToRuntime()` | `menus/motion-popup` | — |
 | `buildPoseStudioLevel()` | `menus/motion-pose-levels` | — |
 | `buildProcLibraryLevel()` | `menus/motion-procmotion-levels` | — |
-| `buildProcMotionLevel()` | `menus/motion-procmotion-levels` | — |
+| `buildProcMotionSchema()` | `menus/motion-procmotion-levels` | — |
+| `procLabel()` | `menus/motion-procmotion-levels` | [doc:adr-207] 程序化动作 ID → 显示名（跨模块复用，避免标签逻辑重复）。 |
 | `buildMotionRootItems()` | `menus/motion-root-ui` | — |
 | `buildMotionRootLevel()` | `menus/motion-root-ui` | — |
 | `buildRetargetLevel()` | `menus/motion-root-ui` | — |
