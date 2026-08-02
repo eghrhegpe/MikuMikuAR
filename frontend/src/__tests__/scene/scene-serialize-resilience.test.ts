@@ -31,6 +31,7 @@ vi.mock('../../core/config', () => ({
     modelRegistry: registry,
     showErrorToast: vi.fn(),
     setStatus: vi.fn(),
+    triggerAutoSave: vi.fn(),
 }));
 
 vi.mock('../../core/i18n/t', () => ({ t: (k: string) => k }));

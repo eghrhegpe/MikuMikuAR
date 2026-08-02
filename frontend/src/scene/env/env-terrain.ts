@@ -13,6 +13,7 @@ import { EnvState } from '@/core/config';
 import { createCanvasDataURL, isCacheOwnedTexture } from './_shared/env-texture';
 import { clamp01 } from '@/core/clamp';
 import { _effectiveBumpLevel } from './env-ground';
+import { underwaterFogController } from './env-underwater-fog';
 
 // ======== 确定性值噪声（FBM）========
 // 哈希与值噪声原语统一由 @/core/math/hash-noise 提供（与 water/caustics 共用，消除重复）；
@@ -140,6 +141,10 @@ export function applyTerrainMaterial(ground: GroundMesh, state: EnvState, scene:
             disposeTex(oldMat.bumpTexture);
             disposeTex(oldMat.opacityTexture);
             disposeTex(oldMat.reflectionTexture);
+        }
+        // [fix P1] 移除水下焦散安装条目，避免对已销毁地形材质残留引用
+        if (oldMat instanceof PBRMaterial || oldMat instanceof StandardMaterial) {
+            underwaterFogController.uninstall(oldMat);
         }
         oldMat.dispose();
         ground.material = null;
