@@ -7,6 +7,11 @@ scope:
   - frontend/src/menus/library.ts
 source_files:
   - frontend/src/menus/library.ts
+adr:
+  - ADR-045
+invariants:
+  - 纯 barrel re-export：保持历史 import 路径零变化，业务代码无需因拆分改动
+  - 具体实现内聚于子模块（library-core / library-browse / library-session-store / motion-popup / model-preset），本文件不写业务逻辑
 use_when:
   - 模型库
   - 资源库
