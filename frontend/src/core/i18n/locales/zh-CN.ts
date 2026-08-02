@@ -1487,6 +1487,7 @@ export const zhCN: Record<string, string> = {
     // toast — Toast 组件
     'toast.copy': '复制',
     'toast.copied': '已复制 ✓',
+    'toast.lightNotReady': '灯光尚未就绪，本次设置未生效',
 
     // about — 链接区域
     'about.license': '开源许可证',

@@ -25,6 +25,8 @@ import { test, expect } from "./wails-fixture";
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+// [ADR-229 §9] 扁平化唯一实现（勿抄本地副本）：与元测试同一份
+import { flattenNodes } from "../src/menus/menu-registry";
 
 // 读取 schema 快照 JSON（Node.js 文件读取，避免 ESM JSON import 限制）
 const __filename = fileURLToPath(import.meta.url);
@@ -49,17 +51,17 @@ interface PanelNav {
     subLevel2TestId?: string;
 }
 
-/** 扁平化节点树，返回所有带 id 的节点 */
-function flattenNodes(nodes: any[]): any[] {
-    const result: any[] = [];
-    for (const node of nodes) {
-        result.push(node);
-        if (node.children && node.children.length > 0) {
-            result.push(...flattenNodes(node.children));
-        }
-    }
-    return result;
+// [ADR-229 §9] 结构性 DOM 契约（折叠头 class / 开关原生输入）同样由快照携带
+// （panel.meta，源自 src/core/dom-contract.ts），e2e 不手写 '.collapsible-header'
+// 与 'input[type="checkbox"]'。快照过期（无 meta）直接抛错，不退化为 '.undefined' 选择器。
+const DOM_META = snapshot[0]?.meta;
+if (!DOM_META?.collapsibleHeader || !DOM_META?.toggleInput) {
+    throw new Error(
+        'schema-snapshot.json 缺 meta（DOM 契约）——请先运行 npx vitest run src/__tests__/schema-snapshot.test.ts'
+    );
 }
+/** 未展开的折叠头选择器（.collapsible-header:not(.open)） */
+const COLLAPSED_HEADER_SELECTOR = `.${DOM_META.collapsibleHeader}:not(.${DOM_META.collapsibleOpen})`;
 
 /** 根据 nav 元数据执行导航（ADR-229 §2.1：entryTestId → 一级/二级 folder testid） */
 async function navigateToPanel(page: any, nav: PanelNav): Promise<void> {
@@ -89,11 +91,9 @@ async function navigateToPanel(page: any, nav: PanelNav): Promise<void> {
     //    ⚠️ 点击 subLevel 后面板内容可能异步挂载（实测 env:water 9 个 folder 分批渲染），
     //    立即 querySelectorAll 会漏掉未挂载的 header → 先等一帧再展开。
     await page.waitForTimeout(250);
-    await page.evaluate(() => {
-        document
-            .querySelectorAll<HTMLElement>('.collapsible-header:not(.open)')
-            .forEach((h) => h.click());
-    });
+    await page.evaluate((sel: string) => {
+        document.querySelectorAll<HTMLElement>(sel).forEach((h) => h.click());
+    }, COLLAPSED_HEADER_SELECTOR);
 }
 
 // 遍历快照中所有面板
@@ -232,12 +232,8 @@ function describeSchemaPanel(
 // ======== [ADR-229 §2.2] 交互 action 执行 ========
 
 /** 经 window.__state 读取控件对应的 state 值（只读，@dom 模式可用） */
-async function readState(page: any, bind: string, modelId?: string): Promise<unknown> {
-    return page.evaluate(
-        (args: { bind: string; modelId?: string }) =>
-            (window as any).__state?.get(args.bind, args.modelId),
-        { bind, modelId }
-    );
+async function readState(page: any, bind: string): Promise<unknown> {
+    return page.evaluate((b: string) => (window as any).__state?.get(b), bind);
 }
 
 /**
@@ -295,7 +291,6 @@ async function executeAction(page: any, node: any): Promise<void> {
     if (!bind) {
         return;
     }
-    const modelId = node.modelId;
     const sel = controlSelector(node);
 
     // [fix:P1] 守卫域整域跳过：light./render. 域在 @dom 环境（无灯光/管线）写入被
@@ -323,7 +318,7 @@ async function executeAction(page: any, node: any): Promise<void> {
             if (min === undefined || max === undefined || !step) {
                 return;
             }
-            const before = await readState(page, bind, modelId);
+            const before = await readState(page, bind);
             const beforeNum = Number(before);
             // mid-point 对齐 step；与当前值相等则改用端点（保证值发生变化）
             let target = Math.round(((min + max) / 2 - min) / step) * step + min;
@@ -337,7 +332,7 @@ async function executeAction(page: any, node: any): Promise<void> {
             await dispatchKeys(page, sel, 'Home', 1); // 跳到 min
             const steps = Math.round((target - min) / step);
             await dispatchKeys(page, sel, 'ArrowRight', steps);
-            const after = await readState(page, bind, modelId);
+            const after = await readState(page, bind);
             // [ADR-229 §2.2] 两类控件无法精确断言 state 值：
             //  ① transformed（control.get/set 变换，如 iblIntensity set: v*3、windDirection 角度↔向量）
             //     → state 存变换后值，退化为「值发生变化」
@@ -363,12 +358,13 @@ async function executeAction(page: any, node: any): Promise<void> {
         }
         case 'toggle': {
             // toggle：点击 checkbox，断言 state 翻转（原生 click 触发 change → onChange）
-            const before = await readState(page, bind, modelId);
+            const inputSel = `[data-testid="${node.id}"] ${DOM_META.toggleInput}`;
+            const before = await readState(page, bind);
             await page.evaluate((s: string) => {
                 const input = document.querySelector<HTMLInputElement>(s);
                 input?.click();
-            }, `[data-testid="${node.id}"] input[type="checkbox"]`);
-            const after = await readState(page, bind, modelId);
+            }, inputSel);
+            const after = await readState(page, bind);
             if (before !== after) {
                 // state 发生变化：boolean 做强翻转断言，其他值（headerToggle/set 变换）变化即通过
                 if (typeof before === 'boolean' && typeof after === 'boolean') {
@@ -379,7 +375,7 @@ async function executeAction(page: any, node: any): Promise<void> {
                 // @dom 无灯光/管线）写入被拦截 → 退化为「checkbox checked 翻转」DOM 层断言
                 const checked = await page.evaluate(
                     (s: string) => document.querySelector<HTMLInputElement>(s)?.checked,
-                    `[data-testid="${node.id}"] input[type="checkbox"]`
+                    inputSel
                 );
                 expect(checked, `${node.id} toggle: DOM checked 未翻转（state=${after}）`).toBe(!(before as boolean));
             }
@@ -393,7 +389,7 @@ async function executeAction(page: any, node: any): Promise<void> {
             if (opts.length < 2) {
                 return;
             }
-            const before = await readState(page, bind, modelId);
+            const before = await readState(page, bind);
             const target = opts.find((o: any) => o.value !== before)?.value ?? opts[0].value;
             const targetIdx = opts.findIndex((o: any) => o.value === target);
             const currentIdx = opts.findIndex((o: any) => o.value === before);
@@ -405,7 +401,7 @@ async function executeAction(page: any, node: any): Promise<void> {
             } else if (targetIdx < currentIdx) {
                 await dispatchKeys(page, sel, 'ArrowLeft', currentIdx - targetIdx);
             }
-            const after = await readState(page, bind, modelId);
+            const after = await readState(page, bind);
             // [ADR-229 §2.2] 断言强度分级：
             //  ① state 变化且落在 options → 精确断言（最严格）
             //  ② state 变化但不在 options（get/set 变换）→ 值变化即通过

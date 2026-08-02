@@ -85,10 +85,14 @@ export function collectAllSchemas(): RegisteredSchema[] {
     return collectAllSchemasWithFailures().schemas;
 }
 
-/** 递归展开 schema 树（含 children），返回扁平节点列表 */
-export function flattenNodes(nodes: MenuNode[]): MenuNode[] {
-    const result: MenuNode[] = [];
-    function walk(list: MenuNode[]): void {
+/**
+ * 递归展开 schema 树（含 children），返回扁平节点列表。
+ * 泛型：同时服务 MenuNode 树与快照 JSON 的纯数据节点树（唯一实现，
+ * 元测试 / e2e 均复用本函数，勿再抄本地副本）。
+ */
+export function flattenNodes<T extends { children?: T[] }>(nodes: T[]): T[] {
+    const result: T[] = [];
+    function walk(list: T[]): void {
         for (const node of list) {
             result.push(node);
             if (node.children) {

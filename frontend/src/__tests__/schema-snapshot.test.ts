@@ -202,12 +202,14 @@ vi.mock('@/core/wails-bindings', () => ({
 import '../menus/menu-schema-register';
 import {
     collectAllSchemasWithFailures,
+    flattenNodes,
     type PanelNav,
     type SchemaCollectFailure,
     type RegisteredSchema,
 } from '../menus/menu-registry';
-// [ADR-229 §9] DOM 契约单源：快照携带 kind → 选择器映射，e2e 从快照读，不手写
-import { KIND_CONTROL_SELECTOR } from '../core/dom-contract';
+// [ADR-229 §9] DOM 契约单源：快照携带 kind → 选择器映射 + 结构选择器 meta，
+// e2e 从快照读，不手写
+import { KIND_CONTROL_SELECTOR, COLLAPSIBLE, TOGGLE_INPUT_SELECTOR } from '../core/dom-contract';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -244,8 +246,19 @@ function deriveNav(panelId: string, nav?: PanelNav): PanelNav {
     return result;
 }
 
+/**
+ * [ADR-229 §9] 结构性 DOM 契约（非 kind 级）：折叠头 class / 开关原生输入选择器。
+ * 每个面板携带一份，e2e 的展开逻辑与 toggle 交互从快照读，不再手写字符串。
+ */
+const PANEL_DOM_META = {
+    collapsibleHeader: COLLAPSIBLE.headerClass,
+    collapsibleOpen: COLLAPSIBLE.openClass,
+    toggleInput: TOGGLE_INPUT_SELECTOR,
+} as const;
+
 /** 清理节点为纯数据（去除函数/副作用），用于 JSON 序列化 */
 function cleanNode(node: any): any {
+    const action = deriveAction(node);
     const result: any = {
         id: node.id,
         kind: node.kind,
@@ -259,7 +272,7 @@ function cleanNode(node: any): any {
             : {}),
         // [ADR-229 §2.2] action 交互策略描述（非静态目标值——运行时初始值不可预知，
         // 目标由 spec 运行时计算；colorSlider 值域是 [r,g,b] 三元组，首轮跳过）
-        ...(deriveAction(node) ? { action: deriveAction(node) } : {}),
+        ...(action ? { action } : {}),
     };
     if (node.label) {
         result.label = node.label;
@@ -329,6 +342,7 @@ describe('Schema Snapshot Generator', () => {
         const snapshot = schemas.map((s) => ({
             panelId: s.panelId,
             nav: deriveNav(s.panelId, s.nav),
+            meta: PANEL_DOM_META,
             nodes: s.nodes.map(cleanNode),
         }));
 
@@ -342,6 +356,9 @@ describe('Schema Snapshot Generator', () => {
             } else {
                 expect(s.nav.subLevelTestId, `${s.panelId} 缺 subLevelTestId`).toBeTruthy();
             }
+            // [ADR-229 §9] 结构契约完整性：e2e 的展开/toggle 交互直接读 meta，缺失即失败
+            expect(s.meta.collapsibleHeader, `${s.panelId} meta.collapsibleHeader 缺失`).toBeTruthy();
+            expect(s.meta.toggleInput, `${s.panelId} meta.toggleInput 缺失`).toBeTruthy();
         }
 
         // [ADR-229 §9] DOM 契约完整性断言：所有 kind 在 KIND_CONTROL_SELECTOR 中的节点
@@ -401,18 +418,6 @@ function countNodes(nodes: any[]): number {
     return nodes.reduce((acc: number, n: any) => {
         return acc + 1 + (n.children ? countNodes(n.children) : 0);
     }, 0);
-}
-
-/** 递归展开 schema 树（含 children），返回扁平节点列表（供 dom 契约断言用） */
-function flattenNodes(nodes: any[]): any[] {
-    const result: any[] = [];
-    for (const n of nodes) {
-        result.push(n);
-        if (n.children) {
-            result.push(...flattenNodes(n.children));
-        }
-    }
-    return result;
 }
 
 function countBindPaths(nodes: any[]): number {

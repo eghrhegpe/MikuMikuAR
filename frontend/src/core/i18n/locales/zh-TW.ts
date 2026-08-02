@@ -1378,6 +1378,7 @@ export const zhTW: Record<string, string> = {
     // toast — Toast 元件
     'toast.copy': '複製',
     'toast.copied': '已複製 ✓',
+    'toast.lightNotReady': '燈光尚未就緒，本次設定未生效',
 
     // about — 連結區塊
     'about.license': '開源許可證',

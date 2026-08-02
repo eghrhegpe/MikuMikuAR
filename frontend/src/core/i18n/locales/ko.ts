@@ -1391,6 +1391,7 @@ export const ko: Record<string, string> = {
     // toast — Toast 컴포넌트
     'toast.copy': '복사',
     'toast.copied': '복사됨 ✓',
+    'toast.lightNotReady': '조명이 아직 준비되지 않아 이번 설정이 적용되지 않았습니다',
 
     // about — 링크 섹션
     'about.license': '오픈소스 라이선스',
