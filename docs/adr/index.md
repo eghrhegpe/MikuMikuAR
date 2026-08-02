@@ -30,7 +30,7 @@
 
 | ADR | 主题 | 状态 |
 |-----|------|------|
-| [ADR-230](./adr-230-ground-visual-roadmap.md) | 地面视觉后续方向（自发光地屏 + 程序化地面图案） | 📝 规划 |
+| [ADR-231](./adr-231-ground-visual-roadmap.md) | 地面视觉后续方向（自发光地屏 + 程序化地面图案） | 📝 规划 |
 | [ADR-229](./adr-229-e2e-automation-advancement.md) | E2E 自动化推进 —— 从 schema 到测试零映射 | 📝 规划 |
 | [ADR-223](./adr-223-water-surface-overhaul.md) | 水面视觉效果整顿 —— 法线混合、深度泡沫、折射扭曲、SSS、渐变颜色 | 规划 |
 | [ADR-222](./adr-222-water-depth-fog.md) | 水面深度差雾（Depth-Difference Fog）—— 从相机距离雾迁移至水柱厚度雾 | 规划 |
