@@ -242,6 +242,10 @@ const PLAZA_API_BASE = `https://api.github.com/repos/${PLAZA_GH_OWNER}/${PLAZA_G
 const PLAZA_FETCH_TIMEOUT_MS = 10_000; // 对齐 Go 端 10s 超时
 const PLAZA_FETCH_MAX_BYTES = 2 << 20; // 2 MB — 对齐 Go 端 io.LimitReader
 
+// [doc:adr-234] last_scene 的 localStorage 同步镜像键：
+// beforeunload 场景下 IndexedDB 事务异步可能来不及落盘，setItem 同步完成保证退出兜底。
+const LAST_SCENE_MIRROR_KEY = 'mikumikuar:last_scene_mirror';
+
 /**
  * [doc:adr-177] 网页端拉取单个 plaza 配置文件，对齐 Go 端 fetchPlazaRemote 的三源 fallback。
  *
@@ -1664,11 +1668,31 @@ export const browserAdapter: BackendService = {
     // LoadLastScene() 无参返回 string，单文件覆盖语义（Go 写 last_scene.json）。
     // 旧实现误用 (name, data) 双参，业务侧 SaveLastScene(json) 会把整段 JSON 当作
     // IndexedDB key、data 为 undefined，导致网页端自动保存静默失效、无法恢复。
+    //
+    // [doc:adr-234] Web 端退出兜底：Go 端 SaveLastScene 有 sceneMu 互斥锁同步写盘，
+    // 但浏览器端 IndexedDB 事务是异步的——cleanupAndFlushSave 在 beforeunload 里
+    // fire-and-forget 时事务可能来不及落盘，最后几秒场景静默丢失。故双写：
+    // 主路径 IndexedDB（无 5MB 容量限制）+ localStorage 同步镜像（setItem 同步完成，
+    // beforeunload 场景必落盘）。镜像失败（配额超限等）静默忽略，主路径不受影响。
     async SaveLastScene(jsonStr: string): Promise<void> {
+        try {
+            localStorage.setItem(LAST_SCENE_MIRROR_KEY, jsonStr);
+        } catch {
+            // 配额超限/不可用：忽略，主路径 IndexedDB 仍写入
+        }
         await idbSet('scenes', 'last_scene', jsonStr);
     },
     async LoadLastScene(): Promise<string> {
-        return (await idbGet<string>('scenes', 'last_scene')) ?? '';
+        const primary = await idbGet<string>('scenes', 'last_scene');
+        if (primary) {
+            return primary;
+        }
+        // 回退镜像：上次退出时 IndexedDB 事务可能未完成，镜像保留了最后状态
+        try {
+            return localStorage.getItem(LAST_SCENE_MIRROR_KEY) ?? '';
+        } catch {
+            return '';
+        }
     },
     async GetCacheStats(): Promise<CacheStats> {
         // [doc:adr-177] 对齐 Go CacheStats 9 字段结构（settings-system.ts 面板据此渲染）。
