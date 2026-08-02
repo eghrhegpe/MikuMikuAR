@@ -53,4 +53,6 @@ ADR-196 浏览器端 AI 配置持久化层，复用 `backend/idb.ts` IndexedDB�
 - 依赖 `core/backend/idb.ts`
 
 ## 不变量
-- 见 frontmatter
+- 仅服务浏览器适配器；桌面端配置由 Go 侧持有，前端不暴露 key
+- 默认零 key 路径：本地 Ollama（http://localhost:11434/v1/chat/completions，model llama3.2）
+- capabilities() 同步语义：内存缓存 + 异步回源，未加载时回退默认不阻塞调用方

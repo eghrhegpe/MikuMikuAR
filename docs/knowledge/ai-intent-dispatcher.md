@@ -43,7 +43,9 @@ ADR-155 自然语言控场管线的解析层：把 LLM 的自由文本响应解�
 - 下行：`action-executor.executeActionById` 执行；动作定义见 [action-registry.md](./action-registry.md)
 
 ## 不变量
-- 见 frontmatter `invariants`
+- parseActionFromLLM 三级回退提取 JSON（整文本→```json 代码块→正则匹配含 action+params 的对象），全失败返回 null
+- action 缺失 CONTROL_NAMESPACE（ai:control:）前缀时自动补齐；params 缺省为空对象
+- executeAction 委托 action-executor.executeActionById，本模块不直接触碰 action-registry
 
 ## 验证入口
 - 决策见 ADR-155；暂无专门单测（纯解析函数 `parseActionFromLLM` 为后续补测优先项）

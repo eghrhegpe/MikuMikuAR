@@ -33,4 +33,6 @@ ADR-196 的 SSE（Server-Sent Events）行解析纯函数，从 `ReadableStream&
 - 被 `browser-adapter.ts` 的 streamChat 调用
 
 ## 不变量
-- 见 frontmatter
+- 纯函数、零依赖，兼容 OpenAI / Ollama / 任意 OpenAI 兼容端点
+- 中止信号（signal.aborted）统一归并为 done，不渲染为 error（FR-10）
+- 兼容非 JSON 纯文本流（Ollama），catch 后直接产出原始文本

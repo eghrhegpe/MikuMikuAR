@@ -70,7 +70,10 @@ ADR-196 内置 AI 诊断助手的核心服务抽象，镜像 BackendService（AD
 - 上行：被 `menus/settings-diagnostic.ts` 经 `resolveAi()` 调用
 
 ## 不变量
-- 见 frontmatter `invariants`
+- resolveAi() 为惰性单例，模块顶层禁止同步求值（避免 Android 冷启动 window.wails 未注入而误降级）
+- go-adapter 必须动态 import（桌面/安卓路径按需），不得进入纯浏览器 bundle
+- AiService.capabilities() 为同步签名，异步能力回源由 refreshCapabilities 更新缓存
+- 两适配器均实现统一 AiService 契约（streamChat 返回 AsyncIterable<ChatChunk>），双路径对调用方透明
 
 ## 验证入口
 - 契约见 ADR-196；单测以 `frontend/src/__tests__/core/ai/` 下 ai 子模块测试为准（待补登）

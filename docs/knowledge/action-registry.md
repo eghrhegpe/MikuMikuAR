@@ -104,7 +104,11 @@ ADR-197 引入的统一动作注册表：把 settings/scene/motion/env/library �
 - `action-catalog` 消费 `listActions()`，产出喂给 `ai-service` 的 LLM 请求
 
 ## 不变量
-- 见 frontmatter `invariants`
+- action-registry.ts 为零依赖纯叶子；ActionDef.label 当前为硬编码中文（非 i18n key），消费端原样使用，NL 国际化为待办
+- executeActionById 先经 adaptParam 校验/转换所有参数，缺参（非 boolean/toggle）即失败短路，execute 异常被捕获转为 ActionResult
+- param-adapters 的 entity 类型必须配 ParamDef.resolve；string 类型直通透传不校验
+- destructive 动作的确认 UI 由调用方自行处理，注册表本身不弹 showConfirm
+- registerAction 遇重复 id 默认 console.warn + 覆盖；strictMode 下抛错
 
 ## 验证入口
 - 契约见 ADR-197 / ADR-155

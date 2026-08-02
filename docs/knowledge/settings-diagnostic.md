@@ -54,4 +54,8 @@ ADR-196 的 AI 诊断助手 UI 面板，经 ADR-203 重构为协调入口模式�
 - 下行：经 ADR-093 声明式 Schema 挂载到设置菜单；经 `assistant-panel.ts` 复用 buildDiagnosticSchema 以独立 overlay 打开
 
 ## 不变量
-- 见 frontmatter
+- 面板双标签页布局（chat/config），经 buildDiagnosticSchema 渲染；withSessions 可选嵌入会话历史
+- 模块顶层调用 resolveAi() 加载适配器 → loadActiveSession() → refreshCaps()，不阻塞启动
+- 流式对话受 diagState.abortController.signal 控制，break/return 时底层 fetch 被中止（FR-10/AC-6）
+- 状态寄存在 diagState 单例，disposeDiagnosticPanel 清空 DOM 引用但保留 messages 等运行时状态
+- 子模块负责各自 UI：diagnostic-chat（对话渲染）/ diagnostic-config（配置）/ diagnostic-control（动作面板）/ diagnostic-session（会话管理）；本文件仅做协调与生命周期
