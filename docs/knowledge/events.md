@@ -25,7 +25,6 @@ invariants:
 tests: []
 use_when:
   - 全局事件
-  - 键盘导航
   - 拖放导入
   - 更新通知
 ---

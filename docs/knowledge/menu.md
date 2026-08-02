@@ -22,7 +22,6 @@ use_when:
   - 菜单引擎
   - SlideMenu
   - 弹窗菜单
-  - 键盘导航
 ---
 
 # 滑出式菜单引擎（SlideMenu）
