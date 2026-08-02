@@ -160,15 +160,16 @@ function describeSchemaPanel(
     nav: PanelNavConfig,
     interactiveNodes: any[],
 ) {
-    test.describe(`Schema 驱动 E2E — ${panel.panelId}`, { tag: ["@dom"] }, () => {
-        test.beforeEach(async ({ vitePage: page }) => {
-            await navigateToPanel(page, nav);
-        });
+    // ⚡ 优化：每个面板只导航一次，用 test.step() 聚合所有节点断言。
+    // 之前每个节点一个 test() + beforeEach 导航，158 个节点 → 158 次导航 → 2h+。
+    // 改为每个面板一个 test() + 一次导航，16 个面板 → 16 次导航 → ~15min。
+    test(`Schema 驱动 E2E — ${panel.panelId}: 所有节点渲染正确`, { tag: ["@dom"] }, async ({ vitePage: page }) => {
+        await navigateToPanel(page, nav);
 
         for (const node of interactiveNodes) {
             const selector = KIND_SELECTOR_MAP[node.kind];
 
-            test(`${node.id} (kind: ${node.kind}) 渲染了正确的 DOM 元素`, async ({ vitePage: page }) => {
+            await test.step(`${node.id} (kind: ${node.kind})`, async () => {
                 const el = page.getByTestId(node.id);
 
                 // 1. 断言元素可见
