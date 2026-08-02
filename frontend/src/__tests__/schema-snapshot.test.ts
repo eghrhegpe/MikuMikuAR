@@ -269,6 +269,10 @@ function cleanNode(node: any): any {
             max: node.control.max,
             step: node.control.step,
             options: node.control.options?.map((o: any) => ({ value: o.value, label: o.label })),
+            // [ADR-229 §2.2] get/set 值域变换标记：有变换时 state 存的是变换后值
+            // （如 iblIntensity set: v*3 → state=1.5 而非显示 0.5；windDirection 角度↔向量），
+            // e2e 无法从显示值精确断言 → 退化为「值发生变化」断言
+            transformed: !!(node.control.get || node.control.set),
         };
     }
     if (node.headerToggle) {

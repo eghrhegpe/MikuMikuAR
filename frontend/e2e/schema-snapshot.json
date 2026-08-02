@@ -38,7 +38,8 @@
               "value": "procedural",
               "label": "env.procedural"
             }
-          ]
+          ],
+          "transformed": false
         }
       },
       {
@@ -48,7 +49,8 @@
         "dom": "[role=\"slider\"]",
         "label": "env.skyColorTop",
         "control": {
-          "bind": "env.skyColorTop"
+          "bind": "env.skyColorTop",
+          "transformed": false
         }
       },
       {
@@ -58,7 +60,8 @@
         "dom": "[role=\"slider\"]",
         "label": "env.zenithColor",
         "control": {
-          "bind": "env.skyColorTop"
+          "bind": "env.skyColorTop",
+          "transformed": false
         }
       },
       {
@@ -68,7 +71,8 @@
         "dom": "[role=\"slider\"]",
         "label": "env.horizonColor",
         "control": {
-          "bind": "env.skyColorBot"
+          "bind": "env.skyColorBot",
+          "transformed": false
         }
       },
       {
@@ -91,7 +95,8 @@
           "bind": "env.skyRotationSpeed",
           "min": 0,
           "max": 5,
-          "step": 0.1
+          "step": 0.1,
+          "transformed": true
         }
       },
       {
@@ -116,7 +121,8 @@
               "bind": "light.dirIntensity",
               "min": 0,
               "max": 1,
-              "step": 0.05
+              "step": 0.05,
+              "transformed": false
             }
           },
           {
@@ -134,7 +140,8 @@
               "bind": "env.iblIntensity",
               "min": 0,
               "max": 1,
-              "step": 0.05
+              "step": 0.05,
+              "transformed": true
             }
           },
           {
@@ -152,7 +159,8 @@
               "bind": "env.globalBrightness",
               "min": 0.1,
               "max": 3,
-              "step": 0.05
+              "step": 0.05,
+              "transformed": false
             }
           },
           {
@@ -165,7 +173,8 @@
             },
             "label": "env.stars",
             "control": {
-              "bind": "env.starsEnabled"
+              "bind": "env.starsEnabled",
+              "transformed": false
             }
           },
           {
@@ -183,7 +192,8 @@
               "bind": "env.skyBrightness",
               "min": 0.1,
               "max": 5,
-              "step": 0.1
+              "step": 0.1,
+              "transformed": false
             }
           },
           {
@@ -218,7 +228,8 @@
           "bind": "env.windDirection",
           "min": 0,
           "max": 360,
-          "step": 1
+          "step": 1,
+          "transformed": true
         }
       },
       {
@@ -236,7 +247,8 @@
           "bind": "env.windSpeed",
           "min": 0,
           "max": 10,
-          "step": 0.1
+          "step": 0.1,
+          "transformed": false
         }
       }
     ]
@@ -275,7 +287,8 @@
               "value": "linear",
               "label": "env.linear"
             }
-          ]
+          ],
+          "transformed": false
         }
       },
       {
@@ -285,7 +298,8 @@
         "dom": "[role=\"slider\"]",
         "label": "env.fogColor",
         "control": {
-          "bind": "env.fogColor"
+          "bind": "env.fogColor",
+          "transformed": false
         }
       },
       {
@@ -303,7 +317,8 @@
           "bind": "env.fogDensity",
           "min": 0,
           "max": 0.1,
-          "step": 0.001
+          "step": 0.001,
+          "transformed": false
         }
       },
       {
@@ -320,7 +335,8 @@
           "bind": "env.fogStart",
           "min": 0,
           "max": 200,
-          "step": 1
+          "step": 1,
+          "transformed": true
         }
       },
       {
@@ -337,7 +353,8 @@
           "bind": "env.fogEnd",
           "min": 0,
           "max": 200,
-          "step": 1
+          "step": 1,
+          "transformed": true
         }
       }
     ]
@@ -365,7 +382,8 @@
           "bind": "env.cloudCover",
           "min": 0,
           "max": 1,
-          "step": 0.01
+          "step": 0.01,
+          "transformed": false
         }
       },
       {
@@ -383,7 +401,8 @@
           "bind": "env.cloudGap",
           "min": 0,
           "max": 1,
-          "step": 0.01
+          "step": 0.01,
+          "transformed": true
         }
       },
       {
@@ -407,7 +426,8 @@
           "bind": "env.cloudErosion",
           "min": 0,
           "max": 1,
-          "step": 0.01
+          "step": 0.01,
+          "transformed": true
         }
       },
       {
@@ -425,7 +445,8 @@
           "bind": "env.cloudWeatherStrength",
           "min": 0,
           "max": 1,
-          "step": 0.01
+          "step": 0.01,
+          "transformed": true
         }
       },
       {
@@ -443,7 +464,8 @@
           "bind": "env.cloudHeight",
           "min": 50,
           "max": 3000,
-          "step": 5
+          "step": 5,
+          "transformed": false
         }
       },
       {
@@ -461,7 +483,8 @@
           "bind": "env.cloudScale",
           "min": 0.1,
           "max": 1,
-          "step": 0.05
+          "step": 0.05,
+          "transformed": false
         }
       },
       {
@@ -479,7 +502,8 @@
           "bind": "env.cloudThickness",
           "min": 10,
           "max": 200,
-          "step": 1
+          "step": 1,
+          "transformed": true
         }
       },
       {
@@ -497,7 +521,8 @@
           "bind": "env.cloudVisibility",
           "min": 500,
           "max": 12000,
-          "step": 100
+          "step": 100,
+          "transformed": true
         }
       },
       {
@@ -521,7 +546,8 @@
           "bind": "env.cloudBacklight",
           "min": 0,
           "max": 1,
-          "step": 0.01
+          "step": 0.01,
+          "transformed": true
         }
       },
       {
@@ -539,7 +565,8 @@
           "bind": "env.cloudPowder",
           "min": 0,
           "max": 2,
-          "step": 0.05
+          "step": 0.05,
+          "transformed": true
         }
       }
     ]
@@ -585,7 +612,8 @@
                   "value": "pcf",
                   "label": "env.pcf"
                 }
-              ]
+              ],
+              "transformed": false
             }
           },
           {
@@ -608,7 +636,8 @@
               "bind": "light.shadowBias",
               "min": 0,
               "max": 0.01,
-              "step": 0.0001
+              "step": 0.0001,
+              "transformed": false
             }
           },
           {
@@ -626,7 +655,8 @@
               "bind": "light.shadowCascades",
               "min": 2,
               "max": 4,
-              "step": 1
+              "step": 1,
+              "transformed": false
             }
           }
         ]
@@ -679,7 +709,8 @@
               "bind": "env.waterLevel",
               "min": -10,
               "max": 30,
-              "step": 0.1
+              "step": 0.1,
+              "transformed": false
             }
           },
           {
@@ -697,7 +728,8 @@
               "bind": "env.waterAnimSpeed",
               "min": 0.1,
               "max": 5,
-              "step": 0.1
+              "step": 0.1,
+              "transformed": true
             }
           },
           {
@@ -711,7 +743,8 @@
             "label": "env.waterDispersionEnabled",
             "icon": "lucide:activity",
             "control": {
-              "bind": "env.waterDispersionEnabled"
+              "bind": "env.waterDispersionEnabled",
+              "transformed": false
             }
           }
         ]
@@ -741,7 +774,8 @@
               "bind": "env.bigWaveHeight",
               "min": 0,
               "max": 3,
-              "step": 0.1
+              "step": 0.1,
+              "transformed": false
             }
           }
         ]
@@ -771,7 +805,8 @@
               "bind": "env.smallWaveHeight",
               "min": 0,
               "max": 3,
-              "step": 0.1
+              "step": 0.1,
+              "transformed": false
             }
           }
         ]
@@ -790,7 +825,8 @@
             "dom": "[role=\"slider\"]",
             "label": "env.waterColor",
             "control": {
-              "bind": "env.waterColor"
+              "bind": "env.waterColor",
+              "transformed": false
             }
           },
           {
@@ -808,7 +844,8 @@
               "bind": "env.waterTransparency",
               "min": 0,
               "max": 1,
-              "step": 0.05
+              "step": 0.05,
+              "transformed": false
             }
           },
           {
@@ -818,7 +855,8 @@
             "dom": "[role=\"slider\"]",
             "label": "env.waterFogColor",
             "control": {
-              "bind": "env.waterFogColor"
+              "bind": "env.waterFogColor",
+              "transformed": false
             }
           },
           {
@@ -836,7 +874,8 @@
               "bind": "env.waterFogStart",
               "min": 0,
               "max": 500,
-              "step": 10
+              "step": 10,
+              "transformed": false
             }
           },
           {
@@ -854,7 +893,8 @@
               "bind": "env.waterFogEnd",
               "min": 50,
               "max": 1000,
-              "step": 10
+              "step": 10,
+              "transformed": false
             }
           },
           {
@@ -872,7 +912,8 @@
               "bind": "env.waterSkyColorBlend",
               "min": 0,
               "max": 1,
-              "step": 0.05
+              "step": 0.05,
+              "transformed": false
             }
           }
         ]
@@ -898,7 +939,8 @@
               "bind": "env.fresnelBias",
               "min": 0,
               "max": 1,
-              "step": 0.01
+              "step": 0.01,
+              "transformed": false
             }
           },
           {
@@ -915,7 +957,8 @@
               "bind": "env.fresnelPower",
               "min": 0.5,
               "max": 8,
-              "step": 0.1
+              "step": 0.1,
+              "transformed": false
             }
           },
           {
@@ -932,7 +975,8 @@
               "bind": "env.fresnelAlphaInfluence",
               "min": 0,
               "max": 1,
-              "step": 0.05
+              "step": 0.05,
+              "transformed": false
             }
           },
           {
@@ -949,7 +993,8 @@
               "bind": "env.diffuseStrength",
               "min": 0,
               "max": 2,
-              "step": 0.05
+              "step": 0.05,
+              "transformed": false
             }
           },
           {
@@ -966,7 +1011,8 @@
               "bind": "env.ambientStrength",
               "min": 0,
               "max": 2,
-              "step": 0.05
+              "step": 0.05,
+              "transformed": false
             }
           },
           {
@@ -983,7 +1029,8 @@
               "bind": "env.waterRippleSlots",
               "min": 16,
               "max": 1024,
-              "step": 16
+              "step": 16,
+              "transformed": false
             }
           },
           {
@@ -1000,7 +1047,8 @@
               "bind": "env.rippleNormalStrength",
               "min": 0,
               "max": 2,
-              "step": 0.05
+              "step": 0.05,
+              "transformed": false
             }
           },
           {
@@ -1017,7 +1065,8 @@
               "bind": "env.rippleGlintStrength",
               "min": 0,
               "max": 2,
-              "step": 0.05
+              "step": 0.05,
+              "transformed": false
             }
           },
           {
@@ -1034,7 +1083,8 @@
               "bind": "env.waterNormalStrength",
               "min": 0,
               "max": 1.5,
-              "step": 0.05
+              "step": 0.05,
+              "transformed": false
             }
           },
           {
@@ -1051,7 +1101,8 @@
               "bind": "env.waterGlintStrength",
               "min": 0,
               "max": 2,
-              "step": 0.05
+              "step": 0.05,
+              "transformed": false
             }
           },
           {
@@ -1068,7 +1119,8 @@
               "bind": "env.lowFreqNormalStrength",
               "min": 0,
               "max": 0.5,
-              "step": 0.01
+              "step": 0.01,
+              "transformed": false
             }
           },
           {
@@ -1086,7 +1138,8 @@
               "bind": "env.waterHorizonFade",
               "min": 0,
               "max": 1,
-              "step": 0.05
+              "step": 0.05,
+              "transformed": false
             }
           }
         ]
@@ -1116,7 +1169,8 @@
               "bind": "env.causticIntensity",
               "min": 0,
               "max": 0.5,
-              "step": 0.01
+              "step": 0.01,
+              "transformed": false
             }
           },
           {
@@ -1126,7 +1180,8 @@
             "dom": "[role=\"slider\"]",
             "label": "env.causticColor1",
             "control": {
-              "bind": "env.causticColor1"
+              "bind": "env.causticColor1",
+              "transformed": false
             }
           },
           {
@@ -1136,7 +1191,8 @@
             "dom": "[role=\"slider\"]",
             "label": "env.causticColor2",
             "control": {
-              "bind": "env.causticColor2"
+              "bind": "env.causticColor2",
+              "transformed": false
             }
           },
           {
@@ -1153,7 +1209,8 @@
               "bind": "env.causticScrollX",
               "min": -2,
               "max": 2,
-              "step": 0.05
+              "step": 0.05,
+              "transformed": false
             }
           },
           {
@@ -1170,7 +1227,8 @@
               "bind": "env.causticScrollY",
               "min": -2,
               "max": 2,
-              "step": 0.05
+              "step": 0.05,
+              "transformed": false
             }
           },
           {
@@ -1187,7 +1245,8 @@
               "bind": "env.waterFogOpacityInfluence",
               "min": 0,
               "max": 1,
-              "step": 0.05
+              "step": 0.05,
+              "transformed": false
             }
           },
           {
@@ -1200,7 +1259,8 @@
             },
             "label": "env.waterFlip",
             "control": {
-              "bind": "env.waterFlipEnabled"
+              "bind": "env.waterFlipEnabled",
+              "transformed": false
             }
           }
         ]
@@ -1229,7 +1289,8 @@
               "bind": "env.foamThreshold",
               "min": 0,
               "max": 2,
-              "step": 0.05
+              "step": 0.05,
+              "transformed": false
             }
           },
           {
@@ -1246,7 +1307,8 @@
               "bind": "env.foamIntensity",
               "min": 0,
               "max": 1,
-              "step": 0.05
+              "step": 0.05,
+              "transformed": false
             }
           },
           {
@@ -1263,7 +1325,8 @@
               "bind": "env.foamTransitionRange",
               "min": 0,
               "max": 1,
-              "step": 0.05
+              "step": 0.05,
+              "transformed": false
             }
           },
           {
@@ -1280,7 +1343,8 @@
               "bind": "env.foamOpacity",
               "min": 0,
               "max": 1,
-              "step": 0.05
+              "step": 0.05,
+              "transformed": false
             }
           },
           {
@@ -1297,7 +1361,8 @@
               "bind": "env.foamNoiseStrength",
               "min": 0,
               "max": 1,
-              "step": 0.05
+              "step": 0.05,
+              "transformed": false
             }
           },
           {
@@ -1307,7 +1372,8 @@
             "dom": "[role=\"slider\"]",
             "label": "env.foamColor",
             "control": {
-              "bind": "env.foamColor"
+              "bind": "env.foamColor",
+              "transformed": false
             }
           }
         ]
@@ -1337,7 +1403,8 @@
               "bind": "env.underwaterToneIntensity",
               "min": 0,
               "max": 1,
-              "step": 0.05
+              "step": 0.05,
+              "transformed": false
             }
           },
           {
@@ -1355,7 +1422,8 @@
               "bind": "env.underwaterTintStrength",
               "min": 0,
               "max": 1,
-              "step": 0.05
+              "step": 0.05,
+              "transformed": false
             }
           }
         ]
@@ -1390,7 +1458,8 @@
             "dom": "[role=\"slider\"]",
             "label": "env.groundColor",
             "control": {
-              "bind": "env.groundColor"
+              "bind": "env.groundColor",
+              "transformed": false
             }
           },
           {
@@ -1408,7 +1477,8 @@
               "bind": "env.groundAlpha",
               "min": 0,
               "max": 1,
-              "step": 0.05
+              "step": 0.05,
+              "transformed": false
             }
           },
           {
@@ -1426,7 +1496,8 @@
               "bind": "env.groundLevel",
               "min": -5,
               "max": 5,
-              "step": 0.1
+              "step": 0.1,
+              "transformed": false
             }
           },
           {
@@ -1444,7 +1515,8 @@
               "bind": "env.groundSize",
               "min": 10,
               "max": 1000,
-              "step": 10
+              "step": 10,
+              "transformed": false
             }
           },
           {
@@ -1462,7 +1534,8 @@
               "bind": "env.groundEdgeFade",
               "min": 0,
               "max": 1,
-              "step": 0.01
+              "step": 0.01,
+              "transformed": false
             }
           }
         ]
@@ -1507,7 +1580,8 @@
               "bind": "env.groundGridSize",
               "min": 0.5,
               "max": 5,
-              "step": 0.1
+              "step": 0.1,
+              "transformed": false
             }
           },
           {
@@ -1517,7 +1591,8 @@
             "dom": "[role=\"slider\"]",
             "label": "env.gridLineColor",
             "control": {
-              "bind": "env.groundLineColor"
+              "bind": "env.groundLineColor",
+              "transformed": false
             }
           },
           {
@@ -1550,7 +1625,8 @@
                   "value": "radial",
                   "label": "env.patternRadial"
                 }
-              ]
+              ],
+              "transformed": false
             }
           }
         ]
@@ -1570,7 +1646,8 @@
             "label": "env.groundEmissiveColor",
             "icon": "lucide:palette",
             "control": {
-              "bind": "env.groundEmissiveColor"
+              "bind": "env.groundEmissiveColor",
+              "transformed": false
             }
           },
           {
@@ -1588,7 +1665,8 @@
               "bind": "env.groundEmissiveStrength",
               "min": 0,
               "max": 2,
-              "step": 0.05
+              "step": 0.05,
+              "transformed": false
             }
           },
           {
@@ -1606,7 +1684,8 @@
               "bind": "env.groundEmissiveReflectMix",
               "min": 0,
               "max": 1,
-              "step": 0.05
+              "step": 0.05,
+              "transformed": false
             }
           },
           {
@@ -1620,7 +1699,8 @@
             "label": "env.groundEmissiveUseTexture",
             "icon": "lucide:image",
             "control": {
-              "bind": "env.groundEmissiveTexture"
+              "bind": "env.groundEmissiveTexture",
+              "transformed": true
             }
           }
         ]
@@ -1650,7 +1730,8 @@
               "bind": "env.groundTerrainHeight",
               "min": 0,
               "max": 15,
-              "step": 0.1
+              "step": 0.1,
+              "transformed": false
             }
           },
           {
@@ -1668,7 +1749,8 @@
               "bind": "env.groundTerrainScale",
               "min": 0.01,
               "max": 5,
-              "step": 0.05
+              "step": 0.05,
+              "transformed": false
             }
           },
           {
@@ -1686,7 +1768,8 @@
               "bind": "env.groundTerrainSeed",
               "min": 0,
               "max": 9999,
-              "step": 1
+              "step": 1,
+              "transformed": false
             }
           },
           {
@@ -1704,7 +1787,8 @@
               "bind": "env.groundTerrainOctaves",
               "min": 1,
               "max": 8,
-              "step": 1
+              "step": 1,
+              "transformed": false
             }
           }
         ]
@@ -1731,7 +1815,8 @@
               "bind": "env.groundPitch",
               "min": -45,
               "max": 45,
-              "step": 1
+              "step": 1,
+              "transformed": false
             }
           },
           {
@@ -1749,7 +1834,8 @@
               "bind": "env.groundRoll",
               "min": -45,
               "max": 45,
-              "step": 1
+              "step": 1,
+              "transformed": false
             }
           },
           {
@@ -1767,7 +1853,8 @@
               "bind": "env.groundScrollSpeedX",
               "min": -2,
               "max": 2,
-              "step": 0.1
+              "step": 0.1,
+              "transformed": false
             }
           },
           {
@@ -1785,7 +1872,8 @@
               "bind": "env.groundScrollSpeedZ",
               "min": -2,
               "max": 2,
-              "step": 0.1
+              "step": 0.1,
+              "transformed": false
             }
           },
           {
@@ -1799,7 +1887,8 @@
             "label": "env.groundInfiniteEnabled",
             "icon": "lucide:infinity",
             "control": {
-              "bind": "env.groundInfiniteEnabled"
+              "bind": "env.groundInfiniteEnabled",
+              "transformed": false
             }
           }
         ]
@@ -1829,7 +1918,8 @@
               "bind": "env.groundMetallic",
               "min": 0,
               "max": 1,
-              "step": 0.05
+              "step": 0.05,
+              "transformed": false
             }
           },
           {
@@ -1847,7 +1937,8 @@
               "bind": "env.groundRoughness",
               "min": 0,
               "max": 1,
-              "step": 0.05
+              "step": 0.05,
+              "transformed": false
             }
           },
           {
@@ -1865,7 +1956,8 @@
               "bind": "env.groundReflectionBlur",
               "min": 0,
               "max": 1,
-              "step": 0.05
+              "step": 0.05,
+              "transformed": false
             }
           },
           {
@@ -1883,7 +1975,8 @@
               "bind": "env.groundReflectionDistort",
               "min": 0,
               "max": 1,
-              "step": 0.05
+              "step": 0.05,
+              "transformed": false
             }
           },
           {
@@ -1901,7 +1994,8 @@
               "bind": "env.groundReflectionBlend",
               "min": 0,
               "max": 1,
-              "step": 0.05
+              "step": 0.05,
+              "transformed": false
             }
           },
           {
@@ -1919,7 +2013,8 @@
               "bind": "env.groundNormalStrength",
               "min": 0,
               "max": 2,
-              "step": 0.05
+              "step": 0.05,
+              "transformed": false
             }
           },
           {
@@ -1933,7 +2028,8 @@
             "label": "env.groundElevationColoringEnabled",
             "icon": "lucide:mountain-snow",
             "control": {
-              "bind": "env.groundElevationColoringEnabled"
+              "bind": "env.groundElevationColoringEnabled",
+              "transformed": false
             }
           }
         ]
@@ -1983,7 +2079,8 @@
           "bind": "env.particleEmitRate",
           "min": 0,
           "max": 3,
-          "step": 0.1
+          "step": 0.1,
+          "transformed": false
         }
       },
       {
@@ -2001,7 +2098,8 @@
           "bind": "env.particleSize",
           "min": 0.1,
           "max": 3,
-          "step": 0.1
+          "step": 0.1,
+          "transformed": false
         }
       },
       {
@@ -2019,7 +2117,8 @@
           "bind": "env.particleSpeed",
           "min": 0.1,
           "max": 5,
-          "step": 0.1
+          "step": 0.1,
+          "transformed": false
         }
       },
       {
@@ -2033,7 +2132,8 @@
         "label": "env.splash",
         "icon": "lucide:droplets",
         "control": {
-          "bind": "env.particleSplashEnabled"
+          "bind": "env.particleSplashEnabled",
+          "transformed": false
         }
       },
       {
@@ -2076,7 +2176,8 @@
               "bind": "render.bloomWeight",
               "min": 0,
               "max": 1,
-              "step": 0.05
+              "step": 0.05,
+              "transformed": false
             }
           },
           {
@@ -2094,7 +2195,8 @@
               "bind": "render.bloomThreshold",
               "min": 0,
               "max": 1,
-              "step": 0.05
+              "step": 0.05,
+              "transformed": false
             }
           },
           {
@@ -2112,7 +2214,8 @@
               "bind": "render.bloomKernel",
               "min": 16,
               "max": 256,
-              "step": 2
+              "step": 2,
+              "transformed": false
             }
           },
           {
@@ -2126,7 +2229,8 @@
             "label": "scene.outline",
             "icon": "lucide:square",
             "control": {
-              "bind": "render.outlineEnabled"
+              "bind": "render.outlineEnabled",
+              "transformed": false
             }
           }
         ]
@@ -2146,7 +2250,8 @@
           "bind": "render.vignetteDarkness",
           "min": 0,
           "max": 1,
-          "step": 0.05
+          "step": 0.05,
+          "transformed": false
         }
       },
       {
@@ -2164,7 +2269,8 @@
           "bind": "render.sharpenAmount",
           "min": 0,
           "max": 1,
-          "step": 0.05
+          "step": 0.05,
+          "transformed": false
         }
       },
       {
@@ -2194,7 +2300,8 @@
               "bind": "render.grainIntensity",
               "min": 0,
               "max": 1,
-              "step": 0.05
+              "step": 0.05,
+              "transformed": false
             }
           },
           {
@@ -2212,7 +2319,8 @@
               "bind": "render.chromaticAberrationAmount",
               "min": 0,
               "max": 1,
-              "step": 0.05
+              "step": 0.05,
+              "transformed": false
             }
           },
           {
@@ -2230,7 +2338,8 @@
               "bind": "render.glowIntensity",
               "min": 0,
               "max": 1,
-              "step": 0.05
+              "step": 0.05,
+              "transformed": false
             }
           }
         ]
@@ -2253,7 +2362,8 @@
             "label": "scene.ssao",
             "icon": "lucide:box",
             "control": {
-              "bind": "render.ssaoEnabled"
+              "bind": "render.ssaoEnabled",
+              "transformed": false
             }
           },
           {
@@ -2271,7 +2381,8 @@
               "bind": "render.ssaoStrength",
               "min": 0,
               "max": 1,
-              "step": 0.05
+              "step": 0.05,
+              "transformed": false
             }
           },
           {
@@ -2289,7 +2400,8 @@
               "bind": "render.ssaoRadius",
               "min": 0,
               "max": 1,
-              "step": 0.05
+              "step": 0.05,
+              "transformed": false
             }
           },
           {
@@ -2307,7 +2419,8 @@
               "bind": "render.ssaoSamples",
               "min": 4,
               "max": 32,
-              "step": 1
+              "step": 1,
+              "transformed": false
             }
           }
         ]
@@ -2349,7 +2462,8 @@
               "bind": "render.exposure",
               "min": 0,
               "max": 4,
-              "step": 0.05
+              "step": 0.05,
+              "transformed": false
             }
           },
           {
@@ -2367,7 +2481,8 @@
               "bind": "render.contrast",
               "min": 0,
               "max": 4,
-              "step": 0.05
+              "step": 0.05,
+              "transformed": false
             }
           },
           {
@@ -2381,7 +2496,8 @@
             "label": "scene.celShading",
             "icon": "lucide:droplet",
             "control": {
-              "bind": "render.celShadingMode"
+              "bind": "render.celShadingMode",
+              "transformed": false
             }
           },
           {
@@ -2399,7 +2515,8 @@
               "bind": "render.celColorLevels",
               "min": 2,
               "max": 8,
-              "step": 1
+              "step": 1,
+              "transformed": false
             }
           },
           {
@@ -2417,7 +2534,8 @@
               "bind": "render.celEdgeThreshold",
               "min": 0,
               "max": 1,
-              "step": 0.01
+              "step": 0.01,
+              "transformed": false
             }
           },
           {
@@ -2435,7 +2553,8 @@
               "bind": "render.celEdgeStrength",
               "min": 0,
               "max": 1,
-              "step": 0.01
+              "step": 0.01,
+              "transformed": false
             }
           }
         ]
@@ -2460,7 +2579,8 @@
         },
         "label": "motion.perceptionEnableAll",
         "control": {
-          "bind": "perception.allEnabled"
+          "bind": "perception.allEnabled",
+          "transformed": true
         }
       },
       {
@@ -2492,7 +2612,8 @@
               "bind": "perception.headGazeMaxYaw",
               "min": 0,
               "max": 90,
-              "step": 1
+              "step": 1,
+              "transformed": false
             }
           },
           {
@@ -2509,7 +2630,8 @@
               "bind": "perception.headGazeMaxPitch",
               "min": 0,
               "max": 90,
-              "step": 1
+              "step": 1,
+              "transformed": false
             }
           }
         ]
@@ -2538,7 +2660,8 @@
               "bind": "perception.eyeGazeMaxYaw",
               "min": 0,
               "max": 15,
-              "step": 0.5
+              "step": 0.5,
+              "transformed": false
             }
           },
           {
@@ -2555,7 +2678,8 @@
               "bind": "perception.eyeGazeMaxPitch",
               "min": 0,
               "max": 15,
-              "step": 0.5
+              "step": 0.5,
+              "transformed": false
             }
           },
           {
@@ -2572,7 +2696,8 @@
               "bind": "perception.eyeGazeSmooth",
               "min": 0,
               "max": 1,
-              "step": 0.05
+              "step": 0.05,
+              "transformed": false
             }
           }
         ]
@@ -2601,7 +2726,8 @@
               "bind": "perception.breathFrequency",
               "min": 0.1,
               "max": 1,
-              "step": 0.05
+              "step": 0.05,
+              "transformed": false
             }
           },
           {
@@ -2618,7 +2744,8 @@
               "bind": "perception.breathAmplitude",
               "min": 0,
               "max": 0.05,
-              "step": 0.005
+              "step": 0.005,
+              "transformed": false
             }
           }
         ]
@@ -2647,7 +2774,8 @@
               "bind": "perception.blinkFrequency",
               "min": 0.05,
               "max": 0.5,
-              "step": 0.05
+              "step": 0.05,
+              "transformed": false
             }
           },
           {
@@ -2664,7 +2792,8 @@
               "bind": "perception.blinkAmplitude",
               "min": 0,
               "max": 1,
-              "step": 0.05
+              "step": 0.05,
+              "transformed": false
             }
           }
         ]
@@ -2710,7 +2839,8 @@
               "bind": "perception.balanceSwayPeriod",
               "min": 0.5,
               "max": 5,
-              "step": 0.1
+              "step": 0.1,
+              "transformed": false
             }
           },
           {
@@ -2727,7 +2857,8 @@
               "bind": "perception.balanceSwayAmplitude",
               "min": 0,
               "max": 2,
-              "step": 0.05
+              "step": 0.05,
+              "transformed": false
             }
           }
         ]
@@ -2761,7 +2892,8 @@
               "bind": "perception.lipSyncSensitivity",
               "min": 0,
               "max": 1,
-              "step": 0.01
+              "step": 0.01,
+              "transformed": false
             }
           },
           {
@@ -2778,7 +2910,8 @@
               "bind": "perception.lipSyncIntensity",
               "min": 0,
               "max": 1,
-              "step": 0.01
+              "step": 0.01,
+              "transformed": false
             }
           },
           {
@@ -2791,7 +2924,8 @@
             },
             "label": "motion.lipSyncMultiMorph",
             "control": {
-              "bind": "perception.lipSyncMultiMorphEnabled"
+              "bind": "perception.lipSyncMultiMorphEnabled",
+              "transformed": false
             }
           }
         ]
@@ -2821,7 +2955,8 @@
           "bind": "ui.cameraSensitivity",
           "min": 0.2,
           "max": 3,
-          "step": 0.1
+          "step": 0.1,
+          "transformed": true
         }
       },
       {
@@ -2840,7 +2975,8 @@
         "label": "settings.perf.invertY",
         "icon": "lucide:flip-vertical",
         "control": {
-          "bind": "ui.invertYAxis"
+          "bind": "ui.invertYAxis",
+          "transformed": true
         }
       },
       {
@@ -2859,7 +2995,8 @@
         "label": "settings.perf.autoCenter",
         "icon": "lucide:crosshair",
         "control": {
-          "bind": "ui.autoCenterModel"
+          "bind": "ui.autoCenterModel",
+          "transformed": true
         }
       },
       {
@@ -2888,7 +3025,8 @@
         "label": "settings.perf.frameCap",
         "icon": "lucide:monitor-check",
         "control": {
-          "bind": "ui.frameCapEnabled"
+          "bind": "ui.frameCapEnabled",
+          "transformed": true
         }
       },
       {
@@ -2911,7 +3049,8 @@
           "bind": "ui.fpsLimit",
           "min": 0,
           "max": 144,
-          "step": 1
+          "step": 1,
+          "transformed": true
         }
       },
       {
@@ -2934,7 +3073,8 @@
           "bind": "ui.renderScale",
           "min": 0.5,
           "max": 2,
-          "step": 0.05
+          "step": 0.05,
+          "transformed": true
         }
       },
       {
@@ -2978,7 +3118,8 @@
         "label": "settings.perf.defaultPhysics",
         "icon": "lucide:atom",
         "control": {
-          "bind": "ui.defaultPhysicsEnabled"
+          "bind": "ui.defaultPhysicsEnabled",
+          "transformed": true
         }
       },
       {
@@ -2997,7 +3138,8 @@
         "label": "settings.perf.showFpsClock",
         "icon": "lucide:gauge",
         "control": {
-          "bind": "ui.showFpsClock"
+          "bind": "ui.showFpsClock",
+          "transformed": true
         }
       },
       {
@@ -3011,7 +3153,8 @@
         "label": "settings.perf.showRuntimeBadge",
         "icon": "lucide:cpu",
         "control": {
-          "bind": "ui.showRuntimeBadge"
+          "bind": "ui.showRuntimeBadge",
+          "transformed": true
         }
       }
     ]
