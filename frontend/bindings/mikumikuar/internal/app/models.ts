@@ -319,6 +319,16 @@ export interface EnvState {
      * ADR-128/129: 镜面道具开关，对应 TS mirrorEnabled
      */
     "mirrorEnabled": boolean;
+
+    /**
+     * 镜面几何参数（mirror 持久化收口，对齐 TS env-state-schema mirror 组）：
+     * Width/Height/RotationY 用值类型（合法最小 0.5 > 0，零值即缺省，无歧义）；
+     * Position 用指针 + omitempty，区分「旧配置未设置」与「用户真在原点 [0,0,0]」。
+     */
+    "mirrorWidth": number;
+    "mirrorHeight": number;
+    "mirrorPosition"?: number[] | null;
+    "mirrorRotationY": number;
     "fogEnabled": boolean;
     "fogMode": string;
     "fogColor": number[];

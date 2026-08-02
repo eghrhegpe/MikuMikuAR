@@ -1,6 +1,8 @@
 package app
 
 import (
+	"bytes"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -138,6 +140,74 @@ func TestManifestJSON(t *testing.T) {
 	}
 	if m.Version != extractCacheVersion {
 		t.Errorf("manifest.Version = %d, want %d", m.Version, extractCacheVersion)
+	}
+}
+
+func TestMergeEnvStateMirrorGeometryFields(t *testing.T) {
+	// 回归：镜面几何参数持久化缺失（buglog 2026-08-02-mirror-geometry-persist-gap）
+	// mergeEnvState 走 JSON round-trip，Go 端 EnvState 结构体必须保留 4 个几何字段，
+	// 否则 config.json 静默丢弃，启动恢复回默认值。
+	pos := [3]float64{2.5, 1.0, 9.5}
+	src := EnvState{
+		SkyMode:        "day",
+		MirrorEnabled:  true,
+		MirrorWidth:    24,
+		MirrorHeight:   12,
+		MirrorPosition: &pos,
+		MirrorRotationY: 0.785,
+	}
+	var dst *EnvState
+	mergeEnvState(&dst, src)
+	if dst == nil {
+		t.Fatal("mergeEnvState left dst nil")
+	}
+	if !dst.MirrorEnabled {
+		t.Error("MirrorEnabled lost after round-trip")
+	}
+	if dst.MirrorWidth != 24 {
+		t.Errorf("MirrorWidth = %v, want 24", dst.MirrorWidth)
+	}
+	if dst.MirrorHeight != 12 {
+		t.Errorf("MirrorHeight = %v, want 12", dst.MirrorHeight)
+	}
+	if dst.MirrorPosition == nil || *dst.MirrorPosition != pos {
+		t.Errorf("MirrorPosition = %v, want %v", dst.MirrorPosition, pos)
+	}
+	if dst.MirrorRotationY != 0.785 {
+		t.Errorf("MirrorRotationY = %v, want 0.785", dst.MirrorRotationY)
+	}
+
+	// 旧配置缺失字段场景：dst 已存在（旧 config.json），src 只带部分字段，
+	// round-trip 后 dst 的镜面几何应保留而非被零值覆盖。
+	oldPos := [3]float64{0, 1.5, 8}
+	dst = &EnvState{MirrorPosition: &oldPos}
+	partial := EnvState{SkyMode: "day"}
+	mergeEnvState(&dst, partial)
+	if dst.MirrorPosition == nil || *dst.MirrorPosition != oldPos {
+		t.Errorf("existing MirrorPosition clobbered: %v", dst.MirrorPosition)
+	}
+}
+
+func TestEnvStateMirrorPositionOmitEmpty(t *testing.T) {
+	// 指针 + omitempty：未设置时 JSON 中省略该字段（前端读到 undefined → 兜底默认值），
+	// 避免与用户真设置 [0,0,0] 混淆。
+	empty := EnvState{}
+	data, err := json.Marshal(empty)
+	if err != nil {
+		t.Fatalf("Marshal error: %v", err)
+	}
+	if bytes.Contains(data, []byte("mirrorPosition")) {
+		t.Errorf("nil MirrorPosition should be omitted with omitempty, got: %s", data)
+	}
+
+	zero := [3]float64{0, 0, 0}
+	atOrigin := EnvState{MirrorPosition: &zero}
+	data, err = json.Marshal(atOrigin)
+	if err != nil {
+		t.Fatalf("Marshal error: %v", err)
+	}
+	if !bytes.Contains(data, []byte("mirrorPosition")) {
+		t.Errorf("explicit [0,0,0] MirrorPosition must be serialized, got: %s", data)
 	}
 }
 

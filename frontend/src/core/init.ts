@@ -286,6 +286,23 @@ async function restoreEnvState(): Promise<void> {
         if (loaded.reflectionQuality === undefined) {
             loaded.reflectionQuality = 'off';
         }
+        // 向后兼容：旧配置缺少镜面几何参数时补默认值（与 env-state-schema.ts mirror 组一致）。
+        // Go 端 EnvState 已补齐 mirrorWidth/mirrorHeight/mirrorPosition/mirrorRotationY 字段
+        // （持久化收口）；此处兜底仅针对修复前的旧 config.json（字段缺失/零值）。
+        // width/height 合法最小值 0.5（setMirrorSize 下限），<=0 判定零值缺省无歧义；
+        // position 为指针+omitempty，缺失时 undefined，不误伤用户真正设置的 [0,0,0]。
+        if (loaded.mirrorWidth === undefined || loaded.mirrorWidth <= 0) {
+            loaded.mirrorWidth = 18;
+        }
+        if (loaded.mirrorHeight === undefined || loaded.mirrorHeight <= 0) {
+            loaded.mirrorHeight = 21;
+        }
+        if (loaded.mirrorPosition === undefined) {
+            loaded.mirrorPosition = [0, 1.5, 8];
+        }
+        if (loaded.mirrorRotationY === undefined) {
+            loaded.mirrorRotationY = 0;
+        }
         // 向后兼容：旧配置缺少粒子字段时补默认值
         if (loaded.particleEnabled === undefined) {
             loaded.particleEnabled = false;
