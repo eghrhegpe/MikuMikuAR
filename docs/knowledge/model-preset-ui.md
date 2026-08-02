@@ -27,22 +27,6 @@ invariants:
   - Schema 驱动 UI
   - 动作预设管理
 
-  - frontend/src/__tests__/model-preset.apply.test.ts
-  - frontend/src/__tests__/model-preset.material.test.ts
-  - frontend/src/__tests__/model-preset.serialize.test.ts
-  - frontend/src/__tests__/model-preset.stopvmd.test.ts
-  - frontend/src/__tests__/model-preset.apply.test.ts
-  - frontend/src/__tests__/model-preset.material.test.ts
-  - frontend/src/__tests__/model-preset.serialize.test.ts
-  - frontend/src/__tests__/model-preset.stopvmd.test.ts
-  - frontend/src/__tests__/model-preset.apply.test.ts
-  - frontend/src/__tests__/model-preset.material.test.ts
-  - frontend/src/__tests__/model-preset.serialize.test.ts
-  - frontend/src/__tests__/model-preset.stopvmd.test.ts
-  - frontend/src/__tests__/model-preset.apply.test.ts
-  - frontend/src/__tests__/model-preset.material.test.ts
-  - frontend/src/__tests__/model-preset.serialize.test.ts
-  - frontend/src/__tests__/model-preset.stopvmd.test.ts
 use_when:
   - 模型预设
   - 动作预设

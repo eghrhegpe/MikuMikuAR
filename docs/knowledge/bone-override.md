@@ -48,10 +48,6 @@ invariants:
   - 覆盖数据按模型 ID 隔离
   - 帧钩子按 order 升序执行（顺序由声明决定，与注册时序解耦）
 
-  - frontend/src/__tests__/scene/bone-override.test.ts
-  - frontend/src/__tests__/scene/bone-override.test.ts
-  - frontend/src/__tests__/scene/bone-override.test.ts
-  - frontend/src/__tests__/scene/bone-override.test.ts
 use_when:
   - 骨骼覆盖
   - bone override

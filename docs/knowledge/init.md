@@ -30,10 +30,6 @@ invariants:
   - restoreEnvState / restoreUIState 从持久化配置恢复状态，异常时降级不阻塞启动
   - Service Worker 只在浏览器模式下注册（sw-register.ts）
 
-  - frontend/src/__tests__/sw-register.test.ts
-  - frontend/src/__tests__/sw-register.test.ts
-  - frontend/src/__tests__/sw-register.test.ts
-  - frontend/src/__tests__/sw-register.test.ts
 use_when:
   - 启动引导
   - 初始化

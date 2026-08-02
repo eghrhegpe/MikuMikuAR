@@ -21,10 +21,6 @@ invariants:
   - Escape 触发 onEscape 回调
   - createKeyboardNav 返回 Disposable 用于移除监听
 
-  - frontend/src/__tests__/ui-keyboard-nav.test.ts
-  - frontend/src/__tests__/ui-keyboard-nav.test.ts
-  - frontend/src/__tests__/ui-keyboard-nav.test.ts
-  - frontend/src/__tests__/ui-keyboard-nav.test.ts
 use_when:
   - 键盘导航
   - 列表导航

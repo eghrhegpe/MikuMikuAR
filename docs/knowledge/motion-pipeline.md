@@ -24,10 +24,6 @@ invariants:
   - 骨骼占用经 bone-override-store 仲裁，避免多动作源写同一骨骼
   - register 返回 unregister 函数，用于 HMR/测试 teardown
 
-  - frontend/src/__tests__/scene/motion-pipeline.test.ts
-  - frontend/src/__tests__/scene/motion-pipeline.test.ts
-  - frontend/src/__tests__/scene/motion-pipeline.test.ts
-  - frontend/src/__tests__/scene/motion-pipeline.test.ts
 use_when:
   - 动作管线
   - 逐帧合成

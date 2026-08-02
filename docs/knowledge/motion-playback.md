@@ -23,18 +23,6 @@ invariants:
   - _manager 引用在 initPlaybackObservables 中注入，dispose 后清零
   - autoLoop 期间 _loopPending 为 true，防止 UI 闪烁
 
-  - frontend/src/__tests__/playback.observables.test.ts
-  - frontend/src/__tests__/playback.seek.test.ts
-  - frontend/src/__tests__/playback.ui.test.ts
-  - frontend/src/__tests__/playback.observables.test.ts
-  - frontend/src/__tests__/playback.seek.test.ts
-  - frontend/src/__tests__/playback.ui.test.ts
-  - frontend/src/__tests__/playback.observables.test.ts
-  - frontend/src/__tests__/playback.seek.test.ts
-  - frontend/src/__tests__/playback.ui.test.ts
-  - frontend/src/__tests__/playback.observables.test.ts
-  - frontend/src/__tests__/playback.seek.test.ts
-  - frontend/src/__tests__/playback.ui.test.ts
 use_when:
   - 播放进度 UI
   - seek 拖动

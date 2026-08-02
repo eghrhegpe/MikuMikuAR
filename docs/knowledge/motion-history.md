@@ -28,10 +28,6 @@ invariants:
   - 动作历史管理
   - 可撤销/重做
 
-  - frontend/src/__tests__/scene/motion-history.test.ts
-  - frontend/src/__tests__/scene/motion-history.test.ts
-  - frontend/src/__tests__/scene/motion-history.test.ts
-  - frontend/src/__tests__/scene/motion-history.test.ts
 use_when:
   - 动作历史
   - 撤销

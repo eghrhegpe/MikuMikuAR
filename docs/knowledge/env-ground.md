@@ -58,10 +58,6 @@ invariants:
   - UV 滚动动画每帧由 tickGround(dt) 驱动
   - 高度查询 getGroundHeightAt 含倾斜平面插值
 
-  - frontend/src/__tests__/scene/env-ground.test.ts
-  - frontend/src/__tests__/scene/env-ground.test.ts
-  - frontend/src/__tests__/scene/env-ground.test.ts
-  - frontend/src/__tests__/scene/env-ground.test.ts
 use_when:
   - 地面系统
   - 程序化纹理

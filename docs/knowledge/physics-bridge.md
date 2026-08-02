@@ -27,10 +27,6 @@ invariants:
   - dt 做非有限值/后台恢复钳制（上限 50ms）
   - getBoneLocalMatrix 返回局部矩阵（不含 rootMesh 变换）；世界矩阵请走 mmd-adapter.getBoneWorldMatrix
 
-  - frontend/src/__tests__/physics-bridge.test.ts
-  - frontend/src/__tests__/physics-bridge.test.ts
-  - frontend/src/__tests__/physics-bridge.test.ts
-  - frontend/src/__tests__/physics-bridge.test.ts
 use_when:
   - 物理桥
   - 骨骼读取
