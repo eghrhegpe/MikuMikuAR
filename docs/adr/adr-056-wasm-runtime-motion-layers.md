@@ -1,6 +1,7 @@
 # ADR-056: WASM 运行时 Motion Layers 解锁 — JS 帧流合并 + 单图层兜底
 
 > **状态**: ✅ 已实施（2026-07-08 代码核实；wasm-layers-blender.ts 实现 + vmd-layers.ts:630 集成）
+> **日期**: 2026-07-08
 > **后续演进**：
 > - 2026-07-22：wasm-layers-blender.ts 的循环依赖已通过依赖注入消除（`initWasmLayersBlender` 初始化 scene/modelManager/loadVMDMotion 引用，打破静态 `import scene.ts` 链）。
 > - 2026-07-22：`_filterVmdBones` 已导出并添加 13 项单元测试（vmd-layers-filter.test.ts）。

@@ -1,6 +1,7 @@
 # ADR-220: Schema 完整性元测试 —— 不开浏览器，秒级捕获 schema 漂移
 
 > **状态**: 实施中（P0 精化完成：16 面板 1427 断言全绿 + 多语言包校验 + motionModule 动态校验 + folder 真空节点修复；P1 原型建成：16 面板 158 用例自动生成，分域导航已实现，settings 二级导航修复，mock 工厂扩展）
+> **日期**: 2026-07-31
 >
 > **编号说明**: 本 ADR 原误编为 200，与 `adr-200-wind-physics-empty-bundle-map`（被 wind-physics.ts / mmd-adapter.ts 等 16 处代码 `[doc:adr-200]` 引用，为原生 200）撞车。因本 ADR 无任何代码 `[doc:adr-200]` 引用（测试文件挂接的是 ADR-093），故本 ADR 顺延改号为 220，wind-physics 保留 200，零破坏现有引用。
 

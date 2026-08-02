@@ -1,6 +1,7 @@
 # ADR-116: 动作覆盖系统 — 模块化架构 + 骨骼覆盖下沉
 
 > **状态**: 已完成（P0+P1+P2+P3 全部实施并通过验证：tsc + 1557 单测 + ESLint）。2026-07-17 补充：`_computeOverride` `weight≥1` 语义修正为复合父骨传播旋转，详见 §十一。基础层与 Phase 2 打磨均已交付（冲突提示用户语言化、骨骼搜索框、applyOverride 统一函数，见 §十·一，2026-07-23）。
+> **日期**: 2026-07-17
 > **背景**: 用户反馈骨骼覆盖面板「太难用了」：100+ 骨骼塞在一个下拉框里，调完还要点「Apply」才生效；即便优化选骨效率，本质仍是「用户直接操作骨骼 + 欧拉角」。竞品（VRChat Motion Override）采用**动作覆盖**范式——按功能/行为分模块，每个模块有独立开关 + 专属语义参数，用户 90% 操作不需接触骨骼名。本 ADR 将 ADR-116 初稿（纯 UI 优化）升级为**架构级双层重构**：L1 模块化动作覆盖（默认入口）+ L2 骨骼覆盖（下沉为高级子页）。
 > **范围**: 新增 `motion/motion-modules/` 模块层（复用 ADR-093 `MenuNode` schema），重写 `menus/motion-override-levels.ts` 为模块列表 + 子页路由，`scene/motion/bone-override.ts` 核心引擎扩展（position 覆盖 + `_computeOverride` 复合 + `_mPool` 复用池）。
 

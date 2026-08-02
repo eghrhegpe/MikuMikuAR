@@ -15,16 +15,16 @@
 
 | ADR | 主题 | 状态 |
 |-----|------|------|
-| ADR-229 | E2E 自动化推进 —— 从 schema 到测试零映射 | 📝 规划 |
-| ADR-228 | UI 行控件公共化第三轮 + 命名去 `_` 前缀 | 已完成（2026-07-24 执行） |
+| ADR-229 | E2E 自动化推进 —— 从 schema 到测试零映射 | 📝 规划（2026-08-02） |
+| ADR-228 | UI 行控件公共化第三轮 + 命名去 `_` 前缀 | 已完成（2026-07-24 执行）（2026-07-22） |
 | ADR-227 | 个人灯阴影按需开关与分辨率可调 | 已完成（2026-08-01） |
 | ADR-226 | 地面材质单一事实源重构（GroundMaterialSpec） | 已落地（2026-08-01） |
 | ADR-225 | Web 部署路径重分配 — 文档站占 Pages 根、主应用降 /app/ 子路径 | 已实施（2026-08-01） |
 | ADR-224 | Plaza 广场数据源统一与持久化 — GitHub 远程配置 + Go 用户目录缓存 + 内置兜底 + id 统一 | 已实施（2026-08-01） |
 | ADR-223 | 水面视觉效果整顿 —— 法线混合、深度泡沫、折射扭曲、SSS、渐变颜色 | 规划（2026-08-01） |
 | ADR-222 | 水面深度差雾（Depth-Difference Fog）—— 从相机距离雾迁移至水柱厚度雾 | 规划（2026-08-01） |
-| ADR-221 | 逐材质透明度（alphaMul）—— 材质编辑器第 11 参数 | 已完成 |
-| ADR-220 | Schema 完整性元测试 —— 不开浏览器，秒级捕获 schema 漂移 | 实施中（P0 精化完成：16 面板 1427 断言全绿 + 多语言包校验 + motionModule 动态校验 + folder 真空节点修复；P1 原型建成：16 面板 158 用例自动生成，分域导航已实现，settings 二级导航修复，mock 工厂扩展） |
+| ADR-221 | 逐材质透明度（alphaMul）—— 材质编辑器第 11 参数 | 已完成（2026-08-01） |
+| ADR-220 | Schema 完整性元测试 —— 不开浏览器，秒级捕获 schema 漂移 | 实施中（P0 精化完成：16 面板 1427 断言全绿 + 多语言包校验 + motionModule 动态校验 + folder 真空节点修复；P1 原型建成：16 面板 158 用例自动生成，分域导航已实现，settings 二级导航修复，mock 工厂扩展）（2026-07-31） |
 | ADR-219 | 测试并发调优与 isolate 污染治理 — vitest 全量提速：maxWorkers 落地 + isolate=false 障碍清理 | 已完成（2026-08-01 决策 C 收口。Phase 1 maxWorkers 落地省 13%；Phase 2 idb 全局化落地，isolate=true 4135 全绿零回退；有界诊断判定「收集期蒸发」与「执行期污染」两债同土壤、不同修法，isolate=false 存在结构性风险 → 降级为非目标不采纳；剩余执行期污染债入测试卫生清单）（2026-07-31） |
 | ADR-218 | 知识库（docs/knowledge）分层治理 — 痛点与方案 | 已实施（工具治理线闭环：P1~P5 全部落地，2026-08-01）；剩余缺口在内容层 use_when 空桩 / routes 36% 覆盖（独立后续项，非本 ADR 范围）（2026-07-31） |
 | ADR-217 | 地水无限尺寸单源化 — 水面跟进 groundInfiniteEnabled | ✅ 已实施（2026-07-30） |
@@ -38,11 +38,11 @@
 | ADR-209 | 月亮 —— 第二天体的渐进式设计（复用太阳骨架） | 📝 规划（2026-07-30） |
 | ADR-208 | 地面预设贴图设计统一 —— sourceKind 语义标注（预留）+ 程序化纹理防覆盖 | ✅ 已完成（2026-07-30） |
 | ADR-207 | 动作菜单重构 —— 程序化动作可加载化 + 双面板对称 | ✅ 已完成（Phase 1-3 全部落地）（2026-07-30） |
-| ADR-206 | 测试基础设施收敛与断言质量治理 | 🟢 已完成（Phase 0-4 全部完成） |
+| ADR-206 | 测试基础设施收敛与断言质量治理 | 🟢 已完成（Phase 0-4 全部完成）（2026-07-29） |
 | ADR-205 | AI 工具体系全景 — 从写操作到读写闭环 | ✅ 已完成（Phase 1+2 全部落地，2026-07-30）（2026-07-29） |
-| ADR-204 | 单测分层与治理规范（拆上帝文件 · 降 mock 密度 · fixtures 复用 · unit/integration 分层） | 🟢 实施中 |
+| ADR-204 | 单测分层与治理规范（拆上帝文件 · 降 mock 密度 · fixtures 复用 · unit/integration 分层） | 🟢 实施中（2026-07-29） |
 | ADR-203 | AI 助手会话持久化与独立面板 | 🟢 已完成（Phase 1 多会话 IndexedDB 持久化 + Phase 2 主窗口内独立面板）（2026-07-29） |
-| ADR-202 | fork 自治改动批次 — 一次回灌批量根治可改 fork 的上游缺口 | ✅ P0 已落地（vendored + postinstall）；P2/P3 搭车项全部完成（audio 条目9 ✅ / IK 重解 ✅ / WASM 迁移 ✅）；🟢 仅余 `MODEL_WIND_FORCE_SCALE` 真机标定与 🟡 vendor/fork 漂移防护待探明 |
+| ADR-202 | fork 自治改动批次 — 一次回灌批量根治可改 fork 的上游缺口 | ✅ P0 已落地（vendored + postinstall）；P2/P3 搭车项全部完成（audio 条目9 ✅ / IK 重解 ✅ / WASM 迁移 ✅）；🟢 仅余 `MODEL_WIND_FORCE_SCALE` 真机标定与 🟡 vendor/fork 漂移防护待探明（2026-07-31） |
 | ADR-201 | 路径2 — 给 babylon-mmd fork 增加原生刚体施力导出（wasm 侧解析） | ✅ 已实施（2026-07-28，2B 变体，见 §九 实施记录；e2e test #4 待本地回归） |
 | ADR-200 | 风力对模型自带刚体无效 — 遍历 map 恒空的架构误解 | ✅ 已定性（2026-07-28 — WASM 内建物理下 JS 侧根本无模型物理对象（`_physicsModel === null`），施力方案为死路已回退；保留 lazy impl 订阅修复（对自建刚体有效）） |
 | ADR-199 | LLM 能力边界与缓解策略（归档） | 📋 归档登记（缺陷与缓解方向盘点，未强制排期）（2026-07-28） |
@@ -58,7 +58,7 @@
 | ADR-189 | 纹理加载路径优化（并行读取 + basename 共享 + LRU + KTX2 基础设施） | 实施中 — Phase 0/1 全量 2133/2133 通过；babylon-mmd fork KTX2 分发已内置（§3.5）；Phase 3 转码管线待推进（剩余卡点仅 ADR-187 触发判据）（2026-07-26（初版）/ 2026-07-26（修订 — 方向调整）/ 2026-07-26（审核修订 — AbortSignal/LRU/数值一致性）/ 2026-07-26（修复 — LRU 接入 collectTextureFiles）/ 2026-08-01（修订 — babylon-mmd fork KTX2 分发已就位，更新 §3.1-§3.4，新增 §3.5）） |
 | ADR-188 | PBRMaterialBuilder 材质系统迁移 — PBR 渲染升级 | Phase 1 基本完成（2026-08-01） |
 | ADR-187 | babylon-mmd 剩余高价值功能综合分析 | 草案 · 待立项（2026-07-26 — 系统性调研 + 落地优先级评估） |
-| ADR-186 | bone-override 帧内时序图 | accepted |
+| ADR-186 | bone-override 帧内时序图 | accepted（2026-07-26） |
 | ADR-185 | 网页端 ZIP 内子目录 PMX 贴图路径维度对齐 | 已完成（2026-07-26） |
 | ADR-184 | 网页端 ZIP 嵌套识别能力补齐（多编码检测 + 炸弹防护对齐 Go 端） | 已完成（2026-07-26） |
 | ADR-183 | 网页端 FSA 根目录授权引导（四态探针 + 重授权兜底） | 已完成（代码已落地 + 单测 14/14，2026-07-26） |
@@ -97,7 +97,7 @@
 | ADR-150 | 模型替换原子操作契约（Model Replace Contract） | ✅ 已完成（决策二完整落地：`captureInheritedState` + `applyInheritedState` + `startReplaceModel` 集成 + undo 保护 + toast 治理；2026-07-26 审核通过）（2026-07-20） |
 | ADR-149 | 材质系统 × 换装系统基线冲突登记 | 搁置登记（已验证 — 真实可稳定复现，2026-07-30 复核确认）（2026-07-20（立项）/ 2026-07-30（复核升级）） |
 | ADR-148 | 过载文件拆分工程 | ✅ 已完成（5/5 阶段全部落地，2026-07-21 收口）（2026-07-20（收口 2026-07-21）） |
-| ADR-147 | 动作管线显式调度器 + 集中骨骼覆盖状态 | 已完成（Phase 1 + Phase 2 运行时接入全部落地，R1/R2/R3/R4 根治；Phase 3 在 motion 子系统范围内已完成，见 §八 说明） |
+| ADR-147 | 动作管线显式调度器 + 集中骨骼覆盖状态 | 已完成（Phase 1 + Phase 2 运行时接入全部落地，R1/R2/R3/R4 根治；Phase 3 在 motion 子系统范围内已完成，见 §八 说明）（2026-07-20） |
 | ADR-146 | 函数级重复摸排与收敛（第二波） | ✅ 已完成（P1 主题 1–5 / P2 主题 6–11 / P3 主题 12–14 全量落地；全量回归 `vitest run` 76 文件/1700 用例全绿；`npm run build` 0 错误）（2026-07-19） |
 | ADR-145 | 多模块协同预设 — 一键启用组合姿态 | ✅ P1 已实施（类型定义 + applyMotionPreset + UI 卡片 + Go 侧 .mcpreset.json CRUD + 5 语言 i18n）（2026-07-17） |
 | ADR-144 | Per-model Overlay Motion（动作2 叠加层） | 已废弃（被 ADR-167 取代）（2026-07-19） |
@@ -125,25 +125,25 @@
 | ADR-122 | IK 感知骨骼覆盖 — 运动模块 IK 适配 | P1 已实施（2026-07-21）— `applyBoneOverrideIK` 辅助函数已新增，riding-model 膝/足骨已改用 IK 感知写入；P2（module-base 暴露）已完成；**P3（高级骨骼覆盖 UI IK 骨骼标记）已完成** — `motion-override-levels.ts:580/743` 两处 `_isIkBone` 标记（2026-07-17） |
 | ADR-121 | 全局动作意图（Scene-level Motion Intent）— 场景级意图 + 每实例继承/覆盖 | 已实施（P0+P1+P2 已完成，2026-07-18）（2026-07-17） |
 | ADR-120 | 环境预设分类化 — 天空/地面/水面/大气 | ✅ Phase 1 完成（Go API + bindings + TS 分类预设 + UI 重写 + i18n + 单测全绿；待真机验证）（2026-07-16） |
-| ADR-119 | 缩略图缓存键单一源治理 | Phase 1 + Phase 2 已完成（模型 + 道具写侧收口至 `thumbnail-key.ts`；VMD 缩略图死路径已删除；meta 缓存错位已修复）。后续审计曾将 `thumbnailCache` 内存缓存与 `GetModelMeta.thumbnail` 列为待清理 deferred，经核实二者均**无需清理**（`thumbnailCache` 为活跃 UI 缩略图数据源；`ModelMeta` 本无 `thumbnail` 字段，先前误将 `DanceSet.Thumbnail` 归错）。治理已闭环。契约测试 `thumbnail-key.contract.test.ts` 已作防反弹熔断丝（16 例全过） |
-| ADR-118 | 刷新率感知的自动降级阈值 | ✅ 已完成（Phase 1 刷新率相对阈值 + Phase 2 运行时峰值校准全量落地） |
-| ADR-117 | Go 端用户可见错误的 i18n 化 | ✅ 已完成（Phase 1 + 2 + 3 全部完成；信封方案见 §2.6） |
+| ADR-119 | 缩略图缓存键单一源治理 | Phase 1 + Phase 2 已完成（模型 + 道具写侧收口至 `thumbnail-key.ts`；VMD 缩略图死路径已删除；meta 缓存错位已修复）。后续审计曾将 `thumbnailCache` 内存缓存与 `GetModelMeta.thumbnail` 列为待清理 deferred，经核实二者均**无需清理**（`thumbnailCache` 为活跃 UI 缩略图数据源；`ModelMeta` 本无 `thumbnail` 字段，先前误将 `DanceSet.Thumbnail` 归错）。治理已闭环。契约测试 `thumbnail-key.contract.test.ts` 已作防反弹熔断丝（16 例全过）（2026-07-16） |
+| ADR-118 | 刷新率感知的自动降级阈值 | ✅ 已完成（Phase 1 刷新率相对阈值 + Phase 2 运行时峰值校准全量落地）（2026-07-16） |
+| ADR-117 | Go 端用户可见错误的 i18n 化 | ✅ 已完成（Phase 1 + 2 + 3 全部完成；信封方案见 §2.6）（2026-07-16） |
 | ADR-116 | 动作覆盖系统 — 模块化架构 + 骨骼覆盖下沉 | 已完成（P0+P1+P2+P3 全部实施并通过验证：tsc + 1557 单测 + ESLint）。2026-07-17 补充：`_computeOverride` `weight≥1` 语义修正为复合父骨传播旋转，详见 §十一。基础层与 Phase 2 打磨均已交付（冲突提示用户语言化、骨骼搜索框、applyOverride 统一函数，见 §十·一，2026-07-23）。 |
 | ADR-115 | 风格化水体竞品调研与波光粼粼增强方向 | P1+P2+P3+P4 已完成（2026-07-22）；P5 海洋波澜专项已实施。 |
 | ADR-114 | 地面反射增强 — 从平面近似到 PBR 材质 | 已完成（Phase 1 ✅ 2026-07-16 — PBR 材质 + 程序化木纹 + UI 面板 + i18n + Go/TS 状态同步；Phase 2 ✅ 2026-07-16 — 反射模糊(mipmap+roughness) + 法线扭曲(bumpTexture) + 低质量守卫；Phase 3 ✅ 2026-07-16 — 接触阴影(屏幕空间 ray marching 后处理) + 中/高质量守卫） |
-| ADR-113 | 体积云延展地平线与画质/性能升级 | 完成（前置渲染分层 + Phase A slab-uniform 步长/地平线延展/地面交界/距离雾 + Phase B Weather Map/Erosion + Phase C 双瓣散射/Powder/高度梯度日落着色 + Phase D1 Blue-noise dither 全部落地） |
+| ADR-113 | 体积云延展地平线与画质/性能升级 | 完成（前置渲染分层 + Phase A slab-uniform 步长/地平线延展/地面交界/距离雾 + Phase B Weather Map/Erosion + Phase C 双瓣散射/Powder/高度梯度日落着色 + Phase D1 Blue-noise dither 全部落地）（2026-07-15） |
 | ADR-112 | SdefInjector + SdefMesh 接入 — SDEF 球面变形 | 已完成（2026-07-14 决策；2026-07-22 修正实现 — 由空操作 side-effect import 改为显式 `OverrideEngineCreateEffect(engine)` 调用，SDEF 方真正生效） |
-| ADR-111 | 场景/环境菜单按用户直觉重新划分 | 已实施 |
-| ADR-110 | IMmdModel 接口类型补全 — 上游 PR 计划 | 草案 · 待立项（作为「babylon-mmd 上游贡献登记册」总入口；条目 1 = IMmdModel 接口补全已立项，条目 2–11 = 跨 ADR / 研究候选 / 已否决 / 已延期，统一归集避免散落） |
+| ADR-111 | 场景/环境菜单按用户直觉重新划分 | 已实施（2026-07-14） |
+| ADR-110 | IMmdModel 接口类型补全 — 上游 PR 计划 | 草案 · 待立项（作为「babylon-mmd 上游贡献登记册」总入口；条目 1 = IMmdModel 接口补全已立项，条目 2–11 = 跨 ADR / 研究候选 / 已否决 / 已延期，统一归集避免散落）（2026-07-14） |
 | ADR-109 | AR 模块审查结论与遗留项排期 | `部分实现`（2026-07-14） |
 | ADR-108 | AnimationRetargeter + HumanoidMmd 接入 — 扩展动作来源 | 已落地（2026-07-14 — 桥接模块 + UI 入口；2026-07-22 — 文件格式过滤 + 场景序列化 + 状态管理完整落地；2026-07-26 — additive 模式兼容性风险审查） |
 | ADR-107 | StreamAudioPlayer 接入 — 替换自建音频管线 | 已完成（2026-07-14 落地 — 全 3 阶段：内部实现替换 + 测试适配 + MmdRuntime 集成） |
-| ADR-106 | 时序审核与异步生命周期规范 | ✅ 全部完成（Phase 1 ✅ + Phase 2 ✅ + Phase 3 ✅） |
+| ADR-106 | 时序审核与异步生命周期规范 | ✅ 全部完成（Phase 1 ✅ + Phase 2 ✅ + Phase 3 ✅）（2026-07-16） |
 | ADR-105 | AbortSignal 传递规范与异步异常处理基线 | ✅ Phase 1 + Phase 2 完成（2026-07-14） |
 | ADR-104 | 物理/换装/音频子系统设计债暂缓登记 | 已完成（Claim 11/12 已落地偿付）；Claim 13 正式搁置（2026-07-19）（2026-07-14） |
 | ADR-103 | SettingsStore 接入 setUIState 持久化链路 | 已完成（2026-07-13） |
 | ADR-102 | main.ts 拆分（init / events / render-loop / dev-hooks） | 已完成（2026-07-13） |
-| ADR-101 | 通用逻辑模式收敛（第二波） | 已完成（P1-a/P1-b/P2/P3 全部完成；12 纯函数新增 + 43 单测 + 15 处调用点迁移；tsc 通过 / vitest 1476 测试通过） |
+| ADR-101 | 通用逻辑模式收敛（第二波） | 已完成（P1-a/P1-b/P2/P3 全部完成；12 纯函数新增 + 43 单测 + 15 处调用点迁移；tsc 通过 / vitest 1476 测试通过）（2026-07-13） |
 | ADR-100 | 相机系统「控制方案 × 运动行为」双轴拆分 | 已完成（2026-07-16 对账：P1-P5 全部落地，无 P6 阶段） |
 | ADR-99 | babylon-mmd 未利用 API 接入 · Item 4 MPR 多线程 WASM 物理（Go 端 COOP/COEP 注入 POC） | 已完成（Go 端 COOP/COEP 注入 `c2a0734` + 前端 MPR 切换 + 真机 WebView2 验证 `crossOriginIsolated=true` / `SharedArrayBuffer=true` / `useMultiThread=true` 全绿，2026-07-14 收口）（2026-07-13） |
 | ADR-98 | babylon-mmd 未利用 API 接入 · 批次一（描边渲染 + Composite 动画类型收敛） | 已完成（2026-07-13） |
@@ -152,32 +152,32 @@
 | ADR-95 | 路径归一化与归属判定统一 | 已完成（批次 1–5 全落地，2026-07-13） |
 | ADR-94 | 资源库替换模式 — 加载后自动保持替换状态并回到模型列表 | 已完成（2026-07-27 简化：自动跳转机制已替换为 `stay` 模式，见下方 §变更记录） |
 | ADR-93 | 菜单声明式 Schema —— 单一数据源 + 单渲染器，根治「大」与「AI 难改」 | 已完成 P0+P1+P2（57 个面板迁移完成，env/motion/scene/model/settings 全域覆盖）；P3 收尾（2026-07-27 裁定：`library.ts`/`library-core.ts:986` 的 barrel re-export 为有意为之的公共 API 入口，被 `events.ts`/`drop-import.ts`/`init.ts`/`plaza-download.ts`/`model-preset.test.ts` 5 处活跃消费者依赖，**不属死代码，无需移除**；全量类型化 P3 目标由 ADR-190 声明式收口自然完成，P3 整体关闭） |
-| ADR-92 | 贴图与反射统一 —— 单一纹理工厂 + 单一平面反射引擎 | 已完成 |
-| ADR-91 | 地面纹理统一 —— 4 种样式合并为单一 canvas + StandardMaterial 路径 | 已完成 |
+| ADR-92 | 贴图与反射统一 —— 单一纹理工厂 + 单一平面反射引擎 | 已完成（2026-07-12） |
+| ADR-91 | 地面纹理统一 —— 4 种样式合并为单一 canvas + StandardMaterial 路径 | 已完成（2026-07-12） |
 | ADR-90 | 对话框默认目录记忆（按资源类型）—— 双端可用 | 已完成（2026-07-12）（2026-07-11 / 2026-07-12（双端重构 + 浏览器扩展）） |
-| ADR-89 | 地面模式分类重构 —— 拆分为几何类型(groundType) + 外观样式(groundStyle) | 已完成 |
+| ADR-89 | 地面模式分类重构 —— 拆分为几何类型(groundType) + 外观样式(groundStyle) | 已完成（2026-07-12） |
 | ADR-88 | 音效系统 — 脚步声与 SFX 总线 | Phase A + Phase B 已完成；Phase C（音乐增强）搁置（2026-07-19）（2026-07-11） |
-| ADR-87 | 模型广场 · 浏览器体验增强路线图 | 已完成（P0+P1+P2 全部实施完毕：window 模式下载拦截 `/__plaza_dl__` + 导航控制 + 遥控面板 + URL 追踪 `/__plaza_url__` + 下载进度 + Per-site 模式记忆 + Embed 加载指示 + 拖放导入 + 下载完成 Toast + 模型库自动刷新 + 键盘快捷键） |
+| ADR-87 | 模型广场 · 浏览器体验增强路线图 | 已完成（P0+P1+P2 全部实施完毕：window 模式下载拦截 `/__plaza_dl__` + 导航控制 + 遥控面板 + URL 追踪 `/__plaza_url__` + 下载进度 + Per-site 模式记忆 + Embed 加载指示 + 拖放导入 + 下载完成 Toast + 模型库自动刷新 + 键盘快捷键）（2026-07-11） |
 | ADR-86 | 猫步走秀程序化动作（Catwalk Procedural Motion） | 通过（2026-07-11） |
 | ADR-85 | 脚部地面跟随（Feet Adjustment） | Phase A 已完成；Phase B/C 降级搁置（2026-07-19）· 已纳入代码审核 4 项修正（纯文档，无代码变更）· 方案C（WASM 手动 IK）已实施（2026-07-26）· **方案A 迁移全部完成（2026-07-29，ADR-202 §六）**（2026-07-11） |
-| ADR-84 | Mesh-to-Cloth 虚拟裙骨生成 —— WASM Bullet 运行时刚体注入 | 已完成（Phase 1-5 POC 全链路 + P2/P3 审计加固 + 单测全绿 + 五语言 i18n。代码层无剩余待办；「真机/模型实测微调参数」归用户验证，非开发任务。P2b(A1 蒙皮天花板)/P3c(worldId 回收) 为已知限制，详见 §3.5 / §十 P3c） |
+| ADR-84 | Mesh-to-Cloth 虚拟裙骨生成 —— WASM Bullet 运行时刚体注入 | 已完成（Phase 1-5 POC 全链路 + P2/P3 审计加固 + 单测全绿 + 五语言 i18n。代码层无剩余待办；「真机/模型实测微调参数」归用户验证，非开发任务。P2b(A1 蒙皮天花板)/P3c(worldId 回收) 为已知限制，详见 §3.5 / §十 P3c）（2026-07-19） |
 | ADR-83 | 地面功能扩展 —— 反射/倾斜/纹理滚动/高程着色/跟随网格/图案扩展/法线贴图 | 已交付 — Phase A + Phase B 全部实施完成；terrain 倾斜于 2026-07-12 追加支持（坐标变换方案） |
 | ADR-82 | 跨发版 CI 缓存预热（cache-warm 落盘 main 作用域） | 已实施（2026-07-11 经 commit `788b2e9` 落地 `cache-warm.yml`，Linux GTK 修复 `4192631`；v1.2.7 tag run `29118031286` 实测三平台全命中） |
 | ADR-81 | XPBD(TS) 测试物理全栈移除与受影响 ADR 审计 | 已实施（2026-07-10 经 commit `530af6e` 落地；`go build` / `npm run check` / `vitest` 1206 测试全绿） |
 | ADR-80 | 预设动画 observer 级联暴涨——addOnce 自注册陷阱 | 已修复（2026-07-10） |
 | ADR-79 | 感知层扩展——always-on 实时叠加的适用边界 | Phase 1-4 已实施（2026-07-14） |
-| ADR-78 | 模型广场 · 下载拦截（iframe 内一键入库） | 已实施 |
-| ADR-77 | 模型广场 · Cookie 中继（登录态代理） | 已实施 |
+| ADR-78 | 模型广场 · 下载拦截（iframe 内一键入库） | 已实施（2026-07-09） |
+| ADR-77 | 模型广场 · Cookie 中继（登录态代理） | 已实施（2026-07-09） |
 | ADR-76 | 卡通化渲染后处理模式 | ✅ 已实施（2026-07-10）（2026-07-09） |
-| ADR-75 | 模型广场 · 网页浏览（内嵌代理 + 外链闭环） | 已采纳 · 已实施（Phase 1 基础代理 + 导航接入） |
+| ADR-75 | 模型广场 · 网页浏览（内嵌代理 + 外链闭环） | 已采纳 · 已实施（Phase 1 基础代理 + 导航接入）（2026-07-09） |
 | ADR-74 | 动态 Cubemap RT 球面反射 | 🗑️ 已放弃（2026-07-19，stash 内容已清理。Stash 中的 cubemap 代码与当前 HEAD 架构冲突——水反射已改用统一 `PlanarReflection` 引擎（ADR-092），model-loader 传参方式也不同（二进制 vs URL）。材料诊断工具等附属代码一并移除。后续若重新评估此方案，需基于当前 HEAD 重写。） |
 | ADR-73 | AR 地形识别 —— 原生 ARCore / ARKit 桥接 | 提案（Proposed）—— ADR-055 §3.1 方案 C「平台原生 ARCore / ARKit 桥接」的细化，远期可 reconsider（2026-07-09） |
 | ADR-72 | AR 平面检测 —— WebXR hit-test + plane detection | 提案（Proposed）—— ADR-055 Phase 3「WebXR 升级」的细化，待 P1 探针结果后批准（2026-07-09） |
 | ADR-71 | 程序化动作与角色感知边界重构 | 已实施（方案 B 全部落地；2026-07-09 创建，2026-07-10 核实代码已落地） ⚠️ **部分被 ADR-079 推翻**（lifelike/idle 保留定位） |
-| ADR-70 | 相机模式「演唱会」语义重构（拆分出「环绕」模式） | 已实施 |
+| ADR-70 | 相机模式「演唱会」语义重构（拆分出「环绕」模式） | 已实施（2026-07-13） |
 | ADR-69 | 材质面板纹理支持审计与推进路线 | 调研落档 — 材质面板当前仅支持 4 标量乘率，贴图槽位归 outfit，PBR 流延续 ADR-024 决策延期（2026-07-09） |
 | ADR-67 | UI 重复率审计与重构 | 已完成（2026-07-05 执行两轮重构） |
-| ADR-66 | 全屏资源库界面（精简版） | ✅ 已实施（Phase 1-4） |
+| ADR-66 | 全屏资源库界面（精简版） | ✅ 已实施（Phase 1-4）（2026-07-08） |
 | ADR-65 | 纯 items 层级语言热切换刷新（精简版） | ✅ 已实施（2026-07-09） |
 | ADR-64 | 技术债清偿（续）—— *Dir 包装维持现状 + scene.ts 业务循环依赖破除 | 已实施（2026-07-08 起草并落地，循环依赖审计确认零残留——两条业务型环已通过动态 `import()` 破除，`*Dir` 包装保持现状） |
 | ADR-63 | 架构债务清偿（精简版） | ✅ 已实施（2026-07-08，build+1128 tests 通过） |
@@ -198,7 +198,7 @@
 | ADR-48 | 变换系统统一 — 模型/灯光/道具移动一致性 | 已完成 — 反序列化统一 + 输入验证均已实施。回调统一标记为可选（优先级低），未做（2026-07-06） |
 | ADR-47 | 配置持久化覆盖现状 | 已完成 — 2026-07-06 会话中修复了配置未持久化 Bug（clothConfig 防抖、调试开关、相机/时间流逝状态等），并完成全量覆盖梳理。 |
 | ADR-46 | 渲染独立开关 — Custom 性能模式（精简版） | ✅ 已实施（2026-07-06） |
-| ADR-45 | 统一加载与资源管理（精简版） | ✅ 已完成（Phase 1 + Phase 2 全部落地） |
+| ADR-45 | 统一加载与资源管理（精简版） | ✅ 已完成（Phase 1 + Phase 2 全部落地）（2026-07-08） |
 | ADR-44 | MMD 生态竞品分析 | 已完成 — 调研归档（2026-07-05） |
 | ADR-43 | DanceXR 功能差距挖掘 | 已完成 — 调研归档（2026-07-05） |
 | ADR-42 | motion/ → motion-algos/ 目录改名 | 已完成（2026-07-05） |
@@ -235,7 +235,7 @@
 | ADR-6 | 扫描简化 + 文件名多编码自动检测 | 已完成 — bestDecode/cleanModelName + modelMetaCache 全链路上线（2026-07-16） |
 | ADR-5 | 待修复项 — 已知技术债务 | 已完成 — #1 HTTP 目录隔离（IsolateModelDir）+ #2 HasThumb 扫描检测 + #3 失败进度条 auto-hide（2026-07-16） |
 | ADR-4 | CSS 统一重构 + 弹窗单例模式 | 已完成 — CSS 变量体系 12 token + closeAllOverlays + 5 弹窗复用类统一（2026-07-16） |
-| ADR-3 | 下载监听策略（精简版） | 方案 C 已实施 ✅；方案 E 远期构想 |
+| ADR-3 | 下载监听策略（精简版） | 方案 C 已实施 ✅；方案 E 远期构想（2026-07-08） |
 | ADR-2 | 配置写入分离 — writeConfig 轻写 vs writeConfigAndRescan 全量 | 已完成 — writeConfig 从 writeConfigAndRescan 拆出，SetBlenderPath 改用轻写（2026-07-16） |
 | ADR-1 | 项目基础设施决策 | 已完成 — 5 条基础设施决策已定案。注意：foundation.md / fix-cycle.md / reusables.md 已于 ADR-039 删除，AGENTS.md 章节编号已在 ADR-031 重构后变更（2026-07-16） |
 

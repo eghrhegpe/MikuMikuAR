@@ -1,6 +1,7 @@
 # ADR-188: PBRMaterialBuilder 材质系统迁移 — PBR 渲染升级
 
 > **状态**: Phase 1 基本完成（2026-08-01）
+> **日期**: 2026-08-01
 >
 > Phase 0 + Phase 1 成果（commits fa27e54e → f20c60b3）：
 > - PMX 加载阶段 PBRMaterialBuilder 注册（VITE_MMD_MATERIAL=pbr）

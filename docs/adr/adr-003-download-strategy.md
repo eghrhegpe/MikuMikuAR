@@ -1,6 +1,7 @@
 # ADR-003: 下载监听策略（精简版）
 
 > **状态**: 方案 C 已实施 ✅；方案 E 远期构想
+> **日期**: 2026-07-08
 > **关联**: ADR-011（Wails 版本策略）
 > **来源**: ADR-003 + ADR-008 合并（2026-07-08）
 > **修订**: 2026-07-09 默认监听目录由 `Downloads/MMDHub_Inbox` 改为 `Downloads/` 根目录 + 首启默认开启。理由：浏览器默认下载到 `Downloads/` 而非其子目录，监听子目录无法真正零配置拉起即用。Config 新增 `DownloadWatchEnabled`（开关，与 dir 解耦）+ `DownloadWatchInitialized`（首启默认哨兵，防重复默认覆盖用户关闭）。

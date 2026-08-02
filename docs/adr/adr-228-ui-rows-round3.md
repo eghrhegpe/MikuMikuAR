@@ -3,6 +3,7 @@
 > **更号记录**: 原编号 ADR-173 与 [adr-173-env-bridge-middleware.md](adr-173-env-bridge-middleware.md) 撞号（env-bridge 先到 2026-07-22，本 ADR 2026-07-24 后至），于 2026-08-02 更号为 ADR-228。
 
 > **状态**: 已完成（2026-07-24 执行）
+> **日期**: 2026-07-22
 
 ## 背景
 
