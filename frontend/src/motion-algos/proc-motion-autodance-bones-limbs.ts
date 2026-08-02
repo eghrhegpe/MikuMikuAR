@@ -9,7 +9,7 @@
  * - FootIK 随重心摆动制造换脚感
  */
 import type { BoneKeyFrame } from './vmd-writer';
-import { type ProcMotionState, clamp1, quatW } from './proc-motion-shared';
+import { type ProcMotionParams, clamp1, quatW } from './proc-motion-shared';
 import type { TrigCache } from './proc-motion-autodance-bones';
 import { beatInfo, beatBounce, downbeatWeight, swayAt } from './proc-motion-autodance-bones';
 
@@ -24,7 +24,7 @@ const STEP = 3;
 export function genArmBones(
     larmBone: string | null,
     rarmBone: string | null,
-    state: ProcMotionState,
+    state: ProcMotionParams,
     cache: TrigCache,
     intensity: number
 ): BoneKeyFrame[] {
@@ -76,7 +76,7 @@ export function genArmBones(
 export function genElbowBones(
     lelbowBone: string | null,
     relbowBone: string | null,
-    state: ProcMotionState,
+    state: ProcMotionParams,
     cache: TrigCache,
     intensity: number
 ): BoneKeyFrame[] {
@@ -124,7 +124,7 @@ export function genElbowBones(
 export function genWristBones(
     lBone: string | null,
     rBone: string | null,
-    state: ProcMotionState,
+    state: ProcMotionParams,
     cache: TrigCache,
     intensity: number
 ): BoneKeyFrame[] {
@@ -161,7 +161,7 @@ export function genWristBones(
 export function genShoulderBones(
     lBone: string | null,
     rBone: string | null,
-    state: ProcMotionState,
+    state: ProcMotionParams,
     cache: TrigCache,
     intensity: number
 ): BoneKeyFrame[] {
@@ -200,7 +200,7 @@ export function genShoulderBones(
 export function genFootIkBones(
     lBone: string | null,
     rBone: string | null,
-    state: ProcMotionState,
+    state: ProcMotionParams,
     cache: TrigCache,
     intensity: number
 ): BoneKeyFrame[] {

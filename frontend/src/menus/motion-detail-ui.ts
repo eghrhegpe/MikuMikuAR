@@ -314,8 +314,13 @@ function buildMotionDetailSchema(
     // [doc:adr-207] 程序化激活时，把参数卡并入统一详情页：模式切换/强度/速度/骨骼微动/插值。
     // 覆盖/预设本就 model-scoped 始终可达，至此程序化动作与 VMD 共享全部动作功能。
     // [audit-fix] 行体点击查看某 proc（viewingProc）时即使未激活也显示参数卡（仅查看/预配置）。
+    // [audit] per-mode：参数卡绑定目标模式——优先查看的 proc，否则当前激活模式。
     if (procActive || viewingProc) {
-        nodes.push(...buildProcMotionSchema(modelId));
+        const targetMode: import('../motion-algos/procedural-motion').ProcModeKey =
+            viewingProc && procId !== 'none'
+                ? (procId as import('../motion-algos/procedural-motion').ProcModeKey)
+                : (procState.mode as import('../motion-algos/procedural-motion').ProcModeKey);
+        nodes.push(...buildProcMotionSchema(modelId, targetMode));
     }
 
     return nodes;

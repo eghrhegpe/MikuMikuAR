@@ -31,6 +31,7 @@ import {
     createModuleShell,
     prepareBake,
     createFrameHookManager,
+    createEnsureActive,
 } from './module-base';
 
 const MODULE_ID = 'body-posture';
@@ -118,14 +119,9 @@ function _resolveIkBones(modelId: string): { l: string | null; r: string | null 
     return result;
 }
 
-/** 启用时注册帧钩子，每帧写入 センター 位置偏移（在 feet-adjustment 之前执行） */
-function ensureActive(modelId: string): void {
-    if (_bodyFrameHooks.has(modelId)) {
-        return;
-    }
-    bake(modelId);
-
-    const unregister = registerBoneOverrideFrameHook(
+/** 注册 センター 位置偏移帧钩子（在 feet-adjustment 之前执行），返回 unregister */
+function _registerBodyPositionHook(modelId: string): () => void {
+    return registerBoneOverrideFrameHook(
         (_t, mid) => {
             if (mid !== modelId) {
                 return;
@@ -160,8 +156,10 @@ function ensureActive(modelId: string): void {
         FRAME_HOOK_ORDER.BODY_POSITION,
         'body-posture'
     );
-    _bodyFrameHooks.set(modelId, unregister);
 }
+
+/** 启用时：每帧按当前参数重烤旋转覆盖 + 幂等注册 センター 位置帧钩子 */
+const ensureActive = createEnsureActive(bake, _bodyFrameHooks, _registerBodyPositionHook);
 
 /** 创建身体姿态模块实例 */
 export function createBodyPostureModule(modelId: string): MotionOverrideModule {

@@ -12,7 +12,7 @@ import {
     FPS,
     MAX_FRAMES,
     PROC_VMD_NAME_AUTODANCE,
-    type ProcMotionState,
+    type ProcMotionParams,
 } from './proc-motion-shared';
 
 import {
@@ -38,13 +38,13 @@ import { generateEmotionMorphs } from './proc-motion-autodance-emotion';
 /**
  * 生成 AutoDance VMD
  *
- * @param state       程序化运动状态（含开关/强度/速度）
+ * @param params      autodance 模式专属参数（含开关/强度/速度/插值覆写）
  * @param bpm         节拍 BPM（clamp 60–200）
  * @param morphNames  可用的 morph 名称列表
  * @param boneNames   可用的骨骼名称列表
  */
 export function generateAutoDanceVmd(
-    state: ProcMotionState,
+    params: ProcMotionParams,
     bpm: number,
     morphNames: readonly string[] = [],
     boneNames: readonly string[] = []
@@ -52,11 +52,11 @@ export function generateAutoDanceVmd(
     // ========================================================================
     // 1. 参数计算
     // ========================================================================
-    const safeSpeed = Math.max(0.1, Math.min(10, state.speed));
+    const safeSpeed = Math.max(0.1, Math.min(10, params.speed));
     const clampedBpm = Math.max(60, Math.min(200, bpm));
     const beatFrames = Math.min(MAX_FRAMES, Math.round(((60 / clampedBpm) * FPS) / safeSpeed));
     const loopFrames = beatFrames * 8;
-    const intensity = state.intensity;
+    const intensity = params.intensity;
 
     // ========================================================================
     // 2. 骨骼解析
@@ -72,28 +72,28 @@ export function generateAutoDanceVmd(
     // 4. 骨骼帧生成
     // ========================================================================
     const bones = [
-        ...(resolution.centerBone && state.boneToggles.center
-            ? genCenterBone(resolution.centerBone, state, cache, intensity)
+        ...(resolution.centerBone && params.boneToggles.center
+            ? genCenterBone(resolution.centerBone, params, cache, intensity)
             : []),
-        ...(resolution.upperBone && state.boneToggles.upper
-            ? genUpperBone(resolution.upperBone, state, cache, intensity)
+        ...(resolution.upperBone && params.boneToggles.upper
+            ? genUpperBone(resolution.upperBone, params, cache, intensity)
             : []),
-        ...(resolution.upper2Bone && state.boneToggles.upper2
-            ? genUpper2Bone(resolution.upper2Bone, state, cache, intensity)
+        ...(resolution.upper2Bone && params.boneToggles.upper2
+            ? genUpper2Bone(resolution.upper2Bone, params, cache, intensity)
             : []),
-        ...(resolution.waistBone && state.boneToggles.waist
-            ? genWaistBone(resolution.waistBone, state, cache, intensity)
+        ...(resolution.waistBone && params.boneToggles.waist
+            ? genWaistBone(resolution.waistBone, params, cache, intensity)
             : []),
-        ...(resolution.larmBone && resolution.rarmBone && state.boneToggles.arm
-            ? genArmBones(resolution.larmBone, resolution.rarmBone, state, cache, intensity)
+        ...(resolution.larmBone && resolution.rarmBone && params.boneToggles.arm
+            ? genArmBones(resolution.larmBone, resolution.rarmBone, params, cache, intensity)
             : []),
-        ...(state.boneToggles.arm
-            ? genElbowBones(resolution.elbowLBone, resolution.elbowRBone, state, cache, intensity)
+        ...(params.boneToggles.arm
+            ? genElbowBones(resolution.elbowLBone, resolution.elbowRBone, params, cache, intensity)
             : []),
-        ...(resolution.grooveBone && state.boneToggles.groove
-            ? genGrooveBone(resolution.grooveBone, state, cache, intensity)
+        ...(resolution.grooveBone && params.boneToggles.groove
+            ? genGrooveBone(resolution.grooveBone, params, cache, intensity)
             : []),
-        ...(resolution.shoulderLBone && resolution.shoulderRBone && state.boneToggles.shoulder
+        ...(resolution.shoulderLBone && resolution.shoulderRBone && params.boneToggles.shoulder
             ? genShoulderBones(
                   resolution.shoulderLBone,
                   resolution.shoulderRBone,
@@ -102,14 +102,14 @@ export function generateAutoDanceVmd(
                   intensity
               )
             : []),
-        ...(resolution.allParentBone && state.boneToggles.allParent
-            ? genAllParentBone(resolution.allParentBone, state, cache, intensity)
+        ...(resolution.allParentBone && params.boneToggles.allParent
+            ? genAllParentBone(resolution.allParentBone, params, cache, intensity)
             : []),
-        ...(resolution.wristLBone && resolution.wristRBone && state.boneToggles.wrist
-            ? genWristBones(resolution.wristLBone, resolution.wristRBone, state, cache, intensity)
+        ...(resolution.wristLBone && resolution.wristRBone && params.boneToggles.wrist
+            ? genWristBones(resolution.wristLBone, resolution.wristRBone, params, cache, intensity)
             : []),
-        ...(state.boneToggles.footIk && resolution.legIkLBone && resolution.legIkRBone
-            ? genFootIkBones(resolution.legIkLBone, resolution.legIkRBone, state, cache, intensity)
+        ...(params.boneToggles.footIk && resolution.legIkLBone && resolution.legIkRBone
+            ? genFootIkBones(resolution.legIkLBone, resolution.legIkRBone, params, cache, intensity)
             : []),
     ];
 
@@ -118,11 +118,11 @@ export function generateAutoDanceVmd(
     // ========================================================================
     let overrideInterp:
         typeof INTERP_SHARP | typeof INTERP_EASE_IN_OUT | typeof INTERP_EASE_OUT | null = null;
-    if (state.interpOverride === 'sharp') {
+    if (params.interpOverride === 'sharp') {
         overrideInterp = INTERP_SHARP;
-    } else if (state.interpOverride === 'ease-in-out') {
+    } else if (params.interpOverride === 'ease-in-out') {
         overrideInterp = INTERP_EASE_IN_OUT;
-    } else if (state.interpOverride === 'ease-out') {
+    } else if (params.interpOverride === 'ease-out') {
         overrideInterp = INTERP_EASE_OUT;
     }
 
@@ -135,7 +135,7 @@ export function generateAutoDanceVmd(
     // ========================================================================
     // 6. 情绪 morph（独立模块）
     // ========================================================================
-    const morphs = state.boneToggles.emotion
+    const morphs = params.boneToggles.emotion
         ? generateEmotionMorphs(morphNames, beatFrames, loopFrames, intensity).morphs
         : [];
 

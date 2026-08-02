@@ -25,7 +25,10 @@ invariants:
   - 表单状态提升到模块级 Map（_overrideFormStates）避免 reRender 时丢失
   - 覆盖语义 absolute=true 仅对叶骨开放（中间层级骨骼视觉跳跃，审计 P2 风险）
   - 所有破坏性操作（清空/重置）走 showConfirm + pushUndoSnapshot + offerSceneUndoAndRefresh
-tests: []
+tests:
+  - frontend/src/__tests__/scene/bone-override.test.ts   # ADR-116 P1 computeOverride 加法/Slerp/父骨传播语义
+  - frontend/src/__tests__/scene/bone-override-store.test.ts  # ADR-147 Phase 2 槽位认领/冲突/所有权守卫
+  # 注：以上仅覆盖 bone-override 运行时逻辑，不覆盖本卡的 DOM 渲染入口（见下方「测试缺口」）
 use_when:
   - 动作覆盖 UI
   - 模块参数子页
@@ -73,3 +76,15 @@ use_when:
 - order=30 hand-symmetry（若未在 order=20）
 
 > 此卡片是 ADR-186 时序图的运行时可视化，便于用户理解多模块协作的执行顺序。
+
+## 测试缺口（2026-08-02 核实）
+
+本卡描述的 **DOM 渲染入口**（`renderOverrideCard` / `renderPresetCard` / `buildAdvancedBoneOverrideLevel` / `buildModuleParamLevel`）**当前无任何自动化测试覆盖**：
+
+- `frontend/src` 内无文件直接 import 这四个渲染函数做断言；
+- E2E `frontend/e2e/motion-panel-dom.spec.ts:37` 把覆盖卡片渲染的覆盖"推给 wailsPage 模式或单测"，实际未实现；
+- `tests:` 列出的两条单测只验证 `bone-override.ts` 运行时逻辑（computeOverride / BoneOverrideStore），**不触碰本卡的 UI 渲染**。
+
+后果：渲染层回归（卡片不显示 / 表单状态丢失 / absolute 开关错位等）会"单测全绿但界面坏掉"，只能靠 manual dev 或补一条 DOM 测试发现。
+
+**建议**：若要为渲染补测试，在 `motion-override-levels` 上加 `jsdom` 环境单测（调用 `renderOverrideCard(container, modelId)` 后断言 `container` 内的行/冲突徽标），或在 `motion-panel-dom.spec.ts` 落实 `@wails` 模式的覆盖卡片断言。

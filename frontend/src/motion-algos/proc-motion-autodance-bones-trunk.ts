@@ -9,7 +9,7 @@
  * - 循环含端点 f=loopFrames（值=周期起点），保证无缝循环、无重复关键帧
  */
 import type { BoneKeyFrame } from './vmd-writer';
-import { type ProcMotionState, clamp1, quatW } from './proc-motion-shared';
+import { type ProcMotionParams, clamp1, quatW } from './proc-motion-shared';
 import type { TrigCache } from './proc-motion-autodance-bones';
 import { swayAt } from './proc-motion-autodance-bones';
 
@@ -24,7 +24,7 @@ const STEP = 3;
  */
 export function genCenterBone(
     bone: string,
-    state: ProcMotionState,
+    state: ProcMotionParams,
     cache: TrigCache,
     intensity: number
 ): BoneKeyFrame[] {
@@ -51,7 +51,7 @@ export function genCenterBone(
  */
 export function genUpperBone(
     bone: string,
-    state: ProcMotionState,
+    state: ProcMotionParams,
     cache: TrigCache,
     intensity: number
 ): BoneKeyFrame[] {
@@ -75,7 +75,7 @@ export function genUpperBone(
  */
 export function genUpper2Bone(
     bone: string,
-    state: ProcMotionState,
+    state: ProcMotionParams,
     cache: TrigCache,
     intensity: number
 ): BoneKeyFrame[] {
@@ -98,7 +98,7 @@ export function genUpper2Bone(
  */
 export function genWaistBone(
     bone: string,
-    state: ProcMotionState,
+    state: ProcMotionParams,
     cache: TrigCache,
     intensity: number
 ): BoneKeyFrame[] {
@@ -122,7 +122,7 @@ export function genWaistBone(
  */
 export function genGrooveBone(
     bone: string,
-    state: ProcMotionState,
+    state: ProcMotionParams,
     cache: TrigCache,
     intensity: number
 ): BoneKeyFrame[] {
@@ -146,7 +146,7 @@ export function genGrooveBone(
  */
 export function genAllParentBone(
     bone: string,
-    state: ProcMotionState,
+    state: ProcMotionParams,
     cache: TrigCache,
     intensity: number
 ): BoneKeyFrame[] {

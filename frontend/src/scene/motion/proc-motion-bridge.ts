@@ -16,9 +16,12 @@
 import {
     ProcMotionState,
     ProcMotionMode,
+    ProcModeKey,
+    ProcMotionParams,
     ProcMotionBoneCategory,
     PROC_MOTION_BONE_CATEGORIES,
     DEFAULT_PROC_STATE,
+    migrateProcState,
     generateIdleVmd,
     generateAutoDanceVmd,
     shouldAutoDance,
@@ -89,14 +92,45 @@ class ProcMotionController {
     }
 
     /** [adr-XX per-motion] 写入程序化配置：同步写入 activeMotion（若存在）+ fallback。
-     *  保证无动作时的本地状态也与最新设置一致，切换动作后参数不丢失。 */
-    private _writeProcState(patch: Partial<ProcMotionState>): void {
+     *  保证无动作时的本地状态也与最新设置一致，切换动作后参数不丢失。
+     *  [audit] per-mode：patch 写入指定模式的 params（idle / autodance 各自独立）。 */
+    private _writeProcState(mode: ProcModeKey, patch: Partial<ProcMotionParams>): void {
         const intent = getActiveMotion();
         if (intent) {
             if (!intent.procMotion) {
                 intent.procMotion = { ...DEFAULT_PROC_STATE } as ProcMotionConfig;
             }
-            intent.procMotion = { ...intent.procMotion, ...patch } as ProcMotionConfig;
+            const cur = intent.procMotion as ProcMotionState;
+            intent.procMotion = {
+                ...cur,
+                params: {
+                    ...cur.params,
+                    [mode]: { ...(cur.params?.[mode] ?? {}), ...patch },
+                },
+            } as ProcMotionConfig;
+        }
+        this._fallbackProcState = {
+            ...this._fallbackProcState,
+            params: {
+                ...this._fallbackProcState.params,
+                [mode]: { ...(this._fallbackProcState.params?.[mode] ?? {}), ...patch },
+            },
+        };
+    }
+
+    /** 写入顶层字段（mode / 感知层开关），不经过 per-mode params。 */
+    private _writeTopLevel(
+        patch: Partial<Pick<ProcMotionState, 'mode' | 'eyeTrackingEnabled' | 'headTrackingEnabled'>>
+    ): void {
+        const intent = getActiveMotion();
+        if (intent) {
+            if (!intent.procMotion) {
+                intent.procMotion = { ...DEFAULT_PROC_STATE } as ProcMotionConfig;
+            }
+            intent.procMotion = {
+                ...(intent.procMotion as ProcMotionState),
+                ...patch,
+            } as ProcMotionConfig;
         }
         this._fallbackProcState = { ...this._fallbackProcState, ...patch };
     }
@@ -106,7 +140,7 @@ class ProcMotionController {
         field: 'eyeTrackingEnabled' | 'headTrackingEnabled',
         value: boolean
     ): void {
-        this._writeProcState({ [field]: value } as Partial<ProcMotionState>);
+        this._writeTopLevel({ [field]: value });
         // 同步到 perception.ts（内部已调用 triggerAutoSave）
         const st = this._refProcState();
         setGazeConfig(st.headTrackingEnabled, st.eyeTrackingEnabled);
@@ -171,8 +205,9 @@ class ProcMotionController {
             throw new Error('proc-motion: autodance 模式需要有效 BPM，当前 BPM 无效');
         }
         if (targetMode === 'autodance' && bpmValid) {
+            // [audit] per-mode：生成用 autodance 专属参数
             buf = generateAutoDanceVmd(
-                this._refProcState(modelIdOverride),
+                this._refProcState(modelIdOverride).params.autodance,
                 bpm!,
                 morphNames,
                 boneNames
@@ -180,7 +215,8 @@ class ProcMotionController {
             this._lastBeatBpm = bpm!;
             this._activeKind = 'autodance';
         } else {
-            buf = generateIdleVmd(this._refProcState(modelIdOverride), boneNames);
+            // [audit] per-mode：生成用 idle 专属参数
+            buf = generateIdleVmd(this._refProcState(modelIdOverride).params.idle, boneNames);
             this._activeKind = targetMode;
         }
 
@@ -340,7 +376,7 @@ class ProcMotionController {
     }
 
     setProcMotionMode(mode: ProcMotionMode): void {
-        this._writeProcState({ mode });
+        this._writeTopLevel({ mode });
         if (mode === 'off') {
             this.stopProcMotion();
         }
@@ -350,15 +386,17 @@ class ProcMotionController {
         //  motion-popup.ts/motion-procmotion-levels.ts 均已持有显式 regenerate 调用）
     }
 
-    setProcMotionIntensity(v: number): void {
-        this._writeProcState({ intensity: clamp01(v) });
+    /** [audit] per-mode：写入指定程序化模式的强度。 */
+    setProcMotionIntensity(mode: ProcModeKey, v: number): void {
+        this._writeProcState(mode, { intensity: clamp01(v) });
         triggerAutoSave();
         // [fix P2] 强度变更需重生成 VMD
         this.regenerateProcMotion();
     }
 
-    setProcMotionSpeed(v: number): void {
-        this._writeProcState({ speed: Math.max(0.5, Math.min(2, v)) });
+    /** [audit] per-mode：写入指定程序化模式的速度。 */
+    setProcMotionSpeed(mode: ProcModeKey, v: number): void {
+        this._writeProcState(mode, { speed: Math.max(0.5, Math.min(2, v)) });
         triggerAutoSave();
         // [fix P2] 速度变更需重生成 VMD
         this.regenerateProcMotion();
@@ -369,19 +407,21 @@ class ProcMotionController {
     }
 
     /** 设置程序化动作状态（从存储恢复时使用，不触发自动保存以免干扰反序列化）。
-     *  外部直接调用此函数时，请确保调用者在合适时机手动触发保存。 */
+     *  外部直接调用此函数时，请确保调用者在合适时机手动触发保存。
+     *  [audit] 入口统一过 migrateProcState，兼容旧扁平存档与新嵌套结构。 */
     setProcMotionState(s: ProcMotionState): void {
+        const migrated = migrateProcState(s);
         const intent = getActiveMotion();
         if (intent) {
-            intent.procMotion = { ...s } as ProcMotionConfig;
+            intent.procMotion = { ...migrated } as ProcMotionConfig;
         }
-        this._fallbackProcState = { ...s };
+        this._fallbackProcState = { ...migrated };
     }
 
     // ======== 开关 Getter/Setter（P0/P1） ========
 
-    /** 设置单个微动效果的开关 */
-    setProcMotionBoneToggle(cat: ProcMotionBoneCategory, v: boolean): void {
+    /** 设置单个微动效果的开关（per-mode：写入指定模式） */
+    setProcMotionBoneToggle(mode: ProcModeKey, cat: ProcMotionBoneCategory, v: boolean): void {
         if (!PROC_MOTION_BONE_CATEGORIES.includes(cat)) {
             logWarn('proc-motion', `invalid bone category: ${cat}`);
             return;
@@ -390,16 +430,19 @@ class ProcMotionController {
             logWarn('proc-motion', 'setProcMotionBoneToggle: invalid value type, expected boolean');
             return;
         }
-        const bt = { ...this._refProcState().boneToggles };
+        const bt = { ...this._refProcState().params[mode].boneToggles };
         bt[cat] = v;
-        this._writeProcState({ boneToggles: bt });
+        this._writeProcState(mode, { boneToggles: bt });
         triggerAutoSave();
         // [fix] 程序化调用必须触发 VMD 重生成，否则 toggle 新值不生效（UI 层已包含此调用）
         this.regenerateProcMotion();
     }
 
-    /** 批量设置微动效果开关 */
-    setProcMotionBoneToggles(bt: Partial<Record<ProcMotionBoneCategory, boolean>>): void {
+    /** 批量设置微动效果开关（per-mode：写入指定模式） */
+    setProcMotionBoneToggles(
+        mode: ProcModeKey,
+        bt: Partial<Record<ProcMotionBoneCategory, boolean>>
+    ): void {
         for (const [k, v] of Object.entries(bt)) {
             if (typeof v !== 'boolean') {
                 logWarn(
@@ -409,14 +452,15 @@ class ProcMotionController {
                 return;
             }
         }
-        const cur = this._refProcState();
-        this._writeProcState({ boneToggles: { ...cur.boneToggles, ...bt } });
+        const cur = this._refProcState().params[mode];
+        this._writeProcState(mode, { boneToggles: { ...cur.boneToggles, ...bt } });
         triggerAutoSave();
         // [fix] 批量设置同样需要重生成 VMD
         this.regenerateProcMotion();
     }
 
-    setProcMotionVpdApplyEnabled(v: boolean): void {
+    /** [audit] per-mode：写入指定模式的 VPD 应用开关。 */
+    setProcMotionVpdApplyEnabled(mode: ProcModeKey, v: boolean): void {
         if (typeof v !== 'boolean') {
             logWarn(
                 'proc-motion',
@@ -424,19 +468,20 @@ class ProcMotionController {
             );
             return;
         }
-        this._writeProcState({ vpdApplyEnabled: v });
+        this._writeProcState(mode, { vpdApplyEnabled: v });
         triggerAutoSave();
         // [fix P2] VPD 应用开关影响 VMD 生成结果
         this.regenerateProcMotion();
     }
 
-    setProcMotionInterpOverride(v: ProcMotionState['interpOverride']): void {
+    /** [audit] per-mode：写入指定模式的插值覆写。 */
+    setProcMotionInterpOverride(mode: ProcModeKey, v: ProcMotionParams['interpOverride']): void {
         const valid = ['auto', 'sharp', 'ease-in-out', 'ease-out'] as const;
         if (!valid.includes(v as (typeof valid)[number])) {
             logWarn('proc-motion', `setProcMotionInterpOverride: invalid value "${v}"`);
             return;
         }
-        this._writeProcState({ interpOverride: v });
+        this._writeProcState(mode, { interpOverride: v });
         triggerAutoSave();
         // [fix P2] 插值模式变更需重生成 VMD（UI 层已包含此调用）
         this.regenerateProcMotion();
@@ -567,11 +612,11 @@ export async function updateProcMotion(): Promise<void> {
 export function setProcMotionMode(mode: ProcMotionMode): void {
     _getCtrl().setProcMotionMode(mode);
 }
-export function setProcMotionIntensity(v: number): void {
-    _getCtrl().setProcMotionIntensity(v);
+export function setProcMotionIntensity(mode: ProcModeKey, v: number): void {
+    _getCtrl().setProcMotionIntensity(mode, v);
 }
-export function setProcMotionSpeed(v: number): void {
-    _getCtrl().setProcMotionSpeed(v);
+export function setProcMotionSpeed(mode: ProcModeKey, v: number): void {
+    _getCtrl().setProcMotionSpeed(mode, v);
 }
 export function getProcMotionState(): ProcMotionState {
     return _getCtrl().getProcMotionState();
@@ -579,19 +624,27 @@ export function getProcMotionState(): ProcMotionState {
 export function setProcMotionState(s: ProcMotionState): void {
     _getCtrl().setProcMotionState(s);
 }
-export function setProcMotionBoneToggle(cat: ProcMotionBoneCategory, v: boolean): void {
-    _getCtrl().setProcMotionBoneToggle(cat, v);
+export function setProcMotionBoneToggle(
+    mode: ProcModeKey,
+    cat: ProcMotionBoneCategory,
+    v: boolean
+): void {
+    _getCtrl().setProcMotionBoneToggle(mode, cat, v);
 }
 export function setProcMotionBoneToggles(
+    mode: ProcModeKey,
     bt: Partial<Record<ProcMotionBoneCategory, boolean>>
 ): void {
-    _getCtrl().setProcMotionBoneToggles(bt);
+    _getCtrl().setProcMotionBoneToggles(mode, bt);
 }
-export function setProcMotionVpdApplyEnabled(v: boolean): void {
-    _getCtrl().setProcMotionVpdApplyEnabled(v);
+export function setProcMotionVpdApplyEnabled(mode: ProcModeKey, v: boolean): void {
+    _getCtrl().setProcMotionVpdApplyEnabled(mode, v);
 }
-export function setProcMotionInterpOverride(v: ProcMotionState['interpOverride']): void {
-    _getCtrl().setProcMotionInterpOverride(v);
+export function setProcMotionInterpOverride(
+    mode: ProcModeKey,
+    v: ProcMotionParams['interpOverride']
+): void {
+    _getCtrl().setProcMotionInterpOverride(mode, v);
 }
 export function setBpmQuantizeEnabled(v: boolean): void {
     _getCtrl().setBpmQuantizeEnabled(v);

@@ -18,13 +18,14 @@ import {
     quatW,
     closingFrame,
     PROC_VMD_NAME_IDLE,
-    type ProcMotionState,
+    type ProcMotionParams,
 } from './proc-motion-shared';
 
-export function generateIdleVmd(state: ProcMotionState, boneNames: string[] = []): ArrayBuffer {
-    const safeSpeed = Math.max(0.1, Math.min(10, state.speed));
+/** [audit] 待机呼吸生成：params 为 idle 模式专属参数；尊重 boneToggles，关闭的骨类别不生成。 */
+export function generateIdleVmd(params: ProcMotionParams, boneNames: string[] = []): ArrayBuffer {
+    const safeSpeed = Math.max(0.1, Math.min(10, params.speed));
     const loopFrames = Math.min(MAX_FRAMES, Math.round(120 / safeSpeed));
-    const intensity = state.intensity;
+    const intensity = params.intensity;
     const bones: BoneKeyFrame[] = [];
     const morphs: MorphKeyFrame[] = [];
 
@@ -56,7 +57,7 @@ export function generateIdleVmd(state: ProcMotionState, boneNames: string[] = []
         allParentRz: 0.003, // 全ての親 微摆（原 0.005）
     };
 
-    if (centerBone) {
+    if (params.boneToggles.center && centerBone) {
         for (let f = 0; f < loopFrames; f += 4) {
             const phase = (f / loopFrames) * Math.PI * 2;
             const slowPhase = phase * 0.5;
@@ -74,7 +75,7 @@ export function generateIdleVmd(state: ProcMotionState, boneNames: string[] = []
         bones.push(closingFrame(centerBone, loopFrames));
     }
 
-    if (upper2Bone) {
+    if (params.boneToggles.upper2 && upper2Bone) {
         for (let f = 0; f < loopFrames; f += 4) {
             const phase = (f / loopFrames) * Math.PI * 2;
             const rx = Math.sin(phase * 0.7 + 0.3) * swayAmp.upper2Rx * intensity;
@@ -89,7 +90,7 @@ export function generateIdleVmd(state: ProcMotionState, boneNames: string[] = []
         bones.push(closingFrame(upper2Bone, loopFrames));
     }
 
-    if (waistBone) {
+    if (params.boneToggles.waist && waistBone) {
         for (let f = 0; f < loopFrames; f += 4) {
             const phase = (f / loopFrames) * Math.PI * 2;
             const rz = Math.sin(phase + 0.5) * swayAmp.waistRz * intensity;
@@ -104,7 +105,7 @@ export function generateIdleVmd(state: ProcMotionState, boneNames: string[] = []
         bones.push(closingFrame(waistBone, loopFrames));
     }
 
-    if (allParentBone) {
+    if (params.boneToggles.allParent && allParentBone) {
         for (let f = 0; f < loopFrames; f += 4) {
             const phase = (f / loopFrames) * Math.PI * 2;
             const rx = Math.sin(phase * 0.2 + 1.1) * swayAmp.allParentRx * intensity;
@@ -120,7 +121,7 @@ export function generateIdleVmd(state: ProcMotionState, boneNames: string[] = []
         bones.push(closingFrame(allParentBone, loopFrames));
     }
 
-    if (larmBone || rarmBone) {
+    if (params.boneToggles.arm && (larmBone || rarmBone)) {
         const armAmp = 0.04 * intensity;
         for (let f = 0; f < loopFrames; f += 4) {
             const phase = (f / loopFrames) * Math.PI * 2;
@@ -151,7 +152,7 @@ export function generateIdleVmd(state: ProcMotionState, boneNames: string[] = []
         }
     }
 
-    if (shoulderLBone || shoulderRBone) {
+    if (params.boneToggles.shoulder && (shoulderLBone || shoulderRBone)) {
         const shoulderAmp = 0.015 * intensity;
         const rotAmp = 0.01 * intensity;
         for (let f = 0; f < loopFrames; f += 4) {
@@ -188,7 +189,7 @@ export function generateIdleVmd(state: ProcMotionState, boneNames: string[] = []
         }
     }
 
-    if (wristLBone || wristRBone) {
+    if (params.boneToggles.wrist && (wristLBone || wristRBone)) {
         const wristAmp = 0.015 * intensity;
         for (let f = 0; f < loopFrames; f += 4) {
             const phase = (f / loopFrames) * Math.PI * 2;
@@ -222,7 +223,7 @@ export function generateIdleVmd(state: ProcMotionState, boneNames: string[] = []
     }
 
     // ── 足 IK 微动（呼吸起伏 + 重心微摆）──
-    if (legIkLBone || legIkRBone) {
+    if (params.boneToggles.footIk && (legIkLBone || legIkRBone)) {
         const legIkAmp = 0.012 * intensity; // Y 轴起伏振幅
         const legSwayAmp = 0.005 * intensity; // Z 轴微摆
         for (let f = 0; f < loopFrames; f += 4) {

@@ -16,13 +16,19 @@ symbols:
   - createModuleBase
   - applyModuleSnapshot
   - createFrameHookManager
+  - FrameHookManager
+  - createEnsureActive
   - ModuleShellConfig
   - createModuleShell
   - prepareBake
 invariants:
   - 被 body-posture/hand-modules/foot-modules/riding-model 等 6 模块引用
   - 提供骨架代码，子模块通过覆写实现自定义行为
-tests: []
+  - `createEnsureActive(bake, hookManager, registerHook)` 固化「先 bake 重烤、再幂等注册帧钩子」模式；
+    body-posture/foot/hand 经它创建 `action`，避免复制粘贴早期 return 冻结静态参数（见 buglog 2026-08-02）
+  - riding-model 因 autoPedal 需动态注册/注销钩子，不套用 createEnsureActive（保留自定义 ensureActive）
+tests:
+  - frontend/src/__tests__/scene/motion-modules-registry.param.test.ts   # setParam 触发 re-bake 回归（91dbe42a / 2026-08-02）
 use_when:
   - 动作模块基类
   - module base

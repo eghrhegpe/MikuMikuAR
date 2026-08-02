@@ -26,7 +26,7 @@ symbols:
   - buildMotionRootLevel
   - buildPoseStudioLevel
   - buildProcLibraryLevel
-  - buildProcMotionLevel
+  - buildProcMotionSchema
   - buildRetargetLevel
   - buildVirtualSkirtLevel
   - disposeAllVirtualSkirts
@@ -37,6 +37,7 @@ symbols:
   - hideMotionPopup
   - importExternalAnimation
   - initMotionBroadcast
+  - procLabel
   - refreshMotionRoot
   - renderModuleToggleList
   - renderOverrideCard

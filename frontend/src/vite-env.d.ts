@@ -22,6 +22,10 @@ declare global {
             matType: string;
             skyMode: string;
         };
+        // [doc:adr-229] 只读状态读取器（schema-driven 交互断言用，复用 getStateValue）
+        __state?: {
+            get: (path: string, modelId?: string) => unknown;
+        };
     }
 
     // ADR-099: 构建期注入的 MPR 开关（vite define）。
