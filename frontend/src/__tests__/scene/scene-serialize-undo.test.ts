@@ -62,7 +62,10 @@ vi.mock('../../scene/env/_bridge/env-bridge', () => ({
 vi.mock('../../scene/physics/ground-collision', () => ({}));
 vi.mock('../../scene/motion/proc-motion-bridge', () => ({}));
 vi.mock('../../scene/motion/lipsync-bridge', () => ({}));
-vi.mock('../../motion-algos/procedural-motion', () => ({ DEFAULT_PROC_STATE: {} }));
+vi.mock('../../motion-algos/procedural-motion', () => ({
+    DEFAULT_PROC_STATE: {},
+    migrateProcState: (raw: unknown) => (raw ?? {}) as object,
+}));
 vi.mock('../../motion-algos/lipsync', () => ({ DEFAULT_LIPSYNC_STATE: {} }));
 vi.mock('../../scene/motion/perception', () => ({}));
 // 注意：'../../core/utils'（debounce 在模块求值期使用）与 '../../core/logger' 保留真实。

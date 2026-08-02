@@ -97,7 +97,7 @@ export function generateAutoDanceVmd(
             ? genShoulderBones(
                   resolution.shoulderLBone,
                   resolution.shoulderRBone,
-                  state,
+                  params,
                   cache,
                   intensity
               )

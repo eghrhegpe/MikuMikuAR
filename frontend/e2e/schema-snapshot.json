@@ -17,6 +17,10 @@
         "kind": "modeSlider",
         "conditional": false,
         "dom": "[role=\"listbox\"]",
+        "action": {
+          "type": "selectChip",
+          "target": "non-current"
+        },
         "label": "env.skyMode",
         "icon": "lucide:sun",
         "control": {
@@ -77,6 +81,10 @@
         "kind": "slider",
         "conditional": false,
         "dom": "[role=\"slider\"]",
+        "action": {
+          "type": "drag",
+          "target": "midpoint"
+        },
         "label": "env.skyRotationSpeed",
         "icon": "lucide:rotate-cw",
         "control": {
@@ -98,6 +106,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.sunIntensity",
             "icon": "lucide:sun",
             "control": {
@@ -112,6 +124,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.skyLighting",
             "icon": "lucide:sun",
             "control": {
@@ -126,6 +142,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.environmentBrightness",
             "icon": "lucide:sun-dim",
             "control": {
@@ -140,6 +160,9 @@
             "kind": "toggle",
             "conditional": true,
             "dom": "[role=\"switch\"], input[type=\"checkbox\"]",
+            "action": {
+              "type": "toggle"
+            },
             "label": "env.stars",
             "control": {
               "bind": "env.starsEnabled"
@@ -150,6 +173,10 @@
             "kind": "slider",
             "conditional": true,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.brightness",
             "icon": "lucide:sun",
             "control": {
@@ -181,6 +208,10 @@
         "kind": "slider",
         "conditional": false,
         "dom": "[role=\"slider\"]",
+        "action": {
+          "type": "drag",
+          "target": "midpoint"
+        },
         "label": "env.windAngle",
         "icon": "lucide:compass",
         "control": {
@@ -195,6 +226,10 @@
         "kind": "slider",
         "conditional": false,
         "dom": "[role=\"slider\"]",
+        "action": {
+          "type": "drag",
+          "target": "midpoint"
+        },
         "label": "env.windSpeed",
         "icon": "lucide:gauge",
         "control": {
@@ -219,6 +254,10 @@
         "kind": "modeSlider",
         "conditional": false,
         "dom": "[role=\"listbox\"]",
+        "action": {
+          "type": "selectChip",
+          "target": "non-current"
+        },
         "label": "env.fogMode",
         "icon": "lucide:layers",
         "control": {
@@ -254,6 +293,10 @@
         "kind": "slider",
         "conditional": true,
         "dom": "[role=\"slider\"]",
+        "action": {
+          "type": "drag",
+          "target": "midpoint"
+        },
         "label": "env.fogDensity",
         "icon": "lucide:droplets",
         "control": {
@@ -268,6 +311,10 @@
         "kind": "slider",
         "conditional": true,
         "dom": "[role=\"slider\"]",
+        "action": {
+          "type": "drag",
+          "target": "midpoint"
+        },
         "label": "env.fogStart",
         "control": {
           "bind": "env.fogStart",
@@ -281,6 +328,10 @@
         "kind": "slider",
         "conditional": true,
         "dom": "[role=\"slider\"]",
+        "action": {
+          "type": "drag",
+          "target": "midpoint"
+        },
         "label": "env.fogEnd",
         "control": {
           "bind": "env.fogEnd",
@@ -304,6 +355,10 @@
         "kind": "slider",
         "conditional": false,
         "dom": "[role=\"slider\"]",
+        "action": {
+          "type": "drag",
+          "target": "midpoint"
+        },
         "label": "env.cloudCover",
         "icon": "lucide:cloud",
         "control": {
@@ -318,6 +373,10 @@
         "kind": "slider",
         "conditional": false,
         "dom": "[role=\"slider\"]",
+        "action": {
+          "type": "drag",
+          "target": "midpoint"
+        },
         "label": "env.cloudGap",
         "icon": "lucide:columns",
         "control": {
@@ -338,6 +397,10 @@
         "kind": "slider",
         "conditional": false,
         "dom": "[role=\"slider\"]",
+        "action": {
+          "type": "drag",
+          "target": "midpoint"
+        },
         "label": "env.cloudErosion",
         "icon": "lucide:wind",
         "control": {
@@ -352,6 +415,10 @@
         "kind": "slider",
         "conditional": false,
         "dom": "[role=\"slider\"]",
+        "action": {
+          "type": "drag",
+          "target": "midpoint"
+        },
         "label": "env.cloudWeatherStrength",
         "icon": "lucide:cloud-sun",
         "control": {
@@ -366,6 +433,10 @@
         "kind": "slider",
         "conditional": false,
         "dom": "[role=\"slider\"]",
+        "action": {
+          "type": "drag",
+          "target": "midpoint"
+        },
         "label": "env.height",
         "icon": "lucide:arrow-up",
         "control": {
@@ -380,6 +451,10 @@
         "kind": "slider",
         "conditional": false,
         "dom": "[role=\"slider\"]",
+        "action": {
+          "type": "drag",
+          "target": "midpoint"
+        },
         "label": "env.scale",
         "icon": "lucide:maximize",
         "control": {
@@ -394,6 +469,10 @@
         "kind": "slider",
         "conditional": false,
         "dom": "[role=\"slider\"]",
+        "action": {
+          "type": "drag",
+          "target": "midpoint"
+        },
         "label": "env.thickness",
         "icon": "lucide:move-vertical",
         "control": {
@@ -408,6 +487,10 @@
         "kind": "slider",
         "conditional": false,
         "dom": "[role=\"slider\"]",
+        "action": {
+          "type": "drag",
+          "target": "midpoint"
+        },
         "label": "env.cloudVisibility",
         "icon": "lucide:eye",
         "control": {
@@ -428,6 +511,10 @@
         "kind": "slider",
         "conditional": false,
         "dom": "[role=\"slider\"]",
+        "action": {
+          "type": "drag",
+          "target": "midpoint"
+        },
         "label": "env.cloudBacklight",
         "icon": "lucide:sun",
         "control": {
@@ -442,6 +529,10 @@
         "kind": "slider",
         "conditional": false,
         "dom": "[role=\"slider\"]",
+        "action": {
+          "type": "drag",
+          "target": "midpoint"
+        },
         "label": "env.cloudPowder",
         "icon": "lucide:snowflake",
         "control": {
@@ -473,6 +564,10 @@
             "kind": "modeSlider",
             "conditional": false,
             "dom": "[role=\"listbox\"]",
+            "action": {
+              "type": "selectChip",
+              "target": "non-current"
+            },
             "label": "env.shadowType",
             "icon": "lucide:cloud",
             "control": {
@@ -503,6 +598,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.shadowBias",
             "icon": "lucide:move",
             "control": {
@@ -517,6 +616,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.shadowCascades",
             "icon": "lucide:layers",
             "control": {
@@ -566,6 +669,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.height",
             "icon": "lucide:arrow-up",
             "control": {
@@ -580,6 +687,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.animSpeed",
             "icon": "lucide:fast-forward",
             "control": {
@@ -594,6 +705,9 @@
             "kind": "toggle",
             "conditional": false,
             "dom": "[role=\"switch\"], input[type=\"checkbox\"]",
+            "action": {
+              "type": "toggle"
+            },
             "label": "env.waterDispersionEnabled",
             "icon": "lucide:activity",
             "control": {
@@ -617,6 +731,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.bigWaveHeight",
             "icon": "lucide:mountain",
             "control": {
@@ -643,6 +761,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.smallWaveHeight",
             "icon": "lucide:waves",
             "control": {
@@ -676,6 +798,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.opacity",
             "icon": "lucide:eye",
             "control": {
@@ -700,6 +826,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.waterFogStart",
             "icon": "lucide:cloud-fog",
             "control": {
@@ -714,6 +844,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.waterFogEnd",
             "icon": "lucide:cloud-fog",
             "control": {
@@ -728,6 +862,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.waterSkyColorBlend",
             "icon": "lucide:cloud",
             "control": {
@@ -751,6 +889,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.fresnelBias",
             "control": {
               "bind": "env.fresnelBias",
@@ -764,6 +906,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.fresnelPower",
             "control": {
               "bind": "env.fresnelPower",
@@ -777,6 +923,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.fresnelAlpha",
             "control": {
               "bind": "env.fresnelAlphaInfluence",
@@ -790,6 +940,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.diffuseStrength",
             "control": {
               "bind": "env.diffuseStrength",
@@ -803,6 +957,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.ambientStrength",
             "control": {
               "bind": "env.ambientStrength",
@@ -816,6 +974,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.waterRippleSlots",
             "control": {
               "bind": "env.waterRippleSlots",
@@ -829,6 +991,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.rippleNormal",
             "control": {
               "bind": "env.rippleNormalStrength",
@@ -842,6 +1008,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.rippleGlint",
             "control": {
               "bind": "env.rippleGlintStrength",
@@ -855,6 +1025,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.waterNormalStrength",
             "control": {
               "bind": "env.waterNormalStrength",
@@ -868,6 +1042,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.waterGlintStrength",
             "control": {
               "bind": "env.waterGlintStrength",
@@ -881,6 +1059,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.lowFreqNormalStrength",
             "control": {
               "bind": "env.lowFreqNormalStrength",
@@ -894,6 +1076,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.waterHorizonFade",
             "icon": "lucide:mountain",
             "control": {
@@ -920,6 +1106,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.causticIntensity",
             "icon": "lucide:sun",
             "control": {
@@ -954,6 +1144,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.causticScrollX",
             "control": {
               "bind": "env.causticScrollX",
@@ -967,6 +1161,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.causticScrollY",
             "control": {
               "bind": "env.causticScrollY",
@@ -980,6 +1178,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.waterFogOpacityInfluence",
             "control": {
               "bind": "env.waterFogOpacityInfluence",
@@ -993,6 +1195,9 @@
             "kind": "toggle",
             "conditional": false,
             "dom": "[role=\"switch\"], input[type=\"checkbox\"]",
+            "action": {
+              "type": "toggle"
+            },
             "label": "env.waterFlip",
             "control": {
               "bind": "env.waterFlipEnabled"
@@ -1015,6 +1220,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.foamThreshold",
             "control": {
               "bind": "env.foamThreshold",
@@ -1028,6 +1237,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.foamIntensity",
             "control": {
               "bind": "env.foamIntensity",
@@ -1041,6 +1254,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.foamTransition",
             "control": {
               "bind": "env.foamTransitionRange",
@@ -1054,6 +1271,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.foamOpacity",
             "control": {
               "bind": "env.foamOpacity",
@@ -1067,6 +1288,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.foamNoise",
             "control": {
               "bind": "env.foamNoiseStrength",
@@ -1102,6 +1327,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.toneIntensity",
             "icon": "lucide:palette",
             "control": {
@@ -1116,6 +1345,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.underwaterTintStrength",
             "icon": "lucide:palette",
             "control": {
@@ -1165,6 +1398,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.opacity",
             "icon": "lucide:eye",
             "control": {
@@ -1179,6 +1416,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.groundHeight",
             "icon": "lucide:move-vertical",
             "control": {
@@ -1193,6 +1434,10 @@
             "kind": "slider",
             "conditional": true,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.range",
             "icon": "lucide:maximize",
             "control": {
@@ -1207,6 +1452,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.edgeFade",
             "icon": "lucide:droplet",
             "control": {
@@ -1248,6 +1497,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.gridSize",
             "icon": "lucide:grid-3x3",
             "control": {
@@ -1272,6 +1525,10 @@
             "kind": "modeSlider",
             "conditional": true,
             "dom": "[role=\"listbox\"]",
+            "action": {
+              "type": "selectChip",
+              "target": "non-current"
+            },
             "label": "env.groundPattern",
             "icon": "lucide:grid-3x3",
             "control": {
@@ -1321,6 +1578,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.groundEmissiveStrength",
             "icon": "lucide:sun",
             "control": {
@@ -1335,6 +1596,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.groundEmissiveReflectMix",
             "icon": "lucide:scale",
             "control": {
@@ -1349,6 +1614,9 @@
             "kind": "toggle",
             "conditional": false,
             "dom": "[role=\"switch\"], input[type=\"checkbox\"]",
+            "action": {
+              "type": "toggle"
+            },
             "label": "env.groundEmissiveUseTexture",
             "icon": "lucide:image",
             "control": {
@@ -1372,6 +1640,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.terrainHeight",
             "icon": "lucide:mountain",
             "control": {
@@ -1386,6 +1658,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.terrainScale",
             "icon": "lucide:ruler",
             "control": {
@@ -1400,6 +1676,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.terrainSeed",
             "icon": "lucide:hash",
             "control": {
@@ -1414,6 +1694,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.terrainOctaves",
             "icon": "lucide:layers",
             "control": {
@@ -1437,6 +1721,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.groundPitch",
             "icon": "lucide:arrow-up-down",
             "control": {
@@ -1451,6 +1739,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.groundRoll",
             "icon": "lucide:rotate-cw",
             "control": {
@@ -1465,6 +1757,10 @@
             "kind": "slider",
             "conditional": true,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.groundScrollX",
             "icon": "lucide:move-right",
             "control": {
@@ -1479,6 +1775,10 @@
             "kind": "slider",
             "conditional": true,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.groundScrollZ",
             "icon": "lucide:move-down",
             "control": {
@@ -1493,6 +1793,9 @@
             "kind": "toggle",
             "conditional": false,
             "dom": "[role=\"switch\"], input[type=\"checkbox\"]",
+            "action": {
+              "type": "toggle"
+            },
             "label": "env.groundInfiniteEnabled",
             "icon": "lucide:infinity",
             "control": {
@@ -1516,6 +1819,10 @@
             "kind": "slider",
             "conditional": true,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.metallic",
             "icon": "lucide:circle-dot",
             "control": {
@@ -1530,6 +1837,10 @@
             "kind": "slider",
             "conditional": true,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.roughness",
             "icon": "lucide:grid-2x2",
             "control": {
@@ -1544,6 +1855,10 @@
             "kind": "slider",
             "conditional": true,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.reflectionBlur",
             "icon": "lucide:droplets",
             "control": {
@@ -1558,6 +1873,10 @@
             "kind": "slider",
             "conditional": true,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.reflectionDistort",
             "icon": "lucide:waves",
             "control": {
@@ -1572,6 +1891,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.groundReflectBlend",
             "icon": "lucide:blend",
             "control": {
@@ -1586,6 +1909,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "env.groundNormalStrength",
             "icon": "lucide:layers",
             "control": {
@@ -1600,6 +1927,9 @@
             "kind": "toggle",
             "conditional": true,
             "dom": "[role=\"switch\"], input[type=\"checkbox\"]",
+            "action": {
+              "type": "toggle"
+            },
             "label": "env.groundElevationColoringEnabled",
             "icon": "lucide:mountain-snow",
             "control": {
@@ -1643,6 +1973,10 @@
         "kind": "slider",
         "conditional": false,
         "dom": "[role=\"slider\"]",
+        "action": {
+          "type": "drag",
+          "target": "midpoint"
+        },
         "label": "env.density",
         "icon": "lucide:layers",
         "control": {
@@ -1657,6 +1991,10 @@
         "kind": "slider",
         "conditional": false,
         "dom": "[role=\"slider\"]",
+        "action": {
+          "type": "drag",
+          "target": "midpoint"
+        },
         "label": "env.size",
         "icon": "lucide:maximize",
         "control": {
@@ -1671,6 +2009,10 @@
         "kind": "slider",
         "conditional": false,
         "dom": "[role=\"slider\"]",
+        "action": {
+          "type": "drag",
+          "target": "midpoint"
+        },
         "label": "env.speed",
         "icon": "lucide:gauge",
         "control": {
@@ -1685,6 +2027,9 @@
         "kind": "toggle",
         "conditional": false,
         "dom": "[role=\"switch\"], input[type=\"checkbox\"]",
+        "action": {
+          "type": "toggle"
+        },
         "label": "env.splash",
         "icon": "lucide:droplets",
         "control": {
@@ -1721,6 +2066,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "scene.intensity",
             "icon": "lucide:sun",
             "control": {
@@ -1735,6 +2084,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "scene.threshold",
             "icon": "lucide:sliders",
             "control": {
@@ -1749,6 +2102,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "scene.kernelSize",
             "icon": "lucide:circle",
             "control": {
@@ -1763,6 +2120,9 @@
             "kind": "toggle",
             "conditional": false,
             "dom": "[role=\"switch\"], input[type=\"checkbox\"]",
+            "action": {
+              "type": "toggle"
+            },
             "label": "scene.outline",
             "icon": "lucide:square",
             "control": {
@@ -1776,6 +2136,10 @@
         "kind": "slider",
         "conditional": false,
         "dom": "[role=\"slider\"]",
+        "action": {
+          "type": "drag",
+          "target": "midpoint"
+        },
         "label": "scene.vignette",
         "icon": "lucide:circle-dot",
         "control": {
@@ -1790,6 +2154,10 @@
         "kind": "slider",
         "conditional": false,
         "dom": "[role=\"slider\"]",
+        "action": {
+          "type": "drag",
+          "target": "midpoint"
+        },
         "label": "scene.sharpen",
         "icon": "lucide:focus",
         "control": {
@@ -1816,6 +2184,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "scene.grain",
             "icon": "lucide:grid-3x3",
             "control": {
@@ -1830,6 +2202,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "scene.chromatic",
             "icon": "lucide:rainbow",
             "control": {
@@ -1844,6 +2220,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "scene.glow",
             "icon": "lucide:sparkles",
             "control": {
@@ -1867,6 +2247,9 @@
             "kind": "toggle",
             "conditional": false,
             "dom": "[role=\"switch\"], input[type=\"checkbox\"]",
+            "action": {
+              "type": "toggle"
+            },
             "label": "scene.ssao",
             "icon": "lucide:box",
             "control": {
@@ -1878,6 +2261,10 @@
             "kind": "slider",
             "conditional": true,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "scene.ssaoStrength",
             "icon": "lucide:contrast",
             "control": {
@@ -1892,6 +2279,10 @@
             "kind": "slider",
             "conditional": true,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "scene.ssaoRadius",
             "icon": "lucide:circle-dot",
             "control": {
@@ -1906,6 +2297,10 @@
             "kind": "slider",
             "conditional": true,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "scene.ssaoSamples",
             "icon": "lucide:grid-3x3",
             "control": {
@@ -1944,6 +2339,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "scene.exposure",
             "icon": "lucide:lightbulb",
             "control": {
@@ -1958,6 +2357,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "scene.contrast",
             "icon": "lucide:contrast",
             "control": {
@@ -1972,6 +2375,9 @@
             "kind": "toggle",
             "conditional": false,
             "dom": "[role=\"switch\"], input[type=\"checkbox\"]",
+            "action": {
+              "type": "toggle"
+            },
             "label": "scene.celShading",
             "icon": "lucide:droplet",
             "control": {
@@ -1983,6 +2389,10 @@
             "kind": "slider",
             "conditional": true,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "scene.celColorLevels",
             "icon": "lucide:layers",
             "control": {
@@ -1997,6 +2407,10 @@
             "kind": "slider",
             "conditional": true,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "scene.celEdgeThreshold",
             "icon": "lucide:scan-line",
             "control": {
@@ -2011,6 +2425,10 @@
             "kind": "slider",
             "conditional": true,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "scene.celEdgeStrength",
             "icon": "lucide:pen-line",
             "control": {
@@ -2037,6 +2455,9 @@
         "kind": "toggle",
         "conditional": false,
         "dom": "[role=\"switch\"], input[type=\"checkbox\"]",
+        "action": {
+          "type": "toggle"
+        },
         "label": "motion.perceptionEnableAll",
         "control": {
           "bind": "perception.allEnabled"
@@ -2062,6 +2483,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "perception.headYawRange",
             "control": {
               "bind": "perception.headGazeMaxYaw",
@@ -2075,6 +2500,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "perception.headPitchRange",
             "control": {
               "bind": "perception.headGazeMaxPitch",
@@ -2100,6 +2529,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "perception.eyeYawRange",
             "control": {
               "bind": "perception.eyeGazeMaxYaw",
@@ -2113,6 +2546,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "perception.eyePitchRange",
             "control": {
               "bind": "perception.eyeGazeMaxPitch",
@@ -2126,6 +2563,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "perception.eyeSmooth",
             "control": {
               "bind": "perception.eyeGazeSmooth",
@@ -2151,6 +2592,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "perception.breathFreq",
             "control": {
               "bind": "perception.breathFrequency",
@@ -2164,6 +2609,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "perception.breathAmp",
             "control": {
               "bind": "perception.breathAmplitude",
@@ -2189,6 +2638,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "perception.blinkFreq",
             "control": {
               "bind": "perception.blinkFrequency",
@@ -2202,6 +2655,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "perception.blinkAmp",
             "control": {
               "bind": "perception.blinkAmplitude",
@@ -2244,6 +2701,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "motion.balanceSwayPeriod",
             "control": {
               "bind": "perception.balanceSwayPeriod",
@@ -2257,6 +2718,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "motion.balanceSwayAmplitude",
             "control": {
               "bind": "perception.balanceSwayAmplitude",
@@ -2287,6 +2752,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "motion.lipSyncSensitivity",
             "control": {
               "bind": "perception.lipSyncSensitivity",
@@ -2300,6 +2769,10 @@
             "kind": "slider",
             "conditional": false,
             "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
             "label": "motion.lipSyncIntensity",
             "control": {
               "bind": "perception.lipSyncIntensity",
@@ -2313,6 +2786,9 @@
             "kind": "toggle",
             "conditional": false,
             "dom": "[role=\"switch\"], input[type=\"checkbox\"]",
+            "action": {
+              "type": "toggle"
+            },
             "label": "motion.lipSyncMultiMorph",
             "control": {
               "bind": "perception.lipSyncMultiMorphEnabled"
@@ -2335,6 +2811,10 @@
         "kind": "slider",
         "conditional": false,
         "dom": "[role=\"slider\"]",
+        "action": {
+          "type": "drag",
+          "target": "midpoint"
+        },
         "label": "settings.perf.camSens",
         "icon": "lucide:move",
         "control": {
@@ -2354,6 +2834,9 @@
         "kind": "toggle",
         "conditional": false,
         "dom": "[role=\"switch\"], input[type=\"checkbox\"]",
+        "action": {
+          "type": "toggle"
+        },
         "label": "settings.perf.invertY",
         "icon": "lucide:flip-vertical",
         "control": {
@@ -2370,6 +2853,9 @@
         "kind": "toggle",
         "conditional": false,
         "dom": "[role=\"switch\"], input[type=\"checkbox\"]",
+        "action": {
+          "type": "toggle"
+        },
         "label": "settings.perf.autoCenter",
         "icon": "lucide:crosshair",
         "control": {
@@ -2396,6 +2882,9 @@
         "kind": "toggle",
         "conditional": false,
         "dom": "[role=\"switch\"], input[type=\"checkbox\"]",
+        "action": {
+          "type": "toggle"
+        },
         "label": "settings.perf.frameCap",
         "icon": "lucide:monitor-check",
         "control": {
@@ -2412,6 +2901,10 @@
         "kind": "slider",
         "conditional": false,
         "dom": "[role=\"slider\"]",
+        "action": {
+          "type": "drag",
+          "target": "midpoint"
+        },
         "label": "settings.perf.fpsCap",
         "icon": "lucide:gauge",
         "control": {
@@ -2431,6 +2924,10 @@
         "kind": "slider",
         "conditional": false,
         "dom": "[role=\"slider\"]",
+        "action": {
+          "type": "drag",
+          "target": "midpoint"
+        },
         "label": "settings.perf.renderScale",
         "icon": "lucide:scan",
         "control": {
@@ -2475,6 +2972,9 @@
         "kind": "toggle",
         "conditional": false,
         "dom": "[role=\"switch\"], input[type=\"checkbox\"]",
+        "action": {
+          "type": "toggle"
+        },
         "label": "settings.perf.defaultPhysics",
         "icon": "lucide:atom",
         "control": {
@@ -2491,6 +2991,9 @@
         "kind": "toggle",
         "conditional": false,
         "dom": "[role=\"switch\"], input[type=\"checkbox\"]",
+        "action": {
+          "type": "toggle"
+        },
         "label": "settings.perf.showFpsClock",
         "icon": "lucide:gauge",
         "control": {
@@ -2502,6 +3005,9 @@
         "kind": "toggle",
         "conditional": false,
         "dom": "[role=\"switch\"], input[type=\"checkbox\"]",
+        "action": {
+          "type": "toggle"
+        },
         "label": "settings.perf.showRuntimeBadge",
         "icon": "lucide:cpu",
         "control": {

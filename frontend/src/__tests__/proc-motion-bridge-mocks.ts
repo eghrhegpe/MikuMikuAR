@@ -201,29 +201,90 @@ export function mockProceduralMotion(s: ProcMockState) {
         get DEFAULT_PROC_STATE() {
             return {
                 mode: 'off' as const,
-                intensity: 0.5,
-                speed: 1.0,
-                boneToggles: {
-                    center: true,
-                    upper: true,
-                    upper2: true,
-                    waist: true,
-                    head: true,
-                    arm: true,
-                    groove: true,
-                    shoulder: true,
-                    allParent: true,
-                    wrist: true,
-                    footIk: true,
-                    blink: true,
-                    emotion: true,
-                },
                 bpmQuantizeEnabled: true,
-                vpdApplyEnabled: false,
-                interpOverride: 'auto' as const,
-                multiMorphEnabled: false,
                 eyeTrackingEnabled: true,
                 headTrackingEnabled: true,
+                params: {
+                    idle: {
+                        intensity: 0.5,
+                        speed: 1.0,
+                        boneToggles: {
+                            center: true,
+                            upper: true,
+                            upper2: true,
+                            waist: true,
+                            head: true,
+                            arm: true,
+                            groove: true,
+                            shoulder: true,
+                            allParent: true,
+                            wrist: true,
+                            footIk: true,
+                            blink: true,
+                            emotion: true,
+                        },
+                        vpdApplyEnabled: false,
+                        interpOverride: 'auto' as const,
+                    },
+                    autodance: {
+                        intensity: 0.5,
+                        speed: 1.0,
+                        boneToggles: {
+                            center: true,
+                            upper: true,
+                            upper2: true,
+                            waist: true,
+                            head: true,
+                            arm: true,
+                            groove: true,
+                            shoulder: true,
+                            allParent: true,
+                            wrist: true,
+                            footIk: true,
+                            blink: true,
+                            emotion: true,
+                        },
+                        vpdApplyEnabled: false,
+                        interpOverride: 'auto' as const,
+                    },
+                },
+            };
+        },
+        // [audit] 迁移函数（per-mode 结构），mock 提供最小实现：新结构透传，旧扁平拆到两模式
+        get migrateProcState() {
+            return (raw: Record<string, unknown>) => {
+                const d = this.DEFAULT_PROC_STATE;
+                const r = raw ?? {};
+                const base = {
+                    mode: r.mode ?? d.mode,
+                    bpmQuantizeEnabled: r.bpmQuantizeEnabled ?? d.bpmQuantizeEnabled,
+                    eyeTrackingEnabled: r.eyeTrackingEnabled ?? d.eyeTrackingEnabled,
+                    headTrackingEnabled: r.headTrackingEnabled ?? d.headTrackingEnabled,
+                };
+                if ((r.params as Record<string, unknown> | undefined)?.idle) {
+                    return {
+                        ...base,
+                        ...r,
+                        params: {
+                            idle: { ...d.params.idle, ...(r.params as any).idle },
+                            autodance: { ...d.params.autodance, ...(r.params as any).autodance },
+                        },
+                    };
+                }
+                const per = {
+                    intensity: r.intensity ?? d.params.idle.intensity,
+                    speed: r.speed ?? d.params.idle.speed,
+                    boneToggles: r.boneToggles ?? d.params.idle.boneToggles,
+                    vpdApplyEnabled: r.vpdApplyEnabled ?? d.params.idle.vpdApplyEnabled,
+                    interpOverride: r.interpOverride ?? d.params.idle.interpOverride,
+                };
+                return {
+                    ...base,
+                    params: {
+                        idle: { ...per, boneToggles: { ...(per as any).boneToggles } },
+                        autodance: { ...per, boneToggles: { ...(per as any).boneToggles } },
+                    },
+                };
             };
         },
         // 纯函数 — 真实实现

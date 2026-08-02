@@ -162,7 +162,10 @@ vi.mock('../../scene/env/_bridge/env-persist', () => ({
     cancelEnvPersistTimer: vi.fn(),
 }));
 vi.mock('../../scene/physics/ground-collision', () => ({ applyGroundCollision: vi.fn() }));
-vi.mock('../../motion-algos/procedural-motion', () => ({ DEFAULT_PROC_STATE: {} }));
+vi.mock('../../motion-algos/procedural-motion', () => ({
+    DEFAULT_PROC_STATE: {},
+    migrateProcState: (raw: unknown) => (raw ?? {}) as object,
+}));
 vi.mock('../../motion-algos/lipsync', () => ({ DEFAULT_LIPSYNC_STATE: {} }));
 
 import { serializeScene, deserializeScene, triggerAutoSaveImpl } from '../../scene/scene-serialize';
