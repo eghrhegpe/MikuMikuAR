@@ -2281,11 +2281,6 @@
         "icon": "lucide:sparkles",
         "children": [
           {
-            "id": "postprocess:optical:aa",
-            "kind": "custom",
-            "conditional": false
-          },
-          {
             "id": "postprocess:optical:grain",
             "kind": "slider",
             "conditional": false,

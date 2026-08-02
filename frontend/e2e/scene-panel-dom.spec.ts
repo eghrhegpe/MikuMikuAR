@@ -26,14 +26,15 @@ test.describe("Scene — DOM/overlay (vitePage, @dom)", { tag: ["@dom"] }, () =>
         await expect(page.getByTestId("folder:scene:physics")).toBeVisible();
     });
 
-    test("场景面板: 后处理区段含抗锯齿等选项（迁至环境菜单）", async ({ vitePage: page }) => {
+    test("场景面板: 后处理区段含颗粒/色差等选项（迁至环境菜单）", async ({ vitePage: page }) => {
         // [adr-111] 后处理（Bloom/DOF/色调映射）从场景菜单迁入环境菜单，故从 env 入口验证
+        // 抗锯齿已移至设置→图形页（settings-graphics.ts 唯一入口），后处理页不再挂载
         await page.keyboard.press("Escape");
         await page.waitForSelector("#sceneOverlay:not(.visible)", { timeout: 5000 });
         await page.click("#btnEnv");
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
         await page.getByTestId("folder:env:postprocess").click();
-        await expect(page.getByTestId("postprocess:optical:aa")).toBeVisible();
+        await expect(page.getByTestId("postprocess:optical:grain")).toBeVisible();
         await expect(page.getByTestId("postprocess:vignette")).toBeVisible();
     });
 

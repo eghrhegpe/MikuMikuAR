@@ -895,6 +895,8 @@ export const en: Record<string, string> = {
     'scene.toastSavePresetFailed': 'Failed to save render preset',
     'scene.statusPresetSaved': '✓ Preset saved: {trimmed}',
     'scene.statusPresetApplied': '✓ Preset: {name}',
+    'scene.resetRenderDefaults': 'Reset Post-Processing to Defaults',
+    'scene.statusRenderDefaultsReset': '✓ Post-processing restored to defaults',
 
     // ===== Library =====
     'library.recent': 'Recent',

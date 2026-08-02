@@ -905,6 +905,8 @@ export const zhTW: Record<string, string> = {
     'scene.toastSavePresetFailed': '儲存渲染預設失敗',
     'scene.statusPresetSaved': '✓ 預設已儲存: {trimmed}',
     'scene.statusPresetApplied': '✓ 預設: {name}',
+    'scene.resetRenderDefaults': '還原後處理預設值',
+    'scene.statusRenderDefaultsReset': '✓ 後處理已還原預設值',
 
     // —— Scene Physics ——
     'scene.gravityStrength': '重力強度（WASM + 布料）',

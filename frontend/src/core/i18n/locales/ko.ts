@@ -909,6 +909,8 @@ export const ko: Record<string, string> = {
     'scene.toastSavePresetFailed': '렌더 프리셋 저장에 실패했습니다',
     'scene.statusPresetSaved': '✓ 프리셋 저장됨: {trimmed}',
     'scene.statusPresetApplied': '✓ 프리셋 적용됨: {name}',
+    'scene.resetRenderDefaults': '후처리를 기본값으로 되돌리기',
+    'scene.statusRenderDefaultsReset': '✓ 후처리를 기본값으로 되돌렸습니다',
 
     // —— Scene Physics ——
     'scene.gravityStrength': '중력 강도 (WASM + 천)',
