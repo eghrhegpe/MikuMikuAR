@@ -151,7 +151,7 @@
 | **P1（本季度）** ✅ **已完成** | Motion Override（逐骨骼） | 2.1 | 中 | `bone-override.ts` + `motion-override-levels.ts` + 持久化；POC 通过后直接落地 |
 | **P1 / P2** ✅ **已完成** | Pose Studio / 拍照模式 | 2.5 | 中 | `motion-pose-levels.ts`（构图辅助+DOF+T-pose/A-pose 子开关+批量截图+水印） |
 | **P2（中期）** ✅ **已完成** | 道具挂载 Accessory | 2.4 | 中 | `accessory.ts`（attachToBone/detachFromBone）+ `scene-prop-levels.ts`（UI）；POC 通过后直接落地 |
-| **按需发起（单独立项 ADR-061.R）** ✅ **已完成** | 布娃娃 Ragdoll（MVP） | 3A | 高 | `xpbd-ragdoll.ts` + `ragdoll-manager.ts` + 接入 scene/model-manager/physics-levels/menu |
+| **按需发起（单独立项 ADR-061.1）** ✅ **已完成** | 布娃娃 Ragdoll（MVP） | 3A | 高 | `xpbd-ragdoll.ts` + `ragdoll-manager.ts` + 接入 scene/model-manager/physics-levels/menu |
 
 > 顺序逻辑：先以**半天 POC** 解锁骨骼兼容性闸门，再排 Motion Override（P1）；Pose Studio 优先级取决于用户场景核实（含 T-pose/A-pose 子开关）；Accessory 待 POC 通过后入 P2；Ragdoll 移出主路线，按需单独立项。
 
