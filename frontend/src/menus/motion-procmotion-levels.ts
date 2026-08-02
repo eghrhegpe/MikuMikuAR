@@ -17,7 +17,6 @@ import { getProcMotionBoneCategories } from '../motion-algos/procedural-motion';
 import type { ProcMotionState } from '../motion-algos/procedural-motion';
 import { DEFAULT_PROC_STATE } from '../motion-algos/procedural-motion';
 import { t } from '../core/i18n/t'; // [doc:adr-059]
-import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
 import {
     getAllLoadableProcMotions,
@@ -65,7 +64,7 @@ function _setProcState(modelId: string, patch: Partial<ProcMotionState>): void {
     }
 }
 
-function buildProcMotionSchema(modelId?: string): MenuNode[] {
+export function buildProcMotionSchema(modelId?: string): MenuNode[] {
     const st = _getProcState(modelId);
 
     return [
@@ -298,18 +297,6 @@ function buildProcMotionSchema(modelId?: string): MenuNode[] {
     ] satisfies MenuNode[];
 }
 
-export function buildProcMotionLevel(modelId?: string): PopupLevel {
-    return {
-        label: t('motion.procMotion'),
-        dir: '',
-        items: [],
-        renderCustom: (container) => {
-            return renderMenu(buildProcMotionSchema(modelId), container);
-        },
-    };
-}
-
-// ═══════════════════════════════════════════════════════════
 // [doc:adr-207] 程序化动作库子页（加载/卸载）
 // ═══════════════════════════════════════════════════════════
 
@@ -318,6 +305,11 @@ const PROC_LABELS: Record<LoadableProcId, () => string> = {
     idle: () => t('motion.modeIdle'),
     autodance: () => t('motion.modeAutodance'),
 };
+
+/** [doc:adr-207] 程序化动作 ID → 显示名（跨模块复用，避免标签逻辑重复）。 */
+export function procLabel(id: LoadableProcId): string {
+    return PROC_LABELS[id]();
+}
 
 export function buildProcLibraryLevel(): PopupLevel {
     return {
