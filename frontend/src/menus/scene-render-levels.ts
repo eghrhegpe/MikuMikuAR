@@ -169,48 +169,8 @@ export function buildPresetScenesLevel(): PopupLevel {
 // ======== Post Process Schema (ADR-093) ========
 // 后处理面板迁移为 schema 驱动：Bloom/DoF/Vignette/Sharpen/光学/环境/色调映射
 // 复合状态（dofAperture+dofEnabled 等）由 bind 写主字段、onChange 写附加字段；
-// 抗锯齿/色调映射因复合状态或 number 类型 modeSlider，用 custom 节点保留原 addModeSlider 调用。
-
-/** 抗锯齿控件 — 复合状态（fxaaEnabled + msaaSamples），用 custom 节点保留原 addModeSlider 调用 */
-function _renderAntiAliasingControl(container: HTMLElement): void {
-    const state = getRenderState();
-    addModeSlider(
-        container,
-        t('scene.antialiasing'),
-        [
-            { value: 'off', label: t('scene.off') },
-            { value: 'fxaa', label: 'FXAA' },
-            { value: '2x', label: '2x' },
-            { value: '4x', label: '4x' },
-            { value: '8x', label: '8x' },
-        ],
-        state.msaaSamples > 1 ? `${state.msaaSamples}x` : state.fxaaEnabled ? 'fxaa' : 'off',
-        (v) => {
-            const updates: Partial<RenderState> = {};
-            if (v === 'off') {
-                updates.fxaaEnabled = false;
-                updates.msaaSamples = 1;
-            } else if (v === 'fxaa') {
-                updates.fxaaEnabled = true;
-                updates.msaaSamples = 1;
-            } else {
-                updates.fxaaEnabled = false;
-                updates.msaaSamples = parseInt(v, 10);
-            }
-            setRenderState(updates);
-            triggerAutoSave();
-        },
-        'lucide:scan-line',
-        undefined,
-        {
-            bind: () => {
-                const s = getRenderState();
-                return s.msaaSamples > 1 ? `${s.msaaSamples}x` : s.fxaaEnabled ? 'fxaa' : 'off';
-            },
-        },
-        'postprocess:optical:aa'
-    );
-}
+// 色调映射因 number 类型 modeSlider，用 custom 节点保留原 addModeSlider 调用。
+// 抗锯齿已移至设置→图形页（settings-graphics.ts，唯一入口），此处不再挂载。
 
 /** 色调映射模式控件 — value 是 number，schema modeSlider 仅支持 string，用 custom 节点 */
 function _renderToneMappingControl(container: HTMLElement): void {
@@ -328,7 +288,7 @@ export function buildPostProcessCoreSchema(): MenuNode[] {
                 onChange: () => triggerAutoSave(),
             },
         },
-        // ===== 视觉效果折叠头（抗锯齿/颗粒/色差/辉光） =====
+        // ===== 视觉效果折叠头（颗粒/色差/辉光；抗锯齿已移至设置→图形页） =====
         {
             id: 'postprocess:optical',
             kind: 'folder',
@@ -336,11 +296,6 @@ export function buildPostProcessCoreSchema(): MenuNode[] {
             icon: 'lucide:sparkles',
             defaultOpen: false,
             children: [
-                {
-                    id: 'postprocess:optical:aa',
-                    kind: 'custom',
-                    renderCustom: (c) => _renderAntiAliasingControl(c),
-                },
                 {
                     id: 'postprocess:optical:grain',
                     kind: 'slider',
@@ -581,6 +536,23 @@ export function buildPostProcessLevel(): PopupLevel {
             }
             // 滤镜预设芯片组
             _renderFilterPresetChips(container);
+            // 还原默认：一键恢复后处理出厂值（与滤镜芯片不同，是真正的全量还原）
+            cardContainer(container, (c) => {
+                slideRow(
+                    c,
+                    'lucide:rotate-ccw',
+                    t('scene.resetRenderDefaults'),
+                    false,
+                    () => {
+                        setRenderState(defaultRenderState());
+                        triggerAutoSave();
+                        reRenderSceneMenu();
+                        showInfoToast(t('scene.statusRenderDefaultsReset'));
+                    },
+                    undefined,
+                    'postprocess:reset-defaults'
+                );
+            });
             if (disposes.length > 0) {
                 return () => {
                     for (const d of disposes) {

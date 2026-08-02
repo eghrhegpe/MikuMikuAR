@@ -81,4 +81,13 @@ test.describe("Desktop Capabilities — DOM 入口 (@dom)", { tag: ["@dom"] }, (
 
         await expect(page.getByTestId("folder:settings:paths")).toBeVisible();
     });
+
+    test("设置面板: 抗锯齿档位选择器可见（AA 唯一入口）", async ({ vitePage: page }) => {
+        await dismissErrorDialog(page);
+        await page.click("#btnSettings");
+        await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
+        await page.getByTestId("folder:settings:graphics").click();
+
+        await expect(page.getByTestId("settings:graphics:aa")).toBeVisible();
+    });
 });

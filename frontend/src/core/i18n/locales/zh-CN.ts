@@ -891,6 +891,8 @@ export const zhCN: Record<string, string> = {
     'scene.toastSavePresetFailed': '保存渲染预设失败',
     'scene.statusPresetSaved': '✓ 预设已保存: {trimmed}',
     'scene.statusPresetApplied': '✓ 预设: {name}',
+    'scene.resetRenderDefaults': '还原后处理默认值',
+    'scene.statusRenderDefaultsReset': '✓ 后处理已还原默认值',
 
     // ===== Library =====
     'library.recent': '最近打开',

@@ -6,7 +6,7 @@ import { t } from '../core/i18n/t';
 import { uiState, cardContainer, applyHudVisibility } from '../core/config';
 import { feedbackInfo } from '../core/feedback';
 import { showInfoToast } from '../core/toast';
-import { slideRow, addSectionTitle, addInlineToggleRow } from '../core/ui-helpers';
+import { slideRow, addSectionTitle, addInlineToggleRow, addModeSlider } from '../core/ui-helpers';
 import { swallowError } from '../core/async';
 import { getCurrentRenderingMenu } from './menu';
 import {
@@ -231,8 +231,50 @@ export function buildEffectsSchema(): MenuNode[] {
                     setRenderState({ ssaoEnabled: v })
                 );
                 addSectionTitle(c, t('settings.effects.antialiasing'));
-                toggle(t('settings.perf.fxaa'), rs.fxaaEnabled, (v) =>
-                    setRenderState({ fxaaEnabled: v })
+                // AA 唯一入口（ADR-111 后处理页移除 AA）：完整档位 off/FXAA/2x/4x/8x
+                addModeSlider(
+                    c,
+                    t('scene.antialiasing'),
+                    [
+                        { value: 'off', label: t('scene.off') },
+                        { value: 'fxaa', label: 'FXAA' },
+                        { value: '2x', label: '2x' },
+                        { value: '4x', label: '4x' },
+                        { value: '8x', label: '8x' },
+                    ],
+                    rs.msaaSamples > 1
+                        ? `${rs.msaaSamples}x`
+                        : rs.fxaaEnabled
+                          ? 'fxaa'
+                          : 'off',
+                    (v) => {
+                        if (v === 'off') {
+                            setRenderState({ fxaaEnabled: false, msaaSamples: 1 });
+                        } else if (v === 'fxaa') {
+                            setRenderState({ fxaaEnabled: true, msaaSamples: 1 });
+                        } else {
+                            setRenderState({ fxaaEnabled: false, msaaSamples: parseInt(v, 10) });
+                        }
+                        showInfoToast(
+                            t('settings.toggleState', {
+                                label: t('scene.antialiasing'),
+                                state: v,
+                            })
+                        );
+                    },
+                    'lucide:scan-line',
+                    undefined,
+                    {
+                        bind: () => {
+                            const s = getRenderState();
+                            return s.msaaSamples > 1
+                                ? `${s.msaaSamples}x`
+                                : s.fxaaEnabled
+                                  ? 'fxaa'
+                                  : 'off';
+                        },
+                    },
+                    'settings:graphics:aa'
                 );
                 addSectionTitle(c, t('settings.effects.postprocess'));
                 toggle(t('settings.perf.dof'), rs.dofEnabled, (v) =>

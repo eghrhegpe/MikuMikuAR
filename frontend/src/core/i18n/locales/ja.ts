@@ -910,6 +910,8 @@ export const ja: Record<string, string> = {
     'scene.toastSavePresetFailed': 'レンダープリセットの保存に失敗しました',
     'scene.statusPresetSaved': '✓ プリセットを保存しました: {trimmed}',
     'scene.statusPresetApplied': '✓ プリセット: {name}',
+    'scene.resetRenderDefaults': '後処理をデフォルトに戻す',
+    'scene.statusRenderDefaultsReset': '✓ 後処理をデフォルトに戻しました',
 
     // —— Scene Physics ——
     'scene.gravityStrength': '重力強度（WASM + 布）',
