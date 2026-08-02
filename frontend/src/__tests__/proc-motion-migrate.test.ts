@@ -61,4 +61,31 @@ describe('migrateProcState（旧扁平 → per-mode 嵌套）', () => {
         expect(s.params.idle.boneToggles.arm).toBe(true); // 默认
         expect(s.params.autodance.intensity).toBe(0.7);
     });
+
+    it('P3#1 回归：新结构 boneToggles 部分覆盖时逐类别补默认（不静默关闭其余类别）', () => {
+        const s = migrateProcState({
+            mode: 'idle' as const,
+            params: {
+                idle: { intensity: 0.3, boneToggles: { arm: false } as Record<string, boolean> },
+                autodance: { intensity: 0.9, boneToggles: { wrist: false } as Record<string, boolean> },
+            },
+        });
+        // idle：仅 arm 显式关闭，其余类别应保持默认 true（修复前其余类别变 undefined）
+        expect(s.params.idle.boneToggles.arm).toBe(false);
+        expect(s.params.idle.boneToggles.center).toBe(true);
+        expect(s.params.idle.boneToggles.footIk).toBe(true);
+        // autodance：仅 wrist 关闭，其余默认
+        expect(s.params.autodance.boneToggles.wrist).toBe(false);
+        expect(s.params.autodance.boneToggles.center).toBe(true);
+    });
+
+    it('P3#1 回归：新结构两模式 boneToggles 引用独立（不共享 _fallbackParams）', () => {
+        const s = migrateProcState({
+            mode: 'idle' as const,
+            params: { idle: {}, autodance: {} },
+        });
+        expect(s.params.idle.boneToggles).not.toBe(s.params.autodance.boneToggles);
+        s.params.idle.boneToggles.arm = false;
+        expect(s.params.autodance.boneToggles.arm).toBe(true);
+    });
 });

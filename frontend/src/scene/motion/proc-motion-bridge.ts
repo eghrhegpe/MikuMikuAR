@@ -199,11 +199,8 @@ class ProcMotionController {
         );
         let buf: ArrayBuffer;
 
-        // Issue #2: bpm 无效时直接抛错，保持状态一致
+        // Issue #2: bpm 无效时直接抛错，保持状态一致（throw 移入 try 内，见下）
         const bpmValid = bpm !== null && bpm !== undefined && bpm > 0 && Number.isFinite(bpm);
-        if (targetMode === 'autodance' && !bpmValid) {
-            throw new Error('proc-motion: autodance 模式需要有效 BPM，当前 BPM 无效');
-        }
         if (targetMode === 'autodance' && bpmValid) {
             // [audit] per-mode：生成用 autodance 专属参数
             buf = generateAutoDanceVmd(
@@ -224,6 +221,11 @@ class ProcMotionController {
         // [fix] _procVmdActive/procModelId 移至成功分支内赋值（P1: 防止 early return 后状态泄漏）
         const isExplicitTarget = modelIdOverride !== undefined;
         try {
+            // [fix:P2#2] bpm 校验 throw 移入 try 内：throw 后 finally 仍会复位 _starting，
+            // 避免 try 外 throw 导致 _starting 永久为 true、程序化动作锁死（此前 L204 在 try 外抛错）。
+            if (targetMode === 'autodance' && !bpmValid) {
+                throw new Error('proc-motion: autodance 模式需要有效 BPM，当前 BPM 无效');
+            }
             // D4: 仅在未显式指定目标时检查焦点切换，避免无意义的 VMD 生成
             if (!isExplicitTarget && focusedModelId !== modelIdAtStart) {
                 logWarn('proc-motion', '焦点已在生成期间切换，取消本次程序化动作');
@@ -328,7 +330,11 @@ class ProcMotionController {
     }
 
     async updateProcMotion(): Promise<void> {
-        const st = this._refProcState(focusedModelId ?? undefined);
+        // [fix:P2#1] 统一以当前焦点模型为目标：自动重生成也读 per-model 参数。
+        // 此前 _startProcMotion 不带 modelIdOverride 会退化为全局 activeMotion/fallback 参数，
+        // 覆盖用户在模型面板设置的 per-model 强度/速度/骨骼微动。
+        const targetModelId = focusedModelId ?? undefined;
+        const st = this._refProcState(targetModelId);
         if (st.mode === 'off') {
             if (this._procVmdActive()) {
                 this.stopProcMotion();
@@ -362,14 +368,14 @@ class ProcMotionController {
                 this._activeKind !== 'autodance' ||
                 Math.abs(bpm - this._lastBeatBpm) > 10
             ) {
-                await this._startProcMotion('autodance', bpm);
+                await this._startProcMotion('autodance', bpm, targetModelId);
             }
             return;
         }
 
         if (wantIdle && !hasUserVmd) {
             if (!this._procVmdActive() || this._activeKind !== 'idle') {
-                await this._startProcMotion('idle');
+                await this._startProcMotion('idle', undefined, targetModelId);
             }
             return;
         }
