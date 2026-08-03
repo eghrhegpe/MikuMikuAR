@@ -127,9 +127,9 @@ export interface SceneActions {
     /** 释放音频（scene/manager 调用），由 outfit 注册 */
     disposeAudio: () => void;
     /** 读取活跃动作（model-loader 调用），由 scene/motion 注册 */
-    getActiveMotion: () => unknown;
+    getActiveMotion: () => { vmdPath?: string; vmdName?: string } | null;
     /** 读取场景动作列表（model-loader 调用），由 scene/motion 注册 */
-    getSceneMotions: () => unknown[];
+    getSceneMotions: () => { id?: string }[];
     /** 读取动作生成器（model-loader 调用），由 scene/motion 注册 */
     getMotionGen: () => number;
     /** 解析动作兼容性（model-loader 调用），由 scene/motion 注册 */
@@ -167,8 +167,16 @@ export function registerSceneAction<K extends keyof SceneActions>(
 }
 
 /** 读取单个场景操作（core/action-defs 侧调用；未注册返回 undefined） */
+const _missingWarned = new Set<string>();
+
 export function getSceneAction<K extends keyof SceneActions>(
     key: K
 ): SceneActions[K] | undefined {
-    return _sceneActions.get(key) as SceneActions[K] | undefined;
+    const fn = _sceneActions.get(key) as SceneActions[K] | undefined;
+    // [doc:adr-238] 缺失注册一次性告警：防重构破坏导致静默跳过（如 dispose 桥缺失泄漏）。
+    if (!fn && !_missingWarned.has(key)) {
+        _missingWarned.add(key);
+        console.warn(`[scene-action-bridge] '${key}' 未注册——调用将静默跳过`);
+    }
+    return fn;
 }

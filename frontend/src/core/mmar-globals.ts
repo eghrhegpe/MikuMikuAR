@@ -156,8 +156,8 @@ export async function refreshSceneSnapshot(): Promise<void> {
 
     // 活跃动作
     try {
-        const { getActiveMotion } = await import('../scene/motion/motion-intent');
-        const motion = getActiveMotion();
+        // [doc:adr-238] getActiveMotion 经 scene-action-bridge（motion-intent 注册）
+        const motion = getSceneAction('getActiveMotion')?.();
         if (motion) {
             snapshot.activeMotion = motion.vmdName;
         }
