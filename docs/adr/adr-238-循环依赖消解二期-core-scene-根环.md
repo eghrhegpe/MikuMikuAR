@@ -1,6 +1,6 @@
 # ADR-238: 循环依赖消解第二期 —— core→scene 根环与 motion/outfit 互依赖拆解
 
-> **状态**: 📝 规划（2026-08-03 由 `check:circular --strict` 实测 21 个新增环立项；ADR-236 Phase 1 已解 render↔manager，本 ADR 承接其余 21 环）
+> **状态**: 🟡 实施中（Phase 1 ✅ 已实施 21→17；Phase 2 已实测否决「目录搬迁」路线，确认注册表化为唯一正解，前置须处理 `core→menus` 既有边；2026-08-03 更新）
 > **日期**: 2026-08-03
 >
 > **编号**: 238
@@ -95,7 +95,7 @@ outfit 2-环： scene/manager → outfit → scene/manager                      
 | 阶段 | 切断的边 | 实测/预期 | 边数 |
 |------|----------|-----------|------|
 | Phase 1（✅ 已实施） | `motion-algos → scene/motion`（type-only） | 21 → **17**（消 4 环） | 1 |
-| Phase 2 | `core → scene`（根因一，35 条） | 17 → **8**（消 9 个 core 系环） | 35 |
+| Phase 2（🟡 实施中） | `core → scene`（根因一，35 条）+ 前置 `core → menus`（约 10 条） | 17 → **8**（消 9 个 core 系环） | 35 |
 | Phase 3 | `scene/motion → menus`（2 条）+ `scene/motion → scene`（2 条）——簇反向边 | 8 → **1**（消 7 个 scene 系环） | 4 |
 | Phase 4 | `scene/manager ↔ outfit`（根因三） | 1 → **0** | 2（双向） |
 | **合计** | | **21 → 0** | **42** |
@@ -125,6 +125,10 @@ outfit 2-环： scene/manager → outfit → scene/manager                      
 - **拆法（依赖反转 + 注入，不动运行期行为）**：
   1. **动作定义迁移（13 条边，最大簇）**：`core/action-defs/*` 与 `core/ai/action-registry-defs.ts` 改为——core 只定义「动作 id / handler 类型 / 注册表接口（`registerAction(id, handler)` + `ActionContext`）」；scene 侧各模块在 bootstrap 时注册 handler（handler 内部 import scene 符号）。迁移后 `core/action-defs` 不再 import `scene/*`。
   2. **启动/调试/事件层 DI（其余 22 条边）**：`core/init.ts`、`dev-hooks.ts`、`events.ts`、`render-loop.ts`、`load-manager.ts`、`mmar-globals.ts`、`shortcut-app.ts` 对 `scene` 单例的 import，改为由 scene 层在启动时**把实例/回调注入 core**（构造函数参数 / setter / 事件订阅），core 只持接口或 `unknown` 句柄。
+- **⚠️ 2026-08-03 实测：整体「目录搬迁」路线否决（勿再走）**：曾尝试 `git mv core/action-defs → menus/action-defs`（含 `core/ai/action-registry-defs.ts`），结果**总环数 29 → 34 恶化**：
+  - 白名单环 12 → **2**（10 个被修复，含 `core→scene→core` 根环——迁移确实断开了 `core→scene` 直连边，这是实质进展）；
+  - 但新增环 17 → **32**：因 `core→menus` 既有边（`core/config.ts` export `menu-stack-registry`、`core/events.ts` import `menu-overlay` 等约 10 条）仍在，action-defs 搬入 menus 后新增 `menus→outfit/library` 出边，暴露 `core→menus→…→core` 隐藏长环。
+  - **结构性教训**：`core/action-defs` 的 execute 闭包同时依赖 `scene`+`menus`+`outfit`+`library` 多域（如 `motion-actions.ts` 同时 import `scene/motion/*`、`menus/motion-popup`、`outfit/audio`、`library/library-path`），**目录级搬迁到任何位置都会制造「应用层↔domain」双向环**——环检测是目录粒度，边随文件走。唯一正解是注册表化（定义留 core，execute 实现按域下沉注册），且**前置必须先切断 `core→menus` 反向边**（约 10 条，`core/config.ts`/`events.ts`/`init.ts`/`dev-hooks.ts`/`drop-import.ts`），否则 core 无法回归叶子。已回退该实验（工作区恢复 17+12 基线）。
 - **风险**：中——涉及启动链路（`init.ts`/`dev-hooks.ts`/`render-loop.ts`）与动作分发，须保证注入时序与 ADR-236「改前先 commit、独立 commit」纪律；参照 `texture-lru` 下沉先例。
 - **验证**：`check:circular --strict` 应剩 **8 环**（7 个 scene 系 + ⑩）；`tsc --noEmit` + `vitest`（init / dev-hooks / action-registry 相关 4 文件全绿）。
 

@@ -1,6 +1,6 @@
 # ADR-237: 超限模块拆分计划 —— 250LOC 天花板的优先级拆解路线图
 
-> **状态**: 📝 规划（2026-08-03 审计摸查后登记；P1/P2 可随时实施，P3 需独立子 ADR）
+> **状态**: ✅ 收口（2026-08-03 登记；P1 c88aea48 / P2 2f656432 已完成，P3 需独立子 ADR 评估，P4 维持不拆）
 > **日期**: 2026-08-03
 >
 > **编号**: 237
@@ -24,36 +24,38 @@
 | `perception.ts` | 1155 | ✅ 已拆 | 10 文件（audit round-8），范本 |
 | `proc-motion-autodance.ts` | 540 | ✅ 148 | 已瘦身 + proc-motion-bridge 测试覆盖 |
 | `lighting.ts` | 1229 | 549 | 已拆一轮（transitionLighting → lighting-tween.ts），结构清晰 |
-| `vmd-layers.ts` | 611 | 624 | 未拆，`_rebuildCompositeAnimation` 210 行单函数 |
-| `proc-motion-bridge.ts` | 448 | 736 | 未拆，`ProcMotionController` 类 575 行 |
-| `env-water.ts` | — | 1569 | 最大超限，内联状态多 |
+| `vmd-layers.ts` | 611 | 624 | ✅ 已拆（2f656432）| `_rebuildCompositeAnimation` 210 行拆 4 函数（Fallback/Composite/tryWasmBlender + 调度入口） |
+| `proc-motion-bridge.ts` | 448 | 736 | ✅ 已拆（c88aea48）| 3 文件：bridge 135 转发层 / controller 392 / params 289 |
+| `env-water.ts` | — | 1569 | 📋 未动 | 最大超限，内联状态多，需独立子 ADR |
 
 **结论**：拆分先例已建立（perception/autodance），剩余模块按 ROI 排序可安全推进。
 
 ## 2. 决策：按 ROI 排序的拆分优先级
 
-### P1 — proc-motion-bridge.ts 拆类（低风险高收益）
+### P1 — proc-motion-bridge.ts 拆类（低风险高收益）✅ 已完成（c88aea48）
 
-- **目标**：736 → ~350 行
+- **目标**：736 → 135 转发层 + 2 新文件
 - **拆法**：`ProcMotionController` 类（65-639 行，575 行单类）按职责拆 3 文件：
-  - `proc-motion-controller.ts` — 状态机核心（`_startProcMotion`/`updateProcMotion`/`stopProcMotion`/`dispose`）
-  - `proc-motion-setup.ts` — 启动/重生成（`regenerateProcMotion`/`createProcBeatDetector`）
-  - `proc-motion-params.ts` — setter 群（`setProcMotionMode`/`setProcMotionIntensity`/`setBpmQuantizeEnabled` 等 18 个）
-- **工具**：`npm run codemod move-function`（AST 感知）移方法；export 层（653-736 的 26 个薄转发函数）**保持原样**
+  - `proc-motion-controller.ts`（392 行）— 状态机核心 + setup（`ProcMotionControllerBase`：`_startProcMotion`/`updateProcMotion`/`stopProcMotion`/`dispose`/`createProcBeatDetector`/`regenerateProcMotion`）
+  - `proc-motion-params.ts`（289 行）— `ProcMotionParamsMixin` 混入 setter 群（`setProcMotionMode`/`setProcMotionIntensity`/`setBpmQuantizeEnabled` 等 18 个）
+  - `proc-motion-bridge.ts`（135 行）— 保持原样的薄转发 export 层
+  - **实施偏差**：原计划 3 新文件（controller/setup/params），实际 setup 逻辑并入 controller，只产生 2 新文件（mix-in 模式更省事，转发层零改动）
+- **工具**：`npm run codemod move-function`（AST 感知）移方法；export 层保持原样
 - **风险**：低——转发层不动，调用方零改动；参照 perception 拆分先例
 - **验证**：proc-motion-bridge 测试（lifecycle/state/toggles/tracking 4 文件）+ `check:funcmap`
 
-### P2 — vmd-layers.ts 拆函数（中风险）
+### P2 — vmd-layers.ts 拆函数（中风险）✅ 已完成（2f656432）
 
-- **目标**：624 → ~400 行
-- **拆法**：`_rebuildCompositeAnimation`（402-612，210 行）按路径拆 3 函数：
-  - `_rebuildFallback` — 无图层/单图层回退路径（447-470）
-  - `_rebuildComposite` — 多动画 `MmdCompositeAnimation` 合成（472-522, 584-607）
-  - `_rebuildWasmBlender` — WASM blender 路径 + 失败降级（524-582）
-- **风险**：中——函数间共享 `modelId`/`layersSnapshot`/`gen` 状态，需显式传参；`gen` 校验散布 4 处需保持
+- **目标**：624 行单函数 210 行 → 四函数拆分（实测 668 行，因拆分注释与边界略有上浮）
+- **拆法**：`_rebuildCompositeAnimation`（402-612，210 行）按路径拆 4 函数：
+  - `_rebuildCompositeAnimation` — 调度入口（模式分发 + gen 校验）
+  - `_rebuildFallback` — 无图层/单图层回退路径
+  - `_rebuildComposite` — 多动画 `MmdCompositeAnimation` 合成
+  - `_tryWasmBlender` — WASM blender 路径 + 失败降级（动态 import，避免与 wasm-layers-blender 静态循环，ADR-236）
+- **风险**：中——函数间共享 `modelId`/`layersSnapshot`/`gen` 状态，已显式传参；`gen` 校验保持
 - **验证**：vmd-layers 测试（dispose/filter 2 文件 14 用例）+ `check:funcmap`
 
-### P3 — env-water.ts 拆模块（高风险，需独立子 ADR）
+### P3 — env-water.ts 拆模块（高风险，需独立子 ADR）📋 待单独立项评估
 
 - **目标**：1569 → ~900 行
 - **拆法**：按 env 子系统先例（env-impl/env-water/env-terrain 拆分模式）拆 3 模块：
@@ -64,10 +66,11 @@
 - **前置**：写独立子 ADR（触及 ADR-062/115/138 决策边界）；拆分时复核 `getScene()` null guard（历史 P1 已修，拆时验证不回归）
 - **验证**：env 子系统全量测试 + 视觉回归（水面默认值逐像素一致）
 
-### P4 — lighting.ts 维持（不拆）
+### P4 — lighting.ts 维持（不拆）⛔ 确认维持
 
 - 549 行，已拆一轮，31 符号结构清晰（init/set/transition/dispose 四大块）
 - 结论：**为拆而拆无收益**，维持现状；`transitionLighting` 已独立至 lighting-tween.ts
+- 2026-08-03 收口复核：未再增长，维持决策不变
 
 ## 3. 拆分纪律（对齐项目规范）
 

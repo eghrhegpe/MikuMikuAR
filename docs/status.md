@@ -15,8 +15,8 @@
 
 | ADR | 主题 | 状态 |
 |-----|------|------|
-| ADR-238 | 循环依赖消解第二期 —— core→scene 根环与 motion/outfit 互依赖拆解 | 📝 规划（2026-08-03 由 `check:circular --strict` 实测 21 个新增环立项；ADR-236 Phase 1 已解 render↔manager，本 ADR 承接其余 21 环） |
-| ADR-237 | 超限模块拆分计划 —— 250LOC 天花板的优先级拆解路线图 | 📝 规划（2026-08-03 审计摸查后登记；P1/P2 可随时实施，P3 需独立子 ADR） |
+| ADR-238 | 循环依赖消解第二期 —— core→scene 根环与 motion/outfit 互依赖拆解 | 🟡 实施中（Phase 1 ✅ 已实施 21→17；Phase 2 已实测否决「目录搬迁」路线，确认注册表化为唯一正解，前置须处理 `core→menus` 既有边；2026-08-03 更新） |
+| ADR-237 | 超限模块拆分计划 —— 250LOC 天花板的优先级拆解路线图 | ✅ 收口（2026-08-03 登记；P1 c88aea48 / P2 2f656432 已完成，P3 需独立子 ADR 评估，P4 维持不拆） |
 | ADR-236 | 循环依赖消解 — scene/render ↔ scene/manager 互依赖拆解 | 部分实施 — render↔manager 互依赖已拆解（2026-08-03，texture-lru 下沉 scene/shared，互环归零）；剩余 21 个新增环属其他模块（motion-algos↔scene/motion 等），门禁转正待整体环归零 |
 | ADR-235 | 保存机制现状与张力登记 —— 双权威源 / 同步写假设 / 全量 vs 增量 / 迁移不对称 | ✅ 已完成（2026-08-02 落地登记 + Web 端退出兜底修复） |
 | ADR-234 | env-state ↔ Go EnvState 字段 parity 防线 —— 用检查脚本终结「TS 加字段、Go 忘同步」 | ✅ 已完成（2026-08-02 落地，check:docs 全链绿） |
