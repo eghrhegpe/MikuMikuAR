@@ -5,7 +5,7 @@
 >
 > **编号**: 230
 >
-> **关联**: [ADR-218](adr-218-knowledge-base-governance.md)（知识卡分层治理）、[ADR-191](adr-191-god-barrel-debarreling.md)（神桶去桶化，同一「去重/分层」哲学）、[ADR-225](adr-225-docs-partition-indexes.md)（分区索引枢纽）、[ADR-229](adr-229-e2e-automation-advancement.md)（E2E 自动化推进）
+> **关联**: [ADR-218](adr-218-knowledge-base-governance.md)（知识卡分层治理）、[ADR-191](adr-191-god-barrel-debarreling.md)（神桶去桶化，同一「去重/分层」哲学）、[ADR-225](adr-225-web-pages-path-reallocation.md)（Web 部署路径重分配——分区索引枢纽）、[ADR-229](adr-229-e2e-automation-advancement.md)（E2E 自动化推进）
 >
 > **来源**: 2026-08-02 十轮文档抽样审查中，新增 7 个文档生成脚本（gen-routes / gen-knowledge-adr / gen-knowledge-tests / gen-guide-gap / gen-knowledge-h1 / gen-knowledge-graph / gen-ui-entry）——这些工具已实际运行于文档维护，但**没有任何决策文件记录「为什么这么设计、坑在哪、守护规则是什么」**，违背 ADR-218「决策真相源」原则。
 

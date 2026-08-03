@@ -5,7 +5,7 @@
 >
 > **编号**: 235
 >
-> **关联**: [ADR-047](adr-047-config-persistence-coverage.md)（配置持久化覆盖现状——本 ADR 是其在保存机制架构维度的延伸）、[ADR-176](adr-176-web-desktop-dual-adapter.md)（Web/Desktop 双适配器——同步写假设断裂点）、[ADR-177](adr-177-web-loader-unification.md)（Web Loader 统一）、[ADR-234](adr-234-env-state-parity-guard.md)（env-state ↔ Go parity 防线——本 ADR 的发现源）、[ADR-198](adr-198-save-fault-tolerance.md)（保存分段容错）、[ADR-137](adr-137-envstate-single-source-schema.md)（EnvState 单一源）
+> **关联**: [ADR-047](adr-047-config-persistence-coverage.md)（配置持久化覆盖现状——本 ADR 是其在保存机制架构维度的延伸）、[ADR-176](adr-176-frontend-backend-adapter.md)（Web/Desktop 双适配器——同步写假设断裂点）、[ADR-177](adr-177-web-loader-main-app-unification.md)（Web Loader 统一）、[ADR-234](adr-234-env-state-parity-guard.md)（env-state ↔ Go parity 防线——本 ADR 的发现源）、[ADR-198](adr-198-场景序列化异常的保存韧性.md)（保存分段容错）、[ADR-137](adr-137-envstate-single-source-schema.md)（EnvState 单一源）
 >
 > **来源**: 修复 mirror 几何持久化缺失（buglog `2026-08-02-mirror-geometry-persist-gap.md`）并落地 parity 防线（ADR-234）后，顺藤摸瓜对保存机制整体做了一次链路审阅，发现 4 个设计张力此前**从未被显式登记**——它们互不阻塞当前功能，但各自是潜在 bug 源或演进障碍。
 

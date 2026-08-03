@@ -31,10 +31,6 @@
       "path": "core → scene → motion-algos → scene/env → scene/render → scene/transform → core"
     },
     {
-      "key": "menus→outfit→scene/manager→scene/motion→menus",
-      "path": "scene/manager → scene/motion → menus → outfit → scene/manager"
-    },
-    {
       "key": "menus→scene/ar→scene/motion→menus",
       "path": "scene/motion → menus → scene/ar → scene/motion"
     },
@@ -49,10 +45,6 @@
     {
       "key": "motion-algos→scene/env→scene→motion-algos",
       "path": "scene → motion-algos → scene/env → scene"
-    },
-    {
-      "key": "scene/manager→scene/motion→scene/manager",
-      "path": "scene/manager → scene/motion → scene/manager"
     },
     {
       "key": "scene/render→scene/transform→scene/render",

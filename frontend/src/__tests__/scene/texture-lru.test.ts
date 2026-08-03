@@ -23,7 +23,7 @@ import {
     clearTextureLRU,
     textureLRUSize,
     _resetTextureLRUForTest,
-} from '../../scene/manager/texture-lru';
+} from '../../scene/shared/texture-lru';
 
 const mockReadFileBytes = __mocks.readFileBytes;
 

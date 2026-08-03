@@ -5,7 +5,7 @@
 >
 > **编号**: 232
 >
-> **关联**: [ADR-218](adr-218-knowledge-base-governance.md)（知识卡分层治理，同一「机器守护」哲学）、[ADR-230](adr-230-docs-automation-toolchain.md)（文档自动化工具链，本 ADR 是其 ADR 域延伸）、[ADR-225](adr-225-docs-partition-indexes.md)（分区索引枢纽）、[ADR-191](adr-191-god-barrel-debarreling.md)（神桶去桶化，同一「单一事实源」哲学）
+> **关联**: [ADR-218](adr-218-knowledge-base-governance.md)（知识卡分层治理，同一「机器守护」哲学）、[ADR-230](adr-230-docs-automation-toolchain.md)（文档自动化工具链，本 ADR 是其 ADR 域延伸）、[ADR-225](adr-225-web-pages-path-reallocation.md)（Web 部署路径重分配——分区索引枢纽）、[ADR-191](adr-191-god-barrel-debarreling.md)（神桶去桶化，同一「单一事实源」哲学）
 >
 > **来源**: ADR 已落地 200+ 篇后，难以判断哪些被后来的 ADR 取代；五个脚本（gen-status-index / gen-docs-index / check-adr-status / check-adr-health / gen-adr-supersede）对同一批 ADR 的分类口径分岐（223 vs 225 篇、12 vs 16 词表、归档桶误归 6 篇），且无任何决策文件记录「如何判别取代、坑在哪、守护规则是什么」。
 

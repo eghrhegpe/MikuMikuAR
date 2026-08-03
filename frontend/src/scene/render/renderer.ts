@@ -18,7 +18,7 @@ import { resetPerformanceSnapshot, isSnapshotResetSuppressed } from './performan
 import { clamp, clamp01, lerp, lerpArray } from '@/core/clamp';
 import { setKey } from '@/core/set-key';
 import { logWarn } from '@/core/logger';
-import { clearTextureLRU } from '../manager/texture-lru';
+import { clearTextureLRU } from '../shared/texture-lru';
 
 // ======== Tone Mapping Modes ========
 

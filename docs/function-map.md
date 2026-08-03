@@ -1272,10 +1272,6 @@
 | `expandFallbackCandidates()` | `scene/manager/texture-fallback` | 批量展开 fallback 候选条目（共享 data 引用），并对「候选 vs 真实路径」冲突去重。 |
 | `registerDeclaredAliases()` | `scene/manager/texture-fallback` | 按 PMX 声明路径反向注册别名（[fix:decl-alias]）。 |
 | `textureFallbackCandidates()` | `scene/manager/texture-fallback` | 生成给定相对路径的 fallback 候选列表（不含原始路径本身）。 |
-| `_resetTextureLRUForTest()` | `scene/manager/texture-lru` | 仅供测试：重置缓存状态。 |
-| `clearTextureLRU()` | `scene/manager/texture-lru` | 清空 LRU 缓存。在 disposeRenderer 中调用，释放所有缓存的纹理 ArrayBuffer。 |
-| `readTextureWithLRU()` | `scene/manager/texture-lru` | 带 LRU 缓存的纹理读取。命中直接返回 ArrayBuffer，未命中则 readFileBytes 后缓存。 |
-| `textureLRUSize()` | `scene/manager/texture-lru` | 返回当前缓存条目数（供测试使用）。 |
 | `ThumbnailSource()` | `scene/manager/thumbnail-capture` | — |
 | `renderInstanceThumbnail()` | `scene/manager/thumbnail-capture` | 用离屏 RenderTargetTexture 渲染指定模型实例的「当前骨骼姿态」并保存为缩略图。 |
 | `ThumbnailBaseKeyInput()` | `scene/manager/thumbnail-key` | — |
@@ -1408,7 +1404,7 @@
 | `getConflictCount()` | `scene/motion/motion-modules/registry` | 获取某模型冲突总数（骨骼数） |
 | `getModuleConflicts()` | `scene/motion/motion-modules/registry` | 获取某模块被其他模块抢占的骨骼明细（loser 视角：本模块想要但被谁抢） |
 | `getModuleDefaultParam()` | `scene/motion/motion-modules/registry` | [doc:adr-116] 读取模块注册的默认参数值。 |
-| `getModuleState()` | `scene/motion/motion-modules/registry` | 获取当前动作的模块配置（不存在则创建默认状态，种入 defaults）。 |
+| `getModuleState()` | `scene/motion/motion-modules/registry` | 获取动作的模块配置（不存在则创建默认状态，种入 defaults）。 |
 | `getOwnedBones()` | `scene/motion/motion-modules/registry` | 获取模块当前 owned 的骨骼（disable 时用于精确清除） |
 | `getRegisteredModules()` | `scene/motion/motion-modules/registry` | 获取所有已注册模块的元信息（按优先级排序） |
 | `initMotionModules()` | `scene/motion/motion-modules/registry` | 注册所有内置模块（幂等，重复调用安全） |
@@ -1421,7 +1417,7 @@
 | `RIDING_MODEL_DEF()` | `scene/motion/motion-modules/riding-model` | 骑行模型模块注册定义（供 registry BUILTIN_MODULE_DEFS 批量注册） |
 | `createRidingModelModule()` | `scene/motion/motion-modules/riding-model` | 创建骑行模型模块实例 |
 | `ModuleDef()` | `scene/motion/motion-modules/types` | 模块注册定义（工厂 + 元信息 + 优先级），用于 BUILTIN_MODULE_DEFS 批量注册 |
-| `ModuleFactory()` | `scene/motion/motion-modules/types` | 模块工厂函数：接受 modelId，返回绑定到该模型的模块实例 |
+| `ModuleFactory()` | `scene/motion/motion-modules/types` | 模块工厂函数：接受 modelId，返回绑定到该模型的模块实例。 |
 | `ModuleMeta()` | `scene/motion/motion-modules/types` | 模块元信息 |
 | `MotionOverrideModule()` | `scene/motion/motion-modules/types` | [doc:adr-116] 动作覆盖模块接口 模块是无状态转换器的壳：状态存储在 ModelInstance.motionOverrideModules 中， 模块实例负责「语义参 |
 | `FrameContext()` | `scene/motion/motion-pipeline` | 帧上下文，由各层按需取用。调度器内核不依赖其中任何字段。 |
@@ -1859,6 +1855,10 @@
 | `takeARScreenshot()` | `scene/scene` | — |
 | `triggerAutoSave()` | `scene/scene` | — |
 | `updatePlaybackUI()` | `scene/scene` | — |
+| `_resetTextureLRUForTest()` | `scene/shared/texture-lru` | 仅供测试：重置缓存状态。 |
+| `clearTextureLRU()` | `scene/shared/texture-lru` | 清空 LRU 缓存。在 disposeRenderer 中调用，释放所有缓存的纹理 ArrayBuffer。 |
+| `readTextureWithLRU()` | `scene/shared/texture-lru` | 带 LRU 缓存的纹理读取。命中直接返回 ArrayBuffer，未命中则 readFileBytes 后缓存。 |
+| `textureLRUSize()` | `scene/shared/texture-lru` | 返回当前缓存条目数（供测试使用）。 |
 | `TransformAdapter()` | `scene/transform/transform-adapter` | — |
 | `TransformCapability()` | `scene/transform/transform-adapter` | — |
 | `attachGizmoForKind()` | `scene/transform/transform-adapter` | 统一 Gizmo 入口：替代三个 attachXxxGizmo。 |
