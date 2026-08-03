@@ -48,9 +48,10 @@ AR Camera：摄像头视频流管理（ADR-055）。提供 `start` / `stop` / `s
 
 ## 对外 API（节选）
 - `startARCamera(): Promise<boolean>` / `stopARCamera()`
-- `switchFacing()` — 切换前后摄像头
+- `switchARCameraFacing()` — 切换前后摄像头
 - `captureARScreenshot()` — AR 截图
-- `onARModeChange(cb)` — 注册 AR 模式变更监听（`_listeners`）
+- `isARActive()` / `getARFacing()` — 状态查询
+- `setARMirror(mirrored)` / `isARMirrored()` — 镜像设置
 
 ## 与其他子系统关系
 - 依赖 `core/config`（`dom` / `setStatus`）、`core/platform`（`isAndroidPlatform`）、`core/i18n`

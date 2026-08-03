@@ -30,10 +30,7 @@ use_when:
 - `model-material.ts` — 材质编辑菜单 schema 定义、参数绑定。
 
 ## 对外 API（节选）
-- `buildMatBatchLevel(id, modelName)` — 批量材质编辑层级。
-- `buildPerMatLevel(id, modelName, matIndex)` — 单材质编辑层级。
 - `buildMatRootLevel()` — 材质菜单根层级。
-- `buildMatListLevel()` — 材质列表层级。
 
 ## 与其他子系统关系
 - 被 `model-detail.ts` 和 `resource-detail-helpers.ts` 调用。

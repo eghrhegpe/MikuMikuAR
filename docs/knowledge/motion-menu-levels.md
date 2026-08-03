@@ -72,10 +72,10 @@ use_when:
 - `motion-root-ui.ts` — 动作根面板 UI。
 
 ## 对外 API（节选）
-- `getMotionMenu()` / `setMotionMenu(menu)` — 取/设动作菜单实例。
-- `reRenderMotionMenu()` — 重渲染动作菜单。
-- `buildGazeLevel()` — 感知视线面板（ADR-071 感知层统一入口）。
-- `buildProcMotionLevel()` — 程序化动作面板。
+- `getMotionMenu()` / `showMotionPopup()` / `refreshMotionRoot()` — 取/显示/刷新动作菜单实例（motion-popup.ts / motion-root-ui.ts）。
+- `buildGazeTrackingLevel()` — 感知视线面板（motion-gaze-levels.ts，ADR-071 感知层统一入口）。
+- `buildProcLibraryLevel()` / `buildProcMotionSchema(...)` — 程序化动作面板（motion-procmotion-levels.ts）。
+- `buildCameraLevel()` / `buildVirtualSkirtLevel()` — 相机 / 裙骨面板。
 
 ## 与其他子系统关系
 - 感知层：`../scene/motion/perception.ts`（状态读写）。

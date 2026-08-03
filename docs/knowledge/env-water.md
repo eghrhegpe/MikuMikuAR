@@ -64,9 +64,8 @@ use_when:
 - `env-water.ts` — 水面网格创建、波纹动画、反射效果、资源释放。
 
 ## 对外 API（节选）
-- `initWater(scene, options)` — 初始化水面。
+- `createWater(state)` — 初始化水面（env.ts 亦 re-export）。
 - `disposeWater()` — 释放水面资源（含反射 RT）。
-- `updateWater(deltaTime)` — 更新水面动画。
 
 ## 与其他子系统关系
 - 被 `env-impl.ts` 调用初始化。

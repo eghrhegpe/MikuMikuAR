@@ -32,8 +32,6 @@ use_when:
 
 ## 对外 API（节选）
 - `getCanvasCtx(dt)` — 封装 `DynamicTexture.getContext()` 到 `CanvasRenderingContext2D` 的断言。
-- `setPostProcessEnabled(pp, enabled)` — 通过 `_enabled` 私有字段控制后处理开关（Babylon 未导出 enabled setter）。
-- `isWorldMatrixFrozen(mesh)` — 查询 `AbstractMesh._worldMatrixFrozen` 私有字段。
 - `REFRESHRATE_RENDER_ONCE` — Babylon 未导出的静态常量（`Number.MAX_VALUE`），供 `RenderTargetTexture` 单帧渲染用。
 - `FrozenCamera` — `FreeCamera` 私有字段接口（`_worldMatrix` / `_isWorldMatrixFrozen`），供 `planar-reflection` 镜像相机矩阵设置用。
 

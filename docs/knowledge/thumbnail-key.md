@@ -31,7 +31,6 @@ key 格式：`<baseKey>::<resolution>::<aspect>`。
 - `thumbnailBaseKey(input)` — 由库引用路径 + 内部路径推导 baseKey（libraryPath 优先，ZIP 内模型追加 `::<zipInner>`）。
 - `libraryModelBaseKey(m)` — 由 LibraryModel 推导 baseKey（读侧专用适配器）。
 - `buildThumbnailKey(input)` — 唯一缓存 key 构造：`<baseKey>::<resolution>::<aspect>`。
-- `thumbnailKeyForKind(input)` — 便捷：由 kind/type 字符串直接构造完整 key。
 
 ## 与其他子系统关系
 - 被 [`thumbnail-capture`](./thumbnail-capture.md)（写侧）与 `library-core`（读侧）共同引用，确保 key 一致。

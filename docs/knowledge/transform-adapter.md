@@ -31,7 +31,7 @@ Transform Adapter Registry（ADR-126）：把「某 kind 支持哪些变换能�
 
 ## 对外 API（节选）
 - `registerTransformAdapter(adapter)`
-- `getAdapter(kind)` / `attachGizmoForKind` / `getGizmoTargetId`（gizmo 调度收敛点）
+- `getTransformAdapter(kind)` / `attachGizmoForKind` / `getGizmoTargetId`（gizmo 调度收敛点）
 - `TransformCapability` 类型 + `TransformAdapter` 接口
 
 ## 依赖方向（防循环依赖）

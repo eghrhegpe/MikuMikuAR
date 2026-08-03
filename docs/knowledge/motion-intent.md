@@ -59,10 +59,10 @@ use_when:
 - `interface SceneMotionIntent` — 场景动作意图（id、filePath、procMotion 参数等）。
 - `getActiveMotion()` — 取当前默认动作（null = 无默认）。
 - `getSceneMotions()` — 取所有动作列表。
-- `setActiveMotion(motionId)` — 设置默认动作。
+- `setDefaultMotion(id)` — 设置默认动作。
 - `addSceneMotion(intent)` — 添加动作到场景库。
 - `removeSceneMotion(motionId)` — 从场景库移除动作。
-- `broadcastMotion(modelId?)` — 将动作广播到模型实例。
+- `setBroadcastCallback(cb)` — 注册动作广播回调。
 
 ## 与其他子系统关系
 - 上游：`vmd-loader.ts` 加载动作后通过 `replaceDefaultMotion` 注册。

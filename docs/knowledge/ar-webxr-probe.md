@@ -36,7 +36,6 @@ WebXR 能力探测模块：检测当前设备/浏览器是否支持 WebXR、支�
 - `WebXRProbeResult` — 探测结果接口（isSupported / features / platform / error 等）。
 - `probeWebXR()` — 完整 WebXR 探测：平台检测 → session 支持检查 → 特性探测（含缓存，同参数复用）。
 - `probeWebXRFeatures()` — 仅特性探测（跳过平台检测，供已确认支持的场景调用）。
-- `resetProbeCache()` — 重置探测结果缓存。
 - `formatProbeReport(r)` — 将探测结果格式化为可读字符串。
 
 ## 内部协作

@@ -38,7 +38,7 @@ use_when:
 
 ## 对外 API（节选）
 - `createIconifyIcon(name, props?)` — 创建 Iconify 图标。
-- `getIconBundle()` — 取图标包。
+- `createIconButton(...)` / `softwareKindIcon(kind)` — 图标按钮与软件类型图标。
 
 ## 与其他子系统关系
 - 图标库：`@iconify/*`。

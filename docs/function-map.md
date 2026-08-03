@@ -11,7 +11,7 @@
 | 3D 场景 | 113 | 1138 |
 | 菜单 & UI | 75 | 386 |
 | 换装 & 音频 | 3 | 33 |
-| 动作算法 | 17 | 130 |
+| 动作算法 | 18 | 135 |
 | 物理系统 | 2 | 14 |
 
 ## 核心基础设施
@@ -2379,6 +2379,11 @@
 | `scoreMorph()` | `motion-algos/proc-motion-autodance-emotion` | 计算 morph 名称对一组关键词的匹配得分 - 含关键词 +10 分（大小写不敏感） - 含黑名单模式 -10 分 ⚠️ P3: 使用字符串包含匹配精度较低，建议后续用正则或语义 |
 | `generateAutoDanceVmd()` | `motion-algos/proc-motion-autodance` | 生成 AutoDance VMD |
 | `generateIdleVmd()` | `motion-algos/proc-motion-idle` | [audit] 待机呼吸生成：params 为 idle 模式专属参数；尊重 boneToggles，关闭的骨类别不生成。 |
+| `PROC_AUTODANCE_PRESETS()` | `motion-algos/proc-motion-presets` | autodance（自动舞蹈）预设集 |
+| `PROC_IDLE_PRESETS()` | `motion-algos/proc-motion-presets` | idle（待机呼吸）预设集 |
+| `ProcParamsPreset()` | `motion-algos/proc-motion-presets` | — |
+| `getProcParamsPreset()` | `motion-algos/proc-motion-presets` | 取单个预设（缺失返回 undefined，UI 层需兜底） |
+| `getProcPresetSet()` | `motion-algos/proc-motion-presets` | 指定模式的预设集（无则空表） |
 | `BONE_ALLPARENT_CANDIDATES()` | `motion-algos/proc-motion-shared` | — |
 | `BONE_ARM_IK_L_CANDIDATES()` | `motion-algos/proc-motion-shared` | — |
 | `BONE_ARM_IK_R_CANDIDATES()` | `motion-algos/proc-motion-shared` | — |

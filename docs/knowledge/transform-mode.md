@@ -32,7 +32,6 @@ use_when:
 ## 对外 API（节选）
 - `isDragModeEnabled(): boolean`
 - `setDragModeEnabled(enabled: boolean)`
-- `toggleDragMode()`
 
 ## 关键约定
 - 持久化键 `miku.dragModeEnabled`（'1'/'0'）

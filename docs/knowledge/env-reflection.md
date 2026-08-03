@@ -51,7 +51,6 @@ use_when:
 - `getPlanarQualityOverride(state)` — 平面反射的质量覆盖（off / low / null）。
 - `bindProbeToMeshes(meshes)` / `onModelMeshesReady(meshes)` — 模型网格就绪后绑定探针。
 - `applyReflection(state)` — 将解析结果应用到渲染管线。
-- `getCurrentReflectionMode()` / `isReflectionProbeActive()` — 运行时查询。
 - `disposeReflection()` — 释放探针与渲染目标。
 
 ## 与其他子系统关系

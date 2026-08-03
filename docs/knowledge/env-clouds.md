@@ -35,9 +35,8 @@ use_when:
 - `env-clouds.ts` — 云层网格创建、动画更新、参数配置、资源释放。
 
 ## 对外 API（节选）
-- `initClouds(scene, options)` — 初始化云层。
+- `createClouds(state)` — 初始化云层。
 - `disposeClouds()` — 释放云层资源。
-- `updateClouds(deltaTime)` — 更新云层动画。
 
 ## 与其他子系统关系
 - 被 `env-impl.ts` 调用初始化。

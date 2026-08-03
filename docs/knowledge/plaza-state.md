@@ -65,7 +65,7 @@ use_when:
 - `interface PlazaState` — 广场状态描述。
 - `closePlaza()` — 关闭广场。
 - `setAllSites(sites)` — 设置全部站点。
-- `setLayer(layer)` — 设置当前层级。
+- `getLayer()` — 取当前广场层级（DOM 容器）。
 
 ## 与其他子系统关系
 - 广场浏览器：`./plaza-browser.ts`。
