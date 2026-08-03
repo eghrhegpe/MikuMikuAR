@@ -443,6 +443,27 @@ async function _rebuildCompositeAnimation(modelId: string): Promise<void> {
 
     const hasBaseVmd = !!inst.vmdData;
 
+    // 无图层 / 单图层回退路径（不需要 MmdCompositeAnimation 混合）
+    if (vmdEnabledLayers.length === 0 || (vmdEnabledLayers.length === 1 && !hasBaseVmd)) {
+        await _rebuildFallback(modelId, gen, inst, vmdEnabledLayers, hasBaseVmd);
+        return;
+    }
+
+    // 多动画合成（基础 VMD + 图层）→ WASM blender 或 JS MmdCompositeAnimation
+    await _rebuildComposite(modelId, gen, inst, vmdEnabledLayers, hasBaseVmd, scene);
+}
+
+/**
+ * 回退路径：无 VMD 图层 → 加载基础 VMD；单图层且无基础 → 过滤后直接加载。
+ * 不需要 MmdCompositeAnimation 混合的场景。共享状态显式传参（ADR-237 P2）。
+ */
+async function _rebuildFallback(
+    modelId: string,
+    gen: number,
+    inst: import('../../core/config').ModelInstance,
+    vmdEnabledLayers: VmdLayer[],
+    hasBaseVmd: boolean
+): Promise<void> {
     // 没有 VMD 图层 → 回退到单 VMD 模式（如果有 vmdData）
     if (vmdEnabledLayers.length === 0) {
         if (hasBaseVmd) {
@@ -456,20 +477,30 @@ async function _rebuildCompositeAnimation(modelId: string): Promise<void> {
     }
 
     // 单一 VMD 图层且无基础 VMD → 直接加载，不需要 composite
-    if (vmdEnabledLayers.length === 1 && !hasBaseVmd) {
-        const layer = vmdEnabledLayers[0];
-        const { loadVMDMotion } = await import('./vmd-loader');
-        if (_rebuildGenMap.get(modelId) !== gen) {
-            return;
-        }
-        const loadData = layer.boneFilter?.length
-            ? _filterVmdBones(layer.data, layer.boneFilter)
-            : layer.data;
-        await loadVMDMotion(loadData, layer.name, modelId);
+    const layer = vmdEnabledLayers[0];
+    const { loadVMDMotion } = await import('./vmd-loader');
+    if (_rebuildGenMap.get(modelId) !== gen) {
         return;
     }
+    const loadData = layer.boneFilter?.length
+        ? _filterVmdBones(layer.data, layer.boneFilter)
+        : layer.data;
+    await loadVMDMotion(loadData, layer.name, modelId);
+}
 
-    // 多个动画（基础 VMD + VMD 图层）→ 创建 MmdCompositeAnimation 混合叠加
+/**
+ * 多动画合成：构建 MmdCompositeAnimation（基础 VMD + 各 VMD 图层），权重归一化后绑定。
+ * WASM 运行时优先走 blender 方案（_tryWasmBlender），失败降级单层。
+ * 共享状态显式传参（ADR-237 P2）；保持动态 import 不引入新循环依赖。
+ */
+async function _rebuildComposite(
+    modelId: string,
+    _gen: number,
+    inst: import('../../core/config').ModelInstance,
+    vmdEnabledLayers: VmdLayer[],
+    hasBaseVmd: boolean,
+    scene: import('@babylonjs/core/scene').Scene
+): Promise<void> {
     try {
         const vmdLoader = new VmdLoader(scene);
         const composite = new MmdCompositeAnimation('motionLayers');
@@ -521,57 +552,13 @@ async function _rebuildCompositeAnimation(modelId: string): Promise<void> {
             // VmdLoader 无 dispose() API（fork 实现），loader 为局部引用，GC 自动回收
         }
 
-        // WASM 运行时：使用 JS 帧流合并的 blender 方案
+        // WASM 运行时：优先 JS 帧流合并的 blender 方案，失败降级单层
         if (mmdRuntime instanceof MmdWasmRuntime) {
-            const totalSources = sources.length;
-            if (totalSources > 1) {
-                const blendEnabled = import.meta.env.VITE_WASM_LAYERS_BLEND !== '0';
-                if (blendEnabled) {
-                    try {
-                        const { initWasmLayersBlender, setupWasmLayersBlender, addWasmLayer } =
-                            await import('./wasm-layers-blender');
-                        const { modelManager } = await getScene();
-                        const { loadVMDMotion } = await import('./vmd-loader');
-
-                        initWasmLayersBlender({ scene, modelManager, loadVMDMotion });
-
-                        const baseSrc = sources[0];
-                        await setupWasmLayersBlender(modelId, baseSrc.data, baseSrc.name);
-
-                        for (let i = 1; i < sources.length; i++) {
-                            const src = sources[i];
-                            await addWasmLayer(modelId, {
-                                id: `layer_${i}`,
-                                data: src.data,
-                                weight: src.weight,
-                                boneFilter: src.boneFilter,
-                                name: src.name,
-                            });
-                        }
-
-                        inst.animationDuration = maxEndFrame / 30;
-                        const compositeName = sources.map((s) => s.name).join(' + ');
-                        showInfoToast(
-                            t('scene.vmd.layersBlendedBlender', { names: compositeName })
-                        );
-                        triggerAutoSave();
-                        return;
-                    } catch (err) {
-                        console.error(
-                            '[MotionLayers] WASM blender failed, falling back to single layer',
-                            err
-                        );
-                        // P3-fix: 明确告知用户多图层混合失败已降级，而非静默回退
-                        setStatus(
-                            t('scene.vmd.layersBlendFailedFallback', {
-                                reason: err instanceof Error ? translateGoError(err) : String(err),
-                            }),
-                            false
-                        );
-                    }
+            if (sources.length > 1 && import.meta.env.VITE_WASM_LAYERS_BLEND !== '0') {
+                if (await _tryWasmBlender(modelId, inst, sources, maxEndFrame, scene)) {
+                    return;
                 }
             }
-
             const primarySrc = sources[0];
             const { loadVMDMotion } = await import('./vmd-loader');
             await loadVMDMotion(primarySrc.data, primarySrc.name, modelId);
@@ -608,6 +595,63 @@ async function _rebuildCompositeAnimation(modelId: string): Promise<void> {
     } catch (err) {
         console.error('Motion Layers rebuild failed:', err);
         feedbackStatus('scene.vmd.blendFailed', undefined, false);
+    }
+}
+
+/**
+ * WASM blender 专用路径：init 依赖注入 + setup 基础层 + addWasmLayer 各图层。
+ * 成功返回 true；失败（含 blender 模块不可用）返回 false 并提示降级。
+ * 共享状态显式传参；保持动态 import 避免与 wasm-layers-blender 静态循环（ADR-236）。
+ */
+async function _tryWasmBlender(
+    modelId: string,
+    inst: import('../../core/config').ModelInstance,
+    sources: {
+        data: ArrayBuffer;
+        name: string;
+        weight: number;
+        boneFilter?: string[];
+    }[],
+    maxEndFrame: number,
+    scene: import('@babylonjs/core/scene').Scene
+): Promise<boolean> {
+    try {
+        const { initWasmLayersBlender, setupWasmLayersBlender, addWasmLayer } =
+            await import('./wasm-layers-blender');
+        const { modelManager } = await getScene();
+        const { loadVMDMotion } = await import('./vmd-loader');
+
+        initWasmLayersBlender({ scene, modelManager, loadVMDMotion });
+
+        const baseSrc = sources[0];
+        await setupWasmLayersBlender(modelId, baseSrc.data, baseSrc.name);
+
+        for (let i = 1; i < sources.length; i++) {
+            const src = sources[i];
+            await addWasmLayer(modelId, {
+                id: `layer_${i}`,
+                data: src.data,
+                weight: src.weight,
+                boneFilter: src.boneFilter,
+                name: src.name,
+            });
+        }
+
+        inst.animationDuration = maxEndFrame / 30;
+        const compositeName = sources.map((s) => s.name).join(' + ');
+        showInfoToast(t('scene.vmd.layersBlendedBlender', { names: compositeName }));
+        triggerAutoSave();
+        return true;
+    } catch (err) {
+        console.error('[MotionLayers] WASM blender failed, falling back to single layer', err);
+        // P3-fix: 明确告知用户多图层混合失败已降级，而非静默回退
+        setStatus(
+            t('scene.vmd.layersBlendFailedFallback', {
+                reason: err instanceof Error ? translateGoError(err) : String(err),
+            }),
+            false
+        );
+        return false;
     }
 }
 
