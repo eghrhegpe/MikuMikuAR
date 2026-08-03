@@ -64,9 +64,17 @@ export function registerUiAction<K extends keyof UiActions>(key: K, fn: UiAction
     _uiActions.set(key, fn);
 }
 
+const _missingWarned = new Set<string>();
+
 /** 读取单个 UI 行为（core 侧调用；未注册返回 undefined） */
 export function getUiAction<K extends keyof UiActions>(key: K): UiActions[K] | undefined {
-    return _uiActions.get(key) as UiActions[K] | undefined;
+    const fn = _uiActions.get(key) as UiActions[K] | undefined;
+    // [doc:adr-238] 缺失注册一次性告警（防重构破坏导致静默跳过）
+    if (!fn && !_missingWarned.has(key)) {
+        _missingWarned.add(key);
+        console.warn(`[ui-action-bridge] '${key}' 未注册——调用将静默跳过`);
+    }
+    return fn;
 }
 
 // 兼容旧调用点（shortcut-app 的 closeAllOverlays/screenshotCurrent 用 getUiActions）

@@ -151,6 +151,11 @@ async function init(): Promise<void> {
         // 引擎就绪 → 隐藏加载遮罩，显示主应用 UI
         dom.showApp();
         console.info('MikuMikuAR initialized');
+        // [doc:adr-238] 桥注册守卫：initLibrary 经 menus/library-setup 动态链注册，
+        // 未注册时模型库永不初始化（静默失败），此处显式校验。
+        if (!getSceneAction('initLibrary')) {
+            console.warn('[init] initLibrary bridge 未注册——模型库可能不会初始化');
+        }
         safeCallAsync('init', 'Library init', () => getSceneAction('initLibrary')?.());
         // [doc:adr-008] 启动时预加载自动导入开关，供 watch:newfile 自动导入分支判定
         fireAndForget(async () => {

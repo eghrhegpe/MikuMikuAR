@@ -35,8 +35,9 @@ describe('mmar-globals', () => {
         // 复位 status 到已知态；scene 由 refreshSceneSnapshot 用例自行填充
         stopSceneSnapshotPolling();
         updateMmarStatus('idle', '');
-        // 桥注册（model-ops 被 mock，其尾部注册不执行，手动补齐）
+        // 桥注册（model-ops/motion-intent 被 mock，其尾部注册不执行，手动补齐）
         registerSceneAction('focusedModel', () => mockFocusedModel());
+        registerSceneAction('getActiveMotion', () => ({ vmdName: 'dance' }));
     });
 
     it('模块加载后 window.__mmar 已就绪（F2 自动初始化）', () => {
