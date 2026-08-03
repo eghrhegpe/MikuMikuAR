@@ -468,3 +468,6 @@ import { registerSceneAction } from '@/core/scene-action-bridge';
 registerSceneAction('setEnvState', (partial: Record<string, unknown>) => {
     setEnvState(partial as Partial<EnvState>);
 });
+
+// [doc:adr-238] 注册地面可见性读取供 core/action-defs toggleGround 判定
+registerSceneAction('getEnvGroundVisible', () => envState.groundVisibleEnabled);

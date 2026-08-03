@@ -35,10 +35,17 @@ import {
     findLibraryMotionByName,
 } from '../../menus/library-actions';
 import { _resetActionRegistry } from '../action-registry';
+// [doc:adr-238] library-actions 被 mock 后其尾部桥注册也失效，测试手动补注册到 scene-action-bridge
+import { registerSceneAction } from '../scene-action-bridge';
 
 beforeEach(() => {
     vi.clearAllMocks();
     _resetActionRegistry();
+    // 桥注册（真实模块被 mock，模块尾部注册不执行，此处手动补齐）
+    registerSceneAction('replaceModel', (m) => replaceModel(m as never));
+    registerSceneAction('replaceMotion', (m) => replaceMotion(m as never));
+    registerSceneAction('findLibraryModelByName', (n) => findLibraryModelByName(n as never));
+    registerSceneAction('findLibraryMotionByName', (n) => findLibraryMotionByName(n as never));
     registerControlActions();
 });
 

@@ -1,19 +1,8 @@
+// action-registry-defs.ts — [doc:adr-238] AI 动作注册聚合（定义留 core，execute 经 scene-action-bridge）。
 import { registerAction } from '../action-registry';
-import { setLightState } from '../../scene/render/lighting';
 import { showToast } from '../toast';
 import { t } from '../i18n/t';
-import { setCameraMode } from '../../scene/camera/camera-state';
-import { applyEnvPreset } from '../../scene/env/env-time-of-day';
-import { setEnvState } from '../../scene/env/_bridge/env-bridge';
-import { setPerformanceMode } from '../../scene/render/performance';
-import {
-    replaceModel,
-    replaceMotion,
-    findLibraryModelByName,
-    findLibraryMotionByName,
-} from '../../menus/library-actions';
-import type { LibraryModel } from '../../core/types';
-import { envState } from '../state';
+import { getSceneAction } from '../scene-action-bridge';
 import { registerSettingsActions } from '../action-defs/settings-actions';
 import { registerSceneActions } from '../action-defs/scene-actions';
 import { registerMotionActions } from '../action-defs/motion-actions';
@@ -48,7 +37,7 @@ export function registerControlActions(): void {
         domain: 'scene',
         params: [{ name: 'dirIntensity', type: 'range', min: 0, max: 1, step: 0.05 }],
         execute: (p) => {
-            _reportLightWrite(setLightState({ dirIntensity: p.dirIntensity as number }));
+            _reportLightWrite(getSceneAction('setLightState')?.({ dirIntensity: p.dirIntensity as number }) ?? false);
         },
     });
 
@@ -59,7 +48,7 @@ export function registerControlActions(): void {
         domain: 'scene',
         params: [{ name: 'dirColor', type: 'color' }],
         execute: (p) => {
-            _reportLightWrite(setLightState({ dirColor: p.dirColor as [number, number, number] }));
+            _reportLightWrite(getSceneAction('setLightState')?.({ dirColor: p.dirColor as [number, number, number] }) ?? false);
         },
     });
 
@@ -76,7 +65,7 @@ export function registerControlActions(): void {
                 synonyms: { follow: 'freefly' },
             },
         ],
-        execute: (p) => setCameraMode(p.mode as 'orbit' | 'freefly' | 'surround'),
+        execute: (p) => getSceneAction('setCameraMode')?.(p.mode as string),
     });
 
     // env:preset
@@ -92,7 +81,7 @@ export function registerControlActions(): void {
             },
         ],
         execute: (p) => {
-            const ok = applyEnvPreset(p.preset as string);
+            const ok = getSceneAction('applyEnvPreset')?.(p.preset as string) ?? false;
             if (!ok) {
                 throw new Error(`环境预设 "${p.preset}" 应用失败`);
             }
@@ -105,7 +94,7 @@ export function registerControlActions(): void {
         label: 'ai.actions.control.toggleGround',
         domain: 'env',
         params: [],
-        execute: () => setEnvState({ groundVisibleEnabled: !envState.groundVisibleEnabled }),
+        execute: () => getSceneAction('setEnvState')?.({ groundVisibleEnabled: !getSceneAction('getEnvGroundVisible')?.() }),
     });
 
     // model:load
@@ -117,12 +106,12 @@ export function registerControlActions(): void {
             {
                 name: 'name',
                 type: 'entity',
-                resolve: async (name: string) => findLibraryModelByName(name),
+                resolve: async (name: string) => getSceneAction('findLibraryModelByName')?.(name),
             },
         ],
         destructive: true,
         execute: async (p) => {
-            replaceModel(p.name as LibraryModel);
+            await getSceneAction('replaceModel')?.(p.name);
         },
     });
 
@@ -135,12 +124,12 @@ export function registerControlActions(): void {
             {
                 name: 'name',
                 type: 'entity',
-                resolve: async (name: string) => findLibraryMotionByName(name),
+                resolve: async (name: string) => getSceneAction('findLibraryMotionByName')?.(name),
             },
         ],
         destructive: true,
         execute: async (p) => {
-            replaceMotion(p.name as LibraryModel);
+            await getSceneAction('replaceMotion')?.(p.name);
         },
     });
 
@@ -157,6 +146,6 @@ export function registerControlActions(): void {
                 synonyms: { high: 'quality', low: 'performance' },
             },
         ],
-        execute: (p) => setPerformanceMode(p.mode as 'quality' | 'balanced' | 'performance'),
+        execute: (p) => getSceneAction('setPerformanceMode')?.(p.mode as string),
     });
 }

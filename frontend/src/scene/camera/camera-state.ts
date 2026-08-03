@@ -321,3 +321,9 @@ export function getViewMatrixHandle(): ObserverHandle | null {
 export function setViewMatrixHandle(handle: ObserverHandle | null): void {
     _viewMatrixHandle = handle;
 }
+
+// [doc:adr-238] 注册相机模式切换供 core/action-defs 经 scene-action-bridge 调用
+import { registerSceneAction } from '@/core/scene-action-bridge';
+registerSceneAction('setCameraMode', (mode: string) => {
+    setCameraMode(mode as CameraMode);
+});
