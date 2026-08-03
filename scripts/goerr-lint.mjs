@@ -25,6 +25,7 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve, relative } from 'node:path';
+import { toPosix } from './_lib/to-posix.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
@@ -62,7 +63,7 @@ function walk(dir, onFile) {
 }
 
 function toRel(file) {
-    return relative(ROOT, file).replace(/\\/g, '/');
+    return toPosix(relative(ROOT, file));
 }
 
 // ── 规则 1：Go 侧（internal/app/*.go） ──────────────────────────

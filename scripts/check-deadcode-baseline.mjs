@@ -18,6 +18,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { toPosix } from "./_lib/to-posix.mjs";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const REPO_ROOT = resolve(__dirname, "..");
@@ -155,7 +156,7 @@ function showKnipDetails(knipJson) {
         }
         if (rows.length) {
             any = true;
-            console.log(`  ${file.file.replace(/\\/g, "/")}:`);
+            console.log(`  ${toPosix(file.file)}:`);
             for (const r of rows) console.log(r);
         }
     }
@@ -168,7 +169,7 @@ function showJscpdDetails(jscpdJson) {
         console.log("  （无）");
         return;
     }
-    const short = (f) => f.replace(/^.*?src[\\/]?/, "src/").replace(/\\/g, "/");
+    const short = (f) => toPosix(f).replace(/^.*?src[\\/]?/, "src/");
     for (const clone of jscpdJson.statistics.clones.slice(0, 10)) {
         const a = clone.duplicationA;
         const b = clone.duplicationB;
