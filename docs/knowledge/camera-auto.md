@@ -22,7 +22,8 @@ invariants:
   - 集中订阅 beat 回调（_subscribeAutoCameraBeat），避免饥饿 bug
   - restoreAutoCameraState 内部幂等，重复调用安全
 tests:
-  - frontend/src/__tests__/camera.test.ts
+  - frontend/src/__tests__/camera.adr100.guards.test.ts
+  - frontend/src/__tests__/camera.adr100.serialization.test.ts
 use_when:
   - 节拍自动运镜
   - beatcut 行为

@@ -21,7 +21,8 @@ invariants:
   - applyEnvStateFacade 是 setEnvState 的轻量版（跳过防抖持久化 + 中间件链），供 time-of-day tick 高频调用
   - _presetAnimActive 标记预设动画运行中，applyEnvStateFacade 据此跳过方向光同步（动画自己管光照）
 tests:
-  - frontend/src/__tests__/env-bridge.test.ts
+  - frontend/src/__tests__/env-bridge/facade.int.test.ts
+  - frontend/src/__tests__/env-bridge/middleware.int.test.ts
 use_when:
   - setEnvState
   - 环境状态写入

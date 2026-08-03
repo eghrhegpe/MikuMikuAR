@@ -22,7 +22,7 @@ invariants:
   - 清除 VMD 时若当前模式为 vmd，通过注入的 switchCameraMode 回调切回 orbit
   - VMD 动画句柄（_mmdCamera / _cameraAnimationHandle）在 clearCameraVmd 中显式释放
 tests:
-  - frontend/src/__tests__/camera.test.ts
+  - frontend/src/__tests__/camera.vmd-state.test.ts
 use_when:
   - 相机 VMD 加载
   - VMD 相机动画

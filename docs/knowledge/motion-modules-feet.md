@@ -19,7 +19,7 @@ invariants:
   - 位置偏移通过帧钩子 setBoneOverridePosition 每帧驱动
   - 与 feet-adjustment 引擎互不冲突（旋转 vs 位置，不同维度）
 tests:
-  - src/__tests__/scene/motion-modules-registry.test.ts
+  - frontend/src/__tests__/scene/motion-modules-registry.ik.test.ts
 use_when:
   - 左脚控制
   - 右脚控制

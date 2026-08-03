@@ -65,9 +65,9 @@ invariants:
   - 应用层叶模块（ui-card/ui-loading/status-helpers/auto-save）可依赖 core/dom/i18n 等应用层，但不反向依赖场景/菜单
   - 通过 @/core/config barrel 聚合导出，保持现有消费方兼容
 tests:
-  - browse-dir.test.ts
-  - library-core.*.test.ts
-  - scene-serialize-undo.test.ts
+  - frontend/src/__tests__/browse-dir.test.ts
+  - frontend/src/__tests__/library-core.build-level.test.ts
+  - frontend/src/__tests__/scene/scene-serialize-resilience.test.ts
 use_when:
   - 文本格式化
   - 数学/几何计算

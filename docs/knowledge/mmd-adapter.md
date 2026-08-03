@@ -32,7 +32,8 @@ invariants:
   - switchAnimation 必须 seekAnimation(0, true) 归零全局时钟，否则陈旧时钟越界导致下一帧 pause
   - switchAnimation 必须 dispose 旧 runtime animation 句柄，否则 WASM AnimCurve 泄漏
 tests:
-  - frontend/src/__tests__/core/mmd-adapter.test.ts
+  - frontend/src/__tests__/mmd-adapter.contract.test.ts
+  - frontend/src/__tests__/mmd-adapter.native.test.ts
 use_when:
   - babylon-mmd
   - MmdRuntime

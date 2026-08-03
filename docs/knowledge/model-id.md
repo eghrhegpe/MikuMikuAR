@@ -15,7 +15,7 @@ symbols:
 invariants:
   - 同一模型在存档恢复时复用 preferredId，不重新生成，避免材质/outfit/个人灯按 id 落盘后孤儿化
 tests:
-  - frontend/src/__tests__/scene/manager/model-id.test.ts
+  - frontend/src/__tests__/scene/resolve-model-id.test.ts
 use_when:
   - 模型运行时 id
   - 模型加载时 id 分配

@@ -24,7 +24,8 @@ invariants:
   - viewMatrix 句柄通过 _bindViewMatrixPersist 绑定，触发 scheduleCameraPersist 防抖保存
   - disposeViewMatrixHandle 在 switchCameraMode 切换相机前显式调用，避免 observer 累积
 tests:
-  - frontend/src/__tests__/camera.test.ts
+  - frontend/src/__tests__/camera.presets.test.ts
+  - frontend/src/__tests__/camera.adr100.guards.test.ts
 use_when:
   - 创建相机实例
   - 用户输入设置（键盘/鼠标/触摸）

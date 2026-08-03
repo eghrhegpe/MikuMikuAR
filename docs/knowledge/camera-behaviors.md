@@ -24,7 +24,8 @@ invariants:
   - stop* 函数显式 dispose ObserverHandle，避免回调残留
   - 行为仅在对应模式下生效（switchCameraMode 负责启动/停止配对）
 tests:
-  - frontend/src/__tests__/camera.test.ts
+  - frontend/src/__tests__/camera.adr100.guards.test.ts
+  - frontend/src/__tests__/camera.presets.test.ts
 use_when:
   - freefly 自由飞行
   - surround 环绕/转台
