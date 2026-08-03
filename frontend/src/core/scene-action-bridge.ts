@@ -126,6 +126,14 @@ export interface SceneActions {
     restoreMaterials: (inst: unknown) => void;
     /** 释放音频（scene/manager 调用），由 outfit 注册 */
     disposeAudio: () => void;
+    /** 读取活跃动作（model-loader 调用），由 scene/motion 注册 */
+    getActiveMotion: () => unknown;
+    /** 读取场景动作列表（model-loader 调用），由 scene/motion 注册 */
+    getSceneMotions: () => unknown[];
+    /** 读取动作生成器（model-loader 调用），由 scene/motion 注册 */
+    getMotionGen: () => number;
+    /** 解析动作兼容性（model-loader 调用），由 scene/motion 注册 */
+    resolveCompatibility: (bones: unknown, motion: unknown) => { compatible?: boolean };
 }
 
 const _sceneActions = new Map<keyof SceneActions, unknown>();
