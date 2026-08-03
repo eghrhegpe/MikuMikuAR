@@ -48,5 +48,5 @@ use_when:
 
 ## 验证入口
 
-- 测试：`frontend/src/__tests__/scene/manager/model-id.test.ts`
-- 命令：`cd frontend && npm run test -- scene/manager/model-id.test.ts`
+- 测试：`frontend/src/__tests__/scene/resolve-model-id.test.ts`
+- 命令：`cd frontend && npm run test -- scene/resolve-model-id.test.ts`

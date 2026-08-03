@@ -93,5 +93,5 @@ use_when:
 
 ## 验证入口
 
-- 测试：`frontend/src/__tests__/core/mmd-adapter.test.ts`
-- 命令：`cd frontend && npm run test -- core/mmd-adapter.test.ts`
+- 测试：`frontend/src/__tests__/mmd-adapter.contract.test.ts` / `mmd-adapter.native.test.ts`
+- 命令：`cd frontend && npm run test -- mmd-adapter.contract.test.ts mmd-adapter.native.test.ts`

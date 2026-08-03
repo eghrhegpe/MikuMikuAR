@@ -159,7 +159,7 @@
 | [事件处理与导航系统](./events.md) | - ADR-102 |
 | [结构化反馈 API](./feedback.md) | — |
 | [统一文件服务层](./fileservice.md) | - ADR-057 |
-| [应用启动引导](./init.md) | - ADR-008 |
+| [应用启动引导](./init.md) | - ADR-003 |
 | [统一资源加载队列](./load-manager.md) | - ADR-045 |
 | [模型加载/库扫描完成后菜单刷新注册表](./load-refresh-registry.md) | — |
 | [国际化语言状态](./locale.md) | - ADR-059 |
@@ -182,7 +182,7 @@
 
 | ADR | 主题 | 关联卡片 |
 |-----|------|----------|
-| ADR-008 | — | [应用启动引导](./init.md) |
+| [ADR-003](../adr/adr-003-download-strategy.md) | 下载监听策略（精简版） | [应用启动引导](./init.md) |
 | [ADR-017](../adr/adr-017-android-adaptation.md) | Android 平台适配（精简版） | [安卓文件访问（shared 模式）](./android-file-access.md) · [资源库初始化](./library-setup.md) |
 | [ADR-021](../adr/adr-021-procedural-motion.md) | 程序化动作系统（Idle/Auto Dance + LipSync + 视线追踪） | [口型同步桥](./lipsync-bridge.md) · [程序化动作系统](./proc-motion-bridge.md) |
 | [ADR-026](../adr/adr-026-environment-system-enhancement.md) | 环境系统增强 — 纹理地面、粒子系统、粒子溅射、水下后处理联动 | [粒子系统](./env-particles.md) |

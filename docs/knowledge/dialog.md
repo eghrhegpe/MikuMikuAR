@@ -41,5 +41,5 @@ use_when:
 - 文本使用 `textContent`，不能把用户输入当 HTML 注入。
 
 ## 验证入口
-- 测试：`frontend/src/__tests__/core/dialog.test.ts`（若存在）。
+- 测试：`frontend/src/core/ai/__tests__/dialogue-session.test.ts`（对话会话状态）。
 
