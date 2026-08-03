@@ -13,6 +13,8 @@ function scanAiFluff() {
   for (const src of ['internal', 'frontend/src']) {
     for (const line of rg(/^\s*\/\/.*\u7528\u4e8e|^\s*\/\/.*\u8fd9\u662f|^\s*\/\/.*\u68c0\u67e5.*\u662f\u5426/.source, src, ['*.go', '*.js', '*.ts'])) {
       const [f, ln, txt] = parseRgLine(line);
+      // 白名单：带 [doc:adr-XXX] / [ADR-XXX] 文档引用的合法注释不视为废话
+      if (/\[doc:adr-|\[ADR-\d|ADR-\d{2,3}/i.test(txt)) continue;
       results.push({ file: f, line: ln, snippet: txt, type: 'AI_fluff' });
     }
   }
