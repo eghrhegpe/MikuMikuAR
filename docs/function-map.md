@@ -8,10 +8,10 @@
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
 | 核心基础设施 | 124 | 725 |
-| 3D 场景 | 113 | 1140 |
+| 3D 场景 | 114 | 1141 |
 | 菜单 & UI | 75 | 386 |
 | 换装 & 音频 | 3 | 33 |
-| 动作算法 | 18 | 139 |
+| 动作算法 | 19 | 140 |
 | 物理系统 | 2 | 14 |
 
 ## 核心基础设施
@@ -1323,7 +1323,6 @@
 | `startBoneOverride()` | `scene/motion/bone-override` | — |
 | `stopBoneOverride()` | `scene/motion/bone-override` | 停止覆盖系统。 |
 | `FeetModelProvider()` | `scene/motion/feet-adjustment` | 注入：返回需要处理脚部调整的模型及其 runtime bones |
-| `FootLandEvent()` | `scene/motion/feet-adjustment` | 落地事件：脚从空中接触地面的瞬间（ADR-088 供脚步声消费）。 |
 | `isFeetAdjustmentRunning()` | `scene/motion/feet-adjustment` | 查询脚部跟随系统是否正在运行（observer 已注册）。 |
 | `setOnFootLand()` | `scene/motion/feet-adjustment` | 注入落地事件回调（null 取消）。脚步声控制器调用。 |
 | `solveFootTarget()` | `scene/motion/feet-adjustment` | — |
@@ -1542,6 +1541,7 @@
 | `initPlaybackObservables()` | `scene/motion/playback` | — |
 | `seekFromEvent()` | `scene/motion/playback` | — |
 | `updatePlaybackUI()` | `scene/motion/playback` | — |
+| `ProcMotionController()` | `scene/motion/proc-motion-bridge` | — |
 | `activateGazeTracking()` | `scene/motion/proc-motion-bridge` | — |
 | `createProcBeatDetector()` | `scene/motion/proc-motion-bridge` | — |
 | `disposeProcMotion()` | `scene/motion/proc-motion-bridge` | 释放程序化动作模块全部资源并销毁单例。应用关闭 / 模块卸载时调用。 |
@@ -1565,6 +1565,7 @@
 | `setProcMotionVpdApplyEnabled()` | `scene/motion/proc-motion-bridge` | — |
 | `stopProcMotion()` | `scene/motion/proc-motion-bridge` | — |
 | `updateProcMotion()` | `scene/motion/proc-motion-bridge` | — |
+| `ProcMotionParamsMixin()` | `scene/motion/proc-motion-params` | 参数 setter 群 mixin —— 混入 ProcMotionControllerBase。 |
 | `_filterVmdBones()` | `scene/motion/vmd-layers` | 过滤 VMD 二进制数据，只保留指定骨骼的关键帧。 |
 | `addGazeLayer()` | `scene/motion/vmd-layers` | 添加一个视线追踪（gaze）图层。 |
 | `addVmdLayer()` | `scene/motion/vmd-layers` | 添加一个 VMD 图层到模型。 |
@@ -2326,6 +2327,7 @@
 | `SolveFootInput()` | `motion-algos/feet-adjustment-math` | — |
 | `SolveFootOutput()` | `motion-algos/feet-adjustment-math` | — |
 | `solveFootTarget()` | `motion-algos/feet-adjustment-math` | 解算单脚应处的世界 Y 坐标。 |
+| `FootLandEvent()` | `motion-algos/feet-event` | 落地事件：脚从空中接触地面的瞬间（ADR-088 供脚步声消费）。 |
 | `startFallbackDetection()` | `motion-algos/footstep-detect-fallback` | 启动独立落地检测（fallback 模式）。 |
 | `stopFallbackDetection()` | `motion-algos/footstep-detect-fallback` | 停止独立落地检测。 |
 | `StepDetectInput()` | `motion-algos/footstep-detect` | — |
