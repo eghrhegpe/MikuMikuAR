@@ -32,7 +32,7 @@
 
 ### 序列化兼容
 
-`migrateEnvState`（[env-bridge.ts:651](../../frontend/src/scene/env/env-bridge.ts#L651)）已有处理旧字段迁移的先例（groundMode → groundType+groundStyle）。新增一条迁移规则：
+`migrateEnvState`（[env-bridge.ts:651](../../frontend/src/scene/env/_bridge/env-bridge.ts#L651)）已有处理旧字段迁移的先例（groundMode → groundType+groundStyle）。新增一条迁移规则：
 
 ```typescript
 if (typeof raw.debugMirrorEnabled === 'boolean') {
