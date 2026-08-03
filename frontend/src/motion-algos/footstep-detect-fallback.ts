@@ -20,7 +20,7 @@ import {
     matchBone,
 } from './proc-motion-shared';
 import { detectFootLanding } from './footstep-detect';
-import type { FootLandEvent } from '@/scene/motion/feet-adjustment';
+import type { FootLandEvent } from './feet-event';
 import { modelRegistry } from '@/core/config';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
 import { safeDispose } from '@/core/dispose-helpers';

@@ -29,6 +29,10 @@ import { getModuleState } from './motion-modules/registry';
 import { solveFootTarget } from '@/motion-algos/feet-adjustment-math';
 // 落地判定（无 Babylon 依赖，便于单测）见 motion-algos/footstep-detect.ts
 import { detectFootLanding } from '@/motion-algos/footstep-detect';
+// [doc:adr-238] FootLandEvent 类型下沉 motion-algos/feet-event（纯类型叶），此处 import 并 re-export
+// 保持 footstep.ts 等既有 `from './feet-adjustment'` 引用兼容；同时切断 motion-algos→scene/motion 边
+import type { FootLandEvent } from '@/motion-algos/feet-event';
+export type { FootLandEvent };
 import { logWarn } from '../../core/logger';
 import { getMotionPipeline } from './motion-pipeline';
 import { isWasmRuntime, feetDebug } from './perception-shared';
@@ -113,17 +117,6 @@ function _getCache(id: string): _ModelCache {
         _cache.set(id, c);
     }
     return c;
-}
-
-/** 落地事件：脚从空中接触地面的瞬间（ADR-088 供脚步声消费）。 */
-export interface FootLandEvent {
-    modelId: string;
-    foot: 'L' | 'R';
-    groundY: number;
-    /** 落地垂直速度（单位/秒），>=0，用于脚步声音量映射 */
-    impactSpeed: number;
-    worldX: number;
-    worldZ: number;
 }
 
 /** 注入落地事件回调（null 取消）。脚步声控制器调用。 */
