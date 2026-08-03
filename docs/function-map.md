@@ -7,8 +7,8 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 124 | 725 |
-| 3D 场景 | 115 | 1143 |
+| 核心基础设施 | 125 | 728 |
+| 3D 场景 | 116 | 1150 |
 | 菜单 & UI | 75 | 386 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 19 | 140 |
@@ -235,6 +235,9 @@
 | `dom()` | `core/dom` | — |
 | `handleDropFile()` | `core/drop-import` | 处理已落地的路径（桌面绝对路径或浏览器 IndexedDB 键）。 |
 | `handleDroppedFile()` | `core/drop-import` | [doc:adr-177] 单个拖入文件落地：桌面走原生 path，浏览器读字节写 IndexedDB。 |
+| `StateReader()` | `core/e2e-state-bridge` | — |
+| `getE2EStateReader()` | `core/e2e-state-bridge` | 读取 E2E 状态读取器（core/dev-hooks 侧调用；未注册返回 null） |
+| `setE2EStateReader()` | `core/e2e-state-bridge` | 注册 E2E 状态读取器（menus/menu-schema 侧调用，模块加载即注册） |
 | `ENV_STATE_SCHEMA()` | `core/env-state-schema` | — |
 | `EnvDispatchGroup()` | `core/env-state-schema` | 已定义的 dispatch 分组名称 |
 | `EnvStateSchema()` | `core/env-state-schema` | — |
@@ -1092,30 +1095,37 @@
 | `stopTimeOfDay()` | `scene/env/env-time-of-day` | — |
 | `syncTimeOfDayFromEnv()` | `scene/env/env-time-of-day` | 从持久化的 envState 恢复 time-of-day 模块变量（启动时调用） |
 | `underwaterFogController()` | `scene/env/env-underwater-fog` | — |
+| `MAX_RIPPLES()` | `scene/env/env-water-fx` | — |
+| `_applyWaterLOD()` | `scene/env/env-water-fx` | 按相机到水面的距离手动切换 LOD 可见性（仅 0/1/2 三层中恰好一层 enabled）， 规避 Babylon addLODLevel 的父子/兄弟重复渲染问题。仅当层级变化 |
+| `addGroundRipple()` | `scene/env/env-water-fx` | 添加地面涟漪（粒子落地时调用） |
+| `addRipple()` | `scene/env/env-water-fx` | — |
+| `buildRippleBuffers()` | `scene/env/env-water-fx` | 收集涟漪数据供 shader 上传（材质回调调用；按 MAX_RIPPLES 分配，未用 slot 为 0） |
+| `clearGroundRipples()` | `scene/env/env-water-fx` | — |
+| `clearRipples()` | `scene/env/env-water-fx` | — |
+| `computeWaveDirs()` | `scene/env/env-water-fx` | 根据风向计算 4 层 Gerstner 波的 vec2 方向数组。 |
+| `disposeGroundRipples()` | `scene/env/env-water-fx` | 释放地面涟漪纹理与状态（由 disposeWater / disposeGround 调用，防止 GPU 纹理泄漏） |
+| `getGroundRippleTexture()` | `scene/env/env-water-fx` | 获取地面涟漪纹理（供 env-ground 设置到 bumpTexture） |
+| `getWaterLODMeshes()` | `scene/env/env-water-fx` | 供宿主/material 读取 LOD 网格（同步缩放/位置或逐层 dispose） |
+| `hasActiveGroundRipples()` | `scene/env/env-water-fx` | 是否有活跃的地面涟漪（供 env-ground 判断是否需要叠加 ripple 法线纹理） |
+| `isUnderwaterActive()` | `scene/env/env-water-fx` | 相机是否处于水下（雾效接管中）。 |
+| `resetUnderwaterFlags()` | `scene/env/env-water-fx` | 供宿主 disposeWater 重置水下状态 flag（灯光强度恢复由 resetUnderwaterState 负责） |
+| `resetUnderwaterState()` | `scene/env/env-water-fx` | — |
+| `resetWaterLODState()` | `scene/env/env-water-fx` | 供宿主 disposeWater 重置 LOD 状态 |
+| `selectWaterLOD()` | `scene/env/env-water-fx` | — |
+| `setGroundGeometryProvider()` | `scene/env/env-water-fx` | 注入地面几何提供者（env-ground 在模块初始化时调用一次） |
+| `setWaterLODMeshes()` | `scene/env/env-water-fx` | 供宿主 createWater 写入 LOD 网格（拆分后状态归本模块，宿主经函数访问） |
+| `updateGroundRipples()` | `scene/env/env-water-fx` | 每帧更新地面涟漪纹理（由 env-ground 的 update observer 驱动） |
+| `updateRipples()` | `scene/env/env-water-fx` | 每帧涟漪衰减 + 死亡清理（由材质更新回调驱动；dt&lt;=0 时跳过避免零时距死循环） |
+| `updateUnderwaterTransition()` | `scene/env/env-water-fx` | — |
 | `WATER_PRESETS()` | `scene/env/env-water` | — |
 | `WaterPreset()` | `scene/env/env-water` | — |
-| `_applyWaterLOD()` | `scene/env/env-water` | 按相机到水面的距离手动切换 LOD 可见性（仅 0/1/2 三层中恰好一层 enabled）， 规避 Babylon addLODLevel 的父子/兄弟重复渲染问题。仅当层级变化 |
-| `addGroundRipple()` | `scene/env/env-water` | 添加地面涟漪（粒子落地时调用） |
-| `addRipple()` | `scene/env/env-water` | — |
 | `applyWaterPresetToCurrent()` | `scene/env/env-water` | — |
 | `buildWaterPresetEnvState()` | `scene/env/env-water` | 预设 → EnvState 完整字段映射（含扩展参数），供 UI chip handler 调用并持久化。 |
-| `clearGroundRipples()` | `scene/env/env-water` | — |
-| `clearRipples()` | `scene/env/env-water` | — |
-| `computeWaveDirs()` | `scene/env/env-water` | 根据风向计算 4 层 Gerstner 波的 vec2 方向数组。 |
 | `createWater()` | `scene/env/env-water` | — |
-| `disposeGroundRipples()` | `scene/env/env-water` | 释放地面涟漪纹理与状态（由 disposeWater / disposeGround 调用，防止 GPU 纹理泄漏） |
 | `disposeWater()` | `scene/env/env-water` | — |
-| `getGroundRippleTexture()` | `scene/env/env-water` | 获取地面涟漪纹理（供 env-ground 设置到 bumpTexture） |
 | `getWaterPhase()` | `scene/env/env-water` | 测试/调试用：读取当前累计波相位。 |
-| `hasActiveGroundRipples()` | `scene/env/env-water` | 是否有活跃的地面涟漪（供 env-ground 判断是否需要叠加 ripple 法线纹理） |
-| `isUnderwaterActive()` | `scene/env/env-water` | 相机是否处于水下（雾效接管中）。 |
 | `refreshWaterRenderList()` | `scene/env/env-water` | 刷新水面渲染列表（钩子函数） 当前为空实现，保留作为API接口，未来可能用于： - 更新水的渲染顺序 - 响应场景图形变更（如新增/移除需要水面反射的对象） - 同步水的渲染状态 |
-| `resetUnderwaterState()` | `scene/env/env-water` | — |
-| `selectWaterLOD()` | `scene/env/env-water` | 按相机到水面的距离选择 LOD 层级（纯函数，便于单测）。 |
-| `setGroundGeometryProvider()` | `scene/env/env-water` | 注入地面几何提供者（env-ground 在模块初始化时调用一次） |
 | `setUnderwaterFog()` | `scene/env/env-water` | 由水下雾控制器同步水下雾参数到水面材质（含材质重建后的恢复由 _syncWaterUniforms 负责）。 |
-| `updateGroundRipples()` | `scene/env/env-water` | 每帧更新地面涟漪纹理（由 env-ground 的 update observer 驱动） |
-| `updateUnderwaterTransition()` | `scene/env/env-water` | — |
 | `updateWaterAnimSpeed()` | `scene/env/env-water` | — |
 | `applyWetnessToAllModels()` | `scene/env/env-wetness` | 对所有已加载模型应用湿身材质效果（幂等）。 |
 | `applyWetnessToInst()` | `scene/env/env-wetness` | — |
