@@ -19,6 +19,7 @@
     "gen:menumap": "node scripts/gen-menu-map.mjs",
     "check:menumap": "node scripts/gen-menu-map.mjs --check",
     "check:circular": "node scripts/check-circular.mjs",
+    "check:consumers": "node scripts/check-consumers.mjs",
     "gen:funcmap": "node scripts/gen-funcmap.mjs",
     "check:funcmap": "node scripts/gen-funcmap.mjs --check",
     "gen:knowledge-symbols": "node scripts/gen-knowledge-symbols.mjs",
