@@ -1613,3 +1613,9 @@ registerSceneAction('restoreUndoSnapshot', (snap: unknown) =>
 registerSceneAction('listModels', () =>
     modelManager.getAll().map((m) => ({ id: m.id, name: m.name }))
 );
+
+// [doc:adr-238] 补充注册撤销快照供 core/action-defs 经 scene-action-bridge 调用
+registerSceneAction('pushUndoSnapshot', () => pushUndoSnapshot());
+registerSceneAction('offerSceneUndoAndRefresh', (label: string, snap: unknown, afterApply?: () => void) => {
+    offerSceneUndoAndRefresh(label, snap as string, afterApply);
+});
