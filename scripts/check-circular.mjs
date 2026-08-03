@@ -28,7 +28,7 @@ const SRC_DIR = path.join(ROOT, 'frontend', 'src');
 const ALLOWLIST_PATH = path.join(__dirname, 'circular-allowlist.json');
 
 const args = parseArgs(process.argv.slice(2), {
-    bools: ['strict', 'json', 'update-allowlist'],
+    bools: ['strict', 'json', 'update-allowlist', 'edges'],
     strings: ['scope'],
 });
 
@@ -54,6 +54,8 @@ function getModule(relativePath) {
  */
 function buildModuleGraph(fileGraph) {
     const moduleGraph = new Map();
+    // 模块对 → 具体文件级 import 边（用于 --edges 归因）
+    const moduleEdges = new Map(); // "srcMod|dstMod" -> [{from, to}]
 
     for (const [file, deps] of fileGraph) {
         const sourceModule = getModule(file);
@@ -69,11 +71,14 @@ function buildModuleGraph(fileGraph) {
             // 只记录跨模块依赖
             if (targetModule !== sourceModule) {
                 moduleGraph.get(sourceModule).add(targetModule);
+                const key = `${sourceModule}|${targetModule}`;
+                if (!moduleEdges.has(key)) moduleEdges.set(key, []);
+                moduleEdges.get(key).push({ from: file, to: dep });
             }
         }
     }
 
-    return moduleGraph;
+    return { moduleGraph, moduleEdges };
 }
 
 // ── 循环依赖检测 ──
@@ -175,7 +180,7 @@ function saveAllowlist(cycles) {
 
 const { graph: fileGraph } = scanSourceGraph(SRC_DIR, { scope: args.scope });
 
-const moduleGraph = buildModuleGraph(fileGraph);
+const { moduleGraph, moduleEdges } = buildModuleGraph(fileGraph);
 const rawCycles = detectCycles(moduleGraph);
 const cycles = dedupeCycles(rawCycles);
 
@@ -214,16 +219,33 @@ if (args.json) {
     if (cycles.length === 0) {
         console.log('✅ 未检测到跨模块循环依赖');
     } else {
+        // --edges 模式：环路径下追加文件级 import 边，便于定位具体引入点
+        const formatCycle = (cycle) => {
+            const header = `  ${cycle.join(' → ')}`;
+            if (!args.edges) return header;
+            const lines = [header];
+            for (let i = 0; i < cycle.length - 1; i++) {
+                const key = `${cycle[i]}|${cycle[i + 1]}`;
+                const edges = moduleEdges.get(key) || [];
+                for (const { from, to } of edges.slice(0, 5)) {
+                    lines.push(`      ${from} → ${to}`);
+                }
+                if (edges.length > 5) {
+                    lines.push(`      … 共 ${edges.length} 条边`);
+                }
+            }
+            return lines.join('\n');
+        };
         if (known.length > 0) {
             console.log(`🟡 ${known.length} 个已知架构环（白名单内，不阻断）：\n`);
             for (const cycle of known) {
-                console.log(`  ${cycle.join(' → ')}`);
+                console.log(formatCycle(cycle));
             }
         }
         if (added.length > 0) {
             console.log(`\n🔴 ${added.length} 个新增循环依赖（白名单外${args.strict ? '，CI 阻断' : ''}）：\n`);
             for (const cycle of added) {
-                console.log(`  ${cycle.join(' → ')}`);
+                console.log(formatCycle(cycle));
             }
         }
     }
