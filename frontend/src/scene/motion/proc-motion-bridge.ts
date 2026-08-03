@@ -315,28 +315,43 @@ class ProcMotionController {
         }
     }
 
-    stopProcMotion(): void {
+    /**
+     * 停止程序化动作。
+     * [fix:P2] 支持按模型停止：传 modelId 仅清理该模型（per-model 场景避免误杀其他活跃模型，
+     * 焦点模型 off / 加载用户 VMD 时不再清空全部）；不传则全量清理（兼容既有调用：
+     * dispose / setProcMotionMode('off') / 外部加载 VMD）。
+     */
+    stopProcMotion(modelId?: string): void {
         this._stopRequested = true;
         // 感知层独立于程序化动作，不再随 stopProcMotion 注销
         // gaze 由 perception.ts 管理，always-on
-        // [fix:P1] 遍历所有活跃模型，逐一清理
-        for (const modelId of this._activeModels) {
-            const inst = modelManager.get(modelId);
-            if (inst) {
-                // [fix] 若用户已在程序化动作 active 期间加载了真实 VMD（vmdPath 非空），
-                // 不可盲目清除 vmdData —— 否则会覆盖用户刚点击的动作。
-                // 仅在模型未持有用户真实 VMD 时才清除程序化数据并 rebuild 到静止姿。
-                const userVmdPresent =
-                    inst.vmdPath !== null && inst.vmdPath !== undefined && inst.vmdPath !== '';
-                if (!userVmdPresent) {
-                    inst.vmdData = null;
-                    inst.vmdName = '';
-                    inst.vmdPath = null;
-                    rebuildCompositeAnimation(modelId);
-                }
+        if (modelId) {
+            this._stopActiveModel(modelId);
+            return;
+        }
+        // [fix:P1] 遍历所有活跃模型，逐一清理（复制数组：循环内 delete 需迭代快照）
+        for (const id of [...this._activeModels]) {
+            this._stopActiveModel(id);
+        }
+    }
+
+    /** 清理单个模型的程序化数据并移出活跃集合。 */
+    private _stopActiveModel(modelId: string): void {
+        const inst = modelManager.get(modelId);
+        if (inst) {
+            // [fix] 若用户已在程序化动作 active 期间加载了真实 VMD（vmdPath 非空），
+            // 不可盲目清除 vmdData —— 否则会覆盖用户刚点击的动作。
+            // 仅在模型未持有用户真实 VMD 时才清除程序化数据并 rebuild 到静止姿。
+            const userVmdPresent =
+                inst.vmdPath !== null && inst.vmdPath !== undefined && inst.vmdPath !== '';
+            if (!userVmdPresent) {
+                inst.vmdData = null;
+                inst.vmdName = '';
+                inst.vmdPath = null;
+                rebuildCompositeAnimation(modelId);
             }
         }
-        this._activeModels.clear();
+        this._activeModels.delete(modelId);
     }
 
     onModelRemoved(id: string): void {
@@ -352,8 +367,10 @@ class ProcMotionController {
         const targetModelId = focusedModelId ?? undefined;
         const st = this._refProcState(targetModelId);
         if (st.mode === 'off') {
-            if (this._procVmdActive()) {
-                this.stopProcMotion();
+            // [fix:P2] 仅停止焦点模型：非焦点模型可能持有自己的 per-model 程序化，
+            // 全量停止会误杀它们（模型面板开的 autodance 被焦点 off 每帧清掉）。
+            if (targetModelId && this._activeModels.has(targetModelId)) {
+                this.stopProcMotion(targetModelId);
             }
             return;
         }
@@ -372,8 +389,9 @@ class ProcMotionController {
         const wantAutoDance = shouldAutoDance(audioOn, mode);
         const wantIdle = shouldIdle(audioOn, hasUserVmd, mode);
 
-        if (hasUserVmd && this._procVmdActive()) {
-            this.stopProcMotion();
+        if (hasUserVmd && targetModelId && this._activeModels.has(targetModelId)) {
+            // [fix:P2] 仅停止焦点模型：用户为该模型加载 VMD，不应清空其他模型的程序化
+            this.stopProcMotion(targetModelId);
             return;
         }
 
@@ -572,8 +590,9 @@ class ProcMotionController {
         const st = this._refProcState(modelId);
         // [fix] mode === 'off' 时立刻停掉程序化，不继续往下走到 idle 重启动
         if (st.mode === 'off') {
-            if (this._procVmdActive()) {
-                this.stopProcMotion();
+            // [fix:P2] 仅停止目标模型：regenerateProcMotion(modelId) 不应清空其他活跃模型
+            if (modelId && this._activeModels.has(modelId)) {
+                this.stopProcMotion(modelId);
             }
             return;
         }
@@ -634,8 +653,8 @@ export function getProcBeatDetector(): BeatDetector | null {
 export function createProcBeatDetector(): BeatDetector {
     return _getCtrl().createProcBeatDetector();
 }
-export function stopProcMotion(): void {
-    _getCtrl().stopProcMotion();
+export function stopProcMotion(modelId?: string): void {
+    _getCtrl().stopProcMotion(modelId);
 }
 export function onModelRemoved(id: string): void {
     _getCtrl().onModelRemoved(id);

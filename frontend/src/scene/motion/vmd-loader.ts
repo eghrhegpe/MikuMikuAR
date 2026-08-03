@@ -149,8 +149,9 @@ export async function loadVMDMotion(
         inst.vmdData = data;
         // 停止程序化动作（延迟到 vmdData 赋值后，确保 stopProcMotion 内 userVmdPresent=true，
         // 不会清空刚绑定的动画——否则缩略图截帧时动画已被清空，截到空姿态）
+        // [fix:P2] 仅停止目标模型的程序化，不误杀其他活跃模型
         if (isProcVmdActive() && name !== PROC_VMD_NAME_IDLE && name !== PROC_VMD_NAME_AUTODANCE) {
-            stopProcMotion();
+            stopProcMotion(targetId);
         }
         _companionAudioCache.clear();
         inst.vmdName = name;
@@ -341,9 +342,9 @@ export async function loadVPDPose(
             const rawData = rawBytes.buffer as ArrayBuffer;
             const poseName = getBaseName(path) || '';
 
-            // 停掉程序化动作（VPD 姿势不被动画干扰）
+            // 停掉程序化动作（VPD 姿势不被动画干扰）；[fix:P2] 仅停止目标模型
             if (isProcVmdActive()) {
-                stopProcMotion();
+                stopProcMotion(targetModelId);
             }
 
             // 解析 VPD 并作为静态姿势应用（不生成 VMD 动画）
