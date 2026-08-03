@@ -20,7 +20,7 @@ invariants:
   - 对 Go nullable 返回做 ?? [] 守卫，避免 NPE
   - 读侧归一不写侧信封化，写侧保持各系统独立写路径
 tests:
-  - frontend/src/__tests__/core/preset-meta.test.ts
+  - frontend/src/core/__tests__/preset-meta.test.ts
 use_when:
   - 预设
   - 预设列表

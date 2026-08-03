@@ -20,7 +20,7 @@ invariants:
   - 帧钩子驱动手臂位置偏移（与旧 hand-symmetry 同构）
   - 手指/手腕为静态 bake
 tests:
-  - src/__tests__/scene/motion-modules-registry.test.ts
+  - frontend/src/__tests__/scene/motion-modules-registry.ik.test.ts
 use_when:
   - 左手控制
   - 右手控制

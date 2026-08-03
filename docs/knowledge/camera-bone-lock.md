@@ -23,7 +23,8 @@ invariants:
   - 启用时保存并禁用 panning + 关闭 inertia，避免与每帧 target 跟随冲突
   - 每帧通过 bone absolute position 计算 target，cam.setTarget 跟随
 tests:
-  - frontend/src/__tests__/camera.test.ts
+  - frontend/src/__tests__/camera.adr100.guards.test.ts
+  - frontend/src/__tests__/camera.adr100.serialization.test.ts
 use_when:
   - 骨骼锁
   - orbit 跟随骨骼

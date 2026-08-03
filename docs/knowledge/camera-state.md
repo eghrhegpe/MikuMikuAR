@@ -73,7 +73,8 @@ invariants:
   - 双轴（CameraControl × CameraBehavior）是 ADR-100 后的权威状态，CameraMode 降为兼容别名
   - freeflyInput 为双方共享状态（camera.ts 读/写，events.ts 键盘写入），定义在此切断循环依赖
 tests:
-  - frontend/src/__tests__/camera.test.ts
+  - frontend/src/__tests__/camera.adr100.serialization.test.ts
+  - frontend/src/__tests__/camera.presets.test.ts
 use_when:
   - 相机状态
   - 相机位置保存

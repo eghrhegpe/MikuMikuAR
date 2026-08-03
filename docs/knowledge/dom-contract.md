@@ -21,7 +21,7 @@ invariants:
   - 渲染层产出 role/class 时引用本文件常量，禁止手写字符串
   - 若渲染层改 role/class 而未同步本文件 → CI「快照重生成 + git diff」门禁直接红
 tests:
-  - frontend/src/__tests__/schema/schema-snapshot.test.ts
+  - frontend/src/__tests__/schema-snapshot.test.ts
 use_when:
   - DOM 契约
   - role 属性
