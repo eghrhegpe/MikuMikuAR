@@ -1,7 +1,8 @@
+// scene-actions.ts — [doc:adr-238] 场景动作定义（定义留 core，execute 经桥调实现）。
 import { registerAction } from '../action-registry';
-import { screenshotCurrent, screenshotBatch, saveScene } from '../../menus/scene-menu';
-import { popUndoSnapshot, restoreUndoSnapshot, modelManager } from '../../scene/scene';
 import { feedbackStatus, feedbackInfo } from '../feedback';
+import { getUiAction } from '../ui-action-bridge';
+import { getSceneAction } from '../scene-action-bridge';
 
 export function registerSceneActions(): void {
     registerAction({
@@ -12,7 +13,7 @@ export function registerSceneActions(): void {
         params: [],
         destructive: false,
         execute: async () => {
-            await screenshotCurrent();
+            await getUiAction('screenshotCurrent')?.();
         },
     });
 
@@ -24,7 +25,7 @@ export function registerSceneActions(): void {
         params: [],
         destructive: false,
         execute: async () => {
-            await screenshotBatch();
+            await getUiAction('screenshotBatch')?.();
         },
     });
 
@@ -36,7 +37,7 @@ export function registerSceneActions(): void {
         params: [],
         destructive: false,
         execute: async () => {
-            await saveScene();
+            await getUiAction('saveScene')?.();
         },
     });
 
@@ -48,12 +49,12 @@ export function registerSceneActions(): void {
         params: [],
         destructive: false,
         execute: async () => {
-            const snap = popUndoSnapshot();
+            const snap = getSceneAction('popUndoSnapshot')?.();
             if (!snap) {
                 feedbackStatus('scene.statusNoUndo', undefined, false);
                 return;
             }
-            const ok = await restoreUndoSnapshot(snap);
+            const ok = await getSceneAction('restoreUndoSnapshot')?.(snap);
             if (ok) {
                 feedbackInfo('scene.undoApplied', undefined);
             }
@@ -66,7 +67,7 @@ export function registerSceneActions(): void {
         params: [],
         readonly: true,
         execute: async () => {
-            const models = modelManager.getAll().map((m) => ({ id: m.id, name: m.name }));
+            const models = getSceneAction('listModels')?.() ?? [];
             return { data: { models, count: models.length } };
         },
     });

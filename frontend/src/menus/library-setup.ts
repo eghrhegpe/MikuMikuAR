@@ -449,3 +449,9 @@ export async function refreshLibrary(): Promise<void> {
         }
     }
 }
+
+// [doc:adr-238] 注册文件选择器行为供 core/action-defs 经 ui-action-bridge 调用
+// （定义留 core、实现归 menus 启动链，切断 core→menus 反向依赖）。
+import { registerUiAction } from '@/core/ui-action-bridge';
+registerUiAction('selectResourceRoot', () => selectResourceRoot());
+registerUiAction('selectOverridePath', (kind: string) => selectOverridePath(kind));

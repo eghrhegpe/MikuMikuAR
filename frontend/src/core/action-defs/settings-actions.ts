@@ -1,8 +1,17 @@
+// [doc:adr-238] 文件选择器经 ui-action-bridge 调用（定义留 core、实现归 menus）
 import { registerAction } from '../action-registry';
 import { ClearExtractCache, ClearThumbnailCache, ClearAllCaches } from '../wails-bindings';
 import { feedbackInfo } from '../feedback';
-import { selectResourceRoot, selectOverridePath } from '../../menus/library-core';
+import { getUiAction } from '../ui-action-bridge';
 import { setLang, type LangCode } from '../i18n/locale';
+
+function _selectResourceRoot(): Promise<void> {
+    return getUiAction('selectResourceRoot')?.() ?? Promise.resolve();
+}
+
+function _selectOverridePath(kind: string): Promise<void> {
+    return getUiAction('selectOverridePath')?.(kind) ?? Promise.resolve();
+}
 
 export function registerSettingsActions(): void {
     registerAction({
@@ -52,7 +61,7 @@ export function registerSettingsActions(): void {
         destructive: false,
         uiOnly: true,
         execute: async () => {
-            await selectResourceRoot();
+            await _selectResourceRoot();
         },
     });
 
@@ -64,7 +73,7 @@ export function registerSettingsActions(): void {
         destructive: false,
         uiOnly: true,
         execute: async () => {
-            await selectOverridePath('pmx');
+            await _selectOverridePath('pmx');
         },
     });
 
@@ -76,7 +85,7 @@ export function registerSettingsActions(): void {
         destructive: false,
         uiOnly: true,
         execute: async () => {
-            await selectOverridePath('vmd');
+            await _selectOverridePath('vmd');
         },
     });
 
@@ -88,7 +97,7 @@ export function registerSettingsActions(): void {
         destructive: false,
         uiOnly: true,
         execute: async () => {
-            await selectOverridePath('audio');
+            await _selectOverridePath('audio');
         },
     });
 
@@ -100,7 +109,7 @@ export function registerSettingsActions(): void {
         destructive: false,
         uiOnly: true,
         execute: async () => {
-            await selectOverridePath('stage');
+            await _selectOverridePath('stage');
         },
     });
 
@@ -112,7 +121,7 @@ export function registerSettingsActions(): void {
         destructive: false,
         uiOnly: true,
         execute: async () => {
-            await selectOverridePath('environment');
+            await _selectOverridePath('environment');
         },
     });
 
@@ -124,7 +133,7 @@ export function registerSettingsActions(): void {
         destructive: false,
         uiOnly: true,
         execute: async () => {
-            await selectOverridePath('md_dress');
+            await _selectOverridePath('md_dress');
         },
     });
 
@@ -136,7 +145,7 @@ export function registerSettingsActions(): void {
         destructive: false,
         uiOnly: true,
         execute: async () => {
-            await selectOverridePath('setting');
+            await _selectOverridePath('setting');
         },
     });
 
