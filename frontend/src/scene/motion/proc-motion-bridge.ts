@@ -66,13 +66,16 @@ class ProcMotionController {
     // ── 私有状态（原 8 个模块级 let，外部不可直接访问）──
     private _fallbackProcState: ProcMotionState = { ...DEFAULT_PROC_STATE };
     private _beatDetector: BeatDetector | null = null;
-    private _lastBeatBpm = 120;
     private _starting = false;
     private _stopRequested = false; // await 期间被 stop 时置位，防止 start 完成后重新激活
     private _regeneratePending = false;
-    private _activeKind: ProcMotionMode = 'idle';
     /** [fix:P1] Set 支持多模型并发程序化，替代原 procModelId 单值 */
     private _activeModels = new Set<string>();
+    /** [fix:P2] per-model 程序化状态（kind + 上次 BPM）。
+     *  原 `_activeKind`/`_lastBeatBpm` 为全局单值，多模型并发时最后一个启动的模型
+     *  覆盖它们，导致 updateProcMotion 对焦点模型的 kind/BPM 判断失真（重复/漏重生成）。
+     *  现按 modelId 记录，生命周期与 `_activeModels` 同步（成功 set / 停止 delete）。 */
+    private _modelProcState = new Map<string, { kind: ProcMotionMode; bpm: number }>();
 
     // ── 内部工具 ──
 
@@ -234,12 +237,9 @@ class ProcMotionController {
                     morphNames,
                     boneNames
                 );
-                this._lastBeatBpm = bpm!;
-                this._activeKind = 'autodance';
             } else {
                 // [audit] per-mode：生成用 idle 专属参数
                 buf = generateIdleVmd(this._refProcState(modelIdOverride).params.idle, boneNames);
-                this._activeKind = targetMode;
             }
 
             // D4: 仅在未显式指定目标时检查焦点切换，避免无意义的 VMD 生成
@@ -272,22 +272,27 @@ class ProcMotionController {
                 inst.vmdName = '';
                 rebuildCompositeAnimation(modelIdAtStart);
                 this._activeModels.delete(modelIdAtStart);
-                this._activeKind = 'idle';
+                this._modelProcState.delete(modelIdAtStart);
             } else if (this._stopRequested) {
                 logWarn('proc-motion', '生成完成但已被 stop，丢弃结果');
                 inst.vmdData = null;
                 inst.vmdName = '';
                 rebuildCompositeAnimation(modelIdAtStart);
                 this._activeModels.delete(modelIdAtStart);
-                this._activeKind = 'idle';
+                this._modelProcState.delete(modelIdAtStart);
             } else {
-                // 成功：加入活跃集合
+                // 成功：加入活跃集合 + 记录 per-model 状态（kind/bpm 供重生成判断）
                 this._activeModels.add(modelIdAtStart);
+                this._modelProcState.set(modelIdAtStart, {
+                    kind: targetMode === 'autodance' && bpmValid ? 'autodance' : 'idle',
+                    bpm: bpmValid ? bpm! : 120,
+                });
                 // 感知层独立激活，不依赖程序化动作生命周期
             }
         } catch (err) {
             logWarn('proc-motion', '程序化动作生成失败:', err);
             this._activeModels.delete(modelIdAtStart);
+            this._modelProcState.delete(modelIdAtStart);
             _clearVmdData(modelManager.get(modelIdAtStart));
         } finally {
             this._starting = false;
@@ -352,10 +357,12 @@ class ProcMotionController {
             }
         }
         this._activeModels.delete(modelId);
+        this._modelProcState.delete(modelId);
     }
 
     onModelRemoved(id: string): void {
         this._activeModels.delete(id);
+        this._modelProcState.delete(id);
         // 感知层清理
         onPerceptionModelRemoved(id);
     }
@@ -397,18 +404,18 @@ class ProcMotionController {
 
         if (wantAutoDance && !hasUserVmd && this._beatDetector) {
             const bpm = this._beatDetector.getBPM() ?? 120;
-            if (
-                !this._procVmdActive() ||
-                this._activeKind !== 'autodance' ||
-                Math.abs(bpm - this._lastBeatBpm) > 10
-            ) {
+            // [fix:P2] per-model 判断：读目标模型自己的 kind/bpm，而非全局单值
+            const cur = targetModelId ? this._modelProcState.get(targetModelId) : undefined;
+            if (!cur || cur.kind !== 'autodance' || Math.abs(bpm - cur.bpm) > 10) {
                 await this._startProcMotion('autodance', bpm, targetModelId);
             }
             return;
         }
 
         if (wantIdle && !hasUserVmd) {
-            if (!this._procVmdActive() || this._activeKind !== 'idle') {
+            // [fix:P2] per-model 判断：目标模型无记录或非 idle 才启动
+            const cur = targetModelId ? this._modelProcState.get(targetModelId) : undefined;
+            if (!cur || cur.kind !== 'idle') {
                 await this._startProcMotion('idle', undefined, targetModelId);
             }
             return;
@@ -627,8 +634,7 @@ class ProcMotionController {
         this._regeneratePending = false;
         this._stopRequested = false;
         this._starting = false;
-        this._activeKind = 'idle';
-        this._lastBeatBpm = 120;
+        this._modelProcState.clear();
     }
 }
 
