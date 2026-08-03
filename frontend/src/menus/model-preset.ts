@@ -17,6 +17,7 @@ import {
     getMatState,
     applyMatState,
     MaterialCategoryParams,
+    SssParams,
 } from '../scene/scene';
 import {
     GetModelPresets,
@@ -73,6 +74,7 @@ export interface ModelPresetFile {
     materialCategories?: Record<string, MaterialCategoryParams>;
     materialOverrides?: Record<number, MaterialCategoryParams>;
     materialEnabled?: Record<number, boolean>;
+    materialSssCategories?: Record<string, SssParams>;
 }
 
 export function serializeModelPreset(id: string, presetName?: string): string {
@@ -115,6 +117,9 @@ export function serializeModelPreset(id: string, presetName?: string): string {
         materialCategories: matState?.categories ?? {},
         materialOverrides: matState?.overrides ?? {},
         materialEnabled: matState?.enabled ?? {},
+        ...(matState?.sssCategories && Object.keys(matState.sssCategories).length > 0
+            ? { materialSssCategories: matState.sssCategories }
+            : {}),
     };
     return jsonStringify(preset);
 }
@@ -172,7 +177,12 @@ export async function applyModelPreset(id: string, jsonStr: string): Promise<voi
             stopVMD(id);
         }
     }
-    if (preset.materialCategories || preset.materialOverrides || preset.materialEnabled) {
+    if (
+        preset.materialCategories ||
+        preset.materialOverrides ||
+        preset.materialEnabled ||
+        preset.materialSssCategories
+    ) {
         // 跨模型保护：overrides/enabled 按 matIndex 索引，不同模型 matIndex 不通用，
         // 跨模型应用会导致头发参数覆盖到眼睛等错位。仅 categories 走名称匹配兜底。
         const inst = modelRegistry.get(id);
@@ -182,6 +192,7 @@ export async function applyModelPreset(id: string, jsonStr: string): Promise<voi
             categories: preset.materialCategories,
             overrides: isSameModel ? preset.materialOverrides : undefined,
             enabled: isSameModel ? preset.materialEnabled : undefined,
+            sssCategories: preset.materialSssCategories,
         });
         if (!isSameModel && (preset.materialOverrides || preset.materialEnabled)) {
             logWarn(
