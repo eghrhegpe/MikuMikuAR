@@ -4,6 +4,9 @@ source_files:
   - frontend/src/core/math/hash-noise.ts
   - frontend/src/menus/env-water-levels.ts
   - frontend/src/scene/env/env-water.ts
+  - frontend/src/scene/env/env-water-fx.ts
+  - frontend/src/scene/env/env-water-material.ts
+  - frontend/src/scene/env/env-water-reflect.ts
 tests:
   - frontend/src/__tests__/scene/env-water.test.ts
 kind: env_water
@@ -11,24 +14,37 @@ name: 水面系统
 category: env
 scope:
   - frontend/src/scene/env/env-water.ts
+  - frontend/src/scene/env/env-water-fx.ts
+  - frontend/src/scene/env/env-water-material.ts
+  - frontend/src/scene/env/env-water-reflect.ts
 adr:
   - ADR-062
 symbols:
+  - MAX_RIPPLES
   - WATER_PRESETS
   - WaterPreset
+  - _WATER_KEYS
   - _applyWaterLOD
+  - _createWaterMaterial
+  - _rebuildWaterMaterial
+  - _setupMirrorRT
+  - _syncWaterUniforms
+  - _waterUpdateCallback
   - addGroundRipple
   - addRipple
   - applyWaterPresetToCurrent
+  - buildRippleBuffers
   - buildWaterLevel
   - buildWaterPresetEnvState
   - clearGroundRipples
   - clearRipples
   - computeWaveDirs
   - createWater
+  - disposeDetailNormalTexture
   - disposeGroundRipples
   - disposeWater
   - getGroundRippleTexture
+  - getWaterLODMeshes
   - getWaterPhase
   - getWaterSchema
   - hasActiveGroundRipples
@@ -36,14 +52,21 @@ symbols:
   - hash2v
   - isUnderwaterActive
   - refreshWaterRenderList
+  - resetUnderwaterFlags
   - resetUnderwaterState
+  - resetWaterLODState
+  - resetWaterPhaseState
   - selectWaterLOD
   - setGroundGeometryProvider
   - setUnderwaterFog
+  - setWaterLODMeshes
+  - setWaterWaveSpeed
   - updateGroundRipples
+  - updateRipples
   - updateUnderwaterTransition
   - updateWaterAnimSpeed
   - valueNoise
+  - waterReflection
 invariants:
   - disposeWater 级联释放水面 RT + 材质 + 镜像相机
   - 涟漪（ripple）独立于水面主体
@@ -61,7 +84,10 @@ use_when:
 **水面系统**。在地面之上生成动态水面，支持波纹动画和反射效果。
 
 ## 核心职责
-- `env-water.ts` — 水面网格创建、波纹动画、反射效果、资源释放。
+- `env-water.ts` — 生命周期宿主与编排（ADR-239）：水面网格创建、资源释放、转发 fx/material/reflect。
+- `env-water-fx.ts` — 涟漪/地面涟漪/LOD/水下过渡/波方向（ADR-239）。
+- `env-water-material.ts` — 材质/着色器 uniform/法线细节纹理/水下雾/preset 系（ADR-239）。
+- `env-water-reflect.ts` — 平面反射单例（waterReflection，ADR-239 叶子模块）。
 
 ## 对外 API（节选）
 - `createWater(state)` — 初始化水面（env.ts 亦 re-export）。
