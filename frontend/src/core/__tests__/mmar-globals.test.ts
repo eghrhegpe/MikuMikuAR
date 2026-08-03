@@ -26,12 +26,17 @@ import {
     startSceneSnapshotPolling,
     stopSceneSnapshotPolling,
 } from '../mmar-globals';
+// [doc:adr-238] focusedModel 改经 scene-action-bridge（model-ops 注册），测试补注册 mock
+import { registerSceneAction } from '../scene-action-bridge';
+import { focusedModel as mockFocusedModel } from '../../scene/manager/model-ops';
 
 describe('mmar-globals', () => {
     beforeEach(() => {
         // 复位 status 到已知态；scene 由 refreshSceneSnapshot 用例自行填充
         stopSceneSnapshotPolling();
         updateMmarStatus('idle', '');
+        // 桥注册（model-ops 被 mock，其尾部注册不执行，手动补齐）
+        registerSceneAction('focusedModel', () => mockFocusedModel());
     });
 
     it('模块加载后 window.__mmar 已就绪（F2 自动初始化）', () => {
