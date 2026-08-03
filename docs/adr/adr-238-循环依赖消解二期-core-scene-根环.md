@@ -1,6 +1,6 @@
 # ADR-238: 循环依赖消解第二期 —— core→scene 根环与 motion/outfit 互依赖拆解
 
-> **状态**: 🟢 已实施（Phase 1–4 全部落地，2026-08-03 收尾；实测新增环 21 → 11，白名单 12 → 9）
+> **状态**: 🟢 已实施（Phase 1–4 + 收尾全部落地，2026-08-03 收尾；实测新增环 21 → 10，白名单 12 → 9；独立审查 P1/P2 已修复）
 > **日期**: 2026-08-03
 >
 > **编号**: 238
@@ -92,7 +92,7 @@ scene 系 7 环：scene → scene/motion → menus → X → scene              
 outfit 2-环： scene/manager → outfit → scene/manager                                         （根因三）
 ```
 
-**实施结果（2026-08-03 收尾实测）**：新增环 17 → **11**，白名单 12 → **9**（3 个白名单环被修复：`core→scene→motion-algos→scene/env→scene/physics→physics→core`、`core→scene→motion-algos→scene/env→scene/render→core`、`core→scene→motion-algos→scene/env→scene/render→scene/transform→core`）。剩余 11 环全部为「core 系结构性保留（dev-hooks DEV-only + render-loop 渲染循环）」或「type-only/动态 import（运行时零成本，检测器静态计数）」——详见 §2.5。
+**实施结果（2026-08-03 收尾实测）**：新增环 17 → **10**，白名单 12 → **9**（3 个白名单环被修复：`core→scene→motion-algos→scene/env→scene/physics→physics→core`、`core→scene→motion-algos→scene/env→scene/render→core`、`core→scene→motion-algos→scene/env→scene/render→scene/transform→core`）。剩余 10 环全部为「core 系结构性保留（dev-hooks DEV-only + render-loop 渲染循环 + load-manager 动态惰性）」或「type-only/动态 import（运行时零成本，检测器静态计数）」——详见 §2.5。收尾阶段还完成：白名单**精确收紧**（仅移除 3 个已修复白名单环，不吞新增环——`--update-allowlist` 会误收录新增环入白名单，已回退改手动精确移除）与独立审查修复（见 §2.6）。
 
 ---
 
@@ -148,10 +148,10 @@ outfit 2-环： scene/manager → outfit → scene/manager                      
   1. **AR 双向依赖解耦**（`scene/scene.ts ↔ scene/ar/ar-scene.ts` 双向 import）：scene.ts 移除 `setARMode/takeARScreenshot/isARModeActive` re-export，menus/scene-menu 改从 ar-scene 直引；scene/camera 的 `setARMode` 改经 `scene-action-bridge`（ar-scene 注册）。**实测教训**：camera 直引 ar-scene 曾致 +1 恶化（新增 `scene/camera→scene/ar` 链环），改用桥注入后消 2 环。
   2. **outfit 域资源释放桥接**：`scene/manager` 的 `disposeOverlay/restoreMaterials/disposeAudio` 改经桥（outfit-overlay/audio 注册）。
   3. **model-loader/motion 状态读取桥接**：`getActiveMotion/getSceneMotions/getMotionGen/resolveCompatibility`（motion-intent 注册）、`getOverrideType`（bone-override 注册）改经桥。
-- **实际落地 commit**：`be28aa27`（AR 解耦，14→12）、`6ea230e9`（outfit 桥接，12→11）、`609795f1`（model-loader 桥接）、`dbbe9afa`（bone-override 桥接）。
-- **验证**：`check:circular --strict` → **11 环**；`tsc --noEmit` + `vitest` 227 全绿。
+- **实际落地 commit**：`be28aa27`（AR 解耦，14→12）、`6ea230e9`（outfit 桥接，12→11）、`609795f1`（model-loader 桥接）、`dbbe9afa`（bone-override 桥接）、`7292e8df`（收尾：scene→outfit 清零 11→10 + 白名单精确收紧 12→9）。
+- **验证**：`check:circular --strict` → **10 环**；`tsc --noEmit` + `vitest` 227 全绿。
 
-### 2.5 剩余 11 环（收尾实测，2026-08-03）
+### 2.5 剩余 10 环（收尾实测，2026-08-03）
 
 ```
 core 系 5 环：
@@ -160,25 +160,36 @@ core 系 5 环：
   core → scene → scene/motion → scene/manager → core
   core → scene → scene/motion → scene/manager → scene/camera → core
   core → scene → library → core
-scene 内部系 6 环：
+scene 内部系 5 环：
   scene → scene/motion → scene
   scene/motion → scene/manager → scene/motion
   scene → scene/motion → scene/manager → scene/camera → scene
   scene → scene/motion → scene/manager → scene
   core → scene → outfit → core
-  scene → outfit → scene
 ```
 
 **逐环定性（为何保留）**：
 
 | 类别 | 环 | 驱动边 | 处置 |
 |------|----|--------|------|
-| core 系 | 5 环 | `core/dev-hooks.ts`（DEV-only 调试钩子，生产 tree-shake）+ `core/render-loop.ts`（核心渲染循环，结构性依赖）+ `core/mmar-globals.ts`（动态 import，惰性加载） | **合理保留**——dev-hooks 下沉会因 outfit 边成环（已实测），render-loop 下沉会暴露 `scene/render→core` 隐藏环（已实测），均为「检测器静态计数、运行时非环或 DEV-only」 |
+| core 系 | 5 环 | `core/dev-hooks.ts`（DEV-only 调试钩子，生产 tree-shake）+ `core/render-loop.ts`（核心渲染循环，结构性依赖）+ `core/load-manager.ts`（动态惰性 import） | **合理保留**——dev-hooks 下沉会因 outfit 边成环（已实测），render-loop 下沉会暴露 `scene/render→core` 隐藏环（已实测），均为「检测器静态计数、运行时非环或 DEV-only」 |
 | type-only | `scene/motion↔scene/manager` 部分 | `playback.ts`/`wasm-layers-blender.ts` 的 `import type { ModelManager }`（编译擦除） | **合理保留**——运行时零成本，检测器不区分 type-only |
-| 动态 import | `scene→outfit` 等 | `scene/scene.ts` 的 `await import('../outfit/outfit')`（初始化时序必需惰性加载） | **合理保留**——运行时惰性，非模块加载期边 |
-| 待治理 | `scene→outfit→scene`、`core→scene→outfit→core` | `scene/scene.ts` 动态 import outfit + `outfit→scene/manager` | 后续可经 `makeLazyLoader` 或 outfit 域解耦继续收敛 |
+| core→outfit | `core→outfit→core` | `core/dev-hooks.ts`（DEV-only）+ `core/load-manager.ts` 动态 import；outfit→core 为合法下行 | **合理保留**——同 core 系性质 |
 
-> 注：白名单 12 → **9**（3 个 `core→scene→motion-algos→scene/env→…` 系白名单环被 Phase 2 修复，可 `--update-allowlist` 收紧）。新增 21 → **11**，其中 8 环为上述合理保留，3 环（scene→outfit 系）为后续可选优化。
+> 注：白名单 12 → **9**（3 个 `core→scene→motion-algos→scene/env→…` 系白名单环被 Phase 2 修复，收尾时已**精确移除**——`--update-allowlist` 会误收录新增环入白名单，故改手动编辑 `circular-allowlist.json` 仅移除已修复环）。新增 21 → **10**，其中 9 环为上述合理保留，1 环（`core→outfit→core`）随 dev-hooks/load-manager 结构性保留。
+
+### 2.6 独立审查（2026-08-03，commit `1f3bc76f`）
+
+独立审查员（Agent）对 ADR-238 全链桥接审计，处置如下：
+
+| 级别 | 发现 | 处置 |
+|------|------|------|
+| P1 | `initLibrary` 桥注册依赖 menus 动态链，未注册则模型库静默不初始化 | ✅ init 调用前显式守卫 + `console.warn` |
+| P1 | 桥接口 `getActiveMotion`/`getSceneMotions` 用 `unknown` 泛化，消费端隐式断言 | ✅ 类型精确化为结构契约（`{vmdPath?,vmdName?}|null` / `{id?}[]`） |
+| P2 | dispose 桥缺失静默跳过（泄漏风险） | ✅ `getSceneAction`/`getUiAction` 对未注册 key 一次性 `console.warn` |
+| P3 | `mmar-globals` 残留 `await import('../scene/motion/motion-intent')` 双路径 | ✅ 改经桥（core→scene 直连清零） |
+| P3 | 桥未注册回退行为零测试 | ⏸ 部分覆盖（mock 场景 beforeEach 补注册） |
+| P3 | `getUiActions()` 兼容层与单字段 getter 并存 | ⏸ 保留（shortcut-app 仍用） |
 
 ---
 
@@ -189,7 +200,7 @@ scene 内部系 6 环：
 | A. 仅 `--update-allowlist` 吞掉 21 环 | ❌ 掩盖真实互依赖（恰是 `core→scene` 根环使 447 条 `menus→core` 全成环），门禁失效、运行时初始化顺序隐患照旧——ADR-236 已定性「不吞白名单」|
 | B. 只做 Phase 1（1 条边）不碰 core→scene | ⚠️ 已实施（21→17），解部分 CI 阻断；但 `core→scene` 根环未治，白名单继续掩盖结构性债务；作为**过渡**可接受，不作为终点 |
 | C. 全量重构（一次性拆 42 边） | ❌ 改动面过大、回归风险高；违背「小步验证、每阶段可回滚」纪律 |
-| **D. 四阶段（本 ADR，采纳并全部实施）** | ✅ 每阶段有 `check:circular` 硬验证；Phase 1 秒级解 CI，Phase 2 结构根治（注册表化 + 注入桥），Phase 3 簇反向边，Phase 4 收尾——**最终 21 → 11（剩余为合理保留）** |
+| **D. 四阶段（本 ADR，采纳并全部实施）** | ✅ 每阶段有 `check:circular` 硬验证；Phase 1 秒级解 CI，Phase 2 结构根治（注册表化 + 注入桥），Phase 3 簇反向边，Phase 4 收尾——**最终 21 → 10（剩余为合理保留）** |
 
 ---
 
@@ -211,11 +222,11 @@ scene 内部系 6 环：
 
 ## 5. 验证
 
-- 每阶段末 `npm run check:circular -- --strict` 实测：**21（基线）→ 17（Phase 1）→ 15（Phase 3 类型下沉）→ 14（Phase 2 收尾）→ 12（Phase 4 AR）→ 11（Phase 4 outfit/motion）**。
+- 每阶段末 `npm run check:circular -- --strict` 实测：**21（基线）→ 17（Phase 1）→ 15（Phase 3 类型下沉）→ 14（Phase 2 收尾）→ 12（Phase 4 AR）→ 11（Phase 4 outfit/motion）→ 10（收尾 scene→outfit 清零）**。
 - 白名单：12 → **9**（3 个 `scene/env` 系白名单环被修复）。
 - `tsc --noEmit` 零错误（每阶段）。
 - `vitest` 相关模块全绿（motion-algos / action-registry / init / dev-hooks / outfit / model-manager / mmar-globals，core 全量 227 通过）。
-- 剩余 11 环为合理保留（DEV-only / type-only / 动态惰性），见 §2.5 逐环定性。
+- 剩余 10 环为合理保留（DEV-only / type-only / 动态惰性 / core 系结构性），见 §2.5 逐环定性。
 
 ---
 

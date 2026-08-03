@@ -17,7 +17,7 @@
 |-----|------|------|
 | ADR-240 | 代码重复审计与双源消除 —— canvasToBase64 去重 / applyWindToParticles 空壳处置 / 工作区垃圾清理 | ✅ 已实施（2026-08-03 完成；P1 清理 + P2 双源消除 + P3 空壳删除落地，P4 暂缓） |
 | ADR-239 | env-water.ts 拆模块 —— 材质/反射/FX 三向拆分与生命周期宿主收拢（ADR-237 P3 落地） | ✅ 已实施（2026-08-03 完成；四文件拆分落地，env-water.ts 1569→237 行） |
-| ADR-238 | 循环依赖消解第二期 —— core→scene 根环与 motion/outfit 互依赖拆解 | 🟢 已实施（Phase 1–4 全部落地，2026-08-03 收尾；实测新增环 21 → 11，白名单 12 → 9） |
+| ADR-238 | 循环依赖消解第二期 —— core→scene 根环与 motion/outfit 互依赖拆解 | 🟢 已实施（Phase 1–4 + 收尾全部落地，2026-08-03 收尾；实测新增环 21 → 10，白名单 12 → 9；独立审查 P1/P2 已修复） |
 | ADR-237 | 超限模块拆分计划 —— 250LOC 天花板的优先级拆解路线图 | ✅ 收口（2026-08-03 登记；P1 c88aea48 / P2 2f656432 已完成，P3 已完成 [ADR-239](adr/adr-239-split-env-water.md)，P4 维持不拆） |
 | ADR-236 | 循环依赖消解 — scene/render ↔ scene/manager 互依赖拆解 | ✅ 核心已实施 — render↔manager 互依赖已拆解（2026-08-03，texture-lru 下沉 scene/shared，互环归零）；剩余 21 个新增环由 [ADR-238](adr/adr-238-循环依赖消解二期-core-scene-根环.md) 承接并已拆至 11 环（2026-08-03 收尾）。**订正**：texture-lru 下沉 scene/shared 引入 `scene/shared → core` 边，是 ADR-238 环 ①（`core→scene→motion-algos→scene/env→scene/render→scene/shared→core`）的成因之一，已在 ADR-238 §6 记录，勿误判为「剩余环不含 render」。门禁转正待剩余 11 环合理保留确认。 |
 | ADR-235 | 保存机制现状与张力登记 —— 双权威源 / 同步写假设 / 全量 vs 增量 / 迁移不对称 | ✅ 已完成（2026-08-02 落地登记 + Web 端退出兜底修复） |
