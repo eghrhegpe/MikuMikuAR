@@ -6,11 +6,12 @@ import { dom, mmdRuntime, setStatus } from './config';
 import { getUiAction, getUiActions } from './ui-action-bridge';
 import { t } from './i18n/t';
 import { focusedModelId } from './state';
-import { focusedModel, updatePlaybackUI, focusedMmdModel } from '../scene/scene';
+// [doc:adr-238] scene 操作经 scene-action-bridge（scene 侧注册）
+import { getSceneAction } from './scene-action-bridge';
 import { registerShortcuts } from './shortcut-registry';
-import { undo, redo, canUndo, canRedo } from '../scene/motion/motion-modules/motion-history';
-import { applyModuleSnapshot } from '../scene/motion/motion-modules/module-base';
-import { popUndoSnapshot, restoreUndoSnapshot } from '../scene/scene';
+
+
+
 
 // ======== Register global shortcuts via ShortcutRegistry ========
 export function registerAppShortcuts(): void {
@@ -105,7 +106,7 @@ export function registerAppShortcuts(): void {
             defaultKey: 'Space',
             prevent: true,
             handler: () => {
-                if (mmdRuntime && focusedMmdModel()) {
+                if (mmdRuntime && getSceneAction('focusedMmdModel')?.()) {
                     dom.btnPlayPause.click();
                 }
             },
@@ -130,7 +131,7 @@ export function registerAppShortcuts(): void {
                 if (!mmdRuntime) {
                     return;
                 }
-                const foc = focusedModel();
+                const foc = getSceneAction('focusedModel')?.() as { animationDuration?: number } | undefined;
                 if (!foc) {
                     return;
                 }
@@ -139,7 +140,7 @@ export function registerAppShortcuts(): void {
                     return;
                 }
                 mmdRuntime.seekAnimation(Math.max(0, mmdRuntime.currentTime - 5), true);
-                updatePlaybackUI();
+                getSceneAction('updatePlaybackUI')?.();
             },
             group: 'shortcuts.group.playbackControl',
         },
@@ -152,7 +153,7 @@ export function registerAppShortcuts(): void {
                 if (!mmdRuntime) {
                     return;
                 }
-                const foc = focusedModel();
+                const foc = getSceneAction('focusedModel')?.() as { animationDuration?: number } | undefined;
                 if (!foc) {
                     return;
                 }
@@ -161,7 +162,7 @@ export function registerAppShortcuts(): void {
                     return;
                 }
                 mmdRuntime.seekAnimation(Math.min(dur, mmdRuntime.currentTime + 5), true);
-                updatePlaybackUI();
+                getSceneAction('updatePlaybackUI')?.();
             },
             group: 'shortcuts.group.playbackControl',
         },
@@ -183,15 +184,15 @@ export function registerAppShortcuts(): void {
             prevent: true,
             handler: () => {
                 const modelId = focusedModelId;
-                if (modelId && canUndo(modelId)) {
-                    undo(modelId, (snap) => applyModuleSnapshot(modelId, snap));
+                if (modelId && (getSceneAction('canUndo')?.(modelId) ?? false)) {
+                    getSceneAction('undo')?.(modelId, (snap) => getSceneAction('applyModuleSnapshot')?.(modelId, snap)) ?? false;
                     setStatus(t('motion.undoApplied'), true);
                     return;
                 }
                 // 无 motion 撤销时，尝试场景级撤销（Ctrl+Z 兼顾全局）
-                const snap = popUndoSnapshot();
+                const snap = getSceneAction('popUndoSnapshot')?.();
                 if (snap) {
-                    void restoreUndoSnapshot(snap).then((ok) => {
+                    void (getSceneAction('restoreUndoSnapshot')?.(snap) ?? Promise.resolve(false)).then((ok) => {
                         if (ok) {
                             setStatus(t('scene.undoApplied'), true);
                         }
@@ -209,10 +210,10 @@ export function registerAppShortcuts(): void {
             prevent: true,
             handler: () => {
                 const modelId = focusedModelId;
-                if (!modelId || !canRedo(modelId)) {
+                if (!modelId || !(getSceneAction('canRedo')?.(modelId) ?? false)) {
                     return;
                 }
-                redo(modelId, (snap) => applyModuleSnapshot(modelId, snap));
+                getSceneAction('redo')?.(modelId, (snap) => getSceneAction('applyModuleSnapshot')?.(modelId, snap)) ?? false;
                 setStatus(t('motion.override.redoApplied'), true);
             },
             group: 'shortcuts.group.motionUndoRedo',

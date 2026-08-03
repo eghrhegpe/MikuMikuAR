@@ -17,11 +17,11 @@ import {
     setStatus,
 } from './config';
 import { getUiAction } from './ui-action-bridge';
-import { updatePlaybackUI, seekFromEvent, focusedMmdModel } from '../scene/scene';
 import { DownloadApk } from '../core/wails-bindings';
 import { freeflyInput } from './freefly-state';
 import { orbitInput } from './orbit-state';
-import { getCameraMode } from '../scene/camera/camera';
+// [doc:adr-238] scene 操作经 scene-action-bridge（scene 侧注册）
+import { getSceneAction } from './scene-action-bridge';
 import { t } from './i18n/t';
 import { openExternalLink } from './platform';
 import { getCachedCapabilities } from './backend';
@@ -71,13 +71,13 @@ export function registerEventHandlers(): void {
             await mmdRuntime.playAnimation();
             setIsPlaying(true);
         }
-        updatePlaybackUI();
+        getSceneAction('updatePlaybackUI')?.();
     });
 
     // Loop toggle
     _reg(dom.btnLoopToggle, 'click', () => {
         setAutoLoop(!autoLoop);
-        updatePlaybackUI();
+        getSceneAction('updatePlaybackUI')?.();
         setStatus(t('status.loop', { state: autoLoop ? t('common.on') : t('common.off') }), true);
     });
 
@@ -98,7 +98,7 @@ export function registerEventHandlers(): void {
     // keydown 完整守卫（模式 + 输入框 + 菜单）：避免在输入框打字或菜单导航时误触发移动。
     // keyup 只查模式、不受守卫限制：保证松键总能清标记，避免相机“卡住”持续移动（同 orbit 模式）。
     const _freeflyKeyActive = (t: HTMLElement | null): boolean => {
-        if (getCameraMode() !== 'freefly') {
+        if ((getSceneAction('getCameraMode')?.() ?? 'orbit') !== 'freefly') {
             return false;
         }
         if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) {
@@ -145,7 +145,7 @@ export function registerEventHandlers(): void {
     // Freefly WASD release
     _reg(window, 'keyup', (e) => {
         // keyup 不受输入框/菜单守卫限制：保证松键总能清标记，避免相机“卡住”持续移动
-        if (getCameraMode() !== 'freefly') {
+        if ((getSceneAction('getCameraMode')?.() ?? 'orbit') !== 'freefly') {
             return;
         }
         if (_freeflyKeyFlag(e.code, false)) {
@@ -158,7 +158,7 @@ export function registerEventHandlers(): void {
     // 丝滑：keydown/keyup 只置位，实际积分由 camera-behaviors.ts 的 initOrbitUpdate
     // 渲染循环逐帧推进（同 freefly）。方向键从相机控制让出：菜单开 = 导航，菜单关 = 播放 seek。
     const _orbitKeyActive = (t: HTMLElement | null): boolean => {
-        if (getCameraMode() !== 'orbit') {
+        if ((getSceneAction('getCameraMode')?.() ?? 'orbit') !== 'orbit') {
             return false;
         }
         if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) {
@@ -203,7 +203,7 @@ export function registerEventHandlers(): void {
     });
     _reg(window, 'keyup', (e) => {
         // keyup 不受菜单守卫限制：保证松键总能清标记，避免相机“卡住”持续旋转
-        if (getCameraMode() !== 'orbit') {
+        if ((getSceneAction('getCameraMode')?.() ?? 'orbit') !== 'orbit') {
             return;
         }
         if (_orbitKeyFlag(e.code, false)) {
@@ -219,12 +219,12 @@ export function registerEventHandlers(): void {
             mmdRuntime.pauseAnimation();
             setIsPlaying(false);
         }
-        seekFromEvent(e);
+        getSceneAction('seekFromEvent')?.(e);
         dom.seekBar.setPointerCapture(e.pointerId);
     });
     _reg(window, 'pointermove', (e) => {
         if (seekDragging) {
-            seekFromEvent(e);
+            getSceneAction('seekFromEvent')?.(e);
         }
     });
     _reg(window, 'pointerup', async () => {
@@ -232,10 +232,10 @@ export function registerEventHandlers(): void {
             return;
         }
         setSeekDragging(false);
-        if (seekWasPlaying && mmdRuntime && focusedMmdModel()) {
+        if (seekWasPlaying && mmdRuntime && getSceneAction('focusedMmdModel')?.()) {
             await mmdRuntime.playAnimation();
             setIsPlaying(true);
-            updatePlaybackUI();
+            getSceneAction('updatePlaybackUI')?.();
         }
     });
 

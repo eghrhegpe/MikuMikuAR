@@ -209,3 +209,14 @@ export function clearHistory(modelId: string): void {
     _historyMap.delete(modelId);
     _mergeMap.delete(modelId);
 }
+
+// [doc:adr-238] 注册动作历史供 core/快捷键层经 scene-action-bridge 调用
+import { registerSceneAction } from '@/core/scene-action-bridge';
+registerSceneAction('undo', (modelId: string, applySnapshot: (snap: unknown) => void) =>
+    undo(modelId, applySnapshot as SnapshotApplier)
+);
+registerSceneAction('redo', (modelId: string, applySnapshot: (snap: unknown) => void) =>
+    redo(modelId, applySnapshot as SnapshotApplier)
+);
+registerSceneAction('canUndo', (modelId: string) => canUndo(modelId));
+registerSceneAction('canRedo', (modelId: string) => canRedo(modelId));
