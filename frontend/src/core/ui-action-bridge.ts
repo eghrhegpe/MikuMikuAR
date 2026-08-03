@@ -26,6 +26,33 @@ export interface UiActions {
     screenshotBatch: () => Promise<void>;
     /** 保存场景（scene 动作），由 menus/scene-menu 注册 */
     saveScene: () => Promise<void>;
+    /** 获取动作菜单栈（motion 动作），由 menus/motion-popup 注册 */
+    getMotionMenu: () => unknown;
+    /** 刷新动作菜单根（motion 动作），由 menus/motion-popup 注册 */
+    refreshMotionRoot: () => void;
+    /** 构建动作菜单根项（motion 动作），由 menus/motion-root-ui 注册 */
+    buildMotionRootItems: () => unknown[];
+    /** 导入外部动画（motion 动作），由 menus/motion-root-ui 注册 */
+    importExternalAnimation: (kind: string) => void;
+    /** 处理模型动作（motion 动作），由 menus/motion-binding-ui 注册 */
+    handleModelAction: (action: string, modelId?: string) => Promise<void>;
+    /** 重置焦点图层（motion 动作），由 menus/motion-binding-ui 注册 */
+    resetFocusedLayerId: () => void;
+    /** 构建动作绑定层级（motion 动作），由 menus/motion-binding-ui 注册 */
+    buildActionBindingLevel: (id?: string) => unknown;
+    /** 构建动作详情层级（motion 动作），由 menus/motion-detail-ui 注册 */
+    buildMotionDetailLevel: (sceneMotionId?: string) => unknown;
+    /** 获取浏览目录（motion 动作），由 library/library-path 注册 */
+    getBrowseDir: (kind: string) => string;
+    /** 构建菜单浏览层级（motion 动作 browse-*），由 menus/motion-popup 注册 */
+    buildBrowseLevel: (args: {
+        dir: string;
+        label: string;
+        filter?: (m: { format?: string }) => boolean;
+        targetStack?: unknown;
+        extraFolders?: { label: string; path: string }[];
+        outcome?: Record<string, unknown>;
+    }) => unknown;
 }
 
 const _uiActions = new Map<keyof UiActions, unknown>();

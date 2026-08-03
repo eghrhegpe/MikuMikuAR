@@ -463,3 +463,9 @@ export function applyInheritedState(newId: string, snap: ReplaceSnapshot): void 
         }
     }
 }
+
+// [doc:adr-238] 注册模型编队供 core/action-defs 经 scene-action-bridge 调用
+import { registerSceneAction } from '@/core/scene-action-bridge';
+registerSceneAction('setModelFormation', (formation: string) => {
+    setModelFormation(formation as Parameters<typeof setModelFormation>[0]);
+});

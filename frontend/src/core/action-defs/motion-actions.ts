@@ -1,41 +1,43 @@
 import { registerAction } from '../action-registry';
-import { setLipSyncEnabled, getLipSyncState } from '../../scene/motion/lipsync-bridge';
-import {
-    clearAllSceneMotions,
-    addSceneMotion,
-    replaceDefaultMotion,
-} from '../../scene/motion/motion-intent';
-import { pushUndoSnapshot, offerSceneUndoAndRefresh } from '../../scene/scene-serialize';
-import { updatePlaybackUI } from '../../scene/motion/playback';
 import { triggerAutoSave } from '../config';
 import { feedbackInfo } from '../feedback';
 import { showInfoToast } from '../toast';
 import { showConfirm } from '../dialog';
 import { isPlaying, setIsPlaying } from '../playback-state';
 import { mmdRuntime } from '../scene-state';
-import { getMotionMenu, refreshMotionRoot } from '../../menus/motion-popup';
-import { buildMotionRootItems, importExternalAnimation } from '../../menus/motion-root-ui';
-import {
-    handleModelAction,
-    resetFocusedLayerId,
-    buildActionBindingLevel,
-} from '../../menus/motion-binding-ui';
-import { buildMotionDetailLevel } from '../../menus/motion-detail-ui';
-import { setProcMotionMode, regenerateProcMotion } from '../../scene/motion/proc-motion-bridge';
-import type { ProcMotionMode } from '../../motion-algos/procedural-motion';
-import { loadManager } from '../load-manager';
-import { loadVPDPose, modelManager } from '../../scene/scene';
-import { getAudioName } from '../../outfit/audio';
 import { t } from '../i18n/t';
-// [doc:adr-238] stackRegistry 归 menus 层（config 聚合转发已移除），此文件为 action-defs（任务 #7 迁出 core），临时直连维持行为。
-import { stackRegistry } from '../../menus/menu-stack-registry';
-import { getBrowseDir } from '../../library/library-path';
+import { loadManager } from '../load-manager';
+// [doc:adr-238] 跨层实现经 scene-action-bridge / ui-action-bridge 调用
+import { getSceneAction } from '../scene-action-bridge';
+import { getUiAction } from '../ui-action-bridge';
 
-/** 按名称模糊搜索场景内已加载模型（供 entity resolve 消费）。 */
-async function findSceneModelByName(name: string): Promise<unknown> {
-    return (
-        modelManager.getAll().find((m) => m.name.toLowerCase().includes(name.toLowerCase())) ?? null
-    );
+/** [doc:adr-238] 按名称模糊搜索场景内已加载模型（经桥，entity resolve 消费） */
+function findSceneModelByName(name: string): Promise<unknown> {
+    return getSceneAction('findSceneModelByName')?.(name) ?? Promise.resolve(null);
+}
+
+/** [doc:adr-238] 菜单栈访问统一经 getUiAction('getMotionMenu')，不再直接 import menus */
+function _getMotionMenu(): { push?: (l: unknown) => void; getLevel?: (i: number) => unknown } | null {
+    return (getUiAction('getMotionMenu')?.() ?? null) as ReturnType<typeof _getMotionMenu>;
+}
+
+/** [doc:adr-238] 菜单浏览层级构建经 ui-action-bridge（library-core 注册），不再直接 import menus */
+function _buildLevel(
+    dir: string,
+    label: string,
+    filter?: (m: { format?: string }) => boolean,
+    targetStack?: unknown,
+    extraFolders?: { label: string; path: string }[],
+    outcome?: Record<string, unknown>
+): unknown {
+    return getUiAction('buildBrowseLevel')?.({
+        dir,
+        label,
+        filter,
+        targetStack,
+        extraFolders,
+        outcome,
+    });
 }
 
 export function registerMotionActions(): void {
@@ -47,7 +49,7 @@ export function registerMotionActions(): void {
         params: [],
         destructive: false,
         execute: async () => {
-            setLipSyncEnabled(!getLipSyncState().enabled);
+            getSceneAction('setLipSyncEnabled')?.(!getSceneAction('getLipSyncState')?.().enabled);
         },
     });
 
@@ -62,18 +64,18 @@ export function registerMotionActions(): void {
             if (!(await showConfirm(t('motion.clearAllConfirm')))) {
                 return;
             }
-            const snap = pushUndoSnapshot();
-            clearAllSceneMotions();
+            const snap = getSceneAction('pushUndoSnapshot')?.();
+            getSceneAction('clearAllSceneMotions')?.();
             if (isPlaying && mmdRuntime) {
                 mmdRuntime.pauseAnimation();
                 setIsPlaying(false);
             }
-            updatePlaybackUI();
-            refreshMotionRoot();
+            getSceneAction('updatePlaybackUI')?.();
+            getUiAction('refreshMotionRoot')?.();
             triggerAutoSave();
             feedbackInfo('motion.motionCleared', undefined);
-            offerSceneUndoAndRefresh('motion.motionCleared', snap, () => {
-                refreshMotionRoot();
+            getSceneAction('offerSceneUndoAndRefresh')?.('motion.motionCleared', snap, () => {
+                getUiAction('refreshMotionRoot')?.();
             });
         },
     });
@@ -87,7 +89,7 @@ export function registerMotionActions(): void {
         destructive: false,
         uiOnly: true,
         execute: async () => {
-            importExternalAnimation('mixamo');
+            getUiAction('importExternalAnimation')?.('mixamo');
         },
     });
 
@@ -100,7 +102,7 @@ export function registerMotionActions(): void {
         destructive: false,
         uiOnly: true,
         execute: async () => {
-            importExternalAnimation('vrm');
+            getUiAction('importExternalAnimation')?.('vrm');
         },
     });
 
@@ -113,7 +115,7 @@ export function registerMotionActions(): void {
         destructive: false,
         uiOnly: true,
         execute: async () => {
-            importExternalAnimation('custom');
+            getUiAction('importExternalAnimation')?.('custom');
         },
     });
 
@@ -125,7 +127,7 @@ export function registerMotionActions(): void {
         params: [{ name: 'modelId', type: 'entity', resolve: findSceneModelByName }],
         destructive: false,
         execute: async (p) => {
-            await handleModelAction('pause', p.modelId as string);
+            await getUiAction('handleModelAction')?.('pause', p.modelId as string);
         },
     });
 
@@ -137,7 +139,7 @@ export function registerMotionActions(): void {
         params: [{ name: 'modelId', type: 'entity', resolve: findSceneModelByName }],
         destructive: true,
         execute: async (p) => {
-            await handleModelAction('reset', p.modelId as string);
+            await getUiAction('handleModelAction')?.('reset', p.modelId as string);
         },
     });
 
@@ -149,7 +151,7 @@ export function registerMotionActions(): void {
         params: [{ name: 'modelId', type: 'entity', resolve: findSceneModelByName }],
         destructive: false,
         execute: async (p) => {
-            await handleModelAction('pose', p.modelId as string);
+            await getUiAction('handleModelAction')?.('pose', p.modelId as string);
         },
     });
 
@@ -161,7 +163,7 @@ export function registerMotionActions(): void {
         params: [{ name: 'modelId', type: 'entity', resolve: findSceneModelByName }],
         destructive: false,
         execute: async (p) => {
-            await handleModelAction('loop', p.modelId as string);
+            await getUiAction('handleModelAction')?.('loop', p.modelId as string);
         },
     });
 
@@ -179,8 +181,8 @@ export function registerMotionActions(): void {
         ],
         destructive: false,
         execute: async (p) => {
-            setProcMotionMode(p.mode as ProcMotionMode);
-            regenerateProcMotion();
+            getSceneAction('setProcMotionMode')?.(p.mode as string);
+            getSceneAction('regenerateProcMotion')?.();
         },
     });
 
@@ -211,7 +213,7 @@ export function registerMotionActions(): void {
         destructive: false,
         uiOnly: true,
         execute: async (p) => {
-            addSceneMotion({
+            getSceneAction('addSceneMotion')?.({
                 vmdPath: p.path as string,
                 vmdName:
                     (p.name as string) ||
@@ -236,7 +238,7 @@ export function registerMotionActions(): void {
         uiOnly: true,
         execute: async (p) => {
             loadManager.load({ kind: 'audio', path: p.path as string });
-            showInfoToast(t('motion.musicLoaded', { name: getAudioName() }));
+            showInfoToast(t('motion.musicLoaded', { name: getSceneAction('getAudioName')?.() ?? '' }));
         },
     });
 
@@ -249,7 +251,7 @@ export function registerMotionActions(): void {
         destructive: false,
         uiOnly: true,
         execute: async (p) => {
-            loadVPDPose(p.path as string);
+            getSceneAction('loadVPDPose')?.(p.path as string);
         },
     });
 
@@ -264,11 +266,15 @@ export function registerMotionActions(): void {
         destructive: false,
         uiOnly: true,
         execute: async (p) => {
-            resetFocusedLayerId();
+            getUiAction('resetFocusedLayerId')?.();
             const id = p.modelId as string;
-            const lvl = buildActionBindingLevel(id);
-            lvl.itemBuilder = () => buildActionBindingLevel(id).items;
-            getMotionMenu()?.push(lvl);
+            const lvl = getUiAction('buildActionBindingLevel')?.(id) as {
+                itemBuilder?: (() => unknown[]) | undefined;
+            } | undefined;
+            if (lvl) {
+                lvl.itemBuilder = () => (getUiAction('buildActionBindingLevel')?.(id) as { items?: unknown[] })?.items ?? [];
+            }
+            (getUiAction('getMotionMenu')?.() as { push?: (l: unknown) => void } | undefined)?.push(lvl);
         },
     });
 
@@ -281,13 +287,13 @@ export function registerMotionActions(): void {
         destructive: false,
         uiOnly: true,
         execute: async () => {
-            const level = stackRegistry.buildLevel!(
-                getBrowseDir('audio'),
+            const level = _buildLevel!(
+                getUiAction('getBrowseDir')?.('audio') ?? '',
                 t('motion.musicLibrary'),
                 (m) => m.format === 'audio',
-                getMotionMenu() ?? undefined
+                _getMotionMenu() ?? undefined
             );
-            getMotionMenu()?.push(level);
+            _getMotionMenu()?.push(level);
         },
     });
 
@@ -300,45 +306,45 @@ export function registerMotionActions(): void {
         destructive: false,
         uiOnly: true,
         execute: async () => {
-            resetFocusedLayerId();
-            const level = stackRegistry.buildLevel!(
-                getBrowseDir('vmd'),
+            getUiAction('resetFocusedLayerId')?.();
+            const level = _buildLevel!(
+                getUiAction('getBrowseDir')?.('vmd') ?? '',
                 t('motion.browseMotionLibrary'),
                 (m) => m.format === 'vmd',
-                getMotionMenu() ?? undefined,
+                _getMotionMenu() ?? undefined,
                 undefined,
                 {
                     mode: 'stay',
                     onVmdPick: (path: string, name: string) => {
                         const vmdName = name.replace(/\.vmd$/i, '');
-                        addSceneMotion({ vmdPath: path, vmdName, vmdLayers: [], source: 'vmd' });
-                        const menu = getMotionMenu();
+                        getSceneAction('addSceneMotion')?.({ vmdPath: path, vmdName, vmdLayers: [], source: 'vmd' });
+                        const menu = _getMotionMenu();
                         if (menu) {
-                            const root = menu.getLevel(0);
+                            const root = menu?.getLevel?.(0) as { items?: unknown[] } | undefined;
                             if (root) {
-                                root.items = buildMotionRootItems();
+                                root.items = (getUiAction('buildMotionRootItems')?.() ?? []);
                             }
                         }
                     },
                     onVmdReplace: (path: string, name: string) => {
                         const vmdName = name.replace(/\.vmd$/i, '');
-                        replaceDefaultMotion({
+                        getSceneAction('replaceDefaultMotion')?.({
                             vmdPath: path,
                             vmdName,
                             vmdLayers: [],
                             source: 'vmd',
                         });
-                        const menu = getMotionMenu();
+                        const menu = _getMotionMenu();
                         if (menu) {
-                            const root = menu.getLevel(0);
+                            const root = menu?.getLevel?.(0) as { items?: unknown[] } | undefined;
                             if (root) {
-                                root.items = buildMotionRootItems();
+                                root.items = (getUiAction('buildMotionRootItems')?.() ?? []);
                             }
                         }
                     },
                 }
             );
-            getMotionMenu()?.push(level);
+            _getMotionMenu()?.push(level);
         },
     });
 
@@ -352,9 +358,13 @@ export function registerMotionActions(): void {
         uiOnly: true,
         execute: async (p) => {
             const sceneMotionId = p.sceneMotionId as string | undefined;
-            const lvl = buildMotionDetailLevel(sceneMotionId);
-            lvl.itemBuilder = () => [];
-            getMotionMenu()?.push(lvl);
+            const lvl = getUiAction('buildMotionDetailLevel')?.(sceneMotionId) as {
+                itemBuilder?: (() => unknown[]) | undefined;
+            } | undefined;
+            if (lvl) {
+                lvl.itemBuilder = () => [];
+            }
+            (getUiAction('getMotionMenu')?.() as { push?: (l: unknown) => void } | undefined)?.push(lvl);
         },
     });
 }

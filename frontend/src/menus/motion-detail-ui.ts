@@ -447,3 +447,9 @@ export function buildPlaybackSpeedLevel(): PopupLevel {
         },
     };
 }
+
+// [doc:adr-238] 注册动作详情 UI 操作供 core/action-defs 经 ui-action-bridge 调用
+import { registerUiAction } from '@/core/ui-action-bridge';
+registerUiAction('buildMotionDetailLevel', (sceneMotionId?: string) =>
+    buildMotionDetailLevel(sceneMotionId)
+);

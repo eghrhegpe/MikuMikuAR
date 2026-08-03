@@ -78,3 +78,7 @@ export function getBrowseDir(category: string): string {
     const subdir = CATEGORY_DIR[category] ?? category;
     return libraryRoot + '/' + subdir;
 }
+
+// [doc:adr-238] 注册浏览目录读取供 core/action-defs 经 ui-action-bridge 调用
+import { registerUiAction } from '@/core/ui-action-bridge';
+registerUiAction('getBrowseDir', (kind: string) => getBrowseDir(kind));

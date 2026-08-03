@@ -394,3 +394,8 @@ export async function importExternalAnimation(
     playRetargetedAnimation(scene, result, path);
     showInfoToast(t('motion.retarget.loaded', { preset }));
 }
+
+// [doc:adr-238] 注册动作根 UI 操作供 core/action-defs 经 ui-action-bridge 调用
+import { registerUiAction } from '@/core/ui-action-bridge';
+registerUiAction('buildMotionRootItems', () => buildMotionRootItems());
+registerUiAction('importExternalAnimation', (kind: string) => importExternalAnimation(kind as Parameters<typeof importExternalAnimation>[0]));

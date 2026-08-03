@@ -704,3 +704,4 @@ registerSceneAction('replaceModel', (model: unknown) => replaceModel(model as Li
 registerSceneAction('replaceMotion', (model: unknown) => replaceMotion(model as LibraryModel));
 registerSceneAction('findLibraryModelByName', (name: string) => findLibraryModelByName(name));
 registerSceneAction('findLibraryMotionByName', (name: string) => findLibraryMotionByName(name));
+registerSceneAction('importFile', () => importFile());

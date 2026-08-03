@@ -351,3 +351,13 @@ export function resolveCompatibility(
         reason: `仅匹配到 ${matched}/${MIN_STANDARD_BONE_MATCH} 个标准骨骼，不兼容当前动作`,
     };
 }
+
+// [doc:adr-238] 注册动作意图操作供 core/action-defs 经 scene-action-bridge 调用
+import { registerSceneAction } from '@/core/scene-action-bridge';
+registerSceneAction('clearAllSceneMotions', () => clearAllSceneMotions());
+registerSceneAction('addSceneMotion', (opts: Record<string, unknown>) => {
+    addSceneMotion(opts as unknown as Parameters<typeof addSceneMotion>[0]);
+});
+registerSceneAction('replaceDefaultMotion', (opts: Record<string, unknown>) => {
+    replaceDefaultMotion(opts as unknown as Parameters<typeof replaceDefaultMotion>[0]);
+});
