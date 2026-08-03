@@ -22,7 +22,8 @@ import {
 } from '@/motion-algos/procedural-motion';
 import { BeatDetector } from '@/motion-algos/beat-detector';
 import { focusedModelId } from '@/core/config';
-import { isAudioPlaying } from '@/outfit/audio';
+// [doc:adr-238] 音频操作经 scene-action-bridge（outfit/audio 注册）
+import { getSceneAction } from '@/core/scene-action-bridge';
 import { modelManager, focusedMmdModel, focusedModel } from '../scene';
 import { onPerceptionModelRemoved } from './perception';
 import { logWarn } from '@/core/logger';
@@ -305,7 +306,7 @@ export class ProcMotionControllerBase {
 
         // Issue #1: focusedModel() 可能为 null/undefined
         const model = focusedModel();
-        const audioOn = isAudioPlaying();
+        const audioOn = getSceneAction('isAudioPlaying')?.() ?? false;
         // [fix:adr-129/proc-slot] 程序化动作现已写入 inst.vmdData（替代旧直写 setRuntimeAnimation，
         // 见 _startProcMotion 内注），故不能再用 vmdData 判定"用户/场景 VMD 是否存在"——
         // 否则每帧 onBeforeRender 调用的 updateProcMotion 会把程序化数据误判为"用户 VMD"，

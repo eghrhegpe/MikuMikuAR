@@ -25,8 +25,9 @@ import { feedbackInfo, feedbackStatus } from '@/core/feedback';
 import { switchAnimation } from '@/core/mmd-adapter';
 import { showInfoToast } from '@/core/toast';
 import { replaceDefaultMotion, getActiveMotion } from './motion-intent';
-import { loadCameraVmd } from '../camera/camera';
-import { loadAudioFile } from '@/outfit/audio';
+// [doc:adr-238] 相机 VMD 经 scene-action-bridge
+import { getSceneAction } from '@/core/scene-action-bridge';
+// [doc:adr-238] 音频操作经 scene-action-bridge（outfit/audio 注册）
 import { PROC_VMD_NAME_IDLE, PROC_VMD_NAME_AUTODANCE } from '@/motion-algos/procedural-motion';
 import { isAutoLoadCompanionAudioEnabled } from '@/core/state';
 
@@ -124,7 +125,7 @@ export async function loadVMDMotion(
 
         // Extract camera track from VMD and apply to MmdCamera
         try {
-            loadCameraVmd(mmdAnimation, '', name);
+            getSceneAction('loadCameraVmd')?.(mmdAnimation, '', name);
         } catch {
             // 程序化动作的 VMD 不含相机轨道，此处跳过是正常行为
         }
@@ -291,7 +292,7 @@ async function _tryLoadCompanionAudio(
             return; // VMD 已被切换，丢弃本次伴音
         }
 
-        await loadAudioFile(audioPath);
+        await (getSceneAction('loadAudioFile') as ((p: string) => Promise<void>) | undefined)?.(audioPath);
         _companionAudioCache.add(basePath);
         // [doc:adr-feedback] 伴音加载是中间步骤，走状态栏；模型替换的最终态由"模型已替换"toast 承担。
         feedbackStatus('scene.vmd.loadedWithAudio', undefined, undefined, { name: audioName });
@@ -317,7 +318,7 @@ export async function loadCameraVmdFromPath(path: string, _signal?: AbortSignal)
             const vmdLoader = new VmdLoader(scene);
             const mmdAnimation = await vmdLoader.loadFromBufferAsync(vmdName, vmdData);
             // VmdLoader 无实例状态需释放（解析结果已转移到 mmdAnimation），GC 自动回收
-            loadCameraVmd(mmdAnimation, path, vmdName.replace(/\.vmd$/i, ''));
+            getSceneAction('loadCameraVmd')?.(mmdAnimation, path, vmdName.replace(/\.vmd$/i, ''));
             showInfoToast(t('scene.vmd.cameraLoaded', { name: vmdName }));
             triggerAutoSave();
         } catch (err) {

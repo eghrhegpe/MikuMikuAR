@@ -556,3 +556,13 @@ export function getStreamPlayer(): StreamAudioPlayer | null {
 // [doc:adr-238] 注册音频名读取供 core/action-defs 经 scene-action-bridge 调用
 import { registerSceneAction } from '@/core/scene-action-bridge';
 registerSceneAction('getAudioName', () => getAudioName());
+
+// [doc:adr-238] 注册音频操作供 scene/motion 经 scene-action-bridge 调用（切断 scene/motion→outfit）
+registerSceneAction('isAudioPlaying', () => isAudioPlaying());
+registerSceneAction('getAudioPath', () => getAudioPath());
+registerSceneAction('syncAudioPlayback', (vmdTime: number, isPlaying: boolean, vmdDuration: number) => {
+    syncAudioPlayback(vmdTime, isPlaying, vmdDuration);
+});
+
+// [doc:adr-238] 补充注册音频加载供 scene/motion 经 scene-action-bridge 调用
+registerSceneAction('loadAudioFile', (filePath: string) => loadAudioFile(filePath));

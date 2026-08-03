@@ -13,8 +13,9 @@ import {
     formatTime,
     mmdRuntime,
 } from '@/core/config';
-import { isAudioPlaying, syncAudioPlayback } from '@/outfit/audio';
-import { animateCameraVmd } from '../camera/camera';
+// [doc:adr-238] 音频操作经 scene-action-bridge（outfit/audio 注册）
+import { getSceneAction } from '@/core/scene-action-bridge';
+// [doc:adr-238] 相机 VMD 经 scene-action-bridge
 import type { IMmdRuntime } from 'babylon-mmd/esm/Runtime/IMmdRuntime';
 import type { ModelManager } from '../manager/model-manager';
 import type { BeatDetector } from '@/motion-algos/beat-detector';
@@ -57,11 +58,11 @@ export function initPlaybackObservables(
     const tickHandle = observe(runtime.onAnimationTickObservable, () => {
         // 每帧统一刷新节拍检测器（供 LipSync + Auto Dance 共享）
         const beatDetector = getProcBeatDetector();
-        if (isAudioPlaying() && beatDetector) {
+        if ((getSceneAction('isAudioPlaying')?.() ?? false) && beatDetector) {
             beatDetector.update();
         }
         updatePlaybackUI();
-        animateCameraVmd(runtime.currentTime * 30);
+        getSceneAction('animateCameraVmd')?.(runtime.currentTime * 30);
         // updateProcMotion 是 async 函数，在同步回调中 fire-and-forget
         // 添加 .catch 防止未处理的 Promise 拒绝导致静默崩溃
         updateProcMotion().catch((err: unknown) =>
@@ -190,7 +191,7 @@ export function seekFromEvent(e: MouseEvent | PointerEvent): void {
     const targetTime = ratio * duration;
     mmdRuntime.seekAnimation(targetTime, true);
     updatePlaybackUI();
-    syncAudioPlayback(targetTime, isPlaying, duration);
+    getSceneAction('syncAudioPlayback')?.(targetTime, isPlaying, duration);
 }
 
 // [doc:adr-238] 注册播放 UI 刷新供 core/action-defs 经 scene-action-bridge 调用

@@ -7,7 +7,8 @@ import { Camera } from '@babylonjs/core/Cameras/camera';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 
 import type { MmdRuntimeBoneExtended } from '@/core/types';
-import { isARActive } from '../ar/ar-camera';
+// [doc:adr-238] isARActive 经 scene-action-bridge 查询（ar-camera 注册），切断 scene/motion→scene/ar
+import { getSceneAction } from '@/core/scene-action-bridge';
 import { transformWorldToRootLocal } from '@/core/mmd-adapter';
 import type {
     MeshMetadata,
@@ -135,7 +136,7 @@ function _swingTwistDecompose(q: Quaternion, twistAxis: Vector3, outTwist: Quate
 
 /** 获取视线目标点（AR 模式沿相机朝向投射，普通模式用相机位置） */
 export function _getGazeTarget(cam: Camera, out: Vector3): Vector3 {
-    if (isARActive()) {
+    if (getSceneAction('isARActive')?.() ?? false) {
         const forward = cam.getDirection(Vector3.Forward());
         out.copyFrom(cam.position);
         out.addInPlace(forward.scale(AR_GAZE_DISTANCE));
