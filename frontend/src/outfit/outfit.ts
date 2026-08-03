@@ -793,3 +793,12 @@ export async function resetOutfit(id: string): Promise<void> {
     inst._origParams = undefined;
     triggerAutoSave();
 }
+
+// [doc:adr-238] 注册换装加载供 scene 经 scene-action-bridge 调用（切断 scene→outfit）
+import { registerSceneAction } from '@/core/scene-action-bridge';
+registerSceneAction('loadOutfits', (id: string) => loadOutfits(id) as unknown as Promise<void>);
+
+// [doc:adr-238] 注册换装变体应用供 scene-serialize 经 scene-action-bridge 调用
+registerSceneAction('applyOutfitVariant', (id: string, variantName: string) =>
+    applyOutfitVariant(id, variantName)
+);

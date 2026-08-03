@@ -112,7 +112,7 @@ import {
     focusedModelId,
 } from '../core/config';
 import { triggerAutoSave, setTriggerAutoSave } from '../core/auto-save';
-import { attachBeatDetector, getStreamPlayer } from '../outfit/audio';
+// [doc:adr-238] 音频功能经 scene-action-bridge（outfit/audio 注册），切断 scene→outfit
 import { detectRuntimeMode, persistRuntimeMode, renderRuntimeBadge } from '../core/runtime-mode';
 import { _catState, _matState, _matEnabled } from './manager/material';
 import { updatePlaybackUI, initPlaybackObservables } from './motion/playback';
@@ -360,15 +360,14 @@ export async function initScene(): Promise<void> {
     initRenderer(scene, modelRegistry, triggerAutoSave);
     initEnvFacade(scene, pipeline);
     const beat = createProcBeatDetector();
-    attachBeatDetector(beat);
+    getSceneAction('attachBeatDetector')?.(beat);
     _bindSceneEvents(scene);
     await _injectRuntimeCallbacks(runtime, scene);
     _initModelManager(scene, runtime, triggerAutoSave, autoFrame);
     _injectModelCallbacks(modelManager, runtime);
     // Loader（必须在 modelManager + setTriggerAutoSave 之后）
-    const outfitMod = await import('../outfit/outfit');
-    // [doc:adr-238] tryAutoApplyPreset 经 scene-action-bridge 获取（menus/model-preset 注册），
-    // 切断 scene→menus 反向依赖。
+    // [doc:adr-238] tryAutoApplyPreset/loadOutfits 经 scene-action-bridge（menus/model-preset + outfit 注册），
+    // 切断 scene→menus 与 scene→outfit 反向依赖。
     initLoader(
         scene,
         runtime,
@@ -376,8 +375,7 @@ export async function initScene(): Promise<void> {
         refreshWaterRenderList,
         (id: string) => getSceneAction('tryAutoApplyPreset')?.(id),
         (id: string) =>
-            outfitMod
-                .loadOutfits(id)
+            getSceneAction('loadOutfits')?.(id)
                 .then(() => {})
                 .catch(() => {
                     /* loadOutfits 仅用于换装，失败不阻断流程 */
@@ -499,7 +497,7 @@ async function _injectRuntimeCallbacks(runtime: IMmdRuntime, scene: Scene): Prom
     // 将 StreamAudioPlayer 接入 MMD Runtime，实现原生音画同步
     // （play/pause/seek 由 Runtime 自动管理，无需手动 syncAudioPlayback）
     swallowError(
-        Promise.resolve(getStreamPlayer()).then((player) => {
+        Promise.resolve(getSceneAction('getStreamPlayer')?.() as Parameters<typeof runtime.setAudioPlayer>[0] | null).then((player) => {
             if (player) {
                 runtime.setAudioPlayer(player);
             }
@@ -824,13 +822,6 @@ export {
     getCameraMode,
 } from './camera/camera';
 export type { CameraState } from './camera/camera';
-export {
-    syncAudioPlayback,
-    loadAudioFile,
-    attachBeatDetector,
-    disposeAudio,
-    isAudioPlaying,
-} from '../outfit/audio';
 export { SaveThumbnail, SaveLastScene, LoadLastScene, SetEnvState } from '../core/wails-bindings';
 export type { LightState, StageLightState } from './render/lighting';
 export type { RenderState } from './render/renderer';

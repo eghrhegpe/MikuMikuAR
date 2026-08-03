@@ -136,6 +136,24 @@ export interface SceneActions {
     resolveCompatibility: (bones: unknown, motion: unknown) => { compatible?: boolean };
     /** 读取骨骼覆写类型（model-manager 调用），由 scene/motion 注册 */
     getOverrideType: (boneName: string, modelId?: string) => unknown;
+    /** 挂载节拍检测器（scene 初始化调用），由 outfit/audio 注册 */
+    attachBeatDetector: (detector: unknown) => void;
+    /** 读取流式播放器（scene 调用），由 outfit/audio 注册 */
+    getStreamPlayer: () => unknown;
+    /** 加载换装（scene 初始化调用），由 outfit/outfit 注册 */
+    loadOutfits: (id: string) => Promise<void>;
+    /** 应用换装变体（scene-serialize 调用），由 outfit/outfit 注册 */
+    applyOutfitVariant: (id: string, variantName: string) => Promise<void>;
+    /** 设置音量（scene-serialize 调用），由 outfit/audio 注册 */
+    setVolume: (v: number) => void;
+    /** 读取音量（scene-serialize 调用），由 outfit/audio 注册 */
+    getVolume: () => number;
+    /** 读取音频偏移（scene-serialize 调用），由 outfit/audio 注册 */
+    getAudioOffset: () => number;
+    /** 设置音频偏移（scene-serialize 调用），由 outfit/audio 注册 */
+    setAudioOffset: (v: number) => void;
+    /** 恢复音频（scene-serialize 调用），由 outfit/audio 注册 */
+    resumeAudio: () => void;
 }
 
 const _sceneActions = new Map<keyof SceneActions, unknown>();
