@@ -130,7 +130,7 @@ graph TD;
     end
 
     subgraph adr_group["决策（ADR）"]
-        a8["ADR-008"]
+        a3["ADR-003"]
         a17["ADR-017"]
         a21["ADR-021"]
         a35["ADR-035"]
@@ -272,7 +272,7 @@ graph TD;
     c78 --> a179;
     c80 --> a57;
     c28 --> a189;
-    c81 --> a8;
+    c81 --> a3;
     c81 --> a59;
     c81 --> a99;
     c81 --> a102;
@@ -403,6 +403,7 @@ graph TD;
     c27 --> a192;
     c27 --> a194;
 
+    click a3 href "../adr/adr-003-download-strategy.md"
     click a17 href "../adr/adr-017-android-adaptation.md"
     click a21 href "../adr/adr-021-procedural-motion.md"
     click a35 href "../adr/adr-035-settings-gap-analysis.md"

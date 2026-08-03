@@ -58,5 +58,5 @@ use_when:
 
 ## 验证入口
 
-- 测试：`frontend/src/__tests__/core/preset-meta.test.ts`
-- 命令：`cd frontend && npm run test -- core/preset-meta.test.ts`
+- 测试：`frontend/src/core/__tests__/preset-meta.test.ts`
+- 命令：`cd frontend && npm run test -- core/__tests__/preset-meta.test.ts`

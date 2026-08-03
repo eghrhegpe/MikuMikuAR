@@ -61,5 +61,5 @@ use_when:
 - 渲染层改 role/class 必须同步本文件，否则 CI 快照门禁直接红
 
 ## 验证入口
-- 测试：`frontend/src/__tests__/schema/schema-snapshot.test.ts`（元测试断言一致性）
-- 命令：`cd frontend && npm run test -- schema/schema-snapshot.test.ts`
+- 测试：`frontend/src/__tests__/schema-snapshot.test.ts`（元测试断言一致性）
+- 命令：`cd frontend && npm run test -- schema-snapshot.test.ts`

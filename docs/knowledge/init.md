@@ -7,7 +7,7 @@ source_files:
 tests:
   - frontend/src/__tests__/sw-register.test.ts
 adr:
-  - ADR-008
+  - ADR-003
   - ADR-059
   - ADR-099
   - ADR-102
