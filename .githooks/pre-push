@@ -207,14 +207,39 @@ fi
 
 # ── test:coverage（仅 TS/JS 变更时；不可自动修复） ──
 # 纯 Go 变更有 Go 测试覆盖，纯文档变更无逻辑可测，均跳过前端测试
-# npm 不可用时跳过；成功静默（coverage summary 大表由 CI 门禁兜底），失败打印详情
+# npm 不可用时跳过；成功静默（coverage summary 大表由 CI 门禁兜底），失败时打印失败测试明细 + 覆盖率差距
 if [ "$TS_CHANGED" = "true" ] && [ "$NPM_AVAILABLE" = "true" ]; then
   echo "[pre-push] test:coverage（门禁: lines≥35% functions≥30%）"
-  cd "$ROOT/frontend" && npm run test:coverage >/dev/null 2>&1 || {
-    echo "❌ 测试失败或覆盖率低于阈值。修复: npm run test:coverage 查看详情"
+  COV_LOG="$(mktemp -t pre-push-cov.XXXXXX 2>/dev/null || echo "$ROOT/.pre-push-cov.log")"
+  cd "$ROOT/frontend"
+  if npm run test:coverage >"$COV_LOG" 2>&1; then
+    rm -f "$COV_LOG"
+    note_check "✅ test:coverage"
+    # P8-A: 新代码保护——本次变更源码的行覆盖率 ≥60%（复用 test:coverage 生成的 coverage-final.json）
+    # 整体阈值 35% 只防「覆盖率回退」，不保护「新代码有测试」；diff-coverage 补上后者（vitest.config.ts 注释）
+    echo "[pre-push] diff-coverage（新代码保护: 变更行 ≥60%）"
+    if npm run test:diff-coverage >"$COV_LOG" 2>&1; then
+      rm -f "$COV_LOG"
+      note_check "✅ diff-coverage"
+    else
+      echo "❌ diff-coverage 失败：本次变更源码覆盖率不足 60%。明细："
+      grep -E "\[X\]|失败|低于|覆盖" "$COV_LOG" | head -15
+      echo "（完整输出: cd frontend && npm run test:diff-coverage）"
+      rm -f "$COV_LOG"
+      exit 1
+    fi
+  else
+    echo "❌ test:coverage 失败。明细如下："
+    echo "── 失败测试 ──"
+    grep -E "×|✗|FAIL" "$COV_LOG" | head -20
+    echo "── 覆盖率阈值 ──"
+    grep -E "does not meet|threshold|Coverage for" "$COV_LOG" | head -8
+    echo "── 汇总 ──"
+    grep -E "Test Files|Tests " "$COV_LOG" | head -4
+    echo "（完整输出: cd frontend && npm run test:coverage）"
+    rm -f "$COV_LOG"
     exit 1
-  }
-  note_check "✅ test:coverage"
+  fi
 else
   echo "[pre-push] test:coverage（跳过：纯 Go / 纯文档变更 / npm 不可用）"
   note_check "⏭️ test:coverage（未涉及 TS 或 npm 不可用）"
