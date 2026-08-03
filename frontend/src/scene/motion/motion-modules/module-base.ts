@@ -54,7 +54,9 @@ export function createModuleBase(
     moduleId: string,
     defaults: Record<string, ParamValue>,
     bake: (modelId: string) => void,
-    overrides?: ModuleBaseOverrides
+    overrides?: ModuleBaseOverrides,
+    /** [fix:P2] UI 查看指定动作时传入，模块读写落到该动作而非激活动作 */
+    actionId?: string
 ): ModuleBaseMethods {
     const doAction = overrides?.action ?? bake;
     const autoEnable = overrides?.autoEnableOnParam ?? true;
@@ -66,7 +68,7 @@ export function createModuleBase(
             { enabled: boolean; params: Record<string, import('@/core/types').ParamValue> }
         > = {};
         for (const mod of getRegisteredModules()) {
-            const ms = getModuleState(modelId, mod.id);
+            const ms = getModuleState(modelId, mod.id, actionId);
             snap[mod.id] = { enabled: ms.enabled, params: { ...ms.params } };
         }
         return snap;
@@ -74,7 +76,7 @@ export function createModuleBase(
 
     return {
         getState(): MotionModuleState {
-            const state = getModuleState(modelId, moduleId);
+            const state = getModuleState(modelId, moduleId, actionId);
             return {
                 id: moduleId,
                 enabled: state.enabled,
@@ -83,20 +85,20 @@ export function createModuleBase(
         },
 
         setState(s: MotionModuleState): void {
-            const state = getModuleState(modelId, moduleId);
+            const state = getModuleState(modelId, moduleId, actionId);
             state.enabled = s.enabled;
             state.params = { ...s.params };
         },
 
         setParam(name: string, value: ParamValue): void {
-            const st = getModuleState(modelId, moduleId);
+            const st = getModuleState(modelId, moduleId, actionId);
             const prev = st.params[name] ?? defaults[name];
             if (prev !== value) {
                 pushHistory(modelId, moduleId, name, prev, value, buildSnapshot);
             }
-            setModuleParam(modelId, moduleId, name, value);
+            setModuleParam(modelId, moduleId, name, value, actionId);
             if (autoEnable) {
-                const cur = getModuleState(modelId, moduleId);
+                const cur = getModuleState(modelId, moduleId, actionId);
                 if (!cur.enabled) {
                     cur.enabled = true;
                 }
@@ -105,13 +107,13 @@ export function createModuleBase(
         },
 
         enable(): void {
-            const state = getModuleState(modelId, moduleId);
+            const state = getModuleState(modelId, moduleId, actionId);
             state.enabled = true;
             doAction(modelId);
         },
 
         disable(): void {
-            const state = getModuleState(modelId, moduleId);
+            const state = getModuleState(modelId, moduleId, actionId);
             state.enabled = false;
             overrides?.onDisable?.(modelId);
             if (!overrides?.skipBonesCleanup) {

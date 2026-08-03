@@ -71,7 +71,12 @@ const _overrideFormStates = new Map<string, OverrideFormState>();
  * [doc:adr-145] 动作预设卡片：标题栏（保存按钮）+ 预设列表 / 空状态。
  * 提取自已移除的独立覆盖页（原死路由 motion:boneOverride），供动作详情页消费。
  */
-export function renderPresetCard(container: HTMLElement, modelId: string): void {
+export function renderPresetCard(
+    container: HTMLElement,
+    modelId: string,
+    /** [fix:P2] 查看的动作 id；缺省回退激活动作（兼容旧调用） */
+    actionId?: string
+): void {
     const inst = modelRegistry.get(modelId);
     const presets = inst?.motionPresets ?? [];
     cardContainer(container, (inner) => {
@@ -98,7 +103,7 @@ export function renderPresetCard(container: HTMLElement, modelId: string): void 
             const modules = getRegisteredModules();
             const states: MotionModuleState[] = [];
             for (const m of modules) {
-                const st = getModuleState(modelId, m.id);
+                const st = getModuleState(modelId, m.id, actionId);
                 states.push(st);
             }
             const newPreset: MotionPreset = {
@@ -147,7 +152,7 @@ export function renderPresetCard(container: HTMLElement, modelId: string): void 
                         return;
                     }
                     const snap = pushUndoSnapshot();
-                    applyMotionPreset(modelId, preset);
+                    applyMotionPreset(modelId, preset, actionId);
                     feedbackInfo('motion-preset.applied', preset.name);
                     if (snap) {
                         offerSceneUndoAndRefresh(
@@ -198,7 +203,9 @@ export function renderPresetCard(container: HTMLElement, modelId: string): void 
 export function renderOverrideCard(
     container: HTMLElement,
     modelId: string,
-    opts: { onEnter: (modId: string) => void }
+    opts: { onEnter: (modId: string) => void },
+    /** [fix:P2] 查看的动作 id；缺省回退激活动作（兼容旧调用） */
+    actionId?: string
 ): void {
     cardContainer(container, (inner) => {
         // [doc:adr-125 P2] 标题栏 + 撤销/重做按钮
@@ -396,7 +403,7 @@ export function renderOverrideCard(
         renderModuleToggleList(inner, modelId, {
             initModules: true,
             onEnter: opts.onEnter,
-        });
+        }, actionId);
 
         // [doc:adr-116] 高级骨骼覆盖入口（附激活计数 sublabel，避免被快速滑过）
         const ovCount = modelRegistry.get(modelId)?.boneOverrides?.length ?? 0;
@@ -467,9 +474,13 @@ function updateConflictBanner(el: HTMLElement, modelId: string | null): void {
 }
 
 /** 模块参数子页：渲染模块的 buildSchema() */
-export function buildModuleParamLevel(moduleId: string): PopupLevel {
+export function buildModuleParamLevel(
+    moduleId: string,
+    /** [fix:P2] 查看的动作 id；缺省回退激活动作（兼容旧调用） */
+    actionId?: string
+): PopupLevel {
     const modelId = focusedModelId;
-    const mod = modelId ? createModule(moduleId, modelId) : null;
+    const mod = modelId ? createModule(moduleId, modelId, actionId) : null;
     return {
         label: mod ? t(mod.meta.labelKey) : moduleId,
         dir: '',

@@ -59,14 +59,16 @@ import { getMotionMenu } from './motion-popup';
 export function renderModuleToggleList(
     container: HTMLElement,
     modelId: string,
-    opts: { initModules?: boolean; onEnter: (modId: string) => void }
+    opts: { initModules?: boolean; onEnter: (modId: string) => void },
+    /** [fix:P2] 查看的动作 id；缺省回退激活动作（兼容旧调用） */
+    actionId?: string
 ): void {
     if (opts.initModules) {
         initMotionModules();
     }
     const modules = getRegisteredModules();
     for (const mod of modules) {
-        const state = getModuleState(modelId, mod.id);
+        const state = getModuleState(modelId, mod.id, actionId);
         // [P3] 非默认参数摘要：让用户一眼看到哪个模块已调过参，无需逐个点进子页
         const defaults = mod.meta.defaults ?? {};
         const tuned = Object.keys(state.params).filter(
@@ -85,7 +87,7 @@ export function renderModuleToggleList(
             {
                 value: state.enabled,
                 onChange: (v: boolean) => {
-                    const inst = createModule(mod.id, modelId);
+                    const inst = createModule(mod.id, modelId, actionId);
                     if (v) {
                         inst?.enable();
                     } else {
@@ -97,7 +99,7 @@ export function renderModuleToggleList(
                     );
                     getMotionMenu()?.reRender();
                 },
-                bind: () => getModuleState(modelId, mod.id).enabled,
+                bind: () => getModuleState(modelId, mod.id, actionId).enabled,
             }
         );
     }

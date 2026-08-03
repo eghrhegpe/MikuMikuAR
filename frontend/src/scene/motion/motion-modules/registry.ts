@@ -6,7 +6,7 @@
 // 的 _claimPerceptionBones / _releasePerceptionBones 直接通过 BoneOverrideStore 管理，
 // 注册表仅作 releaseOwnedBones 的透传入口（claimBones 在 perception.ts 内部绕过本注册表）。
 
-import type { MotionModuleState, ParamValue } from '@/core/types';
+import type { MotionModuleState, ParamValue, SceneMotionIntent } from '@/core/types';
 import { triggerAutoSave } from '@/core/config';
 import type { MotionOverrideModule, ModuleFactory, ModuleMeta } from './types';
 import { getBoneOverrideStore } from '../bone-override-store';
@@ -52,27 +52,41 @@ export function getRegisteredModules(): Array<{ id: string; meta: ModuleMeta; pr
 }
 
 /** 为指定模型创建模块实例 */
-export function createModule(id: string, modelId: string): MotionOverrideModule | null {
+export function createModule(id: string, modelId: string, actionId?: string): MotionOverrideModule | null {
     initMotionModules(); // 幂等兜底：确保注册表已就绪
     const entry = _registry.get(id);
     if (!entry) {
         return null;
     }
-    return entry.factory(modelId);
+    return entry.factory(modelId, actionId);
 }
 
 // ── 场景级配置管理（per-motion，随动作走）──
 
-import { getActiveMotion, findOrCreateModuleState } from '../motion-intent';
+import { getActiveMotion, getSceneMotions, findOrCreateModuleState } from '../motion-intent';
+
+/** [fix:P2] 按 actionId 解析目标 intent；缺省回退激活动作（保持既有行为）。 */
+function _resolveIntent(actionId?: string): SceneMotionIntent | null {
+    if (actionId) {
+        return getSceneMotions().find((m) => m.id === actionId) ?? null;
+    }
+    return getActiveMotion();
+}
 
 /**
- * 获取当前动作的模块配置（不存在则创建默认状态，种入 defaults）。
+ * 获取动作的模块配置（不存在则创建默认状态，种入 defaults）。
  * [doc:adr-121 P4-4] _modelId 未使用：ADR-129 将配置存储从 per-model 改为 per-motion（随动作走），
  * 保留参数仅为维持接口兼容（UI 调用方均传入 modelId）。
+ * [fix:P2] actionId 指定「写入哪个动作」：UI 查看动作 A 时传 A 的 id，
+ * 使覆盖参数落在被查看的动作而非激活动作；缺省回退激活动作（运行时路径不变）。
  */
-export function getModuleState(_modelId: string, moduleId: string): MotionModuleState {
+export function getModuleState(
+    _modelId: string,
+    moduleId: string,
+    actionId?: string
+): MotionModuleState {
     initMotionModules(); // 幂等兜底
-    const intent = getActiveMotion();
+    const intent = _resolveIntent(actionId);
 
     // [doc:pose-debug] 无 VMD 时使用回退存储，避免 enable/bake 读写不一致
     if (!intent) {
@@ -123,9 +137,10 @@ export function setModuleParam(
     _modelId: string,
     moduleId: string,
     param: string,
-    value: ParamValue
+    value: ParamValue,
+    actionId?: string
 ): void {
-    const state = getModuleState(_modelId, moduleId);
+    const state = getModuleState(_modelId, moduleId, actionId);
     state.params[param] = value;
     // 仅持久化：配置已写入 intent.motionModules（随动作走）。
     // 注意：不再调用 setActiveMotion 重新广播——否则会触发 VMD 重载 + seekAnimation(0)，
@@ -134,8 +149,13 @@ export function setModuleParam(
 }
 
 /** 设置模块启用/禁用状态到场景动作意图 */
-export function setModuleEnabled(_modelId: string, moduleId: string, enabled: boolean): void {
-    const state = getModuleState(_modelId, moduleId);
+export function setModuleEnabled(
+    _modelId: string,
+    moduleId: string,
+    enabled: boolean,
+    actionId?: string
+): void {
+    const state = getModuleState(_modelId, moduleId, actionId);
     state.enabled = enabled;
     // 仅持久化（原因同 setModuleParam：避免重新广播导致 VMD 重载抖动）
     triggerAutoSave();

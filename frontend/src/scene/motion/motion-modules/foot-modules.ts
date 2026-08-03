@@ -36,7 +36,7 @@ interface FootSideConfig {
 
 /** 创建左脚或右脚模块 */
 function createFootModuleFactory(cfg: FootSideConfig) {
-    return (modelId: string): MotionOverrideModule => {
+    return (modelId: string, actionId?: string): MotionOverrideModule => {
         const managedBones = [cfg.ikBone];
 
         const DEFAULTS: Record<string, ParamValue> = {
@@ -104,7 +104,7 @@ function createFootModuleFactory(cfg: FootSideConfig) {
             onDisable: (mid) => {
                 _footFrameHooks.unregister(mid);
             },
-        });
+        }, actionId);
 
         return createModuleShell({
             id: cfg.moduleId,
