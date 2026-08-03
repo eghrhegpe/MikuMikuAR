@@ -14,8 +14,9 @@ import { GetConfig, CheckForUpdate, GetSystemA11ySettings } from './wails-bindin
 import { events, initRuntimeBridge } from './runtime-bridge';
 import { isAndroidPlatform, isWebPlatform } from './platform';
 import { getCapabilities, resolveBackend } from './backend';
-import { generateTextColors } from '../menus/settings';
-import { SETTINGS_FONT_RESTORE } from '../menus/settings-shared';
+// [doc:adr-238] 主题纯函数下沉 core/theme，不再经 menus
+import { generateTextColors } from './theme';
+import { SETTINGS_FONT_RESTORE } from './theme';
 import {
     initScene,
     tryRestoreLastScene,
@@ -35,7 +36,8 @@ import {
     uninstallLoggingPatch,
 } from './ai/error-buffer';
 import { setPerformanceMode } from '../scene/render/performance';
-import { initLibrary, refreshLibrary } from '../menus/library';
+// [doc:adr-238] initLibrary/refreshLibrary 经 scene-action-bridge 调用
+import { getSceneAction } from './scene-action-bridge';
 import { restoreAutoCameraState } from '../scene/camera/camera';
 import { syncTimeOfDayFromEnv } from '../scene/env/env-time-of-day';
 import { initShortcutDispatcher, loadKeyBindings } from './shortcut-registry';
@@ -156,11 +158,11 @@ async function init(): Promise<void> {
         // 引擎就绪 → 隐藏加载遮罩，显示主应用 UI
         dom.showApp();
         console.info('MikuMikuAR initialized');
-        safeCallAsync('init', 'Library init', () => initLibrary());
+        safeCallAsync('init', 'Library init', () => getSceneAction('initLibrary')?.());
         // [doc:adr-008] 启动时预加载自动导入开关，供 watch:newfile 自动导入分支判定
         fireAndForget(async () => {
-            const m = await import('../menus/settings');
-            swallowError(m.preloadAutoImportState());
+            // [doc:adr-238] preloadAutoImportState 经 ui-action-bridge 调用（settings-shared 注册）
+            swallowError(getUiAction('preloadAutoImportState')?.() ?? Promise.resolve());
         });
         // Restore env state from config (authoritative — scene restore skips env)
         await restoreEnvState();
@@ -467,7 +469,7 @@ function checkAndroidStoragePermission(): void {
 events.on('storage:permissionGranted', async () => {
     setStatus(t('main.permissionGranted'), false);
     try {
-        await refreshLibrary();
+        await getSceneAction('refreshLibrary')?.();
         setStatus(t('main.libraryRefreshed'), false);
     } catch (err) {
         console.error('refreshLibrary after permission grant:', err);

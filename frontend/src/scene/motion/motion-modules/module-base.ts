@@ -3,7 +3,7 @@
 // 用法: 模块工厂内调用 createModuleBase(modelId, MODULE_ID, DEFAULTS, bake, overrides?)
 // 返回 { getState, setState, setParam, enable, disable }，spread 到模块对象即可
 
-import type { MenuNode } from '@/menus/menu-schema';
+import type { MenuNode } from '@/scene/shared/menu-node-types';
 import type { MotionModuleState, ParamValue } from '@/core/types';
 import {
     getModuleState,

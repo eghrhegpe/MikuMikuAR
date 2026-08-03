@@ -2,7 +2,7 @@
 // 职责: 声明 MotionOverrideModule 接口，模块层通过实现此接口将语义参数烘焙为骨骼覆盖
 // 复用 ADR-093 MenuNode schema，UI 由 renderMenu 自动渲染
 
-import type { MenuNode } from '@/menus/menu-schema';
+import type { MenuNode } from '@/scene/shared/menu-node-types';
 import type { MotionModuleState, ParamValue } from '@/core/types';
 
 /** 模块元信息 */

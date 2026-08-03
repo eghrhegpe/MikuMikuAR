@@ -68,6 +68,10 @@ export interface SceneActions {
     refreshLibrary: () => Promise<void> | void;
     /** 导入文件（library 动作），由 menus/library-actions 注册 */
     importFile: () => void;
+    /** 自动应用模型预设（scene 初始化回调），由 menus/model-preset 注册 */
+    tryAutoApplyPreset: (id: string) => Promise<void>;
+    /** 初始化模型库（core/init 启动调用），由 menus/library-setup 注册 */
+    initLibrary: () => Promise<void>;
 }
 
 const _sceneActions = new Map<keyof SceneActions, unknown>();
