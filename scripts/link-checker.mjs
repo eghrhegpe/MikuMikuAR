@@ -8,7 +8,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const SKIP_DIRS = new Set(['node_modules', 'archive', '.git', 'vendor', 'build', 'dist']);
+// vendored/外部源/工具态目录不参与链接治理：
+//  - research/upstream/mmd_tools_repo 为导入的参考材料，其相对链接指向未同步的外部文件（预期断链）
+//  - .qoder/.trae/.workbuddy 为外部/AI 工具生成的缓存或状态目录
+const SKIP_DIRS = new Set(['node_modules', 'archive', '.git', 'vendor', 'build', 'dist', '.qoder', 'research', 'upstream', 'mmd_tools_repo', '.trae', '.workbuddy']);
 
 function walkMd(dir) {
   const out = [];
@@ -47,6 +50,7 @@ function extractLinks(filepath) {
 function resolvePath(filepath, rawPath) {
   /** 将 Markdown 相对路径解析为实际文件系统路径。 */
   if (rawPath.startsWith('http://') || rawPath.startsWith('https://')) return null; // 外部链接跳过
+  if (rawPath.startsWith('file://')) return null; // 源码引用(file://...)非文档链接，跳过
   if (rawPath.startsWith('#')) return null; // 锚点跳过
   let candidate;
   if (rawPath.startsWith('/')) {
