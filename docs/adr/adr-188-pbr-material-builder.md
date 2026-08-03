@@ -1,22 +1,22 @@
 # ADR-188: PBRMaterialBuilder 材质系统迁移 — PBR 渲染升级
 
-> **状态**: Phase 1 基本完成（2026-08-01）
+> **状态**: Phase 1 完成（2026-08-01）
 > **日期**: 2026-08-01
 >
-> Phase 0 + Phase 1 成果（commits fa27e54e → f20c60b3）：
+> 成果（commits fa27e54e → 1be90293）：
 > - PMX 加载阶段 PBRMaterialBuilder 注册（VITE_MMD_MATERIAL=pbr）
 > - 7 处 instanceof StandardMaterial 新增 PBRMaterial 分支 + PBR 参数映射
 > - SSS 参数应用层 + 序列化（getMatSssState/applyMatSssState）
 > - scene-serialize: materialSssCategories 字段 + 保存/恢复
+> - model-preset: materialSssCategories 序列化/恢复（旧预设自动 fallback，零迁移成本）
 > - PBR/SSS UI 面板（model-material.ts: metallic/roughness/sssPower/sssColor/sssDistance）
-> - scene-serialize: PBRMaterial wireframe 兼容
-> - i18n: zh-CN + en（zh-TW/ko/ja 非阻塞）
+> - scene-serialize + model-manager: PBRMaterial wireframe 兼容
+> - i18n: zh-CN/en/ja/ko/zh-TW 全部已补全，check 全绿
 > - 全量 246 文件 / 4206 测试全绿
 >
 > 待推进：
-> 1. zh-TW/ko/ja 翻译补全（非阻塞）
-> 2. 实测验证（VITE_MMD_MATERIAL=pbr 构建 + 加载 PMX 模型）
-> 3. Phase 2: 旧预设迁移脚本、性能基准测试
+> 1. ⏳ 实测验证（VITE_MMD_MATERIAL=pbr 构建 + 加载 PMX 模型 + 验证 SSS 效果）
+> 2. ⏳ Phase 2: 旧预设批量迁移工具、性能基准测试
 
 **决策者**: Riku（联邦首席架构师 AI）、Jieling（人类侧首席架构师）
 
