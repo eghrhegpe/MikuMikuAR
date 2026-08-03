@@ -7,11 +7,11 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 124 | 724 |
+| 核心基础设施 | 124 | 725 |
 | 3D 场景 | 113 | 1138 |
 | 菜单 & UI | 75 | 386 |
 | 换装 & 音频 | 3 | 33 |
-| 动作算法 | 18 | 135 |
+| 动作算法 | 18 | 139 |
 | 物理系统 | 2 | 14 |
 
 ## 核心基础设施
@@ -497,6 +497,7 @@
 | `PopupRow()` | `core/types` | — |
 | `PresetModuleState()` | `core/types` | [doc:adr-145] 单模块在预设中的状态快照 |
 | `ProcMotionConfig()` | `core/types` | [doc:adr-XX] 程序化动作配置（per-motion，随动作走） 参数存 SceneMotionIntent.procMotion（多角色共享）， 启用/分配权在每角色 |
+| `ProcPreset()` | `core/types` | [audit] 程序化动作自定义预设（per-model 参数快照，仿 MotionPreset 模式）。 |
 | `RecentMotion()` | `core/types` | — |
 | `RuntimeModel()` | `core/types` | IMmdModel 接口不含 setRuntimeAnimation / createRuntimeAnimation （这两个方法在 MmdModel 和 MmdWasmMode |
 | `SceneMotionIntent()` | `core/types` | 场景级动作意图（「场上在跳什么」） |
@@ -2382,8 +2383,12 @@
 | `PROC_AUTODANCE_PRESETS()` | `motion-algos/proc-motion-presets` | autodance（自动舞蹈）预设集 |
 | `PROC_IDLE_PRESETS()` | `motion-algos/proc-motion-presets` | idle（待机呼吸）预设集 |
 | `ProcParamsPreset()` | `motion-algos/proc-motion-presets` | — |
+| `generateProcPresetId()` | `motion-algos/proc-motion-presets` | 生成唯一预设 ID（仿 preset-types.generatePresetId，避免跨模块 import 耦合） |
 | `getProcParamsPreset()` | `motion-algos/proc-motion-presets` | 取单个预设（缺失返回 undefined，UI 层需兜底） |
 | `getProcPresetSet()` | `motion-algos/proc-motion-presets` | 指定模式的预设集（无则空表） |
+| `makeProcPreset()` | `motion-algos/proc-motion-presets` | 由当前参数构造自定义预设快照（深拷贝，防与运行时状态共引用） |
+| `removeProcPreset()` | `motion-algos/proc-motion-presets` | 按 id 删除自定义预设（返回新数组） |
+| `upsertProcPreset()` | `motion-algos/proc-motion-presets` | 增改自定义预设（同 id 覆盖，否则追加；返回新数组） |
 | `BONE_ALLPARENT_CANDIDATES()` | `motion-algos/proc-motion-shared` | — |
 | `BONE_ARM_IK_L_CANDIDATES()` | `motion-algos/proc-motion-shared` | — |
 | `BONE_ARM_IK_R_CANDIDATES()` | `motion-algos/proc-motion-shared` | — |
