@@ -23,7 +23,9 @@ import { clamp } from '@/core/clamp';
 import { debounce } from '@/core/debounce';
 import { deepClone } from '@/core/deep-clone';
 import { logWarn } from '@/core/logger';
-import { focusModel, reattachPipeline, setARMode } from '../scene';
+import { focusModel, reattachPipeline } from '../scene';
+// [doc:adr-238] setARMode 经 scene-action-bridge（ar-scene 注册）
+import { getSceneAction } from '@/core/scene-action-bridge';
 
 import {
     defaultCameraPreset,
@@ -344,7 +346,7 @@ export function switchCameraMode(mode: CameraMode): void {
     // freefly/concert/surround 的 onBeforeRender 回调在切到 AR 时残留注册
     // （仅靠各回调内部的 _cameraMode 守卫变 no-op，属轻微泄漏，AR 审查 #5）。
     if (getCameraMode() === 'ar') {
-        setARMode(false);
+        void getSceneAction('setARMode')?.(false);
     } else {
         if (getCameraMode() === 'freefly') {
             stopFreefly();
@@ -367,7 +369,7 @@ export function switchCameraMode(mode: CameraMode): void {
         }
         // 乐观提交 _cameraMode='ar'，保证"进入 AR 期间用户切走"时下方
         // `if (_cameraMode === 'ar')` 离开检测能命中并正确注销摄像头。
-        // 真正的视频激活由 setARMode(true) 异步完成；若失败，仅还原模式标记，
+        // 真正的视频激活由 getSceneAction('setARMode')?.(true) 异步完成；若失败，仅还原模式标记，
         // 不重建相机（进入 AR 时从未切换/重建 Babylon 相机）。
         setCameraMode('ar');
         _syncAxesFromMode('ar');
@@ -379,7 +381,7 @@ export function switchCameraMode(mode: CameraMode): void {
         //   - resolve(false)：摄像头拒绝授权，恢复模式标记
         //   - reject：摄像头 API 抛错，同样恢复模式标记
         //   - resolve(true) 但用户已切走：立即 setARMode(false) 释放摄像头流（竞态修复）
-        setARMode(true)
+        getSceneAction('setARMode')?.(true)
             .then((ok) => {
                 if (!ok) {
                     // 显式失败：若模式仍在 ar，提示并还原标记。
@@ -393,9 +395,9 @@ export function switchCameraMode(mode: CameraMode): void {
                 }
                 // 成功：但若 pending 期间用户已切走（_cameraMode 不再是 'ar'），
                 // 立即释放摄像头流避免泄漏（switchCameraMode 切走时已调用 setARMode(false)，
-                // 但此次 setARMode(true) 是后到的，会重新激活摄像头）。
+                // 但此次 getSceneAction('setARMode')?.(true) 是后到的，会重新激活摄像头）。
                 if (getCameraMode() !== 'ar') {
-                    setARMode(false).catch((err) =>
+                    getSceneAction('setARMode')?.(false).catch((err) =>
                         logWarn('camera', 'setARMode(false) cleanup after race:', err)
                     );
                 }

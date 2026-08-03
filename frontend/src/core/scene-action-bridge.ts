@@ -118,6 +118,8 @@ export interface SceneActions {
     syncTimeOfDayFromEnv: () => void;
     /** 立即保存场景（core/init 调用），由 scene 注册 */
     saveSceneImmediate: () => Promise<void>;
+    /** 切换 AR 模式（scene/camera 调用），由 scene/ar 注册 */
+    setARMode: (enabled: boolean) => Promise<boolean>;
 }
 
 const _sceneActions = new Map<keyof SceneActions, unknown>();
