@@ -12,7 +12,7 @@ import { clamp01 } from '@/core/clamp';
 import { envState } from '@/core/config';
 import { logWarn } from '@/core/logger';
 import { safeDispose } from '@/core/dispose-helpers';
-import { _envSys, getScene } from './_shared/env-context';
+import { _envSys } from './_shared/env-context';
 
 // ======== 常量 ========
 const LOD_HIGH_DISTANCE = 30; // LOD 切换距离（近）

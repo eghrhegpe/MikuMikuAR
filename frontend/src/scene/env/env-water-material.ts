@@ -9,13 +9,12 @@ import { DirectionalLight } from '@babylonjs/core/Lights/directionalLight';
 
 import { EnvState, envState } from '@/core/config';
 import { col3FromTriple } from '@/core/color-helpers';
-import { _envSys, getScene, effectiveGroundSize } from './_shared/env-context';
+import { _envSys, effectiveGroundSize } from './_shared/env-context';
 import { createCanvasTexture } from './_shared/env-texture';
 import { causticsController } from './env-caustics';
 import { valueNoise } from '@/core/math/hash-noise';
 import { getEnvKeys } from '@/core/env-state-schema';
 import { safeDispose } from '@/core/dispose-helpers';
-import { logWarn } from '@/core/logger';
 import {
     MAX_RIPPLES,
     _applyWaterLOD,
