@@ -80,6 +80,19 @@ jobs:
         # 曾漏网：2026-08-02 v1.8.0 发版记录只提交 v1.8.0.md、漏同步 releases/index.md。
         run: node ../scripts/gen-docs-index.mjs --check
 
+      - name: Generated docs sync check (funcmap/menumap/guide-gap/symbols/tier)
+        # 生成物同步全检——源码变更后文档生成物未提交 → --check 检出 stale → exit 1。
+        # 覆盖 check:docs 链中纯 node 的生成物门禁（ci 此前只跑 check-doc-drift +
+        # gen-docs-index，曾漏网：2026-08-03 function-map 漂移需本地 check:docs 才抓到）。
+        # 修复: 对应 npm run gen:funcmap / gen:menumap / gen:guide-gap /
+        #       gen:knowledge-symbols / gen:tier 后随 PR 提交生成物。
+        run: |
+          node ../scripts/gen-funcmap.mjs --check
+          node ../scripts/gen-menu-map.mjs --check
+          node ../scripts/gen-guide-gap.mjs --strict
+          node ../scripts/gen-knowledge-symbols.mjs --check
+          node ../scripts/gen-tier.mjs --check
+
       - name: Build
         # [doc:adr-059/2026-08-01-web-locale-404] 必须走 npm run build:dev（= generate-locale-json && vite build），
         # 不能裸 npx vite build——locales/*.json 是预构建产物且被 .gitignore 排除，
