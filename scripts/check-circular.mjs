@@ -9,9 +9,15 @@
  *   node scripts/check-circular.mjs --json       # JSON 输出
  *   node scripts/check-circular.mjs --scope core # 只检测指定模块及其依赖
  *   node scripts/check-circular.mjs --update-allowlist # 将当前所有环写入白名单
+ *   node scripts/check-circular.mjs --edges      # 报告环时附文件级 import 边（定位具体引入点）
+ *   node scripts/check-circular.mjs --snapshot <file> # 保存环 + 边为基线快照
+ *   node scripts/check-circular.mjs --diff <file>     # 与基线对比：标出新增环、已消失环及引入环的新增边
  *
  * 白名单：scripts/circular-allowlist.json 记录「已知架构环」。
  * --strict 模式只对白名单之外的“新增环”exit 1，历史环仅告警。
+ *
+ * 归因链路：--edges 看环由哪些 import 边构成；--snapshot/--diff
+ * 对比两次扫描，定位「哪条新 import 引入了环」（--diff --strict 按新增环退出码）。
  *
  * 退出码：无新增循环依赖 → 0；有新增循环依赖 → 1（--strict 模式）
  */
