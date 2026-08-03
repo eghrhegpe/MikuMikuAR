@@ -110,6 +110,7 @@ import type {
     MotionModuleState,
     MotionPreset,
     ProcMotionConfig,
+    ProcPreset,
 } from '../core/types';
 import {
     getPerceptionState,
@@ -199,6 +200,8 @@ export interface SceneFile {
         motionOverrideModules?: MotionModuleState[];
         /** [doc:adr-145] 动作预设列表 */
         motionPresets?: MotionPreset[];
+        /** [audit] 程序化动作自定义预设列表（per-model 参数快照） */
+        procPresets?: ProcPreset[];
         /** [doc:adr-233] per-model 程序化动作状态（per-mode 独立参数），序列化/恢复时过 migrateProcState */
         procMotion?: Partial<ProcMotionState>;
         /** [doc:adr-121] 双槽位动作分配（仅 primary.source==='pinned' 落盘，inherit 不落盘） */
@@ -421,6 +424,11 @@ function serializeModel(inst: ModelInstance): SceneFile['models'][number] {
         // [fix:P3] 深拷贝：浅拷贝会让快照的 params.*.boneToggles 与运行时状态共引用，
         // 快照若驻留内存（undo）会被后续编辑回写污染。
         procMotion: inst.procMotion ? structuredClone(inst.procMotion) : undefined,
+        // [audit] 序列化程序化自定义预设（参数快照，深拷贝防与运行时共引用）
+        procPresets:
+            inst.procPresets && inst.procPresets.length > 0
+                ? structuredClone(inst.procPresets)
+                : undefined,
         // [doc:adr-121] 序列化 primary 槽位（仅 source==='pinned' 落盘）
         // [doc:adr-167] overlay 槽位已移除（ADR-144 废弃）
         motionSlots: (() => {
@@ -722,6 +730,10 @@ async function deserializeModels(
             // [doc:adr-233] 恢复 per-model 程序化动作状态（统一过 migrateProcState，兼容旧扁平存档）
             if (m.procMotion) {
                 inst.procMotion = migrateProcState(m.procMotion);
+            }
+            // [audit] 恢复程序化自定义预设（纯数据，无需迁移）
+            if (m.procPresets && Array.isArray(m.procPresets)) {
+                inst.procPresets = m.procPresets;
             }
             // [doc:adr-121] 恢复双槽位动作分配（兼容旧 motionAssignment 格式）
             const pinnedData =

@@ -62,12 +62,22 @@ export type MotionPreset = {
 
 // ======== Procedural Motion Config (ADR-XX per-motion) ========
 
-import type { ProcMotionState } from '@/motion-algos/procedural-motion';
+import type { ProcMotionState, ProcModeKey, ProcMotionParams } from '@/motion-algos/procedural-motion';
 
 /** [doc:adr-XX] 程序化动作配置（per-motion，随动作走）
  *  参数存 SceneMotionIntent.procMotion（多角色共享），
  *  启用/分配权在每角色 ModelInstance.motionSlots。*/
 export type ProcMotionConfig = ProcMotionState;
+
+/** [audit] 程序化动作自定义预设（per-model 参数快照，仿 MotionPreset 模式）。
+ *  与 MotionPreset（模块状态快照）语义独立：本类型存 ProcMotionParams。 */
+export type ProcPreset = {
+    id: string;
+    name: string;
+    mode: ProcModeKey;
+    /** 参数快照（boneToggles 全键，应用时整体覆盖） */
+    params: ProcMotionParams;
+};
 
 // ======== Feet Adjustment (ADR-085) Types ========
 
@@ -244,6 +254,8 @@ export type ModelInstance = {
     motionPresets?: MotionPreset[];
     /** 程序化动作状态（per-model），未设置时使用全局默认值 */
     procMotion?: ProcMotionState;
+    /** [audit] 程序化动作自定义预设列表（per-model 参数快照） */
+    procPresets?: ProcPreset[];
     /** [doc:adr-085] 足部 IK 调整状态（per-model），未设置时使用全局默认值 */
     feet?: FeetState;
     /** [doc:adr-049] 球面坐标轨道控制：坐标模式，默认 'cartesian' */
