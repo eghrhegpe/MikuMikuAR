@@ -39,7 +39,7 @@ use_when:
 ## 与其他子系统关系
 
 - 被 `model-loader.ts` / `model-ops.ts` 在加载模型时调用来确定模型 id
-- 依赖 `@/core/utils` 的 `generateUuid`（因此为间接依赖，非零依赖叶）
+- 依赖 `@/core/uuid` 的 `generateUuid`（ADR-191 去桶化后为零依赖叶直连）
 
 ## 不变量
 

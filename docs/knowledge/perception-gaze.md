@@ -65,4 +65,4 @@ use_when:
 - JS 模式和 WASM 模式**互斥**，由 `_isWasmRuntime(bone)` 检测当前 `IMmdRuntimeBone` 所属运行时类型自动分支（**非按性能切换**）。
 - WASM 模式下不调 `skeleton._markAsDirty()`（直写 frontBuffer 即生效）；JS 模式必须调。
 - 视线配置与感知层状态同步。
-- JS 路径仅用于 `VITE_MMD_RUNTIME=js` 调试模式（无物理），保留作为 gaze 行为对比排查与 WASM 兼容性回退（[scene.ts:561](../../../frontend/src/scene/scene.ts#L561) 注释明令勿删除）。
+- JS 路径仅用于 `VITE_MMD_RUNTIME=js` 调试模式（无物理），保留作为 gaze 行为对比排查与 WASM 兼容性回退（[scene.ts:687](../../../frontend/src/scene/scene.ts#L687) 注释明令勿删除）。

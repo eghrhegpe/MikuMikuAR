@@ -45,6 +45,6 @@ use_when:
 
 ## 不变量
 - JS 模式与 WASM 模式互斥，由 `perception-gaze.ts:_applyGaze` 通过 `_isWasmRuntime()` 自动分支。
-- **仅用于 `VITE_MMD_RUNTIME=js` 调试模式**（无物理），保留作为 gaze 行为对比排查与 WASM 兼容性回退（[scene.ts:561](../../../frontend/src/scene/scene.ts#L561) 注释明令勿删除）。
+- **仅用于 `VITE_MMD_RUNTIME=js` 调试模式**（无物理），保留作为 gaze 行为对比排查与 WASM 兼容性回退（[scene.ts:687](../../../frontend/src/scene/scene.ts#L687) 注释明令勿删除）。
 - 写入策略：`linkedBone.rotationQuaternion` + `_updateBoneChain` 递归 + `skeleton._markAsDirty()`。
 - 视线追踪频率约 30 FPS。

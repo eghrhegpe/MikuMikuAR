@@ -39,4 +39,4 @@ use_when:
 
 ## 与其他子系统关系
 - 依赖 [`logger.ts`](./logger.md) 记录警告日志。
-- 被各子系统（[`watch-import`](./watch-import.md)、[`events`](./events.md) 等）广泛引用。
+- 被各子系统（[`events`](./events.md) 等）广泛引用。

@@ -117,7 +117,7 @@ use_when:
 
 ## 不变量
 
-- 所有模块为零依赖叶，不引入 `dom/state/fileservice/status-bar/i18n/feedback/menus/logger` 等应用层
+- 所有模块为零依赖叶，不引入 `dom/state/fileservice/status-bar/i18n/feedback/menus` 等应用层；`logger` 亦属叶层（零依赖），`async.ts` 可依赖它
 - 从这些模块导入不会拖起应用层，纯模块可安全引用
 - `normPath` 缓存上限 5000 条目，超限时清空
 - 禁止从 `@/core/utils` 神桶间接导入——应直接引用本叶

@@ -111,7 +111,10 @@ function generateTable(entries) {
     const adr = `ADR-${e.num}`;
     // 转义标题中的管道符，避免破坏表格
     const safeTitle = e.title.replace(/\|/g, '\\|');
-    const safeStatus = e.status.replace(/\|/g, '\\|');
+    // 状态文本里的 ADR 链接在 docs/adr/ 下有效（如 `](adr-xxx.md)`），
+    // 搬进 docs/status.md（docs/ 下）后需补 `adr/` 前缀，否则 md-links 断链。
+    const statusLinked = e.status.replace(/\]\(adr-([^)\s]+\.md)\)/g, '](adr/adr-$1)');
+    const safeStatus = statusLinked.replace(/\|/g, '\\|');
     return `| ${adr} | ${safeTitle} | ${safeStatus} |`;
   });
 
