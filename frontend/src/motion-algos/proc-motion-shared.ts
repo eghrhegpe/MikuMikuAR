@@ -37,6 +37,7 @@ export interface ProcMotionParams {
     intensity: number;
     speed: number;
     boneToggles: Record<ProcMotionBoneCategory, boolean>;
+    /** [audit:dead-field] 暂无 UI 入口、生成器不消费（纯 API 保留字段，勿误判为缺口）。 */
     vpdApplyEnabled: boolean;
     interpOverride: 'auto' | 'sharp' | 'ease-in-out' | 'ease-out';
 }
@@ -44,7 +45,11 @@ export interface ProcMotionParams {
 export interface ProcMotionState {
     /** 当前激活的程序化模式（与 VMD 互斥的单一指针） */
     mode: ProcMotionMode;
-    /** 节拍量化（全局运行时设置，仅 autodance 消费） */
+    /**
+     * [audit:dead-field] 运行时实际生效的是 uiState.bpmQuantizeEnabled（UI bind）
+     * + beatDetector（BPM 量化逻辑）；本字段仅存在于类型/默认/迁移，setBpmQuantizeEnabled
+     * 不写它、无消费端。清理前须同步迁移逻辑，勿删。
+     */
     bpmQuantizeEnabled: boolean;
     /** 感知层：眼部跟随（全局，不随程序化动作切换） */
     eyeTrackingEnabled: boolean;
