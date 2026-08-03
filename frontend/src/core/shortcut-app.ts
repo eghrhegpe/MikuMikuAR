@@ -1,9 +1,9 @@
 // [doc:adr-102] App-level shortcut definitions — split from events.ts (P3).
 // 纯定义层：注册快捷键绑定到 ShortcutRegistry，不涉及 DOM 事件绑定。
 import { dom, mmdRuntime, setStatus } from './config';
-// [doc:adr-238] UI 行为（closeAllOverlays/screenshotCurrent）经 ui-action-bridge 注入，
-// 本模块不直接 import menus（core 回归叶子）。
-import { getUiActions } from './ui-action-bridge';
+// [doc:adr-238] UI 行为（closeAllOverlays/screenshotCurrent/navAction/navLabel）经
+// ui-action-bridge 注入（navActions 已下沉 menus/nav-actions），本模块不直接 import menus。
+import { getUiAction, getUiActions } from './ui-action-bridge';
 import { t } from './i18n/t';
 import { focusedModelId } from './state';
 import { focusedModel, updatePlaybackUI, focusedMmdModel } from '../scene/scene';
@@ -11,13 +11,6 @@ import { registerShortcuts } from './shortcut-registry';
 import { undo, redo, canUndo, canRedo } from '../scene/motion/motion-modules/motion-history';
 import { applyModuleSnapshot } from '../scene/motion/motion-modules/module-base';
 import { popUndoSnapshot, restoreUndoSnapshot } from '../scene/scene';
-
-/**
- * navActions 与 navLabels 由 events.ts 管理，本模块只消费。
- * navActions: 导航按钮映射表（数字→处理函数）
- * navLabels:  导航按钮标签（数字→显示文本）
- */
-import { navActions, navLabels } from './events';
 
 // ======== Register global shortcuts via ShortcutRegistry ========
 export function registerAppShortcuts(): void {
@@ -29,8 +22,8 @@ export function registerAppShortcuts(): void {
             defaultCtrl: true,
             prevent: true,
             handler: () => {
-                navActions[1]();
-                setStatus(navLabels[1] || '', false);
+                getUiAction('navAction')?.(1);
+                setStatus(getUiAction('navLabel')?.(1) ?? '', false);
             },
             group: 'shortcuts.group.popupNav',
         },
@@ -41,8 +34,8 @@ export function registerAppShortcuts(): void {
             defaultCtrl: true,
             prevent: true,
             handler: () => {
-                navActions[2]();
-                setStatus(navLabels[2] || '', false);
+                getUiAction('navAction')?.(2);
+                setStatus(getUiAction('navLabel')?.(2) ?? '', false);
             },
             group: 'shortcuts.group.popupNav',
         },
@@ -53,8 +46,8 @@ export function registerAppShortcuts(): void {
             defaultCtrl: true,
             prevent: true,
             handler: () => {
-                navActions[3]();
-                setStatus(navLabels[3] || '', false);
+                getUiAction('navAction')?.(3);
+                setStatus(getUiAction('navLabel')?.(3) ?? '', false);
             },
             group: 'shortcuts.group.popupNav',
         },
@@ -65,8 +58,8 @@ export function registerAppShortcuts(): void {
             defaultCtrl: true,
             prevent: true,
             handler: () => {
-                navActions[4]();
-                setStatus(navLabels[4] || '', false);
+                getUiAction('navAction')?.(4);
+                setStatus(getUiAction('navLabel')?.(4) ?? '', false);
             },
             group: 'shortcuts.group.popupNav',
         },
@@ -77,8 +70,8 @@ export function registerAppShortcuts(): void {
             defaultCtrl: true,
             prevent: true,
             handler: () => {
-                navActions[5]();
-                setStatus(navLabels[5] || '', false);
+                getUiAction('navAction')?.(5);
+                setStatus(getUiAction('navLabel')?.(5) ?? '', false);
             },
             group: 'shortcuts.group.popupNav',
         },
@@ -89,8 +82,8 @@ export function registerAppShortcuts(): void {
             defaultCtrl: true,
             prevent: true,
             handler: () => {
-                navActions[7]();
-                setStatus(navLabels[7] || '', false);
+                getUiAction('navAction')?.(7);
+                setStatus(getUiAction('navLabel')?.(7) ?? '', false);
             },
             group: 'shortcuts.group.popupNav',
         },
@@ -101,8 +94,8 @@ export function registerAppShortcuts(): void {
             defaultCtrl: true,
             prevent: true,
             handler: () => {
-                navActions[8]();
-                setStatus(navLabels[8] || '', false);
+                getUiAction('navAction')?.(8);
+                setStatus(getUiAction('navLabel')?.(8) ?? '', false);
             },
             group: 'shortcuts.group.popupNav',
         },
