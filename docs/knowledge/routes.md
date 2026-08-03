@@ -82,7 +82,7 @@
 | FPS 监控、自动降级、性能模式、RenderBridge | [性能监控与自动降级](./performance.md) | — |
 | 物理桥、骨骼读取、每帧更新注册表 | [物理骨骼桥与每帧注册表](./physics-bridge.md) | [虚拟裙骨物理控制器（ADR-084 Phase 2-3）](./virtual-skirt.md) |
 | 广场状态、Plaza 状态、广场关闭、广场站点、广场层级 | [广场状态管理](./plaza-state.md) | — |
-| 程序化动作、idle 动作、auto dance、节拍联动、动作生成、程序化 VMD | [程序化动作系统](./proc-motion-bridge.md) | [口型同步桥](./lipsync-bridge.md) |
+| 程序化动作、idle 动作、auto dance、节拍联动、动作生成、程序化 VMD | [程序化动作系统](./proc-motion-bridge.md) | [口型同步桥](./lipsync-bridge.md)、[多 VMD 叠加系统](./vmd-layers.md) |
 | 渲染循环、FPS 时钟、硬件缩放、渲染启停 | [渲染循环与 FPS 时钟](./render-loop.md) | [事件处理与导航系统](./events.md)、[应用启动引导](./init.md) |
 | 菜单渲染、schema 渲染、控件渲染、数据绑定 | [菜单渲染引擎](./render-menu.md) | [声明式菜单 Schema](./menu-schema.md) |
 | 渲染管线、后处理、tone mapping、SSR / SSAO | [场景渲染管线与后处理](./renderer.md) | [GPU 压缩纹理能力探测](./gpu-capabilities.md)、[PMX 模型加载与缩略图捕获](./model-loader.md)、[场景核心编排器（纯组装器）](./scene.md) |
@@ -101,7 +101,7 @@
 | 选中状态、选中物、变换选择、selection 状态 | [变换选中物状态源](./transform-selection.md) | [场景核心编排器（纯组装器）](./scene.md) |
 | 键盘导航、列表导航、箭头键导航 | [键盘导航工具](./ui-keyboard-nav.md) | [应用启动引导](./init.md) |
 | 虚拟裙骨、物理裙摆、Bullet 弹簧链、skirt analyzer | [虚拟裙骨物理控制器（ADR-084 Phase 2-3）](./virtual-skirt.md) | [骨骼覆盖存储（多模块仲裁）](./bone-override-store.md)、[物理骨骼桥与每帧注册表](./physics-bridge.md) |
-| 多层动作、动作叠加、VMD 混合、composite animation、动作图层、动作优先级 | [多 VMD 叠加系统](./vmd-layers.md) | [VMD 动作加载器](./vmd-loader.md) |
+| 多层动作、动作叠加、VMD 混合、composite animation、动作图层、动作优先级 | [多 VMD 叠加系统](./vmd-layers.md) | [程序化动作系统](./proc-motion-bridge.md)、[VMD 动作加载器](./vmd-loader.md) |
 | VMD 加载、动作文件导入、伴音自动加载、动作时长、文件格式校验、动作播放开始 | [VMD 动作加载器](./vmd-loader.md) | [多 VMD 叠加系统](./vmd-layers.md) |
 | 后端绑定、后端代理、resolveBackend、Wails bindings | [后端绑定聚合层（backend 代理化）](./wails-bindings.md) | [内置 AI 诊断助手 — 双适配器服务层](./ai-service.md)、[后端适配层](./core-backend.md)、[环境状态防抖持久化](./env-persist.md) |
 | 风力物理、风力注入、头发/裙子物理 | [风力物理注入（WASM Bullet）](./wind-physics.md) | [安卓文件访问（shared 模式）](./android-file-access.md)、[场景光照与阴影（barrel）](./lighting.md)、[babylon-mmd 适配边界](./mmd-adapter.md) |

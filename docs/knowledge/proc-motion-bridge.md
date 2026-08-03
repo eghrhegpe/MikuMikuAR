@@ -2,6 +2,8 @@
 tier: architecture
 source_files:
   - frontend/src/scene/motion/proc-motion-bridge.ts
+  - frontend/src/scene/motion/proc-motion-controller.ts
+  - frontend/src/scene/motion/proc-motion-params.ts
 tests:
   - frontend/src/__tests__/proc-motion-bridge.lifecycle.test.ts
   - frontend/src/__tests__/proc-motion-bridge.state.test.ts
@@ -12,10 +14,16 @@ name: 程序化动作系统
 category: motion
 scope:
   - frontend/src/scene/motion/proc-motion-bridge.ts
+  - frontend/src/scene/motion/proc-motion-controller.ts
+  - frontend/src/scene/motion/proc-motion-params.ts
 adr:
   - ADR-021
+  - ADR-237
 symbols:
   - ProcMotionController
+  - ProcMotionControllerBase
+  - ProcMotionParamsMixin
+  - _clearVmdData
   - activateGazeTracking
   - createProcBeatDetector
   - disposeProcMotion
@@ -40,7 +48,9 @@ symbols:
   - stopProcMotion
   - updateProcMotion
 invariants:
-  - 内部使用 `ProcMotionController` 类（模块内，不导出）收口状态，替代 8 个模块级 let
+  - [ADR-237 P1] 三文件拆分：bridge（转发层 135 行）/ controller（状态机核心 392 行）/ params（setter mixin 289 行）
+  - 内部使用 `ProcMotionController` 类（导出，组合 ProcMotionControllerBase + ProcMotionParamsMixin）收口状态
+  - 基类 `_fallbackProcState`/`_beatDetector`/`_refProcState` 为 protected，供 params mixin 访问
   - disposeProcMotion() 一键清零全部状态并销毁单例
   - 参数存储优先级：activeMotion.procMotion > _fallbackProcState
 

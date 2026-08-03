@@ -25,7 +25,7 @@ import fs from 'node:fs';
 
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { scanSourceGraph } from './_lib/source-graph.mjs';
+import { scanSourceGraph, resolveSourceImport } from './_lib/source-graph.mjs';
 import { parseArgs } from './_lib/parse-args.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -216,9 +216,40 @@ function loadSnapshot(snapshotPath) {
 }
 
 /**
+ * 定位 from 文件中 import to 的具体行号（用于 diff 归因精确到行）。
+ * 复用 source-graph 的解析逻辑：逐行匹配 import 语句，取 resolved 后与 to 比对。
+ * @returns {number|null} 首个命中的行号（1-based），未命中返回 null
+ */
+function findImportLine(fromFile, toRel) {
+    const srcDir = SRC_DIR;
+    const fullPath = path.join(srcDir, fromFile);
+    if (!fs.existsSync(fullPath)) return null;
+    const text = fs.readFileSync(fullPath, 'utf8');
+    const lines = text.split('\n');
+    // 匹配 import/export ... from '...'（含跨行），记录语句起始行
+    const reFrom = /(?:^|\n)\s*(?:\/\/[^\n]*\n)*\s*(?:import|export)\b[\s\S]*?\bfrom\s+['"]([^'"]+)['"]/g;
+    // 匹配 import '...' 纯副作用与动态 import
+    const reSide = /(?:^|\n)\s*(?:\/\/[^\n]*\n)*\s*import\s+['"]([^'"]+)['"]/g;
+    const reDyna = /await\s+import\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
+    for (const re of [reFrom, reSide, reDyna]) {
+        let m;
+        while ((m = re.exec(text))) {
+            const spec = m[1];
+            const resolved = resolveSourceImport(spec, fullPath, srcDir);
+            if (resolved === toRel) {
+                // 计算起始行号：m.index 前的换行数 + 1（语句起始可能在换行后）
+                const line = text.slice(0, m.index).split('\n').length;
+                return line;
+            }
+        }
+    }
+    return null;
+}
+
+/**
  * 对比当前扫描与基线快照：
  * - 新增环（基线无）
- * - 每个新增环路径上、基线中不存在的模块对边（最可能引入环的 import）
+ * - 每个新增环路径上的新增文件级边（基线 edges 中不存在 from→to 的文件级 import）
  */
 function diffAgainstSnapshot(snapshotPath, cycles, moduleEdges) {
     const base = loadSnapshot(snapshotPath);
@@ -226,6 +257,12 @@ function diffAgainstSnapshot(snapshotPath, cycles, moduleEdges) {
 
     const addedCycles = cycles.filter(c => !base.cycleKeys.has(normalizeCycleKey(c)));
     const fixedCycles = [...base.cycleKeys].filter(k => !currentKeys.has(k));
+
+    // 基线文件级边集合：`from → to` 归一化 key
+    const baseFileEdges = new Set();
+    for (const list of Object.values(base.edges || {})) {
+        for (const { from, to } of list) baseFileEdges.add(`${from} → ${to}`);
+    }
 
     console.log(`基线快照: ${base.cycleKeys.size} 个环 | 当前: ${currentKeys.size} 个环`);
     if (fixedCycles.length > 0) {
@@ -242,15 +279,18 @@ function diffAgainstSnapshot(snapshotPath, cycles, moduleEdges) {
         const lines = [header];
         for (let i = 0; i < cycle.length - 1; i++) {
             const key = `${cycle[i]}|${cycle[i + 1]}`;
-            // 基线中没有的模块对 → 本次新增的 import 边，最可能是环的来源
-            if (!base.edges[key]) {
-                const edges = moduleEdges.get(key) || [];
-                for (const { from, to } of edges.slice(0, 5)) {
-                    lines.push(`    [新增边] ${from} → ${to}`);
+            const edges = moduleEdges.get(key) || [];
+            // 文件级新增边：基线快照的文件级边集合中不存在
+            const newEdges = edges.filter(({ from, to }) => !baseFileEdges.has(`${from} → ${to}`));
+            if (newEdges.length > 0) {
+                for (const { from, to } of newEdges.slice(0, 5)) {
+                    const line = findImportLine(from, to);
+                    const loc = line ? `:${line}` : '';
+                    lines.push(`    [新增边] ${from}${loc} → ${to}`);
                 }
-                if (edges.length > 5) lines.push(`    … 共 ${edges.length} 条新增边`);
-            } else {
-                lines.push(`    （模块对 ${cycle[i]}→${cycle[i+1]} 基线已存在，非新增边）`);
+                if (newEdges.length > 5) lines.push(`    … 共 ${newEdges.length} 条新增文件级边`);
+            } else if (!base.edges[key]) {
+                lines.push(`    （模块对 ${cycle[i]}→${cycle[i+1]} 基线已存在，文件级边均非新增）`);
             }
         }
         console.log(lines.join('\n'));

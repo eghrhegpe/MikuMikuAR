@@ -215,6 +215,7 @@ graph TD;
         a215["ADR-215"]
         a226["ADR-226"]
         a229["ADR-229"]
+        a237["ADR-237"]
     end
 
     c68 --> a197;
@@ -351,6 +352,7 @@ graph TD;
     c25 --> a81;
     c63 --> a87;
     c46 --> a21;
+    c46 --> a237;
     c87 --> a102;
     c64 --> a93;
     c33 --> a76;
@@ -397,6 +399,7 @@ graph TD;
     c26 --> a84;
     c26 --> a81;
     c47 --> a51;
+    c47 --> a237;
     c48 --> a51;
     c94 --> a176;
     c27 --> a104;
@@ -488,4 +491,5 @@ graph TD;
     click a215 href "../adr/adr-215-eliminate-prop-kind.md"
     click a226 href "../adr/adr-226-ground-material-spec-single-source.md"
     click a229 href "../adr/adr-229-e2e-automation-advancement.md"
+    click a237 href "../adr/adr-237-split-overlong-modules.md"
 ```
