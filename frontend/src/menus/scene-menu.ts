@@ -90,6 +90,7 @@ import { syncDragMode } from '../scene/transform/transform-selection';
 import { addSliderRow } from '../core/ui-helpers';
 import { executeActionById } from '../core/action-executor';
 import { registerSceneActions } from '../core/action-defs/scene-actions';
+import { registerUiAction } from '../core/ui-action-bridge';
 
 // ======== Barrel Re-Exports ========
 // 保持向后兼容——外部文件引用路径不变
@@ -387,7 +388,6 @@ export async function screenshotCurrent(): Promise<void> {
 }
 
 // [doc:adr-238] 注册截图行为供 core 快捷键层经桥调用（切断 core→menus 反向边）
-import { registerUiAction } from '@/core/ui-action-bridge';
 registerUiAction('screenshotCurrent', () => screenshotCurrent());
 
 /** 批量截图所有已加载模型 */
@@ -504,3 +504,7 @@ function handleSceneAction(row: PopupRow): void {
 }
 
 // Wire up events in main.ts:243-244 — do NOT re-register here.
+
+// [doc:adr-238] 注册截图/保存行为供 core/action-defs 经 ui-action-bridge 调用
+registerUiAction('screenshotBatch', () => screenshotBatch());
+registerUiAction('saveScene', () => saveScene());

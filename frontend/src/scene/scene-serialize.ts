@@ -1603,3 +1603,13 @@ export async function tryRestoreLastScene(): Promise<void> {
         logWarn('scene-serialize', '场景恢复失败（数据可能已损坏）:', err);
     }
 }
+
+// [doc:adr-238] 注册撤销/模型列表供 core/action-defs 经 scene-action-bridge 调用
+import { registerSceneAction } from '@/core/scene-action-bridge';
+registerSceneAction('popUndoSnapshot', () => popUndoSnapshot());
+registerSceneAction('restoreUndoSnapshot', (snap: unknown) =>
+    restoreUndoSnapshot(snap as string)
+);
+registerSceneAction('listModels', () =>
+    modelManager.getAll().map((m) => ({ id: m.id, name: m.name }))
+);

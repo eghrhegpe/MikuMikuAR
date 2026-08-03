@@ -26,6 +26,12 @@ export interface SceneActions {
     findLibraryMotionByName: (name: string) => unknown | Promise<unknown>;
     /** 读取环境状态（toggleGround 判定） */
     getEnvGroundVisible: () => boolean;
+    /** 弹出撤销快照（scene 动作） */
+    popUndoSnapshot: () => unknown;
+    /** 恢复撤销快照（scene 动作） */
+    restoreUndoSnapshot: (snap: unknown) => Promise<boolean>;
+    /** 获取全部已加载模型（scene 动作 list-models） */
+    listModels: () => { id: string; name: string }[];
 }
 
 const _sceneActions = new Map<keyof SceneActions, unknown>();

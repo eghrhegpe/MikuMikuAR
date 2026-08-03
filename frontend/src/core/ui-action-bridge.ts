@@ -18,6 +18,14 @@ export interface UiActions {
     navLabel: (index: number) => string;
     /** Android 返回键处理（优先菜单 pop/close，其次关遮罩/退出），由 menus/nav-actions 注册 */
     handleAndroidBack: () => boolean;
+    /** 选择资源根目录（settings 动作），由 menus/library-core 注册 */
+    selectResourceRoot: () => Promise<void>;
+    /** 选择覆写路径（settings 动作），由 menus/library-core 注册 */
+    selectOverridePath: (kind: string) => Promise<void>;
+    /** 批量截图所有模型（scene 动作），由 menus/scene-menu 注册 */
+    screenshotBatch: () => Promise<void>;
+    /** 保存场景（scene 动作），由 menus/scene-menu 注册 */
+    saveScene: () => Promise<void>;
 }
 
 const _uiActions = new Map<keyof UiActions, unknown>();
