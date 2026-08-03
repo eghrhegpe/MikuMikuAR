@@ -44,10 +44,14 @@ import {
 } from '../core/backend/browser-adapter';
 import { t } from '../core/i18n/t';
 import { translateGoError } from '../core/i18n/goerr';
+import { addDisposableListener } from '../core/dom';
 import { buildLevel, setResourceViewMode } from './library-core';
 import { showModelPopup } from './library-browse';
 
 // ======== 初始化 ========
+
+/** [doc:adr-238] mmar:zip-imported 监听幂等保护（initLibrary 可能被 HMR 重复执行） */
+let _zipImportedListenerInstalled = false;
 
 /** [doc:adr-180] 启动授权引导：弹确认框（用户手势）→ 对已有句柄 requestPermission 重新授权（不重选目录）。
  * 返回 true 表示 _fsaRootHandle 已有效、可继续真扫；false 表示用户跳过/拒绝/无句柄。 */
@@ -149,6 +153,15 @@ export async function initLibrary(): Promise<void> {
         }
         safeCallAsync('library-setup', 'CleanOrphanCache:', () => CleanOrphanCache());
         feedbackStatus('library.browseHint2', undefined, false);
+        // [doc:adr-238] zip 拖拽导入完成后重扫库：core/drop-import 不再直接 import 本模块
+        // （core 回归叶子），改派发 mmar:zip-imported 事件。initLibrary 为启动唯一入口，
+        // 监听器注册带幂等保护（HMR 安全）。
+        if (!_zipImportedListenerInstalled) {
+            _zipImportedListenerInstalled = true;
+            addDisposableListener(window, 'mmar:zip-imported', () => {
+                safeCallAsync('library-setup', 'refresh after zip import', () => refreshLibrary());
+            });
+        }
     } catch (err) {
         logWarn('library-setup', 'initLibrary:', err);
         setStatus(t('library.loadLibraryFailed') + translateGoError(err), false);
