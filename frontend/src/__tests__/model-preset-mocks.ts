@@ -17,6 +17,7 @@ export {
     mockMathColor,
     mockMathVector,
     mockStandardMaterial,
+    mockPBRMaterial,
     mockMaterial,
     mockMesh,
     mockTexture,

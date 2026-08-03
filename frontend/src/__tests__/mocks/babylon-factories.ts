@@ -21,6 +21,7 @@ import {
     MockMatrix,
     MockQuaternion,
     MockStandardMaterial,
+    MockPBRMaterial,
     MockMaterial,
     MockAbstractMesh,
     MockMesh,
@@ -63,6 +64,7 @@ export const mockMathVector = () => ({
     TmpVectors: { Vector3: [] },
 });
 export const mockStandardMaterial = () => ({ StandardMaterial: MockStandardMaterial });
+export const mockPBRMaterial = () => ({ PBRMaterial: MockPBRMaterial });
 export const mockMaterial = () => ({ Material: MockMaterial });
 export const mockMesh = () => ({ AbstractMesh: MockAbstractMesh, Mesh: MockMesh });
 export const mockTexture = () => ({ Texture: MockTexture });
