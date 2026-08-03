@@ -203,3 +203,52 @@ describe('P2#2 回归 — autodance BPM 无效时不锁死 _starting', () => {
         expect(sut.isProcVmdActive()).toBe(true);
     });
 });
+
+describe('P2#3 回归 — per-model 状态多模型并发不互相覆盖', () => {
+    it('焦点在 idle/autodance 两模型间切换时，autodance 不被 idle 覆盖而重复重生成', async () => {
+        const mmdModel = { morph: { morphs: [] }, runtimeBones: [] };
+        const mkInst = (mode: 'idle' | 'autodance') => ({
+            vmdData: null,
+            vmdPath: null,
+            mmdModel,
+            vmdLayers: [],
+            procMotion: {
+                mode,
+                bpmQuantizeEnabled: true,
+                eyeTrackingEnabled: true,
+                headTrackingEnabled: true,
+                params: {
+                    idle: { ...DEFAULT_PROC_STATE.params.idle },
+                    autodance: { ...DEFAULT_PROC_STATE.params.autodance },
+                },
+            },
+        });
+        const m1 = mkInst('idle');
+        const m2 = mkInst('autodance');
+        mockState.modelManager.get.mockImplementation((id: string) =>
+            id === 'm1' ? m1 : id === 'm2' ? m2 : undefined
+        );
+        mockState.focusedMmdModel.mockReturnValue(mmdModel);
+        mockState.beatDetectorInst.getBPM.mockReturnValue(120);
+        sut.createProcBeatDetector();
+
+        // 1) 焦点 m2（autodance）→ 启动 autodance
+        mockState.focusedModelId = 'm2';
+        mockState.focusedModel.mockReturnValue(m2);
+        await sut.updateProcMotion();
+        expect(mockState.generateAutoDanceVmd).toHaveBeenCalledTimes(1);
+
+        // 2) 焦点切到 m1（idle）→ 启动 idle（修复前会覆盖全局 _activeKind='idle'）
+        mockState.focusedModelId = 'm1';
+        mockState.focusedModel.mockReturnValue(m1);
+        await sut.updateProcMotion();
+        expect(mockState.generateIdleVmd).toHaveBeenCalledTimes(1);
+
+        // 3) 焦点切回 m2：BPM 未变、autodance 已在跑 → 不应重复重生成
+        //    修复前：_activeKind 被 m1 覆盖为 'idle' → 误判需重生成 → 第 2 次调用
+        mockState.focusedModelId = 'm2';
+        mockState.focusedModel.mockReturnValue(m2);
+        await sut.updateProcMotion();
+        expect(mockState.generateAutoDanceVmd).toHaveBeenCalledTimes(1);
+    });
+});
