@@ -188,7 +188,7 @@ note_check "✅ check:menumap 同步"
 # npm 不可用时跳过（环境问题不该阻断代码推送）
 # 警告多为结构性指标（complexity/max-lines 等，无 --fix），成功时只输出计数摘要，避免刷屏
 if [ "$TS_CHANGED" = "true" ] && [ "$NPM_AVAILABLE" = "true" ]; then
-  echo "[pre-push] lint（0 errors 放行）"
+  echo "[pre-push] lint（0 errors 放行；全量 ESLint 约 15s，可用 git push --no-verify 跳过，不推荐）"
   LINT_OUT="$(cd "$ROOT/frontend" && npm run lint 2>&1)" || {
     printf '%s\n' "$LINT_OUT" | tail -40
     echo "❌ ESLint 检出 error。修复: npm run lint 查看详情"
@@ -209,7 +209,7 @@ fi
 # 纯 Go 变更有 Go 测试覆盖，纯文档变更无逻辑可测，均跳过前端测试
 # npm 不可用时跳过；成功静默（coverage summary 大表由 CI 门禁兜底），失败时打印失败测试明细 + 覆盖率差距
 if [ "$TS_CHANGED" = "true" ] && [ "$NPM_AVAILABLE" = "true" ]; then
-  echo "[pre-push] test:coverage（门禁: lines≥35% functions≥30%）"
+  echo "[pre-push] test:coverage（门禁: lines≥35% functions≥30%；全量 4328 测试 + 覆盖率约 40s，可用 git push --no-verify 跳过，不推荐）"
   COV_LOG="$(mktemp -t pre-push-cov.XXXXXX 2>/dev/null || echo "$ROOT/.pre-push-cov.log")"
   cd "$ROOT/frontend"
   if npm run test:coverage >"$COV_LOG" 2>&1; then

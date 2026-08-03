@@ -8,9 +8,7 @@ import { getLightState, setLightState } from '@/scene/render/lighting';
 import { uiState, setUIState, focusedModelId, modelRegistry } from '@/core/state';
 import {
     getPerceptionState,
-    getPerceptionStateFor,
     setPerceptionState,
-    setPerceptionStateFor,
 } from '@/scene/motion/perception';
 import { getModuleDefaultParam, getModuleState, setModuleParam } from '@/scene/motion/motion-modules/registry';
 
@@ -105,13 +103,8 @@ export function getStateValue(path: StatePath, modelId?: string, actionId?: stri
         case 'ui':
             return (uiState as unknown as Record<string, unknown>)[key];
         case 'perception': {
-            const mid = modelId ?? focusedModelId;
-            return (
-                (mid ? getPerceptionStateFor(mid) : getPerceptionState()) as unknown as Record<
-                    string,
-                    unknown
-                >
-            )[key];
+            // [fix:P3] 场景级存储：参数统一单一来源，无 per-model 分支
+            return (getPerceptionState() as unknown as Record<string, unknown>)[key];
         }
         case 'motionModule': {
             // 格式: motionModule.${moduleId}.${paramKey}
@@ -165,12 +158,8 @@ export function setStateValue(
             setUIState({ [key]: value });
             break;
         case 'perception': {
-            const mid = modelId ?? focusedModelId;
-            if (mid) {
-                setPerceptionStateFor(mid, { [key]: value });
-            } else {
-                setPerceptionState({ [key]: value });
-            }
+            // [fix:P3] 场景级存储：参数统一单一来源，无 per-model 分支
+            setPerceptionState({ [key]: value });
             break;
         }
         case 'motionModule': {

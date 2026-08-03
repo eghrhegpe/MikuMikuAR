@@ -495,7 +495,7 @@ async function _rebuildFallback(
  */
 async function _rebuildComposite(
     modelId: string,
-    _gen: number,
+    gen: number,
     inst: import('../../core/config').ModelInstance,
     vmdEnabledLayers: VmdLayer[],
     hasBaseVmd: boolean,
@@ -529,6 +529,11 @@ async function _rebuildComposite(
             const totalWeight = sources.reduce((sum, s) => sum + s.weight, 0);
 
             for (const src of sources) {
+                // [audit] 循环内多次 await：每次迭代后校验 gen，防止加载多个图层期间
+                // 新 rebuild 已开始（旧结果应被丢弃，避免覆盖新图层状态）
+                if (_rebuildGenMap.get(modelId) !== gen) {
+                    return;
+                }
                 const loadData = src.boneFilter?.length
                     ? _filterVmdBones(src.data, src.boneFilter)
                     : src.data;
@@ -550,6 +555,11 @@ async function _rebuildComposite(
             }
         } finally {
             // VmdLoader 无 dispose() API（fork 实现），loader 为局部引用，GC 自动回收
+        }
+
+        // [audit] 绑定前最终校验：sources 加载完成后、apply 前再确认 gen 未过期
+        if (_rebuildGenMap.get(modelId) !== gen) {
+            return;
         }
 
         // WASM 运行时：优先 JS 帧流合并的 blender 方案，失败降级单层

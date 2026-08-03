@@ -616,22 +616,21 @@ function _syncGazeAngles(): void {
 // [doc:adr-162] Phase 3 — pin / unpin API
 // ══════════════════════════════════════════════════════════════
 
-/** [doc:adr-164] pin 模型感知（原 ≤5 上限已移除，全员感知由 tier 控制） */
+/** [doc:adr-164] pin 模型感知（原 ≤5 上限已移除，全员感知由 tier 控制）。
+ *  [fix:P3] 场景级存储：pin 仅标记激活白名单，不再携带独立参数；
+ *  传入 state 时并入场景级单例（兼容旧存档 pinned 携带 state 的格式）。 */
 export function pinPerception(modelId: string, state?: Partial<PerceptionState>): void {
     const ctx = _getOrCreateContext(modelId);
 
+    if (state) {
+        _setFocusedState(state);
+    }
     if (ctx.isPinned) {
-        if (state) {
-            ctx.state = { ...ctx.state, ...state };
-        }
         return;
     }
 
     ctx.isPinned = true;
     ctx.isActive = true;
-    if (state) {
-        ctx.state = { ...ctx.state, ...state };
-    }
 
     _claimPerceptionBones(modelId);
     _ensureObserverRegistered();
@@ -670,67 +669,14 @@ export function getPinnedModelIds(): string[] {
         .map((c) => c.modelId);
 }
 
-/** 获取指定模型的感知状态（不存在时回退 fallback） */
-export function getPerceptionStateFor(modelId: string): PerceptionState {
-    const ctx = _contexts.get(modelId);
-    if (!ctx) {
-        return { ..._fallbackState };
-    }
-    return { ...ctx.state };
+/** 获取感知状态（场景级单例；参数对所有模型一致，modelId 参数保留仅为兼容旧调用） */
+export function getPerceptionStateFor(_modelId: string): PerceptionState {
+    return { ..._perceptionState };
 }
 
-/** [fix:P2] 获取全部模型的感知状态快照（per-model 独立保存，切换模型不丢）。
- *  仅含已创建 context 的模型（用户编辑过或激活过）；从未触碰的模型无快照，
- *  deserialize 时仍回退 focused/fallback。 */
-export function getAllPerceptionStates(): Array<{ modelId: string; state: PerceptionState }> {
-    return Array.from(_contexts.entries()).map(([modelId, ctx]) => ({
-        modelId,
-        state: { ...ctx.state },
-    }));
-}
-
-/** [fix:P2] 恢复指定模型的感知状态（无 context 时创建，不触发 activate/claim）。 */
-export function restorePerceptionStateFor(modelId: string, s: Partial<PerceptionState>): void {
-    const ctx = _getOrCreateContext(modelId);
-    ctx.state = { ...ctx.state, ...s };
-}
-
-/** 设置指定模型的感知状态 */
-export function setPerceptionStateFor(modelId: string, s: Partial<PerceptionState>): void {
-    // 钳制 gaze 角度参数（与各单项 setter 一致，避免绕过 clamp）
-    const clamped: Partial<PerceptionState> = {};
-    if ('headGazeMaxYaw' in s) {
-        clamped.headGazeMaxYaw = Math.max(0, Math.min(90, s.headGazeMaxYaw!));
-    }
-    if ('headGazeMaxPitch' in s) {
-        clamped.headGazeMaxPitch = Math.max(0, Math.min(90, s.headGazeMaxPitch!));
-    }
-    if ('eyeGazeMaxYaw' in s) {
-        clamped.eyeGazeMaxYaw = Math.max(0, Math.min(15, s.eyeGazeMaxYaw!));
-    }
-    if ('eyeGazeMaxPitch' in s) {
-        clamped.eyeGazeMaxPitch = Math.max(0, Math.min(15, s.eyeGazeMaxPitch!));
-    }
-    if ('eyeGazeSmooth' in s) {
-        clamped.eyeGazeSmooth = Math.max(0, Math.min(1, s.eyeGazeSmooth!));
-    }
-    // 非 gaze 字段原样传入
-    for (const k of Object.keys(s)) {
-        if (!(k in clamped)) {
-            (clamped as Record<string, unknown>)[k] = (s as Record<string, unknown>)[k];
-        }
-    }
-
-    const ctx = _contexts.get(modelId);
-    if (!ctx) {
-        const newCtx = _getOrCreateContext(modelId);
-        newCtx.state = { ...newCtx.state, ...clamped };
-    } else {
-        ctx.state = { ...ctx.state, ...clamped };
-    }
-    if (modelId === _focusedContextId) {
-        _syncGazeAngles();
-    }
+/** 设置感知状态（场景级单例；参数对所有模型一致，modelId 参数保留仅为兼容旧调用） */
+export function setPerceptionStateFor(_modelId: string, s: Partial<PerceptionState>): void {
+    setPerceptionState(s);
     triggerAutoSave();
 }
 
