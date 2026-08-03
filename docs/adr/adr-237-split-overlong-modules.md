@@ -1,6 +1,6 @@
 # ADR-237: 超限模块拆分计划 —— 250LOC 天花板的优先级拆解路线图
 
-> **状态**: ✅ 收口（2026-08-03 登记；P1 c88aea48 / P2 2f656432 已完成，P3 需独立子 ADR 评估，P4 维持不拆）
+> **状态**: ✅ 收口（2026-08-03 登记；P1 c88aea48 / P2 2f656432 已完成，P3 已立项 [ADR-239](adr-239-split-env-water.md)，P4 维持不拆）
 > **日期**: 2026-08-03
 >
 > **编号**: 237
@@ -55,7 +55,7 @@
 - **风险**：中——函数间共享 `modelId`/`layersSnapshot`/`gen` 状态，已显式传参；`gen` 校验保持
 - **验证**：vmd-layers 测试（dispose/filter 2 文件 14 用例）+ `check:funcmap`
 
-### P3 — env-water.ts 拆模块（高风险，需独立子 ADR）📋 待单独立项评估
+### P3 — env-water.ts 拆模块（高风险，需独立子 ADR）📋 已立项（[ADR-239](adr-239-split-env-water.md)）
 
 - **目标**：1569 → ~900 行
 - **拆法**：按 env 子系统先例（env-impl/env-water/env-terrain 拆分模式）拆 3 模块：
@@ -71,6 +71,19 @@
 - 549 行，已拆一轮，31 符号结构清晰（init/set/transition/dispose 四大块）
 - 结论：**为拆而拆无收益**，维持现状；`transitionLighting` 已独立至 lighting-tween.ts
 - 2026-08-03 收口复核：未再增长，维持决策不变
+
+## 2.5 实施经验（P1/P2 落地实录）
+
+### TS mixin 两个坑（P1 实施时踩中，均已修复并留注释）
+
+1. **TS2545 — mixin 构造器类型必须用 `any[]`**：mixin 泛型 `Constructor<T>` 写成 `abstract new (...args: unknown[]) => T` 会报 "A mixin class must have a constructor with a single rest parameter of type 'any[]'"。必须用 `new (...args: any[]) => T`。
+2. **TS2353 — mixin 返回类名不能遮蔽 import 的接口**：`return class ProcMotionParams extends Base` 与 import 的 `ProcMotionParams` 接口同名，导致类方法内 `Partial<ProcMotionParams>` 解析为局部类而非接口（`intensity does not exist` 类错误）。重命名为 `ParamsMixin` 解决。
+
+### 拆分纪律实操补充
+
+- **mixin 访问基类 protected 成员**：基类 `_fallbackProcState`/`_beatDetector`/`_refProcState` 需从 `private` 改 `protected` 供 mixin 读取；mixin 泛型约束 `TBase extends Constructor<ProcMotionControllerBase>` 直接引用基类类型（type-only import，无循环依赖）。
+- **P2 拆函数共享状态显式传参**：`modelId`/`gen`/`inst`/`vmdEnabledLayers`/`hasBaseVmd`/`scene` 全走参数，`gen` 竞态校验在每个 await 后保持（编排 2 处 + fallback 内 2 处）。
+- **动态 import 破环纪律**：`getScene()` 与 `wasm-layers-blender` 保持动态 import（ADR-236 既定模式），拆分未新增任何静态 scene 引用——与隔壁 core→scene 根环解构（action-defs 注册表化）互不冲突。
 
 ## 3. 拆分纪律（对齐项目规范）
 
