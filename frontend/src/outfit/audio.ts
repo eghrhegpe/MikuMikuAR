@@ -569,3 +569,20 @@ registerSceneAction('loadAudioFile', (filePath: string) => loadAudioFile(filePat
 
 // [doc:adr-238] 注册音频释放供 scene/manager 经 scene-action-bridge 调用
 registerSceneAction('disposeAudio', () => disposeAudio());
+
+// [doc:adr-238] 补充注册节拍检测器/流播放器供 scene 经 scene-action-bridge 调用
+registerSceneAction('attachBeatDetector', (detector: unknown) =>
+    attachBeatDetector(detector as Parameters<typeof attachBeatDetector>[0])
+);
+registerSceneAction('getStreamPlayer', () => getStreamPlayer());
+
+// [doc:adr-238] 注册音量设置供 scene-serialize 经 scene-action-bridge 调用
+registerSceneAction('setVolume', (v: number) => setVolume(v));
+
+// [doc:adr-238] 注册音量/偏移读取供 scene-serialize 经 scene-action-bridge 调用
+registerSceneAction('getVolume', () => getVolume());
+registerSceneAction('getAudioOffset', () => getAudioOffset());
+
+// [doc:adr-238] 注册音频偏移/恢复供 scene-serialize 经 scene-action-bridge 调用
+registerSceneAction('setAudioOffset', (v: number) => setAudioOffset(v));
+registerSceneAction('resumeAudio', () => resumeAudio());

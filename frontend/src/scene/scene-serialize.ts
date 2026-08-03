@@ -42,18 +42,8 @@ import {
 import { loadCameraVmdFromPath } from './motion/vmd-loader';
 import type { CameraState } from './camera/camera';
 import { migratePerceptionFromProcMotion, migratePerceptionData } from './scene-migrate';
-import {
-    getAudioName,
-    getAudioPath,
-    getVolume,
-    getAudioOffset,
-    isAudioPlaying,
-    loadAudioFile,
-    setVolume,
-    setAudioOffset,
-    resumeAudio,
-} from '../outfit/audio';
-import { loadOutfits, applyOutfitVariant } from '../outfit/outfit';
+// [doc:adr-238] outfit 操作经 scene-action-bridge（outfit 注册）
+import { getSceneAction } from '@/core/scene-action-bridge';
 
 import {
     getLightState,
@@ -533,16 +523,16 @@ export function serializeScene(): SceneFile {
                   active: getCameraMode() === 'vmd',
               }
             : undefined,
-        audio: getAudioName()
+        audio: getSceneAction('getAudioName')?.() ?? ''
             ? {
-                  path: getAudioPath(),
-                  libraryRef: getAudioPath()
-                      ? computeLibraryRef(getAudioPath(), libraryRoot) || undefined
+                  path: getSceneAction('getAudioPath')?.() ?? '',
+                  libraryRef: getSceneAction('getAudioPath')?.() ?? ''
+                      ? computeLibraryRef(getSceneAction('getAudioPath')?.() ?? '', libraryRoot) || undefined
                       : undefined,
-                  name: getAudioName(),
-                  volume: getVolume(),
-                  offset: getAudioOffset(),
-                  playing: isAudioPlaying(),
+                  name: getSceneAction('getAudioName')?.() ?? '',
+                  volume: getSceneAction('getVolume')?.() ?? 1,
+                  offset: getSceneAction('getAudioOffset')?.() ?? 0,
+                  playing: getSceneAction('isAudioPlaying')?.() ?? false,
               }
             : undefined,
         // [fix:P3] 与 serializeModel 一致：深拷贝防嵌套 params 与运行时状态共引用
@@ -855,8 +845,8 @@ async function deserializeModels(
         }
         if (m.outfitVariant) {
             try {
-                await loadOutfits(id);
-                await applyOutfitVariant(id, m.outfitVariant);
+                await getSceneAction('loadOutfits')?.(id);
+                await getSceneAction('applyOutfitVariant')?.(id, m.outfitVariant);
             } catch (err) {
                 logWarn('scene-serialize', `场景恢复: 模型 ${m.name} 变体应用失败:`, err);
             }
@@ -1078,9 +1068,9 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
             try {
                 const resolvedPath = resolvePathFromRef(data.audio.path, data.audio.libraryRef);
                 if (resolvedPath) {
-                    await loadAudioFile(resolvedPath);
-                    setVolume(data.audio.volume ?? 1);
-                    setAudioOffset(data.audio.offset ?? 0);
+                    await getSceneAction('loadAudioFile')?.(resolvedPath);
+                    getSceneAction('setVolume')?.(data.audio.volume ?? 1);
+                    getSceneAction('setAudioOffset')?.(data.audio.offset ?? 0);
                     if (data.audio.playing) {
                         // In Wails desktop environments, AudioContext.resume() works without
                         // user gesture. But to be safe in any environment, check state first.
@@ -1092,7 +1082,7 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
                                     '场景恢复: 音频上下文已暂停，跳过自动播放（需用户交互后手动播放）'
                                 );
                             } else {
-                                resumeAudio();
+                                getSceneAction('resumeAudio')?.();
                             }
                         } catch (e) {
                             logWarn(
@@ -1100,7 +1090,7 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
                                 '场景恢复: AudioContext 创建失败，尝试直接 resume:',
                                 e
                             );
-                            resumeAudio();
+                            getSceneAction('resumeAudio')?.();
                         }
                     }
                 }
