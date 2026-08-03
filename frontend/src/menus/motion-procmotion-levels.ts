@@ -11,6 +11,7 @@ import {
     getProcMotionState,
     regenerateProcMotion,
     setProcMotionInterpOverride,
+    triggerAutoSave,
 } from '../scene/scene';
 import { setProcMotionBoneToggles } from '../scene/motion/proc-motion-bridge';
 import { getProcMotionBoneCategories } from '../motion-algos/procedural-motion';
@@ -115,6 +116,9 @@ function _applyProcParam(
             full.boneToggles = { ...cur, ...patch.boneToggles };
         }
         _setProcParams(modelId, mode, full);
+        // [fix:persist] 与全局路径（bridge setter 内部 triggerAutoSave）对齐：
+        // per-model 参数直写 modelRegistry 不触发 autosave，需显式触发落盘
+        triggerAutoSave();
         regenerateProcMotion(modelId);
         return;
     }
@@ -153,6 +157,9 @@ export function buildProcMotionSchema(modelId?: string, mode: ProcModeKey = 'idl
                                         mode: v,
                                     };
                                 }
+                                // [fix:persist] per-model 直写不触发 autosave，与全局分支
+                                // （setProcMotionMode 内部 triggerAutoSave）对齐后显式落盘
+                                triggerAutoSave();
                                 regenerateProcMotion(modelId);
                             } else {
                                 setProcMotionMode(v);

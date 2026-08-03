@@ -16,6 +16,8 @@ import { Vector3, Quaternion } from '@babylonjs/core/Maths/math.vector';
 import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { PBRMaterial } from '@babylonjs/core/Materials/PBR/pbrMaterial';
+import type { Material } from '@babylonjs/core/Materials/material';
+import { detachSharedTextures } from '@/core/dispose-helpers';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
 import {
     ModelInstance,
@@ -309,12 +311,20 @@ export class ModelManager {
         // [fix:gpu-texture-leak] 显式释放材质及其纹理（mesh.dispose 只释放几何体，不释放材质）。
         // restoreMaterials 已将原始材质恢复到 mesh 上，此处统一 dispose 防止 GPU 纹理泄漏。
         // 用 Set 去重：多个 mesh 可能共享同一材质实例。
-        const disposedMats = new Set<import('@babylonjs/core/Materials/material').Material>();
+        const disposedMats = new Set<Material>();
         for (const m of inst.meshes) {
-            if (m instanceof Mesh && m.material && !disposedMats.has(m.material)) {
+            if (m instanceof Mesh && m.material) {
                 disposedMats.add(m.material);
-                m.material.dispose(false, true); // disposeTextures=true 级联释放贴图
             }
+        }
+        // [bugfix:shared-toon-dispose] 必须先摘除共享纹理，再 dispose。
+        // MMD 共享 toon（toon01–10）在 babylon-mmd 中是全局单例（纹理缓存键
+        // `file:shared_toon_texture_<N>` 不含区分模型的 fileRootId），多个模型共用同一 Texture；
+        // 而 MmdPluginMaterial.dispose 无引用计数，会直接销毁它，
+        // 导致其他存活模型的 toon 失效 → 相关材质（常见于眼睛）渲染纯黑且不随光照变化。
+        detachSharedTextures(disposedMats);
+        for (const mat of disposedMats) {
+            mat.dispose(false, true); // disposeTextures=true 级联释放贴图
         }
 
         for (const m of inst.meshes) {
