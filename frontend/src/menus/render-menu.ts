@@ -94,13 +94,14 @@ function renderFolder(node: MenuNode, container: HTMLElement): (() => void) | un
         headerToggle: node.headerToggle
             ? {
                   value: node.headerToggle.get
-                      ? node.headerToggle.get(getStateValue(node.headerToggle.bind, node.modelId))
-                      : !!getStateValue(node.headerToggle.bind, node.modelId),
+                      ? node.headerToggle.get(getStateValue(node.headerToggle.bind, node.modelId, node.actionId))
+                      : !!getStateValue(node.headerToggle.bind, node.modelId, node.actionId),
                   onChange: (v: boolean) => {
                       setStateValue(
                           node.headerToggle!.bind,
                           node.headerToggle!.set ? node.headerToggle!.set(v) : v,
-                          node.modelId
+                          node.modelId,
+                          node.actionId
                       );
                       node.headerToggle!.onChange?.(v);
                   },
@@ -136,10 +137,10 @@ function renderSlider(node: MenuNode, container: HTMLElement): void {
         return;
     }
 
-    const raw = getStateValue(ctrl.bind, node.modelId);
+    const raw = getStateValue(ctrl.bind, node.modelId, node.actionId);
     const value = ctrl.get ? (ctrl.get(raw) as number) : (raw as number);
     const onChange = (v: number) => {
-        setStateValue(ctrl.bind, ctrl.set ? ctrl.set(v) : v, node.modelId);
+        setStateValue(ctrl.bind, ctrl.set ? ctrl.set(v) : v, node.modelId, node.actionId);
         ctrl.onChange?.(v);
     };
 
@@ -191,8 +192,8 @@ function renderColorSlider(node: MenuNode, container: HTMLElement): void {
         return;
     }
 
-    const value = getStateValue(ctrl.bind, node.modelId) as [number, number, number];
-    const onChange = (v: [number, number, number]) => setStateValue(ctrl.bind, v, node.modelId);
+    const value = getStateValue(ctrl.bind, node.modelId, node.actionId) as [number, number, number];
+    const onChange = (v: [number, number, number]) => setStateValue(ctrl.bind, v, node.modelId, node.actionId);
 
     addColorSliderRow(
         container,
@@ -215,10 +216,10 @@ function renderToggle(node: MenuNode, container: HTMLElement): void {
         return;
     }
 
-    const raw = getStateValue(ctrl.bind, node.modelId);
+    const raw = getStateValue(ctrl.bind, node.modelId, node.actionId);
     const value = ctrl.get ? (ctrl.get(raw) as boolean) : (raw as boolean);
     const onChange = (v: boolean) => {
-        setStateValue(ctrl.bind, ctrl.set ? ctrl.set(v) : v, node.modelId);
+        setStateValue(ctrl.bind, ctrl.set ? ctrl.set(v) : v, node.modelId, node.actionId);
         ctrl.onChange?.(v);
     };
 
@@ -247,9 +248,9 @@ function renderModeSlider(node: MenuNode, container: HTMLElement): void {
         return;
     }
 
-    const value = getStateValue(ctrl.bind, node.modelId) as string;
+    const value = getStateValue(ctrl.bind, node.modelId, node.actionId) as string;
     const onChange = (v: string) => {
-        setStateValue(ctrl.bind, v, node.modelId);
+        setStateValue(ctrl.bind, v, node.modelId, node.actionId);
         ctrl.onChange?.(v);
     };
     const opts = ctrl.options.map((o) => ({ value: o.value, label: t(o.label) }));
@@ -275,9 +276,9 @@ function renderModeRow(node: MenuNode, container: HTMLElement): void {
         return;
     }
 
-    const value = getStateValue(ctrl.bind, node.modelId) as string;
+    const value = getStateValue(ctrl.bind, node.modelId, node.actionId) as string;
     const onChange = (v: string) => {
-        setStateValue(ctrl.bind, v, node.modelId);
+        setStateValue(ctrl.bind, v, node.modelId, node.actionId);
         ctrl.onChange?.(v);
     };
     const opts = ctrl.options.map((o) => ({ value: o.value, label: t(o.label) }));

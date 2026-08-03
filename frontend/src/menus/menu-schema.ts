@@ -12,7 +12,7 @@ import {
     setPerceptionState,
     setPerceptionStateFor,
 } from '@/scene/motion/perception';
-import { getModuleDefaultParam } from '@/scene/motion/motion-modules/registry';
+import { getModuleDefaultParam, getModuleState, setModuleParam } from '@/scene/motion/motion-modules/registry';
 
 // 状态路径：类型化字符串，由解析器按前缀映射到 reactive state 对象
 export type StatePath =
@@ -86,12 +86,14 @@ export interface MenuNode {
     conflictHint?: string;
     /** [doc:adr-166] 模型 ID 覆写：感知层 path 时优先读/写指定模型的 ctx.state，而非焦点模型 */
     modelId?: string;
+    /** [fix:P2] 查看的动作 id：motionModule path 时读写指定动作的模块配置，缺省回退激活动作 */
+    actionId?: string;
 }
 
 // ======== 状态路径解析器 ========
 
 /** 按 StatePath 获取当前值 */
-export function getStateValue(path: StatePath, modelId?: string): unknown {
+export function getStateValue(path: StatePath, modelId?: string, actionId?: string): unknown {
     const [prefix, key] = path.split('.') as [string, string];
     switch (prefix) {
         case 'env':
@@ -121,13 +123,15 @@ export function getStateValue(path: StatePath, modelId?: string): unknown {
             }
             const moduleId = rest.substring(0, dotIdx);
             const paramKey = rest.substring(dotIdx + 1);
-            const mid = focusedModelId;
+            const mid = modelId ?? focusedModelId;
             if (!mid) {
                 return undefined;
             }
-            const inst = modelRegistry.get(mid);
-            const modState = inst?.motionOverrideModules?.find((m) => m.id === moduleId);
-            const v = modState?.params[paramKey];
+            // [fix:P2] 改走 registry 单源（intent.motionModules + actionId）：
+            // 此前读 inst.motionOverrideModules（per-model 旧源），与 registry 实际生效的
+            // per-motion 新源脱节 → 滑块显示值 ≠ 生效值。缺省 actionId 回退激活动作。
+            const modState = getModuleState(mid, moduleId, actionId);
+            const v = modState.params[paramKey];
             // [doc:adr-116] 未 seed 时回退到模块注册默认值，避免滑块显示成负值 min（Q2 修复）
             if (v === undefined) {
                 return getModuleDefaultParam(moduleId, paramKey);
@@ -140,7 +144,12 @@ export function getStateValue(path: StatePath, modelId?: string): unknown {
 }
 
 /** 按 StatePath 设置值 */
-export function setStateValue(path: StatePath, value: unknown, modelId?: string): void {
+export function setStateValue(
+    path: StatePath,
+    value: unknown,
+    modelId?: string,
+    actionId?: string
+): void {
     const [prefix, key] = path.split('.') as [string, string];
     switch (prefix) {
         case 'env':
@@ -174,23 +183,13 @@ export function setStateValue(path: StatePath, value: unknown, modelId?: string)
             }
             const moduleId = rest.substring(0, dotIdx);
             const paramKey = rest.substring(dotIdx + 1);
-            const mid = focusedModelId;
+            const mid = modelId ?? focusedModelId;
             if (!mid) {
                 return;
             }
-            const inst = modelRegistry.get(mid);
-            if (!inst) {
-                return;
-            }
-            if (!inst.motionOverrideModules) {
-                inst.motionOverrideModules = [];
-            }
-            let modState = inst.motionOverrideModules.find((m) => m.id === moduleId);
-            if (!modState) {
-                modState = { id: moduleId, enabled: false, params: {} };
-                inst.motionOverrideModules.push(modState);
-            }
-            modState.params[paramKey] = value as number | boolean;
+            // [fix:P2] 改走 registry 单源（intent.motionModules + actionId）：
+            // 此前写 inst.motionOverrideModules（per-model 旧源），与 registry 生效源脱节。
+            setModuleParam(mid, moduleId, paramKey, value as number | boolean, actionId);
             break;
         }
     }

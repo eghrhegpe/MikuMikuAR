@@ -37,9 +37,16 @@ describe('ADR-093 Menu Schema — motionModule. StatePath 前缀', () => {
         vi.doUnmock('@/core/state');
     });
 
-    it('reads from modelRegistry motionOverrideModules', async () => {
+    it('reads from registry getModuleState（单源，intent.motionModules + actionId）', async () => {
         const { getStateValue: gsv } = await import('../menus/menu-schema');
+        const { getModuleState: gms } =
+            await import('../scene/motion/motion-modules/registry');
+        (gms as ReturnType<typeof vi.fn>).mockReturnValue({
+            enabled: true,
+            params: { headYawRange: 45 },
+        });
         expect(gsv('motionModule.gaze.headYawRange')).toBe(45);
+        expect(gms).toHaveBeenCalledWith(TEST_MID, 'gaze', undefined);
     });
 
     it('falls back to getModuleDefaultParam when undefined', async () => {
@@ -51,14 +58,12 @@ describe('ADR-093 Menu Schema — motionModule. StatePath 前缀', () => {
         expect(gmdp).toHaveBeenCalledWith('gaze', 'breathAmp');
     });
 
-    it('writes create module state if not exists', async () => {
+    it('writes via setModuleParam（单源，不再写 inst.motionOverrideModules）', async () => {
         const { setStateValue: ssv } = await import('../menus/menu-schema');
-        const { modelRegistry: mr } = await import('../core/state');
+        const { setModuleParam: smp } =
+            await import('../scene/motion/motion-modules/registry');
         ssv('motionModule.newMod.someParam', 0.75);
-        const inst = mr.get(TEST_MID);
-        const mod = inst?.motionOverrideModules?.find((m: any) => m.id === 'newMod');
-        expect(mod).toBeTruthy();
-        expect(mod!.params.someParam).toBe(0.75);
+        expect(smp).toHaveBeenCalledWith(TEST_MID, 'newMod', 'someParam', 0.75, undefined);
     });
 
     it('returns undefined when no focused model', async () => {

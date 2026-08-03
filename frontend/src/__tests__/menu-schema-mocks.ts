@@ -109,6 +109,9 @@ export const mockPerception = () => ({
 export const mockRegistry = () => ({
     getModuleDefaultParam: vi.fn(),
     getModuleConflicts: vi.fn(() => []),
+    // [fix:P2] menu-schema motionModule bind 改走 registry 单源后新增的 mock
+    getModuleState: vi.fn(() => ({ enabled: false, params: {} })),
+    setModuleParam: vi.fn(),
 });
 
 // —— 新增工厂：供 schema-snapshot.test.ts 等使用 ——
