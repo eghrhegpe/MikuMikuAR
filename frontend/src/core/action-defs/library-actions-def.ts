@@ -1,8 +1,7 @@
+// [doc:adr-238] 库操作经 scene-action-bridge 调用（定义留 core、实现归 scene/menus）
 import { registerAction } from '../action-registry';
-import { setModelFormation } from '../../scene/scene';
-import { refreshLibrary } from '../../menus/library-setup';
-import { importFile } from '../../menus/library-actions';
 import { feedbackInfo } from '../feedback';
+import { getSceneAction } from '../scene-action-bridge';
 import { allModels } from '../config';
 
 export function registerLibraryActions(): void {
@@ -13,7 +12,7 @@ export function registerLibraryActions(): void {
         params: [],
         destructive: false,
         execute: async () => {
-            refreshLibrary();
+            await getSceneAction('refreshLibrary')?.();
         },
     });
     registerAction({
@@ -24,7 +23,7 @@ export function registerLibraryActions(): void {
         destructive: false,
         uiOnly: true,
         execute: async () => {
-            importFile();
+            getSceneAction('importFile')?.();
         },
     });
     registerAction({
@@ -41,9 +40,7 @@ export function registerLibraryActions(): void {
         ],
         destructive: false,
         execute: async (p) => {
-            setModelFormation(
-                p.type as 'line' | 'v-shape' | 'circle' | 'grid' | 'diagonal' | 'arc'
-            );
+            getSceneAction('setModelFormation')?.(p.type as string);
             feedbackInfo('scene.formationStatus.' + p.type, undefined);
         },
     });

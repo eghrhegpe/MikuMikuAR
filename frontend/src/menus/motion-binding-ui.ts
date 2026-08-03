@@ -461,3 +461,11 @@ export async function handleModelAction(action: string, id: string): Promise<voi
             break;
     }
 }
+
+// [doc:adr-238] 注册动作绑定 UI 操作供 core/action-defs 经 ui-action-bridge 调用
+import { registerUiAction } from '@/core/ui-action-bridge';
+registerUiAction('handleModelAction', (action: string, modelId?: string) =>
+    handleModelAction(action as Parameters<typeof handleModelAction>[0], modelId)
+);
+registerUiAction('resetFocusedLayerId', () => resetFocusedLayerId());
+registerUiAction('buildActionBindingLevel', (id?: string) => buildActionBindingLevel(id));

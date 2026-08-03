@@ -834,3 +834,13 @@ export {
 export { SaveThumbnail, SaveLastScene, LoadLastScene, SetEnvState } from '../core/wails-bindings';
 export type { LightState, StageLightState } from './render/lighting';
 export type { RenderState } from './render/renderer';
+
+// [doc:adr-238] 注册模型搜索供 core/action-defs entity resolve 经 scene-action-bridge 调用
+import { registerSceneAction } from '@/core/scene-action-bridge';
+registerSceneAction('findSceneModelByName', async (name: string) => {
+    return (
+        modelManager.getAll().find((m) => m.name.toLowerCase().includes(name.toLowerCase())) ??
+        null
+    );
+});
+

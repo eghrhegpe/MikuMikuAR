@@ -987,3 +987,17 @@ export {
     reloadConfig,
     refreshLibrary,
 } from './library-setup';
+
+// [doc:adr-238] 注册菜单浏览层级构建供 core/action-defs 经 ui-action-bridge 调用
+import { registerUiAction } from '@/core/ui-action-bridge';
+registerUiAction('buildBrowseLevel', (args) => {
+    const { dir, label, filter, targetStack, extraFolders, outcome } = args;
+    return buildLevel(
+        dir,
+        label,
+        filter as Parameters<typeof buildLevel>[2],
+        targetStack as Parameters<typeof buildLevel>[3],
+        extraFolders as Parameters<typeof buildLevel>[4],
+        outcome as Parameters<typeof buildLevel>[5]
+    );
+});

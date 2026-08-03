@@ -133,3 +133,10 @@ export function disposeProcMotion(): void {
         _ctrl = null;
     }
 }
+
+// [doc:adr-238] 注册程序化动作操作供 core/action-defs 经 scene-action-bridge 调用
+import { registerSceneAction } from '@/core/scene-action-bridge';
+registerSceneAction('setProcMotionMode', (mode: string) => {
+    setProcMotionMode(mode as Parameters<typeof setProcMotionMode>[0]);
+});
+registerSceneAction('regenerateProcMotion', () => regenerateProcMotion());

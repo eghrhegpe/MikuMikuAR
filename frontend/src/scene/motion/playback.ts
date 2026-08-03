@@ -192,3 +192,7 @@ export function seekFromEvent(e: MouseEvent | PointerEvent): void {
     updatePlaybackUI();
     syncAudioPlayback(targetTime, isPlaying, duration);
 }
+
+// [doc:adr-238] 注册播放 UI 刷新供 core/action-defs 经 scene-action-bridge 调用
+import { registerSceneAction } from '@/core/scene-action-bridge';
+registerSceneAction('updatePlaybackUI', () => updatePlaybackUI());

@@ -73,3 +73,8 @@ export function resetLipSyncOnFocusChange(): void {
 export function updateLipSync(): void {
     // no-op: 逻辑已迁入 perception.ts
 }
+
+// [doc:adr-238] 注册唇形同步操作供 core/action-defs 经 scene-action-bridge 调用
+import { registerSceneAction } from '@/core/scene-action-bridge';
+registerSceneAction('setLipSyncEnabled', (enabled: boolean) => setLipSyncEnabled(enabled));
+registerSceneAction('getLipSyncState', () => getLipSyncState());

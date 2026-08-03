@@ -370,3 +370,9 @@ export async function loadVPDPose(
         }
     });
 }
+
+// [doc:adr-238] 注册 VPD 姿势加载供 core/action-defs 经 scene-action-bridge 调用
+import { registerSceneAction } from '@/core/scene-action-bridge';
+registerSceneAction('loadVPDPose', (path: string) => {
+    void loadVPDPose(path);
+});

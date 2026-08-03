@@ -32,6 +32,42 @@ export interface SceneActions {
     restoreUndoSnapshot: (snap: unknown) => Promise<boolean>;
     /** 获取全部已加载模型（scene 动作 list-models） */
     listModels: () => { id: string; name: string }[];
+    /** 唇形同步开关（motion 动作） */
+    setLipSyncEnabled: (enabled: boolean) => void;
+    /** 读取唇形同步状态（motion 动作） */
+    getLipSyncState: () => { enabled: boolean };
+    /** 清空全部场景动作（motion 动作） */
+    clearAllSceneMotions: () => void;
+    /** 添加场景动作（motion 动作） */
+    addSceneMotion: (opts: Record<string, unknown>) => void;
+    /** 替换默认动作（motion 动作） */
+    replaceDefaultMotion: (opts: Record<string, unknown>) => void;
+    /** 推送撤销快照（motion 动作） */
+    pushUndoSnapshot: () => unknown;
+    /** 场景撤销后刷新（motion 动作） */
+    offerSceneUndoAndRefresh: (
+        label: string,
+        snap: unknown,
+        afterApply?: () => void
+    ) => void;
+    /** 更新播放 UI（motion 动作） */
+    updatePlaybackUI: () => void;
+    /** 设置程序化动作模式（motion 动作） */
+    setProcMotionMode: (mode: string) => void;
+    /** 重新生成程序化动作（motion 动作） */
+    regenerateProcMotion: () => void;
+    /** 加载 VPD 姿势（motion 动作） */
+    loadVPDPose: (path: string) => void;
+    /** 读取音频名（motion 动作） */
+    getAudioName: () => string;
+    /** 按名称模糊搜索场景内模型（entity resolve） */
+    findSceneModelByName: (name: string) => Promise<unknown>;
+    /** 设置模型编队（library 动作） */
+    setModelFormation: (formation: string) => void;
+    /** 刷新模型库（library 动作），由 menus/library-setup 注册 */
+    refreshLibrary: () => Promise<void> | void;
+    /** 导入文件（library 动作），由 menus/library-actions 注册 */
+    importFile: () => void;
 }
 
 const _sceneActions = new Map<keyof SceneActions, unknown>();

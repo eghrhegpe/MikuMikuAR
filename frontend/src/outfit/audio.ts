@@ -552,3 +552,7 @@ export function notifyBeatDetectorReset(): void {
 export function getStreamPlayer(): StreamAudioPlayer | null {
     return streamPlayer;
 }
+
+// [doc:adr-238] 注册音频名读取供 core/action-defs 经 scene-action-bridge 调用
+import { registerSceneAction } from '@/core/scene-action-bridge';
+registerSceneAction('getAudioName', () => getAudioName());
