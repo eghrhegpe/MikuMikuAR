@@ -2,15 +2,15 @@
 
 # 决策记录（ADR）
 
-> 架构决策日志，共 **235** 篇（ADR-001 起按编号递增）。决策一旦写下即不可变；状态变化以各 ADR 文件首部「状态」行为准。
+> 架构决策日志，共 **236** 篇（ADR-001 起按编号递增）。决策一旦写下即不可变；状态变化以各 ADR 文件首部「状态」行为准。
 
 ## 按状态分布
 
 | 状态 | 数量 | 含义 |
 |------|------|------|
-| [推进中](#推进中) | 8 | 已开工，尚未收口（含部分实施） |
+| [推进中](#推进中) | 6 | 已开工，尚未收口（含部分实施） |
 | [规划中](#规划中) | 8 | 已立项，等待实施 |
-| [已落地](#已落地) | 208 | 实施完成，代码已合入 |
+| [已落地](#已落地) | 211 | 实施完成，代码已合入 |
 | [已归档](#已归档) | 9 | 被取代、放弃、过时或搁置，保留供追溯 |
 | [其他](#其他) | 2 | 状态行缺失或表述不可归类 |
 
@@ -20,8 +20,6 @@
 
 | ADR | 主题 | 状态 |
 |-----|------|------|
-| [ADR-238](./adr-238-循环依赖消解二期-core-scene-根环.md) | 循环依赖消解第二期 —— core→scene 根环与 motion/outfit 互依赖拆解 | 🟡 实施中 |
-| [ADR-236](./adr-236-循环依赖消解.md) | 循环依赖消解 — scene/render ↔ scene/manager 互依赖拆解 | 部分实施 — render↔manager 互依… |
 | [ADR-229](./adr-229-e2e-automation-advancement.md) | E2E 自动化推进 —— 从 schema 到测试零映射 | 部分实施 — Phase 1 |
 | [ADR-220](./adr-220-schema-integrity-metatest.md) | Schema 完整性元测试 —— 不开浏览器，秒级捕获 schema 漂移 | 实施中 |
 | [ADR-215](./adr-215-eliminate-prop-kind.md) | 取消「道具」资源类型 — 模型附属关系替代 prop + accessory 体系 | 🔄 实施中 |
@@ -46,8 +44,11 @@
 
 | ADR | 主题 | 状态 |
 |-----|------|------|
+| [ADR-240](./adr-240-代码重复审计与双源消除.md) | 代码重复审计与双源消除 —— canvasToBase64 去重 / applyWindToParticles 空壳处置 / 工作区垃圾清理 | ✅ 已实施 |
 | [ADR-239](./adr-239-split-env-water.md) | env-water.ts 拆模块 —— 材质/反射/FX 三向拆分与生命周期宿主收拢（ADR-237 P3 落地） | ✅ 已实施 |
+| [ADR-238](./adr-238-循环依赖消解二期-core-scene-根环.md) | 循环依赖消解第二期 —— core→scene 根环与 motion/outfit 互依赖拆解 | 🟢 已实施 |
 | [ADR-237](./adr-237-split-overlong-modules.md) | 超限模块拆分计划 —— 250LOC 天花板的优先级拆解路线图 | ✅ 收口 |
+| [ADR-236](./adr-236-循环依赖消解.md) | 循环依赖消解 — scene/render ↔ scene/manager 互依赖拆解 | ✅ 核心已实施 — render↔manager… |
 | [ADR-235](./adr-235-save-mechanism-tensions.md) | 保存机制现状与张力登记 —— 双权威源 / 同步写假设 / 全量 vs 增量 / 迁移不对称 | ✅ 已完成 |
 | [ADR-234](./adr-234-env-state-parity-guard.md) | env-state ↔ Go EnvState 字段 parity 防线 —— 用检查脚本终结「TS 加字段、Go 忘同步」 | ✅ 已完成 |
 | [ADR-233](./adr-233-proc-motion-per-mode-params.md) | 程序化动作 per-mode 独立参数 —— 拆分单一状态为待机/自动舞蹈各自参数集 | ✅ 已完成 |
@@ -85,7 +86,7 @@
 | [ADR-192](./adr-192-upstream-adapter-layer.md) | 上游适配层重构（MmdAdapter） | 已立项 · Phase 2 已完成 |
 | [ADR-191](./adr-191-god-barrel-debarreling.md) | 神桶 `@/core/utils` 去桶化（零依赖叶下沉） | 已完成 |
 | [ADR-190](./adr-190-capability-declarative-consolidation.md) | 端能力声明式收口（淘汰散落 isAndroidPlatform 分支） | 已完成 |
-| [ADR-188](./adr-188-pbr-material-builder.md) | PBRMaterialBuilder 材质系统迁移 — PBR 渲染升级 | Phase 1 基本完成 |
+| [ADR-188](./adr-188-pbr-material-builder.md) | PBRMaterialBuilder 材质系统迁移 — PBR 渲染升级 | Phase 1 完成 |
 | [ADR-186](./adr-186-bone-override-frame-timing.md) | bone-override 帧内时序图 | accepted |
 | [ADR-185](./adr-185-web-zip-pmx-subdir-relpath.md) | 网页端 ZIP 内子目录 PMX 贴图路径维度对齐 | 已完成 |
 | [ADR-184](./adr-184-web-zip-encoding-and-bomb-guard.md) | 网页端 ZIP 嵌套识别能力补齐（多编码检测 + 炸弹防护对齐 Go 端） | 已完成 |

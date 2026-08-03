@@ -30,49 +30,7 @@ import { registerLoadRefreshHook, registerLibraryScannedHook } from '../core/loa
 import { focusModel } from '../scene/scene';
 import { t } from '../core/i18n/t';
 import { translateGoError } from '../core/i18n/goerr';
-
-/**
- * canvas → base64 异步编码（ADR-017 A2-04）。
- * 用 toBlob 替代 toDataURL，编码移至后台线程，降低低端机 OOM 风险。
- * toBlob 失败时降级 toDataURL（受约束环境兼容）。
- */
-function canvasToBase64(
-    canvas: HTMLCanvasElement,
-    format: string,
-    quality: number
-): Promise<string> {
-    return new Promise((resolve) => {
-        canvas.toBlob(
-            (blob) => {
-                if (!blob) {
-                    resolve(
-                        canvas.toDataURL(format, quality).replace(/^data:image\/\w+;base64,/, '')
-                    );
-                    return;
-                }
-                const reader = new FileReader();
-                reader.onload = () => {
-                    const r = reader.result;
-                    resolve(
-                        typeof r === 'string'
-                            ? r.replace(/^data:image\/\w+;base64,/, '')
-                            : canvas
-                                  .toDataURL(format, quality)
-                                  .replace(/^data:image\/\w+;base64,/, '')
-                    );
-                };
-                reader.onerror = () => {
-                    resolve(
-                        canvas.toDataURL(format, quality).replace(/^data:image\/\w+;base64,/, '')
-                    );
-                };
-                reader.readAsDataURL(blob);
-            },
-            format,
-            quality
-        );
-    });
-}
+import { canvasToBase64 } from '../core/image';
 
 // ======== 导入 ========
 import { buildPresetScenesLevel } from './scene-render-levels';

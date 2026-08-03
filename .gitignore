@@ -118,3 +118,4 @@ frontend/report/jscpd-report.json
 docs/.doc-check-last.json
 docs/.doc-check-next-steps.md
 _tmp_atomgit_cli/
+base_export/
