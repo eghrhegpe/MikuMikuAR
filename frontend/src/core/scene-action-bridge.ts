@@ -134,6 +134,8 @@ export interface SceneActions {
     getMotionGen: () => number;
     /** 解析动作兼容性（model-loader 调用），由 scene/motion 注册 */
     resolveCompatibility: (bones: unknown, motion: unknown) => { compatible?: boolean };
+    /** 读取骨骼覆写类型（model-manager 调用），由 scene/motion 注册 */
+    getOverrideType: (boneName: string, modelId?: string) => unknown;
 }
 
 const _sceneActions = new Map<keyof SceneActions, unknown>();

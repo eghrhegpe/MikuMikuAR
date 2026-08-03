@@ -1098,3 +1098,9 @@ export function dumpBoneHierarchy(modelId?: string): BoneHierarchyDump | null {
         bones: result,
     };
 }
+
+// [doc:adr-238] 注册骨骼覆写类型读取供 model-manager 经 scene-action-bridge 调用（切断 scene/manager→scene/motion）
+import { registerSceneAction } from '@/core/scene-action-bridge';
+registerSceneAction('getOverrideType', (boneName: string, modelId?: string) =>
+    getOverrideType(boneName, modelId)
+);
