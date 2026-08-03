@@ -92,6 +92,8 @@ vi.mock('../../scene/motion/perception', () => ({
     getPerceptionState: () => ({}),
     getPinnedModelIds: () => [],
     getPerceptionStateFor: () => ({}),
+    getAllPerceptionStates: () => [],
+    restorePerceptionStateFor: vi.fn(),
     getPerceptionPerfManualTier: () => null,
     isAllPerceptionEnabled: () => false,
     setPerceptionState: vi.fn(),
