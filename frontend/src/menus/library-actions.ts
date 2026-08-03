@@ -696,3 +696,11 @@ export {
     findLibraryModelByName,
     findLibraryMotionByName,
 };
+
+// [doc:adr-238] 注册库操作供 core/action-defs 经 scene-action-bridge 调用
+// （定义留 core、实现归 menus 启动链，切断 core→menus 反向依赖）。
+import { registerSceneAction } from '@/core/scene-action-bridge';
+registerSceneAction('replaceModel', (model: unknown) => replaceModel(model as LibraryModel));
+registerSceneAction('replaceMotion', (model: unknown) => replaceMotion(model as LibraryModel));
+registerSceneAction('findLibraryModelByName', (name: string) => findLibraryModelByName(name));
+registerSceneAction('findLibraryMotionByName', (name: string) => findLibraryMotionByName(name));

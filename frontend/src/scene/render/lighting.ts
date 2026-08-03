@@ -547,3 +547,10 @@ export * from './lighting-shadow';
 export * from './lighting-sun';
 export * from './lighting-tween';
 export * from './lighting-follow';
+
+// [doc:adr-238] 注册灯光写入供 core/action-defs 经 scene-action-bridge 调用
+// （定义留 core、实现归 scene 层分散注册，避免聚合注册器成环）。
+import { registerSceneAction } from '@/core/scene-action-bridge';
+registerSceneAction('setLightState', (partial: Record<string, unknown>) =>
+    setLightState(partial as Partial<LightState>)
+);

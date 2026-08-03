@@ -8,6 +8,24 @@
 export interface SceneActions {
     /** 更新环境状态（env-actions 的 bind-* 纹理绑定） */
     setEnvState: (partial: Record<string, unknown>) => void;
+    /** 灯光状态写入（control 动作 light:*） */
+    setLightState: (partial: Record<string, unknown>) => boolean;
+    /** 相机模式切换（control 动作 camera:mode） */
+    setCameraMode: (mode: string) => void;
+    /** 环境预设应用（control 动作 env:preset） */
+    applyEnvPreset: (preset: string) => boolean;
+    /** 性能模式切换（control 动作 render:performance） */
+    setPerformanceMode: (mode: string) => void;
+    /** 模型替换（control 动作 model:load） */
+    replaceModel: (model: unknown) => void | Promise<void>;
+    /** 动作替换（control 动作 motion:load） */
+    replaceMotion: (model: unknown) => void | Promise<void>;
+    /** 按名称查找库模型（entity resolve） */
+    findLibraryModelByName: (name: string) => unknown | Promise<unknown>;
+    /** 按名称查找库动作（entity resolve） */
+    findLibraryMotionByName: (name: string) => unknown | Promise<unknown>;
+    /** 读取环境状态（toggleGround 判定） */
+    getEnvGroundVisible: () => boolean;
 }
 
 const _sceneActions = new Map<keyof SceneActions, unknown>();

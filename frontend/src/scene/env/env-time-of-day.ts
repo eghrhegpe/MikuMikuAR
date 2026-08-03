@@ -353,3 +353,7 @@ registerEnvStateMiddleware({
         }
     },
 });
+
+// [doc:adr-238] 注册环境预设应用供 core/action-defs 经 scene-action-bridge 调用
+import { registerSceneAction } from '@/core/scene-action-bridge';
+registerSceneAction('applyEnvPreset', (preset: string) => applyEnvPreset(preset));
