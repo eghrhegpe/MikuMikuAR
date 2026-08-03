@@ -8,6 +8,11 @@
  *   node scripts/check-consumers.mjs <符号名>                 # 查询全部消费者
  *   node scripts/check-consumers.mjs <符号名> --json          # JSON 输出（供脚本/AI 消费）
  *   node scripts/check-consumers.mjs <符号名> --scope scene   # 只扫 scene/ 子模块
+ *   node scripts/check-consumers.mjs <符号名> --snapshot <file> # 存消费者基线（重构前）
+ *   node scripts/check-consumers.mjs <符号名> --diff <file>     # 对比基线：🟢消失/🔴新增/定义迁移
+ *
+ * 前后信息闭环：重构前 --snapshot 存基线 → 重构后 --diff 对比，
+ * 精确回答「影响面扩大还是收敛、哪些消费者消失了」。
  *
  * 注意：--scope 会同时限制「定义」与「消费者」的扫描范围，查全量影响面时勿带此参数。
  *
@@ -159,30 +164,17 @@ function findUsageLines(filePath, localName, excludeFromLine) {
   return hits.slice(0, 12); // 行号上限 12，防刷屏
 }
 
-// ── 主流程 ──
+// ── 消费者扫描（可复用：查询 / 快照 / diff 共用） ──
 
-function main() {
-  const args = parseArgs(process.argv.slice(2), {
-    bools: ['json'],
-    strings: ['scope'],
-  });
-
-  const target = args._[0];
-  if (!target) {
-    console.error('用法: node scripts/check-consumers.mjs <符号名> [--json] [--scope <dir>]');
-    process.exit(1);
-  }
-
-  const scope = args.scope;
-  const allFiles = walkSourceFiles(SRC_DIR);
-  const files = scope
-    ? allFiles.filter((f) => f.rel.startsWith(scope + '/'))
-    : allFiles;
-
-  const defs = [];        // { rel, line, kind }
-  const direct = [];      // { rel, line, text, kind, local }
-  const namespaces = [];  // { rel, line, ns, usageLines }
-  const reexports = [];   // { rel, line, text, kind }
+/**
+ * 扫描 target 的全部消费者信息。
+ * @returns {{defs:Array, direct:Array, namespaces:Array, reexports:Array}}
+ */
+function collectConsumers(target, files) {
+  const defs = [];
+  const direct = [];
+  const namespaces = [];
+  const reexports = [];
 
   // 1. 定义扫描（含 re-export 中转）。行号定位：单行 export 声明 → 多行 export { 块起始行 → 符号首现行
   for (const { file, rel } of files) {
@@ -259,32 +251,174 @@ function main() {
     }
   }
 
+  return { defs, direct, namespaces, reexports };
+}
+
+// ── 快照 / 对比（--snapshot / --diff） ──
+
+/** 消费者条目稳定 key（rel + line + 类型区分），用于 diff 比对 */
+function directKey(d) { return `${d.rel}:${d.line}:${d.kind}`; }
+function nsKey(n) { return `${n.rel}:${n.line}:ns.${n.ns}`; }
+function reKey(r) { return `${r.rel}:${r.line}:${r.kind}`; }
+
+function saveConsumerSnapshot(snapshotPath, target, c) {
+  const data = {
+    $comment: '符号消费者基线快照。由 check-consumers.mjs --snapshot 生成，供 --diff 对比。',
+    updatedAt: new Date().toISOString().slice(0, 10),
+    target,
+    definitions: c.defs.map((d) => `${d.rel}:${d.line}`),
+    direct: c.direct.map((d) => ({ rel: d.rel, line: d.line, kind: d.kind, text: d.text, used: d.used })),
+    namespaces: c.namespaces.map((n) => ({ rel: n.rel, line: n.line, ns: n.ns })),
+    reexports: c.reexports.map((r) => ({ rel: r.rel, line: r.line, kind: r.kind })),
+  };
+  fs.writeFileSync(snapshotPath, JSON.stringify(data, null, 2) + '\n', 'utf8');
+  console.log(`✅ 快照已保存：${target} → ${path.relative(ROOT, snapshotPath)}`);
+}
+
+function loadConsumerSnapshot(snapshotPath) {
+  if (!fs.existsSync(snapshotPath)) {
+    console.error(`❌ 快照文件不存在：${snapshotPath}`);
+    process.exit(2);
+  }
+  return JSON.parse(fs.readFileSync(snapshotPath, 'utf8'));
+}
+
+/** 对比当前消费者与基线快照：🟢 消失 / 🔴 新增 / 🟡 保留 */
+function diffConsumers(snapshotPath, target, c) {
+  const base = loadConsumerSnapshot(snapshotPath);
+  if (base.target && base.target !== target) {
+    console.warn(`⚠️ 快照符号 ${base.target} ≠ 命令行符号 ${target}，对比结果无意义。`);
+  }
+
+  const curDefs = new Set(c.defs.map((d) => `${d.rel}:${d.line}`));
+  const baseDefs = new Set(base.definitions || []);
+  const defAdded = [...curDefs].filter((k) => !baseDefs.has(k));
+  const defRemoved = [...baseDefs].filter((k) => !curDefs.has(k));
+
+  const curDirect = new Map(c.direct.map((d) => [directKey(d), d]));
+  const baseDirect = new Map((base.direct || []).map((d) => [directKey(d), d]));
+  const directAdded = [...curDirect.values()].filter((d) => !baseDirect.has(directKey(d)));
+  const directRemoved = [...baseDirect.values()].filter((d) => !curDirect.has(directKey(d)));
+
+  const curNs = new Map(c.namespaces.map((n) => [nsKey(n), n]));
+  const baseNs = new Map((base.namespaces || []).map((n) => [nsKey(n), n]));
+  const nsAdded = [...curNs.values()].filter((n) => !baseNs.has(nsKey(n)));
+  const nsRemoved = [...baseNs.values()].filter((n) => !curNs.has(nsKey(n)));
+
+  const curRe = new Map(c.reexports.map((r) => [reKey(r), r]));
+  const baseRe = new Map((base.reexports || []).map((r) => [reKey(r), r]));
+  const reAdded = [...curRe.values()].filter((r) => !baseRe.has(reKey(r)));
+  const reRemoved = [...baseRe.values()].filter((r) => !curRe.has(reKey(r)));
+
+  const totalBase = baseDirect.size + baseNs.size + baseRe.size + baseDefs.size;
+  const totalCur = curDirect.size + curNs.size + curRe.size + curDefs.size;
+  const addedCount = directAdded.length + nsAdded.length + reAdded.length + defAdded.length;
+  const removedCount = directRemoved.length + nsRemoved.length + reRemoved.length + defRemoved.length;
+
+  console.log(`🔍 diff: ${target}（基线 ${totalBase} → 当前 ${totalCur}）\n`);
+
+  if (defRemoved.length > 0) {
+    console.log(`📦 定义消失（${defRemoved.length}）：`);
+    for (const k of defRemoved) console.log(`  ${k}`);
+  }
+  if (defAdded.length > 0) {
+    console.log(`\n📦 定义新增（${defAdded.length}）：`);
+    for (const k of defAdded) console.log(`  ${k}`);
+  }
+
+  if (directRemoved.length > 0) {
+    console.log(`\n🟢 消费消失（${directRemoved.length}）：`);
+    for (const d of directRemoved) console.log(`  ${d.rel}:${d.line}  [${d.kind}] ${d.text || ''}`);
+  }
+  if (directAdded.length > 0) {
+    console.log(`\n🔴 消费新增（${directAdded.length}）：`);
+    for (const d of directAdded) console.log(`  ${d.rel}:${d.line}  [${d.kind}] ${d.text || ''}`);
+  }
+
+  if (nsRemoved.length > 0) {
+    console.log(`\n🟢 命名空间消失（${nsRemoved.length}）：`);
+    for (const n of nsRemoved) console.log(`  ${n.rel}:${n.line}  import * as ${n.ns}`);
+  }
+  if (nsAdded.length > 0) {
+    console.log(`\n🔴 命名空间新增（${nsAdded.length}）：`);
+    for (const n of nsAdded) console.log(`  ${n.rel}:${n.line}  import * as ${n.ns} → ${n.ns}.${target}`);
+  }
+
+  if (reRemoved.length > 0) {
+    console.log(`\n🟢 再导出消失（${reRemoved.length}）：`);
+    for (const r of reRemoved) console.log(`  ${r.rel}:${r.line}  [${r.kind}]`);
+  }
+  if (reAdded.length > 0) {
+    console.log(`\n🔴 再导出新增（${reAdded.length}）：`);
+    for (const r of reAdded) console.log(`  ${r.rel}:${r.line}  [${r.kind}]`);
+  }
+
+  if (addedCount === 0 && removedCount === 0) {
+    console.log('✅ 消费者清单无变化');
+  } else {
+    console.log(`\n结论：+${addedCount} / -${removedCount}。`);
+    if (addedCount > 0) console.log('  ⚠️ 新增消费者说明影响面扩大，重构需覆盖新引用。');
+  }
+}
+
+// ── 主流程 ──
+
+function main() {
+  const args = parseArgs(process.argv.slice(2), {
+    bools: ['json'],
+    strings: ['scope', 'snapshot', 'diff'],
+  });
+
+  const target = args._[0];
+  const snapshot = args.snapshot;
+  const diff = args.diff;
+  if (!target) {
+    console.error('用法: node scripts/check-consumers.mjs <符号名> [--json] [--scope <dir>] [--snapshot <file>] [--diff <file>]');
+    process.exit(1);
+  }
+
+  const scope = args.scope;
+  const allFiles = walkSourceFiles(SRC_DIR);
+  const files = scope
+    ? allFiles.filter((f) => f.rel.startsWith(scope + '/'))
+    : allFiles;
+
+  const c = collectConsumers(target, files);
+
+  if (snapshot) {
+    saveConsumerSnapshot(snapshot, target, c);
+    return;
+  }
+  if (diff) {
+    diffConsumers(diff, target, c);
+    return;
+  }
   // ── 输出 ──
   if (args.json) {
     console.log(JSON.stringify({
       target,
       scope: scope || 'all',
-      definitions: defs.map((d) => `${d.rel}:${d.line}`),
-      directConsumers: direct.map((d) => ({ file: d.rel, line: d.line, kind: d.kind, used: d.used, usageLines: d.usageLines })),
-      namespaceConsumers: namespaces.map((n) => ({ file: n.rel, line: n.line, ns: n.ns, usageLines: n.usageLines })),
-      reexports: reexports.map((r) => ({ file: r.rel, line: r.line, kind: r.kind })),
+      definitions: c.defs.map((d) => `${d.rel}:${d.line}`),
+      directConsumers: c.direct.map((d) => ({ file: d.rel, line: d.line, kind: d.kind, used: d.used, usageLines: d.usageLines })),
+      namespaceConsumers: c.namespaces.map((n) => ({ file: n.rel, line: n.line, ns: n.ns, usageLines: n.usageLines })),
+      reexports: c.reexports.map((r) => ({ file: r.rel, line: r.line, kind: r.kind })),
     }, null, 2));
     return;
   }
 
   console.log(`🔍 consumers: ${target}${scope ? `（scope=${scope}）` : ''}\n`);
 
-  if (defs.length > 0) {
-    console.log(`📦 定义（${defs.length} 处）：`);
-    for (const d of defs) console.log(`  ${d.rel}:${d.line}`);
+  if (c.defs.length > 0) {
+    console.log(`📦 定义（${c.defs.length} 处）：`);
+    for (const d of c.defs) console.log(`  ${d.rel}:${d.line}`);
   } else {
     console.log(`📦 定义：未在 frontend/src 内找到直接 export（可能是 re-export 链末端或外部符号）`);
   }
 
-  const directUsed = direct.filter((d) => d.used);
-  const directUnused = direct.filter((d) => !d.used);
-  console.log(`\n⬅️ 直接 import 消费（${direct.length} 处，其中实际使用 ${directUsed.length}）：`);
-  for (const d of direct) {
+  const directUsed = c.direct.filter((d) => d.used);
+  const directUnused = c.direct.filter((d) => !d.used);
+  console.log(`\n⬅️ 直接 import 消费（${c.direct.length} 处，其中实际使用 ${directUsed.length}）：`);
+  for (const d of c.direct) {
     const mark = d.used ? '' : '  ⚠️ 仅导入未使用';
     const kindTag = `[${d.kind}]`;
     console.log(`  ${d.rel}:${d.line}  ${kindTag} ${d.text}${mark}`);
@@ -295,24 +429,24 @@ function main() {
     }
   }
 
-  if (namespaces.length > 0) {
-    console.log(`\n🌐 命名空间消费（${namespaces.length} 处）：`);
-    for (const n of namespaces) {
+  if (c.namespaces.length > 0) {
+    console.log(`\n🌐 命名空间消费（${c.namespaces.length} 处）：`);
+    for (const n of c.namespaces) {
       console.log(`  ${n.rel}:${n.line}  import * as ${n.ns}  →  ${n.ns}.${target} 使用行：${n.usageLines.join(', ')}`);
     }
   }
 
-  if (reexports.length > 0) {
-    console.log(`\n↩️ 再导出中转（${reexports.length} 处，改动后需同步）：`);
-    for (const r of reexports) {
+  if (c.reexports.length > 0) {
+    console.log(`\n↩️ 再导出中转（${c.reexports.length} 处，改动后需同步）：`);
+    for (const r of c.reexports) {
       console.log(`  ${r.rel}:${r.line}  ${r.text}`);
     }
   }
 
-  if (defs.length === 0 && direct.length === 0 && namespaces.length === 0 && reexports.length === 0) {
+  if (c.defs.length === 0 && c.direct.length === 0 && c.namespaces.length === 0 && c.reexports.length === 0) {
     console.log(`✅ 未找到任何引用 —— ${target} 是干净叶子，可安全重构`);
   } else {
-    console.log(`\n结论：改动 ${target} 共影响 ${defs.length} 定义 + ${direct.length + namespaces.length} 消费 + ${reexports.length} 再导出。`);
+    console.log(`\n结论：改动 ${target} 共影响 ${c.defs.length} 定义 + ${c.direct.length + c.namespaces.length} 消费 + ${c.reexports.length} 再导出。`);
   }
 }
 
