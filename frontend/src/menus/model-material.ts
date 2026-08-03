@@ -1,6 +1,7 @@
 // [doc:architecture] Model Material — 材质调节 UI 层（batch/per-mat/root/list）
 
-import { cardContainer, PopupLevel, stackRegistry, modelRegistry } from '../core/config';
+import { cardContainer, PopupLevel, modelRegistry } from '../core/config';
+import { stackRegistry } from './menu-stack-registry';
 import { feedbackInfo } from '../core/feedback';
 import { showInfoToast } from '../core/toast';
 import {

@@ -14,10 +14,10 @@ import {
     focusedModelId,
     cardContainer,
     librarySortMode,
-    stackRegistry,
     libraryRoot,
     BrowseOutcome,
 } from '../core/config';
+import { stackRegistry } from './menu-stack-registry';
 import { normPath, getBaseName } from '../core/path';
 import { logWarn } from '../core/logger';
 import { LoadingGuard } from '../core/async';

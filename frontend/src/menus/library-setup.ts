@@ -27,8 +27,8 @@ import {
     LibraryModel,
     setDisplayNamePriority,
     DisplayNamePriority,
-    stackRegistry,
 } from '../core/config';
+import { stackRegistry } from './menu-stack-registry';
 import { normPath } from '../core/path';
 import { feedbackStatus } from '../core/feedback';
 import { isUnderRoot } from '../core/path';

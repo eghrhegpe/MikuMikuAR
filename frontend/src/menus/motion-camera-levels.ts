@@ -1,7 +1,8 @@
 // [doc:architecture] Camera Levels — 相机参数弹窗层级
 // 从 scene-menu.ts 迁移到 motion-popup.ts
 
-import { setStatus, cardContainer, stackRegistry } from '../core/config';
+import { setStatus, cardContainer } from '../core/config';
+import { stackRegistry } from './menu-stack-registry';
 import type { PopupLevel } from '../core/config';
 import { feedbackInfo, feedbackStatus } from '../core/feedback';
 import { showInfoToast } from '../core/toast';

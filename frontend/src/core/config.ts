@@ -18,7 +18,8 @@ export * from './format';
 export * from './math-geometry';
 export * from './collections';
 export * from './auto-save';
-export * from '../menus/menu-stack-registry';
+// [doc:adr-238] 移除对 menus/menu-stack-registry 的聚合转发（core 反向依赖 UI 层）。
+// stackRegistry 持有 SlideMenu 引用，归 menus 层；消费者改从 './menu-stack-registry' 直连。
 export * from './ui-helpers';
 export * from './status-bar';
 export * from './toast';

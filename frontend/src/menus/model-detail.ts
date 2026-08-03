@@ -7,8 +7,8 @@ import {
     modelMetaCache,
     setModelMetaCache,
     dom,
-    stackRegistry,
 } from '../core/config';
+import { stackRegistry } from './menu-stack-registry';
 import { computeLibraryRef, getBrowseDir } from '../library/library-path';
 import { escapeHtml } from '../core/escape-html';
 import { feedbackInfo, feedbackStatus } from '../core/feedback';

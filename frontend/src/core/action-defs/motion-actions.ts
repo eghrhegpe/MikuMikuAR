@@ -27,7 +27,8 @@ import { loadManager } from '../load-manager';
 import { loadVPDPose, modelManager } from '../../scene/scene';
 import { getAudioName } from '../../outfit/audio';
 import { t } from '../i18n/t';
-import { stackRegistry } from '../config';
+// [doc:adr-238] stackRegistry 归 menus 层（config 聚合转发已移除），此文件为 action-defs（任务 #7 迁出 core），临时直连维持行为。
+import { stackRegistry } from '../../menus/menu-stack-registry';
 import { getBrowseDir } from '../../library/library-path';
 
 /** 按名称模糊搜索场景内已加载模型（供 entity resolve 消费）。 */
