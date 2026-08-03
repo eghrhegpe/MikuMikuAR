@@ -29,7 +29,7 @@ const ALLOWLIST_PATH = path.join(__dirname, 'circular-allowlist.json');
 
 const args = parseArgs(process.argv.slice(2), {
     bools: ['strict', 'json', 'update-allowlist', 'edges'],
-    strings: ['scope'],
+    strings: ['scope', 'snapshot', 'diff'],
 });
 
 // ── 模块映射 ──
@@ -176,6 +176,82 @@ function saveAllowlist(cycles) {
     fs.writeFileSync(ALLOWLIST_PATH, JSON.stringify(data, null, 2) + '\n', 'utf8');
 }
 
+// ── 基线快照（--snapshot / --diff） ──
+
+/**
+ * 保存当前环依赖快照：环 key 列表 + 模块对 → 文件级边。
+ * 用于 --diff 对比两次扫描，定位「新增环由哪些新增 import 边引起」。
+ */
+function saveSnapshot(snapshotPath, cycles, moduleEdges) {
+    const edges = {};
+    for (const [key, list] of moduleEdges) {
+        edges[key] = list;
+    }
+    const data = {
+        $comment: '环形依赖基线快照。由 check-circular.mjs --snapshot 生成，供 --diff 对比。',
+        updatedAt: new Date().toISOString().slice(0, 10),
+        cycleKeys: cycles.map(normalizeCycleKey).sort(),
+        edges,
+    };
+    fs.writeFileSync(snapshotPath, JSON.stringify(data, null, 2) + '\n', 'utf8');
+    console.log(`✅ 快照已保存：${cycles.length} 个环 → ${path.relative(ROOT, snapshotPath)}`);
+}
+
+function loadSnapshot(snapshotPath) {
+    if (!fs.existsSync(snapshotPath)) {
+        console.error(`❌ 快照文件不存在：${snapshotPath}`);
+        process.exit(2);
+    }
+    const data = JSON.parse(fs.readFileSync(snapshotPath, 'utf8'));
+    return {
+        cycleKeys: new Set(data.cycleKeys || []),
+        edges: data.edges || {},
+    };
+}
+
+/**
+ * 对比当前扫描与基线快照：
+ * - 新增环（基线无）
+ * - 每个新增环路径上、基线中不存在的模块对边（最可能引入环的 import）
+ */
+function diffAgainstSnapshot(snapshotPath, cycles, moduleEdges) {
+    const base = loadSnapshot(snapshotPath);
+    const currentKeys = new Set(cycles.map(normalizeCycleKey));
+
+    const addedCycles = cycles.filter(c => !base.cycleKeys.has(normalizeCycleKey(c)));
+    const fixedCycles = [...base.cycleKeys].filter(k => !currentKeys.has(k));
+
+    console.log(`基线快照: ${base.cycleKeys.size} 个环 | 当前: ${currentKeys.size} 个环`);
+    if (fixedCycles.length > 0) {
+        console.log(`🟢 已消失 ${fixedCycles.length} 个环（基线有、当前无）：`);
+        for (const k of fixedCycles) console.log(`  ${k}`);
+    }
+    if (addedCycles.length === 0) {
+        console.log('✅ 无新增环');
+        return false;
+    }
+    console.log(`🔴 新增 ${addedCycles.length} 个环（基线无）：\n`);
+    for (const cycle of addedCycles) {
+        const header = `  ${cycle.join(' → ')}`;
+        const lines = [header];
+        for (let i = 0; i < cycle.length - 1; i++) {
+            const key = `${cycle[i]}|${cycle[i + 1]}`;
+            // 基线中没有的模块对 → 本次新增的 import 边，最可能是环的来源
+            if (!base.edges[key]) {
+                const edges = moduleEdges.get(key) || [];
+                for (const { from, to } of edges.slice(0, 5)) {
+                    lines.push(`    [新增边] ${from} → ${to}`);
+                }
+                if (edges.length > 5) lines.push(`    … 共 ${edges.length} 条新增边`);
+            } else {
+                lines.push(`    （模块对 ${cycle[i]}→${cycle[i+1]} 基线已存在，非新增边）`);
+            }
+        }
+        console.log(lines.join('\n'));
+    }
+    return true;
+}
+
 // ── 主流程 ──
 
 const { graph: fileGraph } = scanSourceGraph(SRC_DIR, { scope: args.scope });
@@ -188,6 +264,18 @@ if (args['update-allowlist']) {
     saveAllowlist(cycles);
     console.log(`✅ 白名单已更新：${cycles.length} 个已知环 → ${path.relative(ROOT, ALLOWLIST_PATH)}`);
     process.exit(0);
+}
+
+// --snapshot：保存基线快照后退出（供 --diff 对比）
+if (args.snapshot) {
+    saveSnapshot(args.snapshot, cycles, moduleEdges);
+    process.exit(0);
+}
+
+// --diff：与基线快照对比，标出新增环及引入环的新增边
+if (args.diff) {
+    const hasNew = diffAgainstSnapshot(args.diff, cycles, moduleEdges);
+    process.exit(args.strict && hasNew ? 1 : 0);
 }
 
 const allowlist = loadAllowlist();
