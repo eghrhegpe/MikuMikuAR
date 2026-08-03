@@ -27,12 +27,8 @@ import { swallowError, fireAndForget } from '@/core/async';
 import { resolveModelId } from './model-id';
 import { logWarn } from '@/core/logger';
 import { parsePmxComment } from '@/core/pmx-meta';
-import {
-    getActiveMotion,
-    getSceneMotions,
-    getMotionGen,
-    resolveCompatibility,
-} from '../motion/motion-intent';
+// [doc:adr-238] 动作状态读取经 scene-action-bridge（motion-intent 注册）
+import { getSceneAction } from '@/core/scene-action-bridge';
 import { resolveModelDir } from '@/core/fileservice';
 import { readFileBytes, ListDirRecursive } from '@/core/wails-bindings';
 import { readTextureWithLRU } from '../shared/texture-lru';
@@ -350,10 +346,10 @@ async function _applySceneMotion(
     };
     const pickedId = slots.primary.sceneMotionId;
     const pickedMotion = pickedId
-        ? (getSceneMotions().find((m) => m.id === pickedId) ?? null)
+        ? ((getSceneAction('getSceneMotions')?.() ?? []).find((m) => (m as { id?: string }).id === pickedId) ?? null)
         : null;
-    const activeMotion = pickedMotion ?? getActiveMotion();
-    const loadGen = getMotionGen();
+    const activeMotion = (pickedMotion ?? getSceneAction('getActiveMotion')?.()) as { vmdPath?: string; vmdName?: string } | null;
+    const loadGen = getSceneAction('getMotionGen')?.();
     let appliedVmd = '';
 
     if (activeMotion && activeMotion.vmdPath && mmdRuntime) {
@@ -364,8 +360,8 @@ async function _applySceneMotion(
                 inst.meshes[0]?.skeleton?.bones?.map((b) => b.name) ??
                 [];
             // [doc:adr-121 P4-2] 宽松匹配：未传 vmdBoneNames，退回标准骨骼预筛（有意为之，见 motion-binding-ui.ts 注释）
-            const compat = resolveCompatibility(bones, activeMotion);
-            if (!compat.compatible) {
+            const compat = getSceneAction('resolveCompatibility')?.(bones as never, activeMotion as never) as { compatible?: boolean } | undefined;
+            if (!compat?.compatible) {
                 inst.motionSlots = {
                     primary: { ...slots.primary, status: 'incompatible' },
                 };
@@ -375,7 +371,7 @@ async function _applySceneMotion(
                     // 读取 VMD 文件数据，然后加载到模型
                     // 读取后检查 generation：若已过期则丢弃，避免覆盖较新的广播结果
                     const vmdData = await readFileBytes(activeMotion.vmdPath);
-                    if (getMotionGen() !== loadGen) {
+                    if ((getSceneAction('getMotionGen')?.() ?? 0) !== loadGen) {
                         appliedVmd = '';
                     } else {
                         const { loadVMDMotion } = await import('../motion/vmd-loader');
@@ -394,7 +390,7 @@ async function _applySceneMotion(
                         };
                     }
                 } catch (vmdErr) {
-                    if (getMotionGen() !== loadGen) {
+                    if ((getSceneAction('getMotionGen')?.() ?? 0) !== loadGen) {
                         appliedVmd = '';
                     } else {
                         logWarn('model-loader', 'VMD 加载失败，模型已保留:', vmdErr);

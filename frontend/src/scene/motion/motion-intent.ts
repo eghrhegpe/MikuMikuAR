@@ -361,3 +361,11 @@ registerSceneAction('addSceneMotion', (opts: Record<string, unknown>) => {
 registerSceneAction('replaceDefaultMotion', (opts: Record<string, unknown>) => {
     replaceDefaultMotion(opts as unknown as Parameters<typeof replaceDefaultMotion>[0]);
 });
+
+// [doc:adr-238] 注册动作状态读取供 model-loader 经 scene-action-bridge 调用（切断 scene/manager→scene/motion）
+registerSceneAction('getActiveMotion', () => getActiveMotion());
+registerSceneAction('getSceneMotions', () => getSceneMotions());
+registerSceneAction('getMotionGen', () => getMotionGen());
+registerSceneAction('resolveCompatibility', (bones: unknown, motion: unknown) =>
+    resolveCompatibility(bones as string[], motion as Parameters<typeof resolveCompatibility>[1])
+);
