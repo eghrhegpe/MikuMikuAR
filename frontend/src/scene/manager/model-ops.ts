@@ -469,3 +469,9 @@ import { registerSceneAction } from '@/core/scene-action-bridge';
 registerSceneAction('setModelFormation', (formation: string) => {
     setModelFormation(formation as Parameters<typeof setModelFormation>[0]);
 });
+
+// [doc:adr-238] 注册焦点模型读取供 core/events 经 scene-action-bridge 调用
+registerSceneAction('focusedMmdModel', () => focusedMmdModel());
+
+// [doc:adr-238] 补充注册焦点模型供 core/快捷键层经 scene-action-bridge 调用
+registerSceneAction('focusedModel', () => focusedModel());

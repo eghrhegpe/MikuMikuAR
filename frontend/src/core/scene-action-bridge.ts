@@ -86,6 +86,24 @@ export interface SceneActions {
     animateCameraVmd: (frameTime: number) => void;
     /** 加载相机 VMD（scene/motion 调用），由 scene/camera 注册 */
     loadCameraVmd: (mmdAnimation: unknown, vmdPath: string, vmdName: string) => void;
+    /** 从事件 seek（events 调用），由 scene 注册 */
+    seekFromEvent: (e: unknown) => void;
+    /** 当前焦点 MMD 模型（events/快捷键 调用），由 scene 注册 */
+    focusedMmdModel: () => unknown;
+    /** 读取相机模式（events 调用），由 scene/camera 注册 */
+    getCameraMode: () => string;
+    /** 焦点模型读取（快捷键调用），由 scene/manager/model-ops 注册 */
+    focusedModel: () => unknown;
+    /** 动作历史撤销（快捷键调用），由 scene/motion/motion-history 注册 */
+    undo: (modelId: string, applySnapshot: (snap: unknown) => void) => boolean;
+    /** 动作历史重做（快捷键调用），由 scene/motion/motion-history 注册 */
+    redo: (modelId: string, applySnapshot: (snap: unknown) => void) => boolean;
+    /** 可否撤销（快捷键调用），由 scene/motion/motion-history 注册 */
+    canUndo: (modelId: string) => boolean;
+    /** 可否重做（快捷键调用），由 scene/motion/motion-history 注册 */
+    canRedo: (modelId: string) => boolean;
+    /** 应用模块快照（快捷键调用），由 scene/motion/module-base 注册 */
+    applyModuleSnapshot: (moduleId: string, snap: unknown) => void;
 }
 
 const _sceneActions = new Map<keyof SceneActions, unknown>();

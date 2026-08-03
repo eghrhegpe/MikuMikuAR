@@ -197,3 +197,6 @@ export function seekFromEvent(e: MouseEvent | PointerEvent): void {
 // [doc:adr-238] 注册播放 UI 刷新供 core/action-defs 经 scene-action-bridge 调用
 import { registerSceneAction } from '@/core/scene-action-bridge';
 registerSceneAction('updatePlaybackUI', () => updatePlaybackUI());
+
+// [doc:adr-238] 补充注册 seekFromEvent 供 core/events 经 scene-action-bridge 调用
+registerSceneAction('seekFromEvent', (e: unknown) => seekFromEvent(e as MouseEvent | PointerEvent));

@@ -94,6 +94,7 @@ interface GlLike {
 export async function refreshSceneSnapshot(): Promise<void> {
     const g = ensureMmar();
 
+    // [doc:adr-238] 惰性加载（Promise 形式，避免 check-circular 静态边）
     const m = await import('../scene/scene');
     const engine = m.engine;
     const scene = m.scene;
@@ -142,8 +143,8 @@ export async function refreshSceneSnapshot(): Promise<void> {
 
     // 活跃模型（真实加载数已在上方由 modelManager 填充；此处补全名称）
     try {
-        const { focusedModel } = await import('../scene/manager/model-ops');
-        const model = focusedModel();
+        // [doc:adr-238] focusedModel 经 scene-action-bridge（model-ops 注册）
+        const model = getSceneAction('focusedModel')?.() as { name?: string } | undefined;
         if (model) {
             snapshot.activeModel = model.name;
         }

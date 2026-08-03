@@ -273,3 +273,9 @@ export function prepareBake(
     const claimed = claimBones(modelId, moduleId, bones);
     return { state, claimed };
 }
+
+// [doc:adr-238] 注册模块快照应用供 core/快捷键层经 scene-action-bridge 调用
+import { registerSceneAction } from '@/core/scene-action-bridge';
+registerSceneAction('applyModuleSnapshot', (moduleId: string, snap: unknown) => {
+    applyModuleSnapshot(moduleId, snap as Parameters<typeof applyModuleSnapshot>[1]);
+});

@@ -327,3 +327,6 @@ import { registerSceneAction } from '@/core/scene-action-bridge';
 registerSceneAction('setCameraMode', (mode: string) => {
     setCameraMode(mode as CameraMode);
 });
+
+// [doc:adr-238] 注册相机模式读取供 core/events 经 scene-action-bridge 调用
+registerSceneAction('getCameraMode', () => getCameraMode());
