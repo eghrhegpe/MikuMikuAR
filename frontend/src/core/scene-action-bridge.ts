@@ -120,6 +120,12 @@ export interface SceneActions {
     saveSceneImmediate: () => Promise<void>;
     /** 切换 AR 模式（scene/camera 调用），由 scene/ar 注册 */
     setARMode: (enabled: boolean) => Promise<boolean>;
+    /** 释放换装 overlay（scene/manager 调用），由 outfit 注册 */
+    disposeOverlay: (inst: unknown) => void;
+    /** 恢复原始材质（scene/manager 调用），由 outfit 注册 */
+    restoreMaterials: (inst: unknown) => void;
+    /** 释放音频（scene/manager 调用），由 outfit 注册 */
+    disposeAudio: () => void;
 }
 
 const _sceneActions = new Map<keyof SceneActions, unknown>();
