@@ -72,6 +72,20 @@ export interface SceneActions {
     tryAutoApplyPreset: (id: string) => Promise<void>;
     /** 初始化模型库（core/init 启动调用），由 menus/library-setup 注册 */
     initLibrary: () => Promise<void>;
+    /** AR 是否激活（perception-gaze 查询），由 scene/ar/ar-camera 注册 */
+    isARActive: () => boolean;
+    /** 音频是否播放中（scene/motion 查询），由 outfit/audio 注册 */
+    isAudioPlaying: () => boolean;
+    /** 读取音频路径（scene/motion 查询），由 outfit/audio 注册 */
+    getAudioPath: () => string;
+    /** 同步音频播放（scene/motion 调用），由 outfit/audio 注册 */
+    syncAudioPlayback: (vmdTime: number, isPlaying: boolean, vmdDuration: number) => void;
+    /** 加载音频文件（scene/motion 调用），由 outfit/audio 注册 */
+    loadAudioFile: (filePath: string) => Promise<void>;
+    /** 动画相机 VMD（scene/motion 调用），由 scene/camera 注册 */
+    animateCameraVmd: (frameTime: number) => void;
+    /** 加载相机 VMD（scene/motion 调用），由 scene/camera 注册 */
+    loadCameraVmd: (mmdAnimation: unknown, vmdPath: string, vmdName: string) => void;
 }
 
 const _sceneActions = new Map<keyof SceneActions, unknown>();

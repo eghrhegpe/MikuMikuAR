@@ -334,3 +334,7 @@ function _applyVideoMirror(): void {
         video.style.transform = 'none';
     }
 }
+
+// [doc:adr-238] 注册 AR 激活状态供 scene/motion 经 scene-action-bridge 查询（切断 scene/motion→scene/ar）
+import { registerSceneAction } from '@/core/scene-action-bridge';
+registerSceneAction('isARActive', () => isARActive());

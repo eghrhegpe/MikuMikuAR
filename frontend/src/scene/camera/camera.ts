@@ -773,3 +773,11 @@ export {
 // @knipkeep — 测试通过 vi.importActual 动态访问（setAutoCameraEnabled/isAutoCameraEnabled）；
 // setSyncAxesCallback 为内部协调 API，测试手动注入双轴派生回调
 export { setAutoCameraEnabled, isAutoCameraEnabled, setSyncAxesCallback } from './camera-auto';
+
+// [doc:adr-238] 注册相机 VMD 操作供 scene/motion 经 scene-action-bridge 调用（切断 scene/motion→scene/camera）
+import { registerSceneAction } from '@/core/scene-action-bridge';
+import { loadCameraVmd as _loadCameraVmd, animateCameraVmd as _animateCameraVmd } from './camera-vmd';
+registerSceneAction('animateCameraVmd', (frameTime: number) => _animateCameraVmd(frameTime));
+registerSceneAction('loadCameraVmd', (mmdAnimation: unknown, vmdPath: string, vmdName: string) =>
+    _loadCameraVmd(mmdAnimation as Parameters<typeof _loadCameraVmd>[0], vmdPath, vmdName)
+);

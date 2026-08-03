@@ -1,7 +1,8 @@
 // [doc:adr-079] 感知层 — Lip-sync（口型同步，从 lipsync-bridge.ts 迁移）
 
 import { getProcBeatDetector } from './proc-motion-bridge';
-import { isAudioPlaying, getAudioPath } from '@/outfit/audio';
+// [doc:adr-238] 音频操作经 scene-action-bridge（outfit/audio 注册）
+import { getSceneAction } from '@/core/scene-action-bridge';
 import { findLipMorph, findAllLipMorphs, amplitudeToWeight } from '@/motion-algos/lipsync';
 import type { PerceptionState, MmdModelLike, PerceptionTier } from './perception-shared';
 
@@ -71,16 +72,16 @@ export function _applyLipSync(
     }
 
     // #10: 音源切换 → 立即重置状态
-    if (getAudioPath() !== _lastLipSyncAudioPath) {
+    if (getSceneAction('getAudioPath')?.() ?? '' !== _lastLipSyncAudioPath) {
         _lipSyncMorphName = null;
         _lipSyncMorphSet = null;
         _smoothLow = 0;
         _smoothHigh = 0;
-        _lastLipSyncAudioPath = getAudioPath();
+        _lastLipSyncAudioPath = getSceneAction('getAudioPath')?.() ?? '';
     }
 
     // #12: 音频停止时指数衰减（约 20 帧淡出）
-    if (!isAudioPlaying()) {
+    if (!(getSceneAction('isAudioPlaying')?.() ?? false)) {
         _smoothLow *= 0.85;
         _smoothHigh *= 0.85;
         if (_smoothLow < 0.005 && _smoothHigh < 0.005) {
@@ -138,7 +139,7 @@ export function _applyLipSync(
     const highLevel = beatDetector ? beatDetector.getLevel(HIGH_BIN_START, HIGH_BIN_END) : 0;
 
     // 低通滤波（音频播放时才平滑，衰减期保留衰减值）
-    if (isAudioPlaying()) {
+    if (getSceneAction('isAudioPlaying')?.() ?? false) {
         _smoothLow = _smoothLow * 0.7 + lowLevel * 0.3;
         _smoothHigh = _smoothHigh * 0.7 + highLevel * 0.3;
     }
