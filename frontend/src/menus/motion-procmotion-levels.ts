@@ -3,7 +3,7 @@
 
 import { cardContainer, modelRegistry } from '../core/config';
 import type { PopupLevel, PopupRow } from '../core/config';
-import { addSliderRow, addToggleRow, addModeSlider, addSectionTitle } from '../core/ui-helpers';
+import { addSliderRow, addToggleRow, addModeSlider, addSectionTitle, buildPresetChipGroup } from '../core/ui-helpers';
 import {
     setProcMotionMode,
     setProcMotionIntensity,
@@ -15,6 +15,7 @@ import {
 } from '../scene/scene';
 import { setProcMotionBoneToggles } from '../scene/motion/proc-motion-bridge';
 import { getProcMotionBoneCategories } from '../motion-algos/procedural-motion';
+import { getProcPresetSet, getProcParamsPreset } from '../motion-algos/proc-motion-presets';
 import type {
     ProcMotionState,
     ProcModeKey,
@@ -177,7 +178,37 @@ export function buildProcMotionSchema(modelId?: string, mode: ProcModeKey = 'idl
                 });
             },
         },
-        // 卡片 2：强度/速度（per-mode：绑定 mode 专属参数）
+        // 卡片 2：参数预设（当前 mode 的参数快照，一键应用）
+        {
+            id: 'procmotion:presets',
+            kind: 'custom',
+            renderCustom: (c) => {
+                cardContainer(c, (inner) => {
+                    addSectionTitle(inner, t('motion.procPresets'));
+                    buildPresetChipGroup(
+                        inner,
+                        Object.entries(getProcPresetSet(mode)).map(([id, preset]) => {
+                            const current = _getProcParams(modelId, mode);
+                            const presetParams = getProcParamsPreset(mode, id)?.params;
+                            const isActive = !!presetParams &&
+                                Math.abs(current.intensity - presetParams.intensity) < 1e-6 &&
+                                Math.abs(current.speed - presetParams.speed) < 1e-6 &&
+                                current.interpOverride === presetParams.interpOverride;
+                            return {
+                                label: t(preset.label),
+                                isActive: () => isActive,
+                                onClick: () => {
+                                    _applyProcParam(modelId, mode, preset.params);
+                                    regenerateProcMotion(modelId);
+                                    getMotionMenu()?.reRender();
+                                },
+                            };
+                        })
+                    );
+                });
+            },
+        },
+        // 卡片 3：强度/速度（per-mode：绑定 mode 专属参数）
         {
             id: 'procmotion:params',
             kind: 'custom',
