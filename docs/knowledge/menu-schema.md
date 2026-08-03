@@ -2,6 +2,7 @@
 tier: architecture
 source_files:
   - frontend/src/menus/menu-schema.ts
+  - frontend/src/scene/shared/menu-node-types.ts
 tests:
   - frontend/src/__tests__/menu-schema.conflict.test.ts
   - frontend/src/__tests__/menu-schema.controlspec.test.ts
