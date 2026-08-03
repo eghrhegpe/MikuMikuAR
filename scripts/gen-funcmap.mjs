@@ -9,6 +9,8 @@
  *   node scripts/gen-funcmap.mjs --check          # 只检查是否已同步
  *   node scripts/gen-funcmap.mjs --scope scene    # 只分析 scene/ 模块
  *
+ * 输出「文件:行」列（findExportLine 定位 export 声明行），grep 索引可直接跳行。
+ *
  * 零依赖（仅 node:fs / node:path）。
  */
 
@@ -112,6 +114,43 @@ const GROUP_LABELS = {
 
 const GROUP_ORDER = ['core', 'scene', 'menus', 'outfit', 'motion-algos', 'physics'];
 
+// ── 导出符号行号定位 ──
+
+/**
+ * 定位符号在文件内的 export 声明行号（1-based）。
+ * 优先单行 export 声明；多行 export { ... } 块取块起始行；兜底符号首现行。
+ * 与 check-consumers.mjs 的定位逻辑保持一致（同一视觉：file:line 可直接跳转）。
+ */
+function findExportLine(filePath, sym) {
+  let text;
+  try {
+    text = fs.readFileSync(filePath, 'utf8');
+  } catch {
+    return null;
+  }
+  const lines = text.split('\n');
+  const reSym = new RegExp(`\\b${escapeRe(sym)}\\b`);
+
+  let line = lines.findIndex((l) => /^export\b/.test(l) && reSym.test(l));
+  if (line === -1) {
+    // 多行 export { ... } 块
+    for (let idx = 0; idx < lines.length; idx++) {
+      if (/^export\s*(?:type\s+)?\{/.test(lines[idx])) {
+        let j = idx;
+        while (j < lines.length && !lines[j].includes('}')) {
+          if (reSym.test(lines[j])) { line = idx; break; }
+          j++;
+        }
+        if (line !== -1) break;
+      }
+    }
+  }
+  if (line === -1) {
+    line = lines.findIndex((l) => reSym.test(l));
+  }
+  return line === -1 ? null : line + 1;
+}
+
 // ── 渲染 Markdown ──
 
 function renderMarkdown(groups, entries, scope) {
@@ -148,8 +187,8 @@ function renderMarkdown(groups, entries, scope) {
 
     lines.push(`## ${label}`);
     lines.push(``);
-    lines.push(`| 符号 | 文件 | 说明 |`);
-    lines.push(`|------|------|------|`);
+    lines.push(`| 符号 | 文件:行 | 说明 |`);
+    lines.push(`|------|--------|------|`);
 
     // 按文件排序
     const sortedFiles = [...group.files].sort((a, b) => a.rel.localeCompare(b.rel));
@@ -157,10 +196,12 @@ function renderMarkdown(groups, entries, scope) {
       const displayPath = file.rel.replace(/\.ts$/, '');
       for (const sym of file.syms) {
         const doc = extractDocSummary(file.file, sym);
+        const locLine = findExportLine(file.file, sym);
+        const loc = locLine ? `${displayPath}:${locLine}` : displayPath;
         // [doc:vitepress] JSDoc 摘要可能含 HTML 尖括号（如 <iconify-icon> / <label>），
         // 文档站全量渲染时会被 Vue 编译器当标签解析导致构建失败，须转义。
         const escaped = doc ? doc.replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
-        lines.push(`| \`${sym}()\` | \`${displayPath}\` | ${escaped || '—'} |`);
+        lines.push(`| \`${sym}()\` | \`${loc}\` | ${escaped || '—'} |`);
       }
     }
     lines.push(``);
