@@ -162,13 +162,13 @@ function _registerBodyPositionHook(modelId: string): () => void {
 const ensureActive = createEnsureActive(bake, _bodyFrameHooks, _registerBodyPositionHook);
 
 /** 创建身体姿态模块实例 */
-export function createBodyPostureModule(modelId: string): MotionOverrideModule {
+export function createBodyPostureModule(modelId: string, actionId?: string): MotionOverrideModule {
     const base = createModuleBase(modelId, MODULE_ID, DEFAULTS, bake, {
         action: ensureActive,
         onDisable: (mid) => {
             _bodyFrameHooks.unregister(mid);
         },
-    });
+    }, actionId);
     return createModuleShell({
         id: MODULE_ID,
         meta: META,

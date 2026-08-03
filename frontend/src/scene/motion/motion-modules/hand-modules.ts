@@ -95,7 +95,7 @@ function buildFingerBones(prefix: string): string[] {
 
 /** 创建左手或右手模块 */
 function createHandModuleFactory(cfg: HandSideConfig) {
-    return (modelId: string): MotionOverrideModule => {
+    return (modelId: string, actionId?: string): MotionOverrideModule => {
         const fingerBones = buildFingerBones(cfg.fingerPrefix);
         const managedBones = [cfg.wristBone, cfg.shoulderBone, ...fingerBones];
 
@@ -248,7 +248,7 @@ function createHandModuleFactory(cfg: HandSideConfig) {
             onDisable: (mid) => {
                 _handFrameHooks.unregister(mid);
             },
-        });
+        }, actionId);
 
         return createModuleShell({
             id: cfg.moduleId,

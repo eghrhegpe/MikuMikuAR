@@ -292,21 +292,24 @@ function buildMotionDetailSchema(
 
     // ── 卡片 4：动作覆盖（核心）+ 卡片 5：动作预设 ──
     // [doc:pose-debug] 无 VMD 时仍显示覆盖/预设面板，用于姿势调整和骨骼调试
+    // [fix:P2] 传入解析后的动作 id（motion?.id）：查看动作 A 时覆盖/预设读写落到 A；
+    // 未传或无效 sceneMotionId 时 motion 回退激活动作 → 写激活动作（兼容旧行为）。
     if (modelId) {
         nodes.push({
             id: 'detail:override',
             kind: 'custom',
             renderCustom: (c) => {
                 renderOverrideCard(c, modelId, {
-                    onEnter: (modId) => getMotionMenu()?.push(buildModuleParamLevel(modId)),
-                });
+                    onEnter: (modId) =>
+                        getMotionMenu()?.push(buildModuleParamLevel(modId, motion?.id)),
+                }, motion?.id);
             },
         });
         nodes.push({
             id: 'detail:presets',
             kind: 'custom',
             renderCustom: (c) => {
-                renderPresetCard(c, modelId);
+                renderPresetCard(c, modelId, motion?.id);
             },
         });
     }

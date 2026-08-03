@@ -43,8 +43,9 @@ export interface MotionOverrideModule {
     disable(): void;
 }
 
-/** 模块工厂函数：接受 modelId，返回绑定到该模型的模块实例 */
-export type ModuleFactory = (modelId: string) => MotionOverrideModule;
+/** 模块工厂函数：接受 modelId，返回绑定到该模型的模块实例。
+ *  [fix:P2] actionId 可选：UI 查看指定动作时传入，使模块读写落到该动作而非激活动作。 */
+export type ModuleFactory = (modelId: string, actionId?: string) => MotionOverrideModule;
 
 /** 模块注册定义（工厂 + 元信息 + 优先级），用于 BUILTIN_MODULE_DEFS 批量注册 */
 export interface ModuleDef {

@@ -189,13 +189,13 @@ function ensureActive(modelId: string): void {
 }
 
 /** 创建骑行模型模块实例 */
-export function createRidingModelModule(modelId: string): MotionOverrideModule {
+export function createRidingModelModule(modelId: string, actionId?: string): MotionOverrideModule {
     const base = createModuleBase(modelId, MODULE_ID, DEFAULTS, bake, {
         action: ensureActive,
         onDisable: (mid) => {
             _ridingFrameHooks.unregister(mid);
         },
-    });
+    }, actionId);
     return createModuleShell({
         id: MODULE_ID,
         meta: META,
