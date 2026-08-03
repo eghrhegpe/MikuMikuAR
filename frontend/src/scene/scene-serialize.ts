@@ -119,6 +119,8 @@ import {
     getPinnedModelIds,
     getPerceptionStateFor,
     pinPerception,
+    getAllPerceptionStates,
+    restorePerceptionStateFor,
     enableAllPerception,
     setPerceptionPerfTier,
     getPerceptionPerfManualTier,
@@ -282,11 +284,14 @@ export interface SceneFile {
     /** [doc:adr-071] 感知层状态（呼吸/眨眼/视线追踪），独立于程序化动作 */
     /** [doc:adr-162] Phase 4: 新格式 { focused: PerceptionState, pinned: Array<{ modelId, state }> } */
     /** [doc:adr-164] 新增 tier + allEnabled */
+    /** [fix:P2] 新增 allStates（per-model 全量快照，切换模型不丢） */
     perception?:
         | PerceptionState
         | {
               focused: PerceptionState;
               pinned: Array<{ modelId: string; state: PerceptionState }>;
+              /** [fix:P2] per-model 全量快照（含非 pinned 模型，恢复后切换模型参数独立保留） */
+              allStates?: Array<{ modelId: string; state: PerceptionState }>;
               tier?: 'high' | 'medium' | 'low' | 'auto';
               allEnabled?: boolean;
           };
@@ -552,6 +557,9 @@ export function serializeScene(): SceneFile {
                 modelId: id,
                 state: { ...getPerceptionStateFor(id) },
             })),
+            // [fix:P2] per-model 全量快照：切换模型后各模型感知参数独立保留
+            // （此前仅落盘 focused + pinned，非 pinned 模型重启后回退默认）
+            allStates: getAllPerceptionStates(),
             // [doc:adr-164] 性能档位与全员感知开关（保存用户意图而非运行时 tier，防止反序列化后自动降级失效）
             tier: getPerceptionPerfManualTier(),
             allEnabled: isAllPerceptionEnabled(),
@@ -1028,6 +1036,10 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
         const perceptionData = migratePerceptionData(data.perception);
         if (perceptionData) {
             setPerceptionState(perceptionData.focused);
+            // [fix:P2] 先恢复 per-model 全量快照，再 pin 白名单覆盖（保持 pinned 语义优先）
+            for (const s of perceptionData.allStates ?? []) {
+                restorePerceptionStateFor(s.modelId, s.state);
+            }
             for (const p of perceptionData.pinned) {
                 pinPerception(p.modelId, p.state);
             }
