@@ -10,11 +10,11 @@ import {
     recentModels,
     setRecentModels,
     cardContainer,
-    stackRegistry,
 } from '../core/config';
 import { computeLibraryRef } from '../library/library-path';
 import { loadManager } from '../core/load-manager';
 import { closeAllOverlays } from './menu-overlay';
+import { stackRegistry } from './menu-stack-registry';
 import {
     removeModel,
     loadVPDPose,
@@ -66,7 +66,7 @@ function _onModelLoaded(): void {
         return;
     }
     // 懒加载避免循环依赖
-    import('../core/config').then(({ dom, stackRegistry }) => {
+    import('../core/config').then(({ dom }) => {
         if (
             dom.sceneOverlay.classList.contains('visible') &&
             dom.sceneOverlay.dataset.popupType === 'model'
