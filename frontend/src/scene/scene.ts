@@ -845,3 +845,6 @@ registerSceneAction('findSceneModelByName', async (name: string) => {
     );
 });
 
+
+// [doc:adr-238] 注册场景初始化供 core/init 经 scene-action-bridge 调用
+registerSceneAction('initScene', () => initScene());

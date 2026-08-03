@@ -204,3 +204,7 @@ function _onAutoCameraBeat(): void {
         }
     });
 }
+
+// [doc:adr-238] 注册自动相机恢复供 core/init 经 scene-action-bridge 调用
+import { registerSceneAction } from '@/core/scene-action-bridge';
+registerSceneAction('restoreAutoCameraState', () => restoreAutoCameraState());
