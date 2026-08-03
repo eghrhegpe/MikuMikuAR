@@ -27,10 +27,10 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { getExportedSymbols } from './_lib/source-graph.mjs';
+import { toPosix } from './_lib/to-posix.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
-const asPosix = (p) => p.split(path.sep).join('/');
 
 const CONFIG = {
   // 符号覆盖率扫描根（近期子系统集中地）。可加目录扩展覆盖面。
@@ -64,7 +64,7 @@ function walk(dir, out = []) {
   if (!fs.existsSync(dir)) return out;
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, e.name);
-    const rel = asPosix(full);
+    const rel = toPosix(full);
     if (CONFIG.symbolExclude.some((re) => re.test(rel))) continue;
     if (e.isDirectory()) walk(full, out);
     else if (e.isFile() && rel.endsWith('.ts')) out.push(full);
@@ -76,7 +76,7 @@ function walkRepo(dir, out = []) {
   if (!fs.existsSync(dir)) return out;
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, e.name);
-    const rel = asPosix(full);
+    const rel = toPosix(full);
     if (CONFIG.repoExclude.some((re) => re.test(rel))) continue;
     if (e.isDirectory()) walkRepo(full, out);
     else if (e.isFile()) out.push(e.name);
@@ -170,7 +170,7 @@ function checkSymbolCoverage() {
     const coverage = Math.max(inArch, inFunc) / syms.length;
     if (coverage === 0 && !archTreeBasenames.has(path.basename(f))) {
       undocumented++;
-      const rel = asPosix(f).replace(asPosix(ROOT) + '/', '');
+      const rel = toPosix(f).replace(toPosix(ROOT) + '/', '');
       const top = rel.split('/').slice(1, 3).join('/'); // frontend/src/<a>/<b>
       undocumentedByDir[top] = (undocumentedByDir[top] || 0) + 1;
     }
@@ -385,7 +385,7 @@ function checkKnowledgeCoverage() {
   for (const cf of cardFiles) {
     const text = fs.readFileSync(path.join(dir, cf), 'utf8');
     for (const src of parseSourceFiles(text)) {
-      referenced.add(src.replace(/\\/g, '/'));
+      referenced.add(toPosix(src));
     }
   }
   const byDir = {};
@@ -393,7 +393,7 @@ function checkKnowledgeCoverage() {
   let total = 0;
   for (const root of CONFIG.sourceRoots) {
     for (const f of walk(path.join(ROOT, root))) {
-      const rel = asPosix(f).replace(asPosix(ROOT) + '/', '');
+      const rel = toPosix(f).replace(toPosix(ROOT) + '/', '');
       if (referenced.has(rel)) continue;
       total++;
       files.push(rel);
@@ -436,7 +436,7 @@ function buildGlobalExportIndex() {
       } catch {
         continue;
       }
-      const rel = asPosix(f).replace(asPosix(ROOT) + '/', '');
+      const rel = toPosix(f).replace(toPosix(ROOT) + '/', '');
       for (const s of syms) {
         if (!index.has(s)) index.set(s, new Set());
         index.get(s).add(rel);

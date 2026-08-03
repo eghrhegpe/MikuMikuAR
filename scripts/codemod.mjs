@@ -36,6 +36,7 @@ import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import fs from 'node:fs';
 import path from 'node:path';
+import { toPosix } from './_lib/to-posix.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -115,7 +116,7 @@ function walkAndGrep(dir, results, regex) {
           const lines = content.split('\n');
           for (let i = 0; i < lines.length; i++) {
             if (regex.test(lines[i])) {
-              const rel = path.relative(FRONTEND, full).replace(/\\/g, '/');
+              const rel = toPosix(path.relative(FRONTEND, full));
               results.push(`${rel}:${i + 1}: ${lines[i].trim().slice(0, 120)}`);
             }
           }

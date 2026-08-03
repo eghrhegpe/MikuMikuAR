@@ -22,6 +22,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { scanSourceGraph } from './_lib/source-graph.mjs';
+import { toPosix } from './_lib/to-posix.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -67,7 +68,7 @@ function toRelSource(raw) {
   let s = String(raw).trim();
   if (s.startsWith(SRC_PREFIX)) s = s.slice(SRC_PREFIX.length);
   else if (s.startsWith('src/')) s = s.slice(4);
-  return s.replace(/\\/g, '/');
+  return toPosix(s);
 }
 
 // ---------- 建图 ----------

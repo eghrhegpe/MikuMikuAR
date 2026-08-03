@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { toPosix } from './to-posix.mjs';
 
 export const EXCLUDE_DIRS = new Set(['__tests__', '__mocks__', 'node_modules', 'wailsjs']);
 export const EXCLUDE_FILES = [/\.d\.ts$/, /\.test\.tsx?$/, /\.spec\.tsx?$/, /\.gen\.tsx?$/];
@@ -59,7 +60,7 @@ export function resolveSourceImport(spec, importerFile, srcDir) {
   }
 
   const found = resolveCandidates(basePath).find((candidate) => fs.existsSync(candidate));
-  return found ? path.relative(srcDir, found).replace(/\\/g, '/') : null;
+  return found ? toPosix(path.relative(srcDir, found)) : null;
 }
 
 export function parseSourceImports(filePath, srcDir) {

@@ -35,6 +35,7 @@ import {
   SOURCE_EXTENSIONS,
 } from './_lib/source-graph.mjs';
 import { parseArgs } from './_lib/parse-args.mjs';
+import { toNative } from './_lib/to-posix.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -217,7 +218,7 @@ function collectConsumers(target, files) {
       if (stmt.kind === 'namespace') {
         // namespace：解析模块导出含 target 且 ns.target 实际出现才计
         if (!stmt.resolved) continue;
-        const nsTarget = path.join(SRC_DIR, stmt.resolved.replace(/\//g, path.sep));
+        const nsTarget = path.join(SRC_DIR, toNative(stmt.resolved));
         if (!fs.existsSync(nsTarget)) continue;
         if (!getExportedSymbols(nsTarget).includes(target)) continue;
         const usageRe = new RegExp(`\\b${stmt.ns}\\.${target}\\b`);
