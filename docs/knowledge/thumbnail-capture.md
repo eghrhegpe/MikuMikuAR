@@ -34,7 +34,6 @@ use_when:
 - `ThumbnailSource` — 缩略图源描述（mesh / 渲染设置）。
 - `thumbDataUrl(base64)` — 将 base64 字符串转为 data URL。
 - `renderInstanceThumbnail(inst, scene)` — 渲染模型实例的缩略图。
-- `renderPropThumbnail(prop, scene)` — 渲染道具的缩略图。
 
 ## 内部协作
 - `_renderThumbnailImpl(mesh, scene, opts)` — 缩略图渲染核心实现（180 行）：创建独立渲染场景 → 设置相机 → 渲染 RT → 读取像素 → toDataURL → 缓存。

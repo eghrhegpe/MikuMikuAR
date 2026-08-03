@@ -26,7 +26,6 @@ use_when:
 
 ## 对外 API（节选）
 - `getWindVector()` — 返回当前风矢量（方向 × 速度 × 强度倍率），windEnabled=false 时返回零向量。
-- `getWindStrength()` 不存在于源码中
 - `isWindActive()` — 风向是否生效（快捷判空，避免 Vector3.Zero() 比较开销）。
 
 ## 与其他子系统关系

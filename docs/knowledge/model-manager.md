@@ -49,7 +49,7 @@ Model Manager：封装 `modelRegistry`、`focusedModelId`、per-model 状态 map
 
 ## 对外 API（节选）
 - `modelManager` 单例 — `add` / `remove` / `get` / `list` 等注册表操作
-- 物理类别判定：`classifyPhysics(id)` 按网格/骨骼名匹配规则
+- 物理类别判定：`ModelManager` 内部经 `PHYSICS_CAT_RULES` 关键词规则匹配（可经 `uiState.physicsCategoryMap` 覆盖）
 - 属性：`setModelProperty` 系列（骨骼覆盖、Morph、formation）
 - `getFormationLabels()` — Formation 类型人类可读标签
 

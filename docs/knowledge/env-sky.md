@@ -34,7 +34,6 @@ use_when:
 ## 对外 API（节选）
 - `applySky(state)` — 根据 EnvState 的 skyMode 选择并应用天空模式。
 - `disposeSky()` — 销毁天空球、环境贴图、太阳光晕与观察者。
-- `_getStarsTexCache()` / `_setStarsTexCache(img, url, gen)` — 恒星纹理缓存的读写。
 - `clearStarsTexCache()` — 清理恒星纹理缓存。
 
 ## 内部协作

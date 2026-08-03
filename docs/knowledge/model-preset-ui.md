@@ -46,7 +46,7 @@ use_when:
 ## 对外 API（节选）
 - `serializeModelPreset(id, presetName?)` — 序列化模型预设为 JSON 字符串。
 - `applyModelPreset(id, jsonStr)` — 从 JSON 字符串应用预设。
-- `selectAndSavePreset(id)` / `selectAndLoadPreset(id)` — 保存/加载预设。
+- `applyPresetFromLib(id, ref)` / `savePresetToLibDialog(id)` — 从资源库应用/保存预设。
 - `buildPresetListLevel(id)` — 构建预设列表菜单层级。
 
 ## 与其他子系统关系

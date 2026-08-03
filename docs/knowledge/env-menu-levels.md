@@ -77,8 +77,7 @@ use_when:
 - `interface PopupLevel` — 弹窗层级描述（title、schema、actions）。
 - `buildLevel(title, schemaFactory)` — 构建环境层级。
 - `getEnvMenu()` / `setEnvMenu(menu)` — 取/设环境菜单实例。
-- `reRenderEnvMenu()` — 重渲染环境菜单。
-- `getEnvTextureBindingTarget()` / `setEnvTextureBindingTarget(target)` — 贴图绑定目标。
+- `getEnvTextureBindingTarget()` / `setEnvTextureBindingTarget(target)` / `clearEnvTextureBindingTarget()` — 贴图绑定目标。
 
 ## 与其他子系统关系
 - 数据绑定：`envState`（各种环境参数）。

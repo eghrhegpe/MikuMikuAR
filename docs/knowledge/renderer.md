@@ -55,8 +55,8 @@ Scene Renderer：渲染管线、后处理、渲染状态。职责：`DefaultRend
 
 ## 对外 API（节选）
 - `setRenderState(patch)` / `getRenderState()`
-- `setContactShadow(...)` / `registerCelGroundCoupling(...)`
-- `applyToneMapping(mode)` / 后处理开关
+- `registerCelGroundCoupling(fn)` / `rebuildOutlineState()`
+- `ToneMappingMode` 常量 / `transitionRenderState(...)` — 色调映射与后处理切换
 
 ## 关键约定
 - 渲染状态变更经 `scheduleRefresh()` 联动 UI

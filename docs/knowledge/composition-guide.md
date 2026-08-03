@@ -34,8 +34,6 @@ use_when:
 - `interface CompositionGuide` — 构图指南配置。
 - `getGuideMode()` — 取当前构图模式。
 - `setGuideMode(mode)` — 设置构图模式（off/ruleOfThirds/goldenRatio/diagonal）。
-- `cycleGuideMode()` — 循环切换构图模式。
-- `disposeGuides()` — 释放构图指南资源。
 
 ## 与其他子系统关系
 - 被 `camera-angle.ts` 调用。

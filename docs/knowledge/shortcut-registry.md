@@ -45,9 +45,9 @@ use_when:
 - `shortcut-registry.ts` — 快捷键注册、注销、触发、冲突检测。
 
 ## 对外 API（节选）
-- `registerShortcut(id, key, handler)` — 注册快捷键。
-- `unregisterShortcut(id)` — 注销快捷键。
-- `triggerShortcut(id)` — 触发快捷键。
+- `registerShortcut(def: ShortcutDef)` / `registerShortcuts(defs)` — 注册快捷键。
+- `resetKeyBinding(id)` / `resetAllKeyBindings()` — 重置按键绑定。
+- `initShortcutDispatcher()` — 初始化快捷键分发器。
 
 ## 与其他子系统关系
 - 快捷键定义：`shortcut-app.ts`。

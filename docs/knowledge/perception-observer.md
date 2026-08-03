@@ -36,7 +36,7 @@ use_when:
 - `perception-observer.ts` — 活跃上下文收集、分层施加感知修正、外部实例数上限管控。
 
 ## 对外 API（节选）
-- `getMediumMaxOthers()` / `setMediumMaxOthers(v)` — 查询 / 设置「其他实例」上限。
+- `getMediumMaxOthers()` — 查询「其他实例」上限。
 - `_getActiveContextsByTier(...)` — 按层级取活跃感知上下文。
 - `_applyPerceptionForContext(...)` — 对单个上下文施加感知修正。
 
