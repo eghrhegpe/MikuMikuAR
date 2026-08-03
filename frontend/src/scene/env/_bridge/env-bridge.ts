@@ -461,3 +461,10 @@ registerCelGroundCoupling((celActive: boolean) => {
         _celGroundSnapshot = null;
     }
 });
+
+// [doc:adr-238] 注册 setEnvState 供 core/action-defs 经 scene-action-bridge 调用
+// （切断 core→scene 反向依赖，action-defs 定义留 core、实现走注入）。
+import { registerSceneAction } from '@/core/scene-action-bridge';
+registerSceneAction('setEnvState', (partial: Record<string, unknown>) => {
+    setEnvState(partial as Partial<EnvState>);
+});
