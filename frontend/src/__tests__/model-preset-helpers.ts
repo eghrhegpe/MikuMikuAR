@@ -5,6 +5,7 @@
 import { vi } from 'vitest';
 import * as sceneModule from '../scene/scene';
 import { updatePlaybackUI } from '../scene/motion/playback';
+import { MockPBRMaterial } from './mocks/babylon-classes';
 import {
     modelRegistry,
     dom,
@@ -115,6 +116,28 @@ export function fakeMeshes(count: number): any[] {
     return Array.from({ length: count }, (_, i) => {
         const m = fakeMesh(`mat${i}`);
         return m;
+    });
+}
+
+/**
+ * Create N fake meshes with PBRMaterial instances (ADR-188 PBR roundtrip).
+ * material 为 MockPBRMaterial 实例（含 albedoColor/reflectionColor/roughness/metallic 与
+ * PBRSubSurfaceConfiguration 插件 stub），供 _capturePbr/_applyPbrMatParams 分支使用。
+ */
+export function fakePbrMeshes(count: number): any[] {
+    return Array.from({ length: count }, (_, i) => {
+        const name = `mat${i}`;
+        return {
+            name,
+            position: {
+                x: 0, y: 0, z: 0,
+                set(x: number, y: number, z: number) { this.x = x; this.y = y; this.z = z; },
+            },
+            scaling: { setAll() {} },
+            rotation: { y: 0 },
+            setEnabled() {},
+            material: new MockPBRMaterial(name),
+        };
     });
 }
 

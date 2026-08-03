@@ -718,6 +718,85 @@ export class MockParticleSystem {
 }
 
 // ===== GridMaterial =====
+export class MockPBRMaterial {
+    name = '';
+    alpha = 1;
+    wireframe = false;
+    backFaceCulling = true;
+    metallic = 0;
+    roughness = 1;
+    reflectionColor = this._makeColor(1, 1, 1);
+    emissiveColor = this._makeColor(0, 0, 0);
+    ambientColor = this._makeColor(0.5, 0.5, 0.5);
+    albedoColor = this._makeColor(1, 1, 1);
+    albedoTexture: { level: number; setLevel(l: number): void } | null = null;
+    bumpTexture: { level: number; setLevel(l: number): void } | null = null;
+    emissiveTexture: { level: number; setLevel(l: number): void } | null = null;
+    // PBRSubSurfaceConfiguration 插件 stub：让 applySssToMaterial 的
+    // `plugins.find(pl => typeof pl.isTranslucencyEnabled === 'boolean')` 能找到目标
+    plugins: unknown[] = [{ isTranslucencyEnabled: false, isScatteringEnabled: false }];
+
+    private _makeColor(r: number, g: number, b: number) {
+        const obj: any = {
+            r,
+            g,
+            b,
+            set(rv: number, gv: number, bv: number) {
+                obj.r = rv;
+                obj.g = gv;
+                obj.b = bv;
+                return obj;
+            },
+            clone() {
+                return { ...obj, r: obj.r, g: obj.g, b: obj.b };
+            },
+            scale(s: number) {
+                return { ...obj, r: obj.r * s, g: obj.g * s, b: obj.b * s };
+            },
+            toArray() {
+                return [obj.r, obj.g, obj.b];
+            },
+        };
+        return obj;
+    }
+
+    constructor(name: string) {
+        this.name = name;
+    }
+    getClassName() {
+        return 'PBRMaterial';
+    }
+    getScene() {
+        return null;
+    }
+    clone() {
+        return this;
+    }
+    dispose() {}
+    markDirty() {}
+    enableAlbedoTexture(level: number = 1): void {
+        let _level = level;
+        this.albedoTexture = {
+            get level() { return _level; },
+            setLevel(l: number) { _level = l; },
+        };
+    }
+    enableBumpTexture(level: number = 1): void {
+        let _level = level;
+        this.bumpTexture = {
+            get level() { return _level; },
+            setLevel(l: number) { _level = l; },
+        };
+    }
+    enableEmissiveTexture(level: number = 1): void {
+        let _level = level;
+        this.emissiveTexture = {
+            get level() { return _level; },
+            setLevel(l: number) { _level = l; },
+        };
+    }
+}
+
 export class MockGridMaterial {
     name = '';
     constructor() {}
