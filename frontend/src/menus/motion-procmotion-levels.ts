@@ -3,7 +3,7 @@
 
 import { cardContainer, modelRegistry } from '../core/config';
 import type { PopupLevel, PopupRow } from '../core/config';
-import { addSliderRow, addToggleRow, addModeSlider, addSectionTitle, buildPresetChipGroup } from '../core/ui-helpers';
+import { addSliderRow, addToggleRow, addModeSlider, addSectionTitle, buildPresetChipGroup, addActionRow, addDangerRow, addEmptyRow } from '../core/ui-helpers';
 import {
     setProcMotionMode,
     setProcMotionIntensity,
@@ -15,7 +15,7 @@ import {
 } from '../scene/scene';
 import { setProcMotionBoneToggles } from '../scene/motion/proc-motion-bridge';
 import { getProcMotionBoneCategories } from '../motion-algos/procedural-motion';
-import { getProcPresetSet, getProcParamsPreset } from '../motion-algos/proc-motion-presets';
+import { getProcPresetSet, getProcParamsPreset, makeProcPreset, upsertProcPreset, removeProcPreset } from '../motion-algos/proc-motion-presets';
 import type {
     ProcMotionState,
     ProcModeKey,
@@ -24,6 +24,7 @@ import type {
 } from '../motion-algos/procedural-motion';
 import { DEFAULT_PROC_STATE } from '../motion-algos/procedural-motion';
 import { t } from '../core/i18n/t'; // [doc:adr-059]
+import { feedbackInfo } from '../core/feedback';
 import type { MenuNode } from './menu-schema';
 import {
     getAllLoadableProcMotions,
@@ -178,7 +179,7 @@ export function buildProcMotionSchema(modelId?: string, mode: ProcModeKey = 'idl
                 });
             },
         },
-        // 卡片 2：参数预设（当前 mode 的参数快照，一键应用）
+        // 卡片 2：参数预设（当前 mode 的内置预设 + 用户自定义预设）
         {
             id: 'procmotion:presets',
             kind: 'custom',
@@ -205,6 +206,43 @@ export function buildProcMotionSchema(modelId?: string, mode: ProcModeKey = 'idl
                             };
                         })
                     );
+                    // [audit] 自定义预设：保存当前参数快照 / 应用 / 删除
+                    const inst = modelId ? modelRegistry.get(modelId) : undefined;
+                    const userPresets = (inst?.procPresets ?? []).filter((p) => p.mode === mode);
+                    const saveCustom = () => {
+                        if (!inst) {
+                            return;
+                        }
+                        if (userPresets.length >= 10) {
+                            feedbackInfo('motion.procPresetTooMany', undefined);
+                            return;
+                        }
+                        const snapshot = makeProcPreset(mode, t('motion.procPresetName'), _getProcParams(modelId, mode));
+                        inst.procPresets = upsertProcPreset(inst.procPresets ?? [], snapshot);
+                        triggerAutoSave();
+                        getMotionMenu()?.reRender();
+                    };
+                    addActionRow(inner, t('motion.procPresetSave'), saveCustom, {
+                        icon: 'lucide:save',
+                        testId: 'procmotion:save-preset',
+                    });
+                    if (userPresets.length === 0) {
+                        addEmptyRow(inner, t('motion.procPresetEmpty'));
+                    }
+                    for (const p of userPresets) {
+                        addActionRow(inner, p.name, () => {
+                            _applyProcParam(modelId, mode, p.params);
+                            regenerateProcMotion(modelId);
+                            getMotionMenu()?.reRender();
+                        }, { icon: 'lucide:wand-sparkles' });
+                        addDangerRow(inner, 'lucide:trash-2', p.name, () => {
+                            if (inst) {
+                                inst.procPresets = removeProcPreset(inst.procPresets ?? [], p.id);
+                                triggerAutoSave();
+                                getMotionMenu()?.reRender();
+                            }
+                        });
+                    }
                 });
             },
         },

@@ -123,3 +123,51 @@ export function getProcParamsPreset(
 ): ProcParamsPreset | undefined {
     return getProcPresetSet(mode)[id];
 }
+
+// ======== 自定义预设（用户保存的参数快照）纯操作 ========
+
+let _presetIdCounter = 0;
+/** 生成唯一预设 ID（仿 preset-types.generatePresetId，避免跨模块 import 耦合） */
+export function generateProcPresetId(): string {
+    _presetIdCounter++;
+    return `procPreset_${Date.now()}_${_presetIdCounter}`;
+}
+
+/** 由当前参数构造自定义预设快照（深拷贝，防与运行时状态共引用） */
+export function makeProcPreset(
+    mode: ProcModeKey,
+    name: string,
+    params: ProcMotionParams
+): { id: string; mode: ProcModeKey; name: string; params: ProcMotionParams } {
+    return {
+        id: generateProcPresetId(),
+        mode,
+        name,
+        params: {
+            ...params,
+            boneToggles: { ...params.boneToggles },
+        },
+    };
+}
+
+/** 增改自定义预设（同 id 覆盖，否则追加；返回新数组） */
+export function upsertProcPreset(
+    presets: Array<{ id: string; mode: ProcModeKey; name: string; params: ProcMotionParams }>,
+    preset: { id: string; mode: ProcModeKey; name: string; params: ProcMotionParams }
+): Array<{ id: string; mode: ProcModeKey; name: string; params: ProcMotionParams }> {
+    const idx = presets.findIndex((p) => p.id === preset.id);
+    if (idx >= 0) {
+        const next = [...presets];
+        next[idx] = preset;
+        return next;
+    }
+    return [...presets, preset];
+}
+
+/** 按 id 删除自定义预设（返回新数组） */
+export function removeProcPreset(
+    presets: Array<{ id: string; mode: ProcModeKey; name: string; params: ProcMotionParams }>,
+    id: string
+): Array<{ id: string; mode: ProcModeKey; name: string; params: ProcMotionParams }> {
+    return presets.filter((p) => p.id !== id);
+}
