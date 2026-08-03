@@ -153,7 +153,8 @@ export function teardownWasmLayersBlender(modelId: string): void {
 }
 
 export function isWasmLayersBlenderActive(modelId: string): boolean {
-    return _blenderStates.has(modelId) && _blenderStates.get(modelId)!.enabled;
+    // 可选链替代非空断言（.has() 守卫后的 get()! 写法冗余）
+    return _blenderStates.get(modelId)?.enabled ?? false;
 }
 
 export async function addWasmLayer(modelId: string, config: WasmLayerConfig): Promise<void> {
