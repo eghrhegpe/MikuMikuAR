@@ -737,7 +737,12 @@ async function _initMmdRuntime(): Promise<IMmdRuntime> {
             disposeRenderer();
         });
     }
-    runtime.loggingEnabled = true;
+    // [doc:adr-059/binding] 生产静音：babymmd 的 Binding failed 告警（物理骨/IK 骨
+    // 轨道精确匹配失败）是「失败跳过」设计、视觉无影响，属预期噪音。
+    // 默认 loggingEnabled=false（babymmd 静音），仅 dev 构建开启以便调试绑定问题。
+    if (import.meta.env.DEV) {
+        runtime.loggingEnabled = true;
+    }
     runtime.register(scene);
     setMmdRuntime(runtime);
     dom.loadingText.textContent = t('boot.initScene');
