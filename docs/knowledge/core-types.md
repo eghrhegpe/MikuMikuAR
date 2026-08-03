@@ -44,6 +44,7 @@ symbols:
   - PopupRow
   - PresetModuleState
   - ProcMotionConfig
+  - ProcPreset
   - RecentMotion
   - RuntimeModel
   - SceneMotionIntent
