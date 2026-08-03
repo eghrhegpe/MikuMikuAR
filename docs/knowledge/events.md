@@ -10,10 +10,14 @@ scope:
   - frontend/src/core/**
 source_files:
   - frontend/src/core/events.ts
+  - frontend/src/menus/nav-actions.ts
 symbols:
   - buildNavMaps
   - disposeEventHandlers
+  - disposeNavBindings
+  - getNavLabel
   - initDropHandler
+  - initNavActions
   - navActions
   - navLabels
   - registerEventHandlers

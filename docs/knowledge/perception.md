@@ -27,7 +27,6 @@ symbols:
   - deactivatePerception
   - disableAllPerception
   - enableAllPerception
-  - getAllPerceptionStates
   - getPerceptionPerfManualTier
   - getPerceptionPerfTier
   - getPerceptionState
@@ -36,7 +35,6 @@ symbols:
   - isAllPerceptionEnabled
   - onPerceptionModelRemoved
   - pinPerception
-  - restorePerceptionStateFor
   - setAllPerceptionEnabled
   - setBalanceSwayAmplitude
   - setBalanceSwayEnabled
