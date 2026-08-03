@@ -459,3 +459,6 @@ registerUiAction('selectOverridePath', (kind: string) => selectOverridePath(kind
 // [doc:adr-238] 注册库刷新供 core/action-defs 经 scene-action-bridge 调用
 import { registerSceneAction } from '@/core/scene-action-bridge';
 registerSceneAction('refreshLibrary', () => refreshLibrary());
+
+// [doc:adr-238] 注册 initLibrary 供 core/init 经 scene-action-bridge 调用（切断 core→menus）
+registerSceneAction('initLibrary', () => initLibrary());

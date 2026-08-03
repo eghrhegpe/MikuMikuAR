@@ -367,13 +367,14 @@ export async function initScene(): Promise<void> {
     _injectModelCallbacks(modelManager, runtime);
     // Loader（必须在 modelManager + setTriggerAutoSave 之后）
     const outfitMod = await import('../outfit/outfit');
-    const presetMod = await import('../menus/model-preset');
+    // [doc:adr-238] tryAutoApplyPreset 经 scene-action-bridge 获取（menus/model-preset 注册），
+    // 切断 scene→menus 反向依赖。
     initLoader(
         scene,
         runtime,
         modelManager,
         refreshWaterRenderList,
-        presetMod.tryAutoApplyPreset,
+        (id: string) => getSceneAction('tryAutoApplyPreset')?.(id),
         (id: string) =>
             outfitMod
                 .loadOutfits(id)
@@ -836,7 +837,7 @@ export type { LightState, StageLightState } from './render/lighting';
 export type { RenderState } from './render/renderer';
 
 // [doc:adr-238] 注册模型搜索供 core/action-defs entity resolve 经 scene-action-bridge 调用
-import { registerSceneAction } from '@/core/scene-action-bridge';
+import { registerSceneAction, getSceneAction } from '@/core/scene-action-bridge';
 registerSceneAction('findSceneModelByName', async (name: string) => {
     return (
         modelManager.getAll().find((m) => m.name.toLowerCase().includes(name.toLowerCase())) ??

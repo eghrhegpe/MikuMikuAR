@@ -53,6 +53,8 @@ export interface UiActions {
         extraFolders?: { label: string; path: string }[];
         outcome?: Record<string, unknown>;
     }) => unknown;
+    /** 预加载自动导入状态（core/init 启动调用），由 menus/settings-shared 注册 */
+    preloadAutoImportState: () => Promise<void>;
 }
 
 const _uiActions = new Map<keyof UiActions, unknown>();

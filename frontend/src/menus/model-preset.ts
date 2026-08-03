@@ -366,3 +366,7 @@ export function buildPresetListLevel(id: string | null): PopupLevel {
         reRender
     );
 }
+
+// [doc:adr-238] 注册预设自动应用供 scene/init 经 scene-action-bridge 调用（切断 scene→menus）
+import { registerSceneAction } from '@/core/scene-action-bridge';
+registerSceneAction('tryAutoApplyPreset', (id: string) => tryAutoApplyPreset(id));
