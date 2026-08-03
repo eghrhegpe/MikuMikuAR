@@ -7,7 +7,7 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 124 | 723 |
+| 核心基础设施 | 124 | 724 |
 | 3D 场景 | 113 | 1138 |
 | 菜单 & UI | 75 | 386 |
 | 换装 & 音频 | 3 | 33 |
@@ -221,6 +221,7 @@
 | `showConfirm()` | `core/dialog` | Show a confirmation dialog. |
 | `showPrompt()` | `core/dialog` | Show a prompt dialog. |
 | `showPrompt2()` | `core/dialog` | 双字段输入对话框。返回 [value1, value2] 或 null（取消）。 |
+| `detachSharedTextures()` | `core/dispose-helpers` | 批量 dispose 一组材质**之前**调用：摘除这组材质对「仍被其他存活材质引用」的纹理的引用， 使随后的 `material.dispose(_, true)` 不会误杀共享 |
 | `safeDispose()` | `core/dispose-helpers` | 安全释放对象并置空。 |
 | `ARIA_ATTR()` | `core/dom-contract` | aria 属性名常量（ARIA_ATTR.valuemin 等） |
 | `COLLAPSIBLE()` | `core/dom-contract` | collapsible（folder）组件契约（ui-collapsible.ts 与 e2e 展开逻辑共用） |

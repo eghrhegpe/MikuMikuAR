@@ -21,6 +21,15 @@ const __dirname = path.dirname(__filename);
 
 const ADR_DIR = path.join(__dirname, '..', 'docs', 'adr');
 
+// 已知空洞:编号已删除或并入其他 ADR,不应报为缺失(编号连续性 + 关联检查共用)
+//   ADR-007 已删除(场景菜单设计参考,见 ADR-027 关联)
+//   ADR-008 并入 ADR-003(来源行)
+//   ADR-010 无记录
+//   ADR-023 并入 ADR-017(Phase A/B 修复; 正文「原 ADR-023 已并入」属历史注记)
+//   ADR-040 无记录
+//   ADR-068 并入 ADR-017(追加修复)
+const KNOWN_MISSING_IDS = new Set([7, 8, 10, 23, 40, 68]);
+
 const _args = parseArgs(process.argv.slice(2), {
   bools: ['verbose', 'json'],
 });
@@ -180,7 +189,7 @@ function checkRelatedAdrs(content) {
       file.startsWith(`adr-${relatedId.toString().padStart(3, '0')}-`)
     );
     
-    if (!found) {
+    if (!found && !KNOWN_MISSING_IDS.has(relatedId)) {
       issues.push(`关联 ADR-${relatedId} 不存在`);
     }
   }
@@ -300,15 +309,6 @@ function main() {
   const totalIssues = formatIssueCount + debtIssueCount + relatedIssueCount;
 
   // 检查编号连续性
-  // 已知空洞:编号已删除或并入其他 ADR,不应报为缺失
-  //   ADR-007 已删除(场景菜单设计参考,见 ADR-027 关联)
-  //   ADR-008 并入 ADR-003(来源行)
-  //   ADR-010 无记录
-  //   ADR-023 并入 ADR-017(Phase A/B 修复)
-  //   ADR-040 无记录
-  //   ADR-068 并入 ADR-017(追加修复)
-  const KNOWN_MISSING_IDS = new Set([7, 8, 10, 23, 40, 68]);
-
   const sortedIds = [...new Set(adrIds)].sort((a, b) => a - b);
   const missingIds = [];
   
