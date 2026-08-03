@@ -152,9 +152,9 @@ function _applyLoadedMotion(id: string, inst: ModelInstance): void {
     if (inst.procMotion) {
         inst.procMotion = { ...inst.procMotion, mode: 'off' };
     }
-    // 如果该模型在活跃 proc 集合中，停止它
+    // 如果该模型在活跃 proc 集合中，停止它（仅停止该模型，不误杀其他活跃模型）
     if (isProcVmdActive()) {
-        stopProcMotion();
+        stopProcMotion(id);
     }
     if (pinned) {
         const gen = getMotionGen();
