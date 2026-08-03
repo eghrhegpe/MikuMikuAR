@@ -5,7 +5,7 @@ import { observe } from '@/core/observer-handle';
 import { Texture } from '@babylonjs/core/Materials/Textures/texture';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { LoadOutfitFile, ListSubDirs, readFileBytes, FileExists } from '../core/wails-bindings';
-import { readTextureWithLRU } from '../scene/manager/texture-lru';
+import { readTextureWithLRU } from '../scene/shared/texture-lru';
 import {
     modelRegistry,
     OutfitFile,

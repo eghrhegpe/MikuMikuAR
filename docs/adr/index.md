@@ -8,8 +8,8 @@
 
 | 状态 | 数量 | 含义 |
 |------|------|------|
-| [推进中](#推进中) | 6 | 已开工，尚未收口（含部分实施） |
-| [规划中](#规划中) | 10 | 已立项，等待实施 |
+| [推进中](#推进中) | 7 | 已开工，尚未收口（含部分实施） |
+| [规划中](#规划中) | 9 | 已立项，等待实施 |
 | [已落地](#已落地) | 206 | 实施完成，代码已合入 |
 | [已归档](#已归档) | 9 | 被取代、放弃、过时或搁置，保留供追溯 |
 | [其他](#其他) | 2 | 状态行缺失或表述不可归类 |
@@ -20,6 +20,7 @@
 
 | ADR | 主题 | 状态 |
 |-----|------|------|
+| [ADR-236](./adr-236-循环依赖消解.md) | 循环依赖消解 — scene/render ↔ scene/manager 互依赖拆解 | 部分实施 — render↔manager 互依… |
 | [ADR-229](./adr-229-e2e-automation-advancement.md) | E2E 自动化推进 —— 从 schema 到测试零映射 | 部分实施 — Phase 1 |
 | [ADR-220](./adr-220-schema-integrity-metatest.md) | Schema 完整性元测试 —— 不开浏览器，秒级捕获 schema 漂移 | 实施中 |
 | [ADR-215](./adr-215-eliminate-prop-kind.md) | 取消「道具」资源类型 — 模型附属关系替代 prop + accessory 体系 | 🔄 实施中 |
@@ -32,7 +33,6 @@
 | ADR | 主题 | 状态 |
 |-----|------|------|
 | [ADR-237](./adr-237-split-overlong-modules.md) | 超限模块拆分计划 —— 250LOC 天花板的优先级拆解路线图 | 📝 规划 |
-| [ADR-236](./adr-236-循环依赖消解.md) | 循环依赖消解 — scene/render ↔ scene/manager 互依赖拆解 | 规划 |
 | [ADR-231](./adr-231-ground-visual-roadmap.md) | 地面视觉后续方向（自发光地屏 + 程序化地面图案） | 📝 规划 |
 | [ADR-223](./adr-223-water-surface-overhaul.md) | 水面视觉效果整顿 —— 法线混合、深度泡沫、折射扭曲、SSS、渐变颜色 | 规划 |
 | [ADR-222](./adr-222-water-depth-fog.md) | 水面深度差雾（Depth-Difference Fog）—— 从相机距离雾迁移至水柱厚度雾 | 规划 |

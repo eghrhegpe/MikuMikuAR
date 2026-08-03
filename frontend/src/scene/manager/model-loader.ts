@@ -35,7 +35,7 @@ import {
 } from '../motion/motion-intent';
 import { resolveModelDir } from '@/core/fileservice';
 import { readFileBytes, ListDirRecursive } from '@/core/wails-bindings';
-import { readTextureWithLRU } from './texture-lru';
+import { readTextureWithLRU } from '../shared/texture-lru';
 import { auditMissingTextures, parsePmxTexturePaths } from './pmx-texture-audit';
 import { textureFallbackCandidates, registerDeclaredAliases, expandFallbackCandidates } from './texture-fallback';
 import { reportResourceWarning } from '@/core/resource-warning-sink';

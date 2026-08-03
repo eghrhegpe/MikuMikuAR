@@ -71,7 +71,7 @@ ADR-052 / 083 / 089 / 091 / 114 / 134 / 208 / 226 已把地面从模式拆分、
 
 ### 3.1 状态单源（env-ground-spec.ts，ADR-226）
 
-`env-state-schema` 的 `ground` 分组新增一组 emissive 字段 + 扩展 `groundOverlay` 枚举，均带零回归默认值：
+`env-state-schema` 的 `ground` 分组**新增的一组 emissive 字段（`groundEmissiveColor/Strength/ReflectMix/Texture`）+ 扩展 `groundOverlay` 枚举**——⚠️ 状态更新：schema 字段已于 `env-state-schema.ts:155-163` 落地、Go `EnvState` 补 4 字段的 parity 修复已由 [ADR-234](adr-234-env-state-parity-guard.md) 一并完成（属其第 4 次漂移顺带修复），故本 ADR 剩余真实范围仅剩**材质层同步（`_syncGroundEmissive`）+ 菜单/预设暴露**；下方字段表为已落地契约的登记，非待办：
 
 | 字段 | 类型 | 默认 | 说明 |
 |------|------|------|------|
