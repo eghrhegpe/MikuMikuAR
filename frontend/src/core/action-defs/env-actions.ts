@@ -1,5 +1,10 @@
+// env-actions.ts — [doc:adr-238] 环境动作定义（定义留 core，execute 经 scene-action-bridge 调场景实现）。
 import { registerAction } from '../action-registry';
-import { setEnvState } from '../../scene/scene';
+import { getSceneAction } from '../scene-action-bridge';
+
+function _setEnv(partial: Record<string, unknown>): void {
+    getSceneAction('setEnvState')?.(partial);
+}
 
 export function registerEnvActions(): void {
     registerAction({
@@ -10,7 +15,7 @@ export function registerEnvActions(): void {
         destructive: false,
         uiOnly: true,
         execute: (p) => {
-            setEnvState({ particleCustomTexture: p.filePath as string });
+            _setEnv({ particleCustomTexture: p.filePath as string });
         },
     });
     registerAction({
@@ -21,7 +26,7 @@ export function registerEnvActions(): void {
         destructive: false,
         uiOnly: true,
         execute: (p) => {
-            setEnvState({ skyTexture: p.filePath as string });
+            _setEnv({ skyTexture: p.filePath as string });
         },
     });
     registerAction({
@@ -32,7 +37,7 @@ export function registerEnvActions(): void {
         destructive: false,
         uiOnly: true,
         execute: (p) => {
-            setEnvState({ starsTexture: p.filePath as string });
+            _setEnv({ starsTexture: p.filePath as string });
         },
     });
 }
