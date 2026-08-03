@@ -1,6 +1,6 @@
 {
   "$comment": "已知架构循环依赖白名单。CI (--strict) 只对本清单之外的新增环阻断。修复一个环后请运行 node scripts/check-circular.mjs --update-allowlist 收紧清单。",
-  "updatedAt": "2026-07-23",
+  "updatedAt": "2026-08-03",
   "cycles": [
     {
       "key": "core→scene→core",
@@ -13,34 +13,6 @@
     {
       "key": "core→scene→motion-algos→scene/env→core",
       "path": "core → scene → motion-algos → scene/env → core"
-    },
-    {
-      "key": "core→scene→motion-algos→scene/env→scene/manager→core",
-      "path": "core → scene → motion-algos → scene/env → scene/manager → core"
-    },
-    {
-      "key": "core→scene→motion-algos→scene/env→scene/manager→scene/motion→core",
-      "path": "core → scene → motion-algos → scene/env → scene/manager → scene/motion → core"
-    },
-    {
-      "key": "core→scene→motion-algos→scene/env→scene/manager→scene/motion→menus→core",
-      "path": "core → scene → motion-algos → scene/env → scene/manager → scene/motion → menus → core"
-    },
-    {
-      "key": "core→scene→motion-algos→scene/env→scene/manager→scene/motion→menus→outfit→core",
-      "path": "core → scene → motion-algos → scene/env → scene/manager → scene/motion → menus → outfit → core"
-    },
-    {
-      "key": "core→scene→motion-algos→scene/env→scene/manager→scene/motion→menus→scene/ar→core",
-      "path": "core → scene → motion-algos → scene/env → scene/manager → scene/motion → menus → scene/ar → core"
-    },
-    {
-      "key": "core→scene→motion-algos→scene/env→scene/manager→scene/motion→menus→scene/camera→core",
-      "path": "core → scene → motion-algos → scene/env → scene/manager → scene/motion → menus → scene/camera → core"
-    },
-    {
-      "key": "core→scene→motion-algos→scene/env→scene/manager→scene/motion→menus→scene/pose→core",
-      "path": "core → scene → motion-algos → scene/env → scene/manager → scene/motion → menus → scene/pose → core"
     },
     {
       "key": "core→scene→motion-algos→scene/env→scene/physics→core",
@@ -59,44 +31,12 @@
       "path": "core → scene → motion-algos → scene/env → scene/render → scene/transform → core"
     },
     {
-      "key": "menus→motion-algos→scene/env→scene/manager→scene/motion→menus",
-      "path": "motion-algos → scene/env → scene/manager → scene/motion → menus → motion-algos"
-    },
-    {
-      "key": "menus→outfit→motion-algos→scene/env→scene/manager→scene/motion→menus",
-      "path": "motion-algos → scene/env → scene/manager → scene/motion → menus → outfit → motion-algos"
-    },
-    {
       "key": "menus→outfit→scene/manager→scene/motion→menus",
       "path": "scene/manager → scene/motion → menus → outfit → scene/manager"
     },
     {
-      "key": "menus→outfit→scene→motion-algos→scene/env→scene/manager→scene/motion→menus",
-      "path": "scene → motion-algos → scene/env → scene/manager → scene/motion → menus → outfit → scene"
-    },
-    {
-      "key": "menus→scene/ar→scene/env→scene/manager→scene/motion→menus",
-      "path": "scene/env → scene/manager → scene/motion → menus → scene/ar → scene/env"
-    },
-    {
       "key": "menus→scene/ar→scene/motion→menus",
       "path": "scene/motion → menus → scene/ar → scene/motion"
-    },
-    {
-      "key": "menus→scene/ar→scene→motion-algos→scene/env→scene/manager→scene/motion→menus",
-      "path": "scene → motion-algos → scene/env → scene/manager → scene/motion → menus → scene/ar → scene"
-    },
-    {
-      "key": "menus→scene/camera→scene/env→scene/manager→scene/motion→menus",
-      "path": "scene/env → scene/manager → scene/motion → menus → scene/camera → scene/env"
-    },
-    {
-      "key": "menus→scene/camera→scene→motion-algos→scene/env→scene/manager→scene/motion→menus",
-      "path": "scene → motion-algos → scene/env → scene/manager → scene/motion → menus → scene/camera → scene"
-    },
-    {
-      "key": "menus→scene/env→scene/manager→scene/motion→menus",
-      "path": "scene/env → scene/manager → scene/motion → menus → scene/env"
     },
     {
       "key": "menus→scene/manager→scene/motion→menus",
@@ -107,40 +47,8 @@
       "path": "scene/motion → menus → scene/motion"
     },
     {
-      "key": "menus→scene/pose→scene→motion-algos→scene/env→scene/manager→scene/motion→menus",
-      "path": "scene → motion-algos → scene/env → scene/manager → scene/motion → menus → scene/pose → scene"
-    },
-    {
-      "key": "menus→scene→motion-algos→scene/env→scene/manager→scene/motion→menus",
-      "path": "scene → motion-algos → scene/env → scene/manager → scene/motion → menus → scene"
-    },
-    {
-      "key": "motion-algos→scene/env→scene/manager→motion-algos",
-      "path": "motion-algos → scene/env → scene/manager → motion-algos"
-    },
-    {
-      "key": "motion-algos→scene/env→scene/manager→scene/motion→motion-algos",
-      "path": "motion-algos → scene/env → scene/manager → scene/motion → motion-algos"
-    },
-    {
-      "key": "motion-algos→scene/env→scene/manager→scene/motion→scene→motion-algos",
-      "path": "scene → motion-algos → scene/env → scene/manager → scene/motion → scene"
-    },
-    {
-      "key": "motion-algos→scene/env→scene/manager→scene→motion-algos",
-      "path": "scene → motion-algos → scene/env → scene/manager → scene"
-    },
-    {
       "key": "motion-algos→scene/env→scene→motion-algos",
       "path": "scene → motion-algos → scene/env → scene"
-    },
-    {
-      "key": "scene/env→scene/manager→scene/env",
-      "path": "scene/env → scene/manager → scene/env"
-    },
-    {
-      "key": "scene/env→scene/manager→scene/motion→scene/env",
-      "path": "scene/env → scene/manager → scene/motion → scene/env"
     },
     {
       "key": "scene/manager→scene/motion→scene/manager",
