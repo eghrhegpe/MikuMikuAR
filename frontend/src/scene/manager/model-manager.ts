@@ -34,7 +34,8 @@ import { swallowError } from '@/core/async';
 import { logWarn } from '@/core/logger';
 import { disposeModelMaterialState, _applyAll, type AlphaCtx } from './material';
 import { applyWetnessToInst } from '@/scene/env/env-wetness';
-import { getOverrideType, type OverrideType } from '../motion/bone-override';
+// [doc:adr-238] 骨骼覆写类型经 scene-action-bridge（bone-override 注册）
+import type { OverrideType } from '../motion/bone-override';
 import { showInfoToast } from '@/core/toast';
 import { t } from '@/core/i18n/t';
 import { feedbackStatus } from '@/core/feedback';
@@ -966,12 +967,13 @@ export class ModelManager {
 
                 // [doc:bone-override] 覆盖线段着色
                 const ovLineColors: Record<
-                    NonNullable<ReturnType<typeof getOverrideType>>,
+                    OverrideType | 'default',
                     Color3
                 > = {
                     rotation: new Color3(1, 0.3, 0.3), // 红
                     position: new Color3(0.3, 0.5, 1), // 蓝
                     both: new Color3(1, 0.3, 1), // 紫
+                    default: new Color3(0.5, 0.5, 0.5), // 灰
                 };
                 for (let i = 0; i < lineData.length; i++) {
                     const ld = lineData[i];
@@ -981,8 +983,8 @@ export class ModelManager {
                         overrideLines[i].setEnabled(false);
                         continue;
                     }
-                    const childOv = getOverrideType(childBone.name, id);
-                    const parentOv = getOverrideType(parentBone.name, id);
+                    const childOv = getSceneAction('getOverrideType')?.(childBone.name, id) as OverrideType | null;
+                    const parentOv = getSceneAction('getOverrideType')?.(parentBone.name, id) as OverrideType | null;
                     const ovType = childOv ?? parentOv;
                     if (!ovType) {
                         overrideLines[i].setEnabled(false);
@@ -1020,7 +1022,7 @@ export class ModelManager {
                 jd.mesh.setEnabled(true);
 
                 // [doc:bone-override] 覆盖状态着色
-                const ovType = getOverrideType(jd.boneName, id);
+                const ovType = getSceneAction('getOverrideType')?.(jd.boneName, id) as OverrideType | null;
                 jd.mesh.material = ovType ? ovMat[ovType] : ovMat.default;
             }
         };
