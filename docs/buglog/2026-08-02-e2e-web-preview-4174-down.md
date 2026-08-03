@@ -1,6 +1,6 @@
-# E2E @web 冒烟失败：vite preview 4174 起不来
+# E2E @web 冒烟失败：vite preview 4174 起不来 [主因已修，见进展]
 
-> **状态**: 🔴 未修复
+> **状态**: 🟢 已修复（主因；遗留 @web 渲染问题另立 buglog `2026-08-03-web-entry-btnMainAction-not-rendered.md`）
 
 **日期**: 2026-08-02
 **严重程度**: 🟡 P3
