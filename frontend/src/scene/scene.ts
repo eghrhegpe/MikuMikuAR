@@ -758,7 +758,6 @@ export function getScene(): Scene {
 }
 
 // ======== AR Camera Mode (delegated to ar/ar-scene.ts) ========
-export { setARMode, takeARScreenshot, isARModeActive } from './ar/ar-scene';
 
 // Re-exports from extracted sub-modules (zero-change for consumers)
 export {

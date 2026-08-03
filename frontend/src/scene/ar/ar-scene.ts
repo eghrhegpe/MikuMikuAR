@@ -243,3 +243,7 @@ export function takeARScreenshot(fmt: string, quality: number): Promise<string> 
 export function isARModeActive(): boolean {
     return isARActive();
 }
+
+// [doc:adr-238] 注册 AR 模式切换供 scene/camera 经 scene-action-bridge 调用（切断 scene/camera→scene/ar）
+import { registerSceneAction } from '@/core/scene-action-bridge';
+registerSceneAction('setARMode', (enabled: boolean) => setARMode(enabled));

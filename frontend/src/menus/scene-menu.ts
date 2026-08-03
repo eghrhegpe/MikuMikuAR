@@ -17,7 +17,8 @@ import {
 import { feedbackStatus } from '../core/feedback';
 import { showInfoToast } from '../core/toast';
 import { registerPopupMenu } from './menu-factory';
-import { serializeScene, isARModeActive, takeARScreenshot, setEnvState } from '../scene/scene';
+import { serializeScene, setEnvState } from '../scene/scene';
+import { isARModeActive, takeARScreenshot } from '../scene/ar/ar-scene';
 import { SelectDir, SaveScreenshot, SaveScenePreset } from '../core/wails-bindings';
 import { waitForFrame } from '../core/async';
 import { showErrorToast } from '../core/toast';
