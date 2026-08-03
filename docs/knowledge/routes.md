@@ -26,6 +26,7 @@
 | 相机状态、相机位置保存、scene/canvas 引用共享、freefly 输入状态 | [相机状态管理 + 运行时上下文](./camera-state.md) | [相机模式管理系统（MmdCamera）](./camera.md)、[环境状态写入入口（setEnvState + 中间件链）](./env-bridge.md)、[环境重力控制](./env-gravity.md) |
 | 相机模式、轨道相机、自由飞行、相机控制、视角切换、ArcRotate、Freefly | [相机模式管理系统（MmdCamera）](./camera.md) | [相机状态管理 + 运行时上下文](./camera-state.md)、[环境状态写入入口（setEnvState + 中间件链）](./env-bridge.md)、[环境重力控制](./env-gravity.md) |
 | 后端适配、浏览器后端、Go 后端、IndexedDB、存储适配、后端测试、测试桩、mock | [后端适配层](./core-backend.md) | [内置 AI 诊断助手 — 双适配器服务层](./ai-service.md)、[环境状态防抖持久化](./env-persist.md)、[应用启动引导](./init.md) |
+| DOM 契约、role 属性、aria 属性、选择器、e2e 断言、collapsible class | [渲染层 DOM 契约单源](./dom-contract.md) | — |
 | setEnvState、环境状态写入、中间件注册、预设动画状态 | [环境状态写入入口（setEnvState + 中间件链）](./env-bridge.md) | [相机状态管理 + 运行时上下文](./camera-state.md)、[相机模式管理系统（MmdCamera）](./camera.md)、[环境变更分发回调（破循环依赖）](./env-dispatcher.md) |
 | 碰撞开关、身体碰撞、地面碰撞、WASM 物理碰撞 | [环境碰撞控制](./env-collision.md) | [环境重力控制](./env-gravity.md) |
 | 环境调度、破循环依赖、dispatch | [环境变更分发回调（破循环依赖）](./env-dispatcher.md) | [环境状态写入入口（setEnvState + 中间件链）](./env-bridge.md)、[环境系统实现核心（barrel + observer + fog）](./env-impl.md) |
@@ -85,6 +86,7 @@
 | 渲染循环、FPS 时钟、硬件缩放、渲染启停 | [渲染循环与 FPS 时钟](./render-loop.md) | [事件处理与导航系统](./events.md)、[应用启动引导](./init.md) |
 | 菜单渲染、schema 渲染、控件渲染、数据绑定 | [菜单渲染引擎](./render-menu.md) | [声明式菜单 Schema](./menu-schema.md) |
 | 渲染管线、后处理、tone mapping、SSR / SSAO | [场景渲染管线与后处理](./renderer.md) | [GPU 压缩纹理能力探测](./gpu-capabilities.md)、[PMX 模型加载与缩略图捕获](./model-loader.md)、[场景核心编排器（纯组装器）](./scene.md) |
+| 资源加载失败、纹理缺失、警告汇总、toast 提示 | [资源加载失败统一汇总](./resource-warning-sink.md) | — |
 | runtime bridge、Wails events、跨平台事件、runtime-bridge | [Runtime 隔离桥（Wails Events/Browser）](./runtime-bridge.md) | [应用启动引导](./init.md) |
 | 运行模式、桌面模式、浏览器模式、环境检测 | [运行模式检测](./runtime-mode.md) | [应用启动引导](./init.md)、[内置 AI 诊断助手 — 双适配器服务层](./ai-service.md)、[后端适配层](./core-backend.md) |
 | 场景弹窗、场景菜单、场景设置入口、场景路由 | [场景弹窗（编排 + 路由）](./scene-menu.md) | [环境弹窗（编排 + barrel）](./env-menu.md)、[统一动作注册表 — 菜单/NL/快捷键共享真相源](./action-registry.md)、[NL 意图解析 — LLM 文本 → 动作执行](./ai-intent-dispatcher.md) |

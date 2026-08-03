@@ -56,9 +56,9 @@
 | ADR-197 | 统一动作注册表 — 菜单可维护性归一化 | 🟢 已完成（Phase 0–5 全域迁移完成，共 41 动作）（2026-07-28） |
 | ADR-196 | 内置 AI 诊断助手（LLM Diagnostic Assistant） | ✅ 已完成（Phase 0 基础设施 + Phase 1 集成打通与体验打磨 + Phase 2 审计修复与测试覆盖 + Phase 2 模式合并 + Phase 3 只读工具）（2026-07-28） |
 | ADR-195 | 下载文件夹统一修订（三平台系统下载目录 + 消除"二扫"） | 已完成（代码落地 + 单测 + 全量验证通过 2026-07-27；设计偏差与已知限制见 §实施记录与已知限制）（2026-07-27（初版）） |
-| ADR-194 | 风物理系统修复 — 从「假风」到真实风场 | 已完成（2026-07-27 — tsc 零错误，env-bridge 80 + wind-physics 1 + app.contract 17 全绿；P2 修复后全量 2174/2174 全绿）⚠️ **§4 风力系数前提被 [ADR-200](adr-200-wind-physics-empty-bundle-map.md) 推翻**（见下方勘误）（2026-07-27（初版）/ 2026-07-27（P2 修复 — 水面 `uWindSpeed` 加 `windEnabled` 守卫）） |
+| ADR-194 | 风物理系统修复 — 从「假风」到真实风场 | 已完成（2026-07-27 — tsc 零错误，env-bridge 80 + wind-physics 1 + app.contract 17 全绿；P2 修复后全量 2174/2174 全绿）⚠️ **§4 风力系数前提被 [ADR-200](adr/adr-200-wind-physics-empty-bundle-map.md) 推翻**（见下方勘误）（2026-07-27（初版）/ 2026-07-27（P2 修复 — 水面 `uWindSpeed` 加 `windEnabled` 守卫）） |
 | ADR-193 | 模型稳定身份（inst.id = 持久化 uuid） | 已立项 · 已实现（2026-07-27 — tsc 零错误；resolve-model-id 5 + replace-model-inherit 16 + material-editor 50 + lighting-follow 8 + env-lighting 22 + scene-serialize-undo 6 全绿）（2026-07-27（初版）） |
-| ADR-192 | 上游适配层重构（MmdAdapter） | 已立项 · Phase 2 已完成（2026-07-27 — 条目 3 用公开 API 真正内化、条目 9 经调研确认能力内化不可行改为守卫式反射；tsc 零错误，契约测试 13 + wind-physics 1 + audio 48 全绿）⚠️ **条目 3 隐含假设被 [ADR-200](adr-200-wind-physics-empty-bundle-map.md) 推翻**（见下方勘误）（2026-07-27（初版）） |
+| ADR-192 | 上游适配层重构（MmdAdapter） | 已立项 · Phase 2 已完成（2026-07-27 — 条目 3 用公开 API 真正内化、条目 9 经调研确认能力内化不可行改为守卫式反射；tsc 零错误，契约测试 13 + wind-physics 1 + audio 48 全绿）⚠️ **条目 3 隐含假设被 [ADR-200](adr/adr-200-wind-physics-empty-bundle-map.md) 推翻**（见下方勘误）（2026-07-27（初版）） |
 | ADR-191 | 神桶 `@/core/utils` 去桶化（零依赖叶下沉） | 已完成（2026-07-27）；**E 档追加** 2026-07-30；**F 档收尾** 2026-07-31（2026-07-27（初版），2026-07-30（E 档追记），2026-07-31（F 档神桶删除）） |
 | ADR-190 | 端能力声明式收口（淘汰散落 isAndroidPlatform 分支） | 已完成（代码 + 测试 2026-07-26 落地；tsc --noEmit + vitest 全绿）（2026-07-26（初版）） |
 | ADR-189 | 纹理加载路径优化（并行读取 + basename 共享 + LRU + KTX2 基础设施） | 实施中 — Phase 0/1 全量 2133/2133 通过；babylon-mmd fork KTX2 分发已内置（§3.5）；Phase 3 转码管线待推进（剩余卡点仅 ADR-187 触发判据）（2026-07-26（初版）/ 2026-07-26（修订 — 方向调整）/ 2026-07-26（审核修订 — AbortSignal/LRU/数值一致性）/ 2026-07-26（修复 — LRU 接入 collectTextureFiles）/ 2026-08-01（修订 — babylon-mmd fork KTX2 分发已就位，更新 §3.1-§3.4，新增 §3.5）） |
@@ -176,7 +176,7 @@
 | ADR-77 | 模型广场 · Cookie 中继（登录态代理） | 已实施（2026-07-09） |
 | ADR-76 | 卡通化渲染后处理模式 | ✅ 已实施（2026-07-10）（2026-07-09） |
 | ADR-75 | 模型广场 · 网页浏览（内嵌代理 + 外链闭环） | 已采纳 · 已实施（Phase 1 基础代理 + 导航接入）（2026-07-09） |
-| ADR-74 | 动态 Cubemap RT 球面反射 | 🗑️ 已放弃（被 [ADR-092](adr-092-unified-texture-reflection.md) 取代；2026-07-19，stash 内容已清理。Stash 中的 cubemap 代码与当前 HEAD 架构冲突——水反射已改用统一 `PlanarReflection` 引擎（ADR-092），model-loader 传参方式也不同（二进制 vs URL）。材料诊断工具等附属代码一并移除。后续若重新评估此方案，需基于当前 HEAD 重写。） |
+| ADR-74 | 动态 Cubemap RT 球面反射 | 🗑️ 已放弃（被 [ADR-092](adr/adr-092-unified-texture-reflection.md) 取代；2026-07-19，stash 内容已清理。Stash 中的 cubemap 代码与当前 HEAD 架构冲突——水反射已改用统一 `PlanarReflection` 引擎（ADR-092），model-loader 传参方式也不同（二进制 vs URL）。材料诊断工具等附属代码一并移除。后续若重新评估此方案，需基于当前 HEAD 重写。） |
 | ADR-73 | AR 地形识别 —— 原生 ARCore / ARKit 桥接 | 提案（Proposed）—— ADR-055 §3.1 方案 C「平台原生 ARCore / ARKit 桥接」的细化，远期可 reconsider（2026-07-09） |
 | ADR-72 | AR 平面检测 —— WebXR hit-test + plane detection | 提案（Proposed）—— ADR-055 Phase 3「WebXR 升级」的细化，待 P1 探针结果后批准（2026-07-09） |
 | ADR-71 | 程序化动作与角色感知边界重构 | 已实施（方案 B 全部落地；2026-07-09 创建，2026-07-10 核实代码已落地） ⚠️ **部分被 ADR-079 推翻**（lifelike/idle 保留定位） |
@@ -189,7 +189,7 @@
 | ADR-63 | 架构债务清偿（精简版） | ✅ 已实施（2026-07-08，build+1128 tests 通过） |
 | ADR-62 | 水面反射渲染目标与通用反射系统 | 已完成（2026-07-10）— P1 核心（MirrorCamera + RT + 着色器扩展 + UI）+ P2 增强（波浪 UV 偏移 + 泡沫衰减） |
 | ADR-61.1 | Ragdoll 保真度补齐（球面关节 + 旋转求解 + 暂停/过渡仲裁 + 关节参数化） | 已交付（2026-07-10）— ①④③ 全部实施完成，14 个 TDD Task 全绿（1351 测试 + tsc 零错误）。③ 方案修订：boneFilter 不可运行时暂停基础 VMD，改用 blendWeight Slerp 混合。 ⚠️ **整篇废弃**（XPBD 移除，见 ADR-081；源码 xpbd-ragdoll/ragdoll-manager 已删） |
-| ADR-61.1 | Ragdoll 保真度补齐 实施计划 | 已交付（2026-07-10）— 见 [adr-061.1-ragdoll-fidelity.md](adr-061.1-ragdoll-fidelity.md)；①④③ 全部实施完成，14 个 TDD Task 全绿 ⚠️ **整篇废弃**（XPBD 移除，见 ADR-081） |
+| ADR-61.1 | Ragdoll 保真度补齐 实施计划 | 已交付（2026-07-10）— 见 [adr-061.1-ragdoll-fidelity.md](adr/adr-061.1-ragdoll-fidelity.md)；①④③ 全部实施完成，14 个 TDD Task 全绿 ⚠️ **整篇废弃**（XPBD 移除，见 ADR-081） |
 | ADR-61 | 高级骨骼操控与姿态工作室实现计划 | 已完成（2026-07-10，2026-07-16 对账修正）— Pose Studio ✅、Motion Override ✅、Accessory ✅、T-pose/A-pose ✅（并入 Pose Studio）。Ragdoll ❌ 永久废弃（随 XPBD 全栈移除 530af6e，不再恢复）。 |
 | ADR-60 | E2E 测试策略（Playwright + 双模式 Fixture + 场景数值钩子） | ✅ 已完成（Phase 0 / Phase 1 / Phase 2 / Phase 3，2026-07-07 提出并推进） |
 | ADR-59 | i18n 多语言切换框架 | 已完成（2026-07-10 全部 Phase 落地，奇偶校验脚本已接 CI；2026-07-22 废弃 Go UIState 持久化升级预留路径；2026-07-30 补齐首访系统语言自动识别；剩余 ja/ko/zh-TW 翻译质量为人工/AI 走查任务，非框架范畴） |
@@ -230,14 +230,14 @@
 | ADR-22 | 预设治理 — 统一管理范围与分级架构 | 已实现 — 8 项改动全完成：EnvPreset 精简 + L2 环境预设扩展 + 用户预设快照迁移（2026-07-04） |
 | ADR-21 | 程序化动作系统（Idle/Auto Dance + LipSync + 视线追踪） | 已完成 — Idle/AutoDance/LipSync/VPD/VMD-writer 5 套测试全通过（2026-07-03） |
 | ADR-20 | 换装系统（服装变体/纹理替换） | 已完成 — Phase 8 完成，outfit.ts 加载/应用/重置 + 自动发现 + 序列化（2026-06-28） |
-| ADR-19 | XPBD 布料模拟引擎选型与架构 | 已完成 — xpbd-solver/collider/cloth/renderer + 20 tests 全通过 ⚠️ **已废弃**（XPBD 全栈移除，被 [ADR-081](adr-081-xpbd-removal.md) 取代；源码 xpbd-solver/collider/cloth 等已删；布料功能替代见 ADR-084）（2026-06-28） |
+| ADR-19 | XPBD 布料模拟引擎选型与架构 | 已完成 — xpbd-solver/collider/cloth/renderer + 20 tests 全通过 ⚠️ **已废弃**（XPBD 全栈移除，被 [ADR-081](adr/adr-081-xpbd-removal.md) 取代；源码 xpbd-solver/collider/cloth 等已删；布料功能替代见 ADR-084）（2026-06-28） |
 | ADR-18 | PathManager 平台抽象层 + 文件 I/O 审计 | 已完成 — PathManager 接口 + trustedRoots 修复 + copyDir 流式复制 + zipextract 句柄关闭修正（2026-07-04） |
 | ADR-17 | Android 平台适配（精简版） | 主体已完成（Phase A/B/C ✅）；P0(A0-01/A0-02) 与 P1(A1-01~05) ✅ 全部已实施；P2 七项 ✅ 全部已落地（A2-04 于 2026-07-22 完成全路径 `toBlob` 迁移）；P3 四项 ✅ 全部已修复（A3-01/04 于 2026-07-22 完成事件总线消费）。A0-01 已于 2026-07-24 根治：模型文件改经 `readFileBytes` + Blob URL 加载（复用 ADR-176 浏览器端路径，见 frontend/src/core/fileservice.ts `resolveFileUrl`），移除 `MainActivity.java` 的 `MIXED_CONTENT_ALWAYS_ALLOW`；不再依赖 PathHandler 代理方案（ADR-133 方案 B 不再必要）。§四 SAF 目录选择方案已放弃，改用 `MANAGE_EXTERNAL_STORAGE` 授权 `/sdcard/MMD`（2026-07-22 核对）。 |
 | ADR-16 | 视线追踪子系统架构 | 已完成 — 双路径方案已实施（WASM frontBuffer 直写 + JS linkedBone + updateWorldMatrix），手动计时方案（方案 A）为优化项，需上游 babylon-mmd 暴露 beforePhysics/afterPhysics API（2026-07-03） |
 | ADR-15 | 材质编辑器 UI 重构 + 逐材质开关 | 已完成 — buildMatRootLevel/ListLevel/BatchLevel 三级面板 + _matEnabled 开关（2026-06-27） |
 | ADR-14 | 模型加载预设库（角色设置快照） | 已完成 — 保存/加载/库管理/自动匹配/tryAutoApplyPreset 全部实现（2026-06-27） |
 | ADR-13 | Skybox 贴图系统改进 | 已完成 — SelectEnvTextureFile binding + CubeTexture 统一加载 + 天空穹顶（2026-06-27） |
-| ADR-12 | 云渲染改进 — Perlin 噪声 + 双分层 | ⚠️ 已过时 — 被 **[ADR-113](adr-113-horizon-volumetric-clouds.md)（体积云 Ray Marching）** 取代；下方 env-clouds.ts Perlin FBM 双分层云方案已退役（其「否决 GPU 着色器云」理由亦被 [ADR-113](adr-113-horizon-volumetric-clouds.md) 推翻）（2026-06-27） |
+| ADR-12 | 云渲染改进 — Perlin 噪声 + 双分层 | ⚠️ 已过时 — 被 **[ADR-113](adr/adr-113-horizon-volumetric-clouds.md)（体积云 Ray Marching）** 取代；下方 env-clouds.ts Perlin FBM 双分层云方案已退役（其「否决 GPU 着色器云」理由亦被 [ADR-113](adr/adr-113-horizon-volumetric-clouds.md) 推翻）（2026-06-27） |
 | ADR-11 | Wails v3 迁移评估与决策 | 已完成 — 已迁至 Wails v3，项目当前运行于 v3 构建管线（2026-07-03（初版），2026-07-（迁移完成）） |
 | ADR-9 | 模型详情面板 — 运行时模型实例控制 | 已完成 — Phase 1-5 全部完成（动作绑定改为预设间接绑定）（2026-07-16） |
 | ADR-6 | 扫描简化 + 文件名多编码自动检测 | 已完成 — bestDecode/cleanModelName + modelMetaCache 全链路上线（2026-07-16） |

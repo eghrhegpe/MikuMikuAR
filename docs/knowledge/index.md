@@ -2,7 +2,7 @@
 
 # 知识卡索引
 
-> 原子化架构知识层，共 **233** 张卡：记录「某个子系统**现在**长啥样、去哪找」。与 ADR（为什么这么决定）互补——知识卡引用而不复制 ADR 结论。
+> 原子化架构知识层，共 **237** 张卡：记录「某个子系统**现在**长啥样、去哪找」。与 ADR（为什么这么决定）互补——知识卡引用而不复制 ADR 结论。
 
 > 卡片格式规范、立卡判据、`source_files` 铁律见 [知识卡层导读](./README.md)；AI 检索入口见 [路由表](./routes.md)；菜单全景见 [menu-map](./menu-map.md)（机器生成）。
 
@@ -11,12 +11,12 @@
 | 分类 | 卡片数 | 说明 |
 |------|--------|------|
 | [env](#env) | 24 | 环境系统 |
-| [scene](#scene) | 28 | 场景编排 |
+| [scene](#scene) | 30 | 场景编排 |
 | [physics](#physics) | 5 | 物理系统 |
 | [rendering](#rendering) | 18 | 渲染系统 |
 | [motion](#motion) | 34 | 动作系统 |
-| [ui](#ui) | 55 | UI / 菜单 |
-| [core](#core) | 69 | 核心基础设施 |
+| [ui](#ui) | 56 | UI / 菜单 |
+| [core](#core) | 70 | 核心基础设施 |
 
 ## env
 
@@ -59,7 +59,7 @@
 | [拖拽变换模式开关](./transform-mode.md) | — |
 | [变换选中物状态源](./transform-selection.md) | - ADR-171 |
 
-> 叶子模块 / 工具函数（15 张）：[camera-angle](./camera-angle.md) · [camera-auto](./camera-auto.md) · [camera-behaviors](./camera-behaviors.md) · [camera-bone-lock](./camera-bone-lock.md) · [camera-factory](./camera-factory.md) · [camera-vmd](./camera-vmd.md) · [composition-guide](./composition-guide.md) · [model-id](./model-id.md) · [scene-bundle](./scene-bundle.md) · [scene-migrate](./scene-migrate.md) · [texture-lru](./texture-lru.md) · [thumbnail-capture](./thumbnail-capture.md) · [thumbnail-key](./thumbnail-key.md) · [transform-pick](./transform-pick.md) · [watermark](./watermark.md)
+> 叶子模块 / 工具函数（17 张）：[camera-angle](./camera-angle.md) · [camera-auto](./camera-auto.md) · [camera-behaviors](./camera-behaviors.md) · [camera-bone-lock](./camera-bone-lock.md) · [camera-factory](./camera-factory.md) · [camera-vmd](./camera-vmd.md) · [composition-guide](./composition-guide.md) · [model-id](./model-id.md) · [pmx-texture-audit](./pmx-texture-audit.md) · [scene-bundle](./scene-bundle.md) · [scene-migrate](./scene-migrate.md) · [texture-fallback](./texture-fallback.md) · [texture-lru](./texture-lru.md) · [thumbnail-capture](./thumbnail-capture.md) · [thumbnail-key](./thumbnail-key.md) · [transform-pick](./transform-pick.md) · [watermark](./watermark.md)
 
 ## physics
 
@@ -118,6 +118,7 @@
 
 | 卡片 | 关联 ADR |
 |------|----------|
+| [渲染层 DOM 契约单源](./dom-contract.md) | - ADR-229 |
 | [环境弹窗（编排 + barrel）](./env-menu.md) | - ADR-065 |
 | [资源库操作](./library-actions.md) | - ADR-131 |
 | [资源库核心](./library-core.md) | - ADR-131 |
@@ -165,6 +166,7 @@
 | [babylon-mmd 适配边界](./mmd-adapter.md) | - ADR-192 |
 | [轨道相机键盘输入状态叶子](./orbit-state.md) | - ADR-049 |
 | [渲染循环与 FPS 时钟](./render-loop.md) | - ADR-102 |
+| [资源加载失败统一汇总](./resource-warning-sink.md) | — |
 | [Runtime 隔离桥（Wails Events/Browser）](./runtime-bridge.md) | - ADR-177 |
 | [运行模式检测](./runtime-mode.md) | - ADR-099 |
 | [快捷键注册表](./shortcut-registry.md) | - ADR-036 |
@@ -270,7 +272,7 @@
 | [ADR-183](../adr/adr-183-fsa-auth-guidance.md) | 网页端 FSA 根目录授权引导（四态探针 + 重授权兜底） | [安卓文件访问（shared 模式）](./android-file-access.md) · [资源库初始化](./library-setup.md) |
 | [ADR-186](../adr/adr-186-bone-override-frame-timing.md) | bone-override 帧内时序图 | [骨骼覆盖核心 API](./bone-override.md) · [动作覆盖 UI 层级（模块化覆盖 + 高级骨骼覆盖）](./motion-override-levels.md) |
 | [ADR-188](../adr/adr-188-pbr-material-builder.md) | PBRMaterialBuilder 材质系统迁移 — PBR 渲染升级 | [分类材质系统](./material.md) |
-| [ADR-189](../adr/adr-189-ktx2-texture-compression.md) | 纹理加载路径优化（并行读取 + basename 共享 + LRU + KTX2 基础设施） | [GPU 压缩纹理能力探测](./gpu-capabilities.md) · [PMX 模型加载与缩略图捕获](./model-loader.md) · [场景渲染管线与后处理](./renderer.md) · [场景核心编排器（纯组装器）](./scene.md) · [纹理 LRU 缓存](./texture-lru.md) |
+| [ADR-189](../adr/adr-189-ktx2-texture-compression.md) | 纹理加载路径优化（并行读取 + basename 共享 + LRU + KTX2 基础设施） | [GPU 压缩纹理能力探测](./gpu-capabilities.md) · [PMX 模型加载与缩略图捕获](./model-loader.md) · [PMX 声明纹理缺失审计](./pmx-texture-audit.md) · [场景渲染管线与后处理](./renderer.md) · [场景核心编排器（纯组装器）](./scene.md) · [纹理路径 fallback 候选生成](./texture-fallback.md) · [纹理 LRU 缓存](./texture-lru.md) |
 | [ADR-190](../adr/adr-190-capability-declarative-consolidation.md) | 端能力声明式收口（淘汰散落 isAndroidPlatform 分支） | [核心零依赖叶模块](./core-leaf-modules.md) |
 | [ADR-191](../adr/adr-191-god-barrel-debarreling.md) | 神桶 `@/core/utils` 去桶化（零依赖叶下沉） | [核心零依赖叶模块](./core-leaf-modules.md) · [工具函数叶模块群](./core-utils.md) · [菜单 Overlay 与 Wrapper 管理](./menu-overlay.md) · [菜单栈共享指针（stackRegistry）](./menu-stack-registry.md) · [菜单渲染上下文栈（RenderContext）](./render-context.md) · [标题栏小型开关（createHeaderToggle）](./ui-header-toggle.md) |
 | [ADR-192](../adr/adr-192-upstream-adapter-layer.md) | 上游适配层重构（MmdAdapter） | [地面碰撞体（WASM Bullet 静态刚体）](./ground-collision.md) · [场景光照与阴影（barrel）](./lighting.md) · [babylon-mmd 适配边界](./mmd-adapter.md) · [风力物理注入（WASM Bullet）](./wind-physics.md) |
@@ -287,6 +289,7 @@
 | [ADR-212](../adr/adr-212-naming-vs-functionality-audit.md) | 命名 vs 翻译 vs 实际功能错位系统审计与治理 | [环境碰撞控制](./env-collision.md) · [环境重力控制](./env-gravity.md) · [确定性哈希与值噪声](./hash-noise.md) |
 | [ADR-215](../adr/adr-215-eliminate-prop-kind.md) | 取消「道具」资源类型 — 模型附属关系替代 prop + accessory 体系 | [模型注册表与生命周期管理](./model-manager.md) · [场景序列化与自动保存](./scene-serialize.md) |
 | [ADR-226](../adr/adr-226-ground-material-spec-single-source.md) | 地面材质单一事实源重构（GroundMaterialSpec） | [地面材质单一事实源（GroundMaterialSpec）](./env-ground-spec.md) |
+| [ADR-229](../adr/adr-229-e2e-automation-advancement.md) | E2E 自动化推进 —— 从 schema 到测试零映射 | [渲染层 DOM 契约单源](./dom-contract.md) |
 
 ## 索引与路由（非卡片）
 

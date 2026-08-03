@@ -65,7 +65,7 @@ use_when:
 ## 对外 API（节选）
 - `serializeScene()` / `deserializeScene()` — 场景 ↔ SceneFile
 - `SaveLastScene` / `LoadLastScene` 封装（Go 后端）
-- auto-save debounce（基于 `core/utils` 的 `debounce`）
+- auto-save debounce（基于 `core/debounce` 叶模块的 `debounce`）
 
 ## 与其他子系统关系
 - 引用 `core/config`（envState / modelRegistry / propRegistry）、`motion-intent`（场景动作）、`camera`（相机状态/FOV）、audio、`scene-migrate`（旧档迁移）

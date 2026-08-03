@@ -50,7 +50,7 @@ use_when:
 - 动作意图：`./motion-intent.replaceDefaultMotion`。
 - 文件读取：`@/core/wails-bindings.readFileBytes`。
 - 文件引用：`@/core/fileservice.encodeFileRef`。
-- 加载指示：`@/core/utils.withLoadingIndicator`。
+- 加载指示：`@/core/config.withLoadingIndicator`（源头为 `core/ui-loading.ts` 叶模块）。
 
 ## 不变量
 - per-model `_vmdLoadGenMap`：每次 `loadVMDMotion` 调用递增，await 后检查防止过期。

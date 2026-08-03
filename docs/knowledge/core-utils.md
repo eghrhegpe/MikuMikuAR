@@ -100,7 +100,7 @@ use_when:
 | `auto-save.ts` | `setTriggerAutoSave`/`triggerAutoSave` | 应用层叶（不依赖具体保存实现） |
 | `ui-card.ts` | `cardContainer` UI 卡片容器 | 应用层叶（依赖 dom） |
 | `ui-loading.ts` | `withLoadingIndicator` 加载指示器 | 应用层叶（依赖 dom/i18n） |
-| `status-helpers.ts` | `tryCatchStatus` 状态栏错误包装 | 应用层叶（依赖 status-bar） |
+| `status-helpers.ts` | `tryCatchStatus`/`withLoadingStatus`/`withLoadingStatusTargeted` 状态栏错误包装与加载态包装 | 应用层叶（依赖 status-bar） |
 | `library/library-path.ts` | `computeLibraryRef`/`resolveLibraryRef`/`CATEGORY_DIR`/`getBrowseDir` | 应用层叶（依赖 libraryRoot） |
 
 ## 对外 API（节选）
