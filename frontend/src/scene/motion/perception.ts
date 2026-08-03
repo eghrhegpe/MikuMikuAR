@@ -685,6 +685,22 @@ export function getPerceptionStateFor(modelId: string): PerceptionState {
     return { ...ctx.state };
 }
 
+/** [fix:P2] 获取全部模型的感知状态快照（per-model 独立保存，切换模型不丢）。
+ *  仅含已创建 context 的模型（用户编辑过或激活过）；从未触碰的模型无快照，
+ *  deserialize 时仍回退 focused/fallback。 */
+export function getAllPerceptionStates(): Array<{ modelId: string; state: PerceptionState }> {
+    return Array.from(_contexts.entries()).map(([modelId, ctx]) => ({
+        modelId,
+        state: { ...ctx.state },
+    }));
+}
+
+/** [fix:P2] 恢复指定模型的感知状态（无 context 时创建，不触发 activate/claim）。 */
+export function restorePerceptionStateFor(modelId: string, s: Partial<PerceptionState>): void {
+    const ctx = _getOrCreateContext(modelId);
+    ctx.state = { ...ctx.state, ...s };
+}
+
 /** 设置指定模型的感知状态 */
 export function setPerceptionStateFor(modelId: string, s: Partial<PerceptionState>): void {
     // 钳制 gaze 角度参数（与各单项 setter 一致，避免绕过 clamp）

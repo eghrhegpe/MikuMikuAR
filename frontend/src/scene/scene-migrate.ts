@@ -46,6 +46,8 @@ export function migrateLipSyncFromOldState(old: {
 export function migratePerceptionData(perception: unknown): {
     focused: PerceptionState;
     pinned: Array<{ modelId: string; state: PerceptionState }>;
+    /** [fix:P2] 全部模型的感知状态快照（per-model 独立保存，切换模型不丢） */
+    allStates?: Array<{ modelId: string; state: PerceptionState }>;
     tier?: 'high' | 'medium' | 'low' | 'auto';
     allEnabled?: boolean;
 } | null {
@@ -56,6 +58,7 @@ export function migratePerceptionData(perception: unknown): {
         return perception as {
             focused: PerceptionState;
             pinned: Array<{ modelId: string; state: PerceptionState }>;
+            allStates?: Array<{ modelId: string; state: PerceptionState }>;
             tier?: 'high' | 'medium' | 'low' | 'auto';
             allEnabled?: boolean;
         };

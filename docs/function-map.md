@@ -8,7 +8,7 @@
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
 | 核心基础设施 | 124 | 725 |
-| 3D 场景 | 113 | 1138 |
+| 3D 场景 | 113 | 1140 |
 | 菜单 & UI | 75 | 386 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 18 | 139 |
@@ -1500,6 +1500,7 @@
 | `deactivatePerception()` | `scene/motion/perception` | 注销感知层 |
 | `disableAllPerception()` | `scene/motion/perception` | 全员关闭感知层（仅焦点 + pinned 保留） |
 | `enableAllPerception()` | `scene/motion/perception` | 全员激活感知层（受 tier 限制） |
+| `getAllPerceptionStates()` | `scene/motion/perception` | [fix:P2] 获取全部模型的感知状态快照（per-model 独立保存，切换模型不丢）。 |
 | `getPerceptionPerfManualTier()` | `scene/motion/perception` | [doc:adr-164] 获取手动档位设置（'auto' 表示自动降级模式） |
 | `getPerceptionPerfTier()` | `scene/motion/perception` | 获取当前性能档位 |
 | `getPerceptionState()` | `scene/motion/perception` | 获取感知状态（焦点 context 状态，兼容旧 API） |
@@ -1508,6 +1509,7 @@
 | `isAllPerceptionEnabled()` | `scene/motion/perception` | [doc:adr-164] 获取全员感知开关状态 |
 | `onPerceptionModelRemoved()` | `scene/motion/perception` | 兼容接口：模型移除时清理（供 proc-motion-bridge.ts 调用） |
 | `pinPerception()` | `scene/motion/perception` | [doc:adr-164] pin 模型感知（原 ≤5 上限已移除，全员感知由 tier 控制） |
+| `restorePerceptionStateFor()` | `scene/motion/perception` | [fix:P2] 恢复指定模型的感知状态（无 context 时创建，不触发 activate/claim）。 |
 | `setAllPerceptionEnabled()` | `scene/motion/perception` | [doc:adr-164] 设置全员感知开关状态 |
 | `setBalanceSwayAmplitude()` | `scene/motion/perception` | 设置重心微动振幅（全局乘数，钳制 0–2.0） |
 | `setBalanceSwayEnabled()` | `scene/motion/perception` | 设置重心微动开关（[doc:adr-079] Phase 2） |
