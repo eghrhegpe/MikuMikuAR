@@ -566,3 +566,6 @@ registerSceneAction('syncAudioPlayback', (vmdTime: number, isPlaying: boolean, v
 
 // [doc:adr-238] 补充注册音频加载供 scene/motion 经 scene-action-bridge 调用
 registerSceneAction('loadAudioFile', (filePath: string) => loadAudioFile(filePath));
+
+// [doc:adr-238] 注册音频释放供 scene/manager 经 scene-action-bridge 调用
+registerSceneAction('disposeAudio', () => disposeAudio());

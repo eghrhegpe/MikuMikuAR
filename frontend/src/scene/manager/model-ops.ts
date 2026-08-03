@@ -19,7 +19,8 @@ import {
     getFocusedModelBoneNames,
 } from '../camera/camera';
 import { updatePlaybackUI } from '../motion/playback';
-import { disposeAudio } from '@/outfit/audio';
+// [doc:adr-238] 音频释放经 scene-action-bridge（outfit 注册）
+import { getSceneAction } from '@/core/scene-action-bridge';
 import { modelManager } from '../scene';
 import { setTargetModel } from '../motion/motion-modules/registry'; // [doc:adr-116]
 import { setBoneOverride } from '../motion/bone-override'; // [doc:adr-150]
@@ -60,7 +61,7 @@ export function removeModel(id: string): void {
         setAutoLoop(true);
         setSeekDragging(false);
         dom.playbackBar.style.display = 'none';
-        disposeAudio();
+        getSceneAction('disposeAudio')?.();
     }
 }
 

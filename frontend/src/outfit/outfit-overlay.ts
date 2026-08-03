@@ -378,3 +378,8 @@ export function disposeOverlay(inst: ModelInstance): void {
     }
     inst._overlayMeshes = undefined;
 }
+
+// [doc:adr-238] 注册换装 overlay 释放供 scene/manager 经 scene-action-bridge 调用（切断 scene/manager→outfit）
+import { registerSceneAction } from '@/core/scene-action-bridge';
+registerSceneAction('disposeOverlay', (inst: unknown) => disposeOverlay(inst as ModelInstance));
+registerSceneAction('restoreMaterials', (inst: unknown) => restoreMaterials(inst as ModelInstance));

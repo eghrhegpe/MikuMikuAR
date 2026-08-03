@@ -27,7 +27,8 @@ import {
     type RuntimeModel,
 } from '@/core/config';
 import { orbitToCartesian, cartesianToOrbit, normalizeOrbit } from '@/core/orbit';
-import { disposeOverlay, restoreMaterials } from '@/outfit/outfit-overlay';
+// [doc:adr-238] 换装释放经 scene-action-bridge（outfit 注册）
+import { getSceneAction } from '@/core/scene-action-bridge';
 import { clamp01 } from '@/core/clamp';
 import { swallowError } from '@/core/async';
 import { logWarn } from '@/core/logger';
@@ -298,8 +299,8 @@ export class ModelManager {
         // [doc:adr-215] 级联卸载附属子模型（先子后父，递归）
         this.detachChildModels(id);
 
-        disposeOverlay(inst);
-        restoreMaterials(inst);
+        getSceneAction('disposeOverlay')?.(inst);
+        getSceneAction('restoreMaterials')?.(inst);
 
         // ⚠️ onRemoveModel（mmdRuntime.destroyMmdModel）必须在网格释放之前调用！
         // destroyMmdModel 需要 skeleton 尚存才能从运行时中解除 observable 链接，
@@ -1120,8 +1121,8 @@ export class ModelManager {
         }
         // Dispose all remaining outfit overlays
         for (const [, inst] of this.modelRegistry) {
-            disposeOverlay(inst);
-            restoreMaterials(inst);
+            getSceneAction('disposeOverlay')?.(inst);
+            getSceneAction('restoreMaterials')?.(inst);
         }
     }
 
