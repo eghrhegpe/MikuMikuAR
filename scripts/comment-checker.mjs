@@ -4,6 +4,7 @@
  * 由 ysm-model-manager/scripts/comment-checker.mjs 搬运至联邦（2026-08-03），
  * 路径已对齐联邦结构：frontend/js → frontend/src，go → internal。
  */
+import fs from 'node:fs';
 import { rg } from './_lib/ripgrep.mjs';
 import { parseRgLine } from './_lib/rg-line.mjs';
 
@@ -32,10 +33,26 @@ function scanEmptyJsdoc() {
 }
 
 function scanCommentedCode() {
-  /** 检测注释掉的代码行 */
+  /** 检测注释掉的代码行；跳过 JSDoc 示例（// 后 ≥2 空格）与 why/prose 注释 */
   const results = [];
+  const fileCache = new Map();
+  const readLine = (f, ln) => {
+    if (!fileCache.has(f)) {
+      try { fileCache.set(f, fs.readFileSync(f, 'utf8').split('\n')); }
+      catch { fileCache.set(f, []); }
+    }
+    return fileCache.get(f)[ln - 1] ?? '';
+  };
   for (const line of rg(/^\s*\/\/\s+(var |let |const |function |if |for |return |import |export )/.source, 'frontend/src', ['*.js', '*.ts'])) {
     const [f, ln, txt] = parseRgLine(line);
+    const raw = readLine(f, ln);
+    // 跳过 JSDoc 代码样例：// 后跟 ≥2 空格（缩进示例，如 safe-call.ts 用法示例）
+    const slashIdx = raw.indexOf('//');
+    if (slashIdx >= 0 && /^\s{2,}/.test(raw.slice(slashIdx + 2))) continue;
+    // 跳过 why/prose 注释：关键字后无代码特征（= ; ( { from =>），如 thumbnail-capture.ts 循环依赖说明
+    const kw = (txt.match(/^(var|let|const|function|if|for|return|import|export)\b/) || [])[0] || '';
+    const rest = txt.slice(kw.length).trim();
+    if (!/[=;({]|from\b|=>/.test(rest)) continue;
     results.push({ file: f, line: ln, snippet: txt, type: 'commented_code' });
   }
   return results;

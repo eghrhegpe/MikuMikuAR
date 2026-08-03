@@ -2,6 +2,11 @@
 /**
  * Markdown 链接检查。扫所有 md 文件，验证内部链接目标是否存在。
  * 由 ysm-model-manager/scripts/link-checker.mjs 搬运至联邦（2026-08-03），逻辑逐点保真。
+ *
+ * 用法：
+ *   node scripts/link-checker.mjs            # 文本报告（信息型，exit 0）
+ *   node scripts/link-checker.mjs --json     # JSON（便于 CI 解析）
+ *   node scripts/link-checker.mjs --strict   # 门禁模式：存在断链即 exit 1
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -107,6 +112,7 @@ function checkLinks(files) {
 
 const args = process.argv.slice(2);
 const jsonMode = args.includes('--json');
+const strict = args.includes('--strict'); // 门禁模式：断链即 exit 1，可接 CI 卡点
 
 // 收集所有 md 文件（跳过 archive）
 const files = [];
@@ -124,7 +130,7 @@ if (jsonMode) {
     broken_links: broken,
   };
   process.stdout.write(JSON.stringify(out, null, 2) + '\n');
-  process.exit(0);
+  process.exit(strict && broken.length ? 1 : 0);
 }
 
 process.stdout.write(`扫描 ${files.length} 个 md 文件\n有效链接: ${ok}, 断链: ${broken.length}\n\n`);
@@ -136,3 +142,6 @@ if (broken.length) {
 } else {
   process.stdout.write('全部链接有效\n');
 }
+
+// 门禁模式：存在断链则非零退出（可接 CI 卡点）；--strict 未启用时仅信息展示
+process.exit(strict && broken.length ? 1 : 0);
