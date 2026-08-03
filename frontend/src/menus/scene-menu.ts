@@ -386,6 +386,10 @@ export async function screenshotCurrent(): Promise<void> {
     }
 }
 
+// [doc:adr-238] 注册截图行为供 core 快捷键层经桥调用（切断 core→menus 反向边）
+import { registerUiAction } from '@/core/ui-action-bridge';
+registerUiAction('screenshotCurrent', () => screenshotCurrent());
+
 /** 批量截图所有已加载模型 */
 export async function screenshotBatch(): Promise<void> {
     if (modelRegistry.size === 0) {

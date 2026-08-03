@@ -1,12 +1,13 @@
 // [doc:adr-102] App-level shortcut definitions — split from events.ts (P3).
 // 纯定义层：注册快捷键绑定到 ShortcutRegistry，不涉及 DOM 事件绑定。
 import { dom, mmdRuntime, setStatus } from './config';
-import { closeAllOverlays } from '../menus/menu-overlay';
+// [doc:adr-238] UI 行为（closeAllOverlays/screenshotCurrent）经 ui-action-bridge 注入，
+// 本模块不直接 import menus（core 回归叶子）。
+import { getUiActions } from './ui-action-bridge';
 import { t } from './i18n/t';
 import { focusedModelId } from './state';
 import { focusedModel, updatePlaybackUI, focusedMmdModel } from '../scene/scene';
 import { registerShortcuts } from './shortcut-registry';
-import { screenshotCurrent } from '../menus/scene-menu';
 import { undo, redo, canUndo, canRedo } from '../scene/motion/motion-modules/motion-history';
 import { applyModuleSnapshot } from '../scene/motion/motion-modules/module-base';
 import { popUndoSnapshot, restoreUndoSnapshot } from '../scene/scene';
@@ -122,7 +123,7 @@ export function registerAppShortcuts(): void {
             label: 'shortcuts.label.closePopup',
             defaultKey: 'Escape',
             handler: () => {
-                closeAllOverlays();
+                getUiActions()?.closeAllOverlays();
                 document.body.classList.remove('ui-hidden');
             },
             group: 'shortcuts.group.global',
@@ -177,7 +178,7 @@ export function registerAppShortcuts(): void {
             defaultKey: 'F2',
             defaultCtrl: false,
             prevent: true,
-            handler: () => void screenshotCurrent(),
+            handler: () => void getUiActions()?.screenshotCurrent(),
             group: 'shortcuts.group.screenshot',
         },
         // [doc:adr-125 P2] 模块层撤销/重做

@@ -4,6 +4,8 @@
 
 import { dom } from '@/core/dom';
 import { setPopupOpen } from '@/core/state';
+// [doc:adr-238] 注册关闭全部弹窗行为供 core 快捷键层经桥调用（切断 core→menus 反向边）
+import { registerUiAction } from '@/core/ui-action-bridge';
 
 let _onCloseAllOverlays: (() => void) | null = null;
 const _extraCloseAllOverlays = new Set<() => void>();
@@ -36,6 +38,11 @@ export function closeAllOverlays(): void {
     _onCloseAllOverlays?.();
     _extraCloseAllOverlays.forEach((fn) => fn());
 }
+
+// [doc:adr-238] 模块加载即注册（menu-overlay 在菜单系统初始化早期必被加载）
+registerUiAction('closeAllOverlays', () => {
+    closeAllOverlays();
+});
 
 const _menuWrapperRegistry = new Map<string, HTMLElement>();
 
