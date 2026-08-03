@@ -8,7 +8,7 @@
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
 | 核心基础设施 | 125 | 728 |
-| 3D 场景 | 116 | 1150 |
+| 3D 场景 | 118 | 1160 |
 | 菜单 & UI | 75 | 386 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 19 | 140 |
@@ -1117,15 +1117,25 @@
 | `updateGroundRipples()` | `scene/env/env-water-fx` | 每帧更新地面涟漪纹理（由 env-ground 的 update observer 驱动） |
 | `updateRipples()` | `scene/env/env-water-fx` | 每帧涟漪衰减 + 死亡清理（由材质更新回调驱动；dt&lt;=0 时跳过避免零时距死循环） |
 | `updateUnderwaterTransition()` | `scene/env/env-water-fx` | — |
-| `WATER_PRESETS()` | `scene/env/env-water` | — |
-| `WaterPreset()` | `scene/env/env-water` | — |
-| `applyWaterPresetToCurrent()` | `scene/env/env-water` | — |
-| `buildWaterPresetEnvState()` | `scene/env/env-water` | 预设 → EnvState 完整字段映射（含扩展参数），供 UI chip handler 调用并持久化。 |
-| `createWater()` | `scene/env/env-water` | — |
+| `WATER_PRESETS()` | `scene/env/env-water-material` | — |
+| `WaterPreset()` | `scene/env/env-water-material` | — |
+| `_WATER_KEYS()` | `scene/env/env-water-material` | — |
+| `_createWaterMaterial()` | `scene/env/env-water-material` | — |
+| `_rebuildWaterMaterial()` | `scene/env/env-water-material` | 重建水面材质（切换 PLANAR_REFLECTION define 时必须），保持网格与 LOD 引用一致。 |
+| `_syncWaterUniforms()` | `scene/env/env-water-material` | 同步水面材质的全部 uniform 参数（非破坏性，不销毁/重建材质）。 |
+| `_waterUpdateCallback()` | `scene/env/env-water-material` | — |
+| `applyWaterPresetToCurrent()` | `scene/env/env-water-material` | — |
+| `buildWaterPresetEnvState()` | `scene/env/env-water-material` | 预设 → EnvState 完整字段映射（含扩展参数），供 UI chip handler 调用并持久化。 |
+| `disposeDetailNormalTexture()` | `scene/env/env-water-material` | 宿主 disposeWater 委托：释放法线细节纹理（ADR-115 P1） |
+| `getWaterPhase()` | `scene/env/env-water-material` | 测试/调试用：读取当前累计波相位。 |
+| `resetWaterPhaseState()` | `scene/env/env-water-material` | 宿主 disposeWater 委托：重置相位/波速状态 |
+| `setUnderwaterFog()` | `scene/env/env-water-material` | 由水下雾控制器同步水下雾参数到水面材质（含材质重建后的恢复由 _syncWaterUniforms 负责）。 |
+| `setWaterWaveSpeed()` | `scene/env/env-water-material` | 宿主 updateWaterAnimSpeed 委托：只更新累加速率，相位由每帧 observer 累加（改波速不跳变） |
+| `_setupMirrorRT()` | `scene/env/env-water-reflect` | 初始化/更新水面平面反射：委托给统一引擎（创建 RT、镜像相机、挂载、互斥）。 |
+| `waterReflection()` | `scene/env/env-water-reflect` | — |
+| `createWater()` | `scene/env/env-water` | 按相机到水面的距离选择 LOD 层级（纯函数，便于单测）。 |
 | `disposeWater()` | `scene/env/env-water` | — |
-| `getWaterPhase()` | `scene/env/env-water` | 测试/调试用：读取当前累计波相位。 |
 | `refreshWaterRenderList()` | `scene/env/env-water` | 刷新水面渲染列表（钩子函数） 当前为空实现，保留作为API接口，未来可能用于： - 更新水的渲染顺序 - 响应场景图形变更（如新增/移除需要水面反射的对象） - 同步水的渲染状态 |
-| `setUnderwaterFog()` | `scene/env/env-water` | 由水下雾控制器同步水下雾参数到水面材质（含材质重建后的恢复由 _syncWaterUniforms 负责）。 |
 | `updateWaterAnimSpeed()` | `scene/env/env-water` | — |
 | `applyWetnessToAllModels()` | `scene/env/env-wetness` | 对所有已加载模型应用湿身材质效果（幂等）。 |
 | `applyWetnessToInst()` | `scene/env/env-wetness` | — |
