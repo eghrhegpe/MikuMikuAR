@@ -5,7 +5,7 @@
 // Pure Split-layer orchestrator: imports leaf/domain modules but is never
 // imported by them (no cycle).
 import { dom, setStatus, initHints, UIState, EnvState, formatError, uiState } from './config';
-import { closeAllOverlays } from '../menus/menu-overlay';
+import { getUiAction } from './ui-action-bridge';
 import { t } from './i18n/t';
 import { translateGoError } from './i18n/goerr';
 import { registerIconBundle } from './icons-bundle';
@@ -16,7 +16,6 @@ import { isAndroidPlatform, isWebPlatform } from './platform';
 import { getCapabilities, resolveBackend } from './backend';
 import { generateTextColors } from '../menus/settings';
 import { SETTINGS_FONT_RESTORE } from '../menus/settings-shared';
-import { getOpenMenus } from '../menus/menu';
 import {
     initScene,
     tryRestoreLastScene,
@@ -36,9 +35,7 @@ import {
     uninstallLoggingPatch,
 } from './ai/error-buffer';
 import { setPerformanceMode } from '../scene/render/performance';
-import { initLibrary, showModelPopup, showMotionPopup, refreshLibrary } from '../menus/library';
-import { showPlaza } from '../menus/plaza-browser';
-import { closePlaza } from '../menus/plaza-state';
+import { initLibrary, refreshLibrary } from '../menus/library';
 import { restoreAutoCameraState } from '../scene/camera/camera';
 import { syncTimeOfDayFromEnv } from '../scene/env/env-time-of-day';
 import { initShortcutDispatcher, loadKeyBindings } from './shortcut-registry';
@@ -47,10 +44,8 @@ import { startRenderLoop } from './render-loop';
 import {
     registerEventHandlers,
     disposeEventHandlers,
-    buildNavMaps,
     initDropHandler,
     showUpdateToast,
-    toggleOverlay,
 } from './events';
 import { registerAppShortcuts } from './shortcut-app';
 import { addDisposableListener } from './dom';
@@ -128,7 +123,7 @@ async function init(): Promise<void> {
         _updateStaticHtmlTexts(); // 更新 HTML 模板中的硬编码文案
         initRuntimeBadge(); // [adr-099] 立即渲染持久化的运行时模式徽标（刷新不丢）
         registerEventHandlers(); // [adr-102] P3: 全局 DOM/window 监听器迁至 events.ts
-        buildNavMaps();
+        // [doc:adr-238] buildNavMaps 下沉 menus/nav-actions，由 initNavActions 驱动
         // Register keyboard shortcuts via ShortcutRegistry
         registerAppShortcuts();
         initShortcutDispatcher();
@@ -152,58 +147,8 @@ async function init(): Promise<void> {
             setBackendBadge(b.kind);
         });
 
-        // [doc:e2e] 按钮监听器在 initScene 之前注册，确保纯 Vite 模式下 overlay 可打开
-        // 即使 WASM 加载失败或场景初始化异常，用户仍能点击导航按钮查看菜单
-        _initDisposables.push(
-            addDisposableListener(dom.btnMainAction, 'click', () =>
-                toggleOverlay('sceneOverlay', showModelPopup)
-            )
-        );
-        _initDisposables.push(
-            addDisposableListener(dom.btnMotionPopup, 'click', () =>
-                toggleOverlay('sceneOverlay', showMotionPopup)
-            )
-        );
-        _initDisposables.push(
-            addDisposableListener(dom.btnScene, 'click', async () => {
-                const m = await import('../menus/scene-menu');
-                toggleOverlay('sceneOverlay', m.showSceneMenu);
-            })
-        );
-        _initDisposables.push(
-            addDisposableListener(dom.btnEnv, 'click', async () => {
-                const m = await import('../menus/env-menu');
-                toggleOverlay('sceneOverlay', m.showEnvMenu);
-            })
-        );
-        _initDisposables.push(
-            addDisposableListener(dom.btnSettings, 'click', async () => {
-                const m = await import('../menus/settings');
-                await safeCallAsync('init', 'preloadAutoImportState', () =>
-                    m.preloadAutoImportState()
-                ); // 静默失败，避免阻塞 UI
-                await safeCallAsync('init', 'preloadDownloadWatchState', () =>
-                    m.preloadDownloadWatchState()
-                ); // 预加载监听开关状态
-                toggleOverlay('sceneOverlay', m.showSettings);
-            })
-        );
-        _initDisposables.push(
-            addDisposableListener(dom.btnAssistant, 'click', async () => {
-                const m = await import('../menus/assistant-panel');
-                toggleOverlay('sceneOverlay', m.showAssistant);
-            })
-        );
-        _initDisposables.push(
-            addDisposableListener(dom.btnPlaza, 'click', () => {
-                const layer = document.getElementById('webviewLayer');
-                if (layer && layer.classList.contains('visible')) {
-                    closePlaza();
-                } else {
-                    toggleOverlay('webviewLayer', showPlaza);
-                }
-            })
-        );
+        // [doc:adr-238] 导航按钮接线下沉 menus/nav-actions（initNavActions 由 initLibrary
+        // 启动链驱动），本层不再直接 import menus 弹窗函数或注册按钮监听。
 
         initDropHandler(); // 拖拽导入处理不依赖场景初始化
 
@@ -538,33 +483,10 @@ events.on('storage:permissionGranted', async () => {
 const BACK_EXIT_INTERVAL_MS = 2000;
 let _lastBackExitPress = 0;
 events.on('android:back', () => {
-    // 优先：SlideMenu 子层级返回（如 角色面板 → 渲染设置）。
-    // 用原生返回键驱动 pop()/close()，不再依赖 menu.ts 里脆弱的屏幕坐标位移手势。
-    const openMenus = getOpenMenus().filter((m) => m.isVisible);
-    if (openMenus.length > 0) {
-        const top = openMenus[openMenus.length - 1]; // 最后创建 = 最顶层
-        if (top.levelCount > 1) {
-            top.pop();
-        } else {
-            top.close();
-        }
-        return;
-    }
-
-    // Was anything actually open? Must check BEFORE closing anything.
-    const anyOverlayOpen =
-        document.querySelector('[data-overlay].visible') !== null ||
-        document.querySelector('.mmd-dialog-visible') !== null;
-
-    if (anyOverlayOpen) {
-        // Plaza needs dedicated cleanup (stop proxy + release iframe);
-        // closePlaza() internally calls closeAllOverlays().
-        const plazaLayer = document.getElementById('webviewLayer');
-        if (plazaLayer && plazaLayer.classList.contains('visible')) {
-            closePlaza();
-        } else {
-            closeAllOverlays();
-        }
+    // [doc:adr-238] 菜单/遮罩优先处理下沉 menus/nav-actions（经 ui-action-bridge）；
+    // 本层只保留「无菜单可关 → 二次返回退出」逻辑。
+    const handled = getUiAction('handleAndroidBack')?.() ?? false;
+    if (handled) {
         _lastBackExitPress = 0; // closing a panel resets the exit window
         return;
     }
