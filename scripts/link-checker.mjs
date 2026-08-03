@@ -37,9 +37,12 @@ function extractLinks(filepath) {
   } catch { return links; }
 
   // 匹配 [text](path) 和 [text](path "title")
+  // 先剔除 fenced 代码块（```...```），避免示例链接（如 adr-030 的占位章节路径）被误判为断链
+  const stripped = text.replace(/```[\s\S]*?```/g, '');
+
   const re = /\[([^\]]*)\]\(([^)\s]+(?:\s+"[^"]*")?)\)/g;
   let m;
-  while ((m = re.exec(text)) !== null) {
+  while ((m = re.exec(stripped)) !== null) {
     const linkText = m[1];
     const rawPath = m[2].split(/\s+/)[0]; // 去掉 title 部分
     links.push([linkText, rawPath, m.index]);

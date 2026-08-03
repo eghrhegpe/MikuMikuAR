@@ -131,7 +131,7 @@
 | [Knowledge Base](docs/knowledge/README.md) | Module snapshots + card index (what a module looks like now, where to find it) |
 | [Architecture](docs/architecture.md) | Full feature summary |
 | [Design Decisions](docs/adr/) | 80+ ADR technical approaches |
-| [Requirements & Selection](docs/requirements.md) | P0-P4 priorities + tech selection rationale |
+| [Requirements & Selection](docs/architecture.md) | P0-P4 priorities + tech selection rationale |
 | [Competitive Analysis](docs/competitive-analysis.md) | 23 project research |
 | [Coding Chronicles](novel/README.md) | 100+ chapter code evolution narrative |
 | [AI Workflow Rules](AGENTS.md) | AI collaboration guide |
