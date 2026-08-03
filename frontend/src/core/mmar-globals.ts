@@ -1,3 +1,5 @@
+// [doc:adr-238] getSceneAction 供 focusedModel 快照读取（scene-action-bridge）
+import { getSceneAction } from './scene-action-bridge';
 // [doc:architecture] __mmar — 运行时结构化状态暴露
 // 挂载到 window.__mmar，供外置 AI（LLM）直接读取快照。
 // 轻量叶子模块：仅依赖普通 JS 全局与动态 import，无静态内部模块耦合，不引入新架构范式。

@@ -1619,3 +1619,8 @@ registerSceneAction('pushUndoSnapshot', () => pushUndoSnapshot());
 registerSceneAction('offerSceneUndoAndRefresh', (label: string, snap: unknown, afterApply?: () => void) => {
     offerSceneUndoAndRefresh(label, snap as string, afterApply);
 });
+
+// [doc:adr-238] 注册场景恢复/保存供 core/init 经 scene-action-bridge 调用
+registerSceneAction('tryRestoreLastScene', () => tryRestoreLastScene());
+registerSceneAction('setSuppressAutoSave', (s: boolean) => setSuppressAutoSave(s));
+registerSceneAction('saveSceneImmediate', () => saveSceneImmediate());

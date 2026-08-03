@@ -6,16 +6,12 @@
 // 分字段注册（registerSceneAction），支持各场景模块独立注册。
 
 export interface SceneActions {
-    /** 更新环境状态（env-actions 的 bind-* 纹理绑定） */
-    setEnvState: (partial: Record<string, unknown>) => void;
     /** 灯光状态写入（control 动作 light:*） */
     setLightState: (partial: Record<string, unknown>) => boolean;
     /** 相机模式切换（control 动作 camera:mode） */
     setCameraMode: (mode: string) => void;
     /** 环境预设应用（control 动作 env:preset） */
     applyEnvPreset: (preset: string) => boolean;
-    /** 性能模式切换（control 动作 render:performance） */
-    setPerformanceMode: (mode: string) => void;
     /** 模型替换（control 动作 model:load） */
     replaceModel: (model: unknown) => void | Promise<void>;
     /** 动作替换（control 动作 motion:load） */
@@ -104,6 +100,24 @@ export interface SceneActions {
     canRedo: (modelId: string) => boolean;
     /** 应用模块快照（快捷键调用），由 scene/motion/module-base 注册 */
     applyModuleSnapshot: (moduleId: string, snap: unknown) => void;
+    /** 初始化场景（core/init 启动调用），由 scene 注册 */
+    initScene: () => Promise<void>;
+    /** 尝试恢复上次场景（core/init 调用），由 scene 注册 */
+    tryRestoreLastScene: () => Promise<void>;
+    /** 设置环境状态（core/init 调用），由 scene/env 注册 */
+    setEnvState: (partial: Record<string, unknown>, skipAutoSave?: boolean) => void;
+    /** 设置抑制自动保存（core/init 调用），由 scene 注册 */
+    setSuppressAutoSave: (suppress: boolean) => void;
+    /** 取消环境持久化计时器（core/init 调用），由 scene 注册 */
+    cancelEnvPersistTimer: () => void;
+    /** 设置性能模式（core/init 调用），由 scene/render 注册 */
+    setPerformanceMode: (mode: string) => void;
+    /** 恢复自动相机状态（core/init 调用），由 scene/camera 注册 */
+    restoreAutoCameraState: () => void;
+    /** 从环境同步时段（core/init 调用），由 scene/env 注册 */
+    syncTimeOfDayFromEnv: () => void;
+    /** 立即保存场景（core/init 调用），由 scene 注册 */
+    saveSceneImmediate: () => Promise<void>;
 }
 
 const _sceneActions = new Map<keyof SceneActions, unknown>();

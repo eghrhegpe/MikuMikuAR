@@ -17,13 +17,6 @@ import { getCapabilities, resolveBackend } from './backend';
 // [doc:adr-238] 主题纯函数下沉 core/theme，不再经 menus
 import { generateTextColors } from './theme';
 import { SETTINGS_FONT_RESTORE } from './theme';
-import {
-    initScene,
-    tryRestoreLastScene,
-    setEnvState,
-    setSuppressAutoSave,
-    cancelEnvPersistTimer,
-} from '../scene/scene';
 import { initRuntimeBadge, setBackendBadge } from './runtime-mode';
 import { applyHudVisibility, disposeStatusBar } from './status-bar';
 import { hexToRgb, rgbToString } from './color-helpers';
@@ -35,11 +28,11 @@ import {
     installLoggingPatch,
     uninstallLoggingPatch,
 } from './ai/error-buffer';
-import { setPerformanceMode } from '../scene/render/performance';
+
 // [doc:adr-238] initLibrary/refreshLibrary 经 scene-action-bridge 调用
 import { getSceneAction } from './scene-action-bridge';
-import { restoreAutoCameraState } from '../scene/camera/camera';
-import { syncTimeOfDayFromEnv } from '../scene/env/env-time-of-day';
+
+
 import { initShortcutDispatcher, loadKeyBindings } from './shortcut-registry';
 import { setupE2ECapture } from './dev-hooks';
 import { startRenderLoop } from './render-loop';
@@ -52,7 +45,7 @@ import {
 import { registerAppShortcuts } from './shortcut-app';
 import { addDisposableListener } from './dom';
 import { disposeOverlay2 } from './dialog';
-import { saveSceneImmediate } from '../scene/scene-serialize';
+
 
 // [adr:audit] init 层本地事件监听收集，配合 disposeEventHandlers 实现 HMR 幂等清理
 const _initDisposables: { dispose(): void }[] = [];
@@ -154,7 +147,7 @@ async function init(): Promise<void> {
 
         initDropHandler(); // 拖拽导入处理不依赖场景初始化
 
-        await initScene();
+        await getSceneAction('initScene')?.();
         // 引擎就绪 → 隐藏加载遮罩，显示主应用 UI
         dom.showApp();
         console.info('MikuMikuAR initialized');
@@ -179,10 +172,10 @@ async function init(): Promise<void> {
             });
         }
         // Sync module-level state from persisted envState
-        syncTimeOfDayFromEnv();
-        restoreAutoCameraState();
+        getSceneAction('syncTimeOfDayFromEnv')?.();
+        getSceneAction('restoreAutoCameraState')?.();
         // Auto-restore last scene after library + scene init (env already restored above)
-        safeCallAsync('init', 'Auto-restore', () => tryRestoreLastScene());
+        safeCallAsync('init', 'Auto-restore', () => getSceneAction('tryRestoreLastScene')?.());
     } catch (err) {
         console.error('Init failed:', err);
         const msg = translateGoError(err);
@@ -265,14 +258,14 @@ async function restoreEnvState(): Promise<void> {
         // 2. reactive 状态通过 Proxy 正确通知 UI 刷新
         // 3. _applyEnvStateFacade 精确控制各子系统应用（避免 applyEnvState 的全量无条件重建）
         // 4. 抑制 auto-save，防止恢复过程中触发级联保存
-        setSuppressAutoSave(true);
-        setEnvState(loaded, true);
+        getSceneAction('setSuppressAutoSave')?.(true);
+        getSceneAction('setEnvState')?.(loaded, true);
         // 丢弃恢复阶段触发的 env 防抖写入（setEnvState 的 skipAutoSave 只跳过
         // triggerAutoSave，不跳过 _envPersistTimer）。若不取消，500ms 后会把
         // 刚恢复的值写回 config.json，在 LoadLastScene 延迟超过 500ms 的极端
         // 时序下会写入默认值，污染下次启动的恢复源。见 buglog 2026-07-16 教训3。
-        cancelEnvPersistTimer();
-        setSuppressAutoSave(false);
+        getSceneAction('cancelEnvPersistTimer')?.();
+        getSceneAction('setSuppressAutoSave')?.(false);
         console.info('[env-restore] 环境状态恢复完成');
     } else {
         console.info('[env-restore] restoreEnvState: cfg.env 为 null/undefined，跳过环境恢复');
@@ -312,9 +305,9 @@ async function restoreUIState(): Promise<void> {
     // 首次启动（无持久化 performanceMode）时，移动端默认 balanced 降一档，
     // 桌面端走 auto 自适应。已有持久化值的老用户不受影响。
     if (s.performanceMode) {
-        setPerformanceMode(s.performanceMode);
+        getSceneAction('setPerformanceMode')?.(s.performanceMode);
     } else if (isAndroidPlatform()) {
-        setPerformanceMode('balanced');
+        getSceneAction('setPerformanceMode')?.('balanced');
     }
     if (s.autoUpdateEnabled) {
         uiState.autoUpdateEnabled = s.autoUpdateEnabled;
@@ -512,7 +505,7 @@ events.on('android:back', () => {
 // 比 visibilitychange 更可靠：部分国产 ROM WebView 切后台 visibilityState 不变 hidden，
 // 导致 cleanupAndFlushSave() 不触发；ScreenLocked 是原生广播，信号确切。
 events.on('android:ScreenLocked', () => {
-    swallowError(saveSceneImmediate(true));
+    swallowError(getSceneAction('saveSceneImmediate')?.() ?? Promise.resolve());
 });
 
 // 网络变化 → toast 提示（plaza 等在线功能依赖网络）

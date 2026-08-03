@@ -112,3 +112,7 @@ export async function flushUIState(): Promise<void> {
 
 // 注册持久化回调（state.ts → 本模块，避免循环依赖）
 setUIPersistCallback(schedulePersistUI);
+
+// [doc:adr-238] 注册环境持久化计时器取消供 core/init 经 scene-action-bridge 调用
+import { registerSceneAction } from '@/core/scene-action-bridge';
+registerSceneAction('cancelEnvPersistTimer', () => cancelEnvPersistTimer());

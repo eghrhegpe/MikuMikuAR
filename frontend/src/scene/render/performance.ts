@@ -633,3 +633,8 @@ import { registerSceneAction } from '@/core/scene-action-bridge';
 registerSceneAction('setPerformanceMode', (mode: string) => {
     setPerformanceMode(mode as Parameters<typeof setPerformanceMode>[0]);
 });
+
+// [doc:adr-238] 补充注册性能模式供 core/init 经 scene-action-bridge 调用
+registerSceneAction('setPerformanceMode', (mode: string) => {
+    setPerformanceMode(mode as PerformanceMode);
+});
