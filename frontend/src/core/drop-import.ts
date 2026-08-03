@@ -17,7 +17,8 @@ import { idbSet, saveModel } from './backend/idb';
 import { setStatus, formatError } from './config';
 import { t } from './i18n/t';
 import { safeCallAsync } from './safe-call';
-import { refreshLibrary } from '../menus/library';
+// [doc:adr-238] 移除对 menus/library 的静态 import（core 不反向依赖 UI 层）：
+// zip 落盘后经 mmar:zip-imported 事件通知 menus/library-setup 重扫库。
 
 /**
  * 处理已落地的路径（桌面绝对路径或浏览器 IndexedDB 键）。
@@ -43,7 +44,9 @@ export async function handleDropFile(path: string, zipBytes?: Uint8Array): Promi
                 await ImportZip(path);
             }
             setStatus(t('main.zipImported'), true);
-            await safeCallAsync('drop-import', 'refresh after drop', () => refreshLibrary());
+            // [doc:adr-238] 库重扫由 menus/library-setup 监听 mmar:zip-imported 驱动，
+            // 本模块不直接 import menus（core 回归叶子）。
+            window.dispatchEvent(new CustomEvent('mmar:zip-imported'));
         } catch (err) {
             setStatus(t('main.importFailedDetail') + formatError(err), false);
             console.error('ImportZip failed:', err);
