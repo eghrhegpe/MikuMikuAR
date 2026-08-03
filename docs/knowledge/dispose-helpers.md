@@ -10,6 +10,7 @@ source_files:
 adr:
   - ADR-146
 symbols:
+  - detachSharedTextures
   - safeDispose
 invariants:
   - safeDispose(obj, ...args) 与 obj?.dispose(...args) 语义严格等价，始终返回 null
