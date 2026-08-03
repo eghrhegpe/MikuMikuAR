@@ -15,7 +15,7 @@
 
 | 能力 | WASM Runtime | JS Runtime | 证据 |
 |------|--------------|------------|------|
-| WASM Bullet 物理（头发/服装刚体） | ✅ | ❌ | [env-bridge.ts:196](../../frontend/src/scene/env/env-bridge.ts#L196) |
+| WASM Bullet 物理（头发/服装刚体） | ✅ | ❌ | [env-bridge.ts:196](../../frontend/src/scene/env/_bridge/env-bridge.ts#L196) |
 | XPBD 布料 | ✅ | ✅ | ADR-019 |
 | Gaze Tracking（头/眼跟随） | ✅ frontBuffer 直写 | ✅ linkedBone | [proc-motion-bridge.ts:82](../../frontend/src/scene/motion/proc-motion-bridge.ts#L82) `_isWasmRuntime` |
 | 程序化动作（Idle/AutoDance） | ✅ VMD 帧注入 | ✅ | ADR-021 |

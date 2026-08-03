@@ -1,6 +1,6 @@
 # 此文件已合并
 
-> **维护计划** 已于 2026-07-20 合并入 **[grand-blueprint.md](grand-blueprint.md)**。
+> **维护计划** 已于 2026-07-20 合并入 **[grand-blueprint.md](../../grand-blueprint.md)**。
 
 ## 迁移内容
 

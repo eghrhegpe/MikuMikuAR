@@ -51,6 +51,7 @@ function resolvePath(filepath, rawPath) {
   /** 将 Markdown 相对路径解析为实际文件系统路径。 */
   if (rawPath.startsWith('http://') || rawPath.startsWith('https://')) return null; // 外部链接跳过
   if (rawPath.startsWith('file://')) return null; // 源码引用(file://...)非文档链接，跳过
+  if (/[<>]/.test(rawPath)) return null; // 占位符链接（如 <page>-<n>.png）非真实链接，跳过
   if (rawPath.startsWith('#')) return null; // 锚点跳过
   let candidate;
   if (rawPath.startsWith('/')) {
