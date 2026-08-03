@@ -13,7 +13,6 @@ adr:
   - ADR-085
 symbols:
   - FeetModelProvider
-  - FootLandEvent
   - isFeetAdjustmentRunning
   - setOnFootLand
   - solveFootTarget

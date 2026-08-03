@@ -8,7 +8,7 @@
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
 | 核心基础设施 | 124 | 725 |
-| 3D 场景 | 114 | 1141 |
+| 3D 场景 | 115 | 1143 |
 | 菜单 & UI | 75 | 386 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 19 | 140 |
@@ -1565,6 +1565,8 @@
 | `setProcMotionVpdApplyEnabled()` | `scene/motion/proc-motion-bridge` | — |
 | `stopProcMotion()` | `scene/motion/proc-motion-bridge` | — |
 | `updateProcMotion()` | `scene/motion/proc-motion-bridge` | — |
+| `ProcMotionControllerBase()` | `scene/motion/proc-motion-controller` | — |
+| `_clearVmdData()` | `scene/motion/proc-motion-controller` | 清除模型上的 vmdData/vmdName（纯工具函数，无状态依赖）。 |
 | `ProcMotionParamsMixin()` | `scene/motion/proc-motion-params` | 参数 setter 群 mixin —— 混入 ProcMotionControllerBase。 |
 | `_filterVmdBones()` | `scene/motion/vmd-layers` | 过滤 VMD 二进制数据，只保留指定骨骼的关键帧。 |
 | `addGazeLayer()` | `scene/motion/vmd-layers` | 添加一个视线追踪（gaze）图层。 |

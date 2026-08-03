@@ -15,6 +15,7 @@ scope:
 adr:
   - ADR-021
 symbols:
+  - ProcMotionController
   - activateGazeTracking
   - createProcBeatDetector
   - disposeProcMotion
