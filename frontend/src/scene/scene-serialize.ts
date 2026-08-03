@@ -1486,14 +1486,6 @@ function migrateToV1(data: Record<string, unknown>): boolean {
     return false;
 }
 
-// 未来迁移示例：
-// function migrateToV2(data: Record<string, unknown>): boolean {
-//     if ((data.version as number) >= 2) return false;
-//     // ... 变更逻辑 ...
-//     data.version = 2;
-//     return true;
-// }
-
 /** 迁移注册表：新增迁移在此追加。 */
 const _sceneMigrators: SceneMigrator[] = [migrateToV1];
 

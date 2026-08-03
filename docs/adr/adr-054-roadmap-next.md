@@ -101,8 +101,8 @@
 
 ### P3（远期探索）
 9. ~~Soft Body / Ragdoll~~ ❌ 已移除（XPBD 全栈删除，commit 530af6e，无 WASM 等价）
-10. AR 相机模式 Phase 3 / WebXR（[ADR-072](adr/adr-072-webxr-plane-detection.md)，待探针）
-11. 原生 ARCore/ARKit（[ADR-073](adr/adr-073-native-arcore-arkit.md)，远期兜底）
+10. AR 相机模式 Phase 3 / WebXR（[ADR-072](adr-072-webxr-plane-detection.md)，待探针）
+11. 原生 ARCore/ARKit（[ADR-073](adr-073-native-arcore-arkit.md)，远期兜底）
 12. iOS 端
 13. ~~SSS（待上游 PBR proxy）~~ ✅ 阻塞已解除（PBRMaterialProxy 实现），待 ADR-188 PBR 迁移后启动
 14. Lua / JS 脚本层（自动化工作流）

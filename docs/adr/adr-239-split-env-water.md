@@ -5,7 +5,7 @@
 >
 > **编号**: 239
 >
-> **关联**: [ADR-237](adr-237-split-overlong-modules.md)（P3 来源，超限模块拆分路线图）、[ADR-062](adr-062-环境系统架构.md)（env 子系统架构）、[ADR-115](adr-115-环境系统重构.md)（env 重构，含材质资源生命周期）、[ADR-138](adr-138-环境系统三期.md)（env 三期，水面/涟漪能力边界）、[ADR-151](adr-151-反射质量.md)（reflectionMode 全局覆盖——`waterReflection.getQuality` 依赖）
+> **关联**: [ADR-237](adr-237-split-overlong-modules.md)（P3 来源，超限模块拆分路线图）、[ADR-062](adr-062-water-reflection-render-target.md)（env 子系统架构）、[ADR-115](adr-115-stylized-water-glint-research.md)（env 重构，含材质资源生命周期）、[ADR-138](adr-138-env-dispatcher-decouple.md)（env 三期，水面/涟漪能力边界）、[ADR-151](adr-151-reflection-unified-architecture.md)（reflectionMode 全局覆盖——`waterReflection.getQuality` 依赖）
 >
 > **来源**: ADR-237 P3 立项要求；2026-08-03 摸查 `frontend/src/scene/env/env-water.ts` 确认 1569 行、约 30 个顶层符号、五类职责混杂，且 `_envSys` 单例共享面实测可支撑拆边界。
 

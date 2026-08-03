@@ -193,7 +193,7 @@ export interface CatwalkParams {
 ## 相关 ADR
 
 - [ADR-061](adr-061-advanced-bone-systems.md) — Bone Override / 骨骼通道，Catwalk 复用同一骨骼写入路径
-- [ADR-037](adr-037-formation-camera.md) — 队形预设 / 运镜，traverse 位移可与之联动
+- [ADR-037](adr-037-session-ui-improvements.md) — 队形预设 / 运镜，traverse 位移可与之联动
 - [ADR-085](adr-085-feet-adjustment.md) — 脚部地面跟随，与 Catwalk 抬腿姿态正交、顺序已定义
 - [ADR-079](adr-079-perception-layer-expansion.md) — 感知层（呼吸/眨眼），Catwalk 不应抑制 always-on 感知
 - `docs/competitive-analysis.md` — Catwalk 竞品行已登记（MikuMikuAR ❌ / DanceXR ✅）

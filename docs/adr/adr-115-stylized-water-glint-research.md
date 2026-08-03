@@ -862,7 +862,7 @@ P2（焦散强度 + UI 预设化）涉及的所有变更点，实施时逐项打
 - [ADR-062](adr-062-water-reflection-render-target.md) — 水面反射 RT（本 ADR 不改动其架构）
 - [ADR-114](adr-114-ground-reflection-enhancement.md) — 地面反射增强（平面反射引擎共用）
 - [ADR-026](adr-026-environment-system-enhancement.md) — 环境系统增强（水面子系统所属）
-- [ADR-113](adr-113-volumetric-clouds.md) — 体积云系统（云壳渲染对水面反射的影响见§九）
+- [ADR-113](adr-113-horizon-volumetric-clouds.md) — 体积云系统（云壳渲染对水面反射的影响见§九）
 
 ---
 
