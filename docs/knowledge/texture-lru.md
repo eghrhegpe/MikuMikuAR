@@ -4,9 +4,9 @@ kind: texture_lru
 name: 纹理 LRU 缓存
 category: scene
 scope:
-  - scene/manager/texture-lru.ts
+  - scene/shared/texture-lru.ts
 source_files:
-  - frontend/src/scene/manager/texture-lru.ts
+  - frontend/src/scene/shared/texture-lru.ts
 adr:
   - ADR-189
 symbols:
