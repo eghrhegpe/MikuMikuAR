@@ -184,11 +184,11 @@ describe('pinPerception', () => {
 });
 
 describe('setPerceptionStateFor', () => {
-    it('可为指定模型独立设置感知状态', () => {
+    it('写入场景级单例（所有模型共享参数）', () => {
         sut.setPerceptionStateFor('m1', { breathEnabled: false });
         expect(sut.getPerceptionStateFor('m1').breathEnabled).toBe(false);
-        // 未激活时 fallback 状态不受影响
-        expect(sut.getPerceptionState().breathEnabled).toBe(true);
+        // [fix:P3] 场景级存储：参数对所有模型一致
+        expect(sut.getPerceptionState().breathEnabled).toBe(false);
     });
 });
 

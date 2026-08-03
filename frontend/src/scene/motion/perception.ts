@@ -140,9 +140,11 @@ function _getFocusedState(): PerceptionState {
     return _perceptionState;
 }
 
-/** 更新场景级感知参数（所有 context 共享引用，改动即时对所有模型生效） */
+/** 更新场景级感知参数（所有 context 共享引用，改动即时对所有模型生效）。
+ *  [fix:P3] 原地更新而非替换引用：context.state 捕获的是 `_perceptionState` 对象引用，
+ *  若替换为 `{...old, ...partial}` 新对象，已存在 context 仍指向旧对象 → 参数不生效。 */
 function _setFocusedState(partial: Partial<PerceptionState>): void {
-    _perceptionState = { ..._perceptionState, ...partial };
+    Object.assign(_perceptionState, partial);
 }
 
 /** 局部更新焦点上下文状态（用于各单项 setter） */

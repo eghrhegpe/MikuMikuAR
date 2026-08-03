@@ -104,16 +104,17 @@ describe('ADR-164 模型加载自动激活', () => {
 // =====================================================================
 
 describe('ADR-166 多模型隔离', () => {
-    it('1. setPerceptionStateFor 写入不同 context 互不干扰', () => {
+    it('1. setPerceptionStateFor 写入场景级单例（所有模型共享参数）', () => {
         sut.setPerceptionStateFor('m1', { breathFrequency: 0.5 });
         sut.setPerceptionStateFor('m2', { breathFrequency: 0.7 });
 
-        expect(sut.getPerceptionStateFor('m1').breathFrequency).toBe(0.5);
+        // [fix:P3] 场景级存储：最后一次写入生效，对所有模型一致
+        expect(sut.getPerceptionStateFor('m1').breathFrequency).toBe(0.7);
         expect(sut.getPerceptionStateFor('m2').breathFrequency).toBe(0.7);
-        expect(sut.getPerceptionState().breathFrequency).toBe(0.3); // fallback 默认不受影响
+        expect(sut.getPerceptionState().breathFrequency).toBe(0.7);
     });
 
-    it('2. 焦点 setBreathFrequency 不污染 pinned 模型 ctx.state', () => {
+    it('2. 焦点 setBreathFrequency 写入场景级单例（pinned 模型同参）', () => {
         mockState.focusedModelId = 'm1';
         mockState.modelManager.get.mockReturnValue({
             mmdModel: { mesh: { isDisposed: () => false }, runtimeBones: [] },
@@ -122,11 +123,11 @@ describe('ADR-166 多模型隔离', () => {
         sut.pinPerception('m2');
         sut.setPerceptionStateFor('m2', { breathFrequency: 0.3 });
 
-        // 焦点 setter 仅影响焦点 context，不污染 pinned
+        // [fix:P3] 场景级存储：焦点 setter 对所有模型生效（含 pinned）
         sut.setBreathFrequency(0.7);
 
         expect(sut.getPerceptionStateFor('m1').breathFrequency).toBe(0.7);
-        expect(sut.getPerceptionStateFor('m2').breathFrequency).toBe(0.3);
+        expect(sut.getPerceptionStateFor('m2').breathFrequency).toBe(0.7);
     });
 
     it('3. 非感知模块释放骨骼时触发感知层自动 reclaim', async () => {
