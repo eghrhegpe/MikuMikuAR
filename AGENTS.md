@@ -27,6 +27,7 @@
 | 查模块依赖图 | `npm run dep:graph`（Mermaid 图） / `npm run dep:graph:list`（缩进列表） |
 | 查某模块「现在长啥样、去哪找」的现状快照 | `docs/knowledge/`（先读 `README.md` 索引定位卡片，grep 卡正文锁定符号，再按 `source_files` 跳源码；比直接 grep 全量 .ts 省上下文） |
 | 查/更新函数索引 | `docs/function-map.md`（由 `npm run gen:funcmap` 自动生成，改动后运行 `npm run check:funcmap` 校验） |
+| 查某符号的全部消费者（重构前影响面预判） | `npm run check:consumers -- <符号名>`（列出定义处/直接 import/namespace 消费/再导出中转，各带 file:line；`--json` 给脚本/AI 消费） |
 | 校验文档漂移 | `npm run check:docs`（根目录运行，ADR 索引同步 + 架构树完整性 + 知识卡 source_files 有效性）；`git push` 后 pre-push hook 自动落 `docs/.doc-check-next-steps.md`（AI 可读的下一步建议简报，含知识卡缺口/architecture 路由缺口/AGENTS 手写事实 WARN），读它即可拿精准下一步 |
 | 查项目技术 | `docs/architecture.md` |
 | 查函数大全 | `grep docs/function-map.md` |
