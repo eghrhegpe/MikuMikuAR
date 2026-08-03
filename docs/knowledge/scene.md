@@ -17,6 +17,9 @@ scope:
   - frontend/src/scene/**
 source_files:
   - frontend/src/scene/scene.ts
+  # [doc:adr-238] 音频/AR 功能下沉后归属（scene.ts 不再 re-export）
+  - frontend/src/outfit/audio.ts
+  - frontend/src/scene/ar/ar-scene.ts
 tests:
   - frontend/src/__tests__/scene-model.test.ts
   - frontend/src/__tests__/scene-stage.test.ts
@@ -38,6 +41,7 @@ symbols:
   - animateCameraVmd
   - applyEnvState
   - applyFrameControl
+  - applyGain
   - applyMatSssState
   - applyMatState
   - applySss
@@ -47,6 +51,7 @@ symbols:
   - autoLoop
   - canUndo
   - captureThumbnail
+  - clearAudio
   - clearCameraVmd
   - disposeAudio
   - disposeModelSssState
@@ -58,10 +63,15 @@ symbols:
   - focusedModel
   - focusedModelId
   - formatTime
+  - getAudioName
+  - getAudioOffset
+  - getAudioPath
   - getCameraMode
   - getCameraState
   - getCameraVmdName
   - getCameraVmdPath
+  - getCurrentTime
+  - getDuration
   - getMatCatGroups
   - getMatCatParams
   - getMatDetailList
@@ -69,7 +79,10 @@ symbols:
   - getMatSssParams
   - getMatSssState
   - getMatState
+  - getRepeatModeStr
   - getScene
+  - getStreamPlayer
+  - getVolume
   - hasCameraVmd
   - initCameraSystem
   - initLoader
@@ -92,9 +105,13 @@ symbols:
   - mmdRuntime
   - modelManager
   - modelRegistry
+  - nextTrack
   - normPath
+  - notifyBeatDetectorReset
   - offerSceneUndo
   - offerSceneUndoAndRefresh
+  - pauseAudio
+  - playAudio
   - popUndoSnapshot
   - pushUndoSnapshot
   - resetMatCatParams
@@ -102,10 +119,13 @@ symbols:
   - resetSingleMatParams
   - resolveFileUrl
   - restoreUndoSnapshot
+  - resumeAudio
   - scene
+  - seekAudio
   - seekDragging
   - seekFromEvent
   - setARMode
+  - setAudioOffset
   - setAutoLoop
   - setCameraState
   - setFocusedModelId
@@ -117,9 +137,12 @@ symbols:
   - setMatSssParams
   - setMmdRuntime
   - setModelRegistry
+  - setRepeatMode
   - setSeekDragging
   - setStatus
   - setTriggerAutoSave
+  - setVolume
+  - stopAudio
   - switchCameraMode
   - syncAudioPlayback
   - takeARScreenshot

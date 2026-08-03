@@ -285,7 +285,7 @@
 | `canvasToBase64()` | `core/image:13` | 将 Canvas 编码为 base64 字符串（剥离 data:image/...;base64, 前缀）。 |
 | `thumbDataUrl()` | `core/image:64` | Build a data URL from a base64 thumbnail, sniffing PNG/JPEG/WebP from the header. |
 | `toBase64()` | `core/image:54` | Encode a string as base64 (UTF-8 safe). |
-| `bootstrap()` | `core/init:546` | 应用启动入口：接线 dev-hooks / render-loop / events 并启动渲染循环。 |
+| `bootstrap()` | `core/init:551` | 应用启动入口：接线 dev-hooks / render-loop / events 并启动渲染循环。 |
 | `jsonParse()` | `core/json-stringify:10` | Safely parse JSON; returns null on failure instead of throwing. |
 | `jsonStringify()` | `core/json-stringify:5` | Format a value as pretty-printed JSON (2-space indent). |
 | `addRecentMotion()` | `core/library-state:82` | — |
@@ -423,7 +423,7 @@
 | `safeCallAsync()` | `core/safe-call:46` | 安全执行异步函数；异常时记录 logWarn(tag, msg, err)，返回的 Promise 解析为 undefined（不 reject），等价于 `promise.cat |
 | `safeCallVoid()` | `core/safe-call:32` | 同 safeCall，但 fn 无返回值。 |
 | `SceneActions()` | `core/scene-action-bridge:8` | — |
-| `getSceneAction()` | `core/scene-action-bridge:170` | 读取单个场景操作（core/action-defs 侧调用；未注册返回 undefined） |
+| `getSceneAction()` | `core/scene-action-bridge:172` | — |
 | `registerSceneAction()` | `core/scene-action-bridge:162` | 注册单个场景操作（scene 侧启动时调用） |
 | `createDefaultFeetState()` | `core/scene-state:47` | [doc:adr-085] 脚部地面跟随默认状态（Phase A 参数） |
 | `focusedModelId()` | `core/scene-state:62` | — |
@@ -511,8 +511,8 @@
 | `UIState()` | `core/types:438` | — |
 | `VmdLayer()` | `core/types:110` | VMD 动画图层 — 支持多 VMD 叠加（Motion Layers） |
 | `UiActions()` | `core/ui-action-bridge:8` | — |
-| `getUiAction()` | `core/ui-action-bridge:68` | 读取单个 UI 行为（core 侧调用；未注册返回 undefined） |
-| `getUiActions()` | `core/ui-action-bridge:74` | 读取 UI 行为集（未完整注册时返回 null） |
+| `getUiAction()` | `core/ui-action-bridge:70` | 读取单个 UI 行为（core 侧调用；未注册返回 undefined） |
+| `getUiActions()` | `core/ui-action-bridge:82` | 读取 UI 行为集（未完整注册时返回 null） |
 | `registerUiAction()` | `core/ui-action-bridge:63` | 注册单个 UI 行为（menus 侧各模块启动时调用，可重复注册覆盖） |
 | `addColorSliderRow()` | `core/ui-advanced-rows:17` | — |
 | `addModeSlider()` | `core/ui-advanced-rows:305` | — |

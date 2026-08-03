@@ -29,7 +29,6 @@ symbols:
   - applyEnvState
   - applyGround
   - applySky
-  - applyWindToParticles
   - clearGroundRipples
   - clearRipples
   - createClouds

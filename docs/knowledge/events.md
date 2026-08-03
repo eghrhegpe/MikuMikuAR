@@ -61,3 +61,8 @@ use_when:
 - 依赖 `menus/library` 弹窗模型/动作库。
 - 依赖 `platform` 打开外部 URL。
 - 依赖 [`safe-call`](./safe-call.md) 安全执行异步操作。
+
+## UI 入口
+
+- 菜单层级 / 入口函数 / 快捷键统一由 [menu-map.md](./menu-map.md) 机器生成（勿手改）。
+- 运行时动态生成的菜单项（renderCustom / slideRow 等）无法静态提取，缺口由本卡正文说明。
