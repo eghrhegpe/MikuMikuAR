@@ -59,6 +59,10 @@ coverage-tmp/
 coverage-run.log
 vitest.coverage.tmp.config.ts
 
+# Wails dev 运行日志（本地临时产物，不入库）
+dev-run*.log
+wails3-dev-*.log
+
 # Binary / executable artifacts
 *.exe
 *.bak
