@@ -64,13 +64,13 @@
 
 **最大簇 = `core/action-defs/*` + `core/ai/action-registry-defs.ts`（共 13 条边）**：动作定义层本应只定义「动作类型/注册表接口」，却直接 import scene 实现符号——典型依赖方向倒置。
 
-### 1.2 根因二：`motion-algos → scene/motion` 单边（仅 1 条，且为 type-only）
+### 1.2 根因二：`motion-algos → scene/motion` 单边（1 条，type-only，已实施）
 
 ```
 motion-algos/footstep-detect-fallback.ts:23  →  import type { FootLandEvent } from '@/scene/motion/feet-adjustment'
 ```
 
-仅 **1 条边**即形成 11 个环的「枢纽」：所有形如 `scene → motion-algos → scene/motion → … → scene` 的环（③⑤⑨⑪⑬⑭⑮⑯⑱⑲㉑，共 11 个）都必经 `motion-algos → scene/motion`。且它是 `import type`（运行期无代价，仅编译期成环），**拆解成本极低**。
+这是 `motion-algos` 唯一指向 `scene/motion` 的边，属算法层反向依赖集成层。**但实测切断它只消 4 环（21→17），不是初版预估的 11 环**——因为 `scene/motion` 有 **6 路入边**（`scene`×18、`menus`×23、`scene/manager`、`scene/ar`、`core`、`motion-algos`），`scene` 侧仍可经 `scene → scene/motion` 直达，故「必经 `motion-algos → scene/motion`」的判断错误。真正的枢纽在 §1.4 的簇反向边。
 
 ### 1.3 根因三：`scene/manager ↔ outfit` 双向 2-环（2 条边）
 
@@ -82,49 +82,71 @@ outfit/outfit.ts:?                  →  import { _catOf } from '../scene/manage
 
 `scene/manager` 与 `outfit` 互相 import，构成环 ⑩，且不依赖 `core→scene`／`motion-algos→scene/motion`，须独立拆解。
 
-### 1.4 分解结论（可逐步验证）
+### 1.4 分解结论（2026-08-03 实测修正版）
 
-| 阶段 | 切断的边 | 消灭的环 | 边数 |
-|------|----------|----------|------|
-| Phase 1 | `core → scene`（根因一） | ①②⑥⑦⑧⑫⑰⑳（纯 core 抵达类） | 35 |
-| Phase 2 | `motion-algos → scene/motion`（根因二） | ③⑤⑨⑪⑬⑭⑮⑯⑱⑲㉑（含 type-only 枢纽） | 1 |
-| Phase 3 | `scene/manager ↔ outfit`（根因三） | ⑩ | 2（双向） |
-| **合计** | | **21 → 0** | **38** |
+初版（本 ADR 草稿）预估「21 = 9 + 11 + 1」；Phase 1 实际落地后仅 21→17，**重新分解**为 17 个残留环，按共同骨架归类：
 
-> 注：环 ② 同时含 `core→scene` 与 `motion-algos→scene/motion`，任一阶段即可消除；上表按「首个命中阶段」归类，不重复计。
+```
+core 系 9 环：core → scene → {motion-algos→…→scene/shared | scene/motion → … → X} → core   （根因一）
+scene 系 7 环：scene → scene/motion → menus → X → scene                                     （簇反向边）
+outfit 2-环： scene/manager → outfit → scene/manager                                         （根因三）
+```
+
+| 阶段 | 切断的边 | 实测/预期 | 边数 |
+|------|----------|-----------|------|
+| Phase 1（✅ 已实施） | `motion-algos → scene/motion`（type-only） | 21 → **17**（消 4 环） | 1 |
+| Phase 2 | `core → scene`（根因一，35 条） | 17 → **8**（消 9 个 core 系环） | 35 |
+| Phase 3 | `scene/motion → menus`（2 条）+ `scene/motion → scene`（2 条）——簇反向边 | 8 → **1**（消 7 个 scene 系环） | 4 |
+| Phase 4 | `scene/manager ↔ outfit`（根因三） | 1 → **0** | 2（双向） |
+| **合计** | | **21 → 0** | **42** |
+
+**簇反向边证据（脚本实测，切断即消 7 个 scene 系环）**：
+
+| 边 | 边数 | 文件 |
+|----|------|------|
+| `scene/motion → menus` | 2 | `scene/motion/motion-modules/module-base.ts`、`types.ts`（domain import UI，方向倒置） |
+| `scene/motion → scene` | 2 | `scene/motion/perception.ts`、`proc-motion-bridge.ts`（domain import 中央单例） |
+
+> 注：`scene → scene/motion`（18 条）与 `menus → scene/motion`（23 条）是**合法下行边**（中央/UI 消费 domain），不动；只切 domain 的**上行反向边**。
 
 ---
 
-## 2. 决策：三阶段拆解，按 ROI 排序
+## 2. 决策：四阶段拆解（Phase 1 已实施，按依赖方向恢复顺序推进）
 
-### Phase 2（先做，最快解 CI 阻断）— 切断 `motion-algos → scene/motion` 的 type-only 边
+### Phase 1（✅ 已完成，commit `09ebe60a`）— 切断 `motion-algos → scene/motion` type-only 边
 
-- **目标**：1 条边 → 消灭 11 环。
-- **拆法**：`FootLandEvent` 类型从 `scene/motion/feet-adjustment.ts` 下沉到共享叶（二选一，按零依赖原则）：
-  - `motion-algos` 内部新增 `feet-event.ts`（纯类型，无 scene 依赖），`feet-adjustment.ts` 与 `footstep-detect-fallback.ts` 均从这里 import；或
-  - 并入既有 `scene/shared/` 叶（与 ADR-236 `texture-lru` 同层）。
-- **风险**：极低——`import type` 仅编译期，重定位后运行期行为零变化；`footstep-detect-fallback` 仅消费类型。
-- **验证**：`check:circular --strict` 应剩 **10 环**（①及 core 类 9 + ⑩）；`tsc --noEmit` + `vitest run motion-algos`。
+- **目标**：21 → 17。
+- **拆法**：`FootLandEvent` 类型下沉 `motion-algos/feet-event.ts`（纯类型零依赖叶）；`feet-adjustment.ts` import + re-export 保持既有消费者兼容；`footstep-detect-fallback.ts` 改从 `./feet-event` 直取。
+- **实测**：`check:circular --strict` 21 → 17（消 4 环）。**教训**：单一 type-only 边不是唯一枢纽，`scene/motion` 有 6 路入边，须按簇整体治理。
 
-### Phase 1（结构根治）— 解构 `core → scene` 白名单根环（35 条边）
+### Phase 2（结构根治）— 解构 `core → scene` 白名单根环（35 条边）
 
-- **目标**：消除 `core` 对 `scene` 的全部依赖，使 `core` 回归叶子；消灭 9 环，并顺带令 12 个白名单历史环（含 `core→scene→core` 等）一并消失，可收紧白名单。
+- **目标**：消除 `core` 对 `scene` 的全部依赖，使 `core` 回归叶子；消 9 个 core 系环（17 → 8），并顺带令 12 个白名单历史环（含 `core→scene→core` 等）一并消失，可收紧白名单。
 - **拆法（依赖反转 + 注入，不动运行期行为）**：
   1. **动作定义迁移（13 条边，最大簇）**：`core/action-defs/*` 与 `core/ai/action-registry-defs.ts` 改为——core 只定义「动作 id / handler 类型 / 注册表接口（`registerAction(id, handler)` + `ActionContext`）」；scene 侧各模块在 bootstrap 时注册 handler（handler 内部 import scene 符号）。迁移后 `core/action-defs` 不再 import `scene/*`。
-  2. **启动/调试/事件层 DI（其余 22 条边）**：`core/init.ts`、`dev-hooks.ts`、`events.ts`、`render-loop.ts`、`load-manager.ts`、`mmar-globals.ts`、`shortcut-app.ts`、`shortcut-app.ts` 对 `scene` 单例的 import，改为由 scene 层在启动时**把实例/回调注入 core**（构造函数参数 / setter / 事件订阅），core 只持接口或 `unknown` 句柄。
+  2. **启动/调试/事件层 DI（其余 22 条边）**：`core/init.ts`、`dev-hooks.ts`、`events.ts`、`render-loop.ts`、`load-manager.ts`、`mmar-globals.ts`、`shortcut-app.ts` 对 `scene` 单例的 import，改为由 scene 层在启动时**把实例/回调注入 core**（构造函数参数 / setter / 事件订阅），core 只持接口或 `unknown` 句柄。
 - **风险**：中——涉及启动链路（`init.ts`/`dev-hooks.ts`/`render-loop.ts`）与动作分发，须保证注入时序与 ADR-236「改前先 commit、独立 commit」纪律；参照 `texture-lru` 下沉先例。
-- **验证**：`check:circular --strict` 应剩 **1 环**（⑩）；`tsc --noEmit` + `vitest`（init / dev-hooks / action-registry 相关 4 文件全绿）。
+- **验证**：`check:circular --strict` 应剩 **8 环**（7 个 scene 系 + ⑩）；`tsc --noEmit` + `vitest`（init / dev-hooks / action-registry 相关 4 文件全绿）。
 
-### Phase 3（收尾）— 解 `scene/manager ↔ outfit` 2-环（2 条边）
+### Phase 3（簇反向边）— 切 `scene/motion` 的两条上行边（4 条 import）
 
-- **目标**：消灭最后 1 环 ⑩。
+- **目标**：17 中的 7 个 scene 系环（`scene → scene/motion → menus → X → scene`）全消（8 → 1）。
+- **拆法（只切 domain 的上行反向边，合法下行边 18+23 条不动）**：
+  1. **`scene/motion → menus`（2 条：`motion-modules/module-base.ts`、`types.ts`）**：domain import UI 方向倒置——被消费的符号（menu schema 类型/常量）下沉 `scene/shared` 或 `core` 叶，`module-base/types` 改为经回调/事件向 menus 注册，不再 import menus。
+  2. **`scene/motion → scene`（2 条：`perception.ts`、`proc-motion-bridge.ts`）**：domain import 中央单例 `scene.ts`——改为经参数/注入拿 `scene` 实例（启动时由 scene 层注入），或把依赖 `scene.ts` 的片段上移/下沉。
+- **风险**：中——涉及 motion-modules 注册机制与 proc-motion/perception 对 scene 单例的消费，需逐条评估被 import 符号的归属。
+- **验证**：`check:circular --strict` 应剩 **1 环**（⑩）；`tsc --noEmit` + `vitest`（motion-modules / proc-motion-bridge / perception 相关全绿）。
+
+### Phase 4（收尾）— 解 `scene/manager ↔ outfit` 2-环（2 条边）
+
+- **目标**：消灭最后 1 环 ⑩（1 → 0）。
 - **拆法**：
   - `scene/manager → outfit`：`model-manager.ts:30`（`disposeOverlay/restoreMaterials`）、`model-ops.ts:22`（`disposeAudio`）——这些是「卸载模型时清理 outfit」的副作用，改为经 **事件/回调注入**：`scene/manager` 在模型卸载时派发事件，`outfit` 自行监听清理；或把 `outfit-overlay/audio` 的清理函数下沉到 `scene/shared` 叶供 manager 调用（纯函数、无 outfit 反向依赖）。
   - `outfit → scene/manager`：`outfit/outfit.ts` import `_catOf from '../scene/manager/material'`——把 `_catOf` 纯函数下沉到 `scene/shared/material-cat.ts`，两侧均引用下沉模块，切断互引。
 - **风险**：低——清理/分类函数纯函数化，无状态耦合。
 - **验证**：`check:circular --strict` → **0 环**。
 
-### 收尾（三阶段全完成后）
+### 收尾（全部完成后）
 
 1. `node scripts/check-circular.mjs --update-allowlist` 收紧白名单（core→scene 等历史环一并消失）。
 2. `package.json`：将 `check:circular --strict` 挂入 `check:docs` 链（ADR-236 已注明「待整体环归零后转正」——本 ADR 完成后达标）。
@@ -137,9 +159,9 @@ outfit/outfit.ts:?                  →  import { _catOf } from '../scene/manage
 | 方案 | 评估 |
 |------|------|
 | A. 仅 `--update-allowlist` 吞掉 21 环 | ❌ 掩盖真实互依赖（恰是 `core→scene` 根环使 447 条 `menus→core` 全成环），门禁失效、运行时初始化顺序隐患照旧——ADR-236 已定性「不吞白名单」|
-| B. 只做 Phase 2（1 条边）不碰 core→scene | ⚠️ 可立刻把 21→10、解大部分 CI 阻断，但留下 `core→scene` 根环（9 环）未治，白名单继续掩盖结构性债务；作为**过渡**可接受，不作为终点 |
-| C. 全量重构（一次性拆 38 边） | ❌ 改动面过大、回归风险高；违背「小步验证、每阶段可回滚」纪律 |
-| **D. 三阶段（本 ADR，采纳）** | ✅ Phase 2 秒级解 CI + Phase 1 结构根治 + Phase 3 收尾，每阶段有 `check:circular` 硬验证 |
+| B. 只做 Phase 1（1 条边）不碰 core→scene | ⚠️ 已实施（21→17），解部分 CI 阻断；但 `core→scene` 根环未治，白名单继续掩盖结构性债务；作为**过渡**可接受，不作为终点 |
+| C. 全量重构（一次性拆 42 边） | ❌ 改动面过大、回归风险高；违背「小步验证、每阶段可回滚」纪律 |
+| **D. 四阶段（本 ADR，采纳）** | ✅ Phase 1 秒级解 CI（已实施）+ Phase 2 结构根治 + Phase 3 簇反向 + Phase 4 收尾，每阶段有 `check:circular` 硬验证 |
 
 ---
 
@@ -147,7 +169,8 @@ outfit/outfit.ts:?                  →  import { _catOf } from '../scene/manage
 
 - `core/action-defs/*`、`core/ai/action-registry-defs.ts`：改为注册表模式，scene 侧注册 handler。
 - `core/init.ts`、`dev-hooks.ts`、`events.ts`、`render-loop.ts`、`load-manager.ts`、`mmar-globals.ts`、`shortcut-app.ts`：scene 实例/回调注入，不再 import scene。
-- `motion-algos/footstep-detect-fallback.ts` + `scene/motion/feet-adjustment.ts`：`FootLandEvent` 类型下沉共享叶。
+- `motion-algos/footstep-detect-fallback.ts` + `scene/motion/feet-adjustment.ts`：`FootLandEvent` 类型下沉 `motion-algos/feet-event.ts`（**Phase 1 已实施**）。
+- `scene/motion/motion-modules/{module-base,types}.ts`、`scene/motion/{perception,proc-motion-bridge}.ts`：切上行反向边，被消费符号下沉/注入（Phase 3）。
 - `scene/manager/{model-manager,model-ops}.ts`、`outfit/{outfit,outfit-overlay,audio}.ts`、`scene/manager/material.ts`：清理/分类函数下沉 `scene/shared` 或事件化。
 - `scripts/circular-allowlist.json`：环归零后清理。
 - `package.json`：`check:circular --strict` 挂入 `check:docs`。
@@ -157,7 +180,7 @@ outfit/outfit.ts:?                  →  import { _catOf } from '../scene/manage
 
 ## 5. 验证
 
-- 每阶段末：`npm run check:circular -- --strict` 环数分别降至 **10 → 1 → 0**。
+- 每阶段末：`npm run check:circular -- --strict` 环数分别降至 **17（Phase 1 已达成）→ 8 → 1 → 0**。
 - `tsc --noEmit` 零错误（每阶段）。
 - `vitest` 相关模块全绿（motion-algos / action-registry / init / dev-hooks / outfit / model-manager）。
 - 全量归零后：`--update-allowlist` + `check:docs` 链含 `check:circular --strict` exit 0。
@@ -166,4 +189,4 @@ outfit/outfit.ts:?                  →  import { _catOf } from '../scene/manage
 
 ## 6. 关联说明（对 ADR-236 的订正）
 
-ADR-236 实施记录称「剩余 21 个新增环全部不含 render（属 motion-algos↔scene/motion↔menus↔core 等其他模块）」**与实测不符**：环 ① 明确含 `scene/render → scene/shared`，且其 `scene/shared → core` 边正是 ADR-236 Phase 1 把 `texture-lru` 下沉到 `scene/shared` 时引入（`scene/shared/texture-lru.ts → core/wails-bindings.ts`）——即 ADR-236 的修复**自身制造了环 ①**。本 ADR Phase 1（消除 `core→scene`）会一并消除环 ①。建议同步订正 ADR-236 实施记录该行表述。
+ADR-236 实施记录称「剩余 21 个新增环全部不含 render（属 motion-algos↔scene/motion↔menus↔core 等其他模块）」**与实测不符**：环 ① 明确含 `scene/render → scene/shared`，且其 `scene/shared → core` 边正是 ADR-236 Phase 1 把 `texture-lru` 下沉到 `scene/shared` 时引入（`scene/shared/texture-lru.ts → core/wails-bindings.ts`）——即 ADR-236 的修复**自身制造了环 ①**。本 ADR Phase 2（消除 `core→scene`）会一并消除环 ①。建议同步订正 ADR-236 实施记录该行表述。
