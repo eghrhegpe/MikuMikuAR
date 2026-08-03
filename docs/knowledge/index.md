@@ -290,6 +290,7 @@
 | [ADR-215](../adr/adr-215-eliminate-prop-kind.md) | 取消「道具」资源类型 — 模型附属关系替代 prop + accessory 体系 | [模型注册表与生命周期管理](./model-manager.md) · [场景序列化与自动保存](./scene-serialize.md) |
 | [ADR-226](../adr/adr-226-ground-material-spec-single-source.md) | 地面材质单一事实源重构（GroundMaterialSpec） | [地面材质单一事实源（GroundMaterialSpec）](./env-ground-spec.md) |
 | [ADR-229](../adr/adr-229-e2e-automation-advancement.md) | E2E 自动化推进 —— 从 schema 到测试零映射 | [渲染层 DOM 契约单源](./dom-contract.md) |
+| [ADR-237](../adr/adr-237-split-overlong-modules.md) | 超限模块拆分计划 —— 250LOC 天花板的优先级拆解路线图 | [程序化动作系统](./proc-motion-bridge.md) · [多 VMD 叠加系统](./vmd-layers.md) |
 
 ## 索引与路由（非卡片）
 

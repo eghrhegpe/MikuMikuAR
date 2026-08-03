@@ -64,10 +64,13 @@ export {
 };
 
 // ── 感知状态（[doc:adr-162] Phase 1: Map<modelId, Context>） ──
+// [fix:P3] 场景级存储：感知参数收敛为单一 `_perceptionState`（所有 context 共享引用），
+// 各模型的差异仅保留在运行时字段（lastOffsets/pool/gazeCache/激活态）。
+// 此前 per-model `ctx.state` 与场景级编辑入口（UI 仅焦点可调）错配——参数本无需逐模型配置。
 
-/** 当无焦点模型时的状态回退（兼容旧单例行为） */
-let _fallbackState: PerceptionState = { ...DEFAULT_PERCEPTION_STATE };
-/** 每模型感知上下文 */
+/** 场景级感知参数（唯一参数源；context.state 共享此引用，子模块读 ctx.state 即读到它） */
+let _perceptionState: PerceptionState = { ...DEFAULT_PERCEPTION_STATE };
+/** 每模型感知上下文（仅运行时字段，不再持有独立参数副本） */
 const _contexts = new Map<string, PerceptionContext>();
 /** 当前焦点模型 ID */
 let _focusedContextId: string | null = null;
@@ -106,7 +109,8 @@ function _getOrCreateContext(modelId: string): PerceptionContext {
     if (!ctx) {
         ctx = {
             modelId,
-            state: { ..._fallbackState },
+            // [fix:P3] 共享场景级参数引用：子模块读 ctx.state 即读到统一参数（无 per-model 副本）
+            state: _perceptionState,
             isActive: false,
             isPinned: false,
             lastOffsets: {
@@ -131,24 +135,14 @@ function _getOrCreateContext(modelId: string): PerceptionContext {
     return ctx;
 }
 
-/** 获取焦点上下文的状态（无焦点时回退到 fallback） */
+/** 获取场景级感知参数（唯一参数源；原按焦点/fallback 读取已统一） */
 function _getFocusedState(): PerceptionState {
-    if (!_focusedContextId) {
-        return _fallbackState;
-    }
-    return _contexts.get(_focusedContextId)?.state ?? _fallbackState;
+    return _perceptionState;
 }
 
-/** 直接替换焦点上下文状态（用于 setPerceptionState 批量更新） */
+/** 更新场景级感知参数（所有 context 共享引用，改动即时对所有模型生效） */
 function _setFocusedState(partial: Partial<PerceptionState>): void {
-    if (_focusedContextId) {
-        const ctx = _contexts.get(_focusedContextId);
-        if (ctx) {
-            ctx.state = { ...ctx.state, ...partial };
-        }
-    } else {
-        _fallbackState = { ..._fallbackState, ...partial };
-    }
+    _perceptionState = { ..._perceptionState, ...partial };
 }
 
 /** 局部更新焦点上下文状态（用于各单项 setter） */
