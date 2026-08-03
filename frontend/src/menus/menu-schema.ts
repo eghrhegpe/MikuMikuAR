@@ -199,3 +199,11 @@ export function setStateValue(
 export function getBindFn(path: StatePath): () => unknown {
     return () => getStateValue(path);
 }
+
+// [doc:adr-238] E2E 状态读取器注入：core/dev-hooks 的 window.__state 钩子经
+// core/e2e-state-bridge 获取 getStateValue（零依赖叶，不拖 scene 链），
+// 本模块不再被 core 静态 import（切断 core→menus 反向边）。模块加载即注册。
+import { setE2EStateReader } from '../core/e2e-state-bridge';
+setE2EStateReader((path: string, modelId?: string): unknown =>
+    getStateValue(path as StatePath, modelId)
+);
