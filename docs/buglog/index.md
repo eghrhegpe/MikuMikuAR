@@ -2,13 +2,14 @@
 
 # Bug 日志索引
 
-> 排障记录共 **47** 篇：29 篇按日期归档、18 篇早期记录（命名规范确立前）。每篇记录现象、根因、修复与验证方式，供回归时快速比对。
+> 排障记录共 **48** 篇：30 篇按日期归档、18 篇早期记录（命名规范确立前）。每篇记录现象、根因、修复与验证方式，供回归时快速比对。
 
 > 写作规范见 [Buglog 规范](./README.md)。
 
-## 2026 年 8 月（7）
+## 2026 年 8 月（8）
 
 - `2026-08-03` [换装/替换模型后，新模型眼睛变纯黑且不受光照影响](./2026-08-03-shared-toon-disposed-on-model-remove.md)
+- `2026-08-03` [babymmd 骨骼绑定告警刷屏（Binding failed 预期行为 + 生产静音）](./2026-08-03-babymmd-binding-warning-noise.md)
 - `2026-08-02` [schema-driven E2E action 交互自动化：三类控件驱动/断言链路坑](./2026-08-02-schema-driven-action-drive-pitfalls.md)
 - `2026-08-02` [模型/换装/音频加载失败无提示](./2026-08-02-resource-load-missing-warning.md)
 - `2026-08-02` [镜面几何参数持久化缺失（config.json 链路断在 Go 端）](./2026-08-02-mirror-geometry-persist-gap.md)
