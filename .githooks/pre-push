@@ -159,6 +159,30 @@ cd "$ROOT" && node scripts/gen-docs-index.mjs --check >/dev/null 2>&1 || {
 }
 note_check "✅ check:docsindex 分区索引同步"
 
+# ── check:guide-gap（菜单面板 ↔ 指南覆盖缺口；人工补写，不可自动修复） ──
+# 依赖 menu-map.md（源码生成）与 guide/（手写）：新增菜单面板后 guide 无对应
+# 操作页 → 用户找不到入口。guide 是手写叙事文档，无法自动生成 → 缺口即阻断，
+# 提示人工补写（与 CI 的 gen-guide-gap --strict 硬门禁对齐）。
+echo "[pre-push] check:guide-gap（缺口即阻断）"
+if ! cd "$ROOT" && node scripts/gen-guide-gap.mjs --strict >/dev/null 2>&1; then
+  echo "❌ 菜单面板存在 guide 覆盖缺口，需人工补写指南页。详情："
+  cd "$ROOT" && node scripts/gen-guide-gap.mjs --strict 2>&1 | tail -15
+  exit 1
+fi
+note_check "✅ check:guide-gap（guide 全覆盖）"
+
+# ── check:menumap（可自动修复，amend 进当前 commit） ──
+# menu-map.md 由声明式菜单 schema 生成：新增/改名面板后未同步 → --check 检出 stale。
+echo "[pre-push] check:menumap"
+cd "$ROOT" && node scripts/gen-menu-map.mjs --check >/dev/null 2>&1 || {
+  echo "⚠️  menu-map.md 未同步，自动修复中..."
+  cd "$ROOT" && node scripts/gen-menu-map.mjs
+  git add docs/knowledge/menu-map.md 2>/dev/null || true
+  git commit --amend --no-edit 2>/dev/null && echo "⚠️  已自动更新 menu-map.md 并 amend 进当前 commit。" || echo "⚠️  已 stage menu-map.md（无 HEAD 可 amend，请手动 commit）。"
+  note_fixed "menu-map.md 已同步"
+}
+note_check "✅ check:menumap 同步"
+
 # ── lint（仅 TS/JS 变更时；不可自动修复） ──
 # 纯 Go / 纯文档变更不触发前端 lint（Go 有 go vet，文档无 lint 必要）
 # npm 不可用时跳过（环境问题不该阻断代码推送）
