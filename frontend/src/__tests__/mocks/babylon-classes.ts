@@ -578,6 +578,11 @@ export class MockStandardMaterial {
     getClassName() {
         return 'StandardMaterial';
     }
+    getScene() {
+        // Material 未挂载到 scene（独立 mock 材质），与 detachSharedTextures 的
+        // `if (!scene) return;` 早退契约一致（model-manager.remove 经此路径）。
+        return null;
+    }
     clone() {
         return this;
     }
