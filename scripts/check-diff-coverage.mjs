@@ -36,8 +36,8 @@ function parseArgs(argv) {
         const eq = a.indexOf("=");
         if (eq >= 0) {
             out[a.slice(2, eq)] = a.slice(eq + 1);
-        } else if (a === "--uncommitted") {
-            out.uncommitted = true;
+        } else if (a === "--uncommitted" || a === "--json") {
+            out[a.slice(2)] = true;
         } else if (i + 1 < argv.length) {
             out[a.slice(2)] = argv[++i];
         }
@@ -176,6 +176,7 @@ function main() {
     const head = args.head ?? "HEAD";
     const threshold = Number(args.threshold ?? "60");
     const uncommitted = Boolean(args.uncommitted);
+    const json = Boolean(args.json);
 
     if (!existsSync(coveragePath)) {
         console.error(`[diff-coverage] 未找到覆盖率文件：${coveragePath}`);
@@ -220,6 +221,11 @@ function main() {
         const missing = !key; // 无覆盖率条目 → 视为 0% 未覆盖
         rows.push({ file: f, pct, missing });
         if (pct < threshold) failures.push({ file: f, pct });
+    }
+
+    if (json) {
+        console.log(JSON.stringify({ threshold, rows, failures }, null, 2));
+        process.exit(failures.length > 0 ? COVERAGE_FAILURE : 0);
     }
 
     console.log(`\n[diff-coverage] 变更源码 ${srcFiles.length} 个，阈值 ${threshold}%（变更行覆盖率）：`);
