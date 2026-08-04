@@ -19,6 +19,9 @@
  * 用法：
  *   node scripts/gen-docs-index.mjs           # 写入
  *   node scripts/gen-docs-index.mjs --check   # 校验是否已同步（CI 用，不写入）
+ * 依赖：node:fs / node:path / node:url
+ * 退出码：1（失败）
+ * 设计意图：文档索引生成器（ADR 目录索引）
  */
 
 import fs from 'node:fs';

@@ -3,6 +3,13 @@
 /**
  * ADR 技术债务检查 - 精简版
  * 只报告有问题的 ADR
+ * check-adr-technical-debt.mjs — ADR 技术债务关键词扫描
+ * 设计意图：ADR 技术债务关键词扫描
+ * 依赖：fs / path / url / 本地模块
+ * 用法：
+ *   node scripts/check-adr-technical-debt.mjs                 # 默认行为
+ *   node scripts/check-adr-technical-debt.mjs --json # JSON 输出（CI/子代理消费）
+ * 退出码：0（无 process.exit 调用）
  */
 
 import fs from 'fs';

@@ -18,6 +18,8 @@
  *   adr         — 可选，关联 ADR 编号，如 ADR-174
  *
  * 零依赖，仅 node:fs / node:path。
+ * 设计意图：知识卡新建工具
+ * 退出码：1（失败）
  */
 
 import fs from 'node:fs';

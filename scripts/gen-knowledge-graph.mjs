@@ -17,6 +17,8 @@
  *   - 全图约 95 卡 + 92 ADR 节点，GitHub / VSCode 的 Mermaid 均可渲染。
  *
  * 零依赖（仅 node:fs / node:path）。
+ * 设计意图：知识图谱生成器
+ * 退出码：1（失败）
  */
 
 import fs from 'node:fs';

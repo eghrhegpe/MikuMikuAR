@@ -6,6 +6,12 @@
  *
  * 设计：纯零依赖（node:fs / node:path / node:url）。
  *      JSON 缺失 / 解析失败 → 写最小占位并退出 0（绝不阻断 hook）。
+ * 设计意图：文档下一步检查（生成器产出物验证）
+ * 用法：
+ *   node scripts/doc-check-next-steps.mjs                 # 默认行为
+ *   node scripts/doc-check-next-steps.mjs --baseline # 启用 baseline
+ *   node scripts/doc-check-next-steps.mjs --json     # JSON 输出（CI/子代理消费）
+ * 退出码：0（无 process.exit 调用）
  */
 import fs from 'node:fs';
 import path from 'node:path';

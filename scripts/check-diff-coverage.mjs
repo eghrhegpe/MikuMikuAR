@@ -15,6 +15,8 @@
  *     --files <csv>       跳过 git，直接用给定文件列表（测试/调试用）
  *
  * 退出码：0 = 全部达标；1 = 存在未达标文件；2 = 配置/用法错误（缺覆盖率文件或 git 失败）
+ * 设计意图：变更文件覆盖率检查（git diff 与覆盖率基线比对）
+ * 依赖：node:child_process / node:fs / node:path / node:url
  */
 
 import { execFileSync } from "node:child_process";

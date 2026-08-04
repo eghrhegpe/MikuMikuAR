@@ -14,6 +14,8 @@
  *   node scripts/gen-routes.mjs --check    # 只校验不写入（CI）
  *
  * 零依赖（仅 node:fs / node:path）。
+ * 设计意图：路由表生成器
+ * 退出码：1（失败）
  */
 
 import fs from 'node:fs';

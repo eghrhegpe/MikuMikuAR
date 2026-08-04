@@ -21,6 +21,8 @@
  *   node scripts/gen-menu-map.mjs --check    # 校验文档是否与源码一致（不一致 exit 1）
  *
  * 零依赖（node:fs / node:path / node:url）。写盘采用原子重命名（.tmp → rename）。
+ * 设计意图：// ---------------------------------------------------------------------------
+ * 退出码：1（失败）
  */
 
 import fs from 'node:fs';

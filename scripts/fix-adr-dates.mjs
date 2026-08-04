@@ -15,6 +15,8 @@
  *   node scripts/fix-adr-dates.mjs adr-066-*  # 只补指定文件
  *
  * 零依赖,仅 node:fs / node:path。保留原文件换行风格(CRLF/LF)。
+ * 退出码：0（无 process.exit 调用）
+ * 设计意图：ADR 日期修复工具
  */
 
 import fs from 'node:fs';

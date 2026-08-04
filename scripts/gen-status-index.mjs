@@ -20,6 +20,8 @@
  * ```
  *
  * 零依赖（仅 node:fs / node:path）。
+ * 设计意图：状态索引生成器
+ * 退出码：1（失败）
  */
 
 import fs from 'node:fs';

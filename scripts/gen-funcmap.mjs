@@ -12,6 +12,8 @@
  * 输出「文件:行」列（findExportLine 定位 export 声明行），grep 索引可直接跳行。
  *
  * 零依赖（仅 node:fs / node:path）。
+ * 退出码：1（失败）
+ * 设计意图：函数地图生成器
  */
 
 import fs from 'node:fs';

@@ -3,6 +3,13 @@
 /**
  * ADR 状态检查脚本 - 精简版
  * 只报告有问题的 ADR
+ * check-adr-status.mjs — ADR 状态分类统计（已完成/进行中/已废弃/未知）
+ * 设计意图：ADR 状态分类统计（已完成/进行中/已废弃/未知）
+ * 依赖：fs / path / url / 本地模块
+ * 用法：
+ *   node scripts/check-adr-status.mjs                 # 默认行为
+ *   node scripts/check-adr-status.mjs --json # JSON 输出（CI/子代理消费）
+ * 退出码：0（无 process.exit 调用）
  */
 
 import fs from 'fs';

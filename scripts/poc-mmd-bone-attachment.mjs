@@ -1,13 +1,15 @@
-// POC: 验证 babylon-mmd 是否暴露可被 mesh.attachToBone 接受的原生 Babylon Bone
-// 背景: ADR-061 风险1（最高）。本脚本用真实 @babylonjs/core(NullEngine) + 真实 babylon-mmd 加载一个 PMX，
-//       在不依赖前端单测 mock 的前提下，实证三件事：
-//       1) runtimeBone.linkedBone 是否为 Babylon Bone 实例
-//       2) mmd runtime 覆盖 _computeTransformMatrices 后，linkedBone.getFinalMatrix() 是否仍为最新世界矩阵
-//       3) mesh.attachToBone(linkedBone, rootMesh) 是否能跟随骨骼变换
-//
-// 运行: node scripts/poc-mmd-bone-attachment.mjs [pmx路径]
-// 依赖: 在 frontend/ 目录下执行（node_modules 解析）
-
+/**
+ * poc-mmd-bone-attachment.mjs — POC: 验证 babylon-mmd 是否暴露可被 mesh.attachToBone 接受的原生 Babylon Bone
+ *
+ * 设计意图：POC: 验证 babylon-mmd 是否暴露可被 mesh.attachToBone 接受的原生 Babylon Bone
+ *
+ * 依赖：node:fs / node:path / @babylonjs/core/Engines/nullEngine / @babylonjs/core/scene / @babylonjs/core/Bones/bone / @babylonjs/core/Maths/math.vector / @babylonjs/core/Meshes/mesh / @babylonjs/core/Meshes/transformNode / @babylonjs/core/Loading/sceneLoader / babylon-mmd/esm/Runtime/mmdRuntime
+ *
+ * 用法：
+ *   node scripts/poc-mmd-bone-attachment.mjs                 # 默认行为
+ *
+ * 退出码：2 / 3 / 4 / gate ? 0 : 1（含失败码）
+ */
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { NullEngine } from '@babylonjs/core/Engines/nullEngine';
@@ -57,7 +59,6 @@ try {
   process.exit(4);
 }
 
-// --- 检查 1: linkedBone 是否为 Babylon Bone ---
 const rb0 = model.runtimeBones[0];
 const linked = rb0.linkedBone;
 const isRealBone = linked instanceof Bone;
@@ -65,13 +66,11 @@ console.log(`[POC] 检查1 runtimeBone[0].name=${rb0.name} linkedBone instanceof
 console.log(`[POC]   model.skeleton.bones[0] instanceof Bone = ${model.skeleton.bones[0] instanceof Bone}`);
 console.log(`[POC]   runtimeBones 总数 = ${model.runtimeBones.length}, skeleton.bones 总数 = ${model.skeleton.bones.length}`);
 
-// --- 跑几帧，刷新骨骼世界矩阵 ---
 for (let i = 0; i < 3; i++) {
   runtime.update(16);
   scene.render();
 }
 
-// --- 检查 2: getFinalMatrix 是否新鲜（与 runtimeBone.getWorldMatrixToRef 对比）---
 const mRuntime = new Matrix();
 const mFinal = new Matrix();
 let maxDiff = 0;
@@ -81,7 +80,6 @@ for (let i = 0; i < Math.min(model.runtimeBones.length, 30); i++) {
   if (!(rb.linkedBone instanceof Bone)) continue;
   rb.getWorldMatrixToRef(mRuntime);
   rb.linkedBone.getFinalMatrix().copyTo(mFinal);
-  // 比较平移分量（世界矩阵 12,13,14）
   const dx = Math.abs(mRuntime.m[12] - mFinal.m[12]);
   const dy = Math.abs(mRuntime.m[13] - mFinal.m[13]);
   const dz = Math.abs(mRuntime.m[14] - mFinal.m[14]);
@@ -92,17 +90,13 @@ for (let i = 0; i < Math.min(model.runtimeBones.length, 30); i++) {
 console.log(`[POC] 检查2 对比 ${checked} 根骨骼 worldMatrix 平移最大偏差 = ${maxDiff.toFixed(6)} (0 表示 getFinalMatrix 新鲜)`);
 const finalFresh = maxDiff < 1e-3;
 
-// --- 检查 3: attachToBone 是否跟随骨骼 ---
 const probe = new TransformNode('probe', scene);
 probe.attachToBone(linked, rootMesh);
 const before = new Vector3();
 probe.getAbsolutePosition().cloneToRef?.(before) ?? probe.getAbsolutePosition();
-// 用 getWorldMatrix 取探针位置
 const probeBefore = new Vector3(probe.getWorldMatrix().m[12], probe.getWorldMatrix().m[13], probe.getWorldMatrix().m[14]);
-// 骨骼世界平移
 const boneTrans = new Vector3();
 rb0.getWorldTranslationToRef(boneTrans);
-// 移动骨骼（经 linkedBone 局部旋转/位移），再刷新
 linked.rotationQuaternion = linked.rotationQuaternion || Matrix.Identity().toQuaternion();
 linked.rotationQuaternion.z += 0.5;
 for (let i = 0; i < 3; i++) { runtime.update(16); scene.render(); }
@@ -114,7 +108,6 @@ console.log(`[POC] 检查3 attachToBone 探针 位移 = (${probeAfter.x.toFixed(
 console.log(`[POC]   对应骨骼世界平移 = (${boneTransAfter.x.toFixed(3)}, ${boneTransAfter.y.toFixed(3)}, ${boneTransAfter.z.toFixed(3)})`);
 console.log(`[POC]   attachToBone 跟随骨骼 = ${probeTracked}`);
 
-// --- 结论 ---
 console.log('\n========== POC 结论 ==========');
 console.log(`检查1 原生Bone暴露 : ${isRealBone ? 'PASS ✅' : 'FAIL ❌'}`);
 console.log(`检查2 getFinalMatrix新鲜: ${finalFresh ? 'PASS ✅' : 'FAIL ❌ (偏差 ' + maxDiff.toFixed(4) + ')'}`);

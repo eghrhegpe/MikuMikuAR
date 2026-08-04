@@ -26,6 +26,9 @@
  * 用法：
  *   node scripts/gen-novel-index.mjs          # 写入 docs/novel/index.md
  *   node scripts/gen-novel-index.mjs --check  # 校验是否已同步（CI 用，不写入）
+ * 依赖：node:fs / node:path / node:url
+ * 退出码：1（失败）
+ * 设计意图：小说索引生成器
  */
 
 import fs from 'node:fs';

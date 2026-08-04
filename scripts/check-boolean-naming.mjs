@@ -1,14 +1,17 @@
 #!/usr/bin/env node
-// scripts/check-boolean-naming.mjs — ADR-212 §6.1 / ADR-214 §二: boolean 字段 *Enabled 后缀纪律
-//
-// 校验 env-state-schema.ts 中所有 type: 'boolean' 的字段名以 Enabled 或 Active 结尾。
-// 裸名词作 boolean（如 particleSplash、debugClouds）已由 ADR-212 治理，
-// 此脚本防止新字段再次违反同一纪律。
-//
-// 用法：
-//   node scripts/check-boolean-naming.mjs           # 默认 warning 模式
-//   node scripts/check-boolean-naming.mjs --strict  # 任何违规即 exit 1（CI 阻塞）
-
+/**
+ * check-boolean-naming.mjs — Boolean 字段命名规范检查（env-state-schema.ts）
+ *
+ * 设计意图：Boolean 字段命名规范检查（env-state-schema.ts）
+ *
+ * 依赖：node:fs / node:path / node:url / 本地模块
+ *
+ * 用法：
+ *   node scripts/check-boolean-naming.mjs                 # 默认行为
+ *   node scripts/check-boolean-naming.mjs --strict # 启用 strict
+ *
+ * 退出码：1 / violations.length > 0 && strict ? 1 : 0 / 0（含失败码）
+ */
 import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -21,7 +24,6 @@ const { strict, json } = parseArgs(process.argv.slice(2), { bools: ['strict', 'j
 
 const text = readFileSync(SCHEMA_FILE, 'utf8');
 
-// 找到 ENV_STATE_SCHEMA 对象范围
 const schemaStart = text.indexOf('export const ENV_STATE_SCHEMA = {');
 if (schemaStart === -1) {
     console.error('❌ 未找到 ENV_STATE_SCHEMA 定义');
@@ -35,7 +37,6 @@ if (asConstIdx === -1) {
 }
 const schemaText = schemaBody.slice(0, asConstIdx + 1);
 
-// 确定基准缩进
 const lines = schemaText.split('\n');
 let baseIndent = 0;
 for (const line of lines) {
@@ -47,7 +48,6 @@ for (const line of lines) {
 }
 const prefix = ' '.repeat(baseIndent);
 
-// 扫描字段：找到 type: 'boolean' 的字段，检查命名是否以 Enabled/Active 结尾
 const violations = [];
 let totalBoolFields = 0;
 let i = 0;
@@ -67,7 +67,6 @@ while (i < lines.length) {
         i++;
         continue;
     }
-    // 收集块
     let block = '';
     let depth = 0;
     let done = false;

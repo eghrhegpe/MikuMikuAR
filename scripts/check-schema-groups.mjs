@@ -1,13 +1,17 @@
 #!/usr/bin/env node
-// scripts/check-schema-groups.mjs — ADR-212 P4: Schema group 完整性检查
-//
-// 校验 env-state-schema.ts 中除已声明豁免字段外，所有字段必须有 `group`。
-// 无 group 的字段不会被 getEnvKeys() 收录，导致写状态后静默不派发 —— 这是已知 bug 模式。
-//
-// 用法：
-//   node scripts/check-schema-groups.mjs           # 默认 warning 模式
-//   node scripts/check-schema-groups.mjs --strict  # 任何缺失即 exit 1（CI 阻塞）
-
+/**
+ * check-schema-groups.mjs — Schema group 完整性检查（env-state-schema.ts）
+ *
+ * 设计意图：Schema group 完整性检查（env-state-schema.ts）
+ *
+ * 依赖：node:fs / node:path / node:url / 本地模块
+ *
+ * 用法：
+ *   node scripts/check-schema-groups.mjs                 # 默认行为
+ *   node scripts/check-schema-groups.mjs --strict # 启用 strict
+ *
+ * 退出码：1 / missing.length > 0 && strict ? 1 : 0 / 0（含失败码）
+ */
 import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -20,12 +24,10 @@ const { strict, json } = parseArgs(process.argv.slice(2), {
   bools: ['strict', 'json'],
 });
 
-// 已知豁免字段：有充分理由不设 group
 const EXEMPT_FIELDS = new Set(['groundPreset', 'lightingPresetName']);
 
 const text = readFileSync(SCHEMA_FILE, 'utf8');
 
-// 找到 ENV_STATE_SCHEMA 对象范围
 const schemaStart = text.indexOf('export const ENV_STATE_SCHEMA = {');
 if (schemaStart === -1) {
     console.error('❌ 未找到 ENV_STATE_SCHEMA 定义');
@@ -40,7 +42,6 @@ if (asConstIdx === -1) {
 }
 const schemaText = schemaBody.slice(0, asConstIdx + 1);
 
-// 确定基准缩进（schema 内第一层字段的缩进）
 const lines = schemaText.split('\n');
 let baseIndent = 0;
 for (const line of lines) {
@@ -51,10 +52,8 @@ for (const line of lines) {
     }
 }
 
-// 前缀字符串用于匹配 baseIndent 级别的字段
 const prefix = ' '.repeat(baseIndent);
 
-// 收集所有字段定义块：从 `prefix + fieldName: {` 到匹配的 `prefix + }`
 const fields = [];
 let i = 0;
 while (i < lines.length) {
@@ -73,7 +72,6 @@ while (i < lines.length) {
         i++;
         continue;
     }
-    // 收集从当前行到匹配 } 的块
     let block = '';
     let depth = 0;
     let done = false;
@@ -85,7 +83,6 @@ while (i < lines.length) {
             if (l[c] === '{') depth++;
             else if (l[c] === '}') depth--;
             if (depth === 0 && l[c] === '}') {
-                // 确认是同级的 }
                 const closeIndent = l.search(/\S/);
                 if (closeIndent === baseIndent) {
                     done = true;

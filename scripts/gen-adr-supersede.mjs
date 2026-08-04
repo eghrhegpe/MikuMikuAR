@@ -19,6 +19,7 @@
  *                                              # ③/④/⑤ 只提示不拦截,详见文末 --check 分支注释
  *
  * 零依赖(仅 node:fs / node:path)。
+ * 设计意图：ADR 替代关系生成器
  */
 
 import fs from 'node:fs';

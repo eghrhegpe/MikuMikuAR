@@ -15,6 +15,7 @@
  *   node scripts/diagnose.mjs --slow          # 只跑测试
  *
  * 退出码：任一子检查失败则非零退出（透传子进程退出码）。
+ * 设计意图：全量项目诊断编排（秒级 + 分钟级检查）
  */
 
 import { execSync } from "node:child_process";

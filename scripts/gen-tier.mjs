@@ -17,6 +17,11 @@
  *   - --check：尚有未标卡则退出码 1（人工补全后的 CI 门）。
  *
  * 复用 scripts/_lib/source-graph.mjs（scanSourceGraph / resolveSourceImport），零新依赖。
+ * 设计意图：知识卡 tier 生成器
+ * 用法：
+ *   node scripts/gen-tier.mjs                 # 默认行为
+ *   node scripts/gen-tier.mjs --check # 启用 check
+ * 依赖：node:fs / node:path / node:url / 本地模块
  */
 import fs from 'node:fs';
 import path from 'node:path';

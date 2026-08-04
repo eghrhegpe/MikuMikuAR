@@ -7,6 +7,9 @@
  *   node scripts/link-checker.mjs            # 文本报告（信息型，exit 0）
  *   node scripts/link-checker.mjs --json     # JSON（便于 CI 解析）
  *   node scripts/link-checker.mjs --strict   # 门禁模式：存在断链即 exit 1
+ * 设计意图：文档链接检查器
+ * 依赖：node:fs / node:path / node:url
+ * 退出码：strict && broken.length ? 1 : 0（失败）
  */
 import fs from 'node:fs';
 import path from 'node:path';
