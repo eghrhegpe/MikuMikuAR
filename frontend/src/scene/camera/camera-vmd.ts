@@ -72,6 +72,7 @@ export function clearCameraVmd(): void {
             _switchModeCallback('orbit');
         }
         scene.removeCamera(_mmdCamera);
+        _mmdCamera.dispose(); // 释放 GPU 资源（与 loadCameraVmd 重载路径对称）
         _mmdCamera = null;
         _cameraAnimationHandle = null;
         clearCameraVmdState();
