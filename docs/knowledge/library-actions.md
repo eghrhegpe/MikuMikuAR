@@ -7,6 +7,8 @@ scope:
   - frontend/src/menus/library-actions.ts
 source_files:
   - frontend/src/menus/library-actions.ts
+tests:
+  - frontend/src/__tests__/library-actions.test.ts
 adr:
   - ADR-131
   - ADR-135
@@ -34,7 +36,6 @@ invariants:
   - 提取 / 加载中间步骤走状态栏（`feedbackStatus`），避免与最终 toast 叠加（ADR-feedback）
   - 多格式分流：`.zip` 解压后自动加载主 PMX；`.pmx` 与 `web://model/<encStem>` 视为 PMX 加载；`.vmd` 加载动作（ADR-182）
   - 行点击守卫：提取中 / 替换中直接返回并提示，不重复触发
-tests: []
 use_when:
   - 资源库操作
   - 导入模型

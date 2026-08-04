@@ -1,3 +1,10 @@
+---
+tier: leaf
+kind: outfits_spec
+name: 服装变体配置指南
+category: core
+---
+
 # 服装变体配置指南
 
 ## 概述
