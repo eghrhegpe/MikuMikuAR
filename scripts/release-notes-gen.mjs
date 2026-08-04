@@ -10,10 +10,8 @@
  * release-notes-gen.mjs — 发布说明生成器
  */
 import { execFileSync } from 'node:child_process';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { ROOT } from './_lib/scan-files.mjs';
 
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 function run(cmd) {
   try {
