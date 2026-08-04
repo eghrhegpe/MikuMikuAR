@@ -35,7 +35,14 @@ symbols:
 invariants:
   - 模块注册后按 priority 排序执行
   - 每个模块有唯一 name 标识
-tests: []
+tests:
+  - frontend/src/__tests__/scene/motion-modules-registry.conflict.test.ts
+  - frontend/src/__tests__/scene/motion-modules-registry.create.test.ts
+  - frontend/src/__tests__/scene/motion-modules-registry.disable.test.ts
+  - frontend/src/__tests__/scene/motion-modules-registry.ik.test.ts
+  - frontend/src/__tests__/scene/motion-modules-registry.init.test.ts
+  - frontend/src/__tests__/scene/motion-modules-registry.param.test.ts
+  - frontend/src/__tests__/scene/motion-modules-registry.snapshot.test.ts
 use_when:
   - 动作模块
   - 模块注册
@@ -67,4 +74,4 @@ use_when:
 
 ## 不变量
 - 模块按 priority 升序执行，相同 priority 按注册顺序。
-- 模块 name 必须唯一，重复注册报错。
+- 模块 name 必须唯一，重复注册 console.warn 告警并覆盖（不静默覆盖；为兼容 vite HMR 热重载不 throw）。

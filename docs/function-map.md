@@ -8,7 +8,7 @@
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
 | 核心基础设施 | 128 | 734 |
-| 3D 场景 | 119 | 1154 |
+| 3D 场景 | 119 | 1155 |
 | 菜单 & UI | 76 | 388 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 19 | 140 |
@@ -285,7 +285,7 @@
 | `canvasToBase64()` | `core/image:13` | 将 Canvas 编码为 base64 字符串（剥离 data:image/...;base64, 前缀）。 |
 | `thumbDataUrl()` | `core/image:64` | Build a data URL from a base64 thumbnail, sniffing PNG/JPEG/WebP from the header. |
 | `toBase64()` | `core/image:54` | Encode a string as base64 (UTF-8 safe). |
-| `bootstrap()` | `core/init:551` | 应用启动入口：接线 dev-hooks / render-loop / events 并启动渲染循环。 |
+| `bootstrap()` | `core/init:557` | 应用启动入口：接线 dev-hooks / render-loop / events 并启动渲染循环。 |
 | `jsonParse()` | `core/json-stringify:10` | Safely parse JSON; returns null on failure instead of throwing. |
 | `jsonStringify()` | `core/json-stringify:5` | Format a value as pretty-printed JSON (2-space indent). |
 | `addRecentMotion()` | `core/library-state:82` | — |
@@ -335,8 +335,8 @@
 | `MmarSceneSnapshot()` | `core/mmar-globals:16` | — |
 | `MmarStatus()` | `core/mmar-globals:9` | — |
 | `refreshSceneSnapshot()` | `core/mmar-globals:96` | 刷新 window.__mmar.scene 快照。 |
-| `startSceneSnapshotPolling()` | `core/mmar-globals:176` | 启动周期快照刷新；重复调用安全（仅注册一个 timer）。 |
-| `stopSceneSnapshotPolling()` | `core/mmar-globals:186` | 停止周期快照刷新；未启动或重复调用均安全。 |
+| `startSceneSnapshotPolling()` | `core/mmar-globals:190` | 启动周期快照刷新；重复调用安全（仅注册一个 timer）。 |
+| `stopSceneSnapshotPolling()` | `core/mmar-globals:200` | 停止周期快照刷新；未启动或重复调用均安全。 |
 | `updateMmarStatus()` | `core/mmar-globals:73` | — |
 | `CapabilityProbe()` | `core/mmd-adapter:366` | CapabilityProbe — 升级回归探测（ADR-192 Phase 2 守卫式反射）。 |
 | `applyForceToModelRigidBodies()` | `core/mmd-adapter:163` | — |
@@ -969,7 +969,7 @@
 | `setBodyCollisionEnabled()` | `scene/env/env-collision:21` | — |
 | `setCollisionEnabled()` | `scene/env/env-collision:12` | — |
 | `setGroundCollisionEnabled()` | `scene/env/env-collision:30` | — |
-| `getGravityStrength()` | `scene/env/env-gravity:28` | — |
+| `getGravityStrength()` | `scene/env/env-gravity:30` | — |
 | `setGravityStrength()` | `scene/env/env-gravity:18` | — |
 | `GROUND_PRESETS()` | `scene/env/env-ground-presets:55` | — |
 | `GROUND_PRESET_KEYS()` | `scene/env/env-ground-presets:310` | 预设「关心」的 EnvState 字段集合（单一真相源）。 |
@@ -1244,11 +1244,11 @@
 | `setMatEnabled()` | `scene/manager/material:657` | — |
 | `setMatParams()` | `scene/manager/material:812` | — |
 | `resolveModelId()` | `scene/manager/model-id:9` | 解析模型运行时 id：优先复用存档 uuid（preferredId，由恢复路径传入）， 否则生成稳定 uuid。替代旧实现 `model_${Date.now()}_${Math |
-| `captureThumbnail()` | `scene/manager/model-loader:161` | Captures a screenshot after model load for thumbnail cache. |
-| `initLoader()` | `scene/manager/model-loader:99` | — |
-| `loadPMXFile()` | `scene/manager/model-loader:428` | — |
-| `setOnMeshesReady()` | `scene/manager/model-loader:91` | — |
-| `setOnModelLoaded()` | `scene/manager/model-loader:95` | — |
+| `captureThumbnail()` | `scene/manager/model-loader:153` | Captures a screenshot after model load for thumbnail cache. |
+| `initLoader()` | `scene/manager/model-loader:91` | — |
+| `loadPMXFile()` | `scene/manager/model-loader:420` | — |
+| `setOnMeshesReady()` | `scene/manager/model-loader:83` | — |
+| `setOnModelLoaded()` | `scene/manager/model-loader:87` | — |
 | `FormationType()` | `scene/manager/model-manager:124` | — |
 | `ModelManager()` | `scene/manager/model-manager:192` | — |
 | `getFormationLabels()` | `scene/manager/model-manager:135` | — |
@@ -1390,16 +1390,16 @@
 | `RIGHT_FOOT_DEF()` | `scene/motion/motion-modules/foot-modules:223` | — |
 | `LEFT_HAND_DEF()` | `scene/motion/motion-modules/hand-modules:388` | — |
 | `RIGHT_HAND_DEF()` | `scene/motion/motion-modules/hand-modules:416` | — |
-| `FrameHookManager()` | `scene/motion/motion-modules/module-base:192` | 帧钩子管理器的返回类型（供 createEnsureActive 复用） |
+| `FrameHookManager()` | `scene/motion/motion-modules/module-base:200` | 帧钩子管理器的返回类型（供 createEnsureActive 复用） |
 | `ModuleBaseMethods()` | `scene/motion/motion-modules/module-base:20` | createModuleBase 返回的方法子集（与 MotionOverrideModule 对应方法签名一致） |
 | `ModuleBaseOverrides()` | `scene/motion/motion-modules/module-base:26` | 模块基础行为覆盖 |
-| `ModuleShellConfig()` | `scene/motion/motion-modules/module-base:234` | [doc:adr-146 P3 主题12] 模块实例外壳 — 消除 6 个工厂末尾重复的 `id/meta/priority/managedBones/buildSchema + |
-| `applyModuleSnapshot()` | `scene/motion/motion-modules/module-base:132` | [doc:adr-125] 将快照应用到指定模型的所有模块。 |
-| `createEnsureActive()` | `scene/motion/motion-modules/module-base:213` | [doc:adr-146 P3] ensureActive 公共工厂 — 消除 body-posture/foot/hand 复制粘贴的 「先 bake 重烤、再幂等注册帧钩子」模 |
-| `createFrameHookManager()` | `scene/motion/motion-modules/module-base:168` | [doc:adr-116 P3] 帧钩子管理器 — 消除 sway/riding 的 _xxxFrameHooks Map 重复模式。 |
+| `ModuleShellConfig()` | `scene/motion/motion-modules/module-base:242` | [doc:adr-146 P3 主题12] 模块实例外壳 — 消除 6 个工厂末尾重复的 `id/meta/priority/managedBones/buildSchema + |
+| `applyModuleSnapshot()` | `scene/motion/motion-modules/module-base:144` | [doc:adr-125] 将快照应用到指定模型的所有模块。 |
+| `createEnsureActive()` | `scene/motion/motion-modules/module-base:221` | [doc:adr-146 P3] ensureActive 公共工厂 — 消除 body-posture/foot/hand 复制粘贴的 「先 bake 重烤、再幂等注册帧钩子」模 |
+| `createFrameHookManager()` | `scene/motion/motion-modules/module-base:176` | [doc:adr-116 P3] 帧钩子管理器 — 消除 sway/riding 的 _xxxFrameHooks Map 重复模式。 |
 | `createModuleBase()` | `scene/motion/motion-modules/module-base:52` | 创建模块通用方法，减少 7 个模块间 ~105 行重复 boilerplate。 |
-| `createModuleShell()` | `scene/motion/motion-modules/module-base:244` | — |
-| `prepareBake()` | `scene/motion/motion-modules/module-base:264` | [doc:adr-146 P3 主题13] bake 头部守卫 — 消除 6 个 bake 重复的 `getModuleState + enabled 守卫 + claimBone |
+| `createModuleShell()` | `scene/motion/motion-modules/module-base:252` | — |
+| `prepareBake()` | `scene/motion/motion-modules/module-base:272` | [doc:adr-146 P3 主题13] bake 头部守卫 — 消除 6 个 bake 重复的 `getModuleState + enabled 守卫 + claimBone |
 | `MotionHistoryEntry()` | `scene/motion/motion-modules/motion-history:10` | — |
 | `SnapshotApplier()` | `scene/motion/motion-modules/motion-history:44` | 应用快照到引擎的回调（调用方负责从 registry 读模块实例并 setState/enable/disable） |
 | `SnapshotBuilder()` | `scene/motion/motion-modules/motion-history:41` | 构建当前全量快照的回调（调用方负责从 registry 读状态） |
@@ -1418,26 +1418,26 @@
 | `applyMotionPreset()` | `scene/motion/motion-modules/preset-types:23` | 应用预设到指定模型。 |
 | `generatePresetId()` | `scene/motion/motion-modules/preset-types:45` | — |
 | `modulesToPresetMap()` | `scene/motion/motion-modules/preset-types:9` | MotionModuleState[] → MotionPreset['modules'] |
-| `BoneConflict()` | `scene/motion/motion-modules/registry:188` | — |
-| `applyMotionModulesToModel()` | `scene/motion/motion-modules/registry:301` | [doc:adr-129] 将场景级模块配置应用到指定模型 用于动作广播时应用配置到所有 inherit 模型 |
-| `claimBones()` | `scene/motion/motion-modules/registry:174` | 为模块声明对一组骨骼的所有权（bake 前调用）。 |
-| `clearAllModulesForModel()` | `scene/motion/motion-modules/registry:292` | 清除指定模型的所有模块覆盖（删除模型时调用） |
-| `createModule()` | `scene/motion/motion-modules/registry:55` | 为指定模型创建模块实例 |
-| `getAllConflicts()` | `scene/motion/motion-modules/registry:213` | 获取某模型全部模块的冲突明细（按 loser 模块分组） |
-| `getBuiltinModuleDefs()` | `scene/motion/motion-modules/registry:337` | 内置模块定义聚合（供 initMotionModules 批量注册，消除 6 个 registerXxx 分散调用）。 |
-| `getConflictCount()` | `scene/motion/motion-modules/registry:235` | 获取某模型冲突总数（骨骼数） |
-| `getModuleConflicts()` | `scene/motion/motion-modules/registry:200` | 获取某模块被其他模块抢占的骨骼明细（loser 视角：本模块想要但被谁抢） |
-| `getModuleDefaultParam()` | `scene/motion/motion-modules/registry:130` | [doc:adr-116] 读取模块注册的默认参数值。 |
-| `getModuleState()` | `scene/motion/motion-modules/registry:83` | 获取动作的模块配置（不存在则创建默认状态，种入 defaults）。 |
-| `getOwnedBones()` | `scene/motion/motion-modules/registry:180` | 获取模块当前 owned 的骨骼（disable 时用于精确清除） |
-| `getRegisteredModules()` | `scene/motion/motion-modules/registry:48` | 获取所有已注册模块的元信息（按优先级排序） |
-| `initMotionModules()` | `scene/motion/motion-modules/registry:349` | 注册所有内置模块（幂等，重复调用安全） |
-| `registerModule()` | `scene/motion/motion-modules/registry:33` | 注册一个动作覆盖模块 |
-| `releaseOwnedBones()` | `scene/motion/motion-modules/registry:240` | 释放模块的 ownedBones 记录并级联清引擎槽（由 store.releaseBones 负责清除） |
-| `setModuleEnabled()` | `scene/motion/motion-modules/registry:152` | 设置模块启用/禁用状态到场景动作意图 |
-| `setModuleParam()` | `scene/motion/motion-modules/registry:136` | 写入模块参数到场景动作意图 |
-| `setTargetModel()` | `scene/motion/motion-modules/registry:252` | 切换目标模型：禁用当前模型的所有模块覆盖，启用新模型已保存的模块状态。 |
-| `unregisterModule()` | `scene/motion/motion-modules/registry:43` | 注销模块 |
+| `BoneConflict()` | `scene/motion/motion-modules/registry:197` | — |
+| `applyMotionModulesToModel()` | `scene/motion/motion-modules/registry:310` | [doc:adr-129] 将场景级模块配置应用到指定模型 用于动作广播时应用配置到所有 inherit 模型 |
+| `claimBones()` | `scene/motion/motion-modules/registry:183` | 为模块声明对一组骨骼的所有权（bake 前调用）。 |
+| `clearAllModulesForModel()` | `scene/motion/motion-modules/registry:301` | 清除指定模型的所有模块覆盖（删除模型时调用） |
+| `createModule()` | `scene/motion/motion-modules/registry:64` | 为指定模型创建模块实例 |
+| `getAllConflicts()` | `scene/motion/motion-modules/registry:222` | 获取某模型全部模块的冲突明细（按 loser 模块分组） |
+| `getBuiltinModuleDefs()` | `scene/motion/motion-modules/registry:346` | 内置模块定义聚合（供 initMotionModules 批量注册，消除 6 个 registerXxx 分散调用）。 |
+| `getConflictCount()` | `scene/motion/motion-modules/registry:244` | 获取某模型冲突总数（骨骼数） |
+| `getModuleConflicts()` | `scene/motion/motion-modules/registry:209` | 获取某模块被其他模块抢占的骨骼明细（loser 视角：本模块想要但被谁抢） |
+| `getModuleDefaultParam()` | `scene/motion/motion-modules/registry:139` | [doc:adr-116] 读取模块注册的默认参数值。 |
+| `getModuleState()` | `scene/motion/motion-modules/registry:92` | 获取动作的模块配置（不存在则创建默认状态，种入 defaults）。 |
+| `getOwnedBones()` | `scene/motion/motion-modules/registry:189` | 获取模块当前 owned 的骨骼（disable 时用于精确清除） |
+| `getRegisteredModules()` | `scene/motion/motion-modules/registry:57` | 获取所有已注册模块的元信息（按优先级排序） |
+| `initMotionModules()` | `scene/motion/motion-modules/registry:358` | 注册所有内置模块（幂等，重复调用安全） |
+| `registerModule()` | `scene/motion/motion-modules/registry:39` | 注册一个动作覆盖模块。 |
+| `releaseOwnedBones()` | `scene/motion/motion-modules/registry:249` | 释放模块的 ownedBones 记录并级联清引擎槽（由 store.releaseBones 负责清除） |
+| `setModuleEnabled()` | `scene/motion/motion-modules/registry:161` | 设置模块启用/禁用状态到场景动作意图 |
+| `setModuleParam()` | `scene/motion/motion-modules/registry:145` | 写入模块参数到场景动作意图 |
+| `setTargetModel()` | `scene/motion/motion-modules/registry:261` | 切换目标模型：禁用当前模型的所有模块覆盖，启用新模型已保存的模块状态。 |
+| `unregisterModule()` | `scene/motion/motion-modules/registry:52` | 注销模块 |
 | `RIDING_MODEL_DEF()` | `scene/motion/motion-modules/riding-model:289` | 骑行模型模块注册定义（供 registry BUILTIN_MODULE_DEFS 批量注册） |
 | `createRidingModelModule()` | `scene/motion/motion-modules/riding-model:192` | 创建骑行模型模块实例 |
 | `ModuleDef()` | `scene/motion/motion-modules/types:51` | 模块注册定义（工厂 + 元信息 + 优先级），用于 BUILTIN_MODULE_DEFS 批量注册 |
@@ -1474,7 +1474,8 @@
 | `getEyeGazeMaxPitch()` | `scene/motion/perception-gaze:36` | — |
 | `getEyeGazeMaxYaw()` | `scene/motion/perception-gaze:36` | — |
 | `getEyeGazeSmooth()` | `scene/motion/perception-gaze:36` | — |
-| `_applyLipSync()` | `scene/motion/perception-lipsync:30` | — |
+| `_applyLipSync()` | `scene/motion/perception-lipsync:52` | — |
+| `_disposeLipSyncRuntime()` | `scene/motion/perception-lipsync:48` | 释放指定模型的 lip-sync 运行时（模型移除时调用，防 Map 泄漏） |
 | `_applyPerceptionForContext()` | `scene/motion/perception-observer:56` | 对单个 context 应用完整感知管线 |
 | `_getActiveContextsByTier()` | `scene/motion/perception-observer:31` | [doc:adr-164] 根据 tier 返回应激活的 context 列表 |
 | `getMediumMaxOthers()` | `scene/motion/perception-observer:26` | 获取 medium 档非焦点模型上限 |
@@ -1511,59 +1512,59 @@
 | `getHeadGazeMaxYaw()` | `scene/motion/perception-shared:233` | 获取头部跟随最大偏航角（弧度） |
 | `isWasmRuntime()` | `scene/motion/perception-shared:216` | 判断骨骼是否运行在 WASM runtime（无 updateWorldMatrix 方法）。 |
 | `setGazeAngles()` | `scene/motion/perception-shared:265` | 更新头部跟随角度限位（度→弧度，由 perception.ts setter 调用） |
-| `__testOnlyGetContext()` | `scene/motion/perception:791` | 测试用：获取指定模型的 context（含 lastOffsets） |
-| `_clampEyeGazeTarget()` | `scene/motion/perception:57` | — |
-| `_clampHeadGazeTarget()` | `scene/motion/perception:57` | — |
-| `_getGazeResetTick()` | `scene/motion/perception:379` | 获取 gaze 重置计数（供测试验证调用时机） |
-| `_isWasmRuntime()` | `scene/motion/perception:57` | — |
-| `_propagateChildrenWasm()` | `scene/motion/perception:57` | — |
-| `_resetGazeState()` | `scene/motion/perception:384` | 重置 gaze 增量状态（清理跨帧缓存，避免切换/开关后出现跳跃） |
-| `_writeMatToBuffer()` | `scene/motion/perception:57` | — |
-| `activatePerception()` | `scene/motion/perception:313` | 激活感知层（呼吸/眨眼/gaze） |
-| `applyGazeWasm()` | `scene/motion/perception:57` | — |
-| `deactivatePerception()` | `scene/motion/perception:393` | 注销感知层 |
-| `disableAllPerception()` | `scene/motion/perception:716` | 全员关闭感知层（仅焦点 + pinned 保留） |
-| `enableAllPerception()` | `scene/motion/perception:690` | 全员激活感知层（受 tier 限制） |
-| `getPerceptionPerfManualTier()` | `scene/motion/perception:743` | [doc:adr-164] 获取手动档位设置（'auto' 表示自动降级模式） |
-| `getPerceptionPerfTier()` | `scene/motion/perception:738` | 获取当前性能档位 |
-| `getPerceptionState()` | `scene/motion/perception:421` | 获取感知状态（焦点 context 状态，兼容旧 API） |
-| `getPerceptionStateFor()` | `scene/motion/perception:675` | 获取感知状态（场景级单例；参数对所有模型一致，modelId 参数保留仅为兼容旧调用） |
-| `getPinnedModelIds()` | `scene/motion/perception:668` | 获取当前 pinned 模型 ID 列表 |
-| `isAllPerceptionEnabled()` | `scene/motion/perception:754` | [doc:adr-164] 获取全员感知开关状态 |
-| `onPerceptionModelRemoved()` | `scene/motion/perception:796` | 兼容接口：模型移除时清理（供 proc-motion-bridge.ts 调用） |
-| `pinPerception()` | `scene/motion/perception:624` | [doc:adr-164] pin 模型感知（原 ≤5 上限已移除，全员感知由 tier 控制）。 |
-| `setAllPerceptionEnabled()` | `scene/motion/perception:759` | [doc:adr-164] 设置全员感知开关状态 |
-| `setBalanceSwayAmplitude()` | `scene/motion/perception:509` | 设置重心微动振幅（全局乘数，钳制 0–2.0） |
-| `setBalanceSwayEnabled()` | `scene/motion/perception:497` | 设置重心微动开关（[doc:adr-079] Phase 2） |
-| `setBalanceSwayPeriod()` | `scene/motion/perception:503` | 设置重心微动周期（秒，钳制 0.5–5.0） |
-| `setBlinkAmplitude()` | `scene/motion/perception:565` | 设置眨眼幅度（0–1，钳制） |
-| `setBlinkEnabled()` | `scene/motion/perception:471` | 设置眨眼开关 |
-| `setBlinkFrequency()` | `scene/motion/perception:559` | 设置眨眼频率（Hz，钳制 0.05–0.5） |
-| `setBreathAmplitude()` | `scene/motion/perception:553` | 设置呼吸幅度（弧度，钳制 0–0.05） |
-| `setBreathEnabled()` | `scene/motion/perception:465` | 设置呼吸开关 |
-| `setBreathFrequency()` | `scene/motion/perception:547` | 设置呼吸频率（Hz，钳制 0.1–1.0） |
-| `setEmotion()` | `scene/motion/perception:515` | 设置情绪类型 |
-| `setEyeGazeMaxPitch()` | `scene/motion/perception:592` | 设置眼部跟随最大俯仰角（度，钳制 0–15） |
-| `setEyeGazeMaxYaw()` | `scene/motion/perception:585` | 设置眼部跟随最大偏航角（度，钳制 0–15） |
-| `setEyeGazeSmooth()` | `scene/motion/perception:599` | 设置眼部跟随平滑度（0–1） |
-| `setEyeTrackingEnabled()` | `scene/motion/perception:484` | 设置眼部跟随开关 |
-| `setGazeConfig()` | `scene/motion/perception:772` | 兼容接口：设置 gaze 配置（供 proc-motion-bridge.ts 调用） |
-| `setHeadGazeMaxPitch()` | `scene/motion/perception:578` | 设置头部跟随最大俯仰角（度，钳制 0–90） |
-| `setHeadGazeMaxYaw()` | `scene/motion/perception:571` | 设置头部跟随最大偏航角（度，钳制 0–90） |
-| `setHeadTrackingEnabled()` | `scene/motion/perception:477` | 设置头部跟随开关 |
-| `setLipSyncEnabled()` | `scene/motion/perception:521` | 设置 lip-sync 开关 |
-| `setLipSyncIntensity()` | `scene/motion/perception:533` | 设置 lip-sync 强度（钳制 0..1） |
-| `setLipSyncMultiMorphEnabled()` | `scene/motion/perception:539` | 设置多口型 morph 开关 |
-| `setLipSyncSensitivity()` | `scene/motion/perception:527` | 设置 lip-sync 灵敏度（钳制 0..1） |
-| `setMicroExpressionEnabled()` | `scene/motion/perception:491` | 设置微表情开关 |
-| `setPerceptionPerfTier()` | `scene/motion/perception:748` | 手动设置性能档位（auto/high/medium/low） |
-| `setPerceptionState()` | `scene/motion/perception:426` | 设置感知状态（从存储恢复时使用） |
-| `setPerceptionStateFor()` | `scene/motion/perception:680` | 设置感知状态（场景级单例；参数对所有模型一致，modelId 参数保留仅为兼容旧调用） |
-| `unpinPerception()` | `scene/motion/perception:643` | unpin 模型感知（非焦点模型同步 deactivate） |
-| `PlaybackObservablesDispose()` | `scene/motion/playback:44` | — |
-| `initPlaybackObservables()` | `scene/motion/playback:48` | — |
-| `seekFromEvent()` | `scene/motion/playback:181` | — |
-| `updatePlaybackUI()` | `scene/motion/playback:159` | — |
+| `__testOnlyGetContext()` | `scene/motion/perception:795` | 测试用：获取指定模型的 context（含 lastOffsets） |
+| `_clampEyeGazeTarget()` | `scene/motion/perception:58` | — |
+| `_clampHeadGazeTarget()` | `scene/motion/perception:58` | — |
+| `_getGazeResetTick()` | `scene/motion/perception:381` | 获取 gaze 重置计数（供测试验证调用时机） |
+| `_isWasmRuntime()` | `scene/motion/perception:58` | — |
+| `_propagateChildrenWasm()` | `scene/motion/perception:58` | — |
+| `_resetGazeState()` | `scene/motion/perception:386` | 重置 gaze 增量状态（清理跨帧缓存，避免切换/开关后出现跳跃） |
+| `_writeMatToBuffer()` | `scene/motion/perception:58` | — |
+| `activatePerception()` | `scene/motion/perception:315` | 激活感知层（呼吸/眨眼/gaze） |
+| `applyGazeWasm()` | `scene/motion/perception:58` | — |
+| `deactivatePerception()` | `scene/motion/perception:395` | 注销感知层 |
+| `disableAllPerception()` | `scene/motion/perception:718` | 全员关闭感知层（仅焦点 + pinned 保留） |
+| `enableAllPerception()` | `scene/motion/perception:692` | 全员激活感知层（受 tier 限制） |
+| `getPerceptionPerfManualTier()` | `scene/motion/perception:746` | [doc:adr-164] 获取手动档位设置（'auto' 表示自动降级模式） |
+| `getPerceptionPerfTier()` | `scene/motion/perception:741` | 获取当前性能档位 |
+| `getPerceptionState()` | `scene/motion/perception:423` | 获取感知状态（焦点 context 状态，兼容旧 API） |
+| `getPerceptionStateFor()` | `scene/motion/perception:677` | 获取感知状态（场景级单例；参数对所有模型一致，modelId 参数保留仅为兼容旧调用） |
+| `getPinnedModelIds()` | `scene/motion/perception:670` | 获取当前 pinned 模型 ID 列表 |
+| `isAllPerceptionEnabled()` | `scene/motion/perception:757` | [doc:adr-164] 获取全员感知开关状态 |
+| `onPerceptionModelRemoved()` | `scene/motion/perception:800` | 兼容接口：模型移除时清理（供 proc-motion-bridge.ts 调用） |
+| `pinPerception()` | `scene/motion/perception:626` | [doc:adr-164] pin 模型感知（原 ≤5 上限已移除，全员感知由 tier 控制）。 |
+| `setAllPerceptionEnabled()` | `scene/motion/perception:762` | [doc:adr-164] 设置全员感知开关状态 |
+| `setBalanceSwayAmplitude()` | `scene/motion/perception:511` | 设置重心微动振幅（全局乘数，钳制 0–2.0） |
+| `setBalanceSwayEnabled()` | `scene/motion/perception:499` | 设置重心微动开关（[doc:adr-079] Phase 2） |
+| `setBalanceSwayPeriod()` | `scene/motion/perception:505` | 设置重心微动周期（秒，钳制 0.5–5.0） |
+| `setBlinkAmplitude()` | `scene/motion/perception:567` | 设置眨眼幅度（0–1，钳制） |
+| `setBlinkEnabled()` | `scene/motion/perception:473` | 设置眨眼开关 |
+| `setBlinkFrequency()` | `scene/motion/perception:561` | 设置眨眼频率（Hz，钳制 0.05–0.5） |
+| `setBreathAmplitude()` | `scene/motion/perception:555` | 设置呼吸幅度（弧度，钳制 0–0.05） |
+| `setBreathEnabled()` | `scene/motion/perception:467` | 设置呼吸开关 |
+| `setBreathFrequency()` | `scene/motion/perception:549` | 设置呼吸频率（Hz，钳制 0.1–1.0） |
+| `setEmotion()` | `scene/motion/perception:517` | 设置情绪类型 |
+| `setEyeGazeMaxPitch()` | `scene/motion/perception:594` | 设置眼部跟随最大俯仰角（度，钳制 0–15） |
+| `setEyeGazeMaxYaw()` | `scene/motion/perception:587` | 设置眼部跟随最大偏航角（度，钳制 0–15） |
+| `setEyeGazeSmooth()` | `scene/motion/perception:601` | 设置眼部跟随平滑度（0–1） |
+| `setEyeTrackingEnabled()` | `scene/motion/perception:486` | 设置眼部跟随开关 |
+| `setGazeConfig()` | `scene/motion/perception:775` | 兼容接口：设置 gaze 配置（供 proc-motion-bridge.ts 调用） |
+| `setHeadGazeMaxPitch()` | `scene/motion/perception:580` | 设置头部跟随最大俯仰角（度，钳制 0–90） |
+| `setHeadGazeMaxYaw()` | `scene/motion/perception:573` | 设置头部跟随最大偏航角（度，钳制 0–90） |
+| `setHeadTrackingEnabled()` | `scene/motion/perception:479` | 设置头部跟随开关 |
+| `setLipSyncEnabled()` | `scene/motion/perception:523` | 设置 lip-sync 开关 |
+| `setLipSyncIntensity()` | `scene/motion/perception:535` | 设置 lip-sync 强度（钳制 0..1） |
+| `setLipSyncMultiMorphEnabled()` | `scene/motion/perception:541` | 设置多口型 morph 开关 |
+| `setLipSyncSensitivity()` | `scene/motion/perception:529` | 设置 lip-sync 灵敏度（钳制 0..1） |
+| `setMicroExpressionEnabled()` | `scene/motion/perception:493` | 设置微表情开关 |
+| `setPerceptionPerfTier()` | `scene/motion/perception:751` | 手动设置性能档位（auto/high/medium/low） |
+| `setPerceptionState()` | `scene/motion/perception:428` | 设置感知状态（从存储恢复时使用） |
+| `setPerceptionStateFor()` | `scene/motion/perception:682` | 设置感知状态（场景级单例；参数对所有模型一致，modelId 参数保留仅为兼容旧调用） |
+| `unpinPerception()` | `scene/motion/perception:645` | unpin 模型感知（非焦点模型同步 deactivate） |
+| `PlaybackObservablesDispose()` | `scene/motion/playback:47` | — |
+| `initPlaybackObservables()` | `scene/motion/playback:51` | — |
+| `seekFromEvent()` | `scene/motion/playback:184` | — |
+| `updatePlaybackUI()` | `scene/motion/playback:162` | — |
 | `ProcMotionController()` | `scene/motion/proc-motion-bridge:38` | — |
 | `activateGazeTracking()` | `scene/motion/proc-motion-bridge:119` | — |
 | `createProcBeatDetector()` | `scene/motion/proc-motion-bridge:58` | — |
@@ -1769,55 +1770,55 @@
 | `migratePerceptionData()` | `scene/scene-migrate:46` | 旧存档 perception 格式迁移：PerceptionState → { focused, pinned }。 |
 | `migratePerceptionFromProcMotion()` | `scene/scene-migrate:71` | 旧存档 ProcMotionState → 新版 PerceptionState 迁移。 |
 | `SceneFile()` | `scene/scene-serialize:145` | — |
-| `canUndo()` | `scene/scene-serialize:1278` | — |
-| `deserializeScene()` | `scene/scene-serialize:942` | Restore scene state from a SceneFile. |
-| `offerSceneUndo()` | `scene/scene-serialize:1322` | 破坏性操作后调用：弹出中性撤销 toast（复用 action-button toast，info 变体）。 |
-| `offerSceneUndoAndRefresh()` | `scene/scene-serialize:1347` | offerSceneUndo 的常见变体：撤销恢复后执行 reRender 回调并统一提示 `undoApplied`。 |
-| `popUndoSnapshot()` | `scene/scene-serialize:1283` | 弹出最近一次撤销快照（LIFO），供全局撤销按钮 / Ctrl+Z 使用。返回快照字符串，无快照时返回 null。 |
-| `pushUndoSnapshot()` | `scene/scene-serialize:1264` | 破坏性操作前调用：抓当前整场景快照压栈（环形，上限 UNDO_LIMIT），返回快照字符串供撤销绑定。 |
+| `canUndo()` | `scene/scene-serialize:1276` | — |
+| `deserializeScene()` | `scene/scene-serialize:940` | Restore scene state from a SceneFile. |
+| `offerSceneUndo()` | `scene/scene-serialize:1320` | 破坏性操作后调用：弹出中性撤销 toast（复用 action-button toast，info 变体）。 |
+| `offerSceneUndoAndRefresh()` | `scene/scene-serialize:1345` | offerSceneUndo 的常见变体：撤销恢复后执行 reRender 回调并统一提示 `undoApplied`。 |
+| `popUndoSnapshot()` | `scene/scene-serialize:1281` | 弹出最近一次撤销快照（LIFO），供全局撤销按钮 / Ctrl+Z 使用。返回快照字符串，无快照时返回 null。 |
+| `pushUndoSnapshot()` | `scene/scene-serialize:1262` | 破坏性操作前调用：抓当前整场景快照压栈（环形，上限 UNDO_LIMIT），返回快照字符串供撤销绑定。 |
 | `resolvePathFromRef()` | `scene/scene-serialize:133` | Resolve a file path from either a libraryRef or a raw absolute path. |
-| `restoreUndoSnapshot()` | `scene/scene-serialize:1299` | 恢复特定快照到整场景。返回是否成功恢复。 |
-| `saveSceneImmediate()` | `scene/scene-serialize:1365` | — |
+| `restoreUndoSnapshot()` | `scene/scene-serialize:1297` | 恢复特定快照到整场景。返回是否成功恢复。 |
+| `saveSceneImmediate()` | `scene/scene-serialize:1363` | — |
 | `serializeScene()` | `scene/scene-serialize:493` | 序列化当前场景为 SceneFile（分段容错，单模型失败跳过并记录）。 |
-| `setSuppressAutoSave()` | `scene/scene-serialize:1237` | — |
-| `triggerAutoSaveImpl()` | `scene/scene-serialize:1246` | — |
-| `tryRestoreLastScene()` | `scene/scene-serialize:1503` | — |
+| `setSuppressAutoSave()` | `scene/scene-serialize:1235` | — |
+| `triggerAutoSaveImpl()` | `scene/scene-serialize:1244` | — |
+| `tryRestoreLastScene()` | `scene/scene-serialize:1501` | — |
 | `DEFAULT_MAT_PARAMS()` | `scene/scene:139` | — |
-| `LoadLastScene()` | `scene/scene:825` | — |
-| `SaveLastScene()` | `scene/scene:825` | — |
-| `SaveThumbnail()` | `scene/scene:825` | — |
-| `SetEnvState()` | `scene/scene:825` | — |
-| `__envDebug()` | `scene/scene:307` | — |
+| `LoadLastScene()` | `scene/scene:827` | — |
+| `SaveLastScene()` | `scene/scene:827` | — |
+| `SaveThumbnail()` | `scene/scene:827` | — |
+| `SetEnvState()` | `scene/scene:827` | — |
+| `__envDebug()` | `scene/scene:308` | — |
 | `_applyAll()` | `scene/scene:139` | — |
 | `_catOf()` | `scene/scene:139` | — |
 | `_catState()` | `scene/scene:139` | — |
 | `_matEnabled()` | `scene/scene:139` | — |
 | `_matState()` | `scene/scene:139` | — |
-| `animateCameraVmd()` | `scene/scene:810` | — |
-| `applyEnvState()` | `scene/scene:797` | — |
-| `applyFrameControl()` | `scene/scene:250` | 统一应用帧率控制：帧率限制器开关 + 帧率上限。 |
+| `animateCameraVmd()` | `scene/scene:812` | — |
+| `applyEnvState()` | `scene/scene:799` | — |
+| `applyFrameControl()` | `scene/scene:252` | 统一应用帧率控制：帧率限制器开关 + 帧率上限。 |
 | `applyMatSssState()` | `scene/scene:165` | — |
 | `applyMatState()` | `scene/scene:139` | — |
 | `applySss()` | `scene/scene:165` | — |
 | `applyUnlitFallback()` | `scene/scene:139` | — |
-| `autoFrame()` | `scene/scene:810` | — |
-| `autoLoop()` | `scene/scene:768` | — |
-| `canUndo()` | `scene/scene:789` | — |
-| `captureThumbnail()` | `scene/scene:809` | — |
-| `clearCameraVmd()` | `scene/scene:810` | — |
+| `autoFrame()` | `scene/scene:812` | — |
+| `autoLoop()` | `scene/scene:770` | — |
+| `canUndo()` | `scene/scene:791` | — |
+| `captureThumbnail()` | `scene/scene:811` | — |
+| `clearCameraVmd()` | `scene/scene:812` | — |
 | `disposeModelSssState()` | `scene/scene:165` | — |
-| `disposeScene()` | `scene/scene:267` | 级联释放 Scene → Engine 及其所有子资源。 |
-| `dom()` | `scene/scene:768` | — |
-| `engine()` | `scene/scene:223` | — |
-| `envState()` | `scene/scene:768` | — |
-| `focusedMmdModel()` | `scene/scene:325` | — |
-| `focusedModel()` | `scene/scene:325` | — |
-| `focusedModelId()` | `scene/scene:768` | — |
-| `formatTime()` | `scene/scene:768` | — |
-| `getCameraMode()` | `scene/scene:810` | — |
-| `getCameraState()` | `scene/scene:810` | — |
-| `getCameraVmdName()` | `scene/scene:810` | — |
-| `getCameraVmdPath()` | `scene/scene:810` | — |
+| `disposeScene()` | `scene/scene:269` | 级联释放 Scene → Engine 及其所有子资源。 |
+| `dom()` | `scene/scene:770` | — |
+| `engine()` | `scene/scene:225` | — |
+| `envState()` | `scene/scene:770` | — |
+| `focusedMmdModel()` | `scene/scene:326` | — |
+| `focusedModel()` | `scene/scene:326` | — |
+| `focusedModelId()` | `scene/scene:770` | — |
+| `formatTime()` | `scene/scene:770` | — |
+| `getCameraMode()` | `scene/scene:812` | — |
+| `getCameraState()` | `scene/scene:812` | — |
+| `getCameraVmdName()` | `scene/scene:812` | — |
+| `getCameraVmdPath()` | `scene/scene:812` | — |
 | `getMatCatGroups()` | `scene/scene:139` | — |
 | `getMatCatParams()` | `scene/scene:139` | — |
 | `getMatDetailList()` | `scene/scene:139` | — |
@@ -1825,56 +1826,56 @@
 | `getMatSssParams()` | `scene/scene:165` | — |
 | `getMatSssState()` | `scene/scene:165` | — |
 | `getMatState()` | `scene/scene:139` | — |
-| `getScene()` | `scene/scene:754` | — |
-| `hasCameraVmd()` | `scene/scene:810` | — |
-| `initCameraSystem()` | `scene/scene:810` | — |
-| `initLoader()` | `scene/scene:809` | — |
-| `initPlaybackObservables()` | `scene/scene:767` | — |
-| `initScene()` | `scene/scene:354` | 场景初始化入口。首次调用时创建 Scene/Engine/运行时； HMR 重入时先调用 _reinitSceneForHMR() 清理旧资源再重建。 |
-| `isHeadless()` | `scene/scene:203` | — |
+| `getScene()` | `scene/scene:756` | — |
+| `hasCameraVmd()` | `scene/scene:812` | — |
+| `initCameraSystem()` | `scene/scene:812` | — |
+| `initLoader()` | `scene/scene:811` | — |
+| `initPlaybackObservables()` | `scene/scene:769` | — |
+| `initScene()` | `scene/scene:355` | 场景初始化入口。首次调用时创建 Scene/Engine/运行时； HMR 重入时先调用 _reinitSceneForHMR() 清理旧资源再重建。 |
+| `isHeadless()` | `scene/scene:205` | — |
 | `isMatCategoryAllEnabled()` | `scene/scene:139` | — |
 | `isMatEnabled()` | `scene/scene:139` | — |
 | `isPbrMaterial()` | `scene/scene:164` | — |
-| `isPlaying()` | `scene/scene:768` | — |
-| `loadCameraVmd()` | `scene/scene:810` | — |
-| `loadCameraVmdFromPath()` | `scene/scene:761` | — |
-| `loadPMXFile()` | `scene/scene:809` | — |
-| `loadVMDFromPath()` | `scene/scene:761` | — |
-| `loadVMDMotion()` | `scene/scene:761` | — |
-| `loadVPDPose()` | `scene/scene:761` | — |
-| `mmdRuntime()` | `scene/scene:768` | — |
-| `modelManager()` | `scene/scene:298` | — |
-| `modelRegistry()` | `scene/scene:768` | — |
-| `normPath()` | `scene/scene:788` | — |
-| `offerSceneUndo()` | `scene/scene:789` | — |
-| `offerSceneUndoAndRefresh()` | `scene/scene:789` | — |
-| `popUndoSnapshot()` | `scene/scene:789` | — |
-| `pushUndoSnapshot()` | `scene/scene:789` | — |
+| `isPlaying()` | `scene/scene:770` | — |
+| `loadCameraVmd()` | `scene/scene:812` | — |
+| `loadCameraVmdFromPath()` | `scene/scene:763` | — |
+| `loadPMXFile()` | `scene/scene:811` | — |
+| `loadVMDFromPath()` | `scene/scene:763` | — |
+| `loadVMDMotion()` | `scene/scene:763` | — |
+| `loadVPDPose()` | `scene/scene:763` | — |
+| `mmdRuntime()` | `scene/scene:770` | — |
+| `modelManager()` | `scene/scene:299` | — |
+| `modelRegistry()` | `scene/scene:770` | — |
+| `normPath()` | `scene/scene:790` | — |
+| `offerSceneUndo()` | `scene/scene:791` | — |
+| `offerSceneUndoAndRefresh()` | `scene/scene:791` | — |
+| `popUndoSnapshot()` | `scene/scene:791` | — |
+| `pushUndoSnapshot()` | `scene/scene:791` | — |
 | `resetMatCatParams()` | `scene/scene:139` | — |
 | `resetPerMaterialParams()` | `scene/scene:139` | — |
 | `resetSingleMatParams()` | `scene/scene:139` | — |
-| `resolveFileUrl()` | `scene/scene:788` | — |
-| `restoreUndoSnapshot()` | `scene/scene:789` | — |
-| `scene()` | `scene/scene:234` | — |
-| `seekDragging()` | `scene/scene:768` | — |
-| `seekFromEvent()` | `scene/scene:767` | — |
-| `setAutoLoop()` | `scene/scene:768` | — |
-| `setCameraState()` | `scene/scene:810` | — |
-| `setFocusedModelId()` | `scene/scene:768` | — |
-| `setIsPlaying()` | `scene/scene:768` | — |
+| `resolveFileUrl()` | `scene/scene:790` | — |
+| `restoreUndoSnapshot()` | `scene/scene:791` | — |
+| `scene()` | `scene/scene:236` | — |
+| `seekDragging()` | `scene/scene:770` | — |
+| `seekFromEvent()` | `scene/scene:769` | — |
+| `setAutoLoop()` | `scene/scene:770` | — |
+| `setCameraState()` | `scene/scene:812` | — |
+| `setFocusedModelId()` | `scene/scene:770` | — |
+| `setIsPlaying()` | `scene/scene:770` | — |
 | `setMatCatParams()` | `scene/scene:139` | — |
 | `setMatCategoryEnabled()` | `scene/scene:139` | — |
 | `setMatEnabled()` | `scene/scene:139` | — |
 | `setMatParams()` | `scene/scene:139` | — |
 | `setMatSssParams()` | `scene/scene:165` | — |
-| `setMmdRuntime()` | `scene/scene:768` | — |
-| `setModelRegistry()` | `scene/scene:768` | — |
-| `setSeekDragging()` | `scene/scene:768` | — |
-| `setStatus()` | `scene/scene:768` | — |
-| `setTriggerAutoSave()` | `scene/scene:786` | — |
-| `switchCameraMode()` | `scene/scene:810` | — |
-| `triggerAutoSave()` | `scene/scene:786` | — |
-| `updatePlaybackUI()` | `scene/scene:767` | — |
+| `setMmdRuntime()` | `scene/scene:770` | — |
+| `setModelRegistry()` | `scene/scene:770` | — |
+| `setSeekDragging()` | `scene/scene:770` | — |
+| `setStatus()` | `scene/scene:770` | — |
+| `setTriggerAutoSave()` | `scene/scene:788` | — |
+| `switchCameraMode()` | `scene/scene:812` | — |
+| `triggerAutoSave()` | `scene/scene:788` | — |
+| `updatePlaybackUI()` | `scene/scene:769` | — |
 | `ActionMenuCtx()` | `scene/shared/menu-node-types:16` | — |
 | `ControlSpec()` | `scene/shared/menu-node-types:37` | — |
 | `MenuKind()` | `scene/shared/menu-node-types:25` | — |
