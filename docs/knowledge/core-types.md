@@ -37,6 +37,7 @@ symbols:
   - OutfitSlot
   - OutfitVariant
   - OverridePaths
+  - OverrideType
   - ParamValue
   - PendingVmd
   - PhysicsCategory
