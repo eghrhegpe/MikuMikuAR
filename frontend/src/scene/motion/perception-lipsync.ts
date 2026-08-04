@@ -72,12 +72,15 @@ export function _applyLipSync(
     }
 
     // #10: 音源切换 → 立即重置状态
-    if (getSceneAction('getAudioPath')?.() ?? '' !== _lastLipSyncAudioPath) {
+    // NOTE: `??` 优先级低于 `!==`，缺括号会被解析成 `path ?? ('' !== _last)`，
+    // 导致有音频路径时每帧恒真 → 平滑值与 morph 缓存被逐帧清空。
+    const audioPath = getSceneAction('getAudioPath')?.() ?? '';
+    if (audioPath !== _lastLipSyncAudioPath) {
         _lipSyncMorphName = null;
         _lipSyncMorphSet = null;
         _smoothLow = 0;
         _smoothHigh = 0;
-        _lastLipSyncAudioPath = getSceneAction('getAudioPath')?.() ?? '';
+        _lastLipSyncAudioPath = audioPath;
     }
 
     // #12: 音频停止时指数衰减（约 20 帧淡出）
