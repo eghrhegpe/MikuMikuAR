@@ -1586,6 +1586,7 @@ export const zhCN: Record<string, string> = {
     'plaza.openInBrowser': '浏览器',
     'plaza.refresh': '刷新',
     'plaza.close': '关闭',
+    'plaza.searchTerms': '网页搜索词',
     'toast.undo': '撤销',
     'settings.software.title': '软件管理',
     'settings.software.custom': '自定义',

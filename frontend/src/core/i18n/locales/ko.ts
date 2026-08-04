@@ -1801,6 +1801,7 @@ export const ko: Record<string, string> = {
     'plaza.openInBrowser': '브라우저',
     'plaza.refresh': '새로고침',
     'plaza.close': '닫기',
+    'plaza.searchTerms': '웹 검색어',
     'scene.waterReflectionQuality': '플라나 반사 품질',
     'scene.waterReflectionQualityHigh': '높음',
     'scene.waterReflectionQualityLow': '낮음',

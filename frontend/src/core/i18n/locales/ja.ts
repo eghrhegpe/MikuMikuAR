@@ -1807,6 +1807,7 @@ export const ja: Record<string, string> = {
     'plaza.openInBrowser': 'ブラウザ',
     'plaza.refresh': '更新',
     'plaza.close': '閉じる',
+    'plaza.searchTerms': 'ウェブ検索ワード',
     'scene.waterReflectionQuality': 'プラナーリフレクション品質',
     'scene.waterReflectionQualityHigh': '高',
     'scene.waterReflectionQualityLow': '低',

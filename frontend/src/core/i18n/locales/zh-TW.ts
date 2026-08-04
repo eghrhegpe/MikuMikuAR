@@ -1777,6 +1777,7 @@ export const zhTW: Record<string, string> = {
     'plaza.openInBrowser': '瀏覽器',
     'plaza.refresh': '重新整理',
     'plaza.close': '關閉',
+    'plaza.searchTerms': '網頁搜尋詞',
     'settings.autoUpdate': '✓ 自動檢查更新: {state}',
     'settings.bpmQuantOn': '✓ BPM 量化已開啟',
     'settings.bpmQuantOff': '✓ BPM 量化已關閉',

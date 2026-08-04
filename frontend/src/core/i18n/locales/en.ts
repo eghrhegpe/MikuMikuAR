@@ -1602,6 +1602,7 @@ export const en: Record<string, string> = {
     'plaza.openInBrowser': 'Browser',
     'plaza.refresh': 'Refresh',
     'plaza.close': 'Close',
+    'plaza.searchTerms': 'Search Terms',
     'toast.undo': 'Undo',
     'settings.software.title': 'Software',
     'settings.software.custom': 'Custom',
