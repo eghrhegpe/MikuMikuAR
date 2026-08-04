@@ -13,6 +13,7 @@
  *   [ERROR] 架构目录树引用了磁盘不存在的文件（文档声称 X 但代码无 X）
  *   [ERROR] status.md 未提及最新 ADR（ADR 索引滞后）
  *   [ERROR] 知识卡 source_files 指向磁盘不存在的文件（卡片自身漂移）
+ *   [ERROR] 文档 frontmatter 列表项以 [ 开头被 YAML 误解析为 flow sequence（阻断 VitePress 构建）
  *   [INFO ]  源码模块符号 0% 入文档（architecture.md 树 + function-map.md 均未覆盖）
  *            注：architecture.md 目录树本就是精选子集、function-map.md 自承部分过时，
  *            故覆盖率缺口列为 INFO，不阻断 CI，仅供人工补登参考。
@@ -346,6 +347,46 @@ function checkKnowledgeMeta() {
   return { errors, warns };
 }
 
+// ---------- 检查 12：frontmatter YAML 合法性（ERROR，防 ADR-237 类误解析） ----------
+// 知识卡 frontmatter 中 `- [ADR-237 P1] 文本` 形式的列表项会被 YAML 误解析为 flow sequence，
+// 触发 VitePress 构建 `bad indentation of a sequence entry` 而整站部署失败。本检查在 CI 阶段
+// 提前拦截，避免再犯。
+// 规则：block sequence 列表项（`- [...]`）若方括号内不是「单行完整闭合的 flow sequence」或
+// 其后跟有非空白文本，即视为误解析风险。合法情形 `- [a, b]` / `- [a]`（无后续文本）放行。
+function checkFrontmatterYaml() {
+  const errors = [];
+  const dir = path.join(ROOT, 'docs');
+  const mdFiles = [];
+  (function walkDir(d) {
+    if (!fs.existsSync(d)) return;
+    for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+      const full = path.join(d, e.name);
+      const rel = toPosix(full);
+      if (CONFIG.repoExclude.some((re) => re.test(rel))) continue;
+      if (e.isDirectory()) walkDir(full);
+      else if (e.isFile() && rel.endsWith('.md')) mdFiles.push(full);
+    }
+  })(dir);
+  for (const f of mdFiles) {
+    const text = fs.readFileSync(f, 'utf8');
+    const fm = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+    if (!fm) continue;
+    const lines = fm[1].split(/\r?\n/);
+    for (let i = 0; i < lines.length; i++) {
+      const m = lines[i].match(/^(\s*)-\s+\[(.*)$/);
+      if (!m) continue;
+      const rest = m[2];
+      const idx = rest.indexOf(']');
+      const hasTrailing = idx === -1 || rest.slice(idx + 1).trim().length > 0;
+      if (hasTrailing) {
+        const rel = toPosix(f).replace(toPosix(ROOT) + '/', '');
+        errors.push(`文档 ${rel} 第 ${i + 1} 行 frontmatter 列表项以 [ 开头，YAML 会误解析为 flow sequence（应加引号包裹）: ${lines[i].trim()}`);
+      }
+    }
+  }
+  return errors;
+}
+
 // ---------- 检查 11：知识索引（README 索引 / routes 路由表）链接存在性（ERROR） ----------
 // README 索引表与 routes 路由表是手写索引，链接指向 ./xxx.md 知识卡；
 // 卡被归档/删除后索引易残留断链（历史:preset-manager/watch-import 曾漏网）。
@@ -587,6 +628,11 @@ function main() {
   }
   const knowledgeMetaWarns = km.warns;
 
+  const fy = checkFrontmatterYaml();
+  for (const e of fy) {
+    errors.push(`frontmatter YAML 合法性：${e}`);
+  }
+
   const kix = checkKnowledgeIndexLinks();
   for (const e of kix.errors) {
     errors.push(`知识索引断链：${e}`);
@@ -647,6 +693,7 @@ function main() {
   console.log(`知识卡数 / source 覆盖   : ${kc.cards} 张 / ${kc.coveredCount} 个源文件`);
   console.log(`知识卡失效 source_files  : ${kc.missingSources.length ? kc.missingSources.length + ' 个 ❌' : '无 ✅'}`);
   console.log(`知识卡治理 category/tier  : ${km.errors.length ? km.errors.length + ' 个 ❌' : '无 ✅'}`);
+  console.log(`frontmatter YAML 合法性   : ${fy.length ? fy.length + ' 个 ❌' : '无 ✅'}`);
   console.log(`architecture 卡缺 UI 入口 : ${knowledgeMetaWarns.length ? knowledgeMetaWarns.length + ' 张（WARN）' : '无 ✅'}`);
   console.log(`知识索引断链(README/routes): ${kix.errors.length ? kix.errors.length + ' 个 ❌' : '无 ✅'}`);
   console.log(`符号 0% 未文档化模块     : ${cov.undocumented}（INFO）`);
