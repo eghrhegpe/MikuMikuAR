@@ -7,7 +7,7 @@ description: MikuMikuAR 站点技术栈、路径约定、构建部署与本地�
 
 > **读者**：所有协作 AI（Copilot / CodeBuddy / WorkBuddy 等）与开发者。
 > **定位**：本文是「网站怎么搭、怎么部署、本地怎么跑」的**唯一集中入口**。其余信息（见 §8）均为分散来源，读本文一份即可建立全貌。
-> **权威事实源**：部署逻辑以 [`.github/workflows/web-pages.yml`](./.github/workflows/web-pages.yml) 为准；本文为其人类可读摘要。
+> **权威事实源**：部署逻辑以 [`.github/workflows/web-pages.yml`](../.github/workflows/web-pages.yml) 为准；本文为其人类可读摘要。
 
 ---
 
@@ -43,7 +43,7 @@ eghrhegpe.github.io/MikuMikuAR/          ← Pages 根 = 文档站（VitePress b
 ```
 
 - **路径重分配**：文档站占根、主应用降为 `/app/` 子路径（ADR-177 / ADR-225）。
-- **旧路径兼容**：历史 `/docs/` 路径经 [`scripts/redirect-stubs/docs-404-redirect.html`](./scripts/redirect-stubs/docs-404-redirect.html) 跳回根；根投放墓碑 Service Worker 注销旧 scope 的 SW（ADR-225）。
+- **旧路径兼容**：历史 `/docs/` 路径经 [`scripts/redirect-stubs/docs-404-redirect.html`](../scripts/redirect-stubs/docs-404-redirect.html) 跳回根；根投放墓碑 Service Worker 注销旧 scope 的 SW（ADR-225）。
 
 ## 4. 路径约定速查
 
@@ -58,17 +58,17 @@ eghrhegpe.github.io/MikuMikuAR/          ← Pages 根 = 文档站（VitePress b
 
 | 文件 | 作用 |
 |------|------|
-| [`.github/workflows/web-pages.yml`](./.github/workflows/web-pages.yml) | **部署流水线（权威事实源）**：构建+合并+deploy-pages |
-| [`docs/guide/.vitepress/config.ts`](./docs/guide/.vitepress/config.ts) | VitePress 配置（base、srcDir、sidebar 自动扫描、srcExclude） |
-| [`docs/guide/package.json`](./docs/guide/package.json) | VitePress 依赖与脚本（`dev`/`build`/`preview`） |
-| [`frontend/vite.web.config.ts`](./frontend/vite.web.config.ts) | 网页版构建配置（base=`/MikuMikuAR/app/`、Wails stub、MPR） |
-| [`frontend/index.web.html`](./frontend/index.web.html) | 网页版入口 HTML |
-| [`scripts/redirect-stubs/`](./scripts/redirect-stubs/) | `/docs/` 跳转 stub + 根墓碑 SW（`sw-tombstone.js`） |
-| [`.github/copilot-instructions.md`](./.github/copilot-instructions.md) | GitHub Copilot 专用架构速览（本文的 Copilot 子集） |
+| [`.github/workflows/web-pages.yml`](../.github/workflows/web-pages.yml) | **部署流水线（权威事实源）**：构建+合并+deploy-pages |
+| [`docs/.vitepress/config.ts`](./.vitepress/config.ts) | VitePress 配置（base、srcDir、sidebar 自动扫描、srcExclude） |
+| [`docs/package.json`](./package.json) | VitePress 依赖与脚本（`dev`/`build`/`preview`） |
+| [`frontend/vite.web.config.ts`](../frontend/vite.web.config.ts) | 网页版构建配置（base=`/MikuMikuAR/app/`、Wails stub、MPR） |
+| [`frontend/index.web.html`](../frontend/index.web.html) | 网页版入口 HTML |
+| [`scripts/redirect-stubs/`](../scripts/redirect-stubs/) | `/docs/` 跳转 stub + 根墓碑 SW（`sw-tombstone.js`） |
+| [`.github/copilot-instructions.md`](../.github/copilot-instructions.md) | GitHub Copilot 专用架构速览（本文的 Copilot 子集） |
 
 ## 6. 构建与部署（CI）
 
-**流水线**：[`web-pages.yml`](./.github/workflows/web-pages.yml)（名称 `Web — GitHub Pages Deploy`）。
+**流水线**：[`web-pages.yml`](../.github/workflows/web-pages.yml)（名称 `Web — GitHub Pages Deploy`）。
 
 - **触发**：`main` 分支 push，且 `frontend/index.web.html`、`frontend/vite.web.config.ts`、`frontend/src/**`、`frontend/bindings/**`、`docs/**`、`.github/workflows/web-pages.yml`、`scripts/redirect-stubs/**` 任一改动；亦支持 `workflow_dispatch` 手动触发。
 - **权限**：`pages: write` + `id-token: write`（`deploy-pages` 需要）。
@@ -77,8 +77,8 @@ eghrhegpe.github.io/MikuMikuAR/          ← Pages 根 = 文档站（VitePress b
   2. `node ../scripts/generate-locale-json.mjs`（编译语言包到 `public/locales/`，否则线上 404 回退 key）
   3. `npx vite build --config vite.web.config.ts`（`VITE_MMD_WASM_MT=1` → 解锁多线程物理）→ 产物 `frontend/dist-web/app/`
   4. `cp dist-web/app/index.web.html dist-web/app/index.html`（Pages 默认入口）
-  5. `cd docs/guide && npm ci && npm run build` → VitePress 产物 `docs/guide/.vitepress/dist/`
-  6. `cp -r ../docs/guide/.vitepress/dist/. dist-web/`（拷**目录内容**而非目录，避免根 `index.html` 缺失）
+  5. `cd docs && npm ci && npm run build` → VitePress 产物 `docs/.vitepress/dist/`
+  6. `cp -r ../docs/.vitepress/dist/. dist-web/`（拷**目录内容**而非目录，避免根 `index.html` 缺失）
   7. 追加 `/docs/` 跳转 stub、`404.html`、根墓碑 `sw.js`
   8. `actions/upload-pages-artifact` + `actions/deploy-pages`
 - **并发**：`group: web-pages`，`cancel-in-progress: true`。
@@ -95,14 +95,14 @@ eghrhegpe.github.io/MikuMikuAR/          ← Pages 根 = 文档站（VitePress b
 
 ## 8. 文档站内部要点（VitePress）
 
-配置见 [`docs/guide/.vitepress/config.ts`](./docs/guide/.vitepress/config.ts)：
+配置见 [`docs/.vitepress/config.ts`](./.vitepress/config.ts)：
 
-- **`base: '/MikuMikuAR/'`**，**`srcDir: '..'`**（指向 `docs/` 根，全量文档进站）。
+- **`base: '/MikuMikuAR/'`**，**`srcDir: '.'`**（站点根即 `docs/`，全量文档进站）。
 - **自动扫描 sidebar**：`guide/`、`docs/` 根 md、`adr/`（编号倒序）、`knowledge/`（按 category 分组）、`buglog/`（日期倒序）、`releases/`（版本倒序）均自动收录，**新增页面无需手改 sidebar 数组**。
 - **`srcExclude`**（不发布）：`guide/README.md`、`guide/img/**`、`knowledge/.archive/**`、`audit/**`、`research/**`、`superpowers/**`、`ai-new/**`、`upstream/**`、`AGENTS.md`、`dep-graph.md`。
 - **`ignoreDeadLinks: true`**：正文相对链接（如 `../../AGENTS`）多为 GitHub 仓库浏览用途，站内按路由解析会死链，统一忽略；站内导航由 sidebar 保证。
 - **nav**：首页 / 用户指南 / 知识卡 / 决策记录 / 开发运维 / GitHub。
-- **写作规范**：内容格式见 [`docs/guide/README.md`](./docs/guide/README.md)（frontmatter 模板、命名约定、铁律）。
+- **写作规范**：内容格式见 [`docs/guide/README.md`](./guide/README.md)（frontmatter 模板、命名约定、铁律）。
 
 ## 9. 相关 ADR 与文档
 
@@ -125,7 +125,7 @@ eghrhegpe.github.io/MikuMikuAR/          ← Pages 根 = 文档站（VitePress b
 |------|------|
 | 根 `AGENTS.md` | CodeBuddy / WorkBuddy 总入口 |
 | [`docs/AGENTS.md`](./AGENTS.md) | 文档索引 / AI 路由 |
-| [`.github/copilot-instructions.md`](./.github/copilot-instructions.md) | GitHub Copilot 专用 |
+| [`.github/copilot-instructions.md`](../.github/copilot-instructions.md) | GitHub Copilot 专用 |
 | **本文 `docs/WEBSITE.md`** | **所有 AI——站点架构集中说明（推荐首读）** |
 
 ---

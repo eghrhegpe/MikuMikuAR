@@ -7,7 +7,7 @@ import path from 'node:path';
 // 主应用 web 入口降为 /MikuMikuAR/app/ 子路径；本站产物由 web-pages.yml 拷入 dist-web/（根）。
 // ============================================================
 
-const docsRoot = path.resolve(__dirname, '../..'); // docs/（srcDir 根）
+const docsRoot = path.resolve(__dirname, '..'); // docs/（srcDir 根）
 
 /**
  * docs 根级「不发布」清单 —— 单一真相源。
@@ -167,7 +167,7 @@ export default defineConfig({
   title: 'MikuMikuAR 文档',
   description: 'MikuMikuAR 用户指南 + 架构文档 + 决策记录 + 知识卡',
   // 内容源 = docs/ 根（全量文档）；排除内部/未定稿目录
-  srcDir: '..',
+  srcDir: '.',
   srcExclude: [
     'guide/README.md', // 编写规范/目录,落在 /guide/README;用户指南枢纽由 guide/index.md 承担
     'guide/img/**',
