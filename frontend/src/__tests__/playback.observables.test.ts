@@ -9,7 +9,6 @@ const mockState = vi.hoisted(() => ({
     seekDragging: false,
 }));
 
-const syncAudioPlayback = vi.hoisted(() => vi.fn());
 const isAudioPlaying = vi.hoisted(() => vi.fn(() => false));
 const animateCameraVmd = vi.hoisted(() => vi.fn());
 
@@ -59,17 +58,14 @@ vi.mock('../core/config', () => ({
     },
 }));
 
-vi.mock('../outfit/audio', () => ({
-    syncAudioPlayback: (...args: unknown[]) => syncAudioPlayback(...args),
-    isAudioPlaying: () => isAudioPlaying(),
-}));
-
-vi.mock('../scene/camera/camera', () => ({
-    animateCameraVmd: (...args: unknown[]) => animateCameraVmd(...args),
-}));
-
 import { initPlaybackObservables } from '../scene/motion/playback';
 import { mockRuntime, tickObs, playObs, pauseObs, mockManager } from './playback-helpers';
+import { registerSceneAction } from '../core/scene-action-bridge';
+
+// [doc:adr-238] playback 不再静态 import outfit/audio 与 scene/camera，音频查询与相机 VMD
+// 均经 scene-action-bridge 调用；真实注册来自各自模块副作用，测试侧手动注册桩。
+registerSceneAction('isAudioPlaying', () => isAudioPlaying());
+registerSceneAction('animateCameraVmd', (frameTime: number) => animateCameraVmd(frameTime));
 
 describe('initPlaybackObservables', () => {
     const mockUpdateUI = vi.fn();
@@ -93,7 +89,6 @@ describe('initPlaybackObservables', () => {
         mockUpdateUI.mockClear();
         mockUpdateProcMotion.mockClear().mockResolvedValue(undefined);
         mockGetBeatDetector.mockClear().mockReturnValue(null);
-        syncAudioPlayback.mockClear();
         animateCameraVmd.mockClear();
         mockManager.focused.mockReset();
 

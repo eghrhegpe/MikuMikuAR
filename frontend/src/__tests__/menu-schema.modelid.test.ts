@@ -8,25 +8,27 @@ vi.mock('@/scene/motion/perception', () => mockPerception());
 vi.mock('@/scene/motion/motion-modules/registry', () => mockRegistry());
 
 import { getStateValue, setStateValue } from '../menus/menu-schema';
-import { getPerceptionStateFor, setPerceptionStateFor } from '../scene/motion/perception';
+import { getPerceptionState, setPerceptionState } from '../scene/motion/perception';
 
 describe('ADR-093 Menu Schema — modelId override', () => {
     beforeEach(() => {
         vi.clearAllMocks();
     });
 
-    it('perception. uses getPerceptionStateFor with node modelId', () => {
-        (getPerceptionStateFor as ReturnType<typeof vi.fn>).mockReturnValue({
+    // 933fa46d：感知状态改场景级单例存储，menu-schema 不再按 modelId 分流，
+    // 统一读写 getPerceptionState / setPerceptionState（modelId 仅对 motionModule 生效）。
+    it('perception. reads scene-level getPerceptionState regardless of node modelId', () => {
+        (getPerceptionState as ReturnType<typeof vi.fn>).mockReturnValue({
             eyeTrackingEnabled: true,
         });
         const val = getStateValue('perception.eyeTrackingEnabled', 'other-model');
-        expect(getPerceptionStateFor).toHaveBeenCalledWith('other-model');
+        expect(getPerceptionState).toHaveBeenCalled();
         expect(val).toBe(true);
     });
 
-    it('perception. set uses setPerceptionStateFor with node modelId', () => {
+    it('perception. set writes scene-level setPerceptionState regardless of node modelId', () => {
         setStateValue('perception.eyeTrackingEnabled', false, 'other-model');
-        expect(setPerceptionStateFor).toHaveBeenCalledWith('other-model', {
+        expect(setPerceptionState).toHaveBeenCalledWith({
             eyeTrackingEnabled: false,
         });
     });

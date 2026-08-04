@@ -15,6 +15,7 @@ import * as cameraModule from '../scene/camera/camera';
 import * as materialModule from '../scene/manager/material';
 import * as envModule from '../scene/env/env';
 import * as audioModule from '../outfit/audio';
+import { registerSceneAction } from '../core/scene-action-bridge';
 
 const mockModelManager = modelOpsShared.mockModelManager;
 
@@ -64,6 +65,9 @@ vi.mock('@babylonjs/core/Maths/math.vector', async () => {
 const _disposeModelMaterialState = vi.mocked(materialModule.disposeModelMaterialState);
 const refreshWaterRenderList = vi.mocked(envModule.refreshWaterRenderList);
 const disposeAudio = vi.mocked(audioModule.disposeAudio);
+// [doc:adr-238] model-ops 经 scene-action-bridge 调用 disposeAudio；真实注册由 outfit/audio
+// 模块副作用完成，此处 outfit/audio 被 mock 掉，故测试侧手动注册桩，否则调用被静默跳过。
+registerSceneAction('disposeAudio', () => disposeAudio());
 const switchCameraMode = vi.mocked(cameraModule.switchCameraMode);
 const getCameraMode = vi.mocked(cameraModule.getCameraMode);
 
