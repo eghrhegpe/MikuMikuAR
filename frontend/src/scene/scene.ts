@@ -178,6 +178,8 @@ import {
     createProcBeatDetector,
     getProcBeatDetector,
     onModelRemoved,
+    disposeProcMotion,
+    activateGazeTracking,
 } from './motion/proc-motion-bridge';
 import { triggerAutoSaveImpl } from './scene-serialize';
 
@@ -280,9 +282,8 @@ export function disposeScene(): void {
     _disposePlaybackObservables = null;
 
     // 3. [fix:P3] 释放程序化动作模块（BeatDetector + perception observer）
-    import('./motion/proc-motion-bridge')
-        .then(({ disposeProcMotion }) => disposeProcMotion())
-        .catch((e) => logWarn('scene', 'disposeProcMotion failed:', e));
+    //    proc-motion-bridge 已静态导入，同步释放以保持 disposeScene 同步级联契约
+    disposeProcMotion();
 
     // 4. 释放反射系统、渲染管线、环境更新、物理风系统
     disposeReflection();
@@ -497,7 +498,10 @@ async function _injectRuntimeCallbacks(runtime: IMmdRuntime, scene: Scene): Prom
     // 将 StreamAudioPlayer 接入 MMD Runtime，实现原生音画同步
     // （play/pause/seek 由 Runtime 自动管理，无需手动 syncAudioPlayback）
     swallowError(
-        Promise.resolve(getSceneAction('getStreamPlayer')?.() as Parameters<typeof runtime.setAudioPlayer>[0] | null).then((player) => {
+        Promise.resolve(
+            getSceneAction('getStreamPlayer')?.() as
+                Parameters<typeof runtime.setAudioPlayer>[0] | null
+        ).then((player) => {
             if (player) {
                 runtime.setAudioPlayer(player);
             }
@@ -584,15 +588,17 @@ function _initModelManager(
 function _injectModelCallbacks(modelManager: ModelManager, _runtime: IMmdRuntime): void {
     // 5. 注入回调解耦：model-loader / model-manager 不再直接动态导入 renderer / proc-motion-bridge
     setOnMeshesReady((meshes) => onModelMeshesReady(meshes));
-    const procMotionMod = import('./motion/proc-motion-bridge');
+    // proc-motion-bridge 已静态导入，activateGazeTracking 直接同步调用；
+    // perception 未静态导入（避免环），仍走动态导入
     const activatePerception = import('./motion/perception').then((m) => m.activatePerception);
+    swallowError(activatePerception);
     modelManager.onModelFocused = () => {
-        procMotionMod.then((m) => m.activateGazeTracking());
+        activateGazeTracking();
     };
     setOnModelLoaded((id) => {
-        procMotionMod.then((m) => m.activateGazeTracking());
+        activateGazeTracking();
         // [doc:adr-164] 新模型加载时自动激活感知层（全员感知模式下激活所有模型）
-        activatePerception.then((fn) => fn(id));
+        swallowError(activatePerception.then((fn) => fn(id)));
         // [doc:adr-168] 角色模型自动获得专属个人灯
         const inst = modelRegistry.get(id);
         if (inst?.kind === 'actor') {
@@ -830,11 +836,9 @@ export type { RenderState } from './render/renderer';
 import { registerSceneAction, getSceneAction } from '@/core/scene-action-bridge';
 registerSceneAction('findSceneModelByName', async (name: string) => {
     return (
-        modelManager.getAll().find((m) => m.name.toLowerCase().includes(name.toLowerCase())) ??
-        null
+        modelManager.getAll().find((m) => m.name.toLowerCase().includes(name.toLowerCase())) ?? null
     );
 });
-
 
 // [doc:adr-238] 注册场景初始化供 core/init 经 scene-action-bridge 调用
 registerSceneAction('initScene', () => initScene());

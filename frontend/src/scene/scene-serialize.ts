@@ -1328,11 +1328,13 @@ export function offerSceneUndo(message: string, snap: string | null, onRestored:
             {
                 label: t('toast.undo'),
                 onClick: () => {
-                    void restoreUndoSnapshot(snap).then((ok) => {
-                        if (ok) {
-                            onRestored();
-                        }
-                    });
+                    void restoreUndoSnapshot(snap)
+                        .then((ok) => {
+                            if (ok) {
+                                onRestored();
+                            }
+                        })
+                        .catch((err) => logWarn('undo', 'restoreUndoSnapshot failed', err));
                 },
             },
         ],

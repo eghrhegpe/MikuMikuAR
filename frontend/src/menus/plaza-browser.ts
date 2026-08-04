@@ -367,7 +367,7 @@ export function renderSiteContent(site: PlazaSite): HTMLElement {
     function updateSearchCount(): void {
         const custom = getCustomPresets(site.id);
         const total = custom.length + presets.length;
-        searchTitle.innerHTML = `<iconify-icon icon="lucide:search"></iconify-icon><span>网页搜索词</span><span class="plaza-section-sub">(${total})</span>`;
+        searchTitle.innerHTML = `<iconify-icon icon="lucide:search"></iconify-icon><span>${t('plaza.searchTerms')}</span><span class="plaza-section-sub">(${total})</span>`;
     }
     updateSearchCount();
     searchHeader.appendChild(searchTitle);

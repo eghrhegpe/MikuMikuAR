@@ -66,25 +66,29 @@ function _onModelLoaded(): void {
         return;
     }
     // 懒加载避免循环依赖
-    import('../core/config').then(({ dom }) => {
-        if (
-            dom.sceneOverlay.classList.contains('visible') &&
-            dom.sceneOverlay.dataset.popupType === 'model'
-        ) {
-            const stack = stackRegistry.modelStack;
-            if (stack) {
-                import('./library-core').then(({ buildModelRootItems }) => {
-                    stack.setLevel(0, {
-                        label: t('library.model'),
-                        dir: '',
-                        items: buildModelRootItems(),
-                        itemBuilder: buildModelRootItems,
-                    });
-                    stack.reRender();
-                });
+    import('../core/config')
+        .then(({ dom }) => {
+            if (
+                dom.sceneOverlay.classList.contains('visible') &&
+                dom.sceneOverlay.dataset.popupType === 'model'
+            ) {
+                const stack = stackRegistry.modelStack;
+                if (stack) {
+                    import('./library-core')
+                        .then(({ buildModelRootItems }) => {
+                            stack.setLevel(0, {
+                                label: t('library.model'),
+                                dir: '',
+                                items: buildModelRootItems(),
+                                itemBuilder: buildModelRootItems,
+                            });
+                            stack.reRender();
+                        })
+                        .catch((err) => logWarn('library', 'buildModelRootItems failed', err));
+                }
             }
-        }
-    });
+        })
+        .catch((err) => logWarn('library', 'refresh model root list on modelLoaded failed', err));
 }
 // 先移除旧监听器再注册，确保 HMR 重载不重复绑定
 _mmkuDisp?.dispose();

@@ -5,6 +5,7 @@ import { dom, mmdRuntime, setStatus } from './config';
 // ui-action-bridge 注入（navActions 已下沉 menus/nav-actions），本模块不直接 import menus。
 import { getUiAction, getUiActions } from './ui-action-bridge';
 import { t } from './i18n/t';
+import { logWarn } from './logger';
 import { focusedModelId } from './state';
 // [doc:adr-238] scene 操作经 scene-action-bridge（scene 侧注册）
 import { getSceneAction } from './scene-action-bridge';
@@ -192,11 +193,13 @@ export function registerAppShortcuts(): void {
                 // 无 motion 撤销时，尝试场景级撤销（Ctrl+Z 兼顾全局）
                 const snap = getSceneAction('popUndoSnapshot')?.();
                 if (snap) {
-                    void (getSceneAction('restoreUndoSnapshot')?.(snap) ?? Promise.resolve(false)).then((ok) => {
-                        if (ok) {
-                            setStatus(t('scene.undoApplied'), true);
-                        }
-                    });
+                    void (getSceneAction('restoreUndoSnapshot')?.(snap) ?? Promise.resolve(false))
+                        .then((ok) => {
+                            if (ok) {
+                                setStatus(t('scene.undoApplied'), true);
+                            }
+                        })
+                        .catch((err) => logWarn('undo', 'scene-level undo restore failed', err));
                 }
             },
             group: 'shortcuts.group.motionUndoRedo',
