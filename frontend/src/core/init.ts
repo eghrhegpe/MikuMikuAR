@@ -12,6 +12,7 @@ import { registerIconBundle } from './icons-bundle';
 import { initI18n } from './i18n/locale';
 import { GetConfig, CheckForUpdate, GetSystemA11ySettings } from './wails-bindings';
 import { events, initRuntimeBridge } from './runtime-bridge';
+import type { Unsubscribe } from './runtime-bridge';
 import { isAndroidPlatform, isWebPlatform } from './platform';
 import { getCapabilities, resolveBackend } from './backend';
 // [doc:adr-238] 主题纯函数下沉 core/theme，不再经 menus
@@ -32,7 +33,6 @@ import {
 // [doc:adr-238] initLibrary/refreshLibrary 经 scene-action-bridge 调用
 import { getSceneAction } from './scene-action-bridge';
 
-
 import { initShortcutDispatcher, loadKeyBindings } from './shortcut-registry';
 import { setupE2ECapture } from './dev-hooks';
 import { startRenderLoop } from './render-loop';
@@ -45,7 +45,6 @@ import {
 import { registerAppShortcuts } from './shortcut-app';
 import { addDisposableListener } from './dom';
 import { disposeOverlay2 } from './dialog';
-
 
 // [adr:audit] init 层本地事件监听收集，配合 disposeEventHandlers 实现 HMR 幂等清理
 const _initDisposables: { dispose(): void }[] = [];
@@ -103,6 +102,9 @@ async function init(): Promise<void> {
         // events.on(...) 订阅——否则 events 回落到 no-op WebEvents，Wails 后端事件
         // （ai:chunk/ai:done/ai:error、android:* 等）全部收不到，AI 流式会永久挂起。
         await initRuntimeBridge();
+        // RuntimeEvents 订阅必须在 initRuntimeBridge() 之后注册——模块顶层求值时
+        // _events 仍为 null 会静默落到一次性 WebEvents，导致事件收不到。
+        registerRuntimeEventHandlers();
         // [doc:adr-196] 启动早期安装 AI 诊断上下文采集：先 patch console.error 使所有
         // console.error（含 @/core/logger 的 logError）自动入环，再注册全局未捕获异常监听。
         // disposer 纳入 _initDisposables，HMR 重跑 init 时幂等清理旧监听器、重新安装。
@@ -469,86 +471,111 @@ function checkAndroidStoragePermission(): void {
 }
 
 // When the native side reports a fresh grant, rescan the library.
-events.on('storage:permissionGranted', async () => {
-    setStatus(t('main.permissionGranted'), false);
-    try {
-        await getSceneAction('refreshLibrary')?.();
-        setStatus(t('main.libraryRefreshed'), false);
-    } catch (err) {
-        console.error('refreshLibrary after permission grant:', err);
-        setStatus(t('main.libraryRefreshFailed') + formatError(err), true);
-    }
-});
+// [fix:audit] RuntimeEvents 订阅全部收敛到 registerRuntimeEventHandlers()：
+// - 原模块顶层 events.on 在 initRuntimeBridge() 之前求值，_events 仍为 null，
+//   会静默落到一次性 WebEvents（no-op），桌面/Android 事件全部收不到；
+// - 现在由 init() 在 await initRuntimeBridge() 之后调用，并保存 unsubscribe
+//   到 _initDisposables，HMR 重跑 init() 时幂等清理。
+function registerRuntimeEventHandlers(): void {
+    const track = (unsub: Unsubscribe): void => {
+        _initDisposables.push({ dispose: unsub });
+    };
 
-// Android back gesture → close overlays first; double-back to exit (ADR-017 A2-02).
-// Single source of truth for back handling: plaza gets dedicated cleanup
-// (stop proxy + release iframe) via closePlaza(); everything else via
-// closeAllOverlays(). The redundant handler in plaza-download.ts was removed
-// to avoid order-dependent cleanup being skipped.
-const BACK_EXIT_INTERVAL_MS = 2000;
-let _lastBackExitPress = 0;
-events.on('android:back', () => {
-    // [doc:adr-238] 菜单/遮罩优先处理下沉 menus/nav-actions（经 ui-action-bridge）；
-    // 本层只保留「无菜单可关 → 二次返回退出」逻辑。
-    const handled = getUiAction('handleAndroidBack')?.() ?? false;
-    if (handled) {
-        _lastBackExitPress = 0; // closing a panel resets the exit window
-        return;
-    }
+    track(
+        events.on('storage:permissionGranted', async () => {
+            setStatus(t('main.permissionGranted'), false);
+            try {
+                await getSceneAction('refreshLibrary')?.();
+                setStatus(t('main.libraryRefreshed'), false);
+            } catch (err) {
+                console.error('refreshLibrary after permission grant:', err);
+                setStatus(t('main.libraryRefreshFailed') + formatError(err), true);
+            }
+        })
+    );
 
-    // Nothing open → double-back-to-exit
-    const now = Date.now();
-    if (now - _lastBackExitPress < BACK_EXIT_INTERVAL_MS) {
-        window.wails?.exitApp?.();
-        return;
-    }
-    _lastBackExitPress = now;
-    showInfoToast(t('main.pressAgainToExit'), undefined, undefined, BACK_EXIT_INTERVAL_MS);
-});
+    // Android back gesture → close overlays first; double-back to exit (ADR-017 A2-02).
+    // Single source of truth for back handling: plaza gets dedicated cleanup
+    // (stop proxy + release iframe) via closePlaza(); everything else via
+    // closeAllOverlays(). The redundant handler in plaza-download.ts was removed
+    // to avoid order-dependent cleanup being skipped.
+    const BACK_EXIT_INTERVAL_MS = 2000;
+    let _lastBackExitPress = 0;
+    track(
+        events.on('android:back', () => {
+            // [doc:adr-238] 菜单/遮罩优先处理下沉 menus/nav-actions（经 ui-action-bridge）；
+            // 本层只保留「无菜单可关 → 二次返回退出」逻辑。
+            const handled = getUiAction('handleAndroidBack')?.() ?? false;
+            if (handled) {
+                _lastBackExitPress = 0; // closing a panel resets the exit window
+                return;
+            }
 
-// Android 系统事件消费（ADR-017 A3-04）
-// Java 端经 emitSystemEvent 转发 6 类事件；back/permissionGranted 已在上方消费，
-// 此处补齐剩余 4 类：ScreenLocked/NetworkChanged/BatteryChanged/ThemeChanged。
-// 仅 Android 平台注册，桌面端 Events.On 无副作用但避免无意义监听。
+            // Nothing open → double-back-to-exit
+            const now = Date.now();
+            if (now - _lastBackExitPress < BACK_EXIT_INTERVAL_MS) {
+                window.wails?.exitApp?.();
+                return;
+            }
+            _lastBackExitPress = now;
+            showInfoToast(t('main.pressAgainToExit'), undefined, undefined, BACK_EXIT_INTERVAL_MS);
+        })
+    );
 
-// 屏幕锁定 → 立即刷盘保存场景。
-// 比 visibilitychange 更可靠：部分国产 ROM WebView 切后台 visibilityState 不变 hidden，
-// 导致 cleanupAndFlushSave() 不触发；ScreenLocked 是原生广播，信号确切。
-events.on('android:ScreenLocked', () => {
-    swallowError(getSceneAction('saveSceneImmediate')?.() ?? Promise.resolve());
-});
+    // Android 系统事件消费（ADR-017 A3-04）
+    // Java 端经 emitSystemEvent 转发 6 类事件；back/permissionGranted 已在上方消费，
+    // 此处补齐剩余 4 类：ScreenLocked/NetworkChanged/BatteryChanged/ThemeChanged。
+    // 仅 Android 平台注册，桌面端 Events.On 无副作用但避免无意义监听。
 
-// 网络变化 → toast 提示（plaza 等在线功能依赖网络）
-// payload: {"online":true|false}
-events.on('android:NetworkChanged', (ev: unknown) => {
-    // Wails 事件对象：data 字段承载 Java 端 emitSystemEvent 的 JSON payload
-    const data = (ev as { data?: { online?: boolean } } | null)?.data;
-    const online = data?.online === true;
-    if (online) {
-        showInfoToast(t('main.networkOnline'));
-    } else {
-        showInfoToast(t('main.networkOffline'));
-    }
-});
+    // 屏幕锁定 → 立即刷盘保存场景。
+    // 比 visibilitychange 更可靠：部分国产 ROM WebView 切后台 visibilityState 不变 hidden，
+    // 导致 cleanupAndFlushSave() 不触发；ScreenLocked 是原生广播，信号确切。
+    track(
+        events.on('android:ScreenLocked', () => {
+            swallowError(getSceneAction('saveSceneImmediate')?.() ?? Promise.resolve());
+        })
+    );
 
-// 电量变化 → 仅日志，暂不消费（预留扩展点，未来可低电量降级渲染）
-// payload: {"level":int,"scale":int,"plugged":bool}
-events.on('android:BatteryChanged', (_ev: unknown) => {
-    // no-op: 预留扩展点
-});
+    // 网络变化 → toast 提示（plaza 等在线功能依赖网络）
+    // payload: {"online":true|false}
+    track(
+        events.on('android:NetworkChanged', (ev: unknown) => {
+            // Wails 事件对象：data 字段承载 Java 端 emitSystemEvent 的 JSON payload
+            const data = (ev as { data?: { online?: boolean } } | null)?.data;
+            const online = data?.online === true;
+            if (online) {
+                showInfoToast(t('main.networkOnline'));
+            } else {
+                showInfoToast(t('main.networkOffline'));
+            }
+        })
+    );
 
-// 主题变化 → 仅日志，暂不消费（预留扩展点，未来可跟随系统暗色模式）
-// payload: {"nightMode":bool}
-events.on('android:ThemeChanged', (_ev: unknown) => {
-    // no-op: 预留扩展点
-});
+    // 电量变化 → 仅日志，暂不消费（预留扩展点，未来可低电量降级渲染）
+    // payload: {"level":int,"scale":int,"plugged":bool}
+    track(
+        events.on('android:BatteryChanged', (_ev: unknown) => {
+            // no-op: 预留扩展点
+        })
+    );
 
-// [doc:adr-179] APK 安装失败回传（Java installApk → emitEvent）
-// payload: {"error":"..."}
-events.on('update:installFailed', (ev: unknown) => {
-    const data = (ev as { data?: { error?: string } } | null)?.data;
-    showInfoToast(data?.error || t('settings.about.update.downloadFailed'));
-});
+    // 主题变化 → 仅日志，暂不消费（预留扩展点，未来可跟随系统暗色模式）
+    // payload: {"nightMode":bool}
+    track(
+        events.on('android:ThemeChanged', (_ev: unknown) => {
+            // no-op: 预留扩展点
+        })
+    );
+
+    // [doc:adr-179] APK 安装失败回传（Java installApk → emitEvent）
+    // payload: {"error":"..."}
+    track(
+        events.on('update:installFailed', (ev: unknown) => {
+            const data = (ev as { data?: { error?: string } } | null)?.data;
+            showInfoToast(data?.error || t('settings.about.update.downloadFailed'));
+        })
+    );
+}
 
 // ======== Bootstrap ========
 // Wires dev-hooks / render-loop / events modules and starts the app.

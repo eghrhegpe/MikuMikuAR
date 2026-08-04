@@ -21,6 +21,7 @@ buglog/              🐛 Bug 修复记录
 releases/            📦 发版记录（v1.1.4 ~ v1.5.3 + release-process）
 research/            🧊 调研归档（含 dancexr-zh/ 竞品文档转储）
 superpowers/         📋 ADR 实施计划（plans/）
+website.md          🌐 网站与 Web 部署架构（技术栈+路径+构建部署+本地预览，AI 集中入口）
 ```
 
 > AI 路由入口见根目录 [`AGENTS.md`](../AGENTS.md)。
