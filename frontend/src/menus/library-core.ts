@@ -199,6 +199,9 @@ export function thumbnailKeyForModel(m: LibraryModel, resolution?: number): stri
     return buildThumbnailKey({ baseKey, isStage: isStageLike(m.type), resolution: res });
 }
 
+/** [audit-p3] 元数据单次批量上限：目录含数百模型时避免单次 GetModelMetaBatch 响应过大。 */
+const META_BATCH_SIZE = 50;
+
 async function ensureModelMeta(pmxPaths: string[]): Promise<void> {
     const guard = getPendingMetaGuard();
     const uncached = pmxPaths.filter((p) => !modelMetaCache.has(p) && !guard.isLoading(p));
@@ -209,13 +212,17 @@ async function ensureModelMeta(pmxPaths: string[]): Promise<void> {
         guard.tryEnter(p);
     }
     try {
-        const batch = await GetModelMetaBatch(uncached);
-        if (batch) {
-            const merged = new Map(modelMetaCache);
-            for (const [path, meta] of Object.entries(batch)) {
-                merged.set(path, meta);
+        // [audit-p3] 按固定大小分片顺序拉取；每片完成后立即回填缓存，部分成功也能尽早可用
+        const merged = new Map(modelMetaCache);
+        for (let i = 0; i < uncached.length; i += META_BATCH_SIZE) {
+            const chunk = uncached.slice(i, i + META_BATCH_SIZE);
+            const batch = await GetModelMetaBatch(chunk);
+            if (batch) {
+                for (const [path, meta] of Object.entries(batch)) {
+                    merged.set(path, meta);
+                }
+                setModelMetaCache(merged);
             }
-            setModelMetaCache(merged);
         }
     } catch (err) {
         logWarn('library-core', 'ensureModelMeta:', err);
@@ -611,6 +618,16 @@ function renderItemsWithRAF(
     renderBatch();
 }
 
+/** [audit-p4] 从 ResourceItem.data 安全取回 LibraryModel：仅模型项携带 data，文件夹项为 undefined。
+ *  带一次轻量形状校验，替代裸 as 断言绕过类型检查。 */
+function resourceItemAsModel(item: ResourceItem): LibraryModel | undefined {
+    if (item.isFolder || typeof item.data !== 'object' || item.data === null) {
+        return undefined;
+    }
+    const d = item.data as LibraryModel;
+    return typeof d.file_path === 'string' ? d : undefined;
+}
+
 // [修复] 全屏资源浏览器统一导航：无论 list / grid 内嵌模式，
 // 全屏一律以「grid 面板 + overlay 自有 navigate 栈」渲染，文件夹进入走 overlay.navigate（重渲染当前面板），
 // 不再触碰被冻结的 SlideMenu 栈，退出后位置不丢失。
@@ -633,7 +650,7 @@ function openResourceFullscreen(
             items: itemsForPath,
             thumbnailCache,
             onSelect: (item) => {
-                const m = item.data as LibraryModel | undefined;
+                const m = resourceItemAsModel(item);
                 if (!m) {
                     return;
                 }

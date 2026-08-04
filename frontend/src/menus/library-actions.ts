@@ -386,7 +386,8 @@ function loadModelNormal(m: LibraryModel, isStage: boolean): void {
                 feedbackError('library.modelLoadFailed', getBaseName(m.file_path), err)
             );
     } else if (m.format === 'vpd') {
-        loadVPDPose(m.file_path);
+        // [audit-p2] VPD 加载无兜底：失败静默吞掉并 logWarn，避免未处理 rejection
+        safeCallAsync('library-actions', 'loadVPDPose failed:', () => loadVPDPose(m.file_path));
     }
 }
 
@@ -481,7 +482,8 @@ function replaceMotion(m: LibraryModel): void {
             });
         return;
     }
-    void doLoad(m.file_path);
+    // [audit-p4] 非 zip 分支丢弃 doLoad 的 Promise：若中途抛异常，撤销快照已记录但异常被静默吞掉，这里统一安全包装
+    safeCallAsync('library-actions', 'doLoad failed:', () => doLoad(m.file_path));
 }
 
 // ======== 标签 ========
@@ -552,6 +554,15 @@ function buildTagsOverviewLevel(): PopupLevel {
     };
 }
 
+/** [audit-p4] 空态占位：用 createElement + textContent 而非 innerHTML，避免 i18n 文本注入 HTML。 */
+function appendEmptyHint(container: HTMLElement, key: string): void {
+    const empty = document.createElement('div');
+    empty.className = 'slide-empty';
+    empty.style.cssText = 'padding:24px;text-align:center;color:var(--text-muted);font-size:13px;';
+    empty.textContent = t(key);
+    container.appendChild(empty);
+}
+
 function buildTagDetailLevel(tagName: string): PopupLevel {
     return {
         label: t('library.tagDetail', { name: tagName }),
@@ -562,7 +573,7 @@ function buildTagDetailLevel(tagName: string): PopupLevel {
             try {
                 const modelRefs = await GetModelsByTag(tagName);
                 if (!modelRefs || modelRefs.length === 0) {
-                    container.innerHTML = `<div class="slide-empty" style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px;">${t('library.tagNoModels')}</div>`;
+                    appendEmptyHint(container, 'library.tagNoModels');
                     return;
                 }
                 const matched = (allModels || []).filter((m) => {
@@ -570,7 +581,7 @@ function buildTagDetailLevel(tagName: string): PopupLevel {
                     return ref && modelRefs.includes(ref);
                 });
                 if (matched.length === 0) {
-                    container.innerHTML = `<div class="slide-empty" style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px;">${t('library.tagNoMatch')}</div>`;
+                    appendEmptyHint(container, 'library.tagNoMatch');
                     return;
                 }
                 cardContainer(container, (c) => {

@@ -154,6 +154,7 @@ export const zhTW: Record<string, string> = {
     'menu.canvasLabel': '3D 場景',
     'menu.noHint': '暫無提示',
     'menu.noDesc': '暫無描述',
+    'menu.renderFailed': '✗ 面板渲染失敗',
 
     // ===== 主頁 =====
     'main.importing': '匯入中...',

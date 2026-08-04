@@ -1184,6 +1184,7 @@ export const zhCN: Record<string, string> = {
     'menu.canvasLabel': '3D 场景',
     'menu.noHint': '暂无提示',
     'menu.noDesc': '暂无描述',
+    'menu.renderFailed': '✗ 面板渲染失败',
 
     // settings — 硬编码状态文案收口
     'settings.invalidRegex': '✗ 无效的正则表达式',

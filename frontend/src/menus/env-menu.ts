@@ -17,6 +17,7 @@ import { registerLoadRefreshHook, registerLibraryScannedHook } from '../core/loa
 import type { MenuNode } from './menu-schema';
 import { executeActionById } from '../core/action-executor';
 import { registerEnvActions } from '../core/action-defs/env-actions';
+import { showInfoToast } from '../core/toast';
 // ======== 从子文件导入 ========
 import { buildSkyLevel } from './env-sky-levels';
 import { buildWindLevel } from './env-wind-levels';
@@ -275,7 +276,12 @@ function envOnItemClick(row: PopupRow): void {
     closeAllOverlays();
 
     const actionId = `env:bind-${target}-texture`;
-    void executeActionById(actionId, { filePath: row.model.file_path });
+    // [audit-p4] 消费执行结果：纹理绑定失败时向用户反馈，不静默丢弃
+    void executeActionById(actionId, { filePath: row.model.file_path }).then((r) => {
+        if (!r.success) {
+            showInfoToast(r.message);
+        }
+    });
 
     getEnvMenu()?.reRender();
 }

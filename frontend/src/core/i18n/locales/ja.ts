@@ -154,6 +154,7 @@ export const ja: Record<string, string> = {
     'menu.canvasLabel': '3D シーン',
     'menu.noHint': 'ヒントなし',
     'menu.noDesc': '説明なし',
+    'menu.renderFailed': '✗ パネルのレンダリングに失敗しました',
 
     // ===== メイン =====
     'main.importing': 'インポート中...',

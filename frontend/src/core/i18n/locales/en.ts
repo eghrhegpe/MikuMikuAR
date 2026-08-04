@@ -1197,6 +1197,7 @@ export const en: Record<string, string> = {
     'menu.canvasLabel': '3D Scene',
     'menu.noHint': 'No hint',
     'menu.noDesc': 'No description',
+    'menu.renderFailed': '✗ Failed to render panel',
 
     // settings — hardcoded status messages
     'settings.invalidRegex': '✗ Invalid regex',

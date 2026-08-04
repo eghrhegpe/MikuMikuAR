@@ -156,6 +156,7 @@ export const ko: Record<string, string> = {
     'menu.canvasLabel': '3D 씬',
     'menu.noHint': '힌트 없음',
     'menu.noDesc': '설명 없음',
+    'menu.renderFailed': '✗ 패널 렌더링 실패',
 
     // ===== 메인 =====
     'main.importing': '가져오는 중...',
