@@ -48,7 +48,7 @@ symbols:
   - stopProcMotion
   - updateProcMotion
 invariants:
-  - [ADR-237 P1] 三文件拆分：bridge（转发层 135 行）/ controller（状态机核心 392 行）/ params（setter mixin 289 行）
+  - "[ADR-237 P1] 三文件拆分：bridge（转发层 135 行）/ controller（状态机核心 392 行）/ params（setter mixin 289 行）"
   - 内部使用 `ProcMotionController` 类（导出，组合 ProcMotionControllerBase + ProcMotionParamsMixin）收口状态
   - 基类 `_fallbackProcState`/`_beatDetector`/`_refProcState` 为 protected，供 params mixin 访问
   - disposeProcMotion() 一键清零全部状态并销毁单例
