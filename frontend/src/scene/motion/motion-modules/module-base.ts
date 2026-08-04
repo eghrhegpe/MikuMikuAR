@@ -74,6 +74,25 @@ export function createModuleBase(
         return snap;
     }
 
+    /** 应用启用：置 enabled=true 并重烤静态覆盖（setState/enable 共用） */
+    function applyEnable(): void {
+        const state = getModuleState(modelId, moduleId, actionId);
+        state.enabled = true;
+        doAction(modelId);
+    }
+
+    /** 应用禁用：置 enabled=false 并释放骨骼/注销帧钩子（setState/disable 共用） */
+    function applyDisable(): void {
+        const state = getModuleState(modelId, moduleId, actionId);
+        state.enabled = false;
+        overrides?.onDisable?.(modelId);
+        if (!overrides?.skipBonesCleanup) {
+            // [doc:adr-147 Phase 2 step 2] store.releaseBones 已级联清引擎槽
+            // （onClearEngineSlot → clearBoneOverride），此处不再双清，避免重复调用断言破。
+            releaseOwnedBones(modelId, moduleId);
+        }
+    }
+
     return {
         getState(): MotionModuleState {
             const state = getModuleState(modelId, moduleId, actionId);
@@ -88,6 +107,13 @@ export function createModuleBase(
             const state = getModuleState(modelId, moduleId, actionId);
             state.enabled = s.enabled;
             state.params = { ...s.params };
+            // [audit:P2] 与 enable()/disable() 对齐：setState 直接生效
+            // （enabled → 重烤；disabled → 释放骨骼），不再要求调用方 setState 后手动 enable/disable。
+            if (s.enabled) {
+                applyEnable();
+            } else {
+                applyDisable();
+            }
         },
 
         setParam(name: string, value: ParamValue): void {
@@ -106,22 +132,8 @@ export function createModuleBase(
             doAction(modelId);
         },
 
-        enable(): void {
-            const state = getModuleState(modelId, moduleId, actionId);
-            state.enabled = true;
-            doAction(modelId);
-        },
-
-        disable(): void {
-            const state = getModuleState(modelId, moduleId, actionId);
-            state.enabled = false;
-            overrides?.onDisable?.(modelId);
-            if (!overrides?.skipBonesCleanup) {
-                // [doc:adr-147 Phase 2 step 2] store.releaseBones 已级联清引擎槽
-                // （onClearEngineSlot → clearBoneOverride），此处不再双清，避免重复调用断言破。
-                releaseOwnedBones(modelId, moduleId);
-            }
-        },
+        enable: applyEnable,
+        disable: applyDisable,
     };
 }
 
@@ -138,12 +150,8 @@ export function applyModuleSnapshot(
         if (!mod) {
             continue;
         }
+        // [audit:P2] setState 自生效（enabled → 重烤；disabled → 释放骨骼），无需再手动 enable/disable
         mod.setState({ id: moduleId, ...state });
-        if (state.enabled) {
-            mod.enable();
-        } else {
-            mod.disable();
-        }
     }
     for (const mod of getRegisteredModules()) {
         if (!(mod.id in snapshot)) {

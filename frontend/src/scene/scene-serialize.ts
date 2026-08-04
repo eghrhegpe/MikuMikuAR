@@ -875,10 +875,8 @@ async function deserializeModels(
                         );
                         continue;
                     }
+                    // [audit:P2] setState 自生效（enabled → 重烘焙；disabled → 释放骨骼），无需再手动 enable
                     mod.setState(ms);
-                    if (ms.enabled) {
-                        mod.enable(); // 重烘焙到引擎 _overrideMap
-                    }
                 }
             } catch (err) {
                 logWarn('scene-serialize', `场景恢复: 模型 ${m.name} 动作覆盖模块恢复失败:`, err);

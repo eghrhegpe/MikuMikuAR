@@ -29,13 +29,22 @@ const _fallbackModuleStates = new Map<string, MotionModuleState>();
 
 const _registry = new Map<string, RegistryEntry>();
 
-/** 注册一个动作覆盖模块 */
+/**
+ * 注册一个动作覆盖模块。
+ * [audit:P1] 知识卡不变量「模块 name 必须唯一，重复注册报错」：
+ * 重复 id 不再静默覆盖——console.warn 告警后覆盖。
+ * 内置模块经 initMotionModules 幂等注册（_initialized 守卫）不会触发；
+ * 此处主要拦截插件/外部注册的重复 id，且不 throw 以免破坏 vite HMR 热重载（模块重执行后重复注册）。
+ */
 export function registerModule(
     id: string,
     meta: ModuleMeta,
     priority: number,
     factory: ModuleFactory
 ): void {
+    if (_registry.has(id)) {
+        console.warn(`[registry] module "${id}" 已注册，将被覆盖`);
+    }
     _registry.set(id, { factory, meta, priority });
 }
 
