@@ -4,7 +4,7 @@
 
 本目录的章节文件**必须且只能**放入以下 10 个顶级文件夹之一，或 `appendix/` 下的 4 个分组之一，优先利用已有文档，已有文件夹。
 
-> **映射表唯一事实源**：10 个顶级文件夹 ↔ `frontend/src/` 代码目录、附录 4 组的主题与典型内容，由 `scripts/gen-novel-index.mjs` 扫描生成，完整映射见 [README.md](./README.md)（目录结构总览）。此处**不手维护映射表**——改映射请改脚本常量 `MAIN_CHAPTERS` / `APPENDIX_GROUPS`，再跑 `npm run gen:novelindex` 同步 README，避免双源漂移。
+> **映射表唯一事实源**：10 个顶级文件夹 ↔ `frontend/src/` 代码目录、附录 4 组的主题与典型内容，由 `scripts/gen-novel-index.mjs` 扫描生成，完整映射见 [index.md](./index.md)（目录结构总览）。此处**不手维护映射表**——改映射请改脚本常量 `MAIN_CHAPTERS` / `APPENDIX_GROUPS`，再跑 `npm run gen:novelindex` 同步 index，避免双源漂移。
 
 具体路由决策（改了代码 → 命中哪一章）见第二节。
 
@@ -35,7 +35,7 @@ tests/ / .github/ / CI / Vitest                           → appendix/文档演
 
 ## 三、禁止行为
 
-- ❌ **严禁在 `novel/` 根目录创建新的 `.md` 文件**（`README.md` / `SKELETON.md` / `AGENTS.md` 除外）
+- ❌ **严禁在 `novel/` 根目录创建新的 `.md` 文件**（`index.md` / `SKELETON.md` / `AGENTS.md` 除外）
 - ❌ **严禁创建新的顶级文件夹**（10 章 + `appendix/` 已锁定）
 - ❌ **严禁在 `appendix/` 下创建新的分组**（4 组已锁定）
 - ✅ 新增章节时，根据改动的代码目录放入对应章，附录内容放入对应分组
@@ -50,12 +50,12 @@ tests/ / .github/ / CI / Vitest                           → appendix/文档演
 ## 四、卷号与目录解耦
 
 - **物理目录**服从"代码目录锚定"（10 章 + appendix）
-- **叙事卷号**（vol-0 ~ vol-10）是叙事时间线，在章节文件内顶部标题保留，在 `README.md` 映射表中维护
+- **叙事卷号**（vol-0 ~ vol-10）是叙事时间线，在章节文件内顶部标题保留，在 `index.md` 映射表中维护
 - 两套体系互不干扰：AI 按物理目录定位章，读者按卷号读叙事
 
 ## 五、现有章节索引
 
-各章详细映射详见 [README.md](./README.md) 。
+各章详细映射详见 [index.md](./index.md) 。
 世界观模板详见 [SKELETON.md](./SKELETON.md) 。
 
 ## 六、写作标杆
