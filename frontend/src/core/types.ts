@@ -31,6 +31,9 @@ export type BoneOverrideEntry = {
     absolute?: boolean;
 };
 
+/** 骨骼覆盖类型（着色/诊断共用枚举） */
+export type OverrideType = 'rotation' | 'position' | 'both';
+
 // ======== Motion Override Module Types (ADR-116) ========
 
 /** [doc:adr-116] 动作覆盖模块语义参数值 */
