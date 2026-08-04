@@ -63,7 +63,6 @@ describe('ObserverRegistry', () => {
 
         reg.disposeAll();
         expect(() => reg.disposeAll()).not.toThrow(); // 第二次调用
-        expect(() => reg.clear()).not.toThrow(); // clear 别名也安全
         expect(reg.size).toBe(0);
     });
 
@@ -89,13 +88,13 @@ describe('ObserverRegistry', () => {
         expect(reg.remove(dummy)).toBe(false);
     });
 
-    it('clear alias behaves like disposeAll', () => {
+    it('disposeAll clears all registrations', () => {
         const obs = new Observable<void>();
         const reg = new ObserverRegistry();
         reg.add(obs, () => {});
         expect(reg.size).toBe(1);
 
-        reg.clear();
+        reg.disposeAll();
         expect(reg.size).toBe(0);
     });
 });

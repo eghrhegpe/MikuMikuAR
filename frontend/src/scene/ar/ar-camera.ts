@@ -25,7 +25,6 @@ let _active = false;
 let _facing: CameraFacing = 'user';
 let _stream: MediaStream | null = null;
 let _videoEl: HTMLVideoElement | null = null;
-const _originalClearColor: { r: number; g: number; b: number; a: number } | null = null;
 let _mirrorOverridden = false; // 用户是否手动设置过镜像
 type ARModeChangeListener = (active: boolean) => void;
 const _listeners: ARModeChangeListener[] = [];
