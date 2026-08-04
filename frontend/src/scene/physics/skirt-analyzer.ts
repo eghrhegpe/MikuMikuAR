@@ -94,13 +94,13 @@ class UnionFind {
             return x;
         }
         let root = x;
-        while (this.parent.get(root)! !== root) {
-            root = this.parent.get(root)!;
+        while ((this.parent.get(root) ?? root) !== root) {
+            root = this.parent.get(root) ?? root;
         }
         // 路径压缩
         let cur = x;
-        while (this.parent.get(cur)! !== root) {
-            const next = this.parent.get(cur)!;
+        while ((this.parent.get(cur) ?? cur) !== root) {
+            const next = this.parent.get(cur) ?? cur;
             this.parent.set(cur, root);
             cur = next;
         }
