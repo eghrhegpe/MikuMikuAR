@@ -8,6 +8,13 @@
  *   node scripts/check-adr-health.mjs              # 默认输出
  *   node scripts/check-adr-health.mjs --json        # JSON格式输出
  *   node scripts/check-adr-health.mjs --verbose     # 详细输出
+ * 设计意图：ADR 健康综合检查（状态/债务/格式/关联/连续性）
+ * 依赖：fs / path / url / 本地模块
+ * 用法：
+ *   node scripts/check-adr-health.mjs                 # 默认行为
+ *   node scripts/check-adr-health.mjs --json    # JSON 输出（CI/子代理消费）
+ *   node scripts/check-adr-health.mjs --verbose # 启用 verbose
+ * 退出码：1（失败）
  */
 
 import fs from 'fs';

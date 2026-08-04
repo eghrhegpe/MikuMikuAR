@@ -1,8 +1,15 @@
-// @ts-check
-// 将 frontend/src/core/i18n/locales/*.ts 编译为独立的 JSON 文件，
-// 输出到 frontend/public/locales/，供运行时 fetch 加载。
-// 这样语言包不再打包进主 bundle，实现按需加载。
-
+/**
+ * generate-locale-json.mjs — i18n 语言包 JSON 生成器（esbuild 编译 .ts → JSON）
+ *
+ * 设计意图：i18n 语言包 JSON 生成器（esbuild 编译 .ts → JSON）
+ *
+ * 依赖：node:fs / node:path / node:url / node:module
+ *
+ * 用法：
+ *   node scripts/generate-locale-json.mjs                 # 默认行为
+ *
+ * 退出码：1（失败）
+ */
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -14,11 +21,9 @@ const FRONTEND = path.join(ROOT, 'frontend');
 const LOCALE_DIR = path.join(FRONTEND, 'src', 'core', 'i18n', 'locales');
 const OUTPUT_DIR = path.join(FRONTEND, 'public', 'locales');
 
-// esbuild 在 frontend/node_modules 里，从 frontend/ 解析
 const require = createRequire(FRONTEND + '/package.json');
 const esbuild = require('esbuild');
 
-// .ts 文件名 → 导出名映射（zh-CN.ts → zhCN, en.ts → en, …）
 const EXPORT_NAMES = {
   'zh-CN.ts': 'zhCN',
   'en.ts': 'en',
@@ -37,7 +42,6 @@ async function main() {
       continue;
     }
 
-    // 用 esbuild 编译 .ts → CJS
     const result = await esbuild.build({
       entryPoints: [entryPath],
       format: 'cjs',
@@ -49,7 +53,6 @@ async function main() {
 
     const code = result.outputFiles[0].text;
 
-    // 在沙箱中执行 CJS 模块
     const mod = { exports: {} };
     const fn = new Function('module', 'exports', code);
     fn(mod, mod.exports);
