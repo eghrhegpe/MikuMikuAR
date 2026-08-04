@@ -13,6 +13,7 @@ import { TECHNICAL_DEBT_KEYWORDS } from './_lib/adr-status-categories.mjs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ADR_DIR = path.join(__dirname, '..', 'docs', 'adr');
+const JSON_OUT = process.argv.includes('--json');
 
 const DEBT_KEYWORDS = TECHNICAL_DEBT_KEYWORDS;
 
@@ -41,8 +42,13 @@ function main() {
     }
   }
 
+  if (JSON_OUT) {
+    console.log(JSON.stringify({ count: debtItems.length, debtItems }, null, 2));
+    return;
+  }
+
   console.log(`技术债务: ${debtItems.length} 个 ADR 需要关注`);
-  
+
   if (debtItems.length > 0) {
     debtItems.forEach(item => console.log(`  - ${item}`));
   }

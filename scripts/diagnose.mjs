@@ -1,15 +1,20 @@
 #!/usr/bin/env node
 /**
- * diagnose.mjs — 全量项目诊断编排
+ * diagnose.mjs — 全量项目诊断编排。
  *
  * 由快到慢执行所有质量检查：
  *  - 秒级：status/funcmap/lint/goerr/i18n/icons/format/circular/deadcode/docs
  *  - 分钟级：全量单测
  *
- * 用法：npm run diagnose
- *       node scripts/diagnose.mjs            # 全量
- *       node scripts/diagnose.mjs --fast     # 只跑秒级，跳过测试
- *       node scripts/diagnose.mjs --slow     # 只跑测试
+ * 依赖：node:child_process（execSync 编排）、node:path / node:url。
+ *
+ * 用法：
+ *   npm run diagnose                          # 全量
+ *   node scripts/diagnose.mjs                 # 全量
+ *   node scripts/diagnose.mjs --fast          # 只跑秒级，跳过测试
+ *   node scripts/diagnose.mjs --slow          # 只跑测试
+ *
+ * 退出码：任一子检查失败则非零退出（透传子进程退出码）。
  */
 
 import { execSync } from "node:child_process";

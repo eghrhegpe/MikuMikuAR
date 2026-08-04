@@ -32,8 +32,8 @@ const BINDINGS_FILE = resolve(
     'models.ts'
 );
 
-const { strict } = parseArgs(process.argv.slice(2), {
-    bools: ['strict'],
+const { strict, json } = parseArgs(process.argv.slice(2), {
+    bools: ['strict', 'json'],
 });
 
 // ======== 豁免表：已确认的合理差异（双向） ========
@@ -100,6 +100,18 @@ const schemaOnlyExempt = schemaOnly.filter((k) => EXEMPT_SCHEMA_ONLY.has(k));
 const schemaOnlyReal = schemaOnly.filter((k) => !EXEMPT_SCHEMA_ONLY.has(k));
 const bindOnlyExempt = bindOnly.filter((k) => EXEMPT_BIND_ONLY.has(k));
 const bindOnlyReal = bindOnly.filter((k) => !EXEMPT_BIND_ONLY.has(k));
+
+const failedParity = schemaOnlyReal.length > 0 || bindOnlyReal.length > 0;
+if (json) {
+    console.log(JSON.stringify({
+        schemaOnlyReal,
+        bindOnlyReal,
+        schemaOnlyExempt,
+        bindOnlyExempt,
+        failed: failedParity,
+    }, null, 2));
+    process.exit(failedParity && strict ? 1 : 0);
+}
 
 console.log('EnvState 字段 parity 检查 — env-state-schema.ts ↔ Go bindings models.ts');
 console.log(`  权威源 schema: ${schemaKeys.size} 字段 | Go bindings: ${bindKeys.size} 字段`);

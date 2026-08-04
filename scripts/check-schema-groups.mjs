@@ -16,8 +16,8 @@ import { parseArgs } from './_lib/parse-args.mjs';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SCHEMA_FILE = resolve(__dirname, '..', 'frontend', 'src', 'core', 'env-state-schema.ts');
 
-const { strict } = parseArgs(process.argv.slice(2), {
-  bools: ['strict'],
+const { strict, json } = parseArgs(process.argv.slice(2), {
+  bools: ['strict', 'json'],
 });
 
 // 已知豁免字段：有充分理由不设 group
@@ -101,6 +101,11 @@ while (i < lines.length) {
 
 const missing = fields.filter((f) => !f.hasGroup && !EXEMPT_FIELDS.has(f.name));
 const exemptFound = fields.filter((f) => !f.hasGroup && EXEMPT_FIELDS.has(f.name));
+
+if (json) {
+    console.log(JSON.stringify({ total: fields.length, missing, exemptFound }, null, 2));
+    process.exit(missing.length > 0 && strict ? 1 : 0);
+}
 
 console.log(`Schema group 完整性检查 — env-state-schema.ts`);
 console.log(`  总字段: ${fields.length}`);

@@ -19,7 +19,8 @@ const LOCALES_DIR = resolve(__dirname, '..', 'frontend', 'src', 'core', 'i18n', 
 const BASE_LANG = 'zh-CN';
 const REFERENCE_LANGS = ['en', 'ja', 'ko', 'zh-TW'];
 
-const { strict } = parseArgs(process.argv.slice(2), { bools: ['strict'], strings: [], defaults: {} });
+const { strict, json } = parseArgs(process.argv.slice(2), { bools: ['strict', 'json'], strings: [], defaults: {} });
+const log = json ? () => {} : console.log.bind(console);
 
 // 抽取 bundle 对象里的所有 key（形如 `  'some.key': '...'` 或 `"some.key": "..."`），
 // 排除方法定义（`'x': (...) =>`）——bundle 均为纯字符串值，故可安全过滤。
@@ -77,8 +78,8 @@ for (const ref of refs) {
     report.push(lines.join('\n'));
 }
 
-console.log(`i18n parity — base lang: ${BASE_LANG} (${base.keys.size} keys)`);
-console.log(report.join('\n'));
+log(`i18n parity — base lang: ${BASE_LANG} (${base.keys.size} keys)`);
+log(report.join('\n'));
 
 // 占位符一致性校验
 const basePH = extractPlaceholders(resolve(LOCALES_DIR, `${BASE_LANG}.ts`));
@@ -101,25 +102,25 @@ for (const ref of refs) {
     }
 }
 if (phReport.length) {
-    console.log(`\n⚠ ${phIssues} placeholder mismatch(es) across bundles:`);
-    console.log(phReport.join('\n'));
-    console.log('  These cause t() to silently leave {xxx} unreplaced at runtime.');
+    log(`\n⚠ ${phIssues} placeholder mismatch(es) across bundles:`);
+    log(phReport.join('\n'));
+    log('  These cause t() to silently leave {xxx} unreplaced at runtime.');
 } else {
-    console.log('\n✅ All placeholder sets are consistent across bundles.');
+    log('\n✅ All placeholder sets are consistent across bundles.');
 }
 
 if (totalMissing > 0) {
-    console.log(`\n⚠ ${totalMissing} key(s) missing across translation bundles.`);
-    console.log('  These silently fall back to zh-CN at runtime (t.ts fallback chain).');
-    console.log('  Fill them in the corresponding frontend/src/core/i18n/locales/*.ts,');
-    console.log('  then this check goes green.');
-    if (strict) {
+    log(`\n⚠ ${totalMissing} key(s) missing across translation bundles.`);
+    log('  These silently fall back to zh-CN at runtime (t.ts fallback chain).');
+    log('  Fill them in the corresponding frontend/src/core/i18n/locales/*.ts,');
+    log('  then this check goes green.');
+    if (strict && !json) {
         console.error(`\n[i18n-check] --strict: ${totalMissing} missing key(s) → CI fails.`);
         process.exit(1);
     }
-    console.log('  (warning mode — non-blocking. Flip to --strict after gaps cleared.)');
+    log('  (warning mode — non-blocking. Flip to --strict after gaps cleared.)');
 } else {
-    console.log('\n✅ All translation bundles are key-aligned with the base.');
+    log('\n✅ All translation bundles are key-aligned with the base.');
 }
 
 // ======== ADR-212 P4: 漏译检测（zh-CN 中纯英文值）========
@@ -171,21 +172,21 @@ for (const [key, value] of zhCNEntries) {
 if (untranslated.length > 0) {
     const maxShow = 20;
     const shown = untranslated.slice(0, maxShow);
-    console.log(`\n⚠ ${untranslated.length} 个 zh-CN 条目疑似漏译（值不含中文字符）:`);
+    log(`\n⚠ ${untranslated.length} 个 zh-CN 条目疑似漏译（值不含中文字符）:`);
     for (const { key, value } of shown) {
-        console.log(`  ${key}: '${value}'`);
+        log(`  ${key}: '${value}'`);
     }
     if (untranslated.length > maxShow) {
-        console.log(`  ... 及其他 ${untranslated.length - maxShow} 个条目`);
+        log(`  ... 及其他 ${untranslated.length - maxShow} 个条目`);
     }
-    console.log('  这些条目在 zh-CN.ts 中为纯英文，可能是翻译遗漏。');
-    if (strict) {
+    log('  这些条目在 zh-CN.ts 中为纯英文，可能是翻译遗漏。');
+    if (strict && !json) {
         console.error(`\n[i18n-check] --strict: ${untranslated.length} untranslated entry(s) → CI fails.`);
         process.exit(1);
     }
-    console.log('  (warning mode — non-blocking.)');
+    log('  (warning mode — non-blocking.)');
 } else {
-    console.log('\n✅ zh-CN 基准包无漏译（所有条目均含中文字符）。');
+    log('\n✅ zh-CN 基准包无漏译（所有条目均含中文字符）。');
 }
 
 // ======== AVAILABLE_LANGS 与 locales/*.ts 文件集一致性校验 ========
@@ -210,16 +211,39 @@ const inAvailNotFile = availableLangs.filter((l) => !fileSet.has(l));
 const inFileNotAvail = langFiles.filter((f) => !availSet.has(f));
 
 if (inAvailNotFile.length || inFileNotAvail.length) {
-    console.log('\n⚠ AVAILABLE_LANGS (t.ts) 与 locales/*.ts 文件集不一致:');
-    if (inAvailNotFile.length) console.log('  仅声明于 AVAILABLE_LANGS 但无 bundle 文件: ' + inAvailNotFile.join(', '));
-    if (inFileNotAvail.length) console.log('  存在 bundle 文件但未列入 AVAILABLE_LANGS: ' + inFileNotAvail.join(', '));
-    console.log('  请同步 frontend/src/core/i18n/t.ts 与 frontend/src/core/i18n/locales/。');
-    if (strict) {
+    log('\n⚠ AVAILABLE_LANGS (t.ts) 与 locales/*.ts 文件集不一致:');
+    if (inAvailNotFile.length) log('  仅声明于 AVAILABLE_LANGS 但无 bundle 文件: ' + inAvailNotFile.join(', '));
+    if (inFileNotAvail.length) log('  存在 bundle 文件但未列入 AVAILABLE_LANGS: ' + inFileNotAvail.join(', '));
+    log('  请同步 frontend/src/core/i18n/t.ts 与 frontend/src/core/i18n/locales/。');
+    if (strict && !json) {
         console.error('\n[i18n-check] --strict: AVAILABLE_LANGS 与文件集不一致 → CI fails.');
         process.exit(1);
     }
-    console.log('  (warning mode — non-blocking.)');
+    log('  (warning mode — non-blocking.)');
 } else {
-    console.log(`\n✅ AVAILABLE_LANGS (${availableLangs.length}) 与 locales/*.ts 文件集完全一致。`);
+    log(`\n✅ AVAILABLE_LANGS (${availableLangs.length}) 与 locales/*.ts 文件集完全一致。`);
+}
+if (json) {
+    const failed =
+        totalMissing > 0 ||
+        phIssues > 0 ||
+        untranslated.length > 0 ||
+        inAvailNotFile.length > 0 ||
+        inFileNotAvail.length > 0;
+    console.log(
+        JSON.stringify(
+            {
+                baseLang: BASE_LANG,
+                baseKeys: base.keys.size,
+                keyParity: report,
+                placeholderMismatches: phReport,
+                untranslated,
+                langListDrift: { inAvailNotFile, inFileNotAvail },
+            },
+            null,
+            2
+        )
+    );
+    process.exit(failed && strict ? 1 : 0);
 }
 process.exit(0);

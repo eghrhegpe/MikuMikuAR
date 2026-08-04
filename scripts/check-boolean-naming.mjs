@@ -17,7 +17,7 @@ import { parseArgs } from './_lib/parse-args.mjs';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SCHEMA_FILE = resolve(__dirname, '..', 'frontend', 'src', 'core', 'env-state-schema.ts');
 
-const { strict } = parseArgs(process.argv.slice(2), { bools: ['strict'] });
+const { strict, json } = parseArgs(process.argv.slice(2), { bools: ['strict', 'json'] });
 
 const text = readFileSync(SCHEMA_FILE, 'utf8');
 
@@ -98,6 +98,11 @@ while (i < lines.length) {
         }
     }
     i = j;
+}
+
+if (json) {
+    console.log(JSON.stringify({ totalBoolFields, violations }, null, 2));
+    process.exit(violations.length > 0 && strict ? 1 : 0);
 }
 
 console.log(`Boolean 字段命名检查 — env-state-schema.ts`);

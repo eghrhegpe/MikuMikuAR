@@ -255,7 +255,7 @@
 | `resolveFileUrl()` | `core/fileservice:52` | 从文件路径解析出 HTTP URL 及对应服务器信息。 |
 | `resolveModelDir()` | `core/fileservice:85` | 从文件路径解析出隔离后的目录路径（不启动 HTTP 服务器）。 |
 | `formatTimestamp()` | `core/format-timestamp:6` | 格式化日期为 HH:MM:SS.mmm 字符串。 |
-| `formatError()` | `core/format:19` | 将任意错误值转换为人类可读字符串，带截断保护。 |
+| `formatError()` | `core/format:22` | 将任意错误值转换为人类可读字符串，带截断保护。 |
 | `formatTime()` | `core/format:8` | 格式化秒数为 `MM:SS.CC` 字符串（分:秒.百分秒）。 |
 | `freeflyInput()` | `core/freefly-state:8` | — |
 | `Ktx2Capability()` | `core/gpu-capabilities:8` | — |
@@ -368,13 +368,13 @@
 | `isUnderRoot()` | `core/path:68` | [doc:adr-090][doc:adr-095] 路径归属判定（唯一实现，基于 normPath）。 |
 | `normPath()` | `core/path:15` | 标准化路径：反斜杠 → 正斜杠，去掉尾部斜杠。 |
 | `awaitWailsBridge()` | `core/platform:44` | Waits for the Wails bridge (window.wails) to be injected by the WebView. |
-| `guardExternalAction()` | `core/platform:114` | Guards an external application action (Blender, MMD, etc.) that is not available on Androi |
+| `guardExternalAction()` | `core/platform:118` | Guards an external application action (Blender, MMD, etc.) that is not available on Androi |
 | `isAndroidPlatform()` | `core/platform:13` | Returns true when running inside the Android WebView (Wails v3). |
-| `isWebEntryMode()` | `core/platform:125` | [doc:adr-196/176] 运行时判定是否为 web 入口（短路标记或构建模式）。 |
+| `isWebEntryMode()` | `core/platform:129` | [doc:adr-196/176] 运行时判定是否为 web 入口（短路标记或构建模式）。 |
 | `isWebPlatform()` | `core/platform:28` | Returns true when running in a pure browser (no Wails bridge). |
-| `openExternalLink()` | `core/platform:96` | 打开外链的统一入口：先尝试 Android `&lt;a&gt;.click()` 方式，失败则回退 `window.open`。 |
-| `openExternalURL()` | `core/platform:78` | Opens a URL in the system browser. |
-| `readDeclaredAdapter()` | `core/platform:135` | [doc:adr-196/176] 读取 globalThis 上声明的适配器身份（'go' | 'browser'）。 |
+| `openExternalLink()` | `core/platform:100` | 打开外链的统一入口：先尝试 Android `&lt;a&gt;.click()` 方式，失败则回退 `window.open`。 |
+| `openExternalURL()` | `core/platform:82` | Opens a URL in the system browser. |
+| `readDeclaredAdapter()` | `core/platform:139` | [doc:adr-196/176] 读取 globalThis 上声明的适配器身份（'go' | 'browser'）。 |
 | `autoLoop()` | `core/playback-state:13` | — |
 | `isPlaying()` | `core/playback-state:8` | [doc:architecture] Playback control store — ADR-141 split from core/state.ts. |
 | `seekDragging()` | `core/playback-state:20` | — |
@@ -759,14 +759,14 @@
 | 符号 | 文件:行 | 说明 |
 |------|--------|------|
 | `CameraFacing()` | `scene/ar/ar-camera:13` | — |
-| `captureARScreenshot()` | `scene/ar/ar-camera:241` | 截取 AR 合成画面（视频底 + 3D 模型层）。 |
-| `getARFacing()` | `scene/ar/ar-camera:80` | — |
-| `isARActive()` | `scene/ar/ar-camera:76` | — |
-| `isARMirrored()` | `scene/ar/ar-camera:228` | 当前是否镜像显示。 |
-| `setARMirror()` | `scene/ar/ar-camera:221` | 设置是否镜像显示（前置默认镜像，后置默认不镜像）。用户手动调用后标记为 overridden，切换摄像头时保持用户设置。 |
-| `startARCamera()` | `scene/ar/ar-camera:89` | 启动 AR 摄像头并显示视频背景。 |
-| `stopARCamera()` | `scene/ar/ar-camera:189` | 停止 AR 摄像头，释放资源并隐藏视频背景。 |
-| `switchARCameraFacing()` | `scene/ar/ar-camera:208` | 切换前后摄像头。 |
+| `captureARScreenshot()` | `scene/ar/ar-camera:240` | 截取 AR 合成画面（视频底 + 3D 模型层）。 |
+| `getARFacing()` | `scene/ar/ar-camera:79` | — |
+| `isARActive()` | `scene/ar/ar-camera:75` | — |
+| `isARMirrored()` | `scene/ar/ar-camera:227` | 当前是否镜像显示。 |
+| `setARMirror()` | `scene/ar/ar-camera:220` | 设置是否镜像显示（前置默认镜像，后置默认不镜像）。用户手动调用后标记为 overridden，切换摄像头时保持用户设置。 |
+| `startARCamera()` | `scene/ar/ar-camera:88` | 启动 AR 摄像头并显示视频背景。 |
+| `stopARCamera()` | `scene/ar/ar-camera:188` | 停止 AR 摄像头，释放资源并隐藏视频背景。 |
+| `switchARCameraFacing()` | `scene/ar/ar-camera:207` | 切换前后摄像头。 |
 | `isARModeActive()` | `scene/ar/ar-scene:243` | — |
 | `setARMode()` | `scene/ar/ar-scene:161` | 切换 AR 模式（摄像头视频背景 + 透明 canvas）。 |
 | `takeARScreenshot()` | `scene/ar/ar-scene:239` | AR 合成截图（视频底 + 3D 层），供截图功能调用。异步版（ADR-017 A2-04）。 |
@@ -859,10 +859,10 @@
 | `setScriptedSubMode()` | `scene/camera/camera-state:172` | — |
 | `setSurroundPaused()` | `scene/camera/camera-state:220` | — |
 | `setViewMatrixHandle()` | `scene/camera/camera-state:321` | — |
-| `animateCameraVmd()` | `scene/camera/camera-vmd:82` | Animate the VMD camera to a given 30fps frame time. |
+| `animateCameraVmd()` | `scene/camera/camera-vmd:83` | Animate the VMD camera to a given 30fps frame time. |
 | `clearCameraVmd()` | `scene/camera/camera-vmd:68` | — |
-| `createVmdCamera()` | `scene/camera/camera-vmd:89` | 创建 VMD 相机（若已存在则复用）。供 camera.ts switchCameraMode 在 vmd 分支使用。 |
-| `hasCameraAnimationHandle()` | `scene/camera/camera-vmd:100` | VMD 相机动画句柄是否就绪（switchCameraMode 在 vmd 分支前置检查）。 |
+| `createVmdCamera()` | `scene/camera/camera-vmd:90` | 创建 VMD 相机（若已存在则复用）。供 camera.ts switchCameraMode 在 vmd 分支使用。 |
+| `hasCameraAnimationHandle()` | `scene/camera/camera-vmd:101` | VMD 相机动画句柄是否就绪（switchCameraMode 在 vmd 分支前置检查）。 |
 | `loadCameraVmd()` | `scene/camera/camera-vmd:33` | Load camera animation from a VMD (MmdAnimation) and create an MmdCamera. |
 | `setSwitchCameraModeCallback()` | `scene/camera/camera-vmd:28` | camera.ts 启动时注入 switchCameraMode 回调。 |
 | `CameraState()` | `scene/camera/camera:556` | — |

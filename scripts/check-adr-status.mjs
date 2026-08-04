@@ -13,6 +13,7 @@ import { STATUS_CATEGORIES } from './_lib/adr-status-categories.mjs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ADR_DIR = path.join(__dirname, '..', 'docs', 'adr');
+const JSON_OUT = process.argv.includes('--json');
 
 // 提取状态
 function extractStatus(content) {
@@ -58,9 +59,14 @@ function main() {
     }
   }
 
-  // 简洁输出
+  // 简洁输出（或 JSON 机读）
+  if (JSON_OUT) {
+    console.log(JSON.stringify({ stats, problems }, null, 2));
+    return;
+  }
+
   console.log(`✅ 已完成: ${stats.completed} | 🔄 进行中: ${stats.inProgress} | ⚠️ 已废弃: ${stats.deprecated} | ❓ 未知: ${stats.unknown} | 总计: ${files.length}`);
-  
+
   if (problems.length > 0) {
     console.log('\n需要关注的 ADR:');
     problems.forEach(p => console.log(p));
