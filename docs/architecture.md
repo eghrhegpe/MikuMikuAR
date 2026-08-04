@@ -1,6 +1,6 @@
 # MikuMikuAR 架构与技术方案
 
-> 相关视图：模块依赖图见 [`dep-graph.md`](./dep-graph.md)（自动生成）；历史规划见 [`grand-blueprint.md`](./grand-blueprint.md)（快照，非当前真相源）。
+> 相关视图：模块依赖图见 [`dep-graph.md`](./dep-graph.md)（自动生成）。
 
 基于 MikuMikuAR 的架构（Wails + Go 后端 + babylon-mmd 前端），下面是各环节技术方案的简要梳理：
 
@@ -758,7 +758,7 @@ applyOutfitVariant(id, variantName)
 
 #### 17.3 变体配置格式（`outfits.json`）
 
-参见 [outfits-spec.md](outfits-spec.md)。
+参见 [outfits-spec.md](knowledge/outfits-spec.md)。
 
 #### 17.4 三层混合优先级
 
