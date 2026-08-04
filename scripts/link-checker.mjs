@@ -13,9 +13,8 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { ROOT } from './_lib/scan-files.mjs';
 
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 // vendored/外部源/工具态目录不参与链接治理：
 //  - research/upstream/mmd_tools_repo 为导入的参考材料，其相对链接指向未同步的外部文件（预期断链）
 //  - .qoder/.trae/.workbuddy 为外部/AI 工具生成的缓存或状态目录
