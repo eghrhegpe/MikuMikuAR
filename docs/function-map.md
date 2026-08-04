@@ -1,7 +1,7 @@
 # 函数映射表
 
 > AI 找代码用。改前端功能时先 grep 此表定位文件。
-> **自动生成**（2026-08-03）— 由 `scripts/gen-funcmap.mjs` 生成。
+> **自动生成**（2026-08-04）— 由 `scripts/gen-funcmap.mjs` 生成。
 
 ## 总览
 
@@ -1781,7 +1781,7 @@
 | `serializeScene()` | `scene/scene-serialize:493` | 序列化当前场景为 SceneFile（分段容错，单模型失败跳过并记录）。 |
 | `setSuppressAutoSave()` | `scene/scene-serialize:1237` | — |
 | `triggerAutoSaveImpl()` | `scene/scene-serialize:1246` | — |
-| `tryRestoreLastScene()` | `scene/scene-serialize:1511` | — |
+| `tryRestoreLastScene()` | `scene/scene-serialize:1503` | — |
 | `DEFAULT_MAT_PARAMS()` | `scene/scene:139` | — |
 | `LoadLastScene()` | `scene/scene:825` | — |
 | `SaveLastScene()` | `scene/scene:825` | — |
