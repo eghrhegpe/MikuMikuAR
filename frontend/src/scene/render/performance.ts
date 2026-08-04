@@ -628,13 +628,8 @@ export function resetPerformanceSnapshot(): void {
     _lastRecoveryTime = 0;
 }
 
-// [doc:adr-238] 注册性能模式切换供 core/action-defs 经 scene-action-bridge 调用
+// [doc:adr-238] 注册性能模式切换供 core/action-defs / core/init 经 scene-action-bridge 调用
 import { registerSceneAction } from '@/core/scene-action-bridge';
-registerSceneAction('setPerformanceMode', (mode: string) => {
-    setPerformanceMode(mode as Parameters<typeof setPerformanceMode>[0]);
-});
-
-// [doc:adr-238] 补充注册性能模式供 core/init 经 scene-action-bridge 调用
 registerSceneAction('setPerformanceMode', (mode: string) => {
     setPerformanceMode(mode as PerformanceMode);
 });
