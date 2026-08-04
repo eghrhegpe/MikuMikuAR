@@ -12,6 +12,8 @@
  *   node ../scripts/check-deadcode-baseline.mjs --update     # 更新基线
  *
  * 退出码：0 = 未回退；1 = 回退（数量增加）；2 = 配置错误
+ * 设计意图：死代码基线检查（与 baseline 文件比对）
+ * 依赖：node:child_process / node:fs / node:path / node:url / 本地模块
  */
 
 import { execFileSync } from "node:child_process";

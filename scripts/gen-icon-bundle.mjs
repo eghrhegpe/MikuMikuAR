@@ -15,6 +15,12 @@
  *       - 网络失败时自动降级到已有 bundle（如存在）
  *       - 写入采用原子重命名（先 .tmp 再 rename），避免中断损坏
  *       生成产物 icons-bundle.ts 提交进仓库后即固化，运行期零网络。
+ * 依赖：node:url / node:path / node:fs / 本地模块 / iconify-icon
+ * 用法：
+ *   node scripts/gen-icon-bundle.mjs                 # 默认行为
+ *   node scripts/gen-icon-bundle.mjs --check # 启用 check
+ * 退出码：1（失败）
+ * 设计意图：图标包生成器
  */
 
 import { fileURLToPath } from 'node:url';

@@ -1,14 +1,17 @@
 #!/usr/bin/env node
-// scripts/i18n-check.mjs — ADR-059 §3.5 / ADR-041 i18n bundle key 奇偶校验
-//
-// 校验翻译 bundle（ja/ko/zh-TW…）的 key 集合与基准（zh-CN）对齐，
-// 防止新增 key 时翻译 bundle 静默漏翻（t.ts 回退链会兜底到 zh-CN，
-// 故不会被 tsc/运行时发现，只能靠此脚本 + CI 守住）。
-//
-// 用法：
-//   node ../scripts/i18n-check.mjs            # 默认 warning 模式（列缺口，exit 0）
-//   node ../scripts/i18n-check.mjs --strict   # 任何缺失即 exit 1（CI 阻塞）
-//
+/**
+ * i18n-check.mjs — i18n 国际化检查（key parity/占位符/漏译/语言清单漂移）
+ *
+ * 设计意图：i18n 国际化检查（key parity/占位符/漏译/语言清单漂移）
+ *
+ * 依赖：node:fs / node:url / node:path / 本地模块
+ *
+ * 用法：
+ *   node scripts/i18n-check.mjs                 # 默认行为
+ *   node scripts/i18n-check.mjs --strict # 启用 strict
+ *
+ * 退出码：1 / failed && strict ? 1 : 0 / 0（含失败码）
+ */
 import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
@@ -22,8 +25,6 @@ const REFERENCE_LANGS = ['en', 'ja', 'ko', 'zh-TW'];
 const { strict, json } = parseArgs(process.argv.slice(2), { bools: ['strict', 'json'], strings: [], defaults: {} });
 const log = json ? () => {} : console.log.bind(console);
 
-// 抽取 bundle 对象里的所有 key（形如 `  'some.key': '...'` 或 `"some.key": "..."`），
-// 排除方法定义（`'x': (...) =>`）——bundle 均为纯字符串值，故可安全过滤。
 function extractKeys(file) {
     const text = readFileSync(file, 'utf8');
     const keys = new Set();
@@ -40,9 +41,6 @@ function loadBundle(lang) {
     return { lang, file, keys: extractKeys(file) };
 }
 
-// [doc:adr-059] 占位符一致性校验：提取 bundle 里每个 key 的 {xxx} 占位符集合，
-// 比对各语言 bundle 与基准（zh-CN）是否一致。不一致说明某语言漏了占位符或拼错，
-// 运行时 t() 会静默不替换，用户看到 {xxx} 裸露。
 function extractPlaceholders(file) {
     const text = readFileSync(file, 'utf8');
     const map = new Map(); // key -> Set<string> of placeholder names
@@ -81,7 +79,6 @@ for (const ref of refs) {
 log(`i18n parity — base lang: ${BASE_LANG} (${base.keys.size} keys)`);
 log(report.join('\n'));
 
-// 占位符一致性校验
 const basePH = extractPlaceholders(resolve(LOCALES_DIR, `${BASE_LANG}.ts`));
 let phIssues = 0;
 const phReport = [];
@@ -123,9 +120,6 @@ if (totalMissing > 0) {
     log('\n✅ All translation bundles are key-aligned with the base.');
 }
 
-// ======== ADR-212 P4: 漏译检测（zh-CN 中纯英文值）========
-// 检测基准语言包中值不含任何中文字符的条目，这些条目可能是漏译。
-// 不包含中文字符的值通常意味着翻译未完成（直接复制了英文 key 的值）。
 function extractKeyValues(file) {
     const text = readFileSync(file, 'utf8');
     const map = new Map();
@@ -138,8 +132,6 @@ function extractKeyValues(file) {
 }
 
 const zhCNEntries = extractKeyValues(resolve(LOCALES_DIR, `${BASE_LANG}.ts`));
-// 设计如此豁免：值为品牌名 / 技术术语 / 符号占位符模板，无需中文翻译。
-// 新增此类 key 时须同时登记于此，否则 strict 模式会误报。
 const KNOWN_INTENTIONAL = new Set([
     'lang.en', // 语言自名
     'lang.ko', // 语言自名（韩文）
@@ -163,7 +155,6 @@ const KNOWN_INTENTIONAL = new Set([
 const untranslated = [];
 for (const [key, value] of zhCNEntries) {
     if (KNOWN_INTENTIONAL.has(key)) continue;
-    // 检测是否包含中文字符（CJK 统一表意文字范围）
     if (!/[\u4e00-\u9fff\u3400-\u4dbf]/.test(value) && value.length > 0) {
         untranslated.push({ key, value });
     }
@@ -189,10 +180,6 @@ if (untranslated.length > 0) {
     log('\n✅ zh-CN 基准包无漏译（所有条目均含中文字符）。');
 }
 
-// ======== AVAILABLE_LANGS 与 locales/*.ts 文件集一致性校验 ========
-// t.ts 的 AVAILABLE_LANGS 是「有 bundle 的语言」权威清单，语言菜单据此过滤。
-// 若与 locales/*.ts 实际文件集漂移：多列 → 菜单出现但 bundle 缺失（fetch 404 → 静默回退中文）；
-// 少列 → 已补全 bundle 的语言不显示。两者都是静默漂移，故在此守一道 CI 护栏。
 const T_TS_PATH = resolve(__dirname, '..', 'frontend', 'src', 'core', 'i18n', 't.ts');
 const T_TS = readFileSync(T_TS_PATH, 'utf8');
 const availMatch = T_TS.match(/AVAILABLE_LANGS\s*:\s*string\[\]\s*=\s*\[([^\]]*)\]/);

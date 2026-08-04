@@ -20,6 +20,8 @@
  * 对比两次扫描，定位「哪条新 import 引入了环」（--diff --strict 按新增环退出码）。
  *
  * 退出码：无新增循环依赖 → 0；有新增循环依赖 → 1（--strict 模式）
+ * 设计意图：循环依赖检查（source-graph 分析）
+ * 依赖：node:fs / node:path / node:url / 本地模块
  */
 import fs from 'node:fs';
 

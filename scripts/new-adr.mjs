@@ -18,6 +18,8 @@
  *   node scripts/new-adr.mjs --reserve "标题"              # 占号模式（状态=规划，空壳）
  *
  * 零依赖，仅 node:fs / node:path / node:child_process。
+ * 设计意图：ADR 新建工具（占号防撞）
+ * 退出码：1（失败）
  */
 
 import fs from 'node:fs';

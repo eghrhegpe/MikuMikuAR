@@ -13,6 +13,8 @@
  *   node scripts/gen-dep-graph.mjs --check                 # 只检查是否已同步（需配合 --file）
  *
  * 零依赖（仅 node:fs / node:path）。
+ * 设计意图：依赖图生成器
+ * 退出码：1（失败）
  */
 
 import fs from 'node:fs';

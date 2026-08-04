@@ -23,6 +23,9 @@
  *   ↩️ 再导出    —— export { Foo } from / export * from
  *
  * 零依赖（仅 node:fs / node:path）。符号匹配区分大小写。
+ * 设计意图：符号消费者审计（重构影响面分析）
+ * 退出码：2 / 1（含失败码）
+ * check-consumers.mjs — 符号消费者审计（重构影响面分析）
  */
 
 import fs from 'node:fs';

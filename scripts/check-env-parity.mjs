@@ -1,19 +1,17 @@
 #!/usr/bin/env node
-// scripts/check-env-parity.mjs — env-state-schema ↔ Go EnvState 字段级 parity 检查
-//
-// 背景（buglog 2026-08-02-mirror-geometry-persist-gap）：TS envState 新增字段后，
-// Go 端 EnvState 结构体若未同步，SetEnvState 的 JSON round-trip 会静默丢弃该字段，
-// config.json 持久化断链，重启回默认值。mirror 几何 4 字段、groundEmissive* 4 字段
-// 均为此类漂移。ADR-137 §3.4 承诺的字段 parity 契约测试未真正落地，本脚本补上。
-//
-// 数据源：
-//   - frontend/src/core/env-state-schema.ts  —— TS 权威源（127+ 字段，含 group）
-//   - frontend/bindings/.../models.ts        —— Go EnvState 结构体的 Wails 生成镜像
-//
-// 用法：
-//   node scripts/check-env-parity.mjs           # 双向 diff，默认 warning 模式
-//   node scripts/check-env-parity.mjs --strict  # 任何未豁免漂移即 exit 1（CI 阻塞）
-
+/**
+ * check-env-parity.mjs — EnvState 字段 parity 检查（TS schema ↔ Go bindings）
+ *
+ * 设计意图：EnvState 字段 parity 检查（TS schema ↔ Go bindings）
+ *
+ * 依赖：node:fs / node:path / node:url / 本地模块
+ *
+ * 用法：
+ *   node scripts/check-env-parity.mjs                 # 默认行为
+ *   node scripts/check-env-parity.mjs --strict # 启用 strict
+ *
+ * 退出码：1 / failedParity && strict ? 1 : 0 / failed && strict ? 1 : 0（含失败码）
+ */
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -36,10 +34,6 @@ const { strict, json } = parseArgs(process.argv.slice(2), {
     bools: ['strict', 'json'],
 });
 
-// ======== 豁免表：已确认的合理差异（双向） ========
-// schema-only（TS 有、Go 无）：仅当"明确不随 config 持久化"才豁免；
-//   默认这些字段应补进 Go（否则重启丢参数），见 buglog 2026-08-02-mirror-geometry-persist-gap。
-// bind-only（Go 有、TS 无）：多为 Go 结构体残留的死字段（schema 已删/从未有）。
 const EXEMPT_SCHEMA_ONLY = new Map();
 const EXEMPT_BIND_ONLY = new Map([
     ['underwaterFogDensity', 'ADR-216 死字段：schema 已删（FOGMODE_EXP2→colorCurves 替换后无消费），Go 结构体残留未清理'],
@@ -47,7 +41,6 @@ const EXEMPT_BIND_ONLY = new Map([
     ['waterFogDensity', '死字段：schema 从未有此字段，Go 结构体残留，frontend 零消费'],
 ]);
 
-// ======== 解析 env-state-schema.ts 顶层字段 ========
 function parseSchemaKeys(text) {
     const start = text.indexOf('export const ENV_STATE_SCHEMA = {');
     if (start === -1) {
@@ -56,7 +49,6 @@ function parseSchemaKeys(text) {
     }
     const keys = new Set();
     for (const line of text.slice(start).split('\n')) {
-        // 顶层字段：恰好 4 空格缩进 + `name: {`
         const m = line.match(/^ {4}(\w+)\s*:\s*\{/);
         if (m) {
             keys.add(m[1]);
@@ -65,7 +57,6 @@ function parseSchemaKeys(text) {
     return keys;
 }
 
-// ======== 解析 bindings models.ts 的 EnvState 接口字段 ========
 function parseBindingsEnvStateKeys(text) {
     const m = text.match(/export interface EnvState \{([\s\S]*?)\n\}/);
     if (!m) {
@@ -74,8 +65,6 @@ function parseBindingsEnvStateKeys(text) {
     }
     const keys = new Set();
     for (const line of m[1].split('\n')) {
-        // bindings 中可空字段形如 `"mirrorPosition"?: number[] | null;`（带 ?），
-        // 正则须兼容 `"name":` 与 `"name"?:` 两种形式，否则可空字段被误报为漂移。
         const f = line.match(/^\s*"([A-Za-z0-9]+)"\??\s*:/);
         if (f) {
             keys.add(f[1]);
@@ -84,7 +73,6 @@ function parseBindingsEnvStateKeys(text) {
     return keys;
 }
 
-// ======== 主流程 ========
 if (!existsSync(SCHEMA_FILE) || !existsSync(BINDINGS_FILE)) {
     console.error('❌ 数据源文件缺失（schema / bindings models.ts）');
     process.exit(1);

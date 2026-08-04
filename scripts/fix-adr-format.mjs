@@ -18,6 +18,8 @@
  *   node scripts/fix-adr-format.mjs adr-131-*    # 修复指定文件
  *
  * 零依赖，仅 node:fs / node:path。
+ * 设计意图：ADR 格式修复工具
+ * 退出码：0（无 process.exit 调用）
  */
 
 import fs from 'node:fs';
