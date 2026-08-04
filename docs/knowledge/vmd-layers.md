@@ -24,7 +24,7 @@ symbols:
   - setVmdLayerWeight
   - toggleVmdLayer
 invariants:
-  - [ADR-237 P2] `_rebuildCompositeAnimation` 拆 4 函数（调度入口/_rebuildFallback/_rebuildComposite/_tryWasmBlender），共享状态显式传参、gen 竞态校验保持
+  - "[ADR-237 P2] `_rebuildCompositeAnimation` 拆 4 函数（调度入口/_rebuildFallback/_rebuildComposite/_tryWasmBlender），共享状态显式传参、gen 竞态校验保持"
   - MmdCompositeAnimation 在每次层变更时重建
   - 层 ID 唯一（crypto.randomUUID 前缀）
   - VMD 字节需 Shift-JIS 解码（骨骼名）
