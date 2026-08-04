@@ -175,6 +175,21 @@ cd "$ROOT" && node scripts/gen-docs-index.mjs --check >/dev/null 2>&1 || {
 }
 note_check "✅ check:docsindex 分区索引同步"
 
+# ── check:novelindex（可自动修复，amend 进当前 commit） ──
+# gen-novel-index 生成小说章节索引 docs/novel/index.md（VitePress /novel/ 落地页）：
+# 新增/改名/移动章节文件后未同步索引 → --check 检出 stale（磁盘是唯一事实源）。
+# 无条件运行：小说章节纯文档变更恰是最易漏索引的场景，与 check:docsindex 同模式。
+echo "[pre-push] check:novelindex"
+if cd "$ROOT" && node scripts/gen-novel-index.mjs --check >/dev/null 2>&1; then
+  note_check "✅ check:novelindex 小说索引同步"
+else
+  echo "⚠️  小说章节索引（docs/novel/index.md）未同步，自动修复中..."
+  cd "$ROOT" && node scripts/gen-novel-index.mjs
+  git add docs/novel/index.md 2>/dev/null || true
+  git commit --amend --no-edit 2>/dev/null && echo "⚠️  已自动更新小说索引并 amend 进当前 commit。" || echo "⚠️  已 stage 小说索引（无 HEAD 可 amend，请手动 commit）。"
+  note_fixed "小说索引已同步"
+fi
+
 # ── check:guide-gap（菜单面板 ↔ 指南覆盖缺口；人工补写，不可自动修复） ──
 # 依赖 menu-map.md（源码生成）与 guide/（手写）：新增菜单面板后 guide 无对应
 # 操作页 → 用户找不到入口。guide 是手写叙事文档，无法自动生成 → 缺口即阻断，
