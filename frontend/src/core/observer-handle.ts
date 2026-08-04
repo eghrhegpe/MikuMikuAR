@@ -130,8 +130,4 @@ export class ObserverRegistry {
         return this._handles.length;
     }
 
-    /** 释放所有句柄并清空（同 disposeAll）。 */
-    clear(): void {
-        this.disposeAll();
-    }
 }
