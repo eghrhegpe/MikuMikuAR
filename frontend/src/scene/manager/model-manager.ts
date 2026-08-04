@@ -983,8 +983,8 @@ export class ModelManager {
                         overrideLines[i].setEnabled(false);
                         continue;
                     }
-                    const childOv = getSceneAction('getOverrideType')?.(childBone.name, id) as OverrideType | null;
-                    const parentOv = getSceneAction('getOverrideType')?.(parentBone.name, id) as OverrideType | null;
+                    const childOv = getSceneAction('getOverrideType')?.(childBone.name, id) ?? null;
+                    const parentOv = getSceneAction('getOverrideType')?.(parentBone.name, id) ?? null;
                     const ovType = childOv ?? parentOv;
                     if (!ovType) {
                         overrideLines[i].setEnabled(false);
@@ -1022,7 +1022,7 @@ export class ModelManager {
                 jd.mesh.setEnabled(true);
 
                 // [doc:bone-override] 覆盖状态着色
-                const ovType = getSceneAction('getOverrideType')?.(jd.boneName, id) as OverrideType | null;
+                const ovType = getSceneAction('getOverrideType')?.(jd.boneName, id) ?? null;
                 jd.mesh.material = ovType ? ovMat[ovType] : ovMat.default;
             }
         };
@@ -1266,8 +1266,14 @@ export class ModelManager {
                 const target = inst.rootMesh;
                 try {
                     target.detachFromBone();
-                } catch {
-                    /* cleanup */
+                } catch (detachErr) {
+                    // 记录失败并继续 attach：目标本就是恢复附属关系，attachModelToBone
+                    // 内部有独立的错误处理（返回 false + feedbackStatus），此处仅记录。
+                    logWarn(
+                        'model-manager',
+                        'reattachAllAttachments: detachFromBone failed:',
+                        detachErr
+                    );
                 }
                 this.attachModelToBone(
                     childId,

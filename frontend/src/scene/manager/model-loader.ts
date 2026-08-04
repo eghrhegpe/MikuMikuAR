@@ -4,7 +4,6 @@
 
 import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { ImportMeshAsync } from '@babylonjs/core/Loading/sceneLoader';
-import type { ISceneLoaderAsyncResult } from '@babylonjs/core/Loading/sceneLoader';
 // ADR-188: 材质代理解析器（运行时 materialProxyConstructor）
 import { getStandardMaterialProxy } from './material-proxy-resolver';
 import { renderInstanceThumbnail } from './thumbnail-capture';
@@ -45,13 +44,6 @@ import { _capture } from './material';
 import { rebuildShadowCasters } from '../render/lighting';
 import { getGroundHeightAt, setOnTerrainReady, setOnGroundChanged } from '../env/env-impl';
 import { setTransformMetadata } from '../transform/transform-pick';
-
-/** babylon-mmd 扩展 ImportMeshAsync 接受 Uint8Array，原类型签名不支持，需手动断言 */
-const importMeshFromBytes = ImportMeshAsync as unknown as (
-    data: Uint8Array,
-    scene: unknown,
-    options: Record<string, unknown>
-) => Promise<ISceneLoaderAsyncResult>;
 
 /**
  * [doc:adr-182] 从 filePath 的 basename 推导人类可读显示名。
@@ -360,7 +352,7 @@ async function _applySceneMotion(
                 inst.meshes[0]?.skeleton?.bones?.map((b) => b.name) ??
                 [];
             // [doc:adr-121 P4-2] 宽松匹配：未传 vmdBoneNames，退回标准骨骼预筛（有意为之，见 motion-binding-ui.ts 注释）
-            const compat = getSceneAction('resolveCompatibility')?.(bones as never, activeMotion as never) as { compatible?: boolean } | undefined;
+            const compat = getSceneAction('resolveCompatibility')?.(bones, activeMotion);
             if (!compat?.compatible) {
                 inst.motionSlots = {
                     primary: { ...slots.primary, status: 'incompatible' },
@@ -487,7 +479,16 @@ export async function loadPMXFile(
         // 真缺失（磁盘无同名文件）不注册，audit 差集仍会如实提示。
         const declaredPaths = await parsePmxTexturePaths(pmxBytes);
         const finalTextureFiles = registerDeclaredAliases(textureFiles, declaredPaths);
-        const result = await importMeshFromBytes(pmxBytes, _scene, {
+        if (!_scene) {
+            logWarn('model-loader', 'loadPMXFile: scene 未初始化');
+            return null;
+        }
+        // [doc:adr-238] 直接使用 Babylon 原生 ImportMeshAsync：其 (source, scene, options) 签名
+        // source 为 SceneSource（含 Uint8Array），且 babylon-mmd fork 已 augmentation
+        // pluginOptions.mmdmodel —— 无需本地重写签名，避免类型断言遮蔽。
+        // referenceFiles 仍断言：fork 声明 readonly File[]，但运行时实际接受 IArrayBufferFile
+        // （ReferenceFileResolver 支持 File | IArrayBufferFile），TextureFile 与其结构一致。
+        const result = await ImportMeshAsync(pmxBytes, _scene, {
             pluginExtension: '.pmx',
             pluginOptions: {
                 mmdmodel: {
@@ -787,13 +788,15 @@ export async function loadPMXFile(
         setTimeout(() => {
             swallowError(captureThumbnail(filePath, libraryPath, innerPath, inst));
         }, 0);
-        if (!skipAutoApply) {
+        if (!skipAutoApply && _tryAutoApplyPreset) {
             _tryAutoApplyPreset(id).catch((err: unknown) =>
                 logWarn('model-loader', 'auto-apply preset:', err)
             );
         }
         // Pre-load outfit file for UI entry availability
-        swallowError(_loadOutfits(id));
+        if (_loadOutfits) {
+            swallowError(_loadOutfits(id));
+        }
 
         // Re-apply outline state so new model gets edge rendering if enabled
         _rebuildOutlineState?.();

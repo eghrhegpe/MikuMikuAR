@@ -5,6 +5,8 @@
 // 与 ui-action-bridge 同模式：core 持注入点，scene 层注册，方向单向。
 // 分字段注册（registerSceneAction），支持各场景模块独立注册。
 
+import type { OverrideType } from './types';
+
 export interface SceneActions {
     /** 灯光状态写入（control 动作 light:*） */
     setLightState: (partial: Record<string, unknown>) => boolean;
@@ -135,7 +137,7 @@ export interface SceneActions {
     /** 解析动作兼容性（model-loader 调用），由 scene/motion 注册 */
     resolveCompatibility: (bones: unknown, motion: unknown) => { compatible?: boolean };
     /** 读取骨骼覆写类型（model-manager 调用），由 scene/motion 注册 */
-    getOverrideType: (boneName: string, modelId?: string) => unknown;
+    getOverrideType: (boneName: string, modelId?: string) => OverrideType | null;
     /** 挂载节拍检测器（scene 初始化调用），由 outfit/audio 注册 */
     attachBeatDetector: (detector: unknown) => void;
     /** 读取流式播放器（scene 调用），由 outfit/audio 注册 */
