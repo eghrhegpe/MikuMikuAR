@@ -21,13 +21,14 @@ frontend/public/locales/
 
 # Dependencies
 node_modules/
-# 用户指南站（VitePress）：依赖与构建产物不入库（img/*.png 为构建硬依赖，必须入库）
-docs/guide/node_modules/
-docs/guide/.vitepress/dist/
-docs/guide/.vitepress/dist-verify/
-docs/guide/.vitepress/dist-test/
-docs/guide/.vitepress/.temp/
-docs/guide/.vitepress/cache/
+# 文档站（VitePress，站点根 = docs/）：依赖与构建产物不入库（img/*.png 为构建硬依赖，必须入库）
+docs/node_modules/
+docs/.vitepress/dist/
+docs/.vitepress/dist-verify/
+docs/.vitepress/dist-test/
+docs/.vitepress/.temp/
+docs/.vitepress/cache/
+docs/.vitepress/.temp.bak/
 
 # Reasonix internal state
 .reasonix/

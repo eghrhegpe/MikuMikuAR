@@ -2,7 +2,7 @@
 // 用户指南截图健康检查
 // 规则（一文一图）：每个 guide 功能页应恰好引用一张同名截图 img/<page>-1.png，
 // 且该文件必须真实存在、非 0 字节占位。
-// 用法：node docs/guide/scripts/check-screenshots.mjs [--json]
+// 用法：node docs/scripts/check-screenshots.mjs [--json]
 // 退出码：有缺失/占位/命名不符 → 1；全部就绪 → 0。CI 可卡点。
 
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';

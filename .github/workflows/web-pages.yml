@@ -89,9 +89,9 @@ jobs:
           cp dist-web/app/index.web.html dist-web/app/index.html
 
       - name: Build user guide (VitePress)
-        # 文档中心站：docs/guide（VitePress）→ dist-web/（Pages 根）
+        # 文档中心站：docs/（VitePress，站点根 = docs/）→ dist-web/（Pages 根）
         # 主应用降为 /app/ 子路径，文档站 base=/MikuMikuAR/ 占根
-        working-directory: docs/guide
+        working-directory: docs
         run: |
           npm ci
           npm run build
@@ -101,7 +101,7 @@ jobs:
         # 注意尾部 /. ：dist-web 已由上一步 vite 构建创建，直接 `cp -r src dst`
         # 会拷成 dist-web/dist/（POSIX 语义：目标存在则拷进去），导致根 index.html
         # 缺失 → 整站 404 + stub 死循环。必须拷「目录内容」而非目录本身。
-        run: cp -r ../docs/guide/.vitepress/dist/. dist-web/
+        run: cp -r ../docs/.vitepress/dist/. dist-web/
 
       - name: Add legacy /docs/ redirect stub
         # 旧文档站路径 /MikuMikuAR/docs/ 已上提至 Pages 根 /MikuMikuAR/。

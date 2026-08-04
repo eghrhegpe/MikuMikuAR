@@ -26,14 +26,14 @@
 | `gaze-tracking.md` | `motion:gaze` | 视线追踪面板 |
 | `camera-control.md` | 动作面板 → 相机 | 相机参数面板 |
 
-`docs/guide/package.json` 已有 `prebuild` 门禁：`node scripts/check-screenshots.mjs`（截图缺口仅 warn 不阻断构建）。
+`docs/package.json` 已有 `prebuild` 门禁：`node scripts/check-screenshots.mjs`（截图缺口仅 warn 不阻断构建）。
 
 ## 修复方案
 
 1. 运行应用逐个进入上述面板，按 README 命名规范截图：`img/<page>-<n>.png`（如 `img/mirror-1.png`）
 2. 正文 `## 操作步骤` 对应小节插入 `![描述](../guide/img/<page>-<n>.png)`
 3. 截图就绪后删除「(截图占位)」文字标注（当前无残留）
-4. 建议分轮推进（每轮 3-4 页），每轮验证 `npm run build`（docs/guide）通过
+4. 建议分轮推进（每轮 3-4 页），每轮验证 `npm run build`（docs）通过
 
 ## 教训
 

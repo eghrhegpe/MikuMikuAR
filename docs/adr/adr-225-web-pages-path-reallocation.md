@@ -13,7 +13,7 @@
 
 ## 决策
 
-1. **文档站占根**：VitePress `base` 由 `/MikuMikuAR/docs/` 改为 `/MikuMikuAR/`（`docs/guide/.vitepress/config.ts`）；产物由 `web-pages.yml` 拷入 `dist-web/`（根）。`/MikuMikuAR/` 即文档中心首页。
+1. **文档站占根**：VitePress `base` 由 `/MikuMikuAR/docs/` 改为 `/MikuMikuAR/`（`docs/.vitepress/config.ts`）；产物由 `web-pages.yml` 拷入 `dist-web/`（根）。`/MikuMikuAR/` 即文档中心首页。
 2. **主应用降子路径**：web 入口 `base` 由 `/MikuMikuAR/` 改为 `/MikuMikuAR/app/`、`build.outDir` 由 `dist-web` 改为 `dist-web/app`（`frontend/vite.web.config.ts`）；`web-pages.yml` 将其 index.web.html 复制为 `dist-web/app/index.html` 作为 /app/ 入口。主应用线上地址变为 `https://eghrhegpe.github.io/MikuMikuAR/app/`。
 3. **旧 /docs/ 链接兜底**：根 `404.html`（docs-404-redirect.html）逻辑为——**仅当**路径含 `/MikuMikuAR/docs/` 时剥离该段跳回根（文档首页）；其余未知 404 **不跳转**，静态显示 404 页（内含「文档中心 / 在线应用」双入口链接）。
    - 取舍理由：无条件兜底回根会在根 `index.html` 缺失时形成**无限重定向**，且掩盖真实坏链。代价是覆盖了 VitePress 自带 404 页，换取确定性安全。（见审核 P2）
@@ -29,7 +29,7 @@
 
 ## 影响
 
-- **修改**：`docs/guide/.vitepress/config.ts`（base→根）、`frontend/vite.web.config.ts`（base→/app/、outDir→dist-web/app）、`frontend/index.web.html`（注释）、`frontend/src/menus/settings-about.ts`（文档链接→根）、`README.md`（网页版→/app/、知识库→根）、`CLAUDE.md`、`docs/web-data-origin-isolation.md`、`docs/guide/README.md`（注释）、`.github/workflows/web-pages.yml`（路径段重分配 + stub 改 /docs/）。
+- **修改**：`docs/.vitepress/config.ts`（base→根）、`frontend/vite.web.config.ts`（base→/app/、outDir→dist-web/app）、`frontend/index.web.html`（注释）、`frontend/src/menus/settings-about.ts`（文档链接→根）、`README.md`（网页版→/app/、知识库→根）、`CLAUDE.md`、`docs/web-data-origin-isolation.md`、`docs/guide/README.md`（注释）、`.github/workflows/web-pages.yml`（路径段重分配 + stub 改 /docs/）。
 - **删除**：`scripts/redirect-stubs/guide-redirect.html`。
 - **新增**：`scripts/redirect-stubs/sw-tombstone.js`（根墓碑 SW，由 `web-pages.yml` 拷为 `dist-web/sw.js`）。
 - **服务 worker 范围变化**：app 的 `sw.js`（COOP/COEP 注入）作用域由根收缩为 `/MikuMikuAR/app/`，更精确；文档站不需要该 worker。
@@ -39,4 +39,4 @@
 
 - ADR-177（Web Loader 统一路径，本 ADR 重分配其路径分配部分）
 - `.github/workflows/web-pages.yml`（部署路径段）
-- `docs/guide/.vitepress/config.ts` / `frontend/vite.web.config.ts`（base 定义）
+- `docs/.vitepress/config.ts` / `frontend/vite.web.config.ts`（base 定义）
