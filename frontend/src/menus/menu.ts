@@ -284,7 +284,10 @@ export class SlideMenu implements RenderContext {
         return this._isOpen && this.container.getClientRects().length > 0;
     }
 
-    /** 关闭整个菜单（触发 onClose，通常内部会 closeAllOverlays + dispose 当前 SlideMenu） */
+    /** 关闭整个菜单（触发 onClose，通常内部会 closeAllOverlays + dispose 当前 SlideMenu）。
+     * 注意：close() ≠ dispose()——close 仅翻转可见状态并通知 onClose，不释放监听器/存活集合条目，
+     * 实例仍留在 _liveMenus 中；menu-factory 的 onClose 回调负责随后的显式 dispose（见 menu-factory.ts）。
+     * 外部若直接构造 SlideMenu 且 onClose 未接 dispose，需自行 dispose 以释放资源。 */
     close(): void {
         this._isOpen = false;
         this.onClose?.();
@@ -1037,8 +1040,13 @@ export class SlideMenu implements RenderContext {
                     this._customDispose = result;
                 }
             } catch (err) {
+                // [audit-p4] 原始 err.message 可能含内部技术信息，仅进日志；UI 展示友好翻译文案
                 console.error('[SlideMenu] renderCustom failed:', err);
-                list.innerHTML = `<div class="slide-empty" style="color:var(--danger);">加载失败: ${err instanceof Error ? err.message : '未知错误'}</div>`;
+                const empty = document.createElement('div');
+                empty.className = 'slide-empty';
+                empty.style.color = 'var(--danger)';
+                empty.textContent = t('menu.renderFailed');
+                list.appendChild(empty);
             } finally {
                 popRenderingContext();
             }

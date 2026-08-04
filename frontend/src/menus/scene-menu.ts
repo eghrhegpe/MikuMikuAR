@@ -13,6 +13,7 @@ import {
     setFocusedModelId,
     uiState,
     setUIState,
+    type ModelInstance,
 } from '../core/config';
 import { feedbackStatus } from '../core/feedback';
 import { showInfoToast } from '../core/toast';
@@ -309,39 +310,12 @@ export async function screenshotCurrent(): Promise<void> {
         feedbackStatus('scene.statusModelNotFound', undefined, false);
         return;
     }
-    let dir = uiState.screenshotDir;
+    const dir = await resolveScreenshotDir();
     if (!dir) {
-        dir = await tryCatchStatus(async () => {
-            const d = await SelectDir();
-            if (!d) {
-                return undefined;
-            }
-            return d;
-        }, t('scene.statusScreenshotFailed'));
-        if (!dir) {
-            return;
-        }
-        uiState.screenshotDir = dir;
-        setUIState({ screenshotDir: dir });
+        return;
     }
-    await waitForFrame();
-    await waitForFrame();
-    const fmt = uiState.screenshotFormat ?? 'image/png';
-    const q = uiState.screenshotQuality ?? 0.9;
-    const ts = Date.now();
-    const ext = fmt === 'image/jpeg' ? 'jpg' : fmt === 'image/webp' ? 'webp' : 'png';
-    let base64: string;
-    if (isARModeActive()) {
-        base64 = await takeARScreenshot(fmt, q);
-    } else {
-        base64 = await canvasToBase64(dom.canvas, fmt, q);
-    }
-    const filename = `${inst.name.replace(/[\\/:*?"<>|]/g, '_')}_${ts}.${ext}`;
-    const r = await tryCatchStatus(async () => {
-        await SaveScreenshot(dir, filename, base64);
-        return true;
-    }, t('scene.statusScreenshotFailed'));
-    if (r) {
+    const filename = await captureAndSave(inst, dir);
+    if (filename) {
         showInfoToast(t('scene.statusScreenshotSaved', { filename }));
     }
 }
@@ -355,6 +329,37 @@ export async function screenshotBatch(): Promise<void> {
         feedbackStatus('scene.statusNoModels', undefined, false);
         return;
     }
+    const dir = await resolveScreenshotDir();
+    if (!dir) {
+        return;
+    }
+    const prevFocused = focusedModelId;
+    let saved = 0;
+    try {
+        for (const [id, inst] of modelRegistry) {
+            setFocusedModelId(id);
+            focusModel(id);
+            // [audit-p3] 单模型失败不中断整个批量：captureAndSave 内部容错返回 undefined，saved 不增、继续下一个
+            const filename = await captureAndSave(inst, dir, 3);
+            if (filename) {
+                saved++;
+                showInfoToast(
+                    t('scene.statusScreenshotting', { saved, total: modelRegistry.size })
+                );
+            }
+        }
+    } finally {
+        // [audit-p3] 无论成败都恢复原聚焦，避免批量中断后视角停在最后一个模型
+        if (prevFocused) {
+            setFocusedModelId(prevFocused);
+            focusModel(prevFocused);
+        }
+    }
+    showInfoToast(t('scene.statusBatchScreenshotDone', { saved }));
+}
+
+/** [audit-p4] 解析截图目录（无则弹窗选择并记忆）。返回 undefined 表示用户取消。 */
+async function resolveScreenshotDir(): Promise<string | undefined> {
     let dir = uiState.screenshotDir;
     if (!dir) {
         dir = await tryCatchStatus(async () => {
@@ -365,45 +370,40 @@ export async function screenshotBatch(): Promise<void> {
             return d;
         }, t('scene.statusScreenshotFailed'));
         if (!dir) {
-            return;
+            return undefined;
         }
         uiState.screenshotDir = dir;
         setUIState({ screenshotDir: dir });
     }
-    let saved = 0;
-    const prevFocused = focusedModelId;
-    const batchOk = await tryCatchStatus(async () => {
-        for (const [id, inst] of modelRegistry) {
-            setFocusedModelId(id);
-            focusModel(id);
-            await waitForFrame();
-            await waitForFrame();
-            await waitForFrame();
-            const fmt = uiState.screenshotFormat ?? 'image/png';
-            const q = uiState.screenshotQuality ?? 0.9;
-            let base64: string;
-            if (isARModeActive()) {
-                base64 = await takeARScreenshot(fmt, q);
-            } else {
-                base64 = await canvasToBase64(dom.canvas, fmt, q);
-            }
+    return dir;
+}
 
-            const ts = Date.now();
-            const ext = fmt === 'image/jpeg' ? 'jpg' : fmt === 'image/webp' ? 'webp' : 'png';
-            const filename = `${inst.name.replace(/[\\/:*?"<>|]/g, '_')}_${ts}.${ext}`;
-            await SaveScreenshot(dir, filename, base64);
-            saved++;
-            showInfoToast(t('scene.statusScreenshotting', { saved, total: modelRegistry.size }));
-        }
-        if (prevFocused) {
-            setFocusedModelId(prevFocused);
-            focusModel(prevFocused);
-        }
-        return true;
-    }, t('scene.statusBatchScreenshotFailed'));
-    if (batchOk) {
-        showInfoToast(t('scene.statusBatchScreenshotDone', { saved }));
+/** [audit-p4] 捕获单模型一帧并保存；任一环节失败返回 undefined（单模型失败不中断批量）。
+ *  batch 需额外等一帧让 focusModel 的相机切换落定，故传 frames=3。 */
+async function captureAndSave(
+    inst: ModelInstance,
+    dir: string,
+    frames = 2
+): Promise<string | undefined> {
+    for (let i = 0; i < frames; i++) {
+        await waitForFrame();
     }
+    const fmt = uiState.screenshotFormat ?? 'image/png';
+    const q = uiState.screenshotQuality ?? 0.9;
+    let base64: string;
+    if (isARModeActive()) {
+        base64 = await takeARScreenshot(fmt, q);
+    } else {
+        base64 = await canvasToBase64(dom.canvas, fmt, q);
+    }
+    const ts = Date.now();
+    const ext = fmt === 'image/jpeg' ? 'jpg' : fmt === 'image/webp' ? 'webp' : 'png';
+    const filename = `${inst.name.replace(/[\\/:*?"<>|]/g, '_')}_${ts}.${ext}`;
+    const ok = await tryCatchStatus(async () => {
+        await SaveScreenshot(dir, filename, base64);
+        return true;
+    }, t('scene.statusScreenshotFailed'));
+    return ok ? filename : undefined;
 }
 
 /** 保存场景（自动编号到预设目录） */
@@ -458,7 +458,12 @@ function handleSceneAction(row: PopupRow): void {
         }
     }
     if (row.target) {
-        void executeActionById(row.target, {});
+        // [audit-p4] 消费执行结果：动作失败时向用户反馈，不静默丢弃
+        void executeActionById(row.target, {}).then((r) => {
+            if (!r.success) {
+                showInfoToast(r.message);
+            }
+        });
     }
 }
 

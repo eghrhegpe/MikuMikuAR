@@ -47,6 +47,8 @@ export function wailsBindingsFactory() {
         GetModelMetaBatch: vi.fn(),
         GetRecentModels: vi.fn(),
         AddRecentModel: vi.fn(),
+        GetLastBrowseDir: vi.fn(),
+        SetLastBrowseDir: vi.fn(),
         GetAllTags: vi.fn(),
         GetModelsByTag: vi.fn(),
         SelectAudioFile: vi.fn(),
