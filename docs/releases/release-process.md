@@ -5,6 +5,44 @@
 
 ---
 
+## AI 一键发版入口
+
+> **给 AI 用**：下面 §2 的 9 步已被封装为 `scripts/release.ps1`，幂等可跑。
+> AI 接到发版请求时，**先读本节**，再决定是直接调脚本还是按 §2 手动走。
+
+### 快速用法
+
+```powershell
+# 演练（只打印不执行，确认 9 步流程无误）
+.\scripts\release.ps1 -Version 1.9.1 -DryRun
+
+# 正式发版（自动改版本号 → 提交 → 推 main → 等缓存 → 打 tag → 监控 CI → 核对 Release）
+.\scripts\release.ps1 -Version 1.9.1
+```
+
+### 脚本不替你做的事（需 AI 或人类补）
+
+| 事项 | 原因 | 谁来补 |
+|------|------|--------|
+| 写 `docs/releases/vX.Y.Z.md` | 创意性写文档，无法模板化 | AI 按既有 `v1.3.5.md` 格式写 |
+| Android Secrets 校验 | 需 `gh secret list`，发版前一次性确认 | AI 跑 `gh secret list` 核对四键 |
+| 应用内版本核对 | 需启动应用读「关于」页 | 人类或 E2E |
+| `build/windows/info.json` 字段名变化 | 脚本假设 `file_version` + `ProductVersion` | 若字段改名，同步改脚本 |
+
+### 与本文件各节的对应关系
+
+| 脚本步骤 | 对应文档章节 |
+|----------|-------------|
+| step 2（改版本号） | §2 步 2、§4 三平台注入 |
+| step 3+5（提交+推 main） | §2 步 3/5 |
+| step 4（校验 notes 存在） | §2 步 4、§6 发布说明约定 |
+| step 6（等缓存预热） | §2 步 6、§1.3 缓存预热顺序、ADR-082 |
+| step 7（打 tag） | §2 步 7、§3 版本一致性闸门 |
+| step 8（监控 CI） | §2 步 8 |
+| step 9（核对 Release） | §2 步 9、§7 回滚/补发 |
+
+---
+
 ## 0. 触发机制总览
 
 | 触发方式 | 入口 | 行为 |
@@ -67,7 +105,15 @@
    git push origin main
    ```
 
-6. **等缓存预热**（仅当本版动了依赖时）：若修改了 `go.mod` / `go.sum` / `frontend/package-lock.json`，等 `cache-warm` workflow 落盘（约 1–2 分钟，GitHub Actions 页确认绿勾）。未动依赖则跳过此步。
+6. **等缓存预热**（仅当本版动了依赖时）：若修改了 `go.mod` / `go.sum` / `frontend/package-lock.json`，等 `cache-warm` workflow 落盘（约 1–2 分钟）。**机器视角判定**（workflow 文件名 `cache-warm.yml`，display name `Cache Warm`）：
+   ```bash
+   # 查最近一次 cache-warm 状态（success=绿勾，可继续；in_progress/queued=再等）
+   gh run list --workflow cache-warm.yml --branch main --limit 1 \
+     --json status,conclusion,createdAt,displayTitle
+   # 或阻塞等到它跑完（建议先 push main 触发它，再 watch）
+   gh run watch $(gh run list --workflow cache-warm.yml --branch main --limit 1 --json databaseId --jq '.[0].databaseId')
+   ```
+   未动依赖则跳过此步。
 
 7. **打 tag 触发**：
    ```bash
@@ -157,22 +203,22 @@ npm run build:android:release  # = scripts/build-android.ps1 -Arch arm64 -Produc
 ## 9. 发版验证清单
 
 ### 发版前
-- [ ] `package.json.version` 已更新且等于目标 tag（去 `v`）。
-- [ ] `build/windows/info.json` 的 `file_version` 和 `ProductVersion` 已同步。
-- [ ] 已提交版本号变更（package.json + info.json）。
-- [ ] `docs/releases/vX.Y.Z.md` 已写好（手写 notes；路径确认小写 `releases`）。
-- [ ] 已提交发布说明。
+- [ ] `package.json.version` 已更新且等于目标 tag（去 `v`）。（§2 步 1–2）
+- [ ] `build/windows/info.json` 的 `file_version` 和 `ProductVersion` 已同步。（§2 步 2）
+- [ ] 已提交版本号变更（package.json + info.json）。（§2 步 3）
+- [ ] `docs/releases/vX.Y.Z.md` 已写好（手写 notes；路径确认小写 `releases`）。（§2 步 4）
+- [ ] 已提交发布说明并 `git push origin main`。（§2 步 5）
 
 ### 发版中
-- [ ] 若动了依赖：已先推 `main` 并等 `cache-warm` 绿勾。
-- [ ] `git tag vX.Y.Z && git push origin vX.Y.Z` 已执行。
-- [ ] CI 四 job 全绿（Prepare / Windows / Linux / Android），无 `Version mismatch`。
+- [ ] 若动了依赖：已先推 `main` 并等 `cache-warm` 绿勾（`gh run list --workflow cache-warm.yml --branch main`）。（§2 步 6）
+- [ ] `git tag vX.Y.Z && git push origin vX.Y.Z` 已执行。（§2 步 7）
+- [ ] CI 四 job 全绿（Prepare / Windows / Linux / Android），无 `Version mismatch`。（§2 步 8）
 
 ### 发版后
-- [ ] GitHub Release 已建，三平台产物齐全（Windows .exe / Linux binary / Android .apk）。
-- [ ] Release body 为手写 notes（非自动生成 changelog）。
-- [ ] 应用内「关于 / 检查更新」显示真实版本（非 `dev`）。
-- [ ] Android：有签名则为 release APK，无签名则为 debug（符合预期）。
+- [ ] GitHub Release 已建，三平台产物齐全（Windows .exe / Linux binary / Android .apk）。（§2 步 9）
+- [ ] Release body 为手写 notes（非自动生成 changelog）。（§2 步 9；不符则 `gh release edit vX.Y.Z --notes-file docs/releases/vX.Y.Z.md`）
+- [ ] 应用内「关于 / 检查更新」显示真实版本（非 `dev`）。（§4 三平台注入对照）
+- [ ] Android：有签名则为 release APK，无签名则为 debug（符合预期）。（§1.2 Secrets）
 
 ---
 
@@ -210,31 +256,75 @@ npm run build:android:release  # = scripts/build-android.ps1 -Arch arm64 -Produc
 
 ## 11. 发版快速命令序列
 
-一行接一行执行，按需跳步：
+一行接一行执行，按需跳步。
+
+> ⚠️ **跨平台坑**：下方 `sed -i "..."` 仅 **GNU sed**（Linux / Git Bash）可用；**macOS BSD sed** 需 `sed -i '' "..."`（空 backup 后缀），**Windows PowerShell** 不认 sed。三平台各给一份，按本机环境选其一。
+>
+> **Windows PowerShell**（本项目主开发环境）：
+> ```powershell
+> $VER = "X.Y.Z"   # ← 改成实际版本号
+>
+> # 步骤 2：改 package.json 的 version 字段（不动其他字段）
+> $pkg = Get-Content package.json -Raw | ConvertFrom-Json
+> $pkg.version = $VER
+> $pkg | ConvertTo-Json -Depth 100 | Set-Content package.json -NoNewline
+>
+> # 步骤 2 续：同步 build/windows/info.json 的 file_version 和 ProductVersion
+> $info = Get-Content build/windows/info.json -Raw | ConvertFrom-Json
+> $info.file_version = $VER
+> $info.ProductVersion = $VER
+> $info | ConvertTo-Json -Depth 100 | Set-Content build/windows/info.json
+>
+> # 步骤 4：手动写 docs/releases/v$VER.md
+> ```
+>
+> **Linux / Git Bash（GNU sed）**：
+> ```bash
+> VER="X.Y.Z"  # ← 改成实际版本号
+>
+> # 步骤 2：改 package.json 的 version
+> sed -i "s/\"version\": \".*\"/\"version\": \"$VER\"/" package.json
+> # 步骤 2 续：手动改 build/windows/info.json 的 file_version 和 ProductVersion
+> # 步骤 4：手动写 docs/releases/v$VER.md
+> ```
+>
+> **macOS（BSD sed，需空 backup 后缀）**：
+> ```bash
+> VER="X.Y.Z"
+> sed -i '' "s/\"version\": \".*\"/\"version\": \"$VER\"/" package.json
+> ```
+
+### 共用：提交 + 打 tag + 监控
 
 ```bash
-# 步骤 2：改版本号
-VER="X.Y.Z"  # ← 改成实际版本号
+VER="X.Y.Z"  # ← 与上文同值
 
-# 步骤 3+4：改文件 + 写 notes
-sed -i "s/\"version\": \".*\"/\"version\": \"$VER\"/" package.json
-# 手动改 build/windows/info.json 的 file_version 和 ProductVersion
-# 手动写 docs/releases/v$VER.md
-
-# 步骤 5：提交
+# 步骤 5：提交版本号 + 发布说明，推 main
 git add package.json build/windows/info.json
 git commit -m "chore: bump version to $VER"
 git add docs/releases/v$VER.md
 git commit -m "docs: add v$VER release notes"
 git push origin main
 
-# 步骤 6：等缓存预热（仅动了依赖时需要）
-# 手动去 GitHub Actions 等 cache-warm 绿勾
+# 步骤 6：等缓存预热（仅动了 go.mod/go.sum/frontend/package-lock.json 时）
+gh run list --workflow cache-warm.yml --branch main --limit 1 \
+  --json status,conclusion,createdAt
+# 若 conclusion != success 或 status != completed，watch 到完成：
+gh run watch $(gh run list --workflow cache-warm.yml --branch main --limit 1 \
+  --json databaseId --jq '.[0].databaseId')
 
-# 步骤 7：打 tag
+# 步骤 7：打 tag 触发 release.yml
 git tag v$VER && git push origin v$VER
 
-# 步骤 8+9：监控 + 核对
+# 步骤 8：监控 release.yml 四 job
 gh run list --workflow release.yml --limit 3
-gh release view v$VER --json body,tagName,assets --jq '{tag: .tagName, body: (.body[0:80]+"..."), assets: (.assets | length)}'
+# 阻塞等到结束：
+gh run watch $(gh run list --workflow release.yml --limit 1 \
+  --json databaseId --jq '.[0].databaseId')
+
+# 步骤 9：核对 Release
+gh release view v$VER --json body,tagName,assets \
+  --jq '{tag: .tagName, body: (.body[0:80]+"..."), assets: (.assets | length)}'
+# 若 body 不对（自动生成 changelog 覆盖了手写 notes）：
+gh release edit v$VER --notes-file docs/releases/v$VER.md
 ```
