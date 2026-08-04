@@ -984,7 +984,7 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
             setEnvState(data.env, true);
         }
         if (data.gravityStrength !== undefined) {
-            setGravityStrength(data.gravityStrength);
+            setGravityStrength(data.gravityStrength, true);
         }
         // [adr:ground] envState 已恢复（含 groundCollisionEnabled），注入/移除地面刚体
         applyGroundCollision();
