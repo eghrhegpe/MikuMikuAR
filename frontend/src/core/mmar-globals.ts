@@ -97,26 +97,40 @@ export async function refreshSceneSnapshot(): Promise<void> {
     const g = ensureMmar();
 
     // [doc:adr-238] 惰性加载（Promise 形式，避免 check-circular 静态边）
-    const m = await import('../scene/scene');
-    const engine = m.engine;
-    const scene = m.scene;
-    const modelManager = m.modelManager;
-    if (!engine || !scene) {
+    // try/catch 覆盖场景模块加载失败：保持快照零值并退出，避免轮询
+    // （startSceneSnapshotPolling）下每 tick 抛一次 unhandled rejection 刷屏。
+    let snapshot: MmarSceneSnapshot | undefined;
+    // engine 供下方 GPU 段复用（WebGL 渲染器信息读取）
+    let engine: unknown;
+    try {
+        const m = await import('../scene/scene');
+        engine = m.engine;
+        const scene = m.scene;
+        const modelManager = m.modelManager;
+        if (!engine || !scene) {
+            return;
+        }
+
+        snapshot = {
+            fps: Math.round((engine as { getFps(): number }).getFps()),
+            meshCount: scene.meshes?.length ?? 0,
+            modelCount: modelManager?.getAll().length ?? 0,
+            gpu: '',
+            ktxSupported: false,
+            qualityTier: 'medium',
+        };
+    } catch {
         return;
     }
 
-    const snapshot: MmarSceneSnapshot = {
-        fps: Math.round(engine.getFps()),
-        meshCount: scene.meshes?.length ?? 0,
-        modelCount: modelManager?.getAll().length ?? 0,
-        gpu: '',
-        ktxSupported: false,
-        qualityTier: 'medium',
-    };
+    // 防御：TS 控制流对 try/catch 保守，显式收窄快照非空
+    if (!snapshot) {
+        return;
+    }
 
     // GPU 渲染器信息（从底层 WebGL context 读取；WebGPU 下 _gl 为 undefined）
     try {
-        const gl = (engine as unknown as { _gl?: GlLike })._gl;
+        const gl = (engine as { _gl?: GlLike })._gl;
         if (gl) {
             snapshot.gpu = `${gl.getParameter(gl.VENDOR)} ${gl.getParameter(gl.RENDERER)}`;
         }
