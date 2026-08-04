@@ -2,7 +2,7 @@
 
 # Bug 日志索引
 
-> 排障记录共 **50** 篇：32 篇按日期归档、18 篇早期记录（命名规范确立前）。每篇记录现象、根因、修复与验证方式，供回归时快速比对。
+> 排障记录共 **51** 篇：32 篇按日期归档、19 篇早期记录（命名规范确立前）。每篇记录现象、根因、修复与验证方式，供回归时快速比对。
 
 > 写作规范见 [Buglog 规范](./README.md)。
 
@@ -44,7 +44,7 @@
 - `2026-07-11` [第④轮审核 — 光照模块 tween 功能 BUG + 资源管理](./2026-07-11-lighting-tween-bugs.md)
 - `2026-07-11` [env-water: setWorldMatrix / freezeWorldMatrix 运行时不存在于 FreeCamera](./2026-07-11-env-water-setWorldMatrix.md)
 
-## 早期记录（18）
+## 早期记录（19）
 
 > 命名规范（`YYYY-MM-DD-简短英文描述.md`）确立前的记录，按标题排序。
 
@@ -62,6 +62,7 @@
 - [Ctrl+Space 被三个模块同时注册，静默覆盖](<./Ctrl+Space 被三个模块同时注册静默覆盖.md>)
 - [grid 切换后地面变纯色，重启才恢复](./grid切换后地面变纯色重启才恢复.md)
 - [PMX 加载失败：`is not pmx file`](<./PMX 加载失败：`is not pmx file`.md>)
+- [安全审计 CVE 记录](./security-audit-CVE.md)
 - [Shader 404：textureAlphaChecker.vertex.fx](<./Shader 404：textureAlphaChecker.vertex.fx.md>)
 - [UI 硬编码中文，无法切换语言](<./UI 硬编码中文无法切换语言.md>)
 - [VMD 播放无反应](<./VMD 播放无反应.md>)
