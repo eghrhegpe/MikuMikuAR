@@ -28,7 +28,7 @@ import {
     registerSetEnvState,
 } from '../../render/performance-env-bridge';
 import { setPerformanceMode, getPerformanceMode } from '../../render/performance';
-import { schedulePersistEnvState } from './env-persist';
+import { schedulePersistEnvState, cancelEnvPersistTimer } from './env-persist';
 
 // [doc:adr-132] 上一次 envBrightness 值，用于变化时 rebake 光照强度
 let _prevEnvBrightness = 1;
@@ -457,12 +457,17 @@ registerEnvStateMiddleware({
 registerSetEnvState(setEnvState);
 
 // cel-shading 激活时强制地面哑光（关 PBR 镜面），消除「cel 角色踩镜面地板」割裂。
+// skipAutoSave=true 表达「运行时临时状态」，但因契约 skipAutoSave 只跳过 triggerAutoSave、
+// 不跳过 env 防抖持久化（见 set-env-state.int.test.ts），若不加 cancelEnvPersistTimer，
+// groundPbrEnabled=false 中间态会在 500ms 后写回后端，用户在 cel 激活期间退出应用时
+// 会把临时值当最终态持久化。此处显式取消防抖队列，最终态由 cel 关闭时恢复的 setEnvState 持久化。
 let _celGroundSnapshot: { pbr: boolean } | null = null;
 registerCelGroundCoupling((celActive: boolean) => {
     if (celActive) {
         _celGroundSnapshot = { pbr: envState.groundPbrEnabled };
         if (_celGroundSnapshot.pbr) {
             setEnvState({ groundPbrEnabled: false }, true);
+            cancelEnvPersistTimer();
         }
     } else if (_celGroundSnapshot) {
         setEnvState({ groundPbrEnabled: _celGroundSnapshot.pbr }, true);
