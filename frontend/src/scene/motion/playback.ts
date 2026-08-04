@@ -33,6 +33,9 @@ function _getDuration(runtime: IMmdRuntime, manager: ModelManager): number {
 /** 当前是否有 auto-loop 在进行中（用于避免 UI 闪烁）。 */
 let _loopPending = false;
 
+/** [audit:P3] auto-loop「接近结束」容差（秒）：currentTime 距结尾在此阈值内视为已播完，触发循环 */
+const LOOP_NEAR_END_THRESHOLD = 0.1;
+
 /** Module-level ModelManager 引用，供 updatePlaybackUI 统一获取动画时长。 */
 let _manager: ModelManager | null = null;
 
@@ -93,7 +96,7 @@ export function initPlaybackObservables(
             focModel &&
             runtime &&
             focModel.animationDuration > 0 &&
-            runtime.currentTime >= focModel.animationDuration - 0.1
+            runtime.currentTime >= focModel.animationDuration - LOOP_NEAR_END_THRESHOLD
         ) {
             // 设置 loopPending 标志，阻止 setIsPlaying(false) 导致的 UI 闪烁
             _loopPending = true;
@@ -105,8 +108,8 @@ export function initPlaybackObservables(
                         _loopPending = false;
                         return;
                     }
-                    // 检查 runtime 和 manager 在 async 间隙是否仍有效
-                    if (!loop || !runtime || !_manager) {
+                    // [audit:P3] runtime 为 initPlaybackObservables 闭包参数，恒非空；仅校验 loop 与 _manager
+                    if (!loop || !_manager) {
                         _loopPending = false;
                         return;
                     }
