@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitepress';
+import type { HeadConfig } from 'vitepress';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -221,6 +222,16 @@ export default defineConfig({
   // 在 VitePress 站内按路由解析必然死链；站内导航由 sidebar 数组保证。
   // 取舍：忽略全部死链；新增 guide 页必须同步更新 sidebar（见 P1 维护约定）。
   ignoreDeadLinks: true,
+
+  // A 项：防 FOUC 主题脚本（借鉴 reasonix.io 的 <head> 内联模式，落 VitePress 主题）。
+  // VitePress 1.x 已自带暗色 FOUC 防护，此处为「显式可控加固层」：
+  // 首帧绘制前同步 localStorage 的 appearance 偏好并设原生 color-scheme，
+  // 消除自定义主题变量加载前的白屏闪烁；与 VitePress 内置脚本共用同一 key，幂等无冲突。
+  transformHead(): HeadConfig[] {
+    const noFouc =
+      "(function(){try{var k='vitepress-theme-appearance';var s=localStorage.getItem(k)||'auto';var d=s==='auto'?(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):s;var c=d==='dark';var r=document.documentElement;r.classList.toggle('dark',c);r.style.colorScheme=c?'dark':'light';}catch(e){}})();"
+    return [['script', { id: 'mma-no-fouc' }, noFouc]]
+  },
 
   // srcDir 指向 docs/ 后，页面模块位于 docs/adr/ 等子目录，Node 从页面目录向上找 node_modules
   // 找不到（依赖只在 docs/guide/node_modules）→ vue/server-renderer 解析失败。
