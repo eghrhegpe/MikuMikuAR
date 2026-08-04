@@ -15,14 +15,16 @@ import { DEFAULT_GRAVITY } from '@/core/ui-constants';
 let _gravityStrength = 1.0;
 const _gravityVec = new Vector3(0, DEFAULT_GRAVITY, 0);
 
-export function setGravityStrength(value: number): void {
+export function setGravityStrength(value: number, skipAutoSave = false): void {
     _gravityStrength = Math.max(0, Math.min(2, value));
     _gravityVec.y = DEFAULT_GRAVITY * _gravityStrength;
     // physics 是 WASM 版专属 API，JS 版无物理，instanceof 守卫后访问
     if (mmdRuntime instanceof MmdWasmRuntime && mmdRuntime.physics) {
         mmdRuntime.physics.setGravity(_gravityVec);
     }
-    triggerAutoSave();
+    if (!skipAutoSave) {
+        triggerAutoSave();
+    }
 }
 
 export function getGravityStrength(): number {
