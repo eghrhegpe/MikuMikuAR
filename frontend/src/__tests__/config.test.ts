@@ -36,6 +36,12 @@ describe('config pure functions', () => {
         it('handles large values', () => {
             expect(formatTime(59999)).toBe('999:59.00');
         });
+
+        it('NaN / Infinity → "00:00.00" (safe fallback)', () => {
+            expect(formatTime(NaN)).toBe('00:00.00');
+            expect(formatTime(Infinity)).toBe('00:00.00');
+            expect(formatTime(-Infinity)).toBe('00:00.00');
+        });
     });
 
     describe('formatError', () => {

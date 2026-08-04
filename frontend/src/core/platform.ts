@@ -43,6 +43,7 @@ export function isWebPlatform(): boolean {
  */
 export async function awaitWailsBridge(timeout = 3000): Promise<boolean> {
     let settled = false;
+    let pollTimer: ReturnType<typeof setTimeout> | undefined;
     const poll = (resolve: (v: boolean) => void) => {
         if (settled) {
             return;
@@ -53,9 +54,12 @@ export async function awaitWailsBridge(timeout = 3000): Promise<boolean> {
             (window as { wails?: unknown }).wails !== null
         ) {
             settled = true;
+            if (pollTimer !== undefined) {
+                clearTimeout(pollTimer);
+            }
             resolve(true);
         } else {
-            setTimeout(() => poll(resolve), 50);
+            pollTimer = setTimeout(() => poll(resolve), 50);
         }
     };
     return new Promise<boolean>((resolve) => {
