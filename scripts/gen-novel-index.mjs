@@ -273,7 +273,7 @@ function buildReadme() {
     '附录 `appendix/` 收纳非代码目录锚定的章节，分 4 组：跨模块重构 / 文档演进 / Go后端 / 安全横切。'
   );
   out.push('');
-  out.push('判定规则与决策链路详见 [AGENTS.md](AGENTS.md)。');
+  out.push('判定规则与决策链路详见 `AGENTS.md`（写作规范，不入文档站）。');
   out.push('');
   out.push('---');
   out.push('');
