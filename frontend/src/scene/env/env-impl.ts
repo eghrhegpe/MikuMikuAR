@@ -85,18 +85,18 @@ const _COLLISION_KEYS = getEnvKeys('collision');
 
 registerEnvCallback((changed, state) => {
     // Sky
-    if (!changed || [...changed].some((k) => _SKY_KEYS.includes(k))) {
+    if (!changed || _SKY_KEYS.some((k) => changed.has(k))) {
         applySky(state);
         if (isMirrorActive() && updateMirrorClearColor) {
             updateMirrorClearColor();
         }
     }
     // Ground
-    if (!changed || [...changed].some((k) => _GROUND_KEYS.includes(k))) {
+    if (!changed || _GROUND_KEYS.some((k) => changed.has(k))) {
         applyGround(state);
     }
     // Fog
-    if (!changed || [...changed].some((k) => _FOG_KEYS.includes(k))) {
+    if (!changed || _FOG_KEYS.some((k) => changed.has(k))) {
         applyFog(state);
     }
     // Mirror

@@ -7,6 +7,7 @@
 import { Color3 } from '@babylonjs/core/Maths/math.color';
 
 import { envState, type EnvState, triggerAutoSave } from '@/core/config';
+import { ENV_STATE_SCHEMA } from '@/core/env-state-schema';
 import { ENV_LIGHT_MAX } from '@/core/ui-constants';
 import { col3FromTriple } from '@/core/color-helpers';
 import { deriveLighting } from '../env-lighting';
@@ -308,7 +309,14 @@ function migrateEnvState(input: Partial<EnvState>): Partial<EnvState> {
             migrated = true;
         }
     }
-    return migrated ? (out as Partial<EnvState>) : input;
+    // 白名单收窄：仅保留 Schema 已知 key，杜绝迁移残留的未知字段写入 envState
+    const result: Partial<EnvState> = {};
+    for (const k of Object.keys(out)) {
+        if (k in ENV_STATE_SCHEMA) {
+            (result as Record<string, unknown>)[k] = out[k];
+        }
+    }
+    return migrated || Object.keys(result).length !== Object.keys(out).length ? result : input;
 }
 
 /** 环境状态唯一写入入口（ADR-173 中间件链），可选跳过自动保存。 */

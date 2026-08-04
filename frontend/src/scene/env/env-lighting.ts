@@ -298,17 +298,14 @@ export function snapshotEnvPresetByCategory(
     state: EnvState
 ): CategorizedEnvPreset {
     const keys = ENV_PRESET_FIELDS[category];
-    const fields: Record<string, unknown> = {};
+    const fields: Partial<EnvState> = {};
+    const rec = fields as Record<string, unknown>;
     for (const k of keys) {
         const v = state[k];
         // 颜色/方向等 [number,number,number] 数组浅拷贝，避免预设引用 reactive state
-        if (Array.isArray(v)) {
-            fields[k as string] = (v as number[]).slice();
-        } else {
-            fields[k as string] = v;
-        }
+        rec[k] = Array.isArray(v) ? (v as number[]).slice() : v;
     }
-    return { version: 3, category, label, fields: fields as Partial<EnvState> };
+    return { version: 3, category, label, fields };
 }
 
 /** 序列化分类预设为 JSON 字符串。 */
