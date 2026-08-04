@@ -133,7 +133,7 @@
 | [設計決定](docs/adr/) | 80+ ADR 技術的アプローチ |
 | [要件と選定](docs/architecture.md) | P0-P4 優先度 + 技術選定理由 |
 | [競合分析](docs/competitive-analysis.md) | 23 プロジェクト調査 |
-| [コーディング奇譚](novel/README.md) | 100+ 章 コード進化物語 |
+| [コーディング奇譚](docs/novel/index.md) | 100+ 章 コード進化物語 |
 | [AI ワークフロー規則](AGENTS.md) | AI 協業ガイド |
 
 ---

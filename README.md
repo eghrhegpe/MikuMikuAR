@@ -34,7 +34,7 @@
 | [竞品分析](docs/competitive-analysis.md) | 23 个项目调研对比        |
 | [项目现状](docs/status.md)               | 当前状态 + 已完成功能      |
 | [菜单指南](docs/menu-how-to.md)          | 声明式菜单 Schema 开发手册 |
-| [编码奇谭](novel/README.md)              | 代码演化叙事            |
+| [编码奇谭](docs/novel/index.md)          | 代码演化叙事            |
 
 ---
 

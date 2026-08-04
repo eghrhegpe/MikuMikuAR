@@ -160,6 +160,39 @@ const releasesItems = mdNames('releases')
   .sort((a, b) => b.localeCompare(a))
   .map((f) => ({ text: f.replace(/\.md$/, ''), link: link('releases/' + f) }));
 
+// ---------- 6. 小说（novel/，按章文件夹分组折叠；appendix/附录·其他 嵌套展开） ----------
+// 与 adr/knowledge 同款自动扫描：新增章文件夹/章节文件自动入列，删除即消失。
+// 仅排除索引页与写作元文件（AGENTS/SKELETON 已由 srcExclude 挡在构建外）。
+const NOVEL_META = ['index.md'];
+function novelGroups() {
+  const root = path.join(docsRoot, 'novel');
+  if (!fs.existsSync(root)) return [];
+  const groups = [];
+  const dirs = fs
+    .readdirSync(root, { withFileTypes: true })
+    .filter((e) => e.isDirectory())
+    .sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'));
+  for (const d of dirs) {
+    if (d.name === 'appendix') {
+      const subs = fs
+        .readdirSync(path.join(root, d.name), { withFileTypes: true })
+        .filter((e) => e.isDirectory())
+        .sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'));
+      for (const s of subs) {
+        groups.push({
+          text: `附录·${s.name}`,
+          collapsed: true,
+          items: scanItems(`novel/appendix/${s.name}`, NOVEL_META),
+        });
+      }
+      continue;
+    }
+    groups.push({ text: d.name, collapsed: true, items: scanItems(`novel/${d.name}`, NOVEL_META) });
+  }
+  return groups;
+}
+const novelItems = novelGroups();
+
 export default defineConfig({
   // 根路径部署：文档站即 Pages 根；主应用降为 /MikuMikuAR/app/ 子路径（ADR-177 路径重分配）
   base: '/MikuMikuAR/',
@@ -178,6 +211,9 @@ export default defineConfig({
     'ai-new/**',
     'upstream/**',
     '_writetest.txt',
+    // novel/ 内部写作规范与骨架模板（作者/写作 AI 用，读者不可见）
+    'novel/AGENTS.md',
+    'novel/SKELETON.md',
     // AGENTS.md（AI 协作约定）+ dep-graph.md（开发自查产物，252 节点/1444 边依赖图）
     ...ROOT_NOBUILD,
   ],
@@ -238,6 +274,7 @@ export default defineConfig({
       { text: '首页', link: '/' },
       { text: '用户指南', link: '/guide/' },
       { text: '知识卡', link: '/knowledge/' },
+      { text: '小说', link: '/novel/' },
       { text: '决策记录', link: '/adr/' },
       { text: '开发运维', link: '/buglog/' },
       { text: 'GitHub', link: 'https://github.com/eghrhegpe/MikuMikuAR' },
@@ -247,6 +284,7 @@ export default defineConfig({
       { text: '架构与规范', link: '/architecture', collapsed: true, items: archItems },
       { text: '决策记录 (ADR)', link: '/adr/', collapsed: true, items: adrItems },
       { text: '知识卡', link: '/knowledge/', items: knowledgeItems },
+      { text: '小说', link: '/novel/', collapsed: true, items: novelItems },
       { text: '开发运维', items: [
         { text: 'Bug 日志', link: '/buglog/', collapsed: true, items: buglogItems },
         { text: '发版记录', link: '/releases/', collapsed: true, items: releasesItems },

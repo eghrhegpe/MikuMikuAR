@@ -133,7 +133,7 @@
 | [설계 결정](docs/adr/) | 80+ ADR 기술 접근 방식 |
 | [요구사항 및 선정](docs/architecture.md) | P0-P4 우선순위 + 기술 선정 이유 |
 | [경쟁 분석](docs/competitive-analysis.md) | 23개 프로젝트 조사 |
-| [코딩 기담](novel/README.md) | 100+ 챕터 코드 진화 이야기 |
+| [코딩 기담](docs/novel/index.md) | 100+ 챕터 코드 진화 이야기 |
 | [AI 워크플로 규칙](AGENTS.md) | AI 협업 가이드 |
 
 ---

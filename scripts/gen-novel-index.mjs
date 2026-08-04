@@ -1,15 +1,19 @@
 #!/usr/bin/env node
 /**
- * gen-novel-index.mjs —— 全自动生成小说章节索引 `novel/README.md`。
+ * gen-novel-index.mjs —— 全自动生成小说章节索引 `docs/novel/index.md`。
  *
- * 背景：novel/README.md 原本由 AI 手动维护章节清单表格，长期漂移——
+ * 背景：novel/README.md 原本由 AI 手动维护章节清单表格（2026-08 迁移至
+ *   docs/novel/ 并改名 index.md 后成为 VitePress 落地页），长期漂移——
  *   漏列（磁盘有文件但索引没列）、重复（同文件被列两遍）、混入内部状态
  *   标记（如「已恢复」）。手写索引无法随章节文件增减自动同步。
  *
  * 本脚本让磁盘成为唯一事实源：扫描 novel/ 下所有子目录的章节 .md，
  * 解析编号 / 标题 / 相对路径，结合结构锁定的章元信息（10 主章 + 附录组）
- * 重新生成整份 README.md（索引仅列干净标题，章节内容摘要由各章文件自身的
+ * 重新生成整份 index.md（索引仅列干净标题，章节内容摘要由各章文件自身的
  * `> **过程**：` 块承载，不在此重复维护）。
+ *
+ * 索引同时是 VitePress 站 `/novel/` 落地页（docs/novel/index.md），
+ * 站点构建与生成器共用同一份文件，无第二真相源。
  *
  * 设计原则：
  *   - 全文生成，禁止手改。重跑即同步，杜绝手写索引漂移。
@@ -20,7 +24,7 @@
  *     自身的 `> **过程**：` 块承载，读者按标题定位文件后自行查阅，避免索引与正文双重维护。
  *
  * 用法：
- *   node scripts/gen-novel-index.mjs          # 写入 novel/README.md
+ *   node scripts/gen-novel-index.mjs          # 写入 docs/novel/index.md
  *   node scripts/gen-novel-index.mjs --check  # 校验是否已同步（CI 用，不写入）
  */
 
@@ -30,8 +34,8 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
-const NOVEL = path.join(ROOT, 'novel');
-const README = path.join(NOVEL, 'README.md');
+const NOVEL = path.join(ROOT, 'docs', 'novel');
+const INDEX = path.join(NOVEL, 'index.md');
 const CHECK = process.argv.includes('--check');
 
 const BANNER =
@@ -323,23 +327,23 @@ function main() {
   }
 
   const expected = buildReadme().replace(/\s+$/, '') + '\n';
-  const actual = fs.existsSync(README) ? fs.readFileSync(README, 'utf8') : null;
+  const actual = fs.existsSync(INDEX) ? fs.readFileSync(INDEX, 'utf8') : null;
 
   if (CHECK) {
     if (actual === expected) {
-      console.log('✅ novel/README.md 索引已同步');
+      console.log('✅ docs/novel/index.md 索引已同步');
       return;
     }
-    console.error('❌ novel/README.md 未同步，请运行：npm run gen:novelindex');
+    console.error('❌ docs/novel/index.md 未同步，请运行：npm run gen:novelindex');
     process.exit(1);
   }
 
   if (actual === expected) {
-    console.log('✓ novel/README.md 已是最新，无需写入');
+    console.log('✓ docs/novel/index.md 已是最新，无需写入');
     return;
   }
-  fs.writeFileSync(README, expected, 'utf8');
-  console.log('✅ 已生成 novel/README.md');
+  fs.writeFileSync(INDEX, expected, 'utf8');
+  console.log('✅ 已生成 docs/novel/index.md');
 }
 
 main();
