@@ -4,29 +4,9 @@
 
 本目录的章节文件**必须且只能**放入以下 10 个顶级文件夹之一，或 `appendix/` 下的 4 个分组之一，优先利用已有文档，已有文件夹。
 
-10 个顶级文件夹与 `frontend/src/` 代码目录一一对应：
+> **映射表唯一事实源**：10 个顶级文件夹 ↔ `frontend/src/` 代码目录、附录 4 组的主题与典型内容，由 `scripts/gen-novel-index.mjs` 扫描生成，完整映射见 [README.md](./README.md)（目录结构总览）。此处**不手维护映射表**——改映射请改脚本常量 `MAIN_CHAPTERS` / `APPENDIX_GROUPS`，再跑 `npm run gen:novelindex` 同步 README，避免双源漂移。
 
-| 章号 | 文件夹 | 对应代码目录 | 主题 |
-|------|--------|------------|------|
-| 01 | `01-基础设施与依赖/` | `frontend/src/core/` | 共享状态、配置、文件URL、图标、UI helpers、快捷键路由 |
-| 02 | `02-UI交互/` | `frontend/src/menus/` | MenuStack、弹窗、设置页、模型库UI、动作UI、环境UI、场景UI |
-| 03 | `03-动作演算/` | `frontend/src/motion-algos/` | 程序化动作、VMD写入、VPD解析、节拍检测、LipSync算法 |
-| 04 | `04-音频与换装/` | `frontend/src/outfit/` | 音频播放、VMD同步、节拍挂载、换装系统、纹理变体 |
-| 05 | `05-布料物理/` | `frontend/src/physics/` | XPBD求解器、布料生成、SDF碰撞、调试可视化、布料管理器 |
-| 06 | `06-相机移动/` | `frontend/src/scene/camera/` | 相机模式、自由飞行、相机VMD轨道 |
-| 07 | `07-环境渲染/` | `frontend/src/scene/env/` | 天空、地面、雾、云、水、粒子、风、环境预设、光照推导 |
-| 08 | `08-模型管理/` | `frontend/src/scene/manager/` | 模型注册表、PMX加载、缩略图、材质系统、模型操作、预设 |
-| 09 | `09-程序化动作/` | `frontend/src/scene/motion/` | VMD加载播放、程序化动作桥接、LipSync桥接、播放控制 |
-| 10 | `10-灯光与阴影/` | `frontend/src/scene/render/` | 渲染管线、灯光、阴影、性能降级、后处理 |
-
-`appendix/` 下分 4 组，收纳非代码目录锚定的章节：
-
-| 分组 | 主题 | 典型内容 |
-|------|------|---------|
-| `appendix/跨模块重构/` | 多模块同时动刀的工程事件 | 八城审计、瘦身日、八城之盟、中段清算、审计报告 |
-| `appendix/文档演进/` | 文档/测试体系本身的发展 | 绘图师、读图、议会与织工、试金石、审计之光、伪影与真镜、代码的镜厅 |
-| `appendix/Go后端/` | Go 代码与 Wails 框架 | 地下管道、西西弗斯之夜、断桥重建 |
-| `appendix/安全横切/` | 横切多模块的安全问题 | XSS攻坚战、追赶者的阴影、路径的陷阱 |
+具体路由决策（改了代码 → 命中哪一章）见第二节。
 
 ## 二、AI 决策链路（核心规则）
 

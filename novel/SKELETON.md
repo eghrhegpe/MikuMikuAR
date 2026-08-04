@@ -299,22 +299,15 @@ MikuMikuAR 在某次 `wails dev` 扫完所有外部库后产生的自意识。
 
 | 类别 | 规则 | 示例 |
 |------|------|------|
-| 功能父目录 | `NN-功能名/`，两位数字编号 + 中文功能名 | `03-UI交互系统/` |
+| 功能父目录 | `NN-功能名/`，两位数字编号 + 中文功能名 | `03-动作演算/` |
 | 卷目录 | `vol-N-kebab-case`，全小写 + 短横线 | `vol-4-the-new-world` |
 | 正文章 | `NN-标题.md`，两位数字编号 | `07-三层闭包.md` |
 | 番外篇 | `番外-标题.md`，不加数字编号 | `番外-云层协议.md` |
 | 尾章 | `尾章-标题.md`，不加数字编号 | `尾章-减法.md` |
 
-卷必须放在对应的功能父目录下。新卷续写前，先确定其核心主题归属哪个功能分类，然后放置到对应父目录，并在 `README.md` 中更新路径前缀。
+卷必须放在对应的功能父目录下。新卷续写前，先确定其核心主题归属哪个功能分类，然后放置到对应父目录。索引由 `scripts/gen-novel-index.mjs` 自动生成，无需手改 `README.md` 路径前缀。
 
-| 功能父目录 | 包含的卷 |
-|-----------|---------|
-| `01-基础设施与依赖/` | vol-0-foundation, vol-2-expansion |
-| `02-核心渲染与场景/` | vol-1-genesis, vol-8-the-heraldry-of-materials |
-| `03-UI交互系统/` | vol-3-upper, vol-3-lower, vol-10-incremental-republic |
-| `04-架构重构与模块化/` | vol-4-the-new-world, vol-7-the-frontiers, vol-9-the-bridge |
-| `05-物理引擎与环境系统/` | vol-5-the-light-of-physics |
-| `06-安全审计与性能优化/` | vol-6-federal-checkup |
+> **父目录真实名称以 [README.md](./README.md) 目录结构总览为准**（由脚本扫描生成）。前述旧版的父目录命名（如 `02-核心渲染与场景/`、`03-UI交互系统/`）已与磁盘实际文件夹（`02-UI交互/`、`03-动作演算/` …）脱节，已废弃，请勿照抄。
 
 ### 卷的定位（不可越界）
 
@@ -358,7 +351,7 @@ MikuMikuAR 在某次 `wails dev` 扫完所有外部库后产生的自意识。
 
 1. 先读本文件，再读对应卷的已有章节，最后动笔
 2. 查 `docs/status.md` 的 Bug 记录与已实现清单
-3. 写完同步更新 `README.md` 目录索引（注意路径前缀：`03-UI交互系统/vol-3-upper/...`）
+3. 写完索引由 `scripts/gen-novel-index.mjs` 自动生成，无需手改 `README.md`；父目录真实名称见 [README.md](./README.md) 目录结构总览
 4. 不更新索引的续写 = 没写。下一个 AI 找不到，等于不存在。
 
 ---
