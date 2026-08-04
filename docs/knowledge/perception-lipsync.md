@@ -13,6 +13,7 @@ adr:
   - ADR-166
 symbols:
   - _applyLipSync
+  - _disposeLipSyncRuntime
 invariants:
   - 口型参数与音频信号联动
   - 口型同步与 VMD 口型动作互补
