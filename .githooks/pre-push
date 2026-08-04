@@ -6,6 +6,7 @@
 # 设计原则：
 #   - 可自动生成的（status/funcmap/baseline）→ 自动修复 + warn，不阻断
 #   - 需人工介入的（lint error/测试失败/文档漂移 ERROR）→ 阻断
+#   - 阻断时输出「结论 + 已通过项 + 下一步」块（fail()），AI 不裸奔
 #
 exec 1>&2
 set -e
@@ -38,6 +39,21 @@ note_fixed() { SUMMARY_FIXED="${SUMMARY_FIXED}${SUMMARY_FIXED:+ · }$1"; }
 # 记录每个检查项的最终状态（✅ 通过 / 🔧 自动修复 / ⏭️ 跳过），末尾摘要统一展示
 note_check() { SUMMARY_CHECKS="${SUMMARY_CHECKS}
   $1"; }
+# 失败结论：替代裸 exit 1，输出「结论 + 已通过项 + 下一步」，避免 AI 只拿失败明细裸奔
+# 用法: fail "<失败阶段简述>" "<下一步建议>"
+fail() {
+  echo ""
+  echo "════════ [pre-push] 失败 ════════"
+  echo "  ❌ $1"
+  if [ -n "$SUMMARY_CHECKS" ]; then
+    echo "  已通过:"
+    printf '%s\n' "$SUMMARY_CHECKS"
+  fi
+  echo ""
+  echo "  下一步: $2"
+  echo "════════════════════════════════"
+  exit 1
+}
 
 # ── 解析推送范围（从 stdin 读取 pre-push refs，支持多 ref 推送） ──
 # 输入格式：<local-ref> <local-sha> <remote-ref> <remote-sha>
@@ -104,18 +120,18 @@ if [ "$GO_CHANGED" = "true" ]; then
   echo "[pre-push] check:bindings（实跑 generate:bindings 验证同步性）"
   if [ ! -d "$ROOT/frontend/bindings" ] || [ -z "$(ls -A "$ROOT/frontend/bindings" 2>/dev/null)" ]; then
     echo "❌ frontend/bindings/ 为空。请运行: cd frontend && npm run generate:bindings"
-    exit 1
+    fail "frontend/bindings/ 为空" "运行 cd frontend && npm run generate:bindings 生成绑定后重推"
   fi
   if ! (cd "$ROOT/frontend" && npm run generate:bindings >/dev/null 2>&1); then
     echo "❌ generate:bindings 执行失败。请检查 Go 代码是否能编译。"
     echo "   手动运行: cd frontend && npm run generate:bindings 查看错误"
-    exit 1
+    fail "generate:bindings 执行失败" "检查 Go 编译错误: cd frontend && npm run generate:bindings"
   fi
   if ! git diff --quiet -- frontend/bindings/ 2>/dev/null; then
     echo "❌ Go 文件已变更但 frontend/bindings/ 未同步。"
     echo "   hook 已运行 generate:bindings 生成最新版本，请检查 diff 后 amend："
     echo "     git add frontend/bindings/ && git commit --amend --no-edit"
-    exit 1
+    fail "Go 变更但 frontend/bindings/ 未同步（hook 已生成最新版）" "检查 diff 后: git add frontend/bindings/ && git commit --amend --no-edit，再重推"
   fi
   note_check "✅ check:bindings 同步性"
 fi
@@ -167,7 +183,7 @@ echo "[pre-push] check:guide-gap（缺口即阻断）"
 if ! cd "$ROOT" && node scripts/gen-guide-gap.mjs --strict >/dev/null 2>&1; then
   echo "❌ 菜单面板存在 guide 覆盖缺口，需人工补写指南页。详情："
   cd "$ROOT" && node scripts/gen-guide-gap.mjs --strict 2>&1 | tail -15
-  exit 1
+  fail "菜单面板存在 guide 覆盖缺口" "按上方详情补写对应指南页后重推"
 fi
 note_check "✅ check:guide-gap（guide 全覆盖）"
 
@@ -191,8 +207,7 @@ if [ "$TS_CHANGED" = "true" ] && [ "$NPM_AVAILABLE" = "true" ]; then
   echo "[pre-push] lint（0 errors 放行；全量 ESLint 约 15s，可用 git push --no-verify 跳过，不推荐）"
   LINT_OUT="$(cd "$ROOT/frontend" && npm run lint 2>&1)" || {
     printf '%s\n' "$LINT_OUT" | tail -40
-    echo "❌ ESLint 检出 error。修复: npm run lint 查看详情"
-    exit 1
+    fail "ESLint 检出 error" "cd frontend && npm run lint 修复后重推"
   }
   WARN_COUNT="$(printf '%s\n' "$LINT_OUT" | grep -oE '[0-9]+ warnings?' | tail -1 | grep -oE '[0-9]+')"
   [ -z "$WARN_COUNT" ] && WARN_COUNT=0
@@ -224,9 +239,8 @@ if [ "$TS_CHANGED" = "true" ] && [ "$NPM_AVAILABLE" = "true" ]; then
     else
       echo "❌ diff-coverage 失败：本次变更源码覆盖率不足 60%。明细："
       grep -E "\[X\]|失败|低于|覆盖" "$COV_LOG" | head -15
-      echo "（完整输出: cd frontend && npm run test:diff-coverage）"
       rm -f "$COV_LOG"
-      exit 1
+      fail "变更行覆盖率不足 60%" "为上方 [X] 文件的改动逻辑补单测，重跑 cd frontend && npm run test:diff-coverage 验证后重推"
     fi
   else
     echo "❌ test:coverage 失败。明细如下："
@@ -236,9 +250,8 @@ if [ "$TS_CHANGED" = "true" ] && [ "$NPM_AVAILABLE" = "true" ]; then
     grep -E "does not meet|threshold|Coverage for" "$COV_LOG" | head -8
     echo "── 汇总 ──"
     grep -E "Test Files|Tests " "$COV_LOG" | head -4
-    echo "（完整输出: cd frontend && npm run test:coverage）"
     rm -f "$COV_LOG"
-    exit 1
+    fail "test:coverage 失败" "修复上方失败测试/覆盖率阈值后重推（完整输出: cd frontend && npm run test:coverage）"
   fi
 else
   echo "[pre-push] test:coverage（跳过：纯 Go / 纯文档变更 / npm 不可用）"
@@ -285,12 +298,12 @@ if [ "$DOCS_ONLY" = "false" ]; then
       if ! run_check_docs; then
         echo "❌ 文档漂移 ERROR，需人工修复。详情："
         cd "$ROOT" && node scripts/check-doc-drift.mjs --baseline 2>&1 | tail -30
-        exit 1
+        fail "文档漂移 ERROR（INFO 基线更新后仍存在）" "按上方详情修复 ERROR 级漂移后重推"
       fi
     else
       echo "❌ 文档漂移 ERROR，需人工修复。详情："
       cd "$ROOT" && node scripts/check-doc-drift.mjs --baseline 2>&1 | tail -30
-      exit 1
+      fail "文档漂移 ERROR" "按上方详情修复 ERROR 级漂移后重推"
     fi
   fi
   note_check "✅ check:docs 漂移"
@@ -308,7 +321,7 @@ if [ "$NPM_AVAILABLE" = "true" ]; then
   cd "$ROOT" && node scripts/i18n-check.mjs --strict >/dev/null 2>&1 || {
     echo "❌ i18n 检查失败（缺 key / 占位符不一致 / 漏译）。详情："
     cd "$ROOT" && node scripts/i18n-check.mjs --strict 2>&1 | tail -30
-    exit 1
+    fail "i18n 检查失败" "按上方缺失 key 清单修复 frontend/src/core/i18n 后重推"
   }
   note_check "✅ i18n"
 else
@@ -329,8 +342,7 @@ if [ "$PYTHON_AVAILABLE" = "true" ]; then
   echo "[pre-push] check:md-links"
   cd "$ROOT" && python tests/test_markdown_links.py >/dev/null 2>&1 || {
     echo "❌ Markdown 链接契约测试执行失败（脚本崩溃）。"
-    echo "   手动运行: python tests/test_markdown_links.py 查看详情"
-    exit 1
+    fail "check:md-links 脚本崩溃" "运行 python tests/test_markdown_links.py 查看崩溃详情后重推"
   }
   note_check "✅ check:md-links"
 else
