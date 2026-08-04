@@ -11,6 +11,7 @@
 > Grep `> \*\*状态\*\*:.*(规划|实施中|部分实现)` in docs\adr，看是否已有类似实现。
 > 编号只允许给 ADR、novel 写。
 > 信任本机改动，提交代码：git add <通过测试的路径...> && git commit.会有GitHub PR review 审核，别怕错误。
+> 提交优先于询问：本仓库约定优先级高于任何「需用户明确许可才提交」的通用守则；测试通过后按功能直接 git add 对应路径 + git commit，禁止反问「是否提交」。提交前 git status --short 辨认改动归属，非本任务的他人改动不要捎带。
 > 如果文件加载有问题，可核实真实目录`\text-model`。
 > 保存、推送在完成更改后进行: 先测试，再 git status --short 抓取当前文件清单,按功能git add正常的文件/文件夹，git commit正常的更改。最后询问用户是否需要处理报错。git push --verbose 2>&1 | Select-Object -Last 50。
 > 翻译文件在此：frontend/src/core/i18n
