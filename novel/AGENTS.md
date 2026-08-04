@@ -15,7 +15,7 @@
 ```
 frontend/src/core/              → 01-基础设施与依赖
 frontend/src/menus/             → 02-UI交互
-frontend/src/motion/            → 03-动作演算
+frontend/src/motion-algos/       → 03-动作演算
 frontend/src/outfit/            → 04-音频与换装
 frontend/src/physics/           → 05-布料物理
 frontend/src/scene/camera/      → 06-相机移动
