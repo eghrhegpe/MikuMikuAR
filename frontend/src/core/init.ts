@@ -147,6 +147,11 @@ async function init(): Promise<void> {
 
         initDropHandler(); // 拖拽导入处理不依赖场景初始化
 
+        // [doc:adr-238] 桥注册守卫：initScene 经 scene/scene 注册，依赖 render-loop 静态边
+        // 加载（ADR-238 §2.5 结构性保留）。未注册时场景静默不初始化，此处显式校验。
+        if (!getSceneAction('initScene')) {
+            console.warn('[init] initScene bridge 未注册——场景可能不会初始化');
+        }
         await getSceneAction('initScene')?.();
         // 引擎就绪 → 隐藏加载遮罩，显示主应用 UI
         dom.showApp();
