@@ -12,20 +12,42 @@ const VOICE_BIN_END = 50;
 const HIGH_BIN_START = 25;
 const HIGH_BIN_END = 50;
 
-/** lip-sync 状态机（从 lipsync-bridge.ts 搬运：音源切换重置 + 静音指数衰减 + 低通滤波 + morph 缓存） */
-let _lipSyncMorphName: string | null = null;
-let _lipSyncMorphSet: {
-    open: string | null;
-    close: string | null;
-    pucker: string | null;
-    smile: string | null;
-} | null = null;
-let _lastLipSyncModelId: string | null = null;
-let _lastLipSyncMorphNames: string[] = [];
-let _lastLipSyncMorphNameSet = new Set<string>();
-let _smoothLow = 0;
-let _smoothHigh = 0;
-let _lastLipSyncAudioPath = '';
+/** 单模型 lip-sync 运行时状态（per-model 隔离：全员感知多模型互不污染 morph 缓存/平滑值/关闭复位） */
+interface LipSyncRuntimeState {
+    morphName: string | null;
+    morphSet: {
+        open: string | null;
+        close: string | null;
+        pucker: string | null;
+        smile: string | null;
+    } | null;
+    morphNames: string[];
+    morphNameSet: Set<string>;
+    smoothLow: number;
+    smoothHigh: number;
+    audioPath: string;
+}
+
+function _createLipSyncRuntime(): LipSyncRuntimeState {
+    return {
+        morphName: null,
+        morphSet: null,
+        morphNames: [],
+        morphNameSet: new Set<string>(),
+        smoothLow: 0,
+        smoothHigh: 0,
+        audioPath: '',
+    };
+}
+
+/** lip-sync 状态机（从 lipsync-bridge.ts 搬运：音源切换重置 + 静音指数衰减 + 低通滤波 + morph 缓存）。
+ *  [doc:adr-164] per-model 隔离：多模型全员感知下避免 morph 缓存每帧重建 / 平滑值串扰 / 关闭时 morph 残留。 */
+const _lipSyncRuntimes = new Map<string, LipSyncRuntimeState>();
+
+/** 释放指定模型的 lip-sync 运行时（模型移除时调用，防 Map 泄漏） */
+export function _disposeLipSyncRuntime(modelId: string): void {
+    _lipSyncRuntimes.delete(modelId);
+}
 
 export function _applyLipSync(
     mmdModel: MmdModelLike,
@@ -44,18 +66,26 @@ export function _applyLipSync(
         return;
     }
 
+    // per-model 运行时：多模型全员感知下各自持有 morph 缓存与平滑值
+    const modelId = perceptionModelId ?? '';
+    let rt = _lipSyncRuntimes.get(modelId);
+    if (!rt) {
+        rt = _createLipSyncRuntime();
+        _lipSyncRuntimes.set(modelId, rt);
+    }
+
     // 关闭时复位 morph influence（防残留冻结，与 _applyMicroExpression 同款）
     if (!enabled) {
-        if (_lipSyncMorphName) {
-            const old = morphManager.getTargetByName(_lipSyncMorphName);
+        if (rt.morphName) {
+            const old = morphManager.getTargetByName(rt.morphName);
             if (old) {
                 old.influence = 0;
             }
         }
         // 复位所有 multiMorph 口型（close/pucker/smile），防止冻结在最后值
-        if (_lipSyncMorphSet) {
+        if (rt.morphSet) {
             for (const key of ['close', 'pucker', 'smile'] as const) {
-                const name = _lipSyncMorphSet[key];
+                const name = rt.morphSet[key];
                 if (name) {
                     const m = morphManager.getTargetByName(name);
                     if (m) {
@@ -64,10 +94,10 @@ export function _applyLipSync(
                 }
             }
         }
-        _lipSyncMorphName = null;
-        _lipSyncMorphSet = null;
-        _smoothLow = 0;
-        _smoothHigh = 0;
+        rt.morphName = null;
+        rt.morphSet = null;
+        rt.smoothLow = 0;
+        rt.smoothHigh = 0;
         return;
     }
 
@@ -75,31 +105,31 @@ export function _applyLipSync(
     // NOTE: `??` 优先级低于 `!==`，缺括号会被解析成 `path ?? ('' !== _last)`，
     // 导致有音频路径时每帧恒真 → 平滑值与 morph 缓存被逐帧清空。
     const audioPath = getSceneAction('getAudioPath')?.() ?? '';
-    if (audioPath !== _lastLipSyncAudioPath) {
-        _lipSyncMorphName = null;
-        _lipSyncMorphSet = null;
-        _smoothLow = 0;
-        _smoothHigh = 0;
-        _lastLipSyncAudioPath = audioPath;
+    if (audioPath !== rt.audioPath) {
+        rt.morphName = null;
+        rt.morphSet = null;
+        rt.smoothLow = 0;
+        rt.smoothHigh = 0;
+        rt.audioPath = audioPath;
     }
 
     // #12: 音频停止时指数衰减（约 20 帧淡出）
     if (!(getSceneAction('isAudioPlaying')?.() ?? false)) {
-        _smoothLow *= 0.85;
-        _smoothHigh *= 0.85;
-        if (_smoothLow < 0.005 && _smoothHigh < 0.005) {
-            _smoothLow = 0;
-            _smoothHigh = 0;
+        rt.smoothLow *= 0.85;
+        rt.smoothHigh *= 0.85;
+        if (rt.smoothLow < 0.005 && rt.smoothHigh < 0.005) {
+            rt.smoothLow = 0;
+            rt.smoothHigh = 0;
             // 衰减完成：复位所有口型 morph（open/close/pucker/smile）
-            if (_lipSyncMorphName) {
-                const morph = morphManager.getTargetByName(_lipSyncMorphName);
+            if (rt.morphName) {
+                const morph = morphManager.getTargetByName(rt.morphName);
                 if (morph) {
                     morph.influence = 0;
                 }
             }
-            if (_lipSyncMorphSet) {
+            if (rt.morphSet) {
                 for (const key of ['close', 'pucker', 'smile'] as const) {
-                    const name = _lipSyncMorphSet[key];
+                    const name = rt.morphSet[key];
                     if (name) {
                         const m = morphManager.getTargetByName(name);
                         if (m) {
@@ -113,26 +143,20 @@ export function _applyLipSync(
         // 仍在衰减期：继续以衰减值应用 morph 权重
     }
 
-    // morph 名缓存：仅 modelId 变化时重建（消除每帧 O(M) 扫描）
-    const modelId = perceptionModelId;
-    if (modelId !== _lastLipSyncModelId) {
-        _lastLipSyncModelId = modelId;
-        const morphNames: string[] = [];
+    // morph 名缓存：仅首次（per-model）构建，消除每帧 O(M) 扫描
+    if (rt.morphNames.length === 0) {
         for (let i = 0; i < morphManager.numTargets; i++) {
-            morphNames.push(morphManager.getTarget(i).name);
+            rt.morphNames.push(morphManager.getTarget(i).name);
         }
-        _lastLipSyncMorphNames = morphNames;
-        _lastLipSyncMorphNameSet = new Set(morphNames);
-        _lipSyncMorphName = null;
-        _lipSyncMorphSet = null;
+        rt.morphNameSet = new Set(rt.morphNames);
     }
 
-    // 查找口型 morph（仅首次或 modelId 变化时）
-    if (!_lipSyncMorphName || !_lastLipSyncMorphNameSet.has(_lipSyncMorphName)) {
-        _lipSyncMorphName = findLipMorph(_lastLipSyncMorphNames);
-        _lipSyncMorphSet = findAllLipMorphs(_lastLipSyncMorphNames);
+    // 查找口型 morph（仅首次或 morph 名失效时）
+    if (!rt.morphName || !rt.morphNameSet.has(rt.morphName)) {
+        rt.morphName = findLipMorph(rt.morphNames);
+        rt.morphSet = findAllLipMorphs(rt.morphNames);
     }
-    if (!_lipSyncMorphName) {
+    if (!rt.morphName) {
         return;
     }
 
@@ -143,43 +167,43 @@ export function _applyLipSync(
 
     // 低通滤波（音频播放时才平滑，衰减期保留衰减值）
     if (getSceneAction('isAudioPlaying')?.() ?? false) {
-        _smoothLow = _smoothLow * 0.7 + lowLevel * 0.3;
-        _smoothHigh = _smoothHigh * 0.7 + highLevel * 0.3;
+        rt.smoothLow = rt.smoothLow * 0.7 + lowLevel * 0.3;
+        rt.smoothHigh = rt.smoothHigh * 0.7 + highLevel * 0.3;
     }
 
     // open morph（あ）
     const openWeight = amplitudeToWeight(
-        _smoothLow,
+        rt.smoothLow,
         perceptionState.lipSyncSensitivity,
         perceptionState.lipSyncIntensity
     );
-    const openMorph = morphManager.getTargetByName(_lipSyncMorphName);
+    const openMorph = morphManager.getTargetByName(rt.morphName);
     if (openMorph) {
         openMorph.influence = openWeight;
     }
 
     // 多口型 morph（close 反比 + pucker 高频驱动）
-    if (perceptionState.lipSyncMultiMorphEnabled && _lipSyncMorphSet) {
+    if (perceptionState.lipSyncMultiMorphEnabled && rt.morphSet) {
         // close：与 open 反比（嘴开时 close=0，嘴闭时 close=1）
-        if (_lipSyncMorphSet.close) {
+        if (rt.morphSet.close) {
             const closeWeight = amplitudeToWeight(
-                1 - _smoothLow,
+                1 - rt.smoothLow,
                 perceptionState.lipSyncSensitivity,
                 perceptionState.lipSyncIntensity
             );
-            const closeMorph = morphManager.getTargetByName(_lipSyncMorphSet.close);
+            const closeMorph = morphManager.getTargetByName(rt.morphSet.close);
             if (closeMorph) {
                 closeMorph.influence = closeWeight;
             }
         }
         // pucker：由高频能量驱动（模拟「う」口型）
-        if (_lipSyncMorphSet.pucker) {
+        if (rt.morphSet.pucker) {
             const puckerWeight = amplitudeToWeight(
-                _smoothHigh * 0.8,
+                rt.smoothHigh * 0.8,
                 perceptionState.lipSyncSensitivity,
                 perceptionState.lipSyncIntensity
             );
-            const puckerMorph = morphManager.getTargetByName(_lipSyncMorphSet.pucker);
+            const puckerMorph = morphManager.getTargetByName(rt.morphSet.pucker);
             if (puckerMorph) {
                 puckerMorph.influence = puckerWeight;
             }
@@ -187,9 +211,9 @@ export function _applyLipSync(
     }
 
     // smile：高频能量大时轻微微笑（模拟说话表情）
-    if (_lipSyncMorphSet?.smile) {
+    if (rt.morphSet?.smile) {
         const smileWeight = Math.max(0, openWeight * 0.3 - 0.1);
-        const smileMorph = morphManager.getTargetByName(_lipSyncMorphSet.smile);
+        const smileMorph = morphManager.getTargetByName(rt.morphSet.smile);
         if (smileMorph) {
             smileMorph.influence = smileWeight;
         }

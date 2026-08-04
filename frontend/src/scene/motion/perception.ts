@@ -37,6 +37,7 @@ import {
     EYE_BONE_CANDIDATES,
 } from './perception-gaze';
 import { _resetBalanceSwayState } from './perception-balance';
+import { _disposeLipSyncRuntime } from './perception-lipsync';
 import {
     BONE_UPPER_CANDIDATES,
     BONE_NECK_CANDIDATES,
@@ -234,6 +235,7 @@ function _deactivateContext(modelId: string): void {
     }
     _releasePerceptionBones(modelId);
     ctx.isActive = false;
+    _disposeLipSyncRuntime(modelId);
     if (_focusedContextId === modelId) {
         _focusedContextId = null;
     }
@@ -723,6 +725,7 @@ export function disableAllPerception(): void {
         const inst = modelManager.get(ctx.modelId);
         if (!inst?.mmdModel || inst.mmdModel.mesh?.isDisposed()) {
             _releasePerceptionBones(ctx.modelId);
+            _disposeLipSyncRuntime(ctx.modelId);
             _contexts.delete(ctx.modelId);
             _perceptionOwnedBones.delete(ctx.modelId);
             continue;
@@ -777,11 +780,12 @@ export function setGazeConfig(headEnabled: boolean, eyeEnabled: boolean): void {
     triggerAutoSave();
 }
 
-/** 内部统一：完全移除指定 context（释放骨骼 + 删除 Map 占位） */
+/** 内部统一：完全移除指定 context（释放骨骼 + 删除 Map 占位 + 清理 lip-sync 运行时） */
 function _removeContext(modelId: string): void {
     const ctx = _contexts.get(modelId);
     if (ctx) {
         _releasePerceptionBones(modelId);
+        _disposeLipSyncRuntime(modelId);
         _contexts.delete(modelId);
         _perceptionOwnedBones.delete(modelId);
     }
