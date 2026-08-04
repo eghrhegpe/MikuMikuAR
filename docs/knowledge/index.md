@@ -16,8 +16,7 @@
 | [rendering](#rendering) | 18 | 渲染系统 |
 | [motion](#motion) | 34 | 动作系统 |
 | [ui](#ui) | 56 | UI / 菜单 |
-| [core](#core) | 70 | 核心基础设施 |
-| [未分类](#未分类) | 1 | 未标注 category（待补） |
+| [core](#core) | 71 | 核心基础设施 |
 
 ## env
 
@@ -175,15 +174,7 @@
 | [键盘导航工具](./ui-keyboard-nav.md) | - ADR-153 |
 | [后端绑定聚合层（backend 代理化）](./wails-bindings.md) | - ADR-176 |
 
-> 叶子模块 / 工具函数（43 张）：[ai-sse](./ai-sse.md) · [character-bible](./character-bible.md) · [chat-store](./chat-store.md) · [color-helpers](./color-helpers.md) · [config-barrel](./config-barrel.md) · [core-dom](./core-dom.md) · [core-leaf-modules](./core-leaf-modules.md) · [core-orbit](./core-orbit.md) · [core-types](./core-types.md) · [core-utils](./core-utils.md) · [dev-hooks](./dev-hooks.md) · [diagnostic-actions](./diagnostic-actions.md) · [dialog](./dialog.md) · [dispose-helpers](./dispose-helpers.md) · [drop-import](./drop-import.md) · [goerr](./goerr.md) · [hash-noise](./hash-noise.md) · [i18n-t](./i18n-t.md) · [icons-bundle](./icons-bundle.md) · [logger](./logger.md) · [markdown](./markdown.md) · [mmar-globals](./mmar-globals.md) · [observer-handle](./observer-handle.md) · [platform](./platform.md) · [pmx-meta](./pmx-meta.md) · [preset-meta](./preset-meta.md) · [reactivity](./reactivity.md) · [render-context](./render-context.md) · [runtime-stub](./runtime-stub.md) · [safe-call](./safe-call.md) · [shortcut-app](./shortcut-app.md) · [status-bar](./status-bar.md) · [toast](./toast.md) · [ui-constants](./ui-constants.md) · [ui-focus-trap](./ui-focus-trap.md) · [ui-header-toggle](./ui-header-toggle.md) · [ui-nav-item](./ui-nav-item.md) · [ui-preset](./ui-preset.md) · [ui-slider-controller](./ui-slider-controller.md) · [ui-state](./ui-state.md) · [wind-utils](./wind-utils.md) · [zh-CN](./zh-CN.md) · [zh-TW](./zh-TW.md)
-
-## 未分类
-
-**未标注 `category` 字段**——补齐 frontmatter 后会自动归入对应分类。
-
-| 卡片 | 关联 ADR |
-|------|----------|
-| [outfits-spec](./outfits-spec.md) | — |
+> 叶子模块 / 工具函数（44 张）：[ai-sse](./ai-sse.md) · [character-bible](./character-bible.md) · [chat-store](./chat-store.md) · [color-helpers](./color-helpers.md) · [config-barrel](./config-barrel.md) · [core-dom](./core-dom.md) · [core-leaf-modules](./core-leaf-modules.md) · [core-orbit](./core-orbit.md) · [core-types](./core-types.md) · [core-utils](./core-utils.md) · [dev-hooks](./dev-hooks.md) · [diagnostic-actions](./diagnostic-actions.md) · [dialog](./dialog.md) · [dispose-helpers](./dispose-helpers.md) · [drop-import](./drop-import.md) · [goerr](./goerr.md) · [hash-noise](./hash-noise.md) · [i18n-t](./i18n-t.md) · [icons-bundle](./icons-bundle.md) · [logger](./logger.md) · [markdown](./markdown.md) · [mmar-globals](./mmar-globals.md) · [observer-handle](./observer-handle.md) · [outfits-spec](./outfits-spec.md) · [platform](./platform.md) · [pmx-meta](./pmx-meta.md) · [preset-meta](./preset-meta.md) · [reactivity](./reactivity.md) · [render-context](./render-context.md) · [runtime-stub](./runtime-stub.md) · [safe-call](./safe-call.md) · [shortcut-app](./shortcut-app.md) · [status-bar](./status-bar.md) · [toast](./toast.md) · [ui-constants](./ui-constants.md) · [ui-focus-trap](./ui-focus-trap.md) · [ui-header-toggle](./ui-header-toggle.md) · [ui-nav-item](./ui-nav-item.md) · [ui-preset](./ui-preset.md) · [ui-slider-controller](./ui-slider-controller.md) · [ui-state](./ui-state.md) · [wind-utils](./wind-utils.md) · [zh-CN](./zh-CN.md) · [zh-TW](./zh-TW.md)
 
 ## ADR 反查
 
