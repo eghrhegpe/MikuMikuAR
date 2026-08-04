@@ -8,16 +8,16 @@
  *
  * 本脚本让磁盘成为唯一事实源：扫描 novel/ 下所有子目录的章节 .md，
  * 解析编号 / 标题 / 相对路径，结合结构锁定的章元信息（10 主章 + 附录组）
- * 与「含 XX」内容摘要层（NOTES），重新生成整份 README.md。
+ * 重新生成整份 README.md（索引仅列干净标题，章节内容摘要由各章文件自身的
+ * `> **过程**：` 块承载，不在此重复维护）。
  *
  * 设计原则：
  *   - 全文生成，禁止手改。重跑即同步，杜绝手写索引漂移。
  *   - 固定段（标题 / 引言 / 目录总览 / 各章简介 / 结尾）硬编码为结构常量，
  *     因其对应「代码目录锚定」这一锁定约定（AGENTS.md：10 章 + appendix 已锁定）。
  *   - 章节清单表 100% 由磁盘扫描得出。新增章节只需放一个 `NN-标题.md`，重跑即入列。
- *   - NOTES 是「含 XX」内容摘要的集中维护层（读者向技术覆盖说明），生成器会校验
- *     其 key 对应的文件在磁盘真实存在，防止路径漂移。未来可把 NOTES 搬进各章
- *     文件 frontmatter 的 `note:` 字段，实现零维护，届时本层可废弃。
+ *   - 索引刻意只列「干净标题 + 链接」，不附内容摘要。章节技术覆盖说明由各章文件
+ *     自身的 `> **过程**：` 块承载，读者按标题定位文件后自行查阅，避免索引与正文双重维护。
  *
  * 用法：
  *   node scripts/gen-novel-index.mjs          # 写入 novel/README.md
@@ -163,35 +163,6 @@ const OTHER_META = {
   '附录·其他/隐形的面板-代码块-巨石原始稿.md': '原始稿存档',
 };
 
-// ── 「含 XX」内容摘要层（读者向技术覆盖说明） ──────────
-// key = 相对路径；value = 摘要文本（生成时统一包裹中文括号）。
-// 新增含 XX 备注只需在此添加一项；生成器会校验 key 对应文件存在。
-
-const NOTES = {
-  '01-基础设施与依赖/19-声音与按键.md': '含 AudioBus + ShortcutRegistry',
-  '01-基础设施与依赖/20-五种语言.md': '含 i18n 五语言 + 热切换',
-  '02-UI交互/13-调目.md': '含滑条手感↩21',
-  '02-UI交互/19-图书馆的摆书人.md': '含楼层记忆↩20',
-  '02-UI交互/30-账本的合并术.md':
-    '含 SetUIState 整体替换→合并、视图模式重启持久化、3 测试失败留待后修',
-  '02-UI交互/31-目录的记忆术.md':
-    '含 ADR-097 路径记忆统一：isLeafFlattenDir / computeRestoreSegments / modelToResourceItem 三公共函数 + 网格视图同步 + 78→103 测试覆盖',
-  '02-UI交互/32-审核的微光.md':
-    '含联邦大面板迁移审核：i18n 硬编码清理 + visibleWhen 动态求值 + schema 测试覆盖补全 + renderFolder headerToggle 修复',
-  '06-相机移动/04-双轴分野.md':
-    '含 ADR-100 控制×行为双轴拆分 P1–P2 + 自动运镜 restore 饥饿修复',
-  '07-环境渲染/07-反射与幽灵粒子.md': '含 ADR-092 反射统一 + ghost-particle-sim',
-  '07-环境渲染/10-水面苏醒.md':
-    'ADR-115 风格化水面波光：法线扰动+Sun Glitter+焦散暴露+无限水面+双尺度波高',
-  '08-模型管理/10-不显影的证件照.md':
-    '含缩略图三层缺陷：zip 路径错配 / 冻结快照不重绘 / resource_root 迁移孤儿',
-  '08-模型管理/11-锁死的钥匙与沉默的笔.md':
-    '含 ADR-119 单一源收口后写侧传参不对称：actor 漏 inst / replace 漏 innerPath，commit 52ba99a + 6fe8007',
-  'appendix/跨模块重构/18-审计报告的最后一页.md': '含中段盘点↩14',
-  'appendix/文档演进/11-回声的几何.md':
-    '含 ADR-206 测试基础设施收敛：死代码清理 + 两层 mock 架构 + 断言质量 + 大文件拆分',
-};
-
 // ── 文件名解析 ───────────────────────────────────────────
 
 /**
@@ -243,8 +214,7 @@ function scanFolder(folder) {
       const rel = `${folder}/${file}`;
       const { base, label, sortKey } = parseName(file);
       const title = deriveTitle(base);
-      const note = NOTES[rel];
-      return { rel, label, sortKey, base, title, note };
+      return { rel, label, sortKey, base, title };
     })
     .sort((a, b) => a.sortKey - b.sortKey || a.base.localeCompare(b.base, 'zh-CN'));
 }
@@ -254,7 +224,7 @@ function buildTable(entries) {
   const rows = ['| 章 | 标题 |', '|----|------|'];
   for (const e of entries) {
     const link = `[${cell(e.title)}](${href(e.rel)})`;
-    rows.push(`| ${e.label} | ${link}${e.note ? `（${e.note}）` : ''} |`);
+    rows.push(`| ${e.label} | ${link} |`);
   }
   return rows.join('\n');
 }
@@ -345,13 +315,7 @@ function buildReadme() {
 }
 
 function main() {
-  // NOTES 校验：key 对应文件必须真实存在，否则索引会指向幽灵章节
-  for (const rel of Object.keys(NOTES)) {
-    if (!fs.existsSync(path.join(NOVEL, rel))) {
-      console.warn(`⚠️  NOTES 引用了不存在的文件：${rel}（请核对或删除该 NOTES 项）`);
-    }
-  }
-  // OTHER_META 校验
+  // OTHER_META 校验：key 对应文件必须真实存在，否则索引会指向幽灵章节
   for (const rel of Object.keys(OTHER_META)) {
     if (!fs.existsSync(path.join(NOVEL, rel))) {
       console.warn(`⚠️  OTHER_META 引用了不存在的文件：${rel}`);
