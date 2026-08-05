@@ -13,9 +13,10 @@
  *   node scripts/diagnose.mjs                 # 全量
  *   node scripts/diagnose.mjs --fast          # 只跑秒级，跳过测试
  *   node scripts/diagnose.mjs --slow          # 只跑测试
+ *   node scripts/diagnose.mjs -does           # 只审 docs/知识库/ADR（轻量，秒级）
  *
  * 退出码：任一子检查失败则非零退出（透传子进程退出码）。
- * 设计意图：全量项目诊断编排（秒级 + 分钟级检查）
+ * 设计意图：全量项目诊断编排（秒级 + 分钟级检查）+ 按模块轻量子集
  */
 
 import { execSync } from "node:child_process";
@@ -73,13 +74,40 @@ function runFrontend(label, npmScript) {
 const args = process.argv.slice(2);
 const fastOnly = args.includes("--fast");
 const slowOnly = args.includes("--slow");
+const docsOnly = args.includes("-does") || args.includes("--docs");
 
 const SECTION = {
     fast: (label) => console.log(`\n${CYAN}═══ ${label}（秒级）${RESET}`),
     slow: (label) => console.log(`\n${CYAN}═══ ${label}（分钟级）${RESET}`),
+    docs: (label) => console.log(`\n${CYAN}═══ ${label}（docs/知识库，轻量）${RESET}`),
 };
 
 let passed = 0;
+
+if (docsOnly) {
+    SECTION.docs("ADR 健康");
+    runTask("ADR 健康检查", "check-adr-health.mjs", { critical: false }) && passed++;
+    runTask("ADR 技术债务", "check-adr-technical-debt.mjs", { critical: false }) && passed++;
+    runTask("ADR 取代标记", "gen-adr-supersede.mjs --check", { critical: false }) && passed++;
+
+    SECTION.docs("知识库");
+    runTask("check:status", "gen-status-index.mjs --reverse --check") && passed++;
+    runTask("文档漂移", "check-doc-drift.mjs") && passed++;
+    runTask("知识图", "gen-knowledge-graph.mjs --check --file docs/knowledge/graph.md", { critical: false }) && passed++;
+    runTask("知识卡 H1", "gen-knowledge-h1.mjs --check", { critical: false }) && passed++;
+    runTask("路由表", "gen-routes.mjs --check", { critical: false }) && passed++;
+    runTask("知识-ADR", "gen-knowledge-adr.mjs --check", { critical: false }) && passed++;
+    runTask("知识测试", "gen-knowledge-tests.mjs --check", { critical: false }) && passed++;
+
+    SECTION.docs("索引与链接");
+    runTask("docsindex", "gen-docs-index.mjs --check", { critical: false }) && passed++;
+    runTask("menumap", "gen-menu-map.mjs --check", { critical: false }) && passed++;
+    runTask("链接检查", "link-checker.mjs --strict", { critical: false }) && passed++;
+
+    console.log(`\n${CYAN}════════════════════════════════════${RESET}`);
+    console.log(`  诊断完成（仅 docs/知识库 模块，${passed} 项通过）`);
+    process.exit(0);
+}
 
 if (!slowOnly) {
     SECTION.fast("代码同步");
