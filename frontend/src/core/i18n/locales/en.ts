@@ -544,6 +544,7 @@ export const en: Record<string, string> = {
     'motion.boneOverride.exportFailed': '✕ Export failed: no model or bones available',
     // [doc:adr-186] Pipeline order overview UI
     'motion.boneOverride.pipelineOrder': 'Pipeline Order Overview',
+    'motion.boneOverride.orderPrefix': '#{n}',
     'motion.boneOverride.pipelineEmpty':
         'No frame hooks registered (they will appear here once modules are enabled)',
     'motion.boneOverride.pipelineNote':

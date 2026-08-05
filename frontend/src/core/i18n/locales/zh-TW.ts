@@ -1681,6 +1681,7 @@ export const zhTW: Record<string, string> = {
     'motion.boneOverride.exportFailed': '✕ 匯出失敗：無可用模型或骨骼',
     // [doc:adr-186] 管線時序一覽 UI
     'motion.boneOverride.pipelineOrder': '管線時序一覽',
+    'motion.boneOverride.orderPrefix': '序 {n}',
     'motion.boneOverride.pipelineEmpty': '暫無幀鉤子註冊（啟用模組後此處將顯示執行順序）',
     'motion.boneOverride.pipelineNote':
         '數字越小越早執行；後執行層可覆蓋前一層寫入。順序由聲明決定，與註冊先後無關。',

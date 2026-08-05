@@ -1704,6 +1704,7 @@ export const ko: Record<string, string> = {
     'motion.boneOverride.exportFailed': '✕ 내보내기 실패: 모델 또는 본이 없습니다',
     // [doc:adr-186] 파이프라인 순서 UI
     'motion.boneOverride.pipelineOrder': '파이프라인 순서 개요',
+    'motion.boneOverride.orderPrefix': '순서 {n}',
     'motion.boneOverride.pipelineEmpty':
         '등록된 프레임 훅이 없습니다 (모듈을 활성화하면 여기에 표시됩니다)',
     'motion.boneOverride.pipelineNote':

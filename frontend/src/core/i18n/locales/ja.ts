@@ -1710,6 +1710,7 @@ export const ja: Record<string, string> = {
     'motion.boneOverride.exportFailed': '✕ エクスポート失敗：モデルまたはボーンがありません',
     // [doc:adr-186] パイプライン順序 UI
     'motion.boneOverride.pipelineOrder': 'パイプライン順序一覧',
+    'motion.boneOverride.orderPrefix': '順序 {n}',
     'motion.boneOverride.pipelineEmpty':
         'フレームフックが登録されていません（モジュールを有効にするとここに表示されます）',
     'motion.boneOverride.pipelineNote':

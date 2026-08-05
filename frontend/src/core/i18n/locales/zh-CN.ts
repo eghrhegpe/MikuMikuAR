@@ -540,6 +540,7 @@ export const zhCN: Record<string, string> = {
     'motion.boneOverride.exportFailed': '✕ 导出失败：无可用模型或骨骼',
     // [doc:adr-186] 管线时序一览 UI
     'motion.boneOverride.pipelineOrder': '管线时序一览',
+    'motion.boneOverride.orderPrefix': '序 {n}',
     'motion.boneOverride.pipelineEmpty': '暂无帧钩子注册（启用模块后此处将显示执行顺序）',
     'motion.boneOverride.pipelineNote':
         '数字越小越早执行；后执行层可覆盖前一层写入。顺序由声明决定，与注册先后无关。',

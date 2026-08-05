@@ -45,7 +45,7 @@ use_when:
 
 ## 核心职责
 - `renderPresetCard(container, modelId)` — 动作预设卡片：标题栏（保存按钮）+ 预设列表 / 空状态（ADR-145）
-- `renderOverrideCard(container, modelId)` — 骨骼覆盖卡片：列表项 + 编辑表单（pitch/yaw/roll/weight/absolute）+ 冲突检测展示
+- `renderOverrideCard(container, modelId)` — 骨骼覆盖卡片：列表项 + 编辑表单（pitch/yaw/roll/weight/absolute）+ 冲突检测展示。注：UI 仅暴露旋转覆盖编辑，position 覆盖（setBoneOverridePosition）无编辑入口；编辑含位置覆盖的骨骼时 setBoneOverride 保留既有 pos（bone-override.ts L324），位置不丢但 UI 无法修改
 - `buildModuleParamLevel(moduleId)` — 模块参数子页：渲染指定模块的 `buildSchema()`，由 motion-popup push 进入
 - `buildAdvancedBoneOverrideLevel()` — 高级骨骼覆盖子页（原 ADR-061 UI，下沉为 power user 通道）：批量覆盖编辑 + IK 保护 + 帧钩子时序一览（ADR-186）
 - `syncOverrideToInstance(modelId)` — 将 bone-override.ts 运行时状态同步回 `ModelInstance.boneOverrides` 用于持久化

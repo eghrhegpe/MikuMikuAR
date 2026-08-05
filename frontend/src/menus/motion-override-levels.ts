@@ -898,7 +898,10 @@ function buildBoneOverrideSchema(): MenuNode[] {
                         orderSpan.style.cssText =
                             'flex:0 0 36px;font-family:var(--font-mono,monospace);' +
                             'color:var(--accent);font-weight:bold;font-size:10px;';
-                        orderSpan.textContent = `序 ${hook.order}`;
+                        // [fix P2] i18n：硬编码中文「序」无法切换语言（2026-07-15 先例）
+                        orderSpan.textContent = t('motion.boneOverride.orderPrefix', {
+                            n: hook.order,
+                        });
                         row.appendChild(orderSpan);
 
                         // 来源模块名
@@ -977,5 +980,7 @@ export function syncOverrideToInstance(modelId: string): void {
     if (!inst) {
         return;
     }
-    inst.boneOverrides = getAllOverrides();
+    // [fix P2] 透传 modelId：无参 getAllOverrides() 默认解析为 focusedModel，
+    // 若 modelId ≠ 当前焦点（如焦点切换后的异步回调）会把错误模型数据写入目标实例。
+    inst.boneOverrides = getAllOverrides(modelId);
 }
