@@ -243,18 +243,27 @@ if [ "$TS_CHANGED" = "true" ] && [ "$NPM_AVAILABLE" = "true" ]; then
   COV_LOG="$(mktemp -t pre-push-cov.XXXXXX 2>/dev/null || echo "$ROOT/.pre-push-cov.log")"
   cd "$ROOT/frontend"
   if npm run test:coverage -- --coverage.clean=false >"$COV_LOG" 2>&1; then
-    rm -f "$COV_LOG"
+    # [fix:win] 临时日志清理容错：部分 Windows 环境（WorkBuddy safe-delete 层 /
+    # genie-trash）包装 rm 后对 /tmp 相对路径处理失败返回非零，set -e 下会中断
+    # hook（2026-08-05 v1.9.1 发版实证）。清理失败仅遗留垃圾文件，不影响正确性。
+    rm -f "$COV_LOG" 2>/dev/null || true
     note_check "✅ test:coverage"
     # P8-A: 新代码保护——本次变更源码的行覆盖率 ≥60%（复用 test:coverage 生成的 coverage-final.json）
     # 整体阈值 35% 只防「覆盖率回退」，不保护「新代码有测试」；diff-coverage 补上后者（vitest.config.ts 注释）
     echo "[pre-push] diff-coverage（新代码保护: 变更行 ≥60%）"
     if npm run test:diff-coverage >"$COV_LOG" 2>&1; then
-      rm -f "$COV_LOG"
+      # [fix:win] 临时日志清理容错：部分 Windows 环境（WorkBuddy safe-delete 层 /
+    # genie-trash）包装 rm 后对 /tmp 相对路径处理失败返回非零，set -e 下会中断
+    # hook（2026-08-05 v1.9.1 发版实证）。清理失败仅遗留垃圾文件，不影响正确性。
+    rm -f "$COV_LOG" 2>/dev/null || true
       note_check "✅ diff-coverage"
     else
       echo "❌ diff-coverage 失败：本次变更源码覆盖率不足 60%。明细："
       grep -E "\[X\]|失败|低于|覆盖" "$COV_LOG" | head -15
-      rm -f "$COV_LOG"
+      # [fix:win] 临时日志清理容错：部分 Windows 环境（WorkBuddy safe-delete 层 /
+    # genie-trash）包装 rm 后对 /tmp 相对路径处理失败返回非零，set -e 下会中断
+    # hook（2026-08-05 v1.9.1 发版实证）。清理失败仅遗留垃圾文件，不影响正确性。
+    rm -f "$COV_LOG" 2>/dev/null || true
       fail "变更行覆盖率不足 60%" "为上方 [X] 文件的改动逻辑补单测，重跑 cd frontend && npm run test:diff-coverage 验证后重推"
     fi
   else
@@ -265,7 +274,10 @@ if [ "$TS_CHANGED" = "true" ] && [ "$NPM_AVAILABLE" = "true" ]; then
     grep -E "does not meet|threshold|Coverage for" "$COV_LOG" | head -8
     echo "── 汇总 ──"
     grep -E "Test Files|Tests " "$COV_LOG" | head -4
-    rm -f "$COV_LOG"
+    # [fix:win] 临时日志清理容错：部分 Windows 环境（WorkBuddy safe-delete 层 /
+    # genie-trash）包装 rm 后对 /tmp 相对路径处理失败返回非零，set -e 下会中断
+    # hook（2026-08-05 v1.9.1 发版实证）。清理失败仅遗留垃圾文件，不影响正确性。
+    rm -f "$COV_LOG" 2>/dev/null || true
     fail "test:coverage 失败" "修复上方失败测试/覆盖率阈值后重推（完整输出: cd frontend && npm run test:coverage）"
   fi
 else
