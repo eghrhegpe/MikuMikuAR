@@ -422,6 +422,8 @@ interface _OrigPbr {
     bumpTexLevel: number;
     emissiveTexLevel: number;
     alpha: number;
+    /** 捕获时的透明度模式基线（用于区分「本代码切到 ALPHABLEND」与「模型自设 ALPHATEST/ALPHABLEND」） */
+    transparencyMode: number;
 }
 
 const _origPbrValues = new WeakMap<PBRMaterial, _OrigPbr>();
@@ -449,6 +451,7 @@ export function _capturePbr(mat: PBRMaterial, mi = 0, origAlpha: number[] = []):
         bumpTexLevel: mat.bumpTexture?.level ?? 1,
         emissiveTexLevel: mat.emissiveTexture?.level ?? 1,
         alpha: origAlpha[mi] ?? 1,
+        transparencyMode: mat.transparencyMode,
     });
 }
 
@@ -492,6 +495,8 @@ function _applyPbrMatParams(
         mat.emissiveTexture.level = orig.emissiveTexLevel * p.emissiveTexLevel;
     }
     // alpha（对齐 StandardMaterial 分支语义：opacity 乘子 + clamp + transparencyMode 切换）
+    // [fix P2] 仅还原「本代码从 OPAQUE 切到 ALPHABLEND」的材质；模型自设的
+    // ALPHATEST/ALPHABLEND（如 alpha 纹理头发/蕾丝）不得被强制改回 OPAQUE。
     if (alphaCtx) {
         const finalAlpha = clamp01(orig.alpha * alphaCtx.opacity * p.alphaMul);
         mat.alpha = finalAlpha;
@@ -499,7 +504,8 @@ function _applyPbrMatParams(
             if (mat.transparencyMode === Material.MATERIAL_OPAQUE) {
                 mat.transparencyMode = Material.MATERIAL_ALPHABLEND;
             }
-        } else {
+        } else if (orig.transparencyMode === Material.MATERIAL_OPAQUE) {
+            // 仅当基线是 OPAQUE（即本代码此前切过 ALPHABLEND）时才还原
             mat.transparencyMode = Material.MATERIAL_OPAQUE;
         }
     }

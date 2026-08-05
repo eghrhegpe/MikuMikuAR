@@ -16,13 +16,15 @@
  *
  * 退出码：0 = 全部达标；1 = 存在未达标文件；2 = 配置/用法错误（缺覆盖率文件或 git 失败）
  * 设计意图：变更文件覆盖率检查（git diff 与覆盖率基线比对）
+ * rename 处理：对 git mv 重构，强制 --find-renames 检测并以两点 blob diff 取真实最小 hunk；
+ *   纯改名（仅 import/路径变动，改动行上无语句）自然达标；rename 中新增的真实逻辑仍受覆盖约束。
  * 依赖：node:child_process / node:fs / node:path / node:url
  */
 
 import { execFileSync } from "node:child_process";
 import { readFileSync, existsSync } from "node:fs";
 import { resolve, sep } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const REPO_ROOT = resolve(__dirname, "..");
@@ -59,20 +61,22 @@ function git(args) {
 function getChangedFiles(base, head, uncommitted) {
     const out = new Set();
     // 三圆点：PR 分支相对 main 合并基的改动
-    git(["diff", "--diff-filter=ACMR", "--name-only", `${base}...${head}`])
+    // --find-renames=30：强制激活 rename 检测（不依赖 git config），
+    // 避免 base...head 相对合并基时把 rename 拆成 A+D，导致纯改名被当新增惩罚。
+    git(["diff", "--diff-filter=ACMR", "--find-renames=30", "--name-only", `${base}...${head}`])
         .split("\n")
         .forEach((l) => l && out.add(l));
     // 兜底：直推 main 时三圆点可能为空，退化为上一提交
     if (out.size === 0) {
-        git(["diff", "--diff-filter=ACMR", "--name-only", `${head}~1...${head}`])
+        git(["diff", "--diff-filter=ACMR", "--find-renames=30", "--name-only", `${head}~1...${head}`])
             .split("\n")
             .forEach((l) => l && out.add(l));
     }
     if (uncommitted) {
-        git(["diff", "--name-only"])
+        git(["diff", "--find-renames=30", "--name-only"])
             .split("\n")
             .forEach((l) => l && out.add(l));
-        git(["diff", "--cached", "--name-only"])
+        git(["diff", "--cached", "--find-renames=30", "--name-only"])
             .split("\n")
             .forEach((l) => l && out.add(l));
     }
@@ -80,7 +84,7 @@ function getChangedFiles(base, head, uncommitted) {
 }
 
 /** 解析 --unified=0 diff 输出，提取新增行号。 */
-function addLinesFromDiff(out, diff) {
+export function addLinesFromDiff(out, diff) {
     if (!diff) return;
     const lines = diff.split("\n");
     let currentLine = 0;
@@ -102,17 +106,50 @@ function addLinesFromDiff(out, diff) {
     }
 }
 
+/**
+ * 检测本次改动中的 rename 对（newPath -> { from, sim }）。
+ * 用 --find-renames=30 强制激活 rename 检测（不依赖 git config）；
+ * 即使 base...head 三圆点相对合并基把 rename 拆成 A+D，--find-renames
+ * 也能在合并基视角重新配对，使纯改名不被当新增惩罚。
+ * 返回的 from 用于 getChangedLines 以两点 blob diff 取真实最小 hunk。
+ */
+/** 解析 `git diff --name-status` 的 R 行（R<sim>\t<from>\t<to>）→ Map<to, {from, sim}>。 */
+export function parseRenameStatus(out) {
+    const map = new Map();
+    out.split("\n").forEach((l) => {
+        const m = l.match(/^R(\d+)\t(.+?)\t(.+)$/);
+        if (m) map.set(m[3], { from: m[2], sim: Number(m[1]) });
+    });
+    return map;
+}
+
+export function detectRenames(base, head) {
+    // 三圆点：PR 相对 main 合并基
+    const map = parseRenameStatus(git(["diff", "--name-status", "--find-renames=30", `${base}...${head}`]));
+    // 兜底：直推 main 时三圆点可能为空，退化为两点
+    if (map.size === 0) {
+        return parseRenameStatus(git(["diff", "--name-status", "--find-renames=30", base, head]));
+    }
+    return map;
+}
+
 /** 获取变更文件的具体行号集合（新文件行号）。 */
-function getChangedLines(file, base, head, uncommitted) {
+export function getChangedLines(file, base, head, uncommitted, renameOld) {
     const out = new Set();
-    addLinesFromDiff(out, git(["diff", "--unified=0", `${base}...${head}`, "--", file]));
+    // rename 重构：用两点 blob diff 取「旧路径→新路径」的真实最小 hunk，
+    // 避免 base...head 三圆点把 rename 当 add 时整文件被判为新增行。
+    if (renameOld) {
+        addLinesFromDiff(out, git(["diff", "--unified=0", `${base}:${renameOld}`, `${head}:${file}`]));
+        if (out.size > 0) return out;
+    }
+    addLinesFromDiff(out, git(["diff", "--unified=0", "--find-renames=30", `${base}...${head}`, "--", file]));
     // 兜底：直推 main 时三圆点可能为空
     if (out.size === 0) {
-        addLinesFromDiff(out, git(["diff", "--unified=0", `${head}~1...${head}`, "--", file]));
+        addLinesFromDiff(out, git(["diff", "--unified=0", "--find-renames=30", `${head}~1...${head}`, "--", file]));
     }
     if (uncommitted) {
-        addLinesFromDiff(out, git(["diff", "--unified=0", "--", file]));
-        addLinesFromDiff(out, git(["diff", "--cached", "--unified=0", "--", file]));
+        addLinesFromDiff(out, git(["diff", "--unified=0", "--find-renames=30", "--", file]));
+        addLinesFromDiff(out, git(["diff", "--cached", "--unified=0", "--find-renames=30", "--", file]));
     }
     return out;
 }
@@ -144,7 +181,7 @@ function matchCoverageKey(rel, covKeys) {
 }
 
 /** 变更行相关的语句覆盖率百分比。 */
-function statementPctForChangedLines(entry, changedLines) {
+export function statementPctForChangedLines(entry, changedLines) {
     const s = entry?.s || {};
     const sm = entry?.statementMap || {};
     const ids = Object.keys(s);
@@ -193,6 +230,7 @@ function main() {
         ? args.files.split(",").map((s) => s.trim()).filter(Boolean)
         : getChangedFiles(base, head, uncommitted);
 
+    const renameMap = detectRenames(base, head);
     const srcFiles = changed.filter(isSourceFile);
 
     if (srcFiles.length === 0) {
@@ -217,12 +255,14 @@ function main() {
                 return lines;
             }))); // --files 模式：视所有行均为变更行 = 全文件检查
         } else {
-            const changedLines = getChangedLines(f, base, head, uncommitted);
+            const renameOld = renameMap.get(f)?.from;
+            const changedLines = getChangedLines(f, base, head, uncommitted, renameOld);
             pct = statementPctForChangedLines(cov[key], changedLines);
         }
         const missing = !key; // 无覆盖率条目 → 视为 0% 未覆盖
-        rows.push({ file: f, pct, missing });
-        if (pct < threshold) failures.push({ file: f, pct });
+        const renamed = renameMap.has(f);
+        rows.push({ file: f, pct, missing, renamed });
+        if (pct < threshold) failures.push({ file: f, pct, renamed });
     }
 
     if (json) {
@@ -235,13 +275,19 @@ function main() {
     console.log("  " + "-".repeat(70) + "------");
     for (const r of rows) {
         const flag = r.pct < threshold ? "X" : "OK";
-        console.log(`  [${flag}] ${r.file.padEnd(66)} ${r.pct.toFixed(1)}`);
+        const tag = r.renamed ? "R" : " ";
+        console.log(`  [${flag}] [${tag}] ${r.file.padEnd(62)} ${r.pct.toFixed(1)}`);
     }
 
     if (failures.length > 0) {
+        const renamedFails = failures.filter((x) => x.renamed).map((x) => x.file);
         console.error(
             `\n[diff-coverage] 失败：${failures.length} 个改动文件覆盖率低于 ${threshold}%。` +
-                ` 请为新增/修改逻辑补测试。`
+                ` 请为新增/修改逻辑补测试。` +
+                (renamedFails.length
+                    ? ` 其中 ${renamedFails.length} 个为 rename 重构（真实改动行已评估），` +
+                      `若仍失败说明 rename 中新增了未覆盖的真实逻辑，需补测试。`
+                    : "")
         );
         process.exit(COVERAGE_FAILURE);
     }
@@ -250,4 +296,6 @@ function main() {
     process.exit(0);
 }
 
-main();
+// 仅当脚本被直接运行时执行 main（被单测 import 时不触发，避免误退出）
+const invokedDirectly = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+if (invokedDirectly) main();
