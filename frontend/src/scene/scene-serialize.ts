@@ -1572,12 +1572,17 @@ export async function tryRestoreLastScene(): Promise<void> {
         const envFromScene = (data as Record<string, unknown>).env;
         if (envFromScene && typeof envFromScene === 'object') {
             console.info('[auto-load] 场景文件中包含 env 状态，覆盖 config.json 的 env 状态');
+            // [fix suppress-leak] try/finally 包裹：setEnvState/cancelEnvPersistTimer 抛错时
+            // 也必须复位 suppress，否则 auto-save 永久失效（对齐同文件 L944-946 模式）。
             setSuppressAutoSave(true);
-            setEnvState(envFromScene as Partial<EnvState>, true);
-            // 同 restoreEnvState：取消恢复触发的 env 防抖写入，避免 500ms 后
-            // 把刚覆盖的值写回 config.json（见 buglog 2026-07-16 教训3）。
-            cancelEnvPersistTimer();
-            setSuppressAutoSave(false);
+            try {
+                setEnvState(envFromScene as Partial<EnvState>, true);
+                // 同 restoreEnvState：取消恢复触发的 env 防抖写入，避免 500ms 后
+                // 把刚覆盖的值写回 config.json（见 buglog 2026-07-16 教训3）。
+                cancelEnvPersistTimer();
+            } finally {
+                setSuppressAutoSave(false);
+            }
         }
 
         console.info('[auto-load] Scene restored successfully');
