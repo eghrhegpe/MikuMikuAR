@@ -19,7 +19,7 @@ symbols:
   - setOnMeshesReady
   - setOnModelLoaded
 invariants:
-  - 加载锁 / 重复检测 / 清理由 scene.ts 编排器负责，本模块专注「解析→实例」
+  - 加载锁 / 重复检测：加载成功后清理由 scene.ts 编排器负责；加载中途 abort/失败的资源释放由本模块直接执行（remove/destroyMmdModel+dispose）
   - loadPMXFile 经 readFileBytes（backend 代理）读取 PMX/资源字节，调用 babylon-mmd ImportMeshAsync
   - 实例创建后写入 modelRegistry 并触发缩略图捕获、rebuildShadowCasters
   - initLoader 注入 reGroundAllModels、retryWindPhysicsSubscription 等回调防循环依赖

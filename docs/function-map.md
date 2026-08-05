@@ -206,15 +206,15 @@
 | `goAdapter()` | `core/backend/go-adapter:21` | — |
 | `STORES()` | `core/backend/idb:10` | — |
 | `Store()` | `core/backend/idb:24` | — |
-| `WebModelEntry()` | `core/backend/idb:126` | — |
-| `closeIDB()` | `core/backend/idb:117` | 释放连接（页面卸载/切换时调用），与联邦资源配对纪律对齐。 |
-| `idbBatchSet()` | `core/backend/idb:94` | 单事务批量写入（键/值对），避免逐条 idbSet 的并发写竞态。 |
-| `idbDelete()` | `core/backend/idb:82` | — |
+| `WebModelEntry()` | `core/backend/idb:132` | — |
+| `closeIDB()` | `core/backend/idb:123` | 释放连接（页面卸载/切换时调用），与联邦资源配对纪律对齐。 |
+| `idbBatchSet()` | `core/backend/idb:98` | 单事务批量写入（键/值对），避免逐条 idbSet 的并发写竞态。 |
+| `idbDelete()` | `core/backend/idb:84` | — |
 | `idbGet()` | `core/backend/idb:62` | — |
-| `idbKeys()` | `core/backend/idb:106` | — |
+| `idbKeys()` | `core/backend/idb:112` | — |
 | `idbSet()` | `core/backend/idb:72` | — |
 | `openDB()` | `core/backend/idb:28` | — |
-| `saveModel()` | `core/backend/idb:142` | 存入模型库（同名覆盖）。返回写入的元数据。 |
+| `saveModel()` | `core/backend/idb:148` | 存入模型库（同名覆盖）。返回写入的元数据。 |
 | `getCachedCapabilities()` | `core/backend/index:126` | — |
 | `getCapabilities()` | `core/backend/index:117` | — |
 | `resolveBackend()` | `core/backend/index:33` | — |
@@ -501,44 +501,44 @@
 | `showInfoToast()` | `core/toast:237` | — |
 | `showToast()` | `core/toast:192` | — |
 | `BoneOverrideEntry()` | `core/types:22` | [doc:adr-061] Motion Override — 持久化的单条骨骼覆盖配置 |
-| `BrowseOutcome()` | `core/types:385` | — |
-| `CameraBehavior()` | `core/types:595` | ADR-100 轴 B — 运动行为：相机如何自动运动，仅当控制轴为 `orbit`(ArcRotate) 时生效。 |
-| `CameraControl()` | `core/types:583` | ADR-100 轴 A — 控制方案：决定相机类 + 输入方式。 |
-| `CameraMode()` | `core/types:574` | 保留为兼容别名（存档 / 旧调用点），新代码请用 {@link CameraControl} × {@link CameraBehavior}。 |
-| `DisplayNamePriority()` | `core/types:565` | — |
-| `EnvState()` | `core/types:537` | 从 schema 派生 EnvState interface（-readonly 保证可写）。[doc:adr-137] |
-| `FeetState()` | `core/types:88` | [doc:adr-085] 脚部地面跟随（按模型）状态 |
-| `LibraryModel()` | `core/types:312` | — |
-| `LibrarySortMode()` | `core/types:604` | — |
-| `MmdRuntimeBoneExtended()` | `core/types:545` | — |
-| `MmdStandardMaterial()` | `core/types:613` | MmdStandardMaterial 扩展 — 用于材质系统和换装系统共享的类型定义 |
-| `ModelInstance()` | `core/types:185` | — |
-| `ModelKind()` | `core/types:110` | — |
-| `ModelMotionSlots()` | `core/types:162` | [doc:adr-167] 单槽位：overlay 槽位已移除（ADR-144 废弃） |
-| `MotionModuleState()` | `core/types:43` | [doc:adr-116] 模块语义状态（per-motion，随动作走） |
-| `MotionPreset()` | `core/types:56` | [doc:adr-145] 动作预设 DTO |
-| `MotionSlotConfig()` | `core/types:149` | 单个槽位的配置 |
-| `MotionSource()` | `core/types:128` | 用户选择的「原始动作来源类型」——仅描述意图来源性质，不描述广播后的运行时产物。 |
-| `OutfitFile()` | `core/types:305` | — |
-| `OutfitSlot()` | `core/types:284` | — |
-| `OutfitVariant()` | `core/types:294` | — |
-| `OverridePaths()` | `core/types:554` | — |
-| `OverrideType()` | `core/types:35` | 骨骼覆盖类型（着色/诊断共用枚举） |
-| `ParamValue()` | `core/types:40` | [doc:adr-116] 动作覆盖模块语义参数值 |
-| `PendingVmd()` | `core/types:552` | — |
-| `PhysicsCategory()` | `core/types:567` | — |
-| `PopupLevel()` | `core/types:397` | — |
-| `PopupRow()` | `core/types:327` | — |
-| `PresetModuleState()` | `core/types:50` | [doc:adr-145] 单模块在预设中的状态快照 |
-| `ProcMotionConfig()` | `core/types:73` | [doc:adr-XX] 程序化动作配置（per-motion，随动作走） 参数存 SceneMotionIntent.procMotion（多角色共享）， 启用/分配权在每角色 |
-| `ProcPreset()` | `core/types:77` | [audit] 程序化动作自定义预设（per-model 参数快照，仿 MotionPreset 模式）。 |
-| `RecentMotion()` | `core/types:606` | — |
-| `RuntimeModel()` | `core/types:173` | IMmdModel 接口不含 setRuntimeAnimation / createRuntimeAnimation （这两个方法在 MmdModel 和 MmdWasmMode |
-| `SceneMotionIntent()` | `core/types:131` | 场景级动作意图（「场上在跳什么」） |
-| `ScriptedSubMode()` | `core/types:602` | ADR-100 §6.4 — `scripted` 行为的子模式。 |
-| `SlotSource()` | `core/types:146` | 槽位来源 |
-| `UIState()` | `core/types:441` | — |
-| `VmdLayer()` | `core/types:113` | VMD 动画图层 — 支持多 VMD 叠加（Motion Layers） |
+| `BrowseOutcome()` | `core/types:388` | — |
+| `CameraBehavior()` | `core/types:598` | ADR-100 轴 B — 运动行为：相机如何自动运动，仅当控制轴为 `orbit`(ArcRotate) 时生效。 |
+| `CameraControl()` | `core/types:586` | ADR-100 轴 A — 控制方案：决定相机类 + 输入方式。 |
+| `CameraMode()` | `core/types:577` | 保留为兼容别名（存档 / 旧调用点），新代码请用 {@link CameraControl} × {@link CameraBehavior}。 |
+| `DisplayNamePriority()` | `core/types:568` | — |
+| `EnvState()` | `core/types:540` | 从 schema 派生 EnvState interface（-readonly 保证可写）。[doc:adr-137] |
+| `FeetState()` | `core/types:91` | [doc:adr-085] 脚部地面跟随（按模型）状态 |
+| `LibraryModel()` | `core/types:315` | — |
+| `LibrarySortMode()` | `core/types:607` | — |
+| `MmdRuntimeBoneExtended()` | `core/types:548` | — |
+| `MmdStandardMaterial()` | `core/types:616` | MmdStandardMaterial 扩展 — 用于材质系统和换装系统共享的类型定义 |
+| `ModelInstance()` | `core/types:188` | — |
+| `ModelKind()` | `core/types:113` | — |
+| `ModelMotionSlots()` | `core/types:165` | [doc:adr-167] 单槽位：overlay 槽位已移除（ADR-144 废弃） |
+| `MotionModuleState()` | `core/types:46` | [doc:adr-116] 模块语义状态（per-motion，随动作走） |
+| `MotionPreset()` | `core/types:59` | [doc:adr-145] 动作预设 DTO |
+| `MotionSlotConfig()` | `core/types:152` | 单个槽位的配置 |
+| `MotionSource()` | `core/types:131` | 用户选择的「原始动作来源类型」——仅描述意图来源性质，不描述广播后的运行时产物。 |
+| `OutfitFile()` | `core/types:308` | — |
+| `OutfitSlot()` | `core/types:287` | — |
+| `OutfitVariant()` | `core/types:297` | — |
+| `OverridePaths()` | `core/types:557` | — |
+| `OverrideType()` | `core/types:38` | 骨骼覆盖类型（着色/诊断共用枚举） |
+| `ParamValue()` | `core/types:43` | [doc:adr-116] 动作覆盖模块语义参数值 |
+| `PendingVmd()` | `core/types:555` | — |
+| `PhysicsCategory()` | `core/types:570` | — |
+| `PopupLevel()` | `core/types:400` | — |
+| `PopupRow()` | `core/types:330` | — |
+| `PresetModuleState()` | `core/types:53` | [doc:adr-145] 单模块在预设中的状态快照 |
+| `ProcMotionConfig()` | `core/types:76` | [doc:adr-XX] 程序化动作配置（per-motion，随动作走） 参数存 SceneMotionIntent.procMotion（多角色共享）， 启用/分配权在每角色 |
+| `ProcPreset()` | `core/types:80` | [audit] 程序化动作自定义预设（per-model 参数快照，仿 MotionPreset 模式）。 |
+| `RecentMotion()` | `core/types:609` | — |
+| `RuntimeModel()` | `core/types:176` | IMmdModel 接口不含 setRuntimeAnimation / createRuntimeAnimation （这两个方法在 MmdModel 和 MmdWasmMode |
+| `SceneMotionIntent()` | `core/types:134` | 场景级动作意图（「场上在跳什么」） |
+| `ScriptedSubMode()` | `core/types:605` | ADR-100 §6.4 — `scripted` 行为的子模式。 |
+| `SlotSource()` | `core/types:149` | 槽位来源 |
+| `UIState()` | `core/types:444` | — |
+| `VmdLayer()` | `core/types:116` | VMD 动画图层 — 支持多 VMD 叠加（Motion Layers） |
 | `UiActions()` | `core/ui-action-bridge:8` | — |
 | `getUiAction()` | `core/ui-action-bridge:70` | 读取单个 UI 行为（core 侧调用；未注册返回 undefined） |
 | `getUiActions()` | `core/ui-action-bridge:82` | 读取 UI 行为集（未完整注册时返回 null） |
@@ -1359,31 +1359,31 @@
 | `OverrideSlot()` | `scene/motion/bone-override-store:18` | 单骨覆盖槽位（原 _OverrideSlot 的共享命名版） |
 | `ReleaseListener()` | `scene/motion/bone-override-store:73` | 骨骼释放事件监听器 |
 | `getBoneOverrideStore()` | `scene/motion/bone-override-store:412` | 获取全局 BoneOverrideStore 单例（registry / module-base 等委托此存储骨骼所有权与冲突状态） |
-| `BoneHierarchyDump()` | `scene/motion/bone-override:1039` | 骨骼层级导出结果 |
-| `BoneHierarchyNode()` | `scene/motion/bone-override:1019` | 单根骨骼的层级与覆盖状态（dumpBoneHierarchy 输出元素） |
+| `BoneHierarchyDump()` | `scene/motion/bone-override:1041` | 骨骼层级导出结果 |
+| `BoneHierarchyNode()` | `scene/motion/bone-override:1021` | 单根骨骼的层级与覆盖状态（dumpBoneHierarchy 输出元素） |
 | `BoneOverrideEntry()` | `scene/motion/bone-override:24` | 持久化的单条骨骼覆盖配置 |
-| `FRAME_HOOK_ORDER()` | `scene/motion/bone-override:688` | [doc:adr-116 P3] 注册每帧渲染钩子。 |
-| `FrameHookSnapshot()` | `scene/motion/bone-override:718` | 帧钩子快照（供 UI 查询管线时序一览） |
+| `FRAME_HOOK_ORDER()` | `scene/motion/bone-override:690` | [doc:adr-116 P3] 注册每帧渲染钩子。 |
+| `FrameHookSnapshot()` | `scene/motion/bone-override:720` | 帧钩子快照（供 UI 查询管线时序一览） |
 | `OverrideSlotLike()` | `scene/motion/bone-override:250` | 覆盖槽的最小形态，供 _computeOverride 接收（与内部 _OverrideSlot 结构兼容） |
 | `applyBoneOverrideIK()` | `scene/motion/bone-override:336` | [doc:adr-122 P1] IK 感知的骨骼覆盖。 |
-| `clearAllOverrides()` | `scene/motion/bone-override:543` | 清除所有骨骼覆盖。 |
+| `clearAllOverrides()` | `scene/motion/bone-override:545` | 清除所有骨骼覆盖。 |
 | `clearBoneOverride()` | `scene/motion/bone-override:438` | 清除指定骨骼的覆盖。 |
 | `computeOverride()` | `scene/motion/bone-override:266` | [doc:adr-116 P1] 计算单槽覆盖后的平移与旋转。 |
-| `dumpBoneHierarchy()` | `scene/motion/bone-override:1054` | 导出当前聚焦模型的骨骼层级与覆盖状态。 |
-| `getAllOverrides()` | `scene/motion/bone-override:733` | 获取当前所有覆盖的条目列表（用于持久化/UI 展示）。 |
-| `getFrameHooksSnapshot()` | `scene/motion/bone-override:724` | 按 order 升序返回当前注册的所有帧钩子快照（不含 hook 函数本身）。 |
-| `getOverride()` | `scene/motion/bone-override:461` | [doc:adr-116] 读取单条骨骼的覆盖条目（用于 UI 回填）。不存在返回 undefined。 |
-| `getOverrideType()` | `scene/motion/bone-override:483` | 查询骨骼覆盖类型（零分配）。 |
-| `getWasmIkResolver()` | `scene/motion/bone-override:888` | [ADR-202 §六] 获取 WASM IK 重解回调（供 feet-adjustment 等外部模块调用）。 |
-| `protectIkPosition()` | `scene/motion/bone-override:564` | 注册骨骼位置保护（帧钩子内调用）。 |
-| `registerBoneOverrideFrameHook()` | `scene/motion/bone-override:701` | — |
-| `restoreOverrides()` | `scene/motion/bone-override:755` | 从持久化的条目列表批量恢复覆盖。 |
+| `dumpBoneHierarchy()` | `scene/motion/bone-override:1056` | 导出当前聚焦模型的骨骼层级与覆盖状态。 |
+| `getAllOverrides()` | `scene/motion/bone-override:735` | 获取当前所有覆盖的条目列表（用于持久化/UI 展示）。 |
+| `getFrameHooksSnapshot()` | `scene/motion/bone-override:726` | 按 order 升序返回当前注册的所有帧钩子快照（不含 hook 函数本身）。 |
+| `getOverride()` | `scene/motion/bone-override:463` | [doc:adr-116] 读取单条骨骼的覆盖条目（用于 UI 回填）。不存在返回 undefined。 |
+| `getOverrideType()` | `scene/motion/bone-override:485` | 查询骨骼覆盖类型（零分配）。 |
+| `getWasmIkResolver()` | `scene/motion/bone-override:890` | [ADR-202 §六] 获取 WASM IK 重解回调（供 feet-adjustment 等外部模块调用）。 |
+| `protectIkPosition()` | `scene/motion/bone-override:566` | 注册骨骼位置保护（帧钩子内调用）。 |
+| `registerBoneOverrideFrameHook()` | `scene/motion/bone-override:703` | — |
+| `restoreOverrides()` | `scene/motion/bone-override:757` | 从持久化的条目列表批量恢复覆盖。 |
 | `setBoneOverride()` | `scene/motion/bone-override:302` | 设置单条骨骼覆盖。 |
 | `setBoneOverridePosition()` | `scene/motion/bone-override:407` | [doc:adr-116] 设置单条骨骼的位置覆盖（P2 引擎扩展）。 |
 | `setBoneOverrideQuat()` | `scene/motion/bone-override:373` | 设置单条骨骼覆盖（直接传四元数）。 |
-| `setWasmIkResolver()` | `scene/motion/bone-override:871` | [ADR-202 A-class] 注入 WASM IK 重解回调。 |
-| `startBoneOverride()` | `scene/motion/bone-override:893` | — |
-| `stopBoneOverride()` | `scene/motion/bone-override:997` | 停止覆盖系统。 |
+| `setWasmIkResolver()` | `scene/motion/bone-override:873` | [ADR-202 A-class] 注入 WASM IK 重解回调。 |
+| `startBoneOverride()` | `scene/motion/bone-override:895` | — |
+| `stopBoneOverride()` | `scene/motion/bone-override:999` | 停止覆盖系统。 |
 | `FeetModelProvider()` | `scene/motion/feet-adjustment:48` | 注入：返回需要处理脚部调整的模型及其 runtime bones |
 | `isFeetAdjustmentRunning()` | `scene/motion/feet-adjustment:128` | 查询脚部跟随系统是否正在运行（observer 已注册）。 |
 | `setOnFootLand()` | `scene/motion/feet-adjustment:123` | 注入落地事件回调（null 取消）。脚步声控制器调用。 |
