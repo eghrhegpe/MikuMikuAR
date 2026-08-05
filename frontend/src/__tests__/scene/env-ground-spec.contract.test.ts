@@ -571,3 +571,47 @@ describe('ADR-226 terrain — [P3-2] elevation 收敛守卫', () => {
         expect(hasBump(mat)).toBe(true);
     });
 });
+
+// ──────────────── Suite 7 — terrain canvas/texture 重建路径（从 legacy 死代码激活）────────────
+// [code_review P3] ADR-226 Phase 4 删除 legacy terrain 重建块后，canvas/texture 来源的
+// terrain 重建首次走 spec 单源（此前 applyGround 对 terrain 提前 return，该分支从未执行）。
+// 本 Suite 锁定：canvas/texture 来源在 terrain 重建时正确套用，elevation 开启时原地路径
+// （isRebuild=false）也不得添加 bump/ripple。
+describe('ADR-226 terrain — [P3] canvas/texture 重建路径激活', () => {
+    it('terrain + checker（canvas）重建套用画布纹理（不再停留纯色）', () => {
+        const state = makeState({
+            groundType: 'terrain',
+            groundElevationColoringEnabled: false,
+            groundStyle: 'checker',
+            groundProceduralTexture: 'none',
+        });
+        const mat = new StandardMaterial('canvasTerrain', scene);
+        applyGroundMaterialSpec(mat, state, scene, true);
+        expect(mat.diffuseTexture, 'canvas 来源应生成画布纹理').not.toBeNull();
+    });
+
+    it('terrain + 外部贴图（texture）重建套用贴图来源', () => {
+        const state = makeState({
+            groundType: 'terrain',
+            groundElevationColoringEnabled: false,
+            groundTextureEnabled: true,
+            groundTexture: TINY_PNG,
+            groundStyle: 'texture',
+        });
+        const mat = new StandardMaterial('texTerrain', scene);
+        applyGroundMaterialSpec(mat, state, scene, true);
+        expect(mat.diffuseTexture, 'texture 来源应套用贴图').not.toBeNull();
+    });
+
+    it('terrain + elevation 开启原地（isRebuild=false）守卫：不添加 bump/ripple', () => {
+        const state = makeState({
+            groundType: 'terrain',
+            groundElevationColoringEnabled: true,
+            groundProceduralTexture: 'wood',
+        });
+        const mat = new StandardMaterial('elevInplace', scene);
+        applyGroundMaterialSpec(mat, state, scene, false);
+        expect(mat.diffuseTexture, 'elevation 材质不应被覆盖为程序化 albedo').toBeNull();
+        expect(hasBump(mat), 'elevation 材质不应获得程序化法线').toBe(false);
+    });
+});
