@@ -112,6 +112,6 @@
 | 严重度 | 状态 | 说明 |
 |--------|------|------|
 | P2 涟漪纹理所有权 | ✅ 已修复 | 见 `docs/buglog/` 对应记录；disposeGroundMaterial 跳过 groundRippleTex、重建路径复位涟漪状态、补回归测试 |
-| P3 地形 onReady 陈旧回调 | ⬜ 待修 | 建议 onReady 首行 `if (gm.isDisposed()) return;` |
+| P3 地形 onReady 陈旧回调 | ✅ 已修复 | onReady 首行补 `if (gm.isDisposed()) return;`（env-terrain.ts:116）；补 2 条回归测试（陈旧回调不触发 + 存活 mesh 正常触发），9 tests passed，tsc 通过 |
 | P3 terrain 双路径未收敛 spec | ⬜ 待修 | 属 ADR-226 Phase 4 收尾，需先补 terrain 合约测试 |
 | P4 循环导入 / 文档漂移 / 哨兵 | ⬜ 待修 | 低优先，可随日常改动顺手处理 |

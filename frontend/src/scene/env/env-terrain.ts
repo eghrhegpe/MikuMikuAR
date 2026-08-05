@@ -114,6 +114,9 @@ export function createHeightmapGround(
                     return; // 已被更新的地形重建取代，旧回调放弃
                 }
                 const gm = mesh as GroundMesh;
+                if (gm.isDisposed()) {
+                    return; // [fix P3] 地形被移除/换 flat 而旧回调仍异步到达：对已销毁 mesh 不再应用材质，防僵尸材质泄漏
+                }
                 gm.isPickable = true; // 碰撞/拾取：模型可站上去
                 gm.position.y = state.groundLevel;
                 gm.rotation.x = (state.groundPitch * Math.PI) / 180;

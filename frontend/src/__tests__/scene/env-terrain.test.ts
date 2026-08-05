@@ -17,7 +17,15 @@ vi.mock('../../scene/scene', () => ({
     scene: {} as unknown as Scene,
 }));
 
-import { hash2, valueNoise, fbm, generateTerrainHeightmapURL, applyTerrainMaterial } from '../../scene/env/env-terrain';
+import {
+    hash2,
+    valueNoise,
+    fbm,
+    generateTerrainHeightmapURL,
+    applyTerrainMaterial,
+    createHeightmapGround,
+    clearTerrainGeneration,
+} from '../../scene/env/env-terrain';
 import { envState } from '@/core/config';
 import { underwaterFogController } from '../../scene/env/env-underwater-fog';
 
@@ -167,6 +175,70 @@ describe('applyTerrainMaterial — P1 uninstall 守卫', () => {
         applyTerrainMaterial(ground, envState, scene);
 
         expect(spy).not.toHaveBeenCalled();
+        spy.mockRestore();
+    });
+});
+
+// ======== createHeightmapGround onReady 陈旧回调守卫（P3-①） ========
+
+describe('createHeightmapGround — onReady 陈旧回调守卫', () => {
+    let engine: NullEngine;
+    let scene: Scene;
+
+    beforeEach(() => {
+        engine = new NullEngine();
+        scene = new Scene(engine);
+        clearTerrainGeneration();
+    });
+
+    afterEach(() => {
+        scene.dispose();
+        engine.dispose();
+    });
+
+    it('onReady 对已 dispose 的 mesh 不调用回调（terrain→移除/换 flat 场景）', () => {
+        // 捕获 CreateGroundFromHeightMap 的 onReady，手动控制触发时序，
+        // 复现「旧地形 mesh 被销毁后，异步 onReady 才到达」的竞态。
+        let capturedOnReady: ((mesh: GroundMesh) => void) | undefined;
+        // mock 签名与上游 CreateGroundFromHeightMap 对齐；仅用于拦截 onReady 触发时机
+        const spy = vi
+            .spyOn(MeshBuilder, 'CreateGroundFromHeightMap')
+            .mockImplementation(((_name: string, _url: string, options: { onReady?: (m: GroundMesh) => void }) => {
+                capturedOnReady = options.onReady;
+                return MeshBuilder.CreateGround('envGround', { width: 10, height: 10 }, scene) as GroundMesh;
+            }) as never);
+
+        const onReady = vi.fn();
+        const hg = createHeightmapGround(envState, scene, onReady);
+        expect(capturedOnReady).toBeDefined();
+
+        // 模拟 terrain→flat/hidden 重建路径：旧 mesh 被 dispose，_terrainGen 未递增
+        hg.dispose();
+
+        // 延迟到达的 onReady：mesh 已销毁，不得执行 applyTerrainMaterial（防僵尸材质泄漏）
+        capturedOnReady?.(hg as unknown as GroundMesh);
+
+        expect(onReady).not.toHaveBeenCalled();
+        spy.mockRestore();
+    });
+
+    it('onReady 对存活 mesh 正常触发（修复不误伤正常路径）', () => {
+        let capturedOnReady: ((mesh: GroundMesh) => void) | undefined;
+        const spy = vi
+            .spyOn(MeshBuilder, 'CreateGroundFromHeightMap')
+            .mockImplementation(((_name: string, _url: string, options: { onReady?: (m: GroundMesh) => void }) => {
+                capturedOnReady = options.onReady;
+                return MeshBuilder.CreateGround('envGround', { width: 10, height: 10 }, scene) as GroundMesh;
+            }) as never);
+
+        const onReady = vi.fn();
+        const hg = createHeightmapGround(envState, scene, onReady);
+        expect(capturedOnReady).toBeDefined();
+
+        // 存活 mesh + 代际匹配 → onReady 正常触发（守卫不误伤）
+        capturedOnReady?.(hg as unknown as GroundMesh);
+
+        expect(onReady).toHaveBeenCalledTimes(1);
         spy.mockRestore();
     });
 });
