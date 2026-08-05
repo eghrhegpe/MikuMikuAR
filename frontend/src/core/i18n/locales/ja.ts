@@ -1842,6 +1842,9 @@ export const ja: Record<string, string> = {
     'goerr.software.launchFailed': '{name} の起動に失敗しました。',
     'goerr.software.androidNotSupported': '{name} は Android では起動できません。',
     'goerr.config.readFailed': '設定の読み込みに失敗しました。',
+    'goerr.llm.endpointEmpty': 'LLM エンドポイントが空です。',
+    'goerr.llm.noModels': 'レスポンスに有効なモデルリストがありません。',
+    'goerr.llm.unexpectedFormat': 'レスポンスが OpenAI または Ollama 形式ではありません。',
     'goerr.screenshot.dirNotSet':
         'スクリーンショット保存先が未設定です。まずスクリーンショットを撮影してください。',
     'goerr.screenshot.dirCreateFailed': 'スクリーンショット保存先の作成に失敗しました。',

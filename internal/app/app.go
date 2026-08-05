@@ -66,6 +66,7 @@ type App struct {
 
 	llmCancel context.CancelFunc // 正在进行的 LLM 流式请求取消函数
 	llmMu     sync.Mutex
+	llmGen    uint64 // 流代际计数：流结束时仅当自己仍是当前流才清理 llmCancel
 
 	// AI 诊断日志环形缓冲（ADR-205）
 	logRing *LogRing

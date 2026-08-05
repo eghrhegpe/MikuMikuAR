@@ -75,6 +75,8 @@ func SaveScreenshot(dir string, filename string, base64PNG string) error {
 	if err != nil {
 		return err
 	}
-	path := filepath.Join(dir, filename)
+	// 路径净化：仅取 basename，防调用方传 ../ 或绝对路径写到目录之外
+	// （前端已做 replace 净化，此处是绑定方法的最后一道防线）。
+	path := filepath.Join(dir, filepath.Base(filename))
 	return os.WriteFile(path, data, 0644)
 }

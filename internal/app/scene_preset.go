@@ -30,9 +30,13 @@ func (a *App) presetDir(subDir string) (string, error) {
 
 // autoNumberedSave writes jsonStr to the next available NNN.ext file in dir.
 // Returns the generated filename (e.g. "003.mmascene").
+// Uses tmp+rename for atomicity: prevents corrupted preset on crash/power loss.
 func autoNumberedSave(dir, ext, jsonStr string) (string, error) {
 	next := 1
-	entries, _ := os.ReadDir(dir)
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return "", err
+	}
 	pattern := "%d." + ext
 	format := "%03d." + ext
 	for _, e := range entries {
@@ -45,7 +49,11 @@ func autoNumberedSave(dir, ext, jsonStr string) (string, error) {
 	}
 	filename := fmt.Sprintf(format, next)
 	path := filepath.Join(dir, filename)
-	if err := os.WriteFile(path, []byte(jsonStr), 0644); err != nil {
+	tmpPath := path + ".tmp"
+	if err := os.WriteFile(tmpPath, []byte(jsonStr), 0644); err != nil {
+		return "", err
+	}
+	if err := os.Rename(tmpPath, path); err != nil {
 		return "", err
 	}
 	return filename, nil

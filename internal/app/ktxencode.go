@@ -45,6 +45,13 @@ func ktx2Encode(srcPath string) (string, error) {
 	tmpFile := filepath.Join(dir, ".ktx2_tmp_"+filepath.Base(srcPath))
 	tmpLog := tmpFile + ".log"
 
+	// 失败路径清理临时产物：toktx 转码失败/校验失败/rename 失败都会残留 tmp 文件。
+	// 成功路径 tmpFile 已被 rename 走、tmpLog 已被删除，Remove 不存在文件返回错误无害。
+	defer func() {
+		os.Remove(tmpFile)
+		os.Remove(tmpLog)
+	}()
+
 	// toktx v4.4.2 syntax: `toktx [options] <outfile> <infile>`.
 	// Output (tmpFile) MUST precede input (srcPath). There is no --i/--o flag;
 	// passing one makes toktx exit non-zero on the unknown option.

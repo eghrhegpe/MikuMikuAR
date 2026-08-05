@@ -63,6 +63,7 @@ func (a *App) OpenInBlender(modelPath string) error {
 	if err := cmd.Start(); err != nil {
 		return i18nerr.New("software.launchFailed", "启动 Blender 失败", map[string]string{"name": "Blender"})
 	}
+	go func() { _ = cmd.Wait() }() // 回收子进程，防僵尸
 
 	a.safeLogInfo("Blender started for %s", modelPath)
 	return nil
@@ -125,6 +126,7 @@ func (a *App) OpenInMMD(modelPath string) error {
 	if err := cmd.Start(); err != nil {
 		return i18nerr.New("software.launchFailed", "启动 MMD 失败", map[string]string{"name": "MikuMikuDance"})
 	}
+	go func() { _ = cmd.Wait() }() // 回收子进程，防僵尸
 
 	a.safeLogInfo("MMD started for %s", modelPath)
 	return nil
@@ -242,6 +244,7 @@ func (a *App) LaunchSoftware(path string, args string) error {
 	if err := cmd.Start(); err != nil {
 		return i18nerr.New("software.launchFailed", "启动软件失败")
 	}
+	go func() { _ = cmd.Wait() }() // 回收子进程，防僵尸
 	a.safeLogInfo("Launched software: %s", path)
 	return nil
 }
@@ -268,6 +271,7 @@ func (a *App) OpenWithSoftware(modelPath string, softwarePath string, args strin
 	if err := cmd.Start(); err != nil {
 		return i18nerr.New("software.launchFailed", "启动软件失败")
 	}
+	go func() { _ = cmd.Wait() }() // 回收子进程，防僵尸
 	a.safeLogInfo("Opened %s with %s", modelPath, softwarePath)
 	return nil
 }

@@ -2,6 +2,7 @@ package app
 
 import (
 	"archive/zip"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -144,12 +145,18 @@ func (a *App) BundleScene(targetPath string, sceneJSON string, assetPaths []stri
 	allPaths := expandBundleAssets(assetPaths)
 
 	// Write each asset file
+	var copyErrs []error
 	for _, absPath := range allPaths {
 		rel := _bundleRelPath(absPath, libRoot)
-		_ = _copyFileToZip(zw, absPath, "assets/"+rel)
+		if err := _copyFileToZip(zw, absPath, "assets/"+rel); err != nil {
+			copyErrs = append(copyErrs, fmt.Errorf("copy asset %s: %w", absPath, err))
+		}
 	}
-
-	return nil
+	// 显式 Close 并检查错误（磁盘满等场景 zw.Close 会失败）；defer 兜底防泄漏。
+	if err := zw.Close(); err != nil {
+		copyErrs = append(copyErrs, fmt.Errorf("close bundle zip: %w", err))
+	}
+	return errors.Join(copyErrs...)
 }
 
 // SelectBundleSaveFile opens a save dialog for scene bundle files.
@@ -225,7 +232,7 @@ func (a *App) findBestLibRoot(cfg *Config, assetPaths []string) string {
 				count++
 			}
 		}
-		if count > bestCount || (count == bestCount && len(root) > len(bestRoot)) {
+		if count > 0 && (count > bestCount || (count == bestCount && len(root) > len(bestRoot))) {
 			bestRoot = root
 			bestCount = count
 		}

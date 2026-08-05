@@ -62,6 +62,8 @@ func (a *App) AiStreamChat(req llm.ChatRequest) error {
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	a.llmCancel = cancel
+	a.llmGen++
+	gen := a.llmGen
 	a.llmMu.Unlock()
 
 	client := a.getLLMClient(req)
@@ -69,6 +71,15 @@ func (a *App) AiStreamChat(req llm.ChatRequest) error {
 
 	go func() {
 		defer cancel()
+		// 流结束时清理 llmCancel（仅当自己仍是当前流，避免误清新流的取消函数），
+		// 使 AiGetBackendState 的 llmConnected 如实反映「当前是否有流在跑」。
+		defer func() {
+			a.llmMu.Lock()
+			if a.llmGen == gen {
+				a.llmCancel = nil
+			}
+			a.llmMu.Unlock()
+		}()
 		// goroutine 内 panic 不会被外层捕获，会导致事件永不 emit、前端永久挂起。
 		// 兜底：recover 后主动 emit error，保证前端能收尾。
 		defer func() {

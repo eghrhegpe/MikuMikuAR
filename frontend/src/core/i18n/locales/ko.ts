@@ -1836,6 +1836,9 @@ export const ko: Record<string, string> = {
     'goerr.software.launchFailed': '{name} 실행에 실패했습니다.',
     'goerr.software.androidNotSupported': '{name}은(는) Android에서 실행할 수 없습니다.',
     'goerr.config.readFailed': '설정 읽기에 실패했습니다.',
+    'goerr.llm.endpointEmpty': 'LLM 엔드포인트가 비어 있습니다.',
+    'goerr.llm.noModels': '응답에 유효한 모델 목록이 없습니다.',
+    'goerr.llm.unexpectedFormat': '응답이 OpenAI 또는 Ollama 형식이 아닙니다.',
     'goerr.screenshot.dirNotSet':
         '스크린샷 저장 폴더가 설정되지 않았습니다. 먼저 스크린샷을 찍어 주세요.',
     'goerr.screenshot.dirCreateFailed': '스크린샷 저장 폴더 생성에 실패했습니다.',

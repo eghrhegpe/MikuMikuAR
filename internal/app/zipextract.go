@@ -415,6 +415,7 @@ func (a *App) importZipUnsafe(zipPath string) (*ExtractResult, error) {
 	if err != nil {
 		return nil, util.WrapErrorf(op, "打开压缩包失败", err)
 	}
+	defer zr.Close() // 提前 break 或后续 return 时也保证关闭句柄
 	var firstPmx string
 	for _, zf := range zr.File {
 		entryName := decodeZipName(zf.Name, zf.NonUTF8)
@@ -423,7 +424,6 @@ func (a *App) importZipUnsafe(zipPath string) (*ExtractResult, error) {
 			break
 		}
 	}
-	zr.Close()
 	if firstPmx == "" {
 		return nil, util.WrapErrorf(op, "压缩包内未找到模型文件", nil)
 	}

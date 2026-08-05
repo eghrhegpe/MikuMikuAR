@@ -118,6 +118,7 @@ func (a *App) SaveModelPresetToLibAuto(jsonStr string) (string, error) {
 }
 
 // SaveModelPresetToLib saves a model preset JSON to the library with the given name.
+// Uses tmp+rename for atomicity, matching writeConfig's crash-safe write pattern.
 func (a *App) SaveModelPresetToLib(name string, jsonStr string) error {
 	clean := validatePresetName(name)
 	if clean == "" {
@@ -128,7 +129,11 @@ func (a *App) SaveModelPresetToLib(name string, jsonStr string) error {
 		return err
 	}
 	path := filepath.Join(dir, clean+".mcupreset.json")
-	return os.WriteFile(path, []byte(jsonStr), 0644)
+	tmpPath := path + ".tmp"
+	if err := os.WriteFile(tmpPath, []byte(jsonStr), 0644); err != nil {
+		return err
+	}
+	return os.Rename(tmpPath, path)
 }
 
 // LoadModelPresetFromLib reads a model preset JSON from the library by name.
@@ -211,14 +216,13 @@ func (a *App) writeConfig(cfg *Config) error {
 	return nil
 }
 
-// writeConfigAndRescan persists the config, runs a full scan with current settings,
-// and writes index.json.
-func (a *App) writeConfigAndRescan(cfg *Config) error {
-	if err := a.writeConfig(cfg); err != nil {
-		return err
-	}
+// writeIndexAfterScan runs a full scan with the given cfg snapshot and writes index.json.
+// Caller must NOT hold configMu: the scan can take seconds (8 categories, recursive
+// walks), so it must run outside the write lock to avoid blocking all GetConfig readers.
+// Config persistence itself is done by updateConfig before calling this.
+func (a *App) writeIndexAfterScan(cfg *Config) error {
 	// Scan and write index — pass cfg directly, don't go through ScanModelDir
-	// which would re-acquire configMu.RLock() and deadlock (we already hold the write lock).
+	// which would re-acquire configMu.RLock() and deadlock.
 	models, err := a.scanAllCategories(cfg)
 	if err != nil {
 		return err

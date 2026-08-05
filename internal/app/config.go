@@ -70,6 +70,20 @@ func (a *App) GetConfig() (*Config, error) {
 	return a.getConfigUnsafe()
 }
 
+// cloneConfig returns a deep copy of cfg via JSON round-trip, so callers can
+// mutate the returned config without racing cachedCfg readers.
+func cloneConfig(cfg *Config) (*Config, error) {
+	data, err := json.Marshal(cfg)
+	if err != nil {
+		return nil, err
+	}
+	var out Config
+	if err := json.Unmarshal(data, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
 // finaliseConfig runs migrations and ensure-dirs after loading a config.
 func (a *App) finaliseConfig(cfg *Config) {
 	// --- Migrations ---
@@ -111,18 +125,32 @@ func (a *App) finaliseConfig(cfg *Config) {
 // If rescan is true, it also re-scans the model index.
 func (a *App) updateConfig(mutate func(*Config), rescan bool) error {
 	a.configMu.Lock()
-	defer a.configMu.Unlock()
 	cfg, err := a.getConfigUnsafe()
 	if err != nil {
 		cfg = &Config{}
 	}
+	// 深拷贝后再 mutate：getConfigUnsafe 命中缓存时返回的是 cachedCfg 共享指针，
+	// 就地修改会让 GetConfig 返回后（RLock 已释放）在锁外读取的调用方遭遇数据竞态。
+	cfg, err = cloneConfig(cfg)
+	if err != nil {
+		a.configMu.Unlock()
+		return err
+	}
 	mutate(cfg)
+	if err := a.writeConfig(cfg); err != nil {
+		a.configMu.Unlock()
+		return err
+	}
+	a.configMu.Unlock()
+
 	if rescan {
 		a.safeLogInfo("[config-persist] updateConfig: rescan=true")
-		return a.writeConfigAndRescan(cfg)
+		// 全量扫描耗时长（8 分类递归遍历），不能在持锁期间执行——会阻塞所有
+		// GetConfig 读者。配置已持久化，此处以 cfg 快照在锁外扫描写 index。
+		return a.writeIndexAfterScan(cfg)
 	}
 	a.safeLogInfo("[config-persist] updateConfig: rescan=false")
-	return a.writeConfig(cfg)
+	return nil
 }
 
 // SetResourceRoot persists the resource root path, initialises all category

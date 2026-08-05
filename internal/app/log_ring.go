@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"io"
+	"strings"
 	"sync"
 	"time"
 )
@@ -50,14 +51,13 @@ func (r *LogRing) Append(entry LogEntry) {
 // AppendLine parses a pre-formatted slog line and appends it to the ring.
 func (r *LogRing) AppendLine(text string) {
 	level := "info"
-	if len(text) > 5 {
-		tag := text[0:5]
-		switch {
-		case tag == "ERROR" || tag == "ERRO ":
-			level = "error"
-		case tag == "WARN ":
-			level = "warn"
-		}
+	// slog TextHandler 输出形如 "time=... level=ERROR msg=..."，行首是 time=，
+	// 旧逻辑按行首 5 字节匹配 ERROR/WARN 永不命中 → level 恒为 info，需按 level= 字段匹配。
+	switch {
+	case strings.Contains(text, "level=ERROR"):
+		level = "error"
+	case strings.Contains(text, "level=WARN"):
+		level = "warn"
 	}
 	r.Append(LogEntry{
 		Time:  time.Now().Format(time.RFC3339),
@@ -143,8 +143,12 @@ func (a *App) AiGetBackendState() map[string]any {
 			"error":        fmt.Sprintf("配置读取失败: %v", err),
 		}
 	}
+	// llmCancel 由 AiStreamChat/AiCancelStream 在 llmMu 下读写，此处必须持锁读。
+	a.llmMu.Lock()
+	connected := a.llmCancel != nil
+	a.llmMu.Unlock()
 	return map[string]any{
-		"llmConnected": a.llmCancel != nil,
+		"llmConnected": connected,
 		"configValid":  true,
 		"model":        cfg.LLMConfig.Model,
 		"apiEndpoint":  cfg.LLMConfig.BaseURL,

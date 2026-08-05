@@ -411,6 +411,13 @@ func (a *App) watchLoop(w *fsnotify.Watcher) {
 			}
 			// Store pending file
 			a.watchMu.Lock()
+			// StopWatchDir / ServiceShutdown 会把 watchPending 置 nil 后 Close watcher，
+			// 但 fsnotify Close 只关 channel，缓冲中的事件仍可能被读到（ok==true）。
+			// 对 nil map 赋值会 panic 且 watchLoop 无 recover → 整个进程崩溃，故须判空。
+			if a.watchPending == nil {
+				a.watchMu.Unlock()
+				return // 监听已停止，退出循环
+			}
 			a.watchPending[event.Name] = struct{}{}
 			// Reset debounce timer
 			if a.watchTimer != nil {

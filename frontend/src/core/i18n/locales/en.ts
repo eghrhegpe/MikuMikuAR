@@ -1827,6 +1827,9 @@ export const en: Record<string, string> = {
     'goerr.software.launchFailed': 'Failed to launch {name}.',
     'goerr.software.androidNotSupported': '{name} cannot be launched on Android.',
     'goerr.config.readFailed': 'Failed to read config.',
+    'goerr.llm.endpointEmpty': 'LLM endpoint is empty.',
+    'goerr.llm.noModels': 'Response contains no valid model list.',
+    'goerr.llm.unexpectedFormat': 'Response is not in OpenAI or Ollama format.',
     'goerr.screenshot.dirNotSet': 'Screenshot directory is not set. Take a screenshot first.',
     'goerr.screenshot.dirCreateFailed': 'Failed to create screenshot directory.',
     'goerr.screenshot.androidNotSupported':
