@@ -303,7 +303,7 @@ export function setCameraBehavior(behavior: CameraBehavior): void {
 export function setFov(v: number): void {
     setFovState(clampFov(v));
     if (getCurrentCamera()) {
-        getCurrentCamera()!.fov = getFovState();
+        getCurrentCamera().fov = getFovState();
     }
 }
 
@@ -332,7 +332,7 @@ export function initCameraSystem(scene: Scene, canvas: HTMLCanvasElement): Camer
 
 /** Switch to a different camera mode, preserving position as much as possible. */
 export function switchCameraMode(mode: CameraMode): void {
-    if (mode === getCameraMode() && getCurrentCamera()) {
+    if (mode === getCameraMode()) {
         return;
     }
     const scene = getCameraScene();
@@ -720,6 +720,31 @@ export function setCameraState(s: CameraState): void {
     if (isAutoCameraEnabled()) {
         restoreAutoCameraState();
     }
+}
+
+// ======== Teardown ========
+
+/** 顶层销毁相机系统（HMR / 页面卸载 / scene 销毁时调用）。幂等。 */
+export function disposeCameraSystem(): void {
+    // 停止所有行为循环
+    stopFreefly();
+    stopOrbit();
+    stopSurround();
+    stopConcert();
+    stopBoneLock();
+    // 销毁当前相机
+    const cam = getCurrentCamera();
+    if (cam) {
+        try {
+            cam.dispose();
+        } catch {
+            // dispose 可能因场景已销毁而抛异常，吞掉
+        }
+        setCurrentCamera(null);
+    }
+    // 清理运行时上下文
+    setCameraScene(null);
+    setCameraCanvas(null);
 }
 
 // ======== Re-exports (backward compat — barrel re-export for downstream consumers) ========

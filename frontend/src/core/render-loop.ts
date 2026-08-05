@@ -131,7 +131,9 @@ export function startRenderLoop(): void {
             const now = new Date();
             const h = String(now.getHours()).padStart(2, '0');
             const m = String(now.getMinutes()).padStart(2, '0');
-            dom.fpsClock.textContent = `${Math.round(engine.getFps())} FPS | ${h}:${m}`;
+            if (dom.fpsClock) {
+                dom.fpsClock.textContent = `${Math.round(engine.getFps())} FPS | ${h}:${m}`;
+            }
         }, 500);
     };
     startFpsClock();

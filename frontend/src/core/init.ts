@@ -181,6 +181,8 @@ async function init(): Promise<void> {
                 if (r && r.available && r.url) {
                     showUpdateToast(r.latest, r.url, r.downloadUrl || undefined);
                 }
+            }).catch((err) => {
+                console.error('[init] update toast failed:', err);
             });
         }
         // Sync module-level state from persisted envState

@@ -33,6 +33,8 @@ export type BoneOverrideEntry = {
     position?: [number, number, number];
     /** [doc:adr-123 P1] 绝对覆盖模式：true=替换 oldRotation，false/undefined=复合 */
     absolute?: boolean;
+    /** [fix P2] 旋转覆盖标志：true=覆盖旋转，false=仅覆盖位置（与 position 共存时区分语义） */
+    overrideRotation?: boolean;
 };
 
 /** 运行时缓存：四元数 + 混合参数 + 可选位置 */
