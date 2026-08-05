@@ -106,6 +106,23 @@ function withUpdatedSymbols(fm, newSymbols) {
 }
 
 // ---------- 符号收集 ----------
+// Go 顶层符号提取：函数（含方法接收者）/类型/变量/常量。
+function getGoSymbols(filePath) {
+  const text = fs.readFileSync(filePath, 'utf8');
+  const syms = new Set();
+  const reFunc = /^func\s+(?:\([^)]*\)\s+)?([A-Za-z0-9_]+)/gm;
+  for (const [re, idx] of [
+    [reFunc, 1],
+    [/^type\s+([A-Za-z0-9_]+)/gm, 1],
+    [/^var\s+([A-Za-z0-9_]+)/gm, 1],
+    [/^const\s+([A-Za-z0-9_]+)/gm, 1],
+  ]) {
+    let m;
+    while ((m = re.exec(text))) syms.add(m[idx]);
+  }
+  return [...syms].sort();
+}
+
 function collectSymbols(sourceFiles) {
   const set = new Set();
   for (const src of sourceFiles) {
@@ -113,7 +130,7 @@ function collectSymbols(sourceFiles) {
     if (!fs.existsSync(abs)) continue;
     let syms = [];
     try {
-      syms = getExportedSymbols(abs);
+      syms = src.endsWith('.go') ? getGoSymbols(abs) : getExportedSymbols(abs);
     } catch {
       continue;
     }

@@ -22,10 +22,19 @@ adr:
   - ADR-183
   - ADR-194
 symbols:
+  - Abs
+  - ErrContentUriNotSupported
+  - Open
+  - ReadDir
+  - Stat
+  - WalkDir
+  - androidFileAccessor
   - buildSettingsDownloadsLevel
   - buildSettingsResourcesLevel
   - goAdapter
+  - init
   - initLibrary
+  - newFileAccessor
   - refreshLibrary
   - reloadConfig
   - rescanAndSync

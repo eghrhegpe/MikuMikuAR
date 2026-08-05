@@ -125,8 +125,25 @@ graph TD;
         c94["后端绑定聚合层（backend 代理化）"]
     end
 
+    subgraph cat_backend["后端"]
+        c95["Go 后端核心（App 生命周期 + 配置系统）"]
+        c96["Go 文件与路径平台抽象"]
+        c97["Go 模型隔离与安全 HTTP"]
+        c98["Go 软件集成（Blender/MMD/自定义）"]
+        c99["Go KTX2 纹理编码"]
+        c100["Go 模型库扫描"]
+        c101["Go LLM 客户端与 AI 绑定"]
+        c102["Go 广场窗口与配置"]
+        c103["Go 预设持久化与标签"]
+        c104["Go 模型广场代理（SSRF 防护）"]
+        c105["Go 场景序列化与打包"]
+        c106["Go 更新检查与安装"]
+        c107["Go 下载目录监听与导入"]
+        c108["Go ZIP 解压与缓存管理"]
+    end
+
     subgraph cat_未分类["未分类"]
-        c95["tier-review"]
+        c109["tier-review"]
     end
 
     subgraph adr_group["决策（ADR）"]

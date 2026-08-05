@@ -44,6 +44,20 @@
 | 全局事件、拖放导入、更新通知 | [事件处理与导航系统](./events.md) | [应用启动引导](./init.md)、[渲染循环与 FPS 时钟](./render-loop.md) |
 | 错误提示、信息提示、状态反馈、toast、status | [结构化反馈 API](./feedback.md) | — |
 | 文件服务、文件 URL、文件编码、HTTP URL、文件服务器 | [统一文件服务层](./fileservice.md) | — |
+| Go 后端 生命周期 ServiceStartup ServiceShutdown、Go 配置系统 config.json GetConfig SetResourceRoot SetStorageMode、无障碍 GetSystemA11ySettings、后端日志环形缓冲 LogRing AiGetBackendLogs、COOP/COEP MPR coopCoepEnabled | [Go 后端核心（App 生命周期 + 配置系统）](./go-app.md) | — |
+| Go 文件访问 FileAccessor ReadTextFile ReadFileBytes 平台抽象、安卓 shared 模式 路径管理 pathmgr、content:// URI ErrContentUriNotSupported | [Go 文件与路径平台抽象](./go-fileaccess.md) | — |
+| Go 模型隔离 IsolateModelDir、安全路径 isSafePath 路径穿越、信任目录 trustedRoots | [Go 模型隔离与安全 HTTP](./go-httpserver.md) | — |
+| Go 软件集成 Blender MMD 检测 打开、自定义软件 ScanSoftwareDir LaunchSoftware、OpenWithSoftware 外部软件打开模型 | [Go 软件集成（Blender/MMD/自定义）](./go-integration.md) | — |
+| Go KTX2 纹理编码 toktx 转码、纹理压缩 ktx2Encode transcodeTexturesInDir、压缩模式 guessEncodeMode | [Go KTX2 纹理编码](./go-ktx2.md) | — |
+| Go 模型库扫描 ScanModelDir 资源分类、模型元数据 GetModelMeta GetModelMetaBatch、资源根目录 SelectDir、ZIP 内部条目展开 expandZipEntries | [Go 模型库扫描](./go-library.md) | — |
+| Go LLM 客户端 StreamChat 流式对话、AI 诊断助手 AiStreamChat AiCancelStream 后端实现、连接测试 AiTestLLMConnection AiFetchModels、工具调用 ToolSchema tool call | [Go LLM 客户端与 AI 绑定](./go-llm.md) | — |
+| Go 广场窗口 预热 导航 NavigatePlazaWindow 窗口控制、广场配置 FetchPlazaConfig SavePlazaConfig 缓存、plaza 直连模式 window.open 拦截 | [Go 广场窗口与配置](./go-plaza.md) | — |
+| Go 预设 保存加载 环境预设 模型预设 动作预设 渲染预设 场景预设、标签系统 AddTag GetTagsByModel、库内预设模型 GetModelPresets SaveModelPresetToLibAuto | [Go 预设持久化与标签](./go-presets.md) | — |
+| Go 模型广场代理 StartProxy StopProxy、SSRF 防护 私有 IP 拦截 isBlockedIP、广场下载 DownloadFromPlaza、WebSocket 代理 proxyWebSocket | [Go 模型广场代理（SSRF 防护）](./go-proxy.md) | — |
+| Go 场景保存加载 SaveSceneFile LoadSceneFile SaveLastScene、场景打包 BundleScene 场景 bundle、自动存档 SaveLastScene 韧性 | [Go 场景序列化与打包](./go-scene.md) | — |
+| Go 更新检查 CheckForUpdate GitHub Release、安装器 DownloadAndRunInstaller APK DownloadApk、版本比较 compareVersion isNewer | [Go 更新检查与安装](./go-update.md) | — |
+| Go 下载目录监听 fsnotify 下载自动导入、本地文件导入 ImportLocalFile、watch:newfile 事件、去抖 800ms watchPending | [Go 下载目录监听与导入](./go-watch.md) | — |
+| Go ZIP 解压 ExtractZip ImportZip 缓存、解压缓存清理 CleanOrphanCache ClearAllCaches GetCacheStats、Shift-JIS GBK 文件名解码 bestDecode decodeZipName、文件 HTTP 服务 StartFileServer StopFileServer、COOP COEP 中间件 | [Go ZIP 解压与缓存管理](./go-zipextract.md) | — |
 | GPU 能力、压缩纹理、KTX2、ASTC、BC7、ADR-189 | [GPU 压缩纹理能力探测](./gpu-capabilities.md) | [PMX 模型加载与缩略图捕获](./model-loader.md)、[场景渲染管线与后处理](./renderer.md)、[场景核心编排器（纯组装器）](./scene.md) |
 | 启动引导、初始化、bootstrap | [应用启动引导](./init.md) | [内置 AI 诊断助手 — 双适配器服务层](./ai-service.md)、[事件处理与导航系统](./events.md)、[运行模式检测](./runtime-mode.md) |
 | 资源库操作、导入模型、替换模型、替换动作、标签浏览、模型行点击 | [资源库操作](./library-actions.md) | [资源库核心](./library-core.md)、[统一动作注册表 — 菜单/NL/快捷键共享真相源](./action-registry.md)、[NL 意图解析 — LLM 文本 → 动作执行](./ai-intent-dispatcher.md) |

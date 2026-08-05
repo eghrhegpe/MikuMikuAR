@@ -2,7 +2,7 @@
 
 # 知识卡索引
 
-> 原子化架构知识层，共 **242** 张卡：记录「某个子系统**现在**长啥样、去哪找」。与 ADR（为什么这么决定）互补——知识卡引用而不复制 ADR 结论。
+> 原子化架构知识层，共 **260** 张卡：记录「某个子系统**现在**长啥样、去哪找」。与 ADR（为什么这么决定）互补——知识卡引用而不复制 ADR 结论。
 
 > 卡片格式规范、立卡判据、`source_files` 铁律见 [知识卡层导读](./README.md)；AI 检索入口见 [路由表](./routes.md)；菜单全景见 [menu-map](./menu-map.md)（机器生成）。
 
@@ -17,6 +17,7 @@
 | [motion](#motion) | 34 | 动作系统 |
 | [ui](#ui) | 56 | UI / 菜单 |
 | [core](#core) | 75 | 核心基础设施 |
+| [backend](#backend) | 18 | 后端 |
 
 ## env
 
@@ -176,6 +177,29 @@
 
 > 叶子模块 / 工具函数（48 张）：[ai-sse](./ai-sse.md) · [character-bible](./character-bible.md) · [chat-store](./chat-store.md) · [color-helpers](./color-helpers.md) · [config-barrel](./config-barrel.md) · [core-dom](./core-dom.md) · [core-leaf-modules](./core-leaf-modules.md) · [core-orbit](./core-orbit.md) · [core-types](./core-types.md) · [core-utils](./core-utils.md) · [dev-hooks](./dev-hooks.md) · [diagnostic-actions](./diagnostic-actions.md) · [dialog](./dialog.md) · [dispose-helpers](./dispose-helpers.md) · [drop-import](./drop-import.md) · [e2e-state-bridge](./e2e-state-bridge.md) · [goerr](./goerr.md) · [hash-noise](./hash-noise.md) · [i18n-t](./i18n-t.md) · [icons-bundle](./icons-bundle.md) · [logger](./logger.md) · [markdown](./markdown.md) · [mmar-globals](./mmar-globals.md) · [observer-handle](./observer-handle.md) · [outfits-spec](./outfits-spec.md) · [platform](./platform.md) · [pmx-meta](./pmx-meta.md) · [preset-meta](./preset-meta.md) · [reactivity](./reactivity.md) · [render-context](./render-context.md) · [runtime-stub](./runtime-stub.md) · [safe-call](./safe-call.md) · [scene-action-bridge](./scene-action-bridge.md) · [shortcut-app](./shortcut-app.md) · [status-bar](./status-bar.md) · [theme](./theme.md) · [toast](./toast.md) · [ui-action-bridge](./ui-action-bridge.md) · [ui-constants](./ui-constants.md) · [ui-focus-trap](./ui-focus-trap.md) · [ui-header-toggle](./ui-header-toggle.md) · [ui-nav-item](./ui-nav-item.md) · [ui-preset](./ui-preset.md) · [ui-slider-controller](./ui-slider-controller.md) · [ui-state](./ui-state.md) · [wind-utils](./wind-utils.md) · [zh-CN](./zh-CN.md) · [zh-TW](./zh-TW.md)
 
+## backend
+
+**后端**
+
+| 卡片 | 关联 ADR |
+|------|----------|
+| [Go 后端核心（App 生命周期 + 配置系统）](./go-app.md) | — |
+| [Go 文件与路径平台抽象](./go-fileaccess.md) | — |
+| [Go 模型隔离与安全 HTTP](./go-httpserver.md) | — |
+| [Go 软件集成（Blender/MMD/自定义）](./go-integration.md) | — |
+| [Go KTX2 纹理编码](./go-ktx2.md) | — |
+| [Go 模型库扫描](./go-library.md) | — |
+| [Go LLM 客户端与 AI 绑定](./go-llm.md) | — |
+| [Go 广场窗口与配置](./go-plaza.md) | — |
+| [Go 预设持久化与标签](./go-presets.md) | — |
+| [Go 模型广场代理（SSRF 防护）](./go-proxy.md) | — |
+| [Go 场景序列化与打包](./go-scene.md) | — |
+| [Go 更新检查与安装](./go-update.md) | — |
+| [Go 下载目录监听与导入](./go-watch.md) | — |
+| [Go ZIP 解压与缓存管理](./go-zipextract.md) | — |
+
+> 叶子模块 / 工具函数（4 张）：[go-dialogs](./go-dialogs.md) · [go-i18nerr](./go-i18nerr.md) · [go-thumbnail](./go-thumbnail.md) · [go-util](./go-util.md)
+
 ## ADR 反查
 
 > 从卡片 `adr:` 字段**反向聚合**：某条决策影响了哪些子系统。正向导航见 [决策记录索引](../adr/index.md)。
@@ -223,7 +247,7 @@
 | [ADR-114](../adr/adr-114-ground-reflection-enhancement.md) | 地面反射增强 — 从平面近似到 PBR 材质 | [地面系统](./env-ground.md) · [地形生成器](./env-terrain.md) |
 | [ADR-115](../adr/adr-115-stylized-water-glint-research.md) | 风格化水体竞品调研与波光粼粼增强方向 | [共享焦散纹理系统](./env-caustics.md) |
 | [ADR-116](../adr/adr-116-bone-override-ui-redesign.md) | 动作覆盖系统 — 模块化架构 + 骨骼覆盖下沉 | [骨骼覆盖核心 API](./bone-override.md) · [共享类型定义](./core-types.md) · [手部独立控制模块（左手/右手）](./hand-symmetry.md) · [模型运行时 ID 解析](./model-id.md) · [模型生命周期操作](./model-ops.md) · [动作模块基类](./motion-module-base.md) · [动作模块类型定义](./motion-module-types.md) · [脚部独立控制模块（左脚/右脚）](./motion-modules-feet.md) · [动作模块注册表](./motion-modules-registry.md) · [动作覆盖 UI 层级（模块化覆盖 + 高级骨骼覆盖）](./motion-override-levels.md) · [动作管线（逐帧合成）](./motion-pipeline.md) · [场景序列化与自动保存](./scene-serialize.md) · [场景核心编排器（纯组装器）](./scene.md) |
-| [ADR-117](../adr/adr-117-go-error-i18n.md) | Go 端用户可见错误的 i18n 化 | [Go 错误翻译](./goerr.md) |
+| [ADR-117](../adr/adr-117-go-error-i18n.md) | Go 端用户可见错误的 i18n 化 | [Go 错误 i18n 信封](./go-i18nerr.md) · [Go 错误翻译](./goerr.md) |
 | [ADR-119](../adr/adr-119-thumbnail-key-single-source.md) | 缩略图缓存键单一源治理 | [缩略图缓存 key 推导](./thumbnail-key.md) |
 | [ADR-121](../adr/adr-121-global-motion-intent.md) | 全局动作意图（Scene-level Motion Intent）— 场景级意图 + 每实例继承/覆盖 | [场景级动作意图库](./motion-intent.md) · [场景序列化与自动保存](./scene-serialize.md) · [场景核心编排器（纯组装器）](./scene.md) · [变换适配器注册表（双模态去重）](./transform-adapter.md) |
 | [ADR-123](../adr/adr-123-compute-override-semantics.md) | `_computeOverride` 语义正式化 — weight≥1 复合、overrideRotation 标志、absolute 模式 | [骨骼覆盖核心 API](./bone-override.md) · [共享类型定义](./core-types.md) · [动作覆盖 UI 层级（模块化覆盖 + 高级骨骼覆盖）](./motion-override-levels.md) |
