@@ -54,6 +54,7 @@ func autoNumberedSave(dir, ext, jsonStr string) (string, error) {
 		return "", err
 	}
 	if err := os.Rename(tmpPath, path); err != nil {
+		os.Remove(tmpPath) // 清理残留 tmp，避免累积
 		return "", err
 	}
 	return filename, nil

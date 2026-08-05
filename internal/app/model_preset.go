@@ -133,7 +133,11 @@ func (a *App) SaveModelPresetToLib(name string, jsonStr string) error {
 	if err := os.WriteFile(tmpPath, []byte(jsonStr), 0644); err != nil {
 		return err
 	}
-	return os.Rename(tmpPath, path)
+	if err := os.Rename(tmpPath, path); err != nil {
+		os.Remove(tmpPath) // 清理残留 tmp，避免累积
+		return err
+	}
+	return nil
 }
 
 // LoadModelPresetFromLib reads a model preset JSON from the library by name.
@@ -220,7 +224,14 @@ func (a *App) writeConfig(cfg *Config) error {
 // Caller must NOT hold configMu: the scan can take seconds (8 categories, recursive
 // walks), so it must run outside the write lock to avoid blocking all GetConfig readers.
 // Config persistence itself is done by updateConfig before calling this.
+//
+// indexMu 串行化 scan+write：并发 updateConfig(rescan=true) 若交错执行，最后写 index
+// 的必须是最后持久化的 config（indexMu 获取顺序 = configMu 释放顺序），避免旧快照
+// 覆盖新 index（config.json=B 而 index.json=A 的永久陈旧状态）。
 func (a *App) writeIndexAfterScan(cfg *Config) error {
+	a.indexMu.Lock()
+	defer a.indexMu.Unlock()
+
 	// Scan and write index — pass cfg directly, don't go through ScanModelDir
 	// which would re-acquire configMu.RLock() and deadlock.
 	models, err := a.scanAllCategories(cfg)

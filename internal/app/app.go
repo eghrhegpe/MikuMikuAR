@@ -54,6 +54,7 @@ type App struct {
 	httpServers map[string]*httpServerInfo // keyed by dirPath
 	httpSrvMu   sync.Mutex
 	configMu    sync.RWMutex // guards GetConfig/writeConfig sequences
+	indexMu     sync.Mutex   // 串行化全量扫描写 index（防并发 rescan 交错写出过期 index.json）
 	cachedCfg   *Config      // in-memory cache, invalidated by writeConfig
 	sceneMu     sync.Mutex   // serialises SaveLastScene writes to prevent concurrent truncate/interleave
 
