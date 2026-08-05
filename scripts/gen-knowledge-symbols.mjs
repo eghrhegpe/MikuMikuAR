@@ -22,12 +22,10 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { getExportedSymbols } from './_lib/source-graph.mjs';
 import { parseArgs } from './_lib/parse-args.mjs';
+import { ROOT } from './_lib/scan-files.mjs';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const ROOT = path.resolve(__dirname, '..');
 const KNOWLEDGE_DIR = path.join(ROOT, 'docs', 'knowledge');
 
 // ---------- frontmatter 解析 ----------
