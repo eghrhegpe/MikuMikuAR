@@ -222,8 +222,9 @@ func contains(s, substr string) bool {
 }
 
 // TestUpdateConfigRescanConcurrent 并发触发多个 rescan=true 的配置写入（SetOverridePath），
-// 验证 writeIndexAfterScan 的 indexMu + 重读最新配置机制：最终落盘的 index.json 必须
+// 验证 writeIndexAfterScan 的 indexMu + 重读最新配置机制：最终落盘的 index.json 应
 // 与最终 config.json 一致（模型条目都位于最终 override 目录下），且无死锁。
+// 注：index/config 一致性为 best-effort（二次校验尽力收敛，见 writeIndexAfterScan 注释）。
 func TestUpdateConfigRescanConcurrent(t *testing.T) {
 	testConfigDir(t)
 	root := t.TempDir()

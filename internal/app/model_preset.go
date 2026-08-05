@@ -183,6 +183,17 @@ func (a *App) RenameModelPreset(oldName, newName string) error {
 	return os.Rename(oldPath, newPath)
 }
 
+// indexRelevantChanged reports whether the two configs differ in fields that
+// affect scanAllCategories output (ResourceRoot + all OverridePaths). rescan=false
+// settings writes (BlenderPath, UI scale, ...) replace the cachedCfg pointer but
+// do not change the index, so comparing content avoids needless re-scans.
+func indexRelevantChanged(a, b *Config) bool {
+	if a.ResourceRoot != b.ResourceRoot {
+		return true
+	}
+	return a.OverridePaths != b.OverridePaths
+}
+
 // writeConfig persists only the config JSON (no rescan). Use for settings changes
 // that don't affect the model index (e.g. Blender path).
 // Uses tmp+rename for atomicity: prevents corrupted config on crash/power loss.
@@ -234,7 +245,8 @@ func (a *App) writeConfig(cfg *Config) error {
 //
 // 二次校验（best-effort）：扫描完成后再次 re-read，若扫描期间配置又被持久化
 // （含 rescan=false 的写入也会替换 cachedCfg 指针），用最新配置重扫一次，
-// 避免写出的 index 基于过期快照。
+// 避免写出的 index 基于过期快照。此机制尽力收敛，不保证绝对一致（scan 窗口内
+// 仍可能有新写入落盘），注释与测试均按 best-effort 语义表述。
 func (a *App) writeIndexAfterScan(cfg *Config) error {
 	a.indexMu.Lock()
 	defer a.indexMu.Unlock()
@@ -253,16 +265,21 @@ func (a *App) writeIndexAfterScan(cfg *Config) error {
 	if err != nil {
 		return err
 	}
-	// 扫描期间配置可能又被持久化（rescan=false 也会替换 cachedCfg 指针），
-	// 再读一次：若与扫描所用快照不同，用最新配置重扫一遍。
+	// 扫描期间配置可能又被持久化。仅当 index 相关字段（ResourceRoot/OverridePaths）
+	// 变化时才重扫：rescan=false 的设置写入（BlenderPath/UI 等）不改变扫描结果，
+	// 用内容比较而非指针身份，避免无谓的二次全量扫描。
 	a.configMu.RLock()
 	latest, lErr := a.getConfigUnsafe()
 	a.configMu.RUnlock()
-	if lErr == nil && latest != nil && latest != fresh {
+	if lErr == nil && latest != nil && indexRelevantChanged(fresh, latest) {
 		fresh = latest
-		models, err = a.scanAllCategories(fresh)
-		if err != nil {
-			return err
+		models2, err2 := a.scanAllCategories(fresh)
+		if err2 != nil {
+			// 配置已持久化，此处失败不应丢弃首次有效扫描结果：保留 models
+			//（略旧但比"config 新 + index 旧 + 假错误"更合理），仅记警告。
+			a.safeLogWarning("writeIndexAfterScan: 二次扫描失败，保留首次结果: %v", err2)
+		} else {
+			models = models2
 		}
 	}
 	idxData, err := json.Marshal(models)
