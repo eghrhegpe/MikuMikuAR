@@ -85,111 +85,134 @@ function _applySystemA11y(): void {
 }
 
 // ======== Init ========
+// [doc:adr-244] init() 按职责拆 4 阶段：清理 / 早期基建 / 场景与库 / 状态恢复。
+// 除 _initCleanup 外均 async——阶段内含 await 步骤（initI18n→initRuntimeBridge 硬依赖、
+// initScene→showApp、restoreEnvState→tryRestoreLastScene 三条串行链），非 async 会竞态。
+
+/** [doc:adr-244] 阶段 1：HMR 幂等清理（旧监听器 / overlay / status 定时器）。同步、无 await。 */
+function _initCleanup(): void {
+    // [adr:audit] 幂等清理入口：HMR 重跑 init 时先销毁旧监听器，避免重复绑定
+    for (const d of _initDisposables) {
+        d.dispose();
+    }
+    _initDisposables.length = 0;
+    disposeEventHandlers();
+    disposeOverlay2(); // 清理 showPrompt2 创建的双字段输入 overlay（HMR 幂等）
+    disposeStatusBar(); // 清理 status 定时器（HMR 幂等）
+}
+
+/** [doc:adr-244] 阶段 2：早期基建（i18n / runtime 桥 / 错误捕获 / a11y / 快捷键 / 徽标）。 */
+async function _initEarlyInfra(): Promise<void> {
+    // 注册本地图标 bundle，使 iconify 离线可用
+    registerIconBundle();
+    await initI18n(); // [doc:adr-059] 在菜单渲染前确定语言并同步 <html lang>；[doc:perf] 异步预加载语言包
+    // 桌面/Android 侧强制加载 @wailsio/runtime 并绑定 events 实例，必须先于任何
+    // events.on(...) 订阅——否则 events 回落到 no-op WebEvents，Wails 后端事件
+    // （ai:chunk/ai:done/ai:error、android:* 等）全部收不到，AI 流式会永久挂起。
+    await initRuntimeBridge();
+    // RuntimeEvents 订阅必须在 initRuntimeBridge() 之后注册——模块顶层求值时
+    // _events 仍为 null 会静默落到一次性 WebEvents，导致事件收不到。
+    registerRuntimeEventHandlers();
+    // [doc:adr-196] 启动早期安装 AI 诊断上下文采集：先 patch console.error 使所有
+    // console.error（含 @/core/logger 的 logError）自动入环，再注册全局未捕获异常监听。
+    // disposer 纳入 _initDisposables，HMR 重跑 init 时幂等清理旧监听器、重新安装。
+    installLoggingPatch();
+    const _aiErrDisposer = installGlobalErrorCapture();
+    _initDisposables.push({
+        dispose() {
+            _aiErrDisposer();
+            uninstallLoggingPatch();
+        },
+    });
+    _applySystemA11y(); // [doc:adr-153] 启动时应用系统无障碍设置（暗色/高对比度）
+    _updateStaticHtmlTexts(); // 更新 HTML 模板中的硬编码文案
+    initRuntimeBadge(); // [adr-099] 立即渲染持久化的运行时模式徽标（刷新不丢）
+    registerEventHandlers(); // [adr-102] P3: 全局 DOM/window 监听器迁至 events.ts
+    // [doc:adr-238] buildNavMaps 下沉 menus/nav-actions，由 initNavActions 驱动
+    // Register keyboard shortcuts via ShortcutRegistry
+    registerAppShortcuts();
+    initShortcutDispatcher();
+    setStatus(t('main.initializing'), false);
+    // [doc:adr-177] Phase 2 A5：web 入口预热 capabilities 缓存
+    // web 入口短路快，await 无延迟；桌面 fallback 全 true 已正确，无需阻塞。
+    // Android 必须预热：缺少真实 capabilities 时 ALL_TRUE_CAPS 的 fsSelectDir=true
+    // 会误导 settings-resources 走桌面路径，隐藏私有/共享存储切换 UI。
+    if (isWebPlatform()) {
+        await getCapabilities();
+    } else if (isAndroidPlatform()) {
+        // Android 异步预热，不阻塞首屏（awaitWailsBridge 最长 3s）
+        fireAndForget(async () => {
+            await getCapabilities();
+        });
+    }
+    // [doc:adr-176] 后台解析后端并把实际选中的 kind（go/browser）写进运行时徽标，
+    // 不阻塞首屏渲染；消除「网页壳参杂 Go 逻辑」的歧义（9245 等 webview 场景一眼可辨）。
+    fireAndForget(async () => {
+        const b = await resolveBackend();
+        setBackendBadge(b.kind);
+    });
+}
+
+/** [doc:adr-244] 阶段 3：场景与库初始化（drop / scene / library / auto-import）。 */
+async function _initScenePhase(): Promise<void> {
+    // [doc:adr-238] 导航按钮接线下沉 menus/nav-actions（initNavActions 由 initLibrary
+    // 启动链驱动），本层不再直接 import menus 弹窗函数或注册按钮监听。
+
+    initDropHandler(); // 拖拽导入处理不依赖场景初始化
+
+    // [doc:adr-238] 桥注册守卫：initScene 经 scene/scene 注册，依赖 render-loop 静态边
+    // 加载（ADR-238 §2.5 结构性保留）。未注册时场景静默不初始化，此处显式校验。
+    if (!getSceneAction('initScene')) {
+        console.warn('[init] initScene bridge 未注册——场景可能不会初始化');
+    }
+    await getSceneAction('initScene')?.();
+    // 引擎就绪 → 隐藏加载遮罩，显示主应用 UI
+    dom.showApp();
+    console.info('MikuMikuAR initialized');
+    // [doc:adr-238] 桥注册守卫：initLibrary 经 menus/library-setup 动态链注册，
+    // 未注册时模型库永不初始化（静默失败），此处显式校验。
+    if (!getSceneAction('initLibrary')) {
+        console.warn('[init] initLibrary bridge 未注册——模型库可能不会初始化');
+    }
+    safeCallAsync('init', 'Library init', () => getSceneAction('initLibrary')?.());
+    // [doc:adr-008] 启动时预加载自动导入开关，供 watch:newfile 自动导入分支判定
+    fireAndForget(async () => {
+        // [doc:adr-238] preloadAutoImportState 经 ui-action-bridge 调用（settings-shared 注册）
+        swallowError(getUiAction('preloadAutoImportState')?.() ?? Promise.resolve());
+    });
+}
+
+/** [doc:adr-244] 阶段 4：状态恢复（env / UI / HUD / 更新检查 / 场景恢复）。 */
+async function _initRestorePhase(): Promise<void> {
+    // Restore env state from config (authoritative — scene restore skips env)
+    await restoreEnvState();
+    // Apply persisted UI state
+    await restoreUIState();
+    // 应用顶部 HUD 显隐开关（在 restoreUIState 之后，确保读到持久化值）
+    applyHudVisibility();
+    // 启动时自动检查更新（若用户在设置中开启）
+    if (uiState.autoUpdateEnabled) {
+        safeCallAsync('init', '', () => CheckForUpdate()).then((r) => {
+            if (r && r.available && r.url) {
+                showUpdateToast(r.latest, r.url, r.downloadUrl || undefined);
+            }
+        }).catch((err) => {
+            console.error('[init] update toast failed:', err);
+        });
+    }
+    // Sync module-level state from persisted envState
+    getSceneAction('syncTimeOfDayFromEnv')?.();
+    getSceneAction('restoreAutoCameraState')?.();
+    // Auto-restore last scene after library + scene init (env already restored above)
+    safeCallAsync('init', 'Auto-restore', () => getSceneAction('tryRestoreLastScene')?.());
+}
+
 async function init(): Promise<void> {
     try {
-        // [adr:audit] 幂等清理入口：HMR 重跑 init 时先销毁旧监听器，避免重复绑定
-        for (const d of _initDisposables) {
-            d.dispose();
-        }
-        _initDisposables.length = 0;
-        disposeEventHandlers();
-        disposeOverlay2(); // 清理 showPrompt2 创建的双字段输入 overlay（HMR 幂等）
-        disposeStatusBar(); // 清理 status 定时器（HMR 幂等）
-        // 注册本地图标 bundle，使 iconify 离线可用
-        registerIconBundle();
-        await initI18n(); // [doc:adr-059] 在菜单渲染前确定语言并同步 <html lang>；[doc:perf] 异步预加载语言包
-        // 桌面/Android 侧强制加载 @wailsio/runtime 并绑定 events 实例，必须先于任何
-        // events.on(...) 订阅——否则 events 回落到 no-op WebEvents，Wails 后端事件
-        // （ai:chunk/ai:done/ai:error、android:* 等）全部收不到，AI 流式会永久挂起。
-        await initRuntimeBridge();
-        // RuntimeEvents 订阅必须在 initRuntimeBridge() 之后注册——模块顶层求值时
-        // _events 仍为 null 会静默落到一次性 WebEvents，导致事件收不到。
-        registerRuntimeEventHandlers();
-        // [doc:adr-196] 启动早期安装 AI 诊断上下文采集：先 patch console.error 使所有
-        // console.error（含 @/core/logger 的 logError）自动入环，再注册全局未捕获异常监听。
-        // disposer 纳入 _initDisposables，HMR 重跑 init 时幂等清理旧监听器、重新安装。
-        installLoggingPatch();
-        const _aiErrDisposer = installGlobalErrorCapture();
-        _initDisposables.push({
-            dispose() {
-                _aiErrDisposer();
-                uninstallLoggingPatch();
-            },
-        });
-        _applySystemA11y(); // [doc:adr-153] 启动时应用系统无障碍设置（暗色/高对比度）
-        _updateStaticHtmlTexts(); // 更新 HTML 模板中的硬编码文案
-        initRuntimeBadge(); // [adr-099] 立即渲染持久化的运行时模式徽标（刷新不丢）
-        registerEventHandlers(); // [adr-102] P3: 全局 DOM/window 监听器迁至 events.ts
-        // [doc:adr-238] buildNavMaps 下沉 menus/nav-actions，由 initNavActions 驱动
-        // Register keyboard shortcuts via ShortcutRegistry
-        registerAppShortcuts();
-        initShortcutDispatcher();
-        setStatus(t('main.initializing'), false);
-        // [doc:adr-177] Phase 2 A5：web 入口预热 capabilities 缓存
-        // web 入口短路快，await 无延迟；桌面 fallback 全 true 已正确，无需阻塞。
-        // Android 必须预热：缺少真实 capabilities 时 ALL_TRUE_CAPS 的 fsSelectDir=true
-        // 会误导 settings-resources 走桌面路径，隐藏私有/共享存储切换 UI。
-        if (isWebPlatform()) {
-            await getCapabilities();
-        } else if (isAndroidPlatform()) {
-            // Android 异步预热，不阻塞首屏（awaitWailsBridge 最长 3s）
-            fireAndForget(async () => {
-                await getCapabilities();
-            });
-        }
-        // [doc:adr-176] 后台解析后端并把实际选中的 kind（go/browser）写进运行时徽标，
-        // 不阻塞首屏渲染；消除「网页壳参杂 Go 逻辑」的歧义（9245 等 webview 场景一眼可辨）。
-        fireAndForget(async () => {
-            const b = await resolveBackend();
-            setBackendBadge(b.kind);
-        });
-
-        // [doc:adr-238] 导航按钮接线下沉 menus/nav-actions（initNavActions 由 initLibrary
-        // 启动链驱动），本层不再直接 import menus 弹窗函数或注册按钮监听。
-
-        initDropHandler(); // 拖拽导入处理不依赖场景初始化
-
-        // [doc:adr-238] 桥注册守卫：initScene 经 scene/scene 注册，依赖 render-loop 静态边
-        // 加载（ADR-238 §2.5 结构性保留）。未注册时场景静默不初始化，此处显式校验。
-        if (!getSceneAction('initScene')) {
-            console.warn('[init] initScene bridge 未注册——场景可能不会初始化');
-        }
-        await getSceneAction('initScene')?.();
-        // 引擎就绪 → 隐藏加载遮罩，显示主应用 UI
-        dom.showApp();
-        console.info('MikuMikuAR initialized');
-        // [doc:adr-238] 桥注册守卫：initLibrary 经 menus/library-setup 动态链注册，
-        // 未注册时模型库永不初始化（静默失败），此处显式校验。
-        if (!getSceneAction('initLibrary')) {
-            console.warn('[init] initLibrary bridge 未注册——模型库可能不会初始化');
-        }
-        safeCallAsync('init', 'Library init', () => getSceneAction('initLibrary')?.());
-        // [doc:adr-008] 启动时预加载自动导入开关，供 watch:newfile 自动导入分支判定
-        fireAndForget(async () => {
-            // [doc:adr-238] preloadAutoImportState 经 ui-action-bridge 调用（settings-shared 注册）
-            swallowError(getUiAction('preloadAutoImportState')?.() ?? Promise.resolve());
-        });
-        // Restore env state from config (authoritative — scene restore skips env)
-        await restoreEnvState();
-        // Apply persisted UI state
-        await restoreUIState();
-        // 应用顶部 HUD 显隐开关（在 restoreUIState 之后，确保读到持久化值）
-        applyHudVisibility();
-        // 启动时自动检查更新（若用户在设置中开启）
-        if (uiState.autoUpdateEnabled) {
-            safeCallAsync('init', '', () => CheckForUpdate()).then((r) => {
-                if (r && r.available && r.url) {
-                    showUpdateToast(r.latest, r.url, r.downloadUrl || undefined);
-                }
-            }).catch((err) => {
-                console.error('[init] update toast failed:', err);
-            });
-        }
-        // Sync module-level state from persisted envState
-        getSceneAction('syncTimeOfDayFromEnv')?.();
-        getSceneAction('restoreAutoCameraState')?.();
-        // Auto-restore last scene after library + scene init (env already restored above)
-        safeCallAsync('init', 'Auto-restore', () => getSceneAction('tryRestoreLastScene')?.());
+        _initCleanup();
+        await _initEarlyInfra();
+        await _initScenePhase();
+        await _initRestorePhase();
     } catch (err) {
         console.error('Init failed:', err);
         const msg = translateGoError(err);

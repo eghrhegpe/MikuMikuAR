@@ -1,7 +1,7 @@
 # ADR-244: init 启动流程阶段化拆分 —— 110 行编排器按职责切分
 
 > **日期**: 2026-08-06
-> **状态**: 🔄 规划中 —— 已登记方案与实施步骤，待落地
+> **状态**: ✅ 已完成（2026-08-06 落地；实施前子代理坑点审核确认 1 个阻断项——骨架示例缺 await——已先修订再实施）—— `init()` 主体压至 13 行，4 个阶段函数落地，零行为变更
 > **编号**: 244
 >
 > **关联**: [ADR-102](adr-102-main-ts-split.md)（main.ts 拆分——init/events/render-loop/dev-hooks 同款拆分精神）、[ADR-003](adr-003-download-strategy.md)（启动引导）、[ADR-177](adr-177-web-loader-main-app-unification.md)（Web Loader 统一）、[ADR-238](adr-238-循环依赖消解二期-core-scene-根环.md)（桥接注册链）
@@ -55,31 +55,73 @@
 
 ### 实施步骤（Phase 1：纯结构拆分，零行为变更）
 
-1. 抽取 4 个私有阶段函数（参数 = 现闭包所需局部状态，返回值 = 需传给后续阶段的句柄）：
-   - `_initCleanup()`：`_initDisposables` 清理 + `disposeEventHandlers` + `disposeOverlay2` + `disposeStatusBar`；
-   - `_initEarlyInfra()`：icon bundle → i18n → runtime bridge → runtime event handlers → logging patch/error capture（返回 disposer 并入 `_initDisposables`）→ a11y → 静态文案 → 徽标 → 事件处理器 → 快捷键 → status；capabilities 预热 / backend 徽标；
-   - `_initScenePhase()`：`initDropHandler` → initScene 桥守卫 → `initScene` → `showApp` → initLibrary 桥守卫 → `initLibrary` → auto-import 预加载；
-   - `_initRestorePhase()`：`restoreEnvState` → `restoreUIState` → `applyHudVisibility` → 更新检查 → `syncTimeOfDayFromEnv` → `restoreAutoCameraState` → `tryRestoreLastScene`。
-2. `init()` 主体改为：
+1. 抽取 4 个私有阶段函数。**除 `_initCleanup` 外均为 `async`**——阶段内含 `await` 步骤，非 async 会导致阶段函数在首个 await 处让出后立即进入下一阶段，破坏 3 条串行链（`initI18n→initRuntimeBridge` 硬依赖、`initScene→showApp`、`restoreEnvState→tryRestoreLastScene`，P0 竞态）：
+   - `_initCleanup(): void`：`_initDisposables` 清理 + `disposeEventHandlers` + `disposeOverlay2` + `disposeStatusBar`；
+   - `_initEarlyInfra(): Promise<void>`：icon bundle → i18n → runtime bridge → runtime event handlers → logging patch/error capture（disposer 并入 `_initDisposables`）→ a11y → 静态文案 → 徽标 → 事件处理器 → 快捷键 → status；capabilities 预热 / backend 徽标；
+   - `_initScenePhase(): Promise<void>`：`initDropHandler` → initScene 桥守卫 → `initScene` → `showApp` → initLibrary 桥守卫 → `initLibrary` → auto-import 预加载；
+   - `_initRestorePhase(): Promise<void>`：`restoreEnvState` → `restoreUIState` → `applyHudVisibility` → 更新检查 → `syncTimeOfDayFromEnv` → `restoreAutoCameraState` → `tryRestoreLastScene`。
+2. `init()` 主体改为（**必须 `await` 三个 async 阶段**）：
    ```ts
    async function init(): Promise<void> {
        try {
            _initCleanup();
-           _initEarlyInfra();
-           _initScenePhase();
-           _initRestorePhase();
+           await _initEarlyInfra();
+           await _initScenePhase();
+           await _initRestorePhase();
        } catch (err) { /* 保持现有错误 UI 契约 */ }
    }
    ```
 3. **阶段内顺序一字不动**，仅移动代码位置——重构以「diff 中无行为差异」为验收。
-4. 跑 `npm run test`（重点 `main.boot-anchor.test.ts`）+ `npm run build` 验证。
+4. **已吞错调用原样搬移**：`fireAndForget`/`swallowError`/`safeCallAsync` 共 7 处（L75/136/142/166/168/180/192）保持原位次，不得改写为 await 或加 catch（语义：吞错后不进入顶层 catch）。
+5. 跑 `npm run test`（重点 `main.boot-anchor.test.ts`）+ `npm run build` + `npm run deadcode`（knip）验证。
 
 ### 验收标准
 
-- [ ] `init()` 主体 ≤ 15 行（编排 + 清理 + try/catch）
-- [ ] 4 个阶段函数各 ≤ 40 行，职责单一
-- [ ] 启动顺序与现状逐位一致（boot-anchor 测试全绿）
-- [ ] 全量单测通过，构建通过
+- [x] `init()` 主体 ≤ 15 行（实测 13 行：编排 + 清理 + try/catch）
+- [x] 4 个阶段函数各 ≤ 40 行**（注释不计行；实测代码行 cleanup 9 / earlyInfra 32 / scenePhase 16 / restorePhase 17）**，职责单一
+- [x] 启动顺序与现状逐位一致（boot-anchor 测试全绿；diff 确认纯搬运，语句一字未动）
+- [x] 全量单测通过（4394），构建通过，knip 无新增死代码
+
+## 落地记录（2026-08-06）
+
+### 实施前子代理坑点审核结论
+
+9 点核实 **1 个阻断项 + 7 个注意项**，全部处理：
+
+| 项 | 结论 | 处理方式 |
+|----|------|---------|
+| ❌ 阻断：ADR 骨架示例缺 `await` | 照抄会破坏 `initI18n→initRuntimeBridge`、`initScene→showApp`、`restoreEnvState→tryRestoreLastScene` 三条串行链（P0 竞态） | 实施前先修订文档：3 个阶段函数标 `async` + init() 内 `await` |
+| 阶段间共享状态 | 全模块级（`_initDisposables`/`uiState`/`dom`/桥引用），唯一局部 `_aiErrDisposer` 阶段内自洽 | 无需跨阶段参数/返回值 |
+| 已吞错调用 7 处 | fireAndForget/swallowError/safeCallAsync 语义（吞错不 reject） | 原位次搬移，不改写为 await |
+| HMR 幂等语义 | 清理-重建顺序现状一致 | 无改动 |
+| 测试影响 | boot-anchor **mock 整个 init 模块**（不执行真实 init） | 零影响 |
+| import 副作用 | 全部无顶层执行；真正的 side-effect import 在 main.ts | 保持顶部不动 |
+| knip | 私有函数被 init() 调用，非 dead code | 确认无新增报告 |
+| `_initEarlyInfra` 超 40 行风险 | 注释 18 行 + 代码 32 行 | 同步修订 ADR 验收口径（注释不计行） |
+
+### 变更文件
+
+| 文件 | 变更 |
+|------|------|
+| `core/init.ts` | 拆 4 阶段函数（`_initCleanup` 同步 + 3 个 async），`init()` 主体 110 行 → 13 行；语句零改动（diff 纯搬运验证） |
+| ADR-244 文档 | 修订骨架示例（补 await）+ 验收口径（注释不计行） |
+
+### 阶段函数实测尺寸
+
+| 函数 | 总行 | 代码行 | 职责 |
+|------|------|--------|------|
+| `_initCleanup` | 10 | 9 | HMR 幂等清理（disposables/events/overlay/status） |
+| `_initEarlyInfra` | 50 | 32 | i18n/桥/错误捕获/a11y/快捷键/徽标/预热 |
+| `_initScenePhase` | 27 | 16 | drop/scene/library/auto-import |
+| `_initRestorePhase` | 23 | 17 | env/UI/HUD/更新检查/场景恢复 |
+| `init()` | 13 | 13 | 4 行编排 + try/catch |
+
+### 验证
+
+- `tsc --noEmit` 干净
+- boot-anchor 3 用例 + 全量 **262 文件 / 4394 测试全绿**
+- `vite build` 通过；`npm run deadcode`（knip）无新增报告
+- `git diff` 确认纯搬运（122 insertions / 99 deletions，语句一字未动）
 
 ---
 
