@@ -213,11 +213,14 @@ async function ensureModelMeta(pmxPaths: string[]): Promise<void> {
     }
     try {
         // [audit-p3] 按固定大小分片顺序拉取；每片完成后立即回填缓存，部分成功也能尽早可用
-        const merged = new Map(modelMetaCache);
+        // [fix:p4-concurrency] 每片基于最新 modelMetaCache 增量合并后整体回写——
+        // 旧实现函数开头快照一次、循环内整体 set，两个不相交路径并发时后完成者
+        // 会用旧快照覆盖对方已写缓存（guard 只拦同 key，不拦跨路径并发）。
         for (let i = 0; i < uncached.length; i += META_BATCH_SIZE) {
             const chunk = uncached.slice(i, i + META_BATCH_SIZE);
             const batch = await GetModelMetaBatch(chunk);
             if (batch) {
+                const merged = new Map(modelMetaCache);
                 for (const [path, meta] of Object.entries(batch)) {
                     merged.set(path, meta);
                 }
@@ -654,6 +657,9 @@ function openResourceFullscreen(
                 if (!m) {
                     return;
                 }
+                // [fix:p3-leak] 选中模型前先释放当前 panel（含 observer）——
+                // onBack 路径已有 safeDispose，onSelect 缺失，每次全屏选中泄漏一个 panel。
+                currentPanel = safeDispose(currentPanel);
                 closeFullscreen();
                 onSelectModel(m);
             },
@@ -680,7 +686,7 @@ function renderGridMode(
     items: PopupRow[],
     filter?: (m: LibraryModel) => boolean,
     targetStack?: SlideMenu
-): void {
+): (() => void) | void {
     const allResourceItems = buildResourceItemsForDir(dir, filter);
     const thumbKeys2 = allResourceItems
         .filter((item) => !item.isFolder && item.thumbKey)
@@ -691,7 +697,7 @@ function renderGridMode(
             logWarn('library-core', 'loadThumbnailsStreaming failed:', err)
         );
     }
-    cardContainer(container, (card) => {
+    return cardContainer(container, (card) => {
         const toolbar = document.createElement('div');
         toolbar.className = 'toolbar';
         _buildViewToggleButtons(toolbar, targetStack);
@@ -711,7 +717,7 @@ function renderGridMode(
         });
         toolbar.appendChild(expandBtn);
         card.appendChild(toolbar);
-        createResourcePanel(card, {
+        const panel = createResourcePanel(card, {
             items: allResourceItems,
             thumbnailCache,
             onSelect: (item) => {
@@ -749,6 +755,10 @@ function renderGridMode(
             },
             layout: 'grid',
         });
+        // [fix:p3-leak] panel handle 必须经 cardContainer 返回给清理链——
+        // 否则每次重渲染（视图切换/导航/refreshModelRoot 触发 renderCustom 重建）
+        // 旧 IntersectionObserver/MutationObserver/virtualGrid 永久泄漏。
+        return () => safeDispose(panel);
     });
 }
 
@@ -846,14 +856,15 @@ export function buildLevel(
             // 解压/扫描未完成时进入空层，待数据就绪后任意一次 reRender（含导航 push/pop、视图切换）即自愈填充。
             const liveItems = buildPopupRows(dir, filter, extraFolders);
             const resourceItems = buildResourceItemsForDir(dir, filter);
+            // [fix:p3-leak] 返回 dispose 链：menu.ts _customDispose 在 buildPanel 重建/dispose 时
+            // 调用，释放 renderGridMode 内 createResourcePanel 的 observer/virtualGrid。
             if (resourceViewMode === 'grid') {
-                renderGridMode(container, dir, liveItems, filter, targetStack);
-            } else {
-                cardContainer(container, (card) => {
-                    addListViewToolbar(card, dir, liveItems, filter, targetStack, resourceItems);
-                    renderItemsWithRAF(card, liveItems, filter, targetStack);
-                });
+                return renderGridMode(container, dir, liveItems, filter, targetStack);
             }
+            return cardContainer(container, (card) => {
+                addListViewToolbar(card, dir, liveItems, filter, targetStack, resourceItems);
+                renderItemsWithRAF(card, liveItems, filter, targetStack);
+            });
         },
     };
 }

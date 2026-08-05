@@ -237,6 +237,7 @@
 | [ADR-131](../adr/adr-131-resource-browse-selection-outcome.md) | 资源浏览选中结果统一契约（BrowseOutcome） | [资源库操作](./library-actions.md) · [资源库核心](./library-core.md) |
 | [ADR-132](../adr/adr-132-env-brightness-unification.md) | 环境亮度统一标量（EnvBrightness Unification） | [环境灯光包装](./env-lighting.md) · [EnvState 单一源 Schema](./env-state-schema.md) · [场景光照与阴影（barrel）](./lighting.md) |
 | [ADR-135](../adr/adr-135-library-session-store.md) | LibrarySessionStore — 资源库状态收敛基座 | [资源库操作](./library-actions.md) · [资源库核心](./library-core.md) · [资源库会话状态单例](./library-session-store.md) · [统一资源加载队列](./load-manager.md) |
+| [ADR-136](../adr/adr-136-thumbnail-abortsignal.md) | 缩略图流式加载 AbortSignal 协作式取消 | [资源库核心](./library-core.md) |
 | [ADR-137](../adr/adr-137-envstate-single-source-schema.md) | EnvState 单一源 Schema | [EnvState 单一源 Schema](./env-state-schema.md) · [全局状态与场景运行时 Store](./state.md) |
 | [ADR-138](../adr/adr-138-env-dispatcher-decouple.md) | env-dispatcher 破循环依赖 | [环境状态写入入口（setEnvState + 中间件链）](./env-bridge.md) · [环境变更分发回调（破循环依赖）](./env-dispatcher.md) · [环境系统实现核心（barrel + observer + fog）](./env-impl.md) |
 | [ADR-141](../adr/adr-141-state-split.md) | state.ts 拆分 — 状态基座重构 | [配置聚合层](./config-barrel.md) · [轻量日志工具（无依赖）](./logger.md) · [全局状态与场景运行时 Store](./state.md) · [UI 持久化状态](./ui-state.md) |
@@ -291,7 +292,7 @@
 | [ADR-226](../adr/adr-226-ground-material-spec-single-source.md) | 地面材质单一事实源重构（GroundMaterialSpec） | [地面材质单一事实源（GroundMaterialSpec）](./env-ground-spec.md) |
 | [ADR-229](../adr/adr-229-e2e-automation-advancement.md) | E2E 自动化推进 —— 从 schema 到测试零映射 | [渲染层 DOM 契约单源](./dom-contract.md) |
 | [ADR-237](../adr/adr-237-split-overlong-modules.md) | 超限模块拆分计划 —— 250LOC 天花板的优先级拆解路线图 | [程序化动作系统](./proc-motion-bridge.md) · [多 VMD 叠加系统](./vmd-layers.md) |
-| [ADR-238](../adr/adr-238-循环依赖消解二期-core-scene-根环.md) | 循环依赖消解第二期 —— core→scene 根环与 motion/outfit 互依赖拆解 | [E2E 状态读取器注入桥](./e2e-state-bridge.md) · [场景动作注入桥](./scene-action-bridge.md) · [主题纯函数叶](./theme.md) · [UI 行为注入桥](./ui-action-bridge.md) |
+| [ADR-238](../adr/adr-238-循环依赖消解二期-core-scene-根环.md) | 循环依赖消解第二期 —— core→scene 根环与 motion/outfit 互依赖拆解 | [E2E 状态读取器注入桥](./e2e-state-bridge.md) · [资源库核心](./library-core.md) · [场景动作注入桥](./scene-action-bridge.md) · [主题纯函数叶](./theme.md) · [UI 行为注入桥](./ui-action-bridge.md) |
 
 ## 索引与路由（非卡片）
 

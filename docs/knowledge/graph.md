@@ -171,6 +171,7 @@ graph TD;
         a131["ADR-131"]
         a132["ADR-132"]
         a135["ADR-135"]
+        a136["ADR-136"]
         a137["ADR-137"]
         a138["ADR-138"]
         a141["ADR-141"]
@@ -216,6 +217,7 @@ graph TD;
         a226["ADR-226"]
         a229["ADR-229"]
         a237["ADR-237"]
+        a238["ADR-238"]
     end
 
     c68 --> a197;
@@ -292,7 +294,9 @@ graph TD;
     c51 --> a195;
     c52 --> a131;
     c52 --> a135;
+    c52 --> a136;
     c52 --> a195;
+    c52 --> a238;
     c53 --> a17;
     c53 --> a180;
     c53 --> a183;
@@ -447,6 +451,7 @@ graph TD;
     click a131 href "../adr/adr-131-resource-browse-selection-outcome.md"
     click a132 href "../adr/adr-132-env-brightness-unification.md"
     click a135 href "../adr/adr-135-library-session-store.md"
+    click a136 href "../adr/adr-136-thumbnail-abortsignal.md"
     click a137 href "../adr/adr-137-envstate-single-source-schema.md"
     click a138 href "../adr/adr-138-env-dispatcher-decouple.md"
     click a141 href "../adr/adr-141-state-split.md"
@@ -492,4 +497,5 @@ graph TD;
     click a226 href "../adr/adr-226-ground-material-spec-single-source.md"
     click a229 href "../adr/adr-229-e2e-automation-advancement.md"
     click a237 href "../adr/adr-237-split-overlong-modules.md"
+    click a238 href "../adr/adr-238-循环依赖消解二期-core-scene-根环.md"
 ```

@@ -47,7 +47,7 @@
 | GPU 能力、压缩纹理、KTX2、ASTC、BC7、ADR-189 | [GPU 压缩纹理能力探测](./gpu-capabilities.md) | [PMX 模型加载与缩略图捕获](./model-loader.md)、[场景渲染管线与后处理](./renderer.md)、[场景核心编排器（纯组装器）](./scene.md) |
 | 启动引导、初始化、bootstrap | [应用启动引导](./init.md) | [内置 AI 诊断助手 — 双适配器服务层](./ai-service.md)、[事件处理与导航系统](./events.md)、[运行模式检测](./runtime-mode.md) |
 | 资源库操作、导入模型、替换模型、替换动作、标签浏览、模型行点击 | [资源库操作](./library-actions.md) | [资源库核心](./library-core.md)、[统一动作注册表 — 菜单/NL/快捷键共享真相源](./action-registry.md)、[NL 意图解析 — LLM 文本 → 动作执行](./ai-intent-dispatcher.md) |
-| 资源库核心、资源扫描、资源索引、资源管理核心 | [资源库核心](./library-core.md) | [资源库操作](./library-actions.md)、[统一资源加载队列](./load-manager.md) |
+| 资源库核心、资源浏览层级、网格视图、缩略图流式加载、资源管理核心 | [资源库核心](./library-core.md) | [资源库操作](./library-actions.md)、[统一资源加载队列](./load-manager.md) |
 | 资源库初始化、资源库设置、资源库启动 | [资源库初始化](./library-setup.md) | [安卓文件访问（shared 模式）](./android-file-access.md) |
 | 模型库、资源库、模型浏览、加载模型、library | [资源库入口与编排](./library.md) | [统一资源加载队列](./load-manager.md) |
 | 个人灯光、灯光跟随、跟随聚光灯 | [个人灯光跟随](./lighting-follow.md) | [灯光预设系统](./lighting-presets.md)、[场景光照与阴影（barrel）](./lighting.md)、[模型生命周期操作](./model-ops.md) |
