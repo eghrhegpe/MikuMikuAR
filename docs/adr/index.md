@@ -2,7 +2,7 @@
 
 # 决策记录（ADR）
 
-> 架构决策日志，共 **240** 篇（ADR-001 起按编号递增）。决策一旦写下即不可变；状态变化以各 ADR 文件首部「状态」行为准。
+> 架构决策日志，共 **246** 篇（ADR-001 起按编号递增）。决策一旦写下即不可变；状态变化以各 ADR 文件首部「状态」行为准。
 
 ## 按状态分布
 
@@ -10,9 +10,9 @@
 |------|------|------|
 | [推进中](#推进中) | 6 | 已开工，尚未收口（含部分实施） |
 | [规划中](#规划中) | 8 | 已立项，等待实施 |
-| [已落地](#已落地) | 215 | 实施完成，代码已合入 |
+| [已落地](#已落地) | 216 | 实施完成，代码已合入 |
 | [已归档](#已归档) | 9 | 被取代、放弃、过时或搁置，保留供追溯 |
-| [其他](#其他) | 2 | 状态行缺失或表述不可归类 |
+| [其他](#其他) | 7 | 状态行缺失或表述不可归类 |
 
 > 本文件为 ADR **规范索引**（按状态分组导航，可锚点跳转）。带日期的全量列表见 [项目现状 · ADR 索引](../status.md)（附表，由 `scripts/gen-status-index.mjs` 生成）。
 
@@ -44,6 +44,7 @@
 
 | ADR | 主题 | 状态 |
 |-----|------|------|
+| [ADR-246](./adr-246-serialization-explicit-fields.md) | 序列化往返显式字段原则 —— 判别字段必须显式持久化，禁止反推 | ✅ 已立 |
 | [ADR-244](./adr-244-init-phase-split.md) | init 启动流程阶段化拆分 —— 110 行编排器按职责切分 | ✅ 已完成 |
 | [ADR-243](./adr-243-env-state-defaults-from-schema.md) | EnvState 默认值从 Schema 自动推导 —— 消除 100+ 字段双源手工映射 | ✅ 已完成 |
 | [ADR-242](./adr-242-toplevel-layering-axiom.md) | 顶层目录分层公理 —— 「纯算法层」假说的证伪与重定性 | 已完成 —— 采纳方案 C；Phase 1 |
@@ -278,5 +279,10 @@
 
 | ADR | 主题 | 状态 |
 |-----|------|------|
+| [ADR-250](./adr-250-scene-init-reentrancy.md) | 场景初始化重入与异常一致性 —— initScene 重入守护 + 中途异常状态复位 | ✅ 已立 |
+| [ADR-249](./adr-249-idb-transaction-contract.md) | IndexedDB 事务异常契约 —— complete/error/abort 三事件必须全部接线 | ✅ 已立 |
+| [ADR-248](./adr-248-derived-cache-reference-key.md) | 派生缓存依赖引用键 —— 缓存 key 必须携带依赖引用，依赖变更即失效 | ✅ 已立 |
+| [ADR-247](./adr-247-material-params-dual-path.md) | 材质参数应用双路径收敛 —— PBR 与 StandardMaterial 语义必须一致 | ✅ 已立 |
+| [ADR-245](./adr-245-babylon9-plugin-access.md) | Babylon 9.x 插件访问规范 —— 禁止桥接私有数组，统一走公开只读属性 | ✅ 已立 |
 | [ADR-149](./adr-149-material-outfit-baseline-conflict.md) | 材质系统 × 换装系统基线冲突登记 | 已登记 |
 | [ADR-133](./adr-133-android-mpr-gap.md) | Android MPR 多线程物理缺失——构建门控与架构障碍 | ⚠️ 决策二证伪 — Android WebVi… |

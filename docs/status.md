@@ -15,6 +15,12 @@
 
 | ADR | 主题 | 状态 |
 |-----|------|------|
+| ADR-250 | 场景初始化重入与异常一致性 —— initScene 重入守护 + 中途异常状态复位 | ✅ 已立（2026-08-06 立项；来源审核第 15 轮：`scene.ts` 编排器幽灵路径——`initScene` 无重入守护、`_sceneInitialized` 中途抛异常不复位。本 ADR 固化决策，实现可后续跟进） |
+| ADR-249 | IndexedDB 事务异常契约 —— complete/error/abort 三事件必须全部接线 | ✅ 已立（2026-08-06 立项；`core/backend/idb.ts` 的 `idbSet` / `idbDelete` / `idbBatchSet` 已补 `tx.onabort`，Promise 不再因 QuotaExceeded 等 abort 场景永不 settle） |
+| ADR-248 | 派生缓存依赖引用键 —— 缓存 key 必须携带依赖引用，依赖变更即失效 | ✅ 已立（2026-08-06 立项；`material.ts` `getMaterialCategory` 已从无感知的 `_matCategoryCache` 改为委托带 `mapRef` 键的 `_catCache`，陈旧缓存幽灵路径消除） |
+| ADR-247 | 材质参数应用双路径收敛 —— PBR 与 StandardMaterial 语义必须一致 | ✅ 已立（2026-08-06 立项；`material.ts` `_applyPbrMatParams` alpha 分支已对齐 StandardMaterial 语义：补 `clamp01` + `alphaCtx.opacity` 乘子 + transparencyMode 切换） |
+| ADR-246 | 序列化往返显式字段原则 —— 判别字段必须显式持久化，禁止反推 | ✅ 已立（2026-08-06 立项；bone-override 往返修复已落地：`BoneOverrideEntry` 增 `overrideRotation?: boolean`，`restoreOverrides` 优先用显式字段、旧数据回退 `!e.position` 推断） |
+| ADR-245 | Babylon 9.x 插件访问规范 —— 禁止桥接私有数组，统一走公开只读属性 | ✅ 已立（2026-08-06 立项；SSS 系两处落地修复：`material-sss.ts` / `sss-pbr-material.ts` 均从 `.plugins` 桥接改为 `subSurface` 公开属性） |
 | ADR-244 | init 启动流程阶段化拆分 —— 110 行编排器按职责切分 | ✅ 已完成（2026-08-06 落地；实施前子代理坑点审核确认 1 个阻断项——骨架示例缺 await——已先修订再实施）—— `init()` 主体压至 13 行，4 个阶段函数落地，零行为变更 |
 | ADR-243 | EnvState 默认值从 Schema 自动推导 —— 消除 100+ 字段双源手工映射 | ✅ 已完成（2026-08-06 落地；实施前子代理坑点审核无阻断项，3 个注意项已处理）—— `deriveDefaultEnvState` 上线，`state.ts` 手工 148 字段映射删除，`satisfies` 编译期防线前移至 schema 互锁 |
 | ADR-242 | 顶层目录分层公理 —— 「纯算法层」假说的证伪与重定性 | 已完成 —— 采纳方案 C；Phase 1（守护先行）+ Phase 2（目录收编 5/5）全部落地。顶层目录由 5 个收敛至 1 个（`motion-algos/`），CI 阻断环 13 → 11，分层基线 10 → 9（2026-08-06） |
