@@ -3,14 +3,13 @@
   "generatedAt": "2026-08-05",
   "entries": [
     "core/dev-hooks.ts:scene/manager/model-ops",
+    "core/dev-hooks.ts:scene/manager/outfit",
     "core/dev-hooks.ts:scene/physics/wind-physics",
     "core/dev-hooks.ts:scene/render/lighting",
     "core/dev-hooks.ts:scene/render/renderer",
     "core/dev-hooks.ts:scene/scene",
     "core/main.ts:menus/library-setup",
     "core/render-loop.ts:scene/render/performance",
-    "core/render-loop.ts:scene/scene",
-    "outfit/outfit.ts:scene/manager/material",
-    "outfit/outfit.ts:scene/shared/texture-lru"
+    "core/render-loop.ts:scene/scene"
   ]
 }

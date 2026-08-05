@@ -59,5 +59,5 @@ Model Manager：封装 `modelRegistry`、`focusedModelId`、per-model 状态 map
 
 ## 与其他子系统关系
 - 上游：`model-loader.ts` 调用注册；`model-ops.ts` 调用 `remove`
-- 下游：`material.ts`（`disposeModelMaterialState`）、`outfit/outfit-overlay`、`env/env-wetness`（`applyWetnessToInst`）
+- 下游：`material.ts`（`disposeModelMaterialState`）、`scene/manager/outfit-overlay`、`env/env-wetness`（`applyWetnessToInst`）
 - 状态源：`core/state.ts`（`modelRegistry` / `focusedModelId`）

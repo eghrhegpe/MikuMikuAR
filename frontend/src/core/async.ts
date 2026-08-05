@@ -38,7 +38,7 @@ export function waitForFrame(): Promise<void> {
  *  - backend/index.ts:_getGoAdapter()
  *  - ai/index.ts:_getGoAdapter()
  *  - ai/go-adapter.ts:_getB()
- *  - outfit/outfit.ts:_getScene()
+ *  - scene/manager/outfit.ts:_getScene()
  */
 export function makeLazyLoader<T>(loader: () => Promise<T>): () => Promise<T> {
     let _cached: T | null = null;

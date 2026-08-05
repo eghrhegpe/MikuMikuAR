@@ -104,7 +104,7 @@ describe('resetOutfit', () => {
     });
 
     it('should clear outfit state', async () => {
-        const { resetOutfit } = await import('../outfit/outfit');
+        const { resetOutfit } = await import('@/scene/manager/outfit');
         await resetOutfit('m1');
         expect(inst.activeVariant).toBeUndefined();
         expect(inst.outfitFile).toBeUndefined();
@@ -112,7 +112,7 @@ describe('resetOutfit', () => {
     });
 
     it('should be a no-op for unknown id', async () => {
-        const { resetOutfit } = await import('../outfit/outfit');
+        const { resetOutfit } = await import('@/scene/manager/outfit');
         await resetOutfit('nonexistent');
         // Should not throw
     });
@@ -135,7 +135,7 @@ describe('resetOutfit', () => {
                 },
             ],
         ]);
-        const { resetOutfit } = await import('../outfit/outfit');
+        const { resetOutfit } = await import('@/scene/manager/outfit');
         await resetOutfit('m1');
         expect(inst._origParams).toBeUndefined();
     });
@@ -151,13 +151,13 @@ describe('loadOutfits', () => {
     it('returns null when no filePath', async () => {
         const inst = createBaseInstance({ filePath: '' });
         modelRegistry.set('m1', inst);
-        const { loadOutfits } = await import('../outfit/outfit');
+        const { loadOutfits } = await import('@/scene/manager/outfit');
         const result = await loadOutfits('m1');
         expect(result).toBeNull();
     });
 
     it('returns null when model not in registry', async () => {
-        const { loadOutfits } = await import('../outfit/outfit');
+        const { loadOutfits } = await import('@/scene/manager/outfit');
         const result = await loadOutfits('nonexistent');
         expect(result).toBeNull();
     });

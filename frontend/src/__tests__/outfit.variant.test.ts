@@ -123,13 +123,13 @@ describe('applyOutfitVariant', () => {
 
     it('should return early if no outfitFile', async () => {
         inst.outfitFile = undefined;
-        const { applyOutfitVariant } = await import('../outfit/outfit');
+        const { applyOutfitVariant } = await import('@/scene/manager/outfit');
         await applyOutfitVariant('m1', '泳装');
         expect(inst.activeVariant).toBeUndefined();
     });
 
     it('should capture _origTextures on first apply', async () => {
-        const { applyOutfitVariant } = await import('../outfit/outfit');
+        const { applyOutfitVariant } = await import('@/scene/manager/outfit');
         expect(inst._origTextures).toBeUndefined();
         await applyOutfitVariant('m1', '泳装');
         expect(inst._origTextures).toBeDefined();
@@ -140,19 +140,19 @@ describe('applyOutfitVariant', () => {
     });
 
     it('should set activeVariant after apply', async () => {
-        const { applyOutfitVariant } = await import('../outfit/outfit');
+        const { applyOutfitVariant } = await import('@/scene/manager/outfit');
         await applyOutfitVariant('m1', '校服');
         expect(inst.activeVariant).toBe('校服');
     });
 
     it('should apply byMaterial override over byCategory', async () => {
-        const { applyOutfitVariant } = await import('../outfit/outfit');
+        const { applyOutfitVariant } = await import('@/scene/manager/outfit');
         await applyOutfitVariant('m1', '校服');
         expect(inst.activeVariant).toBe('校服');
     });
 
     it("should restore originals on '默认'", async () => {
-        const { applyOutfitVariant } = await import('../outfit/outfit');
+        const { applyOutfitVariant } = await import('@/scene/manager/outfit');
         await applyOutfitVariant('m1', '泳装');
         expect(inst.activeVariant).toBe('泳装');
         await applyOutfitVariant('m1', '默认');
@@ -160,20 +160,20 @@ describe('applyOutfitVariant', () => {
     });
 
     it('should be a no-op for unknown variant', async () => {
-        const { applyOutfitVariant } = await import('../outfit/outfit');
+        const { applyOutfitVariant } = await import('@/scene/manager/outfit');
         inst.activeVariant = '泳装';
         await applyOutfitVariant('m1', '不存在');
         expect(inst.activeVariant).toBe('泳装');
     });
 
     it('should apply "all" slot fallback', async () => {
-        const { applyOutfitVariant } = await import('../outfit/outfit');
+        const { applyOutfitVariant } = await import('@/scene/manager/outfit');
         await applyOutfitVariant('m1', '演出服');
         expect(inst.activeVariant).toBe('演出服');
     });
 
     it('should not re-capture _origTextures on second apply', async () => {
-        const { applyOutfitVariant } = await import('../outfit/outfit');
+        const { applyOutfitVariant } = await import('@/scene/manager/outfit');
         await applyOutfitVariant('m1', '泳装');
         const firstCapture = inst._origTextures;
         await applyOutfitVariant('m1', '校服');

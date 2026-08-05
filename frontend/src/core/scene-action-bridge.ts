@@ -142,9 +142,9 @@ export interface SceneActions {
     attachBeatDetector: (detector: unknown) => void;
     /** 读取流式播放器（scene 调用），由 core/audio 注册 */
     getStreamPlayer: () => unknown;
-    /** 加载换装（scene 初始化调用），由 outfit/outfit 注册 */
+    /** 加载换装（scene 初始化调用），由 scene/manager/outfit 注册 */
     loadOutfits: (id: string) => Promise<void>;
-    /** 应用换装变体（scene-serialize 调用），由 outfit/outfit 注册 */
+    /** 应用换装变体（scene-serialize 调用），由 scene/manager/outfit 注册 */
     applyOutfitVariant: (id: string, variantName: string) => Promise<void>;
     /** 设置音量（scene-serialize 调用），由 core/audio 注册 */
     setVolume: (v: number) => void;

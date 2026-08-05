@@ -8,9 +8,8 @@
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
 | 核心基础设施 | 130 | 765 |
-| 3D 场景 | 123 | 1171 |
+| 3D 场景 | 125 | 1179 |
 | 菜单 & UI | 76 | 388 |
-| 换装 & 音频 | 2 | 8 |
 | 动作算法 | 18 | 138 |
 
 ## 核心基础设施
@@ -1321,6 +1320,14 @@
 | `setModelWireframe()` | `scene/manager/model-ops:122` | — |
 | `setPhysicsCategory()` | `scene/manager/model-ops:152` | — |
 | `stopVMD()` | `scene/manager/model-ops:239` | — |
+| `disposeOverlay()` | `scene/manager/outfit-overlay:353` | 释放 overlay mesh 并清理引用。 |
+| `hideMaterials()` | `scene/manager/outfit-overlay:301` | 隐藏指定材质名的 PMX mesh（保存原始可见性用于恢复）。 |
+| `loadOverlay()` | `scene/manager/outfit-overlay:202` | 加载 FBX overlay 并尝试绑定到模型 skeleton。 |
+| `restoreMaterials()` | `scene/manager/outfit-overlay:333` | 恢复被 hideMaterials 隐藏的 PMX mesh 可见性。 |
+| `applyOutfitVariant()` | `scene/manager/outfit:555` | — |
+| `loadOutfits()` | `scene/manager/outfit:119` | — |
+| `resetOutfit()` | `scene/manager/outfit:743` | — |
+| `setSceneRef()` | `scene/manager/outfit:39` | 由 scene.ts 在场景初始化完成后注入当前 scene 实例 |
 | `tryApplyPbrMaterialBuilder()` | `scene/manager/pbr-builder-init:12` | 动态导入 PBRMaterialBuilder 并覆盖 MmdModelLoader.SharedMaterialBuilder。 |
 | `auditMissingTextures()` | `scene/manager/pmx-texture-audit:46` | 识别 PMX 声明但目录中缺失的纹理。 |
 | `parsePmxTexturePaths()` | `scene/manager/pmx-texture-audit:31` | 解析 PMX 声明的纹理路径清单（相对路径，原样保留目录前缀与分隔符）。 |
@@ -2351,19 +2358,6 @@
 | `preloadDownloadWatchState()` | `menus/settings:13` | — |
 | `refreshSettingsRoot()` | `menus/settings:18` | — |
 | `showSettings()` | `menus/settings:18` | — |
-
-## 换装 & 音频
-
-| 符号 | 文件:行 | 说明 |
-|------|--------|------|
-| `disposeOverlay()` | `outfit/outfit-overlay:353` | 释放 overlay mesh 并清理引用。 |
-| `hideMaterials()` | `outfit/outfit-overlay:301` | 隐藏指定材质名的 PMX mesh（保存原始可见性用于恢复）。 |
-| `loadOverlay()` | `outfit/outfit-overlay:202` | 加载 FBX overlay 并尝试绑定到模型 skeleton。 |
-| `restoreMaterials()` | `outfit/outfit-overlay:333` | 恢复被 hideMaterials 隐藏的 PMX mesh 可见性。 |
-| `applyOutfitVariant()` | `outfit/outfit:555` | — |
-| `loadOutfits()` | `outfit/outfit:119` | — |
-| `resetOutfit()` | `outfit/outfit:743` | — |
-| `setSceneRef()` | `outfit/outfit:39` | 由 scene.ts 在场景初始化完成后注入当前 scene 实例 |
 
 ## 动作算法
 

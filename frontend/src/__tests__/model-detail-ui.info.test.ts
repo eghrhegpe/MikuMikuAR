@@ -108,7 +108,7 @@ vi.mock('babylon-mmd/esm/Runtime/Optimized/Animation/mmdWasmRuntimeModelAnimatio
 );
 vi.mock('../scene/scene', () => mockSceneScene());
 vi.mock('../scene-menu', () => mockSceneMenu());
-vi.mock('../outfit/outfit', () => mockOutfitModule());
+vi.mock('@/scene/manager/outfit', () => mockOutfitModule());
 vi.mock('../motion/lipsync', () => mockLipsync());
 vi.mock('../motion/procedural-motion', () => mockProceduralMotion());
 vi.mock('../motion/beat-detector', () => mockBeatDetectorModule());

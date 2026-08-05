@@ -1,7 +1,7 @@
 # ADR-242: 顶层目录分层公理 —— 「纯算法层」假说的证伪与重定性
 
 > **日期**: 2026-08-06
-> **状态**: 部分实现 —— 采纳方案 C；Phase 1（守护先行）已落地；Phase 2（目录收编）5 项中 4 项完成，仅剩 `outfit/` 拆分
+> **状态**: 已完成 —— 采纳方案 C；Phase 1（守护先行）+ Phase 2（目录收编 5/5）全部落地。顶层目录由 5 个收敛至 1 个（`motion-algos/`），CI 阻断环 13 → 11，分层基线 10 → 9
 > **关联**：ADR-191(core/utils 神桶拆分)、ADR-236/237/238(循环依赖重构)、ADR-226(地面 spec 单源)
 
 ## 背景
@@ -141,5 +141,8 @@ npm run gen:layering-baseline # 消除反向边后收紧基线
 4. `outfit/` 拆分（分两步）。审计发现该目录混装了**两种性质完全不同**的模块，「outfit（换装）」这一目录名对其中之一属**语义错配**：
    - 🅰️ ✅ **已完成（Phase 2-5a）** `outfit/audio.ts` → `core/audio.ts`。该文件是音乐播放器（588 行），与「换装」无任何概念关联，且**零 `@babylonjs/core` 依赖、零 `scene/` 依赖**（仅用 babylon-mmd 的 `StreamAudioPlayer`），消费面横跨 `core/load-manager` 与 3 个 menus 面板 —— 是典型的 core 层公共服务。语义邻居 `core/audio-bus.ts`（ADR-088 音效总线）本就在 core。30 处引用统一改写为 `@/core/audio`。
      - **附带修复**：迁入 core 后，原 `import type { BeatDetector } from '@/motion-algos/beat-detector'` 会构成新环 `core → motion-algos → core`（本仓 `check-circular` 依据 `_lib/source-graph.mjs` 将 type import 一并计边）。处置方式为**消除依赖本身而非放宽检查**：在 `core/audio.ts` 定义最小结构接口 `BeatSink`（`attach`/`setVolume`/`reset`/`dispose` 四方法），调用方传入的 `BeatDetector` 实例按结构类型自动兼容。环总数回落至迁移前的 20（白名单 8 / 阻断 12）。
-   - 🅱️ **待办** `outfit/outfit.ts`(804 行) + `outfit/outfit-overlay.ts`(385 行) → `scene/manager/`。两者均持运行时 Babylon 依赖（`Texture`/`StandardMaterial`/`Mesh`/`Bone`/`Skeleton`），属场景绑定层。迁入后两条 R3 反向边（`→scene/manager/material` 的 `_catOf`、`→scene/shared/texture-lru`）降级为同层引用自动消解，活环 `core → outfit → core` 亦随之改写。同步评估 `_catOf` 下划线私有前缀的跨文件穿透是否改为公开导出。
+   - 🅱️ ✅ **已完成（Phase 2-5b）** `outfit/outfit.ts`(804 行) + `outfit/outfit-overlay.ts`(385 行) → `scene/manager/`。两者均持运行时 Babylon 依赖（`Texture`/`StandardMaterial`/`Mesh`/`Bone`/`Skeleton`）+ 模块级 `_sceneRef` 状态 + `disposeOverlay` 生命周期，属场景绑定层无疑；语义邻居 `material.ts` / `model-loader.ts` 均在 `scene/manager/`。
+     - **收益**：两条 R3 反向边（`→scene/manager/material` 的 `_catOf`、`→scene/shared/texture-lru`）降级为同域引用自动消解，分层基线 10 → 9；活环 `core → outfit → core` 消失，CI 阻断环 12 → **11**。
+     - **代价**：`core/dev-hooks.ts:7` 的 `loadOutfits`/`applyOutfitVariant` 引用显式化为 R2 边 `core → scene/manager/outfit`。至此 `dev-hooks.ts` 已累计 **6 条** core→scene 反向边，占基线总量 2/3 —— 它是调试钩子聚合点，本质上是「core 位置上的 scene 消费者」，**建议后续整体迁至 `scene/` 或全量改走 ADR-238 桥接注册**，单独立项处置。
+     - **顶层目录归零**：`frontend/src/` 顶层算法目录 2 → **1**，仅剩 `motion-algos/`（ADR-242 认定的唯一名实相符者）。`check-layering.mjs` 的 `TOPLEVEL_ALGO` 同步收敛。
 5. ~~`motion-algos/footstep-detect-fallback.ts` → `scene/motion/`~~ ✅ **已完成（Phase 2-4）**：迁至 `scene/motion/footstep-detect-fallback.ts`。持 observer 生命周期 + 运行时 `Scene` 依赖，属绑定层，顶层安置为分层颠倒。收益：R3 反向边 `→scene/env/env-impl` 随迁移自动消解，分层基线 11 → 10。副作用：环白名单中 5 条含 `motion-algos` 段的 key 因拓扑重命名失配（`motion-algos` → `scene/motion`），已外科式改写；环总数 20（白名单 8 / 阻断 12）与迁移前完全一致。

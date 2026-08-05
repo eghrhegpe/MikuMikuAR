@@ -410,7 +410,9 @@ MikuMikuAR/
         │   │   ├── model-manager.ts  # 模型管理器
         │   │   ├── model-loader.ts   # 模型加载器
         │   │   ├── model-ops.ts      # 模型操作
-        │   │   └── material.ts       # 材质管理
+        │   │   ├── material.ts       # 材质管理
+        │   │   ├── outfit.ts         # 换装加载/应用/重置 + 自动发现（ADR-242 由顶层收编）
+        │   │   └── outfit-overlay.ts # 换装覆盖层（ADR-242 由顶层收编）
         │   ├── motion/               # ★ 动作桥接层（ADR-079 感知层 + ADR-086 猫步）
         │   │   ├── perception.ts     # 感知层总入口（呼吸/眨眼/注视/表情/平衡/LipSync）
         │   │   ├── perception-balance.ts    # 平衡系统
@@ -556,10 +558,6 @@ MikuMikuAR/
         │   ├── feet-adjustment-math.ts  # 脚部调整数学（ADR-085）
         │   ├── footstep-detect.ts       # 脚步声检测（ADR-088）
         │   └── pose-preset.ts           # 姿势预设
-        │
-        ├── outfit/                   # 换装系统
-        │   ├── outfit.ts           # 加载/应用/重置 + 自动发现
-        │   └── outfit-overlay.ts   # 换装覆盖层
         │
         ├── __tests__/                # 测试夹具
         │   ├── mocks/
@@ -777,9 +775,9 @@ applyOutfitVariant(id, variantName)
 | `internal/app/app.go:LoadOutfitFile` | Go binding: 读 outfits.json |
 | `internal/app/app.go:ListSubDirs` | Go binding: 列子目录（自动发现） |
 | `core/types.ts:OutfitFile/OutfitVariant/OutfitSlot` | 类型定义 |
-| `outfit/outfit.ts:loadOutfits` | 加载 + 自动发现 |
-| `outfit/outfit.ts:applyOutfitVariant` | 核心贴图替换（含 _origTextures 快照） |
-| `outfit/outfit.ts:resetOutfit` | 回退原始贴图 |
+| `scene/manager/outfit.ts:loadOutfits` | 加载 + 自动发现 |
+| `scene/manager/outfit.ts:applyOutfitVariant` | 核心贴图替换（含 _origTextures 快照） |
+| `scene/manager/outfit.ts:resetOutfit` | 回退原始贴图 |
 | `menus/outfit-ui.ts:buildOutfitLevel` | UI 子菜单 |
 | `menus/model-preset.ts:ModelPresetFile.outfitVariant` | 预设序列化 |
 | `scene/scene-serialize.ts:SceneFile.model.outfitVariant` | 场景序列化 |

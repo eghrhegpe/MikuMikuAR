@@ -7,11 +7,11 @@ import { Skeleton } from '@babylonjs/core/Bones/skeleton';
 import { ImportMeshAsync } from '@babylonjs/core/Loading/sceneLoader';
 import type { Scene } from '@babylonjs/core/scene';
 
-import { type ModelInstance } from '../core/config';
-import { readFileBytes } from '../core/wails-bindings';
+import { type ModelInstance } from '@/core/config';
+import { readFileBytes } from '@/core/wails-bindings';
 import { normPath } from '@/core/path';
-import { logWarn } from '../core/logger';
-import { safeCallVoid } from '../core/safe-call';
+import { logWarn } from '@/core/logger';
+import { safeCallVoid } from '@/core/safe-call';
 import { t } from '@/core/i18n/t';
 import { reportResourceWarning } from '@/core/resource-warning-sink';
 

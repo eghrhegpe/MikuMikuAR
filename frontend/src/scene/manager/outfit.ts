@@ -4,27 +4,27 @@ import { observe } from '@/core/observer-handle';
 
 import { Texture } from '@babylonjs/core/Materials/Textures/texture';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
-import { LoadOutfitFile, ListSubDirs, readFileBytes, FileExists } from '../core/wails-bindings';
-import { readTextureWithLRU } from '../scene/shared/texture-lru';
+import { LoadOutfitFile, ListSubDirs, readFileBytes, FileExists } from '@/core/wails-bindings';
+import { readTextureWithLRU } from '@/scene/shared/texture-lru';
 import {
     modelRegistry,
     OutfitFile,
     OutfitVariant,
     OutfitSlot,
     ModelInstance,
-} from '../core/config';
-import { showInfoToast } from '../core/toast';
+} from '@/core/config';
+import { showInfoToast } from '@/core/toast';
 import type { Scene } from '@babylonjs/core/scene';
 import { getBaseName, normPath, getDirPath } from '@/core/path';
 import { delay, LoadingGuard } from '@/core/async';
 import { logWarn, logInfo } from '@/core/logger';
 import { reportResourceWarning } from '@/core/resource-warning-sink';
 import { col3FromTriple } from '@/core/color-helpers';
-import { _catOf } from '../scene/manager/material';
-import { triggerAutoSave } from '../core/config';
+import { _catOf } from './material';
+import { triggerAutoSave } from '@/core/config';
 import { loadOverlay, hideMaterials, restoreMaterials, disposeOverlay } from './outfit-overlay';
-import type { MmdStandardMaterial } from '../core/types';
-import { t } from '../core/i18n/t';
+import type { MmdStandardMaterial } from '@/core/types';
+import { t } from '@/core/i18n/t';
 
 /** 恢复默认变体的标识名（非 outfits.json 中定义的变体名） */
 const RESET_VARIANT = '默认';
@@ -46,7 +46,7 @@ async function _getScene(): Promise<Scene> {
     }
     if (!_sceneLoading) {
         _sceneLoading = (async () => {
-            const mod = await import('../scene/scene');
+            const mod = await import('@/scene/scene');
             _sceneRef = mod.scene;
             _sceneLoading = null;
             return _sceneRef;

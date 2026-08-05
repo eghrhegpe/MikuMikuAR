@@ -155,7 +155,7 @@ describe('outfit helper functions (via integration)', () => {
     });
 
     it('should apply params and tint from variant', async () => {
-        const { applyOutfitVariant } = await import('../outfit/outfit');
+        const { applyOutfitVariant } = await import('@/scene/manager/outfit');
         await applyOutfitVariant('m1', 'test');
         expect(inst.activeVariant).toBe('test');
     });
@@ -171,7 +171,7 @@ describe('outfit helper functions (via integration)', () => {
                 },
             },
         };
-        const { applyOutfitVariant } = await import('../outfit/outfit');
+        const { applyOutfitVariant } = await import('@/scene/manager/outfit');
         await applyOutfitVariant('m1', 'catTest');
         expect(inst.activeVariant).toBe('catTest');
     });
@@ -185,7 +185,7 @@ describe('outfit helper functions (via integration)', () => {
                 tint: [0.5, 0.5, 0.5],
             },
         };
-        const { applyOutfitVariant } = await import('../outfit/outfit');
+        const { applyOutfitVariant } = await import('@/scene/manager/outfit');
         await applyOutfitVariant('m1', 'allTest');
         expect(inst.activeVariant).toBe('allTest');
     });

@@ -34,7 +34,7 @@ use_when:
 - `reportResourceWarning(message)` — 上报一条资源加载警告（自动去重，窗口内合并）
 
 ## 与其他子系统关系
-- 被 `core/audio.ts` / `outfit/outfit-overlay.ts` / `outfit/outfit.ts`（换装贴图 / 音频）调用
+- 被 `core/audio.ts` / `scene/manager/outfit-overlay.ts` / `scene/manager/outfit.ts`（换装贴图 / 音频）调用
 - 被 `scene/manager/model-loader.ts`（模型纹理）调用
 - 依赖 `@/core/toast`（showInfoToast）、`@/core/i18n/t`、`@/core/logger`（logWarn）
 

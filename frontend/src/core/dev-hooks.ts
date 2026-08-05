@@ -4,7 +4,7 @@
 // business logic shared with production paths, so it stays out of the Split
 // layer's hot import graph.
 import { scene, engine, focusedModel, modelManager, isHeadless } from '../scene/scene';
-import { loadOutfits, applyOutfitVariant } from '../outfit/outfit';
+import { loadOutfits, applyOutfitVariant } from '@/scene/manager/outfit';
 import { envState, mmdRuntime } from './config';
 import { isWindPhysicsActive } from '@/scene/physics/wind-physics';
 import { removeFocusedModel } from '../scene/manager/model-ops';

@@ -46,4 +46,4 @@ DEV 仅有的 E2E capture + scene inspection 钩子，从 `main.ts` 拆分而来
 
 ## 与其他子系统关系
 - 依赖 `scene/scene` 获取场景/引擎/聚焦模型引用。
-- 依赖 `outfit/outfit` 的 `loadOutfits` / `applyOutfitVariant` 驱动换装。
+- 依赖 `scene/manager/outfit` 的 `loadOutfits` / `applyOutfitVariant` 驱动换装。

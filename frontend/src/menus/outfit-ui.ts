@@ -4,7 +4,7 @@
 import { modelRegistry, cardContainer, PopupLevel } from '../core/config';
 import { feedbackInfo } from '../core/feedback';
 import type { OutfitFile } from '../core/config';
-import { loadOutfits, applyOutfitVariant, resetOutfit } from '../outfit/outfit';
+import { loadOutfits, applyOutfitVariant, resetOutfit } from '@/scene/manager/outfit';
 import { createIconifyIcon } from '../core/icons';
 import { slideRow } from '../core/ui-helpers';
 import { LoadingGuard } from '../core/async';

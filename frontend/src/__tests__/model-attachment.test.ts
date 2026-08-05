@@ -7,7 +7,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 // ── 重依赖 mock（no-op，避免拉起应用层）──
-vi.mock('@/outfit/outfit-overlay', () => ({
+vi.mock('@/scene/manager/outfit-overlay', () => ({
     disposeOverlay: vi.fn(),
     restoreMaterials: vi.fn(),
 }));

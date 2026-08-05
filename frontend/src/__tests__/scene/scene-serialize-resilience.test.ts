@@ -148,7 +148,7 @@ vi.mock('../../scene/scene-migrate', () => ({
     migratePerceptionData: (p: unknown) => p ?? null,
     migratePerceptionFromProcMotion: () => ({}),
 }));
-vi.mock('../../outfit/outfit', () => ({ loadOutfits: vi.fn(), applyOutfitVariant: vi.fn() }));
+vi.mock('@/scene/manager/outfit', () => ({ loadOutfits: vi.fn(), applyOutfitVariant: vi.fn() }));
 vi.mock('../../core/toast', () => ({ showInfoToast: vi.fn() }));
 vi.mock('../../core/feedback', () => ({ feedbackError: vi.fn(), feedbackInfo: vi.fn() }));
 vi.mock('../../core/logger', () => ({ logWarn: vi.fn() }));
