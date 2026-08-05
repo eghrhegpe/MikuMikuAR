@@ -218,10 +218,13 @@ export class SssPBRMaterial extends PBRMaterial {
     // ========== 克隆 ==========
 
     public clone(name: string, cloneTexturesOnlyOnce?: boolean, rootUrl?: string): SssPBRMaterial {
-        // [fix P3] 委托基类完整克隆全部 PBR 状态（纹理通道/alpha/透明度/emissive/插件等），
-        // 再补 SSS 私有状态。此前手拷 albedoColor/roughness/metallic 会导致纹理与透明度
-        // 在克隆后丢失（静默视觉回归）。返回实例由调用方 dispose，无额外泄漏。
-        const result = super.clone(name, cloneTexturesOnlyOnce, rootUrl) as unknown as SssPBRMaterial;
+        // [fix P1] super.clone 创建的是普通 PBRMaterial（原型链 PBRMaterial.prototype），
+        // 用 setPrototypeOf 恢复 SssPBRMaterial 原型，否则 _syncSubSurface 等方法不存在，
+        // 且返回实例的 SSS setter 不会生效。纹理/alpha/透明度等 PBR 状态由基类完整克隆。
+        const result = Object.setPrototypeOf(
+            super.clone(name, cloneTexturesOnlyOnce, rootUrl),
+            SssPBRMaterial.prototype
+        ) as unknown as SssPBRMaterial;
         result._sssEnabled = this._sssEnabled;
         result._sssPower = this._sssPower;
         result._sssColor = this._sssColor.clone();

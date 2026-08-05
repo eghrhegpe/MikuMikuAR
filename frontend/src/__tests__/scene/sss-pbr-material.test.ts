@@ -38,10 +38,6 @@ const MockPBR = vi.hoisted(() => {
             (this as any).getScene = vi.fn(() => mockScene);
             (this as any).markDirty = vi.fn();
             (this as any).dispose = vi.fn();
-            (this as any).clone = vi.fn().mockImplementation(function () {
-                const c = new Base('cloned');
-                return c;
-            });
         }
         // PBRMaterial properties
         albedoColor = new Color3(1, 1, 1);
@@ -50,7 +46,16 @@ const MockPBR = vi.hoisted(() => {
         getScene = vi.fn(() => mockScene);
         markDirty = vi.fn();
         dispose = vi.fn();
-        clone = vi.fn();
+        // [fix P2] clone 必须是原型方法（模拟 Babylon 基类 clone 在原型上的行为），
+        // 不能用实例字段——实例属性会遮蔽 SssPBRMaterial.prototype.clone，
+        // 使真实 clone 实现永不执行（旧 mock 因此假绿）。
+        clone(name: string): Base {
+            const c = new Base(name);
+            c.albedoColor = this.albedoColor.clone();
+            c.roughness = this.roughness;
+            c.metallic = this.metallic;
+            return c;
+        }
     }
     return Base;
 });
@@ -200,11 +205,21 @@ describe('SssPBRMaterial — property defaults & setters', () => {
     });
 
     describe('clone', () => {
-        it('clones without throwing', () => {
+        it('克隆结果是 SssPBRMaterial 且 SSS 状态完整复制并同步到底层 subSurface', () => {
             const mat = new SssPBRMaterial('test');
             mat.isSssEnabled = true;
             mat.sssPower = 0.8;
-            expect(() => mat.clone('cloned')).not.toThrow();
+            mat.sssColor = new Color3(1.0, 0.6, 0.4);
+            const c = mat.clone('cloned');
+            expect(c).toBeInstanceOf(SssPBRMaterial);
+            expect(c.isSssEnabled).toBe(true);
+            expect(c.sssPower).toBe(0.8);
+            expect(c.sssColor.r).toBe(1.0);
+            // 底层 subSurface 为新实例且已同步（P1 修复后原型恢复，_syncSubSurface 真实执行）
+            const ss = (c as any).subSurface;
+            expect(ss).toBeDefined();
+            expect(ss.isTranslucencyEnabled).toBe(true);
+            expect(ss.translucencyIntensity).toBe(0.8);
         });
     });
 

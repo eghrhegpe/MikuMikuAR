@@ -12,7 +12,6 @@ import { clamp01 } from '@/core/clamp';
 import { logWarn } from '@/core/logger';
 import { modelRegistry, triggerAutoSave } from '@/core/config';
 import { getMatCatGroups } from './material';
-import type { PBRSubSurfaceConfiguration } from '@babylonjs/core/Materials/PBR/pbrSubSurfaceConfiguration';
 
 /** SSS 参数 */
 export interface SssParams {
