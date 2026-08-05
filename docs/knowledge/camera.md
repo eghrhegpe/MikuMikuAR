@@ -18,6 +18,7 @@ tests:
   - frontend/src/__tests__/camera.adr100.serialization.test.ts
   - frontend/src/__tests__/camera.presets.test.ts
   - frontend/src/__tests__/camera.vmd-state.test.ts
+  - frontend/src/__tests__/camera-mode-guard.test.ts
 adr:
   - ADR-035
   - ADR-100

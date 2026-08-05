@@ -608,7 +608,8 @@ export function getCameraState(): CameraState {
 export function setCameraState(s: CameraState): void {
     // Switch to the saved mode first (creates the right camera type),
     // then restore the preset over the live state.
-    let mode = s.mode || s.preset.mode;
+    // [fix P3] preset 为可选反序列化字段，s.mode 缺失时不得裸访问 s.preset.mode
+    let mode = s.mode ?? s.preset?.mode ?? 'orbit';
     // [audit:P3] 反序列化守卫：存档 mode 来自 JSON 恢复，无编译期保护；
     // 非法值会使下方 LEGACY_MODE_MAP[mode] 为 undefined，并在 s.control 也缺失时
     // 访问 undefined.control 抛 TypeError（场景存档恢复崩溃）。
