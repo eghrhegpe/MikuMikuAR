@@ -220,21 +220,32 @@ func (a *App) writeConfig(cfg *Config) error {
 	return nil
 }
 
-// writeIndexAfterScan runs a full scan with the given cfg snapshot and writes index.json.
+// writeIndexAfterScan runs a full scan and writes index.json.
 // Caller must NOT hold configMu: the scan can take seconds (8 categories, recursive
 // walks), so it must run outside the write lock to avoid blocking all GetConfig readers.
 // Config persistence itself is done by updateConfig before calling this.
 //
-// indexMu 串行化 scan+write：并发 updateConfig(rescan=true) 若交错执行，最后写 index
-// 的必须是最后持久化的 config（indexMu 获取顺序 = configMu 释放顺序），避免旧快照
-// 覆盖新 index（config.json=B 而 index.json=A 的永久陈旧状态）。
+// indexMu 串行化 scan+write 防止交错写出半成品；但互斥锁不保证获取顺序（Go 调度器
+// 可插队、Mutex 非 FIFO），快照可能已过期——并发 updateConfig(rescan=true) 中后
+// 持久化的配置可能先完成扫描。故持 indexMu 后重读当前已持久化配置再扫描：保证
+// index.json 始终对应最新 config.json，杜绝「config.json=B 而 index.json=A」的
+// 永久陈旧状态。cachedCfg 采用 copy-on-write（updateConfig 先深拷贝再 mutate），
+// 读出的指针在锁外不会被就地修改，可安全使用。
 func (a *App) writeIndexAfterScan(cfg *Config) error {
 	a.indexMu.Lock()
 	defer a.indexMu.Unlock()
 
+	// 重读当前配置：快照可能已过期（见上注释）。
+	fresh := cfg
+	a.configMu.RLock()
+	if latest, err := a.getConfigUnsafe(); err == nil && latest != nil {
+		fresh = latest
+	}
+	a.configMu.RUnlock()
+
 	// Scan and write index — pass cfg directly, don't go through ScanModelDir
 	// which would re-acquire configMu.RLock() and deadlock.
-	models, err := a.scanAllCategories(cfg)
+	models, err := a.scanAllCategories(fresh)
 	if err != nil {
 		return err
 	}
@@ -242,7 +253,7 @@ func (a *App) writeIndexAfterScan(cfg *Config) error {
 	if err != nil {
 		return err
 	}
-	dir, err := settingDir(cfg)
+	dir, err := settingDir(fresh)
 	if err != nil {
 		return err
 	}
