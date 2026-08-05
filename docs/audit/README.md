@@ -91,6 +91,8 @@
 | 日期 | 模块 | 文件 | 结论 | 报告 |
 |------|------|------|------|------|
 | 2026-07-31 | AI/安全 · 换装 · 物理桥 · Relay | `core/ai/*`, `outfit/outfit.ts`, `physics/physics-bridge.ts`, `relay/src/worker.js` | ✅ 通过（1×P2 待并入下轮） | [查看](2026-07-31-ai-outfit-physics-relay-audit.md) |
+| 2026-08-06 | 第 10 轮：核心基础设施 | `core/state·init·render-loop·events·audio-bus·fileservice·load-manager`, `scene/scene`, `manager/*`, `camera/*`, `motion-pipeline`, `physics/*`, `render/*` | 18 模块：8✅ / 9⚠️ / 1❌（P1×4，已修 6 项） | [查看](2026-08-06-round11-core-backend-serialize-motion-menu.md)（同文件附第 10 轮结论于对话记录） |
+| 2026-08-06 | 第 11 轮：后端/序列化/动作/菜单 | `core/backend/*`, `action-registry`, `runtime-bridge`, `scene-serialize`, `material`, `ar/*`, `motion-intent·history·retargeter`, `transform-*`, `menu`, `render-menu`, `library-*` | 16 模块：5✅ / 10⚠️ / 1❌（P1×3：ar-camera 死锁、motion-history 撤销栈、library-actions 并发） | [查看](2026-08-06-round11-core-backend-serialize-motion-menu.md) |
 
 ---
 
