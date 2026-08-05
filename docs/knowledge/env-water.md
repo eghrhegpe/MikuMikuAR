@@ -71,6 +71,7 @@ invariants:
   - disposeWater 级联释放水面 RT + 材质 + 镜像相机
   - 涟漪（ripple）独立于水面主体
   - 水下过渡效果与水面可见性联动
+  - groundRippleTex 归 env-water-fx 独占拥有，仅 disposeGroundRipples 可释放；地面材质只借用为 bumpTexture，重建时只脱离不 dispose
 
 use_when:
   - 水面
@@ -97,6 +98,7 @@ use_when:
 - 被 `env-impl.ts` 调用初始化。
 - 参数来源：`envState.water`。
 - 反射：可能使用 `env-reflection.ts` 的反射技术。
+- 向 [`env-ground`](./env-ground.md) 出借地面涟漪纹理：地面侧经 `getGroundRippleTexture(scene)` 取得后挂到材质 `bumpTexture`；几何映射所需的地面中心/尺寸由 `setGroundGeometryProvider` 反向注入（避免 env-water→env-ground 循环依赖）。
 
 ## UI 入口
 
@@ -105,6 +107,7 @@ use_when:
 ## 不变量
 - 水面反射 RT（RenderTexture）在 `disposeWater` 中释放。
 - 水面对象在场景 dispose 时级联释放。
+- **地面涟漪纹理所有权（跨模块契约）**：`groundRippleTex`（`env-water-fx.ts` 模块级 `_groundRippleTex`，256² DynamicTexture）由本系统独占拥有，唯一释放点是 `disposeGroundRipples()`（`disposeWater` / `disposeGround` 调用）。地面材质**仅借用**它作为 `bumpTexture`，属外部引用：地面重建/材质销毁时必须**只脱离不 dispose**（`env-ground.ts` 按 `tex.name !== 'groundRippleTex'` 跳过），否则 env-water-fx 侧持有已销毁引用，涟漪静默失效。
 - 小波细节波受 `smallWaveEnabled` 门控：关闭时 `_syncWaterUniforms` 向 shader 送 `smallWaveHeight=0`（水面呈纯净反射面），字段缺失时 `?? true` 兜底为开启。此为水面功能开关体系试点，复用地面 `folder + headerToggle` 模式（开关只控 shader 输出，不联动置灰 slider）。
 
 ## 菜单入口（去哪找 UI）

@@ -289,7 +289,7 @@
 | [ADR-207](../adr/adr-207-motion-menu-restructure.md) | 动作菜单重构 —— 程序化动作可加载化 + 双面板对称 | [场景序列化与自动保存](./scene-serialize.md) |
 | [ADR-212](../adr/adr-212-naming-vs-functionality-audit.md) | 命名 vs 翻译 vs 实际功能错位系统审计与治理 | [环境碰撞控制](./env-collision.md) · [环境重力控制](./env-gravity.md) · [确定性哈希与值噪声](./hash-noise.md) |
 | [ADR-215](../adr/adr-215-eliminate-prop-kind.md) | 取消「道具」资源类型 — 模型附属关系替代 prop + accessory 体系 | [模型注册表与生命周期管理](./model-manager.md) · [场景序列化与自动保存](./scene-serialize.md) |
-| [ADR-226](../adr/adr-226-ground-material-spec-single-source.md) | 地面材质单一事实源重构（GroundMaterialSpec） | [地面材质单一事实源（GroundMaterialSpec）](./env-ground-spec.md) |
+| [ADR-226](../adr/adr-226-ground-material-spec-single-source.md) | 地面材质单一事实源重构（GroundMaterialSpec） | [地面材质单一事实源（GroundMaterialSpec）](./env-ground-spec.md) · [地面系统](./env-ground.md) · [地形生成器](./env-terrain.md) |
 | [ADR-229](../adr/adr-229-e2e-automation-advancement.md) | E2E 自动化推进 —— 从 schema 到测试零映射 | [渲染层 DOM 契约单源](./dom-contract.md) |
 | [ADR-237](../adr/adr-237-split-overlong-modules.md) | 超限模块拆分计划 —— 250LOC 天花板的优先级拆解路线图 | [程序化动作系统](./proc-motion-bridge.md) · [多 VMD 叠加系统](./vmd-layers.md) |
 | [ADR-238](../adr/adr-238-循环依赖消解二期-core-scene-根环.md) | 循环依赖消解第二期 —— core→scene 根环与 motion/outfit 互依赖拆解 | [E2E 状态读取器注入桥](./e2e-state-bridge.md) · [资源库核心](./library-core.md) · [场景动作注入桥](./scene-action-bridge.md) · [主题纯函数叶](./theme.md) · [UI 行为注入桥](./ui-action-bridge.md) |

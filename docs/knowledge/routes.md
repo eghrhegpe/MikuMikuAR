@@ -31,8 +31,8 @@
 | 碰撞开关、身体碰撞、地面碰撞、WASM 物理碰撞 | [环境碰撞控制](./env-collision.md) | [环境重力控制](./env-gravity.md) |
 | 环境调度、破循环依赖、dispatch | [环境变更分发回调（破循环依赖）](./env-dispatcher.md) | [环境状态写入入口（setEnvState + 中间件链）](./env-bridge.md)、[环境系统实现核心（barrel + observer + fog）](./env-impl.md) |
 | 重力控制、WASM 物理重力 | [环境重力控制](./env-gravity.md) | [相机状态管理 + 运行时上下文](./camera-state.md)、[相机模式管理系统（MmdCamera）](./camera.md)、[环境状态写入入口（setEnvState + 中间件链）](./env-bridge.md) |
-| 地面材质、GroundMaterialSpec、地面重建、地面材质单一来源、地面 typeKey、ADR-226 | [地面材质单一事实源（GroundMaterialSpec）](./env-ground-spec.md) | — |
-| 地面系统、程序化纹理、涟漪、地面高度查询 | [地面系统](./env-ground.md) | — |
+| 地面材质、GroundMaterialSpec、地面重建、地面材质单一来源、地面 typeKey、ADR-226 | [地面材质单一事实源（GroundMaterialSpec）](./env-ground-spec.md) | [地面系统](./env-ground.md) |
+| 地面系统、程序化纹理、涟漪、地面高度查询 | [地面系统](./env-ground.md) | [地面材质单一事实源（GroundMaterialSpec）](./env-ground-spec.md) |
 | 环境实现、observer、fog、barrel 重导出 | [环境系统实现核心（barrel + observer + fog）](./env-impl.md) | [环境状态写入入口（setEnvState + 中间件链）](./env-bridge.md)、[环境变更分发回调（破循环依赖）](./env-dispatcher.md) |
 | 环境灯光、灯光包装、灯光与场景集成、时间预设、灯光派生 | [环境灯光包装](./env-lighting.md) | [EnvState 单一源 Schema](./env-state-schema.md)、[场景光照与阴影（barrel）](./lighting.md) |
 | 环境弹窗、环境菜单、环境设置入口、env 菜单 | [环境弹窗（编排 + barrel）](./env-menu.md) | [场景弹窗（编排 + 路由）](./scene-menu.md)、[统一动作注册表 — 菜单/NL/快捷键共享真相源](./action-registry.md)、[NL 意图解析 — LLM 文本 → 动作执行](./ai-intent-dispatcher.md) |

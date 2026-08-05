@@ -36,12 +36,13 @@ use_when:
 ## 对外 API（节选）
 - `underwaterFogController.setWaterLevel(level)` — 通知水面 Y（env-impl 在 `state.waterLevel` 变化时调用）。
 - `underwaterFogController.install(mat)` — 给地面材质注册水下修饰（幂等：同一 mat 只存一次，缓存原 `emissiveTexture`/`emissiveColor`）。
-- `underwaterFogController.update(dt, scene)` — 每帧按相机 Y 与水面关系切换雾 + 焦散；状态未变直接返回。
+- `underwaterFogController.uninstall(mat)` — 材质销毁前摘除注册条目（与 `install` 成对；`applyTerrainMaterial` / 地面重建路径调用），避免 `update` 对已 dispose 材质写 emissive。
+- `underwaterFogController.update(dt, scene)` — 每帧按相机 Y 与水面关系切换雾 + 焦散；受 `waterEnabled && underwaterEnabled` 门控，状态未变直接返回。
 - `underwaterFogController.reset(scene?)` — 还原 emissive、关闭 fog、清空注册表。
 - `computeUnderwaterFogColor()` — 基准浅青与天空底色（`skyColorBot`）混合，让雾色随天空变化。
 
 ## 与其他子系统关系
-- 消费 `env-caustics.ts`（[共享焦散纹理系统](./env-caustics.md)）：`getTexture` 注入地面 `emissiveTexture`，并按 `GROUND_CAUSTIC_UV_SCALE=8` 设地面 UV 密度。
+- 消费 `env-caustics.ts`（[共享焦散纹理系统](./env-caustics.md)）：`getTexture` 注入地面 `emissiveTexture`，并按 `envState.groundSize * CAUSTIC_WORLD_SCALE` 派生地面 `uScale`/`vScale`（旧版写死常量 8 不随 groundSize 变，已改为世界空间锚定，与水面焦散同尺度）。
 - 联动 `env-water.ts`（[水面系统](./env-water.md)）：`setUnderwaterFog` 手动注入水面 ShaderMaterial（水面不参与 Babylon `scene.fog`）。
 - 读取 `envState.skyColorBot` 计算雾色。
 - 被 `env-impl.ts` 驱动：`setWaterLevel` + 每帧 `update`。

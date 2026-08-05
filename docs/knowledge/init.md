@@ -6,6 +6,7 @@ source_files:
   - frontend/src/core/sw-register.ts
 tests:
   - frontend/src/__tests__/sw-register.test.ts
+  - frontend/src/__tests__/main.boot-anchor.test.ts
 adr:
   - ADR-003
   - ADR-059
@@ -55,6 +56,10 @@ MikuMikuAR 前端应用的启动引导入口。`bootstrap()` 在 Wails 就绪后
 - `restoreUIState()` — 从持久化配置恢复 UI 状态（菜单位置、状态栏等）。
 - `_updateStaticHtmlTexts()` — 更新静态 HTML 文本的国际化。
 - `_applySystemA11y()` — 应用系统无障碍设置。
+
+## 测试守护
+- `main.boot-anchor.test.ts` — 加载锚点回归测试（防 v1.9.1 P0 复发）。真实 import `core/main.ts`，把 `bootstrap` / `registerServiceWorker` 及场景、菜单等重依赖 mock 成 no-op，只保留锚点链（`menus/library-setup` → `nav-actions` → `library-core`）的模块顶层副作用，断言桥接注册确实发生：`ui-action-bridge` 可取到 `navAction` / `toggleOverlayMode` / `handleAndroidBack` / `navLabel`，`scene-action-bridge` 可取到 `initLibrary` / `refreshLibrary`。
+- 守护点：`main.ts` 的 `import '../menus/library-setup'` 被删改、或注册从模块顶层挪进函数体，导致 ADR-238 桥接在 `sideEffects: false` 下被摇树而静默失注册，CI 即拦截。
 
 ## 与其他子系统关系
 - 依赖 `wails-bindings` 获取 Go 后端配置与事件。
