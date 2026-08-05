@@ -54,6 +54,7 @@ import {
     getCameraCanvas,
     getPreviousMode,
     setPreviousMode,
+    isCameraMode,
 } from './camera-state';
 import type {
     CameraMode,
@@ -608,6 +609,13 @@ export function setCameraState(s: CameraState): void {
     // Switch to the saved mode first (creates the right camera type),
     // then restore the preset over the live state.
     let mode = s.mode || s.preset.mode;
+    // [audit:P3] 反序列化守卫：存档 mode 来自 JSON 恢复，无编译期保护；
+    // 非法值会使下方 LEGACY_MODE_MAP[mode] 为 undefined，并在 s.control 也缺失时
+    // 访问 undefined.control 抛 TypeError（场景存档恢复崩溃）。
+    if (!isCameraMode(mode)) {
+        logWarn('camera', `[setCameraState] 存档 mode "${mode}" 非法，回退 'orbit'`);
+        mode = 'orbit';
+    }
     // 存档恢复时跳过 AR：进入 AR 需要用户手势授权摄像头，启动时无手势调 getUserMedia
     // 多数浏览器会直接拒绝；用户可在加载后手动进入 AR。
     if (s.preset) {

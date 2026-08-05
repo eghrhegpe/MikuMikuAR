@@ -12,6 +12,7 @@ adr:
   - ADR-100
   - ADR-148
 symbols:
+  - CAMERA_MODES
   - CameraBehavior
   - CameraControl
   - CameraMode
@@ -48,6 +49,7 @@ symbols:
   - getViewMatrixHandle
   - hasCameraVmd
   - isAutoCameraEnabled
+  - isCameraMode
   - isTouchDevice
   - setAutoCameraBeatCount
   - setAutoCameraEnabledFlag

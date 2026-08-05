@@ -7,6 +7,7 @@
 import type { Camera } from '@babylonjs/core/Cameras/camera';
 import type { Scene } from '@babylonjs/core/scene';
 import type { ObserverHandle } from '@/core/observer-handle';
+import { logWarn } from '@/core/logger';
 
 // ======== Types (单源定义，camera.ts 通过 re-export 复用) ========
 
@@ -16,6 +17,23 @@ import type { ObserverHandle } from '@/core/observer-handle';
  */
 export type CameraMode =
     'orbit' | 'freefly' | 'surround' | 'concert' | 'oneshot' | 'vmd' | 'ar' | 'beatcut';
+
+/** [audit:P3] CameraMode 合法值全集（运行时校验用，与类型定义同源维护）。 */
+export const CAMERA_MODES: readonly CameraMode[] = [
+    'orbit',
+    'freefly',
+    'surround',
+    'concert',
+    'oneshot',
+    'vmd',
+    'ar',
+    'beatcut',
+] as const;
+
+/** [audit:P3] 类型守卫：任意 string 是否为合法 CameraMode（桥接入口 / 反序列化用）。 */
+export function isCameraMode(mode: string): mode is CameraMode {
+    return (CAMERA_MODES as readonly string[]).includes(mode);
+}
 
 /** ADR-100 轴 A — 控制方案（相机类 + 输入）。双写于 `core/types.ts`。 */
 export type CameraControl = 'orbit' | 'freefly' | 'ar';
@@ -325,7 +343,14 @@ export function setViewMatrixHandle(handle: ObserverHandle | null): void {
 // [doc:adr-238] 注册相机模式切换供 core/action-defs 经 scene-action-bridge 调用
 import { registerSceneAction } from '@/core/scene-action-bridge';
 registerSceneAction('setCameraMode', (mode: string) => {
-    setCameraMode(mode as CameraMode);
+    // [audit:P3] 运行时校验：桥接输入面宽（action-defs / NL 意图 / AI tool call / E2E），
+    // 非法 mode 若静默写入 _cameraMode，switchCameraMode 无分支可走、相机行为异常。
+    // 回退 'orbit' 为安全默认（相机系统必然初始化的模式）。
+    const safe: CameraMode = isCameraMode(mode) ? mode : 'orbit';
+    if (safe !== mode) {
+        logWarn('camera', `[setCameraMode] 非法 mode "${mode}"，回退 'orbit'`);
+    }
+    setCameraMode(safe);
 });
 
 // [doc:adr-238] 注册相机模式读取供 core/events 经 scene-action-bridge 调用

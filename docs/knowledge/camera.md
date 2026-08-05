@@ -23,6 +23,7 @@ adr:
   - ADR-100
   - ADR-148
 symbols:
+  - CAMERA_MODES
   - CameraBehavior
   - CameraControl
   - CameraMode
@@ -84,6 +85,7 @@ symbols:
   - initFreeflyUpdate
   - initOrbitUpdate
   - isAutoCameraEnabled
+  - isCameraMode
   - isTouchDevice
   - loadCameraVmd
   - logCameraAlpha
