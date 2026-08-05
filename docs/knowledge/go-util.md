@@ -45,7 +45,7 @@ Go 端零外部依赖工具集（`internal/util`）。错误包装（`WrapError`
 
 ## 核心职责
 - `errors.go` — `WrapError(op, err)` / `WrapErrorf(op, msg, err)` 错误上下文包装。
-- `safecall.go` — `SafeCall[T](fn)` / `SafeCallVoid(fn)` 泛型 panic 恢复。
+- `safecall.go` — `SafeCall[T]` 泛型 panic 恢复（传入 `fn` 被调用函数）、`SafeCallVoid(fn)`。
 - `pmx.go` — `ParsePMXHeader`（UTF-8/UTF-16LE 模型名解码）、`PMXMeta`。
 - `hash.go` — `SHA256Hex(s)`。
 
