@@ -228,9 +228,13 @@ func (a *App) writeConfig(cfg *Config) error {
 // indexMu 串行化 scan+write 防止交错写出半成品；但互斥锁不保证获取顺序（Go 调度器
 // 可插队、Mutex 非 FIFO），快照可能已过期——并发 updateConfig(rescan=true) 中后
 // 持久化的配置可能先完成扫描。故持 indexMu 后重读当前已持久化配置再扫描：保证
-// index.json 始终对应最新 config.json，杜绝「config.json=B 而 index.json=A」的
+// index.json 尽量对应最新 config.json，杜绝「config.json=B 而 index.json=A」的
 // 永久陈旧状态。cachedCfg 采用 copy-on-write（updateConfig 先深拷贝再 mutate），
 // 读出的指针在锁外不会被就地修改，可安全使用。
+//
+// 二次校验（best-effort）：扫描完成后再次 re-read，若扫描期间配置又被持久化
+// （含 rescan=false 的写入也会替换 cachedCfg 指针），用最新配置重扫一次，
+// 避免写出的 index 基于过期快照。
 func (a *App) writeIndexAfterScan(cfg *Config) error {
 	a.indexMu.Lock()
 	defer a.indexMu.Unlock()
@@ -248,6 +252,18 @@ func (a *App) writeIndexAfterScan(cfg *Config) error {
 	models, err := a.scanAllCategories(fresh)
 	if err != nil {
 		return err
+	}
+	// 扫描期间配置可能又被持久化（rescan=false 也会替换 cachedCfg 指针），
+	// 再读一次：若与扫描所用快照不同，用最新配置重扫一遍。
+	a.configMu.RLock()
+	latest, lErr := a.getConfigUnsafe()
+	a.configMu.RUnlock()
+	if lErr == nil && latest != nil && latest != fresh {
+		fresh = latest
+		models, err = a.scanAllCategories(fresh)
+		if err != nil {
+			return err
+		}
 	}
 	idxData, err := json.Marshal(models)
 	if err != nil {

@@ -5,7 +5,10 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
+	"sync"
 	"testing"
+	"time"
 )
 
 func TestValidatePresetName(t *testing.T) {
@@ -216,4 +219,64 @@ func contains(s, substr string) bool {
 		(len(s) > 0 && len(substr) > 0 && s[:len(substr)] == substr) ||
 		(len(s) > len(substr) && s[len(s)-len(substr):] == substr) ||
 		(filepath.Base(s) == substr))
+}
+
+// TestUpdateConfigRescanConcurrent 并发触发多个 rescan=true 的配置写入（SetOverridePath），
+// 验证 writeIndexAfterScan 的 indexMu + 重读最新配置机制：最终落盘的 index.json 必须
+// 与最终 config.json 一致（模型条目都位于最终 override 目录下），且无死锁。
+func TestUpdateConfigRescanConcurrent(t *testing.T) {
+	testConfigDir(t)
+	root := t.TempDir()
+	dirA := filepath.Join(root, "libA")
+	dirB := filepath.Join(root, "libB")
+	for _, d := range []string{dirA, dirB} {
+		if err := os.MkdirAll(d, 0o755); err != nil {
+			t.Fatalf("MkdirAll(%s): %v", d, err)
+		}
+		if err := os.WriteFile(filepath.Join(d, "model.pmx"), []byte("fake-pmx"), 0o644); err != nil {
+			t.Fatalf("WriteFile(%s): %v", d, err)
+		}
+	}
+
+	a := NewApp("test", "", "")
+	if err := a.updateConfig(func(c *Config) { c.ResourceRoot = root }, false); err != nil {
+		t.Fatalf("init config: %v", err)
+	}
+
+	done := make(chan struct{})
+	go func() {
+		var wg sync.WaitGroup
+		for i := 0; i < 8; i++ {
+			wg.Add(2)
+			go func() { defer wg.Done(); _ = a.SetOverridePath("pmx", dirA) }()
+			go func() { defer wg.Done(); _ = a.SetOverridePath("pmx", dirB) }()
+		}
+		wg.Wait()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(30 * time.Second):
+		t.Fatal("updateConfig 并发 rescan 死锁：30s 未完成")
+	}
+
+	cfg, err := a.GetConfig()
+	if err != nil {
+		t.Fatalf("GetConfig: %v", err)
+	}
+	finalOverride := cfg.OverridePaths.PMX
+	if finalOverride != dirA && finalOverride != dirB {
+		t.Fatalf("final override = %q, want %q or %q", finalOverride, dirA, dirB)
+	}
+
+	idx, err := a.GetLibraryIndex()
+	if err != nil {
+		t.Fatalf("GetLibraryIndex: %v", err)
+	}
+	for _, m := range idx {
+		if !strings.HasPrefix(filepath.ToSlash(m.PMXPath), filepath.ToSlash(finalOverride)) {
+			t.Errorf("index entry %q not under final override %q — stale index.json", m.PMXPath, finalOverride)
+		}
+	}
 }
