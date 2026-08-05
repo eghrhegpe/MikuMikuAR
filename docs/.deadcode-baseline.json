@@ -1,10 +1,10 @@
 {
-  "unusedExports": 37,
-  "unusedTypes": 14,
+  "unusedExports": 42,
+  "unusedTypes": 17,
   "duplicateExports": 1,
   "unusedDevDeps": 0,
   "unlistedDeps": 0,
   "clones": 15,
   "duplicatedLines": 274,
-  "updatedAt": "2026-08-03"
+  "updatedAt": "2026-08-05"
 }
