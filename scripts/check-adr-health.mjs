@@ -108,7 +108,8 @@ function categorizeStatus(status) {
   return 'unknown';
 }
 
-// 检查技术债务
+// 检查技术债务（仅状态行关键词；正文历史叙述——「已移除/临时/弃用」等——为正常记载，
+// 若计入会因历史事实描写触发大量误报，ADR-232 词表已共享，债务报告另有 check-adr-technical-debt 承接）
 function checkTechnicalDebt(status, content) {
   const issues = [];
   
@@ -116,21 +117,6 @@ function checkTechnicalDebt(status, content) {
   for (const keyword of TECHNICAL_DEBT_KEYWORDS) {
     if (status && status.includes(keyword)) {
       issues.push(`状态包含技术过时关键词: "${keyword}"`);
-    }
-  }
-  
-  // 检查内容中的过时引用
-  const contentLower = content.toLowerCase();
-  const outdatedPatterns = [
-    { pattern: /deprecated|弃用|过时/, message: '内容包含弃用/过时引用' },
-    { pattern: /todo|fixme|hack/, message: '内容包含待办/修复标记' },
-    { pattern: /临时|temporary|workaround/, message: '内容包含临时解决方案' },
-    { pattern: /已移除|removed|deleted/, message: '内容包含已移除功能引用' }
-  ];
-  
-  for (const { pattern, message } of outdatedPatterns) {
-    if (pattern.test(contentLower)) {
-      issues.push(message);
     }
   }
   
@@ -302,18 +288,19 @@ function main() {
   const relatedIssueCount = results.issues.relatedAdrs.reduce((sum, item) => sum + item.issues.length, 0);
   
   // 不同类型问题的权重不同
+  // 注：技术债务（状态行含过时语义）仅作 INFO 展示，不参与健康分与退出判定——
+  // ADR 记录推进中/已废弃本就是正常历史状态，计入会把健康分长期压至 0（见 check-adr-technical-debt 信息性定位）。
   const formatWeight = 2;      // 格式问题权重较低
-  const debtWeight = 3;        // 技术债务权重中等
   const relatedWeight = 5;     // 关联问题权重较高
   
   const weightedIssues = (formatIssueCount * formatWeight) + 
-                        (debtIssueCount * debtWeight) + 
                         (relatedIssueCount * relatedWeight);
   
   // 基于加权问题数计算健康分数
   results.healthScore = Math.max(0, Math.round(100 - (weightedIssues * 0.5)));
   
-  const totalIssues = formatIssueCount + debtIssueCount + relatedIssueCount;
+  // 真实结构问题（格式 + 关联 + 编号连续性）用于退出判定；债务不计入
+  let structuralIssueCount = formatIssueCount + relatedIssueCount;
 
   // 检查编号连续性
   const sortedIds = [...new Set(adrIds)].sort((a, b) => a - b);
@@ -431,8 +418,10 @@ function main() {
   console.log('══════════════════════════════════════════════');
   
   // 返回退出码
-  if (totalIssues > 10) {
-    process.exit(1); // 问题过多
+  // 仅真实结构问题（格式 + 关联 + 编号连续性）驱动退出；技术债务为 INFO 展示，不阻断
+  const finalStructuralIssues = structuralIssueCount + missingIds.length;
+  if (finalStructuralIssues > 10) {
+    process.exit(1); // 结构问题过多
   }
 }
 

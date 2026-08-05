@@ -108,16 +108,16 @@ eghrhegpe.github.io/MikuMikuAR/          ← Pages 根 = 文档站（VitePress b
 
 | 主题 | 入口 |
 |------|------|
-| Web Loader 与主应用统一路径 | [/adr/adr-177-web-loader-main-app-unification](/adr/adr-177-web-loader-main-app-unification) |
-| Web 页面路径重分配 | [/adr/adr-225-web-pages-path-reallocation](/adr/adr-225-web-pages-path-reallocation) |
-| 模型广场 Web 浏览 | [/adr/adr-075-model-plaza-web-browsing](/adr/adr-075-model-plaza-web-browsing) |
-| 广场浏览器体验 | [/adr/adr-087-plaza-browser-experience](/adr/adr-087-plaza-browser-experience) |
-| 广场 cookie relay | [/adr/adr-077-plaza-cookie-relay](/adr/adr-077-plaza-cookie-relay) |
-| 广场数据源统一与持久化 | [/adr/adr-224-plaza-广场数据源统一与持久化](/adr/adr-224-plaza-广场数据源统一与持久化) |
-| FSA 句柄持久化 / 认证 / 能力矩阵 host keys | [/adr/adr-180-fsa-handle-persistence](/adr/adr-180-fsa-handle-persistence) · [/adr/adr-183-fsa-auth-guidance](/adr/adr-183-fsa-auth-guidance) · [/adr/adr-178-capability-matrix-host-keys](/adr/adr-178-capability-matrix-host-keys) |
-| 前端 Backend 适配器双实现 | [/adr/adr-176-frontend-backend-adapter](/adr/adr-176-frontend-backend-adapter) |
+| Web Loader 与主应用统一路径 | [./adr/adr-177-web-loader-main-app-unification.md](./adr/adr-177-web-loader-main-app-unification.md) |
+| Web 页面路径重分配 | [./adr/adr-225-web-pages-path-reallocation.md](./adr/adr-225-web-pages-path-reallocation.md) |
+| 模型广场 Web 浏览 | [./adr/adr-075-model-plaza-web-browsing.md](./adr/adr-075-model-plaza-web-browsing.md) |
+| 广场浏览器体验 | [./adr/adr-087-plaza-browser-experience.md](./adr/adr-087-plaza-browser-experience.md) |
+| 广场 cookie relay | [./adr/adr-077-plaza-cookie-relay.md](./adr/adr-077-plaza-cookie-relay.md) |
+| 广场数据源统一与持久化 | [./adr/adr-224-plaza-广场数据源统一与持久化.md](./adr/adr-224-plaza-广场数据源统一与持久化.md) |
+| FSA 句柄持久化 / 认证 / 能力矩阵 host keys | [./adr/adr-180-fsa-handle-persistence.md](./adr/adr-180-fsa-handle-persistence.md) · [./adr/adr-183-fsa-auth-guidance.md](./adr/adr-183-fsa-auth-guidance.md) · [./adr/adr-178-capability-matrix-host-keys.md](./adr/adr-178-capability-matrix-host-keys.md) |
+| 前端 Backend 适配器双实现 | [./adr/adr-176-frontend-backend-adapter.md](./adr/adr-176-frontend-backend-adapter.md) |
 | 网页端数据存储与 Origin 隔离 | [web-data-origin-isolation.md](./web-data-origin-isolation.md) |
-| 文档自动化工具链 | [/adr/adr-230-docs-automation-toolchain](/adr/adr-230-docs-automation-toolchain) |
+| 文档自动化工具链 | [./adr/adr-230-docs-automation-toolchain.md](./adr/adr-230-docs-automation-toolchain.md) |
 
 ## 10. AI 上下文入口矩阵
 

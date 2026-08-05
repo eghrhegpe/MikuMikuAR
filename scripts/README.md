@@ -6,7 +6,7 @@
 ## 脚本文件头规范（统一约定）
 
 > 本仓库与 ysm-model-manager 共用同一套 `.mjs` 文档约定，确保跨项目可迁移、可机读。
-> 规范由 `scripts/check-script-hygiene.mjs` 校验；决策基线见 [ADR-241](../adr/adr-241-mjs-script-doc-convention.md)；本仓库当前状态见本节省末注记。
+> 规范由 `scripts/check-script-hygiene.mjs` 校验；决策基线见 [ADR-241](../docs/adr/adr-241-mjs-script-doc-convention.md)；本仓库当前状态见本节省末注记。
 
 每个 `scripts/*.mjs`（不含 `_` 前缀共享层 `_lib/`）必须在文件顶部保留 JSDoc 头，且至少包含以下字段：
 
