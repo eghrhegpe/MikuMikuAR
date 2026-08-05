@@ -2043,13 +2043,13 @@
 | `LibraryRestoreState()` | `menus/library-session-store:32` | 资源库会话状态：恢复链路（上次浏览位置 + 高亮模型）。 |
 | `LibraryRestoreStatus()` | `menus/library-session-store:17` | [doc:adr-135] P0.3 deferRestore 状态机。 |
 | `librarySessionStore()` | `menus/library-session-store:253` | 单例。 |
-| `initLibrary()` | `menus/library-setup:76` | — |
-| `refreshLibrary()` | `menus/library-setup:414` | — |
-| `reloadConfig()` | `menus/library-setup:336` | — |
-| `rescanAndSync()` | `menus/library-setup:263` | — |
-| `selectOverridePath()` | `menus/library-setup:202` | — |
-| `selectResourceRoot()` | `menus/library-setup:177` | — |
-| `switchStorageMode()` | `menus/library-setup:221` | — |
+| `initLibrary()` | `menus/library-setup:83` | — |
+| `refreshLibrary()` | `menus/library-setup:421` | — |
+| `reloadConfig()` | `menus/library-setup:343` | — |
+| `rescanAndSync()` | `menus/library-setup:270` | — |
+| `selectOverridePath()` | `menus/library-setup:209` | — |
+| `selectResourceRoot()` | `menus/library-setup:184` | — |
+| `switchStorageMode()` | `menus/library-setup:228` | — |
 | `applyModelPreset()` | `menus/library:7` | — |
 | `initLibrary()` | `menus/library:4` | — |
 | `refreshLibrary()` | `menus/library:4` | — |
@@ -2149,9 +2149,9 @@
 | `importExternalAnimation()` | `menus/motion-root-ui:362` | 外部动作导入：选文件 → 重定向骨骼 → 播放。 |
 | `openProcDetail()` | `menus/motion-root-ui:323` | [doc:adr-207] 行体点击进入程序化统一详情页。 |
 | `buildNavMaps()` | `menus/nav-actions:140` | — |
-| `disposeNavBindings()` | `menus/nav-actions:221` | 卸载导航按钮监听（HMR/dispose 用） |
-| `getNavLabel()` | `menus/nav-actions:286` | 供 core 侧读取导航标签（经桥，不直接 import menus） |
-| `initNavActions()` | `menus/nav-actions:231` | [doc:adr-238] nav-actions 启动入口：安装按钮接线 + 构建导航标签映射。 |
+| `disposeNavBindings()` | `menus/nav-actions:227` | 卸载导航按钮监听（HMR/dispose 用） |
+| `getNavLabel()` | `menus/nav-actions:292` | 供 core 侧读取导航标签（经桥，不直接 import menus） |
+| `initNavActions()` | `menus/nav-actions:237` | [doc:adr-238] nav-actions 启动入口：安装按钮接线 + 构建导航标签映射。 |
 | `navActions()` | `menus/nav-actions:104` | — |
 | `navLabels()` | `menus/nav-actions:25` | — |
 | `toggleOverlay()` | `menus/nav-actions:58` | — |
