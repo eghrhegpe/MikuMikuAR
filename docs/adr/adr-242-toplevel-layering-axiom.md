@@ -1,7 +1,7 @@
 # ADR-242: 顶层目录分层公理 —— 「纯算法层」假说的证伪与重定性
 
 > **日期**: 2026-08-06
-> **状态**: 提案（Proposed）—— 待裁决，暂未落地任何代码改动
+> **状态**: 部分实现 —— 采纳方案 C；Phase 1（守护先行）已落地，Phase 2（目录收编）待启动
 > **关联**：ADR-191(core/utils 神桶拆分)、ADR-236/237/238(循环依赖重构)、ADR-226(地面 spec 单源)
 
 ## 背景
@@ -96,8 +96,45 @@
 | `physics-bridge` / `scene/physics/*` | **名字巧合 + 方向反转**（bridge 被 scene 消费） |
 | `proc-motion-*`(6) / `motion-modules/` | 真配对（共享内核式，非 1:1 对偶） |
 
-## 待裁决
+## 决议
 
-1. 选 A / B / C 哪个方案？
-2. `SssPBRMaterial` 是死代码（删）还是未接线特性（接）？
-3. 13 个白名单外阻断环是否纳入本 ADR 范围，还是归 ADR-238 续作？
+**采纳方案 C（分期）**。理由：R1 规则（算法层不得 import `@/menus/**`）当前 **0 违规**，是唯一无例外的既成事实，零成本即可固化；而目录收编涉及数十处 import 改写并可能触发新环，须与 ADR-238 的环治理错峰进行。
+
+| 议题 | 决议 |
+|---|---|
+| 方案选型 | C —— Phase 1 守护先行，Phase 2 逐目录收编 |
+| `SssPBRMaterial` | 判定为**未接线特性**而非死代码（`material-sss.ts` 注释明示其为 PMX 加载期目标材质类型）。保留，Phase 2 随 `materials/` → `scene/render/` 收编时一并接线或降级 |
+| 13 个阻断环 | 不纳入本 ADR。归 **ADR-238 续作**——环的破口在 `core/` 反向边，属循环依赖治理范畴，本 ADR 只负责「不再新增」 |
+
+## Phase 1 落地记录（已完成）
+
+新增 `scripts/check-layering.mjs`，将分层公理编码为三条可执行规则：
+
+| 规则 | 内容 | 执法强度 | 当前值 |
+|---|---|---|---|
+| **R1** | 顶层算法目录 不得运行时 import `@/menus/**` | 零容忍，任一违规即失败 | ✅ 0 条 |
+| **R2** | `core/**` 不得运行时 import `@/menus/**` 或 `@/scene/**` | 基线防回退 | 8 条 |
+| **R3** | 顶层算法目录 不得运行时 import `@/scene/**` | 基线防回退 | 2 条 |
+
+设计要点：
+
+- **`import type` 一律豁免**——type-only 导入不构成运行时耦合，不是分层违规。
+- **基线机制**（`docs/.layering-baseline.json`）：R2/R3 存量 10 条唯一反向边登记在册，只防新增；消除后脚本主动提示收紧基线，形成棘轮。
+- 同时解析 `@/` 别名与相对路径两种写法，避免绕过；副作用导入（`import 'x'`）视为运行时。
+
+接入方式：
+
+```bash
+npm run check:layering        # 检查（已挂入 check:all）
+npm run gen:layering-baseline # 消除反向边后收紧基线
+```
+
+## Phase 2 待办（未启动）
+
+按目录逐个收编，每个目录一次独立 commit + 全量验证（`tsc` / `test` / `check:circular --strict` / `check:layering`）：
+
+1. `materials/SssPBRMaterial.ts` → `scene/render/`（并决定接线或降级）
+2. `library/library-path.ts` → `core/`（消费面 12/13 在 menus，属公共服务）
+3. `physics/` → `scene/physics/`（被 scene 反向消费 7 处，方向已反转）
+4. `outfit/` 拆分绑定层与 UI 调用层，同步消除 `_catOf` 穿透引用
+5. `motion-algos/footstep-detect-fallback.ts` → `scene/motion/`（分层颠倒，它持 observer 生命周期）

@@ -27,6 +27,7 @@
 | 查 ADR 是否被取代 | `npm run gen:adr-supersede`（五层判别：①已登记取代 ②漏标告警 ③废弃未指明 ④可疑信号 ⑤表格弱宣称；判别方法见下方「ADR 取代判别方法」小节） |
 | 查/更新项目状态 | ADR 规范索引：`docs/adr/index.md`（分组导航·锚点跳转）；带日期全量附表：`docs/status.md`（由 `npm run gen:status` 生成，改状态改 ADR 首部即可） |
 | 查模块依赖图 | `npm run dep:graph`（Mermaid 图） / `npm run dep:graph:list`（缩进列表） |
+| 查分层是否违规（`menus → scene → 顶层算法层 → core` 单向） | `npm run check:layering`（ADR-242；R1「算法层 import menus」零容忍，R2/R3 反向边基线防回退，`import type` 豁免；消除反向边后跑 `npm run gen:layering-baseline` 收紧棘轮） |
 | 查某模块「现在长啥样、去哪找」的现状快照 | `docs/knowledge/`（先读 `README.md` 索引定位卡片，grep 卡正文锁定符号，再按 `source_files` 跳源码；比直接 grep 全量 .ts 省上下文） |
 | 查/更新函数索引 | `docs/function-map.md`（由 `npm run gen:funcmap` 自动生成，符号带 `文件:行` 可直接跳转；改动后运行 `npm run check:funcmap` 校验） |
 | 查某符号的全部消费者（重构前影响面预判） | `npm run check:consumers -- <符号名>`（列出定义处/直接 import/namespace 消费/再导出中转，各带 file:line；`--json` 给脚本/AI 消费） |
