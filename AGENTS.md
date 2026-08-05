@@ -134,6 +134,8 @@ git reset --soft HEAD~1               # 撤销最近一条 commit，把改动放
 git reset HEAD~1                       # 撤销最近一条 commit，把改动放回工作区
 ```
 
+> **Git 钩子（非阻断）**：仓库钩子位于 `.githooks/`（非 `.git/hooks/`），克隆后需激活：`git config core.hooksPath .githooks`。钩子仅把覆盖率缺口等建议非阻断写入 commit message，绝不阻塞提交；逃生阀 `MM_SKIP_COVERAGE_HINT=1 git commit`。
+
 | 规则 | 说明 |
 |------|------|
 | commit 信息格式 | `<type>: <描述>`，type 同conventional commits（feat/fix/docs/chore/refactor/test） |
