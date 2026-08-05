@@ -450,7 +450,12 @@ function _bindSceneEvents(scene: Scene): void {
             return;
         }
         const waterY = envState.waterLevel;
-        const camY = scene.activeCamera.globalPosition.y;
+        // [fix P2] activeCamera 可能为 null（场景无活动相机时），访问前守卫
+        const cam = scene.activeCamera;
+        if (!cam) {
+            return;
+        }
+        const camY = cam.globalPosition.y;
         if (camY === undefined || camY <= waterY) {
             return;
         }
@@ -835,6 +840,11 @@ export type { RenderState } from './render/renderer';
 // [doc:adr-238] 注册模型搜索供 core/action-defs entity resolve 经 scene-action-bridge 调用
 import { registerSceneAction, getSceneAction } from '@/core/scene-action-bridge';
 registerSceneAction('findSceneModelByName', async (name: string) => {
+    // [fix P2] modelManager 在 _initModelManager（initScene 内）执行前为 undefined，
+    // 该回调模块加载即注册，须守卫避免 initScene 前调用抛 TypeError。
+    if (!modelManager) {
+        return null;
+    }
     return (
         modelManager.getAll().find((m) => m.name.toLowerCase().includes(name.toLowerCase())) ?? null
     );

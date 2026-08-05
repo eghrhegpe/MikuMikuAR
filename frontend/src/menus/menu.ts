@@ -608,10 +608,11 @@ export class SlideMenu implements RenderContext {
             );
         } else {
             // === 纯 items → 全量重建（card-per-divider 结构不支持增量 patch） ===
+            // [fix P2] 仅经 safeCallAsync 异步 finalize（buildPanel 完成后执行一次），
+            // 删除下方同步 finalize() 调用，避免 onAfterRender/setupFocus 重复触发。
             safeCallAsync('menu', 'buildPanel failed:', () =>
                 this.buildPanel(level).then(safeFinalize)
             );
-            finalize();
         }
     }
 
