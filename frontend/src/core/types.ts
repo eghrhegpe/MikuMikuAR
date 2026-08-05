@@ -29,6 +29,9 @@ export type BoneOverrideEntry = {
     enabled: boolean;
     /** [doc:adr-123 P1] 绝对覆盖模式：true=替换 oldRotation，false/undefined=复合 */
     absolute?: boolean;
+    /** [fix P2] 旋转覆盖标志：true=覆盖旋转（可能同时含位置），false/undefined=仅位置覆盖。
+     *  序列化往返保留，避免 restoreOverrides 用 !position 推断时丢失旋转覆盖。 */
+    overrideRotation?: boolean;
 };
 
 /** 骨骼覆盖类型（着色/诊断共用枚举） */

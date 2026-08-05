@@ -454,6 +454,8 @@ function _slotToEntry(boneName: string, slot: _OverrideSlot): BoneOverrideEntry 
         position: slot.pos ? [slot.pos.x, slot.pos.y, slot.pos.z] : undefined,
         // [doc:adr-123 P1] 序列化 absolute 标志
         absolute: slot.absolute,
+        // [fix P2] 序列化 overrideRotation 标志（slot 可同时含旋转+位置覆盖）
+        overrideRotation: slot.overrideRotation,
     };
 }
 
@@ -765,9 +767,9 @@ export function restoreOverrides(entries: BoneOverrideEntry[], modelId?: string)
             weight: clamp01(e.weight),
             enabled: e.enabled,
             pos: e.position ? new Vector3(e.position[0], e.position[1], e.position[2]) : undefined,
-            // [doc:adr-116 P1] 含位置字段的条目必为位置覆盖（来自 setBoneOverridePosition），
-            // 不应覆盖动画旋转；纯旋转条目（手动覆盖）overrideRotation=true。
-            overrideRotation: !e.position,
+            // [fix P2] 优先用序列化的 overrideRotation 标志；旧数据无该字段时
+            // 回退到「含位置字段即位置覆盖」的 legacy 推断（保留既有行为）。
+            overrideRotation: e.overrideRotation ?? !e.position,
             // [doc:adr-123 P1] 反序列化 absolute 标志
             absolute: e.absolute,
         });
