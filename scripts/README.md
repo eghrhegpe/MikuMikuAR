@@ -18,7 +18,7 @@
 
 硬规则：
 - 检查类脚本（`check-*` / `*-check` / `review` / `doctor` / `link-checker` / `type-consistency` / `event-audit` / `binding-check`）必须支持 `--json` 或默认输出 JSON，供 CI / 子代理稳定消费。
-- 共享能力（`walk` / `rg` / `ROOT` / `frontmatter` 解析）一律 `import` 自 `scripts/_lib/`，**禁止内联样板**。
+- 共享能力（`walk` / `rg` / `ROOT` / `frontmatter` 解析）一律 `import` 自 `scripts/_lib/`，**禁止内联通用样板**；领域专用的文件收集器（带扩展名过滤 / 跳过集合 / 回调，如 `gen-icon-bundle` 的图标 walker）属合法内联，不计入违规。
 - 公共函数需写 `/** */` 简述；纯内部小工具可不写。
 
 范例见 `comment-checker.mjs`、`diagnose.mjs`（已按本规范整改）。
