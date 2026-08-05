@@ -535,7 +535,7 @@ function checkCardApiSymbols(globalIndex) {
 //   (a) 手工目录树：含 box-drawing 缩进树（├── / └──）
 //   (b) 手工 ADR 状态表：行首 `| ADR-<n> |`（区别于 `docs/adr/adr-<n>-*.md` 链接引用）
 function checkAgentsNoHandcraftedIndex() {
-  const targets = ['AGENTS.md', 'frontend/AGENTS.md'];
+  const targets = ['AGENTS.md', 'frontend/AGENTS.md', 'internal/AGENTS.md'];
   const warns = [];
   for (const rel of targets) {
     const text = read(rel);
