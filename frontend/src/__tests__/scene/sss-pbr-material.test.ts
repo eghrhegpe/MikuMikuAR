@@ -18,11 +18,23 @@ vi.mock('@babylonjs/core/Engines/engine', () => ({ Engine: vi.fn() }));
 
 // Build a mock PBRMaterial that properly returns `this` so subclass constructors work
 const MockPBR = vi.hoisted(() => {
+    // Babylon 9.x PBRBaseMaterial 构造器创建 PBRSubSurfaceConfiguration 并赋给公开 subSurface 属性
+    const makeSubSurface = () => ({
+        isTranslucencyEnabled: false,
+        isScatteringEnabled: false,
+        translucencyIntensity: 0.0,
+        tintColor: new Color3(1, 1, 1),
+        tintColorAtDistance: 0.5,
+        diffusionDistance: new Color3(1, 1, 1),
+        scatteringDiffusionProfile: null,
+        minimumThickness: 0.0,
+        maximumThickness: 1.0,
+        useThicknessAsDepth: false,
+    });
     class Base {
         constructor(_name: string) {
-            // PBRMaterial auto-registers PBRSubSurfaceConfiguration in its constructor.
-            // Simulate by attaching a stub to this.plugins
-            (this as any).plugins = [];
+            // PBRMaterial 构造器自动创建 subSurface（9.x 公开只读属性）
+            (this as any).subSurface = makeSubSurface();
             (this as any).getScene = vi.fn(() => mockScene);
             (this as any).markDirty = vi.fn();
             (this as any).dispose = vi.fn();
@@ -141,6 +153,49 @@ describe('SssPBRMaterial — property defaults & setters', () => {
             expect(mat.sssDiffusion.r).toBe(0.5);
             expect(mat.sssDiffusion.g).toBe(0.3);
             expect(mat.sssDiffusion.b).toBe(0.1);
+        });
+    });
+
+    describe('SSS 参数传播到底层 PBRSubSurfaceConfiguration（[fix P1/P2] 插件接线）', () => {
+        it('isSssEnabled=true + sssPower 写入 isTranslucencyEnabled / translucencyIntensity', () => {
+            const mat = new SssPBRMaterial('test') as any;
+            const ss = mat.subSurface;
+            mat.isSssEnabled = true;
+            mat.sssPower = 0.8;
+            expect(ss.isTranslucencyEnabled).toBe(true);
+            expect(ss.isScatteringEnabled).toBe(true);
+            expect(ss.translucencyIntensity).toBe(0.8);
+        });
+
+        it('sssColor / sssDistance / sssDiffusion 传播到 config', () => {
+            const mat = new SssPBRMaterial('test') as any;
+            const ss = mat.subSurface;
+            mat.isSssEnabled = true; // tintColorAtDistance 仅在启用时写入（_syncSubSurface 契约）
+            mat.sssColor = new Color3(1.0, 0.6, 0.4);
+            mat.sssDistance = 0.3;
+            mat.sssDiffusion = new Color3(0.5, 0.3, 0.1);
+            expect(ss.tintColor.r).toBe(1.0);
+            expect(ss.tintColorAtDistance).toBe(0.3);
+            expect(ss.diffusionDistance.r).toBe(0.5);
+        });
+
+        it('无 subSurface 时 setter 静默跳过不抛错（失败路径）', () => {
+            const mat = new SssPBRMaterial('test') as any;
+            (mat as any)._subSurface = null;
+            expect(() => {
+                mat.isSssEnabled = true;
+                mat.sssPower = 0.8;
+            }).not.toThrow();
+            expect(mat.sssPower).toBe(0.8); // 包装层状态仍更新
+        });
+
+        it('NaN 不被存储（[fix P4]）', () => {
+            const mat = new SssPBRMaterial('test');
+            mat.sssPower = NaN;
+            expect(mat.sssPower).toBe(0.0); // 默认 0，NaN 被拒
+            mat.sssPower = 0.8;
+            mat.sssPower = NaN;
+            expect(mat.sssPower).toBe(0.8); // 已有值不被 NaN 覆盖
         });
     });
 

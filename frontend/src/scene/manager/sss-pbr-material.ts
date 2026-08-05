@@ -36,24 +36,10 @@ export class SssPBRMaterial extends PBRMaterial {
 
     constructor(name: string, scene?: Scene, forceGLSL?: boolean) {
         super(name, scene, forceGLSL);
-        // 自动创建 SSS 插件并接入底层 PBRSubSurfaceConfiguration
-        // 注：PBRMaterial 构造函数内部已自动注册 PBRSubSurfaceConfiguration 插件，
-        // 此处通过 plugins 数组查找引用，避免重复创建。
-        // 注：Babylon 9.x 未公开 plugins 访问器，此处以结构化桥接类型访问私有数组，
-        //     运行时行为与历史实现一致。
-        const plugins = (this as unknown as { plugins?: unknown[] }).plugins;
-        if (Array.isArray(plugins)) {
-            for (const p of plugins) {
-                if (
-                    p &&
-                    typeof (p as { isTranslucencyEnabled?: unknown }).isTranslucencyEnabled ===
-                        'boolean'
-                ) {
-                    this._subSurface = p as PBRSubSurfaceConfiguration;
-                    break;
-                }
-            }
-        }
+        // [fix P1] Babylon 9.x PBRBaseMaterial 公开只读 subSurface（pbrBaseMaterial.pure.js
+        // 构造时赋值 this.subSurface = new PBRSubSurfaceConfiguration(this)），直接读取；
+        // 不再桥接访问 plugins 数组（9.x 插件注册于私有 pluginManager._plugins，无 plugins 成员）。
+        this._subSurface = this.subSurface;
     }
 
     // ========== SSS 启用/禁用 ==========
@@ -77,7 +63,8 @@ export class SssPBRMaterial extends PBRMaterial {
         return this._sssPower;
     }
     public set sssPower(value: number) {
-        if (this._sssPower === value) {
+        // [fix P4] NaN 守卫：Math.max/min 对 NaN 返回 NaN 且 NaN !== NaN 恒真，会污染 shader uniform
+        if (!Number.isFinite(value) || this._sssPower === value) {
             return;
         }
         this._sssPower = Math.max(0.0, Math.min(2.0, value));
@@ -107,7 +94,8 @@ export class SssPBRMaterial extends PBRMaterial {
         return this._sssDistance;
     }
     public set sssDistance(value: number) {
-        if (this._sssDistance === value) {
+        // [fix P4] NaN 守卫
+        if (!Number.isFinite(value) || this._sssDistance === value) {
             return;
         }
         this._sssDistance = Math.max(0.0, Math.min(1.0, value));
@@ -149,6 +137,10 @@ export class SssPBRMaterial extends PBRMaterial {
         return this._getSubSurface()?.minimumThickness ?? 0.0;
     }
     public set sssMinThickness(value: number) {
+        // [fix P4] NaN 守卫
+        if (!Number.isFinite(value)) {
+            return;
+        }
         const ss = this._getSubSurface();
         if (!ss) {
             return;
@@ -162,6 +154,10 @@ export class SssPBRMaterial extends PBRMaterial {
         return this._getSubSurface()?.maximumThickness ?? 1.0;
     }
     public set sssMaxThickness(value: number) {
+        // [fix P4] NaN 守卫
+        if (!Number.isFinite(value)) {
+            return;
+        }
         const ss = this._getSubSurface();
         if (!ss) {
             return;
@@ -222,20 +218,17 @@ export class SssPBRMaterial extends PBRMaterial {
     // ========== 克隆 ==========
 
     public clone(name: string, cloneTexturesOnlyOnce?: boolean, rootUrl?: string): SssPBRMaterial {
-        // 不再 super.clone，避免创建一个 PBRMaterial 注册到 scene 却永不 dispose（泄漏）。
-        // 直接构造并拷贝当前实例属性，行为与原本一致。
-        const result = new SssPBRMaterial(name, this.getScene?.() || undefined);
-
-        // 复制 PBRMaterial 属性
-        result.albedoColor = this.albedoColor.clone();
-        result.roughness = this.roughness;
-        result.metallic = this.metallic;
+        // [fix P3] 委托基类完整克隆全部 PBR 状态（纹理通道/alpha/透明度/emissive/插件等），
+        // 再补 SSS 私有状态。此前手拷 albedoColor/roughness/metallic 会导致纹理与透明度
+        // 在克隆后丢失（静默视觉回归）。返回实例由调用方 dispose，无额外泄漏。
+        const result = super.clone(name, cloneTexturesOnlyOnce, rootUrl) as unknown as SssPBRMaterial;
         result._sssEnabled = this._sssEnabled;
         result._sssPower = this._sssPower;
         result._sssColor = this._sssColor.clone();
         result._sssDistance = this._sssDistance;
         result._sssDiffusion = this._sssDiffusion.clone();
         result._sssDiffusionProfile = this._sssDiffusionProfile;
+        result._subSurface = result.subSurface ?? null;
         result._syncSubSurface();
         return result;
     }
