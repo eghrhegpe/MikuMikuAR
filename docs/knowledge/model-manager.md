@@ -25,9 +25,9 @@ symbols:
   - getFormationLabels
 invariants:
   - 模型状态完全封装，外部只能经 ModelManager 方法访问，不直接读写 modelRegistry
-  - 物理分类规则 PHYSICS_CAT_RULES（skirt/chest/hair/accessory 多语言关键词），可被 uiState.physicsCategoryMap 覆盖
+  - 物理分类规则 PHYSICS_CAT_RULES（skirt/chest/hair/accessory 多语言关键词），加载时构建 PHYSICS_CAT_PATTERNS；注：uiState.physicsCategoryMap 覆盖机制为历史注释声明，当前源码未实现
   - 不直接 import triggerAutoSave / scene.ts → 经构造函数注入回调，防循环依赖
-  - dispose 级联释放所有模型实例、骨骼覆盖 observer、清除 VMD 数据
+  - dispose 级联释放骨骼覆盖（lineSystem/joints/overrideLines）、override 材质、outfit overlay；VMD 数据仅由 clearVmdData 显式清除（dispose 不清理）
 
 use_when:
   - 模型注册表

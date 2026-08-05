@@ -340,7 +340,8 @@ export class ModelManager {
         this.modelRegistry.delete(id);
         this._initialRigidBodyStates.delete(id);
         this._physicsCatState.delete(id);
-        this._boneOverlayMap.delete(id);
+        // [fix P2] destroyBoneOverlay 内部既 dispose（lineSystem/joints/overrideLines）又 delete，
+        // 此处不得提前 delete，否则 destroyBoneOverlay 的 get(id) 得 undefined 会跳过资源释放。
         this.destroyBoneOverlay(id);
 
         disposeModelMaterialState(id);
@@ -745,7 +746,7 @@ export class ModelManager {
 
     getPhysicsCategories(id: string): PhysicsCategory[] {
         const inst = this.modelRegistry.get(id);
-        if (!inst.mmdModel) {
+        if (!inst || !inst.mmdModel) {
             return [];
         }
         const map = _buildRigidBodyCatMap(inst.mmdModel);
