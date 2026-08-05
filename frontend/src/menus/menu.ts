@@ -1037,8 +1037,14 @@ export class SlideMenu implements RenderContext {
             pushRenderingContext(this);
             try {
                 const result = await level.renderCustom(list);
-                if (typeof result === 'function') {
+                // [fix P2] seq 守卫：dispose 后挂起的 renderCustom 完成时不得覆盖
+                // _customDispose（可能已被新 build 或 dispose 置空/替换），
+                // 否则其返回的 dispose 会被永久悬挂（observer/virtualGrid 泄漏）。
+                if (typeof result === 'function' && seq === this._buildSeq) {
                     this._customDispose = result;
+                } else if (typeof result === 'function') {
+                    // 过期 build：立即释放返回的 dispose，避免悬挂
+                    result();
                 }
             } catch (err) {
                 // [audit-p4] 原始 err.message 可能含内部技术信息，仅进日志；UI 展示友好翻译文案
@@ -1060,6 +1066,9 @@ export class SlideMenu implements RenderContext {
 
     /** 释放所有资源（清除动画定时器、键盘/触摸监听、状态），调用后实例不可再用。 */
     dispose(): void {
+        // [fix P2] 递增构建序号：使挂起的 buildPanel 完成后 seq 检查失败——
+        // 不再 appendChild 到已清空的 panel，且 renderCustom 返回值被立即释放（见 buildPanel）。
+        this._buildSeq++;
         this._cancelAnim();
         if (this._unsubscribe) {
             this._unsubscribe();
@@ -1099,7 +1108,8 @@ export class SlideMenu implements RenderContext {
         if (this.levels.length > 1) {
             backBtn.addEventListener('click', () => this.pop());
         } else {
-            backBtn.addEventListener('click', () => this.onClose());
+            // [fix P2] optional 链：外部直接构造 SlideMenu 且未传 onClose 时，点 X 不抛 TypeError
+            backBtn.addEventListener('click', () => this.onClose?.());
         }
         this.headerEl.appendChild(backBtn);
 

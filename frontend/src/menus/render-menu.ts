@@ -321,19 +321,26 @@ function renderAction(node: MenuNode, container: HTMLElement): void {
  */
 export function buildSchemaLevel(labelKey: string, schemaBuilder: () => MenuNode[]): PopupLevel {
     const containerRef: HTMLElement[] = [];
+    // [fix P2] 保存 renderMenu 返回的 dispose 链：onLangChange 重建前先释放旧 dispose，
+    // 重建后保存新 dispose——否则含 renderCustom 的 schema（如 library grid panel）在
+    // 语言切换时旧 IntersectionObserver/virtualGrid 不释放、新 dispose 也丢失（累积泄漏）。
+    let disposeRef: (() => void) | undefined;
     return {
         label: t(labelKey),
         dir: '',
         items: [],
         renderCustom: (container) => {
             containerRef[0] = container;
-            return renderMenu(schemaBuilder(), container);
+            disposeRef = renderMenu(schemaBuilder(), container);
+            return disposeRef;
         },
         onLangChange: () => {
             const c = containerRef[0];
             if (c) {
+                disposeRef?.();
+                disposeRef = undefined;
                 c.innerHTML = '';
-                renderMenu(schemaBuilder(), c);
+                disposeRef = renderMenu(schemaBuilder(), c);
             }
         },
     };

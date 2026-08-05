@@ -18,6 +18,7 @@ import type { BackendService, BackendCapabilities } from './types';
 import { browserAdapter } from './browser-adapter';
 import { awaitWailsBridge, isWebEntryMode, readDeclaredAdapter } from '../platform';
 import { makeLazyLoader } from '../async';
+import { logWarn } from '../logger';
 
 // go-adapter 动态加载：web 入口短路路径完全不拉进 bundle，
 // 避免 @wailsio/runtime 初始化触发 /wails/custom.js 404（ADR-176 web 侧干净运行）。
@@ -39,40 +40,52 @@ export function resolveBackend(): Promise<BackendService> {
     }
 
     _resolving = (async (): Promise<BackendService> => {
-        // Tier 0 — 入口显式声明（最高优先级）。
-        const declared = readDeclaredAdapter('__MMKU_BACKEND__');
-        if (declared === 'browser') {
-            _resolved = browserAdapter;
-            return _resolved;
-        }
-        if (declared === 'go') {
-            const ready = await awaitWailsBridge(3000);
-            _resolved =
-                ready && typeof window.wails === 'object' ? await _getGoAdapter() : browserAdapter;
-            return _resolved;
-        }
+        // [fix P2] 顶层 try/catch：go-adapter 动态 import 失败（chunk 加载失败 / CSP）
+        // 时，若 IIFE reject 会让 _resolving 永久持有 rejected promise——之后所有
+        // resolveBackend() 复用该 rejected promise，后端永久不可用，破坏
+        // 「resolveBackend 不 reject」不变量。降级 browserAdapter（功能降级不死锁）。
+        try {
+            // Tier 0 — 入口显式声明（最高优先级）。
+            const declared = readDeclaredAdapter('__MMKU_BACKEND__');
+            if (declared === 'browser') {
+                _resolved = browserAdapter;
+                return _resolved;
+            }
+            if (declared === 'go') {
+                const ready = await awaitWailsBridge(3000);
+                _resolved =
+                    ready && typeof window.wails === 'object'
+                        ? await _getGoAdapter()
+                        : browserAdapter;
+                return _resolved;
+            }
 
-        // Tier 1 — 旧 web 短路标记 / 构建模式。
-        if (isWebEntryMode()) {
+            // Tier 1 — 旧 web 短路标记 / 构建模式。
+            if (isWebEntryMode()) {
+                _resolved = browserAdapter;
+                return _resolved;
+            }
+
+            // Tier 2 — 桌面入口（dev 浏览器 / Wails / Android 共享同一 bundle）。
+            // 纯浏览器 dev 下 window.wails 永不存在，缩短探测避免 3s 白等；
+            // 生产 Wails/Android 保留 3000ms 以消化冷启动桥接延迟。
+            const dev = (import.meta as unknown as { env?: { DEV?: boolean } }).env?.DEV === true;
+            const timeout = dev && typeof window.wails === 'undefined' ? 500 : 3000;
+            const ready = await awaitWailsBridge(timeout);
+            if (ready && typeof window.wails === 'object') {
+                _resolved = await _getGoAdapter();
+            } else {
+                console.warn(
+                    `[backend] resolveBackend: ${timeout}ms 内未探测到 window.wails，降级 browserAdapter`
+                );
+                _resolved = browserAdapter;
+            }
+            return _resolved;
+        } catch (err) {
+            logWarn('backend', 'resolveBackend failed, degrade to browserAdapter:', err);
             _resolved = browserAdapter;
             return _resolved;
         }
-
-        // Tier 2 — 桌面入口（dev 浏览器 / Wails / Android 共享同一 bundle）。
-        // 纯浏览器 dev 下 window.wails 永不存在，缩短探测避免 3s 白等；
-        // 生产 Wails/Android 保留 3000ms 以消化冷启动桥接延迟。
-        const dev = (import.meta as unknown as { env?: { DEV?: boolean } }).env?.DEV === true;
-        const timeout = dev && typeof window.wails === 'undefined' ? 500 : 3000;
-        const ready = await awaitWailsBridge(timeout);
-        if (ready && typeof window.wails === 'object') {
-            _resolved = await _getGoAdapter();
-        } else {
-            console.warn(
-                `[backend] resolveBackend: ${timeout}ms 内未探测到 window.wails，降级 browserAdapter`
-            );
-            _resolved = browserAdapter;
-        }
-        return _resolved;
     })();
 
     return _resolving;

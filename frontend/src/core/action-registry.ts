@@ -71,7 +71,11 @@ export function registerAction(def: ActionDef): () => void {
     }
     registry.set(id, def);
     return () => {
-        registry.delete(id);
+        // [fix P2] 校验当前注册者仍是自己：A 注册 id → B 覆盖 → A 的 unregister 在
+        // HMR teardown 时执行，若无条件 delete 会误删 B 的注册。
+        if (registry.get(id) === def) {
+            registry.delete(id);
+        }
     };
 }
 

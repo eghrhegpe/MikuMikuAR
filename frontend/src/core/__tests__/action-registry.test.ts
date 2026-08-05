@@ -158,6 +158,33 @@ describe('unregisterAction', () => {
     it('no-op for non-existent id', () => {
         expect(() => unregisterAction('no-such-action')).not.toThrow();
     });
+
+    it('[fix P2] 覆盖后旧 unregister 不误删新注册（HMR teardown 场景）', () => {
+        const execA = vi.fn();
+        const execB = vi.fn();
+        const unregA = registerAction({
+            id: 'test:overwrite',
+            label: 'A',
+            domain: 'scene',
+            params: [],
+            execute: execA,
+        });
+        // B 覆盖 A（重复 id 默认 warn + 覆盖）
+        registerAction({
+            id: 'test:overwrite',
+            label: 'B',
+            domain: 'scene',
+            params: [],
+            execute: execB,
+        });
+        expect(getAction('test:overwrite')?.execute).toBe(execB);
+        // A 的 unregister 在 HMR teardown 时执行：不应误删 B 的注册
+        unregA();
+        expect(getAction('test:overwrite')?.execute, 'B 的注册应保留').toBe(execB);
+        // B 自己的 unregister 正常生效
+        unregisterAction('test:overwrite');
+        expect(getAction('test:overwrite')).toBeUndefined();
+    });
 });
 
 describe('_resetActionRegistry', () => {

@@ -12,6 +12,7 @@ import type { Node } from '@babylonjs/core/node';
 import type { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
 import { Observable } from '@babylonjs/core/Misc/observable';
 import { safeDispose } from '@/core/dispose-helpers';
+import { logWarn } from '@/core/logger';
 
 export type GizmoType = 'position' | 'rotation' | 'scale';
 
@@ -30,6 +31,10 @@ let _gizmoNode: Node | null = null;
 let _snapEnabled = false;
 let _snapStep = 1.0; // 场景单位（position）；rotation/scale 按轴派生
 let _isDragging = false;
+// [fix P2] 当前 attach 的全部 drag-end 回写（按类型收集）。detachGizmo 时若拖拽进行中
+// （_isDragging=true）须 flush 一次——否则拖拽中切换选中/关闭开关会让 Babylon 已实时改写
+// 的 transform 丢失持久化回写（视觉与保存状态分叉）。
+let _activeDragEndCallbacks: Array<(node: Node) => void> = [];
 
 /** 拖拽进行中（连续）可观察量：任一 Gizmo 轴被拖动时每帧触发，
  *  供数值滑杆实时同步显示（ADR-126 Phase 2 双模态）。
@@ -39,7 +44,19 @@ export const onGizmoDragObservable = new Observable<void>();
 // ======== Initialization ========
 
 export function initTransformGizmo(scene: Scene): void {
-    _scene = scene;
+    // [fix P2] 场景重建时（HMR / disposeScene → initScene）旧 layer 绑定在已 dispose 的场景上，
+    // 若沿用会造成 gizmo 渲染失效/悬挂。重置 layer 与 gizmo 缓存（attachGizmo 会按需重建）。
+    if (_scene !== scene) {
+        _posGizmo = safeDispose(_posGizmo);
+        _rotGizmo = safeDispose(_rotGizmo);
+        _scaleGizmo = safeDispose(_scaleGizmo);
+        _gizmoLayer = safeDispose(_gizmoLayer);
+        _gizmoTargetId = null;
+        _gizmoNode = null;
+        _isDragging = false;
+        _activeDragEndCallbacks = [];
+        _scene = scene;
+    }
 }
 
 function _getOrCreateLayer(): UtilityLayerRenderer {
@@ -119,12 +136,16 @@ export function attachGizmo(options: GizmoAttachOptions): boolean {
                 g.onDragStartObservable.add(() => {
                     _isDragging = true;
                 });
-                if (options.onPositionDragEnd) {
-                    g.onDragEndObservable.add(() => options.onPositionDragEnd!(options.node));
-                }
+                // [fix P3] 先复位 _isDragging 再回调：回调抛异常不会让拖拽态永久卡 true
+                // （否则 scene.ts 点击拾取闸 isGizmoDragging() 被永久闸死）
                 g.onDragEndObservable.add(() => {
                     _isDragging = false;
+                    options.onPositionDragEnd?.(options.node);
                 });
+                // [fix P2] 收集回写供 detachGizmo 在拖拽中 detach 时 flush
+                if (options.onPositionDragEnd) {
+                    _activeDragEndCallbacks.push(options.onPositionDragEnd);
+                }
                 g.onDragObservable.add(() => onGizmoDragObservable.notifyObservers());
                 _posGizmo = g;
                 break;
@@ -138,12 +159,15 @@ export function attachGizmo(options: GizmoAttachOptions): boolean {
                 g.onDragStartObservable.add(() => {
                     _isDragging = true;
                 });
-                if (options.onRotationDragEnd) {
-                    g.onDragEndObservable.add(() => options.onRotationDragEnd!(options.node));
-                }
+                // [fix P3] 同 position：先复位 _isDragging 再回调
                 g.onDragEndObservable.add(() => {
                     _isDragging = false;
+                    options.onRotationDragEnd?.(options.node);
                 });
+                // [fix P2] 收集回写供 detach 时 flush
+                if (options.onRotationDragEnd) {
+                    _activeDragEndCallbacks.push(options.onRotationDragEnd);
+                }
                 g.onDragObservable.add(() => onGizmoDragObservable.notifyObservers());
                 _rotGizmo = g;
                 break;
@@ -157,12 +181,15 @@ export function attachGizmo(options: GizmoAttachOptions): boolean {
                 g.onDragStartObservable.add(() => {
                     _isDragging = true;
                 });
-                if (options.onScaleDragEnd) {
-                    g.onDragEndObservable.add(() => options.onScaleDragEnd!(options.node));
-                }
+                // [fix P3] 同 position：先复位 _isDragging 再回调
                 g.onDragEndObservable.add(() => {
                     _isDragging = false;
+                    options.onScaleDragEnd?.(options.node);
                 });
+                // [fix P2] 收集回写供 detach 时 flush
+                if (options.onScaleDragEnd) {
+                    _activeDragEndCallbacks.push(options.onScaleDragEnd);
+                }
                 g.onDragObservable.add(() => onGizmoDragObservable.notifyObservers());
                 _scaleGizmo = g;
                 break;
@@ -177,6 +204,22 @@ export function attachGizmo(options: GizmoAttachOptions): boolean {
 
 /** 移除当前 Gizmo。 */
 export function detachGizmo(): void {
+    // [fix P2] 拖拽中 detach（切换选中 / 关闭拖拽开关 / disposeScene）：Babylon 已实时改写
+    // node transform 但 onDragEndObservable 不会触发 → flush 一次 drag-end 回写，确保
+    // 位移落到持久化 + autosave，避免视觉与保存状态分叉。
+    if (_isDragging && _gizmoNode) {
+        const callbacks = _activeDragEndCallbacks;
+        _activeDragEndCallbacks = [];
+        for (const cb of callbacks) {
+            try {
+                cb(_gizmoNode);
+            } catch (err) {
+                logWarn('gizmo', 'drag-end flush failed:', err);
+            }
+        }
+        _isDragging = false;
+    }
+    _activeDragEndCallbacks = [];
     _posGizmo = safeDispose(_posGizmo);
     _rotGizmo = safeDispose(_rotGizmo);
     _scaleGizmo = safeDispose(_scaleGizmo);

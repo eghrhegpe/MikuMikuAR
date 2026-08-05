@@ -107,7 +107,7 @@ export async function loadAndRetargetAnimation(
     if (!animationGroups || animationGroups.length === 0) {
         logWarn('retarget', 'no animation groups found');
         feedbackStatus('motion.retarget.noAnimation', undefined, false);
-        _cleanupTempMeshes(result.meshes);
+        _cleanupTempMeshes(result.meshes, result.animationGroups);
         return null;
     }
 
@@ -123,7 +123,7 @@ export async function loadAndRetargetAnimation(
     if (!sourceSkeleton) {
         logWarn('retarget', 'no skeleton found in loaded file');
         feedbackStatus('motion.retarget.noSkeleton', undefined, false);
-        _cleanupTempMeshes(result.meshes);
+        _cleanupTempMeshes(result.meshes, result.animationGroups);
         return null;
     }
 
@@ -149,12 +149,12 @@ export async function loadAndRetargetAnimation(
         if (!retargeted) {
             logWarn('retarget', 'retargetAnimation returned null');
             feedbackStatus('motion.retarget.failed', undefined, false);
-            _cleanupTempMeshes(result.meshes);
+            _cleanupTempMeshes(result.meshes, result.animationGroups);
             return null;
         }
         feedbackInfo('motion.retarget.success', undefined);
         // retarget 成功且 cloneAnimation:true 后，源 mesh 不再需要（动画已克隆到目标骨骼）
-        _cleanupTempMeshes(result.meshes);
+        _cleanupTempMeshes(result.meshes, result.animationGroups);
         return {
             animationGroup: retargeted,
             sourceSkeleton,
@@ -163,7 +163,7 @@ export async function loadAndRetargetAnimation(
     } catch (err) {
         logWarn('retarget', 'retargetAnimation failed:', err);
         feedbackStatus('motion.retarget.failed', undefined, false);
-        _cleanupTempMeshes(result.meshes);
+        _cleanupTempMeshes(result.meshes, result.animationGroups);
         return null;
     }
 }
@@ -215,10 +215,29 @@ export function playRetargetedAnimation(
 
 /** 清理加载动画时创建的临时网格。 */
 function _cleanupTempMeshes(
-    meshes: import('@babylonjs/core/Meshes/abstractMesh').AbstractMesh[]
+    meshes: import('@babylonjs/core/Meshes/abstractMesh').AbstractMesh[],
+    animationGroups?: AnimationGroup[]
 ): void {
+    // [fix P2] mesh.dispose() 不释放其 skeleton：源文件加载的临时骨骼
+    // （retarget 用 cloneAnimation:true 后动画已克隆到目标骨骼）必须显式 dispose，
+    // 否则每次 loadAndRetargetAnimation 都在场景累积一组源骨骼 + 动画组。
+    // 用 Set 去重：GLB/FBX 通常多个 mesh 共享同一骨架，避免二次 dispose。
+    const skeletons = new Set<Skeleton>();
     for (const mesh of meshes) {
+        if (mesh.skeleton) {
+            skeletons.add(mesh.skeleton);
+        }
         mesh.dispose();
+    }
+    for (const sk of skeletons) {
+        sk.dispose();
+    }
+    if (animationGroups) {
+        for (const group of animationGroups) {
+            // [fix P2] 源 AnimationGroup 泄漏：retargeted 是 cloneAnimation:true 的克隆，
+            // 源 group 生命周期结束，须显式 dispose（dispose 克隆不影响）。
+            group.dispose();
+        }
     }
 }
 

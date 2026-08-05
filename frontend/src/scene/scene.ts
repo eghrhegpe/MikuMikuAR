@@ -131,7 +131,7 @@ import { onModelMeshesReady, disposeReflection } from './env/env-reflection';
 import { initLoader, setOnMeshesReady, setOnModelLoaded } from './manager/model-loader';
 import { isDragModeEnabled } from './transform/transform-mode';
 import { tryAttachGizmoFromPick } from './transform/transform-pick';
-import { isGizmoDragging } from './transform/transform-adapter';
+import { isGizmoDragging, detachGizmo } from './transform/transform-adapter';
 import { registerAiSnapshotBridge } from '@/core/ai/scene-snapshot';
 import { detectKtx2Support } from '@/core/gpu-capabilities';
 
@@ -284,6 +284,10 @@ export function disposeScene(): void {
     // 3. [fix:P3] 释放程序化动作模块（BeatDetector + perception observer）
     //    proc-motion-bridge 已静态导入，同步释放以保持 disposeScene 同步级联契约
     disposeProcMotion();
+
+    // 3.5 [fix P2] 释放 Gizmo（含拖拽中 flush 回写）——layer 绑定在即将 dispose 的 scene 上，
+    //    不释放会导致 initTransformGizmo 跨场景复用失效 layer
+    detachGizmo();
 
     // 4. 释放反射系统、渲染管线、环境更新、物理风系统
     disposeReflection();

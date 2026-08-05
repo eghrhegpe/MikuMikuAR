@@ -1523,10 +1523,36 @@ export const browserAdapter: BackendService = {
         if (!buf) {
             return null;
         }
+        // [fix P2] ZIP 炸弹防护 1：压缩包本体大小预判（对齐 _scanDirIntoIDB L1157）
+        if (buf.byteLength > MAX_ZIP_FILE_SIZE) {
+            console.warn(
+                `[web-extract] 跳过过大 zip (${(buf.byteLength / 1024 / 1024).toFixed(1)} MB): ${zipPath}`
+            );
+            return null;
+        }
         // [doc:adr-006] 用 fflate 替代 JSZip：先解析中央目录得正确文件名（经 bestDecodeZipName），
         // 再用 unzipSync 解压全部条目。unzipSync 返回的键由 gpf bit 11 决定编码（UTF-8 或 Latin-1），
         // parseZipCentralDir 已预计算 fflateKey 与此对齐，直接按键取回数据。
         const entries = parseZipCentralDir(buf);
+        // [fix P2] ZIP 炸弹防护 2+3：unzipSync 会全量解压到内存（OOM 风险），
+        // 复用 _scanDirIntoIDB 的条目数 / 总未压缩大小阈值（对齐 Go 端 expandZipEntries）。
+        if (entries.length > MAX_ZIP_ENTRY_COUNT) {
+            console.warn(
+                `[web-extract] zip ${zipPath} 条目数 ${entries.length} 超限，疑似 zip 炸弹`
+            );
+            return null;
+        }
+        let _totalUncompressed = 0;
+        for (const entry of entries) {
+            _totalUncompressed += entry.uncompressedSize;
+            if (_totalUncompressed > MAX_ZIP_TOTAL_BYTES) {
+                break;
+            }
+        }
+        if (_totalUncompressed > MAX_ZIP_TOTAL_BYTES) {
+            console.warn(`[web-extract] zip ${zipPath} 总未压缩大小超限，疑似 zip 炸弹`);
+            return null;
+        }
         const fileEntries = entries.filter((e) => !e.isDir);
         const ASSET_RE = /\.(pmx|vmd|vpd|png|jpg|jpeg|bmp|tga|dds|tif|tiff|wav|mp3|ogg|flac|glb)$/i;
         // 第一遍：确定目标文件（优先使用 innerPath，兜底找第一个 PMX）
