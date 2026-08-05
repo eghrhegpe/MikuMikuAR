@@ -2,14 +2,31 @@
 // 职责: 定义 EnvState 全部字段的类型 + 默认值 + dispatch 分组，types.ts/state.ts 从此派生。
 // 新增字段只需在此追加（type + default + group），各子系统通过 getEnvKeys(group) 自动获取 key 列表。
 // 无需再手工维护 _SKY_KEYS / _GROUND_KEYS / _WATER_KEYS 等数组。
+// [doc:adr-243] default 与 type 互锁（FieldDefaultMap + satisfies），杜绝「type:'number' 但 default:'x'」
+// 类错误静默放行；deriveDefaultEnvState（env-state-defaults.ts）据此安全遍历推导。
 
-/** Schema 字段类型定义 */
-type _FieldDef<TType extends string, TDefault> = {
+/** type → default 类型互锁映射：[doc:adr-243] default 的类型必须与 type 声明一致（编译期防线） */
+type FieldDefaultMap = {
+    enum: string;
+    number: number;
+    boolean: boolean;
+    string: string;
+    tuple3: readonly [number, number, number];
+    'optional-string': string | undefined;
+};
+
+/** Schema 字段类型定义（[doc:adr-243] 互锁版：default 类型随 type 收窄） */
+type _FieldDef<TType extends keyof FieldDefaultMap> = {
     type: TType;
-    default: TDefault;
+    default: FieldDefaultMap[TType];
     /** dispatch 分组：字段变化时触发哪些子系统回调。未指定 = 不触发任何子系统。 */
     group?: string | readonly string[];
 } & (TType extends 'enum' ? { values: readonly string[] } : object);
+
+/** 任意合法字段定义的联合：对 ENV_STATE_SCHEMA 施加 satisfies 约束时逐字段匹配 */
+type _AnyFieldDef = {
+    [TType in keyof FieldDefaultMap]: _FieldDef<TType>;
+}[keyof FieldDefaultMap];
 
 // ======== EnvState Schema ========
 // 按 sky / ground / wind / particle / water / water-shader / underwater / clouds / mirror / fog / collision / lighting 分组
@@ -357,7 +374,7 @@ export const ENV_STATE_SCHEMA = {
     lightingPresetName: { type: 'optional-string', default: undefined },
     timeOfDayActive: { type: 'boolean', default: false, group: 'sky' },
     timeOfDaySpeed: { type: 'number', default: 3, group: 'sky' },
-} as const;
+} as const satisfies Record<string, _AnyFieldDef>;
 
 export type EnvStateSchema = typeof ENV_STATE_SCHEMA;
 

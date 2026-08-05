@@ -1,7 +1,7 @@
 # ADR-243: EnvState 默认值从 Schema 自动推导 —— 消除 100+ 字段双源手工映射
 
 > **日期**: 2026-08-06
-> **状态**: 🔄 规划中 —— 已登记方案与实施步骤，待落地
+> **状态**: ✅ 已完成（2026-08-06 落地；实施前子代理坑点审核无阻断项，3 个注意项已处理）—— `deriveDefaultEnvState` 上线，`state.ts` 手工 148 字段映射删除，`satisfies` 编译期防线前移至 schema 互锁
 > **编号**: 243
 >
 > **关联**: [ADR-137](adr-137-envstate-single-source-schema.md)（EnvState 单一源 Schema）、[ADR-141](adr-141-state-split.md)（state.ts 拆分）、[ADR-226](adr-226-ground-material-spec-single-source.md)（地面材质单一事实源，同款「单源派生」先例）
@@ -96,10 +96,37 @@ type _FieldDef<TType extends string, TDefault> = {
 
 ### 验收标准
 
-- [ ] `buildDefaultEnvState` 不再手工逐字段映射（或映射体 ≤ 3 行转发）
-- [ ] 新增 env 字段只需改 schema 一处
-- [ ] tuple3 克隆语义与现状完全一致（单测锁定）
-- [ ] 全量单测通过，构建通过
+- [x] `buildDefaultEnvState` 不再手工逐字段映射（已删除，`state.ts` 直接 `reactive(deriveDefaultEnvState())`）
+- [x] 新增 env 字段只需改 schema 一处
+- [x] tuple3 克隆语义与现状完全一致（单测锁定：新引用 + 值相等）
+- [x] 全量单测通过（4394），构建通过
+
+## 落地记录（2026-08-06）
+
+### 实施前子代理坑点审核结论
+
+9 点核实 **0 阻断项**；3 个注意项全部处理：
+
+| 注意项 | 处理方式 |
+|--------|---------|
+| `as unknown as EnvState` 丢失 `satisfies` 兜底 | ✅ 编译期防线**前移**：`ENV_STATE_SCHEMA` 施加 `as const satisfies Record<string, _AnyFieldDef>`，`FieldDefaultMap` 互锁 type↔default（原 `_FieldDef` 是**从未被应用的死类型**，本次顺手激活） |
+| `optional-string` 未在 type 判断中穷举 | ✅ 靠 else 分支兜底正确（lightingPresetName），已在 `env-state-defaults.ts` 注释标明「未来新增非 tuple3 引用类型须补克隆分支」 |
+| `env-state.test.ts` 的 `defaultEnv` 过期快照 | ⚪ 不属本 ADR 范围（fixture 断言自洽，本次不新增字段不会编译失败），已记录为后续技术债 |
+
+### 变更文件
+
+| 文件 | 变更 |
+|------|------|
+| `core/env-state-schema.ts` | `_FieldDef` 改互锁版 + `FieldDefaultMap` + `_AnyFieldDef` + schema 施加 `satisfies` |
+| `core/env-state-defaults.ts` | **新增**：`deriveDefaultEnvState()` 纯函数（tuple3 克隆，其余直引） |
+| `core/state.ts` | 删除 148 行手工映射，改 `reactive(deriveDefaultEnvState())` |
+| `core/__tests__/env-state-defaults.test.ts` | **新增**：6 用例（字段数/孤儿字段/tuple3 新引用/值相等/optional-string/重复调用独立引用） |
+
+### 验证
+
+- `tsc --noEmit` 通过（互锁未破坏 148 字段）
+- 相关 env 测试 91 用例 + 全量 **262 文件 / 4394 测试全绿**
+- `vite build` 通过
 
 ---
 

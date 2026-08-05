@@ -30,7 +30,9 @@ if (schemaStart === -1) {
     process.exit(1);
 }
 const schemaBody = text.slice(schemaStart);
-const asConstIdx = schemaBody.indexOf('} as const;');
+// [doc:adr-243] schema 收尾为 `} as const satisfies Record<string, _AnyFieldDef>;`，
+// 兼容匹配 `} as const`（indexOf 前缀命中），截取到 `}` 为止
+const asConstIdx = schemaBody.indexOf('} as const');
 if (asConstIdx === -1) {
     console.error('❌ 未找到 ENV_STATE_SCHEMA 结束标记');
     process.exit(1);
