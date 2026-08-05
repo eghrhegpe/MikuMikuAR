@@ -3,7 +3,6 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "sideEffects": false,
   "scripts": {
     "dev": "node ../scripts/generate-locale-json.mjs && vite",
     "build": "node ../scripts/generate-locale-json.mjs && tsc && vite build",

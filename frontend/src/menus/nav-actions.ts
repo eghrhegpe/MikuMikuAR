@@ -177,44 +177,50 @@ function installNavBindings(): void {
     if (_navDisposables.length > 0) {
         return;
     }
-    _navDisposables.push(
-        addDisposableListener(dom.btnMainAction, 'click', () =>
-            toggleOverlay('sceneOverlay', showModelPopup)
-        ),
-        addDisposableListener(dom.btnMotionPopup, 'click', () =>
-            toggleOverlay('sceneOverlay', showMotionPopup)
-        ),
-        addDisposableListener(dom.btnScene, 'click', async () => {
-            const m = await import('./scene-menu');
-            toggleOverlay('sceneOverlay', m.showSceneMenu);
-        }),
-        addDisposableListener(dom.btnEnv, 'click', async () => {
-            const m = await import('./env-menu');
-            toggleOverlay('sceneOverlay', m.showEnvMenu);
-        }),
-        addDisposableListener(dom.btnSettings, 'click', async () => {
-            const m = await import('./settings');
-            await safeCallAsync('nav-actions', 'preloadAutoImportState', () =>
-                m.preloadAutoImportState()
-            ); // 静默失败，避免阻塞 UI
-            await safeCallAsync('nav-actions', 'preloadDownloadWatchState', () =>
-                m.preloadDownloadWatchState()
-            ); // 预加载监听开关状态
-            toggleOverlay('sceneOverlay', m.showSettings);
-        }),
-        addDisposableListener(dom.btnAssistant, 'click', async () => {
-            const m = await import('./assistant-panel');
-            toggleOverlay('sceneOverlay', m.showAssistant);
-        }),
-        addDisposableListener(dom.btnPlaza, 'click', () => {
-            const layer = document.getElementById('webviewLayer');
-            if (layer && layer.classList.contains('visible')) {
-                closePlaza();
-            } else {
-                toggleOverlay('webviewLayer', showPlaza);
-            }
-        })
+    // [fix:test] 按钮缺失（happy-dom 无对应元素）时跳过该按钮接线，而非抛异常中断
+    // 整个模块求值——否则 registerUiAction 等后续顶层副作用全部丢失（测试 import 即崩）。
+    const bindBtn = (el: HTMLButtonElement | null, fn: () => void): void => {
+        if (!el) {
+            return;
+        }
+        _navDisposables.push(addDisposableListener(el, 'click', fn));
+    };
+    bindBtn(dom.btnMainAction, () =>
+        toggleOverlay('sceneOverlay', showModelPopup)
     );
+    bindBtn(dom.btnMotionPopup, () =>
+        toggleOverlay('sceneOverlay', showMotionPopup)
+    );
+    bindBtn(dom.btnScene, async () => {
+        const m = await import('./scene-menu');
+        toggleOverlay('sceneOverlay', m.showSceneMenu);
+    });
+    bindBtn(dom.btnEnv, async () => {
+        const m = await import('./env-menu');
+        toggleOverlay('sceneOverlay', m.showEnvMenu);
+    });
+    bindBtn(dom.btnSettings, async () => {
+        const m = await import('./settings');
+        await safeCallAsync('nav-actions', 'preloadAutoImportState', () =>
+            m.preloadAutoImportState()
+        ); // 静默失败，避免阻塞 UI
+        await safeCallAsync('nav-actions', 'preloadDownloadWatchState', () =>
+            m.preloadDownloadWatchState()
+        ); // 预加载监听开关状态
+        toggleOverlay('sceneOverlay', m.showSettings);
+    });
+    bindBtn(dom.btnAssistant, async () => {
+        const m = await import('./assistant-panel');
+        toggleOverlay('sceneOverlay', m.showAssistant);
+    });
+    bindBtn(dom.btnPlaza, () => {
+        const layer = document.getElementById('webviewLayer');
+        if (layer && layer.classList.contains('visible')) {
+            closePlaza();
+        } else {
+            toggleOverlay('webviewLayer', showPlaza);
+        }
+    });
 }
 
 /** 卸载导航按钮监听（HMR/dispose 用） */
