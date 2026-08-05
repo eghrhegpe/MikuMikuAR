@@ -47,7 +47,7 @@ import { translateGoError } from '../core/i18n/goerr';
 import { addDisposableListener } from '../core/dom';
 import { buildLevel, setResourceViewMode } from './library-core';
 import { showModelPopup } from './library-browse';
-// [doc:adr-238] 导航按钮接线 + 标签映射（从 core/init.ts 下沉），initLibrary 驱动
+// [doc:adr-238] 导航按钮接线 + 标签映射（从 core/init.ts 下沉），main.ts side-effect import 拉起
 import { initNavActions, disposeNavBindings } from './nav-actions';
 
 // ======== 初始化 ========
@@ -75,8 +75,8 @@ async function promptReauthorize(): Promise<boolean> {
 
 export async function initLibrary(): Promise<void> {
     try {
-        // [doc:adr-238] nav-actions 模块加载即完成按钮接线 + 标签映射（import 链已拉起），
-        // 此处无需显式调用 initNavActions。
+        // [doc:adr-238] nav-actions 模块加载即完成按钮接线 + 标签映射（main.ts side-effect
+        // import 本模块→import nav-actions 已拉起），此处无需显式调用 initNavActions。
         const cfg = await GetConfig();
         let cfgRoot = cfg.resource_root || cfg.library_root || cfg.override_paths?.pmx || '';
         const state = await getFsaAuthState();
