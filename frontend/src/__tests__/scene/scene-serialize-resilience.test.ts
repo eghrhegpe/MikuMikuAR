@@ -171,7 +171,8 @@ vi.mock('../../motion-algos/procedural-motion', () => ({
 }));
 vi.mock('../../motion-algos/lipsync', () => ({ DEFAULT_LIPSYNC_STATE: {} }));
 
-import { serializeScene, deserializeScene, triggerAutoSaveImpl } from '../../scene/scene-serialize';
+import { serializeScene, deserializeScene, triggerAutoSaveImpl, tryRestoreLastScene } from '../../scene/scene-serialize';
+import { LoadLastScene } from '../../core/wails-bindings';
 import { setCameraState } from '../../scene/camera/camera';
 import { getMatState, applyMatState, loadPMXFile } from '../../scene/scene';
 import {
@@ -317,6 +318,20 @@ describe('deserializeScene — suppress 泄漏防护（fix:suppress-leak）', ()
         expect(logs.some((l) => l.includes('suppressed'))).toBe(false);
         info.mockRestore();
         vi.mocked(setCameraState).mockReset();
+    });
+
+    it('tryRestoreLastScene — env 恢复 try/finally 复位 suppress（fix:suppress-leak）', async () => {
+        vi.mocked(LoadLastScene).mockResolvedValueOnce(
+            JSON.stringify({ version: 1, models: [], env: { time: 12 } })
+        );
+        await tryRestoreLastScene();
+        const info = vi.spyOn(console, 'info').mockImplementation(() => {});
+        triggerAutoSaveImpl();
+        const logs = info.mock.calls.map((c) => String(c[0]));
+        expect(logs.some((l) => l.includes('triggerAutoSaveImpl() called — debounce scheduled'))).toBe(true);
+        expect(logs.some((l) => l.includes('suppressed'))).toBe(false);
+        info.mockRestore();
+        vi.mocked(LoadLastScene).mockReset();
     });
 
     it('deserializeScene 恢复 SSS materialSssCategories', async () => {

@@ -273,6 +273,31 @@ describe('_applyAll ordering: per-material overrides category on re-apply', () =
         expect(m1.diffuseColor.r).toBeCloseTo(0.9);
         expect(m2.diffuseColor.r).toBeCloseTo(0.5);
     });
+
+    it('applies PBR alpha = clamp01(origAlpha * opacity * alphaMul) (fix P2)', () => {
+        const mats = [makeMockMat(1, 1, 1)];
+        mats[0].alpha = 1;
+        // @ts-expect-error duck-typed mock material
+        modelRegistry.set(TEST_ID, { meshes: [{ material: mats[0] }] });
+        setMatCatParams(TEST_ID, '皮肤', {
+            diffuseMul: 1, specularMul: 1, shininess: 50, ambientMul: 1,
+        });
+        setMatParams(TEST_ID, 0, { alphaMul: 0.5, diffuseMul: 1, specularMul: 1, shininess: 50, ambientMul: 1 });
+        _applyAll(TEST_ID, { opacity: 0.8, origAlpha: [] });
+        expect(mats[0].alpha).toBeCloseTo(1 * 0.8 * 0.5);
+    });
+
+    it('reads _matState presence in early-return guard (fix stale-cache guard)', () => {
+        const mats = [makeMockMat(1, 1, 1)];
+        // @ts-expect-error duck-typed mock material
+        modelRegistry.set(TEST_ID, { meshes: [{ material: mats[0] }] });
+        setMatCatParams(TEST_ID, '皮肤', {
+            diffuseMul: 1, specularMul: 1, shininess: 50, ambientMul: 1,
+        });
+        _matState.set(TEST_ID, new Map());
+        expect(() => _applyAll(TEST_ID)).not.toThrow();
+        _matState.clear();
+    });
 });
 
 describe('per-material params write through to Babylon material properties', () => {

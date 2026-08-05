@@ -84,6 +84,7 @@ vi.mock(
     () => mmdTextureAlphaFragmentMock
 );
 
+import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { getMaterialCategory } from '../scene/scene';
 
 describe('getMaterialCategory material classification', () => {
@@ -137,5 +138,11 @@ describe('getMaterialCategory material classification', () => {
 
     it('classifies "ahoge" as 头发', () => {
         expect(getMaterialCategory('ahoge')).toBe('头发');
+    });
+
+    it('classifies a Material instance by name via categoryOfMaterial delegation (fix stale-cache)', () => {
+        const mat = new StandardMaterial('skin');
+        expect(getMaterialCategory(mat)).toBe('皮肤');
+        mat.dispose();
     });
 });
