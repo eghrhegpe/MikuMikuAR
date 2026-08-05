@@ -129,11 +129,11 @@ npm run check:layering        # 检查（已挂入 check:all）
 npm run gen:layering-baseline # 消除反向边后收紧基线
 ```
 
-## Phase 2 待办（未启动）
+## Phase 2 进行中
 
 按目录逐个收编，每个目录一次独立 commit + 全量验证（`tsc` / `test` / `check:circular --strict` / `check:layering`）：
 
-1. `materials/SssPBRMaterial.ts` → `scene/render/`（并决定接线或降级）
+1. ✅ **已完成** `materials/SssPBRMaterial.ts` → `scene/manager/sss-pbr-material.ts`。归宿选 `scene/manager/` 而非原计划 `scene/render/`：`scene/render/` 实为灯光/渲染管线域，SSS 材质的语义邻居是同域的 `material-sss.ts`（对其有 2 处注释引用）。同步修正 PascalCase 命名越狱，测试迁至 `__tests__/scene/`，`check-layering.mjs` 的 `TOPLEVEL_ALGO` 移除 `materials`。顶层目录 5 → 4。
 2. `library/library-path.ts` → `core/`（消费面 12/13 在 menus，属公共服务）
 3. `physics/` → `scene/physics/`（被 scene 反向消费 7 处，方向已反转）
 4. `outfit/` 拆分绑定层与 UI 调用层，同步消除 `_catOf` 穿透引用

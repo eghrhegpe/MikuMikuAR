@@ -65,7 +65,7 @@ vi.mock('@babylonjs/core/Materials/PBR/pbrSubSurfaceConfiguration', () => ({
 }));
 
 // Force re-import after mocks
-import { SssPBRMaterial } from '@/materials/SssPBRMaterial';
+import { SssPBRMaterial } from '@/scene/manager/sss-pbr-material';
 
 describe('SssPBRMaterial — property defaults & setters', () => {
     beforeEach(() => {

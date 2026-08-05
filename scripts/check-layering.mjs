@@ -38,7 +38,7 @@ const SRC_ROOT = resolve(REPO_ROOT, 'frontend', 'src');
 const BASELINE_FILE = resolve(REPO_ROOT, 'docs', '.layering-baseline.json');
 
 /** 顶层算法目录（ADR-242 认定的中间层） */
-const TOPLEVEL_ALGO = ['motion-algos', 'physics', 'library', 'materials', 'outfit'];
+const TOPLEVEL_ALGO = ['motion-algos', 'physics', 'library', 'outfit'];
 
 const { json, update } = parseArgs(process.argv.slice(2), { bools: ['json', 'update'] });
 

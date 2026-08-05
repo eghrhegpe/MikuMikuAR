@@ -8,7 +8,7 @@
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
 | 核心基础设施 | 128 | 735 |
-| 3D 场景 | 119 | 1154 |
+| 3D 场景 | 120 | 1155 |
 | 菜单 & UI | 76 | 388 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 19 | 140 |
@@ -1295,6 +1295,7 @@
 | `tryApplyPbrMaterialBuilder()` | `scene/manager/pbr-builder-init:12` | 动态导入 PBRMaterialBuilder 并覆盖 MmdModelLoader.SharedMaterialBuilder。 |
 | `auditMissingTextures()` | `scene/manager/pmx-texture-audit:46` | 识别 PMX 声明但目录中缺失的纹理。 |
 | `parsePmxTexturePaths()` | `scene/manager/pmx-texture-audit:31` | 解析 PMX 声明的纹理路径清单（相对路径，原样保留目录前缀与分隔符）。 |
+| `SssPBRMaterial()` | `scene/manager/sss-pbr-material:26` | — |
 | `expandFallbackCandidates()` | `scene/manager/texture-fallback:93` | 批量展开 fallback 候选条目（共享 data 引用），并对「候选 vs 真实路径」冲突去重。 |
 | `registerDeclaredAliases()` | `scene/manager/texture-fallback:52` | 按 PMX 声明路径反向注册别名（[fix:decl-alias]）。 |
 | `textureFallbackCandidates()` | `scene/manager/texture-fallback:17` | 生成给定相对路径的 fallback 候选列表（不含原始路径本身）。 |
