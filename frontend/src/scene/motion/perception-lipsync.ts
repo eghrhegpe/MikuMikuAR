@@ -1,7 +1,7 @@
 // [doc:adr-079] 感知层 — Lip-sync（口型同步，从 lipsync-bridge.ts 迁移）
 
 import { getProcBeatDetector } from './proc-motion-bridge';
-// [doc:adr-238] 音频操作经 scene-action-bridge（outfit/audio 注册）
+// [doc:adr-238] 音频操作经 scene-action-bridge（core/audio 注册）
 import { getSceneAction } from '@/core/scene-action-bridge';
 import { findLipMorph, findAllLipMorphs, amplitudeToWeight } from '@/motion-algos/lipsync';
 import type { PerceptionState, MmdModelLike, PerceptionTier } from './perception-shared';

@@ -60,7 +60,7 @@ vi.mock('../scene/manager/material', () => mockMaterial());
 vi.mock('../scene/env/env', () => mockEnv());
 vi.mock('../scene/camera/camera', () => mockCamera());
 vi.mock('../scene/motion/playback', () => mockPlayback());
-vi.mock('../outfit/audio', () => mockAudio());
+vi.mock('@/core/audio', () => mockAudio());
 vi.mock('@babylonjs/core/Maths/math.vector', async () => {
     const m = await vi.importActual<any>('./mocks/babylon-classes.ts');
     return {

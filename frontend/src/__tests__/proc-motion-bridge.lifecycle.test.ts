@@ -16,7 +16,7 @@ import {
 const mockState = createProcMockState();
 
 vi.mock('../core/config', () => mockConfig(mockState));
-vi.mock('../outfit/audio', () => mockAudio(mockState));
+vi.mock('@/core/audio', () => mockAudio(mockState));
 vi.mock('../scene/scene', () => mockScene(mockState));
 vi.mock('../scene/motion/vmd-layers', () => mockVmdLayers());
 vi.mock('../scene/motion/perception', () => mockPerception(mockState));

@@ -22,7 +22,7 @@ import {
 } from '@/motion-algos/procedural-motion';
 import { BeatDetector } from '@/motion-algos/beat-detector';
 import { focusedModelId } from '@/core/config';
-// [doc:adr-238] 音频操作经 scene-action-bridge（outfit/audio 注册）
+// [doc:adr-238] 音频操作经 scene-action-bridge（core/audio 注册）
 import { getSceneAction } from '@/core/scene-action-bridge';
 import { modelManager, focusedMmdModel, focusedModel } from '../scene';
 import { onPerceptionModelRemoved } from './perception';

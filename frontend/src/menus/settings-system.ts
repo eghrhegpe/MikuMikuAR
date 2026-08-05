@@ -41,7 +41,7 @@ import { setPerformanceMode } from '../scene/render/performance';
 import { engine, applyFrameControl } from '../scene/scene';
 import { calcHardwareScaling } from '../core/render-loop';
 import { refreshCameraUserSettings } from '../scene/camera/camera';
-import { setVolume, getVolume, setAudioOffset, getAudioOffset } from '../outfit/audio';
+import { setVolume, getVolume, setAudioOffset, getAudioOffset } from '@/core/audio';
 import { executeActionById } from '../core/action-executor';
 import { applyUIAppearanceDom, formatBytes } from './settings-shared';
 import type { SlideMenu } from './menu';

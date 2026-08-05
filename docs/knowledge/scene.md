@@ -18,7 +18,7 @@ scope:
 source_files:
   - frontend/src/scene/scene.ts
   # [doc:adr-238] 音频/AR 功能下沉后归属（scene.ts 不再 re-export）
-  - frontend/src/outfit/audio.ts
+  - frontend/src/core/audio.ts
   - frontend/src/scene/ar/ar-scene.ts
 tests:
   - frontend/src/__tests__/scene-model.test.ts
@@ -27,6 +27,7 @@ tests:
   - frontend/src/__tests__/scene/scene-serialize-resilience.test.ts
   - frontend/src/__tests__/scene/scene-serialize-undo.test.ts
 symbols:
+  - BeatSink
   - DEFAULT_MAT_PARAMS
   - LoadLastScene
   - SaveLastScene

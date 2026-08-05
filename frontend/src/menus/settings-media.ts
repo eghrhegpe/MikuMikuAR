@@ -9,7 +9,7 @@ import { translateGoError } from '../core/i18n/goerr';
 import { slideRow, addSectionTitle } from '../core/ui-helpers';
 import { getCurrentRenderingMenu } from './menu';
 import { SelectDir, OpenScreenshotDir } from '../core/wails-bindings';
-import { setVolume, setAudioOffset, setRepeatMode, getRepeatModeStr } from '../outfit/audio';
+import { setVolume, setAudioOffset, setRepeatMode, getRepeatModeStr } from '@/core/audio';
 import {
     setSfxEnabled,
     setSfxVolume,

@@ -61,8 +61,8 @@ import { seekFromEvent } from '../scene/motion/playback';
 import { mockRuntime } from './playback-helpers';
 import { registerSceneAction } from '../core/scene-action-bridge';
 
-// [doc:adr-238] seekFromEvent 经 scene-action-bridge 调用 syncAudioPlayback（outfit/audio 注册），
-// 不再静态 import outfit/audio；测试侧手动注册桩。
+// [doc:adr-238] seekFromEvent 经 scene-action-bridge 调用 syncAudioPlayback（core/audio 注册），
+// 不再静态 import core/audio；测试侧手动注册桩。
 registerSceneAction('syncAudioPlayback', (vmdTime, playing, vmdDuration) =>
     syncAudioPlayback(vmdTime, playing, vmdDuration)
 );

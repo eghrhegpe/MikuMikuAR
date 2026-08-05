@@ -39,6 +39,6 @@ use_when:
 - `buildMediaSchema(getSettingsMenu)` — 组装媒体页面 Schema。
 
 ## 与其他子系统关系
-- 依赖 `outfit/audio` 的音频控制函数。
+- 依赖 `core/audio` 的音频控制函数。
 - 依赖 `wails-bindings` 的目录选择与后端操作。
 - 依赖 `scene/motion/proc-motion-bridge` 的 BPM 量化设置。

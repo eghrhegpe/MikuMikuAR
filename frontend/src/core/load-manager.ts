@@ -201,7 +201,7 @@ class LoadManager {
                     };
                 }
                 case 'audio': {
-                    const { loadAudioFile } = await import('../outfit/audio');
+                    const { loadAudioFile } = await import('@/core/audio');
                     await loadAudioFile(req.path, signal);
                     this._phase = 'refresh';
                     this._refreshMenus();

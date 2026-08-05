@@ -45,7 +45,7 @@ use_when:
 
 ## 与其他子系统关系
 - 使用 `babylon-mmd` 的 `VmdLoader` / `MmdWasmAnimation`。
-- 伴音加载：`@/outfit/audio.loadAudioFile`。
+- 伴音加载：`@/core/audio.loadAudioFile`。
 - 相机 VMD：`../camera/camera.loadCameraVmd`。
 - 动作意图：`./motion-intent.replaceDefaultMotion`。
 - 文件读取：`@/core/wails-bindings.readFileBytes`。

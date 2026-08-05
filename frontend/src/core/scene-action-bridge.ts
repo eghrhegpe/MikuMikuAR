@@ -72,13 +72,13 @@ export interface SceneActions {
     initLibrary: () => Promise<void>;
     /** AR 是否激活（perception-gaze 查询），由 scene/ar/ar-camera 注册 */
     isARActive: () => boolean;
-    /** 音频是否播放中（scene/motion 查询），由 outfit/audio 注册 */
+    /** 音频是否播放中（scene/motion 查询），由 core/audio 注册 */
     isAudioPlaying: () => boolean;
-    /** 读取音频路径（scene/motion 查询），由 outfit/audio 注册 */
+    /** 读取音频路径（scene/motion 查询），由 core/audio 注册 */
     getAudioPath: () => string;
-    /** 同步音频播放（scene/motion 调用），由 outfit/audio 注册 */
+    /** 同步音频播放（scene/motion 调用），由 core/audio 注册 */
     syncAudioPlayback: (vmdTime: number, isPlaying: boolean, vmdDuration: number) => void;
-    /** 加载音频文件（scene/motion 调用），由 outfit/audio 注册 */
+    /** 加载音频文件（scene/motion 调用），由 core/audio 注册 */
     loadAudioFile: (filePath: string) => Promise<void>;
     /** 动画相机 VMD（scene/motion 调用），由 scene/camera 注册 */
     animateCameraVmd: (frameTime: number) => void;
@@ -138,23 +138,23 @@ export interface SceneActions {
     resolveCompatibility: (bones: unknown, motion: unknown) => { compatible?: boolean };
     /** 读取骨骼覆写类型（model-manager 调用），由 scene/motion 注册 */
     getOverrideType: (boneName: string, modelId?: string) => OverrideType | null;
-    /** 挂载节拍检测器（scene 初始化调用），由 outfit/audio 注册 */
+    /** 挂载节拍检测器（scene 初始化调用），由 core/audio 注册 */
     attachBeatDetector: (detector: unknown) => void;
-    /** 读取流式播放器（scene 调用），由 outfit/audio 注册 */
+    /** 读取流式播放器（scene 调用），由 core/audio 注册 */
     getStreamPlayer: () => unknown;
     /** 加载换装（scene 初始化调用），由 outfit/outfit 注册 */
     loadOutfits: (id: string) => Promise<void>;
     /** 应用换装变体（scene-serialize 调用），由 outfit/outfit 注册 */
     applyOutfitVariant: (id: string, variantName: string) => Promise<void>;
-    /** 设置音量（scene-serialize 调用），由 outfit/audio 注册 */
+    /** 设置音量（scene-serialize 调用），由 core/audio 注册 */
     setVolume: (v: number) => void;
-    /** 读取音量（scene-serialize 调用），由 outfit/audio 注册 */
+    /** 读取音量（scene-serialize 调用），由 core/audio 注册 */
     getVolume: () => number;
-    /** 读取音频偏移（scene-serialize 调用），由 outfit/audio 注册 */
+    /** 读取音频偏移（scene-serialize 调用），由 core/audio 注册 */
     getAudioOffset: () => number;
-    /** 设置音频偏移（scene-serialize 调用），由 outfit/audio 注册 */
+    /** 设置音频偏移（scene-serialize 调用），由 core/audio 注册 */
     setAudioOffset: (v: number) => void;
-    /** 恢复音频（scene-serialize 调用），由 outfit/audio 注册 */
+    /** 恢复音频（scene-serialize 调用），由 core/audio 注册 */
     resumeAudio: () => void;
 }
 

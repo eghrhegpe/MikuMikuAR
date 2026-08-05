@@ -50,7 +50,7 @@ use_when:
 - `setLipSyncMultiMorphEnabled(v)` — 开启/关闭多形态口型。
 
 ## 与其他子系统关系
-- 音频信号：`@/outfit/audio`。
+- 音频信号：`@/core/audio`。
 - 感知口型：`./perception-lipsync.ts`。
 - 注册表：`./motion-modules/registry.ts`。
 

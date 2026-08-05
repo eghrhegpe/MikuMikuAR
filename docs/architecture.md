@@ -253,7 +253,7 @@ stages/ 目录下的 PMX 加载为纯静态网格，不创建 MMD 运行时对�
 
 视图层通过 `inst.kind` 区分，`mmdModel` 使用可选类型 `mmdModel?: MmdWasmModel`，所有访问处加 `?.` 安全调用。
 
-### 9. 音乐播放系统（`outfit/audio.ts`）
+### 9. 音乐播放系统（`core/audio.ts`）
 
 原生 `HTMLAudioElement` 实现，不引入额外依赖。支持 MP3 / WAV / OGG。
 
@@ -339,6 +339,7 @@ MikuMikuAR/
 └── frontend/
     └── src/
         ├── core/                     # ★ 基础设施
+        │   ├── audio.ts              # 音乐播放 + VMD 同步 + 节拍检测（ADR-242 由 outfit/ 收编）
         │   ├── audio-bus.ts          # 音效总线（ADR-088）
         │   ├── ai/                   # 内置 AI 诊断助手（ADR-196 双适配器）
         │   │   ├── index.ts          # resolveAi() 适配器选型单例（Tier 分层）
@@ -558,8 +559,7 @@ MikuMikuAR/
         │
         ├── outfit/                   # 换装系统
         │   ├── outfit.ts           # 加载/应用/重置 + 自动发现
-        │   ├── outfit-overlay.ts   # 换装覆盖层
-        │   └── audio.ts            # 音频播放 + VMD 同步 + 节拍检测
+        │   └── outfit-overlay.ts   # 换装覆盖层
         │
         ├── __tests__/                # 测试夹具
         │   ├── mocks/
@@ -685,11 +685,11 @@ scene/scene.ts
  ├── core/auto-save.ts           自动保存触发
  ├── core/format.ts              文本格式化
  ├── scene/camera/camera.ts      autoFrame / getCameraState / setCameraState / animateCameraVmd / ...
- ├── outfit/audio.ts             syncAudioPlayback / loadAudioFile / ...
+ ├── core/audio.ts             syncAudioPlayback / loadAudioFile / ...
  ├── core/fileservice.ts         resolveFileUrl
  └── Wails Binding               SaveThumbnail / SaveLastScene / LoadLastScene
 
-outfit/audio.ts
+core/audio.ts
  └── core/fileservice.ts   resolveFileUrl
 
 menus/library.ts
@@ -697,7 +697,7 @@ menus/library.ts
  ├── core/library-path.ts        图书馆路径工具
  ├── core/async.ts               异步工具
  ├── scene/scene.ts        loadPMXFile / loadVMDFromPath / focusModel / removeModel
- ├── outfit/audio.ts       loadAudioFile / setAudioOffset
+ ├── core/audio.ts       loadAudioFile / setAudioOffset
  ├── menus/menu.ts          MenuStack
  └── Wails Binding          GetConfig / ScanModelDir / ExtractZip / ...
 
@@ -712,7 +712,7 @@ menus/scene-menu.ts
  ├── menus/menu.ts                MenuStack
  ├── scene/camera/camera.ts      switchCameraMode / getCameraMode / hasCameraVmd / ...
  ├── scene/scene.ts               triggerAutoSave / serializeScene / deserializeScene / getRenderState / ...
- ├── outfit/audio.ts              loadAudioFile / pauseAudio / resumeAudio / ...
+ ├── core/audio.ts              loadAudioFile / pauseAudio / resumeAudio / ...
  └── Wails Binding                SelectSceneSaveFile / SaveSceneFile / SelectAudioFile / ...
 
 scene/camera/camera.ts

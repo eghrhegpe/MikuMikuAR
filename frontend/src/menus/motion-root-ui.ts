@@ -26,7 +26,7 @@ import {
 import type { LoadableProcId } from '../scene/motion/motion-intent';
 // [doc:adr-170] 行尾「动作工具」推进独立工具页；循环依赖安全：仅在函数体内调用
 import { buildMotionToolsLevel, buildMotionDetailLevel } from './motion-detail-ui';
-import { clearAudio, getAudioName } from '../outfit/audio';
+import { clearAudio, getAudioName } from '@/core/audio';
 import { t } from '../core/i18n/t';
 import { SelectRetargetFile } from '../core/wails-bindings';
 import {

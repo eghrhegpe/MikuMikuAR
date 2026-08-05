@@ -20,7 +20,7 @@ import {
     disposeAudio,
     attachBeatDetector,
     getCurrentTime,
-} from '../outfit/audio';
+} from '@/core/audio';
 
 const m = createAudioMockState();
 let streamPlayer: Record<string, any> | null = null;

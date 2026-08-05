@@ -145,7 +145,7 @@ export async function setupPerceptionTest(
     vi.resetModules();
     const sut = await import('../../scene/motion/perception');
     // [doc:adr-238] perception-lipsync 经 scene-action-bridge 查询音频状态（isAudioPlaying /
-    // getAudioPath），不再静态 import outfit/audio。resetModules 后桥实例是新的且注册表为空，
+    // getAudioPath），不再静态 import core/audio。resetModules 后桥实例是新的且注册表为空，
     // 必须在此重新注册 mockState 桩，否则 lip-sync 永远走「无音频」衰减分支。
     const bridge = await import('../../core/scene-action-bridge');
     bridge.registerSceneAction('isAudioPlaying', () => mockState.isAudioPlaying());

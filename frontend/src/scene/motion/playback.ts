@@ -13,7 +13,7 @@ import {
     formatTime,
     mmdRuntime,
 } from '@/core/config';
-// [doc:adr-238] 音频操作经 scene-action-bridge（outfit/audio 注册）
+// [doc:adr-238] 音频操作经 scene-action-bridge（core/audio 注册）
 import { getSceneAction } from '@/core/scene-action-bridge';
 // [doc:adr-238] 相机 VMD 经 scene-action-bridge
 import type { IMmdRuntime } from 'babylon-mmd/esm/Runtime/IMmdRuntime';

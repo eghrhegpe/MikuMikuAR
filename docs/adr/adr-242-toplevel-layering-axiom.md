@@ -1,7 +1,7 @@
 # ADR-242: 顶层目录分层公理 —— 「纯算法层」假说的证伪与重定性
 
 > **日期**: 2026-08-06
-> **状态**: 部分实现 —— 采纳方案 C；Phase 1（守护先行）已落地，Phase 2（目录收编）待启动
+> **状态**: 部分实现 —— 采纳方案 C；Phase 1（守护先行）已落地；Phase 2（目录收编）5 项中 4 项完成，仅剩 `outfit/` 拆分
 > **关联**：ADR-191(core/utils 神桶拆分)、ADR-236/237/238(循环依赖重构)、ADR-226(地面 spec 单源)
 
 ## 背景
@@ -138,5 +138,8 @@ npm run gen:layering-baseline # 消除反向边后收紧基线
 3. ~~`physics/` → `scene/physics/`~~ ✅ **已完成（Phase 2-3）**：`physics-bridge.ts` / `wind-physics.ts` 两文件均持运行时 Babylon 依赖 + 模块级状态 + `dispose` 生命周期，属场景绑定层无疑。迁入 `scene/physics/` 后顶层算法目录 3 → 2。
    - **收益**：消除循环依赖 `core→scene→motion-algos→scene/env→scene/physics→physics→core`，白名单 9 → 8 环，CI 阻断环 13 → 12。
    - **代价**：`core/dev-hooks.ts:9` 的 `isWindPhysicsActive` 引用由「core → 顶层 physics」显式化为 R2 反向边 `core → scene/physics`，分层基线 10 → 11 条。此为**标注显式化而非新增耦合**（dev-hooks 早已有 4 条 core→scene 边），净账为 −1 环 / +1 已知反向边。彻底消除需走 ADR-238 桥接注册，不在本 ADR 范围。
-4. `outfit/` 拆分绑定层与 UI 调用层，同步消除 `_catOf` 穿透引用
+4. `outfit/` 拆分（分两步）。审计发现该目录混装了**两种性质完全不同**的模块，「outfit（换装）」这一目录名对其中之一属**语义错配**：
+   - 🅰️ ✅ **已完成（Phase 2-5a）** `outfit/audio.ts` → `core/audio.ts`。该文件是音乐播放器（588 行），与「换装」无任何概念关联，且**零 `@babylonjs/core` 依赖、零 `scene/` 依赖**（仅用 babylon-mmd 的 `StreamAudioPlayer`），消费面横跨 `core/load-manager` 与 3 个 menus 面板 —— 是典型的 core 层公共服务。语义邻居 `core/audio-bus.ts`（ADR-088 音效总线）本就在 core。30 处引用统一改写为 `@/core/audio`。
+     - **附带修复**：迁入 core 后，原 `import type { BeatDetector } from '@/motion-algos/beat-detector'` 会构成新环 `core → motion-algos → core`（本仓 `check-circular` 依据 `_lib/source-graph.mjs` 将 type import 一并计边）。处置方式为**消除依赖本身而非放宽检查**：在 `core/audio.ts` 定义最小结构接口 `BeatSink`（`attach`/`setVolume`/`reset`/`dispose` 四方法），调用方传入的 `BeatDetector` 实例按结构类型自动兼容。环总数回落至迁移前的 20（白名单 8 / 阻断 12）。
+   - 🅱️ **待办** `outfit/outfit.ts`(804 行) + `outfit/outfit-overlay.ts`(385 行) → `scene/manager/`。两者均持运行时 Babylon 依赖（`Texture`/`StandardMaterial`/`Mesh`/`Bone`/`Skeleton`），属场景绑定层。迁入后两条 R3 反向边（`→scene/manager/material` 的 `_catOf`、`→scene/shared/texture-lru`）降级为同层引用自动消解，活环 `core → outfit → core` 亦随之改写。同步评估 `_catOf` 下划线私有前缀的跨文件穿透是否改为公开导出。
 5. ~~`motion-algos/footstep-detect-fallback.ts` → `scene/motion/`~~ ✅ **已完成（Phase 2-4）**：迁至 `scene/motion/footstep-detect-fallback.ts`。持 observer 生命周期 + 运行时 `Scene` 依赖，属绑定层，顶层安置为分层颠倒。收益：R3 反向边 `→scene/env/env-impl` 随迁移自动消解，分层基线 11 → 10。副作用：环白名单中 5 条含 `motion-algos` 段的 key 因拓扑重命名失配（`motion-algos` → `scene/motion`），已外科式改写；环总数 20（白名单 8 / 阻断 12）与迁移前完全一致。

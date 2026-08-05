@@ -8,22 +8,36 @@
 // Phase C: 播放列表 + 淡入淡出 + 循环模式（none/one/all/shuffle）
 
 import { StreamAudioPlayer } from 'babylon-mmd/esm/Runtime/Audio/streamAudioPlayer';
-import { readFileBytes } from '../core/wails-bindings';
-import { triggerAutoSave, setUIState } from '../core/config';
+import { readFileBytes } from './wails-bindings';
+import { triggerAutoSave, setUIState } from './config';
 import { clamp01 } from '@/core/clamp';
 import { logWarn } from '@/core/logger';
 import { t } from '@/core/i18n/t';
 import { reportResourceWarning } from '@/core/resource-warning-sink';
 import { safeCallAsync, safeCallVoid } from '@/core/safe-call';
 import { safeDispose } from '@/core/dispose-helpers';
-import type { BeatDetector } from '../motion-algos/beat-detector';
 import { getStreamAudio } from '@/core/mmd-adapter';
-import { uiState } from '../core/state';
+import { uiState } from './state';
+
+/**
+ * [doc:adr-242] 节拍检测器的结构契约。core 层不得依赖 `motion-algos/beat-detector`
+ * 的具体实现类——那会构成 `core → motion-algos → core` 环。改以最小接口描述所需能力，
+ * 调用方传入的 `BeatDetector` 实例按结构类型自动兼容，无需显式 implements。
+ */
+export interface BeatSink {
+    attach(
+        audioElement: HTMLAudioElement,
+        opts?: { ctx?: AudioContext; sourceNode?: MediaElementAudioSourceNode }
+    ): boolean;
+    setVolume(value: number): void;
+    reset(): void;
+    dispose(): void;
+}
 
 let streamPlayer: StreamAudioPlayer | null = null;
 let audioName = '';
 let audioPath = '';
-let beatDetector: BeatDetector | null = null;
+let beatDetector: BeatSink | null = null;
 let beatDetectorAttached = false;
 
 // ======== Phase C: 播放列表 + 循环模式 ========
@@ -525,7 +539,7 @@ export function syncAudioPlayback(vmdTime: number, isPlaying: boolean, vmdDurati
 
 // ======== Beat Detector 桥接 ========
 
-export function attachBeatDetector(detector: BeatDetector): void {
+export function attachBeatDetector(detector: BeatSink): void {
     beatDetector = detector;
     if (streamPlayer && !beatDetectorAttached) {
         _tryAttachBeatDetector(streamPlayer);
@@ -557,7 +571,7 @@ export function getStreamPlayer(): StreamAudioPlayer | null {
 import { registerSceneAction } from '@/core/scene-action-bridge';
 registerSceneAction('getAudioName', () => getAudioName());
 
-// [doc:adr-238] 注册音频操作供 scene/motion 经 scene-action-bridge 调用（切断 scene/motion→outfit）
+// [doc:adr-238] 注册音频操作供 scene/motion 经 scene-action-bridge 调用（历史上用于切断 scene/motion→outfit 反向边；ADR-242 后 audio 归 core，注册链保留）
 registerSceneAction('isAudioPlaying', () => isAudioPlaying());
 registerSceneAction('getAudioPath', () => getAudioPath());
 registerSceneAction('syncAudioPlayback', (vmdTime: number, isPlaying: boolean, vmdDuration: number) => {

@@ -123,7 +123,7 @@ vi.mock('../../scene/env/env-gravity', () => ({
     getGravityStrength: () => 1,
     setGravityStrength: vi.fn(),
 }));
-vi.mock('../../outfit/audio', () => ({
+vi.mock('@/core/audio', () => ({
     getAudioName: () => '',
     getAudioPath: () => '',
     getVolume: () => 0,

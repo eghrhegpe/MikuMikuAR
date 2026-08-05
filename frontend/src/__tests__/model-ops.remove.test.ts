@@ -14,7 +14,7 @@ import { removeModel, removeFocusedModel } from '../scene/manager/model-ops';
 import * as cameraModule from '../scene/camera/camera';
 import * as materialModule from '../scene/manager/material';
 import * as envModule from '../scene/env/env';
-import * as audioModule from '../outfit/audio';
+import * as audioModule from '@/core/audio';
 import { registerSceneAction } from '../core/scene-action-bridge';
 
 const mockModelManager = modelOpsShared.mockModelManager;
@@ -51,7 +51,7 @@ vi.mock('../scene/manager/material', () => mockMaterial());
 vi.mock('../scene/env/env', () => mockEnv());
 vi.mock('../scene/camera/camera', () => mockCamera());
 vi.mock('../scene/motion/playback', () => mockPlayback());
-vi.mock('../outfit/audio', () => mockAudio());
+vi.mock('@/core/audio', () => mockAudio());
 vi.mock('@babylonjs/core/Maths/math.vector', async () => {
     const m = await vi.importActual<any>('./mocks/babylon-classes.ts');
     return {
@@ -65,8 +65,8 @@ vi.mock('@babylonjs/core/Maths/math.vector', async () => {
 const _disposeModelMaterialState = vi.mocked(materialModule.disposeModelMaterialState);
 const refreshWaterRenderList = vi.mocked(envModule.refreshWaterRenderList);
 const disposeAudio = vi.mocked(audioModule.disposeAudio);
-// [doc:adr-238] model-ops 经 scene-action-bridge 调用 disposeAudio；真实注册由 outfit/audio
-// 模块副作用完成，此处 outfit/audio 被 mock 掉，故测试侧手动注册桩，否则调用被静默跳过。
+// [doc:adr-238] model-ops 经 scene-action-bridge 调用 disposeAudio；真实注册由 core/audio
+// 模块副作用完成，此处 core/audio 被 mock 掉，故测试侧手动注册桩，否则调用被静默跳过。
 registerSceneAction('disposeAudio', () => disposeAudio());
 const switchCameraMode = vi.mocked(cameraModule.switchCameraMode);
 const getCameraMode = vi.mocked(cameraModule.getCameraMode);

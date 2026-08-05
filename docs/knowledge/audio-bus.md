@@ -50,7 +50,7 @@ use_when:
 
 ## 与其他子系统关系
 - 脚步声：`../scene/motion/footstep.ts`。
-- 音频同步：`@/outfit/audio`。
+- 音频同步：`@/core/audio`。
 
 ## 不变量
 - 音频上下文单例：只创建一个 `AudioContext`。

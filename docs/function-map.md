@@ -7,10 +7,10 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 129 | 739 |
+| 核心基础设施 | 130 | 765 |
 | 3D 场景 | 123 | 1171 |
 | 菜单 & UI | 76 | 388 |
-| 换装 & 音频 | 3 | 33 |
+| 换装 & 音频 | 2 | 8 |
 | 动作算法 | 18 | 138 |
 
 ## 核心基础设施
@@ -152,6 +152,32 @@
 | `setFootstepVolume()` | `core/audio-bus:75` | — |
 | `setSfxEnabled()` | `core/audio-bus:62` | — |
 | `setSfxVolume()` | `core/audio-bus:52` | — |
+| `BeatSink()` | `core/audio:27` | [doc:adr-242] 节拍检测器的结构契约。core 层不得依赖 `motion-algos/beat-detector` 的具体实现类——那会构成 `core → moti |
+| `applyGain()` | `core/audio:549` | — |
+| `attachBeatDetector()` | `core/audio:542` | — |
+| `clearAudio()` | `core/audio:392` | — |
+| `disposeAudio()` | `core/audio:403` | — |
+| `getAudioName()` | `core/audio:494` | — |
+| `getAudioOffset()` | `core/audio:465` | — |
+| `getAudioPath()` | `core/audio:369` | — |
+| `getCurrentTime()` | `core/audio:471` | — |
+| `getDuration()` | `core/audio:475` | — |
+| `getRepeatModeStr()` | `core/audio:346` | 获取当前重复模式。 |
+| `getStreamPlayer()` | `core/audio:566` | 暴露内部 StreamAudioPlayer 供 scene.ts 调用 MmdRuntime.setAudioPlayer()。 |
+| `getVolume()` | `core/audio:454` | — |
+| `isAudioPlaying()` | `core/audio:490` | — |
+| `loadAudioFile()` | `core/audio:282` | — |
+| `nextTrack()` | `core/audio:332` | 切换到下一曲。 |
+| `notifyBeatDetectorReset()` | `core/audio:559` | — |
+| `pauseAudio()` | `core/audio:373` | — |
+| `playAudio()` | `core/audio:260` | — |
+| `resumeAudio()` | `core/audio:377` | — |
+| `seekAudio()` | `core/audio:480` | — |
+| `setAudioOffset()` | `core/audio:458` | — |
+| `setRepeatMode()` | `core/audio:341` | 设置重复模式（持久化）。 |
+| `setVolume()` | `core/audio:448` | — |
+| `stopAudio()` | `core/audio:384` | — |
+| `syncAudioPlayback()` | `core/audio:502` | — |
 | `setTriggerAutoSave()` | `core/auto-save:10` | 注册自动保存的实现回调（由 scene-serialize.ts 在初始化时调用）。 |
 | `triggerAutoSave()` | `core/auto-save:15` | 触发自动保存（由动作/菜单/UI 层调用）。 |
 | `clearWebFlag()` | `core/backend/backend-mocks:13` | — |
@@ -2330,31 +2356,6 @@
 
 | 符号 | 文件:行 | 说明 |
 |------|--------|------|
-| `applyGain()` | `outfit/audio:535` | — |
-| `attachBeatDetector()` | `outfit/audio:528` | — |
-| `clearAudio()` | `outfit/audio:378` | — |
-| `disposeAudio()` | `outfit/audio:389` | — |
-| `getAudioName()` | `outfit/audio:480` | — |
-| `getAudioOffset()` | `outfit/audio:451` | — |
-| `getAudioPath()` | `outfit/audio:355` | — |
-| `getCurrentTime()` | `outfit/audio:457` | — |
-| `getDuration()` | `outfit/audio:461` | — |
-| `getRepeatModeStr()` | `outfit/audio:332` | 获取当前重复模式。 |
-| `getStreamPlayer()` | `outfit/audio:552` | 暴露内部 StreamAudioPlayer 供 scene.ts 调用 MmdRuntime.setAudioPlayer()。 |
-| `getVolume()` | `outfit/audio:440` | — |
-| `isAudioPlaying()` | `outfit/audio:476` | — |
-| `loadAudioFile()` | `outfit/audio:268` | — |
-| `nextTrack()` | `outfit/audio:318` | 切换到下一曲。 |
-| `notifyBeatDetectorReset()` | `outfit/audio:545` | — |
-| `pauseAudio()` | `outfit/audio:359` | — |
-| `playAudio()` | `outfit/audio:246` | — |
-| `resumeAudio()` | `outfit/audio:363` | — |
-| `seekAudio()` | `outfit/audio:466` | — |
-| `setAudioOffset()` | `outfit/audio:444` | — |
-| `setRepeatMode()` | `outfit/audio:327` | 设置重复模式（持久化）。 |
-| `setVolume()` | `outfit/audio:434` | — |
-| `stopAudio()` | `outfit/audio:370` | — |
-| `syncAudioPlayback()` | `outfit/audio:488` | — |
 | `disposeOverlay()` | `outfit/outfit-overlay:353` | 释放 overlay mesh 并清理引用。 |
 | `hideMaterials()` | `outfit/outfit-overlay:301` | 隐藏指定材质名的 PMX mesh（保存原始可见性用于恢复）。 |
 | `loadOverlay()` | `outfit/outfit-overlay:202` | 加载 FBX overlay 并尝试绑定到模型 skeleton。 |

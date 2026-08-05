@@ -112,7 +112,7 @@ import {
     focusedModelId,
 } from '../core/config';
 import { triggerAutoSave, setTriggerAutoSave } from '../core/auto-save';
-// [doc:adr-238] 音频功能经 scene-action-bridge（outfit/audio 注册），切断 scene→outfit
+// [doc:adr-238] 音频功能经 scene-action-bridge（core/audio 注册），切断 scene→outfit
 import { detectRuntimeMode, persistRuntimeMode, renderRuntimeBadge } from '../core/runtime-mode';
 import { _catState, _matState, _matEnabled } from './manager/material';
 import { updatePlaybackUI, initPlaybackObservables } from './motion/playback';

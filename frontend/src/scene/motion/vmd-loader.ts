@@ -27,7 +27,7 @@ import { showInfoToast } from '@/core/toast';
 import { replaceDefaultMotion, getActiveMotion } from './motion-intent';
 // [doc:adr-238] 相机 VMD 经 scene-action-bridge
 import { getSceneAction } from '@/core/scene-action-bridge';
-// [doc:adr-238] 音频操作经 scene-action-bridge（outfit/audio 注册）
+// [doc:adr-238] 音频操作经 scene-action-bridge（core/audio 注册）
 import { PROC_VMD_NAME_IDLE, PROC_VMD_NAME_AUTODANCE } from '@/motion-algos/procedural-motion';
 import { isAutoLoadCompanionAudioEnabled } from '@/core/state';
 

@@ -1,6 +1,6 @@
 // audio-bus.ts — SFX 总线（Web Audio 短音效底座）
 //
-// [doc:adr-088] 脚步声与 SFX 总线基础设施。与 outfit/audio.ts 的音乐播放器解耦：
+// [doc:adr-088] 脚步声与 SFX 总线基础设施。与 core/audio.ts 的音乐播放器解耦：
 // 音乐走 HTMLAudioElement（长曲目、流式），音效走 Web Audio BufferSource（短促、多发、低延迟）。
 // 本模块提供共享单一 AudioContext + 独立主增益 + 采样/合成缓存 + playSfx 多发。
 //

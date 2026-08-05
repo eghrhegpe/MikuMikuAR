@@ -51,7 +51,7 @@ use_when:
 ## 与其他子系统关系
 - 上游：`vmd-loader.ts` 加载动作后触发播放。
 - 下游：`@/core/config` 的 `isPlaying` / `setIsPlaying` / `autoLoop` / `seekDragging`。
-- 协作者：`@/outfit/audio`（音频同步）、`../camera/camera`（相机 VMD 动画）。
+- 协作者：`@/core/audio`（音频同步）、`../camera/camera`（相机 VMD 动画）。
 - 模块引用 `model-manager` 以参数形式注入（避免 ES module 循环依赖）。
 
 ## 不变量

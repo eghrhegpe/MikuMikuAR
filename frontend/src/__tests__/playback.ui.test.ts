@@ -59,7 +59,7 @@ vi.mock('../core/config', () => ({
     },
 }));
 
-vi.mock('../outfit/audio', () => ({
+vi.mock('@/core/audio', () => ({
     syncAudioPlayback: (...args: unknown[]) => syncAudioPlayback(...args),
     isAudioPlaying: () => isAudioPlaying(),
 }));

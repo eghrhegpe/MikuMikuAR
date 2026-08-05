@@ -104,4 +104,4 @@ use_when:
 ## 与其他子系统关系
 - 依赖 `model-manager.ts`（注册表操作）、`core/state`（播放/聚焦 store）
 - 依赖 `camera/camera`（模式切换）、`motion/playback`（UI 刷新）、`transform/transform-adapter`（注册）
-- 下游：`env/env`（水面渲染列表）、`outfit/audio`（伴音释放）
+- 下游：`env/env`（水面渲染列表）、`core/audio`（伴音释放）
