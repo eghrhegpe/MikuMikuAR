@@ -984,43 +984,43 @@
 | `GroundStructuralSpec()` | `scene/env/env-ground-spec:63` | 结构性字段：任一变化都要求重建几何/材质（取代手拼 typeKey 的判别符集合）。 |
 | `applyGroundMaterialSpec()` | `scene/env/env-ground-spec:278` | 统一「填材质」逻辑。 |
 | `buildGroundMaterialSpec()` | `scene/env/env-ground-spec:124` | 由 EnvState 派生完整 Spec。新增材质相关字段只需在此赋值，specKey 自动纳入。 |
-| `createGroundMeshFromSpec()` | `scene/env/env-ground-spec:385` | 创建地面 mesh 并落好材质。Phase 1 已接入：applyGround 非 terrain 重建路径调用本函数。 |
+| `createGroundMeshFromSpec()` | `scene/env/env-ground-spec:390` | 创建地面 mesh 并落好材质。Phase 1 已接入：applyGround 非 terrain 重建路径调用本函数。 |
 | `groundSpecNeedsRebuild()` | `scene/env/env-ground-spec:262` | diffSpec 的结构性结论：是否需要重建。 |
 | `specKey()` | `scene/env/env-ground-spec:215` | 稳定 key：仅序列化结构性字段。新增结构性字段自动纳入，无遗漏风险。 |
-| `GROUND_PRESETS()` | `scene/env/env-ground:1482` | — |
-| `GroundMat()` | `scene/env/env-ground:54` | — |
-| `INFINITE_GROUND_SIZE()` | `scene/env/env-ground:571` | — |
-| `_disableGroundRippleTexture()` | `scene/env/env-ground:611` | — |
-| `_effectiveBumpLevel()` | `scene/env/env-ground:131` | ADR-114 Phase 2: 法线扭曲映射到 bumpTexture.level 增强（distort=1 时额外 +2.0）；低质量模式自动关闭 |
-| `_effectiveRoughness()` | `scene/env/env-ground:122` | ADR-114 Phase 2: 反射模糊映射到 roughness 偏移（blur=1 最多增加 0.4）；低质量模式自动关闭 |
-| `_generateGroundTexture()` | `scene/env/env-ground:971` | — |
-| `_getAlbedoColor()` | `scene/env/env-ground:105` | — |
-| `_getAlbedoTex()` | `scene/env/env-ground:92` | — |
-| `_needAlphaBlend()` | `scene/env/env-ground:162` | 判断地面是否需要 alpha blend 渲染（alpha &lt; 1 或边缘淡出）。 |
-| `_setAlbedoColor()` | `scene/env/env-ground:111` | — |
-| `_setAlbedoTex()` | `scene/env/env-ground:98` | — |
-| `_syncAllTextureOffsets()` | `scene/env/env-ground:1187` | — |
-| `_syncGroundEmissive()` | `scene/env/env-ground:1133` | [doc:adr-230] 自发光地屏增量同步：复用 Babylon 内置 emissiveColor/emissiveTexture 通道， 不引入新材质体系。es=0 / 黑 |
-| `_syncGroundNormalTexture()` | `scene/env/env-ground:1215` | — |
-| `_syncGroundRippleTexture()` | `scene/env/env-ground:595` | — |
-| `_syncPbrProperties()` | `scene/env/env-ground:1237` | PBR 增量更新：roughness / metallic / 程序化纹理无需重建材质的属性 |
-| `_syncTextureGroundTexture()` | `scene/env/env-ground:1055` | — |
-| `_updateGroundTexture()` | `scene/env/env-ground:1202` | — |
-| `applyGround()` | `scene/env/env-ground:1302` | — |
-| `applyGroundEdgeFade()` | `scene/env/env-ground:1122` | — |
-| `buildGroundPresetEnvState()` | `scene/env/env-ground:1482` | — |
-| `buildGroundReflection()` | `scene/env/env-ground:724` | — |
-| `clearGroundTexCache()` | `scene/env/env-ground:625` | — |
-| `createGroundMaterial()` | `scene/env/env-ground:139` | — |
-| `disposeGround()` | `scene/env/env-ground:1485` | 释放地面网格、材质与反射资源（幂等）。 |
-| `generateProceduralGroundTextures()` | `scene/env/env-ground:464` | — |
-| `getGroundHeightAt()` | `scene/env/env-ground:757` | — |
-| `setGroundActualSize()` | `scene/env/env-ground:819` | — |
-| `setGroundMesh()` | `scene/env/env-ground:815` | ADR-226: 供 env-ground-spec.ts 在建地面后同步模块局部状态（_envSys.ground.mesh / _groundActualSize）。 |
-| `setOnGroundChanged()` | `scene/env/env-ground:823` | — |
-| `setOnTerrainReady()` | `scene/env/env-ground:805` | — |
-| `tickGround()` | `scene/env/env-ground:1417` | — |
-| `triggerTerrainReady()` | `scene/env/env-ground:810` | ADR-226: 供 env-ground-spec.ts 的地形 onReady 回调触发已注册监听（避免直接访问模块局部 _onTerrainReady）。 |
+| `GROUND_PRESETS()` | `scene/env/env-ground:1383` | — |
+| `GroundMat()` | `scene/env/env-ground:52` | — |
+| `INFINITE_GROUND_SIZE()` | `scene/env/env-ground:569` | — |
+| `_disableGroundRippleTexture()` | `scene/env/env-ground:609` | — |
+| `_effectiveBumpLevel()` | `scene/env/env-ground:129` | ADR-114 Phase 2: 法线扭曲映射到 bumpTexture.level 增强（distort=1 时额外 +2.0）；低质量模式自动关闭 |
+| `_effectiveRoughness()` | `scene/env/env-ground:120` | ADR-114 Phase 2: 反射模糊映射到 roughness 偏移（blur=1 最多增加 0.4）；低质量模式自动关闭 |
+| `_generateGroundTexture()` | `scene/env/env-ground:969` | — |
+| `_getAlbedoColor()` | `scene/env/env-ground:103` | — |
+| `_getAlbedoTex()` | `scene/env/env-ground:90` | — |
+| `_needAlphaBlend()` | `scene/env/env-ground:160` | 判断地面是否需要 alpha blend 渲染（alpha &lt; 1 或边缘淡出）。 |
+| `_setAlbedoColor()` | `scene/env/env-ground:109` | — |
+| `_setAlbedoTex()` | `scene/env/env-ground:96` | — |
+| `_syncAllTextureOffsets()` | `scene/env/env-ground:1185` | — |
+| `_syncGroundEmissive()` | `scene/env/env-ground:1131` | [doc:adr-230] 自发光地屏增量同步：复用 Babylon 内置 emissiveColor/emissiveTexture 通道， 不引入新材质体系。es=0 / 黑 |
+| `_syncGroundNormalTexture()` | `scene/env/env-ground:1213` | — |
+| `_syncGroundRippleTexture()` | `scene/env/env-ground:593` | — |
+| `_syncPbrProperties()` | `scene/env/env-ground:1235` | PBR 增量更新：roughness / metallic / 程序化纹理无需重建材质的属性 |
+| `_syncTextureGroundTexture()` | `scene/env/env-ground:1053` | — |
+| `_updateGroundTexture()` | `scene/env/env-ground:1200` | — |
+| `applyGround()` | `scene/env/env-ground:1254` | — |
+| `applyGroundEdgeFade()` | `scene/env/env-ground:1120` | — |
+| `buildGroundPresetEnvState()` | `scene/env/env-ground:1383` | — |
+| `buildGroundReflection()` | `scene/env/env-ground:722` | — |
+| `clearGroundTexCache()` | `scene/env/env-ground:623` | — |
+| `createGroundMaterial()` | `scene/env/env-ground:137` | — |
+| `disposeGround()` | `scene/env/env-ground:1386` | 释放地面网格、材质与反射资源（幂等）。 |
+| `generateProceduralGroundTextures()` | `scene/env/env-ground:462` | — |
+| `getGroundHeightAt()` | `scene/env/env-ground:755` | — |
+| `setGroundActualSize()` | `scene/env/env-ground:817` | — |
+| `setGroundMesh()` | `scene/env/env-ground:813` | ADR-226: 供 env-ground-spec.ts 在建地面后同步模块局部状态（_envSys.ground.mesh / _groundActualSize）。 |
+| `setOnGroundChanged()` | `scene/env/env-ground:821` | — |
+| `setOnTerrainReady()` | `scene/env/env-ground:803` | — |
+| `tickGround()` | `scene/env/env-ground:1318` | — |
+| `triggerTerrainReady()` | `scene/env/env-ground:808` | ADR-226: 供 env-ground-spec.ts 的地形 onReady 回调触发已注册监听（避免直接访问模块局部 _onTerrainReady）。 |
 | `_envSys()` | `scene/env/env-impl:20` | — |
 | `addGroundRipple()` | `scene/env/env-impl:23` | — |
 | `addRipple()` | `scene/env/env-impl:23` | — |
@@ -2010,34 +2010,34 @@
 | `makeModelMenu()` | `menus/library-browse:369` | — |
 | `showModelPopup()` | `menus/library-browse:338` | — |
 | `ResourceViewMode()` | `menus/library-core:43` | — |
-| `abortThumbnailStreaming()` | `menus/library-core:312` | [adr-136] 取消当前正在进行的缩略图流式加载批次（如弹窗关闭/重开时调用）。 |
-| `buildLevel()` | `menus/library-core:829` | — |
-| `buildModelFormationLevel()` | `menus/library-core:872` | — |
-| `buildModelRootItems()` | `menus/library-core:903` | — |
-| `buildResourceItemsForDir()` | `menus/library-core:379` | — |
+| `abortThumbnailStreaming()` | `menus/library-core:315` | [adr-136] 取消当前正在进行的缩略图流式加载批次（如弹窗关闭/重开时调用）。 |
+| `buildLevel()` | `menus/library-core:839` | — |
+| `buildModelFormationLevel()` | `menus/library-core:883` | — |
+| `buildModelRootItems()` | `menus/library-core:914` | — |
+| `buildResourceItemsForDir()` | `menus/library-core:382` | — |
 | `computeRestoreSegments()` | `menus/library-core:161` | — |
 | `getPendingMetaGuard()` | `menus/library-core:67` | — |
 | `getRelativePathUnderDir()` | `menus/library-core:83` | — |
 | `getResourceViewMode()` | `menus/library-core:47` | — |
-| `importFile()` | `menus/library-core:997` | — |
-| `initLibrary()` | `menus/library-core:998` | — |
+| `importFile()` | `menus/library-core:1008` | — |
+| `initLibrary()` | `menus/library-core:1009` | — |
 | `isLeafFlattenDir()` | `menus/library-core:93` | — |
 | `isModelDirTarget()` | `menus/library-core:59` | — |
-| `loadThumbnailsStreaming()` | `menus/library-core:257` | 流式加载缩略图：并发控制，每加载一张立即更新缓存并通知面板刷新， 替代一次性 GetThumbnailBatch 的"全等"模式，实现缩略图逐张出现。 |
-| `modelToResourceItem()` | `menus/library-core:362` | — |
-| `modelToRow()` | `menus/library-core:346` | — |
-| `prepareModelRestore()` | `menus/library-core:997` | — |
-| `refreshLibrary()` | `menus/library-core:998` | — |
-| `refreshModelRoot()` | `menus/library-core:978` | — |
-| `reloadConfig()` | `menus/library-core:998` | — |
-| `rescanAndSync()` | `menus/library-core:998` | — |
+| `loadThumbnailsStreaming()` | `menus/library-core:260` | 流式加载缩略图：并发控制，每加载一张立即更新缓存并通知面板刷新， 替代一次性 GetThumbnailBatch 的"全等"模式，实现缩略图逐张出现。 |
+| `modelToResourceItem()` | `menus/library-core:365` | — |
+| `modelToRow()` | `menus/library-core:349` | — |
+| `prepareModelRestore()` | `menus/library-core:1008` | — |
+| `refreshLibrary()` | `menus/library-core:1009` | — |
+| `refreshModelRoot()` | `menus/library-core:989` | — |
+| `reloadConfig()` | `menus/library-core:1009` | — |
+| `rescanAndSync()` | `menus/library-core:1009` | — |
 | `resolveDisplayBrowseDir()` | `menus/library-core:140` | [修复] 解析模型在资源库中的"显示目录"——即用户点击该模型时实际看到的层级。 |
-| `selectOverridePath()` | `menus/library-core:998` | — |
-| `selectResourceRoot()` | `menus/library-core:998` | — |
+| `selectOverridePath()` | `menus/library-core:1009` | — |
+| `selectResourceRoot()` | `menus/library-core:1009` | — |
 | `setResourceViewMode()` | `menus/library-core:50` | — |
-| `showModelPopup()` | `menus/library-core:996` | — |
+| `showModelPopup()` | `menus/library-core:1007` | — |
 | `splitSubdirSegments()` | `menus/library-core:73` | — |
-| `switchStorageMode()` | `menus/library-core:998` | — |
+| `switchStorageMode()` | `menus/library-core:1009` | — |
 | `thumbnailKeyForModel()` | `menus/library-core:194` | — |
 | `LibraryLoadingState()` | `menus/library-session-store:51` | 资源库会话状态：加载守卫。 |
 | `LibraryRestoreState()` | `menus/library-session-store:32` | 资源库会话状态：恢复链路（上次浏览位置 + 高亮模型）。 |

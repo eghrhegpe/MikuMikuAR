@@ -97,7 +97,7 @@
 | P1 | — | 未发现 | — |
 | P2 | env-ground.ts:505-561 + 587-612 + env-water-fx.ts:311-329 | **涟漪纹理跨模块所有权被破坏**：`disposeGroundMaterial` Step1 把非缓存的 `bumpTexture`（即 `groundRippleTex`）dispose 掉，而 env-water-fx 仍持有 `_groundRippleTex` 引用；重建后 `getGroundRippleTexture` 因 `_groundRippleTex` 非空返回已销毁纹理（不重建），涟漪系统永久失效直到 disposeGround。且 `_groundRipples`/`_groundRippleApplied` 在重建路径不重置，`_disableGroundRippleTexture` 会把**上一代材质的陈旧 bump（可能是不同程序化 kind 的 normal）**恢复到新材质上 | ① disposeGroundMaterial 对 name==='groundRippleTex' 的纹理跳过（或纳入缓存所有权标记）；② applyGround 重建路径先复位 `_groundRipples=null; _groundRippleApplied=false`；③ 补一条「涟漪激活时重建地面」的测试 |
 | P3 | env-terrain.ts:112-121 + env-ground.ts:1336-1348 | **地形 onReady 陈旧回调在「移除而非替换」场景漏防**：`_terrainGen` 只防 terrain→terrain；terrain→隐藏/换 flat 时 gen 不递增，旧回调越过 gen 校验对已 dispose 的 mesh 执行 applyTerrainMaterial，新材质挂死 mesh 泄漏 | onReady 首行补 `if (gm.isDisposed()) return;`；或在 applyGround 重建 dispose 旧 mesh 前递增地形代际 |
-| P3 | env-ground-spec.ts:389-403 + env-ground.ts:1249-1401 | **terrain 双路径未收敛 spec（invariant 3a 漂移）**：terrain 重建 legacy 块、原地 `_applyGroundInplaceLegacy`、spec 内死代码 terrain 分支三份平行实现，其中 spec 分支未 `setGroundActualSize`，`_syncTextureGroundTexture` 会用陈旧 `_groundActualSize` 算纹理密度 | 按 ADR-226 Phase 4 收尾：补 terrain 合约测试（覆盖 elevationColoring）后删 legacy 双路径，仅留 spec 单源 |
+| P3 | env-ground-spec.ts:389-403 + env-ground.ts:1249-1401 | **terrain 双路径未收敛 spec（invariant 3a 漂移）**：terrain 重建 legacy 块、原地 `_applyGroundInplaceLegacy`、spec 内死代码 terrain 分支三份平行实现，其中 spec 分支未 `setGroundActualSize`，`_syncTextureGroundTexture` 会用陈旧 `_groundActualSize` 算纹理密度 | 已按 ADR-226 Phase 4 收尾：补 terrain 合约测试（Suite 6 覆盖 elevationColoring）后删 legacy 双路径，仅留 spec 单源；`applyGroundMaterialSpec` 加 `isElevation` 守卫；spec terrain 分支补 `setGroundActualSize` |
 | P4 | env-ground.ts:35 | `env-ground → env → env-impl → env-ground` 循环导入（运行时安全但违反 AGENTS.md「无循环依赖」） | 将 `ensureEnvUpdateObserver` 提升至 env-dispatcher/独立叶子，砍掉环 |
 | P4 | env-ground.md:84 / env-ground.md:57 / ground-collision.ts:6 | 文档漂移：`clearGroundTexCache` 描述为「清程序化缓存」（实际清文件图缓存）；disposeGround「经 safeDispose」（实际直接 dispose）；collision「由 env-bridge 驱动」（实际 env-collision.ts） | 修正知识卡/头部注释 |
 | P4 | env-ground.ts:1336-1338 | 重建只复位 `_groundScrollU/V`，`_scanRingPhase` 不复位（相位延续，cosmetic） | 顺手复位或注释豁免 |
@@ -113,5 +113,5 @@
 |--------|------|------|
 | P2 涟漪纹理所有权 | ✅ 已修复 | 见 `docs/buglog/` 对应记录；disposeGroundMaterial 跳过 groundRippleTex、重建路径复位涟漪状态、补回归测试 |
 | P3 地形 onReady 陈旧回调 | ✅ 已修复 | onReady 首行补 `if (gm.isDisposed()) return;`（env-terrain.ts:116）；补 2 条回归测试（陈旧回调不触发 + 存活 mesh 正常触发），9 tests passed，tsc 通过 |
-| P3 terrain 双路径未收敛 spec | ⬜ 待修 | 属 ADR-226 Phase 4 收尾，需先补 terrain 合约测试 |
+| P3 terrain 双路径未收敛 spec | ✅ 已修复 | 见 ADR-226 Phase 4b 记录；删 `_applyGroundInplaceLegacy` + legacy 重建块，统一 spec 单源；`applyGroundMaterialSpec` 加 `isElevation` 守卫；spec terrain 分支补 `setGroundActualSize`；新增 Suite 6 terrain 合约测试 2 例，28/28 全绿 |
 | P4 循环导入 / 文档漂移 / 哨兵 | ⬜ 待修 | 低优先，可随日常改动顺手处理 |

@@ -243,4 +243,23 @@ Phase 1–3 落库后，对地面系统做一次专项代码审查，发现 3 �
 - 既有 `env-ground.test.ts` **19/19** 不回归
 - `npm run check:docs` 通过（无漂移）
 
+## Phase 4b — terrain 收敛收尾（2026-08-05）
+
+### 范围决策
+- **收敛对象**：`terrain` 重建 / 原地的遗留平行实现（`_applyGroundInplaceLegacy` + `applyGround` 地形重建块 + `createGroundMeshFromSpec` 内死代码 terrain 分支，共三份 divergent 实现），统一收敛到 spec 单源，完成 ADR-226 Phase 4 全部收尾。
+- **elevationColoring 行为差**（本 Phase 关键约束）：terrain 程序化分支依赖 `!groundElevationColoringEnabled` 才套用程序化三件套；`applyElevationColoring` 产出纯色顶点着色材质，任何 albedo/法线/画布覆盖都会破坏语义。故 `applyGroundMaterialSpec` 顶部新增 `isElevation = groundType==='terrain' && groundElevationColoringEnabled`，对 albedo source（procedural/canvas/texture/solid）、normal、ripple 各分支统一加 `!isElevation` 守卫。
+
+### 改动
+| 文件 | 改动 |
+|------|------|
+| `frontend/src/scene/env/env-ground-spec.ts` | `applyGroundMaterialSpec` 加 `isElevation` 守卫（albedo 四分支 + normal + ripple，[fix P3-2] 注释）；`createGroundMeshFromSpec` terrain 分支补 `setGroundActualSize(state.groundSize)`（修复纹理密度用陈旧 `_groundActualSize` 的潜在 bug） |
+| `frontend/src/scene/env/env-ground.ts` | 原地路径删 `if (terrain) _applyGroundInplaceLegacy else` 分叉，统一 `applyGroundMaterialSpec(mat,state,scene,false)`；删除 `_applyGroundInplaceLegacy` 函数；重建路径删地形 legacy 块，统一 `createGroundMeshFromSpec(state,scene)`；移除变为未引用的 `hasActiveGroundRipples` / `createHeightmapGround` / `applyTerrainMaterial` import |
+| `frontend/src/__tests__/scene/env-ground-spec.contract.test.ts` | 新增 `Suite 6` terrain 收敛契约（2 例）：①elevation 开启时 `applyGroundMaterialSpec` 不覆盖 albedo/法线（保留纯白顶点着色材质）②elevation 关闭时 procedural 重建套用三件套（albedo/metallic 非空 + hasBump），锁死 legacy 一致性不回归 |
+
+### 验证
+- `tsc --noEmit` 全项目 **0 错误**
+- 合约测试 **24 + 2 = 26 例**（Suite 6 并入后 28 例全绿，含 Suite 1-6）
+- env 相关 5 文件（env-ground / env-ground-spec.contract / api-terrain / env-impl / env-terrain）**66/66 全绿**（含 P2 涟漪回归 2 例 + P3-① onReady 守卫 2 例）
+- `npm run check:docs` 通过（无漂移）
+
 

@@ -285,6 +285,10 @@ export function applyGroundMaterialSpec(
     const sk = spec.structural;
     const ap = spec.appearance;
 
+    // [fix P3-2] 高程着色材质（applyElevationColoring 产出的纯色 StandardMaterial + 顶点色）
+    // 由 applyTerrainMaterial 全权负责，不得再被本函数覆盖 albedo/法线/画布来源。
+    const isElevation = state.groundType === 'terrain' && state.groundElevationColoringEnabled;
+
     const meshSize =
         state.groundType === 'terrain'
             ? state.groundSize
@@ -293,7 +297,8 @@ export function applyGroundMaterialSpec(
               : state.groundSize;
 
     // ---- albedo source ----
-    if (sk.sourceKind === 'procedural') {
+    // [fix P3-2] isElevation：材质与顶点色已由 applyElevationColoring 落定，跳过 albedo 来源覆盖
+    if (!isElevation && sk.sourceKind === 'procedural') {
         if (isRebuild) {
             const texs = generateProceduralGroundTextures(
                 sk.proceduralTexture as Exclude<GroundProceduralKind, 'none'>,
@@ -316,7 +321,7 @@ export function applyGroundMaterialSpec(
             }
         }
         // 原地路径：程序化 albedo 已在 create 时生成，不重生成（与原地路径一致）
-    } else if (sk.sourceKind === 'canvas') {
+    } else if (!isElevation && sk.sourceKind === 'canvas') {
         _updateGroundTexture(mat, state);
         if (isRebuild) {
             const t = _getAlbedoTex(mat);
@@ -324,10 +329,10 @@ export function applyGroundMaterialSpec(
                 t.uScale = t.vScale = meshSize / 10 / Math.max(0.1, ap.textureScale);
             }
         }
-    } else if (sk.sourceKind === 'texture') {
+    } else if (!isElevation && sk.sourceKind === 'texture') {
         _setAlbedoColor(mat, new Color3(1, 1, 1));
         _syncTextureGroundTexture(mat, state, scene); // 内部按 meshSize 设 uScale
-    } else {
+    } else if (!isElevation) {
         // solid
         if (isRebuild) {
             _setAlbedoColor(mat, new Color3(sk.color[0], sk.color[1], sk.color[2]));
@@ -356,12 +361,12 @@ export function applyGroundMaterialSpec(
     // 仅用户显式提供外部法线贴图才覆盖。否则 _syncGroundNormalTexture 的 else
     // 分支会把程序化 normal 清掉（与 legacy 重建路径一致，且修复 legacy 原地路径
     // 清掉程序化法线的历史 bug）。见 ADR-226。
-    if (sk.sourceKind !== 'procedural' || state.groundNormalTexture) {
+    if (!isElevation && (sk.sourceKind !== 'procedural' || state.groundNormalTexture)) {
         _syncGroundNormalTexture(mat, state);
     }
-    if (hasActiveGroundRipples()) {
+    if (!isElevation && hasActiveGroundRipples()) {
         _syncGroundRippleTexture(mat, scene);
-    } else {
+    } else if (!isElevation) {
         _disableGroundRippleTexture(mat);
     }
     if (mat instanceof PBRMaterial) {
@@ -398,6 +403,8 @@ export function createGroundMeshFromSpec(state: EnvState, scene: Scene): Mesh {
             triggerTerrainReady();
         });
         setGroundMesh(hg);
+        // [fix P3-2] 地形重建也要同步 _groundActualSize（否则原地纹理密度/滚动用陈旧值计算）
+        setGroundActualSize(state.groundSize);
         buildGroundReflection(state);
         return hg;
     }

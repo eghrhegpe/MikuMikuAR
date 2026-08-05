@@ -23,7 +23,6 @@ import { EnvState, envState } from '@/core/config';
 import { col3FromTriple, rgbString } from '@/core/color-helpers';
 import { logWarn } from '@/core/logger';
 import { fbm, hash2 } from './env-terrain';
-import { createHeightmapGround, applyTerrainMaterial } from './env-terrain';
 import { PlanarReflection, registerReflectionSurface } from './planar-reflection';
 import { getPlanarQualityOverride } from './env-reflection';
 import {
@@ -36,7 +35,6 @@ import { ensureEnvUpdateObserver } from './env';
 import { underwaterFogController } from './env-underwater-fog';
 import {
     getGroundRippleTexture,
-    hasActiveGroundRipples,
     setGroundGeometryProvider,
     disposeGroundRipples,
 } from './env-water';
@@ -1251,53 +1249,7 @@ export function _syncPbrProperties(mat: PBRMaterial, state: EnvState): void {
 
 // ======== applyGround (public) ========
 
-/** ADR-226 Phase 2: terrain 原地材质更新（暂留 legacy，待补 terrain 合约测试后收敛到 applyGroundMaterialSpec）。 */
-function _applyGroundInplaceLegacy(mat: GroundMat, state: EnvState, scene: Scene): void {
-    // 仅 canvas 图案/纯色来源才在原地更新时重生成 canvas 纹理；
-    // 程序化(proc≠none)与文件贴图来源须跳过，否则程序化 PBR 三件套会被 canvas 纯色覆盖
-    if (
-        state.groundStyle !== 'texture' &&
-        state.groundProceduralTexture === 'none' &&
-        !(state.groundTextureEnabled && state.groundTexture)
-    ) {
-        _updateGroundTexture(mat, state);
-    }
-    mat.alpha = state.groundAlpha;
-    if (mat instanceof PBRMaterial) {
-        const needAlpha = _needAlphaBlend(state);
-        mat.transparencyMode = needAlpha ? Material.MATERIAL_ALPHABLEND : Material.MATERIAL_OPAQUE;
-    }
-    const albedoTex = _getAlbedoTex(mat);
-    if (albedoTex && albedoTex instanceof Texture) {
-        albedoTex.uScale = albedoTex.vScale =
-            _groundActualSize / 10 / Math.max(0.1, state.groundTextureScale);
-        _syncAllTextureOffsets(mat, state);
-    }
-    if (
-        !(state.groundProceduralTexture !== 'none' && !state.groundTextureEnabled) ||
-        state.groundNormalTexture
-    ) {
-        _syncGroundNormalTexture(mat, state);
-    }
-    if (hasActiveGroundRipples()) {
-        _syncGroundRippleTexture(mat, scene);
-    } else if (_groundRippleApplied) {
-        _disableGroundRippleTexture(mat);
-    }
-    if (state.groundStyle === 'texture') {
-        _syncTextureGroundTexture(mat, state, scene);
-    }
-    if (mat instanceof PBRMaterial) {
-        _syncPbrProperties(mat, state);
-    }
-    applyGroundEdgeFade(mat, state.groundEdgeFade, scene);
-    // [adr-230] 自发光增量同步（terrain 原地路径；此前仅重建/平面原地生效）
-    _syncGroundEmissive(mat, state);
-    // [adr-230 P1-fix] 水下焦散优先：同步完自发光后若在水下，重放焦散避免覆盖
-    if (underwaterFogController.isCausticsActive()) {
-        underwaterFogController.applyCausticsTo(mat, scene);
-    }
-}
+// ======== applyGround (public) ========
 
 export function applyGround(state: EnvState): void {
     const scene = getScene();
@@ -1312,13 +1264,10 @@ export function applyGround(state: EnvState): void {
     if (_envSys.ground.mesh && state.groundVisibleEnabled && !keyChanged) {
         const mat = _envSys.ground.mesh.material as GroundMat | null;
         if (mat && (mat instanceof StandardMaterial || mat instanceof PBRMaterial)) {
-            // ADR-226 Phase 2: 平面/无限原地改调 spec 单源 applyGroundMaterialSpec；
-            // terrain 暂留 legacy 原逻辑（elevationColoring 行为差未受合约测试覆盖）。
-            if (state.groundType === 'terrain') {
-                _applyGroundInplaceLegacy(mat, state, scene);
-            } else {
-                applyGroundMaterialSpec(mat, state, scene, false);
-            }
+            // ADR-226 Phase 2 + [fix P3-2]: 原地路径统一走 spec 单源 applyGroundMaterialSpec。
+            // terrain 原 _applyGroundInplaceLegacy 已删除（行为等价：applyGroundMaterialSpec 内部
+            // 对 elevation 着色也做了 isElevation 守卫，等同 legacy 的 !elevationColoringEnabled 判定）。
+            applyGroundMaterialSpec(mat, state, scene, false);
         }
         _envSys.ground.mesh.position.y = state.groundLevel;
         _envSys.ground.mesh.rotation.x = (state.groundPitch * Math.PI) / 180;
@@ -1356,58 +1305,10 @@ export function applyGround(state: EnvState): void {
         return;
     }
 
-    // 地形模式
-    if (state.groundType === 'terrain') {
-        const hg = createHeightmapGround(state, scene, (gm) => {
-            applyTerrainMaterial(gm, state, scene);
-            if (
-                state.groundProceduralTexture !== 'none' &&
-                !state.groundTextureEnabled &&
-                !state.groundElevationColoringEnabled
-            ) {
-                const mat = gm.material as GroundMat;
-                const texs = generateProceduralGroundTextures(
-                    state.groundProceduralTexture,
-                    state.groundProceduralSeed,
-                    scene,
-                    state
-                );
-                const scale = state.groundSize / 10 / Math.max(0.1, state.groundProceduralScale);
-                texs.albedo.uScale = texs.albedo.vScale = scale;
-                texs.roughness.uScale = texs.roughness.vScale = scale;
-                texs.normal.uScale = texs.normal.vScale = scale;
-                _setAlbedoTex(mat, texs.albedo);
-                _setAlbedoColor(mat, new Color3(1, 1, 1));
-                if (mat instanceof PBRMaterial) {
-                    mat.bumpTexture = texs.normal;
-                    mat.bumpTexture.level = _effectiveBumpLevel(state);
-                    mat.metallicTexture = texs.roughness;
-                    mat.useRoughnessFromMetallicTextureAlpha = false;
-                    mat.useRoughnessFromMetallicTextureGreen = true;
-                }
-            }
-            applyGroundEdgeFade(gm.material as GroundMat, state.groundEdgeFade, scene);
-            // 水下视觉修饰：焦散 emissive + 入水雾色（在 tickGround 中按相机深度统一驱动）
-            underwaterFogController.install(gm.material as GroundMat);
-            // [adr-230] terrain 重建走 legacy（无 applyGroundMaterialSpec），需补自发光同步；
-            // install 在先，_syncGroundEmissive 内的 noteGroundEmissiveChanged 会刷新 orig 快照。
-            _syncGroundEmissive(gm.material as GroundMat, state);
-            if (underwaterFogController.isCausticsActive()) {
-                underwaterFogController.applyCausticsTo(gm.material as GroundMat, scene);
-            }
-            _onTerrainReady?.();
-        });
-        _envSys.ground.mesh = hg;
-        // [adr-114] 时序修复：mesh 赋值后再 buildGroundReflection，确保 mount 能拿到 material
-        buildGroundReflection(state);
-        return;
-    }
-
-    // ADR-226 Phase 1+4: 非地形（平面/无限）重建改调 spec 单源 createGroundMeshFromSpec，
-    // 重建/原地双路径及手拼 typeKey 已统一收敛到 spec 单源（见 applyGround 顶部 specKey 决策）。
-    // terrain 重建仍保留下方 legacy 分支（含 _onTerrainReady / elevationColoring 语义），
-    // 待补 terrain 合约测试（覆盖 elevationColoring）后再收敛——
-    // 避免未受合约测试覆盖的 elevationColoring 行为变更。
+    // 重建路径（含地形）统一走 spec 单源 createGroundMeshFromSpec。
+    // [fix P3-2] terrain 收敛：删除 legacy 重建块（手拼程序化三件套 + elevationColoring 语义），
+    // 由 spec 模块内部 terrain 分支等价处理（_onTerrainReady 经 triggerTerrainReady，
+    // elevationColoring 由 applyGroundMaterialSpec 的 isElevation 守卫跳过三件套）。
     createGroundMeshFromSpec(state, scene);
     return;
 }

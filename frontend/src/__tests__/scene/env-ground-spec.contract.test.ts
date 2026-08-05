@@ -17,6 +17,7 @@ import { Material } from '@babylonjs/core/Materials/material';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { PBRMaterial } from '@babylonjs/core';
 import { Texture } from '@babylonjs/core/Materials/Textures/texture';
+import { Color3 } from '@babylonjs/core/Maths/math.color';
 
 // 隔离 env-impl / env-context / env-reflection，避免重型链（clouds/particles/renderer→scene）
 vi.mock('../../scene/env/env-impl', () => {
@@ -178,6 +179,10 @@ function fingerprint(mat: Material | null): MatFingerprint {
         vScale: tex instanceof Texture ? tex.vScale : null,
         hasOpacity: !!(mat as unknown as { opacityTexture?: unknown }).opacityTexture,
     };
+}
+
+function hasBump(mat: Material): boolean {
+    return !!(mat as unknown as { bumpTexture?: unknown }).bumpTexture;
 }
 
 // spec 侧用偏移 seed 隔离程序化纹理缓存，避免与 legacy 侧共享同一缓存 normal 纹理
@@ -522,4 +527,47 @@ describe('ADR-226 迁移护栏 — legacy 原地 == spec 原地', () => {
     }
 });
 
-// ──────────────── Suite 4/5 结束 ────────────────
+// ──────────────── Suite 6 — terrain 收敛契约（P3-2）───────────────
+// [fix P3-2] terrain 重建/原地已从 legacy 双路径收敛到 spec 单源：
+//   - legacy 重建块（手拼程序化三件套 + !elevationColoring 守卫）→ createGroundMeshFromSpec terrain 分支
+//   - _applyGroundInplaceLegacy → applyGroundMaterialSpec
+// 本 Suite 锁定收敛后的关键行为：elevationColoring 开启时，spec 不得用
+// 程序化三件套/画布/法线覆盖 applyElevationColoring 产出的纯色顶点着色材质。
+describe('ADR-226 terrain — [P3-2] elevation 收敛守卫', () => {
+    it('elevation 开启时 applyGroundMaterialSpec 不覆盖 albedo/法线（保留顶点着色材质）', () => {
+        const state = makeState({
+            groundType: 'terrain',
+            groundElevationColoringEnabled: true,
+            groundProceduralTexture: 'wood',
+            groundPbrEnabled: true,
+        });
+        const stateSpec = buildGroundMaterialSpec(state);
+        expect(stateSpec.structural.geometry).toBe('terrain');
+
+        // 造一个"地形已由 applyTerrainMaterial 落定"的材质（模拟 elevation 材质）
+        const mat = new StandardMaterial('elev', scene);
+        mat.diffuseColor = new Color3(1, 1, 1);
+        mat.alpha = state.groundAlpha;
+        applyGroundMaterialSpec(mat, state, scene, true);
+
+        // elevation 材质：不应被覆盖成程序化 albedo/法线/画布
+        expect(mat.diffuseTexture).toBeNull();
+        expect(mat.bumpTexture).toBeNull();
+        expect(mat.diffuseColor.r).toBeCloseTo(1); // 保留纯色
+        expect(mat.alpha).toBeCloseTo(state.groundAlpha as number);
+    });
+
+    it('elevation 关闭时 procedural 重建套用三件套（与 legacy 一致性不回归）', () => {
+        const state = makeState({
+            groundType: 'terrain',
+            groundElevationColoringEnabled: false,
+            groundProceduralTexture: 'wood',
+            groundPbrEnabled: true,
+        });
+        const mat = new PBRMaterial('pbrTerrain', scene);
+        applyGroundMaterialSpec(mat, state, scene, true);
+        expect(mat.albedoTexture).not.toBeNull();
+        expect(mat.metallicTexture).not.toBeNull();
+        expect(hasBump(mat)).toBe(true);
+    });
+});
