@@ -91,9 +91,10 @@ const CLAMP_RULES: Record<keyof MaterialCategoryParams, [number, number, boolean
     alphaMul: [0, 1, false],
 };
 
-/** 将 Partial 参数 clamp 后写入 target — 消除 setMatCatParams / setMatParams 的重复 clamp 逻辑。 */
+/** 将 Partial 参数 clamp 后写入 target — 消除 setMatCatParams / setMatParams 的重复 clamp 逻辑。
+ *  [fix P2] target 支持 Partial（per-mat entry 仅存显式字段）。 */
 function _clampAndAssign(
-    target: MaterialCategoryParams,
+    target: MaterialCategoryParams | Partial<MaterialCategoryParams>,
     params: Partial<MaterialCategoryParams>
 ): void {
     for (const key of Object.keys(params) as (keyof MaterialCategoryParams)[]) {
@@ -106,6 +107,15 @@ function _clampAndAssign(
             ? Math.max(min, Math.min(max, Math.round(val)))
             : Math.max(min, Math.min(max, val));
     }
+}
+
+/** [fix P2] 合并分类参数与 per-mat 显式字段：未显式设置的 per-mat 字段继承分类结果，
+ *  消除「per-mat 存在即以 DEFAULT 全量覆盖 category」的遮蔽问题。 */
+function _mergedMatParams(
+    catParams: MaterialCategoryParams | undefined,
+    perMatParams: Partial<MaterialCategoryParams> | undefined
+): MaterialCategoryParams {
+    return { ...(catParams ?? DEFAULT_MAT_PARAMS), ...(perMatParams ?? {}) };
 }
 
 /** 将一组参数写入 Babylon StandardMaterial — 消除 _applyAll 中分类级与逐材质级的重复写入。 */
@@ -170,7 +180,10 @@ const _origValues = new WeakMap<Material, _OrigMat>();
 /** 材质状态管理器 — 集中管理分类/逐材质/可见性状态，便于测试 mock 和未来扩展。 */
 export class MaterialStateManager {
     catState = new Map<string, Map<string, MaterialCategoryParams>>();
-    matState = new Map<string, Map<number, MaterialCategoryParams>>();
+    // [fix P2] per-mat 存 Partial（仅显式设置的字段）：apply 时与分类参数合并，
+    // 未设置的字段继承分类调整——否则新建 entry 用 DEFAULT 全量初始化会遮蔽
+    // category 级 alphaMul 等调整。
+    matState = new Map<string, Map<number, Partial<MaterialCategoryParams>>>();
     matEnabled = new Map<string, Map<number, boolean>>();
 
     dispose(id: string): void {
@@ -525,19 +538,23 @@ function _applyMaterial(id: string, mi: number, alphaCtx?: AlphaCtx): void {
         _capturePbr(m, mi, alphaCtx?.origAlpha ?? []);
         const o = _origPbrValues.get(m)!;
         let applied = false;
+        // [fix P2] category 参数提到外层，per-mat 合并时继承
+        let catParams: MaterialCategoryParams | undefined;
         const state = _catState.get(id);
         if (state) {
             const p = state.get(categoryOfMaterial(m));
             if (p) {
                 _applyPbrMatParams(m, o, p, alphaCtx);
                 applied = true;
+                catParams = p;
             }
         }
         const perMat = _matState.get(id);
         if (perMat) {
             const mp = perMat.get(mi);
             if (mp) {
-                _applyPbrMatParams(m, o, mp, alphaCtx);
+                // [fix P2] 仅 per-mat 显式字段覆盖；未设置字段继承 category 结果
+                _applyPbrMatParams(m, o, _mergedMatParams(catParams, mp), alphaCtx);
                 applied = true;
             }
         }
@@ -554,19 +571,23 @@ function _applyMaterial(id: string, mi: number, alphaCtx?: AlphaCtx): void {
     _capture(m, mi, alphaCtx?.origAlpha ?? []);
     const o = _origValues.get(m)!;
     let applied = false;
+    // [fix P2] category 参数提到外层，per-mat 合并时继承
+    let catParams: MaterialCategoryParams | undefined;
     const state = _catState.get(id);
     if (state) {
         const p = state.get(categoryOfMaterial(m));
         if (p) {
             _applyParamsToMaterial(m, mmdMat, o, p, alphaCtx);
             applied = true;
+            catParams = p;
         }
     }
     const perMat = _matState.get(id);
     if (perMat) {
         const mp = perMat.get(mi);
         if (mp) {
-            _applyParamsToMaterial(m, mmdMat, o, mp, alphaCtx);
+            // [fix P2] 仅 per-mat 显式字段覆盖；未设置字段继承 category 结果
+            _applyParamsToMaterial(m, mmdMat, o, _mergedMatParams(catParams, mp), alphaCtx);
             applied = true;
         }
     }
@@ -604,7 +625,8 @@ function _applyCategory(id: string, cat: string, alphaCtx?: AlphaCtx): void {
             _applyPbrMatParams(m, o, p, alphaCtx);
             const mp = perMat.get(mi);
             if (mp) {
-                _applyPbrMatParams(m, o, mp, alphaCtx);
+                // [fix P2] 仅 per-mat 显式字段覆盖；未设置字段继承分类结果 p
+                _applyPbrMatParams(m, o, _mergedMatParams(p, mp), alphaCtx);
             }
             continue;
         }
@@ -621,7 +643,8 @@ function _applyCategory(id: string, cat: string, alphaCtx?: AlphaCtx): void {
         _applyParamsToMaterial(m, mmdMat, o, p, alphaCtx);
         const mp = perMat.get(mi);
         if (mp) {
-            _applyParamsToMaterial(m, mmdMat, o, mp, alphaCtx);
+            // [fix P2] 仅 per-mat 显式字段覆盖；未设置字段继承分类结果 p
+            _applyParamsToMaterial(m, mmdMat, o, _mergedMatParams(p, mp), alphaCtx);
         }
     }
 }
@@ -776,7 +799,7 @@ export function applyUnlitFallback(id: string): void {
     triggerAutoSave();
 }
 
-function _ensureMatState(id: string): Map<number, MaterialCategoryParams> {
+function _ensureMatState(id: string): Map<number, Partial<MaterialCategoryParams>> {
     let m = _matState.get(id);
     if (m) {
         return m;
@@ -806,7 +829,10 @@ export function getMatDetailList(
             continue;
         }
         const mp = perMat.get(mi);
-        const params: MaterialCategoryParams = mp ? { ...mp } : { ...DEFAULT_MAT_PARAMS };
+        // [fix P2] per-mat 为 Partial：UI 回填须合并 DEFAULT 显示完整值
+        const params: MaterialCategoryParams = mp
+            ? { ...DEFAULT_MAT_PARAMS, ...mp }
+            : { ...DEFAULT_MAT_PARAMS };
         result.push({ name: m.name, index: mi, params, modified: !!mp });
     }
     return result;
@@ -818,7 +844,8 @@ export function getMatParams(id: string, matIndex: number): MaterialCategoryPara
         return null;
     }
     const entry = modelState.get(matIndex);
-    return entry ? { ...entry } : null;
+    // [fix P2] per-mat 为 Partial：回填完整值（未设置字段以 DEFAULT 兜底，UI 显示不缺失）
+    return entry ? { ...DEFAULT_MAT_PARAMS, ...entry } : null;
 }
 
 export function setMatParams(
@@ -837,7 +864,9 @@ export function setMatParams(
     const state = _ensureMatState(id);
     let entry = state.get(matIndex);
     if (!entry) {
-        entry = { ...DEFAULT_MAT_PARAMS };
+        // [fix P2] per-mat 新建为空 Partial：仅存显式设置字段（apply 时与分类参数合并继承），
+        // 不再用 DEFAULT 全量初始化（那会遮蔽 category 级调整）。
+        entry = {};
         state.set(matIndex, entry);
     }
     _clampAndAssign(entry, params);
@@ -974,10 +1003,19 @@ export function getMatState(id: string): {
     const overrides: Record<number, MaterialCategoryParams> = {};
     if (matState) {
         for (const [idx, params] of matState) {
-            if (JSON.stringify(params) === defaultJson) {
+            // [fix P2] per-mat 为 Partial：仅落盘「值 ≠ DEFAULT」的显式字段——
+            // 显式设回默认值（如 alphaMul=1）等价于继承 category，不产生序列化体积；
+            // 全部为默认值时整个 entry 跳过（与「无调整」语义一致）。
+            const filtered: Record<string, number> = {};
+            for (const [k, v] of Object.entries(params)) {
+                if (v !== undefined && v !== DEFAULT_MAT_PARAMS[k as keyof MaterialCategoryParams]) {
+                    filtered[k] = v;
+                }
+            }
+            if (Object.keys(filtered).length === 0) {
                 continue;
             }
-            overrides[idx] = { ...params };
+            overrides[idx] = filtered as MaterialCategoryParams;
         }
     }
     const enabled: Record<number, boolean> = {};

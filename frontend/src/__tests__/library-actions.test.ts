@@ -189,9 +189,10 @@ describe('library-actions — 行点击 / 替换 / 动作 / 标签 / 导入', ()
             loadManager.load.mockResolvedValue({ id: 'new' });
             onModelRowClick(makeModel({ file_path: '/test/root/models/a.pmx' }));
             onModelRowClick(makeModel({ file_path: '/test/root/models/b.pmx' }));
-            rejectFirst(new Error('Aborted'));
-            await vi.waitFor(() => expect(showErrorToast).toHaveBeenCalled());
+            rejectFirst(new DOMException('Aborted', 'AbortError'));
             await vi.waitFor(() => expect(loadManager.load).toHaveBeenCalledTimes(2));
+            // [fix P2] abort（快速连点被新选择取消）不是失败：不弹「加载失败」误报 toast
+            expect(showErrorToast).not.toHaveBeenCalled();
         });
     });
 

@@ -124,6 +124,15 @@ class WailsRuntimeBridge implements RuntimeBridge {
         // 这里用惰性同步访问——若未加载，先调 _load（async），但 events 方法本身返回同步值
         // 实际上 Wails 环境下 bridge 已在 bootstrap 时注入，不会走到 _load 的异步路径
         // 保险起见，若 _events 为 null（理论上不会），返回 WebEvents 兜底
+        // [fix P2] no-op WebEvents 的订阅会静默丢失（init 前订阅，init 后不补发）——
+        // 历史 AI 流挂起即此症状。一次性 console.warn 暴露时序问题，便于排查。
+        if (!this._events && !_warnedNoEvents) {
+            _warnedNoEvents = true;
+            console.warn(
+                '[runtime-bridge] events 在 bridge 注入前被访问，订阅将落入 no-op WebEvents（丢失）；' +
+                    '请确保业务订阅发生在 initRuntimeBridge() 之后'
+            );
+        }
         return this._events ?? new WebEvents();
     }
 
@@ -156,6 +165,8 @@ class WailsRuntimeBridge implements RuntimeBridge {
 // ======== 单例选型 ========
 let _bridge: RuntimeBridge | null = null;
 let _wailsBridge: WailsRuntimeBridge | null = null;
+// [fix P2] no-op WebEvents 一次性告警标志（见 events getter）
+let _warnedNoEvents = false;
 
 export function getRuntimeBridge(): RuntimeBridge {
     if (_bridge) {

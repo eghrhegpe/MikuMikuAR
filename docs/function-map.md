@@ -433,10 +433,10 @@
 | `RuntimeBrowser()` | `core/runtime-bridge:28` | — |
 | `RuntimeEvents()` | `core/runtime-bridge:20` | — |
 | `Unsubscribe()` | `core/runtime-bridge:17` | — |
-| `browser()` | `core/runtime-bridge:206` | — |
-| `events()` | `core/runtime-bridge:200` | — |
-| `getRuntimeBridge()` | `core/runtime-bridge:160` | — |
-| `initRuntimeBridge()` | `core/runtime-bridge:181` | bootstrap 早期调用：桌面/Android 侧强制加载 @wailsio/runtime 并绑定 events 实例。 |
+| `browser()` | `core/runtime-bridge:217` | — |
+| `events()` | `core/runtime-bridge:211` | — |
+| `getRuntimeBridge()` | `core/runtime-bridge:171` | — |
+| `initRuntimeBridge()` | `core/runtime-bridge:192` | bootstrap 早期调用：桌面/Android 侧强制加载 @wailsio/runtime 并绑定 events 实例。 |
 | `RuntimeMode()` | `core/runtime-mode:6` | — |
 | `detectRuntimeMode()` | `core/runtime-mode:22` | 探测运行时模式（COOP/COEP + SharedArrayBuffer + MPR 构建标志）。 |
 | `initRuntimeBadge()` | `core/runtime-mode:95` | bootstrap 早期调用：立即渲染上次持久化的模式，刷新后不丢失 |
@@ -1248,34 +1248,34 @@
 | `DEFAULT_MAT_PARAMS()` | `scene/manager/material:65` | 材质参数默认值 — 所有新增字段在此维护，消除散落硬编码。 |
 | `MaterialCategory()` | `scene/manager/material:47` | — |
 | `MaterialCategoryParams()` | `scene/manager/material:32` | — |
-| `MaterialStateManager()` | `scene/manager/material:171` | 材质状态管理器 — 集中管理分类/逐材质/可见性状态，便于测试 mock 和未来扩展。 |
+| `MaterialStateManager()` | `scene/manager/material:181` | 材质状态管理器 — 集中管理分类/逐材质/可见性状态，便于测试 mock 和未来扩展。 |
 | `SssMaterial()` | `scene/manager/material:18` | — |
-| `_applyAll()` | `scene/manager/material:630` | 将 MaterialCategoryParams 映射为 PBRMaterial 属性 映射关系（与 StandardMaterial 语义对齐）： - diffuseMul |
-| `_capture()` | `scene/manager/material:391` | Per-material category cache. |
-| `_capturePbr()` | `scene/manager/material:439` | PBRMaterial 参数捕获（对应 _capture 的 PBR 版） |
-| `_catState()` | `scene/manager/material:192` | 材质状态管理器 — 集中管理分类/逐材质/可见性状态，便于测试 mock 和未来扩展。 |
-| `_isPbrMaterial()` | `scene/manager/material:431` | — |
-| `_matEnabled()` | `scene/manager/material:196` | 材质状态管理器 — 集中管理分类/逐材质/可见性状态，便于测试 mock 和未来扩展。 |
-| `_matState()` | `scene/manager/material:194` | 材质状态管理器 — 集中管理分类/逐材质/可见性状态，便于测试 mock 和未来扩展。 |
-| `applyMatState()` | `scene/manager/material:1009` | — |
-| `applyUnlitFallback()` | `scene/manager/material:759` | 光照兜底预设：让模型呈现"伪 unlit"状态，不依赖方向光即可正常显示。 |
-| `disposeModelMaterialState()` | `scene/manager/material:867` | 清理指定模型的全部材质状态（分类 + 逐材质 + 启用标记）。 |
-| `getMatCatGroups()` | `scene/manager/material:692` | — |
-| `getMatCatParams()` | `scene/manager/material:712` | — |
-| `getMatDetailList()` | `scene/manager/material:789` | — |
-| `getMatParams()` | `scene/manager/material:815` | — |
-| `getMatState()` | `scene/manager/material:948` | — |
-| `getMaterialCategory()` | `scene/manager/material:360` | Resolve the display category (皮肤 / 头发 / 眼睛 / 服装 …) for a material or its material name. |
-| `isMatCategoryAllEnabled()` | `scene/manager/material:876` | 检查指定分类的全部材质是否都已启用。 |
-| `isMatEnabled()` | `scene/manager/material:665` | — |
-| `isPbrMaterial()` | `scene/manager/material:436` | — |
-| `resetMatCatParams()` | `scene/manager/material:735` | — |
-| `resetPerMaterialParams()` | `scene/manager/material:942` | 重置所有逐材质覆盖（per-material），保留分类调整（皮肤/头发等）。 |
-| `resetSingleMatParams()` | `scene/manager/material:848` | — |
-| `setMatCatParams()` | `scene/manager/material:720` | — |
-| `setMatCategoryEnabled()` | `scene/manager/material:904` | 按分类批量切换材质可见性。 |
-| `setMatEnabled()` | `scene/manager/material:669` | — |
-| `setMatParams()` | `scene/manager/material:824` | — |
+| `_applyAll()` | `scene/manager/material:653` | 将 MaterialCategoryParams 映射为 PBRMaterial 属性 映射关系（与 StandardMaterial 语义对齐）： - diffuseMul |
+| `_capture()` | `scene/manager/material:404` | Per-material category cache. |
+| `_capturePbr()` | `scene/manager/material:452` | PBRMaterial 参数捕获（对应 _capture 的 PBR 版） |
+| `_catState()` | `scene/manager/material:205` | 材质状态管理器 — 集中管理分类/逐材质/可见性状态，便于测试 mock 和未来扩展。 |
+| `_isPbrMaterial()` | `scene/manager/material:444` | — |
+| `_matEnabled()` | `scene/manager/material:209` | 材质状态管理器 — 集中管理分类/逐材质/可见性状态，便于测试 mock 和未来扩展。 |
+| `_matState()` | `scene/manager/material:207` | 材质状态管理器 — 集中管理分类/逐材质/可见性状态，便于测试 mock 和未来扩展。 |
+| `applyMatState()` | `scene/manager/material:1047` | — |
+| `applyUnlitFallback()` | `scene/manager/material:782` | 光照兜底预设：让模型呈现"伪 unlit"状态，不依赖方向光即可正常显示。 |
+| `disposeModelMaterialState()` | `scene/manager/material:896` | 清理指定模型的全部材质状态（分类 + 逐材质 + 启用标记）。 |
+| `getMatCatGroups()` | `scene/manager/material:715` | — |
+| `getMatCatParams()` | `scene/manager/material:735` | — |
+| `getMatDetailList()` | `scene/manager/material:812` | — |
+| `getMatParams()` | `scene/manager/material:841` | — |
+| `getMatState()` | `scene/manager/material:977` | — |
+| `getMaterialCategory()` | `scene/manager/material:373` | Resolve the display category (皮肤 / 头发 / 眼睛 / 服装 …) for a material or its material name. |
+| `isMatCategoryAllEnabled()` | `scene/manager/material:905` | 检查指定分类的全部材质是否都已启用。 |
+| `isMatEnabled()` | `scene/manager/material:688` | — |
+| `isPbrMaterial()` | `scene/manager/material:449` | — |
+| `resetMatCatParams()` | `scene/manager/material:758` | — |
+| `resetPerMaterialParams()` | `scene/manager/material:971` | 重置所有逐材质覆盖（per-material），保留分类调整（皮肤/头发等）。 |
+| `resetSingleMatParams()` | `scene/manager/material:877` | — |
+| `setMatCatParams()` | `scene/manager/material:743` | — |
+| `setMatCategoryEnabled()` | `scene/manager/material:933` | 按分类批量切换材质可见性。 |
+| `setMatEnabled()` | `scene/manager/material:692` | — |
+| `setMatParams()` | `scene/manager/material:851` | — |
 | `resolveModelId()` | `scene/manager/model-id:9` | 解析模型运行时 id：优先复用存档 uuid（preferredId，由恢复路径传入）， 否则生成稳定 uuid。替代旧实现 `model_${Date.now()}_${Math |
 | `captureThumbnail()` | `scene/manager/model-loader:153` | Captures a screenshot after model load for thumbnail cache. |
 | `initLoader()` | `scene/manager/model-loader:91` | — |
@@ -2053,17 +2053,17 @@
 | `getWaterSchema()` | `menus/env-water-levels:31` | 导出 water schema 供 menu-registry 静态分析（ADR-093 元测试） |
 | `buildWindLevel()` | `menus/env-wind-levels:44` | — |
 | `getWindSchema()` | `menus/env-wind-levels:12` | 导出 wind schema 供 menu-registry 静态分析（ADR-093 元测试） |
-| `buildTagDetailLevel()` | `menus/library-actions:712` | — |
-| `buildTagsOverviewLevel()` | `menus/library-actions:712` | — |
-| `findLibraryModelByName()` | `menus/library-actions:712` | 按名称模糊搜索模型（纯查询，不触发加载）。供 ADR-155/197 NL 控制 resolve 使用，避免 resolve 阶段误触发真实加载。 |
-| `findLibraryMotionByName()` | `menus/library-actions:712` | 按名称模糊搜索 VMD 动作（纯查询，不触发替换）。 |
-| `highlightRow()` | `menus/library-actions:712` | — |
-| `importFile()` | `menus/library-actions:667` | — |
-| `importFileByPath()` | `menus/library-actions:622` | — |
-| `onModelRowClick()` | `menus/library-actions:712` | — |
+| `buildTagDetailLevel()` | `menus/library-actions:716` | — |
+| `buildTagsOverviewLevel()` | `menus/library-actions:716` | — |
+| `findLibraryModelByName()` | `menus/library-actions:716` | 按名称模糊搜索模型（纯查询，不触发加载）。供 ADR-155/197 NL 控制 resolve 使用，避免 resolve 阶段误触发真实加载。 |
+| `findLibraryMotionByName()` | `menus/library-actions:716` | 按名称模糊搜索 VMD 动作（纯查询，不触发替换）。 |
+| `highlightRow()` | `menus/library-actions:716` | — |
+| `importFile()` | `menus/library-actions:671` | — |
+| `importFileByPath()` | `menus/library-actions:626` | — |
+| `onModelRowClick()` | `menus/library-actions:716` | — |
 | `prepareModelRestore()` | `menus/library-actions:112` | — |
-| `replaceModel()` | `menus/library-actions:712` | — |
-| `replaceMotion()` | `menus/library-actions:712` | — |
+| `replaceModel()` | `menus/library-actions:716` | — |
+| `replaceMotion()` | `menus/library-actions:716` | — |
 | `makeModelMenu()` | `menus/library-browse:369` | — |
 | `showModelPopup()` | `menus/library-browse:338` | — |
 | `ResourceViewMode()` | `menus/library-core:43` | — |

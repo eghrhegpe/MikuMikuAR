@@ -301,6 +301,34 @@ function loadModelNormal(m: LibraryModel, isStage: boolean): void {
     _loadManagerAbortCtrl = ctrl;
     const signal = ctrl.signal;
 
+    // [fix P2] 统一判定「加载被取消」（快速连点被新选择 abort）——非失败，静默 logWarn
+    // 不弹「加载失败」误报 toast。判定依据：ctrl 已被 abort 或 reject 的是 AbortError。
+    const isAborted = (err: unknown): boolean =>
+        ctrl.signal.aborted ||
+        (err != null && typeof err === 'object' && 'name' in err && err.name === 'AbortError');
+    // [fix P2] 统一清理模块级 ctrl（zip 与非 zip 分支共用，消除非 zip 分支无 finally 的残留）
+    const clearCtrl = (): void => {
+        if (_loadManagerAbortCtrl === ctrl) {
+            _loadManagerAbortCtrl = null;
+        }
+    };
+    const loadWithFallback = (promise: Promise<{ id?: string } | null | undefined>): void => {
+        promise
+            .then((handle) => {
+                if (!handle) {
+                    feedbackError('library.modelLoadFailed', getBaseName(m.file_path));
+                }
+            })
+            .catch((err) => {
+                if (isAborted(err)) {
+                    logWarn('library-actions', '加载被取消（abort），静默处理', getBaseName(m.file_path));
+                    return;
+                }
+                feedbackError('library.modelLoadFailed', getBaseName(m.file_path), err);
+            })
+            .finally(clearCtrl);
+    };
+
     if (m.container === 'zip') {
         closeAllOverlays();
         feedbackStatus('library.extractingZip', getBaseName(m.file_path));
@@ -313,14 +341,12 @@ function loadModelNormal(m: LibraryModel, isStage: boolean): void {
                     getBaseName(m.file_path)
                 );
                 if (m.format === 'vmd') {
-                    loadManager
-                        .load({ kind: 'vmd', path: result.file_path }, signal)
-                        .catch((err) =>
-                            feedbackError('library.modelLoadFailed', getBaseName(m.file_path), err)
-                        );
+                    loadWithFallback(
+                        loadManager.load({ kind: 'vmd', path: result.file_path }, signal)
+                    );
                 } else {
-                    loadManager
-                        .load(
+                    loadWithFallback(
+                        loadManager.load(
                             {
                                 kind: isStage ? 'stage' : 'actor',
                                 path: result.file_path,
@@ -329,14 +355,7 @@ function loadModelNormal(m: LibraryModel, isStage: boolean): void {
                             },
                             signal
                         )
-                        .then((handle) => {
-                            if (!handle) {
-                                feedbackError('library.modelLoadFailed', getBaseName(m.file_path));
-                            }
-                        })
-                        .catch((err) => {
-                            feedbackError('library.modelLoadFailed', getBaseName(m.file_path), err);
-                        });
+                    );
                 }
             })
             .catch((err) => {
@@ -353,41 +372,18 @@ function loadModelNormal(m: LibraryModel, isStage: boolean): void {
     }
     closeAllOverlays();
     if (m.format === 'pmx') {
-        loadManager
-            .load({ kind: isStage ? 'stage' : 'actor', path: m.file_path }, signal)
-            .then((handle) => {
-                if (!handle) {
-                    feedbackError('library.modelLoadFailed', getBaseName(m.file_path));
-                }
-            })
-            .catch((err) =>
-                feedbackError('library.modelLoadFailed', getBaseName(m.file_path), err)
-            );
+        loadWithFallback(
+            loadManager.load({ kind: isStage ? 'stage' : 'actor', path: m.file_path }, signal)
+        );
     } else if (m.format === 'vmd') {
-        loadManager
-            .load({ kind: 'vmd', path: m.file_path }, signal)
-            .then((handle) => {
-                if (!handle) {
-                    feedbackError('library.modelLoadFailed', getBaseName(m.file_path));
-                }
-            })
-            .catch((err) =>
-                feedbackError('library.modelLoadFailed', getBaseName(m.file_path), err)
-            );
+        loadWithFallback(loadManager.load({ kind: 'vmd', path: m.file_path }, signal));
     } else if (m.format === 'audio') {
-        loadManager
-            .load({ kind: 'audio', path: m.file_path }, signal)
-            .then((handle) => {
-                if (!handle) {
-                    feedbackError('library.modelLoadFailed', getBaseName(m.file_path));
-                }
-            })
-            .catch((err) =>
-                feedbackError('library.modelLoadFailed', getBaseName(m.file_path), err)
-            );
+        loadWithFallback(loadManager.load({ kind: 'audio', path: m.file_path }, signal));
     } else if (m.format === 'vpd') {
         // [audit-p2] VPD 加载无兜底：失败静默吞掉并 logWarn，避免未处理 rejection
         safeCallAsync('library-actions', 'loadVPDPose failed:', () => loadVPDPose(m.file_path));
+        // [fix P2] VPD 路径无 loadManager 请求，主动清理 ctrl（避免残留悬挂）
+        clearCtrl();
     }
 }
 
@@ -480,9 +476,17 @@ function replaceMotion(m: LibraryModel): void {
                 if (!result) {
                     return;
                 }
-                await doLoad(result.file_path);
+                try {
+                    await doLoad(result.file_path);
+                } catch (err) {
+                    // [fix P2] doLoad 失败发生在解压成功之后——报「动作加载失败」而非误报「解压失败」。
+                    // 注意：doLoad 内的 pushUndoSnapshot 已记录（操作前快照），失败时该撤销项指向
+                    // 未完成的变更（撤销为 no-op），不破坏栈语义，属已知小瑕疵。
+                    feedbackError('library.modelLoadFailed', getBaseName(m.file_path), err);
+                }
             })
             .catch((err) => {
+                // 仅 ExtractZip 本身失败才报解压失败
                 feedbackError('library.extractFailed', getBaseName(m.file_path), err);
             })
             .finally(() => {

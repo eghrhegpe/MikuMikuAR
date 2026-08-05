@@ -140,6 +140,18 @@ describe('P2 emissiveMul parameter', () => {
         setMatParams(TEST_ID, 0, { emissiveMul: 1.5 });
         expect(mat.emissiveColor.r).toBeCloseTo(0.75);
     });
+
+    it('[fix P2] per-mat 未显式设置的字段继承 category（alphaMul 不被 DEFAULT 重置）', () => {
+        const mat = new StandardMaterial('skin');
+        // @ts-expect-error duck-typed mock
+        modelRegistry.set(TEST_ID, { meshes: [{ material: mat }], opacity: 1, _origAlpha: [0.9] });
+        // category：alphaMul 0.5（半透明调整）
+        setMatCatParams(TEST_ID, '皮肤', { alphaMul: 0.5 });
+        // per-mat 只显式设置 emissiveMul：alphaMul 应继承 category 的 0.5
+        // 修复前：per-mat 以 DEFAULT(alphaMul=1) 全量覆盖 → mat.alpha 回到 0.9（遮蔽分类调整）
+        setMatParams(TEST_ID, 0, { emissiveMul: 1.5 });
+        expect(mat.alpha).toBeCloseTo(0.9 * 0.5);
+    });
 });
 
 describe('P1 texture level parameters', () => {
