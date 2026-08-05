@@ -14,6 +14,7 @@ import { showPlaza } from './plaza-browser';
 import { closePlaza } from './plaza-state';
 import { getOpenMenus } from './menu';
 import { safeCallAsync } from '@/core/safe-call';
+import { logWarn } from '@/core/logger';
 
 // ======== Module-level state ========
 const _lastOverlayFn = new Map<string, () => void>();
@@ -179,27 +180,32 @@ function installNavBindings(): void {
     }
     // [fix:test] 按钮缺失（happy-dom 无对应元素）时跳过该按钮接线，而非抛异常中断
     // 整个模块求值——否则 registerUiAction 等后续顶层副作用全部丢失（测试 import 即崩）。
-    const bindBtn = (el: HTMLButtonElement | null, fn: () => void): void => {
+    // [fix:audit] 生产 DOM 漂移（index.html 丢按钮 id）时同样静默跳过——为避免按钮
+    // 悄然失联，跳过时输出诊断 warn；测试环境（happy-dom 无按钮 DOM）属预期，静默。
+    const bindBtn = (id: string, el: HTMLButtonElement | null, fn: () => void): void => {
         if (!el) {
+            if (import.meta.env.MODE !== 'test') {
+                logWarn('nav-actions', `bindBtn: 按钮 #${id} 缺失，跳过接线——检查 index.html 是否丢失该按钮 id`);
+            }
             return;
         }
         _navDisposables.push(addDisposableListener(el, 'click', fn));
     };
-    bindBtn(dom.btnMainAction, () =>
+    bindBtn('btnMainAction', dom.btnMainAction, () =>
         toggleOverlay('sceneOverlay', showModelPopup)
     );
-    bindBtn(dom.btnMotionPopup, () =>
+    bindBtn('btnMotionPopup', dom.btnMotionPopup, () =>
         toggleOverlay('sceneOverlay', showMotionPopup)
     );
-    bindBtn(dom.btnScene, async () => {
+    bindBtn('btnScene', dom.btnScene, async () => {
         const m = await import('./scene-menu');
         toggleOverlay('sceneOverlay', m.showSceneMenu);
     });
-    bindBtn(dom.btnEnv, async () => {
+    bindBtn('btnEnv', dom.btnEnv, async () => {
         const m = await import('./env-menu');
         toggleOverlay('sceneOverlay', m.showEnvMenu);
     });
-    bindBtn(dom.btnSettings, async () => {
+    bindBtn('btnSettings', dom.btnSettings, async () => {
         const m = await import('./settings');
         await safeCallAsync('nav-actions', 'preloadAutoImportState', () =>
             m.preloadAutoImportState()
@@ -209,11 +215,11 @@ function installNavBindings(): void {
         ); // 预加载监听开关状态
         toggleOverlay('sceneOverlay', m.showSettings);
     });
-    bindBtn(dom.btnAssistant, async () => {
+    bindBtn('btnAssistant', dom.btnAssistant, async () => {
         const m = await import('./assistant-panel');
         toggleOverlay('sceneOverlay', m.showAssistant);
     });
-    bindBtn(dom.btnPlaza, () => {
+    bindBtn('btnPlaza', dom.btnPlaza, () => {
         const layer = document.getElementById('webviewLayer');
         if (layer && layer.classList.contains('visible')) {
             closePlaza();

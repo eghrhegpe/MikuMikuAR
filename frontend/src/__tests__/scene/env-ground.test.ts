@@ -8,7 +8,7 @@ import { MeshBuilder } from '@babylonjs/core/Meshes/meshBuilder';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { DynamicTexture } from '@babylonjs/core/Materials/Textures/dynamicTexture';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
-import { addGroundRipple, disposeGroundRipples } from '../../scene/env/env-water';
+import { addGroundRipple, clearGroundRipples, disposeGroundRipples } from '../../scene/env/env-water';
 
 // 隔离 env-impl，避免其重型依赖（clouds/particles/sky 等）干扰；
 // _envSys 通过 globalThis 共享同对象，与 env-context mock 一致。
@@ -64,6 +64,7 @@ import {
     disposeGround,
     applyGround,
     _syncGroundEmissive,
+    generateProceduralGroundTextures,
 } from '../../scene/env/env-ground';
 import type { EnvState } from '../../core/types';
 
@@ -471,5 +472,34 @@ describe('涟漪激活时重建地面 — ripple 纹理所有权（P2 回归）'
         expect(matAfter?.bumpTexture?.name).toBe('groundRippleTex');
         expect(matAfter?.bumpTexture).toBe(rippleTex);
         disposeSpy.mockRestore();
+    });
+
+    it('重建复位涟漪状态：停用涟漪后原地更新恢复新材质自己的 normal，而非上一代陈旧 bump（deactivation leg）', () => {
+        clearGroundTexCache();
+        addGroundRipple(new Vector3(0, 0, 0), 3, 0.5, 1.5, 2);
+
+        // 首次重建：涟漪激活，bump 被 ripple 覆盖；_groundRipples 暂存的是 seed 42 的 normal
+        applyGround(rippleState());
+        const matBefore = _envSys.ground.mesh!.material as any;
+        expect(matBefore?.bumpTexture?.name).toBe('groundRippleTex');
+        const legacyNormal = generateProceduralGroundTextures('metal', 42, scene).normal;
+
+        // 触发重建（改 seed → specKey 变化）：重建路径必须复位 _groundRipples/_groundRippleApplied
+        applyGround(rippleState({ groundProceduralSeed: 43 }));
+        const matAfter = _envSys.ground.mesh!.material as any;
+        // 涟漪仍激活 → 新材质重新 sync 上 ripple 纹理，_groundRipples 暂存新材质自己的 normal（seed 43 实例）
+        expect(matAfter?.bumpTexture?.name).toBe('groundRippleTex');
+        const currentNormal = generateProceduralGroundTextures('metal', 43, scene).normal;
+        expect(currentNormal).not.toBe(legacyNormal);
+
+        // 停用涟漪 → 原地 applyGround（同 specKey，仅改 roughness，不触发重建）→
+        // _disableGroundRippleTexture 恢复 bumpTexture = _groundRipples
+        clearGroundRipples();
+        applyGround(rippleState({ groundProceduralSeed: 43, groundRoughness: 0.3 }));
+
+        // [P2 核心] 若重建未复位 _groundRipples，这里会把上一代（seed 42）的陈旧 normal
+        // 恢复到新材质上——断言恢复的是当前代（seed 43）实例即拦截该回归。
+        expect(matAfter?.bumpTexture).toBe(currentNormal);
+        expect(matAfter?.bumpTexture).not.toBe(legacyNormal);
     });
 });
