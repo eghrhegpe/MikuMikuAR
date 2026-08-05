@@ -7,6 +7,8 @@ import { Scene } from '@babylonjs/core/scene';
 import { MeshBuilder } from '@babylonjs/core/Meshes/meshBuilder';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { DynamicTexture } from '@babylonjs/core/Materials/Textures/dynamicTexture';
+import { Vector3 } from '@babylonjs/core/Maths/math.vector';
+import { addGroundRipple, disposeGroundRipples } from '../../scene/env/env-water';
 
 // 隔离 env-impl，避免其重型依赖（clouds/particles/sky 等）干扰；
 // _envSys 通过 globalThis 共享同对象，与 env-context mock 一致。
@@ -414,5 +416,60 @@ describe('_effectiveRoughness — 反射模糊映射', () => {
                 )
             ).toBeCloseTo(0.6);
         }
+    });
+});
+
+// ──────────────── P2 回归：涟漪激活时重建地面，ripple 纹理不被误 dispose ────────────────
+// 背景：disposeGroundMaterial 会把 bumpTexture（即 groundRippleTex）当普通非缓存纹理 dispose，
+// 而该纹理归 env-water-fx 的 _groundRippleTex 拥有（由 disposeGroundRipples 释放）。
+// 修复后重建只脱离不 dispose，涟漪在新材质上重新同步（ADR-226 spec 路径 L362-366）。
+describe('涟漪激活时重建地面 — ripple 纹理所有权（P2 回归）', () => {
+    function rippleState(overrides: Partial<EnvState> = {}): EnvState {
+        return {
+            ...buildGroundPresetEnvState(GROUND_PRESETS.metalStage),
+            groundVisibleEnabled: true,
+            groundPreset: 'metalStage',
+            groundType: 'flat',
+            groundInfiniteEnabled: false,
+            groundSize: 500,
+            groundLevel: 0,
+            reflectionQuality: 'off',
+            groundReflectionQuality: 'off',
+            groundReflectionBlend: 0,
+            ...overrides,
+        } as EnvState;
+    }
+
+    afterEach(() => {
+        disposeGroundRipples();
+        disposeGround();
+    });
+
+    it('重建前 bumpTexture 已挂 ripple 纹理；重建后 ripple 纹理存活且新材质重新同步', () => {
+        clearGroundTexCache();
+        addGroundRipple(new Vector3(0, 0, 0), 3, 0.5, 1.5, 2);
+
+        // 首次重建：spec 路径 hasActiveGroundRipples() → _syncGroundRippleTexture 覆盖 bump
+        applyGround(rippleState());
+        let mesh = _envSys.ground.mesh;
+        expect(mesh).not.toBeNull();
+        const matBefore = mesh!.material as any;
+        // metalStage 程序化法线在 bumpTexture 上被 ripple 覆盖
+        expect(matBefore?.bumpTexture?.name).toBe('groundRippleTex');
+        const rippleTex = matBefore?.bumpTexture;
+        expect(rippleTex).toBeTruthy();
+
+        // 触发重建（改 groundSize 进 typeKey）：重建应跳过 ripple 纹理的 dispose
+        const disposeSpy = vi.spyOn(rippleTex, 'dispose');
+        applyGround(rippleState({ groundSize: 600 }));
+
+        // [P2 核心] 归 env-water-fx 拥有的 ripple 纹理不得被 disposeGroundMaterial 误释放
+        expect(disposeSpy).not.toHaveBeenCalled();
+
+        // 涟漪仍激活 → 新材质重新同步上同一 ripple 纹理（未产生已销毁引用）
+        const matAfter = _envSys.ground.mesh!.material as any;
+        expect(matAfter?.bumpTexture?.name).toBe('groundRippleTex');
+        expect(matAfter?.bumpTexture).toBe(rippleTex);
+        disposeSpy.mockRestore();
     });
 });

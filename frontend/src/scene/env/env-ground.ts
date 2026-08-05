@@ -507,7 +507,9 @@ function disposeGroundMaterial(mat: Material | null): void {
         return;
     }
     const disposeTex = (tex: BaseTexture | null) => {
-        if (tex && !isCacheOwnedTexture(tex)) {
+        // [fix P2] 涟漪纹理归 env-water-fx 拥有（_groundRippleTex，见 env-water-fx.disposeGroundRipples），
+        // 非地面材质私有。重建地面时只脱离不 dispose，避免 env-water-fx 侧拿到已销毁引用致涟漪失效。
+        if (tex && !isCacheOwnedTexture(tex) && tex.name !== 'groundRippleTex') {
             tex.dispose();
         }
     };
@@ -540,6 +542,9 @@ function disposeGroundMaterial(mat: Material | null): void {
     }
     if (mat instanceof PBRMaterial || mat instanceof StandardMaterial) {
         if (isCacheOwnedTexture(mat.bumpTexture)) {
+            mat.bumpTexture = null;
+        } else if (mat.bumpTexture?.name === 'groundRippleTex') {
+            // [fix P2] 涟漪纹理归 env-water-fx 拥有：脱离防 mat.dispose() 连带释放
             mat.bumpTexture = null;
         }
         if (isCacheOwnedTexture(mat.opacityTexture)) {
@@ -1336,6 +1341,10 @@ export function applyGround(state: EnvState): void {
     _currentGroundKey = nextKey;
     _groundScrollU = 0;
     _groundScrollV = 0;
+    // [fix P2] 重建复位涟漪状态：避免 _disableGroundRippleTexture 把上一代材质的陈旧 bump
+    // （可能是不同程序化 kind 的 normal）恢复到新材质上；涟漪本身不影响，应用侧按需重新 sync。
+    _groundRipples = null;
+    _groundRippleApplied = false;
     disposeGroundReflection();
     if (_envSys.ground.mesh) {
         const oldMesh = _envSys.ground.mesh;
