@@ -30,7 +30,6 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import {
   walkSourceFiles,
   resolveSourceImport,
@@ -39,9 +38,8 @@ import {
 } from './_lib/source-graph.mjs';
 import { parseArgs } from './_lib/parse-args.mjs';
 import { toNative } from './_lib/to-posix.mjs';
+import { ROOT } from './_lib/scan-files.mjs';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const ROOT = path.resolve(__dirname, '..');
 const SRC_DIR = path.join(ROOT, 'frontend', 'src');
 
 // ── import 语句解析（符号级） ──

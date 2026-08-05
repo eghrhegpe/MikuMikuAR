@@ -18,9 +18,9 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { walkSourceFiles, getExportedSymbols } from './_lib/source-graph.mjs';
 import { parseArgs } from './_lib/parse-args.mjs';
+import { ROOT } from './_lib/scan-files.mjs';
 
 // ── JSDoc 摘要提取（零侵入增强，不碰共用的 getExportedSymbols） ──
 function escapeRe(s) {
@@ -77,8 +77,6 @@ function extractDocSummary(filePath, sym) {
   return firstSentence.slice(0, 90).trim();
 }
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const ROOT = path.resolve(__dirname, '..');
 const SRC_DIR = path.join(ROOT, 'frontend', 'src');
 const OUT_FILE = path.join(ROOT, 'docs', 'function-map.md');
 
