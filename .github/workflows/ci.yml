@@ -182,6 +182,28 @@ jobs:
         run: python tests/test_markdown_links.py
 
   # ============================================================
+  # Scripts — Hygiene Gate (P6 convergence guard)
+  # Blocks re-introduction of inline ROOT boilerplate / missing headers /
+  # broken exit codes in scripts/*.mjs. --strict escalates WARN to failure,
+  # preventing regression of the P2–P6 script-convention convergence.
+  # ============================================================
+  scripts-hygiene:
+    name: Scripts — Hygiene Gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+
+      - name: Script hygiene check (no inline ROOT boilerplate)
+        # P6 收口护栏：内联 ROOT 样板 / 文件头缺失 / 退出码失效 → exit 1 阻塞 CI，
+        # 防 P2–P6 的 scripts/*.mjs 约定回退。--strict 将 WARN 升级为失败。
+        run: node scripts/check-script-hygiene.mjs --strict
+
+  # ============================================================
   # Version — tag vs package.json consistency
   # Ensures that if a tag exists (on PRs to main), the package.json
   # version matches it. Only meaningful on push/pull to main/master.
