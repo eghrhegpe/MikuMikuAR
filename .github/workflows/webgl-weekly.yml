@@ -21,7 +21,9 @@ permissions:
 
 jobs:
   webgl-regression:
-    name: @webgl — Full Regression
+    # [fix:yaml] @ 是 YAML 保留字符，不能作标量起始——裸 @webgl 导致整个 workflow
+    # 解析失败（GitHub fallback 到 push 触发，每次 push 都跑且立即失败），必须加引号。
+    name: '@webgl — Full Regression'
     runs-on: windows-latest
     defaults:
       run:
