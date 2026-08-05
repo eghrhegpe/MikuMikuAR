@@ -439,7 +439,9 @@ MikuMikuAR/
         │   ├── physics/              # 物理（WASM Bullet）
         │   │   ├── skirt-analyzer.ts  # 裙装分析器（ADR-084）
         │   │   ├── virtual-skirt.ts   # 虚拟裙骨（ADR-084）
-        │   │   └── ground-collision.ts # 地面碰撞特性（ADR-086）
+        │   │   ├── ground-collision.ts # 地面碰撞特性（ADR-086）
+        │   │   ├── physics-bridge.ts  # 物理桥接（骨骼查询/附着拟合/逐帧注册）
+        │   │   └── wind-physics.ts    # 风场刚体联动（ADR-242 由顶层收编）
         │   ├── env/                  # ★ 环境系统（ADR-091/092 贴图与反射统一）
         │   │   ├── env.ts             # 环境状态总入口
         │   │   ├── env-impl.ts        # 环境实现
@@ -557,10 +559,6 @@ MikuMikuAR/
         │   ├── outfit.ts           # 加载/应用/重置 + 自动发现
         │   ├── outfit-overlay.ts   # 换装覆盖层
         │   └── audio.ts            # 音频播放 + VMD 同步 + 节拍检测
-        │
-        ├── physics/                  # 物理辅助（XPBD 已移除，布料由 WASM Bullet 驱动）
-        │   ├── physics-bridge.ts   # 物理桥接
-        │   └── wind-physics.ts     # 风场辅助函数
         │
         ├── __tests__/                # 测试夹具
         │   ├── mocks/

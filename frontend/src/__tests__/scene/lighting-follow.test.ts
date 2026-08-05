@@ -26,7 +26,7 @@ vi.mock('../../scene/transform/transform-adapter', () => ({
     isGizmoDragging: () => false,
     getGizmoTargetId: () => null,
 }));
-vi.mock('../../physics/physics-bridge', () => ({
+vi.mock('@/scene/physics/physics-bridge', () => ({
     getBoneWorldPosition: () => null,
 }));
 vi.mock('../../scene/render/light-cone', () => ({

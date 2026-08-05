@@ -12,7 +12,7 @@ import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { lightingState } from './lighting-state';
 import { modelRegistry, type ModelInstance } from '@/core/config';
 import { safeDispose } from '@/core/dispose-helpers';
-import { getBoneWorldPosition } from '../../physics/physics-bridge';
+import { getBoneWorldPosition } from '@/scene/physics/physics-bridge';
 import { setTransformMetadata } from '../transform/transform-pick';
 import {
     registerTransformAdapter,

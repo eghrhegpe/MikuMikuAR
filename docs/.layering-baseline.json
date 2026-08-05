@@ -3,6 +3,7 @@
   "generatedAt": "2026-08-05",
   "entries": [
     "core/dev-hooks.ts:scene/manager/model-ops",
+    "core/dev-hooks.ts:scene/physics/wind-physics",
     "core/dev-hooks.ts:scene/render/lighting",
     "core/dev-hooks.ts:scene/render/renderer",
     "core/dev-hooks.ts:scene/scene",

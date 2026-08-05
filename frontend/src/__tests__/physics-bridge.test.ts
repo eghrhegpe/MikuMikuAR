@@ -7,7 +7,7 @@ import {
     getBoneWorldPosition,
     autoFitAttachment,
     PerFrameUpdateRegistry,
-} from '../physics/physics-bridge';
+} from '@/scene/physics/physics-bridge';
 
 function makeModel(bones: { name: string; worldMatrix: Float32Array }[]): IMmdModel {
     return { runtimeBones: bones } as unknown as IMmdModel;

@@ -45,7 +45,7 @@ if (physicsParams !== null) {
 
 ### 2.3 wind-physics 遍历了恒空的 bundle 容器（路径1 根因）
 
-[wind-physics.ts](../../frontend/src/physics/wind-physics.ts) 的 `_onPhysicsSync` 原本**只**遍历 `getRigidBodyBundleMap(impl)`（即 `rigidBodyBundleReferenceCountMap.keys()`），对每个刚体 `applyCentralForce`。而自建刚体（虚拟裙骨/地面）实际在**单数** `rigidBodyReferenceCountMap`，bundle 容器恒空 → 循环体一次都不执行 → 风力零施加。修复：补 `getRigidBodyMap()`（返回 `rigidBodyReferenceCountMap.keys()`）并在循环后追加单数刚体遍历（见 §四 4.2）。
+[wind-physics.ts](../../frontend/src/scene/physics/wind-physics.ts) 的 `_onPhysicsSync` 原本**只**遍历 `getRigidBodyBundleMap(impl)`（即 `rigidBodyBundleReferenceCountMap.keys()`），对每个刚体 `applyCentralForce`。而自建刚体（虚拟裙骨/地面）实际在**单数** `rigidBodyReferenceCountMap`，bundle 容器恒空 → 循环体一次都不执行 → 风力零施加。修复：补 `getRigidBodyMap()`（返回 `rigidBodyReferenceCountMap.keys()`）并在循环后追加单数刚体遍历（见 §四 4.2）。
 
 ### 2.4 ADR-192 / ADR-194 的连锁误判
 
@@ -147,7 +147,7 @@ else { this._physicsModel = null; }   // ← 内建物理走这里
 
 | 文件 | 角色 |
 |------|------|
-| [wind-physics.ts](../../frontend/src/physics/wind-physics.ts) | `_onPhysicsSync` 对**单数**自建刚体（`getRigidBodyMap`，虚拟裙骨/地面）施力；模型原生刚体施力已回退；bundle 循环保留为空兼容 |
+| [wind-physics.ts](../../frontend/src/scene/physics/wind-physics.ts) | `_onPhysicsSync` 对**单数**自建刚体（`getRigidBodyMap`，虚拟裙骨/地面）施力；模型原生刚体施力已回退；bundle 循环保留为空兼容 |
 | [mmd-adapter.ts](../../frontend/src/core/mmd-adapter.ts) | 新增 `getRigidBodyMap`（单数容器）；保留 `getPhysicsImpl` lazy impl 主动创建；`applyForceToModelRigidBodies`/`hasModelPhysicsBundle` 已回退 |
 | [dev-hooks.ts](../../frontend/src/core/dev-hooks.ts) | 新增 `rigidBodyCount` 探针（单数 `rigidBodyReferenceCountMap.size`）；`rigidBodyBundleCount` 注明恒为 0 |
 | [physics-health.spec.ts](../../frontend/e2e/physics-health.spec.ts) | test #1 由 `rigidBodyBundleCount>0` 修正为 `rigidBodyCount>0`（bundle 容器恒空） |

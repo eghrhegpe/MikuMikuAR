@@ -28,7 +28,7 @@ import {
 } from 'babylon-mmd/esm/Runtime/Optimized/Physics/Bind/physicsShape';
 import { MotionType } from 'babylon-mmd/esm/Runtime/Optimized/Physics/Bind/motionType';
 import { analyzeSkirt } from './skirt-analyzer';
-import { PerFrameUpdateRegistry, getBoneWorldPosition } from '../../physics/physics-bridge';
+import { PerFrameUpdateRegistry, getBoneWorldPosition } from './physics-bridge';
 import { getCachedCapabilities } from '../../core/backend';
 import { logWarn } from '../../core/logger';
 

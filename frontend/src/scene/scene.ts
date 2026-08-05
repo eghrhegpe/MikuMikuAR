@@ -40,7 +40,7 @@ import 'babylon-mmd/esm/Runtime/Optimized/Animation/mmdWasmRuntimeModelAnimation
 //         因 MmdStandardMaterialProxy 仅操作 diffuse/shininess，对 PBRMaterial 也兼容）
 import { getMaterialMode, getStandardMaterialProxy } from './manager/material-proxy-resolver';
 import { tryApplyPbrMaterialBuilder } from './manager/pbr-builder-init';
-import { initWindPhysics, disposeWindPhysics } from '../physics/wind-physics';
+import { initWindPhysics, disposeWindPhysics } from '@/scene/physics/wind-physics';
 import { applyGroundCollision } from './physics/ground-collision';
 import { swallowError } from '../core/async';
 import { logWarn } from '../core/logger';

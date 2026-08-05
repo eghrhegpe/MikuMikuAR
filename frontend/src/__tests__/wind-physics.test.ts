@@ -24,7 +24,7 @@ vi.mock('../core/wind-utils', () => ({
     isWindActive: () => true,
 }));
 
-import { _getBundles } from '../physics/wind-physics';
+import { _getBundles } from '@/scene/physics/wind-physics';
 
 describe('_getBundles reads public rigidBodyBundleReferenceCountMap', () => {
     it('returns bundle keys from public API', () => {

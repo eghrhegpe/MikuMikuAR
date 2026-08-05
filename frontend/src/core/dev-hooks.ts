@@ -6,7 +6,7 @@
 import { scene, engine, focusedModel, modelManager, isHeadless } from '../scene/scene';
 import { loadOutfits, applyOutfitVariant } from '../outfit/outfit';
 import { envState, mmdRuntime } from './config';
-import { isWindPhysicsActive } from '../physics/wind-physics';
+import { isWindPhysicsActive } from '@/scene/physics/wind-physics';
 import { removeFocusedModel } from '../scene/manager/model-ops';
 import { logInfo } from './logger';
 // [doc:adr-229] 通用状态读取器：window.__state 由 menus/menu-schema 经 core/e2e-state-bridge 注入，

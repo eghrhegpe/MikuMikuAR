@@ -8,11 +8,10 @@
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
 | 核心基础设施 | 129 | 739 |
-| 3D 场景 | 120 | 1155 |
+| 3D 场景 | 122 | 1169 |
 | 菜单 & UI | 76 | 388 |
 | 换装 & 音频 | 3 | 33 |
 | 动作算法 | 19 | 140 |
-| 物理系统 | 2 | 14 |
 
 ## 核心基础设施
 
@@ -1624,6 +1623,15 @@
 | `disableGroundCollision()` | `scene/physics/ground-collision:86` | 禁用地面碰撞：从所有世界移除并释放资源。 |
 | `enableGroundCollision()` | `scene/physics/ground-collision:51` | 启用地面碰撞：注入静态地板刚体到所有物理世界。幂等。 |
 | `isGroundCollisionEnabled()` | `scene/physics/ground-collision:44` | 地面碰撞是否处于启用状态 |
+| `AttachmentAnchors()` | `scene/physics/physics-bridge:73` | — |
+| `AttachmentFit()` | `scene/physics/physics-bridge:80` | — |
+| `AttachmentTopology()` | `scene/physics/physics-bridge:71` | — |
+| `FrameUpdateFn()` | `scene/physics/physics-bridge:119` | — |
+| `PerFrameUpdateRegistry()` | `scene/physics/physics-bridge:126` | 单一 onBeforeRenderObservable 调度多个按 key 注册的每帧回调。 |
+| `autoFitAttachment()` | `scene/physics/physics-bridge:100` | 从模型尺寸启发式推算挂件几何参数。 |
+| `findRuntimeBone()` | `scene/physics/physics-bridge:31` | 在模型 runtimeBones 中按名查找。WASM / JS runtime 都暴露 runtimeBones，故后端无关。 |
+| `getBoneLocalMatrix()` | `scene/physics/physics-bridge:48` | 取骨骼在 rootMesh **局部坐标系**下的矩阵（列主序 Float32Array[16]），用于挂件锚点跟随。 |
+| `getBoneWorldPosition()` | `scene/physics/physics-bridge:56` | 从骨骼局部矩阵提取世界位置（米，场景单位）。 |
 | `SkirtAnalysisResult()` | `scene/physics/skirt-analyzer:40` | — |
 | `SkirtAnalyzerOptions()` | `scene/physics/skirt-analyzer:55` | — |
 | `SkirtChain()` | `scene/physics/skirt-analyzer:35` | — |
@@ -1637,6 +1645,11 @@
 | `localToWorld()` | `scene/physics/virtual-skirt:106` | 局部坐标 → 世界坐标（点变换，含平移）。 |
 | `resolveVirtualSkirtQuality()` | `scene/physics/virtual-skirt:88` | Phase 5: 解析有效质量档位。 |
 | `worldDeltaToLocal()` | `scene/physics/virtual-skirt:119` | 世界位移向量 → 局部位移向量（仅取旋转/缩放分量，忽略平移）。 |
+| `_getBundles()` | `scene/physics/wind-physics:42` | — |
+| `disposeWindPhysics()` | `scene/physics/wind-physics:187` | 销毁风力物理注入。 |
+| `initWindPhysics()` | `scene/physics/wind-physics:140` | 初始化风力物理注入。 |
+| `isWindPhysicsActive()` | `scene/physics/wind-physics:200` | 当前运行时是否实际启用了风力物理（WASM Bullet）。 |
+| `retryWindPhysicsSubscription()` | `scene/physics/wind-physics:159` | [adr-104] 模型加载成功后由 model-loader 显式调用，重试订阅 physics impl （此时 physics impl 已就绪）。替代原 monkey-pa |
 | `CAMERA_PRESETS()` | `scene/pose/camera-angle:23` | 预设相机角度列表 |
 | `CameraAnglePreset()` | `scene/pose/camera-angle:10` | 预设角度定义 |
 | `applyCameraPreset()` | `scene/pose/camera-angle:68` | 切换到指定预设角度。 |
@@ -2493,25 +2506,6 @@
 | `loadVPDFromBuffer()` | `motion-algos/vpd-parser:194` | 从 ArrayBuffer（VPD 文件内容）解析并生成 VMD。 |
 | `parseVPDText()` | `motion-algos/vpd-parser:93` | 解析 VPD 文本为结构化数据。 |
 | `poseDataToVmdBuffer()` | `motion-algos/vpd-parser:176` | 将 VPD 姿势数据转换为标准 VMD 二进制数据。 |
-
-## 物理系统
-
-| 符号 | 文件:行 | 说明 |
-|------|--------|------|
-| `AttachmentAnchors()` | `physics/physics-bridge:73` | — |
-| `AttachmentFit()` | `physics/physics-bridge:80` | — |
-| `AttachmentTopology()` | `physics/physics-bridge:71` | — |
-| `FrameUpdateFn()` | `physics/physics-bridge:119` | — |
-| `PerFrameUpdateRegistry()` | `physics/physics-bridge:126` | 单一 onBeforeRenderObservable 调度多个按 key 注册的每帧回调。 |
-| `autoFitAttachment()` | `physics/physics-bridge:100` | 从模型尺寸启发式推算挂件几何参数。 |
-| `findRuntimeBone()` | `physics/physics-bridge:31` | 在模型 runtimeBones 中按名查找。WASM / JS runtime 都暴露 runtimeBones，故后端无关。 |
-| `getBoneLocalMatrix()` | `physics/physics-bridge:48` | 取骨骼在 rootMesh **局部坐标系**下的矩阵（列主序 Float32Array[16]），用于挂件锚点跟随。 |
-| `getBoneWorldPosition()` | `physics/physics-bridge:56` | 从骨骼局部矩阵提取世界位置（米，场景单位）。 |
-| `_getBundles()` | `physics/wind-physics:42` | — |
-| `disposeWindPhysics()` | `physics/wind-physics:187` | 销毁风力物理注入。 |
-| `initWindPhysics()` | `physics/wind-physics:140` | 初始化风力物理注入。 |
-| `isWindPhysicsActive()` | `physics/wind-physics:200` | 当前运行时是否实际启用了风力物理（WASM Bullet）。 |
-| `retryWindPhysicsSubscription()` | `physics/wind-physics:159` | [adr-104] 模型加载成功后由 model-loader 显式调用，重试订阅 physics impl （此时 physics impl 已就绪）。替代原 monkey-pa |
 
 ---
 

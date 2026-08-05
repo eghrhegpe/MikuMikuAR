@@ -39,7 +39,7 @@ import { t } from '@/core/i18n/t';
 import type { IMmdRuntime } from 'babylon-mmd/esm/Runtime/IMmdRuntime';
 import type { IMmdModel } from 'babylon-mmd/esm/Runtime/IMmdModel';
 import { MmdWasmModel } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmModel';
-import { retryWindPhysicsSubscription } from '../../physics/wind-physics';
+import { retryWindPhysicsSubscription } from '@/scene/physics/wind-physics';
 import { _capture } from './material';
 import { rebuildShadowCasters } from '../render/lighting';
 import { getGroundHeightAt, setOnTerrainReady, setOnGroundChanged } from '../env/env-impl';

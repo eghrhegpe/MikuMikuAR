@@ -27,7 +27,7 @@ import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import type { IMmdRuntime } from 'babylon-mmd/esm/Runtime/IMmdRuntime';
 import { MmdWasmRuntime as MmdWasmRuntimeClass } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime';
 import type { MmdWasmPhysicsRuntimeImpl } from 'babylon-mmd/esm/Runtime/Optimized/Physics/mmdWasmPhysicsRuntimeImpl';
-import { getWindVector, isWindActive } from '../core/wind-utils';
+import { getWindVector, isWindActive } from '@/core/wind-utils';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
 import {
     getPhysicsImpl,

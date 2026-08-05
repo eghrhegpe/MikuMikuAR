@@ -158,7 +158,7 @@ import {
     initWindPhysics,
     retryWindPhysicsSubscription,
     disposeWindPhysics,
-} from '../physics/wind-physics';
+} from '@/scene/physics/wind-physics';
 import { MmdWasmRuntime } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime';
 
 function makeWasmRuntime(): InstanceType<typeof MmdWasmRuntime> {

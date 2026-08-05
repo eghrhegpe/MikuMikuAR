@@ -55,4 +55,4 @@ PMX 模型加载器：模型文件解析、实例创建、缩略图生成、outf
 ## 与其他子系统关系
 - 上游：`scene.ts` 编排调用
 - 下游：`model-manager.ts`（注册表/生命周期）、`material.ts`（材质捕获 `_capture`）、`thumbnail-capture.ts`、`transform-pick.ts`（元数据）
-- 物理联动：`physics/wind-physics.ts` 的风力订阅重试
+- 物理联动：`scene/physics/wind-physics.ts` 的风力订阅重试

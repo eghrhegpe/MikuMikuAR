@@ -1,6 +1,6 @@
 {
   "$comment": "已知架构循环依赖白名单。CI (--strict) 只对本清单之外的新增环阻断。修复一个环后请运行 node scripts/check-circular.mjs --update-allowlist 收紧清单。",
-  "updatedAt": "2026-08-03",
+  "updatedAt": "2026-08-06",
   "cycles": [
     {
       "key": "core→scene→core",
@@ -17,10 +17,6 @@
     {
       "key": "core→scene→motion-algos→scene/env→scene/physics→core",
       "path": "core → scene → motion-algos → scene/env → scene/physics → core"
-    },
-    {
-      "key": "core→scene→motion-algos→scene/env→scene/physics→physics→core",
-      "path": "core → scene → motion-algos → scene/env → scene/physics → physics → core"
     },
     {
       "key": "core→scene→motion-algos→scene/env→scene/render→core",

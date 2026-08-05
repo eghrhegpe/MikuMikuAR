@@ -135,6 +135,8 @@ npm run gen:layering-baseline # 消除反向边后收紧基线
 
 1. ✅ **已完成** `materials/SssPBRMaterial.ts` → `scene/manager/sss-pbr-material.ts`。归宿选 `scene/manager/` 而非原计划 `scene/render/`：`scene/render/` 实为灯光/渲染管线域，SSS 材质的语义邻居是同域的 `material-sss.ts`（对其有 2 处注释引用）。同步修正 PascalCase 命名越狱，测试迁至 `__tests__/scene/`，`check-layering.mjs` 的 `TOPLEVEL_ALGO` 移除 `materials`。顶层目录 5 → 4。
 2. ✅ **已完成（Phase 2-2）** `library/library-path.ts` → `core/library-path.ts`。依赖全部落在 core（`core/state` / `core/path` / `core/logger`），零 Babylon、零 menus，归属 core 层无争议。26 处引用统一改写为 `@/core/library-path` 别名形式（原为 `../` / `../../` 相对路径混用），并同步修正 `ui-action-bridge.ts`、`library-core-mocks.ts`、`docs/architecture.md`、`core-utils.md` 的路径注释漂移。守护脚本 `TOPLEVEL_ALGO` 移除 `library`，顶层目录 4 → 3。
-3. `physics/` → `scene/physics/`（被 scene 反向消费 7 处，方向已反转）
+3. ~~`physics/` → `scene/physics/`~~ ✅ **已完成（Phase 2-3）**：`physics-bridge.ts` / `wind-physics.ts` 两文件均持运行时 Babylon 依赖 + 模块级状态 + `dispose` 生命周期，属场景绑定层无疑。迁入 `scene/physics/` 后顶层算法目录 3 → 2。
+   - **收益**：消除循环依赖 `core→scene→motion-algos→scene/env→scene/physics→physics→core`，白名单 9 → 8 环，CI 阻断环 13 → 12。
+   - **代价**：`core/dev-hooks.ts:9` 的 `isWindPhysicsActive` 引用由「core → 顶层 physics」显式化为 R2 反向边 `core → scene/physics`，分层基线 10 → 11 条。此为**标注显式化而非新增耦合**（dev-hooks 早已有 4 条 core→scene 边），净账为 −1 环 / +1 已知反向边。彻底消除需走 ADR-238 桥接注册，不在本 ADR 范围。
 4. `outfit/` 拆分绑定层与 UI 调用层，同步消除 `_catOf` 穿透引用
 5. `motion-algos/footstep-detect-fallback.ts` → `scene/motion/`（分层颠倒，它持 observer 生命周期）
