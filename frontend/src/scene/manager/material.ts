@@ -353,8 +353,12 @@ function _catOfUncached(name: string): MaterialCategory {
     return '服装';
 }
 
-/** @internal exported for testing */
-export function _catOf(mat: Material | string): MaterialCategory {
+/**
+ * Resolve the display category (皮肤 / 头发 / 眼睛 / 服装 …) for a material or its
+ * material name. `Material` instances are cached per instance; raw-name lookups
+ * delegate to `_catOfUncached` (which honours `uiState.materialCategoryMap`).
+ */
+export function getMaterialCategory(mat: Material | string): MaterialCategory {
     if (typeof mat === 'string') {
         return _catOfUncached(mat);
     }
@@ -383,7 +387,7 @@ function categoryOfMaterial(mat: Material): MaterialCategory {
     if (hit && hit.mapRef === mapRef) {
         return hit.cat;
     }
-    const cat = _catOf(mat.name);
+    const cat = getMaterialCategory(mat.name);
     _catCache.set(mat, { mapRef, cat });
     return cat;
 }

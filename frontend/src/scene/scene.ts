@@ -140,7 +140,7 @@ export {
     _catState,
     _matState,
     _matEnabled,
-    _catOf,
+    getMaterialCategory,
     _applyAll,
     isMatEnabled,
     setMatEnabled,

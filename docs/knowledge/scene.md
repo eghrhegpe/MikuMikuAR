@@ -35,7 +35,6 @@ symbols:
   - SetEnvState
   - __envDebug
   - _applyAll
-  - _catOf
   - _catState
   - _matEnabled
   - _matState
@@ -80,6 +79,7 @@ symbols:
   - getMatSssParams
   - getMatSssState
   - getMatState
+  - getMaterialCategory
   - getRepeatModeStr
   - getScene
   - getStreamPlayer

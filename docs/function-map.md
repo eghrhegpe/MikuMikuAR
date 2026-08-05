@@ -1246,32 +1246,32 @@
 | `MaterialCategoryParams()` | `scene/manager/material:32` | — |
 | `MaterialStateManager()` | `scene/manager/material:172` | 材质状态管理器 — 集中管理分类/逐材质/可见性状态，便于测试 mock 和未来扩展。 |
 | `SssMaterial()` | `scene/manager/material:18` | — |
-| `_applyAll()` | `scene/manager/material:617` | 将 MaterialCategoryParams 映射为 PBRMaterial 属性 映射关系（与 StandardMaterial 语义对齐）： - diffuseMul |
-| `_capture()` | `scene/manager/material:392` | Per-material category cache. |
-| `_capturePbr()` | `scene/manager/material:438` | PBRMaterial 参数捕获（对应 _capture 的 PBR 版） |
-| `_catOf()` | `scene/manager/material:357` | 材质分类关键词表（按优先级排序）。 |
+| `_applyAll()` | `scene/manager/material:621` | 将 MaterialCategoryParams 映射为 PBRMaterial 属性 映射关系（与 StandardMaterial 语义对齐）： - diffuseMul |
+| `_capture()` | `scene/manager/material:396` | Per-material category cache. |
+| `_capturePbr()` | `scene/manager/material:442` | PBRMaterial 参数捕获（对应 _capture 的 PBR 版） |
 | `_catState()` | `scene/manager/material:193` | 材质状态管理器 — 集中管理分类/逐材质/可见性状态，便于测试 mock 和未来扩展。 |
-| `_isPbrMaterial()` | `scene/manager/material:430` | — |
+| `_isPbrMaterial()` | `scene/manager/material:434` | — |
 | `_matEnabled()` | `scene/manager/material:197` | 材质状态管理器 — 集中管理分类/逐材质/可见性状态，便于测试 mock 和未来扩展。 |
 | `_matState()` | `scene/manager/material:195` | 材质状态管理器 — 集中管理分类/逐材质/可见性状态，便于测试 mock 和未来扩展。 |
-| `applyMatState()` | `scene/manager/material:997` | — |
-| `applyUnlitFallback()` | `scene/manager/material:747` | 光照兜底预设：让模型呈现"伪 unlit"状态，不依赖方向光即可正常显示。 |
-| `disposeModelMaterialState()` | `scene/manager/material:855` | 清理指定模型的全部材质状态（分类 + 逐材质 + 启用标记）。 |
-| `getMatCatGroups()` | `scene/manager/material:680` | — |
-| `getMatCatParams()` | `scene/manager/material:700` | — |
-| `getMatDetailList()` | `scene/manager/material:777` | — |
-| `getMatParams()` | `scene/manager/material:803` | — |
-| `getMatState()` | `scene/manager/material:936` | — |
-| `isMatCategoryAllEnabled()` | `scene/manager/material:864` | 检查指定分类的全部材质是否都已启用。 |
-| `isMatEnabled()` | `scene/manager/material:653` | — |
-| `isPbrMaterial()` | `scene/manager/material:435` | — |
-| `resetMatCatParams()` | `scene/manager/material:723` | — |
-| `resetPerMaterialParams()` | `scene/manager/material:930` | 重置所有逐材质覆盖（per-material），保留分类调整（皮肤/头发等）。 |
-| `resetSingleMatParams()` | `scene/manager/material:836` | — |
-| `setMatCatParams()` | `scene/manager/material:708` | — |
-| `setMatCategoryEnabled()` | `scene/manager/material:892` | 按分类批量切换材质可见性。 |
-| `setMatEnabled()` | `scene/manager/material:657` | — |
-| `setMatParams()` | `scene/manager/material:812` | — |
+| `applyMatState()` | `scene/manager/material:1001` | — |
+| `applyUnlitFallback()` | `scene/manager/material:751` | 光照兜底预设：让模型呈现"伪 unlit"状态，不依赖方向光即可正常显示。 |
+| `disposeModelMaterialState()` | `scene/manager/material:859` | 清理指定模型的全部材质状态（分类 + 逐材质 + 启用标记）。 |
+| `getMatCatGroups()` | `scene/manager/material:684` | — |
+| `getMatCatParams()` | `scene/manager/material:704` | — |
+| `getMatDetailList()` | `scene/manager/material:781` | — |
+| `getMatParams()` | `scene/manager/material:807` | — |
+| `getMatState()` | `scene/manager/material:940` | — |
+| `getMaterialCategory()` | `scene/manager/material:361` | Resolve the display category (皮肤 / 头发 / 眼睛 / 服装 …) for a material or its material name. |
+| `isMatCategoryAllEnabled()` | `scene/manager/material:868` | 检查指定分类的全部材质是否都已启用。 |
+| `isMatEnabled()` | `scene/manager/material:657` | — |
+| `isPbrMaterial()` | `scene/manager/material:439` | — |
+| `resetMatCatParams()` | `scene/manager/material:727` | — |
+| `resetPerMaterialParams()` | `scene/manager/material:934` | 重置所有逐材质覆盖（per-material），保留分类调整（皮肤/头发等）。 |
+| `resetSingleMatParams()` | `scene/manager/material:840` | — |
+| `setMatCatParams()` | `scene/manager/material:712` | — |
+| `setMatCategoryEnabled()` | `scene/manager/material:896` | 按分类批量切换材质可见性。 |
+| `setMatEnabled()` | `scene/manager/material:661` | — |
+| `setMatParams()` | `scene/manager/material:816` | — |
 | `resolveModelId()` | `scene/manager/model-id:9` | 解析模型运行时 id：优先复用存档 uuid（preferredId，由恢复路径传入）， 否则生成稳定 uuid。替代旧实现 `model_${Date.now()}_${Math |
 | `captureThumbnail()` | `scene/manager/model-loader:153` | Captures a screenshot after model load for thumbnail cache. |
 | `initLoader()` | `scene/manager/model-loader:91` | — |
@@ -1843,7 +1843,6 @@
 | `SetEnvState()` | `scene/scene:831` | — |
 | `__envDebug()` | `scene/scene:308` | — |
 | `_applyAll()` | `scene/scene:139` | — |
-| `_catOf()` | `scene/scene:139` | — |
 | `_catState()` | `scene/scene:139` | — |
 | `_matEnabled()` | `scene/scene:139` | — |
 | `_matState()` | `scene/scene:139` | — |
@@ -1879,6 +1878,7 @@
 | `getMatSssParams()` | `scene/scene:165` | — |
 | `getMatSssState()` | `scene/scene:165` | — |
 | `getMatState()` | `scene/scene:139` | — |
+| `getMaterialCategory()` | `scene/scene:139` | — |
 | `getScene()` | `scene/scene:760` | — |
 | `hasCameraVmd()` | `scene/scene:816` | — |
 | `initCameraSystem()` | `scene/scene:816` | — |

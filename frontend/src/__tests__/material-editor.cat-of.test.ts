@@ -84,58 +84,58 @@ vi.mock(
     () => mmdTextureAlphaFragmentMock
 );
 
-import { _catOf } from '../scene/scene';
+import { getMaterialCategory } from '../scene/scene';
 
-describe('_catOf material classification', () => {
+describe('getMaterialCategory material classification', () => {
     it('classifies "skin" as 皮肤', () => {
-        expect(_catOf('skin')).toBe('皮肤');
+        expect(getMaterialCategory('skin')).toBe('皮肤');
     });
 
     it('classifies "face" as 皮肤', () => {
-        expect(_catOf('face')).toBe('皮肤');
+        expect(getMaterialCategory('face')).toBe('皮肤');
     });
 
     it('classifies "髪" as 头发', () => {
-        expect(_catOf('髪')).toBe('头发');
+        expect(getMaterialCategory('髪')).toBe('头发');
     });
 
     it('classifies "hair" as 头发', () => {
-        expect(_catOf('hair')).toBe('头发');
+        expect(getMaterialCategory('hair')).toBe('头发');
     });
 
     it('classifies "eye" as 眼睛', () => {
-        expect(_catOf('eye')).toBe('眼睛');
+        expect(getMaterialCategory('eye')).toBe('眼睛');
     });
 
     it('classifies "目" as 眼睛', () => {
-        expect(_catOf('目')).toBe('眼睛');
+        expect(getMaterialCategory('目')).toBe('眼睛');
     });
 
     it('classifies "pupil" as 眼睛', () => {
-        expect(_catOf('pupil')).toBe('眼睛');
+        expect(getMaterialCategory('pupil')).toBe('眼睛');
     });
 
     it('classifies unknown names as 服装', () => {
-        expect(_catOf('skirt')).toBe('服装');
-        expect(_catOf('shoes')).toBe('服装');
-        expect(_catOf('ribbon')).toBe('服装');
+        expect(getMaterialCategory('skirt')).toBe('服装');
+        expect(getMaterialCategory('shoes')).toBe('服装');
+        expect(getMaterialCategory('ribbon')).toBe('服装');
     });
 
     it('is case insensitive', () => {
-        expect(_catOf('Skin')).toBe('皮肤');
-        expect(_catOf('FACE')).toBe('皮肤');
-        expect(_catOf('Hair')).toBe('头发');
+        expect(getMaterialCategory('Skin')).toBe('皮肤');
+        expect(getMaterialCategory('FACE')).toBe('皮肤');
+        expect(getMaterialCategory('Hair')).toBe('头发');
     });
 
     it('classifies "kihada" (肌) as 皮肤', () => {
-        expect(_catOf('kihada')).toBe('皮肤');
+        expect(getMaterialCategory('kihada')).toBe('皮肤');
     });
 
     it('classifies "body" as 皮肤', () => {
-        expect(_catOf('body')).toBe('皮肤');
+        expect(getMaterialCategory('body')).toBe('皮肤');
     });
 
     it('classifies "ahoge" as 头发', () => {
-        expect(_catOf('ahoge')).toBe('头发');
+        expect(getMaterialCategory('ahoge')).toBe('头发');
     });
 });

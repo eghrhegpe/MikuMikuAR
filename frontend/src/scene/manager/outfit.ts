@@ -20,7 +20,7 @@ import { delay, LoadingGuard } from '@/core/async';
 import { logWarn, logInfo } from '@/core/logger';
 import { reportResourceWarning } from '@/core/resource-warning-sink';
 import { col3FromTriple } from '@/core/color-helpers';
-import { _catOf } from './material';
+import { getMaterialCategory } from './material';
 import { triggerAutoSave } from '@/core/config';
 import { loadOverlay, hideMaterials, restoreMaterials, disposeOverlay } from './outfit-overlay';
 import type { MmdStandardMaterial } from '@/core/types';
@@ -665,7 +665,7 @@ async function _applyOutfitVariantCore(id: string, variantName: string): Promise
             continue;
         }
         const origParams = inst._origParams.get(mi)!;
-        const cat = _catOf(sm);
+        const cat = getMaterialCategory(sm);
 
         promises.push(
             _applySlot(

@@ -31,7 +31,6 @@ symbols:
   - _applyAll
   - _capture
   - _capturePbr
-  - _catOf
   - _catState
   - _isPbrMaterial
   - _matEnabled
@@ -49,6 +48,7 @@ symbols:
   - getMatSssParams
   - getMatSssState
   - getMatState
+  - getMaterialCategory
   - getMaterialMode
   - getPBRMaterialBuilder
   - getStandardMaterialProxy
