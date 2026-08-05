@@ -123,21 +123,23 @@ export async function startARCamera(facing: CameraFacing = 'user'): Promise<bool
         return false;
     }
 
-    // Android WebView：进入 AR 前必须持有 CAMERA 运行时权限，否则 getUserMedia
-    // 会被 WebChromeClient 静默拒绝（NotAllowedError）。这里在按钮点击链路里显式
-    // 判断授权状态——已授权则继续，未授权则弹系统授权框并等待用户决策。
-    if (
-        getCachedCapabilities().arScope === 'android-app' &&
-        !(await ensureAndroidCameraPermission())
-    ) {
-        _active = false;
-        _hideVideo();
-        feedbackStatus('scene.ar.cameraDenied', undefined, false);
-        _starting = false;
-        return false;
-    }
-
     try {
+        // Android WebView：进入 AR 前必须持有 CAMERA 运行时权限，否则 getUserMedia
+        // 会被 WebChromeClient 静默拒绝（NotAllowedError）。这里在按钮点击链路里显式
+        // 判断授权状态——已授权则继续，未授权则弹系统授权框并等待用户决策。
+        // [fix P1] 本 await 位于 try 内：ensureAndroidCameraPermission 已保证不 reject，
+        // 此处 try 为第二道防线——任何意外 rejection 由 catch 统一复位 _starting。
+        if (
+            getCachedCapabilities().arScope === 'android-app' &&
+            !(await ensureAndroidCameraPermission())
+        ) {
+            _active = false;
+            _hideVideo();
+            feedbackStatus('scene.ar.cameraDenied', undefined, false);
+            _starting = false;
+            return false;
+        }
+
         const constraints: MediaStreamConstraints = {
             video: {
                 facingMode: facing,
@@ -295,7 +297,14 @@ export function captureARScreenshot(
  */
 function ensureAndroidCameraPermission(): Promise<boolean> {
     const w = window.wails;
-    if (!w || typeof w.hasCameraPermission !== 'function') {
+    // [fix P1] 校验两个 API 都存在：requestCameraPermission 缺失时不可调用，
+    // 直接 resolve(true) 走桌面自身 getUserMedia 流程（WebChromeClient 拒绝时
+    // 抛 NotAllowedError 由 startARCamera 的 catch 统一处理，而非在此死锁）。
+    if (
+        !w ||
+        typeof w.hasCameraPermission !== 'function' ||
+        typeof w.requestCameraPermission !== 'function'
+    ) {
         return Promise.resolve(true);
     }
     if (w.hasCameraPermission()) {
@@ -303,11 +312,27 @@ function ensureAndroidCameraPermission(): Promise<boolean> {
     }
     return new Promise<boolean>((resolve) => {
         const prev = window.__onArcCameraPermission;
+        // [fix P2] 15s 超时兜底：系统授权框不响应或回调丢失时不再永久挂起
+        // （否则 startARCamera 的 await 永远 pending，AR 功能挂死）。
+        const timer = setTimeout(() => {
+            window.__onArcCameraPermission = prev;
+            resolve(false);
+        }, 15000);
         window.__onArcCameraPermission = (granted: boolean) => {
+            clearTimeout(timer);
             window.__onArcCameraPermission = prev;
             resolve(granted);
         };
-        w.requestCameraPermission!();
+        try {
+            w.requestCameraPermission();
+        } catch (err) {
+            // [fix P1] 调用抛异常（Go 绑定层错误）：恢复回调并 resolve(false)，
+            // 保证 Promise 绝不 reject——startARCamera 的 _starting 由此永不泄漏。
+            clearTimeout(timer);
+            window.__onArcCameraPermission = prev;
+            logWarn('AR', 'requestCameraPermission failed:', err);
+            resolve(false);
+        }
     });
 }
 

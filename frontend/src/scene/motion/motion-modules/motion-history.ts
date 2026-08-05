@@ -65,10 +65,17 @@ function _getMerge(modelId: string): MergeState {
 
 function _shouldMerge(modelId: string, moduleId: string, paramName: string): boolean {
     const m = _getMerge(modelId);
+    const state = _getState(modelId);
     const now = Date.now();
     const withinWindow = now - m.lastPushTime < 500;
     const sameParam = m.lastModuleId === moduleId && m.lastParamName === paramName;
-    return withinWindow && sameParam;
+    // [fix P1] 合并仅允许发生在 pendingEntry 仍是栈顶条目时（cursor 指向最后一条）。
+    // undo/redo/jumpToHistory 移动 cursor 后，pendingEntry 不再代表当前栈顶——
+    // 若此时 500ms 内同参数重推走合并分支，会只更新旧条目而不前进 cursor，
+    // 造成「状态≠初始但 canUndo()=false、canRedo() 为无操作」的撤销栈语义错乱。
+    // 以「cursor === 栈顶」为不变量，任何历史导航后自动失效合并窗口。
+    const atStackTop = m.pendingEntry !== null && state.cursor === state.entries.length - 1;
+    return withinWindow && sameParam && atStackTop;
 }
 
 function _recordLast(modelId: string, moduleId: string, paramName: string): void {

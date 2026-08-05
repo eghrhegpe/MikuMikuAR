@@ -198,6 +198,50 @@ describe('motion-history', () => {
         const entries = getHistoryEntries('model-1');
         expect(entries).toHaveLength(2);
     });
+
+    it('[fix P1] undo 到初始后同参数 500ms 内重推 → 新建条目而非合并（cursor 前进到 0）', () => {
+        const log: string[] = [];
+        const applier = makeApplier(log);
+
+        // 拖滑杆 0→5（入栈 E1，cursor=0）
+        pushHistory('model-1', 'mod1', 'tilt', 0, 5, makeBuilder());
+        expect(getHistoryCursor('model-1')).toBe(0);
+
+        // 撤销 → cursor=-1（状态回到初始）
+        expect(undo('model-1', applier)).toBe(true);
+        expect(getHistoryCursor('model-1')).toBe(-1);
+
+        // 500ms 内同参数重推：应新建条目（初始态之上的 E2，截断 E1）而非合并进 E1
+        pushHistory('model-1', 'mod1', 'tilt', 0, 8, makeBuilder());
+        expect(getHistoryCursor('model-1')).toBe(0); // 修复前：合并分支 cursor 停留 -1
+        expect(canUndo('model-1')).toBe(true); // 修复前：状态≠初始却 canUndo=false
+    });
+
+    it('[fix P1] redo 到非栈顶后同参数重推 → 新建条目并截断 redo 分支', () => {
+        const log: string[] = [];
+        const applier = makeApplier(log);
+
+        // 三次 push（间隔超窗口）：E1/E2/E3（cursor=2 栈顶）
+        pushHistory('model-1', 'mod1', 'tilt', 0, 5, makeBuilder());
+        vi.advanceTimersByTime(600);
+        pushHistory('model-1', 'mod1', 'tilt', 5, 10, makeBuilder());
+        vi.advanceTimersByTime(600);
+        pushHistory('model-1', 'mod1', 'tilt', 10, 15, makeBuilder());
+        expect(getHistoryCursor('model-1')).toBe(2);
+        expect(getHistoryEntries('model-1')).toHaveLength(3);
+
+        // undo×2 → cursor=0；redo → cursor=1（非栈顶，栈顶仍为 E3）
+        undo('model-1', applier);
+        undo('model-1', applier);
+        expect(redo('model-1', applier)).toBe(true);
+        expect(getHistoryCursor('model-1')).toBe(1);
+
+        // 同参数重推：cursor 非栈顶 → 不应合并进 E2，应新建 E4 并截断 E3
+        pushHistory('model-1', 'mod1', 'tilt', 5, 12, makeBuilder());
+        expect(getHistoryEntries('model-1')).toHaveLength(3); // 修复前：合并分支 entries 3 条但 cursor 停留 1
+        expect(getHistoryCursor('model-1')).toBe(2); // 修复前：cursor 停留 1
+        expect(canRedo('model-1')).toBe(false); // 截断后无可重做；修复前 canRedo=true（apply 当前态的无操作）
+    });
 });
 
 // ═════════════════════════════════════════════════════════════════════

@@ -134,6 +134,33 @@ describe('library-actions — 行点击 / 替换 / 动作 / 标签 / 导入', ()
             expect(loadManager.load).not.toHaveBeenCalled();
             expect(setStatus).toHaveBeenCalled();
         });
+
+        it('[fix P1] replaceMotion 快速连点两次：第二次被 replaceLoading 拦截，撤销快照只记一次', async () => {
+            mockState.focusedModelId = 'm1';
+            let releaseFirst!: () => void;
+            loadManager.load.mockImplementationOnce(
+                () => new Promise((res) => (releaseFirst = () => res({ id: 'vmd1' })))
+            );
+            const vmd = makeModel({ file_path: '/test/root/models/a.vmd', format: 'vmd' });
+
+            // 第一次点击：doLoad 进入挂起态，已 push 快照
+            replaceMotion(vmd);
+            await vi.waitFor(() => expect(loadManager.load).toHaveBeenCalledTimes(1));
+            expect(pushUndoSnapshot).toHaveBeenCalledTimes(1);
+
+            // 第二次点击：doLoad 未结束（replaceLoading=true），被拦截
+            replaceMotion(vmd);
+            expect(loadManager.load).toHaveBeenCalledTimes(1);
+            expect(pushUndoSnapshot).toHaveBeenCalledTimes(1);
+            expect(setStatus).toHaveBeenCalled();
+
+            // 释放第一次 → finally 复位 replaceLoading
+            releaseFirst();
+            await vi.waitFor(() => expect(librarySessionStore.isReplaceLoading()).toBe(false));
+            // 释放后同一参数重推不受守卫阻挡
+            replaceMotion(vmd);
+            await vi.waitFor(() => expect(loadManager.load).toHaveBeenCalledTimes(2));
+        });
     });
 
     describe('正常加载', () => {

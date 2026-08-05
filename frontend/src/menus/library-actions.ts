@@ -450,15 +450,23 @@ function replaceMotion(m: LibraryModel): void {
     const targetId = focusedModelId;
     const motionName = getBaseName(m.file_path).replace(/\.vmd$/i, '');
     const doLoad = async (path: string): Promise<void> => {
-        // [adr-169] 原位替换默认动作是破坏性操作（旧默认被移除）：操作前快照，成功后提供撤销
-        const snap = pushUndoSnapshot();
-        await withLoadingStatus('library.loadingMotion', 'status.done', () =>
-            loadManager.load({ kind: 'vmd', path, modelId: targetId })
-        );
-        triggerAutoSave();
-        offerSceneUndoAndRefresh(t('motion.motionReplaced', { name: motionName }), snap, () =>
-            getMotionMenu()?.reRender()
-        );
+        // [fix P1] 与 startReplaceModel 对称：doLoad 开始即置 replaceLoading，
+        // finally 复位——快速连点两个 VMD 时后点击被 isReplaceLoading() 拦截，
+        // 否则两路并发各 pushUndoSnapshot + offerSceneUndoAndRefresh，撤销栈错乱。
+        librarySessionStore.setReplaceLoading(true);
+        try {
+            // [adr-169] 原位替换默认动作是破坏性操作（旧默认被移除）：操作前快照，成功后提供撤销
+            const snap = pushUndoSnapshot();
+            await withLoadingStatus('library.loadingMotion', 'status.done', () =>
+                loadManager.load({ kind: 'vmd', path, modelId: targetId })
+            );
+            triggerAutoSave();
+            offerSceneUndoAndRefresh(t('motion.motionReplaced', { name: motionName }), snap, () =>
+                getMotionMenu()?.reRender()
+            );
+        } finally {
+            librarySessionStore.setReplaceLoading(false);
+        }
     };
     if (m.container === 'zip') {
         librarySessionStore.setExtracting(m.file_path);
