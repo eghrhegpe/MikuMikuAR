@@ -8,7 +8,7 @@
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
 | 核心基础设施 | 130 | 765 |
-| 3D 场景 | 125 | 1179 |
+| 3D 场景 | 125 | 1180 |
 | 菜单 & UI | 76 | 388 |
 | 动作算法 | 18 | 138 |
 
@@ -309,7 +309,7 @@
 | `canvasToBase64()` | `core/image:13` | 将 Canvas 编码为 base64 字符串（剥离 data:image/...;base64, 前缀）。 |
 | `thumbDataUrl()` | `core/image:64` | Build a data URL from a base64 thumbnail, sniffing PNG/JPEG/WebP from the header. |
 | `toBase64()` | `core/image:54` | Encode a string as base64 (UTF-8 safe). |
-| `bootstrap()` | `core/init:583` | 应用启动入口：接线 dev-hooks / render-loop / events 并启动渲染循环。 |
+| `bootstrap()` | `core/init:585` | 应用启动入口：接线 dev-hooks / render-loop / events 并启动渲染循环。 |
 | `jsonParse()` | `core/json-stringify:10` | Safely parse JSON; returns null on failure instead of throwing. |
 | `jsonStringify()` | `core/json-stringify:5` | Format a value as pretty-printed JSON (2-space indent). |
 | `CATEGORY_DIR()` | `core/library-path:52` | — |
@@ -425,7 +425,7 @@
 | `pushRenderingContext()` | `core/render-context:29` | 进入一个渲染上下文（renderCustom 前调用）。 |
 | `calcHardwareScaling()` | `core/render-loop:28` | 根据 DPR + renderScale 计算安全的 hardwareScalingLevel， 钳位帧缓冲不超过 GL_MAX_TEXTURE_SIZE（防 DPR×render |
 | `startRenderLoop()` | `core/render-loop:55` | 启动渲染循环（幂等：先停旧实例，避免 setInterval / render-loop 泄漏）。 |
-| `stopRenderLoop()` | `core/render-loop:141` | 停止渲染循环并清理 FPS 时钟。 |
+| `stopRenderLoop()` | `core/render-loop:143` | 停止渲染循环并清理 FPS 时钟。 |
 | `reportResourceWarning()` | `core/resource-warning-sink:38` | 上报一条资源加载警告（自动去重）。 |
 | `EventCallback()` | `core/runtime-bridge:18` | — |
 | `RuntimeBridge()` | `core/runtime-bridge:32` | — |
@@ -896,53 +896,54 @@
 | `CameraState()` | `scene/camera/camera:556` | — |
 | `LEGACY_MODE_MAP()` | `scene/camera/camera:107` | ADR-100 §6.1 — 旧模式 → 双轴映射（迁移 / shim 共用）。 |
 | `_syncAxesFromMode()` | `scene/camera/camera:237` | ADR-100：由旧 mode 派生双轴状态。switchCameraMode 提交 _cameraMode 时同步调用，作为唯一写入点。 |
-| `animateCameraVmd()` | `scene/camera/camera:761` | — |
+| `animateCameraVmd()` | `scene/camera/camera:786` | — |
 | `autoFrame()` | `scene/camera/camera:532` | Auto-frame the camera to centre on a bounding box. |
-| `clearCameraVmd()` | `scene/camera/camera:761` | — |
-| `defaultCameraPreset()` | `scene/camera/camera:760` | — |
+| `clearCameraVmd()` | `scene/camera/camera:786` | — |
+| `defaultCameraPreset()` | `scene/camera/camera:785` | — |
 | `deriveLegacyMode()` | `scene/camera/camera:125` | ADR-100 §6.2 — 双轴 → 旧模式反查（getCameraState 降级双写 / shim 内部路由）。 |
-| `getAutoCameraBeatsPerSwitch()` | `scene/camera/camera:770` | — |
-| `getBoneLockDamping()` | `scene/camera/camera:763` | — |
-| `getCameraBehavior()` | `scene/camera/camera:740` | — |
-| `getCameraControl()` | `scene/camera/camera:740` | — |
-| `getCameraMode()` | `scene/camera/camera:740` | — |
+| `disposeCameraSystem()` | `scene/camera/camera:728` | 顶层销毁相机系统（HMR / 页面卸载 / scene 销毁时调用）。幂等。 |
+| `getAutoCameraBeatsPerSwitch()` | `scene/camera/camera:795` | — |
+| `getBoneLockDamping()` | `scene/camera/camera:788` | — |
+| `getCameraBehavior()` | `scene/camera/camera:765` | — |
+| `getCameraControl()` | `scene/camera/camera:765` | — |
+| `getCameraMode()` | `scene/camera/camera:765` | — |
 | `getCameraState()` | `scene/camera/camera:577` | — |
-| `getCameraVmdName()` | `scene/camera/camera:740` | — |
-| `getCameraVmdPath()` | `scene/camera/camera:740` | — |
-| `getConcertParams()` | `scene/camera/camera:740` | — |
-| `getConcertPaused()` | `scene/camera/camera:740` | — |
-| `getCurrentCamera()` | `scene/camera/camera:740` | — |
-| `getFocusedModelBoneNames()` | `scene/camera/camera:763` | — |
-| `getFov()` | `scene/camera/camera:740` | — |
-| `getFreeflyParams()` | `scene/camera/camera:740` | — |
-| `getOrbitBoneLock()` | `scene/camera/camera:763` | — |
-| `getOrbitParams()` | `scene/camera/camera:740` | — |
-| `getScriptedSubMode()` | `scene/camera/camera:740` | — |
-| `getSurroundParams()` | `scene/camera/camera:740` | — |
-| `getSurroundPaused()` | `scene/camera/camera:740` | — |
-| `hasCameraVmd()` | `scene/camera/camera:740` | — |
+| `getCameraVmdName()` | `scene/camera/camera:765` | — |
+| `getCameraVmdPath()` | `scene/camera/camera:765` | — |
+| `getConcertParams()` | `scene/camera/camera:765` | — |
+| `getConcertPaused()` | `scene/camera/camera:765` | — |
+| `getCurrentCamera()` | `scene/camera/camera:765` | — |
+| `getFocusedModelBoneNames()` | `scene/camera/camera:788` | — |
+| `getFov()` | `scene/camera/camera:765` | — |
+| `getFreeflyParams()` | `scene/camera/camera:765` | — |
+| `getOrbitBoneLock()` | `scene/camera/camera:788` | — |
+| `getOrbitParams()` | `scene/camera/camera:765` | — |
+| `getScriptedSubMode()` | `scene/camera/camera:765` | — |
+| `getSurroundParams()` | `scene/camera/camera:765` | — |
+| `getSurroundPaused()` | `scene/camera/camera:765` | — |
+| `hasCameraVmd()` | `scene/camera/camera:765` | — |
 | `initCameraSystem()` | `scene/camera/camera:313` | Initialise the camera system and create the default Orbit camera. |
-| `isAutoCameraEnabled()` | `scene/camera/camera:777` | — |
-| `loadCameraVmd()` | `scene/camera/camera:761` | — |
+| `isAutoCameraEnabled()` | `scene/camera/camera:802` | — |
+| `loadCameraVmd()` | `scene/camera/camera:786` | — |
 | `logCameraAlpha()` | `scene/camera/camera:185` | Log current camera alpha for diagnostics. |
-| `refreshCameraUserSettings()` | `scene/camera/camera:762` | — |
-| `restoreAutoCameraState()` | `scene/camera/camera:770` | — |
-| `setAutoCameraBeatsPerSwitch()` | `scene/camera/camera:770` | — |
-| `setAutoCameraEnabled()` | `scene/camera/camera:777` | — |
-| `setBoneLockDamping()` | `scene/camera/camera:763` | — |
+| `refreshCameraUserSettings()` | `scene/camera/camera:787` | — |
+| `restoreAutoCameraState()` | `scene/camera/camera:795` | — |
+| `setAutoCameraBeatsPerSwitch()` | `scene/camera/camera:795` | — |
+| `setAutoCameraEnabled()` | `scene/camera/camera:802` | — |
+| `setBoneLockDamping()` | `scene/camera/camera:788` | — |
 | `setCameraBehavior()` | `scene/camera/camera:280` | ADR-100 P4 — 直接设置运动行为轴（轴 B，仅 orbit 有效）。 |
 | `setCameraControl()` | `scene/camera/camera:258` | ADR-100 P4 — 直接设置控制方案轴（轴 A）。 |
-| `setCameraPreset()` | `scene/camera/camera:760` | — |
+| `setCameraPreset()` | `scene/camera/camera:785` | — |
 | `setCameraState()` | `scene/camera/camera:607` | — |
 | `setConcertParams()` | `scene/camera/camera:207` | — |
-| `setConcertPaused()` | `scene/camera/camera:740` | — |
+| `setConcertPaused()` | `scene/camera/camera:765` | — |
 | `setFov()` | `scene/camera/camera:303` | — |
 | `setFreeflyParams()` | `scene/camera/camera:194` | — |
-| `setOrbitBoneLock()` | `scene/camera/camera:763` | — |
+| `setOrbitBoneLock()` | `scene/camera/camera:788` | — |
 | `setOrbitParams()` | `scene/camera/camera:167` | — |
 | `setSurroundParams()` | `scene/camera/camera:211` | — |
-| `setSurroundPaused()` | `scene/camera/camera:740` | — |
-| `setSyncAxesCallback()` | `scene/camera/camera:777` | — |
+| `setSurroundPaused()` | `scene/camera/camera:765` | — |
+| `setSyncAxesCallback()` | `scene/camera/camera:802` | — |
 | `switchCameraMode()` | `scene/camera/camera:334` | Switch to a different camera mode, preserving position as much as possible. |
 | `InvertableArcRotateCameraPointersInput()` | `scene/camera/invertablePointersInput:13` | 可反转 Y 轴的 ArcRotate 相机指针输入。 |
 | `applyEnvStateFacade()` | `scene/env/_bridge/env-bridge:49` | 等同于 scene-env.ts 的 applyEnvState，但避免循环依赖。 |
@@ -1359,31 +1360,31 @@
 | `OverrideSlot()` | `scene/motion/bone-override-store:18` | 单骨覆盖槽位（原 _OverrideSlot 的共享命名版） |
 | `ReleaseListener()` | `scene/motion/bone-override-store:73` | 骨骼释放事件监听器 |
 | `getBoneOverrideStore()` | `scene/motion/bone-override-store:412` | 获取全局 BoneOverrideStore 单例（registry / module-base 等委托此存储骨骼所有权与冲突状态） |
-| `BoneHierarchyDump()` | `scene/motion/bone-override:1041` | 骨骼层级导出结果 |
-| `BoneHierarchyNode()` | `scene/motion/bone-override:1021` | 单根骨骼的层级与覆盖状态（dumpBoneHierarchy 输出元素） |
+| `BoneHierarchyDump()` | `scene/motion/bone-override:1043` | 骨骼层级导出结果 |
+| `BoneHierarchyNode()` | `scene/motion/bone-override:1023` | 单根骨骼的层级与覆盖状态（dumpBoneHierarchy 输出元素） |
 | `BoneOverrideEntry()` | `scene/motion/bone-override:24` | 持久化的单条骨骼覆盖配置 |
-| `FRAME_HOOK_ORDER()` | `scene/motion/bone-override:690` | [doc:adr-116 P3] 注册每帧渲染钩子。 |
-| `FrameHookSnapshot()` | `scene/motion/bone-override:720` | 帧钩子快照（供 UI 查询管线时序一览） |
-| `OverrideSlotLike()` | `scene/motion/bone-override:250` | 覆盖槽的最小形态，供 _computeOverride 接收（与内部 _OverrideSlot 结构兼容） |
-| `applyBoneOverrideIK()` | `scene/motion/bone-override:336` | [doc:adr-122 P1] IK 感知的骨骼覆盖。 |
-| `clearAllOverrides()` | `scene/motion/bone-override:545` | 清除所有骨骼覆盖。 |
-| `clearBoneOverride()` | `scene/motion/bone-override:438` | 清除指定骨骼的覆盖。 |
-| `computeOverride()` | `scene/motion/bone-override:266` | [doc:adr-116 P1] 计算单槽覆盖后的平移与旋转。 |
-| `dumpBoneHierarchy()` | `scene/motion/bone-override:1056` | 导出当前聚焦模型的骨骼层级与覆盖状态。 |
-| `getAllOverrides()` | `scene/motion/bone-override:735` | 获取当前所有覆盖的条目列表（用于持久化/UI 展示）。 |
-| `getFrameHooksSnapshot()` | `scene/motion/bone-override:726` | 按 order 升序返回当前注册的所有帧钩子快照（不含 hook 函数本身）。 |
-| `getOverride()` | `scene/motion/bone-override:463` | [doc:adr-116] 读取单条骨骼的覆盖条目（用于 UI 回填）。不存在返回 undefined。 |
-| `getOverrideType()` | `scene/motion/bone-override:485` | 查询骨骼覆盖类型（零分配）。 |
-| `getWasmIkResolver()` | `scene/motion/bone-override:890` | [ADR-202 §六] 获取 WASM IK 重解回调（供 feet-adjustment 等外部模块调用）。 |
-| `protectIkPosition()` | `scene/motion/bone-override:566` | 注册骨骼位置保护（帧钩子内调用）。 |
-| `registerBoneOverrideFrameHook()` | `scene/motion/bone-override:703` | — |
-| `restoreOverrides()` | `scene/motion/bone-override:757` | 从持久化的条目列表批量恢复覆盖。 |
-| `setBoneOverride()` | `scene/motion/bone-override:302` | 设置单条骨骼覆盖。 |
-| `setBoneOverridePosition()` | `scene/motion/bone-override:407` | [doc:adr-116] 设置单条骨骼的位置覆盖（P2 引擎扩展）。 |
-| `setBoneOverrideQuat()` | `scene/motion/bone-override:373` | 设置单条骨骼覆盖（直接传四元数）。 |
-| `setWasmIkResolver()` | `scene/motion/bone-override:873` | [ADR-202 A-class] 注入 WASM IK 重解回调。 |
-| `startBoneOverride()` | `scene/motion/bone-override:895` | — |
-| `stopBoneOverride()` | `scene/motion/bone-override:999` | 停止覆盖系统。 |
+| `FRAME_HOOK_ORDER()` | `scene/motion/bone-override:692` | [doc:adr-116 P3] 注册每帧渲染钩子。 |
+| `FrameHookSnapshot()` | `scene/motion/bone-override:722` | 帧钩子快照（供 UI 查询管线时序一览） |
+| `OverrideSlotLike()` | `scene/motion/bone-override:252` | 覆盖槽的最小形态，供 _computeOverride 接收（与内部 _OverrideSlot 结构兼容） |
+| `applyBoneOverrideIK()` | `scene/motion/bone-override:338` | [doc:adr-122 P1] IK 感知的骨骼覆盖。 |
+| `clearAllOverrides()` | `scene/motion/bone-override:547` | 清除所有骨骼覆盖。 |
+| `clearBoneOverride()` | `scene/motion/bone-override:440` | 清除指定骨骼的覆盖。 |
+| `computeOverride()` | `scene/motion/bone-override:268` | [doc:adr-116 P1] 计算单槽覆盖后的平移与旋转。 |
+| `dumpBoneHierarchy()` | `scene/motion/bone-override:1058` | 导出当前聚焦模型的骨骼层级与覆盖状态。 |
+| `getAllOverrides()` | `scene/motion/bone-override:737` | 获取当前所有覆盖的条目列表（用于持久化/UI 展示）。 |
+| `getFrameHooksSnapshot()` | `scene/motion/bone-override:728` | 按 order 升序返回当前注册的所有帧钩子快照（不含 hook 函数本身）。 |
+| `getOverride()` | `scene/motion/bone-override:465` | [doc:adr-116] 读取单条骨骼的覆盖条目（用于 UI 回填）。不存在返回 undefined。 |
+| `getOverrideType()` | `scene/motion/bone-override:487` | 查询骨骼覆盖类型（零分配）。 |
+| `getWasmIkResolver()` | `scene/motion/bone-override:892` | [ADR-202 §六] 获取 WASM IK 重解回调（供 feet-adjustment 等外部模块调用）。 |
+| `protectIkPosition()` | `scene/motion/bone-override:568` | 注册骨骼位置保护（帧钩子内调用）。 |
+| `registerBoneOverrideFrameHook()` | `scene/motion/bone-override:705` | — |
+| `restoreOverrides()` | `scene/motion/bone-override:759` | 从持久化的条目列表批量恢复覆盖。 |
+| `setBoneOverride()` | `scene/motion/bone-override:304` | 设置单条骨骼覆盖。 |
+| `setBoneOverridePosition()` | `scene/motion/bone-override:409` | [doc:adr-116] 设置单条骨骼的位置覆盖（P2 引擎扩展）。 |
+| `setBoneOverrideQuat()` | `scene/motion/bone-override:375` | 设置单条骨骼覆盖（直接传四元数）。 |
+| `setWasmIkResolver()` | `scene/motion/bone-override:875` | [ADR-202 A-class] 注入 WASM IK 重解回调。 |
+| `startBoneOverride()` | `scene/motion/bone-override:897` | — |
+| `stopBoneOverride()` | `scene/motion/bone-override:1001` | 停止覆盖系统。 |
 | `FeetModelProvider()` | `scene/motion/feet-adjustment:48` | 注入：返回需要处理脚部调整的模型及其 runtime bones |
 | `isFeetAdjustmentRunning()` | `scene/motion/feet-adjustment:128` | 查询脚部跟随系统是否正在运行（observer 已注册）。 |
 | `setOnFootLand()` | `scene/motion/feet-adjustment:123` | 注入落地事件回调（null 取消）。脚步声控制器调用。 |
