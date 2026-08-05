@@ -18,9 +18,9 @@ import {
     BONE_LEG_IK_L_CANDIDATES,
     BONE_LEG_IK_R_CANDIDATES,
     matchBone,
-} from './proc-motion-shared';
-import { detectFootLanding } from './footstep-detect';
-import type { FootLandEvent } from './feet-event';
+} from '@/motion-algos/proc-motion-shared';
+import { detectFootLanding } from '@/motion-algos/footstep-detect';
+import type { FootLandEvent } from '@/motion-algos/feet-event';
 import { modelRegistry } from '@/core/config';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
 import { safeDispose } from '@/core/dispose-helpers';

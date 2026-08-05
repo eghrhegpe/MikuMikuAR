@@ -8,10 +8,10 @@
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
 | 核心基础设施 | 129 | 739 |
-| 3D 场景 | 122 | 1169 |
+| 3D 场景 | 123 | 1171 |
 | 菜单 & UI | 76 | 388 |
 | 换装 & 音频 | 3 | 33 |
-| 动作算法 | 19 | 140 |
+| 动作算法 | 18 | 138 |
 
 ## 核心基础设施
 
@@ -1206,15 +1206,15 @@
 | `getPBRMaterialBuilder()` | `scene/manager/material-proxy-resolver:33` | 动态导入 PBRMaterialBuilder（PBR 材质构建器） 注意: PBRMaterialBuilder 在 PMX 加载阶段构建 PBRMaterial， 与 MmdS |
 | `getStandardMaterialProxy()` | `scene/manager/material-proxy-resolver:22` | 返回标准材质代理（MmdStandardMaterialProxy）— 用于 Lambert + Blinn-Phong 渲染 |
 | `resolveMaterialProxy()` | `scene/manager/material-proxy-resolver:44` | 返回当前材质的代理构造函数（同步） （PBR 模式下的材质代理仍使用标准代理，因 PMX 加载阶段已由 PBRMaterialBuilder 构建材质， MmdStandardMa |
-| `DEFAULT_SSS_PARAMS()` | `scene/manager/material-sss:32` | SSS 默认参数 |
-| `SssColorInput()` | `scene/manager/material-sss:55` | — |
-| `SssParams()` | `scene/manager/material-sss:18` | SSS 参数 |
-| `applyMatSssState()` | `scene/manager/material-sss:211` | 反序列化 SSS 状态并应用到模型 |
-| `applySss()` | `scene/manager/material-sss:107` | 应用 SSS 参数到指定分类的所有 PBRMaterial 材质 内部实现： 1. |
-| `disposeModelSssState()` | `scene/manager/material-sss:179` | 重置指定模型的所有 SSS 状态 |
-| `getMatSssParams()` | `scene/manager/material-sss:46` | 获取指定分类的 SSS 参数 |
-| `getMatSssState()` | `scene/manager/material-sss:187` | 序列化指定模型的 SSS 状态为 JSON 兼容结构 用于场景/预设保存。仅返回非默认值，避免默认值噪声。 |
-| `setMatSssParams()` | `scene/manager/material-sss:64` | 设置指定分类的 SSS 参数并立即应用到所有该分类材质 sssColor 可传入 Color3 或 { r, g, b } 形式 |
+| `DEFAULT_SSS_PARAMS()` | `scene/manager/material-sss:31` | SSS 默认参数 |
+| `SssColorInput()` | `scene/manager/material-sss:54` | — |
+| `SssParams()` | `scene/manager/material-sss:17` | SSS 参数 |
+| `applyMatSssState()` | `scene/manager/material-sss:210` | 反序列化 SSS 状态并应用到模型 |
+| `applySss()` | `scene/manager/material-sss:106` | 应用 SSS 参数到指定分类的所有 PBRMaterial 材质 内部实现： 1. |
+| `disposeModelSssState()` | `scene/manager/material-sss:178` | 重置指定模型的所有 SSS 状态 |
+| `getMatSssParams()` | `scene/manager/material-sss:45` | 获取指定分类的 SSS 参数 |
+| `getMatSssState()` | `scene/manager/material-sss:186` | 序列化指定模型的 SSS 状态为 JSON 兼容结构 用于场景/预设保存。仅返回非默认值，避免默认值噪声。 |
+| `setMatSssParams()` | `scene/manager/material-sss:63` | 设置指定分类的 SSS 参数并立即应用到所有该分类材质 sssColor 可传入 Color3 或 { r, g, b } 形式 |
 | `AlphaCtx()` | `scene/manager/material:20` | — |
 | `DEFAULT_MAT_PARAMS()` | `scene/manager/material:65` | 材质参数默认值 — 所有新增字段在此维护，消除散落硬编码。 |
 | `MaterialCategory()` | `scene/manager/material:47` | — |
@@ -1357,6 +1357,8 @@
 | `solveFootTarget()` | `scene/motion/feet-adjustment:39` | — |
 | `startFeetAdjustment()` | `scene/motion/feet-adjustment:364` | 启动脚部调整系统：注册为 MotionPipeline bone-override 层（order=5）。 |
 | `stopFeetAdjustment()` | `scene/motion/feet-adjustment:439` | 停止脚部调整系统并清空缓存。 |
+| `startFallbackDetection()` | `scene/motion/footstep-detect-fallback:68` | 启动独立落地检测（fallback 模式）。 |
+| `stopFallbackDetection()` | `scene/motion/footstep-detect-fallback:133` | 停止独立落地检测。 |
 | `resolveGroundSfxKind()` | `scene/motion/footstep:54` | 依据当前地面类型推断脚步音色。 |
 | `startFootstep()` | `scene/motion/footstep:128` | 启动脚步声系统：注入落地事件回调。 |
 | `stopFootstep()` | `scene/motion/footstep:160` | 停止脚步声系统并清空合成缓存。 |
@@ -2371,8 +2373,6 @@
 | `SolveFootOutput()` | `motion-algos/feet-adjustment-math:25` | — |
 | `solveFootTarget()` | `motion-algos/feet-adjustment-math:46` | 解算单脚应处的世界 Y 坐标。 |
 | `FootLandEvent()` | `motion-algos/feet-event:9` | 落地事件：脚从空中接触地面的瞬间（ADR-088 供脚步声消费）。 |
-| `startFallbackDetection()` | `motion-algos/footstep-detect-fallback:68` | 启动独立落地检测（fallback 模式）。 |
-| `stopFallbackDetection()` | `motion-algos/footstep-detect-fallback:133` | 停止独立落地检测。 |
 | `StepDetectInput()` | `motion-algos/footstep-detect:6` | — |
 | `StepDetectOutput()` | `motion-algos/footstep-detect:25` | — |
 | `detectFootLanding()` | `motion-algos/footstep-detect:36` | 落地判定核心。仅当出现「离地→贴地」上升沿、且去抖间隔满足时返回 landed=true。 |

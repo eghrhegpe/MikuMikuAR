@@ -139,4 +139,4 @@ npm run gen:layering-baseline # 消除反向边后收紧基线
    - **收益**：消除循环依赖 `core→scene→motion-algos→scene/env→scene/physics→physics→core`，白名单 9 → 8 环，CI 阻断环 13 → 12。
    - **代价**：`core/dev-hooks.ts:9` 的 `isWindPhysicsActive` 引用由「core → 顶层 physics」显式化为 R2 反向边 `core → scene/physics`，分层基线 10 → 11 条。此为**标注显式化而非新增耦合**（dev-hooks 早已有 4 条 core→scene 边），净账为 −1 环 / +1 已知反向边。彻底消除需走 ADR-238 桥接注册，不在本 ADR 范围。
 4. `outfit/` 拆分绑定层与 UI 调用层，同步消除 `_catOf` 穿透引用
-5. `motion-algos/footstep-detect-fallback.ts` → `scene/motion/`（分层颠倒，它持 observer 生命周期）
+5. ~~`motion-algos/footstep-detect-fallback.ts` → `scene/motion/`~~ ✅ **已完成（Phase 2-4）**：迁至 `scene/motion/footstep-detect-fallback.ts`。持 observer 生命周期 + 运行时 `Scene` 依赖，属绑定层，顶层安置为分层颠倒。收益：R3 反向边 `→scene/env/env-impl` 随迁移自动消解，分层基线 11 → 10。副作用：环白名单中 5 条含 `motion-algos` 段的 key 因拓扑重命名失配（`motion-algos` → `scene/motion`），已外科式改写；环总数 20（白名单 8 / 阻断 12）与迁移前完全一致。

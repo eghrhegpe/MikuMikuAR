@@ -2,7 +2,7 @@
 // 纯类型、零依赖。原定义于 scene/motion/feet-adjustment.ts（ADR-088 供脚步声消费），
 // 下沉到 motion-algos 内部后：
 //   - scene/motion/feet-adjustment.ts（生产者）从这里 import 并 re-export
-//   - motion-algos/footstep-detect-fallback.ts（消费者）直接从 './feet-event' 取
+//   - scene/motion/footstep-detect-fallback.ts（消费者）直接从 './feet-event' 取
 // 使 motion-algos 不再反向依赖 scene/motion（check-circular 11 个环的枢纽边）。
 
 /** 落地事件：脚从空中接触地面的瞬间（ADR-088 供脚步声消费）。 */

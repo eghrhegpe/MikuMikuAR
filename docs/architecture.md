@@ -423,6 +423,7 @@ MikuMikuAR/
         │   │   ├── perception-shared.ts     # 共享工具
         │   │   ├── feet-adjustment.ts       # 脚部地面跟随（ADR-085）
         │   │   ├── footstep.ts              # 脚步声触发（ADR-088）
+        │   │   ├── footstep-detect-fallback.ts # 独立 IK 落地检测（ADR-088 Phase B；ADR-242 由 motion-algos 收编）
         │   │   ├── bone-override.ts         # 骨骼覆盖 → Motion Override（ADR-116）
         │   │   ├── vmd-layers.ts            # VMD 图层管理
         │   │   ├── wasm-layers-blender.ts   # WASM 图层混合器

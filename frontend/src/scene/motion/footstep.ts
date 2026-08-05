@@ -14,7 +14,7 @@ import { setOnFootLand, isFeetAdjustmentRunning, type FootLandEvent } from './fe
 import {
     startFallbackDetection,
     stopFallbackDetection,
-} from '@/motion-algos/footstep-detect-fallback';
+} from './footstep-detect-fallback';
 
 type GroundSfxKind = 'concrete' | 'grass' | 'wood' | 'water' | 'default';
 

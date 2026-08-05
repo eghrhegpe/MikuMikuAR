@@ -11,24 +11,24 @@
       "path": "core → scene → motion-algos → core"
     },
     {
-      "key": "core→scene→motion-algos→scene/env→core",
-      "path": "core → scene → motion-algos → scene/env → core"
+      "key": "core→scene→scene/motion→scene/env→core",
+      "path": "core → scene → scene/motion → scene/env → core"
     },
     {
-      "key": "core→scene→motion-algos→scene/env→scene/physics→core",
-      "path": "core → scene → motion-algos → scene/env → scene/physics → core"
+      "key": "core→scene→scene/motion→scene/env→scene/physics→core",
+      "path": "core → scene → scene/motion → scene/env → scene/physics → core"
     },
     {
-      "key": "core→scene→motion-algos→scene/env→scene/render→core",
-      "path": "core → scene → motion-algos → scene/env → scene/render → core"
+      "key": "core→scene→scene/motion→scene/env→scene/render→core",
+      "path": "core → scene → scene/motion → scene/env → scene/render → core"
     },
     {
-      "key": "core→scene→motion-algos→scene/env→scene/render→scene/transform→core",
-      "path": "core → scene → motion-algos → scene/env → scene/render → scene/transform → core"
+      "key": "core→scene→scene/motion→scene/env→scene/render→scene/transform→core",
+      "path": "core → scene → scene/motion → scene/env → scene/render → scene/transform → core"
     },
     {
-      "key": "motion-algos→scene/env→scene→motion-algos",
-      "path": "scene → motion-algos → scene/env → scene"
+      "key": "scene→scene/motion→scene/env→scene",
+      "path": "scene → scene/motion → scene/env → scene"
     },
     {
       "key": "scene/render→scene/transform→scene/render",

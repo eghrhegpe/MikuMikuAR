@@ -10,7 +10,6 @@
     "core/main.ts:menus/library-setup",
     "core/render-loop.ts:scene/render/performance",
     "core/render-loop.ts:scene/scene",
-    "motion-algos/footstep-detect-fallback.ts:scene/env/env-impl",
     "outfit/outfit.ts:scene/manager/material",
     "outfit/outfit.ts:scene/shared/texture-lru"
   ]
