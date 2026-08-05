@@ -71,7 +71,7 @@ class UnderwaterFogControllerImpl {
     }
 
     /** [adr-230 P1-fix] 当前是否处于水下（焦散已注入状态）。
-     *  applyGroundMaterialSpec / _applyGroundInplaceLegacy 据此判断：emissive 同步后
+     *  applyGroundMaterialSpec 据此判断：emissive 同步后
      *  是否需要重放焦散，避免 _syncGroundEmissive 覆盖焦散（见 ADR-231 §3.2）。 */
     isCausticsActive(): boolean {
         return this._wasUnderwater;

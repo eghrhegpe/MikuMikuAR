@@ -176,7 +176,7 @@ export function buildGroundMaterialSpec(state: EnvState): GroundMaterialSpec {
         textureScale: state.groundTextureScale,
         textureRotation: state.groundTextureRotation,
         reflectionQuality: state.reflectionQuality,
-        // alpha/level 仅 terrain 模式的 specKey 才纳入结构性（见 specKey terrain 分支，L207/L210）；
+        // alpha/level 仅 terrain 模式的 specKey 才纳入结构性（见 specKey terrain 分支，L231/L234）；
         // 非 terrain 由原地路径增量更新，不触发重建。此处统一存值，specKey 负责取舍。
         alpha: state.groundAlpha,
         level: state.groundLevel,
@@ -423,7 +423,7 @@ export function createGroundMeshFromSpec(state: EnvState, scene: Scene): Mesh {
 
     const mat = createGroundMaterial(state, scene);
     mat.alpha = state.groundAlpha;
-    mat.backFaceCulling = false; // 与 legacy applyGround 重建路径对齐（L1284）
+    mat.backFaceCulling = false; // 与历史 legacy applyGround 重建路径对齐（legacy 重建块已删，行为保留）
     ground.material = mat;
 
     setGroundActualSize(meshSize);

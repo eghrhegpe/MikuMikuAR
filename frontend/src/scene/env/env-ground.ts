@@ -607,7 +607,10 @@ export function _syncGroundRippleTexture(
 }
 
 export function _disableGroundRippleTexture(mat: GroundMat): void {
-    if (_groundRippleApplied && _groundRipples !== undefined) {
+    // 只以 _groundRippleApplied 状态机标志门控：涟漪同步时会把原始 bumpTexture
+    // 暂存进 _groundRipples（可能为 null——材质原本无 bump），停用时无论暂存值
+    // 是否为 null 都必须恢复（null 即恢复为"无 bump"），故不能对 _groundRipples 判空。
+    if (_groundRippleApplied) {
         mat.bumpTexture = _groundRipples;
         _groundRipples = null;
         _groundRippleApplied = false;
@@ -1246,8 +1249,6 @@ export function _syncPbrProperties(mat: PBRMaterial, state: EnvState): void {
     const sunI = dir ? dir.intensity : 0.4;
     mat.environmentIntensity = Math.max(0.6, Math.min(1, sunI * 0.4 + 0.6));
 }
-
-// ======== applyGround (public) ========
 
 // ======== applyGround (public) ========
 
