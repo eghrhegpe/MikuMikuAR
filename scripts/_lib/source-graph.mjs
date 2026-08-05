@@ -3,10 +3,10 @@ import path from 'node:path';
 import { toPosix } from './to-posix.mjs';
 import { walk } from './scan-files.mjs';
 
-export const EXCLUDE_DIRS = new Set(['__tests__', '__mocks__', 'node_modules', 'wailsjs']);
+export const EXCLUDE_DIRS = new Set(['__tests__', '__mocks__', 'node_modules', 'wailsjs', 'bindings', 'dist']);
 export const EXCLUDE_FILES = [/\.d\.ts$/, /\.test\.tsx?$/, /\.spec\.tsx?$/, /\.gen\.tsx?$/];
-/** 默认源码扩展名（含 .tsx）；gen-funcmap 等用 .ts-only 时传 ['ts'] */
-export const SOURCE_EXTENSIONS = ['.ts', '.tsx'];
+/** 默认源码扩展名（含 .tsx + 存量 .js/.jsx，ADR-014 混编期两者并存）；gen-funcmap 等用 .ts-only 时传 ['ts'] */
+export const SOURCE_EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx'];
 const IMPORT_EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs'];
 
 export function isSourceFile(name, extensions = SOURCE_EXTENSIONS) {
