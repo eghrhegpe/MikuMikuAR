@@ -241,6 +241,7 @@ npm run build:android:release  # = scripts/build-android.ps1 -Arch arm64 -Produc
 | 同秒推 main+tag | 本次发版依然冷启动 | Release restore 早于 Cache Warm save | 推 main 后至少等 1–2 分钟确认 cache-warm 绿 |
 | `npm ci` 先删 `node_modules` | 刚恢复的缓存被自己清掉 | `npm ci` 第一步删 `node_modules` 重建 | 已修：`npm ci` 步受 `cache-hit` 守卫 |
 | 改了依赖没等 cache-warm | Release run 全冷启动 | 依赖变化后未推 main 暖缓存 | **改 go.mod/package-lock.json 后必须先推 main 暖缓存再推 tag** |
+| pre-push 在 test:coverage 后崩溃 | hook 输出 safe-delete/genie-trash diag，push 失败但测试实际通过 | Windows 环境安全删除层包装 `rm` 后对 `/tmp` 相对路径失败返回非零，`set -e` 中断 hook | 已修复（2026-08-05）：`.githooks/pre-push` 4 处 `rm -f "$COV_LOG"` 统一加 `2>/dev/null \|\| true` 容错；若再遇 hook 基建故障，可 `git push --no-verify` 并手动补验被跳过的检查（lint/test/check:docs/i18n/md-links/deadcode） |
 | Linux wails3 缺 GTK 开发包 | `go install wails3` 报 `pkg-config` not found | wails3 CLI 编译时链接 GTK (CGO) | 缓存 miss 时才装 `libgtk-4-dev libwebkitgtk-6.0-dev` |
 | Go build cache 必 miss | `go-build-*` 每次都重建 | key 含 `github.sha`，设计如此 | 预期行为，无法预热 |
 
