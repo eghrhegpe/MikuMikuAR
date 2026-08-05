@@ -1210,11 +1210,11 @@
 | `DEFAULT_SSS_PARAMS()` | `scene/manager/material-sss:32` | SSS 默认参数 |
 | `SssColorInput()` | `scene/manager/material-sss:55` | — |
 | `SssParams()` | `scene/manager/material-sss:18` | SSS 参数 |
-| `applyMatSssState()` | `scene/manager/material-sss:215` | 反序列化 SSS 状态并应用到模型 |
+| `applyMatSssState()` | `scene/manager/material-sss:211` | 反序列化 SSS 状态并应用到模型 |
 | `applySss()` | `scene/manager/material-sss:107` | 应用 SSS 参数到指定分类的所有 PBRMaterial 材质 内部实现： 1. |
-| `disposeModelSssState()` | `scene/manager/material-sss:183` | 重置指定模型的所有 SSS 状态 |
+| `disposeModelSssState()` | `scene/manager/material-sss:179` | 重置指定模型的所有 SSS 状态 |
 | `getMatSssParams()` | `scene/manager/material-sss:46` | 获取指定分类的 SSS 参数 |
-| `getMatSssState()` | `scene/manager/material-sss:191` | 序列化指定模型的 SSS 状态为 JSON 兼容结构 用于场景/预设保存。仅返回非默认值，避免默认值噪声。 |
+| `getMatSssState()` | `scene/manager/material-sss:187` | 序列化指定模型的 SSS 状态为 JSON 兼容结构 用于场景/预设保存。仅返回非默认值，避免默认值噪声。 |
 | `setMatSssParams()` | `scene/manager/material-sss:64` | 设置指定分类的 SSS 参数并立即应用到所有该分类材质 sssColor 可传入 Color3 或 { r, g, b } 形式 |
 | `AlphaCtx()` | `scene/manager/material:20` | — |
 | `DEFAULT_MAT_PARAMS()` | `scene/manager/material:65` | 材质参数默认值 — 所有新增字段在此维护，消除散落硬编码。 |

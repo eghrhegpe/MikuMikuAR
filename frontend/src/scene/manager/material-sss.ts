@@ -136,14 +136,10 @@ function applySssToMaterial(mat: Material, params: SssParams): void {
 
     const p = params as SssParams;
 
-    // 直接操作 PBRSubSurfaceConfiguration 插件（PBRMaterial 内部已注册）
-    // 注：Babylon 9.x 未公开 plugins 访问器，此处以结构化桥接类型访问私有数组，
-    //     运行时行为与历史实现一致（find 回调保留 !!pl 短路，等价原 `pl && …`）。
-    const ss = (mat as unknown as { plugins?: unknown[] }).plugins?.find(
-        (pl: unknown): pl is PBRSubSurfaceConfiguration =>
-            !!pl &&
-            typeof (pl as { isTranslucencyEnabled?: unknown }).isTranslucencyEnabled === 'boolean'
-    );
+    // [fix P1] Babylon 9.x PBRBaseMaterial 公开只读 subSurface（构造时自动注册
+    // PBRSubSurfaceConfiguration），直接读取；不再桥接访问 plugins 数组
+    // （9.x 插件注册于私有 pluginManager._plugins，无 plugins 成员）。
+    const ss = mat.subSurface;
 
     if (!ss) {
         logWarn(
