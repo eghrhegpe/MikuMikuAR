@@ -69,10 +69,14 @@ export function clearCameraVmd(): void {
     const scene = getCameraScene();
     if (_mmdCamera && scene) {
         if (getCameraMode() === 'vmd' && _switchModeCallback) {
+            // switchCameraMode('orbit') 已对当前相机（即 MmdCamera）执行
+            // detachControl + removeCamera + dispose，此处不能再释放第二次。
             _switchModeCallback('orbit');
+        } else {
+            // 非 vmd 模式（如 orbit 下预载 VMD 后清除）回调不会处理，手动释放 GPU 资源。
+            scene.removeCamera(_mmdCamera);
+            _mmdCamera.dispose();
         }
-        scene.removeCamera(_mmdCamera);
-        _mmdCamera.dispose(); // 释放 GPU 资源（与 loadCameraVmd 重载路径对称）
         _mmdCamera = null;
         _cameraAnimationHandle = null;
         clearCameraVmdState();
