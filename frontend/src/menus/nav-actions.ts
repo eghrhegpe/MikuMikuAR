@@ -226,8 +226,8 @@ export function disposeNavBindings(): void {
 }
 
 /** [doc:adr-238] nav-actions 启动入口：安装按钮接线 + 构建导航标签映射。
- *  模块加载即执行（nav-actions 经 init.ts 静态 import library→library-core→library-setup
- *  链在启动早期被拉起，早于 initScene，满足 E2E「按钮监听器先于场景初始化注册」）。 */
+ *  模块加载即执行（nav-actions 经 main.ts side-effect import library-setup 链拉起，
+ *  早于 initScene，满足 E2E「按钮监听器先于场景初始化注册」）。 */
 export function initNavActions(): void {
     installNavBindings();
     buildNavMaps();
