@@ -203,7 +203,6 @@
 | [ADR-065](../adr/adr-065-pure-items-hot-render.md) | 纯 items 层级语言热切换刷新（精简版） | [环境弹窗（编排 + barrel）](./env-menu.md) · [滑出式菜单引擎（SlideMenu）](./menu.md) · [场景弹窗（编排 + 路由）](./scene-menu.md) |
 | [ADR-071](../adr/adr-071-proc-vs-perception-boundary.md) | 程序化动作与角色感知边界重构 | [babylon-mmd 适配边界](./mmd-adapter.md) · [动作菜单层级系统](./motion-menu-levels.md) · [眨眼模拟](./perception-blinking.md) · [呼吸模拟](./perception-breathing.md) · [微表情](./perception-expression.md) · [JS 端视线追踪](./perception-gaze-js.md) · [WASM 端视线追踪](./perception-gaze-wasm.md) · [视线追踪主模块](./perception-gaze.md) · [感知口型同步](./perception-lipsync.md) · [感知层共享类型](./perception-shared.md) · [感知层主控](./perception.md) · [场景序列化与自动保存](./scene-serialize.md) |
 | [ADR-072](../adr/adr-072-webxr-plane-detection.md) | AR 平面检测 —— WebXR hit-test + plane detection | [WebXR 能力探测](./ar-webxr-probe.md) |
-| [ADR-073](../adr/adr-073-native-arcore-arkit.md) | AR 地形识别 —— 原生 ARCore / ARKit 桥接 | [地形生成器](./env-terrain.md) |
 | [ADR-076](../adr/adr-076-cel-shading-postprocess-mode.md) | 卡通化渲染后处理模式 | [场景渲染管线与后处理](./renderer.md) |
 | [ADR-079](../adr/adr-079-perception-layer-expansion.md) | 感知层扩展——always-on 实时叠加的适用边界 | [角色台词生成 — 人设约束 + 情绪解析 + TTS 朗读](./character-bible.md) |
 | [ADR-081](../adr/adr-081-xpbd-removal.md) | XPBD(TS) 测试物理全栈移除与受影响 ADR 审计 | [物理骨骼桥与每帧注册表](./physics-bridge.md) · [虚拟裙骨物理控制器（ADR-084 Phase 2-3）](./virtual-skirt.md) |
@@ -221,7 +220,7 @@
 | [ADR-108](../adr/adr-108-animation-retargeter.md) | AnimationRetargeter + HumanoidMmd 接入 — 扩展动作来源 | [外部动作重定向桥](./animation-retargeter.md) · [场景序列化与自动保存](./scene-serialize.md) |
 | [ADR-111](../adr/adr-111-scene-env-menu-restructuring.md) | 场景/环境菜单按用户直觉重新划分 | [环境菜单层级系统](./env-menu-levels.md) |
 | [ADR-113](../adr/adr-113-horizon-volumetric-clouds.md) | 体积云延展地平线与画质/性能升级 | [云层系统](./env-clouds.md) |
-| [ADR-114](../adr/adr-114-ground-reflection-enhancement.md) | 地面反射增强 — 从平面近似到 PBR 材质 | [地面系统](./env-ground.md) |
+| [ADR-114](../adr/adr-114-ground-reflection-enhancement.md) | 地面反射增强 — 从平面近似到 PBR 材质 | [地面系统](./env-ground.md) · [地形生成器](./env-terrain.md) |
 | [ADR-115](../adr/adr-115-stylized-water-glint-research.md) | 风格化水体竞品调研与波光粼粼增强方向 | [共享焦散纹理系统](./env-caustics.md) |
 | [ADR-116](../adr/adr-116-bone-override-ui-redesign.md) | 动作覆盖系统 — 模块化架构 + 骨骼覆盖下沉 | [骨骼覆盖核心 API](./bone-override.md) · [共享类型定义](./core-types.md) · [手部独立控制模块（左手/右手）](./hand-symmetry.md) · [模型运行时 ID 解析](./model-id.md) · [模型生命周期操作](./model-ops.md) · [动作模块基类](./motion-module-base.md) · [动作模块类型定义](./motion-module-types.md) · [脚部独立控制模块（左脚/右脚）](./motion-modules-feet.md) · [动作模块注册表](./motion-modules-registry.md) · [动作覆盖 UI 层级（模块化覆盖 + 高级骨骼覆盖）](./motion-override-levels.md) · [动作管线（逐帧合成）](./motion-pipeline.md) · [场景序列化与自动保存](./scene-serialize.md) · [场景核心编排器（纯组装器）](./scene.md) |
 | [ADR-117](../adr/adr-117-go-error-i18n.md) | Go 端用户可见错误的 i18n 化 | [Go 错误翻译](./goerr.md) |
@@ -291,6 +290,7 @@
 | [ADR-215](../adr/adr-215-eliminate-prop-kind.md) | 取消「道具」资源类型 — 模型附属关系替代 prop + accessory 体系 | [模型注册表与生命周期管理](./model-manager.md) · [场景序列化与自动保存](./scene-serialize.md) |
 | [ADR-226](../adr/adr-226-ground-material-spec-single-source.md) | 地面材质单一事实源重构（GroundMaterialSpec） | [地面材质单一事实源（GroundMaterialSpec）](./env-ground-spec.md) · [地面系统](./env-ground.md) · [地形生成器](./env-terrain.md) |
 | [ADR-229](../adr/adr-229-e2e-automation-advancement.md) | E2E 自动化推进 —— 从 schema 到测试零映射 | [渲染层 DOM 契约单源](./dom-contract.md) |
+| [ADR-231](../adr/adr-231-ground-visual-roadmap.md) | 地面视觉后续方向（自发光地屏 + 程序化地面图案） | [地形生成器](./env-terrain.md) |
 | [ADR-237](../adr/adr-237-split-overlong-modules.md) | 超限模块拆分计划 —— 250LOC 天花板的优先级拆解路线图 | [程序化动作系统](./proc-motion-bridge.md) · [多 VMD 叠加系统](./vmd-layers.md) |
 | [ADR-238](../adr/adr-238-循环依赖消解二期-core-scene-根环.md) | 循环依赖消解第二期 —— core→scene 根环与 motion/outfit 互依赖拆解 | [E2E 状态读取器注入桥](./e2e-state-bridge.md) · [资源库核心](./library-core.md) · [场景动作注入桥](./scene-action-bridge.md) · [主题纯函数叶](./theme.md) · [UI 行为注入桥](./ui-action-bridge.md) |
 

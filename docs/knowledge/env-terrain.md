@@ -8,8 +8,9 @@ scope:
 source_files:
   - frontend/src/scene/env/env-terrain.ts
 adr:
-  - ADR-073
+  - ADR-114
   - ADR-226
+  - ADR-231
 symbols:
   - applyTerrainMaterial
   - clearTerrainGeneration

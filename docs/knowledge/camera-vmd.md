@@ -35,10 +35,10 @@ use_when:
 **VMD 相机动画模块**（ADR-148 阶段 3 续拆，2026-07-26）。从 camera.ts 抽出 VMD 相机相关逻辑：加载 VMD 文件 → 创建 MmdCamera → 启动动画 → 清除（含 dispose 释放）。
 
 ## 核心职责
-- `loadCameraVmd(path, scene, runtime)` — 加载 VMD 文件并切换到 vmd 模式
+- `loadCameraVmd(mmdAnimation, vmdPath, vmdName)` — 绑定已解析的 `MmdAnimation` 并切换到 vmd 模式（scene 从 `camera-state.getCameraScene()` 取，不经参数传入）
 - `clearCameraVmd()` — 清除 VMD 相机（vmd 模式经注入回调切回 orbit，由 `switchCameraMode` 释放；否则本函数自行释放，详见「不变量」）
-- `animateCameraVmd(runtime, animation)` — 启动 VMD 相机动画
-- `createVmdCamera(scene)` — 创建 MmdCamera 实例（Babylon + babylon-mmd 集成）
+- `animateCameraVmd(frameTime)` — 按帧时间驱动 VMD 相机动画（每帧调用，非一次性启动）
+- `createVmdCamera()` — 创建 MmdCamera 实例（Babylon + babylon-mmd 集成），scene 同样由 `camera-state` 提供
 - `hasCameraAnimationHandle()` — 查询当前是否有 VMD 动画句柄（switchCameraMode 拒绝空 VMD 切换的前置检查）
 - `setSwitchCameraModeCallback(cb)` — camera.ts 在 `initCameraSystem` 时注入 `switchCameraMode` 回调，破除循环依赖
 
