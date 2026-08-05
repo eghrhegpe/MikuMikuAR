@@ -13,6 +13,7 @@
  *     --threshold <num>   默认 60（行覆盖率下限 %）
  *     --uncommitted       额外纳入工作区 + 暂存区改动（本地预检用）
  *     --files <csv>       跳过 git，直接用给定文件列表（测试/调试用）
+ *     --suggest           非阻断建议模式：有缺口时输出可追加进 commit message 的区块，永远 exit 0
  *
  * 退出码：0 = 全部达标；1 = 存在未达标文件；2 = 配置/用法错误（缺覆盖率文件或 git 失败）
  * 设计意图：变更文件覆盖率检查（git diff 与覆盖率基线比对）
@@ -40,7 +41,7 @@ function parseArgs(argv) {
         const eq = a.indexOf("=");
         if (eq >= 0) {
             out[a.slice(2, eq)] = a.slice(eq + 1);
-        } else if (a === "--uncommitted" || a === "--json") {
+        } else if (a === "--uncommitted" || a === "--json" || a === "--suggest") {
             out[a.slice(2)] = true;
         } else if (i + 1 < argv.length) {
             out[a.slice(2)] = argv[++i];
@@ -208,6 +209,23 @@ export function statementPctForChangedLines(entry, changedLines) {
     return (covered / relevantIds.length) * 100;
 }
 
+/**
+ * 构造可追加进 commit message 的非阻断建议区块（幂等剥离由钩子负责）。
+ * 仅在 suggest 模式、且有未达标文件时输出；返回 Markdown 字符串，首行即 BLOCK_START 标记。
+ */
+export function buildSuggestBlock(failures, threshold) {
+    const lines = failures.map((f) => `- \`${f.file}\` — ${f.pct.toFixed(1)}%`);
+    return [
+        "## 覆盖率建议（非阻断）",
+        "",
+        `以下改动文件变更行覆盖率低于 ${threshold}%，建议后续补测试（不阻塞提交/合并）：`,
+        "",
+        ...lines,
+        "",
+        "提示：本建议基于最近一次 `vitest --coverage` 产物；新逻辑未跑测试时数据可能滞后。",
+    ].join("\n");
+}
+
 function main() {
     const args = parseArgs(process.argv.slice(2));
     const coveragePath = resolve(args.coverage ?? "coverage/coverage-final.json");
@@ -216,8 +234,14 @@ function main() {
     const threshold = Number(args.threshold ?? "60");
     const uncommitted = Boolean(args.uncommitted);
     const json = Boolean(args.json);
+    const suggest = Boolean(args.suggest);
 
     if (!existsSync(coveragePath)) {
+        if (suggest) {
+            // 非阻断建议模式：无覆盖率数据时静默跳过，不阻塞提交
+            console.log(`[diff-coverage] 未找到覆盖率文件：${coveragePath}（建议模式：先跑 \`vitest run --coverage\` 可生成建议）`);
+            process.exit(0);
+        }
         console.error(`[diff-coverage] 未找到覆盖率文件：${coveragePath}`);
         console.error(`[diff-coverage] 请先运行 \`vitest run --coverage\` 生成 coverage-final.json。`);
         process.exit(USAGE_ERROR);
@@ -263,6 +287,14 @@ function main() {
         const renamed = renameMap.has(f);
         rows.push({ file: f, pct, missing, renamed });
         if (pct < threshold) failures.push({ file: f, pct, renamed });
+    }
+
+    if (suggest) {
+        // 非阻断建议模式：永远 exit 0，仅在有缺口时输出可追加进 commit message 的区块
+        if (failures.length > 0) {
+            console.log(buildSuggestBlock(failures, threshold));
+        }
+        process.exit(0);
     }
 
     if (json) {

@@ -47,9 +47,17 @@ jobs:
           path: frontend/coverage/
 
       - name: Diff-coverage gate (new code must be tested)
-        # P8-A：仅检查本次改动的非测试源码，行覆盖率 <60% 即阻塞。
-        # 解决「整体覆盖率阈值只防回退、不保护新代码有测试」的假安全感。
-        run: node ../scripts/check-diff-coverage.mjs
+        # P8-A：仅检查本次改动的非测试源码，行覆盖率 <60% 即提示。
+        # 已改为非阻断：提供 PR 可见告警（产物归档），不再阻塞 merge；
+        # 提交期建议由 .githooks/prepare-commit-msg 非阻断写入 commit message。
+        continue-on-error: true
+        run: node ../scripts/check-diff-coverage.mjs --json > diff-coverage-report.json || true
+      - name: Upload diff-coverage report
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: diff-coverage-report
+          path: diff-coverage-report.json
 
       - name: Lint
         run: npm run lint

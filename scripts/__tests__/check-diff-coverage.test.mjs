@@ -4,6 +4,7 @@ import {
     addLinesFromDiff,
     parseRenameStatus,
     statementPctForChangedLines,
+    buildSuggestBlock,
 } from "../check-diff-coverage.mjs";
 
 test("addLinesFromDiff 仅取 + 行号，上下文行递增，- 行不递增", () => {
@@ -93,4 +94,28 @@ test("statementPctForChangedLines 部分覆盖按比例", () => {
 
 test("statementPctForChangedLines 空 statementMap → 100", () => {
     assert.equal(statementPctForChangedLines({ s: {}, statementMap: {} }, new Set([1])), 100);
+});
+
+test("buildSuggestBlock 输出可追加进 commit message 的 Markdown 区块", () => {
+    const block = buildSuggestBlock(
+        [
+            { file: "frontend/src/x.ts", pct: 25.0 },
+            { file: "frontend/src/y.ts", pct: 8.3 },
+        ],
+        60,
+    );
+    const lines = block.split("\n");
+    // 首行即钩子 stripBlock 的 BLOCK_START 标记，保证幂等剥离可对位
+    assert.equal(lines[0], "## 覆盖率建议（非阻断）");
+    assert.match(block, /低于 60%/);
+    assert.match(block, /`frontend\/src\/x.ts` — 25\.0%/);
+    assert.match(block, /`frontend\/src\/y.ts` — 8\.3%/);
+    assert.match(block, /不阻塞提交\/合并/);
+    // 不含阈值以外的多余信息，保持 message 整洁
+    assert.doesNotMatch(block, /\[X\]/);
+});
+
+test("buildSuggestBlock 单文件亦生成合法区块", () => {
+    const block = buildSuggestBlock([{ file: "frontend/src/z.ts", pct: 0 }], 60);
+    assert.match(block, /`frontend\/src\/z.ts` — 0\.0%/);
 });

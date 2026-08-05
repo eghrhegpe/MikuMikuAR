@@ -1,0 +1,17 @@
+#!/bin/sh
+# MikuMikuAR diff-coverage 建议（prepare-commit-msg 薄壳，非阻断）
+# 职责：把"变更行覆盖率低于阈值"的文件写入 commit message body，供 PR review 参考。
+# 安装：git config core.hooksPath .githooks（仓库已配置）
+# 逃生阀：MM_SKIP_COVERAGE_HINT=1 git commit
+set -u
+
+ROOT=$(git rev-parse --show-toplevel 2>/dev/null || exit 0)
+[ -z "${ROOT:-}" ] && exit 0
+if [ "${MM_SKIP_COVERAGE_HINT:-0}" = "1" ]; then exit 0; fi
+
+NODE=$(command -v node 2>/dev/null)
+[ -z "$NODE" ] && exit 0
+
+# 辅助脚本内部用 process.execPath 自取 node，无需透传 NODE_BIN
+"$NODE" "$ROOT/scripts/hooks/coverage-hint.mjs" "$1" "$2" || true
+exit 0
