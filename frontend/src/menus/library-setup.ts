@@ -50,6 +50,13 @@ import { showModelPopup } from './library-browse';
 // [doc:adr-238] 导航按钮接线 + 标签映射（从 core/init.ts 下沉），main.ts side-effect import 拉起
 import { initNavActions, disposeNavBindings } from './nav-actions';
 
+// [fix:tree-shake] 必须显式调用 initNavActions()：esbuild（vite dev）与 Rollup（build）
+// 都会移除「绑定未被使用」的 import——nav-actions 若仅被 import 而不调用，其模块顶层
+// 副作用（installNavBindings 按钮接线 + registerUiAction 注册）永不执行，导致按钮
+// 无响应、toggleOverlayMode/navAction 未注册。initNavActions 内部幂等（installNavBindings
+// 有 _navDisposables 守卫），nav-actions 自身顶层调用 + 此处调用重复执行安全。
+initNavActions();
+
 // ======== 初始化 ========
 
 /** [doc:adr-238] mmar:zip-imported 监听幂等保护（initLibrary 可能被 HMR 重复执行） */
