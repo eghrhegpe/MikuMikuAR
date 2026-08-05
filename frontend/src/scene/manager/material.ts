@@ -166,7 +166,6 @@ function _applyParamsToMaterial(
 }
 
 const _origValues = new WeakMap<Material, _OrigMat>();
-const _matCategoryCache = new WeakMap<Material, MaterialCategory>();
 
 /** 材质状态管理器 — 集中管理分类/逐材质/可见性状态，便于测试 mock 和未来扩展。 */
 export class MaterialStateManager {
@@ -362,13 +361,9 @@ export function getMaterialCategory(mat: Material | string): MaterialCategory {
     if (typeof mat === 'string') {
         return _catOfUncached(mat);
     }
-    let cached = _matCategoryCache.get(mat);
-    if (cached !== undefined) {
-        return cached;
-    }
-    cached = _catOfUncached(mat.name);
-    _matCategoryCache.set(mat, cached);
-    return cached;
+    // [fix stale-cache] 委托带 mapRef 键的 _catCache（感知 materialCategoryMap 变更），
+    // 不再使用不感知变更的 _matCategoryCache（幽灵路径：outfit 命中陈旧分类）。
+    return categoryOfMaterial(mat);
 }
 
 /**
@@ -496,9 +491,17 @@ function _applyPbrMatParams(
     if (mat.emissiveTexture) {
         mat.emissiveTexture.level = orig.emissiveTexLevel * p.emissiveTexLevel;
     }
-    // alpha
-    if (alphaCtx && p.alphaMul !== 1) {
-        mat.alpha = orig.alpha * p.alphaMul;
+    // alpha（对齐 StandardMaterial 分支语义：opacity 乘子 + clamp + transparencyMode 切换）
+    if (alphaCtx) {
+        const finalAlpha = clamp01(orig.alpha * alphaCtx.opacity * p.alphaMul);
+        mat.alpha = finalAlpha;
+        if (finalAlpha < 1) {
+            if (mat.transparencyMode === Material.MATERIAL_OPAQUE) {
+                mat.transparencyMode = Material.MATERIAL_ALPHABLEND;
+            }
+        } else {
+            mat.transparencyMode = Material.MATERIAL_OPAQUE;
+        }
     }
 }
 
@@ -624,10 +627,9 @@ export function _applyAll(id: string, alphaCtx?: AlphaCtx): void {
         return;
     }
     const state = _catState.get(id);
-    if (!state && !alphaCtx) {
+    if (!state && !alphaCtx && !_matState.has(id)) {
         return;
     }
-    const _perMat = _matState.get(id) ?? new Map();
     for (let mi = 0; mi < meshes.length; mi++) {
         _applyMaterial(id, mi, alphaCtx);
     }
