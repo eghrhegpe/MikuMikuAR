@@ -11,7 +11,7 @@ import {
     setRecentModels,
     cardContainer,
 } from '../core/config';
-import { computeLibraryRef } from '../library/library-path';
+import { computeLibraryRef } from '@/core/library-path';
 import { loadManager } from '../core/load-manager';
 import { closeAllOverlays } from './menu-overlay';
 import { stackRegistry } from './menu-stack-registry';

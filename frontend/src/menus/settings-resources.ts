@@ -38,7 +38,7 @@ import { showPrompt2 } from '../core/dialog';
 import { getCurrentRenderingMenu } from './menu';
 import { switchStorageMode, refreshLibrary } from './library-core';
 import { t, bundles } from '../core/i18n/t';
-import { CATEGORY_DIR } from '../library/library-path';
+import { CATEGORY_DIR } from '@/core/library-path';
 import { logWarn } from '../core/logger';
 import { SETTINGS_ACTION } from './settings-targets';
 import { executeActionById } from '../core/action-executor';

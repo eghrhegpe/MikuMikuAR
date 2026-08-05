@@ -12,7 +12,7 @@ import {
 } from '../core/config';
 import { stackRegistry } from './menu-stack-registry';
 import { normPath, isUnderRoot } from '../core/path';
-import { computeLibraryRef, getBrowseDir } from '../library/library-path';
+import { computeLibraryRef, getBrowseDir } from '@/core/library-path';
 import { closeAllOverlays, getMenuWrapper } from './menu-overlay';
 import { reconcileTransformSelection } from './resource-detail-helpers';
 import { feedbackInfo } from '../core/feedback';

@@ -15,7 +15,7 @@ scope:
   - frontend/src/core/status-helpers.ts
   - frontend/src/core/uuid.ts
   - frontend/src/core/image.ts
-  - frontend/src/library/library-path.ts
+  - frontend/src/core/library-path.ts
 source_files:
   - frontend/src/core/format.ts
   - frontend/src/core/math-geometry.ts
@@ -28,7 +28,7 @@ source_files:
   - frontend/src/core/status-helpers.ts
   - frontend/src/core/uuid.ts
   - frontend/src/core/image.ts
-  - frontend/src/library/library-path.ts
+  - frontend/src/core/library-path.ts
 adr:
   - adr-191-god-barrel-debarreling
 symbols:
@@ -101,7 +101,7 @@ use_when:
 | `ui-card.ts` | `cardContainer` UI 卡片容器 | 应用层叶（依赖 dom） |
 | `ui-loading.ts` | `withLoadingIndicator` 加载指示器 | 应用层叶（依赖 dom/i18n） |
 | `status-helpers.ts` | `tryCatchStatus`/`withLoadingStatus`/`withLoadingStatusTargeted` 状态栏错误包装与加载态包装 | 应用层叶（依赖 status-bar） |
-| `library/library-path.ts` | `computeLibraryRef`/`resolveLibraryRef`/`CATEGORY_DIR`/`getBrowseDir` | 应用层叶（依赖 libraryRoot） |
+| `core/library-path.ts` | `computeLibraryRef`/`resolveLibraryRef`/`CATEGORY_DIR`/`getBrowseDir` | 应用层叶（依赖 libraryRoot） |
 
 ## 对外 API（节选）
 - `formatTime(seconds)` — 秒数 → "mm:ss.cs" 格式。
@@ -114,7 +114,7 @@ use_when:
 
 ## 与其他子系统关系
 - `core/config.ts` 作为 barrel 聚合导出部分叶模块，供仍通过 `@/core/config` 消费的代码兼容使用。
-- `menus/` 直接引用 `library/library-path.ts`、`core/auto-save.ts`、`core/ui-loading.ts` 等具体叶模块。
+- `menus/` 直接引用 `core/library-path.ts`、`core/auto-save.ts`、`core/ui-loading.ts` 等具体叶模块。
 - `scene/` 直接引用 `core/async.ts`、`core/auto-save.ts`、`core/format.ts`、`core/uuid.ts`、`core/image.ts` 等。
 
 ## 不变量

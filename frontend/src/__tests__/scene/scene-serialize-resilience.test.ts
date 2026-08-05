@@ -153,7 +153,7 @@ vi.mock('../../core/toast', () => ({ showInfoToast: vi.fn() }));
 vi.mock('../../core/feedback', () => ({ feedbackError: vi.fn(), feedbackInfo: vi.fn() }));
 vi.mock('../../core/logger', () => ({ logWarn: vi.fn() }));
 vi.mock('../../core/async', () => ({ swallowError: vi.fn() }));
-vi.mock('../../library/library-path', () => ({ resolveLibraryRef: () => '' }));
+vi.mock('@/core/library-path', () => ({ resolveLibraryRef: () => '' }));
 vi.mock('../../scene/manager/material', () => ({
     _applyAll: vi.fn(),
     getMatCatGroups: vi.fn(() => new Map()),

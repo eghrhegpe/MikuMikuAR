@@ -40,7 +40,7 @@ vi.mock('./menu', () => menuFactory());
 vi.mock('../core/icons', () => iconsFactory());
 vi.mock('../core/status-bar', () => statusBarFactory());
 vi.mock('../core/ui-helpers', () => uiHelpersFactory(capturedSlideRows));
-vi.mock('../library/library-path', () => libraryPathFactory(mockState));
+vi.mock('@/core/library-path', () => libraryPathFactory(mockState));
 // config：与 configModuleFactory(mockState) 同构，但 setModelMetaCache 必须真正写回
 // mockState.modelMetaCache——否则并发合并的中间写入无法被后续调用观察到，测试失真。
 vi.mock('../core/config', () => ({

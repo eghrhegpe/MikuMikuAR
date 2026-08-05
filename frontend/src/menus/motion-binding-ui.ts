@@ -11,7 +11,7 @@ import {
     cardContainer,
 } from '../core/config';
 import { stackRegistry } from './menu-stack-registry';
-import { getBrowseDir } from '../library/library-path';
+import { getBrowseDir } from '@/core/library-path';
 import { feedbackInfo } from '../core/feedback';
 import { showInfoToast } from '../core/toast';
 import { slideRow, addToggleRow, addEmptyRow, addPresetChip } from '../core/ui-helpers';

@@ -695,7 +695,7 @@ outfit/audio.ts
 
 menus/library.ts
  ├── core/state.ts + types.ts    状态、类型
- ├── library/library-path.ts     图书馆路径工具
+ ├── core/library-path.ts        图书馆路径工具
  ├── core/async.ts               异步工具
  ├── scene/scene.ts        loadPMXFile / loadVMDFromPath / focusModel / removeModel
  ├── outfit/audio.ts       loadAudioFile / setAudioOffset

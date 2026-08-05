@@ -21,7 +21,7 @@ import { stackRegistry } from './menu-stack-registry';
 import { normPath, getBaseName } from '../core/path';
 import { logWarn } from '../core/logger';
 import { LoadingGuard } from '../core/async';
-import { getBrowseDir } from '../library/library-path';
+import { getBrowseDir } from '@/core/library-path';
 import { closeAllOverlays } from './menu-overlay';
 import { SlideMenu } from './menu';
 import { safeDispose } from '../core/dispose-helpers';

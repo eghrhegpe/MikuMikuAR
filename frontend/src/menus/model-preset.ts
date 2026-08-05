@@ -2,7 +2,7 @@
 
 import { modelRegistry, PopupLevel, isPlaying } from '../core/config';
 import { stackRegistry } from './menu-stack-registry';
-import { computeLibraryRef } from '../library/library-path';
+import { computeLibraryRef } from '@/core/library-path';
 import { escapeHtml } from '../core/escape-html';
 import { feedbackInfo, feedbackStatus } from '../core/feedback';
 import { loadManager } from '../core/load-manager';

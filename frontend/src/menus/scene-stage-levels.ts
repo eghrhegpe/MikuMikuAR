@@ -37,7 +37,7 @@ function buildStageSchema(): MenuNode[] {
                     () => {
                         (async () => {
                             try {
-                                const { getBrowseDir } = await import('../library/library-path');
+                                const { getBrowseDir } = await import('@/core/library-path');
                                 const browseDir = getBrowseDir('stage');
                                 if (!browseDir) {
                                     feedbackStatus('scene.statusNoModelLib', undefined, false);

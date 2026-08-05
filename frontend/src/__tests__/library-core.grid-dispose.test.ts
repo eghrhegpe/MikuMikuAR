@@ -47,7 +47,7 @@ vi.mock('../menus/scene-menu', () => sceneMenuFactory());
 vi.mock('./menu', () => menuFactory());
 vi.mock('../core/icons', () => iconsFactory());
 vi.mock('../core/status-bar', () => statusBarFactory());
-vi.mock('../library/library-path', () => libraryPathFactory(mockState));
+vi.mock('@/core/library-path', () => libraryPathFactory(mockState));
 vi.mock('../core/ui-helpers', () => ({
     ...uiHelpersFactory(capturedSlideRows),
     createResourcePanel: vi.fn(() => panelHandle),

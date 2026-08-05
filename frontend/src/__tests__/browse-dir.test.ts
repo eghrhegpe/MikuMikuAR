@@ -2,7 +2,7 @@
 // 网页端虚拟根（web://）为扁平目录结构，不应拼接 PMX/VMD 等子目录，
 // 否则扫描到的模型（dir=web://selected-dir）不在拼接路径之下，资源库显示为空。
 import { describe, it, expect, beforeEach } from 'vitest';
-import { getBrowseDir } from '../library/library-path';
+import { getBrowseDir } from '@/core/library-path';
 import { setLibraryRoot, setOverridePaths } from '../core/state';
 
 describe('getBrowseDir', () => {

@@ -81,8 +81,8 @@ vi.mock('./menu-overlay', () => ({
     closeAllOverlays: vi.fn(),
 }));
 
-// env-level-helpers.ts → ../library/library-path
-vi.mock('../library/library-path', () => ({
+// env-level-helpers.ts → @/core/library-path
+vi.mock('@/core/library-path', () => ({
     getBrowseDir: vi.fn(() => 'environment'),
 }));
 

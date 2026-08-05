@@ -163,7 +163,7 @@ export function statusBarFactory() {
     return { setStatus: vi.fn() };
 }
 
-/** [fix:de-barreling] library-core 已从 core/config 改引 library/library-path，
+/** [fix:de-barreling] library-core 已从 core/config 改引 core/library-path，
  *  测试需同步 mock 该模块，否则 getBrowseDir / computeLibraryRef 读到真实空状态。 */
 export function libraryPathFactory(_ms: any) {
     return {

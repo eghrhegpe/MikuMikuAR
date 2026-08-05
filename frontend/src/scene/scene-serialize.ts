@@ -16,7 +16,7 @@ import { debounce } from '../core/debounce';
 import { swallowError } from '../core/async';
 import { computeLibraryRef } from '@/core/path';
 import type { ModelInstance } from '../core/types';
-import { resolveLibraryRef } from '../library/library-path';
+import { resolveLibraryRef } from '@/core/library-path';
 import { logWarn } from '../core/logger';
 import {
     getActiveMotionId,

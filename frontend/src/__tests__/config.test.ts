@@ -8,7 +8,7 @@ import {
     expandedFolders,
     setLibraryRoot,
 } from '../core/config';
-import { computeLibraryRef, resolveLibraryRef } from '../library/library-path';
+import { computeLibraryRef, resolveLibraryRef } from '@/core/library-path';
 import { toBase64 } from '../core/image';
 import { escapeHtml } from '../core/escape-html';
 import { normPath } from '../core/fileservice';

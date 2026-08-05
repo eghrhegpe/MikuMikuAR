@@ -42,7 +42,7 @@ export interface UiActions {
     buildActionBindingLevel: (id?: string) => unknown;
     /** 构建动作详情层级（motion 动作），由 menus/motion-detail-ui 注册 */
     buildMotionDetailLevel: (sceneMotionId?: string) => unknown;
-    /** 获取浏览目录（motion 动作），由 library/library-path 注册 */
+    /** 获取浏览目录（motion 动作），由 core/library-path 注册 */
     getBrowseDir: (kind: string) => string;
     /** 构建菜单浏览层级（motion 动作 browse-*），由 menus/motion-popup 注册 */
     buildBrowseLevel: (args: {

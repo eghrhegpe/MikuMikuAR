@@ -7,7 +7,7 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 128 | 735 |
+| 核心基础设施 | 129 | 739 |
 | 3D 场景 | 120 | 1155 |
 | 菜单 & UI | 76 | 388 |
 | 换装 & 音频 | 3 | 33 |
@@ -288,6 +288,10 @@
 | `bootstrap()` | `core/init:583` | 应用启动入口：接线 dev-hooks / render-loop / events 并启动渲染循环。 |
 | `jsonParse()` | `core/json-stringify:10` | Safely parse JSON; returns null on failure instead of throwing. |
 | `jsonStringify()` | `core/json-stringify:5` | Format a value as pretty-printed JSON (2-space indent). |
+| `CATEGORY_DIR()` | `core/library-path:52` | — |
+| `computeLibraryRef()` | `core/library-path:10` | Backwards-compatible wrapper: reads libraryRoot and delegates to the pure path leaf. |
+| `getBrowseDir()` | `core/library-path:67` | 统一的资源浏览目录解析。 |
+| `resolveLibraryRef()` | `core/library-path:14` | — |
 | `addRecentMotion()` | `core/library-state:82` | — |
 | `allModels()` | `core/library-state:29` | — |
 | `displayNamePriority()` | `core/library-state:65` | 缩略图更新回调（由 ui-resource-panel.ts 注册，避免模块间动态 import 耦合）。 |

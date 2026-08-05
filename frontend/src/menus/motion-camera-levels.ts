@@ -14,7 +14,7 @@ import {
     addModeSlider,
     addBoneSelectRow,
 } from '../core/ui-helpers';
-import { getBrowseDir } from '../library/library-path';
+import { getBrowseDir } from '@/core/library-path';
 import {
     hasCameraVmd,
     clearCameraVmd,

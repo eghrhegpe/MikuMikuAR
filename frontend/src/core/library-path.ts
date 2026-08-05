@@ -1,6 +1,6 @@
 // [doc:architecture] Library path resolution helpers.
 // Extracted from @/core/utils as part of ADR-191 de-barreling.
-// Depends on libraryRoot/overridePaths state, so it lives in the library subsystem.
+// [doc:adr-242] 依赖 core/state 的 libraryRoot/overridePaths，无 Babylon/UI 依赖，归属 core 层。
 
 import { libraryRoot, overridePaths } from '@/core/state';
 import { normPath, isUnderRoot, computeLibraryRef as _pureComputeLibraryRef } from '@/core/path';
