@@ -21,7 +21,10 @@ invariants:
   - 详情页复用 buildTransformCard 统一变换交互
   - 表情 morph 写回经 model-ops 集中管理
   - 各层级经声明式 Schema 渲染
-tests: []
+tests:
+  - frontend/src/__tests__/model-detail-ui.info.test.ts
+  - frontend/src/__tests__/model-detail-ui.model.test.ts
+  - frontend/src/__tests__/model-detail-ui.tags-morph.test.ts
 use_when:
   - 模型详情
   - 模型子菜单

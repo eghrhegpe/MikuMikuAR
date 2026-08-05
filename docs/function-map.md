@@ -899,54 +899,54 @@
 | `CameraState()` | `scene/camera/camera:557` | — |
 | `LEGACY_MODE_MAP()` | `scene/camera/camera:108` | ADR-100 §6.1 — 旧模式 → 双轴映射（迁移 / shim 共用）。 |
 | `_syncAxesFromMode()` | `scene/camera/camera:238` | ADR-100：由旧 mode 派生双轴状态。switchCameraMode 提交 _cameraMode 时同步调用，作为唯一写入点。 |
-| `animateCameraVmd()` | `scene/camera/camera:794` | — |
+| `animateCameraVmd()` | `scene/camera/camera:795` | — |
 | `autoFrame()` | `scene/camera/camera:533` | Auto-frame the camera to centre on a bounding box. |
-| `clearCameraVmd()` | `scene/camera/camera:794` | — |
-| `defaultCameraPreset()` | `scene/camera/camera:793` | — |
+| `clearCameraVmd()` | `scene/camera/camera:795` | — |
+| `defaultCameraPreset()` | `scene/camera/camera:794` | — |
 | `deriveLegacyMode()` | `scene/camera/camera:126` | ADR-100 §6.2 — 双轴 → 旧模式反查（getCameraState 降级双写 / shim 内部路由）。 |
-| `disposeCameraSystem()` | `scene/camera/camera:736` | 顶层销毁相机系统（HMR / 页面卸载 / scene 销毁时调用）。幂等。 |
-| `getAutoCameraBeatsPerSwitch()` | `scene/camera/camera:803` | — |
-| `getBoneLockDamping()` | `scene/camera/camera:796` | — |
-| `getCameraBehavior()` | `scene/camera/camera:773` | — |
-| `getCameraControl()` | `scene/camera/camera:773` | — |
-| `getCameraMode()` | `scene/camera/camera:773` | — |
+| `disposeCameraSystem()` | `scene/camera/camera:737` | 顶层销毁相机系统（HMR / 页面卸载 / scene 销毁时调用）。幂等。 |
+| `getAutoCameraBeatsPerSwitch()` | `scene/camera/camera:804` | — |
+| `getBoneLockDamping()` | `scene/camera/camera:797` | — |
+| `getCameraBehavior()` | `scene/camera/camera:774` | — |
+| `getCameraControl()` | `scene/camera/camera:774` | — |
+| `getCameraMode()` | `scene/camera/camera:774` | — |
 | `getCameraState()` | `scene/camera/camera:578` | — |
-| `getCameraVmdName()` | `scene/camera/camera:773` | — |
-| `getCameraVmdPath()` | `scene/camera/camera:773` | — |
-| `getConcertParams()` | `scene/camera/camera:773` | — |
-| `getConcertPaused()` | `scene/camera/camera:773` | — |
-| `getCurrentCamera()` | `scene/camera/camera:773` | — |
-| `getFocusedModelBoneNames()` | `scene/camera/camera:796` | — |
-| `getFov()` | `scene/camera/camera:773` | — |
-| `getFreeflyParams()` | `scene/camera/camera:773` | — |
-| `getOrbitBoneLock()` | `scene/camera/camera:796` | — |
-| `getOrbitParams()` | `scene/camera/camera:773` | — |
-| `getScriptedSubMode()` | `scene/camera/camera:773` | — |
-| `getSurroundParams()` | `scene/camera/camera:773` | — |
-| `getSurroundPaused()` | `scene/camera/camera:773` | — |
-| `hasCameraVmd()` | `scene/camera/camera:773` | — |
+| `getCameraVmdName()` | `scene/camera/camera:774` | — |
+| `getCameraVmdPath()` | `scene/camera/camera:774` | — |
+| `getConcertParams()` | `scene/camera/camera:774` | — |
+| `getConcertPaused()` | `scene/camera/camera:774` | — |
+| `getCurrentCamera()` | `scene/camera/camera:774` | — |
+| `getFocusedModelBoneNames()` | `scene/camera/camera:797` | — |
+| `getFov()` | `scene/camera/camera:774` | — |
+| `getFreeflyParams()` | `scene/camera/camera:774` | — |
+| `getOrbitBoneLock()` | `scene/camera/camera:797` | — |
+| `getOrbitParams()` | `scene/camera/camera:774` | — |
+| `getScriptedSubMode()` | `scene/camera/camera:774` | — |
+| `getSurroundParams()` | `scene/camera/camera:774` | — |
+| `getSurroundPaused()` | `scene/camera/camera:774` | — |
+| `hasCameraVmd()` | `scene/camera/camera:774` | — |
 | `initCameraSystem()` | `scene/camera/camera:314` | Initialise the camera system and create the default Orbit camera. |
-| `isAutoCameraEnabled()` | `scene/camera/camera:810` | — |
-| `loadCameraVmd()` | `scene/camera/camera:794` | — |
+| `isAutoCameraEnabled()` | `scene/camera/camera:811` | — |
+| `loadCameraVmd()` | `scene/camera/camera:795` | — |
 | `logCameraAlpha()` | `scene/camera/camera:186` | Log current camera alpha for diagnostics. |
-| `refreshCameraUserSettings()` | `scene/camera/camera:795` | — |
-| `restoreAutoCameraState()` | `scene/camera/camera:803` | — |
-| `setAutoCameraBeatsPerSwitch()` | `scene/camera/camera:803` | — |
-| `setAutoCameraEnabled()` | `scene/camera/camera:810` | — |
-| `setBoneLockDamping()` | `scene/camera/camera:796` | — |
+| `refreshCameraUserSettings()` | `scene/camera/camera:796` | — |
+| `restoreAutoCameraState()` | `scene/camera/camera:804` | — |
+| `setAutoCameraBeatsPerSwitch()` | `scene/camera/camera:804` | — |
+| `setAutoCameraEnabled()` | `scene/camera/camera:811` | — |
+| `setBoneLockDamping()` | `scene/camera/camera:797` | — |
 | `setCameraBehavior()` | `scene/camera/camera:281` | ADR-100 P4 — 直接设置运动行为轴（轴 B，仅 orbit 有效）。 |
 | `setCameraControl()` | `scene/camera/camera:259` | ADR-100 P4 — 直接设置控制方案轴（轴 A）。 |
-| `setCameraPreset()` | `scene/camera/camera:793` | — |
+| `setCameraPreset()` | `scene/camera/camera:794` | — |
 | `setCameraState()` | `scene/camera/camera:608` | — |
 | `setConcertParams()` | `scene/camera/camera:208` | — |
-| `setConcertPaused()` | `scene/camera/camera:773` | — |
+| `setConcertPaused()` | `scene/camera/camera:774` | — |
 | `setFov()` | `scene/camera/camera:304` | — |
 | `setFreeflyParams()` | `scene/camera/camera:195` | — |
-| `setOrbitBoneLock()` | `scene/camera/camera:796` | — |
+| `setOrbitBoneLock()` | `scene/camera/camera:797` | — |
 | `setOrbitParams()` | `scene/camera/camera:168` | — |
 | `setSurroundParams()` | `scene/camera/camera:212` | — |
-| `setSurroundPaused()` | `scene/camera/camera:773` | — |
-| `setSyncAxesCallback()` | `scene/camera/camera:810` | — |
+| `setSurroundPaused()` | `scene/camera/camera:774` | — |
+| `setSyncAxesCallback()` | `scene/camera/camera:811` | — |
 | `switchCameraMode()` | `scene/camera/camera:335` | Switch to a different camera mode, preserving position as much as possible. |
 | `InvertableArcRotateCameraPointersInput()` | `scene/camera/invertablePointersInput:13` | 可反转 Y 轴的 ArcRotate 相机指针输入。 |
 | `applyEnvStateFacade()` | `scene/env/_bridge/env-bridge:49` | 等同于 scene-env.ts 的 applyEnvState，但避免循环依赖。 |
@@ -2141,15 +2141,15 @@
 | `SlideMenu()` | `menus/menu:40` | — |
 | `getCurrentRenderingMenu()` | `menus/menu:40` | 获取当前正在渲染的 SlideMenu 实例（供 menus 层控件的自更新注册）。 |
 | `getOpenMenus()` | `menus/menu:48` | 获取所有当前存活的 SlideMenu 实例（已 dispose 的会自动移除，调用方仍需自行判断可见性） |
-| `buildBoneHierarchyLevel()` | `menus/model-detail:1491` | — |
-| `buildModelInfoLevel()` | `menus/model-detail:854` | — |
-| `buildModelLevel()` | `menus/model-detail:613` | — |
-| `buildModelTagsLevel()` | `menus/model-detail:1057` | — |
-| `buildModelToolsLevel()` | `menus/model-detail:556` | [doc:adr-167] 叠加动作次级菜单已移除（ADR-144 per-model overlay 废弃）。 |
-| `buildMorphPreviewLevel()` | `menus/model-detail:1167` | — |
+| `buildBoneHierarchyLevel()` | `menus/model-detail:1502` | — |
+| `buildModelInfoLevel()` | `menus/model-detail:862` | — |
+| `buildModelLevel()` | `menus/model-detail:621` | — |
+| `buildModelTagsLevel()` | `menus/model-detail:1068` | — |
+| `buildModelToolsLevel()` | `menus/model-detail:564` | [doc:adr-167] 叠加动作次级菜单已移除（ADR-144 per-model overlay 废弃）。 |
+| `buildMorphPreviewLevel()` | `menus/model-detail:1178` | — |
 | `buildMotionSlotLevel()` | `menus/model-detail:429` | 构建动作1（基础）次级菜单：场景库选择 + 已加载动作 + 程序化动作 |
 | `buildOpenWithLevel()` | `menus/model-detail:268` | — |
-| `buildPersonalLightLevel()` | `menus/model-detail:1180` | — |
+| `buildPersonalLightLevel()` | `menus/model-detail:1191` | — |
 | `buildMatRootLevel()` | `menus/model-material:446` | — |
 | `ModelPresetEntry()` | `menus/model-preset:37` | — |
 | `ModelPresetFile()` | `menus/model-preset:46` | — |
