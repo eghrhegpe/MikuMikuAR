@@ -24,8 +24,8 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { parseAdrHeader } from './_lib/frontmatter.mjs';
+import { ROOT } from './_lib/scan-files.mjs';
 import {
   RE_SUPERSEDED_BY,
   RE_PARTIAL,
@@ -45,8 +45,6 @@ import {
 const RE_CLAIM_A_G = globalOf(RE_CLAIM_A);
 const RE_CLAIM_B_G = globalOf(RE_CLAIM_B);
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const ROOT = path.resolve(__dirname, '..');
 const ADR_DIR = path.join(ROOT, 'docs', 'adr');
 
 const FLAG_CHECK = process.argv.includes('--check');

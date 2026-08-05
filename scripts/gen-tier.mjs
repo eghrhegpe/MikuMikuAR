@@ -25,12 +25,10 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { scanSourceGraph } from './_lib/source-graph.mjs';
 import { toPosix } from './_lib/to-posix.mjs';
+import { ROOT } from './_lib/scan-files.mjs';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const ROOT = path.resolve(__dirname, '..');
 const KDIR = path.join(ROOT, 'docs', 'knowledge');
 const SRC_DIR = path.join(ROOT, 'frontend', 'src');
 const REVIEW_FILE = path.join(KDIR, 'tier-review.md');

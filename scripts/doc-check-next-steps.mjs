@@ -15,10 +15,8 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { ROOT } from './_lib/scan-files.mjs';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const ROOT = path.resolve(__dirname, '..');
 const JSON_PATH = path.join(ROOT, 'docs', '.doc-check-last.json');
 const OUT_PATH = path.join(ROOT, 'docs', '.doc-check-next-steps.md');
 

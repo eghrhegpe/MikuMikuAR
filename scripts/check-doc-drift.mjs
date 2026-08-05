@@ -27,12 +27,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
 import { getExportedSymbols } from './_lib/source-graph.mjs';
 import { toPosix } from './_lib/to-posix.mjs';
+import { ROOT } from './_lib/scan-files.mjs';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const ROOT = path.resolve(__dirname, '..');
 
 const CONFIG = {
   // 符号覆盖率扫描根（近期子系统集中地）。可加目录扩展覆盖面。

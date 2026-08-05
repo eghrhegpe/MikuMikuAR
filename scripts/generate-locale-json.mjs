@@ -12,11 +12,9 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
+import { ROOT } from './_lib/scan-files.mjs';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const ROOT = path.resolve(__dirname, '..');
 const FRONTEND = path.join(ROOT, 'frontend');
 const LOCALE_DIR = path.join(FRONTEND, 'src', 'core', 'i18n', 'locales');
 const OUTPUT_DIR = path.join(FRONTEND, 'public', 'locales');

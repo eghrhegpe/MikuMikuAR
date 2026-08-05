@@ -27,11 +27,9 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { parseArgs } from './_lib/parse-args.mjs';
+import { ROOT } from './_lib/scan-files.mjs';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const ROOT = path.resolve(__dirname, '..');
 const MENUS_DIR = path.join(ROOT, 'frontend', 'src', 'menus');
 const OUT_PATH = path.join(ROOT, 'docs', 'knowledge', 'menu-map.md');
 
