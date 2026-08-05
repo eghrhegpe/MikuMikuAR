@@ -76,6 +76,8 @@ export async function idbSet(store: Store, key: string, value: unknown): Promise
         tx.objectStore(store).put(value, key);
         tx.oncomplete = () => resolve();
         tx.onerror = () => reject(tx.error);
+        // [fix P2] QuotaExceededError 等触发 onabort 而非 onerror，缺此处理器 Promise 永不 settle
+        tx.onabort = () => reject(tx.error);
     });
 }
 
@@ -86,6 +88,8 @@ export async function idbDelete(store: Store, key: string): Promise<void> {
         tx.objectStore(store).delete(key);
         tx.oncomplete = () => resolve();
         tx.onerror = () => reject(tx.error);
+        // [fix P2] 同上：onabort 时 Promise 须 reject
+        tx.onabort = () => reject(tx.error);
     });
 }
 
@@ -100,6 +104,8 @@ export async function idbBatchSet(store: Store, entries: [string, unknown][]): P
         }
         tx.oncomplete = () => resolve();
         tx.onerror = () => reject(tx.error);
+        // [fix P2] 同上：onabort 时 Promise 须 reject
+        tx.onabort = () => reject(tx.error);
     });
 }
 

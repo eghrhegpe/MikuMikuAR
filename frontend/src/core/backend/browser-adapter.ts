@@ -1872,9 +1872,23 @@ export const browserAdapter: BackendService = {
         const keys = (await idbKeys('presets')).filter((k) => k.startsWith('render:'));
         const out: RenderPreset[] = [];
         for (const k of keys) {
-            const p = await idbGet<RenderPreset>('presets', k);
-            if (p) {
-                out.push(p);
+            const raw = await idbGet<unknown>('presets', k);
+            if (raw === undefined) {
+                continue;
+            }
+            // [fix P2] 存量数据以 params 字符串存储（SaveRenderPreset），
+            // 统一归一为 RenderPreset 对象（name 取自 key），避免调用方拿到
+            // string 后访问 .name/.params 得 undefined。
+            if (typeof raw === 'string') {
+                let params: RenderPreset['params'] = null;
+                try {
+                    params = JSON.parse(raw);
+                } catch {
+                    params = null;
+                }
+                out.push({ name: k.slice('render:'.length), params });
+            } else {
+                out.push(raw as RenderPreset);
             }
         }
         return out;
