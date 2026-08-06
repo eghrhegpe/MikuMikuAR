@@ -88,18 +88,26 @@ export async function handleDroppedFile(file: File): Promise<void> {
     if (!lower.endsWith('.zip') && !lower.endsWith('.pmx') && !lower.endsWith('.vmd')) {
         return;
     }
-    const bytes = new Uint8Array(await file.arrayBuffer());
-    if (lower.endsWith('.zip')) {
-        // zip 整体写入 entry（模型库可见），内部文件由 ExtractZip 落地
-        await saveModel(file.name, bytes, 'zip');
-        await handleDropFile(file.name, bytes);
-        return;
+    // [audit:round14 P2] 浏览器分支整体 try/catch：file.arrayBuffer() / idbSet / saveModel
+    // 任一 reject（大 zip 触发 QuotaExceededError、文件读取失败）时给用户可见状态提示，
+    // 而不是未处理 rejection + setStatus 停在导入前文案。
+    try {
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        if (lower.endsWith('.zip')) {
+            // zip 整体写入 entry（模型库可见），内部文件由 ExtractZip 落地
+            await saveModel(file.name, bytes, 'zip');
+            await handleDropFile(file.name, bytes);
+            return;
+        }
+        // pmx/vmd：落地 file:<name>
+        const name = file.name.replace(/\.(pmx|vmd)$/i, '');
+        await idbSet('models', `file:${name}`, bytes);
+        if (lower.endsWith('.pmx')) {
+            await saveModel(file.name, bytes, 'pmx');
+        }
+        await handleDropFile(file.name);
+    } catch (err) {
+        setStatus(t('main.importFailedDetail') + formatError(err), false);
+        console.error('handleDroppedFile failed:', err);
     }
-    // pmx/vmd：落地 file:<name>
-    const name = file.name.replace(/\.(pmx|vmd)$/i, '');
-    await idbSet('models', `file:${name}`, bytes);
-    if (lower.endsWith('.pmx')) {
-        await saveModel(file.name, bytes, 'pmx');
-    }
-    await handleDropFile(file.name);
 }

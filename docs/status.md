@@ -15,6 +15,7 @@
 
 | ADR | 主题 | 状态 |
 |-----|------|------|
+| ADR-253 | 配置部分更新合并契约损坏 —— mergeUIState bool 覆盖 / mergeEnvState 零值覆盖 | ✅ 已立（2026-08-06 立项；来源审核第 14 轮：`docs/audit/2026-08-06-round14-*.md` Go 后端核心模块审核 P1#1/P1#2）。本 ADR 固化缺陷认知与治理方案，实现分批跟进 |
 | ADR-252 | 菜单资源释放链路缺失 —— disposeMenuWrapper/clearAllMenuWrappers 零调用与 _liveMenus 常驻 | ✅ 已立（2026-08-06 立项；来源审核第 13 轮：`docs/audit/2026-08-06-round13-scene-render-core-ui.md` 跨模块模式问题 #3「状态直写绕过 setter」与 P3「menu-overlay dispose 链路缺失」）。本 ADR 固化现状认知与治理方向，实现分批跟进 |
 | ADR-251 | scene 反向 import 循环依赖治理 —— model-ops/camera 对 `../scene` 的真实静态循环 | ✅ 已立（2026-08-06 立项；来源审核第 13 轮：`docs/audit/2026-08-06-round13-scene-render-core-ui.md` 跨模块模式问题 #2「坐标系契约混淆 / 循环依赖」）。本 ADR 固化现状认知与治理方向，实现分批跟进 |
 | ADR-250 | 场景初始化重入与异常一致性 —— initScene 重入守护 + 中途异常状态复位 | ✅ 已立（2026-08-06 立项；来源审核第 15 轮：`scene.ts` 编排器幽灵路径——`initScene` 无重入守护、`_sceneInitialized` 中途抛异常不复位。本 ADR 固化决策，实现可后续跟进） |

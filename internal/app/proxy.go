@@ -198,9 +198,16 @@ func (a *App) emitDownloadComplete(fileName string, size int64, filePath string)
 // init wires the SSRF-guarded transport into plazaDownloadClient while keeping
 // the default TLS / idle-connection behaviour.
 func init() {
+	plazaDownloadClient.Transport = ssrfGuardedTransport()
+}
+
+// ssrfGuardedTransport returns a clone of http.DefaultTransport whose
+// DialContext is plazaSSRFGuard（逐连接重解析 + 拦截私网），供主反向代理 /
+// 下载客户端共用——任何代理到用户自定义 target 的出站连接都必须过 SSRF 校验。
+func ssrfGuardedTransport() *http.Transport {
 	base := http.DefaultTransport.(*http.Transport).Clone()
 	base.DialContext = plazaSSRFGuard
-	plazaDownloadClient.Transport = base
+	return base
 }
 
 // isBlockedIP reports whether ip is loopback, link-local, private (RFC1918 /
@@ -296,6 +303,11 @@ func (a *App) StartProxy(target, mode string) (string, error) {
 		if targetURL.Scheme == "" || targetURL.Host == "" {
 			return "", fmt.Errorf("proxy target must be an absolute URL with scheme and host: %q", target)
 		}
+		// [audit:round14 P1] 主反向代理 scheme 白名单：仅允许 http/https，拒绝
+		// file:/ftp:/data: 等自定义 scheme（对齐知识卡「只允许 http/https」契约）。
+		if targetURL.Scheme != "http" && targetURL.Scheme != "https" {
+			return "", fmt.Errorf("proxy target scheme %q not allowed (http/https only)", targetURL.Scheme)
+		}
 
 		jar, _ := cookiejar.New(nil)
 		if mode == "" {
@@ -310,6 +322,10 @@ func (a *App) StartProxy(target, mode string) (string, error) {
 		port := listener.Addr().(*net.TCPAddr).Port
 
 		rp := httputil.NewSingleHostReverseProxy(targetURL)
+		// [audit:round14 P1] 主反向代理也必须走 SSRF guard：http.DefaultTransport
+		// 无 IP 拦截，target 指向 127.0.0.1/10.x/169.254.169.254 等内网地址时被直接代理
+		// （开放代理 + SSRF）。复用 plazaSSRFGuard（逐连接重解析 + 拦截私网/DNS-rebinding）。
+		rp.Transport = ssrfGuardedTransport()
 		// FlushInterval=-1：有数据立即刷出，SSE / 流式响应不攒缓冲。
 		rp.FlushInterval = -1
 		baseDirector := rp.Director
@@ -547,13 +563,24 @@ func (a *App) proxyWebSocket(w http.ResponseWriter, r *http.Request, target *url
 	}
 
 	var upConn net.Conn
-	dialer := net.Dialer{Timeout: 15 * time.Second}
 	if target.Scheme == "wss" || target.Scheme == "https" {
-		upConn, err = tls.DialWithDialer(&dialer, "tcp", upHost, &tls.Config{
-			ServerName: target.Hostname(),
-		})
+		// [audit:round14 P1] WebSocket 拨号同样必须过 SSRF guard：tls.DialWithDialer
+		// 直拨会把 127.0.0.1/私网 target 也连上（开放代理 + SSRF）。
+		// 先经 plazaSSRFGuard 逐连接重解析 + 拦截私网地址，再对通过校验的连接做 TLS。
+		conn, derr := plazaSSRFGuard(r.Context(), "tcp", upHost)
+		if derr == nil {
+			tlsConn := tls.Client(conn, &tls.Config{ServerName: target.Hostname()})
+			if terr := tlsConn.HandshakeContext(r.Context()); terr != nil {
+				_ = conn.Close()
+				err = terr
+			} else {
+				upConn = tlsConn
+			}
+		} else {
+			err = derr
+		}
 	} else {
-		upConn, err = dialer.Dial("tcp", upHost)
+		upConn, err = plazaSSRFGuard(r.Context(), "tcp", upHost)
 	}
 	if err != nil {
 		a.safeLogError("proxyWebSocket: dial upstream %s: %v", upHost, err)

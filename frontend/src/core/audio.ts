@@ -284,6 +284,11 @@ export async function loadAudioFile(filePath: string, signal?: AbortSignal): Pro
         return;
     }
     const bytes = await readFileBytes(filePath);
+    // [audit:round14 P2] await 期间 signal 可能已 abort（换歌/卸载场景）：不再创建
+    // blob URL 与入播放列表，避免已取消的加载覆盖新状态（load-manager 透传 signal）。
+    if (signal?.aborted) {
+        return;
+    }
     if (!bytes) {
         logWarn('audio', 'loadAudioFile: failed to read', filePath);
         reportResourceWarning(t('resource.audioLoadFailed', { name: filePath }));
@@ -291,6 +296,12 @@ export async function loadAudioFile(filePath: string, signal?: AbortSignal): Pro
     }
     const blob = new Blob([bytes.buffer as ArrayBuffer], { type: 'audio/mpeg' });
     const url = URL.createObjectURL(blob);
+    // [audit:round14 P2] readFileBytes 返回后、createObjectURL 前的窗口内 abort：
+    // revoke 刚创建的 URL，避免泄漏 blob。
+    if (signal?.aborted) {
+        URL.revokeObjectURL(url);
+        return;
+    }
 
     const fileName = filePath.split(/[\\/]/).pop() || '';
     // 回收被替换的旧 blob（已非播放源），避免句柄/内存泄漏
@@ -524,13 +535,15 @@ export function syncAudioPlayback(vmdTime: number, isPlaying: boolean, vmdDurati
         }
 
         // 偏移纠偏（偏差 > 阈值时 seek 校准）
+        // [audit:round14 P1] 仅当目标落在音频时长内才纠偏：audioTargetTime >= audioDur
+        // 时（音频比 VMD 短）若每帧 seek 回 0，音频刚播放几毫秒就被重置——短 BGM +
+        // 长 VMD 同步时音频永远无法前进、实际无声（audio.sync.test.ts 只调用一次且
+        // 零断言，未捕获该循环）。此时应由播放分支单次置 0 后自然播放，不做逐帧纠偏。
         if (isPlaying && !streamPlayer.paused) {
-            const diff = Math.abs(streamPlayer.currentTime - audioTargetTime);
-            if (diff > SYNC_THRESHOLD) {
-                if (audioTargetTime >= 0 && audioTargetTime < audioDur) {
+            if (audioTargetTime >= 0 && audioTargetTime < audioDur) {
+                const diff = Math.abs(streamPlayer.currentTime - audioTargetTime);
+                if (diff > SYNC_THRESHOLD) {
                     streamPlayer.currentTime = audioTargetTime;
-                } else if (audioTargetTime >= audioDur) {
-                    streamPlayer.currentTime = 0;
                 }
             }
         }

@@ -2,7 +2,7 @@
 
 # 决策记录（ADR）
 
-> 架构决策日志，共 **248** 篇（ADR-001 起按编号递增）。决策一旦写下即不可变；状态变化以各 ADR 文件首部「状态」行为准。
+> 架构决策日志，共 **249** 篇（ADR-001 起按编号递增）。决策一旦写下即不可变；状态变化以各 ADR 文件首部「状态」行为准。
 
 ## 按状态分布
 
@@ -12,7 +12,7 @@
 | [规划中](#规划中) | 8 | 已立项，等待实施 |
 | [已落地](#已落地) | 216 | 实施完成，代码已合入 |
 | [已归档](#已归档) | 9 | 被取代、放弃、过时或搁置，保留供追溯 |
-| [其他](#其他) | 9 | 状态行缺失或表述不可归类 |
+| [其他](#其他) | 10 | 状态行缺失或表述不可归类 |
 
 > 本文件为 ADR **规范索引**（按状态分组导航，可锚点跳转）。带日期的全量列表见 [项目现状 · ADR 索引](../status.md)（附表，由 `scripts/gen-status-index.mjs` 生成）。
 
@@ -279,6 +279,7 @@
 
 | ADR | 主题 | 状态 |
 |-----|------|------|
+| [ADR-253](./adr-253-config-merge-partial-update.md) | 配置部分更新合并契约损坏 —— mergeUIState bool 覆盖 / mergeEnvState 零值覆盖 | ✅ 已立 |
 | [ADR-252](./adr-252-menu-dispose-chain.md) | 菜单资源释放链路缺失 —— disposeMenuWrapper/clearAllMenuWrappers 零调用与 _liveMenus 常驻 | ✅ 已立 |
 | [ADR-251](./adr-251-scene-circular-import-cleanup.md) | scene 反向 import 循环依赖治理 —— model-ops/camera 对 `../scene` 的真实静态循环 | ✅ 已立 |
 | [ADR-250](./adr-250-scene-init-reentrancy.md) | 场景初始化重入与异常一致性 —— initScene 重入守护 + 中途异常状态复位 | ✅ 已立 |

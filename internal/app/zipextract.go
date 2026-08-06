@@ -130,6 +130,7 @@ func (a *App) extractZipUnsafe(zipPath, innerPath string) (*ExtractResult, error
 
 	// Track extracted entry count for ZIP bomb protection
 	var extractedCount int
+	var totalExtracted uint64 // 累计解压总字节（zip 炸弹守卫：解压总量无上限时单个大条目可写满磁盘）
 
 	for _, zf := range zr.File {
 		// Decode entry name (Shift-JIS → UTF-8) so extracted files match model entries
@@ -157,6 +158,14 @@ func (a *App) extractZipUnsafe(zipPath, innerPath string) (*ExtractResult, error
 		if extractedCount > maxZipEntries {
 			return nil, i18nerr.New("zip.tooManyEntries", fmt.Sprintf("%s: 压缩包内文件数 %d 超过上限 %d", op, extractedCount, maxZipEntries), map[string]string{"op": op, "count": fmt.Sprintf("%d", extractedCount), "max": fmt.Sprintf("%d", maxZipEntries)})
 		}
+		// [audit:round14 P1] 解压总量守卫：expandZipEntries 的 2GB 预检只覆盖扫描列表面，
+		// 解压路径若无限流，单个大条目（或大量中等条目）仍可写满磁盘。
+		if zf.UncompressedSize64 > maxZipEntryFileSize {
+			return nil, i18nerr.New("zip.entryTooLarge", fmt.Sprintf("%s: 条目 %s 解压大小 %d 超过上限 %d", op, entryName, zf.UncompressedSize64, maxZipEntryFileSize), map[string]string{"op": op, "entry": entryName})
+		}
+		if totalExtracted+zf.UncompressedSize64 > maxZipTotalBytes {
+			return nil, i18nerr.New("zip.tooLarge", fmt.Sprintf("%s: 累计解压大小 %d 超过上限 %d", op, totalExtracted+zf.UncompressedSize64, maxZipTotalBytes), map[string]string{"op": op})
+		}
 
 		// Create parent directories
 		if err := os.MkdirAll(filepath.Dir(targetAbs), 0755); err != nil {
@@ -177,12 +186,18 @@ func (a *App) extractZipUnsafe(zipPath, innerPath string) (*ExtractResult, error
 			continue
 		}
 
-		_, copyErr := io.Copy(outFile, rc)
+		// [audit:round14 P1] io.LimitReader 兜底：即使 UncompressedSize64 声明值被篡改
+		//（zip 头伪报小值实际输出大流），实际写入也截断在单文件上限内。
+		written, copyErr := io.Copy(outFile, io.LimitReader(rc, maxZipEntryFileSize+1))
 		outFile.Close()
 		rc.Close()
 		if copyErr != nil {
 			a.safeLogError("ExtractZip: copy error for %s: %v", entryName, copyErr)
 		}
+		if written > maxZipEntryFileSize {
+			a.safeLogError("ExtractZip: entry %s 实际解压超限（%d bytes），已截断", entryName, written)
+		}
+		totalExtracted += uint64(written)
 	}
 
 	// [ADR-189] KTX2 transcode is gated behind the KTX2Transcode setting

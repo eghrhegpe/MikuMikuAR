@@ -152,31 +152,31 @@
 | `setSfxEnabled()` | `core/audio-bus:85` | — |
 | `setSfxVolume()` | `core/audio-bus:75` | — |
 | `BeatSink()` | `core/audio:27` | [doc:adr-242] 节拍检测器的结构契约。core 层不得依赖 `motion-algos/beat-detector` 的具体实现类——那会构成 `core → moti |
-| `applyGain()` | `core/audio:549` | — |
-| `attachBeatDetector()` | `core/audio:542` | — |
-| `clearAudio()` | `core/audio:392` | — |
-| `disposeAudio()` | `core/audio:403` | — |
-| `getAudioName()` | `core/audio:494` | — |
-| `getAudioOffset()` | `core/audio:465` | — |
-| `getAudioPath()` | `core/audio:369` | — |
-| `getCurrentTime()` | `core/audio:471` | — |
-| `getDuration()` | `core/audio:475` | — |
-| `getRepeatModeStr()` | `core/audio:346` | 获取当前重复模式。 |
-| `getStreamPlayer()` | `core/audio:566` | 暴露内部 StreamAudioPlayer 供 scene.ts 调用 MmdRuntime.setAudioPlayer()。 |
-| `getVolume()` | `core/audio:454` | — |
-| `isAudioPlaying()` | `core/audio:490` | — |
+| `applyGain()` | `core/audio:562` | — |
+| `attachBeatDetector()` | `core/audio:555` | — |
+| `clearAudio()` | `core/audio:403` | — |
+| `disposeAudio()` | `core/audio:414` | — |
+| `getAudioName()` | `core/audio:505` | — |
+| `getAudioOffset()` | `core/audio:476` | — |
+| `getAudioPath()` | `core/audio:380` | — |
+| `getCurrentTime()` | `core/audio:482` | — |
+| `getDuration()` | `core/audio:486` | — |
+| `getRepeatModeStr()` | `core/audio:357` | 获取当前重复模式。 |
+| `getStreamPlayer()` | `core/audio:579` | 暴露内部 StreamAudioPlayer 供 scene.ts 调用 MmdRuntime.setAudioPlayer()。 |
+| `getVolume()` | `core/audio:465` | — |
+| `isAudioPlaying()` | `core/audio:501` | — |
 | `loadAudioFile()` | `core/audio:282` | — |
-| `nextTrack()` | `core/audio:332` | 切换到下一曲。 |
-| `notifyBeatDetectorReset()` | `core/audio:559` | — |
-| `pauseAudio()` | `core/audio:373` | — |
+| `nextTrack()` | `core/audio:343` | 切换到下一曲。 |
+| `notifyBeatDetectorReset()` | `core/audio:572` | — |
+| `pauseAudio()` | `core/audio:384` | — |
 | `playAudio()` | `core/audio:260` | — |
-| `resumeAudio()` | `core/audio:377` | — |
-| `seekAudio()` | `core/audio:480` | — |
-| `setAudioOffset()` | `core/audio:458` | — |
-| `setRepeatMode()` | `core/audio:341` | 设置重复模式（持久化）。 |
-| `setVolume()` | `core/audio:448` | — |
-| `stopAudio()` | `core/audio:384` | — |
-| `syncAudioPlayback()` | `core/audio:502` | — |
+| `resumeAudio()` | `core/audio:388` | — |
+| `seekAudio()` | `core/audio:491` | — |
+| `setAudioOffset()` | `core/audio:469` | — |
+| `setRepeatMode()` | `core/audio:352` | 设置重复模式（持久化）。 |
+| `setVolume()` | `core/audio:459` | — |
+| `stopAudio()` | `core/audio:395` | — |
+| `syncAudioPlayback()` | `core/audio:513` | — |
 | `setTriggerAutoSave()` | `core/auto-save:10` | 注册自动保存的实现回调（由 scene-serialize.ts 在初始化时调用）。 |
 | `triggerAutoSave()` | `core/auto-save:15` | 触发自动保存（由动作/菜单/UI 层调用）。 |
 | `clearWebFlag()` | `core/backend/backend-mocks:13` | — |
