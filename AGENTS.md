@@ -7,49 +7,41 @@
 
 > 500 行文件先 grep 定位再读。
 > 按需读取 `docs/knowledge/index.md` 枢纽索引（按 category 聚合的卡清单，自动生成）+ grep 卡正文定位功能作用，充实上下文。
-> 新 ADR 落地时检查是否触及既有 ADR 决策；触及就在对方首部标注「被 [ADR-NNN] 取代」。
+> 新 ADR 落地时检查是否触及既有 ADR 决策；触及就在对方首部标注「被 [ADR-NNN] 取代」。编号只允许给 ADR、novel 写。
 > Grep `> \*\*状态\*\*:.*(规划|实施中|部分实现)` in docs\adr，看是否已有类似实现。
-> 编号只允许给 ADR、novel 写。
-> 信任本机改动，提交代码：git add <通过测试的路径...> && git commit.会有GitHub PR review 审核，别怕错误。
-> 测试通过后按功能直接 git add 对应路径 + git commit ，无需询问。提交前 git status --short 辨认改动归属，非本任务的他人改动不要捎带。
 > 如果文件加载有问题，可核实真实目录`\text-model`。
-> 保存、推送在完成更改后进行: 先测试，再 git status --short 抓取当前文件清单,按功能git add正常的文件/文件夹，git commit正常的更改。最后询问用户是否需要处理报错。git push --verbose 2>&1 | Select-Object -Last 50。
-> 放弃低效的 `git stash`， `git stash pop`指令吧。
-> **禁止从 `@/core/utils` 神桶导入**——纯/叶子模块须引具体零依赖叶：`@/core/clamp`（clamp/clamp01/clampInt/lerp/lerpArray/clampPct）、`@/core/path`（normPath/getBaseName/getDirPath/isUnderRoot/isStageLike）、`@/core/async`（swallowError/fireAndForget/delay/waitForFrame/LoadingGuard/DebouncedTimer/Abortable）。整桶 import 会拖起 dom/state/fileservice 等应用层，致 vitest fork worker 挂死（见 ADR-191）。
->babymmd的换算关系是：1 unit = 0.1 米。
+> 信任本机改动，测试通过后, 提交前 git status --short 辨认改动归属 ，按功能git add <通过测试的路径...> && git commit. 正常的更改，无需询问。如有捎带，也别怕 , 会有 GitHub PR review 审核。
+> 最后询问用户是否需要处理报错。git push --verbose 2>&1 | Select-Object -Last 50。
+> babymmd的换算关系是：1 unit = 0.1 米。
+
+```bash
+# 暂存（本地缓存）
+git add .
+git commit -m "<type>: <简短描述>"    # 不带 --no-verify，避免触发 pre-commit
+
+# 恢复（从本地缓存取出）
+git reset --soft HEAD~1               # 撤销最近一条 commit，把改动放回暂存区
+# 或
+git reset HEAD~1                       # 撤销最近一条 commit，把改动放回工作区
+```
+| 规则 | 说明 |
+|------|------|
+| commit 信息格式 | `<type>: <描述>`，type 同conventional commits（feat/fix/docs/chore/refactor/test） |
+| 推送前 squash | 多个本地 commit 可以 `git rebase -i` 合并为一个有意义的 PR commit |
+| 建议避免 | `git stash` / `git stash push` / `git stash pop`（易丢失未提交改动；`list` / `show` 只读操作不受限） |
+
 
 ## 去哪里查
 
 | 要做什么 | 去哪里 |
 |----------|--------|
-| 查当前决策 + 坑点| `grep docs/adr/` |
-| 查 ADR 是否被取代 | `npm run gen:adr-supersede`（五层判别：①已登记取代 ②漏标告警 ③废弃未指明 ④可疑信号 ⑤表格弱宣称；判别方法见下方「ADR 取代判别方法」小节） |
-| 查/更新项目状态 | ADR 规范索引：`docs/adr/index.md`（分组导航·锚点跳转）；带日期全量附表：`docs/status.md`（由 `npm run gen:status` 生成，改状态改 ADR 首部即可） |
-| 查模块依赖图 | `npm run dep:graph`（Mermaid 图） / `npm run dep:graph:list`（缩进列表） |
-| 查分层是否违规（`menus → scene → 顶层算法层 → core` 单向） | `npm run check:layering`（ADR-242；R1「算法层 import menus」零容忍，R2/R3 反向边基线防回退，`import type` 豁免；消除反向边后跑 `npm run gen:layering-baseline` 收紧棘轮） |
-| 查某模块「现在长啥样、去哪找」的现状快照 | `docs/knowledge/`（先读 `README.md` 索引定位卡片，grep 卡正文锁定符号，再按 `source_files` 跳源码；比直接 grep 全量 .ts 省上下文） |
-| 查/更新函数索引 | `docs/function-map.md`（由 `npm run gen:funcmap` 自动生成，符号带 `文件:行` 可直接跳转；改动后运行 `npm run check:funcmap` 校验） |
-| 查某符号的全部消费者（重构前影响面预判） | `npm run check:consumers -- <符号名>`（列出定义处/直接 import/namespace 消费/再导出中转，各带 file:line；`--json` 给脚本/AI 消费） |
-| 校验文档漂移 | `npm run check:docs`（根目录运行，ADR 索引同步 + 架构树完整性 + 知识卡 source_files 有效性）；`git push` 后 pre-push hook 自动落 `docs/.doc-check-next-steps.md`（AI 可读的下一步建议简报，含知识卡缺口/architecture 路由缺口/AGENTS 手写事实 WARN），读它即可拿精准下一步 |
-| 查项目技术 | `docs/architecture.md` |
-| 查函数大全 | `grep docs/function-map.md` |
-| 加 菜单 | `docs/menu-how-to.md` |
-| 加 按钮 组件 | `docs/design.md`（唯一规范） |
-| 改前端子模块 | `frontend/AGENTS.md` |
-| 批量重构代码（重命名/移函数/加参数） | `npm run codemod help`（AST 感知，基于 ts-morph），禁止 Python re.sub 改写 |
-| 改函数签名/跨文件引用 | `npm run codemod rename-function <旧> <新>` |
-| 将函数移到另一文件 | `npm run codemod move-function <函数名> <目标相对路径>` |
-| 给函数批量加参数 | `npm run codemod add-param <函数名> '<参数签名>' [默认值]` |
-| 简单行内替换 | 用 `SearchReplace` 工具，改完 `npm run check` |
-| 改 Go 后端 | `internal/AGENTS.md` |
-| 写/维护 E2E 测试 | `frontend/e2e/` + `frontend/e2e/README.md`(运行手册) + `frontend/playwright.config.ts` |
-| 修 Bug 查历史 | `docs/buglog` |
-| 查竞品参考 | `docs/competitive-analysis.md` |
-| 翻译代码命名/图标/状态栏规范 | `docs/terminology.md` |
-| 写大语言模型小说 | `根目录/adr/` |
-| 完整发版、更新流程 | `docs/releases/release-process.md` |
-| MCP 扩展（Context7 / Serena） | 根目录 `.mcp.json` + 下方「MCP 扩展」小节 |
-| 查babymmd的源代码 | `frontend/node_modules`；**修改指南**见 ADR-189 §3.5 |
+| 当前决策+坑点 | `grep docs/adr/`| 配合`npm run gen:adr-supersede`检查取代关系|
+| 模块现状 | `docs/knowledge/` → 源码追踪| 先读索引→grep卡正文→按source_files跳转                                   |
+| 函数索引| `docs/function-map.md` | 自动生成带文件:行号，修改后`npm run check:funcmap`|
+| ADR状态| `docs/status.md`| 由`npm run gen:status`生成，改状态只需编辑ADR首部|
+| 架构规范| `docs/architecture.md`| 配合`npm run check:layering`验证分层|
+| 符号消费者| `npm run check:consumers -- <符号>`| 重构前影响面分析|
+| Bug历史| `docs/buglog/`| 只关注🔴未修复/🟡搁置状态|
 
 ## MCP 扩展（Context7 / Serena）
 
@@ -62,37 +54,17 @@
 
 注意：Serena 启动后默认不绑定项目，先在对话里让它「索引 `frontend/` 目录」再派活；Context7 免费额度够用，无需 API key。两者均无密钥，`.mcp.json` 可随仓库提交共享。
 
-## 知识库检索协议
+## ADR 生命周期管理
+### 取代判别（五层证据）
+| 证据层级 | 判定方式                  | 处置措施                     |
+|----------|--------------------------|------------------------------|
+| ① 已登记 | 旧ADR首部标注"被[NNN]取代"| 直接归档 |
+| ② 漏标   | 新ADR声明取代但旧ADR未标 | **立即补标**|
+| ③ 废弃   | 状态行含⚠️/🗑️未指明取代方 | 人工确认是否仅为搁置|
+| ④ 可疑   | 正文模糊提及"推翻/过时"  | 人工核查决策关联性 |
+| ⑤ 弱宣称 | 表格跨列自指替代关系     | 人工确认功能覆盖范围 |
 
-处理代码任务时，不得把 `docs/knowledge/` 当作源码替代品；按以下顺序检索，避免无目标通读仓库：
-
-1. 先判断用户意图与所属模块；可先查 `docs/knowledge/routes.md`，或者翻译文件`frontend/src/core/i18n`。
-2. 阅读 `docs/knowledge/index.md` 枢纽索引，定位相关知识卡，再按卡片的 `source_files` 跳转源码。
-3. 用 `docs/adr/index.md` 枢纽（按状态分桶）或 `grep docs/adr/` 查找相关决策、状态和历史坑点；ADR 是决策真相源。
-4. **修 bug 或排查问题时**：先查 `docs/buglog/README.md` 了解格式，再用 `ls docs/buglog/` 列出相关 bug，读取对应文件查看状态（🟢已修复/🔴未修复/🟡搁置/⚪已确认不修）。只读状态为 🔴 未修复 或 🟡 搁置 的 bug 内容。
-5. 以当前源码为最终事实来源，核对知识卡中的 API、依赖、不变量和资源生命周期。
-6. 修改后运行最小相关测试；若模块职责、公共 API、状态流、依赖或不变量变化，同步更新知识卡。
-7. 文档变更后运行 `npm run check:docs`（根目录）；函数签名变化后运行 `npm run check:funcmap`。
-
-知识来源优先级：当前源码 > `docs/adr/` > `docs/knowledge/` > `docs/architecture.md` / `docs/function-map.md` > `docs/research/`。
-若知识卡与源码不一致，报告文档漂移并以源码为准，不得静默假定卡片正确。
-
-## ADR 取代判别方法
-
-> 落地 ADR 多，难判断是否被后来的 ADR 取代。判别依据五层证据，按强度排序；`npm run gen:adr-supersede` 自动扫描全部 ADR，输出 ①–⑤ 分类，`--check` 模式仅 ② 失败退 1（可挂 CI）。
-
-| 层 | 信号 | 判定 | 示例 |
-|----|------|------|------|
-| ① 已登记取代 | 旧 ADR 首部状态行明确「被 [ADR-NNN] 取代/推翻」 | 实锤，直接归档 | ADR-012 → 113、ADR-144 → 167 |
-| ② 漏标告警 | 某 ADR 正文宣称「取代/废弃了 ADR-NNN」，但被取代方首部未回标 | 实锤但漏标，需补标 | ADR-167 处置 ADR-144（流程范本） |
-| ③ 废弃未指明 | 状态行含 ⚠️/🗑️ 废弃/放弃，但未指明被谁取代 | 可能只是放弃/搁置，非被取代 | ADR-019、ADR-074 |
-| ④ 可疑信号 | 正文提及「推翻/已过时」+ 其他 ADR 编号，对方未标记 | 措辞不规整，人工确认 | ADR-200 推翻 ADR-192/194 前提 |
-| ⑤ 表格弱宣称 | 表格行首列为 ADR-NNN、其他列含「本 ADR…(完全)替代」 | 跨列自指关系，人工确认 | ADR-084 声称替代 ADR-019 |
-
-**核心判定标准**：被取代 ≠ 功能演进。被取代要看**决策与理由是否被推翻**（如 ADR-012 连否决理由都被 ADR-113 推翻），而非「功能还在不在」；单纯加参数、加效果算补充，不算取代。
-
-**规矩化流程**：新 ADR 落地时强制检查是否触及既有 ADR 决策；触及就在对方首部加「被 [ADR-NNN] 取代」并同步 `npm run gen:status` + `npm run gen:docsindex`（ADR-167 处置 ADR-144 为范本）。
-
+> **核心原则**：被取代=决策被推翻（ADR-012→113），≠功能演进。新ADR落地时**必须**检查并标注被取代方。
 
 ## 技术栈
 
@@ -110,8 +82,10 @@
 ## 构建
 
 ```bash
-go build ./...                    # Go
-cd frontend && npm run build      # 前端
+ # 全栈构建测试
+go build ./... && cd frontend && npm run build
+
+# 测试套件
 cd frontend && npm run test       # 单元测试 (Vitest)
 cd frontend && npm run test:e2e   # E2E (Playwright; 需 wails dev 或 5173+9222)
 cd frontend && npm run test -- src/__tests__/bindings/app.contract.test.ts  # 运行此命令校验绑定契约；函数数随契约演进，以测试运行时报告为准
@@ -122,33 +96,15 @@ edge://inspect Edog网页调试
 http://localhost:9222/json 实际网页一览
 ```
 
-```bash
-# 暂存（本地缓存）
-git add .
-git commit -m "<type>: <简短描述>"    # 不带 --no-verify，避免触发 pre-commit
-
-# 恢复（从本地缓存取出）
-git reset --soft HEAD~1               # 撤销最近一条 commit，把改动放回暂存区
-# 或
-git reset HEAD~1                       # 撤销最近一条 commit，把改动放回工作区
-```
-
 > **Git 钩子（非阻断）**：仓库钩子位于 `.githooks/`（非 `.git/hooks/`），克隆后需激活：`git config core.hooksPath .githooks`。钩子仅把覆盖率缺口等建议非阻断写入 commit message，绝不阻塞提交；逃生阀 `MM_SKIP_COVERAGE_HINT=1 git commit`。
 
-| 规则 | 说明 |
-|------|------|
-| commit 信息格式 | `<type>: <描述>`，type 同conventional commits（feat/fix/docs/chore/refactor/test） |
-| 推送前 squash | 多个本地 commit 可以 `git rebase -i` 合并为一个有意义的 PR commit |
-| 建议避免 | `git stash` / `git stash push` / `git stash pop`（易丢失未提交改动；`list` / `show` 只读操作不受限） |
+# 审核框架
 
-# 审核代码可用性
-
-> 审核流水线：按功能模块依次遍历未审核的知识卡 → 审核相关代码的实现 → 核对风险修复的可行性，进行修复 → 提交改动 → 发起codereview（如果你的终端有审核工具）
+> 审核流水线：知识卡定位未审核的模块 → 审核相关代码的实现 → 核对风险修复的可行性，进行修复 → 提交改动 → 发起codereview（如果你的终端有审核工具）
 > 推荐用子代理并发审核。
-> 项目已有 docs/audit/ 目录，可参考。
 > 发现预料之外的缺陷时，只读，报告，给出精确的修复建议（diff 格式、文件:行号、修改原因）。
 
-## 代码审核维度标准
+## 代码健康度检测
 
 | 维度 | 检查项 | 通过标准 |
 |------|--------|---------|
