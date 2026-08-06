@@ -78,7 +78,9 @@ export function unloadProceduralMotion(id: LoadableProcId): void {
 
 /** 设置已加载集合（用于场景反序列化）。始终保证 'none' 存在。 */
 export function setLoadedProceduralMotions(ids: LoadableProcId[]): void {
-    _loadedProceduralMotions = new Set(ids);
+    // [fix P2] 过滤非法/过期值：反序列化路径（场景恢复）可能读到旧版含已移除的
+    // LoadableProcId（如 'gesture'），直接采纳会让消费方进入未处理分支
+    _loadedProceduralMotions = new Set(ids.filter((x): x is LoadableProcId => ALL_LOADABLE_PROC.includes(x)));
     _loadedProceduralMotions.add('none');
 }
 
@@ -103,6 +105,12 @@ export function initMotionIntent(
     }
     _broadcastCallback = cb;
     _callbackInitialized = true;
+}
+
+/** [fix P2] 重置广播回调（场景销毁/重建或 HMR 时调用），使 initMotionIntent 可再次注册。 */
+export function resetMotionIntent(): void {
+    _callbackInitialized = false;
+    _broadcastCallback = null;
 }
 
 /**
