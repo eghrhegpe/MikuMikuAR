@@ -12,10 +12,13 @@ symbols:
   - ThumbnailSource
   - renderInstanceThumbnail
 invariants:
-  - 缩略图使用独立场景（FreeCamera + RenderTargetTexture）渲染，不影响主场景
-  - 支持 PNG 与 JPEG 格式，分辨率和质量由 uiState 控制
+  - 缩略图使用独立相机 + 离屏 RT（RenderTargetTexture）渲染，复用主场景（非独立场景）；手动 PerspectiveFovLHToRef + freezeProjectionMatrix 修正 aspect（主画布 16:9 vs RT 2:3）
+  - 支持 PNG 与 JPEG 格式，分辨率和质量由 uiState 控制（复用 screenshotFormat/screenshotQuality）
   - 渲染结果缓存到 thumbnailCache（由 thumbnail-key 构建 key）
-tests: []
+  - readPixels 后逐行上下翻转（WebGL 原点左下 vs canvas 左上）；buffer detach 时整体放弃本帧不写缓存
+  - 渲染前冻结 WASM 物理（rigidBodyStates fill(0)），渲染后恢复；串行互斥 _thumbMutex 保证不并发
+tests:
+  - frontend/src/__tests__/thumbnail-key.contract.test.ts
 use_when:
   - 缩略图
   - 模型预览图

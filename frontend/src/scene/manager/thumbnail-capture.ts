@@ -163,8 +163,11 @@ async function _renderThumbnailImpl(
 
     const renderList: Mesh[] = [];
     inst.rootMesh.getChildMeshes().forEach((m) => {
-        if (m.isVisible) {
-            renderList.push(m as Mesh);
+        // [fix P2] 去掉裸 as：getChildMeshes 返回 AbstractMesh[]，子节点可能是
+        // TransformNode（非 Mesh）——instanceof Mesh 守卫后再 push，避免类型欺骗
+        // 导致 RT 渲染拿到非 Mesh 对象
+        if (m instanceof Mesh && m.isVisible) {
+            renderList.push(m);
         }
     });
     if (inst.rootMesh instanceof Mesh && inst.rootMesh.isVisible) {
@@ -208,6 +211,10 @@ async function _renderThumbnailImpl(
             // canvas putImageData 原点左上，需逐行上下翻转，否则缩略图上下颠倒（倒立）。
             const rowBytes = rtW * 4;
             const flipped = new Uint8Array(arr.length);
+            // [fix P2] detach 容错升级：此前某行 detach 时 `continue`，该行 flipped
+            // 保持 0（全透明/黑）→ 缩略图出现横向黑条纹却仍写入缓存，污染缓存且无降级。
+            // 现在任一 detach 置失败标志，整体放弃本帧（不调用 SaveThumbnail）。
+            let detachFailed = false;
             for (let y = 0; y < rtH; y++) {
                 try {
                     flipped.set(
@@ -215,9 +222,14 @@ async function _renderThumbnailImpl(
                         (rtH - 1 - y) * rowBytes
                     );
                 } catch {
-                    // readPixels 返回的 buffer 可能被 detach（WebGL 竞态），跳过此行不崩
-                    continue;
+                    // readPixels 返回的 buffer 可能被 detach（WebGL 竞态）
+                    detachFailed = true;
+                    break;
                 }
+            }
+            if (detachFailed) {
+                logWarn('thumbnail-capture', 'readPixels buffer detached，放弃本帧缩略图');
+                return;
             }
             imageData.data.set(flipped);
             ctx.putImageData(imageData, 0, 0);

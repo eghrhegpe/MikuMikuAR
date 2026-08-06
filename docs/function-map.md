@@ -1942,10 +1942,10 @@
 | `MenuKind()` | `scene/shared/menu-node-types:25` | — |
 | `MenuNode()` | `scene/shared/menu-node-types:52` | — |
 | `StatePath()` | `scene/shared/menu-node-types:8` | 状态路径：类型化字符串，由解析器按前缀映射到 reactive state 对象 |
-| `_resetTextureLRUForTest()` | `scene/shared/texture-lru:75` | 仅供测试：重置缓存状态。 |
-| `clearTextureLRU()` | `scene/shared/texture-lru:65` | 清空 LRU 缓存。在 disposeRenderer 中调用，释放所有缓存的纹理 ArrayBuffer。 |
-| `readTextureWithLRU()` | `scene/shared/texture-lru:35` | 带 LRU 缓存的纹理读取。命中直接返回 ArrayBuffer，未命中则 readFileBytes 后缓存。 |
-| `textureLRUSize()` | `scene/shared/texture-lru:70` | 返回当前缓存条目数（供测试使用）。 |
+| `_resetTextureLRUForTest()` | `scene/shared/texture-lru:92` | 仅供测试：重置缓存状态。 |
+| `clearTextureLRU()` | `scene/shared/texture-lru:81` | 清空 LRU 缓存。在 disposeRenderer 中调用，释放所有缓存的纹理 ArrayBuffer。 |
+| `readTextureWithLRU()` | `scene/shared/texture-lru:40` | 带 LRU 缓存的纹理读取。命中直接返回 ArrayBuffer，未命中则 readFileBytes 后缓存。 |
+| `textureLRUSize()` | `scene/shared/texture-lru:87` | 返回当前缓存条目数（供测试使用）。 |
 | `TransformAdapter()` | `scene/transform/transform-adapter:28` | — |
 | `TransformCapability()` | `scene/transform/transform-adapter:26` | — |
 | `attachGizmoForKind()` | `scene/transform/transform-adapter:69` | 统一 Gizmo 入口：替代三个 attachXxxGizmo。 |

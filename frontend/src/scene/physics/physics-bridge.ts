@@ -147,7 +147,17 @@ export class PerFrameUpdateRegistry {
             return;
         }
         if (this.fns.size === 0) {
-            this.dispose();
+            // [fix P3] 仅停 observer，不释放 _disposeHandle：dispose() 会置 null
+            // onDispose 绑定，导致「unregister 清空 → 再 register」后 scene 销毁时
+            // 自动清理永久丢失。onDispose 生命周期应与 scene 对齐，而非 fns 空否。
+            this._removeObserver();
+        }
+    }
+
+    private _removeObserver(): void {
+        if (this.observer) {
+            this.observer.dispose();
+            this.observer = null;
         }
     }
 
@@ -169,10 +179,7 @@ export class PerFrameUpdateRegistry {
     }
 
     dispose(): void {
-        if (this.observer) {
-            this.observer.dispose();
-            this.observer = null;
-        }
+        this._removeObserver();
         if (this._disposeHandle) {
             this._disposeHandle.dispose();
             this._disposeHandle = null;

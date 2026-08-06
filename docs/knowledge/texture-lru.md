@@ -22,6 +22,7 @@ invariants:
   - abort 信号触发后的数据不入缓存
 tests:
   - 间接覆盖：运行时集成测试
+  - frontend/src/__tests__/scene/texture-lru.test.ts（直接单测，9 用例）
 use_when:
   - 纹理缓存
   - LRU 纹理

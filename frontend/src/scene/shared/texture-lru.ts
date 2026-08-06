@@ -19,6 +19,11 @@ const _textureLRU = new Map<string, TextureCacheEntry>();
 /** 5 个模型 × 平均 30 纹理/模型；实际纹理数待 Phase 1 验证时统计校准 */
 const TEXTURE_LRU_MAX_ENTRIES = 5 * 30;
 
+// [fix P3] in-flight 去重：readTextureWithLRU 是 async，await readFileBytes 是
+// suspension point——并发同 key 调用都会 miss 都会发起 readFileBytes，冗余 IO。
+// 此 Map 记录进行中的 promise，miss 时先查 in-flight，命中则 await 同一 promise。
+const _inFlight = new Map<string, Promise<ArrayBuffer | null>>();
+
 function evictOldest(): void {
     if (_textureLRU.size === 0) {
         return;
@@ -49,21 +54,33 @@ export async function readTextureWithLRU(
     if (signal?.aborted) {
         return null;
     }
-    const data = await readFileBytes(modelDir + '/' + relativePath);
-    if (!data || signal?.aborted) {
-        return null;
+    // [fix P3] 并发同 key 复用同一 in-flight promise，避免重复读盘
+    const pending = _inFlight.get(key);
+    if (pending) {
+        return pending;
     }
-    if (_textureLRU.size >= TEXTURE_LRU_MAX_ENTRIES) {
-        evictOldest();
-    }
-    const entry: TextureCacheEntry = { data: data.buffer as ArrayBuffer, lastUsed: Date.now() };
-    _textureLRU.set(key, entry);
-    return entry.data;
+    const p = (async (): Promise<ArrayBuffer | null> => {
+        const data = await readFileBytes(modelDir + '/' + relativePath);
+        if (!data || signal?.aborted) {
+            return null;
+        }
+        if (_textureLRU.size >= TEXTURE_LRU_MAX_ENTRIES) {
+            evictOldest();
+        }
+        const entry: TextureCacheEntry = { data: data.buffer as ArrayBuffer, lastUsed: Date.now() };
+        _textureLRU.set(key, entry);
+        return entry.data;
+    })().finally(() => {
+        _inFlight.delete(key);
+    });
+    _inFlight.set(key, p);
+    return p;
 }
 
 /** 清空 LRU 缓存。在 disposeRenderer 中调用，释放所有缓存的纹理 ArrayBuffer。 */
 export function clearTextureLRU(): void {
     _textureLRU.clear();
+    _inFlight.clear();
 }
 
 /** 返回当前缓存条目数（供测试使用）。 */
