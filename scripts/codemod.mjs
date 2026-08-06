@@ -43,8 +43,13 @@ import path from 'node:path';
 import { toPosix } from './_lib/to-posix.mjs';
 import { ROOT } from './_lib/scan-files.mjs';
 
-const FRONTEND = path.join(ROOT, 'frontend');
-const require_ = createRequire(path.join(FRONTEND, 'package.json'));
+// 测试钩子：CODEMOD_FRONTEND 指向 fixture 目录（真实运行不设该变量，不受影响）
+const FRONTEND = process.env.CODEMOD_FRONTEND
+  ? path.resolve(process.env.CODEMOD_FRONTEND)
+  : path.join(ROOT, 'frontend');
+// ts-morph 依赖始终从真实前端解析（fixture 无 node_modules）
+const DEP_BASE = path.join(ROOT, 'frontend');
+const require_ = createRequire(path.join(DEP_BASE, 'package.json'));
 const { Project, SyntaxKind } = require_('ts-morph');
 const TS_CONFIG = path.join(FRONTEND, 'tsconfig.json');
 const FILESELF = fileURLToPath(import.meta.url);
@@ -84,7 +89,15 @@ function findExportDecl(name) {
           const vStmt = parent.getParent();
           if (vStmt && vStmt.getKind() === SyntaxKind.VariableStatement) {
             if (vStmt.isExported()) {
-              return { sourceFile: sf, node: vd, kind: 'variable' };
+              return {
+                sourceFile: sf,
+                node: vd,
+                kind: 'variable',
+                // 整条 VariableStatement（含 const/export 关键字）随迁移带走
+                variableStatement: vStmt,
+                // 同语句声明符个数：>1 时移动会丢失兄弟声明符，须拒绝
+                declarationCount: vStmt.getDeclarations().length,
+              };
             }
           }
         }
@@ -169,6 +182,114 @@ function resolveFunctionImports(funcNode, srcSf) {
   return result;
 }
 
+/** 判断声明/引用节点是否属于 import 绑定（会随 import 迁移，不算本地符号） */
+function isImportBoundDecl(d) {
+  if (!d) return false;
+  const k = d.getKind();
+  if (
+    k === SyntaxKind.ImportClause ||
+    k === SyntaxKind.ImportSpecifier ||
+    k === SyntaxKind.NamespaceImport
+  ) {
+    return true;
+  }
+  return !!d.getFirstAncestorByKind(SyntaxKind.ImportDeclaration);
+}
+
+/** 收集函数体内对「源文件本地符号」（非 import、非函数内局部声明）的引用 */
+function findLocalSymbolRefs(funcNode, srcSf) {
+  const problems = [];
+  const start = funcNode.getStart();
+  const end = funcNode.getEnd();
+  funcNode.forEachDescendant((node) => {
+    if (node.getKind() !== SyntaxKind.Identifier) return;
+    const symbol = node.getSymbol && node.getSymbol();
+    if (!symbol) return;
+    for (const d of symbol.getDeclarations()) {
+      if (!d || !d.getSourceFile || d.getSourceFile() !== srcSf) continue;
+      // 函数体内声明的局部变量/参数：无碍
+      if (d.getStart() >= start && d.getEnd() <= end) continue;
+      // import 绑定名：会随 import 一起迁移
+      if (isImportBoundDecl(d)) continue;
+      problems.push(
+        `${d.getSourceFile().getFilePath()}:${d.getStartLineNumber()}:` +
+          `${symbol.getName()} (${SyntaxKind[d.getKind()]})`
+      );
+    }
+  });
+  return [...new Set(problems)];
+}
+
+/** 源文件内除函数自身外对 funcName 的残留引用（re-export 不绑定本地名） */
+function findResidualRefs(funcNode, srcSf) {
+  const residual = [];
+  const start = funcNode.getStart();
+  const end = funcNode.getEnd();
+  const refs = funcNode.findReferences();
+  for (const ref of refs) {
+    for (const occ of ref.getReferences()) {
+      const node = occ.getNode();
+      if (!node.getSourceFile || node.getSourceFile() !== srcSf) continue;
+      // 声明自身 / 函数体内递归：跳过
+      if (node.getStart() >= start && node.getEnd() <= end) continue;
+      if (isImportBoundDecl(node)) continue;
+      residual.push(
+        `${node.getSourceFile().getFilePath()}:${node.getStartLineNumber()}`
+      );
+    }
+  }
+  return [...new Set(residual)];
+}
+
+/** 字符串化诊断消息（兼容 DiagnosticMessageChain） */
+function diagText(d) {
+  const t = d.getMessageText();
+  return typeof t === 'string' ? t : t.getMessageText();
+}
+
+/** 收集全项目错误级诊断（category=1 Error），返回 Map<key, "文件: 消息"> */
+function collectErrorDiags() {
+  const errs = new Map();
+  for (const sf of project.getSourceFiles()) {
+    let diags;
+    try {
+      diags = sf.getPreEmitDiagnostics();
+    } catch {
+      continue; // 个别文件解析失败不阻断收集
+    }
+    for (const d of diags) {
+      if (d.getCategory() !== 1) continue; // 1 = ts.DiagnosticCategory.Error
+      const key = `${sf.getFilePath()}:${d.getStart()}:${diagText(d)}`;
+      errs.set(key, `${sf.getFilePath()}: ${diagText(d)}`);
+    }
+  }
+  return errs;
+}
+
+/** 操作前记录基线；有存量错误时提示（不阻断） */
+function snapshotDiagBaseline(cmdName) {
+  const baseline = collectErrorDiags();
+  if (baseline.size > 0) {
+    console.log(`⚠️  操作前项目已有 ${baseline.size} 组诊断错误（本次对比以此为基线，不阻断）`);
+  }
+  return baseline;
+}
+
+/** 改动后对比：新增错误（不在基线上的）则打印并 exit 1 */
+function assertNoNewDiags(cmdName, baseline) {
+  const after = collectErrorDiags();
+  const added = [...after.keys()].filter((k) => !baseline.has(k));
+  if (added.length > 0) {
+    console.error(`❌ [${cmdName}] 改动后新增 ${added.length} 组诊断错误（类型未通过校验）：`);
+    for (const k of added.slice(0, 20)) {
+      console.error(`   ${after.get(k)}`);
+    }
+    if (added.length > 20) console.error(`   ...（共 ${added.length} 组）`);
+    process.exit(1);
+  }
+  console.log(`✅ [${cmdName}] 改后诊断校验通过（未新增错误）`);
+}
+
 /** 向目标文件添加 import（自动去重） */
 function ensureImport(destSf, moduleSpecifier, defaultName, namedNames) {
   const existing = destSf.getImportDeclarations().filter(
@@ -209,8 +330,10 @@ function cmdRenameFunction(oldName, newName) {
   }
 
   console.log(`📍 定义位置: ${target.sourceFile.getFilePath()} （${target.kind}）`);
+  const baseline = snapshotDiagBaseline('rename-function');
   target.node.rename(newName);
   project.saveSync();
+  assertNoNewDiags('rename-function', baseline);
 
   console.log(`✅ 重命名完成: "${oldName}" → "${newName}"`);
   console.log('   ts-morph 已自动更新所有引用');
@@ -256,16 +379,59 @@ function cmdMoveFunction(funcName, destRelPath) {
 
   const srcSf = target.sourceFile;
   const stmt = target.node;
-  const text = stmt.getFullText();
   const srcPath = srcSf.getFilePath();
+
+  // 目标与源相同：删除再追加只会产生顺序漂移，且 re-export 会自引用，直接拒绝
+  if (destSf === srcSf) {
+    console.error(`❌ 目标文件与源文件相同（${absDest}），move 无意义`);
+    process.exit(1);
+  }
+
+  // 变量形态：整条 VariableStatement 一起迁移（保留 const/export 关键字），
+  // 但同语句含多个声明符（如 `const a = 1, b = 2`）时移动会丢失兄弟声明符，须拒绝
+  let text;
+  let parentToRemove;
+  if (target.kind === 'variable') {
+    if (target.declarationCount > 1) {
+      console.error(
+        `❌ "${funcName}" 所在语句含 ${target.declarationCount} 个声明符（const a = 1, b = 2 形式），` +
+          '移动会丢失兄弟声明符，请先手动拆分'
+      );
+      process.exit(1);
+    }
+    text = target.variableStatement.getFullText();
+    parentToRemove = target.variableStatement;
+  } else {
+    text = stmt.getFullText();
+    parentToRemove = stmt;
+  }
 
   // 1. 解析函数体用到的 import
   const usedImports = resolveFunctionImports(stmt, srcSf);
   console.log(`📦 检测到 ${usedImports.length} 组 import 被函数引用`);
 
+  // 1.5 迁移前守卫：函数体引用源文件本地符号 / 源文件残留引用，re-export 无法兜底
+  const localRefs = findLocalSymbolRefs(stmt, srcSf);
+  if (localRefs.length > 0) {
+    console.error(`❌ "${funcName}" 函数体引用了源文件本地符号，无法随 import 迁移：`);
+    for (const r of localRefs.slice(0, 20)) {
+      console.error(`   ${r}`);
+    }
+    if (localRefs.length > 20) console.error(`   ...（共 ${localRefs.length} 处）`);
+    process.exit(1);
+  }
+  const residualRefs = findResidualRefs(stmt, srcSf);
+  if (residualRefs.length > 0) {
+    console.error(`❌ 源文件仍有对 "${funcName}" 的引用（re-export 不绑定本地名）：`);
+    for (const r of residualRefs.slice(0, 20)) {
+      console.error(`   ${r}`);
+    }
+    if (residualRefs.length > 20) console.error(`   ...（共 ${residualRefs.length} 处）`);
+    process.exit(1);
+  }
+
   // 2. 从源文件移除函数
-  const parentToRemove =
-    target.kind === 'variable' ? stmt.getParent().getParent() : stmt;
+  const baseline = snapshotDiagBaseline('move-function');
   parentToRemove.remove();
 
   // 3. 清理源文件的孤立 import
@@ -339,10 +505,15 @@ function cmdMoveFunction(funcName, destRelPath) {
   destSf.addStatements(text.trim());
   if (!text.endsWith('\n')) destSf.addStatements('\n');
 
+  // 6. 源文件补 re-export，保持既有 `import { foo } from '<src>'` 不断裂
+  let relDest = toPosix(path.relative(path.dirname(srcPath), absDest));
+  if (!relDest.startsWith('.')) relDest = './' + relDest;
+  srcSf.addStatements(`export { ${funcName} } from '${relDest}';`);
+
   project.saveSync();
 
   console.log(`✅ "${funcName}" 已移至 ${absDest}`);
-  console.log(`   源文件 ${srcPath}`);
+  console.log(`   源文件 ${srcPath}（已补 re-export，既有导入方无需改动）`);
   console.log(`   自动迁移 ${addedCount} 组 import 到目标文件`);
   console.log('⚠️  建议运行 npm run check 验证类型无误');
 }
@@ -381,6 +552,7 @@ function cmdAddParam(funcName, paramSignature, defaultValue) {
   }
 
   // 给定义加参数
+  const baseline = snapshotDiagBaseline('add-param');
   const params = fn.getParameters();
   fn.insertParameter(params.length, {
     name: paramName,
@@ -399,6 +571,7 @@ function cmdAddParam(funcName, paramSignature, defaultValue) {
   }
 
   project.saveSync();
+  assertNoNewDiags('add-param', baseline);
 
   console.log(`✅ 参数已添加: "${funcName}" 现在接受 "${paramSignature}"`);
   if (defaultValue) {
