@@ -21,6 +21,8 @@ interface SplashBurst {
     system: GPUParticleSystem;
     busy: boolean;
     releaseTimer: ReturnType<typeof setTimeout> | null;
+    /** [fix P2] 50ms emitRate 停发 timer：dispose 时一并清除，防止回调操作已销毁系统 */
+    emitStopTimer: ReturnType<typeof setTimeout> | null;
 }
 const SPLASH_POOL_SIZE = 12; // [doc:adr-160] 增大池容量以支持雨天地面溅射
 let _splashBurstPool: SplashBurst[] = [];
@@ -416,9 +418,11 @@ export function createParticleEmitter(type: EnvState['particleType'], windEnable
     }
     _currentParticleType = type;
     // 湿身效果：进入/退出雨天时切换
+    // [fix P2] 旧逻辑 `isWeatherType(prevType) && !isWeatherType(type)` 在 rain→snow
+    // 时两者皆 true 不移除湿身（状态泄漏）；改为显式判断「离开 rain」即移除
     if (isWeatherType(type) && type === 'rain' && !isWeatherType(prevType)) {
         applyWetnessToAllModels();
-    } else if (isWeatherType(prevType) && !isWeatherType(type)) {
+    } else if (prevType === 'rain' && type !== 'rain') {
         removeWetnessFromAllModels();
     }
     if (type === 'none') {
@@ -565,7 +569,7 @@ function initSplashBurstPool(): void {
         ps.addColorGradient(1, new Color4(0.8, 0.9, 1, 0), new Color4(0.9, 0.95, 1, 0));
         ps.updateSpeed = 0.01;
         ps.start();
-        _splashBurstPool.push({ system: ps, busy: false, releaseTimer: null });
+        _splashBurstPool.push({ system: ps, busy: false, releaseTimer: null, emitStopTimer: null });
     }
     _splashPoolReady = true;
 }
@@ -592,7 +596,7 @@ function spawnSplashAt(x: number, y: number, z: number): void {
 
     // 短暂高密度发射
     burst.system.emitRate = 300;
-    setTimeout(() => {
+    burst.emitStopTimer = setTimeout(() => {
         burst!.system.emitRate = 0;
     }, 50);
 
@@ -688,6 +692,10 @@ export function disposeSplash(): void {
         if (b.releaseTimer) {
             clearTimeout(b.releaseTimer);
         }
+        if (b.emitStopTimer) {
+            clearTimeout(b.emitStopTimer);
+            b.emitStopTimer = null;
+        }
         b.system.dispose();
     }
     _splashBurstPool = [];
@@ -716,6 +724,8 @@ export function syncSplashState(): void {
 interface FireworkBurstInstance {
     system: GPUParticleSystem;
     cleanupTimer: ReturnType<typeof setTimeout>;
+    /** [fix P2] 50ms emitRate 停发 timer：stopFireworkBursts 一并清除，防止回调操作已销毁系统 */
+    emitStopTimer: ReturnType<typeof setTimeout>;
 }
 let _fireworkBursts: FireworkBurstInstance[] = [];
 let _fireworkScheduler: ReturnType<typeof setTimeout> | null = null;
@@ -744,7 +754,7 @@ function spawnFireworkBurst(): void {
     burst.emitter = pos;
     // 瞬时高密度爆发：emitRate=2000，50ms 内出约 100 粒子，之后停发
     burst.emitRate = 2000;
-    setTimeout(() => {
+    const emitStopTimer = setTimeout(() => {
         burst.emitRate = 0;
     }, 50);
 
@@ -788,7 +798,7 @@ function spawnFireworkBurst(): void {
         _fireworkBursts = _fireworkBursts.filter((b) => b.system !== burst);
     }, 3000);
 
-    _fireworkBursts.push({ system: burst, cleanupTimer });
+    _fireworkBursts.push({ system: burst, cleanupTimer, emitStopTimer });
 }
 
 function scheduleNextFireworkBurst(): void {
@@ -812,6 +822,7 @@ function stopFireworkBursts(): void {
     }
     for (const b of _fireworkBursts) {
         clearTimeout(b.cleanupTimer);
+        clearTimeout(b.emitStopTimer); // [fix P2] 50ms 停发 timer 一并清除
         b.system.dispose();
     }
     _fireworkBursts = [];

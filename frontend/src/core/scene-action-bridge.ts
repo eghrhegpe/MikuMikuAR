@@ -162,12 +162,22 @@ export interface SceneActions {
 
 const _sceneActions = new Map<keyof SceneActions, unknown>();
 
-/** 注册单个场景操作（scene 侧启动时调用） */
+/**
+ * 注册单个场景操作（scene 侧启动时调用）。
+ * 返回基于身份（fn 引用）的注销 token——dispose 时调用它只删除本实例注册的闭包，
+ * 不会误删后续替换模块的注册（对齐 ui-action-bridge 的 registerUiAction 契约，
+ * code_review P2：与 ui-action-bridge 注销契约对称，防 HMR 闭包残留）。
+ */
 export function registerSceneAction<K extends keyof SceneActions>(
     key: K,
     fn: SceneActions[K]
-): void {
+): () => void {
     _sceneActions.set(key, fn);
+    return () => {
+        if (_sceneActions.get(key) === fn) {
+            _sceneActions.delete(key);
+        }
+    };
 }
 
 /** 读取单个场景操作（core/action-defs 侧调用；未注册返回 undefined） */
