@@ -309,10 +309,12 @@ function envOnFolderEnter(row: PopupRow): PopupLevel | null {
     const builder = ENV_FOLDER_ROUTES[row.target as string];
     if (builder) {
         const lvl = builder();
-        // [fix P3] 复用首次 builder() 结果的 items：此前 `() => builder().items`
-        // 每次 itemBuilder 触发都会再调一次 builder()（副作用重入/重复注册风险），
-        // 且首次 lvl.items 与 itemBuilder 返回值来自两次不同调用，语义不一致。
-        lvl.itemBuilder = () => lvl.items;
+        // [fix code_review P3] 保持与兄弟 adapter（scene-menu/motion-popup/settings）一致的
+        // 重建形式：itemBuilder 是语言热刷新/返回刷新的重建工厂（doc:adr-065，menu.ts 在
+        // i18n 切换/重新渲染时调用以 t() 重新生成标签）。env 子层当前全为 renderCustom 级
+        // （items 恒 []），两种形式行为等价，但改回兄弟形式维持契约统一、防未来纯 items
+        // 子层返回陈旧快照。
+        lvl.itemBuilder = () => builder().items;
         return lvl;
     }
     return null;

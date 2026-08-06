@@ -218,5 +218,18 @@ export function _applyLipSync(
                 smileMorph.influence = smileWeight;
             }
         }
+    } else if (rt.morphSet) {
+        // [fix code_review P3] 开关关闭时不驱动也不残留：清零 multiMorph 口型
+        // （close/pucker/smile），避免音频持续播放时冻结在最后值（smile 此前移入
+        // 开关块后，关闭开关不再每帧写入，必须显式复位，否则整段音频 smile 残留）。
+        for (const key of ['close', 'pucker', 'smile'] as const) {
+            const name = rt.morphSet[key];
+            if (name) {
+                const m = morphManager.getTargetByName(name);
+                if (m) {
+                    m.influence = 0;
+                }
+            }
+        }
     }
 }
