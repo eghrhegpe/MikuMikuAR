@@ -66,7 +66,10 @@ export function extractLinks(filepath) {
   const rePlain = /\[([^\]]*)\]\(([^)\s]+(?:\s+"[^"]*")?)\)/g;
   // 尖括号形式：[text](<path with space>)，路径可含空格（buglog 中文/空格文件名）
   // [P2 2026-08-07] 此前 `[^)\s]+` 遇空格截断、`/[<>]/` 守卫把真实尖括号链接当占位符跳过。
-  const reAngle = /\[([^\]]*)\]\(<([^>]+)>/g;
+  // [P3 2026-08-08] ① `[^>]+` → `[^<>]+`：内部含 `<` 视为占位符；
+  // ② 末尾加 `\)`：真实尖括号链接 `(<path>)` 的 `>` 后必须紧跟 `)`——
+  //    占位符 `<page>-<n>.png` 在 `page>` 后还有 `-<n>.png`，不会误匹配。
+  const reAngle = /\[([^\]]*)\]\(<([^<>]+)>\)/g;
   for (const re of [reAngle, rePlain]) {
     let m;
     while ((m = re.exec(stripped)) !== null) {
@@ -74,6 +77,10 @@ export function extractLinks(filepath) {
       // 尖括号分支：路径可含空格，直接取全量（<...> 内即完整路径，无 title）；
       // 普通分支：去掉 title 部分（`path "title"` 形式）
       const rawPath = re === reAngle ? m[2].trim() : m[2].split(/\s+/)[0];
+      // [P3 2026-08-08] 占位符链接（含 < >，如 `<page>-<n>.png`）不产出条目：
+      // 普通分支 `[^)\s]+` 会捕获它们，若放行到 resolvePath 会绕过占位符守卫。
+      // 此处与 resolvePath 的 `<>` 守卫同口径过滤。
+      if (rawPath.includes('<') || rawPath.includes('>')) continue;
       links.push([linkText, rawPath, m.index]);
     }
   }

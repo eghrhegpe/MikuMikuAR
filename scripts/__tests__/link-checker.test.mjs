@@ -59,6 +59,9 @@ test('extractLinks: 普通链接与尖括号含空格路径均提取', () => {
     const paths = links.map((l) => l[1]);
     assert.ok(paths.includes('./b.md'), `应含普通链接: ${paths}`);
     assert.ok(paths.includes('./中文 空格.md'), `应含尖括号空格路径（含全量空格）: ${paths}`);
+    // [P3 2026-08-08] 占位符 `<page>-<n>.png` 内部含 `>`，不得产出链接条目
+    // （否则会被当真实相对路径报假断链）
+    assert.ok(!paths.some((p) => p.includes('page')), `占位符不应产出链接条目: ${paths}`);
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }

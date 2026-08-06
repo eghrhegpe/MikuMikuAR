@@ -377,17 +377,24 @@ else
   note_check "⏭️ check:md-links（python 不可用）"
 fi
 
-# ── link:check（JS 严格门禁；node 恒可用，独立于 python） ──
+# ── link:check（JS 严格门禁；依赖 npm，须 NPM_AVAILABLE 守卫） ──
 # [P1 2026-08-07] 断链严格门禁接入 pre-push：Python 版 broken 仅 INFO 不阻断，
 # 此前断链非零退出只在本地 `npm run check:docs` 生效 → 门禁假绿。
 # JS `link-checker --strict` 作为阻断门禁（与 CI 同源），断链即 fail。
-echo "[pre-push] link:check（JS strict 门禁）"
-cd "$ROOT" && npm run link:check >/dev/null 2>&1 || {
-  echo "❌ Markdown 断链（link:check --strict）："
-  cd "$ROOT" && npm run link:check 2>&1 | grep -E "broken|❌|✗" | head -15
-  fail "Markdown 断链" "修复 docs/ 下的断链（相对链接目标不存在），重跑 npm run link:check 验证后重推"
-}
-note_check "✅ link:check（JS strict 门禁）"
+# [P2 2026-08-08] 加 NPM_AVAILABLE 守卫：npm 不可用环境（GitHub Desktop/TRAE 场景，
+# hook 修复 PATH 后仍缺 npm）应 ⏭️ 跳过而非 fail() 硬拦——与 i18n/deadcode 门禁一致。
+if [ "$NPM_AVAILABLE" = "true" ]; then
+  echo "[pre-push] link:check（JS strict 门禁）"
+  cd "$ROOT" && npm run link:check >/dev/null 2>&1 || {
+    echo "❌ Markdown 断链（link:check --strict）："
+    cd "$ROOT" && npm run link:check 2>&1 | grep -E "broken|❌|✗" | head -15
+    fail "Markdown 断链" "修复 docs/ 下的断链（相对链接目标不存在），重跑 npm run link:check 验证后重推"
+  }
+  note_check "✅ link:check（JS strict 门禁）"
+else
+  echo "[pre-push] link:check（跳过：npm 不可用）"
+  note_check "⏭️ link:check（npm 不可用）"
+fi
 
 # ── 结论摘要（AI 友好：末尾聚合关键结果，避免只读最后几行漏掉中间 WARN/INFO） ──
 echo ""

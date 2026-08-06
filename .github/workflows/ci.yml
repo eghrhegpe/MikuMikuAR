@@ -183,6 +183,13 @@ jobs:
         with:
           python-version: '3.11'
 
+      # [P3 2026-08-08] 显式 pin Node：下方 JS strict gate 依赖 npm，
+      # 不依赖 runner 镜像预装 node（镜像更新可能移除/降级预装运行时）。
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+
       - name: Run config syntax test
         run: python tests/test_config_syntax.py
 

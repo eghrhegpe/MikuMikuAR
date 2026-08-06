@@ -30,7 +30,7 @@ export {
     clearGroundRipples,
     updateWaterAnimSpeed,
 } from './env-water';
-import { updateUnderwaterTransition, resetUnderwaterState, updateGroundRipples } from './env-water';
+import { updateUnderwaterTransition, resetUnderwaterState, updateGroundRipples, resetCausticsSyncGuard } from './env-water';
 export { createClouds, disposeClouds } from './env-clouds';
 import {
     createMirror,
