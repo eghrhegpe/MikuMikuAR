@@ -11,6 +11,7 @@ import {
 } from '../core/wails-bindings';
 import { cardContainer } from '../core/config';
 import { feedbackInfo, feedbackStatus } from '../core/feedback';
+import { showConfirm } from '../core/dialog';
 import { showInfoToast } from '../core/toast';
 import { slideRow, addToggleRow, addSliderRow, addSectionTitle } from '../core/ui-helpers';
 import { swallowError } from '../core/async';
@@ -340,26 +341,40 @@ function _renderResetButton(
     getSettingsMenu: () => SettingsMenuHandle
 ): void {
     slideRow(container, 'lucide:rotate-ccw', t('settings.resetAppearance'), false, () => {
-        const root = document.documentElement;
-        root.style.setProperty('--ui-scale', '1');
-        root.style.setProperty('--popup-width', '280px');
-        root.style.setProperty('--accent', '#4a6cf7');
-        root.style.setProperty('--accent-rgb', '74, 108, 247');
-        root.style.setProperty('--accent-dim', 'rgba(74,108,247,0.2)');
-        root.style.setProperty('--font', SETTINGS_FONT_RESTORE['system']);
-        root.style.setProperty('--ui-animations', '1');
-        root.style.setProperty('--ui-blur', '0');
-        document
-            .querySelectorAll<HTMLElement>('.overlay')
-            .forEach((el) => el.classList.remove('blur-bg'));
-        swallowError(SetUIScale(1));
-        swallowError(SetUIPopupWidth(280));
-        swallowError(SetUIAccent('#4a6cf7'));
-        swallowError(SetUIFontFamily('system'));
-        swallowError(SetUIAnimations(true));
-        swallowError(SetUIBlurBg(false));
-        getSettingsMenu()?.updateControls();
-        feedbackInfo('settings.appearanceReset', undefined);
+        // [fix P2] 破坏性重置前置确认：一次性覆盖 7 个 CSS 变量 + 6 个后端持久化，
+        // 与 settings-system.ts:241/335/366/380 全部前置 showConfirm 的惯例对齐
+        void showConfirm(t('settings.resetAppearanceConfirm')).then((ok) => {
+            if (!ok) {
+                return;
+            }
+            const root = document.documentElement;
+            root.style.setProperty('--ui-scale', '1');
+            root.style.setProperty('--popup-width', '280px');
+            root.style.setProperty('--accent', '#4a6cf7');
+            root.style.setProperty('--accent-rgb', '74, 108, 247');
+            root.style.setProperty('--accent-dim', 'rgba(74,108,247,0.2)');
+            root.style.setProperty('--font', SETTINGS_FONT_RESTORE['system']);
+            root.style.setProperty('--ui-animations', '1');
+            root.style.setProperty('--ui-blur', '0');
+            document
+                .querySelectorAll<HTMLElement>('.overlay')
+                .forEach((el) => el.classList.remove('blur-bg'));
+            swallowError(SetUIScale(1));
+            swallowError(SetUIPopupWidth(280));
+            swallowError(SetUIAccent('#4a6cf7'));
+            swallowError(SetUIFontFamily('system'));
+            swallowError(SetUIAnimations(true));
+            swallowError(SetUIBlurBg(false));
+            // [fix P3] 重置也覆盖 Android 专属字段（keepAwake 默认 true / 方向默认 auto），
+            // 避免用户改方向后点「恢复默认」方向不回 auto
+            if (isAndroidPlatform()) {
+                setUIState({ keepAwake: true, screenOrientation: 'auto' });
+                window.wails?.setKeepAwake?.(true);
+                window.wails?.setScreenOrientation?.('auto');
+            }
+            getSettingsMenu()?.updateControls();
+            feedbackInfo('settings.appearanceReset', undefined);
+        });
     });
 }
 

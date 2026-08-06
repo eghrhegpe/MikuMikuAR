@@ -231,6 +231,9 @@ function _restoreOriginalTexture(mat: MaterialWithReflection): void {
     if (mat.isDisposed) {
         _savedReflectionTextures.delete(mat.uniqueId);
         _probeBoundMaterials.delete(mat.uniqueId);
+        // [fix P3] 早退路径同样清理颜色映射：此前遗漏导致 _savedReflectionColors
+        // 残留已 dispose 材质的 Color3 克隆引用（小内存泄漏）。
+        _savedReflectionColors.delete(mat.uniqueId);
         return;
     }
     const saved = _savedReflectionTextures.get(mat.uniqueId);
@@ -580,6 +583,10 @@ export function disposeReflection(): void {
     _currentMode = 'none';
     _probeStrength = 1;
     _probeCreateFailed = false;
+    // [fix P2] 重置 AR 挂起标志：此前遗漏——AR 激活时 disposeReflection（场景销毁/HMR）
+    // 后 _arSuspended 残留 true，下次场景重建 resolveReflectionMode 恒返回 'none'，
+    // 反射静默关闭且用户无感知。
+    _arSuspended = false;
     _savedReflectionTextures.clear();
     _savedReflectionColors.clear();
     _probeBoundMaterials.clear();
