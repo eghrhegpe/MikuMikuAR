@@ -1534,6 +1534,7 @@ export const zhCN: Record<string, string> = {
     'settings.screenshotFormatSet': '✓ 截图格式已设为 {label}',
     'settings.screenshotDirSet': '✓ 截图目录已设置: {dir}',
     'settings.perfModeSet': '✓ 性能模式: {label}',
+    'settings.perfModePersistFailed': '性能模式保存失败，重启后可能恢复原设置',
     'settings.perfFpsUnlimited': '✓ 帧率不限制',
     'settings.perfFpsLimit': '✓ 帧率上限: {limit} FPS',
     'settings.perfVsync': '✓ 帧率限制器: {state}',

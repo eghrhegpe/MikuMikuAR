@@ -1442,6 +1442,7 @@ export const ko: Record<string, string> = {
     // settings.performance
     'settings.performance.title': '성능',
     'settings.perfModeSet': '✓ 성능 모드: {label}',
+    'settings.perfModePersistFailed': '성능 모드 저장 실패, 재시작 후 되돌아갈 수 있음',
     'settings.perfFpsUnlimited': '✓ FPS 제한 없음',
     'settings.perfFpsLimit': '✓ FPS 상한: {limit} FPS',
     'settings.perfVsync': '✓ 프레임 제한기: {state}',

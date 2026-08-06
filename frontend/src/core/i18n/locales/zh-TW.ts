@@ -1429,6 +1429,7 @@ export const zhTW: Record<string, string> = {
     // settings.performance
     'settings.performance.title': '效能',
     'settings.perfModeSet': '✓ 效能模式: {label}',
+    'settings.perfModePersistFailed': '效能模式儲存失敗，重新啟動後可能恢復原設定',
     'settings.perfFpsUnlimited': '✓ 幀率不限制',
     'settings.perfFpsLimit': '✓ 幀率上限: {limit} FPS',
     'settings.perfVsync': '✓ 幀率限制器: {state}',

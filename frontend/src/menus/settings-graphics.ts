@@ -57,7 +57,12 @@ function buildPresetSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[
                         false,
                         () => {
                             setPerformanceMode(m.key);
-                            swallowError(SetPerformanceMode(m.key));
+                            // [fix P2] 持久化失败用户可见：swallowError 仅 logWarn，
+                            // 刷新后回退旧档无感知。显式 catch + toast 提示。
+                            SetPerformanceMode(m.key).catch((err) => {
+                                console.warn('[settings-graphics] SetPerformanceMode failed:', err);
+                                showInfoToast(t('settings.perfModePersistFailed'));
+                            });
                             if (m.key === 'custom') {
                                 getSettingsMenu()?.reRender();
                             } else {

@@ -1444,6 +1444,7 @@ export const ja: Record<string, string> = {
     // settings.performance
     'settings.performance.title': 'パフォーマンス',
     'settings.perfModeSet': '✓ パフォーマンスモード: {label}',
+    'settings.perfModePersistFailed': 'パフォーマンスモードの保存に失敗しました。再起動後に戻る可能性があります',
     'settings.perfFpsUnlimited': '✓ FPS 制限なし',
     'settings.perfFpsLimit': '✓ FPS 上限: {limit} FPS',
     'settings.perfVsync': '✓ フレームレート制限: {state}',

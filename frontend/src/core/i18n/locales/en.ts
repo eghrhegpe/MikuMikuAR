@@ -1550,6 +1550,7 @@ export const en: Record<string, string> = {
     'settings.screenshotFormatSet': '✓ Screenshot format set to {label}',
     'settings.screenshotDirSet': '✓ Screenshot directory set: {dir}',
     'settings.perfModeSet': '✓ Performance mode: {label}',
+    'settings.perfModePersistFailed': 'Failed to save performance mode; may revert after restart',
     'settings.perfFpsUnlimited': '✓ FPS unlimited',
     'settings.perfFpsLimit': '✓ FPS cap: {limit} FPS',
     'settings.perfVsync': '✓ Frame Rate Limiter: {state}',
