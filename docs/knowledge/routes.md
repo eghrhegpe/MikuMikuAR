@@ -74,9 +74,9 @@
 | 加载后刷新、库扫描完成、菜单刷新、注册表 | [模型加载/库扫描完成后菜单刷新注册表](./load-refresh-registry.md) | — |
 | 语言切换、国际化、locale | [国际化语言状态](./locale.md) | [应用启动引导](./init.md) |
 | 材质系统、分类材质、材质参数调节、材质状态管理 | [分类材质系统](./material.md) | — |
-| 菜单 overlay、弹窗 wrapper、关闭所有浮层 | [菜单 Overlay 与 Wrapper 管理](./menu-overlay.md) | [菜单栈共享指针（stackRegistry）](./menu-stack-registry.md) |
+| 菜单 overlay、弹窗 wrapper、关闭所有浮层 | [菜单 Overlay 与 Wrapper 管理](./menu-overlay.md) | [菜单栈共享指针（stackRegistry）](./menu-stack-registry.md)、[基础行控件构建器](./ui-rows.md) |
 | 菜单声明、控件配置、状态绑定、菜单节点 | [声明式菜单 Schema](./menu-schema.md) | [菜单渲染引擎](./render-menu.md) |
-| 菜单栈、modelStack、buildLevel、跨菜单导航 | [菜单栈共享指针（stackRegistry）](./menu-stack-registry.md) | [菜单 Overlay 与 Wrapper 管理](./menu-overlay.md) |
+| 菜单栈、modelStack、buildLevel、跨菜单导航 | [菜单栈共享指针（stackRegistry）](./menu-stack-registry.md) | [菜单 Overlay 与 Wrapper 管理](./menu-overlay.md)、[基础行控件构建器](./ui-rows.md) |
 | 菜单引擎、SlideMenu、弹窗菜单 | [滑出式菜单引擎（SlideMenu）](./menu.md) | [环境弹窗（编排 + barrel）](./env-menu.md)、[动作绑定 UI](./motion-binding-ui.md)、[动作模块注册表](./motion-modules-registry.md) |
 | babylon-mmd、MmdRuntime、骨骼矩阵、动作切换、音频、ADR-192 | [babylon-mmd 适配边界](./mmd-adapter.md) | [场景光照与阴影（barrel）](./lighting.md)、[动作菜单层级系统](./motion-menu-levels.md)、[感知层主控](./perception.md) |
 | 模型加载、PMX 解析、缩略图捕获 | [PMX 模型加载与缩略图捕获](./model-loader.md) | [GPU 压缩纹理能力探测](./gpu-capabilities.md)、[资源库操作](./library-actions.md)、[模型生命周期操作](./model-ops.md) |
@@ -119,6 +119,7 @@
 | 变换模式、拖拽模式、位移旋转、transform mode | [拖拽变换模式开关](./transform-mode.md) | — |
 | 选中状态、选中物、变换选择、selection 状态 | [变换选中物状态源](./transform-selection.md) | [场景核心编排器（纯组装器）](./scene.md) |
 | 键盘导航、列表导航、箭头键导航 | [键盘导航工具](./ui-keyboard-nav.md) | [应用启动引导](./init.md) |
+| 行控件、滑块行、开关行、模式行、骨骼选择行、危险操作行、信息卡 | [基础行控件构建器](./ui-rows.md) | [菜单 Overlay 与 Wrapper 管理](./menu-overlay.md)、[菜单栈共享指针（stackRegistry）](./menu-stack-registry.md) |
 | 虚拟裙骨、物理裙摆、Bullet 弹簧链、skirt analyzer | [虚拟裙骨物理控制器（ADR-084 Phase 2-3）](./virtual-skirt.md) | [骨骼覆盖存储（多模块仲裁）](./bone-override-store.md)、[物理骨骼桥与每帧注册表](./physics-bridge.md) |
 | 多层动作、动作叠加、VMD 混合、composite animation、动作图层、动作优先级 | [多 VMD 叠加系统](./vmd-layers.md) | [程序化动作系统](./proc-motion-bridge.md)、[VMD 动作加载器](./vmd-loader.md) |
 | VMD 加载、动作文件导入、伴音自动加载、动作时长、文件格式校验、动作播放开始 | [VMD 动作加载器](./vmd-loader.md) | [统一文件服务层](./fileservice.md)、[资源库操作](./library-actions.md)、[资源库核心](./library-core.md) |

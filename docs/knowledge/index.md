@@ -2,7 +2,7 @@
 
 # 知识卡索引
 
-> 原子化架构知识层，共 **265** 张卡：记录「某个子系统**现在**长啥样、去哪找」。与 ADR（为什么这么决定）互补——知识卡引用而不复制 ADR 结论。
+> 原子化架构知识层，共 **267** 张卡：记录「某个子系统**现在**长啥样、去哪找」。与 ADR（为什么这么决定）互补——知识卡引用而不复制 ADR 结论。
 
 > 卡片格式规范、立卡判据、`source_files` 铁律见 [知识卡层导读](./README.md)；AI 检索入口见 [路由表](./routes.md)；菜单全景见 [menu-map](./menu-map.md)（机器生成）。
 
@@ -15,7 +15,7 @@
 | [physics](#physics) | 5 | 物理系统 |
 | [rendering](#rendering) | 18 | 渲染系统 |
 | [motion](#motion) | 34 | 动作系统 |
-| [ui](#ui) | 56 | UI / 菜单 |
+| [ui](#ui) | 58 | UI / 菜单 |
 | [core](#core) | 76 | 核心基础设施 |
 | [backend](#backend) | 18 | 后端 |
 
@@ -142,8 +142,9 @@
 | [场景弹窗（编排 + 路由）](./scene-menu.md) | - ADR-065 |
 | [设置共享工具](./settings-shared.md) | - ADR-157 |
 | [设置页路由与编排](./settings.md) | - ADR-157 |
+| [基础行控件构建器](./ui-rows.md) | - ADR-140 |
 
-> 叶子模块 / 工具函数（37 张）：[assistant-panel](./assistant-panel.md) · [diagnostic-chat](./diagnostic-chat.md) · [diagnostic-config](./diagnostic-config.md) · [diagnostic-control](./diagnostic-control.md) · [diagnostic-session](./diagnostic-session.md) · [diagnostic-state](./diagnostic-state.md) · [env-menu-levels](./env-menu-levels.md) · [library-browse](./library-browse.md) · [library-session-store](./library-session-store.md) · [menu-factory](./menu-factory.md) · [menu-registry](./menu-registry.md) · [menu-schema-register](./menu-schema-register.md) · [model-detail](./model-detail.md) · [model-material-ui](./model-material-ui.md) · [motion-override-levels](./motion-override-levels.md) · [outfit-ui](./outfit-ui.md) · [plaza-browser](./plaza-browser.md) · [plaza-creators](./plaza-creators.md) · [plaza-download](./plaza-download.md) · [plaza-sites](./plaza-sites.md) · [plaza-thumbnail](./plaza-thumbnail.md) · [preset-list-viewer](./preset-list-viewer.md) · [scene-drag-levels](./scene-drag-levels.md) · [scene-menu-levels](./scene-menu-levels.md) · [scene-menu-state](./scene-menu-state.md) · [settings-about](./settings-about.md) · [settings-actions](./settings-actions.md) · [settings-appearance](./settings-appearance.md) · [settings-controls](./settings-controls.md) · [settings-diagnostic](./settings-diagnostic.md) · [settings-graphics](./settings-graphics.md) · [settings-language](./settings-language.md) · [settings-media](./settings-media.md) · [settings-resources](./settings-resources.md) · [settings-system](./settings-system.md) · [settings-targets](./settings-targets.md) · [ui-helpers](./ui-helpers.md)
+> 叶子模块 / 工具函数（38 张）：[assistant-panel](./assistant-panel.md) · [diagnostic-chat](./diagnostic-chat.md) · [diagnostic-config](./diagnostic-config.md) · [diagnostic-control](./diagnostic-control.md) · [diagnostic-session](./diagnostic-session.md) · [diagnostic-state](./diagnostic-state.md) · [env-menu-levels](./env-menu-levels.md) · [library-browse](./library-browse.md) · [library-session-store](./library-session-store.md) · [menu-factory](./menu-factory.md) · [menu-registry](./menu-registry.md) · [menu-schema-register](./menu-schema-register.md) · [model-detail](./model-detail.md) · [model-material-ui](./model-material-ui.md) · [motion-override-levels](./motion-override-levels.md) · [outfit-ui](./outfit-ui.md) · [plaza-browser](./plaza-browser.md) · [plaza-creators](./plaza-creators.md) · [plaza-download](./plaza-download.md) · [plaza-sites](./plaza-sites.md) · [plaza-thumbnail](./plaza-thumbnail.md) · [preset-list-viewer](./preset-list-viewer.md) · [scene-drag-levels](./scene-drag-levels.md) · [scene-menu-levels](./scene-menu-levels.md) · [scene-menu-state](./scene-menu-state.md) · [scene-stage-lights](./scene-stage-lights.md) · [settings-about](./settings-about.md) · [settings-actions](./settings-actions.md) · [settings-appearance](./settings-appearance.md) · [settings-controls](./settings-controls.md) · [settings-diagnostic](./settings-diagnostic.md) · [settings-graphics](./settings-graphics.md) · [settings-language](./settings-language.md) · [settings-media](./settings-media.md) · [settings-resources](./settings-resources.md) · [settings-system](./settings-system.md) · [settings-targets](./settings-targets.md) · [ui-helpers](./ui-helpers.md)
 
 ## core
 
@@ -263,13 +264,14 @@
 | [ADR-126](../adr/adr-126-transform-adapter.md) | 变换适配器统一（TransformAdapter Registry）— 跨 kind 拖拽/数值双模态去重 | [骨骼覆盖核心 API](./bone-override.md) · [手部独立控制模块（左手/右手）](./hand-symmetry.md) · [舞台灯光系统](./lighting-stage.md) · [镜面道具](./mirror-debug.md) · [模型注册表与生命周期管理](./model-manager.md) · [动作模块基类](./motion-module-base.md) · [动作模块类型定义](./motion-module-types.md) · [动作覆盖 UI 层级（模块化覆盖 + 高级骨骼覆盖）](./motion-override-levels.md) · [场景序列化与自动保存](./scene-serialize.md) · [变换适配器注册表（双模态去重）](./transform-adapter.md) · [3D 拖拽 Gizmo 统一抽象](./transform-gizmo.md) |
 | [ADR-128](../adr/adr-128-mirror-prop-rename.md) | 镜面道具化重命名（debugMirror → mirror） | [环境系统门面（Facade）](./env.md) · [镜面道具](./mirror-debug.md) |
 | [ADR-129](../adr/adr-129-scene-level-motion-ui.md) | 动作菜单场景级重设计（Scene-level Motion UI） | [手部独立控制模块（左手/右手）](./hand-symmetry.md) · [滑出式菜单引擎（SlideMenu）](./menu.md) · [动作绑定 UI](./motion-binding-ui.md) · [脚部独立控制模块（左脚/右脚）](./motion-modules-feet.md) · [动作模块注册表](./motion-modules-registry.md) |
-| [ADR-130](../adr/adr-130-scene-ui-roadmap.md) | 场景 UI 整体设计与前后端发展方向路线图 | [性能降级 — 环境桥接](./performance-env-bridge.md) · [预设元数据归一化](./preset-meta.md) · [统一质量档位解析器](./quality-profile.md) |
+| [ADR-130](../adr/adr-130-scene-ui-roadmap.md) | 场景 UI 整体设计与前后端发展方向路线图 | [性能降级 — 环境桥接](./performance-env-bridge.md) · [预设元数据归一化](./preset-meta.md) · [统一质量档位解析器](./quality-profile.md) · [舞台灯光菜单层级](./scene-stage-lights.md) |
 | [ADR-131](../adr/adr-131-resource-browse-selection-outcome.md) | 资源浏览选中结果统一契约（BrowseOutcome） | [资源库操作](./library-actions.md) · [资源库核心](./library-core.md) |
 | [ADR-132](../adr/adr-132-env-brightness-unification.md) | 环境亮度统一标量（EnvBrightness Unification） | [环境灯光包装](./env-lighting.md) · [EnvState 单一源 Schema](./env-state-schema.md) · [场景光照与阴影（barrel）](./lighting.md) |
 | [ADR-135](../adr/adr-135-library-session-store.md) | LibrarySessionStore — 资源库状态收敛基座 | [资源库操作](./library-actions.md) · [资源库核心](./library-core.md) · [资源库会话状态单例](./library-session-store.md) · [统一资源加载队列](./load-manager.md) |
 | [ADR-136](../adr/adr-136-thumbnail-abortsignal.md) | 缩略图流式加载 AbortSignal 协作式取消 | [资源库核心](./library-core.md) |
 | [ADR-137](../adr/adr-137-envstate-single-source-schema.md) | EnvState 单一源 Schema | [EnvState 单一源 Schema](./env-state-schema.md) · [全局状态与场景运行时 Store](./state.md) |
 | [ADR-138](../adr/adr-138-env-dispatcher-decouple.md) | env-dispatcher 破循环依赖 | [环境状态写入入口（setEnvState + 中间件链）](./env-bridge.md) · [环境变更分发回调（破循环依赖）](./env-dispatcher.md) · [环境系统实现核心（barrel + observer + fog）](./env-impl.md) · [粒子系统](./env-particles.md) |
+| [ADR-140](../adr/adr-140-drag-slider-controller.md) | DragSliderController 统一滑块输入 | [基础行控件构建器](./ui-rows.md) |
 | [ADR-141](../adr/adr-141-state-split.md) | state.ts 拆分 — 状态基座重构 | [配置聚合层](./config-barrel.md) · [轻量日志工具（无依赖）](./logger.md) · [全局状态与场景运行时 Store](./state.md) · [UI 持久化状态](./ui-state.md) |
 | [ADR-143](../adr/adr-143-unification-remaining.md) | 可统一代码收敛（P1 之外剩余项） | [资源库操作](./library-actions.md) · [UI 与场景常量](./ui-constants.md) |
 | [ADR-145](../adr/adr-145-motion-presets.md) | 多模块协同预设 — 一键启用组合姿态 | [共享类型定义](./core-types.md) · [模型预设管理 UI](./model-preset-ui.md) · [动作模块类型定义](./motion-module-types.md) · [动作覆盖 UI 层级（模块化覆盖 + 高级骨骼覆盖）](./motion-override-levels.md) · [动作预设类型](./motion-preset-types.md) · [场景序列化与自动保存](./scene-serialize.md) |
@@ -278,7 +280,7 @@
 | [ADR-148](../adr/adr-148-overload-file-split.md) | 过载文件拆分工程 | [节拍驱动自动运镜（beatcut）](./camera-auto.md) · [相机行为循环（freefly/surround/concert）](./camera-behaviors.md) · [相机骨骼锁定](./camera-bone-lock.md) · [相机工厂 + 用户输入](./camera-factory.md) · [相机状态管理 + 运行时上下文](./camera-state.md) · [相机 VMD 动画](./camera-vmd.md) · [相机模式管理系统（MmdCamera）](./camera.md) · [环境状态写入入口（setEnvState + 中间件链）](./env-bridge.md) · [环境重力控制](./env-gravity.md) · [环境状态防抖持久化](./env-persist.md) · [时间流转与太阳角系统](./env-time-of-day.md) |
 | [ADR-150](../adr/adr-150-model-replace-contract.md) | 模型替换原子操作契约（Model Replace Contract） | [资源库操作](./library-actions.md) · [模型运行时 ID 解析](./model-id.md) · [模型生命周期操作](./model-ops.md) |
 | [ADR-151](../adr/adr-151-reflection-unified-architecture.md) | 反射系统统一架构（SSR/Probe 统一入口 + Planar 协调） | [反射系统](./env-reflection.md) |
-| [ADR-152](../adr/adr-152-stage-light-cone.md) | 舞台灯光光锥（Light Cone） | [反射系统](./env-reflection.md) · [光锥网格](./light-cone.md) · [舞台灯光系统](./lighting-stage.md) |
+| [ADR-152](../adr/adr-152-stage-light-cone.md) | 舞台灯光光锥（Light Cone） | [反射系统](./env-reflection.md) · [光锥网格](./light-cone.md) · [舞台灯光系统](./lighting-stage.md) · [舞台灯光菜单层级](./scene-stage-lights.md) |
 | [ADR-153](../adr/adr-153-accessibility-roadmap.md) | 无障碍（a11y）支持总体方案 | [跨平台对话框](./dialog.md) · [应用启动引导](./init.md) · [状态栏与提示系统](./status-bar.md) · [焦点陷阱工具](./ui-focus-trap.md) · [键盘导航工具](./ui-keyboard-nav.md) · [菜单导航项契约](./ui-nav-item.md) |
 | [ADR-155](../adr/adr-155-llm-nl-scene-control-route.md) | 自然语言控场景 — 叠加于 AiService 管线之上 | [统一动作注册表 — 菜单/NL/快捷键共享真相源](./action-registry.md) · [NL 意图解析 — LLM 文本 → 动作执行](./ai-intent-dispatcher.md) · [诊断助手 → tool call 控制（子模块）](./diagnostic-control.md) · [环境弹窗（编排 + barrel）](./env-menu.md) · [资源库操作](./library-actions.md) · [场景弹窗（编排 + 路由）](./scene-menu.md) |
 | [ADR-156](../adr/adr-156-llm-character-dialogue-route.md) | 大模型交流 — 创意路线（角色台词生成） | [角色台词生成 — 人设约束 + 情绪解析 + TTS 朗读](./character-bible.md) |
@@ -295,6 +297,7 @@
 | [ADR-170](../adr/adr-170-motion-selection-paradigm.md) | 动作库选中范式 —— 将「默认」暴露为逐行「选中」（对齐模型焦点范式） | [动作详情 UI](./motion-detail-ui.md) |
 | [ADR-171](../adr/adr-171-scene-drag-mode.md) | 场景级拖拽模式：快捷开关 + 收纳文件夹 | [场景拖拽层级菜单](./scene-drag-levels.md) · [场景菜单层级系统](./scene-menu-levels.md) · [场景核心编排器（纯组装器）](./scene.md) · [变换选中物状态源](./transform-selection.md) |
 | [ADR-172](../adr/adr-172-wet-body-effect.md) | 湿身效果：雨天角色材质湿润感 | [湿身效果系统](./env-wetness.md) |
+| [ADR-173](../adr/adr-173-env-bridge-middleware.md) | env-bridge setEnvState 中间件化重构 | [基础行控件构建器](./ui-rows.md) |
 | [ADR-174](../adr/adr-174-quality-dimension-registry.md) | 质量维度注册表 — 统一 qualityProfile 扩展点 | [统一质量档位解析器](./quality-profile.md) |
 | [ADR-176](../adr/adr-176-frontend-backend-adapter.md) | 前端 Backend 适配器双实现（Web/Desktop 通杀） | [内置 AI 诊断助手 — 双适配器服务层](./ai-service.md) · [后端适配层](./core-backend.md) · [环境状态防抖持久化](./env-persist.md) · [应用启动引导](./init.md) · [平台能力探测](./platform.md) · [运行模式检测](./runtime-mode.md) · [后端绑定聚合层（backend 代理化）](./wails-bindings.md) |
 | [ADR-177](../adr/adr-177-web-loader-main-app-unification.md) | Web Loader 与主应用统一路径 | [拖拽导入逻辑层](./drop-import.md) · [应用启动引导](./init.md) · [Runtime 隔离桥（Wails Events/Browser）](./runtime-bridge.md) |
@@ -306,7 +309,7 @@
 | [ADR-188](../adr/adr-188-pbr-material-builder.md) | PBRMaterialBuilder 材质系统迁移 — PBR 渲染升级 | [分类材质系统](./material.md) |
 | [ADR-189](../adr/adr-189-ktx2-texture-compression.md) | 纹理加载路径优化（并行读取 + basename 共享 + LRU + KTX2 基础设施） | [GPU 压缩纹理能力探测](./gpu-capabilities.md) · [PMX 模型加载与缩略图捕获](./model-loader.md) · [PMX 声明纹理缺失审计](./pmx-texture-audit.md) · [场景渲染管线与后处理](./renderer.md) · [场景核心编排器（纯组装器）](./scene.md) · [纹理路径 fallback 候选生成](./texture-fallback.md) · [纹理 LRU 缓存](./texture-lru.md) |
 | [ADR-190](../adr/adr-190-capability-declarative-consolidation.md) | 端能力声明式收口（淘汰散落 isAndroidPlatform 分支） | [核心零依赖叶模块](./core-leaf-modules.md) |
-| [ADR-191](../adr/adr-191-god-barrel-debarreling.md) | 神桶 `@/core/utils` 去桶化（零依赖叶下沉） | [核心零依赖叶模块](./core-leaf-modules.md) · [工具函数叶模块群](./core-utils.md) · [菜单 Overlay 与 Wrapper 管理](./menu-overlay.md) · [菜单栈共享指针（stackRegistry）](./menu-stack-registry.md) · [菜单渲染上下文栈（RenderContext）](./render-context.md) · [标题栏小型开关（createHeaderToggle）](./ui-header-toggle.md) |
+| [ADR-191](../adr/adr-191-god-barrel-debarreling.md) | 神桶 `@/core/utils` 去桶化（零依赖叶下沉） | [核心零依赖叶模块](./core-leaf-modules.md) · [工具函数叶模块群](./core-utils.md) · [菜单 Overlay 与 Wrapper 管理](./menu-overlay.md) · [菜单栈共享指针（stackRegistry）](./menu-stack-registry.md) · [菜单渲染上下文栈（RenderContext）](./render-context.md) · [标题栏小型开关（createHeaderToggle）](./ui-header-toggle.md) · [基础行控件构建器](./ui-rows.md) |
 | [ADR-192](../adr/adr-192-upstream-adapter-layer.md) | 上游适配层重构（MmdAdapter） | [地面碰撞体（WASM Bullet 静态刚体）](./ground-collision.md) · [场景光照与阴影（barrel）](./lighting.md) · [babylon-mmd 适配边界](./mmd-adapter.md) · [VMD 动作加载器](./vmd-loader.md) · [风力物理注入（WASM Bullet）](./wind-physics.md) |
 | [ADR-194](../adr/adr-194-wind-physics-fix.md) | 风物理系统修复 — 从「假风」到真实风场 | [安卓文件访问（shared 模式）](./android-file-access.md) · [风力物理注入（WASM Bullet）](./wind-physics.md) |
 | [ADR-195](../adr/adr-195-download-folder-unification.md) | 下载文件夹统一修订（三平台系统下载目录 + 消除"二扫"） | [资源库操作](./library-actions.md) · [资源库核心](./library-core.md) |

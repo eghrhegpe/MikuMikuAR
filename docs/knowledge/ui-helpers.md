@@ -5,7 +5,6 @@ tier: leaf
 category: ui
 scope:
   - frontend/src/core/ui-helpers.ts
-  - frontend/src/core/ui-rows.ts
   - frontend/src/core/ui-advanced-rows.ts
   - frontend/src/core/ui-slide-row.ts
   - frontend/src/core/ui-collapsible.ts
@@ -15,7 +14,6 @@ scope:
   - frontend/src/core/ui-virtual-grid.ts
 source_files:
   - frontend/src/core/ui-helpers.ts
-  - frontend/src/core/ui-rows.ts
   - frontend/src/core/ui-advanced-rows.ts
   - frontend/src/core/ui-slide-row.ts
   - frontend/src/core/ui-collapsible.ts
@@ -106,8 +104,8 @@ collapsible 等），统一返回 DOM 元素。`ui-helpers.ts` 为聚合入口�
 
 ## 核心职责
 - `ui-helpers.ts` — barrel re-export 入口。
-- `ui-rows.ts` — 基础行控件（toggle/slider/mode/danger/field/info）。
 - `ui-advanced-rows.ts` — 高级行控件（color/vector3）。
+- > `ui-rows.ts` 已独立立卡：[ui-rows.md](./ui-rows.md)（基础行控件构建器，ADR-140/191/173）。
 - `ui-slide-row.ts` — 滑动行控件。
 - `ui-collapsible.ts` — 折叠面板、章节标题、预设芯片。
 - `ui-resource-panel.ts` — 资源面板组件。
