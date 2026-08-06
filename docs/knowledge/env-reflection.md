@@ -24,9 +24,10 @@ symbols:
 invariants:
   - 反射模式五态：none / planar / ssr / probe / hybrid
   - 反射探针需与模型加载时序对齐（onModelMeshesReady），避免网格未就绪时绑定失败
-  - disposeReflection 释放探针与渲染目标
+  - disposeReflection 释放探针与渲染目标，并重置 _arSuspended（AR 挂起标志防残留）
   - setReflectionARSuspended 在 AR/性能受限时挂起反射
-tests: []
+tests:
+  - frontend/src/__tests__/scene/env-reflection.test.ts
 use_when:
   - 反射系统
   - 平面反射

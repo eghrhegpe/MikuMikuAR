@@ -8,12 +8,15 @@ scope:
 source_files:
   - frontend/src/menus/settings-appearance.ts
 adr:
+  - ADR-093
   - ADR-157
 symbols:
   - buildSettingsAppearanceLevel
 invariants:
-  - Schema 驱动 UI
+  - Schema 驱动 UI（ADR-093）
   - UI 尺寸/主题颜色/字体/动画/屏幕控制
+  - 恢复默认外观前置 showConfirm 确认（与 settings-system 破坏性操作惯例一致）
+  - 重置覆盖 Android 专属字段（keepAwake/screenOrientation）
 tests: []
 use_when:
   - 外观设置

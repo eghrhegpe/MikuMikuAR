@@ -1106,12 +1106,12 @@
 | `updateParticleWind()` | `scene/env/env-particles:844` | — |
 | `ReflectionMode()` | `scene/env/env-reflection:31` | — |
 | `ResolvedReflectionMode()` | `scene/env/env-reflection:33` | — |
-| `applyReflection()` | `scene/env/env-reflection:410` | 反射子系统统一入口。参考 applySky 模式： 1. |
-| `bindProbeToMeshes()` | `scene/env/env-reflection:326` | 将 Probe cubemap 绑定到指定网格的材质（含 save 原始纹理）。 |
-| `disposeReflection()` | `scene/env/env-reflection:571` | 释放反射子系统全部资源（场景销毁时调用）。 |
+| `applyReflection()` | `scene/env/env-reflection:413` | 反射子系统统一入口。参考 applySky 模式： 1. |
+| `bindProbeToMeshes()` | `scene/env/env-reflection:329` | 将 Probe cubemap 绑定到指定网格的材质（含 save 原始纹理）。 |
+| `disposeReflection()` | `scene/env/env-reflection:574` | 释放反射子系统全部资源（场景销毁时调用）。 |
 | `getPlanarQualityOverride()` | `scene/env/env-reflection:184` | ADR-151: 平面反射质量全局覆盖（供 env-ground / env-water 的 getQuality 检查）。 |
 | `getQualityPreset()` | `scene/env/env-reflection:171` | 获取当前质量等级对应的参数预设。 |
-| `onModelMeshesReady()` | `scene/env/env-reflection:562` | 模型加载后调用：将 Probe 绑定到新模型的网格。 |
+| `onModelMeshesReady()` | `scene/env/env-reflection:565` | 模型加载后调用：将 Probe 绑定到新模型的网格。 |
 | `resolveReflectionMode()` | `scene/env/env-reflection:130` | — |
 | `setReflectionARSuspended()` | `scene/env/env-reflection:149` | AR 模式联动：挂起/恢复反射子系统。 |
 | `applySky()` | `scene/env/env-sky:421` | — |
@@ -2319,7 +2319,7 @@
 | `buildStageLightLevel()` | `menus/scene-stage-lights:791` | — |
 | `buildSettingsAboutLevel()` | `menus/settings-about:235` | — |
 | `handleSettingsAction()` | `menus/settings-actions:21` | 全局设置项点击分发：语言切换 + 动作表。settings.ts 的 onItemClick 使用。 |
-| `buildSettingsAppearanceLevel()` | `menus/settings-appearance:495` | — |
+| `buildSettingsAppearanceLevel()` | `menus/settings-appearance:510` | — |
 | `buildCameraSchema()` | `menus/settings-controls:29` | — |
 | `buildSettingsControlsLevel()` | `menus/settings-controls:325` | — |
 | `buildDiagnosticSchema()` | `menus/settings-diagnostic:405` | — |
