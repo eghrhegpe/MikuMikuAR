@@ -140,6 +140,11 @@ export function initPlaybackObservables(
             return;
         }
         _disposed = true;
+        // [fix P2] 清零模块级状态：auto-loop 中途 dispose 残留 _loopPending=true 会阻止
+        // 下次 init 的 pause handler 复位 isPlaying；旧 _manager 引用导致 updatePlaybackUI
+        // 读到过期 duration。知识卡 invariant「dispose 后清零 _manager」此前未兑现。
+        _manager = null;
+        _loopPending = false;
         // 逐一清理，catch 异常确保后续 handle 仍能释放（等价旧 _safeRemoveCallback 语义）
         try {
             tickHandle.dispose();
