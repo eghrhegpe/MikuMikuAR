@@ -55,20 +55,33 @@ function parseImportStatements(filePath) {
 
   while (i < lines.length) {
     const trimmed = lines[i].trim();
-    const startsImport = /^(import|export)\b/.test(trimmed) && /from\s+['"]|import\s+['"]|export\s+\*\s+from/.test(trimmed);
-    const startsExportFrom = /^export\s*\{/.test(trimmed) || /^export\s+(type\s+)?\{/.test(trimmed);
+    // 动态 import('...') 是表达式不是语句块，单行即跳过（不进入块收集）
+    const isDynamicImport = /^import\s*\(/.test(trimmed);
+    // [P1 2026-08-06] startsImport 不再要求 `from` 与 `import` 同行：
+    // 多行 import（`import {` 换行 `} from '...'`）此前整块漏报 → 消费者漏检 → 「干净叶子」假安全。
+    // 只认「import 开头」与「export { / export * from」形态，避免误吞 export const/function 行。
+    const startsImport = !isDynamicImport
+      && /^(import\b|export\s+(type\s+)?\{|export\s+\*\s+from|export\s*\{)/.test(trimmed);
 
-    if (startsImport || startsExportFrom) {
-      // 收集语句块（支持跨行，直到 from '...' 或 import '...' 结束）
+    if (startsImport) {
+      // 收集语句块（支持跨行，直到 from '...' / import '...' / 括号闭合且行尾分号）
       const startLine = i;
       const blockLines = [];
       let block = '';
       while (i < lines.length) {
         blockLines.push(lines[i]);
         block += lines[i] + '\n';
-        if (/from\s+['"][^'"]+['"]\s*[;]?\s*$/.test(lines[i].trim())
-          || /^import\s+['"][^'"]+['"]\s*[;]?\s*$/.test(lines[i].trim())
-          || /}\s+from\s+['"][^'"]+['"]\s*[;]?\s*$/.test(lines[i].trim())) {
+        const cur = lines[i].trim();
+        const openBraces = (block.match(/\{/g) || []).length;
+        const closeBraces = (block.match(/\}/g) || []).length;
+        const bracesBalanced = openBraces === closeBraces;
+        // 结束条件：
+        //  ① 本行含 from '...'（多行 import 的 from 通常在第二行）
+        //  ② 副作用 import '...'
+        //  ③ 括号已闭合且行尾分号或无续行逗号（无 from 的 `export { A, B };` 单行即止）
+        if (/from\s+['"][^'"]+['"]/.test(cur)
+          || /^import\s+['"][^'"]+['"]/.test(cur)
+          || (bracesBalanced && /;\s*$/.test(cur))) {
           i++;
           break;
         }
@@ -116,7 +129,9 @@ function parseStatement(block, line, filePath) {
     for (const raw of bodyMatch[2].split(',')) {
       const parts = raw.trim().split(/\s+as\s+/);
       if (!parts[0]) continue;
-      const src = parts[0].trim();
+      // [P2] 内联 type 修饰符（import { a, type B }）使 src 含空格被下方白名单过滤 → B 漏报。
+      // 剥掉 `type ` 前缀后再校验（footstep.ts:13 实证）。
+      const src = parts[0].trim().replace(/^type\s+/, '');
       const local = parts[1] ? parts[1].trim() : src;
       if (src && /^[A-Za-z0-9_]+$/.test(src)) symbols.push({ src, local });
     }
@@ -140,7 +155,8 @@ function parseStatement(block, line, filePath) {
     for (const raw of expMatch[1].split(',')) {
       const parts = raw.trim().split(/\s+as\s+/);
       if (!parts[0]) continue;
-      const src = parts[0].trim();
+      // [P2] 同 import 侧：export { type A } from 的内联 type 前缀剥离后再校验
+      const src = parts[0].trim().replace(/^type\s+/, '');
       const local = parts[1] ? parts[1].trim() : src;
       if (src && /^[A-Za-z0-9_]+$/.test(src)) symbols.push({ src, local });
     }
@@ -233,9 +249,31 @@ function collectConsumers(target, files) {
         continue;
       }
 
+      // [P2] reexport-all（export * from）：symbols 为 null，需解析被 re-export 模块的导出集。
+      // 此前被下方 `if (!stmt.symbols) continue` 静默跳过 → barrel 再导出链完全不可见
+      // （core/config.ts:14-25 典型 barrel），影响面分析漏报。
+      if (stmt.kind === 'reexport-all') {
+        if (!stmt.resolved) continue;
+        const srcPath = path.join(SRC_DIR, toNative(stmt.resolved));
+        if (!fs.existsSync(srcPath)) continue;
+        if (!getExportedSymbols(srcPath).includes(target)) continue;
+        reexports.push({ rel, line: stmt.line, text: stmt.text, kind: 'reexport-all' });
+        continue;
+      }
+
       if (!stmt.symbols) continue;
       const hit = stmt.symbols.find((s) => s.src === target);
       if (!hit) continue;
+
+      // [P2] 直接消费校验 resolved 模块确实导出 target（对齐 namespace 分支）：
+      // 同名符号跨模块时仅按名匹配会误报（`import { target } from './other'` 也计为消费），
+      // default 本地重命名同理。resolved 为 null（裸包/解析失败）时保留旧行为不误伤。
+      if (stmt.resolved) {
+        const srcPath = path.join(SRC_DIR, toNative(stmt.resolved));
+        if (fs.existsSync(srcPath) && !getExportedSymbols(srcPath).includes(target)) {
+          continue;
+        }
+      }
 
       if (stmt.kind === 'reexport' || stmt.kind === 'reexport-all') {
         reexports.push({ rel, line: stmt.line, text: stmt.text, kind: stmt.kind });

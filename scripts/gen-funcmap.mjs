@@ -199,7 +199,12 @@ function renderMarkdown(groups, entries, scope) {
         const loc = locLine ? `${displayPath}:${locLine}` : displayPath;
         // [doc:vitepress] JSDoc 摘要可能含 HTML 尖括号（如 <iconify-icon> / <label>），
         // 文档站全量渲染时会被 Vue 编译器当标签解析导致构建失败，须转义。
-        const escaped = doc ? doc.replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
+        // [P2 2026-08-06] 追加转义 | & 反引号：JSDoc 内 `|` 会撑破表格列
+        // （readDeclaredAdapter 行已实证变成 4 列），`&` 与反引号同理破坏 Markdown 渲染。
+        const escaped = doc
+          ? doc.replace(/</g, '&lt;').replace(/>/g, '&gt;')
+              .replace(/\|/g, '\\|').replace(/&/g, '&amp;').replace(/`/g, '&#96;')
+          : '';
         lines.push(`| \`${sym}()\` | \`${loc}\` | ${escaped || '—'} |`);
       }
     }
@@ -257,13 +262,25 @@ function main() {
   // 3. 分组
   const groups = groupByModule(entries);
 
+  // [P2] 未分组顶层目录 WARN 不静默：GROUP_ORDER 之外的顶层目录（根级 config.ts、
+  // 未来新模块）此前被静默丢弃，与「扫描 frontend/src 全量」宣称不符 → 显式提示。
+  const ungrouped = [...groups.keys()].filter((k) => !GROUP_ORDER.includes(k)).sort();
+  if (ungrouped.length > 0) {
+    console.error(`⚠️  以下顶层目录不在 GROUP_ORDER，其导出符号未写入 function-map.md：${ungrouped.join(', ')}`);
+    console.error('   请将新模块加入 scripts/gen-funcmap.mjs 的 GROUP_ORDER / GROUP_LABELS。');
+  }
+
   // 4. 渲染
   const output = renderMarkdown(groups, entries, scope);
 
   // 5. 输出或检查
   if (isCheck) {
     const existing = fs.existsSync(OUT_FILE) ? fs.readFileSync(OUT_FILE, 'utf8') : '';
-    if (existing !== output) {
+    // [P1 2026-08-06] 跨日归一化：产物头部内嵌「自动生成（YYYY-MM-DD）」日期，
+    // 整串比对会令任何跨日运行必误报不同步。比对前把两侧日期行归一化为占位符，
+    // 其余内容仍严格比对（结构/符号/行号漂移照常拦截）。
+    const normDate = (s) => s.replace(/> \*\*自动生成\*\*（\d{4}-\d{2}-\d{2}）/g, '> **自动生成**（DATE）');
+    if (normDate(existing) !== normDate(output)) {
       console.error(`❌ ${OUT_FILE} 未同步，请运行：npm run gen:funcmap`);
       process.exit(1);
     }

@@ -25,7 +25,7 @@
 import fs from 'node:fs';
 
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { scanSourceGraph, resolveSourceImport } from './_lib/source-graph.mjs';
 import { parseArgs } from './_lib/parse-args.mjs';
 import { ROOT } from './_lib/scan-files.mjs';
@@ -55,7 +55,7 @@ if (args.unknown && args.unknown.length) {
 /**
  * 将文件路径映射到模块名
  */
-function getModule(relativePath) {
+export function getModule(relativePath) {
     const parts = relativePath.split('/');
     if (parts.length === 0) return 'unknown';
     const topDir = parts[0];
@@ -70,7 +70,7 @@ function getModule(relativePath) {
 /**
  * 构建模块级依赖图
  */
-function buildModuleGraph(fileGraph) {
+export function buildModuleGraph(fileGraph) {
     const moduleGraph = new Map();
     // 模块对 → 具体文件级 import 边（用于 --edges 归因）
     const moduleEdges = new Map(); // "srcMod|dstMod" -> [{from, to}]
@@ -102,40 +102,31 @@ function buildModuleGraph(fileGraph) {
 // ── 循环依赖检测 ──
 
 /**
- * 使用 DFS 检测循环依赖
+ * 全量枚举所有简单环（Johnson 简化版：以环内字典序最小节点为起点，
+ * 只访问 `> start` 的节点，保证每个环恰好报告一次）。
+ *
+ * [P1 2026-08-06] 旧版 DFS 后向边算法只报「回边指向当前栈内节点」的环，
+ * 目标已被访问完成（cross edge）时跳过 → 钻石结构漏报真实环（例：
+ * a→b,b→a,a→c,c→b,c→a 漏掉 3-环 a→c→b→a）。在已有白名单 2-环上新增
+ * 两条边即可引入新环且门禁静默——门禁级缺陷。本实现每个环以最小节点
+ * 为起点全量 DFS，不漏报；模块图节点仅 ~20，指数级最坏代价可忽略。
  */
-function detectCycles(graph) {
+export function detectCycles(graph) {
     const cycles = [];
-    const visited = new Set();
-    const inStack = new Set();
-    const path = [];
+    const nodes = [...graph.keys()];
 
-    function dfs(node) {
-        if (inStack.has(node)) {
-            const cycleStart = path.indexOf(node);
-            if (cycleStart !== -1) {
-                cycles.push([...path.slice(cycleStart), node]);
+    function dfs(start, node, path) {
+        for (const dep of graph.get(node) || []) {
+            if (dep === start) {
+                cycles.push([...path, start]);
+            } else if (dep > start && !path.includes(dep)) {
+                dfs(start, dep, [...path, dep]);
             }
-            return;
         }
-
-        if (visited.has(node)) return;
-
-        visited.add(node);
-        inStack.add(node);
-        path.push(node);
-
-        const deps = graph.get(node) || new Set();
-        for (const dep of deps) {
-            dfs(dep);
-        }
-
-        path.pop();
-        inStack.delete(node);
     }
 
-    for (const node of graph.keys()) {
-        dfs(node);
+    for (const start of nodes) {
+        dfs(start, start, [start]);
     }
 
     return cycles;
@@ -144,7 +135,7 @@ function detectCycles(graph) {
 /**
  * 规范化循环路径为稳定 key（从字典序最小节点起始，旋转不变）
  */
-function normalizeCycleKey(cycle) {
+export function normalizeCycleKey(cycle) {
     const minIdx = cycle.slice(0, -1).reduce((min, val, idx, arr) =>
         val < arr[min] ? idx : min, 0);
     const body = cycle.slice(0, -1);
@@ -155,7 +146,7 @@ function normalizeCycleKey(cycle) {
 /**
  * 去重循环路径
  */
-function dedupeCycles(cycles) {
+export function dedupeCycles(cycles) {
     const seen = new Set();
     const unique = [];
 
@@ -168,6 +159,25 @@ function dedupeCycles(cycles) {
     }
 
     return unique;
+}
+
+/**
+ * 按节点集合归并环（SCC 语义的报告单位）：同一组节点的排列组合只保留最短代表环。
+ *
+ * [P2 2026-08-06] 全量枚举（detectCycles）保证不漏报，但 14 节点稠密图会爆出 1625 条
+ * 环（--edges 输出 2.1MB，触发 execFileSync maxBuffer 限制，smoke 失败）。循环依赖治理
+ * 关心的是「哪些模块互相依赖成环」而非同一组节点的每条排列，故按节点集合归并：
+ * 每组只报最短环，输出/白名单/快照均用代表环，量级从 1625 降到 ~50。
+ */
+export function representativeCycles(cycles) {
+    const bySet = new Map(); // 节点集合 key（排序 join）→ 最短环
+    for (const c of cycles) {
+        const body = c.slice(0, -1);
+        const key = [...body].sort().join('+');
+        const existing = bySet.get(key);
+        if (!existing || c.length < existing.length) bySet.set(key, c);
+    }
+    return [...bySet.values()];
 }
 
 // ── 白名单 ──
@@ -312,47 +322,72 @@ function diffAgainstSnapshot(snapshotPath, cycles, moduleEdges) {
 
 // ── 主流程 ──
 
+function main() {
 const { graph: fileGraph } = scanSourceGraph(SRC_DIR, { scope: args.scope });
 
 const { moduleGraph, moduleEdges } = buildModuleGraph(fileGraph);
 const rawCycles = detectCycles(moduleGraph);
 const cycles = dedupeCycles(rawCycles);
+// [P2 2026-08-06] 输出/判定/快照统一用「节点集合归并的代表环」：全量枚举保证不漏报，
+// 但稠密模块图会爆出 1625 条路径变体（--edges 输出 2.1MB 触发 execFileSync maxBuffer）。
+// 治理口径 = 代表环（每组节点最短环）；新增环检测 = 出现新的代表环。
+const reportCycles = representativeCycles(cycles);
 
 if (args['update-allowlist']) {
-    saveAllowlist(cycles);
-    console.log(`✅ 白名单已更新：${cycles.length} 个已知环 → ${path.relative(ROOT, ALLOWLIST_PATH)}`);
+    // [P2 2026-08-06] 白名单「只减不增」护栏：旧实现无条件把当前全部环（含新增环）写入
+    // 白名单，任何人可静默吸收新回归（ADR-238 L179 已警示）。现改为：有新增环则拒绝，
+    // 仅允许移除已修复环（fixed）收紧清单。判定基于代表环（节点集合口径）。
+    const existingAllowlist = loadAllowlist();
+    const currentKeys = new Set(reportCycles.map(normalizeCycleKey));
+    const addedKeys = [...currentKeys].filter((k) => !existingAllowlist.has(k));
+    const fixedKeys = [...existingAllowlist].filter((k) => !currentKeys.has(k));
+
+    if (addedKeys.length > 0) {
+        console.error(`❌ --update-allowlist 拒绝：检测到 ${addedKeys.length} 个新增环（代表环口径），白名单只允许减少不允许增加：`);
+        for (const k of addedKeys.slice(0, 20)) console.error(`   ${k}`);
+        if (addedKeys.length > 20) console.error(`   ...（共 ${addedKeys.length} 个）`);
+        console.error('   新增环应先修复代码消除；确认为已知环请人工编辑 circular-allowlist.json。');
+        process.exit(1);
+    }
+    if (fixedKeys.length === 0) {
+        console.log(`✅ 白名单无需更新（无新增环、无已修复环）`);
+        process.exit(0);
+    }
+    saveAllowlist(reportCycles);
+    console.log(`✅ 白名单已更新：移除 ${fixedKeys.length} 个已修复环 → ${path.relative(ROOT, ALLOWLIST_PATH)}`);
     process.exit(0);
 }
 
 // --snapshot：保存基线快照后退出（供 --diff 对比）
 if (args.snapshot) {
-    saveSnapshot(args.snapshot, cycles, moduleEdges);
+    saveSnapshot(args.snapshot, reportCycles, moduleEdges);
     process.exit(0);
 }
 
 // --diff：与基线快照对比，标出新增环及引入环的新增边
 if (args.diff) {
-    const hasNew = diffAgainstSnapshot(args.diff, cycles, moduleEdges);
+    const hasNew = diffAgainstSnapshot(args.diff, reportCycles, moduleEdges);
     process.exit(args.strict && hasNew ? 1 : 0);
 }
 
 const allowlist = loadAllowlist();
 const known = [];
 const added = [];
-for (const cycle of cycles) {
+for (const cycle of reportCycles) {
     (allowlist.has(normalizeCycleKey(cycle)) ? known : added).push(cycle);
 }
-const currentKeys = new Set(cycles.map(normalizeCycleKey));
+const currentKeys = new Set(reportCycles.map(normalizeCycleKey));
 const fixedKeys = [...allowlist].filter(k => !currentKeys.has(k));
 
 if (args.json) {
     console.log(JSON.stringify({
         moduleCount: moduleGraph.size,
-        cycleCount: cycles.length,
+        totalCycleCount: cycles.length,          // 全量路径变体数（枚举口径）
+        cycleCount: reportCycles.length,         // 代表环数（治理口径）
         knownCount: known.length,
         newCount: added.length,
         fixedCount: fixedKeys.length,
-        cycles: cycles.map(c => ({
+        cycles: reportCycles.map(c => ({
             path: c,
             length: c.length - 1,
             known: allowlist.has(normalizeCycleKey(c)),
@@ -362,7 +397,7 @@ if (args.json) {
 } else {
     console.log(`扫描到 ${moduleGraph.size} 个模块`);
 
-    if (cycles.length === 0) {
+    if (reportCycles.length === 0) {
         console.log('✅ 未检测到跨模块循环依赖');
     } else {
         // --edges 模式：环路径下追加文件级 import 边，便于定位具体引入点
@@ -408,3 +443,8 @@ if (args.json) {
 if (added.length > 0 && args.strict) {
     process.exit(1);
 }
+}
+
+// 仅直接运行时执行主流程；被测试 import 时只导出检测函数（detectCycles 已 export 供直测）
+const invokedDirectly = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+if (invokedDirectly) main();

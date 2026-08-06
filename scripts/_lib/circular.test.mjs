@@ -4,6 +4,9 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { walkSourceFiles, getExportedSymbols, parseSourceImports, resolveSourceImport } from './source-graph.mjs';
+// [P2 2026-08-06] 直测生产真身（去副本）：此前测试重实现 getModule/detectCycles 副本，
+// 副本与生产同缺陷、给虚假信心。内部函数已 export，此处全部改为直测。
+import { getModule, buildModuleGraph, detectCycles } from '../check-circular.mjs';
 
 // Helper: create temp fixture dir
 function createFixtureDir() {
@@ -224,17 +227,7 @@ test('Module graph: self-import → no cycle (same module)', () => {
   } finally { cleanup(root); }
 });
 
-test('getModule: edge cases', () => {
-  function getModule(rel) {
-    const parts = rel.split('/');
-    if (parts.length === 0) return 'unknown';
-    const top = parts[0];
-    if (top === '__tests__') return 'test';
-    if (parts.length === 1) return 'core';
-    if (top === 'scene' && parts.length > 2) return `scene/${parts[1]}`;
-    return top;
-  }
-
+test('getModule: edge cases（直测生产真身）', () => {
   assert.equal(getModule('core/state.ts'), 'core');
   assert.equal(getModule('scene/physics/index.ts'), 'scene/physics');
   assert.equal(getModule('scene/index.ts'), 'scene');
@@ -244,6 +237,41 @@ test('getModule: edge cases', () => {
 });
 
 // ── 补充边缘 ──
+
+// [P1 2026-08-06] 钻石结构回归：旧 DFS 后向边算法只报回边指向栈内节点的环，
+// a→b,b→a,a→c,c→b,c→a 会漏掉 3-环 a→c→b→a（cross edge c→b 被 visited 跳过）。
+// 直测生产真身 detectCycles（已 export）。
+test('detectCycles: 钻石结构不漏报 3-环（P1 回归）', () => {
+  const graph = new Map([
+    ['a', new Set(['b', 'c'])],
+    ['b', new Set(['a'])],
+    ['c', new Set(['b', 'a'])],
+  ]);
+  const cycles = detectCycles(graph);
+  const keys = cycles.map((c) => c.join('→'));
+  // 必须包含 3-环 a→c→b→a（旧算法只报 2-环 a→b→a 与 a→c→a）
+  assert.ok(keys.includes('a→c→b→a'), `钻石结构应检出 3-环 a→c→b→a，实际: ${keys.join(', ')}`);
+  // 且不丢失 2-环
+  assert.ok(keys.includes('a→b→a'), `应含 2-环 a→b→a，实际: ${keys.join(', ')}`);
+});
+
+test('detectCycles: 简单 2-环 a→b→a', () => {
+  const graph = new Map([
+    ['a', new Set(['b'])],
+    ['b', new Set(['a'])],
+  ]);
+  const cycles = detectCycles(graph);
+  assert.ok(cycles.some((c) => c.join('→') === 'a→b→a'), JSON.stringify(cycles));
+});
+
+test('detectCycles: 无环图 → 空结果', () => {
+  const graph = new Map([
+    ['a', new Set(['b'])],
+    ['b', new Set(['c'])],
+    ['c', new Set()],
+  ]);
+  assert.deepEqual(detectCycles(graph), []);
+});
 
 test('Module graph: 3-node cycle A→B→C→A', () => {
   const { root } = createFixtureDir();
@@ -261,37 +289,9 @@ test('Module graph: 3-node cycle A→B→C→A', () => {
         g.get(rel)?.add(imp.path);
       }
     }
-    const moduleGraph = new Map();
-    for (const [file, deps] of g) {
-      const parts = file.split('/');
-      const mod = parts.length > 0 ? parts[0] : 'root';
-      if (!moduleGraph.has(mod)) moduleGraph.set(mod, new Set());
-      for (const d of deps) {
-        const dParts = d.split('/');
-        const dMod = dParts.length > 0 ? dParts[0] : 'root';
-        if (dMod !== mod) moduleGraph.get(mod).add(dMod);
-      }
-    }
-
-    const cycles = [];
-    const visited = new Set();
-    const inStack = new Set();
-    const pathArr = [];
-    function dfs(node) {
-      if (inStack.has(node)) {
-        const start = pathArr.indexOf(node);
-        if (start !== -1) cycles.push([...pathArr.slice(start), node]);
-        return;
-      }
-      if (visited.has(node)) return;
-      visited.add(node);
-      inStack.add(node);
-      pathArr.push(node);
-      for (const dep of moduleGraph.get(node) || new Set()) dfs(dep);
-      pathArr.pop();
-      inStack.delete(node);
-    }
-    for (const n of moduleGraph.keys()) dfs(n);
+    // 直测生产真身：buildModuleGraph + detectCycles（此前内联 DFS 副本与生产同缺陷）
+    const { moduleGraph } = buildModuleGraph(g);
+    const cycles = detectCycles(moduleGraph);
     assert.ok(cycles.length >= 1);
     // Cycle should be a → b → c → a
     const first = cycles[0];

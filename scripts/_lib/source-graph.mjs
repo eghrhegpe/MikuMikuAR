@@ -56,7 +56,9 @@ export function resolveSourceImport(spec, importerFile, srcDir) {
 }
 
 export function parseSourceImports(filePath, srcDir) {
-  const text = fs.readFileSync(filePath, 'utf8');
+  // [P2 2026-08-06] 剥离块注释：`/* */` 内的独立行 import 字样此前被正则误识别为真 import
+  // → 假边 → 假环（check-circular 门禁误报）。非换行字符替换为空格，保持行锚定 (?:^|\n) 不破坏。
+  const text = fs.readFileSync(filePath, 'utf8').replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '));
   const imports = [];
   const specs = new Set();
 
@@ -145,12 +147,14 @@ export function getExportedSymbols(filePath) {
   const syms = new Set();
 
   // export async function / function / const / let / class / interface / type / enum
-  const re1 = /^export\s+(?:async\s+)?(?:function|const|let|class|interface|type|enum)\s+([A-Za-z0-9_]+)/gm;
+  // [P2 2026-08-06] re1 兼容 generator：`export async function* parseSseStream` 此前漏提，
+  // 导致 core/ai/sse.ts 整文件缺席 function-map（实证）。function 与 * 之间允许可选星号。
+  const re1 = /^export\s+(?:async\s+)?(?:function\s*\*?|const|let|class|interface|type|enum)\s+([A-Za-z0-9_]+)/gm;
   let m;
   while ((m = re1.exec(text))) syms.add(m[1]);
 
-  // export { a, b, c } / export { a as b }
-  const re2 = /^export\s*\{([^}]+)\}/gm;
+  // export { a, b, c } / export { a as b } / export type { X }（本地再导出，check-consumers resolved 校验依赖）
+  const re2 = /^export\s*(?:type\s+)?\{([^}]+)\}/gm;
   while ((m = re2.exec(text))) {
     m[1].split(',').forEach((s) => {
       const name = s.trim().split(/\s+as\s+/).pop().trim();

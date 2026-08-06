@@ -1,7 +1,2407 @@
 {
-  "$comment": "已知架构循环依赖白名单。CI (--strict) 只对本清单之外的新增环阻断。修复一个环后请运行 node scripts/check-circular.mjs --update-allowlist 收紧清单。",
+  "$comment": "已知架构循环依赖白名单（代表环口径：同节点集合只存最短环）。CI (--strict) 只对本清单之外的新增环阻断。修复一个环后请运行 node scripts/check-circular.mjs --update-allowlist 收紧清单。",
   "updatedAt": "2026-08-06",
   "cycles": [
+    {
+      "key": "core→menus→core",
+      "path": "core → menus → core"
+    },
+    {
+      "key": "core→menus→motion-algos→core",
+      "path": "core → menus → motion-algos → core"
+    },
+    {
+      "key": "core→menus→scene/ar→core",
+      "path": "core → menus → scene/ar → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/env→core",
+      "path": "core → menus → scene/ar → scene/env → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/env→scene/physics→core",
+      "path": "core → menus → scene/ar → scene/env → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/env→scene/render→core",
+      "path": "core → menus → scene/ar → scene/env → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/env→scene/render→scene/shared→core",
+      "path": "core → menus → scene/ar → scene/env → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/env→scene/render→scene/transform→core",
+      "path": "core → menus → scene/ar → scene/env → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/env→scene/transform→core",
+      "path": "core → menus → scene/ar → scene/env → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/env→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene/ar → scene/env → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/env→scene→motion-algos→core",
+      "path": "core → menus → scene/ar → scene/env → scene → motion-algos → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/env→scene→scene/manager→motion-algos→core",
+      "path": "core → menus → scene/ar → scene/env → scene → scene/manager → motion-algos → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/env→scene→scene/manager→scene/shared→core",
+      "path": "core → menus → scene/ar → scene/env → scene → scene/manager → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/env→scene→scene/motion→motion-algos→core",
+      "path": "core → menus → scene/ar → scene/env → scene → scene/motion → motion-algos → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/env→scene→scene/motion→scene/manager→motion-algos→core",
+      "path": "core → menus → scene/ar → scene/env → scene → scene/motion → scene/manager → motion-algos → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/env→scene→scene/motion→scene/manager→scene/shared→core",
+      "path": "core → menus → scene/ar → scene/env → scene → scene/motion → scene/manager → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/env→scene→scene/motion→scene/shared→core",
+      "path": "core → menus → scene/ar → scene/env → scene → scene/motion → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→core",
+      "path": "core → menus → scene/ar → scene/motion → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→motion-algos→core",
+      "path": "core → menus → scene/ar → scene/motion → motion-algos → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene/env→core",
+      "path": "core → menus → scene/ar → scene/motion → scene/env → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene/env→scene/physics→core",
+      "path": "core → menus → scene/ar → scene/motion → scene/env → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene/env→scene/render→core",
+      "path": "core → menus → scene/ar → scene/motion → scene/env → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene/env→scene/render→scene/shared→core",
+      "path": "core → menus → scene/ar → scene/motion → scene/env → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene/env→scene/render→scene/transform→core",
+      "path": "core → menus → scene/ar → scene/motion → scene/env → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene/env→scene/transform→core",
+      "path": "core → menus → scene/ar → scene/motion → scene/env → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene/env→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene/ar → scene/motion → scene/env → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene/env→scene→scene/camera→core",
+      "path": "core → menus → scene/ar → scene/motion → scene/env → scene → scene/camera → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene/manager→core",
+      "path": "core → menus → scene/ar → scene/motion → scene/manager → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene/manager→motion-algos→core",
+      "path": "core → menus → scene/ar → scene/motion → scene/manager → motion-algos → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene/manager→scene/camera→core",
+      "path": "core → menus → scene/ar → scene/motion → scene/manager → scene/camera → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene/manager→scene/camera→scene/env→core",
+      "path": "core → menus → scene/ar → scene/motion → scene/manager → scene/camera → scene/env → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene/manager→scene/camera→scene/env→scene/physics→core",
+      "path": "core → menus → scene/ar → scene/motion → scene/manager → scene/camera → scene/env → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene/manager→scene/camera→scene/env→scene/render→core",
+      "path": "core → menus → scene/ar → scene/motion → scene/manager → scene/camera → scene/env → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene/manager→scene/camera→scene/env→scene/render→scene/shared→core",
+      "path": "core → menus → scene/ar → scene/motion → scene/manager → scene/camera → scene/env → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene/manager→scene/camera→scene/env→scene/render→scene/transform→core",
+      "path": "core → menus → scene/ar → scene/motion → scene/manager → scene/camera → scene/env → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene/manager→scene/camera→scene/env→scene/transform→core",
+      "path": "core → menus → scene/ar → scene/motion → scene/manager → scene/camera → scene/env → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene/manager→scene/camera→scene/env→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene/ar → scene/motion → scene/manager → scene/camera → scene/env → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene/manager→scene/camera→scene/env→scene→motion-algos→core",
+      "path": "core → menus → scene/ar → scene/motion → scene/manager → scene/camera → scene/env → scene → motion-algos → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene/manager→scene/camera→scene→motion-algos→core",
+      "path": "core → menus → scene/ar → scene/motion → scene/manager → scene/camera → scene → motion-algos → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene/manager→scene/camera→scene→scene/physics→core",
+      "path": "core → menus → scene/ar → scene/motion → scene/manager → scene/camera → scene → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene/manager→scene/camera→scene→scene/render→core",
+      "path": "core → menus → scene/ar → scene/motion → scene/manager → scene/camera → scene → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene/manager→scene/camera→scene→scene/render→scene/shared→core",
+      "path": "core → menus → scene/ar → scene/motion → scene/manager → scene/camera → scene → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene/manager→scene/camera→scene→scene/render→scene/transform→core",
+      "path": "core → menus → scene/ar → scene/motion → scene/manager → scene/camera → scene → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene/manager→scene/camera→scene→scene/transform→core",
+      "path": "core → menus → scene/ar → scene/motion → scene/manager → scene/camera → scene → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene/manager→scene/camera→scene→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene/ar → scene/motion → scene/manager → scene/camera → scene → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene/manager→scene/env→core",
+      "path": "core → menus → scene/ar → scene/motion → scene/manager → scene/env → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene/manager→scene/env→scene/physics→core",
+      "path": "core → menus → scene/ar → scene/motion → scene/manager → scene/env → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene/manager→scene/env→scene/render→core",
+      "path": "core → menus → scene/ar → scene/motion → scene/manager → scene/env → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene/manager→scene/env→scene/render→scene/shared→core",
+      "path": "core → menus → scene/ar → scene/motion → scene/manager → scene/env → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene/manager→scene/env→scene/render→scene/transform→core",
+      "path": "core → menus → scene/ar → scene/motion → scene/manager → scene/env → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene/manager→scene/env→scene/transform→core",
+      "path": "core → menus → scene/ar → scene/motion → scene/manager → scene/env → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene/manager→scene/env→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene/ar → scene/motion → scene/manager → scene/env → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene/manager→scene/physics→core",
+      "path": "core → menus → scene/ar → scene/motion → scene/manager → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene/manager→scene/render→core",
+      "path": "core → menus → scene/ar → scene/motion → scene/manager → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene/manager→scene/render→scene/shared→core",
+      "path": "core → menus → scene/ar → scene/motion → scene/manager → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene/manager→scene/render→scene/transform→core",
+      "path": "core → menus → scene/ar → scene/motion → scene/manager → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene/manager→scene/shared→core",
+      "path": "core → menus → scene/ar → scene/motion → scene/manager → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene/manager→scene/transform→core",
+      "path": "core → menus → scene/ar → scene/motion → scene/manager → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene/manager→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene/ar → scene/motion → scene/manager → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene/shared→core",
+      "path": "core → menus → scene/ar → scene/motion → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene→scene/camera→core",
+      "path": "core → menus → scene/ar → scene/motion → scene → scene/camera → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene→scene/camera→scene/env→scene/physics→core",
+      "path": "core → menus → scene/ar → scene/motion → scene → scene/camera → scene/env → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene→scene/camera→scene/env→scene/render→core",
+      "path": "core → menus → scene/ar → scene/motion → scene → scene/camera → scene/env → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene→scene/camera→scene/env→scene/render→scene/shared→core",
+      "path": "core → menus → scene/ar → scene/motion → scene → scene/camera → scene/env → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene→scene/camera→scene/env→scene/render→scene/transform→core",
+      "path": "core → menus → scene/ar → scene/motion → scene → scene/camera → scene/env → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene→scene/camera→scene/env→scene/transform→core",
+      "path": "core → menus → scene/ar → scene/motion → scene → scene/camera → scene/env → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene→scene/camera→scene/env→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene/ar → scene/motion → scene → scene/camera → scene/env → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene→scene/physics→core",
+      "path": "core → menus → scene/ar → scene/motion → scene → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene→scene/render→core",
+      "path": "core → menus → scene/ar → scene/motion → scene → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene→scene/render→scene/shared→core",
+      "path": "core → menus → scene/ar → scene/motion → scene → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene→scene/render→scene/transform→core",
+      "path": "core → menus → scene/ar → scene/motion → scene → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene→scene/transform→core",
+      "path": "core → menus → scene/ar → scene/motion → scene → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/motion→scene→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene/ar → scene/motion → scene → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/render→core",
+      "path": "core → menus → scene/ar → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/render→scene/shared→core",
+      "path": "core → menus → scene/ar → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene/render→scene/transform→core",
+      "path": "core → menus → scene/ar → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→core",
+      "path": "core → menus → scene/ar → scene → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→motion-algos→core",
+      "path": "core → menus → scene/ar → scene → motion-algos → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/camera→core",
+      "path": "core → menus → scene/ar → scene → scene/camera → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/camera→scene/env→core",
+      "path": "core → menus → scene/ar → scene → scene/camera → scene/env → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/camera→scene/env→scene/physics→core",
+      "path": "core → menus → scene/ar → scene → scene/camera → scene/env → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/camera→scene/env→scene/render→core",
+      "path": "core → menus → scene/ar → scene → scene/camera → scene/env → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/camera→scene/env→scene/render→scene/shared→core",
+      "path": "core → menus → scene/ar → scene → scene/camera → scene/env → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/camera→scene/env→scene/render→scene/transform→core",
+      "path": "core → menus → scene/ar → scene → scene/camera → scene/env → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/camera→scene/env→scene/transform→core",
+      "path": "core → menus → scene/ar → scene → scene/camera → scene/env → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/camera→scene/env→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene/ar → scene → scene/camera → scene/env → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/env→core",
+      "path": "core → menus → scene/ar → scene → scene/env → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/env→scene/physics→core",
+      "path": "core → menus → scene/ar → scene → scene/env → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/env→scene/render→core",
+      "path": "core → menus → scene/ar → scene → scene/env → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/env→scene/render→scene/shared→core",
+      "path": "core → menus → scene/ar → scene → scene/env → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/env→scene/render→scene/transform→core",
+      "path": "core → menus → scene/ar → scene → scene/env → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/env→scene/transform→core",
+      "path": "core → menus → scene/ar → scene → scene/env → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/env→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene/ar → scene → scene/env → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/manager→core",
+      "path": "core → menus → scene/ar → scene → scene/manager → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/manager→motion-algos→core",
+      "path": "core → menus → scene/ar → scene → scene/manager → motion-algos → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/manager→scene/camera→core",
+      "path": "core → menus → scene/ar → scene → scene/manager → scene/camera → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/manager→scene/camera→scene/env→core",
+      "path": "core → menus → scene/ar → scene → scene/manager → scene/camera → scene/env → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/manager→scene/camera→scene/env→scene/physics→core",
+      "path": "core → menus → scene/ar → scene → scene/manager → scene/camera → scene/env → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/manager→scene/camera→scene/env→scene/render→core",
+      "path": "core → menus → scene/ar → scene → scene/manager → scene/camera → scene/env → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/manager→scene/camera→scene/env→scene/render→scene/shared→core",
+      "path": "core → menus → scene/ar → scene → scene/manager → scene/camera → scene/env → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/manager→scene/camera→scene/env→scene/render→scene/transform→core",
+      "path": "core → menus → scene/ar → scene → scene/manager → scene/camera → scene/env → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/manager→scene/camera→scene/env→scene/transform→core",
+      "path": "core → menus → scene/ar → scene → scene/manager → scene/camera → scene/env → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/manager→scene/camera→scene/env→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene/ar → scene → scene/manager → scene/camera → scene/env → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/manager→scene/env→core",
+      "path": "core → menus → scene/ar → scene → scene/manager → scene/env → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/manager→scene/env→scene/physics→core",
+      "path": "core → menus → scene/ar → scene → scene/manager → scene/env → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/manager→scene/env→scene/render→core",
+      "path": "core → menus → scene/ar → scene → scene/manager → scene/env → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/manager→scene/env→scene/render→scene/shared→core",
+      "path": "core → menus → scene/ar → scene → scene/manager → scene/env → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/manager→scene/env→scene/render→scene/transform→core",
+      "path": "core → menus → scene/ar → scene → scene/manager → scene/env → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/manager→scene/env→scene/transform→core",
+      "path": "core → menus → scene/ar → scene → scene/manager → scene/env → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/manager→scene/env→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene/ar → scene → scene/manager → scene/env → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/manager→scene/physics→core",
+      "path": "core → menus → scene/ar → scene → scene/manager → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/manager→scene/render→core",
+      "path": "core → menus → scene/ar → scene → scene/manager → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/manager→scene/render→scene/shared→core",
+      "path": "core → menus → scene/ar → scene → scene/manager → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/manager→scene/render→scene/transform→core",
+      "path": "core → menus → scene/ar → scene → scene/manager → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/manager→scene/shared→core",
+      "path": "core → menus → scene/ar → scene → scene/manager → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/manager→scene/transform→core",
+      "path": "core → menus → scene/ar → scene → scene/manager → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/manager→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene/ar → scene → scene/manager → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/motion→core",
+      "path": "core → menus → scene/ar → scene → scene/motion → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/motion→motion-algos→core",
+      "path": "core → menus → scene/ar → scene → scene/motion → motion-algos → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/motion→scene/env→core",
+      "path": "core → menus → scene/ar → scene → scene/motion → scene/env → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/motion→scene/env→scene/physics→core",
+      "path": "core → menus → scene/ar → scene → scene/motion → scene/env → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/motion→scene/env→scene/render→core",
+      "path": "core → menus → scene/ar → scene → scene/motion → scene/env → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/motion→scene/env→scene/render→scene/shared→core",
+      "path": "core → menus → scene/ar → scene → scene/motion → scene/env → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/motion→scene/env→scene/render→scene/transform→core",
+      "path": "core → menus → scene/ar → scene → scene/motion → scene/env → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/motion→scene/env→scene/transform→core",
+      "path": "core → menus → scene/ar → scene → scene/motion → scene/env → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/motion→scene/env→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene/ar → scene → scene/motion → scene/env → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/motion→scene/manager→core",
+      "path": "core → menus → scene/ar → scene → scene/motion → scene/manager → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/motion→scene/manager→motion-algos→core",
+      "path": "core → menus → scene/ar → scene → scene/motion → scene/manager → motion-algos → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/motion→scene/manager→scene/camera→core",
+      "path": "core → menus → scene/ar → scene → scene/motion → scene/manager → scene/camera → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/motion→scene/manager→scene/camera→scene/env→core",
+      "path": "core → menus → scene/ar → scene → scene/motion → scene/manager → scene/camera → scene/env → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/motion→scene/manager→scene/camera→scene/env→scene/physics→core",
+      "path": "core → menus → scene/ar → scene → scene/motion → scene/manager → scene/camera → scene/env → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/motion→scene/manager→scene/camera→scene/env→scene/render→core",
+      "path": "core → menus → scene/ar → scene → scene/motion → scene/manager → scene/camera → scene/env → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/motion→scene/manager→scene/camera→scene/env→scene/render→scene/shared→core",
+      "path": "core → menus → scene/ar → scene → scene/motion → scene/manager → scene/camera → scene/env → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/motion→scene/manager→scene/camera→scene/env→scene/render→scene/transform→core",
+      "path": "core → menus → scene/ar → scene → scene/motion → scene/manager → scene/camera → scene/env → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/motion→scene/manager→scene/camera→scene/env→scene/transform→core",
+      "path": "core → menus → scene/ar → scene → scene/motion → scene/manager → scene/camera → scene/env → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/motion→scene/manager→scene/camera→scene/env→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene/ar → scene → scene/motion → scene/manager → scene/camera → scene/env → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/motion→scene/manager→scene/env→core",
+      "path": "core → menus → scene/ar → scene → scene/motion → scene/manager → scene/env → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/motion→scene/manager→scene/env→scene/physics→core",
+      "path": "core → menus → scene/ar → scene → scene/motion → scene/manager → scene/env → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/motion→scene/manager→scene/env→scene/render→core",
+      "path": "core → menus → scene/ar → scene → scene/motion → scene/manager → scene/env → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/motion→scene/manager→scene/env→scene/render→scene/shared→core",
+      "path": "core → menus → scene/ar → scene → scene/motion → scene/manager → scene/env → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/motion→scene/manager→scene/env→scene/render→scene/transform→core",
+      "path": "core → menus → scene/ar → scene → scene/motion → scene/manager → scene/env → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/motion→scene/manager→scene/env→scene/transform→core",
+      "path": "core → menus → scene/ar → scene → scene/motion → scene/manager → scene/env → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/motion→scene/manager→scene/env→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene/ar → scene → scene/motion → scene/manager → scene/env → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/motion→scene/manager→scene/physics→core",
+      "path": "core → menus → scene/ar → scene → scene/motion → scene/manager → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/motion→scene/manager→scene/render→core",
+      "path": "core → menus → scene/ar → scene → scene/motion → scene/manager → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/motion→scene/manager→scene/render→scene/shared→core",
+      "path": "core → menus → scene/ar → scene → scene/motion → scene/manager → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/motion→scene/manager→scene/render→scene/transform→core",
+      "path": "core → menus → scene/ar → scene → scene/motion → scene/manager → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/motion→scene/manager→scene/shared→core",
+      "path": "core → menus → scene/ar → scene → scene/motion → scene/manager → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/motion→scene/manager→scene/transform→core",
+      "path": "core → menus → scene/ar → scene → scene/motion → scene/manager → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/motion→scene/manager→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene/ar → scene → scene/motion → scene/manager → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/motion→scene/shared→core",
+      "path": "core → menus → scene/ar → scene → scene/motion → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/physics→core",
+      "path": "core → menus → scene/ar → scene → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/render→core",
+      "path": "core → menus → scene/ar → scene → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/render→scene/shared→core",
+      "path": "core → menus → scene/ar → scene → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/render→scene/transform→core",
+      "path": "core → menus → scene/ar → scene → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/transform→core",
+      "path": "core → menus → scene/ar → scene → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/ar→scene→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene/ar → scene → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/camera→core",
+      "path": "core → menus → scene/camera → core"
+    },
+    {
+      "key": "core→menus→scene/camera→scene/env→core",
+      "path": "core → menus → scene/camera → scene/env → core"
+    },
+    {
+      "key": "core→menus→scene/camera→scene/env→scene/physics→core",
+      "path": "core → menus → scene/camera → scene/env → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene/camera→scene/env→scene/render→core",
+      "path": "core → menus → scene/camera → scene/env → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene/camera→scene/env→scene/render→scene/shared→core",
+      "path": "core → menus → scene/camera → scene/env → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/camera→scene/env→scene/render→scene/transform→core",
+      "path": "core → menus → scene/camera → scene/env → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/camera→scene/env→scene/transform→core",
+      "path": "core → menus → scene/camera → scene/env → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/camera→scene/env→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene/camera → scene/env → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/camera→scene/env→scene→motion-algos→core",
+      "path": "core → menus → scene/camera → scene/env → scene → motion-algos → core"
+    },
+    {
+      "key": "core→menus→scene/camera→scene/env→scene→scene/manager→scene/shared→core",
+      "path": "core → menus → scene/camera → scene/env → scene → scene/manager → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/camera→scene/env→scene→scene/motion→motion-algos→core",
+      "path": "core → menus → scene/camera → scene/env → scene → scene/motion → motion-algos → core"
+    },
+    {
+      "key": "core→menus→scene/camera→scene/env→scene→scene/motion→scene/shared→core",
+      "path": "core → menus → scene/camera → scene/env → scene → scene/motion → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/camera→scene→motion-algos→core",
+      "path": "core → menus → scene/camera → scene → motion-algos → core"
+    },
+    {
+      "key": "core→menus→scene/camera→scene→scene/manager→scene/shared→core",
+      "path": "core → menus → scene/camera → scene → scene/manager → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/camera→scene→scene/motion→motion-algos→core",
+      "path": "core → menus → scene/camera → scene → scene/motion → motion-algos → core"
+    },
+    {
+      "key": "core→menus→scene/camera→scene→scene/motion→scene/shared→core",
+      "path": "core → menus → scene/camera → scene → scene/motion → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/camera→scene→scene/physics→core",
+      "path": "core → menus → scene/camera → scene → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene/camera→scene→scene/render→core",
+      "path": "core → menus → scene/camera → scene → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene/camera→scene→scene/render→scene/shared→core",
+      "path": "core → menus → scene/camera → scene → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/camera→scene→scene/render→scene/transform→core",
+      "path": "core → menus → scene/camera → scene → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/camera→scene→scene/transform→core",
+      "path": "core → menus → scene/camera → scene → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/camera→scene→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene/camera → scene → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/env→core",
+      "path": "core → menus → scene/env → core"
+    },
+    {
+      "key": "core→menus→scene/env→scene/physics→core",
+      "path": "core → menus → scene/env → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene/env→scene/render→core",
+      "path": "core → menus → scene/env → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene/env→scene/render→scene/shared→core",
+      "path": "core → menus → scene/env → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/env→scene/render→scene/transform→core",
+      "path": "core → menus → scene/env → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/env→scene/transform→core",
+      "path": "core → menus → scene/env → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/env→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene/env → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/env→scene→motion-algos→core",
+      "path": "core → menus → scene/env → scene → motion-algos → core"
+    },
+    {
+      "key": "core→menus→scene/env→scene→scene/manager→motion-algos→core",
+      "path": "core → menus → scene/env → scene → scene/manager → motion-algos → core"
+    },
+    {
+      "key": "core→menus→scene/env→scene→scene/manager→scene/shared→core",
+      "path": "core → menus → scene/env → scene → scene/manager → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/env→scene→scene/motion→motion-algos→core",
+      "path": "core → menus → scene/env → scene → scene/motion → motion-algos → core"
+    },
+    {
+      "key": "core→menus→scene/env→scene→scene/motion→scene/manager→motion-algos→core",
+      "path": "core → menus → scene/env → scene → scene/motion → scene/manager → motion-algos → core"
+    },
+    {
+      "key": "core→menus→scene/env→scene→scene/motion→scene/manager→scene/shared→core",
+      "path": "core → menus → scene/env → scene → scene/motion → scene/manager → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/env→scene→scene/motion→scene/shared→core",
+      "path": "core → menus → scene/env → scene → scene/motion → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/manager→core",
+      "path": "core → menus → scene/manager → core"
+    },
+    {
+      "key": "core→menus→scene/manager→motion-algos→core",
+      "path": "core → menus → scene/manager → motion-algos → core"
+    },
+    {
+      "key": "core→menus→scene/manager→scene/camera→core",
+      "path": "core → menus → scene/manager → scene/camera → core"
+    },
+    {
+      "key": "core→menus→scene/manager→scene/camera→scene/env→core",
+      "path": "core → menus → scene/manager → scene/camera → scene/env → core"
+    },
+    {
+      "key": "core→menus→scene/manager→scene/camera→scene/env→scene/physics→core",
+      "path": "core → menus → scene/manager → scene/camera → scene/env → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene/manager→scene/camera→scene/env→scene/render→core",
+      "path": "core → menus → scene/manager → scene/camera → scene/env → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene/manager→scene/camera→scene/env→scene/render→scene/shared→core",
+      "path": "core → menus → scene/manager → scene/camera → scene/env → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/manager→scene/camera→scene/env→scene/render→scene/transform→core",
+      "path": "core → menus → scene/manager → scene/camera → scene/env → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/manager→scene/camera→scene/env→scene/transform→core",
+      "path": "core → menus → scene/manager → scene/camera → scene/env → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/manager→scene/camera→scene/env→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene/manager → scene/camera → scene/env → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/manager→scene/camera→scene/env→scene→motion-algos→core",
+      "path": "core → menus → scene/manager → scene/camera → scene/env → scene → motion-algos → core"
+    },
+    {
+      "key": "core→menus→scene/manager→scene/camera→scene/env→scene→scene/motion→motion-algos→core",
+      "path": "core → menus → scene/manager → scene/camera → scene/env → scene → scene/motion → motion-algos → core"
+    },
+    {
+      "key": "core→menus→scene/manager→scene/camera→scene/env→scene→scene/motion→scene/shared→core",
+      "path": "core → menus → scene/manager → scene/camera → scene/env → scene → scene/motion → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/manager→scene/camera→scene→motion-algos→core",
+      "path": "core → menus → scene/manager → scene/camera → scene → motion-algos → core"
+    },
+    {
+      "key": "core→menus→scene/manager→scene/camera→scene→scene/motion→motion-algos→core",
+      "path": "core → menus → scene/manager → scene/camera → scene → scene/motion → motion-algos → core"
+    },
+    {
+      "key": "core→menus→scene/manager→scene/camera→scene→scene/motion→scene/shared→core",
+      "path": "core → menus → scene/manager → scene/camera → scene → scene/motion → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/manager→scene/camera→scene→scene/physics→core",
+      "path": "core → menus → scene/manager → scene/camera → scene → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene/manager→scene/camera→scene→scene/render→core",
+      "path": "core → menus → scene/manager → scene/camera → scene → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene/manager→scene/camera→scene→scene/render→scene/shared→core",
+      "path": "core → menus → scene/manager → scene/camera → scene → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/manager→scene/camera→scene→scene/render→scene/transform→core",
+      "path": "core → menus → scene/manager → scene/camera → scene → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/manager→scene/camera→scene→scene/transform→core",
+      "path": "core → menus → scene/manager → scene/camera → scene → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/manager→scene/camera→scene→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene/manager → scene/camera → scene → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/manager→scene/env→core",
+      "path": "core → menus → scene/manager → scene/env → core"
+    },
+    {
+      "key": "core→menus→scene/manager→scene/env→scene/physics→core",
+      "path": "core → menus → scene/manager → scene/env → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene/manager→scene/env→scene/render→core",
+      "path": "core → menus → scene/manager → scene/env → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene/manager→scene/env→scene/render→scene/shared→core",
+      "path": "core → menus → scene/manager → scene/env → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/manager→scene/env→scene/render→scene/transform→core",
+      "path": "core → menus → scene/manager → scene/env → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/manager→scene/env→scene/transform→core",
+      "path": "core → menus → scene/manager → scene/env → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/manager→scene/env→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene/manager → scene/env → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/manager→scene/motion→core",
+      "path": "core → menus → scene/manager → scene/motion → core"
+    },
+    {
+      "key": "core→menus→scene/manager→scene/motion→motion-algos→core",
+      "path": "core → menus → scene/manager → scene/motion → motion-algos → core"
+    },
+    {
+      "key": "core→menus→scene/manager→scene/motion→scene/env→core",
+      "path": "core → menus → scene/manager → scene/motion → scene/env → core"
+    },
+    {
+      "key": "core→menus→scene/manager→scene/motion→scene/env→scene/physics→core",
+      "path": "core → menus → scene/manager → scene/motion → scene/env → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene/manager→scene/motion→scene/env→scene/render→core",
+      "path": "core → menus → scene/manager → scene/motion → scene/env → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene/manager→scene/motion→scene/env→scene/render→scene/shared→core",
+      "path": "core → menus → scene/manager → scene/motion → scene/env → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/manager→scene/motion→scene/env→scene/render→scene/transform→core",
+      "path": "core → menus → scene/manager → scene/motion → scene/env → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/manager→scene/motion→scene/env→scene/transform→core",
+      "path": "core → menus → scene/manager → scene/motion → scene/env → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/manager→scene/motion→scene/env→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene/manager → scene/motion → scene/env → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/manager→scene/motion→scene/shared→core",
+      "path": "core → menus → scene/manager → scene/motion → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/manager→scene/physics→core",
+      "path": "core → menus → scene/manager → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene/manager→scene/render→core",
+      "path": "core → menus → scene/manager → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene/manager→scene/render→scene/shared→core",
+      "path": "core → menus → scene/manager → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/manager→scene/render→scene/transform→core",
+      "path": "core → menus → scene/manager → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/manager→scene/shared→core",
+      "path": "core → menus → scene/manager → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/manager→scene/transform→core",
+      "path": "core → menus → scene/manager → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/manager→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene/manager → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/motion→core",
+      "path": "core → menus → scene/motion → core"
+    },
+    {
+      "key": "core→menus→scene/motion→motion-algos→core",
+      "path": "core → menus → scene/motion → motion-algos → core"
+    },
+    {
+      "key": "core→menus→scene/motion→scene/env→core",
+      "path": "core → menus → scene/motion → scene/env → core"
+    },
+    {
+      "key": "core→menus→scene/motion→scene/env→scene/physics→core",
+      "path": "core → menus → scene/motion → scene/env → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene/motion→scene/env→scene/render→core",
+      "path": "core → menus → scene/motion → scene/env → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene/motion→scene/env→scene/render→scene/shared→core",
+      "path": "core → menus → scene/motion → scene/env → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/motion→scene/env→scene/render→scene/transform→core",
+      "path": "core → menus → scene/motion → scene/env → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/motion→scene/env→scene/transform→core",
+      "path": "core → menus → scene/motion → scene/env → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/motion→scene/env→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene/motion → scene/env → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/motion→scene/env→scene→scene/camera→core",
+      "path": "core → menus → scene/motion → scene/env → scene → scene/camera → core"
+    },
+    {
+      "key": "core→menus→scene/motion→scene/manager→scene/camera→core",
+      "path": "core → menus → scene/motion → scene/manager → scene/camera → core"
+    },
+    {
+      "key": "core→menus→scene/motion→scene/manager→scene/camera→scene/env→core",
+      "path": "core → menus → scene/motion → scene/manager → scene/camera → scene/env → core"
+    },
+    {
+      "key": "core→menus→scene/motion→scene/manager→scene/camera→scene/env→scene/physics→core",
+      "path": "core → menus → scene/motion → scene/manager → scene/camera → scene/env → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene/motion→scene/manager→scene/camera→scene/env→scene/render→core",
+      "path": "core → menus → scene/motion → scene/manager → scene/camera → scene/env → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene/motion→scene/manager→scene/camera→scene/env→scene/render→scene/shared→core",
+      "path": "core → menus → scene/motion → scene/manager → scene/camera → scene/env → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/motion→scene/manager→scene/camera→scene/env→scene/render→scene/transform→core",
+      "path": "core → menus → scene/motion → scene/manager → scene/camera → scene/env → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/motion→scene/manager→scene/camera→scene/env→scene/transform→core",
+      "path": "core → menus → scene/motion → scene/manager → scene/camera → scene/env → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/motion→scene/manager→scene/camera→scene/env→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene/motion → scene/manager → scene/camera → scene/env → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/motion→scene/manager→scene/camera→scene→scene/physics→core",
+      "path": "core → menus → scene/motion → scene/manager → scene/camera → scene → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene/motion→scene/manager→scene/camera→scene→scene/render→core",
+      "path": "core → menus → scene/motion → scene/manager → scene/camera → scene → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene/motion→scene/manager→scene/camera→scene→scene/render→scene/shared→core",
+      "path": "core → menus → scene/motion → scene/manager → scene/camera → scene → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/motion→scene/manager→scene/camera→scene→scene/render→scene/transform→core",
+      "path": "core → menus → scene/motion → scene/manager → scene/camera → scene → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/motion→scene/manager→scene/camera→scene→scene/transform→core",
+      "path": "core → menus → scene/motion → scene/manager → scene/camera → scene → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/motion→scene/manager→scene/camera→scene→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene/motion → scene/manager → scene/camera → scene → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/motion→scene/manager→scene/physics→core",
+      "path": "core → menus → scene/motion → scene/manager → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene/motion→scene/manager→scene/render→core",
+      "path": "core → menus → scene/motion → scene/manager → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene/motion→scene/manager→scene/render→scene/shared→core",
+      "path": "core → menus → scene/motion → scene/manager → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/motion→scene/manager→scene/render→scene/transform→core",
+      "path": "core → menus → scene/motion → scene/manager → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/motion→scene/manager→scene/transform→core",
+      "path": "core → menus → scene/motion → scene/manager → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/motion→scene/manager→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene/motion → scene/manager → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/motion→scene/shared→core",
+      "path": "core → menus → scene/motion → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/motion→scene→scene/camera→core",
+      "path": "core → menus → scene/motion → scene → scene/camera → core"
+    },
+    {
+      "key": "core→menus→scene/motion→scene→scene/camera→scene/env→scene/physics→core",
+      "path": "core → menus → scene/motion → scene → scene/camera → scene/env → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene/motion→scene→scene/camera→scene/env→scene/render→core",
+      "path": "core → menus → scene/motion → scene → scene/camera → scene/env → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene/motion→scene→scene/camera→scene/env→scene/render→scene/shared→core",
+      "path": "core → menus → scene/motion → scene → scene/camera → scene/env → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/motion→scene→scene/camera→scene/env→scene/render→scene/transform→core",
+      "path": "core → menus → scene/motion → scene → scene/camera → scene/env → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/motion→scene→scene/camera→scene/env→scene/transform→core",
+      "path": "core → menus → scene/motion → scene → scene/camera → scene/env → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/motion→scene→scene/camera→scene/env→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene/motion → scene → scene/camera → scene/env → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/motion→scene→scene/physics→core",
+      "path": "core → menus → scene/motion → scene → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene/motion→scene→scene/render→core",
+      "path": "core → menus → scene/motion → scene → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene/motion→scene→scene/render→scene/shared→core",
+      "path": "core → menus → scene/motion → scene → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/motion→scene→scene/render→scene/transform→core",
+      "path": "core → menus → scene/motion → scene → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/motion→scene→scene/transform→core",
+      "path": "core → menus → scene/motion → scene → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/motion→scene→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene/motion → scene → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/physics→core",
+      "path": "core → menus → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene/pose→core",
+      "path": "core → menus → scene/pose → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→core",
+      "path": "core → menus → scene/pose → scene/camera → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene/env→core",
+      "path": "core → menus → scene/pose → scene/camera → scene/env → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene/env→scene/physics→core",
+      "path": "core → menus → scene/pose → scene/camera → scene/env → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene/env→scene/render→core",
+      "path": "core → menus → scene/pose → scene/camera → scene/env → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene/env→scene/render→scene/shared→core",
+      "path": "core → menus → scene/pose → scene/camera → scene/env → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene/env→scene/render→scene/transform→core",
+      "path": "core → menus → scene/pose → scene/camera → scene/env → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene/env→scene/transform→core",
+      "path": "core → menus → scene/pose → scene/camera → scene/env → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene/env→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene/pose → scene/camera → scene/env → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene/env→scene→core",
+      "path": "core → menus → scene/pose → scene/camera → scene/env → scene → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene/env→scene→motion-algos→core",
+      "path": "core → menus → scene/pose → scene/camera → scene/env → scene → motion-algos → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene/env→scene→scene/manager→core",
+      "path": "core → menus → scene/pose → scene/camera → scene/env → scene → scene/manager → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene/env→scene→scene/manager→motion-algos→core",
+      "path": "core → menus → scene/pose → scene/camera → scene/env → scene → scene/manager → motion-algos → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene/env→scene→scene/manager→scene/physics→core",
+      "path": "core → menus → scene/pose → scene/camera → scene/env → scene → scene/manager → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene/env→scene→scene/manager→scene/render→core",
+      "path": "core → menus → scene/pose → scene/camera → scene/env → scene → scene/manager → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene/env→scene→scene/manager→scene/render→scene/shared→core",
+      "path": "core → menus → scene/pose → scene/camera → scene/env → scene → scene/manager → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene/env→scene→scene/manager→scene/render→scene/transform→core",
+      "path": "core → menus → scene/pose → scene/camera → scene/env → scene → scene/manager → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene/env→scene→scene/manager→scene/shared→core",
+      "path": "core → menus → scene/pose → scene/camera → scene/env → scene → scene/manager → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene/env→scene→scene/manager→scene/transform→core",
+      "path": "core → menus → scene/pose → scene/camera → scene/env → scene → scene/manager → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene/env→scene→scene/manager→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene/pose → scene/camera → scene/env → scene → scene/manager → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene/env→scene→scene/motion→core",
+      "path": "core → menus → scene/pose → scene/camera → scene/env → scene → scene/motion → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene/env→scene→scene/motion→motion-algos→core",
+      "path": "core → menus → scene/pose → scene/camera → scene/env → scene → scene/motion → motion-algos → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene/env→scene→scene/motion→scene/manager→core",
+      "path": "core → menus → scene/pose → scene/camera → scene/env → scene → scene/motion → scene/manager → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene/env→scene→scene/motion→scene/manager→motion-algos→core",
+      "path": "core → menus → scene/pose → scene/camera → scene/env → scene → scene/motion → scene/manager → motion-algos → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene/env→scene→scene/motion→scene/manager→scene/physics→core",
+      "path": "core → menus → scene/pose → scene/camera → scene/env → scene → scene/motion → scene/manager → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene/env→scene→scene/motion→scene/manager→scene/render→core",
+      "path": "core → menus → scene/pose → scene/camera → scene/env → scene → scene/motion → scene/manager → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene/env→scene→scene/motion→scene/manager→scene/render→scene/shared→core",
+      "path": "core → menus → scene/pose → scene/camera → scene/env → scene → scene/motion → scene/manager → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene/env→scene→scene/motion→scene/manager→scene/render→scene/transform→core",
+      "path": "core → menus → scene/pose → scene/camera → scene/env → scene → scene/motion → scene/manager → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene/env→scene→scene/motion→scene/manager→scene/shared→core",
+      "path": "core → menus → scene/pose → scene/camera → scene/env → scene → scene/motion → scene/manager → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene/env→scene→scene/motion→scene/manager→scene/transform→core",
+      "path": "core → menus → scene/pose → scene/camera → scene/env → scene → scene/motion → scene/manager → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene/env→scene→scene/motion→scene/manager→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene/pose → scene/camera → scene/env → scene → scene/motion → scene/manager → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene/env→scene→scene/motion→scene/shared→core",
+      "path": "core → menus → scene/pose → scene/camera → scene/env → scene → scene/motion → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene/env→scene→scene/physics→core",
+      "path": "core → menus → scene/pose → scene/camera → scene/env → scene → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene/env→scene→scene/render→core",
+      "path": "core → menus → scene/pose → scene/camera → scene/env → scene → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene/env→scene→scene/render→scene/shared→core",
+      "path": "core → menus → scene/pose → scene/camera → scene/env → scene → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene/env→scene→scene/render→scene/transform→core",
+      "path": "core → menus → scene/pose → scene/camera → scene/env → scene → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene/env→scene→scene/transform→core",
+      "path": "core → menus → scene/pose → scene/camera → scene/env → scene → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene/env→scene→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene/pose → scene/camera → scene/env → scene → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene→core",
+      "path": "core → menus → scene/pose → scene/camera → scene → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene→motion-algos→core",
+      "path": "core → menus → scene/pose → scene/camera → scene → motion-algos → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene→scene/manager→core",
+      "path": "core → menus → scene/pose → scene/camera → scene → scene/manager → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene→scene/manager→motion-algos→core",
+      "path": "core → menus → scene/pose → scene/camera → scene → scene/manager → motion-algos → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene→scene/manager→scene/physics→core",
+      "path": "core → menus → scene/pose → scene/camera → scene → scene/manager → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene→scene/manager→scene/render→core",
+      "path": "core → menus → scene/pose → scene/camera → scene → scene/manager → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene→scene/manager→scene/render→scene/shared→core",
+      "path": "core → menus → scene/pose → scene/camera → scene → scene/manager → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene→scene/manager→scene/render→scene/transform→core",
+      "path": "core → menus → scene/pose → scene/camera → scene → scene/manager → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene→scene/manager→scene/shared→core",
+      "path": "core → menus → scene/pose → scene/camera → scene → scene/manager → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene→scene/manager→scene/transform→core",
+      "path": "core → menus → scene/pose → scene/camera → scene → scene/manager → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene→scene/manager→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene/pose → scene/camera → scene → scene/manager → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene→scene/motion→core",
+      "path": "core → menus → scene/pose → scene/camera → scene → scene/motion → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene→scene/motion→motion-algos→core",
+      "path": "core → menus → scene/pose → scene/camera → scene → scene/motion → motion-algos → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene→scene/motion→scene/env→scene/physics→core",
+      "path": "core → menus → scene/pose → scene/camera → scene → scene/motion → scene/env → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene→scene/motion→scene/env→scene/render→core",
+      "path": "core → menus → scene/pose → scene/camera → scene → scene/motion → scene/env → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene→scene/motion→scene/env→scene/render→scene/shared→core",
+      "path": "core → menus → scene/pose → scene/camera → scene → scene/motion → scene/env → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene→scene/motion→scene/env→scene/render→scene/transform→core",
+      "path": "core → menus → scene/pose → scene/camera → scene → scene/motion → scene/env → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene→scene/motion→scene/env→scene/transform→core",
+      "path": "core → menus → scene/pose → scene/camera → scene → scene/motion → scene/env → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene→scene/motion→scene/env→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene/pose → scene/camera → scene → scene/motion → scene/env → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene→scene/motion→scene/manager→core",
+      "path": "core → menus → scene/pose → scene/camera → scene → scene/motion → scene/manager → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene→scene/motion→scene/manager→motion-algos→core",
+      "path": "core → menus → scene/pose → scene/camera → scene → scene/motion → scene/manager → motion-algos → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene→scene/motion→scene/manager→scene/physics→core",
+      "path": "core → menus → scene/pose → scene/camera → scene → scene/motion → scene/manager → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene→scene/motion→scene/manager→scene/render→core",
+      "path": "core → menus → scene/pose → scene/camera → scene → scene/motion → scene/manager → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene→scene/motion→scene/manager→scene/render→scene/shared→core",
+      "path": "core → menus → scene/pose → scene/camera → scene → scene/motion → scene/manager → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene→scene/motion→scene/manager→scene/render→scene/transform→core",
+      "path": "core → menus → scene/pose → scene/camera → scene → scene/motion → scene/manager → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene→scene/motion→scene/manager→scene/shared→core",
+      "path": "core → menus → scene/pose → scene/camera → scene → scene/motion → scene/manager → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene→scene/motion→scene/manager→scene/transform→core",
+      "path": "core → menus → scene/pose → scene/camera → scene → scene/motion → scene/manager → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene→scene/motion→scene/manager→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene/pose → scene/camera → scene → scene/motion → scene/manager → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene→scene/motion→scene/shared→core",
+      "path": "core → menus → scene/pose → scene/camera → scene → scene/motion → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene→scene/physics→core",
+      "path": "core → menus → scene/pose → scene/camera → scene → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene→scene/render→core",
+      "path": "core → menus → scene/pose → scene/camera → scene → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene→scene/render→scene/shared→core",
+      "path": "core → menus → scene/pose → scene/camera → scene → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene→scene/render→scene/transform→core",
+      "path": "core → menus → scene/pose → scene/camera → scene → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene→scene/transform→core",
+      "path": "core → menus → scene/pose → scene/camera → scene → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene/camera→scene→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene/pose → scene/camera → scene → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→core",
+      "path": "core → menus → scene/pose → scene → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→motion-algos→core",
+      "path": "core → menus → scene/pose → scene → motion-algos → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/env→core",
+      "path": "core → menus → scene/pose → scene → scene/env → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/env→scene/physics→core",
+      "path": "core → menus → scene/pose → scene → scene/env → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/env→scene/render→core",
+      "path": "core → menus → scene/pose → scene → scene/env → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/env→scene/render→scene/shared→core",
+      "path": "core → menus → scene/pose → scene → scene/env → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/env→scene/render→scene/transform→core",
+      "path": "core → menus → scene/pose → scene → scene/env → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/env→scene/transform→core",
+      "path": "core → menus → scene/pose → scene → scene/env → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/env→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene/pose → scene → scene/env → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/manager→core",
+      "path": "core → menus → scene/pose → scene → scene/manager → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/manager→motion-algos→core",
+      "path": "core → menus → scene/pose → scene → scene/manager → motion-algos → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/manager→scene/env→core",
+      "path": "core → menus → scene/pose → scene → scene/manager → scene/env → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/manager→scene/env→scene/physics→core",
+      "path": "core → menus → scene/pose → scene → scene/manager → scene/env → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/manager→scene/env→scene/render→core",
+      "path": "core → menus → scene/pose → scene → scene/manager → scene/env → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/manager→scene/env→scene/render→scene/shared→core",
+      "path": "core → menus → scene/pose → scene → scene/manager → scene/env → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/manager→scene/env→scene/render→scene/transform→core",
+      "path": "core → menus → scene/pose → scene → scene/manager → scene/env → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/manager→scene/env→scene/transform→core",
+      "path": "core → menus → scene/pose → scene → scene/manager → scene/env → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/manager→scene/env→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene/pose → scene → scene/manager → scene/env → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/manager→scene/physics→core",
+      "path": "core → menus → scene/pose → scene → scene/manager → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/manager→scene/render→core",
+      "path": "core → menus → scene/pose → scene → scene/manager → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/manager→scene/render→scene/shared→core",
+      "path": "core → menus → scene/pose → scene → scene/manager → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/manager→scene/render→scene/transform→core",
+      "path": "core → menus → scene/pose → scene → scene/manager → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/manager→scene/shared→core",
+      "path": "core → menus → scene/pose → scene → scene/manager → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/manager→scene/transform→core",
+      "path": "core → menus → scene/pose → scene → scene/manager → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/manager→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene/pose → scene → scene/manager → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/motion→core",
+      "path": "core → menus → scene/pose → scene → scene/motion → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/motion→motion-algos→core",
+      "path": "core → menus → scene/pose → scene → scene/motion → motion-algos → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/motion→scene/env→core",
+      "path": "core → menus → scene/pose → scene → scene/motion → scene/env → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/motion→scene/env→scene/physics→core",
+      "path": "core → menus → scene/pose → scene → scene/motion → scene/env → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/motion→scene/env→scene/render→core",
+      "path": "core → menus → scene/pose → scene → scene/motion → scene/env → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/motion→scene/env→scene/render→scene/shared→core",
+      "path": "core → menus → scene/pose → scene → scene/motion → scene/env → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/motion→scene/env→scene/render→scene/transform→core",
+      "path": "core → menus → scene/pose → scene → scene/motion → scene/env → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/motion→scene/env→scene/transform→core",
+      "path": "core → menus → scene/pose → scene → scene/motion → scene/env → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/motion→scene/env→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene/pose → scene → scene/motion → scene/env → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/motion→scene/manager→core",
+      "path": "core → menus → scene/pose → scene → scene/motion → scene/manager → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/motion→scene/manager→motion-algos→core",
+      "path": "core → menus → scene/pose → scene → scene/motion → scene/manager → motion-algos → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/motion→scene/manager→scene/env→core",
+      "path": "core → menus → scene/pose → scene → scene/motion → scene/manager → scene/env → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/motion→scene/manager→scene/env→scene/physics→core",
+      "path": "core → menus → scene/pose → scene → scene/motion → scene/manager → scene/env → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/motion→scene/manager→scene/env→scene/render→core",
+      "path": "core → menus → scene/pose → scene → scene/motion → scene/manager → scene/env → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/motion→scene/manager→scene/env→scene/render→scene/shared→core",
+      "path": "core → menus → scene/pose → scene → scene/motion → scene/manager → scene/env → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/motion→scene/manager→scene/env→scene/render→scene/transform→core",
+      "path": "core → menus → scene/pose → scene → scene/motion → scene/manager → scene/env → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/motion→scene/manager→scene/env→scene/transform→core",
+      "path": "core → menus → scene/pose → scene → scene/motion → scene/manager → scene/env → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/motion→scene/manager→scene/env→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene/pose → scene → scene/motion → scene/manager → scene/env → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/motion→scene/manager→scene/physics→core",
+      "path": "core → menus → scene/pose → scene → scene/motion → scene/manager → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/motion→scene/manager→scene/render→core",
+      "path": "core → menus → scene/pose → scene → scene/motion → scene/manager → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/motion→scene/manager→scene/render→scene/shared→core",
+      "path": "core → menus → scene/pose → scene → scene/motion → scene/manager → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/motion→scene/manager→scene/render→scene/transform→core",
+      "path": "core → menus → scene/pose → scene → scene/motion → scene/manager → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/motion→scene/manager→scene/shared→core",
+      "path": "core → menus → scene/pose → scene → scene/motion → scene/manager → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/motion→scene/manager→scene/transform→core",
+      "path": "core → menus → scene/pose → scene → scene/motion → scene/manager → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/motion→scene/manager→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene/pose → scene → scene/motion → scene/manager → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/motion→scene/shared→core",
+      "path": "core → menus → scene/pose → scene → scene/motion → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/physics→core",
+      "path": "core → menus → scene/pose → scene → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/render→core",
+      "path": "core → menus → scene/pose → scene → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/render→scene/shared→core",
+      "path": "core → menus → scene/pose → scene → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/render→scene/transform→core",
+      "path": "core → menus → scene/pose → scene → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/transform→core",
+      "path": "core → menus → scene/pose → scene → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/pose→scene→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene/pose → scene → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/render→core",
+      "path": "core → menus → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene/render→scene/shared→core",
+      "path": "core → menus → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/render→scene/transform→core",
+      "path": "core → menus → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/shared→core",
+      "path": "core → menus → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene/transform→core",
+      "path": "core → menus → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene→core",
+      "path": "core → menus → scene → core"
+    },
+    {
+      "key": "core→menus→scene→motion-algos→core",
+      "path": "core → menus → scene → motion-algos → core"
+    },
+    {
+      "key": "core→menus→scene→scene/camera→core",
+      "path": "core → menus → scene → scene/camera → core"
+    },
+    {
+      "key": "core→menus→scene→scene/camera→scene/env→core",
+      "path": "core → menus → scene → scene/camera → scene/env → core"
+    },
+    {
+      "key": "core→menus→scene→scene/camera→scene/env→scene/physics→core",
+      "path": "core → menus → scene → scene/camera → scene/env → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene→scene/camera→scene/env→scene/render→core",
+      "path": "core → menus → scene → scene/camera → scene/env → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene→scene/camera→scene/env→scene/render→scene/shared→core",
+      "path": "core → menus → scene → scene/camera → scene/env → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene→scene/camera→scene/env→scene/render→scene/transform→core",
+      "path": "core → menus → scene → scene/camera → scene/env → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene→scene/camera→scene/env→scene/transform→core",
+      "path": "core → menus → scene → scene/camera → scene/env → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene→scene/camera→scene/env→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene → scene/camera → scene/env → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene→scene/env→core",
+      "path": "core → menus → scene → scene/env → core"
+    },
+    {
+      "key": "core→menus→scene→scene/env→scene/physics→core",
+      "path": "core → menus → scene → scene/env → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene→scene/env→scene/render→core",
+      "path": "core → menus → scene → scene/env → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene→scene/env→scene/render→scene/shared→core",
+      "path": "core → menus → scene → scene/env → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene→scene/env→scene/render→scene/transform→core",
+      "path": "core → menus → scene → scene/env → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene→scene/env→scene/transform→core",
+      "path": "core → menus → scene → scene/env → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene→scene/env→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene → scene/env → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene→scene/manager→core",
+      "path": "core → menus → scene → scene/manager → core"
+    },
+    {
+      "key": "core→menus→scene→scene/manager→motion-algos→core",
+      "path": "core → menus → scene → scene/manager → motion-algos → core"
+    },
+    {
+      "key": "core→menus→scene→scene/manager→scene/camera→core",
+      "path": "core → menus → scene → scene/manager → scene/camera → core"
+    },
+    {
+      "key": "core→menus→scene→scene/manager→scene/camera→scene/env→core",
+      "path": "core → menus → scene → scene/manager → scene/camera → scene/env → core"
+    },
+    {
+      "key": "core→menus→scene→scene/manager→scene/camera→scene/env→scene/physics→core",
+      "path": "core → menus → scene → scene/manager → scene/camera → scene/env → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene→scene/manager→scene/camera→scene/env→scene/render→core",
+      "path": "core → menus → scene → scene/manager → scene/camera → scene/env → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene→scene/manager→scene/camera→scene/env→scene/render→scene/shared→core",
+      "path": "core → menus → scene → scene/manager → scene/camera → scene/env → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene→scene/manager→scene/camera→scene/env→scene/render→scene/transform→core",
+      "path": "core → menus → scene → scene/manager → scene/camera → scene/env → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene→scene/manager→scene/camera→scene/env→scene/transform→core",
+      "path": "core → menus → scene → scene/manager → scene/camera → scene/env → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene→scene/manager→scene/camera→scene/env→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene → scene/manager → scene/camera → scene/env → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene→scene/manager→scene/env→core",
+      "path": "core → menus → scene → scene/manager → scene/env → core"
+    },
+    {
+      "key": "core→menus→scene→scene/manager→scene/env→scene/physics→core",
+      "path": "core → menus → scene → scene/manager → scene/env → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene→scene/manager→scene/env→scene/render→core",
+      "path": "core → menus → scene → scene/manager → scene/env → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene→scene/manager→scene/env→scene/render→scene/shared→core",
+      "path": "core → menus → scene → scene/manager → scene/env → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene→scene/manager→scene/env→scene/render→scene/transform→core",
+      "path": "core → menus → scene → scene/manager → scene/env → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene→scene/manager→scene/env→scene/transform→core",
+      "path": "core → menus → scene → scene/manager → scene/env → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene→scene/manager→scene/env→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene → scene/manager → scene/env → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene→scene/manager→scene/physics→core",
+      "path": "core → menus → scene → scene/manager → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene→scene/manager→scene/render→core",
+      "path": "core → menus → scene → scene/manager → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene→scene/manager→scene/render→scene/shared→core",
+      "path": "core → menus → scene → scene/manager → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene→scene/manager→scene/render→scene/transform→core",
+      "path": "core → menus → scene → scene/manager → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene→scene/manager→scene/shared→core",
+      "path": "core → menus → scene → scene/manager → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene→scene/manager→scene/transform→core",
+      "path": "core → menus → scene → scene/manager → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene→scene/manager→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene → scene/manager → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene→scene/motion→core",
+      "path": "core → menus → scene → scene/motion → core"
+    },
+    {
+      "key": "core→menus→scene→scene/motion→motion-algos→core",
+      "path": "core → menus → scene → scene/motion → motion-algos → core"
+    },
+    {
+      "key": "core→menus→scene→scene/motion→scene/env→core",
+      "path": "core → menus → scene → scene/motion → scene/env → core"
+    },
+    {
+      "key": "core→menus→scene→scene/motion→scene/env→scene/physics→core",
+      "path": "core → menus → scene → scene/motion → scene/env → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene→scene/motion→scene/env→scene/render→core",
+      "path": "core → menus → scene → scene/motion → scene/env → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene→scene/motion→scene/env→scene/render→scene/shared→core",
+      "path": "core → menus → scene → scene/motion → scene/env → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene→scene/motion→scene/env→scene/render→scene/transform→core",
+      "path": "core → menus → scene → scene/motion → scene/env → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene→scene/motion→scene/env→scene/transform→core",
+      "path": "core → menus → scene → scene/motion → scene/env → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene→scene/motion→scene/env→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene → scene/motion → scene/env → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene→scene/motion→scene/manager→core",
+      "path": "core → menus → scene → scene/motion → scene/manager → core"
+    },
+    {
+      "key": "core→menus→scene→scene/motion→scene/manager→motion-algos→core",
+      "path": "core → menus → scene → scene/motion → scene/manager → motion-algos → core"
+    },
+    {
+      "key": "core→menus→scene→scene/motion→scene/manager→scene/camera→core",
+      "path": "core → menus → scene → scene/motion → scene/manager → scene/camera → core"
+    },
+    {
+      "key": "core→menus→scene→scene/motion→scene/manager→scene/camera→scene/env→core",
+      "path": "core → menus → scene → scene/motion → scene/manager → scene/camera → scene/env → core"
+    },
+    {
+      "key": "core→menus→scene→scene/motion→scene/manager→scene/camera→scene/env→scene/physics→core",
+      "path": "core → menus → scene → scene/motion → scene/manager → scene/camera → scene/env → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene→scene/motion→scene/manager→scene/camera→scene/env→scene/render→core",
+      "path": "core → menus → scene → scene/motion → scene/manager → scene/camera → scene/env → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene→scene/motion→scene/manager→scene/camera→scene/env→scene/render→scene/shared→core",
+      "path": "core → menus → scene → scene/motion → scene/manager → scene/camera → scene/env → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene→scene/motion→scene/manager→scene/camera→scene/env→scene/render→scene/transform→core",
+      "path": "core → menus → scene → scene/motion → scene/manager → scene/camera → scene/env → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene→scene/motion→scene/manager→scene/camera→scene/env→scene/transform→core",
+      "path": "core → menus → scene → scene/motion → scene/manager → scene/camera → scene/env → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene→scene/motion→scene/manager→scene/camera→scene/env→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene → scene/motion → scene/manager → scene/camera → scene/env → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene→scene/motion→scene/manager→scene/env→core",
+      "path": "core → menus → scene → scene/motion → scene/manager → scene/env → core"
+    },
+    {
+      "key": "core→menus→scene→scene/motion→scene/manager→scene/env→scene/physics→core",
+      "path": "core → menus → scene → scene/motion → scene/manager → scene/env → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene→scene/motion→scene/manager→scene/env→scene/render→core",
+      "path": "core → menus → scene → scene/motion → scene/manager → scene/env → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene→scene/motion→scene/manager→scene/env→scene/render→scene/shared→core",
+      "path": "core → menus → scene → scene/motion → scene/manager → scene/env → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene→scene/motion→scene/manager→scene/env→scene/render→scene/transform→core",
+      "path": "core → menus → scene → scene/motion → scene/manager → scene/env → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene→scene/motion→scene/manager→scene/env→scene/transform→core",
+      "path": "core → menus → scene → scene/motion → scene/manager → scene/env → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene→scene/motion→scene/manager→scene/env→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene → scene/motion → scene/manager → scene/env → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene→scene/motion→scene/manager→scene/physics→core",
+      "path": "core → menus → scene → scene/motion → scene/manager → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene→scene/motion→scene/manager→scene/render→core",
+      "path": "core → menus → scene → scene/motion → scene/manager → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene→scene/motion→scene/manager→scene/render→scene/shared→core",
+      "path": "core → menus → scene → scene/motion → scene/manager → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene→scene/motion→scene/manager→scene/render→scene/transform→core",
+      "path": "core → menus → scene → scene/motion → scene/manager → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene→scene/motion→scene/manager→scene/shared→core",
+      "path": "core → menus → scene → scene/motion → scene/manager → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene→scene/motion→scene/manager→scene/transform→core",
+      "path": "core → menus → scene → scene/motion → scene/manager → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene→scene/motion→scene/manager→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene → scene/motion → scene/manager → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene→scene/motion→scene/shared→core",
+      "path": "core → menus → scene → scene/motion → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene→scene/physics→core",
+      "path": "core → menus → scene → scene/physics → core"
+    },
+    {
+      "key": "core→menus→scene→scene/render→core",
+      "path": "core → menus → scene → scene/render → core"
+    },
+    {
+      "key": "core→menus→scene→scene/render→scene/shared→core",
+      "path": "core → menus → scene → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→menus→scene→scene/render→scene/transform→core",
+      "path": "core → menus → scene → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene→scene/transform→core",
+      "path": "core → menus → scene → scene/transform → core"
+    },
+    {
+      "key": "core→menus→scene→scene/transform→scene/render→scene/shared→core",
+      "path": "core → menus → scene → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→motion-algos→core",
+      "path": "core → motion-algos → core"
+    },
+    {
+      "key": "core→scene/manager→core",
+      "path": "core → scene/manager → core"
+    },
+    {
+      "key": "core→scene/manager→motion-algos→core",
+      "path": "core → scene/manager → motion-algos → core"
+    },
+    {
+      "key": "core→scene/manager→scene/camera→core",
+      "path": "core → scene/manager → scene/camera → core"
+    },
+    {
+      "key": "core→scene/manager→scene/camera→scene/env→core",
+      "path": "core → scene/manager → scene/camera → scene/env → core"
+    },
+    {
+      "key": "core→scene/manager→scene/camera→scene/env→scene/physics→core",
+      "path": "core → scene/manager → scene/camera → scene/env → scene/physics → core"
+    },
+    {
+      "key": "core→scene/manager→scene/camera→scene/env→scene/render→core",
+      "path": "core → scene/manager → scene/camera → scene/env → scene/render → core"
+    },
+    {
+      "key": "core→scene/manager→scene/camera→scene/env→scene/render→scene/shared→core",
+      "path": "core → scene/manager → scene/camera → scene/env → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→scene/manager→scene/camera→scene/env→scene/render→scene/transform→core",
+      "path": "core → scene/manager → scene/camera → scene/env → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→scene/manager→scene/camera→scene/env→scene/transform→core",
+      "path": "core → scene/manager → scene/camera → scene/env → scene/transform → core"
+    },
+    {
+      "key": "core→scene/manager→scene/camera→scene/env→scene/transform→scene/render→scene/shared→core",
+      "path": "core → scene/manager → scene/camera → scene/env → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→scene/manager→scene/camera→scene/env→scene→motion-algos→core",
+      "path": "core → scene/manager → scene/camera → scene/env → scene → motion-algos → core"
+    },
+    {
+      "key": "core→scene/manager→scene/camera→scene/env→scene→scene/motion→motion-algos→core",
+      "path": "core → scene/manager → scene/camera → scene/env → scene → scene/motion → motion-algos → core"
+    },
+    {
+      "key": "core→scene/manager→scene/camera→scene/env→scene→scene/motion→scene/shared→core",
+      "path": "core → scene/manager → scene/camera → scene/env → scene → scene/motion → scene/shared → core"
+    },
+    {
+      "key": "core→scene/manager→scene/camera→scene→motion-algos→core",
+      "path": "core → scene/manager → scene/camera → scene → motion-algos → core"
+    },
+    {
+      "key": "core→scene/manager→scene/camera→scene→scene/motion→motion-algos→core",
+      "path": "core → scene/manager → scene/camera → scene → scene/motion → motion-algos → core"
+    },
+    {
+      "key": "core→scene/manager→scene/camera→scene→scene/motion→scene/shared→core",
+      "path": "core → scene/manager → scene/camera → scene → scene/motion → scene/shared → core"
+    },
+    {
+      "key": "core→scene/manager→scene/camera→scene→scene/physics→core",
+      "path": "core → scene/manager → scene/camera → scene → scene/physics → core"
+    },
+    {
+      "key": "core→scene/manager→scene/camera→scene→scene/render→core",
+      "path": "core → scene/manager → scene/camera → scene → scene/render → core"
+    },
+    {
+      "key": "core→scene/manager→scene/camera→scene→scene/render→scene/shared→core",
+      "path": "core → scene/manager → scene/camera → scene → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→scene/manager→scene/camera→scene→scene/render→scene/transform→core",
+      "path": "core → scene/manager → scene/camera → scene → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→scene/manager→scene/camera→scene→scene/transform→core",
+      "path": "core → scene/manager → scene/camera → scene → scene/transform → core"
+    },
+    {
+      "key": "core→scene/manager→scene/camera→scene→scene/transform→scene/render→scene/shared→core",
+      "path": "core → scene/manager → scene/camera → scene → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→scene/manager→scene/env→core",
+      "path": "core → scene/manager → scene/env → core"
+    },
+    {
+      "key": "core→scene/manager→scene/env→scene/physics→core",
+      "path": "core → scene/manager → scene/env → scene/physics → core"
+    },
+    {
+      "key": "core→scene/manager→scene/env→scene/render→core",
+      "path": "core → scene/manager → scene/env → scene/render → core"
+    },
+    {
+      "key": "core→scene/manager→scene/env→scene/render→scene/shared→core",
+      "path": "core → scene/manager → scene/env → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→scene/manager→scene/env→scene/render→scene/transform→core",
+      "path": "core → scene/manager → scene/env → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→scene/manager→scene/env→scene/transform→core",
+      "path": "core → scene/manager → scene/env → scene/transform → core"
+    },
+    {
+      "key": "core→scene/manager→scene/env→scene/transform→scene/render→scene/shared→core",
+      "path": "core → scene/manager → scene/env → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→scene/manager→scene/env→scene→motion-algos→core",
+      "path": "core → scene/manager → scene/env → scene → motion-algos → core"
+    },
+    {
+      "key": "core→scene/manager→scene/env→scene→scene/motion→motion-algos→core",
+      "path": "core → scene/manager → scene/env → scene → scene/motion → motion-algos → core"
+    },
+    {
+      "key": "core→scene/manager→scene/env→scene→scene/motion→scene/shared→core",
+      "path": "core → scene/manager → scene/env → scene → scene/motion → scene/shared → core"
+    },
+    {
+      "key": "core→scene/manager→scene/motion→core",
+      "path": "core → scene/manager → scene/motion → core"
+    },
+    {
+      "key": "core→scene/manager→scene/motion→motion-algos→core",
+      "path": "core → scene/manager → scene/motion → motion-algos → core"
+    },
+    {
+      "key": "core→scene/manager→scene/motion→scene/env→core",
+      "path": "core → scene/manager → scene/motion → scene/env → core"
+    },
+    {
+      "key": "core→scene/manager→scene/motion→scene/env→scene/physics→core",
+      "path": "core → scene/manager → scene/motion → scene/env → scene/physics → core"
+    },
+    {
+      "key": "core→scene/manager→scene/motion→scene/env→scene/render→core",
+      "path": "core → scene/manager → scene/motion → scene/env → scene/render → core"
+    },
+    {
+      "key": "core→scene/manager→scene/motion→scene/env→scene/render→scene/shared→core",
+      "path": "core → scene/manager → scene/motion → scene/env → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→scene/manager→scene/motion→scene/env→scene/render→scene/transform→core",
+      "path": "core → scene/manager → scene/motion → scene/env → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→scene/manager→scene/motion→scene/env→scene/transform→core",
+      "path": "core → scene/manager → scene/motion → scene/env → scene/transform → core"
+    },
+    {
+      "key": "core→scene/manager→scene/motion→scene/env→scene/transform→scene/render→scene/shared→core",
+      "path": "core → scene/manager → scene/motion → scene/env → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→scene/manager→scene/motion→scene/shared→core",
+      "path": "core → scene/manager → scene/motion → scene/shared → core"
+    },
+    {
+      "key": "core→scene/manager→scene/physics→core",
+      "path": "core → scene/manager → scene/physics → core"
+    },
+    {
+      "key": "core→scene/manager→scene/render→core",
+      "path": "core → scene/manager → scene/render → core"
+    },
+    {
+      "key": "core→scene/manager→scene/render→scene/shared→core",
+      "path": "core → scene/manager → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→scene/manager→scene/render→scene/transform→core",
+      "path": "core → scene/manager → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→scene/manager→scene/shared→core",
+      "path": "core → scene/manager → scene/shared → core"
+    },
+    {
+      "key": "core→scene/manager→scene/transform→core",
+      "path": "core → scene/manager → scene/transform → core"
+    },
+    {
+      "key": "core→scene/manager→scene/transform→scene/render→scene/shared→core",
+      "path": "core → scene/manager → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→scene/motion→core",
+      "path": "core → scene/motion → core"
+    },
+    {
+      "key": "core→scene/motion→motion-algos→core",
+      "path": "core → scene/motion → motion-algos → core"
+    },
+    {
+      "key": "core→scene/motion→scene/env→core",
+      "path": "core → scene/motion → scene/env → core"
+    },
+    {
+      "key": "core→scene/motion→scene/env→scene/physics→core",
+      "path": "core → scene/motion → scene/env → scene/physics → core"
+    },
+    {
+      "key": "core→scene/motion→scene/env→scene/render→core",
+      "path": "core → scene/motion → scene/env → scene/render → core"
+    },
+    {
+      "key": "core→scene/motion→scene/env→scene/render→scene/shared→core",
+      "path": "core → scene/motion → scene/env → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→scene/motion→scene/env→scene/render→scene/transform→core",
+      "path": "core → scene/motion → scene/env → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→scene/motion→scene/env→scene/transform→core",
+      "path": "core → scene/motion → scene/env → scene/transform → core"
+    },
+    {
+      "key": "core→scene/motion→scene/env→scene/transform→scene/render→scene/shared→core",
+      "path": "core → scene/motion → scene/env → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→scene/motion→scene/env→scene→motion-algos→core",
+      "path": "core → scene/motion → scene/env → scene → motion-algos → core"
+    },
+    {
+      "key": "core→scene/motion→scene/env→scene→scene/camera→core",
+      "path": "core → scene/motion → scene/env → scene → scene/camera → core"
+    },
+    {
+      "key": "core→scene/motion→scene/manager→scene/camera→core",
+      "path": "core → scene/motion → scene/manager → scene/camera → core"
+    },
+    {
+      "key": "core→scene/motion→scene/manager→scene/camera→scene/env→core",
+      "path": "core → scene/motion → scene/manager → scene/camera → scene/env → core"
+    },
+    {
+      "key": "core→scene/motion→scene/manager→scene/camera→scene/env→scene/physics→core",
+      "path": "core → scene/motion → scene/manager → scene/camera → scene/env → scene/physics → core"
+    },
+    {
+      "key": "core→scene/motion→scene/manager→scene/camera→scene/env→scene/render→core",
+      "path": "core → scene/motion → scene/manager → scene/camera → scene/env → scene/render → core"
+    },
+    {
+      "key": "core→scene/motion→scene/manager→scene/camera→scene/env→scene/render→scene/shared→core",
+      "path": "core → scene/motion → scene/manager → scene/camera → scene/env → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→scene/motion→scene/manager→scene/camera→scene/env→scene/render→scene/transform→core",
+      "path": "core → scene/motion → scene/manager → scene/camera → scene/env → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→scene/motion→scene/manager→scene/camera→scene/env→scene/transform→core",
+      "path": "core → scene/motion → scene/manager → scene/camera → scene/env → scene/transform → core"
+    },
+    {
+      "key": "core→scene/motion→scene/manager→scene/camera→scene/env→scene/transform→scene/render→scene/shared→core",
+      "path": "core → scene/motion → scene/manager → scene/camera → scene/env → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→scene/motion→scene/manager→scene/camera→scene→scene/physics→core",
+      "path": "core → scene/motion → scene/manager → scene/camera → scene → scene/physics → core"
+    },
+    {
+      "key": "core→scene/motion→scene/manager→scene/camera→scene→scene/render→core",
+      "path": "core → scene/motion → scene/manager → scene/camera → scene → scene/render → core"
+    },
+    {
+      "key": "core→scene/motion→scene/manager→scene/camera→scene→scene/render→scene/shared→core",
+      "path": "core → scene/motion → scene/manager → scene/camera → scene → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→scene/motion→scene/manager→scene/camera→scene→scene/render→scene/transform→core",
+      "path": "core → scene/motion → scene/manager → scene/camera → scene → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→scene/motion→scene/manager→scene/camera→scene→scene/transform→core",
+      "path": "core → scene/motion → scene/manager → scene/camera → scene → scene/transform → core"
+    },
+    {
+      "key": "core→scene/motion→scene/manager→scene/camera→scene→scene/transform→scene/render→scene/shared→core",
+      "path": "core → scene/motion → scene/manager → scene/camera → scene → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→scene/motion→scene/manager→scene/physics→core",
+      "path": "core → scene/motion → scene/manager → scene/physics → core"
+    },
+    {
+      "key": "core→scene/motion→scene/manager→scene/render→core",
+      "path": "core → scene/motion → scene/manager → scene/render → core"
+    },
+    {
+      "key": "core→scene/motion→scene/manager→scene/render→scene/shared→core",
+      "path": "core → scene/motion → scene/manager → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→scene/motion→scene/manager→scene/render→scene/transform→core",
+      "path": "core → scene/motion → scene/manager → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→scene/motion→scene/manager→scene/transform→core",
+      "path": "core → scene/motion → scene/manager → scene/transform → core"
+    },
+    {
+      "key": "core→scene/motion→scene/manager→scene/transform→scene/render→scene/shared→core",
+      "path": "core → scene/motion → scene/manager → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→scene/motion→scene/shared→core",
+      "path": "core → scene/motion → scene/shared → core"
+    },
+    {
+      "key": "core→scene/motion→scene→scene/camera→core",
+      "path": "core → scene/motion → scene → scene/camera → core"
+    },
+    {
+      "key": "core→scene/motion→scene→scene/camera→scene/env→scene/physics→core",
+      "path": "core → scene/motion → scene → scene/camera → scene/env → scene/physics → core"
+    },
+    {
+      "key": "core→scene/motion→scene→scene/camera→scene/env→scene/render→core",
+      "path": "core → scene/motion → scene → scene/camera → scene/env → scene/render → core"
+    },
+    {
+      "key": "core→scene/motion→scene→scene/camera→scene/env→scene/render→scene/shared→core",
+      "path": "core → scene/motion → scene → scene/camera → scene/env → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→scene/motion→scene→scene/camera→scene/env→scene/render→scene/transform→core",
+      "path": "core → scene/motion → scene → scene/camera → scene/env → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→scene/motion→scene→scene/camera→scene/env→scene/transform→core",
+      "path": "core → scene/motion → scene → scene/camera → scene/env → scene/transform → core"
+    },
+    {
+      "key": "core→scene/motion→scene→scene/camera→scene/env→scene/transform→scene/render→scene/shared→core",
+      "path": "core → scene/motion → scene → scene/camera → scene/env → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→scene/motion→scene→scene/physics→core",
+      "path": "core → scene/motion → scene → scene/physics → core"
+    },
+    {
+      "key": "core→scene/motion→scene→scene/render→core",
+      "path": "core → scene/motion → scene → scene/render → core"
+    },
+    {
+      "key": "core→scene/motion→scene→scene/render→scene/shared→core",
+      "path": "core → scene/motion → scene → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→scene/motion→scene→scene/render→scene/transform→core",
+      "path": "core → scene/motion → scene → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→scene/motion→scene→scene/transform→core",
+      "path": "core → scene/motion → scene → scene/transform → core"
+    },
+    {
+      "key": "core→scene/motion→scene→scene/transform→scene/render→scene/shared→core",
+      "path": "core → scene/motion → scene → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→scene/physics→core",
+      "path": "core → scene/physics → core"
+    },
+    {
+      "key": "core→scene/render→core",
+      "path": "core → scene/render → core"
+    },
+    {
+      "key": "core→scene/render→scene/shared→core",
+      "path": "core → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→scene/render→scene/transform→core",
+      "path": "core → scene/render → scene/transform → core"
+    },
     {
       "key": "core→scene→core",
       "path": "core → scene → core"
@@ -9,6 +2409,170 @@
     {
       "key": "core→scene→motion-algos→core",
       "path": "core → scene → motion-algos → core"
+    },
+    {
+      "key": "core→scene→scene/camera→core",
+      "path": "core → scene → scene/camera → core"
+    },
+    {
+      "key": "core→scene→scene/camera→scene/env→core",
+      "path": "core → scene → scene/camera → scene/env → core"
+    },
+    {
+      "key": "core→scene→scene/camera→scene/env→scene/physics→core",
+      "path": "core → scene → scene/camera → scene/env → scene/physics → core"
+    },
+    {
+      "key": "core→scene→scene/camera→scene/env→scene/render→core",
+      "path": "core → scene → scene/camera → scene/env → scene/render → core"
+    },
+    {
+      "key": "core→scene→scene/camera→scene/env→scene/render→scene/shared→core",
+      "path": "core → scene → scene/camera → scene/env → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→scene→scene/camera→scene/env→scene/render→scene/transform→core",
+      "path": "core → scene → scene/camera → scene/env → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→scene→scene/camera→scene/env→scene/transform→core",
+      "path": "core → scene → scene/camera → scene/env → scene/transform → core"
+    },
+    {
+      "key": "core→scene→scene/camera→scene/env→scene/transform→scene/render→scene/shared→core",
+      "path": "core → scene → scene/camera → scene/env → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→scene→scene/env→core",
+      "path": "core → scene → scene/env → core"
+    },
+    {
+      "key": "core→scene→scene/env→scene/physics→core",
+      "path": "core → scene → scene/env → scene/physics → core"
+    },
+    {
+      "key": "core→scene→scene/env→scene/render→core",
+      "path": "core → scene → scene/env → scene/render → core"
+    },
+    {
+      "key": "core→scene→scene/env→scene/render→scene/shared→core",
+      "path": "core → scene → scene/env → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→scene→scene/env→scene/render→scene/transform→core",
+      "path": "core → scene → scene/env → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→scene→scene/env→scene/transform→core",
+      "path": "core → scene → scene/env → scene/transform → core"
+    },
+    {
+      "key": "core→scene→scene/env→scene/transform→scene/render→scene/shared→core",
+      "path": "core → scene → scene/env → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→scene→scene/manager→core",
+      "path": "core → scene → scene/manager → core"
+    },
+    {
+      "key": "core→scene→scene/manager→motion-algos→core",
+      "path": "core → scene → scene/manager → motion-algos → core"
+    },
+    {
+      "key": "core→scene→scene/manager→scene/camera→core",
+      "path": "core → scene → scene/manager → scene/camera → core"
+    },
+    {
+      "key": "core→scene→scene/manager→scene/camera→scene/env→core",
+      "path": "core → scene → scene/manager → scene/camera → scene/env → core"
+    },
+    {
+      "key": "core→scene→scene/manager→scene/camera→scene/env→scene/physics→core",
+      "path": "core → scene → scene/manager → scene/camera → scene/env → scene/physics → core"
+    },
+    {
+      "key": "core→scene→scene/manager→scene/camera→scene/env→scene/render→core",
+      "path": "core → scene → scene/manager → scene/camera → scene/env → scene/render → core"
+    },
+    {
+      "key": "core→scene→scene/manager→scene/camera→scene/env→scene/render→scene/shared→core",
+      "path": "core → scene → scene/manager → scene/camera → scene/env → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→scene→scene/manager→scene/camera→scene/env→scene/render→scene/transform→core",
+      "path": "core → scene → scene/manager → scene/camera → scene/env → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→scene→scene/manager→scene/camera→scene/env→scene/transform→core",
+      "path": "core → scene → scene/manager → scene/camera → scene/env → scene/transform → core"
+    },
+    {
+      "key": "core→scene→scene/manager→scene/camera→scene/env→scene/transform→scene/render→scene/shared→core",
+      "path": "core → scene → scene/manager → scene/camera → scene/env → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→scene→scene/manager→scene/env→core",
+      "path": "core → scene → scene/manager → scene/env → core"
+    },
+    {
+      "key": "core→scene→scene/manager→scene/env→scene/physics→core",
+      "path": "core → scene → scene/manager → scene/env → scene/physics → core"
+    },
+    {
+      "key": "core→scene→scene/manager→scene/env→scene/render→core",
+      "path": "core → scene → scene/manager → scene/env → scene/render → core"
+    },
+    {
+      "key": "core→scene→scene/manager→scene/env→scene/render→scene/shared→core",
+      "path": "core → scene → scene/manager → scene/env → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→scene→scene/manager→scene/env→scene/render→scene/transform→core",
+      "path": "core → scene → scene/manager → scene/env → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→scene→scene/manager→scene/env→scene/transform→core",
+      "path": "core → scene → scene/manager → scene/env → scene/transform → core"
+    },
+    {
+      "key": "core→scene→scene/manager→scene/env→scene/transform→scene/render→scene/shared→core",
+      "path": "core → scene → scene/manager → scene/env → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→scene→scene/manager→scene/physics→core",
+      "path": "core → scene → scene/manager → scene/physics → core"
+    },
+    {
+      "key": "core→scene→scene/manager→scene/render→core",
+      "path": "core → scene → scene/manager → scene/render → core"
+    },
+    {
+      "key": "core→scene→scene/manager→scene/render→scene/shared→core",
+      "path": "core → scene → scene/manager → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→scene→scene/manager→scene/render→scene/transform→core",
+      "path": "core → scene → scene/manager → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→scene→scene/manager→scene/shared→core",
+      "path": "core → scene → scene/manager → scene/shared → core"
+    },
+    {
+      "key": "core→scene→scene/manager→scene/transform→core",
+      "path": "core → scene → scene/manager → scene/transform → core"
+    },
+    {
+      "key": "core→scene→scene/manager→scene/transform→scene/render→scene/shared→core",
+      "path": "core → scene → scene/manager → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→scene→scene/motion→core",
+      "path": "core → scene → scene/motion → core"
+    },
+    {
+      "key": "core→scene→scene/motion→motion-algos→core",
+      "path": "core → scene → scene/motion → motion-algos → core"
     },
     {
       "key": "core→scene→scene/motion→scene/env→core",
@@ -23,16 +2587,204 @@
       "path": "core → scene → scene/motion → scene/env → scene/render → core"
     },
     {
+      "key": "core→scene→scene/motion→scene/env→scene/render→scene/shared→core",
+      "path": "core → scene → scene/motion → scene/env → scene/render → scene/shared → core"
+    },
+    {
       "key": "core→scene→scene/motion→scene/env→scene/render→scene/transform→core",
       "path": "core → scene → scene/motion → scene/env → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→scene→scene/motion→scene/env→scene/transform→core",
+      "path": "core → scene → scene/motion → scene/env → scene/transform → core"
+    },
+    {
+      "key": "core→scene→scene/motion→scene/env→scene/transform→scene/render→scene/shared→core",
+      "path": "core → scene → scene/motion → scene/env → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→scene→scene/motion→scene/manager→core",
+      "path": "core → scene → scene/motion → scene/manager → core"
+    },
+    {
+      "key": "core→scene→scene/motion→scene/manager→motion-algos→core",
+      "path": "core → scene → scene/motion → scene/manager → motion-algos → core"
+    },
+    {
+      "key": "core→scene→scene/motion→scene/manager→scene/camera→core",
+      "path": "core → scene → scene/motion → scene/manager → scene/camera → core"
+    },
+    {
+      "key": "core→scene→scene/motion→scene/manager→scene/camera→scene/env→core",
+      "path": "core → scene → scene/motion → scene/manager → scene/camera → scene/env → core"
+    },
+    {
+      "key": "core→scene→scene/motion→scene/manager→scene/camera→scene/env→scene/physics→core",
+      "path": "core → scene → scene/motion → scene/manager → scene/camera → scene/env → scene/physics → core"
+    },
+    {
+      "key": "core→scene→scene/motion→scene/manager→scene/camera→scene/env→scene/render→core",
+      "path": "core → scene → scene/motion → scene/manager → scene/camera → scene/env → scene/render → core"
+    },
+    {
+      "key": "core→scene→scene/motion→scene/manager→scene/camera→scene/env→scene/render→scene/shared→core",
+      "path": "core → scene → scene/motion → scene/manager → scene/camera → scene/env → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→scene→scene/motion→scene/manager→scene/camera→scene/env→scene/render→scene/transform→core",
+      "path": "core → scene → scene/motion → scene/manager → scene/camera → scene/env → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→scene→scene/motion→scene/manager→scene/camera→scene/env→scene/transform→core",
+      "path": "core → scene → scene/motion → scene/manager → scene/camera → scene/env → scene/transform → core"
+    },
+    {
+      "key": "core→scene→scene/motion→scene/manager→scene/camera→scene/env→scene/transform→scene/render→scene/shared→core",
+      "path": "core → scene → scene/motion → scene/manager → scene/camera → scene/env → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→scene→scene/motion→scene/manager→scene/env→core",
+      "path": "core → scene → scene/motion → scene/manager → scene/env → core"
+    },
+    {
+      "key": "core→scene→scene/motion→scene/manager→scene/env→scene/physics→core",
+      "path": "core → scene → scene/motion → scene/manager → scene/env → scene/physics → core"
+    },
+    {
+      "key": "core→scene→scene/motion→scene/manager→scene/env→scene/render→core",
+      "path": "core → scene → scene/motion → scene/manager → scene/env → scene/render → core"
+    },
+    {
+      "key": "core→scene→scene/motion→scene/manager→scene/env→scene/render→scene/shared→core",
+      "path": "core → scene → scene/motion → scene/manager → scene/env → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→scene→scene/motion→scene/manager→scene/env→scene/render→scene/transform→core",
+      "path": "core → scene → scene/motion → scene/manager → scene/env → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→scene→scene/motion→scene/manager→scene/env→scene/transform→core",
+      "path": "core → scene → scene/motion → scene/manager → scene/env → scene/transform → core"
+    },
+    {
+      "key": "core→scene→scene/motion→scene/manager→scene/env→scene/transform→scene/render→scene/shared→core",
+      "path": "core → scene → scene/motion → scene/manager → scene/env → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→scene→scene/motion→scene/manager→scene/physics→core",
+      "path": "core → scene → scene/motion → scene/manager → scene/physics → core"
+    },
+    {
+      "key": "core→scene→scene/motion→scene/manager→scene/render→core",
+      "path": "core → scene → scene/motion → scene/manager → scene/render → core"
+    },
+    {
+      "key": "core→scene→scene/motion→scene/manager→scene/render→scene/shared→core",
+      "path": "core → scene → scene/motion → scene/manager → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→scene→scene/motion→scene/manager→scene/render→scene/transform→core",
+      "path": "core → scene → scene/motion → scene/manager → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→scene→scene/motion→scene/manager→scene/shared→core",
+      "path": "core → scene → scene/motion → scene/manager → scene/shared → core"
+    },
+    {
+      "key": "core→scene→scene/motion→scene/manager→scene/transform→core",
+      "path": "core → scene → scene/motion → scene/manager → scene/transform → core"
+    },
+    {
+      "key": "core→scene→scene/motion→scene/manager→scene/transform→scene/render→scene/shared→core",
+      "path": "core → scene → scene/motion → scene/manager → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→scene→scene/motion→scene/shared→core",
+      "path": "core → scene → scene/motion → scene/shared → core"
+    },
+    {
+      "key": "core→scene→scene/physics→core",
+      "path": "core → scene → scene/physics → core"
+    },
+    {
+      "key": "core→scene→scene/render→core",
+      "path": "core → scene → scene/render → core"
+    },
+    {
+      "key": "core→scene→scene/render→scene/shared→core",
+      "path": "core → scene → scene/render → scene/shared → core"
+    },
+    {
+      "key": "core→scene→scene/render→scene/transform→core",
+      "path": "core → scene → scene/render → scene/transform → core"
+    },
+    {
+      "key": "core→scene→scene/transform→core",
+      "path": "core → scene → scene/transform → core"
+    },
+    {
+      "key": "core→scene→scene/transform→scene/render→scene/shared→core",
+      "path": "core → scene → scene/transform → scene/render → scene/shared → core"
+    },
+    {
+      "key": "scene/manager→scene/motion→scene/manager",
+      "path": "scene/manager → scene/motion → scene/manager"
+    },
+    {
+      "key": "scene/render→scene/transform→scene/render",
+      "path": "scene/render → scene/transform → scene/render"
+    },
+    {
+      "key": "scene→scene/camera→scene",
+      "path": "scene → scene/camera → scene"
+    },
+    {
+      "key": "scene→scene/camera→scene/env→scene",
+      "path": "scene → scene/camera → scene/env → scene"
+    },
+    {
+      "key": "scene→scene/env→scene",
+      "path": "scene → scene/env → scene"
+    },
+    {
+      "key": "scene→scene/manager→scene",
+      "path": "scene → scene/manager → scene"
+    },
+    {
+      "key": "scene→scene/manager→scene/camera→scene",
+      "path": "scene → scene/manager → scene/camera → scene"
+    },
+    {
+      "key": "scene→scene/manager→scene/camera→scene/env→scene",
+      "path": "scene → scene/manager → scene/camera → scene/env → scene"
+    },
+    {
+      "key": "scene→scene/manager→scene/env→scene",
+      "path": "scene → scene/manager → scene/env → scene"
+    },
+    {
+      "key": "scene→scene/motion→scene",
+      "path": "scene → scene/motion → scene"
     },
     {
       "key": "scene→scene/motion→scene/env→scene",
       "path": "scene → scene/motion → scene/env → scene"
     },
     {
-      "key": "scene/render→scene/transform→scene/render",
-      "path": "scene/render → scene/transform → scene/render"
+      "key": "scene→scene/motion→scene/manager→scene",
+      "path": "scene → scene/motion → scene/manager → scene"
+    },
+    {
+      "key": "scene→scene/motion→scene/manager→scene/camera→scene",
+      "path": "scene → scene/motion → scene/manager → scene/camera → scene"
+    },
+    {
+      "key": "scene→scene/motion→scene/manager→scene/camera→scene/env→scene",
+      "path": "scene → scene/motion → scene/manager → scene/camera → scene/env → scene"
+    },
+    {
+      "key": "scene→scene/motion→scene/manager→scene/env→scene",
+      "path": "scene → scene/motion → scene/manager → scene/env → scene"
     }
   ]
 }
