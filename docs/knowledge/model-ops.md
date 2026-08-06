@@ -20,6 +20,7 @@ category: scene
 scope:
   - frontend/src/scene/manager/model-ops.ts
 symbols:
+  - FormationType
   - ReplaceSnapshot
   - applyInheritedState
   - applyVPDPose

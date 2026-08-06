@@ -22,6 +22,7 @@ symbols:
   - DisplayNamePriority
   - EnvState
   - FeetState
+  - GoUIState
   - LibraryModel
   - LibrarySortMode
   - MmdRuntimeBoneExtended

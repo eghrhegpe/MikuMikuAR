@@ -525,7 +525,11 @@ export class VirtualSkirtController {
         }
         this._disposed = true;
 
-        this.registry?.unregister('virtual-skirt');
+        // [fix code_review P3] 显式 dispose 而非 unregister：unregister-all 只停
+        // observer、保留 onDispose 绑定（生命周期与 scene 对齐）——若此处只 unregister
+        // 再置 null，scene.onDisposeObservable 会累积该 registry 的 observer 闭包，
+        // 每次裙骨开关循环泄漏一个 registry，直至 scene 销毁。
+        this.registry?.dispose();
         this.registry = null;
 
         const impl = this.impl;

@@ -11,8 +11,9 @@ adr:
   - ADR-155
   - ADR-197
 symbols:
-  - parseActionFromLLM
+  - ActionResult
   - executeAction
+  - parseActionFromLLM
 invariants:
   - parseActionFromLLM 三级回退提取 JSON（整文本→```json 代码块→正则匹配含 action+params 的对象），全失败返回 null
   - action 缺失 CONTROL_NAMESPACE（ai:control:）前缀时自动补齐；params 缺省为空对象

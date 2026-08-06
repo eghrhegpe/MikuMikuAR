@@ -20,16 +20,21 @@ symbols:
   - ClearExtractCache
   - ClearThumbnailCache
   - ClosePlazaWindow
+  - Config
   - DeleteEnvPreset
   - DeleteModelPreset
   - DeletePresetScene
   - DownloadAndRunInstaller
   - DownloadApk
   - DownloadFromPlaza
+  - EnvPresetEntry
+  - EnvState
   - Events
+  - ExtractResult
   - ExtractZip
   - FetchPlazaConfig
   - FileExists
+  - FileInfo
   - GetAllTags
   - GetBuildInfo
   - GetCacheStats
@@ -53,6 +58,7 @@ symbols:
   - GetThumbnail
   - ImportLocalFile
   - ImportZip
+  - InstallResult
   - IsolateModelDir
   - LaunchSoftware
   - ListDirRecursive
@@ -64,6 +70,9 @@ symbols:
   - LoadModelPresetFromLib
   - LoadOutfitFile
   - LoadSceneFile
+  - ModelEntry
+  - ModelMeta
+  - ModelPresetEntry
   - NavigatePlazaWindow
   - OpenCacheDir
   - OpenScreenshotDir
@@ -77,6 +86,7 @@ symbols:
   - ReadTextFile
   - RemoveCustomSoftware
   - RemoveTag
+  - RenderPreset
   - SaveEnvPresetAuto
   - SaveLastScene
   - SaveModelPreset
@@ -116,9 +126,12 @@ symbols:
   - SetUIPopupWidth
   - SetUIScale
   - SetUIState
+  - SoftwareEntry
   - StartFileServer
   - StartProxy
   - StopProxy
+  - UIState
+  - UpdateCheckResult
   - UpdateCustomSoftware
   - WriteTextFile
   - readFileBytes

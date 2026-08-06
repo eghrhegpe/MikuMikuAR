@@ -24,6 +24,11 @@ const TEXTURE_LRU_MAX_ENTRIES = 5 * 30;
 // 此 Map 记录进行中的 promise，miss 时先查 in-flight，命中则 await 同一 promise。
 const _inFlight = new Map<string, Promise<ArrayBuffer | null>>();
 
+// [fix code_review P3] 世代计数：clearTextureLRU 时自增，in-flight IIFE 完成时
+// 若世代已变（clear 发生在读取期间），跳过缓存插入——否则 clear 后被迟到的
+// 读取重新填充缓存，disposeRenderer 的释放目的失效。
+let _generation = 0;
+
 function evictOldest(): void {
     if (_textureLRU.size === 0) {
         return;
@@ -59,9 +64,15 @@ export async function readTextureWithLRU(
     if (pending) {
         return pending;
     }
+    const genAtStart = _generation;
     const p = (async (): Promise<ArrayBuffer | null> => {
         const data = await readFileBytes(modelDir + '/' + relativePath);
         if (!data || signal?.aborted) {
+            return null;
+        }
+        // [fix code_review P3] clear 发生在读取期间：世代已变，跳过插入，
+        // 避免迟到结果重新填充已清空的缓存
+        if (_generation !== genAtStart) {
             return null;
         }
         if (_textureLRU.size >= TEXTURE_LRU_MAX_ENTRIES) {
@@ -81,6 +92,7 @@ export async function readTextureWithLRU(
 export function clearTextureLRU(): void {
     _textureLRU.clear();
     _inFlight.clear();
+    _generation++; // 使进行中的读取在完成时跳过缓存插入
 }
 
 /** 返回当前缓存条目数（供测试使用）。 */
@@ -91,4 +103,5 @@ export function textureLRUSize(): number {
 /** 仅供测试：重置缓存状态。 */
 export function _resetTextureLRUForTest(): void {
     _textureLRU.clear();
+    _inFlight.clear(); // [fix code_review P3] 与 clearTextureLRU 一致
 }

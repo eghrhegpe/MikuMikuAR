@@ -22,6 +22,7 @@ symbols:
   - FRAME_HOOK_ORDER
   - FrameHookSnapshot
   - OverrideSlotLike
+  - OverrideType
   - applyBoneOverrideIK
   - clearAllOverrides
   - clearBoneOverride

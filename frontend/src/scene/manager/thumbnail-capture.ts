@@ -7,6 +7,7 @@
 // 本模块内部仅动态 import '../scene' 取 Scene 实例，不反向引入 model-loader / vmd-loader。
 
 import { Mesh } from '@babylonjs/core/Meshes/mesh';
+import { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
 import { TransformNode } from '@babylonjs/core/Meshes/transformNode';
 import { RenderTargetTexture } from '@babylonjs/core/Materials/Textures/renderTargetTexture';
 import { FreeCamera } from '@babylonjs/core/Cameras/freeCamera';
@@ -163,11 +164,12 @@ async function _renderThumbnailImpl(
 
     const renderList: Mesh[] = [];
     inst.rootMesh.getChildMeshes().forEach((m) => {
-        // [fix P2] 去掉裸 as：getChildMeshes 返回 AbstractMesh[]，子节点可能是
-        // TransformNode（非 Mesh）——instanceof Mesh 守卫后再 push，避免类型欺骗
-        // 导致 RT 渲染拿到非 Mesh 对象
-        if (m instanceof Mesh && m.isVisible) {
-            renderList.push(m);
+        // [fix P2] 用 instanceof AbstractMesh（getChildMeshes 实际保证的类型）：
+        // Babylon 中 InstancedMesh 直接 extends AbstractMesh 而非 Mesh——
+        // 若用 `instanceof Mesh` 守卫会把 InstancedMesh 子节点静默丢弃，
+        // 缩略图缺几何而主视图正常（外部模型文件可能含 InstancedMesh）。
+        if (m instanceof AbstractMesh && m.isVisible) {
+            renderList.push(m as Mesh);
         }
     });
     if (inst.rootMesh instanceof Mesh && inst.rootMesh.isVisible) {

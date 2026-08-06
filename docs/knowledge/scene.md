@@ -27,12 +27,21 @@ tests:
   - frontend/src/__tests__/scene/scene-serialize-resilience.test.ts
   - frontend/src/__tests__/scene/scene-serialize-undo.test.ts
 symbols:
+  - AlphaCtx
   - BeatSink
+  - CameraState
   - DEFAULT_MAT_PARAMS
+  - EnvState
+  - LightState
   - LoadLastScene
+  - MaterialCategory
+  - MaterialCategoryParams
+  - ModelInstance
+  - RenderState
   - SaveLastScene
   - SaveThumbnail
   - SetEnvState
+  - StageLightState
   - __envDebug
   - _applyAll
   - _catState

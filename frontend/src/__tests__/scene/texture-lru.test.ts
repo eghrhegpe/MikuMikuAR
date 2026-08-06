@@ -168,4 +168,50 @@ describe('texture-lru', () => {
         const result = await readTextureWithLRU('web://model/a', 'tex/face.png');
         expect(result).toBe(buf1); // 各自命中
     });
+
+    it('concurrent same-key reads share one readFileBytes and one cache entry', async () => {
+        const buf = new Uint8Array([7, 8, 9]).buffer;
+        mockReadFileBytes.mockResolvedValue(new Uint8Array(buf));
+
+        // 不 await 第一个，直接发起第二个同 key 调用
+        const p1 = readTextureWithLRU('web://model/a', 'tex/face.png');
+        const p2 = readTextureWithLRU('web://model/a', 'tex/face.png');
+
+        const [r1, r2] = await Promise.all([p1, p2]);
+        expect(mockReadFileBytes).toHaveBeenCalledTimes(1); // 去重：只读一次
+        expect(r1).toBe(buf);
+        expect(r2).toBe(buf); // 共享同一 buffer
+        expect(textureLRUSize()).toBe(1); // 单条缓存
+    });
+
+    it('rejected readFileBytes cleans up in-flight entry (subsequent call re-reads)', async () => {
+        mockReadFileBytes
+            .mockRejectedValueOnce(new Error('io fail'))
+            .mockResolvedValue(new Uint8Array([5]));
+
+        // readFileBytes reject → readTextureWithLRU 抛错（非返回 null）；
+        // .finally 仍清理 _inFlight，第二次调用重新读而非复用 rejected promise
+        await expect(readTextureWithLRU('web://model/a', 'tex/face.png')).rejects.toThrow('io fail');
+
+        const r2 = await readTextureWithLRU('web://model/a', 'tex/face.png');
+        expect(r2).not.toBeNull(); // in-flight 已清理，第二次重新读
+        expect(mockReadFileBytes).toHaveBeenCalledTimes(2);
+    });
+
+    it('clearTextureLRU during in-flight read prevents stale repopulation', async () => {
+        let releaseRead: (() => void) | undefined;
+        mockReadFileBytes.mockImplementation(
+            () =>
+                new Promise((resolve) => {
+                    releaseRead = () => resolve(new Uint8Array([9]));
+                })
+        );
+
+        const p = readTextureWithLRU('web://model/a', 'tex/face.png'); // 挂起读
+        clearTextureLRU(); // clear 发生在读取期间
+        releaseRead?.(); // 释放读
+        await p;
+
+        expect(textureLRUSize()).toBe(0); // 世代已变：迟到结果不重新填充缓存
+    });
 });

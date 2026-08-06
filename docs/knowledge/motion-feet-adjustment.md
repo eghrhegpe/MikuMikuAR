@@ -17,6 +17,9 @@ adr:
   - ADR-238
 symbols:
   - FeetModelProvider
+  - FootLandEvent
+  - SolveFootInput
+  - SolveFootOutput
   - isFeetAdjustmentRunning
   - setOnFootLand
   - solveFootTarget

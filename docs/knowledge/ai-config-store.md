@@ -11,6 +11,7 @@ adr:
   - ADR-196
 symbols:
   - AiConfig
+  - AiConfigProvider
   - DEFAULT_AI_CONFIG
   - DEFAULT_RELAY_URL
   - DEFAULT_TIMEOUT_MS

@@ -7,9 +7,9 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 131 | 768 |
-| 3D 场景 | 125 | 1184 |
-| 菜单 & UI | 76 | 388 |
+| 核心基础设施 | 132 | 799 |
+| 3D 场景 | 125 | 1214 |
+| 菜单 & UI | 76 | 394 |
 | 动作算法 | 18 | 138 |
 
 ## 核心基础设施
@@ -62,6 +62,7 @@
 | `saveSession()` | `core/ai/chat-store:87` | 保存完整会话（元信息 + 消息，单事务批量写）。降级不阻断 UI，但写失败需留日志便于排查丢失。 |
 | `setActiveId()` | `core/ai/chat-store:125` | 写当前活动会话 id。 |
 | `AiConfig()` | `core/ai/config-store:10` | — |
+| `AiConfigProvider()` | `core/ai/config-store:8` | — |
 | `DEFAULT_AI_CONFIG()` | `core/ai/config-store:80` | 零 key 默认路径：本地 Ollama（大模型零 key，小模型零成本）。见 ADR-196 开放问题 Q2 裁定。 |
 | `DEFAULT_RELAY_URL()` | `core/ai/config-store:77` | 网页端 CORS 同源代理 Worker 默认地址（部署时由 wrangler deploy 产出）。 |
 | `DEFAULT_TIMEOUT_MS()` | `core/ai/config-store:27` | 缺省超时。 |
@@ -72,7 +73,7 @@
 | `classifyAiError()` | `core/ai/config-store:213` | 根据 testConnection / streamChat 的错误消息分类错误类型。 |
 | `ensureAiConfigLoaded()` | `core/ai/config-store:138` | 主动预加载（建议 init 后台调用，使首次读取即命中缓存，避免回退默认窗口）。 |
 | `loadAiConfig()` | `core/ai/config-store:95` | 同步读取：优先内存缓存；未加载时回退默认并触发异步回源（不阻塞调用方）。 |
-| `normalizeEndpoint()` | `core/ai/config-store:105` | 补全 chat completions 路径：输入 `/v1` 自动补全为 `/v1/chat/completions`，已有完整路径则原样返回。 |
+| `normalizeEndpoint()` | `core/ai/config-store:105` | 补全 chat completions 路径：输入 &#96;/v1&#96; 自动补全为 &#96;/v1/chat/completions&#96;，已有完整路径则原样返回。 |
 | `normalizeTimeout()` | `core/ai/config-store:146` | [doc:adr-199 P2-3] 将超时值归一到 [MIN, MAX]；非法/缺失回落缺省。 |
 | `saveAiConfig()` | `core/ai/config-store:120` | 保存配置：写内存缓存（同步即时生效）+ 异步落盘 IndexedDB。 |
 | `validateAiConfig()` | `core/ai/config-store:192` | 校验配置是否足够发起一次对话。全量收集所有错误，一次性返回。 |
@@ -99,8 +100,9 @@
 | `uninstallLoggingPatch()` | `core/ai/error-buffer:219` | 卸载 console.error 补丁，恢复原始实现。 |
 | `GoAiAdapter()` | `core/ai/go-adapter:30` | — |
 | `goAiAdapter()` | `core/ai/go-adapter:357` | — |
-| `goKeyAllowsProceed()` | `core/ai/go-key-allows-proceed:11` | Go 桌面端 key 不可回读，当 isGo=true && keyConfigured=true 时， missingKey 不应阻止前端发起请求（key 由 Go 后端持有）。 |
+| `goKeyAllowsProceed()` | `core/ai/go-key-allows-proceed:11` | Go 桌面端 key 不可回读，当 isGo=true &amp;&amp; keyConfigured=true 时， missingKey 不应阻止前端发起请求（key 由 Go 后端持有）。 |
 | `resolveAi()` | `core/ai/index:28` | — |
+| `ActionResult()` | `core/ai/intent-dispatcher:4` | — |
 | `executeAction()` | `core/ai/intent-dispatcher:56` | — |
 | `parseActionFromLLM()` | `core/ai/intent-dispatcher:23` | — |
 | `renderMarkdownInto()` | `core/ai/markdown:55` | 把 Markdown 文本渲染为 DOM 片段，追加进目标容器。 |
@@ -117,6 +119,7 @@
 | `captureSceneSnapshotData()` | `core/ai/scene-snapshot:64` | 采集当前场景快照结构化数据；未初始化时返回 null。 |
 | `formatSceneSnapshot()` | `core/ai/scene-snapshot:49` | 将快照数据格式化为紧凑文本（≤ NFR-3 的 2048 字符预算）。 |
 | `registerAiSnapshotBridge()` | `core/ai/scene-snapshot:39` | 由 scene.ts 在 initScene() 时注入引擎引用（单向依赖，避免 ai → scene 静态耦合）。 |
+| `parseSseStream()` | `core/ai/sse:20` | — |
 | `AI_ERROR_KINDS()` | `core/ai/types:124` | [doc:adr-196] AiErrorKind 运行时值数组，供 Go kind 白名单校验等需要运行时遍历的场景使用。 |
 | `AiCapabilities()` | `core/ai/types:5` | AI 后端能力描述 |
 | `AiConfigProvider()` | `core/ai/types:107` | 用户选择的服务商配置项 |
@@ -137,7 +140,7 @@
 | `delay()` | `core/async:22` | Promise 包装的延迟。 |
 | `fireAndForget()` | `core/async:17` | 启动一个异步操作但不等待，异常由 swallowError 兜底。 |
 | `makeLazyLoader()` | `core/async:43` | 创建惰性动态 import 加载器（带并发守卫 + 失败重试）。 |
-| `swallowError()` | `core/async:12` | 吞掉 promise 的异常并记录日志（比空 `.catch(() =&gt; {})` 可调试）。 |
+| `swallowError()` | `core/async:12` | 吞掉 promise 的异常并记录日志（比空 &#96;.catch(() =&amp;gt; {})&#96; 可调试）。 |
 | `waitForFrame()` | `core/async:27` | Promise 包装的等待下一帧。 |
 | `PlaySfxOptions()` | `core/audio-bus:107` | — |
 | `disposeAudioBus()` | `core/audio-bus:190` | 释放总线资源（context 关闭、缓存清空）。 |
@@ -151,7 +154,7 @@
 | `setFootstepVolume()` | `core/audio-bus:98` | — |
 | `setSfxEnabled()` | `core/audio-bus:85` | — |
 | `setSfxVolume()` | `core/audio-bus:75` | — |
-| `BeatSink()` | `core/audio:27` | [doc:adr-242] 节拍检测器的结构契约。core 层不得依赖 `motion-algos/beat-detector` 的具体实现类——那会构成 `core → moti |
+| `BeatSink()` | `core/audio:27` | [doc:adr-242] 节拍检测器的结构契约。core 层不得依赖 &#96;motion-algos/beat-detector&#96; 的具体实现类——那会构成 &#96;core → moti |
 | `applyGain()` | `core/audio:562` | — |
 | `attachBeatDetector()` | `core/audio:555` | — |
 | `clearAudio()` | `core/audio:403` | — |
@@ -232,9 +235,9 @@
 | `allSettledFilter()` | `core/collections:49` | 等待全部 promise 结束，仅返回 fulfilled 结果（rejected 被静默丢弃）。 |
 | `ensureArray()` | `core/collections:6` | 确保值为数组；非数组则包裹为单元素数组。 |
 | `filterKeys()` | `core/collections:11` | 按谓词过滤对象键，返回仅含满足条件键值对的新对象。 |
-| `col3FromTriple()` | `core/color-helpers:12` | 从 `[r, g, b]` 三元组构造 Color3。 |
+| `col3FromTriple()` | `core/color-helpers:12` | 从 &#96;[r, g, b]&#96; 三元组构造 Color3。 |
 | `hexToRgb()` | `core/color-helpers:19` | 将 #rrggbb 解析为 {r,g,b}（0–255）。非法输入回退主题默认 74,108,247。 |
-| `rgbString()` | `core/color-helpers:37` | 将 Color3 转为 CSS `rgb(r, g, b)` 字符串（0–255 整数）。 |
+| `rgbString()` | `core/color-helpers:37` | 将 Color3 转为 CSS &#96;rgb(r, g, b)&#96; 字符串（0–255 整数）。 |
 | `rgbToString()` | `core/color-helpers:32` | 将 {r,g,b} 转为 CSS rgb 字符串 "r, g, b"（供 --accent-rgb 等 CSS 变量）。 |
 | `debounce()` | `core/debounce:8` | 函数防抖：在等待指定时间后才执行函数，如果在等待期间再次调用则重置计时器。 |
 | `deepClone()` | `core/deep-clone:9` | 深拷贝对象（基于 JSON 序列化）。 |
@@ -245,7 +248,7 @@
 | `showConfirm()` | `core/dialog:255` | Show a confirmation dialog. |
 | `showPrompt()` | `core/dialog:271` | Show a prompt dialog. |
 | `showPrompt2()` | `core/dialog:394` | 双字段输入对话框。返回 [value1, value2] 或 null（取消）。 |
-| `detachSharedTextures()` | `core/dispose-helpers:64` | 批量 dispose 一组材质**之前**调用：摘除这组材质对「仍被其他存活材质引用」的纹理的引用， 使随后的 `material.dispose(_, true)` 不会误杀共享 |
+| `detachSharedTextures()` | `core/dispose-helpers:64` | 批量 dispose 一组材质**之前**调用：摘除这组材质对「仍被其他存活材质引用」的纹理的引用， 使随后的 &#96;material.dispose(_, true)&#96; 不会误杀共享 |
 | `safeDispose()` | `core/dispose-helpers:29` | 安全释放对象并置空。 |
 | `ARIA_ATTR()` | `core/dom-contract:32` | aria 属性名常量（ARIA_ATTR.valuemin 等） |
 | `COLLAPSIBLE()` | `core/dom-contract:44` | collapsible（folder）组件契约（ui-collapsible.ts 与 e2e 展开逻辑共用） |
@@ -282,7 +285,7 @@
 | `revokeFileUrl()` | `core/fileservice:94` | 释放 resolveFileUrl 浏览器分支产生的 blob: URL（调用方用完必须调用，配对释放）。 |
 | `formatTimestamp()` | `core/format-timestamp:6` | 格式化日期为 HH:MM:SS.mmm 字符串。 |
 | `formatError()` | `core/format:22` | 将任意错误值转换为人类可读字符串，带截断保护。 |
-| `formatTime()` | `core/format:8` | 格式化秒数为 `MM:SS.CC` 字符串（分:秒.百分秒）。 |
+| `formatTime()` | `core/format:8` | 格式化秒数为 &#96;MM:SS.CC&#96; 字符串（分:秒.百分秒）。 |
 | `freeflyInput()` | `core/freefly-state:8` | — |
 | `Ktx2Capability()` | `core/gpu-capabilities:8` | — |
 | `Ktx2PreferredFormat()` | `core/gpu-capabilities:6` | — |
@@ -293,7 +296,7 @@
 | `SUPPORTED_LANGS()` | `core/i18n/locale:15` | 规划支持的语言清单（与竞品 DanceXR 对齐：简/繁中、英、日、韩）。 |
 | `detectSystemLang()` | `core/i18n/locale:36` | [doc:adr-059] 从浏览器/WebView 语言偏好推断首选语言。 |
 | `getLang()` | `core/i18n/locale:82` | 当前语言代码（响应式，切换语言后自动更新）。 |
-| `initI18n()` | `core/i18n/locale:116` | 启动期语言初始化：同步 &lt;html lang&gt; 并预加载当前语言包。 |
+| `initI18n()` | `core/i18n/locale:116` | 启动期语言初始化：同步 &amp;lt;html lang&amp;gt; 并预加载当前语言包。 |
 | `setLang()` | `core/i18n/locale:88` | — |
 | `en()` | `core/i18n/locales/en:2` | — |
 | `ja()` | `core/i18n/locales/ja:2` | — |
@@ -306,7 +309,7 @@
 | `t()` | `core/i18n/t:54` | 翻译一个 key。 |
 | `registerIconBundle()` | `core/icons-bundle:678` | — |
 | `createIconButton()` | `core/icons:27` | 创建图标按钮（默认 slide-action 样式）。 |
-| `createIconifyIcon()` | `core/icons:12` | Create an &lt;iconify-icon&gt; element for the given icon name. |
+| `createIconifyIcon()` | `core/icons:12` | Create an &amp;lt;iconify-icon&amp;gt; element for the given icon name. |
 | `softwareKindIcon()` | `core/icons:43` | Map software kind to an iconify icon name. |
 | `canvasToBase64()` | `core/image:13` | 将 Canvas 编码为 base64 字符串（剥离 data:image/...;base64, 前缀）。 |
 | `thumbDataUrl()` | `core/image:64` | Build a data URL from a base64 thumbnail, sniffing PNG/JPEG/WebP from the header. |
@@ -386,14 +389,14 @@
 | `observe()` | `core/observer-handle:60` | 订阅 Observable 并返回自动管理的句柄。 |
 | `observeOnce()` | `core/observer-handle:74` | 一次性订阅：回调执行后自动移除，等价于 observable.addOnce()。 |
 | `orbitInput()` | `core/orbit-state:10` | — |
-| `MIN_ORBIT_DISTANCE()` | `core/orbit:15` | 轨道距离下限：distance&lt;=0 或非有限时钳制到此值，避免塌缩到原点或 NaN。 |
+| `MIN_ORBIT_DISTANCE()` | `core/orbit:15` | 轨道距离下限：distance&amp;lt;=0 或非有限时钳制到此值，避免塌缩到原点或 NaN。 |
 | `OrbitCoords()` | `core/orbit:5` | — |
 | `cartesianToOrbit()` | `core/orbit:61` | 笛卡尔坐标 → 球面坐标。 |
 | `normalizeOrbit()` | `core/orbit:25` | 钳制一组原始轨道参数为合法值域。 |
 | `orbitToCartesian()` | `core/orbit:38` | 球面坐标 → 笛卡尔坐标。 |
 | `computeLibraryRef()` | `core/path:85` | 纯函数：计算文件路径相对于 libraryRoot 的引用标识（相对路径）。 |
 | `getBaseName()` | `core/path:45` | 跨平台取路径末段文件名。 |
-| `getDirPath()` | `core/path:55` | 跨平台取父目录路径。根目录（无 `/`）返回空字符串。 |
+| `getDirPath()` | `core/path:55` | 跨平台取父目录路径。根目录（无 &#96;/&#96;）返回空字符串。 |
 | `isStageLike()` | `core/path:106` | 判断给定 kind/type 是否为「舞台类」（缩略图使用横屏 16:9 宽高比）。 |
 | `isUnderRoot()` | `core/path:68` | [doc:adr-090][doc:adr-095] 路径归属判定（唯一实现，基于 normPath）。 |
 | `normPath()` | `core/path:15` | 标准化路径：反斜杠 → 正斜杠，去掉尾部斜杠。 |
@@ -402,9 +405,9 @@
 | `isAndroidPlatform()` | `core/platform:13` | Returns true when running inside the Android WebView (Wails v3). |
 | `isWebEntryMode()` | `core/platform:129` | [doc:adr-196/176] 运行时判定是否为 web 入口（短路标记或构建模式）。 |
 | `isWebPlatform()` | `core/platform:28` | Returns true when running in a pure browser (no Wails bridge). |
-| `openExternalLink()` | `core/platform:100` | 打开外链的统一入口：先尝试 Android `&lt;a&gt;.click()` 方式，失败则回退 `window.open`。 |
+| `openExternalLink()` | `core/platform:100` | 打开外链的统一入口：先尝试 Android &#96;&amp;lt;a&amp;gt;.click()&#96; 方式，失败则回退 &#96;window.open&#96;。 |
 | `openExternalURL()` | `core/platform:82` | Opens a URL in the system browser. |
-| `readDeclaredAdapter()` | `core/platform:139` | [doc:adr-196/176] 读取 globalThis 上声明的适配器身份（'go' | 'browser'）。 |
+| `readDeclaredAdapter()` | `core/platform:139` | [doc:adr-196/176] 读取 globalThis 上声明的适配器身份（'go' \| 'browser'）。 |
 | `autoLoop()` | `core/playback-state:13` | — |
 | `isPlaying()` | `core/playback-state:8` | [doc:architecture] Playback control store — ADR-141 split from core/state.ts. |
 | `seekDragging()` | `core/playback-state:20` | — |
@@ -414,8 +417,8 @@
 | `parsePmxComment()` | `core/pmx-meta:11` | 从 PMX 文件的 Uint8Array 中提取 comment（日本语说明/使用规约）。 |
 | `PresetCategory()` | `core/preset-meta:19` | — |
 | `PresetMeta()` | `core/preset-meta:21` | — |
-| `listPresets()` | `core/preset-meta:57` | 跨系统枚举预设，归一为 `PresetMeta[]`。 |
-| `toPresetMeta()` | `core/preset-meta:35` | 由单条记录构造 `PresetMeta`。`extra` 仅承载 envelope 字段，不触碰各系统原生 payload。 |
+| `listPresets()` | `core/preset-meta:57` | 跨系统枚举预设，归一为 &#96;PresetMeta[]&#96;。 |
+| `toPresetMeta()` | `core/preset-meta:35` | 由单条记录构造 &#96;PresetMeta&#96;。&#96;extra&#96; 仅承载 envelope 字段，不触碰各系统原生 payload。 |
 | `reactive()` | `core/reactivity:77` | — |
 | `readonly()` | `core/reactivity:118` | Passthrough readonly — store 层通过约定保证不可变，不做深冻结。 |
 | `scheduleRefresh()` | `core/reactivity:25` | 安排一次刷新（RAF 去抖）。 |
@@ -450,7 +453,7 @@
 | `CancellablePromise()` | `core/runtime-stub:16` | — |
 | `Events()` | `core/runtime-stub:27` | — |
 | `safeCall()` | `core/safe-call:22` | 安全执行同步函数；异常时记录 logWarn(tag, msg, err) 并返回 undefined。 |
-| `safeCallAsync()` | `core/safe-call:46` | 安全执行异步函数；异常时记录 logWarn(tag, msg, err)，返回的 Promise 解析为 undefined（不 reject），等价于 `promise.cat |
+| `safeCallAsync()` | `core/safe-call:46` | 安全执行异步函数；异常时记录 logWarn(tag, msg, err)，返回的 Promise 解析为 undefined（不 reject），等价于 &#96;promise.cat |
 | `safeCallVoid()` | `core/safe-call:32` | 同 safeCall，但 fn 无返回值。 |
 | `SceneActions()` | `core/scene-action-bridge:10` | — |
 | `getSceneAction()` | `core/scene-action-bridge:176` | — |
@@ -464,7 +467,7 @@
 | `setMmdRuntime()` | `core/scene-state:16` | — |
 | `setMmdRuntimeType()` | `core/scene-state:33` | — |
 | `setModelRegistry()` | `core/scene-state:40` | — |
-| `setKey()` | `core/set-key:8` | 泛型键值写入工具，避免大量 `obj[key] = value` 重复。 |
+| `setKey()` | `core/set-key:8` | 泛型键值写入工具，避免大量 &#96;obj[key] = value&#96; 重复。 |
 | `registerAppShortcuts()` | `core/shortcut-app:18` | — |
 | `KeyBindingOverride()` | `core/shortcut-registry:23` | — |
 | `ShortcutDef()` | `core/shortcut-registry:9` | — |
@@ -504,12 +507,13 @@
 | `showToast()` | `core/toast:192` | — |
 | `BoneOverrideEntry()` | `core/types:22` | [doc:adr-061] Motion Override — 持久化的单条骨骼覆盖配置 |
 | `BrowseOutcome()` | `core/types:388` | — |
-| `CameraBehavior()` | `core/types:598` | ADR-100 轴 B — 运动行为：相机如何自动运动，仅当控制轴为 `orbit`(ArcRotate) 时生效。 |
+| `CameraBehavior()` | `core/types:598` | ADR-100 轴 B — 运动行为：相机如何自动运动，仅当控制轴为 &#96;orbit&#96;(ArcRotate) 时生效。 |
 | `CameraControl()` | `core/types:586` | ADR-100 轴 A — 控制方案：决定相机类 + 输入方式。 |
 | `CameraMode()` | `core/types:577` | 保留为兼容别名（存档 / 旧调用点），新代码请用 {@link CameraControl} × {@link CameraBehavior}。 |
 | `DisplayNamePriority()` | `core/types:568` | — |
 | `EnvState()` | `core/types:540` | 从 schema 派生 EnvState interface（-readonly 保证可写）。[doc:adr-137] |
 | `FeetState()` | `core/types:91` | [doc:adr-085] 脚部地面跟随（按模型）状态 |
+| `GoUIState()` | `core/types:17` | — |
 | `LibraryModel()` | `core/types:315` | — |
 | `LibrarySortMode()` | `core/types:607` | — |
 | `MmdRuntimeBoneExtended()` | `core/types:548` | — |
@@ -537,7 +541,7 @@
 | `RecentMotion()` | `core/types:609` | — |
 | `RuntimeModel()` | `core/types:176` | IMmdModel 接口不含 setRuntimeAnimation / createRuntimeAnimation （这两个方法在 MmdModel 和 MmdWasmMode |
 | `SceneMotionIntent()` | `core/types:134` | 场景级动作意图（「场上在跳什么」） |
-| `ScriptedSubMode()` | `core/types:605` | ADR-100 §6.4 — `scripted` 行为的子模式。 |
+| `ScriptedSubMode()` | `core/types:605` | ADR-100 §6.4 — &#96;scripted&#96; 行为的子模式。 |
 | `SlotSource()` | `core/types:149` | 槽位来源 |
 | `UIState()` | `core/types:444` | — |
 | `VmdLayer()` | `core/types:116` | VMD 动画图层 — 支持多 VMD 叠加（Motion Layers） |
@@ -568,7 +572,20 @@
 | `openFullscreen()` | `core/ui-fullscreen-overlay:47` | — |
 | `setCurrentState()` | `core/ui-fullscreen-overlay:99` | — |
 | `HeaderToggleConfig()` | `core/ui-header-toggle:8` | — |
-| `createHeaderToggle()` | `core/ui-header-toggle:26` | 创建标题栏小型开关。返回 `&lt;label class="toggle header-toggle"&gt;`， 含双触发去重（跳过 target===input 的 synthetic |
+| `createHeaderToggle()` | `core/ui-header-toggle:26` | 创建标题栏小型开关。返回 &#96;&amp;lt;label class="toggle header-toggle"&amp;gt;&#96;， 含双触发去重（跳过 target===input 的 synthetic |
+| `BoneSelectOptions()` | `core/ui-helpers:28` | — |
+| `ControlOptions()` | `core/ui-helpers:4` | — |
+| `FullscreenOverlayHandle()` | `core/ui-helpers:48` | — |
+| `FullscreenOverlayOptions()` | `core/ui-helpers:48` | — |
+| `HeaderToggleConfig()` | `core/ui-helpers:30` | — |
+| `OverlayState()` | `core/ui-helpers:48` | — |
+| `PresetChipItem()` | `core/ui-helpers:34` | — |
+| `ResourceItem()` | `core/ui-helpers:36` | — |
+| `ResourcePanelHandle()` | `core/ui-helpers:36` | — |
+| `ResourcePanelOptions()` | `core/ui-helpers:36` | — |
+| `SlideRowExtra()` | `core/ui-helpers:6` | — |
+| `VirtualGridHandle()` | `core/ui-helpers:38` | — |
+| `VirtualGridOptions()` | `core/ui-helpers:38` | — |
 | `addActionRow()` | `core/ui-helpers:7` | — |
 | `addBoneSelectRow()` | `core/ui-helpers:7` | — |
 | `addCardTitle()` | `core/ui-helpers:7` | — |
@@ -610,7 +627,7 @@
 | `KeyboardNavOptions()` | `core/ui-keyboard-nav:19` | — |
 | `NavKeyKind()` | `core/ui-keyboard-nav:17` | 导航按键分类：垂直移动 / 水平移动，供 perKeySkip 差异化判断 |
 | `createKeyboardNav()` | `core/ui-keyboard-nav:67` | — |
-| `withLoadingIndicator()` | `core/ui-loading:20` | 加载指示器包裹器：显示 loading 遮罩 → 执行 fn → `finally` 隐藏。 |
+| `withLoadingIndicator()` | `core/ui-loading:20` | 加载指示器包裹器：显示 loading 遮罩 → 执行 fn → &#96;finally&#96; 隐藏。 |
 | `NAV_ADJUST_ATTR()` | `core/ui-nav-item:17` | — |
 | `NAV_FOCUS_ATTR()` | `core/ui-nav-item:16` | — |
 | `NAV_GROUP_ATTR()` | `core/ui-nav-item:18` | — |
@@ -634,10 +651,10 @@
 | `addActionRow()` | `core/ui-rows:571` | 创建一个可点击的操作按钮行（替代手写 cs-row + button）。 |
 | `addBoneSelectRow()` | `core/ui-rows:754` | 创建骨骼选择行：label + 搜索框 + 分组下拉（含 IK 标记）。 |
 | `addCardTitle()` | `core/ui-rows:345` | 创建 card-title 标题行并追加到容器 |
-| `addDangerRow()` | `core/ui-rows:360` | 创建危险操作行（icon + red label），替代手动拼接 `div.slide-item &gt; icon + label.danger-text` |
+| `addDangerRow()` | `core/ui-rows:360` | 创建危险操作行（icon + red label），替代手动拼接 &#96;div.slide-item &amp;gt; icon + label.danger-text&#96; |
 | `addDisabledRow()` | `core/ui-rows:608` | 创建一个不可交互的提示行（替代手写 cs-row + opacity 0.4 + pointer-events none）。 |
-| `addEmptyRow()` | `core/ui-rows:322` | 创建空状态占位行（灰色文字，不可点击），替代手动 `el.style.opacity = '0.5'` 模式 |
-| `addFieldRow()` | `core/ui-rows:392` | 创建字段行（左 label + 右 value），替代手动拼接的 `div.slide-item &gt; span.slide-label.field-label + span.fie |
+| `addEmptyRow()` | `core/ui-rows:322` | 创建空状态占位行（灰色文字，不可点击），替代手动 &#96;el.style.opacity = '0.5'&#96; 模式 |
+| `addFieldRow()` | `core/ui-rows:392` | 创建字段行（左 label + 右 value），替代手动拼接的 &#96;div.slide-item &amp;gt; span.slide-label.field-label + span.fie |
 | `addInfoCard()` | `core/ui-rows:432` | — |
 | `addInfoGrid()` | `core/ui-rows:425` | — |
 | `addInlineToggleRow()` | `core/ui-rows:639` | 创建一个内联 toggle 行（替代手写 toggle-row + toggle-label + toggle-switch）。 |
@@ -650,9 +667,10 @@
 | `isIkBone()` | `core/ui-rows:688` | [doc:adr-122 P3] 判断骨骼是否为 IK 相关骨骼 |
 | `sliderRow()` | `core/ui-rows:465` | — |
 | `toggleRow()` | `core/ui-rows:482` | — |
+| `HeaderToggleConfig()` | `core/ui-slide-row:9` | — |
 | `SlideRowExtra()` | `core/ui-slide-row:67` | — |
 | `TrailingAction()` | `core/ui-slide-row:11` | — |
-| `createLeadingBtn()` | `core/ui-slide-row:63` | 统一左侧行为区按钮工厂——镜像 createTrailingBtn，但渲染为 21px 透明可点击 `.slide-lead-btn`（复用 .slide-icon 尺寸，非 22 |
+| `createLeadingBtn()` | `core/ui-slide-row:63` | 统一左侧行为区按钮工厂——镜像 createTrailingBtn，但渲染为 21px 透明可点击 &#96;.slide-lead-btn&#96;（复用 .slide-icon 尺寸，非 22 |
 | `createTrailingBtn()` | `core/ui-slide-row:54` | 统一尾部第二动作按钮工厂——供 slideRow 与 menu.ts createRow 共用， 确保两条渲染路径的第二按钮观感与行为一致（22px .slide-add-btn； |
 | `slideRow()` | `core/ui-slide-row:96` | — |
 | `DragSliderController()` | `core/ui-slider-controller:23` | — |
@@ -680,16 +698,21 @@
 | `ClearExtractCache()` | `core/wails-bindings:57` | — |
 | `ClearThumbnailCache()` | `core/wails-bindings:58` | — |
 | `ClosePlazaWindow()` | `core/wails-bindings:59` | — |
+| `Config()` | `core/wails-bindings:14` | — |
 | `DeleteEnvPreset()` | `core/wails-bindings:60` | — |
 | `DeleteModelPreset()` | `core/wails-bindings:61` | — |
 | `DeletePresetScene()` | `core/wails-bindings:62` | — |
 | `DownloadAndRunInstaller()` | `core/wails-bindings:64` | — |
 | `DownloadApk()` | `core/wails-bindings:63` | — |
 | `DownloadFromPlaza()` | `core/wails-bindings:65` | — |
+| `EnvPresetEntry()` | `core/wails-bindings:14` | — |
+| `EnvState()` | `core/wails-bindings:14` | — |
 | `Events()` | `core/wails-bindings:13` | — |
+| `ExtractResult()` | `core/wails-bindings:14` | — |
 | `ExtractZip()` | `core/wails-bindings:66` | — |
 | `FetchPlazaConfig()` | `core/wails-bindings:67` | — |
 | `FileExists()` | `core/wails-bindings:68` | — |
+| `FileInfo()` | `core/wails-bindings:14` | — |
 | `GetAllTags()` | `core/wails-bindings:69` | — |
 | `GetBuildInfo()` | `core/wails-bindings:70` | — |
 | `GetCacheStats()` | `core/wails-bindings:71` | — |
@@ -713,6 +736,7 @@
 | `GetThumbnail()` | `core/wails-bindings:89` | — |
 | `ImportLocalFile()` | `core/wails-bindings:90` | — |
 | `ImportZip()` | `core/wails-bindings:91` | — |
+| `InstallResult()` | `core/wails-bindings:14` | — |
 | `IsolateModelDir()` | `core/wails-bindings:92` | — |
 | `LaunchSoftware()` | `core/wails-bindings:93` | — |
 | `ListDirRecursive()` | `core/wails-bindings:94` | — |
@@ -724,6 +748,9 @@
 | `LoadModelPresetFromLib()` | `core/wails-bindings:100` | — |
 | `LoadOutfitFile()` | `core/wails-bindings:101` | — |
 | `LoadSceneFile()` | `core/wails-bindings:102` | — |
+| `ModelEntry()` | `core/wails-bindings:14` | — |
+| `ModelMeta()` | `core/wails-bindings:14` | — |
+| `ModelPresetEntry()` | `core/wails-bindings:14` | — |
 | `NavigatePlazaWindow()` | `core/wails-bindings:103` | — |
 | `OpenCacheDir()` | `core/wails-bindings:104` | — |
 | `OpenScreenshotDir()` | `core/wails-bindings:105` | — |
@@ -737,6 +764,7 @@
 | `ReadTextFile()` | `core/wails-bindings:113` | — |
 | `RemoveCustomSoftware()` | `core/wails-bindings:115` | — |
 | `RemoveTag()` | `core/wails-bindings:116` | — |
+| `RenderPreset()` | `core/wails-bindings:14` | — |
 | `SaveEnvPresetAuto()` | `core/wails-bindings:117` | — |
 | `SaveLastScene()` | `core/wails-bindings:118` | — |
 | `SaveModelPreset()` | `core/wails-bindings:119` | — |
@@ -776,14 +804,17 @@
 | `SetUIPopupWidth()` | `core/wails-bindings:153` | — |
 | `SetUIScale()` | `core/wails-bindings:154` | — |
 | `SetUIState()` | `core/wails-bindings:155` | — |
+| `SoftwareEntry()` | `core/wails-bindings:14` | — |
 | `StartFileServer()` | `core/wails-bindings:156` | — |
 | `StartProxy()` | `core/wails-bindings:157` | — |
 | `StopProxy()` | `core/wails-bindings:158` | — |
+| `UIState()` | `core/wails-bindings:14` | — |
+| `UpdateCheckResult()` | `core/wails-bindings:14` | — |
 | `UpdateCustomSoftware()` | `core/wails-bindings:159` | — |
 | `WriteTextFile()` | `core/wails-bindings:114` | — |
 | `readFileBytes()` | `core/wails-bindings:44` | 读取文件为 Uint8Array（go：自动解码 Wails v3 base64；browser：IndexedDB/FSA 直读）。 |
 | `getWindVector()` | `core/wind-utils:35` | 返回当前风矢量（方向 × 速度），风未生效时返回零向量。 |
-| `isWindActive()` | `core/wind-utils:24` | 风向是否生效（windEnabled 且 windSpeed &gt; 0.01，过滤浮点噪声 / 滑条零位残留）。 |
+| `isWindActive()` | `core/wind-utils:24` | 风向是否生效（windEnabled 且 windSpeed &amp;gt; 0.01，过滤浮点噪声 / 滑条零位残留）。 |
 
 ## 3D 场景
 
@@ -837,9 +868,9 @@
 | `refreshCameraUserSettings()` | `scene/camera/camera-factory:67` | 设置变更后重新应用到当前活动相机 |
 | `setSchedulePersistCallback()` | `scene/camera/camera-factory:40` | camera.ts 启动时注入 scheduleCameraPersist 回调。 |
 | `CAMERA_MODES()` | `scene/camera/camera-state:22` | [audit:P3] CameraMode 合法值全集（运行时校验用，与类型定义同源维护）。 |
-| `CameraBehavior()` | `scene/camera/camera-state:42` | ADR-100 轴 B — 运动行为（仅对 orbit/ArcRotate 生效，初版互斥）。双写于 `core/types.ts`。 |
-| `CameraControl()` | `scene/camera/camera-state:39` | ADR-100 轴 A — 控制方案（相机类 + 输入）。双写于 `core/types.ts`。 |
-| `CameraMode()` | `scene/camera/camera-state:18` | 新代码请用 {@link CameraControl} × {@link CameraBehavior}。双写于 `core/types.ts`。 |
+| `CameraBehavior()` | `scene/camera/camera-state:42` | ADR-100 轴 B — 运动行为（仅对 orbit/ArcRotate 生效，初版互斥）。双写于 &#96;core/types.ts&#96;。 |
+| `CameraControl()` | `scene/camera/camera-state:39` | ADR-100 轴 A — 控制方案（相机类 + 输入）。双写于 &#96;core/types.ts&#96;。 |
+| `CameraMode()` | `scene/camera/camera-state:18` | 新代码请用 {@link CameraControl} × {@link CameraBehavior}。双写于 &#96;core/types.ts&#96;。 |
 | `CameraPreset()` | `scene/camera/camera-state:83` | Per-mode parameter bundle, persisted with scene files. |
 | `ConcertParams()` | `scene/camera/camera-state:72` | Concert (fan-cam) camera parameters — limited horizontal sweep + sinusoidal vertical bob. |
 | `FreeflyParams()` | `scene/camera/camera-state:59` | Freefly camera parameters. |
@@ -898,8 +929,17 @@
 | `hasCameraAnimationHandle()` | `scene/camera/camera-vmd:119` | VMD 相机动画句柄是否就绪（switchCameraMode 在 vmd 分支前置检查）。 |
 | `loadCameraVmd()` | `scene/camera/camera-vmd:37` | Load camera animation from a VMD (MmdAnimation) and create an MmdCamera. |
 | `setSwitchCameraModeCallback()` | `scene/camera/camera-vmd:32` | camera.ts 启动时注入 switchCameraMode 回调。 |
+| `CameraBehavior()` | `scene/camera/camera:281` | — |
+| `CameraControl()` | `scene/camera/camera:259` | — |
+| `CameraMode()` | `scene/camera/camera:238` | — |
+| `CameraPreset()` | `scene/camera/camera:763` | — |
 | `CameraState()` | `scene/camera/camera:557` | — |
+| `ConcertParams()` | `scene/camera/camera:208` | — |
+| `FreeflyParams()` | `scene/camera/camera:195` | — |
 | `LEGACY_MODE_MAP()` | `scene/camera/camera:108` | ADR-100 §6.1 — 旧模式 → 双轴映射（迁移 / shim 共用）。 |
+| `OrbitParams()` | `scene/camera/camera:168` | — |
+| `ScriptedSubMode()` | `scene/camera/camera:763` | — |
+| `SurroundParams()` | `scene/camera/camera:212` | — |
 | `_syncAxesFromMode()` | `scene/camera/camera:238` | ADR-100：由旧 mode 派生双轴状态。switchCameraMode 提交 _cameraMode 时同步调用，作为唯一写入点。 |
 | `animateCameraVmd()` | `scene/camera/camera:795` | — |
 | `autoFrame()` | `scene/camera/camera:533` | Auto-frame the camera to centre on a bounding box. |
@@ -1023,6 +1063,8 @@
 | `specKey()` | `scene/env/env-ground-spec:215` | 稳定 key：仅序列化结构性字段。新增结构性字段自动纳入，无遗漏风险。 |
 | `GROUND_PRESETS()` | `scene/env/env-ground:1384` | — |
 | `GroundMat()` | `scene/env/env-ground:52` | — |
+| `GroundPreset()` | `scene/env/env-ground:1383` | — |
+| `GroundProceduralKind()` | `scene/env/env-ground:169` | — |
 | `INFINITE_GROUND_SIZE()` | `scene/env/env-ground:569` | — |
 | `_disableGroundRippleTexture()` | `scene/env/env-ground:609` | — |
 | `_effectiveBumpLevel()` | `scene/env/env-ground:129` | ADR-114 Phase 2: 法线扭曲映射到 bumpTexture.level 增强（distort=1 时额外 +2.0）；低质量模式自动关闭 |
@@ -1030,7 +1072,7 @@
 | `_generateGroundTexture()` | `scene/env/env-ground:972` | — |
 | `_getAlbedoColor()` | `scene/env/env-ground:103` | — |
 | `_getAlbedoTex()` | `scene/env/env-ground:90` | — |
-| `_needAlphaBlend()` | `scene/env/env-ground:160` | 判断地面是否需要 alpha blend 渲染（alpha &lt; 1 或边缘淡出）。 |
+| `_needAlphaBlend()` | `scene/env/env-ground:160` | 判断地面是否需要 alpha blend 渲染（alpha &amp;lt; 1 或边缘淡出）。 |
 | `_setAlbedoColor()` | `scene/env/env-ground:109` | — |
 | `_setAlbedoTex()` | `scene/env/env-ground:96` | — |
 | `_syncAllTextureOffsets()` | `scene/env/env-ground:1188` | — |
@@ -1156,7 +1198,7 @@
 | `setGroundGeometryProvider()` | `scene/env/env-water-fx:234` | 注入地面几何提供者（env-ground 在模块初始化时调用一次） |
 | `setWaterLODMeshes()` | `scene/env/env-water-fx:89` | 供宿主 createWater 写入 LOD 网格（拆分后状态归本模块，宿主经函数访问） |
 | `updateGroundRipples()` | `scene/env/env-water-fx:337` | 每帧更新地面涟漪纹理（由 env-ground 的 update observer 驱动） |
-| `updateRipples()` | `scene/env/env-water-fx:172` | 每帧涟漪衰减 + 死亡清理（由材质更新回调驱动；dt&lt;=0 时跳过避免零时距死循环） |
+| `updateRipples()` | `scene/env/env-water-fx:172` | 每帧涟漪衰减 + 死亡清理（由材质更新回调驱动；dt&amp;lt;=0 时跳过避免零时距死循环） |
 | `updateUnderwaterTransition()` | `scene/env/env-water-fx:461` | — |
 | `WATER_PRESETS()` | `scene/env/env-water-material:543` | — |
 | `WaterPreset()` | `scene/env/env-water-material:507` | — |
@@ -1278,7 +1320,7 @@
 | `setMatCategoryEnabled()` | `scene/manager/material:933` | 按分类批量切换材质可见性。 |
 | `setMatEnabled()` | `scene/manager/material:692` | — |
 | `setMatParams()` | `scene/manager/material:851` | — |
-| `resolveModelId()` | `scene/manager/model-id:9` | 解析模型运行时 id：优先复用存档 uuid（preferredId，由恢复路径传入）， 否则生成稳定 uuid。替代旧实现 `model_${Date.now()}_${Math |
+| `resolveModelId()` | `scene/manager/model-id:9` | 解析模型运行时 id：优先复用存档 uuid（preferredId，由恢复路径传入）， 否则生成稳定 uuid。替代旧实现 &#96;model_${Date.now()}_${Math |
 | `captureThumbnail()` | `scene/manager/model-loader:153` | Captures a screenshot after model load for thumbnail cache. |
 | `initLoader()` | `scene/manager/model-loader:91` | — |
 | `loadPMXFile()` | `scene/manager/model-loader:420` | — |
@@ -1287,6 +1329,7 @@
 | `FormationType()` | `scene/manager/model-manager:125` | — |
 | `ModelManager()` | `scene/manager/model-manager:193` | — |
 | `getFormationLabels()` | `scene/manager/model-manager:136` | — |
+| `FormationType()` | `scene/manager/model-ops:97` | — |
 | `ReplaceSnapshot()` | `scene/manager/model-ops:331` | [doc:adr-150] 替换模型时从旧模型捕获、应用到新模型的可继承状态快照。 |
 | `applyInheritedState()` | `scene/manager/model-ops:390` | [doc:adr-150] 将状态快照应用到新模型（通过 modelManager setter + setBoneOverride）。 |
 | `applyVPDPose()` | `scene/manager/model-ops:284` | 应用 VPD 姿势到模型（静态姿势，停掉 VMD 播放）。 |
@@ -1341,11 +1384,11 @@
 | `expandFallbackCandidates()` | `scene/manager/texture-fallback:93` | 批量展开 fallback 候选条目（共享 data 引用），并对「候选 vs 真实路径」冲突去重。 |
 | `registerDeclaredAliases()` | `scene/manager/texture-fallback:52` | 按 PMX 声明路径反向注册别名（[fix:decl-alias]）。 |
 | `textureFallbackCandidates()` | `scene/manager/texture-fallback:17` | 生成给定相对路径的 fallback 候选列表（不含原始路径本身）。 |
-| `ThumbnailSource()` | `scene/manager/thumbnail-capture:30` | — |
-| `renderInstanceThumbnail()` | `scene/manager/thumbnail-capture:48` | 用离屏 RenderTargetTexture 渲染指定模型实例的「当前骨骼姿态」并保存为缩略图。 |
+| `ThumbnailSource()` | `scene/manager/thumbnail-capture:31` | — |
+| `renderInstanceThumbnail()` | `scene/manager/thumbnail-capture:49` | 用离屏 RenderTargetTexture 渲染指定模型实例的「当前骨骼姿态」并保存为缩略图。 |
 | `ThumbnailBaseKeyInput()` | `scene/manager/thumbnail-key:14` | — |
 | `ThumbnailKeyInput()` | `scene/manager/thumbnail-key:45` | — |
-| `buildThumbnailKey()` | `scene/manager/thumbnail-key:54` | 唯一缓存 key 构造：`&lt;baseKey&gt;::&lt;resolution&gt;::&lt;aspect&gt;`。 |
+| `buildThumbnailKey()` | `scene/manager/thumbnail-key:54` | 唯一缓存 key 构造：&#96;&amp;lt;baseKey&amp;gt;::&amp;lt;resolution&amp;gt;::&amp;lt;aspect&amp;gt;&#96;。 |
 | `libraryModelBaseKey()` | `scene/manager/thumbnail-key:37` | 由 LibraryModel 推导 baseKey（读侧专用适配器）。 |
 | `thumbnailBaseKey()` | `scene/manager/thumbnail-key:27` | 由库引用路径 + 内部路径推导 baseKey。 |
 | `BoneMapPreset()` | `scene/motion/animation-retargeter:26` | — |
@@ -1371,6 +1414,7 @@
 | `FRAME_HOOK_ORDER()` | `scene/motion/bone-override:692` | [doc:adr-116 P3] 注册每帧渲染钩子。 |
 | `FrameHookSnapshot()` | `scene/motion/bone-override:722` | 帧钩子快照（供 UI 查询管线时序一览） |
 | `OverrideSlotLike()` | `scene/motion/bone-override:252` | 覆盖槽的最小形态，供 _computeOverride 接收（与内部 _OverrideSlot 结构兼容） |
+| `OverrideType()` | `scene/motion/bone-override:478` | — |
 | `applyBoneOverrideIK()` | `scene/motion/bone-override:338` | [doc:adr-122 P1] IK 感知的骨骼覆盖。 |
 | `clearAllOverrides()` | `scene/motion/bone-override:547` | 清除所有骨骼覆盖。 |
 | `clearBoneOverride()` | `scene/motion/bone-override:440` | 清除指定骨骼的覆盖。 |
@@ -1391,6 +1435,9 @@
 | `startBoneOverride()` | `scene/motion/bone-override:902` | — |
 | `stopBoneOverride()` | `scene/motion/bone-override:1006` | 停止覆盖系统。 |
 | `FeetModelProvider()` | `scene/motion/feet-adjustment:48` | 注入：返回需要处理脚部调整的模型及其 runtime bones |
+| `FootLandEvent()` | `scene/motion/feet-adjustment:35` | — |
+| `SolveFootInput()` | `scene/motion/feet-adjustment:40` | — |
+| `SolveFootOutput()` | `scene/motion/feet-adjustment:40` | — |
 | `isFeetAdjustmentRunning()` | `scene/motion/feet-adjustment:128` | 查询脚部跟随系统是否正在运行（observer 已注册）。 |
 | `setOnFootLand()` | `scene/motion/feet-adjustment:123` | 注入落地事件回调（null 取消）。脚步声控制器调用。 |
 | `solveFootTarget()` | `scene/motion/feet-adjustment:39` | — |
@@ -1439,13 +1486,13 @@
 | `FrameHookManager()` | `scene/motion/motion-modules/module-base:203` | 帧钩子管理器的返回类型（供 createEnsureActive 复用） |
 | `ModuleBaseMethods()` | `scene/motion/motion-modules/module-base:21` | createModuleBase 返回的方法子集（与 MotionOverrideModule 对应方法签名一致） |
 | `ModuleBaseOverrides()` | `scene/motion/motion-modules/module-base:27` | 模块基础行为覆盖 |
-| `ModuleShellConfig()` | `scene/motion/motion-modules/module-base:245` | [doc:adr-146 P3 主题12] 模块实例外壳 — 消除 6 个工厂末尾重复的 `id/meta/priority/managedBones/buildSchema + |
+| `ModuleShellConfig()` | `scene/motion/motion-modules/module-base:245` | [doc:adr-146 P3 主题12] 模块实例外壳 — 消除 6 个工厂末尾重复的 &#96;id/meta/priority/managedBones/buildSchema + |
 | `applyModuleSnapshot()` | `scene/motion/motion-modules/module-base:147` | [doc:adr-125] 将快照应用到指定模型的所有模块。 |
 | `createEnsureActive()` | `scene/motion/motion-modules/module-base:224` | [doc:adr-146 P3] ensureActive 公共工厂 — 消除 body-posture/foot/hand 复制粘贴的 「先 bake 重烤、再幂等注册帧钩子」模 |
 | `createFrameHookManager()` | `scene/motion/motion-modules/module-base:179` | [doc:adr-116 P3] 帧钩子管理器 — 消除 sway/riding 的 _xxxFrameHooks Map 重复模式。 |
 | `createModuleBase()` | `scene/motion/motion-modules/module-base:53` | 创建模块通用方法，减少 7 个模块间 ~105 行重复 boilerplate。 |
 | `createModuleShell()` | `scene/motion/motion-modules/module-base:255` | — |
-| `prepareBake()` | `scene/motion/motion-modules/module-base:275` | [doc:adr-146 P3 主题13] bake 头部守卫 — 消除 6 个 bake 重复的 `getModuleState + enabled 守卫 + claimBone |
+| `prepareBake()` | `scene/motion/motion-modules/module-base:275` | [doc:adr-146 P3 主题13] bake 头部守卫 — 消除 6 个 bake 重复的 &#96;getModuleState + enabled 守卫 + claimBone |
 | `MotionHistoryEntry()` | `scene/motion/motion-modules/motion-history:10` | — |
 | `SnapshotApplier()` | `scene/motion/motion-modules/motion-history:44` | 应用快照到引擎的回调（调用方负责从 registry 读模块实例并 setState/enable/disable） |
 | `SnapshotBuilder()` | `scene/motion/motion-modules/motion-history:41` | 构建当前全量快照的回调（调用方负责从 registry 读状态） |
@@ -1558,6 +1605,11 @@
 | `getHeadGazeMaxYaw()` | `scene/motion/perception-shared:233` | 获取头部跟随最大偏航角（弧度） |
 | `isWasmRuntime()` | `scene/motion/perception-shared:216` | 判断骨骼是否运行在 WASM runtime（无 updateWorldMatrix 方法）。 |
 | `setGazeAngles()` | `scene/motion/perception-shared:265` | 更新头部跟随角度限位（度→弧度，由 perception.ts setter 调用） |
+| `BalanceSwayState()` | `scene/motion/perception:57` | — |
+| `Emotion()` | `scene/motion/perception:57` | — |
+| `GazeConfig()` | `scene/motion/perception:57` | — |
+| `PerceptionContext()` | `scene/motion/perception:57` | — |
+| `PerceptionState()` | `scene/motion/perception:57` | — |
 | `__testOnlyGetContext()` | `scene/motion/perception:808` | 测试用：获取指定模型的 context（含 lastOffsets） |
 | `_clampEyeGazeTarget()` | `scene/motion/perception:58` | — |
 | `_clampHeadGazeTarget()` | `scene/motion/perception:58` | — |
@@ -1767,7 +1819,7 @@
 | `_defaultStageLightState()` | `scene/render/lighting:105` | — |
 | `disposeLighting()` | `scene/render/lighting:520` | 整体清理光照模块（场景销毁时调用） |
 | `getDirLight()` | `scene/render/lighting:149` | 主方向光（未初始化时为 null）。 |
-| `getHemiLight()` | `scene/render/lighting:144` | 主半球光（未初始化时为 null）。导出 getter 替代原 `export let`，消除导出可变绑定。 |
+| `getHemiLight()` | `scene/render/lighting:144` | 主半球光（未初始化时为 null）。导出 getter 替代原 &#96;export let&#96;，消除导出可变绑定。 |
 | `getLightState()` | `scene/render/lighting:257` | — |
 | `initLighting()` | `scene/render/lighting:158` | — |
 | `isLightingReady()` | `scene/render/lighting:303` | [fix:P1] 灯光运行时是否就绪（@dom/e2e 环境无灯光/管线时返回 false，供 UI/测试预检跳过守卫域）。 |
@@ -1834,7 +1886,7 @@
 | `canUndo()` | `scene/scene-serialize:1276` | — |
 | `deserializeScene()` | `scene/scene-serialize:940` | Restore scene state from a SceneFile. |
 | `offerSceneUndo()` | `scene/scene-serialize:1320` | 破坏性操作后调用：弹出中性撤销 toast（复用 action-button toast，info 变体）。 |
-| `offerSceneUndoAndRefresh()` | `scene/scene-serialize:1347` | offerSceneUndo 的常见变体：撤销恢复后执行 reRender 回调并统一提示 `undoApplied`。 |
+| `offerSceneUndoAndRefresh()` | `scene/scene-serialize:1347` | offerSceneUndo 的常见变体：撤销恢复后执行 reRender 回调并统一提示 &#96;undoApplied&#96;。 |
 | `popUndoSnapshot()` | `scene/scene-serialize:1281` | 弹出最近一次撤销快照（LIFO），供全局撤销按钮 / Ctrl+Z 使用。返回快照字符串，无快照时返回 null。 |
 | `pushUndoSnapshot()` | `scene/scene-serialize:1262` | 破坏性操作前调用：抓当前整场景快照压栈（环形，上限 UNDO_LIMIT），返回快照字符串供撤销绑定。 |
 | `resolvePathFromRef()` | `scene/scene-serialize:133` | Resolve a file path from either a libraryRef or a raw absolute path. |
@@ -1844,11 +1896,20 @@
 | `setSuppressAutoSave()` | `scene/scene-serialize:1235` | — |
 | `triggerAutoSaveImpl()` | `scene/scene-serialize:1244` | — |
 | `tryRestoreLastScene()` | `scene/scene-serialize:1503` | — |
+| `AlphaCtx()` | `scene/scene:165` | — |
+| `CameraState()` | `scene/scene:855` | — |
 | `DEFAULT_MAT_PARAMS()` | `scene/scene:141` | — |
+| `EnvState()` | `scene/scene:818` | — |
+| `LightState()` | `scene/scene:857` | — |
 | `LoadLastScene()` | `scene/scene:856` | — |
+| `MaterialCategory()` | `scene/scene:165` | — |
+| `MaterialCategoryParams()` | `scene/scene:165` | — |
+| `ModelInstance()` | `scene/scene:818` | — |
+| `RenderState()` | `scene/scene:858` | — |
 | `SaveLastScene()` | `scene/scene:856` | — |
 | `SaveThumbnail()` | `scene/scene:856` | — |
 | `SetEnvState()` | `scene/scene:856` | — |
+| `StageLightState()` | `scene/scene:857` | — |
 | `__envDebug()` | `scene/scene:324` | — |
 | `_applyAll()` | `scene/scene:141` | — |
 | `_catState()` | `scene/scene:141` | — |
@@ -1942,10 +2003,10 @@
 | `MenuKind()` | `scene/shared/menu-node-types:25` | — |
 | `MenuNode()` | `scene/shared/menu-node-types:52` | — |
 | `StatePath()` | `scene/shared/menu-node-types:8` | 状态路径：类型化字符串，由解析器按前缀映射到 reactive state 对象 |
-| `_resetTextureLRUForTest()` | `scene/shared/texture-lru:92` | 仅供测试：重置缓存状态。 |
-| `clearTextureLRU()` | `scene/shared/texture-lru:81` | 清空 LRU 缓存。在 disposeRenderer 中调用，释放所有缓存的纹理 ArrayBuffer。 |
-| `readTextureWithLRU()` | `scene/shared/texture-lru:40` | 带 LRU 缓存的纹理读取。命中直接返回 ArrayBuffer，未命中则 readFileBytes 后缓存。 |
-| `textureLRUSize()` | `scene/shared/texture-lru:87` | 返回当前缓存条目数（供测试使用）。 |
+| `_resetTextureLRUForTest()` | `scene/shared/texture-lru:104` | 仅供测试：重置缓存状态。 |
+| `clearTextureLRU()` | `scene/shared/texture-lru:92` | 清空 LRU 缓存。在 disposeRenderer 中调用，释放所有缓存的纹理 ArrayBuffer。 |
+| `readTextureWithLRU()` | `scene/shared/texture-lru:45` | 带 LRU 缓存的纹理读取。命中直接返回 ArrayBuffer，未命中则 readFileBytes 后缓存。 |
+| `textureLRUSize()` | `scene/shared/texture-lru:99` | 返回当前缓存条目数（供测试使用）。 |
 | `TransformAdapter()` | `scene/transform/transform-adapter:28` | — |
 | `TransformCapability()` | `scene/transform/transform-adapter:26` | — |
 | `attachGizmoForKind()` | `scene/transform/transform-adapter:69` | 统一 Gizmo 入口：替代三个 attachXxxGizmo。 |
@@ -2111,6 +2172,7 @@
 | `selectOverridePath()` | `menus/library-setup:209` | — |
 | `selectResourceRoot()` | `menus/library-setup:184` | — |
 | `switchStorageMode()` | `menus/library-setup:228` | — |
+| `ModelPresetFile()` | `menus/library:6` | — |
 | `applyModelPreset()` | `menus/library:7` | — |
 | `initLibrary()` | `menus/library:4` | — |
 | `refreshLibrary()` | `menus/library:4` | — |
@@ -2138,6 +2200,11 @@
 | `collectAllSchemasWithFailures()` | `menus/menu-registry:68` | 收集所有已注册 schema，同时返回 builder 失败列表。 |
 | `flattenNodes()` | `menus/menu-registry:94` | 递归展开 schema 树（含 children），返回扁平节点列表。 |
 | `registerSchema()` | `menus/menu-registry:37` | 注册一个面板的 schema 构建函数（nav 可选，特例面板覆写导航元数据） |
+| `ActionMenuCtx()` | `menus/menu-schema:18` | — |
+| `ControlSpec()` | `menus/menu-schema:18` | — |
+| `MenuKind()` | `menus/menu-schema:18` | — |
+| `MenuNode()` | `menus/menu-schema:18` | — |
+| `StatePath()` | `menus/menu-schema:18` | — |
 | `getBindFn()` | `menus/menu-schema:118` | 按 StatePath 获取 bind 函数（用于 registerControl 自更新） |
 | `getStateValue()` | `menus/menu-schema:24` | 按 StatePath 获取当前值 |
 | `setStateValue()` | `menus/menu-schema:70` | 按 StatePath 设置值 |
@@ -2357,7 +2424,7 @@
 | `setMMDPath()` | `menus/settings-system:418` | — |
 | `SETTINGS()` | `menus/settings-targets:5` | 设置菜单文件夹导航 target（ADR-157：7 分类信息架构） |
 | `SETTINGS_ACTION()` | `menus/settings-targets:17` | 设置菜单动作 target（点击后执行操作，不导航） |
-| `SOFTWARE_DETAIL_PREFIX()` | `menus/settings-targets:33` | 动态 target 前缀 —— 用于 `settings:software-detail:&lt;path&gt;` 模式 |
+| `SOFTWARE_DETAIL_PREFIX()` | `menus/settings-targets:33` | 动态 target 前缀 —— 用于 &#96;settings:software-detail:&amp;lt;path&amp;gt;&#96; 模式 |
 | `SettingsActionTarget()` | `menus/settings-targets:39` | 所有动作 target 的联合类型 |
 | `SettingsFolderTarget()` | `menus/settings-targets:36` | 所有文件夹 target 的联合类型 |
 | `generateTextColors()` | `menus/settings:13` | — |

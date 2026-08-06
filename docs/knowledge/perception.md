@@ -19,6 +19,11 @@ adr:
   - ADR-162
   - ADR-166
 symbols:
+  - BalanceSwayState
+  - Emotion
+  - GazeConfig
+  - PerceptionContext
+  - PerceptionState
   - __testOnlyGetContext
   - _clampEyeGazeTarget
   - _clampHeadGazeTarget

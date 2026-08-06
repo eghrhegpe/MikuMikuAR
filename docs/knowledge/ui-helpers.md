@@ -29,7 +29,9 @@ symbols:
   - ControlOptions
   - FullscreenOverlayHandle
   - FullscreenOverlayOptions
+  - HeaderToggleConfig
   - OverlayState
+  - PresetChipItem
   - ResourceItem
   - ResourcePanelHandle
   - ResourcePanelOptions
