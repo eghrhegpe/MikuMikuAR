@@ -3,7 +3,15 @@
  * check-diff-coverage.mjs — P8-A diff-coverage gate
  *
  * 解决「覆盖率阈值只防整体回退、不保护新代码有测试」的假安全感。
- * 仅检查「本次变更的非测试源码」的覆盖率，低于阈值即阻塞。
+ * 仅检查「本次变更的非测试源码」的覆盖率，低于阈值即失败（阻断模式）。
+ *
+ * ## 双模式契约（两条调用路径，勿混淆）
+ *   1. 阻断模式（pre-push 门禁）：`.githooks/pre-push` 以 `npm run test:diff-coverage`
+ *      调用（不加 --suggest），低于阈值 exit 1 拦 push。git 失败也终止（exit 2）而非假绿。
+ *   2. 非阻断建议模式（prepare-commit-msg）：`scripts/hooks/coverage-hint.mjs` 以
+ *      `--suggest --staged` 调用，有缺口时输出可追加进 commit message 的建议区块，
+ *      永远 exit 0（任何失败都静默跳过，不阻塞提交）。
+ *   判断依据仅看是否带 --suggest：带 = 建议，不带 = 阻断。
  *
  * 用法（默认在 frontend/ 工作目录运行）：
  *   node ../scripts/check-diff-coverage.mjs
@@ -57,13 +65,18 @@ function parseArgs(argv) {
     return out;
 }
 
+/** 执行 git 命令；失败返回 null（调用方需区分「失败」与「成功但空输出」）。 */
 function git(args) {
     try {
         return execFileSync("git", args, { cwd: REPO_ROOT, encoding: "utf8" }).trim();
     } catch {
-        return "";
+        return null;
     }
 }
+
+// [P2-1 fix] git 硬失败标志：三圆点 + 兜底全部失败时置位，
+// main 据此非 suggest 模式 exit 2（杜绝 git 故障被当「空 diff → 通过」的假绿）
+let gitHardFail = false;
 
 /** 取本次改动的非测试源码文件（repo-root 相对路径）。 */
 function getChangedFiles(base, head, uncommitted, staged) {
@@ -71,30 +84,31 @@ function getChangedFiles(base, head, uncommitted, staged) {
     // --staged：仅本次暂存区（prepare-commit-msg 场景 = 本次 commit 的文件），
     // 避免 --base origin/main 在本地领先时把历史未推送改动也纳入噪音。
     if (staged) {
-        git(["diff", "--cached", "--find-renames=30", "--name-only"])
-            .split("\n")
-            .forEach((l) => l && out.add(l));
+        const r = git(["diff", "--cached", "--find-renames=30", "--name-only"]);
+        if (r === null) { gitHardFail = true; return []; }
+        r.split("\n").forEach((l) => l && out.add(l));
         return [...out];
     }
     // 三圆点：PR 分支相对 main 合并基的改动
     // --find-renames=30：强制激活 rename 检测（不依赖 git config），
     // 避免 base...head 相对合并基时把 rename 拆成 A+D，导致纯改名被当新增惩罚。
-    git(["diff", "--diff-filter=ACMR", "--find-renames=30", "--name-only", `${base}...${head}`])
-        .split("\n")
-        .forEach((l) => l && out.add(l));
+    const r1 = git(["diff", "--diff-filter=ACMR", "--find-renames=30", "--name-only", `${base}...${head}`]);
+    if (r1 === null) {
+        gitHardFail = true;
+    } else {
+        r1.split("\n").forEach((l) => l && out.add(l));
+    }
     // 兜底：直推 main 时三圆点可能为空，退化为上一提交
     if (out.size === 0) {
-        git(["diff", "--diff-filter=ACMR", "--find-renames=30", "--name-only", `${head}~1...${head}`])
-            .split("\n")
-            .forEach((l) => l && out.add(l));
+        const r2 = git(["diff", "--diff-filter=ACMR", "--find-renames=30", "--name-only", `${head}~1...${head}`]);
+        if (r2 === null) { gitHardFail = true; return []; }
+        r2.split("\n").forEach((l) => l && out.add(l));
     }
     if (uncommitted) {
-        git(["diff", "--find-renames=30", "--name-only"])
-            .split("\n")
-            .forEach((l) => l && out.add(l));
-        git(["diff", "--cached", "--find-renames=30", "--name-only"])
-            .split("\n")
-            .forEach((l) => l && out.add(l));
+        const r3 = git(["diff", "--find-renames=30", "--name-only"]);
+        if (r3 !== null) r3.split("\n").forEach((l) => l && out.add(l));
+        const r4 = git(["diff", "--cached", "--find-renames=30", "--name-only"]);
+        if (r4 !== null) r4.split("\n").forEach((l) => l && out.add(l));
     }
     return [...out];
 }
@@ -142,13 +156,19 @@ export function parseRenameStatus(out) {
 export function detectRenames(base, head, staged) {
     // --staged：用暂存区 name-status 检测 rename（prepare-commit-msg 场景）
     if (staged) {
-        return parseRenameStatus(git(["diff", "--cached", "--name-status", "--find-renames=30"]));
+        const r = git(["diff", "--cached", "--name-status", "--find-renames=30"]);
+        if (r === null) { gitHardFail = true; return new Map(); }
+        return parseRenameStatus(r);
     }
     // 三圆点：PR 相对 main 合并基
-    const map = parseRenameStatus(git(["diff", "--name-status", "--find-renames=30", `${base}...${head}`]));
+    const r1 = git(["diff", "--name-status", "--find-renames=30", `${base}...${head}`]);
+    if (r1 === null) { gitHardFail = true; return new Map(); }
+    const map = parseRenameStatus(r1);
     // 兜底：直推 main 时三圆点可能为空，退化为两点
     if (map.size === 0) {
-        return parseRenameStatus(git(["diff", "--name-status", "--find-renames=30", base, head]));
+        const r2 = git(["diff", "--name-status", "--find-renames=30", base, head]);
+        if (r2 === null) { gitHardFail = true; return new Map(); }
+        return parseRenameStatus(r2);
     }
     return map;
 }
@@ -301,6 +321,17 @@ function main() {
 
     const renameMap = detectRenames(base, head, staged);
     const srcFiles = changed.filter(isSourceFile);
+
+    // [P2-1 fix] git 硬失败（命令报错而非空 diff）：不能当作「无改动」假绿放行
+    if (gitHardFail) {
+        if (suggest) {
+            console.log(`[diff-coverage] git 命令执行失败（建议模式：跳过本次检查，不阻塞提交）`);
+            process.exit(0);
+        }
+        console.error(`[diff-coverage] git 命令执行失败，无法获取可靠 diff（终止而非放行）：`);
+        console.error(`[diff-coverage]   请检查仓库状态（git 是否可用、origin/main 引用是否存在）。`);
+        process.exit(USAGE_ERROR);
+    }
 
     if (srcFiles.length === 0) {
         console.log(`[diff-coverage] 本次无改动源码需要检查（阈值 ${threshold}%）。通过。`);

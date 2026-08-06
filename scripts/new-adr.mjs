@@ -30,6 +30,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
 import { RE_SUPERSEDED_BY } from './_lib/supersede-regex.mjs';
+import { parseAdrHeader } from './_lib/frontmatter.mjs';
 
 const ADR_DIR = path.resolve(process.cwd(), 'docs/adr');
 
@@ -173,6 +174,17 @@ if (args.dryRun) {
 
 const filename = `adr-${next}-${slug}.md`;
 const filepath = path.join(ADR_DIR, filename);
+// 防并发撞号：open 前先校验「同编号任意 slug」是否已存在。
+// wx/O_EXCL 只能防同文件名，两个并发进程用不同标题算到同一 next 时
+// 文件名不同 → 都不会 EEXIST → 产出同号异名双文件；此校验在占位前拦截。
+const sameNumFile = fs
+  .readdirSync(ADR_DIR)
+  .find((f) => new RegExp(`^adr-${next}-`).test(f));
+if (sameNumFile) {
+  console.error(`❌ ADR-${next} 编号已被占用（已存在 ${sameNumFile}），疑似并发创建或本地落后远端。`);
+  console.error(`   当前 ${srcNote}，请先 \`git fetch\` 再从最大号 +1 重新运行，或人工核对编号。`);
+  process.exit(1);
+}
 let fd;
 try {
   fd = fs.openSync(filepath, 'wx');
@@ -213,20 +225,43 @@ function annotateSuperseded(targetRefs, supersedingNum) {
       continue;
     }
     const fp = path.join(ADR_DIR, fname);
-    let text = fs.readFileSync(fp, 'utf8');
-    const statusM = text.match(/^(\s*>\s*\*\*状态\*\*[：:][^\n]*)$/m);
-    if (!statusM) {
-      console.error(`❌ adr-${tPad} 缺少状态行（> **状态**: ...），无法插入标注`);
+    const hdr = parseAdrHeader(fp);
+    if (hdr.error || hdr.statusLine < 0) {
+      console.error(`❌ adr-${tPad} 无法定位状态行（${hdr.error || '未找到状态行'}），无法插入标注`);
       ok = false;
       continue;
     }
-    if (RE_SUPERSEDED_BY.test(statusM[0])) {
-      console.log(`⏭ adr-${tPad} 状态行已有「被取代」标注，跳过（幂等）`);
+    const raw = fs.readFileSync(fp, 'utf8');
+    const eol = raw.includes('\r\n') ? '\r\n' : '\n';
+    const lines = raw.split(/\r?\n/);
+    const statusLine = lines[hdr.statusLine];
+    const existing = statusLine.match(RE_SUPERSEDED_BY);
+    if (existing) {
+      const existingNum = parseInt(existing[1], 10);
+      if (existingNum === supersedingNum) {
+        console.log(`⏭ adr-${tPad} 状态行已有「被 [ADR-${existingNum}] 取代」标注，跳过（幂等）`);
+        continue;
+      }
+      // 已被更早的 ADR 取代：更新为新取代者而非静默丢弃本次请求（防陈旧标注）
+      console.warn(`⚠ adr-${tPad} 已标注「被 [ADR-${existingNum}] 取代」，本次 --supersedes 更新为 [ADR-${supersedingNum}]`);
+      lines[hdr.statusLine] = statusLine.replace(
+        existing[0],
+        `⚠️ 被 [ADR-${supersedingNum}](adr-${supersedingNum}-${slug}.md) 取代（new-adr.mjs 自动标注）`
+      );
+      fs.writeFileSync(fp, lines.join(eol), 'utf8');
+      console.log(`✅ adr-${tPad} 状态行标注已更新为「被 [ADR-${supersedingNum}] 取代」`);
       continue;
     }
     const insert = ` ⚠️ 被 [ADR-${supersedingNum}](adr-${supersedingNum}-${slug}.md) 取代（new-adr.mjs 自动标注）`;
-    text = text.slice(0, statusM.index + statusM[0].length) + insert + text.slice(statusM.index + statusM[0].length);
-    fs.writeFileSync(fp, text, 'utf8');
+    // 行尾追加（table 格式 `| **状态** | ... |` 插在末位 | 前，避免破坏表格）
+    const lastPipe = statusLine.lastIndexOf('|');
+    if (statusLine.trimStart().startsWith('|') && lastPipe >= 0) {
+      lines[hdr.statusLine] =
+        statusLine.slice(0, lastPipe) + insert + statusLine.slice(lastPipe);
+    } else {
+      lines[hdr.statusLine] = statusLine + insert;
+    }
+    fs.writeFileSync(fp, lines.join(eol), 'utf8');
     console.log(`✅ adr-${tPad} 状态行已标注「被 [ADR-${supersedingNum}] 取代」`);
   }
   return ok;
