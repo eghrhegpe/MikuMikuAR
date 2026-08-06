@@ -382,12 +382,14 @@ export function setLightState(s: Partial<LightState>): boolean {
     }
     _updateSunDisc();
     if (!lightingState.skipLightAutoSave) {
-        lightingState.triggerAutoSave();
-        // 用户手动修改灯光/阴影设置：清除自动降级快照，避免 auto 模式后续降级覆盖用户意图。
+        // [audit:round13 P1] 用户手动修改灯光/阴影设置：先清除自动降级快照（恢复到全质量），
+        // 再让本 patch 生效，避免 _restoreSnapshot 整体回写覆盖刚应用的改动
+        // （原顺序导致「改→恢复→再降级」死循环 + 内存与存档发散）。
         // applyDegrade 触发的 setLightState 通过 _suppressSnapshotReset 跳过，防止降级→恢复→再降级循环。
         if (!isSnapshotResetSuppressed()) {
             resetPerformanceSnapshot();
         }
+        lightingState.triggerAutoSave();
     }
     scheduleRefresh();
     return true;

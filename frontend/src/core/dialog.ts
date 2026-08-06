@@ -16,24 +16,33 @@ import { t } from './i18n/t';
 import { createFocusTrap } from './ui-focus-trap';
 
 // ======== 背景冻结（inert 管理）========
-// 弹窗打开时标记 #app 内的内容为 inert，阻止 Tab/点击逃逸到背景
+// 弹窗打开时标记 #app 内的内容为 inert，阻止 Tab/点击逃逸到背景。
+// 引用计数：showDialog 与 showPrompt2 可能嵌套/交叉打开，关闭内层不得解冻外层仍在
+// 打开的对话框背景（[audit:round13] _frozenTarget 共享导致的逃逸缺陷）。
 let _frozenTarget: HTMLElement | null = null;
+let _frozenDepth = 0;
 
 function freezeBackground(exceptEl: HTMLElement): void {
     const app = document.getElementById('app');
     if (!app) {
         return;
     }
-    _frozenTarget = app;
-    app.inert = true;
+    if (_frozenDepth === 0) {
+        _frozenTarget = app;
+        app.inert = true;
+    }
+    _frozenDepth++;
     // 弹窗自身及其 overlay 需要可交互，显式取消 inert
     exceptEl.inert = false;
 }
 
 function unfreezeBackground(): void {
-    if (_frozenTarget) {
-        _frozenTarget.inert = false;
-        _frozenTarget = null;
+    if (_frozenDepth > 0) {
+        _frozenDepth--;
+        if (_frozenDepth === 0 && _frozenTarget) {
+            _frozenTarget.inert = false;
+            _frozenTarget = null;
+        }
     }
 }
 
@@ -297,6 +306,33 @@ export interface Prompt2Options {
 let _overlay2: HTMLDivElement | null = null;
 let _trapRestore2: (() => void) | null = null;
 
+// [audit:round13 P1] showPrompt2 并发守卫：复用单例 _overlay2 的弹窗若被第二次调用
+// 覆盖（_replaceButtonListeners 替换按钮监听器），第一个 Promise 的 cleanup/resolve
+// 永远不再被引用 → Promise 永不结束。与 showDialog 同构：串行化 + FIFO 排队。
+let _prompt2Active = false;
+const _pendingPrompt2: Array<{
+    opts: Prompt2Options;
+    resolve: (v: [string, string] | null) => void;
+}> = [];
+
+function _drainPrompt2Queue(): void {
+    _prompt2Active = false;
+    const next = _pendingPrompt2.shift();
+    if (next) {
+        _prompt2Active = true;
+        _showPrompt2Inner(next.opts).then(
+            (v) => {
+                next.resolve(v);
+                _drainPrompt2Queue();
+            },
+            () => {
+                next.resolve(null);
+                _drainPrompt2Queue();
+            }
+        );
+    }
+}
+
 function getOverlay2(): HTMLDivElement {
     if (_overlay2) {
         return _overlay2;
@@ -331,6 +367,9 @@ export function disposeOverlay2(): void {
     _trapRestore2?.();
     _trapRestore2 = null;
     unfreezeBackground();
+    // [audit:round13 P1] HMR 清理时同步重置并发守卫，避免队列残留卡住后续 showPrompt2
+    _prompt2Active = false;
+    _pendingPrompt2.length = 0;
     if (_overlay2) {
         _overlay2.remove();
         _overlay2 = null;
@@ -340,8 +379,29 @@ export function disposeOverlay2(): void {
 /**
  * 双字段输入对话框。返回 [value1, value2] 或 null（取消）。
  * 替代连续两次 showPrompt，用户一次交互完成。
+ * [audit:round13 P1] 串行化：首次调用同步执行（测试兼容），后续排队等前一个关闭，
+ * 防止第二次调用覆盖单例 overlay2 导致第一个 Promise 永不 resolve。
  */
 export function showPrompt2(opts: Prompt2Options): Promise<[string, string] | null> {
+    if (!_prompt2Active) {
+        _prompt2Active = true;
+        return _showPrompt2Inner(opts).then(
+            (v) => {
+                _drainPrompt2Queue();
+                return v;
+            },
+            (e) => {
+                _drainPrompt2Queue();
+                throw e;
+            }
+        );
+    }
+    return new Promise<[string, string] | null>((resolve) => {
+        _pendingPrompt2.push({ opts, resolve });
+    });
+}
+
+function _showPrompt2Inner(opts: Prompt2Options): Promise<[string, string] | null> {
     return new Promise((resolve) => {
         const overlay = getOverlay2();
         const dialog = overlay.querySelector('.mmd-dialog') as HTMLElement;

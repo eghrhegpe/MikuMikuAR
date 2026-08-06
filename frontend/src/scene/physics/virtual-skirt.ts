@@ -452,6 +452,10 @@ export class VirtualSkirtController {
         const m = this._waistBone?.worldMatrix;
         if (m) {
             this._tmpMatrix.fromArray(m);
+            // [audit:round13 P1] babylon-mmd 骨骼 worldMatrix 是 rootMesh 局部坐标系，
+            // 而 WASM 物理世界为世界坐标（链身骨节初始位/写回均经 localToWorld 转换）。
+            // 锚定体必须乘上 mesh 世界矩阵，否则模型被平移/缩放时锚定体与裙链错位数米。
+            this._tmpMatrix.multiplyToRef(this._meshWorld, this._tmpMatrix);
             this.anchorRb.setTransformMatrix(this._tmpMatrix);
         }
 

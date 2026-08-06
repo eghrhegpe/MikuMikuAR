@@ -817,3 +817,9 @@ registerSceneAction('animateCameraVmd', (frameTime: number) => _animateCameraVmd
 registerSceneAction('loadCameraVmd', (mmdAnimation: unknown, vmdPath: string, vmdName: string) =>
     _loadCameraVmd(mmdAnimation as Parameters<typeof _loadCameraVmd>[0], vmdPath, vmdName)
 );
+// [audit:round13 P2] 真正切换相机模式（含双轴派生与相机生命周期），供 AI action
+// ai:control:setCameraMode 经 camera-state 的 setCameraMode bridge 委托调用。
+// 此前 bridge 只写 _cameraMode 标志，AI「切换相机模式」实际不生效。
+registerSceneAction('switchCameraMode', (mode: string) => {
+    switchCameraMode(isCameraMode(mode) ? mode : 'orbit');
+});

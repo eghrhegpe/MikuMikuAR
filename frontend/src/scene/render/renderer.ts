@@ -200,7 +200,7 @@ export function getRenderState(): RenderState {
         grainEnabled: pipeline.grainEnabled ?? false,
         grainIntensity: pipeline.grain ? clamp(pipeline.grain.intensity / 50, 0, 1) : 0,
         sharpenAmount: pipeline.sharpen ? clamp(pipeline.sharpen.edgeAmount, 0, 1) : 0,
-        glowEnabled: _glowLayer !== null && _glowLayer.intensity > 0,
+        glowEnabled: _glowLayer !== null,
         glowIntensity: _glowLayer ? clamp(_glowLayer.intensity, 0, 1) : 0,
         ssaoEnabled: _ssaoPipeline !== null,
         ssaoStrength: _ssaoPipeline ? clamp(_ssaoPipeline.totalStrength / 2, 0, 1) : 0,
@@ -476,7 +476,9 @@ function _applyRenderState(s: Partial<RenderState>): void {
 
     // 卡通化渲染预设：快照/恢复
     if (s.celShadingMode !== undefined) {
-        if (s.celShadingMode) {
+        // [audit:round13 P2] 幂等守卫：已处于 cel 模式时重复收到 celShadingMode:true
+        // 不再覆盖 _originalRenderState（否则快照污染为 cel 调整后状态，关闭时无法还原用户原始观感）。
+        if (s.celShadingMode && !_celShadingMode) {
             // 保存当前状态 → 切换到预设
             _originalRenderState = getRenderState();
             _celShadingMode = true;
@@ -672,15 +674,18 @@ export function setRenderState(s: Partial<RenderState>): boolean {
     }
     _clearGuardWarn();
 
-    _applyRenderState(s);
-
-    _triggerAutoSave();
-    scheduleRefresh();
-    // 用户手动修改渲染设置：清除自动降级快照，避免 auto 模式后续降级覆盖用户意图。
+    // [audit:round13 P1] 用户手动修改渲染设置：先清除自动降级快照（恢复到全质量），
+    // 再应用用户 patch，避免 _restoreSnapshot 整体回写覆盖刚应用的改动
+    // （原顺序导致「改→恢复→再降级」死循环 + 内存与存档发散）。
     // applyDegrade 触发的 setRenderState 通过 _suppressSnapshotReset 跳过，防止降级→恢复→再降级循环。
     if (!isSnapshotResetSuppressed()) {
         resetPerformanceSnapshot();
     }
+
+    _applyRenderState(s);
+
+    _triggerAutoSave();
+    scheduleRefresh();
     return true;
 }
 
@@ -850,11 +855,14 @@ export function transitionRenderState(
 
         // 中间帧调用 _applyRenderState（不触发自动保存），最终帧用 setRenderState（触发一次保存）
         if (t >= 1) {
-            setRenderState(interp);
-            if (onComplete) {
-                onComplete();
+            // [audit:round13 P2] try/finally：onComplete 抛错也保证 _cancelRenderTransition 执行，
+            // 否则 observer 泄漏且 animLoop 以 t=1 反复 setRenderState（无限自动保存）。
+            try {
+                setRenderState(interp);
+                onComplete?.();
+            } finally {
+                _cancelRenderTransition();
             }
-            _cancelRenderTransition();
         } else {
             _applyRenderState(interp);
         }

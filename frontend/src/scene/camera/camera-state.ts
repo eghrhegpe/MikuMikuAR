@@ -341,7 +341,7 @@ export function setViewMatrixHandle(handle: ObserverHandle | null): void {
 }
 
 // [doc:adr-238] 注册相机模式切换供 core/action-defs 经 scene-action-bridge 调用
-import { registerSceneAction } from '@/core/scene-action-bridge';
+import { registerSceneAction, getSceneAction } from '@/core/scene-action-bridge';
 registerSceneAction('setCameraMode', (mode: string) => {
     // [audit:P3] 运行时校验：桥接输入面宽（action-defs / NL 意图 / AI tool call / E2E），
     // 非法 mode 若静默写入 _cameraMode，switchCameraMode 无分支可走、相机行为异常。
@@ -350,7 +350,15 @@ registerSceneAction('setCameraMode', (mode: string) => {
     if (safe !== mode) {
         logWarn('camera', `[setCameraMode] 非法 mode "${mode}"，回退 'orbit'`);
     }
-    setCameraMode(safe);
+    // [audit:round13 P2] 委托真正切换相机（switchCameraMode 内含双轴派生 + 相机生命周期），
+    // 而非只翻转兼容别名标志导致 AI「切换相机模式」不生效。
+    // camera.ts 已注册 switchCameraMode action；未注册（如无 scene 环境）时降级为状态写入。
+    const switcher = getSceneAction('switchCameraMode');
+    if (switcher) {
+        switcher(safe);
+    } else {
+        setCameraMode(safe);
+    }
 });
 
 // [doc:adr-238] 注册相机模式读取供 core/events 经 scene-action-bridge 调用

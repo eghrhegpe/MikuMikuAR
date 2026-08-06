@@ -99,7 +99,7 @@ import {
     addRipple,
     disposeEnvUpdateObserver,
 } from './env/env';
-import { initCameraSystem, autoFrame } from './camera/camera';
+import { initCameraSystem, autoFrame, disposeCameraSystem } from './camera/camera';
 import {
     dom,
     setMmdRuntime,
@@ -294,6 +294,10 @@ export function disposeScene(): void {
     disposeRenderer();
     disposeEnvUpdateObserver();
     disposeWindPhysics();
+    // [audit:round13 P2] 级联释放相机系统（stop 各行为循环 + dispose 当前相机 + 清理运行时上下文）。
+    // 此前 disposeCameraSystem 是全工程无调用点的死代码；HMR 重入 _reinitSceneForHMR 会再次
+    // initCameraSystem(scene, canvas) 重建，故此处调用是安全且必须的（否则旧相机引用/触摸监听残留）。
+    disposeCameraSystem();
 
     // 5. Scene → Engine 级联释放（WebGL 上下文最终释放）
     scene.dispose();

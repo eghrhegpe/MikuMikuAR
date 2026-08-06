@@ -145,6 +145,12 @@ class LoadManager {
         loadId: string,
         signal?: AbortSignal
     ): Promise<ResourceHandle | null> {
+        // [audit:round13 P2] 排队期间 signal 已 abort 的请求直接短路抛出，
+        // 不再占用队列槽位启动底层 loader（取消语义立即生效；底层 loader 内的
+        // aborted 检查作为第二道防线）。
+        if (signal?.aborted) {
+            throw new DOMException('Aborted', 'AbortError');
+        }
         this._current = req;
         this._loadId = loadId;
         try {

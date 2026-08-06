@@ -10,6 +10,7 @@
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { MmdCamera } from 'babylon-mmd/esm/Runtime/mmdCamera';
 import type { MmdAnimation } from 'babylon-mmd/esm/Loader/Animation/mmdAnimation';
+import type { MmdRuntimeAnimationHandle } from 'babylon-mmd/esm/Runtime/mmdRuntimeAnimationHandle';
 
 import {
     getCameraMode,
@@ -19,7 +20,10 @@ import {
 } from './camera-state';
 
 let _mmdCamera: MmdCamera | null = null;
-let _cameraAnimationHandle: number | null = null;
+let _cameraAnimationHandle: MmdRuntimeAnimationHandle | null = null;
+// 保留 VMD 动画源引用：MmdCamera 被销毁（如 vmd→orbit→vmd 切换）后重建相机时，
+// 可用它重新 createRuntimeAnimation，避免「已 dispose 相机被复用」缺陷。
+let _mmdAnimation: MmdAnimation | null = null;
 
 /** 切换相机模式的回调（由 camera.ts 注入，避免循环依赖）。 */
 let _switchModeCallback: ((mode: 'orbit') => void) | null = null;
@@ -56,6 +60,7 @@ export function loadCameraVmd(mmdAnimation: MmdAnimation, vmdPath: string, vmdNa
 
     _mmdCamera = mmdCam;
     _cameraAnimationHandle = handle;
+    _mmdAnimation = mmdAnimation;
     setCameraVmdState(vmdName, vmdPath);
 
     // 若旧 MmdCamera 是 activeCamera（vmd 模式下重新加载场景），切换到新 MmdCamera。
@@ -79,6 +84,7 @@ export function clearCameraVmd(): void {
         }
         _mmdCamera = null;
         _cameraAnimationHandle = null;
+        _mmdAnimation = null;
         clearCameraVmdState();
     }
 }
@@ -90,13 +96,21 @@ export function animateCameraVmd(frameTime: number): void {
     }
 }
 
-/** 创建 VMD 相机（若已存在则复用）。供 camera.ts switchCameraMode 在 vmd 分支使用。 */
+/** 创建 VMD 相机（若已存在且未销毁则复用）。供 camera.ts switchCameraMode 在 vmd 分支使用。 */
 export function createVmdCamera(): MmdCamera {
     const scene = getCameraScene();
-    if (_mmdCamera) {
+    if (_mmdCamera && !_mmdCamera.isDisposed()) {
         return _mmdCamera;
     }
+    // 旧 MmdCamera 已被销毁（如 vmd→orbit→vmd 切换时 switchCameraMode 对 oldCam 执行了 dispose，
+    // 但本模块级引用未置空）：重建相机，并用保留的动画源恢复动画句柄。
     const cam = new MmdCamera('mmdCam', new Vector3(0, 10, 0), scene, false);
+    if (_mmdAnimation) {
+        _cameraAnimationHandle = cam.createRuntimeAnimation(_mmdAnimation);
+        cam.setRuntimeAnimation(_cameraAnimationHandle);
+    } else {
+        _cameraAnimationHandle = null;
+    }
     _mmdCamera = cam;
     return cam;
 }

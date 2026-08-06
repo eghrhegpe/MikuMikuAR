@@ -12,6 +12,8 @@ export interface SceneActions {
     setLightState: (partial: Record<string, unknown>) => boolean;
     /** 相机模式切换（control 动作 camera:mode） */
     setCameraMode: (mode: string) => void;
+    /** 真正切换相机模式（含双轴派生），由 camera.ts 注册（control 动作 camera:mode 内部委托） */
+    switchCameraMode: (mode: string) => void;
     /** 环境预设应用（control 动作 env:preset） */
     applyEnvPreset: (preset: string) => boolean;
     /** 模型替换（control 动作 model:load） */

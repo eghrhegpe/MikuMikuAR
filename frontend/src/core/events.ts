@@ -363,7 +363,10 @@ export function initDropHandler(): void {
     let dragOverLogged = 0;
     console.info('[drop-diag] initDropHandler registered on window');
     // 同时在 document 和 window 上注册 dragover，对比哪个先收到 / 是否被拦截
-    document.addEventListener(
+    // [audit:round13 P2] 改用 _reg 收集，纳入 disposeEventHandlers 统一清理；
+    // 原 document.addEventListener 裸注册在 HMR 重跑 init 时累积监听器 + 重复日志。
+    _reg(
+        document,
         'dragover',
         (e) => {
             docDragOverCount++;
@@ -382,7 +385,7 @@ export function initDropHandler(): void {
                 );
             }
         },
-        true
+        { capture: true }
     ); // capture 阶段，最早收到
     _reg(window, 'dragenter', (e) => {
         e.preventDefault();

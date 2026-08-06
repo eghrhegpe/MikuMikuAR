@@ -161,4 +161,18 @@ export function closePlaza(): void {
     setPlazaIframe(null);
     stopProxy();
     closeAllOverlays();
+    // [audit:round13 P2] 清理常驻资源：observer 从不 disconnect、隐藏 iframe 持续运行。
+    // 关闭时断开 MutationObserver 并清空引用，避免隐藏期间 iframe 网络开销 + observer 常驻。
+    if (observer) {
+        observer.disconnect();
+        setObserver(null);
+    }
+    // iframe 元素移除：打开时重新 innerHTML 重建，此处直接移出 DOM 停止远程站点加载。
+    const el = getLayer();
+    if (el) {
+        const frame = el.querySelector('iframe');
+        if (frame) {
+            frame.remove();
+        }
+    }
 }
