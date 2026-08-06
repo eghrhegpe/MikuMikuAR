@@ -292,7 +292,7 @@ describe('isTouchDevice', () => {
     });
 
     it('正常：maxTouchPoints>0 时判定为触屏', () => {
-        // @ts-ignore
+        // @ts-ignore 删除 ontouchstart 以隔离 maxTouchPoints 分支
         delete window.ontouchstart;
         vi.stubGlobal('navigator', { maxTouchPoints: 3 });
         vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: false })));
@@ -300,7 +300,7 @@ describe('isTouchDevice', () => {
     });
 
     it('正常：pointer:coarse 命中时判定为触屏', () => {
-        // @ts-ignore
+        // @ts-ignore 删除 ontouchstart 以隔离 pointer:coarse 分支
         delete window.ontouchstart;
         vi.stubGlobal('navigator', { maxTouchPoints: 0 });
         vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: true })));
@@ -308,7 +308,7 @@ describe('isTouchDevice', () => {
     });
 
     it('边界：全部不命中时判定为非触屏', () => {
-        // @ts-ignore
+        // @ts-ignore 删除 ontouchstart 以隔离全不命中分支
         delete window.ontouchstart;
         vi.stubGlobal('navigator', { maxTouchPoints: 0 });
         vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: false })));
