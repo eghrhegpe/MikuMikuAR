@@ -305,6 +305,10 @@ export interface Prompt2Options {
 
 let _overlay2: HTMLDivElement | null = null;
 let _trapRestore2: (() => void) | null = null;
+// [audit:round13 P3] overlay2 是否实际冻结过背景（_showPrompt2Inner freeze 时置 true、
+// cleanup 解冻时置 false）。disposeOverlay2 只在冻结过时才 unfreeze，避免 HMR 清理时
+// 误减引用计数、解冻仍打开的 showDialog 背景（_frozenTarget 引用计数机制的配对前提）。
+let _overlay2Frozen = false;
 
 // [audit:round13 P1] showPrompt2 并发守卫：复用单例 _overlay2 的弹窗若被第二次调用
 // 覆盖（_replaceButtonListeners 替换按钮监听器），第一个 Promise 的 cleanup/resolve
@@ -366,7 +370,12 @@ function getOverlay2(): HTMLDivElement {
 export function disposeOverlay2(): void {
     _trapRestore2?.();
     _trapRestore2 = null;
-    unfreezeBackground();
+    // [audit:round13 P3] 仅在 overlay2 实际冻结过背景时才解冻，避免误减引用计数、
+    // 解冻仍打开的 showDialog 背景（引用计数机制的配对前提）。
+    if (_overlay2Frozen) {
+        unfreezeBackground();
+        _overlay2Frozen = false;
+    }
     // [audit:round13 P1] HMR 清理时同步重置并发守卫，避免队列残留卡住后续 showPrompt2
     _prompt2Active = false;
     _pendingPrompt2.length = 0;
@@ -430,6 +439,7 @@ function _showPrompt2Inner(opts: Prompt2Options): Promise<[string, string] | nul
             _trapRestore2?.();
             _trapRestore2 = null;
             unfreezeBackground();
+            _overlay2Frozen = false;
             overlay.setAttribute('inert', '');
             overlay.classList.remove('mmd-dialog-visible');
             // [bugfix:dialog-escape] 显式移除监听器（替代 { once: true }）
@@ -480,6 +490,7 @@ function _showPrompt2Inner(opts: Prompt2Options): Promise<[string, string] | nul
         fields[0].focus();
         overlay.removeAttribute('inert');
         freezeBackground(overlay);
+        _overlay2Frozen = true;
         _trapRestore2 = createFocusTrap({ container: dialog, onEscape: onCancel });
     });
 }

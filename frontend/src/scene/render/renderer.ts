@@ -476,8 +476,8 @@ function _applyRenderState(s: Partial<RenderState>): void {
 
     // 卡通化渲染预设：快照/恢复
     if (s.celShadingMode !== undefined) {
-        // [audit:round13 P2] 幂等守卫：已处于 cel 模式时重复收到 celShadingMode:true
-        // 不再覆盖 _originalRenderState（否则快照污染为 cel 调整后状态，关闭时无法还原用户原始观感）。
+        // [audit:round13 P2] 幂等守卫：已处于 cel 模式时重复收到 celShadingMode:true 是
+        // 真正的 no-op（不覆盖 _originalRenderState 也不误关 cel）；只有显式 false 才走关闭分支。
         if (s.celShadingMode && !_celShadingMode) {
             // 保存当前状态 → 切换到预设
             _originalRenderState = getRenderState();
@@ -501,7 +501,7 @@ function _applyRenderState(s: Partial<RenderState>): void {
             } catch (e) {
                 logWarn('renderer', 'celGroundCoupling(on) 失败:', e);
             }
-        } else {
+        } else if (!s.celShadingMode && _celShadingMode) {
             // 恢复到快照状态
             _celShadingMode = false;
             // cel 关闭：恢复地面 PBR 到 cel 开启前状态
@@ -524,6 +524,7 @@ function _applyRenderState(s: Partial<RenderState>): void {
                 _applyRenderState(rest);
             }
         }
+        // 其余组合（已激活 + true / 未激活 + false）为 no-op，保持当前状态。
     }
 }
 
