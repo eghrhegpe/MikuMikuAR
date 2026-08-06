@@ -24,20 +24,80 @@
 范例见 `comment-checker.mjs`、`diagnose.mjs`（已按本规范整改）。
 
 > 执行状态：本仓库已落地 `check-script-hygiene.mjs`（与 ysm-model-manager 同款，四口径：退出码失效 / 共享层内联 / `--json` 契约 / 文件头 5 字段）；运行 `node scripts/check-script-hygiene.mjs [--json|--strict]` 即可机检本规范。
+>
+> ⚠️ 已知漂移（2026-08-06 登记）：上述「文件头 5 字段」规范当前**未被严格执行**——抽查显示多数脚本 JSDoc 首行格式不统一（有的以文件名开头、有的无 `— 描述` 前缀），而 hygiene 检查对该格式放行（0 警告）。规范 enforcement 缺口已列为待办（见下「脚本缺陷排查」）。
 
-## 快速索引
+## 快速索引（全量分类）
 
-| 脚本 | 用途 | 新人友好 |
-|------|------|---------|
-| `check-doc-drift.mjs` | 文档漂移检查（ADR/知识卡/架构树） | ✅ |
-| `new-adr.mjs` | 生成新 ADR 文件模板 | ✅ |
-| `new-knowledge-card.mjs` | 生成知识卡模板 | ✅ |
-| `fix-adr-format.mjs` | 批量修复 ADR 首部格式 | 🟡 |
-| `gen-status-index.mjs` | 从 ADR 自动生成状态索引表 | 🟡 |
-| `i18n-check.mjs` | i18n 语言包键值奇偶校验 | 🛠 |
-| `goerr-lint.mjs` | Go 错误信封静态检查 | 🛠 |
-| `gen-icon-bundle.mjs` | 图标 Bundle 生成 | 🛠 |
-| `verify-sab.js` | SharedArrayBuffer 可用性验证 | 🛠 |
+### 文档维护（gen / fix / new）
+
+| 脚本 | 用途 |
+|------|------|
+| `new-adr.mjs` | 新 ADR 脚手架（占号→模板→取代标注→索引对账，见下方专节） |
+| `new-knowledge-card.mjs` | 生成知识卡模板（frontmatter + 章节骨架） |
+| `gen-status-index.mjs` | 从 ADR 首部生成 `docs/status.md` 状态索引 |
+| `gen-docs-index.mjs` | 生成文档站分区枢纽索引（adr/buglog/knowledge/novel 等） |
+| `gen-funcmap.mjs` | 生成函数大全 `docs/function-map.md`（符号带文件:行号） |
+| `gen-novel-index.mjs` | 生成小说章节索引 `docs/novel/index.md` |
+| `gen-menu-map.mjs` | 生成菜单地图 `docs/knowledge/menu-map.md` |
+| `gen-knowledge-graph.mjs` | 生成知识卡关联图 `docs/knowledge/graph.md` |
+| `gen-knowledge-h1.mjs` | 知识卡 H1 标题同步 |
+| `gen-knowledge-symbols.mjs` | 知识卡 `symbols:` 字段同步（源码导出符号） |
+| `gen-knowledge-adr.mjs` | 知识卡 `adr:` 关联同步 |
+| `gen-knowledge-tests.mjs` | 知识卡 `tests:` 字段同步 |
+| `gen-tier.mjs` | 知识卡 tier 分层标注（ADR-218 P3） |
+| `gen-routes.mjs` | 知识卡检索路由 `docs/knowledge/routes.md` |
+| `gen-ui-entry.mjs` | 知识卡 UI 入口同步 |
+| `gen-adr-supersede.mjs` | 取代关系审计（五层证据，登记/漏标/废弃/可疑/弱宣称） |
+| `gen-dep-graph.mjs` | 模块依赖图生成 |
+| `gen-guide-gap.mjs` | 用户指南缺口分析 |
+| `fix-adr-format.mjs` | 批量修复 ADR 首部格式（冒号/前缀对齐解析契约） |
+| `fix-adr-dates.mjs` | 为缺日期行的 ADR 补 `> **日期**: yyyy-mm-dd` |
+
+### 检查（check / lint / doctor）
+
+| 脚本 | 用途 |
+|------|------|
+| `check-doc-drift.mjs` | 文档漂移检查（ADR/知识卡/架构树，CI 卡点） |
+| `check-adr-health.mjs` | ADR 健康综合检查（状态/债务/格式/关联/连续性） |
+| `check-adr-status.mjs` | ADR 状态检查（精简版） |
+| `check-adr-technical-debt.mjs` | ADR 技术债务检查（精简版） |
+| `check-boolean-naming.mjs` | env-state-schema boolean 字段命名规范 |
+| `check-circular.mjs` | 前端循环依赖检查 |
+| `check-consumers.mjs` | 符号消费者查询（重构前影响面分析） |
+| `check-deadcode-baseline.mjs` | knip/jscpd 死代码与重复代码基线治理 |
+| `check-diff-coverage.mjs` | P8-A diff-coverage 门禁 |
+| `check-env-parity.mjs` | EnvState 字段 parity（TS schema ↔ Go bindings） |
+| `check-layering.mjs` | 前端分层依赖方向守护（ADR-242） |
+| `check-schema-groups.mjs` | env-state-schema group 完整性 |
+| `check-script-hygiene.mjs` | scripts/ 工具脚本卫生检查（四口径） |
+| `comment-checker.mjs` | 注释质量检查（AI 废话/空 JSDoc/TODO 无编号/调试残留） |
+| `goerr-lint.mjs` | Go 错误处理 lint（ADR-117 信封规范） |
+| `i18n-check.mjs` | i18n 五语言包 key parity/占位符/漏译/清单漂移 |
+| `link-checker.mjs` | Markdown 链接检查（内部链接目标存在性） |
+| `diagnose.mjs` | 全量项目诊断编排（多检查聚合） |
+
+### 构建 / 发布
+
+| 脚本 | 用途 |
+|------|------|
+| `build-windows.ps1` / `build-darwin.sh` / `build-linux.sh` | 桌面三平台构建 |
+| `build-android.ps1` / `build-android-so.ps1` | Android 构建（含 native .so） |
+| `build-ios.sh` | iOS 构建 |
+| `release.ps1` | Wails 发布（含 release-notes-gen 联动） |
+| `setup-github-secrets.ps1` | GitHub Actions secrets 配置 |
+| `verify-sab.js` | SharedArrayBuffer 可用性验证 |
+
+### 重构 / 工具
+
+| 脚本 | 用途 |
+|------|------|
+| `codemod.mjs` | AST 感知批量重构（rename/move/add-param，ts-morph） |
+| `generate-locale-json.mjs` | i18n 语言包 .ts → JSON（esbuild） |
+| `release-notes-gen.mjs` | 收集 git 数据供子智能体写发版说明 |
+| `doc-check-next-steps.mjs` | 文档检查后续步骤建议 |
+| `poc-mmd-bone-attachment.mjs` | POC：babylon-mmd mesh.attachToBone 验证 |
+| `gen-textures.py` / `gen-textures-stdlib.py` / `gen_appicon.py` / `_pmxtex.py` / `_zipcmp.py` / `_probe_tier.mjs` | 纹理/图标生成与内部探测工具 |
 
 ---
 
@@ -90,14 +150,29 @@ node scripts/fix-adr-format.mjs adr-131-*
 - 标题缺冒号/用破折号 → 补冒号（`# ADR-131 标题` → `# ADR-131: 标题`）
 - 状态/日期行缺 `> ` 前缀或中文冒号
 
-### `new-adr.mjs` — 新建 ADR 模板
+### `new-adr.mjs` — 新建 ADR 脚手架
 
-自动获取下一个编号，生成标准格式模板；创建后自动同步 `docs/status.md` 的 ADR 索引（仅重写标记区，无需手动 `npm run gen:status`）。
+双源取号（本地 + origin/main 最大号 +1）、wx 原子占位防并发、自动同步 `docs/status.md`；创建后自动跑 `gen-adr-supersede` 取代关系审计。**禁止手写编号。**
 
 ```bash
 node scripts/new-adr.mjs "标题" ["副标题"] ["状态"]
-# 示例:
-node scripts/new-adr.mjs "灯光系统统一" "Phase 2 增强" "进行中"
+# 显式文件名 slug（默认从标题自动提取，支持中文）
+node scripts/new-adr.mjs "标题" --slug kebab-name
+# 预填「相关文档」段
+node scripts/new-adr.mjs "标题" --related "ADR-113 / scene/env-water.ts"
+# 自动在被取代方状态行标注「被 [ADR-NNN] 取代」（幂等，多目标逗号分隔）
+node scripts/new-adr.mjs "标题" --supersedes ADR-012,ADR-019
+# 只算号不写文件（并行任务先确认最新编号）
+node scripts/new-adr.mjs "标题" --dry-run
+# 占号模式（状态=规划，立空壳待并行 AI 补正文）
+node scripts/new-adr.mjs --reserve "标题"
+# 用法帮助（退 0 不占号）
+node scripts/new-adr.mjs --help
+```
+
+示例：
+```bash
+node scripts/new-adr.mjs "灯光系统统一" "Phase 2 增强" "进行中" --supersedes ADR-074
 ```
 
 ### `new-knowledge-card.mjs` — 新建知识卡模板
