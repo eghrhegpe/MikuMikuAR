@@ -259,7 +259,9 @@ function collectErrorDiags() {
     }
     for (const d of diags) {
       if (d.getCategory() !== 1) continue; // 1 = ts.DiagnosticCategory.Error
-      const key = `${sf.getFilePath()}:${d.getStart()}:${diagText(d)}`;
+      // key 不含 d.getStart() 绝对偏移：编辑使同文件内后续存量错误位置漂移时，
+      // 同一错误不会被误判为「新增」（rename/add-param 跨文件改引用时风险最大）
+      const key = `${sf.getFilePath()}:${diagText(d)}`;
       errs.set(key, `${sf.getFilePath()}: ${diagText(d)}`);
     }
   }
@@ -505,12 +507,15 @@ function cmdMoveFunction(funcName, destRelPath) {
   destSf.addStatements(text.trim());
   if (!text.endsWith('\n')) destSf.addStatements('\n');
 
-  // 6. 源文件补 re-export，保持既有 `import { foo } from '<src>'` 不断裂
-  let relDest = toPosix(path.relative(path.dirname(srcPath), absDest));
+  // 6. 源文件补 re-export，保持既有 `import { foo } from '<src>'` 不断裂。
+  //    路径不带 .ts/.tsx 扩展名（全仓 extensionless 风格，tsconfig 未开
+  //    allowImportingTsExtensions；带扩展名会被诊断门禁拦截）
+  let relDest = toPosix(path.relative(path.dirname(srcPath), absDest)).replace(/\.(ts|tsx)$/, '');
   if (!relDest.startsWith('.')) relDest = './' + relDest;
   srcSf.addStatements(`export { ${funcName} } from '${relDest}';`);
 
   project.saveSync();
+  assertNoNewDiags('move-function', baseline);
 
   console.log(`✅ "${funcName}" 已移至 ${absDest}`);
   console.log(`   源文件 ${srcPath}（已补 re-export，既有导入方无需改动）`);

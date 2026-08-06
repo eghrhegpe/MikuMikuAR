@@ -109,8 +109,8 @@ test('move-function: 迁移函数 + 源文件补 re-export + importer 不断裂'
     assert.equal(r.code, 0, `exit=${r.code} stderr=${r.stderr} stdout=${r.stdout}`);
     // 定义迁入目标文件
     assert.match(read(dir, 'src/util.ts'), /export function add/);
-    // 源文件补 re-export（保留既有 import 方；项目用显式 .ts 扩展名风格）
-    assert.match(read(dir, 'src/math.ts'), /export \{ add \} from '\.\/util\.ts'/);
+    // 源文件补 re-export（保留既有 import 方；全仓 extensionless 风格）
+    assert.match(read(dir, 'src/math.ts'), /export \{ add \} from '\.\/util'/);
     // importer 无需改动
     assert.match(read(dir, 'src/app.ts'), /import \{ add \} from '\.\/math'/);
 
@@ -132,6 +132,33 @@ test('move-function: 函数体引用源文件本地符号 → 拒绝并列出', 
     assert.equal(r.code, 1, '本地符号引用应拒绝');
     assert.match(r.stdout + r.stderr, /本地符号/);
     assert.match(r.stdout + r.stderr, /BASE/);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('move-function: 源文件残留引用（const alias = add）→ 拒绝（re-export 不绑定本地名）', () => {
+  const dir = makeFixture({
+    'src/math.ts': 'export function add(a: number): number { return a; }\nconst alias = add;\n',
+    'src/util.ts': 'export const K = 1;\n',
+  });
+  try {
+    const r = runCodemod(dir, ['move-function', 'add', 'src/util.ts']);
+    assert.equal(r.code, 1, '源文件残留引用应拒绝');
+    assert.match(r.stdout + r.stderr, /源文件仍有对 "add" 的引用/);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('move-function: 独立 export { add } 导出语句 → 拒绝而非静默断裂', () => {
+  const dir = makeFixture({
+    'src/math.ts': 'function add(a: number): number { return a; }\nexport { add };\n',
+    'src/util.ts': 'export const K = 1;\n',
+  });
+  try {
+    const r = runCodemod(dir, ['move-function', 'add', 'src/util.ts']);
+    assert.equal(r.code, 1, '独立 export 语句的 specifier 是引用，应保守拒绝');
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
@@ -160,7 +187,7 @@ test('move-function: 变量形态迁移保留 export/const 关键字', () => {
     const r = runCodemod(dir, ['move-function', 'VERSION', 'src/util.ts']);
     assert.equal(r.code, 0, `exit=${r.code} stderr=${r.stderr} stdout=${r.stdout}`);
     assert.match(read(dir, 'src/util.ts'), /export const VERSION = "1\.0";/);
-    assert.match(read(dir, 'src/math.ts'), /export \{ VERSION \} from '\.\/util\.ts'/);
+    assert.match(read(dir, 'src/math.ts'), /export \{ VERSION \} from '\.\/util'/);
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }

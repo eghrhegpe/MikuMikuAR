@@ -160,47 +160,75 @@ try {
   // 降级路径：无 origin/main 远端引用时仅用本地编号，不阻断创建
 }
 const next = Math.max(localMax + 1, remoteMax + 1);
+// 全仓 ADR 文件名/标题/标注统一三位补零（adr-002-*、# ADR-002:），
+// 与 tPad 补零查找（annotateSuperseded）保持一致
+const nextPad = String(next).padStart(3, '0');
 const srcNote = mergedRemote ? `本地最大 ${localMax} / 远端最大 ${remoteMax}` : `本地最大 ${localMax}`;
 
 // ── dry-run：只算号不写文件 ──────────────────────────────────────────
 
 if (args.dryRun) {
-  console.log(`[占号] ${srcNote} → 新编号 ADR-${next}（文件 adr-${next}-${slug}.md）`);
+  console.log(`[占号] ${srcNote} → 新编号 ADR-${nextPad}（文件 adr-${nextPad}-${slug}.md）`);
   console.log('[dry-run] 未写入任何文件');
   process.exit(0);
 }
 
-// ── 原子占位（wx = O_EXCL）+ 写文件 ───────────────────────────────────
+// ── 按号锁 + 原子占位（wx = O_EXCL）+ 写文件 ──────────────────────────
 
-const filename = `adr-${next}-${slug}.md`;
+const filename = `adr-${nextPad}-${slug}.md`;
 const filepath = path.join(ADR_DIR, filename);
-// 防并发撞号：open 前先校验「同编号任意 slug」是否已存在。
-// wx/O_EXCL 只能防同文件名，两个并发进程用不同标题算到同一 next 时
-// 文件名不同 → 都不会 EEXIST → 产出同号异名双文件；此校验在占位前拦截。
-const sameNumFile = fs
-  .readdirSync(ADR_DIR)
-  .find((f) => new RegExp(`^adr-${next}-`).test(f));
-if (sameNumFile) {
-  console.error(`❌ ADR-${next} 编号已被占用（已存在 ${sameNumFile}），疑似并发创建或本地落后远端。`);
-  console.error(`   当前 ${srcNote}，请先 \`git fetch\` 再从最大号 +1 重新运行，或人工核对编号。`);
-  process.exit(1);
-}
-let fd;
+// 按号锁：真正封口「同号异名」并发。readdir 预检 + wx 只能防同文件名——
+// 两进程不同 slug 算到同一 next 时文件名不同 → 都不会 EEXIST。
+// 锁文件 `.adr-<next>.lock` 以 wx（O_EXCL）原子创建：同号并发只有一方能拿到锁。
+const lockpath = path.join(ADR_DIR, `.adr-${nextPad}.lock`);
+let lockFd;
 try {
-  fd = fs.openSync(filepath, 'wx');
+  lockFd = fs.openSync(lockpath, 'wx');
 } catch (e) {
   if (e && e.code === 'EEXIST') {
-    console.error(`❌ ADR-${next} 编号已被占用（${filepath} 已存在），疑似并发创建或本地落后远端。`);
-    console.error(`   当前 ${srcNote}，请先 \`git fetch\` 再从最大号 +1 重新运行，或人工核对编号。`);
+    console.error(`❌ ADR-${nextPad} 正在被其他进程占号（锁文件 .adr-${nextPad}.lock 已存在）。`);
+    console.error(`   若确认无并发任务，请删除该锁文件后重试。`);
     process.exit(1);
   }
   throw e;
 }
-fs.writeSync(fd, content0(title, subtitle, status, next, args.reserve, args.related));
-fs.closeSync(fd);
+try {
+  fs.writeSync(lockFd, `${process.pid}\n${new Date().toISOString()}\n`);
+  fs.closeSync(lockFd);
+  lockFd = undefined;
 
-console.log(`✅ 已创建 ADR-${next}: ${subtitle ? `${title} — ${subtitle}` : title}${args.reserve ? '（占号模式）' : ''}`);
-console.log(`   ℹ 编号分配：${srcNote} → ADR-${next}`);
+  // 同编号任意 slug 已存在（本地落后远端 / 顺序创建）→ 拒绝
+  const sameNumFile = fs
+    .readdirSync(ADR_DIR)
+    .find((f) => /^adr-\d+-/.test(f) && f.startsWith(`adr-${nextPad}-`));
+  if (sameNumFile) {
+    console.error(`❌ ADR-${nextPad} 编号已被占用（已存在 ${sameNumFile}），疑似并发创建或本地落后远端。`);
+    console.error(`   当前 ${srcNote}，请先 \`git fetch\` 再从最大号 +1 重新运行，或人工核对编号。`);
+    process.exit(1);
+  }
+  let fd;
+  try {
+    fd = fs.openSync(filepath, 'wx');
+  } catch (e) {
+    if (e && e.code === 'EEXIST') {
+      console.error(`❌ ADR-${nextPad} 编号已被占用（${filepath} 已存在），疑似并发创建或本地落后远端。`);
+      console.error(`   当前 ${srcNote}，请先 \`git fetch\` 再从最大号 +1 重新运行，或人工核对编号。`);
+      process.exit(1);
+    }
+    throw e;
+  }
+  fs.writeSync(fd, content0(title, subtitle, status, nextPad, args.reserve, args.related));
+  fs.closeSync(fd);
+} finally {
+  // 兜底：writeSync/close 异常时确保 fd 关闭、锁文件清理
+  if (lockFd !== undefined) {
+    try { fs.closeSync(lockFd); } catch {}
+  }
+  try { fs.rmSync(lockpath, { force: true }); } catch {}
+}
+
+console.log(`✅ 已创建 ADR-${nextPad}: ${subtitle ? `${title} — ${subtitle}` : title}${args.reserve ? '（占号模式）' : ''}`);
+console.log(`   ℹ 编号分配：${srcNote} → ADR-${nextPad}`);
 console.log(`   文件: ${filepath}`);
 console.log(`   > **状态**: ${status}（${new Date().toISOString().slice(0, 10)}）`);
 
@@ -208,17 +236,22 @@ console.log(`   > **状态**: ${status}（${new Date().toISOString().slice(0, 10
 
 // 我们的 RE_SUPERSEDED_BY 检测的是状态行（gen-adr-supersede 契约），故标注必须进状态行而非独立行。
 function annotateSuperseded(targetRefs, supersedingNum) {
+  // 标注文本统一三位补零（[ADR-002](adr-002-slug.md)），与文件名/标题约定一致
+  const supPad = String(supersedingNum).padStart(3, '0');
   let ok = true;
   for (const ref of targetRefs) {
-    const m = String(ref).match(/(\d{1,3})/);
+    // 兼容子编号（仓库已有 adr-061.1-*）：ADR-061.1 / 061.1，
+    // 避免 \d{1,3} 截断成 061 → 标错到父文件 adr-061-*
+    const m = String(ref).match(/(\d+(?:\.\d+)?)/);
     if (!m) {
-      console.error(`❌ --supersedes 无法解析「${ref}」，需形如 ADR-012 或 012`);
+      console.error(`❌ --supersedes 无法解析「${ref}」，需形如 ADR-012、012 或 ADR-061.1`);
       ok = false;
       continue;
     }
-    const tNum = parseInt(m[1], 10);
-    const tPad = String(tNum).padStart(3, '0');
-    const fname = fs.readdirSync(ADR_DIR).find(f => new RegExp(`^adr-${tPad}-`).test(f));
+    const [mainNum, subNum] = m[1].split('.');
+    // 主号补零（012）、子号保留（061.1），避免正则拼接时小数点被当通配符
+    const tPad = String(parseInt(mainNum, 10)).padStart(3, '0') + (subNum ? `.${subNum}` : '');
+    const fname = fs.readdirSync(ADR_DIR).find(f => f.startsWith(`adr-${tPad}-`) && /^adr-\d/.test(f));
     if (!fname) {
       console.error(`❌ 未找到 adr-${tPad}-* 文件`);
       ok = false;
@@ -242,17 +275,25 @@ function annotateSuperseded(targetRefs, supersedingNum) {
         console.log(`⏭ adr-${tPad} 状态行已有「被 [ADR-${existingNum}] 取代」标注，跳过（幂等）`);
         continue;
       }
-      // 已被更早的 ADR 取代：更新为新取代者而非静默丢弃本次请求（防陈旧标注）
-      console.warn(`⚠ adr-${tPad} 已标注「被 [ADR-${existingNum}] 取代」，本次 --supersedes 更新为 [ADR-${supersedingNum}]`);
+      // 已被更早的 ADR 取代：仅自动更新「工具自身格式」的标注（防陈旧标注）。
+      // 手工/加粗链接/部分取代/勘误格式一律 warn 提示人工，不自动覆盖（保护合法存量语义）。
+      const TOOL_MARK = '（new-adr.mjs 自动标注）';
+      if (!statusLine.includes(TOOL_MARK)) {
+        console.warn(`⚠ adr-${tPad} 已有「被 [ADR-${existingNum}] 取代」标注（非 new-adr 自动格式），本次 [ADR-${supPad}] 未自动覆盖：`);
+        console.warn(`   请人工核对并合并标注（自动更新仅限带「${TOOL_MARK}」后缀的标注）。`);
+        continue;
+      }
+      console.warn(`⚠ adr-${tPad} 已标注「被 [ADR-${existingNum}] 取代」，本次 --supersedes 更新为 [ADR-${supPad}]`);
+      // 连旧后缀一起替换，避免残留产生「（自动标注）（自动标注）」双后缀
       lines[hdr.statusLine] = statusLine.replace(
-        existing[0],
-        `⚠️ 被 [ADR-${supersedingNum}](adr-${supersedingNum}-${slug}.md) 取代（new-adr.mjs 自动标注）`
+        existing[0] + TOOL_MARK,
+        `⚠️ 被 [ADR-${supPad}](adr-${supPad}-${slug}.md) 取代${TOOL_MARK}`
       );
       fs.writeFileSync(fp, lines.join(eol), 'utf8');
-      console.log(`✅ adr-${tPad} 状态行标注已更新为「被 [ADR-${supersedingNum}] 取代」`);
+      console.log(`✅ adr-${tPad} 状态行标注已更新为「被 [ADR-${supPad}] 取代」`);
       continue;
     }
-    const insert = ` ⚠️ 被 [ADR-${supersedingNum}](adr-${supersedingNum}-${slug}.md) 取代（new-adr.mjs 自动标注）`;
+    const insert = ` ⚠️ 被 [ADR-${supPad}](adr-${supPad}-${slug}.md) 取代（new-adr.mjs 自动标注）`;
     // 行尾追加（table 格式 `| **状态** | ... |` 插在末位 | 前，避免破坏表格）
     const lastPipe = statusLine.lastIndexOf('|');
     if (statusLine.trimStart().startsWith('|') && lastPipe >= 0) {
@@ -262,7 +303,7 @@ function annotateSuperseded(targetRefs, supersedingNum) {
       lines[hdr.statusLine] = statusLine + insert;
     }
     fs.writeFileSync(fp, lines.join(eol), 'utf8');
-    console.log(`✅ adr-${tPad} 状态行已标注「被 [ADR-${supersedingNum}] 取代」`);
+    console.log(`✅ adr-${tPad} 状态行已标注「被 [ADR-${supPad}] 取代」`);
   }
   return ok;
 }

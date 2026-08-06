@@ -74,8 +74,10 @@ function git(args) {
     }
 }
 
-// [P2-1 fix] git 硬失败标志：三圆点 + 兜底全部失败时置位，
-// main 据此非 suggest 模式 exit 2（杜绝 git 故障被当「空 diff → 通过」的假绿）
+// [P2-1 fix] git 硬失败标志：任一关键 git 命令失败即置位（fail-closed）。
+// 三圆点 r1 失败通常意味着 ref 缺失（origin/main 不存在）/git 不可用/仓库损坏，
+// 此时即使 head~1 兜底成功也只覆盖最近一次提交，可能漏掉推送范围内更早的改动，
+// 用它当文件列表是弱门禁——故非 suggest 模式直接 exit 2（杜绝假绿），suggest 模式提示后跳过。
 let gitHardFail = false;
 
 /** 取本次改动的非测试源码文件（repo-root 相对路径）。 */

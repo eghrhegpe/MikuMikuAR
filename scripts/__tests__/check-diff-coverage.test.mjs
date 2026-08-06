@@ -1,11 +1,35 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import {
     addLinesFromDiff,
     parseRenameStatus,
     statementPctForChangedLines,
     buildSuggestBlock,
 } from "../check-diff-coverage.mjs";
+
+/** spawn 真实 CLI（P2-1 git 失败路径需真实 git 交互，无法纯函数注入）。 */
+const ROOT = path.resolve(new URL("../..", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1"));
+const CLI = path.join(ROOT, "scripts", "check-diff-coverage.mjs");
+function runCli(args) {
+    try {
+        const stdout = execFileSync(process.execPath, [CLI, ...args], {
+            cwd: ROOT,
+            encoding: "utf8",
+            timeout: 30000,
+        });
+        return { code: 0, stdout, stderr: "" };
+    } catch (e) {
+        return {
+            code: e.status ?? 1,
+            stdout: e.stdout?.toString() ?? "",
+            stderr: e.stderr?.toString() ?? "",
+        };
+    }
+}
 
 test("addLinesFromDiff 仅取 + 行号，上下文行递增，- 行不递增", () => {
     const diff = [
@@ -118,4 +142,38 @@ test("buildSuggestBlock 输出可追加进 commit message 的 Markdown 区块", 
 test("buildSuggestBlock 单文件亦生成合法区块", () => {
     const block = buildSuggestBlock([{ file: "frontend/src/z.ts", pct: 0 }], 60);
     assert.match(block, /`frontend\/src\/z.ts` — 0\.0%/);
+});
+
+// ── P2-1: git 失败 fail-closed（阻断 exit 2 / suggest exit 0）───────────
+
+/** 造一个空 coverage 文件（绕过缺 coverage 的 exit 2 前置），返回路径。 */
+function makeEmptyCoverage() {
+    const p = path.join(os.tmpdir(), `cov-empty-${process.pid}-${Date.now()}.json`);
+    fs.writeFileSync(p, "{}", "utf8");
+    return p;
+}
+
+test("git 失败（base ref 不存在）→ 阻断模式 exit 2，不假绿通过", () => {
+    const cov = makeEmptyCoverage();
+    try {
+        // 用一个不存在的 base ref 让 git diff 失败 → gitHardFail → exit 2
+        const r = runCli(["--base", "__NO_SUCH_REF_9x__", "--coverage", cov]);
+        assert.equal(r.code, 2, `exit=${r.code} stderr=${r.stderr} stdout=${r.stdout}`);
+        assert.match(r.stderr + r.stdout, /git 命令执行失败/);
+        // 不再出现假绿的「通过」结论
+        assert.doesNotMatch(r.stdout, /全部达标|无改动源码需要检查.*通过/);
+    } finally {
+        fs.rmSync(cov, { force: true });
+    }
+});
+
+test("git 失败（base ref 不存在）→ suggest 模式 exit 0 跳过", () => {
+    const cov = makeEmptyCoverage();
+    try {
+        const r = runCli(["--suggest", "--base", "__NO_SUCH_REF_9x__", "--coverage", cov]);
+        assert.equal(r.code, 0, `exit=${r.code} stderr=${r.stderr} stdout=${r.stdout}`);
+        assert.match(r.stderr + r.stdout, /git 命令执行失败/);
+    } finally {
+        fs.rmSync(cov, { force: true });
+    }
 });
