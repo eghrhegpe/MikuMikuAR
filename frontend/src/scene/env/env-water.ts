@@ -220,6 +220,15 @@ registerEnvCallback((changed, state) => {
 // 速度按用户可调参数 causticScrollX/Y 推（缩放 0.5 避免过快），经纹理 uOffset/vOffset 每帧累加；
 // water frag 通过 uCausticOffset 读取该偏移，故水面焦散与用户滑块联动，且与水底地面共享同一节奏。
 let _causticsLastConfig: { sx: number; sy: number } = { sx: NaN, sy: NaN };
+
+/** [fix code_review P2] 复位焦散 config diff guard 内存：dispose 后 causticsController
+ *  config 回 DEFAULT_CONFIG，若此处不把 _causticsLastConfig 复位为 NaN，下次 dt tick
+ *  的 diff 守卫（envState.causticScrollX !== NaN 恒真）不再触发 setConfig → 用户配置
+ *  丢失且 scrollY 停在 DEFAULT（与 envState 派生值不匹配）。env-impl dispose 时调用。 */
+export function resetCausticsSyncGuard(): void {
+    _causticsLastConfig = { sx: NaN, sy: NaN };
+}
+
 registerEnvDtTickCallback((_dt) => {
     if (
         envState.causticScrollX !== _causticsLastConfig.sx ||

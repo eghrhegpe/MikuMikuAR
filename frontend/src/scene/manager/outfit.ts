@@ -19,7 +19,6 @@ import { getBaseName, normPath, getDirPath } from '@/core/path';
 import { delay, LoadingGuard } from '@/core/async';
 import { logWarn, logInfo } from '@/core/logger';
 import { reportResourceWarning } from '@/core/resource-warning-sink';
-import { col3FromTriple } from '@/core/color-helpers';
 import { getMaterialCategory } from './material';
 import { triggerAutoSave } from '@/core/config';
 import { loadOverlay, hideMaterials, restoreMaterials, disposeOverlay } from './outfit-overlay';
@@ -516,15 +515,20 @@ function _applyOutfitParams(
 function _applyOutfitTint(
     sm: StandardMaterial,
     tint: [number, number, number],
-    orig: { diffuseR: number; diffuseG: number; diffuseB: number }
+    orig: { diffuseR: number; diffuseG: number; diffuseB: number },
+    diffuseMul?: number
 ): void {
     // [fix P1] 基于 orig 绝对设置而非 multiplyInPlace：乘法不可逆，每次 apply 同一
     // 变体都乘 tint → diffuseColor 几何级数漂移（orig 仅在 reset 后重捕获，连续
     // 变体切换 A→B→A 之间不 reset）。绝对设置保证幂等。
+    // [fix code_review P2] 合并 diffuseMul：同一 slot 可同时定义 params.diffuseMul
+    // 与 tint（测试 fixture 构造过），旧语义是 orig * diffuseMul * tint——绝对 set
+    // 若只乘 tint 会丢掉 diffuseMul 亮度因子。此处组合两者。
+    const mul = diffuseMul ?? 1;
     sm.diffuseColor.set(
-        orig.diffuseR * tint[0],
-        orig.diffuseG * tint[1],
-        orig.diffuseB * tint[2]
+        orig.diffuseR * mul * tint[0],
+        orig.diffuseG * mul * tint[1],
+        orig.diffuseB * mul * tint[2]
     );
 }
 
@@ -741,7 +745,7 @@ async function _applyOutfitVariantCore(id: string, variantName: string): Promise
 
         const tint = _getTintFor(variant, sm.name, cat);
         if (tint) {
-            _applyOutfitTint(sm, tint, origParams);
+            _applyOutfitTint(sm, tint, origParams, slotParams?.diffuseMul);
         }
     }
 

@@ -205,6 +205,10 @@ export function disposeEnvUpdateObserver(): void {
     clearEnvDtTickCallbacks();
     // 释放共享焦散纹理（env-caustics controller 单例）
     causticsController.dispose();
+    // [fix code_review P2] 同步复位 env-water 的焦散 diff guard 内存：
+    // controller config 已回 DEFAULT，guard 不复位则下次 tick 不再 setConfig，
+    // 用户 scrollX/Y 配置丢失且 scrollY 尺度与 envState 派生值不一致。
+    resetCausticsSyncGuard();
     // 复位水下雾（关闭场景雾 + 清空注册材质）
     underwaterFogController.reset(getScene());
     disposeTextureCache();

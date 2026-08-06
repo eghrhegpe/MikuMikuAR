@@ -52,6 +52,7 @@ symbols:
   - hash2v
   - isUnderwaterActive
   - refreshWaterRenderList
+  - resetCausticsSyncGuard
   - resetUnderwaterFlags
   - resetUnderwaterState
   - resetWaterLODState

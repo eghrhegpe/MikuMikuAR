@@ -8,7 +8,7 @@
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
 | 核心基础设施 | 132 | 799 |
-| 3D 场景 | 125 | 1214 |
+| 3D 场景 | 125 | 1215 |
 | 菜单 & UI | 76 | 394 |
 | 动作算法 | 18 | 138 |
 
@@ -1100,7 +1100,7 @@
 | `_envSys()` | `scene/env/env-impl:20` | — |
 | `addGroundRipple()` | `scene/env/env-impl:23` | — |
 | `addRipple()` | `scene/env/env-impl:23` | — |
-| `applyFog()` | `scene/env/env-impl:218` | — |
+| `applyFog()` | `scene/env/env-impl:222` | — |
 | `applyGround()` | `scene/env/env-impl:47` | — |
 | `applySky()` | `scene/env/env-impl:43` | — |
 | `clearGroundRipples()` | `scene/env/env-impl:23` | — |
@@ -1219,6 +1219,7 @@
 | `createWater()` | `scene/env/env-water:76` | 按相机到水面的距离选择 LOD 层级（纯函数，便于单测）。 |
 | `disposeWater()` | `scene/env/env-water:150` | — |
 | `refreshWaterRenderList()` | `scene/env/env-water:195` | 刷新水面渲染列表（钩子函数） 当前为空实现，保留作为API接口，未来可能用于： - 更新水的渲染顺序 - 响应场景图形变更（如新增/移除需要水面反射的对象） - 同步水的渲染状态 |
+| `resetCausticsSyncGuard()` | `scene/env/env-water:228` | [fix code_review P2] 复位焦散 config diff guard 内存：dispose 后 causticsController config 回 DEFAU |
 | `updateWaterAnimSpeed()` | `scene/env/env-water:198` | — |
 | `applyWetnessToAllModels()` | `scene/env/env-wetness:86` | 对所有已加载模型应用湿身材质效果（幂等）。 |
 | `applyWetnessToInst()` | `scene/env/env-wetness:134` | — |
@@ -1373,10 +1374,10 @@
 | `hideMaterials()` | `scene/manager/outfit-overlay:301` | 隐藏指定材质名的 PMX mesh（保存原始可见性用于恢复）。 |
 | `loadOverlay()` | `scene/manager/outfit-overlay:202` | 加载 FBX overlay 并尝试绑定到模型 skeleton。 |
 | `restoreMaterials()` | `scene/manager/outfit-overlay:333` | 恢复被 hideMaterials 隐藏的 PMX mesh 可见性。 |
-| `applyOutfitVariant()` | `scene/manager/outfit:566` | — |
-| `loadOutfits()` | `scene/manager/outfit:119` | — |
-| `resetOutfit()` | `scene/manager/outfit:754` | — |
-| `setSceneRef()` | `scene/manager/outfit:39` | 由 scene.ts 在场景初始化完成后注入当前 scene 实例 |
+| `applyOutfitVariant()` | `scene/manager/outfit:570` | — |
+| `loadOutfits()` | `scene/manager/outfit:118` | — |
+| `resetOutfit()` | `scene/manager/outfit:758` | — |
+| `setSceneRef()` | `scene/manager/outfit:38` | 由 scene.ts 在场景初始化完成后注入当前 scene 实例 |
 | `tryApplyPbrMaterialBuilder()` | `scene/manager/pbr-builder-init:12` | 动态导入 PBRMaterialBuilder 并覆盖 MmdModelLoader.SharedMaterialBuilder。 |
 | `auditMissingTextures()` | `scene/manager/pmx-texture-audit:46` | 识别 PMX 声明但目录中缺失的纹理。 |
 | `parsePmxTexturePaths()` | `scene/manager/pmx-texture-audit:31` | 解析 PMX 声明的纹理路径清单（相对路径，原样保留目录前缀与分隔符）。 |
