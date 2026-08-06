@@ -32,38 +32,15 @@
 
 ## 审核轮次（9）
 
-| 轮次 | 文件 | 结论 | 报告 |
-|------|------|------|------|
-| 第①轮 | env-water.ts | ⚠️ 有条件通过 | [报告](./round-1-water.md) |
-| 第②轮 | env-clouds.ts | ⚠️ 有条件通过 | [报告](./round-2-clouds-particles.md) |
-| 第②轮 | env-particles.ts | ⚠️ 有条件通过 | [报告](./round-2-clouds-particles.md) |
-| 第③轮 | env-impl.ts | ⚠️ 有条件通过 | [报告](./round-3-facade-terrain.md) |
-| 第③轮 | env-terrain.ts | ⚠️ 有条件通过 | [报告](./round-3-facade-terrain.md) |
-| 第④轮 | lighting.ts | ❌ 不通过 | [报告](./round-4-lighting-props.md) |
-| 第④轮 | lighting-presets.ts | ⚠️ 有条件通过 | [报告](./round-4-lighting-props.md) |
-| 第④轮 | env-lighting.ts | ✅ 通过 | [报告](./round-4-lighting-props.md) |
-| 第④轮 | props.ts | ⚠️ 有条件通过 | [报告](./round-4-lighting-props.md) |
-| 第⑤轮 | vmd-loader.ts | ⚠️ 有条件通过 | [报告](./round-5-vmd-layers.md) |
-| 第⑤轮 | vmd-layers.ts | ⚠️ 有条件通过 | [报告](./round-5-vmd-layers.md) |
-| 第⑤轮 | wasm-layers-blender.ts | ⚠️ 有条件通过 | [报告](./round-5-vmd-layers.md) |
-| 第⑤轮 | wasm-layers-config.ts | ✅ 通过 | [报告](./round-5-vmd-layers.md) |
-| 第⑤轮 | vmd-evaluator.ts | ✅ 通过 | [报告](./round-5-vmd-layers.md) |
-| 第⑥轮 | playback.ts | ✅ 通过 | [报告](./round-6-playback-procedural-perception.md) |
-| 第⑥轮 | vmd-writer.ts | ✅ 通过 | [报告](./round-6-playback-procedural-perception.md) |
-| 第⑥轮 | beat-detector.ts | ✅ 通过 | [报告](./round-6-playback-procedural-perception.md) |
-| 第⑥轮 | lipsync.ts | ✅ 通过 | [报告](./round-6-playback-procedural-perception.md) |
-| 第⑥轮 | vpd-parser.ts | ✅ 通过 | [报告](./round-6-playback-procedural-perception.md) |
-| 第⑥轮 | proc-motion-idle.ts | ⚠️ 有条件通过 | [报告](./round-6-playback-procedural-perception.md) |
-| 第⑥轮 | proc-motion-autodance.ts | ❌ 不通过 | [报告](./round-6-playback-procedural-perception.md) |
-| 第⑥轮 | proc-motion-lifelike.ts | ⚠️ 有条件通过 | [报告](./round-6-playback-procedural-perception.md) |
-| 第⑥轮 | proc-motion-bridge.ts | ⚠️ 有条件通过 | [报告](./round-6-playback-procedural-perception.md) |
-| 第⑥轮 | perception.ts | ❌ 不通过 | [报告](./round-6-playback-procedural-perception.md) |
-| 第⑥轮 | proc-motion-shared.ts | ✅ 通过 | [报告](./round-6-playback-procedural-perception.md) |
-| 第⑦轮 | bone-override.ts | ⚠️ 有条件通过 | [报告](./round-7-wasm-bone-override.md) |
-| 第⑦轮 | wasm-layers-blender.ts | ⚠️ 有条件通过 | [报告](./round-7-wasm-bone-override.md) |
-| 第⑦轮 | scene.ts | ✅ 通过 | [报告](./round-7-wasm-bone-override.md) |
-| 第⑧轮 | 第⑧轮审核 — 感知层拆分（ADR-071 Phase 1-3 + ADR-079 后续） | — | [报告](./round-8-perception-split.md) |
-| 第⑨轮 | 第⑨轮审核 — 镜面反射功能 | — | [报告](./round-9-mirror-reflection.md) |
+- [第①轮审核 — 环境水面 (env-water.ts)](./round-1-water.md)
+- [第②轮审核 — 环境云 + 环境粒子](./round-2-clouds-particles.md)
+- [第③轮审核 — 环境门面 + 地形](./round-3-facade-terrain.md)
+- [第④轮审核 — 光照 + 道具](./round-4-lighting-props.md)
+- [第⑤轮审核 — VMD 加载 + 图层](./round-5-vmd-layers.md)
+- [第⑥轮审核 — 播放 + 程序化 + 感知](./round-6-playback-procedural-perception.md)
+- [第⑦轮审核 — WASM 混合 + 骨骼覆盖](./round-7-wasm-bone-override.md)
+- [第⑧轮审核 — 感知层拆分（ADR-071 Phase 1-3 + ADR-079 后续）](./round-8-perception-split.md)
+- [第⑨轮审核 — 镜面反射功能](./round-9-mirror-reflection.md)
 
 ## 专题审核（16）
 

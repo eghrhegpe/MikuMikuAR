@@ -56,8 +56,38 @@
 
 ## 审核轮次速查
 
-> 轮次结论表（round-1~9，每模块结论，自动从报告「总体结论」解析）见 [index.md](./index.md) —— 本表已由自动表取代。
-
+| 轮次 | 模块 | 文件 | 结论 | 报告 |
+|------|------|------|------|------|
+| ① | 环境水面 | `env-water.ts` | ⚠️ 有条件通过 | [查看](round-1-water.md) |
+| ② | 环境云 | `env-clouds.ts` | ⚠️ 有条件通过 | [查看](round-2-clouds-particles.md) |
+| ② | 环境粒子 | `env-particles.ts` | ⚠️ 有条件通过 | ↑ |
+| ③ | 环境门面 | `env-impl.ts` | ⚠️ 有条件通过 | [查看](round-3-facade-terrain.md) |
+| ③ | 环境地形 | `env-terrain.ts` | ⚠️ 有条件通过 | ↑ |
+| ④ | 光照系统 | `lighting.ts` | ❌ 不通过 | [查看](round-4-lighting-props.md) |
+| ④ | 光照预设 | `lighting-presets.ts` | ⚠️ 有条件通过 | ↑ |
+| ④ | 环境光照 | `env-lighting.ts` | ✅ 通过 | ↑ |
+| ④ | 道具 | `props.ts` | ⚠️ 有条件通过 | ↑ |
+| ⑤ | VMD加载器 | `vmd-loader.ts` | ⚠️ 有条件通过 | [查看](round-5-vmd-layers.md) |
+| ⑤ | VMD图层 | `vmd-layers.ts` | ⚠️ 有条件通过 | ↑ |
+| ⑤ | WASM图层混合 | `wasm-layers-blender.ts` | ⚠️ 有条件通过 | ↑ |
+| ⑤ | 图层配置 | `wasm-layers-config.ts` | ✅ 通过 | ↑ |
+| ⑤ | VMD求值器 | `vmd-evaluator.ts` | ✅ 通过 | ↑ |
+| ⑥ | 播放控制 | `playback.ts` | ✅ 通过 | [查看](round-6-playback-procedural-perception.md) |
+| ⑥ | VMD写入器 | `vmd-writer.ts` | ✅ 通过 | ↑ |
+| ⑥ | 节拍检测 | `beat-detector.ts` | ✅ 通过 | ↑ |
+| ⑥ | 唇形同步 | `lipsync.ts` | ✅ 通过 | ↑ |
+| ⑥ | 空闲程序化运动 | `proc-motion-idle.ts` | ⚠️ 有条件通过 | ↑ |
+| ⑥ | 程序化自动舞蹈 | `proc-motion-autodance.ts` | ❌ 不通过 | ↑ |
+| ⑥ | 逼真程序化运动 | `proc-motion-lifelike.ts` | ⚠️ 有条件通过 | ↑ |
+| ⑥ | 程序化桥接 | `proc-motion-bridge.ts` | ⚠️ 有条件通过 | ↑ |
+| ⑥ | 共享程序化逻辑 | `proc-motion-shared.ts` | ✅ 通过 | ↑ |
+| ⑥ | 感知系统 | `perception.ts` | ✅ 通过（拆分后 10 文件全绿） | ↑ |
+| ⑥ | VPD解析器 | `vpd-parser.ts` | ✅ 通过（测试覆盖佳） | ↑ |
+| ⑦ | WASM图层混合(追审) | `wasm-layers-blender.ts` | ⚠️ 有条件通过 | [查看](round-7-wasm-bone-override.md) |
+| ⑦ | 骨骼覆盖 | `bone-override.ts` | ⚠️ 有条件通过 | ↑ |
+| ⑦ | scene.ts WASM集成 | `scene.ts` (WASM部分) | ✅ 通过 | ↑ |
+| ⑧ | 感知层拆分 | `perception.ts` (共10文件) | ✅ 通过 | [查看](round-8-perception-split.md) |
+| ⑨ | 镜面反射 | `env-water.ts`, `env-impl.ts`, `renderer.ts` | ⚠️ 有条件通过 | [查看](round-9-mirror-reflection.md) |
 
 ### 补充轮次（非渲染链模块）
 

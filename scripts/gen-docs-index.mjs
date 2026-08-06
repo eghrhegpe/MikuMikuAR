@@ -521,45 +521,10 @@ function buildReleasesIndex() {
  *   2. round-N-xxx.md       审核轮次序列（round-1-water 等，按 N 排序）
  *   3. 专题名.md            无日期/轮次的专题审核（deadcode-baseline-* 等，按标题排序）
  * 汇总视图（执行摘要/风险全景/优先级）保留在 README.md，本索引承担明细导航。
+ * 注：轮次结论不在此表格化——round-11+ 已切换子代理并发审核（结论为叙述性分级统计，
+ *     无逐模块「总体结论」结构），自动解析会退化鸡肋；结论归报告正文，README 手写速查表
+ *     仅覆盖 round-1~9 历史（史料），index 只做报告导航。
  */
-
-/**
- * 解析 round-N 审核报告的模块结论小节：
- *   ## <文件名> (N行)
- *   **总体结论：<通过/有条件通过/不通过>
- * 返回 [{ file, conclusion }]。
- * 旧格式 fallback（无 ## 小节，如 round-1）：解析 H1 后首部的「**总体结论：**」+「**文件：**`xxx.ts`」。
- * 注：小节内取**首个**总体结论（审核时刻结论）；修复后的最终状态在报告正文，表内给报告链接。
- */
-function parseRoundConclusions(f) {
-  const text = read('audit', f);
-  const lines = text.split('\n');
-  const rows = [];
-  for (let i = 0; i < lines.length; i++) {
-    const m = lines[i].match(/^##\s+([\w.-]+\.ts)\s*(?:\((\d+)\s*行?\))?/);
-    if (!m) continue;
-    let conclusion = '';
-    for (let j = i + 1; j < Math.min(i + 4, lines.length); j++) {
-      const cm = lines[j].match(/\*\*总体结论[：:]\s*([^\*\n]+)/);
-      if (cm) {
-        conclusion = cm[1].trim();
-        break;
-      }
-    }
-    rows.push({ file: m[1], conclusion: conclusion || '—' });
-  }
-  if (rows.length > 0) return rows;
-  // 旧格式 fallback：H1 标题后首部找「总体结论」+「文件：`xxx.ts`」
-  // 注意 `**文件：** `frontend/...` 格式：加粗闭合 `**` 在冒号后（`文件：` 被加粗包裹）
-  const head = lines.slice(0, 6).join('\n');
-  const c = head.match(/\*\*总体结论[：:]\s*([^\*\n]+)/);
-  const fl = head.match(/\*\*文件[：:]\*\*\s*`?([\w./-]+\.ts)`?/);
-  if (c) {
-    rows.push({ file: fl ? fl[1].split('/').pop() : f.replace(/^round-\d+-/, '').replace(/\.md$/, ''), conclusion: c[1].trim() });
-  }
-  return rows;
-}
-
 function buildAuditIndex() {
   const dated = [];
   const rounds = [];
@@ -613,22 +578,8 @@ function buildAuditIndex() {
   if (rounds.length) {
     out.push(`## 审核轮次（${rounds.length}）`);
     out.push('');
-    // 轮次结论表：解析 round-N 报告内「## <文件> (N行)」小节 + 紧随的「**总体结论：**」行，
-    // 自动产出 轮次|文件|结论|报告——替代手写速查表（曾漏 round-8/9）。
-    out.push('| 轮次 | 文件 | 结论 | 报告 |');
-    out.push('|------|------|------|------|');
     for (const r of rounds) {
-      const rows = parseRoundConclusions(r.file);
-      const rLabel = `第${'①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳'[r.n - 1] ?? r.n}轮`;
-      const reportCell = `[报告](${href('./' + r.file)})`;
-      if (rows.length === 0) {
-        // 报告无结构化小节（旧格式）：整篇一行
-        out.push(`| ${rLabel} | ${cell(h1(read('audit', r.file), r.file))} | — | ${reportCell} |`);
-        continue;
-      }
-      for (const row of rows) {
-        out.push(`| ${rLabel} | ${row.file} | ${row.conclusion} | ${reportCell} |`);
-      }
+      out.push(`- [${cell(h1(read('audit', r.file), r.file))}](${href('./' + r.file)})`);
     }
     out.push('');
   }
