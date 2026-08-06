@@ -41,7 +41,7 @@ function parseArgs(argv) {
         const eq = a.indexOf("=");
         if (eq >= 0) {
             out[a.slice(2, eq)] = a.slice(eq + 1);
-        } else if (a === "--uncommitted" || a === "--json" || a === "--suggest") {
+        } else if (a === "--uncommitted" || a === "--json" || a === "--suggest" || a === "--staged") {
             out[a.slice(2)] = true;
         } else if (i + 1 < argv.length) {
             out[a.slice(2)] = argv[++i];
@@ -59,8 +59,16 @@ function git(args) {
 }
 
 /** 取本次改动的非测试源码文件（repo-root 相对路径）。 */
-function getChangedFiles(base, head, uncommitted) {
+function getChangedFiles(base, head, uncommitted, staged) {
     const out = new Set();
+    // --staged：仅本次暂存区（prepare-commit-msg 场景 = 本次 commit 的文件），
+    // 避免 --base origin/main 在本地领先时把历史未推送改动也纳入噪音。
+    if (staged) {
+        git(["diff", "--cached", "--find-renames=30", "--name-only"])
+            .split("\n")
+            .forEach((l) => l && out.add(l));
+        return [...out];
+    }
     // 三圆点：PR 分支相对 main 合并基的改动
     // --find-renames=30：强制激活 rename 检测（不依赖 git config），
     // 避免 base...head 相对合并基时把 rename 拆成 A+D，导致纯改名被当新增惩罚。
@@ -124,7 +132,11 @@ export function parseRenameStatus(out) {
     return map;
 }
 
-export function detectRenames(base, head) {
+export function detectRenames(base, head, staged) {
+    // --staged：用暂存区 name-status 检测 rename（prepare-commit-msg 场景）
+    if (staged) {
+        return parseRenameStatus(git(["diff", "--cached", "--name-status", "--find-renames=30"]));
+    }
     // 三圆点：PR 相对 main 合并基
     const map = parseRenameStatus(git(["diff", "--name-status", "--find-renames=30", `${base}...${head}`]));
     // 兜底：直推 main 时三圆点可能为空，退化为两点
@@ -135,8 +147,13 @@ export function detectRenames(base, head) {
 }
 
 /** 获取变更文件的具体行号集合（新文件行号）。 */
-export function getChangedLines(file, base, head, uncommitted, renameOld) {
+export function getChangedLines(file, base, head, uncommitted, renameOld, staged) {
     const out = new Set();
+    // --staged：仅暂存区变更行（本次 commit 的文件）
+    if (staged) {
+        addLinesFromDiff(out, git(["diff", "--cached", "--unified=0", "--find-renames=30", "--", file]));
+        return out;
+    }
     // rename 重构：用两点 blob diff 取「旧路径→新路径」的真实最小 hunk，
     // 避免 base...head 三圆点把 rename 当 add 时整文件被判为新增行。
     if (renameOld) {
@@ -233,6 +250,7 @@ function main() {
     const head = args.head ?? "HEAD";
     const threshold = Number(args.threshold ?? "60");
     const uncommitted = Boolean(args.uncommitted);
+    const staged = Boolean(args.staged);
     const json = Boolean(args.json);
     const suggest = Boolean(args.suggest);
 
@@ -252,9 +270,9 @@ function main() {
 
     const changed = args.files
         ? args.files.split(",").map((s) => s.trim()).filter(Boolean)
-        : getChangedFiles(base, head, uncommitted);
+        : getChangedFiles(base, head, uncommitted, staged);
 
-    const renameMap = detectRenames(base, head);
+    const renameMap = detectRenames(base, head, staged);
     const srcFiles = changed.filter(isSourceFile);
 
     if (srcFiles.length === 0) {
@@ -280,7 +298,7 @@ function main() {
             }))); // --files 模式：视所有行均为变更行 = 全文件检查
         } else {
             const renameOld = renameMap.get(f)?.from;
-            const changedLines = getChangedLines(f, base, head, uncommitted, renameOld);
+            const changedLines = getChangedLines(f, base, head, uncommitted, renameOld, staged);
             pct = statementPctForChangedLines(cov[key], changedLines);
         }
         const missing = !key; // 无覆盖率条目 → 视为 0% 未覆盖

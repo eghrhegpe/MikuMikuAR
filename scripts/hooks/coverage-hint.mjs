@@ -64,6 +64,8 @@ function main() {
             : path.join(ROOT, "frontend", "coverage", "coverage-final.json");
 
     // 调 gate 脚本的 --suggest 模式：有缺口时输出 Markdown 区块到 stdout，永远 exit 0。
+    // --staged 仅检查本次暂存区（= 本次 commit 的文件），避免 --base origin/main
+    // 在本地领先时把历史未推送改动也纳入噪音（2026-08-06 实证：改 scripts/*.mjs 却建议补测 lighting-follow.ts）。
     // 用 process.execPath（当前 node 的 Windows 绝对路径），避免 Git Bash msys 路径
     // 在 Windows 版 node 的 execFileSync 中无法被 CreateProcess 解析的陷阱。
     let out = "";
@@ -73,13 +75,9 @@ function main() {
             [
                 path.join(ROOT, "scripts", "check-diff-coverage.mjs"),
                 "--suggest",
-                "--uncommitted",
+                "--staged",
                 "--coverage",
                 coveragePath,
-                "--base",
-                "origin/main",
-                "--head",
-                "HEAD",
             ],
             { encoding: "utf8" },
         );
@@ -89,6 +87,7 @@ function main() {
 
     out = out.trim();
     if (!out) return; // 无缺口或无覆盖率数据，不追加，保持 message 整洁
+    if (!out.startsWith(BLOCK_START)) return; // 非建议区块（如"无改动源码需要检查"提示）不追加，防污染 message
 
     let msg;
     try {
@@ -105,6 +104,10 @@ function main() {
     } catch {
         /* 非阻断：写失败不影响提交 */
     }
+
+    // A：echo 到 stderr，让 AI 在 commit 终端即时可见（git commit 输出只显示 subject，
+    // 不显示 body；prepare-commit-msg 的 stderr 会随 commit 显示）。
+    process.stderr.write("\n" + out + "\n");
 }
 
 // 仅当作为入口直接执行时才跑主流程（被测试 import 时不触发）
