@@ -721,6 +721,15 @@ export function enableAllPerception(): void {
 /** 全员关闭感知层（仅焦点 + pinned 保留） */
 export function disableAllPerception(): void {
     _allEnabled = false;
+    // [fix code_review P3] 焦点模型 dispose 时先清 _focusedContextId：下方循环的
+    // continue 守卫（ctx.modelId === _focusedContextId）会跳过焦点 context，循环内
+    // 无法处理；此处前置检查避免下次 activatePerception 判重误命中幽灵焦点。
+    if (_focusedContextId) {
+        const focusInst = modelManager.get(_focusedContextId);
+        if (!focusInst?.mmdModel || focusInst.mmdModel.mesh?.isDisposed()) {
+            _focusedContextId = null;
+        }
+    }
     for (const ctx of _contexts.values()) {
         if (ctx.modelId === _focusedContextId || ctx.isPinned) {
             continue;
@@ -730,11 +739,6 @@ export function disableAllPerception(): void {
         if (!inst?.mmdModel || inst.mmdModel.mesh?.isDisposed()) {
             _releasePerceptionBones(ctx.modelId);
             _disposeLipSyncRuntime(ctx.modelId);
-            // [fix P3] 焦点模型 dispose 时清残留 _focusedContextId，避免下次
-            // activatePerception 的 focusedModelId===targetId 判重误命中幽灵焦点
-            if (_focusedContextId === ctx.modelId) {
-                _focusedContextId = null;
-            }
             _contexts.delete(ctx.modelId);
             _perceptionOwnedBones.delete(ctx.modelId);
             continue;

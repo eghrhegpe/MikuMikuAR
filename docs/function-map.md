@@ -304,7 +304,7 @@
 | `bundles()` | `core/i18n/t:9` | 运行时加载的语言包缓存。生产环境由 fetch 填充，测试环境可直接赋值。 |
 | `loadLocale()` | `core/i18n/t:23` | 异步加载指定语言包，从 public/locales/{lang}.json fetch。 |
 | `t()` | `core/i18n/t:54` | 翻译一个 key。 |
-| `registerIconBundle()` | `core/icons-bundle:650` | — |
+| `registerIconBundle()` | `core/icons-bundle:678` | — |
 | `createIconButton()` | `core/icons:27` | 创建图标按钮（默认 slide-action 样式）。 |
 | `createIconifyIcon()` | `core/icons:12` | Create an &lt;iconify-icon&gt; element for the given icon name. |
 | `softwareKindIcon()` | `core/icons:43` | Map software kind to an iconify icon name. |
@@ -1558,7 +1558,7 @@
 | `getHeadGazeMaxYaw()` | `scene/motion/perception-shared:233` | 获取头部跟随最大偏航角（弧度） |
 | `isWasmRuntime()` | `scene/motion/perception-shared:216` | 判断骨骼是否运行在 WASM runtime（无 updateWorldMatrix 方法）。 |
 | `setGazeAngles()` | `scene/motion/perception-shared:265` | 更新头部跟随角度限位（度→弧度，由 perception.ts setter 调用） |
-| `__testOnlyGetContext()` | `scene/motion/perception:804` | 测试用：获取指定模型的 context（含 lastOffsets） |
+| `__testOnlyGetContext()` | `scene/motion/perception:808` | 测试用：获取指定模型的 context（含 lastOffsets） |
 | `_clampEyeGazeTarget()` | `scene/motion/perception:58` | — |
 | `_clampHeadGazeTarget()` | `scene/motion/perception:58` | — |
 | `_getGazeResetTick()` | `scene/motion/perception:381` | 获取 gaze 重置计数（供测试验证调用时机） |
@@ -1571,15 +1571,15 @@
 | `deactivatePerception()` | `scene/motion/perception:395` | 注销感知层 |
 | `disableAllPerception()` | `scene/motion/perception:722` | 全员关闭感知层（仅焦点 + pinned 保留） |
 | `enableAllPerception()` | `scene/motion/perception:696` | 全员激活感知层（受 tier 限制） |
-| `getPerceptionPerfManualTier()` | `scene/motion/perception:755` | [doc:adr-164] 获取手动档位设置（'auto' 表示自动降级模式） |
-| `getPerceptionPerfTier()` | `scene/motion/perception:750` | 获取当前性能档位 |
+| `getPerceptionPerfManualTier()` | `scene/motion/perception:759` | [doc:adr-164] 获取手动档位设置（'auto' 表示自动降级模式） |
+| `getPerceptionPerfTier()` | `scene/motion/perception:754` | 获取当前性能档位 |
 | `getPerceptionState()` | `scene/motion/perception:423` | 获取感知状态（焦点 context 状态，兼容旧 API） |
 | `getPerceptionStateFor()` | `scene/motion/perception:681` | 获取感知状态（场景级单例；参数对所有模型一致，modelId 参数保留仅为兼容旧调用） |
 | `getPinnedModelIds()` | `scene/motion/perception:674` | 获取当前 pinned 模型 ID 列表 |
-| `isAllPerceptionEnabled()` | `scene/motion/perception:766` | [doc:adr-164] 获取全员感知开关状态 |
-| `onPerceptionModelRemoved()` | `scene/motion/perception:809` | 兼容接口：模型移除时清理（供 proc-motion-bridge.ts 调用） |
+| `isAllPerceptionEnabled()` | `scene/motion/perception:770` | [doc:adr-164] 获取全员感知开关状态 |
+| `onPerceptionModelRemoved()` | `scene/motion/perception:813` | 兼容接口：模型移除时清理（供 proc-motion-bridge.ts 调用） |
 | `pinPerception()` | `scene/motion/perception:626` | [doc:adr-164] pin 模型感知（原 ≤5 上限已移除，全员感知由 tier 控制）。 |
-| `setAllPerceptionEnabled()` | `scene/motion/perception:771` | [doc:adr-164] 设置全员感知开关状态 |
+| `setAllPerceptionEnabled()` | `scene/motion/perception:775` | [doc:adr-164] 设置全员感知开关状态 |
 | `setBalanceSwayAmplitude()` | `scene/motion/perception:511` | 设置重心微动振幅（全局乘数，钳制 0–2.0） |
 | `setBalanceSwayEnabled()` | `scene/motion/perception:499` | 设置重心微动开关（[doc:adr-079] Phase 2） |
 | `setBalanceSwayPeriod()` | `scene/motion/perception:505` | 设置重心微动周期（秒，钳制 0.5–5.0） |
@@ -1594,7 +1594,7 @@
 | `setEyeGazeMaxYaw()` | `scene/motion/perception:587` | 设置眼部跟随最大偏航角（度，钳制 0–15） |
 | `setEyeGazeSmooth()` | `scene/motion/perception:601` | 设置眼部跟随平滑度（0–1） |
 | `setEyeTrackingEnabled()` | `scene/motion/perception:486` | 设置眼部跟随开关 |
-| `setGazeConfig()` | `scene/motion/perception:784` | 兼容接口：设置 gaze 配置（供 proc-motion-bridge.ts 调用） |
+| `setGazeConfig()` | `scene/motion/perception:788` | 兼容接口：设置 gaze 配置（供 proc-motion-bridge.ts 调用） |
 | `setHeadGazeMaxPitch()` | `scene/motion/perception:580` | 设置头部跟随最大俯仰角（度，钳制 0–90） |
 | `setHeadGazeMaxYaw()` | `scene/motion/perception:573` | 设置头部跟随最大偏航角（度，钳制 0–90） |
 | `setHeadTrackingEnabled()` | `scene/motion/perception:479` | 设置头部跟随开关 |
@@ -1603,7 +1603,7 @@
 | `setLipSyncMultiMorphEnabled()` | `scene/motion/perception:541` | 设置多口型 morph 开关 |
 | `setLipSyncSensitivity()` | `scene/motion/perception:529` | 设置 lip-sync 灵敏度（钳制 0..1） |
 | `setMicroExpressionEnabled()` | `scene/motion/perception:493` | 设置微表情开关 |
-| `setPerceptionPerfTier()` | `scene/motion/perception:760` | 手动设置性能档位（auto/high/medium/low） |
+| `setPerceptionPerfTier()` | `scene/motion/perception:764` | 手动设置性能档位（auto/high/medium/low） |
 | `setPerceptionState()` | `scene/motion/perception:428` | 设置感知状态（从存储恢复时使用） |
 | `setPerceptionStateFor()` | `scene/motion/perception:686` | 设置感知状态（场景级单例；参数对所有模型一致，modelId 参数保留仅为兼容旧调用） |
 | `unpinPerception()` | `scene/motion/perception:647` | unpin 模型感知（非焦点模型同步 deactivate） |

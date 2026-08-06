@@ -271,8 +271,18 @@ const LUCIDE_BUNDLE = ${JSON.stringify(lucideBundle, null, 2)};
 const TABLER_BUNDLE = ${JSON.stringify(tablerBundle, null, 2)};
 
 export function registerIconBundle(): void {
-    addCollection(LUCIDE_BUNDLE);
-    addCollection(TABLER_BUNDLE);
+    // 逐个 try/catch 降级：addCollection 抛错（iconify schema 不兼容 / bundle 破损）
+    // 时图标缺失优于应用启动失败（init.ts _initEarlyInfra 后续基建不阻断）。
+    try {
+        addCollection(LUCIDE_BUNDLE);
+    } catch (err) {
+        console.warn('[icons-bundle] lucide 图标注册失败（降级为缺失）：', err);
+    }
+    try {
+        addCollection(TABLER_BUNDLE);
+    } catch (err) {
+        console.warn('[icons-bundle] tabler 图标注册失败（降级为缺失）：', err);
+    }
 }
 `;
     // 安全写入：先写临时文件，再原子重命名，避免写入中途中断导致 bundle 损坏
