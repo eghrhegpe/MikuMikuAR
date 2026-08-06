@@ -123,8 +123,11 @@ function checkHeader(file, text) {
   const head = extractHeader(text);
   if (!head) return [`[文件头] ${file} 缺少 JSDoc 文件头`];
   const issues = [];
-  if (!/\.mjs\s*[—-]/.test(head)) {
-    issues.push(`[文件头] ${file} 缺「文件名 + 描述」(格式: * <name>.mjs — <描述>)`);
+  // [fix] 锚定 JSDoc 块首行（'/**' 后第一行）：原 `/\.mjs\s*[—-]/` 在整个块内匹配，
+  // 被用法示例里的 `.mjs --json` 满足 → 24/44 脚本首行不合规被洗白（2026-08-06 排查）。
+  const firstLine = head.split('\n')[1] ?? '';
+  if (!/^\s*\*\s*[\w.-]+\.mjs\s+[—-]\s+/.test(firstLine)) {
+    issues.push(`[文件头] ${file} 缺「文件名 + 描述」首行 (格式: * <name>.mjs — <描述>)`);
   }
   if (!/(零依赖|依赖[:：])/.test(head)) {
     issues.push(`[文件头] ${file} 缺「依赖声明」(零依赖 或 外部依赖)`);

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * check-circular.mjs
+ * check-circular.mjs — 检测 frontend/src 模块间的跨模块循环依赖。
  * 检测 frontend/src 模块间的跨模块循环依赖。
  *
  * 用法：

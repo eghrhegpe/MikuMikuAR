@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Markdown 链接检查。扫所有 md 文件，验证内部链接目标是否存在。
+ * link-checker.mjs — Markdown 链接检查。扫所有 md 文件，验证内部链接目标是否存在。
  * 由 ysm-model-manager/scripts/link-checker.mjs 搬运至联邦（2026-08-03），逻辑逐点保真。
  *
  * 用法：

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * gen-ui-entry.mjs
+ * gen-ui-entry.mjs — 知识卡「## UI 入口」小节自动生成器（ADR-218 配套）。
  * 知识卡「## UI 入口」小节自动生成器（ADR-218 配套）。
  *
  * 背景：check-doc-drift 对 source_files 含 menus/ 或 ui/ 的 architecture 卡

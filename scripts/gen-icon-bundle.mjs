@@ -1,5 +1,5 @@
 /**
- * 生成 iconify 本地图标捆绑包（离线可用）。
+ * gen-icon-bundle.mjs — 生成 iconify 本地图标捆绑包（离线可用）。
  *
  * 设计目标：
  *  - 自动扫描 frontend/src 所有图标引用，不再手维护列表，杜绝「新增图标漏网 → 运行时回退到 Iconify 公共 API 拉取 + 缓存」的病灶。

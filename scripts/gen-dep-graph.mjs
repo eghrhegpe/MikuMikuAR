@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * gen-dep-graph.mjs
+ * gen-dep-graph.mjs — 前端模块依赖图生成器 —— 扫描 frontend/src/ 的 TS 文件，提取 import 依赖，
  * 前端模块依赖图生成器 —— 扫描 frontend/src/ 的 TS 文件，提取 import 依赖，
  * 输出 Mermaid 图 / 列表 / JSON。
  *

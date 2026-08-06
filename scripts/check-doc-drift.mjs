@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * check-doc-drift.mjs
+ * check-doc-drift.mjs — 文档漂移检查器 —— 比对「代码现实」与「架构文档声称」。
  * 文档漂移检查器 —— 比对「代码现实」与「架构文档声称」。
  *
  * 零依赖（仅 node:fs / node:path / node:url）。用法：

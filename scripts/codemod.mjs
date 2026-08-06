@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * @file AST 感知的代码批量重构工具（基于 ts-morph）
+ * codemod.mjs — @file AST 感知的代码批量重构工具（基于 ts-morph）
  *
  * 用法:
  *   node scripts/codemod.mjs <命令> [参数...]
@@ -436,7 +436,8 @@ if (!cmd || cmd === 'help') {
 switch (cmd) {
   case 'rename-function': {
     const [, oldName, newName] = args;
-    if (!oldName || !newName) {
+    // [fix] 拦截 flag 顶位：`rename-function foo --dry-run` 会把 --dry-run 当新函数名改码
+    if (!oldName || !newName || oldName.startsWith('--') || newName.startsWith('--')) {
       console.error('用法: node scripts/codemod.mjs rename-function <旧名> <新名>');
       process.exit(1);
     }
@@ -445,7 +446,8 @@ switch (cmd) {
   }
   case 'move-function': {
     const [, funcName, destPath] = args;
-    if (!funcName || !destPath) {
+    // [fix] 同上：flag 顶位拦截
+    if (!funcName || !destPath || funcName.startsWith('--') || destPath.startsWith('--')) {
       console.error('用法: node scripts/codemod.mjs move-function <函数名> <目标文件>');
       process.exit(1);
     }
@@ -454,7 +456,8 @@ switch (cmd) {
   }
   case 'add-param': {
     const [, funcName, paramSignature, defaultValue] = args;
-    if (!funcName || !paramSignature) {
+    // [fix] flag 顶位拦截（defaultValue 是值参数，不拦截）
+    if (!funcName || !paramSignature || funcName.startsWith('--') || paramSignature.startsWith('--')) {
       console.error('用法: node scripts/codemod.mjs add-param <函数名> <参数签名> [默认值]');
       process.exit(1);
     }

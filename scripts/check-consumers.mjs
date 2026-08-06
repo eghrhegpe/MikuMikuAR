@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * check-consumers.mjs
+ * check-consumers.mjs — 符号反向查询 —— 给定一个导出符号（函数/类/接口/类型），列出 frontend/src/ 中
  * 符号反向查询 —— 给定一个导出符号（函数/类/接口/类型），列出 frontend/src/ 中
  * 所有 import 并消费它的文件与行号，帮助 AI 在重构前做「影响面预判」。
  *

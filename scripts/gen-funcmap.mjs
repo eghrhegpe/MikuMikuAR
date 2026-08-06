@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * gen-funcmap.mjs
+ * gen-funcmap.mjs — 函数映射表生成器 —— 扫描 frontend/src/ 的 TS 源文件，提取 export 符号，
  * 函数映射表生成器 —— 扫描 frontend/src/ 的 TS 源文件，提取 export 符号，
  * 按模块分组生成函数索引表，写入 docs/function-map.md。
  *

@@ -26,7 +26,21 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const ADR_DIR = path.resolve(process.cwd(), 'docs/adr');
-const targets = process.argv.slice(2);
+// [fix] --help 退 0 + 未知 flag 退 1：原实现把任意参数静默丢进 filter（--help 空转退 0，
+// 用户误以为生效）；白名单拦截保证可诊断、绝不误操作。
+const HELP_FLAGS = new Set(['--help', '-h']);
+const argvRest = process.argv.slice(2);
+if (argvRest.some((a) => HELP_FLAGS.has(a))) {
+  console.log('用法: node scripts/fix-adr-format.mjs [adr-NNN-*.md ...]');
+  console.log('  无参 = 修复全部 ADR；可传文件名 glob（如 adr-131-*）限定范围。');
+  process.exit(0);
+}
+const unknown = argvRest.filter((a) => a.startsWith('--') && !HELP_FLAGS.has(a));
+if (unknown.length) {
+  console.error(`❌ 未知参数: ${unknown.join(', ')}（--help 查看用法）`);
+  process.exit(1);
+}
+const targets = argvRest;
 
 let files = targets.length > 0
   ? targets.filter(f => /^adr-[\d.]+-.+\.md$/.test(f))

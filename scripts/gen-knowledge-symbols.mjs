@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * gen-knowledge-symbols.mjs
+ * gen-knowledge-symbols.mjs — 知识卡 `symbols:` 字段自动生成器 —— 从卡片 `source_files` 指向的源码提取导出符号，
  * 知识卡 `symbols:` 字段自动生成器 —— 从卡片 `source_files` 指向的源码提取导出符号，
  * 与 frontmatter 的 `symbols:` 列表做集合比对并同步。与 gen-funcmap.mjs 同构
  * （gen 写 / --check 校验），复用 _lib/source-graph.mjs 的 getExportedSymbols。

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * gen-adr-supersede.mjs
+ * gen-adr-supersede.mjs — 扫描 docs/adr/ 全部 ADR,输出「取代关系」判定结果:
  * 扫描 docs/adr/ 全部 ADR,输出「取代关系」判定结果:
  *
  *   ① 已登记:旧 ADR 首部状态行明确声明「被 [ADR-NNN] 取代」

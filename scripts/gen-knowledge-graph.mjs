@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * gen-knowledge-graph.mjs
+ * gen-knowledge-graph.mjs — 知识卡关联图生成器 —— 扫描 docs/knowledge/*.md 的 frontmatter（category / tier / adr 列表），
  * 知识卡关联图生成器 —— 扫描 docs/knowledge/*.md 的 frontmatter（category / tier / adr 列表），
  * 输出 Mermaid 图：architecture 卡按 category 分组，卡片节点连到其引用的 ADR 决策节点，
  * ADR 节点带 click 链接直达决策原文。

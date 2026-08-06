@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * gen-knowledge-h1.mjs
+ * gen-knowledge-h1.mjs — 知识卡正文补 `# 标题`（h1）——从 frontmatter `name` 生成，消除「内容无标题」。
  * 知识卡正文补 `# 标题`（h1）——从 frontmatter `name` 生成，消除「内容无标题」。
  *
  * 背景：知识卡正文普遍以 `## 系统概览` 直接开头，缺 `# h1` 大标题；

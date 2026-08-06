@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * ADR 状态检查脚本 - 精简版
+ * check-adr-status.mjs — ADR 状态检查脚本 - 精简版
  * 只报告有问题的 ADR
  * check-adr-status.mjs — ADR 状态分类统计（已完成/进行中/已废弃/未知）
  * 设计意图：ADR 状态分类统计（已完成/进行中/已废弃/未知）

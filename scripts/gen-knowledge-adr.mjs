@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * gen-knowledge-adr.mjs
+ * gen-knowledge-adr.mjs — 知识卡 `adr:` 关联自动补全 —— 从卡片 source_files 指向的源码扫描 `[doc:adr-NNN]` 显式标记，
  * 知识卡 `adr:` 关联自动补全 —— 从卡片 source_files 指向的源码扫描 `[doc:adr-NNN]` 显式标记，
  * 同步进 frontmatter 的 `adr:` 列表（仅补全当前无 adr 关联的 architecture 卡）。
  *

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * gen-novel-index.mjs —— 全自动生成小说章节索引 `docs/novel/index.md`。
+ * gen-novel-index.mjs — 背景：novel/README.md 原本由 AI 手动维护章节清单表格（2026-08 迁移至
  *
  * 背景：novel/README.md 原本由 AI 手动维护章节清单表格（2026-08 迁移至
  *   docs/novel/ 并改名 index.md 后成为 VitePress 落地页），长期漂移——

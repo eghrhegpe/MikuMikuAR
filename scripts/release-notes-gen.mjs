@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 收集 git 数据，供子智能体写发版说明。
+ * release-notes-gen.mjs — 收集 git 数据，供子智能体写发版说明。
  * 由 ysm-model-manager/scripts/release-notes-gen.mjs 搬运至联邦（2026-08-03），逻辑逐点保真。
  * 设计意图：发布说明生成器
  * 依赖：node:child_process / node:path / node:url

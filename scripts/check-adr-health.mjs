@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * ADR 健康检查脚本
+ * check-adr-health.mjs — ADR 健康检查脚本
  * 综合检查ADR的状态、技术债务、格式规范等
  * 
  * 使用方法：

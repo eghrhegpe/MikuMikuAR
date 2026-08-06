@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * doc-check-next-steps.mjs
+ * doc-check-next-steps.mjs — 读 docs/.doc-check-last.json（由 pre-push hook 调 check-doc-drift.mjs --json 生成），
  * 读 docs/.doc-check-last.json（由 pre-push hook 调 check-doc-drift.mjs --json 生成），
  * 产出面向 AI / 人的「下一步建议」简报 docs/.doc-check-next-steps.md。
  *

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * gen-knowledge-tests.mjs
+ * gen-knowledge-tests.mjs — 知识卡 `tests:` 字段自动登记 —— 扫描 frontend/src/__tests__/ 下测试文件，
  * 知识卡 `tests:` 字段自动登记 —— 扫描 frontend/src/__tests__/ 下测试文件，
  * 按卡名/source_files basename 匹配，为「tests 为空但实际有测试文件」的卡补登测试路径。
  *

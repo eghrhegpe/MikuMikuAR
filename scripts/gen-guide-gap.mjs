@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * gen-guide-gap.mjs
+ * gen-guide-gap.mjs — 用户指南覆盖缺口扫描 —— 从 menu-map.md（机器生成的声明式菜单事实源）提取 folder 面板，
  * 用户指南覆盖缺口扫描 —— 从 menu-map.md（机器生成的声明式菜单事实源）提取 folder 面板，
  * 与 guide/ 页面清单对照，列出「菜单有面板但用户指南无对应页」的缺口（WARN 不阻断）。
  *

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * gen-status-index.mjs
+ * gen-status-index.mjs — 从 ADR 文件首部自动生成状态索引表，替换 docs/status.md 中标记区域。
  * 从 ADR 文件首部自动生成状态索引表，替换 docs/status.md 中标记区域。
  *
  * 用法：

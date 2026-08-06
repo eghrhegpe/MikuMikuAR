@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * gen-menu-map.mjs
+ * gen-menu-map.mjs — 从源码自动生成「菜单层级地图」知识库文档（docs/knowledge/menu-map.md）。
  * 从源码自动生成「菜单层级地图」知识库文档（docs/knowledge/menu-map.md）。
  *
  * 提取三部分静态菜单骨架：

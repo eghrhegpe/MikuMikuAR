@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * ADR 技术债务检查 - 精简版
+ * check-adr-technical-debt.mjs — ADR 技术债务检查 - 精简版
  * 只报告有问题的 ADR
  * check-adr-technical-debt.mjs — ADR 技术债务关键词扫描
  * 设计意图：ADR 技术债务关键词扫描

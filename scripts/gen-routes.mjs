@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * gen-routes.mjs
+ * gen-routes.mjs — AI 知识库路由表自动生成器 —— 从知识卡 frontmatter 的 `use_when` 字段生成
  * AI 知识库路由表自动生成器 —— 从知识卡 frontmatter 的 `use_when` 字段生成
  * 「意图 → 首选卡 → 其次阅读」路由表，替代手工维护的 routes.md。
  *
