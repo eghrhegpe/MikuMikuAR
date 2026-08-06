@@ -33,7 +33,9 @@ invariants:
   - 广场状态集中在 plaza-state.ts，不分散到各子模块
   - showPlaza 为统一打开入口，closePlaza 在 plaza-state.ts 中
   - 自定义站点经 savePlazaCache / loadPlazaCache 持久化（Go 用户目录 plaza-cache/，不依赖 CWD 仓库文件）
-tests: []
+  - preserveBuiltinRouting：缓存/远程配置丢失 directNavigate 时以源码 PLAZA_SITES 为准（SPA CORS 白屏不变量）
+tests:
+  - frontend/src/__tests__/plaza.contract.test.ts
 use_when:
   - 模型广场
   - Plaza 浏览器

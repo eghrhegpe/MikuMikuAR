@@ -8,7 +8,7 @@
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
 | 核心基础设施 | 131 | 766 |
-| 3D 场景 | 125 | 1182 |
+| 3D 场景 | 125 | 1183 |
 | 菜单 & UI | 76 | 388 |
 | 动作算法 | 18 | 138 |
 
@@ -996,12 +996,12 @@
 | `createClouds()` | `scene/env/env-clouds:573` | — |
 | `disposeClouds()` | `scene/env/env-clouds:792` | — |
 | `resolveCloudShaderParams()` | `scene/env/env-clouds:220` | 按质量档派生 shader 注入参数： - high: 200 步主 march + 2 步光照 march + blue-noise jitter - standard: 96 |
-| `getBodyCollisionEnabled()` | `scene/env/env-collision:26` | — |
-| `getCollisionEnabled()` | `scene/env/env-collision:17` | — |
-| `getGroundCollisionEnabled()` | `scene/env/env-collision:39` | — |
-| `setBodyCollisionEnabled()` | `scene/env/env-collision:21` | — |
-| `setCollisionEnabled()` | `scene/env/env-collision:12` | — |
-| `setGroundCollisionEnabled()` | `scene/env/env-collision:30` | — |
+| `getBodyCollisionEnabled()` | `scene/env/env-collision:33` | — |
+| `getCollisionEnabled()` | `scene/env/env-collision:24` | — |
+| `getGroundCollisionEnabled()` | `scene/env/env-collision:46` | — |
+| `setBodyCollisionEnabled()` | `scene/env/env-collision:28` | — |
+| `setCollisionEnabled()` | `scene/env/env-collision:19` | — |
+| `setGroundCollisionEnabled()` | `scene/env/env-collision:37` | — |
 | `getGravityStrength()` | `scene/env/env-gravity:30` | — |
 | `setGravityStrength()` | `scene/env/env-gravity:18` | — |
 | `GROUND_PRESETS()` | `scene/env/env-ground-presets:55` | — |
@@ -1282,9 +1282,9 @@
 | `loadPMXFile()` | `scene/manager/model-loader:420` | — |
 | `setOnMeshesReady()` | `scene/manager/model-loader:83` | — |
 | `setOnModelLoaded()` | `scene/manager/model-loader:87` | — |
-| `FormationType()` | `scene/manager/model-manager:124` | — |
-| `ModelManager()` | `scene/manager/model-manager:192` | — |
-| `getFormationLabels()` | `scene/manager/model-manager:135` | — |
+| `FormationType()` | `scene/manager/model-manager:125` | — |
+| `ModelManager()` | `scene/manager/model-manager:193` | — |
+| `getFormationLabels()` | `scene/manager/model-manager:136` | — |
 | `ReplaceSnapshot()` | `scene/manager/model-ops:331` | [doc:adr-150] 替换模型时从旧模型捕获、应用到新模型的可继承状态快照。 |
 | `applyInheritedState()` | `scene/manager/model-ops:390` | [doc:adr-150] 将状态快照应用到新模型（通过 modelManager setter + setBoneOverride）。 |
 | `applyVPDPose()` | `scene/manager/model-ops:284` | 应用 VPD 姿势到模型（静态姿势，停掉 VMD 播放）。 |
@@ -1462,19 +1462,19 @@
 | `generatePresetId()` | `scene/motion/motion-modules/preset-types:45` | — |
 | `modulesToPresetMap()` | `scene/motion/motion-modules/preset-types:9` | MotionModuleState[] → MotionPreset['modules'] |
 | `BoneConflict()` | `scene/motion/motion-modules/registry:203` | — |
-| `applyMotionModulesToModel()` | `scene/motion/motion-modules/registry:316` | [doc:adr-129] 将场景级模块配置应用到指定模型 用于动作广播时应用配置到所有 inherit 模型 |
+| `applyMotionModulesToModel()` | `scene/motion/motion-modules/registry:312` | [doc:adr-129] 将场景级模块配置应用到指定模型 用于动作广播时应用配置到所有 inherit 模型 |
 | `claimBones()` | `scene/motion/motion-modules/registry:189` | 为模块声明对一组骨骼的所有权（bake 前调用）。 |
-| `clearAllModulesForModel()` | `scene/motion/motion-modules/registry:307` | 清除指定模型的所有模块覆盖（删除模型时调用） |
+| `clearAllModulesForModel()` | `scene/motion/motion-modules/registry:303` | 清除指定模型的所有模块覆盖（删除模型时调用） |
 | `createModule()` | `scene/motion/motion-modules/registry:70` | 为指定模型创建模块实例 |
 | `getAllConflicts()` | `scene/motion/motion-modules/registry:228` | 获取某模型全部模块的冲突明细（按 loser 模块分组） |
-| `getBuiltinModuleDefs()` | `scene/motion/motion-modules/registry:357` | 内置模块定义聚合（供 initMotionModules 批量注册，消除 6 个 registerXxx 分散调用）。 |
+| `getBuiltinModuleDefs()` | `scene/motion/motion-modules/registry:345` | 内置模块定义聚合（供 initMotionModules 批量注册，消除 6 个 registerXxx 分散调用）。 |
 | `getConflictCount()` | `scene/motion/motion-modules/registry:250` | 获取某模型冲突总数（骨骼数） |
 | `getModuleConflicts()` | `scene/motion/motion-modules/registry:215` | 获取某模块被其他模块抢占的骨骼明细（loser 视角：本模块想要但被谁抢） |
 | `getModuleDefaultParam()` | `scene/motion/motion-modules/registry:145` | [doc:adr-116] 读取模块注册的默认参数值。 |
 | `getModuleState()` | `scene/motion/motion-modules/registry:98` | 获取动作的模块配置（不存在则创建默认状态，种入 defaults）。 |
 | `getOwnedBones()` | `scene/motion/motion-modules/registry:195` | 获取模块当前 owned 的骨骼（disable 时用于精确清除） |
 | `getRegisteredModules()` | `scene/motion/motion-modules/registry:63` | 获取所有已注册模块的元信息（按优先级排序） |
-| `initMotionModules()` | `scene/motion/motion-modules/registry:369` | 注册所有内置模块（幂等，重复调用安全） |
+| `initMotionModules()` | `scene/motion/motion-modules/registry:357` | 注册所有内置模块（幂等，重复调用安全） |
 | `registerModule()` | `scene/motion/motion-modules/registry:39` | 注册一个动作覆盖模块。 |
 | `releaseOwnedBones()` | `scene/motion/motion-modules/registry:255` | 释放模块的 ownedBones 记录并级联清引擎槽（由 store.releaseBones 负责清除） |
 | `setModuleEnabled()` | `scene/motion/motion-modules/registry:167` | 设置模块启用/禁用状态到场景动作意图 |
@@ -1639,8 +1639,9 @@
 | `addGazeLayer()` | `scene/motion/vmd-layers:247` | 添加一个视线追踪（gaze）图层。 |
 | `addVmdLayer()` | `scene/motion/vmd-layers:122` | 添加一个 VMD 图层到模型。 |
 | `addVmdLayersFromPaths()` | `scene/motion/vmd-layers:172` | 批量添加 VMD 图层（场景恢复用）。 |
-| `getVmdLayers()` | `scene/motion/vmd-layers:669` | 获取模型的图层列表 |
-| `rebuildCompositeAnimation()` | `scene/motion/vmd-layers:676` | 触发复合动画重建（程序化/外部修改 vmdData/vmdLayers 后调用）。 |
+| `disposeVmdLayerState()` | `scene/motion/vmd-layers:691` | [fix P2] 模型销毁时清理 vmd-layers 模块级 per-model 状态。 |
+| `getVmdLayers()` | `scene/motion/vmd-layers:674` | 获取模型的图层列表 |
+| `rebuildCompositeAnimation()` | `scene/motion/vmd-layers:681` | 触发复合动画重建（程序化/外部修改 vmdData/vmdLayers 后调用）。 |
 | `removeVmdLayer()` | `scene/motion/vmd-layers:284` | 移除一个 VMD 图层 |
 | `setVmdLayerWeight()` | `scene/motion/vmd-layers:335` | 设置图层权重 |
 | `toggleVmdLayer()` | `scene/motion/vmd-layers:310` | 切换图层启用/禁用 |
@@ -1658,7 +1659,7 @@
 | `teardownWasmLayersBlender()` | `scene/motion/wasm-layers-blender:140` | — |
 | `updateWasmLayerWeight()` | `scene/motion/wasm-layers-blender:192` | — |
 | `DEFAULT_LAYER_BONE_FILTER()` | `scene/motion/wasm-layers-config:1` | — |
-| `applyGroundCollision()` | `scene/physics/ground-collision:103` | 根据当前 envState 还原地面碰撞状态（运行时就绪 / 场景加载后调用） |
+| `applyGroundCollision()` | `scene/physics/ground-collision:104` | 根据当前 envState 还原地面碰撞状态（运行时就绪 / 场景加载后调用）。 |
 | `disableGroundCollision()` | `scene/physics/ground-collision:86` | 禁用地面碰撞：从所有世界移除并释放资源。 |
 | `enableGroundCollision()` | `scene/physics/ground-collision:51` | 启用地面碰撞：注入静态地板刚体到所有物理世界。幂等。 |
 | `isGroundCollisionEnabled()` | `scene/physics/ground-collision:44` | 地面碰撞是否处于启用状态 |

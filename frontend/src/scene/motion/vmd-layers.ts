@@ -683,9 +683,11 @@ export function rebuildCompositeAnimation(modelId: string): void {
 }
 
 /** [fix P2] 模型销毁时清理 vmd-layers 模块级 per-model 状态。
- *  由 model-manager.remove 调用；防止 _rebuildGenMap/_prevGazeActiveMap 条目积累，
- *  并避免同 ID 复用场景读到陈旧 gen/gaze 状态。 */
+ *  由 model-manager.remove 调用；清理 _prevGazeActiveMap 避免陈旧 gaze 状态。
+ *  注意：不删 _rebuildGenMap 条目——模型 ID 是稳定 UUID（场景恢复复用同 ID），
+ *  保留单调计数器保证「同 ID 复用场景下在途旧 rebuild 必然败给新 rebuild」
+ *  （若删除，旧 rebuild gen=1 会与新模型首次 rebuild gen=1 碰撞，旧数据可能应用
+ *  到新模型）。单整数条目内存可忽略。 */
 export function disposeVmdLayerState(modelId: string): void {
-    _rebuildGenMap.delete(modelId);
     _prevGazeActiveMap.delete(modelId);
 }
