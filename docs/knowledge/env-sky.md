@@ -15,7 +15,7 @@ symbols:
 invariants:
   - 三种天空模式：color 渐变色 / procedural 程序化天空盒 / cube 六面体 HDR 贴图
   - disposeSky 销毁天空球、环境贴图、太阳光晕与 observer
-  - 恒星纹理缓存经 clearStarsTexCache 清理，避免 HMR/mode 切换时累积
+  - 恒星纹理缓存经 clearStarsTexCache 清理，避免 HMR/mode 切换时累积；disposeSky 递增 _texStarsGeneration 使未完成的异步纹理回调失效（防幽灵写入已 dispose 纹理）
 tests: []
 use_when:
   - 天空系统

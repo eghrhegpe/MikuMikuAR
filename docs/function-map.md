@@ -1156,7 +1156,7 @@
 | `onModelMeshesReady()` | `scene/env/env-reflection:565` | 模型加载后调用：将 Probe 绑定到新模型的网格。 |
 | `resolveReflectionMode()` | `scene/env/env-reflection:130` | — |
 | `setReflectionARSuspended()` | `scene/env/env-reflection:149` | AR 模式联动：挂起/恢复反射子系统。 |
-| `applySky()` | `scene/env/env-sky:421` | — |
+| `applySky()` | `scene/env/env-sky:426` | — |
 | `clearStarsTexCache()` | `scene/env/env-sky:40` | — |
 | `disposeSky()` | `scene/env/env-sky:395` | 释放天空盒并移除相机跟随观察者（幂等）。 |
 | `applyTerrainMaterial()` | `scene/env/env-terrain:139` | 地形材质（与其他地面模式一致：纯色或半透明/纹理）。 |
@@ -2384,7 +2384,7 @@
 | `showPresetSaveDialog()` | `menus/scene-render-presets:267` | — |
 | `buildStageLevel()` | `menus/scene-stage-levels:161` | — |
 | `buildStageTransformLevel()` | `menus/scene-stage-levels:175` | — |
-| `buildStageLightLevel()` | `menus/scene-stage-lights:791` | — |
+| `buildStageLightLevel()` | `menus/scene-stage-lights:811` | — |
 | `buildSettingsAboutLevel()` | `menus/settings-about:235` | — |
 | `handleSettingsAction()` | `menus/settings-actions:21` | 全局设置项点击分发：语言切换 + 动作表。settings.ts 的 onItemClick 使用。 |
 | `buildSettingsAppearanceLevel()` | `menus/settings-appearance:510` | — |

@@ -4,6 +4,8 @@
 import { cardContainer, envState, modelRegistry } from '../core/config';
 import type { PopupLevel } from '../core/config';
 import { showConfirm } from '../core/dialog';
+import { feedbackStatus } from '../core/feedback';
+import { logWarn } from '../core/logger';
 import {
     addSliderRow,
     addColorSliderRow,
@@ -133,8 +135,20 @@ function buildStageLightSchema(): MenuNode[] {
                         '+',
                         false,
                         () => {
-                            addStageLight('spot');
+                            // [fix P2] 添加灯光与删除路径（L777）对称接入场景级撤销：
+                            // 知识卡不变量「增删灯光属破坏性操作须 offerSceneUndo」，
+                            // 此前添加无快照，误点后只能手动删除。
+                            const snap = pushUndoSnapshot();
+                            const newId = addStageLight('spot');
+                            if (!newId) {
+                                // [fix P3] 达 MAX_STAGE_LIGHTS（6）上限时 addStageLight 返回 ''，
+                                // 此前用户点击「+」无任何反馈
+                                feedbackStatus(t('scene.maxLightsReached'), undefined, false);
+                            }
                             reRenderSceneMenu();
+                            offerSceneUndo(t('scene.statusLightAdded'), snap, () =>
+                                reRenderSceneMenu()
+                            );
                         },
                         { icon: 'lucide:plus', title: t('scene.addLight') }
                     );
@@ -762,24 +776,30 @@ function buildStageLightSchema(): MenuNode[] {
                         'lucide:trash-2',
                         t('scene.deleteLight', { name: state.name }),
                         async () => {
-                            if (
-                                !(await showConfirm(
-                                    t('scene.confirmDeleteLight', { name: state.name })
-                                ))
-                            ) {
-                                return;
-                            }
-                            if (!getStageLights().find((l) => l.id === state.id)) {
+                            try {
+                                if (
+                                    !(await showConfirm(
+                                        t('scene.confirmDeleteLight', { name: state.name })
+                                    ))
+                                ) {
+                                    return;
+                                }
+                                if (!getStageLights().find((l) => l.id === state.id)) {
+                                    reRenderSceneMenu();
+                                    return;
+                                }
+                                // [doc:adr-127] 场景级撤销保护：快照含 stageLights，可完整还原（ADR-130 Phase 2.6 缺口 B）
+                                const snap = pushUndoSnapshot();
+                                removeStageLight(state.id);
                                 reRenderSceneMenu();
-                                return;
+                                offerSceneUndo(t('scene.statusLightDeleted'), snap, () =>
+                                    reRenderSceneMenu()
+                                );
+                            } catch (err) {
+                                // [fix P3] async onClick 经 slideRow 同步调用无 .catch 兜底——
+                                // 任一步骤抛异常产生 unhandled rejection 且删除状态不一致
+                                logWarn('scene-stage-lights', 'delete light failed', err);
                             }
-                            // [doc:adr-127] 场景级撤销保护：快照含 stageLights，可完整还原（ADR-130 Phase 2.6 缺口 B）
-                            const snap = pushUndoSnapshot();
-                            removeStageLight(state.id);
-                            reRenderSceneMenu();
-                            offerSceneUndo(t('scene.statusLightDeleted'), snap, () =>
-                                reRenderSceneMenu()
-                            );
                         }
                     );
                 });

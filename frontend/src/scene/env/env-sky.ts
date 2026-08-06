@@ -415,6 +415,11 @@ export function disposeSky(): void {
     }
     _lastProceduralSkyKey = '';
     _lastSkyCubePath = null;
+    // [fix P2] 递增星空纹理 generation：updateSkyDynamicTexture 内 _ensureStarsTextureImage
+    // 的异步回调（L192-212）在 disposeSky 后仍可能执行——generation 不递增则回调继续写
+    // 已 dispose 的 skyDynamicTex（Babylon 内部 _texture 已 null，getContext/update 行为
+    // 未定义）。dispose 后回调经 L59/L66 的 generation 守卫直接丢弃。
+    _texStarsGeneration++;
     _disposeSunDisc();
 }
 
