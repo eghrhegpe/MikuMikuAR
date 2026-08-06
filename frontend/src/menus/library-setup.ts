@@ -269,12 +269,18 @@ export async function switchStorageMode(mode: 'private' | 'shared'): Promise<voi
 
 // ======== 扫描重入锁（[fix P2] 快速连点「重扫」防并发覆盖） ========
 let _scanInFlight: Promise<LibraryModel[]> | null = null;
+// [code_review P2] coalescing 标志：扫描进行中又收到新请求（换资源根/存储模式/
+// zip 导入完成等上下文已变场景）时置位，当前扫描 finally 完成后补扫一次——
+// 只复用旧 Promise 会静默丢弃合法重扫，旧目录结果应用到新状态。
+let _rescanRequested = false;
 
 export async function rescanAndSync(): Promise<LibraryModel[]> {
     // [fix P2] 重入锁：快速连点「重扫」时两个 ScanModelDir 异步流并发，
     // 后启动的可能先返回 → setAllModels 覆盖顺序错乱；A 完成还会清掉 B 的进度回调。
-    // 进行中直接复用同一 Promise，杜绝并发竞态。
+    // 进行中先复用同一 Promise 防并发竞态；但若请求上下文已变（libraryRoot/
+    // storageMode 变化或 zip 导入完成），置 coalescing 标志，当前扫描完成后补扫。
     if (_scanInFlight) {
+        _rescanRequested = true;
         return _scanInFlight;
     }
     console.info('[debug] rescanAndSync called');
@@ -348,6 +354,12 @@ export async function rescanAndSync(): Promise<LibraryModel[]> {
         // 清除"正在扫描"文本，状态栏自动隐藏（空文本 → syncStatusBarVisibility → display:none）
         setStatus('', false, false);
         _scanInFlight = null;
+        // [code_review P2] coalescing 补扫：扫描期间收到的新请求（上下文已变）
+        // 在旧扫描 finally 完成后触发一次新扫描，避免合法重扫被静默丢弃。
+        if (_rescanRequested) {
+            _rescanRequested = false;
+            void rescanAndSync();
+        }
     }
     })();
     _scanInFlight = run;

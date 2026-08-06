@@ -175,6 +175,7 @@ export {
 } from './manager/material-sss';
 
 import { ModelManager } from './manager/model-manager';
+import { resetMotionIntent } from './motion/motion-intent';
 import {
     updateProcMotion,
     createProcBeatDetector,
@@ -282,6 +283,11 @@ export function disposeScene(): void {
     // 2. 清理播放相关 observer
     _disposePlaybackObservables?.();
     _disposePlaybackObservables = null;
+
+    // 2.5 [code_review P3] 重置动作意图广播回调：initMotionIntent 的幂等守卫
+    // （_callbackInitialized）在场景销毁/重建或 HMR 后永久阻断重注册，广播回调
+    // 会残留绑定旧注册——disposeScene 时复位，使下次 initMotionBroadcast 可重新注册。
+    resetMotionIntent();
 
     // 3. [fix:P3] 释放程序化动作模块（BeatDetector + perception observer）
     //    proc-motion-bridge 已静态导入，同步释放以保持 disposeScene 同步级联契约
