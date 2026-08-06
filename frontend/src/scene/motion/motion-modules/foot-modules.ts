@@ -37,6 +37,11 @@ function createFootModuleFactory(cfg: FootSideConfig) {
     // createEnsureActive 的 has(modelId) 幂等检查误判，导致后启用一侧的位置偏移帧钩子
     // 永不注册（round-12 P1 修复）。
     const _footFrameHooks = createFrameHookManager();
+    // [fix code_review P1] 本模块是否写过非零位置的 per-model 标志：
+    // 归零时仅当本模块写入过才清整槽（clearBoneOverride 会删除含旋转覆盖的整个槽，
+    // 无条件清除会误伤「只用旋转滑块」的用户——默认 footPos=(0,0,0) 时首帧即失效）。
+    // 与 body-posture 的 _centerPosWritten 守卫模式一致（ADR-116 §4「仅清自有骨」）。
+    const _footPosWritten = new Set<string>();
     return (modelId: string, actionId?: string): MotionOverrideModule => {
         const managedBones = [cfg.ikBone];
 
@@ -93,11 +98,22 @@ function createFootModuleFactory(cfg: FootSideConfig) {
                             // [fix P2] 归零时清除残留位置覆盖：此前直接 return 导致上一帧
                             // setBoneOverridePosition 写入的 slot.pos 残留（与 body-posture
                             // 同模式，round-P2 修复对齐），用户把 footPos 拖回 0 后脚不归位。
-                            clearBoneOverride(cfg.ikBone, mid);
+                            // [fix code_review P1] 仅当本模块写过非零位置才清整槽（clearBoneOverride
+                            // 删除含旋转覆盖的整个槽，无条件清除会误伤旋转-only 用户）；
+                            // 清后重建仅旋转槽（保留 bake 的 pitch/yaw/roll 语义）。
+                            if (_footPosWritten.has(mid)) {
+                                _footPosWritten.delete(mid);
+                                clearBoneOverride(cfg.ikBone, mid);
+                                const pitch = (st.params.pitch as number) ?? 0;
+                                const yaw = (st.params.yaw as number) ?? 0;
+                                const roll = (st.params.roll as number) ?? 0;
+                                setBoneOverride(cfg.ikBone, [pitch, yaw, roll], 1, true, mid);
+                            }
                             return;
                         }
 
                         setBoneOverridePosition(cfg.ikBone, [fx, fy, fz], 1, true, mid);
+                        _footPosWritten.add(mid);
                     },
                     FRAME_HOOK_ORDER.FEET,
                     cfg.moduleId

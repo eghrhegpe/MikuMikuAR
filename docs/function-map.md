@@ -1432,8 +1432,8 @@
 | `unloadProceduralMotion()` | `scene/motion/motion-intent:72` | 卸载一个程序化动作。'none' 不可卸载。 |
 | `BODY_POSTURE_DEF()` | `scene/motion/motion-modules/body-posture:285` | 身体姿态模块注册定义（供 registry BUILTIN_MODULE_DEFS 批量注册） |
 | `createBodyPostureModule()` | `scene/motion/motion-modules/body-posture:181` | 创建身体姿态模块实例 |
-| `LEFT_FOOT_DEF()` | `scene/motion/motion-modules/foot-modules:212` | — |
-| `RIGHT_FOOT_DEF()` | `scene/motion/motion-modules/foot-modules:228` | — |
+| `LEFT_FOOT_DEF()` | `scene/motion/motion-modules/foot-modules:228` | — |
+| `RIGHT_FOOT_DEF()` | `scene/motion/motion-modules/foot-modules:244` | — |
 | `LEFT_HAND_DEF()` | `scene/motion/motion-modules/hand-modules:388` | — |
 | `RIGHT_HAND_DEF()` | `scene/motion/motion-modules/hand-modules:416` | — |
 | `FrameHookManager()` | `scene/motion/motion-modules/module-base:203` | 帧钩子管理器的返回类型（供 createEnsureActive 复用） |
