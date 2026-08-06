@@ -7,7 +7,7 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 131 | 766 |
+| 核心基础设施 | 131 | 767 |
 | 3D 场景 | 125 | 1183 |
 | 菜单 & UI | 76 | 388 |
 | 动作算法 | 18 | 138 |
@@ -139,18 +139,18 @@
 | `makeLazyLoader()` | `core/async:43` | 创建惰性动态 import 加载器（带并发守卫 + 失败重试）。 |
 | `swallowError()` | `core/async:12` | 吞掉 promise 的异常并记录日志（比空 `.catch(() =&gt; {})` 可调试）。 |
 | `waitForFrame()` | `core/async:27` | Promise 包装的等待下一帧。 |
-| `PlaySfxOptions()` | `core/audio-bus:84` | — |
-| `disposeAudioBus()` | `core/audio-bus:163` | 释放总线资源（context 关闭、缓存清空）。 |
-| `getAudioContext()` | `core/audio-bus:17` | 惰性创建共享 AudioContext（SFX 总线与未来音效共用）。 |
-| `getFootstepVolume()` | `core/audio-bus:80` | — |
-| `getSfxEnabled()` | `core/audio-bus:67` | — |
-| `getSfxMasterGain()` | `core/audio-bus:42` | SFX 主增益（独立于音乐音量）。增益值实时反映 sfxEnabled / sfxVolume。 |
-| `getSfxVolume()` | `core/audio-bus:58` | — |
-| `playSfx()` | `core/audio-bus:100` | 播放一次短音效。每次 new BufferSource（一次性、可叠加），播完自动断开释放。 |
-| `setFootstepEnabled()` | `core/audio-bus:71` | — |
-| `setFootstepVolume()` | `core/audio-bus:75` | — |
-| `setSfxEnabled()` | `core/audio-bus:62` | — |
-| `setSfxVolume()` | `core/audio-bus:52` | — |
+| `PlaySfxOptions()` | `core/audio-bus:107` | — |
+| `disposeAudioBus()` | `core/audio-bus:190` | 释放总线资源（context 关闭、缓存清空）。 |
+| `getAudioContext()` | `core/audio-bus:21` | 惰性创建共享 AudioContext（SFX 总线与未来音效共用）。无支持环境返回 null。 |
+| `getFootstepVolume()` | `core/audio-bus:103` | — |
+| `getSfxEnabled()` | `core/audio-bus:90` | — |
+| `getSfxMasterGain()` | `core/audio-bus:62` | SFX 主增益（独立于音乐音量）。增益值实时反映 sfxEnabled / sfxVolume。无 AudioContext 支持返回 null。 |
+| `getSfxVolume()` | `core/audio-bus:81` | — |
+| `playSfx()` | `core/audio-bus:123` | 播放一次短音效。每次 new BufferSource（一次性、可叠加），播完自动断开释放。 |
+| `setFootstepEnabled()` | `core/audio-bus:94` | — |
+| `setFootstepVolume()` | `core/audio-bus:98` | — |
+| `setSfxEnabled()` | `core/audio-bus:85` | — |
+| `setSfxVolume()` | `core/audio-bus:75` | — |
 | `BeatSink()` | `core/audio:27` | [doc:adr-242] 节拍检测器的结构契约。core 层不得依赖 `motion-algos/beat-detector` 的具体实现类——那会构成 `core → moti |
 | `applyGain()` | `core/audio:549` | — |
 | `attachBeatDetector()` | `core/audio:542` | — |
@@ -241,10 +241,10 @@
 | `setupE2ECapture()` | `core/dev-hooks:20` | — |
 | `DialogOptions()` | `core/dialog:49` | — |
 | `Prompt2Options()` | `core/dialog:294` | — |
-| `disposeOverlay2()` | `core/dialog:366` | 移除 showPrompt2 创建的 overlay2 DOM（供 HMR 清理入口调用）。 |
+| `disposeOverlay2()` | `core/dialog:370` | 移除 showPrompt2 创建的 overlay2 DOM（供 HMR 清理入口调用）。 |
 | `showConfirm()` | `core/dialog:255` | Show a confirmation dialog. |
 | `showPrompt()` | `core/dialog:271` | Show a prompt dialog. |
-| `showPrompt2()` | `core/dialog:385` | 双字段输入对话框。返回 [value1, value2] 或 null（取消）。 |
+| `showPrompt2()` | `core/dialog:394` | 双字段输入对话框。返回 [value1, value2] 或 null（取消）。 |
 | `detachSharedTextures()` | `core/dispose-helpers:64` | 批量 dispose 一组材质**之前**调用：摘除这组材质对「仍被其他存活材质引用」的纹理的引用， 使随后的 `material.dispose(_, true)` 不会误杀共享 |
 | `safeDispose()` | `core/dispose-helpers:29` | 安全释放对象并置空。 |
 | `ARIA_ATTR()` | `core/dom-contract:32` | aria 属性名常量（ARIA_ATTR.valuemin 等） |
@@ -269,16 +269,17 @@
 | `getEnvKeys()` | `core/env-state-schema:405` | 从 Schema 派生指定 dispatch 分组的 key 列表。 |
 | `escapeHtml()` | `core/escape-html:5` | Escape HTML special characters to prevent injection. |
 | `disposeEventHandlers()` | `core/events:44` | — |
-| `initDropHandler()` | `core/events:359` | — |
-| `registerEventHandlers()` | `core/events:61` | — |
-| `showUpdateToast()` | `core/events:277` | — |
+| `initDropHandler()` | `core/events:367` | — |
+| `registerEventHandlers()` | `core/events:60` | — |
+| `showUpdateToast()` | `core/events:282` | — |
 | `feedbackError()` | `core/feedback:40` | 错误级 toast 反馈。标题 =「动作 + 目标」，detail 自动从 error 翻译。 |
 | `feedbackInfo()` | `core/feedback:53` | Info 级 toast 反馈。标题 =「动作 + 目标」。 |
 | `feedbackStatus()` | `core/feedback:70` | 通用状态栏反馈。auto-detect 成功与否：title 以 ✗ 开头则为失败。 |
-| `encodeFileRef()` | `core/fileservice:40` | 编码文件名为查询参数值（base64url 无填充）。 |
-| `normPath()` | `core/fileservice:92` | — |
-| `resolveFileUrl()` | `core/fileservice:52` | 从文件路径解析出 HTTP URL 及对应服务器信息。 |
-| `resolveModelDir()` | `core/fileservice:85` | 从文件路径解析出隔离后的目录路径（不启动 HTTP 服务器）。 |
+| `encodeFileRef()` | `core/fileservice:45` | 编码文件名为查询参数值（base64url 无填充）。 |
+| `normPath()` | `core/fileservice:115` | — |
+| `resolveFileUrl()` | `core/fileservice:60` | 从文件路径解析出 HTTP URL 及对应服务器信息。 |
+| `resolveModelDir()` | `core/fileservice:108` | 从文件路径解析出隔离后的目录路径（不启动 HTTP 服务器）。 |
+| `revokeFileUrl()` | `core/fileservice:94` | 释放 resolveFileUrl 浏览器分支产生的 blob: URL（调用方用完必须调用，配对释放）。 |
 | `formatTimestamp()` | `core/format-timestamp:6` | 格式化日期为 HH:MM:SS.mmm 字符串。 |
 | `formatError()` | `core/format:22` | 将任意错误值转换为人类可读字符串，带截断保护。 |
 | `formatTime()` | `core/format:8` | 格式化秒数为 `MM:SS.CC` 字符串（分:秒.百分秒）。 |
@@ -310,7 +311,7 @@
 | `canvasToBase64()` | `core/image:13` | 将 Canvas 编码为 base64 字符串（剥离 data:image/...;base64, 前缀）。 |
 | `thumbDataUrl()` | `core/image:64` | Build a data URL from a base64 thumbnail, sniffing PNG/JPEG/WebP from the header. |
 | `toBase64()` | `core/image:54` | Encode a string as base64 (UTF-8 safe). |
-| `bootstrap()` | `core/init:608` | 应用启动入口：接线 dev-hooks / render-loop / events 并启动渲染循环。 |
+| `bootstrap()` | `core/init:632` | 应用启动入口：接线 dev-hooks / render-loop / events 并启动渲染循环。 |
 | `jsonParse()` | `core/json-stringify:10` | Safely parse JSON; returns null on failure instead of throwing. |
 | `jsonStringify()` | `core/json-stringify:5` | Format a value as pretty-printed JSON (2-space indent). |
 | `CATEGORY_DIR()` | `core/library-path:52` | — |
@@ -345,7 +346,7 @@
 | `LoadRequest()` | `core/load-manager:45` | — |
 | `ResourceHandle()` | `core/load-manager:73` | — |
 | `ResourceKind()` | `core/load-manager:11` | — |
-| `loadManager()` | `core/load-manager:251` | 单例。 |
+| `loadManager()` | `core/load-manager:256` | 单例。 |
 | `registerLibraryScannedHook()` | `core/load-refresh-registry:57` | 注册一个「库扫描完成」钩子。 |
 | `registerLoadRefreshHook()` | `core/load-refresh-registry:21` | 注册一个「模型加载后刷新」钩子。 |
 | `runLoadRefreshHooks()` | `core/load-refresh-registry:33` | 执行所有已注册的加载后刷新钩子。 |
@@ -1397,8 +1398,8 @@
 | `startFallbackDetection()` | `scene/motion/footstep-detect-fallback:68` | 启动独立落地检测（fallback 模式）。 |
 | `stopFallbackDetection()` | `scene/motion/footstep-detect-fallback:133` | 停止独立落地检测。 |
 | `resolveGroundSfxKind()` | `scene/motion/footstep:54` | 依据当前地面类型推断脚步音色。 |
-| `startFootstep()` | `scene/motion/footstep:128` | 启动脚步声系统：注入落地事件回调。 |
-| `stopFootstep()` | `scene/motion/footstep:160` | 停止脚步声系统并清空合成缓存。 |
+| `startFootstep()` | `scene/motion/footstep:137` | 启动脚步声系统：注入落地事件回调。 |
+| `stopFootstep()` | `scene/motion/footstep:169` | 停止脚步声系统并清空合成缓存。 |
 | `getLipSyncState()` | `scene/motion/lipsync-bridge:57` | — |
 | `initLipSync()` | `scene/motion/lipsync-bridge:17` | — |
 | `resetLipSyncOnFocusChange()` | `scene/motion/lipsync-bridge:65` | — |
@@ -1711,18 +1712,18 @@
 | `updateLightConeUniforms()` | `scene/render/light-cone:203` | 更新光锥的 shader uniforms（颜色/亮度/柔和度） |
 | `DEFAULT_PERSONAL_LIGHT()` | `scene/render/lighting-follow:70` | — |
 | `PersonalLightSettings()` | `scene/render/lighting-follow:32` | — |
-| `attachPersonalLight()` | `scene/render/lighting-follow:156` | — |
-| `detachPersonalLight()` | `scene/render/lighting-follow:281` | — |
-| `disposeAllPersonalLights()` | `scene/render/lighting-follow:419` | — |
-| `getAllPersonalLights()` | `scene/render/lighting-follow:428` | 导出所有个人灯状态（仅非默认值差异落盘由调用方决定） |
+| `attachPersonalLight()` | `scene/render/lighting-follow:160` | — |
+| `detachPersonalLight()` | `scene/render/lighting-follow:285` | — |
+| `disposeAllPersonalLights()` | `scene/render/lighting-follow:423` | — |
+| `getAllPersonalLights()` | `scene/render/lighting-follow:432` | 导出所有个人灯状态（仅非默认值差异落盘由调用方决定） |
 | `getPersonalLightDefault()` | `scene/render/lighting-follow:124` | 获取用户保存的个人灯默认值，无则返回 null。 |
-| `getPersonalLightState()` | `scene/render/lighting-follow:332` | — |
+| `getPersonalLightState()` | `scene/render/lighting-follow:336` | — |
 | `resetPersonalLightDefault()` | `scene/render/lighting-follow:129` | 重置用户默认值回出厂硬编码值。 |
-| `restorePersonalLights()` | `scene/render/lighting-follow:440` | 场景反序列化后，按 modelId 恢复个人灯设置（attach 已由 onModelLoaded 触发，此处仅覆盖参数） |
+| `restorePersonalLights()` | `scene/render/lighting-follow:444` | 场景反序列化后，按 modelId 恢复个人灯设置（attach 已由 onModelLoaded 触发，此处仅覆盖参数） |
 | `setPersonalLightDefault()` | `scene/render/lighting-follow:114` | 将当前个人灯参数保存为用户默认值。 |
-| `setPersonalLightState()` | `scene/render/lighting-follow:296` | — |
-| `tickPersonalLights()` | `scene/render/lighting-follow:336` | — |
-| `tickStageLightFollow()` | `scene/render/lighting-follow:479` | 舞台灯追光 tick：更新所有绑定了 followTarget 的舞台灯 |
+| `setPersonalLightState()` | `scene/render/lighting-follow:300` | — |
+| `tickPersonalLights()` | `scene/render/lighting-follow:340` | — |
+| `tickStageLightFollow()` | `scene/render/lighting-follow:483` | 舞台灯追光 tick：更新所有绑定了 followTarget 的舞台灯 |
 | `LIGHTING_PRESETS()` | `scene/render/lighting-presets:21` | — |
 | `LightingPreset()` | `scene/render/lighting-presets:12` | — |
 | `LightingPresetLight()` | `scene/render/lighting-presets:6` | — |
@@ -1758,35 +1759,35 @@
 | `_tweenColor3()` | `scene/render/lighting-tween:58` | — |
 | `_tweenValue()` | `scene/render/lighting-tween:19` | — |
 | `applyLightingPresetFromEnv()` | `scene/render/lighting-tween:86` | 应用灯光预设——复用现有灯光，平滑过渡参数。 |
-| `LightState()` | `scene/render/lighting:36` | — |
-| `StageLightState()` | `scene/render/lighting:54` | — |
-| `StageLightType()` | `scene/render/lighting:52` | — |
-| `_defaultStageLightState()` | `scene/render/lighting:104` | — |
-| `disposeLighting()` | `scene/render/lighting:491` | 整体清理光照模块（场景销毁时调用） |
-| `getDirLight()` | `scene/render/lighting:148` | 主方向光（未初始化时为 null）。 |
-| `getHemiLight()` | `scene/render/lighting:143` | 主半球光（未初始化时为 null）。导出 getter 替代原 `export let`，消除导出可变绑定。 |
-| `getLightState()` | `scene/render/lighting:240` | — |
-| `initLighting()` | `scene/render/lighting:157` | — |
-| `isLightingReady()` | `scene/render/lighting:286` | [fix:P1] 灯光运行时是否就绪（@dom/e2e 环境无灯光/管线时返回 false，供 UI/测试预检跳过守卫域）。 |
-| `rebakeEnvBrightness()` | `scene/render/lighting:232` | [doc:adr-132] 当 envBrightness 变化时 rebake 存储的光照强度 |
-| `setLightState()` | `scene/render/lighting:321` | 写入灯光状态。守卫未就绪时 logWarn + 返回 false（不再静默吞写）， 使「UI 可操作但 state 未生效」可被观测（@dom 测试环境无灯光对象时会命中）。 |
-| `setSkipLightAutoSave()` | `scene/render/lighting:153` | 预设动画期间临时抑制 setLightState 内的自动保存，由 applyEnvPreset 控制 |
-| `transitionLighting()` | `scene/render/lighting:403` | 平滑过渡当前灯光到目标灯光参数，默认 2 秒。 |
+| `LightState()` | `scene/render/lighting:37` | — |
+| `StageLightState()` | `scene/render/lighting:55` | — |
+| `StageLightType()` | `scene/render/lighting:53` | — |
+| `_defaultStageLightState()` | `scene/render/lighting:105` | — |
+| `disposeLighting()` | `scene/render/lighting:520` | 整体清理光照模块（场景销毁时调用） |
+| `getDirLight()` | `scene/render/lighting:149` | 主方向光（未初始化时为 null）。 |
+| `getHemiLight()` | `scene/render/lighting:144` | 主半球光（未初始化时为 null）。导出 getter 替代原 `export let`，消除导出可变绑定。 |
+| `getLightState()` | `scene/render/lighting:257` | — |
+| `initLighting()` | `scene/render/lighting:158` | — |
+| `isLightingReady()` | `scene/render/lighting:303` | [fix:P1] 灯光运行时是否就绪（@dom/e2e 环境无灯光/管线时返回 false，供 UI/测试预检跳过守卫域）。 |
+| `rebakeEnvBrightness()` | `scene/render/lighting:233` | [doc:adr-132] 当 envBrightness 变化时 rebake 存储的光照强度 |
+| `setLightState()` | `scene/render/lighting:342` | 写入灯光状态。守卫未就绪时 logWarn + 返回 false（不再静默吞写）， 使「UI 可操作但 state 未生效」可被观测（@dom 测试环境无灯光对象时会命中）。 |
+| `setSkipLightAutoSave()` | `scene/render/lighting:154` | 预设动画期间临时抑制 setLightState 内的自动保存，由 applyEnvPreset 控制 |
+| `transitionLighting()` | `scene/render/lighting:432` | 平滑过渡当前灯光到目标灯光参数，默认 2 秒。 |
 | `isAutoDegradingReflection()` | `scene/render/performance-env-bridge:18` | env-bridge.ts 调用此函数检查当前是否处于自动降级反射质量变更中 |
 | `registerSetEnvState()` | `scene/render/performance-env-bridge:26` | env-bridge.ts 初始化时注册 setEnvState 函数 |
 | `setAutoDegradingReflection()` | `scene/render/performance-env-bridge:13` | performance.ts 调用此函数通知 env-bridge 当前反射质量变更来自自动降级 |
 | `setEnvStateForPerformance()` | `scene/render/performance-env-bridge:33` | performance.ts 调用此函数设置 envState（延迟绑定，避免循环导入） |
 | `PerformanceMode()` | `scene/render/performance:44` | — |
 | `RenderBridge()` | `scene/render/performance:19` | — |
-| `getCurrentDegradeLevel()` | `scene/render/performance:616` | — |
+| `getCurrentDegradeLevel()` | `scene/render/performance:619` | — |
 | `getPerfRenderScaleMul()` | `scene/render/performance:83` | 降级系统对 renderScale 的乘数（1.0=无影响，0.7=降级时降至 70%）。 |
-| `getPerformanceMode()` | `scene/render/performance:612` | — |
+| `getPerformanceMode()` | `scene/render/performance:615` | — |
 | `isSnapshotResetSuppressed()` | `scene/render/performance:88` | 供 setLightState/setRenderState 检查是否应跳过 resetPerformanceSnapshot。 |
-| `recalcPerformanceReference()` | `scene/render/performance:474` | 重新计算刷新率基准（外接显示器变化时由 render-loop resize 触发）。 |
+| `recalcPerformanceReference()` | `scene/render/performance:477` | 重新计算刷新率基准（外接显示器变化时由 render-loop resize 触发）。 |
 | `registerRenderBridge()` | `scene/render/performance:34` | ADR-159 P3-A：延迟绑定渲染桥接，由 scene.ts 在 initScene() 时注入。 |
-| `resetPerformanceSnapshot()` | `scene/render/performance:624` | 重置性能快照（用户手动修改渲染/光照设置后调用）。 |
-| `setPerformanceMode()` | `scene/render/performance:584` | 设置性能模式。 |
-| `updatePerformance()` | `scene/render/performance:492` | 每帧调用（渲染循环内）。 |
+| `resetPerformanceSnapshot()` | `scene/render/performance:627` | 重置性能快照（用户手动修改渲染/光照设置后调用）。 |
+| `setPerformanceMode()` | `scene/render/performance:587` | 设置性能模式。 |
+| `updatePerformance()` | `scene/render/performance:495` | 每帧调用（渲染循环内）。 |
 | `QualityDimension()` | `scene/render/quality-profile:22` | 质量维度定义。 |
 | `QualityProfile()` | `scene/render/quality-profile:12` | — |
 | `QualityProfileSettings()` | `scene/render/quality-profile:60` | 从注册表派生 QualityProfileSettings 类型。 |
@@ -1794,20 +1795,20 @@
 | `resolveQualityProfile()` | `scene/render/quality-profile:70` | 将 qualityProfile 解析为各域质量设置。 |
 | `RenderState()` | `scene/render/renderer:35` | — |
 | `ToneMappingMode()` | `scene/render/renderer:27` | — |
-| `defaultRenderState()` | `scene/render/renderer:216` | — |
-| `disposeRenderer()` | `scene/render/renderer:137` | 释放渲染管线及相关资源。在场景销毁时调用。 |
-| `getRenderState()` | `scene/render/renderer:170` | — |
+| `defaultRenderState()` | `scene/render/renderer:231` | — |
+| `disposeRenderer()` | `scene/render/renderer:145` | 释放渲染管线及相关资源。在场景销毁时调用。 |
+| `getRenderState()` | `scene/render/renderer:185` | — |
 | `initRenderer()` | `scene/render/renderer:113` | — |
-| `isRenderReady()` | `scene/render/renderer:637` | [fix:P1] 渲染管线是否就绪（@dom/e2e 环境无 pipeline/scene 时返回 false，供 UI/测试预检跳过守卫域）。 |
-| `isRendererReady()` | `scene/render/renderer:132` | 检查渲染器是否已初始化。外部代码在调用 setRenderState 前可先检查。 |
-| `isSSRActive()` | `scene/render/renderer:925` | SSR 管线当前是否激活（供 env-reflection 检查，尊重用户手动关闭）。 |
+| `isRenderReady()` | `scene/render/renderer:653` | [fix:P1] 渲染管线是否就绪（@dom/e2e 环境无 pipeline/scene 时返回 false，供 UI/测试预检跳过守卫域）。 |
+| `isRendererReady()` | `scene/render/renderer:140` | 检查渲染器是否已初始化。外部代码在调用 setRenderState 前可先检查。 |
+| `isSSRActive()` | `scene/render/renderer:954` | SSR 管线当前是否激活（供 env-reflection 检查，尊重用户手动关闭）。 |
 | `pipeline()` | `scene/render/renderer:81` | — |
-| `reattachPipeline()` | `scene/render/renderer:880` | Re-attach the rendering pipeline to the current active camera (call after camera switch). |
-| `rebuildOutlineState()` | `scene/render/renderer:978` | 当模型注册表更新时，重新应用边缘高亮状态。 |
+| `reattachPipeline()` | `scene/render/renderer:896` | Re-attach the rendering pipeline to the current active camera (call after camera switch). |
+| `rebuildOutlineState()` | `scene/render/renderer:1013` | 当模型注册表更新时，重新应用边缘高亮状态。 |
 | `registerCelGroundCoupling()` | `scene/render/renderer:105` | — |
-| `setRenderState()` | `scene/render/renderer:667` | — |
-| `setSSRFromReflection()` | `scene/render/renderer:933` | 反射系统专用 SSR 控制接口（不触发 auto-save）。 |
-| `transitionRenderState()` | `scene/render/renderer:707` | 平滑过渡渲染状态到目标值，默认 2 秒。 |
+| `setRenderState()` | `scene/render/renderer:683` | — |
+| `setSSRFromReflection()` | `scene/render/renderer:966` | 反射系统专用 SSR 控制接口（不触发 auto-save）。 |
+| `transitionRenderState()` | `scene/render/renderer:723` | 平滑过渡渲染状态到目标值，默认 2 秒。 |
 | `GizmoAttachOptions()` | `scene/render/transform-gizmo:94` | — |
 | `GizmoType()` | `scene/render/transform-gizmo:17` | — |
 | `attachGizmo()` | `scene/render/transform-gizmo:114` | 为指定 Node 激活变换 Gizmo。 |
@@ -2065,8 +2066,8 @@
 | `prepareModelRestore()` | `menus/library-actions:112` | — |
 | `replaceModel()` | `menus/library-actions:727` | — |
 | `replaceMotion()` | `menus/library-actions:727` | — |
-| `makeModelMenu()` | `menus/library-browse:369` | — |
-| `showModelPopup()` | `menus/library-browse:338` | — |
+| `makeModelMenu()` | `menus/library-browse:377` | — |
+| `showModelPopup()` | `menus/library-browse:346` | — |
 | `ResourceViewMode()` | `menus/library-core:43` | — |
 | `abortThumbnailStreaming()` | `menus/library-core:315` | [adr-136] 取消当前正在进行的缩略图流式加载批次（如弹窗关闭/重开时调用）。 |
 | `buildLevel()` | `menus/library-core:839` | — |

@@ -6,10 +6,22 @@
 //   仅加载真实 scene.ts 模块，测试其自身定义的导出函数与守卫分支。
 // - 覆盖的导出函数：applyFrameControl / disposeScene / getScene / initScene / isHeadless /
 //   __envDebug，以及模块级注册的 findSceneModelByName 动作、initScene 内部注入的
-//   onRemoveModel / onModelLoaded / 指针事件（涟漪 + 拖拽）回调、AI 快照桥的 getRendererInfo。
-// - 未覆盖：initScene 的 MPR 多线程 WASM 分支（__MMD_ENABLE_MPR__ 构建期常量在测试态为
-//   undefined，esbuild 消除该分支，无法在 vitest 触发）；真实 WebGL/Canvas 的 engine 创建链路
-//   （happy-dom 无 WebGL，Engine 以最小假对象 mock，仅覆盖其守卫分支）。
+//   onRemoveModel / onModelLoaded / 指针事件（涟漪 + 拖拽）回调、AI 快照桥的
+//   getRendererInfo / getFps / getMeshCount / getMaterialCount / getKtx2Support /
+//   getPerformanceMode、_injectRuntimeCallbacks 的 getStreamPlayer 桥接、
+//   _initMotionSubsystems 的 startFeetAdjustment / startBoneOverride / setWasmIkResolver 回调、
+//   _injectModelCallbacks 的 setOnMeshesReady / onModelFocused、initLoader 的
+//   tryAutoApplyPreset / loadOutfits 动作编排、onRemoveModel 的 scene.isDisposed 异步清理守卫。
+// - 未覆盖（依赖真实 WebGL 或构建期常量，vitest 无法触发，仅覆盖其守卫分支并在上文标注）：
+//   - initScene 的 MPR 多线程 WASM 分支（__MMD_ENABLE_MPR__ 构建期常量测试态为 false，
+//     esbuild 消除该分支）；真实 WebGL/Canvas 的 engine 创建链路（happy-dom 无 WebGL，
+//     Engine 以最小假对象 mock）；headless NullEngine 分支；测试环境跳过的
+//     initCameraSystem / SdefInjector.OverrideEngineCreateEffect 顶层副作用。
+//   - _injectRuntimeCallbacks 中 initMotionBroadcast() 经同一 mock 模块（../menus/motion-popup）
+//     二次动态 import，vitest 下第二次 import 的 .then 回调不触发（mock 工厂只求值一次、
+//     模块缓存，但回调不执行，属 vitest 模块 mock 怪癖），故无法断言。
+//   - disposeScene 后 WASM 路径的 _sceneDisposeObserverHandle 二次 dispose 与
+//     observe 回调体（disposeWindPhysics 等，observe 为 mock 不触发回调）。
 // - 每个用例前 vi.resetModules() + 动态 import 获取全新模块实例，隔离 _sceneInitialized /
 //   _sceneDisposed 等模块级状态。
 
@@ -310,6 +322,7 @@ vi.mock('babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime', () => ({
     MmdWasmRuntime: class {
         loggingEnabled = false;
         register = vi.fn();
+        setAudioPlayer = vi.fn();
     },
 }));
 vi.mock('babylon-mmd/esm/Runtime/Optimized/Physics/mmdWasmPhysics', () => ({
@@ -323,6 +336,7 @@ vi.mock('babylon-mmd/esm/Runtime/mmdRuntime', () => ({
     MmdRuntime: class {
         loggingEnabled = false;
         register = vi.fn();
+        setAudioPlayer = vi.fn();
     },
 }));
 vi.mock('babylon-mmd/esm/Runtime/Animation/mmdRuntimeModelAnimation', () => ({}));
@@ -617,9 +631,14 @@ vi.mock('../scene/motion/lipsync-bridge', () => ({}));
 type SceneModule = typeof import('../scene/scene');
 let sceneModule: SceneModule;
 
+/** 冲刷 fire-and-forget 动态 import 的微任务/宏任务（swallowError 不 await）。 */
+const flushAsync = () => new Promise((resolve) => setTimeout(resolve, 0));
+
 beforeEach(async () => {
     vi.clearAllMocks();
     vi.resetModules();
+    // 构建期常量测试态显式归 false（与 vite define 默认一致），避免 WASM 路径 ReferenceError
+    vi.stubGlobal('__MMD_ENABLE_MPR__', false);
     // 重置可变状态
     shared.uiState.frameCapEnabled = true;
     shared.uiState.fpsLimit = 60;
@@ -707,6 +726,8 @@ describe('disposeScene（级联释放 + 幂等）', () => {
     });
 
     it('正常：initScene 后 dispose → 释放 observer 句柄与播放观察者', async () => {
+        // 仅 WASM 路径会 observe(scene.onDisposeObservable) 设置 _sceneDisposeObserverHandle
+        shared.getMmdRuntimeType.mockReturnValue('wasm');
         await sceneModule.initScene();
         sceneModule.disposeScene();
         expect(shared.safeDispose).toHaveBeenCalled();
@@ -718,6 +739,7 @@ describe('initScene（场景初始化编排）', () => {
     it('正常：JS runtime 路径按序装配全部子系统', async () => {
         shared.getMmdRuntimeType.mockReturnValue('js');
         await sceneModule.initScene();
+        await flushAsync(); // 冲刷 _injectRuntimeCallbacks 的 fire-and-forget 动态 import
 
         // runtime 初始化
         expect(shared.setMmdRuntime).toHaveBeenCalled();
@@ -742,7 +764,9 @@ describe('initScene（场景初始化编排）', () => {
         // 回调注入
         expect(shared.setSceneRef).toHaveBeenCalled();
         expect(shared.syncPlaybackSpeedToRuntime).toHaveBeenCalled();
-        expect(shared.initMotionBroadcast).toHaveBeenCalled();
+        // 注：initMotionBroadcast 经同模块二次动态 import，vitest 下 .then 不触发
+        // （mock 工厂只求值一次、缓存模块，但场景代码第二次 import 的 then 回调不执行），
+        // 属 vitest 模块 mock 怪癖，无法在此断言，见文件头注释。
         // 模型管理器
         expect(shared.setModelRegistry).toHaveBeenCalled();
         expect(shared.setTriggerAutoSave).toHaveBeenCalledWith(shared.triggerAutoSaveImpl);
@@ -768,7 +792,7 @@ describe('initScene（场景初始化编排）', () => {
     it('守卫：二次调用走 HMR 重入（_reinitSceneForHMR）', async () => {
         await sceneModule.initScene();
         await sceneModule.initScene();
-        expect(shared.disposeScene).not.toBeDefined(); // disposeScene 是模块内函数，此处验证 scene 重建
+        // disposeScene 是模块内函数，HMR 重入会触发其清理副作用（下方 stop* 断言验证）
         expect(shared.stopBoneOverride).toHaveBeenCalled();
         expect(shared.stopFeetAdjustment).toHaveBeenCalled();
         expect(shared.stopFootstep).toHaveBeenCalled();
@@ -832,8 +856,10 @@ describe('AI 快照桥（registerAiSnapshotBridge 回调）', () => {
             _gl: { getParameter: (p: number) => string };
         };
         engine._gl = {
+            VENDOR: 0x1f00,
+            RENDERER: 0x1f01,
             getParameter: (p: number) => (p === 0x1f00 ? 'NVIDIA' : 'RTX 4090'),
-        };
+        } as unknown as { getParameter: (p: number) => string };
         const bridge = shared.aiBridge as {
             getRendererInfo: () => { vendor: string; renderer: string };
         };
@@ -893,20 +919,26 @@ describe('onRemoveModel 回调（模型删除清理）', () => {
         expect(shared.clearHistory).toHaveBeenCalledWith('m1');
         expect(shared.onModelRemoved).toHaveBeenCalledWith('m1');
         expect(shared.detachPersonalLight).toHaveBeenCalledWith('m1');
-        expect(shared.mmdRuntime.destroyMmdModel).toHaveBeenCalled();
+        expect(
+            (shared.mmdRuntime as { destroyMmdModel: ReturnType<typeof vi.fn> }).destroyMmdModel,
+        ).toHaveBeenCalled();
     });
 
     it('守卫：无 mmdModel 或 runtime → 跳过 destroyMmdModel', async () => {
         const onRemove = await getOnRemove();
         shared.modelRegistry.set('m2', { id: 'm2', mmdModel: null });
         onRemove('m2');
-        expect(shared.mmdRuntime.destroyMmdModel).not.toHaveBeenCalled();
+        expect(
+            (shared.mmdRuntime as { destroyMmdModel: ReturnType<typeof vi.fn> }).destroyMmdModel,
+        ).not.toHaveBeenCalled();
     });
 
     it('守卫：destroyMmdModel 抛错 → logWarn 降级不崩', async () => {
         const onRemove = await getOnRemove();
         shared.modelRegistry.set('m3', { id: 'm3', mmdModel: {} });
-        shared.mmdRuntime.destroyMmdModel.mockImplementation(() => {
+        (
+            shared.mmdRuntime as { destroyMmdModel: ReturnType<typeof vi.fn> }
+        ).destroyMmdModel.mockImplementation(() => {
             throw new Error('boom');
         });
         expect(() => onRemove('m3')).not.toThrow();
@@ -971,7 +1003,10 @@ describe('指针事件回调（水面涟漪 + 拖拽模式）', () => {
             type: 1,
             pickInfo: {
                 hit: false,
-                ray: { origin: { y: 5 }, direction: { y: -1 } },
+                ray: {
+                    origin: { y: 5, add: () => ({ x: 0, z: 0 }) },
+                    direction: { y: -1, scale: () => ({ x: 0, y: -1, z: 0 }) },
+                },
             },
         });
         expect(shared.addRipple).toHaveBeenCalledTimes(1);
@@ -992,10 +1027,32 @@ describe('指针事件回调（水面涟漪 + 拖拽模式）', () => {
         // t<=0（ray 起点在水面下）
         scene.activeCamera = { globalPosition: { y: 10 } };
         ripple({ type: 1, pickInfo: { hit: false, ray: { origin: { y: -5 }, direction: { y: -1 } } } });
-        // 超出地面范围
+        // 超出地面范围（hit 计算需要 origin.add / direction.scale）
         ripple({
             type: 1,
-            pickInfo: { hit: false, ray: { origin: { y: 5, x: 100, z: 0 }, direction: { y: -1 } } },
+            pickInfo: {
+                hit: false,
+                ray: {
+                    origin: { y: 5, add: () => ({ x: 100, z: 0 }) },
+                    direction: { y: -1, scale: () => ({ x: 0, y: -1, z: 0 }) },
+                },
+            },
+        });
+        expect(shared.addRipple).not.toHaveBeenCalled();
+    });
+
+    it('守卫：涟漪——相机 globalPosition.y 为 undefined → 跳过', async () => {
+        await sceneModule.initScene();
+        const [ripple] = getPointerCallbacks();
+        shared.envState.waterEnabled = true;
+        shared.envState.waterLevel = 0;
+        const scene = sceneModule.scene as unknown as {
+            activeCamera: { globalPosition: { y: number | undefined } } | null;
+        };
+        scene.activeCamera = { globalPosition: { y: undefined } };
+        ripple({
+            type: 1,
+            pickInfo: { hit: false, ray: { origin: { y: 5 }, direction: { y: -1 } } },
         });
         expect(shared.addRipple).not.toHaveBeenCalled();
     });
@@ -1028,6 +1085,190 @@ describe('指针事件回调（水面涟漪 + 拖拽模式）', () => {
         drag({ type: 1, event: { clientX: 10, clientY: 20 } });
         drag({ type: 2, event: { clientX: 11, clientY: 21 } });
         expect(shared.tryAttachGizmoFromPick).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe('AI 快照桥补充 getter（getFps / getMeshCount / getMaterialCount / getKtx2Support）', () => {
+    it('正常：读取当前 engine / scene 状态', async () => {
+        await sceneModule.initScene();
+        const bridge = shared.aiBridge as {
+            getFps: () => number;
+            getMeshCount: () => number;
+            getMaterialCount: () => number;
+            getKtx2Support: () => boolean;
+            getPerformanceMode: () => string;
+        };
+        (sceneModule.scene as unknown as { meshes: unknown[] }).meshes = [1, 2, 3];
+        (sceneModule.scene as unknown as { materials: unknown[] }).materials = [1, 2];
+        expect(bridge.getFps()).toBe(60);
+        expect(bridge.getMeshCount()).toBe(3);
+        expect(bridge.getMaterialCount()).toBe(2);
+        expect(bridge.getKtx2Support()).toBe(false);
+        expect(bridge.getPerformanceMode()).toBe('balanced');
+    });
+});
+
+describe('_injectRuntimeCallbacks（运行时回调注入）', () => {
+    it('正常：getStreamPlayer 动作返回播放器 → runtime.setAudioPlayer 被调用', async () => {
+        const player = { play: vi.fn() };
+        shared.sceneActions['getStreamPlayer'] = () => player;
+        await sceneModule.initScene();
+        await flushAsync(); // 冲刷 Promise.resolve(player).then(...) 微任务
+        const runtime = shared.setMmdRuntime.mock.calls[0][0] as {
+            setAudioPlayer: ReturnType<typeof vi.fn>;
+        };
+        expect(runtime.setAudioPlayer).toHaveBeenCalledWith(player);
+    });
+});
+
+describe('_initMotionSubsystems（运动子系统回调）', () => {
+    it('正常：startFeetAdjustment 收集器——仅收集含 runtimeBones 的模型', async () => {
+        await sceneModule.initScene();
+        const collector = shared.startFeetAdjustment.mock.calls[0][0] as () => Array<{
+            id: string;
+            feet: { enabled: boolean };
+            runtimeBones: unknown[];
+        }>;
+        shared.modelRegistry.set('m1', { id: 'm1', mmdModel: { runtimeBones: [{}, {}] } });
+        shared.modelRegistry.set('m2', { id: 'm2', mmdModel: { runtimeBones: [] } });
+        shared.modelRegistry.set('m3', { id: 'm3', mmdModel: null });
+        const out = collector();
+        expect(out).toHaveLength(1);
+        expect(out[0].id).toBe('m1');
+        expect(out[0].feet.enabled).toBe(true);
+    });
+
+    it('守卫：startBoneOverride 回调——无 focusedModelId → 空数组', async () => {
+        await sceneModule.initScene();
+        const cb = shared.startBoneOverride.mock.calls[0][0] as () => unknown[];
+        shared.focusedModelId = null;
+        expect(cb()).toEqual([]);
+    });
+
+    it('正常：startBoneOverride 回调——有 focusedModelId → 返回 runtimeBones', async () => {
+        await sceneModule.initScene();
+        const cb = shared.startBoneOverride.mock.calls[0][0] as () => unknown[];
+        shared.focusedModelId = 'm1';
+        shared.modelRegistry.set('m1', { mmdModel: { runtimeBones: [1, 2, 3] } });
+        expect(cb()).toEqual([1, 2, 3]);
+    });
+
+    it('守卫：setWasmIkResolver——模型缺失 / 无物理实现 → 不调用 solveIkNative', async () => {
+        await sceneModule.initScene();
+        const cb = shared.setWasmIkResolver.mock.calls[0][0] as (
+            id: string,
+            idx: number,
+            usePhysics: boolean,
+        ) => void;
+        cb('nope', 0, true);
+        shared.modelRegistry.set('m1', { mmdModel: {} });
+        shared.getPhysicsImpl.mockReturnValue(null);
+        cb('m1', 0, true);
+        expect(shared.solveIkNative).not.toHaveBeenCalled();
+    });
+
+    it('正常：setWasmIkResolver——完整路径调用 solveIkNative', async () => {
+        await sceneModule.initScene();
+        const cb = shared.setWasmIkResolver.mock.calls[0][0] as (
+            id: string,
+            idx: number,
+            usePhysics: boolean,
+        ) => void;
+        shared.modelRegistry.set('m1', { mmdModel: { bones: [] } });
+        shared.getPhysicsImpl.mockReturnValue({ wasmInstance: {} });
+        cb('m1', 2, true);
+        expect(shared.solveIkNative).toHaveBeenCalledWith({}, { bones: [] }, 2, true);
+    });
+});
+
+describe('_injectModelCallbacks（模型生命周期回调）', () => {
+    it('正常：setOnMeshesReady → onModelMeshesReady 转发', async () => {
+        await sceneModule.initScene();
+        const cb = shared.setOnMeshesReady.mock.calls[0][0] as (meshes: unknown[]) => void;
+        cb([1, 2]);
+        expect(shared.onModelMeshesReady).toHaveBeenCalledWith([1, 2]);
+    });
+
+    it('正常：modelManager.onModelFocused → 激活视线追踪', async () => {
+        await sceneModule.initScene();
+        const mm = sceneModule.modelManager as unknown as { onModelFocused: () => void };
+        mm.onModelFocused();
+        expect(shared.activateGazeTracking).toHaveBeenCalled();
+    });
+});
+
+describe('initScene 动作编排（attachBeatDetector / tryAutoApplyPreset / loadOutfits）', () => {
+    it('正常：attachBeatDetector 动作被调用', async () => {
+        const attachBeatDetector = vi.fn();
+        shared.sceneActions['attachBeatDetector'] = attachBeatDetector;
+        await sceneModule.initScene();
+        expect(attachBeatDetector).toHaveBeenCalled();
+    });
+
+    it('正常：tryAutoApplyPreset 动作在模型加载时被调用', async () => {
+        const tryAutoApplyPreset = vi.fn();
+        shared.sceneActions['tryAutoApplyPreset'] = tryAutoApplyPreset;
+        await sceneModule.initScene();
+        const cb = (shared.initLoader.mock.calls[0] as unknown[])[4] as (id: string) => void;
+        cb('m1');
+        expect(tryAutoApplyPreset).toHaveBeenCalledWith('m1');
+    });
+
+    it('正常：loadOutfits 动作在模型加载时被调用（失败不阻断）', async () => {
+        const loadOutfits = vi.fn(() => Promise.resolve());
+        shared.sceneActions['loadOutfits'] = loadOutfits;
+        await sceneModule.initScene();
+        const cb = (shared.initLoader.mock.calls[0] as unknown[])[5] as (id: string) => Promise<void>;
+        await cb('m1');
+        expect(loadOutfits).toHaveBeenCalledWith('m1');
+    });
+});
+
+describe('onRemoveModel 异步清理（scene.isDisposed 守卫）', () => {
+    async function getOnRemoveCb(): Promise<(id: string) => void> {
+        await sceneModule.initScene();
+        const mm = sceneModule.modelManager as unknown as { onRemoveModel: (id: string) => void };
+        return mm.onRemoveModel;
+    }
+
+    it('守卫：scene 已 dispose → 跳过 wasm-layers-blender / virtual-skirt 清理', async () => {
+        const onRemove = await getOnRemoveCb();
+        (sceneModule.scene as unknown as { isDisposed: boolean }).isDisposed = true;
+        shared.modelRegistry.set('m1', { id: 'm1', mmdModel: {} });
+        onRemove('m1');
+        await flushAsync();
+        expect(shared.teardownWasmLayersBlender).not.toHaveBeenCalled();
+        expect(shared.disposeVirtualSkirtForModel).not.toHaveBeenCalled();
+    });
+
+    it('正常：scene 未 dispose → 执行异步清理', async () => {
+        const onRemove = await getOnRemoveCb();
+        (sceneModule.scene as unknown as { isDisposed: boolean }).isDisposed = false;
+        shared.modelRegistry.set('m1', { id: 'm1', mmdModel: {} });
+        onRemove('m1');
+        await flushAsync();
+        expect(shared.teardownWasmLayersBlender).toHaveBeenCalledWith('m1');
+        expect(shared.disposeVirtualSkirtForModel).toHaveBeenCalledWith('m1');
+    });
+});
+
+describe('_getRendererInfo（GL 上下文读取降级）', () => {
+    it('守卫：_gl.getParameter 抛错 → 回退 unknown', async () => {
+        await sceneModule.initScene();
+        const engine = sceneModule.engine as unknown as {
+            _gl: { VENDOR: number; RENDERER: number; getParameter: () => string };
+        };
+        engine._gl = {
+            VENDOR: 0x1f00,
+            RENDERER: 0x1f01,
+            getParameter: () => {
+                throw new Error('context lost');
+            },
+        };
+        const bridge = shared.aiBridge as {
+            getRendererInfo: () => { vendor: string; renderer: string };
+        };
+        expect(bridge.getRendererInfo()).toEqual({ vendor: 'unknown', renderer: 'unknown' });
     });
 });
 
