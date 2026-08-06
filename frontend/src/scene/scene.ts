@@ -116,6 +116,8 @@ import { triggerAutoSave, setTriggerAutoSave } from '../core/auto-save';
 import { detectRuntimeMode, persistRuntimeMode, renderRuntimeBadge } from '../core/runtime-mode';
 import { _catState, _matState, _matEnabled } from './manager/material';
 import { updatePlaybackUI, initPlaybackObservables } from './motion/playback';
+// [fix P1] 模型删除时清理动作历史（_historyMap/_mergeMap），否则条目累积 + ID 复用幽灵历史
+import { clearHistory } from './motion/motion-modules/motion-history';
 import { initLighting, _updateSunDisc, setLightState, getLightState } from './render/lighting';
 import { attachPersonalLight, detachPersonalLight } from './render/lighting-follow';
 import {
@@ -544,6 +546,10 @@ function _initModelManager(
 ): void {
     modelManager = new ModelManager(scene, triggerAutoSave, autoFrame);
     modelManager.onRemoveModel = (id) => {
+        // [fix P1] 模型删除时清理动作历史与合并窗口状态，防止 _historyMap/_mergeMap
+        // 条目累积（内存泄漏）及同 ID 复用读到幽灵历史
+        clearHistory(id);
+
         // 程序化动作清理（视线追踪 observer 拆除）必须早于 destroyMmdModel
         // 否则下一帧 observer 同时读到 _procVmdActive=true + mmdModel 已销毁 → skeleton null → TypeError
         // 见 proc-motion-bridge.ts onModelRemoved

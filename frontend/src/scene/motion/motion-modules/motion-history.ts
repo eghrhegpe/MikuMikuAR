@@ -133,6 +133,12 @@ function _writeEntry(modelId: string, entry: MotionHistoryEntry): void {
         state.entries.splice(0, state.entries.length - MAX_HISTORY);
     }
     state.cursor = state.entries.length - 1;
+    // [fix P2] 截断/裁剪可能把 pendingEntry 指向的条目移出 entries，切断孤儿引用，
+    // 避免后续合并分支更新一个已不在数组中的对象（等价「push 静默丢失」）。
+    const merge = _getMerge(modelId);
+    if (merge.pendingEntry && !state.entries.includes(merge.pendingEntry)) {
+        merge.pendingEntry = null;
+    }
 }
 
 /** 撤销一步（恢复到上一条快照），返回是否成功 */
