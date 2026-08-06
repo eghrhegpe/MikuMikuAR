@@ -501,8 +501,11 @@ function _applyStageLightParams(entry: StageLightEntry, s: Partial<StageLightSta
                 state.targetX - light.position.x,
                 state.targetY - light.position.y,
                 state.targetZ - light.position.z
-            ).normalize();
-            light.direction = dir;
+            );
+            // [fix P2] 零向量守卫：target === position 时 normalize() 产 NaN，
+            // 与 _createStageLight（L78）同款兜底——fallback 到朝下
+            light.direction =
+                dir.lengthSquared() < 1e-6 ? new Vector3(0, -1, 0) : dir.normalize();
         }
     }
     if (s.posX !== undefined || s.posY !== undefined || s.posZ !== undefined) {
@@ -527,8 +530,10 @@ function _applyStageLightParams(entry: StageLightEntry, s: Partial<StageLightSta
                 (s.targetX ?? state.targetX) - light.position.x,
                 (s.targetY ?? state.targetY) - light.position.y,
                 (s.targetZ ?? state.targetZ) - light.position.z
-            ).normalize();
-            light.direction = dir;
+            );
+            // [fix P2] 零向量守卫：与 L501 同款兜底，避免 target === position 时 NaN
+            light.direction =
+                dir.lengthSquared() < 1e-6 ? new Vector3(0, -1, 0) : dir.normalize();
         }
     }
 

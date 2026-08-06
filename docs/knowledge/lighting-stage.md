@@ -7,26 +7,29 @@ scope:
   - frontend/src/scene/render/**
 source_files:
   - frontend/src/scene/render/lighting-stage.ts
-adr: []
+adr:
+  - ADR-152
+  - ADR-126
 symbols:
   - _createStageLight
+  - _disposeStageLightEntry
+  - _updateIndicator
   - addStageLight
-  - removeStageLight
-  - getStageLights
   - getActiveStageLightId
-  - setActiveStageLightId
   - getStageLightState
-  - setStageLightState
+  - getStageLights
   - loadStageLights
   - rebuildStageLightShadows
-  - _updateIndicator
-  - _disposeStageLightEntry
+  - removeStageLight
+  - setActiveStageLightId
+  - setStageLightState
 invariants:
   - 支持 SpotLight / PointLight / DirectionalLight 三种类型
   - 每盏灯含轨道定位、指示器、光锥、阴影，通过 lightingState.stageLights 管理
   - setStageLightState 含阴影重建、光锥重建、轨道移动
   - _disposeStageLightEntry 销毁灯光条目（含阴影/光锥/指示器）
-tests: []
+tests:
+  - frontend/src/__tests__/scene/lighting-stage.test.ts
 use_when:
   - 舞台灯光
   - 聚光灯
