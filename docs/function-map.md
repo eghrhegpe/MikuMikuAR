@@ -1167,7 +1167,7 @@
 | `hash2()` | `scene/env/env-terrain:22` | — |
 | `valueNoise()` | `scene/env/env-terrain:22` | — |
 | `applyEnvPreset()` | `scene/env/env-time-of-day:156` | — |
-| `applyEnvPresetByCategory()` | `scene/env/env-time-of-day:348` | [adr-120] 按类别应用用户自定义预设。 |
+| `applyEnvPresetByCategory()` | `scene/env/env-time-of-day:358` | [adr-120] 按类别应用用户自定义预设。 |
 | `applyEnvPresetObject()` | `scene/env/env-time-of-day:257` | 应用任意 EnvPreset 对象（支持用户自定义预设）。 |
 | `getEnvSunAngle()` | `scene/env/env-time-of-day:49` | — |
 | `getTimeOfDaySpeed()` | `scene/env/env-time-of-day:136` | — |

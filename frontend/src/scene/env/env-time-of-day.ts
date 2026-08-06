@@ -335,6 +335,16 @@ export function applyEnvPresetObject(preset: {
             setPresetAnimActive(false);
             setSkipLightAutoSave(false);
             cancelEnvPersistTimer();
+            // [fix code_review P3] 镜像正常完成路径（t>=1 分支）恢复 time-of-day
+            // 暂停状态：applyEnvPresetObject 动画前 pause 了 time-of-day（若原本活跃），
+            // 异常中断若不恢复则 _timeOfDayPaused 永久 true → 时间流转冻结；
+            // _timeOfDayBeforePreset 残留 stale 还会破坏下次预设的状态捕获语义。
+            if (_timeOfDayBeforePreset) {
+                _timeOfDayPaused = false;
+                _lastSkySunAngle = envSunAngle;
+                _lastAutoLinkSunAngle = envSunAngle;
+            }
+            _timeOfDayBeforePreset = null;
         }
     });
     return true;
