@@ -59,12 +59,22 @@ export interface UiActions {
 
 const _uiActions = new Map<keyof UiActions, unknown>();
 
-/** 注册单个 UI 行为（menus 侧各模块启动时调用，可重复注册覆盖） */
-export function registerUiAction<K extends keyof UiActions>(key: K, fn: UiActions[K]): void {
+/**
+ * 注册单个 UI 行为（menus 侧各模块启动时调用，可重复注册覆盖）。
+ * 返回基于身份（fn 引用）的注销 token——dispose 时调用它只会删除本实例注册的闭包，
+ * 不会误删后续替换模块的注册（code_review P2：delete-by-key 在「新注册先于 dispose」
+ * 顺序下会删错，导致 bridge 永久缺失、core 侧静默跳过）。
+ */
+export function registerUiAction<K extends keyof UiActions>(key: K, fn: UiActions[K]): () => void {
     _uiActions.set(key, fn);
+    return () => {
+        if (_uiActions.get(key) === fn) {
+            _uiActions.delete(key);
+        }
+    };
 }
 
-/** 注销单个 UI 行为（模块 dispose/HMR 清理时调用，防止闭包残留）。 */
+/** 兼容旧调用点：按 key 注销（不区分注册实例，慎用；优先用 registerUiAction 返回的 token）。 */
 export function unregisterUiAction<K extends keyof UiActions>(key: K): void {
     _uiActions.delete(key);
 }

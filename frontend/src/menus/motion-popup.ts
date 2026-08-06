@@ -68,19 +68,22 @@ const _unregisterLibraryScanned = registerLibraryScannedHook(() => getMotionMenu
 export { getMotionMenu, refreshMotionRoot, showMotionPopup };
 
 // [doc:adr-238] 注册动作菜单操作供 core/action-defs 经 ui-action-bridge 调用
-import { registerUiAction, unregisterUiAction } from '@/core/ui-action-bridge';
-registerUiAction('getMotionMenu', () => getMotionMenu());
-registerUiAction('refreshMotionRoot', () => refreshMotionRoot());
+// [fix code_review P2] 保存 registerUiAction 返回的身份 token（fn 引用注销），
+// dispose 只删本实例闭包，不误删后续替换模块的注册。
+import { registerUiAction } from '@/core/ui-action-bridge';
+const _unregisterGetMotionMenu = registerUiAction('getMotionMenu', () => getMotionMenu());
+const _unregisterRefreshMotionRoot = registerUiAction('refreshMotionRoot', () => refreshMotionRoot());
 
 /** 释放 motion-popup 模块资源（取消注册 hooks + UI actions + HMR/清理时调用） */
 export function disposeMotionPopup(): void {
     _unregisterLoadRefresh();
     _unregisterLibraryScanned();
-    // [fix P2] 注销 UI action 防止 HMR dispose 后闭包残留（ui-action-bridge 覆盖语义下
-    // 新模块会 .set 覆盖，但 dispose 顺序不当（先 disposeMotionPopup 再 HMR）时 Map 中
-    // 残留的是已 dispose 模块的闭包引用）
-    unregisterUiAction('getMotionMenu');
-    unregisterUiAction('refreshMotionRoot');
+    // [fix P2] 注销本模块注册的 UI action（identity token，防闭包残留）。
+    // 注：当前 disposeMotionPopup 尚无调用者（与 disposeEnvMenu/disposeSceneMenu
+    // 一致，菜单 dispose 未接入 core/init _initCleanup）；此处为将来接线预留的
+    // 正确清理语义，勿改回 delete-by-key（会误删替换模块注册）。
+    _unregisterGetMotionMenu();
+    _unregisterRefreshMotionRoot();
 }
 
 // ═══════════════════════════════════════════════════════════
