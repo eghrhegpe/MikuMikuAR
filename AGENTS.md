@@ -58,7 +58,7 @@ git reset HEAD~1                      # 撤销最近一条 commit，把改动放
 
 ## ADR 规则
 
-> 新 ADR 一律走叫号脚本：`node scripts/new-adr.mjs "标题" ["副标题"] ["状态"] [--reserve]`（双源取号 = 本地/远端最大号 +1、原子占位防并发、五段模板，slug 自动从标题生成，无 `--slug` 选项；未知参数报错退出），禁止手写编号。
+> 新 ADR 一律走叫号脚本：`node scripts/new-adr.mjs "标题" ["副标题"] ["状态"] [--slug kebab-name] [--related 关联内容] [--supersedes ADR-0XX,...] [--dry-run] [--reserve]`（双源取号 = 本地/远端最大号 +1、原子占位防并发、五段模板、`--supersedes` 自动在被取代方状态行标注「被 [ADR-NNN] 取代」且幂等、`--dry-run` 只算号不写文件；`--help` 退 0 / 未知 flag 退 1，绝不占号），禁止手写编号。
 > 状态值：`✅ 已采纳` / `🔄 部分采纳` / `🧊 已废弃` / `❌ 已取代`；状态变更同步更新登记表。
 > 新 ADR 落地时检查是否触及既有 ADR 决策；触及就在对方首部标注「被 [ADR-NNN] 取代」。
 
