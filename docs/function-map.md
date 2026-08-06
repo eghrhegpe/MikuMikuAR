@@ -2298,9 +2298,9 @@
 | `disposeSceneMenu()` | `menus/scene-menu:98` | 释放 scene-menu 模块资源（取消注册 hooks + UI actions + HMR/清理时调用） |
 | `getSceneMenu()` | `menus/scene-menu:80` | — |
 | `refreshSceneRoot()` | `menus/scene-menu:92` | — |
-| `saveScene()` | `menus/scene-menu:418` | 保存场景（自动编号到预设目录） |
-| `screenshotBatch()` | `menus/scene-menu:335` | 批量截图所有已加载模型 |
-| `screenshotCurrent()` | `menus/scene-menu:307` | 截图当前焦点模型 |
+| `saveScene()` | `menus/scene-menu:421` | 保存场景（自动编号到预设目录） |
+| `screenshotBatch()` | `menus/scene-menu:338` | 批量截图所有已加载模型 |
+| `screenshotCurrent()` | `menus/scene-menu:310` | 截图当前焦点模型 |
 | `showSceneMenu()` | `menus/scene-menu:80` | — |
 | `buildPhysicsDebugLevel()` | `menus/scene-physics-levels:155` | 构建物理调试子页（材质线框/骨骼 — WASM 相关，由模型详情页调用） |
 | `buildPhysicsLevel()` | `menus/scene-physics-levels:37` | 构建 WASM 物理子页（Bullet 骨髁物理 — per-model） |
@@ -2326,10 +2326,10 @@
 | `buildSettingsDiagnosticLevel()` | `menus/settings-diagnostic:509` | — |
 | `renderDiagnosticPanel()` | `menus/settings-diagnostic:479` | — |
 | `buildSettingsDownloadsLevel()` | `menus/settings-downloads:446` | — |
-| `buildEffectsSchema()` | `menus/settings-graphics:205` | — |
-| `buildFrameQualitySchema()` | `menus/settings-graphics:103` | — |
-| `buildPhysicsHudSchema()` | `menus/settings-graphics:310` | — |
-| `buildSettingsGraphicsLevel()` | `menus/settings-graphics:433` | — |
+| `buildEffectsSchema()` | `menus/settings-graphics:204` | — |
+| `buildFrameQualitySchema()` | `menus/settings-graphics:102` | — |
+| `buildPhysicsHudSchema()` | `menus/settings-graphics:309` | — |
+| `buildSettingsGraphicsLevel()` | `menus/settings-graphics:432` | — |
 | `buildSettingsLanguageLevel()` | `menus/settings-language:7` | — |
 | `buildSettingsMediaLevel()` | `menus/settings-media:469` | — |
 | `buildSettingsResourcesLevel()` | `menus/settings-resources:520` | — |

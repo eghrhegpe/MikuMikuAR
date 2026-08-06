@@ -7,7 +7,6 @@ import { uiState, cardContainer, applyHudVisibility } from '../core/config';
 import { feedbackInfo } from '../core/feedback';
 import { showInfoToast } from '../core/toast';
 import { slideRow, addSectionTitle, addInlineToggleRow, addModeSlider } from '../core/ui-helpers';
-import { swallowError } from '../core/async';
 import { getCurrentRenderingMenu } from './menu';
 import {
     setPerformanceMode,

@@ -100,6 +100,9 @@ export function disposeSceneMenu(): void {
     _unregisterLibraryScanned();
     // [fix P2] 注销本模块注册的 UI action（identity token，防闭包残留；
     // 与 motion-popup disposeMotionPopup 的清理语义对齐）
+    // 注：当前 disposeSceneMenu 尚无调用者（与 disposeEnvMenu/disposeMotionPopup
+    // 一致，菜单 dispose 未接入 core/init _initCleanup）；此处为将来接线预留的
+    // 正确清理语义，勿改回 delete-by-key（会误删替换模块注册）。
     _unregisterScreenshotCurrent();
     _unregisterScreenshotBatch();
     _unregisterSaveScene();
