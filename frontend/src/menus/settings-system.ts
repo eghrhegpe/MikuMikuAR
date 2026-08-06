@@ -331,7 +331,14 @@ function buildCacheSchema(): MenuNode[] {
                         'lucide:trash-2',
                         t('settings.about.maintenance.clearExtract'),
                         false,
-                        () => void executeActionById('settings:set:clearextractcache', {})
+                        () =>
+                            void showConfirm(t('settings.about.maintenance.clearExtractConfirm')).then(
+                                (ok) => {
+                                    if (ok) {
+                                        void executeActionById('settings:set:clearextractcache', {});
+                                    }
+                                }
+                            )
                     );
                     if (getCachedCapabilities().systemDirOpen) {
                         slideRow(
@@ -355,14 +362,28 @@ function buildCacheSchema(): MenuNode[] {
                         'lucide:image',
                         t('settings.about.maintenance.clearThumbnail'),
                         false,
-                        () => void executeActionById('settings:set:clearthumbnail', {})
+                        () =>
+                            void showConfirm(t('settings.about.maintenance.clearThumbnailConfirm')).then(
+                                (ok) => {
+                                    if (ok) {
+                                        void executeActionById('settings:set:clearthumbnail', {});
+                                    }
+                                }
+                            )
                     );
                     slideRow(
                         inner,
                         'lucide:trash',
                         t('settings.about.maintenance.clearAll'),
                         false,
-                        () => void executeActionById('settings:set:clearallcache', {})
+                        () =>
+                            void showConfirm(t('settings.about.maintenance.clearAllConfirm')).then(
+                                (ok) => {
+                                    if (ok) {
+                                        void executeActionById('settings:set:clearallcache', {});
+                                    }
+                                }
+                            )
                     );
                 });
 
