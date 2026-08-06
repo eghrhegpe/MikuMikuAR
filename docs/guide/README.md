@@ -9,33 +9,8 @@
 
 ## 目录
 
-| 功能 | 入口 | 状态 |
-|------|------|------|
-| [模型导入](./import-model.md) | 主界面 → 模型 | 🟢 已建档 |
-| [动作与播放](./motion-playback.md) | 动作面板 | 🟢 已建档 |
-| [程序化动作](./proc-motion.md) | 动作面板 → 程序化动作（`motion:proc-library`） | 🟢 已建档 |
-| [场景保存与恢复](./scene-save.md) | 自动 / 场景菜单 → 预设场景 | 🟢 已建档 |
-| [换装](./outfit.md) | 模型详情 → 换装 | 🟢 已建档 |
-| [布料物理](./physics.md) | 场景菜单 → 物理（`scene:physics`） | 🟢 已建档 |
-| [风力与粒子](./wind-particles.md) | 环境弹窗 → 风 / 粒子 | 🟢 已建档 |
-| [环境氛围](./env-atmosphere.md) | 环境弹窗 → 雾 / 云 / 后处理 | 🟢 已建档 |
-| [AI 助手](./ai-assistant.md) | 主界面 → AI 助手（Ctrl+8） | 🟢 已建档 |
-| [相机操作](./camera-control.md) | 动作面板 → 相机 | 🟢 已建档 |
-| [姿势工作室](./pose-studio.md) | 动作面板 → 更多 → 姿势工作室（`motion:poseStudio`） | 🟢 已建档 |
-| [视线追踪](./gaze-tracking.md) | 动作面板 → 更多 → 视线追踪（`motion:gaze`） | 🟢 已建档 |
-| [外部动作导入](./external-import.md) | 动作面板 → 更多 → 外部动作导入（`motion:retarget`） | 🟢 已建档 |
-| [道具](./props.md) | 模型库加载 → 骨骼附属（原独立面板已取消） | 🟢 已建档 |
-| [拖拽模式](./drag-mode.md) | 场景菜单 → 拖拽模式（`scene:dragMode`） | 🟢 已建档 |
-| [舞台渲染](./stage.md) | 场景菜单 → 舞台（`scene:render:stage`） | 🟢 已建档 |
-| [舞台灯光](./stage-lights.md) | 场景菜单 → 舞台灯光 | 🟢 已建档 |
-| [天空设置](./sky.md) | 环境弹窗 → 天空 | 🟢 已建档 |
-| [地面设置](./ground.md) | 场景菜单 → 地面 | 🟢 已建档 |
-| [水面设置](./env-water.md) | 场景菜单 → 水面（`scene:water`） | 🟢 已建档 |
-| [环境预设](./env-presets.md) | 环境弹窗 → 预设 | 🟢 已建档 |
-| [设置](./settings.md) | 主界面 → 设置 | 🟢 已建档 |
-| [实验功能](./experimental.md) | 环境弹窗 → 实验（`env:experimental`） | 🟢 已建档 |
-
-> ✅ 全部已上线功能均有独立指南页（镜子见[镜面反射](./mirror.md)，阴影见[阴影设置](./shadow.md)）。
+> 全量指南索引（28 篇，自动生成、含每页说明）见 **[index.md](./index.md)**——新指南建档后 `npm run gen:docsindex` 自动入列，本 README 不再维护清单。
+> 每篇指南页首部含「打开方式」（菜单路径 / 快捷键 / 入口按钮）。
 
 ## 网站格式规范（VitePress）
 
