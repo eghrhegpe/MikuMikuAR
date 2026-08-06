@@ -94,10 +94,15 @@ export { refreshSceneRoot } from './scene-menu-state';
 // 库扫描完成时刷新菜单（通过注册表统一监听，替代独立 addDisposableListener）
 const _unregisterLibraryScanned = registerLibraryScannedHook(() => reRenderSceneMenu());
 
-/** 释放 scene-menu 模块资源（取消注册 hooks + HMR/清理时调用） */
+/** 释放 scene-menu 模块资源（取消注册 hooks + UI actions + HMR/清理时调用） */
 export function disposeSceneMenu(): void {
     _unregisterLoadRefresh();
     _unregisterLibraryScanned();
+    // [fix P2] 注销本模块注册的 UI action（identity token，防闭包残留；
+    // 与 motion-popup disposeMotionPopup 的清理语义对齐）
+    _unregisterScreenshotCurrent();
+    _unregisterScreenshotBatch();
+    _unregisterSaveScene();
 }
 
 // ======== Mirror Level ========
@@ -321,7 +326,10 @@ export async function screenshotCurrent(): Promise<void> {
 }
 
 // [doc:adr-238] 注册截图行为供 core 快捷键层经桥调用（切断 core→menus 反向边）
-registerUiAction('screenshotCurrent', () => screenshotCurrent());
+// [fix P2] 保存 registerUiAction 返回的身份 token，disposeSceneMenu 时注销
+const _unregisterScreenshotCurrent = registerUiAction('screenshotCurrent', () =>
+    screenshotCurrent()
+);
 
 /** 批量截图所有已加载模型 */
 export async function screenshotBatch(): Promise<void> {
@@ -470,5 +478,5 @@ function handleSceneAction(row: PopupRow): void {
 // Wire up events in main.ts:243-244 — do NOT re-register here.
 
 // [doc:adr-238] 注册截图/保存行为供 core/action-defs 经 ui-action-bridge 调用
-registerUiAction('screenshotBatch', () => screenshotBatch());
-registerUiAction('saveScene', () => saveScene());
+const _unregisterScreenshotBatch = registerUiAction('screenshotBatch', () => screenshotBatch());
+const _unregisterSaveScene = registerUiAction('saveScene', () => saveScene());
