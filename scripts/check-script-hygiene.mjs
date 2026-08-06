@@ -76,7 +76,25 @@ function checkExitCode(text) {
 
 const INLINE_WALK_RE = /^function walk\(|^const walk\s*=/m;
 const INLINE_RG_RE = /^function rg\(|^const rg\s*=|execFileSync\([^)]*['"]rg['"]/m;
-const INLINE_BOILERPLATE_RE = /path\.resolve\(path\.dirname\(fileURLToPath\(import\.meta\.url\)\)\)|const __dirname = path\.dirname\(fileURLToPath\(import\.meta\.url\)\);\r?\nconst ROOT = path\.resolve\(__dirname, '\.\.'\)/;
+// [P2 2026-08-07] 放宽内联 ROOT 样板识别：原正则只匹配两种精确字面形态，
+// 仓库 14 个脚本的 `dirname(fileURLToPath(import.meta.url))` /
+// `fileURLToPath(new URL(".", import.meta.url))` / `path.dirname(__filename)`
+// 三种形态全部漏检 → 该口径零检出空转、门禁名不副实。现覆盖三种形态；
+// 存量 14 个历史内联脚本列入 KNOWN_INLINE_BOILERPLATE 豁免（Phase 2 已知债），
+// 新脚本内联仍告警。
+const INLINE_BOILERPLATE_RE =
+  /(?:path\.)?dirname\(fileURLToPath\(import\.meta\.url\)\)|fileURLToPath\(new URL\s*\(\s*["']\.["']\s*,\s*import\.meta\.url\s*\)\)|path\.dirname\(__filename\)/;
+/** 存量历史内联 ROOT 脚本（放宽后豁免；新脚本内联才告警）。 */
+const KNOWN_INLINE_BOILERPLATE = new Set([
+  'check-adr-health.mjs', 'check-adr-status.mjs', 'check-adr-technical-debt.mjs',
+  'check-boolean-naming.mjs', 'check-circular.mjs', 'check-deadcode-baseline.mjs',
+  'check-diff-coverage.mjs', 'check-env-parity.mjs', 'check-layering.mjs',
+  'check-schema-groups.mjs', 'diagnose.mjs', 'gen-icon-bundle.mjs',
+  'goerr-lint.mjs', 'i18n-check.mjs',
+  // 元脚本自身：注释/正则描述被检模式字样（`dirname(fileURLToPath(...))` 等），
+  // 非真实内联（实际 import ROOT），且列入后自举性保持通过
+  'check-script-hygiene.mjs',
+]);
 
 // 领域收集器特征：带显式扩展名过滤 / 跳过集合 / 回调的专用 walk 视为合法内联，不告警。
 const DOMAIN_WALK_RE =
@@ -98,14 +116,15 @@ function isDomainWalk(text) {
   return !!win && DOMAIN_WALK_RE.test(win);
 }
 
-function checkSharedLayer(text) {
+function checkSharedLayer(file, text) {
   const out = [];
   if (INLINE_WALK_RE.test(text) && !isDomainWalk(text)) {
     out.push('内联 walk() 定义（应 import 共享层 _lib/，如 _lib/scan-files.mjs）');
   }
   if (INLINE_RG_RE.test(text)) out.push('内联 rg() 定义（应 import 共享层 _lib/，如 _lib/ripgrep.mjs）');
-  if (INLINE_BOILERPLATE_RE.test(text)) {
-    out.push('内联 ROOT 样板 path.resolve(dirname(fileURLToPath(...)))（新脚本应 import 共享层 _lib/ 的 ROOT/getRoot）');
+  // [P2 2026-08-07] 豁免存量历史内联脚本（Phase 2 已知债），新脚本内联 ROOT 才告警
+  if (INLINE_BOILERPLATE_RE.test(text) && !KNOWN_INLINE_BOILERPLATE.has(file)) {
+    out.push('内联 ROOT 样板 dirname(fileURLToPath(import.meta.url)) 等（新脚本应 import 共享层 _lib/ 的 ROOT/getRoot）');
   }
   return out;
 }
@@ -174,7 +193,7 @@ function main() {
     const text = fs.readFileSync(path.join(SCRIPTS_DIR, f), 'utf8');
     const issues = [
       ...checkExitCode(text).map((m) => `${f}: ${m}`),
-      ...checkSharedLayer(text).map((m) => `${f}: ${m}`),
+      ...checkSharedLayer(f, text).map((m) => `${f}: ${m}`),
       ...checkJsonContract(f, text).map((m) => `${f}: ${m}`),
       ...checkHeader(f, text),
     ];

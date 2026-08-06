@@ -75,7 +75,7 @@
 | `comment-checker.mjs` | 注释质量检查（AI 废话/空 JSDoc/TODO 无编号/调试残留） |
 | `goerr-lint.mjs` | Go 错误处理 lint（ADR-117 信封规范） |
 | `i18n-check.mjs` | i18n 五语言包 key parity/占位符/漏译/清单漂移 |
-| `link-checker.mjs` | Markdown 链接检查（内部链接目标存在性） |
+| `link-checker.mjs` | Markdown 链接检查（内部链接目标存在性）；**断链严格门禁**（`npm run link:check --strict`，CI/pre-push 阻断）；Python 版 `tests/test_markdown_links.py` 为契约测试（broken 仅 INFO 不阻断）——解析规则以 JS 版为准 |
 | `diagnose.mjs` | 全量项目诊断编排（多检查聚合） |
 
 ### 构建 / 发布

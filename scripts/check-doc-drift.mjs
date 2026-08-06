@@ -140,16 +140,23 @@ function checkTreeIntegrity() {
 function checkAdrIndex() {
   const dir = path.join(ROOT, CONFIG.adrDir);
   const files = fs.existsSync(dir) ? fs.readdirSync(dir) : [];
+  // [P3 2026-08-07] 支持子编号 ADR（adr-061.1-*）：旧正则 `adr-(\d+)-` 把 061.1 截成 061，
+  // 最新 ADR 为子编号时 max 取错。改 `[\d.]+` + parseFloat，与 _lib/frontmatter.mjs parseAdrHeader 对齐。
   const nums = files
     .map((f) => {
-      const m = f.match(/adr-(\d+)-/);
-      return m ? parseInt(m[1], 10) : null;
+      const m = f.match(/adr-([\d.]+)-/);
+      return m ? parseFloat(m[1]) : null;
     })
     .filter((n) => n !== null);
   if (nums.length === 0) return { max: 0, statusMentionsMax: true };
   const max = nums.sort((a, b) => a - b)[nums.length - 1];
   const status = read(CONFIG.statusDoc);
-  const statusMentionsMax = new RegExp('ADR-0*' + max).test(status);
+  // [P3 2026-08-07] 词边界判定：旧 `ADR-0*`+max 子串匹配会被更大编号前缀（如 ADR-253 含 ADR-25）假通过。
+  // 提取 status 中全部 ADR 编号做精确比对（parseFloat 兼容子编号）。
+  const statusNums = [...status.matchAll(/ADR-([\d.]+)/g)]
+    .map((m) => parseFloat(m[1]))
+    .filter((n) => !Number.isNaN(n));
+  const statusMentionsMax = statusNums.includes(max);
   return { max, statusMentionsMax };
 }
 
@@ -624,6 +631,14 @@ function main() {
     errors.push(`架构目录树引用了磁盘不存在的文件：${s}`);
   }
 
+  // [P3 2026-08-07] 关键文档缺失不再静默：read() 对缺失文件返回 ''，
+  // architecture.md/function-map.md 被删时 checkTreeIntegrity/checkSymbolCoverage 全部静默通过。
+  for (const [key, rel] of [['architecture.md', CONFIG.archDoc], ['function-map.md', CONFIG.funcDoc]]) {
+    if (!fs.existsSync(path.join(ROOT, rel))) {
+      errors.push(`关键文档缺失：${rel}（依赖它的树完整性/符号覆盖率检查已跳过）`);
+    }
+  }
+
   const adr = checkAdrIndex();
   if (!adr.statusMentionsMax) {
     errors.push(`status.md 未提及最新 ADR-${adr.max}（ADR 索引可能落后）`);
@@ -680,10 +695,14 @@ function main() {
     }
 
     // 自动更新基线（只在指标改善时，且非 --baseline 只读模式）
+    // [P3 2026-08-07] 存在 ERROR 时不自动登记 INFO 基线：否则「架构树断链等 ERROR 未修
+    // 完，仅因符号覆盖改善就覆写基线」会掩盖问题（审核发现基线更新含回归仍 exit 0 的隐患）。
     if (!baselineMode && baselineChanged) {
       const improved = BASELINE_TRACKED.some(([k]) => infoCounts[k] < baseline[k]);
-      if (improved) {
+      if (improved && errors.length === 0) {
         writeBaseline(infoCounts);
+      } else if (improved && errors.length > 0) {
+        infoWarnings.push('INFO 指标改善但存在 ERROR，未自动更新基线（先修复 ERROR 再登记）');
       }
     }
   } else if (!baselineMode) {

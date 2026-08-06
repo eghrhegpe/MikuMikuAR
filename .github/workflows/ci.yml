@@ -186,8 +186,14 @@ jobs:
       - name: Run config syntax test
         run: python tests/test_config_syntax.py
 
-      - name: Check markdown links
+      - name: Check markdown links (Python contract test)
         run: python tests/test_markdown_links.py
+
+      - name: Check markdown links (JS strict gate)
+        # [P1 2026-08-07] 断链严格门禁接入 CI：Python 版仅契约测试不阻断 broken，
+        # 此前断链非零退出只在本地 `npm run check:docs` 生效 → CI 假绿。
+        # JS `link-checker --strict` 作为阻断门禁，与 pre-push 同源。
+        run: npm run link:check
 
   # ============================================================
   # Scripts — Hygiene Gate (P6 convergence guard)
