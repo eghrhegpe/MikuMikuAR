@@ -62,6 +62,7 @@ symbols:
   - autoNumberedSave
   - deletePresetFile
   - envPresetsDir
+  - indexRelevantChanged
   - modelPresetDir
   - motionPresetDir
   - parseLibraryIndex

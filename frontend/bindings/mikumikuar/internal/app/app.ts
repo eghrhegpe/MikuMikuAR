@@ -750,6 +750,7 @@ export function SaveModelPreset(jsonStr: string, path: string): $CancellableProm
 
 /**
  * SaveModelPresetToLib saves a model preset JSON to the library with the given name.
+ * Uses tmp+rename for atomicity, matching writeConfig's crash-safe write pattern.
  */
 export function SaveModelPresetToLib(name: string, jsonStr: string): $CancellablePromise<void> {
     return $Call.ByID(3034880824, name, jsonStr);
