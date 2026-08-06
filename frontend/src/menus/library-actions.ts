@@ -217,19 +217,25 @@ function startReplaceModel(m: LibraryModel, replaceId: string): void {
                 }
                 // [doc:adr-150] 在 removeModel 旧模型之前应用继承状态（此时新模型已注册，
                 // 焦点已由 model-loader 切换；旧模型 inst 仍可查询）
-                if (snapshot) {
-                    applyInheritedState(handle.id, snapshot);
-                    // [doc:adr-150] sceneMotionId 赋值后手动触发 VMD 应用：
-                    // model-loader 已按新模型默认 motionSlots 加载了 VMD，
-                    // 若继承的 sceneMotionId 对应不同动作，需通过 applyIntentToModel 重新应用
-                    if (snapshot.sceneMotionId) {
-                        const intent = getSceneMotions().find(
-                            (m) => m.id === snapshot.sceneMotionId
-                        );
-                        if (intent) {
-                            applyIntentToModel(handle.id, intent, getMotionGen());
+                // [fix P2] 继承应用包 try-catch：失败时降级为「不继承但继续替换」，
+                // 避免异常逃逸到 .catch 报「加载失败」而 removeModel 未执行 → 新旧模型并存。
+                try {
+                    if (snapshot) {
+                        applyInheritedState(handle.id, snapshot);
+                        // [doc:adr-150] sceneMotionId 赋值后手动触发 VMD 应用：
+                        // model-loader 已按新模型默认 motionSlots 加载了 VMD，
+                        // 若继承的 sceneMotionId 对应不同动作，需通过 applyIntentToModel 重新应用
+                        if (snapshot.sceneMotionId) {
+                            const intent = getSceneMotions().find(
+                                (m) => m.id === snapshot.sceneMotionId
+                            );
+                            if (intent) {
+                                applyIntentToModel(handle.id, intent, getMotionGen());
+                            }
                         }
                     }
+                } catch (inheritErr) {
+                    logWarn('library-actions', 'applyInheritedState failed, replaced without inherit', inheritErr);
                 }
                 removeModel(replaceId);
                 // [doc:adr-127] 破坏性操作场景级撤销保护
@@ -453,9 +459,14 @@ function replaceMotion(m: LibraryModel): void {
         try {
             // [adr-169] 原位替换默认动作是破坏性操作（旧默认被移除）：操作前快照，成功后提供撤销
             const snap = pushUndoSnapshot();
-            await withLoadingStatus('library.loadingMotion', 'status.done', () =>
+            // [fix P2] withLoadingStatus 吞错返回 undefined：加载失败时不得继续
+            // 执行 triggerAutoSave/offerSceneUndoAndRefresh（否则「动作已替换」误报 + 误保存）
+            const ok = await withLoadingStatus('library.loadingMotion', 'status.done', () =>
                 loadManager.load({ kind: 'vmd', path, modelId: targetId })
             );
+            if (!ok) {
+                return;
+            }
             triggerAutoSave();
             offerSceneUndoAndRefresh(t('motion.motionReplaced', { name: motionName }), snap, () =>
                 getMotionMenu()?.reRender()
