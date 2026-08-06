@@ -239,12 +239,12 @@
 | `debounce()` | `core/debounce:8` | 函数防抖：在等待指定时间后才执行函数，如果在等待期间再次调用则重置计时器。 |
 | `deepClone()` | `core/deep-clone:9` | 深拷贝对象（基于 JSON 序列化）。 |
 | `setupE2ECapture()` | `core/dev-hooks:20` | — |
-| `DialogOptions()` | `core/dialog:40` | — |
-| `Prompt2Options()` | `core/dialog:285` | — |
-| `disposeOverlay2()` | `core/dialog:330` | 移除 showPrompt2 创建的 overlay2 DOM（供 HMR 清理入口调用）。 |
-| `showConfirm()` | `core/dialog:246` | Show a confirmation dialog. |
-| `showPrompt()` | `core/dialog:262` | Show a prompt dialog. |
-| `showPrompt2()` | `core/dialog:344` | 双字段输入对话框。返回 [value1, value2] 或 null（取消）。 |
+| `DialogOptions()` | `core/dialog:49` | — |
+| `Prompt2Options()` | `core/dialog:294` | — |
+| `disposeOverlay2()` | `core/dialog:366` | 移除 showPrompt2 创建的 overlay2 DOM（供 HMR 清理入口调用）。 |
+| `showConfirm()` | `core/dialog:255` | Show a confirmation dialog. |
+| `showPrompt()` | `core/dialog:271` | Show a prompt dialog. |
+| `showPrompt2()` | `core/dialog:385` | 双字段输入对话框。返回 [value1, value2] 或 null（取消）。 |
 | `detachSharedTextures()` | `core/dispose-helpers:64` | 批量 dispose 一组材质**之前**调用：摘除这组材质对「仍被其他存活材质引用」的纹理的引用， 使随后的 `material.dispose(_, true)` 不会误杀共享 |
 | `safeDispose()` | `core/dispose-helpers:29` | 安全释放对象并置空。 |
 | `ARIA_ATTR()` | `core/dom-contract:32` | aria 属性名常量（ARIA_ATTR.valuemin 等） |
@@ -890,12 +890,12 @@
 | `setScriptedSubMode()` | `scene/camera/camera-state:190` | — |
 | `setSurroundPaused()` | `scene/camera/camera-state:238` | — |
 | `setViewMatrixHandle()` | `scene/camera/camera-state:339` | — |
-| `animateCameraVmd()` | `scene/camera/camera-vmd:87` | Animate the VMD camera to a given 30fps frame time. |
-| `clearCameraVmd()` | `scene/camera/camera-vmd:68` | — |
-| `createVmdCamera()` | `scene/camera/camera-vmd:94` | 创建 VMD 相机（若已存在则复用）。供 camera.ts switchCameraMode 在 vmd 分支使用。 |
-| `hasCameraAnimationHandle()` | `scene/camera/camera-vmd:105` | VMD 相机动画句柄是否就绪（switchCameraMode 在 vmd 分支前置检查）。 |
-| `loadCameraVmd()` | `scene/camera/camera-vmd:33` | Load camera animation from a VMD (MmdAnimation) and create an MmdCamera. |
-| `setSwitchCameraModeCallback()` | `scene/camera/camera-vmd:28` | camera.ts 启动时注入 switchCameraMode 回调。 |
+| `animateCameraVmd()` | `scene/camera/camera-vmd:92` | Animate the VMD camera to a given 30fps frame time. |
+| `clearCameraVmd()` | `scene/camera/camera-vmd:72` | — |
+| `createVmdCamera()` | `scene/camera/camera-vmd:99` | 创建 VMD 相机（若已存在且未销毁则复用）。供 camera.ts switchCameraMode 在 vmd 分支使用。 |
+| `hasCameraAnimationHandle()` | `scene/camera/camera-vmd:118` | VMD 相机动画句柄是否就绪（switchCameraMode 在 vmd 分支前置检查）。 |
+| `loadCameraVmd()` | `scene/camera/camera-vmd:36` | Load camera animation from a VMD (MmdAnimation) and create an MmdCamera. |
+| `setSwitchCameraModeCallback()` | `scene/camera/camera-vmd:31` | camera.ts 启动时注入 switchCameraMode 回调。 |
 | `CameraState()` | `scene/camera/camera:557` | — |
 | `LEGACY_MODE_MAP()` | `scene/camera/camera:108` | ADR-100 §6.1 — 旧模式 → 双轴映射（迁移 / shim 共用）。 |
 | `_syncAxesFromMode()` | `scene/camera/camera:238` | ADR-100：由旧 mode 派生双轴状态。switchCameraMode 提交 _cameraMode 时同步调用，作为唯一写入点。 |
@@ -1762,7 +1762,7 @@
 | `StageLightState()` | `scene/render/lighting:54` | — |
 | `StageLightType()` | `scene/render/lighting:52` | — |
 | `_defaultStageLightState()` | `scene/render/lighting:104` | — |
-| `disposeLighting()` | `scene/render/lighting:489` | 整体清理光照模块（场景销毁时调用） |
+| `disposeLighting()` | `scene/render/lighting:491` | 整体清理光照模块（场景销毁时调用） |
 | `getDirLight()` | `scene/render/lighting:148` | 主方向光（未初始化时为 null）。 |
 | `getHemiLight()` | `scene/render/lighting:143` | 主半球光（未初始化时为 null）。导出 getter 替代原 `export let`，消除导出可变绑定。 |
 | `getLightState()` | `scene/render/lighting:240` | — |
@@ -1771,7 +1771,7 @@
 | `rebakeEnvBrightness()` | `scene/render/lighting:232` | [doc:adr-132] 当 envBrightness 变化时 rebake 存储的光照强度 |
 | `setLightState()` | `scene/render/lighting:321` | 写入灯光状态。守卫未就绪时 logWarn + 返回 false（不再静默吞写）， 使「UI 可操作但 state 未生效」可被观测（@dom 测试环境无灯光对象时会命中）。 |
 | `setSkipLightAutoSave()` | `scene/render/lighting:153` | 预设动画期间临时抑制 setLightState 内的自动保存，由 applyEnvPreset 控制 |
-| `transitionLighting()` | `scene/render/lighting:401` | 平滑过渡当前灯光到目标灯光参数，默认 2 秒。 |
+| `transitionLighting()` | `scene/render/lighting:403` | 平滑过渡当前灯光到目标灯光参数，默认 2 秒。 |
 | `isAutoDegradingReflection()` | `scene/render/performance-env-bridge:18` | env-bridge.ts 调用此函数检查当前是否处于自动降级反射质量变更中 |
 | `registerSetEnvState()` | `scene/render/performance-env-bridge:26` | env-bridge.ts 初始化时注册 setEnvState 函数 |
 | `setAutoDegradingReflection()` | `scene/render/performance-env-bridge:13` | performance.ts 调用此函数通知 env-bridge 当前反射质量变更来自自动降级 |
@@ -1800,14 +1800,14 @@
 | `initRenderer()` | `scene/render/renderer:113` | — |
 | `isRenderReady()` | `scene/render/renderer:635` | [fix:P1] 渲染管线是否就绪（@dom/e2e 环境无 pipeline/scene 时返回 false，供 UI/测试预检跳过守卫域）。 |
 | `isRendererReady()` | `scene/render/renderer:132` | 检查渲染器是否已初始化。外部代码在调用 setRenderState 前可先检查。 |
-| `isSSRActive()` | `scene/render/renderer:917` | SSR 管线当前是否激活（供 env-reflection 检查，尊重用户手动关闭）。 |
+| `isSSRActive()` | `scene/render/renderer:920` | SSR 管线当前是否激活（供 env-reflection 检查，尊重用户手动关闭）。 |
 | `pipeline()` | `scene/render/renderer:81` | — |
-| `reattachPipeline()` | `scene/render/renderer:872` | Re-attach the rendering pipeline to the current active camera (call after camera switch). |
-| `rebuildOutlineState()` | `scene/render/renderer:970` | 当模型注册表更新时，重新应用边缘高亮状态。 |
+| `reattachPipeline()` | `scene/render/renderer:875` | Re-attach the rendering pipeline to the current active camera (call after camera switch). |
+| `rebuildOutlineState()` | `scene/render/renderer:973` | 当模型注册表更新时，重新应用边缘高亮状态。 |
 | `registerCelGroundCoupling()` | `scene/render/renderer:105` | — |
 | `setRenderState()` | `scene/render/renderer:665` | — |
-| `setSSRFromReflection()` | `scene/render/renderer:925` | 反射系统专用 SSR 控制接口（不触发 auto-save）。 |
-| `transitionRenderState()` | `scene/render/renderer:702` | 平滑过渡渲染状态到目标值，默认 2 秒。 |
+| `setSSRFromReflection()` | `scene/render/renderer:928` | 反射系统专用 SSR 控制接口（不触发 auto-save）。 |
+| `transitionRenderState()` | `scene/render/renderer:705` | 平滑过渡渲染状态到目标值，默认 2 秒。 |
 | `GizmoAttachOptions()` | `scene/render/transform-gizmo:94` | — |
 | `GizmoType()` | `scene/render/transform-gizmo:17` | — |
 | `attachGizmo()` | `scene/render/transform-gizmo:114` | 为指定 Node 激活变换 Gizmo。 |

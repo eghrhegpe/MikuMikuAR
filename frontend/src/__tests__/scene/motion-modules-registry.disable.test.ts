@@ -89,6 +89,43 @@ describe('setTargetModel 作用域切换', () => {
         expect(getModuleState('m1', 'body-posture').enabled).toBe(true);
         expect(getModuleState('m2', 'body-posture').enabled).toBe(true);
     });
+
+    it('切换新模型时从场景级配置启用模块（round-12 P2#3 单次 setState 路径）', () => {
+        shared.mockModelRegistry.set('m1', makeModel('m1'));
+        shared.mockModelRegistry.set('m2', makeModel('m2'));
+        initMotionModules();
+        // 场景级配置含已启用模块（随动作走）
+        shared.mockActiveMotion.value = {
+            vmdPath: 'test.vmd',
+            vmdName: 'test',
+            vmdLayers: [],
+            source: 'vmd',
+            motionModules: [
+                { id: 'body-posture', enabled: true, params: { tilt: 12, bend: -3, twist: 5 } },
+            ],
+        };
+        setTargetModel('m2');
+
+        // 新模型模块被启用（setState 单次调用：enabled + params 一次写入并 bake）
+        expect(getModuleState('m2', 'body-posture').enabled).toBe(true);
+        expect(getModuleState('m2', 'body-posture').params.tilt).toBe(12);
+        expect(shared.setBoneOverrideSpy).toHaveBeenCalled();
+    });
+
+    it('切换 null 目标时清理旧模型已启用模块', () => {
+        shared.mockModelRegistry.set('m1', makeModel('m1'));
+        initMotionModules();
+        setActiveMotionWithModules();
+        setTargetModel('m1'); // 先设当前模型，使切换 null 时走清理路径
+        const mod = createModule('body-posture', 'm1')!;
+        mod.enable();
+
+        shared.clearBoneOverrideSpy.mockClear();
+        setTargetModel(null);
+
+        // 旧模型模块被 disable → clearBoneOverride 被调用
+        expect(shared.clearBoneOverrideSpy).toHaveBeenCalled();
+    });
 });
 
 describe('clearAllModulesForModel', () => {
