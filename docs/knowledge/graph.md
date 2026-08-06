@@ -142,10 +142,6 @@ graph TD;
         c108["Go ZIP 解压与缓存管理"]
     end
 
-    subgraph cat_未分类["未分类"]
-        c109["tier-review"]
-    end
-
     subgraph adr_group["决策（ADR）"]
         a3["ADR-003"]
         a17["ADR-017"]

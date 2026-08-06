@@ -24,6 +24,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { parseArgs } from './_lib/parse-args.mjs';
 import { ROOT } from './_lib/scan-files.mjs';
+// [P2-2] 知识卡常量（标签/非卡片清单）统一走共享库——本文件此前缺 tier-review.md（漂移点）
+import { CATEGORY_LABEL, KNOWLEDGE_NON_CARDS as NON_CARDS } from './_lib/knowledge-cards.mjs';
 
 const DOCS = path.join(ROOT, 'docs');
 const KNOW_DIR = path.join(DOCS, 'knowledge');
@@ -32,19 +34,7 @@ const ADR_DIR = path.join(DOCS, 'adr');
 const BANNER =
   '<!-- 本文件由 scripts/gen-knowledge-graph.mjs 自动生成，请勿手改。重跑：npm run gen:knowgraph -->';
 
-const CATEGORY_LABEL = {
-  env: '环境系统',
-  scene: '场景编排',
-  physics: '物理系统',
-  rendering: '渲染系统',
-  motion: '动作系统',
-  ui: 'UI / 菜单',
-  core: '核心基础设施',
-  backend: '后端',
-};
-
-/** 索引/路由等非卡片文件（与 gen-docs-index.mjs 保持一致，graph.md 为本次新增） */
-const NON_CARDS = new Set(['index.md', 'README.md', 'routes.md', 'menu-map.md', 'graph.md']);
+// （CATEGORY_LABEL / NON_CARDS 来自 _lib/knowledge-cards.mjs 共享常量）
 
 /** 提取 frontmatter 单字段（仅扫描首个 --- 块）。 */
 function fm(text, key) {

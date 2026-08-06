@@ -24,7 +24,7 @@ const REFERENCE_LANGS = ['en', 'ja', 'ko', 'zh-TW'];
 
 const { strict, json , help, unknown} = parseArgs(process.argv.slice(2), { bools: ['strict', 'json'], strings: [], defaults: {} });
   if (help) {
-    const _src = fs.readFileSync(process.argv[1], 'utf-8');
+    const _src = readFileSync(process.argv[1], 'utf-8');
     const _s = _src.indexOf('/**');
     const _e = _src.indexOf('*/', _s);
     console.log(_src.slice(_s, _e + 2).replace(/^ \* ?/gm, '').trim());
@@ -113,6 +113,13 @@ if (phReport.length) {
     log(`\n⚠ ${phIssues} placeholder mismatch(es) across bundles:`);
     log(phReport.join('\n'));
     log('  These cause t() to silently leave {xxx} unreplaced at runtime.');
+    // [P2-2 fix] 与 missing/untranslated/langList 段同口径：文本模式 --strict 下也必须非零退出，
+    // 否则 pre-push/CI 实际使用的 `--strict` 对该类问题假绿放行（此前仅 --json --strict 生效）
+    if (strict && !json) {
+        console.error(`\n[i18n-check] --strict: ${phIssues} placeholder mismatch(es) → CI fails.`);
+        process.exit(1);
+    }
+    log('  (warning mode — non-blocking.)');
 } else {
     log('\n✅ All placeholder sets are consistent across bundles.');
 }

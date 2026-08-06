@@ -20,12 +20,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { parseArgs } from './_lib/parse-args.mjs';
 import { ROOT } from './_lib/scan-files.mjs';
+// [P2-2] 非知识卡清单统一走共享库
+import { KNOWLEDGE_NON_CARDS as NON_CARDS } from './_lib/knowledge-cards.mjs';
 
 const KNOW_DIR = path.join(ROOT, 'docs', 'knowledge');
-
-const NON_CARDS = new Set([
-  'README.md', 'index.md', 'routes.md', 'menu-map.md', 'graph.md', 'tier-review.md',
-]);
 
 /** 提取 frontmatter 块。 */
 function fmBlock(text) {

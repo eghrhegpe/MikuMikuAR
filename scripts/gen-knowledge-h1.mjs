@@ -19,13 +19,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { parseArgs } from './_lib/parse-args.mjs';
 import { ROOT } from './_lib/scan-files.mjs';
+// [P2-2] 非知识卡清单统一走共享库（此前四处复制、graph 缺 tier-review.md 已漂移）
+import { KNOWLEDGE_NON_CARDS as NON_CARDS } from './_lib/knowledge-cards.mjs';
 
 const KNOW_DIR = path.join(ROOT, 'docs', 'knowledge');
-
-/** 非知识卡文件（与 gen-docs-index.mjs 保持一致） */
-const NON_CARDS = new Set([
-  'README.md', 'index.md', 'routes.md', 'menu-map.md', 'graph.md', 'tier-review.md',
-]);
 
 /** 解析 frontmatter：返回 { name, body, h1Exists }。 */
 function parseCard(text) {

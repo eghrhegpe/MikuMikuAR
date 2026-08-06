@@ -27,6 +27,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { ROOT } from './_lib/scan-files.mjs';
+// [P2-1] frontmatter/ADR 首部解析统一走共享库（ADR 规则：各脚本各写一套 → _lib/frontmatter.mjs）
+import { parseFrontmatter, getScalar, getList, parseAdrHeader } from './_lib/frontmatter.mjs';
+// [P2-2] 知识卡常量（分类顺序/标签/非卡片清单）统一走共享库，杜绝多脚本复制漂移
+import { KNOWLEDGE_ORDER, CATEGORY_LABEL, KNOWLEDGE_NON_CARDS } from './_lib/knowledge-cards.mjs';
 // [fix] CLI 健壮性契约：--help 自吐 JSDoc 退 0 / 未知 flag 退 1（2026-08-06）
 const _HELP = new Set(['--help', '-h']);
 const _KNOWN = new Set(['--check']);
@@ -84,45 +88,17 @@ function href(rel) {
   return /[\s()]/.test(rel) ? `<${rel}>` : rel;
 }
 
-/** 提取 frontmatter 单字段（仅扫描首个 --- 块）。 */
+/** 提取 frontmatter 单字段（复用共享库，兼容 <...> 占位符与 # 注释）。 */
 function fm(text, key) {
-  const m = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
-  if (!m) return undefined;
-  const line = m[1].match(new RegExp('^' + key + '\\s*:\\s*(.+)$', 'm'));
-  if (!line) return undefined;
-  const v = line[1].trim();
-  // 模板占位符 <a|b|c> 视为未填写
-  return v.startsWith('<') ? undefined : v;
+  return getScalar(parseFrontmatter(text), key);
 }
 
 /**
- * 提取 frontmatter 列表字段的全部项（`key:` 后逐行 `- 项`）。
+ * 提取 frontmatter 列表字段（复用共享库）。
  * 兼容单行形式（`key: 值`）；忽略 `#` 注释与模板占位符 `<...>`。
  */
 function fmList(text, key) {
-  const m = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
-  if (!m) return [];
-  const lines = m[1].split(/\r?\n/);
-  const out = [];
-  let inList = false;
-  for (const line of lines) {
-    const head = line.match(new RegExp('^' + key + '\\s*:\\s*(.*)$'));
-    if (head) {
-      inList = true;
-      const inline = head[1].replace(/#.*$/, '').trim();
-      if (inline && !inline.startsWith('<')) out.push(inline);
-      continue;
-    }
-    if (!inList) continue;
-    const item = line.match(/^\s*-\s*(.+)$/);
-    if (item) {
-      const v = item[1].replace(/#.*$/, '').trim();
-      if (v && !v.startsWith('<')) out.push(v);
-    } else if (/^\S/.test(line)) {
-      inList = false; // 遇到下一个顶层键，列表结束
-    }
-  }
-  return out;
+  return getList(parseFrontmatter(text), key);
 }
 
 // ── 1. ADR 索引 ───────────────────────────────────────────
@@ -151,30 +127,17 @@ function adrBucket(status) {
   return '其他';
 }
 
-/** 复用 gen-status-index.mjs 的首部解析口径（编号 / 标题 / 状态）。 */
+/** 复用 _lib/frontmatter.mjs 的 parseAdrHeader 口径（编号 / 标题 / 状态 / 日期）。
+ *  兼容三种首部格式（blockquote/list/table）与无冒号标题；缺状态时保留「（未标注）」容错。 */
 function parseAdrHead(file) {
-  const text = read('adr', file);
-  const lines = text.split(/\r?\n/).slice(0, 20);
-  let num = null;
-  let title = '';
-  let status = '';
-  for (const line of lines) {
-    // 支持子编号,如 ADR-061.1(parseFloat 保持 61.1 与 61 不冲突)
-    const mT = line.match(/^#\s+ADR-([\d.]+):\s*(.+)/);
-    if (mT) {
-      num = parseFloat(mT[1]);
-      title = mT[2].trim();
-      continue;
-    }
-    const mS =
-      line.match(/^>\s*\*\*状态\*\*\s*[：:]\s*(.+)/) ||
-      line.match(/^[-*]\s*\*\*状态\*\*\s*[：:]\s*(.+)/) ||
-      line.match(/^\s*\*\*状态\*\*\s*[：:]\s*(.+)/) ||
-      line.match(/^\|\s*\*\*状态\*\*\s*\|\s*(.+?)\s*\|\s*$/);
-    if (mS) status = mS[1].trim();
-  }
-  if (num === null) return null;
-  return { num, file, title: title || file, status: status || '（未标注）' };
+  const hdr = parseAdrHeader(path.join(DOCS, 'adr', file));
+  if (hdr.error) return null;
+  return {
+    num: hdr.num,
+    file,
+    title: hdr.title || file,
+    status: hdr.status || '（未标注）',
+  };
 }
 
 /** 长状态串截断：ADR-220 等含大段进度描述，索引表只留首句。 */
@@ -244,20 +207,7 @@ function buildAdrIndex() {
 }
 
 // ── 2. 知识卡索引 ─────────────────────────────────────────
-
-const KNOWLEDGE_ORDER = ['env', 'scene', 'physics', 'rendering', 'motion', 'ui', 'core', 'backend'];
-const CATEGORY_LABEL = {
-  env: '环境系统',
-  scene: '场景编排',
-  physics: '物理系统',
-  rendering: '渲染系统',
-  motion: '动作系统',
-  ui: 'UI / 菜单',
-  core: '核心基础设施',
-  backend: '后端',
-};
-/** 非知识卡的目录成员（索引 / 路由表 / 机器生成地图），单列不参与分类统计。 */
-const KNOWLEDGE_NON_CARDS = new Set(['index.md', 'README.md', 'routes.md', 'menu-map.md', 'graph.md', 'tier-review.md']);
+// （KNOWLEDGE_ORDER / CATEGORY_LABEL / KNOWLEDGE_NON_CARDS 来自 _lib/knowledge-cards.mjs 共享常量）
 
 function buildKnowledgeIndex() {
   const cards = [];
@@ -641,7 +591,55 @@ const TARGETS = [
   { rel: 'audit/index.md', build: buildAuditIndex, label: '代码审核' },
 ];
 
+/**
+ * [P2-3] 校验 .vitepress/config.ts 的知识卡分类契约与 _lib/knowledge-cards.mjs 一致。
+ * config.ts 是 vitepress 构建侧独立解析（不 import 本 _lib），靠本断言守住「双源一致」：
+ * 分类顺序（KNOWLEDGE_ORDER）与非卡片清单（KNOWLEDGE_NON_CARDS）漂移即报错。
+ * 返回差异字符串数组；空数组 = 一致。
+ */
+function verifyVitepressContract() {
+  const cfgPath = path.join(DOCS, '.vitepress', 'config.ts');
+  if (!fs.existsSync(cfgPath)) return [`${cfgPath} 不存在`];
+  const src = fs.readFileSync(cfgPath, 'utf8');
+  const diff = [];
+
+  // KNOWLEDGE_ORDER（数组字面量）
+  const orderM = src.match(/KNOWLEDGE_ORDER\s*=\s*\[([^\]]*)\]/);
+  if (!orderM) {
+    diff.push('config.ts 未找到 KNOWLEDGE_ORDER');
+  } else {
+    const cfgOrder = orderM[1].split(',').map((s) => s.trim().replace(/['"]/g, '')).filter(Boolean);
+    if (JSON.stringify(cfgOrder) !== JSON.stringify(KNOWLEDGE_ORDER)) {
+      diff.push(`config.ts KNOWLEDGE_ORDER 漂移：config=${JSON.stringify(cfgOrder)} 期望=${JSON.stringify(KNOWLEDGE_ORDER)}`);
+    }
+  }
+
+  // KNOWLEDGE_NON_CARDS（new Set([...]) 字面量）
+  const nonM = src.match(/KNOWLEDGE_NON_CARDS\s*=\s*new Set\(\[([^\]]*)\]\)/);
+  if (!nonM) {
+    diff.push('config.ts 未找到 KNOWLEDGE_NON_CARDS');
+  } else {
+    const cfgNon = nonM[1].split(',').map((s) => s.trim().replace(/['"]/g, '')).filter(Boolean).sort();
+    const expNon = [...KNOWLEDGE_NON_CARDS].sort();
+    if (JSON.stringify(cfgNon) !== JSON.stringify(expNon)) {
+      diff.push(`config.ts KNOWLEDGE_NON_CARDS 漂移：config=${JSON.stringify(cfgNon)} 期望=${JSON.stringify(expNon)}`);
+    }
+  }
+
+  return diff;
+}
+
 function main() {
+  // [P2-3] 先校验 vitepress config 双源一致性（写入与 --check 均提示；--check 计入 stale）
+  const cfgDiffs = verifyVitepressContract();
+  if (cfgDiffs.length) {
+    console.error('❌ .vitepress/config.ts 知识卡分类契约与 _lib/knowledge-cards.mjs 不一致：');
+    for (const d of cfgDiffs) console.error(`   - ${d}`);
+    console.error('   请同步 docs/.vitepress/config.ts 的 KNOWLEDGE_ORDER / KNOWLEDGE_NON_CARDS');
+    if (CHECK) process.exit(1);
+  } else if (!CHECK) {
+    console.log('✅ .vitepress/config.ts 知识卡分类契约一致');
+  }
   let stale = 0;
   for (const t of TARGETS) {
     const abs = path.join(DOCS, t.rel);

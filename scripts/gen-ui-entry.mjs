@@ -23,6 +23,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { parseArgs } from './_lib/parse-args.mjs';
 import { ROOT } from './_lib/scan-files.mjs';
+// [P2-2] 非知识卡清单统一走共享库
+import { KNOWLEDGE_NON_CARDS as NON_CARDS } from './_lib/knowledge-cards.mjs';
 
 const KNOW_DIR = path.join(ROOT, 'docs', 'knowledge');
 
@@ -97,10 +99,7 @@ function main() {
     process.exit(1);
   }
 
-  // 非知识卡文件（与 gen-docs-index.mjs 保持一致），防止误改机器生成物
-  const NON_CARDS = new Set([
-    'README.md', 'index.md', 'routes.md', 'menu-map.md', 'graph.md', 'tier-review.md',
-  ]);
+  // 非知识卡文件来自 _lib/knowledge-cards.mjs 共享常量（NON_CARDS），防止误改机器生成物
 
   // 扫描 source_files 含 menus/ 或 ui/ 的 architecture 卡：
   // 缺 UI 入口的插入，已有旧格式（入口函数明细）的统一重写为一行引用。

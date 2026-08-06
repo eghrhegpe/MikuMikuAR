@@ -22,6 +22,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { parseArgs } from './_lib/parse-args.mjs';
 import { STATUS_CATEGORIES, TECHNICAL_DEBT_KEYWORDS } from './_lib/adr-status-categories.mjs';
+import { parseAdrHeader } from './_lib/frontmatter.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -38,7 +39,7 @@ const ADR_DIR = path.join(__dirname, '..', 'docs', 'adr');
 const KNOWN_MISSING_IDS = new Set([7, 8, 10, 23, 40, 68]);
 
 const _args = parseArgs(process.argv.slice(2), {
-  bools: ['verbose', 'json'],
+  bools: ['verbose', 'json', 'strict'],
 });
 if (_args.help) {
   const _src = fs.readFileSync(process.argv[1], 'utf-8');
@@ -53,6 +54,7 @@ if (_args.unknown && _args.unknown.length) {
 }
 const VERBOSE = _args.verbose;
 const JSON_OUTPUT = _args.json;
+const STRICT = _args.strict; // --strict：任意结构问题（>0）即失败；缺省阈值 10（宽松 oracle）
 
 // 检查文件是否存在
 function fileExists(filePath) {
@@ -60,44 +62,23 @@ function fileExists(filePath) {
 }
 
 // 读取 ADR 文件并提取所有信息
+// 首部解析统一走 _lib/frontmatter.mjs 的 parseAdrHeader（首 20 行 + `---` 早停）：
+// 修复「正文状态行 last-match-wins 覆盖首部」问题（ADR-232 §2.2 要求与 check-adr-status 口径一致）。
 function readAdrFile(filePath) {
   try {
     const content = fs.readFileSync(filePath, 'utf-8');
-    const lines = content.split('\n');
-    
-    let status = null;
-    let title = null;
-    let date = null;
-    let id = null;
-    
-    for (const line of lines) {
-      // 提取状态（支持三种格式）
-      const statusMatch1 = line.match(/^>\s*\*\*状态\*\*:\s*(.+)/);
-      const statusMatch2 = line.match(/^-\s*\*\*状态\*\*[：:]\s*(.+)/);
-      const statusMatch3 = line.match(/^\|\s*\*\*状态\*\*\s*\|\s*(.+?)\s*\|/);
-      
-      if (statusMatch1) status = statusMatch1[1].trim();
-      else if (statusMatch2) status = statusMatch2[1].trim();
-      else if (statusMatch3) status = statusMatch3[1].trim();
-      
-      // 提取标题(支持子编号,如 ADR-061.1 —— ADR-061 §范围约定子项沿用父编号作前缀)
-      const titleMatch = line.match(/^#\s+ADR-([\d.]+):\s*(.+)/);
-      if (titleMatch) {
-        id = parseFloat(titleMatch[1]);
-        title = titleMatch[2].trim();
-      }
-      
-      // 提取日期
-      const dateMatch1 = line.match(/^>\s*\*\*日期\*\*:\s*(.+)/);
-      const dateMatch2 = line.match(/^-\s*\*\*日期\*\*[：:]\s*(.+)/);
-      const dateMatch3 = line.match(/^\|\s*\*\*日期\*\*\s*\|\s*(.+?)\s*\|/);
-      
-      if (dateMatch1) date = dateMatch1[1].trim();
-      else if (dateMatch2) date = dateMatch2[1].trim();
-      else if (dateMatch3) date = dateMatch3[1].trim();
-    }
-    
-    return { id, status, title, date, content, lines };
+    const hdr = parseAdrHeader(filePath);
+    // parseAdrHeader 返回 { num, title, status, date, statusLine } 或 { error }；
+    // 有 error（如缺状态/标题）时保持 null，由 checkFormat 报对应 issue，不在此吞掉
+    const ok = !hdr.error;
+    return {
+      id: ok ? (hdr.num ?? null) : null,
+      status: ok ? (hdr.status || null) : null,
+      title: ok ? (hdr.title || null) : null,
+      date: ok ? (hdr.date || null) : null,
+      content,
+      lines: content.split('\n'),
+    };
   } catch (error) {
     console.error(`Error reading file ${filePath}:`, error.message);
     return null;
@@ -235,11 +216,22 @@ function main() {
   
   // 收集所有ADR编号，用于检查连续性
   const adrIds = [];
-  
+  // ADR-232 §2.4：编号重复检测用「文件名原始编号字符串」分组——
+  // parseFloat 会把 061.1 / 061.10 折叠成同一数字，Set 去重后查不出这类撞号
+  const numFilesMap = new Map(); // 编号字符串 → 文件名[]
+
   for (const file of files) {
     const filePath = path.join(ADR_DIR, file);
     const adrData = readAdrFile(filePath);
-    
+
+    // 文件名编号（adr-061.1-plan.md → "061.1"），供重复检测分组
+    const fileNum = file.match(/^adr-(\d+(?:\.\d+)?)-/);
+    if (fileNum) {
+      const key = fileNum[1];
+      if (!numFilesMap.has(key)) numFilesMap.set(key, []);
+      numFilesMap.get(key).push(file);
+    }
+
     if (!adrData) continue;
     
     const { id, status, title, date, content, lines } = adrData;
@@ -334,11 +326,38 @@ function main() {
       issues: [`缺少ADR编号: ${missingIds.join(', ')}`]
     });
   }
-  
+
+  // ADR-232 §2.4：编号重复检测（同 num 多文件）。
+  // 整数编号重复 = 真错误（同号异名撞号），计入 format 驱动退出；
+  // 子编号成对（adr-061.1-plan + adr-061.1-ragdoll-fidelity）是 §2.3 合法形态，仅 INFO 提示不阻断。
+  const intDupGroups = [...numFilesMap.entries()]
+    .filter(([num, flist]) => !num.includes('.') && flist.length > 1);
+  if (intDupGroups.length > 0) {
+    results.issues.format.push({
+      file: '(全局)',
+      issues: intDupGroups.map(
+        ([num, flist]) => `编号 ADR-${num} 重复（${flist.length} 个文件）: ${flist.join(', ')}`
+      ),
+    });
+  }
+  const subDupGroups = [...numFilesMap.entries()]
+    .filter(([num, flist]) => num.includes('.') && flist.length > 1);
+  if (subDupGroups.length > 0) {
+    results.subNumberPairs = subDupGroups.map(
+      ([num, flist]) => `子编号 ADR-${num} 成对（§2.3 允许）: ${flist.join(', ')}`
+    );
+  }
+
   // 输出结果
+  // 退出口径：仅真实结构问题（格式 + 关联 + 编号连续性）驱动；技术债务为 INFO 展示，不阻断。
+  // JSON 与文本模式共用同一口径，避免 --json 消费方按 $? 判定时拿到假绿（exit 0）。
+  const finalStructuralIssues = structuralIssueCount + missingIds.length;
+  // 阈值：--strict 下任意结构问题（>0）即失败；缺省 10 为宽松 oracle（供人工诊断）。
+  // 该常量同时被 JSON / 文本两个输出分支共用，保证消费方按 $? 判定口径一致。
+  const STRUCTURAL_THRESHOLD = STRICT ? 0 : 10;
   if (JSON_OUTPUT) {
     console.log(JSON.stringify(results, null, 2));
-    return;
+    process.exit(finalStructuralIssues > STRUCTURAL_THRESHOLD ? 1 : 0);
   }
   
   // 人类可读输出
@@ -428,10 +447,8 @@ function main() {
   console.log(' 检查完成');
   console.log('══════════════════════════════════════════════');
   
-  // 返回退出码
-  // 仅真实结构问题（格式 + 关联 + 编号连续性）驱动退出；技术债务为 INFO 展示，不阻断
-  const finalStructuralIssues = structuralIssueCount + missingIds.length;
-  if (finalStructuralIssues > 10) {
+  // 返回退出码（与 JSON 分支共用上方 finalStructuralIssues / STRUCTURAL_THRESHOLD 口径）
+  if (finalStructuralIssues > STRUCTURAL_THRESHOLD) {
     process.exit(1); // 结构问题过多
   }
 }
