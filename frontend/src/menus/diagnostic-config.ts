@@ -223,26 +223,37 @@ export function persistConfig(partial: Partial<AiConfig>): void {
 async function doSaveConfig(): Promise<void> {
     const snapshot: AiConfig = { ...diagState.localConfig };
     const kind = diagState.ai?.kind;
-    diagState.saveChain = diagState.saveChain.then(async () => {
-        try {
-            if (kind === 'go') {
-                const normalizedEndpoint = normalizeEndpoint(snapshot.endpoint);
-                const b = await import('@bindings/mikumikuar/internal/app/app');
-                await b.AiSetLLMConfig({
-                    baseUrl: normalizedEndpoint,
-                    model: snapshot.model,
-                    aiKey: snapshot.apiKey,
-                });
-                await saveAiConfig({ ...snapshot, endpoint: normalizedEndpoint, apiKey: '' });
-            } else {
-                await saveAiConfig(snapshot);
+    // [fix P2] 分离「链状态」与「本次结果」：单次保存失败不得永久破坏 saveChain。
+    //   - current 承载本次结果（失败仍 reject，供 flushAndSave 等调用方捕获反馈）
+    //   - diagState.saveChain 更新为吞错版（resolved），下次 doSaveConfig 不受影响
+    // 修复前：L242 throw err 使 saveChain 永久 rejected，后续所有保存 .then 不执行、静默失效。
+    const current = diagState.saveChain
+        .catch(() => {
+            /* 吞掉历史 reject，链恢复为 resolved */
+        })
+        .then(async () => {
+            try {
+                if (kind === 'go') {
+                    const normalizedEndpoint = normalizeEndpoint(snapshot.endpoint);
+                    const b = await import('@bindings/mikumikuar/internal/app/app');
+                    await b.AiSetLLMConfig({
+                        baseUrl: normalizedEndpoint,
+                        model: snapshot.model,
+                        aiKey: snapshot.apiKey,
+                    });
+                    await saveAiConfig({ ...snapshot, endpoint: normalizedEndpoint, apiKey: '' });
+                } else {
+                    await saveAiConfig(snapshot);
+                }
+            } catch (err) {
+                console.warn('[ai-config] 持久化失败', err);
+                throw err; // 重新抛出，让调用方（如保存按钮）能够捕获并反馈给用户
             }
-        } catch (err) {
-            console.warn('[ai-config] 持久化失败', err);
-            throw err; // 重新抛出，让调用方（如保存按钮）能够捕获并反馈给用户
-        }
+        });
+    diagState.saveChain = current.catch(() => {
+        /* 链保持 resolved，供后续串行 */
     });
-    return diagState.saveChain;
+    return current;
 }
 
 export function applyProvider(provider: AiConfigProvider): void {
@@ -758,8 +769,20 @@ async function testConnection(statusEl: HTMLElement): Promise<void> {
         diagState.testing = false;
         return;
     }
-    await ensureTestModel();
-    await flushAndSave();
+    // [fix P2] ensureTestModel/flushAndSave 可能抛错（内部 doSaveConfig reject），
+    // 若不捕获，diagState.testing 永久为 true 锁死所有后续测试。
+    try {
+        await ensureTestModel();
+        await flushAndSave();
+    } catch (err) {
+        const msg = translateGoError(err);
+        statusEl.textContent = msg;
+        statusEl.style.color = 'var(--danger)';
+        captureError('ai-connection', msg, err);
+        diagState.lastConnectionOk = false;
+        diagState.testing = false;
+        return;
+    }
     const validation = validateAiConfig(diagState.localConfig);
     if (!validation.ok && !goKeyAllowsProceed(validation)) {
         const errMsg = validation.errors

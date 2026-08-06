@@ -21,10 +21,11 @@ symbols:
   - updateStatusBadge
 invariants:
   - Go 桌面端 key 不可回读时（isGo=true && keyConfigured=true），missingKey 不阻止请求发起
-  - 配置写回经 saveChain 串行化（链式 Promise），避免并发持久化竞争
+  - 配置写回经 saveChain 串行化（链式 Promise），避免并发持久化竞争；单次保存失败不得永久破坏链（doSaveConfig 分离链状态与本次结果）
   - provider 切换时自动填充对应默认端点/模型/文档链接
-  - testConnection 先 flushAndSave 持久化当前配置，再使用 localConfig 验证连接
-tests: []
+  - testConnection 先 flushAndSave 持久化当前配置，再使用 localConfig 验证连接；ensureTestModel/flushAndSave 抛错时复位 testing 标志
+tests:
+  - frontend/src/__tests__/settings-diagnostic.test.ts
 use_when:
   - 端点配置
   - API key
