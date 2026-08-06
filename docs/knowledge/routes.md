@@ -20,7 +20,7 @@
 | 外部动画、Mixamo、VRM、GLB、FBX、动作重定向、骨骼映射、人形动画导入 | [外部动作重定向桥](./animation-retargeter.md) | [场景序列化与自动保存](./scene-serialize.md) |
 | AR 摄像头、视频透传、前后摄切换 | [AR 摄像头视频透传](./ar-camera.md) | [AR 模式场景级协调](./ar-scene.md) |
 | AR 模式协调、接触阴影、AR 截图 | [AR 模式场景级协调](./ar-scene.md) | [AR 摄像头视频透传](./ar-camera.md) |
-| 音频总线、音效、SFX、脚步声音量、音频上下文 | [音频总线](./audio-bus.md) | [脚部地面跟随（MMD-native IK）](./motion-feet-adjustment.md) |
+| 音频总线、音效、SFX、脚步声音量、音频上下文 | [音频总线](./audio-bus.md) | [脚部落地检测降级](./footstep-detect-fallback.md)、[脚部地面跟随（MMD-native IK）](./motion-feet-adjustment.md) |
 | 骨骼覆盖存储、骨骼仲裁、感知层冲突 | [骨骼覆盖存储（多模块仲裁）](./bone-override-store.md) | [虚拟裙骨物理控制器（ADR-084 Phase 2-3）](./virtual-skirt.md) |
 | 骨骼覆盖、bone override、骨骼编辑、动作覆盖、欧拉角覆盖、混合权重、IK 保护、帧钩子注册、帧内时序（ADR-186） | [骨骼覆盖核心 API](./bone-override.md) | [场景序列化与自动保存](./scene-serialize.md)、[动作模块基类](./motion-module-base.md)、[模型注册表与生命周期管理](./model-manager.md) |
 | 相机状态、相机位置保存、scene/canvas 引用共享、freefly 输入状态 | [相机状态管理 + 运行时上下文](./camera-state.md) | [相机模式管理系统（MmdCamera）](./camera.md)、[环境状态写入入口（setEnvState + 中间件链）](./env-bridge.md)、[环境重力控制](./env-gravity.md) |
@@ -37,6 +37,7 @@
 | 环境灯光、灯光包装、灯光与场景集成、时间预设、灯光派生 | [环境灯光包装](./env-lighting.md) | [EnvState 单一源 Schema](./env-state-schema.md)、[场景光照与阴影（barrel）](./lighting.md) |
 | 环境弹窗、环境菜单、环境设置入口、env 菜单 | [环境弹窗（编排 + barrel）](./env-menu.md) | [场景弹窗（编排 + 路由）](./scene-menu.md)、[统一动作注册表 — 菜单/NL/快捷键共享真相源](./action-registry.md)、[NL 意图解析 — LLM 文本 → 动作执行](./ai-intent-dispatcher.md) |
 | 环境持久化、防抖保存、envState 持久化 | [环境状态防抖持久化](./env-persist.md) | [内置 AI 诊断助手 — 双适配器服务层](./ai-service.md)、[相机状态管理 + 运行时上下文](./camera-state.md)、[相机模式管理系统（MmdCamera）](./camera.md) |
+| EnvState 默认值 | [EnvState 默认值派生](./env-state-defaults.md) | — |
 | EnvState、环境状态 schema、getEnvKeys、dispatch group | [EnvState 单一源 Schema](./env-state-schema.md) | [环境灯光包装](./env-lighting.md)、[场景光照与阴影（barrel）](./lighting.md)、[全局状态与场景运行时 Store](./state.md) |
 | 时间流转、太阳角、预设动画、环境预设 | [时间流转与太阳角系统](./env-time-of-day.md) | [相机状态管理 + 运行时上下文](./camera-state.md)、[相机模式管理系统（MmdCamera）](./camera.md)、[环境状态写入入口（setEnvState + 中间件链）](./env-bridge.md) |
 | 水面、水池、水面反射 | [水面系统](./env-water.md) | — |
@@ -44,6 +45,7 @@
 | 全局事件、拖放导入、更新通知 | [事件处理与导航系统](./events.md) | [应用启动引导](./init.md)、[渲染循环与 FPS 时钟](./render-loop.md) |
 | 错误提示、信息提示、状态反馈、toast、status | [结构化反馈 API](./feedback.md) | — |
 | 文件服务、文件 URL、文件编码、HTTP URL、文件服务器 | [统一文件服务层](./fileservice.md) | [VMD 动作加载器](./vmd-loader.md) |
+| 脚部落地检测 | [脚部落地检测降级](./footstep-detect-fallback.md) | [音频总线](./audio-bus.md)、[脚部地面跟随（MMD-native IK）](./motion-feet-adjustment.md) |
 | Go 后端 生命周期 ServiceStartup ServiceShutdown、Go 配置系统 config.json GetConfig SetResourceRoot SetStorageMode、无障碍 GetSystemA11ySettings、后端日志环形缓冲 LogRing AiGetBackendLogs、COOP/COEP MPR coopCoepEnabled | [Go 后端核心（App 生命周期 + 配置系统）](./go-app.md) | — |
 | Go 文件访问 FileAccessor ReadTextFile ReadFileBytes 平台抽象、安卓 shared 模式 路径管理 pathmgr、content:// URI ErrContentUriNotSupported | [Go 文件与路径平台抽象](./go-fileaccess.md) | — |
 | Go 模型隔离 IsolateModelDir、安全路径 isSafePath 路径穿越、信任目录 trustedRoots | [Go 模型隔离与安全 HTTP](./go-httpserver.md) | — |
@@ -83,7 +85,7 @@
 | 模型预设、动作预设、预设管理、预设面板 | [模型预设管理 UI](./model-preset-ui.md) | [场景序列化与自动保存](./scene-serialize.md) |
 | 动作绑定 UI、动作槽位管理、模块切换列表 | [动作绑定 UI](./motion-binding-ui.md) | [滑出式菜单引擎（SlideMenu）](./menu.md)、[PMX 模型加载与缩略图捕获](./model-loader.md)、[模型生命周期操作](./model-ops.md) |
 | 动作详情、图层管理、播放速度 | [动作详情 UI](./motion-detail-ui.md) | [PMX 模型加载与缩略图捕获](./model-loader.md)、[模型生命周期操作](./model-ops.md)、[动作绑定 UI](./motion-binding-ui.md) |
-| 脚部跟随、脚 IK、地面高度、脚部调整引擎 | [脚部地面跟随（MMD-native IK）](./motion-feet-adjustment.md) | [音频总线](./audio-bus.md)、[资源库核心](./library-core.md)、[场景核心编排器（纯组装器）](./scene.md) |
+| 脚部跟随、脚 IK、地面高度、脚部调整引擎 | [脚部地面跟随（MMD-native IK）](./motion-feet-adjustment.md) | [音频总线](./audio-bus.md)、[脚部落地检测降级](./footstep-detect-fallback.md)、[资源库核心](./library-core.md) |
 | 动作历史、撤销、重做、动作记录 | [动作历史管理](./motion-history.md) | — |
 | 动作意图、多主动作、动作库、动作广播、默认动作、场景动作 | [场景级动作意图库](./motion-intent.md) | [场景序列化与自动保存](./scene-serialize.md)、[PMX 模型加载与缩略图捕获](./model-loader.md)、[模型生命周期操作](./model-ops.md) |
 | 动作菜单、动作层级、感知面板、程序化动作面板 | [动作菜单层级系统](./motion-menu-levels.md) | [babylon-mmd 适配边界](./mmd-adapter.md)、[感知层主控](./perception.md)、[场景序列化与自动保存](./scene-serialize.md) |
@@ -92,6 +94,8 @@
 | 动作管线、逐帧合成、骨骼写入顺序、PipelineStage / PipelineLayer | [动作管线（逐帧合成）](./motion-pipeline.md) | [骨骼覆盖核心 API](./bone-override.md)、[模型生命周期操作](./model-ops.md)、[动作模块基类](./motion-module-base.md) |
 | 播放进度 UI、seek 拖动、自动循环播放、MMD runtime 回调、时间格式、播放控制栏 | [动作播放控制](./motion-playback.md) | — |
 | 轨道相机键盘、WSAD 环绕控制、相机键位、orbit input | [轨道相机键盘输入状态叶子](./orbit-state.md) | [模型注册表与生命周期管理](./model-manager.md)、[模型生命周期操作](./model-ops.md)、[场景序列化与自动保存](./scene-serialize.md) |
+| 换装叠加层 | [换装叠加层](./outfit-overlay.md) | [换装系统](./outfit.md) |
+| 换装加载/应用/重置 | [换装系统](./outfit.md) | [换装叠加层](./outfit-overlay.md) |
 | 感知层、视线追踪、眨眼、呼吸、重心微动、感知上下文 | [感知层主控](./perception.md) | [场景序列化与自动保存](./scene-serialize.md)、[babylon-mmd 适配边界](./mmd-adapter.md)、[动作菜单层级系统](./motion-menu-levels.md) |
 | FPS 监控、自动降级、性能模式、RenderBridge | [性能监控与自动降级](./performance.md) | — |
 | 物理桥、骨骼读取、每帧更新注册表 | [物理骨骼桥与每帧注册表](./physics-bridge.md) | [虚拟裙骨物理控制器（ADR-084 Phase 2-3）](./virtual-skirt.md) |
@@ -109,6 +113,7 @@
 | 设置共享、设置工具、UI 主题应用、字节格式化、设置默认值 | [设置共享工具](./settings-shared.md) | [设置页路由与编排](./settings.md) |
 | 设置页、设置路由、设置编排 | [设置页路由与编排](./settings.md) | [设置共享工具](./settings-shared.md) |
 | 快捷键、快捷键注册、键盘绑定 | [快捷键注册表](./shortcut-registry.md) | — |
+| 次表面散射材质 | [SSS PBR 材质](./sss-pbr-material.md) | — |
 | 全局状态、场景状态、播放控制状态、资源库状态、scene-state / playback-state / library-state | [全局状态与场景运行时 Store](./state.md) | [EnvState 单一源 Schema](./env-state-schema.md) |
 | 变换适配、transform adapter、双模态、拖拽适配 | [变换适配器注册表（双模态去重）](./transform-adapter.md) | [场景序列化与自动保存](./scene-serialize.md)、[骨骼覆盖核心 API](./bone-override.md)、[模型注册表与生命周期管理](./model-manager.md) |
 | 变换模式、拖拽模式、位移旋转、transform mode | [拖拽变换模式开关](./transform-mode.md) | — |

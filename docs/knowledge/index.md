@@ -2,7 +2,7 @@
 
 # 知识卡索引
 
-> 原子化架构知识层，共 **260** 张卡：记录「某个子系统**现在**长啥样、去哪找」。与 ADR（为什么这么决定）互补——知识卡引用而不复制 ADR 结论。
+> 原子化架构知识层，共 **265** 张卡：记录「某个子系统**现在**长啥样、去哪找」。与 ADR（为什么这么决定）互补——知识卡引用而不复制 ADR 结论。
 
 > 卡片格式规范、立卡判据、`source_files` 铁律见 [知识卡层导读](./README.md)；AI 检索入口见 [路由表](./routes.md)；菜单全景见 [menu-map](./menu-map.md)（机器生成）。
 
@@ -11,12 +11,12 @@
 | 分类 | 卡片数 | 说明 |
 |------|--------|------|
 | [env](#env) | 24 | 环境系统 |
-| [scene](#scene) | 30 | 场景编排 |
+| [scene](#scene) | 34 | 场景编排 |
 | [physics](#physics) | 5 | 物理系统 |
 | [rendering](#rendering) | 18 | 渲染系统 |
 | [motion](#motion) | 34 | 动作系统 |
 | [ui](#ui) | 56 | UI / 菜单 |
-| [core](#core) | 75 | 核心基础设施 |
+| [core](#core) | 76 | 核心基础设施 |
 | [backend](#backend) | 18 | 后端 |
 
 ## env
@@ -50,12 +50,16 @@
 | [AR 模式场景级协调](./ar-scene.md) | - ADR-055 |
 | [相机状态管理 + 运行时上下文](./camera-state.md) | - ADR-100 |
 | [相机模式管理系统（MmdCamera）](./camera.md) | - ADR-035 |
+| [脚部落地检测降级](./footstep-detect-fallback.md) | - ADR-088 |
 | [分类材质系统](./material.md) | - ADR-188 |
 | [PMX 模型加载与缩略图捕获](./model-loader.md) | - ADR-124 |
 | [模型注册表与生命周期管理](./model-manager.md) | - ADR-049 |
 | [模型生命周期操作](./model-ops.md) | - ADR-049 |
+| [换装叠加层](./outfit-overlay.md) | - ADR-242 |
+| [换装系统](./outfit.md) | - ADR-242 |
 | [场景序列化与自动保存](./scene-serialize.md) | - ADR-049 |
 | [场景核心编排器（纯组装器）](./scene.md) | - ADR-099 |
+| [SSS PBR 材质](./sss-pbr-material.md) | [] |
 | [变换适配器注册表（双模态去重）](./transform-adapter.md) | - ADR-126 |
 | [拖拽变换模式开关](./transform-mode.md) | — |
 | [变换选中物状态源](./transform-selection.md) | - ADR-171 |
@@ -156,6 +160,7 @@
 | [安卓文件访问（shared 模式）](./android-file-access.md) | - ADR-017 |
 | [音频总线](./audio-bus.md) | - ADR-088 |
 | [后端适配层](./core-backend.md) | - ADR-176 |
+| [EnvState 默认值派生](./env-state-defaults.md) | - ADR-243 |
 | [EnvState 单一源 Schema](./env-state-schema.md) | - ADR-137 |
 | [事件处理与导航系统](./events.md) | - ADR-102 |
 | [结构化反馈 API](./feedback.md) | — |
@@ -234,7 +239,7 @@
 | [ADR-084](../adr/adr-084-mesh-to-cloth-virtual-skirt-bones.md) | Mesh-to-Cloth 虚拟裙骨生成 —— WASM Bullet 运行时刚体注入 | [骨骼覆盖存储（多模块仲裁）](./bone-override-store.md) · [裙摆拓扑分析（ADR-084 Phase 1）](./skirt-analyzer.md) · [虚拟裙骨物理控制器（ADR-084 Phase 2-3）](./virtual-skirt.md) |
 | [ADR-085](../adr/adr-085-feet-adjustment.md) | 脚部地面跟随（Feet Adjustment） | [脚部地面跟随（MMD-native IK）](./motion-feet-adjustment.md) |
 | [ADR-087](../adr/adr-087-plaza-browser-experience.md) | 模型广场 · 浏览器体验增强路线图 | [模型广场浏览器](./plaza-browser.md) · [模型广场创作者列表](./plaza-creators.md) · [广场下载拦截器](./plaza-download.md) · [广场站点配置](./plaza-sites.md) · [广场状态管理](./plaza-state.md) · [模型广场 UI 辅助函数](./plaza-thumbnail.md) |
-| [ADR-088](../adr/adr-088-audio-sfx-footstep.md) | 音效系统 — 脚步声与 SFX 总线 | [音频总线](./audio-bus.md) · [脚部地面跟随（MMD-native IK）](./motion-feet-adjustment.md) · [脚步声控制器](./motion-footstep.md) |
+| [ADR-088](../adr/adr-088-audio-sfx-footstep.md) | 音效系统 — 脚步声与 SFX 总线 | [音频总线](./audio-bus.md) · [脚部落地检测降级](./footstep-detect-fallback.md) · [脚部地面跟随（MMD-native IK）](./motion-feet-adjustment.md) · [脚步声控制器](./motion-footstep.md) |
 | [ADR-092](../adr/adr-092-unified-texture-reflection.md) | 贴图与反射统一 —— 单一纹理工厂 + 单一平面反射引擎 | [统一贴图工厂](./env-texture.md) · [统一平面反射引擎](./planar-reflection.md) |
 | [ADR-093](../adr/adr-093-menu-declarative-schema.md) | 菜单声明式 Schema —— 单一数据源 + 单渲染器，根治「大」与「AI 难改」 | [AI 助手独立面板入口](./assistant-panel.md) · [声明式菜单 Schema 注册表](./menu-registry.md) · [声明式菜单 Schema 集中注册聚合器](./menu-schema-register.md) · [声明式菜单 Schema](./menu-schema.md) · [菜单渲染引擎](./render-menu.md) · [外观设置](./settings-appearance.md) · [AI 诊断助手面板（协调入口）](./settings-diagnostic.md) |
 | [ADR-096](../adr/adr-096-general-helper-consolidation.md) | 通用 Helper 单点收敛 | [VMD 动作加载器](./vmd-loader.md) |
@@ -320,6 +325,8 @@
 | [ADR-231](../adr/adr-231-ground-visual-roadmap.md) | 地面视觉后续方向（自发光地屏 + 程序化地面图案） | [地形生成器](./env-terrain.md) |
 | [ADR-237](../adr/adr-237-split-overlong-modules.md) | 超限模块拆分计划 —— 250LOC 天花板的优先级拆解路线图 | [程序化动作系统](./proc-motion-bridge.md) · [多 VMD 叠加系统](./vmd-layers.md) |
 | [ADR-238](../adr/adr-238-循环依赖消解二期-core-scene-根环.md) | 循环依赖消解第二期 —— core→scene 根环与 motion/outfit 互依赖拆解 | [E2E 状态读取器注入桥](./e2e-state-bridge.md) · [资源库核心](./library-core.md) · [脚部地面跟随（MMD-native IK）](./motion-feet-adjustment.md) · [场景动作注入桥](./scene-action-bridge.md) · [主题纯函数叶](./theme.md) · [UI 行为注入桥](./ui-action-bridge.md) · [VMD 动作加载器](./vmd-loader.md) |
+| [ADR-242](../adr/adr-242-toplevel-layering-axiom.md) | 顶层目录分层公理 —— 「纯算法层」假说的证伪与重定性 | [换装叠加层](./outfit-overlay.md) · [换装系统](./outfit.md) |
+| [ADR-243](../adr/adr-243-env-state-defaults-from-schema.md) | EnvState 默认值从 Schema 自动推导 —— 消除 100+ 字段双源手工映射 | [EnvState 默认值派生](./env-state-defaults.md) |
 
 ## 索引与路由（非卡片）
 
