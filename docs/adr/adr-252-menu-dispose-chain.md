@@ -4,7 +4,7 @@
 > **状态**: ✅ 已立（2026-08-06 立项；来源审核第 13 轮：`docs/audit/2026-08-06-round13-scene-render-core-ui.md` 跨模块模式问题 #3「状态直写绕过 setter」与 P3「menu-overlay dispose 链路缺失」）。本 ADR 固化现状认知与治理方向，实现分批跟进
 > **编号**: 252
 >
-> **关联**: [ADR-065](adr-065-menu-schema.md)（菜单 Schema / 声明式菜单）、[ADR-093](adr-093-menu-schema-register.md)（菜单 Schema 注册与渲染）、[ADR-191](adr-191-de-barrel-core.md)（menu-overlay 抽离与 de-barrel）、[ADR-106](adr-106-timing-audit-and-async-lifecycle.md)（HMR 幂等生命周期）
+> **关联**: [ADR-065](adr-065-pure-items-hot-render.md)（菜单 Schema / 声明式菜单）、[ADR-093](adr-093-menu-declarative-schema.md)（菜单 Schema 注册与渲染）、[ADR-191](adr-191-god-barrel-debarreling.md)（menu-overlay 抽离与 de-barrel）、[ADR-106](adr-106-timing-audit-and-async-lifecycle.md)（HMR 幂等生命周期）
 >
 > **来源**: 2026-08-06 第 13 轮代码审核（`docs/audit/2026-08-06-round13-scene-render-core-ui.md`）——`menu-overlay.ts` 导出的 `disposeMenuWrapper`/`clearAllMenuWrappers` 全库零调用；模型菜单（`library-browse.ts` 的 `makeModelMenu`）onClose 只调 `closeAllOverlays` 不 dispose，SlideMenu 实例常驻 `_liveMenus`，隐藏时仍逐帧 `updateControls`。
 
@@ -61,8 +61,8 @@ const _liveMenus = new Set<SlideMenu>();   // constructor 时 add，仅 dispose(
 
 ## 与其他 ADR 的关系
 
-- 不取代 [ADR-065](adr-065-menu-schema.md)/[ADR-093](adr-093-menu-schema-register.md)——本 ADR 管菜单**资源生命周期**（dispose 链路），ADR-065/093 管菜单**声明与渲染**（schema 结构），正交。
-- 不取代 [ADR-191](adr-191-de-barrel-core.md)——ADR-191 管 menu-overlay 的模块边界（抽离/de-barrel）；本 ADR 管其内部释放语义。
+- 不取代 [ADR-065](adr-065-pure-items-hot-render.md)/[ADR-093](adr-093-menu-declarative-schema.md)——本 ADR 管菜单**资源生命周期**（dispose 链路），ADR-065/093 管菜单**声明与渲染**（schema 结构），正交。
+- 不取代 [ADR-191](adr-191-god-barrel-debarreling.md)——ADR-191 管 menu-overlay 的模块边界（抽离/de-barrel）；本 ADR 管其内部释放语义。
 - 触及 menu-overlay.md 知识卡「disposeMenuWrapper/clearAllMenuWrappers 被各菜单/弹窗浮层消费」——**该表述与事实不符**（零调用），本 ADR 登记为偏差，实现接线后知识卡同步更正。
 
 ## 影响与验收

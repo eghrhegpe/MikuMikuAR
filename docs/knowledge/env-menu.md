@@ -27,7 +27,7 @@ Env Menu：环境弹窗（核心 + barrel export）。拆分后保留导航/统�
 
 ## 核心职责
 - `registerPopupMenu(...)` 注册 env 弹窗（wrapperKey `env-menu`）
-- 子面板构建器导入并 barrel re-export：`buildSkyLevel` / `buildWindLevel` / `buildExperimentalLevel` / `buildFogLevel` / `buildShadowLevel` / `buildCloudLevel` / `buildPresetLevel` / `SCENE_PRESETS`
+- 子面板构建器经 `ENV_FOLDER_ROUTES` 内部引用（buildSkyLevel / buildWindLevel / buildExperimentalLevel / buildFogLevel / buildShadowLevel / buildCloudLevel / buildPresetLevel / SCENE_PRESETS），非 barrel re-export（barrel 仅 re-export `getEnvMenu`/`refreshEnvRoot`/`showEnvMenu` 与纹理绑定目标 getter/clearer）
 - 环境纹理绑定目标（`getEnvTextureBindingTarget` / `setEnvTextureBindingTarget` / `clearEnvTextureBindingTarget`，已迁移到 env-menu-state）
 - 经 `setEnvState`（来自 scene）驱动环境状态
 

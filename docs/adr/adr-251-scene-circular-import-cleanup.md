@@ -4,7 +4,7 @@
 > **状态**: ✅ 已立（2026-08-06 立项；来源审核第 13 轮：`docs/audit/2026-08-06-round13-scene-render-core-ui.md` 跨模块模式问题 #2「坐标系契约混淆 / 循环依赖」）。本 ADR 固化现状认知与治理方向，实现分批跟进
 > **编号**: 251
 >
-> **关联**: [ADR-100](adr-100-camera-state-mmd-camera-reorg.md)（相机系统拆分：子模块单向依赖 camera-state，禁止互相 import）、[ADR-242](adr-242-top-level-layering.md)（顶层目录分层公理）、[ADR-191](adr-191-de-barrel-core.md)（barrel 去重与单向依赖）、[ADR-244](adr-244-init-phase-split.md)（初始化阶段拆分）
+> **关联**: [ADR-100](adr-100-camera-control-behavior-dual-axis.md)（相机系统拆分：子模块单向依赖 camera-state，禁止互相 import）、[ADR-242](adr-242-toplevel-layering-axiom.md)（顶层目录分层公理）、[ADR-191](adr-191-god-barrel-debarreling.md)（barrel 去重与单向依赖）、[ADR-244](adr-244-init-phase-split.md)（初始化阶段拆分）
 >
 > **来源**: 2026-08-06 第 13 轮代码审核（`docs/audit/2026-08-06-round13-scene-render-core-ui.md`）——`model-ops.ts:24`、`camera.ts:26`、`camera-auto.ts:14` 从各自子模块反向 `import '../scene'`，与 scene.ts 的 `export *` 构成真实静态循环。
 
@@ -57,8 +57,8 @@ import { getProcBeatDetector } from '../scene';
 
 ## 与其他 ADR 的关系
 
-- 不取代 [ADR-100](adr-100-camera-state-mmd-camera-reorg.md)——ADR-100 约束的是相机子模块**互相** import；本 ADR 针对子模块 → scene 根的反向边，是同一拆分子模块工作的残余项。
-- 不取代 [ADR-242](adr-242-top-level-layering.md)——ADR-242 管顶层目录分层（算法层/绑定层）；本 ADR 管 scene 目录内部的反向依赖。
+- 不取代 [ADR-100](adr-100-camera-control-behavior-dual-axis.md)——ADR-100 约束的是相机子模块**互相** import；本 ADR 针对子模块 → scene 根的反向边，是同一拆分子模块工作的残余项。
+- 不取代 [ADR-242](adr-242-toplevel-layering-axiom.md)——ADR-242 管顶层目录分层（算法层/绑定层）；本 ADR 管 scene 目录内部的反向依赖。
 - 触及 model-manager.md / camera.md 知识卡的「不引用 scene.ts 符号」不变量——**该不变量是目标态**，本 ADR 登记现状违约与治理路径，不改写知识卡（知识卡描述目标态，ADR 登记偏差）。
 
 ## 影响与验收

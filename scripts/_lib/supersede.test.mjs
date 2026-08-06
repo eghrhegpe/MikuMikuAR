@@ -328,6 +328,20 @@ test('RE_NEGATED: not matched — 非否定语境', () => {
   assert.ok(!RE_NEGATED.test('推翻 ADR-019'));
 });
 
+// [fix 2026-08-06] RE_NEGATED 扩展覆盖全部宣称词:ADR 常写「本 ADR 不取代 [ADR-NNN]」澄清边界,
+// 原仅防「不推翻」→「不取代」被 RE_CLAIM_A 误判为宣称 → 误报漏标。
+test('RE_NEGATED: matched — 不取代（fix 扩展）', () => {
+  assert.ok(RE_NEGATED.test('本 ADR 不取代 [ADR-100]——边界澄清'));
+});
+
+test('RE_NEGATED: matched — 未替代（fix 扩展）', () => {
+  assert.ok(RE_NEGATED.test('未替代 ADR-093 的注册机制'));
+});
+
+test('RE_NEGATED: matched — 没有废弃（fix 扩展）', () => {
+  assert.ok(RE_NEGATED.test('没有废弃 ADR-137 的 schema 决策'));
+});
+
 // ⑤ 表格弱宣称
 
 test('RE_TABLE_FIRST_COL: matched', () => {

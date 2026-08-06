@@ -4,7 +4,7 @@
 > **状态**: ✅ 已立（2026-08-06 立项；来源审核第 14 轮：`docs/audit/2026-08-06-round14-*.md` Go 后端核心模块审核 P1#1/P1#2）。本 ADR 固化缺陷认知与治理方案，实现分批跟进
 > **编号**: 253
 >
-> **关联**: [ADR-137](adr-137-env-state-schema.md)（EnvState 单一源 Schema）、[ADR-214](adr-214-frame-cap-vsync-migration.md)（frameCapEnabled 兼容迁移先例）、[ADR-171](adr-171-transform-selection.md)（状态单一写入点）
+> **关联**: [ADR-137](adr-137-envstate-single-source-schema.md)（EnvState 单一源 Schema）、[ADR-214](adr-214-menu-id-naming.md)（frameCapEnabled 兼容迁移先例）、[ADR-171](adr-171-scene-drag-mode.md)（状态单一写入点）
 >
 > **来源**: 2026-08-06 第 14 轮代码审核——`internal/app/config.go` 两个部分更新合并函数的契约损坏。
 
@@ -75,8 +75,8 @@ EnvState 除 `MirrorPosition`/`LightingPresetName` 外全部**无 omitempty** �
 
 ## 与其他 ADR 的关系
 
-- 不取代 [ADR-137](adr-137-env-state-schema.md)——ADR-137 管 EnvState 字段 schema 本身，本 ADR 管持久化合并语义。
-- 不取代 [ADR-214](adr-214-frame-cap-vsync-migration.md)——frameCapEnabled 的 `*bool` 迁移先例（UnmarshalJSON 兼容旧 vsync key）正是决策 1 的范本，本 ADR 是对其模式的推广。
+- 不取代 [ADR-137](adr-137-envstate-single-source-schema.md)——ADR-137 管 EnvState 字段 schema 本身，本 ADR 管持久化合并语义。
+- 不取代 [ADR-214](adr-214-menu-id-naming.md)——frameCapEnabled 的 `*bool` 迁移先例（UnmarshalJSON 兼容旧 vsync key）正是决策 1 的范本，本 ADR 是对其模式的推广。
 
 ## 影响与验收
 

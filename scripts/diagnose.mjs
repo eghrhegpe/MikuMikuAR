@@ -22,6 +22,7 @@
 import { execSync } from "node:child_process";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { readFileSync } from "node:fs";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const ROOT = resolve(__dirname, "..");
@@ -69,6 +70,37 @@ function runFrontend(label, npmScript) {
     return run(label, `npm run ${npmScript}`, { cwd: FRONTEND, critical: false });
 }
 
+// ── 继承 check:docs 门禁链（单一真相源，2026-08-06 方案 A）──
+// docs 段不再手维护「要跑哪些检查」清单：运行时解析 package.json 的 check:docs，
+// 展开全部 `node scripts/*.mjs [--flag]` 子命令（含 `npm run check:*` 嵌套，展开一层）。
+// 门禁链新增/删除项自动同步，杜绝「diagnose 落后 check:docs」漂移（曾落后 4 项）。
+function expandDocsGate() {
+    const pkg = JSON.parse(readFileSync(resolve(ROOT, "package.json"), "utf-8"));
+    const chain = pkg.scripts["check:docs"] || "";
+    const cmds = [];
+    const pushScript = (token) => {
+        const m = token.match(/node scripts\/(\S+\.mjs)(.*)$/);
+        if (m) {
+            cmds.push({ script: m[1], flags: m[2].trim() });
+        }
+    };
+    for (const token of chain.split("&&")) {
+        const t = token.trim();
+        const nest = t.match(/^npm run (\S+)$/);
+        if (nest) {
+            pushScript((pkg.scripts[nest[1]] || "").trim());
+        } else {
+            pushScript(t);
+        }
+    }
+    return cmds;
+}
+
+// 门禁链中的 critical 项（原 diagnose docs 段仅这两项 critical，保持语义）
+function isGateCritical(script) {
+    return script === "gen-status-index.mjs" || script === "check-doc-drift.mjs";
+}
+
 // ── 诊断流程 ──
 
 const args = process.argv.slice(2);
@@ -85,27 +117,19 @@ const SECTION = {
 let passed = 0;
 
 if (docsOnly) {
-    SECTION.docs("ADR 健康");
+    SECTION.docs("docs 门禁链（继承 check:docs，真相源=package.json）");
+    const gate = expandDocsGate();
+    for (const { script, flags } of gate) {
+        const label = script.replace(/\.mjs$/, "") + (flags ? ` ${flags}` : "");
+        runTask(label, `${script} ${flags}`.trim(), { critical: isGateCritical(script) }) && passed++;
+    }
+
+    SECTION.docs("diagnose 额外项");
     runTask("ADR 健康检查", "check-adr-health.mjs", { critical: false }) && passed++;
     runTask("ADR 技术债务", "check-adr-technical-debt.mjs", { critical: false }) && passed++;
-    runTask("ADR 取代标记", "gen-adr-supersede.mjs --check", { critical: false }) && passed++;
-
-    SECTION.docs("知识库");
-    runTask("check:status", "gen-status-index.mjs --reverse --check") && passed++;
-    runTask("文档漂移", "check-doc-drift.mjs") && passed++;
-    runTask("知识图", "gen-knowledge-graph.mjs --check --file docs/knowledge/graph.md", { critical: false }) && passed++;
-    runTask("知识卡 H1", "gen-knowledge-h1.mjs --check", { critical: false }) && passed++;
-    runTask("路由表", "gen-routes.mjs --check", { critical: false }) && passed++;
-    runTask("知识-ADR", "gen-knowledge-adr.mjs --check", { critical: false }) && passed++;
-    runTask("知识测试", "gen-knowledge-tests.mjs --check", { critical: false }) && passed++;
-
-    SECTION.docs("索引与链接");
-    runTask("docsindex", "gen-docs-index.mjs --check", { critical: false }) && passed++;
-    runTask("menumap", "gen-menu-map.mjs --check", { critical: false }) && passed++;
-    runTask("链接检查", "link-checker.mjs --strict", { critical: false }) && passed++;
 
     console.log(`\n${CYAN}════════════════════════════════════${RESET}`);
-    console.log(`  诊断完成（仅 docs/知识库 模块，${passed} 项通过）`);
+    console.log(`  诊断完成（docs/知识库，门禁链 ${gate.length} 项 + 额外 ${2} 项，${passed} 项通过）`);
     process.exit(0);
 }
 

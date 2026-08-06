@@ -131,6 +131,14 @@ function main() {
     for (let i = headerEnd; i < lines.length; i++) {
       const line = lines[i];
 
+      // [fix 2026-08-06] 否定宣称行跳过：ADR 常写「本 ADR **不**取代 [ADR-NNN]」澄清边界，
+      // RE_CLAIM_A 会把「不取代 ADR-100」误判为宣称 → 误报漏标。整行含否定宣称词即跳过
+      // （RE_NEGATED 已扩展覆盖 取代/替代/推翻/废弃/废除；混排「不取代X 且 取代Y」极罕见，
+      // 行级跳过可接受）。
+      if (RE_NEGATED.test(line)) {
+        continue;
+      }
+
       // ② 明确宣称结构:行内「取代/替代…ADR-NNN」或「ADR-NNN…已废弃」,抽取全部目标
       const targets = [];
       for (const m of line.matchAll(RE_CLAIM_A_G)) targets.push(parseInt(m[1], 10));
