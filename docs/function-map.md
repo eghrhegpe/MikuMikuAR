@@ -456,8 +456,8 @@
 | `safeCallAsync()` | `core/safe-call:46` | 安全执行异步函数；异常时记录 logWarn(tag, msg, err)，返回的 Promise 解析为 undefined（不 reject），等价于 &#96;promise.cat |
 | `safeCallVoid()` | `core/safe-call:32` | 同 safeCall，但 fn 无返回值。 |
 | `SceneActions()` | `core/scene-action-bridge:10` | — |
-| `getSceneAction()` | `core/scene-action-bridge:176` | — |
-| `registerSceneAction()` | `core/scene-action-bridge:166` | 注册单个场景操作（scene 侧启动时调用） |
+| `getSceneAction()` | `core/scene-action-bridge:186` | — |
+| `registerSceneAction()` | `core/scene-action-bridge:171` | 注册单个场景操作（scene 侧启动时调用）。 |
 | `createDefaultFeetState()` | `core/scene-state:47` | [doc:adr-085] 脚部地面跟随默认状态（Phase A 参数） |
 | `focusedModelId()` | `core/scene-state:62` | — |
 | `getMmdRuntimeType()` | `core/scene-state:25` | — |
@@ -1097,32 +1097,32 @@
 | `setOnTerrainReady()` | `scene/env/env-ground:806` | — |
 | `tickGround()` | `scene/env/env-ground:1319` | — |
 | `triggerTerrainReady()` | `scene/env/env-ground:811` | ADR-226: 供 env-ground-spec.ts 的地形 onReady 回调触发已注册监听（避免直接访问模块局部 _onTerrainReady）。 |
-| `_envSys()` | `scene/env/env-impl:20` | — |
-| `addGroundRipple()` | `scene/env/env-impl:23` | — |
-| `addRipple()` | `scene/env/env-impl:23` | — |
-| `applyFog()` | `scene/env/env-impl:222` | — |
-| `applyGround()` | `scene/env/env-impl:47` | — |
-| `applySky()` | `scene/env/env-impl:43` | — |
-| `clearGroundRipples()` | `scene/env/env-impl:23` | — |
-| `clearRipples()` | `scene/env/env-impl:23` | — |
-| `createClouds()` | `scene/env/env-impl:34` | — |
-| `createParticleEmitter()` | `scene/env/env-impl:69` | — |
-| `createWater()` | `scene/env/env-impl:23` | — |
-| `disposeClouds()` | `scene/env/env-impl:34` | — |
-| `disposeEnvUpdateObserver()` | `scene/env/env-impl:194` | — |
-| `disposeParticles()` | `scene/env/env-impl:69` | — |
-| `disposeWater()` | `scene/env/env-impl:23` | — |
-| `ensureEnvUpdateObserver()` | `scene/env/env-impl:122` | — |
-| `getGroundHeightAt()` | `scene/env/env-impl:47` | — |
-| `getScene()` | `scene/env/env-impl:20` | — |
-| `initEnvImpl()` | `scene/env/env-impl:75` | — |
-| `refreshWaterRenderList()` | `scene/env/env-impl:23` | — |
-| `registerSceneTickCallback()` | `scene/env/env-impl:72` | — |
-| `setOnGroundChanged()` | `scene/env/env-impl:47` | — |
-| `setOnTerrainReady()` | `scene/env/env-impl:47` | — |
-| `updateParticleTexture()` | `scene/env/env-impl:69` | — |
-| `updateParticleWind()` | `scene/env/env-impl:69` | — |
-| `updateWaterAnimSpeed()` | `scene/env/env-impl:23` | — |
+| `_envSys()` | `scene/env/env-impl:21` | — |
+| `addGroundRipple()` | `scene/env/env-impl:24` | — |
+| `addRipple()` | `scene/env/env-impl:24` | — |
+| `applyFog()` | `scene/env/env-impl:227` | — |
+| `applyGround()` | `scene/env/env-impl:48` | — |
+| `applySky()` | `scene/env/env-impl:44` | — |
+| `clearGroundRipples()` | `scene/env/env-impl:24` | — |
+| `clearRipples()` | `scene/env/env-impl:24` | — |
+| `createClouds()` | `scene/env/env-impl:35` | — |
+| `createParticleEmitter()` | `scene/env/env-impl:70` | — |
+| `createWater()` | `scene/env/env-impl:24` | — |
+| `disposeClouds()` | `scene/env/env-impl:35` | — |
+| `disposeEnvUpdateObserver()` | `scene/env/env-impl:195` | — |
+| `disposeParticles()` | `scene/env/env-impl:70` | — |
+| `disposeWater()` | `scene/env/env-impl:24` | — |
+| `ensureEnvUpdateObserver()` | `scene/env/env-impl:123` | — |
+| `getGroundHeightAt()` | `scene/env/env-impl:48` | — |
+| `getScene()` | `scene/env/env-impl:21` | — |
+| `initEnvImpl()` | `scene/env/env-impl:76` | — |
+| `refreshWaterRenderList()` | `scene/env/env-impl:24` | — |
+| `registerSceneTickCallback()` | `scene/env/env-impl:73` | — |
+| `setOnGroundChanged()` | `scene/env/env-impl:48` | — |
+| `setOnTerrainReady()` | `scene/env/env-impl:48` | — |
+| `updateParticleTexture()` | `scene/env/env-impl:70` | — |
+| `updateParticleWind()` | `scene/env/env-impl:70` | — |
+| `updateWaterAnimSpeed()` | `scene/env/env-impl:24` | — |
 | `CategorizedEnvPreset()` | `scene/env/env-lighting:287` | 分类预设（version 3 格式）。 |
 | `DerivedLighting()` | `scene/env/env-lighting:37` | — |
 | `ENV_PRESET_FIELDS()` | `scene/env/env-lighting:166` | 各类别包含的 EnvState 字段白名单。未列入的字段（如 collision*）不参与任何预设。 |
@@ -1135,17 +1135,17 @@
 | `exportCategorizedEnvPreset()` | `scene/env/env-lighting:312` | 序列化分类预设为 JSON 字符串。 |
 | `importCategorizedEnvPreset()` | `scene/env/env-lighting:329` | 从 JSON 字符串反序列化分类预设，失败返回 null。 |
 | `snapshotEnvPresetByCategory()` | `scene/env/env-lighting:295` | 从当前 envState 快照指定类别的字段。数组字段做浅拷贝避免别名。 |
-| `applyWetnessToInst()` | `scene/env/env-particles:34` | — |
-| `applyWindToParticles()` | `scene/env/env-particles:826` | — |
-| `createParticleEmitter()` | `scene/env/env-particles:406` | — |
-| `disposeParticles()` | `scene/env/env-particles:503` | — |
-| `disposeSplash()` | `scene/env/env-particles:685` | 销毁 splash burst 池 |
-| `getCurrentParticleType()` | `scene/env/env-particles:532` | 获取当前粒子类型（用于 particleEnabled 自动启停） |
-| `isWetnessActive()` | `scene/env/env-particles:34` | — |
-| `syncSplashState()` | `scene/env/env-particles:703` | 溅射开关切换（由 env-impl 检测 particleSplashEnabled 变化时调用） |
-| `updateParticleParams()` | `scene/env/env-particles:851` | 运行时更新粒子参数（密度/大小/速度），响应滑条变化 |
-| `updateParticleTexture()` | `scene/env/env-particles:868` | — |
-| `updateParticleWind()` | `scene/env/env-particles:844` | — |
+| `applyWetnessToInst()` | `scene/env/env-particles:36` | — |
+| `applyWindToParticles()` | `scene/env/env-particles:837` | — |
+| `createParticleEmitter()` | `scene/env/env-particles:408` | — |
+| `disposeParticles()` | `scene/env/env-particles:507` | — |
+| `disposeSplash()` | `scene/env/env-particles:689` | 销毁 splash burst 池 |
+| `getCurrentParticleType()` | `scene/env/env-particles:536` | 获取当前粒子类型（用于 particleEnabled 自动启停） |
+| `isWetnessActive()` | `scene/env/env-particles:36` | — |
+| `syncSplashState()` | `scene/env/env-particles:711` | 溅射开关切换（由 env-impl 检测 particleSplashEnabled 变化时调用） |
+| `updateParticleParams()` | `scene/env/env-particles:862` | 运行时更新粒子参数（密度/大小/速度），响应滑条变化 |
+| `updateParticleTexture()` | `scene/env/env-particles:879` | — |
+| `updateParticleWind()` | `scene/env/env-particles:855` | — |
 | `ReflectionMode()` | `scene/env/env-reflection:31` | — |
 | `ResolvedReflectionMode()` | `scene/env/env-reflection:33` | — |
 | `applyReflection()` | `scene/env/env-reflection:413` | 反射子系统统一入口。参考 applySky 模式： 1. |

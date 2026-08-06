@@ -27,10 +27,12 @@ invariants:
   - disposeParticles 可选保留湿身效果（keepWetness）
   - 粒子数量根据性能等级动态调整
   - splash 粒子（水滴溅射）独立于主粒子发射器管理（对象池 _splashBurstPool）
-  - fireworks burst 调度（scheduleNextFireworkBurst/stopFireworkBursts）与碰撞检测 observer 配对释放
+  - fireworks burst 调度（scheduleNextFireworkBurst/stopFireworkBursts）与碰撞检测 observer 配对释放；splash/firework 50ms emitRate 停发 timer 存于 burst 实例（emitStopTimer）dispose 时一并清除
   - applyWetnessToInst/isWetnessActive 由 env-wetness.ts 导出，本文件仅 re-export（ADR-160 湿身联动）
+  - 湿身切换按「进入 rain 激活 / 离开 rain 移除」独立判断（rain→snow 切换须移除湿身）
   - createParticleEmitter 返回 void（系统挂到 _envSys.particles.system），非 ParticleSystem
-tests: []
+tests:
+  - frontend/src/__tests__/scene/env-particles.test.ts
 use_when:
   - 粒子
   - 雪花
