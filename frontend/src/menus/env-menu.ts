@@ -274,6 +274,12 @@ function envOnItemClick(row: PopupRow): void {
     const target = getEnvTextureBindingTarget();
     clearEnvTextureBindingTarget();
     closeAllOverlays();
+    // [fix P3] target 类型含 null：正常流程经 openTexturePicker→setEnvTextureBindingTarget
+    // 先设置，但外部直接派发 click（无前置 set）时 target===null → 拼出
+    // "env:bind-null-texture" 伪 actionId 触发"不支持的操作"；前置守卫短路。
+    if (!target) {
+        return;
+    }
 
     const actionId = `env:bind-${target}-texture`;
     // [audit-p4] 消费执行结果：纹理绑定失败时向用户反馈，不静默丢弃
@@ -303,7 +309,10 @@ function envOnFolderEnter(row: PopupRow): PopupLevel | null {
     const builder = ENV_FOLDER_ROUTES[row.target as string];
     if (builder) {
         const lvl = builder();
-        lvl.itemBuilder = () => builder().items;
+        // [fix P3] 复用首次 builder() 结果的 items：此前 `() => builder().items`
+        // 每次 itemBuilder 触发都会再调一次 builder()（副作用重入/重复注册风险），
+        // 且首次 lvl.items 与 itemBuilder 返回值来自两次不同调用，语义不一致。
+        lvl.itemBuilder = () => lvl.items;
         return lvl;
     }
     return null;

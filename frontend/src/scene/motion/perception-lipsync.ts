@@ -182,7 +182,7 @@ export function _applyLipSync(
         openMorph.influence = openWeight;
     }
 
-    // 多口型 morph（close 反比 + pucker 高频驱动）
+    // 多口型 morph（close 反比 + pucker 高频驱动 + smile 微笑表情）
     if (perceptionState.lipSyncMultiMorphEnabled && rt.morphSet) {
         // close：与 open 反比（嘴开时 close=0，嘴闭时 close=1）
         if (rt.morphSet.close) {
@@ -208,14 +208,15 @@ export function _applyLipSync(
                 puckerMorph.influence = puckerWeight;
             }
         }
-    }
-
-    // smile：高频能量大时轻微微笑（模拟说话表情）
-    if (rt.morphSet?.smile) {
-        const smileWeight = Math.max(0, openWeight * 0.3 - 0.1);
-        const smileMorph = morphManager.getTargetByName(rt.morphSet.smile);
-        if (smileMorph) {
-            smileMorph.influence = smileWeight;
+        // smile：高频能量大时轻微微笑（模拟说话表情）
+        // [fix P2] 此前 smile 在开关块之外无条件应用——用户关闭「多口型」后
+        // smile 仍被写入，与开关语义矛盾；移入 lipSyncMultiMorphEnabled 块内。
+        if (rt.morphSet.smile) {
+            const smileWeight = Math.max(0, openWeight * 0.3 - 0.1);
+            const smileMorph = morphManager.getTargetByName(rt.morphSet.smile);
+            if (smileMorph) {
+                smileMorph.influence = smileWeight;
+            }
         }
     }
 }
