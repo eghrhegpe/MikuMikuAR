@@ -448,16 +448,21 @@ export async function refreshLibrary(): Promise<void> {
     if (models === undefined) {
         // [fix P2] 扫描失败分支也恢复浏览路径 + 显式提示缓存态，
         // 避免用户停留在被清空的视图上且路径恢复逻辑被跳过。
-        if (prevPath.length > 0 && libraryRoot) {
+        // [fix code_review P2×2] ① stack 可能为 null（扫描期间 popup 被关闭，library-browse
+        // onClose 置 null）——null 守卫防 .push 抛 TypeError；② push 前先 resetToRoot 镜像
+        // 成功分支（showModelPopup→resetToRoot），避免旧层级叠加导致 back 导航/路径重复。
+        const stack = stackRegistry.modelStack;
+        if (prevPath.length > 0 && libraryRoot && stack) {
+            stack.resetToRoot();
             const rootDir = normPath(libraryRoot);
             const rootLevel = buildLevel(
                 rootDir,
                 t('library.title'),
                 (m) => m.format === 'pmx',
-                stackRegistry.modelStack!,
+                stack,
                 []
             );
-            stackRegistry.modelStack!.push(rootLevel);
+            stack.push(rootLevel);
             restoreBrowsePath(prevPath);
         }
         return;
