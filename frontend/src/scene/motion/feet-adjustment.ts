@@ -272,14 +272,16 @@ function _adjustFoot(
     const moduleId = side === 'L' ? 'left-foot' : 'right-foot';
     const st = getModuleState(modelId, moduleId);
     const fp = st?.params;
+    // [fix P2] NaN 守卫：params 字段缺失时裸 as number 得 NaN，NaN !== 0 恒真
+    // → 误判「有非零参数」而跳过自动贴地。改为 Number.isFinite + 非零双条件。
     const hasModParams =
         fp &&
-        ((fp.pitch as number) !== 0 ||
-            (fp.yaw as number) !== 0 ||
-            (fp.roll as number) !== 0 ||
-            (fp.footPosX as number) !== 0 ||
-            (fp.footPosY as number) !== 0 ||
-            (fp.footPosZ as number) !== 0);
+        ((Number.isFinite(fp.pitch) && (fp.pitch as number) !== 0) ||
+            (Number.isFinite(fp.yaw) && (fp.yaw as number) !== 0) ||
+            (Number.isFinite(fp.roll) && (fp.roll as number) !== 0) ||
+            (Number.isFinite(fp.footPosX) && (fp.footPosX as number) !== 0) ||
+            (Number.isFinite(fp.footPosY) && (fp.footPosY as number) !== 0) ||
+            (Number.isFinite(fp.footPosZ) && (fp.footPosZ as number) !== 0));
     if (hasModParams) {
         return;
     }
