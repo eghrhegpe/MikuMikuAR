@@ -143,6 +143,19 @@ function _setProcForModel(id: string, inst: ModelInstance, role: 'idle' | 'autod
  */
 let _applyingMotionId: string | null = null;
 
+/** [fix P3] 场景无默认动作时清模型旧 VMD，避免残留播放。
+ *  镜像 motion-binding-ui 广播处理器的 null-intent 清理契约
+ *  （setRuntimeAnimation(null) + vmdData/vmdPath/vmdName 复位）。 */
+function _clearModelMotion(inst: ModelInstance): void {
+    if (inst.mmdModel && inst.vmdPath) {
+        inst.mmdModel.setRuntimeAnimation(null);
+        inst.vmdData = null;
+        inst.vmdName = '';
+        inst.vmdPath = null;
+        inst.animationDuration = 0;
+    }
+}
+
 function _applyLoadedMotion(id: string, inst: ModelInstance): void {
     const slots = _ensureMotionSlots(inst);
     const pinned = slots.primary.pinned;
@@ -458,6 +471,9 @@ export function buildMotionSlotLevel(id: string, inst: ModelInstance): PopupLeve
                                 const active = getActiveMotion();
                                 if (active) {
                                     applyIntentToModel(id, active, getMotionGen());
+                                } else {
+                                    // [fix P3] 无默认动作时清旧 VMD，避免残留播放（镜像广播处理器契约）
+                                    _clearModelMotion(inst);
                                 }
                                 stackRegistry.modelStack?.reRender();
                             },
@@ -513,6 +529,9 @@ export function buildMotionSlotLevel(id: string, inst: ModelInstance): PopupLeve
                                 const active = getActiveMotion();
                                 if (active) {
                                     applyIntentToModel(id, active, getMotionGen());
+                                } else {
+                                    // [fix P3] 无默认动作时清旧 VMD，避免残留播放（镜像广播处理器契约）
+                                    _clearModelMotion(inst);
                                 }
                                 stackRegistry.modelStack?.reRender();
                             },
@@ -994,6 +1013,15 @@ function buildModelTagsSchema(id: string): MenuNode[] {
                                 (libRef ? GetTagsByModel(libRef) : Promise.resolve(null)).then(
                                     (modelTags) => {
                                         if (!container.isConnected) {
+                                            return;
+                                        }
+                                        // [fix P3] libRef 为 null（模型无 filePath）时渲染 noPath 消息，
+                                        // 不渲染可点击但无效的 chips（对齐 refreshTags L936-939 契约）
+                                        if (!libRef) {
+                                            picker.innerHTML =
+                                                '<span class="tag-empty">' +
+                                                t('model-detail.noPath') +
+                                                '</span>';
                                             return;
                                         }
                                         (modelTags || []).forEach((tm) => assigned.add(tm));

@@ -272,13 +272,14 @@ func (a *App) writeIndexAfterScan(cfg *Config) error {
 	latest, lErr := a.getConfigUnsafe()
 	a.configMu.RUnlock()
 	if lErr == nil && latest != nil && indexRelevantChanged(fresh, latest) {
-		fresh = latest
-		models2, err2 := a.scanAllCategories(fresh)
+		models2, err2 := a.scanAllCategories(latest)
 		if err2 != nil {
-			// 配置已持久化，此处失败不应丢弃首次有效扫描结果：保留 models
-			//（略旧但比"config 新 + index 旧 + 假错误"更合理），仅记警告。
+			// 配置已持久化，此处失败不应丢弃首次有效扫描结果：保留 (models, fresh)
+			// 一致对（略旧但自洽），仅记警告；不把 fresh 换成 latest，否则会拿旧
+			// models 写到新 settingDir，造成"config 新 + index 旧"的不一致。
 			a.safeLogWarning("writeIndexAfterScan: 二次扫描失败，保留首次结果: %v", err2)
 		} else {
+			fresh = latest
 			models = models2
 		}
 	}

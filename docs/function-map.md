@@ -2141,15 +2141,15 @@
 | `SlideMenu()` | `menus/menu:40` | — |
 | `getCurrentRenderingMenu()` | `menus/menu:40` | 获取当前正在渲染的 SlideMenu 实例（供 menus 层控件的自更新注册）。 |
 | `getOpenMenus()` | `menus/menu:48` | 获取所有当前存活的 SlideMenu 实例（已 dispose 的会自动移除，调用方仍需自行判断可见性） |
-| `buildBoneHierarchyLevel()` | `menus/model-detail:1502` | — |
-| `buildModelInfoLevel()` | `menus/model-detail:862` | — |
-| `buildModelLevel()` | `menus/model-detail:621` | — |
-| `buildModelTagsLevel()` | `menus/model-detail:1068` | — |
-| `buildModelToolsLevel()` | `menus/model-detail:564` | [doc:adr-167] 叠加动作次级菜单已移除（ADR-144 per-model overlay 废弃）。 |
-| `buildMorphPreviewLevel()` | `menus/model-detail:1178` | — |
-| `buildMotionSlotLevel()` | `menus/model-detail:429` | 构建动作1（基础）次级菜单：场景库选择 + 已加载动作 + 程序化动作 |
-| `buildOpenWithLevel()` | `menus/model-detail:268` | — |
-| `buildPersonalLightLevel()` | `menus/model-detail:1191` | — |
+| `buildBoneHierarchyLevel()` | `menus/model-detail:1530` | — |
+| `buildModelInfoLevel()` | `menus/model-detail:881` | — |
+| `buildModelLevel()` | `menus/model-detail:640` | — |
+| `buildModelTagsLevel()` | `menus/model-detail:1096` | — |
+| `buildModelToolsLevel()` | `menus/model-detail:583` | [doc:adr-167] 叠加动作次级菜单已移除（ADR-144 per-model overlay 废弃）。 |
+| `buildMorphPreviewLevel()` | `menus/model-detail:1206` | — |
+| `buildMotionSlotLevel()` | `menus/model-detail:442` | 构建动作1（基础）次级菜单：场景库选择 + 已加载动作 + 程序化动作 |
+| `buildOpenWithLevel()` | `menus/model-detail:281` | — |
+| `buildPersonalLightLevel()` | `menus/model-detail:1219` | — |
 | `buildMatRootLevel()` | `menus/model-material:446` | — |
 | `ModelPresetEntry()` | `menus/model-preset:37` | — |
 | `ModelPresetFile()` | `menus/model-preset:46` | — |
