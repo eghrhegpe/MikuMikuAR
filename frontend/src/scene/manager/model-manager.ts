@@ -33,6 +33,7 @@ import { clamp01 } from '@/core/clamp';
 import { swallowError } from '@/core/async';
 import { logWarn } from '@/core/logger';
 import { disposeModelMaterialState, _applyAll, type AlphaCtx } from './material';
+import { disposeVmdLayerState } from '../motion/vmd-layers';
 import { applyWetnessToInst } from '@/scene/env/env-wetness';
 // [doc:adr-238] 骨骼覆写类型经 scene-action-bridge（bone-override 注册）
 import type { OverrideType } from '../motion/bone-override';
@@ -345,6 +346,9 @@ export class ModelManager {
         this.destroyBoneOverlay(id);
 
         disposeModelMaterialState(id);
+        // [fix P2] 模型销毁时清理 vmd-layers 模块级 per-model 状态
+        // （_rebuildGenMap/_prevGazeActiveMap 条目积累 + 同 ID 复用读到陈旧状态）
+        disposeVmdLayerState(id);
 
         // Update focus
         if (configFocusedId === id) {

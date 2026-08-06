@@ -538,6 +538,11 @@ async function _rebuildComposite(
                     ? _filterVmdBones(src.data, src.boneFilter)
                     : src.data;
                 const mmdAnimation = await vmdLoader.loadFromBufferAsync(src.name, loadData);
+                // [fix P2] await 后重校验 gen：加载期间新 rebuild 到来时放弃本次，
+                // 避免继续消费剩余 sources 构建被丢弃的 span（与 L534 循环顶部检查配对）
+                if (_rebuildGenMap.get(modelId) !== gen) {
+                    return;
+                }
                 const endFrame = mmdAnimation.endFrame;
                 if (endFrame > maxEndFrame) {
                     maxEndFrame = endFrame;
@@ -675,4 +680,12 @@ export function getVmdLayers(modelId: string): VmdLayer[] {
  *  内部有 generation 去重，连续调用不会重复执行。 */
 export function rebuildCompositeAnimation(modelId: string): void {
     void _rebuildCompositeAnimation(modelId);
+}
+
+/** [fix P2] 模型销毁时清理 vmd-layers 模块级 per-model 状态。
+ *  由 model-manager.remove 调用；防止 _rebuildGenMap/_prevGazeActiveMap 条目积累，
+ *  并避免同 ID 复用场景读到陈旧 gen/gaze 状态。 */
+export function disposeVmdLayerState(modelId: string): void {
+    _rebuildGenMap.delete(modelId);
+    _prevGazeActiveMap.delete(modelId);
 }

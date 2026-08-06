@@ -18,6 +18,7 @@ symbols:
   - addGazeLayer
   - addVmdLayer
   - addVmdLayersFromPaths
+  - disposeVmdLayerState
   - getVmdLayers
   - rebuildCompositeAnimation
   - removeVmdLayer
