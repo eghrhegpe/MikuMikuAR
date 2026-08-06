@@ -73,6 +73,10 @@ interface _WindSub {
 }
 const _subs = new Map<IMmdRuntime, _WindSub>();
 
+/** [fix code_review P3] impl 缺失告警防刷屏：每次会话仅告警一次（对齐 mmd-adapter
+ *  _nativeMissingWarned 先例）。订阅成功后复位，使后续真实失败仍可观测。 */
+let _implMissingWarned = false;
+
 /**
  * physics sync 回调 — 在 Bullet 评估前施加风力。
  * 注意：Buffered 模式下此回调在锁内执行，applyCentralForce 会自动等待锁。
@@ -177,10 +181,15 @@ function _trySubscribe(runtime: IMmdRuntime): void {
     if (!impl) {
         // [fix P2] 显式告警：physics impl 未就绪时静默返回会导致「风参数生效但
         // 物理无反应」的不可观测状态；告警暴露 retry 时机依赖（model-loader 漏调
-        // 时用户/日志可发现）。参照 mmd-adapter _nativeMissingWarned 先例，防刷屏。
-        logWarn('wind-physics', 'physics impl 未就绪，风力注入暂未订阅（等待 retryWindPhysicsSubscription）');
+        // 时用户/日志可发现）。[fix code_review P3] 防刷屏：impl 持续缺失时
+        // 每次模型加载都会重试，仅首次告警；订阅成功后复位（后续真实失败可观测）。
+        if (!_implMissingWarned) {
+            _implMissingWarned = true;
+            logWarn('wind-physics', 'physics impl 未就绪，风力注入暂未订阅（等待 retryWindPhysicsSubscription）');
+        }
         return;
     }
+    _implMissingWarned = false;
 
     sub.observer = observe(impl.onSyncObservable, () => _onPhysicsSync(impl));
 }

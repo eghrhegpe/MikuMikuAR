@@ -152,6 +152,12 @@ vi.mock('@/core/observer-handle', () => ({
     observe: mockObserve,
 }));
 
+// ======== mock logger（捕获 logWarn 断言 impl 缺失告警） ========
+const mockLogWarn = vi.hoisted(() => vi.fn());
+vi.mock('@/core/logger', () => ({
+    logWarn: mockLogWarn,
+}));
+
 import { getPhysicsImpl, getRigidBodyBundleMap } from '@/core/mmd-adapter';
 import { observe } from '@/core/observer-handle';
 import {
@@ -304,6 +310,61 @@ describe('wind-physics 状态机', () => {
 
         it('空 dispose 不抛异常', () => {
             expect(() => disposeWindPhysics()).not.toThrow();
+        });
+
+        it('per-runtime dispose：仅清理指定 runtime 的 observer，其他 runtime 保持订阅', () => {
+            const rt1 = makeWasmRuntime();
+            const rt2 = makeWasmRuntime();
+            initWindPhysics(rt1);
+            initWindPhysics(rt2);
+            expect(observe).toHaveBeenCalledTimes(2);
+
+            disposeWindPhysics(rt1);
+
+            // rt1 的 observer 被 dispose；rt2 的 observer 未被 dispose
+            expect(mocks.observerHandle.dispose).toHaveBeenCalledTimes(1);
+            // rt2 仍保持订阅：再次全局 retry 不新增 observer（已订阅守卫）
+            const callsBefore = observe.mock.calls.length;
+            retryWindPhysicsSubscription();
+            expect(observe.mock.calls.length).toBe(callsBefore);
+        });
+
+        it('per-runtime dispose 后该 runtime 可重新订阅', () => {
+            const rt1 = makeWasmRuntime();
+            initWindPhysics(rt1);
+            disposeWindPhysics(rt1);
+
+            vi.clearAllMocks();
+            initWindPhysics(rt1);
+
+            expect(observe).toHaveBeenCalledTimes(1);
+        });
+    });
+
+    describe('impl 缺失告警（P2 + code_review P3 防刷屏）', () => {
+        it('impl 缺失时 logWarn 恰好一次（多次重试不刷屏）', () => {
+            mocks.implReturn = null;
+            const rt = makeWasmRuntime();
+            initWindPhysics(rt); // 第一次：告警
+            retryWindPhysicsSubscription(rt); // 第二次：防刷屏不重复
+            retryWindPhysicsSubscription(rt);
+
+            expect(mockLogWarn).toHaveBeenCalledTimes(1);
+        });
+
+        it('impl 就绪后复位：后续再次缺失可再次告警', () => {
+            // 前置：rt1 订阅成功（复位 _implMissingWarned 标志，隔离前序测试残留）
+            mocks.implReturn = mocks.mockImpl;
+            const rt1 = makeWasmRuntime();
+            initWindPhysics(rt1);
+            expect(observe).toHaveBeenCalledTimes(1);
+
+            // rt2 全新 runtime：impl 缺失 → 可再次告警（复位后真实失败可观测）
+            mocks.implReturn = null;
+            const rt2 = makeWasmRuntime();
+            mockLogWarn.mockClear();
+            initWindPhysics(rt2);
+            expect(mockLogWarn).toHaveBeenCalledTimes(1);
         });
     });
 
