@@ -44,7 +44,7 @@
     "gen:knowledge-tests": "node scripts/gen-knowledge-tests.mjs",
     "check:knowledge-tests": "node scripts/gen-knowledge-tests.mjs --check",
     "gen:guide-gap": "node scripts/gen-guide-gap.mjs",
-    "test:scripts": "node --test scripts/_lib/source-graph.test.mjs scripts/_lib/parse-args.test.mjs scripts/_lib/frontmatter.test.mjs scripts/_lib/circular.test.mjs scripts/_lib/supersede.test.mjs scripts/_lib/to-posix.test.mjs scripts/check-cli.smoke.test.mjs scripts/__tests__/check-diff-coverage.test.mjs scripts/__tests__/codemod.test.mjs scripts/__tests__/new-adr.test.mjs",
+    "test:scripts": "node --test scripts/_lib/source-graph.test.mjs scripts/_lib/parse-args.test.mjs scripts/_lib/frontmatter.test.mjs scripts/_lib/circular.test.mjs scripts/_lib/supersede.test.mjs scripts/_lib/to-posix.test.mjs scripts/check-cli.smoke.test.mjs scripts/__tests__/check-diff-coverage.test.mjs scripts/__tests__/codemod.test.mjs scripts/__tests__/new-adr.test.mjs scripts/__tests__/check-layering.test.mjs",
     "codemod": "cd frontend && node ../scripts/codemod.mjs",
     "diagnose": "node scripts/diagnose.mjs",
     "diagnose:docs": "node scripts/diagnose.mjs -does",

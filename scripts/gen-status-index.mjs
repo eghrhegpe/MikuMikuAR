@@ -27,6 +27,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { parseArgs } from './_lib/parse-args.mjs';
 import { ROOT } from './_lib/scan-files.mjs';
+import { parseAdrHeader } from './_lib/frontmatter.mjs';
 
 const args = parseArgs(process.argv.slice(2), { bools: ['reverse', 'check'], strings: [], defaults: {} });
 if (args.help) {
@@ -48,70 +49,20 @@ const MARKER_END   = '<!-- GEN:ADR_INDEX end -->';
 
 // ── 解析单个 ADR 文件 ──
 
+// [P2] 首部解析收口共享库 _lib/frontmatter.mjs 的 parseAdrHeader：
+// 兼容三种首部格式 + 无冒号标题 + `---` 早停（本文件此前手写正则复制，已实际漂移）。
+// parseAdrHeader 返回 { num, title, status, date, statusLine } 或 { error }，错误文案与旧实现兼容。
 function parseAdr(filePath) {
-  const text = fs.readFileSync(filePath, 'utf8');
-  const lines = text.split(/\r?\n/);
+  const hdr = parseAdrHeader(filePath);
+  if (hdr.error) return { error: hdr.error };
 
-  let num = null;
-  let title = '';
-  let status = '';
-  let date = '';
-
-  for (let i = 0; i < Math.min(lines.length, 20); i++) {
-    const line = lines[i];
-
-    // # ADR-NNN: Title(支持子编号,如 ADR-061.1;parseFloat 保持 61.1 与 61 不冲突)
-    const mTitle = line.match(/^#\s+ADR-([\d.]+):\s*(.+)/);
-    if (mTitle) {
-      num = parseFloat(mTitle[1]);
-      title = mTitle[2].trim();
-      continue;
-    }
-
-    // 兼容历史 ADR 首部：blockquote / 无序列表 / 表格字段。
-    // [：:] 前加 \s* 以兼容 **状态** ：xxx 等带空格的写法
-    const mStatus = line.match(/^>\s*\*\*状态\*\*\s*[：:]\s*(.+)/)
-      || line.match(/^[-*]\s*\*\*状态\*\*\s*[：:]\s*(.+)/)
-      || line.match(/^\s*\*\*状态\*\*\s*[：:]\s*(.+)/)
-      || line.match(/^\|\s*\*\*状态\*\*\s*\|\s*(.+?)\s*\|\s*$/);
-    if (mStatus) {
-      status = mStatus[1].trim();
-      continue;
-    }
-
-    const mDate = line.match(/^>\s*\*\*日期\*\*\s*[：:]\s*(.+)/)
-      || line.match(/^[-*]\s*\*\*日期\*\*\s*[：:]\s*(.+)/)
-      || line.match(/^\s*\*\*日期\*\*\s*[：:]\s*(.+)/)
-      || line.match(/^\|\s*\*\*日期\*\*\s*\|\s*(.+?)\s*\|\s*$/);
-    if (mDate) {
-      date = mDate[1].trim();
-      continue;
-    }
+  // 若状态行未包含日期，追加日期（与旧实现行为一致）
+  let statusDisplay = hdr.status;
+  if (hdr.date && !hdr.status.includes(hdr.date)) {
+    statusDisplay = `${hdr.status}（${hdr.date}）`;
   }
 
-  if (num === null) {
-    return { error: `未找到 ADR 编号` };
-  }
-
-  if (!status) {
-    return { error: `未找到可解析的状态字段` };
-  }
-
-  if (!title) {
-    return { error: `未找到 ADR 标题` };
-  }
-
-  if (date && !/^\d{4}-\d{2}-\d{2}/.test(date)) {
-    return { error: `日期格式不可识别：${date}` };
-  }
-
-  // 若状态行未包含日期，追加日期
-  let statusDisplay = status;
-  if (date && !status.includes(date)) {
-    statusDisplay = `${status}（${date}）`;
-  }
-
-  return { num, title, status: statusDisplay };
+  return { num: hdr.num, title: hdr.title, status: statusDisplay };
 }
 
 // ── 生成 Markdown 表格 ──

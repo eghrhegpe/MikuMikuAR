@@ -181,6 +181,14 @@ test('RE_SUPERSEDED_BY: matched — 链接形式', () => {
   assert.equal(m[1], '113');
 });
 
+// [fix 2026-08-06] 存量 ADR-012「被 **[ADR-113](…)（体积云）** 取代」此前匹配失败
+test('RE_SUPERSEDED_BY: matched — 粗体 + 全角括号注记（ADR-012 形态）', () => {
+  const m = RE_SUPERSEDED_BY.exec('被 **[ADR-113](adr-113-volume-clouds.md)（体积云）** 取代');
+  assert.ok(m, '粗体收尾 + 全角括号应匹配');
+  assert.equal(m[1], '113');
+  assert.ok(RE_SUPERSEDED_BY.test('被 **[ADR-113](adr-113.md)** 取代'));
+});
+
 test('RE_SUPERSEDED_BY: matched — 替代', () => {
   assert.ok(RE_SUPERSEDED_BY.test('被ADR-084替代'));
 });
@@ -247,6 +255,12 @@ test('RE_SELF_DEPRECATED: matched — 直接开头', () => {
 
 test('RE_SELF_DEPRECATED: matched — 粗体加 emoji', () => {
   assert.ok(RE_SELF_DEPRECATED.test('🗑️ **已废弃**'));
+});
+
+// [fix 2026-08-06] ADR-061.1 子编号「⚠️ **整篇废弃**」此前因「整」字拦截未被任何层捕获
+test('RE_SELF_DEPRECATED: matched — 整篇/全篇废弃（ADR-061.1 形态）', () => {
+  assert.ok(RE_SELF_DEPRECATED.test('⚠️ **整篇废弃**（XPBD 移除，见 ADR-081）'));
+  assert.ok(RE_SELF_DEPRECATED.test('🗑️ 全篇废弃'));
 });
 
 test('RE_SELF_DEPRECATED: not matched — 正常状态', () => {

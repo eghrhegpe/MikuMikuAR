@@ -41,7 +41,7 @@ import {
 
 // [fix] CLI 健壮性契约：--help 自吐 JSDoc 退 0 / 未知 flag 退 1（2026-08-06）
 const _HELP = new Set(['--help', '-h']);
-const _KNOWN = new Set(['--check', '--quiet']);
+const _KNOWN = new Set(['--check', '--quiet', '--strict']);
 const _REST = process.argv.slice(2);
 if (_REST.some((a) => _HELP.has(a))) {
   const _SRC = fs.readFileSync(process.argv[1], 'utf-8');
@@ -65,6 +65,7 @@ const ADR_DIR = path.join(ROOT, 'docs', 'adr');
 
 const FLAG_CHECK = process.argv.includes('--check');
 const FLAG_QUIET = process.argv.includes('--quiet');
+const FLAG_STRICT = process.argv.includes('--strict'); // --strict：④可疑/⑤表格弱宣称也 exit 1
 
 // ── 已知勘误注记白名单（人工核对后登记，非取代关系，不再报 ④） ──
 // 判别：被提及方并非被「取代」，而是被勘误/引用/整合，状态行无废弃词属正常。
@@ -242,9 +243,13 @@ function main() {
 
   // --check 模式:仅漏标(②)是流程错误 → 退出码 1;
   // 废弃未指明(③)可能是合法登记(放弃/搁置本就无取代者),降级为提示不拦截。
-  if (FLAG_CHECK && unmarked.length > 0) {
+  // --strict:④ 可疑/⑤ 表格弱宣称也视为需人工确认 → exit 1(与 repo 其他 check 脚本惯例一致)。
+  if (FLAG_CHECK && (unmarked.length > 0 || (FLAG_STRICT && (suspicious.length > 0 || tableClaims.length > 0)))) {
     if (!FLAG_QUIET) {
       console.error(`\n⚠️ 存在 ${unmarked.length} 处漏标(正文宣称取代但首部未回标),请补标首部状态行。`);
+      if (FLAG_STRICT && (suspicious.length > 0 || tableClaims.length > 0)) {
+        console.error(`   --strict:另有 ${suspicious.length} 处可疑信号、${tableClaims.length} 处表格弱宣称待人工确认。`);
+      }
     }
     process.exit(1);
   }

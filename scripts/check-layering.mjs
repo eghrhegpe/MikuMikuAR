@@ -34,24 +34,29 @@ import { walk } from './_lib/scan-files.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, '..');
-const SRC_ROOT = resolve(REPO_ROOT, 'frontend', 'src');
-const BASELINE_FILE = resolve(REPO_ROOT, 'docs', '.layering-baseline.json');
+// 测试钩子：LAYERING_SRC / LAYERING_BASELINE 指向 fixture（真实运行不设，不受影响）
+const SRC_ROOT = process.env.LAYERING_SRC
+    ? resolve(process.env.LAYERING_SRC)
+    : resolve(REPO_ROOT, 'frontend', 'src');
+const BASELINE_FILE = process.env.LAYERING_BASELINE
+    ? resolve(process.env.LAYERING_BASELINE)
+    : resolve(REPO_ROOT, 'docs', '.layering-baseline.json');
 
 /** 顶层算法目录（ADR-242 认定的中间层） */
 const TOPLEVEL_ALGO = ['motion-algos'];
 
-const { json, update , help, unknown} = parseArgs(process.argv.slice(2), { bools: ['json', 'update'] });
-  if (help) {
-    const _src = fs.readFileSync(process.argv[1], 'utf-8');
+const { json, update, help, unknown } = parseArgs(process.argv.slice(2), { bools: ['json', 'update'] });
+if (help) {
+    const _src = readFileSync(process.argv[1], 'utf-8');
     const _s = _src.indexOf('/**');
     const _e = _src.indexOf('*/', _s);
     console.log(_src.slice(_s, _e + 2).replace(/^ \* ?/gm, '').trim());
     process.exit(0);
-  }
-  if (unknown && unknown.length) {
+}
+if (unknown && unknown.length) {
     console.error(`❌ 未知参数: ${unknown.join(', ')}（--help 查看用法）`);
     process.exit(1);
-  }
+}
 
 /* ---------- 收集源文件（复用 _lib/scan-files 共享遍历层） ---------- */
 const SCAN_OPTS = {
@@ -82,9 +87,19 @@ function resolveTarget(spec, fromSrcRel) {
 }
 
 /* ---------- 扫描 ---------- */
-// 匹配 import / export-from 语句，捕获是否 type-only 与来源字符串
-const IMPORT_RE = /^\s*(?:import|export)\s+(type\s+)?([^'"]*?)from\s*['"]([^'"]+)['"]/;
-const BARE_IMPORT_RE = /^\s*import\s*['"]([^'"]+)['"]/;
+// 跨行 import/export-from、副作用导入、动态 import（与 _lib/source-graph.mjs
+// parseSourceImports 同款模式，消除单行正则漏报「多行 import / await import()」的漂移）。
+// 捕获组1 = from 前文本（用于 type-only 判定），组2 = spec。
+const IMPORT_FROM_RE = /(?:^|\n)\s*(?:\/\/[^\n]*\n)*\s*(?:import|export)\b([\s\S]*?)\bfrom\s+['"]([^'"]+)['"]/gm;
+const IMPORT_SIDE_RE = /(?:^|\n)\s*(?:\/\/[^\n]*\n)*\s*import\s+['"]([^'"]+)['"]/gm;
+const IMPORT_DYNA_RE = /await\s+import\s*\(\s*['"]([^'"]+)['"]\s*\)/gm;
+
+/** from 前文本是否 type-only：`import type …` 或具名项全部带 `type` 前缀（`{ type A, type B }`）。 */
+function isTypeOnlyBody(body) {
+    const b = body.trim();
+    return /^type\b/.test(b)
+        || /^\{\s*(?:type\s+\w+(?:\s+as\s+\w+)?\s*,?\s*)+\}\s*$/.test(b);
+}
 
 const violations = [];
 
@@ -93,27 +108,15 @@ for (const abs of walk(SRC_ROOT, SCAN_OPTS)) {
     const fromLayer = layerOf(srcRel);
     if (!fromLayer || fromLayer === 'menus') continue; // menus 是顶层，向下依赖合法
 
-    const lines = readFileSync(abs, 'utf8').split('\n');
-    lines.forEach((line, i) => {
-        let spec = null;
-        let typeOnly = false;
+    const text = readFileSync(abs, 'utf8');
+    const lineOf = (idx) => text.slice(0, idx).split('\n').length;
 
-        const m = IMPORT_RE.exec(line);
-        if (m) {
-            spec = m[3];
-            // `import type … from`（整句 type-only），或具名项全部带 `type` 前缀
-            typeOnly = Boolean(m[1]) || /^\s*\{\s*(?:type\s+\w+(?:\s+as\s+\w+)?\s*,?\s*)+\}\s*$/.test(m[2]);
-        } else {
-            const b = BARE_IMPORT_RE.exec(line);
-            if (b) spec = b[1]; // 副作用导入，必为运行时
-        }
-        if (!spec) return;
-
+    const visit = (spec, typeOnly, idx) => {
+        if (typeOnly) return; // type-only 豁免
         const target = resolveTarget(spec, srcRel);
         if (!target) return;
         const toLayer = layerOf(target);
         if (!toLayer) return;
-        if (typeOnly) return; // type-only 豁免
 
         let rule = null;
         if (fromLayer === 'algo' && toLayer === 'menus') rule = 'R1';
@@ -121,8 +124,17 @@ for (const abs of walk(SRC_ROOT, SCAN_OPTS)) {
         else if (fromLayer === 'algo' && toLayer === 'scene') rule = 'R3';
         if (!rule) return;
 
-        violations.push({ rule, from: srcRel, line: i + 1, to: target, fromLayer, toLayer });
-    });
+        violations.push({ rule, from: srcRel, line: lineOf(idx), to: target, fromLayer, toLayer });
+    };
+
+    for (const re of [IMPORT_FROM_RE, IMPORT_SIDE_RE, IMPORT_DYNA_RE]) {
+        re.lastIndex = 0;
+        let m;
+        while ((m = re.exec(text)) !== null) {
+            if (re === IMPORT_FROM_RE) visit(m[2], isTypeOnlyBody(m[1]), m.index);
+            else visit(m[1], false, m.index);
+        }
+    }
 }
 
 /* ---------- 基线比对 ---------- */
