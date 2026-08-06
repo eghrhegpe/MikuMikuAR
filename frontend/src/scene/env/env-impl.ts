@@ -13,7 +13,6 @@ import { disposeTextureCache } from './_shared/env-texture';
 import { _envSys, getScene, getPipeline, isInitialized } from './_shared/env-context';
 import { clearSceneTickCallbacks, runSceneTickCallbacks } from './_bridge/env-dispatcher';
 import { clearEnvDtTickCallbacks, runEnvDtTickCallbacks } from './_bridge/env-dispatcher';
-import { clearAllEnvCallbacks } from './_bridge/env-dispatcher';
 import { causticsController } from './env-caustics';
 import { underwaterFogController } from './env-underwater-fog';
 
@@ -204,10 +203,10 @@ export function disposeEnvUpdateObserver(): void {
     // 清理所有场景 tick 回调（如 time-of-day），避免 HMR 重入时泄漏
     clearSceneTickCallbacks();
     clearEnvDtTickCallbacks();
-    // [fix P2] 清理 env 回调注册表：此前 clearAllEnvCallbacks 生产零调用（死兜底），
-    // HMR 重入时各子系统顶层 registerEnvCallback 创建新箭头函数对象（Set 无法按引用
-    // 去重），旧回调残留 → 同一 env 变化被新旧回调双重处理。与 scene-tick/dt-tick 对称。
-    clearAllEnvCallbacks();
+    // 注：env 回调注册表（registerEnvCallback）不在 dispose 清理——注册点在模块顶层、
+    // 页面加载单次执行，且无 init 重注册路径（tick 回调有 startTimeOfDay 重注册，
+    // env 回调无对应机制）。此前曾接线 clearAllEnvCallbacks()，但 dispose→re-init 后
+    // 注册表永久为空，用户 env 变更静默失效（code_review P2 回归，已回退）。
     // 释放共享焦散纹理（env-caustics controller 单例）
     causticsController.dispose();
     // [fix code_review P2] 同步复位 env-water 的焦散 diff guard 内存：
