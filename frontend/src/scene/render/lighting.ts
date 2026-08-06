@@ -20,6 +20,7 @@ import { setKey } from '@/core/set-key';
 import { safeDispose } from '@/core/dispose-helpers';
 import { col3FromTriple } from '@/core/color-helpers';
 import { envState } from '@/core/config';
+import { clamp } from '@/core/clamp';
 import { lightingState } from './lighting-state';
 import { _createStageLight, _updateIndicator, _disposeStageLightEntry } from './lighting-stage';
 import { _ensureShadow } from './lighting-shadow';
@@ -233,8 +234,24 @@ export function rebakeEnvBrightness(ratio: number): void {
     if (!lightingState.hemiLight || !lightingState.dirLight || ratio <= 0) {
         return;
     }
-    lightingState.hemiLight.intensity *= ratio;
-    lightingState.dirLight.intensity *= ratio;
+    // [audit:round13 P3] 防复利放大：
+    // 1) 非有限值（NaN/Infinity，如 envBrightness 极端值）直接忽略，避免强度被污染为 NaN；
+    // 2) 以首次调用时的强度为基准 + 累计比值重算，而非连续 `*= ratio`——
+    //    重复回调/同一增量多次应用会导致指数级放大（基准方案下累计比值有钳制兜底）。
+    if (!Number.isFinite(ratio)) {
+        return;
+    }
+    if (!_brightnessBakeBase) {
+        _brightnessBakeBase = {
+            hemi: lightingState.hemiLight.intensity,
+            dir: lightingState.dirLight.intensity,
+        };
+        _brightnessBakedRatio = ratio;
+    } else {
+        _brightnessBakedRatio = clamp(_brightnessBakedRatio * ratio, 0.01, 20);
+    }
+    lightingState.hemiLight.intensity = _brightnessBakeBase.hemi * _brightnessBakedRatio;
+    lightingState.dirLight.intensity = _brightnessBakeBase.dir * _brightnessBakedRatio;
 }
 
 export function getLightState(): LightState {
@@ -293,6 +310,10 @@ export function isLightingReady(): boolean {
 // 首次仍告警（不丢首发），组合变化会再告警一次；守卫通过（就绪）即清空，
 // 保证下一轮未就绪重新可见。key 空间有界（2 函数 × 8 组合）。
 const _guardWarnedKeys = new Set<string>();
+
+// [audit:round13 P3] rebakeEnvBrightness 防复利：首次调用时的基准强度 + 累计比值
+let _brightnessBakeBase: { hemi: number; dir: number } | null = null;
+let _brightnessBakedRatio = 1;
 
 function _warnGuardBlocked(key: string, msg: string): void {
     if (_guardWarnedKeys.has(key)) {

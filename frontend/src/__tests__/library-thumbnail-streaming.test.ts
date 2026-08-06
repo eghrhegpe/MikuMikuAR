@@ -118,7 +118,7 @@ vi.mock('../core/config', () => ({
         },
     },
     getMenuWrapper: () => document.createElement('div'),
-    stackRegistry: { modelStack: null, sceneStackGetter: null, buildLevel: null },
+    stackRegistry: { modelStack: null, buildLevel: null },
     uiState: {} as Record<string, unknown>,
 
     setStatus: vi.fn(),

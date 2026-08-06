@@ -64,7 +64,9 @@
 - **#9 plaza closePlaza 资源清理**：断开 observer + 清引用 + 移除隐藏 iframe 元素。
 - **#10 dialog _frozenTarget 引用计数**：freeze/unfreeze 改为 `_frozenDepth` 计数，嵌套关闭内层不解冻外层。
 
-## 🟡 P3 关注项（持续改进，本轮未修）
+## 🟡 P3 关注项（持续改进）
+
+> **修复状态（2026-08-06）**：以下 8 项已修复，见「✅ P3 已修复」小节；其余留待后续。
 
 | 模块 | 问题 |
 |------|------|
@@ -88,6 +90,17 @@
 | settings | `settingsOnFolderEnter` 每次进入子页 builder() 两次（性能冗余） |
 | dom-contract | `ARIA_ATTR` 死导出；ui-collapsible 硬编码 panelClass/openClass 绕过契约 |
 | render-menu | colorSlider/modeSlider/modeRow 未应用 ControlSpec get/set 衍生转换（当前无 schema 使用，潜在） |
+
+### ✅ P3 已修复（2026-08-06）
+
+- **renderer reattachPipeline SSR/SSAO 重建**：`setSSRFromReflection` 记录最近参数到 `_lastSSRParams`；reattachPipeline 先保存 SSR/SSAO 启用状态，dispose 后按状态主动重建（SSR 用记录参数、SSAO 走 `_applyRenderState({ssaoEnabled:true})`），切相机不再静默丢失。
+- **init 失败回滚**：init() catch 中遍历释放 `_initDisposables` + `disposeEventHandlers()` + `stopRenderLoop()`，bootstrap 先启动的渲染循环/事件监听不再残留半初始化状态。
+- **events 三处**：`update:installFailed` 改用 `_reg` 收集（纳入 disposeEventHandlers）；pointerup 内 `await mmdRuntime.playAnimation()` 包 try/catch 防 unhandled rejection；`hideDropOverlay` 非空断言改可选链。
+- **render-loop**：`stopRenderLoop()` 重置 `_lastMul = 1.0` / `_frameCounter = 0`，重启后降级乘数比对与采样相位正确。
+- **lighting rebakeEnvBrightness**：非有限值守卫 + 基准强度 + 累计比值重算（clamp 0.01~20），重复回调不再指数级放大。
+- **audio-bus**：getAudioContext 增加 AudioContext/webkitAudioContext 探测（无支持或创建失败置 `_ctxUnsupported` 返回 null，音效静默降级）；`disposeAudioBus` 先 disconnect `_master` 再 close ctx；getSfxMasterGain/playSfx/footstep 适配 null ctx。
+- **fileservice**：`getBackend()` 失败不缓存 rejected Promise（清缓存下次重试）；新增 `revokeFileUrl()` 配套释放 blob: URL（浏览器分支 createObjectURL 的配对 revoke 入口，JSDoc 声明责任契约）。
+- **menu-stack-registry**：移除 `sceneStackGetter` 死字段（全库零赋值），同步清理 5 处测试 mock。
 
 ## 跨模块模式问题
 

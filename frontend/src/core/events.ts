@@ -233,7 +233,13 @@ export function registerEventHandlers(): void {
         }
         setSeekDragging(false);
         if (seekWasPlaying && mmdRuntime && getSceneAction('focusedMmdModel')?.()) {
-            await mmdRuntime.playAnimation();
+            // [audit:round13 P3] playAnimation reject（如 WASM runtime 异常）不得产生
+            // unhandled rejection；降级为状态同步并告警，不破坏指针事件链。
+            try {
+                await mmdRuntime.playAnimation();
+            } catch (err) {
+                console.warn('[events] playAnimation on seek-end failed:', err);
+            }
             setIsPlaying(true);
             getSceneAction('updatePlaybackUI')?.();
         }
@@ -308,7 +314,9 @@ export function showUpdateToast(latest: string, url: string, downloadUrl?: strin
                             btn.textContent = t('settings.about.update.downloadFailed');
                             openExternalLink(url);
                         };
-                        window.addEventListener('update:installFailed', onInstallFailed);
+                        // [audit:round13 P3] 改用 _reg 收集，纳入 disposeEventHandlers 统一清理，
+                        // 避免 HMR 窗口内泄漏（原裸 addEventListener 仅靠 10s 定时器自清理）。
+                        _reg(window, 'update:installFailed', onInstallFailed);
                         window.wails?.installApk?.(result.localPath);
                         btn.textContent = t('settings.about.update.installLaunched');
                         // Clean up listener after a generous window (Java→JS bridge is async).
@@ -353,7 +361,8 @@ export function showUpdateToast(latest: string, url: string, downloadUrl?: strin
 // handleDropFile / handleDroppedFile 抽至 ./drop-import（纯逻辑，便于单测）。
 // 此处仅保留 DOM 事件注册 + overlay 视觉控制。
 function hideDropOverlay(): void {
-    document.getElementById('dropOverlay')!.classList.remove('visible');
+    // [audit:round13 P3] 元素缺失时拖放路径不再抛 TypeError（防御性 null 守卫）
+    document.getElementById('dropOverlay')?.classList.remove('visible');
 }
 
 export function initDropHandler(): void {

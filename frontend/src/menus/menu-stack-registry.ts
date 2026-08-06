@@ -7,7 +7,6 @@ import type { LibraryModel, PopupLevel, BrowseOutcome } from '../core/types';
 
 export const stackRegistry: {
     modelStack: SlideMenu | null;
-    sceneStackGetter: (() => SlideMenu | null) | null;
     buildLevel:
         | ((
               dir: string,
@@ -20,6 +19,5 @@ export const stackRegistry: {
         | null;
 } = {
     modelStack: null,
-    sceneStackGetter: null,
     buildLevel: null,
 };

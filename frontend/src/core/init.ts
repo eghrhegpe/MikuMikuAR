@@ -35,7 +35,7 @@ import { getSceneAction } from './scene-action-bridge';
 
 import { initShortcutDispatcher, loadKeyBindings } from './shortcut-registry';
 import { setupE2ECapture } from './dev-hooks';
-import { startRenderLoop } from './render-loop';
+import { startRenderLoop, stopRenderLoop } from './render-loop';
 import {
     registerEventHandlers,
     disposeEventHandlers,
@@ -218,6 +218,23 @@ async function init(): Promise<void> {
         const msg = translateGoError(err);
         dom.showError(msg);
         setStatus(t('main.initFailed'), false);
+        // [audit:round13 P3] 失败回滚：bootstrap() 在 init() 之前已 startRenderLoop()，
+        // 若 init 中途抛错，渲染循环/事件监听/AI 错误捕获/console 补丁/runtime 事件订阅
+        // 会残留运行在未初始化完成的场景上。此处统一释放，避免半初始化状态。
+        for (const d of _initDisposables) {
+            try {
+                d.dispose();
+            } catch (e) {
+                console.warn('[init] dispose on failed init:', e);
+            }
+        }
+        _initDisposables.length = 0;
+        try {
+            disposeEventHandlers();
+        } catch (e) {
+            console.warn('[init] disposeEventHandlers on failed init:', e);
+        }
+        stopRenderLoop();
     }
 }
 

@@ -82,7 +82,7 @@ vi.mock('../core/dom', () => ({
     },
 }));
 vi.mock('./menu-stack-registry', () => ({
-    stackRegistry: { modelStack: null, sceneStackGetter: null, buildLevel: null },
+    stackRegistry: { modelStack: null, buildLevel: null },
 }));
 vi.mock('./menu-overlay', () => ({
     closeAllOverlays: vi.fn(),

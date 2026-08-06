@@ -11,10 +11,15 @@ import type { BackendService } from './backend/types';
 import { normPath } from './path';
 
 let _cachedBackend: Promise<BackendService> | null = null;
-/** 惰性缓存 resolveBackend 结果（避免每请求重路由）。 */
+/** 惰性缓存 resolveBackend 结果（避免每请求重路由）。失败不缓存 rejected Promise，下次调用重试。 */
 function getBackend(): Promise<BackendService> {
     if (!_cachedBackend) {
-        _cachedBackend = resolveBackend();
+        _cachedBackend = resolveBackend().catch((err) => {
+            // [audit:round13 P3] 原实现缓存 rejected Promise → 永久失败永不再试
+            //（如 transient 网络错误 / 后端尚未就绪）。失败时清空缓存，后续调用重试。
+            _cachedBackend = null;
+            throw err;
+        });
     }
     return _cachedBackend;
 }
@@ -47,6 +52,9 @@ export function encodeFileRef(fileName: string): string {
  * - 输入路径支持正斜杠或反斜杠，内部统一处理
  * - URL 形态 `?f=<base64url(fileName)>`，绕开路径段编码歧义（ADR-057）
  *
+ * 浏览器分支返回 `blob:` URL（内存中 Blob），**调用方用完必须调用 {@link revokeFileUrl} 释放**
+ * （否则 Blob 驻留内存；详见 ADR-176 双环境适配）。
+ *
  * @returns URL、端口、文件所在目录
  */
 export async function resolveFileUrl(
@@ -76,6 +84,21 @@ export async function resolveFileUrl(
     const port = await StartFileServer(safeDir);
     const url = `http://127.0.0.1:${port}/?f=${encodeFileRef(fileName)}`;
     return { url, port, dir: safeDir };
+}
+
+/**
+ * 释放 resolveFileUrl 浏览器分支产生的 blob: URL（调用方用完必须调用，配对释放）。
+ * [audit:round13 P3] 原实现 createObjectURL 永不 revoke → Blob 驻留内存；
+ * 提供配套 revoke 入口使调用方能够成对释放（http:// 分支传 http URL 时无害 no-op）。
+ */
+export function revokeFileUrl(url: string | undefined | null): void {
+    if (url && url.startsWith('blob:')) {
+        try {
+            URL.revokeObjectURL(url);
+        } catch {
+            /* noop — 已释放或非 blob URL */
+        }
+    }
 }
 
 /**

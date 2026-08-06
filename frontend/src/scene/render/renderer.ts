@@ -882,6 +882,12 @@ export function reattachPipeline(): void {
     if (!_scene || !pipeline) {
         return;
     }
+    // [audit:round13 P3] 先记录 SSR/SSAO 启用状态，dispose 后主动重建。
+    // 此前 dispose 后仅靠注释声称「下次 _applyRenderState 时会重建」，但 SSR 只由
+    // setSSRFromReflection 创建（_applyRenderState 不重建）、SSAO 也仅当后续 patch
+    // 含 ssao 字段时才重建 → 切相机后 SSR/SSAO 静默关闭，需重载场景/反射才能恢复。
+    const ssrWasActive = _ssrPipeline !== null && _ssrPipeline.isEnabled;
+    const ssaoWasActive = _ssaoPipeline !== null;
     if (_scene.activeCamera) {
         // 先清除 pipeline 中所有已注册的相机，再添加当前相机
         const existingCameras = pipeline.cameras;
@@ -900,7 +906,6 @@ export function reattachPipeline(): void {
         if (_ssrPipeline) {
             try {
                 _ssrPipeline = safeDispose(_ssrPipeline);
-                // 下次 _applyRenderState 时会重建
             } catch {
                 // Intentionally empty — SSR pipeline dispose 失败不影响主流程
             }
@@ -909,10 +914,18 @@ export function reattachPipeline(): void {
         if (_ssaoPipeline) {
             try {
                 _ssaoPipeline = safeDispose(_ssaoPipeline);
-                // 下次 _applyRenderState 时会重建
             } catch {
                 // Intentionally empty — SSAO pipeline dispose 失败不影响主流程
             }
+        }
+        // [audit:round13 P3] 相机切换后重建 SSR/SSAO（用记录的启用状态与用户自定义参数）。
+        if (ssrWasActive && _lastSSRParams) {
+            setSSRFromReflection(_lastSSRParams);
+        } else if (ssrWasActive) {
+            setSSRFromReflection({ enabled: true });
+        }
+        if (ssaoWasActive) {
+            _applyRenderState({ ssaoEnabled: true });
         }
         // 光锥是普通 Mesh，无需相机切换重建（替代 ADR-152 的 PostProcess 方案）
     }
@@ -927,6 +940,10 @@ export function isSSRActive(): boolean {
     return _ssrPipeline !== null && _ssrPipeline.isEnabled;
 }
 
+/** 上次 setSSRFromReflection 传入的参数（reattachPipeline 相机切换后重建用，保留用户自定义值）。 */
+let _lastSSRParams: { enabled: boolean; step?: number; strength?: number; thickness?: number } | null =
+    null;
+
 /**
  * 反射系统专用 SSR 控制接口（不触发 auto-save）。
  * 由 env-reflection.ts 的 applyReflection 调用，避免循环依赖。
@@ -937,6 +954,8 @@ export function setSSRFromReflection(params: {
     strength?: number;
     thickness?: number;
 }): void {
+    // [audit:round13 P3] 记录最近一次参数，供 reattachPipeline 相机切换后重建 SSR 使用
+    _lastSSRParams = { ...params };
     if (!_scene || !pipeline) {
         return;
     }

@@ -155,5 +155,9 @@ export function stopRenderLoop(): void {
     if (_afterObs) {
         _afterObs = safeDispose(_afterObs);
     }
+    // [audit:round13 P3] 重置缓存状态：重启后首个帧若降级乘数仍为旧值，
+    // _lastMul 比对会漏掉 applyScaling；_frameCounter 不清则性能采样相位偏移。
+    _lastMul = 1.0;
+    _frameCounter = 0;
     engine.stopRenderLoop();
 }

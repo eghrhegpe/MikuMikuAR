@@ -74,9 +74,14 @@ export function resolveGroundSfxKind(): GroundSfxKind {
     }
 }
 
-/** 程序化合成一个变体（固定种子 → 确定性波形）。 */
-function _synthVariant(kind: GroundSfxKind, seed: number): AudioBuffer {
+/** 程序化合成一个变体（固定种子 → 确定性波形）。无 AudioContext 支持环境返回 null（静默降级）。 */
+function _synthVariant(kind: GroundSfxKind, seed: number): AudioBuffer | null {
     const ctx = getAudioContext();
+    // [audit:round13 P3] getAudioContext 现可返回 null（旧 WebView 无 AudioContext 支持），
+    // 此时无法合成 buffer，返回 null 让 _getVariants 过滤 → 脚步声静默降级（不抛错）。
+    if (!ctx) {
+        return null;
+    }
     const dur = 0.18;
     const sr = ctx.sampleRate;
     const len = Math.max(1, Math.floor(sr * dur));
@@ -107,13 +112,17 @@ function _synthVariant(kind: GroundSfxKind, seed: number): AudioBuffer {
     return buf;
 }
 
-/** 获取某音色的所有变体（惰性生成，缓存复用）。 */
+/** 获取某音色的所有变体（惰性生成，缓存复用）。无 AudioContext 支持时返回空数组（静默降级）。 */
 function _getVariants(kind: GroundSfxKind): AudioBuffer[] {
     let variants = _synthCache.get(kind);
     if (!variants) {
         variants = [];
         for (let s = 0; s < VARIANT_COUNT; s++) {
-            variants.push(_synthVariant(kind, s));
+            // [audit:round13 P3] _synthVariant 可返回 null（无 AudioContext 支持），过滤掉
+            const v = _synthVariant(kind, s);
+            if (v) {
+                variants.push(v);
+            }
         }
         _synthCache.set(kind, variants);
     }

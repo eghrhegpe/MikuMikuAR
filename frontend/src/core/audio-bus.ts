@@ -12,14 +12,34 @@ import { clamp01 } from '@/core/clamp';
 
 let _ctx: AudioContext | null = null;
 let _master: GainNode | null = null;
+// [audit:round13 P3] 无 AudioContext 支持探测：旧 WebView 同时缺 AudioContext /
+// webkitAudioContext 时，new 一个 undefined 构造器会直接抛 TypeError 污染启动链。
+// 探测失败后置该标志，避免每次调用重复告警（playSfx 高频调用路径）。
+let _ctxUnsupported = false;
 
-/** 惰性创建共享 AudioContext（SFX 总线与未来音效共用）。 */
-export function getAudioContext(): AudioContext {
-    if (!_ctx) {
-        const Ctor: typeof AudioContext =
-            window.AudioContext ??
-            (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+/** 惰性创建共享 AudioContext（SFX 总线与未来音效共用）。无支持环境返回 null。 */
+export function getAudioContext(): AudioContext | null {
+    if (_ctx) {
+        return _ctx;
+    }
+    if (_ctxUnsupported) {
+        return null;
+    }
+    const Ctor: typeof AudioContext | undefined =
+        window.AudioContext ??
+        (window as unknown as { webkitAudioContext: typeof AudioContext | undefined })
+            .webkitAudioContext;
+    if (!Ctor) {
+        _ctxUnsupported = true;
+        console.warn('[audio] AudioContext 不受支持（缺 AudioContext/webkitAudioContext），音效静默降级');
+        return null;
+    }
+    try {
         _ctx = new Ctor();
+    } catch (err) {
+        _ctxUnsupported = true;
+        console.warn('[audio] AudioContext 创建失败，音效静默降级:', err);
+        return null;
     }
     return _ctx;
 }
@@ -38,9 +58,12 @@ function refreshMasterGain(): void {
     _master.gain.value = enabled ? clamp01(vol) : 0;
 }
 
-/** SFX 主增益（独立于音乐音量）。增益值实时反映 sfxEnabled / sfxVolume。 */
-export function getSfxMasterGain(): GainNode {
+/** SFX 主增益（独立于音乐音量）。增益值实时反映 sfxEnabled / sfxVolume。无 AudioContext 支持返回 null。 */
+export function getSfxMasterGain(): GainNode | null {
     const ctx = getAudioContext();
+    if (!ctx) {
+        return null;
+    }
     if (!_master) {
         _master = ctx.createGain();
         _master.connect(ctx.destination);
@@ -102,6 +125,10 @@ export function playSfx(buffer: AudioBuffer, opts: PlaySfxOptions = {}): void {
         return;
     }
     const ctx = getAudioContext();
+    // [audit:round13 P3] 无 AudioContext 支持环境静默跳过（不抛错、不影响调用链）
+    if (!ctx) {
+        return;
+    }
     if (ctx.state === 'suspended') {
         // 自动播放策略限制：首个用户手势前无法发声
         // [audit:P3] resume 成功后重试播放，避免首次点击音效被吞
@@ -161,11 +188,21 @@ export function playSfx(buffer: AudioBuffer, opts: PlaySfxOptions = {}): void {
 
 /** 释放总线资源（context 关闭、缓存清空）。 */
 export function disposeAudioBus(): void {
+    // [audit:round13 P3] 先断开 master 输出，再关闭 context（避免已播放节点在 ctx 关闭后
+    // 执行 disconnect 依赖 try/catch 兜底；显式断开是配对释放）。
+    if (_master) {
+        try {
+            _master.disconnect();
+        } catch {
+            /* cleanup, ignore errors */
+        }
+        _master = null;
+    }
     if (_ctx) {
         _ctx.close().catch(() => {
             /* noop */
         });
         _ctx = null;
-        _master = null;
     }
+    _ctxUnsupported = false;
 }
