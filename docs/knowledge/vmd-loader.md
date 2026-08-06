@@ -11,6 +11,12 @@ tests:
   - frontend/src/__tests__/vmd-loader-race.test.ts
 adr:
   - ADR-051
+  - ADR-057
+  - ADR-096
+  - ADR-167
+  - ADR-169
+  - ADR-192
+  - ADR-238
 symbols:
   - loadCameraVmdFromPath
   - loadVMDFromPath
@@ -20,6 +26,8 @@ invariants:
   - per-model generation counter 防止异步竞态
   - VMD 签名前缀校验防止损坏文件
   - 同名伴音缓存避免重复加载
+  - switchAnimation 旧 WASM 句柄显式 dispose（ADR-192 workaround）
+  - 每次 loadVMDMotion 成功时清空伴音缓存（_companionAudioCache.clear）
 use_when:
   - VMD 加载
   - 动作文件导入

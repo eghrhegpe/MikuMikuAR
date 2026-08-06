@@ -7,6 +7,8 @@ scope:
   - frontend/src/core/render-loop.ts
 source_files:
   - frontend/src/core/render-loop.ts
+tests:
+  - frontend/src/__tests__/render-loop.test.ts
 adr:
   - ADR-102
 symbols:
@@ -18,7 +20,6 @@ invariants:
   - stopRenderLoop 移除 observer 句柄、FPS 时钟、resize 处理器（幂等）
   - calcHardwareScaling 含 DPR + GL 钳位 + 降级乘数（getPerfRenderScaleMul）
   - 所有模块级句柄（_fpsClockId/_beforeObs/_afterObs/_resizeHandler）在 stop 时全部释放
-tests: []
 use_when:
   - 渲染循环
   - FPS 时钟

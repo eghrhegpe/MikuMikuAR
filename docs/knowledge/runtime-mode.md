@@ -10,6 +10,8 @@ scope:
   - frontend/src/core/runtime-mode.ts
 source_files:
   - frontend/src/core/runtime-mode.ts
+tests:
+  - frontend/src/__tests__/runtime-mode.test.ts
 symbols:
   - RuntimeMode
   - detectRuntimeMode
@@ -20,7 +22,6 @@ symbols:
   - setBackendBadge
 invariants:
   - 运行模式在启动时确定
-tests: []
 use_when:
   - 运行模式
   - 桌面模式

@@ -220,7 +220,7 @@
 | [ADR-051](../adr/adr-051-vmd-layers-bonefilter.md) | VMD 图层系统与骨骼级过滤 | [多 VMD 叠加系统](./vmd-layers.md) · [VMD 动作加载器](./vmd-loader.md) |
 | [ADR-054](../adr/adr-054-roadmap-next.md) | 后续开发方向路线图 | [场景序列化与自动保存](./scene-serialize.md) |
 | [ADR-055](../adr/adr-055-ar-camera-mode.md) | AR 相机模式 —— 摄像头视频透传与模型叠加 | [AR 摄像头视频透传](./ar-camera.md) · [AR 模式场景级协调](./ar-scene.md) |
-| [ADR-057](../adr/adr-057-shift-jis-url-base64.md) | Shift-JIS URL 乱码修复 —— Base64 查询参数方案（链路 A） | [统一文件服务层](./fileservice.md) |
+| [ADR-057](../adr/adr-057-shift-jis-url-base64.md) | Shift-JIS URL 乱码修复 —— Base64 查询参数方案（链路 A） | [统一文件服务层](./fileservice.md) · [VMD 动作加载器](./vmd-loader.md) |
 | [ADR-059](../adr/adr-059-i18n-framework.md) | i18n 多语言切换框架 | [国际化翻译函数](./i18n-t.md) · [应用启动引导](./init.md) · [国际化语言状态](./locale.md) · [简体中文语言包](./zh-CN.md) · [繁体中文语言包](./zh-TW.md) |
 | [ADR-061](../adr/adr-061-advanced-bone-systems.md) | 高级骨骼操控与姿态工作室实现计划 | [骨骼覆盖核心 API](./bone-override.md) · [共享类型定义](./core-types.md) · [动作覆盖 UI 层级（模块化覆盖 + 高级骨骼覆盖）](./motion-override-levels.md) · [场景序列化与自动保存](./scene-serialize.md) |
 | [ADR-062](../adr/adr-062-water-reflection-render-target.md) | 水面反射渲染目标与通用反射系统 | [水面系统](./env-water.md) |
@@ -236,6 +236,7 @@
 | [ADR-088](../adr/adr-088-audio-sfx-footstep.md) | 音效系统 — 脚步声与 SFX 总线 | [音频总线](./audio-bus.md) · [脚步声控制器](./motion-footstep.md) |
 | [ADR-092](../adr/adr-092-unified-texture-reflection.md) | 贴图与反射统一 —— 单一纹理工厂 + 单一平面反射引擎 | [统一贴图工厂](./env-texture.md) · [统一平面反射引擎](./planar-reflection.md) |
 | [ADR-093](../adr/adr-093-menu-declarative-schema.md) | 菜单声明式 Schema —— 单一数据源 + 单渲染器，根治「大」与「AI 难改」 | [AI 助手独立面板入口](./assistant-panel.md) · [声明式菜单 Schema 注册表](./menu-registry.md) · [声明式菜单 Schema 集中注册聚合器](./menu-schema-register.md) · [声明式菜单 Schema](./menu-schema.md) · [菜单渲染引擎](./render-menu.md) · [AI 诊断助手面板（协调入口）](./settings-diagnostic.md) |
+| [ADR-096](../adr/adr-096-general-helper-consolidation.md) | 通用 Helper 单点收敛 | [VMD 动作加载器](./vmd-loader.md) |
 | [ADR-099](../adr/adr-099-mpr-coop-coep-poc.md) | babylon-mmd 未利用 API 接入 · Item 4 MPR 多线程 WASM 物理（Go 端 COOP/COEP 注入 POC） | [应用启动引导](./init.md) · [运行模式检测](./runtime-mode.md) · [场景核心编排器（纯组装器）](./scene.md) |
 | [ADR-100](../adr/adr-100-camera-control-behavior-dual-axis.md) | 相机系统「控制方案 × 运动行为」双轴拆分 | [节拍驱动自动运镜（beatcut）](./camera-auto.md) · [相机状态管理 + 运行时上下文](./camera-state.md) · [相机模式管理系统（MmdCamera）](./camera.md) |
 | [ADR-102](../adr/adr-102-main-ts-split.md) | main.ts 拆分（init / events / render-loop / dev-hooks） | [开发环境 E2E 钩子](./dev-hooks.md) · [事件处理与导航系统](./events.md) · [应用启动引导](./init.md) · [渲染循环与 FPS 时钟](./render-loop.md) · [应用快捷键定义](./shortcut-app.md) |
@@ -281,9 +282,9 @@
 | [ADR-162](../adr/adr-162-perception-permodel-phase1.md) | 感知层 per-model 实例化 — Phase 1（pinned 模型支持） | [眨眼模拟](./perception-blinking.md) · [呼吸模拟](./perception-breathing.md) · [微表情](./perception-expression.md) · [JS 端视线追踪](./perception-gaze-js.md) · [WASM 端视线追踪](./perception-gaze-wasm.md) · [视线追踪主模块](./perception-gaze.md) · [感知口型同步](./perception-lipsync.md) · [感知观察者（感知层）](./perception-observer.md) · [感知层共享类型](./perception-shared.md) · [感知层主控](./perception.md) · [场景序列化与自动保存](./scene-serialize.md) |
 | [ADR-164](../adr/adr-164-perception-permodel-phase2.md) | 感知层 per-model 实例化 — Phase 2（全员感知 + 性能降级） | [场景序列化与自动保存](./scene-serialize.md) · [场景核心编排器（纯组装器）](./scene.md) |
 | [ADR-166](../adr/adr-166-perception-permodel-rework.md) | 感知层 per-model 上下文真实隔离（ADR-162/163 返工） | [动作模块注册表](./motion-modules-registry.md) · [视线追踪主模块](./perception-gaze.md) · [感知口型同步](./perception-lipsync.md) · [感知观察者（感知层）](./perception-observer.md) · [感知层主控](./perception.md) · [场景存档迁移（纯函数）](./scene-migrate.md) |
-| [ADR-167](../adr/adr-167-scene-motion-library.md) | 场景级动作库（Scene Motion Library）— 多主动作平等共存 | [共享类型定义](./core-types.md) · [PMX 模型加载与缩略图捕获](./model-loader.md) · [模型生命周期操作](./model-ops.md) · [动作绑定 UI](./motion-binding-ui.md) · [动作详情 UI](./motion-detail-ui.md) · [场景级动作意图库](./motion-intent.md) · [场景序列化与自动保存](./scene-serialize.md) |
+| [ADR-167](../adr/adr-167-scene-motion-library.md) | 场景级动作库（Scene Motion Library）— 多主动作平等共存 | [共享类型定义](./core-types.md) · [PMX 模型加载与缩略图捕获](./model-loader.md) · [模型生命周期操作](./model-ops.md) · [动作绑定 UI](./motion-binding-ui.md) · [动作详情 UI](./motion-detail-ui.md) · [场景级动作意图库](./motion-intent.md) · [场景序列化与自动保存](./scene-serialize.md) · [VMD 动作加载器](./vmd-loader.md) |
 | [ADR-168](../adr/adr-168-dynamic-light-tracking.md) | 动态追光：舞台灯跟随角色/骨骼 | [个人灯光跟随](./lighting-follow.md) · [灯光预设系统](./lighting-presets.md) · [场景光照与阴影（barrel）](./lighting.md) · [模型生命周期操作](./model-ops.md) · [场景序列化与自动保存](./scene-serialize.md) · [场景核心编排器（纯组装器）](./scene.md) |
-| [ADR-169](../adr/adr-169-motion-load-replace-default.md) | 动作装载语义统一 —— 原位替换默认动作（replaceDefaultMotion） | [资源库操作](./library-actions.md) |
+| [ADR-169](../adr/adr-169-motion-load-replace-default.md) | 动作装载语义统一 —— 原位替换默认动作（replaceDefaultMotion） | [资源库操作](./library-actions.md) · [VMD 动作加载器](./vmd-loader.md) |
 | [ADR-170](../adr/adr-170-motion-selection-paradigm.md) | 动作库选中范式 —— 将「默认」暴露为逐行「选中」（对齐模型焦点范式） | [动作详情 UI](./motion-detail-ui.md) |
 | [ADR-171](../adr/adr-171-scene-drag-mode.md) | 场景级拖拽模式：快捷开关 + 收纳文件夹 | [场景拖拽层级菜单](./scene-drag-levels.md) · [场景菜单层级系统](./scene-menu-levels.md) · [场景核心编排器（纯组装器）](./scene.md) · [变换选中物状态源](./transform-selection.md) |
 | [ADR-172](../adr/adr-172-wet-body-effect.md) | 湿身效果：雨天角色材质湿润感 | [湿身效果系统](./env-wetness.md) |
@@ -299,7 +300,7 @@
 | [ADR-189](../adr/adr-189-ktx2-texture-compression.md) | 纹理加载路径优化（并行读取 + basename 共享 + LRU + KTX2 基础设施） | [GPU 压缩纹理能力探测](./gpu-capabilities.md) · [PMX 模型加载与缩略图捕获](./model-loader.md) · [PMX 声明纹理缺失审计](./pmx-texture-audit.md) · [场景渲染管线与后处理](./renderer.md) · [场景核心编排器（纯组装器）](./scene.md) · [纹理路径 fallback 候选生成](./texture-fallback.md) · [纹理 LRU 缓存](./texture-lru.md) |
 | [ADR-190](../adr/adr-190-capability-declarative-consolidation.md) | 端能力声明式收口（淘汰散落 isAndroidPlatform 分支） | [核心零依赖叶模块](./core-leaf-modules.md) |
 | [ADR-191](../adr/adr-191-god-barrel-debarreling.md) | 神桶 `@/core/utils` 去桶化（零依赖叶下沉） | [核心零依赖叶模块](./core-leaf-modules.md) · [工具函数叶模块群](./core-utils.md) · [菜单 Overlay 与 Wrapper 管理](./menu-overlay.md) · [菜单栈共享指针（stackRegistry）](./menu-stack-registry.md) · [菜单渲染上下文栈（RenderContext）](./render-context.md) · [标题栏小型开关（createHeaderToggle）](./ui-header-toggle.md) |
-| [ADR-192](../adr/adr-192-upstream-adapter-layer.md) | 上游适配层重构（MmdAdapter） | [地面碰撞体（WASM Bullet 静态刚体）](./ground-collision.md) · [场景光照与阴影（barrel）](./lighting.md) · [babylon-mmd 适配边界](./mmd-adapter.md) · [风力物理注入（WASM Bullet）](./wind-physics.md) |
+| [ADR-192](../adr/adr-192-upstream-adapter-layer.md) | 上游适配层重构（MmdAdapter） | [地面碰撞体（WASM Bullet 静态刚体）](./ground-collision.md) · [场景光照与阴影（barrel）](./lighting.md) · [babylon-mmd 适配边界](./mmd-adapter.md) · [VMD 动作加载器](./vmd-loader.md) · [风力物理注入（WASM Bullet）](./wind-physics.md) |
 | [ADR-194](../adr/adr-194-wind-physics-fix.md) | 风物理系统修复 — 从「假风」到真实风场 | [安卓文件访问（shared 模式）](./android-file-access.md) · [风力物理注入（WASM Bullet）](./wind-physics.md) |
 | [ADR-195](../adr/adr-195-download-folder-unification.md) | 下载文件夹统一修订（三平台系统下载目录 + 消除"二扫"） | [资源库操作](./library-actions.md) · [资源库核心](./library-core.md) |
 | [ADR-196](../adr/adr-196-llm-diagnostic-assistant.md) | 内置 AI 诊断助手（LLM Diagnostic Assistant） | [AI 配置持久化（IndexedDB）](./ai-config-store.md) · [错误环形缓冲与全局捕获](./ai-error-buffer.md) · [场景运行时快照（AI 上下文）](./ai-scene-snapshot.md) · [内置 AI 诊断助手 — 双适配器服务层](./ai-service.md) · [SSE 流式解析器](./ai-sse.md) · [角色台词生成 — 人设约束 + 情绪解析 + TTS 朗读](./character-bible.md) · [诊断用动作注册](./diagnostic-actions.md) · [诊断助手 → 聊天 UI（子模块）](./diagnostic-chat.md) · [诊断助手 → 配置 UI（子模块）](./diagnostic-config.md) · [诊断助手 → 单例状态（子模块）](./diagnostic-state.md) · [应用启动引导](./init.md) · [轻量 Markdown→DOM 渲染器](./markdown.md) · [场景核心编排器（纯组装器）](./scene.md) · [AI 诊断助手面板（协调入口）](./settings-diagnostic.md) |
@@ -316,7 +317,7 @@
 | [ADR-229](../adr/adr-229-e2e-automation-advancement.md) | E2E 自动化推进 —— 从 schema 到测试零映射 | [渲染层 DOM 契约单源](./dom-contract.md) |
 | [ADR-231](../adr/adr-231-ground-visual-roadmap.md) | 地面视觉后续方向（自发光地屏 + 程序化地面图案） | [地形生成器](./env-terrain.md) |
 | [ADR-237](../adr/adr-237-split-overlong-modules.md) | 超限模块拆分计划 —— 250LOC 天花板的优先级拆解路线图 | [程序化动作系统](./proc-motion-bridge.md) · [多 VMD 叠加系统](./vmd-layers.md) |
-| [ADR-238](../adr/adr-238-循环依赖消解二期-core-scene-根环.md) | 循环依赖消解第二期 —— core→scene 根环与 motion/outfit 互依赖拆解 | [E2E 状态读取器注入桥](./e2e-state-bridge.md) · [资源库核心](./library-core.md) · [场景动作注入桥](./scene-action-bridge.md) · [主题纯函数叶](./theme.md) · [UI 行为注入桥](./ui-action-bridge.md) |
+| [ADR-238](../adr/adr-238-循环依赖消解二期-core-scene-根环.md) | 循环依赖消解第二期 —— core→scene 根环与 motion/outfit 互依赖拆解 | [E2E 状态读取器注入桥](./e2e-state-bridge.md) · [资源库核心](./library-core.md) · [场景动作注入桥](./scene-action-bridge.md) · [主题纯函数叶](./theme.md) · [UI 行为注入桥](./ui-action-bridge.md) · [VMD 动作加载器](./vmd-loader.md) |
 
 ## 索引与路由（非卡片）
 

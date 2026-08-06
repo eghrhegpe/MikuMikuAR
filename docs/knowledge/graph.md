@@ -170,6 +170,7 @@ graph TD;
         a87["ADR-087"]
         a88["ADR-088"]
         a93["ADR-093"]
+        a96["ADR-096"]
         a99["ADR-099"]
         a100["ADR-100"]
         a102["ADR-102"]
@@ -423,6 +424,12 @@ graph TD;
     c47 --> a51;
     c47 --> a237;
     c48 --> a51;
+    c48 --> a57;
+    c48 --> a96;
+    c48 --> a167;
+    c48 --> a169;
+    c48 --> a192;
+    c48 --> a238;
     c94 --> a176;
     c27 --> a104;
     c27 --> a192;
@@ -451,6 +458,7 @@ graph TD;
     click a87 href "../adr/adr-087-plaza-browser-experience.md"
     click a88 href "../adr/adr-088-audio-sfx-footstep.md"
     click a93 href "../adr/adr-093-menu-declarative-schema.md"
+    click a96 href "../adr/adr-096-general-helper-consolidation.md"
     click a99 href "../adr/adr-099-mpr-coop-coep-poc.md"
     click a100 href "../adr/adr-100-camera-control-behavior-dual-axis.md"
     click a102 href "../adr/adr-102-main-ts-split.md"
