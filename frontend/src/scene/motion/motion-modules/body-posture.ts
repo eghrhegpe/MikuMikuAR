@@ -65,6 +65,11 @@ const MANAGED_BONES = ['上半身', '上半身2', 'センター'];
 const _bodyFrameHooks = createFrameHookManager();
 const _centerBoneCache = new Map<string, string | null>();
 const _ikBoneCache = new Map<string, { l: string | null; r: string | null }>();
+// [fix code_review P2] 本模块是否写过 センター 位置覆盖的 per-model 标志：
+// 归零时仅当本模块写入过才 clearBoneOverride——clearBoneOverride 会整槽删除
+// 该骨覆盖条目（含用户手动覆盖/其他模块贡献），无条件清除会误伤手动设置
+// （ADR-116 §4「仅清自有骨，不误伤用户手动设的骨」）。
+const _centerPosWritten = new Set<string>();
 
 /** 烘焙：将旋转语义参数写入引擎（仅 enabled 时生效，通过 claimBones 仲裁冲突） */
 function bake(modelId: string): void {
@@ -141,11 +146,17 @@ function _registerBodyPositionHook(modelId: string): () => void {
                 // [fix P2] 参数归零时清除残留的位置覆盖：此前直接 return 会导致
                 // 上一帧写入的 setBoneOverridePosition(centerName, [0, 旧值, 0]) 残留在
                 // _overrideMaps 中，用户把 bodyHeight 拖回 0 后身体高度不归零。
-                clearBoneOverride(centerName, modelId);
+                // [fix code_review P2] 仅当本模块写过非零偏移才清除（_centerPosWritten），
+                // 避免整槽删除误伤用户手动覆盖（ADR-116 §4）。
+                if (_centerPosWritten.has(modelId)) {
+                    clearBoneOverride(centerName, modelId);
+                    _centerPosWritten.delete(modelId);
+                }
                 return;
             }
             // 世界空间偏移：X 不动，Y=高度，Z=前后
             setBoneOverridePosition(centerName, [0, height, depth], 1, true, modelId);
+            _centerPosWritten.add(modelId);
 
             // IK 位置保护：注册左右足 IK 目标，防止センター传播平移带动 IK 目标
             // （部分 MMD 模型中 左足IK/右足IK 的 parentBone 是 センター，
