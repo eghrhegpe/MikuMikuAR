@@ -127,6 +127,7 @@ http://localhost:9222/json 实际网页一览
 2. **状态流追踪**
    ```bash
    grep -E 'setState|setEnvState|= envState\.' <文件路径>
+   ```
 
 ## 资源生命周期
 
