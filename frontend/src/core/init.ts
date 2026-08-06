@@ -312,14 +312,19 @@ async function restoreEnvState(): Promise<void> {
         // 2. reactive 状态通过 Proxy 正确通知 UI 刷新
         // 3. _applyEnvStateFacade 精确控制各子系统应用（避免 applyEnvState 的全量无条件重建）
         // 4. 抑制 auto-save，防止恢复过程中触发级联保存
-        getSceneAction('setSuppressAutoSave')?.(true);
-        getSceneAction('setEnvState')?.(loaded, true);
-        // 丢弃恢复阶段触发的 env 防抖写入（setEnvState 的 skipAutoSave 只跳过
-        // triggerAutoSave，不跳过 _envPersistTimer）。若不取消，500ms 后会把
-        // 刚恢复的值写回 config.json，在 LoadLastScene 延迟超过 500ms 的极端
-        // 时序下会写入默认值，污染下次启动的恢复源。见 buglog 2026-07-16 教训3。
-        getSceneAction('cancelEnvPersistTimer')?.();
-        getSceneAction('setSuppressAutoSave')?.(false);
+        // [audit:round13 P3] try/finally：setEnvState 抛错（如某子系统应用失败）时
+        // 也必须恢复 auto-save 抑制，否则整个应用 auto-save 永久关闭（静默数据丢失）。
+        try {
+            getSceneAction('setSuppressAutoSave')?.(true);
+            getSceneAction('setEnvState')?.(loaded, true);
+        } finally {
+            // 丢弃恢复阶段触发的 env 防抖写入（setEnvState 的 skipAutoSave 只跳过
+            // triggerAutoSave，不跳过 _envPersistTimer）。若不取消，500ms 后会把
+            // 刚恢复的值写回 config.json，在 LoadLastScene 延迟超过 500ms 的极端
+            // 时序下会写入默认值，污染下次启动的恢复源。见 buglog 2026-07-16 教训3。
+            getSceneAction('cancelEnvPersistTimer')?.();
+            getSceneAction('setSuppressAutoSave')?.(false);
+        }
         console.info('[env-restore] 环境状态恢复完成');
     } else {
         console.info('[env-restore] restoreEnvState: cfg.env 为 null/undefined，跳过环境恢复');
@@ -502,8 +507,10 @@ function checkAndroidStoragePermission(): void {
         return;
     }
 
-    const w = window.wails!;
-    if (typeof w.hasStoragePermission === 'function' && !w.hasStoragePermission()) {
+    // [audit:round13 P3] window.wails 可能未注入（Android 浏览器 dev 模式 / 后端未就绪），
+    // 非空断言会抛 TypeError 中断存储权限流程；改为可选访问 + 守卫。
+    const w = window.wails;
+    if (w && typeof w.hasStoragePermission === 'function' && !w.hasStoragePermission()) {
         androidStoragePromptShown = true;
         if (typeof w.requestStoragePermission === 'function') {
             setStatus(t('main.needFileAccess'), true);

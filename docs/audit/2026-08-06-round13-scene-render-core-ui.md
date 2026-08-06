@@ -66,11 +66,11 @@
 
 ## 🟡 P3 关注项（持续改进）
 
-> **修复状态（2026-08-06）**：以下 8 项已修复，见「✅ P3 已修复」小节；其余留待后续。
+> **修复状态（2026-08-06）**：两轮共修 15 项（首批 8 项 + 本轮 7 项），见「✅ P3 已修复」小节；其余留待后续。
 
 | 模块 | 问题 |
 |------|------|
-| renderer | #4 reattachPipeline SSR/SSAO 重建（需 env-reflection 配合，留待下轮）；initRenderer `scene.activeCamera!` 非空断言；disposeRenderer 无 try/finally 异常隔离 |
+| renderer | initRenderer `scene.activeCamera!` 非空断言；disposeRenderer 无 try/finally 异常隔离 |
 | performance | `_bridgeGetLightState = () => ({})` 不安全强转（registerRenderBridge 前调用会捕获空快照） |
 | lighting | `rebakeEnvBrightness` 无防重入钳制，多次调用强度复利放大 |
 | physics-bridge | lighting-follow 个人灯基准点同样使用局部坐标（`_getLightBasePos` → getBoneWorldPosition），模型移动时个人灯错位 |
@@ -91,16 +91,16 @@
 | dom-contract | `ARIA_ATTR` 死导出；ui-collapsible 硬编码 panelClass/openClass 绕过契约 |
 | render-menu | colorSlider/modeSlider/modeRow 未应用 ControlSpec get/set 衍生转换（当前无 schema 使用，潜在） |
 
-### ✅ P3 已修复（2026-08-06）
+### ✅ P3 已修复（2026-08-06，第二批 7 项）
 
-- **renderer reattachPipeline SSR/SSAO 重建**：`setSSRFromReflection` 记录最近参数到 `_lastSSRParams`；reattachPipeline 先保存 SSR/SSAO 启用状态，dispose 后按状态主动重建（SSR 用记录参数、SSAO 走 `_applyRenderState({ssaoEnabled:true})`），切相机不再静默丢失。
-- **init 失败回滚**：init() catch 中遍历释放 `_initDisposables` + `disposeEventHandlers()` + `stopRenderLoop()`，bootstrap 先启动的渲染循环/事件监听不再残留半初始化状态。
-- **events 三处**：`update:installFailed` 改用 `_reg` 收集（纳入 disposeEventHandlers）；pointerup 内 `await mmdRuntime.playAnimation()` 包 try/catch 防 unhandled rejection；`hideDropOverlay` 非空断言改可选链。
-- **render-loop**：`stopRenderLoop()` 重置 `_lastMul = 1.0` / `_frameCounter = 0`，重启后降级乘数比对与采样相位正确。
-- **lighting rebakeEnvBrightness**：非有限值守卫 + 基准强度 + 累计比值重算（clamp 0.01~20），重复回调不再指数级放大。
-- **audio-bus**：getAudioContext 增加 AudioContext/webkitAudioContext 探测（无支持或创建失败置 `_ctxUnsupported` 返回 null，音效静默降级）；`disposeAudioBus` 先 disconnect `_master` 再 close ctx；getSfxMasterGain/playSfx/footstep 适配 null ctx。
-- **fileservice**：`getBackend()` 失败不缓存 rejected Promise（清缓存下次重试）；新增 `revokeFileUrl()` 配套释放 blob: URL（浏览器分支 createObjectURL 的配对 revoke 入口，JSDoc 声明责任契约）。
-- **menu-stack-registry**：移除 `sceneStackGetter` 死字段（全库零赋值），同步清理 5 处测试 mock。
+- **lighting-follow 个人灯基准点世界坐标**：`_getLightBasePos` 改用 `getBoneWorldMatrix(bone, rootMesh)`（局部 × rootWorld）提取世界平移，替代返回局部坐标的 `getBoneWorldPosition`——模型被平移/旋转/缩放时个人灯基准点不再错位。
+- **virtual-skirt dispose 阶段 try/catch**：constraint/rigidBody/info/shape 的 `.dispose()` 逐一包 try/catch（与 remove 阶段同风格），单对象释放异常不阻断资源链路。
+- **performance bridge 空快照守卫**：`applyDegrade` 快照捕获增加 `_bridgeEngine !== null` 守卫，bridge 未注册（initScene 前手动切 performance 模式）时不再捕获 `({}) as LightState` 空对象快照。
+- **renderer 断言与释放隔离**：initRenderer 的 `scene.activeCamera!` 改为可选 activeCam（无相机时传空数组）；disposeRenderer 包 try/catch/finally，任一 dispose 抛错不中断级联释放且状态复位必达。
+- **events 死代码 + init wails 断言**：删除 `_lastTapTime = 0` 死代码；`window.wails!` 非空断言改可选访问 + 守卫。
+- **init auto-save 恢复**：restoreEnvState 抑制块包 try/finally，setEnvState 抛错时 `cancelEnvPersistTimer` + `setSuppressAutoSave(false)` 仍执行，不再永久关闭 auto-save。
+- **load-manager 未知 kind 告警**：dispatch default 分支（light/personalLight/mirror 未实现）显式 console.warn，不再静默 return null。
+- **menu-stack-registry modelStack 悬垂**：makeModelMenu onClose 中先清空 `stackRegistry.modelStack` 再 closeAllOverlays，避免容器已移除后悬垂引用。
 
 ## 跨模块模式问题
 

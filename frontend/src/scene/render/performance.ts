@@ -300,8 +300,11 @@ function applyDegrade(level: DegradeLevel, force = false): void {
         }
     }
 
-    // 首次降级时保存快照（用户原始设置）
-    if (!_snapshot && level > 0) {
+    // 首次降级时保存快照（用户原始设置）。
+    // [audit:round13 P3] bridge 未注册（initScene 前，如启动早期手动切 performance 模式）
+    // 时跳过快照捕获——默认 getter 返回 `({}) as LightState` 空对象强转，捕获后恢复无意义
+    //（恢复时把空对象回写 setLightState，虽无副作用但丢失「恢复到用户原始设置」语义）。
+    if (!_snapshot && level > 0 && _bridgeEngine !== null) {
         _snapshot = {
             light: _bridgeGetLightState(),
             render: _bridgeGetRenderState(),

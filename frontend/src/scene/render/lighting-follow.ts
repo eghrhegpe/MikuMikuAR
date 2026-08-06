@@ -12,7 +12,7 @@ import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { lightingState } from './lighting-state';
 import { modelRegistry, type ModelInstance } from '@/core/config';
 import { safeDispose } from '@/core/dispose-helpers';
-import { getBoneWorldPosition } from '@/scene/physics/physics-bridge';
+import { getBoneWorldMatrix } from '@/core/mmd-adapter';
 import { setTransformMetadata } from '../transform/transform-pick';
 import {
     registerTransformAdapter,
@@ -145,9 +145,13 @@ function _effectivePersonalLightDefault(): PersonalLightSettings {
 /** 取个人灯跟随基准点：用户指定骨骼 → 腰骨候选 → 根节点（兜底） */
 function _getLightBasePos(model: ModelInstance, waistName: string | null): Vector3 {
     if (waistName && model.mmdModel) {
-        const p = getBoneWorldPosition(model.mmdModel, waistName);
-        if (p) {
-            return p;
+        // [audit:round13 P3] babylon-mmd 骨骼 worldMatrix 是 rootMesh 局部坐标系，
+        // 经 getBoneWorldMatrix 乘 rootMesh 世界矩阵得到真正世界坐标——
+        // 模型被平移/旋转/缩放时个人灯基准点不再错位（原 getBoneWorldPosition 返回局部平移）。
+        const bone = model.mmdModel.runtimeBones?.find((b) => b.name === waistName);
+        if (bone) {
+            const world = getBoneWorldMatrix(bone, model.rootMesh);
+            return new Vector3(world.m[12], world.m[13], world.m[14]);
         }
     }
     return model.rootMesh.getAbsolutePosition();

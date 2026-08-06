@@ -119,7 +119,15 @@ export function initRenderer(
     _modelRegistry = modelRegistry;
     _triggerAutoSave = triggerAutoSave;
 
-    pipeline = new DefaultRenderingPipeline('default', true, scene, [scene.activeCamera!]);
+    // [audit:round13 P3] activeCamera 可能为 null（防御）：DefaultRenderingPipeline
+    // cameras 参数可选，无 activeCamera 时传空数组，避免 `scene.activeCamera!` 断言抛错
+    const activeCam = scene.activeCamera;
+    pipeline = new DefaultRenderingPipeline(
+        'default',
+        true,
+        scene,
+        activeCam ? [activeCam] : []
+    );
     pipeline.samples = 1; // MSAA off (performance)
     pipeline.fxaaEnabled = false;
     pipeline.bloomEnabled = false;
@@ -135,34 +143,41 @@ export function isRendererReady(): boolean {
 
 /** 释放渲染管线及相关资源。在场景销毁时调用。 */
 export function disposeRenderer(): void {
-    // ADR-151: ReflectionProbe 已迁移至 env-reflection.ts，由 disposeReflection() 释放
-    _glowLayer = safeDispose(_glowLayer);
-    _ssrPipeline = safeDispose(_ssrPipeline);
-    _ssaoPipeline = safeDispose(_ssaoPipeline);
-    if (_celPP) {
-        _celPP = safeDispose(_celPP);
-        _celHandle = null;
+    // [audit:round13 P3] try/finally 异常隔离：任一 dispose 抛错不中断后续级联释放，
+    // 且模块状态复位（_scene=null 等）在 finally 中必达，避免 HMR 重入时残留陈旧引用。
+    try {
+        // ADR-151: ReflectionProbe 已迁移至 env-reflection.ts，由 disposeReflection() 释放
+        _glowLayer = safeDispose(_glowLayer);
+        _ssrPipeline = safeDispose(_ssrPipeline);
+        _ssaoPipeline = safeDispose(_ssaoPipeline);
+        if (_celPP) {
+            _celPP = safeDispose(_celPP);
+            _celHandle = null;
+        }
+        if (pipeline) {
+            pipeline.dispose();
+            pipeline = undefined;
+        }
+        // [doc:adr-189] Phase 1.3: 清空纹理 LRU 缓存，释放 ArrayBuffer 避免泄漏
+        clearTextureLRU();
+    } catch (err) {
+        console.warn('[renderer] disposeRenderer 部分资源释放失败（继续复位状态）:', err);
+    } finally {
+        _scene = null;
+        _modelRegistry = null;
+        _triggerAutoSave = null;
+        _pipelineCamera = null;
+        _outlineEnabled = false;
+        _outlineColor = [0, 0, 0];
+        // P2-fix: 补全 cel 状态与渲染过渡的释放，避免 HMR 重入时残留
+        _cancelRenderTransition();
+        _originalRenderState = null;
+        _celGroundCoupling = null;
+        _celShadingMode = false;
+        _celColorLevels = 4;
+        _celEdgeThreshold = 0.2;
+        _celEdgeStrength = 0.6;
     }
-    if (pipeline) {
-        pipeline.dispose();
-        pipeline = undefined;
-    }
-    // [doc:adr-189] Phase 1.3: 清空纹理 LRU 缓存，释放 ArrayBuffer 避免泄漏
-    clearTextureLRU();
-    _scene = null;
-    _modelRegistry = null;
-    _triggerAutoSave = null;
-    _pipelineCamera = null;
-    _outlineEnabled = false;
-    _outlineColor = [0, 0, 0];
-    // P2-fix: 补全 cel 状态与渲染过渡的释放，避免 HMR 重入时残留
-    _cancelRenderTransition();
-    _originalRenderState = null;
-    _celGroundCoupling = null;
-    _celShadingMode = false;
-    _celColorLevels = 4;
-    _celEdgeThreshold = 0.2;
-    _celEdgeStrength = 0.6;
 }
 
 // ======== 状态读取 ========

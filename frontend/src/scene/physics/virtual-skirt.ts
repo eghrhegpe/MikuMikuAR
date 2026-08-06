@@ -558,35 +558,65 @@ export class VirtualSkirtController {
             }
         }
 
+        // dispose 阶段：与 remove 阶段同风格，单对象 dispose 抛错不阻断后续释放，
+        // 避免一个对象异常导致资源链路断裂（知识卡「每项独立 try/catch」契约）
         for (const c of this.constraints) {
-            c.dispose();
+            try {
+                c.dispose();
+            } catch (e) {
+                logWarn('virtual-skirt', 'constraint.dispose failed', e);
+            }
         }
         this.constraints.length = 0;
 
         for (const rb of this.segmentRbs) {
-            rb.dispose();
+            try {
+                rb.dispose();
+            } catch (e) {
+                logWarn('virtual-skirt', 'segment rigidBody.dispose failed', e);
+            }
         }
         this.segmentRbs.length = 0;
         if (this.anchorRb) {
-            this.anchorRb.dispose();
+            try {
+                this.anchorRb.dispose();
+            } catch (e) {
+                logWarn('virtual-skirt', 'anchor rigidBody.dispose failed', e);
+            }
         }
         this.anchorRb = null;
 
         for (const info of this.segmentInfos) {
-            info.dispose();
+            try {
+                info.dispose();
+            } catch (e) {
+                logWarn('virtual-skirt', 'segment info.dispose failed', e);
+            }
         }
         this.segmentInfos.length = 0;
         if (this.anchorInfo) {
-            this.anchorInfo.dispose();
+            try {
+                this.anchorInfo.dispose();
+            } catch (e) {
+                logWarn('virtual-skirt', 'anchor info.dispose failed', e);
+            }
         }
         this.anchorInfo = null;
 
         for (const s of this.segmentShapes) {
-            s.dispose();
+            try {
+                s.dispose();
+            } catch (e) {
+                logWarn('virtual-skirt', 'segment shape.dispose failed', e);
+            }
         }
         this.segmentShapes.length = 0;
         if (this.anchorShape) {
-            this.anchorShape.dispose();
+            try {
+                this.anchorShape.dispose();
+            } catch (e) {
+                logWarn('virtual-skirt', 'anchor shape.dispose failed', e);
+            }
         }
         this.anchorShape = null;
 

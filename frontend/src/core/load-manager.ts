@@ -220,6 +220,11 @@ class LoadManager {
                     };
                 }
                 default:
+                    // [audit:round13 P3] light/personalLight/mirror 等 kind 当前未实现，
+                    // 静默 return null 会让调用方拿到 null 而不知原因；显式告警便于排查。
+                    console.warn(
+                        `[loadManager] kind "${req.kind}" 尚未实现加载器，返回 null（调用方应自行兜底）`
+                    );
                     return null;
             }
         } catch (err) {

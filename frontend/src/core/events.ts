@@ -54,7 +54,6 @@ import { handleDroppedFile } from './drop-import';
 // ======== Module-level state ========
 let seekWasPlaying = false;
 let _pointerDownPos = { x: 0, y: 0 };
-const _lastTapTime = 0;
 let _activePointerCount = 0; // 活跃指针计数；仅单指时执行 click/toggle
 
 // ======== Register all DOM/window event listeners ========
