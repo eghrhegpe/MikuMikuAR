@@ -648,6 +648,17 @@ const TABLER_BUNDLE = {
 };
 
 export function registerIconBundle(): void {
-    addCollection(LUCIDE_BUNDLE);
-    addCollection(TABLER_BUNDLE);
+    // [fix P3] 逐个 try/catch 降级：addCollection 抛错（iconify 版本升级 schema
+    // 不兼容 / bundle 数据破损）时图标缺失优于整个应用启动失败——init.ts _initEarlyInfra
+    // 在 registerIconBundle 后还依赖 initI18n 等基建，不能因图标注册阻断启动。
+    try {
+        addCollection(LUCIDE_BUNDLE);
+    } catch (err) {
+        console.warn('[icons-bundle] lucide 图标注册失败（降级为缺失）：', err);
+    }
+    try {
+        addCollection(TABLER_BUNDLE);
+    } catch (err) {
+        console.warn('[icons-bundle] tabler 图标注册失败（降级为缺失）：', err);
+    }
 }

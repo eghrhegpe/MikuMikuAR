@@ -9,6 +9,8 @@ source_files:
   - frontend/src/scene/env/env-particles.ts
 adr:
   - ADR-026
+  - ADR-138
+  - ADR-160
 symbols:
   - applyWetnessToInst
   - applyWindToParticles
@@ -24,7 +26,10 @@ symbols:
 invariants:
   - disposeParticles 可选保留湿身效果（keepWetness）
   - 粒子数量根据性能等级动态调整
-  - splash 粒子（水滴溅射）独立于主粒子发射器管理
+  - splash 粒子（水滴溅射）独立于主粒子发射器管理（对象池 _splashBurstPool）
+  - fireworks burst 调度（scheduleNextFireworkBurst/stopFireworkBursts）与碰撞检测 observer 配对释放
+  - applyWetnessToInst/isWetnessActive 由 env-wetness.ts 导出，本文件仅 re-export（ADR-160 湿身联动）
+  - createParticleEmitter 返回 void（系统挂到 _envSys.particles.system），非 ParticleSystem
 tests: []
 use_when:
   - 粒子

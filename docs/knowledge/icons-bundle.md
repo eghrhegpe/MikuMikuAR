@@ -16,9 +16,10 @@ symbols:
   - registerIconBundle
   - softwareKindIcon
 invariants:
-  - 图标按需加载，只在需要时加载图标数据
-  - createIconifyIcon 返回 DOM 元素，由调用方管理生命周期
-  - softwareKindIcon 从规范名推导 lucide 图标名
+  - icons-bundle.ts 由 scripts/gen-icon-bundle.mjs 自动生成，禁止手编（首行注释声明）
+  - 图标全量离线注册（无网络加载），addCollection 经 try/catch 降级（注册失败不阻断启动）
+  - lucide/tabler prefix 物理隔离，避免 iconify 名字空间碰撞；aliases 显式空对象
+  - icons.ts 负责图标创建/加载（createIconButton/createIconifyIcon/softwareKindIcon）
 tests: []
 use_when:
   - 图标

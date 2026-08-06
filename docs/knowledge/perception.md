@@ -4,6 +4,11 @@ source_files:
   - frontend/src/scene/motion/perception.ts
 tests:
   - frontend/src/__tests__/perception.perf.test.ts
+  - frontend/src/__tests__/perception/balance-sway-pin.int.test.ts
+  - frontend/src/__tests__/perception/claim-bones.int.test.ts
+  - frontend/src/__tests__/perception/multi-model.int.test.ts
+  - frontend/src/__tests__/perception/perf-tier.int.test.ts
+  - frontend/src/__tests__/perception/state-lifecycle.int.test.ts
 kind: perception
 name: 感知层主控
 category: motion

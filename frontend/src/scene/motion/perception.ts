@@ -638,6 +638,8 @@ export function pinPerception(modelId: string, state?: Partial<PerceptionState>)
 
     _claimPerceptionBones(modelId);
     _ensureObserverRegistered();
+    // [fix P3] pin 状态是持久化白名单，变更须落盘（与 setXxx setter 一致）
+    triggerAutoSave();
     logWarn('perception', `pin: 模型=${modelId}`);
 }
 
@@ -652,6 +654,8 @@ export function unpinPerception(modelId: string): void {
 
     // 焦点 unpin 仅清 pinned 标志，isActive 保留至焦点切换（仍为当前编辑目标，不应释放骨骼）
     // 非焦点模型：取消激活
+    // [fix P3] unpin 同为持久化白名单变更，须落盘
+    triggerAutoSave();
     if (_focusedContextId !== modelId) {
         _releasePerceptionBones(modelId);
         ctx.isActive = false;
@@ -726,6 +730,11 @@ export function disableAllPerception(): void {
         if (!inst?.mmdModel || inst.mmdModel.mesh?.isDisposed()) {
             _releasePerceptionBones(ctx.modelId);
             _disposeLipSyncRuntime(ctx.modelId);
+            // [fix P3] 焦点模型 dispose 时清残留 _focusedContextId，避免下次
+            // activatePerception 的 focusedModelId===targetId 判重误命中幽灵焦点
+            if (_focusedContextId === ctx.modelId) {
+                _focusedContextId = null;
+            }
             _contexts.delete(ctx.modelId);
             _perceptionOwnedBones.delete(ctx.modelId);
             continue;

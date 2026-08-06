@@ -264,7 +264,7 @@
 | [ADR-135](../adr/adr-135-library-session-store.md) | LibrarySessionStore — 资源库状态收敛基座 | [资源库操作](./library-actions.md) · [资源库核心](./library-core.md) · [资源库会话状态单例](./library-session-store.md) · [统一资源加载队列](./load-manager.md) |
 | [ADR-136](../adr/adr-136-thumbnail-abortsignal.md) | 缩略图流式加载 AbortSignal 协作式取消 | [资源库核心](./library-core.md) |
 | [ADR-137](../adr/adr-137-envstate-single-source-schema.md) | EnvState 单一源 Schema | [EnvState 单一源 Schema](./env-state-schema.md) · [全局状态与场景运行时 Store](./state.md) |
-| [ADR-138](../adr/adr-138-env-dispatcher-decouple.md) | env-dispatcher 破循环依赖 | [环境状态写入入口（setEnvState + 中间件链）](./env-bridge.md) · [环境变更分发回调（破循环依赖）](./env-dispatcher.md) · [环境系统实现核心（barrel + observer + fog）](./env-impl.md) |
+| [ADR-138](../adr/adr-138-env-dispatcher-decouple.md) | env-dispatcher 破循环依赖 | [环境状态写入入口（setEnvState + 中间件链）](./env-bridge.md) · [环境变更分发回调（破循环依赖）](./env-dispatcher.md) · [环境系统实现核心（barrel + observer + fog）](./env-impl.md) · [粒子系统](./env-particles.md) |
 | [ADR-141](../adr/adr-141-state-split.md) | state.ts 拆分 — 状态基座重构 | [配置聚合层](./config-barrel.md) · [轻量日志工具（无依赖）](./logger.md) · [全局状态与场景运行时 Store](./state.md) · [UI 持久化状态](./ui-state.md) |
 | [ADR-143](../adr/adr-143-unification-remaining.md) | 可统一代码收敛（P1 之外剩余项） | [资源库操作](./library-actions.md) · [UI 与场景常量](./ui-constants.md) |
 | [ADR-145](../adr/adr-145-motion-presets.md) | 多模块协同预设 — 一键启用组合姿态 | [共享类型定义](./core-types.md) · [模型预设管理 UI](./model-preset-ui.md) · [动作模块类型定义](./motion-module-types.md) · [动作覆盖 UI 层级（模块化覆盖 + 高级骨骼覆盖）](./motion-override-levels.md) · [动作预设类型](./motion-preset-types.md) · [场景序列化与自动保存](./scene-serialize.md) |
@@ -279,6 +279,7 @@
 | [ADR-156](../adr/adr-156-llm-character-dialogue-route.md) | 大模型交流 — 创意路线（角色台词生成） | [角色台词生成 — 人设约束 + 情绪解析 + TTS 朗读](./character-bible.md) |
 | [ADR-157](../adr/adr-157-settings-ia-restructure.md) | 设置界面信息架构重组 — 10 分类 → 7 分类 | [设置 — 关于页面](./settings-about.md) · [设置动作映射表](./settings-actions.md) · [外观设置](./settings-appearance.md) · [设置 — 操控页面](./settings-controls.md) · [设置 — 画面页面](./settings-graphics.md) · [语言设置](./settings-language.md) · [设置 — 媒体页面](./settings-media.md) · [设置 — 资源页面](./settings-resources.md) · [设置共享工具](./settings-shared.md) · [设置 — 系统页面](./settings-system.md) · [设置目标常量](./settings-targets.md) · [设置页路由与编排](./settings.md) |
 | [ADR-159](../adr/adr-159-render-dedup-and-refactor.md) | 渲染模块重复收口 + 关键补测 + 两项结构性重构决策 | [灯光模块状态对象](./lighting-state.md) · [性能监控与自动降级](./performance.md) |
+| [ADR-160](../adr/adr-160-gaze-delta-exponential-decay.md) | Gaze Delta 指数衰减 — 闭环「左右脑互博」物理根因最后一环 | [粒子系统](./env-particles.md) |
 | [ADR-161](../adr/adr-161-balancesway-params-exposure.md) | balanceSway 独立参数暴露 — 补齐感知层 UI 可调性 | [重心微动](./perception-balance.md) |
 | [ADR-162](../adr/adr-162-perception-permodel-phase1.md) | 感知层 per-model 实例化 — Phase 1（pinned 模型支持） | [眨眼模拟](./perception-blinking.md) · [呼吸模拟](./perception-breathing.md) · [微表情](./perception-expression.md) · [JS 端视线追踪](./perception-gaze-js.md) · [WASM 端视线追踪](./perception-gaze-wasm.md) · [视线追踪主模块](./perception-gaze.md) · [感知口型同步](./perception-lipsync.md) · [感知观察者（感知层）](./perception-observer.md) · [感知层共享类型](./perception-shared.md) · [感知层主控](./perception.md) · [场景序列化与自动保存](./scene-serialize.md) |
 | [ADR-164](../adr/adr-164-perception-permodel-phase2.md) | 感知层 per-model 实例化 — Phase 2（全员感知 + 性能降级） | [场景序列化与自动保存](./scene-serialize.md) · [场景核心编排器（纯组装器）](./scene.md) |
