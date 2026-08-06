@@ -20,7 +20,7 @@
 | 外部动画、Mixamo、VRM、GLB、FBX、动作重定向、骨骼映射、人形动画导入 | [外部动作重定向桥](./animation-retargeter.md) | [场景序列化与自动保存](./scene-serialize.md) |
 | AR 摄像头、视频透传、前后摄切换 | [AR 摄像头视频透传](./ar-camera.md) | [AR 模式场景级协调](./ar-scene.md) |
 | AR 模式协调、接触阴影、AR 截图 | [AR 模式场景级协调](./ar-scene.md) | [AR 摄像头视频透传](./ar-camera.md) |
-| 音频总线、音效、SFX、脚步声音量、音频上下文 | [音频总线](./audio-bus.md) | — |
+| 音频总线、音效、SFX、脚步声音量、音频上下文 | [音频总线](./audio-bus.md) | [脚部地面跟随（MMD-native IK）](./motion-feet-adjustment.md) |
 | 骨骼覆盖存储、骨骼仲裁、感知层冲突 | [骨骼覆盖存储（多模块仲裁）](./bone-override-store.md) | [虚拟裙骨物理控制器（ADR-084 Phase 2-3）](./virtual-skirt.md) |
 | 骨骼覆盖、bone override、骨骼编辑、动作覆盖、欧拉角覆盖、混合权重、IK 保护、帧钩子注册、帧内时序（ADR-186） | [骨骼覆盖核心 API](./bone-override.md) | [场景序列化与自动保存](./scene-serialize.md)、[动作模块基类](./motion-module-base.md)、[模型注册表与生命周期管理](./model-manager.md) |
 | 相机状态、相机位置保存、scene/canvas 引用共享、freefly 输入状态 | [相机状态管理 + 运行时上下文](./camera-state.md) | [相机模式管理系统（MmdCamera）](./camera.md)、[环境状态写入入口（setEnvState + 中间件链）](./env-bridge.md)、[环境重力控制](./env-gravity.md) |
@@ -61,7 +61,7 @@
 | GPU 能力、压缩纹理、KTX2、ASTC、BC7、ADR-189 | [GPU 压缩纹理能力探测](./gpu-capabilities.md) | [PMX 模型加载与缩略图捕获](./model-loader.md)、[场景渲染管线与后处理](./renderer.md)、[场景核心编排器（纯组装器）](./scene.md) |
 | 启动引导、初始化、bootstrap | [应用启动引导](./init.md) | [内置 AI 诊断助手 — 双适配器服务层](./ai-service.md)、[事件处理与导航系统](./events.md)、[运行模式检测](./runtime-mode.md) |
 | 资源库操作、导入模型、替换模型、替换动作、标签浏览、模型行点击 | [资源库操作](./library-actions.md) | [资源库核心](./library-core.md)、[统一动作注册表 — 菜单/NL/快捷键共享真相源](./action-registry.md)、[NL 意图解析 — LLM 文本 → 动作执行](./ai-intent-dispatcher.md) |
-| 资源库核心、资源浏览层级、网格视图、缩略图流式加载、资源管理核心 | [资源库核心](./library-core.md) | [资源库操作](./library-actions.md)、[统一资源加载队列](./load-manager.md)、[VMD 动作加载器](./vmd-loader.md) |
+| 资源库核心、资源浏览层级、网格视图、缩略图流式加载、资源管理核心 | [资源库核心](./library-core.md) | [资源库操作](./library-actions.md)、[统一资源加载队列](./load-manager.md)、[脚部地面跟随（MMD-native IK）](./motion-feet-adjustment.md) |
 | 资源库初始化、资源库设置、资源库启动 | [资源库初始化](./library-setup.md) | [安卓文件访问（shared 模式）](./android-file-access.md) |
 | 模型库、资源库、模型浏览、加载模型、library | [资源库入口与编排](./library.md) | [统一资源加载队列](./load-manager.md) |
 | 个人灯光、灯光跟随、跟随聚光灯 | [个人灯光跟随](./lighting-follow.md) | [灯光预设系统](./lighting-presets.md)、[场景光照与阴影（barrel）](./lighting.md)、[模型生命周期操作](./model-ops.md) |
@@ -83,7 +83,7 @@
 | 模型预设、动作预设、预设管理、预设面板 | [模型预设管理 UI](./model-preset-ui.md) | [场景序列化与自动保存](./scene-serialize.md) |
 | 动作绑定 UI、动作槽位管理、模块切换列表 | [动作绑定 UI](./motion-binding-ui.md) | [滑出式菜单引擎（SlideMenu）](./menu.md)、[PMX 模型加载与缩略图捕获](./model-loader.md)、[模型生命周期操作](./model-ops.md) |
 | 动作详情、图层管理、播放速度 | [动作详情 UI](./motion-detail-ui.md) | [PMX 模型加载与缩略图捕获](./model-loader.md)、[模型生命周期操作](./model-ops.md)、[动作绑定 UI](./motion-binding-ui.md) |
-| 脚部跟随、脚 IK、地面高度、脚部调整引擎 | [脚部地面跟随（MMD-native IK）](./motion-feet-adjustment.md) | — |
+| 脚部跟随、脚 IK、地面高度、脚部调整引擎 | [脚部地面跟随（MMD-native IK）](./motion-feet-adjustment.md) | [音频总线](./audio-bus.md)、[资源库核心](./library-core.md)、[场景核心编排器（纯组装器）](./scene.md) |
 | 动作历史、撤销、重做、动作记录 | [动作历史管理](./motion-history.md) | — |
 | 动作意图、多主动作、动作库、动作广播、默认动作、场景动作 | [场景级动作意图库](./motion-intent.md) | [场景序列化与自动保存](./scene-serialize.md)、[PMX 模型加载与缩略图捕获](./model-loader.md)、[模型生命周期操作](./model-ops.md) |
 | 动作菜单、动作层级、感知面板、程序化动作面板 | [动作菜单层级系统](./motion-menu-levels.md) | [babylon-mmd 适配边界](./mmd-adapter.md)、[感知层主控](./perception.md)、[场景序列化与自动保存](./scene-serialize.md) |

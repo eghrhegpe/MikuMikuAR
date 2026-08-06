@@ -8,7 +8,7 @@
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
 | 核心基础设施 | 131 | 768 |
-| 3D 场景 | 125 | 1183 |
+| 3D 场景 | 125 | 1184 |
 | 菜单 & UI | 76 | 388 |
 | 动作算法 | 18 | 138 |
 
@@ -1394,8 +1394,8 @@
 | `isFeetAdjustmentRunning()` | `scene/motion/feet-adjustment:128` | 查询脚部跟随系统是否正在运行（observer 已注册）。 |
 | `setOnFootLand()` | `scene/motion/feet-adjustment:123` | 注入落地事件回调（null 取消）。脚步声控制器调用。 |
 | `solveFootTarget()` | `scene/motion/feet-adjustment:39` | — |
-| `startFeetAdjustment()` | `scene/motion/feet-adjustment:364` | 启动脚部调整系统：注册为 MotionPipeline bone-override 层（order=5）。 |
-| `stopFeetAdjustment()` | `scene/motion/feet-adjustment:439` | 停止脚部调整系统并清空缓存。 |
+| `startFeetAdjustment()` | `scene/motion/feet-adjustment:366` | 启动脚部调整系统：注册为 MotionPipeline bone-override 层（order=5）。 |
+| `stopFeetAdjustment()` | `scene/motion/feet-adjustment:441` | 停止脚部调整系统并清空缓存。 |
 | `startFallbackDetection()` | `scene/motion/footstep-detect-fallback:68` | 启动独立落地检测（fallback 模式）。 |
 | `stopFallbackDetection()` | `scene/motion/footstep-detect-fallback:133` | 停止独立落地检测。 |
 | `resolveGroundSfxKind()` | `scene/motion/footstep:54` | 依据当前地面类型推断脚步音色。 |
@@ -1411,22 +1411,23 @@
 | `setLipSyncState()` | `scene/motion/lipsync-bridge:61` | — |
 | `updateLipSync()` | `scene/motion/lipsync-bridge:73` | 保留空壳避免外部引用断裂，实际逻辑已由 perception observer 调度。 |
 | `LoadableProcId()` | `scene/motion/motion-intent:18` | — |
-| `addSceneMotion()` | `scene/motion/motion-intent:130` | 新增主动作到场景库。 |
-| `clearAllSceneMotions()` | `scene/motion/motion-intent:181` | 清空整个场景动作库 + 默认动作。 |
-| `findOrCreateModuleState()` | `scene/motion/motion-intent:194` | [doc:adr-121 P4-1] 在 intent.motionModules 中查找或创建模块状态。 |
+| `addSceneMotion()` | `scene/motion/motion-intent:138` | 新增主动作到场景库。 |
+| `clearAllSceneMotions()` | `scene/motion/motion-intent:189` | 清空整个场景动作库 + 默认动作。 |
+| `findOrCreateModuleState()` | `scene/motion/motion-intent:202` | [doc:adr-121 P4-1] 在 intent.motionModules 中查找或创建模块状态。 |
 | `getActiveMotion()` | `scene/motion/motion-intent:32` | 获取当前默认动作（派生自 _activeMotionId）。 |
 | `getActiveMotionId()` | `scene/motion/motion-intent:45` | 获取当前默认动作 id。null = 无默认。 |
 | `getAllLoadableProcMotions()` | `scene/motion/motion-intent:57` | 获取全部可加载的程序化动作 ID 列表（含未加载的）。 |
 | `getLoadedProceduralMotions()` | `scene/motion/motion-intent:62` | 获取当前已加载的程序化动作集合。 |
 | `getMotionGen()` | `scene/motion/motion-intent:50` | 获取当前 generation 值。用于异步操作中判断是否为最新广播。 |
 | `getSceneMotions()` | `scene/motion/motion-intent:40` | 获取场景级动作库（所有主动作列表）。 |
-| `initMotionIntent()` | `scene/motion/motion-intent:98` | 初始化广播回调。由 bootstrap 点（如 scene.ts initScene）调用一次。 |
+| `initMotionIntent()` | `scene/motion/motion-intent:100` | 初始化广播回调。由 bootstrap 点（如 scene.ts initScene）调用一次。 |
 | `loadProceduralMotion()` | `scene/motion/motion-intent:67` | 加载一个程序化动作到集合。 |
-| `removeSceneMotion()` | `scene/motion/motion-intent:151` | 移除场景库中的某个主动作。 |
-| `replaceDefaultMotion()` | `scene/motion/motion-intent:227` | [adr-169] 原位替换默认动作。 |
-| `resolveCompatibility()` | `scene/motion/motion-intent:323` | 兼容性解析：判断指定模型的骨骼列表是否兼容某 VMD 动作。 |
-| `setBroadcastCallback()` | `scene/motion/motion-intent:113` | 测试用例间需 setBroadcastCallback(null) 隔离回调，而 initMotionIntent 的幂等守卫不允许置空。 |
-| `setDefaultMotion()` | `scene/motion/motion-intent:170` | 设置默认动作 id。 |
+| `removeSceneMotion()` | `scene/motion/motion-intent:159` | 移除场景库中的某个主动作。 |
+| `replaceDefaultMotion()` | `scene/motion/motion-intent:235` | [adr-169] 原位替换默认动作。 |
+| `resetMotionIntent()` | `scene/motion/motion-intent:111` | [fix P2] 重置广播回调（场景销毁/重建或 HMR 时调用），使 initMotionIntent 可再次注册。 |
+| `resolveCompatibility()` | `scene/motion/motion-intent:331` | 兼容性解析：判断指定模型的骨骼列表是否兼容某 VMD 动作。 |
+| `setBroadcastCallback()` | `scene/motion/motion-intent:121` | 测试用例间需 setBroadcastCallback(null) 隔离回调，而 initMotionIntent 的幂等守卫不允许置空。 |
+| `setDefaultMotion()` | `scene/motion/motion-intent:178` | 设置默认动作 id。 |
 | `setLoadedProceduralMotions()` | `scene/motion/motion-intent:80` | 设置已加载集合（用于场景反序列化）。始终保证 'none' 存在。 |
 | `unloadProceduralMotion()` | `scene/motion/motion-intent:72` | 卸载一个程序化动作。'none' 不可卸载。 |
 | `BODY_POSTURE_DEF()` | `scene/motion/motion-modules/body-posture:269` | 身体姿态模块注册定义（供 registry BUILTIN_MODULE_DEFS 批量注册） |
@@ -2104,9 +2105,9 @@
 | `LibraryRestoreStatus()` | `menus/library-session-store:17` | [doc:adr-135] P0.3 deferRestore 状态机。 |
 | `librarySessionStore()` | `menus/library-session-store:253` | 单例。 |
 | `initLibrary()` | `menus/library-setup:83` | — |
-| `refreshLibrary()` | `menus/library-setup:421` | — |
-| `reloadConfig()` | `menus/library-setup:343` | — |
-| `rescanAndSync()` | `menus/library-setup:270` | — |
+| `refreshLibrary()` | `menus/library-setup:435` | — |
+| `reloadConfig()` | `menus/library-setup:357` | — |
+| `rescanAndSync()` | `menus/library-setup:273` | — |
 | `selectOverridePath()` | `menus/library-setup:209` | — |
 | `selectResourceRoot()` | `menus/library-setup:184` | — |
 | `switchStorageMode()` | `menus/library-setup:228` | — |

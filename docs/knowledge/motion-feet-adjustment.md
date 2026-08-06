@@ -12,6 +12,9 @@ scope:
   - frontend/src/scene/motion/feet-adjustment.ts
 adr:
   - ADR-085
+  - ADR-088
+  - ADR-202
+  - ADR-238
 symbols:
   - FeetModelProvider
   - isFeetAdjustmentRunning
@@ -22,6 +25,7 @@ symbols:
 invariants:
   - 脚 IK 为自动约束基础，手动 Override 叠加其上
   - 注册为 MotionPipeline bone-override 层（order=5）
+  - 运动模块非零参数 / 激活 bone override 时跳过自动贴地（用户手动覆盖优先，ADR-202 §六）
 
 use_when:
   - 脚部跟随

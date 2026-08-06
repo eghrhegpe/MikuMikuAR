@@ -151,6 +151,17 @@ export function getChangedLines(file, base, head, uncommitted, renameOld, staged
     const out = new Set();
     // --staged：仅暂存区变更行（本次 commit 的文件）
     if (staged) {
+        // [code_review P3] staged rename：pathsocope 限定单路径会把旧路径的删除项
+        // 从 diff 队列滤掉，rename 对无法配对 → 整文件被判为新增（覆盖率误判）。
+        // 与下方非 staged 的 rename 分支同思路：renameOld 存在时用「HEAD 旧 blob ↔
+        // 索引新 blob」两点 diff 取真实最小 hunk，否则回退 --cached 常规 diff。
+        if (renameOld) {
+            addLinesFromDiff(
+                out,
+                git(["diff", "--unified=0", `HEAD:${renameOld}`, `:${file}`])
+            );
+            return out;
+        }
         addLinesFromDiff(out, git(["diff", "--cached", "--unified=0", "--find-renames=30", "--", file]));
         return out;
     }

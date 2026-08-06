@@ -20,9 +20,9 @@ symbols:
   - reloadConfig
   - refreshLibrary
 invariants:
-  - 初始化在应用启动时执行一次
-  - 初始化失败时降级为最小可用状态
-  - rescanAndSync 含防抖，避免频繁触发全量扫描
+  - 初始化在应用启动时执行一次（HMR 可能重复执行，mmar:zip-imported 监听器经 _zipImportedListenerInstalled 幂等保护）
+  - 初始化失败时降级为最小可用状态（各子步骤自 try/catch 兜底；外层仅 logWarn + 状态提示，无统一「最小状态」恢复）
+  - rescanAndSync 含防抖，避免频繁触发全量扫描；并含 _scanInFlight 重入锁（快速连点「重扫」复用同一 Promise，杜绝并发覆盖）
 tests: []
 use_when:
   - 资源库初始化

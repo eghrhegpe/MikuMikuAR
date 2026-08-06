@@ -233,7 +233,7 @@
 | [ADR-084](../adr/adr-084-mesh-to-cloth-virtual-skirt-bones.md) | Mesh-to-Cloth 虚拟裙骨生成 —— WASM Bullet 运行时刚体注入 | [骨骼覆盖存储（多模块仲裁）](./bone-override-store.md) · [裙摆拓扑分析（ADR-084 Phase 1）](./skirt-analyzer.md) · [虚拟裙骨物理控制器（ADR-084 Phase 2-3）](./virtual-skirt.md) |
 | [ADR-085](../adr/adr-085-feet-adjustment.md) | 脚部地面跟随（Feet Adjustment） | [脚部地面跟随（MMD-native IK）](./motion-feet-adjustment.md) |
 | [ADR-087](../adr/adr-087-plaza-browser-experience.md) | 模型广场 · 浏览器体验增强路线图 | [模型广场浏览器](./plaza-browser.md) · [模型广场创作者列表](./plaza-creators.md) · [广场下载拦截器](./plaza-download.md) · [广场站点配置](./plaza-sites.md) · [广场状态管理](./plaza-state.md) · [模型广场 UI 辅助函数](./plaza-thumbnail.md) |
-| [ADR-088](../adr/adr-088-audio-sfx-footstep.md) | 音效系统 — 脚步声与 SFX 总线 | [音频总线](./audio-bus.md) · [脚步声控制器](./motion-footstep.md) |
+| [ADR-088](../adr/adr-088-audio-sfx-footstep.md) | 音效系统 — 脚步声与 SFX 总线 | [音频总线](./audio-bus.md) · [脚部地面跟随（MMD-native IK）](./motion-feet-adjustment.md) · [脚步声控制器](./motion-footstep.md) |
 | [ADR-092](../adr/adr-092-unified-texture-reflection.md) | 贴图与反射统一 —— 单一纹理工厂 + 单一平面反射引擎 | [统一贴图工厂](./env-texture.md) · [统一平面反射引擎](./planar-reflection.md) |
 | [ADR-093](../adr/adr-093-menu-declarative-schema.md) | 菜单声明式 Schema —— 单一数据源 + 单渲染器，根治「大」与「AI 难改」 | [AI 助手独立面板入口](./assistant-panel.md) · [声明式菜单 Schema 注册表](./menu-registry.md) · [声明式菜单 Schema 集中注册聚合器](./menu-schema-register.md) · [声明式菜单 Schema](./menu-schema.md) · [菜单渲染引擎](./render-menu.md) · [AI 诊断助手面板（协调入口）](./settings-diagnostic.md) |
 | [ADR-096](../adr/adr-096-general-helper-consolidation.md) | 通用 Helper 单点收敛 | [VMD 动作加载器](./vmd-loader.md) |
@@ -306,7 +306,7 @@
 | [ADR-196](../adr/adr-196-llm-diagnostic-assistant.md) | 内置 AI 诊断助手（LLM Diagnostic Assistant） | [AI 配置持久化（IndexedDB）](./ai-config-store.md) · [错误环形缓冲与全局捕获](./ai-error-buffer.md) · [场景运行时快照（AI 上下文）](./ai-scene-snapshot.md) · [内置 AI 诊断助手 — 双适配器服务层](./ai-service.md) · [SSE 流式解析器](./ai-sse.md) · [角色台词生成 — 人设约束 + 情绪解析 + TTS 朗读](./character-bible.md) · [诊断用动作注册](./diagnostic-actions.md) · [诊断助手 → 聊天 UI（子模块）](./diagnostic-chat.md) · [诊断助手 → 配置 UI（子模块）](./diagnostic-config.md) · [诊断助手 → 单例状态（子模块）](./diagnostic-state.md) · [应用启动引导](./init.md) · [轻量 Markdown→DOM 渲染器](./markdown.md) · [场景核心编排器（纯组装器）](./scene.md) · [AI 诊断助手面板（协调入口）](./settings-diagnostic.md) |
 | [ADR-197](../adr/adr-197-unified-action-registry.md) | 统一动作注册表 — 菜单可维护性归一化 | [统一动作注册表 — 菜单/NL/快捷键共享真相源](./action-registry.md) · [NL 意图解析 — LLM 文本 → 动作执行](./ai-intent-dispatcher.md) · [诊断用动作注册](./diagnostic-actions.md) · [诊断助手 → tool call 控制（子模块）](./diagnostic-control.md) |
 | [ADR-198](../adr/adr-198-场景序列化异常的保存韧性.md) | 场景序列化异常的保存韧性 | [场景序列化与自动保存](./scene-serialize.md) |
-| [ADR-202](../adr/adr-202-fork-autonomy-batch.md) | fork 自治改动批次 — 一次回灌批量根治可改 fork 的上游缺口 | [场景核心编排器（纯组装器）](./scene.md) |
+| [ADR-202](../adr/adr-202-fork-autonomy-batch.md) | fork 自治改动批次 — 一次回灌批量根治可改 fork 的上游缺口 | [脚部地面跟随（MMD-native IK）](./motion-feet-adjustment.md) · [场景核心编排器（纯组装器）](./scene.md) |
 | [ADR-203](../adr/adr-203-ai-assistant-sessions-and-panel.md) | AI 助手会话持久化与独立面板 | [AI 助手独立面板入口](./assistant-panel.md) · [AI 会话 IndexedDB 存储](./chat-store.md) · [诊断助手 → 聊天 UI（子模块）](./diagnostic-chat.md) · [诊断助手 → 配置 UI（子模块）](./diagnostic-config.md) · [诊断助手 → tool call 控制（子模块）](./diagnostic-control.md) · [诊断助手 → 会话管理（子模块）](./diagnostic-session.md) · [诊断助手 → 单例状态（子模块）](./diagnostic-state.md) · [AI 诊断助手面板（协调入口）](./settings-diagnostic.md) |
 | [ADR-204](../adr/adr-204-unit-test-layering-and-hygiene.md) | 单测分层与治理规范（拆上帝文件 · 降 mock 密度 · fixtures 复用 · unit/integration 分层） | [动作播放控制](./motion-playback.md) |
 | [ADR-206](../adr/adr-206-test-infra-consolidation-and-assertion-quality.md) | 测试基础设施收敛与断言质量治理 | [后端适配层](./core-backend.md) |
@@ -317,7 +317,7 @@
 | [ADR-229](../adr/adr-229-e2e-automation-advancement.md) | E2E 自动化推进 —— 从 schema 到测试零映射 | [渲染层 DOM 契约单源](./dom-contract.md) |
 | [ADR-231](../adr/adr-231-ground-visual-roadmap.md) | 地面视觉后续方向（自发光地屏 + 程序化地面图案） | [地形生成器](./env-terrain.md) |
 | [ADR-237](../adr/adr-237-split-overlong-modules.md) | 超限模块拆分计划 —— 250LOC 天花板的优先级拆解路线图 | [程序化动作系统](./proc-motion-bridge.md) · [多 VMD 叠加系统](./vmd-layers.md) |
-| [ADR-238](../adr/adr-238-循环依赖消解二期-core-scene-根环.md) | 循环依赖消解第二期 —— core→scene 根环与 motion/outfit 互依赖拆解 | [E2E 状态读取器注入桥](./e2e-state-bridge.md) · [资源库核心](./library-core.md) · [场景动作注入桥](./scene-action-bridge.md) · [主题纯函数叶](./theme.md) · [UI 行为注入桥](./ui-action-bridge.md) · [VMD 动作加载器](./vmd-loader.md) |
+| [ADR-238](../adr/adr-238-循环依赖消解二期-core-scene-根环.md) | 循环依赖消解第二期 —— core→scene 根环与 motion/outfit 互依赖拆解 | [E2E 状态读取器注入桥](./e2e-state-bridge.md) · [资源库核心](./library-core.md) · [脚部地面跟随（MMD-native IK）](./motion-feet-adjustment.md) · [场景动作注入桥](./scene-action-bridge.md) · [主题纯函数叶](./theme.md) · [UI 行为注入桥](./ui-action-bridge.md) · [VMD 动作加载器](./vmd-loader.md) |
 
 ## 索引与路由（非卡片）
 

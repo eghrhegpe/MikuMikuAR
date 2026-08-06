@@ -27,6 +27,7 @@ symbols:
   - loadProceduralMotion
   - removeSceneMotion
   - replaceDefaultMotion
+  - resetMotionIntent
   - resolveCompatibility
   - setBroadcastCallback
   - setDefaultMotion
@@ -74,3 +75,6 @@ use_when:
 - `_motionGen` generation counter：每次库变更递增，异步广播 await 后检查。
 - 不 import 任何 UI 模块，保持单向依赖。
 - 轻量 singleton，状态不经过 EnvState 同步。
+- 删除默认动作时 `_activeMotionId` 直接置 `null`（不回退列表第一项，修复「动作根卡片永远到不了无动作」）。
+- `setLoadedProceduralMotions` 过滤非 `LoadableProcId` 值（反序列化脏数据防御）。
+- `initMotionIntent` 幂等守卫 + `resetMotionIntent()` 显式重置（场景重建/HMR 可再注册）。
