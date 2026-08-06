@@ -7,7 +7,7 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 131 | 767 |
+| 核心基础设施 | 131 | 768 |
 | 3D 场景 | 125 | 1183 |
 | 菜单 & UI | 76 | 388 |
 | 动作算法 | 18 | 138 |
@@ -542,9 +542,10 @@
 | `UIState()` | `core/types:444` | — |
 | `VmdLayer()` | `core/types:116` | VMD 动画图层 — 支持多 VMD 叠加（Motion Layers） |
 | `UiActions()` | `core/ui-action-bridge:8` | — |
-| `getUiAction()` | `core/ui-action-bridge:70` | 读取单个 UI 行为（core 侧调用；未注册返回 undefined） |
-| `getUiActions()` | `core/ui-action-bridge:82` | 读取 UI 行为集（未完整注册时返回 null） |
+| `getUiAction()` | `core/ui-action-bridge:75` | 读取单个 UI 行为（core 侧调用；未注册返回 undefined） |
+| `getUiActions()` | `core/ui-action-bridge:87` | 读取 UI 行为集（未完整注册时返回 null） |
 | `registerUiAction()` | `core/ui-action-bridge:63` | 注册单个 UI 行为（menus 侧各模块启动时调用，可重复注册覆盖） |
+| `unregisterUiAction()` | `core/ui-action-bridge:68` | 注销单个 UI 行为（模块 dispose/HMR 清理时调用，防止闭包残留）。 |
 | `addColorSliderRow()` | `core/ui-advanced-rows:17` | — |
 | `addModeSlider()` | `core/ui-advanced-rows:305` | — |
 | `addVector3SliderRow()` | `core/ui-advanced-rows:149` | — |
@@ -2189,7 +2190,7 @@
 | `syncOverrideToInstance()` | `menus/motion-override-levels:978` | 将 bone-override.ts 的运行时状态同步回 ModelInstance.boneOverrides 用于持久化 |
 | `applyIntentToModel()` | `menus/motion-popup:30` | — |
 | `buildMotionRootItems()` | `menus/motion-popup:36` | — |
-| `disposeMotionPopup()` | `menus/motion-popup:76` | 释放 motion-popup 模块资源（取消注册 hooks + HMR/清理时调用） |
+| `disposeMotionPopup()` | `menus/motion-popup:76` | 释放 motion-popup 模块资源（取消注册 hooks + UI actions + HMR/清理时调用） |
 | `getMotionMenu()` | `menus/motion-popup:68` | — |
 | `hideMotionPopup()` | `menus/motion-popup:36` | — |
 | `initMotionBroadcast()` | `menus/motion-popup:30` | — |

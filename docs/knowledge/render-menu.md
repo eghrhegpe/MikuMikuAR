@@ -14,8 +14,18 @@ symbols:
   - buildSchemaLevel
 invariants:
   - Schema 驱动渲染，不硬编码 DOM
-  - 支持多种控件类型（slider/toggle/dropdown 等）
-tests: []
+  - 支持多种控件类型（folder/slider/colorSlider/toggle/modeSlider/modeRow/sectionTitle/action/divider/custom）
+  - renderMenu 返回 dispose 函数（子节点 dispose 级联）
+tests:
+  - frontend/src/__tests__/menu-schema.dispose.test.ts
+  - frontend/src/__tests__/menu-schema.guards.test.ts
+  - frontend/src/__tests__/menu-schema.kinds.test.ts
+  - frontend/src/__tests__/menu-schema.conflict.test.ts
+  - frontend/src/__tests__/menu-schema.controlspec.test.ts
+  - frontend/src/__tests__/menu-schema.statepath.test.ts
+  - frontend/src/__tests__/menu-schema.i18n.test.ts
+  - frontend/src/__tests__/menu-schema.header-toggle.test.ts
+  - frontend/src/__tests__/menu/level-management.test.ts
 use_when:
   - 菜单渲染
   - schema 渲染
@@ -34,8 +44,8 @@ use_when:
 
 ## 对外 API（节选）
 - `interface MenuNode` — 菜单节点定义（kind、label、control、bind 等）。
-- `renderMenu(schema, container, bindings)` — 渲染菜单 schema。
-- 支持控件类型：`slider` / `toggle` / `dropdown` / `color` / `button` / `folder`。
+- `renderMenu(schema: MenuNode[], container: HTMLElement): () => void` — 渲染菜单 schema，返回 dispose 函数。
+- 支持控件类型：`folder` / `slider` / `colorSlider` / `toggle` / `modeSlider` / `modeRow` / `sectionTitle` / `action` / `divider` / `custom`。
 
 ## 与其他子系统关系
 - 被所有 `*-levels.ts` 调用。

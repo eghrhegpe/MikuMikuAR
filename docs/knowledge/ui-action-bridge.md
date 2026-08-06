@@ -10,10 +10,11 @@ source_files:
 adr:
   - ADR-238
 symbols:
-  - registerUiAction
+  - UiActions
   - getUiAction
   - getUiActions
-  - UiActions
+  - registerUiAction
+  - unregisterUiAction
 invariants:
   - core 持注入点，menus 侧注册，方向单向（与 e2e-state-bridge / scene-action-bridge 同模式）
   - 未注册调用一次性告警后静默返回 undefined
