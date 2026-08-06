@@ -64,6 +64,11 @@ export function registerUiAction<K extends keyof UiActions>(key: K, fn: UiAction
     _uiActions.set(key, fn);
 }
 
+/** 注销单个 UI 行为（模块 dispose/HMR 清理时调用，防止闭包残留）。 */
+export function unregisterUiAction<K extends keyof UiActions>(key: K): void {
+    _uiActions.delete(key);
+}
+
 const _missingWarned = new Set<string>();
 
 /** 读取单个 UI 行为（core 侧调用；未注册返回 undefined） */
