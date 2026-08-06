@@ -15,6 +15,8 @@
 > babymmd的换算关系是：1 unit = 0.1 米。
 > 禁止从 `@/core/utils` 神桶导入（ADR-191）——纯/叶子模块须引具体零依赖叶（`@/core/clamp`/`@/core/path`/`@/core/async`），整桶 import 会拖起 dom/state/fileservice 致 vitest fork worker 挂死。
 > 批量重构（重命名/移函数/加参数）用 `npm run codemod`（AST 感知），禁止 Python re.sub 或手动跨文件改。
+> 知识来源优先级：当前源码 > `docs/adr/` > `docs/knowledge/` > `docs/architecture.md`/`docs/function-map.md` > `docs/research/`。
+> 用户描述 UI 文案/点击问题时，先查 `frontend/src/core/i18n` 翻译文件反查定位对应 UI 元素（意图识别），再跳源码。
 
 ```bash
 # 暂存（本地缓存）
