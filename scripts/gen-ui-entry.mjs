@@ -134,7 +134,7 @@ function main() {
     if (newText === t.text) continue;
     fs.writeFileSync(path.join(KNOW_DIR, t.file), newText, 'utf8');
     written++;
-    console.log(`✍️  ${t.file} → 一行引用 menu-map.md`);
+    console.log(`✅  ${t.file} → 一行引用 menu-map.md`);
   }
   console.log(written ? `✅ 已统一 ${written} 张卡的 UI 入口` : '✅ 无需补齐');
 }

@@ -108,7 +108,7 @@ console.log(`[POC] 检查3 attachToBone 探针 位移 = (${probeAfter.x.toFixed(
 console.log(`[POC]   对应骨骼世界平移 = (${boneTransAfter.x.toFixed(3)}, ${boneTransAfter.y.toFixed(3)}, ${boneTransAfter.z.toFixed(3)})`);
 console.log(`[POC]   attachToBone 跟随骨骼 = ${probeTracked}`);
 
-console.log('\n========== POC 结论 ==========');
+console.log('\n📄 POC 结论');
 console.log(`检查1 原生Bone暴露 : ${isRealBone ? 'PASS ✅' : 'FAIL ❌'}`);
 console.log(`检查2 getFinalMatrix新鲜: ${finalFresh ? 'PASS ✅' : 'FAIL ❌ (偏差 ' + maxDiff.toFixed(4) + ')'}`);
 console.log(`检查3 attachToBone跟随 : ${probeTracked ? 'PASS ✅' : 'FAIL ❌'}`);

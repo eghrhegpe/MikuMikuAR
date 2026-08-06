@@ -207,11 +207,11 @@ const lines = [
 ];
 fs.writeFileSync(REVIEW_FILE, lines.join('\n'));
 
-console.log(`\n=== gen-tier 摘要（${mode}）===`);
+console.log(`\n📄 gen-tier 摘要（${mode}）`);
 console.log(`已标种子卡（信任跳过）: ${seeds.length}`);
 console.log(`未标卡: ${untagged.length}`);
-console.log(`  机器自动 architecture（广度≥2）: ${autoArch.length}`);
-console.log(`  人工复核队列: ${reviewRows.length}`);
+console.log(`   机器自动 architecture（广度≥2）: ${autoArch.length}`);
+console.log(`   人工复核队列: ${reviewRows.length}`);
 console.log(`\n复核队列已写入: ${path.relative(ROOT, REVIEW_FILE)}`);
 if (mode === 'preview') {
   console.log('（预览模式未改动任何卡；加 --apply 写入 architecture 标注）');

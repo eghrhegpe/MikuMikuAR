@@ -138,7 +138,7 @@ function main() {
     if (newText === t.text) continue;
     fs.writeFileSync(path.join(KNOW_DIR, t.file), newText, 'utf8');
     written++;
-    console.log(`✍️  ${t.file} → ${t.adrs.join(', ')}`);
+    console.log(`✅  ${t.file} → ${t.adrs.join(', ')}`);
   }
   console.log(written ? `✅ 已补全 ${written} 张卡的 adr 关联` : '✅ 无需补全');
 }

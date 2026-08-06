@@ -182,7 +182,7 @@ function main() {
 
   // ── 输出 ──
   if (!FLAG_QUIET) {
-    console.log('=== ADR 取代关系扫描 ===\n');
+    console.log('📄 ADR 取代关系扫描\n');
 
     console.log(`① 已登记取代(${registered.length}):`);
     for (const r of registered) {

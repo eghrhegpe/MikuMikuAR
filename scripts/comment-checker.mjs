@@ -127,7 +127,7 @@ if (jsonMode) {
   results._summary = { total, ...counts, truncated };
   process.stdout.write(JSON.stringify(results, null, 2) + '\n');
 } else {
-  console.log('========== Comment Checker ==========\n');
+  console.log('📄 Comment Checker\n');
   const names = {
     AI_fluff: 'AI 废话注释', empty_jsdoc: '空 JSDoc 模板',
     commented_code: '注释掉的代码', todo_no_ticket: 'TODO 无编号',

@@ -150,7 +150,7 @@ function main() {
     if (newText === t.text) continue;
     fs.writeFileSync(path.join(KNOW_DIR, t.file), newText, 'utf8');
     written++;
-    console.log(`✍️  ${t.file} → ${t.tests.length} 个测试`);
+    console.log(`✅  ${t.file} → ${t.tests.length} 个测试`);
   }
   console.log(written ? `✅ 已登记 ${written} 张卡的 tests` : '✅ 无需登记');
 }

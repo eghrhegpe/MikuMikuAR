@@ -551,7 +551,7 @@ function main() {
     const expected = t.build().replace(/\s+$/, '') + '\n';
     const actual = fs.existsSync(abs) ? fs.readFileSync(abs, 'utf8') : null;
     if (actual === expected) {
-      if (!CHECK) console.log(`✓ docs/${t.rel}（${t.label}）已是最新`);
+      if (!CHECK) console.log(`✅ docs/${t.rel}（${t.label}）已是最新`);
       continue;
     }
     if (CHECK) {

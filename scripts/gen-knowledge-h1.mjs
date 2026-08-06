@@ -91,7 +91,7 @@ function main() {
     if (newText === t.text) continue;
     fs.writeFileSync(t.filePath, newText, 'utf8');
     written++;
-    console.log(`✍️  ${t.file} → # ${t.name}`);
+    console.log(`✅  ${t.file} → # ${t.name}`);
   }
   console.log(written ? `✅ 已补齐 ${written} 张知识卡的 # 标题` : '✅ 无需补齐');
 }
