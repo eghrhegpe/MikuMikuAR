@@ -10,7 +10,7 @@
 > 新 ADR 落地前先 Grep `> \*\*状态\*\*:.*(规划|实施中|部分实现)` in docs\adr 看是否已有类似实现；若触及既有 ADR 决策，就在对方首部标注「被 [ADR-NNN] 取代」。编号只允许给 ADR、novel 写。
 > 如果文件加载有问题，可核实真实目录`\text-model`。
 > 信任本机改动，测试通过后, 提交前 git status --short 辨认改动归属 ，按功能git add <通过测试的路径...> && git commit. 正常的更改，无需询问。如有捎带，也别怕 , 会有 GitHub PR review 审核。
-> 最后询问用户是否需要处理报错。git push --verbose 2>&1 | Select-Object -Last 50。
+> 最后询问用户是否需要处理预料之外的报错。
 > babymmd的换算关系是：1 unit = 0.1 米。
 > 禁止从 `@/core/utils` 神桶导入（ADR-191）——纯/叶子模块须引具体零依赖叶（`@/core/clamp`/`@/core/path`/`@/core/async`），整桶 import 会拖起 dom/state/fileservice 致 vitest fork worker 挂死。
 > 批量重构（重命名/移函数/加参数）用 `npm run codemod`（AST 感知），禁止 Python re.sub 或手动跨文件改。
@@ -20,7 +20,8 @@
 ```bash
 # 暂存（本地缓存）
 git add .
-git commit -m "<type>: <简短描述>"    # 不带 --no-verify，避免触发 pre-commit
+git commit -m "<type>: <简短描述>"    # pre-commit 自动同步文档/索引（秒级），勿 --no-verify 跳过
+git push --verbose 2>&1 | Select-Object -Last 50。    # 可以查看返回的信息。
 
 # 恢复（从本地缓存取出）
 git reset --soft HEAD~1               # 撤销最近一条 commit，把改动放回暂存区
@@ -99,7 +100,7 @@ edge://inspect Edog网页调试
 http://localhost:9222/json 实际网页一览
 ```
 
-> **Git 钩子（非阻断）**：仓库钩子位于 `.githooks/`（非 `.git/hooks/`），克隆后需激活：`git config core.hooksPath .githooks`。钩子仅把覆盖率缺口等建议非阻断写入 commit message，绝不阻塞提交；逃生阀 `MM_SKIP_COVERAGE_HINT=1 git commit`。
+> **Git 钩子（非阻断）**：仓库钩子位于 `.githooks/`（非 `.git/hooks/`），克隆后需激活：`git config core.hooksPath .githooks`。pre-commit 自动同步文档/索引（秒级 gen）；prepare-commit-msg 把覆盖率缺口建议写入 commit message；均不阻塞提交。逃生阀 `git commit --no-verify`。
 
 # 审核框架
 

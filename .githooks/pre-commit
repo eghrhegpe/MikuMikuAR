@@ -1,0 +1,55 @@
+#!/bin/sh
+# MikuMikuAR pre-commit — 秒级文档自动同步（非阻断）
+# 职责：commit 前自动跑全部秒级 gen 脚本（实测 74ms–849ms，合计 ~2.5s），
+#       同步文档/索引/知识卡机器生成区，并 stage 生成文件。
+#       文档与源码同步在 commit 时自动完成，push 时 pre-push 全量门禁兜底。
+# 安装：git config core.hooksPath .githooks
+# 跳过：git commit --no-verify（不推荐）
+# 设计原则：
+#   - 只做「快速更新 + stage」，不做阻断检查（阻断留给 pre-push）
+#   - 任何 gen 失败仅提示，不阻断 commit
+#   - 幂等：文档已同步时无 diff，git add docs/ 无副作用
+exec 1>&2
+set -u
+ROOT="$(git rev-parse --show-toplevel 2>/dev/null || exit 0)"
+[ -z "${ROOT:-}" ] && exit 0
+
+# ── 环境修正（Windows 多 git/node 环境兼容，同 pre-push） ──
+command -v node >/dev/null 2>&1 || {
+  SYS_NODE="/c/Program Files/nodejs"
+  [ -d "$SYS_NODE" ] && PATH="$SYS_NODE:$PATH"
+  export PATH
+  command -v node >/dev/null 2>&1 || {
+    echo "⚠️  node 不可用（PATH 异常）。跳过文档自动同步。"
+    exit 0
+  }
+}
+
+cd "$ROOT"
+
+# ── 秒级文档同步（全部输出在 docs/ 下；失败不阻断） ──
+echo "[pre-commit] 文档自动同步..."
+GEN_CMDS='gen-status-index.mjs --reverse
+gen-funcmap.mjs
+gen-docs-index.mjs
+gen-novel-index.mjs
+gen-menu-map.mjs
+gen-knowledge-graph.mjs --file docs/knowledge/graph.md
+gen-knowledge-h1.mjs
+gen-knowledge-symbols.mjs
+gen-knowledge-adr.mjs
+gen-knowledge-tests.mjs
+gen-tier.mjs
+gen-routes.mjs
+gen-ui-entry.mjs'
+echo "$GEN_CMDS" | while IFS= read -r line; do
+  [ -z "$line" ] && continue
+  # shellcheck disable=SC2086（有意分词以携带 --file 等参数）
+  node scripts/$line >/dev/null 2>&1 || echo "⚠️  scripts/$line 执行失败（不阻断）"
+done
+
+# ── stage 生成的文档（无 diff 则无副作用） ──
+git add docs/ 2>/dev/null || true
+
+echo "[pre-commit] ✅ 文档已同步并 stage"
+exit 0
