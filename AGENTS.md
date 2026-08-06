@@ -14,7 +14,6 @@
 > 测试通过后按功能直接 git add 对应路径 + git commit ，无需询问。提交前 git status --short 辨认改动归属，非本任务的他人改动不要捎带。
 > 如果文件加载有问题，可核实真实目录`\text-model`。
 > 保存、推送在完成更改后进行: 先测试，再 git status --short 抓取当前文件清单,按功能git add正常的文件/文件夹，git commit正常的更改。最后询问用户是否需要处理报错。git push --verbose 2>&1 | Select-Object -Last 50。
-> 翻译文件在此：frontend/src/core/i18n
 > 放弃低效的 `git stash`， `git stash pop`指令吧。
 > **禁止从 `@/core/utils` 神桶导入**——纯/叶子模块须引具体零依赖叶：`@/core/clamp`（clamp/clamp01/clampInt/lerp/lerpArray/clampPct）、`@/core/path`（normPath/getBaseName/getDirPath/isUnderRoot/isStageLike）、`@/core/async`（swallowError/fireAndForget/delay/waitForFrame/LoadingGuard/DebouncedTimer/Abortable）。整桶 import 会拖起 dom/state/fileservice 等应用层，致 vitest fork worker 挂死（见 ADR-191）。
 >babymmd的换算关系是：1 unit = 0.1 米。
@@ -67,7 +66,7 @@
 
 处理代码任务时，不得把 `docs/knowledge/` 当作源码替代品；按以下顺序检索，避免无目标通读仓库：
 
-1. 先判断用户意图与所属模块；可先查 `docs/knowledge/routes.md`。
+1. 先判断用户意图与所属模块；可先查 `docs/knowledge/routes.md`，或者翻译文件`frontend/src/core/i18n`。
 2. 阅读 `docs/knowledge/index.md` 枢纽索引，定位相关知识卡，再按卡片的 `source_files` 跳转源码。
 3. 用 `docs/adr/index.md` 枢纽（按状态分桶）或 `grep docs/adr/` 查找相关决策、状态和历史坑点；ADR 是决策真相源。
 4. **修 bug 或排查问题时**：先查 `docs/buglog/README.md` 了解格式，再用 `ls docs/buglog/` 列出相关 bug，读取对应文件查看状态（🟢已修复/🔴未修复/🟡搁置/⚪已确认不修）。只读状态为 🔴 未修复 或 🟡 搁置 的 bug 内容。
