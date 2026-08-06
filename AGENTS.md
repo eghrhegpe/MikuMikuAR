@@ -8,7 +8,6 @@
 > 500 行文件先 grep 定位再读。
 > 按需读取 `docs/knowledge/index.md` 枢纽索引（按 category 聚合的卡清单，自动生成）+ grep 卡正文定位功能作用，充实上下文。
 > 新 ADR 落地前先 Grep `> \*\*状态\*\*:.*(规划|实施中|部分实现)` in docs\adr 看是否已有类似实现；若触及既有 ADR 决策，就在对方首部标注「被 [ADR-NNN] 取代」。编号只允许给 ADR、novel 写。
-> 如果文件加载有问题，可核实真实目录`\text-model`。
 > 信任本机改动，测试通过后, 提交前 git status --short 辨认改动归属 ，按功能git add <通过测试的路径...> && git commit. 正常的更改，无需询问。如有捎带，也别怕 , 会有 GitHub PR review 审核。
 > 最后询问用户是否需要处理预料之外的报错。
 > babymmd的换算关系是：1 unit = 0.1 米。
@@ -19,14 +18,13 @@
 
 ```bash
 # 暂存（本地缓存）
-git add .
+git add <通过测试的路径...> # 精准提交自己的代码。
 git commit -m "<type>: <简短描述>"    # pre-commit 自动同步文档/索引（秒级），勿 --no-verify 跳过
-git push --verbose 2>&1 | Select-Object -Last 50。    # 可以查看返回的信息。
+git push --verbose 2>&1 | Select-Object -Last 50    # 推送结束时，返回检查信息。
 
 # 恢复（从本地缓存取出）
-git reset --soft HEAD~1               # 撤销最近一条 commit，把改动放回暂存区
-# 或
-git reset HEAD~1                       # 撤销最近一条 commit，把改动放回工作区
+git reset --soft HEAD~1               # 撤销最近一条 commit，把改动留在暂存区（staged）
+git reset HEAD~1                      # 撤销最近一条 commit，把改动放回工作区（unstaged）
 ```
 | 规则 | 说明 |
 |------|------|
@@ -39,7 +37,7 @@ git reset HEAD~1                       # 撤销最近一条 commit，把改动�
 
 | 要做什么 | 去哪里 |
 |----------|--------|
-| 当前决策+坑点 | `grep docs/adr/`| 配合`npm run gen:adr-supersede`检查取代关系|
+| 当前决策+坑点 | `grep docs/adr/` | 配合`npm run gen:adr-supersede`检查取代关系|
 | 模块现状 | `docs/knowledge/` → 源码追踪| 先读索引→grep卡正文→按source_files跳转                                   |
 | 函数索引| `docs/function-map.md` | 自动生成带文件:行号，修改后`npm run check:funcmap`|
 | ADR状态| `docs/status.md`| 由`npm run gen:status`生成，改状态只需编辑ADR首部|
@@ -59,6 +57,9 @@ git reset HEAD~1                       # 撤销最近一条 commit，把改动�
 注意：Serena 启动后默认不绑定项目，先在对话里让它「索引 `frontend/` 目录」再派活；Context7 免费额度够用，无需 API key。两者均无密钥，`.mcp.json` 可随仓库提交共享。
 
 ## ADR 生命周期管理
+
+> 叫号脚本 new-adr.mjs 抢号 → 填充内容。
+
 ### 取代判别（五层证据）
 | 证据层级 | 判定方式                  | 处置措施                     |
 |----------|--------------------------|------------------------------|
@@ -81,8 +82,6 @@ git reset HEAD~1                       # 撤销最近一条 commit，把改动�
 | 存储 | zip 原档 + 惰性 cache |
 | 命令行 | pwsh + GitHub cli|
 
-请别说wails v3 alpha是测试版，风险很大什么的，这个项目很完善了。
-
 ## 构建
 
 ```bash
@@ -101,6 +100,26 @@ http://localhost:9222/json 实际网页一览
 ```
 
 > **Git 钩子（非阻断）**：仓库钩子位于 `.githooks/`（非 `.git/hooks/`），克隆后需激活：`git config core.hooksPath .githooks`。pre-commit 自动同步文档/索引（秒级 gen）；prepare-commit-msg 把覆盖率缺口建议写入 commit message；均不阻塞提交。逃生阀 `git commit --no-verify`。
+
+**pre-commit 会跑什么**（`.githooks/pre-commit`，commit 时自动执行，顺序跑 13 个 gen 脚本，失败仅提示不阻断）：
+
+| # | 命令 | 输出文件 | 作用 |
+|---|------|----------|------|
+| 1 | `node scripts/gen-status-index.mjs --reverse` | `docs/status.md` | 带日期全量 ADR 附表 |
+| 2 | `node scripts/gen-funcmap.mjs` | `docs/function-map.md` | 函数大全（符号带 `文件:行`） |
+| 3 | `node scripts/gen-docs-index.mjs` | `docs/adr/index.md`、`docs/buglog/index.md`、`docs/knowledge/index.md` | 三大枢纽索引 |
+| 4 | `node scripts/gen-novel-index.mjs` | `docs/novel/index.md` | 小说索引 |
+| 5 | `node scripts/gen-menu-map.mjs` | `docs/knowledge/menu-map.md` | 菜单地图 |
+| 6 | `node scripts/gen-knowledge-graph.mjs --file docs/knowledge/graph.md` | `docs/knowledge/graph.md` | 知识卡关联图 |
+| 7 | `node scripts/gen-knowledge-h1.mjs` | 知识卡内 | 卡 H1 标题同步 |
+| 8 | `node scripts/gen-knowledge-symbols.mjs` | 知识卡内 | `symbols:` 字段同步 |
+| 9 | `node scripts/gen-knowledge-adr.mjs` | 知识卡内 | `adr:` 关联同步 |
+| 10 | `node scripts/gen-knowledge-tests.mjs` | 知识卡内 | `tests:` 字段同步 |
+| 11 | `node scripts/gen-tier.mjs` | 知识卡内 | `tier:` 层级同步 |
+| 12 | `node scripts/gen-routes.mjs` | `docs/knowledge/routes.md` | 检索路由 |
+| 13 | `node scripts/gen-ui-entry.mjs` | 知识卡内 | UI 入口同步 |
+
+跑完后执行 `git add docs/` 把生成文件 stage 进本次提交（幂等：无漂移时零副作用）。**这就是为什么你的提交常夹带 `docs/function-map.md` 等文件——那是钩子自动补的同步，不是手滑。** 质量门禁（覆盖率/分层/i18n）在 pre-push 全量检查。
 
 # 审核框架
 
