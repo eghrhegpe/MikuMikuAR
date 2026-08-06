@@ -196,6 +196,11 @@ export function showToast(
     duration = 8000,
     variant: ToastVariant = 'error'
 ): void {
+    if (typeof document === 'undefined') {
+        // 无 document 环境（headless 测试/启动早期）静默降级，不抛错冒泡到调用方（round-12 P2）
+        console.warn(`[toast] 跳过 toast（无 document）：${title}`);
+        return;
+    }
     while (_activeToasts.length >= MAX_VISIBLE_TOASTS) {
         const oldest = _activeToasts[0];
         if (oldest) {

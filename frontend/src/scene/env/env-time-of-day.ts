@@ -101,7 +101,10 @@ export function startTimeOfDay(speed?: number): void {
         _timeOfDaySpeed = speed;
         setEnvState({ timeOfDaySpeed: speed }, true);
     }
-    if (envState.timeOfDayActive && !_timeOfDayPaused) {
+    // 幂等守卫：以 _unregisterTimeOfDay 为准（而非 timeOfDayActive && !_timeOfDayPaused）。
+    // 预设动画期间 _timeOfDayPaused=true，旧守卫会失效导致重复 registerSceneTickCallback
+    // 并覆盖 _unregisterTimeOfDay 而不释放旧回调 → 回调泄漏 + envSunAngle 每帧双倍递增（round-12 P2）。
+    if (_unregisterTimeOfDay) {
         return;
     }
     setEnvState({ timeOfDayActive: true }, true);

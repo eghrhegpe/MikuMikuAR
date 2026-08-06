@@ -789,7 +789,12 @@ function _runFrameHooks(focusedId: string): void {
         _frameHooksSorted = true;
     }
     for (const entry of _frameHooks.slice()) {
-        entry.hook(t, focusedId);
+        // 单模块钩子抛错不中断整帧回调（跳过覆盖应用/IK 恢复/WASM 重解），round-12 P2
+        try {
+            entry.hook(t, focusedId);
+        } catch (e) {
+            console.warn(`[bone-override] 帧钩子异常（order=${entry.order}）`, e);
+        }
     }
 }
 

@@ -50,6 +50,12 @@ export function registerModule(
 
 /** 注销模块 */
 export function unregisterModule(id: string): void {
+    // 先清理该模块已 claim 的 ownedBones + 帧钩子（round-12 P2），再删注册表条目。
+    // 对每个持有该模块骨骼的模型，创建实例并 disable()（onDisable 注销帧钩子 + releaseOwnedBones）。
+    // 必须在 _registry.delete 之前调用，否则 createModule 查不到条目返回 null。
+    for (const modelId of getBoneOverrideStore().getModelsOwningModule(id)) {
+        createModule(id, modelId)?.disable();
+    }
     _registry.delete(id);
 }
 
@@ -314,19 +320,24 @@ export function applyMotionModulesToModel(modelId: string): void {
     }
 
     for (const state of intent.motionModules) {
-        const mod = createModule(state.id, modelId);
-        if (!mod) {
-            continue;
-        }
-
-        if (state.enabled) {
-            mod.enable();
-            // 应用参数
-            for (const [key, value] of Object.entries(state.params)) {
-                mod.setParam?.(key, value);
+        try {
+            const mod = createModule(state.id, modelId);
+            if (!mod) {
+                continue;
             }
-        } else {
-            mod.disable();
+
+            if (state.enabled) {
+                mod.enable();
+                // 应用参数
+                for (const [key, value] of Object.entries(state.params)) {
+                    mod.setParam?.(key, value);
+                }
+            } else {
+                mod.disable();
+            }
+        } catch (e) {
+            // 单模块异常不阻断其余模块应用（round-12 P2）
+            console.warn(`[registry] applyMotionModulesToModel 模块 "${state.id}" 应用失败`, e);
         }
     }
 }

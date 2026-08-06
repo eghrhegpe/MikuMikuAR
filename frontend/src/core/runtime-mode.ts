@@ -29,12 +29,21 @@ export function detectRuntimeMode(): RuntimeMode {
 }
 
 export function persistRuntimeMode(mode: RuntimeMode): void {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(mode));
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(mode));
+    } catch {
+        // localStorage 不可用/配额满时静默降级，不中断 bootstrap（round-12 P2）
+    }
 }
 
 export function loadPersistedRuntimeMode(): RuntimeMode | null {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as RuntimeMode) : null;
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? (JSON.parse(raw) as RuntimeMode) : null;
+    } catch {
+        // 损坏 JSON / localStorage 不可用时降级 null，避免抛错冒泡中断 bootstrap（round-12 P2）
+        return null;
+    }
 }
 
 function badgeText(mode: RuntimeMode): string {

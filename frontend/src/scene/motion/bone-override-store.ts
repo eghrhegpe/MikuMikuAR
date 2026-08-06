@@ -97,6 +97,8 @@ export interface BoneOverrideStore {
     /** 释放模块全部已认领骨骼，并级联清理其槽位；返回被释放的骨骼集合 */
     releaseBones(modelId: string, moduleId: string): Set<string>;
     getOwnedBones(modelId: string, moduleId: string): Set<string>;
+    /** 返回所有认领了指定模块骨骼的模型 id（供 unregisterModule 清理该模块的 ownedBones + 帧钩子） */
+    getModelsOwningModule(moduleId: string): string[];
     /** 查询某骨当前归属模块 id（无归属返回 null）；供 isBoneOwnedByOther 等运行时判定 */
     getBoneOwnerModule(modelId: string, bone: string): string | null;
     setModuleEnabled(modelId: string, moduleId: string, enabled: boolean): void;
@@ -290,6 +292,17 @@ export class InMemoryBoneOverrideStore implements BoneOverrideStore {
             all.push(...list);
         }
         return all;
+    }
+
+    /** 返回所有认领了指定模块骨骼的模型 id（供 unregisterModule 清理该模块的 ownedBones + 帧钩子） */
+    getModelsOwningModule(moduleId: string): string[] {
+        const result: string[] = [];
+        for (const [modelId, ownedMap] of this._ownedBones) {
+            if (ownedMap.has(moduleId)) {
+                result.push(modelId);
+            }
+        }
+        return result;
     }
 
     // —— 事件监听 ——

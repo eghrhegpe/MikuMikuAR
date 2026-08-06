@@ -15,7 +15,11 @@ import {
     setTargetModel,
     registerModule,
     unregisterModule,
+    createModule,
+    claimBones,
+    releaseOwnedBones,
 } from '@/scene/motion/motion-modules/registry';
+import { getBoneOverrideStore } from '@/scene/motion/bone-override-store';
 
 vi.mock('@/core/state', () => mockState());
 vi.mock('@/scene/motion/bone-override', () => mockBoneOverride());
@@ -87,5 +91,38 @@ describe('getRegisteredModules', () => {
         expect(getRegisteredModules().map((m) => m.id)).not.toContain('test-mod');
         const after = getRegisteredModules().length;
         expect(after).toBe(before);
+    });
+
+    it('unregisterModule 释放该模块已 claim 的 ownedBones（round-12 P2）', () => {
+        initMotionModules();
+        registerModule(
+            'test-claim',
+            { labelKey: 'test' },
+            5,
+            () =>
+                ({
+                    id: 'test-claim',
+                    meta: { labelKey: 'test' },
+                    priority: 5,
+                    managedBones: ['上半身'],
+                    buildSchema: () => [],
+                    getState: () => ({ id: 'test-claim', enabled: false, params: {} }),
+                    setState: () => {},
+                    setParam: () => {},
+                    enable: () => {
+                        claimBones('m1', 'test-claim', ['上半身']);
+                    },
+                    disable: () => {
+                        releaseOwnedBones('m1', 'test-claim');
+                    },
+                }) as any
+        );
+
+        const mod = createModule('test-claim', 'm1')!;
+        mod.enable();
+        expect(getBoneOverrideStore().getOwnedBones('m1', 'test-claim').has('上半身')).toBe(true);
+
+        unregisterModule('test-claim');
+        expect(getBoneOverrideStore().getOwnedBones('m1', 'test-claim').size).toBe(0);
     });
 });
