@@ -11,15 +11,16 @@ adr:
   - ADR-138
   - ADR-148
 symbols:
-  - setEnvState
   - applyEnvStateFacade
   - registerEnvStateMiddleware
+  - setEnvState
   - setPresetAnimActive
 invariants:
-  - setEnvState 是环境状态唯一写入入口；内部经 dispatchEnvChange 分发，触发 schedulePersistEnvState 防抖持久化
+  - setEnvState 是环境状态主写入入口（白名单迁移 + 中间件链 + dispatchEnvChange 分发 + schedulePersistEnvState 防抖持久化）；注：env-time-of-day.ts:82 直接写 envState.sunAngle 绕过 setEnvState（仅 facade 补偿派发），「唯一入口」表述不严格
   - registerEnvStateMiddleware 注册的中间件按 phase 执行（pre-facade / post-facade），syncEnvSunAngle 等
   - applyEnvStateFacade 是 setEnvState 的轻量版（跳过防抖持久化 + 中间件链），供 time-of-day tick 高频调用
-  - _presetAnimActive 标记预设动画运行中，applyEnvStateFacade 据此跳过方向光同步（动画自己管光照）
+  - _presetAnimActive 标记预设动画运行中，applyEnvStateFacade 据此跳过方向光同步（动画自己管光照）；动画异常中断时经 observer try/catch 复位标志（防方向光同步永久跳过）
+  - 模块加载时 registerSceneAction('setEnvState') 暴露给 core/action-defs 调用（经白名单迁移收窄）
 tests:
   - frontend/src/__tests__/env-bridge/facade.int.test.ts
   - frontend/src/__tests__/env-bridge/middleware.int.test.ts

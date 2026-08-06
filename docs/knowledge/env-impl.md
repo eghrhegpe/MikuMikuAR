@@ -3,7 +3,7 @@ tier: architecture
 source_files:
   - frontend/src/scene/env/env-impl.ts
 tests:
-  - frontend/src/__tests__/scene/env-impl.test.ts
+  - frontend/src/__tests__/scene/env-impl.test.ts（注：该文件仅测试 getGroundHeightAt——定义于 env-ground.ts 的 barrel re-export；ensureEnvUpdateObserver/disposeEnvUpdateObserver/applyFog 等本文件核心编排逻辑无直接单测）
 kind: env_impl
 name: 环境系统实现核心（barrel + observer + fog）
 category: env

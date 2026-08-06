@@ -1100,7 +1100,7 @@
 | `_envSys()` | `scene/env/env-impl:20` | — |
 | `addGroundRipple()` | `scene/env/env-impl:23` | — |
 | `addRipple()` | `scene/env/env-impl:23` | — |
-| `applyFog()` | `scene/env/env-impl:226` | — |
+| `applyFog()` | `scene/env/env-impl:229` | — |
 | `applyGround()` | `scene/env/env-impl:47` | — |
 | `applySky()` | `scene/env/env-impl:43` | — |
 | `clearGroundRipples()` | `scene/env/env-impl:23` | — |
@@ -1109,10 +1109,10 @@
 | `createParticleEmitter()` | `scene/env/env-impl:69` | — |
 | `createWater()` | `scene/env/env-impl:23` | — |
 | `disposeClouds()` | `scene/env/env-impl:34` | — |
-| `disposeEnvUpdateObserver()` | `scene/env/env-impl:194` | — |
+| `disposeEnvUpdateObserver()` | `scene/env/env-impl:197` | — |
 | `disposeParticles()` | `scene/env/env-impl:69` | — |
 | `disposeWater()` | `scene/env/env-impl:23` | — |
-| `ensureEnvUpdateObserver()` | `scene/env/env-impl:122` | — |
+| `ensureEnvUpdateObserver()` | `scene/env/env-impl:125` | — |
 | `getGroundHeightAt()` | `scene/env/env-impl:47` | — |
 | `getScene()` | `scene/env/env-impl:20` | — |
 | `initEnvImpl()` | `scene/env/env-impl:75` | — |
@@ -1167,7 +1167,7 @@
 | `hash2()` | `scene/env/env-terrain:22` | — |
 | `valueNoise()` | `scene/env/env-terrain:22` | — |
 | `applyEnvPreset()` | `scene/env/env-time-of-day:156` | — |
-| `applyEnvPresetByCategory()` | `scene/env/env-time-of-day:335` | [adr-120] 按类别应用用户自定义预设。 |
+| `applyEnvPresetByCategory()` | `scene/env/env-time-of-day:348` | [adr-120] 按类别应用用户自定义预设。 |
 | `applyEnvPresetObject()` | `scene/env/env-time-of-day:257` | 应用任意 EnvPreset 对象（支持用户自定义预设）。 |
 | `getEnvSunAngle()` | `scene/env/env-time-of-day:49` | — |
 | `getTimeOfDaySpeed()` | `scene/env/env-time-of-day:136` | — |
@@ -1769,16 +1769,16 @@
 | `PersonalLightSettings()` | `scene/render/lighting-follow:32` | — |
 | `attachPersonalLight()` | `scene/render/lighting-follow:169` | — |
 | `detachPersonalLight()` | `scene/render/lighting-follow:294` | — |
-| `disposeAllPersonalLights()` | `scene/render/lighting-follow:432` | — |
-| `getAllPersonalLights()` | `scene/render/lighting-follow:441` | 导出所有个人灯状态（仅非默认值差异落盘由调用方决定） |
+| `disposeAllPersonalLights()` | `scene/render/lighting-follow:439` | — |
+| `getAllPersonalLights()` | `scene/render/lighting-follow:448` | 导出所有个人灯状态（仅非默认值差异落盘由调用方决定） |
 | `getPersonalLightDefault()` | `scene/render/lighting-follow:124` | 获取用户保存的个人灯默认值，无则返回 null。 |
 | `getPersonalLightState()` | `scene/render/lighting-follow:345` | — |
 | `resetPersonalLightDefault()` | `scene/render/lighting-follow:129` | 重置用户默认值回出厂硬编码值。 |
-| `restorePersonalLights()` | `scene/render/lighting-follow:453` | 场景反序列化后，按 modelId 恢复个人灯设置（attach 已由 onModelLoaded 触发，此处仅覆盖参数） |
+| `restorePersonalLights()` | `scene/render/lighting-follow:460` | 场景反序列化后，按 modelId 恢复个人灯设置（attach 已由 onModelLoaded 触发，此处仅覆盖参数） |
 | `setPersonalLightDefault()` | `scene/render/lighting-follow:114` | 将当前个人灯参数保存为用户默认值。 |
 | `setPersonalLightState()` | `scene/render/lighting-follow:309` | — |
 | `tickPersonalLights()` | `scene/render/lighting-follow:349` | — |
-| `tickStageLightFollow()` | `scene/render/lighting-follow:492` | 舞台灯追光 tick：更新所有绑定了 followTarget 的舞台灯 |
+| `tickStageLightFollow()` | `scene/render/lighting-follow:499` | 舞台灯追光 tick：更新所有绑定了 followTarget 的舞台灯 |
 | `LIGHTING_PRESETS()` | `scene/render/lighting-presets:21` | — |
 | `LightingPreset()` | `scene/render/lighting-presets:12` | — |
 | `LightingPresetLight()` | `scene/render/lighting-presets:6` | — |

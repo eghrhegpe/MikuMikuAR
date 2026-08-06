@@ -379,6 +379,13 @@ export function tickPersonalLights(): void {
         }
 
         if (entry.cone) {
+            // [fix P2] 个人灯锥的 u_cameraPos 此前永不更新：lighting.ts 的 onBeforeRender
+            // observer 仅遍历 stageCones（舞台灯光锥），个人灯锥的 Fresnel 用默认 (0,0,0)
+            // 相机位置，边缘辉光方向恒定指向世界原点。此处与舞台锥对齐，每帧同步相机位置。
+            const cam = lightingState.scene?.activeCamera;
+            if (cam) {
+                entry.cone.material.setVector3('u_cameraPos', cam.position);
+            }
             updateLightConeTransform(entry.cone, entry.light, entry.settings.coneLength);
         }
     }

@@ -87,7 +87,9 @@ registerEnvCallback((changed, state) => {
     // Sky
     if (!changed || _SKY_KEYS.some((k) => changed.has(k))) {
         applySky(state);
-        if (isMirrorActive() && updateMirrorClearColor) {
+        // [fix P3] 简化：updateMirrorClearColor 是静态 import 的函数引用恒为 truthy，
+        // `&& updateMirrorClearColor` 是死代码/语义误导，直接调用
+        if (isMirrorActive()) {
             updateMirrorClearColor();
         }
     }
@@ -108,7 +110,8 @@ registerEnvCallback((changed, state) => {
         }
     }
     // Collision — 地面碰撞由 collisionEnabled（总开关）&& groundCollisionEnabled 共同驱动
-    if (!changed || [...changed].some((k) => _COLLISION_KEYS.includes(k))) {
+    // [fix P3] 写法与 sky/ground/fog 对齐（changed.has 而非展开 Set 再 includes）
+    if (!changed || _COLLISION_KEYS.some((k) => changed.has(k))) {
         applyGroundCollision();
     }
 });

@@ -323,7 +323,20 @@ export function applyEnvPresetObject(preset: {
         startTime: performance.now(),
         lastSkyUpdate: 0,
     };
-    const handle = observe(scene.onBeforeRenderObservable, () => _presetAnimLoop(ctx, handle));
+    const handle = observe(scene.onBeforeRenderObservable, () => {
+        try {
+            _presetAnimLoop(ctx, handle);
+        } catch (err) {
+            // [fix P2] 预设动画异常中断时复位运行标志：否则 _presetAnimActive 永久
+            // true，方向光同步（sunAngle/azimuth）被 env-bridge 守卫永久跳过，
+            // 用户后续手动调光照无响应（env-bridge _LIGHT_SYNC_KEYS 幽灵路径）。
+            logWarn('presetAnim', 'animation loop error, resetting active flag', err);
+            handle.dispose();
+            setPresetAnimActive(false);
+            setSkipLightAutoSave(false);
+            cancelEnvPersistTimer();
+        }
+    });
     return true;
 }
 
