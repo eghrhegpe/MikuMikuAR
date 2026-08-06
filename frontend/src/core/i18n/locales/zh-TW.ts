@@ -28,6 +28,7 @@ export const zhTW: Record<string, string> = {
     'settings.orientationPortrait': '直向',
     'settings.orientationLandscape': '橫向',
     'settings.resetAppearance': '恢復預設外觀',
+    'settings.resetAppearanceConfirm': '確定恢復預設外觀？所有外觀設定將被重置',
     'settings.filename': '檔案名稱',
     'settings.library': '庫設定',
     'settings.performance': '效能',

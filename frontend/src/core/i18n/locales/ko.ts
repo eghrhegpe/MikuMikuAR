@@ -29,6 +29,7 @@ export const ko: Record<string, string> = {
     'settings.orientationPortrait': '세로',
     'settings.orientationLandscape': '가로',
     'settings.resetAppearance': '외관 초기화',
+    'settings.resetAppearanceConfirm': '외관을 기본값으로 초기화하시겠습니까? 모든 외관 설정이 재설정됩니다',
     'settings.filename': '파일명',
     'settings.library': '라이브러리',
     'settings.performance': '성능',

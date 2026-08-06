@@ -28,6 +28,7 @@ export const ja: Record<string, string> = {
     'settings.orientationPortrait': '縦画面',
     'settings.orientationLandscape': '横画面',
     'settings.resetAppearance': '外観をリセット',
+    'settings.resetAppearanceConfirm': '外観をデフォルトにリセットしますか？すべての外観設定が初期化されます',
     'settings.filename': 'ファイル名',
     'settings.library': 'ライブラリ',
     'settings.performance': 'パフォーマンス',

@@ -29,6 +29,7 @@ export const en: Record<string, string> = {
     'settings.orientationPortrait': 'Portrait',
     'settings.orientationLandscape': 'Landscape',
     'settings.resetAppearance': 'Reset Appearance',
+    'settings.resetAppearanceConfirm': 'Reset appearance to defaults? All appearance settings will be restored',
     'settings.filename': 'Filename',
     'settings.library': 'Library',
     'settings.performance': 'Performance',

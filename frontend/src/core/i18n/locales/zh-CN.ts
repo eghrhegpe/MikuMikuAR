@@ -29,6 +29,7 @@ export const zhCN: Record<string, string> = {
     'settings.orientationPortrait': '竖屏',
     'settings.orientationLandscape': '横屏',
     'settings.resetAppearance': '恢复默认外观',
+    'settings.resetAppearanceConfirm': '确定恢复默认外观？所有外观设置将被重置',
     'settings.filename': '文件名',
     'settings.library': '库设置',
     'settings.performance': '性能',
