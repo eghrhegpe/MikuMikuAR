@@ -30,9 +30,17 @@ const BINDINGS_FILE = resolve(
     'models.ts'
 );
 
-const { strict, json } = parseArgs(process.argv.slice(2), {
+const { strict, json , help, unknown} = parseArgs(process.argv.slice(2), {
     bools: ['strict', 'json'],
 });
+  if (help) {
+    console.log('用法见文件头 JSDoc（node scripts/check-env-parity.mjs [--check|--json|--strict]）');
+    process.exit(0);
+  }
+  if (unknown && unknown.length) {
+    console.error(`❌ 未知参数: ${unknown.join(', ')}（--help 查看用法）`);
+    process.exit(1);
+  }
 
 const EXEMPT_SCHEMA_ONLY = new Map();
 const EXEMPT_BIND_ONLY = new Map([

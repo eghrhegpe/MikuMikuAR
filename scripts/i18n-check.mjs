@@ -22,7 +22,15 @@ const LOCALES_DIR = resolve(__dirname, '..', 'frontend', 'src', 'core', 'i18n', 
 const BASE_LANG = 'zh-CN';
 const REFERENCE_LANGS = ['en', 'ja', 'ko', 'zh-TW'];
 
-const { strict, json } = parseArgs(process.argv.slice(2), { bools: ['strict', 'json'], strings: [], defaults: {} });
+const { strict, json , help, unknown} = parseArgs(process.argv.slice(2), { bools: ['strict', 'json'], strings: [], defaults: {} });
+  if (help) {
+    console.log('用法见文件头 JSDoc（node scripts/i18n-check.mjs [--check|--json|--strict]）');
+    process.exit(0);
+  }
+  if (unknown && unknown.length) {
+    console.error(`❌ 未知参数: ${unknown.join(', ')}（--help 查看用法）`);
+    process.exit(1);
+  }
 const log = json ? () => {} : console.log.bind(console);
 
 function extractKeys(file) {

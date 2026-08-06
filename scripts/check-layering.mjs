@@ -40,7 +40,15 @@ const BASELINE_FILE = resolve(REPO_ROOT, 'docs', '.layering-baseline.json');
 /** 顶层算法目录（ADR-242 认定的中间层） */
 const TOPLEVEL_ALGO = ['motion-algos'];
 
-const { json, update } = parseArgs(process.argv.slice(2), { bools: ['json', 'update'] });
+const { json, update , help, unknown} = parseArgs(process.argv.slice(2), { bools: ['json', 'update'] });
+  if (help) {
+    console.log('用法见文件头 JSDoc（node scripts/check-layering.mjs [--check|--json|--strict]）');
+    process.exit(0);
+  }
+  if (unknown && unknown.length) {
+    console.error(`❌ 未知参数: ${unknown.join(', ')}（--help 查看用法）`);
+    process.exit(1);
+  }
 
 /* ---------- 收集源文件（复用 _lib/scan-files 共享遍历层） ---------- */
 const SCAN_OPTS = {

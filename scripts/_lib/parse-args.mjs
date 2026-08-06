@@ -14,9 +14,14 @@
  *
  *   位置参数（无前缀的裸参数）收集在 `_` 数组中。
  *   未知参数或缺少值的 value flag 会输出 stderr 警告，不清除 $exit。
+ *
+ * [fix] 2026-08-06 增强（脚本大搬运）：
+ *   - `--help` / `-h` 内置识别 → 返回 `help: true`（不进入 unknown，调用方据此打印用法退 0）；
+ *   - 未知 flag 收集到返回值 `unknown: [...]` 数组（仍 warn，向后兼容；调用方可据此退 1，
+ *     杜绝「未知 flag 静默落入位置参数位」——new-adr / fix-* 曾中招）。
  */
 export function parseArgs(argv, { bools = [], strings = [], defaults = {} } = {}) {
-  const result = { _: [], ...defaults };
+  const result = { _: [], help: false, unknown: [], ...defaults };
 
   // 预填 bools/strings 默认值
   for (const k of bools) if (!(k in result)) result[k] = false;
@@ -26,6 +31,10 @@ export function parseArgs(argv, { bools = [], strings = [], defaults = {} } = {}
 
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
+    if (arg === '--help' || arg === '-h') {
+      result.help = true;
+      continue;
+    }
     if (!arg.startsWith('--') || arg === '--') {
       // 位置参数（-- 作为分隔符，后续所有参数均为位置参数）
       result._.push(arg);
@@ -43,6 +52,7 @@ export function parseArgs(argv, { bools = [], strings = [], defaults = {} } = {}
 
     if (!known.has(name)) {
       console.warn(`⚠️  未知参数: --${name}`);
+      result.unknown.push(arg);
       continue;
     }
 

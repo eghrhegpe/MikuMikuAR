@@ -30,6 +30,14 @@ import { parseArgs } from './_lib/parse-args.mjs';
 import { ROOT } from './_lib/scan-files.mjs';
 
 const args = parseArgs(process.argv.slice(2), { bools: ['reverse', 'check'], strings: [], defaults: {} });
+if (args.help) {
+  console.log('用法见文件头 JSDoc（node scripts/gen-status-index.mjs [--check|--json|--strict]）');
+  process.exit(0);
+}
+if (args.unknown && args.unknown.length) {
+  console.error(`❌ 未知参数: ${args.unknown.join(', ')}（--help 查看用法）`);
+  process.exit(1);
+}
 const ADR_DIR = path.join(ROOT, 'docs', 'adr');
 const STATUS_FILE = path.join(ROOT, 'docs', 'status.md');
 

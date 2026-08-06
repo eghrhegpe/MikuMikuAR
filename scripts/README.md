@@ -18,6 +18,7 @@
 
 硬规则：
 - 检查类脚本（`check-*` / `*-check` / `review` / `doctor` / `link-checker` / `type-consistency` / `event-audit` / `binding-check`）必须支持 `--json` 或默认输出 JSON，供 CI / 子代理稳定消费。
+- **CLI 健壮性契约（2026-08-06 全面铺开）**：全部脚本必须响应 `--help`/`-h`（退 0 打印用法，绝不执行主流程）；未知 `--flag` 一律报错退 1（绝不静默落入位置参数位 / 被吞为值参数）。实现：`_lib/parse-args.mjs` 内置 `help` / `unknown` 字段 + 各脚本统一守卫；手写解析的脚本（new-adr / fix-* / codemod / check-diff-coverage）各自实现同契约。
 - 共享能力（`walk` / `rg` / `ROOT` / `frontmatter` 解析）一律 `import` 自 `scripts/_lib/`，**禁止内联通用样板**；领域专用的文件收集器（带扩展名过滤 / 跳过集合 / 回调，如 `gen-icon-bundle` 的图标 walker）属合法内联，不计入违规。
 - 公共函数需写 `/** */` 简述；纯内部小工具可不写。
 
@@ -25,7 +26,7 @@
 
 > 执行状态：本仓库已落地 `check-script-hygiene.mjs`（与 ysm-model-manager 同款，四口径：退出码失效 / 共享层内联 / `--json` 契约 / 文件头 5 字段）；运行 `node scripts/check-script-hygiene.mjs [--json|--strict]` 即可机检本规范。
 >
-> ⚠️ 已知漂移（2026-08-06 登记）：上述「文件头 5 字段」规范当前**未被严格执行**——抽查显示多数脚本 JSDoc 首行格式不统一（有的以文件名开头、有的无 `— 描述` 前缀），而 hygiene 检查对该格式放行（0 警告）。规范 enforcement 缺口已列为待办（见下「脚本缺陷排查」）。
+> ✅ 2026-08-06 收口：文件头首行格式已加严并批量修复 26 个脚本（hygiene 0 警告）；`--help`/未知 flag 契约已覆盖全部 40+ 脚本。
 
 ## 快速索引（全量分类）
 

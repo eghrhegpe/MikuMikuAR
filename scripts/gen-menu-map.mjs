@@ -34,6 +34,14 @@ const MENUS_DIR = path.join(ROOT, 'frontend', 'src', 'menus');
 const OUT_PATH = path.join(ROOT, 'docs', 'knowledge', 'menu-map.md');
 
 const args = parseArgs(process.argv.slice(2), { bools: ['check'], strings: [] });
+if (args.help) {
+  console.log('用法见文件头 JSDoc（node scripts/gen-menu-map.mjs [--check|--json|--strict]）');
+  process.exit(0);
+}
+if (args.unknown && args.unknown.length) {
+  console.error(`❌ 未知参数: ${args.unknown.join(', ')}（--help 查看用法）`);
+  process.exit(1);
+}
 const CHECK_ONLY = args.check;
 
 // ---------------------------------------------------------------------------

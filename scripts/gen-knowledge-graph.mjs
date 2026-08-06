@@ -161,6 +161,14 @@ function main() {
     strings: ['file', 'category'],
     defaults: { file: null, category: null },
   });
+  if (args.help) {
+    console.log('用法见文件头 JSDoc（node scripts/gen-knowledge-graph.mjs [--check|--json|--strict]）');
+    process.exit(0);
+  }
+  if (args.unknown && args.unknown.length) {
+    console.error(`❌ 未知参数: ${args.unknown.join(', ')}（--help 查看用法）`);
+    process.exit(1);
+  }
 
   const isCheck = args.check;
   const categoryFilter = args.category;

@@ -34,9 +34,13 @@ const USAGE_ERROR = 2;
 const COVERAGE_FAILURE = 1;
 
 function parseArgs(argv) {
-    const out = {};
+    const out = { help: false, unknown: [] };
     for (let i = 0; i < argv.length; i++) {
         const a = argv[i];
+        if (a === "--help" || a === "-h") {
+            out.help = true;
+            continue;
+        }
         if (!a.startsWith("--")) continue;
         const eq = a.indexOf("=");
         if (eq >= 0) {
@@ -45,6 +49,9 @@ function parseArgs(argv) {
             out[a.slice(2)] = true;
         } else if (i + 1 < argv.length) {
             out[a.slice(2)] = argv[++i];
+        } else {
+            // [fix] 末尾未知 flag：不静默吞掉
+            out.unknown.push(a);
         }
     }
     return out;
@@ -256,6 +263,15 @@ export function buildSuggestBlock(failures, threshold) {
 
 function main() {
     const args = parseArgs(process.argv.slice(2));
+    // [fix] --help 退 0 / 未知 flag 退 1：原自写解析把未知 flag 静默吞为值参数（--foo bar 吞 bar）
+    if (args.help) {
+        console.log("用法: node scripts/check-diff-coverage.mjs [--coverage <path>] [--base <ref>] [--threshold <n>] [--uncommitted] [--staged] [--json] [--suggest]");
+        process.exit(0);
+    }
+    if (args.unknown && args.unknown.length) {
+        console.error(`❌ 未知参数: ${args.unknown.join(", ")}（--help 查看用法）`);
+        process.exit(1);
+    }
     const coveragePath = resolve(args.coverage ?? "coverage/coverage-final.json");
     const base = args.base ?? "origin/main";
     const head = args.head ?? "HEAD";

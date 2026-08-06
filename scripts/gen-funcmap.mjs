@@ -221,6 +221,14 @@ function main() {
     bools: ['check'],
     strings: ['scope'],
   });
+  if (args.help) {
+    console.log('用法见文件头 JSDoc（node scripts/gen-funcmap.mjs [--check|--json|--strict]）');
+    process.exit(0);
+  }
+  if (args.unknown && args.unknown.length) {
+    console.error(`❌ 未知参数: ${args.unknown.join(', ')}（--help 查看用法）`);
+    process.exit(1);
+  }
 
   const scope = args.scope;
   const isCheck = args.check;

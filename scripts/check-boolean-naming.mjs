@@ -20,7 +20,15 @@ import { parseArgs } from './_lib/parse-args.mjs';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SCHEMA_FILE = resolve(__dirname, '..', 'frontend', 'src', 'core', 'env-state-schema.ts');
 
-const { strict, json } = parseArgs(process.argv.slice(2), { bools: ['strict', 'json'] });
+const { strict, json , help, unknown} = parseArgs(process.argv.slice(2), { bools: ['strict', 'json'] });
+  if (help) {
+    console.log('用法见文件头 JSDoc（node scripts/check-boolean-naming.mjs [--check|--json|--strict]）');
+    process.exit(0);
+  }
+  if (unknown && unknown.length) {
+    console.error(`❌ 未知参数: ${unknown.join(', ')}（--help 查看用法）`);
+    process.exit(1);
+  }
 
 const text = readFileSync(SCHEMA_FILE, 'utf8');
 

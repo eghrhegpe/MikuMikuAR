@@ -40,6 +40,14 @@ const KNOWN_MISSING_IDS = new Set([7, 8, 10, 23, 40, 68]);
 const _args = parseArgs(process.argv.slice(2), {
   bools: ['verbose', 'json'],
 });
+if (_args.help) {
+  console.log('用法见文件头 JSDoc（node scripts/check-adr-health.mjs [--check|--json|--strict]）');
+  process.exit(0);
+}
+if (_args.unknown && _args.unknown.length) {
+  console.error(`❌ 未知参数: ${_args.unknown.join(', ')}（--help 查看用法）`);
+  process.exit(1);
+}
 const VERBOSE = _args.verbose;
 const JSON_OUTPUT = _args.json;
 

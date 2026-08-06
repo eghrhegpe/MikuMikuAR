@@ -148,7 +148,15 @@ function setsEqual(a, b) {
 
 // ---------- 主流程 ----------
 function main() {
-  const { check: checkMode } = parseArgs(process.argv.slice(2), { bools: ['check'] });
+  const { check: checkMode , help, unknown} = parseArgs(process.argv.slice(2), { bools: ['check'] });
+  if (help) {
+    console.log('用法见文件头 JSDoc（node scripts/gen-knowledge-symbols.mjs [--check|--json|--strict]）');
+    process.exit(0);
+  }
+  if (unknown && unknown.length) {
+    console.error(`❌ 未知参数: ${unknown.join(', ')}（--help 查看用法）`);
+    process.exit(1);
+  }
   if (!fs.existsSync(KNOWLEDGE_DIR)) {
     console.log('知识卡目录不存在：' + KNOWLEDGE_DIR);
     process.exit(0);
