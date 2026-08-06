@@ -769,16 +769,25 @@ async function testConnection(statusEl: HTMLElement): Promise<void> {
         diagState.testing = false;
         return;
     }
-    // [fix P2] ensureTestModel/flushAndSave 可能抛错（内部 doSaveConfig reject），
-    // 若不捕获，diagState.testing 永久为 true 锁死所有后续测试。
+    // [fix P2] ensureTestModel 可能抛错（内部 doSaveConfig reject）——包 try/catch 复位 testing。
     try {
         await ensureTestModel();
-        await flushAndSave();
     } catch (err) {
         const msg = translateGoError(err);
         statusEl.textContent = msg;
         statusEl.style.color = 'var(--danger)';
         captureError('ai-connection', msg, err);
+        diagState.lastConnectionOk = false;
+        diagState.testing = false;
+        return;
+    }
+    // [fix P2] flushAndSave 从不 reject（内部吞错返回 {ok:false}），须显式检查返回值：
+    // 保存失败时中止测试并提示，避免「配置未持久化却报已连接」的静默误导。
+    const saveRes = await flushAndSave();
+    if (!saveRes.ok) {
+        statusEl.textContent = t('ai.config.saveFailed') + ': ' + (saveRes.error ?? '');
+        statusEl.style.color = 'var(--danger)';
+        captureError('ai-config', saveRes.error ?? 'save failed', undefined);
         diagState.lastConnectionOk = false;
         diagState.testing = false;
         return;
