@@ -7,8 +7,7 @@
 
 > 500 行文件先 grep 定位再读。
 > 按需读取 `docs/knowledge/index.md` 枢纽索引（按 category 聚合的卡清单，自动生成）+ grep 卡正文定位功能作用，充实上下文。
-> 新 ADR 落地时检查是否触及既有 ADR 决策；触及就在对方首部标注「被 [ADR-NNN] 取代」。编号只允许给 ADR、novel 写。
-> Grep `> \*\*状态\*\*:.*(规划|实施中|部分实现)` in docs\adr，看是否已有类似实现。
+> 新 ADR 落地前先 Grep `> \*\*状态\*\*:.*(规划|实施中|部分实现)` in docs\adr 看是否已有类似实现；若触及既有 ADR 决策，就在对方首部标注「被 [ADR-NNN] 取代」。编号只允许给 ADR、novel 写。
 > 如果文件加载有问题，可核实真实目录`\text-model`。
 > 信任本机改动，测试通过后, 提交前 git status --short 辨认改动归属 ，按功能git add <通过测试的路径...> && git commit. 正常的更改，无需询问。如有捎带，也别怕 , 会有 GitHub PR review 审核。
 > 最后询问用户是否需要处理报错。git push --verbose 2>&1 | Select-Object -Last 50。
