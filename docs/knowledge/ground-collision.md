@@ -19,7 +19,8 @@ invariants:
   - enableGroundCollision 幂等；失败释放已分配资源，保持未启用态
   - 地板半尺寸 2000m，碰撞组/掩码全开，friction 0.9
   - dispose 异常契约：removeRigidBodyFromGlobal 抛错时 logWarn 但不阻断后续 safeDispose
-tests: []
+tests:
+  - frontend/src/__tests__/ground-collision.test.ts
 use_when:
   - 地面碰撞
   - 物理碰撞
@@ -36,7 +37,7 @@ use_when:
 
 ## 对外 API（节选）
 - `isGroundCollisionEnabled()` — 当前是否启用
-- `enableGroundCollision(groundY=0)` — 注入静态地板（幂等；失败释放已分配资源，保持未启用态）
+- `enableGroundCollision(groundY=0)` — 注入静态地板（幂等；失败释放已分配资源，保持未启用态）。注：groundY 参数当前为死代码——`applyGroundCollision` 不传、无外部调用方传非零值，地面 Y 恒为 0。
 - `disableGroundCollision()` — 从所有世界移除并释放
 - `applyGroundCollision()` — 按 `envState.groundCollisionEnabled` 还原
 

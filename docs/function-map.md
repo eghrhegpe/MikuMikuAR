@@ -1029,10 +1029,10 @@
 | `REFRESHRATE_RENDER_ONCE()` | `scene/env/_shared/env-type-helpers:14` | — |
 | `getCanvasCtx()` | `scene/env/_shared/env-type-helpers:8` | — |
 | `CAUSTIC_WORLD_SCALE()` | `scene/env/env-caustics:26` | — |
-| `CausticsHostMat()` | `scene/env/env-caustics:174` | 类型守卫：材质是否支持 emissiveTexture（用于焦散投影） |
+| `CausticsHostMat()` | `scene/env/env-caustics:178` | 类型守卫：材质是否支持 emissiveTexture（用于焦散投影） |
 | `CausticsScrollConfig()` | `scene/env/env-caustics:90` | 焦散滚动配置（用户可通过 state.causticScrollX/Y 覆盖） |
-| `causticsController()` | `scene/env/env-caustics:171` | — |
-| `isCausticsHost()` | `scene/env/env-caustics:176` | — |
+| `causticsController()` | `scene/env/env-caustics:175` | — |
+| `isCausticsHost()` | `scene/env/env-caustics:180` | — |
 | `FRAG_SRC()` | `scene/env/env-clouds:344` | — |
 | `buildJitterSource()` | `scene/env/env-clouds:237` | 根据 useBlueNoise 选择 jitter 代码路径（模板注入） |
 | `createClouds()` | `scene/env/env-clouds:587` | — |
@@ -1373,9 +1373,9 @@
 | `hideMaterials()` | `scene/manager/outfit-overlay:301` | 隐藏指定材质名的 PMX mesh（保存原始可见性用于恢复）。 |
 | `loadOverlay()` | `scene/manager/outfit-overlay:202` | 加载 FBX overlay 并尝试绑定到模型 skeleton。 |
 | `restoreMaterials()` | `scene/manager/outfit-overlay:333` | 恢复被 hideMaterials 隐藏的 PMX mesh 可见性。 |
-| `applyOutfitVariant()` | `scene/manager/outfit:555` | — |
+| `applyOutfitVariant()` | `scene/manager/outfit:566` | — |
 | `loadOutfits()` | `scene/manager/outfit:119` | — |
-| `resetOutfit()` | `scene/manager/outfit:743` | — |
+| `resetOutfit()` | `scene/manager/outfit:754` | — |
 | `setSceneRef()` | `scene/manager/outfit:39` | 由 scene.ts 在场景初始化完成后注入当前 scene 实例 |
 | `tryApplyPbrMaterialBuilder()` | `scene/manager/pbr-builder-init:12` | 动态导入 PBRMaterialBuilder 并覆盖 MmdModelLoader.SharedMaterialBuilder。 |
 | `auditMissingTextures()` | `scene/manager/pmx-texture-audit:46` | 识别 PMX 声明但目录中缺失的纹理。 |

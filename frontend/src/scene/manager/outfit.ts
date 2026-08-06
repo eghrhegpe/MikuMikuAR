@@ -513,8 +513,19 @@ function _applyOutfitParams(
     }
 }
 
-function _applyOutfitTint(sm: StandardMaterial, tint: [number, number, number]): void {
-    sm.diffuseColor.multiplyInPlace(col3FromTriple(tint));
+function _applyOutfitTint(
+    sm: StandardMaterial,
+    tint: [number, number, number],
+    orig: { diffuseR: number; diffuseG: number; diffuseB: number }
+): void {
+    // [fix P1] 基于 orig 绝对设置而非 multiplyInPlace：乘法不可逆，每次 apply 同一
+    // 变体都乘 tint → diffuseColor 几何级数漂移（orig 仅在 reset 后重捕获，连续
+    // 变体切换 A→B→A 之间不 reset）。绝对设置保证幂等。
+    sm.diffuseColor.set(
+        orig.diffuseR * tint[0],
+        orig.diffuseG * tint[1],
+        orig.diffuseB * tint[2]
+    );
 }
 
 function _captureOrigParams(inst: ModelInstance): void {
@@ -730,7 +741,7 @@ async function _applyOutfitVariantCore(id: string, variantName: string): Promise
 
         const tint = _getTintFor(variant, sm.name, cat);
         if (tint) {
-            _applyOutfitTint(sm, tint);
+            _applyOutfitTint(sm, tint, origParams);
         }
     }
 

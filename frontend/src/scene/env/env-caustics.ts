@@ -165,6 +165,10 @@ class CausticsControllerImpl {
         this._scene = null;
         this._offsetU = 0;
         this._offsetV = 0;
+        // [fix P2] 复位 config：HMR 重入后 causticsController 是模块级单例，
+        // 上次 setConfig 写入的 scrollX/scrollY 残留会与新场景 envState 不同步
+        // （若新场景初始值与上次相等，diff 守卫不触发，残留 config 持续生效）。
+        this._config = { ...DEFAULT_CONFIG };
     }
 }
 
