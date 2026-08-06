@@ -563,14 +563,19 @@ func (a *App) proxyWebSocket(w http.ResponseWriter, r *http.Request, target *url
 	}
 
 	var upConn net.Conn
+	// [code_review P2] 拨号/握手须带超时：r.Context() 在 hijack 后不再被 http.Server
+	// 监控（hijack gotcha），黑盒 IP/不响应对端会让 TCP dial 与 TLS handshake 无限阻塞、
+	// 挂死 handler goroutine。恢复原实现的 15s 上限。
+	dialCtx, cancelDial := context.WithTimeout(r.Context(), 15*time.Second)
+	defer cancelDial()
 	if target.Scheme == "wss" || target.Scheme == "https" {
 		// [audit:round14 P1] WebSocket 拨号同样必须过 SSRF guard：tls.DialWithDialer
 		// 直拨会把 127.0.0.1/私网 target 也连上（开放代理 + SSRF）。
 		// 先经 plazaSSRFGuard 逐连接重解析 + 拦截私网地址，再对通过校验的连接做 TLS。
-		conn, derr := plazaSSRFGuard(r.Context(), "tcp", upHost)
+		conn, derr := plazaSSRFGuard(dialCtx, "tcp", upHost)
 		if derr == nil {
 			tlsConn := tls.Client(conn, &tls.Config{ServerName: target.Hostname()})
-			if terr := tlsConn.HandshakeContext(r.Context()); terr != nil {
+			if terr := tlsConn.HandshakeContext(dialCtx); terr != nil {
 				_ = conn.Close()
 				err = terr
 			} else {
@@ -580,7 +585,7 @@ func (a *App) proxyWebSocket(w http.ResponseWriter, r *http.Request, target *url
 			err = derr
 		}
 	} else {
-		upConn, err = plazaSSRFGuard(r.Context(), "tcp", upHost)
+		upConn, err = plazaSSRFGuard(dialCtx, "tcp", upHost)
 	}
 	if err != nil {
 		a.safeLogError("proxyWebSocket: dial upstream %s: %v", upHost, err)

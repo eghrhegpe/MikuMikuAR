@@ -191,13 +191,25 @@ func (a *App) extractZipUnsafe(zipPath, innerPath string) (*ExtractResult, error
 		written, copyErr := io.Copy(outFile, io.LimitReader(rc, maxZipEntryFileSize+1))
 		outFile.Close()
 		rc.Close()
-		if copyErr != nil {
+		// [code_review P2] 超限/复制错误不得静默继续：删除部分文件并以失败返回，
+		// 否则截断的 PMX/VMD 被当成功结果写 manifest，后续缓存命中永久返回坏路径。
+		truncated := written > maxZipEntryFileSize
+		if truncated || copyErr != nil {
+			_ = os.Remove(targetAbs)
+			if truncated {
+				a.safeLogError("ExtractZip: entry %s 实际解压超限（%d bytes），中止解压", entryName, written)
+				return nil, i18nerr.New("zip.entryTooLarge", fmt.Sprintf("%s: 条目 %s 实际解压超限 %d", op, entryName, written), map[string]string{"op": op, "entry": entryName})
+			}
 			a.safeLogError("ExtractZip: copy error for %s: %v", entryName, copyErr)
-		}
-		if written > maxZipEntryFileSize {
-			a.safeLogError("ExtractZip: entry %s 实际解压超限（%d bytes），已截断", entryName, written)
+			return nil, util.WrapErrorf(op, "解压条目失败 "+entryName, copyErr)
 		}
 		totalExtracted += uint64(written)
+		// [code_review P2] 以实际写入字节复查累计总量（声明值可被篡改）：超限即
+		// 失败并清理半解压目录，避免恶意流把磁盘写满（50000 条目 × 500MB ≈ 25TB）。
+		if totalExtracted > maxZipTotalBytes {
+			os.RemoveAll(dest)
+			return nil, i18nerr.New("zip.tooLarge", fmt.Sprintf("%s: 实际累计解压大小 %d 超过上限 %d", op, totalExtracted, maxZipTotalBytes), map[string]string{"op": op})
+		}
 	}
 
 	// [ADR-189] KTX2 transcode is gated behind the KTX2Transcode setting
