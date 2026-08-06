@@ -439,11 +439,11 @@
 | `initRuntimeBridge()` | `core/runtime-bridge:192` | bootstrap 早期调用：桌面/Android 侧强制加载 @wailsio/runtime 并绑定 events 实例。 |
 | `RuntimeMode()` | `core/runtime-mode:6` | — |
 | `detectRuntimeMode()` | `core/runtime-mode:22` | 探测运行时模式（COOP/COEP + SharedArrayBuffer + MPR 构建标志）。 |
-| `initRuntimeBadge()` | `core/runtime-mode:95` | bootstrap 早期调用：立即渲染上次持久化的模式，刷新后不丢失 |
-| `loadPersistedRuntimeMode()` | `core/runtime-mode:35` | — |
+| `initRuntimeBadge()` | `core/runtime-mode:104` | bootstrap 早期调用：立即渲染上次持久化的模式，刷新后不丢失 |
+| `loadPersistedRuntimeMode()` | `core/runtime-mode:39` | — |
 | `persistRuntimeMode()` | `core/runtime-mode:31` | — |
-| `renderRuntimeBadge()` | `core/runtime-mode:75` | — |
-| `setBackendBadge()` | `core/runtime-mode:86` | 渲染实际选中的后端（go / browser）到运行时徽标，与 MPR/SPR 状态合成显示 |
+| `renderRuntimeBadge()` | `core/runtime-mode:84` | — |
+| `setBackendBadge()` | `core/runtime-mode:95` | 渲染实际选中的后端（go / browser）到运行时徽标，与 MPR/SPR 状态合成显示 |
 | `Browser()` | `core/runtime-stub:53` | — |
 | `Call()` | `core/runtime-stub:15` | — |
 | `CancellablePromise()` | `core/runtime-stub:16` | — |
@@ -498,8 +498,8 @@
 | `generateTextColors()` | `core/theme:7` | — |
 | `ToastAction()` | `core/toast:3` | — |
 | `ToastVariant()` | `core/toast:8` | — |
-| `showErrorToast()` | `core/toast:228` | — |
-| `showInfoToast()` | `core/toast:237` | — |
+| `showErrorToast()` | `core/toast:233` | — |
+| `showInfoToast()` | `core/toast:242` | — |
 | `showToast()` | `core/toast:192` | — |
 | `BoneOverrideEntry()` | `core/types:22` | [doc:adr-061] Motion Override — 持久化的单条骨骼覆盖配置 |
 | `BrowseOutcome()` | `core/types:388` | — |
@@ -1122,17 +1122,17 @@
 | `generateTerrainHeightmapURL()` | `scene/env/env-terrain:43` | 程序化生成灰度高度图（data URL），亮=高峰、暗=低谷。经统一工厂创建（受约束环境返回 ''）。 |
 | `hash2()` | `scene/env/env-terrain:22` | — |
 | `valueNoise()` | `scene/env/env-terrain:22` | — |
-| `applyEnvPreset()` | `scene/env/env-time-of-day:153` | — |
-| `applyEnvPresetByCategory()` | `scene/env/env-time-of-day:332` | [adr-120] 按类别应用用户自定义预设。 |
-| `applyEnvPresetObject()` | `scene/env/env-time-of-day:254` | 应用任意 EnvPreset 对象（支持用户自定义预设）。 |
+| `applyEnvPreset()` | `scene/env/env-time-of-day:156` | — |
+| `applyEnvPresetByCategory()` | `scene/env/env-time-of-day:335` | [adr-120] 按类别应用用户自定义预设。 |
+| `applyEnvPresetObject()` | `scene/env/env-time-of-day:257` | 应用任意 EnvPreset 对象（支持用户自定义预设）。 |
 | `getEnvSunAngle()` | `scene/env/env-time-of-day:49` | — |
-| `getTimeOfDaySpeed()` | `scene/env/env-time-of-day:133` | — |
-| `isTimeOfDayActive()` | `scene/env/env-time-of-day:129` | — |
+| `getTimeOfDaySpeed()` | `scene/env/env-time-of-day:136` | — |
+| `isTimeOfDayActive()` | `scene/env/env-time-of-day:132` | — |
 | `setEnvSunAngle()` | `scene/env/env-time-of-day:44` | — |
-| `setTimeOfDaySpeed()` | `scene/env/env-time-of-day:137` | — |
+| `setTimeOfDaySpeed()` | `scene/env/env-time-of-day:140` | — |
 | `startTimeOfDay()` | `scene/env/env-time-of-day:99` | — |
-| `stopTimeOfDay()` | `scene/env/env-time-of-day:115` | — |
-| `syncTimeOfDayFromEnv()` | `scene/env/env-time-of-day:143` | 从持久化的 envState 恢复 time-of-day 模块变量（启动时调用） |
+| `stopTimeOfDay()` | `scene/env/env-time-of-day:118` | — |
+| `syncTimeOfDayFromEnv()` | `scene/env/env-time-of-day:146` | 从持久化的 envState 恢复 time-of-day 模块变量（启动时调用） |
 | `underwaterFogController()` | `scene/env/env-underwater-fog:195` | — |
 | `MAX_RIPPLES()` | `scene/env/env-water-fx:31` | — |
 | `_applyWaterLOD()` | `scene/env/env-water-fx:440` | 按相机到水面的距离手动切换 LOD 可见性（仅 0/1/2 三层中恰好一层 enabled）， 规避 Babylon addLODLevel 的父子/兄弟重复渲染问题。仅当层级变化 |
@@ -1358,13 +1358,13 @@
 | `BoneOverrideStore()` | `scene/motion/bone-override-store:75` | — |
 | `BoneOverrideStoreOptions()` | `scene/motion/bone-override-store:58` | 构造选项（ADR-147 M8：注入模块→stage 解析器，填充 BoneConflict.stage） |
 | `BoneOwnership()` | `scene/motion/bone-override-store:31` | 单骨所有权记录 |
-| `InMemoryBoneOverrideStore()` | `scene/motion/bone-override-store:119` | — |
+| `InMemoryBoneOverrideStore()` | `scene/motion/bone-override-store:121` | — |
 | `ModuleRuntimeState()` | `scene/motion/bone-override-store:37` | 模块运行时状态（合并原 intent.motionModules + _ownedBones 的职责） |
 | `OverrideSlot()` | `scene/motion/bone-override-store:18` | 单骨覆盖槽位（原 _OverrideSlot 的共享命名版） |
 | `ReleaseListener()` | `scene/motion/bone-override-store:73` | 骨骼释放事件监听器 |
-| `getBoneOverrideStore()` | `scene/motion/bone-override-store:412` | 获取全局 BoneOverrideStore 单例（registry / module-base 等委托此存储骨骼所有权与冲突状态） |
-| `BoneHierarchyDump()` | `scene/motion/bone-override:1043` | 骨骼层级导出结果 |
-| `BoneHierarchyNode()` | `scene/motion/bone-override:1023` | 单根骨骼的层级与覆盖状态（dumpBoneHierarchy 输出元素） |
+| `getBoneOverrideStore()` | `scene/motion/bone-override-store:425` | 获取全局 BoneOverrideStore 单例（registry / module-base 等委托此存储骨骼所有权与冲突状态） |
+| `BoneHierarchyDump()` | `scene/motion/bone-override:1048` | 骨骼层级导出结果 |
+| `BoneHierarchyNode()` | `scene/motion/bone-override:1028` | 单根骨骼的层级与覆盖状态（dumpBoneHierarchy 输出元素） |
 | `BoneOverrideEntry()` | `scene/motion/bone-override:24` | 持久化的单条骨骼覆盖配置 |
 | `FRAME_HOOK_ORDER()` | `scene/motion/bone-override:692` | [doc:adr-116 P3] 注册每帧渲染钩子。 |
 | `FrameHookSnapshot()` | `scene/motion/bone-override:722` | 帧钩子快照（供 UI 查询管线时序一览） |
@@ -1373,21 +1373,21 @@
 | `clearAllOverrides()` | `scene/motion/bone-override:547` | 清除所有骨骼覆盖。 |
 | `clearBoneOverride()` | `scene/motion/bone-override:440` | 清除指定骨骼的覆盖。 |
 | `computeOverride()` | `scene/motion/bone-override:268` | [doc:adr-116 P1] 计算单槽覆盖后的平移与旋转。 |
-| `dumpBoneHierarchy()` | `scene/motion/bone-override:1058` | 导出当前聚焦模型的骨骼层级与覆盖状态。 |
+| `dumpBoneHierarchy()` | `scene/motion/bone-override:1063` | 导出当前聚焦模型的骨骼层级与覆盖状态。 |
 | `getAllOverrides()` | `scene/motion/bone-override:737` | 获取当前所有覆盖的条目列表（用于持久化/UI 展示）。 |
 | `getFrameHooksSnapshot()` | `scene/motion/bone-override:728` | 按 order 升序返回当前注册的所有帧钩子快照（不含 hook 函数本身）。 |
 | `getOverride()` | `scene/motion/bone-override:465` | [doc:adr-116] 读取单条骨骼的覆盖条目（用于 UI 回填）。不存在返回 undefined。 |
 | `getOverrideType()` | `scene/motion/bone-override:487` | 查询骨骼覆盖类型（零分配）。 |
-| `getWasmIkResolver()` | `scene/motion/bone-override:892` | [ADR-202 §六] 获取 WASM IK 重解回调（供 feet-adjustment 等外部模块调用）。 |
+| `getWasmIkResolver()` | `scene/motion/bone-override:897` | [ADR-202 §六] 获取 WASM IK 重解回调（供 feet-adjustment 等外部模块调用）。 |
 | `protectIkPosition()` | `scene/motion/bone-override:568` | 注册骨骼位置保护（帧钩子内调用）。 |
 | `registerBoneOverrideFrameHook()` | `scene/motion/bone-override:705` | — |
 | `restoreOverrides()` | `scene/motion/bone-override:759` | 从持久化的条目列表批量恢复覆盖。 |
 | `setBoneOverride()` | `scene/motion/bone-override:304` | 设置单条骨骼覆盖。 |
 | `setBoneOverridePosition()` | `scene/motion/bone-override:409` | [doc:adr-116] 设置单条骨骼的位置覆盖（P2 引擎扩展）。 |
 | `setBoneOverrideQuat()` | `scene/motion/bone-override:375` | 设置单条骨骼覆盖（直接传四元数）。 |
-| `setWasmIkResolver()` | `scene/motion/bone-override:875` | [ADR-202 A-class] 注入 WASM IK 重解回调。 |
-| `startBoneOverride()` | `scene/motion/bone-override:897` | — |
-| `stopBoneOverride()` | `scene/motion/bone-override:1001` | 停止覆盖系统。 |
+| `setWasmIkResolver()` | `scene/motion/bone-override:880` | [ADR-202 A-class] 注入 WASM IK 重解回调。 |
+| `startBoneOverride()` | `scene/motion/bone-override:902` | — |
+| `stopBoneOverride()` | `scene/motion/bone-override:1006` | 停止覆盖系统。 |
 | `FeetModelProvider()` | `scene/motion/feet-adjustment:48` | 注入：返回需要处理脚部调整的模型及其 runtime bones |
 | `isFeetAdjustmentRunning()` | `scene/motion/feet-adjustment:128` | 查询脚部跟随系统是否正在运行（observer 已注册）。 |
 | `setOnFootLand()` | `scene/motion/feet-adjustment:123` | 注入落地事件回调（null 取消）。脚步声控制器调用。 |
@@ -1461,25 +1461,25 @@
 | `applyMotionPreset()` | `scene/motion/motion-modules/preset-types:23` | 应用预设到指定模型。 |
 | `generatePresetId()` | `scene/motion/motion-modules/preset-types:45` | — |
 | `modulesToPresetMap()` | `scene/motion/motion-modules/preset-types:9` | MotionModuleState[] → MotionPreset['modules'] |
-| `BoneConflict()` | `scene/motion/motion-modules/registry:197` | — |
-| `applyMotionModulesToModel()` | `scene/motion/motion-modules/registry:310` | [doc:adr-129] 将场景级模块配置应用到指定模型 用于动作广播时应用配置到所有 inherit 模型 |
-| `claimBones()` | `scene/motion/motion-modules/registry:183` | 为模块声明对一组骨骼的所有权（bake 前调用）。 |
-| `clearAllModulesForModel()` | `scene/motion/motion-modules/registry:301` | 清除指定模型的所有模块覆盖（删除模型时调用） |
-| `createModule()` | `scene/motion/motion-modules/registry:64` | 为指定模型创建模块实例 |
-| `getAllConflicts()` | `scene/motion/motion-modules/registry:222` | 获取某模型全部模块的冲突明细（按 loser 模块分组） |
-| `getBuiltinModuleDefs()` | `scene/motion/motion-modules/registry:346` | 内置模块定义聚合（供 initMotionModules 批量注册，消除 6 个 registerXxx 分散调用）。 |
-| `getConflictCount()` | `scene/motion/motion-modules/registry:244` | 获取某模型冲突总数（骨骼数） |
-| `getModuleConflicts()` | `scene/motion/motion-modules/registry:209` | 获取某模块被其他模块抢占的骨骼明细（loser 视角：本模块想要但被谁抢） |
-| `getModuleDefaultParam()` | `scene/motion/motion-modules/registry:139` | [doc:adr-116] 读取模块注册的默认参数值。 |
-| `getModuleState()` | `scene/motion/motion-modules/registry:92` | 获取动作的模块配置（不存在则创建默认状态，种入 defaults）。 |
-| `getOwnedBones()` | `scene/motion/motion-modules/registry:189` | 获取模块当前 owned 的骨骼（disable 时用于精确清除） |
-| `getRegisteredModules()` | `scene/motion/motion-modules/registry:57` | 获取所有已注册模块的元信息（按优先级排序） |
-| `initMotionModules()` | `scene/motion/motion-modules/registry:358` | 注册所有内置模块（幂等，重复调用安全） |
+| `BoneConflict()` | `scene/motion/motion-modules/registry:203` | — |
+| `applyMotionModulesToModel()` | `scene/motion/motion-modules/registry:316` | [doc:adr-129] 将场景级模块配置应用到指定模型 用于动作广播时应用配置到所有 inherit 模型 |
+| `claimBones()` | `scene/motion/motion-modules/registry:189` | 为模块声明对一组骨骼的所有权（bake 前调用）。 |
+| `clearAllModulesForModel()` | `scene/motion/motion-modules/registry:307` | 清除指定模型的所有模块覆盖（删除模型时调用） |
+| `createModule()` | `scene/motion/motion-modules/registry:70` | 为指定模型创建模块实例 |
+| `getAllConflicts()` | `scene/motion/motion-modules/registry:228` | 获取某模型全部模块的冲突明细（按 loser 模块分组） |
+| `getBuiltinModuleDefs()` | `scene/motion/motion-modules/registry:357` | 内置模块定义聚合（供 initMotionModules 批量注册，消除 6 个 registerXxx 分散调用）。 |
+| `getConflictCount()` | `scene/motion/motion-modules/registry:250` | 获取某模型冲突总数（骨骼数） |
+| `getModuleConflicts()` | `scene/motion/motion-modules/registry:215` | 获取某模块被其他模块抢占的骨骼明细（loser 视角：本模块想要但被谁抢） |
+| `getModuleDefaultParam()` | `scene/motion/motion-modules/registry:145` | [doc:adr-116] 读取模块注册的默认参数值。 |
+| `getModuleState()` | `scene/motion/motion-modules/registry:98` | 获取动作的模块配置（不存在则创建默认状态，种入 defaults）。 |
+| `getOwnedBones()` | `scene/motion/motion-modules/registry:195` | 获取模块当前 owned 的骨骼（disable 时用于精确清除） |
+| `getRegisteredModules()` | `scene/motion/motion-modules/registry:63` | 获取所有已注册模块的元信息（按优先级排序） |
+| `initMotionModules()` | `scene/motion/motion-modules/registry:369` | 注册所有内置模块（幂等，重复调用安全） |
 | `registerModule()` | `scene/motion/motion-modules/registry:39` | 注册一个动作覆盖模块。 |
-| `releaseOwnedBones()` | `scene/motion/motion-modules/registry:249` | 释放模块的 ownedBones 记录并级联清引擎槽（由 store.releaseBones 负责清除） |
-| `setModuleEnabled()` | `scene/motion/motion-modules/registry:161` | 设置模块启用/禁用状态到场景动作意图 |
-| `setModuleParam()` | `scene/motion/motion-modules/registry:145` | 写入模块参数到场景动作意图 |
-| `setTargetModel()` | `scene/motion/motion-modules/registry:261` | 切换目标模型：禁用当前模型的所有模块覆盖，启用新模型已保存的模块状态。 |
+| `releaseOwnedBones()` | `scene/motion/motion-modules/registry:255` | 释放模块的 ownedBones 记录并级联清引擎槽（由 store.releaseBones 负责清除） |
+| `setModuleEnabled()` | `scene/motion/motion-modules/registry:167` | 设置模块启用/禁用状态到场景动作意图 |
+| `setModuleParam()` | `scene/motion/motion-modules/registry:151` | 写入模块参数到场景动作意图 |
+| `setTargetModel()` | `scene/motion/motion-modules/registry:267` | 切换目标模型：禁用当前模型的所有模块覆盖，启用新模型已保存的模块状态。 |
 | `unregisterModule()` | `scene/motion/motion-modules/registry:52` | 注销模块 |
 | `RIDING_MODEL_DEF()` | `scene/motion/motion-modules/riding-model:289` | 骑行模型模块注册定义（供 registry BUILTIN_MODULE_DEFS 批量注册） |
 | `createRidingModelModule()` | `scene/motion/motion-modules/riding-model:192` | 创建骑行模型模块实例 |

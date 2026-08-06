@@ -34,6 +34,8 @@
 
 ## 🟠 P2 问题（建议修复）
 
+> **修复状态（2026-08-06）**：以下 #1/#2/#4/#6/#8/#9 已修复，见「✅ 已修复」标注。
+
 | # | 模块 | 位置 | 问题 |
 |---|------|------|------|
 | 1 | registry | `registry.ts:52-54` | `unregisterModule` 仅删注册表条目，不清理已 claim 的 ownedBones 与帧钩子 → 插件模块注销后骨骼所有权永久占用 + 帧钩子泄漏 |
@@ -47,6 +49,15 @@
 | 9 | feedback | `feedback.ts:43,55` | 直接调 `showErrorToast`/`showInfoToast` 无 try/catch；toast.ts 在无 document 环境抛 ReferenceError，与 resource-warning-sink 的防御不一致 |
 | 10 | footstep | `footstep.ts:128-157` | 本模块零测试（footstep-detect.test.ts 只测纯函数 detectFootLanding），合成音色与地面映射逻辑无守护 |
 | 11 | module-base | `module-base.ts:119-133` | `setParam` 自动启用时直接 `cur.enabled = true` 改状态，未走 `setModuleEnabled`/独立 autosave |
+
+### ✅ 已修复（2026-08-06）
+
+- **#1 unregisterModule 清理**：store 新增 `getModelsOwningModule(moduleId)`，unregisterModule 先对每个持有该模块骨骼的模型 `createModule(id, modelId)?.disable()`（onDisable 注销帧钩子 + releaseOwnedBones），再删注册表条目。补回归测试（init.test.ts）。
+- **#2 applyMotionModulesToModel 异常隔离**：每模块 try/catch，单模块失败不阻断其余。
+- **#4 _runFrameHooks 异常隔离**：每帧钩子 try/catch + console.warn，单模块异常不中断整帧回调。
+- **#6 startTimeOfDay 幂等**：守卫改为以 `_unregisterTimeOfDay` 为准（而非 `timeOfDayActive && !_timeOfDayPaused`），根治预设动画期间重复注册泄漏。
+- **#8 runtime-mode JSON.parse**：`loadPersistedRuntimeMode`/`persistRuntimeMode` 包 try/catch 降级 null。
+- **#9 toast 无 document 防御**：根因修在 `toast.ts` 的 `showToast` 入口（`typeof document === 'undefined'` 时降级日志返回），惠及所有调用方（feedback/resource-warning-sink），比逐调用方打补丁更通用。
 
 ## 🟡 P3 关注项（持续改进）
 
