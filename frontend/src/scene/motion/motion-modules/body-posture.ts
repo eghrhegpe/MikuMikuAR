@@ -14,6 +14,7 @@ import { modelRegistry } from '@/core/state';
 import {
     setBoneOverride,
     setBoneOverridePosition,
+    clearBoneOverride,
     registerBoneOverrideFrameHook,
     protectIkPosition,
     FRAME_HOOK_ORDER,
@@ -132,11 +133,15 @@ function _registerBodyPositionHook(modelId: string): () => void {
             }
             const height = (st.params.bodyHeight as number) ?? 0;
             const depth = (st.params.bodyDepth as number) ?? 0;
-            if (height === 0 && depth === 0) {
-                return;
-            }
             const centerName = _resolveCenterBone(modelId);
             if (!centerName) {
+                return;
+            }
+            if (height === 0 && depth === 0) {
+                // [fix P2] 参数归零时清除残留的位置覆盖：此前直接 return 会导致
+                // 上一帧写入的 setBoneOverridePosition(centerName, [0, 旧值, 0]) 残留在
+                // _overrideMaps 中，用户把 bodyHeight 拖回 0 后身体高度不归零。
+                clearBoneOverride(centerName, modelId);
                 return;
             }
             // 世界空间偏移：X 不动，Y=高度，Z=前后

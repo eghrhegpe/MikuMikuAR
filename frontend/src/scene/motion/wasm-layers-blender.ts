@@ -168,6 +168,12 @@ export async function addWasmLayer(modelId: string, config: WasmLayerConfig): Pr
     }
 
     const evaluator = await createVmdEvaluator(config.data);
+    // [fix P2] await 期间同 config.id 可能已被并发 addWasmLayer 写入（快速连点/双调用）：
+    // 重检并先释放旧 evaluator，避免后到者直接覆盖导致旧 evaluator 泄漏。
+    const existing = state.layers.get(config.id);
+    if (existing) {
+        existing.evaluator.dispose();
+    }
     state.layers.set(config.id, {
         evaluator,
         weight: config.weight,

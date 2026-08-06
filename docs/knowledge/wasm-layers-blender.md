@@ -9,7 +9,10 @@ scope:
 source_files:
   - frontend/src/scene/motion/wasm-layers-blender.ts
   - frontend/src/scene/motion/wasm-layers-config.ts
-adr: []
+adr:
+  - ADR-056
+  - ADR-071
+  - ADR-147
 symbols:
   - DEFAULT_LAYER_BONE_FILTER
   - WasmLayerConfig
@@ -21,8 +24,12 @@ symbols:
   - teardownWasmLayersBlender
   - updateWasmLayerWeight
 invariants:
-  - 混合引擎
-tests: []
+  - 混合引擎：多层动作按权重加权混合（累积 Slerp 旋转 + lerp 平移），非优先级覆盖语义
+  - addWasmLayer 经 await createVmdEvaluator 后重检并释放旧 evaluator（并发防泄漏）
+  - teardownWasmLayersBlender 销毁指定模型混合器（evaluator.dispose + layers 清空）
+tests:
+  - frontend/src/__tests__/wasm-layers-blender.test.ts
+  - frontend/src/__tests__/wasm-layers-blender.perf.test.ts
 use_when:
   - WASM 混合器
   - 图层混合

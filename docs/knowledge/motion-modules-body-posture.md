@@ -7,13 +7,17 @@ scope:
   - frontend/src/scene/motion/motion-modules/body-posture.ts
 source_files:
   - frontend/src/scene/motion/motion-modules/body-posture.ts
-adr: []
+adr:
+  - ADR-147
 symbols:
   - createBodyPostureModule
   - BODY_POSTURE_DEF
 invariants:
   - 姿势参数影响身体倾斜
-tests: []
+  - 位置参数（bodyHeight/bodyDepth）归零时清除センター位置覆盖，防止残留高度不归零
+  - 帧钩子注册于 FRAME_HOOK_ORDER.BODY_POSITION（升序执行在 FEET 之后、bone-override 合成前）
+tests:
+  - frontend/src/__tests__/motion-modules-registry.param.test.ts
 use_when:
   - 身体姿势
   - 姿势调整

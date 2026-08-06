@@ -52,7 +52,7 @@ use_when:
 - `setGazeConfig(config)` — 设置视线配置（启用/灵敏度/模式）。
 - `getGazeConfig()` — 取当前视线配置。
 - `_applyGaze(...)` — 统一调度入口（perception-observer 每帧调用）。
-- `applyGazeWasm(bones, cam, config, dt)` — WASM 路径直暴露（供 wasm-layers-blender 等模块直接调用）。
+- `applyGazeWasm(bones, cam, config, dt)` — WASM 路径直暴露（当前无外部调用者，仅经 perception.ts re-export 预留；wasm-layers-blender 未实际调用，注释已过时）。
 
 ## 与其他子系统关系
 - WASM 生产路径：`./perception-gaze-wasm.ts`（直写 frontBuffer + `_propagateChildrenWasm`）。

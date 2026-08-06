@@ -1430,8 +1430,8 @@
 | `setDefaultMotion()` | `scene/motion/motion-intent:178` | 设置默认动作 id。 |
 | `setLoadedProceduralMotions()` | `scene/motion/motion-intent:80` | 设置已加载集合（用于场景反序列化）。始终保证 'none' 存在。 |
 | `unloadProceduralMotion()` | `scene/motion/motion-intent:72` | 卸载一个程序化动作。'none' 不可卸载。 |
-| `BODY_POSTURE_DEF()` | `scene/motion/motion-modules/body-posture:269` | 身体姿态模块注册定义（供 registry BUILTIN_MODULE_DEFS 批量注册） |
-| `createBodyPostureModule()` | `scene/motion/motion-modules/body-posture:165` | 创建身体姿态模块实例 |
+| `BODY_POSTURE_DEF()` | `scene/motion/motion-modules/body-posture:274` | 身体姿态模块注册定义（供 registry BUILTIN_MODULE_DEFS 批量注册） |
+| `createBodyPostureModule()` | `scene/motion/motion-modules/body-posture:170` | 创建身体姿态模块实例 |
 | `LEFT_FOOT_DEF()` | `scene/motion/motion-modules/foot-modules:207` | — |
 | `RIGHT_FOOT_DEF()` | `scene/motion/motion-modules/foot-modules:223` | — |
 | `LEFT_HAND_DEF()` | `scene/motion/motion-modules/hand-modules:388` | — |
@@ -1657,10 +1657,10 @@
 | `addWasmLayer()` | `scene/motion/wasm-layers-blender:160` | — |
 | `initWasmLayersBlender()` | `scene/motion/wasm-layers-blender:53` | 初始化 blender 的场景级依赖（必须在 setupWasmLayersBlender 之前调用）。 |
 | `isWasmLayersBlenderActive()` | `scene/motion/wasm-layers-blender:155` | — |
-| `removeWasmLayer()` | `scene/motion/wasm-layers-blender:179` | — |
+| `removeWasmLayer()` | `scene/motion/wasm-layers-blender:185` | — |
 | `setupWasmLayersBlender()` | `scene/motion/wasm-layers-blender:114` | — |
 | `teardownWasmLayersBlender()` | `scene/motion/wasm-layers-blender:140` | — |
-| `updateWasmLayerWeight()` | `scene/motion/wasm-layers-blender:192` | — |
+| `updateWasmLayerWeight()` | `scene/motion/wasm-layers-blender:198` | — |
 | `DEFAULT_LAYER_BONE_FILTER()` | `scene/motion/wasm-layers-config:1` | — |
 | `applyGroundCollision()` | `scene/physics/ground-collision:104` | 根据当前 envState 还原地面碰撞状态（运行时就绪 / 场景加载后调用）。 |
 | `disableGroundCollision()` | `scene/physics/ground-collision:86` | 禁用地面碰撞：从所有世界移除并释放资源。 |

@@ -220,12 +220,13 @@
 | [ADR-051](../adr/adr-051-vmd-layers-bonefilter.md) | VMD 图层系统与骨骼级过滤 | [多 VMD 叠加系统](./vmd-layers.md) · [VMD 动作加载器](./vmd-loader.md) |
 | [ADR-054](../adr/adr-054-roadmap-next.md) | 后续开发方向路线图 | [场景序列化与自动保存](./scene-serialize.md) |
 | [ADR-055](../adr/adr-055-ar-camera-mode.md) | AR 相机模式 —— 摄像头视频透传与模型叠加 | [AR 摄像头视频透传](./ar-camera.md) · [AR 模式场景级协调](./ar-scene.md) |
+| [ADR-056](../adr/adr-056-wasm-runtime-motion-layers.md) | WASM 运行时 Motion Layers 解锁 — JS 帧流合并 + 单图层兜底 | [WASM 图层混合器](./wasm-layers-blender.md) |
 | [ADR-057](../adr/adr-057-shift-jis-url-base64.md) | Shift-JIS URL 乱码修复 —— Base64 查询参数方案（链路 A） | [统一文件服务层](./fileservice.md) · [VMD 动作加载器](./vmd-loader.md) |
 | [ADR-059](../adr/adr-059-i18n-framework.md) | i18n 多语言切换框架 | [国际化翻译函数](./i18n-t.md) · [应用启动引导](./init.md) · [国际化语言状态](./locale.md) · [简体中文语言包](./zh-CN.md) · [繁体中文语言包](./zh-TW.md) |
 | [ADR-061](../adr/adr-061-advanced-bone-systems.md) | 高级骨骼操控与姿态工作室实现计划 | [骨骼覆盖核心 API](./bone-override.md) · [共享类型定义](./core-types.md) · [动作覆盖 UI 层级（模块化覆盖 + 高级骨骼覆盖）](./motion-override-levels.md) · [场景序列化与自动保存](./scene-serialize.md) |
 | [ADR-062](../adr/adr-062-water-reflection-render-target.md) | 水面反射渲染目标与通用反射系统 | [水面系统](./env-water.md) |
 | [ADR-065](../adr/adr-065-pure-items-hot-render.md) | 纯 items 层级语言热切换刷新（精简版） | [环境弹窗（编排 + barrel）](./env-menu.md) · [滑出式菜单引擎（SlideMenu）](./menu.md) · [场景弹窗（编排 + 路由）](./scene-menu.md) |
-| [ADR-071](../adr/adr-071-proc-vs-perception-boundary.md) | 程序化动作与角色感知边界重构 | [babylon-mmd 适配边界](./mmd-adapter.md) · [动作菜单层级系统](./motion-menu-levels.md) · [眨眼模拟](./perception-blinking.md) · [呼吸模拟](./perception-breathing.md) · [微表情](./perception-expression.md) · [JS 端视线追踪](./perception-gaze-js.md) · [WASM 端视线追踪](./perception-gaze-wasm.md) · [视线追踪主模块](./perception-gaze.md) · [感知口型同步](./perception-lipsync.md) · [感知层共享类型](./perception-shared.md) · [感知层主控](./perception.md) · [场景序列化与自动保存](./scene-serialize.md) |
+| [ADR-071](../adr/adr-071-proc-vs-perception-boundary.md) | 程序化动作与角色感知边界重构 | [babylon-mmd 适配边界](./mmd-adapter.md) · [动作菜单层级系统](./motion-menu-levels.md) · [眨眼模拟](./perception-blinking.md) · [呼吸模拟](./perception-breathing.md) · [微表情](./perception-expression.md) · [JS 端视线追踪](./perception-gaze-js.md) · [WASM 端视线追踪](./perception-gaze-wasm.md) · [视线追踪主模块](./perception-gaze.md) · [感知口型同步](./perception-lipsync.md) · [感知层共享类型](./perception-shared.md) · [感知层主控](./perception.md) · [场景序列化与自动保存](./scene-serialize.md) · [WASM 图层混合器](./wasm-layers-blender.md) |
 | [ADR-072](../adr/adr-072-webxr-plane-detection.md) | AR 平面检测 —— WebXR hit-test + plane detection | [WebXR 能力探测](./ar-webxr-probe.md) |
 | [ADR-076](../adr/adr-076-cel-shading-postprocess-mode.md) | 卡通化渲染后处理模式 | [场景渲染管线与后处理](./renderer.md) |
 | [ADR-079](../adr/adr-079-perception-layer-expansion.md) | 感知层扩展——always-on 实时叠加的适用边界 | [角色台词生成 — 人设约束 + 情绪解析 + TTS 朗读](./character-bible.md) |
@@ -268,7 +269,7 @@
 | [ADR-143](../adr/adr-143-unification-remaining.md) | 可统一代码收敛（P1 之外剩余项） | [资源库操作](./library-actions.md) · [UI 与场景常量](./ui-constants.md) |
 | [ADR-145](../adr/adr-145-motion-presets.md) | 多模块协同预设 — 一键启用组合姿态 | [共享类型定义](./core-types.md) · [模型预设管理 UI](./model-preset-ui.md) · [动作模块类型定义](./motion-module-types.md) · [动作覆盖 UI 层级（模块化覆盖 + 高级骨骼覆盖）](./motion-override-levels.md) · [动作预设类型](./motion-preset-types.md) · [场景序列化与自动保存](./scene-serialize.md) |
 | [ADR-146](../adr/adr-146-function-duplication-triage.md) | 函数级重复摸排与收敛（第二波） | [安全释放工具](./dispose-helpers.md) · [安全调用工具](./safe-call.md) |
-| [ADR-147](../adr/adr-147-explicit-motion-pipeline-scheduler.md) | 动作管线显式调度器 + 集中骨骼覆盖状态 | [动作管线（逐帧合成）](./motion-pipeline.md) |
+| [ADR-147](../adr/adr-147-explicit-motion-pipeline-scheduler.md) | 动作管线显式调度器 + 集中骨骼覆盖状态 | [动作模块 — 身体姿势](./motion-modules-body-posture.md) · [动作管线（逐帧合成）](./motion-pipeline.md) · [WASM 图层混合器](./wasm-layers-blender.md) |
 | [ADR-148](../adr/adr-148-overload-file-split.md) | 过载文件拆分工程 | [节拍驱动自动运镜（beatcut）](./camera-auto.md) · [相机行为循环（freefly/surround/concert）](./camera-behaviors.md) · [相机骨骼锁定](./camera-bone-lock.md) · [相机工厂 + 用户输入](./camera-factory.md) · [相机状态管理 + 运行时上下文](./camera-state.md) · [相机 VMD 动画](./camera-vmd.md) · [相机模式管理系统（MmdCamera）](./camera.md) · [环境状态写入入口（setEnvState + 中间件链）](./env-bridge.md) · [环境重力控制](./env-gravity.md) · [环境状态防抖持久化](./env-persist.md) · [时间流转与太阳角系统](./env-time-of-day.md) |
 | [ADR-150](../adr/adr-150-model-replace-contract.md) | 模型替换原子操作契约（Model Replace Contract） | [资源库操作](./library-actions.md) · [模型运行时 ID 解析](./model-id.md) · [模型生命周期操作](./model-ops.md) |
 | [ADR-151](../adr/adr-151-reflection-unified-architecture.md) | 反射系统统一架构（SSR/Probe 统一入口 + Planar 协调） | [反射系统](./env-reflection.md) |
