@@ -50,14 +50,23 @@ use_when:
 ## 核心职责
 - `env-particles.ts` — 粒子发射器创建、类型切换、参数/纹理/风力更新、splash 管理、资源释放。
 
-## 对外 API（节选）
-- `createParticleEmitter(type, windEnabled)` — 按类型创建粒子发射器，返回 `ParticleSystem`。
-- `disposeParticles(keepWetness?)` — 释放粒子发射器（可选保留湿身效果）。
-- `getCurrentParticleType()` — 取当前粒子类型。
-- `updateParticleWind()` / `updateParticleParams()` / `updateParticleTexture()` — 增量更新（按 envState 变化触发）。
-- `syncSplashState()` — 同步 splash（水滴溅射）状态。
-- `disposeSplash()` — 释放 splash 粒子。
-- `applyWindToParticles(ps)` — 对指定粒子系统施加风力。
+## 对外 API（全量导出）
+> 本文件 9 个直接导出 + 2 个 re-export（来自 `env-wetness.ts`，ADR-160 湿身联动），与 `symbols` 字段一致。
+
+### 直接导出（`env-particles.ts`）
+- `createParticleEmitter(type: EnvState['particleType'], windEnabled: boolean): void` — 按类型创建粒子发射器；系统挂到 `_envSys.particles.system`，**返回 void 而非 `ParticleSystem`**（见 invariant）。
+- `disposeParticles(keepWetness = false): void` — 释放粒子发射器（可选保留湿身效果）。
+- `getCurrentParticleType(): EnvState['particleType']` — 取当前粒子类型。
+- `updateParticleWind(): void` — 按 `envState` 增量更新风力。
+- `updateParticleParams(): void` — 按 `envState` 增量更新粒子参数。
+- `updateParticleTexture(): void` — 按 `envState` 增量更新粒子纹理。
+- `syncSplashState(): void` — 同步 splash（水滴溅射）状态。
+- `disposeSplash(): void` — 释放 splash 粒子。
+- `applyWindToParticles(ps: ParticleSystem): void` — 对指定粒子系统施加风力。
+
+### re-export（`env-wetness.ts`，ADR-160）
+- `isWetnessActive(): boolean` — 湿身效果是否激活。
+- `applyWetnessToInst(inst: ModelInstance): void` — 对模型实例施加湿身效果。
 
 ## 与其他子系统关系
 - 被 `env-impl.ts` 调用初始化。
