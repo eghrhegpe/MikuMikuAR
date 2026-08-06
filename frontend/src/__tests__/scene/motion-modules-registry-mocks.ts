@@ -16,6 +16,7 @@ export const shared = {
     protectIkPositionSpy: vi.fn(),
     mockActiveMotion: { value: null as any },
     pushHistorySpy: vi.fn(),
+    triggerAutoSaveSpy: vi.fn(),
     reset(): void {
         this.mockModelRegistry.clear();
         this.setBoneOverrideSpy.mockClear();
@@ -23,6 +24,7 @@ export const shared = {
         this.protectIkPositionSpy.mockClear();
         this.mockActiveMotion.value = null;
         this.pushHistorySpy.mockClear();
+        this.triggerAutoSaveSpy.mockClear();
     },
 };
 

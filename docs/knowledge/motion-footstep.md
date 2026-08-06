@@ -16,7 +16,9 @@ symbols:
 invariants:
   - 合成 buffer 缓存按音色 kind → 3 个变体
   - 每步随机选变体 + detune 音高随机化
-tests: []
+tests:
+  - footstep.test.ts
+  - footstep-detect.test.ts
 use_when:
   - 脚步声
   - 落地音效

@@ -288,15 +288,11 @@ export function setTargetModel(modelId: string | null): void {
         const intent = getActiveMotion();
         if (intent?.motionModules) {
             for (const state of intent.motionModules) {
-                if (state.enabled) {
-                    const mod = createModule(state.id, modelId);
-                    if (mod) {
-                        mod.enable();
-                        // 应用参数
-                        for (const [key, value] of Object.entries(state.params)) {
-                            mod.setParam?.(key, value);
-                        }
-                    }
+                const mod = createModule(state.id, modelId);
+                if (mod) {
+                    // [round-12 P2] 单次 setState：1 次 bake、0 次 autosave（参数直写 state.params），
+                    // 替代 enable + N×setParam 的 N+1 次 bake + N 次 autosave。与 applyModuleSnapshot 同模式。
+                    mod.setState({ id: state.id, enabled: state.enabled, params: state.params });
                 }
             }
         }
@@ -325,16 +321,8 @@ export function applyMotionModulesToModel(modelId: string): void {
             if (!mod) {
                 continue;
             }
-
-            if (state.enabled) {
-                mod.enable();
-                // 应用参数
-                for (const [key, value] of Object.entries(state.params)) {
-                    mod.setParam?.(key, value);
-                }
-            } else {
-                mod.disable();
-            }
+            // [round-12 P2] 单次 setState（1 次 bake、0 次 autosave），替代 enable + N×setParam
+            mod.setState({ id: state.id, enabled: state.enabled, params: state.params });
         } catch (e) {
             // 单模块异常不阻断其余模块应用（round-12 P2）
             console.warn(`[registry] applyMotionModulesToModel 模块 "${state.id}" 应用失败`, e);

@@ -8,6 +8,13 @@ import { applyGroundCollision } from '../physics/ground-collision';
 import { setEnvState } from './_bridge/env-bridge';
 
 // ======== Collision (WASM Bullet) ========
+// 字段语义：
+// - collisionEnabled      碰撞总开关（round-12 P2 已接线：总开关关闭时地面碰撞一并禁用，
+//                         见 ground-collision.applyGroundCollision）
+// - groundCollisionEnabled 地面碰撞开关（注入静态地板刚体，见 ground-collision.ts）
+// - bodyCollisionEnabled  身体碰撞开关 —— ⚠️ 预留字段：目前无模型身体刚体碰撞实现，
+//                         写状态 + 触发 'collision' group dispatch 但不产生物理效果。
+//                         等接入 per-body collisionGroup 控制后再实现，勿误以为已生效。
 
 export function setCollisionEnabled(value: boolean): void {
     setEnvState({ collisionEnabled: value }, true);

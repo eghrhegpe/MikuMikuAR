@@ -88,7 +88,10 @@ vi.mock('babylon-mmd/esm/Runtime/Optimized/Physics/Bind/motionType', () => ({
 
 const cfg = vi.hoisted(() => ({
     mmdRuntime: null as any,
-    envState: { groundCollisionEnabled: false } as { groundCollisionEnabled: boolean },
+    envState: { collisionEnabled: true, groundCollisionEnabled: false } as {
+        collisionEnabled: boolean;
+        groundCollisionEnabled: boolean;
+    },
 }));
 vi.mock('@/core/config', () => ({
     get mmdRuntime() {
@@ -203,5 +206,18 @@ describe('ground-collision', () => {
         cfg.envState.groundCollisionEnabled = false;
         applyGroundCollision();
         expect(isGroundCollisionEnabled()).toBe(false);
+    });
+
+    it('collisionEnabled 总开关关闭时地面碰撞一并禁用（round-12 P2）', () => {
+        setRuntime();
+        cfg.envState.groundCollisionEnabled = true;
+        cfg.envState.collisionEnabled = false;
+        applyGroundCollision();
+        expect(isGroundCollisionEnabled()).toBe(false);
+
+        // 总开关恢复后按地面开关还原
+        cfg.envState.collisionEnabled = true;
+        applyGroundCollision();
+        expect(isGroundCollisionEnabled()).toBe(true);
     });
 });

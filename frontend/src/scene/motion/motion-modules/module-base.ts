@@ -8,6 +8,7 @@ import type { MotionModuleState, ParamValue } from '@/core/types';
 import {
     getModuleState,
     setModuleParam,
+    setModuleEnabled,
     releaseOwnedBones,
     getRegisteredModules,
     createModule,
@@ -126,7 +127,9 @@ export function createModuleBase(
             if (autoEnable) {
                 const cur = getModuleState(modelId, moduleId, actionId);
                 if (!cur.enabled) {
-                    cur.enabled = true;
+                    // [round-12 P2] 走 setModuleEnabled 持久化 enabled（触发 autosave），
+                    // 替代直接 cur.enabled=true 改状态（不落盘，重启后自动启用丢失）。
+                    setModuleEnabled(modelId, moduleId, true, actionId);
                 }
             }
             doAction(modelId);

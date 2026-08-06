@@ -19,6 +19,10 @@ import {
 } from '@/scene/motion/motion-modules/registry';
 
 vi.mock('@/core/state', () => mockState());
+vi.mock('@/core/config', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('@/core/config')>();
+    return { ...actual, triggerAutoSave: shared.triggerAutoSaveSpy };
+});
 vi.mock('@/scene/motion/bone-override', () => mockBoneOverride());
 vi.mock('@/scene/motion/perception', () => mockPerception());
 vi.mock('@/scene/motion/motion-intent', async (importOriginal) => {
@@ -186,5 +190,37 @@ describe('setParam 触发 re-bake（回归 91dbe42a / 2026-08-02）', () => {
         expect(fingerCalls.length).toBeGreaterThan(0);
         // fist 预设下手指应有明显弯曲（euler[0] ≠ 0），证明预设参数被重烤
         expect(fingerCalls.some((c) => (c[1] as number[])[0] !== 0)).toBe(true);
+    });
+});
+
+describe('setParam 自动启用持久化（round-12 P2#11）', () => {
+    it('禁用模块 setParam → 自动启用并持久化 enabled（走 setModuleEnabled 触发 autosave）', () => {
+        shared.mockModelRegistry.set('m1', makeModel('m1'));
+        initMotionModules();
+        setActiveMotionWithModules();
+        const mod = createModule('body-posture', 'm1')!;
+        expect(mod.getState().enabled).toBe(false);
+
+        shared.triggerAutoSaveSpy.mockClear();
+        mod.setParam('tilt', 10);
+
+        // 自动启用生效
+        expect(mod.getState().enabled).toBe(true);
+        // 参数写入 + enabled 写入各触发一次 autosave（旧实现直接改状态不落盘，仅 1 次）
+        expect(shared.triggerAutoSaveSpy.mock.calls.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it('已启用模块 setParam 不重复触发 enabled 持久化', () => {
+        shared.mockModelRegistry.set('m1', makeModel('m1'));
+        initMotionModules();
+        setActiveMotionWithModules();
+        const mod = createModule('body-posture', 'm1')!;
+        mod.enable();
+
+        shared.triggerAutoSaveSpy.mockClear();
+        mod.setParam('tilt', 10);
+
+        // 已启用 → 仅参数写入触发 1 次 autosave，不额外写 enabled
+        expect(shared.triggerAutoSaveSpy.mock.calls.length).toBe(1);
     });
 });

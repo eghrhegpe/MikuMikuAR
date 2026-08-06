@@ -99,9 +99,10 @@ export function disableGroundCollision(): void {
     }
 }
 
-/** 根据当前 envState 还原地面碰撞状态（运行时就绪 / 场景加载后调用） */
+/** 根据当前 envState 还原地面碰撞状态（运行时就绪 / 场景加载后调用）。
+ *  collisionEnabled 为碰撞总开关：总开关关闭时地面碰撞一并禁用（round-12 P2）。 */
 export function applyGroundCollision(): void {
-    if (envState.groundCollisionEnabled) {
+    if (envState.collisionEnabled && envState.groundCollisionEnabled) {
         enableGroundCollision();
     } else {
         disableGroundCollision();

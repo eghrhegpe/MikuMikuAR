@@ -107,7 +107,7 @@ registerEnvCallback((changed, state) => {
             disposeMirror();
         }
     }
-    // Collision — 地面碰撞启用/禁用由 groundCollisionEnabled 驱动
+    // Collision — 地面碰撞由 collisionEnabled（总开关）&& groundCollisionEnabled 共同驱动
     if (!changed || [...changed].some((k) => _COLLISION_KEYS.includes(k))) {
         applyGroundCollision();
     }

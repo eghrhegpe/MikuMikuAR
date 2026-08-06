@@ -34,7 +34,7 @@
 
 ## 🟠 P2 问题（建议修复）
 
-> **修复状态（2026-08-06）**：以下 #1/#2/#4/#6/#8/#9 已修复，见「✅ 已修复」标注。
+> **修复状态（2026-08-06）**：以下 #1/#2/#4/#6/#8/#9 已修复，见「✅ 已修复」标注；#3/#5/#7/#10/#11 已修复，见「✅ 已修复（第二批）」标注。
 
 | # | 模块 | 位置 | 问题 |
 |---|------|------|------|
@@ -58,6 +58,14 @@
 - **#6 startTimeOfDay 幂等**：守卫改为以 `_unregisterTimeOfDay` 为准（而非 `timeOfDayActive && !_timeOfDayPaused`），根治预设动画期间重复注册泄漏。
 - **#8 runtime-mode JSON.parse**：`loadPersistedRuntimeMode`/`persistRuntimeMode` 包 try/catch 降级 null。
 - **#9 toast 无 document 防御**：根因修在 `toast.ts` 的 `showToast` 入口（`typeof document === 'undefined'` 时降级日志返回），惠及所有调用方（feedback/resource-warning-sink），比逐调用方打补丁更通用。
+
+### ✅ 已修复（第二批，2026-08-06）
+
+- **#3 setTargetModel 单次 setState**：`setTargetModel` 对新模型每模块改走 `mod.setState({ id, enabled, params })` 单次调用（1 次 bake、0 次 autosave），替代 enable + N×setParam 的 N+1 次 bake + N 次 autosave。与 applyModuleSnapshot 同模式。
+- **#5 env-collision 死状态接线**：`applyGroundCollision` 改为 `if (envState.collisionEnabled && envState.groundCollisionEnabled)`，collisionEnabled 作为总开关门控地面碰撞（总开关关闭时地面碰撞一并禁用）；env-collision.ts 补字段语义注释（collisionEnabled/groundCollisionEnabled 已接线，bodyCollisionEnabled 为预留字段）。补回归测试（ground-collision.test.ts「总开关关闭时地面碰撞一并禁用」）。
+- **#7 mmd-adapter 补单测**：`mmd-adapter.native.test.ts` 补 `solveIkNative`（5 用例：正常透传/usePhysics/缺导出警告一次/哨兵 -1 不调/ptr 缺失）与 `applyWindForceToModelRigidBodiesNative`（4 用例：正常/缺导出警告一次/ptr 缺失/len<=0）直接单测。
+- **#10 footstep 补单测**：新增 `footstep.test.ts`（18 用例），覆盖 resolveGroundSfxKind 地面映射（water/terrain/grass/wood/default + 优先级）、start/stop 生命周期（回调注册/降级检测/缓存清空）、落地回调音色触发（开关门控/音量归一化钳制/左右声像/无相机回退）、合成缓存惰性生成与复用。同步更新 motion-footstep.md 的 tests 字段。
+- **#11 module-base setParam 自动启用持久化**：`setParam` 自动启用改走 `setModuleEnabled`（触发 autosave 落盘 enabled），替代直接 `cur.enabled = true` 改状态（不落盘，重启后自动启用丢失）。补回归测试（param.test.ts「自动启用并持久化 / 已启用不重复写」）。
 
 ## 🟡 P3 关注项（持续改进）
 
