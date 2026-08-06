@@ -37,6 +37,7 @@ import {
     applyWindForceToModelRigidBodiesNative,
 } from '@/core/mmd-adapter';
 import { modelRegistry } from '@/core/config';
+import { logWarn } from '@/core/logger';
 
 // 薄转发：保留历史导出名 _getBundles，避免 wind-physics.test.ts 改动（ADR-192 双轨过渡）
 export { getRigidBodyBundleMap as _getBundles } from '@/core/mmd-adapter';
@@ -174,6 +175,10 @@ function _trySubscribe(runtime: IMmdRuntime): void {
 
     const impl = getPhysicsImpl(runtime);
     if (!impl) {
+        // [fix P2] 显式告警：physics impl 未就绪时静默返回会导致「风参数生效但
+        // 物理无反应」的不可观测状态；告警暴露 retry 时机依赖（model-loader 漏调
+        // 时用户/日志可发现）。参照 mmd-adapter _nativeMissingWarned 先例，防刷屏。
+        logWarn('wind-physics', 'physics impl 未就绪，风力注入暂未订阅（等待 retryWindPhysicsSubscription）');
         return;
     }
 
@@ -183,8 +188,18 @@ function _trySubscribe(runtime: IMmdRuntime): void {
 /**
  * 销毁风力物理注入。
  * 仅移除自己的 observer，不影响其他 onSyncObservable 订阅者。重置所有状态。
+ * @param runtime 指定运行时时只清理该运行时的订阅（runtime 销毁点调用）；
+ *                省略时清理全部（应用级 dispose 调用）。
  */
-export function disposeWindPhysics(): void {
+export function disposeWindPhysics(runtime?: IMmdRuntime): void {
+    if (runtime) {
+        const sub = _subs.get(runtime);
+        if (sub?.observer) {
+            sub.observer.dispose();
+        }
+        _subs.delete(runtime);
+        return;
+    }
     for (const [, sub] of _subs) {
         if (sub.observer) {
             sub.observer.dispose();

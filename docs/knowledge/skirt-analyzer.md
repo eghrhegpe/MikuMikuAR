@@ -19,7 +19,8 @@ invariants:
   - 纯几何模块，无 Babylon.js / babylon-mmd / WASM 依赖
   - 防误判：多底部环（裤子/连体衣）安全跳过自动生成
   - 全局顶点映射（跨链最近 2 骨节）消除相邻链独立位移导致的撕裂
-tests: []
+tests:
+  - frontend/src/__tests__/skirt-analyzer.test.ts
 use_when:
   - 裙摆分析
   - 虚拟裙骨
