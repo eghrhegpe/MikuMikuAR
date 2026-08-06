@@ -45,7 +45,7 @@ use_when:
 
 ## 对外 API（节选）
 - `interface MotionHistoryEntry` — 动作历史条目。
-- `pushHistory(modelId, builder)` — 推送历史快照。
+- `pushHistory(modelId, moduleId, paramName, prev, next, buildSnapshot)` — 推送历史快照（同参数 500ms 内合并）。
 - `undo(modelId, applier)` / `redo(modelId, applier)` — 撤销/重做。
 - `canUndo(modelId)` / `canRedo(modelId)` — 可撤销/重做状态。
 - `getHistoryEntries(modelId)` / `getHistoryCursor(modelId)` — 取历史记录和光标位置。

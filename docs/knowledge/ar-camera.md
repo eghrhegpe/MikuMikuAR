@@ -7,6 +7,8 @@ scope:
   - frontend/src/scene/ar/ar-camera.ts
 source_files:
   - frontend/src/scene/ar/ar-camera.ts
+tests:
+  - frontend/src/__tests__/ar-camera.test.ts
 adr:
   - ADR-055
 symbols:
@@ -23,7 +25,6 @@ invariants:
   - 代数令牌 _arGen 防止幽灵 AR（getUserMedia 后检测代数变化即丢弃流）
   - 防重入 _starting 避免并发双 getUserMedia 泄漏摄像头流
   - Android 经 window.__onArcCameraPermission 桥接权限结果
-tests: []
 use_when:
   - AR 摄像头
   - 视频透传

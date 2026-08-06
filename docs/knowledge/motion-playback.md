@@ -43,7 +43,7 @@ use_when:
 - `playback.ts` — 播放状态管理、进度 UI 更新、auto-loop 控制、runtime 回调注册/清理。
 
 ## 对外 API（节选）
-- `initPlaybackObservables(runtime, manager, updatePlaybackUI)` — 注册 runtime 回调，返回清理函数。
+- `initPlaybackObservables(runtime, manager, updatePlaybackUI, updateProcMotion, getProcBeatDetector)` — 注册 runtime 回调，返回清理函数。
 - `updatePlaybackUI()` — 刷新播放进度 UI（时长、当前时间、进度条）。
 - `_getDuration(runtime, manager)` — 取当前聚焦模型动画时长。
 - `_loopPending` — 标记 auto-loop 进行中（防 UI 闪烁）。

@@ -1446,15 +1446,15 @@
 | `MotionHistoryEntry()` | `scene/motion/motion-modules/motion-history:10` | — |
 | `SnapshotApplier()` | `scene/motion/motion-modules/motion-history:44` | 应用快照到引擎的回调（调用方负责从 registry 读模块实例并 setState/enable/disable） |
 | `SnapshotBuilder()` | `scene/motion/motion-modules/motion-history:41` | 构建当前全量快照的回调（调用方负责从 registry 读状态） |
-| `canRedo()` | `scene/motion/motion-modules/motion-history:173` | 是否有可重做的记录 |
-| `canUndo()` | `scene/motion/motion-modules/motion-history:168` | 是否有可撤销的记录 |
-| `clearHistory()` | `scene/motion/motion-modules/motion-history:215` | 清除指定模型的历史（删除模型时调用） |
-| `getHistoryCursor()` | `scene/motion/motion-modules/motion-history:184` | 获取当前游标位置（UI 高亮用） |
-| `getHistoryEntries()` | `scene/motion/motion-modules/motion-history:179` | 获取历史条目列表（UI 显示用） |
-| `jumpToHistory()` | `scene/motion/motion-modules/motion-history:193` | [doc:adr-125 P3] 跳转到指定历史位置。 |
+| `canRedo()` | `scene/motion/motion-modules/motion-history:179` | 是否有可重做的记录 |
+| `canUndo()` | `scene/motion/motion-modules/motion-history:174` | 是否有可撤销的记录 |
+| `clearHistory()` | `scene/motion/motion-modules/motion-history:221` | 清除指定模型的历史（删除模型时调用） |
+| `getHistoryCursor()` | `scene/motion/motion-modules/motion-history:190` | 获取当前游标位置（UI 高亮用） |
+| `getHistoryEntries()` | `scene/motion/motion-modules/motion-history:185` | 获取历史条目列表（UI 显示用） |
+| `jumpToHistory()` | `scene/motion/motion-modules/motion-history:199` | [doc:adr-125 P3] 跳转到指定历史位置。 |
 | `pushHistory()` | `scene/motion/motion-modules/motion-history:99` | 记录一次参数变更到历史栈。 |
-| `redo()` | `scene/motion/motion-modules/motion-history:156` | 重做一步（恢复到下一条快照），返回是否成功 |
-| `undo()` | `scene/motion/motion-modules/motion-history:139` | 撤销一步（恢复到上一条快照），返回是否成功 |
+| `redo()` | `scene/motion/motion-modules/motion-history:162` | 重做一步（恢复到下一条快照），返回是否成功 |
+| `undo()` | `scene/motion/motion-modules/motion-history:145` | 撤销一步（恢复到上一条快照），返回是否成功 |
 | `computeFootPitch()` | `scene/motion/motion-modules/motion-math:39` | 单足俯仰角（度）。 |
 | `computePedalPhase()` | `scene/motion/motion-modules/motion-math:27` | 踏板相位（度，0-360 自然循环）。 |
 | `computeSwayYaw()` | `scene/motion/motion-modules/motion-math:12` | 摇摆正弦 yaw（度）。 |
@@ -1606,8 +1606,8 @@
 | `unpinPerception()` | `scene/motion/perception:645` | unpin 模型感知（非焦点模型同步 deactivate） |
 | `PlaybackObservablesDispose()` | `scene/motion/playback:47` | — |
 | `initPlaybackObservables()` | `scene/motion/playback:51` | — |
-| `seekFromEvent()` | `scene/motion/playback:184` | — |
-| `updatePlaybackUI()` | `scene/motion/playback:162` | — |
+| `seekFromEvent()` | `scene/motion/playback:189` | — |
+| `updatePlaybackUI()` | `scene/motion/playback:167` | — |
 | `ProcMotionController()` | `scene/motion/proc-motion-bridge:38` | — |
 | `activateGazeTracking()` | `scene/motion/proc-motion-bridge:119` | — |
 | `createProcBeatDetector()` | `scene/motion/proc-motion-bridge:58` | — |
@@ -1841,99 +1841,99 @@
 | `setSuppressAutoSave()` | `scene/scene-serialize:1235` | — |
 | `triggerAutoSaveImpl()` | `scene/scene-serialize:1244` | — |
 | `tryRestoreLastScene()` | `scene/scene-serialize:1503` | — |
-| `DEFAULT_MAT_PARAMS()` | `scene/scene:139` | — |
-| `LoadLastScene()` | `scene/scene:844` | — |
-| `SaveLastScene()` | `scene/scene:844` | — |
-| `SaveThumbnail()` | `scene/scene:844` | — |
-| `SetEnvState()` | `scene/scene:844` | — |
-| `__envDebug()` | `scene/scene:316` | — |
-| `_applyAll()` | `scene/scene:139` | — |
-| `_catState()` | `scene/scene:139` | — |
-| `_matEnabled()` | `scene/scene:139` | — |
-| `_matState()` | `scene/scene:139` | — |
-| `animateCameraVmd()` | `scene/scene:829` | — |
-| `applyEnvState()` | `scene/scene:816` | — |
-| `applyFrameControl()` | `scene/scene:252` | 统一应用帧率控制：帧率限制器开关 + 帧率上限。 |
-| `applyMatSssState()` | `scene/scene:165` | — |
-| `applyMatState()` | `scene/scene:139` | — |
-| `applySss()` | `scene/scene:165` | — |
-| `applyUnlitFallback()` | `scene/scene:139` | — |
-| `autoFrame()` | `scene/scene:829` | — |
-| `autoLoop()` | `scene/scene:787` | — |
-| `canUndo()` | `scene/scene:808` | — |
-| `captureThumbnail()` | `scene/scene:828` | — |
-| `clearCameraVmd()` | `scene/scene:829` | — |
-| `disposeModelSssState()` | `scene/scene:165` | — |
-| `disposeScene()` | `scene/scene:269` | 级联释放 Scene → Engine 及其所有子资源。 |
-| `dom()` | `scene/scene:787` | — |
-| `engine()` | `scene/scene:225` | — |
-| `envState()` | `scene/scene:787` | — |
-| `focusedMmdModel()` | `scene/scene:334` | — |
-| `focusedModel()` | `scene/scene:334` | — |
-| `focusedModelId()` | `scene/scene:787` | — |
-| `formatTime()` | `scene/scene:787` | — |
-| `getCameraMode()` | `scene/scene:829` | — |
-| `getCameraState()` | `scene/scene:829` | — |
-| `getCameraVmdName()` | `scene/scene:829` | — |
-| `getCameraVmdPath()` | `scene/scene:829` | — |
-| `getMatCatGroups()` | `scene/scene:139` | — |
-| `getMatCatParams()` | `scene/scene:139` | — |
-| `getMatDetailList()` | `scene/scene:139` | — |
-| `getMatParams()` | `scene/scene:139` | — |
-| `getMatSssParams()` | `scene/scene:165` | — |
-| `getMatSssState()` | `scene/scene:165` | — |
-| `getMatState()` | `scene/scene:139` | — |
-| `getMaterialCategory()` | `scene/scene:139` | — |
-| `getScene()` | `scene/scene:773` | — |
-| `hasCameraVmd()` | `scene/scene:829` | — |
-| `initCameraSystem()` | `scene/scene:829` | — |
-| `initLoader()` | `scene/scene:828` | — |
-| `initPlaybackObservables()` | `scene/scene:786` | — |
-| `initScene()` | `scene/scene:363` | 场景初始化入口。首次调用时创建 Scene/Engine/运行时； HMR 重入时先调用 _reinitSceneForHMR() 清理旧资源再重建。 |
-| `isHeadless()` | `scene/scene:205` | — |
-| `isMatCategoryAllEnabled()` | `scene/scene:139` | — |
-| `isMatEnabled()` | `scene/scene:139` | — |
-| `isPbrMaterial()` | `scene/scene:164` | — |
-| `isPlaying()` | `scene/scene:787` | — |
-| `loadCameraVmd()` | `scene/scene:829` | — |
-| `loadCameraVmdFromPath()` | `scene/scene:780` | — |
-| `loadPMXFile()` | `scene/scene:828` | — |
-| `loadVMDFromPath()` | `scene/scene:780` | — |
-| `loadVMDMotion()` | `scene/scene:780` | — |
-| `loadVPDPose()` | `scene/scene:780` | — |
-| `mmdRuntime()` | `scene/scene:787` | — |
-| `modelManager()` | `scene/scene:307` | — |
-| `modelRegistry()` | `scene/scene:787` | — |
-| `normPath()` | `scene/scene:807` | — |
-| `offerSceneUndo()` | `scene/scene:808` | — |
-| `offerSceneUndoAndRefresh()` | `scene/scene:808` | — |
-| `popUndoSnapshot()` | `scene/scene:808` | — |
-| `pushUndoSnapshot()` | `scene/scene:808` | — |
-| `resetMatCatParams()` | `scene/scene:139` | — |
-| `resetPerMaterialParams()` | `scene/scene:139` | — |
-| `resetSingleMatParams()` | `scene/scene:139` | — |
-| `resolveFileUrl()` | `scene/scene:807` | — |
-| `restoreUndoSnapshot()` | `scene/scene:808` | — |
-| `scene()` | `scene/scene:236` | — |
-| `seekDragging()` | `scene/scene:787` | — |
-| `seekFromEvent()` | `scene/scene:786` | — |
-| `setAutoLoop()` | `scene/scene:787` | — |
-| `setCameraState()` | `scene/scene:829` | — |
-| `setFocusedModelId()` | `scene/scene:787` | — |
-| `setIsPlaying()` | `scene/scene:787` | — |
-| `setMatCatParams()` | `scene/scene:139` | — |
-| `setMatCategoryEnabled()` | `scene/scene:139` | — |
-| `setMatEnabled()` | `scene/scene:139` | — |
-| `setMatParams()` | `scene/scene:139` | — |
-| `setMatSssParams()` | `scene/scene:165` | — |
-| `setMmdRuntime()` | `scene/scene:787` | — |
-| `setModelRegistry()` | `scene/scene:787` | — |
-| `setSeekDragging()` | `scene/scene:787` | — |
-| `setStatus()` | `scene/scene:787` | — |
-| `setTriggerAutoSave()` | `scene/scene:805` | — |
-| `switchCameraMode()` | `scene/scene:829` | — |
-| `triggerAutoSave()` | `scene/scene:805` | — |
-| `updatePlaybackUI()` | `scene/scene:786` | — |
+| `DEFAULT_MAT_PARAMS()` | `scene/scene:141` | — |
+| `LoadLastScene()` | `scene/scene:850` | — |
+| `SaveLastScene()` | `scene/scene:850` | — |
+| `SaveThumbnail()` | `scene/scene:850` | — |
+| `SetEnvState()` | `scene/scene:850` | — |
+| `__envDebug()` | `scene/scene:318` | — |
+| `_applyAll()` | `scene/scene:141` | — |
+| `_catState()` | `scene/scene:141` | — |
+| `_matEnabled()` | `scene/scene:141` | — |
+| `_matState()` | `scene/scene:141` | — |
+| `animateCameraVmd()` | `scene/scene:835` | — |
+| `applyEnvState()` | `scene/scene:822` | — |
+| `applyFrameControl()` | `scene/scene:254` | 统一应用帧率控制：帧率限制器开关 + 帧率上限。 |
+| `applyMatSssState()` | `scene/scene:167` | — |
+| `applyMatState()` | `scene/scene:141` | — |
+| `applySss()` | `scene/scene:167` | — |
+| `applyUnlitFallback()` | `scene/scene:141` | — |
+| `autoFrame()` | `scene/scene:835` | — |
+| `autoLoop()` | `scene/scene:793` | — |
+| `canUndo()` | `scene/scene:814` | — |
+| `captureThumbnail()` | `scene/scene:834` | — |
+| `clearCameraVmd()` | `scene/scene:835` | — |
+| `disposeModelSssState()` | `scene/scene:167` | — |
+| `disposeScene()` | `scene/scene:271` | 级联释放 Scene → Engine 及其所有子资源。 |
+| `dom()` | `scene/scene:793` | — |
+| `engine()` | `scene/scene:227` | — |
+| `envState()` | `scene/scene:793` | — |
+| `focusedMmdModel()` | `scene/scene:336` | — |
+| `focusedModel()` | `scene/scene:336` | — |
+| `focusedModelId()` | `scene/scene:793` | — |
+| `formatTime()` | `scene/scene:793` | — |
+| `getCameraMode()` | `scene/scene:835` | — |
+| `getCameraState()` | `scene/scene:835` | — |
+| `getCameraVmdName()` | `scene/scene:835` | — |
+| `getCameraVmdPath()` | `scene/scene:835` | — |
+| `getMatCatGroups()` | `scene/scene:141` | — |
+| `getMatCatParams()` | `scene/scene:141` | — |
+| `getMatDetailList()` | `scene/scene:141` | — |
+| `getMatParams()` | `scene/scene:141` | — |
+| `getMatSssParams()` | `scene/scene:167` | — |
+| `getMatSssState()` | `scene/scene:167` | — |
+| `getMatState()` | `scene/scene:141` | — |
+| `getMaterialCategory()` | `scene/scene:141` | — |
+| `getScene()` | `scene/scene:779` | — |
+| `hasCameraVmd()` | `scene/scene:835` | — |
+| `initCameraSystem()` | `scene/scene:835` | — |
+| `initLoader()` | `scene/scene:834` | — |
+| `initPlaybackObservables()` | `scene/scene:792` | — |
+| `initScene()` | `scene/scene:365` | 场景初始化入口。首次调用时创建 Scene/Engine/运行时； HMR 重入时先调用 _reinitSceneForHMR() 清理旧资源再重建。 |
+| `isHeadless()` | `scene/scene:207` | — |
+| `isMatCategoryAllEnabled()` | `scene/scene:141` | — |
+| `isMatEnabled()` | `scene/scene:141` | — |
+| `isPbrMaterial()` | `scene/scene:166` | — |
+| `isPlaying()` | `scene/scene:793` | — |
+| `loadCameraVmd()` | `scene/scene:835` | — |
+| `loadCameraVmdFromPath()` | `scene/scene:786` | — |
+| `loadPMXFile()` | `scene/scene:834` | — |
+| `loadVMDFromPath()` | `scene/scene:786` | — |
+| `loadVMDMotion()` | `scene/scene:786` | — |
+| `loadVPDPose()` | `scene/scene:786` | — |
+| `mmdRuntime()` | `scene/scene:793` | — |
+| `modelManager()` | `scene/scene:309` | — |
+| `modelRegistry()` | `scene/scene:793` | — |
+| `normPath()` | `scene/scene:813` | — |
+| `offerSceneUndo()` | `scene/scene:814` | — |
+| `offerSceneUndoAndRefresh()` | `scene/scene:814` | — |
+| `popUndoSnapshot()` | `scene/scene:814` | — |
+| `pushUndoSnapshot()` | `scene/scene:814` | — |
+| `resetMatCatParams()` | `scene/scene:141` | — |
+| `resetPerMaterialParams()` | `scene/scene:141` | — |
+| `resetSingleMatParams()` | `scene/scene:141` | — |
+| `resolveFileUrl()` | `scene/scene:813` | — |
+| `restoreUndoSnapshot()` | `scene/scene:814` | — |
+| `scene()` | `scene/scene:238` | — |
+| `seekDragging()` | `scene/scene:793` | — |
+| `seekFromEvent()` | `scene/scene:792` | — |
+| `setAutoLoop()` | `scene/scene:793` | — |
+| `setCameraState()` | `scene/scene:835` | — |
+| `setFocusedModelId()` | `scene/scene:793` | — |
+| `setIsPlaying()` | `scene/scene:793` | — |
+| `setMatCatParams()` | `scene/scene:141` | — |
+| `setMatCategoryEnabled()` | `scene/scene:141` | — |
+| `setMatEnabled()` | `scene/scene:141` | — |
+| `setMatParams()` | `scene/scene:141` | — |
+| `setMatSssParams()` | `scene/scene:167` | — |
+| `setMmdRuntime()` | `scene/scene:793` | — |
+| `setModelRegistry()` | `scene/scene:793` | — |
+| `setSeekDragging()` | `scene/scene:793` | — |
+| `setStatus()` | `scene/scene:793` | — |
+| `setTriggerAutoSave()` | `scene/scene:811` | — |
+| `switchCameraMode()` | `scene/scene:835` | — |
+| `triggerAutoSave()` | `scene/scene:811` | — |
+| `updatePlaybackUI()` | `scene/scene:792` | — |
 | `ActionMenuCtx()` | `scene/shared/menu-node-types:16` | — |
 | `ControlSpec()` | `scene/shared/menu-node-types:37` | — |
 | `MenuKind()` | `scene/shared/menu-node-types:25` | — |
@@ -2054,17 +2054,17 @@
 | `getWaterSchema()` | `menus/env-water-levels:31` | 导出 water schema 供 menu-registry 静态分析（ADR-093 元测试） |
 | `buildWindLevel()` | `menus/env-wind-levels:44` | — |
 | `getWindSchema()` | `menus/env-wind-levels:12` | 导出 wind schema 供 menu-registry 静态分析（ADR-093 元测试） |
-| `buildTagDetailLevel()` | `menus/library-actions:716` | — |
-| `buildTagsOverviewLevel()` | `menus/library-actions:716` | — |
-| `findLibraryModelByName()` | `menus/library-actions:716` | 按名称模糊搜索模型（纯查询，不触发加载）。供 ADR-155/197 NL 控制 resolve 使用，避免 resolve 阶段误触发真实加载。 |
-| `findLibraryMotionByName()` | `menus/library-actions:716` | 按名称模糊搜索 VMD 动作（纯查询，不触发替换）。 |
-| `highlightRow()` | `menus/library-actions:716` | — |
-| `importFile()` | `menus/library-actions:671` | — |
-| `importFileByPath()` | `menus/library-actions:626` | — |
-| `onModelRowClick()` | `menus/library-actions:716` | — |
+| `buildTagDetailLevel()` | `menus/library-actions:727` | — |
+| `buildTagsOverviewLevel()` | `menus/library-actions:727` | — |
+| `findLibraryModelByName()` | `menus/library-actions:727` | 按名称模糊搜索模型（纯查询，不触发加载）。供 ADR-155/197 NL 控制 resolve 使用，避免 resolve 阶段误触发真实加载。 |
+| `findLibraryMotionByName()` | `menus/library-actions:727` | 按名称模糊搜索 VMD 动作（纯查询，不触发替换）。 |
+| `highlightRow()` | `menus/library-actions:727` | — |
+| `importFile()` | `menus/library-actions:682` | — |
+| `importFileByPath()` | `menus/library-actions:637` | — |
+| `onModelRowClick()` | `menus/library-actions:727` | — |
 | `prepareModelRestore()` | `menus/library-actions:112` | — |
-| `replaceModel()` | `menus/library-actions:716` | — |
-| `replaceMotion()` | `menus/library-actions:716` | — |
+| `replaceModel()` | `menus/library-actions:727` | — |
+| `replaceMotion()` | `menus/library-actions:727` | — |
 | `makeModelMenu()` | `menus/library-browse:369` | — |
 | `showModelPopup()` | `menus/library-browse:338` | — |
 | `ResourceViewMode()` | `menus/library-core:43` | — |
