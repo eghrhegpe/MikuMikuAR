@@ -47,6 +47,12 @@ export function disposeEventHandlers(): void {
     }
     _eventDisposables.length = 0;
     _activePointerCount = 0;
+    // [fix P2] 复位 seek 拖动状态：HMR 期间用户正拖 seek bar 时 dispose 触发，
+    // 若不复位 seekDragging 保持 true（pointerup 监听器已移除无法设回 false），
+    // 且 seekWasPlaying 残留旧值会误判下次 seek 的播放恢复；_pointerDownPos 残留旧坐标。
+    setSeekDragging(false);
+    seekWasPlaying = false;
+    _pointerDownPos = { x: 0, y: 0 };
 }
 
 import { handleDroppedFile } from './drop-import';

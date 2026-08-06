@@ -269,9 +269,9 @@
 | `getEnvKeys()` | `core/env-state-schema:405` | 从 Schema 派生指定 dispatch 分组的 key 列表。 |
 | `escapeHtml()` | `core/escape-html:5` | Escape HTML special characters to prevent injection. |
 | `disposeEventHandlers()` | `core/events:44` | — |
-| `initDropHandler()` | `core/events:367` | — |
-| `registerEventHandlers()` | `core/events:60` | — |
-| `showUpdateToast()` | `core/events:282` | — |
+| `initDropHandler()` | `core/events:373` | — |
+| `registerEventHandlers()` | `core/events:66` | — |
+| `showUpdateToast()` | `core/events:288` | — |
 | `feedbackError()` | `core/feedback:40` | 错误级 toast 反馈。标题 =「动作 + 目标」，detail 自动从 error 翻译。 |
 | `feedbackInfo()` | `core/feedback:53` | Info 级 toast 反馈。标题 =「动作 + 目标」。 |
 | `feedbackStatus()` | `core/feedback:70` | 通用状态栏反馈。auto-detect 成功与否：title 以 ✗ 开头则为失败。 |
@@ -2295,12 +2295,12 @@
 | `setRefreshSceneRoot()` | `menus/scene-menu-state:31` | — |
 | `setSceneMenu()` | `menus/scene-menu-state:12` | — |
 | `buildStageTransformLevel()` | `menus/scene-menu:57` | — |
-| `disposeSceneMenu()` | `menus/scene-menu:98` | 释放 scene-menu 模块资源（取消注册 hooks + HMR/清理时调用） |
+| `disposeSceneMenu()` | `menus/scene-menu:98` | 释放 scene-menu 模块资源（取消注册 hooks + UI actions + HMR/清理时调用） |
 | `getSceneMenu()` | `menus/scene-menu:80` | — |
 | `refreshSceneRoot()` | `menus/scene-menu:92` | — |
-| `saveScene()` | `menus/scene-menu:410` | 保存场景（自动编号到预设目录） |
-| `screenshotBatch()` | `menus/scene-menu:327` | 批量截图所有已加载模型 |
-| `screenshotCurrent()` | `menus/scene-menu:302` | 截图当前焦点模型 |
+| `saveScene()` | `menus/scene-menu:418` | 保存场景（自动编号到预设目录） |
+| `screenshotBatch()` | `menus/scene-menu:335` | 批量截图所有已加载模型 |
+| `screenshotCurrent()` | `menus/scene-menu:307` | 截图当前焦点模型 |
 | `showSceneMenu()` | `menus/scene-menu:80` | — |
 | `buildPhysicsDebugLevel()` | `menus/scene-physics-levels:155` | 构建物理调试子页（材质线框/骨骼 — WASM 相关，由模型详情页调用） |
 | `buildPhysicsLevel()` | `menus/scene-physics-levels:37` | 构建 WASM 物理子页（Bullet 骨髁物理 — per-model） |
@@ -2326,10 +2326,10 @@
 | `buildSettingsDiagnosticLevel()` | `menus/settings-diagnostic:509` | — |
 | `renderDiagnosticPanel()` | `menus/settings-diagnostic:479` | — |
 | `buildSettingsDownloadsLevel()` | `menus/settings-downloads:446` | — |
-| `buildEffectsSchema()` | `menus/settings-graphics:200` | — |
-| `buildFrameQualitySchema()` | `menus/settings-graphics:98` | — |
-| `buildPhysicsHudSchema()` | `menus/settings-graphics:305` | — |
-| `buildSettingsGraphicsLevel()` | `menus/settings-graphics:428` | — |
+| `buildEffectsSchema()` | `menus/settings-graphics:205` | — |
+| `buildFrameQualitySchema()` | `menus/settings-graphics:103` | — |
+| `buildPhysicsHudSchema()` | `menus/settings-graphics:310` | — |
+| `buildSettingsGraphicsLevel()` | `menus/settings-graphics:433` | — |
 | `buildSettingsLanguageLevel()` | `menus/settings-language:7` | — |
 | `buildSettingsMediaLevel()` | `menus/settings-media:469` | — |
 | `buildSettingsResourcesLevel()` | `menus/settings-resources:520` | — |

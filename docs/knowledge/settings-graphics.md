@@ -16,8 +16,9 @@ symbols:
   - buildSettingsGraphicsLevel
 invariants:
   - 性能预设 Schema 支持自动/质量优先/平衡/性能优先/自定义五档
-  - 渲染效果 Schema 管理阴影/泛光/FXAA/DOF/SSAO/辉光/色差/颗粒等开关
-  - 设置变更经 wails-bindings.SetPerformanceMode / renderer/setRenderState 写入
+  - 渲染效果 Schema 管理阴影/泛光/FXAA/DOF/SSAO/辉光/色差/颗粒等开关（SSR 已迁 env-reflection，不在本模块）
+  - 抗锯齿（AA）为独立 modeSlider（off/FXAA/MSAA 2x/4x/8x），非 boolean toggle
+  - 设置变更经 wails-bindings.SetPerformanceMode / renderer/setRenderState 写入；持久化失败经 toast 提示
 tests: []
 use_when:
   - 设置画面

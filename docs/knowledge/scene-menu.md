@@ -27,8 +27,9 @@ Scene Menu：场景弹窗（核心 + barrel export）。职责：MenuStack 场�
 
 ## 核心职责
 - `registerPopupMenu(...)` 注册 scene 弹窗（wrapperKey `scene-menu`）
-- 根级路由 + 动作处理：场景序列化（`serializeScene`）、AR 截图（`takeARScreenshot` / `isARModeActive`）、撤销快照（`popUndoSnapshot` / `restoreUndoSnapshot`）、模型聚焦（`focusModel` / `setFocusedModelId`）
+- 根级路由 + 动作处理：场景序列化（`serializeScene`）、AR 截图（`takeARScreenshot` / `isARModeActive`）、模型聚焦（`focusModel` / `setFocusedModelId`）、批量截图（`screenshotBatch`）、保存场景（`saveScene`）
 - 经 `setEnvState`、`SelectDir` / `SaveScreenshot` / `SaveScenePreset`（backend 代理）联动
+- 经 `registerUiAction` 注册 `screenshotCurrent` / `screenshotBatch` / `saveScene` 供 core 桥调用（disposeSceneMenu 注销）
 
 ## 对外 API（节选）
 - `getSceneMenu()` / `showSceneMenu()`

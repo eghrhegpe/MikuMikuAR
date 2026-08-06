@@ -24,11 +24,12 @@ symbols:
   - showUpdateToast
   - toggleOverlay
 invariants:
-  - disposeEventHandlers 释放所有已注册的事件处理器，防止 HMR/重入泄漏
+  - disposeEventHandlers 释放所有已注册的事件处理器，防止 HMR/重入泄漏；并复位 seekDragging/seekWasPlaying/_pointerDownPos（HMR 期间拖 seek 的状态泄漏修复）
   - toggleOverlay 含过渡动画等待（waitForTransition），避免动画竞态
   - initDropHandler 处理文件拖放导入，与 library setup 联动
   - buildNavMaps 构建 navActions/navLabels 映射表，被 shortcut-app.ts 消费
-tests: []
+tests:
+  - frontend/src/__tests__/drop-import.test.ts
 use_when:
   - 全局事件
   - 拖放导入
