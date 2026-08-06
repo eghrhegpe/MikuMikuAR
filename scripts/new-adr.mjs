@@ -30,8 +30,18 @@ import { parseArgs } from './_lib/parse-args.mjs';
 const ADR_DIR = path.resolve(process.cwd(), 'docs/adr');
 
 // 占号模式：先立空壳 ADR 占号，状态=规划，待并行 AI 立档
+const KNOWN_FLAGS = new Set(['--reserve', '--占位']);
 const reserve = process.argv.includes('--reserve') || process.argv.includes('--占位');
-const rawArgv = process.argv.filter(a => a !== '--reserve' && a !== '--占位');
+// [fix] 未知 flag 必须报错退出：parseArgs 对未知参数只 warn 不退出（共享库行为），
+// 其后的裸参数会被静默吞为「副标题」→ 误创建错误命名的 ADR 且消耗编号。
+for (const a of process.argv.slice(2)) {
+  if (a.startsWith('--') && !KNOWN_FLAGS.has(a)) {
+    console.error(`❌ 未知参数: ${a}`);
+    console.error('用法: node scripts/new-adr.mjs "标题" ["副标题"] ["状态"] [--reserve]');
+    process.exit(1);
+  }
+}
+const rawArgv = process.argv.filter(a => !KNOWN_FLAGS.has(a));
 
 // 位置参数（标题/副标题/状态）走 parseArgs 的 `_` 收集，统一参数解析
 const { _: positional } = parseArgs(rawArgv.slice(2), { bools: [], strings: [], defaults: {} });
