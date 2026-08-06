@@ -993,11 +993,11 @@
 | `CausticsScrollConfig()` | `scene/env/env-caustics:90` | 焦散滚动配置（用户可通过 state.causticScrollX/Y 覆盖） |
 | `causticsController()` | `scene/env/env-caustics:171` | — |
 | `isCausticsHost()` | `scene/env/env-caustics:176` | — |
-| `FRAG_SRC()` | `scene/env/env-clouds:330` | — |
-| `buildJitterSource()` | `scene/env/env-clouds:232` | 根据 useBlueNoise 选择 jitter 代码路径（模板注入） |
-| `createClouds()` | `scene/env/env-clouds:573` | — |
-| `disposeClouds()` | `scene/env/env-clouds:792` | — |
-| `resolveCloudShaderParams()` | `scene/env/env-clouds:220` | 按质量档派生 shader 注入参数： - high: 200 步主 march + 2 步光照 march + blue-noise jitter - standard: 96 |
+| `FRAG_SRC()` | `scene/env/env-clouds:344` | — |
+| `buildJitterSource()` | `scene/env/env-clouds:237` | 根据 useBlueNoise 选择 jitter 代码路径（模板注入） |
+| `createClouds()` | `scene/env/env-clouds:587` | — |
+| `disposeClouds()` | `scene/env/env-clouds:806` | — |
+| `resolveCloudShaderParams()` | `scene/env/env-clouds:225` | 按质量档派生 shader 注入参数： - high: 200 步主 march + 2 步光照 march + blue-noise jitter - standard: 96 |
 | `getBodyCollisionEnabled()` | `scene/env/env-collision:33` | — |
 | `getCollisionEnabled()` | `scene/env/env-collision:24` | — |
 | `getGroundCollisionEnabled()` | `scene/env/env-collision:46` | — |
@@ -1432,8 +1432,8 @@
 | `unloadProceduralMotion()` | `scene/motion/motion-intent:72` | 卸载一个程序化动作。'none' 不可卸载。 |
 | `BODY_POSTURE_DEF()` | `scene/motion/motion-modules/body-posture:285` | 身体姿态模块注册定义（供 registry BUILTIN_MODULE_DEFS 批量注册） |
 | `createBodyPostureModule()` | `scene/motion/motion-modules/body-posture:181` | 创建身体姿态模块实例 |
-| `LEFT_FOOT_DEF()` | `scene/motion/motion-modules/foot-modules:207` | — |
-| `RIGHT_FOOT_DEF()` | `scene/motion/motion-modules/foot-modules:223` | — |
+| `LEFT_FOOT_DEF()` | `scene/motion/motion-modules/foot-modules:212` | — |
+| `RIGHT_FOOT_DEF()` | `scene/motion/motion-modules/foot-modules:228` | — |
 | `LEFT_HAND_DEF()` | `scene/motion/motion-modules/hand-modules:388` | — |
 | `RIGHT_HAND_DEF()` | `scene/motion/motion-modules/hand-modules:416` | — |
 | `FrameHookManager()` | `scene/motion/motion-modules/module-base:203` | 帧钩子管理器的返回类型（供 createEnsureActive 复用） |
@@ -1484,7 +1484,7 @@
 | `setModuleParam()` | `scene/motion/motion-modules/registry:151` | 写入模块参数到场景动作意图 |
 | `setTargetModel()` | `scene/motion/motion-modules/registry:267` | 切换目标模型：禁用当前模型的所有模块覆盖，启用新模型已保存的模块状态。 |
 | `unregisterModule()` | `scene/motion/motion-modules/registry:52` | 注销模块 |
-| `RIDING_MODEL_DEF()` | `scene/motion/motion-modules/riding-model:289` | 骑行模型模块注册定义（供 registry BUILTIN_MODULE_DEFS 批量注册） |
+| `RIDING_MODEL_DEF()` | `scene/motion/motion-modules/riding-model:290` | 骑行模型模块注册定义（供 registry BUILTIN_MODULE_DEFS 批量注册） |
 | `createRidingModelModule()` | `scene/motion/motion-modules/riding-model:192` | 创建骑行模型模块实例 |
 | `ModuleDef()` | `scene/motion/motion-modules/types:51` | 模块注册定义（工厂 + 元信息 + 优先级），用于 BUILTIN_MODULE_DEFS 批量注册 |
 | `ModuleFactory()` | `scene/motion/motion-modules/types:48` | 模块工厂函数：接受 modelId，返回绑定到该模型的模块实例。 |

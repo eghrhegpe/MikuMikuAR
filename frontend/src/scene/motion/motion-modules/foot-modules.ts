@@ -8,6 +8,7 @@ import type { ParamValue } from '@/core/types';
 import {
     setBoneOverride,
     setBoneOverridePosition,
+    clearBoneOverride,
     registerBoneOverrideFrameHook,
     FRAME_HOOK_ORDER,
 } from '../bone-override';
@@ -89,6 +90,10 @@ function createFootModuleFactory(cfg: FootSideConfig) {
                         const fy = (st.params.footPosY as number) ?? 0;
                         const fz = (st.params.footPosZ as number) ?? 0;
                         if (fx === 0 && fy === 0 && fz === 0) {
+                            // [fix P2] 归零时清除残留位置覆盖：此前直接 return 导致上一帧
+                            // setBoneOverridePosition 写入的 slot.pos 残留（与 body-posture
+                            // 同模式，round-P2 修复对齐），用户把 footPos 拖回 0 后脚不归位。
+                            clearBoneOverride(cfg.ikBone, mid);
                             return;
                         }
 

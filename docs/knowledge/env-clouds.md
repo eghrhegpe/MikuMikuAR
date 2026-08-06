@@ -16,10 +16,11 @@ symbols:
   - disposeClouds
   - resolveCloudShaderParams
 invariants:
-  - disposeClouds 释放云层所有资源
+  - disposeClouds 释放云层所有资源（含调试可视化 mesh 挂载的 StandardMaterial——Mesh.dispose 不自动释放 material）
   - 云层使用程序化噪声纹理驱动形状，非静态 mesh
   - 云层参数经 envState.clouds 动态更新
-tests: []
+tests:
+  - frontend/src/__tests__/scene/env-clouds.test.ts
 use_when:
   - 云层
   - 天空云层

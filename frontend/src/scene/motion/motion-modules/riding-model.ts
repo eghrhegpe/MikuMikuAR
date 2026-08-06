@@ -194,6 +194,7 @@ export function createRidingModelModule(modelId: string, actionId?: string): Mot
         action: ensureActive,
         onDisable: (mid) => {
             _ridingFrameHooks.unregister(mid);
+            _ridingFeet.delete(mid);
         },
     }, actionId);
     return createModuleShell({

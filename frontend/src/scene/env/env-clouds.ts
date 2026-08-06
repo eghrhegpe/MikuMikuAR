@@ -196,6 +196,11 @@ function _computeWindVelocity(state: EnvState): [number, number, number] {
     if (!state.windEnabled || !state.windSpeed) {
         return [0, 0, 0];
     }
+    // [fix P3] windDirection 可能缺省（schema 演进/旧存档）——与 windSpeed 一致前置守卫，
+    // 避免 windEnabled=true 且 windDirection 为 undefined 时解构抛 TypeError 崩 shader 初始化
+    if (!state.windDirection) {
+        return [0, 0, 0];
+    }
     const dx = state.windDirection[0];
     const dz = state.windDirection[2];
     const dirLen = Math.sqrt(dx * dx + dz * dz) || 1;
@@ -249,14 +254,23 @@ let _debugCloudDeck: Mesh | null = null;
 let _cloudFollowHandle: ObserverHandle | null = null;
 let _cloudUpdateHandle: ObserverHandle | null = null;
 
-/** 清理所有调试可视化对象。 */
+/** 清理所有调试可视化对象（含 mesh 上挂载的材质，Mesh.dispose 不自动释放 material）。 */
 function _clearDebugVisuals(): void {
-    const _scene = getScene();
-    _debugCloudRing = safeDispose(_debugCloudRing);
+    // [fix P2] ring/markers/deck 的 StandardMaterial 此前从不 dispose——
+    // Babylon Mesh.dispose() 不连带释放 material，每次 toggle debugCloudsEnabled
+    // 泄漏 1+N+1 个材质。先释放 material 再 dispose mesh。
+    if (_debugCloudRing) {
+        _debugCloudRing.material?.dispose();
+    }
     for (const m of _debugCloudMarkers) {
+        m.material?.dispose();
         m.dispose();
     }
     _debugCloudMarkers = [];
+    if (_debugCloudDeck) {
+        _debugCloudDeck.material?.dispose();
+    }
+    _debugCloudRing = safeDispose(_debugCloudRing);
     _debugCloudDeck = safeDispose(_debugCloudDeck);
 }
 
