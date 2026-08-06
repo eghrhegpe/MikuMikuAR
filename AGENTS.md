@@ -13,6 +13,8 @@
 > 信任本机改动，测试通过后, 提交前 git status --short 辨认改动归属 ，按功能git add <通过测试的路径...> && git commit. 正常的更改，无需询问。如有捎带，也别怕 , 会有 GitHub PR review 审核。
 > 最后询问用户是否需要处理报错。git push --verbose 2>&1 | Select-Object -Last 50。
 > babymmd的换算关系是：1 unit = 0.1 米。
+> 禁止从 `@/core/utils` 神桶导入（ADR-191）——纯/叶子模块须引具体零依赖叶（`@/core/clamp`/`@/core/path`/`@/core/async`），整桶 import 会拖起 dom/state/fileservice 致 vitest fork worker 挂死。
+> 批量重构（重命名/移函数/加参数）用 `npm run codemod`（AST 感知），禁止 Python re.sub 或手动跨文件改。
 
 ```bash
 # 暂存（本地缓存）
