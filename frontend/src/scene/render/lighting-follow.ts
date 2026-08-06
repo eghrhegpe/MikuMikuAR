@@ -12,7 +12,7 @@ import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { lightingState } from './lighting-state';
 import { modelRegistry, type ModelInstance } from '@/core/config';
 import { safeDispose } from '@/core/dispose-helpers';
-import { getBoneWorldMatrix } from '@/core/mmd-adapter';
+// [fix code_review P3] 已改用 TransformCoordinatesToRef + scratch，不再调用 getBoneWorldMatrix
 import { setTransformMetadata } from '../transform/transform-pick';
 import {
     registerTransformAdapter,
@@ -143,15 +143,24 @@ function _effectivePersonalLightDefault(): PersonalLightSettings {
 }
 
 /** 取个人灯跟随基准点：用户指定骨骼 → 腰骨候选 → 根节点（兜底） */
+// [fix code_review P3] scratch 复用：getBoneWorldMatrix 每次调用分配 2 个 Matrix
+// （FromArray + multiply），而本函数处于每帧每灯热路径（tickPersonalLights/
+// tickStageLightFollow），改用 TransformCoordinatesToRef 复用 scratch Vector3——
+// 平移列变换结果与 local.multiply(rootWorld).m[12..14] 数学等价（仿射矩阵乘法
+// 平移列 = 局部平移×旋转 + 世界平移），语义不变、零 Matrix 分配。
+const _scratchLightPos = Vector3.Zero();
+
 function _getLightBasePos(model: ModelInstance, waistName: string | null): Vector3 {
     if (waistName && model.mmdModel) {
         // [audit:round13 P3] babylon-mmd 骨骼 worldMatrix 是 rootMesh 局部坐标系，
-        // 经 getBoneWorldMatrix 乘 rootMesh 世界矩阵得到真正世界坐标——
+        // 经 rootMesh 世界矩阵变换得到真正世界坐标——
         // 模型被平移/旋转/缩放时个人灯基准点不再错位（原 getBoneWorldPosition 返回局部平移）。
         const bone = model.mmdModel.runtimeBones?.find((b) => b.name === waistName);
         if (bone) {
-            const world = getBoneWorldMatrix(bone, model.rootMesh);
-            return new Vector3(world.m[12], world.m[13], world.m[14]);
+            // bone.worldMatrix 平移列（rootMesh 局部系）→ 世界系
+            _scratchLightPos.set(bone.worldMatrix[12], bone.worldMatrix[13], bone.worldMatrix[14]);
+            Vector3.TransformCoordinatesToRef(_scratchLightPos, model.rootMesh.getWorldMatrix(), _scratchLightPos);
+            return _scratchLightPos.clone();
         }
     }
     return model.rootMesh.getAbsolutePosition();

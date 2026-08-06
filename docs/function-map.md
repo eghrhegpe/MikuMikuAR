@@ -550,8 +550,8 @@
 | `addVector3SliderRow()` | `core/ui-advanced-rows:149` | — |
 | `cardContainer()` | `core/ui-card:9` | Card container helper: removes render-card bg, wraps content in an lcard. |
 | `addCollapsible()` | `core/ui-collapsible:23` | 通用折叠面板组件 |
-| `addPresetChip()` | `core/ui-collapsible:161` | 创建一个 preset-chip 按钮并追加到 container（通常是 .preset-group div）。 |
-| `addSectionTitle()` | `core/ui-collapsible:136` | 区块标题（section-title），用于 cardContainer 内的视觉分组。 |
+| `addPresetChip()` | `core/ui-collapsible:163` | 创建一个 preset-chip 按钮并追加到 container（通常是 .preset-group div）。 |
+| `addSectionTitle()` | `core/ui-collapsible:138` | 区块标题（section-title），用于 cardContainer 内的视觉分组。 |
 | `AUTO_LINK_THRESHOLD_DEG()` | `core/ui-constants:18` | time-of-day 与 lighting 联动判定阈值（度） |
 | `DEFAULT_GRAVITY()` | `core/ui-constants:14` | 默认重力（m/s²） |
 | `ENV_LIGHT_MAX()` | `core/ui-constants:16` | 环境光强度上限 |
@@ -1712,18 +1712,18 @@
 | `updateLightConeUniforms()` | `scene/render/light-cone:203` | 更新光锥的 shader uniforms（颜色/亮度/柔和度） |
 | `DEFAULT_PERSONAL_LIGHT()` | `scene/render/lighting-follow:70` | — |
 | `PersonalLightSettings()` | `scene/render/lighting-follow:32` | — |
-| `attachPersonalLight()` | `scene/render/lighting-follow:160` | — |
-| `detachPersonalLight()` | `scene/render/lighting-follow:285` | — |
-| `disposeAllPersonalLights()` | `scene/render/lighting-follow:423` | — |
-| `getAllPersonalLights()` | `scene/render/lighting-follow:432` | 导出所有个人灯状态（仅非默认值差异落盘由调用方决定） |
+| `attachPersonalLight()` | `scene/render/lighting-follow:169` | — |
+| `detachPersonalLight()` | `scene/render/lighting-follow:294` | — |
+| `disposeAllPersonalLights()` | `scene/render/lighting-follow:432` | — |
+| `getAllPersonalLights()` | `scene/render/lighting-follow:441` | 导出所有个人灯状态（仅非默认值差异落盘由调用方决定） |
 | `getPersonalLightDefault()` | `scene/render/lighting-follow:124` | 获取用户保存的个人灯默认值，无则返回 null。 |
-| `getPersonalLightState()` | `scene/render/lighting-follow:336` | — |
+| `getPersonalLightState()` | `scene/render/lighting-follow:345` | — |
 | `resetPersonalLightDefault()` | `scene/render/lighting-follow:129` | 重置用户默认值回出厂硬编码值。 |
-| `restorePersonalLights()` | `scene/render/lighting-follow:444` | 场景反序列化后，按 modelId 恢复个人灯设置（attach 已由 onModelLoaded 触发，此处仅覆盖参数） |
+| `restorePersonalLights()` | `scene/render/lighting-follow:453` | 场景反序列化后，按 modelId 恢复个人灯设置（attach 已由 onModelLoaded 触发，此处仅覆盖参数） |
 | `setPersonalLightDefault()` | `scene/render/lighting-follow:114` | 将当前个人灯参数保存为用户默认值。 |
-| `setPersonalLightState()` | `scene/render/lighting-follow:300` | — |
-| `tickPersonalLights()` | `scene/render/lighting-follow:340` | — |
-| `tickStageLightFollow()` | `scene/render/lighting-follow:483` | 舞台灯追光 tick：更新所有绑定了 followTarget 的舞台灯 |
+| `setPersonalLightState()` | `scene/render/lighting-follow:309` | — |
+| `tickPersonalLights()` | `scene/render/lighting-follow:349` | — |
+| `tickStageLightFollow()` | `scene/render/lighting-follow:492` | 舞台灯追光 tick：更新所有绑定了 followTarget 的舞台灯 |
 | `LIGHTING_PRESETS()` | `scene/render/lighting-presets:21` | — |
 | `LightingPreset()` | `scene/render/lighting-presets:12` | — |
 | `LightingPresetLight()` | `scene/render/lighting-presets:6` | — |
@@ -1779,15 +1779,15 @@
 | `setEnvStateForPerformance()` | `scene/render/performance-env-bridge:33` | performance.ts 调用此函数设置 envState（延迟绑定，避免循环导入） |
 | `PerformanceMode()` | `scene/render/performance:44` | — |
 | `RenderBridge()` | `scene/render/performance:19` | — |
-| `getCurrentDegradeLevel()` | `scene/render/performance:619` | — |
+| `getCurrentDegradeLevel()` | `scene/render/performance:622` | — |
 | `getPerfRenderScaleMul()` | `scene/render/performance:83` | 降级系统对 renderScale 的乘数（1.0=无影响，0.7=降级时降至 70%）。 |
-| `getPerformanceMode()` | `scene/render/performance:615` | — |
+| `getPerformanceMode()` | `scene/render/performance:618` | — |
 | `isSnapshotResetSuppressed()` | `scene/render/performance:88` | 供 setLightState/setRenderState 检查是否应跳过 resetPerformanceSnapshot。 |
-| `recalcPerformanceReference()` | `scene/render/performance:477` | 重新计算刷新率基准（外接显示器变化时由 render-loop resize 触发）。 |
+| `recalcPerformanceReference()` | `scene/render/performance:480` | 重新计算刷新率基准（外接显示器变化时由 render-loop resize 触发）。 |
 | `registerRenderBridge()` | `scene/render/performance:34` | ADR-159 P3-A：延迟绑定渲染桥接，由 scene.ts 在 initScene() 时注入。 |
-| `resetPerformanceSnapshot()` | `scene/render/performance:627` | 重置性能快照（用户手动修改渲染/光照设置后调用）。 |
-| `setPerformanceMode()` | `scene/render/performance:587` | 设置性能模式。 |
-| `updatePerformance()` | `scene/render/performance:495` | 每帧调用（渲染循环内）。 |
+| `resetPerformanceSnapshot()` | `scene/render/performance:630` | 重置性能快照（用户手动修改渲染/光照设置后调用）。 |
+| `setPerformanceMode()` | `scene/render/performance:590` | 设置性能模式。 |
+| `updatePerformance()` | `scene/render/performance:498` | 每帧调用（渲染循环内）。 |
 | `QualityDimension()` | `scene/render/quality-profile:22` | 质量维度定义。 |
 | `QualityProfile()` | `scene/render/quality-profile:12` | — |
 | `QualityProfileSettings()` | `scene/render/quality-profile:60` | 从注册表派生 QualityProfileSettings 类型。 |
@@ -2277,7 +2277,7 @@
 | `PresetListViewerConfig()` | `menus/preset-list-viewer:15` | — |
 | `buildPresetListLevel()` | `menus/preset-list-viewer:156` | 构建完整 PopupLevel（适用于纯预设列表场景，如模型预设） |
 | `presetListContent()` | `menus/preset-list-viewer:53` | 渲染预设列表内容到现有 container 中。用于混合内容的 PopupLevel（场景预设） |
-| `buildSchemaLevel()` | `menus/render-menu:322` | [doc:P6] 构建一个含增量 i18n 刷新的 schema 层级。 |
+| `buildSchemaLevel()` | `menus/render-menu:350` | [doc:P6] 构建一个含增量 i18n 刷新的 schema 层级。 |
 | `renderMenu()` | `menus/render-menu:26` | 渲染一个 MenuNode 树到 container 中。返回 dispose 函数，调用时级联释放所有 renderCustom 资源 |
 | `ResourceHandle()` | `menus/resource-detail-helpers:40` | — |
 | `buildAttachmentCard()` | `menus/resource-detail-helpers:388` | [doc:adr-215] 模型附属关系卡片。 |

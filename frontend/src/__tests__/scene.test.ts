@@ -767,6 +767,8 @@ describe('initScene（场景初始化编排）', () => {
         // 注：initMotionBroadcast 经同模块二次动态 import，vitest 下 .then 不触发
         // （mock 工厂只求值一次、缓存模块，但场景代码第二次 import 的 then 回调不执行），
         // 属 vitest 模块 mock 怪癖，无法在此断言，见文件头注释。
+        // [实测证实] 恢复断言会失败：syncPlaybackSpeedToRuntime 是首次 import 触发回调，
+        // initMotionBroadcast 是二次 import 缓存模块不触发——code_review 静态推理误判。
         // 模型管理器
         expect(shared.setModelRegistry).toHaveBeenCalled();
         expect(shared.setTriggerAutoSave).toHaveBeenCalledWith(shared.triggerAutoSaveImpl);

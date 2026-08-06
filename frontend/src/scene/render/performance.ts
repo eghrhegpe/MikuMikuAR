@@ -302,12 +302,15 @@ function applyDegrade(level: DegradeLevel, force = false): void {
 
     // 首次降级时保存快照（用户原始设置）。
     // [audit:round13 P3] bridge 未注册（initScene 前，如启动早期手动切 performance 模式）
-    // 时跳过快照捕获——默认 getter 返回 `({}) as LightState` 空对象强转，捕获后恢复无意义
+    // 时 light/render getter 返回 `({}) as LightState` 空对象强转，捕获后恢复无意义
     //（恢复时把空对象回写 setLightState，虽无副作用但丢失「恢复到用户原始设置」语义）。
-    if (!_snapshot && level > 0 && _bridgeEngine !== null) {
+    // [fix code_review P2] env 部分必须无条件捕获：setEnvStateForPerformance（L374）不依赖
+    // bridge，bridge 未注册时 env 降级已生效；若整快照被跳过，恢复路径 L332 无快照直接 return，
+    // env 永久停留在降级状态无法还原。仅 light/render 按 bridge 注册条件捕获。
+    if (!_snapshot && level > 0) {
         _snapshot = {
-            light: _bridgeGetLightState(),
-            render: _bridgeGetRenderState(),
+            light: _bridgeEngine !== null ? _bridgeGetLightState() : ({} as LightState),
+            render: _bridgeEngine !== null ? _bridgeGetRenderState() : ({} as RenderState),
             env: {
                 qualityProfile: envState.qualityProfile,
                 reflectionQuality: envState.reflectionQuality,
