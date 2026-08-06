@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 /**
  * gen-menu-map.mjs — 从源码自动生成「菜单层级地图」知识库文档（docs/knowledge/menu-map.md）。
- * 从源码自动生成「菜单层级地图」知识库文档（docs/knowledge/menu-map.md）。
  *
  * 提取三部分静态菜单骨架：
  *   A. 声明式 Schema 树 —— 每个 `build*Schema(): MenuNode[]` 返回的数组字面量
@@ -35,7 +34,10 @@ const OUT_PATH = path.join(ROOT, 'docs', 'knowledge', 'menu-map.md');
 
 const args = parseArgs(process.argv.slice(2), { bools: ['check'], strings: [] });
 if (args.help) {
-  console.log('用法见文件头 JSDoc（node scripts/gen-menu-map.mjs [--check|--json|--strict]）');
+  const _src = fs.readFileSync(process.argv[1], 'utf-8');
+  const _s = _src.indexOf('/**');
+  const _e = _src.indexOf('*/', _s);
+  console.log(_src.slice(_s, _e + 2).replace(/^ \* ?/gm, '').trim());
   process.exit(0);
 }
 if (args.unknown && args.unknown.length) {

@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 /**
  * gen-knowledge-symbols.mjs — 知识卡 `symbols:` 字段自动生成器 —— 从卡片 `source_files` 指向的源码提取导出符号，
- * 知识卡 `symbols:` 字段自动生成器 —— 从卡片 `source_files` 指向的源码提取导出符号，
  * 与 frontmatter 的 `symbols:` 列表做集合比对并同步。与 gen-funcmap.mjs 同构
  * （gen 写 / --check 校验），复用 _lib/source-graph.mjs 的 getExportedSymbols。
  *
@@ -150,7 +149,10 @@ function setsEqual(a, b) {
 function main() {
   const { check: checkMode , help, unknown} = parseArgs(process.argv.slice(2), { bools: ['check'] });
   if (help) {
-    console.log('用法见文件头 JSDoc（node scripts/gen-knowledge-symbols.mjs [--check|--json|--strict]）');
+    const _src = fs.readFileSync(process.argv[1], 'utf-8');
+    const _s = _src.indexOf('/**');
+    const _e = _src.indexOf('*/', _s);
+    console.log(_src.slice(_s, _e + 2).replace(/^ \* ?/gm, '').trim());
     process.exit(0);
   }
   if (unknown && unknown.length) {

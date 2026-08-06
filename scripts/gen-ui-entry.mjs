@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 /**
  * gen-ui-entry.mjs — 知识卡「## UI 入口」小节自动生成器（ADR-218 配套）。
- * 知识卡「## UI 入口」小节自动生成器（ADR-218 配套）。
  *
  * 背景：check-doc-drift 对 source_files 含 menus/ 或 ui/ 的 architecture 卡
  * 强制要求登记 UI 入口（「## UI 入口」小节或引用 menu-map.md）。
@@ -81,7 +80,10 @@ function main() {
     defaults: {},
   });
   if (args.help) {
-    console.log('用法见文件头 JSDoc（node scripts/gen-ui-entry.mjs [--check|--json|--strict]）');
+    const _src = fs.readFileSync(process.argv[1], 'utf-8');
+    const _s = _src.indexOf('/**');
+    const _e = _src.indexOf('*/', _s);
+    console.log(_src.slice(_s, _e + 2).replace(/^ \* ?/gm, '').trim());
     process.exit(0);
   }
   if (args.unknown && args.unknown.length) {

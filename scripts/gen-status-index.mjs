@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 /**
  * gen-status-index.mjs — 从 ADR 文件首部自动生成状态索引表，替换 docs/status.md 中标记区域。
- * 从 ADR 文件首部自动生成状态索引表，替换 docs/status.md 中标记区域。
  *
  * 用法：
  *   node scripts/gen-status-index.mjs              # 生成并写入（升序）
@@ -31,7 +30,10 @@ import { ROOT } from './_lib/scan-files.mjs';
 
 const args = parseArgs(process.argv.slice(2), { bools: ['reverse', 'check'], strings: [], defaults: {} });
 if (args.help) {
-  console.log('用法见文件头 JSDoc（node scripts/gen-status-index.mjs [--check|--json|--strict]）');
+  const _src = fs.readFileSync(process.argv[1], 'utf-8');
+  const _s = _src.indexOf('/**');
+  const _e = _src.indexOf('*/', _s);
+  console.log(_src.slice(_s, _e + 2).replace(/^ \* ?/gm, '').trim());
   process.exit(0);
 }
 if (args.unknown && args.unknown.length) {

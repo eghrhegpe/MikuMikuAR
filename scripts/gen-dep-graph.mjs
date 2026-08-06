@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 /**
  * gen-dep-graph.mjs — 前端模块依赖图生成器 —— 扫描 frontend/src/ 的 TS 文件，提取 import 依赖，
- * 前端模块依赖图生成器 —— 扫描 frontend/src/ 的 TS 文件，提取 import 依赖，
  * 输出 Mermaid 图 / 列表 / JSON。
  *
  * 用法：
@@ -133,7 +132,10 @@ function main() {
     defaults: { format: 'mermaid', scope: null, file: null },
   });
   if (args.help) {
-    console.log('用法见文件头 JSDoc（node scripts/gen-dep-graph.mjs [--check|--json|--strict]）');
+    const _src = fs.readFileSync(process.argv[1], 'utf-8');
+    const _s = _src.indexOf('/**');
+    const _e = _src.indexOf('*/', _s);
+    console.log(_src.slice(_s, _e + 2).replace(/^ \* ?/gm, '').trim());
     process.exit(0);
   }
   if (args.unknown && args.unknown.length) {

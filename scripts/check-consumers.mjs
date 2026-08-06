@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 /**
  * check-consumers.mjs — 符号反向查询 —— 给定一个导出符号（函数/类/接口/类型），列出 frontend/src/ 中
- * 符号反向查询 —— 给定一个导出符号（函数/类/接口/类型），列出 frontend/src/ 中
  * 所有 import 并消费它的文件与行号，帮助 AI 在重构前做「影响面预判」。
  *
  * 用法：
@@ -371,7 +370,10 @@ function main() {
     strings: ['scope', 'snapshot', 'diff'],
   });
   if (args.help) {
-    console.log('用法见文件头 JSDoc（node scripts/check-consumers.mjs [--check|--json|--strict]）');
+    const _src = fs.readFileSync(process.argv[1], 'utf-8');
+    const _s = _src.indexOf('/**');
+    const _e = _src.indexOf('*/', _s);
+    console.log(_src.slice(_s, _e + 2).replace(/^ \* ?/gm, '').trim());
     process.exit(0);
   }
   if (args.unknown && args.unknown.length) {

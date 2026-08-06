@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 /**
  * gen-routes.mjs — AI 知识库路由表自动生成器 —— 从知识卡 frontmatter 的 `use_when` 字段生成
- * AI 知识库路由表自动生成器 —— 从知识卡 frontmatter 的 `use_when` 字段生成
  * 「意图 → 首选卡 → 其次阅读」路由表，替代手工维护的 routes.md。
  *
  * 背景：routes.md 此前手维护 75 条意图映射，新增子系统易遗漏。
@@ -136,7 +135,10 @@ function main() {
     defaults: {},
   });
   if (args.help) {
-    console.log('用法见文件头 JSDoc（node scripts/gen-routes.mjs [--check|--json|--strict]）');
+    const _src = fs.readFileSync(process.argv[1], 'utf-8');
+    const _s = _src.indexOf('/**');
+    const _e = _src.indexOf('*/', _s);
+    console.log(_src.slice(_s, _e + 2).replace(/^ \* ?/gm, '').trim());
     process.exit(0);
   }
   if (args.unknown && args.unknown.length) {

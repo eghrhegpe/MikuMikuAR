@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 /**
  * gen-knowledge-tests.mjs — 知识卡 `tests:` 字段自动登记 —— 扫描 frontend/src/__tests__/ 下测试文件，
- * 知识卡 `tests:` 字段自动登记 —— 扫描 frontend/src/__tests__/ 下测试文件，
  * 按卡名/source_files basename 匹配，为「tests 为空但实际有测试文件」的卡补登测试路径。
  *
  * 背景：内容层审计发现 35 张 architecture 卡 tests 为空，但 __tests__ 下存在对应测试文件
@@ -102,7 +101,10 @@ function writeTests(text, tests) {
 function main() {
   const args = parseArgs(process.argv.slice(2), { bools: ['check'], strings: [], defaults: {} });
   if (args.help) {
-    console.log('用法见文件头 JSDoc（node scripts/gen-knowledge-tests.mjs [--check|--json|--strict]）');
+    const _src = fs.readFileSync(process.argv[1], 'utf-8');
+    const _s = _src.indexOf('/**');
+    const _e = _src.indexOf('*/', _s);
+    console.log(_src.slice(_s, _e + 2).replace(/^ \* ?/gm, '').trim());
     process.exit(0);
   }
   if (args.unknown && args.unknown.length) {

@@ -16,6 +16,23 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { STATUS_CATEGORIES } from './_lib/adr-status-categories.mjs';
+// [fix] CLI 健壮性契约：--help 自吐 JSDoc 退 0 / 未知 flag 退 1（2026-08-06）
+const _HELP = new Set(['--help', '-h']);
+const _KNOWN = new Set(['--json']);
+const _REST = process.argv.slice(2);
+if (_REST.some((a) => _HELP.has(a))) {
+  const _SRC = fs.readFileSync(process.argv[1], 'utf-8');
+  const _B = _SRC.indexOf('/**');
+  const _X = _SRC.indexOf('*/', _B);
+  console.log(_SRC.slice(_B, _X + 2).replace(/^ \* ?/gm, '').trim());
+  process.exit(0);
+}
+const _UNK = _REST.filter((a) => a.startsWith('--') && !_KNOWN.has(a) && !_HELP.has(a));
+if (_UNK.length) {
+  console.error(`❌ 未知参数: ${_UNK.join(', ')}（--help 查看用法）`);
+  process.exit(1);
+}
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

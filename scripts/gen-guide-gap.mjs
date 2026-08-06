@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 /**
  * gen-guide-gap.mjs — 用户指南覆盖缺口扫描 —— 从 menu-map.md（机器生成的声明式菜单事实源）提取 folder 面板，
- * 用户指南覆盖缺口扫描 —— 从 menu-map.md（机器生成的声明式菜单事实源）提取 folder 面板，
  * 与 guide/ 页面清单对照，列出「菜单有面板但用户指南无对应页」的缺口（WARN 不阻断）。
  *
  * 背景：guide 是手写的叙事性操作手册（"怎么用"），无法机器生成正文；但缺口可见性可以自动化——
@@ -44,7 +43,10 @@ const ALIAS_COVERED = new Set(['tags']);
 function main() {
   const args = parseArgs(process.argv.slice(2), { bools: ['strict'], strings: [], defaults: {} });
   if (args.help) {
-    console.log('用法见文件头 JSDoc（node scripts/gen-guide-gap.mjs [--check|--json|--strict]）');
+    const _src = fs.readFileSync(process.argv[1], 'utf-8');
+    const _s = _src.indexOf('/**');
+    const _e = _src.indexOf('*/', _s);
+    console.log(_src.slice(_s, _e + 2).replace(/^ \* ?/gm, '').trim());
     process.exit(0);
   }
   if (args.unknown && args.unknown.length) {

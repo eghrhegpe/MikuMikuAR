@@ -41,7 +41,10 @@ const _args = parseArgs(process.argv.slice(2), {
   bools: ['verbose', 'json'],
 });
 if (_args.help) {
-  console.log('用法见文件头 JSDoc（node scripts/check-adr-health.mjs [--check|--json|--strict]）');
+  const _src = fs.readFileSync(process.argv[1], 'utf-8');
+  const _s = _src.indexOf('/**');
+  const _e = _src.indexOf('*/', _s);
+  console.log(_src.slice(_s, _e + 2).replace(/^ \* ?/gm, '').trim());
   process.exit(0);
 }
 if (_args.unknown && _args.unknown.length) {

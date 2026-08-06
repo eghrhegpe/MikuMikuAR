@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 /**
  * gen-adr-supersede.mjs — 扫描 docs/adr/ 全部 ADR,输出「取代关系」判定结果:
- * 扫描 docs/adr/ 全部 ADR,输出「取代关系」判定结果:
  *
  *   ① 已登记:旧 ADR 首部状态行明确声明「被 [ADR-NNN] 取代」
  *   ①b 部分推翻:声明带局部限定词(部分/§N/条目 N),只有该章节失效,整篇不归档
@@ -39,6 +38,23 @@ import {
   RE_TABLE_NEGATED,
   globalOf,
 } from './_lib/supersede-regex.mjs';
+
+// [fix] CLI 健壮性契约：--help 自吐 JSDoc 退 0 / 未知 flag 退 1（2026-08-06）
+const _HELP = new Set(['--help', '-h']);
+const _KNOWN = new Set(['--check', '--quiet']);
+const _REST = process.argv.slice(2);
+if (_REST.some((a) => _HELP.has(a))) {
+  const _SRC = fs.readFileSync(process.argv[1], 'utf-8');
+  const _B = _SRC.indexOf('/**');
+  const _X = _SRC.indexOf('*/', _B);
+  console.log(_SRC.slice(_B, _X + 2).replace(/^ \* ?/gm, '').trim());
+  process.exit(0);
+}
+const _UNK = _REST.filter((a) => a.startsWith('--') && !_KNOWN.has(a) && !_HELP.has(a));
+if (_UNK.length) {
+  console.error(`❌ 未知参数: ${_UNK.join(', ')}（--help 查看用法）`);
+  process.exit(1);
+}
 
 // matchAll 强制要求 g 标志;共享常量刻意无 g(避免 lastIndex 状态串味),这里各建一份带 g 的副本。
 // matchAll 内部自带克隆,不会污染这两个副本的 lastIndex,可安全跨行复用。

@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 /**
  * gen-knowledge-adr.mjs — 知识卡 `adr:` 关联自动补全 —— 从卡片 source_files 指向的源码扫描 `[doc:adr-NNN]` 显式标记，
- * 知识卡 `adr:` 关联自动补全 —— 从卡片 source_files 指向的源码扫描 `[doc:adr-NNN]` 显式标记，
  * 同步进 frontmatter 的 `adr:` 列表（仅补全当前无 adr 关联的 architecture 卡）。
  *
  * 背景：32 张 architecture 卡 frontmatter 无 `adr:` 关联，导致 ADR 反查表 / 关联图
@@ -100,7 +99,10 @@ function main() {
     defaults: {},
   });
   if (args.help) {
-    console.log('用法见文件头 JSDoc（node scripts/gen-knowledge-adr.mjs [--check|--json|--strict]）');
+    const _src = fs.readFileSync(process.argv[1], 'utf-8');
+    const _s = _src.indexOf('/**');
+    const _e = _src.indexOf('*/', _s);
+    console.log(_src.slice(_s, _e + 2).replace(/^ \* ?/gm, '').trim());
     process.exit(0);
   }
   if (args.unknown && args.unknown.length) {

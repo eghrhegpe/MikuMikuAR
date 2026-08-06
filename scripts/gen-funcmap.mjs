@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 /**
  * gen-funcmap.mjs — 函数映射表生成器 —— 扫描 frontend/src/ 的 TS 源文件，提取 export 符号，
- * 函数映射表生成器 —— 扫描 frontend/src/ 的 TS 源文件，提取 export 符号，
  * 按模块分组生成函数索引表，写入 docs/function-map.md。
  *
  * 用法：
@@ -222,7 +221,10 @@ function main() {
     strings: ['scope'],
   });
   if (args.help) {
-    console.log('用法见文件头 JSDoc（node scripts/gen-funcmap.mjs [--check|--json|--strict]）');
+    const _src = fs.readFileSync(process.argv[1], 'utf-8');
+    const _s = _src.indexOf('/**');
+    const _e = _src.indexOf('*/', _s);
+    console.log(_src.slice(_s, _e + 2).replace(/^ \* ?/gm, '').trim());
     process.exit(0);
   }
   if (args.unknown && args.unknown.length) {

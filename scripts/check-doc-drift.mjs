@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 /**
  * check-doc-drift.mjs — 文档漂移检查器 —— 比对「代码现实」与「架构文档声称」。
- * 文档漂移检查器 —— 比对「代码现实」与「架构文档声称」。
  *
  * 零依赖（仅 node:fs / node:path / node:url）。用法：
  *   node scripts/check-doc-drift.mjs            # 文本报告
@@ -586,6 +585,22 @@ function getInfoCounts(cov, rev, apiSym) {
 
 // ---------- 主流程 ----------
 function main() {
+  // [fix] --help 退 0 自吐 JSDoc / 未知 flag 退 1（CLI 健壮性契约，2026-08-06）
+  const argvRest = process.argv.slice(2);
+  const HELP_FLAGS = new Set(['--help', '-h']);
+  if (argvRest.some((a) => HELP_FLAGS.has(a))) {
+    const src = fs.readFileSync(process.argv[1], 'utf-8');
+    const s = src.indexOf('/**');
+    const e = src.indexOf('*/', s);
+    console.log(src.slice(s, e + 2).replace(/^ \* ?/gm, '').trim());
+    process.exit(0);
+  }
+  const knownFlags = new Set(['--json', '--baseline', '--baseline-update']);
+  const unknown = argvRest.filter((a) => a.startsWith('--') && !knownFlags.has(a) && !HELP_FLAGS.has(a));
+  if (unknown.length) {
+    console.error(`❌ 未知参数: ${unknown.join(', ')}（--help 查看用法）`);
+    process.exit(1);
+  }
   const json = process.argv.includes('--json');
   const baselineMode = process.argv.includes('--baseline');
   const baselineUpdate = process.argv.includes('--baseline-update');

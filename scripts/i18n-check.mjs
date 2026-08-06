@@ -24,7 +24,10 @@ const REFERENCE_LANGS = ['en', 'ja', 'ko', 'zh-TW'];
 
 const { strict, json , help, unknown} = parseArgs(process.argv.slice(2), { bools: ['strict', 'json'], strings: [], defaults: {} });
   if (help) {
-    console.log('用法见文件头 JSDoc（node scripts/i18n-check.mjs [--check|--json|--strict]）');
+    const _src = fs.readFileSync(process.argv[1], 'utf-8');
+    const _s = _src.indexOf('/**');
+    const _e = _src.indexOf('*/', _s);
+    console.log(_src.slice(_s, _e + 2).replace(/^ \* ?/gm, '').trim());
     process.exit(0);
   }
   if (unknown && unknown.length) {
