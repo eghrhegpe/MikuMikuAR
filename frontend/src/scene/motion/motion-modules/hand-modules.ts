@@ -47,11 +47,7 @@ const FINGER_BASES = ['親指', '人差指', '中指', '薬指', '小指'];
 const PHALANX_SUFFIXES = ['０', '１', '２', '第一', '第二', '第三'];
 const PHALANX_WEIGHTS = [0.5, 0.3, 0.2];
 
-// ── 共享帧钩子管理器（左右手共用一个 Map，按 modelId 注册一次）──
-
-const _handFrameHooks = createFrameHookManager();
-
-/** 手臂骨名缓存（per-model） */
+// ── 手臂骨名缓存（per-model）──
 interface _ArmIkCache {
     lIk?: string | null;
     rIk?: string | null;
@@ -95,6 +91,10 @@ function buildFingerBones(prefix: string): string[] {
 
 /** 创建左手或右手模块 */
 function createHandModuleFactory(cfg: HandSideConfig) {
+    // 每侧独立帧钩子管理器（按 modelId 键控）：左右手各持一个，避免共用同一 Map 时
+    // createEnsureActive 的 has(modelId) 幂等检查误判，导致后启用一侧的手臂位置偏移
+    // 帧钩子永不注册（round-12 P1 修复）。
+    const _handFrameHooks = createFrameHookManager();
     return (modelId: string, actionId?: string): MotionOverrideModule => {
         const fingerBones = buildFingerBones(cfg.fingerPrefix);
         const managedBones = [cfg.wristBone, cfg.shoulderBone, ...fingerBones];

@@ -4,6 +4,7 @@ source_files:
   - frontend/src/scene/motion/feet-adjustment.ts
 tests:
   - frontend/src/__tests__/feet-adjustment.test.ts
+  - frontend/src/__tests__/feet-adjustment.engine.test.ts
 kind: motion_feet_adjustment
 name: 脚部地面跟随（MMD-native IK）
 category: motion

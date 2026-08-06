@@ -21,10 +21,6 @@ import {
     createEnsureActive,
 } from './module-base';
 
-// ── 共享帧钩子管理器（左右脚共用一个 Map，按 modelId 注册一次）──
-
-const _footFrameHooks = createFrameHookManager();
-
 // ── 工厂函数 ──
 
 interface FootSideConfig {
@@ -36,6 +32,10 @@ interface FootSideConfig {
 
 /** 创建左脚或右脚模块 */
 function createFootModuleFactory(cfg: FootSideConfig) {
+    // 每侧独立帧钩子管理器（按 modelId 键控）：左右脚各持一个，避免共用同一 Map 时
+    // createEnsureActive 的 has(modelId) 幂等检查误判，导致后启用一侧的位置偏移帧钩子
+    // 永不注册（round-12 P1 修复）。
+    const _footFrameHooks = createFrameHookManager();
     return (modelId: string, actionId?: string): MotionOverrideModule => {
         const managedBones = [cfg.ikBone];
 

@@ -56,6 +56,6 @@ use_when:
 - 手指：`左/右` + 5 指名 + 6 节后缀 = 30 候选骨骼
 
 ## 不变量
-- 左右手共享一个 `_handFrameHooks` Map（按 modelId 注册一次）。
+- 左右手各自持独立 `_handFrameHooks` Map（按 modelId 键控，每侧只注册一次）——避免共享同一 Map 时 `createEnsureActive` 的 `has(modelId)` 幂等检查误判，导致后启用一侧的手臂位置偏移帧钩子永不注册（round-12 P1 修复）。
 - 手臂 IK 缓存 `_armIkCache` per-model 惰性查找。
 - disable 时注销帧钩子 + clearBoneOverride 仅清 owned 骨骼。

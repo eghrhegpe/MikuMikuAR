@@ -58,6 +58,6 @@ use_when:
 - 右脚：`右足IK`
 
 ## 不变量
-- 左右脚共享一个 `_footFrameHooks` Map（按 modelId 注册一次）。
+- 左右脚各自持独立 `_footFrameHooks` Map（按 modelId 键控，每侧只注册一次）——避免共享同一 Map 时 `createEnsureActive` 的 `has(modelId)` 幂等检查误判，导致后启用一侧的位置偏移帧钩子永不注册（round-12 P1 修复）。
 - disable 时注销帧钩子 + clearBoneOverride 仅清 owned 骨骼。
 - 位置偏移在 feet-adjustment 之前写入，引擎会在偏移基础上做地面修正。
