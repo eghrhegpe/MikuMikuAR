@@ -1,0 +1,64 @@
+<!-- 本文件由 scripts/gen-docs-index.mjs 自动生成，请勿手改。重跑：npm run gen:docsindex -->
+
+# 代码审核索引
+
+> 审核台账共 **43** 篇：18 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
+
+> 汇总视图（执行摘要 / 风险全景 / 改进优先级）见 [审核总索引](./README.md)。
+
+## 2026 年 8 月（7）
+
+- `2026-08-06` [第 14 轮审核报告 — Go 后端全量 / UI 剩余 / core 剩余](./2026-08-06-round14-go-backend-ui-core.md)
+- `2026-08-06` [第 13 轮审核报告 — scene 核心 / 渲染+物理 / core 关键设施 / UI 菜单核心](./2026-08-06-round13-scene-render-core-ui.md)
+- `2026-08-06` [第 12 轮审核报告 — env 状态链 / 动作模块化覆盖 / core 关键设施 / AI 子模块](./2026-08-06-round12-env-motion-core-ai.md)
+- `2026-08-06` [第 11 轮审核报告 — Core 后端 / 序列化 / 动作 / 菜单](./2026-08-06-round11-core-backend-serialize-motion-menu.md)
+- `2026-08-06` [最近 50 提交 code_review 审核（7 高价值目标 + 修复闭环）](./2026-08-06-code-review-commits-audit.md)
+- `2026-08-05` [验证记录 — `library-core.ts` 模块（子代理审核流水线实跑）](./2026-08-05-validation-library-core.md)
+- `2026-08-05` [地面/地形系统（env-ground / env-terrain / env-ground-spec / ground-collision）审核](./2026-08-05-env-ground-terrain-audit.md)
+
+## 2026 年 7 月（11）
+
+- `2026-07-31` [Web 构建告警审计：Rollup 动态/静态导入并存（dynamic-import warnings）](./2026-07-31-web-dynamic-import-warnings-audit.md)
+- `2026-07-31` [补充审核 — AI/安全 · 换装 · 物理桥 · Relay](./2026-07-31-ai-outfit-physics-relay-audit.md)
+- `2026-07-21` [ADR-164 / ADR-165 深度审核报告](./2026-07-21-adr-164-165-perception-perf-audit.md)
+- `2026-07-17` [ADR-121 审计报告 — 全局动作意图（Scene-level Motion Intent）](./2026-07-17-adr-121-global-motion-intent-audit.md)
+- `2026-07-17` [ADR-116 P2+P3 动作系统审核报告](./2026-07-17-adr-116-p2-p3-audit.md)
+- `2026-07-17` [ADR-116 P0+P1 实施审核报告](./2026-07-17-adr-116-p0-p1-audit.md)
+- `2026-07-16` [设计审核：资源库全屏界面的「返回」机制](./2026-07-16-resource-fs-back-nav-audit.md)
+- `2026-07-16` [第⑤轮审核 — outfit 模块修复记录](./2026-07-16-outfit-audit-mesh-leak.md)
+- `2026-07-16` [第⑤轮审核 — scene/manager 模块修复记录](./2026-07-16-manager-audit-abort-cleanup.md)
+- `2026-07-11` [第②轮审核 — 粒子+云模块修复记录](./2026-07-11-env-particles-clouds-audit.md)
+- `2026-07-11` [第③轮审核 — env-impl + env-terrain 修复记录](./2026-07-11-env-impl-terrain-audit.md)
+
+## 审核轮次（9）
+
+- [第①轮审核 — 环境水面 (env-water.ts)](./round-1-water.md)
+- [第②轮审核 — 环境云 + 环境粒子](./round-2-clouds-particles.md)
+- [第③轮审核 — 环境门面 + 地形](./round-3-facade-terrain.md)
+- [第④轮审核 — 光照 + 道具](./round-4-lighting-props.md)
+- [第⑤轮审核 — VMD 加载 + 图层](./round-5-vmd-layers.md)
+- [第⑥轮审核 — 播放 + 程序化 + 感知](./round-6-playback-procedural-perception.md)
+- [第⑦轮审核 — WASM 混合 + 骨骼覆盖](./round-7-wasm-bone-override.md)
+- [第⑧轮审核 — 感知层拆分（ADR-071 Phase 1-3 + ADR-079 后续）](./round-8-perception-split.md)
+- [第⑨轮审核 — 镜面反射功能](./round-9-mirror-reflection.md)
+
+## 专题审核（16）
+
+> 无统一日期/轮次前缀的审核记录（命名规范确立前），按标题排序。
+
+- [ADR-113 审核报告 — 体积云延展地平线与画质/性能升级](./adr-113-audit.md)
+- [ADR-151 审核记录（反射系统统一架构）](./adr-151-review.md)
+- [三色统一审核报告](./color-unification-audit.md)
+- [deadcode-baseline-2026-07-24](./deadcode-baseline-2026-07-24.md)
+- [历史文档陈旧度审计 — 2026-07-21](./doc-staleness-audit-2026-07-21.md)
+- [环境系统代码审核 — 验证性 Triage（2026-07-14）](./env-review-triage-2026-07-14.md)
+- [frontend-src-audit](./frontend-src-audit.md)
+- [frontend-src-dependency](./frontend-src-dependency.md)
+- [地面反射逻辑性审计（假设性：地面不反射角色 / 反射错误）](./ground-reflection-logical-audit.md)
+- [审核灵感清单（触发式提示词）](./inspiration.md)
+- [模型管理层代码审核 — 逐条验真 Triage（2026-07-14）](./model-review-triage-2026-07-14.md)
+- [ADR-105 Phase 2 P2 函数代码审核报告](./phase2-audit.md)
+- [预设 vs 复杂选项矛盾分析](./preset-vs-complexity-analysis.md)
+- [缩略图系统 — 审核报告](./thumbnail-system.md)
+- [可统一代码巡查 — 2026-07-19](./unification-triage-2026-07-19.md)
+- [水面反射边界情况审核报告](./water-reflection-boundary-audit.md)

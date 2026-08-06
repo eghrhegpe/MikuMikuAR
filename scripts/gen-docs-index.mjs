@@ -513,6 +513,86 @@ function buildReleasesIndex() {
   return out.join('\n');
 }
 
+// ── 4b. 代码审核索引 ───────────────────────────────────────
+
+/**
+ * audit/ 审核台账索引：命名混杂三类——
+ *   1. YYYY-MM-DD-xxx.md    按日期归档（2026-07-xx / 2026-08-xx）
+ *   2. round-N-xxx.md       审核轮次序列（round-1-water 等，按 N 排序）
+ *   3. 专题名.md            无日期/轮次的专题审核（deadcode-baseline-* 等，按标题排序）
+ * 汇总视图（执行摘要/风险全景/优先级）保留在 README.md，本索引承担明细导航。
+ */
+function buildAuditIndex() {
+  const dated = [];
+  const rounds = [];
+  const topical = [];
+  for (const f of mdFiles('audit')) {
+    if (f === 'index.md' || f === 'README.md') continue;
+    const d = f.match(/^(\d{4})-(\d{2})-(\d{2})-/);
+    if (d) {
+      dated.push({ file: f, year: d[1], month: d[2], day: d[3] });
+      continue;
+    }
+    const r = f.match(/^round-(\d+)-/);
+    if (r) {
+      rounds.push({ file: f, n: parseInt(r[1], 10) });
+      continue;
+    }
+    topical.push(f);
+  }
+  dated.sort((a, b) => b.file.localeCompare(a.file)); // 日期倒序
+  rounds.sort((a, b) => a.n - b.n); // 轮次正序
+  topical.sort((a, b) => a.localeCompare(b, 'zh-CN'));
+
+  const byMonth = new Map();
+  for (const d of dated) {
+    const k = `${d.year}-${d.month}`;
+    if (!byMonth.has(k)) byMonth.set(k, []);
+    byMonth.get(k).push(d);
+  }
+
+  const out = [];
+  out.push(BANNER('gen-docs-index.mjs'));
+  out.push('');
+  out.push('# 代码审核索引');
+  out.push('');
+  out.push(
+    `> 审核台账共 **${dated.length + rounds.length + topical.length}** 篇：${dated.length} 篇按日期归档、` +
+      `${rounds.length} 篇轮次记录、${topical.length} 篇专题审核。每篇记录审核范围、发现与结论。`
+  );
+  out.push('');
+  out.push('> 汇总视图（执行摘要 / 风险全景 / 改进优先级）见 [审核总索引](./README.md)。');
+  out.push('');
+  for (const [ym, items] of byMonth) {
+    const [y, mo] = ym.split('-');
+    out.push(`## ${y} 年 ${Number(mo)} 月（${items.length}）`);
+    out.push('');
+    for (const it of items) {
+      out.push(`- \`${it.file.slice(0, 10)}\` [${cell(h1(read('audit', it.file), it.file))}](${href('./' + it.file)})`);
+    }
+    out.push('');
+  }
+  if (rounds.length) {
+    out.push(`## 审核轮次（${rounds.length}）`);
+    out.push('');
+    for (const r of rounds) {
+      out.push(`- [${cell(h1(read('audit', r.file), r.file))}](${href('./' + r.file)})`);
+    }
+    out.push('');
+  }
+  if (topical.length) {
+    out.push(`## 专题审核（${topical.length}）`);
+    out.push('');
+    out.push('> 无统一日期/轮次前缀的审核记录（命名规范确立前），按标题排序。');
+    out.push('');
+    for (const f of topical) {
+      out.push(`- [${cell(h1(read('audit', f), f))}](${href('./' + f)})`);
+    }
+    out.push('');
+  }
+  return out.join('\n');
+}
+
 // ── 5. 用户指南索引 ────────────────────────────────────────
 
 /**
@@ -555,6 +635,7 @@ const TARGETS = [
   { rel: 'knowledge/index.md', build: buildKnowledgeIndex, label: '知识卡' },
   { rel: 'buglog/index.md', build: buildBuglogIndex, label: 'Bug 日志' },
   { rel: 'releases/index.md', build: buildReleasesIndex, label: '发版记录' },
+  { rel: 'audit/index.md', build: buildAuditIndex, label: '代码审核' },
 ];
 
 function main() {
