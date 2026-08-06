@@ -15,6 +15,8 @@
 
 | ADR | 主题 | 状态 |
 |-----|------|------|
+| ADR-252 | 菜单资源释放链路缺失 —— disposeMenuWrapper/clearAllMenuWrappers 零调用与 _liveMenus 常驻 | ✅ 已立（2026-08-06 立项；来源审核第 13 轮：`docs/audit/2026-08-06-round13-scene-render-core-ui.md` 跨模块模式问题 #3「状态直写绕过 setter」与 P3「menu-overlay dispose 链路缺失」）。本 ADR 固化现状认知与治理方向，实现分批跟进 |
+| ADR-251 | scene 反向 import 循环依赖治理 —— model-ops/camera 对 `../scene` 的真实静态循环 | ✅ 已立（2026-08-06 立项；来源审核第 13 轮：`docs/audit/2026-08-06-round13-scene-render-core-ui.md` 跨模块模式问题 #2「坐标系契约混淆 / 循环依赖」）。本 ADR 固化现状认知与治理方向，实现分批跟进 |
 | ADR-250 | 场景初始化重入与异常一致性 —— initScene 重入守护 + 中途异常状态复位 | ✅ 已立（2026-08-06 立项；来源审核第 15 轮：`scene.ts` 编排器幽灵路径——`initScene` 无重入守护、`_sceneInitialized` 中途抛异常不复位。本 ADR 固化决策，实现可后续跟进） |
 | ADR-249 | IndexedDB 事务异常契约 —— complete/error/abort 三事件必须全部接线 | ✅ 已立（2026-08-06 立项；`core/backend/idb.ts` 的 `idbSet` / `idbDelete` / `idbBatchSet` 已补 `tx.onabort`，Promise 不再因 QuotaExceeded 等 abort 场景永不 settle） |
 | ADR-248 | 派生缓存依赖引用键 —— 缓存 key 必须携带依赖引用，依赖变更即失效 | ✅ 已立（2026-08-06 立项；`material.ts` `getMaterialCategory` 已从无感知的 `_matCategoryCache` 改为委托带 `mapRef` 键的 `_catCache`，陈旧缓存幽灵路径消除） |

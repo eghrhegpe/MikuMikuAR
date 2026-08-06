@@ -91,7 +91,14 @@
 | dom-contract | `ARIA_ATTR` 死导出；ui-collapsible 硬编码 panelClass/openClass 绕过契约 |
 | render-menu | colorSlider/modeSlider/modeRow 未应用 ControlSpec get/set 衍生转换（当前无 schema 使用，潜在） |
 
-### ✅ P3 已修复（2026-08-06，第二批 7 项）
+### ✅ P3 已修复（2026-08-06，第三批 4 项 + 2 项评估结论）
+
+- **menu-factory showPopupMenu overlayClass 动态清理**：硬编码移除 3 类 `sceneOverlay-*` 改为动态清理全部（与 registerPopupMenu.show 同口径），新增 overlayClass 时两路径行为一致。
+- **dom-contract 契约接线**：ui-collapsible 硬编码 `'collapsible-panel'`/`'open'` 改引用 `COLLAPSIBLE` 常量；ARIA_ATTR 死导出接线到 ui-rows/ui-advanced-rows（28 处 aria 属性名改引用常量），消除死契约。
+- **render-menu ControlSpec get/set 应用**：renderColorSlider/renderModeSlider/renderModeRow 三处读经 `ctrl.get` 派生、写经 `ctrl.set` 还原（对齐 renderToggle 模式），未来衍生控件（如 windDirection→角度）显示与回写正确。
+- **model-manager remove() 副作用消除**：仅删除焦点模型时才 `focus(nextId)` 重取景 + autoSave；删除非焦点模型不再隐式重置相机视角（原无条件 focus(configFocusedId) 是反直觉副作用）。
+- **settings settingsOnFolderEnter builder 双调——评估为设计内行为不修**：`lvl = builder(); lvl.itemBuilder = () => builder().items` 与 menu.ts:323 既定模式 `push(buildXxx(id), () => buildXxx(id).items)` 完全一致——itemBuilder 是惰性刷新工厂（仅语言切换/返回刷新时重建），首次进入只调一次 builder()。强行拆分 8 个 builder 的 items 工厂改动面大、收益趋零，报告记录。
+- **ADR-251 / ADR-252 立档**：循环依赖（model-ops/camera 反向 import `../scene`）与菜单 dispose 链路缺失（disposeMenuWrapper 零调用 / _liveMenus 常驻）为结构性大改，立 ADR 固化现状认知、治理方向与验收标准，实现分批跟进（见 `docs/adr/adr-251-*.md`、`adr-252-*.md`）。
 
 - **lighting-follow 个人灯基准点世界坐标**：`_getLightBasePos` 改用 `getBoneWorldMatrix(bone, rootMesh)`（局部 × rootWorld）提取世界平移，替代返回局部坐标的 `getBoneWorldPosition`——模型被平移/旋转/缩放时个人灯基准点不再错位。
 - **virtual-skirt dispose 阶段 try/catch**：constraint/rigidBody/info/shape 的 `.dispose()` 逐一包 try/catch（与 remove 阶段同风格），单对象释放异常不阻断资源链路。

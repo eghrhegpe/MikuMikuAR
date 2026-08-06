@@ -351,14 +351,19 @@ export class ModelManager {
         disposeVmdLayerState(id);
 
         // Update focus
-        if (configFocusedId === id) {
-            setFocusedModelId(
-                this.modelRegistry.size > 0 ? this.modelRegistry.keys().next().value : null
-            );
+        const wasFocused = configFocusedId === id;
+        if (wasFocused) {
+            // 焦点模型被删除：焦点切到剩余第一个模型，并对其重新取景（focus 内含 autoFrame + autoSave）。
+            const nextId =
+                this.modelRegistry.size > 0 ? this.modelRegistry.keys().next().value : null;
+            setFocusedModelId(nextId);
+            if (nextId) {
+                this.focus(nextId);
+            }
         }
-        if (configFocusedId) {
-            this.focus(configFocusedId);
-        }
+        // [audit:round13 P3] 删除非焦点模型：不再隐式对焦点模型 focus()——
+        // 原实现无条件 focus(configFocusedId) 会重置相机视角（autoFrame）+ 冗余 autoSave，
+        // 删除任意模型都动相机是反直觉副作用。焦点状态已在删除焦点模型分支维护，此处保持不动。
     }
 
     /** Remove the currently focused model. */

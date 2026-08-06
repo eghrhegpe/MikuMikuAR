@@ -157,11 +157,13 @@ export interface PopupMenuConfig {
 }
 
 export function showPopupMenu(config: PopupMenuConfig): void {
-    dom.sceneOverlay.classList.remove(
-        'sceneOverlay-model',
-        'sceneOverlay-motion',
-        'sceneOverlay-settings'
-    );
+    // [audit:round13 P3] 动态清理所有 sceneOverlay-* class（与 registerPopupMenu.show 同口径），
+    // 替代硬编码 3 类——新增 overlayClass 时两条路径行为保持一致，避免样式串台。
+    Array.from(dom.sceneOverlay.classList).forEach((c) => {
+        if (c.startsWith('sceneOverlay-')) {
+            dom.sceneOverlay.classList.remove(c);
+        }
+    });
     if (config.overlayClass) {
         dom.sceneOverlay.classList.add(config.overlayClass);
     }

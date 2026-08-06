@@ -8,7 +8,7 @@ import { clampPct } from '@/core/clamp';
 import { col3FromTriple, rgbString } from './color-helpers';
 import { DragSliderController } from './ui-slider-controller';
 // [doc:adr-229] DOM 契约单源：role/class 由 dom-contract 提供，禁止手写字符串
-import { ROLE, SLIDER_BAR_CLASS } from './dom-contract';
+import { ROLE, SLIDER_BAR_CLASS, ARIA_ATTR } from './dom-contract';
 
 // ===================================================================
 // addColorSliderRow
@@ -61,11 +61,11 @@ export function addColorSliderRow(
         bar.className = SLIDER_BAR_CLASS;
         bar.tabIndex = 0;
         bar.setAttribute('role', ROLE.slider);
-        bar.setAttribute('aria-label', `${label} ${['Red', 'Green', 'Blue'][ci]} channel`);
-        bar.setAttribute('aria-valuemin', '0');
-        bar.setAttribute('aria-valuemax', '1');
-        bar.setAttribute('aria-valuenow', String(color[ci]));
-        bar.setAttribute('aria-labelledby', ch.id);
+        bar.setAttribute(ARIA_ATTR.label, `${label} ${['Red', 'Green', 'Blue'][ci]} channel`);
+        bar.setAttribute(ARIA_ATTR.valuemin, '0');
+        bar.setAttribute(ARIA_ATTR.valuemax, '1');
+        bar.setAttribute(ARIA_ATTR.valuenow, String(color[ci]));
+        bar.setAttribute(ARIA_ATTR.labelledby, ch.id);
 
         const fill = document.createElement('div');
         fill.className = 'cs-fill';
@@ -84,7 +84,7 @@ export function addColorSliderRow(
             val.textContent = v.toFixed(2);
             fill.style.width = v * 100 + '%';
             thumb.style.left = v * 100 + '%';
-            bar.setAttribute('aria-valuenow', String(v));
+            bar.setAttribute(ARIA_ATTR.valuenow, String(v));
             swatch.style.background = rgbString(col3FromTriple(current));
             onChange([current[0], current[1], current[2]]);
         }
@@ -130,7 +130,7 @@ export function addColorSliderRow(
                     vals[i].textContent = v[i].toFixed(2);
                     fills[i].style.width = v[i] * 100 + '%';
                     thumbs[i].style.left = v[i] * 100 + '%';
-                    bars[i].setAttribute('aria-valuenow', String(v[i]));
+                    bars[i].setAttribute(ARIA_ATTR.valuenow, String(v[i]));
                     controllers[i].setValue(v[i]);
                 }
             }
@@ -220,12 +220,12 @@ export function addVector3SliderRow(
         bar.className = SLIDER_BAR_CLASS;
         bar.tabIndex = 0;
         bar.setAttribute('role', ROLE.slider);
-        bar.setAttribute('aria-label', `${label} ${axes[ai]}`);
-        bar.setAttribute('aria-valuenow', String(current[ai]));
-        bar.setAttribute('aria-valuemin', String(min));
-        bar.setAttribute('aria-valuemax', String(max));
-        bar.setAttribute('aria-valuenow', String(current[ai]));
-        bar.setAttribute('aria-labelledby', ch.id);
+        bar.setAttribute(ARIA_ATTR.label, `${label} ${axes[ai]}`);
+        bar.setAttribute(ARIA_ATTR.valuenow, String(current[ai]));
+        bar.setAttribute(ARIA_ATTR.valuemin, String(min));
+        bar.setAttribute(ARIA_ATTR.valuemax, String(max));
+        bar.setAttribute(ARIA_ATTR.valuenow, String(current[ai]));
+        bar.setAttribute(ARIA_ATTR.labelledby, ch.id);
         barEls[ai] = bar;
 
         const pct = ((current[ai] - min) / range) * 100;
@@ -251,7 +251,7 @@ export function addVector3SliderRow(
             const clamped = clampPct(newPct);
             fill.style.width = clamped + '%';
             thumb.style.left = clamped + '%';
-            bar.setAttribute('aria-valuenow', String(v));
+            bar.setAttribute(ARIA_ATTR.valuenow, String(v));
             onChange([current[0], current[1], current[2]]);
         }
 
@@ -289,7 +289,7 @@ export function addVector3SliderRow(
                     const clamped = clampPct(newPct);
                     fillEls[i].style.width = clamped + '%';
                     thumbEls[i].style.left = clamped + '%';
-                    barEls[i].setAttribute('aria-valuenow', String(v[i]));
+                    barEls[i].setAttribute(ARIA_ATTR.valuenow, String(v[i]));
                     controllers[i].setValue(v[i]);
                 }
             }
@@ -333,10 +333,10 @@ export function addModeSlider<T extends string | number>(
     top.className = 'cs-top';
     top.tabIndex = 0;
     top.setAttribute('role', ROLE.listbox);
-    top.setAttribute('aria-label', label);
-    top.setAttribute('aria-valuenow', String(currentIndex));
-    top.setAttribute('aria-valuemin', '0');
-    top.setAttribute('aria-valuemax', String(total - 1));
+    top.setAttribute(ARIA_ATTR.label, label);
+    top.setAttribute(ARIA_ATTR.valuenow, String(currentIndex));
+    top.setAttribute(ARIA_ATTR.valuemin, '0');
+    top.setAttribute(ARIA_ATTR.valuemax, String(total - 1));
 
     if (icon) {
         const iconBox = document.createElement('span');
@@ -386,7 +386,7 @@ export function addModeSlider<T extends string | number>(
         const clamped = clampPct(newPct);
         fill.style.width = clamped + '%';
         thumb.style.left = clamped + '%';
-        top.setAttribute('aria-valuenow', String(idx));
+        top.setAttribute(ARIA_ATTR.valuenow, String(idx));
     }
 
     function cycleIdx(dir: -1 | 1): void {

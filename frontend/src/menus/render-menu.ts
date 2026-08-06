@@ -192,8 +192,21 @@ function renderColorSlider(node: MenuNode, container: HTMLElement): void {
         return;
     }
 
-    const value = getStateValue(ctrl.bind, node.modelId, node.actionId) as [number, number, number];
-    const onChange = (v: [number, number, number]) => setStateValue(ctrl.bind, v, node.modelId, node.actionId);
+    // [audit:round13 P3] 应用 ControlSpec get/set 衍生转换（与 renderToggle 同模式）：
+    // 显示值经 ctrl.get 派生（如角度→RGB），回写经 ctrl.set 还原（如 RGB→角度）。
+    const raw = getStateValue(ctrl.bind, node.modelId, node.actionId);
+    const value = (
+        ctrl.get ? (ctrl.get(raw) as [number, number, number]) : raw
+    ) as [number, number, number];
+    const onChange = (v: [number, number, number]) => {
+        setStateValue(
+            ctrl.bind,
+            ctrl.set ? ctrl.set(v) : v,
+            node.modelId,
+            node.actionId
+        );
+        ctrl.onChange?.(v);
+    };
 
     addColorSliderRow(
         container,
@@ -201,7 +214,12 @@ function renderColorSlider(node: MenuNode, container: HTMLElement): void {
         value,
         onChange,
         {
-            bind: () => getBindFn(ctrl.bind)() as [number, number, number],
+            bind: () => {
+                const r = getBindFn(ctrl.bind)();
+                return ctrl.get
+                    ? (ctrl.get(r) as [number, number, number])
+                    : (r as [number, number, number]);
+            },
             pathHint: ctrl.bind.split('.').pop()!,
         },
         node.id
@@ -248,9 +266,11 @@ function renderModeSlider(node: MenuNode, container: HTMLElement): void {
         return;
     }
 
-    const value = getStateValue(ctrl.bind, node.modelId, node.actionId) as string;
+    // [audit:round13 P3] 应用 ControlSpec get/set 衍生转换（与 renderToggle 同模式）
+    const raw = getStateValue(ctrl.bind, node.modelId, node.actionId);
+    const value = (ctrl.get ? (ctrl.get(raw) as string) : raw) as string;
     const onChange = (v: string) => {
-        setStateValue(ctrl.bind, v, node.modelId, node.actionId);
+        setStateValue(ctrl.bind, ctrl.set ? ctrl.set(v) : v, node.modelId, node.actionId);
         ctrl.onChange?.(v);
     };
     const opts = ctrl.options.map((o) => ({ value: o.value, label: t(o.label) }));
@@ -263,7 +283,13 @@ function renderModeSlider(node: MenuNode, container: HTMLElement): void {
         onChange,
         node.icon ?? ctrl.icon,
         undefined,
-        { bind: () => getBindFn(ctrl.bind)() as string, pathHint: ctrl.bind.split('.').pop()! },
+        {
+            bind: () => {
+                const r = getBindFn(ctrl.bind)();
+                return ctrl.get ? (ctrl.get(r) as string) : (r as string);
+            },
+            pathHint: ctrl.bind.split('.').pop()!,
+        },
         node.id
     );
 }
@@ -276,9 +302,11 @@ function renderModeRow(node: MenuNode, container: HTMLElement): void {
         return;
     }
 
-    const value = getStateValue(ctrl.bind, node.modelId, node.actionId) as string;
+    // [audit:round13 P3] 应用 ControlSpec get/set 衍生转换（与 renderToggle 同模式）
+    const raw = getStateValue(ctrl.bind, node.modelId, node.actionId);
+    const value = (ctrl.get ? (ctrl.get(raw) as string) : raw) as string;
     const onChange = (v: string) => {
-        setStateValue(ctrl.bind, v, node.modelId, node.actionId);
+        setStateValue(ctrl.bind, ctrl.set ? ctrl.set(v) : v, node.modelId, node.actionId);
         ctrl.onChange?.(v);
     };
     const opts = ctrl.options.map((o) => ({ value: o.value, label: t(o.label) }));

@@ -84,8 +84,9 @@ export function addCollapsible(
 
     // Panel
     const panel = document.createElement('div');
+    // [audit:round13 P3] 引用 dom-contract 常量（ADR-229 §9 契约：禁手写字符串）
     panel.className =
-        'collapsible-panel' + (variant === 'mat' ? ' mat-slider-panel mat-cat-slider' : '');
+        COLLAPSIBLE.panelClass + (variant === 'mat' ? ' mat-slider-panel mat-cat-slider' : '');
     const inner = document.createElement('div');
     inner.className = 'collapsible-inner';
     config.renderContent(inner);
@@ -95,8 +96,9 @@ export function addCollapsible(
     let isOpen = config.openWhen ?? config.defaultOpen ?? false;
 
     function applyState(open: boolean) {
-        panel.classList.toggle('open', open);
-        header.classList.toggle('open', open);
+        // [audit:round13 P3] 引用 dom-contract 常量（ADR-229 §9 契约：禁手写字符串）
+        panel.classList.toggle(COLLAPSIBLE.openClass, open);
+        header.classList.toggle(COLLAPSIBLE.openClass, open);
         arrow.style.transform = open ? 'rotate(180deg)' : 'rotate(0deg)';
         panel.style.maxHeight = open ? panel.scrollHeight + 'px' : '0';
         panel.inert = !open; // 收起时从 Tab 顺序中移除，防止 AI 和键盘用户聚焦到不可见元素

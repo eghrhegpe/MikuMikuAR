@@ -11,7 +11,7 @@ import { swallowError } from '@/core/async';
 import { DragSliderController } from './ui-slider-controller';
 import { SLIDER_QUARTER_LARGE_STEP, SLIDER_QUARTER_SMALL_STEP } from './ui-constants';
 // [doc:adr-229] DOM 契约单源：role/class 由 dom-contract 提供，禁止手写字符串
-import { ROLE, SLIDER_BAR_CLASS } from './dom-contract';
+import { ROLE, SLIDER_BAR_CLASS, ARIA_ATTR } from './dom-contract';
 
 // ===================================================================
 // addToggleRow
@@ -65,11 +65,11 @@ export function addToggleRow(
     toggle.type = 'checkbox';
     toggle.checked = value;
     toggle.setAttribute('role', ROLE.switch);
-    toggle.setAttribute('aria-label', label);
-    toggle.setAttribute('aria-checked', String(value));
-    toggle.setAttribute('aria-labelledby', lbl.id);
+    toggle.setAttribute(ARIA_ATTR.label, label);
+    toggle.setAttribute(ARIA_ATTR.checked, String(value));
+    toggle.setAttribute(ARIA_ATTR.labelledby, lbl.id);
     toggle.addEventListener('change', () => {
-        toggle.setAttribute('aria-checked', String(toggle.checked));
+        toggle.setAttribute(ARIA_ATTR.checked, String(toggle.checked));
         onChange(toggle.checked);
     });
     const slider = document.createElement('span');
@@ -85,7 +85,7 @@ export function addToggleRow(
             return;
         }
         toggle.checked = !toggle.checked;
-        toggle.setAttribute('aria-checked', String(toggle.checked));
+        toggle.setAttribute(ARIA_ATTR.checked, String(toggle.checked));
         onChange(toggle.checked);
     });
 
@@ -98,7 +98,7 @@ export function addToggleRow(
             return false;
         }
         toggle.checked = b;
-        toggle.setAttribute('aria-checked', String(b));
+        toggle.setAttribute(ARIA_ATTR.checked, String(b));
         return true;
     });
 }
@@ -201,9 +201,9 @@ export function addSliderRow(
     bar.className = SLIDER_BAR_CLASS;
     bar.tabIndex = 0;
     bar.setAttribute('role', ROLE.slider);
-    bar.setAttribute('aria-label', label);
-    bar.setAttribute('aria-valuemin', String(min));
-    bar.setAttribute('aria-valuemax', String(max));
+    bar.setAttribute(ARIA_ATTR.label, label);
+    bar.setAttribute(ARIA_ATTR.valuemin, String(min));
+    bar.setAttribute(ARIA_ATTR.valuemax, String(max));
 
     const fill = document.createElement('div');
     fill.className = 'cs-fill';
@@ -221,7 +221,7 @@ export function addSliderRow(
         const clamped = clampPct(newPct);
         fill.style.width = clamped + '%';
         thumb.style.left = clamped + '%';
-        bar.setAttribute('aria-valuenow', String(v));
+        bar.setAttribute(ARIA_ATTR.valuenow, String(v));
     }
 
     updateDisplay(currentValue);
@@ -534,7 +534,7 @@ export function addWatchDirRow(
     selectBtn.textContent = '📁';
     selectBtn.className = 'mode-btn';
     selectBtn.title = t('settings.paths.watchDirPlaceholder');
-    selectBtn.setAttribute('aria-label', t('settings.paths.watchDirPlaceholder'));
+    selectBtn.setAttribute(ARIA_ATTR.label, t('settings.paths.watchDirPlaceholder'));
     selectBtn.addEventListener('click', async () => {
         const dir = await onSelectDir();
         if (!dir) {
