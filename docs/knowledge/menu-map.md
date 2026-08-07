@@ -107,20 +107,20 @@ use_when:
 
 | id | label | 默认键 | Ctrl | 分组 |
 |----|-------|--------|------|------|
-| `toggle:model` | `shortcuts.label.models` | `Digit1` | ✓ | — |
-| `toggle:motion` | `shortcuts.label.motion` | `Digit2` | ✓ | — |
-| `toggle:scene` | `shortcuts.label.scene` | `Digit3` | ✓ | — |
-| `toggle:env` | `shortcuts.label.env` | `Digit4` | ✓ | — |
-| `toggle:settings` | `shortcuts.label.settings` | `Digit5` | ✓ | — |
-| `toggle:plaza` | `shortcuts.label.plaza` | `Digit7` | ✓ | — |
-| `toggle:assistant` | `shortcuts.label.assistant` | `Digit8` | ✓ | — |
-| `playback:toggle` | `shortcuts.label.playPause` | `Space` | — | — |
-| `global:close` | `shortcuts.label.closePopup` | `Escape` | — | — |
-| `playback:seek-back` | `shortcuts.label.seekBack` | `ArrowLeft` | — | — |
-| `playback:seek-forward` | `shortcuts.label.seekForward` | `ArrowRight` | — | — |
-| `screenshot:current` | `shortcuts.label.screenshot` | `F2` | — | — |
-| `motion:undo` | `shortcuts.label.motionUndo` | `KeyZ` | ✓ | — |
-| `motion:redo` | `shortcuts.label.motionRedo` | `KeyZ` | ✓ | — |
+| `toggle:model` | `shortcuts.label.models` | `Digit1` | ✓ | shortcuts.group.popupNav |
+| `toggle:motion` | `shortcuts.label.motion` | `Digit2` | ✓ | shortcuts.group.popupNav |
+| `toggle:scene` | `shortcuts.label.scene` | `Digit3` | ✓ | shortcuts.group.popupNav |
+| `toggle:env` | `shortcuts.label.env` | `Digit4` | ✓ | shortcuts.group.popupNav |
+| `toggle:settings` | `shortcuts.label.settings` | `Digit5` | ✓ | shortcuts.group.popupNav |
+| `toggle:plaza` | `shortcuts.label.plaza` | `Digit7` | ✓ | shortcuts.group.popupNav |
+| `toggle:assistant` | `shortcuts.label.assistant` | `Digit8` | ✓ | shortcuts.group.popupNav |
+| `playback:toggle` | `shortcuts.label.playPause` | `Space` | — | shortcuts.group.playbackControl |
+| `global:close` | `shortcuts.label.closePopup` | `Escape` | — | shortcuts.group.global |
+| `playback:seek-back` | `shortcuts.label.seekBack` | `ArrowLeft` | — | shortcuts.group.playbackControl |
+| `playback:seek-forward` | `shortcuts.label.seekForward` | `ArrowRight` | — | shortcuts.group.playbackControl |
+| `screenshot:current` | `shortcuts.label.screenshot` | `F2` | — | shortcuts.group.screenshot |
+| `motion:undo` | `shortcuts.label.motionUndo` | `KeyZ` | ✓ | shortcuts.group.motionUndoRedo |
+| `motion:redo` | `shortcuts.label.motionRedo` | `KeyZ` | ✓ | shortcuts.group.motionUndoRedo |
 
 ## diagnostic-chat.ts
 
@@ -448,11 +448,11 @@ use_when:
 
 ### Schema: buildCameraSchema()
 
-- **slider** `settings:perf:cam-sens` · `settings.perf.camSens`
+- **slider** `settings:perf:cam-sens` · `settings.perf.camSens` lucide:move
 - **custom** `settings:perf:cam-sens-hint` · —
-- **toggle** `settings:perf:invert-y` · `settings.perf.invertY`
+- **toggle** `settings:perf:invert-y` · `settings.perf.invertY` lucide:flip-vertical
 - **custom** `settings:perf:invert-y-hint` · —
-- **toggle** `settings:perf:auto-center` · `settings.perf.autoCenter`
+- **toggle** `settings:perf:auto-center` · `settings.perf.autoCenter` lucide:crosshair
 - **custom** `settings:perf:auto-center-hint` · —
 
 ## settings-diagnostic.ts
@@ -465,11 +465,11 @@ use_when:
 
 ### Schema: buildFrameQualitySchema()
 
-- **toggle** `settings:graphics:frame-cap` · `settings.perf.frameCap`
+- **toggle** `settings:graphics:frame-cap` · `settings.perf.frameCap` lucide:monitor-check
 - **custom** `settings:graphics:frame-cap-hint` · —
-- **slider** `settings:graphics:fps` · `settings.perf.fpsCap`
+- **slider** `settings:graphics:fps` · `settings.perf.fpsCap` lucide:gauge
 - **custom** `settings:graphics:fps-hint` · —
-- **slider** `settings:graphics:render-scale` · `settings.perf.renderScale`
+- **slider** `settings:graphics:render-scale` · `settings.perf.renderScale` lucide:scan
 - **custom** `settings:graphics:render-scale-hint` · —
 
 ### Schema: buildEffectsSchema()
@@ -478,10 +478,10 @@ use_when:
 
 ### Schema: buildPhysicsHudSchema()
 
-- **toggle** `settings:graphics:default-physics` · `settings.perf.defaultPhysics`
+- **toggle** `settings:graphics:default-physics` · `settings.perf.defaultPhysics` lucide:atom
 - **custom** `settings:graphics:default-physics-hint` · —
-- **toggle** `settings:graphics:show-fps-clock` · `settings.perf.showFpsClock`
-- **toggle** `settings:graphics:show-runtime-badge` · `settings.perf.showRuntimeBadge`
+- **toggle** `settings:graphics:show-fps-clock` · `settings.perf.showFpsClock` lucide:gauge
+- **toggle** `settings:graphics:show-runtime-badge` · `settings.perf.showRuntimeBadge` lucide:cpu
 
 ## settings-resources.ts
 

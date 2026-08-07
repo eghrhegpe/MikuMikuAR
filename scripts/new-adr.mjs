@@ -182,6 +182,8 @@ const filepath = path.join(ADR_DIR, filename);
 // 锁文件 `.adr-<next>.lock` 以 wx（O_EXCL）原子创建：同号并发只有一方能拿到锁。
 const lockpath = path.join(ADR_DIR, `.adr-${nextPad}.lock`);
 let lockFd;
+// [P2 2026-08-08] 失败标记须在 try 外声明（let 块级作用域），供 finally 之后统一 exit 使用
+let failExitCode = null;
 try {
   lockFd = fs.openSync(lockpath, 'wx');
 } catch (e) {
@@ -197,6 +199,9 @@ try {
   fs.closeSync(lockFd);
   lockFd = undefined;
 
+  // [P2 2026-08-08] 失败分支不再 try 内 process.exit(1)（exit 同步终止，finally 不执行 →
+  // 锁文件永久遗留，后续同号运行被误锁）。改为 flag 标记，finally 清理锁后再统一 exit。
+
   // 同编号任意 slug 已存在（本地落后远端 / 顺序创建）→ 拒绝
   const sameNumFile = fs
     .readdirSync(ADR_DIR)
@@ -204,21 +209,26 @@ try {
   if (sameNumFile) {
     console.error(`❌ ADR-${nextPad} 编号已被占用（已存在 ${sameNumFile}），疑似并发创建或本地落后远端。`);
     console.error(`   当前 ${srcNote}，请先 \`git fetch\` 再从最大号 +1 重新运行，或人工核对编号。`);
-    process.exit(1);
+    failExitCode = 1;
   }
-  let fd;
-  try {
-    fd = fs.openSync(filepath, 'wx');
-  } catch (e) {
-    if (e && e.code === 'EEXIST') {
-      console.error(`❌ ADR-${nextPad} 编号已被占用（${filepath} 已存在），疑似并发创建或本地落后远端。`);
-      console.error(`   当前 ${srcNote}，请先 \`git fetch\` 再从最大号 +1 重新运行，或人工核对编号。`);
-      process.exit(1);
+  if (failExitCode === null) {
+    let fd;
+    try {
+      fd = fs.openSync(filepath, 'wx');
+    } catch (e) {
+      if (e && e.code === 'EEXIST') {
+        console.error(`❌ ADR-${nextPad} 编号已被占用（${filepath} 已存在），疑似并发创建或本地落后远端。`);
+        console.error(`   当前 ${srcNote}，请先 \`git fetch\` 再从最大号 +1 重新运行，或人工核对编号。`);
+        failExitCode = 1;
+      } else {
+        throw e;
+      }
     }
-    throw e;
+    if (failExitCode === null) {
+      fs.writeSync(fd, content0(title, subtitle, status, nextPad, args.reserve, args.related));
+      fs.closeSync(fd);
+    }
   }
-  fs.writeSync(fd, content0(title, subtitle, status, nextPad, args.reserve, args.related));
-  fs.closeSync(fd);
 } finally {
   // 兜底：writeSync/close 异常时确保 fd 关闭、锁文件清理
   if (lockFd !== undefined) {
@@ -226,6 +236,8 @@ try {
   }
   try { fs.rmSync(lockpath, { force: true }); } catch {}
 }
+// [P2 2026-08-08] finally 已清理锁，此时 exit 才安全
+if (failExitCode !== null) process.exit(failExitCode);
 
 console.log(`✅ 已创建 ADR-${nextPad}: ${subtitle ? `${title} — ${subtitle}` : title}${args.reserve ? '（占号模式）' : ''}`);
 console.log(`   ℹ 编号分配：${srcNote} → ADR-${nextPad}`);
