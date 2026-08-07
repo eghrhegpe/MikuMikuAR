@@ -148,12 +148,12 @@ test('check-adr-technical-debt: --json 含 ADR-149（list 格式漏检回归）'
 
 // ── gen-knowledge-adr 冒烟（P2 回归：带后缀/合并标记 + Go 卡 sources） ──
 
-test('gen-knowledge-adr: --check 能检出 Go/backend 卡缺 adr 关联（P2-3 回归）', () => {
+test('gen-knowledge-adr: --check 通过（P2-3 修复后 Go/backend 卡 adr 已补全 → exit 0）', () => {
   const r = runScript(path.join(SCRIPTS, 'gen-knowledge-adr.mjs'), ['--check']);
-  // Go 卡有 [doc:adr-] 标记但缺 adr 字段 → check exit 1（缺口检测器）；
-  // 缺口输出走 console.error（stderr），断言需合并 stdout+stderr
-  assert.equal(r.code, 1, `Go 卡缺口应 exit 1: ${r.stdout} ${r.stderr}`);
-  assert.match(r.stdout + r.stderr, /go-zipextract|go-app|go-library/);
+  // P2-3 修复后 Go 卡 sources 不再被 frontend/ 前缀排除，pre-commit 钩子已补全其 adr 字段；
+  // 断言稳态：全部 architecture 卡均已登记（此前 6 张 Go 卡缺口已被消化）
+  assert.equal(r.code, 0, `应 exit 0: ${r.stdout} ${r.stderr}`);
+  assert.match(r.stdout + r.stderr, /所有 architecture 卡均已登记 adr 关联/);
 });
 
 // ── gen-tier 冒烟（P2-1 回归：占位符卡 writeTier 不产生重复键） ──
@@ -162,4 +162,34 @@ test('gen-tier: --check 跑通（当前稳态全卡已标 tier → exit 0）', (
   const r = runScript(path.join(SCRIPTS, 'gen-tier.mjs'), ['--check']);
   assert.equal(r.code, 0, `exit=${r.code} stderr=${r.stderr} stdout=${r.stdout}`);
   assert.match(r.stdout, /未标 tier 卡: 0|全部知识卡已标 tier/);
+});
+
+// ── check-schema-groups 冒烟（P2 回归：--help 必崩 + group 值校验不误报） ──
+
+test('check-schema-groups: --help 退 0 且含用法（P2 回归：fs 未绑定必崩）', () => {
+  const r = runScript(path.join(SCRIPTS, 'check-schema-groups.mjs'), ['--help']);
+  assert.equal(r.code, 0, `exit=${r.code} stderr=${r.stderr}`);
+  assert.match(r.stdout, /check-schema-groups/);
+});
+
+test('check-schema-groups: --strict 跑通（当前 schema 无缺 group / 无非法 group 值 → exit 0）', () => {
+  const r = runScript(path.join(SCRIPTS, 'check-schema-groups.mjs'), ['--strict']);
+  assert.equal(r.code, 0, `exit=${r.code} stderr=${r.stderr} stdout=${r.stdout}`);
+  assert.match(r.stdout, /所有字段均有 group|Schema group 完整性/);
+});
+
+// ── gen-knowledge-tests 冒烟（P2 回归：非 frontend tests 条目保守跳过 + 收口共享库） ──
+
+test('gen-knowledge-tests: --check 跑通（225 测试文件登记无漂移 → exit 0）', () => {
+  const r = runScript(path.join(SCRIPTS, 'gen-knowledge-tests.mjs'), ['--check']);
+  assert.equal(r.code, 0, `exit=${r.code} stderr=${r.stderr} stdout=${r.stdout}`);
+  assert.match(r.stdout, /所有有测试文件的卡均已登记 tests/);
+});
+
+// ── gen-routes 冒烟（P2 回归：NON_CARDS/frontmatter 收口共享库后行为一致） ──
+
+test('gen-routes: --check 跑通（收口共享库后 routes.md 无漂移 → exit 0）', () => {
+  const r = runScript(path.join(SCRIPTS, 'gen-routes.mjs'), ['--check']);
+  assert.equal(r.code, 0, `exit=${r.code} stderr=${r.stderr} stdout=${r.stdout}`);
+  assert.match(r.stdout, /已同步/);
 });

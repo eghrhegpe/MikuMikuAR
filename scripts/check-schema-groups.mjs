@@ -20,22 +20,26 @@ import { parseArgs } from './_lib/parse-args.mjs';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SCHEMA_FILE = resolve(__dirname, '..', 'frontend', 'src', 'core', 'env-state-schema.ts');
 
-const { strict, json , help, unknown} = parseArgs(process.argv.slice(2), {
+const { strict, json, help, unknown } = parseArgs(process.argv.slice(2), {
   bools: ['strict', 'json'],
 });
-  if (help) {
-    const _src = fs.readFileSync(process.argv[1], 'utf-8');
+if (help) {
+    const _src = readFileSync(process.argv[1], 'utf-8');
     const _s = _src.indexOf('/**');
     const _e = _src.indexOf('*/', _s);
     console.log(_src.slice(_s, _e + 2).replace(/^ \* ?/gm, '').trim());
     process.exit(0);
-  }
-  if (unknown && unknown.length) {
+}
+if (unknown && unknown.length) {
     console.error(`❌ 未知参数: ${unknown.join(', ')}（--help 查看用法）`);
     process.exit(1);
-  }
+}
 
 const EXEMPT_FIELDS = new Set(['groundPreset', 'lightingPresetName']);
+
+// [P2 2026-08-08] 合法 dispatch 分组（与 env-state-schema.ts:384-393 的 EnvDispatchGroup 联合一致）：
+// group 值不在其中 → getEnvKeys 永不命中 → 静默不派发 bug（正是本脚本声称要防的核心问题）。
+const VALID_GROUPS = new Set(['sky', 'ground', 'fog', 'water', 'particle', 'cloud', 'reflection', 'mirror', 'collision']);
 
 const text = readFileSync(SCHEMA_FILE, 'utf8');
 
@@ -105,22 +109,44 @@ while (i < lines.length) {
         }
     }
     const hasGroup = /group\s*:/.test(block);
-    fields.push({ name: fieldName, hasGroup });
+    // [P2 2026-08-08] group 值合法性：提取 `group: 'xxx'` 或 `group: ['a','b']` 的值，
+    // 空串/空数组视为缺失（getEnvKeys 永不命中），非法值计入 invalidGroups。
+    let groupValues = [];
+    const gm = block.match(/group\s*:\s*(?:\[\s*)?['"]([^'"]+)['"](?:\s*,\s*['"]([^'"]+)['"])*\s*(?:\])?/);
+    if (gm) {
+      groupValues = [gm[1], ...(gm.slice(2).filter(Boolean))];
+    }
+    fields.push({ name: fieldName, hasGroup, groupValues });
     i = j;
 }
 
 const missing = fields.filter((f) => !f.hasGroup && !EXEMPT_FIELDS.has(f.name));
+const invalidGroups = fields.filter(
+  (f) => f.hasGroup && f.groupValues.length > 0 && !f.groupValues.every((v) => VALID_GROUPS.has(v))
+);
 const exemptFound = fields.filter((f) => !f.hasGroup && EXEMPT_FIELDS.has(f.name));
 
 if (json) {
-    console.log(JSON.stringify({ total: fields.length, missing, exemptFound }, null, 2));
-    process.exit(missing.length > 0 && strict ? 1 : 0);
+    console.log(JSON.stringify({ total: fields.length, missing, invalidGroups, exemptFound }, null, 2));
+    process.exit((missing.length > 0 || invalidGroups.length > 0) && strict ? 1 : 0);
 }
 
 console.log(`Schema group 完整性检查 — env-state-schema.ts`);
 console.log(`  总字段: ${fields.length}`);
 console.log(`  有 group: ${fields.filter((f) => f.hasGroup).length}`);
 console.log(`  豁免（无 group 但已知原因）: ${exemptFound.map((f) => f.name).join(', ') || '无'}`);
+
+if (invalidGroups.length > 0) {
+    console.log(`\n❌ ${invalidGroups.length} 个字段的 group 值不在合法分组内（EnvDispatchGroup: ${[...VALID_GROUPS].join('/')}）:`);
+    for (const f of invalidGroups) {
+      console.log(`   ${f.name}: group=${JSON.stringify(f.groupValues)}`);
+    }
+    console.log('  这些字段写状态后不会触发 dispatch，形成静默不派发 bug。');
+    if (strict) {
+        process.exit(1);
+    }
+    console.log('  (warning mode — 非阻塞。加 --strict 后 CI 阻断。)');
+}
 
 if (missing.length > 0) {
     const names = missing.map((f) => f.name).join(', ');

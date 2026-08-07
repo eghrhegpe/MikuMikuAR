@@ -19,13 +19,14 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { parseArgs } from './_lib/parse-args.mjs';
 import { ROOT } from './_lib/scan-files.mjs';
+// [P2-2/P2-3 2026-08-08] source_files 解析收口共享库：旧正则作用于整个 frontmatter
+// （tests:/scope: 下的 `- frontend/*.ts` 行被当 source → 前缀匹配可能把不相干测试挂到卡上），
+// 且自写 fmBlock/NON_CARDS 未复用共享层（symbols/adr/tier 均已收口，本脚本是系列唯一剩余者）。
+import { parseFrontmatter, parseSourceFiles } from './_lib/frontmatter.mjs';
+import { KNOWLEDGE_NON_CARDS as NON_CARDS } from './_lib/knowledge-cards.mjs';
 
 const KNOW_DIR = path.join(ROOT, 'docs', 'knowledge');
 const TEST_DIR = path.join(ROOT, 'frontend', 'src', '__tests__');
-
-const NON_CARDS = new Set([
-  'README.md', 'index.md', 'routes.md', 'menu-map.md', 'graph.md', 'tier-review.md',
-]);
 
 /** 递归收集测试文件相对仓库路径（.test.ts / .spec.ts）。 */
 function collectTestFiles() {
@@ -42,10 +43,9 @@ function collectTestFiles() {
   return out;
 }
 
-/** 提取 frontmatter 块。 */
+/** 提取 frontmatter 块（收口共享 parseFrontmatter）。 */
 function fmBlock(text) {
-  const m = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
-  return m ? m[1] : '';
+  return parseFrontmatter(text) || '';
 }
 
 /** 测试文件 basename（去 .test.ts/.spec.ts 后缀）。 */
@@ -137,8 +137,19 @@ function main() {
       : [];
     const testsHasDup = existingTests.length !== new Set(existingTests).size;
     if (!testsEmpty && !testsHasDup) continue;
+    // [P2 2026-08-08] 保守跳过：tests 块内存在非 frontend/*.ts 条目（Go 测试 internal/...、
+    // 无前缀相对路径、行内中文注释、散文条目等真实形态——go-app.md 的
+    // `internal/app/app_test.go`、env-impl.md 行内注释等实证）时跳过该卡——
+    // 重写只保留 frontend 条目会静默丢弃这些人工维护内容（数据丢失），宁可不动。
+    if (testsBlock) {
+      const allRawTests = [...testsBlock[1].matchAll(/^\s*-\s*(.+?)\s*$/gm)].map((m) => m[1]);
+      if (allRawTests.some((t) => !/^frontend\/\S+\.ts$/.test(t))) continue;
+    }
     const cardName = f.replace(/\.md$/, '');
-    const sources = [...fmTxt.matchAll(/^\s*-\s*(frontend\/\S+\.ts)\s*$/gm)].map((m) => m[1]);
+    // [P2-2 2026-08-08] sources 改用共享 parseSourceFiles（限定 source_files 块）：
+    // 旧正则收整个 frontmatter 的 `- frontend/*.ts` 行（tests:/scope: 下也被当 source →
+    // 前缀匹配可能把不相干测试挂到卡上）。保留 .ts 过滤维持原匹配语义。
+    const sources = parseSourceFiles(fmTxt).filter((s) => s.endsWith('.ts'));
     const sourceBases = sources.map((s) => path.basename(s).replace(/\.ts$/, ''));
     const tests = matchTests(cardName, sourceBases, testFiles);
     if (tests.length) targets.push({ file: f, text, tests });

@@ -21,53 +21,27 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { parseArgs } from './_lib/parse-args.mjs';
 import { ROOT } from './_lib/scan-files.mjs';
+// [P2-1 2026-08-08] NON_CARDS/KNOW_DIR 收口共享库（knowledge-cards.mjs 头注明示本地副本是漂移点，
+// graph 曾缺 tier-review.md；gen-knowledge-graph 已收口，本脚本为游离副本）
+import { KNOWLEDGE_NON_CARDS as NON_CARDS, KNOW_DIR } from './_lib/knowledge-cards.mjs';
+// [P2-2 2026-08-08] frontmatter 解析收口共享库：手写 fm() 不剥 `#` 注释/`<...>` 占位符，
+// `tier: architecture # 注` 会使卡从路由表静默消失、`name: Foo # 注` 会把注释带进链接文本
+//（graph/tier/docs-index 均用共享库，本脚本为游离副本）
+import { parseFrontmatter, getScalar, getList } from './_lib/frontmatter.mjs';
 
-const KNOW_DIR = path.join(ROOT, 'docs', 'knowledge');
 const OUT_PATH = path.join(KNOW_DIR, 'routes.md');
 
 const BANNER =
   '<!-- 本文件由 scripts/gen-routes.mjs 自动生成，请勿手改。重跑：npm run gen:routes -->';
 
-/** 非知识卡文件 */
-const NON_CARDS = new Set([
-  'README.md', 'index.md', 'routes.md', 'menu-map.md', 'graph.md', 'tier-review.md',
-]);
-
-/** 提取 frontmatter 块。 */
-function fmBlock(text) {
-  const m = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
-  return m ? m[1] : '';
-}
-
-/** 提取 frontmatter 单字段。 */
+/** 提取 frontmatter 单字段（收口共享 getScalar：剥 `#` 注释、`<...>` 占位符返回 undefined）。 */
 function fm(text, key) {
-  const m = fmBlock(text).match(new RegExp('^' + key + '\\s*:\\s*(.+)$', 'm'));
-  return m ? m[1].trim() : undefined;
+  return getScalar(parseFrontmatter(text), key);
 }
 
-/** 提取 frontmatter 列表字段（`key:` 后逐行 `- 项`，兼容单行）。 */
+/** 提取 frontmatter 列表字段（收口共享 getList，兼容单行与块列表）。 */
 function fmList(text, key) {
-  const lines = fmBlock(text).split(/\r?\n/);
-  const out = [];
-  let inList = false;
-  for (const line of lines) {
-    const head = line.match(new RegExp('^' + key + '\\s*:\\s*(.*)$'));
-    if (head) {
-      inList = true;
-      const inline = head[1].replace(/#.*$/, '').trim();
-      if (inline && !inline.startsWith('<')) out.push(inline);
-      continue;
-    }
-    if (!inList) continue;
-    const item = line.match(/^\s*-\s*(.+)$/);
-    if (item) {
-      const v = item[1].replace(/#.*$/, '').trim();
-      if (v && !v.startsWith('<')) out.push(v);
-    } else if (/^\S/.test(line)) {
-      inList = false;
-    }
-  }
-  return out;
+  return getList(parseFrontmatter(text), key);
 }
 
 /** 单元格转义。 */
@@ -157,7 +131,7 @@ function main() {
   for (const f of fs.readdirSync(KNOW_DIR).filter((f) => f.endsWith('.md'))) {
     if (NON_CARDS.has(f)) continue;
     const text = fs.readFileSync(path.join(KNOW_DIR, f), 'utf8');
-    if (!fmBlock(text)) continue;
+    if (!parseFrontmatter(text)) continue;
     const tier = fm(text, 'tier');
     if (tier !== 'architecture') continue;
     cards.push({
