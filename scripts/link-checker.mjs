@@ -64,12 +64,15 @@ export function extractLinks(filepath) {
 
   // 普通形式：[text](path "title")，path 不含空格（含空格会被下一分支捕获）
   const rePlain = /\[([^\]]*)\]\(([^)\s]+(?:\s+"[^"]*")?)\)/g;
-  // 尖括号形式：[text](<path with space>)，路径可含空格（buglog 中文/空格文件名）
+  // 尖括号形式：[text](<path with space> "title")，路径可含空格（buglog 中文/空格文件名）
   // [P2 2026-08-07] 此前 `[^)\s]+` 遇空格截断、`/[<>]/` 守卫把真实尖括号链接当占位符跳过。
   // [P3 2026-08-08] ① `[^>]+` → `[^<>]+`：内部含 `<` 视为占位符；
   // ② 末尾加 `\)`：真实尖括号链接 `(<path>)` 的 `>` 后必须紧跟 `)`——
   //    占位符 `<page>-<n>.png` 在 `page>` 后还有 `-<n>.png`，不会误匹配。
-  const reAngle = /\[([^\]]*)\]\(<([^<>]+)>\)/g;
+  // [P2 2026-08-08] ③ `>(?:\s+"[^"]*")?\)`：允许 CommonMark 带 title 的尖括号链接
+  //    `[text](<path> "title")`——纯 `\)` 要求会让此类合法链接整体失配（rePlain 兜底
+  //    捕获 `<path>` 又被 <> 守卫丢弃 → 断链漏检）。占位符 `page>` 后既非 `)` 也非 title，仍排除。
+  const reAngle = /\[([^\]]*)\]\(<([^<>]+)>(?:\s+"[^"]*")?\)/g;
   for (const re of [reAngle, rePlain]) {
     let m;
     while ((m = re.exec(stripped)) !== null) {

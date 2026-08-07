@@ -135,27 +135,40 @@ function splitTopLevel(text) {
 // ---------------------------------------------------------------------------
 
 /**
- * 取对象文本中「顶层属性区域」——跳过起始对象 `{` 与字符串/模板字面量，
- * 截断到第一个嵌套结构（引号/模板外的 `{` 或 `=>`）之前。
- * [P2 2026-08-08] renderCustom 回调内类型注解（`label: string`、`{ id; label }` 等）会被
- * `\blabel\s*:` 全局误当顶层属性 → menu-map.md 现 4 处 `string` 误报（实证）。顶层属性值
- * 都是简单标量（字符串/t()/标识符），嵌套内容（renderCustom 函数体、icon 对象）在截断点后，
- * 不再污染顶层属性提取；children 数组的嵌套对象由 parseNodeArray 递归处理，不受影响。
+ * 深度感知扫描对象文本，找顶层 `key:` 的起始位置（括号深度 0 才接受）。
+ * 跳过字符串/模板字面量与嵌套对象体（depth>0）。
+ * [P2 2026-08-08 code_review] 旧 topLevelPrefix 硬截断到第一个嵌套 `{`/`=>` 前 →
+ * 丢失嵌套结构之后的真实顶层属性（shortcut-app.ts 的 `group:` 在 `handler: () => {...}`
+ * 之后、settings 的 `icon:` 在 `control: {...}` 之后 → menu-map.md 分组列变 `—`、图标丢失，
+ * 实证数据丢失）。深度感知方案保留 string-污染排除（renderCustom 内 `label: string` 在
+ * depth>0 不匹配）且顺序无关——嵌套前后的顶层属性都提取得到。
  */
-function topLevelPrefix(objText) {
+function findTopLevelKeyIdx(objText, key) {
+  const keyRe = new RegExp(`\\b${key}\\s*:`);
+  let depth = 0;
   let inStr = null; // ', ", `
-  for (let i = 1; i < objText.length; i++) { // 跳过起始 `{`
+  let i = 1; // 跳过起始 `{`
+  while (i < objText.length) {
     const c = objText[i];
     if (inStr) {
-      if (c === '\\') { i++; continue; }
+      if (c === '\\') { i += 2; continue; }
       if (c === inStr) inStr = null;
+      i++;
       continue;
     }
-    if (c === "'" || c === '"' || c === '`') { inStr = c; continue; }
-    if (c === '{') return objText.slice(0, i); // 嵌套对象字面量起点
-    if (c === '=' && objText[i + 1] === '>') return objText.slice(0, i); // 箭头函数（renderCustom）
+    if (c === "'" || c === '"' || c === '`') { inStr = c; i++; continue; }
+    if (c === '{') { depth++; i++; continue; }
+    if (c === '}') { depth = Math.max(0, depth - 1); i++; continue; }
+    if (depth === 0) {
+      const m = keyRe.exec(objText.slice(i));
+      if (m && m.index === 0) return i;
+      // 跳到下一个可能的 key 起始，避免逐字符 regex（文本不长，直接步进即可）
+      i++;
+      continue;
+    }
+    i++;
   }
-  return objText;
+  return -1;
 }
 
 /**
@@ -164,11 +177,13 @@ function topLevelPrefix(objText) {
  * 嵌套对象/数组不提取（返回 undefined）。
  */
 function extractProp(objText, key) {
-  // [P2 2026-08-08] 仅在顶层属性区域匹配（见 topLevelPrefix 注释）
+  // [P2 2026-08-08] 深度感知定位顶层 key（见 findTopLevelKeyIdx 注释）
+  const keyIdx = findTopLevelKeyIdx(objText, key);
+  if (keyIdx === -1) return undefined;
   const re = new RegExp(`\\b${key}\\s*:`);
-  const m = re.exec(topLevelPrefix(objText));
+  const m = re.exec(objText.slice(keyIdx));
   if (!m) return undefined;
-  let i = m.index + m[0].length;
+  let i = keyIdx + m[0].length;
   while (i < objText.length && /\s/.test(objText[i])) i++;
   const ch = objText[i];
   if (ch === "'" || ch === '"' || ch === '`') {

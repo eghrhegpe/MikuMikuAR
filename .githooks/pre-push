@@ -291,9 +291,12 @@ fi
 # 改为阻断：fail + 展开明细，要求人工核对后显式 --update 并单独提交基线。
 if [ "$TS_CHANGED" = "true" ] && [ "$NPM_AVAILABLE" = "true" ]; then
   echo "[pre-push] deadcode（基线治理：knip + jscpd；超基线阻断）"
-  if ! cd "$ROOT/frontend" && node ../scripts/check-deadcode-baseline.mjs >/dev/null 2>&1; then
+  # [P1 2026-08-08] `! cd x && node y` 中 `!` 只否定 cd（POSIX sh 语法）→ 正常路径
+  # `! cd`=1 → && 短路 → 检查从不执行，门禁静默假绿。子 shell 包裹使 `!` 否定整个
+  # `cd && node` 列表（同 :125 generate:bindings 的写法）。
+  if ! (cd "$ROOT/frontend" && node ../scripts/check-deadcode-baseline.mjs) >/dev/null 2>&1; then
     echo "❌ 死代码/重复代码超过基线："
-    cd "$ROOT/frontend" && node ../scripts/check-deadcode-baseline.mjs 2>&1 | grep -E "unused|clones|duplicated|超过|↑|↓|新增" | head -20
+    (cd "$ROOT/frontend" && node ../scripts/check-deadcode-baseline.mjs) 2>&1 | grep -E "unused|clones|duplicated|超过|↑|↓|新增" | head -20
     fail "死代码/重复代码超过基线" "清理新增死代码；或确认合理后显式运行 cd frontend && node ../scripts/check-deadcode-baseline.mjs --update 并单独提交基线更新"
   fi
   note_check "✅ deadcode 基线"

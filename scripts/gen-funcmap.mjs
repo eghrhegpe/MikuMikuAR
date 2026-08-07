@@ -201,9 +201,11 @@ function renderMarkdown(groups, entries, scope) {
         // 文档站全量渲染时会被 Vue 编译器当标签解析导致构建失败，须转义。
         // [P2 2026-08-06] 追加转义 | & 反引号：JSDoc 内 `|` 会撑破表格列
         // （readDeclaredAdapter 行已实证变成 4 列），`&` 与反引号同理破坏 Markdown 渲染。
+        // [P2 2026-08-08] `&` 转义必须在链首：`&lt;`/`&gt;` 自身含 `&`，若 `&` 在后会
+        // 二次转义成 `&amp;lt;`（function-map.md:299/312/408 已实证渲染为字面 `&lt;`）。
         const escaped = doc
-          ? doc.replace(/</g, '&lt;').replace(/>/g, '&gt;')
-              .replace(/\|/g, '\\|').replace(/&/g, '&amp;').replace(/`/g, '&#96;')
+          ? doc.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+              .replace(/\|/g, '\\|').replace(/`/g, '&#96;')
           : '';
         lines.push(`| \`${sym}()\` | \`${loc}\` | ${escaped || '—'} |`);
       }

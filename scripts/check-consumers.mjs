@@ -270,8 +270,15 @@ function collectConsumers(target, files) {
       // default 本地重命名同理。resolved 为 null（裸包/解析失败）时保留旧行为不误伤。
       if (stmt.resolved) {
         const srcPath = path.join(SRC_DIR, toNative(stmt.resolved));
-        if (fs.existsSync(srcPath) && !getExportedSymbols(srcPath).includes(target)) {
-          continue;
+        if (fs.existsSync(srcPath)) {
+          // [P2 2026-08-08] barrel 源（`export * from`，core/state.ts:14-17 实证）的
+          // getExportedSymbols 不展开 re-export 链 → 空集 → 校验会把 barrel 的真实消费者
+          // （audio-bus.ts:10 的 uiState、menu-schema.ts:5 的 envState）误删为 0。
+          // barrel 的再导出消费由下方 reexport-all/链处理负责，此处跳过导出集校验。
+          const isBarrel = /export\s+\*\s+from/.test(fs.readFileSync(srcPath, 'utf8'));
+          if (!isBarrel && !getExportedSymbols(srcPath).includes(target)) {
+            continue;
+          }
         }
       }
 

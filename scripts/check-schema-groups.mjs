@@ -109,12 +109,17 @@ while (i < lines.length) {
         }
     }
     const hasGroup = /group\s*:/.test(block);
-    // [P2 2026-08-08] group 值合法性：提取 `group: 'xxx'` 或 `group: ['a','b']` 的值，
-    // 空串/空数组视为缺失（getEnvKeys 永不命中），非法值计入 invalidGroups。
+    // [P2 2026-08-08] group 值合法性：提取 `group: 'xxx'` 或 `group: ['a','b','c']` 的全部值。
+    // [P2 2026-08-08 code_review] 旧 `(?:\s*,\s*['"]([^'"]+)['"])*` 重复捕获组只保留最后一次
+    // 匹配 → `group: ['ground','water','reflection']` 中间项 water 丢失，非法中间值漏检。
+    // 改为捕获整个数组/单值内容后按逗号 split（每项 trim + 去引号 + filter(Boolean)）。
     let groupValues = [];
-    const gm = block.match(/group\s*:\s*(?:\[\s*)?['"]([^'"]+)['"](?:\s*,\s*['"]([^'"]+)['"])*\s*(?:\])?/);
+    const gm = block.match(/group\s*:\s*(?:\[([^\]]*)\]|'([^']+)'|"([^"]+)")/);
     if (gm) {
-      groupValues = [gm[1], ...(gm.slice(2).filter(Boolean))];
+      const raw = gm[1] ?? gm[2] ?? gm[3];
+      groupValues = raw
+        ? raw.split(',').map((s) => s.trim().replace(/^['"]|['"]$/g, '')).filter(Boolean)
+        : [];
     }
     fields.push({ name: fieldName, hasGroup, groupValues });
     i = j;

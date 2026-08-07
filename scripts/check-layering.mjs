@@ -90,7 +90,11 @@ function resolveTarget(spec, fromSrcRel) {
 // 跨行 import/export-from、副作用导入、动态 import（与 _lib/source-graph.mjs
 // parseSourceImports 同款模式，消除单行正则漏报「多行 import / await import()」的漂移）。
 // 捕获组1 = from 前文本（用于 type-only 判定），组2 = spec。
-const IMPORT_FROM_RE = /(?:^|\n)\s*(?:\/\/[^\n]*\n)*\s*(?:import|export)\b([\s\S]*?)\bfrom\s+['"]([^'"]+)['"]/gm;
+// [P2 2026-08-08] body 限定 `[^;"'/`]*?`：旧 `[\s\S]*?` 无界 lazy 会跨语句/字符串/注释
+// 吞到文件里任意后续 `from '...'`（副作用导入 `import '../app.css'`、`export const X = "..."`、
+// 注释里记录的旧路径等都会伪造假导入边）。排除引号/分号/斜杠/反引号后，多行 specifier 列表
+// `{\n  loadScene,\n}` 仍可匹配（不含这些字符），但无法吸收其他语句或注释内容。
+const IMPORT_FROM_RE = /(?:^|\n)\s*(?:\/\/[^\n]*\n)*\s*(?:import|export)\b([^;"'/`]*?)\bfrom\s+['"]([^'"]+)['"]/gm;
 const IMPORT_SIDE_RE = /(?:^|\n)\s*(?:\/\/[^\n]*\n)*\s*import\s+['"]([^'"]+)['"]/gm;
 const IMPORT_DYNA_RE = /await\s+import\s*\(\s*['"]([^'"]+)['"]\s*\)/gm;
 

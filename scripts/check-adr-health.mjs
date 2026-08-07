@@ -349,9 +349,11 @@ function main() {
   }
 
   // 输出结果
-  // 退出口径：仅真实结构问题（格式 + 关联 + 编号连续性）驱动；技术债务为 INFO 展示，不阻断。
+  // 退出口径：仅真实结构问题（格式 + 关联 + 编号连续性 + 编号重复）驱动；技术债务为 INFO 展示，不阻断。
   // JSON 与文本模式共用同一口径，避免 --json 消费方按 $? 判定时拿到假绿（exit 0）。
-  const finalStructuralIssues = structuralIssueCount + missingIds.length;
+  // [P2 2026-08-08] 重复编号（intDupGroups）此前只进报告不出退出码——同号异名撞号时
+  // --strict 假绿，直接违背 L331 注释「计入 format 驱动退出」。现并入 finalStructuralIssues。
+  const finalStructuralIssues = structuralIssueCount + missingIds.length + intDupGroups.length;
   // 阈值：--strict 下任意结构问题（>0）即失败；缺省 10 为宽松 oracle（供人工诊断）。
   // 该常量同时被 JSON / 文本两个输出分支共用，保证消费方按 $? 判定口径一致。
   const STRUCTURAL_THRESHOLD = STRICT ? 0 : 10;
