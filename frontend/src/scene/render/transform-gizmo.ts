@@ -55,16 +55,26 @@ export function initTransformGizmo(scene: Scene): void {
         _gizmoNode = null;
         _isDragging = false;
         _activeDragEndCallbacks = [];
+        // [fix P2] 场景销毁时清空全局拖拽通知 observer：resource-detail-helpers 等
+        // 经 onGizmoDragObservable 订阅，场景重建后旧 observer 闭包引用已 dispose 的
+        // id/adapter——不清理则下次拖拽通知过期闭包。可选链兼容测试 mock（无 clear）。
+        onGizmoDragObservable.clear?.();
         _scene = scene;
     }
 }
 
 function _getOrCreateLayer(): UtilityLayerRenderer {
-    if (!_gizmoLayer && _scene) {
+    // [fix P2] 防御非空断言：此前 `if (!_gizmoLayer && _scene)` 后直接 `return _gizmoLayer!`，
+    // 若 _scene 为 null（disposeScene 后未重新 init）且 _gizmoLayer 也为 null，返回 null
+    // 的 UtilityLayerRenderer → 调用方运行时 crash。加显式守卫：请求在 init 前 = 编程错误。
+    if (!_scene) {
+        throw new Error('[transform-gizmo] layer requested before init (scene not initialized)');
+    }
+    if (!_gizmoLayer) {
         _gizmoLayer = new UtilityLayerRenderer(_scene);
         _gizmoLayer.shouldRender = false;
     }
-    return _gizmoLayer!;
+    return _gizmoLayer;
 }
 
 // ======== Attach / Detach ========

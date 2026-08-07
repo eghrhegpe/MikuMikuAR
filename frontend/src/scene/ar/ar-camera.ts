@@ -52,7 +52,11 @@ function getVideoEl(): HTMLVideoElement {
     if (_videoEl) {
         return _videoEl;
     }
-    let el = document.getElementById('arVideo') as HTMLVideoElement | null;
+    // [fix P3] 去掉裸 as：getElementById 返回 HTMLElement，若 DOM 被外部脚本替换为
+    // 非 video 节点（或 id 冲突），强转后调用 srcObject/play 会在非 video 上崩溃。
+    // instanceof 守卫：类型不符时重建 video 元素。
+    const existing = document.getElementById('arVideo');
+    let el: HTMLVideoElement | null = existing instanceof HTMLVideoElement ? existing : null;
     if (!el) {
         el = document.createElement('video');
         el.id = 'arVideo';
@@ -94,41 +98,39 @@ export async function startARCamera(facing: CameraFacing = 'user'): Promise<bool
     // 占用一个代数；随后任意 stopARCamera 或新的 startARCamera 都会使本代数失效。
     const myGen = ++_arGen;
 
-    if (_active && _facing === facing && _stream) {
-        _starting = false;
-        return true;
-    }
-
-    // 停止旧流（内联停止，不 bump 代数——我们马上会用新流替换它）。
-    if (_stream) {
-        const old = _stream;
-        _stream = null;
-        old.getTracks().forEach((tr) => tr.stop());
-        if (_videoEl) {
-            _videoEl.srcObject = null;
-        }
-        _active = false;
-        _hideVideo();
-    }
-
-    const video = getVideoEl();
-    _facing = facing;
-
-    // 环境不支持（如 Wails/WebView2 未声明 media 能力）：navigator.mediaDevices 可能为 undefined。
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        _active = false;
-        _hideVideo();
-        feedbackStatus('scene.ar.cameraUnavailable', undefined, false);
-        _starting = false;
-        return false;
-    }
-
     try {
+        if (_active && _facing === facing && _stream) {
+            return true;
+        }
+
+        // 停止旧流（内联停止，不 bump 代数——我们马上会用新流替换它）。
+        if (_stream) {
+            const old = _stream;
+            _stream = null;
+            old.getTracks().forEach((tr) => tr.stop());
+            if (_videoEl) {
+                _videoEl.srcObject = null;
+            }
+            _active = false;
+            _hideVideo();
+        }
+
+        const video = getVideoEl();
+        _facing = facing;
+
+        // 环境不支持（如 Wails/WebView2 未声明 media 能力）：navigator.mediaDevices 可能为 undefined。
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            _active = false;
+            _hideVideo();
+            feedbackStatus('scene.ar.cameraUnavailable', undefined, false);
+            return false;
+        }
+
         // Android WebView：进入 AR 前必须持有 CAMERA 运行时权限，否则 getUserMedia
         // 会被 WebChromeClient 静默拒绝（NotAllowedError）。这里在按钮点击链路里显式
         // 判断授权状态——已授权则继续，未授权则弹系统授权框并等待用户决策。
         // [fix P1] 本 await 位于 try 内：ensureAndroidCameraPermission 已保证不 reject，
-        // 此处 try 为第二道防线——任何意外 rejection 由 catch 统一复位 _starting。
+        // 此处 try 为第二道防线——任何意外 rejection 由 catch 统一处理，finally 复位 _starting。
         if (
             getCachedCapabilities().arScope === 'android-app' &&
             !(await ensureAndroidCameraPermission())
@@ -136,7 +138,6 @@ export async function startARCamera(facing: CameraFacing = 'user'): Promise<bool
             _active = false;
             _hideVideo();
             feedbackStatus('scene.ar.cameraDenied', undefined, false);
-            _starting = false;
             return false;
         }
 
@@ -157,7 +158,6 @@ export async function startARCamera(facing: CameraFacing = 'user'): Promise<bool
             _stream = null;
             _active = false;
             _hideVideo();
-            _starting = false;
             return false;
         }
 
@@ -170,7 +170,6 @@ export async function startARCamera(facing: CameraFacing = 'user'): Promise<bool
 
         feedbackInfo('scene.ar.enabled', undefined);
         _notifyARModeChange(true);
-        _starting = false;
         return true;
     } catch (err) {
         logWarn('AR', 'startARCamera failed:', err);
@@ -181,8 +180,12 @@ export async function startARCamera(facing: CameraFacing = 'user'): Promise<bool
         _active = false;
         _hideVideo();
         feedbackStatus('scene.ar.cameraDenied', undefined, false);
-        _starting = false;
         return false;
+    } finally {
+        // [fix P2] 集中复位启动标志：此前 6 个复位点分散在各 return 前，新增分支漏复位
+        // 会卡死 _starting=true 永久阻塞后续启动；finally 保证所有路径（含异常）复位。
+        // 注意：重入短路（L90 `if (_starting) return`）在 try 外，不影响在途请求的标志。
+        _starting = false;
     }
 }
 
@@ -203,6 +206,10 @@ export function stopARCamera(): void {
     _active = false;
     _hideVideo();
     _notifyARModeChange(false);
+    // [fix P3] 复位镜像覆盖标志：stopARCamera 不清零则下次 startARCamera 时
+    // _applyVideoMirror 仍跳过默认镜像逻辑（用户上次 setARMirror 的 overridden
+    // 跨会话残留），重新进入 AR 不恢复「前置默认镜像」期望。
+    _mirrorOverridden = false;
 }
 
 /** 切换前后摄像头。 */

@@ -569,6 +569,10 @@ export function disposeLighting(): void {
     lightingState.shadowResolution = 1024;
     lightingState.shadowBias = 0.0001;
     lightingState.skipLightAutoSave = false;
+    // [fix P2] 复位 rebake 防复利基准：场景销毁→重建后若沿用上一场景的基准强度与
+    // 累计比值，首次 rebakeEnvBrightness 会基于旧基准发散（复利防漂移机制本身漂移）。
+    _brightnessBakeBase = null;
+    _brightnessBakedRatio = 1;
 }
 
 // ======== barrel: 子文件公开 API 透传 ========

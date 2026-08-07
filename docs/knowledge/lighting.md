@@ -30,7 +30,7 @@ symbols:
   - setSkipLightAutoSave
   - transitionLighting
 invariants:
-  - setLightState 为光照唯一写入入口，被 env-bridge 调用 applyLightingPresetFromEnv
+  - setLightState 为光照唯一写入入口，被 env-bridge 调用 applyLightingPresetFromEnv；rebakeEnvBrightness 直接写 hemi/dirLight.intensity 绕过 setLightState（语义上不期望落盘，属知识卡登记的非入口写入路径）
   - 切换预设时 _cancelAllLightingTweens 取消旧补间防冲突
   - disposeLighting 级联释放方向光、半球光、舞台灯、阴影、太阳盘、光锥等全部子资源
   - 子模块共享 lightingState 单例，避免状态碎片
@@ -57,7 +57,7 @@ Scene Lighting：光照、阴影、太阳盘（barrel + 主光管理）。职责
 - `setLightState(patch: Partial<LightState>)` / `getLightState(): LightState`
 - `setSkipLightAutoSave(v)` / `getHemiLight()` / `getDirLight()`
 - `applyLightingPresetFromEnv(...)` / `deriveLighting(...)`（来自 env-lighting）
-- `rebakeEnvBrightness(...)` — 环境亮度重烘焙
+- `rebakeEnvBrightness(...)` — 环境亮度重烘焙（直接写 intensity 绕过 setLightState；防复利基准 `_brightnessBakeBase`/`_brightnessBakedRatio` 为模块级 let，disposeLighting 时复位）
 
 ## 关键约定
 - 子模块共享 `lightingState`，避免状态碎片

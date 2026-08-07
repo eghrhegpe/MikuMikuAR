@@ -821,14 +821,14 @@
 | 符号 | 文件:行 | 说明 |
 |------|--------|------|
 | `CameraFacing()` | `scene/ar/ar-camera:13` | — |
-| `captureARScreenshot()` | `scene/ar/ar-camera:242` | 截取 AR 合成画面（视频底 + 3D 模型层）。 |
-| `getARFacing()` | `scene/ar/ar-camera:79` | — |
-| `isARActive()` | `scene/ar/ar-camera:75` | — |
-| `isARMirrored()` | `scene/ar/ar-camera:229` | 当前是否镜像显示。 |
-| `setARMirror()` | `scene/ar/ar-camera:222` | 设置是否镜像显示（前置默认镜像，后置默认不镜像）。用户手动调用后标记为 overridden，切换摄像头时保持用户设置。 |
-| `startARCamera()` | `scene/ar/ar-camera:88` | 启动 AR 摄像头并显示视频背景。 |
-| `stopARCamera()` | `scene/ar/ar-camera:190` | 停止 AR 摄像头，释放资源并隐藏视频背景。 |
-| `switchARCameraFacing()` | `scene/ar/ar-camera:209` | 切换前后摄像头。 |
+| `captureARScreenshot()` | `scene/ar/ar-camera:249` | 截取 AR 合成画面（视频底 + 3D 模型层）。 |
+| `getARFacing()` | `scene/ar/ar-camera:83` | — |
+| `isARActive()` | `scene/ar/ar-camera:79` | — |
+| `isARMirrored()` | `scene/ar/ar-camera:236` | 当前是否镜像显示。 |
+| `setARMirror()` | `scene/ar/ar-camera:229` | 设置是否镜像显示（前置默认镜像，后置默认不镜像）。用户手动调用后标记为 overridden，切换摄像头时保持用户设置。 |
+| `startARCamera()` | `scene/ar/ar-camera:92` | 启动 AR 摄像头并显示视频背景。 |
+| `stopARCamera()` | `scene/ar/ar-camera:193` | 停止 AR 摄像头，释放资源并隐藏视频背景。 |
+| `switchARCameraFacing()` | `scene/ar/ar-camera:216` | 切换前后摄像头。 |
 | `isARModeActive()` | `scene/ar/ar-scene:243` | — |
 | `setARMode()` | `scene/ar/ar-scene:161` | 切换 AR 模式（摄像头视频背景 + 透明 canvas）。 |
 | `takeARScreenshot()` | `scene/ar/ar-scene:239` | AR 合成截图（视频底 + 3D 层），供截图功能调用。异步版（ADR-017 A2-04）。 |
@@ -1865,20 +1865,20 @@
 | `setRenderState()` | `scene/render/renderer:683` | — |
 | `setSSRFromReflection()` | `scene/render/renderer:966` | 反射系统专用 SSR 控制接口（不触发 auto-save）。 |
 | `transitionRenderState()` | `scene/render/renderer:723` | 平滑过渡渲染状态到目标值，默认 2 秒。 |
-| `GizmoAttachOptions()` | `scene/render/transform-gizmo:94` | — |
+| `GizmoAttachOptions()` | `scene/render/transform-gizmo:104` | — |
 | `GizmoType()` | `scene/render/transform-gizmo:17` | — |
-| `attachGizmo()` | `scene/render/transform-gizmo:114` | 为指定 Node 激活变换 Gizmo。 |
-| `computeSnapDistance()` | `scene/render/transform-gizmo:75` | 纯函数：给定轴类型与吸附配置，计算吸附步长（场景单位）。 |
-| `detachGizmo()` | `scene/render/transform-gizmo:206` | 移除当前 Gizmo。 |
-| `getActiveGizmoTypes()` | `scene/render/transform-gizmo:258` | 获取当前激活的 Gizmo 轴类型组合（用于判断拖拽中是否在改缩放）。 |
-| `getGizmoNode()` | `scene/render/transform-gizmo:253` | 获取当前 Gizmo 绑定的实时 Node（拖拽中其 transform 已被 Babylon 实时改写，供数值滑杆读取）。 |
-| `getGizmoSnapConfig()` | `scene/render/transform-gizmo:294` | 读取当前网格吸附配置（enabled 默认 false，step 默认 1.0）。 |
-| `getGizmoTargetId()` | `scene/render/transform-gizmo:248` | 获取当前 Gizmo 绑定的实体 ID。 |
+| `attachGizmo()` | `scene/render/transform-gizmo:124` | 为指定 Node 激活变换 Gizmo。 |
+| `computeSnapDistance()` | `scene/render/transform-gizmo:85` | 纯函数：给定轴类型与吸附配置，计算吸附步长（场景单位）。 |
+| `detachGizmo()` | `scene/render/transform-gizmo:216` | 移除当前 Gizmo。 |
+| `getActiveGizmoTypes()` | `scene/render/transform-gizmo:268` | 获取当前激活的 Gizmo 轴类型组合（用于判断拖拽中是否在改缩放）。 |
+| `getGizmoNode()` | `scene/render/transform-gizmo:263` | 获取当前 Gizmo 绑定的实时 Node（拖拽中其 transform 已被 Babylon 实时改写，供数值滑杆读取）。 |
+| `getGizmoSnapConfig()` | `scene/render/transform-gizmo:304` | 读取当前网格吸附配置（enabled 默认 false，step 默认 1.0）。 |
+| `getGizmoTargetId()` | `scene/render/transform-gizmo:258` | 获取当前 Gizmo 绑定的实体 ID。 |
 | `initTransformGizmo()` | `scene/render/transform-gizmo:46` | — |
-| `isGizmoActive()` | `scene/render/transform-gizmo:238` | 当前是否有 Gizmo 激活。 |
-| `isGizmoDragging()` | `scene/render/transform-gizmo:243` | 当前是否正在拖拽 Gizmo（drag start → drag end 之间为 true）。 |
+| `isGizmoActive()` | `scene/render/transform-gizmo:248` | 当前是否有 Gizmo 激活。 |
+| `isGizmoDragging()` | `scene/render/transform-gizmo:253` | 当前是否正在拖拽 Gizmo（drag start → drag end 之间为 true）。 |
 | `onGizmoDragObservable()` | `scene/render/transform-gizmo:42` | 拖拽进行中（连续）可观察量：任一 Gizmo 轴被拖动时每帧触发， 供数值滑杆实时同步显示（ADR-126 Phase 2 双模态）。 |
-| `setGizmoSnapDistance()` | `scene/render/transform-gizmo:277` | 设置网格吸附配置。 |
+| `setGizmoSnapDistance()` | `scene/render/transform-gizmo:287` | 设置网格吸附配置。 |
 | `exportSceneBundle()` | `scene/scene-bundle:136` | 导出场景为 bundle zip 文件。 |
 | `importSceneBundle()` | `scene/scene-bundle:165` | 导入场景 bundle zip 文件。 |
 | `migrateLipSyncFromOldState()` | `scene/scene-migrate:11` | 旧存档 lipSync → 新版 PerceptionState lipSync 字段。 |
