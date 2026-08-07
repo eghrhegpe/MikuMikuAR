@@ -36,7 +36,12 @@ git reset HEAD~1                      # 撤销最近一条 commit，把改动放
 
 ## 钩子自动化（无需手动触发）
 
-> **Git 钩子（pre-commit / prepare-commit-msg 非阻断，pre-push 阻断）**：仓库钩子位于 `.githooks/`（非 `.git/hooks/`），克隆后需激活：`git config core.hooksPath .githooks`。pre-commit 自动同步文档/索引（秒级 gen）并 `git add docs/`；prepare-commit-msg 把变更行覆盖率缺口建议写入 commit message **body**；二者均不阻塞提交。逃生阀统一为 `git commit --no-verify`（仅跳过 pre-commit / prepare-commit-msg，不影响 pre-push）。这就是为什么提交常夹带 `docs/function-map.md` 等同步文件——是钩子自动补的，非手滑。
+> **Git 钩子（pre-commit / prepare-commit-msg 非阻断，pre-push 阻断）**：
+仓库钩子位于 `.githooks/`（非 `.git/hooks/`），克隆后需激活：`git config core.hooksPath .githooks`。
+pre-commit 自动同步文档/索引（秒级 gen）并 `git add docs/`；
+prepare-commit-msg 把变更行覆盖率缺口建议写入 commit message **body**；二者均不阻塞提交。
+逃生阀统一为 `git commit --no-verify`（仅跳过 pre-commit / prepare-commit-msg，不影响 pre-push）。
+这就是为什么提交常夹带 `docs/function-map.md` 等同步文件——是钩子自动补的，非手滑。
 
 | 钩子 | 功能 | 逃生阀 |
 |------|------|--------|
@@ -64,10 +69,9 @@ git reset HEAD~1                      # 撤销最近一条 commit，把改动放
 
 | 服务 | 干嘛用 | 前置依赖 | 用法提示 |
 |------|--------|----------|----------|
-| `context7` | 拉取依赖最新文档（Babylon.js 9.x、babylon-mmd、Wails v3），给 AI 喂版本准确的 API 与示例 | Node + `npx` | 提问时点名库，如「用 context7 查 babylon-mmd 的 MmdWasmRuntime 用法」 |
-| `serena` | 符号级导航：查定义/引用、按符号跳转，精准定位 `frontend/` 下 365 个 .ts | Python + `uv`（`uvx`） | 先让 AI 用 Serena 在 `frontend/` 建索引，再做跨文件重构/审计 |
+| `serena` | "语义重构独占",符号级导航：查定义/引用、按符号跳转，精准定位 `frontend/` 下 365 个 .ts | Python + `uv`（`uvx`） | 先让 AI 用 Serena 在 `frontend/` 建索引，再做跨文件重构/审计 |
 
-注意：Serena 启动后默认不绑定项目，先在对话里让它「索引 `frontend/` 目录」再派活；Context7 免费额度够用，无需 API key。两者均无密钥，`.mcp.json` 可随仓库提交共享。
+注意：Serena 启动后默认不绑定项目，先在对话里让它「索引 `frontend/` 目录」再派活。
 
 ## ADR 规则
 
@@ -119,7 +123,7 @@ http://localhost:9222/json 实际网页一览
 # 审核框架
 
 > 审核流水线：知识卡定位未审核的模块 → 审核相关代码的实现 → 核对风险修复的可行性，进行修复 → 提交改动 → 发起codereview（如果你的终端有审核工具）
-> 推荐用子代理并发审核, 每次使用3个子代理审核3个知识卡对应的文件/功能吧，按重要性区分。返回结果后核实+修复，修完提交、使用codereview或子代理审核提交。
+> 推荐用子代理并发审核, 每次使用3个子代理审核3个知识卡对应的文件/功能吧，按重要性区分。返回结果后核实+修复，修完提交、使用使用1个子代理审核改动。或使用code_review终端工具审核（如果有的话）。
 > 发现预料之外的缺陷时，只读，报告，给出精确的修复建议（diff 格式、文件:行号、修改原因）。
 
 ## 代码健康度检测
