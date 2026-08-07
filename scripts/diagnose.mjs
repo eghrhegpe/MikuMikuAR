@@ -115,6 +115,15 @@ const SECTION = {
 };
 
 let passed = 0;
+// 全量模式（非 -does）退出码聚合：与 -does 分支 gateOk 对称——
+// critical 项失败经 run() 立即 process.exit(1)；non-critical 项失败在此聚合，
+// 末尾统一裁决，杜绝「假绿」（non-critical 失败仍 exit 0）。
+let fullOk = true;
+function track(result) {
+    if (result) passed++;
+    else fullOk = false;
+    return result;
+}
 
 if (docsOnly) {
     SECTION.docs("docs 门禁链（继承 check:docs，真相源=package.json）");
@@ -141,46 +150,47 @@ if (docsOnly) {
 
 if (!slowOnly) {
     SECTION.fast("代码同步");
-    runTask("check:status", "gen-status-index.mjs --reverse --check") && passed++;
-    runTask("check:funcmap", "gen-funcmap.mjs --check") && passed++;
+    track(runTask("check:status", "gen-status-index.mjs --reverse --check"));
+    track(runTask("check:funcmap", "gen-funcmap.mjs --check"));
 
     SECTION.fast("静态检查");
-    runFrontend("ESLint", "lint") && passed++;
-    runTask("goerr-lint", "goerr-lint.mjs --strict", { critical: false }) && passed++;
-    runFrontend("i18n 检查", "check:i18n") && passed++;
-    runFrontend("图标检查", "check:icons") && passed++;
-    runFrontend("格式检查", "format:check") && passed++;
+    track(runFrontend("ESLint", "lint"));
+    track(runTask("goerr-lint", "goerr-lint.mjs --strict", { critical: false }));
+    track(runFrontend("i18n 检查", "check:i18n"));
+    track(runFrontend("图标检查", "check:icons"));
+    track(runFrontend("格式检查", "format:check"));
 
     SECTION.fast("架构");
-    runTask("循环依赖", "check-circular.mjs") && passed++;
+    track(runTask("循环依赖", "check-circular.mjs"));
 
     SECTION.fast("代码质量基线");
-    runFrontend("死代码基线", "deadcode:baseline") && passed++;
+    track(runFrontend("死代码基线", "deadcode:baseline"));
 
     SECTION.fast("安全扫描");
-    runFrontend("npm audit", "audit") && passed++;
+    track(runFrontend("npm audit", "audit"));
 
     SECTION.fast("文档漂移");
-    runTask("文档检查", "check-doc-drift.mjs") && passed++;
+    track(runTask("文档检查", "check-doc-drift.mjs"));
 
     SECTION.fast("ADR 健康");
-    runTask("ADR 健康检查", "check-adr-health.mjs", { critical: false }) && passed++;
-    runTask("ADR 技术债务", "check-adr-technical-debt.mjs", { critical: false }) && passed++;
+    track(runTask("ADR 健康检查", "check-adr-health.mjs", { critical: false }));
+    track(runTask("ADR 技术债务", "check-adr-technical-debt.mjs", { critical: false }));
 }
 
 if (!fastOnly) {
     SECTION.slow("全量测试");
-    run("单元测试", "npm test", { cwd: FRONTEND, critical: false, timeout: 300000 }) && passed++;
+    track(run("单元测试", "npm test", { cwd: FRONTEND, critical: false, timeout: 300000 }));
 }
 
 // ── 汇总 ──
 console.log(`\n${CYAN}════════════════════════════════════${RESET}`);
 if (slowOnly) {
     console.log(`  诊断完成（仅测试，跳过秒级项）`);
-    process.exit(0);
-}
-if (fastOnly) {
+} else if (fastOnly) {
     console.log(`  诊断完成（仅秒级）`);
-    process.exit(0);
+} else {
+    console.log(`  全量诊断完成`);
 }
-console.log(`  全量诊断完成`);
+// 退出码聚合：任一检查（含 non-critical）失败 → exit 1；全通过 → exit 0。
+// 与 -does 分支 gateOk 语义对称，消除「假绿」。
+process.exit(fullOk ? 0 : 1);
