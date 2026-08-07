@@ -33,7 +33,7 @@
 | A2 | shortcut-registry | `registerShortcut` Map.set 覆盖无冲突守卫（呼应 Ctrl+Space P1 先例） | ✅ **已修**（跨 id 同绑定 logWarn + 保留先注册者） |
 | A3 | load-manager | `inst?.name ?? ''` 注册表查无实例时静默空名 | ✅ **已修**（console.warn 暴露时序异常） |
 | A4 | env-persist | 无直接单测（防抖/flush/竞态窗口零覆盖） | ✅ **已修**（env-persist.test.ts 7 用例） |
-| A5 | env-bridge | `_middlewares` 无去重/无清理 | ✅ **已修**（name+phase 去重 + clearAllEnvMiddlewares） |
+| A5 | env-bridge | `_middlewares` 无去重/无清理 | ✅ **已修**（registerEnvStateMiddleware 按 name+phase 去重；**无 clearAll 导出**——中间件仅模块顶层注册、无 init 重注册路径，dispose 清空会导致注册表永久为空，与 clearAllEnvCallbacks 同源 P2 回归） |
 | A6 | env-impl | 模块级 prev 状态 dispose 不复位 | ✅ **已修**（_prevParticleEnabled/_prevSplash/_prevCustomTexture 复位） |
 
 > A 类 6 项已在 ADR-254 立项当日全部闭环（提交 406ee2f2），此处保留登记以固化「从审核到修」的追溯链。

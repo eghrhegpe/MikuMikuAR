@@ -118,7 +118,13 @@ import { _catState, _matState, _matEnabled } from './manager/material';
 import { updatePlaybackUI, initPlaybackObservables } from './motion/playback';
 // [fix P1] 模型删除时清理动作历史（_historyMap/_mergeMap），否则条目累积 + ID 复用幽灵历史
 import { clearHistory } from './motion/motion-modules/motion-history';
-import { initLighting, _updateSunDisc, setLightState, getLightState } from './render/lighting';
+import {
+    initLighting,
+    disposeLighting,
+    _updateSunDisc,
+    setLightState,
+    getLightState,
+} from './render/lighting';
 import { attachPersonalLight, detachPersonalLight } from './render/lighting-follow';
 import {
     initRenderer,
@@ -302,6 +308,11 @@ export function disposeScene(): void {
     disposeRenderer();
     disposeEnvUpdateObserver();
     disposeWindPhysics();
+    // [audit:跨模块耦合 P3] 释放灯光系统：lightingState 单例的 hemiLight/dirLight
+    // 引用残留已 dispose 的旧灯光对象（引用非 null 但对象已销毁）——dispose→re-init
+    // 之间若 env-bridge/scene-serialize 调 getLightState() 会读 disposed 对象属性。
+    // initLighting 有兜底 guard，但显式释放与其他子系统 dispose 对齐更安全。
+    disposeLighting();
     // [audit:round13 P2] 级联释放相机系统（stop 各行为循环 + dispose 当前相机 + 清理运行时上下文）。
     // 此前 disposeCameraSystem 是全工程无调用点的死代码；HMR 重入 _reinitSceneForHMR 会再次
     // initCameraSystem(scene, canvas) 重建，故此处调用是安全且必须的（否则旧相机引用/触摸监听残留）。

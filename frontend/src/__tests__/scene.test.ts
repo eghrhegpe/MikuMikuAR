@@ -135,6 +135,7 @@ const shared = vi.hoisted(() => {
 
         // lighting / renderer
         initLighting: vi.fn(),
+        disposeLighting: vi.fn(),
         _updateSunDisc: vi.fn(),
         setLightState: vi.fn(),
         getLightState: vi.fn(),
@@ -499,6 +500,7 @@ vi.mock('../scene/motion/motion-modules/motion-history', () => ({
 }));
 vi.mock('../scene/render/lighting', () => ({
     initLighting: shared.initLighting,
+    disposeLighting: shared.disposeLighting,
     _updateSunDisc: shared._updateSunDisc,
     setLightState: shared.setLightState,
     getLightState: shared.getLightState,
