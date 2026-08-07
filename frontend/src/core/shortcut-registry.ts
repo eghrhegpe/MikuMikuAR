@@ -126,6 +126,11 @@ function _flushDeferredShortcuts(): void {
     }
     const remaining: ShortcutDef[] = [];
     for (const def of _deferredShortcuts) {
+        // [fix code_review P2] 跳过已存在于 _shortcuts 的 id：队列期间同 id 可能已被
+        // 成功重注册（HMR 改绑），当前注册是权威——flush 不得用 stale 队列条目覆盖它。
+        if (_shortcuts.has(def.id)) {
+            continue; // 丢弃 stale 条目（不保留、不覆盖）
+        }
         const incoming = getEffectiveBinding(def);
         let conflict = false;
         for (const [otherId, otherDef] of _shortcuts) {
@@ -172,7 +177,15 @@ export function registerShortcut(def: ShortcutDef): void {
                     `(${incoming.key}${incoming.ctrl ? '+Ctrl' : ''}${incoming.shift ? '+Shift' : ''}${incoming.alt ? '+Alt' : ''})——` +
                     `保留先注册者，忽略后注册者（冲突解除后自动恢复）`
             );
-            _deferredShortcuts.push(def);
+            // [fix code_review P2] 入队按 id 去重：同 id 重复冲突注册（HMR 期间冲突持续）
+            // 会累积多条 stale 条目，flush 时重复恢复 + 重复 logWarn；已入队的同 id
+            // 直接覆盖（保留最新 def，旧条目替换）
+            const existingIdx = _deferredShortcuts.findIndex((d) => d.id === def.id);
+            if (existingIdx >= 0) {
+                _deferredShortcuts[existingIdx] = def;
+            } else {
+                _deferredShortcuts.push(def);
+            }
             return;
         }
     }
@@ -408,6 +421,10 @@ export function _resetShortcutRegistry(): void {
     for (const key of Object.keys(_overrides)) {
         delete _overrides[key];
     }
+    // [fix code_review P3] 清空延迟队列：reset 契约须覆盖全部模块级状态——否则测试
+    // 遗留的 deferred 条目会在下个测试的 setKeyBinding/resetKeyBinding flush 时被
+    // 注入全新注册表（跨测试污染 + stale handler 分发）
+    _deferredShortcuts.length = 0;
     _keydownDisposable = safeDispose(_keydownDisposable);
     _initialized = false;
 }

@@ -109,4 +109,25 @@ describe('冲突解除后 deferred 自动恢复', () => {
         resetKeyBinding('a');
         expect(__mocks.logWarn).toHaveBeenCalled();
     });
+
+    it('deferred id 后重新注册成功，flush 不得用 stale 条目覆盖新注册（code_review P2）', () => {
+        // B 与 A 冲突 → B 入 deferred
+        registerShortcut(makeDef('a', 'Space'));
+        registerShortcut(makeDef('b', 'Space'));
+        expect(getAllShortcuts().map((s) => s.id)).not.toContain('b');
+
+        // HMR 重注册 B（改绑 KeyZ + 新 handler）→ 无冲突，直接注册成功
+        const newHandler = vi.fn();
+        registerShortcut(makeDef('b', 'KeyZ', { handler: newHandler }));
+        const bAfterReReg = getAllShortcuts().find((s) => s.id === 'b');
+        expect(bAfterReReg).toBeDefined();
+        expect(bAfterReReg!.handler).toBe(newHandler);
+
+        // 触发 flush（改绑 A）——stale 队列条目不得覆盖当前 B（KeyZ+newHandler）
+        setKeyBinding('a', 'KeyX');
+        const bAfterFlush = getAllShortcuts().find((s) => s.id === 'b');
+        expect(bAfterFlush).toBeDefined();
+        expect(bAfterFlush!.defaultKey).toBe('KeyZ'); // 仍是新注册的 KeyZ，非 stale 的 Space
+        expect(bAfterFlush!.handler).toBe(newHandler); // 仍是新 handler，非 stale 闭包
+    });
 });
