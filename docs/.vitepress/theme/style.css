@@ -7,3 +7,20 @@
   margin-top: 24px;
   padding-top: 12px;
 }
+
+/* ===== 联邦品牌皮肤（P0 提质感 · 不推倒默认主题结构）=====
+ * 仅覆写 VitePress 设计令牌，不动布局/组件。
+ * 初音青主色：与 MikuMikuAR 的 MMD/AR 调性一致。 */
+:root {
+  --vp-c-brand-1: #18c6c6;
+  --vp-c-brand-2: #14a8a8;
+  --vp-c-brand-3: #0f8a8a;
+  --vp-c-brand-soft: rgba(24, 198, 198, 0.12);
+}
+
+/* 字体栈：西文 Inter + 中文思源黑体，等宽 JetBrains Mono。
+ * 默认主题用系统字体栈，换上后正文/代码质感显著细腻。 */
+:root {
+  --vp-font-family-base: 'Inter', 'Source Han Sans SC', 'Noto Sans SC', system-ui, -apple-system, sans-serif;
+  --vp-font-family-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, monospace;
+}
