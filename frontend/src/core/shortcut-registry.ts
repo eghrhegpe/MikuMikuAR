@@ -151,6 +151,12 @@ function _flushDeferredShortcuts(): void {
     _deferredShortcuts.push(...remaining);
 }
 
+/** 定位延迟队列中指定 id 的条目下标（无则 -1）。入队按 id 去重（replace-or-push），
+ *  同 id 至多一条——冲突替换路径与成功清理路径共用此查找，保持维护点同步。 */
+function findDeferredIndex(id: string): number {
+    return _deferredShortcuts.findIndex((d) => d.id === id);
+}
+
 /** Register ONE shortcut. */
 export function registerShortcut(def: ShortcutDef): void {
     if (!def.handler) {
@@ -178,7 +184,7 @@ export function registerShortcut(def: ShortcutDef): void {
             // [fix code_review P2] 入队按 id 去重：同 id 重复冲突注册（HMR 期间冲突持续）
             // 会累积多条 stale 条目，flush 时重复恢复 + 重复 logWarn；已入队的同 id
             // 直接覆盖（保留最新 def，旧条目替换）
-            const existingIdx = _deferredShortcuts.findIndex((d) => d.id === def.id);
+            const existingIdx = findDeferredIndex(def.id);
             if (existingIdx >= 0) {
                 _deferredShortcuts[existingIdx] = def;
             } else {
@@ -192,7 +198,7 @@ export function registerShortcut(def: ShortcutDef): void {
     // 又成功重注册（HMR 改绑），旧队列条目已过时——保留会让 flush 误以为它是最新意图
     // 而覆盖权威注册。此处同步移除，使 flush 时残留的同 id 条目必然都是成功注册之后的
     // fresh 重新入队（最新意图），可按最新意图恢复。
-    const staleIdx = _deferredShortcuts.findIndex((d) => d.id === def.id);
+    const staleIdx = findDeferredIndex(def.id);
     if (staleIdx >= 0) {
         _deferredShortcuts.splice(staleIdx, 1);
     }

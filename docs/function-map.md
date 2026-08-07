@@ -140,7 +140,7 @@
 | `delay()` | `core/async:22` | Promise 包装的延迟。 |
 | `fireAndForget()` | `core/async:17` | 启动一个异步操作但不等待，异常由 swallowError 兜底。 |
 | `makeLazyLoader()` | `core/async:43` | 创建惰性动态 import 加载器（带并发守卫 + 失败重试）。 |
-| `swallowError()` | `core/async:12` | 吞掉 promise 的异常并记录日志（比空 &#96;.catch(() =&amp;gt; {})&#96; 可调试）。 |
+| `swallowError()` | `core/async:12` | 吞掉 promise 的异常并记录日志（比空 &#96;.catch(() =&gt; {})&#96; 可调试）。 |
 | `waitForFrame()` | `core/async:27` | Promise 包装的等待下一帧。 |
 | `PlaySfxOptions()` | `core/audio-bus:107` | — |
 | `disposeAudioBus()` | `core/audio-bus:190` | 释放总线资源（context 关闭、缓存清空）。 |
@@ -296,7 +296,7 @@
 | `SUPPORTED_LANGS()` | `core/i18n/locale:15` | 规划支持的语言清单（与竞品 DanceXR 对齐：简/繁中、英、日、韩）。 |
 | `detectSystemLang()` | `core/i18n/locale:36` | [doc:adr-059] 从浏览器/WebView 语言偏好推断首选语言。 |
 | `getLang()` | `core/i18n/locale:82` | 当前语言代码（响应式，切换语言后自动更新）。 |
-| `initI18n()` | `core/i18n/locale:116` | 启动期语言初始化：同步 &amp;lt;html lang&amp;gt; 并预加载当前语言包。 |
+| `initI18n()` | `core/i18n/locale:116` | 启动期语言初始化：同步 &lt;html lang&gt; 并预加载当前语言包。 |
 | `setLang()` | `core/i18n/locale:88` | — |
 | `en()` | `core/i18n/locales/en:2` | — |
 | `ja()` | `core/i18n/locales/ja:2` | — |
@@ -309,7 +309,7 @@
 | `t()` | `core/i18n/t:54` | 翻译一个 key。 |
 | `registerIconBundle()` | `core/icons-bundle:678` | — |
 | `createIconButton()` | `core/icons:27` | 创建图标按钮（默认 slide-action 样式）。 |
-| `createIconifyIcon()` | `core/icons:12` | Create an &amp;lt;iconify-icon&amp;gt; element for the given icon name. |
+| `createIconifyIcon()` | `core/icons:12` | Create an &lt;iconify-icon&gt; element for the given icon name. |
 | `softwareKindIcon()` | `core/icons:43` | Map software kind to an iconify icon name. |
 | `canvasToBase64()` | `core/image:13` | 将 Canvas 编码为 base64 字符串（剥离 data:image/...;base64, 前缀）。 |
 | `thumbDataUrl()` | `core/image:64` | Build a data URL from a base64 thumbnail, sniffing PNG/JPEG/WebP from the header. |
@@ -389,7 +389,7 @@
 | `observe()` | `core/observer-handle:60` | 订阅 Observable 并返回自动管理的句柄。 |
 | `observeOnce()` | `core/observer-handle:74` | 一次性订阅：回调执行后自动移除，等价于 observable.addOnce()。 |
 | `orbitInput()` | `core/orbit-state:10` | — |
-| `MIN_ORBIT_DISTANCE()` | `core/orbit:15` | 轨道距离下限：distance&amp;lt;=0 或非有限时钳制到此值，避免塌缩到原点或 NaN。 |
+| `MIN_ORBIT_DISTANCE()` | `core/orbit:15` | 轨道距离下限：distance&lt;=0 或非有限时钳制到此值，避免塌缩到原点或 NaN。 |
 | `OrbitCoords()` | `core/orbit:5` | — |
 | `cartesianToOrbit()` | `core/orbit:61` | 笛卡尔坐标 → 球面坐标。 |
 | `normalizeOrbit()` | `core/orbit:25` | 钳制一组原始轨道参数为合法值域。 |
@@ -405,7 +405,7 @@
 | `isAndroidPlatform()` | `core/platform:13` | Returns true when running inside the Android WebView (Wails v3). |
 | `isWebEntryMode()` | `core/platform:129` | [doc:adr-196/176] 运行时判定是否为 web 入口（短路标记或构建模式）。 |
 | `isWebPlatform()` | `core/platform:28` | Returns true when running in a pure browser (no Wails bridge). |
-| `openExternalLink()` | `core/platform:100` | 打开外链的统一入口：先尝试 Android &#96;&amp;lt;a&amp;gt;.click()&#96; 方式，失败则回退 &#96;window.open&#96;。 |
+| `openExternalLink()` | `core/platform:100` | 打开外链的统一入口：先尝试 Android &#96;&lt;a&gt;.click()&#96; 方式，失败则回退 &#96;window.open&#96;。 |
 | `openExternalURL()` | `core/platform:82` | Opens a URL in the system browser. |
 | `readDeclaredAdapter()` | `core/platform:139` | [doc:adr-196/176] 读取 globalThis 上声明的适配器身份（'go' \| 'browser'）。 |
 | `autoLoop()` | `core/playback-state:13` | — |
@@ -472,18 +472,18 @@
 | `KeyBindingOverride()` | `core/shortcut-registry:23` | — |
 | `ShortcutDef()` | `core/shortcut-registry:9` | — |
 | `ShortcutWithBinding()` | `core/shortcut-registry:47` | — |
-| `_resetShortcutRegistry()` | `core/shortcut-registry:425` | Reset all internal state — only for use in tests. |
-| `exportKeyBindings()` | `core/shortcut-registry:352` | Get current custom bindings (for saving to uiState). |
-| `formatKeyBinding()` | `core/shortcut-registry:225` | 格式化按键绑定为可读字符串，如 "Ctrl+1"、"Shift+←" |
-| `getAllShortcuts()` | `core/shortcut-registry:209` | Get all registered shortcuts with their CURRENT effective bindings. |
-| `getAriaKeyshortcuts()` | `core/shortcut-registry:261` | 将 ShortcutDef 格式化为 aria-keyshortcuts 值，如 "Control+1" |
-| `initShortcutDispatcher()` | `core/shortcut-registry:367` | Initialize the dispatcher — call once at app startup. |
-| `loadKeyBindings()` | `core/shortcut-registry:344` | Load custom bindings from persisted state (call at app init). |
-| `registerShortcut()` | `core/shortcut-registry:155` | Register ONE shortcut. |
-| `registerShortcuts()` | `core/shortcut-registry:202` | Register MULTIPLE shortcuts at once. |
-| `resetAllKeyBindings()` | `core/shortcut-registry:336` | Reset ALL shortcuts to their default bindings. |
-| `resetKeyBinding()` | `core/shortcut-registry:329` | Reset one shortcut to its default binding. |
-| `setKeyBinding()` | `core/shortcut-registry:288` | Set custom key binding for a shortcut ID. |
+| `_resetShortcutRegistry()` | `core/shortcut-registry:431` | Reset all internal state — only for use in tests. |
+| `exportKeyBindings()` | `core/shortcut-registry:358` | Get current custom bindings (for saving to uiState). |
+| `formatKeyBinding()` | `core/shortcut-registry:231` | 格式化按键绑定为可读字符串，如 "Ctrl+1"、"Shift+←" |
+| `getAllShortcuts()` | `core/shortcut-registry:215` | Get all registered shortcuts with their CURRENT effective bindings. |
+| `getAriaKeyshortcuts()` | `core/shortcut-registry:267` | 将 ShortcutDef 格式化为 aria-keyshortcuts 值，如 "Control+1" |
+| `initShortcutDispatcher()` | `core/shortcut-registry:373` | Initialize the dispatcher — call once at app startup. |
+| `loadKeyBindings()` | `core/shortcut-registry:350` | Load custom bindings from persisted state (call at app init). |
+| `registerShortcut()` | `core/shortcut-registry:161` | Register ONE shortcut. |
+| `registerShortcuts()` | `core/shortcut-registry:208` | Register MULTIPLE shortcuts at once. |
+| `resetAllKeyBindings()` | `core/shortcut-registry:342` | Reset ALL shortcuts to their default bindings. |
+| `resetKeyBinding()` | `core/shortcut-registry:335` | Reset one shortcut to its default binding. |
+| `setKeyBinding()` | `core/shortcut-registry:294` | Set custom key binding for a shortcut ID. |
 | `envState()` | `core/state:27` | — |
 | `applyHudVisibility()` | `core/status-bar:31` | 按 uiState 开关应用顶部 HUD 显隐：帧率时钟（#fpsClock）与多线程徽标（#runtimeBadge）。 |
 | `disposeStatusBar()` | `core/status-bar:117` | 清理 status 定时器（供 HMR 清理入口调用）。 |
@@ -572,7 +572,7 @@
 | `openFullscreen()` | `core/ui-fullscreen-overlay:47` | — |
 | `setCurrentState()` | `core/ui-fullscreen-overlay:99` | — |
 | `HeaderToggleConfig()` | `core/ui-header-toggle:8` | — |
-| `createHeaderToggle()` | `core/ui-header-toggle:26` | 创建标题栏小型开关。返回 &#96;&amp;lt;label class="toggle header-toggle"&amp;gt;&#96;， 含双触发去重（跳过 target===input 的 synthetic |
+| `createHeaderToggle()` | `core/ui-header-toggle:26` | 创建标题栏小型开关。返回 &#96;&lt;label class="toggle header-toggle"&gt;&#96;， 含双触发去重（跳过 target===input 的 synthetic |
 | `BoneSelectOptions()` | `core/ui-helpers:28` | — |
 | `ControlOptions()` | `core/ui-helpers:4` | — |
 | `FullscreenOverlayHandle()` | `core/ui-helpers:48` | — |
@@ -651,10 +651,10 @@
 | `addActionRow()` | `core/ui-rows:571` | 创建一个可点击的操作按钮行（替代手写 cs-row + button）。 |
 | `addBoneSelectRow()` | `core/ui-rows:754` | 创建骨骼选择行：label + 搜索框 + 分组下拉（含 IK 标记）。 |
 | `addCardTitle()` | `core/ui-rows:345` | 创建 card-title 标题行并追加到容器 |
-| `addDangerRow()` | `core/ui-rows:360` | 创建危险操作行（icon + red label），替代手动拼接 &#96;div.slide-item &amp;gt; icon + label.danger-text&#96; |
+| `addDangerRow()` | `core/ui-rows:360` | 创建危险操作行（icon + red label），替代手动拼接 &#96;div.slide-item &gt; icon + label.danger-text&#96; |
 | `addDisabledRow()` | `core/ui-rows:608` | 创建一个不可交互的提示行（替代手写 cs-row + opacity 0.4 + pointer-events none）。 |
 | `addEmptyRow()` | `core/ui-rows:322` | 创建空状态占位行（灰色文字，不可点击），替代手动 &#96;el.style.opacity = '0.5'&#96; 模式 |
-| `addFieldRow()` | `core/ui-rows:392` | 创建字段行（左 label + 右 value），替代手动拼接的 &#96;div.slide-item &amp;gt; span.slide-label.field-label + span.fie |
+| `addFieldRow()` | `core/ui-rows:392` | 创建字段行（左 label + 右 value），替代手动拼接的 &#96;div.slide-item &gt; span.slide-label.field-label + span.fie |
 | `addInfoCard()` | `core/ui-rows:432` | — |
 | `addInfoGrid()` | `core/ui-rows:425` | — |
 | `addInlineToggleRow()` | `core/ui-rows:639` | 创建一个内联 toggle 行（替代手写 toggle-row + toggle-label + toggle-switch）。 |
@@ -814,7 +814,7 @@
 | `WriteTextFile()` | `core/wails-bindings:114` | — |
 | `readFileBytes()` | `core/wails-bindings:44` | 读取文件为 Uint8Array（go：自动解码 Wails v3 base64；browser：IndexedDB/FSA 直读）。 |
 | `getWindVector()` | `core/wind-utils:35` | 返回当前风矢量（方向 × 速度），风未生效时返回零向量。 |
-| `isWindActive()` | `core/wind-utils:24` | 风向是否生效（windEnabled 且 windSpeed &amp;gt; 0.01，过滤浮点噪声 / 滑条零位残留）。 |
+| `isWindActive()` | `core/wind-utils:24` | 风向是否生效（windEnabled 且 windSpeed &gt; 0.01，过滤浮点噪声 / 滑条零位残留）。 |
 
 ## 3D 场景
 
@@ -1074,7 +1074,7 @@
 | `_generateGroundTexture()` | `scene/env/env-ground:974` | — |
 | `_getAlbedoColor()` | `scene/env/env-ground:103` | — |
 | `_getAlbedoTex()` | `scene/env/env-ground:90` | — |
-| `_needAlphaBlend()` | `scene/env/env-ground:160` | 判断地面是否需要 alpha blend 渲染（alpha &amp;lt; 1 或边缘淡出）。 |
+| `_needAlphaBlend()` | `scene/env/env-ground:160` | 判断地面是否需要 alpha blend 渲染（alpha &lt; 1 或边缘淡出）。 |
 | `_setAlbedoColor()` | `scene/env/env-ground:109` | — |
 | `_setAlbedoTex()` | `scene/env/env-ground:96` | — |
 | `_syncAllTextureOffsets()` | `scene/env/env-ground:1190` | — |
@@ -1200,7 +1200,7 @@
 | `setGroundGeometryProvider()` | `scene/env/env-water-fx:234` | 注入地面几何提供者（env-ground 在模块初始化时调用一次） |
 | `setWaterLODMeshes()` | `scene/env/env-water-fx:89` | 供宿主 createWater 写入 LOD 网格（拆分后状态归本模块，宿主经函数访问） |
 | `updateGroundRipples()` | `scene/env/env-water-fx:337` | 每帧更新地面涟漪纹理（由 env-ground 的 update observer 驱动） |
-| `updateRipples()` | `scene/env/env-water-fx:172` | 每帧涟漪衰减 + 死亡清理（由材质更新回调驱动；dt&amp;lt;=0 时跳过避免零时距死循环） |
+| `updateRipples()` | `scene/env/env-water-fx:172` | 每帧涟漪衰减 + 死亡清理（由材质更新回调驱动；dt&lt;=0 时跳过避免零时距死循环） |
 | `updateUnderwaterTransition()` | `scene/env/env-water-fx:461` | — |
 | `WATER_PRESETS()` | `scene/env/env-water-material:543` | — |
 | `WaterPreset()` | `scene/env/env-water-material:507` | — |
@@ -1391,7 +1391,7 @@
 | `renderInstanceThumbnail()` | `scene/manager/thumbnail-capture:49` | 用离屏 RenderTargetTexture 渲染指定模型实例的「当前骨骼姿态」并保存为缩略图。 |
 | `ThumbnailBaseKeyInput()` | `scene/manager/thumbnail-key:14` | — |
 | `ThumbnailKeyInput()` | `scene/manager/thumbnail-key:45` | — |
-| `buildThumbnailKey()` | `scene/manager/thumbnail-key:54` | 唯一缓存 key 构造：&#96;&amp;lt;baseKey&amp;gt;::&amp;lt;resolution&amp;gt;::&amp;lt;aspect&amp;gt;&#96;。 |
+| `buildThumbnailKey()` | `scene/manager/thumbnail-key:54` | 唯一缓存 key 构造：&#96;&lt;baseKey&gt;::&lt;resolution&gt;::&lt;aspect&gt;&#96;。 |
 | `libraryModelBaseKey()` | `scene/manager/thumbnail-key:37` | 由 LibraryModel 推导 baseKey（读侧专用适配器）。 |
 | `thumbnailBaseKey()` | `scene/manager/thumbnail-key:27` | 由库引用路径 + 内部路径推导 baseKey。 |
 | `BoneMapPreset()` | `scene/motion/animation-retargeter:26` | — |
@@ -2427,7 +2427,7 @@
 | `setMMDPath()` | `menus/settings-system:418` | — |
 | `SETTINGS()` | `menus/settings-targets:5` | 设置菜单文件夹导航 target（ADR-157：7 分类信息架构） |
 | `SETTINGS_ACTION()` | `menus/settings-targets:17` | 设置菜单动作 target（点击后执行操作，不导航） |
-| `SOFTWARE_DETAIL_PREFIX()` | `menus/settings-targets:33` | 动态 target 前缀 —— 用于 &#96;settings:software-detail:&amp;lt;path&amp;gt;&#96; 模式 |
+| `SOFTWARE_DETAIL_PREFIX()` | `menus/settings-targets:33` | 动态 target 前缀 —— 用于 &#96;settings:software-detail:&lt;path&gt;&#96; 模式 |
 | `SettingsActionTarget()` | `menus/settings-targets:39` | 所有动作 target 的联合类型 |
 | `SettingsFolderTarget()` | `menus/settings-targets:36` | 所有文件夹 target 的联合类型 |
 | `generateTextColors()` | `menus/settings:13` | — |
