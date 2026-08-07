@@ -130,4 +130,25 @@ describe('冲突解除后 deferred 自动恢复', () => {
         expect(bAfterFlush!.defaultKey).toBe('KeyZ'); // 仍是新注册的 KeyZ，非 stale 的 Space
         expect(bAfterFlush!.handler).toBe(newHandler); // 仍是新 handler，非 stale 闭包
     });
+
+    it('成功重注册后再次冲突入队再 flush：最新冲突意图恢复（code_review P2 round2）', () => {
+        // 1. A 注册 Space
+        registerShortcut(makeDef('a', 'Space'));
+        // 2. B 冲突入队（Space）
+        registerShortcut(makeDef('b', 'Space'));
+        expect(getAllShortcuts().map((s) => s.id)).not.toContain('b');
+        // 3. B 成功重注册（KeyZ/h2）——成功路径清理 stale 的 b(Space)
+        const h2 = vi.fn();
+        registerShortcut(makeDef('b', 'KeyZ', { handler: h2 }));
+        // 4. B 再次以冲突绑定注册（Space/h4）——入队去重覆盖为最新意图
+        const h4 = vi.fn();
+        registerShortcut(makeDef('b', 'Space', { handler: h4 }));
+        // 5. 改绑 A 解除冲突 → flush：残留队列条目是 fresh 的 b(Space/h4)，
+        //    必须恢复为最新意图（Space/h4），而非停留在 KeyZ/h2
+        setKeyBinding('a', 'KeyX');
+        const bAfterFlush = getAllShortcuts().find((s) => s.id === 'b');
+        expect(bAfterFlush).toBeDefined();
+        expect(bAfterFlush!.defaultKey).toBe('Space'); // 最新冲突意图 Space，非 KeyZ
+        expect(bAfterFlush!.handler).toBe(h4); // 最新 handler h4，非 h2
+    });
 });

@@ -126,11 +126,9 @@ function _flushDeferredShortcuts(): void {
     }
     const remaining: ShortcutDef[] = [];
     for (const def of _deferredShortcuts) {
-        // [fix code_review P2] 跳过已存在于 _shortcuts 的 id：队列期间同 id 可能已被
-        // 成功重注册（HMR 改绑），当前注册是权威——flush 不得用 stale 队列条目覆盖它。
-        if (_shortcuts.has(def.id)) {
-            continue; // 丢弃 stale 条目（不保留、不覆盖）
-        }
+        // 注：不做 `_shortcuts.has(def.id)` 跳过——stale 清理已在 registerShortcut
+        // 成功路径完成（set 时删队列同 id 条目），此处残留的同 id 条目必然都是
+        // 成功注册之后的 fresh 重新入队（最新意图），可直接按最新意图覆盖恢复。
         const incoming = getEffectiveBinding(def);
         let conflict = false;
         for (const [otherId, otherDef] of _shortcuts) {
@@ -190,6 +188,14 @@ export function registerShortcut(def: ShortcutDef): void {
         }
     }
     _shortcuts.set(def.id, def);
+    // [fix code_review P2] 成功路径清理队列中同 id 的 stale 条目：若 id 曾在冲突入队后
+    // 又成功重注册（HMR 改绑），旧队列条目已过时——保留会让 flush 误以为它是最新意图
+    // 而覆盖权威注册。此处同步移除，使 flush 时残留的同 id 条目必然都是成功注册之后的
+    // fresh 重新入队（最新意图），可按最新意图恢复。
+    const staleIdx = _deferredShortcuts.findIndex((d) => d.id === def.id);
+    if (staleIdx >= 0) {
+        _deferredShortcuts.splice(staleIdx, 1);
+    }
 }
 
 /** Register MULTIPLE shortcuts at once. */
