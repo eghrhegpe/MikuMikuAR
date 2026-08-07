@@ -370,9 +370,23 @@ interface EnvStateMiddleware {
 
 const _middlewares: EnvStateMiddleware[] = [];
 
-/** 注册 setEnvState 中间件（供 env-time-of-day/env-gravity 等子模块调用） */
+/** 注册 setEnvState 中间件（供 env-time-of-day/env-gravity 等子模块调用）。
+ * [fix P3] 按 name+phase 去重：HMR 重入时模块顶层重复执行注册，同 name 中间件
+ * 会累积执行（同一 env 变更被多重处理）；重复注册直接覆盖旧条目。 */
 export function registerEnvStateMiddleware(mw: EnvStateMiddleware): void {
+    const existingIdx = _middlewares.findIndex(
+        (e) => e.name === mw.name && e.phase === mw.phase
+    );
+    if (existingIdx >= 0) {
+        _middlewares[existingIdx] = mw;
+        return;
+    }
     _middlewares.push(mw);
+}
+
+/** 清空全部中间件（HMR 重入 / disposeEnvUpdateObserver 时调用，与 scene-tick/dt-tick 对称）。 */
+export function clearAllEnvMiddlewares(): void {
+    _middlewares.length = 0;
 }
 
 /** 按阶段遍历 middleware，异常隔离 */

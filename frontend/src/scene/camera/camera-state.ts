@@ -89,22 +89,41 @@ export interface CameraPreset {
 }
 
 // ======== Runtime Preset State ========
+// [refactor] 单一默认状态源：模块级 let 初始化与 resetCameraState() 均从
+// DEFAULT_CAMERA_STATE 取值，避免两份独立副本未来维护漂移（code_review P3）。
+
+const DEFAULT_CAMERA_STATE = {
+    fov: 0.8,
+    cameraMode: 'orbit' as CameraMode,
+    cameraControl: 'orbit' as CameraControl,
+    cameraBehavior: 'none' as CameraBehavior,
+    scriptedSubMode: 'loop' as ScriptedSubMode,
+    focusCenterY: 8,
+    concertPaused: false,
+    surroundPaused: false,
+    cameraVmdName: '',
+    cameraVmdPath: '',
+    autoCameraEnabled: false,
+    autoCameraBeatCount: 0,
+    autoCameraPresetIdx: 0,
+    previousMode: 'orbit' as CameraMode,
+};
 
 let _currentPreset: CameraPreset = defaultCameraPreset();
-let _fov = 0.8;
-let _cameraMode: CameraMode = 'orbit';
-let _cameraControl: CameraControl = 'orbit';
-let _cameraBehavior: CameraBehavior = 'none';
-let _scriptedSubMode: ScriptedSubMode = 'loop';
+let _fov = DEFAULT_CAMERA_STATE.fov;
+let _cameraMode = DEFAULT_CAMERA_STATE.cameraMode;
+let _cameraControl = DEFAULT_CAMERA_STATE.cameraControl;
+let _cameraBehavior = DEFAULT_CAMERA_STATE.cameraBehavior;
+let _scriptedSubMode = DEFAULT_CAMERA_STATE.scriptedSubMode;
 let _currentCamera: Camera | null = null;
-let _focusCenterY = 8;
-let _concertPaused = false;
-let _surroundPaused = false;
-let _cameraVmdName = '';
-let _cameraVmdPath = '';
-let _autoCameraEnabled = false;
-let _autoCameraBeatCount = 0;
-let _autoCameraPresetIdx = 0;
+let _focusCenterY = DEFAULT_CAMERA_STATE.focusCenterY;
+let _concertPaused = DEFAULT_CAMERA_STATE.concertPaused;
+let _surroundPaused = DEFAULT_CAMERA_STATE.surroundPaused;
+let _cameraVmdName = DEFAULT_CAMERA_STATE.cameraVmdName;
+let _cameraVmdPath = DEFAULT_CAMERA_STATE.cameraVmdPath;
+let _autoCameraEnabled = DEFAULT_CAMERA_STATE.autoCameraEnabled;
+let _autoCameraBeatCount = DEFAULT_CAMERA_STATE.autoCameraBeatCount;
+let _autoCameraPresetIdx = DEFAULT_CAMERA_STATE.autoCameraPresetIdx;
 
 // ======== Defaults ========
 
@@ -305,7 +324,7 @@ export function isTouchDevice(): boolean {
 
 let _scene: Scene | null = null;
 let _canvas: HTMLCanvasElement | null = null;
-let _previousMode: CameraMode = 'orbit';
+let _previousMode: CameraMode = DEFAULT_CAMERA_STATE.previousMode;
 let _viewMatrixHandle: ObserverHandle | null = null;
 
 export function getCameraScene(): Scene | null {
@@ -350,21 +369,21 @@ export function setViewMatrixHandle(handle: ObserverHandle | null): void {
  */
 export function resetCameraState(): void {
     _currentPreset = defaultCameraPreset();
-    _fov = 0.8;
-    _cameraMode = 'orbit';
-    _cameraControl = 'orbit';
-    _cameraBehavior = 'none';
-    _scriptedSubMode = 'loop';
+    _fov = DEFAULT_CAMERA_STATE.fov;
+    _cameraMode = DEFAULT_CAMERA_STATE.cameraMode;
+    _cameraControl = DEFAULT_CAMERA_STATE.cameraControl;
+    _cameraBehavior = DEFAULT_CAMERA_STATE.cameraBehavior;
+    _scriptedSubMode = DEFAULT_CAMERA_STATE.scriptedSubMode;
     _currentCamera = null;
-    _focusCenterY = 8;
-    _concertPaused = false;
-    _surroundPaused = false;
-    _cameraVmdName = '';
-    _cameraVmdPath = '';
-    _autoCameraEnabled = false;
-    _autoCameraBeatCount = 0;
-    _autoCameraPresetIdx = 0;
-    _previousMode = 'orbit';
+    _focusCenterY = DEFAULT_CAMERA_STATE.focusCenterY;
+    _concertPaused = DEFAULT_CAMERA_STATE.concertPaused;
+    _surroundPaused = DEFAULT_CAMERA_STATE.surroundPaused;
+    _cameraVmdName = DEFAULT_CAMERA_STATE.cameraVmdName;
+    _cameraVmdPath = DEFAULT_CAMERA_STATE.cameraVmdPath;
+    _autoCameraEnabled = DEFAULT_CAMERA_STATE.autoCameraEnabled;
+    _autoCameraBeatCount = DEFAULT_CAMERA_STATE.autoCameraBeatCount;
+    _autoCameraPresetIdx = DEFAULT_CAMERA_STATE.autoCameraPresetIdx;
+    _previousMode = DEFAULT_CAMERA_STATE.previousMode;
     _viewMatrixHandle = null;
 }
 

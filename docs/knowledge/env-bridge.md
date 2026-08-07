@@ -12,6 +12,7 @@ adr:
   - ADR-148
 symbols:
   - applyEnvStateFacade
+  - clearAllEnvMiddlewares
   - registerEnvStateMiddleware
   - setEnvState
   - setPresetAnimActive

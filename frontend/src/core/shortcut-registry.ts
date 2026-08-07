@@ -105,11 +105,38 @@ function scopeMatches(shortcutScope: string | undefined, currentScope: string): 
 
 // ======== Public API ========
 
+/** 两个有效绑定是否按键组合冲突（key + 修饰键组合完全一致）。 */
+function bindingsConflict(a: EffectiveBinding, b: EffectiveBinding): boolean {
+    return (
+        a.key === b.key && a.ctrl === b.ctrl && a.shift === b.shift && a.alt === b.alt
+    );
+}
+
 /** Register ONE shortcut. */
 export function registerShortcut(def: ShortcutDef): void {
     if (!def.handler) {
         logWarn('shortcut-registry', `Shortcut "${def.id}" has no handler`);
         return;
+    }
+    // [fix P2] 冲突守卫：检测与已注册 shortcut 的按键绑定冲突（同 key + 修饰键组合）。
+    // 呼应 Ctrl+Space 被三模块同时注册静默覆盖的 P1 先例——后注册者若按键冲突，
+    // 此前 Map.set 静默覆盖先注册者，功能静默失效无告警。现改为：冲突时 logWarn
+    // 并保留先注册者（同 id 跳过——HMR 重载重注册合法，仅跨 id 冲突被拦截）。
+    const incoming = getEffectiveBinding(def);
+    for (const [otherId, otherDef] of _shortcuts) {
+        if (otherId === def.id) {
+            continue;
+        }
+        const other = getEffectiveBinding(otherDef);
+        if (bindingsConflict(incoming, other)) {
+            logWarn(
+                'shortcut-registry',
+                `Shortcut "${def.id}" 与 "${otherId}" 按键冲突 ` +
+                    `(${incoming.key}${incoming.ctrl ? '+Ctrl' : ''}${incoming.shift ? '+Shift' : ''}${incoming.alt ? '+Alt' : ''})——` +
+                    `保留先注册者，忽略后注册者`
+            );
+            return;
+        }
     }
     _shortcuts.set(def.id, def);
 }

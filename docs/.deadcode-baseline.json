@@ -1,10 +1,15 @@
 {
-  "unusedExports": 42,
+  "unusedExports": 41,
   "unusedTypes": 17,
   "duplicateExports": 1,
   "unusedDevDeps": 0,
   "unlistedDeps": 0,
+  "deadFiles": 8,
+  "unusedDeps": 0,
+  "nsExports": 0,
+  "nsTypes": 0,
+  "enumMembers": 0,
   "clones": 15,
-  "duplicatedLines": 274,
-  "updatedAt": "2026-08-05"
+  "duplicatedLines": 272,
+  "updatedAt": "2026-08-07"
 }

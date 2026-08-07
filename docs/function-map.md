@@ -8,7 +8,7 @@
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
 | 核心基础设施 | 132 | 799 |
-| 3D 场景 | 125 | 1217 |
+| 3D 场景 | 125 | 1218 |
 | 菜单 & UI | 76 | 394 |
 | 动作算法 | 18 | 138 |
 
@@ -349,7 +349,7 @@
 | `LoadRequest()` | `core/load-manager:45` | — |
 | `ResourceHandle()` | `core/load-manager:73` | — |
 | `ResourceKind()` | `core/load-manager:11` | — |
-| `loadManager()` | `core/load-manager:256` | 单例。 |
+| `loadManager()` | `core/load-manager:263` | 单例。 |
 | `registerLibraryScannedHook()` | `core/load-refresh-registry:57` | 注册一个「库扫描完成」钩子。 |
 | `registerLoadRefreshHook()` | `core/load-refresh-registry:21` | 注册一个「模型加载后刷新」钩子。 |
 | `runLoadRefreshHooks()` | `core/load-refresh-registry:33` | 执行所有已注册的加载后刷新钩子。 |
@@ -472,18 +472,18 @@
 | `KeyBindingOverride()` | `core/shortcut-registry:23` | — |
 | `ShortcutDef()` | `core/shortcut-registry:9` | — |
 | `ShortcutWithBinding()` | `core/shortcut-registry:47` | — |
-| `_resetShortcutRegistry()` | `core/shortcut-registry:335` | Reset all internal state — only for use in tests. |
-| `exportKeyBindings()` | `core/shortcut-registry:262` | Get current custom bindings (for saving to uiState). |
-| `formatKeyBinding()` | `core/shortcut-registry:141` | 格式化按键绑定为可读字符串，如 "Ctrl+1"、"Shift+←" |
-| `getAllShortcuts()` | `core/shortcut-registry:125` | Get all registered shortcuts with their CURRENT effective bindings. |
-| `getAriaKeyshortcuts()` | `core/shortcut-registry:177` | 将 ShortcutDef 格式化为 aria-keyshortcuts 值，如 "Control+1" |
-| `initShortcutDispatcher()` | `core/shortcut-registry:277` | Initialize the dispatcher — call once at app startup. |
-| `loadKeyBindings()` | `core/shortcut-registry:255` | Load custom bindings from persisted state (call at app init). |
-| `registerShortcut()` | `core/shortcut-registry:109` | Register ONE shortcut. |
-| `registerShortcuts()` | `core/shortcut-registry:118` | Register MULTIPLE shortcuts at once. |
-| `resetAllKeyBindings()` | `core/shortcut-registry:248` | Reset ALL shortcuts to their default bindings. |
-| `resetKeyBinding()` | `core/shortcut-registry:243` | Reset one shortcut to its default binding. |
-| `setKeyBinding()` | `core/shortcut-registry:204` | Set custom key binding for a shortcut ID. |
+| `_resetShortcutRegistry()` | `core/shortcut-registry:362` | Reset all internal state — only for use in tests. |
+| `exportKeyBindings()` | `core/shortcut-registry:289` | Get current custom bindings (for saving to uiState). |
+| `formatKeyBinding()` | `core/shortcut-registry:168` | 格式化按键绑定为可读字符串，如 "Ctrl+1"、"Shift+←" |
+| `getAllShortcuts()` | `core/shortcut-registry:152` | Get all registered shortcuts with their CURRENT effective bindings. |
+| `getAriaKeyshortcuts()` | `core/shortcut-registry:204` | 将 ShortcutDef 格式化为 aria-keyshortcuts 值，如 "Control+1" |
+| `initShortcutDispatcher()` | `core/shortcut-registry:304` | Initialize the dispatcher — call once at app startup. |
+| `loadKeyBindings()` | `core/shortcut-registry:282` | Load custom bindings from persisted state (call at app init). |
+| `registerShortcut()` | `core/shortcut-registry:116` | Register ONE shortcut. |
+| `registerShortcuts()` | `core/shortcut-registry:145` | Register MULTIPLE shortcuts at once. |
+| `resetAllKeyBindings()` | `core/shortcut-registry:275` | Reset ALL shortcuts to their default bindings. |
+| `resetKeyBinding()` | `core/shortcut-registry:270` | Reset one shortcut to its default binding. |
+| `setKeyBinding()` | `core/shortcut-registry:231` | Set custom key binding for a shortcut ID. |
 | `envState()` | `core/state:27` | — |
 | `applyHudVisibility()` | `core/status-bar:31` | 按 uiState 开关应用顶部 HUD 显隐：帧率时钟（#fpsClock）与多线程徽标（#runtimeBadge）。 |
 | `disposeStatusBar()` | `core/status-bar:117` | 清理 status 定时器（供 HMR 清理入口调用）。 |
@@ -877,53 +877,53 @@
 | `OrbitParams()` | `scene/camera/camera-state:52` | Orbit camera parameters. |
 | `ScriptedSubMode()` | `scene/camera/camera-state:45` | ADR-100 §6.4 — scripted 行为子态。 |
 | `SurroundParams()` | `scene/camera/camera-state:65` | Surround (turntable) camera parameters — automatic full-circle orbit around target. |
-| `clearCameraVmdState()` | `scene/camera/camera-state:261` | — |
-| `defaultCameraPreset()` | `scene/camera/camera-state:111` | — |
-| `getAutoCameraBeatCount()` | `scene/camera/camera-state:276` | — |
-| `getAutoCameraPresetIdx()` | `scene/camera/camera-state:284` | — |
-| `getCameraBehavior()` | `scene/camera/camera-state:170` | — |
-| `getCameraCanvas()` | `scene/camera/camera-state:319` | — |
-| `getCameraControl()` | `scene/camera/camera-state:166` | — |
-| `getCameraMode()` | `scene/camera/camera-state:162` | — |
-| `getCameraPreset()` | `scene/camera/camera-state:131` | — |
-| `getCameraScene()` | `scene/camera/camera-state:311` | — |
-| `getCameraVmdName()` | `scene/camera/camera-state:244` | — |
-| `getCameraVmdPath()` | `scene/camera/camera-state:248` | — |
-| `getConcertParams()` | `scene/camera/camera-state:149` | — |
-| `getConcertPaused()` | `scene/camera/camera-state:226` | — |
-| `getCurrentCamera()` | `scene/camera/camera-state:206` | — |
-| `getFocusCenterY()` | `scene/camera/camera-state:216` | — |
-| `getFov()` | `scene/camera/camera-state:196` | — |
-| `getFreeflyParams()` | `scene/camera/camera-state:145` | — |
-| `getOrbitParams()` | `scene/camera/camera-state:141` | — |
-| `getPreviousMode()` | `scene/camera/camera-state:327` | — |
-| `getScriptedSubMode()` | `scene/camera/camera-state:174` | — |
-| `getSurroundParams()` | `scene/camera/camera-state:153` | — |
-| `getSurroundPaused()` | `scene/camera/camera-state:234` | — |
-| `getViewMatrixHandle()` | `scene/camera/camera-state:335` | — |
-| `hasCameraVmd()` | `scene/camera/camera-state:252` | — |
-| `isAutoCameraEnabled()` | `scene/camera/camera-state:268` | — |
+| `clearCameraVmdState()` | `scene/camera/camera-state:280` | — |
+| `defaultCameraPreset()` | `scene/camera/camera-state:130` | — |
+| `getAutoCameraBeatCount()` | `scene/camera/camera-state:295` | — |
+| `getAutoCameraPresetIdx()` | `scene/camera/camera-state:303` | — |
+| `getCameraBehavior()` | `scene/camera/camera-state:189` | — |
+| `getCameraCanvas()` | `scene/camera/camera-state:338` | — |
+| `getCameraControl()` | `scene/camera/camera-state:185` | — |
+| `getCameraMode()` | `scene/camera/camera-state:181` | — |
+| `getCameraPreset()` | `scene/camera/camera-state:150` | — |
+| `getCameraScene()` | `scene/camera/camera-state:330` | — |
+| `getCameraVmdName()` | `scene/camera/camera-state:263` | — |
+| `getCameraVmdPath()` | `scene/camera/camera-state:267` | — |
+| `getConcertParams()` | `scene/camera/camera-state:168` | — |
+| `getConcertPaused()` | `scene/camera/camera-state:245` | — |
+| `getCurrentCamera()` | `scene/camera/camera-state:225` | — |
+| `getFocusCenterY()` | `scene/camera/camera-state:235` | — |
+| `getFov()` | `scene/camera/camera-state:215` | — |
+| `getFreeflyParams()` | `scene/camera/camera-state:164` | — |
+| `getOrbitParams()` | `scene/camera/camera-state:160` | — |
+| `getPreviousMode()` | `scene/camera/camera-state:346` | — |
+| `getScriptedSubMode()` | `scene/camera/camera-state:193` | — |
+| `getSurroundParams()` | `scene/camera/camera-state:172` | — |
+| `getSurroundPaused()` | `scene/camera/camera-state:253` | — |
+| `getViewMatrixHandle()` | `scene/camera/camera-state:354` | — |
+| `hasCameraVmd()` | `scene/camera/camera-state:271` | — |
+| `isAutoCameraEnabled()` | `scene/camera/camera-state:287` | — |
 | `isCameraMode()` | `scene/camera/camera-state:34` | [audit:P3] 类型守卫：任意 string 是否为合法 CameraMode（桥接入口 / 反序列化用）。 |
-| `isTouchDevice()` | `scene/camera/camera-state:294` | — |
-| `resetCameraState()` | `scene/camera/camera-state:351` | [fix P2] 重置相机单例状态（HMR / disposeCameraSystem 时调用）。 |
-| `setAutoCameraBeatCount()` | `scene/camera/camera-state:280` | — |
-| `setAutoCameraEnabledFlag()` | `scene/camera/camera-state:272` | — |
-| `setAutoCameraPresetIdx()` | `scene/camera/camera-state:288` | — |
-| `setCameraBehavior()` | `scene/camera/camera-state:186` | — |
-| `setCameraCanvas()` | `scene/camera/camera-state:323` | — |
-| `setCameraControl()` | `scene/camera/camera-state:182` | — |
-| `setCameraMode()` | `scene/camera/camera-state:178` | — |
-| `setCameraPreset()` | `scene/camera/camera-state:135` | — |
-| `setCameraScene()` | `scene/camera/camera-state:315` | — |
-| `setCameraVmdState()` | `scene/camera/camera-state:256` | — |
-| `setConcertPaused()` | `scene/camera/camera-state:230` | — |
-| `setCurrentCamera()` | `scene/camera/camera-state:210` | — |
-| `setFocusCenterY()` | `scene/camera/camera-state:220` | — |
-| `setFov()` | `scene/camera/camera-state:200` | — |
-| `setPreviousMode()` | `scene/camera/camera-state:331` | — |
-| `setScriptedSubMode()` | `scene/camera/camera-state:190` | — |
-| `setSurroundPaused()` | `scene/camera/camera-state:238` | — |
-| `setViewMatrixHandle()` | `scene/camera/camera-state:339` | — |
+| `isTouchDevice()` | `scene/camera/camera-state:313` | — |
+| `resetCameraState()` | `scene/camera/camera-state:370` | [fix P2] 重置相机单例状态（HMR / disposeCameraSystem 时调用）。 |
+| `setAutoCameraBeatCount()` | `scene/camera/camera-state:299` | — |
+| `setAutoCameraEnabledFlag()` | `scene/camera/camera-state:291` | — |
+| `setAutoCameraPresetIdx()` | `scene/camera/camera-state:307` | — |
+| `setCameraBehavior()` | `scene/camera/camera-state:205` | — |
+| `setCameraCanvas()` | `scene/camera/camera-state:342` | — |
+| `setCameraControl()` | `scene/camera/camera-state:201` | — |
+| `setCameraMode()` | `scene/camera/camera-state:197` | — |
+| `setCameraPreset()` | `scene/camera/camera-state:154` | — |
+| `setCameraScene()` | `scene/camera/camera-state:334` | — |
+| `setCameraVmdState()` | `scene/camera/camera-state:275` | — |
+| `setConcertPaused()` | `scene/camera/camera-state:249` | — |
+| `setCurrentCamera()` | `scene/camera/camera-state:229` | — |
+| `setFocusCenterY()` | `scene/camera/camera-state:239` | — |
+| `setFov()` | `scene/camera/camera-state:219` | — |
+| `setPreviousMode()` | `scene/camera/camera-state:350` | — |
+| `setScriptedSubMode()` | `scene/camera/camera-state:209` | — |
+| `setSurroundPaused()` | `scene/camera/camera-state:257` | — |
+| `setViewMatrixHandle()` | `scene/camera/camera-state:358` | — |
 | `animateCameraVmd()` | `scene/camera/camera-vmd:93` | Animate the VMD camera to a given 30fps frame time. |
 | `clearCameraVmd()` | `scene/camera/camera-vmd:73` | — |
 | `createVmdCamera()` | `scene/camera/camera-vmd:100` | 创建 VMD 相机（若已存在且未销毁则复用）。供 camera.ts switchCameraMode 在 vmd 分支使用。 |
@@ -993,7 +993,8 @@
 | `switchCameraMode()` | `scene/camera/camera:336` | Switch to a different camera mode, preserving position as much as possible. |
 | `InvertableArcRotateCameraPointersInput()` | `scene/camera/invertablePointersInput:13` | 可反转 Y 轴的 ArcRotate 相机指针输入。 |
 | `applyEnvStateFacade()` | `scene/env/_bridge/env-bridge:49` | 等同于 scene-env.ts 的 applyEnvState，但避免循环依赖。 |
-| `registerEnvStateMiddleware()` | `scene/env/_bridge/env-bridge:374` | 注册 setEnvState 中间件（供 env-time-of-day/env-gravity 等子模块调用） |
+| `clearAllEnvMiddlewares()` | `scene/env/_bridge/env-bridge:388` | 清空全部中间件（HMR 重入 / disposeEnvUpdateObserver 时调用，与 scene-tick/dt-tick 对称）。 |
+| `registerEnvStateMiddleware()` | `scene/env/_bridge/env-bridge:376` | 注册 setEnvState 中间件（供 env-time-of-day/env-gravity 等子模块调用）。 |
 | `setEnvState()` | `scene/env/_bridge/env-bridge:323` | 环境状态唯一写入入口（ADR-173 中间件链），可选跳过自动保存。 |
 | `setPresetAnimActive()` | `scene/env/_bridge/env-bridge:43` | 标记预设动画是否运行中（供 _applyEnvStateFacade 跳过方向光同步） |
 | `clearAllEnvCallbacks()` | `scene/env/_bridge/env-dispatcher:33` | 清空所有已注册的 env 回调（场景销毁 / HMR 重入时兜底清理）。 |
@@ -1099,32 +1100,32 @@
 | `setOnTerrainReady()` | `scene/env/env-ground:808` | — |
 | `tickGround()` | `scene/env/env-ground:1321` | — |
 | `triggerTerrainReady()` | `scene/env/env-ground:813` | ADR-226: 供 env-ground-spec.ts 的地形 onReady 回调触发已注册监听（避免直接访问模块局部 _onTerrainReady）。 |
-| `_envSys()` | `scene/env/env-impl:20` | — |
-| `addGroundRipple()` | `scene/env/env-impl:23` | — |
-| `addRipple()` | `scene/env/env-impl:23` | — |
-| `applyFog()` | `scene/env/env-impl:232` | — |
-| `applyGround()` | `scene/env/env-impl:47` | — |
-| `applySky()` | `scene/env/env-impl:43` | — |
-| `clearGroundRipples()` | `scene/env/env-impl:23` | — |
-| `clearRipples()` | `scene/env/env-impl:23` | — |
-| `createClouds()` | `scene/env/env-impl:34` | — |
-| `createParticleEmitter()` | `scene/env/env-impl:69` | — |
-| `createWater()` | `scene/env/env-impl:23` | — |
-| `disposeClouds()` | `scene/env/env-impl:34` | — |
-| `disposeEnvUpdateObserver()` | `scene/env/env-impl:197` | — |
-| `disposeParticles()` | `scene/env/env-impl:69` | — |
-| `disposeWater()` | `scene/env/env-impl:23` | — |
-| `ensureEnvUpdateObserver()` | `scene/env/env-impl:125` | — |
-| `getGroundHeightAt()` | `scene/env/env-impl:47` | — |
-| `getScene()` | `scene/env/env-impl:20` | — |
-| `initEnvImpl()` | `scene/env/env-impl:75` | — |
-| `refreshWaterRenderList()` | `scene/env/env-impl:23` | — |
-| `registerSceneTickCallback()` | `scene/env/env-impl:72` | — |
-| `setOnGroundChanged()` | `scene/env/env-impl:47` | — |
-| `setOnTerrainReady()` | `scene/env/env-impl:47` | — |
-| `updateParticleTexture()` | `scene/env/env-impl:69` | — |
-| `updateParticleWind()` | `scene/env/env-impl:69` | — |
-| `updateWaterAnimSpeed()` | `scene/env/env-impl:23` | — |
+| `_envSys()` | `scene/env/env-impl:21` | — |
+| `addGroundRipple()` | `scene/env/env-impl:24` | — |
+| `addRipple()` | `scene/env/env-impl:24` | — |
+| `applyFog()` | `scene/env/env-impl:241` | — |
+| `applyGround()` | `scene/env/env-impl:48` | — |
+| `applySky()` | `scene/env/env-impl:44` | — |
+| `clearGroundRipples()` | `scene/env/env-impl:24` | — |
+| `clearRipples()` | `scene/env/env-impl:24` | — |
+| `createClouds()` | `scene/env/env-impl:35` | — |
+| `createParticleEmitter()` | `scene/env/env-impl:70` | — |
+| `createWater()` | `scene/env/env-impl:24` | — |
+| `disposeClouds()` | `scene/env/env-impl:35` | — |
+| `disposeEnvUpdateObserver()` | `scene/env/env-impl:198` | — |
+| `disposeParticles()` | `scene/env/env-impl:70` | — |
+| `disposeWater()` | `scene/env/env-impl:24` | — |
+| `ensureEnvUpdateObserver()` | `scene/env/env-impl:126` | — |
+| `getGroundHeightAt()` | `scene/env/env-impl:48` | — |
+| `getScene()` | `scene/env/env-impl:21` | — |
+| `initEnvImpl()` | `scene/env/env-impl:76` | — |
+| `refreshWaterRenderList()` | `scene/env/env-impl:24` | — |
+| `registerSceneTickCallback()` | `scene/env/env-impl:73` | — |
+| `setOnGroundChanged()` | `scene/env/env-impl:48` | — |
+| `setOnTerrainReady()` | `scene/env/env-impl:48` | — |
+| `updateParticleTexture()` | `scene/env/env-impl:70` | — |
+| `updateParticleWind()` | `scene/env/env-impl:70` | — |
+| `updateWaterAnimSpeed()` | `scene/env/env-impl:24` | — |
 | `CategorizedEnvPreset()` | `scene/env/env-lighting:287` | 分类预设（version 3 格式）。 |
 | `DerivedLighting()` | `scene/env/env-lighting:37` | — |
 | `ENV_PRESET_FIELDS()` | `scene/env/env-lighting:166` | 各类别包含的 EnvState 字段白名单。未列入的字段（如 collision*）不参与任何预设。 |
@@ -2386,7 +2387,7 @@
 | `showPresetSaveDialog()` | `menus/scene-render-presets:267` | — |
 | `buildStageLevel()` | `menus/scene-stage-levels:161` | — |
 | `buildStageTransformLevel()` | `menus/scene-stage-levels:175` | — |
-| `buildStageLightLevel()` | `menus/scene-stage-lights:816` | — |
+| `buildStageLightLevel()` | `menus/scene-stage-lights:817` | — |
 | `buildSettingsAboutLevel()` | `menus/settings-about:235` | — |
 | `handleSettingsAction()` | `menus/settings-actions:21` | 全局设置项点击分发：语言切换 + 动作表。settings.ts 的 onItemClick 使用。 |
 | `buildSettingsAppearanceLevel()` | `menus/settings-appearance:510` | — |

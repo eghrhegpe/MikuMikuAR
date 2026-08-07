@@ -10,9 +10,10 @@ import { logWarn } from '@/core/logger';
 import { observe, type ObserverHandle } from '@/core/observer-handle';
 import { safeDispose } from '@/core/dispose-helpers';
 import { disposeTextureCache } from './_shared/env-texture';
-import { _envSys, getScene, getPipeline, isInitialized } from './_shared/env-context';
+import { _envSys, getScene, getPipeline, isInitialized, resetEnvContext } from './_shared/env-context';
 import { clearSceneTickCallbacks, runSceneTickCallbacks } from './_bridge/env-dispatcher';
 import { clearEnvDtTickCallbacks, runEnvDtTickCallbacks } from './_bridge/env-dispatcher';
+import { clearAllEnvMiddlewares } from './_bridge/env-bridge';
 import { causticsController } from './env-caustics';
 import { underwaterFogController } from './env-underwater-fog';
 
@@ -226,6 +227,14 @@ export function disposeEnvUpdateObserver(): void {
     // [fix P2] 复位共享上下文引用：isInitialized() 返回 false，防 HMR 重入 step0
     // 再 dispose 时 getScene() 命中已销毁旧引用（env-context P2 幽灵引用）。
     resetEnvContext();
+    // [fix P3] 复位模块级 prev 状态：HMR 重入后首帧 diff 用陈旧基线（_prevParticleEnabled
+    // 残留 true 会跳过粒子重建等）；与 resetEnvContext 对称复位。
+    _prevParticleEnabled = true;
+    _prevSplash = false;
+    _prevCustomTexture = '';
+    // [fix P3] 清空 env 中间件注册表（HMR 重入时模块顶层重复注册会累积——registerEnvStateMiddleware
+    // 已按 name+phase 去重，此处兜底清空），与 scene-tick/dt-tick 清理对称。
+    clearAllEnvMiddlewares();
 }
 
 // ======== Fog ========

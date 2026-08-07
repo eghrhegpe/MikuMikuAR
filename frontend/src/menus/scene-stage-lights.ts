@@ -23,6 +23,7 @@ import {
     getActiveStageLightId,
     setActiveStageLightId,
     pushUndoSnapshot,
+    popUndoSnapshot,
     offerSceneUndo,
     type StageLightState,
 } from '../scene/scene';

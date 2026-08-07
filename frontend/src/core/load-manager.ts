@@ -173,6 +173,13 @@ class LoadManager {
                     this._phase = 'register';
                     const { modelRegistry } = await import('./config');
                     const inst = modelRegistry.get(id);
+                    if (!inst) {
+                        // [fix P3] 注册表查无实例静默空名：与 resource-load-missing-warning
+                        // 先例一致，暴露注册表时序问题（loadPMXFile 返回 id 但 registry 未写入）
+                        console.warn(
+                            `[loadManager] loadPMXFile 返回 id "${id}" 但 modelRegistry 查无实例（时序异常）`
+                        );
+                    }
                     this._phase = 'refresh';
                     this._refreshMenus();
                     return { id, kind: req.kind, name: inst?.name ?? '', filePath: req.path };
