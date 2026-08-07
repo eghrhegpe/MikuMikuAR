@@ -32,7 +32,7 @@ import {
   RE_CLAIM_A,
   RE_CLAIM_B,
   RE_DEPRECATED_WORD,
-  RE_NEGATED,
+  RE_NEGATED_CLAIM,
   RE_TABLE_FIRST_COL,
   RE_TABLE_VERB,
   RE_TABLE_NEGATED,
@@ -60,6 +60,7 @@ if (_UNK.length) {
 // matchAll 内部自带克隆,不会污染这两个副本的 lastIndex,可安全跨行复用。
 const RE_CLAIM_A_G = globalOf(RE_CLAIM_A);
 const RE_CLAIM_B_G = globalOf(RE_CLAIM_B);
+const RE_NEGATED_CLAIM_G = globalOf(RE_NEGATED_CLAIM);
 
 const ADR_DIR = path.join(ROOT, 'docs', 'adr');
 
@@ -132,13 +133,14 @@ function main() {
     for (let i = headerEnd; i < lines.length; i++) {
       const line = lines[i];
 
-      // [fix 2026-08-06] 否定宣称行跳过：ADR 常写「本 ADR **不**取代 [ADR-NNN]」澄清边界，
-      // RE_CLAIM_A 会把「不取代 ADR-100」误判为宣称 → 误报漏标。整行含否定宣称词即跳过
-      // （RE_NEGATED 已扩展覆盖 取代/替代/推翻/废弃/废除；混排「不取代X 且 取代Y」极罕见，
-      // 行级跳过可接受）。
-      if (RE_NEGATED.test(line)) {
-        continue;
-      }
+      // [code_review P3] 目标级否定判定（取代旧「整行 continue」）：ADR 常写「本 ADR **不**取代
+      // [ADR-NNN]」澄清边界，RE_CLAIM_A 会把「不取代 ADR-100」误判为宣称 → 误报漏标。
+      // 旧实现整行含否定宣称词即 continue，会把「不取代 ADR-100，同时取代 ADR-200」这类
+      // 混排行里 ADR-200 的真实宣称也吞掉（② 漏标假绿）。改为仅剔除被否定词直接修饰的
+      // 目标编号（RE_NEGATED_CLAIM 带捕获组），其余目标继续走 ②/④ 判定。
+      const negatedTargets = new Set(
+        [...line.matchAll(RE_NEGATED_CLAIM_G)].map((m) => parseInt(m[1], 10))
+      );
 
       // ② 明确宣称结构:行内「取代/替代…ADR-NNN」或「ADR-NNN…已废弃」,抽取全部目标
       const targets = [];
@@ -147,6 +149,7 @@ function main() {
 
       const claimedThisLine = [];
       for (const target of targets) {
+        if (negatedTargets.has(target)) continue; // 该目标被否定修饰（不取代 X），非宣称
         if (target !== num && adrNums.has(target)) {
           claimedThisLine.push(target);
           const tMeta = adrList.find(e => e.num === target);
@@ -165,9 +168,12 @@ function main() {
       //      - 部分推翻(①b)也不算,未被推翻的章节仍需体检。
       const selfMarked = (RE_SUPERSEDED_BY.test(meta.status) && !isPartial)
         || RE_SELF_DEPRECATED.test(meta.status);
-      if (claimedThisLine.length === 0 && !selfMarked && RE_DEPRECATED_WORD.test(line) && !RE_NEGATED.test(line)) {
+      // [code_review P3] ④ 判定同步目标级：旧 `!RE_NEGATED.test(line)` 整行过滤会把
+      // 「不废弃 ADR-116 的 UI 改进点，ADR-088 已过时」这类混排行整体排除出 ④ 人工确认，
+      // 覆盖范围被否定词收窄。改为只把被否定修饰的编号从 others 剔除。
+      if (claimedThisLine.length === 0 && !selfMarked && RE_DEPRECATED_WORD.test(line)) {
         const others = [...new Set([...line.matchAll(/ADR-(\d+)/g)].map(m => parseInt(m[1], 10)))]
-          .filter(n => n !== num && adrNums.has(n));
+          .filter(n => n !== num && adrNums.has(n) && !negatedTargets.has(n));
         const anyOtherMarked = others.some((o) => {
           const t = adrList.find(e => e.num === o);
           return t && (RE_SUPERSEDED_BY.test(t.status)

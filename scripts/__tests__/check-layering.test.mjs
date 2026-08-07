@@ -97,6 +97,39 @@ test('多行 import → core→scene 被捕获（P2-2 回归）', () => {
   }
 });
 
+// [code_review P2] 括号内带注释的多行 import：body 组旧 `[^;"'/`]*?` 排除斜杠，
+// 遇到 `// 说明` 注释即整体匹配失败 → import 边从分层图消失（R1/R2/R3 假绿）。
+// body 改为 `(?:[^;"'`]|\/\/[^\n]*|\/\*[\s\S]*?\*\/)*?` 后注释作为可跳过单元放行。
+test('多行 import 带 // 注释 → core→scene 仍被捕获（code_review P2 回归）', () => {
+  const dir = makeFixture({
+    'core/load.ts': "import {\n  loadScene, // 场景加载器\n} from '@/scene/manager/loader';\n",
+    'scene/manager/loader.ts': 'export const loadScene = 1;\n',
+  });
+  try {
+    const r = runCli(dir, ['--json'], NO_BASELINE);
+    assert.equal(r.code, 1, '带注释的多行 core→scene 边应超基线失败');
+    const data = JSON.parse(r.stdout);
+    assert.ok(data.regressions.some((v) => v.rule === 'R2' && v.from === 'core/load.ts'), JSON.stringify(data.regressions));
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('多行 import 带 /* 块注释 */ → core→scene 仍被捕获（code_review P2 回归）', () => {
+  const dir = makeFixture({
+    'core/load.ts': "import {\n  /* 块注释 */\n  loadScene,\n} from '@/scene/manager/loader';\n",
+    'scene/manager/loader.ts': 'export const loadScene = 1;\n',
+  });
+  try {
+    const r = runCli(dir, ['--json'], NO_BASELINE);
+    assert.equal(r.code, 1, '带块注释的多行 core→scene 边应超基线失败');
+    const data = JSON.parse(r.stdout);
+    assert.ok(data.regressions.some((v) => v.rule === 'R2' && v.from === 'core/load.ts'), JSON.stringify(data.regressions));
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('type-only import 豁免（import type / { type A }）→ 不构成违规', () => {
   const dir = makeFixture({
     'core/a.ts': "import type { Scene } from '@/scene/manager/loader';\nimport { type B } from '@/scene/manager/other';\n",

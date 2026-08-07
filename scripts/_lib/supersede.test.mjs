@@ -12,6 +12,7 @@ import {
   RE_CLAIM_B,
   RE_DEPRECATED_WORD,
   RE_NEGATED,
+  RE_NEGATED_CLAIM,
   RE_TABLE_FIRST_COL,
   RE_TABLE_VERB,
   RE_TABLE_NEGATED,
@@ -354,6 +355,31 @@ test('RE_NEGATED: matched — 未替代（fix 扩展）', () => {
 
 test('RE_NEGATED: matched — 没有废弃（fix 扩展）', () => {
   assert.ok(RE_NEGATED.test('没有废弃 ADR-137 的 schema 决策'));
+});
+
+// [code_review P3] 加粗形态:ADR 正文常写「本 ADR **不**取代 [ADR-NNN]」强调否定,
+// 旧 `\s*` 无法跨越 `**` → RE_NEGATED 不命中,② 漏标误报依旧。
+test('RE_NEGATED: matched — **不**取代（加粗形态）', () => {
+  assert.ok(RE_NEGATED.test('本 ADR **不**取代 [ADR-100]——边界澄清'));
+});
+
+// [code_review P3] 目标级否定宣称:捕获被否定修饰的具体目标编号,
+// 供 gen-adr-supersede ②/④ 做目标级剔除(混排「不取代 X 且 取代 Y」不吞真实宣称)。
+test('RE_NEGATED_CLAIM: matched — 不取代 ADR-100（捕获 100）', () => {
+  const m = '本 ADR 不取代 ADR-100，同时取代 ADR-200 的相机部分'.match(RE_NEGATED_CLAIM);
+  assert.ok(m, '应命中否定宣称');
+  assert.equal(parseInt(m[1], 10), 100);
+});
+
+test('RE_NEGATED_CLAIM: matched — **未**替代 ADR-061.1 子编号（与 RE_CLAIM_A 同为整数捕获，目标级比较一致）', () => {
+  // 真实 ADR 写法是加粗否定词本身（**未**替代），而非整个短语——后者星号会挡在 ADR 前
+  const m = '本 ADR **未**替代 ADR-061.1 的 ragdoll 方案'.match(RE_NEGATED_CLAIM);
+  assert.ok(m, '应命中否定宣称');
+  assert.equal(parseInt(m[1], 10), 61, '子编号 061.1 应捕获主号 61，与 RE_CLAIM_A 提取一致');
+});
+
+test('RE_NEGATED_CLAIM: not matched — 真实取代宣称不带否定词', () => {
+  assert.ok(!RE_NEGATED_CLAIM.test('本 ADR 取代 ADR-200 的相机部分'));
 });
 
 // ⑤ 表格弱宣称

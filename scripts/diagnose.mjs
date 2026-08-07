@@ -119,9 +119,15 @@ let passed = 0;
 if (docsOnly) {
     SECTION.docs("docs 门禁链（继承 check:docs，真相源=package.json）");
     const gate = expandDocsGate();
+    // [code_review P3] 门禁链失败须反映到退出码：-does 声称「继承 check:docs（单一真相源）」，
+    // 而 check:docs 是 && 串联、任意项失败即非零退出。旧实现仅 2 项 critical 失败才 exit 1，
+    // 其余 18/20 项失败仍 process.exit(0) → 假绿，与真实 check:docs 红绿判定漂移。
+    let gateOk = true;
     for (const { script, flags } of gate) {
         const label = script.replace(/\.mjs$/, "") + (flags ? ` ${flags}` : "");
-        runTask(label, `${script} ${flags}`.trim(), { critical: isGateCritical(script) }) && passed++;
+        const ok = runTask(label, `${script} ${flags}`.trim(), { critical: isGateCritical(script) });
+        if (ok) passed++;
+        else gateOk = false;
     }
 
     SECTION.docs("diagnose 额外项");
@@ -130,7 +136,7 @@ if (docsOnly) {
 
     console.log(`\n${CYAN}════════════════════════════════════${RESET}`);
     console.log(`  诊断完成（docs/知识库，门禁链 ${gate.length} 项 + 额外 ${2} 项，${passed} 项通过）`);
-    process.exit(0);
+    process.exit(gateOk ? 0 : 1);
 }
 
 if (!slowOnly) {

@@ -211,6 +211,12 @@ try {
     console.error(`   当前 ${srcNote}，请先 \`git fetch\` 再从最大号 +1 重新运行，或人工核对编号。`);
     failExitCode = 1;
   }
+  // [code_review P2] supersedes 目标校验提前到落盘前：任一目标不可解析/不存在/无状态行
+  // → 不创建 ADR 文件、不占号（旧流程创建后再校验，失败留半成品 + EEXIST 不可重试）。
+  if (failExitCode === null && args.supersedes.length && !validateSupersedes(args.supersedes)) {
+    console.error('❌ --supersedes 目标校验失败，未创建 ADR（不占号，无残留文件）');
+    failExitCode = 1;
+  }
   if (failExitCode === null) {
     let fd;
     try {
@@ -247,6 +253,41 @@ console.log(`   > **状态**: ${status}（${new Date().toISOString().slice(0, 10
 // ── 被取代标注：在被取代方状态行内联追加「被 [ADR-NNN] 取代」（幂等）──
 
 // 我们的 RE_SUPERSEDED_BY 检测的是状态行（gen-adr-supersede 契约），故标注必须进状态行而非独立行。
+
+// [code_review P2] supersedes 只读预检：在创建 ADR 文件前校验全部 --supersedes 引用
+// 可解析、目标文件存在、状态行可定位（解析逻辑与 annotateSuperseded 保持同源）。
+// 旧流程在文件创建后才 annotateSuperseded，任一目标失败 exit 1 会留下已创建的
+// adr-NNN-slug.md + 已占编号，重跑即 EEXIST「编号已被占用」，不可干净重试 →
+// 校验提前到落盘前，失败不占号、不留半成品。
+function validateSupersedes(targetRefs) {
+  let ok = true;
+  for (const ref of targetRefs) {
+    // 兼容子编号（仓库已有 adr-061.1-*）：ADR-061.1 / 061.1，
+    // 避免 \d{1,3} 截断成 061 → 标错到父文件 adr-061-*
+    const m = String(ref).match(/(\d+(?:\.\d+)?)/);
+    if (!m) {
+      console.error(`❌ --supersedes 无法解析「${ref}」，需形如 ADR-012、012 或 ADR-061.1`);
+      ok = false;
+      continue;
+    }
+    const [mainNum, subNum] = m[1].split('.');
+    // 主号补零（012）、子号保留（061.1），避免正则拼接时小数点被当通配符
+    const tPad = String(parseInt(mainNum, 10)).padStart(3, '0') + (subNum ? `.${subNum}` : '');
+    const fname = fs.readdirSync(ADR_DIR).find(f => f.startsWith(`adr-${tPad}-`) && /^adr-\d/.test(f));
+    if (!fname) {
+      console.error(`❌ 未找到 adr-${tPad}-* 文件`);
+      ok = false;
+      continue;
+    }
+    const hdr = parseAdrHeader(path.join(ADR_DIR, fname));
+    if (hdr.error || hdr.statusLine < 0) {
+      console.error(`❌ adr-${tPad} 无法定位状态行（${hdr.error || '未找到状态行'}），无法插入标注`);
+      ok = false;
+    }
+  }
+  return ok;
+}
+
 function annotateSuperseded(targetRefs, supersedingNum) {
   // 标注文本统一三位补零（[ADR-002](adr-002-slug.md)），与文件名/标题约定一致
   const supPad = String(supersedingNum).padStart(3, '0');
