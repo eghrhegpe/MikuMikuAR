@@ -312,7 +312,13 @@ export function disposeScene(): void {
     // 引用残留已 dispose 的旧灯光对象（引用非 null 但对象已销毁）——dispose→re-init
     // 之间若 env-bridge/scene-serialize 调 getLightState() 会读 disposed 对象属性。
     // initLighting 有兜底 guard，但显式释放与其他子系统 dispose 对齐更安全。
-    disposeLighting();
+    // [fix P3-A] try/catch 隔离：disposeLighting 内部子释放若抛错，不得阻断后续
+    // disposeCameraSystem / scene.dispose / engine.dispose 级联终态（否则 WebGL 上下文泄漏）。
+    try {
+        disposeLighting();
+    } catch (e) {
+        console.error('[disposeScene] disposeLighting failed; continuing cascade', e);
+    }
     // [audit:round13 P2] 级联释放相机系统（stop 各行为循环 + dispose 当前相机 + 清理运行时上下文）。
     // 此前 disposeCameraSystem 是全工程无调用点的死代码；HMR 重入 _reinitSceneForHMR 会再次
     // initCameraSystem(scene, canvas) 重建，故此处调用是安全且必须的（否则旧相机引用/触摸监听残留）。
