@@ -206,10 +206,9 @@ export function stopARCamera(): void {
     _active = false;
     _hideVideo();
     _notifyARModeChange(false);
-    // [fix P3] 复位镜像覆盖标志：stopARCamera 不清零则下次 startARCamera 时
-    // _applyVideoMirror 仍跳过默认镜像逻辑（用户上次 setARMirror 的 overridden
-    // 跨会话残留），重新进入 AR 不恢复「前置默认镜像」期望。
-    _mirrorOverridden = false;
+    // 注：不复位 _mirrorOverridden——用户手动镜像偏好经 motion-camera-levels
+    // setARMirror + triggerAutoSave 持久化，跨 AR 会话保留是设计意图（code_review
+    // 复核：此前一次「清零」会静默回退用户显式选择，已撤销）。
 }
 
 /** 切换前后摄像头。 */

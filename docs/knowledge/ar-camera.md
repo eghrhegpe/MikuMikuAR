@@ -40,7 +40,7 @@ AR Camera：摄像头视频流管理（ADR-055）。提供 `start` / `stop` / `s
 - `startARCamera()` / `stopARCamera()` / `captureARScreenshot()` / `isARActive()`
 - 维护内部状态 `ARCameraState`（`active` / `facing` / `streamId`）+ `<video>` 元素
 - `CameraFacing = 'user' | 'environment'`，支持前后摄切换
-- 镜像覆盖标记 `_mirrorOverridden`（用户手动设置过镜像；stopARCamera 时清零，重新进入 AR 恢复「前置默认镜像」）
+- 镜像覆盖标记 `_mirrorOverridden`（用户手动设置过镜像；跨 AR 会话保留——用户偏好经 motion-camera-levels setARMirror + triggerAutoSave 持久化）
 
 ## 并发与竞态防御（关键）
 - **代数令牌 `_arGen`**：每次发起/终止 AR 自增；`startARCamera` await `getUserMedia` 后检测 `myGen !== _arGen` 即丢弃流并 `return false`，杜绝「幽灵 AR」（已离开 AR 但 `isARActive()===true`）

@@ -55,10 +55,10 @@ export function initTransformGizmo(scene: Scene): void {
         _gizmoNode = null;
         _isDragging = false;
         _activeDragEndCallbacks = [];
-        // [fix P2] 场景销毁时清空全局拖拽通知 observer：resource-detail-helpers 等
-        // 经 onGizmoDragObservable 订阅，场景重建后旧 observer 闭包引用已 dispose 的
-        // id/adapter——不清理则下次拖拽通知过期闭包。可选链兼容测试 mock（无 clear）。
-        onGizmoDragObservable.clear?.();
+        // 注：不清空 onGizmoDragObservable——resource-detail-helpers.buildTransformCard
+        // 的 syncLive 订阅无场景重建重订阅钩子，clear 会在打开卡片期间场景重建时
+        // 丢订阅致滑杆停止实时更新（code_review 复核：订阅者经 getGizmoNode()/
+        // getGizmoTargetId() 实时读数据，不依赖场景闭包，原行为正常，已撤销 clear）。
         _scene = scene;
     }
 }

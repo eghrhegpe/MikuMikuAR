@@ -821,14 +821,14 @@
 | 符号 | 文件:行 | 说明 |
 |------|--------|------|
 | `CameraFacing()` | `scene/ar/ar-camera:13` | — |
-| `captureARScreenshot()` | `scene/ar/ar-camera:249` | 截取 AR 合成画面（视频底 + 3D 模型层）。 |
+| `captureARScreenshot()` | `scene/ar/ar-camera:248` | 截取 AR 合成画面（视频底 + 3D 模型层）。 |
 | `getARFacing()` | `scene/ar/ar-camera:83` | — |
 | `isARActive()` | `scene/ar/ar-camera:79` | — |
-| `isARMirrored()` | `scene/ar/ar-camera:236` | 当前是否镜像显示。 |
-| `setARMirror()` | `scene/ar/ar-camera:229` | 设置是否镜像显示（前置默认镜像，后置默认不镜像）。用户手动调用后标记为 overridden，切换摄像头时保持用户设置。 |
+| `isARMirrored()` | `scene/ar/ar-camera:235` | 当前是否镜像显示。 |
+| `setARMirror()` | `scene/ar/ar-camera:228` | 设置是否镜像显示（前置默认镜像，后置默认不镜像）。用户手动调用后标记为 overridden，切换摄像头时保持用户设置。 |
 | `startARCamera()` | `scene/ar/ar-camera:92` | 启动 AR 摄像头并显示视频背景。 |
 | `stopARCamera()` | `scene/ar/ar-camera:193` | 停止 AR 摄像头，释放资源并隐藏视频背景。 |
-| `switchARCameraFacing()` | `scene/ar/ar-camera:216` | 切换前后摄像头。 |
+| `switchARCameraFacing()` | `scene/ar/ar-camera:215` | 切换前后摄像头。 |
 | `isARModeActive()` | `scene/ar/ar-scene:243` | — |
 | `setARMode()` | `scene/ar/ar-scene:161` | 切换 AR 模式（摄像头视频背景 + 透明 canvas）。 |
 | `takeARScreenshot()` | `scene/ar/ar-scene:239` | AR 合成截图（视频底 + 3D 层），供截图功能调用。异步版（ADR-017 A2-04）。 |
