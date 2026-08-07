@@ -225,6 +225,31 @@ jobs:
         run: node scripts/check-script-hygiene.mjs --strict
 
   # ============================================================
+  # Deadcode — baseline gate (knip + jscpd)
+  # [P2 2026-08-08] 此前死代码检查仅挂 pre-push 且被 auto-update 中和（exit 1 自动吸纳入
+  # 基线 → 门禁名存实亡）。本 job 为阻断式：超基线即 fail，不带 --update，无自动吸收。
+  # ============================================================
+  deadcode-baseline:
+    name: Deadcode — Baseline Gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+
+      - name: Install frontend deps (knip + jscpd)
+        run: cd frontend && npm ci
+
+      - name: Deadcode baseline check (blocking, no auto-update)
+        # 超基线即 fail；如需更新基线请人工显式运行
+        #   cd frontend && node ../scripts/check-deadcode-baseline.mjs --update
+        # 并单独提交 docs/.deadcode-baseline.json
+        run: cd frontend && node ../scripts/check-deadcode-baseline.mjs
+
+  # ============================================================
   # Version — tag vs package.json consistency
   # Ensures that if a tag exists (on PRs to main), the package.json
   # version matches it. Only meaningful on push/pull to main/master.

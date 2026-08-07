@@ -229,3 +229,28 @@ test('gen-dep-graph: 默认输出跑通（frontend/src 存在 → exit 0）', ()
   assert.equal(r.code, 0, `exit=${r.code} stderr=${r.stderr}`);
   assert.match(r.stdout, /```mermaid/);
 });
+
+// ── gen-guide-gap 冒烟（P1 回归：camelCase 面板提取 + 覆盖判定） ──
+
+test('gen-guide-gap: --strict 跑通（34 面板全提取、无缺口 → exit 0）', () => {
+  const r = runScript(path.join(SCRIPTS, 'gen-guide-gap.mjs'), ['--strict']);
+  assert.equal(r.code, 0, `exit=${r.code} stderr=${r.stderr} stdout=${r.stdout}`);
+  assert.match(r.stdout, /菜单 folder 面板: 34 个/);
+  assert.match(r.stdout, /所有菜单面板均有 guide 页面覆盖/);
+});
+
+// ── gen-menu-map 冒烟（P2 回归：label 限定顶层 / 守卫空数组 / 对象映射路由） ──
+
+test('gen-menu-map: --check 跑通（P2 修复后产物无 string 误报 → exit 0）', () => {
+  const r = runScript(path.join(SCRIPTS, 'gen-menu-map.mjs'), ['--check']);
+  assert.equal(r.code, 0, `exit=${r.code} stderr=${r.stderr} stdout=${r.stdout}`);
+  assert.match(r.stdout, /一致|已同步/);
+});
+
+// ── check-deadcode-baseline 冒烟（P1/P2 回归：正常路径 exit 0） ──
+
+test('check-deadcode-baseline: 正常路径跑通（knip/jscpd 可用、基线内 → exit 0）', () => {
+  const r = runScript(path.join(SCRIPTS, 'check-deadcode-baseline.mjs'));
+  assert.equal(r.code, 0, `exit=${r.code} stderr=${r.stderr} stdout=${r.stdout}`);
+  assert.match(r.stdout, /未回退/);
+});

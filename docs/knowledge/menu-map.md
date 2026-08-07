@@ -18,6 +18,7 @@ source_files:
   - frontend/src/menus/motion-cloth-levels.ts
   - frontend/src/menus/motion-detail-ui.ts
   - frontend/src/menus/motion-override-levels.ts
+  - frontend/src/menus/motion-popup.ts
   - frontend/src/menus/motion-pose-levels.ts
   - frontend/src/menus/motion-procmotion-levels.ts
   - frontend/src/menus/motion-root-ui.ts
@@ -106,20 +107,20 @@ use_when:
 
 | id | label | 默认键 | Ctrl | 分组 |
 |----|-------|--------|------|------|
-| `toggle:model` | `shortcuts.label.models` | `Digit1` | ✓ | shortcuts.group.popupNav |
-| `toggle:motion` | `shortcuts.label.motion` | `Digit2` | ✓ | shortcuts.group.popupNav |
-| `toggle:scene` | `shortcuts.label.scene` | `Digit3` | ✓ | shortcuts.group.popupNav |
-| `toggle:env` | `shortcuts.label.env` | `Digit4` | ✓ | shortcuts.group.popupNav |
-| `toggle:settings` | `shortcuts.label.settings` | `Digit5` | ✓ | shortcuts.group.popupNav |
-| `toggle:plaza` | `shortcuts.label.plaza` | `Digit7` | ✓ | shortcuts.group.popupNav |
-| `toggle:assistant` | `shortcuts.label.assistant` | `Digit8` | ✓ | shortcuts.group.popupNav |
-| `playback:toggle` | `shortcuts.label.playPause` | `Space` | — | shortcuts.group.playbackControl |
-| `global:close` | `shortcuts.label.closePopup` | `Escape` | — | shortcuts.group.global |
-| `playback:seek-back` | `shortcuts.label.seekBack` | `ArrowLeft` | — | shortcuts.group.playbackControl |
-| `playback:seek-forward` | `shortcuts.label.seekForward` | `ArrowRight` | — | shortcuts.group.playbackControl |
-| `screenshot:current` | `shortcuts.label.screenshot` | `F2` | — | shortcuts.group.screenshot |
-| `motion:undo` | `shortcuts.label.motionUndo` | `KeyZ` | ✓ | shortcuts.group.motionUndoRedo |
-| `motion:redo` | `shortcuts.label.motionRedo` | `KeyZ` | ✓ | shortcuts.group.motionUndoRedo |
+| `toggle:model` | `shortcuts.label.models` | `Digit1` | ✓ | — |
+| `toggle:motion` | `shortcuts.label.motion` | `Digit2` | ✓ | — |
+| `toggle:scene` | `shortcuts.label.scene` | `Digit3` | ✓ | — |
+| `toggle:env` | `shortcuts.label.env` | `Digit4` | ✓ | — |
+| `toggle:settings` | `shortcuts.label.settings` | `Digit5` | ✓ | — |
+| `toggle:plaza` | `shortcuts.label.plaza` | `Digit7` | ✓ | — |
+| `toggle:assistant` | `shortcuts.label.assistant` | `Digit8` | ✓ | — |
+| `playback:toggle` | `shortcuts.label.playPause` | `Space` | — | — |
+| `global:close` | `shortcuts.label.closePopup` | `Escape` | — | — |
+| `playback:seek-back` | `shortcuts.label.seekBack` | `ArrowLeft` | — | — |
+| `playback:seek-forward` | `shortcuts.label.seekForward` | `ArrowRight` | — | — |
+| `screenshot:current` | `shortcuts.label.screenshot` | `F2` | — | — |
+| `motion:undo` | `shortcuts.label.motionUndo` | `KeyZ` | ✓ | — |
+| `motion:redo` | `shortcuts.label.motionRedo` | `KeyZ` | ✓ | — |
 
 ## diagnostic-chat.ts
 
@@ -156,9 +157,23 @@ use_when:
 | folder | `scene.postProcess` | lucide:wand-2 | `env:postprocess` |
 | folder | `env.cloud` | lucide:cloud | `env:cloud` |
 
+### target 路由
+
+| target | builder |
+|--------|---------|
+| `env:sky` | `buildSkyLevel` |
+| `env:particle` | `buildParticleLevel` |
+| `env:wind` | `buildWindLevel` |
+| `env:fog` | `buildFogLevel` |
+| `env:shadow` | `buildShadowLevel` |
+| `env:cloud` | `buildCloudLevel` |
+| `env:experimental` | `buildExperimentalLevel` |
+| `env:presets` | `buildPresetLevel` |
+| `env:postprocess` | `buildPostProcessLevel` |
+
 ### Schema: buildParticleSchema()
 
-- **custom** `env:particle:type` · `env.none`
+- **custom** `env:particle:type` · —
 - **slider** `env:particle:density` · `env.density` lucide:layers
 - **slider** `env:particle:size` · `env.size` lucide:maximize
 - **slider** `env:particle:speed` · `env.speed` lucide:gauge
@@ -184,16 +199,20 @@ use_when:
 
 ### Schema: buildOpenWithSchema()
 
-- **custom** `open-with:root` · `model-detail.model`
+- **custom** `open-with:root` · —
 
 ### Schema: buildModelSchema()
 
+- **custom** `model:main` · —
 
 ### Schema: buildModelInfoSchema()
 
+- **custom** `model-info:root` · —
 
 ### Schema: buildModelTagsSchema()
 
+- **custom** `model-tags:fav` · —
+- **custom** `model-tags:picker` · —
 
 ### Schema: buildMorphPreviewSchema()
 
@@ -201,12 +220,13 @@ use_when:
 
 ### Schema: buildBoneHierarchySchema()
 
+- **custom** `bone-hierarchy:root` · —
 
 ## model-material.ts
 
 ### Schema: buildMatRootSchema()
 
-- **custom** `mat-root:groups` · — lucide:layers
+- **custom** `mat-root:groups` · —
 - **custom** `mat-root:param-card` · —
 - **custom** `mat-root:unlit-fallback` · —
 - **custom** `mat-root:reset` · —
@@ -215,13 +235,16 @@ use_when:
 
 ### Schema: buildActionBindingSchema()
 
+- **custom** `binding:pose` · —
+- **custom** `binding:assignment` · —
+- **custom** `binding:tools` · —
 
 ## motion-camera-levels.ts
 
 ### Schema: buildCameraSchema()
 
-- **custom** `camera:main` · `string`
-- **custom** `camera:behavior` · `string`
+- **custom** `camera:main` · —
+- **custom** `camera:behavior` · —
 - **custom** `camera:behavior-na` · —
 - **custom** `camera:auto-interval` · —
 - **custom** `camera:params` · —
@@ -234,7 +257,7 @@ use_when:
 ### Schema: buildVirtualSkirtSchema()
 
 - **custom** `cloth:toggle` · —
-- **custom** `cloth:params` · `cloth.qualityAuto`
+- **custom** `cloth:params` · —
 - **custom** `cloth:status` · —
 
 ## motion-detail-ui.ts
@@ -248,6 +271,19 @@ use_when:
 ### Schema: buildBoneOverrideSchema()
 
 - **custom** `override:empty` · —
+
+## motion-popup.ts
+
+### target 路由
+
+| target | builder |
+|--------|---------|
+| `motion:camera` | `buildCameraLevel` |
+| `motion:playbackSpeed` | `buildPlaybackSpeedLevel` |
+| `motion:proc-library` | `buildProcLibraryLevel` |
+| `motion:gaze` | `buildGazeTrackingLevel` |
+| `motion:poseStudio` | `buildPoseStudioLevel` |
+| `motion:retarget` | `buildRetargetLevel` |
 
 ## motion-pose-levels.ts
 
@@ -265,12 +301,12 @@ use_when:
 
 ### Schema: buildProcMotionSchema()
 
-- **custom** `procmotion:main` · `motion.modeOff`
-- **custom** `procmotion:presets` · `motion.procPresetName` lucide:save
+- **custom** `procmotion:main` · —
+- **custom** `procmotion:presets` · —
 - **custom** `procmotion:params` · —
 - **folder** `procmotion:bone-micro` · `motion.boneMicro` lucide:activity
   - **custom** `procmotion:bone-micro-content` · —
-- **custom** `procmotion:advanced` · `motion.interpAuto`
+- **custom** `procmotion:advanced` · —
 
 ## motion-root-ui.ts
 
@@ -326,6 +362,20 @@ use_when:
 | folder | `scene.mirror` | lucide:scan | `scene:mirror` |
 | modeSlider | `env.reflectionQuality` | lucide:monitor | — |
 | modeSlider | `env.reflectionMode` | lucide:layers | — |
+
+### target 路由
+
+| target | builder |
+|--------|---------|
+| `scene:presets` | `buildPresetScenesLevel` |
+| `scene:render:stage` | `buildStageLevel` |
+| `scene:stageLight` | `buildStageLightLevel` |
+| `scene:ground` | `buildGroundLevel` |
+| `scene:water` | `buildWaterLevel` |
+| `scene:dragMode` | `buildDragModeLevel` |
+| `scene:physics` | `buildPhysicsLevel` |
+| `scene:mirror` | `buildMirrorLevel` |
+| `physics:wasm` | `buildWasmPhysicsLevel` |
 
 ## scene-physics-levels.ts
 
@@ -383,55 +433,55 @@ use_when:
 ### Schema: buildStageLightSchema()
 
 - **custom** `light:presets` · —
-- **custom** `light:list` · — lucide:plus
-- **custom** `light:basic` · `scene.spot` lucide:lightbulb
-- **custom** `light:cone` · — lucide:flashlight
-- **custom** `light:spot-params` · — lucide:sliders
-- **custom** `light:point-params` · — lucide:sliders
-- **custom** `light:dir-params` · — lucide:compass
-- **custom** `light:shadow` · `scene.hardShadow` lucide:cloud
-- **custom** `light:follow` · — lucide:crosshair
-- **custom** `light:transform` · — lucide:move-3d
+- **custom** `light:list` · —
+- **custom** `light:basic` · —
+- **custom** `light:cone` · —
+- **custom** `light:spot-params` · —
+- **custom** `light:point-params` · —
+- **custom** `light:dir-params` · —
+- **custom** `light:shadow` · —
+- **custom** `light:follow` · —
+- **custom** `light:transform` · —
 - **custom** `light:delete` · —
 
 ## settings-controls.ts
 
 ### Schema: buildCameraSchema()
 
-- **slider** `settings:perf:cam-sens` · `settings.perf.camSens` lucide:move
+- **slider** `settings:perf:cam-sens` · `settings.perf.camSens`
 - **custom** `settings:perf:cam-sens-hint` · —
-- **toggle** `settings:perf:invert-y` · `settings.perf.invertY` lucide:flip-vertical
+- **toggle** `settings:perf:invert-y` · `settings.perf.invertY`
 - **custom** `settings:perf:invert-y-hint` · —
-- **toggle** `settings:perf:auto-center` · `settings.perf.autoCenter` lucide:crosshair
+- **toggle** `settings:perf:auto-center` · `settings.perf.autoCenter`
 - **custom** `settings:perf:auto-center-hint` · —
 
 ## settings-diagnostic.ts
 
 ### Schema: buildDiagnosticSchema()
 
-- **custom** `diagnostic:panel` · `string`
+- **custom** `diagnostic:panel` · —
 
 ## settings-graphics.ts
 
 ### Schema: buildFrameQualitySchema()
 
-- **toggle** `settings:graphics:frame-cap` · `settings.perf.frameCap` lucide:monitor-check
+- **toggle** `settings:graphics:frame-cap` · `settings.perf.frameCap`
 - **custom** `settings:graphics:frame-cap-hint` · —
-- **slider** `settings:graphics:fps` · `settings.perf.fpsCap` lucide:gauge
+- **slider** `settings:graphics:fps` · `settings.perf.fpsCap`
 - **custom** `settings:graphics:fps-hint` · —
-- **slider** `settings:graphics:render-scale` · `settings.perf.renderScale` lucide:scan
+- **slider** `settings:graphics:render-scale` · `settings.perf.renderScale`
 - **custom** `settings:graphics:render-scale-hint` · —
 
 ### Schema: buildEffectsSchema()
 
-- **custom** `settings:graphics:toggles` · `string`
+- **custom** `settings:graphics:toggles` · —
 
 ### Schema: buildPhysicsHudSchema()
 
-- **toggle** `settings:graphics:default-physics` · `settings.perf.defaultPhysics` lucide:atom
+- **toggle** `settings:graphics:default-physics` · `settings.perf.defaultPhysics`
 - **custom** `settings:graphics:default-physics-hint` · —
-- **toggle** `settings:graphics:show-fps-clock` · `settings.perf.showFpsClock` lucide:gauge
-- **toggle** `settings:graphics:show-runtime-badge` · `settings.perf.showRuntimeBadge` lucide:cpu
+- **toggle** `settings:graphics:show-fps-clock` · `settings.perf.showFpsClock`
+- **toggle** `settings:graphics:show-runtime-badge` · `settings.perf.showRuntimeBadge`
 
 ## settings-resources.ts
 

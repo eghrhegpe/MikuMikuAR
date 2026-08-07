@@ -135,13 +135,38 @@ function splitTopLevel(text) {
 // ---------------------------------------------------------------------------
 
 /**
+ * 取对象文本中「顶层属性区域」——跳过起始对象 `{` 与字符串/模板字面量，
+ * 截断到第一个嵌套结构（引号/模板外的 `{` 或 `=>`）之前。
+ * [P2 2026-08-08] renderCustom 回调内类型注解（`label: string`、`{ id; label }` 等）会被
+ * `\blabel\s*:` 全局误当顶层属性 → menu-map.md 现 4 处 `string` 误报（实证）。顶层属性值
+ * 都是简单标量（字符串/t()/标识符），嵌套内容（renderCustom 函数体、icon 对象）在截断点后，
+ * 不再污染顶层属性提取；children 数组的嵌套对象由 parseNodeArray 递归处理，不受影响。
+ */
+function topLevelPrefix(objText) {
+  let inStr = null; // ', ", `
+  for (let i = 1; i < objText.length; i++) { // 跳过起始 `{`
+    const c = objText[i];
+    if (inStr) {
+      if (c === '\\') { i++; continue; }
+      if (c === inStr) inStr = null;
+      continue;
+    }
+    if (c === "'" || c === '"' || c === '`') { inStr = c; continue; }
+    if (c === '{') return objText.slice(0, i); // 嵌套对象字面量起点
+    if (c === '=' && objText[i + 1] === '>') return objText.slice(0, i); // 箭头函数（renderCustom）
+  }
+  return objText;
+}
+
+/**
  * 提取对象字面量文本中 `key: <value>` 的值。
  * 支持：'str'、"str"、`str`、t('i18n.key')、数字、布尔、标识符。
  * 嵌套对象/数组不提取（返回 undefined）。
  */
 function extractProp(objText, key) {
+  // [P2 2026-08-08] 仅在顶层属性区域匹配（见 topLevelPrefix 注释）
   const re = new RegExp(`\\b${key}\\s*:`);
-  const m = re.exec(objText);
+  const m = re.exec(topLevelPrefix(objText));
   if (!m) return undefined;
   let i = m.index + m[0].length;
   while (i < objText.length && /\s/.test(objText[i])) i++;
@@ -210,7 +235,19 @@ function findReturnArray(bodyText) {
     if (!m) return null;
     const openIdx = i + m.index + m[0].length - 1; // '[' 位置
     const end = matchBracket(bodyText, openIdx);
-    if (end !== -1) return bodyText.slice(openIdx, end + 1);
+    if (end !== -1) {
+      const arrText = bodyText.slice(openIdx, end + 1);
+      // [P2 2026-08-08] 跳过守卫空数组：`return [] satisfies MenuNode[]` 是 per-model Schema
+      // 的「无实例守卫」分支（model-detail.ts buildModelSchema 等），旧实现取首个 return [
+      // → 文档显示空节，核心 per-model 菜单全部漏报。数组内无节点内容（仅空白/逗号）即视为
+      // 守卫空数组，继续找下一个 `return [`。
+      const inner = arrText.slice(1, -1).trim();
+      if (inner === '' || inner === ',') {
+        i = end + 1;
+        continue;
+      }
+      return arrText;
+    }
     i = openIdx + 1;
   }
   return null;
@@ -283,15 +320,20 @@ function extractRootItems(text) {
   return items;
 }
 
-/** 从文件文本中提取 switch 路由 `case '<target>': return buildXxxLevel()`。 */
+/** 从文件文本中提取 target 路由：switch case 或对象映射表两种形态。 */
 function extractRoutes(text) {
   const routes = [];
-  const re = /case\s+['"]([^'"]+)['"]\s*:\s*return\s+(build\w+Level|build\w+Schema)\s*\(/g;
+  // 旧形态：switch case `case 'x': return buildXxxLevel(`
+  const reCase = /case\s+['"]([^'"]+)['"]\s*:\s*return\s+(build\w+Level|build\w+Schema)\s*\(/g;
   let m;
-  while ((m = re.exec(text))) {
-    routes.push({ target: m[1], builder: m[2] });
-  }
-  return routes;
+  while ((m = reCase.exec(text))) routes.push({ target: m[1], builder: m[2] });
+  // [P2 2026-08-08] 对象映射表形态：`'sky': buildSkyLevel,`（ENV_FOLDER_ROUTES /
+  // SCENE_FOLDER_ROUTES 等 Record 映射——全仓库实际路由都是此形态，旧正则只认 case，
+  // 路由节永不输出而文档引言却宣称覆盖 target 路由，死代码+误导性声明）。
+  const reMap = /['"]([^'"]+)['"]\s*:\s*(build\w+Level|build\w+Schema)\s*(?:\(|,)/g;
+  while ((m = reMap.exec(text))) routes.push({ target: m[1], builder: m[2] });
+  // 去重（同 target 可能两种形态都命中）
+  return [...new Map(routes.map((r) => [`${r.target}:${r.builder}`, r])).values()];
 }
 
 /** 提取顶层入口函数：`export function showXxxMenu(...)` / `export function buildXxxLevel()`（无参）。 */

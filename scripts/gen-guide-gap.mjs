@@ -40,6 +40,30 @@ const SETTINGS_OVERRIDDEN = new Set([
 /** 被其他 guide 页覆盖的别名域（如 tags → import-model / library） */
 const ALIAS_COVERED = new Set(['tags']);
 
+// [P2 2026-08-08] folder→guide 页名别名映射：camelCase 面板与 kebab 页名归一化后
+// 仍不相等（如 stageLight → stagelight vs stage-lights → stagelights），或语义对应
+// 与命名无关（postProcess → env-atmosphere「后处理」、presetScenes → scene-save「预设场景」）。
+// 归一化匹配无法覆盖的特殊对应都列在此；页面存在性仍会校验（页名不存在则判缺口）。
+const ALIAS_FOLDER_TO_PAGE = {
+  postProcess: 'env-atmosphere', // 后处理 → env-atmosphere.md
+  presetScenes: 'scene-save', // 预设场景 → scene-save.md
+  stageLight: 'stage-lights', // 光照 → stage-lights.md
+  loadModel: 'import-model', // 模型加载 → import-model.md
+  camera: 'camera-control', // 相机面板 → camera-control.md
+  // [P2 2026-08-08] 旧双向子串匹配的「巧合覆盖」转为显式别名：
+  // particle/wind 由 wind-particles.md、presets 由 env-presets.md、water 由 env-water.md 命中，
+  // 归一化精确匹配后不再巧合命中，须显式登记（页存在性仍校验）。
+  particle: 'wind-particles',
+  wind: 'wind-particles',
+  presets: 'env-presets',
+  water: 'env-water',
+};
+
+/** 归一化：小写 + 去连字符/点（camelCase 与 kebab-case 折叠为同形比较） */
+function normalize(s) {
+  return String(s).toLowerCase().replace(/[-_.]/g, '');
+}
+
 function main() {
   const args = parseArgs(process.argv.slice(2), { bools: ['strict'], strings: [], defaults: {} });
   if (args.help) {
@@ -61,9 +85,26 @@ function main() {
   }
 
   // 1. 提取 menu-map 的 folder 面板（含 env./scene./library./motion./settings. 前缀的二级域）
+  // [P1 2026-08-08] 旧正则 `[a-z]+\.[a-z0-9-]+` 只认全小写二级域 → 34 个面板中 9 个
+  // camelCase（scene.postProcess/library.loadModel/motion.poseStudio.title 三段域等）静默跳过，
+  // 脚本实际只校验 25/34 却输出「✅ 全覆盖」。放宽支持大写与三段域（split('.')[1] 取二级域）。
+  const menuText = fs.readFileSync(MENU_MAP, 'utf8');
+  const folderRows = [...menuText.matchAll(/^\| folder \| /gm)].length;
   const folders = [];
-  for (const m of fs.readFileSync(MENU_MAP, 'utf8').matchAll(/^\| folder \| `([a-z]+\.[a-z0-9-]+)` \|/gm)) {
+  for (const m of menuText.matchAll(/^\| folder \| `([A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*)` \|/gm)) {
     folders.push(m[1].split('.')[1]);
+  }
+  // [P1 2026-08-08] 提取数断言：提取数 < menu-map 实际 folder 行数 → 正则漏匹配（格式漂移/
+  // 新增形态未覆盖），立即报错而非静默假绿（防止「菜单加了、手册忘了」对未识别面板失效）。
+  if (folderRows === 0) {
+    // [P2 2026-08-08] menu-map 无任何 folder 行（格式整体变化/文件异常）→ 同样不可静默
+    // 「✅ 全覆盖」假绿。旧断言 `folders.length < folderRows` 在 0 < 0 时不触发，需独立守卫。
+    console.error('❌ menu-map 未提取到任何 folder 面板（文件格式异常或结构变化），无法执行覆盖扫描');
+    process.exit(1);
+  }
+  if (folders.length < folderRows) {
+    console.error(`❌ folder 面板提取不完整：menu-map 有 ${folderRows} 行，只提取到 ${folders.length} 个（疑似正则漏匹配或格式漂移）`);
+    process.exit(1);
   }
   const uniqueFolders = [...new Set(folders)].sort();
 
@@ -73,14 +114,26 @@ function main() {
     .filter((f) => f.endsWith('.md') && !['README.md', 'index.md'].includes(f))
     .map((f) => f.replace(/\.md$/, ''));
 
-  // 3. 对照：面板二级域是否被某 guide 页名包含（或反向）
+  // 3. 对照：面板二级域是否被某 guide 页名覆盖
+  // [P2 2026-08-08] 旧匹配为双向裸子串 `p.includes(folder) || folder.includes(p)`——
+  // 新页名若含某域名字串（如新增 skybox.md 使 sky 误判已覆盖）→ 漏报；且 camelCase 面板
+  // vs kebab 页名归一化前不相等 → 集体误报。改为：别名映射优先，否则归一化精确相等。
+  const pageSet = new Set(guidePages.map(normalize));
   const missing = [];
   for (const folder of uniqueFolders) {
     if (EXEMPT.has(folder)) continue;
     if (SETTINGS_OVERRIDDEN.has(folder)) continue; // settings.md 总览页已覆盖
     if (ALIAS_COVERED.has(folder)) continue; // 被其他 guide 页别名覆盖
-    const hit = guidePages.filter((p) => p.includes(folder) || folder.includes(p));
-    if (!hit.length) missing.push(folder);
+    const aliasPage = ALIAS_FOLDER_TO_PAGE[folder];
+    if (aliasPage) {
+      // 别名页必须在 guide 目录真实存在，否则判缺口（页面被删/改名时不再静默通过）
+      if (guidePages.includes(aliasPage)) continue;
+      missing.push(`${folder}（别名 ${aliasPage} 页不存在）`);
+      continue;
+    }
+    const normFolder = normalize(folder);
+    if (pageSet.has(normFolder)) continue; // 归一化精确匹配（camelCase ↔ kebab 折叠）
+    missing.push(folder);
   }
 
   console.log('用户指南覆盖缺口扫描');
