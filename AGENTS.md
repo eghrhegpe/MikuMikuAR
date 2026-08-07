@@ -6,15 +6,15 @@
 ## 硬约束
 
 > 500 行文件先 grep 定位再读。
-> 按需读取 `docs/knowledge/index.md` 枢纽索引（按 category 聚合的卡清单，自动生成）+ grep 卡正文定位功能作用，充实上下文。
-> 新 ADR 落地前先 Grep `> \*\*状态\*\*:.*(规划|实施中|部分实现)` in docs\adr 看是否已有类似实现；若触及既有 ADR 决策，就在对方首部标注「被 [ADR-NNN] 取代」。编号只允许给 ADR、novel 写。
+> 按需读取 `docs/knowledge/index.md`（枢纽索引，自动生成）+ grep 卡正文定位功能作用，充实上下文。
+> 核实情况：直接 grep 关键符号在 当前源码 > `docs/adr/` > `docs/knowledge/` > `docs/architecture.md`/`docs/function-map.md` > `docs/research/` 是否还存在。
+> 新 ADR 落地前先 Grep `> \*\*状态\*\*:.*(规划|实施中|部分实现)` in `docs/adr` 看是否已有类似实现；若触及既有 ADR 决策，就在对方首部标注「被 [ADR-NNN] 取代」。编号只允许给 ADR、novel 写。
+> 批量重构（重命名/移函数/加参数）用 `npm run codemod`（AST 感知），禁止 Python re.sub 或手动跨文件改。
+> 用户描述 UI 文案/点击问题时，先查 `frontend/src/core/i18n` 翻译文件反查定位对应 UI 元素（意图识别），再跳源码。
 > 信任本机改动，提交代码时：先测试 → `git status --short` 抓清单 → 按功能 `git add <通过测试的路径...>` → `git commit`。正常的更改，无需询问。先提交`docs/`,捎带了无关文件也别怕。
 > 最后询问用户是否需要处理预料之外的报错。
 > babymmd的换算关系是：1 unit = 0.1 米。
 > 禁止从 `@/core/utils` 神桶导入（ADR-191）——纯/叶子模块须引具体零依赖叶（`@/core/clamp`/`@/core/path`/`@/core/async`），整桶 import 会拖起 dom/state/fileservice 致 vitest fork worker 挂死。
-> 批量重构（重命名/移函数/加参数）用 `npm run codemod`（AST 感知），禁止 Python re.sub 或手动跨文件改。
-> 知识来源优先级：当前源码 > `docs/adr/` > `docs/knowledge/` > `docs/architecture.md`/`docs/function-map.md` > `docs/research/`。
-> 用户描述 UI 文案/点击问题时，先查 `frontend/src/core/i18n` 翻译文件反查定位对应 UI 元素（意图识别），再跳源码。
 
 ```bash
 # 暂存（本地缓存）
@@ -32,6 +32,21 @@ git reset HEAD~1                      # 撤销最近一条 commit，把改动放
 | 推送前 squash | 多个本地 commit 可以 `git rebase -i` 合并为一个有意义的 PR commit |
 | 建议避免 | `git stash` / `git stash push` / `git stash pop`（易丢失未提交改动；`list` / `show` 只读操作不受限） |
 
+
+## 钩子自动化（无需手动触发）
+
+> **Git 钩子（pre-commit / prepare-commit-msg 非阻断，pre-push 阻断）**：仓库钩子位于 `.githooks/`（非 `.git/hooks/`），克隆后需激活：`git config core.hooksPath .githooks`。pre-commit 自动同步文档/索引（秒级 gen）并 `git add docs/`；prepare-commit-msg 把变更行覆盖率缺口建议写入 commit message **body**；二者均不阻塞提交。逃生阀统一为 `git commit --no-verify`（仅跳过 pre-commit / prepare-commit-msg，不影响 pre-push）。
+
+| 钩子 | 功能 | 逃生阀 |
+|------|------|--------|
+| `pre-commit` | 自动跑 13 个秒级 gen 脚本（`gen-status-index`/`gen-funcmap`/`gen-docs-index`/`gen-novel-index`/`gen-menu-map`/`gen-knowledge-graph`/`gen-knowledge-h1`/`gen-knowledge-symbols`/`gen-knowledge-adr`/`gen-knowledge-tests`/`gen-tier`/`gen-routes`/`gen-ui-entry`）同步 `docs/` 并 `git add docs/` | `git commit --no-verify` |
+| `prepare-commit-msg` | 把变更行覆盖率缺口建议写入 commit message **body**（供 PR review 参考）；只提示覆盖率，**不**提示知识卡 | `MM_SKIP_COVERAGE_HINT=1` |
+| `pre-push` | 内联跑全量门禁（`gen-status-index`/`gen-funcmap`/`gen-docs-index`/`gen-novel-index`/`gen-guide-gap --strict`/`gen-menu-map` 的 `--check`、`check-deadcode-baseline`、`check-doc-drift --baseline`、`i18n-check --strict` 等），失败阻断推送。**不存在** `pre-push-gate.mjs` 包装脚本 | 无（硬门禁） |
+| commit 信息格式 | `<type>: <描述>`，type 同 conventional commits（feat/fix/docs/chore/refactor/test） |
+| 提交范围 | 按功能 `git add <通过测试的路径>`；杜绝被压缩记忆的可能 |
+| 禁 stash 状态变更 | 仅禁 `git stash push`/`git stash pop`/`git stash apply` 等会改动工作区的操作；只读的 `git stash list`、`git stash show` 不受限 |
+
+> **关键原则**：doctor 检查若输出 `[WARN]...skip`，必须手动运行 `node_modules/.bin/tsc` 验证类型。
 
 ## 去哪里查
 
@@ -77,12 +92,14 @@ git reset HEAD~1                      # 撤销最近一条 commit，把改动放
 
 | 层 | 选型 |
 |----|------|
-| 桌面 | Wails v3 (Go + WebView2) |
-| 前端 | Vite + TypeScript |
+| 桌面 | Wails v3 (Go + WebView2) ，绑定统一走 `npm run generate:bindings`（必须 -ts，见硬约束） |
+| 前端 | Vite + TypeScript；UI 层原生 DOM 手写（无 React/Vue/Lit/Preact 等框架、无 Web Components/Shadow DOM，`customElements`/`attachShadow` 全仓零命中；声明式菜单 Schema 驱动视图，状态走 `uiState` 持久化链） |
 | 3D | Babylon.js 9.19.x + babylon-mmd (fork) |
 | 物理 | XPBD (TS) + WASM Bullet |
 | 存储 | zip 原档 + 惰性 cache |
 | 命令行 | pwsh + GitHub cli|
+| 脚本 | Node（.mjs，零依赖工具链） |
+| 测试 | Go 单测 + Node 契约测试（tests/*.mjs） |
 
 ## 构建
 

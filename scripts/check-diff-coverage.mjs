@@ -86,7 +86,10 @@ function getChangedFiles(base, head, uncommitted, staged) {
     // --staged：仅本次暂存区（prepare-commit-msg 场景 = 本次 commit 的文件），
     // 避免 --base origin/main 在本地领先时把历史未推送改动也纳入噪音。
     if (staged) {
-        const r = git(["diff", "--cached", "--find-renames=30", "--name-only"]);
+        // [code_review P2] 与非 staged 路径一致加 --diff-filter=ACMR：staged 删除的文件
+        // 不应算作「变更文件」——否则删除后 coverage 产物里已无该文件时 pct=0 被判缺口，
+        // gate 模式假红报「补测已删除文件」，suggest 模式往 commit message 塞垃圾块。
+        const r = git(["diff", "--cached", "--diff-filter=ACMR", "--find-renames=30", "--name-only"]);
         if (r === null) { gitHardFail = true; return []; }
         r.split("\n").forEach((l) => l && out.add(l));
         return [...out];
@@ -185,11 +188,14 @@ export function getChangedLines(file, base, head, uncommitted, renameOld, staged
         // 与下方非 staged 的 rename 分支同思路：renameOld 存在时用「HEAD 旧 blob ↔
         // 索引新 blob」两点 diff 取真实最小 hunk，否则回退 --cached 常规 diff。
         if (renameOld) {
-            addLinesFromDiff(
-                out,
-                git(["diff", "--unified=0", `HEAD:${renameOld}`, `:${file}`])
-            );
-            return out;
+            // [code_review P3] staged rename blob-diff 失败须 fail-closed / 回退：
+            // 旧实现无条件 return out——git() 失败返回 null 时 addLinesFromDiff 视为 no-op，
+            // out 为空集 → 改名文件被判「无变更行」→ 100% 达标假绿。与下方非 staged rename
+            // 分支同款守卫：有行才早退，否则回退 --cached 常规 diff；git 失败置 gitHardFail。
+            const r = git(["diff", "--unified=0", `HEAD:${renameOld}`, `:${file}`]);
+            if (r === null) { gitHardFail = true; return out; }
+            addLinesFromDiff(out, r);
+            if (out.size > 0) return out;
         }
         addLinesFromDiff(out, git(["diff", "--cached", "--unified=0", "--find-renames=30", "--", file]));
         return out;

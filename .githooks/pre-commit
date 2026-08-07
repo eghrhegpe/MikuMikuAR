@@ -45,7 +45,9 @@ gen-ui-entry.mjs'
 echo "$GEN_CMDS" | while IFS= read -r line; do
   [ -z "$line" ] && continue
   # shellcheck disable=SC2086（有意分词以携带 --file 等参数）
-  node scripts/$line >/dev/null 2>&1 || echo "⚠️  scripts/$line 执行失败（不阻断）"
+  # [code_review P2] 保留 stderr（不再 2>&1）：gen-knowledge-symbols 等对「源文件改名/暂缺
+  # 时卡上人工 symbols 将被静默删除」的 safety 警告走 stderr，丢弃后剥离内容会被直接 stage 进提交。
+  node scripts/$line >/dev/null || echo "⚠️  scripts/$line 执行失败（不阻断）"
 done
 
 # ── stage 生成的文档（无 diff 则无副作用） ──

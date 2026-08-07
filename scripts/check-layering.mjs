@@ -90,11 +90,13 @@ function resolveTarget(spec, fromSrcRel) {
 // 跨行 import/export-from、副作用导入、动态 import（与 _lib/source-graph.mjs
 // parseSourceImports 同款模式，消除单行正则漏报「多行 import / await import()」的漂移）。
 // 捕获组1 = from 前文本（用于 type-only 判定），组2 = spec。
-// [P2 2026-08-08] body 限定 `[^;"'/`]*?`：旧 `[\s\S]*?` 无界 lazy 会跨语句/字符串/注释
-// 吞到文件里任意后续 `from '...'`（副作用导入 `import '../app.css'`、`export const X = "..."`、
-// 注释里记录的旧路径等都会伪造假导入边）。排除引号/分号/斜杠/反引号后，多行 specifier 列表
-// `{\n  loadScene,\n}` 仍可匹配（不含这些字符），但无法吸收其他语句或注释内容。
-const IMPORT_FROM_RE = /(?:^|\n)\s*(?:\/\/[^\n]*\n)*\s*(?:import|export)\b([^;"'/`]*?)\bfrom\s+['"]([^'"]+)['"]/gm;
+// [P2 2026-08-08] body 限定 `(?:[^;"'`]|\/\/[^\n]*|\/\*[\s\S]*?\*\/)*?`：旧 `[\s\S]*?` 无界 lazy
+// 会跨语句/字符串/注释吞到文件里任意后续 `from '...'`（副作用导入 `import '../app.css'`、
+// `export const X = "..."`、注释里记录的旧路径等都会伪造假导入边）。排除引号/分号/反引号
+// 阻止吸收其他语句；`//` 行注释与 `/* */` 块注释作为可跳过单元放行（否则括号内带注释的
+// 多行 specifier 列表 `{\n  loadScene, // 说明\n}` 会因斜杠被排除而整体匹配失败 →
+// 该 import 边从分层图消失，R1/R2/R3 违规静默漏报（假绿）。`\bfrom` 仍保证语句边界。
+const IMPORT_FROM_RE = /(?:^|\n)\s*(?:\/\/[^\n]*\n)*\s*(?:import|export)\b((?:[^;"'`]|\/\/[^\n]*|\/\*[\s\S]*?\*\/)*?)\bfrom\s+['"]([^'"]+)['"]/gm;
 const IMPORT_SIDE_RE = /(?:^|\n)\s*(?:\/\/[^\n]*\n)*\s*import\s+['"]([^'"]+)['"]/gm;
 const IMPORT_DYNA_RE = /await\s+import\s*\(\s*['"]([^'"]+)['"]\s*\)/gm;
 
