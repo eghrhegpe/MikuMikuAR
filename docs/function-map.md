@@ -8,7 +8,7 @@
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
 | 核心基础设施 | 132 | 799 |
-| 3D 场景 | 125 | 1218 |
+| 3D 场景 | 125 | 1217 |
 | 菜单 & UI | 76 | 394 |
 | 动作算法 | 18 | 138 |
 
@@ -472,18 +472,18 @@
 | `KeyBindingOverride()` | `core/shortcut-registry:23` | — |
 | `ShortcutDef()` | `core/shortcut-registry:9` | — |
 | `ShortcutWithBinding()` | `core/shortcut-registry:47` | — |
-| `_resetShortcutRegistry()` | `core/shortcut-registry:362` | Reset all internal state — only for use in tests. |
-| `exportKeyBindings()` | `core/shortcut-registry:289` | Get current custom bindings (for saving to uiState). |
-| `formatKeyBinding()` | `core/shortcut-registry:168` | 格式化按键绑定为可读字符串，如 "Ctrl+1"、"Shift+←" |
-| `getAllShortcuts()` | `core/shortcut-registry:152` | Get all registered shortcuts with their CURRENT effective bindings. |
-| `getAriaKeyshortcuts()` | `core/shortcut-registry:204` | 将 ShortcutDef 格式化为 aria-keyshortcuts 值，如 "Control+1" |
-| `initShortcutDispatcher()` | `core/shortcut-registry:304` | Initialize the dispatcher — call once at app startup. |
-| `loadKeyBindings()` | `core/shortcut-registry:282` | Load custom bindings from persisted state (call at app init). |
-| `registerShortcut()` | `core/shortcut-registry:116` | Register ONE shortcut. |
-| `registerShortcuts()` | `core/shortcut-registry:145` | Register MULTIPLE shortcuts at once. |
-| `resetAllKeyBindings()` | `core/shortcut-registry:275` | Reset ALL shortcuts to their default bindings. |
-| `resetKeyBinding()` | `core/shortcut-registry:270` | Reset one shortcut to its default binding. |
-| `setKeyBinding()` | `core/shortcut-registry:231` | Set custom key binding for a shortcut ID. |
+| `_resetShortcutRegistry()` | `core/shortcut-registry:406` | Reset all internal state — only for use in tests. |
+| `exportKeyBindings()` | `core/shortcut-registry:333` | Get current custom bindings (for saving to uiState). |
+| `formatKeyBinding()` | `core/shortcut-registry:206` | 格式化按键绑定为可读字符串，如 "Ctrl+1"、"Shift+←" |
+| `getAllShortcuts()` | `core/shortcut-registry:190` | Get all registered shortcuts with their CURRENT effective bindings. |
+| `getAriaKeyshortcuts()` | `core/shortcut-registry:242` | 将 ShortcutDef 格式化为 aria-keyshortcuts 值，如 "Control+1" |
+| `initShortcutDispatcher()` | `core/shortcut-registry:348` | Initialize the dispatcher — call once at app startup. |
+| `loadKeyBindings()` | `core/shortcut-registry:325` | Load custom bindings from persisted state (call at app init). |
+| `registerShortcut()` | `core/shortcut-registry:152` | Register ONE shortcut. |
+| `registerShortcuts()` | `core/shortcut-registry:183` | Register MULTIPLE shortcuts at once. |
+| `resetAllKeyBindings()` | `core/shortcut-registry:317` | Reset ALL shortcuts to their default bindings. |
+| `resetKeyBinding()` | `core/shortcut-registry:310` | Reset one shortcut to its default binding. |
+| `setKeyBinding()` | `core/shortcut-registry:269` | Set custom key binding for a shortcut ID. |
 | `envState()` | `core/state:27` | — |
 | `applyHudVisibility()` | `core/status-bar:31` | 按 uiState 开关应用顶部 HUD 显隐：帧率时钟（#fpsClock）与多线程徽标（#runtimeBadge）。 |
 | `disposeStatusBar()` | `core/status-bar:117` | 清理 status 定时器（供 HMR 清理入口调用）。 |
@@ -993,8 +993,7 @@
 | `switchCameraMode()` | `scene/camera/camera:336` | Switch to a different camera mode, preserving position as much as possible. |
 | `InvertableArcRotateCameraPointersInput()` | `scene/camera/invertablePointersInput:13` | 可反转 Y 轴的 ArcRotate 相机指针输入。 |
 | `applyEnvStateFacade()` | `scene/env/_bridge/env-bridge:49` | 等同于 scene-env.ts 的 applyEnvState，但避免循环依赖。 |
-| `clearAllEnvMiddlewares()` | `scene/env/_bridge/env-bridge:388` | 清空全部中间件（HMR 重入 / disposeEnvUpdateObserver 时调用，与 scene-tick/dt-tick 对称）。 |
-| `registerEnvStateMiddleware()` | `scene/env/_bridge/env-bridge:376` | 注册 setEnvState 中间件（供 env-time-of-day/env-gravity 等子模块调用）。 |
+| `registerEnvStateMiddleware()` | `scene/env/_bridge/env-bridge:378` | 注册 setEnvState 中间件（供 env-time-of-day/env-gravity 等子模块调用）。 |
 | `setEnvState()` | `scene/env/_bridge/env-bridge:323` | 环境状态唯一写入入口（ADR-173 中间件链），可选跳过自动保存。 |
 | `setPresetAnimActive()` | `scene/env/_bridge/env-bridge:43` | 标记预设动画是否运行中（供 _applyEnvStateFacade 跳过方向光同步） |
 | `clearAllEnvCallbacks()` | `scene/env/_bridge/env-dispatcher:33` | 清空所有已注册的 env 回调（场景销毁 / HMR 重入时兜底清理）。 |
@@ -1100,32 +1099,32 @@
 | `setOnTerrainReady()` | `scene/env/env-ground:808` | — |
 | `tickGround()` | `scene/env/env-ground:1321` | — |
 | `triggerTerrainReady()` | `scene/env/env-ground:813` | ADR-226: 供 env-ground-spec.ts 的地形 onReady 回调触发已注册监听（避免直接访问模块局部 _onTerrainReady）。 |
-| `_envSys()` | `scene/env/env-impl:21` | — |
-| `addGroundRipple()` | `scene/env/env-impl:24` | — |
-| `addRipple()` | `scene/env/env-impl:24` | — |
-| `applyFog()` | `scene/env/env-impl:241` | — |
-| `applyGround()` | `scene/env/env-impl:48` | — |
-| `applySky()` | `scene/env/env-impl:44` | — |
-| `clearGroundRipples()` | `scene/env/env-impl:24` | — |
-| `clearRipples()` | `scene/env/env-impl:24` | — |
-| `createClouds()` | `scene/env/env-impl:35` | — |
-| `createParticleEmitter()` | `scene/env/env-impl:70` | — |
-| `createWater()` | `scene/env/env-impl:24` | — |
-| `disposeClouds()` | `scene/env/env-impl:35` | — |
-| `disposeEnvUpdateObserver()` | `scene/env/env-impl:198` | — |
-| `disposeParticles()` | `scene/env/env-impl:70` | — |
-| `disposeWater()` | `scene/env/env-impl:24` | — |
-| `ensureEnvUpdateObserver()` | `scene/env/env-impl:126` | — |
-| `getGroundHeightAt()` | `scene/env/env-impl:48` | — |
-| `getScene()` | `scene/env/env-impl:21` | — |
-| `initEnvImpl()` | `scene/env/env-impl:76` | — |
-| `refreshWaterRenderList()` | `scene/env/env-impl:24` | — |
-| `registerSceneTickCallback()` | `scene/env/env-impl:73` | — |
-| `setOnGroundChanged()` | `scene/env/env-impl:48` | — |
-| `setOnTerrainReady()` | `scene/env/env-impl:48` | — |
-| `updateParticleTexture()` | `scene/env/env-impl:70` | — |
-| `updateParticleWind()` | `scene/env/env-impl:70` | — |
-| `updateWaterAnimSpeed()` | `scene/env/env-impl:24` | — |
+| `_envSys()` | `scene/env/env-impl:20` | — |
+| `addGroundRipple()` | `scene/env/env-impl:23` | — |
+| `addRipple()` | `scene/env/env-impl:23` | — |
+| `applyFog()` | `scene/env/env-impl:240` | — |
+| `applyGround()` | `scene/env/env-impl:47` | — |
+| `applySky()` | `scene/env/env-impl:43` | — |
+| `clearGroundRipples()` | `scene/env/env-impl:23` | — |
+| `clearRipples()` | `scene/env/env-impl:23` | — |
+| `createClouds()` | `scene/env/env-impl:34` | — |
+| `createParticleEmitter()` | `scene/env/env-impl:69` | — |
+| `createWater()` | `scene/env/env-impl:23` | — |
+| `disposeClouds()` | `scene/env/env-impl:34` | — |
+| `disposeEnvUpdateObserver()` | `scene/env/env-impl:197` | — |
+| `disposeParticles()` | `scene/env/env-impl:69` | — |
+| `disposeWater()` | `scene/env/env-impl:23` | — |
+| `ensureEnvUpdateObserver()` | `scene/env/env-impl:125` | — |
+| `getGroundHeightAt()` | `scene/env/env-impl:47` | — |
+| `getScene()` | `scene/env/env-impl:20` | — |
+| `initEnvImpl()` | `scene/env/env-impl:75` | — |
+| `refreshWaterRenderList()` | `scene/env/env-impl:23` | — |
+| `registerSceneTickCallback()` | `scene/env/env-impl:72` | — |
+| `setOnGroundChanged()` | `scene/env/env-impl:47` | — |
+| `setOnTerrainReady()` | `scene/env/env-impl:47` | — |
+| `updateParticleTexture()` | `scene/env/env-impl:69` | — |
+| `updateParticleWind()` | `scene/env/env-impl:69` | — |
+| `updateWaterAnimSpeed()` | `scene/env/env-impl:23` | — |
 | `CategorizedEnvPreset()` | `scene/env/env-lighting:287` | 分类预设（version 3 格式）。 |
 | `DerivedLighting()` | `scene/env/env-lighting:37` | — |
 | `ENV_PRESET_FIELDS()` | `scene/env/env-lighting:166` | 各类别包含的 EnvState 字段白名单。未列入的字段（如 collision*）不参与任何预设。 |
@@ -2387,7 +2386,7 @@
 | `showPresetSaveDialog()` | `menus/scene-render-presets:267` | — |
 | `buildStageLevel()` | `menus/scene-stage-levels:161` | — |
 | `buildStageTransformLevel()` | `menus/scene-stage-levels:175` | — |
-| `buildStageLightLevel()` | `menus/scene-stage-lights:817` | — |
+| `buildStageLightLevel()` | `menus/scene-stage-lights:823` | — |
 | `buildSettingsAboutLevel()` | `menus/settings-about:235` | — |
 | `handleSettingsAction()` | `menus/settings-actions:21` | 全局设置项点击分发：语言切换 + 动作表。settings.ts 的 onItemClick 使用。 |
 | `buildSettingsAppearanceLevel()` | `menus/settings-appearance:510` | — |

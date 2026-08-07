@@ -7,6 +7,8 @@ scope:
   - frontend/src/core/shortcut-registry.ts
 source_files:
   - frontend/src/core/shortcut-registry.ts
+tests:
+  - frontend/src/__tests__/shortcut-registry.test.ts
 adr:
   - ADR-036
 symbols:
@@ -29,7 +31,6 @@ invariants:
   - 快捷键 ID 唯一，由 shortcut-app.ts 定义
   - 快捷键注册映射到 action-registry 动作 ID
   - 快捷键编辑后经 settings-controls.ts 持久化
-tests: []
 use_when:
   - 快捷键
   - 快捷键注册

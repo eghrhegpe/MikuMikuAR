@@ -112,6 +112,42 @@ function bindingsConflict(a: EffectiveBinding, b: EffectiveBinding): boolean {
     );
 }
 
+/**
+ * [fix code_review P3] 冲突延迟队列：注册时按键冲突的 shortcut 存入此队列（不直接
+ * 丢弃），待绑定变更（setKeyBinding/resetKeyBinding/loadKeyBindings）后重试注册——
+ * 用户改绑或重置冲突方后，被延迟的快捷键自动恢复，而非永久失效直到整页刷新。
+ */
+const _deferredShortcuts: ShortcutDef[] = [];
+
+/** 绑定变更后重新尝试注册延迟队列中的快捷键；冲突已消失者注册并移除。 */
+function _flushDeferredShortcuts(): void {
+    if (_deferredShortcuts.length === 0) {
+        return;
+    }
+    const remaining: ShortcutDef[] = [];
+    for (const def of _deferredShortcuts) {
+        const incoming = getEffectiveBinding(def);
+        let conflict = false;
+        for (const [otherId, otherDef] of _shortcuts) {
+            if (otherId === def.id) {
+                continue;
+            }
+            if (bindingsConflict(incoming, getEffectiveBinding(otherDef))) {
+                conflict = true;
+                break;
+            }
+        }
+        if (conflict) {
+            remaining.push(def);
+        } else {
+            _shortcuts.set(def.id, def);
+            logWarn('shortcut-registry', `Shortcut "${def.id}" 冲突已解除，恢复注册`);
+        }
+    }
+    _deferredShortcuts.length = 0;
+    _deferredShortcuts.push(...remaining);
+}
+
 /** Register ONE shortcut. */
 export function registerShortcut(def: ShortcutDef): void {
     if (!def.handler) {
@@ -122,6 +158,7 @@ export function registerShortcut(def: ShortcutDef): void {
     // 呼应 Ctrl+Space 被三模块同时注册静默覆盖的 P1 先例——后注册者若按键冲突，
     // 此前 Map.set 静默覆盖先注册者，功能静默失效无告警。现改为：冲突时 logWarn
     // 并保留先注册者（同 id 跳过——HMR 重载重注册合法，仅跨 id 冲突被拦截）。
+    // [fix code_review P3] 冲突项入 deferred 队列而非永久丢弃：绑定变更后自动重试。
     const incoming = getEffectiveBinding(def);
     for (const [otherId, otherDef] of _shortcuts) {
         if (otherId === def.id) {
@@ -133,8 +170,9 @@ export function registerShortcut(def: ShortcutDef): void {
                 'shortcut-registry',
                 `Shortcut "${def.id}" 与 "${otherId}" 按键冲突 ` +
                     `(${incoming.key}${incoming.ctrl ? '+Ctrl' : ''}${incoming.shift ? '+Shift' : ''}${incoming.alt ? '+Alt' : ''})——` +
-                    `保留先注册者，忽略后注册者`
+                    `保留先注册者，忽略后注册者（冲突解除后自动恢复）`
             );
+            _deferredShortcuts.push(def);
             return;
         }
     }
@@ -263,12 +301,16 @@ export function setKeyBinding(
     }
 
     _overrides[id] = { key, ctrl, shift, alt };
+    // [fix code_review P3] 绑定变更后重试延迟队列（可能解除某 deferred shortcut 的冲突）
+    _flushDeferredShortcuts();
     return { ok: true };
 }
 
 /** Reset one shortcut to its default binding. */
 export function resetKeyBinding(id: string): void {
     delete _overrides[id];
+    // [fix code_review P3] 重置可能解除冲突，重试延迟队列
+    _flushDeferredShortcuts();
 }
 
 /** Reset ALL shortcuts to their default bindings. */
@@ -276,6 +318,7 @@ export function resetAllKeyBindings(): void {
     for (const key of Object.keys(_overrides)) {
         delete _overrides[key];
     }
+    _flushDeferredShortcuts();
 }
 
 /** Load custom bindings from persisted state (call at app init). */
@@ -283,6 +326,7 @@ export function loadKeyBindings(bindings: Record<string, KeyBindingOverride>): v
     for (const [id, override] of Object.entries(bindings)) {
         _overrides[id] = { ...override };
     }
+    _flushDeferredShortcuts();
 }
 
 /** Get current custom bindings (for saving to uiState). */

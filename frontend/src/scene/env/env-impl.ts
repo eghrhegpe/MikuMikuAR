@@ -13,7 +13,6 @@ import { disposeTextureCache } from './_shared/env-texture';
 import { _envSys, getScene, getPipeline, isInitialized, resetEnvContext } from './_shared/env-context';
 import { clearSceneTickCallbacks, runSceneTickCallbacks } from './_bridge/env-dispatcher';
 import { clearEnvDtTickCallbacks, runEnvDtTickCallbacks } from './_bridge/env-dispatcher';
-import { clearAllEnvMiddlewares } from './_bridge/env-bridge';
 import { causticsController } from './env-caustics';
 import { underwaterFogController } from './env-underwater-fog';
 
@@ -232,9 +231,9 @@ export function disposeEnvUpdateObserver(): void {
     _prevParticleEnabled = true;
     _prevSplash = false;
     _prevCustomTexture = '';
-    // [fix P3] 清空 env 中间件注册表（HMR 重入时模块顶层重复注册会累积——registerEnvStateMiddleware
-    // 已按 name+phase 去重，此处兜底清空），与 scene-tick/dt-tick 清理对称。
-    clearAllEnvMiddlewares();
+    // 注：不清空 env 中间件注册表——中间件仅在模块顶层注册（env-bridge/env-time-of-day），
+    // 无 init 重注册路径；dispose→re-init 后清空则注册表永久为空（与 clearAllEnvCallbacks
+    // 同源 P2 回归，见上注）。HMR 累积由 registerEnvStateMiddleware 的 name+phase 去重兜底。
 }
 
 // ======== Fog ========
