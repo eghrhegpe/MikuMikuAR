@@ -59,21 +59,23 @@
 | C2 | perception / env-impl 核心编排逻辑直接单测 | `ensureEnvUpdateObserver`/`disposeEnvUpdateObserver` 仅 barrel 间接覆盖 |
 | C3 | env-bridge 中间件链（pre/post-facade 顺序）直接单测 | middleware.int.test.ts 存在但可补「去重后注册」断言 |
 
-### D 类：双源分叉治理池（系统性同类债，根因与 ADR-232 同根）
+### D 类：双源分叉治理池（2026-08-07 全面收口 · 已归档）
 
-> 以下项目并非独立 P4 缺陷，而是「同一枚举 / 词表 / 常量在多处各自维护、未收敛为单一事实源」的系统性根因债。状态词双源（gen-docs-index ↔ _lib/adr-status-categories）即最新暴露的一处。治理结构参考 ADR-232 §2.2「词表单一事实源」：抽共享模块 + 断言守护，成批收口。
+> 本类于 2026-08-07 追加 D1~D7，原仅基于 ADR/audit 文本登记、未以当前源码核实。**同日经两路核查全部闭环**：
+> - **D1（mjs 侧）由其他 AI 根治**：ecc6f509 —— `STATUS_CATEGORIES.completed` 补「已立」、新增 `classifyStatus` 唯一分类入口、gen-docs-index 删硬编码 `ADR_BUCKETS` 接共享模块；check/health 改用共享函数，adr-019/043/044/133/149 分叉消解（check/health 一致 226/13/11/0、unknown=0）。
+> - **D2~D7（非 mjs 侧）经当前 `frontend/src` 源码核验，对应治理 ADR 均已落地，原双源已消除或收敛为有意设计——属误登（过期文档登记），已从待办移除，仅留追溯锚点。**
+>
+> **校准结论：非 mjs 侧当前 0 项真实双源债；mjs 侧 D1 已根治。D 类治理池整体归档；联邦双源风险由 `scripts/check-doc-drift.mjs`（pre-push 红线）持续守护。**
 
-| # | 文档 / 模块 | 双源实例 | 处置状态 |
-|---|------------|---------|---------|
-| D1 | scripts/gen-docs-index.mjs ↔ scripts/_lib/adr-status-categories.mjs | ADR 状态词双源：`已立` 漏词（index 自硬正则、lib 也未收） | ✅ **已修**（82a42d6e 消费端止血 + ecc6f509 根治：lib completed 补「已立」、新增 classifyStatus 唯一分类入口、gen-docs-index 删硬编码接共享模块；check 与 index 同函数，adr-019/043/044/133/149 分叉消解，验证 check/health 一致 226/13/11/0、unknown=0） |
-| D2 | ADR-095 | 路径归一化两套实现 + 7 处手写边界判定 | ⏳ 待排期 |
-| D3 | ADR-119 | 缩略图 key 双源字符串拼接（写/读各拼一次） | ⏳ 待排期 |
-| D4 | ADR-093 | 导航 `map-route` 与 `inline-push` 两套写法未统一 | ⏳ 待排期 |
-| D5 | ADR-022 | 同名两套 `ENV_PRESETS`（`env-lighting` vs `env-preset-levels`） | ⏳ 待排期 |
-| D6 | docs/audit/2026-08-06-round12 | `registry._fallbackModuleStates` 与 `intent.motionModules` 双源 | ⏳ 待排期 |
-| D7 | docs/audit/2026-08-06-round11 | `transform-gizmo` 拖拽中 detach/attach 视觉与持久化分叉 | ⏳ 待排期 |
-
-> 联邦已有专门巡查官 `scripts/check-doc-drift.mjs`（文档漂移检查器，pre-push 红线），双源问题是已知系统性风险。D 类债务统一按「抽共享单源 + 断言守护」范式批量交给其他 AI 收口，不在此逐条救火。
+| # | 文档 / 模块 | 原登记双源 | 源码核验结论（2026-08-07） | 处置 |
+|---|------------|-----------|--------------------------|------|
+| D1 | gen-docs-index.mjs ↔ _lib/adr-status-categories.mjs | ADR 状态词双源：`已立` 漏词 | ✅ **已根治**（其他 AI，ecc6f509）：抽 `classifyStatus` 单源 + gen 接共享模块，5 处分叉消解 | 已闭环 |
+| D2 | ADR-095 | 路径归一化两套 + 7 处手写边界 | ✅ 已消除：`normalizePath` 已删，仅剩 `normPath` 单源；ADR-095「已完成」批次 5；grep 零命中 | 误登·移除 |
+| D3 | ADR-119 | 缩略图 key 双源拼接 | ✅ 已消除：抽 `thumbnail-key` 单模块，library-core.ts:195「杜绝双源拼接反弹」；ADR-119 已落地 | 误登·移除 |
+| D4 | ADR-093 | 导航 `map-route`/`inline-push` 两套 | ✅ 已消除：菜单统一声明式 Schema（ADR-093 已完成），`map-route`/`inline-push` 字面零命中 | 误登·移除 |
+| D5 | ADR-022 | 同名两套 `ENV_PRESETS` | ✅ 已消除：`ENV_PRESETS` 不存在，分化为 `TIME_OF_DAY_PRESETS`(env-lighting)+`SCENE_PRESETS`(env-preset-levels)；ADR-022「已实现」 | 误登·移除 |
+| D6 | audit round12 | `_fallbackModuleStates`↔`intent.motionModules` | ✅ 已收敛为有意 fallback 分治：registry.ts:98-130 + [doc:adr-121] 单 mutate 入口 | 误登·移除 |
+| D7 | audit round11 | transform-gizmo detach/attach 分叉 | ✅ 已修复：transform-gizmo.ts 大量 `[fix P2]` 拖拽中 detach flush 回写 | 误登·移除 |
 
 ---
 
@@ -83,7 +85,7 @@
 2. **B 类为「待排期」**：不设截止，触发条件为「相关模块下一次重构 / 技术债清算轮」。
 3. **C 类为「持续完善」**：随对应模块补测需求自然推进，不单独派单。
 4. 本 ADR 不新增任何架构约束，仅作**技术债登记簿**——后续审核报告中的「记录不修」项应在本 ADR 追加行，避免逐轮口头记录丢失。
-5. **D 类为「系统性双源分叉治理池」**：根因与 ADR-232 同根（多份定义未收敛为单一事实源）。统一按「抽共享单源 + 断言守护」范式批量收口；D1 状态词双源根治已完成（ecc6f509），D2~D7 待排期。
+5. **D 类「双源分叉治理池」已于 2026-08-07 全面收口归档**：D1（mjs）由其他 AI 根治（ecc6f509）；D2~D7 经当前 `frontend/src` 源码核验均为误登（对应 ADR-095/119/093/022 已落地 + [fix P2]/[doc:adr-121] 收敛），已从待办移除。非 mjs 侧真实双源债归零；联邦双源风险由 `scripts/check-doc-drift.mjs` 在 pre-push 红线持续守护。
 
 ---
 
@@ -92,3 +94,4 @@
 - 2026-08-07：立 ADR；A 类 6 项闭环（提交 406ee2f2）；B/C 类登记待排期。
 - 2026-08-07：新增 D 类双源分叉治理池（D1~D7）；D1 状态词双源消费端止血已提交（82a42d6e），根治（lib 补词 + gen 接共享模块）派其他 AI。
 - 2026-08-07：D1 根治闭环（ecc6f509）：`STATUS_CATEGORIES.completed` 补「已立」、新增 `classifyStatus` 唯一分类入口 + `BUCKET_TO_CATEGORY`/`DISPLAY_BUCKET_ORDER`；gen-docs-index 删硬编码 `ADR_BUCKETS` 接共享模块；check-adr-status/check-adr-health 改用共享函数。check 与 index 同函数后 adr-019/043/044/133/149 分叉全部消解（统一归已归档），验证 check/health 一致 226/13/11/0、unknown=0、test:scripts 216 全过。
+- 2026-08-07：D2~D7 源码核验——非 mjs 侧 6 项原登记双源均经 `frontend/src` 核实为误登（ADR-095/119/093/022 已落地 + [fix P2]/[doc:adr-121] 收敛），已从待办移除；结合 D1 已由其他 AI 根治（ecc6f509），D 类整体归档。
