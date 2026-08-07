@@ -9,10 +9,10 @@
 | 状态 | 数量 | 含义 |
 |------|------|------|
 | [推进中](#推进中) | 6 | 已开工，尚未收口（含部分实施） |
-| [规划中](#规划中) | 8 | 已立项，等待实施 |
-| [已落地](#已落地) | 216 | 实施完成，代码已合入 |
+| [规划中](#规划中) | 7 | 已立项，等待实施 |
+| [已落地](#已落地) | 226 | 实施完成，代码已合入 |
 | [已归档](#已归档) | 9 | 被取代、放弃、过时或搁置，保留供追溯 |
-| [其他](#其他) | 11 | 状态行缺失或表述不可归类 |
+| [其他](#其他) | 2 | 状态行缺失或表述不可归类 |
 
 > 本文件为 ADR **规范索引**（按状态分组导航，可锚点跳转）。带日期的全量列表见 [项目现状 · ADR 索引](../status.md)（附表，由 `scripts/gen-status-index.mjs` 生成）。
 
@@ -36,7 +36,6 @@
 | [ADR-222](./adr-222-water-depth-fog.md) | 水面深度差雾（Depth-Difference Fog）—— 从相机距离雾迁移至水柱厚度雾 | 规划 |
 | [ADR-209](./adr-209-lunar-celestial-body.md) | 月亮 —— 第二天体的渐进式设计（复用太阳骨架） | 📝 规划 |
 | [ADR-187](./adr-187-babylon-mmd-remaining-apis-analysis.md) | babylon-mmd 剩余高价值功能综合分析 | 草案 · 待立项 |
-| [ADR-110](./adr-110-immdmodel-upstream-pr.md) | IMmdModel 接口类型补全 — 上游 PR 计划 | 草案 · 待立项 |
 | [ADR-073](./adr-073-native-arcore-arkit.md) | AR 地形识别 —— 原生 ARCore / ARKit 桥接 | 提案 |
 | [ADR-072](./adr-072-webxr-plane-detection.md) | AR 平面检测 —— WebXR hit-test + plane detection | 提案 |
 
@@ -44,7 +43,16 @@
 
 | ADR | 主题 | 状态 |
 |-----|------|------|
+| [ADR-254](./adr-254-p4-backlog-registry.md) | 历轮审核 P4 遗留项登记簿 —— 低风险改进清单与技术债跟踪 | ✅ 已立 |
+| [ADR-253](./adr-253-config-merge-partial-update.md) | 配置部分更新合并契约损坏 —— mergeUIState bool 覆盖 / mergeEnvState 零值覆盖 | ✅ 已立 |
+| [ADR-252](./adr-252-menu-dispose-chain.md) | 菜单资源释放链路缺失 —— disposeMenuWrapper/clearAllMenuWrappers 零调用与 _liveMenus 常驻 | ✅ 已立 |
+| [ADR-251](./adr-251-scene-circular-import-cleanup.md) | scene 反向 import 循环依赖治理 —— model-ops/camera 对 `../scene` 的真实静态循环 | ✅ 已立 |
+| [ADR-250](./adr-250-scene-init-reentrancy.md) | 场景初始化重入与异常一致性 —— initScene 重入守护 + 中途异常状态复位 | ✅ 已立 |
+| [ADR-249](./adr-249-idb-transaction-contract.md) | IndexedDB 事务异常契约 —— complete/error/abort 三事件必须全部接线 | ✅ 已立 |
+| [ADR-248](./adr-248-derived-cache-reference-key.md) | 派生缓存依赖引用键 —— 缓存 key 必须携带依赖引用，依赖变更即失效 | ✅ 已立 |
+| [ADR-247](./adr-247-material-params-dual-path.md) | 材质参数应用双路径收敛 —— PBR 与 StandardMaterial 语义必须一致 | ✅ 已立 |
 | [ADR-246](./adr-246-serialization-explicit-fields.md) | 序列化往返显式字段原则 —— 判别字段必须显式持久化，禁止反推 | ✅ 已立 |
+| [ADR-245](./adr-245-babylon9-plugin-access.md) | Babylon 9.x 插件访问规范 —— 禁止桥接私有数组，统一走公开只读属性 | ✅ 已立 |
 | [ADR-244](./adr-244-init-phase-split.md) | init 启动流程阶段化拆分 —— 110 行编排器按职责切分 | ✅ 已完成 |
 | [ADR-243](./adr-243-env-state-defaults-from-schema.md) | EnvState 默认值从 Schema 自动推导 —— 消除 100+ 字段双源手工映射 | ✅ 已完成 |
 | [ADR-242](./adr-242-toplevel-layering-axiom.md) | 顶层目录分层公理 —— 「纯算法层」假说的证伪与重定性 | 已完成 —— 采纳方案 C；Phase 1 |
@@ -164,6 +172,7 @@
 | [ADR-113](./adr-113-horizon-volumetric-clouds.md) | 体积云延展地平线与画质/性能升级 | 完成 |
 | [ADR-112](./adr-112-sdef-injector.md) | SdefInjector + SdefMesh 接入 — SDEF 球面变形 | 已完成 |
 | [ADR-111](./adr-111-scene-env-menu-restructuring.md) | 场景/环境菜单按用户直觉重新划分 | 已实施 |
+| [ADR-110](./adr-110-immdmodel-upstream-pr.md) | IMmdModel 接口类型补全 — 上游 PR 计划 | 草案 · 待立项 |
 | [ADR-108](./adr-108-animation-retargeter.md) | AnimationRetargeter + HumanoidMmd 接入 — 扩展动作来源 | 已落地 |
 | [ADR-107](./adr-107-stream-audio-player.md) | StreamAudioPlayer 接入 — 替换自建音频管线 | 已完成 |
 | [ADR-106](./adr-106-timing-audit-and-async-lifecycle.md) | 时序审核与异步生命周期规范 | ✅ 全部完成 |
@@ -279,14 +288,5 @@
 
 | ADR | 主题 | 状态 |
 |-----|------|------|
-| [ADR-254](./adr-254-p4-backlog-registry.md) | 历轮审核 P4 遗留项登记簿 —— 低风险改进清单与技术债跟踪 | ✅ 已立 |
-| [ADR-253](./adr-253-config-merge-partial-update.md) | 配置部分更新合并契约损坏 —— mergeUIState bool 覆盖 / mergeEnvState 零值覆盖 | ✅ 已立 |
-| [ADR-252](./adr-252-menu-dispose-chain.md) | 菜单资源释放链路缺失 —— disposeMenuWrapper/clearAllMenuWrappers 零调用与 _liveMenus 常驻 | ✅ 已立 |
-| [ADR-251](./adr-251-scene-circular-import-cleanup.md) | scene 反向 import 循环依赖治理 —— model-ops/camera 对 `../scene` 的真实静态循环 | ✅ 已立 |
-| [ADR-250](./adr-250-scene-init-reentrancy.md) | 场景初始化重入与异常一致性 —— initScene 重入守护 + 中途异常状态复位 | ✅ 已立 |
-| [ADR-249](./adr-249-idb-transaction-contract.md) | IndexedDB 事务异常契约 —— complete/error/abort 三事件必须全部接线 | ✅ 已立 |
-| [ADR-248](./adr-248-derived-cache-reference-key.md) | 派生缓存依赖引用键 —— 缓存 key 必须携带依赖引用，依赖变更即失效 | ✅ 已立 |
-| [ADR-247](./adr-247-material-params-dual-path.md) | 材质参数应用双路径收敛 —— PBR 与 StandardMaterial 语义必须一致 | ✅ 已立 |
-| [ADR-245](./adr-245-babylon9-plugin-access.md) | Babylon 9.x 插件访问规范 —— 禁止桥接私有数组，统一走公开只读属性 | ✅ 已立 |
 | [ADR-149](./adr-149-material-outfit-baseline-conflict.md) | 材质系统 × 换装系统基线冲突登记 | 已登记 |
 | [ADR-133](./adr-133-android-mpr-gap.md) | Android MPR 多线程物理缺失——构建门控与架构障碍 | ⚠️ 决策二证伪 — Android WebVi… |
