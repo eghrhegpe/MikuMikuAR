@@ -21,6 +21,14 @@ export function initEnvImpl(scene: Scene, pipeline: DefaultRenderingPipeline): v
     _pipeline = pipeline;
 }
 
+/** [fix P2] 复位共享上下文引用：disposeEnvUpdateObserver 末尾调用，使 isInitialized()
+ *  在 dispose 后返回 false——否则 HMR 重入 step0 再调 dispose 时 getScene() 返回已
+ *  dispose 的旧 scene 引用（幽灵引用），后续子模块 dispose 写已销毁对象。 */
+export function resetEnvContext(): void {
+    _scene = null;
+    _pipeline = null;
+}
+
 /** 取当前 Babylon 场景；未初始化时抛错（env 子系统内部使用）。 */
 export function getScene(): Scene {
     if (!_scene) {

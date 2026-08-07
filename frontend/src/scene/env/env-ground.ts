@@ -566,7 +566,9 @@ function disposeGroundMaterial(mat: Material | null): void {
 // ======== ADR-134: Infinite ground constants ========
 // 相机追踪 lerp 跟随方案已废弃（_groundInfinitePrevX/Z 从未被使用），
 // 无限地面改为固定大 mesh + 纹理世界空间平铺，不再跟随相机移动。
-export const INFINITE_GROUND_SIZE = 2000; // 无限地面 mesh 固定尺寸（匹配碰撞体范围）
+// [fix P3] 消除双源：此前本文件与 env-context 各自定义 INFINITE_GROUND_SIZE=2000，
+// 值碰巧一致但若一方修改则地水延伸不一致；改从 env-context re-export 单一真相源。
+export { INFINITE_GROUND_SIZE } from './_shared/env-context';
 let _groundActualSize = 60; // 当前 mesh 实际尺寸（用于 UV 补偿计算）
 
 // [doc:adr-160] 向 env-water 注入地面几何，供涟漪世界坐标→UV 映射。

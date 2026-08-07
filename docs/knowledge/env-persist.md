@@ -10,6 +10,8 @@ source_files:
 adr:
   - ADR-148
   - ADR-176
+  - ADR-106
+  - ADR-238
 symbols:
   - persistEnvState
   - flushEnvState
@@ -58,9 +60,9 @@ Env Persist：从 env-bridge 拆出的 envState / uiState 防抖持久化模块�
 
 ## 与其他子系统关系
 - 依赖 `core/backend.ts` 的 `resolveBackend()`（ADR-176 路由）
-- 依赖 `core/state.ts` 的 `uiState` + `setUIPersistCallback()`
+- 依赖 `core/ui-state.ts` 的 `uiState` + `setUIPersistCallback()`（`core/state.ts` 仅 barrel re-export，ADR-141 拆分后定义位置在 ui-state.ts）
 - 被 `env-bridge.ts` 的 `setEnvState()` 内部调用（`schedulePersistEnvState`）
-- 被 `core/state.ts` 的 `setUIState()` 间接调用（通过回调）
+- 被 `core/ui-state.ts` 的 `setUIState()` 间接调用（通过回调）
 
 ## 验证入口
 - 命令：`cd frontend && npm run test`

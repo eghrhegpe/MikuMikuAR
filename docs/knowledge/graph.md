@@ -160,10 +160,12 @@ graph TD;
         a54["ADR-054"]
         a55["ADR-055"]
         a57["ADR-057"]
+        a58["ADR-058"]
         a59["ADR-059"]
         a61["ADR-061"]
         a62["ADR-062"]
         a65["ADR-065"]
+        a66["ADR-066"]
         a71["ADR-071"]
         a76["ADR-076"]
         a81["ADR-081"]
@@ -239,6 +241,7 @@ graph TD;
         a215["ADR-215"]
         a226["ADR-226"]
         a229["ADR-229"]
+        a230["ADR-230"]
         a237["ADR-237"]
         a238["ADR-238"]
         a242["ADR-242"]
@@ -292,6 +295,8 @@ graph TD;
     c54 --> a155;
     c8 --> a148;
     c8 --> a176;
+    c8 --> a106;
+    c8 --> a238;
     c82 --> a243;
     c83 --> a137;
     c83 --> a132;
@@ -307,6 +312,16 @@ graph TD;
     c84 --> a179;
     c86 --> a57;
     c16 --> a88;
+    c101 --> a66;
+    c101 --> a153;
+    c101 --> a230;
+    c102 --> a195;
+    c106 --> a189;
+    c109 --> a145;
+    c112 --> a179;
+    c114 --> a57;
+    c114 --> a58;
+    c114 --> a99;
     c32 --> a189;
     c87 --> a3;
     c87 --> a59;
@@ -470,10 +485,12 @@ graph TD;
     click a54 href "../adr/adr-054-roadmap-next.md"
     click a55 href "../adr/adr-055-ar-camera-mode.md"
     click a57 href "../adr/adr-057-shift-jis-url-base64.md"
+    click a58 href "../adr/adr-058-basenameFallbackFS.md"
     click a59 href "../adr/adr-059-i18n-framework.md"
     click a61 href "../adr/adr-061-advanced-bone-systems.md"
     click a62 href "../adr/adr-062-water-reflection-render-target.md"
     click a65 href "../adr/adr-065-pure-items-hot-render.md"
+    click a66 href "../adr/adr-066-fullscreen-resource-library.md"
     click a71 href "../adr/adr-071-proc-vs-perception-boundary.md"
     click a76 href "../adr/adr-076-cel-shading-postprocess-mode.md"
     click a81 href "../adr/adr-081-xpbd-removal.md"
@@ -549,6 +566,7 @@ graph TD;
     click a215 href "../adr/adr-215-eliminate-prop-kind.md"
     click a226 href "../adr/adr-226-ground-material-spec-single-source.md"
     click a229 href "../adr/adr-229-e2e-automation-advancement.md"
+    click a230 href "../adr/adr-230-docs-automation-toolchain.md"
     click a237 href "../adr/adr-237-split-overlong-modules.md"
     click a238 href "../adr/adr-238-循环依赖消解二期-core-scene-根环.md"
     click a242 href "../adr/adr-242-toplevel-layering-axiom.md"

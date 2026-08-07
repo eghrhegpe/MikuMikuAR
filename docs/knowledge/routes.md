@@ -33,7 +33,7 @@
 | 重力控制、WASM 物理重力 | [环境重力控制](./env-gravity.md) | [相机状态管理 + 运行时上下文](./camera-state.md)、[相机模式管理系统（MmdCamera）](./camera.md)、[环境状态写入入口（setEnvState + 中间件链）](./env-bridge.md) |
 | 地面材质、GroundMaterialSpec、地面重建、地面材质单一来源、地面 typeKey、ADR-226 | [地面材质单一事实源（GroundMaterialSpec）](./env-ground-spec.md) | [地面系统](./env-ground.md) |
 | 地面系统、程序化纹理、涟漪、地面高度查询 | [地面系统](./env-ground.md) | [地面材质单一事实源（GroundMaterialSpec）](./env-ground-spec.md) |
-| 环境实现、observer、fog、barrel 重导出 | [环境系统实现核心（barrel + observer + fog）](./env-impl.md) | [环境状态写入入口（setEnvState + 中间件链）](./env-bridge.md)、[环境变更分发回调（破循环依赖）](./env-dispatcher.md) |
+| 环境实现、observer、fog、barrel 重导出 | [环境系统实现核心（barrel + observer + fog）](./env-impl.md) | [环境状态写入入口（setEnvState + 中间件链）](./env-bridge.md)、[环境变更分发回调（破循环依赖）](./env-dispatcher.md)、[环境状态防抖持久化](./env-persist.md) |
 | 环境灯光、灯光包装、灯光与场景集成、时间预设、灯光派生 | [环境灯光包装](./env-lighting.md) | [EnvState 单一源 Schema](./env-state-schema.md)、[场景光照与阴影（barrel）](./lighting.md) |
 | 环境弹窗、环境菜单、环境设置入口、env 菜单 | [环境弹窗（编排 + barrel）](./env-menu.md) | [场景弹窗（编排 + 路由）](./scene-menu.md)、[统一动作注册表 — 菜单/NL/快捷键共享真相源](./action-registry.md)、[NL 意图解析 — LLM 文本 → 动作执行](./ai-intent-dispatcher.md) |
 | 环境持久化、防抖保存、envState 持久化 | [环境状态防抖持久化](./env-persist.md) | [时间流转与太阳角系统](./env-time-of-day.md)、[内置 AI 诊断助手 — 双适配器服务层](./ai-service.md)、[相机状态管理 + 运行时上下文](./camera-state.md) |
@@ -63,7 +63,7 @@
 | GPU 能力、压缩纹理、KTX2、ASTC、BC7、ADR-189 | [GPU 压缩纹理能力探测](./gpu-capabilities.md) | [Go 模型库扫描](./go-library.md)、[PMX 模型加载与缩略图捕获](./model-loader.md)、[场景渲染管线与后处理](./renderer.md) |
 | 启动引导、初始化、bootstrap | [应用启动引导](./init.md) | [内置 AI 诊断助手 — 双适配器服务层](./ai-service.md)、[事件处理与导航系统](./events.md)、[运行模式检测](./runtime-mode.md) |
 | 资源库操作、导入模型、替换模型、替换动作、标签浏览、模型行点击 | [资源库操作](./library-actions.md) | [资源库核心](./library-core.md)、[统一动作注册表 — 菜单/NL/快捷键共享真相源](./action-registry.md)、[NL 意图解析 — LLM 文本 → 动作执行](./ai-intent-dispatcher.md) |
-| 资源库核心、资源浏览层级、网格视图、缩略图流式加载、资源管理核心 | [资源库核心](./library-core.md) | [资源库操作](./library-actions.md)、[时间流转与太阳角系统](./env-time-of-day.md)、[Go 文件与路径平台抽象](./go-fileaccess.md) |
+| 资源库核心、资源浏览层级、网格视图、缩略图流式加载、资源管理核心 | [资源库核心](./library-core.md) | [资源库操作](./library-actions.md)、[环境状态防抖持久化](./env-persist.md)、[时间流转与太阳角系统](./env-time-of-day.md) |
 | 资源库初始化、资源库设置、资源库启动 | [资源库初始化](./library-setup.md) | [安卓文件访问（shared 模式）](./android-file-access.md) |
 | 模型库、资源库、模型浏览、加载模型、library | [资源库入口与编排](./library.md) | [统一资源加载队列](./load-manager.md) |
 | 个人灯光、灯光跟随、跟随聚光灯 | [个人灯光跟随](./lighting-follow.md) | [灯光预设系统](./lighting-presets.md)、[场景光照与阴影（barrel）](./lighting.md)、[模型生命周期操作](./model-ops.md) |
@@ -85,7 +85,7 @@
 | 模型预设、动作预设、预设管理、预设面板 | [模型预设管理 UI](./model-preset-ui.md) | [Go 预设持久化与标签](./go-presets.md)、[场景序列化与自动保存](./scene-serialize.md) |
 | 动作绑定 UI、动作槽位管理、模块切换列表 | [动作绑定 UI](./motion-binding-ui.md) | [滑出式菜单引擎（SlideMenu）](./menu.md)、[PMX 模型加载与缩略图捕获](./model-loader.md)、[模型生命周期操作](./model-ops.md) |
 | 动作详情、图层管理、播放速度 | [动作详情 UI](./motion-detail-ui.md) | [PMX 模型加载与缩略图捕获](./model-loader.md)、[模型生命周期操作](./model-ops.md)、[动作绑定 UI](./motion-binding-ui.md) |
-| 脚部跟随、脚 IK、地面高度、脚部调整引擎 | [脚部地面跟随（MMD-native IK）](./motion-feet-adjustment.md) | [音频总线](./audio-bus.md)、[时间流转与太阳角系统](./env-time-of-day.md)、[脚部落地检测降级](./footstep-detect-fallback.md) |
+| 脚部跟随、脚 IK、地面高度、脚部调整引擎 | [脚部地面跟随（MMD-native IK）](./motion-feet-adjustment.md) | [音频总线](./audio-bus.md)、[环境状态防抖持久化](./env-persist.md)、[时间流转与太阳角系统](./env-time-of-day.md) |
 | 动作历史、撤销、重做、动作记录 | [动作历史管理](./motion-history.md) | — |
 | 动作意图、多主动作、动作库、动作广播、默认动作、场景动作 | [场景级动作意图库](./motion-intent.md) | [场景序列化与自动保存](./scene-serialize.md)、[PMX 模型加载与缩略图捕获](./model-loader.md)、[模型生命周期操作](./model-ops.md) |
 | 动作菜单、动作层级、感知面板、程序化动作面板 | [动作菜单层级系统](./motion-menu-levels.md) | [babylon-mmd 适配边界](./mmd-adapter.md)、[感知层主控](./perception.md)、[场景序列化与自动保存](./scene-serialize.md) |
@@ -110,7 +110,7 @@
 | 场景弹窗、场景菜单、场景设置入口、场景路由 | [场景弹窗（编排 + 路由）](./scene-menu.md) | [环境弹窗（编排 + barrel）](./env-menu.md)、[统一动作注册表 — 菜单/NL/快捷键共享真相源](./action-registry.md)、[NL 意图解析 — LLM 文本 → 动作执行](./ai-intent-dispatcher.md) |
 | 场景序列化、场景保存、场景恢复、撤销/重做 | [场景序列化与自动保存](./scene-serialize.md) | [模型生命周期操作](./model-ops.md)、[场景核心编排器（纯组装器）](./scene.md)、[骨骼覆盖核心 API](./bone-override.md) |
 | 场景初始化、场景编排、场景生命周期 | [场景核心编排器（纯组装器）](./scene.md) | [场景序列化与自动保存](./scene-serialize.md)、[应用启动引导](./init.md)、[模型生命周期操作](./model-ops.md) |
-| 设置共享、设置工具、UI 主题应用、字节格式化、设置默认值 | [设置共享工具](./settings-shared.md) | [时间流转与太阳角系统](./env-time-of-day.md)、[资源库核心](./library-core.md)、[脚部地面跟随（MMD-native IK）](./motion-feet-adjustment.md) |
+| 设置共享、设置工具、UI 主题应用、字节格式化、设置默认值 | [设置共享工具](./settings-shared.md) | [时间流转与太阳角系统](./env-time-of-day.md)、[环境状态防抖持久化](./env-persist.md)、[资源库核心](./library-core.md) |
 | 设置页、设置路由、设置编排 | [设置页路由与编排](./settings.md) | [设置共享工具](./settings-shared.md) |
 | 快捷键、快捷键注册、键盘绑定 | [快捷键注册表](./shortcut-registry.md) | — |
 | 次表面散射材质 | [SSS PBR 材质](./sss-pbr-material.md) | — |
@@ -122,7 +122,7 @@
 | 行控件、滑块行、开关行、模式行、骨骼选择行、危险操作行、信息卡 | [基础行控件构建器](./ui-rows.md) | [时间流转与太阳角系统](./env-time-of-day.md)、[菜单 Overlay 与 Wrapper 管理](./menu-overlay.md)、[菜单栈共享指针（stackRegistry）](./menu-stack-registry.md) |
 | 虚拟裙骨、物理裙摆、Bullet 弹簧链、skirt analyzer | [虚拟裙骨物理控制器（ADR-084 Phase 2-3）](./virtual-skirt.md) | [骨骼覆盖存储（多模块仲裁）](./bone-override-store.md)、[物理骨骼桥与每帧注册表](./physics-bridge.md) |
 | 多层动作、动作叠加、VMD 混合、composite animation、动作图层、动作优先级 | [多 VMD 叠加系统](./vmd-layers.md) | [程序化动作系统](./proc-motion-bridge.md)、[VMD 动作加载器](./vmd-loader.md) |
-| VMD 加载、动作文件导入、伴音自动加载、动作时长、文件格式校验、动作播放开始 | [VMD 动作加载器](./vmd-loader.md) | [时间流转与太阳角系统](./env-time-of-day.md)、[统一文件服务层](./fileservice.md)、[Go ZIP 解压与缓存管理](./go-zipextract.md) |
+| VMD 加载、动作文件导入、伴音自动加载、动作时长、文件格式校验、动作播放开始 | [VMD 动作加载器](./vmd-loader.md) | [环境状态防抖持久化](./env-persist.md)、[时间流转与太阳角系统](./env-time-of-day.md)、[统一文件服务层](./fileservice.md) |
 | 后端绑定、后端代理、resolveBackend、Wails bindings | [后端绑定聚合层（backend 代理化）](./wails-bindings.md) | [内置 AI 诊断助手 — 双适配器服务层](./ai-service.md)、[后端适配层](./core-backend.md)、[环境状态防抖持久化](./env-persist.md) |
 | 风力物理、风力注入、头发/裙子物理 | [风力物理注入（WASM Bullet）](./wind-physics.md) | [安卓文件访问（shared 模式）](./android-file-access.md)、[场景光照与阴影（barrel）](./lighting.md)、[babylon-mmd 适配边界](./mmd-adapter.md) |
 

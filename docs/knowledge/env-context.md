@@ -16,6 +16,7 @@ symbols:
   - getScene
   - initEnvImpl
   - isInitialized
+  - resetEnvContext
   - resolveStaticAsset
 invariants:
   - 初始化顺序须在场景与渲染管线就绪后调用，否则 getScene() 返回未定义

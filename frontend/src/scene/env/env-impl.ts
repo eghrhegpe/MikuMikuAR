@@ -223,6 +223,9 @@ export function disposeEnvUpdateObserver(): void {
     clearGroundTexCache();
     clearStarsTexCache();
     resetUnderwaterState(scene, pipeline);
+    // [fix P2] 复位共享上下文引用：isInitialized() 返回 false，防 HMR 重入 step0
+    // 再 dispose 时 getScene() 命中已销毁旧引用（env-context P2 幽灵引用）。
+    resetEnvContext();
 }
 
 // ======== Fog ========

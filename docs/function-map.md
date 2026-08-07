@@ -8,7 +8,7 @@
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
 | 核心基础设施 | 132 | 799 |
-| 3D 场景 | 125 | 1215 |
+| 3D 场景 | 125 | 1216 |
 | 菜单 & UI | 76 | 394 |
 | 动作算法 | 18 | 138 |
 
@@ -1011,14 +1011,15 @@
 | `persistUIState()` | `scene/env/_bridge/env-persist:89` | 与 persistEnvState 对称：持久化 UI state（ADR-176 第 2 步：经 resolveBackend 路由）。 |
 | `schedulePersistEnvState()` | `scene/env/_bridge/env-persist:47` | 调度 env state 防抖持久化（500ms）。setEnvState 内部调用。 |
 | `schedulePersistUI()` | `scene/env/_bridge/env-persist:78` | 防抖调度 UIState 持久化。修改 uiState 后调用此函数。 |
-| `INFINITE_GROUND_SIZE()` | `scene/env/_shared/env-context:47` | — |
-| `_envSys()` | `scene/env/_shared/env-context:74` | — |
-| `effectiveGroundSize()` | `scene/env/_shared/env-context:53` | 当前生效的地面尺寸：开启无限地面时为固定大尺寸，否则为 groundSize。 |
-| `getPipeline()` | `scene/env/_shared/env-context:36` | — |
-| `getScene()` | `scene/env/_shared/env-context:25` | 取当前 Babylon 场景；未初始化时抛错（env 子系统内部使用）。 |
+| `INFINITE_GROUND_SIZE()` | `scene/env/_shared/env-context:55` | — |
+| `_envSys()` | `scene/env/_shared/env-context:82` | — |
+| `effectiveGroundSize()` | `scene/env/_shared/env-context:61` | 当前生效的地面尺寸：开启无限地面时为固定大尺寸，否则为 groundSize。 |
+| `getPipeline()` | `scene/env/_shared/env-context:44` | — |
+| `getScene()` | `scene/env/_shared/env-context:33` | 取当前 Babylon 场景；未初始化时抛错（env 子系统内部使用）。 |
 | `initEnvImpl()` | `scene/env/_shared/env-context:19` | — |
-| `isInitialized()` | `scene/env/_shared/env-context:32` | — |
-| `resolveStaticAsset()` | `scene/env/_shared/env-context:58` | — |
+| `isInitialized()` | `scene/env/_shared/env-context:40` | — |
+| `resetEnvContext()` | `scene/env/_shared/env-context:27` | [fix P2] 复位共享上下文引用：disposeEnvUpdateObserver 末尾调用，使 isInitialized() 在 dispose 后返回 false——否则 |
+| `resolveStaticAsset()` | `scene/env/_shared/env-context:66` | — |
 | `CanvasTextureOptions()` | `scene/env/_shared/env-texture:9` | — |
 | `createCanvasDataURL()` | `scene/env/_shared/env-texture:170` | 统一创建 canvas 并导出 data URL（供 CreateGroundFromHeightMap 等以 URL 为输入的场景， 与 createCanvasTexture |
 | `createCanvasTexture()` | `scene/env/_shared/env-texture:42` | 统一创建 canvas 贴图。优先 DynamicTexture（无 toDataURL PNG 编码开销，ADR-091 §6 方向）； 任意环节失败（含 NullEngine |
@@ -1061,46 +1062,46 @@
 | `createGroundMeshFromSpec()` | `scene/env/env-ground-spec:390` | 创建地面 mesh 并落好材质。Phase 1 已接入：applyGround 非 terrain 重建路径调用本函数。 |
 | `groundSpecNeedsRebuild()` | `scene/env/env-ground-spec:262` | diffSpec 的结构性结论：是否需要重建。 |
 | `specKey()` | `scene/env/env-ground-spec:215` | 稳定 key：仅序列化结构性字段。新增结构性字段自动纳入，无遗漏风险。 |
-| `GROUND_PRESETS()` | `scene/env/env-ground:1384` | — |
+| `GROUND_PRESETS()` | `scene/env/env-ground:1386` | — |
 | `GroundMat()` | `scene/env/env-ground:52` | — |
-| `GroundPreset()` | `scene/env/env-ground:1383` | — |
+| `GroundPreset()` | `scene/env/env-ground:1385` | — |
 | `GroundProceduralKind()` | `scene/env/env-ground:169` | — |
-| `INFINITE_GROUND_SIZE()` | `scene/env/env-ground:569` | — |
-| `_disableGroundRippleTexture()` | `scene/env/env-ground:609` | — |
+| `INFINITE_GROUND_SIZE()` | `scene/env/env-ground:571` | — |
+| `_disableGroundRippleTexture()` | `scene/env/env-ground:611` | — |
 | `_effectiveBumpLevel()` | `scene/env/env-ground:129` | ADR-114 Phase 2: 法线扭曲映射到 bumpTexture.level 增强（distort=1 时额外 +2.0）；低质量模式自动关闭 |
 | `_effectiveRoughness()` | `scene/env/env-ground:120` | ADR-114 Phase 2: 反射模糊映射到 roughness 偏移（blur=1 最多增加 0.4）；低质量模式自动关闭 |
-| `_generateGroundTexture()` | `scene/env/env-ground:972` | — |
+| `_generateGroundTexture()` | `scene/env/env-ground:974` | — |
 | `_getAlbedoColor()` | `scene/env/env-ground:103` | — |
 | `_getAlbedoTex()` | `scene/env/env-ground:90` | — |
 | `_needAlphaBlend()` | `scene/env/env-ground:160` | 判断地面是否需要 alpha blend 渲染（alpha &amp;lt; 1 或边缘淡出）。 |
 | `_setAlbedoColor()` | `scene/env/env-ground:109` | — |
 | `_setAlbedoTex()` | `scene/env/env-ground:96` | — |
-| `_syncAllTextureOffsets()` | `scene/env/env-ground:1188` | — |
-| `_syncGroundEmissive()` | `scene/env/env-ground:1134` | [doc:adr-230] 自发光地屏增量同步：复用 Babylon 内置 emissiveColor/emissiveTexture 通道， 不引入新材质体系。es=0 / 黑 |
-| `_syncGroundNormalTexture()` | `scene/env/env-ground:1216` | — |
-| `_syncGroundRippleTexture()` | `scene/env/env-ground:593` | — |
-| `_syncPbrProperties()` | `scene/env/env-ground:1238` | PBR 增量更新：roughness / metallic / 程序化纹理无需重建材质的属性 |
-| `_syncTextureGroundTexture()` | `scene/env/env-ground:1056` | — |
-| `_updateGroundTexture()` | `scene/env/env-ground:1203` | — |
-| `applyGround()` | `scene/env/env-ground:1255` | — |
-| `applyGroundEdgeFade()` | `scene/env/env-ground:1123` | — |
-| `buildGroundPresetEnvState()` | `scene/env/env-ground:1384` | — |
-| `buildGroundReflection()` | `scene/env/env-ground:725` | — |
-| `clearGroundTexCache()` | `scene/env/env-ground:626` | — |
+| `_syncAllTextureOffsets()` | `scene/env/env-ground:1190` | — |
+| `_syncGroundEmissive()` | `scene/env/env-ground:1136` | [doc:adr-230] 自发光地屏增量同步：复用 Babylon 内置 emissiveColor/emissiveTexture 通道， 不引入新材质体系。es=0 / 黑 |
+| `_syncGroundNormalTexture()` | `scene/env/env-ground:1218` | — |
+| `_syncGroundRippleTexture()` | `scene/env/env-ground:595` | — |
+| `_syncPbrProperties()` | `scene/env/env-ground:1240` | PBR 增量更新：roughness / metallic / 程序化纹理无需重建材质的属性 |
+| `_syncTextureGroundTexture()` | `scene/env/env-ground:1058` | — |
+| `_updateGroundTexture()` | `scene/env/env-ground:1205` | — |
+| `applyGround()` | `scene/env/env-ground:1257` | — |
+| `applyGroundEdgeFade()` | `scene/env/env-ground:1125` | — |
+| `buildGroundPresetEnvState()` | `scene/env/env-ground:1386` | — |
+| `buildGroundReflection()` | `scene/env/env-ground:727` | — |
+| `clearGroundTexCache()` | `scene/env/env-ground:628` | — |
 | `createGroundMaterial()` | `scene/env/env-ground:137` | — |
-| `disposeGround()` | `scene/env/env-ground:1387` | 释放地面网格、材质与反射资源（幂等）。 |
+| `disposeGround()` | `scene/env/env-ground:1389` | 释放地面网格、材质与反射资源（幂等）。 |
 | `generateProceduralGroundTextures()` | `scene/env/env-ground:462` | — |
-| `getGroundHeightAt()` | `scene/env/env-ground:758` | — |
-| `setGroundActualSize()` | `scene/env/env-ground:820` | — |
-| `setGroundMesh()` | `scene/env/env-ground:816` | ADR-226: 供 env-ground-spec.ts 在建地面后同步模块局部状态（_envSys.ground.mesh / _groundActualSize）。 |
-| `setOnGroundChanged()` | `scene/env/env-ground:824` | — |
-| `setOnTerrainReady()` | `scene/env/env-ground:806` | — |
-| `tickGround()` | `scene/env/env-ground:1319` | — |
-| `triggerTerrainReady()` | `scene/env/env-ground:811` | ADR-226: 供 env-ground-spec.ts 的地形 onReady 回调触发已注册监听（避免直接访问模块局部 _onTerrainReady）。 |
+| `getGroundHeightAt()` | `scene/env/env-ground:760` | — |
+| `setGroundActualSize()` | `scene/env/env-ground:822` | — |
+| `setGroundMesh()` | `scene/env/env-ground:818` | ADR-226: 供 env-ground-spec.ts 在建地面后同步模块局部状态（_envSys.ground.mesh / _groundActualSize）。 |
+| `setOnGroundChanged()` | `scene/env/env-ground:826` | — |
+| `setOnTerrainReady()` | `scene/env/env-ground:808` | — |
+| `tickGround()` | `scene/env/env-ground:1321` | — |
+| `triggerTerrainReady()` | `scene/env/env-ground:813` | ADR-226: 供 env-ground-spec.ts 的地形 onReady 回调触发已注册监听（避免直接访问模块局部 _onTerrainReady）。 |
 | `_envSys()` | `scene/env/env-impl:20` | — |
 | `addGroundRipple()` | `scene/env/env-impl:23` | — |
 | `addRipple()` | `scene/env/env-impl:23` | — |
-| `applyFog()` | `scene/env/env-impl:229` | — |
+| `applyFog()` | `scene/env/env-impl:232` | — |
 | `applyGround()` | `scene/env/env-impl:47` | — |
 | `applySky()` | `scene/env/env-impl:43` | — |
 | `clearGroundRipples()` | `scene/env/env-impl:23` | — |

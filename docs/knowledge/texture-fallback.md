@@ -15,7 +15,7 @@ symbols:
   - expandFallbackCandidates
 invariants:
   - 纯函数无依赖，便于单测
-  - 候选规则固定：裸名 / 去首段路径 / 首段+裸名；已存在路径不重复注册，同文件重复候选自动去重
+  - 候选规则固定：裸名 / 首段+裸名 / 去首段路径（实际输出顺序与代码一致）；已存在路径不重复注册，同文件重复候选自动去重
   - 候选与磁盘真实文件同名（hasCandidate 预置）时不生成重复条目，避免 referenceFiles 双条目导致 resolver 覆盖错配
   - registerDeclaredAliases 仅在磁盘存在同名（basename 一致）文件时注册声明别名，共享 data 引用
 tests:
