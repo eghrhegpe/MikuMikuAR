@@ -34,6 +34,8 @@ symbols:
   - GetRecentModels
   - GetStorageMode
   - GetSystemA11ySettings
+  - HKEY_CURRENT_USER
+  - KEY_READ
   - KeyBindingOverride
   - LogEntry
   - LogRing
@@ -43,6 +45,7 @@ symbols:
   - NewDualWriter
   - NewLogRing
   - OverridePaths
+  - REG_DWORD
   - Recent
   - RecentByLevel
   - RenderPreset
@@ -99,7 +102,11 @@ symbols:
   - maxRecentModels
   - mergeEnvState
   - mergeUIState
+  - modadvapi32
   - openRegistryKey
+  - procRegCloseKey
+  - procRegOpenKeyExW
+  - procRegQueryValueExW
   - safeLogError
   - safeLogInfo
   - safeLogWarning

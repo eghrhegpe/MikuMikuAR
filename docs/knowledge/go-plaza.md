@@ -25,6 +25,9 @@ symbols:
   - plazaCacheDir
   - plazaCall
   - plazaDirectBridgeJS
+  - plazaGitHubBranch
+  - plazaGitHubOwner
+  - plazaGitHubRepo
   - plazaRemoteResult
   - plazaSource
   - prewarmPlazaWindow

@@ -108,3 +108,27 @@ test('check-circular: --snapshot → --diff 闭环自身无新增环', () => {
     try { fs.rmSync(snap, { force: true }); } catch {}
   }
 });
+
+// ── check-adr-status 冒烟（R1/R2 修复回归：退出码契约 + 入链） ──
+
+test('check-adr-status: 语料全部可分类 → exit 0（R1 修复：unknown>0 才非零）', () => {
+  const r = runScript(path.join(SCRIPTS, 'check-adr-status.mjs'), ['--json']);
+  assert.equal(r.code, 0, `exit=${r.code} stderr=${r.stderr} stdout=${r.stdout}`);
+  const data = JSON.parse(r.stdout);
+  assert.ok(typeof data.stats === 'object', 'JSON 应含 stats');
+  assert.equal(data.stats.unknown, 0, '当前语料应无 unknown 状态');
+});
+
+test('check-adr-status: --help 退 0 且含用法', () => {
+  const r = runScript(path.join(SCRIPTS, 'check-adr-status.mjs'), ['--help']);
+  assert.equal(r.code, 0, r.stderr);
+  assert.match(r.stdout, /check-adr-status/);
+});
+
+// ── gen-knowledge-symbols 冒烟（P2 修复回归：Go 分组/Java 告警不阻断正常路径） ──
+
+test('gen-knowledge-symbols: --check 跑通且语义一致（Go 分组符号增量同步后应无漂移）', () => {
+  const r = runScript(path.join(SCRIPTS, 'gen-knowledge-symbols.mjs'), ['--check']);
+  assert.equal(r.code, 0, `exit=${r.code} stderr=${r.stderr} stdout=${r.stdout}`);
+  assert.match(r.stdout, /与源码导出符号一致|漂移/);
+});

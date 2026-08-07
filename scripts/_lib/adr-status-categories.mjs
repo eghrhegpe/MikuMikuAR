@@ -11,6 +11,17 @@
  * 各脚本禁止各自维护一份词表 —— 否则同一批 ADR 分类结论会分岐
  * (历史教训:check-adr-health 曾报 207/7/3/8,check-adr-status 报 206/11/8/0)。
  *
+ * ## 与 gen-docs-index.mjs ADR_BUCKETS 的已知分歧（R3 2026-08-08 登记）
+ * 本模块是「健康分类」词表（3 桶 + unknown，任意子串命中），ADR_BUCKETS 是
+ * gen-docs-index 的「展示桶」（4 桶 + 其他，归档类锚定行首/⚠️ 前缀/调研归档三档）——
+ * 两者目的不同，未强行收敛为单一函数，已知分歧如下（真实语料可复现）：
+ *   - adr-019「已完成…⚠️ 已废弃」：本表=completed（'已完成'先命中）、index=已归档
+ *   - adr-043/044「已完成 — 调研归档」：本表=completed、index=已归档
+ *   - adr-133「⚠️ 决策二证伪」：本表=deprecated（'证伪'在 deprecated 词表）、
+ *     index=其他（ADR_BUCKETS 无'证伪'）——如要让 index 也归归档，需在 ADR_BUCKETS 加词
+ * 若后续需要「check 与 index 分类完全一致」，应把两套词表统一为共享归一化函数；
+ * 在此之前各脚本不得自行增删本表词条（避免分歧进一步漂移）。
+ *
  * 零依赖。
  */
 

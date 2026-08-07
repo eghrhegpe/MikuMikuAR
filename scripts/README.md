@@ -61,7 +61,7 @@
 |------|------|
 | `check-doc-drift.mjs` | 文档漂移检查（ADR/知识卡/架构树，CI 卡点） |
 | `check-adr-health.mjs` | ADR 健康综合检查（状态/债务/格式/关联/连续性） |
-| `check-adr-status.mjs` | ADR 状态检查（精简版） |
+| `check-adr-status.mjs` | ADR 状态分类检查（已完成/进行中/已废弃/未知）；unknown>0 时 exit 1；已接入 check:docs 链（`npm run check:adr-status`） |
 | `check-adr-technical-debt.mjs` | ADR 技术债务检查（精简版） |
 | `check-boolean-naming.mjs` | env-state-schema boolean 字段命名规范 |
 | `check-circular.mjs` | 前端循环依赖检查 |

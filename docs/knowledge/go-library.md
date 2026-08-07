@@ -8,19 +8,22 @@ scope:
 source_files:
   - internal/app/library.go
 symbols:
-  - SelectDir
-  - ScanModelDir
-  - scanAllCategories
-  - mapCategoryKey
-  - formatByCategory
-  - totalUncompressedZipSize
-  - expandZipEntries
-  - scanDirByExt
   - GetModelMeta
   - GetModelMetaBatch
-  - LoadOutfitFile
   - ListSubDirs
+  - LoadOutfitFile
+  - ScanModelDir
+  - SelectDir
   - ToggleFavorite
+  - expandZipEntries
+  - formatByCategory
+  - mapCategoryKey
+  - maxZipEntryCount
+  - maxZipEntryFileSize
+  - maxZipTotalBytes
+  - scanAllCategories
+  - scanDirByExt
+  - totalUncompressedZipSize
 invariants:
   - 8 个资源分类各一个 goroutine 并行扫描，结果合并返回；调用方必须消费完整切片
   - expandZipEntries 用 totalUncompressedZipSize 预检 ZIP 解压总量，防止 ZIP 炸弹解压失控

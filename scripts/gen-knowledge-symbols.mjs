@@ -24,41 +24,14 @@ import path from 'node:path';
 import { getExportedSymbols } from './_lib/source-graph.mjs';
 import { parseArgs } from './_lib/parse-args.mjs';
 import { ROOT } from './_lib/scan-files.mjs';
+// [P2 2026-08-08] frontmatter/source_files 解析收口共享库（此前逐字/近似复制，
+// 与 gen-knowledge-adr/tests 三处易分叉）。parseSymbols/withUpdatedSymbols 因
+// 「无字段=null vs 空列表=[]」语义与块重写需求，保留本文件实现。
+import { parseFrontmatter, parseSourceFiles } from './_lib/frontmatter.mjs';
 
 const KNOWLEDGE_DIR = path.join(ROOT, 'docs', 'knowledge');
 
-// ---------- frontmatter 解析 ----------
-function parseFrontmatter(text) {
-  const m = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
-  return m ? m[1] : null;
-}
-
-// 解析 source_files:（兼容行内数组与块列表）
-function parseSourceFiles(fm) {
-  const lines = fm.split(/\r?\n/);
-  const out = [];
-  let inBlock = false;
-  for (const line of lines) {
-    if (/^source_files\s*:/.test(line)) {
-      inBlock = true;
-      const inline = line.match(/\[([^\]]*)\]/);
-      if (inline) {
-        inline[1].split(',').forEach((s) => {
-          const v = s.trim().replace(/^['"]|['"]$/g, '');
-          if (v) out.push(v);
-        });
-        inBlock = false;
-      }
-      continue;
-    }
-    if (inBlock) {
-      const item = line.match(/^\s*-\s*(.+?)\s*$/);
-      if (item) out.push(item[1].replace(/^['"]|['"]$/g, ''));
-      else if (/^\S/.test(line)) inBlock = false;
-    }
-  }
-  return out;
-}
+// ---------- frontmatter 解析（parseFrontmatter/parseSourceFiles 来自 _lib/frontmatter.mjs） ----------
 
 // 解析 symbols: 块（行内数组 / 块列表），无该字段返回 null
 function parseSymbols(fm) {
@@ -119,18 +92,48 @@ function getGoSymbols(filePath) {
     let m;
     while ((m = re.exec(text))) syms.add(m[idx]);
   }
+  // [P2 2026-08-08] 分组声明：var ( … ) / const ( … ) / type ( … ) 块内成员
+  // 此前只锚定 `^var name` 单行 → a11y_windows.go 的 procReg*、library.go 的
+  // maxZipEntryFileSize、plaza_config.go 的 plazaGitHubOwner 等全漏提（实证）。
+  // 块内 `// 注释` 行首非标识符，天然跳过。
+  const reGroup = /^(?:var|const|type)\s*\(([\s\S]*?)^\)/gm;
+  let gm;
+  while ((gm = reGroup.exec(text))) {
+    for (const line of gm[1].split('\n')) {
+      const mm = line.match(/^\s*([A-Za-z0-9_]+)/);
+      if (mm) syms.add(mm[1]);
+    }
+  }
   return [...syms].sort();
 }
+
+// 模块级：本次运行中缺失/读失败的 source_files（gen 写模式静默清空人工 symbols 的数据安全守卫）
+const missingSources = [];
+// 模块级：类型不受支持的 source_files（如 .java）——无 export 关键字恒空，显式告警不假装支持
+const unsupportedSources = [];
 
 function collectSymbols(sourceFiles) {
   const set = new Set();
   for (const src of sourceFiles) {
     const abs = path.join(ROOT, src);
-    if (!fs.existsSync(abs)) continue;
+    if (!fs.existsSync(abs)) {
+      // [P2 2026-08-08] 源文件缺失不再静默：叠加 pre-commit 写模式 + git add docs/，
+      // 源文件被改名/暂缺时卡上人工 symbols 会被静默删除并 stage → 显式记录供主流程提醒。
+      missingSources.push(`${src}（不存在）`);
+      continue;
+    }
+    // [P2 2026-08-08] 仅支持 TS/JS（getExportedSymbols）与 Go（getGoSymbols）：
+    // 其余类型（.java 等）无 export 关键字恒空且无提示 → 显式告警，避免假装支持
+    const ext = path.extname(src);
+    if (ext !== '.go' && !['.ts', '.tsx', '.js', '.jsx'].includes(ext)) {
+      unsupportedSources.push(src);
+      continue;
+    }
     let syms = [];
     try {
       syms = src.endsWith('.go') ? getGoSymbols(abs) : getExportedSymbols(abs);
     } catch {
+      missingSources.push(`${src}（读取失败）`);
       continue;
     }
     syms.forEach((s) => set.add(s));
@@ -196,6 +199,10 @@ function main() {
       if (added.length) parts.push('+[' + added.join(', ') + ']');
       if (removed.length) parts.push('-[' + removed.join(', ') + ']');
       console.log(`⚠ ${cf} symbols 漂移 ${parts.join(' ')}`);
+      // [P2 2026-08-08] 缺失/读失败的源文件会导致 removed 误判：显式提示避免误删人工 symbols
+      if (removed.length && missingSources.length) {
+        console.warn(`   ↳ 注意：${missingSources.length} 个 source_files 缺失/读失败，removed 可能是误判，请核对后再同步`);
+      }
     } else {
       const newFm = withUpdatedSymbols(fm, target);
       if (newFm === null) continue;
@@ -209,6 +216,17 @@ function main() {
   }
 
   if (checkMode) {
+    // [P2 2026-08-08] check 分支也输出缺失/不支持源文件告警（此前提前 exit 不显示）
+    if (missingSources.length > 0) {
+      console.warn(`⚠ ${missingSources.length} 个 source_files 缺失/读失败（其贡献符号已跳过）：`);
+      for (const ms of missingSources.slice(0, 10)) console.warn(`   - ${ms}`);
+      if (missingSources.length > 10) console.warn(`   ...（共 ${missingSources.length} 个）`);
+    }
+    if (unsupportedSources.length > 0) {
+      console.warn(`⚠ ${unsupportedSources.length} 个 source_files 类型不受支持（仅支持 TS/JS/Go，其符号未同步）：`);
+      for (const us of unsupportedSources.slice(0, 10)) console.warn(`   - ${us}`);
+      if (unsupportedSources.length > 10) console.warn(`   ...（共 ${unsupportedSources.length} 个）`);
+    }
     if (drift === 0) {
       console.log(
         `✅ 知识卡 symbols: 与源码导出符号一致（扫描 ${cards.length} 张卡，跳过无字段 ${skippedNoField} 张）`
@@ -219,6 +237,20 @@ function main() {
       `❌ ${drift} 张卡 symbols 漂移，请运行：node scripts/gen-knowledge-symbols.mjs 同步`
     );
     process.exit(1);
+  }
+
+  if (missingSources.length > 0) {
+    // [P2 2026-08-08] gen 写模式：源文件缺失/读失败显式告警，防止静默清空人工 symbols
+    console.warn(`⚠ ${missingSources.length} 个 source_files 缺失/读失败（其贡献符号已跳过）：`);
+    for (const ms of missingSources.slice(0, 10)) console.warn(`   - ${ms}`);
+    if (missingSources.length > 10) console.warn(`   ...（共 ${missingSources.length} 个）`);
+  }
+
+  if (unsupportedSources.length > 0) {
+    // [P2 2026-08-08] 类型不受支持的源文件显式告警（仅支持 TS/JS/Go，Java 等恒空）
+    console.warn(`⚠ ${unsupportedSources.length} 个 source_files 类型不受支持（仅支持 TS/JS/Go，其符号未同步）：`);
+    for (const us of unsupportedSources.slice(0, 10)) console.warn(`   - ${us}`);
+    if (unsupportedSources.length > 10) console.warn(`   ...（共 ${unsupportedSources.length} 个）`);
   }
 
   console.log(

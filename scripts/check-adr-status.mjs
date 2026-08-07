@@ -9,13 +9,14 @@
  * 用法：
  *   node scripts/check-adr-status.mjs                 # 默认行为
  *   node scripts/check-adr-status.mjs --json # JSON 输出（CI/子代理消费）
- * 退出码：0（无 process.exit 调用）
+ * 退出码：0 = 全部已完成/正常；1 = 存在需要关注的 ADR（unknown/异常分类）
  */
 
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { STATUS_CATEGORIES } from './_lib/adr-status-categories.mjs';
+import { parseAdrHeader } from './_lib/frontmatter.mjs';
 // [fix] CLI 健壮性契约：--help 自吐 JSDoc 退 0 / 未知 flag 退 1（2026-08-06）
 const _HELP = new Set(['--help', '-h']);
 const _KNOWN = new Set(['--json']);
@@ -39,18 +40,9 @@ const __dirname = path.dirname(__filename);
 const ADR_DIR = path.join(__dirname, '..', 'docs', 'adr');
 const JSON_OUT = process.argv.includes('--json');
 
-// 提取状态
-function extractStatus(content) {
-  for (const line of content.split('\n')) {
-    const m1 = line.match(/^>\s*\*\*状态\*\*:\s*(.+)/);
-    if (m1) return m1[1].trim();
-    const m2 = line.match(/^-\s*\*\*状态\*\*[：:]\s*(.+)/);
-    if (m2) return m2[1].trim();
-    const m3 = line.match(/^\|\s*\*\*状态\*\*\s*\|\s*(.+?)\s*\|/);
-    if (m3) return m3[1].trim();
-  }
-  return null;
-}
+// [R4 2026-08-08] 首部解析统一走共享库 parseAdrHeader（首 20 行 + `---` 早停，
+// 兼容三种格式 + 中文冒号 + plain 格式）：手写 extractStatus 口径更窄且无早停，
+// 正文 `**状态**` 行有被误取风险，与 check-adr-health/gen-status-index/gen-docs-index 不同源。
 
 // 分类状态
 function categorize(status) {
@@ -71,8 +63,9 @@ function main() {
   const problems = [];
 
   for (const file of files) {
-    const content = fs.readFileSync(path.join(ADR_DIR, file), 'utf-8');
-    const status = extractStatus(content);
+    // [R4] 复用共享首部解析；error（缺状态/编号等）按无状态处理（problems 会提示「无状态」）
+    const hdr = parseAdrHeader(path.join(ADR_DIR, file));
+    const status = hdr.error ? null : (hdr.status || null);
     const cat = categorize(status);
     stats[cat]++;
 
@@ -84,9 +77,12 @@ function main() {
   }
 
   // 简洁输出（或 JSON 机读）
+  // [R1 2026-08-08] 退出码契约：仅「无法分类/缺状态」（unknown）视为异常 exit 1，
+  // 进行中/已废弃是正常历史状态只展示不阻断——杜绝「unknown 爆满也恒 0」的假绿，
+  // 同时避免把正常推进中的 ADR 误判为门禁失败。
   if (JSON_OUT) {
     console.log(JSON.stringify({ stats, problems }, null, 2));
-    return;
+    process.exit(stats.unknown > 0 ? 1 : 0);
   }
 
   console.log(`✅ 已完成: ${stats.completed} | 🔄 进行中: ${stats.inProgress} | ⚠️ 已废弃: ${stats.deprecated} | ❓ 未知: ${stats.unknown} | 总计: ${files.length}`);
@@ -97,6 +93,7 @@ function main() {
   } else {
     console.log('\n所有 ADR 状态正常！');
   }
+  process.exit(stats.unknown > 0 ? 1 : 0);
 }
 
 main();

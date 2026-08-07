@@ -25,7 +25,10 @@ import path from 'node:path';
 import { parseArgs } from './_lib/parse-args.mjs';
 import { ROOT } from './_lib/scan-files.mjs';
 // [P2-2] 知识卡常量（标签/非卡片清单）统一走共享库——本文件此前缺 tier-review.md（漂移点）
-import { CATEGORY_LABEL, KNOWLEDGE_NON_CARDS as NON_CARDS } from './_lib/knowledge-cards.mjs';
+import { CATEGORY_LABEL, KNOWLEDGE_NON_CARDS as NON_CARDS, KNOWLEDGE_ORDER } from './_lib/knowledge-cards.mjs';
+// [P3 2026-08-08] frontmatter 解析统一走共享库（此前手写 fm/fmList 不去尾随 # 注释，
+// `category: core # 注` 会产生非法 subgraph id 且与 gen-docs-index 分组不一致）
+import { parseFrontmatter, getScalar, getList } from './_lib/frontmatter.mjs';
 
 const DOCS = path.join(ROOT, 'docs');
 const KNOW_DIR = path.join(DOCS, 'knowledge');
@@ -36,41 +39,14 @@ const BANNER =
 
 // （CATEGORY_LABEL / NON_CARDS 来自 _lib/knowledge-cards.mjs 共享常量）
 
-/** 提取 frontmatter 单字段（仅扫描首个 --- 块）。 */
+/** 提取 frontmatter 单字段（复用共享库，兼容 <...> 占位符与 # 注释）。 */
 function fm(text, key) {
-  const m = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
-  if (!m) return undefined;
-  const line = m[1].match(new RegExp('^' + key + '\\s*:\\s*(.+)$', 'm'));
-  if (!line) return undefined;
-  const v = line[1].trim();
-  return v.startsWith('<') ? undefined : v;
+  return getScalar(parseFrontmatter(text), key);
 }
 
-/** 提取 frontmatter 列表字段的全部项（adr: 下的 `- ADR-xxx` 行）。 */
+/** 提取 frontmatter 列表字段（复用共享库，adr: 下的 `- ADR-xxx` 行）。 */
 function fmList(text, key) {
-  const m = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
-  if (!m) return [];
-  const lines = m[1].split(/\r?\n/);
-  const out = [];
-  let inList = false;
-  for (const line of lines) {
-    const head = line.match(new RegExp('^' + key + '\\s*:\\s*(.*)$'));
-    if (head) {
-      inList = true;
-      const inline = head[1].replace(/#.*$/, '').trim();
-      if (inline && !inline.startsWith('<')) out.push(inline);
-      continue;
-    }
-    if (!inList) continue;
-    const item = line.match(/^\s*-\s*(.+)$/);
-    if (item) {
-      const v = item[1].replace(/#.*$/, '').trim();
-      if (v && !v.startsWith('<')) out.push(v);
-    } else if (/^\S/.test(line)) {
-      inList = false;
-    }
-  }
-  return out;
+  return getList(parseFrontmatter(text), key);
 }
 
 /** Mermaid 节点 label 安全化：双引号会破坏字符串 label。 */
@@ -87,7 +63,10 @@ function renderMermaid(cards, adrFileMap) {
     if (!groups.has(c.category)) groups.set(c.category, []);
     groups.get(c.category).push(c);
   }
-  const order = ['env', 'scene', 'physics', 'rendering', 'motion', 'ui', 'core', 'backend', '未分类'];
+  // [P3 2026-08-08] order 收敛共享库 KNOWLEDGE_ORDER（此前本地硬编码副本，
+  // KNOWLEDGE_ORDER 变更后图不会跟随——正是共享层要消灭的漂移点）。
+  // '未分类' 不在 KNOWLEDGE_ORDER 中 → indexOf=-1 → 99 沉底，行为与旧数组一致。
+  const order = KNOWLEDGE_ORDER;
   const cats = [...groups.keys()].sort((a, b) => {
     const ia = order.indexOf(a);
     const ib = order.indexOf(b);
