@@ -340,6 +340,34 @@ export function setViewMatrixHandle(handle: ObserverHandle | null): void {
     _viewMatrixHandle = handle;
 }
 
+/**
+ * [fix P2] 重置相机单例状态（HMR / disposeCameraSystem 时调用）。
+ * 此前 disposeCameraSystem 只 stop 各行为循环 + dispose 相机 + 清 scene/canvas，
+ * _cameraMode/_cameraControl/_cameraBehavior/_scriptedSubMode/_fov/_focusCenterY/
+ * _concertPaused/_surroundPaused/autoCamera 系/_cameraVmd 系/_previousMode 等单例
+ * 残留上一场景值——HMR 重入后 switchCameraMode 的 `mode === getCameraMode()`
+ * 守卫可能误命中跳过重建（新场景沿用旧模式标志但相机对象已重建，状态分裂）。
+ */
+export function resetCameraState(): void {
+    _currentPreset = defaultCameraPreset();
+    _fov = 0.8;
+    _cameraMode = 'orbit';
+    _cameraControl = 'orbit';
+    _cameraBehavior = 'none';
+    _scriptedSubMode = 'loop';
+    _currentCamera = null;
+    _focusCenterY = 8;
+    _concertPaused = false;
+    _surroundPaused = false;
+    _cameraVmdName = '';
+    _cameraVmdPath = '';
+    _autoCameraEnabled = false;
+    _autoCameraBeatCount = 0;
+    _autoCameraPresetIdx = 0;
+    _previousMode = 'orbit';
+    _viewMatrixHandle = null;
+}
+
 // [doc:adr-238] 注册相机模式切换供 core/action-defs 经 scene-action-bridge 调用
 import { registerSceneAction, getSceneAction } from '@/core/scene-action-bridge';
 registerSceneAction('setCameraMode', (mode: string) => {

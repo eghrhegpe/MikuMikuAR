@@ -193,7 +193,16 @@ export function registerAppShortcuts(): void {
                 // 无 motion 撤销时，尝试场景级撤销（Ctrl+Z 兼顾全局）
                 const snap = getSceneAction('popUndoSnapshot')?.();
                 if (snap) {
-                    void (getSceneAction('restoreUndoSnapshot')?.(snap) ?? Promise.resolve(false))
+                    const restore = getSceneAction('restoreUndoSnapshot');
+                    if (!restore) {
+                        // [fix P2] 幽灵路径拦截：popUndoSnapshot 有快照但 restoreUndoSnapshot
+                        // 未注册（模块加载顺序异常/HMR 时序）时，此前 `?.() ?? Promise.resolve(false)`
+                        // 让快照被弹出但无 restore、无反馈——用户以为撤销成功实则状态未变。
+                        // 显式告警 + 不再吞快照（snap 已弹出，无法回退，只能提示）。
+                        logWarn('undo', 'popUndoSnapshot 有快照但 restoreUndoSnapshot 未注册，Ctrl+Z 未生效');
+                        return;
+                    }
+                    void restore(snap)
                         .then((ok) => {
                             if (ok) {
                                 setStatus(t('scene.undoApplied'), true);

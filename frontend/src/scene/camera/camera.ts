@@ -55,6 +55,7 @@ import {
     getPreviousMode,
     setPreviousMode,
     isCameraMode,
+    resetCameraState,
 } from './camera-state';
 import type {
     CameraMode,
@@ -754,6 +755,9 @@ export function disposeCameraSystem(): void {
     // 清理运行时上下文
     setCameraScene(null);
     setCameraCanvas(null);
+    // [fix P2] 复位相机单例状态：HMR 重入后 switchCameraMode 的 `mode === getCameraMode()`
+    // 守卫若不重置会误命中跳过重建（新场景沿用旧模式标志但相机已重建，状态分裂）。
+    resetCameraState();
 }
 
 // ======== Re-exports (backward compat — barrel re-export for downstream consumers) ========
