@@ -895,6 +895,8 @@ export const zhTW: Record<string, string> = {
     'scene.deleteLight': '刪除「{name}」',
     'scene.confirmDeleteLight': '確定刪除「{name}」？',
     'scene.statusLightDeleted': '✓ 已刪除燈光',
+    'scene.statusLightAdded': '✓ 已新增燈光',
+    'scene.maxLightsReached': '已達燈光數量上限（6）',
     'scene.lightPreset.characterPortrait': '角色肖像',
     'scene.lightPreset.propProduct': '道具產品',
     'scene.lightPreset.stageDrama': '舞台戲劇',

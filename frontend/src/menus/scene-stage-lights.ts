@@ -144,6 +144,11 @@ function buildStageLightSchema(): MenuNode[] {
                                 // [fix P3] 达 MAX_STAGE_LIGHTS（6）上限时 addStageLight 返回 ''，
                                 // 此前用户点击「+」无任何反馈
                                 feedbackStatus(t('scene.maxLightsReached'), undefined, false);
+                                // [fix code_review P2] 失败分支提前收尾：弹出刚压入的空快照
+                                // （未发生任何变更，restore 是纯浪费），保持 _undoStack 干净，
+                                // 不 offerUndo（避免误导性「已添加」toast）
+                                popUndoSnapshot();
+                                return;
                             }
                             reRenderSceneMenu();
                             offerSceneUndo(t('scene.statusLightAdded'), snap, () =>

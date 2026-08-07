@@ -857,6 +857,8 @@ export const zhCN: Record<string, string> = {
     'scene.deleteLight': '删除「{name}」',
     'scene.confirmDeleteLight': '确定删除「{name}」？',
     'scene.statusLightDeleted': '✓ 已删除灯光',
+    'scene.statusLightAdded': '✓ 已添加灯光',
+    'scene.maxLightsReached': '已达灯光数量上限（6）',
     'scene.lightPreset.characterPortrait': '角色肖像',
     'scene.lightPreset.propProduct': '道具产品',
     'scene.lightPreset.stageDrama': '舞台戏剧',

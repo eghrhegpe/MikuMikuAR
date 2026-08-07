@@ -899,6 +899,8 @@ export const ko: Record<string, string> = {
     'scene.deleteLight': '"{name}" 삭제',
     'scene.confirmDeleteLight': '"{name}"을(를) 삭제하시겠습니까?',
     'scene.statusLightDeleted': '✓ 조명 삭제됨',
+    'scene.statusLightAdded': '✓ 조명 추가됨',
+    'scene.maxLightsReached': '조명 수 제한(6)에 도달했습니다',
     'scene.lightPreset.characterPortrait': '캐릭터 인물',
     'scene.lightPreset.propProduct': '제품',
     'scene.lightPreset.stageDrama': '무대 연극',

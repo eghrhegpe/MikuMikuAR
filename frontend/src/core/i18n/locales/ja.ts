@@ -898,6 +898,8 @@ export const ja: Record<string, string> = {
     'scene.deleteLight': '"{name}" を削除',
     'scene.confirmDeleteLight': '"{name}" を削除しますか？',
     'scene.statusLightDeleted': '✓ ライトを削除しました',
+    'scene.statusLightAdded': '✓ ライトを追加しました',
+    'scene.maxLightsReached': 'ライトの上限（6）に達しました',
     'scene.lightPreset.characterPortrait': 'キャラクターポートレート',
     'scene.lightPreset.propProduct': 'プロダクト',
     'scene.lightPreset.stageDrama': '舞台劇',

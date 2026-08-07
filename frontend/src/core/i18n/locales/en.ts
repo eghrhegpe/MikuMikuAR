@@ -860,6 +860,8 @@ export const en: Record<string, string> = {
     'scene.deleteLight': 'Delete "{name}"',
     'scene.confirmDeleteLight': 'Delete "{name}"?',
     'scene.statusLightDeleted': '✓ Light deleted',
+    'scene.statusLightAdded': '✓ Light added',
+    'scene.maxLightsReached': 'Maximum light count reached (6)',
     'scene.lightPreset.characterPortrait': 'Character Portrait',
     'scene.lightPreset.propProduct': 'Product',
     'scene.lightPreset.stageDrama': 'Stage Drama',
