@@ -2401,13 +2401,13 @@
 | `buildSettingsLanguageLevel()` | `menus/settings-language:7` | — |
 | `buildSettingsMediaLevel()` | `menus/settings-media:469` | — |
 | `buildSettingsResourcesLevel()` | `menus/settings-resources:520` | — |
-| `FONT_MAP()` | `menus/settings-shared:114` | — |
-| `SETTINGS_FONT_RESTORE()` | `menus/settings-shared:114` | — |
-| `SettingsMenuHandle()` | `menus/settings-shared:159` | — |
-| `THEME_PRESETS()` | `menus/settings-shared:118` | — |
-| `applyUIAppearanceDom()` | `menus/settings-shared:128` | — |
-| `formatBytes()` | `menus/settings-shared:161` | — |
-| `generateTextColors()` | `menus/settings-shared:114` | — |
+| `FONT_MAP()` | `menus/settings-shared:127` | — |
+| `SETTINGS_FONT_RESTORE()` | `menus/settings-shared:127` | — |
+| `SettingsMenuHandle()` | `menus/settings-shared:172` | — |
+| `THEME_PRESETS()` | `menus/settings-shared:131` | — |
+| `applyUIAppearanceDom()` | `menus/settings-shared:141` | — |
+| `formatBytes()` | `menus/settings-shared:174` | — |
+| `generateTextColors()` | `menus/settings-shared:127` | — |
 | `getAutoImportCached()` | `menus/settings-shared:29` | — |
 | `getDownloadWatchEnabledCached()` | `menus/settings-shared:50` | — |
 | `preloadAutoImportState()` | `menus/settings-shared:21` | 启动时预加载自动导入开关状态。在 main.ts init 中调用。 |
@@ -2415,8 +2415,8 @@
 | `setAutoImportCached()` | `menus/settings-shared:33` | — |
 | `setAutoLoadCompanionAudio()` | `menus/settings-shared:62` | — |
 | `setDownloadWatchEnabledCached()` | `menus/settings-shared:54` | — |
-| `setTheme()` | `menus/settings-shared:79` | — |
-| `truncatePath()` | `menus/settings-shared:173` | 路径截断显示：超长时保留尾部（用户更关心文件名/末级目录） |
+| `setTheme()` | `menus/settings-shared:81` | — |
+| `truncatePath()` | `menus/settings-shared:186` | 路径截断显示：超长时保留尾部（用户更关心文件名/末级目录） |
 | `addCustomSoftware()` | `menus/settings-system:432` | — |
 | `buildSettingsSystemLevel()` | `menus/settings-system:783` | — |
 | `buildSoftwareDetailLevel()` | `menus/settings-system:738` | — |

@@ -70,40 +70,53 @@ export function setAutoLoadCompanionAudio(v: boolean): void {
 
 // ======== Theme helper ========
 
-// [fix P2] 并发守卫：setTheme 的 await tryCatchStatus 是 suspension point，快速连点
-// 主题预设时两次调用并发——后到的 await 先 resolve 会先写 DOM，先到的后 resolve 覆盖，
-// DOM 最终颜色与最后一次点击不一致。用 in-flight promise 去重：进行中直接复用同一
-// promise（last-wins 语义由点击顺序保证，后点击的调用才真正进入）。
+// [fix P2] 并发守卫（true last-wins）：setTheme 的 await tryCatchStatus 是 suspension
+// point，快速连点主题预设时多次调用并发——首版用 in-flight 去重（进行中返回同一
+// promise）实为 first-wins：后点击的 hex 被静默丢弃，主题停在第一个颜色（code_review
+// P2）。改为请求链：进行中记录最新 hex，当前 promise 完成后循环消费，最终 DOM 颜色
+// = 最后一次点击。
 let _themeInFlight: Promise<void> | null = null;
+let _pendingThemeHex: string | null = null;
 
 export async function setTheme(
     hex: string,
     getSettingsMenu: () => { updateControls: () => void } | null
 ): Promise<void> {
     if (_themeInFlight) {
+        _pendingThemeHex = hex; // 记下最新请求，待当前完成后消费
         return _themeInFlight;
     }
+    _pendingThemeHex = null;
     const p = (async (): Promise<void> => {
-        const _r = await tryCatchStatus(() => SetUIAccent(hex), t('settings.themeColor'));
-        if (_r === undefined) {
-            getSettingsMenu()?.updateControls();
-            return;
+        let current = hex;
+        for (;;) {
+            const _r = await tryCatchStatus(() => SetUIAccent(current), t('settings.themeColor'));
+            const next = _pendingThemeHex;
+            if (_r === undefined || next === null) {
+                if (_r === undefined) {
+                    getSettingsMenu()?.updateControls();
+                    return;
+                }
+                // 应用最终 DOM（无更新请求时）
+                const root = document.documentElement;
+                const textColors = generateTextColors(current);
+                root.style.setProperty('--accent', current);
+                root.style.setProperty('--accent-rgb', rgbToString(hexToRgb(current)));
+                root.style.setProperty('--accent-dim', current + '33');
+                root.style.setProperty('--text-bright', textColors.bright);
+                root.style.setProperty('--text-dim', textColors.dim);
+                root.style.setProperty('--text-muted', textColors.muted);
+                showInfoToast(t('settings.themeColorSet', { hex: current }));
+                getSettingsMenu()?.updateControls();
+                return;
+            }
+            // 消费最新请求继续循环
+            _pendingThemeHex = null;
+            current = next;
         }
-
-        const root = document.documentElement;
-        const textColors = generateTextColors(hex);
-
-        root.style.setProperty('--accent', hex);
-        root.style.setProperty('--accent-rgb', rgbToString(hexToRgb(hex)));
-        root.style.setProperty('--accent-dim', hex + '33');
-        root.style.setProperty('--text-bright', textColors.bright);
-        root.style.setProperty('--text-dim', textColors.dim);
-        root.style.setProperty('--text-muted', textColors.muted);
-
-        showInfoToast(t('settings.themeColorSet', { hex }));
-        getSettingsMenu()?.updateControls();
     })().finally(() => {
         _themeInFlight = null;
+        _pendingThemeHex = null;
     });
     _themeInFlight = p;
     return p;
@@ -177,7 +190,5 @@ export function truncatePath(p: string, max = 40): string {
 // [doc:adr-238] 注册预加载状态供 core/init 经 ui-action-bridge 调用（切断 core→menus）
 import { registerUiAction } from '@/core/ui-action-bridge';
 registerUiAction('preloadAutoImportState', () => preloadAutoImportState());
-// [fix P2] 对称注册 download-watch 预加载：此前仅注册 autoImport，downloadWatchEnabledCached
-// 启动期恒 false——资源设置页首次打开前，下载监听分支读到的缓存与后端真实状态不一致
-// （自动导入分支正确预加载，watch 分支静默跳过）。
-registerUiAction('preloadDownloadWatchState', () => preloadDownloadWatchState());
+// 注：download-watch 预加载不在 bridge 注册——nav-actions.ts:213-214 在打开设置页时
+// 直接 safeCallAsync 调用（code_review P0：接口无该 key，注册即 tsc 编译错误 + 死代码）。
