@@ -81,6 +81,33 @@ describe('registerShortcut 冲突守卫', () => {
             expect.stringContaining('按键冲突')
         );
     });
+
+    it('findDeferredIndex 非空队列未命中：注册不冲突的 C 不得 splice 误伤已在队的 B', () => {
+        // A 注册 Space（无修饰键）
+        registerShortcut(makeDef('a', 'Space'));
+        // B 与 A 冲突 → 入 deferred 队列，此时 _deferredShortcuts=[b]（非空）
+        registerShortcut(makeDef('b', 'Space'));
+        expect(getAllShortcuts().map((s) => s.id)).not.toContain('b');
+
+        // C 以 Space+Ctrl 注册：与 A(plain Space) 不冲突 → 直接注册成功。
+        // 其成功路径调用 findDeferredIndex('c')，队列非空但无 'c' 命中（返回 -1），
+        // 必须跳过 splice 分支，不得误删已在 index 0 的 b。
+        registerShortcut(makeDef('c', 'Space', { defaultCtrl: true }));
+        const idsAfterC = getAllShortcuts().map((s) => s.id);
+        expect(idsAfterC).toContain('a');
+        expect(idsAfterC).toContain('c');
+        expect(idsAfterC).not.toContain('b'); // b 仍在 deferred，未被误删
+        expect(__mocks.logWarn).not.toHaveBeenCalledWith(
+            'shortcut-registry',
+            expect.stringContaining('"c" 与')
+        );
+
+        // 旁证：触发 flush（改绑 A 解除与 B 的冲突），b 必须仍能被恢复，
+        // 证明它从始至终都留在队列里（从未被 C 的 -1 命中误 splice）。
+        setKeyBinding('a', 'KeyX');
+        const idsAfterFlush = getAllShortcuts().map((s) => s.id);
+        expect(idsAfterFlush).toContain('b');
+    });
 });
 
 describe('冲突解除后 deferred 自动恢复', () => {
