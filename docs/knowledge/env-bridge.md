@@ -37,13 +37,13 @@ use_when:
 Env Bridge：环境系统核心调度层。ADR-148 Phase 5 拆分后聚焦于 `setEnvState`、中间件注册、`applyEnvStateFacade` 轻量应用。重力/持久化/时间流转已分别拆到 `env-gravity.ts`、`env-persist.ts`、`env-time-of-day.ts`，本模块仅保留调度核心。
 
 ## 核心职责
-- `setEnvState(patch, skipPersist?)` — 环境状态唯一写入入口，合并 envState → 中间件链 → dispatchEnvChange → schedulePersistEnvState
+- `setEnvState(partial, skipAutoSave?)` — 环境状态唯一写入入口，合并 envState → 中间件链 → dispatchEnvChange → schedulePersistEnvState
 - `applyEnvStateFacade(state, partial?)` — 轻量应用（time-of-day tick 专用，跳过防抖持久化与中间件链）
 - `registerEnvStateMiddleware({name, phase, fn})` — 中间件注册（pre-facade / post-facade），供子系统注入副作用
 - `setPresetAnimActive(active)` — 标记预设动画运行中，applyEnvStateFacade 据此跳过方向光同步
 
 ## 对外 API（节选）
-- `setEnvState(patch: Partial<EnvState>, skipPersist?: boolean)`
+- `setEnvState(partial: Partial<EnvState>, skipAutoSave?: boolean)`
 - `applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>)`
 - `registerEnvStateMiddleware(mw: EnvStateMiddleware)`
 - `setPresetAnimActive(active: boolean)`

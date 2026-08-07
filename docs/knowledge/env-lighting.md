@@ -38,18 +38,18 @@ use_when:
 # 环境灯光包装
 
 ## 系统概览
-**环境灯光派生层**。纯计算模块，将 envState 的 sky/ground/water/atmosphere 参数派生为
+**环境灯光派生层**。纯计算模块，将环境灯光参数派生为
 `DerivedLighting`（方向光强度/颜色、半球光、阴影参数、groundColor），不直接操作任何
 Babylon 灯光对象。同时提供时间段预设（`TIME_OF_DAY_PRESETS`）与分类预设的导出/导入。
 
 ## 核心职责
-- `env-lighting.ts` — envState → DerivedLighting 纯函数派生、时间段预设库、分类预设序列化。
+- `env-lighting.ts` — `deriveLighting(skyColor, sunAngle, azimuthDeg?)` 纯函数计算 `DerivedLighting`、时间段预设库、分类预设序列化。
 
 ## 对外 API（节选）
-- `deriveLighting(envState)` — 从 envState 派生 DerivedLighting（纯函数，无副作用）。
+- `deriveLighting(skyColor: [number,number,number], sunAngle: number, azimuthDeg?: number)` — 由天空色/太阳角派生 DerivedLighting（纯函数，无副作用）。
 - `calcLuminance(rgb)` — 计算 RGB 亮度。
 - `TIME_OF_DAY_PRESETS` — 内置时间段预设集（EnvPreset & DerivedLighting）。
-- `snapshotEnvPresetByCategory(envState)` — 按 category 分类快照预设。
+- `snapshotEnvPresetByCategory(label: string, category: EnvPresetCategory, state: EnvState)` — 按 category 分类快照预设。
 - `exportCategorizedEnvPreset(p)` / `importCategorizedEnvPreset(json)` — 分类预设序列化/反序列化。
 - `ENV_PRESET_FIELDS` — 各 category 对应的 envState key 白名单。
 
@@ -58,4 +58,4 @@ Babylon 灯光对象。同时提供时间段预设（`TIME_OF_DAY_PRESETS`）与
 - 底层：`../render/lighting.ts`。
 
 ## 不变量
-- 灯光对象在 dispose 时全部释放。
+- 本模块为纯计算层（不持有任何 Babylon 灯光对象），无资源需 dispose；灯光对象的创建/释放由 `render/lighting.ts` 负责。

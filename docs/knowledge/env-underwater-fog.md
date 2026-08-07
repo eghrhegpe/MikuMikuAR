@@ -39,7 +39,8 @@ use_when:
 - `underwaterFogController.uninstall(mat)` — 材质销毁前摘除注册条目（与 `install` 成对；`applyTerrainMaterial` / 地面重建路径调用），避免 `update` 对已 dispose 材质写 emissive。
 - `underwaterFogController.update(dt, scene)` — 每帧按相机 Y 与水面关系切换雾 + 焦散；受 `waterEnabled && underwaterEnabled` 门控，状态未变直接返回。
 - `underwaterFogController.reset(scene?)` — 还原 emissive、关闭 fog、清空注册表。
-- `computeUnderwaterFogColor()` — 基准浅青与天空底色（`skyColorBot`）混合，让雾色随天空变化。
+
+> 注：`computeUnderwaterFogColor()` 为模块私有辅助函数（`env-underwater-fog.ts:43` 无 `export`），仅 `update` 内部调用，不列入对外 API。
 
 ## 与其他子系统关系
 - 消费 `env-caustics.ts`（[共享焦散纹理系统](./env-caustics.md)）：`getTexture` 注入地面 `emissiveTexture`，并按 `envState.groundSize * CAUSTIC_WORLD_SCALE` 派生地面 `uScale`/`vScale`（旧版写死常量 8 不随 groundSize 变，已改为世界空间锚定，与水面焦散同尺度）。

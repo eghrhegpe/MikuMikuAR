@@ -55,7 +55,7 @@ Env Time-of-Day：从 env-bridge 拆出的时间流转 + 太阳角 + 环境预�
 - `getTimeOfDaySpeed(): number` / `setTimeOfDaySpeed(s: number)`
 - `syncTimeOfDayFromEnv()` — 启动时从持久化 envState 恢复
 - `applyEnvPreset(name: string): boolean` — 应用内置预设（带动画过渡）
-- `applyEnvPresetObject(preset: EnvPreset): boolean` — 应用自定义预设对象
+- `applyEnvPresetObject(preset): boolean` — 应用自定义预设对象（参数为结构兼容 `EnvPreset` 的内联类型 `env-time-of-day.ts:257`，非具名 `EnvPreset`）
 - `applyEnvPresetByCategory(preset: CategorizedEnvPreset): boolean` — 应用分类预设（无过渡）
 
 ## 不变量

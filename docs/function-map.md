@@ -1,7 +1,7 @@
 # 函数映射表
 
 > AI 找代码用。改前端功能时先 grep 此表定位文件。
-> **自动生成**（2026-08-06）— 由 `scripts/gen-funcmap.mjs` 生成。
+> **自动生成**（2026-08-07）— 由 `scripts/gen-funcmap.mjs` 生成。
 
 ## 总览
 
@@ -2384,7 +2384,7 @@
 | `showPresetSaveDialog()` | `menus/scene-render-presets:267` | — |
 | `buildStageLevel()` | `menus/scene-stage-levels:161` | — |
 | `buildStageTransformLevel()` | `menus/scene-stage-levels:175` | — |
-| `buildStageLightLevel()` | `menus/scene-stage-lights:811` | — |
+| `buildStageLightLevel()` | `menus/scene-stage-lights:816` | — |
 | `buildSettingsAboutLevel()` | `menus/settings-about:235` | — |
 | `handleSettingsAction()` | `menus/settings-actions:21` | 全局设置项点击分发：语言切换 + 动作表。settings.ts 的 onItemClick 使用。 |
 | `buildSettingsAppearanceLevel()` | `menus/settings-appearance:510` | — |

@@ -58,10 +58,10 @@ use_when:
 环境系统实现核心（从原 env-impl 拆分而来）。本文件保留：observer、fog、barrel re-export。天空→`env-sky.ts`、地面→`env-ground.ts`、共享上下文→`env-context.ts`，各子系统经本文件 barrel 汇聚。
 
 ## 核心职责
-- 汇聚 re-export：water（`createWater`/`disposeWater`/`refreshWaterRenderList`/ripple 系列）、clouds（`createClouds`/`disposeClouds`）、mirror（`createMirror`/`disposeMirror`/`isMirrorActive`/`updateMirrorClearColor`）
+- 汇聚 re-export：water（`createWater`/`disposeWater`/`refreshWaterRenderList`/ripple 系列）、clouds（`createClouds`/`disposeClouds`）；mirror 符号（`createMirror`/`disposeMirror`/`isMirrorActive`/`updateMirrorClearColor`）仅为本文件内部 `import`（调用点见 `:106-109`/`:92-93`），**不经本文件 re-export**，对外经 `env.ts` 暴露子集
 - 环境 observer：`ensureEnvUpdateObserver` / `disposeEnvUpdateObserver`（由门面 re-export 供 scene 清理）
-- fog 应用（`applyFog`）、共享上下文 `_envSys` / `getScene` / `getPipeline` / `resolveStaticAsset` / `isInitialized`（后 5 者为来自 `env-context` 的 barrel 重导出）
-- 场景 tick 回调 **barrel 重导出**（定义见 `env-dispatcher`）：`registerSceneTickCallback` / `clearSceneTickCallbacks` / `runSceneTickCallbacks`，observer 每帧调用 `runSceneTickCallbacks()`，`disposeEnvUpdateObserver` 中调用 `clearSceneTickCallbacks()`
+- fog 应用（`applyFog`）、共享上下文：`_envSys` / `getScene` 为来自 `_shared/env-context` 的 barrel 重导出；`getPipeline` / `resolveStaticAsset` / `isInitialized` 需直接 `import` 自 `_shared/env-context`（本文件不重导出）
+- 场景 tick 回调：`registerSceneTickCallback` 为来自 `_bridge/env-dispatcher` 的 barrel 重导出（返回反注册函数 `() => void`）；`clearSceneTickCallbacks` / `runSceneTickCallbacks` 仅为本文件内部 `import`（定义见 `env-dispatcher`），observer 每帧调用 `runSceneTickCallbacks()`，`disposeEnvUpdateObserver` 中调用 `clearSceneTickCallbacks()`
 
 ## 对外 API（节选）
 本文件**自身定义**：
@@ -70,8 +70,8 @@ use_when:
 
 本文件为 **barrel 重导出**（定义见上游模块）：
 - `initEnvImpl(scene, pipeline)`（定义于 `env-context`）
-- `registerSceneTickCallback(cb)` / `clearSceneTickCallbacks()` / `runSceneTickCallbacks()`（定义于 `env-dispatcher`，**无参数**）
-- water/clouds/mirror/sky/ground/particles 各子系统 API（定义于各自 `env-*` 模块）
+- `registerSceneTickCallback(cb: () => void): () => void` — 来自 `env-dispatcher` 的 barrel 重导出，返回反注册函数；`clearSceneTickCallbacks()` / `runSceneTickCallbacks()` 仅为本文件内部 `import`，非重导出
+- water/clouds/sky/ground/particles 各子系统 API（定义于各自 `env-*` 模块，经本文件 barrel 透传；mirror 不经本文件透传）
 
 ## 关键约定
 - dispose 链路级联释放 water/clouds/mirror 子资源（见各子系统卡）

@@ -14,7 +14,7 @@ symbols:
   - REFRESHRATE_RENDER_ONCE
 invariants:
   - 每个 helper 对应一处 babylon 私有字段/未导出常量的访问，降低升级时断裂风险
-  - getCanvasCtx 封装 DynamicTexture.getContext() → CanvasRenderingContext2D 的类型断言
+  - getCanvasCtx 封装 DynamicTexture.getContext() → CanvasRenderingContext2D | null 的类型断言（可能返回 null）
 tests: []
 use_when:
   - 类型逃逸
@@ -31,7 +31,7 @@ use_when:
 - `env-type-helpers.ts` — 私有 API 桥接、类型断言封装。
 
 ## 对外 API（节选）
-- `getCanvasCtx(dt)` — 封装 `DynamicTexture.getContext()` 到 `CanvasRenderingContext2D` 的断言。
+- `getCanvasCtx(dt)` — 封装 `DynamicTexture.getContext()` 到 `CanvasRenderingContext2D | null` 的断言（可能为 null）。
 - `REFRESHRATE_RENDER_ONCE` — Babylon 未导出的静态常量（`Number.MAX_VALUE`），供 `RenderTargetTexture` 单帧渲染用。
 - `FrozenCamera` — `FreeCamera` 私有字段接口（`_worldMatrix` / `_isWorldMatrixFrozen`），供 `planar-reflection` 镜像相机矩阵设置用。
 
