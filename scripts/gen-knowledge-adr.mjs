@@ -22,6 +22,11 @@ import { parseArgs } from './_lib/parse-args.mjs';
 import { ROOT } from './_lib/scan-files.mjs';
 // [P2-2] 非知识卡清单统一走共享库
 import { KNOWLEDGE_NON_CARDS as NON_CARDS } from './_lib/knowledge-cards.mjs';
+// [P2-3/P2-4 2026-08-08] source_files 解析收口共享库：旧正则只收 `frontend/` 前缀
+// （Go/backend 卡被静默排除）且作用于整个 frontmatter（scope:/tests: 下 - frontend/... 被当
+// source → 目录路径 EISDIR 崩溃隐患）。parseSourceFiles 限定 source_files 块、任意路径、
+// 兼容行内数组/引号。
+import { parseSourceFiles } from './_lib/frontmatter.mjs';
 
 const KNOW_DIR = path.join(ROOT, 'docs', 'knowledge');
 
@@ -68,8 +73,28 @@ function scanDocAdrMarkers(sourceFiles) {
   for (const sf of sourceFiles) {
     const abs = path.join(ROOT, sf);
     if (!fs.existsSync(abs)) continue;
-    const src = fs.readFileSync(abs, 'utf8');
-    for (const m of src.matchAll(/\[doc:adr-(\d+)\]/g)) found.add(parseInt(m[1], 10));
+    let src;
+    // [P2-4 2026-08-08] 读失败 try/catch：共享 parseSourceFiles 可能返回目录路径
+    // （scope:/tests: 等字段被误当 source 的历史风险），readFileSync(目录) 抛 EISDIR
+    // 未捕获异常会整脚本崩溃 → 跳过并告警。
+    try {
+      src = fs.readFileSync(abs, 'utf8');
+    } catch {
+      console.warn(`   ⚠ 无法读取 ${sf}（跳过）`);
+      continue;
+    }
+    // [P2-1/P2-2 2026-08-08] 旧正则 `/\[doc:adr-(\d+)\]/g` 只认精确形式：
+    // ① 带后缀标记 `[doc:adr-199 P2-3]`、`[doc:adr-123 P1]` 等数十处全漏
+    //    （ai-config-store.md 的 ADR-199 关联永久丢失，实证）；
+    // ② 合并标记 `[doc:adr-176/178]`、`[doc:adr-163/adr-164/adr-166]` 整段无匹配。
+    // 现改为捕获整个 token 内文本，按 `/` 或空白分段后只取「纯数字或 adr-NNN」段——
+    // 后缀 `P2-3` 含连字符且非 adr- 前缀，天然不提取。
+    for (const m of src.matchAll(/\[doc:adr-([^\]]*)\]/g)) {
+      for (const seg of m[1].split(/[\/\s]+/)) {
+        const nm = seg.match(/^(?:adr-)?(\d+)$/);
+        if (nm) found.add(parseInt(nm[1], 10));
+      }
+    }
   }
   return [...found]
     .sort((a, b) => a - b)
@@ -125,7 +150,10 @@ function main() {
     if (tier !== 'architecture') continue;
     const existing = fmList(text, 'adr').filter((a) => a !== '[]');
     if (existing.length) continue; // 已有手写关联，不动
-    const sources = [...fmTxt.matchAll(/^\s*-\s*(frontend\/\S+)\s*$/gm)].map((m) => m[1]);
+    // [P2-3 2026-08-08] 改用共享 parseSourceFiles（限定 source_files 块、任意路径）：
+    // 旧 `/^\s*-\s*(frontend\/\S+)\s*$/gm` 只收 frontend/ → Go/backend 卡（go-app/go-library 等
+    // 约 14 张）静默排除，即使 internal/ 源码有 [doc:adr-] 标记也永远不补 adr 字段。
+    const sources = parseSourceFiles(fmTxt);
     const adrs = scanDocAdrMarkers(sources);
     if (adrs.length) targets.push({ file: f, text, adrs });
   }

@@ -1,5 +1,7 @@
 ---
 tier: architecture
+adr:
+  - ADR-189
 kind: go_library
 name: Go 模型库扫描
 category: backend

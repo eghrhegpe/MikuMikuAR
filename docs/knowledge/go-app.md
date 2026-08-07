@@ -1,5 +1,9 @@
 ---
 tier: architecture
+adr:
+  - ADR-066
+  - ADR-153
+  - ADR-230
 kind: go_app
 name: Go 后端核心（App 生命周期 + 配置系统）
 category: backend

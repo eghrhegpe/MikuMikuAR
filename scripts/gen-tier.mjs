@@ -14,6 +14,9 @@
  * 设计克制：
  *   - 默认预览：只产出 tier-review.md + 打印摘要，不动任何卡（符合「不经确认不动大改动」）。
  *   - --apply：仅把 广度≥2 的 architecture 卡写入 frontmatter；leaf/边界仍留人工，避免误把 facade 藏进机器视图。
+ *     ⚠ 广度≥2 会把被广泛引用的纯工具误提为 architecture（ADR-218 实证 6 张——safe-call/
+ *     observer-handle/i18n-t/goerr/reactivity/platform——被人工降回 leaf）。--apply 必须与
+ *     tier-review.md 人工复核配套：写入后逐张核对，虚高卡手工降回 leaf。
  *   - --check：尚有未标卡则退出码 1（人工补全后的 CI 门）。
  *
  * 复用 scripts/_lib/source-graph.mjs（scanSourceGraph / resolveSourceImport），零新依赖。
@@ -28,6 +31,8 @@ import path from 'node:path';
 import { scanSourceGraph } from './_lib/source-graph.mjs';
 import { toPosix } from './_lib/to-posix.mjs';
 import { ROOT } from './_lib/scan-files.mjs';
+// [P2-4 2026-08-08] frontmatter 解析收口共享库（symbols/graph 已收口，tier 是系列中未收口者）
+import { parseFrontmatter, getScalar, parseSourceFiles } from './_lib/frontmatter.mjs';
 // [fix] CLI 健壮性契约：--help 自吐 JSDoc 退 0 / 未知 flag 退 1（2026-08-06）
 const _HELP = new Set(['--help', '-h']);
 const _KNOWN = new Set(['--apply', '--check']);
@@ -51,38 +56,7 @@ const SRC_DIR = path.join(ROOT, 'frontend', 'src');
 const REVIEW_FILE = path.join(KDIR, 'tier-review.md');
 const SRC_PREFIX = 'frontend/src/';
 
-// ---------- frontmatter 解析 ----------
-function parseFrontmatter(text) {
-  const m = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
-  return m ? m[1] : null;
-}
-function getField(fm, key) {
-  if (!fm) return null;
-  const lines = fm.split('\n');
-  for (let i = 0; i < lines.length; i++) {
-    if (lines[i].startsWith(key + ':')) {
-      const inline = lines[i].slice(key.length + 1).trim();
-      if (inline && !inline.startsWith('[') && !inline.startsWith('-')) return inline;
-      const items = [];
-      if (inline.startsWith('[')) {
-        inline.replace(/^\[/, '').replace(/\]$/, '').split(',').forEach((s) => {
-          const t = s.trim();
-          if (t && t !== '[]') items.push(t);
-        });
-        if (items.length) return items;
-        return [];
-      }
-      for (let j = i + 1; j < lines.length; j++) {
-        const l = lines[j];
-        if (/^\S/.test(l) && !l.startsWith('-')) break;
-        const mm = l.match(/^\s*-\s*(.+?)\s*$/);
-        if (mm) items.push(mm[1]);
-      }
-      return items;
-    }
-  }
-  return null;
-}
+// ---------- frontmatter 解析（parseFrontmatter/getScalar/parseSourceFiles 来自 _lib/frontmatter.mjs） ----------
 function toRelSource(raw) {
   // 卡里写的是 frontend/src/... 或 src/...，统一成相对 frontend/src 的 rel
   let s = String(raw).trim();
@@ -127,16 +101,24 @@ const untagged = []; // 待定
 for (const f of cardFiles) {
   const text = fs.readFileSync(path.join(KDIR, f), 'utf8');
   const fm = parseFrontmatter(text);
-  const tier = getField(fm, 'tier');
-  const tierVal = Array.isArray(tier) ? tier[0] : tier;
+  // [P2-4] getField → 共享 getScalar：模板占位符 <architecture|leaf> 返回 undefined，
+  // 与旧 /^<.*>$/ 判定等价（占位符卡进 untagged 队列）
+  const tierVal = getScalar(fm, 'tier');
   if (tierVal && String(tierVal).trim() && !/^<.*>$/.test(String(tierVal).trim())) {
     seeds.push({ file: f, tier: String(tierVal).trim() });
     continue;
   }
-  const sfRaw = getField(fm, 'source_files');
-  const sources = Array.isArray(sfRaw) ? sfRaw : sfRaw ? [sfRaw] : [];
+  // [P2-4] getField → 共享 parseSourceFiles：支持行内数组与块列表，返回数组
+  const sources = parseSourceFiles(fm);
   const rels = sources.map(toRelSource).filter((s) => s);
-  untagged.push({ file: f, sources: rels, sourcesRaw: sources });
+  // [P2-2 2026-08-08] 非前端源识别：广度信号只建在 frontend/src 图上（buildReverseGraph），
+  // Go/后端源（internal/、build/android/ 等）在图中不存在 → 恒判 leaf 盲区。
+  // 标记含非前端源的卡，后续走人工队列并附「广度不可算」提示。
+  const hasNonFrontend = sources.some((s) => {
+    const raw = String(s).trim();
+    return !raw.startsWith(SRC_PREFIX) && !raw.startsWith('src/');
+  });
+  untagged.push({ file: f, sources: rels, sourcesRaw: sources, hasNonFrontend });
 }
 
 // 算广度
@@ -145,6 +127,12 @@ const autoArch = [];
 for (const c of untagged) {
   if (c.sources.length === 0) {
     reviewRows.push({ file: c.file, breadth: 0, dirs: '', suggestion: 'leaf', note: '无 source_files，无法算广度，建议 leaf 或补 source_files' });
+    continue;
+  }
+  // [P2-2 2026-08-08] 非前端源盲区：广度仅基于 frontend/src 反向图，Go/后端源不可算
+  // （backend 卡永远不可能被自动判 architecture）→ 显式走人工队列，避免静默恒判 leaf。
+  if (c.hasNonFrontend) {
+    reviewRows.push({ file: c.file, breadth: 0, dirs: '', suggestion: 'leaf', note: '含非前端源（Go/后端等），广度不可算，建议人工判定 tier' });
     continue;
   }
   const dirSet = new Set();
@@ -177,10 +165,19 @@ for (const c of untagged) {
 }
 
 // ---------- 输出 ----------
+// [P2-1 2026-08-08] 替换式写入防重复键：旧实现只 `replace(/^---\r?\n/, '---\ntier: ...')`
+// 盲插——卡上已有 `tier: <...>` 占位符行（README 模板自带）时产生重复 tier 键，
+// check-doc-drift 的 parseFrontmatterFields 是 last-wins 取到占位符 → PLACEHOLDER ERROR
+// → CI 必红且本脚本不自知。现改为：有既有 tier 行（含占位符）→ 替换；无 → 首行插入。
 function writeTier(file, tier) {
   const p = path.join(KDIR, file);
   const text = fs.readFileSync(p, 'utf8');
-  const newText = text.replace(/^---\r?\n/, `---\ntier: ${tier}\n`);
+  let newText;
+  if (/^tier\s*:/m.test(text)) {
+    newText = text.replace(/^(tier\s*:.*)$/m, `tier: ${tier}`);
+  } else {
+    newText = text.replace(/^---\r?\n/, `---\ntier: ${tier}\n`);
+  }
   fs.writeFileSync(p, newText);
 }
 
@@ -199,6 +196,13 @@ if (mode === 'check') {
 if (mode === 'apply') {
   for (const a of autoArch) writeTier(a.file, 'architecture');
   console.log(`已自动写入 tier: architecture → ${autoArch.length} 张卡`);
+  // [P2-3 2026-08-08] 纯工具虚高警示：广度≥2 会把被广泛引用的工具函数/门面误提为
+  // architecture（ADR-218 实证 6 张——safe-call/observer-handle/i18n-t/goerr/reactivity/
+  // platform——被人工降回 leaf）。--apply 写的是「信号」不是「结论」，必须与
+  // tier-review.md 人工复核配套：写入后逐张核对，虚高卡手工降回 leaf 并更新卡 frontmatter。
+  if (autoArch.length > 0) {
+    console.log('⚠ 请人工核对 docs/knowledge/tier-review.md 第一节：广度≥2 可能是纯工具虚高（ADR-218 已实证 6 张降回 leaf），确认后保留或降级。');
+  }
 }
 
 // 写 review 队列

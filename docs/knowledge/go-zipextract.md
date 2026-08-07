@@ -1,5 +1,9 @@
 ---
 tier: architecture
+adr:
+  - ADR-057
+  - ADR-058
+  - ADR-099
 kind: go_zipextract
 name: Go ZIP 解压与缓存管理
 category: backend

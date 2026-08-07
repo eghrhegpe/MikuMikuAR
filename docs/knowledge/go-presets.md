@@ -1,5 +1,7 @@
 ---
 tier: architecture
+adr:
+  - ADR-145
 kind: go_presets
 name: Go 预设持久化与标签
 category: backend

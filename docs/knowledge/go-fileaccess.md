@@ -1,5 +1,7 @@
 ---
 tier: architecture
+adr:
+  - ADR-195
 kind: go_fileaccess
 name: Go 文件与路径平台抽象
 category: backend

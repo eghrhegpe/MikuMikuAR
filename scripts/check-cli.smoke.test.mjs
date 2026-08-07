@@ -132,3 +132,34 @@ test('gen-knowledge-symbols: --check 跑通且语义一致（Go 分组符号增�
   assert.equal(r.code, 0, `exit=${r.code} stderr=${r.stderr} stdout=${r.stdout}`);
   assert.match(r.stdout, /与源码导出符号一致|漂移/);
 });
+
+// ── check-adr-technical-debt 冒烟（P1 回归：list 格式状态行不再漏检） ──
+
+test('check-adr-technical-debt: --json 含 ADR-149（list 格式漏检回归）', () => {
+  const r = runScript(path.join(SCRIPTS, 'check-adr-technical-debt.mjs'), ['--json']);
+  assert.equal(r.code, 0, `exit=${r.code} stderr=${r.stderr} stdout=${r.stdout}`);
+  const data = JSON.parse(r.stdout);
+  assert.ok(Array.isArray(data.debtItems), 'JSON 应含 debtItems 数组');
+  assert.ok(
+    data.debtItems.some((i) => i.includes('adr-149')),
+    `ADR-149（- **状态** 列表格式）应被检出，实际: ${data.debtItems.slice(0, 3).join(' | ')}`
+  );
+});
+
+// ── gen-knowledge-adr 冒烟（P2 回归：带后缀/合并标记 + Go 卡 sources） ──
+
+test('gen-knowledge-adr: --check 能检出 Go/backend 卡缺 adr 关联（P2-3 回归）', () => {
+  const r = runScript(path.join(SCRIPTS, 'gen-knowledge-adr.mjs'), ['--check']);
+  // Go 卡有 [doc:adr-] 标记但缺 adr 字段 → check exit 1（缺口检测器）；
+  // 缺口输出走 console.error（stderr），断言需合并 stdout+stderr
+  assert.equal(r.code, 1, `Go 卡缺口应 exit 1: ${r.stdout} ${r.stderr}`);
+  assert.match(r.stdout + r.stderr, /go-zipextract|go-app|go-library/);
+});
+
+// ── gen-tier 冒烟（P2-1 回归：占位符卡 writeTier 不产生重复键） ──
+
+test('gen-tier: --check 跑通（当前稳态全卡已标 tier → exit 0）', () => {
+  const r = runScript(path.join(SCRIPTS, 'gen-tier.mjs'), ['--check']);
+  assert.equal(r.code, 0, `exit=${r.code} stderr=${r.stderr} stdout=${r.stdout}`);
+  assert.match(r.stdout, /未标 tier 卡: 0|全部知识卡已标 tier/);
+});

@@ -1,5 +1,7 @@
 ---
 tier: architecture
+adr:
+  - ADR-179
 kind: go_update
 name: Go 更新检查与安装
 category: backend

@@ -16,6 +16,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { TECHNICAL_DEBT_KEYWORDS } from './_lib/adr-status-categories.mjs';
+import { parseAdrHeader } from './_lib/frontmatter.mjs';
 // [fix] CLI 健壮性契约：--help 自吐 JSDoc 退 0 / 未知 flag 退 1（2026-08-06）
 const _HELP = new Set(['--help', '-h']);
 const _KNOWN = new Set(['--json']);
@@ -41,12 +42,14 @@ const JSON_OUT = process.argv.includes('--json');
 
 const DEBT_KEYWORDS = TECHNICAL_DEBT_KEYWORDS;
 
-function extractStatus(content) {
-  for (const line of content.split('\n')) {
-    const m = line.match(/^[>-|]\s*\*\*状态\*\*[：:|\s]+(.+)/);
-    if (m) return m[1].trim();
-  }
-  return null;
+// [P1+P2 2026-08-08] 首部解析收口共享库 parseAdrHeader（首 20 行 + `---` 早停）：
+// 手写 extractStatus 的 `/^[>-|]/` 是字符区间 `>`..`|`（不匹配字面 `-`）→
+// `- **状态**` 列表格式（ADR-131 起约半数）全部漏检（实证 ADR-149「搁置待修复立项」）；
+// 且无早停导致正文 `**状态**` 行被误取、table 格式贪婪吞尾 `|`。
+// 迁移后与 check-adr-health/check-adr-status 同源，债务报告口径一致。
+function extractStatus(filePath) {
+  const hdr = parseAdrHeader(filePath);
+  return hdr.error ? null : (hdr.status || null);
 }
 
 function main() {
@@ -57,8 +60,7 @@ function main() {
   const debtItems = [];
 
   for (const file of files) {
-    const content = fs.readFileSync(path.join(ADR_DIR, file), 'utf-8');
-    const status = extractStatus(content);
+    const status = extractStatus(path.join(ADR_DIR, file));
     
     if (status && DEBT_KEYWORDS.some(k => status.includes(k))) {
       const shortStatus = status.length > 60 ? status.slice(0, 60) + '...' : status;

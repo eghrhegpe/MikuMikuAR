@@ -42,28 +42,28 @@
 | 时间流转、太阳角、预设动画、环境预设 | [时间流转与太阳角系统](./env-time-of-day.md) | [环境状态防抖持久化](./env-persist.md)、[设置共享工具](./settings-shared.md)、[内置 AI 诊断助手 — 双适配器服务层](./ai-service.md) |
 | 水面、水池、水面反射 | [水面系统](./env-water.md) | — |
 | 环境系统、环境门面、env facade | [环境系统门面（Facade）](./env.md) | — |
-| 全局事件、拖放导入、更新通知 | [事件处理与导航系统](./events.md) | [应用启动引导](./init.md)、[渲染循环与 FPS 时钟](./render-loop.md) |
+| 全局事件、拖放导入、更新通知 | [事件处理与导航系统](./events.md) | [应用启动引导](./init.md)、[Go 更新检查与安装](./go-update.md)、[渲染循环与 FPS 时钟](./render-loop.md) |
 | 错误提示、信息提示、状态反馈、toast、status | [结构化反馈 API](./feedback.md) | — |
-| 文件服务、文件 URL、文件编码、HTTP URL、文件服务器 | [统一文件服务层](./fileservice.md) | [VMD 动作加载器](./vmd-loader.md) |
+| 文件服务、文件 URL、文件编码、HTTP URL、文件服务器 | [统一文件服务层](./fileservice.md) | [Go ZIP 解压与缓存管理](./go-zipextract.md)、[VMD 动作加载器](./vmd-loader.md) |
 | 脚部落地检测 | [脚部落地检测降级](./footstep-detect-fallback.md) | [音频总线](./audio-bus.md)、[脚部地面跟随（MMD-native IK）](./motion-feet-adjustment.md) |
-| Go 后端 生命周期 ServiceStartup ServiceShutdown、Go 配置系统 config.json GetConfig SetResourceRoot SetStorageMode、无障碍 GetSystemA11ySettings、后端日志环形缓冲 LogRing AiGetBackendLogs、COOP/COEP MPR coopCoepEnabled | [Go 后端核心（App 生命周期 + 配置系统）](./go-app.md) | — |
-| Go 文件访问 FileAccessor ReadTextFile ReadFileBytes 平台抽象、安卓 shared 模式 路径管理 pathmgr、content:// URI ErrContentUriNotSupported | [Go 文件与路径平台抽象](./go-fileaccess.md) | — |
+| Go 后端 生命周期 ServiceStartup ServiceShutdown、Go 配置系统 config.json GetConfig SetResourceRoot SetStorageMode、无障碍 GetSystemA11ySettings、后端日志环形缓冲 LogRing AiGetBackendLogs、COOP/COEP MPR coopCoepEnabled | [Go 后端核心（App 生命周期 + 配置系统）](./go-app.md) | [应用启动引导](./init.md)、[键盘导航工具](./ui-keyboard-nav.md) |
+| Go 文件访问 FileAccessor ReadTextFile ReadFileBytes 平台抽象、安卓 shared 模式 路径管理 pathmgr、content:// URI ErrContentUriNotSupported | [Go 文件与路径平台抽象](./go-fileaccess.md) | [资源库操作](./library-actions.md)、[资源库核心](./library-core.md) |
 | Go 模型隔离 IsolateModelDir、安全路径 isSafePath 路径穿越、信任目录 trustedRoots | [Go 模型隔离与安全 HTTP](./go-httpserver.md) | — |
 | Go 软件集成 Blender MMD 检测 打开、自定义软件 ScanSoftwareDir LaunchSoftware、OpenWithSoftware 外部软件打开模型 | [Go 软件集成（Blender/MMD/自定义）](./go-integration.md) | — |
 | Go KTX2 纹理编码 toktx 转码、纹理压缩 ktx2Encode transcodeTexturesInDir、压缩模式 guessEncodeMode | [Go KTX2 纹理编码](./go-ktx2.md) | — |
-| Go 模型库扫描 ScanModelDir 资源分类、模型元数据 GetModelMeta GetModelMetaBatch、资源根目录 SelectDir、ZIP 内部条目展开 expandZipEntries | [Go 模型库扫描](./go-library.md) | — |
+| Go 模型库扫描 ScanModelDir 资源分类、模型元数据 GetModelMeta GetModelMetaBatch、资源根目录 SelectDir、ZIP 内部条目展开 expandZipEntries | [Go 模型库扫描](./go-library.md) | [GPU 压缩纹理能力探测](./gpu-capabilities.md)、[PMX 模型加载与缩略图捕获](./model-loader.md)、[场景渲染管线与后处理](./renderer.md) |
 | Go LLM 客户端 StreamChat 流式对话、AI 诊断助手 AiStreamChat AiCancelStream 后端实现、连接测试 AiTestLLMConnection AiFetchModels、工具调用 ToolSchema tool call | [Go LLM 客户端与 AI 绑定](./go-llm.md) | — |
 | Go 广场窗口 预热 导航 NavigatePlazaWindow 窗口控制、广场配置 FetchPlazaConfig SavePlazaConfig 缓存、plaza 直连模式 window.open 拦截 | [Go 广场窗口与配置](./go-plaza.md) | — |
-| Go 预设 保存加载 环境预设 模型预设 动作预设 渲染预设 场景预设、标签系统 AddTag GetTagsByModel、库内预设模型 GetModelPresets SaveModelPresetToLibAuto | [Go 预设持久化与标签](./go-presets.md) | — |
+| Go 预设 保存加载 环境预设 模型预设 动作预设 渲染预设 场景预设、标签系统 AddTag GetTagsByModel、库内预设模型 GetModelPresets SaveModelPresetToLibAuto | [Go 预设持久化与标签](./go-presets.md) | [模型预设管理 UI](./model-preset-ui.md)、[场景序列化与自动保存](./scene-serialize.md) |
 | Go 模型广场代理 StartProxy StopProxy、SSRF 防护 私有 IP 拦截 isBlockedIP、广场下载 DownloadFromPlaza、WebSocket 代理 proxyWebSocket | [Go 模型广场代理（SSRF 防护）](./go-proxy.md) | — |
 | Go 场景保存加载 SaveSceneFile LoadSceneFile SaveLastScene、场景打包 BundleScene 场景 bundle、自动存档 SaveLastScene 韧性 | [Go 场景序列化与打包](./go-scene.md) | — |
-| Go 更新检查 CheckForUpdate GitHub Release、安装器 DownloadAndRunInstaller APK DownloadApk、版本比较 compareVersion isNewer | [Go 更新检查与安装](./go-update.md) | — |
+| Go 更新检查 CheckForUpdate GitHub Release、安装器 DownloadAndRunInstaller APK DownloadApk、版本比较 compareVersion isNewer | [Go 更新检查与安装](./go-update.md) | [事件处理与导航系统](./events.md)、[应用启动引导](./init.md) |
 | Go 下载目录监听 fsnotify 下载自动导入、本地文件导入 ImportLocalFile、watch:newfile 事件、去抖 800ms watchPending | [Go 下载目录监听与导入](./go-watch.md) | — |
-| Go ZIP 解压 ExtractZip ImportZip 缓存、解压缓存清理 CleanOrphanCache ClearAllCaches GetCacheStats、Shift-JIS GBK 文件名解码 bestDecode decodeZipName、文件 HTTP 服务 StartFileServer StopFileServer、COOP COEP 中间件 | [Go ZIP 解压与缓存管理](./go-zipextract.md) | — |
-| GPU 能力、压缩纹理、KTX2、ASTC、BC7、ADR-189 | [GPU 压缩纹理能力探测](./gpu-capabilities.md) | [PMX 模型加载与缩略图捕获](./model-loader.md)、[场景渲染管线与后处理](./renderer.md)、[场景核心编排器（纯组装器）](./scene.md) |
+| Go ZIP 解压 ExtractZip ImportZip 缓存、解压缓存清理 CleanOrphanCache ClearAllCaches GetCacheStats、Shift-JIS GBK 文件名解码 bestDecode decodeZipName、文件 HTTP 服务 StartFileServer StopFileServer、COOP COEP 中间件 | [Go ZIP 解压与缓存管理](./go-zipextract.md) | [统一文件服务层](./fileservice.md)、[应用启动引导](./init.md)、[运行模式检测](./runtime-mode.md) |
+| GPU 能力、压缩纹理、KTX2、ASTC、BC7、ADR-189 | [GPU 压缩纹理能力探测](./gpu-capabilities.md) | [Go 模型库扫描](./go-library.md)、[PMX 模型加载与缩略图捕获](./model-loader.md)、[场景渲染管线与后处理](./renderer.md) |
 | 启动引导、初始化、bootstrap | [应用启动引导](./init.md) | [内置 AI 诊断助手 — 双适配器服务层](./ai-service.md)、[事件处理与导航系统](./events.md)、[运行模式检测](./runtime-mode.md) |
 | 资源库操作、导入模型、替换模型、替换动作、标签浏览、模型行点击 | [资源库操作](./library-actions.md) | [资源库核心](./library-core.md)、[统一动作注册表 — 菜单/NL/快捷键共享真相源](./action-registry.md)、[NL 意图解析 — LLM 文本 → 动作执行](./ai-intent-dispatcher.md) |
-| 资源库核心、资源浏览层级、网格视图、缩略图流式加载、资源管理核心 | [资源库核心](./library-core.md) | [资源库操作](./library-actions.md)、[时间流转与太阳角系统](./env-time-of-day.md)、[统一资源加载队列](./load-manager.md) |
+| 资源库核心、资源浏览层级、网格视图、缩略图流式加载、资源管理核心 | [资源库核心](./library-core.md) | [资源库操作](./library-actions.md)、[时间流转与太阳角系统](./env-time-of-day.md)、[Go 文件与路径平台抽象](./go-fileaccess.md) |
 | 资源库初始化、资源库设置、资源库启动 | [资源库初始化](./library-setup.md) | [安卓文件访问（shared 模式）](./android-file-access.md) |
 | 模型库、资源库、模型浏览、加载模型、library | [资源库入口与编排](./library.md) | [统一资源加载队列](./load-manager.md) |
 | 个人灯光、灯光跟随、跟随聚光灯 | [个人灯光跟随](./lighting-follow.md) | [灯光预设系统](./lighting-presets.md)、[场景光照与阴影（barrel）](./lighting.md)、[模型生命周期操作](./model-ops.md) |
@@ -79,10 +79,10 @@
 | 菜单栈、modelStack、buildLevel、跨菜单导航 | [菜单栈共享指针（stackRegistry）](./menu-stack-registry.md) | [菜单 Overlay 与 Wrapper 管理](./menu-overlay.md)、[基础行控件构建器](./ui-rows.md) |
 | 菜单引擎、SlideMenu、弹窗菜单 | [滑出式菜单引擎（SlideMenu）](./menu.md) | [环境弹窗（编排 + barrel）](./env-menu.md)、[动作绑定 UI](./motion-binding-ui.md)、[动作模块注册表](./motion-modules-registry.md) |
 | babylon-mmd、MmdRuntime、骨骼矩阵、动作切换、音频、ADR-192 | [babylon-mmd 适配边界](./mmd-adapter.md) | [场景光照与阴影（barrel）](./lighting.md)、[动作菜单层级系统](./motion-menu-levels.md)、[感知层主控](./perception.md) |
-| 模型加载、PMX 解析、缩略图捕获 | [PMX 模型加载与缩略图捕获](./model-loader.md) | [GPU 压缩纹理能力探测](./gpu-capabilities.md)、[资源库操作](./library-actions.md)、[模型生命周期操作](./model-ops.md) |
+| 模型加载、PMX 解析、缩略图捕获 | [PMX 模型加载与缩略图捕获](./model-loader.md) | [Go 模型库扫描](./go-library.md)、[GPU 压缩纹理能力探测](./gpu-capabilities.md)、[资源库操作](./library-actions.md) |
 | 模型注册表、模型生命周期、模型属性、物理分类 | [模型注册表与生命周期管理](./model-manager.md) | [场景序列化与自动保存](./scene-serialize.md)、[骨骼覆盖核心 API](./bone-override.md)、[模型生命周期操作](./model-ops.md) |
 | 删除模型、聚焦模型、模型变换（位置/旋转/缩放）、VPD 姿态应用 | [模型生命周期操作](./model-ops.md) | [场景序列化与自动保存](./scene-serialize.md)、[场景核心编排器（纯组装器）](./scene.md)、[骨骼覆盖核心 API](./bone-override.md) |
-| 模型预设、动作预设、预设管理、预设面板 | [模型预设管理 UI](./model-preset-ui.md) | [场景序列化与自动保存](./scene-serialize.md) |
+| 模型预设、动作预设、预设管理、预设面板 | [模型预设管理 UI](./model-preset-ui.md) | [Go 预设持久化与标签](./go-presets.md)、[场景序列化与自动保存](./scene-serialize.md) |
 | 动作绑定 UI、动作槽位管理、模块切换列表 | [动作绑定 UI](./motion-binding-ui.md) | [滑出式菜单引擎（SlideMenu）](./menu.md)、[PMX 模型加载与缩略图捕获](./model-loader.md)、[模型生命周期操作](./model-ops.md) |
 | 动作详情、图层管理、播放速度 | [动作详情 UI](./motion-detail-ui.md) | [PMX 模型加载与缩略图捕获](./model-loader.md)、[模型生命周期操作](./model-ops.md)、[动作绑定 UI](./motion-binding-ui.md) |
 | 脚部跟随、脚 IK、地面高度、脚部调整引擎 | [脚部地面跟随（MMD-native IK）](./motion-feet-adjustment.md) | [音频总线](./audio-bus.md)、[时间流转与太阳角系统](./env-time-of-day.md)、[脚部落地检测降级](./footstep-detect-fallback.md) |
@@ -103,7 +103,7 @@
 | 程序化动作、idle 动作、auto dance、节拍联动、动作生成、程序化 VMD | [程序化动作系统](./proc-motion-bridge.md) | [口型同步桥](./lipsync-bridge.md)、[多 VMD 叠加系统](./vmd-layers.md) |
 | 渲染循环、FPS 时钟、硬件缩放、渲染启停 | [渲染循环与 FPS 时钟](./render-loop.md) | [事件处理与导航系统](./events.md)、[应用启动引导](./init.md) |
 | 菜单渲染、schema 渲染、控件渲染、数据绑定 | [菜单渲染引擎](./render-menu.md) | [声明式菜单 Schema](./menu-schema.md) |
-| 渲染管线、后处理、tone mapping、SSR / SSAO | [场景渲染管线与后处理](./renderer.md) | [GPU 压缩纹理能力探测](./gpu-capabilities.md)、[PMX 模型加载与缩略图捕获](./model-loader.md)、[场景核心编排器（纯组装器）](./scene.md) |
+| 渲染管线、后处理、tone mapping、SSR / SSAO | [场景渲染管线与后处理](./renderer.md) | [Go 模型库扫描](./go-library.md)、[GPU 压缩纹理能力探测](./gpu-capabilities.md)、[PMX 模型加载与缩略图捕获](./model-loader.md) |
 | 资源加载失败、纹理缺失、警告汇总、toast 提示 | [资源加载失败统一汇总](./resource-warning-sink.md) | — |
 | runtime bridge、Wails events、跨平台事件、runtime-bridge | [Runtime 隔离桥（Wails Events/Browser）](./runtime-bridge.md) | [应用启动引导](./init.md) |
 | 运行模式、桌面模式、浏览器模式、环境检测 | [运行模式检测](./runtime-mode.md) | [应用启动引导](./init.md)、[内置 AI 诊断助手 — 双适配器服务层](./ai-service.md)、[后端适配层](./core-backend.md) |
@@ -118,11 +118,11 @@
 | 变换适配、transform adapter、双模态、拖拽适配 | [变换适配器注册表（双模态去重）](./transform-adapter.md) | [场景序列化与自动保存](./scene-serialize.md)、[骨骼覆盖核心 API](./bone-override.md)、[模型注册表与生命周期管理](./model-manager.md) |
 | 变换模式、拖拽模式、位移旋转、transform mode | [拖拽变换模式开关](./transform-mode.md) | — |
 | 选中状态、选中物、变换选择、selection 状态 | [变换选中物状态源](./transform-selection.md) | [场景核心编排器（纯组装器）](./scene.md) |
-| 键盘导航、列表导航、箭头键导航 | [键盘导航工具](./ui-keyboard-nav.md) | [应用启动引导](./init.md) |
+| 键盘导航、列表导航、箭头键导航 | [键盘导航工具](./ui-keyboard-nav.md) | [Go 后端核心（App 生命周期 + 配置系统）](./go-app.md)、[应用启动引导](./init.md) |
 | 行控件、滑块行、开关行、模式行、骨骼选择行、危险操作行、信息卡 | [基础行控件构建器](./ui-rows.md) | [时间流转与太阳角系统](./env-time-of-day.md)、[菜单 Overlay 与 Wrapper 管理](./menu-overlay.md)、[菜单栈共享指针（stackRegistry）](./menu-stack-registry.md) |
 | 虚拟裙骨、物理裙摆、Bullet 弹簧链、skirt analyzer | [虚拟裙骨物理控制器（ADR-084 Phase 2-3）](./virtual-skirt.md) | [骨骼覆盖存储（多模块仲裁）](./bone-override-store.md)、[物理骨骼桥与每帧注册表](./physics-bridge.md) |
 | 多层动作、动作叠加、VMD 混合、composite animation、动作图层、动作优先级 | [多 VMD 叠加系统](./vmd-layers.md) | [程序化动作系统](./proc-motion-bridge.md)、[VMD 动作加载器](./vmd-loader.md) |
-| VMD 加载、动作文件导入、伴音自动加载、动作时长、文件格式校验、动作播放开始 | [VMD 动作加载器](./vmd-loader.md) | [时间流转与太阳角系统](./env-time-of-day.md)、[统一文件服务层](./fileservice.md)、[资源库操作](./library-actions.md) |
+| VMD 加载、动作文件导入、伴音自动加载、动作时长、文件格式校验、动作播放开始 | [VMD 动作加载器](./vmd-loader.md) | [时间流转与太阳角系统](./env-time-of-day.md)、[统一文件服务层](./fileservice.md)、[Go ZIP 解压与缓存管理](./go-zipextract.md) |
 | 后端绑定、后端代理、resolveBackend、Wails bindings | [后端绑定聚合层（backend 代理化）](./wails-bindings.md) | [内置 AI 诊断助手 — 双适配器服务层](./ai-service.md)、[后端适配层](./core-backend.md)、[环境状态防抖持久化](./env-persist.md) |
 | 风力物理、风力注入、头发/裙子物理 | [风力物理注入（WASM Bullet）](./wind-physics.md) | [安卓文件访问（shared 模式）](./android-file-access.md)、[场景光照与阴影（barrel）](./lighting.md)、[babylon-mmd 适配边界](./mmd-adapter.md) |
 
