@@ -29,22 +29,20 @@ git reset HEAD~1                      # 撤销最近一条 commit，把改动放
 | 规则 | 说明 |
 |------|------|
 | commit 信息格式 | `<type>: <描述>`，type 同conventional commits（feat/fix/docs/chore/refactor/test） |
+| 提交范围 | 按功能 `git add <通过测试的路径>`；杜绝被压缩记忆的可能 |
 | 推送前 squash | 多个本地 commit 可以 `git rebase -i` 合并为一个有意义的 PR commit |
-| 建议避免 | `git stash` / `git stash push` / `git stash pop`（易丢失未提交改动；`list` / `show` 只读操作不受限） |
+| 建议避免 | `git stash push`/`git stash pop`/`git stash apply` 等会改动工作区的操作易丢失未提交改动；`list`/`show` 只读不受限 |
 
 
 ## 钩子自动化（无需手动触发）
 
-> **Git 钩子（pre-commit / prepare-commit-msg 非阻断，pre-push 阻断）**：仓库钩子位于 `.githooks/`（非 `.git/hooks/`），克隆后需激活：`git config core.hooksPath .githooks`。pre-commit 自动同步文档/索引（秒级 gen）并 `git add docs/`；prepare-commit-msg 把变更行覆盖率缺口建议写入 commit message **body**；二者均不阻塞提交。逃生阀统一为 `git commit --no-verify`（仅跳过 pre-commit / prepare-commit-msg，不影响 pre-push）。
+> **Git 钩子（pre-commit / prepare-commit-msg 非阻断，pre-push 阻断）**：仓库钩子位于 `.githooks/`（非 `.git/hooks/`），克隆后需激活：`git config core.hooksPath .githooks`。pre-commit 自动同步文档/索引（秒级 gen）并 `git add docs/`；prepare-commit-msg 把变更行覆盖率缺口建议写入 commit message **body**；二者均不阻塞提交。逃生阀统一为 `git commit --no-verify`（仅跳过 pre-commit / prepare-commit-msg，不影响 pre-push）。这就是为什么提交常夹带 `docs/function-map.md` 等同步文件——是钩子自动补的，非手滑。
 
 | 钩子 | 功能 | 逃生阀 |
 |------|------|--------|
 | `pre-commit` | 自动跑 13 个秒级 gen 脚本（`gen-status-index`/`gen-funcmap`/`gen-docs-index`/`gen-novel-index`/`gen-menu-map`/`gen-knowledge-graph`/`gen-knowledge-h1`/`gen-knowledge-symbols`/`gen-knowledge-adr`/`gen-knowledge-tests`/`gen-tier`/`gen-routes`/`gen-ui-entry`）同步 `docs/` 并 `git add docs/` | `git commit --no-verify` |
 | `prepare-commit-msg` | 把变更行覆盖率缺口建议写入 commit message **body**（供 PR review 参考）；只提示覆盖率，**不**提示知识卡 | `MM_SKIP_COVERAGE_HINT=1` |
 | `pre-push` | 内联跑全量门禁（`gen-status-index`/`gen-funcmap`/`gen-docs-index`/`gen-novel-index`/`gen-guide-gap --strict`/`gen-menu-map` 的 `--check`、`check-deadcode-baseline`、`check-doc-drift --baseline`、`i18n-check --strict` 等），失败阻断推送。**不存在** `pre-push-gate.mjs` 包装脚本 | 无（硬门禁） |
-| commit 信息格式 | `<type>: <描述>`，type 同 conventional commits（feat/fix/docs/chore/refactor/test） |
-| 提交范围 | 按功能 `git add <通过测试的路径>`；杜绝被压缩记忆的可能 |
-| 禁 stash 状态变更 | 仅禁 `git stash push`/`git stash pop`/`git stash apply` 等会改动工作区的操作；只读的 `git stash list`、`git stash show` 不受限 |
 
 > **关键原则**：doctor 检查若输出 `[WARN]...skip`，必须手动运行 `node_modules/.bin/tsc` 验证类型。
 
@@ -118,32 +116,10 @@ edge://inspect Edog网页调试
 http://localhost:9222/json 实际网页一览
 ```
 
-> **Git 钩子（非阻断）**：仓库钩子位于 `.githooks/`（非 `.git/hooks/`），克隆后需激活：`git config core.hooksPath .githooks`。pre-commit 自动同步文档/索引（秒级 gen）；prepare-commit-msg 把覆盖率缺口建议写入 commit message；均不阻塞提交。逃生阀 `git commit --no-verify`。
-
-**pre-commit 会跑什么**（`.githooks/pre-commit`，commit 时自动执行，顺序跑 13 个 gen 脚本，失败仅提示不阻断）：
-
-| # | 命令 | 输出文件 | 作用 |
-|---|------|----------|------|
-| 1 | `node scripts/gen-status-index.mjs --reverse` | `docs/status.md` | 带日期全量 ADR 附表 |
-| 2 | `node scripts/gen-funcmap.mjs` | `docs/function-map.md` | 函数大全（符号带 `文件:行`） |
-| 3 | `node scripts/gen-docs-index.mjs` | `docs/adr/index.md`、`docs/buglog/index.md`、`docs/knowledge/index.md` | 三大枢纽索引 |
-| 4 | `node scripts/gen-novel-index.mjs` | `docs/novel/index.md` | 小说索引 |
-| 5 | `node scripts/gen-menu-map.mjs` | `docs/knowledge/menu-map.md` | 菜单地图 |
-| 6 | `node scripts/gen-knowledge-graph.mjs --file docs/knowledge/graph.md` | `docs/knowledge/graph.md` | 知识卡关联图 |
-| 7 | `node scripts/gen-knowledge-h1.mjs` | 知识卡内 | 卡 H1 标题同步 |
-| 8 | `node scripts/gen-knowledge-symbols.mjs` | 知识卡内 | `symbols:` 字段同步 |
-| 9 | `node scripts/gen-knowledge-adr.mjs` | 知识卡内 | `adr:` 关联同步 |
-| 10 | `node scripts/gen-knowledge-tests.mjs` | 知识卡内 | `tests:` 字段同步 |
-| 11 | `node scripts/gen-tier.mjs` | 知识卡内 | `tier:` 层级同步 |
-| 12 | `node scripts/gen-routes.mjs` | `docs/knowledge/routes.md` | 检索路由 |
-| 13 | `node scripts/gen-ui-entry.mjs` | 知识卡内 | UI 入口同步 |
-
-跑完后执行 `git add docs/` 把生成文件 stage 进本次提交（幂等：无漂移时零副作用）。**这就是为什么你的提交常夹带 `docs/function-map.md` 等文件——那是钩子自动补的同步，不是手滑。** 质量门禁（覆盖率/分层/i18n）在 pre-push 全量检查。
-
 # 审核框架
 
 > 审核流水线：知识卡定位未审核的模块 → 审核相关代码的实现 → 核对风险修复的可行性，进行修复 → 提交改动 → 发起codereview（如果你的终端有审核工具）
-> 推荐用子代理并发审核,每次推荐并发3个子代理。
+> 推荐用子代理并发审核, 每次使用3个子代理审核3个知识卡对应的文件/功能吧，按重要性区分。返回结果后核实+修复，修完提交、使用codereview或子代理审核提交。
 > 发现预料之外的缺陷时，只读，报告，给出精确的修复建议（diff 格式、文件:行号、修改原因）。
 
 ## 代码健康度检测
