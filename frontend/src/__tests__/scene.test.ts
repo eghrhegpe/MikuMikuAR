@@ -715,6 +715,7 @@ describe('disposeScene（级联释放 + 幂等）', () => {
         expect(shared.disposeRenderer).toHaveBeenCalled();
         expect(shared.disposeEnvUpdateObserver).toHaveBeenCalled();
         expect(shared.disposeWindPhysics).toHaveBeenCalled();
+        expect(shared.disposeLighting).toHaveBeenCalled();
         expect(shared.disposeCameraSystem).toHaveBeenCalled();
         expect(sceneModule.scene.dispose).toHaveBeenCalled();
         expect(sceneModule.engine.dispose).toHaveBeenCalled();
