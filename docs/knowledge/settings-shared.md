@@ -9,6 +9,8 @@ source_files:
   - frontend/src/menus/settings-shared.ts
 adr:
   - ADR-157
+  - ADR-204
+  - ADR-238
 symbols:
   - FONT_MAP
   - SETTINGS_FONT_RESTORE
@@ -27,10 +29,11 @@ symbols:
   - setTheme
   - truncatePath
 invariants:
-  - 默认值与 ui-state.ts 的默认值保持一致
+  - setTheme 修改 CSS 变量（含 DOM 写入），不直接操作元素结构；含 in-flight 并发守卫（连点主题预设防 DOM 竞态）
   - applyUIAppearanceDom 将外观配置应用到 DOM（CSS 变量）
   - formatBytes 返回人类可读格式（KB/MB/GB）
-  - setTheme 修改 CSS 变量，不直接操作 DOM 元素
+  - preloadAutoImportState / preloadDownloadWatchState 均注册到 ui-action-bridge（core/init 启动期预加载缓存）
+  - 默认值常量在 core/ui-state.ts（本文件不定义默认值，仅 re-export theme 常量）
 tests: []
 use_when:
   - 设置共享
@@ -52,8 +55,8 @@ use_when:
 ## 对外 API（节选）
 - `applyUIAppearanceDom(appearance)` — 将外观配置应用到 DOM。
 - `formatBytes(bytes)` — 字节数 → 人类可读格式。
-- `SETTINGS_THEME_DEFAULTS` — 主题默认值。
-- `SETTINGS_UI_DEFAULTS` — UI 默认值。
+- `setTheme(hex, getSettingsMenu)` — 主题色应用（含并发守卫）。
+- `THEME_PRESETS` — 主题预设色列表；`FONT_MAP` / `SETTINGS_FONT_RESTORE` / `generateTextColors` 由 core/theme.ts re-export。
 
 ## 与其他子系统关系
 - 被 settings-about/settings-actions/settings-controls/settings-graphics/settings-media/settings-resources/settings-system 全部引用。

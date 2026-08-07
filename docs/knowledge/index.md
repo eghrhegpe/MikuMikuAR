@@ -257,6 +257,7 @@
 | [ADR-116](../adr/adr-116-bone-override-ui-redesign.md) | 动作覆盖系统 — 模块化架构 + 骨骼覆盖下沉 | [骨骼覆盖核心 API](./bone-override.md) · [共享类型定义](./core-types.md) · [手部独立控制模块（左手/右手）](./hand-symmetry.md) · [模型运行时 ID 解析](./model-id.md) · [模型生命周期操作](./model-ops.md) · [动作模块基类](./motion-module-base.md) · [动作模块类型定义](./motion-module-types.md) · [脚部独立控制模块（左脚/右脚）](./motion-modules-feet.md) · [动作模块注册表](./motion-modules-registry.md) · [动作覆盖 UI 层级（模块化覆盖 + 高级骨骼覆盖）](./motion-override-levels.md) · [动作管线（逐帧合成）](./motion-pipeline.md) · [场景序列化与自动保存](./scene-serialize.md) · [场景核心编排器（纯组装器）](./scene.md) |
 | [ADR-117](../adr/adr-117-go-error-i18n.md) | Go 端用户可见错误的 i18n 化 | [Go 错误 i18n 信封](./go-i18nerr.md) · [Go 错误翻译](./goerr.md) |
 | [ADR-119](../adr/adr-119-thumbnail-key-single-source.md) | 缩略图缓存键单一源治理 | [缩略图缓存 key 推导](./thumbnail-key.md) |
+| [ADR-120](../adr/adr-120-env-preset-categorized.md) | 环境预设分类化 — 天空/地面/水面/大气 | [时间流转与太阳角系统](./env-time-of-day.md) |
 | [ADR-121](../adr/adr-121-global-motion-intent.md) | 全局动作意图（Scene-level Motion Intent）— 场景级意图 + 每实例继承/覆盖 | [场景级动作意图库](./motion-intent.md) · [场景序列化与自动保存](./scene-serialize.md) · [场景核心编排器（纯组装器）](./scene.md) · [变换适配器注册表（双模态去重）](./transform-adapter.md) |
 | [ADR-123](../adr/adr-123-compute-override-semantics.md) | `_computeOverride` 语义正式化 — weight≥1 复合、overrideRotation 标志、absolute 模式 | [骨骼覆盖核心 API](./bone-override.md) · [共享类型定义](./core-types.md) · [动作覆盖 UI 层级（模块化覆盖 + 高级骨骼覆盖）](./motion-override-levels.md) |
 | [ADR-124](../adr/adr-124-filesystem-architecture.md) | 文件服务架构审计 —— 从 HTTP 中转到 ArrayBuffer 直传 | [PMX 模型加载与缩略图捕获](./model-loader.md) |
@@ -297,9 +298,9 @@
 | [ADR-170](../adr/adr-170-motion-selection-paradigm.md) | 动作库选中范式 —— 将「默认」暴露为逐行「选中」（对齐模型焦点范式） | [动作详情 UI](./motion-detail-ui.md) |
 | [ADR-171](../adr/adr-171-scene-drag-mode.md) | 场景级拖拽模式：快捷开关 + 收纳文件夹 | [场景拖拽层级菜单](./scene-drag-levels.md) · [场景菜单层级系统](./scene-menu-levels.md) · [场景核心编排器（纯组装器）](./scene.md) · [变换选中物状态源](./transform-selection.md) |
 | [ADR-172](../adr/adr-172-wet-body-effect.md) | 湿身效果：雨天角色材质湿润感 | [湿身效果系统](./env-wetness.md) |
-| [ADR-173](../adr/adr-173-env-bridge-middleware.md) | env-bridge setEnvState 中间件化重构 | [基础行控件构建器](./ui-rows.md) |
+| [ADR-173](../adr/adr-173-env-bridge-middleware.md) | env-bridge setEnvState 中间件化重构 | [时间流转与太阳角系统](./env-time-of-day.md) · [基础行控件构建器](./ui-rows.md) |
 | [ADR-174](../adr/adr-174-quality-dimension-registry.md) | 质量维度注册表 — 统一 qualityProfile 扩展点 | [统一质量档位解析器](./quality-profile.md) |
-| [ADR-176](../adr/adr-176-frontend-backend-adapter.md) | 前端 Backend 适配器双实现（Web/Desktop 通杀） | [内置 AI 诊断助手 — 双适配器服务层](./ai-service.md) · [后端适配层](./core-backend.md) · [环境状态防抖持久化](./env-persist.md) · [应用启动引导](./init.md) · [平台能力探测](./platform.md) · [运行模式检测](./runtime-mode.md) · [后端绑定聚合层（backend 代理化）](./wails-bindings.md) |
+| [ADR-176](../adr/adr-176-frontend-backend-adapter.md) | 前端 Backend 适配器双实现（Web/Desktop 通杀） | [内置 AI 诊断助手 — 双适配器服务层](./ai-service.md) · [后端适配层](./core-backend.md) · [环境状态防抖持久化](./env-persist.md) · [时间流转与太阳角系统](./env-time-of-day.md) · [应用启动引导](./init.md) · [平台能力探测](./platform.md) · [运行模式检测](./runtime-mode.md) · [后端绑定聚合层（backend 代理化）](./wails-bindings.md) |
 | [ADR-177](../adr/adr-177-web-loader-main-app-unification.md) | Web Loader 与主应用统一路径 | [拖拽导入逻辑层](./drop-import.md) · [应用启动引导](./init.md) · [Runtime 隔离桥（Wails Events/Browser）](./runtime-bridge.md) |
 | [ADR-179](../adr/adr-179-update-install-launch-platform-tiered.md) | 更新安装拉起（按平台分级） | [事件处理与导航系统](./events.md) · [应用启动引导](./init.md) |
 | [ADR-180](../adr/adr-180-fsa-handle-persistence.md) | Web 资源库 FSA 句柄持久化与启动自动重扫 | [安卓文件访问（shared 模式）](./android-file-access.md) · [资源库初始化](./library-setup.md) |
@@ -318,7 +319,7 @@
 | [ADR-198](../adr/adr-198-场景序列化异常的保存韧性.md) | 场景序列化异常的保存韧性 | [场景序列化与自动保存](./scene-serialize.md) |
 | [ADR-202](../adr/adr-202-fork-autonomy-batch.md) | fork 自治改动批次 — 一次回灌批量根治可改 fork 的上游缺口 | [脚部地面跟随（MMD-native IK）](./motion-feet-adjustment.md) · [场景核心编排器（纯组装器）](./scene.md) |
 | [ADR-203](../adr/adr-203-ai-assistant-sessions-and-panel.md) | AI 助手会话持久化与独立面板 | [AI 助手独立面板入口](./assistant-panel.md) · [AI 会话 IndexedDB 存储](./chat-store.md) · [诊断助手 → 聊天 UI（子模块）](./diagnostic-chat.md) · [诊断助手 → 配置 UI（子模块）](./diagnostic-config.md) · [诊断助手 → tool call 控制（子模块）](./diagnostic-control.md) · [诊断助手 → 会话管理（子模块）](./diagnostic-session.md) · [诊断助手 → 单例状态（子模块）](./diagnostic-state.md) · [AI 诊断助手面板（协调入口）](./settings-diagnostic.md) |
-| [ADR-204](../adr/adr-204-unit-test-layering-and-hygiene.md) | 单测分层与治理规范（拆上帝文件 · 降 mock 密度 · fixtures 复用 · unit/integration 分层） | [动作播放控制](./motion-playback.md) |
+| [ADR-204](../adr/adr-204-unit-test-layering-and-hygiene.md) | 单测分层与治理规范（拆上帝文件 · 降 mock 密度 · fixtures 复用 · unit/integration 分层） | [时间流转与太阳角系统](./env-time-of-day.md) · [动作播放控制](./motion-playback.md) · [设置共享工具](./settings-shared.md) |
 | [ADR-206](../adr/adr-206-test-infra-consolidation-and-assertion-quality.md) | 测试基础设施收敛与断言质量治理 | [后端适配层](./core-backend.md) |
 | [ADR-207](../adr/adr-207-motion-menu-restructure.md) | 动作菜单重构 —— 程序化动作可加载化 + 双面板对称 | [场景序列化与自动保存](./scene-serialize.md) |
 | [ADR-212](../adr/adr-212-naming-vs-functionality-audit.md) | 命名 vs 翻译 vs 实际功能错位系统审计与治理 | [环境碰撞控制](./env-collision.md) · [环境重力控制](./env-gravity.md) · [确定性哈希与值噪声](./hash-noise.md) |
@@ -327,7 +328,7 @@
 | [ADR-229](../adr/adr-229-e2e-automation-advancement.md) | E2E 自动化推进 —— 从 schema 到测试零映射 | [渲染层 DOM 契约单源](./dom-contract.md) |
 | [ADR-231](../adr/adr-231-ground-visual-roadmap.md) | 地面视觉后续方向（自发光地屏 + 程序化地面图案） | [地形生成器](./env-terrain.md) |
 | [ADR-237](../adr/adr-237-split-overlong-modules.md) | 超限模块拆分计划 —— 250LOC 天花板的优先级拆解路线图 | [程序化动作系统](./proc-motion-bridge.md) · [多 VMD 叠加系统](./vmd-layers.md) |
-| [ADR-238](../adr/adr-238-循环依赖消解二期-core-scene-根环.md) | 循环依赖消解第二期 —— core→scene 根环与 motion/outfit 互依赖拆解 | [E2E 状态读取器注入桥](./e2e-state-bridge.md) · [资源库核心](./library-core.md) · [脚部地面跟随（MMD-native IK）](./motion-feet-adjustment.md) · [场景动作注入桥](./scene-action-bridge.md) · [主题纯函数叶](./theme.md) · [UI 行为注入桥](./ui-action-bridge.md) · [VMD 动作加载器](./vmd-loader.md) |
+| [ADR-238](../adr/adr-238-循环依赖消解二期-core-scene-根环.md) | 循环依赖消解第二期 —— core→scene 根环与 motion/outfit 互依赖拆解 | [E2E 状态读取器注入桥](./e2e-state-bridge.md) · [时间流转与太阳角系统](./env-time-of-day.md) · [资源库核心](./library-core.md) · [脚部地面跟随（MMD-native IK）](./motion-feet-adjustment.md) · [场景动作注入桥](./scene-action-bridge.md) · [设置共享工具](./settings-shared.md) · [主题纯函数叶](./theme.md) · [UI 行为注入桥](./ui-action-bridge.md) · [VMD 动作加载器](./vmd-loader.md) |
 | [ADR-242](../adr/adr-242-toplevel-layering-axiom.md) | 顶层目录分层公理 —— 「纯算法层」假说的证伪与重定性 | [换装叠加层](./outfit-overlay.md) · [换装系统](./outfit.md) |
 | [ADR-243](../adr/adr-243-env-state-defaults-from-schema.md) | EnvState 默认值从 Schema 自动推导 —— 消除 100+ 字段双源手工映射 | [EnvState 默认值派生](./env-state-defaults.md) |
 

@@ -1166,17 +1166,17 @@
 | `generateTerrainHeightmapURL()` | `scene/env/env-terrain:43` | 程序化生成灰度高度图（data URL），亮=高峰、暗=低谷。经统一工厂创建（受约束环境返回 ''）。 |
 | `hash2()` | `scene/env/env-terrain:22` | — |
 | `valueNoise()` | `scene/env/env-terrain:22` | — |
-| `applyEnvPreset()` | `scene/env/env-time-of-day:156` | — |
-| `applyEnvPresetByCategory()` | `scene/env/env-time-of-day:358` | [adr-120] 按类别应用用户自定义预设。 |
-| `applyEnvPresetObject()` | `scene/env/env-time-of-day:257` | 应用任意 EnvPreset 对象（支持用户自定义预设）。 |
+| `applyEnvPreset()` | `scene/env/env-time-of-day:165` | — |
+| `applyEnvPresetByCategory()` | `scene/env/env-time-of-day:367` | [adr-120] 按类别应用用户自定义预设。 |
+| `applyEnvPresetObject()` | `scene/env/env-time-of-day:266` | 应用任意 EnvPreset 对象（支持用户自定义预设）。 |
 | `getEnvSunAngle()` | `scene/env/env-time-of-day:49` | — |
-| `getTimeOfDaySpeed()` | `scene/env/env-time-of-day:136` | — |
-| `isTimeOfDayActive()` | `scene/env/env-time-of-day:132` | — |
+| `getTimeOfDaySpeed()` | `scene/env/env-time-of-day:140` | — |
+| `isTimeOfDayActive()` | `scene/env/env-time-of-day:136` | — |
 | `setEnvSunAngle()` | `scene/env/env-time-of-day:44` | — |
-| `setTimeOfDaySpeed()` | `scene/env/env-time-of-day:140` | — |
-| `startTimeOfDay()` | `scene/env/env-time-of-day:99` | — |
-| `stopTimeOfDay()` | `scene/env/env-time-of-day:118` | — |
-| `syncTimeOfDayFromEnv()` | `scene/env/env-time-of-day:146` | 从持久化的 envState 恢复 time-of-day 模块变量（启动时调用） |
+| `setTimeOfDaySpeed()` | `scene/env/env-time-of-day:144` | — |
+| `startTimeOfDay()` | `scene/env/env-time-of-day:103` | — |
+| `stopTimeOfDay()` | `scene/env/env-time-of-day:122` | — |
+| `syncTimeOfDayFromEnv()` | `scene/env/env-time-of-day:150` | 从持久化的 envState 恢复 time-of-day 模块变量（启动时调用） |
 | `underwaterFogController()` | `scene/env/env-underwater-fog:195` | — |
 | `MAX_RIPPLES()` | `scene/env/env-water-fx:31` | — |
 | `_applyWaterLOD()` | `scene/env/env-water-fx:440` | 按相机到水面的距离手动切换 LOD 可见性（仅 0/1/2 三层中恰好一层 enabled）， 规避 Babylon addLODLevel 的父子/兄弟重复渲染问题。仅当层级变化 |
@@ -1261,14 +1261,14 @@
 | `updateWaterAnimSpeed()` | `scene/env/env:61` | — |
 | `createMirror()` | `scene/env/mirror-debug:78` | 创建镜面道具：竖直平面 + MirrorTexture 反射。 |
 | `disposeMirror()` | `scene/env/mirror-debug:142` | 销毁镜面 |
-| `getMirrorInfo()` | `scene/env/mirror-debug:251` | — |
-| `isMirrorActive()` | `scene/env/mirror-debug:170` | — |
-| `refreshMirrorRenderList()` | `scene/env/mirror-debug:188` | 刷新渲染列表（模型加载/卸载后调用） |
-| `setMirrorPosition()` | `scene/env/mirror-debug:210` | — |
-| `setMirrorResolution()` | `scene/env/mirror-debug:228` | — |
-| `setMirrorRotationY()` | `scene/env/mirror-debug:219` | — |
-| `setMirrorSize()` | `scene/env/mirror-debug:197` | — |
-| `toggleMirror()` | `scene/env/mirror-debug:174` | — |
+| `getMirrorInfo()` | `scene/env/mirror-debug:252` | — |
+| `isMirrorActive()` | `scene/env/mirror-debug:171` | — |
+| `refreshMirrorRenderList()` | `scene/env/mirror-debug:189` | 刷新渲染列表（模型加载/卸载后调用） |
+| `setMirrorPosition()` | `scene/env/mirror-debug:211` | — |
+| `setMirrorResolution()` | `scene/env/mirror-debug:229` | — |
+| `setMirrorRotationY()` | `scene/env/mirror-debug:220` | — |
+| `setMirrorSize()` | `scene/env/mirror-debug:198` | — |
+| `toggleMirror()` | `scene/env/mirror-debug:175` | — |
 | `updateMirrorClearColor()` | `scene/env/mirror-debug:62` | 同步 RT clearColor 与当前天空模式一致： - color 模式：用 scene.clearColor（天空色），使纯净的天空色在镜子中可见 - 其他模式：透明黑，由反 |
 | `PlanarReflection()` | `scene/env/planar-reflection:112` | — |
 | `PlanarReflectionConfig()` | `scene/env/planar-reflection:37` | — |
@@ -2401,13 +2401,13 @@
 | `buildSettingsLanguageLevel()` | `menus/settings-language:7` | — |
 | `buildSettingsMediaLevel()` | `menus/settings-media:469` | — |
 | `buildSettingsResourcesLevel()` | `menus/settings-resources:520` | — |
-| `FONT_MAP()` | `menus/settings-shared:99` | — |
-| `SETTINGS_FONT_RESTORE()` | `menus/settings-shared:99` | — |
-| `SettingsMenuHandle()` | `menus/settings-shared:144` | — |
-| `THEME_PRESETS()` | `menus/settings-shared:103` | — |
-| `applyUIAppearanceDom()` | `menus/settings-shared:113` | — |
-| `formatBytes()` | `menus/settings-shared:146` | — |
-| `generateTextColors()` | `menus/settings-shared:99` | — |
+| `FONT_MAP()` | `menus/settings-shared:114` | — |
+| `SETTINGS_FONT_RESTORE()` | `menus/settings-shared:114` | — |
+| `SettingsMenuHandle()` | `menus/settings-shared:159` | — |
+| `THEME_PRESETS()` | `menus/settings-shared:118` | — |
+| `applyUIAppearanceDom()` | `menus/settings-shared:128` | — |
+| `formatBytes()` | `menus/settings-shared:161` | — |
+| `generateTextColors()` | `menus/settings-shared:114` | — |
 | `getAutoImportCached()` | `menus/settings-shared:29` | — |
 | `getDownloadWatchEnabledCached()` | `menus/settings-shared:50` | — |
 | `preloadAutoImportState()` | `menus/settings-shared:21` | 启动时预加载自动导入开关状态。在 main.ts init 中调用。 |
@@ -2415,8 +2415,8 @@
 | `setAutoImportCached()` | `menus/settings-shared:33` | — |
 | `setAutoLoadCompanionAudio()` | `menus/settings-shared:62` | — |
 | `setDownloadWatchEnabledCached()` | `menus/settings-shared:54` | — |
-| `setTheme()` | `menus/settings-shared:73` | — |
-| `truncatePath()` | `menus/settings-shared:158` | 路径截断显示：超长时保留尾部（用户更关心文件名/末级目录） |
+| `setTheme()` | `menus/settings-shared:79` | — |
+| `truncatePath()` | `menus/settings-shared:173` | 路径截断显示：超长时保留尾部（用户更关心文件名/末级目录） |
 | `addCustomSoftware()` | `menus/settings-system:432` | — |
 | `buildSettingsSystemLevel()` | `menus/settings-system:783` | — |
 | `buildSoftwareDetailLevel()` | `menus/settings-system:738` | — |

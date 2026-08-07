@@ -181,6 +181,7 @@ graph TD;
         a108["ADR-108"]
         a114["ADR-114"]
         a116["ADR-116"]
+        a120["ADR-120"]
         a121["ADR-121"]
         a123["ADR-123"]
         a124["ADR-124"]
@@ -295,6 +296,11 @@ graph TD;
     c83 --> a137;
     c83 --> a132;
     c9 --> a148;
+    c9 --> a120;
+    c9 --> a173;
+    c9 --> a176;
+    c9 --> a204;
+    c9 --> a238;
     c10 --> a62;
     c11 --> a128;
     c84 --> a102;
@@ -424,6 +430,8 @@ graph TD;
     c24 --> a196;
     c24 --> a202;
     c70 --> a157;
+    c70 --> a204;
+    c70 --> a238;
     c71 --> a157;
     c97 --> a36;
     c98 --> a141;
@@ -483,6 +491,7 @@ graph TD;
     click a108 href "../adr/adr-108-animation-retargeter.md"
     click a114 href "../adr/adr-114-ground-reflection-enhancement.md"
     click a116 href "../adr/adr-116-bone-override-ui-redesign.md"
+    click a120 href "../adr/adr-120-env-preset-categorized.md"
     click a121 href "../adr/adr-121-global-motion-intent.md"
     click a123 href "../adr/adr-123-compute-override-semantics.md"
     click a124 href "../adr/adr-124-filesystem-architecture.md"

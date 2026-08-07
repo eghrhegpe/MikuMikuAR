@@ -91,6 +91,10 @@ function _timeOfDayTick(): void {
     } else if (Math.abs(envSunAngle - _lastSkySunAngle) >= 0.4) {
         _lastSkySunAngle = envSunAngle;
         if (envState.skyMode === 'procedural') {
+            // [fix P3] dispatch 前先同步 envState.sunAngle：此前仅 dispatch 变更集合，
+            // 订阅者从 state.sunAngle 读到旧值（幽灵路径）；视觉渲染走 _updateSunDisc
+            // 读 envSunAngle 不受影响，但其他订阅者拿到过期角度。
+            envState.sunAngle = envSunAngle;
             dispatchEnvChange(new Set(['sunAngle']), envState);
         }
     }
@@ -146,6 +150,11 @@ export function setTimeOfDaySpeed(s: number): void {
 export function syncTimeOfDayFromEnv(): void {
     _timeOfDayPaused = false;
     _timeOfDaySpeed = envState.timeOfDaySpeed;
+    // [fix P3] 复位预设捕获残留：预设动画被 HMR/场景销毁中断时（observer 随旧 scene
+    // dispose 静默消失，catch 不触发）_timeOfDayBeforePreset 残留非 null——下次
+    // applyEnvPresetObject 的 `=== null` 检查失败，不再捕获 time-of-day 原始状态，
+    // 动画完成后可能错误恢复/不恢复暂停。此处与 _timeOfDayPaused 对称复位。
+    _timeOfDayBeforePreset = null;
 }
 
 // ======== Environment Presets ========

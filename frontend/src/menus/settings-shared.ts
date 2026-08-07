@@ -70,28 +70,43 @@ export function setAutoLoadCompanionAudio(v: boolean): void {
 
 // ======== Theme helper ========
 
+// [fix P2] 并发守卫：setTheme 的 await tryCatchStatus 是 suspension point，快速连点
+// 主题预设时两次调用并发——后到的 await 先 resolve 会先写 DOM，先到的后 resolve 覆盖，
+// DOM 最终颜色与最后一次点击不一致。用 in-flight promise 去重：进行中直接复用同一
+// promise（last-wins 语义由点击顺序保证，后点击的调用才真正进入）。
+let _themeInFlight: Promise<void> | null = null;
+
 export async function setTheme(
     hex: string,
     getSettingsMenu: () => { updateControls: () => void } | null
 ): Promise<void> {
-    const _r = await tryCatchStatus(() => SetUIAccent(hex), t('settings.themeColor'));
-    if (_r === undefined) {
-        getSettingsMenu()?.updateControls();
-        return;
+    if (_themeInFlight) {
+        return _themeInFlight;
     }
+    const p = (async (): Promise<void> => {
+        const _r = await tryCatchStatus(() => SetUIAccent(hex), t('settings.themeColor'));
+        if (_r === undefined) {
+            getSettingsMenu()?.updateControls();
+            return;
+        }
 
-    const root = document.documentElement;
-    const textColors = generateTextColors(hex);
+        const root = document.documentElement;
+        const textColors = generateTextColors(hex);
 
-    root.style.setProperty('--accent', hex);
-    root.style.setProperty('--accent-rgb', rgbToString(hexToRgb(hex)));
-    root.style.setProperty('--accent-dim', hex + '33');
-    root.style.setProperty('--text-bright', textColors.bright);
-    root.style.setProperty('--text-dim', textColors.dim);
-    root.style.setProperty('--text-muted', textColors.muted);
+        root.style.setProperty('--accent', hex);
+        root.style.setProperty('--accent-rgb', rgbToString(hexToRgb(hex)));
+        root.style.setProperty('--accent-dim', hex + '33');
+        root.style.setProperty('--text-bright', textColors.bright);
+        root.style.setProperty('--text-dim', textColors.dim);
+        root.style.setProperty('--text-muted', textColors.muted);
 
-    showInfoToast(t('settings.themeColorSet', { hex }));
-    getSettingsMenu()?.updateControls();
+        showInfoToast(t('settings.themeColorSet', { hex }));
+        getSettingsMenu()?.updateControls();
+    })().finally(() => {
+        _themeInFlight = null;
+    });
+    _themeInFlight = p;
+    return p;
 }
 
 // [doc:adr-238] 主题纯函数/常量下沉 core/theme.ts，此处 re-export 保持兼容
@@ -162,3 +177,7 @@ export function truncatePath(p: string, max = 40): string {
 // [doc:adr-238] 注册预加载状态供 core/init 经 ui-action-bridge 调用（切断 core→menus）
 import { registerUiAction } from '@/core/ui-action-bridge';
 registerUiAction('preloadAutoImportState', () => preloadAutoImportState());
+// [fix P2] 对称注册 download-watch 预加载：此前仅注册 autoImport，downloadWatchEnabledCached
+// 启动期恒 false——资源设置页首次打开前，下载监听分支读到的缓存与后端真实状态不一致
+// （自动导入分支正确预加载，watch 分支静默跳过）。
+registerUiAction('preloadDownloadWatchState', () => preloadDownloadWatchState());

@@ -140,7 +140,8 @@ export function createMirror(): void {
 
 /** 销毁镜面 */
 export function disposeMirror(): void {
-    const _scene = getScene();
+    // [fix P3] 移除未使用变量 _scene：此前取 getScene() 后全程未用，若 scene 未初始化
+    // 会抛错使 dispose 在 init 前调用时崩溃而非安全降级
     if (_gizmoDragObserver) {
         _gizmoDragObserver.dispose();
         _gizmoDragObserver = null;
