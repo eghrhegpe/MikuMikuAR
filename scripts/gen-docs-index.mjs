@@ -31,6 +31,9 @@ import { ROOT } from './_lib/scan-files.mjs';
 import { parseFrontmatter, getScalar, getList, parseAdrHeader } from './_lib/frontmatter.mjs';
 // [P2-2] 知识卡常量（分类顺序/标签/非卡片清单）统一走共享库，杜绝多脚本复制漂移
 import { KNOWLEDGE_ORDER, CATEGORY_LABEL, KNOWLEDGE_NON_CARDS } from './_lib/knowledge-cards.mjs';
+// [R5] ADR 状态桶从共享模块派生（ADR-232 §2.2 单一事实源）：classifyStatus 为唯一分类入口，
+// 不再自带 ADR_BUCKETS 词表 —— 「已立」等新词只改 _lib/adr-status-categories.mjs 一处。
+import { classifyStatus, DISPLAY_BUCKET_ORDER } from './_lib/adr-status-categories.mjs';
 // [fix] CLI 健壮性契约：--help 自吐 JSDoc 退 0 / 未知 flag 退 1（2026-08-06）
 const _HELP = new Set(['--help', '-h']);
 const _KNOWN = new Set(['--check']);
@@ -103,28 +106,12 @@ function fmList(text, key) {
 
 // ── 1. ADR 索引 ───────────────────────────────────────────
 
-/**
- * 状态归一化到展示桶。顺序敏感：
- * 「部分实施」既含「部分」又含「实施」，必须先于「已实施」匹配。
- */
-const ADR_BUCKETS = [
-  // 归档类判定要精确,不能任意位置含「废弃/搁置/过时」就归档——
-  // 否则「已完成主体 + 局部搁置」(ADR-168 E 远期搁置)会被整篇误归。
-  // 三档匹配:① 状态行开头即废弃语义;② ⚠️/🗑️/📋 强调标记后紧跟废弃词(§6 局部过时等限定语不触发);
-  //           ③ 明确调研落档 / 归档登记。
-  { key: '已归档', re: /^(?:已废弃|已过时|已放弃|已搁置|已退役|废弃|放弃|搁置|归档|落档|作废|取消|被取代|已被|superseded)|(?:⚠️|🗑️|📋)\s*\*{0,2}(?:已废弃|已过时|已放弃|已搁置|已退役|被取代|已被)|(?:调研归档|调研落档|归档登记)/i },
-  // 「部分实施 / 部分实现」既含「部分」又含「实施」，必须先于「已实施」匹配
-  { key: '推进中', re: /部分实施|部分实现|实施中|进行中|推进中|开发中/ },
-  {
-    key: '已落地',
-    re: /已完成|已实施|已落地|已立|已实现|已修复|已采纳|已裁决|已定性|已收口|已交付|实施完毕|完成|采纳|通过|accepted/i,
-  },
-  { key: '规划中', re: /规划|提案|草案|计划|待定|待实施|已立项/ },
-];
+// [R5] 状态归一化到展示桶：逻辑已上收 _lib/adr-status-categories.mjs 的 classifyStatus
+// （顺序敏感：「部分实施」既含「部分」又含「实施」，必须先于「已实施」匹配；
+//  归档类锚定行首/⚠️ 前缀/调研归档三档，避免「已完成主体 + 局部搁置」整篇误归）。
 
 function adrBucket(status) {
-  for (const b of ADR_BUCKETS) if (b.re.test(status)) return b.key;
-  return '其他';
+  return classifyStatus(status);
 }
 
 /** 复用 _lib/frontmatter.mjs 的 parseAdrHeader 口径（编号 / 标题 / 状态 / 日期）。
@@ -159,8 +146,7 @@ function buildAdrIndex() {
     if (!grouped.has(k)) grouped.set(k, []);
     grouped.get(k).push(e);
   }
-  const order = ['推进中', '规划中', '已落地', '已归档', '其他'];
-  const buckets = order.filter((k) => grouped.has(k));
+  const buckets = DISPLAY_BUCKET_ORDER.filter((k) => grouped.has(k));
 
   const out = [];
   out.push(BANNER('gen-docs-index.mjs'));

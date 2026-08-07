@@ -15,7 +15,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { STATUS_CATEGORIES } from './_lib/adr-status-categories.mjs';
+import { classifyStatus, BUCKET_TO_CATEGORY } from './_lib/adr-status-categories.mjs';
 import { parseAdrHeader } from './_lib/frontmatter.mjs';
 // [fix] CLI 健壮性契约：--help 自吐 JSDoc 退 0 / 未知 flag 退 1（2026-08-06）
 const _HELP = new Set(['--help', '-h']);
@@ -44,13 +44,11 @@ const JSON_OUT = process.argv.includes('--json');
 // 兼容三种格式 + 中文冒号 + plain 格式）：手写 extractStatus 口径更窄且无早停，
 // 正文 `**状态**` 行有被误取风险，与 check-adr-health/gen-status-index/gen-docs-index 不同源。
 
-// 分类状态
+// [R5] 分类统一走共享模块 classifyStatus（ADR-232 §2.2 单一事实源）：返回展示桶后
+// 经 BUCKET_TO_CATEGORY 映射到健康分类，与 gen-docs-index 同一函数、不再各自维护词表。
 function categorize(status) {
   if (!status) return 'unknown';
-  for (const [cat, keywords] of Object.entries(STATUS_CATEGORIES)) {
-    if (keywords.some(k => status.includes(k))) return cat;
-  }
-  return 'unknown';
+  return BUCKET_TO_CATEGORY[classifyStatus(status)] ?? 'unknown';
 }
 
 // 主函数

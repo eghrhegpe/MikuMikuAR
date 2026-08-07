@@ -21,7 +21,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { parseArgs } from './_lib/parse-args.mjs';
-import { STATUS_CATEGORIES, TECHNICAL_DEBT_KEYWORDS } from './_lib/adr-status-categories.mjs';
+import { classifyStatus, BUCKET_TO_CATEGORY, TECHNICAL_DEBT_KEYWORDS } from './_lib/adr-status-categories.mjs';
 import { parseAdrHeader } from './_lib/frontmatter.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -85,19 +85,11 @@ function readAdrFile(filePath) {
   }
 }
 
-// 分类状态
+// [R5] 分类统一走共享模块 classifyStatus（ADR-232 §2.2 单一事实源）：返回展示桶后
+// 经 BUCKET_TO_CATEGORY 映射到健康分类，与 gen-docs-index 同一函数、不再各自维护词表。
 function categorizeStatus(status) {
   if (!status) return 'unknown';
-  
-  for (const [category, keywords] of Object.entries(STATUS_CATEGORIES)) {
-    for (const keyword of keywords) {
-      if (status.includes(keyword)) {
-        return category;
-      }
-    }
-  }
-  
-  return 'unknown';
+  return BUCKET_TO_CATEGORY[classifyStatus(status)] ?? 'unknown';
 }
 
 // 检查技术债务（仅状态行关键词；正文历史叙述——「已移除/临时/弃用」等——为正常记载，
