@@ -20,18 +20,20 @@ import { parseArgs } from './_lib/parse-args.mjs';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SCHEMA_FILE = resolve(__dirname, '..', 'frontend', 'src', 'core', 'env-state-schema.ts');
 
-const { strict, json , help, unknown} = parseArgs(process.argv.slice(2), { bools: ['strict', 'json'] });
-  if (help) {
-    const _src = fs.readFileSync(process.argv[1], 'utf-8');
+const { strict, json, help, unknown } = parseArgs(process.argv.slice(2), { bools: ['strict', 'json'] });
+// [P1 2026-08-08] --help 用 fs.readFileSync 但 fs 未绑定（仅具名导入 readFileSync）→ 必崩；
+// check-schema-groups 同类已修（:27），此处遗漏
+if (help) {
+    const _src = readFileSync(process.argv[1], 'utf-8');
     const _s = _src.indexOf('/**');
     const _e = _src.indexOf('*/', _s);
     console.log(_src.slice(_s, _e + 2).replace(/^ \* ?/gm, '').trim());
     process.exit(0);
-  }
-  if (unknown && unknown.length) {
+}
+if (unknown && unknown.length) {
     console.error(`❌ 未知参数: ${unknown.join(', ')}（--help 查看用法）`);
     process.exit(1);
-  }
+}
 
 const text = readFileSync(SCHEMA_FILE, 'utf8');
 
@@ -110,6 +112,14 @@ while (i < lines.length) {
         }
     }
     i = j;
+}
+
+// [P2 2026-08-08] 字段数自校验：schema 格式漂移（缩进/括号形态变化）时括号扫描器
+// 静默漏检 → totalBoolFields=0 → violations=0 → 「✅ 通过」假绿。字段数为 0 即报解析异常。
+// （解析器与 check-schema-groups 复制粘贴重复的根治=抽 _lib 共享，另行排期）
+if (totalBoolFields === 0) {
+    console.error('❌ 未解析到任何 boolean 字段，疑似 env-state-schema.ts 格式变更，无法执行命名检查');
+    process.exit(1);
 }
 
 if (json) {

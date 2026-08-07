@@ -51,6 +51,7 @@ symbols:
   - isAutoCameraEnabled
   - isCameraMode
   - isTouchDevice
+  - resetCameraState
   - setAutoCameraBeatCount
   - setAutoCameraEnabledFlag
   - setAutoCameraPresetIdx
@@ -97,7 +98,7 @@ ADR-148 阶段 3（2026-07-20 抽离）：原本只为 camera.ts 内部状态；
 
 ## 核心职责
 - 类型定义：`CameraMode` / `CameraControl` / `CameraBehavior` / `ScriptedSubMode` / `OrbitParams` / `FreeflyParams` / `SurroundParams` / `ConcertParams` / `CameraPreset`（单源定义，camera.ts re-export 复用）
-- 默认值：`defaultCameraPreset()` / `defaultOrbitParams` 等
+- 默认值：`defaultCameraPreset()`（子参数默认值内联于返回对象，无独立 `defaultOrbitParams` 等函数）
 - 纯状态 getter/setter：`getCameraPreset` / `setCameraPreset` / `getOrbitParams` / `setOrbitParams` / `getCameraMode` / `setCameraMode` / `getCameraControl` / `setCameraControl` / `getCameraBehavior` / `setCameraBehavior` / `getScriptedSubMode` / `setScriptedSubMode` / `getFov` / `setFov` / `getCurrentCamera` / `setCurrentCamera` / `getFocusCenterY` / `setFocusCenterY` / `getConcertPaused` / `setConcertPaused` / `getSurroundPaused` / `setSurroundPaused` / `getCameraVmdName` / `getCameraVmdPath` / `hasCameraVmd` / `setCameraVmdState` / `clearCameraVmdState` / `isAutoCameraEnabled` / `setAutoCameraEnabledFlag` / `getAutoCameraBeatCount` / `setAutoCameraBeatCount` / `getAutoCameraPresetIdx` / `setAutoCameraPresetIdx`
 - 运行时上下文：`getCameraScene` / `setCameraScene` / `getCameraCanvas` / `setCameraCanvas` / `getPreviousMode` / `setPreviousMode` / `getViewMatrixHandle` / `setViewMatrixHandle`
 - 工具：`isTouchDevice()`

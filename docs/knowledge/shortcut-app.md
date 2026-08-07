@@ -41,11 +41,11 @@ use_when:
 | global:close | Escape | 关闭弹窗 |
 | playback:seek-back | ← | 后退 5 秒 |
 | playback:seek-forward | → | 前进 5 秒 |
-| screenshot:current | Ctrl+F6 | 截图当前模型 |
+| screenshot:current | F2 | 截图当前模型 |
 | motion:undo | Ctrl+Z | 撤销模块参数 |
 | motion:redo | Ctrl+Shift+Z | 重做模块参数 |
 
 ## 与其他子系统关系
 - 依赖 `shortcut-registry` 的 `registerShortcuts` 注册快捷键。
-- 依赖 [`events.ts`](./events.md) 的 `navActions` / `navLabels` 导航映射。
+- 依赖 `ui-action-bridge` / `scene-action-bridge`（ADR-238 切断 core→menus 反向依赖），不再直接依赖 `events.ts` 的导航映射。
 - 依赖 `scene/motion/motion-modules/motion-history` 的撤销/重做。

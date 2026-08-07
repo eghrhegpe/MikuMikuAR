@@ -193,3 +193,39 @@ test('gen-routes: --check 跑通（收口共享库后 routes.md 无漂移 → ex
   assert.equal(r.code, 0, `exit=${r.code} stderr=${r.stderr} stdout=${r.stdout}`);
   assert.match(r.stdout, /已同步/);
 });
+
+// ── check-boolean-naming 冒烟（P1/P2 回归：--help 必崩 + 字段数自校验不误报） ──
+
+test('check-boolean-naming: --help 退 0 且含用法（P1 回归：fs 未绑定必崩）', () => {
+  const r = runScript(path.join(SCRIPTS, 'check-boolean-naming.mjs'), ['--help']);
+  assert.equal(r.code, 0, `exit=${r.code} stderr=${r.stderr}`);
+  assert.match(r.stdout, /check-boolean-naming/);
+});
+
+test('check-boolean-naming: --strict 跑通（当前 25 布尔字段全合规 → exit 0）', () => {
+  const r = runScript(path.join(SCRIPTS, 'check-boolean-naming.mjs'), ['--strict']);
+  assert.equal(r.code, 0, `exit=${r.code} stderr=${r.stderr} stdout=${r.stdout}`);
+  assert.match(r.stdout, /boolean 字段总数: 25|Boolean 字段命名检查/);
+});
+
+// ── check-env-parity 冒烟（P1/P2 回归：--help 必崩 + 双空集守卫不误报） ──
+
+test('check-env-parity: --help 退 0 且含用法（P1 回归：fs 未绑定必崩）', () => {
+  const r = runScript(path.join(SCRIPTS, 'check-env-parity.mjs'), ['--help']);
+  assert.equal(r.code, 0, `exit=${r.code} stderr=${r.stderr}`);
+  assert.match(r.stdout, /check-env-parity/);
+});
+
+test('check-env-parity: --strict 跑通（当前 schema↔bindings parity 成立 → exit 0）', () => {
+  const r = runScript(path.join(SCRIPTS, 'check-env-parity.mjs'), ['--strict']);
+  assert.equal(r.code, 0, `exit=${r.code} stderr=${r.stderr} stdout=${r.stdout}`);
+  assert.match(r.stdout, /EnvState 字段 parity|parity 一致/);
+});
+
+// ── gen-dep-graph 冒烟（P2 回归：目录缺失守卫 + 排序确定性） ──
+
+test('gen-dep-graph: 默认输出跑通（frontend/src 存在 → exit 0）', () => {
+  const r = runScript(path.join(SCRIPTS, 'gen-dep-graph.mjs'));
+  assert.equal(r.code, 0, `exit=${r.code} stderr=${r.stderr}`);
+  assert.match(r.stdout, /```mermaid/);
+});

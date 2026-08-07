@@ -30,20 +30,22 @@ const BINDINGS_FILE = resolve(
     'models.ts'
 );
 
-const { strict, json , help, unknown} = parseArgs(process.argv.slice(2), {
+const { strict, json, help, unknown } = parseArgs(process.argv.slice(2), {
     bools: ['strict', 'json'],
 });
-  if (help) {
-    const _src = fs.readFileSync(process.argv[1], 'utf-8');
+// [P1 2026-08-08] --help 用 fs.readFileSync 但 fs 未绑定（仅具名导入 readFileSync）→ 必崩；
+// check-schema-groups 同类已修（:27），此处遗漏
+if (help) {
+    const _src = readFileSync(process.argv[1], 'utf-8');
     const _s = _src.indexOf('/**');
     const _e = _src.indexOf('*/', _s);
     console.log(_src.slice(_s, _e + 2).replace(/^ \* ?/gm, '').trim());
     process.exit(0);
-  }
-  if (unknown && unknown.length) {
+}
+if (unknown && unknown.length) {
     console.error(`❌ 未知参数: ${unknown.join(', ')}（--help 查看用法）`);
     process.exit(1);
-  }
+}
 
 const EXEMPT_SCHEMA_ONLY = new Map();
 const EXEMPT_BIND_ONLY = new Map([
@@ -59,10 +61,23 @@ function parseSchemaKeys(text) {
         process.exit(1);
     }
     const keys = new Set();
-    for (const line of text.slice(start).split('\n')) {
-        const m = line.match(/^ {4}(\w+)\s*:\s*\{/);
+    const lines = text.slice(start).split('\n');
+    // [P2 2026-08-08] 动态 baseIndent：旧硬编码 `^ {4}` 在 Prettier 改 2 空格/tab 时
+    // 全部字段静默漏检（配合双空集守卫会 fail，但此修复让 2/4 空格都正确解析）。
+    let baseIndent = null;
+    for (const line of lines) {
+        const m = line.match(/^(\s+)\w+\s*:\s*\{/);
         if (m) {
-            keys.add(m[1]);
+            baseIndent = m[1].length;
+            break;
+        }
+    }
+    if (baseIndent === null) return keys; // 无字段匹配 → 空集（由双空集守卫拦截）
+    const prefix = ' '.repeat(baseIndent);
+    for (const line of lines) {
+        const m = line.match(/^(\s+)(\w+)\s*:\s*\{/);
+        if (m && m[1].length === baseIndent) {
+            keys.add(m[2]);
         }
     }
     return keys;
@@ -91,6 +106,16 @@ if (!existsSync(SCHEMA_FILE) || !existsSync(BINDINGS_FILE)) {
 
 const schemaKeys = parseSchemaKeys(readFileSync(SCHEMA_FILE, 'utf8'));
 const bindKeys = parseBindingsEnvStateKeys(readFileSync(BINDINGS_FILE, 'utf8'));
+
+// [P2 2026-08-08] 双空集静默假绿守卫：schema 解析硬编码 `^ {4}` 缩进，若 Prettier 改 2 空格
+// 则 schemaKeys 为空；若 bindings 侧解析同时失效 → 双空集 → failedParity=false →
+// 「✅ parity 一致」假绿。解析结果为空即报格式变更，不静默放行。
+if (schemaKeys.size === 0 || bindKeys.size === 0) {
+    console.error(
+        `❌ 字段解析结果为空（schema=${schemaKeys.size} / bindings=${bindKeys.size}），疑似格式变更，无法比较 parity`
+    );
+    process.exit(1);
+}
 
 const schemaOnly = [...schemaKeys].filter((k) => !bindKeys.has(k));
 const bindOnly = [...bindKeys].filter((k) => !schemaKeys.has(k));

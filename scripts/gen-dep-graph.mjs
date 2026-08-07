@@ -55,6 +55,10 @@ function renderMermaid(entries, edges) {
   const nodeMap = new Map(); // rel → id
 
   for (const [mod, files] of Object.entries(modules).sort()) {
+    // [P2 2026-08-08] 组内按 rel 排序：walk（readdir）无 sort，跨 OS 目录顺序不同 →
+    // 节点 ID 随顺序分配会整体重编号 → Mermaid 输出跨机器不确定、--check 不幂等。
+    // 与 list 格式 `entries.map(e => e.rel).sort()` 对齐。
+    files.sort((a, b) => a.rel.localeCompare(b.rel));
     lines.push('');
     for (const f of files) {
       const id = `n${nodeId++}`;
@@ -156,6 +160,16 @@ function main() {
 
   // 1. 扫描文件 + 解析依赖（scope 递归展开依赖，--local-only 限制 scope 内）
   const { files, graph } = scanSourceGraph(SRC_DIR, { scope, localOnly });
+  // [P2 2026-08-08] frontend/src 缺失守卫：子模块未检出/错误 cwd 时 walk 返回 []，
+  // 旧实现打印「0 个文件」后 exit 0 输出空图（可能把空图写进文档）。缺失即明确失败。
+  if (files.length === 0) {
+    if (!fs.existsSync(SRC_DIR)) {
+      console.error(`❌ frontend/src 目录不存在：${SRC_DIR}（子模块未检出或 cwd 错误）`);
+      process.exit(1);
+    }
+    console.error(`❌ 未扫描到任何 TS 文件（srcDir=${SRC_DIR}），疑似扫描异常`);
+    process.exit(1);
+  }
   console.error(`📄 ${scope ? `scope=${scope}${localOnly ? ' (local-only)' : ''}` : '全部'} → ${files.length} 个文件`);
   const edges = [...graph.entries()].flatMap(([from, deps]) => [...deps].map((to) => [from, to]));
   console.error(`   解析到 ${edges.length} 条依赖边`);
@@ -182,7 +196,14 @@ function main() {
     if (isCheck) {
       // 检查文件是否已同步
       const existing = fs.existsSync(outFile) ? fs.readFileSync(outFile, 'utf8') : '';
-      if (existing !== output) {
+      // [P2 2026-08-08] 兼容重定向产物格式：docs/dep-graph.md 由 `npm run dep:graph > file`
+      // 生成，含 npm 头部 + stderr 计数行（📄/解析到/格式=）+ mermaid 块——整串比对必失败。
+      // 提取 existing 与 output 中的 ```mermaid ... ``` 块核心比对（尾部格式行/计数行忽略）。
+      const extractBlock = (s) => {
+        const m = s.match(/```mermaid\n([\s\S]*?)\n```/);
+        return m ? m[1] : s;
+      };
+      if (extractBlock(existing) !== extractBlock(output)) {
         console.error(`❌ ${outFile} 未同步，请运行：npm run dep:graph`);
         process.exit(1);
       }

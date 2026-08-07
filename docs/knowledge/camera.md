@@ -91,6 +91,7 @@ symbols:
   - loadCameraVmd
   - logCameraAlpha
   - refreshCameraUserSettings
+  - resetCameraState
   - restoreAutoCameraState
   - restoreBoneLockIfEnabled
   - setAutoCameraBeatCount

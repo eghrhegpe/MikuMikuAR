@@ -7,6 +7,8 @@ scope:
   - frontend/src/core/load-manager.ts
 source_files:
   - frontend/src/core/load-manager.ts
+tests:
+  - frontend/src/__tests__/load-manager.test.ts
 adr:
   - ADR-045
   - ADR-135
