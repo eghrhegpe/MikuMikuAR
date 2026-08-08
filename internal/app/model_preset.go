@@ -215,6 +215,8 @@ func (a *App) writeConfig(cfg *Config) error {
 		return err
 	}
 	if err := os.Rename(tmpPath, path); err != nil {
+		// rename 失败：清理已写出的 .tmp 临时文件，避免残留垃圾（仅失败路径清理，成功/目标已存在不入此分支）。
+		os.Remove(tmpPath)
 		return err
 	}
 	// 再写 bootstrap config（内部存储，供 getConfigUnsafe 定位 setting/ 目录）；

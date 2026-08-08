@@ -80,7 +80,7 @@ func (a *App) ExtractZip(zipPath, innerPath string) (*ExtractResult, error) {
 	})
 }
 
-func (a *App) extractZipUnsafe(zipPath, innerPath string) (*ExtractResult, error) {
+func (a *App) extractZipUnsafe(zipPath, innerPath string) (result *ExtractResult, retErr error) {
 	const op = "ExtractZip"
 	cacheRoot, err := extractedDir()
 	if err != nil {
@@ -115,6 +115,13 @@ func (a *App) extractZipUnsafe(zipPath, innerPath string) (*ExtractResult, error
 	if err := os.MkdirAll(dest, 0755); err != nil {
 		return nil, util.WrapErrorf(op, "创建缓存目录失败", err)
 	}
+	// 解压中途失败（条目超限/复制错误/写 manifest 失败等）：清理已解压出的半残目录，
+	// 避免残留半解压垃圾。成功路径 retErr==nil，不触发清理。
+	defer func() {
+		if retErr != nil {
+			os.RemoveAll(dest)
+		}
+	}()
 
 	zr, err := zip.OpenReader(zipPath)
 	if err != nil {
