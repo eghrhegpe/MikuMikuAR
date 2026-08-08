@@ -28,7 +28,7 @@ const config: KnipConfig = {
     '@iconify/iconify',        // Used by icon system
     '@preact/signals-core',    // Used by reactivity system
     '@iconify/icons-lucide',   // Dev: icon generation
-    'jscpd-html-reporter',     // Used by `duplicate:html` npm script (--reporters flag)
+    
     'ts-morph',                // Used by root scripts/codemod.mjs (knip can't trace ../scripts)
   ],
   rules: {

@@ -42,7 +42,7 @@
     "deadcode:strict": "knip --production",
     "deadcode:baseline": "node ../scripts/check-deadcode-baseline.mjs",
     "duplicate": "jscpd --config jscpd.config.json src",
-    "duplicate:html": "jscpd --config jscpd.config.json --output jscpd-report --reporters jscpd-html-reporter src",
+    "duplicate:html": "jscpd --config jscpd.config.json --output jscpd-report --reporters html src",
     "analyze:bundle": "vite build --mode production"
   },
   "devDependencies": {
@@ -59,7 +59,6 @@
     "globals": "^17.7.0",
     "happy-dom": "^20.10.6",
     "jscpd": "^5.0.12",
-    "jscpd-html-reporter": "^2.0.1",
     "knip": "^6.29.0",
     "playwright": "^1.61.1",
     "prettier": "^3.9.4",
