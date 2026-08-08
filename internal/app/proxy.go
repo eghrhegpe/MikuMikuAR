@@ -596,6 +596,15 @@ func (a *App) proxyWebSocket(w http.ResponseWriter, r *http.Request, target *url
 	}
 	defer upConn.Close()
 
+	// [code_review P2] 握手读写 deadline：对端接通却不回 101 响应会永久阻塞
+	// outReq.Write / ReadResponse，故在握手期施加 15s 上限，超时即 502 返回。
+	if err := upConn.SetDeadline(time.Now().Add(15 * time.Second)); err != nil {
+		a.safeLogError("proxyWebSocket: set handshake deadline: %v", err)
+		_, _ = clientBuf.WriteString("HTTP/1.1 502 Bad Gateway\r\nContent-Length: 0\r\n\r\n")
+		_ = clientBuf.Flush()
+		return
+	}
+
 	// 3. Forward the original upgrade request to upstream (rewrite Host, inject cookies).
 	outReq := r.Clone(r.Context())
 	outReq.URL.Scheme = target.Scheme
@@ -623,6 +632,9 @@ func (a *App) proxyWebSocket(w http.ResponseWriter, r *http.Request, target *url
 	}
 	_ = resp.Write(clientBuf)
 	_ = clientBuf.Flush()
+
+	// [code_review P2] 握手读写已完成，清除 deadline 放行后续隧道或自然关闭。
+	upConn.SetDeadline(time.Time{})
 
 	if resp.StatusCode != http.StatusSwitchingProtocols {
 		// Upstream refused the upgrade; connection will close naturally.
