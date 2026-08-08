@@ -23,6 +23,7 @@ symbols:
   - isBlockedIP
   - isWebSocketUpgrade
   - maxPlazaDownloadBytes
+  - maxPlazaDownloadReqBytes
   - maxPlazaHTMLBody
   - plazaDownloadClient
   - plazaInjectScript
@@ -34,6 +35,7 @@ symbols:
   - proxyWebSocket
   - setCookies
   - ssrfGuardedTransport
+  - wsTunnelMaxDuration
 invariants:
   - 代理目标仅允许用户显式配置的广场域名，防止 Open Proxy；plazaSSRFGuard 拦截私有/环回 IP（isBlockedIP）
   - maxPlazaHTMLBody=64MiB、maxPlazaDownloadBytes=1GiB 大小上限，超限中止

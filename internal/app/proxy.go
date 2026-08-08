@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -135,6 +136,17 @@ var maxPlazaHTMLBody int64 = 64 << 20 // 64 MiB
 // partially written file.
 var maxPlazaDownloadBytes int64 = 1 << 30 // 1 GiB
 
+// maxPlazaDownloadReqBytes caps the JSON body of POST /__plaza_dl__ so a
+// hostile client cannot exhaust memory with an unbounded request body (audit
+// round14 P3: handler previously had no MaxBytesReader). Exceeding it returns 413.
+var maxPlazaDownloadReqBytes int64 = 50 << 20 // 50 MiB
+
+// wsTunnelMaxDuration caps the lifetime of a proxied WebSocket tunnel so a
+// half-open/hung connection cannot leak its goroutine indefinitely. Normal
+// tunnels end when either side closes, which cancels the context immediately;
+// this is only a backstop for the silent-hang case (audit round14 P3).
+var wsTunnelMaxDuration = 30 * time.Minute
+
 // progressReader wraps an io.Reader to emit progress events during DownloadFromPlaza.
 // It reports read bytes every 500ms (throttled) and emits a final completion event.
 // If Content-Length is missing, percent is 0 and only bytes read are reported.
@@ -216,6 +228,12 @@ func ssrfGuardedTransport() *http.Transport {
 func isBlockedIP(ip net.IP) bool {
 	if ip == nil {
 		return true
+	}
+	// 显式归一到 IPv4：确保 IPv4-mapped IPv6（如 ::ffff:127.0.0.1）按 IPv4 规则
+	// 判定，不被漏判为「公网 IPv6」。Go 的 IsLoopback/IsPrivate 等内部虽已 To4()，
+	// 此处显式归一使 SSRF 主防线对映射地址零歧义（audit round14 P3）。
+	if v4 := ip.To4(); v4 != nil {
+		ip = v4
 	}
 	return ip.IsLoopback() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() ||
 		ip.IsPrivate() || ip.IsUnspecified()
@@ -643,18 +661,29 @@ func (a *App) proxyWebSocket(w http.ResponseWriter, r *http.Request, target *url
 	}
 
 	// 5. Bidirectional copy until either side closes.
+	// 任一边结束即 cancel() 该 context，watcher 关闭两端连接，使对侧阻塞的 Read
+	// 立即返回（继承原 upConn.Close()/clientConn.Close() 语义），双 goroutine 退出。
+	// context 总上限：若某侧长时间挂起既不关闭也不发数据，超时后强制关闭两端，
+	// 杜绝 goroutine 永久泄漏。握手 deadline 已在 637 行清除，隧道阶段由 context 控制（P3）。
 	a.safeLogInfo("proxyWebSocket: established ws tunnel to %s%s", target.Host, r.URL.Path)
+	ctx, cancel := context.WithTimeout(r.Context(), wsTunnelMaxDuration)
+	defer cancel()
+	go func() {
+		<-ctx.Done()
+		_ = upConn.Close()
+		_ = clientConn.Close()
+	}()
 	var wg sync.WaitGroup
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
 		_, _ = io.Copy(upConn, clientBuf) // client → upstream
-		_ = upConn.Close()
+		cancel()
 	}()
 	go func() {
 		defer wg.Done()
 		_, _ = io.Copy(clientConn, upBuf) // upstream → client
-		_ = clientConn.Close()
+		cancel()
 	}()
 	wg.Wait()
 }
@@ -849,7 +878,14 @@ func (a *App) handlePlazaDownloadPost(w http.ResponseWriter, r *http.Request) {
 		URL      string `json:"url"`
 		Filename string `json:"filename"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	// [audit:round14 P3] 用 MaxBytesReader 限制请求体，防止无限制 body 拖垮内存；
+	// 超限返回 413（http.MaxBytesError）。
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxPlazaDownloadReqBytes)).Decode(&req); err != nil {
+		var maxErr *http.MaxBytesError
+		if errors.As(err, &maxErr) {
+			http.Error(w, "request body too large", http.StatusRequestEntityTooLarge)
+			return
+		}
 		http.Error(w, "invalid JSON: "+err.Error(), http.StatusBadRequest)
 		return
 	}

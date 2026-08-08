@@ -215,6 +215,8 @@ func TestIsBlockedIP(t *testing.T) {
 	blocked := []string{
 		"127.0.0.1", "10.0.0.1", "172.16.0.1", "172.31.255.255",
 		"192.168.1.1", "169.254.169.254", "::1", "fc00::1", "0.0.0.0",
+		// IPv4-mapped IPv6 必须按 IPv4 规则判定，不可漏判为「公网 IPv6」（round14 P3）。
+		"::ffff:127.0.0.1", "::ffff:10.0.0.1", "::ffff:169.254.169.254", "::ffff:192.168.1.1",
 	}
 	for _, s := range blocked {
 		ip := net.ParseIP(s)
