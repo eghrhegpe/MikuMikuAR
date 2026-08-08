@@ -2,6 +2,8 @@ package thumbnail
 
 import (
 	"encoding/base64"
+	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -62,10 +64,16 @@ func readThumb(thumbDir, hash string) (string, error) {
 
 func GetBatch(thumbDir string, paths []string, rootPath string) (map[string]string, error) {
 	result := make(map[string]string)
+	var errs []error
 	for _, p := range paths {
 		if b64, err := Get(thumbDir, p, rootPath); err == nil {
 			result[p] = b64
+		} else {
+			errs = append(errs, fmt.Errorf("thumbnail for %q: %w", p, err))
 		}
+	}
+	if len(errs) > 0 {
+		return result, errors.Join(errs...)
 	}
 	return result, nil
 }
