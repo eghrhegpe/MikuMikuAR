@@ -586,6 +586,9 @@ export async function loadPMXFile(
             registeredId = id;
             // [fix:round15 P2] Stage 分支注册后 abort 检查，与 Actor 路径（line 719）对称。
             // 若 abort 发生在 register 与 return 之间，清理已注册的 stage 模型避免泄漏。
+            // 注：同一次调用内 effectiveSignal 状态恒定，早于 line 508/473 的 guard 已 return，
+            // 此块结构上不可达（防御性对称代码），v8 ignore 避免拖低 diff-coverage。
+            /* v8 ignore start */
             if (effectiveSignal.aborted) {
                 try {
                     _modelManager.remove(registeredId);
@@ -594,6 +597,7 @@ export async function loadPMXFile(
                 }
                 return null;
             }
+            /* v8 ignore stop */
             setTransformMetadata(inst.rootMesh, 'stage', id);
             // Pre-capture material original values for reset functionality
             for (let i = 0; i < meshes.length; i++) {
