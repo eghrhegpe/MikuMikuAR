@@ -119,6 +119,9 @@ export function setAutoCameraEnabled(
         _subscribeAutoCameraBeat(beatDetector);
     } else {
         _unsubscribeAutoCameraBeat();
+        // [fix:round16 P3] 重置计数器，消除对后续开启路径的隐式依赖（开启时清零）
+        _setAutoCameraBeatCount(0);
+        _setAutoCameraPresetIdx(0);
     }
     // 重新派生行为轴：beatcut 叠加/移除（互斥由 _resolveBehavior 保证）。
     _syncAxesCallback?.();

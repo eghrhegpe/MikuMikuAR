@@ -69,6 +69,7 @@ import type {
     CameraPreset,
 } from './camera-state';
 import {
+    clearCameraVmd,
     createVmdCamera,
     hasCameraAnimationHandle,
     setSwitchCameraModeCallback,
@@ -742,6 +743,8 @@ export function disposeCameraSystem(): void {
     stopSurround();
     stopConcert();
     stopBoneLock();
+    // [fix:round16 P3] 清理 VMD 相机动画引用，避免 dispose 后 _mmdAnimation 驻留 camera-vmd 模块
+    clearCameraVmd();
     // 销毁当前相机
     const cam = getCurrentCamera();
     if (cam) {

@@ -839,10 +839,10 @@
 | `formatProbeReport()` | `scene/ar/ar-webxr-probe:349` | 格式化探针结果为人类可读的多行文本（用于 UI 展示或复制到剪贴板）。 |
 | `probeWebXR()` | `scene/ar/ar-webxr-probe:190` | 执行 WebXR 支持度探针（非侵入式，不请求 session）。 |
 | `probeWebXRFeatures()` | `scene/ar/ar-webxr-probe:285` | 深度探针：实际创建 immersive-ar session 验证特性可用性。 |
-| `getAutoCameraBeatsPerSwitch()` | `scene/camera/camera-auto:138` | — |
-| `isAutoCameraEnabled()` | `scene/camera/camera-auto:127` | — |
+| `getAutoCameraBeatsPerSwitch()` | `scene/camera/camera-auto:141` | — |
+| `isAutoCameraEnabled()` | `scene/camera/camera-auto:130` | — |
 | `restoreAutoCameraState()` | `scene/camera/camera-auto:92` | 从 UIState 恢复自动机位状态。ADR-100 P2：恢复时集中订阅并派生 beatcut 行为，修复饥饿。 |
-| `setAutoCameraBeatsPerSwitch()` | `scene/camera/camera-auto:132` | 设置每多少拍切换一次镜头。 |
+| `setAutoCameraBeatsPerSwitch()` | `scene/camera/camera-auto:135` | 设置每多少拍切换一次镜头。 |
 | `setAutoCameraEnabled()` | `scene/camera/camera-auto:106` | 设置 Auto Camera（beatcut）开关。ADR-100 P2：启用时集中订阅 beat、派生 beatcut 行为； 禁用时移除订阅并回落基底行为。beatDetect |
 | `setSyncAxesCallback()` | `scene/camera/camera-auto:59` | camera.ts 启动时注入 _syncAxesFromMode 回调。 |
 | `initFreeflyTouch()` | `scene/camera/camera-behaviors:96` | — |
@@ -933,67 +933,67 @@
 | `hasCameraAnimationHandle()` | `scene/camera/camera-vmd:119` | VMD 相机动画句柄是否就绪（switchCameraMode 在 vmd 分支前置检查）。 |
 | `loadCameraVmd()` | `scene/camera/camera-vmd:37` | Load camera animation from a VMD (MmdAnimation) and create an MmdCamera. |
 | `setSwitchCameraModeCallback()` | `scene/camera/camera-vmd:32` | camera.ts 启动时注入 switchCameraMode 回调。 |
-| `CameraBehavior()` | `scene/camera/camera:282` | — |
-| `CameraControl()` | `scene/camera/camera:260` | — |
-| `CameraMode()` | `scene/camera/camera:239` | — |
-| `CameraPreset()` | `scene/camera/camera:767` | — |
-| `CameraState()` | `scene/camera/camera:558` | — |
-| `ConcertParams()` | `scene/camera/camera:209` | — |
-| `FreeflyParams()` | `scene/camera/camera:196` | — |
-| `LEGACY_MODE_MAP()` | `scene/camera/camera:109` | ADR-100 §6.1 — 旧模式 → 双轴映射（迁移 / shim 共用）。 |
-| `OrbitParams()` | `scene/camera/camera:169` | — |
-| `ScriptedSubMode()` | `scene/camera/camera:767` | — |
-| `SurroundParams()` | `scene/camera/camera:213` | — |
-| `_syncAxesFromMode()` | `scene/camera/camera:239` | ADR-100：由旧 mode 派生双轴状态。switchCameraMode 提交 _cameraMode 时同步调用，作为唯一写入点。 |
-| `animateCameraVmd()` | `scene/camera/camera:799` | — |
-| `autoFrame()` | `scene/camera/camera:534` | Auto-frame the camera to centre on a bounding box. |
-| `clearCameraVmd()` | `scene/camera/camera:799` | — |
-| `defaultCameraPreset()` | `scene/camera/camera:798` | — |
-| `deriveLegacyMode()` | `scene/camera/camera:127` | ADR-100 §6.2 — 双轴 → 旧模式反查（getCameraState 降级双写 / shim 内部路由）。 |
-| `disposeCameraSystem()` | `scene/camera/camera:738` | 顶层销毁相机系统（HMR / 页面卸载 / scene 销毁时调用）。幂等。 |
-| `getAutoCameraBeatsPerSwitch()` | `scene/camera/camera:808` | — |
-| `getBoneLockDamping()` | `scene/camera/camera:801` | — |
-| `getCameraBehavior()` | `scene/camera/camera:778` | — |
-| `getCameraControl()` | `scene/camera/camera:778` | — |
-| `getCameraMode()` | `scene/camera/camera:778` | — |
-| `getCameraState()` | `scene/camera/camera:579` | — |
-| `getCameraVmdName()` | `scene/camera/camera:778` | — |
-| `getCameraVmdPath()` | `scene/camera/camera:778` | — |
-| `getConcertParams()` | `scene/camera/camera:778` | — |
-| `getConcertPaused()` | `scene/camera/camera:778` | — |
-| `getCurrentCamera()` | `scene/camera/camera:778` | — |
-| `getFocusedModelBoneNames()` | `scene/camera/camera:801` | — |
-| `getFov()` | `scene/camera/camera:778` | — |
-| `getFreeflyParams()` | `scene/camera/camera:778` | — |
-| `getOrbitBoneLock()` | `scene/camera/camera:801` | — |
-| `getOrbitParams()` | `scene/camera/camera:778` | — |
-| `getScriptedSubMode()` | `scene/camera/camera:778` | — |
-| `getSurroundParams()` | `scene/camera/camera:778` | — |
-| `getSurroundPaused()` | `scene/camera/camera:778` | — |
-| `hasCameraVmd()` | `scene/camera/camera:778` | — |
-| `initCameraSystem()` | `scene/camera/camera:315` | Initialise the camera system and create the default Orbit camera. |
-| `isAutoCameraEnabled()` | `scene/camera/camera:815` | — |
-| `loadCameraVmd()` | `scene/camera/camera:799` | — |
-| `logCameraAlpha()` | `scene/camera/camera:187` | Log current camera alpha for diagnostics. |
-| `refreshCameraUserSettings()` | `scene/camera/camera:800` | — |
-| `restoreAutoCameraState()` | `scene/camera/camera:808` | — |
-| `setAutoCameraBeatsPerSwitch()` | `scene/camera/camera:808` | — |
-| `setAutoCameraEnabled()` | `scene/camera/camera:815` | — |
-| `setBoneLockDamping()` | `scene/camera/camera:801` | — |
-| `setCameraBehavior()` | `scene/camera/camera:282` | ADR-100 P4 — 直接设置运动行为轴（轴 B，仅 orbit 有效）。 |
-| `setCameraControl()` | `scene/camera/camera:260` | ADR-100 P4 — 直接设置控制方案轴（轴 A）。 |
-| `setCameraPreset()` | `scene/camera/camera:798` | — |
-| `setCameraState()` | `scene/camera/camera:609` | — |
-| `setConcertParams()` | `scene/camera/camera:209` | — |
-| `setConcertPaused()` | `scene/camera/camera:778` | — |
-| `setFov()` | `scene/camera/camera:305` | — |
-| `setFreeflyParams()` | `scene/camera/camera:196` | — |
-| `setOrbitBoneLock()` | `scene/camera/camera:801` | — |
-| `setOrbitParams()` | `scene/camera/camera:169` | — |
-| `setSurroundParams()` | `scene/camera/camera:213` | — |
-| `setSurroundPaused()` | `scene/camera/camera:778` | — |
-| `setSyncAxesCallback()` | `scene/camera/camera:815` | — |
-| `switchCameraMode()` | `scene/camera/camera:336` | Switch to a different camera mode, preserving position as much as possible. |
+| `CameraBehavior()` | `scene/camera/camera:283` | — |
+| `CameraControl()` | `scene/camera/camera:261` | — |
+| `CameraMode()` | `scene/camera/camera:240` | — |
+| `CameraPreset()` | `scene/camera/camera:770` | — |
+| `CameraState()` | `scene/camera/camera:559` | — |
+| `ConcertParams()` | `scene/camera/camera:210` | — |
+| `FreeflyParams()` | `scene/camera/camera:197` | — |
+| `LEGACY_MODE_MAP()` | `scene/camera/camera:110` | ADR-100 §6.1 — 旧模式 → 双轴映射（迁移 / shim 共用）。 |
+| `OrbitParams()` | `scene/camera/camera:170` | — |
+| `ScriptedSubMode()` | `scene/camera/camera:770` | — |
+| `SurroundParams()` | `scene/camera/camera:214` | — |
+| `_syncAxesFromMode()` | `scene/camera/camera:240` | ADR-100：由旧 mode 派生双轴状态。switchCameraMode 提交 _cameraMode 时同步调用，作为唯一写入点。 |
+| `animateCameraVmd()` | `scene/camera/camera:802` | — |
+| `autoFrame()` | `scene/camera/camera:535` | Auto-frame the camera to centre on a bounding box. |
+| `clearCameraVmd()` | `scene/camera/camera:802` | — |
+| `defaultCameraPreset()` | `scene/camera/camera:801` | — |
+| `deriveLegacyMode()` | `scene/camera/camera:128` | ADR-100 §6.2 — 双轴 → 旧模式反查（getCameraState 降级双写 / shim 内部路由）。 |
+| `disposeCameraSystem()` | `scene/camera/camera:739` | 顶层销毁相机系统（HMR / 页面卸载 / scene 销毁时调用）。幂等。 |
+| `getAutoCameraBeatsPerSwitch()` | `scene/camera/camera:811` | — |
+| `getBoneLockDamping()` | `scene/camera/camera:804` | — |
+| `getCameraBehavior()` | `scene/camera/camera:781` | — |
+| `getCameraControl()` | `scene/camera/camera:781` | — |
+| `getCameraMode()` | `scene/camera/camera:781` | — |
+| `getCameraState()` | `scene/camera/camera:580` | — |
+| `getCameraVmdName()` | `scene/camera/camera:781` | — |
+| `getCameraVmdPath()` | `scene/camera/camera:781` | — |
+| `getConcertParams()` | `scene/camera/camera:781` | — |
+| `getConcertPaused()` | `scene/camera/camera:781` | — |
+| `getCurrentCamera()` | `scene/camera/camera:781` | — |
+| `getFocusedModelBoneNames()` | `scene/camera/camera:804` | — |
+| `getFov()` | `scene/camera/camera:781` | — |
+| `getFreeflyParams()` | `scene/camera/camera:781` | — |
+| `getOrbitBoneLock()` | `scene/camera/camera:804` | — |
+| `getOrbitParams()` | `scene/camera/camera:781` | — |
+| `getScriptedSubMode()` | `scene/camera/camera:781` | — |
+| `getSurroundParams()` | `scene/camera/camera:781` | — |
+| `getSurroundPaused()` | `scene/camera/camera:781` | — |
+| `hasCameraVmd()` | `scene/camera/camera:781` | — |
+| `initCameraSystem()` | `scene/camera/camera:316` | Initialise the camera system and create the default Orbit camera. |
+| `isAutoCameraEnabled()` | `scene/camera/camera:818` | — |
+| `loadCameraVmd()` | `scene/camera/camera:802` | — |
+| `logCameraAlpha()` | `scene/camera/camera:188` | Log current camera alpha for diagnostics. |
+| `refreshCameraUserSettings()` | `scene/camera/camera:803` | — |
+| `restoreAutoCameraState()` | `scene/camera/camera:811` | — |
+| `setAutoCameraBeatsPerSwitch()` | `scene/camera/camera:811` | — |
+| `setAutoCameraEnabled()` | `scene/camera/camera:818` | — |
+| `setBoneLockDamping()` | `scene/camera/camera:804` | — |
+| `setCameraBehavior()` | `scene/camera/camera:283` | ADR-100 P4 — 直接设置运动行为轴（轴 B，仅 orbit 有效）。 |
+| `setCameraControl()` | `scene/camera/camera:261` | ADR-100 P4 — 直接设置控制方案轴（轴 A）。 |
+| `setCameraPreset()` | `scene/camera/camera:801` | — |
+| `setCameraState()` | `scene/camera/camera:610` | — |
+| `setConcertParams()` | `scene/camera/camera:210` | — |
+| `setConcertPaused()` | `scene/camera/camera:781` | — |
+| `setFov()` | `scene/camera/camera:306` | — |
+| `setFreeflyParams()` | `scene/camera/camera:197` | — |
+| `setOrbitBoneLock()` | `scene/camera/camera:804` | — |
+| `setOrbitParams()` | `scene/camera/camera:170` | — |
+| `setSurroundParams()` | `scene/camera/camera:214` | — |
+| `setSurroundPaused()` | `scene/camera/camera:781` | — |
+| `setSyncAxesCallback()` | `scene/camera/camera:818` | — |
+| `switchCameraMode()` | `scene/camera/camera:337` | Switch to a different camera mode, preserving position as much as possible. |
 | `InvertableArcRotateCameraPointersInput()` | `scene/camera/invertablePointersInput:13` | 可反转 Y 轴的 ArcRotate 相机指针输入。 |
 | `applyEnvStateFacade()` | `scene/env/_bridge/env-bridge:49` | 等同于 scene-env.ts 的 applyEnvState，但避免循环依赖。 |
 | `registerEnvStateMiddleware()` | `scene/env/_bridge/env-bridge:378` | 注册 setEnvState 中间件（供 env-time-of-day/env-gravity 等子模块调用）。 |
@@ -2141,33 +2141,33 @@
 | `showModelPopup()` | `menus/library-browse:346` | — |
 | `ResourceViewMode()` | `menus/library-core:43` | — |
 | `abortThumbnailStreaming()` | `menus/library-core:315` | [adr-136] 取消当前正在进行的缩略图流式加载批次（如弹窗关闭/重开时调用）。 |
-| `buildLevel()` | `menus/library-core:839` | — |
-| `buildModelFormationLevel()` | `menus/library-core:883` | — |
-| `buildModelRootItems()` | `menus/library-core:914` | — |
+| `buildLevel()` | `menus/library-core:841` | — |
+| `buildModelFormationLevel()` | `menus/library-core:885` | — |
+| `buildModelRootItems()` | `menus/library-core:916` | — |
 | `buildResourceItemsForDir()` | `menus/library-core:382` | — |
 | `computeRestoreSegments()` | `menus/library-core:161` | — |
 | `getPendingMetaGuard()` | `menus/library-core:67` | — |
 | `getRelativePathUnderDir()` | `menus/library-core:83` | — |
 | `getResourceViewMode()` | `menus/library-core:47` | — |
-| `importFile()` | `menus/library-core:1008` | — |
-| `initLibrary()` | `menus/library-core:1009` | — |
+| `importFile()` | `menus/library-core:1010` | — |
+| `initLibrary()` | `menus/library-core:1011` | — |
 | `isLeafFlattenDir()` | `menus/library-core:93` | — |
 | `isModelDirTarget()` | `menus/library-core:59` | — |
 | `loadThumbnailsStreaming()` | `menus/library-core:260` | 流式加载缩略图：并发控制，每加载一张立即更新缓存并通知面板刷新， 替代一次性 GetThumbnailBatch 的"全等"模式，实现缩略图逐张出现。 |
 | `modelToResourceItem()` | `menus/library-core:365` | — |
 | `modelToRow()` | `menus/library-core:349` | — |
-| `prepareModelRestore()` | `menus/library-core:1008` | — |
-| `refreshLibrary()` | `menus/library-core:1009` | — |
-| `refreshModelRoot()` | `menus/library-core:989` | — |
-| `reloadConfig()` | `menus/library-core:1009` | — |
-| `rescanAndSync()` | `menus/library-core:1009` | — |
+| `prepareModelRestore()` | `menus/library-core:1010` | — |
+| `refreshLibrary()` | `menus/library-core:1011` | — |
+| `refreshModelRoot()` | `menus/library-core:991` | — |
+| `reloadConfig()` | `menus/library-core:1011` | — |
+| `rescanAndSync()` | `menus/library-core:1011` | — |
 | `resolveDisplayBrowseDir()` | `menus/library-core:140` | [修复] 解析模型在资源库中的"显示目录"——即用户点击该模型时实际看到的层级。 |
-| `selectOverridePath()` | `menus/library-core:1009` | — |
-| `selectResourceRoot()` | `menus/library-core:1009` | — |
+| `selectOverridePath()` | `menus/library-core:1011` | — |
+| `selectResourceRoot()` | `menus/library-core:1011` | — |
 | `setResourceViewMode()` | `menus/library-core:50` | — |
-| `showModelPopup()` | `menus/library-core:1007` | — |
+| `showModelPopup()` | `menus/library-core:1009` | — |
 | `splitSubdirSegments()` | `menus/library-core:73` | — |
-| `switchStorageMode()` | `menus/library-core:1009` | — |
+| `switchStorageMode()` | `menus/library-core:1011` | — |
 | `thumbnailKeyForModel()` | `menus/library-core:194` | — |
 | `LibraryLoadingState()` | `menus/library-session-store:51` | 资源库会话状态：加载守卫。 |
 | `LibraryRestoreState()` | `menus/library-session-store:32` | 资源库会话状态：恢复链路（上次浏览位置 + 高亮模型）。 |

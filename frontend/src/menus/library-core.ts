@@ -664,6 +664,8 @@ function openResourceFullscreen(
                 onSelectModel(m);
             },
             onEnterFolder: (p) => {
+                // [fix:round16 P3] 进入子目录前 abort 旧批次缩略图加载，避免旧请求继续占用带宽
+                abortThumbnailStreaming();
                 navigate(getBaseName(p) || p, (c) => renderPanelAt(p, c, navigate));
             },
             layout: 'grid',

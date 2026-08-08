@@ -172,7 +172,8 @@ export class PerFrameUpdateRegistry {
             }
             // 钳制最大步长（50ms），避免后台标签页恢复后极大 dt 导致物理/动画失稳或脱节
             const dt = Math.min(rawDt, 0.05);
-            for (const fn of this.fns.values()) {
+            // [fix:round16 P2] 快照迭代：防止回调内 register/unregister 修改 Map 导致迭代器行为不确定
+            for (const fn of [...this.fns.values()]) {
                 safeCallVoid('PerFrameUpdateRegistry', 'update error', () => fn(dt));
             }
         });
