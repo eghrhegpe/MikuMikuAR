@@ -10,7 +10,8 @@ import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { DynamicTexture } from '@babylonjs/core/Materials/Textures/dynamicTexture';
 import { Material } from '@babylonjs/core/Materials/material';
 import { scene } from '../scene';
-import { _envSys } from '../env/env-impl';
+// [fix:round15 P1] 走门面而非直接 import env-impl
+import { _envSys } from '../env/env';
 import { setReflectionARSuspended } from '../env/env-reflection';
 import { getRenderState, setRenderState } from '../render/renderer';
 import { startARCamera, stopARCamera, captureARScreenshot, isARActive } from './ar-camera';

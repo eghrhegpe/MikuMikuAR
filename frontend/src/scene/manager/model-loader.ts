@@ -584,6 +584,16 @@ export async function loadPMXFile(
             // Register via ModelManager only — it owns the registry
             _modelManager.register(inst);
             registeredId = id;
+            // [fix:round15 P2] Stage 分支注册后 abort 检查，与 Actor 路径（line 719）对称。
+            // 若 abort 发生在 register 与 return 之间，清理已注册的 stage 模型避免泄漏。
+            if (effectiveSignal.aborted) {
+                try {
+                    _modelManager.remove(registeredId);
+                } catch (e) {
+                    logWarn('model-loader', 'Stage cleanup after abort:', e);
+                }
+                return null;
+            }
             setTransformMetadata(inst.rootMesh, 'stage', id);
             // Pre-capture material original values for reset functionality
             for (let i = 0; i < meshes.length; i++) {

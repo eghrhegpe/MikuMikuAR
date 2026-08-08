@@ -9,9 +9,10 @@
 import { getMotionPipeline } from './motion-pipeline';
 
 import { modelManager, focusedModelId, triggerAutoSave } from '../scene';
-// scene 实例走 env-impl 的 getScene() 延迟获取，避免与 scene.ts 形成静态循环依赖
+// scene 实例走门面 getScene() 延迟获取，避免与 scene.ts 形成静态循环依赖
 // (scene.ts → proc-motion-bridge.ts → perception.ts → scene.ts)
-import { getScene } from '../env/env-impl';
+// [fix:round15 P1] 走门面而非直接 import env-impl
+import { getScene } from '../env/env';
 
 import {
     type Emotion,

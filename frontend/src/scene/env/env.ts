@@ -13,6 +13,8 @@ export { registerSceneTickCallback } from './env-impl';
 export { ensureEnvUpdateObserver } from './env-impl';
 // Re-export observer dispose for scene cleanup
 export { disposeEnvUpdateObserver } from './env-impl';
+// Re-export getScene for perception layer (break circular dependency)
+export { getScene } from './env-impl';
 
 // Time-of-Day 使用 env-time-of-day.ts 的实现（统一的 scene observer）
 import {

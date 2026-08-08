@@ -41,6 +41,7 @@ symbols:
   - ensureEnvUpdateObserver
   - getGroundHeightAt
   - getMirrorInfo
+  - getScene
   - getTimeOfDaySpeed
   - initEnvFacade
   - isMirrorActive

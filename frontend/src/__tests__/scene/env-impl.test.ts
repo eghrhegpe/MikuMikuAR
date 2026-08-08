@@ -12,7 +12,87 @@ vi.mock('../../scene/scene', () => ({
     scene: {} as unknown as Scene,
 }));
 
-import { _envSys, getGroundHeightAt } from '../../scene/env/env-impl';
+// ======== disposeEnvUpdateObserver 修复分支覆盖所用的 mock 基础设施 ========
+// 用 importActual 保留真实导出（如 getGroundHeightAt），仅 stub 掉 dispose 路径调用到的重函数，
+// 避免触发真实 Babylon 场景销毁逻辑，同时不破坏上方已有的 getGroundHeightAt 用例。
+const _m = vi.hoisted(() => ({
+    clearSceneTickCallbacks: vi.fn(),
+    clearEnvDtTickCallbacks: vi.fn(),
+    runSceneTickCallbacks: vi.fn(),
+    runEnvDtTickCallbacks: vi.fn(),
+    registerEnvCallback: vi.fn(),
+    registerSceneTickCallback: vi.fn(),
+    dispatchEnvChange: vi.fn(),
+    disposeTextureCache: vi.fn(),
+    _disposeGround: vi.fn(),
+    clearGroundTexCache: vi.fn(),
+    clearStarsTexCache: vi.fn(),
+    updateUnderwaterTransition: vi.fn(),
+    resetUnderwaterState: vi.fn(),
+    updateGroundRipples: vi.fn(),
+    resetCausticsSyncGuard: vi.fn(),
+    createParticleEmitter: vi.fn(),
+    disposeParticles: vi.fn(),
+    updateParticleWind: vi.fn(),
+    updateParticleParams: vi.fn(),
+    updateParticleTexture: vi.fn(),
+    syncSplashState: vi.fn(),
+    disposeSplash: vi.fn(),
+    getCurrentParticleType: vi.fn(() => 'none'),
+    causticsDispose: vi.fn(),
+    underwaterReset: vi.fn(),
+}));
+
+vi.mock('../../scene/env/_bridge/env-dispatcher', async (importActual) => ({
+    ...(await importActual<typeof import('../../scene/env/_bridge/env-dispatcher')>()),
+    clearSceneTickCallbacks: _m.clearSceneTickCallbacks,
+    clearEnvDtTickCallbacks: _m.clearEnvDtTickCallbacks,
+    runSceneTickCallbacks: _m.runSceneTickCallbacks,
+    runEnvDtTickCallbacks: _m.runEnvDtTickCallbacks,
+    registerEnvCallback: _m.registerEnvCallback,
+    registerSceneTickCallback: _m.registerSceneTickCallback,
+    dispatchEnvChange: _m.dispatchEnvChange,
+}));
+vi.mock('../../scene/env/_shared/env-texture', async (importActual) => ({
+    ...(await importActual<typeof import('../../scene/env/_shared/env-texture')>()),
+    disposeTextureCache: _m.disposeTextureCache,
+}));
+vi.mock('../../scene/env/env-ground', async (importActual) => ({
+    ...(await importActual<typeof import('../../scene/env/env-ground')>()),
+    disposeGround: _m._disposeGround,
+    clearGroundTexCache: _m.clearGroundTexCache,
+}));
+vi.mock('../../scene/env/env-sky', async (importActual) => ({
+    ...(await importActual<typeof import('../../scene/env/env-sky')>()),
+    clearStarsTexCache: _m.clearStarsTexCache,
+}));
+vi.mock('../../scene/env/env-water', async (importActual) => ({
+    ...(await importActual<typeof import('../../scene/env/env-water')>()),
+    updateUnderwaterTransition: _m.updateUnderwaterTransition,
+    resetUnderwaterState: _m.resetUnderwaterState,
+    updateGroundRipples: _m.updateGroundRipples,
+    resetCausticsSyncGuard: _m.resetCausticsSyncGuard,
+}));
+vi.mock('../../scene/env/env-particles', async (importActual) => ({
+    ...(await importActual<typeof import('../../scene/env/env-particles')>()),
+    createParticleEmitter: _m.createParticleEmitter,
+    disposeParticles: _m.disposeParticles,
+    updateParticleWind: _m.updateParticleWind,
+    updateParticleParams: _m.updateParticleParams,
+    updateParticleTexture: _m.updateParticleTexture,
+    syncSplashState: _m.syncSplashState,
+    disposeSplash: _m.disposeSplash,
+    getCurrentParticleType: _m.getCurrentParticleType,
+}));
+vi.mock('../../scene/env/env-caustics', () => ({
+    causticsController: { dispose: _m.causticsDispose },
+}));
+vi.mock('../../scene/env/env-underwater-fog', () => ({
+    underwaterFogController: { reset: _m.underwaterReset },
+}));
+
+import { _envSys, getGroundHeightAt, initEnvImpl, disposeEnvUpdateObserver } from '../../scene/env/env-impl';
+import { isInitialized, resetEnvContext } from '../../scene/env/_shared/env-context';
 import { envState } from '../../core/config';
 
 let engine: NullEngine;
@@ -165,5 +245,57 @@ describe('getGroundHeightAt — 平面倾斜（getTiltedPlaneHeight）', () => {
         expect(getGroundHeightAt(0, 0)).toBeCloseTo(10, 5);
         // z=10 → L - tan(30°)·10 ≈ 4.2265
         expect(getGroundHeightAt(0, 10)).toBeCloseTo(10 - Math.tan(theta) * 10, 3);
+    });
+});
+
+describe('disposeEnvUpdateObserver — fix P2/P3 资源复位分支', () => {
+    const mockScene = { fogMode: -1 } as unknown as Scene;
+    const mockPipeline = {} as unknown as Scene;
+
+    beforeEach(() => {
+        // 每个用例前确保未初始化（resetEnvContext），并清空 mock 调用记录
+        resetEnvContext();
+        for (const fn of Object.values(_m)) {
+            (fn as ReturnType<typeof vi.fn>).mockClear();
+        }
+    });
+
+    it('未初始化时幂等 no-op：不抛错且不触发任何清理/复位', () => {
+        expect(isInitialized()).toBe(false);
+        expect(() => disposeEnvUpdateObserver()).not.toThrow();
+        expect(_m.clearSceneTickCallbacks).not.toHaveBeenCalled();
+        expect(_m.clearEnvDtTickCallbacks).not.toHaveBeenCalled();
+        expect(_m.causticsDispose).not.toHaveBeenCalled();
+        expect(_m.resetCausticsSyncGuard).not.toHaveBeenCalled();
+        expect(_m.underwaterReset).not.toHaveBeenCalled();
+        expect(_m.disposeTextureCache).not.toHaveBeenCalled();
+        expect(_m._disposeGround).not.toHaveBeenCalled();
+        expect(_m.clearGroundTexCache).not.toHaveBeenCalled();
+        expect(_m.clearStarsTexCache).not.toHaveBeenCalled();
+        expect(_m.resetUnderwaterState).not.toHaveBeenCalled();
+    });
+
+    it('初始化后 dispose 触发全部新增清理/复位路径（fix P2/P3）', () => {
+        initEnvImpl(mockScene, mockPipeline);
+        expect(isInitialized()).toBe(true);
+
+        disposeEnvUpdateObserver();
+
+        // [fix P2] resetEnvContext 使 isInitialized 回到 false（幽灵引用复位）
+        expect(isInitialized()).toBe(false);
+        // [fix P2] clearSceneTickCallbacks / clearEnvDtTickCallbacks / caustics / causticsSyncGuard
+        expect(_m.clearSceneTickCallbacks).toHaveBeenCalledTimes(1);
+        expect(_m.clearEnvDtTickCallbacks).toHaveBeenCalledTimes(1);
+        expect(_m.causticsDispose).toHaveBeenCalledTimes(1);
+        expect(_m.resetCausticsSyncGuard).toHaveBeenCalledTimes(1);
+        // [fix P2] underwaterFogController.reset
+        expect(_m.underwaterReset).toHaveBeenCalledWith(mockScene);
+        // 纹理 / 地面 / 星空缓存释放
+        expect(_m.disposeTextureCache).toHaveBeenCalledTimes(1);
+        expect(_m._disposeGround).toHaveBeenCalledTimes(1);
+        expect(_m.clearGroundTexCache).toHaveBeenCalledTimes(1);
+        expect(_m.clearStarsTexCache).toHaveBeenCalledTimes(1);
+        // [fix P2] resetUnderwaterState
+        expect(_m.resetUnderwaterState).toHaveBeenCalledWith(mockScene, mockPipeline);
     });
 });

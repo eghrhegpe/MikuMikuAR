@@ -17,7 +17,8 @@ import {
     type PerceptionTier,
 } from './perception-shared';
 import { logWarn } from '@/core/logger';
-import { getScene } from '../env/env-impl';
+// [fix:round15 P1] 走门面而非直接 import env-impl
+import { getScene } from '../env/env';
 
 /** [doc:adr-164] medium 档最多保留的非焦点非 pinned 模型数（可配置） */
 const _mediumMaxOthers = 10;
