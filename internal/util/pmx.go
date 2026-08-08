@@ -2,7 +2,9 @@ package util
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"unicode/utf16"
@@ -41,7 +43,9 @@ func parsePMXHeaderUnsafe(path string) (*PMXMeta, error) {
 	// Read first 8192 bytes — enough for the header area including long comments
 	buf := make([]byte, 8192)
 	n, err := f.Read(buf)
-	if err != nil {
+	// EOF 且已读到数据（n>0）属正常：小 PMX <8192 字节正好读完；
+	// 仅真正的 I/O 错误或空文件（读到 0 字节的 EOF）才返回错误。
+	if err != nil && !(errors.Is(err, io.EOF) && n > 0) {
 		return nil, WrapError(op, fmt.Errorf("read header: %w", err))
 	}
 	meta := parsePMXHeaderBytes(buf[:n])
