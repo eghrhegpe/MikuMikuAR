@@ -67,7 +67,12 @@ func (a *App) getConfigUnsafe() (*Config, error) {
 func (a *App) GetConfig() (*Config, error) {
 	a.configMu.RLock()
 	defer a.configMu.RUnlock()
-	return a.getConfigUnsafe()
+	cfg, err := a.getConfigUnsafe()
+	if err != nil {
+		return nil, err
+	}
+	// 返回深拷贝，避免调用方（锁已释放后）改写共享的 cachedCfg 底层数据。
+	return cloneConfig(cfg)
 }
 
 // cloneConfig returns a deep copy of cfg via JSON round-trip, so callers can
