@@ -13,11 +13,12 @@ adr:
   - ADR-147
   - ADR-116
 symbols:
-  - MotionPipeline
-  - getMotionPipeline
   - FrameContext
-  - PipelineStage
+  - MotionPipeline
   - PipelineLayer
+  - PipelineStage
+  - __resetMotionPipelineForTest
+  - getMotionPipeline
 invariants:
   - 管线按 (stageIndex, order) 升序统一执行，与注册时序彻底解耦
   - 阶段常量：vmd-base / vmd-layers / proc-motion / bone-override / perception（Ragdoll 已永久移除）

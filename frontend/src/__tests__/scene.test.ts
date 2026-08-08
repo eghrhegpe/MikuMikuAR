@@ -353,7 +353,10 @@ vi.mock('../core/dispose-helpers', () => ({ safeDispose: shared.safeDispose }));
 vi.mock('../core/async', () => ({ swallowError: shared.swallowError }));
 vi.mock('../core/logger', () => ({ logWarn: shared.logWarn }));
 vi.mock('../core/i18n/t', () => ({ t: shared.t }));
-vi.mock('../core/reactivity', () => ({ unsubscribeAll: shared.unsubscribeAll }));
+vi.mock('../core/reactivity', () => ({
+    reactive: <T extends object>(obj: T) => obj,
+    unsubscribeAll: shared.unsubscribeAll,
+}));
 vi.mock('../core/scene-state', () => ({ createDefaultFeetState: shared.createDefaultFeetState }));
 vi.mock('../core/gpu-capabilities', () => ({ detectKtx2Support: shared.detectKtx2Support }));
 vi.mock('../core/ai/scene-snapshot', () => ({

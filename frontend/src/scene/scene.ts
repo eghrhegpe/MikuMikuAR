@@ -268,6 +268,21 @@ export function applyFrameControl(): void {
 }
 
 /**
+ * [fix:round14 P1] 子系统 dispose 安全包装：捕获抛错确保级联不被中断。
+ * 用于 disposeScene() 中段——任一子系统抛错不得阻断后续 scene/engine.dispose()。
+ *
+ * @param name 子系统标识（用于错误日志）
+ * @param fn 无参 dispose 函数
+ */
+function tryDisposeSubsystem(name: string, fn: () => void): void {
+    try {
+        fn();
+    } catch (e) {
+        console.error(`[disposeScene] ${name} dispose failed; continuing cascade`, e);
+    }
+}
+
+/**
  * 级联释放 Scene → Engine 及其所有子资源。
  * - 同步操作，仅在 beforeunload（真正退出）或 initScene HMR 重入时调用。
  * - ⚠️ 禁止挂在 visibilitychange / pagehide —— hidden 在最小化/切后台即触发，
@@ -297,36 +312,41 @@ export function disposeScene(): void {
 
     // 3. [fix:P3] 释放程序化动作模块（BeatDetector + perception observer）
     //    proc-motion-bridge 已静态导入，同步释放以保持 disposeScene 同步级联契约
-    disposeProcMotion();
+    // [fix:round14 P1] try/catch 隔离：任一子系统 dispose 抛错不得阻断后续级联，
+    // 确保 scene.dispose() / engine.dispose() 必达（否则 WebGL 上下文永久泄漏）。
+    tryDisposeSubsystem('proc-motion', disposeProcMotion);
 
     // 3.5 [fix P2] 释放 Gizmo（含拖拽中 flush 回写）——layer 绑定在即将 dispose 的 scene 上，
     //    不释放会导致 initTransformGizmo 跨场景复用失效 layer
-    detachGizmo();
+    tryDisposeSubsystem('gizmo', detachGizmo);
 
     // 4. 释放反射系统、渲染管线、环境更新、物理风系统
-    disposeReflection();
-    disposeRenderer();
-    disposeEnvUpdateObserver();
-    disposeWindPhysics();
+    tryDisposeSubsystem('reflection', disposeReflection);
+    tryDisposeSubsystem('renderer', disposeRenderer);
+    tryDisposeSubsystem('env-update-observer', disposeEnvUpdateObserver);
+    tryDisposeSubsystem('wind-physics', disposeWindPhysics);
     // [audit:跨模块耦合 P3] 释放灯光系统：lightingState 单例的 hemiLight/dirLight
     // 引用残留已 dispose 的旧灯光对象（引用非 null 但对象已销毁）——dispose→re-init
     // 之间若 env-bridge/scene-serialize 调 getLightState() 会读 disposed 对象属性。
     // initLighting 有兜底 guard，但显式释放与其他子系统 dispose 对齐更安全。
-    // [fix P3-A] try/catch 隔离：disposeLighting 内部子释放若抛错，不得阻断后续
-    // disposeCameraSystem / scene.dispose / engine.dispose 级联终态（否则 WebGL 上下文泄漏）。
-    try {
-        disposeLighting();
-    } catch (e) {
-        console.error('[disposeScene] disposeLighting failed; continuing cascade', e);
-    }
+    tryDisposeSubsystem('lighting', disposeLighting);
     // [audit:round13 P2] 级联释放相机系统（stop 各行为循环 + dispose 当前相机 + 清理运行时上下文）。
     // 此前 disposeCameraSystem 是全工程无调用点的死代码；HMR 重入 _reinitSceneForHMR 会再次
     // initCameraSystem(scene, canvas) 重建，故此处调用是安全且必须的（否则旧相机引用/触摸监听残留）。
-    disposeCameraSystem();
+    tryDisposeSubsystem('camera-system', disposeCameraSystem);
 
     // 5. Scene → Engine 级联释放（WebGL 上下文最终释放）
-    scene.dispose();
-    engine.dispose();
+    // [fix:round14 P1] scene/engine dispose 单独 try/catch，确保至少 engine.dispose() 执行
+    try {
+        scene.dispose();
+    } catch (e) {
+        console.error('[disposeScene] scene.dispose failed:', e);
+    }
+    try {
+        engine.dispose();
+    } catch (e) {
+        console.error('[disposeScene] engine.dispose failed:', e);
+    }
 }
 
 export let modelManager: ModelManager;
@@ -382,10 +402,31 @@ function _getRendererInfo(): { vendor: string; renderer: string } {
 }
 
 /**
+ * [fix:round14 P2] 并发守卫：防止 initScene() 重入导致重复创建 runtime/ModelManager。
+ * 首次调用时持有 promise，后续并发调用等待同一 promise 完成。
+ */
+let _initPromise: Promise<void> | null = null;
+
+/**
  * 场景初始化入口。首次调用时创建 Scene/Engine/运行时；
  * HMR 重入时先调用 _reinitSceneForHMR() 清理旧资源再重建。
  */
 export async function initScene(): Promise<void> {
+    // [fix:round14 P2] 并发守卫：若已有 init 进行中，等待其完成而非重复创建
+    if (_initPromise) {
+        await _initPromise;
+        return;
+    }
+    _initPromise = _doInitScene();
+    try {
+        await _initPromise;
+    } finally {
+        _initPromise = null;
+    }
+}
+
+/** 实际 init 逻辑（抽取为内部函数以便并发守卫包装）。 */
+async function _doInitScene(): Promise<void> {
     if (_sceneInitialized) {
         await _reinitSceneForHMR();
     }
@@ -459,7 +500,11 @@ async function _reinitSceneForHMR(): Promise<void> {
     (await import('./motion/bone-override')).stopBoneOverride();
     (await import('./motion/feet-adjustment')).stopFeetAdjustment();
     (await import('./motion/footstep')).stopFootstep();
+    // [fix:round14 P2] disposeAudio() 释放 StreamAudioPlayer / _audioCtx / _fadeGain，
+    // 避免 HMR 时 AudioContext 泄漏（浏览器限制 ~6 个）。disposeAudioBus 清理 master gain/ctx，
+    // disposeAudio 清理 stream player —— 二者职责互补，需同时调用。
     (await import('../core/audio-bus')).disposeAudioBus();
+    (await import('../core/audio')).disposeAudio();
     unsubscribeAll();
     (await import('./env/_bridge/env-persist')).cancelEnvPersistTimer();
     (await import('./env/env')).stopTimeOfDay();

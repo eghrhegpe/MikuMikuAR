@@ -100,10 +100,14 @@ export class MotionPipeline {
         this.sorted = true;
     }
 
-    /** 返回按 (stage, order) 升序排列的只读层列表。 */
+    /**
+     * 返回按 (stage, order) 升序排列的只读层列表。
+     * [fix:round14 P3] 返回浅拷贝，封死外部 push/splice 写入口，
+     * 避免绕过 sorted 标志污染管线内部状态。
+     */
     getOrderedLayers(): readonly PipelineLayer[] {
         this.ensureSorted();
-        return this.layers;
+        return this.layers.slice();
     }
 
     /** 按序执行所有层。 */
@@ -136,4 +140,13 @@ export function getMotionPipeline(): MotionPipeline {
         _instance = new MotionPipeline();
     }
     return _instance;
+}
+
+/**
+ * [fix:round14 P2] 测试/HMR 场景下重置管线单例。
+ * 防止测试间状态泄漏（如 bone-override 层残留污染后续测试）。
+ * 仅在 test 环境或显式调用时生效。
+ */
+export function __resetMotionPipelineForTest(): void {
+    _instance = null;
 }

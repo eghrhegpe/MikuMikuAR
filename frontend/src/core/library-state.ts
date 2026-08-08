@@ -52,6 +52,15 @@ export function setThumbnailCache(m: Map<string, string>): void {
     _thumbnailUpdateCb?.();
 }
 
+/**
+ * [fix:round14 P3] 清空缩略图缓存。
+ * 场景切换或库路径变更时调用，释放旧缩略图内存。
+ */
+export function clearThumbnailCache(): void {
+    thumbnailCache.clear();
+    _thumbnailUpdateCb?.();
+}
+
 // ======== Recent Models ========
 
 export let recentModels: string[] = [];
@@ -91,6 +100,14 @@ export function getRecentMotions(): readonly RecentMotion[] {
     return [..._recentMotions]; // [audit:P2] 返回副本，防外部绕过 setter 直接 mutate
 }
 
+/**
+ * [fix:round14 P3] 清空最近动作列表。
+ * 测试 teardown 或用户手动清除时调用。
+ */
+export function clearRecentMotions(): void {
+    _recentMotions = [];
+}
+
 // ======== Model Metadata Cache ========
 
 export let modelMetaCache = new Map<string, { comment: string }>();
@@ -108,4 +125,12 @@ export function toggleExpandedFolder(path: string): void {
     } else {
         expandedFolders.add(path);
     }
+}
+
+/**
+ * [fix:round14 P3] 清空已展开文件夹集合。
+ * 库路径切换或文件夹删除时调用，消除幽灵展开状态。
+ */
+export function clearExpandedFolders(): void {
+    expandedFolders.clear();
 }

@@ -23,6 +23,9 @@ symbols:
   - addRecentMotion
   - allModels
   - autoLoop
+  - clearExpandedFolders
+  - clearRecentMotions
+  - clearThumbnailCache
   - createDefaultFeetState
   - displayNamePriority
   - envState
