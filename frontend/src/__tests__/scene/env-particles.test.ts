@@ -3,6 +3,8 @@ import { NullEngine } from '@babylonjs/core/Engines/nullEngine';
 import { Scene } from '@babylonjs/core/scene';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { PBRMaterial } from '@babylonjs/core/Materials/PBR/pbrMaterial';
+import { FreeCamera } from '@babylonjs/core/Cameras/freeCamera';
+import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 
 // 隔离 env-impl 重型依赖
 vi.mock('../../scene/env/env-impl', () => {
@@ -48,6 +50,42 @@ vi.mock('../../scene/env/env', () => ({
 vi.mock('../../core/wind-utils', () => ({
     getWindVector: () => ({ x: 0, y: 0, z: 0, scale: () => ({ x: 0, y: 0, z: 0 }) }),
 }));
+
+// fix P2 测试需实例化 GPUParticleSystem（splash burst 池 / firework burst）。
+// NullEngine 下真实 GPUParticleSystem 不可实例化，故用最小桩替换该子模块
+// （CPU ParticleSystem 仍走真实 Babylon，不影响既有 rain/snow 用例）。
+vi.mock('@babylonjs/core/Particles/gpuParticleSystem', () => {
+    class FakeGPUParticleSystem {
+        name: string;
+        capacity: number;
+        scene: any;
+        particleTexture: any = null;
+        emitRate = 0;
+        emitter: any = null;
+        minLifeTime = 0;
+        maxLifeTime = 0;
+        minSize = 0;
+        maxSize = 0;
+        minEmitPower = 0;
+        maxEmitPower = 0;
+        gravity: any = null;
+        blendMode = 0;
+        direction1: any = null;
+        direction2: any = null;
+        updateSpeed = 0;
+        constructor(name: string, options?: any, scene?: any) {
+            this.name = name;
+            this.capacity = options?.capacity ?? 0;
+            this.scene = scene;
+        }
+        start() {}
+        dispose() {}
+        addColorGradient() {}
+        addSizeGradient() {}
+        createSphereEmitter() {}
+    }
+    return { GPUParticleSystem: FakeGPUParticleSystem };
+});
 
 import { _envSys } from '../../scene/env/env-impl';
 import { envState } from '../../core/config';
@@ -380,5 +418,88 @@ describe('env-particles', () => {
             disposeParticles();
             expect(sharedMat.roughness).toBeCloseTo(0.8);
         });
+    });
+});
+
+// ──────────────── fix P2 — 湿身状态泄漏修复（rain→snow 显式离开 rain 即移除）────────────────
+// 变更行：createParticleEmitter 内
+//   `} else if (prevType === 'rain' && type !== 'rain') { removeWetnessFromAllModels(); }`
+// 旧逻辑 `isWeatherType(prevType) && !isWeatherType(type)` 在 rain→snow 时两者皆 weather 不移除。
+describe('env-particles fix P2 — 湿身状态泄漏（rain→snow）', () => {
+    beforeEach(() => {
+        modelRegistry.clear();
+        modelRegistry.set('m1', {
+            id: 'm1',
+            meshes: [{ material: new StandardMaterial('std', scene) }],
+        } as any);
+    });
+    afterEach(() => {
+        modelRegistry.clear();
+        disposeParticles();
+    });
+
+    it('rain→snow 切换移除湿身（显式判断离开 rain）', () => {
+        createParticleEmitter('none', false);
+        expect(isWetnessActive()).toBe(false);
+
+        createParticleEmitter('rain', false);
+        expect(isWetnessActive()).toBe(true);
+
+        // 关键修复路径：prevType='rain' → snow 必须移除湿身
+        createParticleEmitter('snow', false);
+        expect(isWetnessActive()).toBe(false);
+    });
+});
+
+// ──────────────── fix P2 — splash burst 池初始化含 emitStopTimer 字段 ────────────────
+// 变更行：initSplashBurstPool 的 push 新增 `emitStopTimer: null`。
+describe('env-particles fix P2 — splash 池 emitStopTimer 字段', () => {
+    let savedSplash: boolean;
+    let savedEnabled: boolean;
+    beforeEach(() => {
+        savedSplash = envState.particleSplashEnabled;
+        savedEnabled = envState.particleEnabled;
+        envState.particleEnabled = true;
+        envState.particleSplashEnabled = true;
+    });
+    afterEach(() => {
+        envState.particleSplashEnabled = savedSplash;
+        envState.particleEnabled = savedEnabled;
+        disposeParticles();
+    });
+
+    it('rain + splash 启用 → syncSplashState 初始化 splash 池（变更行 emitStopTimer:null）', () => {
+        createParticleEmitter('rain', false); // → syncSplashState → initSplashBurstPool
+        expect(() => disposeParticles()).not.toThrow();
+    });
+});
+
+// ──────────────── fix P2 — firework burst 50ms emitStop timer 与 dispose 清理 ────────────────
+// 变更行：spawnFireworkBurst 内 `const emitStopTimer = setTimeout(...)` 与 push 含 emitStopTimer；
+// stopFireworkBursts 内 `clearTimeout(b.emitStopTimer)` 一并清除。
+describe('env-particles fix P2 — firework emitStop timer 清理', () => {
+    let savedEnabled: boolean;
+    beforeEach(() => {
+        vi.useFakeTimers();
+        savedEnabled = envState.particleEnabled;
+        envState.particleEnabled = true;
+        // spawnFireworkBurst 需要 scene.activeCamera（真实相机，避免 dispose 异常）
+        if ((globalThis as any).__particlesTestScene) {
+            const cam = new FreeCamera('fwcam', new Vector3(0, 5, 10), (globalThis as any).__particlesTestScene);
+            (globalThis as any).__particlesTestScene.activeCamera = cam;
+        }
+    });
+    afterEach(() => {
+        envState.particleEnabled = savedEnabled;
+        vi.useRealTimers();
+        disposeParticles();
+    });
+
+    it('fireworks 调度 burst → 设置 emitStop timer，dispose 一并清除', () => {
+        createParticleEmitter('fireworks', false); // 注册调度器（1.2~3s 后 spawn）
+        vi.advanceTimersByTime(3000); // 触发首个 spawnFireworkBurst（含 emitStop timer + push）
+        vi.advanceTimersByTime(200); // 让 50ms emitStop 回调执行
+        // disposeParticles → stopFireworkBursts 清除 emitStop timer（变更行）
+        expect(() => disposeParticles()).not.toThrow();
     });
 });

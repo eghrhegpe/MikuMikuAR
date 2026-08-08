@@ -53,6 +53,7 @@ import { envState } from '../../core/config';
 import {
     createWater,
     disposeWater,
+    resetCausticsSyncGuard,
     updateWaterAnimSpeed,
     _applyWaterLOD,
     selectWaterLOD,
@@ -713,5 +714,14 @@ describe('reflection quality toggle — P1 修复（ADR-114）', () => {
         const matOff = _envSys.water.material as any;
         expect(matOff.options.defines ?? []).not.toContain('PLANAR_REFLECTION');
         expect(matOff).not.toBe(matOn);
+    });
+});
+
+// ──────────────── 焦散 config diff guard 复位（fix code_review P2）────────────────
+// 变更行：resetCausticsSyncGuard() 将模块级 _causticsLastConfig 复位为 NaN，
+// 使 dispose 后下次 dt tick 的 diff 守卫（causticScrollX !== NaN 恒真）重新触发 setConfig。
+describe('Water 焦散 — resetCausticsSyncGuard 复位 diff guard', () => {
+    it('调用 resetCausticsSyncGuard 不抛错（覆盖变更行）', () => {
+        expect(() => resetCausticsSyncGuard()).not.toThrow();
     });
 });

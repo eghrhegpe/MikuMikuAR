@@ -12,6 +12,8 @@ scope:
   - frontend/src/scene/manager/model-loader.ts
 source_files:
   - frontend/src/scene/manager/model-loader.ts
+tests:
+  - frontend/src/__tests__/model-loader.test.ts
 symbols:
   - loadPMXFile
   - initLoader
@@ -23,7 +25,6 @@ invariants:
   - loadPMXFile 经 readFileBytes（backend 代理）读取 PMX/资源字节，调用 babylon-mmd ImportMeshAsync
   - 实例创建后写入 modelRegistry 并触发缩略图捕获、rebuildShadowCasters
   - initLoader 注入 reGroundAllModels、retryWindPhysicsSubscription 等回调防循环依赖
-tests: []
 use_when:
   - 模型加载
   - PMX 解析

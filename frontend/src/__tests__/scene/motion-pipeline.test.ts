@@ -1,7 +1,7 @@
 // ADR-147 Phase 1 — MotionPipeline 排序不变量单测。
 // 核心断言：执行序只由 (stage, order) 决定，与 register 调用顺序无关。
 import { describe, it, expect, vi } from 'vitest';
-import { MotionPipeline } from '@/scene/motion/motion-pipeline';
+import { MotionPipeline, getMotionPipeline, __resetMotionPipelineForTest } from '@/scene/motion/motion-pipeline';
 import type { PipelineLayer } from '@/scene/motion/motion-pipeline';
 
 function makeLayer(id: string, stage: PipelineLayer['stage'], order: number): PipelineLayer {
@@ -75,5 +75,36 @@ describe('MotionPipeline (ADR-147 Phase 1)', () => {
 
         expect(() => pipeline.runFrame(ctx)).not.toThrow();
         expect(seq).toEqual(['after']); // 后续层仍执行
+    });
+
+    it('getOrderedLayers 返回浅拷贝，外部写不污染内部状态（[fix:round14 P3] slice）', () => {
+        const pipeline = new MotionPipeline();
+        pipeline.register(makeLayer('vb', 'vmd-base', 0));
+        pipeline.register(makeLayer('p', 'perception', 0));
+
+        const layers = pipeline.getOrderedLayers() as PipelineLayer[];
+        // 外部 push / splice 不得影响内部
+        layers.push(makeLayer('evil', 'perception', 99));
+        layers.splice(0, 1);
+
+        const fresh = pipeline.getOrderedLayers().map((l) => l.id);
+        expect(fresh).toEqual(['vb', 'p']); // 内部未被篡改
+        expect(pipeline.size).toBe(2);
+    });
+});
+
+describe('MotionPipeline 单例（[fix:round14 P2] __resetMotionPipelineForTest）', () => {
+    it('reset 后 getMotionPipeline 返回全新实例，避免测试间状态泄漏', () => {
+        const a = getMotionPipeline();
+        expect(a).toBe(getMotionPipeline()); // 同一单例
+
+        __resetMotionPipelineForTest();
+
+        const b = getMotionPipeline();
+        expect(b).not.toBe(a); // 重新创建
+        expect(b.size).toBe(0);
+
+        // 还原，避免影响其它用例
+        __resetMotionPipelineForTest();
     });
 });
