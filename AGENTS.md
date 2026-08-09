@@ -12,6 +12,7 @@
 > 批量重构（重命名/移函数/加参数）用 `npm run codemod`（AST 感知），禁止 Python re.sub 或手动跨文件改。
 > 用户描述 UI 文案/点击问题时，先查 `frontend/src/core/i18n` 翻译文件反查定位对应 UI 元素（意图识别），再跳源码。
 > 信任本机改动，提交代码时：先测试 → `git status --short` 抓清单 → 按功能 `git add <通过测试的路径...>` → `git commit`。正常的更改，无需询问。先提交`docs/`,捎带了无关文件也别怕。
+> 如果测试写入难度较大，建议改进源码的可测性与潜在风险。
 > 最后询问用户是否需要处理预料之外的报错。
 > babymmd的换算关系是：1 unit = 0.1 米。
 > 禁止从 `@/core/utils` 神桶导入（ADR-191）——纯/叶子模块须引具体零依赖叶（`@/core/clamp`/`@/core/path`/`@/core/async`），整桶 import 会拖起 dom/state/fileservice 致 vitest fork worker 挂死。
