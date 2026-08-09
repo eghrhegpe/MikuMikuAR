@@ -44,6 +44,8 @@ jobs:
       - uses: actions/checkout@v5
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
+        with:
+          node-version: ${{ vars.NODE_VERSION || '24' }}
 
       - name: Restore Vite build cache
         uses: actions/cache@v4

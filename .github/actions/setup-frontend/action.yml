@@ -45,10 +45,12 @@ runs:
     - name: Setup Node.js
       uses: actions/setup-node@v5
       with:
-        # 版本单点：仓库级变量 vars.NODE_VERSION 优先（GitHub Settings → Variables 配置），
-        # 调用方显式传 node-version 可覆盖（release/cache-warm 传 env.NODE_VERSION），
-        # 都未设置时回退本 input 默认值 24。
-        node-version: ${{ vars.NODE_VERSION || inputs.node-version }}
+        # 版本单点：本 action 内部**不能**用 vars/env 上下文（GitHub 限制，
+        # composite action 表达式只支持 inputs/github 等），否则整个 action 解析
+        # 失败、所有 workflow 秒挂（e4f537a4 教训）。由调用方在 workflow 层解析：
+        #   node-version: ${{ vars.NODE_VERSION || '24' }}
+        # （release/cache-warm 走 env.NODE_VERSION，env 值同样引用 vars）。
+        node-version: ${{ inputs.node-version }}
         cache: ${{ inputs.cache }}
         cache-dependency-path: ${{ inputs.working-directory }}/package-lock.json
 

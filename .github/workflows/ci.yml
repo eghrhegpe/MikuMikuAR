@@ -24,6 +24,8 @@ jobs:
           fetch-depth: '0' # diff-coverage gate 需要完整 git 历史
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
+        with:
+          node-version: ${{ vars.NODE_VERSION || '24' }}
 
       - name: Type check
         run: npx tsc --noEmit
@@ -235,6 +237,7 @@ jobs:
       - name: Setup frontend (no npm cache, 与原 setup-node 语义一致)
         uses: ./.github/actions/setup-frontend
         with:
+          node-version: ${{ vars.NODE_VERSION || '24' }}
           cache: ''
 
       - name: Deadcode baseline check (blocking, no auto-update)
