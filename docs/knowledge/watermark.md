@@ -11,7 +11,9 @@ adr: []
 symbols:
   - DEFAULT_WATERMARK
   - WatermarkConfig
+  - WatermarkPosition
   - applyWatermark
+  - computeWatermarkPosition
   - getWatermarkConfig
   - setWatermarkConfig
 invariants:

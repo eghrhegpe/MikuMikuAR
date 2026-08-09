@@ -35,6 +35,47 @@ export function setWatermarkConfig(partial: Partial<WatermarkConfig>): void {
     _config = { ..._config, ...partial };
 }
 
+/** 水印文字锚点计算结果。 */
+export interface WatermarkPosition {
+    x: number;
+    y: number;
+    textBaseline: CanvasTextBaseline;
+}
+
+/**
+ * 计算水印文字绘制位置（纯函数，可独立测试）。
+ * 各锚点语义与原实现一致：topLeft/topRight 基线贴顶，bottomLeft/bottomRight 贴底，center 居中。
+ */
+export function computeWatermarkPosition(
+    position: WatermarkConfig['position'],
+    textWidth: number,
+    imgWidth: number,
+    imgHeight: number,
+    fontSize: number
+): WatermarkPosition {
+    const margin = 12;
+    switch (position) {
+        case 'topLeft':
+            return { x: margin, y: fontSize + margin, textBaseline: 'top' };
+        case 'topRight':
+            return { x: imgWidth - textWidth - margin, y: fontSize + margin, textBaseline: 'top' };
+        case 'bottomLeft':
+            return { x: margin, y: imgHeight - margin, textBaseline: 'bottom' };
+        case 'center':
+            return {
+                x: (imgWidth - textWidth) / 2,
+                y: imgHeight / 2 + fontSize / 2,
+                textBaseline: 'middle',
+            };
+        default: // bottomRight
+            return {
+                x: imgWidth - textWidth - margin,
+                y: imgHeight - margin,
+                textBaseline: 'bottom',
+            };
+    }
+}
+
 /**
  * 在 base64 图片数据上叠加水印。
  * @param base64 原始截图 base64（不含 data:URI 前缀）
@@ -78,36 +119,17 @@ export function applyWatermark(base64: string, format: string, quality: number):
             ctx.textBaseline = 'bottom';
 
             const textWidth = ctx.measureText(_config.text).width;
-            const margin = 12;
 
-            let x: number, y: number;
-            switch (_config.position) {
-                case 'topLeft':
-                    x = margin;
-                    y = _config.fontSize + margin;
-                    ctx.textBaseline = 'top';
-                    break;
-                case 'topRight':
-                    x = img.width - textWidth - margin;
-                    y = _config.fontSize + margin;
-                    ctx.textBaseline = 'top';
-                    break;
-                case 'bottomLeft':
-                    x = margin;
-                    y = img.height - margin;
-                    break;
-                case 'center':
-                    x = (img.width - textWidth) / 2;
-                    y = img.height / 2 + _config.fontSize / 2;
-                    ctx.textBaseline = 'middle';
-                    break;
-                default: // bottomRight
-                    x = img.width - textWidth - margin;
-                    y = img.height - margin;
-                    break;
-            }
+            const { x, y, textBaseline } = computeWatermarkPosition(
+                _config.position,
+                textWidth,
+                img.width,
+                img.height,
+                _config.fontSize
+            );
 
             // 带阴影的文字（提升可读性）
+            ctx.textBaseline = textBaseline;
             ctx.shadowColor = 'rgba(0,0,0,0.5)';
             ctx.shadowBlur = 4;
             ctx.shadowOffsetX = 1;

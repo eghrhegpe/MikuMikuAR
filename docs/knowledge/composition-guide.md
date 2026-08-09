@@ -9,6 +9,9 @@ source_files:
   - frontend/src/scene/pose/composition-guide.ts
 adr: []
 symbols:
+  - CompositionMode
+  - GuideLine
+  - getGuideLines
   - getGuideMode
   - setGuideMode
 invariants:

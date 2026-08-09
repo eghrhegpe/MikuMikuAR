@@ -1,14 +1,14 @@
 # 函数映射表
 
 > AI 找代码用。改前端功能时先 grep 此表定位文件。
-> **自动生成**（2026-08-08）— 由 `scripts/gen-funcmap.mjs` 生成。
+> **自动生成**（2026-08-09）— 由 `scripts/gen-funcmap.mjs` 生成。
 
 ## 总览
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
 | 核心基础设施 | 132 | 802 |
-| 3D 场景 | 125 | 1219 |
+| 3D 场景 | 125 | 1224 |
 | 菜单 & UI | 76 | 394 |
 | 动作算法 | 18 | 138 |
 
@@ -1758,11 +1758,16 @@
 | `applyCameraPreset()` | `scene/pose/camera-angle:68` | 切换到指定预设角度。 |
 | `getAllPresets()` | `scene/pose/camera-angle:85` | 获取所有预设的列表（用于 UI 展示）。 |
 | `presetCameraAlpha()` | `scene/pose/camera-angle:58` | 计算某预设对应的相机 alpha（弧度），以聚焦模型朝向为参考。 |
-| `getGuideMode()` | `scene/pose/composition-guide:10` | 获取当前的辅助线模式。 |
-| `setGuideMode()` | `scene/pose/composition-guide:18` | 设置构图辅助线模式。 |
+| `CompositionMode()` | `scene/pose/composition-guide:10` | 构图辅助线模式。 |
+| `GuideLine()` | `scene/pose/composition-guide:13` | 单条辅助线段（SVG 坐标 + 样式）。 |
+| `getGuideLines()` | `scene/pose/composition-guide:28` | 计算某模式的辅助线段列表（纯函数，可独立测试）。 |
+| `getGuideMode()` | `scene/pose/composition-guide:70` | 获取当前的辅助线模式。 |
+| `setGuideMode()` | `scene/pose/composition-guide:78` | 设置构图辅助线模式。 |
 | `DEFAULT_WATERMARK()` | `scene/pose/watermark:17` | — |
 | `WatermarkConfig()` | `scene/pose/watermark:4` | — |
-| `applyWatermark()` | `scene/pose/watermark:45` | 在 base64 图片数据上叠加水印。 |
+| `WatermarkPosition()` | `scene/pose/watermark:39` | 水印文字锚点计算结果。 |
+| `applyWatermark()` | `scene/pose/watermark:86` | 在 base64 图片数据上叠加水印。 |
+| `computeWatermarkPosition()` | `scene/pose/watermark:49` | 计算水印文字绘制位置（纯函数，可独立测试）。 |
 | `getWatermarkConfig()` | `scene/pose/watermark:29` | 获取当前水印配置。 |
 | `setWatermarkConfig()` | `scene/pose/watermark:34` | 设置水印配置（部分更新）。 |
 | `LightConeEntry()` | `scene/render/light-cone:74` | — |
