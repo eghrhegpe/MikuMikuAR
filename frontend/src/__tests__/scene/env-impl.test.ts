@@ -250,7 +250,8 @@ describe('getGroundHeightAt — 平面倾斜（getTiltedPlaneHeight）', () => {
 
 describe('disposeEnvUpdateObserver — fix P2/P3 资源复位分支', () => {
     const mockScene = { fogMode: -1 } as unknown as Scene;
-    const mockPipeline = {} as unknown as Scene;
+    // initEnvImpl 第二参数需要 DefaultRenderingPipeline；测试仅传引用，类型上断言为 any 即可
+    const mockPipeline = {} as unknown as Parameters<typeof initEnvImpl>[1];
 
     beforeEach(() => {
         // 每个用例前确保未初始化（resetEnvContext），并清空 mock 调用记录

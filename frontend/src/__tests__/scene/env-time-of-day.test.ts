@@ -219,11 +219,11 @@ describe('env-time-of-day — applyEnvPresetObject 正常完成恢复 time-of-da
 
 describe('env-time-of-day — 分类预设 / 预设应用（导出 API）', () => {
     it('applyEnvPresetByCategory：空 fields 返回 false', () => {
-        expect(applyEnvPresetByCategory({ category: 'env:sky', fields: {} })).toBe(false);
+        expect(applyEnvPresetByCategory({ version: 3, category: 'env:sky', label: 'test', fields: {} })).toBe(false);
     });
 
     it('applyEnvPresetByCategory：env:sky 且含 sunAngle 时调用 setEnvSunAngle 并 setEnvState', () => {
-        const ok = applyEnvPresetByCategory({ category: 'env:sky', fields: { sunAngle: 30 } });
+        const ok = applyEnvPresetByCategory({ version: 3, category: 'env:sky', label: 'test', fields: { sunAngle: 30 } });
         expect(ok).toBe(true);
         expect(getEnvSunAngle()).toBeCloseTo(30, 5);
         expect(mk.setEnvState).toHaveBeenCalled();

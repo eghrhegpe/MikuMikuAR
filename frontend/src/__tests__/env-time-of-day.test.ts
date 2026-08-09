@@ -114,7 +114,7 @@ beforeEach(() => {
     syncTimeOfDayFromEnv();
     // 复位 lighting mock 行为，避免跨用例污染
     vi.mocked(lighting.isLightingReady).mockReturnValue(false);
-    vi.mocked(lighting.setLightState).mockImplementation(() => {});
+    vi.mocked(lighting.setLightState).mockImplementation(() => true);
 });
 
 describe('env-time-of-day: 太阳角 / 预设 / time-of-day', () => {

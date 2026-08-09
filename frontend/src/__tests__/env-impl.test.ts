@@ -98,6 +98,11 @@ vi.mock('@/core/dispose-helpers', () => ({
 }));
 
 import { envState } from '@/core/config';
+import type { EnvState } from '@/core/types';
+
+// bindings EnvState(skyMode: string) → core EnvState(skyMode 字面量联合)：
+// 两类型字段结构相同，仅枚举字段类型不同，此处仅做类型收窄断言。
+const toCoreEnvState = (s: ReturnType<typeof createMockEnvState>): EnvState => s as unknown as EnvState;
 import { initEnvImpl, isInitialized, getScene } from '../scene/env/_shared/env-context';
 import { applyFog, disposeEnvUpdateObserver } from '../scene/env/env-impl';
 import * as mirrorDebug from '../scene/env/mirror-debug';
@@ -118,7 +123,7 @@ const sceneMock: any = {
 const pipelineMock: any = { tag: 'pipeline' };
 
 beforeEach(() => {
-    mirrorDebug.isMirrorActive.mockReturnValue(false);
+    vi.mocked(mirrorDebug.isMirrorActive).mockReturnValue(false);
     Object.assign(envState, createMockEnvState());
     // 初始化共享上下文，使 getScene 可用
     initEnvImpl(sceneMock, pipelineMock);
@@ -127,7 +132,7 @@ beforeEach(() => {
 describe('env-impl: registerEnvCallback 调度回调', () => {
     it('changed=null 时执行全部分支（含 [fix P3] isMirrorActive 守卫）', () => {
         expect(h.registeredCallback).toBeTruthy();
-        mirrorDebug.isMirrorActive.mockReturnValue(true);
+        vi.mocked(mirrorDebug.isMirrorActive).mockReturnValue(true);
         const state = { ...createMockEnvState(), mirrorEnabled: true };
         h.registeredCallback!(null, state);
         expect(mirrorDebug.updateMirrorClearColor).toHaveBeenCalled();
@@ -144,14 +149,14 @@ describe('env-impl: registerEnvCallback 调度回调', () => {
 
     it('mirrorEnabled 开启且当前未激活 → createMirror', () => {
         const state = { ...createMockEnvState(), mirrorEnabled: true };
-        mirrorDebug.isMirrorActive.mockReturnValue(false);
+        vi.mocked(mirrorDebug.isMirrorActive).mockReturnValue(false);
         h.registeredCallback!(new Set(['mirrorEnabled']), state);
         expect(mirrorDebug.createMirror).toHaveBeenCalled();
     });
 
     it('mirrorEnabled 关闭且当前激活 → disposeMirror', () => {
         const state = { ...createMockEnvState(), mirrorEnabled: false };
-        mirrorDebug.isMirrorActive.mockReturnValue(true);
+        vi.mocked(mirrorDebug.isMirrorActive).mockReturnValue(true);
         h.registeredCallback!(new Set(['mirrorEnabled']), state);
         expect(mirrorDebug.disposeMirror).toHaveBeenCalled();
     });
@@ -159,23 +164,25 @@ describe('env-impl: registerEnvCallback 调度回调', () => {
 
 describe('env-impl: applyFog', () => {
     it('fogEnabled=false → FOGMODE_NONE', () => {
-        applyFog({ ...createMockEnvState(), fogEnabled: false });
+        applyFog(toCoreEnvState({ ...createMockEnvState(), fogEnabled: false }));
         expect(sceneMock.fogMode).toBe(0);
     });
     it('exp / exp2 / linear / default 模式', () => {
-        applyFog({ ...createMockEnvState(), fogEnabled: true, fogMode: 'exp', fogDensity: 0.1 });
+        applyFog(toCoreEnvState({ ...createMockEnvState(), fogEnabled: true, fogMode: 'exp', fogDensity: 0.1 }));
         expect(sceneMock.fogMode).toBe(1);
-        applyFog({ ...createMockEnvState(), fogEnabled: true, fogMode: 'exp2', fogDensity: 0.2 });
+        applyFog(toCoreEnvState({ ...createMockEnvState(), fogEnabled: true, fogMode: 'exp2', fogDensity: 0.2 }));
         expect(sceneMock.fogMode).toBe(2);
-        applyFog({
-            ...createMockEnvState(),
-            fogEnabled: true,
-            fogMode: 'linear',
-            fogStart: 10,
-            fogEnd: 100,
-        });
+        applyFog(
+            toCoreEnvState({
+                ...createMockEnvState(),
+                fogEnabled: true,
+                fogMode: 'linear',
+                fogStart: 10,
+                fogEnd: 100,
+            })
+        );
         expect(sceneMock.fogMode).toBe(3);
-        applyFog({ ...createMockEnvState(), fogEnabled: true, fogMode: 'unknown' as any, fogDensity: 0.3 });
+        applyFog(toCoreEnvState({ ...createMockEnvState(), fogEnabled: true, fogMode: 'unknown' as any, fogDensity: 0.3 }));
         expect(sceneMock.fogMode).toBe(2); // 回退 exp2
     });
 });

@@ -117,6 +117,7 @@ describe('env-persist', () => {
     it('flushEnvState 后端抛错 → logWarn + feedbackStatus（不静默）', async () => {
         __mocks.resolveBackend.mockImplementationOnce(() => ({
             SetEnvState: vi.fn().mockRejectedValue(new Error('boom')),
+            SetUIState: vi.fn().mockResolvedValue(undefined),
         }));
         await flushEnvState();
         expect(__mocks.logWarn).toHaveBeenCalled();

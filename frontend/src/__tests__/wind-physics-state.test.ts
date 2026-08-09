@@ -324,9 +324,9 @@ describe('wind-physics 状态机', () => {
             // rt1 的 observer 被 dispose；rt2 的 observer 未被 dispose
             expect(mocks.observerHandle.dispose).toHaveBeenCalledTimes(1);
             // rt2 仍保持订阅：再次全局 retry 不新增 observer（已订阅守卫）
-            const callsBefore = observe.mock.calls.length;
+            const callsBefore = vi.mocked(observe).mock.calls.length;
             retryWindPhysicsSubscription();
-            expect(observe.mock.calls.length).toBe(callsBefore);
+            expect(vi.mocked(observe).mock.calls.length).toBe(callsBefore);
         });
 
         it('per-runtime dispose 后该 runtime 可重新订阅', () => {

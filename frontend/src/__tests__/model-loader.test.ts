@@ -44,7 +44,7 @@ vi.mock('@/core/status-bar', () => ({ setStatus: vi.fn() }));
 vi.mock('@/core/toast', () => ({ showInfoToast: vi.fn() }));
 vi.mock('@/core/path', () => ({ getBaseName: (p: string) => p.split(/[\\/]/).pop() || p }));
 vi.mock('@/core/async', async (importOriginal) => {
-    const actual = await importOriginal();
+    const actual = await importOriginal<typeof import('@/core/async')>();
     return {
         ...actual,
         swallowError: (p: any) => {

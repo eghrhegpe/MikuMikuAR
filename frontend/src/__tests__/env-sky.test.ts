@@ -17,7 +17,7 @@ import { _disposeSunDisc } from '../scene/render/lighting';
 // ───────────────────────── fix P2 — disposeSky 递增星空 texture generation ─────────────────────────
 describe('env-sky — fix P2 disposeSky 递增星空 texture generation 守卫', () => {
   beforeEach(() => {
-    (_disposeSunDisc as unknown as vi.Mock).mockClear();
+    vi.mocked(_disposeSunDisc).mockClear();
   });
 
   it('disposeSky 幂等执行且不抛错，并到达 _texStarsGeneration++ 与 _disposeSunDisc', () => {
