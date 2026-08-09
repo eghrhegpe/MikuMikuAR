@@ -1,7 +1,11 @@
-# Setup Frontend —— 统一前端环境（checkout + setup-node + 可选 npm ci）
+# Setup Frontend —— 统一前端环境（setup-node + 可选 npm ci）
 #
 # 消除 ci / web-pages / webgl-weekly / release / cache-warm 各 workflow 中重复的
-# checkout + setup-node + npm ci 样板，Node 版本单点维护（改这里即可全局升级）。
+# setup-node + npm ci 样板，Node 版本单点维护（改这里即可全局升级）。
+#
+# ⚠️ 注意：本 composite action **不含** actions/checkout —— GitHub 在 job 首个 step
+# 执行前就要解析本地 action 的 action.yml（此时工作区为空），把 checkout 放内部
+# 会导致「Can't find action.yml」秒挂。调用方必须先在 steps 里 checkout。
 #
 # 两种用法：
 #  1. 默认（常规测试/构建 job：ci / web-pages / webgl-weekly）
@@ -15,7 +19,7 @@
 # 统一用 bash；working-directory 默认 frontend，可通过输入覆盖。
 
 name: Setup Frontend
-description: 统一 Node 环境：checkout + setup-node + 可选 npm ci
+description: 统一 Node 环境：setup-node + 可选 npm ci（调用方需先 checkout）
 
 inputs:
   node-version:
@@ -34,19 +38,10 @@ inputs:
     description: 是否执行 npm ci（release/cache-warm 传 false 自行管理依赖安装）
     required: false
     default: 'true'
-  fetch-depth:
-    description: git checkout fetch-depth（diff 类门禁需要 0 以取全历史）
-    required: false
-    default: '1'
 
 runs:
   using: composite
   steps:
-    - name: Checkout
-      uses: actions/checkout@v5
-      with:
-        fetch-depth: ${{ inputs.fetch-depth }}
-
     - name: Setup Node.js
       uses: actions/setup-node@v5
       with:

@@ -51,6 +51,7 @@ jobs:
       run:
         shell: pwsh
     steps:
+      - uses: actions/checkout@v5
       - name: Setup frontend (custom cache mode)
         uses: ./.github/actions/setup-frontend
         with:
@@ -104,6 +105,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
+      - uses: actions/checkout@v5
       - name: Setup frontend (custom cache mode)
         uses: ./.github/actions/setup-frontend
         with:

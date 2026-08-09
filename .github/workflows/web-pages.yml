@@ -41,6 +41,7 @@ jobs:
         working-directory: frontend
 
     steps:
+      - uses: actions/checkout@v5
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
 
