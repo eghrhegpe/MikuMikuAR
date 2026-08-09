@@ -31,14 +31,8 @@ jobs:
         working-directory: frontend
 
     steps:
-      - uses: actions/checkout@v5
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v5
-        with:
-          node-version: '24'
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
 
       - name: Setup Go
         uses: actions/setup-go@v6
@@ -55,9 +49,6 @@ jobs:
           WAILS_VER=$(grep 'wails/v3' go.mod | head -1 | awk '{print $2}')
           echo "Installing wails3@$WAILS_VER"
           go install github.com/wailsapp/wails/v3/cmd/wails3@$WAILS_VER
-
-      - name: Install frontend deps
-        run: npm ci
 
       - name: Start Wails dev + run @webgl E2E (blocking)
         env:

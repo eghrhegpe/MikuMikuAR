@@ -63,7 +63,11 @@ jobs:
       run:
         shell: pwsh
     steps:
-      - uses: actions/checkout@v5
+      - name: Setup frontend (custom cache mode)
+        uses: ./.github/actions/setup-frontend
+        with:
+          npm-ci: 'false' # node_modules 由 actions/cache + build-windows.ps1 内部管理
+          node-version: ${{ env.NODE_VERSION }}
       - uses: actions/setup-go@v6
         with:
           go-version: ${{ env.GO_VERSION }}
@@ -86,11 +90,6 @@ jobs:
         with:
           path: ${{ runner.os == 'Windows' && '~\go\bin\wails3.exe' || '~/go/bin/wails3' }}
           key: wails-${{ needs.prepare.outputs.wails_ver }}-${{ runner.os }}
-      - uses: actions/setup-node@v5
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
       - name: Cache node_modules
         uses: actions/cache@v5
         with:
@@ -117,7 +116,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v5
+      - name: Setup frontend (custom cache mode)
+        uses: ./.github/actions/setup-frontend
+        with:
+          npm-ci: 'false' # node_modules 缓存命中时跳过，见下方 Install Frontend deps
+          node-version: ${{ env.NODE_VERSION }}
       - uses: actions/setup-go@v6
         with:
           go-version: ${{ env.GO_VERSION }}
@@ -140,11 +143,6 @@ jobs:
         with:
           path: ~/go/bin/wails3
           key: wails-${{ needs.prepare.outputs.wails_ver }}-${{ runner.os }}
-      - uses: actions/setup-node@v5
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
       - name: Cache node_modules
         uses: actions/cache@v5
         id: cache-node-modules-linux
@@ -213,7 +211,11 @@ jobs:
       run:
         shell: pwsh
     steps:
-      - uses: actions/checkout@v5
+      - name: Setup frontend (custom cache mode)
+        uses: ./.github/actions/setup-frontend
+        with:
+          npm-ci: 'false' # node_modules 由 actions/cache + build-android.ps1 内部管理
+          node-version: ${{ env.NODE_VERSION }}
       - uses: actions/setup-go@v6
         with:
           go-version: ${{ env.GO_VERSION }}
@@ -236,11 +238,6 @@ jobs:
         with:
           path: ~\go\bin\wails3.exe
           key: wails-${{ needs.prepare.outputs.wails_ver }}-${{ runner.os }}
-      - uses: actions/setup-node@v5
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
       - name: Cache node_modules
         uses: actions/cache@v5
         id: cache-node-modules-android

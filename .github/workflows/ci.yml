@@ -19,19 +19,10 @@ jobs:
         working-directory: frontend
 
     steps:
-      - uses: actions/checkout@v5
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
         with:
-          fetch-depth: 0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v5
-        with:
-          node-version: '24'
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
+          fetch-depth: '0' # diff-coverage gate 需要完整 git 历史
 
       - name: Type check
         run: npx tsc --noEmit
@@ -233,15 +224,10 @@ jobs:
     name: Deadcode — Baseline Gate
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v5
+      - name: Setup frontend (no npm cache, 与原 setup-node 语义一致)
+        uses: ./.github/actions/setup-frontend
         with:
-          node-version: '24'
-
-      - name: Install frontend deps (knip + jscpd)
-        run: cd frontend && npm ci
+          cache: ''
 
       - name: Deadcode baseline check (blocking, no auto-update)
         # 超基线即 fail；如需更新基线请人工显式运行
@@ -295,17 +281,8 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v5
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v5
-        with:
-          node-version: '24'
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
 
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
@@ -358,14 +335,8 @@ jobs:
         shell: bash
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v5
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v5
-        with:
-          node-version: '24'
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
 
       - name: Setup Go
         uses: actions/setup-go@v6
@@ -380,9 +351,6 @@ jobs:
           echo "Installing wails3@$WAILS_VER"
           go install github.com/wailsapp/wails/v3/cmd/wails3@$WAILS_VER
           echo "WAILS_VER=$WAILS_VER" >> $GITHUB_ENV
-
-      - name: Install frontend deps
-        run: npm ci
 
       - name: Start Wails dev + run @webgl E2E
         env:
@@ -448,17 +416,8 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v5
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v5
-        with:
-          node-version: '24'
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
 
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
@@ -494,17 +453,8 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v5
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v5
-        with:
-          node-version: '24'
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
 
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium

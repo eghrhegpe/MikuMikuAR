@@ -51,7 +51,11 @@ jobs:
       run:
         shell: pwsh
     steps:
-      - uses: actions/checkout@v5
+      - name: Setup frontend (custom cache mode)
+        uses: ./.github/actions/setup-frontend
+        with:
+          npm-ci: 'false' # node_modules 由下方 cache-nm 命中跳过，key 与 release.yml 对齐
+          node-version: ${{ env.NODE_VERSION }}
       - uses: actions/setup-go@v6
         with:
           go-version: ${{ env.GO_VERSION }}
@@ -62,11 +66,6 @@ jobs:
           $v = (Select-String -Path go.mod -Pattern 'wails/v3\s+(v[^\s]+)').Matches.Groups[1].Value
           echo "wails_ver=$v" >> $env:GITHUB_OUTPUT
           Write-Output "wails_ver=$v"
-      - uses: actions/setup-node@v5
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
       - name: Cache Wails binary
         uses: actions/cache@v5
         id: cache-wails
@@ -105,7 +104,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v5
+      - name: Setup frontend (custom cache mode)
+        uses: ./.github/actions/setup-frontend
+        with:
+          npm-ci: 'false' # node_modules 由下方 cache-nm 命中跳过，key 与 release.yml 对齐
+          node-version: ${{ env.NODE_VERSION }}
       - uses: actions/setup-go@v6
         with:
           go-version: ${{ env.GO_VERSION }}
@@ -116,11 +119,6 @@ jobs:
           WAILS_VER=$(grep 'wails/v3' go.mod | head -1 | sed 's/.* //;s/ *$//')
           echo "wails_ver=$WAILS_VER" >> $GITHUB_OUTPUT
           echo "wails_ver=$WAILS_VER"
-      - uses: actions/setup-node@v5
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
       - name: Cache Wails binary
         uses: actions/cache@v5
         id: cache-wails

@@ -1,0 +1,61 @@
+# Setup Frontend —— 统一前端环境（checkout + setup-node + 可选 npm ci）
+#
+# 消除 ci / web-pages / webgl-weekly / release / cache-warm 各 workflow 中重复的
+# checkout + setup-node + npm ci 样板，Node 版本单点维护（改这里即可全局升级）。
+#
+# 两种用法：
+#  1. 默认（常规测试/构建 job：ci / web-pages / webgl-weekly）
+#     npm-ci: true（默认）→ 无条件 npm ci，setup-node 自带 npm 缓存（cache: npm）。
+#  2. 自定义缓存系（release / cache-warm）
+#     npm-ci: false → 由调用方保留自己的 actions/cache（key 与 release.yml 对齐）
+#     与条件 npm ci（缓存命中跳过）。cache 仍传 'npm'：setup-node 的 ~/.npm 缓存
+#     与 node_modules 整体缓存（actions/cache）是两个独立缓存维度。
+#
+# 注意：composite action 内部 step 的 shell 必须显式指定（不继承 job defaults），
+# 统一用 bash；working-directory 默认 frontend，可通过输入覆盖。
+
+name: Setup Frontend
+description: 统一 Node 环境：checkout + setup-node + 可选 npm ci
+
+inputs:
+  node-version:
+    description: Node.js 版本
+    required: false
+    default: '24'
+  working-directory:
+    description: 前端目录（相对仓库根）
+    required: false
+    default: frontend
+  cache:
+    description: setup-node 的 npm 缓存开关（'npm' 启用，'' 禁用）
+    required: false
+    default: npm
+  npm-ci:
+    description: 是否执行 npm ci（release/cache-warm 传 false 自行管理依赖安装）
+    required: false
+    default: 'true'
+  fetch-depth:
+    description: git checkout fetch-depth（diff 类门禁需要 0 以取全历史）
+    required: false
+    default: '1'
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v5
+      with:
+        fetch-depth: ${{ inputs.fetch-depth }}
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v5
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: ${{ inputs.cache }}
+        cache-dependency-path: ${{ inputs.working-directory }}/package-lock.json
+
+    - name: Install dependencies
+      if: inputs.npm-ci == 'true'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: npm ci
