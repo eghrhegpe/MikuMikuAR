@@ -1,0 +1,266 @@
+# ============================================================
+# E2E Suite（独立于 push CI）
+#
+# 2026-08-09 从 ci.yml 迁出：4 个 E2E job（@dom / smoke / @web full / @webgl full）
+# 在 headless CI 上均有环境硬伤（无 GPU → WebGL overlay spec 必崩 / 能力探测
+# spec waitForSelector 20s 超时 / WebView2 启动不稳），历史频繁失败并曾拖垮
+# push CI 长达 1 小时。push CI 只保留 8 个可信门禁（快而绿）；
+# 深度 E2E 验证按需（workflow_dispatch）或每周一自动跑一次。
+#
+# 超时结构（防卡死，[2026-08-09] 实锤）：
+#   - 测试步骤 timeout-minutes: 7 —— setup（checkout/npm ci/Chromium 下载）实测
+#     仅 46s，时间黑洞是测试本身（81 个必败 spec 串行 30s 超时 ×2 重试可跑 40+ 分钟）。
+#     步骤级超时到点 kill，不陪跑。
+#   - job 级 timeout-minutes: 30 —— 仅兜底 setup/上传等步骤意外卡死。
+#   - continue-on-error: true 保持 best-effort 语义（环境硬伤未修复前测试结果
+#     无信息量，不因此红 run；独立跑仍可查看 artifact 报告定位问题）。
+#
+# @see docs/adr/adr-060-e2e-testing-strategy.md
+# ============================================================
+
+name: E2E Suite
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 6 * * 1' # 每周一 06:00 UTC
+
+permissions:
+  contents: read
+
+jobs:
+  # ------------------------------------------------------------
+  # E2E — DOM/Overlay Gate
+  # @dom specs via Playwright Chromium against Vite dev server。
+  # 注意：headless CI 无 GPU，触 WebGL overlay 的 spec 必然崩（环境硬伤），
+  # 7 分钟即杀；待带 GPU runner 或 mock WebGL 后可转正为阻塞项。
+  # ------------------------------------------------------------
+  e2e-dom:
+    name: E2E — DOM/Overlay Gate (@dom, vitePage)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v5
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      # [ADR-229 §2.4] 测试前重生成 schema-snapshot.json（vitest 秒级），
+      # 保证用最新快照跑 E2E（快照新鲜度 gate 本身保留在 push CI 的 test-frontend）。
+      - name: Regenerate schema snapshot
+        run: npx vitest run src/__tests__/schema-snapshot.test.ts
+
+      - name: Run @dom E2E
+        # [2026-08-09] 测试步骤 7 分钟即杀：81 个测试 1 worker 串行，headless CI
+        # 下大量必败（30s 超时 ×2 重试 = 90s/用例），跑完要 40+ 分钟。
+        timeout-minutes: 7
+        continue-on-error: true
+        run: npx playwright test --grep @dom --reporter=line
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: playwright-dom-report
+          path: frontend/playwright-report/
+
+  # ------------------------------------------------------------
+  # E2E — Full Integration (@webgl, wailsPage)
+  # connectOverCDP 连真 Wails WebView2。NOTE: CDP 仅 Chromium 系可用；
+  # Wails on Linux 用 WebKitGTK 不兼容 CDP → 必须 windows-latest。
+  # 复用 cache-warm/release 的 wails3 二进制缓存（同 key，命中免 go install）。
+  # ------------------------------------------------------------
+  e2e-wails:
+    name: E2E — Full Integration (@webgl, wailsPage)
+    runs-on: windows-latest
+    continue-on-error: true
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v5
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.25.0'
+          cache-dependency-path: go.sum
+
+      - name: Extract wails version (from go.mod, 与 release/cache-warm 同源)
+        id: wv
+        run: |
+          WAILS_VER=$(grep 'wails/v3' go.mod | head -1 | awk '{print $2}')
+          echo "wails_ver=$WAILS_VER" >> $GITHUB_OUTPUT
+
+      # 复用 cache-warm 预热的 wails3 二进制（key 与 release/cache-warm 完全一致，
+      # 命中即跳过 go install —— 否则每次冷启动下载 clir/pterm/ProtonMail 等依赖再编译）。
+      - name: Cache Wails binary
+        uses: actions/cache@v5
+        id: cache-wails
+        with:
+          path: ~/go/bin/wails3.exe
+          key: wails-${{ steps.wv.outputs.wails_ver }}-${{ runner.os }}
+
+      - name: Install Wails CLI (v3)
+        if: steps.cache-wails.outputs.cache-hit != 'true'
+        working-directory: .
+        run: |
+          echo "Installing wails3@${{ steps.wv.outputs.wails_ver }}"
+          go install github.com/wailsapp/wails/v3/cmd/wails3@${{ steps.wv.outputs.wails_ver }}
+
+      - name: Start Wails dev + run @webgl E2E
+        timeout-minutes: 7
+        env:
+          # Expose CDP on WebView2 via MMCAR_DEBUG_PORT — main.go reads it and
+          # injects --remote-debugging-port. WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS
+          # is suppressed by Wails v3 (AdditionalBrowserArgs set explicitly).
+          MMCAR_DEBUG_PORT: "9222"
+        working-directory: .
+        run: |
+          export PATH="$HOME/go/bin:$PATH"
+          wails3 dev &
+          WAILS_PID=$!
+          for i in $(seq 1 60); do
+            if curl -s http://127.0.0.1:9222/json/version >/dev/null; then
+              echo "Wails WebView2 CDP is up"; break
+            fi
+            sleep 3
+          done
+          cd frontend
+          npx playwright test --grep @webgl --reporter=line
+          TEST_EXIT=$?
+          kill $WAILS_PID 2>/dev/null || true
+          exit $TEST_EXIT
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: playwright-webgl-report
+          path: frontend/playwright-report/
+
+      - name: WebGL Test Summary
+        if: always()
+        run: |
+          if [ -f frontend/test-results/.last-run.json ]; then
+            python3 -c "
+          import json
+          with open('frontend/test-results/.last-run.json') as f:
+              d = json.load(f)
+          p, fl, fa = d.get('passed',0), d.get('flaky',0), d.get('failed',0)
+          if fa > 0:
+              print(f'::warning title=@webgl ({fa} failed)::seed-model={d.get(\"suites\",[])}')
+              print(f'::warning title=@webgl summary::{p} passed, {fa} failed, {fl} flaky')
+          else:
+              print(f'::notice title=@webgl summary::{p} passed, {fa} failed, {fl} flaky')
+          "
+          else
+            echo '::notice title=@webgl report::test-results not found (all passed?)'
+          fi
+
+  # ------------------------------------------------------------
+  # E2E — Web Entry Smoke (@web, vite preview 4174)
+  # web entry (index.web.html → dist-web/) capability gates:
+  #   - browser-adapter capabilities() correctness
+  #   - AR camera / Plaza window / 桌面能力选项按 capabilities 隐藏
+  # @see docs/adr/adr-178 Phase 3 / adr-177 Phase 4
+  # ------------------------------------------------------------
+  e2e-web-smoke:
+    name: E2E — Web Entry Smoke (@web, vite preview)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v5
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run @web E2E smoke
+        # [2026-08-09] 防卡死护栏：测试步骤 7 分钟即杀（smoke 正常 ≤3 分钟，
+        # 历史曾 grep 误抓 @webgl 导致全部 30s 超时拖 18 分钟）。
+        timeout-minutes: 7
+        # Playwright 的 config.webServer 在 RUN_WEB_E2E=1 时自动管理 4174 preview server，
+        # 含构建 + 启动 + 等待就绪，测试完成后自动清理。
+        env:
+          RUN_WEB_E2E: '1'
+        # [doc:e2e] grep 必须用 @web\b 而非 @web：@webgl 测试标题含 @web 前缀，
+        # 裸 @web 正则会把 42 个 @webgl（wailsPage/CDP）误抓进 @web job。
+        run: npx playwright test --grep "@web\b" --reporter=line
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: playwright-web-report
+          path: frontend/playwright-report/
+
+  # ------------------------------------------------------------
+  # E2E — Web Full Integration (@web, full suite)
+  # ALL @web tagged tests（smoke + 资源加载 + FSA auth + 下载面板 + capabilities）。
+  # @see docs/adr/adr-176/177/178/180/181/182/183
+  # ------------------------------------------------------------
+  e2e-web-full:
+    name: E2E — Web Full Suite (@web, all specs)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v5
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run all @web E2E tests
+        timeout-minutes: 7
+        # Playwright 的 config.webServer 在 RUN_WEB_E2E=1 时自动管理 4174 preview server，
+        # 含构建 + 启动 + 等待就绪，测试完成后自动清理。
+        env:
+          RUN_WEB_E2E: '1'
+        # [doc:e2e] 同 e2e-web-smoke：@web\b 精确匹配，避免 @webgl 误抓。
+        run: npx playwright test --grep "@web\b" --reporter=line
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: playwright-web-full-report
+          path: frontend/playwright-report/
