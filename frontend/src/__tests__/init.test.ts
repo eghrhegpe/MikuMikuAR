@@ -141,7 +141,10 @@ vi.mock('../core/shortcut-registry', () => ({
     loadKeyBindings: shared.loadKeyBindings,
 }));
 vi.mock('../core/dev-hooks', () => ({ setupE2ECapture: shared.setupE2ECapture }));
-vi.mock('../core/render-loop', () => ({ startRenderLoop: shared.startRenderLoop }));
+vi.mock('../core/render-loop', () => ({
+    startRenderLoop: shared.startRenderLoop,
+    stopRenderLoop: vi.fn(),
+}));
 vi.mock('../core/events', () => ({
     registerEventHandlers: shared.registerEventHandlers,
     disposeEventHandlers: shared.disposeEventHandlers,
