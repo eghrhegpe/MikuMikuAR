@@ -68,13 +68,9 @@ export function getBoneWorldPosition(
 // 挂件 auto-fit 几何（纯数学，无求解器依赖）
 // ============================================================================
 
-export type AttachmentTopology = 'grid' | 'radial';
-
 export interface AttachmentAnchors {
     /** 模型整体包围盒尺寸 {x,y,z}（米，场景单位） */
     modelSize: { x: number; y: number; z: number };
-    /** 拓扑：'radial' = 环绕锚点骨的环带（裙摆/披风）；'grid' = 平面网格 */
-    topology?: AttachmentTopology;
 }
 
 export interface AttachmentFit {

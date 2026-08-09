@@ -22,7 +22,8 @@ export type { StatePath, ActionMenuCtx, MenuKind, ControlSpec, MenuNode } from '
 
 /** 按 StatePath 获取当前值 */
 export function getStateValue(path: StatePath, modelId?: string, actionId?: string): unknown {
-    const [prefix, key] = path.split('.') as [string, string];
+    const [prefix, ...restParts] = path.split('.');
+    const key = restParts.join('.');
     switch (prefix) {
         case 'env':
             return (envState as unknown as Record<string, unknown>)[key];
@@ -73,7 +74,8 @@ export function setStateValue(
     modelId?: string,
     actionId?: string
 ): void {
-    const [prefix, key] = path.split('.') as [string, string];
+    const [prefix, ...restParts] = path.split('.');
+    const key = restParts.join('.');
     switch (prefix) {
         case 'env':
             setEnvState({ [key]: value });

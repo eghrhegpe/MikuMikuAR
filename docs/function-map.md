@@ -8,7 +8,7 @@
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
 | 核心基础设施 | 132 | 802 |
-| 3D 场景 | 125 | 1227 |
+| 3D 场景 | 125 | 1226 |
 | 菜单 & UI | 76 | 394 |
 | 动作算法 | 18 | 138 |
 | 顶层配置 | 1 | 1 |
@@ -1730,12 +1730,11 @@
 | `disableGroundCollision()` | `scene/physics/ground-collision:86` | 禁用地面碰撞：从所有世界移除并释放资源。 |
 | `enableGroundCollision()` | `scene/physics/ground-collision:51` | 启用地面碰撞：注入静态地板刚体到所有物理世界。幂等。 |
 | `isGroundCollisionEnabled()` | `scene/physics/ground-collision:44` | 地面碰撞是否处于启用状态 |
-| `AttachmentAnchors()` | `scene/physics/physics-bridge:73` | — |
-| `AttachmentFit()` | `scene/physics/physics-bridge:80` | — |
-| `AttachmentTopology()` | `scene/physics/physics-bridge:71` | — |
-| `FrameUpdateFn()` | `scene/physics/physics-bridge:119` | — |
-| `PerFrameUpdateRegistry()` | `scene/physics/physics-bridge:126` | 单一 onBeforeRenderObservable 调度多个按 key 注册的每帧回调。 |
-| `autoFitAttachment()` | `scene/physics/physics-bridge:100` | 从模型尺寸启发式推算挂件几何参数。 |
+| `AttachmentAnchors()` | `scene/physics/physics-bridge:71` | — |
+| `AttachmentFit()` | `scene/physics/physics-bridge:76` | — |
+| `FrameUpdateFn()` | `scene/physics/physics-bridge:115` | — |
+| `PerFrameUpdateRegistry()` | `scene/physics/physics-bridge:122` | 单一 onBeforeRenderObservable 调度多个按 key 注册的每帧回调。 |
+| `autoFitAttachment()` | `scene/physics/physics-bridge:96` | 从模型尺寸启发式推算挂件几何参数。 |
 | `findRuntimeBone()` | `scene/physics/physics-bridge:31` | 在模型 runtimeBones 中按名查找。WASM / JS runtime 都暴露 runtimeBones，故后端无关。 |
 | `getBoneLocalMatrix()` | `scene/physics/physics-bridge:48` | 取骨骼在 rootMesh **局部坐标系**下的矩阵（列主序 Float32Array[16]），用于挂件锚点跟随。 |
 | `getBoneWorldPosition()` | `scene/physics/physics-bridge:56` | 从骨骼局部矩阵提取世界位置（米，场景单位）。 |
@@ -2222,9 +2221,9 @@
 | `MenuKind()` | `menus/menu-schema:18` | — |
 | `MenuNode()` | `menus/menu-schema:18` | — |
 | `StatePath()` | `menus/menu-schema:18` | — |
-| `getBindFn()` | `menus/menu-schema:118` | 按 StatePath 获取 bind 函数（用于 registerControl 自更新） |
+| `getBindFn()` | `menus/menu-schema:120` | 按 StatePath 获取 bind 函数（用于 registerControl 自更新） |
 | `getStateValue()` | `menus/menu-schema:24` | 按 StatePath 获取当前值 |
-| `setStateValue()` | `menus/menu-schema:70` | 按 StatePath 设置值 |
+| `setStateValue()` | `menus/menu-schema:71` | 按 StatePath 设置值 |
 | `stackRegistry()` | `menus/menu-stack-registry:8` | — |
 | `SlideMenu()` | `menus/menu:40` | — |
 | `getCurrentRenderingMenu()` | `menus/menu:40` | 获取当前正在渲染的 SlideMenu 实例（供 menus 层控件的自更新注册）。 |
