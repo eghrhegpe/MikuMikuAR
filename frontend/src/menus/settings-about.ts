@@ -117,12 +117,11 @@ function buildAboutSchema(_getSettingsMenu: () => SettingsMenuHandle): MenuNode[
                     updateStatus.textContent = t('settings.about.update.checking');
                     inner.appendChild(updateStatus);
 
-                    const updateLink = document.createElement('a');
-                    updateLink.href = '#';
-                    updateLink.style.cssText =
-                        'display:none;font-size:12px;color:var(--accent);cursor:pointer;padding:0 14px 10px;';
-                    updateLink.textContent = t('settings.about.update.goDownload');
-                    inner.appendChild(updateLink);
+                    const updateBtn = document.createElement('button');
+                    updateBtn.className = 'btn btn-sm btn-primary';
+                    updateBtn.style.cssText = 'display:none;margin:0 14px 10px;';
+                    updateBtn.textContent = t('settings.about.update.goDownload');
+                    inner.appendChild(updateBtn);
 
                     // 进入关于页自动检测一次（每会话仅一次）
                     if (_updateCheckedThisSession) {
@@ -150,22 +149,22 @@ function buildAboutSchema(_getSettingsMenu: () => SettingsMenuHandle): MenuNode[
                               })
                             : t('settings.about.update.latest', { current: r.current });
                         if (r.available && r.url) {
-                            updateLink.style.display = 'inline';
+                            updateBtn.style.display = 'inline';
                             const hasDirectInstall =
                                 !!r.downloadUrl && getCachedCapabilities().installLocal;
                             const isDesktopInstall =
                                 hasDirectInstall && !getCachedCapabilities().installApk;
-                            updateLink.textContent = hasDirectInstall
+                            updateBtn.textContent = hasDirectInstall
                                 ? t('settings.about.update.downloadInstall')
                                 : t('settings.about.update.goDownload');
-                            updateLink.onclick = async (e) => {
+                            updateBtn.onclick = async (e) => {
                                 e.preventDefault();
                                 if (!hasDirectInstall) {
                                     openExternalLink(r.url);
                                     return;
                                 }
-                                updateLink.textContent = t('settings.about.update.downloading');
-                                updateLink.style.pointerEvents = 'none';
+                                updateBtn.textContent = t('settings.about.update.downloading');
+                                updateBtn.style.pointerEvents = 'none';
 
                                 // 注册进度监听器
                                 if (_progressListener) {
@@ -174,7 +173,7 @@ function buildAboutSchema(_getSettingsMenu: () => SettingsMenuHandle): MenuNode[
                                 _progressListener = (data: unknown) => {
                                     const d = data as { percent?: number };
                                     if (typeof d.percent === 'number') {
-                                        updateLink.textContent = t('settings.about.update.downloading') + ` ${Math.round(d.percent)}%`;
+                                        updateBtn.textContent = t('settings.about.update.downloading') + ` ${Math.round(d.percent)}%`;
                                     }
                                 };
                                 window.addEventListener('update:downloadProgress', _progressListener);
@@ -183,12 +182,12 @@ function buildAboutSchema(_getSettingsMenu: () => SettingsMenuHandle): MenuNode[
                                     if (isDesktopInstall) {
                                         const result = await DownloadAndRunInstaller();
                                         if (result && result.success) {
-                                            updateLink.textContent = t(
+                                            updateBtn.textContent = t(
                                                 'settings.about.update.installLaunched'
                                             );
                                         } else {
                                             const errMsg = result?.error || '';
-                                            updateLink.textContent = t(
+                                            updateBtn.textContent = t(
                                                 'settings.about.update.downloadFailed'
                                             );
                                             showInfoToast(
@@ -200,10 +199,10 @@ function buildAboutSchema(_getSettingsMenu: () => SettingsMenuHandle): MenuNode[
                                         const result = await DownloadApk();
                                         if (result && result.success && result.localPath) {
                                             const onInstallFailed = () => {
-                                                updateLink.textContent = t(
+                                                updateBtn.textContent = t(
                                                     'settings.about.update.downloadFailed'
                                                 );
-                                                updateLink.style.pointerEvents = '';
+                                                updateBtn.style.pointerEvents = '';
                                                 openExternalLink(r.url);
                                             };
                                             window.addEventListener(
@@ -211,7 +210,7 @@ function buildAboutSchema(_getSettingsMenu: () => SettingsMenuHandle): MenuNode[
                                                 onInstallFailed
                                             );
                                             window.wails?.installApk?.(result.localPath);
-                                            updateLink.textContent = t(
+                                            updateBtn.textContent = t(
                                                 'settings.about.update.installLaunched'
                                             );
                                             setTimeout(() => {
@@ -222,7 +221,7 @@ function buildAboutSchema(_getSettingsMenu: () => SettingsMenuHandle): MenuNode[
                                             }, 10000);
                                         } else {
                                             const errMsg = result?.error || '';
-                                            updateLink.textContent = t(
+                                            updateBtn.textContent = t(
                                                 'settings.about.update.downloadFailed'
                                             );
                                             showInfoToast(
@@ -232,12 +231,12 @@ function buildAboutSchema(_getSettingsMenu: () => SettingsMenuHandle): MenuNode[
                                         }
                                     }
                                 } catch {
-                                    updateLink.textContent = t(
+                                    updateBtn.textContent = t(
                                         'settings.about.update.downloadFailed'
                                     );
                                     openExternalLink(r.url);
                                 } finally {
-                                    updateLink.style.pointerEvents = '';
+                                    updateBtn.style.pointerEvents = '';
                                     // 清理进度监听器
                                     if (_progressListener) {
                                         window.removeEventListener('update:downloadProgress', _progressListener);
