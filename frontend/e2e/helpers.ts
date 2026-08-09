@@ -16,6 +16,87 @@ import path from "node:path";
 
 export const CDP_ENDPOINT = "http://127.0.0.1:9222";
 
+/** Web 入口 preview 根 URL（与 playwright.config.ts webServer url 保持一致）。 */
+export const WEB_ENTRY_URL =
+    process.env.WEB_URL || "http://localhost:4174/MikuMikuAR/app/";
+
+/**
+ * 导航到 Web 入口并等待 init() 完成（@web spec 共用，替代 5 个 spec 的重复副本）。
+ *
+ * init() 完成信号：#loading display:none（成功）或 background 有色（失败）。
+ * web 入口走 browser-adapter，GetConfig 等返回默认值，init 应成功。
+ *
+ * [doc:adr-099] SW 首次接管会 reload 一次（补 COOP/COEP 头解锁跨源隔离），
+ * reload 会销毁旧 execution context——必须在后续 page.evaluate 前等 SW 接管完成，
+ * 否则报 "Execution context was destroyed, most likely because of a navigation"
+ * （run 31324758315 @web smoke 7/7 失败根因）。SW 不可用（如 sw.js 404）时
+ * controller 恒为 null，短超时兜底不阻塞测试。
+ */
+export async function gotoWebEntry(page: Page): Promise<void> {
+    await page.goto(WEB_ENTRY_URL, { waitUntil: "commit", timeout: 30000 });
+
+    // 等 SW 首次接管后的 reload 完成（controller 非 null = 新文档已由 SW 控制）
+    await page
+        .waitForFunction(
+            () => navigator.serviceWorker?.controller != null,
+            null,
+            { timeout: 15000 }
+        )
+        .catch(() => { /* SW 未接管（本地 preview 未注册）时跳过，不影响测试 */ });
+
+    await page.waitForSelector("#btnMainAction", { timeout: 20000 });
+
+    // [doc:adr-183] web 入口 init 会弹 FSA「授权模型根目录」引导对话框（browser-adapter
+    // 有 FSA API 时触发），全屏拦截后续所有点击——与 @dom 的 dismissErrorDialog 同理。
+    // 统一在此关闭，让各 spec 无需各自处理。
+    await page.evaluate(() => {
+        const el = document.getElementById("mmd-dialog-overlay");
+        if (el?.classList.contains("mmd-dialog-visible")) {
+            el.classList.remove("mmd-dialog-visible");
+        }
+    });
+
+    // 等 init() 完成（同 vitePage fixture 的守卫逻辑）
+    await page.evaluate(() => {
+        return new Promise<void>((resolve) => {
+            const loading = document.getElementById("loading");
+            if (!loading) return resolve();
+            const done = () => resolve();
+            if (loading.style.display === "none" || loading.style.background) {
+                return done();
+            }
+            const obs = new MutationObserver(() => {
+                if (loading.style.display === "none" || loading.style.background) {
+                    obs.disconnect();
+                    done();
+                }
+            });
+            obs.observe(loading, { attributes: true, attributeFilter: ["style"] });
+            // [doc:e2e] 兜底 12s < test timeout 15s（同 vitePage 守卫）
+            setTimeout(() => {
+                obs.disconnect();
+                done();
+            }, 12000);
+        });
+    });
+
+    // 强制 #loading pointer-events:none 让 click 穿透（同 vitePage fixture）
+    await page.evaluate(() => {
+        const loading = document.getElementById("loading");
+        if (!loading) return;
+        const forcePassthrough = () => {
+            if (loading.style.pointerEvents !== "none") {
+                loading.style.pointerEvents = "none";
+            }
+        };
+        forcePassthrough();
+        new MutationObserver(forcePassthrough).observe(loading, {
+            attributes: true,
+            attributeFilter: ["style"],
+        });
+    });
+}
+
 /** Connect to the already-running Wails WebView2 via CDP.
  *  Uses 30s timeout to prevent hanging on Windows runner when
  *  connectOverCDP gets ECONNREFUSED (e.g. 9222 not yet open). */

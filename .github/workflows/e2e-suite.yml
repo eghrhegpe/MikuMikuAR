@@ -38,7 +38,8 @@ jobs:
   e2e-dom:
     name: E2E — DOM/Overlay Gate (@dom, vitePage)
     runs-on: ubuntu-latest
-    continue-on-error: true
+    # [2026-08-10] 去掉 job 级 continue-on-error：原「81 全败仍全绿」假绿已由下方
+    # failure-count gate 接管——测试失败不阻塞（best-effort），但失败超阈值必红。
     timeout-minutes: 30
     defaults:
       run:
@@ -74,6 +75,29 @@ jobs:
         timeout-minutes: 7
         continue-on-error: true
         run: npx playwright test --grep "@dom" --grep-invert "@overlay" --reporter=line
+
+      - name: E2E failure-count gate (@dom)
+        # [2026-08-10] 假绿防线：解析 Playwright 的 test-results/.last-run.json，
+        # failed 超阈值即 exit 1 让 job 变红——测试失败不再被 continue-on-error 全吞。
+        # 阈值 20：headless 环境硬伤修复前仍允许部分环境性失败（不阻塞开发），
+        # 但 >20 说明测试体系本身崩了（fixture 回归/大面积超时），必须红。
+        # 待 @overlay 隔离 + 环境硬伤修复后应把阈值收紧到 0 并去掉步骤级 continue-on-error。
+        if: always()
+        run: |
+          if [ ! -f test-results/.last-run.json ]; then
+            echo "::warning::test-results/.last-run.json 缺失（可能被 7min timeout 中断）——report 不可靠"
+            exit 0
+          fi
+          python3 -c "
+          import json
+          with open('test-results/.last-run.json') as f:
+              d = json.load(f)
+          p, fl, fa = d.get('passed', 0), d.get('flaky', 0), d.get('failed', 0)
+          print(f'::notice title=@dom summary::{p} passed, {fa} failed, {fl} flaky')
+          if fa > 20:
+              print(f'::error title=@dom gate::failed={fa} > 20 — 测试体系异常，job 标红')
+              exit(1)
+          "
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v5

@@ -102,10 +102,12 @@ export const test = base.extend<WailsFixtures>({
                     }
                 });
                 obs.observe(loading, { attributes: true, attributeFilter: ["style"] });
+                // [doc:e2e] 兜底 12s < test timeout 15s：先于 Playwright 超时生效，
+                // 否则 20s 兜底永不触发（test 先挂，守卫形同虚设）。
                 setTimeout(() => {
                     obs.disconnect();
                     done();
-                }, 20000);
+                }, 12000);
             });
         });
         // [doc:e2e] 纯 Vite 模式下 init() catch 会调 dom.showError() 设 #loading 的
@@ -204,10 +206,11 @@ export const test = base.extend<WailsFixtures>({
                     }
                 });
                 obs.observe(loading, { attributes: true, attributeFilter: ["style"] });
+                // [doc:e2e] 兜底 12s < test timeout 15s（同 vitePage 守卫）
                 setTimeout(() => {
                     obs.disconnect();
                     done();
-                }, 20000);
+                }, 12000);
             });
         });
         await page.evaluate(() => {
