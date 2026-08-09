@@ -368,13 +368,27 @@ jobs:
           go-version: '1.25.0'
           cache-dependency-path: go.sum
 
-      - name: Install Wails CLI (v3)
-        working-directory: .
+      - name: Extract wails version (from go.mod, 与 release/cache-warm 同源)
+        id: wv
         run: |
           WAILS_VER=$(grep 'wails/v3' go.mod | head -1 | awk '{print $2}')
-          echo "Installing wails3@$WAILS_VER"
-          go install github.com/wailsapp/wails/v3/cmd/wails3@$WAILS_VER
-          echo "WAILS_VER=$WAILS_VER" >> $GITHUB_ENV
+          echo "wails_ver=$WAILS_VER" >> $GITHUB_OUTPUT
+
+      # 复用 cache-warm 预热的 wails3 二进制（key 与 release/cache-warm 完全一致，
+      # 命中即跳过 go install —— 否则每次冷启动下载 clir/pterm/ProtonMail 等依赖再编译）。
+      - name: Cache Wails binary
+        uses: actions/cache@v5
+        id: cache-wails
+        with:
+          path: ~/go/bin/wails3.exe
+          key: wails-${{ steps.wv.outputs.wails_ver }}-${{ runner.os }}
+
+      - name: Install Wails CLI (v3)
+        if: steps.cache-wails.outputs.cache-hit != 'true'
+        working-directory: .
+        run: |
+          echo "Installing wails3@${{ steps.wv.outputs.wails_ver }}"
+          go install github.com/wailsapp/wails/v3/cmd/wails3@${{ steps.wv.outputs.wails_ver }}
 
       - name: Start Wails dev + run @webgl E2E
         env:
