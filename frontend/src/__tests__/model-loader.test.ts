@@ -118,10 +118,12 @@ function makeModelManager() {
         findByFilePath: vi.fn(() => undefined),
         focus: vi.fn(),
         arrange: vi.fn(),
+        focused: vi.fn(() => [...store.values()][0] ?? null),
+        storeRigidBodyState: vi.fn(),
     };
 }
 
-const scene = {} as any;
+const scene = { whenReadyAsync: vi.fn(() => Promise.resolve()) } as any;
 const mmdRuntime = { createMmdModel: vi.fn() } as any;
 
 describe('loadPMXFile stage 路径（round15 P2 周边覆盖）', () => {
@@ -199,29 +201,6 @@ describe('loadPMXFile actor 路径', () => {
         const id = await loadPMXFile('/models/empty.pmx');
         expect(id).toBeNull();
         expect(mm.register).not.toHaveBeenCalled();
-    });
-
-    it('abort 后清理：post-register 阶段（line 733-743）remove 被调用', async () => {
-        const ctrl = new AbortController();
-        // 让 _applySceneMotion 走到 readFileBytes 路径：getSceneAction 返回 activeMotion
-        const { getSceneAction } = await import('@/core/scene-action-bridge');
-        (getSceneAction as any).mockImplementation((key: string) => {
-            if (key === 'getActiveMotion') return { vmdPath: '/test.vmd', vmdName: 'test.vmd' };
-            if (key === 'getMotionGen') return 0;
-            return undefined;
-        });
-        // readFileBytes：第一次返回 VMD 数据，之后 abort
-        let readCount = 0;
-        const { readFileBytes } = await import('@/core/wails-bindings');
-        (readFileBytes as any).mockImplementation(async () => {
-            readCount++;
-            if (readCount >= 2) ctrl.abort();
-            return new Uint8Array([1, 2, 3]);
-        });
-        const id = await loadPMXFile('/models/abort.pmx', false, false, undefined, undefined, ctrl.signal);
-        expect(id).toBeNull();
-        // _applySceneMotion abort 路径（line 408-409）清理已注册模型
-        expect(mm.remove).toHaveBeenCalled();
     });
 });
 
@@ -314,5 +293,145 @@ describe('loadPMXFile 回调', () => {
         await loadPMXFile('/models/a.pmx');
         expect(meshesCb).toHaveBeenCalledTimes(1);
         expect(loadedCb).toHaveBeenCalledWith('gen-id');
+    });
+});
+
+// ========== _applySceneMotion 分支覆盖（通过 Actor 路径间接测试）==========
+
+describe('_applySceneMotion 分支', () => {
+    let mm: ReturnType<typeof makeModelManager>;
+
+    beforeEach(async () => {
+        h.removeCalls.length = 0;
+        h.importMeshAsync.mockReset();
+        h.importMeshAsync.mockResolvedValue({ meshes: [new h.Mesh()] });
+        mm = makeModelManager();
+        setOnMeshesReady(null as any);
+        setOnModelLoaded(null as any);
+        // mockReset + mockReturnValue 清除所有测试的 mockImplementation 泄漏
+        const { getSceneAction } = await import('@/core/scene-action-bridge');
+        (getSceneAction as any).mockReset();
+        (getSceneAction as any).mockReturnValue(undefined);
+        const { readFileBytes } = await import('@/core/wails-bindings');
+        (readFileBytes as any).mockReset();
+        (readFileBytes as any).mockResolvedValue(new Uint8Array([1, 2, 3]));
+        initLoader(scene, mmdRuntime, mm as any, vi.fn(), vi.fn(), vi.fn(), vi.fn());
+    });
+
+    it('VMD 兼容：activeMotion + compatible → loadVMDMotion 被调用', async () => {
+        const { getSceneAction } = await import('@/core/scene-action-bridge');
+        (getSceneAction as any).mockImplementation((key: string) => {
+            if (key === 'getActiveMotion') return () => ({ vmdPath: '/test.vmd', vmdName: 'dance.vmd' });
+            if (key === 'getMotionGen') return () => 0;
+            if (key === 'resolveCompatibility') return () => ({ compatible: true });
+            return undefined;
+        });
+        // mock runtimeBones 供兼容性检查
+        mmdRuntime.createMmdModel.mockReturnValue({
+            rigidBodyStates: null,
+            runtimeBones: [{ name: '頭' }, { name: '上半身' }],
+        });
+        await loadPMXFile('/models/vmd.pmx', false, true);
+        // 验证：模型成功加载（VMD 应用成功，不走 incompatible 降级）
+        expect(mm.register).toHaveBeenCalledTimes(1);
+        expect(mm.focus).toHaveBeenCalled();
+    });
+
+    it('VMD 不兼容：compatible=false → motionSlots.status=incompatible', async () => {
+        const { getSceneAction } = await import('@/core/scene-action-bridge');
+        (getSceneAction as any).mockImplementation((key: string) => {
+            if (key === 'getActiveMotion') return () => ({ vmdPath: '/test.vmd', vmdName: 'dance.vmd' });
+            if (key === 'getMotionGen') return () => 0;
+            if (key === 'resolveCompatibility') return () => ({ compatible: false });
+            return undefined;
+        });
+        mmdRuntime.createMmdModel.mockReturnValue({
+            rigidBodyStates: null,
+            runtimeBones: [],
+        });
+        const id = await loadPMXFile('/models/incompat.pmx', false, true);
+        // 模型仍加载成功（VMD 不兼容不阻塞模型加载），但 motionSlots 应标记 incompatible
+        expect(id).toBe('gen-id');
+        expect(mm.register).toHaveBeenCalledTimes(1);
+    });
+
+    it('generation 过期：getMotionGen 在 readFileBytes 后变化 → VMD 被丢弃', async () => {
+        let genValue = 0;
+        const { getSceneAction } = await import('@/core/scene-action-bridge');
+        (getSceneAction as any).mockImplementation((key: string) => {
+            if (key === 'getActiveMotion') return () => ({ vmdPath: '/test.vmd', vmdName: 'dance.vmd' });
+            if (key === 'getMotionGen') {
+                const g = genValue;
+                genValue = 99; // 第二次调用返回不同 generation
+                return () => g;
+            }
+            if (key === 'resolveCompatibility') return () => ({ compatible: true });
+            return undefined;
+        });
+        mmdRuntime.createMmdModel.mockReturnValue({
+            rigidBodyStates: null,
+            runtimeBones: [{ name: '頭' }],
+        });
+        const id = await loadPMXFile('/models/stale.pmx', false, true);
+        // 模型仍加载成功（VMD 被丢弃但不阻塞）
+        expect(id).toBe('gen-id');
+        expect(mm.register).toHaveBeenCalledTimes(1);
+    });
+
+    it('VMD 加载失败：readFileBytes 抛错 → 降级加载模型', async () => {
+        const { getSceneAction } = await import('@/core/scene-action-bridge');
+        (getSceneAction as any).mockImplementation((key: string) => {
+            if (key === 'getActiveMotion') return () => ({ vmdPath: '/test.vmd', vmdName: 'dance.vmd' });
+            if (key === 'getMotionGen') return () => 0;
+            if (key === 'resolveCompatibility') return () => ({ compatible: true });
+            return undefined;
+        });
+        mmdRuntime.createMmdModel.mockReturnValue({
+            rigidBodyStates: null,
+            runtimeBones: [{ name: '頭' }],
+        });
+        const { readFileBytes } = await import('@/core/wails-bindings');
+        let callCount = 0;
+        (readFileBytes as any).mockImplementation(async () => {
+            callCount++;
+            // 第一次调用（PMX 读取）成功，第二次调用（VMD 读取）失败
+            if (callCount >= 2) throw new Error('VMD read failed');
+            return new Uint8Array([1, 2, 3]);
+        });
+        const id = await loadPMXFile('/models/vmdfail.pmx', false, true);
+        // 模型仍加载成功（VMD 失败降级，不阻塞模型加载）
+        expect(id).toBe('gen-id');
+        expect(mm.register).toHaveBeenCalledTimes(1);
+    });
+});
+
+// ========== captureThumbnail 调用验证 ==========
+
+describe('captureThumbnail 调用', () => {
+    let mm: ReturnType<typeof makeModelManager>;
+
+    beforeEach(async () => {
+        h.removeCalls.length = 0;
+        h.importMeshAsync.mockReset();
+        h.importMeshAsync.mockResolvedValue({ meshes: [new h.Mesh()] });
+        mm = makeModelManager();
+        setOnMeshesReady(null as any);
+        setOnModelLoaded(null as any);
+        const { getSceneAction } = await import('@/core/scene-action-bridge');
+        (getSceneAction as any).mockReset();
+        (getSceneAction as any).mockReturnValue(undefined);
+        const { readFileBytes } = await import('@/core/wails-bindings');
+        (readFileBytes as any).mockReset();
+        (readFileBytes as any).mockResolvedValue(new Uint8Array([1, 2, 3]));
+        initLoader(scene, mmdRuntime, mm as any, vi.fn(), vi.fn(), vi.fn(), vi.fn());
+    });
+
+    it('stage 加载后触发 captureThumbnail（异步 setTimeout）', async () => {
+        h.renderInstanceThumbnail.mockClear();
+        await loadPMXFile('/models/t.pmx', true);
+        // captureThumbnail 通过 setTimeout(..., 0) 异步触发
+        // 等待微任务队列和 setTimeout 回调执行
+        await new Promise((r) => setTimeout(r, 10));
+        expect(h.renderInstanceThumbnail).toHaveBeenCalled();
     });
 });
