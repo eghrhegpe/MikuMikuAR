@@ -142,19 +142,24 @@ npm run test                   # 或 npx vitest run
 
 ## 7. CI 门禁对照
 
-| Job | Runner | CLI 友好 | 性质 | 命令 | 覆盖 |
-|-----|--------|----------|------|------|------|
-| `e2e` | ubuntu-latest | ✅ | **阻塞门禁** | 起 Vite → `npx playwright test --grep "@dom"` | `@dom` ×30（smoke + 面板全覆盖 + 程序化 mesh + 生命周期） |
-| `e2e-wails` | windows-latest | ⚠️ | **非阻塞**（`continue-on-error`） | 起 `wails3 dev`(带 9222) → `npx playwright test --grep "@webgl"` | `@webgl` ×11（真实模型加载 + 动作/换装 + 截图管线） |
-| `e2e-web-smoke` | ubuntu-latest | ✅ | **阻塞门禁** | build + preview dist-web → `npx playwright test --grep "@web"` smoke only | `@web` ×9（首屏 + 能力门控 + 资源加载 + IDB CRUD） |
-| `e2e-web-full` | ubuntu-latest | ✅ | **非阻塞**（`continue-on-error`） | build + preview dist-web → `npx playwright test --grep "@web"` (全量) | `@web` ×23（含 FSA 授权流 + 下载面板 + 能力声明） |
+> [2026-08-10] E2E 已挂回 **push**（`.github/workflows/e2e-suite.yml`，分支 main/master），
+> 作为独立 workflow 与 CI 分开显示。分层门禁：真门禁失败即红；环境硬伤 job 为
+> best-effort + failure-count gate（超阈值才红，杜绝「全败仍全绿」假绿）。
 
-> **设计意图**：`e2e`（@dom，Ubuntu Chromium）和 `e2e-web-smoke`（@web smoke）快且稳，作为阻塞门禁。
-> `e2e-wails`（@webgl，需 Windows + WebView2/CDP）和 `e2e-web-full`（@web 全量，含 FSA/IndexedDB 探针）
-> 设为非阻塞——跑完出报告即可，不影响合并。分支保护 rules 只需勾选 `Frontend — Test & Build` +
-> `E2E — DOM/Overlay Gate (@dom, vitePage)` + `E2E — Web Entry Smoke (@web, vite preview)` 三项作为 required checks。
+| Job | Runner | 触发 | 性质 | 命令 | 覆盖 |
+|-----|--------|------|------|------|------|
+| `e2e-dom` | ubuntu-latest | push / dispatch / 周一 cron | ✅ **阻塞门禁**（failed>0 即红） | 起 Vite → `npx playwright test --grep "@dom\b" --grep-invert "@overlay"` | `@dom` 纯 DOM 断言（a11y/nav/`__scene` hook，不含 WebGL overlay） |
+| `e2e-web-smoke` | ubuntu-latest | 同上 | ✅ **阻塞门禁**（failed>0 即红） | build + preview dist-web → `npx playwright test --grep "@web\b"` smoke only | `@web` ×9（首屏 + 能力门控 + 资源加载 + IDB CRUD） |
+| `e2e-web-full` | ubuntu-latest | 同上 | ⚠️ **best-effort**（gate：failed>20 红） | build + preview dist-web → `npx playwright test --grep "@web\b"` (全量) | `@web` ×23（含 FSA 授权流 + 下载面板 + 能力声明） |
+| `e2e-wails` | windows-latest | 同上 | ⚠️ **best-effort**（gate：failed>20 红） | 起 `wails3 dev`(带 9222) → `npx playwright test --grep "@webgl\b"` | `@webgl` ×11（真实模型加载 + 动作/换装 + 截图管线） |
 
-本地复刻 CI 行为即上述「1 / 2」两套命令。本地 `wails3 dev` 就绪时直接套用「3」一次跑全量，最接近 CI 的 `e2e + e2e-wails` 合并结果。
+> **设计意图**：`e2e-dom`（@dom，Ubuntu Chromium）和 `e2e-web-smoke`（@web smoke）快且稳，
+> 作为真·阻塞门禁（分开显示，前端挂了 AI 好修）。`e2e-wails`（@webgl，需 Windows + WebView2/CDP）
+> 与 `e2e-web-full`（@web 全量，含 FSA/IndexedDB 探针）有无 GPU 等环境硬伤，设为 best-effort
+> 并加失败计数 gate——测试失败仍出报告、不假装绿，超阈值才标红，不阻塞 push。
+> 分支保护 rules 如需强制可勾选 `E2E — DOM/Overlay Gate (@dom, vitePage)` + `E2E — Web Entry Smoke (@web, vite preview)`。
+
+本地复刻 CI 行为即上述「1 / 2」两套命令。本地 `wails3 dev` 就绪时直接套用「3」一次跑全量，最接近 CI 的 `e2e-dom + e2e-wails` 合并结果。
 
 ### @webgl 本地开发注意事项
 

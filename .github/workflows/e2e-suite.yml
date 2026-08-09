@@ -1,19 +1,15 @@
 # ============================================================
-# E2E Suite（独立于 push CI）
+# E2E Suite（push 后独立 workflow，job 分开显示）
 #
-# 2026-08-09 从 ci.yml 迁出：4 个 E2E job（@dom / smoke / @web full / @webgl full）
-# 在 headless CI 上均有环境硬伤（无 GPU → WebGL overlay spec 必崩 / 能力探测
-# spec waitForSelector 20s 超时 / WebView2 启动不稳），历史频繁失败并曾拖垮
-# push CI 长达 1 小时。push CI 只保留 8 个可信门禁（快而绿）；
-# 深度 E2E 验证按需（workflow_dispatch）或每周一自动跑一次。
-#
-# 超时结构（防卡死，[2026-08-09] 实锤）：
-#   - 测试步骤 timeout-minutes: 7 —— setup（checkout/npm ci/Chromium 下载）实测
-#     仅 46s，时间黑洞是测试本身（81 个必败 spec 串行 30s 超时 ×2 重试可跑 40+ 分钟）。
-#     步骤级超时到点 kill，不陪跑。
-#   - job 级 timeout-minutes: 30 —— 仅兜底 setup/上传等步骤意外卡死。
-#   - continue-on-error: true 保持 best-effort 语义（环境硬伤未修复前测试结果
-#     无信息量，不因此红 run；独立跑仍可查看 artifact 报告定位问题）。
+# 2026-08-09 曾从 ci.yml 迁出为纯 schedule/dispatch（headless CI 环境硬伤拖垮
+# push CI 长达 1 小时）；[2026-08-10] 按「分层门禁」挂回 push——E2E 与 CI 各自独立
+# workflow、job 分开显示（前端挂了 AI 好修，E2E 挂了单独可见、不假装绿）：
+#   - @dom / @web-smoke：无 GPU 依赖的纯 DOM / 网页冒烟，真门禁，失败即红。
+#   - @web-full / @webgl：环境硬伤（WebGL overlay 无 GPU 必崩 / WebView2 不稳），
+#     best-effort + failure-count gate（超阈值才红），避免重蹈「81 全败仍全绿」假绿，
+#     又不让环境性抖动阻塞 push。
+#   - 历史「81 个必败 spec 串行 30s 超时 ×2 重试可跑 40+ 分钟」由测试步骤
+#     timeout-minutes: 7 兜底（到点 kill，不陪跑）。
 #
 # @see docs/adr/adr-060-e2e-testing-strategy.md
 # ============================================================
@@ -21,6 +17,8 @@
 name: E2E Suite
 
 on:
+  push:
+    branches: [main, master]
   workflow_dispatch:
   schedule:
     - cron: '0 6 * * 1' # 每周一 06:00 UTC
@@ -38,8 +36,8 @@ jobs:
   e2e-dom:
     name: E2E — DOM/Overlay Gate (@dom, vitePage)
     runs-on: ubuntu-latest
-    # [2026-08-10] 去掉 job 级 continue-on-error：原「81 全败仍全绿」假绿已由下方
-    # failure-count gate 接管——测试失败不阻塞（best-effort），但失败超阈值必红。
+    # [2026-08-10] 挂回 push 后转为阻塞门禁：测试失败/失败数>0 即红，杜绝假绿。
+    # 历史「81 全败仍全绿」假绿已由下方 failure-count gate（阈值 0）接管。
     timeout-minutes: 30
     defaults:
       run:
@@ -72,21 +70,19 @@ jobs:
         # 它们已标 @overlay tag，此处排除 → 门禁只跑纯 DOM 断言（a11y/nav/__scene hook），
         # 本地实测 1.0m 全绿；@overlay 测试保留在带 GPU 环境（本地 / 真机 @webgl）跑。
         # 参数已对齐 playwright.config.ts：15s/项 + maxFailures=5 + retries=1 + globalTimeout 7min。
+        # [doc:e2e] @dom 加 \b 防御未来标签命名冲突（同 @web\b 教训）
         timeout-minutes: 7
-        continue-on-error: true
-        run: npx playwright test --grep "@dom" --grep-invert "@overlay" --reporter=line
+        run: npx playwright test --grep "@dom\b" --grep-invert "@overlay" --reporter=line
 
       - name: E2E failure-count gate (@dom)
-        # [2026-08-10] 假绿防线：解析 Playwright 的 test-results/.last-run.json，
-        # failed 超阈值即 exit 1 让 job 变红——测试失败不再被 continue-on-error 全吞。
-        # 阈值 20：headless 环境硬伤修复前仍允许部分环境性失败（不阻塞开发），
-        # 但 >20 说明测试体系本身崩了（fixture 回归/大面积超时），必须红。
-        # 待 @overlay 隔离 + 环境硬伤修复后应把阈值收紧到 0 并去掉步骤级 continue-on-error。
+        # [2026-08-10] 挂回 push 后收紧为阻塞门禁：last-run.json 缺失（report 不可靠）
+        # 或 failed > 0 即 exit 1 让 job 变红——@dom 已净化、无 GPU 依赖，任何失败即真红。
+        # 不再有 continue-on-error 兜底。
         if: always()
         run: |
           if [ ! -f test-results/.last-run.json ]; then
-            echo "::warning::test-results/.last-run.json 缺失（可能被 7min timeout 中断）——report 不可靠"
-            exit 0
+            echo "::error title=@dom gate::test-results/.last-run.json 缺失（可能被 7min timeout 中断）——report 不可靠，job 标红"
+            exit 1
           fi
           python3 -c "
           import json
@@ -94,8 +90,8 @@ jobs:
               d = json.load(f)
           p, fl, fa = d.get('passed', 0), d.get('flaky', 0), d.get('failed', 0)
           print(f'::notice title=@dom summary::{p} passed, {fa} failed, {fl} flaky')
-          if fa > 20:
-              print(f'::error title=@dom gate::failed={fa} > 20 — 测试体系异常，job 标红')
+          if fa > 0:
+              print(f'::error title=@dom gate::failed={fa} > 0 — @dom 门禁失败，job 标红')
               exit(1)
           "
 
@@ -111,11 +107,12 @@ jobs:
   # connectOverCDP 连真 Wails WebView2。NOTE: CDP 仅 Chromium 系可用；
   # Wails on Linux 用 WebKitGTK 不兼容 CDP → 必须 windows-latest。
   # 复用 cache-warm/release 的 wails3 二进制缓存（同 key，命中免 go install）。
+  # [2026-08-10] 挂回 push：job 级 continue-on-error 去掉，改测试步骤级 + 下方
+  # failure-count gate（阈值 20）——环境性失败容忍，超阈值才红，杜绝假绿。
   # ------------------------------------------------------------
   e2e-wails:
     name: E2E — Full Integration (@webgl, wailsPage)
     runs-on: windows-latest
-    continue-on-error: true
     timeout-minutes: 30
     defaults:
       run:
@@ -157,7 +154,10 @@ jobs:
           go install github.com/wailsapp/wails/v3/cmd/wails3@${{ steps.wv.outputs.wails_ver }}
 
       - name: Start Wails dev + run @webgl E2E
+        # [2026-08-10] 步骤级 continue-on-error：吞环境性失败（WebView2 启动不稳/无
+        # GPU 渲染必崩），失败与否交给下方 failure-count gate 裁决——超阈值才红。
         timeout-minutes: 7
+        continue-on-error: true
         env:
           # Expose CDP on WebView2 via MMCAR_DEBUG_PORT — main.go reads it and
           # injects --remote-debugging-port. WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS
@@ -175,7 +175,8 @@ jobs:
             sleep 3
           done
           cd frontend
-          npx playwright test --grep @webgl --reporter=line
+          # [doc:e2e] @webgl 加 \b：防未来 @webglxxx 标签误抓（同 @web\b 教训）
+          npx playwright test --grep "@webgl\b" --reporter=line
           TEST_EXIT=$?
           kill $WAILS_PID 2>/dev/null || true
           exit $TEST_EXIT
@@ -187,24 +188,27 @@ jobs:
           name: playwright-webgl-report
           path: frontend/playwright-report/
 
-      - name: WebGL Test Summary
+      - name: E2E failure-count gate (@webgl)
+        # [2026-08-10] 挂回 push 的假绿防线：failed > 20（环境硬伤修复前允许少量
+        # 环境性失败）或 last-run.json 缺失（report 不可靠）→ exit 1 让 job 变红。
+        # 注意：本 job defaults.working-directory=frontend，路径写 test-results/ 即可
+        # （原 WebGL Test Summary 误写 frontend/test-results/ 导致永远走 not-found 分支）。
         if: always()
         run: |
-          if [ -f frontend/test-results/.last-run.json ]; then
-            python3 -c "
+          if [ ! -f test-results/.last-run.json ]; then
+            echo "::error title=@webgl gate::test-results/.last-run.json 缺失（CDP 未起或测试被 7min timeout 中断）——report 不可靠，job 标红"
+            exit 1
+          fi
+          python3 -c "
           import json
-          with open('frontend/test-results/.last-run.json') as f:
+          with open('test-results/.last-run.json') as f:
               d = json.load(f)
           p, fl, fa = d.get('passed',0), d.get('flaky',0), d.get('failed',0)
-          if fa > 0:
-              print(f'::warning title=@webgl ({fa} failed)::seed-model={d.get(\"suites\",[])}')
-              print(f'::warning title=@webgl summary::{p} passed, {fa} failed, {fl} flaky')
-          else:
-              print(f'::notice title=@webgl summary::{p} passed, {fa} failed, {fl} flaky')
+          print(f'::notice title=@webgl summary::{p} passed, {fa} failed, {fl} flaky')
+          if fa > 20:
+              print(f'::error title=@webgl gate::failed={fa} > 20 — 测试体系异常，job 标红')
+              exit(1)
           "
-          else
-            echo '::notice title=@webgl report::test-results not found (all passed?)'
-          fi
 
   # ------------------------------------------------------------
   # E2E — Web Entry Smoke (@web, vite preview 4174)
@@ -216,7 +220,8 @@ jobs:
   e2e-web-smoke:
     name: E2E — Web Entry Smoke (@web, vite preview)
     runs-on: ubuntu-latest
-    continue-on-error: true
+    # [2026-08-10] 挂回 push：job 级 continue-on-error 去掉 → 步骤级 + gate（阈值 0，
+    # 缺失即红）。smoke 无 GPU 依赖、应全绿，任何失败即真红（分开显示，不假装绿）。
     timeout-minutes: 30
     defaults:
       run:
@@ -240,7 +245,9 @@ jobs:
       - name: Run @web E2E smoke
         # [2026-08-09] 防卡死护栏：测试步骤 7 分钟即杀（smoke 正常 ≤3 分钟，
         # 历史曾 grep 误抓 @webgl 导致全部 30s 超时拖 18 分钟）。
+        # [2026-08-10] 步骤级 continue-on-error：失败交给下方 gate 裁决（阈值 0）。
         timeout-minutes: 7
+        continue-on-error: true
         # Playwright 的 config.webServer 在 RUN_WEB_E2E=1 时自动管理 4174 preview server，
         # 含构建 + 启动 + 等待就绪，测试完成后自动清理。
         env:
@@ -248,6 +255,26 @@ jobs:
         # [doc:e2e] grep 必须用 @web\b 而非 @web：@webgl 测试标题含 @web 前缀，
         # 裸 @web 正则会把 42 个 @webgl（wailsPage/CDP）误抓进 @web job。
         run: npx playwright test --grep "@web\b" --reporter=line
+
+      - name: E2E failure-count gate (@web-smoke)
+        # [2026-08-10] 挂回 push 的假绿防线：smoke 为真门禁，last-run.json 缺失或
+        # failed > 0 即 exit 1 让 job 变红。
+        if: always()
+        run: |
+          if [ ! -f test-results/.last-run.json ]; then
+            echo "::error title=@web-smoke gate::test-results/.last-run.json 缺失（可能被 7min timeout 中断）——report 不可靠，job 标红"
+            exit 1
+          fi
+          python3 -c "
+          import json
+          with open('test-results/.last-run.json') as f:
+              d = json.load(f)
+          p, fl, fa = d.get('passed', 0), d.get('flaky', 0), d.get('failed', 0)
+          print(f'::notice title=@web-smoke summary::{p} passed, {fa} failed, {fl} flaky')
+          if fa > 0:
+              print(f'::error title=@web-smoke gate::failed={fa} > 0 — @web smoke 门禁失败，job 标红')
+              exit(1)
+          "
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v5
@@ -264,7 +291,8 @@ jobs:
   e2e-web-full:
     name: E2E — Web Full Suite (@web, all specs)
     runs-on: ubuntu-latest
-    continue-on-error: true
+    # [2026-08-10] 挂回 push：job 级 continue-on-error 去掉 → 步骤级 + gate（阈值 20，
+    # 缺失即红）。full suite 量大、个别环境性抖动容忍，超阈值才红，杜绝假绿。
     timeout-minutes: 30
     defaults:
       run:
@@ -286,13 +314,35 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Run all @web E2E tests
+        # [2026-08-10] 步骤级 continue-on-error：失败交给下方 gate 裁决（阈值 20）。
         timeout-minutes: 7
+        continue-on-error: true
         # Playwright 的 config.webServer 在 RUN_WEB_E2E=1 时自动管理 4174 preview server，
         # 含构建 + 启动 + 等待就绪，测试完成后自动清理。
         env:
           RUN_WEB_E2E: '1'
         # [doc:e2e] 同 e2e-web-smoke：@web\b 精确匹配，避免 @webgl 误抓。
         run: npx playwright test --grep "@web\b" --reporter=line
+
+      - name: E2E failure-count gate (@web-full)
+        # [2026-08-10] 挂回 push 的假绿防线：failed > 20（full suite 环境性抖动容忍）
+        # 或 last-run.json 缺失（report 不可靠）→ exit 1 让 job 变红。
+        if: always()
+        run: |
+          if [ ! -f test-results/.last-run.json ]; then
+            echo "::error title=@web-full gate::test-results/.last-run.json 缺失（可能被 7min timeout 中断）——report 不可靠，job 标红"
+            exit 1
+          fi
+          python3 -c "
+          import json
+          with open('test-results/.last-run.json') as f:
+              d = json.load(f)
+          p, fl, fa = d.get('passed', 0), d.get('flaky', 0), d.get('failed', 0)
+          print(f'::notice title=@web-full summary::{p} passed, {fa} failed, {fl} flaky')
+          if fa > 20:
+              print(f'::error title=@web-full gate::failed={fa} > 20 — 测试体系异常，job 标红')
+              exit(1)
+          "
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v5

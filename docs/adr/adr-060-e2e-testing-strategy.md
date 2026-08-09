@@ -177,6 +177,8 @@
 
 > **为何两层而非一层**：单层 `wails3 dev` 在 ubuntu 上因 WebKit≠CDP 根本连不上，若强行全量阻塞会 100% 红。分层后：可靠 DOM 门禁（`@dom`）作为真·提交门禁；完整 3D 集成（`@webgl`）在正确平台（Windows）上跑且容忍 flake。
 
+> **演化（[2026-08-10]）**：2026-08-09 曾将全部 E2E job 迁出 push CI（headless 环境硬伤拖垮 CI）；2026-08-10 以「分层 + 失败计数 gate」挂回 push 独立 workflow，杜绝「push 全绿但 E2E 从未跑」的假绿。详见 §六 CI 门禁更新描述。
+
 ---
 
 ## 四、决策对比
@@ -249,7 +251,7 @@
 | 报告 | — | `npx playwright show-report`（默认 `:9323`） | — |
 | 单元（Vitest） | — | `npm run test` | 33 spec |
 
-CI 门禁：`e2e`(ubuntu, `@dom`, 阻塞) + `e2e-wails`(windows, `@webgl`, `continue-on-error`) + `webgl-weekly.yml`(windows, `@webgl`, **阻塞**, 周日 cron/手动, 失败开 issue)。准确计数以 `npx playwright test --list` 为准，详见 README §7 与 ADR-041 §4。
+CI 门禁（[2026-08-10 更新]）：E2E 挂 **push**（独立 workflow `.github/workflows/e2e-suite.yml`，分支 main/master，与 CI 分开显示）。`e2e-dom`(ubuntu, `@dom` 纯 DOM, **阻塞** failed>0 即红) + `e2e-web-smoke`(ubuntu, `@web` smoke, **阻塞** failed>0 即红) + `e2e-web-full`(ubuntu, `@web` 全量, best-effort, gate failed>20 红) + `e2e-wails`(windows, `@webgl`, best-effort, gate failed>20 红)。历史「全败仍全绿」假绿由各 job 的 failure-count gate 根治（超阈值 exit 1）。`webgl-weekly.yml`(windows, `@webgl`, **阻塞**, 周日 cron/手动, 失败开 issue) 保留为每周深度回归。准确计数以 `npx playwright test --list` 为准，详见 README §7 与 ADR-041 §4。
 
 ---
 
