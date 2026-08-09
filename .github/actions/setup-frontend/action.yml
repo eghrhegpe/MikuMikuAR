@@ -23,7 +23,7 @@ description: 统一 Node 环境：setup-node + 可选 npm ci（调用方需先 c
 
 inputs:
   node-version:
-    description: Node.js 版本
+    description: Node.js 版本（默认跟随仓库级变量 vars.NODE_VERSION，未设时回退 24）
     required: false
     default: '24'
   working-directory:
@@ -45,7 +45,10 @@ runs:
     - name: Setup Node.js
       uses: actions/setup-node@v5
       with:
-        node-version: ${{ inputs.node-version }}
+        # 版本单点：仓库级变量 vars.NODE_VERSION 优先（GitHub Settings → Variables 配置），
+        # 调用方显式传 node-version 可覆盖（release/cache-warm 传 env.NODE_VERSION），
+        # 都未设置时回退本 input 默认值 24。
+        node-version: ${{ vars.NODE_VERSION || inputs.node-version }}
         cache: ${{ inputs.cache }}
         cache-dependency-path: ${{ inputs.working-directory }}/package-lock.json
 

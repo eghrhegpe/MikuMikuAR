@@ -39,7 +39,7 @@ permissions:
 
 env:
   GO_VERSION: '1.25.0'
-  NODE_VERSION: '24'
+  NODE_VERSION: ${{ vars.NODE_VERSION || '24' }}
 
 jobs:
   # ── Windows / Android 共享缓存（二者均跑 windows-latest，key 相同）──

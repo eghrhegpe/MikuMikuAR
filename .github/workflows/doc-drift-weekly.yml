@@ -37,7 +37,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: '24'
+          node-version: ${{ vars.NODE_VERSION || '24' }}
 
       - name: Run doc-drift guard (JSON)
         run: node scripts/check-doc-drift.mjs --json > drift.json 2>/dev/null
