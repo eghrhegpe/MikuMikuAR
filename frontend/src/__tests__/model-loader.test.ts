@@ -1,20 +1,25 @@
-// model-loader.test.ts — [fix:round15 P2] Stage 分支注册后 abort 清理块（line 587-596）覆盖尝试。
+// model-loader.test.ts — Stage / Actor 全路径覆盖 + abort 清理 + 回调验证
 //
-// 关键可达性分析（决定了本文件的变更行覆盖上限）：
-//   loadPMXFile 的 stage 分支在 `await ImportMeshAsync(...)`（line 491）之后、到新 guard（line 589）
-//   之间**没有任何 await / yield**；effectiveSignal.aborted 是同一 AbortSignal 的实时 getter。
-//   - 若 signal 在 import 前/中已 abort：line 473 或 line 508 的既有 guard 已 return null，永远到不了 589。
-//   - 若 import 时未 abort：508 之后同步执行直到 589，期间 signal 状态不可能翻转（单线程无 yield）。
-//   ⇒ 新 guard（589-595）在单次调用内结构上不可达。本测试以 stage 成功路径 + abort 路径
-//     证明该结论，并覆盖其周边 stage 代码；变更行本身 0% 可通过无头单测覆盖。
+// 可达性分析（stage abort guard line 589-595）：
+//   stage 分支在 ImportMeshAsync 之后到 guard 之间无 await/yield，
+//   signal 状态在单线程内不可翻转 ⇒ 589 结构上不可达（v8 ignore）。
+// Actor 路径（line 636-828）：createMmdModel → register →贴地→ _applySceneMotion → focus → 缩略图。
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const h = vi.hoisted(() => {
     class Mesh {
+        static [Symbol.hasInstance](obj: any): boolean {
+            return obj != null && obj.__proto__ === Mesh.prototype;
+        }
         name = 'mesh';
         material: any = null;
         position = { x: 0, y: 0, z: 0 };
-        getHierarchyBoundingVectors = () => ({ min: { x: 0, y: 0, z: 0 }, max: { x: 0, y: 0, z: 0 } });
+        isDisposed = () => false;
+        getHierarchyBoundingVectors = () => ({
+            min: { x: 0, y: 0, z: 0 },
+            max: { x: 0, y: 10, z: 0 },
+        });
+        skeleton = { bones: [] };
         dispose = vi.fn();
     }
     return {
@@ -98,7 +103,7 @@ vi.mock('@/core/config', () => ({
     modelRegistry: new Map(),
 }));
 
-import { initLoader, loadPMXFile } from '../scene/manager/model-loader';
+import { initLoader, loadPMXFile, setOnMeshesReady, setOnModelLoaded } from '../scene/manager/model-loader';
 
 function makeModelManager() {
     const store = new Map<string, any>();
@@ -155,5 +160,159 @@ describe('loadPMXFile stage 路径（round15 P2 周边覆盖）', () => {
         const id = await loadPMXFile('/models/m.pmx', true, false, undefined, undefined, ctrl.signal);
         expect(id).toBeNull();
         expect(mm.register).not.toHaveBeenCalled();
+    });
+});
+
+// ========== Actor 主路径（asStage=false, line 636-828）==========
+
+describe('loadPMXFile actor 路径', () => {
+    let mm: ReturnType<typeof makeModelManager>;
+    const mockMeshes = [new h.Mesh(), new h.Mesh()];
+
+    beforeEach(() => {
+        h.removeCalls.length = 0;
+        h.importMeshAsync.mockReset();
+        h.importMeshAsync.mockResolvedValue({ meshes: mockMeshes });
+        mm = makeModelManager();
+        setOnMeshesReady(null as any);
+        setOnModelLoaded(null as any);
+        initLoader(scene, mmdRuntime, mm as any, vi.fn(), vi.fn(), vi.fn(), vi.fn());
+    });
+
+    it('成功加载：createMmdModel → register → focus → 返回 id', async () => {
+        const id = await loadPMXFile('/models/actor.pmx', false, true); // skipAutoApply=true（预设应用由其他测试覆盖）
+        expect(id).toBe('gen-id');
+        expect(mmdRuntime.createMmdModel).toHaveBeenCalledTimes(1);
+        expect(mm.register).toHaveBeenCalledTimes(1);
+        expect(mm.focus).toHaveBeenCalledWith('gen-id', undefined);
+    });
+
+    it('import 抛错：不注册模型，返回 null', async () => {
+        h.importMeshAsync.mockRejectedValueOnce(new Error('file not found'));
+        const id = await loadPMXFile('/models/bad.pmx');
+        expect(id).toBeNull();
+        expect(mm.register).not.toHaveBeenCalled();
+    });
+
+    it('import 返回空 meshes：反馈 noMeshes，返回 null', async () => {
+        h.importMeshAsync.mockResolvedValueOnce({ meshes: [] });
+        const id = await loadPMXFile('/models/empty.pmx');
+        expect(id).toBeNull();
+        expect(mm.register).not.toHaveBeenCalled();
+    });
+
+    it('abort 后清理：post-register 阶段（line 733-743）remove 被调用', async () => {
+        const ctrl = new AbortController();
+        // 让 _applySceneMotion 走到 readFileBytes 路径：getSceneAction 返回 activeMotion
+        const { getSceneAction } = await import('@/core/scene-action-bridge');
+        (getSceneAction as any).mockImplementation((key: string) => {
+            if (key === 'getActiveMotion') return { vmdPath: '/test.vmd', vmdName: 'test.vmd' };
+            if (key === 'getMotionGen') return 0;
+            return undefined;
+        });
+        // readFileBytes：第一次返回 VMD 数据，之后 abort
+        let readCount = 0;
+        const { readFileBytes } = await import('@/core/wails-bindings');
+        (readFileBytes as any).mockImplementation(async () => {
+            readCount++;
+            if (readCount >= 2) ctrl.abort();
+            return new Uint8Array([1, 2, 3]);
+        });
+        const id = await loadPMXFile('/models/abort.pmx', false, false, undefined, undefined, ctrl.signal);
+        expect(id).toBeNull();
+        // _applySceneMotion abort 路径（line 408-409）清理已注册模型
+        expect(mm.remove).toHaveBeenCalled();
+    });
+});
+
+// ========== existing 模型切换快速路径（line 448-457）==========
+
+describe('loadPMXFile existing 模型切换', () => {
+    let mm: ReturnType<typeof makeModelManager>;
+
+    beforeEach(() => {
+        h.removeCalls.length = 0;
+        h.importMeshAsync.mockReset();
+        mm = makeModelManager();
+        initLoader(scene, mmdRuntime, mm as any, vi.fn(), vi.fn(), vi.fn(), vi.fn());
+    });
+
+    it('findByFilePath 命中已有实例：focus + toast，返回已有 id，不重新加载', async () => {
+        const existingInst = { id: 'existing-123', name: 'Miku' };
+        mm.findByFilePath.mockReturnValue(existingInst);
+        const id = await loadPMXFile('/models/miku.pmx');
+        expect(id).toBe('existing-123');
+        expect(mm.focus).toHaveBeenCalledWith('existing-123', undefined);
+        expect(mm.register).not.toHaveBeenCalled();
+        expect(h.importMeshAsync).not.toHaveBeenCalled();
+    });
+});
+
+// ========== abort 后 Mesh 清理验证（line 508-517, instanceof 修复）==========
+
+describe('loadPMXFile abort Mesh 清理', () => {
+    let mm: ReturnType<typeof makeModelManager>;
+    const mesh1 = new h.Mesh();
+    const mesh2 = new h.Mesh();
+
+    beforeEach(() => {
+        h.removeCalls.length = 0;
+        h.importMeshAsync.mockReset();
+        mesh1.dispose.mockClear();
+        mesh2.dispose.mockClear();
+        h.importMeshAsync.mockResolvedValue({ meshes: [mesh1, mesh2] });
+        mm = makeModelManager();
+        initLoader(scene, mmdRuntime, mm as any, vi.fn(), vi.fn(), vi.fn(), vi.fn());
+    });
+
+    it('import 完成后 abort：Mesh 实例通过 instanceof 过滤并逐个 dispose', async () => {
+        const ctrl = new AbortController();
+        h.importMeshAsync.mockImplementation(async () => {
+            ctrl.abort();
+            return { meshes: [mesh1, mesh2] };
+        });
+        const id = await loadPMXFile('/models/abort.pmx', true, false, undefined, undefined, ctrl.signal);
+        expect(id).toBeNull();
+        expect(mesh1.dispose).toHaveBeenCalledTimes(1);
+        expect(mesh2.dispose).toHaveBeenCalledTimes(1);
+        expect(mm.register).not.toHaveBeenCalled();
+    });
+});
+
+// ========== setOnMeshesReady / setOnModelLoaded 回调 ==========
+
+describe('loadPMXFile 回调', () => {
+    let mm: ReturnType<typeof makeModelManager>;
+
+    beforeEach(async () => {
+        h.removeCalls.length = 0;
+        h.importMeshAsync.mockReset();
+        h.importMeshAsync.mockResolvedValue({ meshes: [new h.Mesh()] });
+        mm = makeModelManager();
+        setOnMeshesReady(null as any);
+        setOnModelLoaded(null as any);
+        // 清除其他测试对 getSceneAction 的 mockImplementation 泄漏
+        const { getSceneAction } = await import('@/core/scene-action-bridge');
+        (getSceneAction as any).mockReset();
+        (getSceneAction as any).mockReturnValue(undefined);
+        initLoader(scene, mmdRuntime, mm as any, vi.fn(), vi.fn(), vi.fn(), vi.fn());
+    });
+
+    it('stage 路径：onMeshesReady 被调用', async () => {
+        const cb = vi.fn();
+        setOnMeshesReady(cb);
+        await loadPMXFile('/models/s.pmx', true);
+        expect(cb).toHaveBeenCalledTimes(1);
+        expect(cb.mock.calls[0][0]).toHaveLength(1);
+    });
+
+    it('actor 路径：onMeshesReady 和 onModelLoaded 均被调用', async () => {
+        const meshesCb = vi.fn();
+        const loadedCb = vi.fn();
+        setOnMeshesReady(meshesCb);
+        setOnModelLoaded(loadedCb);
+        await loadPMXFile('/models/a.pmx');
+        expect(meshesCb).toHaveBeenCalledTimes(1);
+        expect(loadedCb).toHaveBeenCalledWith('gen-id');
     });
 });

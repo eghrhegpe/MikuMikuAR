@@ -803,7 +803,8 @@ export async function loadPMXFile(
             swallowError(captureThumbnail(filePath, libraryPath, innerPath, inst));
         }, 0);
         if (!skipAutoApply && _tryAutoApplyPreset) {
-            _tryAutoApplyPreset(id).catch((err: unknown) =>
+            const p = _tryAutoApplyPreset(id);
+            p?.catch?.((err: unknown) =>
                 logWarn('model-loader', 'auto-apply preset:', err)
             );
         }
