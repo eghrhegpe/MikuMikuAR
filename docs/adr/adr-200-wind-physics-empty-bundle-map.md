@@ -25,7 +25,7 @@
 
 ### 2.1 模型自带刚体走独立构建，绕过 JS 侧 map
 
-[mmdWasmModel.js:198-206](../../frontend/node_modules/babylon-mmd/esm/Runtime/Optimized/mmdWasmModel.js) 构造模型物理时：
+`mmdWasmModel.js:198-206` 构造模型物理时：
 
 ```js
 if (physicsParams !== null) {
@@ -35,11 +35,11 @@ if (physicsParams !== null) {
 }
 ```
 
-模型的所有 PMX 刚体经 `buildPhysics(...)` 打包成一个 `MmdBulletPhysicsModel`，其内部持有私有 `_bundle`（[mmdBulletPhysics.js:40/59](../../frontend/node_modules/babylon-mmd/esm/Runtime/Optimized/Physics/mmdBulletPhysics.js)）。**该路径完全不调用 `impl.addRigidBodyBundle(...)`**。
+模型的所有 PMX 刚体经 `buildPhysics(...)` 打包成一个 `MmdBulletPhysicsModel`，其内部持有私有 `_bundle`（`mmdBulletPhysics.js:40/59`）。**该路径完全不调用 `impl.addRigidBodyBundle(...)`**。
 
 ### 2.2 `rigidBodyBundleReferenceCountMap` 始终为空——联邦从不调用 `addRigidBodyBundle`
 
-[mmdWasmPhysicsRuntimeImpl.js:281-289](../../frontend/node_modules/babylon-mmd/esm/Runtime/Optimized/Physics/mmdWasmPhysicsRuntimeImpl.js)：只有显式调用 `addRigidBodyBundle` 才会 `_rigidBodyBundleMap.set(bundle, count)`。而 `rigidBodyBundleReferenceCountMap` 只是 `_rigidBodyBundleMap` 的公开 getter（js:668-669）。
+`mmdWasmPhysicsRuntimeImpl.js:281-289`：只有显式调用 `addRigidBodyBundle` 才会 `_rigidBodyBundleMap.set(bundle, count)`。而 `rigidBodyBundleReferenceCountMap` 只是 `_rigidBodyBundleMap` 的公开 getter（js:668-669）。
 
 **结论（路径1 核实修正）**：grep 全 `src/` —— **联邦当前没有任何 `addRigidBodyBundle` 调用**，bundle map **恒为空**（`size === 0`）。虚拟裙骨（ADR-084，`virtual-skirt.ts:330/368`）与地面碰撞（`ground-collision.ts:71`）实际经**单数** `addRigidBody` / `addRigidBodyToGlobal` 注入，进的是**单数** `_rigidBodyMap`（`rigidBodyReferenceCountMap`），**不是** bundle 容器。模型原生刚体（C++ 侧）同样不在 bundle map。→ 真因不是「map 仅缺模型刚体」，而是「wind-physics 遍历了恒空的 bundle 容器，而自建刚体都在单数容器」。
 
@@ -60,7 +60,7 @@ if (physicsParams !== null) {
 
 ### 3.1 `physicsParams` 三元链在内建物理下必为 null
 
-[mmdWasmRuntime.js:288-297](../../frontend/node_modules/babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime.js) 传给 `MmdWasmModel` 的 `physicsParams`：
+`mmdWasmRuntime.js:288-297` 传给 `MmdWasmModel` 的 `physicsParams`：
 
 ```js
 options.buildPhysics
@@ -70,18 +70,18 @@ options.buildPhysics
     : null
 ```
 
-构造函数 [mmdWasmRuntime.js:123-124](../../frontend/node_modules/babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime.js)：当 `physics?.createRuntime !== undefined`（即传入 `MmdWasmPhysics`）时，`_externalPhysics = null`，改建 `_physicsRuntime`。**内建物理必走此分支** → `physicsParams === null`。
+构造函数 `mmdWasmRuntime.js:123-124`：当 `physics?.createRuntime !== undefined`（即传入 `MmdWasmPhysics`）时，`_externalPhysics = null`，改建 `_physicsRuntime`。**内建物理必走此分支** → `physicsParams === null`。
 
 ### 3.2 `_physicsModel` 因此恒为 null，`_bundle` 对象根本不存在
 
-[mmdWasmModel.js:198-206](../../frontend/node_modules/babylon-mmd/esm/Runtime/Optimized/mmdWasmModel.js)：
+`mmdWasmModel.js:198-206`：
 
 ```js
 if (physicsParams !== null) { this._physicsModel = physicsImpl.buildPhysics(...); }
 else { this._physicsModel = null; }   // ← 内建物理走这里
 ```
 
-`MmdBulletPhysicsModel`（含 `_bundle`，mmdBulletPhysics.js:35/40）**仅在外部物理 `buildPhysics(...)` 时构造**。内建物理下模型刚体全在 C++ 侧按 `model.ptr` 建（[mmdWasmPhysicsRuntime.js:9](../../frontend/node_modules/babylon-mmd/esm/Runtime/Optimized/Physics/mmdWasmPhysicsRuntime.js) `markMmdModelPhysicsAsNeedInit`）——**JS 侧没有任何 `RigidBodyBundle` 对象，也没有 `_physicsModel._bundle`**。
+`MmdBulletPhysicsModel`（含 `_bundle`，mmdBulletPhysics.js:35/40）**仅在外部物理 `buildPhysics(...)` 时构造**。内建物理下模型刚体全在 C++ 侧按 `model.ptr` 建（`mmdWasmPhysicsRuntime.js:9` `markMmdModelPhysicsAsNeedInit`）——**JS 侧没有任何 `RigidBodyBundle` 对象，也没有 `_physicsModel._bundle`**。
 
 **致命结论**：`applyForceToModelRigidBodies` 反射 `model._physicsModel._bundle` 必拿 null → 触发 `_bundle 缺失` 警告 → 施力 0 个刚体。这不是「藏在私有字段」，而是「JS 侧压根没这个对象」——比 §二 最初判断更彻底。
 
@@ -91,8 +91,8 @@ else { this._physicsModel = null; }   // ← 内建物理走这里
 
 | 事实 | 核实 |
 |------|------|
-| JS 侧施力 API **存在** | [rigidBodyBundle.js:682+](../../frontend/node_modules/babylon-mmd/esm/Runtime/Optimized/Physics/Bind/rigidBodyBundle.js) `applyCentralForce/applyForce/applyTorque/applyCentralImpulse`，各封装 `wasmInstance.rigidBodyBundleApply*(this._inner.ptr, ...)` wasm 导出。**可从 JS 调**，前提是持有 bundle 的 `_inner.ptr`。 |
-| 自建刚体**有**句柄（单数） | 虚拟裙骨/地面经 `impl.addRigidBody(...)` / `addRigidBodyToGlobal(...)` 进**单数** `_rigidBodyMap`（`rigidBodyReferenceCountMap`，[mmdWasmPhysicsRuntimeImpl.js:219/342](../../frontend/node_modules/babylon-mmd/esm/Runtime/Optimized/Physics/mmdWasmPhysicsRuntimeImpl.js)）。单数 `RigidBody` 自带 `applyCentralForce(force)`（[rigidBody.js:513](../../frontend/node_modules/babylon-mmd/esm/Runtime/Optimized/Physics/Bind/rigidBody.js)，无 index）→ 可施力。 |
+| JS 侧施力 API **存在** | `rigidBodyBundle.js:682+` `applyCentralForce/applyForce/applyTorque/applyCentralImpulse`，各封装 `wasmInstance.rigidBodyBundleApply*(this._inner.ptr, ...)` wasm 导出。**可从 JS 调**，前提是持有 bundle 的 `_inner.ptr`。 |
+| 自建刚体**有**句柄（单数） | 虚拟裙骨/地面经 `impl.addRigidBody(...)` / `addRigidBodyToGlobal(...)` 进**单数** `_rigidBodyMap`（`rigidBodyReferenceCountMap`，`mmdWasmPhysicsRuntimeImpl.js:219/342`）。单数 `RigidBody` 自带 `applyCentralForce(force)`（`rigidBody.js:513`，无 index）→ 可施力。 |
 | 模型原生刚体**无**句柄 | `_rigidBodyBundleMap` 初始空（js:65），且 `_impl` 是 lazy（getImpl 才建）。模型 C++ 侧 bundle 从不进此 map，fork 也**未暴露** `getMmdModelRigidBodyBundlePtr(modelPtr)` 之类访问器（grep `.js/.d.ts` 无结果）。 |
 
 ---
