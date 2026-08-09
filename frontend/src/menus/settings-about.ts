@@ -24,6 +24,9 @@ import { safeCallAsync } from '../core/safe-call';
 /** 防止每次进入关于页都触发更新检查——一次会话只检查一次。 */
 let _updateCheckedThisSession = false;
 
+// 进度事件监听器引用（用于清理）
+let _progressListener: ((data: unknown) => void) | null = null;
+
 function buildAboutSchema(_getSettingsMenu: () => SettingsMenuHandle): MenuNode[] {
     return [
         // 卡片 1：版本 + 技术栈
@@ -163,6 +166,19 @@ function buildAboutSchema(_getSettingsMenu: () => SettingsMenuHandle): MenuNode[
                                 }
                                 updateLink.textContent = t('settings.about.update.downloading');
                                 updateLink.style.pointerEvents = 'none';
+
+                                // 注册进度监听器
+                                if (_progressListener) {
+                                    window.removeEventListener('update:downloadProgress', _progressListener);
+                                }
+                                _progressListener = (data: unknown) => {
+                                    const d = data as { percent?: number };
+                                    if (typeof d.percent === 'number') {
+                                        updateLink.textContent = t('settings.about.update.downloading') + ` ${Math.round(d.percent)}%`;
+                                    }
+                                };
+                                window.addEventListener('update:downloadProgress', _progressListener);
+
                                 try {
                                     if (isDesktopInstall) {
                                         const result = await DownloadAndRunInstaller();
@@ -222,6 +238,11 @@ function buildAboutSchema(_getSettingsMenu: () => SettingsMenuHandle): MenuNode[
                                     openExternalLink(r.url);
                                 } finally {
                                     updateLink.style.pointerEvents = '';
+                                    // 清理进度监听器
+                                    if (_progressListener) {
+                                        window.removeEventListener('update:downloadProgress', _progressListener);
+                                        _progressListener = null;
+                                    }
                                 }
                             };
                         }

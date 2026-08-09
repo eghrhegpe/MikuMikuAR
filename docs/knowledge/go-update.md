@@ -14,6 +14,8 @@ symbols:
   - DownloadAndRunInstaller
   - DownloadApk
   - InstallResult
+  - ProgressCallback
+  - Read
   - UpdateCheckResult
   - compareVersion
   - downloadFile
@@ -26,6 +28,7 @@ symbols:
   - normalizeVersion
   - releaseAsset
   - splitVersion
+  - updateProgressReader
 invariants:
   - 版本比较走 compareVersion/splitVersion 语义化三段比较，禁止字符串比较
   - 下载须校验 expectedSize（downloadFile），防不完整包被拉起

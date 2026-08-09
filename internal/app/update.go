@@ -86,7 +86,19 @@ func (a *App) DownloadAndRunInstaller() (*InstallResult, error) {
 		return &InstallResult{Error: "no desktop installer found in latest release"}, nil
 	}
 	dest := filepath.Join(os.TempDir(), name)
-	if dlErr := downloadFile(dlURL, dest, size); dlErr != nil {
+
+	// Progress callback emitting Wails events
+	onProgress := func(read, total int64, percent float64) {
+		if a.wailsApp != nil {
+			a.wailsApp.Event.Emit("update:downloadProgress", map[string]any{
+				"read":    read,
+				"total":   total,
+				"percent": percent,
+			})
+		}
+	}
+
+	if dlErr := downloadFile(dlURL, dest, size, onProgress); dlErr != nil {
 		return &InstallResult{Error: fmt.Sprintf("download: %v", dlErr)}, nil
 	}
 	// Launch the downloaded installer (never silent-install).
@@ -131,7 +143,19 @@ func (a *App) DownloadApk() (*InstallResult, error) {
 		return &InstallResult{Error: fmt.Sprintf("mkdir: %v", mkErr)}, nil
 	}
 	dest := filepath.Join(destDir, name)
-	if dlErr := downloadFile(dlURL, dest, size); dlErr != nil {
+
+	// Progress callback emitting Wails events
+	onProgress := func(read, total int64, percent float64) {
+		if a.wailsApp != nil {
+			a.wailsApp.Event.Emit("update:downloadProgress", map[string]any{
+				"read":    read,
+				"total":   total,
+				"percent": percent,
+			})
+		}
+	}
+
+	if dlErr := downloadFile(dlURL, dest, size, onProgress); dlErr != nil {
 		return &InstallResult{Error: fmt.Sprintf("download: %v", dlErr)}, nil
 	}
 	return &InstallResult{LocalPath: dest, Success: true}, nil
@@ -226,11 +250,16 @@ func matchDesktopAsset(assets []releaseAsset) (string, string, int64) {
 	return "", "", 0
 }
 
+// ProgressCallback is called periodically during download with bytes read and total size.
+// percent is 0-100; total may be 0 if Content-Length is unknown.
+type ProgressCallback func(read, total int64, percent float64)
+
 // downloadFile fetches url and writes the body to destPath.
 // expectedSize is the size declared by the release API asset metadata (bytes).
 // When non-zero, the written file size is verified against it; a mismatch
 // means a truncated or corrupted download and the incomplete file is removed.
-func downloadFile(url, destPath string, expectedSize int64) error {
+// onProgress is called periodically with download progress (may be nil).
+func downloadFile(url, destPath string, expectedSize int64, onProgress ProgressCallback) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
@@ -265,7 +294,22 @@ func downloadFile(url, destPath string, expectedSize int64) error {
 		}
 	}()
 
-	written, err := io.Copy(f, resp.Body)
+	// Wrap reader with progress reporting if callback provided
+	total := expectedSize
+	if resp.ContentLength > 0 {
+		total = resp.ContentLength
+	}
+
+	var reader io.Reader = resp.Body
+	if onProgress != nil {
+		reader = &updateProgressReader{
+			r:          resp.Body,
+			total:      total,
+			onProgress: onProgress,
+		}
+	}
+
+	written, err := io.Copy(f, reader)
 	if err != nil {
 		return err
 	}
@@ -282,7 +326,38 @@ func downloadFile(url, destPath string, expectedSize int64) error {
 		err = fmt.Errorf("size mismatch: wrote %d bytes, Content-Length %d", written, resp.ContentLength)
 		return err
 	}
+
+	// Emit 100% completion
+	if onProgress != nil {
+		onProgress(written, written, 100)
+	}
 	return nil
+}
+
+// updateProgressReader wraps an io.Reader and reports progress via callback.
+// Used for update downloads (separate from proxy progressReader which has session awareness).
+type updateProgressReader struct {
+	r          io.Reader
+	total      int64
+	read       int64
+	lastEmit   time.Time
+	onProgress ProgressCallback
+}
+
+func (pr *updateProgressReader) Read(p []byte) (int, error) {
+	n, err := pr.r.Read(p)
+	pr.read += int64(n)
+
+	if pr.onProgress != nil && time.Since(pr.lastEmit) > 200*time.Millisecond {
+		var percent float64
+		if pr.total > 0 {
+			percent = float64(pr.read) / float64(pr.total) * 100
+		}
+		pr.onProgress(pr.read, pr.total, percent)
+		pr.lastEmit = time.Now()
+	}
+
+	return n, err
 }
 
 // isNewer reports whether the remote tag is a newer semantic version than current.
