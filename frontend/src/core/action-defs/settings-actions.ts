@@ -13,6 +13,24 @@ function _selectOverridePath(kind: string): Promise<void> {
     return getUiAction('selectOverridePath')?.(kind) ?? Promise.resolve();
 }
 
+/**
+ * [doc:adr-238] 同构样板：注册一个「打开路径选择器」的 uiOnly 动作。
+ * 全部路径分支共享此 helper，仅 kind 参数不同——数据驱动避免 7 份重复样板。
+ */
+function registerOverridePathAction(kind: string, id: string, label: string): void {
+    registerAction({
+        id,
+        label,
+        domain: 'settings',
+        params: [],
+        destructive: false,
+        uiOnly: true,
+        execute: async () => {
+            await _selectOverridePath(kind);
+        },
+    });
+}
+
 export function registerSettingsActions(): void {
     registerAction({
         id: 'settings:set:clearextractcache',
@@ -65,89 +83,33 @@ export function registerSettingsActions(): void {
         },
     });
 
-    registerAction({
-        id: 'settings:set:path:pmx',
-        label: 'ai.actions.settings.path.pmx',
-        domain: 'settings',
-        params: [],
-        destructive: false,
-        uiOnly: true,
-        execute: async () => {
-            await _selectOverridePath('pmx');
-        },
-    });
-
-    registerAction({
-        id: 'settings:set:path:vmd',
-        label: 'ai.actions.settings.path.vmd',
-        domain: 'settings',
-        params: [],
-        destructive: false,
-        uiOnly: true,
-        execute: async () => {
-            await _selectOverridePath('vmd');
-        },
-    });
-
-    registerAction({
-        id: 'settings:set:path:audio',
-        label: 'ai.actions.settings.path.audio',
-        domain: 'settings',
-        params: [],
-        destructive: false,
-        uiOnly: true,
-        execute: async () => {
-            await _selectOverridePath('audio');
-        },
-    });
-
-    registerAction({
-        id: 'settings:set:path:stage',
-        label: 'ai.actions.settings.path.stage',
-        domain: 'settings',
-        params: [],
-        destructive: false,
-        uiOnly: true,
-        execute: async () => {
-            await _selectOverridePath('stage');
-        },
-    });
-
-    registerAction({
-        id: 'settings:set:path:environment',
-        label: 'ai.actions.settings.path.environment',
-        domain: 'settings',
-        params: [],
-        destructive: false,
-        uiOnly: true,
-        execute: async () => {
-            await _selectOverridePath('environment');
-        },
-    });
-
-    registerAction({
-        id: 'settings:set:path:md_dress',
-        label: 'ai.actions.settings.path.mdDress',
-        domain: 'settings',
-        params: [],
-        destructive: false,
-        uiOnly: true,
-        execute: async () => {
-            await _selectOverridePath('md_dress');
-        },
-    });
-
-    registerAction({
-        id: 'settings:set:path:setting',
-        label: 'ai.actions.settings.path.setting',
-        domain: 'settings',
-        params: [],
-        destructive: false,
-        uiOnly: true,
-        execute: async () => {
-            await _selectOverridePath('setting');
-        },
-    });
+    registerOverridePathAction('pmx', 'settings:set:path:pmx', 'ai.actions.settings.path.pmx');
+    registerOverridePathAction('vmd', 'settings:set:path:vmd', 'ai.actions.settings.path.vmd');
+    registerOverridePathAction(
+        'audio',
+        'settings:set:path:audio',
+        'ai.actions.settings.path.audio'
+    );
+    registerOverridePathAction(
+        'stage',
+        'settings:set:path:stage',
+        'ai.actions.settings.path.stage'
+    );
+    registerOverridePathAction(
+        'environment',
+        'settings:set:path:environment',
+        'ai.actions.settings.path.environment'
+    );
+    registerOverridePathAction(
+        'md_dress',
+        'settings:set:path:md_dress',
+        'ai.actions.settings.path.mdDress'
+    );
+    registerOverridePathAction(
+        'setting',
+        'settings:set:path:setting',
+        'ai.actions.settings.path.setting'
+    );
 
     registerAction({
         id: 'settings:set-lang',

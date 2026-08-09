@@ -6,38 +6,30 @@ function _setEnv(partial: Record<string, unknown>): void {
     getSceneAction('setEnvState')?.(partial);
 }
 
+/**
+ * [doc:adr-238] 同构样板：注册一个「绑定纹理文件」的 uiOnly 动作。
+ * 三个 bind-texture 分支共享此 helper，仅绑定键不同。
+ */
+function registerBindAction(id: string, label: string, key: string): void {
+    registerAction({
+        id,
+        label,
+        domain: 'env',
+        params: [{ name: 'filePath', type: 'string' }],
+        destructive: false,
+        uiOnly: true,
+        execute: (p) => {
+            _setEnv({ [key]: p.filePath as string });
+        },
+    });
+}
+
 export function registerEnvActions(): void {
-    registerAction({
-        id: 'env:bind-particle-texture',
-        label: 'ai.actions.env.bindParticleTexture',
-        domain: 'env',
-        params: [{ name: 'filePath', type: 'string' }],
-        destructive: false,
-        uiOnly: true,
-        execute: (p) => {
-            _setEnv({ particleCustomTexture: p.filePath as string });
-        },
-    });
-    registerAction({
-        id: 'env:bind-sky-texture',
-        label: 'ai.actions.env.bindSkyTexture',
-        domain: 'env',
-        params: [{ name: 'filePath', type: 'string' }],
-        destructive: false,
-        uiOnly: true,
-        execute: (p) => {
-            _setEnv({ skyTexture: p.filePath as string });
-        },
-    });
-    registerAction({
-        id: 'env:bind-stars-texture',
-        label: 'ai.actions.env.bindStarsTexture',
-        domain: 'env',
-        params: [{ name: 'filePath', type: 'string' }],
-        destructive: false,
-        uiOnly: true,
-        execute: (p) => {
-            _setEnv({ starsTexture: p.filePath as string });
-        },
-    });
+    registerBindAction(
+        'env:bind-particle-texture',
+        'ai.actions.env.bindParticleTexture',
+        'particleCustomTexture'
+    );
+    registerBindAction('env:bind-sky-texture', 'ai.actions.env.bindSkyTexture', 'skyTexture');
+    registerBindAction('env:bind-stars-texture', 'ai.actions.env.bindStarsTexture', 'starsTexture');
 }

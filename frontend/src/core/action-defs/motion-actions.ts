@@ -16,8 +16,54 @@ function findSceneModelByName(name: string): Promise<unknown> {
     return getSceneAction('findSceneModelByName')?.(name) ?? Promise.resolve(null);
 }
 
+/**
+ * [doc:adr-238] 同构样板：注册一个「对聚焦模型执行动作」的动作。
+ * pause/reset/pose/loop 四分支共享此 helper，仅动作名/图标/破坏性不同。
+ */
+function registerModelAction(
+    action: 'pause' | 'reset' | 'pose' | 'loop',
+    id: string,
+    label: string,
+    icon: string,
+    destructive = false
+): void {
+    registerAction({
+        id,
+        label,
+        domain: 'motion',
+        icon,
+        params: [{ name: 'modelId', type: 'entity', resolve: findSceneModelByName }],
+        destructive,
+        execute: async (p) => {
+            await getUiAction('handleModelAction')?.(action, p.modelId as string);
+        },
+    });
+}
+
+/**
+ * [doc:adr-238] 同构样板：注册一个「导入外部动画格式」的 uiOnly 动作。
+ * mixamo/vrm/custom 三分支共享此 helper，仅格式名不同。
+ */
+function registerRetargetAction(kind: string, id: string, label: string): void {
+    registerAction({
+        id,
+        label,
+        domain: 'motion',
+        icon: 'lucide:upload',
+        params: [],
+        destructive: false,
+        uiOnly: true,
+        execute: async () => {
+            getUiAction('importExternalAnimation')?.(kind);
+        },
+    });
+}
+
 /** [doc:adr-238] 菜单栈访问统一经 getUiAction('getMotionMenu')，不再直接 import menus */
-function _getMotionMenu(): { push?: (l: unknown) => void; getLevel?: (i: number) => unknown } | null {
+function _getMotionMenu(): {
+    push?: (l: unknown) => void;
+    getLevel?: (i: number) => unknown;
+} | null {
     return (getUiAction('getMotionMenu')?.() ?? null) as ReturnType<typeof _getMotionMenu>;
 }
 
@@ -80,92 +126,35 @@ export function registerMotionActions(): void {
         },
     });
 
-    registerAction({
-        id: 'motion:retarget:mixamo',
-        label: 'ai.actions.motion.retarget.mixamo',
-        domain: 'motion',
-        icon: 'lucide:upload',
-        params: [],
-        destructive: false,
-        uiOnly: true,
-        execute: async () => {
-            getUiAction('importExternalAnimation')?.('mixamo');
-        },
-    });
+    registerRetargetAction('mixamo', 'motion:retarget:mixamo', 'ai.actions.motion.retarget.mixamo');
+    registerRetargetAction('vrm', 'motion:retarget:vrm', 'ai.actions.motion.retarget.vrm');
+    registerRetargetAction('custom', 'motion:retarget:custom', 'ai.actions.motion.retarget.custom');
 
-    registerAction({
-        id: 'motion:retarget:vrm',
-        label: 'ai.actions.motion.retarget.vrm',
-        domain: 'motion',
-        icon: 'lucide:upload',
-        params: [],
-        destructive: false,
-        uiOnly: true,
-        execute: async () => {
-            getUiAction('importExternalAnimation')?.('vrm');
-        },
-    });
-
-    registerAction({
-        id: 'motion:retarget:custom',
-        label: 'ai.actions.motion.retarget.custom',
-        domain: 'motion',
-        icon: 'lucide:upload',
-        params: [],
-        destructive: false,
-        uiOnly: true,
-        execute: async () => {
-            getUiAction('importExternalAnimation')?.('custom');
-        },
-    });
-
-    registerAction({
-        id: 'motion:model:pause',
-        label: 'ai.actions.motion.model.pause',
-        domain: 'motion',
-        icon: 'lucide:play',
-        params: [{ name: 'modelId', type: 'entity', resolve: findSceneModelByName }],
-        destructive: false,
-        execute: async (p) => {
-            await getUiAction('handleModelAction')?.('pause', p.modelId as string);
-        },
-    });
-
-    registerAction({
-        id: 'motion:model:reset',
-        label: 'ai.actions.motion.model.reset',
-        domain: 'motion',
-        icon: 'lucide:refresh-cw',
-        params: [{ name: 'modelId', type: 'entity', resolve: findSceneModelByName }],
-        destructive: true,
-        execute: async (p) => {
-            await getUiAction('handleModelAction')?.('reset', p.modelId as string);
-        },
-    });
-
-    registerAction({
-        id: 'motion:model:pose',
-        label: 'ai.actions.motion.model.pose',
-        domain: 'motion',
-        icon: 'lucide:palette',
-        params: [{ name: 'modelId', type: 'entity', resolve: findSceneModelByName }],
-        destructive: false,
-        execute: async (p) => {
-            await getUiAction('handleModelAction')?.('pose', p.modelId as string);
-        },
-    });
-
-    registerAction({
-        id: 'motion:model:loop',
-        label: 'ai.actions.motion.model.loop',
-        domain: 'motion',
-        icon: 'lucide:repeat',
-        params: [{ name: 'modelId', type: 'entity', resolve: findSceneModelByName }],
-        destructive: false,
-        execute: async (p) => {
-            await getUiAction('handleModelAction')?.('loop', p.modelId as string);
-        },
-    });
+    registerModelAction(
+        'pause',
+        'motion:model:pause',
+        'ai.actions.motion.model.pause',
+        'lucide:play'
+    );
+    registerModelAction(
+        'reset',
+        'motion:model:reset',
+        'ai.actions.motion.model.reset',
+        'lucide:refresh-cw',
+        true
+    );
+    registerModelAction(
+        'pose',
+        'motion:model:pose',
+        'ai.actions.motion.model.pose',
+        'lucide:palette'
+    );
+    registerModelAction(
+        'loop',
+        'motion:model:loop',
+        'ai.actions.motion.model.loop',
+        'lucide:repeat'
+    );
 
     registerAction({
         id: 'motion:procmotion:set-mode',
@@ -238,7 +227,9 @@ export function registerMotionActions(): void {
         uiOnly: true,
         execute: async (p) => {
             loadManager.load({ kind: 'audio', path: p.path as string });
-            showInfoToast(t('motion.musicLoaded', { name: getSceneAction('getAudioName')?.() ?? '' }));
+            showInfoToast(
+                t('motion.musicLoaded', { name: getSceneAction('getAudioName')?.() ?? '' })
+            );
         },
     });
 
@@ -268,13 +259,19 @@ export function registerMotionActions(): void {
         execute: async (p) => {
             getUiAction('resetFocusedLayerId')?.();
             const id = p.modelId as string;
-            const lvl = getUiAction('buildActionBindingLevel')?.(id) as {
-                itemBuilder?: (() => unknown[]) | undefined;
-            } | undefined;
+            const lvl = getUiAction('buildActionBindingLevel')?.(id) as
+                | {
+                      itemBuilder?: (() => unknown[]) | undefined;
+                  }
+                | undefined;
             if (lvl) {
-                lvl.itemBuilder = () => (getUiAction('buildActionBindingLevel')?.(id) as { items?: unknown[] })?.items ?? [];
+                lvl.itemBuilder = () =>
+                    (getUiAction('buildActionBindingLevel')?.(id) as { items?: unknown[] })
+                        ?.items ?? [];
             }
-            (getUiAction('getMotionMenu')?.() as { push?: (l: unknown) => void } | undefined)?.push(lvl);
+            (getUiAction('getMotionMenu')?.() as { push?: (l: unknown) => void } | undefined)?.push(
+                lvl
+            );
         },
     });
 
@@ -317,12 +314,17 @@ export function registerMotionActions(): void {
                     mode: 'stay',
                     onVmdPick: (path: string, name: string) => {
                         const vmdName = name.replace(/\.vmd$/i, '');
-                        getSceneAction('addSceneMotion')?.({ vmdPath: path, vmdName, vmdLayers: [], source: 'vmd' });
+                        getSceneAction('addSceneMotion')?.({
+                            vmdPath: path,
+                            vmdName,
+                            vmdLayers: [],
+                            source: 'vmd',
+                        });
                         const menu = _getMotionMenu();
                         if (menu) {
                             const root = menu?.getLevel?.(0) as { items?: unknown[] } | undefined;
                             if (root) {
-                                root.items = (getUiAction('buildMotionRootItems')?.() ?? []);
+                                root.items = getUiAction('buildMotionRootItems')?.() ?? [];
                             }
                         }
                     },
@@ -338,7 +340,7 @@ export function registerMotionActions(): void {
                         if (menu) {
                             const root = menu?.getLevel?.(0) as { items?: unknown[] } | undefined;
                             if (root) {
-                                root.items = (getUiAction('buildMotionRootItems')?.() ?? []);
+                                root.items = getUiAction('buildMotionRootItems')?.() ?? [];
                             }
                         }
                     },
@@ -358,13 +360,17 @@ export function registerMotionActions(): void {
         uiOnly: true,
         execute: async (p) => {
             const sceneMotionId = p.sceneMotionId as string | undefined;
-            const lvl = getUiAction('buildMotionDetailLevel')?.(sceneMotionId) as {
-                itemBuilder?: (() => unknown[]) | undefined;
-            } | undefined;
+            const lvl = getUiAction('buildMotionDetailLevel')?.(sceneMotionId) as
+                | {
+                      itemBuilder?: (() => unknown[]) | undefined;
+                  }
+                | undefined;
             if (lvl) {
                 lvl.itemBuilder = () => [];
             }
-            (getUiAction('getMotionMenu')?.() as { push?: (l: unknown) => void } | undefined)?.push(lvl);
+            (getUiAction('getMotionMenu')?.() as { push?: (l: unknown) => void } | undefined)?.push(
+                lvl
+            );
         },
     });
 }
