@@ -7,7 +7,7 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 132 | 802 |
+| 核心基础设施 | 133 | 804 |
 | 3D 场景 | 125 | 1226 |
 | 菜单 & UI | 76 | 394 |
 | 动作算法 | 18 | 138 |
@@ -41,8 +41,8 @@
 | `buildToolSchemas()` | `core/ai/action-catalog:52` | — |
 | `registerAllActions()` | `core/ai/action-registry-defs:14` | 注册全部 AI 动作定义（控制/诊断/设置/库/动作/环境/场景各域）。 |
 | `registerControlActions()` | `core/ai/action-registry-defs:32` | — |
-| `BrowserAiAdapter()` | `core/ai/browser-adapter:42` | — |
-| `browserAiAdapter()` | `core/ai/browser-adapter:329` | — |
+| `BrowserAiAdapter()` | `core/ai/browser-adapter:23` | — |
+| `browserAiAdapter()` | `core/ai/browser-adapter:309` | — |
 | `BUILTIN_BIBLES()` | `core/ai/character-bible:38` | 内置角色圣经（可扩展；后续支持用户自定义导入）。 |
 | `CharacterBible()` | `core/ai/character-bible:11` | 单个角色的人设定义。 |
 | `DIALOGUE_EMOTIONS()` | `core/ai/character-bible:25` | 台词生成的输出情绪标签闭集（用于后续 TTS/表情映射，Step 2）。 |
@@ -113,6 +113,8 @@
 | `entityAdapter()` | `core/ai/param-adapters:52` | — |
 | `enumAdapter()` | `core/ai/param-adapters:6` | — |
 | `rangeAdapter()` | `core/ai/param-adapters:20` | — |
+| `isRemoteEndpoint()` | `core/ai/relay:10` | 端点是否为远程 API（非 localhost/127.0.0.1），远程端点才需要 relay 代理。 |
+| `relayTarget()` | `core/ai/relay:15` | 获取 relay 目标 URL：网页端 + 远程端点 + relayUrl 已配置时返回 relayUrl，否则 null（直连）。 |
 | `SceneSnapshotBridge()` | `core/ai/scene-snapshot:11` | AI 快照所需的引擎运行时读取桥接（由 scene.ts 注入）。 |
 | `SceneSnapshotData()` | `core/ai/scene-snapshot:23` | 格式化后的快照数据（纯数据，便于测试）。 |
 | `_resetAiSnapshotBridge()` | `core/ai/scene-snapshot:44` | 仅供测试使用：重置 bridge 缓存。 |
@@ -2068,14 +2070,14 @@
 | `showPendingBubble()` | `menus/diagnostic-chat:155` | 显示"思考中"占位气泡 |
 | `updateSendButton()` | `menus/diagnostic-chat:372` | 更新发送/停止按钮 |
 | `updateSpeakToggle()` | `menus/diagnostic-chat:355` | 更新朗读开关 UI（不支持时隐藏） |
-| `applyProvider()` | `menus/diagnostic-config:259` | — |
-| `buildConfigSchema()` | `menus/diagnostic-config:473` | — |
-| `goKeyAllowsProceed()` | `menus/diagnostic-config:24` | — |
-| `loadInitialConfig()` | `menus/diagnostic-config:79` | — |
-| `persistConfig()` | `menus/diagnostic-config:218` | — |
-| `refreshCaps()` | `menus/diagnostic-config:106` | — |
-| `refreshModelList()` | `menus/diagnostic-config:304` | — |
-| `updateStatusBadge()` | `menus/diagnostic-config:370` | — |
+| `applyProvider()` | `menus/diagnostic-config:267` | — |
+| `buildConfigSchema()` | `menus/diagnostic-config:481` | — |
+| `goKeyAllowsProceed()` | `menus/diagnostic-config:26` | — |
+| `loadInitialConfig()` | `menus/diagnostic-config:81` | — |
+| `persistConfig()` | `menus/diagnostic-config:226` | — |
+| `refreshCaps()` | `menus/diagnostic-config:108` | — |
+| `refreshModelList()` | `menus/diagnostic-config:312` | — |
+| `updateStatusBadge()` | `menus/diagnostic-config:378` | — |
 | `advancePendingQueue()` | `menus/diagnostic-control:222` | 推进队列 |
 | `applyPendingAction()` | `menus/diagnostic-control:160` | 应用 pending action |
 | `cancelPendingAction()` | `menus/diagnostic-control:205` | 取消 pending action |

@@ -17,27 +17,8 @@ import type {
 import { parseSseStream } from './sse';
 import { loadAiConfig, classifyAiError } from './config-store';
 import { logWarn } from '../logger';
-import { isWebPlatform } from '../platform';
 import { translateGoError } from '../i18n/goerr';
-
-/** 判定端点是否为远程 API（非 localhost/127.0.0.1），需要 relay 代理。 */
-function _isRemoteEndpoint(endpoint: string): boolean {
-    return !/^https?:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/i.test(endpoint);
-}
-
-/** 获取 relay 目标 URL：当网页端 + 远程端点 + relayUrl 已配置时返回 relayUrl，否则返回 null（直连）。 */
-function _relayTarget(relayUrl: string, endpoint: string): string | null {
-    if (!relayUrl || !endpoint) {
-        return null;
-    }
-    if (!isWebPlatform()) {
-        return null;
-    }
-    if (!_isRemoteEndpoint(endpoint)) {
-        return null;
-    }
-    return relayUrl;
-}
+import { relayTarget, isRemoteEndpoint } from './relay';
 
 export class BrowserAiAdapter implements AiService {
     readonly kind = 'browser' as const;
@@ -52,12 +33,11 @@ export class BrowserAiAdapter implements AiService {
         // CORS 风险判定：localhost/127.0.0.1 → none；https 远程 → possible；http 远程 → high
         // [doc:relay] 若 relay 已配置且网页端+远程端点，则 corsRisk 降为 none（relay 负责 CORS）
         let corsRisk: 'none' | 'possible' | 'high' = 'none';
-        const relayActive = _relayTarget(cfg.relayUrl, endpoint) !== null;
+        const relayActive = relayTarget(cfg.relayUrl, endpoint) !== null;
         if (relayActive) {
             corsRisk = 'none';
         } else if (endpoint) {
-            const isLocal = /^https?:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/i.test(endpoint);
-            if (isLocal) {
+            if (!isRemoteEndpoint(endpoint)) {
                 corsRisk = 'none';
             } else if (/^https:\/\//i.test(endpoint)) {
                 corsRisk = 'possible';
@@ -94,7 +74,7 @@ export class BrowserAiAdapter implements AiService {
                 headers['Authorization'] = `Bearer ${cfg.apiKey}`;
             }
             // [doc:relay] 网页端远程 API 经 relay 转发以绕过 CORS
-            const relayUrl = _relayTarget(cfg.relayUrl, cfg.endpoint);
+            const relayUrl = relayTarget(cfg.relayUrl, cfg.endpoint);
             const fetchUrl = relayUrl ?? cfg.endpoint;
             if (relayUrl) {
                 headers['X-Target-Url'] = cfg.endpoint;
@@ -165,7 +145,7 @@ export class BrowserAiAdapter implements AiService {
 
         let lastErr: unknown = null;
         // [doc:relay] 网页端远程 API 经 relay 转发以绕过 CORS
-        const relayUrl = _relayTarget(cfg.relayUrl, cfg.endpoint);
+        const relayUrl = relayTarget(cfg.relayUrl, cfg.endpoint);
         for (const url of candidates) {
             try {
                 // relay 模式下所有候选 URL 发往 relayUrl，带 X-Target-Url 头
@@ -233,7 +213,7 @@ export class BrowserAiAdapter implements AiService {
         }
 
         // [doc:relay] 网页端远程 API 通过 relay 转发以绕过 CORS
-        const relayUrl = _relayTarget(cfg.relayUrl, cfg.endpoint);
+        const relayUrl = relayTarget(cfg.relayUrl, cfg.endpoint);
         const fetchUrl = relayUrl ?? cfg.endpoint;
 
         const body: Record<string, unknown> = {

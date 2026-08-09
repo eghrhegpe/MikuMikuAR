@@ -14,6 +14,8 @@ import {
     type AiConfig,
     type AiConfigProvider,
 } from '../core/ai/config-store';
+import { relayTarget } from '../core/ai/relay';
+import { isWebPlatform } from '../core/platform';
 import { resolveAi } from '../core/ai';
 import type { AiErrorKind } from '../core/ai/types';
 
@@ -197,14 +199,20 @@ function updateCorsWarning(): void {
         return;
     }
 
-    // [doc:relay] 若 relay 已配置且网页端+远程端点，显示 relay 状态，隐藏 CORS 警告
-    const isRemote = !/^https?:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/i.test(cfg.endpoint);
-    const relayConfigured = !!(cfg.relayUrl && isRemote);
+    // [doc:relay] 用与 browser-adapter 完全一致的判定（relayTarget 内置平台/端点/配置检查）：
+    //   - relay 真正生效（纯网页 + 远程端点 + relayUrl 已配置）→ 显示 relay 状态，隐藏 CORS 警告
+    //   - 非网页平台（桌面 Wails 走 go 适配器，Go 直连 API）→ 无 CORS/relay 概念，全部隐藏
+    //     （此前未查平台：桌面端继承默认 relayUrl 后只要端点远程就误报「Relay 代理已启用」）
+    const relayActive = relayTarget(cfg.relayUrl, cfg.endpoint) !== null;
 
-    if (relayConfigured) {
+    if (relayActive) {
         diagState.corsWarningEl.style.display = 'none';
         diagState.relayStatusEl.textContent = t('ai.config.relayActive', { url: cfg.relayUrl });
         diagState.relayStatusEl.className = 'diag-hint diag-hint--ok';
+    } else if (!isWebPlatform()) {
+        // 桌面端直连：不显示 relay 状态，也不显示 CORS 警告（后端无 CORS 限制）
+        diagState.corsWarningEl.style.display = 'none';
+        diagState.relayStatusEl.textContent = '';
     } else if (caps.corsRisk !== 'none') {
         diagState.corsWarningEl.style.display = '';
         diagState.relayStatusEl.textContent = t('ai.config.relayNotConfigured');
