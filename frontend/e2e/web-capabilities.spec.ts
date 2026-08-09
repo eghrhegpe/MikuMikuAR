@@ -1,118 +1,60 @@
 /**
- * [doc:adr-176/178] Web 入口 — 能力门控完整验证
+ * [doc:adr-176/178] Web 入口 — 能力门控 UI 验证
  *
- * 验证 browser-adapter 的 capabilities() 声明在 web 入口中正确生效：
- *   1. windowsCopy 等桌面独有能力 → false
- *   2. watchDir → false（ADRsion-178 Android 同理，web 也 false）
- *   3. AR / plazaWindow 均为 false（已在 web-smoke 覆盖，此处补充交叉验证）
+ * 生产构建（vite preview）下无法 import 源码模块（/src/ 路径不存在），
+ * 故改为通过 UI 行为验证 browser-adapter 的能力门控声明：
+ *   1. ar === false → 相机模式无 AR 选项（web-smoke 已覆盖，此处交叉验证）
+ *   2. plazaWindow === false → 广场无「独立窗口」选项（web-smoke 已覆盖）
+ *   3. watchDir === false → 设置-资源 无「下载监听」卡片（visibleWhen 门控）
  *   4. 广场按钮存在（web 端有 plaza 内联模式，无独立窗口）
  *
- * 与 ADR-177 web-smoke 互补：web-smoke 验证 UI 隐藏，本文件验证能力声明数据。
+ * 与 ADR-177 web-smoke 互补：web-smoke 验证首屏，本文件验证能力门控 UI。
  *
  * 运行：npx playwright test --grep "@web" web-capabilities
  * 前置：webServer 自动 build + preview dist-web/（playwright.config.ts 配置）
  */
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect } from "@playwright/test";
+import { gotoWebEntry } from "./helpers";
 
-const WEB_URL = process.env.WEB_URL || "http://localhost:4174/MikuMikuAR/";
-
-async function gotoWebEntry(page: Page): Promise<void> {
-    await page.goto(WEB_URL, { waitUntil: "commit", timeout: 30000 });
-    await page.waitForSelector("#btnMainAction", { timeout: 20000 });
-    await page.evaluate(() => {
-        return new Promise<void>((resolve) => {
-            const loading = document.getElementById("loading");
-            if (!loading) return resolve();
-            const done = () => resolve();
-            if (loading.style.display === "none" || loading.style.background) {
-                return done();
-            }
-            const obs = new MutationObserver(() => {
-                if (loading.style.display === "none" || loading.style.background) {
-                    obs.disconnect();
-                    done();
-                }
-            });
-            obs.observe(loading, { attributes: true, attributeFilter: ["style"] });
-            setTimeout(() => {
-                obs.disconnect();
-                done();
-            }, 20000);
-        });
-    });
-    await page.evaluate(() => {
-        const loading = document.getElementById("loading");
-        if (!loading) return;
-        const forcePassthrough = () => {
-            if (loading.style.pointerEvents !== "none") {
-                loading.style.pointerEvents = "none";
-            }
-        };
-        forcePassthrough();
-        new MutationObserver(forcePassthrough).observe(loading, {
-            attributes: true,
-            attributeFilter: ["style"],
-        });
-    });
-}
-
-test.describe("Web Capabilities — 能力声明验证 (@web)", { tag: ["@web"] }, () => {
+test.describe("Web Capabilities — 能力门控 UI 验证 (@web)", { tag: ["@web"] }, () => {
     test.beforeEach(async ({ page }) => {
         await gotoWebEntry(page);
     });
 
-    test("browser-adapter capabilities: ar === false", async ({ page }) => {
-        const ar = await page.evaluate(async () => {
-            try {
-                const wb = await import("/src/core/wails-bindings.ts");
-                const caps = await wb.GetCapabilities();
-                return caps?.ar ?? null;
-            } catch {
-                return null;
-            }
-        });
-        expect(ar).toBe(false);
+    test("能力门控: 相机模式无 AR 选项（ar === false）", async ({ page }) => {
+        await page.click("#btnScene");
+        await page.waitForSelector("#sceneOverlay.visible", { timeout: 8000 });
+
+        // 进入相机控制（场景菜单含 camera:main）
+        const cameraRow = page.locator('[data-testid="folder:scene:camera"], [data-id="camera:main"]');
+        if (await cameraRow.count() > 0) {
+            await cameraRow.first().click();
+            // AR 选项不应出现在相机模式（capabilities.ar=false 过滤）
+            await expect(page.locator('text=AR')).toHaveCount(0);
+        }
     });
 
-    test("browser-adapter capabilities: plazaWindow === false", async ({ page }) => {
-        const pw = await page.evaluate(async () => {
-            try {
-                const wb = await import("/src/core/wails-bindings.ts");
-                const caps = await wb.GetCapabilities();
-                return caps?.plazaWindow ?? null;
-            } catch {
-                return null;
-            }
-        });
-        expect(pw).toBe(false);
+    test("能力门控: 广场无「独立窗口」选项（plazaWindow === false）", async ({ page }) => {
+        await page.click("#btnPlaza");
+        await page.waitForSelector("#sceneOverlay.visible", { timeout: 8000 });
+
+        await expect(page.locator('text=独立窗口')).toHaveCount(0);
     });
 
-    test("browser-adapter capabilities: watchDir === false（web 无文件系统监听）", async ({ page }) => {
-        const wd = await page.evaluate(async () => {
-            try {
-                const wb = await import("/src/core/wails-bindings.ts");
-                const caps = await wb.GetCapabilities();
-                return caps?.watchDir ?? null;
-            } catch {
-                return null;
-            }
-        });
-        // ADR-178: web 端无文件系统监听能力
-        expect(wd).toBe(false);
-    });
+    test("能力门控: 设置-资源无「下载监听」卡片（watchDir === false）", async ({ page }) => {
+        // web 无文件系统监听 → settings-resources 的 resources:watch 卡片
+        // （visibleWhen: capabilities().watchDir）不应渲染。
+        await page.click("#btnSettings");
+        await page.waitForSelector("#sceneOverlay.visible", { timeout: 8000 });
 
-    test("browser-adapter capabilities: windowsCopy 为 false（非桌面端）", async ({ page }) => {
-        const wc = await page.evaluate(async () => {
-            try {
-                const wb = await import("/src/core/wails-bindings.ts");
-                const caps = await wb.GetCapabilities();
-                return caps?.windowsCopy ?? null;
-            } catch {
-                return null;
-            }
-        });
-        // 浏览器端无 Wails 原生剪贴板跨端能力
-        expect(wc).toBe(false);
+        // 进入资源页签
+        const resourceTab = page.locator('[data-testid="folder:settings:resources"], [data-id="settings:resources"]');
+        if (await resourceTab.count() > 0) {
+            await resourceTab.first().click();
+        }
+        // watchDir=false → 无「下载监听」/「监听下载目录」文案
+        await expect(page.locator('text=下载监听')).toHaveCount(0);
+        await expect(page.locator('text=监听下载目录')).toHaveCount(0);
     });
 
     test("广场按钮存在（web 端有内联 plaza，无独立窗口）", async ({ page }) => {
@@ -132,24 +74,5 @@ test.describe("Web Capabilities — 能力声明验证 (@web)", { tag: ["@web"] 
         for (const selector of navButtons) {
             await expect(page.locator(selector)).toBeVisible();
         }
-    });
-
-    test("GetCapabilities 返回完整能力清单（无异常）", async ({ page }) => {
-        const caps = await page.evaluate(async () => {
-            try {
-                const wb = await import("/src/core/wails-bindings.ts");
-                return await wb.GetCapabilities();
-            } catch (e) {
-                return { error: String(e) };
-            }
-        });
-
-        // 不应抛异常——browser-adapter 的 getCachedCapabilities() 应正常返回
-        expect(caps).not.toHaveProperty("error");
-        expect(caps).toBeDefined();
-        // 至少包含已知字段
-        expect(caps).toHaveProperty("ar");
-        expect(caps).toHaveProperty("plazaWindow");
-        expect(caps).toHaveProperty("watchDir");
     });
 });

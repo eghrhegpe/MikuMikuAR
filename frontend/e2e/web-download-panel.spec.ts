@@ -12,49 +12,8 @@
  * 运行：npx playwright test --grep "@web" web-download
  * 前置：webServer 自动 build + preview dist-web/（playwright.config.ts 配置）
  */
-import { test, expect, type Page } from "@playwright/test";
-
-const WEB_URL = process.env.WEB_URL || "http://localhost:4174/MikuMikuAR/";
-
-async function gotoWebEntry(page: Page): Promise<void> {
-    await page.goto(WEB_URL, { waitUntil: "commit", timeout: 30000 });
-    await page.waitForSelector("#btnMainAction", { timeout: 20000 });
-    await page.evaluate(() => {
-        return new Promise<void>((resolve) => {
-            const loading = document.getElementById("loading");
-            if (!loading) return resolve();
-            const done = () => resolve();
-            if (loading.style.display === "none" || loading.style.background) {
-                return done();
-            }
-            const obs = new MutationObserver(() => {
-                if (loading.style.display === "none" || loading.style.background) {
-                    obs.disconnect();
-                    done();
-                }
-            });
-            obs.observe(loading, { attributes: true, attributeFilter: ["style"] });
-            setTimeout(() => {
-                obs.disconnect();
-                done();
-            }, 20000);
-        });
-    });
-    await page.evaluate(() => {
-        const loading = document.getElementById("loading");
-        if (!loading) return;
-        const forcePassthrough = () => {
-            if (loading.style.pointerEvents !== "none") {
-                loading.style.pointerEvents = "none";
-            }
-        };
-        forcePassthrough();
-        new MutationObserver(forcePassthrough).observe(loading, {
-            attributes: true,
-            attributeFilter: ["style"],
-        });
-    });
-}
+import { test, expect } from "@playwright/test";
+import { gotoWebEntry } from "./helpers";
 
 test.describe("Web Download — 下载管理面板 (@web)", { tag: ["@web"] }, () => {
     test.beforeEach(async ({ page }) => {
