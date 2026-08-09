@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { SlideMenu } from '../../menus/menu';
 import { makeTestLevel, makeTestMenu } from '../fixtures/menu';
 
@@ -12,6 +12,12 @@ describe('SlideMenu — 创建行 (createRow DOM 类型)', () => {
         menu = m.menu;
         // 确保有一个根层级，使 currentLevel 可用
         menu.reset(makeTestLevel('根'));
+    });
+
+    // 动画生命周期定时器（150ms/200ms fadeOut/fadeIn 兜底）在测试结束后仍会触发，
+    // 不 dispose 会在 vitest teardown 时抛 unhandled error（CI flaky：menu.ts:384 onFadeOut）。
+    afterEach(() => {
+        menu.dispose();
     });
 
     // createRow 是 private，通过 (menu as any).createRow(row) 访问
