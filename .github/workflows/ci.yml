@@ -333,6 +333,10 @@ jobs:
     runs-on: windows-latest
     needs: [test-frontend, e2e]
     continue-on-error: true
+    # [2026-08-09] best-effort job 防卡死护栏：历史上频繁失败/挂起拖垮整个 CI run
+    # （最严重卡 1 小时）。wails3 dev 启动约 1 分钟 + 点击测试 ≤8 分钟 → 7 分钟足够；
+    # 超时即 kill，run 不必等它到天荒地老。
+    timeout-minutes: 7
     defaults:
       run:
         shell: bash
@@ -433,7 +437,10 @@ jobs:
         # 无需手动启动/停止 server，避免端口冲突。
         env:
           RUN_WEB_E2E: '1'
-        run: npx playwright test --grep "@web" --reporter=line
+        # [doc:e2e] grep 必须用 @web\b 而非 @web：@webgl 测试标题含 @web 前缀，
+        # 裸 @web 正则会把 42 个 @webgl（wailsPage/CDP）误抓进 @web job，
+        # ubuntu runner 无 Wails → 全部 30s 超时（run 31322792386 连续失败根因）。
+        run: npx playwright test --grep "@web\b" --reporter=line
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v5
@@ -454,6 +461,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: [test-frontend, e2e]
     continue-on-error: true
+    # [2026-08-09] best-effort job 防卡死护栏（同 e2e-wails）：点击测试 ≤8 分钟，
+    # 7 分钟超时即 kill，避免挂起拖垮整个 CI run。
+    timeout-minutes: 7
     defaults:
       run:
         working-directory: frontend
@@ -471,7 +481,8 @@ jobs:
         # 无需手动启动/停止 server，避免端口冲突。
         env:
           RUN_WEB_E2E: '1'
-        run: npx playwright test --grep "@web" --reporter=line
+        # [doc:e2e] 同 e2e-web-smoke：@web\b 精确匹配，避免 @webgl 误抓。
+        run: npx playwright test --grep "@web\b" --reporter=line
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v5
