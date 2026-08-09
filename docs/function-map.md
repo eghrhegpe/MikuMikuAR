@@ -2400,7 +2400,7 @@
 | `buildStageLevel()` | `menus/scene-stage-levels:161` | — |
 | `buildStageTransformLevel()` | `menus/scene-stage-levels:175` | — |
 | `buildStageLightLevel()` | `menus/scene-stage-lights:823` | — |
-| `buildSettingsAboutLevel()` | `menus/settings-about:255` | — |
+| `buildSettingsAboutLevel()` | `menus/settings-about:247` | — |
 | `handleSettingsAction()` | `menus/settings-actions:21` | 全局设置项点击分发：语言切换 + 动作表。settings.ts 的 onItemClick 使用。 |
 | `buildSettingsAppearanceLevel()` | `menus/settings-appearance:510` | — |
 | `buildCameraSchema()` | `menus/settings-controls:29` | — |

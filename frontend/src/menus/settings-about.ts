@@ -16,6 +16,7 @@ import { t } from '../core/i18n/t';
 import { openExternalLink } from '../core/platform';
 import { getCachedCapabilities } from '../core/backend';
 import { renderMenu } from './render-menu';
+import { events } from '../core/runtime-bridge';
 import type { PopupLevel } from '../core/config';
 import type { MenuNode } from './menu-schema';
 import type { SettingsMenuHandle } from './settings-shared';
@@ -23,9 +24,6 @@ import { safeCallAsync } from '../core/safe-call';
 
 /** 防止每次进入关于页都触发更新检查——一次会话只检查一次。 */
 let _updateCheckedThisSession = false;
-
-// 进度事件监听器引用（用于清理）
-let _progressListener: ((data: unknown) => void) | null = null;
 
 function buildAboutSchema(_getSettingsMenu: () => SettingsMenuHandle): MenuNode[] {
     return [
@@ -62,7 +60,8 @@ function buildAboutSchema(_getSettingsMenu: () => SettingsMenuHandle): MenuNode[
                         GetBuildInfo().then((info) => {
                             const el = title.querySelector<HTMLElement>('[data-app-version]');
                             if (el) {
-                                el.textContent = `v${info.version}`;
+                                // dev 版本不加 v 前缀
+                                el.textContent = info.version === 'dev' ? 'dev' : `v${info.version}`;
                             }
                         })
                     );
@@ -166,17 +165,13 @@ function buildAboutSchema(_getSettingsMenu: () => SettingsMenuHandle): MenuNode[
                                 updateBtn.textContent = t('settings.about.update.downloading');
                                 updateBtn.style.pointerEvents = 'none';
 
-                                // 注册进度监听器
-                                if (_progressListener) {
-                                    window.removeEventListener('update:downloadProgress', _progressListener);
-                                }
-                                _progressListener = (data: unknown) => {
+                                // 注册进度监听器（返回 unsubscribe 函数）
+                                const unsubscribeProgress = events.on('update:downloadProgress', (data) => {
                                     const d = data as { percent?: number };
                                     if (typeof d.percent === 'number') {
                                         updateBtn.textContent = t('settings.about.update.downloading') + ` ${Math.round(d.percent)}%`;
                                     }
-                                };
-                                window.addEventListener('update:downloadProgress', _progressListener);
+                                });
 
                                 try {
                                     if (isDesktopInstall) {
@@ -238,10 +233,7 @@ function buildAboutSchema(_getSettingsMenu: () => SettingsMenuHandle): MenuNode[
                                 } finally {
                                     updateBtn.style.pointerEvents = '';
                                     // 清理进度监听器
-                                    if (_progressListener) {
-                                        window.removeEventListener('update:downloadProgress', _progressListener);
-                                        _progressListener = null;
-                                    }
+                                    unsubscribeProgress();
                                 }
                             };
                         }

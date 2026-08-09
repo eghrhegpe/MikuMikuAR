@@ -1562,7 +1562,7 @@ export const ja: Record<string, string> = {
     'settings.about.update.checking': '確認中…',
     'settings.about.update.failed': '確認失敗',
     'settings.about.update.error': 'エラー: {err}',
-    'settings.about.update.available': '新しいバージョン v{latest}（現在 v{current}）',
+    'settings.about.update.available': '新しいバージョン {latest}（現在 {current}）',
     'settings.about.update.latest': '最新バージョンです（v{current}）',
     'settings.about.update.download': '最新版をダウンロード →',
     'settings.about.update.downloadInstall': 'ダウンロード＆インストール',

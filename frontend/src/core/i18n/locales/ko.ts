@@ -1560,7 +1560,7 @@ export const ko: Record<string, string> = {
     'settings.about.update.checking': '확인 중…',
     'settings.about.update.failed': '확인 실패',
     'settings.about.update.error': '오류: {err}',
-    'settings.about.update.available': '새 버전 v{latest} (현재 v{current})',
+    'settings.about.update.available': '새 버전 {latest} (현재 {current})',
     'settings.about.update.latest': '최신 버전입니다 (v{current})',
     'settings.about.update.download': '최신 버전 다운로드 →',
     'settings.about.update.downloadInstall': '다운로드 및 설치',

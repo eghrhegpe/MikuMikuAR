@@ -1545,7 +1545,7 @@ export const zhTW: Record<string, string> = {
     'settings.about.update.checking': '檢查中…',
     'settings.about.update.failed': '檢查失敗',
     'settings.about.update.error': '檢查出錯：{err}',
-    'settings.about.update.available': '發現新版本 v{latest}（目前 v{current}）',
+    'settings.about.update.available': '發現新版本 {latest}（目前 {current}）',
     'settings.about.update.latest': '已是最新版本（v{current}）',
     'settings.about.update.download': '前往下載最新版本 →',
     'settings.about.update.downloadInstall': '下載並安裝',

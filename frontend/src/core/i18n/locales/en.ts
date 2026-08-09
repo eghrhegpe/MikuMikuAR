@@ -1704,7 +1704,7 @@ export const en: Record<string, string> = {
     'settings.about.update.checking': 'Checking...',
     'settings.about.update.failed': 'Check failed',
     'settings.about.update.error': 'Error: {err}',
-    'settings.about.update.available': 'New version v{latest} (current v{current})',
+    'settings.about.update.available': 'New version {latest} (current {current})',
     'settings.about.update.latest': 'Already latest (v{current})',
     'settings.about.update.download': 'Download latest →',
     'settings.about.update.downloadInstall': 'Download & Install',
