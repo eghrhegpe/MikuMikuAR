@@ -32,6 +32,10 @@ import { getSceneAction } from '../core/scene-action-bridge';
 import { ClearExtractCache, ClearThumbnailCache, ClearAllCaches } from '../core/wails-bindings';
 import { setLang } from '../core/i18n/locale';
 import { feedbackInfo } from '../core/feedback';
+import { showConfirm } from '../core/dialog';
+import { showInfoToast } from '../core/toast';
+import { loadManager } from '../core/load-manager';
+import { triggerAutoSave } from '../core/config';
 
 beforeEach(() => {
     _resetActionRegistry();
@@ -141,6 +145,125 @@ describe('action-defs/motion', () => {
             await def!.execute({});
             expect(importExternalAnimation).toHaveBeenLastCalledWith(kind);
         }
+    });
+
+    it('model action 的 entity resolve 经 findSceneModelByName 查场景', async () => {
+        registerMotionActions();
+        const findSceneModelByName = vi.fn(() => Promise.resolve({ id: 'm-9' }));
+        vi.mocked(getSceneAction).mockImplementation((name: string) =>
+            name === 'findSceneModelByName' ? (findSceneModelByName as never) : undefined
+        );
+        const def = getAction('motion:model:pause');
+        expect(def!.params?.[0]).toMatchObject({ name: 'modelId', type: 'entity' });
+        const resolved = await (def!.params![0] as { resolve?: (n: string) => Promise<unknown> })
+            .resolve?.('初音ミク');
+        expect(findSceneModelByName).toHaveBeenCalledWith('初音ミク');
+        expect(resolved).toEqual({ id: 'm-9' });
+    });
+
+    it('motion UI 分支转发（load/clear/browse/open/detail/set-mode/lipsync）', async () => {
+        registerMotionActions();
+        const ui = new Map<string, ReturnType<typeof vi.fn>>();
+        const scene = new Map<string, ReturnType<typeof vi.fn>>();
+        const menuPush = vi.fn();
+        const menuGetLevel = vi.fn((i: number) => (i === 0 ? { items: [] } : undefined));
+        ui.set('getMotionMenu', vi.fn(() => ({ push: menuPush, getLevel: menuGetLevel })));
+        ui.set('buildBrowseLevel', vi.fn(() => ({ level: 1 })));
+        ui.set('getBrowseDir', vi.fn((kind: string) => `/lib/${kind}`));
+        ui.set('buildMotionRootItems', vi.fn(() => ['root-a']));
+        ui.set('buildActionBindingLevel', vi.fn(() => ({ itemBuilder: () => [], items: ['i'] })));
+        ui.set('buildMotionDetailLevel', vi.fn(() => ({ itemBuilder: () => [] })));
+        ui.set('resetFocusedLayerId', vi.fn());
+        ui.set('refreshMotionRoot', vi.fn());
+        scene.set('setLipSyncEnabled', vi.fn());
+        scene.set('getLipSyncState', vi.fn(() => ({ enabled: false })));
+        scene.set('setProcMotionMode', vi.fn());
+        scene.set('regenerateProcMotion', vi.fn());
+        scene.set('addSceneMotion', vi.fn());
+        scene.set('replaceDefaultMotion', vi.fn());
+        scene.set('loadVPDPose', vi.fn());
+        scene.set('getAudioName', vi.fn(() => 'bgm.mp3'));
+        scene.set('pushUndoSnapshot', vi.fn(() => ({ snap: 1 })));
+        scene.set('clearAllSceneMotions', vi.fn());
+        scene.set('updatePlaybackUI', vi.fn());
+        scene.set('offerSceneUndoAndRefresh', vi.fn());
+        vi.mocked(getUiAction).mockImplementation(
+            (name: string) => (ui.get(name) ?? undefined) as never
+        );
+        vi.mocked(getSceneAction).mockImplementation(
+            (name: string) => (scene.get(name) ?? undefined) as never
+        );
+        vi.mocked(showConfirm).mockResolvedValue(true);
+
+        // lipsync toggle：getLipSyncState.enabled=false → setLipSyncEnabled(true)
+        await getAction('motion:lipsync:toggle')!.execute({});
+        expect(scene.get('setLipSyncEnabled')).toHaveBeenCalledWith(true);
+
+        // clear-all：确认后清空场景并撤销快照
+        await getAction('motion:clear-all')!.execute({});
+        expect(showConfirm).toHaveBeenCalled();
+        expect(scene.get('clearAllSceneMotions')).toHaveBeenCalled();
+        expect(triggerAutoSave).toHaveBeenCalled();
+        expect(scene.get('offerSceneUndoAndRefresh')).toHaveBeenCalled();
+
+        // procmotion set-mode
+        await getAction('motion:procmotion:set-mode')!.execute({ mode: 'dancing' });
+        expect(scene.get('setProcMotionMode')).toHaveBeenCalledWith('dancing');
+        expect(scene.get('regenerateProcMotion')).toHaveBeenCalled();
+
+        // load-camera-vmd / load-vpd：直接转 loadManager / loadVPDPose
+        await getAction('motion:load-camera-vmd')!.execute({ path: '/a/c.vmd' });
+        expect(loadManager.load).toHaveBeenCalledWith({ kind: 'camera-vmd', path: '/a/c.vmd' });
+        await getAction('motion:load-vpd')!.execute({ path: '/a/p.vpd' });
+        expect(scene.get('loadVPDPose')).toHaveBeenCalledWith('/a/p.vpd');
+
+        // add-scene-vmd：带 name 直传
+        await getAction('motion:add-scene-vmd')!.execute({ path: '/a/m.vmd', name: 'M' });
+        expect(scene.get('addSceneMotion')).toHaveBeenCalledWith(
+            expect.objectContaining({ vmdPath: '/a/m.vmd', vmdName: 'M', source: 'vmd' })
+        );
+
+        // load-audio：转 loadManager + toast（名称来自 getAudioName）
+        await getAction('motion:load-audio')!.execute({ path: '/a/bgm.mp3' });
+        expect(loadManager.load).toHaveBeenCalledWith({ kind: 'audio', path: '/a/bgm.mp3' });
+        expect(showInfoToast).toHaveBeenCalled();
+
+        // open-binding：构建层级后推入菜单（itemBuilder 惰性刷新）
+        await getAction('motion:open-binding')!.execute({ modelId: 'm-1' });
+        expect(ui.get('resetFocusedLayerId')).toHaveBeenCalled();
+        expect(ui.get('buildActionBindingLevel')).toHaveBeenCalledWith('m-1');
+        expect(menuPush).toHaveBeenCalled();
+        const bindingLevel = menuPush.mock.calls[0][0] as { itemBuilder?: () => unknown[] };
+        bindingLevel.itemBuilder?.(); // 触发惰性 itemBuilder
+        expect(ui.get('buildActionBindingLevel')).toHaveBeenCalledTimes(2);
+
+        // browse-music：目录层级推入菜单
+        await getAction('motion:browse-music')!.execute({});
+        expect(ui.get('getBrowseDir')).toHaveBeenCalledWith('audio');
+        expect(ui.get('buildBrowseLevel')).toHaveBeenCalled();
+
+        // browse-scene-motions：outcome 回调 onVmdPick / onVmdReplace 刷新根菜单
+        await getAction('motion:browse-scene-motions')!.execute({});
+        const browseCalls = ui.get('buildBrowseLevel').mock.calls;
+        const browseArg = browseCalls[browseCalls.length - 1][0] as {
+            outcome?: { onVmdPick?: (p: string, n: string) => void; onVmdReplace?: (p: string, n: string) => void };
+        };
+        expect(browseArg.outcome).toBeDefined();
+        browseArg.outcome?.onVmdPick?.('/x/1.vmd', '1.vmd');
+        expect(scene.get('addSceneMotion')).toHaveBeenLastCalledWith(
+            expect.objectContaining({ vmdPath: '/x/1.vmd', vmdName: '1' })
+        );
+        expect(ui.get('buildMotionRootItems')).toHaveBeenCalled();
+        browseArg.outcome?.onVmdReplace?.('/x/2.vmd', '2.vmd');
+        expect(scene.get('replaceDefaultMotion')).toHaveBeenCalledWith(
+            expect.objectContaining({ vmdPath: '/x/2.vmd', vmdName: '2' })
+        );
+        expect(menuGetLevel).toHaveBeenCalledWith(0);
+
+        // open-detail：详情层级推入菜单（itemBuilder 惰性求值）
+        await getAction('motion:open-detail')!.execute({ sceneMotionId: 'sm-1' });
+        expect(ui.get('buildMotionDetailLevel')).toHaveBeenCalledWith('sm-1');
+        expect(menuPush).toHaveBeenCalled();
     });
 });
 
