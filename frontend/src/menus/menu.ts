@@ -659,7 +659,17 @@ export class SlideMenu implements RenderContext {
         if (!list) {
             return;
         }
-        const oldChild = list.children[index] as HTMLElement | undefined;
+        // [fix P2] 行被包在 .lcard 分组容器里（buildPanel），list.children 是组而非行——
+        // 旧实现按 list.children[index] 定位在纯 items 菜单上永远错位（单行时还误把 lcard 换成裸行）。
+        // 改为按 items 下标对齐 DOM 行：divider 不生成 DOM，跳过其占位。
+        let domIndex = 0;
+        for (let i = 0; i < index; i++) {
+            if (level.items[i].kind !== 'divider') {
+                domIndex++;
+            }
+        }
+        const rowEls = Array.from(list.querySelectorAll('[data-row-key]'));
+        const oldChild = rowEls[domIndex] as HTMLElement | undefined;
         if (oldChild) {
             const newEl = this.createRow(row);
             if (newEl) {
@@ -737,7 +747,10 @@ export class SlideMenu implements RenderContext {
             if (el.querySelector(`.${SLIDER_BAR_CLASS}`)) {
                 mark(el, { focusSelector: `.${SLIDER_BAR_CLASS}`, horizontalAdjust: true });
             } else if (el.querySelector(`.cs-top[role="${ROLE.listbox}"]`)) {
-                mark(el, { focusSelector: `.cs-top[role="${ROLE.listbox}"]`, horizontalAdjust: true });
+                mark(el, {
+                    focusSelector: `.cs-top[role="${ROLE.listbox}"]`,
+                    horizontalAdjust: true,
+                });
             }
         });
         // 模式切换行 .type-row：一排 .mode-btn 按钮 → 二维组导航（←→ 组内移动、Enter 触发）。
