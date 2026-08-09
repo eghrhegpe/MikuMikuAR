@@ -45,6 +45,12 @@ describe('transform-selection (ADR-171 面板化选中态)', () => {
         detachGizmo.mockClear();
         isDragModeEnabled.mockReset();
         getGizmoTargetId.mockReset();
+        // [fix] mockReset 默认返回 undefined，而生产语义是「未挂任何 gizmo → null」。
+        // undefined 会被 retryPendingAttachment 守卫（currentTargetId !== null）当成「已有目标」
+        // 短路，导致 retry 补挂分支与 syncDragMode 的 attach 成功路径从未真正执行（假阳性）。
+        getGizmoTargetId.mockReturnValue(null);
+        // attach 默认节点就绪（成功）；需要失败路径的用例显式 mockReturnValue(false)
+        attachGizmoForKind.mockReturnValue(true);
     });
 
     it('开关关时 setSelected 只记录，不挂 Gizmo', () => {
