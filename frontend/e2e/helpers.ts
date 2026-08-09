@@ -47,16 +47,70 @@ export async function gotoWebEntry(page: Page): Promise<void> {
     await page.waitForSelector("#btnMainAction", { timeout: 20000 });
 
     // [doc:adr-183] web 入口 init 会弹 FSA「授权模型根目录」引导对话框（browser-adapter
-    // 有 FSA API 时触发），全屏拦截后续所有点击——与 @dom 的 dismissErrorDialog 同理。
-    // 统一在此关闭，让各 spec 无需各自处理。
-    await page.evaluate(() => {
-        const el = document.getElementById("mmd-dialog-overlay");
-        if (el?.classList.contains("mmd-dialog-visible")) {
-            el.classList.remove("mmd-dialog-visible");
-        }
-    });
+    // 有 FSA API 时触发），全屏拦截后续所有点击——installOverlayGuards 常驻移除。
 
     // 等 init() 完成（同 vitePage fixture 的守卫逻辑）
+    await waitForInitComplete(page);
+
+    // 常驻守卫：任何时刻出现的全屏拦截层（#loading / app-booting / mmd-dialog）都强制放行
+    await installOverlayGuards(page);
+}
+
+/**
+ * 常驻 overlay 守卫（vitePage / wailsPage / gotoWebEntry 三处共用）。
+ *
+ * 问题根因（2026-08-10 probe 实锤）：init 失败后 app **异步**创建全屏
+ * #mmd-dialog-overlay（z-index:10000, pointer-events:auto）并加 mmd-dialog-visible；
+ * 旧守卫「等元素存在再挂 MutationObserver」在 dialog 尚未创建时 if(!dialog) return
+ * 直接退出——之后 app 才创建 dialog，守卫没在监听 → 全屏拦截层常驻，真实点击全被吞，
+ * 而 page.evaluate 合成 click 恰好绕过命中测试，掩盖了该 bug（run 实测 3 failed）。
+ *
+ * 修复：observer 挂在 document.body（subtree + childList + attributes），
+ * 任何时刻出现 #loading pe:auto / body.app-booting / dialog visible 都立即清除，
+ * 与元素创建时序无关。
+ */
+export async function installOverlayGuards(page: Page): Promise<void> {
+    await page.evaluate(() => {
+        const guard = () => {
+            const body = document.body;
+            if (body) body.classList.remove("app-booting");
+            const loading = document.getElementById("loading");
+            if (loading && loading.style.pointerEvents !== "none") {
+                loading.style.pointerEvents = "none";
+            }
+            const dialog = document.getElementById("mmd-dialog-overlay");
+            if (dialog?.classList.contains("mmd-dialog-visible")) {
+                dialog.classList.remove("mmd-dialog-visible");
+            }
+        };
+        guard();
+        const obs = new MutationObserver(guard);
+        // body 可能尚未挂载（waitUntil:commit 后仍在解析）——挂 document 兜底
+        const target = document.body ?? document.documentElement;
+        obs.observe(target, {
+            subtree: true,
+            childList: true,
+            attributes: true,
+            attributeFilter: ["class", "style"],
+        });
+        // 页面可能发生导航（SW reload / SPA 路由），document 级兜底重建
+        (window as any).__mmcOverlayGuard = () => {
+            const t = document.body ?? document.documentElement;
+            obs.observe(t, {
+                subtree: true,
+                childList: true,
+                attributes: true,
+                attributeFilter: ["class", "style"],
+            });
+        };
+        document.addEventListener("DOMContentLoaded", () => (window as any).__mmcOverlayGuard());
+    });
+}
+
+/** 等 init() 完成：#loading display:none（成功）或 background 有色（失败）。
+ *  vitePage / wailsPage / gotoWebEntry 三处共用，消除守卫逻辑三副本。
+ *  兜底 12s < test timeout 15s：先于 Playwright 超时生效（原 20s 兜底永不触发）。 */
+export async function waitForInitComplete(page: Page): Promise<void> {
     await page.evaluate(() => {
         return new Promise<void>((resolve) => {
             const loading = document.getElementById("loading");
@@ -72,60 +126,27 @@ export async function gotoWebEntry(page: Page): Promise<void> {
                 }
             });
             obs.observe(loading, { attributes: true, attributeFilter: ["style"] });
-            // [doc:e2e] 兜底 12s < test timeout 15s（同 vitePage 守卫）
             setTimeout(() => {
                 obs.disconnect();
                 done();
             }, 12000);
         });
     });
-
-    // 强制 #loading pointer-events:none 让 click 穿透（同 vitePage fixture）
-    await page.evaluate(() => {
-        const loading = document.getElementById("loading");
-        if (!loading) return;
-        const forcePassthrough = () => {
-            if (loading.style.pointerEvents !== "none") {
-                loading.style.pointerEvents = "none";
-            }
-        };
-        forcePassthrough();
-        new MutationObserver(forcePassthrough).observe(loading, {
-            attributes: true,
-            attributeFilter: ["style"],
-        });
-    });
-}
-
-/** Connect to the already-running Wails WebView2 via CDP.
- *  Uses 30s timeout to prevent hanging on Windows runner when
- *  connectOverCDP gets ECONNREFUSED (e.g. 9222 not yet open). */
-export async function connectToWails(): Promise<{ page: Page; close: () => Promise<void> }> {
-    const browser = await chromium.connectOverCDP(CDP_ENDPOINT, { timeout: 30000 });
-    const contexts = browser.contexts();
-    // The first/default context has the Wails WebView2 page(s)
-    const context = contexts[0] || await browser.newContext();
-    const pages = context.pages();
-    const page = pages[0] || await context.newPage();
-    return {
-        page,
-        close: async () => { await browser.close(); },
-    };
 }
 
 /** Take a Babylon screenshot via the exposed __capture helper. */
 export async function captureScreenshot(page: Page): Promise<string> {
     return await page.evaluate(async () => {
         const f = (window as any).__capture;
-        if (!f) throw new Error("__capture not found on window — ensure main.ts exposes it");
+        if (!f) throw new Error("__capture not found on window — ensure core/dev-hooks.ts setupE2ECapture ran (DEV or VITE_E2E_MODE)");
         return await f();
     });
 }
 
 /** Click the bottom-nav "环境" button to open the environment panel.
- * 用 page.evaluate 触发 click 绕过 pointer-events 拦截。 */
+ *  真实 locator.click（带命中测试）：pointer-events 被拦截时失败并暴露 app bug。 */
 export async function openEnvPanel(page: Page): Promise<void> {
-    await page.evaluate(() => { document.getElementById("btnEnv")?.click(); });
+    await page.locator("#btnEnv").click({ timeout: 3000 });
     // Wait for the overlay to appear
     await page.waitForSelector("#sceneOverlay.visible", { timeout: 3000 });
 }
@@ -149,9 +170,7 @@ export async function clickEnvSubLevel(page: Page, label: string): Promise<void>
     };
     const testId = ENV_SUB_TESTID[label];
     if (testId) {
-        await page.evaluate((id: string) => {
-            document.querySelector<HTMLElement>(`[data-testid="${id}"]`)?.click();
-        }, testId);
+        await page.getByTestId(testId).click();
     } else {
         // 未知标签回退到文本（保持稳定契约前兼容）
         await page.getByText(label, { exact: true }).click();
@@ -168,9 +187,7 @@ export async function clickMotionSubLevel(page: Page, label: string): Promise<vo
     };
     const testId = MOTION_SUB_TESTID[label];
     if (testId) {
-        await page.evaluate((id: string) => {
-            document.querySelector<HTMLElement>(`[data-testid="${id}"]`)?.click();
-        }, testId);
+        await page.getByTestId(testId).click();
     } else {
         await page.getByText(label, { exact: true }).click();
     }
@@ -193,9 +210,7 @@ export async function clickSettingsSubLevel(page: Page, label: string): Promise<
     };
     const testId = SETTINGS_SUB_TESTID[label];
     if (testId) {
-        await page.evaluate((id: string) => {
-            document.querySelector<HTMLElement>(`[data-testid="${id}"]`)?.click();
-        }, testId);
+        await page.getByTestId(testId).click();
     } else {
         await page.getByText(label, { exact: true }).click();
     }
@@ -223,7 +238,7 @@ export async function loadFirstModel(page: Page): Promise<void> {
         // Small wait for close animation to settle
         await page.waitForTimeout(200);
     }
-    await page.evaluate(() => { document.getElementById("btnMainAction")?.click(); });
+    await page.locator("#btnMainAction").click();
     await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
     await page.waitForSelector('[data-testid^="actor:model"]', { timeout: 5000 });
     await page.locator('[data-testid^="actor:model"]').first().click();
@@ -239,34 +254,34 @@ export async function loadModelByName(page: Page, name: string): Promise<void> {
         await page.keyboard.press("Escape");
         await page.waitForTimeout(200);
     }
-    await page.evaluate(() => { document.getElementById("btnMainAction")?.click(); });
+    await page.locator("#btnMainAction").click();
     await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
     await page.locator('[data-testid^="actor:model"]', { hasText: name }).first().click();
     await page.waitForFunction(() => (window as any).__scene?.meshCount > 10, { timeout: 20000 });
 }
 
 /** Open the motion/animation popup (#btnMotionPopup).
- * 用 page.evaluate 触发 click 绕过 pointer-events 拦截。 */
+ *  真实 locator.click（带命中测试）。 */
 export async function openMotionPopup(page: Page): Promise<void> {
-    await page.evaluate(() => { document.getElementById("btnMotionPopup")?.click(); });
+    await page.locator("#btnMotionPopup").click();
     await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
 }
 
 /** Open the library/popup overlay (#btnMainAction). */
 export async function openLibraryPanel(page: Page): Promise<void> {
-    await page.evaluate(() => { document.getElementById("btnMainAction")?.click(); });
+    await page.locator("#btnMainAction").click();
     await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
 }
 
 /** Open the scene overlay (#btnScene). */
 export async function openScenePanel(page: Page): Promise<void> {
-    await page.evaluate(() => { document.getElementById("btnScene")?.click(); });
+    await page.locator("#btnScene").click();
     await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
 }
 
 /** Open the settings overlay (#btnSettings). */
 export async function openSettingsPanel(page: Page): Promise<void> {
-    await page.evaluate(() => { document.getElementById("btnSettings")?.click(); });
+    await page.locator("#btnSettings").click();
     // [doc:e2e] 设置面板使用统一的 #sceneOverlay（非独立 #settingsOverlay）
     await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
 }

@@ -18,38 +18,42 @@ import { isLightingReady } from '../scene/render/lighting';
 import { isRenderReady } from '../scene/render/renderer';
 
 export function setupE2ECapture(): void {
-    // [doc:e2e] 生产构建下默认不注入 E2E 钩子（DEV 为 false），
-    // 但设 VITE_E2E_MODE=true 后仍可编入，供本地 @webgl 测试使用。
-    if (!import.meta.env.DEV && !import.meta.env.VITE_E2E_MODE) {
+    // [fix:P2] 钩子收敛：原编译期 DEV 门控在 dev 模式恒真，21 个可写全局对任何
+    // `npm run dev` 页面裸露。改为双运行时开关：
+    //   - __dumpBones：调试钩子，DEV 或 VITE_E2E_MODE 即注入（控制台随时可用）
+    //   - e2e 钩子（__capture/__state/__scene）：仅 ?e2e=1（isHeadless，vitePage）
+    //     或 VITE_E2E_MODE=true（@webgl 生产构建）注入，普通 dev 页面不再暴露写操作
+    const devMode = import.meta.env.DEV || import.meta.env.VITE_E2E_MODE;
+    const e2eMode = isHeadless || import.meta.env.VITE_E2E_MODE;
+    if (!devMode && !e2eMode) {
         return;
     }
 
     // [doc:bone-override] 骨骼层级导出钩子（DEV only）
     // 用法：在控制台调用 window.__dumpBones() 获取当前模型的骨骼层级 JSON
-    (window as unknown as Record<string, unknown>).__dumpBones = (): unknown => {
-        // 动态导入避免循环依赖 + 仅在需要时加载
+    if (devMode) {
+        (window as unknown as Record<string, unknown>).__dumpBones = (): unknown => {
+            // 动态导入避免循环依赖 + 仅在需要时加载
 
-        return import('../scene/motion/bone-override').then((m) => {
-            const dump = m.dumpBoneHierarchy();
-            if (!dump) {
-                console.warn('[__dumpBones] 无可用模型或骨骼未初始化');
-                return null;
-            }
-            logInfo(
-                '__dumpBones',
-                `导出完成：${dump.totalBones} 根骨骼，${dump.totalOverridden} 根被覆盖`
-            );
-            logInfo('__dumpBones', '返回值已复制到剪贴板（如可用）');
-            // 尝试复制到剪贴板
-            try {
-                const json = JSON.stringify(dump, null, 2);
-                void navigator.clipboard.writeText(json);
-            } catch {
-                /* expected failure when clipboard is unavailable */
-            }
-            return dump;
-        });
-    };
+            return import('../scene/motion/bone-override').then((m) => {
+                const dump = m.dumpBoneHierarchy();
+                if (!dump) {
+                    console.warn('[__dumpBones] 无可用模型或骨骼未初始化');
+                    return null;
+                }
+                logInfo(
+                    '__dumpBones',
+                    `导出完成：${dump.totalBones} 根骨骼，${dump.totalOverridden} 根被覆盖`
+                );
+                return dump;
+            });
+        };
+    }
+
+    // e2e 钩子仅 e2e 模式注入
+    if (!e2eMode) {
+        return;
+    }
 
     window.__capture = async (): Promise<string> => {
         // [doc:adr-229] headless（NullEngine）无 backbuffer，截图必失败；

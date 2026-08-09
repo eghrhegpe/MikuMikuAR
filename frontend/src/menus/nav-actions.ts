@@ -9,7 +9,6 @@ import { addDisposableListener } from '@/core/dom';
 import { getAllShortcuts, getAriaKeyshortcuts } from '@/core/shortcut-registry';
 import { registerUiAction } from '@/core/ui-action-bridge';
 import { closeAllOverlays, setOnCloseAllOverlays } from './menu-overlay';
-import { showModelPopup, showMotionPopup } from './library';
 import { showPlaza } from './plaza-browser';
 import { closePlaza } from './plaza-state';
 import { getOpenMenus } from './menu';
@@ -103,8 +102,14 @@ export async function toggleOverlay(id: string, showFn: () => void): Promise<voi
 }
 
 export const navActions: Record<number, () => void | Promise<void>> = {
-    1: () => toggleOverlay('sceneOverlay', showModelPopup),
-    2: () => toggleOverlay('sceneOverlay', showMotionPopup),
+    1: async () => {
+        const m = await import('./library');
+        toggleOverlay('sceneOverlay', m.showModelPopup);
+    },
+    2: async () => {
+        const m = await import('./library');
+        toggleOverlay('sceneOverlay', m.showMotionPopup);
+    },
     3: async () => {
         const m = await import('./scene-menu');
         toggleOverlay('sceneOverlay', m.showSceneMenu);
@@ -191,12 +196,14 @@ function installNavBindings(): void {
         }
         _navDisposables.push(addDisposableListener(el, 'click', fn));
     };
-    bindBtn('btnMainAction', dom.btnMainAction, () =>
-        toggleOverlay('sceneOverlay', showModelPopup)
-    );
-    bindBtn('btnMotionPopup', dom.btnMotionPopup, () =>
-        toggleOverlay('sceneOverlay', showMotionPopup)
-    );
+    bindBtn('btnMainAction', dom.btnMainAction, async () => {
+        const m = await import('./library');
+        toggleOverlay('sceneOverlay', m.showModelPopup);
+    });
+    bindBtn('btnMotionPopup', dom.btnMotionPopup, async () => {
+        const m = await import('./library');
+        toggleOverlay('sceneOverlay', m.showMotionPopup);
+    });
     bindBtn('btnScene', dom.btnScene, async () => {
         const m = await import('./scene-menu');
         toggleOverlay('sceneOverlay', m.showSceneMenu);
