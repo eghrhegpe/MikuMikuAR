@@ -146,7 +146,7 @@ function scanMenuTree(): { error: string | null; nodes: MenuNodeSnapshot[] } {
 }
 
 // ======== 声明式测试套件 ========
-test.describe("声明式菜单引擎 (@dom, vitePage)", { tag: ["@dom"] }, () => {
+test.describe("声明式菜单引擎 (@dom, vitePage)", { tag: ["@dom", "@overlay"] }, () => {
     let menuTree: MenuNodeSnapshot[] = [];
 
     test("设置面板扫描：捕获 ≥8 个节点，分类覆盖 tab + folder + slider", async ({ vitePage: page }) => {

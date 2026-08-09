@@ -41,7 +41,7 @@ test.describe("Desktop Capabilities — DOM 入口 (@dom)", { tag: ["@dom"] }, (
         await expect(page.locator("#btnPlaza")).toBeVisible();
     });
 
-    test("场景面板包含舞台区段（桌面端场景控制入口）", async ({ vitePage: page }) => {
+    test("场景面板包含舞台区段（桌面端场景控制入口）", { tag: ["@overlay"] }, async ({ vitePage: page }) => {
         await dismissErrorDialog(page);
         await page.click("#btnScene");
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
@@ -50,7 +50,7 @@ test.describe("Desktop Capabilities — DOM 入口 (@dom)", { tag: ["@dom"] }, (
         await expect(page.getByTestId("folder:scene:render:stage")).toBeVisible();
     });
 
-    test("模型库: 导入文件入口可见（桌面端有文件系统访问）", async ({ vitePage: page }) => {
+    test("模型库: 导入文件入口可见（桌面端有文件系统访问）", { tag: ["@overlay"] }, async ({ vitePage: page }) => {
         await dismissErrorDialog(page);
         await page.click("#btnMainAction");
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
@@ -58,7 +58,7 @@ test.describe("Desktop Capabilities — DOM 入口 (@dom)", { tag: ["@dom"] }, (
         await expect(page.getByTestId("action:models:import-file")).toBeVisible();
     });
 
-    test("模型库: 重扫按钮可见", async ({ vitePage: page }) => {
+    test("模型库: 重扫按钮可见", { tag: ["@overlay"] }, async ({ vitePage: page }) => {
         await dismissErrorDialog(page);
         await page.click("#btnMainAction");
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
@@ -66,7 +66,7 @@ test.describe("Desktop Capabilities — DOM 入口 (@dom)", { tag: ["@dom"] }, (
         await expect(page.getByTestId("action:models:rescan")).toBeVisible();
     });
 
-    test("设置面板: 模型库路径区段可见", async ({ vitePage: page }) => {
+    test("设置面板: 模型库路径区段可见", { tag: ["@overlay"] }, async ({ vitePage: page }) => {
         await dismissErrorDialog(page);
         await page.click("#btnSettings");
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
@@ -74,7 +74,7 @@ test.describe("Desktop Capabilities — DOM 入口 (@dom)", { tag: ["@dom"] }, (
         await expect(page.getByTestId("folder:settings:library")).toBeVisible();
     });
 
-    test("设置面板: 路径区段可见", async ({ vitePage: page }) => {
+    test("设置面板: 路径区段可见", { tag: ["@overlay"] }, async ({ vitePage: page }) => {
         await dismissErrorDialog(page);
         await page.click("#btnSettings");
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
@@ -82,7 +82,7 @@ test.describe("Desktop Capabilities — DOM 入口 (@dom)", { tag: ["@dom"] }, (
         await expect(page.getByTestId("folder:settings:paths")).toBeVisible();
     });
 
-    test("设置面板: 抗锯齿档位选择器可见（AA 唯一入口）", async ({ vitePage: page }) => {
+    test("设置面板: 抗锯齿档位选择器可见（AA 唯一入口）", { tag: ["@overlay"] }, async ({ vitePage: page }) => {
         await dismissErrorDialog(page);
         await page.click("#btnSettings");
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });

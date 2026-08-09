@@ -16,7 +16,7 @@ import { test, expect } from "./wails-fixture";
 import { waitForSceneHook } from "./helpers";
 
 // ======== @dom: Settings panel screenshot entry (DOM-only) ========
-test.describe("截图导出: 设置面板入口 (@dom, vitePage)", { tag: ["@dom"] }, () => {
+test.describe("截图导出: 设置面板入口 (@dom, vitePage)", { tag: ["@dom", "@overlay"] }, () => {
     test("设置面板可打开且 __scene.capture 管线就绪", async ({ vitePage: page }) => {
         // 使用 JS click() 绕过 Babylon canvas 的 pointer-events 拦截层
         await page.evaluate(() => {

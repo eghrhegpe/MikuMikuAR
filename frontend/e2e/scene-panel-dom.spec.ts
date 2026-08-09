@@ -6,7 +6,7 @@
  */
 import { test, expect } from "./wails-fixture";
 
-test.describe("Scene — DOM/overlay (vitePage, @dom)", { tag: ["@dom"] }, () => {
+test.describe("Scene — DOM/overlay (vitePage, @dom)", { tag: ["@dom", "@overlay"] }, () => {
     test.beforeEach(async ({ vitePage: page }) => {
         // Isolate: clear localStorage so scene state (render preset, env, camera)
         // from a previous test doesn't carry over.

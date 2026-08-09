@@ -7,7 +7,7 @@
  */
 import { test, expect } from "./wails-fixture";
 
-test.describe("Shortcuts — DOM/overlay (vitePage, @dom)", { tag: ["@dom"] }, () => {
+test.describe("Shortcuts — DOM/overlay (vitePage, @dom)", { tag: ["@dom", "@overlay"] }, () => {
     test.beforeEach(async ({ vitePage: page }) => {
         // Isolate: clear localStorage so key binding overrides from a previous
         // test don't conflict. Shortcuts check is global-state sensitive.

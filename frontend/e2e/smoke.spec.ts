@@ -19,7 +19,7 @@ test.describe("Smoke — DOM/overlay (vitePage, @dom)", { tag: ["@dom"] }, () =>
         await expect(page.locator("#btnSettings")).toBeVisible();
     });
 
-    test("environment button opens overlay", async ({ vitePage: page }) => {
+    test("environment button opens overlay", { tag: ["@overlay"] }, async ({ vitePage: page }) => {
         await page.click("#btnEnv");
         // All nav buttons share the single #sceneOverlay; it gains `.visible` on open.
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 8000 });
@@ -30,7 +30,7 @@ test.describe("Smoke — DOM/overlay (vitePage, @dom)", { tag: ["@dom"] }, () =>
         await expect(page.getByTestId("folder:env:particle")).toBeVisible();
     });
 
-    test("Ctrl+1~5 toggle each nav menu (overlay show/hide)", async ({ vitePage: page }) => {
+    test("Ctrl+1~5 toggle each nav menu (overlay show/hide)", { tag: ["@overlay"] }, async ({ vitePage: page }) => {
         const overlay = page.locator("#sceneOverlay");
         for (const n of [1, 2, 3, 4, 5]) {
             // Open via Ctrl+N

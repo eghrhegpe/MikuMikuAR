@@ -14,7 +14,7 @@
  */
 import { test, expect } from "./wails-fixture";
 
-test.describe("Scene — Water Panel (vitePage, @dom)", { tag: ["@dom"] }, () => {
+test.describe("Scene — Water Panel (vitePage, @dom)", { tag: ["@dom", "@overlay"] }, () => {
     test.beforeEach(async ({ vitePage: page }) => {
         // [ADR-229 §8 修复] ① 不调 localStorage.clear()：vitePage 每 test 全新浏览器实例，
         // localStorage 本就为空；clear() 会触发应用 storage 监听导致页面导航、

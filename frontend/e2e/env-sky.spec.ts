@@ -12,7 +12,7 @@
 import { test, expect } from "./wails-fixture";
 import { openEnvPanel, clickEnvSubLevel, captureScreenshot, captureFingerprint, compareToBaseline } from "./helpers";
 
-test.describe("Environment — Sky Panel (vitePage, DOM-only)", { tag: ["@dom"] }, () => {
+test.describe("Environment — Sky Panel (vitePage, DOM-only)", { tag: ["@dom", "@overlay"] }, () => {
     test.beforeEach(async ({ vitePage: page }) => {
         await openEnvPanel(page);
         await clickEnvSubLevel(page, "天空");

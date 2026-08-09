@@ -6,7 +6,7 @@
  */
 import { test, expect } from "./wails-fixture";
 
-test.describe("Motion — DOM/overlay (vitePage, @dom)", { tag: ["@dom"] }, () => {
+test.describe("Motion — DOM/overlay (vitePage, @dom)", { tag: ["@dom", "@overlay"] }, () => {
     test.beforeEach(async ({ vitePage: page }) => {
         // Isolate: clear localStorage so ProcMotion state, BPM, or playback position
         // from a previous test don't leak into the next one.

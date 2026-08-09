@@ -15,11 +15,18 @@ export default defineConfig({
     testDir: "./e2e",
     fullyParallel: true,
     forbidOnly: !!process.env.CI,
-    retries: process.env.CI ? 2 : 0,
-    // [doc:e2e] 系统级红（如前端在 CI 起不来）时 fail-fast：一旦累计 10 个 spec 失败即中止，
-    // 避免 81 个 spec × retries=2 把 1.2h 全烧在重复超时上（run 30743044142 教训）。
-    // 正常零星失败不会触发；触发即代表环境/共享 fixture 崩了，先修根因而非看完所有失败。
-    maxFailures: process.env.CI ? 10 : 0,
+    // [doc:e2e] 参数对齐隔壁 ysm-model-manager 实证（其 33s 全绿）：
+    //   15s/项 快速失败，不再默认 30s 陪跑必败项；
+    //   retries=1 而非 2（必败项少烧一轮）；
+    //   maxFailures=5 而非 10（headless 环境硬伤快速止损，见下）；
+    //   globalTimeout 7min 总限兜底，防 81 个必败 spec 串行烧穿 CI。
+    // 背景：@dom 集合混入大量「打开设置/场景面板 → 渲染 WebGL overlay」的 spec，
+    // headless CI 无 GPU 时 waitForSelector 20s 必超时（run 31325621473: 49 failed），
+    // 旧参数每个必败项 30s×2 重试=90s、串行 49 个 → 7 分钟护栏到点被杀。
+    timeout: 15000,
+    globalTimeout: 7 * 60 * 1000,
+    retries: process.env.CI ? 1 : 0,
+    maxFailures: process.env.CI ? 5 : 0,
     // 限制并发避免多 worker 同时打 Vite 5173 触发 babylon-mmd 重模块重复编译，
     // 该场景会导致 page.goto 在 10s 内达不到 domcontentloaded（实测 14/16 失败的根因）。
     workers: process.env.CI ? 1 : 2,

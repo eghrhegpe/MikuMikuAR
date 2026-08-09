@@ -65,11 +65,15 @@ jobs:
         run: npx vitest run src/__tests__/schema-snapshot.test.ts
 
       - name: Run @dom E2E
-        # [2026-08-09] 测试步骤 7 分钟即杀：81 个测试 1 worker 串行，headless CI
-        # 下大量必败（30s 超时 ×2 重试 = 90s/用例），跑完要 40+ 分钟。
+        # [2026-08-09] 集合净化（ADR-060 实锤）：@dom 中触 WebGL overlay 的 spec
+        # （打开设置/场景/环境面板 → #sceneOverlay.visible）在 headless CI 无 GPU 时
+        # 必崩（run 31325621473: 49 failed，waitForSelector 20s 超时 ×2 重试 = 90s/用例）。
+        # 它们已标 @overlay tag，此处排除 → 门禁只跑纯 DOM 断言（a11y/nav/__scene hook），
+        # 本地实测 1.0m 全绿；@overlay 测试保留在带 GPU 环境（本地 / 真机 @webgl）跑。
+        # 参数已对齐 playwright.config.ts：15s/项 + maxFailures=5 + retries=1 + globalTimeout 7min。
         timeout-minutes: 7
         continue-on-error: true
-        run: npx playwright test --grep @dom --reporter=line
+        run: npx playwright test --grep "@dom" --grep-invert "@overlay" --reporter=line
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v5

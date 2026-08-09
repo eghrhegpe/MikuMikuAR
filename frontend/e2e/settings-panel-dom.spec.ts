@@ -6,7 +6,7 @@
  */
 import { test, expect } from "./wails-fixture";
 
-test.describe("Settings — DOM/overlay (vitePage, @dom)", { tag: ["@dom"] }, () => {
+test.describe("Settings — DOM/overlay (vitePage, @dom)", { tag: ["@dom", "@overlay"] }, () => {
     test.beforeEach(async ({ vitePage: page }) => {
         // Isolate: clear localStorage so settings state (theme, language, paths)
         // from a previous test doesn't leak into the next one.

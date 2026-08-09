@@ -6,7 +6,7 @@
  */
 import { test, expect } from "./wails-fixture";
 
-test.describe("Library — DOM/overlay (vitePage, @dom)", { tag: ["@dom"] }, () => {
+test.describe("Library — DOM/overlay (vitePage, @dom)", { tag: ["@dom", "@overlay"] }, () => {
     test.beforeEach(async ({ vitePage: page }) => {
         // Isolate: clear localStorage so no stale state (resource_root, favorites, tags)
         // affects the next test. The fixture already provides a fresh browser+page,

@@ -128,7 +128,7 @@ function describeSchemaPanel(
     // ⚡ 优化：每个面板只导航一次，用 test.step() 聚合所有节点断言。
     // 之前每个节点一个 test() + beforeEach 导航，158 个节点 → 158 次导航 → 2h+。
     // 改为每个面板一个 test() + 一次导航，16 个面板 → 16 次导航 → ~15min。
-    test(`Schema 驱动 E2E — ${panel.panelId}: 所有节点渲染正确`, { tag: ["@dom"] }, async ({ vitePage: page }) => {
+    test(`Schema 驱动 E2E — ${panel.panelId}: 所有节点渲染正确`, { tag: ["@dom", "@overlay"] }, async ({ vitePage: page }) => {
         // [ADR-229 §2.2] 每面板一个 test 聚合全部节点断言 + vitePage fixture 初始化
         // （goto/init 守卫最长可达 ~50s），默认 30s test timeout 不够——显式放宽，
         // 避免超时误报掩盖真实断言失败（曾因 60s 超时误判 env:cloud 失败）。
@@ -429,7 +429,7 @@ async function executeAction(page: any, node: any): Promise<void> {
 }
 
 // 总结性测试：验证所有面板的所有节点均有 testId
-test.describe("Schema 完整性总览", { tag: ["@dom"] }, () => {
+test.describe("Schema 完整性总览", { tag: ["@dom", "@overlay"] }, () => {
     for (const panel of snapshot) {
         const nav = panel.nav as PanelNav | undefined;
         if (!nav) continue;

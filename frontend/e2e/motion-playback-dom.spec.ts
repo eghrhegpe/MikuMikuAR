@@ -14,7 +14,7 @@
  */
 import { test, expect } from "./wails-fixture";
 
-test.describe("Motion — Playback Controls (vitePage, @dom)", { tag: ["@dom"] }, () => {
+test.describe("Motion — Playback Controls (vitePage, @dom)", { tag: ["@dom", "@overlay"] }, () => {
     test("底部播放栏: DOM 元素存在", async ({ vitePage: page }) => {
         // 底部播放栏是 index.html 静态元素，默认 display:none，但始终在 DOM 中。
         // 使用 toHaveCount(1) 断言元素存在于文档中，无视可见性。
