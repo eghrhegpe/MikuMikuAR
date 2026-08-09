@@ -88,8 +88,11 @@ jobs:
           import json
           with open('test-results/.last-run.json') as f:
               d = json.load(f)
-          p, fl, fa = d.get('passed', 0), d.get('flaky', 0), d.get('failed', 0)
-          print(f'::notice title=@dom summary::{p} passed, {fa} failed, {fl} flaky')
+          # [fix:P0] Playwright 的 .last-run.json 只有 status/failedTests 键（实测 1.61.1），
+          # 无 passed/flaky/failed 计数——旧代码 d.get('failed',0) 恒为 0，gate 永远放行（假绿根因）。
+          status = d.get('status', '?')
+          fa = len(d.get('failedTests', []))
+          print(f'::notice title=@dom summary::status={status}, {fa} failed')
           if fa > 0:
               print(f'::error title=@dom gate::failed={fa} > 0 — @dom 门禁失败，job 标红')
               exit(1)
@@ -203,8 +206,10 @@ jobs:
           import json
           with open('test-results/.last-run.json') as f:
               d = json.load(f)
-          p, fl, fa = d.get('passed',0), d.get('flaky',0), d.get('failed',0)
-          print(f'::notice title=@webgl summary::{p} passed, {fa} failed, {fl} flaky')
+          # [fix:P0] 同 @dom：读 status/failedTests 而非不存在的 passed/flaky/failed 计数。
+          status = d.get('status', '?')
+          fa = len(d.get('failedTests', []))
+          print(f'::notice title=@webgl summary::status={status}, {fa} failed')
           if fa > 20:
               print(f'::error title=@webgl gate::failed={fa} > 20 — 测试体系异常，job 标红')
               exit(1)
@@ -269,8 +274,10 @@ jobs:
           import json
           with open('test-results/.last-run.json') as f:
               d = json.load(f)
-          p, fl, fa = d.get('passed', 0), d.get('flaky', 0), d.get('failed', 0)
-          print(f'::notice title=@web-smoke summary::{p} passed, {fa} failed, {fl} flaky')
+          # [fix:P0] 同 @dom：读 status/failedTests 而非不存在的 passed/flaky/failed 计数。
+          status = d.get('status', '?')
+          fa = len(d.get('failedTests', []))
+          print(f'::notice title=@web-smoke summary::status={status}, {fa} failed')
           if fa > 0:
               print(f'::error title=@web-smoke gate::failed={fa} > 0 — @web smoke 门禁失败，job 标红')
               exit(1)
@@ -337,8 +344,10 @@ jobs:
           import json
           with open('test-results/.last-run.json') as f:
               d = json.load(f)
-          p, fl, fa = d.get('passed', 0), d.get('flaky', 0), d.get('failed', 0)
-          print(f'::notice title=@web-full summary::{p} passed, {fa} failed, {fl} flaky')
+          # [fix:P0] 同 @dom：读 status/failedTests 而非不存在的 passed/flaky/failed 计数。
+          status = d.get('status', '?')
+          fa = len(d.get('failedTests', []))
+          print(f'::notice title=@web-full summary::status={status}, {fa} failed')
           if fa > 20:
               print(f'::error title=@web-full gate::failed={fa} > 20 — 测试体系异常，job 标红')
               exit(1)
