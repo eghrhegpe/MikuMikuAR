@@ -1766,13 +1766,13 @@
 | `getGuideLines()` | `scene/pose/composition-guide:28` | 计算某模式的辅助线段列表（纯函数，可独立测试）。 |
 | `getGuideMode()` | `scene/pose/composition-guide:70` | 获取当前的辅助线模式。 |
 | `setGuideMode()` | `scene/pose/composition-guide:78` | 设置构图辅助线模式。 |
-| `DEFAULT_WATERMARK()` | `scene/pose/watermark:17` | — |
-| `WatermarkConfig()` | `scene/pose/watermark:4` | — |
-| `WatermarkPosition()` | `scene/pose/watermark:39` | 水印文字锚点计算结果。 |
-| `applyWatermark()` | `scene/pose/watermark:86` | 在 base64 图片数据上叠加水印。 |
-| `computeWatermarkPosition()` | `scene/pose/watermark:49` | 计算水印文字绘制位置（纯函数，可独立测试）。 |
-| `getWatermarkConfig()` | `scene/pose/watermark:29` | 获取当前水印配置。 |
-| `setWatermarkConfig()` | `scene/pose/watermark:34` | 设置水印配置（部分更新）。 |
+| `DEFAULT_WATERMARK()` | `scene/pose/watermark:19` | — |
+| `WatermarkConfig()` | `scene/pose/watermark:6` | — |
+| `WatermarkPosition()` | `scene/pose/watermark:41` | 水印文字锚点计算结果。 |
+| `applyWatermark()` | `scene/pose/watermark:88` | 在 base64 图片数据上叠加水印。 |
+| `computeWatermarkPosition()` | `scene/pose/watermark:51` | 计算水印文字绘制位置（纯函数，可独立测试）。 |
+| `getWatermarkConfig()` | `scene/pose/watermark:31` | 获取当前水印配置。 |
+| `setWatermarkConfig()` | `scene/pose/watermark:36` | 设置水印配置（部分更新）。 |
 | `LightConeEntry()` | `scene/render/light-cone:74` | — |
 | `createLightCone()` | `scene/render/light-cone:162` | 为聚光灯创建光锥。 |
 | `disposeLightCone()` | `scene/render/light-cone:249` | 释放光锥资源（先 mesh 后 material，避免 mesh.dispose 内部引用已释放材质） |

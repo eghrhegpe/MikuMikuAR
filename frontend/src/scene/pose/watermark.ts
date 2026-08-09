@@ -1,6 +1,8 @@
 // [doc:architecture] Watermark — 截图水印系统
 // 职责: 在 canvas 截图时叠加文字/图片水印
 
+import { logWarn } from '@/core/logger';
+
 export interface WatermarkConfig {
     enabled: boolean;
     text: string;
@@ -104,7 +106,7 @@ export function applyWatermark(base64: string, format: string, quality: number):
             canvas.height = img.height;
             const ctx = canvas.getContext('2d');
             if (!ctx) {
-                console.warn('[watermark] canvas.getContext("2d") returned null, skipping watermark');
+                logWarn('watermark', 'canvas.getContext("2d") returned null, skipping watermark');
                 resolve(base64);
                 return;
             }

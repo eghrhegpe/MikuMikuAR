@@ -45,6 +45,7 @@ export function resetState(): void {
     setModelRegistry(new Map());
     setIsPlaying(false);
     setMmdRuntime(null);
+    setFocusedModelId(null);
 }
 
 // 重新导出 config setters，供各测试文件按需调用
