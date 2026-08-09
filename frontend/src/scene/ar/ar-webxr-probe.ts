@@ -148,19 +148,20 @@ async function probeFeaturesBySession(
 
 // ======== Platform Detection ========
 
-function detectPlatform(): {
+/** 平台判定输入：UA 字符串 + 是否运行在 Wails 桌面壳（注入标识）。 */
+export function detectPlatform(
+    ua: string,
+    hasWails: boolean
+): {
     isAndroidWebView: boolean;
     isDesktopWebView2: boolean;
     platform: string;
 } {
-    const ua = navigator.userAgent;
     const isAndroid = /Android/i.test(ua);
     // Android WebView 的 UA 包含 "wv" 标记或 Version/x.x（Chrome 无此标记）
     const isWebView = /\bwv\b/.test(ua) || (/Version\/[\d.]+/.test(ua) && /Chrome/.test(ua));
     // Wails 桌面端 WebView2 UA 包含 "Edg/" (Edge Chromium)
     const isWebView2 = /Edg\//.test(ua) && !isAndroid;
-    // Wails 注入标识
-    const hasWails = typeof window.wails !== 'undefined';
 
     let platform = 'unknown';
     if (isAndroid && isWebView) {
@@ -180,6 +181,70 @@ function detectPlatform(): {
     };
 }
 
+/** 综合结论判定输入。 */
+export interface VerdictInput {
+    xrAvailable: boolean;
+    immersiveAR: boolean;
+    isDesktopWebView2: boolean;
+    isAndroidWebView: boolean;
+    webViewPackage?: string;
+    webViewVersion?: string;
+}
+
+/**
+ * 计算综合结论（纯函数，可独立测试）。
+ * 决策表：无 XR → none（分 WebView2/Android WebView/普通浏览器文案）；
+ * 有 XR 但无 immersive-ar → none；immersive-ar 可用 → partial。
+ */
+export function buildVerdict(input: VerdictInput): {
+    verdict: 'full' | 'partial' | 'none';
+    summary: string;
+} {
+    const {
+        xrAvailable,
+        immersiveAR,
+        isDesktopWebView2,
+        isAndroidWebView,
+        webViewPackage,
+        webViewVersion,
+    } = input;
+
+    if (!xrAvailable && !immersiveAR) {
+        if (isDesktopWebView2) {
+            return {
+                verdict: 'none',
+                summary: 'WebView2 无 XR 后端 → 永久降级 passthrough（ADR-072 §1.3 已确认）',
+            };
+        }
+        if (isAndroidWebView) {
+            const pkgInfo = webViewPackage
+                ? ` [WebView: ${webViewPackage} v${webViewVersion}]`
+                : '';
+            return {
+                verdict: 'none',
+                summary:
+                    `Android WebView 未暴露 navigator.xr → WebXR 默认禁用${pkgInfo}，` +
+                    '需评估启用机制（flag / WebViewCompat / ROM）',
+            };
+        }
+        return { verdict: 'none', summary: 'navigator.xr 不存在 → 浏览器不支持 WebXR' };
+    }
+    if (!immersiveAR) {
+        return {
+            verdict: 'none',
+            summary:
+                'navigator.xr 存在但 immersive-ar 不受支持 → ' +
+                '可能仅支持 immersive-vr 或 inline',
+        };
+    }
+    return {
+        verdict: 'partial',
+        summary:
+            'immersive-ar 受支持 ✓ — hit-test / plane-detection 等特性需进一步验证' +
+            '（调用 probeWebXRFeatures 会触发 AR session + 摄像头权限）',
+    };
+}
+
 // ======== Public API ========
 
 /**
@@ -192,7 +257,10 @@ export async function probeWebXR(): Promise<WebXRProbeResult> {
         return _cachedResult;
     }
 
-    const { isAndroidWebView, isDesktopWebView2, platform } = detectPlatform();
+    const { isAndroidWebView, isDesktopWebView2, platform } = detectPlatform(
+        navigator.userAgent,
+        typeof window.wails !== 'undefined'
+    );
     const xrAvailable = typeof navigator.xr !== 'undefined';
 
     let immersiveAR = false;
@@ -227,35 +295,15 @@ export async function probeWebXR(): Promise<WebXRProbeResult> {
     const lightEstimation = false;
     const anchors = false;
 
-    // 综合结论
-    let verdict: 'full' | 'partial' | 'none';
-    let summary: string;
-
-    if (!xrAvailable && !immersiveAR) {
-        verdict = 'none';
-        if (isDesktopWebView2) {
-            summary = 'WebView2 无 XR 后端 → 永久降级 passthrough（ADR-072 §1.3 已确认）';
-        } else if (isAndroidWebView) {
-            const pkgInfo = webViewPackage
-                ? ` [WebView: ${webViewPackage} v${webViewVersion}]`
-                : '';
-            summary =
-                `Android WebView 未暴露 navigator.xr → WebXR 默认禁用${pkgInfo}，` +
-                '需评估启用机制（flag / WebViewCompat / ROM）';
-        } else {
-            summary = 'navigator.xr 不存在 → 浏览器不支持 WebXR';
-        }
-    } else if (!immersiveAR) {
-        verdict = 'none';
-        summary =
-            'navigator.xr 存在但 immersive-ar 不受支持 → ' + '可能仅支持 immersive-vr 或 inline';
-    } else {
-        // immersive-ar 支持，但具体 features 未验证
-        verdict = 'partial';
-        summary =
-            'immersive-ar 受支持 ✓ — hit-test / plane-detection 等特性需进一步验证' +
-            '（调用 probeWebXRFeatures 会触发 AR session + 摄像头权限）';
-    }
+    // 综合结论（纯决策表，见 buildVerdict）
+    const { verdict, summary } = buildVerdict({
+        xrAvailable,
+        immersiveAR,
+        isDesktopWebView2,
+        isAndroidWebView,
+        webViewPackage,
+        webViewVersion,
+    });
 
     _cachedResult = {
         xrAvailable: xrAvailable || immersiveAR, // Java 侧可能确认 xr 存在

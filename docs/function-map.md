@@ -8,7 +8,7 @@
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
 | 核心基础设施 | 132 | 802 |
-| 3D 场景 | 125 | 1224 |
+| 3D 场景 | 125 | 1227 |
 | 菜单 & UI | 76 | 394 |
 | 动作算法 | 18 | 138 |
 | 顶层配置 | 1 | 1 |
@@ -836,10 +836,13 @@
 | `isARModeActive()` | `scene/ar/ar-scene:244` | — |
 | `setARMode()` | `scene/ar/ar-scene:162` | 切换 AR 模式（摄像头视频背景 + 透明 canvas）。 |
 | `takeARScreenshot()` | `scene/ar/ar-scene:240` | AR 合成截图（视频底 + 3D 层），供截图功能调用。异步版（ADR-017 A2-04）。 |
+| `VerdictInput()` | `scene/ar/ar-webxr-probe:185` | 综合结论判定输入。 |
 | `WebXRProbeResult()` | `scene/ar/ar-webxr-probe:10` | — |
-| `formatProbeReport()` | `scene/ar/ar-webxr-probe:349` | 格式化探针结果为人类可读的多行文本（用于 UI 展示或复制到剪贴板）。 |
-| `probeWebXR()` | `scene/ar/ar-webxr-probe:190` | 执行 WebXR 支持度探针（非侵入式，不请求 session）。 |
-| `probeWebXRFeatures()` | `scene/ar/ar-webxr-probe:285` | 深度探针：实际创建 immersive-ar session 验证特性可用性。 |
+| `buildVerdict()` | `scene/ar/ar-webxr-probe:199` | 计算综合结论（纯函数，可独立测试）。 |
+| `detectPlatform()` | `scene/ar/ar-webxr-probe:152` | 平台判定输入：UA 字符串 + 是否运行在 Wails 桌面壳（注入标识）。 |
+| `formatProbeReport()` | `scene/ar/ar-webxr-probe:397` | 格式化探针结果为人类可读的多行文本（用于 UI 展示或复制到剪贴板）。 |
+| `probeWebXR()` | `scene/ar/ar-webxr-probe:255` | 执行 WebXR 支持度探针（非侵入式，不请求 session）。 |
+| `probeWebXRFeatures()` | `scene/ar/ar-webxr-probe:333` | 深度探针：实际创建 immersive-ar session 验证特性可用性。 |
 | `getAutoCameraBeatsPerSwitch()` | `scene/camera/camera-auto:141` | — |
 | `isAutoCameraEnabled()` | `scene/camera/camera-auto:130` | — |
 | `restoreAutoCameraState()` | `scene/camera/camera-auto:92` | 从 UIState 恢复自动机位状态。ADR-100 P2：恢复时集中订阅并派生 beatcut 行为，修复饥饿。 |

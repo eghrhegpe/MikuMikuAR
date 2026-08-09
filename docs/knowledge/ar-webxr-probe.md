@@ -10,7 +10,10 @@ source_files:
 adr:
   - ADR-072
 symbols:
+  - VerdictInput
   - WebXRProbeResult
+  - buildVerdict
+  - detectPlatform
   - formatProbeReport
   - probeWebXR
   - probeWebXRFeatures
