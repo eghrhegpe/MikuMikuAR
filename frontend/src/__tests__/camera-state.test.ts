@@ -73,6 +73,7 @@ import {
     setPreviousMode,
     getViewMatrixHandle,
     setViewMatrixHandle,
+    resetCameraState,
 } from '../scene/camera/camera-state';
 
 describe('CAMERA_MODES 与 isCameraMode', () => {
@@ -353,5 +354,62 @@ describe('注册的 getCameraMode action（ADR-238）', () => {
         setCameraMode('concert');
         const action = shared.actions.get('getCameraMode') as () => string;
         expect(action()).toBe('concert');
+    });
+});
+
+describe('resetCameraState', () => {
+    it('恢复全部可变状态到默认值', () => {
+        // 将所有状态字段设为非默认值
+        setFov(2.5);
+        setCameraMode('concert');
+        setCameraControl('freefly');
+        setCameraBehavior('turntable');
+        setScriptedSubMode('oneshot');
+        setFocusCenterY(99);
+        setConcertPaused(true);
+        setSurroundPaused(true);
+        setCameraVmdState('test.vmd', '/test.vmd');
+        setAutoCameraEnabledFlag(true);
+        setAutoCameraBeatCount(10);
+        setAutoCameraPresetIdx(3);
+        setPreviousMode('ar');
+
+        resetCameraState();
+
+        expect(getFov()).toBe(0.8);
+        expect(getCameraMode()).toBe('orbit');
+        expect(getCameraControl()).toBe('orbit');
+        expect(getCameraBehavior()).toBe('none');
+        expect(getScriptedSubMode()).toBe('loop');
+        expect(getFocusCenterY()).toBe(8);
+        expect(getConcertPaused()).toBe(false);
+        expect(getSurroundPaused()).toBe(false);
+        expect(hasCameraVmd()).toBe(false);
+        expect(isAutoCameraEnabled()).toBe(false);
+        expect(getAutoCameraBeatCount()).toBe(0);
+        expect(getAutoCameraPresetIdx()).toBe(0);
+        expect(getPreviousMode()).toBe('orbit');
+    });
+
+    it('_currentCamera 和 _viewMatrixHandle 被置 null', () => {
+        setCurrentCamera({ name: 'fake' } as any);
+        setViewMatrixHandle({ dispose: vi.fn() } as any);
+
+        resetCameraState();
+
+        expect(getCurrentCamera()).toBeNull();
+        expect(getViewMatrixHandle()).toBeNull();
+    });
+
+    it('_scene 和 _canvas 保持不变（非 reset 范围）', () => {
+        const scene = { name: 'test-scene' } as any;
+        const canvas = {} as HTMLCanvasElement;
+        setCameraScene(scene);
+        setCameraCanvas(canvas);
+
+        resetCameraState();
+
+        expect(getCameraScene()).toBe(scene);
+        expect(getCameraCanvas()).toBe(canvas);
     });
 });
