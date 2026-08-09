@@ -115,7 +115,7 @@ function makeAnimationGroup(): {
 }
 
 function makeRetargetResult(animationGroup: unknown, boneMapName = 'mixamo') {
-    return { animationGroup, sourceSkeleton: makeSkeleton(), boneMapName };
+    return { animationGroup, boneMapName };
 }
 
 beforeEach(() => {
@@ -143,10 +143,8 @@ describe('loadAndRetargetAnimation（加载 + 重定向 + 清理）', () => {
 
         expect(result).not.toBeNull();
         expect(result!.animationGroup).toBe(retargeted);
-        expect(result!.sourceSkeleton).toBe(skeleton);
         expect(result!.boneMapName).toBe('mixamo');
         expect(shared.feedbackInfo).toHaveBeenCalledWith('motion.retarget.success', undefined);
-        // 临时 mesh / 源骨骼 / 源动画组均被清理
         expect(mesh.dispose).toHaveBeenCalled();
         expect(skeleton.dispose).toHaveBeenCalled();
         expect(group.dispose).toHaveBeenCalled();

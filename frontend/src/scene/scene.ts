@@ -395,8 +395,9 @@ function _getRendererInfo(): { vendor: string; renderer: string } {
                 renderer: (gl.getParameter(gl.RENDERER) as string) || 'unknown',
             };
         }
-    } catch {
+    } catch (e) {
         // 读取 GL 上下文失败（如 headless），回退 unknown
+        console.debug('[scene] _getRendererInfo GL read failed:', e);
     }
     return { vendor: 'unknown', renderer: 'unknown' };
 }

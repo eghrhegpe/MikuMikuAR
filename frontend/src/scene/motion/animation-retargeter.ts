@@ -27,7 +27,6 @@ export type BoneMapPreset = 'mixamo' | 'vrm' | 'custom';
 
 export interface RetargetResult {
     animationGroup: AnimationGroup;
-    sourceSkeleton: Skeleton;
     boneMapName: string;
 }
 
@@ -157,7 +156,6 @@ export async function loadAndRetargetAnimation(
         _cleanupTempMeshes(result.meshes, result.animationGroups);
         return {
             animationGroup: retargeted,
-            sourceSkeleton,
             boneMapName: boneMapPreset,
         };
     } catch (err) {

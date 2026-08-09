@@ -180,12 +180,13 @@ export function buildVmd(
     modelName: string = DEFAULT_MODEL_NAME
 ): ArrayBuffer {
     // 确保帧按帧号排序，防止解析器插值异常
-    boneFrames.sort((a, b) => a.frame - b.frame);
-    morphFrames.sort((a, b) => a.frame - b.frame);
+    // [fix] 排序前先复制，避免原地排序静默修改调用方持有的数组
+    const sortedBoneFrames = [...boneFrames].sort((a, b) => a.frame - b.frame);
+    const sortedMorphFrames = [...morphFrames].sort((a, b) => a.frame - b.frame);
 
     const headerSize = 30 + 20 + 4;
-    const boneSize = boneFrames.length * BONE_FRAME_SIZE;
-    const morphSize = morphFrames.length * MORPH_FRAME_SIZE;
+    const boneSize = sortedBoneFrames.length * BONE_FRAME_SIZE;
+    const morphSize = sortedMorphFrames.length * MORPH_FRAME_SIZE;
     const trailer = 4 + 4 + 4 + 4; // camera + light + selfShadow + ik counts (all 0)
     const total = headerSize + boneSize + 4 + morphSize + trailer;
     const buf = new ArrayBuffer(total);
@@ -206,17 +207,17 @@ export function buildVmd(
     }
 
     // Bone frame count + frames
-    view.setUint32(off, boneFrames.length, true);
+    view.setUint32(off, sortedBoneFrames.length, true);
     off += 4;
-    for (const f of boneFrames) {
+    for (const f of sortedBoneFrames) {
         u8.set(new Uint8Array(buildBoneFrame(f)), off);
         off += BONE_FRAME_SIZE;
     }
 
     // Morph frame count + frames
-    view.setUint32(off, morphFrames.length, true);
+    view.setUint32(off, sortedMorphFrames.length, true);
     off += 4;
-    for (const f of morphFrames) {
+    for (const f of sortedMorphFrames) {
         u8.set(new Uint8Array(buildMorphFrame(f)), off);
         off += MORPH_FRAME_SIZE;
     }
