@@ -14,8 +14,6 @@ source_files:
   - frontend/src/menus/settings-downloads.ts
   - frontend/src/menus/settings-resources.ts
   - frontend/src/menus/library-setup.ts
-  - build/android/app/src/main/java/com/wails/app/WailsBridge.java
-  - build/android/app/src/main/java/com/wails/app/MainActivity.java
 adr:
   - ADR-017
   - ADR-180

@@ -109,9 +109,10 @@ const GROUP_LABELS = {
   outfit: '换装 & 音频',
   'motion-algos': '动作算法',
   physics: '物理系统',
+  'config.ts': '顶层配置',
 };
 
-const GROUP_ORDER = ['core', 'scene', 'menus', 'outfit', 'motion-algos', 'physics'];
+const GROUP_ORDER = ['core', 'scene', 'menus', 'outfit', 'motion-algos', 'physics', 'config.ts'];
 
 // ── 导出符号行号定位 ──
 

@@ -11,6 +11,7 @@
 | 3D 场景 | 125 | 1224 |
 | 菜单 & UI | 76 | 394 |
 | 动作算法 | 18 | 138 |
+| 顶层配置 | 1 | 1 |
 
 ## 核心基础设施
 
@@ -2589,6 +2590,12 @@
 | `loadVPDFromBuffer()` | `motion-algos/vpd-parser:194` | 从 ArrayBuffer（VPD 文件内容）解析并生成 VMD。 |
 | `parseVPDText()` | `motion-algos/vpd-parser:93` | 解析 VPD 文本为结构化数据。 |
 | `poseDataToVmdBuffer()` | `motion-algos/vpd-parser:176` | 将 VPD 姿势数据转换为标准 VMD 二进制数据。 |
+
+## 顶层配置
+
+| 符号 | 文件:行 | 说明 |
+|------|--------|------|
+| `EnvState()` | `config:3` | — |
 
 ---
 
