@@ -2,12 +2,13 @@
 
 # Bug 日志索引
 
-> 排障记录共 **51** 篇：32 篇按日期归档、19 篇早期记录（命名规范确立前）。每篇记录现象、根因、修复与验证方式，供回归时快速比对。
+> 排障记录共 **52** 篇：33 篇按日期归档、19 篇早期记录（命名规范确立前）。每篇记录现象、根因、修复与验证方式，供回归时快速比对。
 
 > 写作规范见 [Buglog 规范](./README.md)。
 
-## 2026 年 8 月（10）
+## 2026 年 8 月（11）
 
+- `2026-08-09` [model-manager 测试：`@ts-nocheck` 全局抑制 + 直接访问 private 字段](./2026-08-09-model-manager-test-ts-nocheck-private-access.md)
 - `2026-08-03` [E2E @web 冒烟失败：web 入口加载后未渲染 #btnMainAction](./2026-08-03-web-entry-btnMainAction-not-rendered.md)
 - `2026-08-03` [换装/替换模型后，新模型眼睛变纯黑且不受光照影响](./2026-08-03-shared-toon-disposed-on-model-remove.md)
 - `2026-08-03` [用户指南 10 页缺失操作截图（README 铁律「能配图必须配图」未达标）](./2026-08-03-guide-screenshots-gap.md)
