@@ -18,11 +18,11 @@
 | 符号 | 文件:行 | 说明 |
 |------|--------|------|
 | `registerDiagnosticActions()` | `core/action-defs/diagnostic-actions:10` | — |
-| `registerEnvActions()` | `core/action-defs/env-actions:9` | — |
+| `registerEnvActions()` | `core/action-defs/env-actions:27` | — |
 | `registerLibraryActions()` | `core/action-defs/library-actions-def:7` | — |
-| `registerMotionActions()` | `core/action-defs/motion-actions:43` | — |
+| `registerMotionActions()` | `core/action-defs/motion-actions:89` | — |
 | `registerSceneActions()` | `core/action-defs/scene-actions:7` | — |
-| `registerSettingsActions()` | `core/action-defs/settings-actions:16` | — |
+| `registerSettingsActions()` | `core/action-defs/settings-actions:34` | — |
 | `ActionResult()` | `core/action-executor:8` | — |
 | `executeActionById()` | `core/action-executor:16` | 按 ID 执行 AI 动作（含参数校验与结果结构化返回）。 |
 | `ActionDef()` | `core/action-registry:24` | — |
