@@ -104,6 +104,7 @@ export function applyWatermark(base64: string, format: string, quality: number):
             canvas.height = img.height;
             const ctx = canvas.getContext('2d');
             if (!ctx) {
+                console.warn('[watermark] canvas.getContext("2d") returned null, skipping watermark');
                 resolve(base64);
                 return;
             }

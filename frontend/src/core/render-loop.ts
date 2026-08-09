@@ -26,7 +26,7 @@ const PERF_SAMPLE_INTERVAL = 60; // 每 60 帧评估一次性能日志（采样�
  * 钳位帧缓冲不超过 GL_MAX_TEXTURE_SIZE（防 DPR×renderScale 越界 OOM）。
  */
 export function calcHardwareScaling(dpr: number, renderScale: number): number {
-    const base = 1 / (dpr * renderScale);
+    const base = 1 / Math.max(dpr * renderScale, 0.001);
     const caps = engine.getCaps();
     if (!caps.maxTextureSize) {
         return base;
