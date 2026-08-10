@@ -51,6 +51,12 @@ vi.mock('../scene/render/lighting', () => ({
 vi.mock('../scene/render/renderer', () => ({
     isRenderReady: () => false,
 }));
+vi.mock('../scene/motion/bone-override', () => ({
+    dumpBoneHierarchy: () => ({
+        totalBones: 12,
+        totalOverridden: 3,
+    }),
+}));
 
 import { setupE2ECapture } from '../core/dev-hooks';
 
@@ -94,5 +100,20 @@ describe('setupE2ECapture 双运行时开关（钩子收敛，ADR-229）', () =>
         expect(scene.fps).toBe(30); // mock engine.getFps
         expect(scene.currentAnimation).toBe('idle'); // focusedModel() = null
         expect(scene.windPhysicsActive).toBe(false);
+    });
+
+    it('__dumpBones 调用走通 bone-override 动态导入（devMode）', async () => {
+        state.isHeadless = true;
+        setupE2ECapture();
+        const w = window as unknown as { __dumpBones: () => Promise<unknown> };
+        const dump = await w.__dumpBones();
+        expect(dump).toEqual({ totalBones: 12, totalOverridden: 3 });
+    });
+
+    it('__capture 在 headless 下返回空串（无 backbuffer 兜底）', async () => {
+        state.isHeadless = true;
+        setupE2ECapture();
+        const w = window as unknown as { __capture: () => Promise<string> };
+        expect(await w.__capture()).toBe('');
     });
 });
