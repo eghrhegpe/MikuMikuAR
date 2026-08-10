@@ -1,3 +1,4 @@
+// @vitest-environment node
 /**
  * VMD 格式测试 — vmd-writer（二进制打包） + vpd-parser（VPD 文本解析 → VMD Buffer）
  */

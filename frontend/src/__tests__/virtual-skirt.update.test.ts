@@ -1,3 +1,4 @@
+// @vitest-environment node
 // virtual-skirt.update.test.ts — 每帧更新（ADR-084，拆自 virtual-skirt.test.ts §每帧更新）
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {

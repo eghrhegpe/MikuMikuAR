@@ -1,3 +1,4 @@
+// @vitest-environment node
 // virtual-skirt.build-cleanup.test.ts — P3a build 异常清理（ADR-084，拆自 virtual-skirt.test.ts §P3a build 异常清理）
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {

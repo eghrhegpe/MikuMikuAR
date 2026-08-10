@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // 代理层 mock：让 listPresets 的 backend 调用可控，不触发真实 resolveBackend()。

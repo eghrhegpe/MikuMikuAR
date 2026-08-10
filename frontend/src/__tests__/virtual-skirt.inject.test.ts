@@ -1,3 +1,4 @@
+// @vitest-environment node
 // virtual-skirt.inject.test.ts — Phase 2 注入（ADR-084，拆自 virtual-skirt.test.ts §Phase 2 注入）
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {

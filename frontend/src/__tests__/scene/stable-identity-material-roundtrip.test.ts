@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:adr-193] 稳定身份 — 材质可见性（「服饰开关」）跨重载还原回合测试
 // 直接回应「服饰开关在重载后全部回到开启」的疑虑：用真实 material.ts 函数模拟
 // serialize(getMatState) → reload(applyMatState) 回合，验证稳定 id 下状态不丢。

@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:adr-204] playback.test.ts 拆分：updatePlaybackUI
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 

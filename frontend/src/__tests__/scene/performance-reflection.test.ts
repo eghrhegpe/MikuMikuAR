@@ -1,3 +1,4 @@
+// @vitest-environment node
 // performance-reflection.test.ts — ADR-130 Phase 2.3: 性能降级 ↔ 反射质量联动测试
 //
 // 验证质量档位映射和桥接模块（避免导入 performance.ts 触发 Babylon 场景初始化）

@@ -1,3 +1,4 @@
+// @vitest-environment node
 /**
  * [doc:adr-204] physics-contract.test.ts 拆分：刚体端到端 + RigidBodyBundle 批量刚体
  */

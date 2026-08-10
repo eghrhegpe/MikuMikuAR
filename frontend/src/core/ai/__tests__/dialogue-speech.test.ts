@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:adr-156] dialogue-speech 守护测试：语音合成封装。
 // 依赖 Web Speech API（mock），验证情绪映射、朗读逻辑。
 

@@ -1,3 +1,4 @@
+// @vitest-environment node
 // virtual-skirt.coord.test.ts — 坐标转换纯函数（ADR-084 P1，拆自 virtual-skirt.test.ts §坐标转换纯函数）
 import { describe, it, expect, vi } from 'vitest';
 import {

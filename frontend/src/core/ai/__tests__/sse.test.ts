@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:adr-196] SSE 行解析器守护测试：文本块、tool_calls 增量聚合、[DONE]、Abort、错误。
 // 纯 async generator 测试，使用 ReadableStream 模拟服务端响应。
 

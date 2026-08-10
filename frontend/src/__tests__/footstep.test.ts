@@ -1,3 +1,4 @@
+// @vitest-environment node
 // footstep.test.ts — 脚步声控制器单测（ADR-088 Phase A + B）
 // 覆盖 P2#10 缺口：resolveGroundSfxKind 地面映射、startFootstep/stopFootstep 生命周期、
 // 落地回调的合成音色触发（音量归一化 / 左右声像 / 开关门控）、合成缓存惰性生成。

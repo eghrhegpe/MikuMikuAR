@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:adr-071] 感知层 — 呼吸轴向回归测试
 // 锁定：呼吸应绕角色左右方向轴（X / Vector3.Right）做俯仰（挺胸/含胸，前后微动），
 // 而非绕垂直轴（Y / Vector3.Up）做偏航（左右摇摆）。

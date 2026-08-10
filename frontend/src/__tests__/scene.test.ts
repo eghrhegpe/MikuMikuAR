@@ -1,3 +1,4 @@
+// @vitest-environment node
 // scene.test.ts — 3D 场景核心模块（scene/scene.ts）单测
 //
 // 覆盖策略：

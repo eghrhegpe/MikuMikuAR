@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:adr-196] sse 解析器测试 — 中止信号语义（FR-10）
 
 import { describe, it, expect } from 'vitest';

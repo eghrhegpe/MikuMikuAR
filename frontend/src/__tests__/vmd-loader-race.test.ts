@@ -1,3 +1,4 @@
+// @vitest-environment node
 /**
  * VMD 加载基础校验 + gen counter 行为测试
  *

@@ -1,3 +1,4 @@
+// @vitest-environment node
 // browser-adapter.ingest.test.ts — 下载文件夹统一摄入（拆自 browser-adapter.test.ts）
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mem, resetMem } from './browser-adapter-mocks';

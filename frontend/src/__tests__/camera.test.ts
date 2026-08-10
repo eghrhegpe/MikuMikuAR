@@ -1,3 +1,4 @@
+// @vitest-environment node
 // camera.test.ts — 主相机模块单测（ADR-100 双轴调度 + 模式切换 + 序列化）
 // 覆盖：deriveLegacyMode/LEGACY_MODE_MAP 兼容映射、setCameraControl/setCameraBehavior 双轴写入、
 // setOrbitParams/setFreeflyParams/setConcertParams/setSurroundParams 子参数同步、

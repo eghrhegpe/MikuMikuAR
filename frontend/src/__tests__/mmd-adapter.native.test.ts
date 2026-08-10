@@ -1,3 +1,4 @@
+// @vitest-environment node
 /**
  * 验证 applyForceToModelRigidBodiesNative（P2 / ADR-201）的**真实**逻辑：
  *

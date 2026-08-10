@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [audit:P3] isCameraMode 运行时校验单测 —— 桥接入口/反序列化的 mode 守卫契约
 import { describe, it, expect } from 'vitest';
 import { isCameraMode, CAMERA_MODES } from '@/scene/camera/camera-state';

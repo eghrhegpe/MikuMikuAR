@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:adr-155] 感知层性能基准测试（headless）
 //
 // 目的：为 ADR-154「全员感知降级」提供阈值数据。

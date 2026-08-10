@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:adr-164] 感知层 — Lip-sync per-model 隔离回归测试
 // 锁定：多模型全员感知下 lip-sync 增量状态按模型隔离——
 //  1) 关闭时每个模型只复位自己的 morph（修复前模块级单态导致非最后模型 morph 残留冻结）

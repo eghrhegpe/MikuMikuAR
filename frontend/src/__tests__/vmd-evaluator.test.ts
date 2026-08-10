@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, afterEach } from 'vitest';
 import { Quaternion } from '@babylonjs/core/Maths/math.vector';
 import { createVmdEvaluator, shutdownVmdEvaluator } from '../motion-algos/vmd-evaluator';

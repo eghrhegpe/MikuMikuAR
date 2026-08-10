@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:adr-085] Feet Adjustment — solveFootTarget 纯逻辑单测
 import { describe, it, expect } from 'vitest';
 import { solveFootTarget, type SolveFootInput } from '../motion-algos/feet-adjustment-math';

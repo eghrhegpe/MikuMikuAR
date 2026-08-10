@@ -1,3 +1,4 @@
+// @vitest-environment node
 /**
  * [doc:adr-204] physics-contract.test.ts 拆分：碰撞检测 + 多物理世界独立共存
  */

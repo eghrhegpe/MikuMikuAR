@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:adr-196] scene-snapshot 守护测试：快照格式化、bridge 注入、未初始化降级。
 // 纯函数 + bridge 模式测试，不依赖 Babylon 引擎。
 // 注意：registerAiSnapshotBridge 写模块级 _bridge 单例，故每个 describe 需在 beforeEach 中重置。

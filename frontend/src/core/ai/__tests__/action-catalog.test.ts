@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:adr-155][doc:adr-197] action-catalog 守护测试：Tool Schema 构建 + 文本目录生成。
 // 隔离测试：mock action-registry 以注入已知动作集，避免真实注册表污染。
 

@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:adr-071] 感知层 — 视线追踪双路径行为契约测试
 // 锁定不变量：
 //   1. _applyGaze 调度入口按 _isWasmRuntime 自动分支到 JS/WASM 路径

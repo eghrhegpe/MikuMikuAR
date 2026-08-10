@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:adr-204] audio.test.ts 拆分：查询 / 跳转 / 播放态 / 名称
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createAudioMockState, createMockStreamPlayer, resetAudioMockState } from './audio-helpers';

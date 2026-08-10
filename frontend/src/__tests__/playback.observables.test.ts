@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:adr-204] playback.test.ts 拆分：initPlaybackObservables
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 

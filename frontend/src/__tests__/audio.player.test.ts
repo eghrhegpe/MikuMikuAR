@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:adr-204] audio.test.ts 拆分：播放器生命周期（play/load/pause/resume/stop/clear/dispose）
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createAudioMockState, createMockStreamPlayer, resetAudioMockState } from './audio-helpers';

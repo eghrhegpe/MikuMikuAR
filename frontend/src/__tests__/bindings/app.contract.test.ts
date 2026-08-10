@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:test-strategy] Binding 契约测试
 // 锁住 15 个项目自有 interface 的形状 + 122 个函数导出存在性 + 122 个 FNV-1a method ID。
 // Go 端改 struct 时此处 test 会 fail，防止静默破坏 Go↔TS 边界。

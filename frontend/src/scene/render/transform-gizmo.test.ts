@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:adr-126] Phase 3 — 网格吸附配置单测（隔离，无需 Babylon Scene）
 import { describe, it, expect, beforeEach } from 'vitest';
 import { getGizmoSnapConfig, setGizmoSnapDistance, computeSnapDistance } from './transform-gizmo';

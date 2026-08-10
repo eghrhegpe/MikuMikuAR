@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from 'vitest';
 import { validateAiConfig, type AiConfig } from '../core/ai/config-store';
 import { goKeyAllowsProceed } from '../core/ai/go-key-allows-proceed';

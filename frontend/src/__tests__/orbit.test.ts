@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:adr-049] 球面坐标轨道控制 — 纯函数与边界保护单元测试
 // 覆盖 ADR §6 验证标准 #1（orbit→cartesian 正确坐标）#2（模式往返无跳变）及边界保护。
 

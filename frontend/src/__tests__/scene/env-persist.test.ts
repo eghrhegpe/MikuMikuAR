@@ -1,3 +1,4 @@
+// @vitest-environment node
 // env-persist.test.ts — envState/uiState 防抖持久化直接单测
 // 背景：此前无专属单测（仅间接覆盖），flushUIState cancel→await 竞态窗口、
 // 防抖调度、失败反馈零直接验证（ADR-204 违规）。本文件直接测 env-persist 模块。

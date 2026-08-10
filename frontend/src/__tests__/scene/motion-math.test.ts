@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:adr-116 P3] 时间驱动纯数学单测 — 验证 frequency/decay/pedalSpeed 真正参与计算
 import { describe, it, expect } from 'vitest';
 import {

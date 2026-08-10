@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [audit 2026-08-02] 程序化动作 + 骨骼覆盖 管线契约测试（P4）。
 //
 // 背景：vmd-base / proc-motion 的骨骼写入由 babylon-mmd 在 WASM 层完成，不经过 JS 管线

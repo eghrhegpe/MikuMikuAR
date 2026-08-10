@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:adr-101] color-helpers 单测（含 P3 新增 rgbString）
 import { describe, it, expect } from 'vitest';
 import { Color3 } from '@babylonjs/core/Maths/math.color';

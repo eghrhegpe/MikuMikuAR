@@ -1,0 +1,54 @@
+# ADR-255: 测试环境分流：@vitest-environment node 削减每文件 happy-dom 成本 — isolate=true 下 happy-dom 每文件重建是墙钟大头；135 个无 DOM 依赖测试文件切 node 环境，全量 55.95s → ~40s（-29%）
+
+> **状态**: ✅ 已采纳（2026-08-10）
+> **日期**: 2026-08-10
+
+## 背景
+
+ADR-219 收口时判定全量 55.95s 的墙钟由「每 worker 固定成本（环境搭建 + 重模块导入）」主导，
+worker 数/池类型均非杠杆，isolate=false 结构性不可修。该结论把环境成本视为**不可削减的固定税**。
+
+本 ADR 用逐项计时推翻了其中一半：**环境成本不是「每 worker 一次」，而是 isolate=true 下
+「每文件重建」**——vitest 4 的 `file.environmentLoad` 是逐文件累加（`sum(files, f => f.environmentLoad)`），
+单文件实测 happy-dom 环境搭建 **~285ms**（node 环境 ~0ms），308 个文件累计 ≈ 88~255s，
+是墙钟第二大构成（仅次于重文件 import）。
+
+而 import 成本同样被高估为「所有文件平均」：实测**只有真加载 babylon 运行时的文件**才付
+~1.8s（预构建 `@babylonjs_core.js` 9.2MB 单文件执行 ~470ms 为下限）；mock 掉 babylon-mmd
+或类型 import 被 esbuild 剥离的文件只要 ~37ms。
+
+## 决策
+
+1. **environment 分流**：给 135 个「无 DOM 依赖」的测试文件加文件头注释
+   `// @vitest-environment node`，使其跑 node 环境（环境成本 ~0ms）；其余 173 个
+   依赖 `window`/`document` 的保持默认 happy-dom。
+2. **识别方法**：`rg -L --files-without-match "<DOM 全局正则>" src --glob "*.test.ts"`
+   得到 221 个候选 → 全量试跑 → 回滚失败的 86 个（间接依赖 DOM，如
+   `status-bar.ts` 顶层 `document.getElementById`）→ 最终 135 个全绿。
+3. **新增测试约定**：纯逻辑测试（不触碰 window/document/localStorage 等 DOM 全局）
+   首行标注 `// @vitest-environment node`；依赖 DOM 的保持默认，无需标注。
+
+## 备选方案
+
+- **environmentMatchGlobs 集中配置**：221 个精确路径的 glob 列表冗长难维护，
+  且「文件是否安全切 node」的判断就近可见更利于后续新增测试照抄。弃。
+- **全局 environment: 'node' + 反向给 DOM 文件标 happy-dom**：需要 DOM 的文件
+  （88 个直接引用 + 更多间接依赖）逐个标注工作量更大且易漏。弃。
+- **修复 86 个失败文件的间接 DOM 依赖（如 status-bar.ts 顶层 document 改惰性）**：
+  属可测性重构，收益仅墙钟再省 ~1-2s，风险面大，留作后续方向，不入本 ADR。
+- **isolate=false / 合并测试文件**：ADR-219 已判死 / 反模式，未再评估。
+
+## 影响
+
+- `frontend/vitest.config.ts`：更新瓶颈描述注释，引用本 ADR。
+- 135 个测试文件：新增首行 `// @vitest-environment node` 注释（git 可审查）。
+- 全量墙钟：**55.95s → ~40s（-29%）**，两次独立运行 39.74s / 40.92s 全绿
+  （308 文件 / 4995 用例）。
+- environment 累加：255s → ~115s；setup/import 不受影响。
+- 不触及 ADR-219 决策：maxWorkers=12、isolate=true、预构建三件套均保留。
+- CI（2 核 runner）预期收益同比例或更大（每 worker 排队文件的环境成本同样削减）。
+- pre-push 门禁（check-doc-drift / i18n-check 等）不涉及测试环境，无影响。
+
+## 相关文档
+
+> ADR-219 测试并发调优与 isolate 污染治理

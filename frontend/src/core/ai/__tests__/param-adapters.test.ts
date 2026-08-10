@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:adr-155] param-adapters 守护测试：枚举/范围/颜色/实体适配器 + 分发。
 // 纯函数测试，不依赖场景模块（entityAdapter 的 resolve 用 mock）。
 

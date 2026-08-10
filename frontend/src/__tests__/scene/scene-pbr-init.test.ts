@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:adr-188] PBR 材质构建器初始化测试
 // 覆盖 pbr-builder-init.ts tryApplyPbrMaterialBuilder 的分支：
 //   1. 成功加载 PBRMaterialBuilder

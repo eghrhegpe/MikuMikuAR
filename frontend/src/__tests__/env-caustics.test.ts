@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, vi } from 'vitest';
 
 // env-caustics 在模块求值期实例化 DEFAULT_CONFIG（new Color3），故需可构造的 Color3；

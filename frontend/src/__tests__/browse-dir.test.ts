@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [bugfix:web-library-empty] getBrowseDir 路径解析回归测试
 // 网页端虚拟根（web://）为扁平目录结构，不应拼接 PMX/VMD 等子目录，
 // 否则扫描到的模型（dir=web://selected-dir）不在拼接路径之下，资源库显示为空。

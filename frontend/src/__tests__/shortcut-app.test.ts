@@ -1,3 +1,4 @@
+// @vitest-environment node
 // shortcut-app.test.ts — registerAppShortcuts 的 motion:undo 幽灵路径守卫（fix P2）
 //
 // 覆盖变更：popUndoSnapshot 有快照但 restoreUndoSnapshot 未注册时，

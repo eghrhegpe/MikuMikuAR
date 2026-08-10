@@ -1,3 +1,4 @@
+// @vitest-environment node
 // library-state.test.ts — [fix:round14 P3] 三个清空函数单测。
 // library-state.ts 仅含类型导入，无运行时依赖，可直接 import 无需 vi.mock。
 import { describe, it, expect, vi, beforeEach } from 'vitest';

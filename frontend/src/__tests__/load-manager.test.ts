@@ -1,3 +1,4 @@
+// @vitest-environment node
 // load-manager.test.ts — [doc:adr-135] P0.2: LoadManager 串行队列 / abort 短路 / 错误包装单测
 // 背景：此前所有测试均 mock loadManager 单例，核心逻辑零直接覆盖（ADR-204 违规）。
 // 本文件直接测 LoadManager 实例：串行排队顺序、signal.aborted 短路抛 AbortError、

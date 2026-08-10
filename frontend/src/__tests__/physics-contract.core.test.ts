@@ -1,3 +1,4 @@
+// @vitest-environment node
 /**
  * [doc:adr-204] physics-contract.test.ts 拆分：模块加载 / 世界生命周期 / 形状 / 内存 / MmdRuntime
  *

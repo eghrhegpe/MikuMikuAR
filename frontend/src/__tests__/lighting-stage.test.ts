@@ -1,3 +1,4 @@
+// @vitest-environment node
 // lighting-stage.test.ts — 舞台灯模块单测（ADR-159）
 // 覆盖 _createStageLight（spot/point/directional + 零向量守卫）、_updateIndicator
 // （指示器/方向线/材质重建/禁用）、get/set 状态、add/remove/load 生命周期、

@@ -1,3 +1,4 @@
+// @vitest-environment node
 // transform-gizmo.test.ts — 变换 Gizmo（移动/旋转/缩放）单测（ADR-048 / ADR-126）
 // 覆盖 computeSnapDistance 三轴派生、initTransformGizmo 场景重建守卫、
 // attachGizmo 独占策略/拖拽回调/吸附应用、detachGizmo 拖拽中 flush 回写、

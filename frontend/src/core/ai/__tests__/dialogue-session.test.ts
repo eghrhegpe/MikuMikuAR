@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:adr-156] dialogue-session 守护测试：角色状态单点持有、切换、prompt 转发。
 // 依赖 character-bible 纯函数，自身仅模块级 state。
 

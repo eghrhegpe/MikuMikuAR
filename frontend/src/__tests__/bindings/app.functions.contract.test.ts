@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:test-strategy] Function 签名契约测试
 // 锁住 22 个高风险 Go 后端 binding 函数的返回类型与参数形状。
 // Go 端改函数签名时此处 test 会 fail，防止静默破坏 Go↔TS 边界。

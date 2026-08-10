@@ -1,3 +1,4 @@
+// @vitest-environment node
 // proc-motion-bridge 拆分 — 骨骼开关 / VPD / 插值覆盖
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DEFAULT_PROC_STATE, PROC_MOTION_BONE_CATEGORIES } from '../motion-algos/procedural-motion';

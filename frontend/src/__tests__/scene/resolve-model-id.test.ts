@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:stable-identity] 单元测试 resolveModelId —— 稳定身份决策点。
 // 覆盖：① 恢复路径传入存档 uuid 时直接复用（跨会话 id 稳定）；
 //       ② 未传/空时生成稳定 uuid（旧 `model_${Date.now()}_${random}` 行为已废弃）。

@@ -1,3 +1,4 @@
+// @vitest-environment node
 // transform-pick.test.ts — 拾取管线：元数据链遍历（纯）+ pick 后处理 + attach 编排
 // 目标：transform-pick.ts 覆盖率 3.7%（全仓最大洼地）→ 高覆盖。
 // getTransformMetadata 是纯逻辑（metadata/parent 鸭子形状，零 Babylon 依赖）。

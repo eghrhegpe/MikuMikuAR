@@ -1,3 +1,4 @@
+// @vitest-environment node
 // browser-adapter.fsa-conflict.test.ts — FSA 多选同名 PMX 冲突检测与序号后缀（拆自 browser-adapter.test.ts）
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mem, resetMem } from './browser-adapter-mocks';

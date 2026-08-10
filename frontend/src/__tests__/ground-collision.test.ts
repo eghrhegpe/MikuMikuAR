@@ -1,3 +1,4 @@
+// @vitest-environment node
 // ground-collision.test.ts — 验证 WASM 地面碰撞刚体的注入/移除/幂等/空转
 // 完全 mock babylon-mmd 物理类与 @/core/config，隔离测试业务逻辑。
 

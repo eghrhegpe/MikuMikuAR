@@ -1,3 +1,4 @@
+// @vitest-environment node
 // ADR-147 Phase 1 — MotionPipeline 排序不变量单测。
 // 核心断言：执行序只由 (stage, order) 决定，与 register 调用顺序无关。
 import { describe, it, expect, vi } from 'vitest';

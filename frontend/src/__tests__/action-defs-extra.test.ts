@@ -1,3 +1,4 @@
+// @vitest-environment node
 // action-defs-extra.test.ts — action-defs 剩余三文件（scene / library / diagnostic）行为测试
 // 目标：core/action-defs 目录剩余 0% 文件拉高。与 action-defs.test.ts 同构：
 // vi.hoisted 共享 mock → 注册 → getAction 全链路触发 execute 断言行为。

@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:adr-056] WASM 图层混合热路径性能基准（headless）
 //
 // 目的：给 ADR-056 §九 回填真实 P50/P95。

@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:adr-196] go-adapter 守护测试：capabilities、testConnection、fetchModels、loadConfig、streamChat。
 // 桌面端 Go 适配器，依赖 @wailsio/runtime Events + @bindings Go 绑定，通过 vi.mock 隔离。
 

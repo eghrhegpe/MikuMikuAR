@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, vi } from 'vitest';
 import { Observable } from '@babylonjs/core/Misc/observable';
 import { ObserverHandle, ObserverRegistry, observe, observeOnce } from '../observer-handle';

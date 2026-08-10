@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // [feature:resource-warning-sink] 验证「去重 + debounce 合并为单条 toast」的核心行为。

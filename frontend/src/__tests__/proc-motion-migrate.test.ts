@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [audit] per-mode 参数迁移测试：旧扁平 ProcMotionState → 新嵌套结构。
 import { describe, it, expect } from 'vitest';
 import { migrateProcState, DEFAULT_PROC_STATE } from '../motion-algos/procedural-motion';

@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:adr-196] go-key-allows-proceed 守护测试：Go 桌面端 key 不可回读时的验证放行逻辑。
 // 纯函数，零依赖。
 

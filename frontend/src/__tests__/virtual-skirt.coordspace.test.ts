@@ -1,3 +1,4 @@
+// @vitest-environment node
 // virtual-skirt.coordspace.test.ts — P1 坐标空间一致性（ADR-084，拆自 virtual-skirt.test.ts §P1 坐标空间一致性）
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {

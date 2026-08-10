@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:adr-196] browser-adapter 测试 — capabilities / corsRisk 判定（不涉及网络）
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';

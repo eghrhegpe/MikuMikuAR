@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:adr-156] character-bible 守护测试：角色查表、system prompt 组装、台词解析。
 // 纯叶子模块，零依赖。
 

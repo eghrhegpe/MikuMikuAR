@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:adr-101] P3 工具函数单测：pure math helpers
 import { describe, it, expect } from 'vitest';
 import { clampPct } from '../core/clamp';

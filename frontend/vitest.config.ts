@@ -28,13 +28,18 @@ export default defineConfig({
         //    Promise 最多挂 10s/15s 后报超时失败，不拖垮整个 vitest run。
         // 2) forceExit 管「用例全过但进程不退」——如整桶 import 触发 pending 微任务导致
         //    fork worker 回收失败（virtual-skirt 历史 hang 即此形态）。开它可保证 run 终会退出。
-        // [2026-08] 全量 56s 的墙钟由每 worker 固定成本（环境+模块导入 ~40s）
-        // 主导，与测试数量弱相关：排除全部 14 个 int 文件（累加 36.7s）后
+        // [2026-08] 全量 56s 的墙钟由每文件固定成本（isolate 下环境重建+模块导入）主导，
+        // 与测试数量弱相关：排除全部 14 个 int 文件（累加 36.7s）后
         // test:unit 仍 53.3s（仅省 2.7s）——删/减测试救不了耗时，勿生此念。
         // no-isolate 复测（2026-08-10）342 失败，比 ADR-219 判死时的 229 更差
         // （债随用例增长），结构性提速仅剩「清偿 mock 形状债 → isolate=false」
         // 一条大工程路。日常反馈用 npm run test:file -- <路径>（秒级），
         // 全量留给提交前/CI。
+        // [2026-08-10] environment 分流落地（见 ADR-255）：isolate=true 下 happy-dom
+        // 环境是「每文件」重建（单文件实测 ~285ms，非每 worker 一次），
+        // 135 个无 DOM 依赖的测试文件加 `// @vitest-environment node` 注释分流，
+        // 全量墙钟 55.95s → ~40s（-29%）。新增测试若纯逻辑请同款标注；
+        // 依赖 window/document 的保持默认 happy-dom 即可。
         // [2026-08] deps.optimizer 预构建（vitest 4 默认关闭）——CI 视角启用：
         // 本地 24 核 CPU 富余，预构建收益 ~4% 落在噪声带（ROI 负不成立）；
         // 但 CI 是 2 核 runner，CPU 是绝对瓶颈（实测 vitest 独占 ~2 分钟），
@@ -62,9 +67,11 @@ export default defineConfig({
         // 测试间状态污染，见 ADR/技术债），待清理污染后再评估 isolate=false。
         // [2026-08] 308 文件/4994 用例规模复核：8/12/16 worker 墙钟全在 55-58s
         // 噪声带内（55.42/55.95/56.21s），pool=threads 仅 54.34s（~3%，且 Babylon/
-        // WASM 场景在线程池下不如进程稳，ADR-219 已否决）。每 worker 的
-        // environment+import 累加恒定 ~40s，即「环境搭建+重模块编译」是绝对瓶颈，
-        // 墙钟被其钉死，worker 数/池类型均非杠杆——改此配置前先重读 ADR-219。
+        // WASM 场景在线程池下不如进程稳，ADR-219 已否决）。每文件固定成本
+        // （环境重建 + 重模块导入）是绝对瓶颈，worker 数/池类型均非杠杆——
+        // 唯一有效杠杆是「降低每文件成本」：environment 分流（ADR-255，55.95→~40s）；
+        // 重文件 import ~1.8s（预构建 core 单文件执行 ~470ms 是下限）暂不可再压。
+        // 改此配置前先重读 ADR-219/ADR-255。
         maxWorkers: 12,
         minWorkers: 12,
         exclude: [

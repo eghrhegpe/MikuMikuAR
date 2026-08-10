@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:adr-155][doc:adr-197] intent-dispatcher 守护测试：LLM 文本三级容错解析。
 // 纯函数测试解析逻辑，不依赖 action-executor（mock 避免场景模块加载）。
 

@@ -1,3 +1,4 @@
+// @vitest-environment node
 // browser-adapter.texture-collision.test.ts — 纹理键命名空间 + 缓存统计（拆自 browser-adapter.test.ts）
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mem, setStore, eqBytes, resetMem } from './browser-adapter-mocks';

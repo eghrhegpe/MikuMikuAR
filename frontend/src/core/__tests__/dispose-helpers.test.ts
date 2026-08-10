@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from 'vitest';
 import { safeDispose, detachSharedTextures } from '../dispose-helpers';
 import type { Material } from '@babylonjs/core/Materials/material';

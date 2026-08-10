@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DEFAULT_LIPSYNC_STATE, type LipSyncState } from '../motion-algos/lipsync';
 import type { PerceptionState } from '../scene/motion/perception-shared';

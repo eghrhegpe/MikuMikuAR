@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:adr-243] deriveDefaultEnvState 单测 —— 从 schema 自动推导的默认值契约
 import { describe, it, expect } from 'vitest';
 import { ENV_STATE_SCHEMA } from '../env-state-schema';

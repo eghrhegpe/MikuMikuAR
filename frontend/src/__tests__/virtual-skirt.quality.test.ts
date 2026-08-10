@@ -1,3 +1,4 @@
+// @vitest-environment node
 // virtual-skirt.quality.test.ts — Phase 5 性能/LOD/降频（ADR-084，拆自 virtual-skirt.test.ts §Phase 5）
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {

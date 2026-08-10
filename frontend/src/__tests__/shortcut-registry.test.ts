@@ -1,3 +1,4 @@
+// @vitest-environment node
 // shortcut-registry.test.ts — registerShortcut 冲突守卫 + deferred 恢复单测
 // 覆盖 code_review P3：跨 id 同绑定冲突（先注册者保留）、同 id HMR 重注册不丢弃、
 // 冲突解除后（resetKeyBinding 触发 flush）deferred 自动恢复、非冲突修饰键双注册。

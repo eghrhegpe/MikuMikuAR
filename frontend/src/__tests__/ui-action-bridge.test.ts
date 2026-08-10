@@ -1,3 +1,4 @@
+// @vitest-environment node
 // ui-action-bridge.test.ts — [doc:adr-238] UI 行为注入桥 register/unregister 契约
 //
 // 覆盖 code_review P3 建议：register→get、unregister→get-undefined、

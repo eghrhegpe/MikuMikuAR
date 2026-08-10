@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:adr-181] 下载管理面板纯逻辑测试 — §测试
 // 注意：settings-downloads.ts 的导入链会触发 Babylon Scene 初始化（library-actions→scene.ts），
 // 故本测试内联核心正则/哈希/路由逻辑，不直接导入源文件。

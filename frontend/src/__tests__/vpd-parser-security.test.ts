@@ -1,3 +1,4 @@
+// @vitest-environment node
 /**
  * vpd-parser 安全边界测试 — 覆盖 P0/P1 安全审计中的边界值、异常编码、XML 实体注入、文件大小限制
  */

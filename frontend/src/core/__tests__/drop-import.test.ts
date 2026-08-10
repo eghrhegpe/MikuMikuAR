@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:test] ADR-177 Phase 2 A4 — drop 导入闭环单测
 //
 // 覆盖 handleDroppedFile 浏览器分支语义：

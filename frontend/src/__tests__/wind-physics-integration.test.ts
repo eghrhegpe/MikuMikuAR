@@ -1,3 +1,4 @@
+// @vitest-environment node
 /**
  * wind-physics-integration.test.ts — L1.5 集成契约测试
  *

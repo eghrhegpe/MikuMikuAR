@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [round-12 P1] feet-adjustment 引擎本体单测 —
 // 覆盖 startFeetAdjustment/_adjustFoot/IK 重解（JS+WASM 分支）/落地事件接线/手动覆盖跳过。
 // 此前仅 solveFootTarget 纯数学有测试，引擎本体零直接测试。

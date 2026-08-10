@@ -1,3 +1,4 @@
+// @vitest-environment node
 // animation-retargeter.test.ts — 外部动作重定向桥接模块单测
 // 覆盖 loadAndRetargetAnimation（加载/骨骼映射/重定向/清理守卫）、
 // playRetargetedAnimation（additive 播放 + stop 幂等）、stopCurrentRetarget、

@@ -1,3 +1,4 @@
+// @vitest-environment node
 // planar-reflection.test.ts — 统一平面反射引擎互斥测试（ADR-092）
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';

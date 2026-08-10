@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:adr-125] motion-history 单测 — push/undo/redo 循环、多模型隔离、合并策略
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';

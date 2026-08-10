@@ -1,3 +1,4 @@
+// @vitest-environment node
 // footstep-detect.test.ts — 纯落地判定单测（ADR-088）
 import { describe, it, expect } from 'vitest';
 import { detectFootLanding } from '../motion-algos/footstep-detect';

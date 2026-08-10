@@ -1,3 +1,4 @@
+// @vitest-environment node
 // texture-fallback.test.ts — 多候选路径 fallback 生成 + 声明别名注册（ADR-189 防御性增强）
 // 覆盖：深子目录文件可被带目录前缀的 PMX 声明命中；裸名/反斜杠/去重边界；
 //      声明路径与磁盘目录名异写时按声明注册别名（tex\ vs Texture\）。

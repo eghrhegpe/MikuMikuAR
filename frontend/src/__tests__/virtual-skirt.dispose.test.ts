@@ -1,3 +1,4 @@
+// @vitest-environment node
 // virtual-skirt.dispose.test.ts — dispose 释放链路（ADR-084，拆自 virtual-skirt.test.ts §dispose 释放链路）
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {

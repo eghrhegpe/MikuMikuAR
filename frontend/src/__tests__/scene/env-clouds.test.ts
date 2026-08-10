@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, vi } from 'vitest';
 
 // 依赖桩：env-clouds 在模块加载时会 import 这些模块并向 env-dispatcher 注册回调、

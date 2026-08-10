@@ -1,3 +1,4 @@
+// @vitest-environment node
 /**
  * [doc:adr-204] physics-contract.test.ts 拆分：6DOF Spring 约束（MMD 关节物理基础）
  */

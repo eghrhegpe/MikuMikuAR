@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:adr-196] config-store 测试 — IndexedDB 持久化（内存缓存 + 异步回源）
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';

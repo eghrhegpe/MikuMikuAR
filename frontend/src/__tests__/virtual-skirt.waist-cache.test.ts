@@ -1,3 +1,4 @@
+// @vitest-environment node
 // virtual-skirt.waist-cache.test.ts — P3e 腰骨缓存（ADR-084，拆自 virtual-skirt.test.ts §P3e 腰骨缓存）
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {

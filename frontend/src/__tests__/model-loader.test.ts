@@ -1,3 +1,4 @@
+// @vitest-environment node
 // model-loader.test.ts — Stage / Actor 全路径覆盖 + abort 清理 + 回调验证
 //
 // 可达性分析（stage abort guard line 589-595）：

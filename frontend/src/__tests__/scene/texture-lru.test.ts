@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:adr-189] 纹理 LRU 缓存测试 — Phase 1.4
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 

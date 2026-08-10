@@ -1,3 +1,4 @@
+// @vitest-environment node
 // thumbnail-key.contract.test.ts — 缩略图 key 双源对齐契约（防反弹熔断丝）
 //
 // 断言：同一逻辑模型的「写侧视图」(model-loader captureThumbnail 视角) 与

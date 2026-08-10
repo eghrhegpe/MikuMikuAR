@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:adr-169] replaceDefaultMotion 单测 — 原位替换默认动作
 // 验收要求：四象限（有默认/无默认/空库/路径已存在）+ 原子广播（generation 单次递增）
 

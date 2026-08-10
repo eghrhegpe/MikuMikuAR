@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:adr-203] chat-store 守护测试 —— 多会话 CRUD + 排序 + 标题派生 + 降级。
 // 用内存 Map mock backend/idb，隔离真实 IndexedDB。
 

@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from 'vitest';
 import { pruneHistory } from '../menus/diagnostic-chat';
 import type { ChatMessage } from '../core/ai/types';

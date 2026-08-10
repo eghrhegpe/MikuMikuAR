@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:adr-135] LibrarySessionStore 回归测试
 //
 // 守护 ADR-135 引入的行为变更：

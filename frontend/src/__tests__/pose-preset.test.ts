@@ -1,3 +1,4 @@
+// @vitest-environment node
 /**
  * pose-preset 测试 — T-pose / A-pose / rest VMD 发生器
  *

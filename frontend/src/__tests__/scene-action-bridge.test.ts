@@ -1,3 +1,4 @@
+// @vitest-environment node
 // scene-action-bridge.test.ts — registerSceneAction 返回的 identity-based 注销 token
 //
 // 覆盖 fix P2 变更：registerSceneAction 现在返回基于 fn 引用的注销 token，

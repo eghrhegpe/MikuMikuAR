@@ -1,3 +1,4 @@
+// @vitest-environment node
 /**
  * wind-physics-state.test.ts — 风力物理状态机测试
  *
