@@ -48,6 +48,20 @@ vi.mock('../../scene/env/env-reflection', () => ({
     getPlanarQualityOverride: () => null,
 }));
 
+// [2026-08] 性能：createCanvasTexture 是 env-water-material/env-caustics 的重纹理
+// 入口（1024² 法线 × 6 octave + 512² 焦散，CPU 密集）。测试只关心 createWater
+// 的副作用（uniform 写入/LOD/状态），纹理像素内容无关紧要——mock 成轻量版：
+// 强制 size=2 + 跳过 draw，仍返回真实 DynamicTexture（uOffset/vOffset/dispose
+// 语义完整）。实测单文件 9.1s → ~2s（每用例省一次 1024² 生成）。
+vi.mock('../../scene/env/_shared/env-texture', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../../scene/env/_shared/env-texture')>();
+    return {
+        ...actual,
+        createCanvasTexture: (opts: { size: number; draw?: (ctx: unknown, s: number) => void; scene: Scene; name?: string; wrap?: string }) =>
+            actual.createCanvasTexture({ ...opts, size: 2, draw: () => {} }),
+    };
+});
+
 import { _envSys } from '../../scene/env/env-impl';
 import { envState } from '../../core/config';
 import {
