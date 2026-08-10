@@ -3,11 +3,7 @@ tier: architecture
 source_files:
   - frontend/src/scene/manager/model-ops.ts
 tests:
-  - frontend/src/__tests__/model-ops.focus.test.ts
-  - frontend/src/__tests__/model-ops.morph.test.ts
-  - frontend/src/__tests__/model-ops.physics.test.ts
-  - frontend/src/__tests__/model-ops.remove.test.ts
-  - frontend/src/__tests__/model-ops.vpd.test.ts
+  - frontend/src/__tests__/model-ops.test.ts
 adr:
   - ADR-049
   - ADR-116

@@ -1,7 +1,8 @@
 // ui-helpers 系列合并（bone/layout/slide-toggle/slider 4 文件 → 1）
 // [2026-08] 同系列合并以省 isolate 单文件 import 成本（vitest.config 同款先例）。
 // 4 文件结构完全同构：相同 vi.mock('../core/icons') + 相同 beforeEach（mockIconify
-// mockReset + 默认返回 span），共享样板原在 4 文件重复 4 份，现收敛为一份。
+// mockReset + 默认返回 span）+ 顶层 beforeAll 预填语言包（addBoneSelectRow 断言
+// '左足IK (IK)' 依赖 zh-CN bundle），共享样板原在 4 文件重复 4 份，现收敛为一份。
 // 各 describe 按原主题分区保留，行为不变。
 import { vi, describe, it, expect, beforeEach, beforeAll } from 'vitest';
 

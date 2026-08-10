@@ -3,14 +3,7 @@ tier: architecture
 source_files:
   - frontend/src/scene/physics/virtual-skirt.ts
 tests:
-  - frontend/src/__tests__/virtual-skirt.build-cleanup.test.ts
-  - frontend/src/__tests__/virtual-skirt.coord.test.ts
-  - frontend/src/__tests__/virtual-skirt.coordspace.test.ts
-  - frontend/src/__tests__/virtual-skirt.dispose.test.ts
-  - frontend/src/__tests__/virtual-skirt.inject.test.ts
-  - frontend/src/__tests__/virtual-skirt.quality.test.ts
-  - frontend/src/__tests__/virtual-skirt.update.test.ts
-  - frontend/src/__tests__/virtual-skirt.waist-cache.test.ts
+  - frontend/src/__tests__/virtual-skirt.test.ts
 kind: virtual_skirt
 name: 虚拟裙骨物理控制器（ADR-084 Phase 2-3）
 category: physics

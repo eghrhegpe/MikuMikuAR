@@ -537,7 +537,7 @@ export function syncAudioPlayback(vmdTime: number, isPlaying: boolean, vmdDurati
         // 偏移纠偏（偏差 > 阈值时 seek 校准）
         // [audit:round14 P1] 仅当目标落在音频时长内才纠偏：audioTargetTime >= audioDur
         // 时（音频比 VMD 短）若每帧 seek 回 0，音频刚播放几毫秒就被重置——短 BGM +
-        // 长 VMD 同步时音频永远无法前进、实际无声（audio.sync.test.ts 只调用一次且
+        // 长 VMD 同步时音频永远无法前进、实际无声（audio.test.ts 只调用一次且
         // 零断言，未捕获该循环）。此时应由播放分支单次置 0 后自然播放，不做逐帧纠偏。
         if (isPlaying && !streamPlayer.paused) {
             if (audioTargetTime >= 0 && audioTargetTime < audioDur) {

@@ -1,7 +1,8 @@
 // model-manager 系列合并（constructor/bone-overlay/focus/physics/physics-categories/transform/vmd-morph 7 文件 → 1）
 // [2026-08] 同系列合并以省 isolate 单文件 import 成本（vitest.config 同款先例）。
-// 7 文件结构完全同构：全 node 环境 + @ts-nocheck + 相同 7 条 Babylon vi.mock +
-// 共享 model-manager-mocks 工厂，共享样板原在 7 文件重复 7 份，现收敛为一份。
+// 7 文件结构完全同构：全 node 环境 + @ts-nocheck + 7 条 Babylon vi.mock +
+// 1 条 transform 特有 material mock（babylon-factories）+ 共享 model-manager-mocks
+// 工厂，共享样板原在 7 文件重复 7 份，现收敛为一份。
 // 各 describe 按原主题分区保留，行为不变（physics-categories 的 describe 因与
 // physics 同名，按语义改名 "ModelManager physics categories"）。
 // @vitest-environment node
@@ -764,6 +765,11 @@ describe('ModelManager visibility / opacity / wireframe', function () {
         mesh = createTestMesh('root', mat);
         const inst = makeModelInstance('m1', { meshes: [mesh] });
         mgr.register(inst);
+    });
+
+    afterEach(function () {
+        // 还原全局 modelRegistry，避免污染后续 describe（transform/VMD-morph 依赖干净全局态）
+        setModelRegistry(new Map());
     });
 
     it('setVisibility updates inst.visible and calls mesh.setEnabled', function () {

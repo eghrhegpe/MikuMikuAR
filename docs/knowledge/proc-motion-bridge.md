@@ -5,10 +5,7 @@ source_files:
   - frontend/src/scene/motion/proc-motion-controller.ts
   - frontend/src/scene/motion/proc-motion-params.ts
 tests:
-  - frontend/src/__tests__/proc-motion-bridge.lifecycle.test.ts
-  - frontend/src/__tests__/proc-motion-bridge.state.test.ts
-  - frontend/src/__tests__/proc-motion-bridge.toggles.test.ts
-  - frontend/src/__tests__/proc-motion-bridge.tracking.test.ts
+  - frontend/src/__tests__/proc-motion-bridge.test.ts
 kind: proc_motion_bridge
 name: 程序化动作系统
 category: motion

@@ -107,7 +107,6 @@ vi.mock('@babylonjs/core/Maths/math.vector', async () => {
 });
 
 const updatePlaybackUI = vi.mocked(playbackModule.updatePlaybackUI);
-const _disposeModelMaterialState = vi.mocked(materialModule.disposeModelMaterialState);
 const refreshWaterRenderList = vi.mocked(envModule.refreshWaterRenderList);
 const disposeAudio = vi.mocked(audioModule.disposeAudio);
 // [doc:adr-238] model-ops 经 scene-action-bridge 调用 disposeAudio；真实注册由 core/audio
@@ -324,6 +323,11 @@ describe('Transform', () => {
 // ======== removeModel / removeFocusedModel ========
 describe('removeModel', () => {
     beforeEach(resetState);
+    afterEach(() => {
+        // 复位 getCameraMode 的 mockReturnValue：resetState 用 clearAllMocks 只清
+        // 调用记录不清实现，concert 会泄漏到后续用例（隐藏耦合）
+        getCameraMode.mockReturnValue('orbit' as any);
+    });
 
     it('calls modelManager.remove and refreshWaterRenderList', () => {
         modelRegistry.set('m1', makeInst({ id: 'm1' }));

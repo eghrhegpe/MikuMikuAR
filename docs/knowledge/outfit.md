@@ -10,9 +10,7 @@ scope:
 source_files:
   - frontend/src/scene/manager/outfit.ts
 tests:
-  - frontend/src/__tests__/outfit.params.test.ts
-  - frontend/src/__tests__/outfit.reset-load.test.ts
-  - frontend/src/__tests__/outfit.variant.test.ts
+  - frontend/src/__tests__/outfit.test.ts
 symbols:
   - setSceneRef
   - loadOutfits

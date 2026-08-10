@@ -3,13 +3,7 @@ tier: architecture
 source_files:
   - frontend/src/scene/manager/model-manager.ts
 tests:
-  - frontend/src/__tests__/model-manager.bone-overlay.test.ts
-  - frontend/src/__tests__/model-manager.constructor.test.ts
-  - frontend/src/__tests__/model-manager.focus.test.ts
-  - frontend/src/__tests__/model-manager.physics-categories.test.ts
-  - frontend/src/__tests__/model-manager.physics.test.ts
-  - frontend/src/__tests__/model-manager.transform.test.ts
-  - frontend/src/__tests__/model-manager.vmd-morph.test.ts
+  - frontend/src/__tests__/model-manager.test.ts
 adr:
   - ADR-049
   - ADR-126

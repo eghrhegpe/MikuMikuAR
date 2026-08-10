@@ -17,14 +17,7 @@ invariants:
   - 支持多种控件类型（folder/slider/colorSlider/toggle/modeSlider/modeRow/sectionTitle/action/divider/custom）
   - renderMenu 返回 dispose 函数（子节点 dispose 级联）
 tests:
-  - frontend/src/__tests__/menu-schema.dispose.test.ts
-  - frontend/src/__tests__/menu-schema.guards.test.ts
-  - frontend/src/__tests__/menu-schema.kinds.test.ts
-  - frontend/src/__tests__/menu-schema.conflict.test.ts
-  - frontend/src/__tests__/menu-schema.controlspec.test.ts
-  - frontend/src/__tests__/menu-schema.statepath.test.ts
-  - frontend/src/__tests__/menu-schema.i18n.test.ts
-  - frontend/src/__tests__/menu-schema.header-toggle.test.ts
+  - frontend/src/__tests__/menu-schema.test.ts
   - frontend/src/__tests__/menu/level-management.test.ts
 use_when:
   - 菜单渲染

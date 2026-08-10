@@ -3,6 +3,8 @@
 // 8 文件结构完全同构：全 node 环境 + 相同 7 条 vi.mock（WASM 物理绑定层 + core/backend）+ 
 // 共享 virtual-skirt-mocks 工厂 / virtual-skirt-helpers fixture + beforeEach(resetHoisted)，
 // 共享样板原在 8 文件重复 8 份，现收敛为一份。各 describe 按原主题分区保留，行为不变。
+// 例外：coord 分区为纯函数测试（localToWorld/worldDeltaToLocal），原文件即无
+// beforeEach(resetHoisted)，保持原样。
 // @vitest-environment node
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {

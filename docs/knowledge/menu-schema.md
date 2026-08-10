@@ -5,17 +5,9 @@ source_files:
   - frontend/src/scene/shared/menu-node-types.ts
 tests:
   - frontend/src/__tests__/menu-schema.conflict.test.ts
-  - frontend/src/__tests__/menu-schema.controlspec.test.ts
-  - frontend/src/__tests__/menu-schema.dispose.test.ts
-  - frontend/src/__tests__/menu-schema.guards.test.ts
-  - frontend/src/__tests__/menu-schema.header-toggle.test.ts
-  - frontend/src/__tests__/menu-schema.i18n.test.ts
   - frontend/src/__tests__/menu-schema.integrity.test.ts
-  - frontend/src/__tests__/menu-schema.kinds.test.ts
-  - frontend/src/__tests__/menu-schema.modelid.test.ts
-  - frontend/src/__tests__/menu-schema.motion-module.test.ts
-  - frontend/src/__tests__/menu-schema.statepath.test.ts
-kind: menu_schema
+  - frontend/src/__tests__/menu-schema.test.ts
+  kind: menu_schema
 name: 声明式菜单 Schema
 category: ui
 scope:
