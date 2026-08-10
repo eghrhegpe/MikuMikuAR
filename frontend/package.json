@@ -22,6 +22,7 @@
     "test:file": "vitest run",
     "test:unit": "vitest run --exclude \"**/*.int.test.ts\"",
     "test:int": "vitest run .int.test",
+    "check:test-perf": "git diff --name-only origin/main HEAD -- \"*.test.ts\" | node ../scripts/check-test-perf.mjs",
     "test:warm": "vitest run src/__tests__/goerr.test.ts --no-color",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",

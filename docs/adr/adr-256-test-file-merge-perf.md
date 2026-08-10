@@ -59,6 +59,12 @@ vitest `isolate: true` 下**每个测试文件独立加载完整依赖图**（�
   `material-editor.test.ts` / `library-core.test.ts`（原 18 个文件删除）。
 - import 累加 201s → 148s；全量墙钟 35.67s → 29.88s；用例守恒 4934。
 - `frontend/vitest.config.ts` 盘点注释追加 P0-3 记录。
+- **防倒退治理**：新增 `npm run check:test-perf`（`scripts/check-test-perf.mjs`）——
+  对变更集内的测试文件做运行时 import 成本检测（totalTime > 3s 且 selfTime < 300ms
+  则 warn「轻用例 × 重依赖」，提示合并/切 node/mock）。warn 不阻断，接入点：
+  `git diff --name-only origin/main HEAD -- "*.test.ts" | node scripts/check-test-perf.mjs`。
+  vitest 4.1.9 的 JSON reporter 与编程 API 均不导出 importDurations，故脚本解析
+  CLI 文本输出（临时 config 开启探针）。
 - ADR-204 状态行标注「被 [ADR-256] 取代」（拆分阈值部分；mock 治理/分层/验收原则保留）。
 - `*.int.test.ts` 命名、`test:unit`/`test:int` 脚本、coverage 阈值均不受影响。
 
