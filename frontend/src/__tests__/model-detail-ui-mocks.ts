@@ -13,7 +13,7 @@ import {
     MockTexture,
     MockCubeTexture,
 } from './mocks/babylon-classes';
-import { sceneMockSuperset } from './mocks/scene-superset';
+import { sceneMockSuperset, mockModelManagerBase } from './mocks/scene-superset';
 
 // ---- babylon.js 补缺工厂（model-preset-mocks 未覆盖的部分） ----
 export const mockShadowGenerator = () => ({ ShadowGenerator: MockShadowGenerator });
@@ -26,36 +26,8 @@ export const mockCubeTexture = () => ({ CubeTexture: MockCubeTexture });
 export const mockEmpty = () => ({});
 
 // ---- 应用模块桩 ----
-export const mockModelManager = {
-    get: vi.fn(),
-    focus: vi.fn(),
-    arrange: vi.fn(),
-    setVisibility: vi.fn(),
-    setOpacity: vi.fn(),
-    setWireframe: vi.fn(),
-    setBoneLinesVis: vi.fn(),
-    setBoneJointsVis: vi.fn(),
-    setPhysics: vi.fn(),
-    getPhysicsCategories: vi.fn().mockReturnValue([]),
-    getPhysicsCatState: vi.fn().mockReturnValue(null),
-    isPhysicsCategoryEnabled: vi.fn().mockReturnValue(false),
-    setPhysicsCategory: vi.fn(),
-    setScaling: vi.fn(),
-    setRotationY: vi.fn(),
-    setPosition: vi.fn(),
-    getPosition: vi.fn().mockReturnValue([0, 0, 0]),
-    setOrbit: vi.fn(),
-    getOrbit: vi.fn().mockReturnValue(null),
-    setPositionMode: vi.fn(),
-    getPositionMode: vi.fn().mockReturnValue('cartesian'),
-    resetTransform: vi.fn(),
-    clearVmdData: vi.fn(),
-    getMorphs: vi.fn().mockReturnValue([]),
-    setMorphWeight: vi.fn(),
-    getMorphWeight: vi.fn().mockReturnValue(0),
-    resetMorphs: vi.fn(),
-    remove: vi.fn(),
-};
+// 收敛单一源：与 scene-superset.mockModelManagerBase 同构，不再各自内联（防增键漂移）
+export const mockModelManager = mockModelManagerBase();
 
 export const mockSceneScene = () => ({
     ...sceneMockSuperset({ modelManager: mockModelManager }),

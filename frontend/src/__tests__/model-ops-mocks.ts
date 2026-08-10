@@ -9,34 +9,12 @@
 //  - babylon math 用 vi.importActual 加载本地 mock 类，特殊性保留在各测试文件内联 vi.mock。
 //  - 其余 6 个 vi.mock 工厂在此收敛为同步函数，mocks 导入须排在 SUT/helpers 之前。
 import { vi } from 'vitest';
-import { sceneMockSuperset } from './mocks/scene-superset';
+import { sceneMockSuperset, mockModelManagerBase } from './mocks/scene-superset';
 
 export function createMockModelManager() {
-    return {
-        focus: vi.fn(),
-        arrange: vi.fn(),
-        setVisibility: vi.fn(),
-        setOpacity: vi.fn(),
-        setWireframe: vi.fn(),
-        setBoneLinesVis: vi.fn(),
-        setBoneJointsVis: vi.fn(),
-        setPhysics: vi.fn(),
-        getPhysicsCategories: vi.fn().mockReturnValue([]),
-        getPhysicsCatState: vi.fn().mockReturnValue(null),
-        isPhysicsCategoryEnabled: vi.fn().mockReturnValue(false),
-        setPhysicsCategory: vi.fn(),
-        setScaling: vi.fn(),
-        setRotationY: vi.fn(),
-        setPosition: vi.fn(),
-        getPosition: vi.fn().mockReturnValue([0, 0, 0]),
-        resetTransform: vi.fn(),
-        clearVmdData: vi.fn(),
-        getMorphs: vi.fn().mockReturnValue([]),
-        setMorphWeight: vi.fn(),
-        getMorphWeight: vi.fn().mockReturnValue(0),
-        resetMorphs: vi.fn(),
-        remove: vi.fn(),
-    };
+    // 收敛单一源：与 scene-superset.mockModelManagerBase 同构（此前内联缺
+    // setOrbit/getOrbit/setPositionMode/getPositionMode/get 等键，增键必漂移）
+    return mockModelManagerBase();
 }
 
 // 模块加载期即创建的共享单例：mockModelManager 必须在 vi.mock 工厂被求值时已就绪

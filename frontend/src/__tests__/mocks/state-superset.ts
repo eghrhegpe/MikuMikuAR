@@ -15,6 +15,5 @@ export const stateMockSuperset = (opts: Record<string, unknown> = {}) => ({
     setFocusedModelId: vi.fn(),
     // scene-state
     envState: {} as Record<string, unknown>,
-    setEnvState: vi.fn(),
     ...opts,
 });
