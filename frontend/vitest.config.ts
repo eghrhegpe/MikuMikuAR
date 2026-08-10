@@ -23,6 +23,13 @@ export default defineConfig({
         //    Promise 最多挂 10s/15s 后报超时失败，不拖垮整个 vitest run。
         // 2) forceExit 管「用例全过但进程不退」——如整桶 import 触发 pending 微任务导致
         //    fork worker 回收失败（virtual-skirt 历史 hang 即此形态）。开它可保证 run 终会退出。
+        // [2026-08] deps.optimizer 预构建实验（vitest 4 默认关闭）：三件套 include
+        // （babylon-mmd/@babylonjs/core/@babylonjs/materials）热缓存中位 52.9s vs
+        // 关闭 55.0s，但样本波动 ±3s，收益 ~4% 落在噪声带内不可稳定复现；冷缓存
+        // （CI 每次 npm ci 重建）反而 58.0s 亏 ~2-3s，且引入 Ubuntu 上 .fx/WASM
+        // 的未知风险（vite.config.ts 构建期排除同因）。ROI 为负 → 不采纳，
+        // 保持 vitest 默认（optimizer 关闭）。若未来 CI 缓存 node_modules/.vite
+        // 且需要再压时间，可重新评估。
         testTimeout: 10000,
         hookTimeout: 15000,
         forceExit: true,
