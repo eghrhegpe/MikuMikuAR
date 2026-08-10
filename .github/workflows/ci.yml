@@ -5,6 +5,10 @@ on:
     branches: [main, master]
   pull_request:
     branches: [main, master]
+  # [2026-08] 覆盖率移出 push 门禁：push/PR 跑无插桩 vitest（2 核 runner 上
+  # coverage 插桩独占 ~2 分钟），整体覆盖率由每日 schedule 补跑（含阈值 gate）。
+  schedule:
+    - cron: '17 3 * * *'
 
 permissions:
   contents: read
@@ -27,11 +31,26 @@ jobs:
         with:
           node-version: ${{ vars.NODE_VERSION || '24' }}
 
+      # [2026-08] vitest 缓存跨 run 复用：cacheDir 已挪到 frontend/.vitest-cache
+      # （见 vitest.config.ts），npm ci 不再清它；此步在依赖安装后 restore，
+      # 命中则跳过整轮 transform/预构建（2 核 runner 上省 ~1 分钟）。
+      # key 绑 package-lock：依赖未变即复用；restore-keys 兜底旧缓存。
+      - name: Restore vitest cache
+        uses: actions/cache@v5
+        id: cache-vitest
+        with:
+          path: frontend/.vitest-cache
+          key: vitest-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
+          restore-keys: |
+            vitest-${{ runner.os }}-
+
       - name: Type check
         run: npx tsc --noEmit
 
+      # [2026-08] push/PR 不跑 coverage（2 核插桩贵）；schedule 分支补跑。
+      # 分支判断：github.event_name == 'schedule' 时追加 --coverage。
       - name: Run unit tests
-        run: npx vitest run --coverage
+        run: npx vitest run ${{ github.event_name == 'schedule' && '--coverage' || '' }}
 
       # [ADR-229 §2.4] 快照新鲜度 gate（自 e2e-suite 迁出保留）：vitest 已重生成
       # schema-snapshot.json，比对入库版本——schema 变更未提交新快照 → diff 非空 → CI 红。
@@ -41,7 +60,7 @@ jobs:
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v5
-        if: always()
+        if: github.event_name == 'schedule' # push 不跑 coverage，无产物可传
         with:
           name: frontend-coverage
           path: frontend/coverage/
@@ -50,8 +69,10 @@ jobs:
         # P8-A：仅检查本次改动的非测试源码，行覆盖率 <60% 即提示。
         # 已改为非阻断：提供 PR 可见告警（产物归档），不再阻塞 merge；
         # 提交期建议由 .githooks/prepare-commit-msg 非阻断写入 commit message。
+        # [2026-08] --suggest：push 不跑 coverage 无产物时优雅跳过（exit 0），
+        # 仅 schedule 补跑后此步才产出真实报告。
         continue-on-error: true
-        run: node ../scripts/check-diff-coverage.mjs --json > diff-coverage-report.json || true
+        run: node ../scripts/check-diff-coverage.mjs --json --suggest > diff-coverage-report.json || true
       - name: Upload diff-coverage report
         if: always()
         uses: actions/upload-artifact@v5

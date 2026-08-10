@@ -59,6 +59,8 @@ coverage-fresh/
 coverage-tmp/
 coverage-run.log
 vitest.coverage.tmp.config.ts
+# vitest transform/预构建缓存（cacheDir 挪出 node_modules 供 CI 跨 run 复用）
+frontend/.vitest-cache/
 
 # Wails dev 运行日志（本地临时产物，不入库）
 dev-run*.log

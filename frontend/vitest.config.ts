@@ -2,6 +2,11 @@ import { defineConfig } from "vitest/config";
 import path from "path";
 
 export default defineConfig({
+    // [2026-08] cacheDir 挪出 node_modules（默认 node_modules/.vite）：
+    // CI 每次 npm ci 重装 node_modules 会清掉 vitest transform 缓存 + 预构建产物，
+    // 2 核 runner 上每次 push 白付全量编译（实测 vitest --coverage 独占 ~2 分钟）。
+    // 挪到 .vitest-cache 后 ci.yml 用 actions/cache 跨 run 复用；本地不受影响。
+    cacheDir: path.resolve(__dirname, ".vitest-cache"),
     resolve: {
         alias: {
             // Path aliases (matching tsconfig.json paths)
@@ -23,13 +28,6 @@ export default defineConfig({
         //    Promise 最多挂 10s/15s 后报超时失败，不拖垮整个 vitest run。
         // 2) forceExit 管「用例全过但进程不退」——如整桶 import 触发 pending 微任务导致
         //    fork worker 回收失败（virtual-skirt 历史 hang 即此形态）。开它可保证 run 终会退出。
-        // [2026-08] deps.optimizer 预构建实验（vitest 4 默认关闭）：三件套 include
-        // （babylon-mmd/@babylonjs/core/@babylonjs/materials）热缓存中位 52.9s vs
-        // 关闭 55.0s，但样本波动 ±3s，收益 ~4% 落在噪声带内不可稳定复现；冷缓存
-        // （CI 每次 npm ci 重建）反而 58.0s 亏 ~2-3s，且引入 Ubuntu 上 .fx/WASM
-        // 的未知风险（vite.config.ts 构建期排除同因）。ROI 为负 → 不采纳，
-        // 保持 vitest 默认（optimizer 关闭）。若未来 CI 缓存 node_modules/.vite
-        // 且需要再压时间，可重新评估。
         // [2026-08] 全量 56s 的墙钟由每 worker 固定成本（环境+模块导入 ~40s）
         // 主导，与测试数量弱相关：排除全部 14 个 int 文件（累加 36.7s）后
         // test:unit 仍 53.3s（仅省 2.7s）——删/减测试救不了耗时，勿生此念。
@@ -37,6 +35,24 @@ export default defineConfig({
         // （债随用例增长），结构性提速仅剩「清偿 mock 形状债 → isolate=false」
         // 一条大工程路。日常反馈用 npm run test:file -- <路径>（秒级），
         // 全量留给提交前/CI。
+        // [2026-08] deps.optimizer 预构建（vitest 4 默认关闭）——CI 视角启用：
+        // 本地 24 核 CPU 富余，预构建收益 ~4% 落在噪声带（ROI 负不成立）；
+        // 但 CI 是 2 核 runner，CPU 是绝对瓶颈（实测 vitest 独占 ~2 分钟），
+        // 预构建把每 worker 重复编译 babylon 的 CPU 总账转成一次预构建，
+        // 且产物落 cacheDir（.vitest-cache）由 ci.yml 的 actions/cache 跨 run
+        // 复用——每次 push 只付一次预构建，之后全命中缓存。风险：Ubuntu 上
+        // .fx shader/WASM 预构建行为未在本地验证（esbuild 0.25 已支持 class
+        // field/.fx，vite.config.ts 构建期排除是 dev/build 场景），若 CI 崩
+        // 快速回滚此块即可。本地已验证三件套 include 全量 308 全绿 + coverage
+        // 4995 全绿。仅预构建 babylon-mmd 无效（依赖链不完整），必须三件套。
+        deps: {
+            optimizer: {
+                ssr: {
+                    enabled: true,
+                    include: ['babylon-mmd', '@babylonjs/core', '@babylonjs/materials'],
+                },
+            },
+        },
         testTimeout: 10000,
         hookTimeout: 15000,
         forceExit: true,
