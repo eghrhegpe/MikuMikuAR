@@ -38,6 +38,10 @@ describe('程序化 mesh 生命周期（happy-dom，无渲染器）', () => {
         const mesh = scene.getMeshByName(`${TEST_MESH_PREFIX}mesh`);
         expect(mesh).toBeTruthy();
         expect(mesh?.material?.name).toBe(`${TEST_MESH_PREFIX}mat`);
+        // [fix:P3] 子代理审核：diffuseColor 红色通道是 applyOutfit 换装断言的
+        // 视觉锚点（指纹亮度变化依赖），补断言保护 Color3 构造不被意外破坏。
+        const c = (mesh?.material as { diffuseColor?: { r: number } } | undefined)?.diffuseColor;
+        expect(c?.r).toBe(1);
     });
 
     it('clearTestMeshes 移除 seed meshes（回到 before 计数）', async () => {
@@ -49,5 +53,14 @@ describe('程序化 mesh 生命周期（happy-dom，无渲染器）', () => {
         // [fix:P2] 断言回到初始计数（此前 toBeLessThan 抓不住「删过头/删错对象」）
         expect(scene.meshes.length).toBe(before);
         expect(scene.getMeshByName(`${TEST_MESH_PREFIX}mesh`)).toBeNull();
+    });
+
+    it('幂等性：clear 后再 createTestMesh 仍正常（无残留 disposed mesh 干扰）', async () => {
+        // [fix:P3] 子代理审核：createTestMesh 内部有「先清理旧 test mesh」逻辑，
+        // clear 后若遗留 disposed mesh 在 scene.meshes 会污染下一次 create。
+        await createTestMesh(scene);
+        clearTestMeshes(scene);
+        await createTestMesh(scene);
+        expect(scene.getMeshByName(`${TEST_MESH_PREFIX}mesh`)).toBeTruthy();
     });
 });
