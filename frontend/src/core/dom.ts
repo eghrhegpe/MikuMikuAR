@@ -5,8 +5,9 @@ import { t } from './i18n/t';
 
 // [fix:test-env] node 环境（@vitest-environment node 测试）无 document，顶层引用
 // 改惰性兜底：真实浏览器/happy-dom 行为与原先完全一致（加载时取一次引用），
-// node 下各引用为 null——依赖 dom 的消费方（status-bar 等）在 node 测试里不被
-// 调用，null 无害。保持属性可写，test helpers（model-preset-helpers）的注入赋值照常。
+// node 下各引用为 undefined——依赖 dom 的消费方（status-bar 等）在 node 测试里
+// 不被调用，undefined 无害。保持属性可写，test helpers（model-preset-helpers）
+// 的注入赋值照常。
 const _doc = typeof document !== 'undefined' ? document : null;
 
 export const dom = {
