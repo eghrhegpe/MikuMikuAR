@@ -9,6 +9,9 @@ frontend/node_modules
 frontend/playwright-report/
 frontend/test-results/
 frontend/e2e/logs_*/
+# e2e 探针孤儿防护：__probe-*.spec.ts / .mjs 是调试残留（无标签、不属于任何
+# CI job、污染 playwright --list 全量统计），不允许进版本库（2026-08-10 清理 15 个）
+frontend/e2e/__probe*
 
 # Model files — do NOT commit (copyrighted, large)
 text-model/
