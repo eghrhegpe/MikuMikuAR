@@ -135,7 +135,11 @@ jobs:
           cache-dependency-path: go.sum
 
       - name: Extract wails version (from go.mod, 与 release/cache-warm 同源)
+        # [2026-08-10 fix] job 级 defaults.working-directory=frontend，但 go.mod 在
+        # 仓库根——不覆盖目录会在 frontend/ 下 grep go.mod 直接 exit 2（run 31329177014
+        # 实锤：@webgl job 秒挂，后续步骤全跳过，gate 报 last-run.json 缺失标红）。
         id: wv
+        working-directory: .
         run: |
           WAILS_VER=$(grep 'wails/v3' go.mod | head -1 | awk '{print $2}')
           echo "wails_ver=$WAILS_VER" >> $GITHUB_OUTPUT
