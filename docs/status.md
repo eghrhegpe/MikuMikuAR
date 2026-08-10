@@ -15,6 +15,7 @@
 
 | ADR | 主题 | 状态 |
 |-----|------|------|
+| ADR-256 | 性能导向的单测文件组织：同系列合并取代一刀切拆分 — isolate 下每文件独立依赖图是墙钟税；importDurations 实测 self ~100ms 却付 ~5s total 的文件优先合并；行数/vi.mock 阈值让位于依赖图成本 | ✅ 已采纳（2026-08-10） |
 | ADR-255 | 测试环境分流：@vitest-environment node 削减每文件 happy-dom 成本 — isolate=true 下 happy-dom 每文件重建是墙钟大头；无 DOM 依赖测试文件切 node 环境，环境累加 255s → ~90-105s | ✅ 已采纳（2026-08-10） |
 | ADR-254 | 历轮审核 P4 遗留项登记簿 —— 低风险改进清单与技术债跟踪 | ✅ 已立（2026-08-07 立项；来源：历轮子代理审核 + code_review 中判定为 P4/可选改进、不阻塞的遗留项汇总）。本 ADR 固化「记录不修」项的完整清单与未来触发条件，避免逐轮口头记录丢失 |
 | ADR-253 | 配置部分更新合并契约损坏 —— mergeUIState bool 覆盖 / mergeEnvState 零值覆盖 | ✅ 已立（2026-08-06 立项；来源审核第 14 轮：`docs/audit/2026-08-06-round14-*.md` Go 后端核心模块审核 P1#1/P1#2）。本 ADR 固化缺陷认知与治理方案，实现分批跟进 |
@@ -66,7 +67,7 @@
 | ADR-207 | 动作菜单重构 —— 程序化动作可加载化 + 双面板对称 | ✅ 已完成（Phase 1-3 全部落地）（2026-07-30） |
 | ADR-206 | 测试基础设施收敛与断言质量治理 | 🟢 已完成（Phase 0-4 全部完成）（2026-07-29） |
 | ADR-205 | AI 工具体系全景 — 从写操作到读写闭环 | ✅ 已完成（Phase 1+2 全部落地，2026-07-30）（2026-07-29） |
-| ADR-204 | 单测分层与治理规范（拆上帝文件 · 降 mock 密度 · fixtures 复用 · unit/integration 分层） | 🟢 实施中（2026-07-29） |
+| ADR-204 | 单测分层与治理规范（拆上帝文件 · 降 mock 密度 · fixtures 复用 · unit/integration 分层） | 🟢 实施中 ⚠️ 被 [ADR-256](adr/adr-256-test-file-merge-perf.md) 取代（new-adr.mjs 自动标注）（2026-07-29） |
 | ADR-203 | AI 助手会话持久化与独立面板 | 🟢 已完成（Phase 1 多会话 IndexedDB 持久化 + Phase 2 主窗口内独立面板）（2026-07-29） |
 | ADR-202 | fork 自治改动批次 — 一次回灌批量根治可改 fork 的上游缺口 | ✅ P0 已落地（vendored + postinstall）；P2/P3 搭车项全部完成（audio 条目9 ✅ / IK 重解 ✅ / WASM 迁移 ✅）；🟢 仅余 `MODEL_WIND_FORCE_SCALE` 真机标定与 🟡 vendor/fork 漂移防护待探明（2026-07-31） |
 | ADR-201 | 路径2 — 给 babylon-mmd fork 增加原生刚体施力导出（wasm 侧解析） | ✅ 已实施（2026-07-28，2B 变体，见 §九 实施记录；e2e test #4 待本地回归） |

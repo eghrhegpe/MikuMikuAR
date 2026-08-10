@@ -2,7 +2,7 @@
 
 # 决策记录（ADR）
 
-> 架构决策日志，共 **251** 篇（ADR-001 起按编号递增）。决策一旦写下即不可变；状态变化以各 ADR 文件首部「状态」行为准。
+> 架构决策日志，共 **252** 篇（ADR-001 起按编号递增）。决策一旦写下即不可变；状态变化以各 ADR 文件首部「状态」行为准。
 
 ## 按状态分布
 
@@ -10,7 +10,7 @@
 |------|------|------|
 | [推进中](#推进中) | 6 | 已开工，尚未收口（含部分实施） |
 | [规划中](#规划中) | 7 | 已立项，等待实施 |
-| [已落地](#已落地) | 227 | 实施完成，代码已合入 |
+| [已落地](#已落地) | 228 | 实施完成，代码已合入 |
 | [已归档](#已归档) | 11 | 被取代、放弃、过时或搁置，保留供追溯 |
 
 > 本文件为 ADR **规范索引**（按状态分组导航，可锚点跳转）。带日期的全量列表见 [项目现状 · ADR 索引](../status.md)（附表，由 `scripts/gen-status-index.mjs` 生成）。
@@ -22,7 +22,7 @@
 | [ADR-229](./adr-229-e2e-automation-advancement.md) | E2E 自动化推进 —— 从 schema 到测试零映射 | 部分实施 — Phase 1 |
 | [ADR-220](./adr-220-schema-integrity-metatest.md) | Schema 完整性元测试 —— 不开浏览器，秒级捕获 schema 漂移 | 实施中 |
 | [ADR-215](./adr-215-eliminate-prop-kind.md) | 取消「道具」资源类型 — 模型附属关系替代 prop + accessory 体系 | 🔄 实施中 |
-| [ADR-204](./adr-204-unit-test-layering-and-hygiene.md) | 单测分层与治理规范（拆上帝文件 · 降 mock 密度 · fixtures 复用 · unit/integration 分层） | 🟢 实施中 |
+| [ADR-204](./adr-204-unit-test-layering-and-hygiene.md) | 单测分层与治理规范（拆上帝文件 · 降 mock 密度 · fixtures 复用 · unit/integration 分层） | 🟢 实施中 ⚠️ 被 [ADR-256] |
 | [ADR-189](./adr-189-ktx2-texture-compression.md) | 纹理加载路径优化（并行读取 + basename 共享 + LRU + KTX2 基础设施） | 实施中 — Phase 0/1 全量 2133/… |
 | [ADR-109](./adr-109-ar-audit-resolution-and-deferral.md) | AR 模块审查结论与遗留项排期 | `部分实现` |
 
@@ -42,6 +42,7 @@
 
 | ADR | 主题 | 状态 |
 |-----|------|------|
+| [ADR-256](./adr-256-test-file-merge-perf.md) | 性能导向的单测文件组织：同系列合并取代一刀切拆分 — isolate 下每文件独立依赖图是墙钟税；importDurations 实测 self ~100ms 却付 ~5s total 的文件优先合并；行数/vi.mock 阈值让位于依赖图成本 | ✅ 已采纳 |
 | [ADR-255](./adr-255-test-env-split.md) | 测试环境分流：@vitest-environment node 削减每文件 happy-dom 成本 — isolate=true 下 happy-dom 每文件重建是墙钟大头；无 DOM 依赖测试文件切 node 环境，环境累加 255s → ~90-105s | ✅ 已采纳 |
 | [ADR-254](./adr-254-p4-backlog-registry.md) | 历轮审核 P4 遗留项登记簿 —— 低风险改进清单与技术债跟踪 | ✅ 已立 |
 | [ADR-253](./adr-253-config-merge-partial-update.md) | 配置部分更新合并契约损坏 —— mergeUIState bool 覆盖 / mergeEnvState 零值覆盖 | ✅ 已立 |
