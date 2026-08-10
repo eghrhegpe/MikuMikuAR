@@ -113,6 +113,83 @@ jobs:
           path: frontend/playwright-report/
 
   # ------------------------------------------------------------
+  # E2E — Overlay Best-Effort (@overlay, vitePage)
+  # [2026-08-10] 新增：74 个 @overlay 测试此前完全真空（@dom 门禁 --grep-invert @overlay
+  # 排除，无任何 CI job 承接）——设置/场景/环境面板 DOM 断言在 headless 无 GPU 时
+  # 点击不可达（probe 实锤：elementFromPoint 命中 BODY，非守卫/滚动/伪元素问题），
+  # 与 @webgl 同类环境硬伤。按 best-effort 模式承接：continue-on-error + failure-count
+  # gate（阈值 50%），不阻塞 push，但每次 push 都跑、报告可见、超阈值必红——
+  # 环境修复后自动转正，回归不再被真空吞掉。
+  # ------------------------------------------------------------
+  e2e-overlay:
+    name: E2E — Overlay Best-Effort (@overlay, vitePage)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v5
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          node-version: ${{ vars.NODE_VERSION || '24' }}
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Regenerate schema snapshot
+        run: npx vitest run src/__tests__/schema-snapshot.test.ts
+
+      - name: Run @overlay E2E
+        # [2026-08-10] best-effort：74 个 overlay 测试 headless 点击不可达（环境硬伤），
+        # 失败不阻塞 push（continue-on-error），交下方 gate 按阈值裁决。
+        # 15min 超时（74 spec × 15s 最坏 ~18.5min，正常通过项秒级；超时则 last-run 缺失→红）。
+        timeout-minutes: 15
+        continue-on-error: true
+        run: npx playwright test --grep "@overlay" --reporter=line
+
+      - name: E2E failure-count gate (@overlay)
+        # [2026-08-10] 阈值 50%（74 spec → 37）：环境硬伤（headless 点击不可达）修复前
+        # 允许部分失败；过半失败说明测试体系崩了（fixture 回归/大面积超时），必须红。
+        # last-run 缺失或 status 非 passed/flaky 且 0 failedTests → report 不可靠，红。
+        if: always()
+        run: |
+          if [ ! -f test-results/.last-run.json ]; then
+            echo "::error title=@overlay gate::test-results/.last-run.json 缺失（可能被 15min timeout 中断）——report 不可靠，job 标红"
+            exit 1
+          fi
+          (python3 || python) -c "
+          import json
+          with open('test-results/.last-run.json') as f:
+              d = json.load(f)
+          status = d.get('status', '?')
+          fa = len(d.get('failedTests', []))
+          print(f'::notice title=@overlay summary::status={status}, {fa} failed')
+          if status not in ('passed', 'flaky'):
+              if status in ('interrupted', 'timedout') or fa == 0:
+                  print(f'::error title=@overlay gate::status={status} 且 failedTests={fa} — run 被中断/report 不可靠，job 标红')
+                  exit(1)
+          THRESHOLD = 37
+          if fa > THRESHOLD:
+              print(f'::error title=@overlay gate::failed={fa} > {THRESHOLD} — 测试体系异常，job 标红')
+              exit(1)
+          "
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: playwright-overlay-report
+          path: frontend/playwright-report/
+
+  # ------------------------------------------------------------
   # E2E — Full Integration (@webgl, wailsPage)
   # connectOverCDP 连真 Wails WebView2。NOTE: CDP 仅 Chromium 系可用；
   # Wails on Linux 用 WebKitGTK 不兼容 CDP → 必须 windows-latest。
