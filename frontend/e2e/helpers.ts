@@ -65,45 +65,62 @@ export async function gotoWebEntry(page: Page): Promise<void> {
  * 直接退出——之后 app 才创建 dialog，守卫没在监听 → 全屏拦截层常驻，真实点击全被吞，
  * 而 page.evaluate 合成 click 恰好绕过命中测试，掩盖了该 bug（run 实测 3 failed）。
  *
- * 修复：observer 挂在 document.body（subtree + childList + attributes），
- * 任何时刻出现 #loading pe:auto / body.app-booting / dialog visible 都立即清除，
- * 与元素创建时序无关。
+ * 修复（2026-08-10 二版）：observer **逐个挂到目标节点**（body / #loading / dialog），
+ * 不用 subtree+childList 全量监听——axe-core 扫描会大量增删改 DOM，全量监听导致
+ * guard 被高频触发、axe analyze 超时（probe11 实证：无守卫 axe 通过，全量守卫 axe 崩）。
+ * 三节点各自只监听自己的 class/style 变化，axe 扫描期间静默。
  */
 export async function installOverlayGuards(page: Page): Promise<void> {
     await page.evaluate(() => {
-        const guard = () => {
-            const body = document.body;
-            if (body) body.classList.remove("app-booting");
-            const loading = document.getElementById("loading");
-            if (loading && loading.style.pointerEvents !== "none") {
-                loading.style.pointerEvents = "none";
-            }
-            const dialog = document.getElementById("mmd-dialog-overlay");
-            if (dialog?.classList.contains("mmd-dialog-visible")) {
-                dialog.classList.remove("mmd-dialog-visible");
-            }
+        // 1) body.app-booting → 移除（仅监听 body 自身 class）
+        const body = document.body;
+        const removeBooting = () => {
+            if (body.classList.contains("app-booting")) body.classList.remove("app-booting");
         };
-        guard();
-        const obs = new MutationObserver(guard);
-        // body 可能尚未挂载（waitUntil:commit 后仍在解析）——挂 document 兜底
-        const target = document.body ?? document.documentElement;
-        obs.observe(target, {
-            subtree: true,
-            childList: true,
+        removeBooting();
+        new MutationObserver(removeBooting).observe(body, {
             attributes: true,
-            attributeFilter: ["class", "style"],
+            attributeFilter: ["class"],
         });
-        // 页面可能发生导航（SW reload / SPA 路由），document 级兜底重建
-        (window as any).__mmcOverlayGuard = () => {
-            const t = document.body ?? document.documentElement;
-            obs.observe(t, {
-                subtree: true,
-                childList: true,
+
+        // 2) #loading pointer-events → 强制 none（仅监听 loading 自身 style）
+        const loading = document.getElementById("loading");
+        if (loading) {
+            const forcePassthrough = () => {
+                if (loading.style.pointerEvents !== "none") loading.style.pointerEvents = "none";
+            };
+            forcePassthrough();
+            new MutationObserver(forcePassthrough).observe(loading, {
                 attributes: true,
-                attributeFilter: ["class", "style"],
+                attributeFilter: ["style"],
             });
+        }
+
+        // 3) #mmd-dialog-overlay → 移除 mmd-dialog-visible。
+        //    若 dialog 尚未创建（init 失败异步弹窗），用一次性 childList 监听等待创建；
+        //    创建后立即转成对该 dialog 的 class 监听，childList observer 即 disconnect，
+        //    避免常驻全量 childList 干扰 axe 等扫描。
+        const ensureDialogGuard = () => {
+            const dialog = document.getElementById("mmd-dialog-overlay");
+            if (!dialog) return false;
+            const forceHidden = () => {
+                if (dialog.classList.contains("mmd-dialog-visible")) {
+                    dialog.classList.remove("mmd-dialog-visible");
+                }
+            };
+            forceHidden();
+            new MutationObserver(forceHidden).observe(dialog, {
+                attributes: true,
+                attributeFilter: ["class"],
+            });
+            return true;
         };
-        document.addEventListener("DOMContentLoaded", () => (window as any).__mmcOverlayGuard());
+        if (!ensureDialogGuard()) {
+            const watch = new MutationObserver(() => {
+                if (ensureDialogGuard()) watch.disconnect();
+            });
+            watch.observe(document.body ?? document.documentElement, { childList: true, subtree: true });
+        }
     });
 }
 

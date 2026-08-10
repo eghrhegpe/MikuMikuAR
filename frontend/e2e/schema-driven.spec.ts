@@ -66,23 +66,18 @@ const COLLAPSED_HEADER_SELECTOR = `.${DOM_META.collapsibleHeader}:not(.${DOM_MET
 /** 根据 nav 元数据执行导航（ADR-229 §2.1：entryTestId → 一级/二级 folder testid） */
 async function navigateToPanel(page: any, nav: PanelNav): Promise<void> {
     // 1. 打开入口按钮（btnEnv / btnMotionPopup / btnSettings / btnScene）
-    await page.evaluate((id: string) => {
-        document.getElementById(id)?.click();
-    }, nav.entryTestId);
+    //    真实 locator.click（带命中测试）：pointer-events 被拦截时失败并暴露 app bug。
+    await page.locator(`#${nav.entryTestId}`).click();
     await page.waitForSelector("#sceneOverlay.visible", { timeout: 3000 });
 
     // 2. 一级子面板（folder:env:sky 等；settings 域无一级，跳过）
     if (nav.subLevelTestId) {
-        await page.evaluate((id: string) => {
-            document.querySelector<HTMLElement>(`[data-testid="${id}"]`)?.click();
-        }, nav.subLevelTestId);
+        await page.getByTestId(nav.subLevelTestId).click();
     }
 
     // 3. settings 域二级 folder（folder:settings:controls 等）
     if (nav.subLevel2TestId) {
-        await page.evaluate((id: string) => {
-            document.querySelector<HTMLElement>(`[data-testid="${id}"]`)?.click();
-        }, nav.subLevel2TestId);
+        await page.getByTestId(nav.subLevel2TestId).click();
     }
 
     // 4. 展开所有 collapsible folder：收起时子节点仍在 DOM（renderContent 立即执行）
@@ -91,9 +86,12 @@ async function navigateToPanel(page: any, nav: PanelNav): Promise<void> {
     //    ⚠️ 点击 subLevel 后面板内容可能异步挂载（实测 env:water 9 个 folder 分批渲染），
     //    立即 querySelectorAll 会漏掉未挂载的 header → 先等一帧再展开。
     await page.waitForTimeout(250);
-    await page.evaluate((sel: string) => {
-        document.querySelectorAll<HTMLElement>(sel).forEach((h) => h.click());
-    }, COLLAPSED_HEADER_SELECTOR);
+    const headers = page.locator(COLLAPSED_HEADER_SELECTOR);
+    const count = await headers.count();
+    for (let i = 0; i < count; i++) {
+        // 逐个真实点击：展开第一个后 DOM 会重排，重新定位再点下一个
+        await headers.nth(i).click().catch(() => { /* 已展开或已失效，跳过 */ });
+    }
 }
 
 // 遍历快照中所有面板
@@ -358,12 +356,17 @@ async function executeAction(page: any, node: any): Promise<void> {
         }
         case 'toggle': {
             // toggle：点击 checkbox，断言 state 翻转（原生 click 触发 change → onChange）
+            // 真实 locator.click（带命中测试）替代合成 input.click()
             const inputSel = `[data-testid="${node.id}"] ${DOM_META.toggleInput}`;
             const before = await readState(page, bind);
-            await page.evaluate((s: string) => {
-                const input = document.querySelector<HTMLInputElement>(s);
-                input?.click();
-            }, inputSel);
+            const toggleEl = page.locator(inputSel).first();
+            await toggleEl.click().catch(async () => {
+                // 折叠/不可见时 fallback 到 DOM 强制点击（headerToggle 场景），
+                // 保证 toggle 断言仍可执行而非直接超时失败
+                await page.evaluate((s: string) => {
+                    document.querySelector<HTMLInputElement>(s)?.click();
+                }, inputSel);
+            });
             const after = await readState(page, bind);
             if (before !== after) {
                 // state 发生变化：boolean 做强翻转断言，其他值（headerToggle/set 变换）变化即通过

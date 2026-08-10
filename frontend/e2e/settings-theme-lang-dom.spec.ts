@@ -11,7 +11,6 @@ import { test, expect } from "./wails-fixture";
 
 test.describe("Settings — 主题与语言 (vitePage, @dom)", { tag: ["@dom", "@overlay"] }, () => {
     test.beforeEach(async ({ vitePage: page }) => {
-        await page.evaluate(() => localStorage.clear());
         await page.click("#btnSettings");
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
     });

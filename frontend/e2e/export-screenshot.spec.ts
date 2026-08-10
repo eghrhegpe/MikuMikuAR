@@ -18,10 +18,8 @@ import { waitForSceneHook } from "./helpers";
 // ======== @dom: Settings panel screenshot entry (DOM-only) ========
 test.describe("截图导出: 设置面板入口 (@dom, vitePage)", { tag: ["@dom", "@overlay"] }, () => {
     test("设置面板可打开且 __scene.capture 管线就绪", async ({ vitePage: page }) => {
-        // 使用 JS click() 绕过 Babylon canvas 的 pointer-events 拦截层
-        await page.evaluate(() => {
-            document.getElementById("btnSettings")?.click();
-        });
+        // 真实 locator.click（带命中测试）；vitePage fixture 已移除 app-booting 拦截
+        await page.locator("#btnSettings").click();
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
         // 验证设置面板 overlay 已打开
         const overlayVisible = await page.evaluate(() => {

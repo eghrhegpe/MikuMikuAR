@@ -150,10 +150,8 @@ test.describe("声明式菜单引擎 (@dom, vitePage)", { tag: ["@dom", "@overla
     let menuTree: MenuNodeSnapshot[] = [];
 
     test("设置面板扫描：捕获 ≥8 个节点，分类覆盖 tab + folder + slider", async ({ vitePage: page }) => {
-        // 打开设置面板
-        await page.evaluate(() => {
-            document.getElementById("btnSettings")?.click();
-        });
+        // 打开设置面板（真实 locator.click，带命中测试）
+        await page.locator("#btnSettings").click();
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
         await page.waitForTimeout(300);
 
@@ -199,10 +197,8 @@ test.describe("声明式菜单引擎 (@dom, vitePage)", { tag: ["@dom", "@overla
         // 记录当前 URL
         const urlBefore = page.url();
 
-        // 点击 tab
-        await page.evaluate((tabId: string) => {
-            document.querySelector<HTMLElement>(`[data-testid="${tabId}"]`)?.click();
-        }, firstTab.testid);
+        // 点击 tab（真实 locator.click）
+        await page.getByTestId(firstTab.testid).click();
         await page.waitForTimeout(500);
 
         // 验证页面没有完全崩溃（body 仍有内容）

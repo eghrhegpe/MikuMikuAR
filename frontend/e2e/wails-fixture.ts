@@ -11,6 +11,7 @@
  */
 import { test as base, chromium, Page } from "@playwright/test";
 import http from "http";
+import { waitForInitComplete, installOverlayGuards } from "./helpers";
 
 const VITE_URL = process.env.VITE_URL || "http://localhost:5173";
 const CDP_ENDPOINT = "http://127.0.0.1:9222";
@@ -87,80 +88,14 @@ export const test = base.extend<WailsFixtures>({
         // 失败 → dom.showError() 给 #loading 加 background。任一信号出现即表示 init 跑完，
         // click handler 已注册。纯 Vite 模式下 Wails binding 不可用通常走失败路径，
         // 但 click handler 仍已在 `await initScene()` 之前注册，可正常触发 toggleOverlay。
-        await page.evaluate(() => {
-            return new Promise<void>((resolve) => {
-                const loading = document.getElementById("loading");
-                if (!loading) return resolve();
-                const done = () => resolve();
-                if (loading.style.display === "none" || loading.style.background) {
-                    return done();
-                }
-                const obs = new MutationObserver(() => {
-                    if (loading.style.display === "none" || loading.style.background) {
-                        obs.disconnect();
-                        done();
-                    }
-                });
-                obs.observe(loading, { attributes: true, attributeFilter: ["style"] });
-                // [doc:e2e] 兜底 12s < test timeout 15s：先于 Playwright 超时生效，
-                // 否则 20s 兜底永不触发（test 先挂，守卫形同虚设）。
-                setTimeout(() => {
-                    obs.disconnect();
-                    done();
-                }, 12000);
-            });
-        });
+        await waitForInitComplete(page);
         // [doc:e2e] 纯 Vite 模式下 init() catch 会调 dom.showError() 设 #loading 的
-        // pointer-events:'auto'，全屏 z-index:10000 的 #loading 会拦截所有 nav click。
-        // 强制保持 pointer-events:none 让 click 穿透；MutationObserver 兜后续变更。
-        await page.evaluate(() => {
-            const loading = document.getElementById("loading");
-            if (!loading) return;
-            const forcePassthrough = () => {
-                if (loading.style.pointerEvents !== "none") {
-                    loading.style.pointerEvents = "none";
-                }
-            };
-            forcePassthrough();
-            new MutationObserver(forcePassthrough).observe(loading, {
-                attributes: true,
-                attributeFilter: ["style"],
-            });
-        });
-        // [doc:e2e] vite-only 模式下 body.app-booting 让 #bottomNav 设为
-        // pointer-events:none，仅放行 AI/广场 按钮。其余导航按钮（环境/场景/动作等）
-        // 全部被阻断。强制移除 app-booting class 恢复全导航可交互。
-        await page.evaluate(() => {
-            const body = document.body;
-            if (!body) return;
-            const removeBooting = () => {
-                if (body.classList.contains("app-booting")) {
-                    body.classList.remove("app-booting");
-                }
-            };
-            removeBooting();
-            new MutationObserver(removeBooting).observe(body, {
-                attributes: true,
-                attributeFilter: ["class"],
-            });
-        });
-        // [doc:e2e] vite-only 模式下 init() 失败后可能弹出 #mmd-dialog-overlay
-        // 错误对话框，该 dialog 的 class mmd-dialog-visible 覆盖全屏拦截所有 click。
-        // 强制隐藏它以让 nav 按钮可点击。
-        await page.evaluate(() => {
-            const dialog = document.getElementById("mmd-dialog-overlay");
-            if (!dialog) return;
-            const forceHidden = () => {
-                if (dialog.classList.contains("mmd-dialog-visible")) {
-                    dialog.classList.remove("mmd-dialog-visible");
-                }
-            };
-            forceHidden();
-            new MutationObserver(forceHidden).observe(dialog, {
-                attributes: true,
-                attributeFilter: ["class"],
-            });
-        });
+        // pointer-events:'auto'，全屏 z-index:10000 的 #loading 会拦截所有 nav click；
+        // body.app-booting 让 #bottomNav pointer-events:none 阻断导航；
+        // init 失败还可能异步弹出 #mmd-dialog-overlay 全屏拦截层。
+        // installOverlayGuards 用 body 级常驻 MutationObserver 统一放行三者，
+        // 与元素创建时序无关（旧守卫 dialog 未创建时不监听 → 真实点击被吞，probe 实锤）。
+        await installOverlayGuards(page);
         await use(page);
         await browser.close();
     },
@@ -191,42 +126,8 @@ export const test = base.extend<WailsFixtures>({
         // force pointer-events:none on the #loading overlay so nav clicks
         // are not intercepted.
         await page.waitForSelector("#btnMainAction", { timeout: 20000 });
-        await page.evaluate(() => {
-            return new Promise<void>((resolve) => {
-                const loading = document.getElementById("loading");
-                if (!loading) return resolve();
-                const done = () => resolve();
-                if (loading.style.display === "none" || loading.style.background) {
-                    return done();
-                }
-                const obs = new MutationObserver(() => {
-                    if (loading.style.display === "none" || loading.style.background) {
-                        obs.disconnect();
-                        done();
-                    }
-                });
-                obs.observe(loading, { attributes: true, attributeFilter: ["style"] });
-                // [doc:e2e] 兜底 12s < test timeout 15s（同 vitePage 守卫）
-                setTimeout(() => {
-                    obs.disconnect();
-                    done();
-                }, 12000);
-            });
-        });
-        await page.evaluate(() => {
-            const loading = document.getElementById("loading");
-            if (!loading) return;
-            const forcePassthrough = () => {
-                if (loading.style.pointerEvents !== "none") {
-                    loading.style.pointerEvents = "none";
-                }
-            };
-            forcePassthrough();
-            new MutationObserver(forcePassthrough).observe(loading, {
-                attributes: true,
-                attributeFilter: ["style"],
-            });
-        });
+        await waitForInitComplete(page);
+        await installOverlayGuards(page);
         // Dismiss any leftover overlay from a previous test run
         // via Escape so the app's own state machine properly resets.
         await page.keyboard.press("Escape");

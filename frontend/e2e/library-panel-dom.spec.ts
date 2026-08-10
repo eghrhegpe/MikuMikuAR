@@ -8,10 +8,8 @@ import { test, expect } from "./wails-fixture";
 
 test.describe("Library — DOM/overlay (vitePage, @dom)", { tag: ["@dom", "@overlay"] }, () => {
     test.beforeEach(async ({ vitePage: page }) => {
-        // Isolate: clear localStorage so no stale state (resource_root, favorites, tags)
-        // affects the next test. The fixture already provides a fresh browser+page,
-        // but localStorage from a previous run in the same worker could persist.
-        await page.evaluate(() => localStorage.clear());
+        // [ADR-229 §8] vitePage 每 test 全新浏览器实例，localStorage 本为空，
+        // clear() 反而触发应用 storage 监听导致页面导航——不调用。
         await page.click("#btnMainAction");
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
     });

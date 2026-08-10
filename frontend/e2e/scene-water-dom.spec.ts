@@ -19,15 +19,12 @@ test.describe("Scene — Water Panel (vitePage, @dom)", { tag: ["@dom", "@overla
         // [ADR-229 §8 修复] ① 不调 localStorage.clear()：vitePage 每 test 全新浏览器实例，
         // localStorage 本就为空；clear() 会触发应用 storage 监听导致页面导航、
         // 销毁执行上下文（曾报 "Execution context was destroyed"）。
-        // ② 用 page.evaluate 触发 click（与 helpers/schema-driven 一致）：原生
-        // page.click 会被 vite-only 的 app-booting pointer-events:none 拦截
-        // （wails-fixture 注释记载），导致 beforeEach 超时。
-        await page.evaluate(() => { document.getElementById("btnScene")?.click(); });
+        // ② 真实 locator.click：vitePage fixture 已强制移除 app-booting 并保持
+        // #loading pointer-events:none，命中测试可通过；若被拦截会失败并暴露 app bug。
+        await page.locator("#btnScene").click();
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
         // Navigate into 水面 sub-level (folder in scene root with headerToggle)
-        await page.evaluate(() => {
-            document.querySelector<HTMLElement>('[data-testid="folder:scene:water"]')?.click();
-        });
+        await page.getByTestId("folder:scene:water").click();
     });
 
     test("水面面板: 预设芯片渲染", async ({ vitePage: page }) => {

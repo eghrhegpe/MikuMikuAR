@@ -3,7 +3,6 @@ import { openSettingsPanel } from "./helpers";
 
 test.describe("AI 控制模式 (@dom)", { tag: ["@dom", "@overlay"] }, () => {
     test.beforeEach(async ({ vitePage: page }) => {
-        await page.evaluate(() => localStorage.clear());
         await openSettingsPanel(page);
         await page.getByTestId("folder:settings:diagnostic").click();
     });

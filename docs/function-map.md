@@ -1,7 +1,7 @@
 # 函数映射表
 
 > AI 找代码用。改前端功能时先 grep 此表定位文件。
-> **自动生成**（2026-08-09）— 由 `scripts/gen-funcmap.mjs` 生成。
+> **自动生成**（2026-08-10）— 由 `scripts/gen-funcmap.mjs` 生成。
 
 ## 总览
 

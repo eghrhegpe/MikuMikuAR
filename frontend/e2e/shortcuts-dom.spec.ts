@@ -8,12 +8,6 @@
 import { test, expect } from "./wails-fixture";
 
 test.describe("Shortcuts — DOM/overlay (vitePage, @dom)", { tag: ["@dom", "@overlay"] }, () => {
-    test.beforeEach(async ({ vitePage: page }) => {
-        // Isolate: clear localStorage so key binding overrides from a previous
-        // test don't conflict. Shortcuts check is global-state sensitive.
-        await page.evaluate(() => localStorage.clear());
-    });
-
     test("快捷键面板: 通过设置 → 快捷键导航可见", async ({ vitePage: page }) => {
         await page.click("#btnSettings");
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });

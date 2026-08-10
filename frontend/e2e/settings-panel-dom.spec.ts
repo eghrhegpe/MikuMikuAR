@@ -8,9 +8,7 @@ import { test, expect } from "./wails-fixture";
 
 test.describe("Settings — DOM/overlay (vitePage, @dom)", { tag: ["@dom", "@overlay"] }, () => {
     test.beforeEach(async ({ vitePage: page }) => {
-        // Isolate: clear localStorage so settings state (theme, language, paths)
-        // from a previous test doesn't leak into the next one.
-        await page.evaluate(() => localStorage.clear());
+        // [ADR-229 §8] vitePage 每 test 全新浏览器实例，localStorage 本为空，不调用 clear()
         await page.click("#btnSettings");
         // [doc:e2e] 设置面板使用统一的 #sceneOverlay（非独立 #settingsOverlay）
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
