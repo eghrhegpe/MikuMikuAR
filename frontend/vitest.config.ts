@@ -52,6 +52,13 @@ export default defineConfig({
         // field/.fx，vite.config.ts 构建期排除是 dev/build 场景），若 CI 崩
         // 快速回滚此块即可。本地已验证三件套 include 全量 308 全绿 + coverage
         // 4995 全绿。仅预构建 babylon-mmd 无效（依赖链不完整），必须三件套。
+        // ⚠️ [2026-08-11 勘误] 上轮「确认不采纳」注释系错误认知：当时 edit
+        // 回滚失败未验证，deps 块实际一直在（git log -S 证实 7d36c010 后
+        // 从未删除），所谓「关闭基线 30.56s」实为开启态数据。
+        // 真对照（2026-08-11）：开启冷 29.76s / 开启热 31.09s / 真关闭 30.93s
+        // ——本地 24 核上开/关无差异（±1s 噪声带）。保留开启：决策在 CI 侧
+        // （2 核 runner CPU 瓶颈 + .vitest-cache actions/cache 复用），
+        // 本地无差异不构成关闭理由。
         deps: {
             optimizer: {
                 ssr: {
@@ -71,6 +78,11 @@ export default defineConfig({
         // ⑤ P1-3 坏断言修复 ✅（a0c78e2f）
         // ⑥ P2 目录整理 ❌ 不采纳：70 文件移动 + import 路径重写无 codemod
         //    支持，纯组织收益零、破坏风险高——保持平铺命名约定。
+        // [2026-08] deps.optimizer 预构建决策（vitest 4 默认关闭）——CI 视角启用：
+        // 本地 24 核 CPU 富余，三件套 include（babylon-mmd/@babylonjs/core/
+        // @babylonjs/materials）热缓存 50.4-51.6s vs 关闭 54-56s（省 ~5s/~9%）；
+        // 仅预构建 babylon-mmd 无效（依赖链不完整），必须三件套。
+        // 后续改此配置前先读本段 + vitest.config.ts 顶部结论区。
         testTimeout: 10000,
         hookTimeout: 15000,
         forceExit: true,
