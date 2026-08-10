@@ -238,36 +238,58 @@ fi
 # ── test:coverage（仅 TS/JS 变更时；不可自动修复） ──
 # 纯 Go 变更有 Go 测试覆盖，纯文档变更无逻辑可测，均跳过前端测试
 # npm 不可用时跳过；成功静默（coverage summary 大表由 CI 门禁兜底），失败时打印失败测试明细 + 覆盖率差距
+# [2026-08-10] 全量 test:coverage（~66s）→ `vitest run --changed <base>` 只跑
+# 本次推送变更影响的测试（秒级）：base 取推送 RANGE 的远端 SHA（对象缺失时
+# 回退 origin/main）。纯配置/CI 变更 0 测试命中（vitest exit 0 且不产 coverage
+# 产物）→ 跳过 diff-coverage；整体覆盖率回退由 CI 每日 schedule 兜底。
 if [ "$TS_CHANGED" = "true" ] && [ "$NPM_AVAILABLE" = "true" ]; then
-  echo "[pre-push] test:coverage（门禁: lines≥35% functions≥30%；全量 4328 测试 + 覆盖率约 40s，可用 git push --no-verify 跳过，不推荐）"
+  # 取第一个可解析的 RANGE base（remote_sha）；git 对象缺失时回退 origin/main
+  CHANGED_BASE=""
+  for r in $RANGES; do
+    base="${r%%..*}"
+    if git cat-file -e "$base" 2>/dev/null; then
+      CHANGED_BASE="$base"
+      break
+    fi
+  done
+  [ -z "$CHANGED_BASE" ] && CHANGED_BASE="origin/main"
+  echo "[pre-push] vitest --changed $CHANGED_BASE（只跑受影响测试 + coverage，替代全量 ~66s；可用 git push --no-verify 跳过，不推荐）"
   COV_LOG="$(mktemp -t pre-push-cov.XXXXXX 2>/dev/null || echo "$ROOT/.pre-push-cov.log")"
   cd "$ROOT/frontend"
-  if npm run test:coverage -- --coverage.clean=false >"$COV_LOG" 2>&1; then
-    # [fix:win] 临时日志清理容错：部分 Windows 环境（WorkBuddy safe-delete 层 /
-    # genie-trash）包装 rm 后对 /tmp 相对路径处理失败返回非零，set -e 下会中断
-    # hook（2026-08-05 v1.9.1 发版实证）。清理失败仅遗留垃圾文件，不影响正确性。
-    rm -f "$COV_LOG" 2>/dev/null || true
-    note_check "✅ test:coverage"
+  if npx vitest run --changed "$CHANGED_BASE" --coverage --coverage.clean=false >"$COV_LOG" 2>&1; then
     # P8-A: 新代码保护——本次变更源码的行覆盖率 ≥60%（复用 test:coverage 生成的 coverage-final.json）
     # 整体阈值 35% 只防「覆盖率回退」，不保护「新代码有测试」；diff-coverage 补上后者（vitest.config.ts 注释）
-    echo "[pre-push] diff-coverage（新代码保护: 变更行 ≥60%）"
-    if npm run test:diff-coverage >"$COV_LOG" 2>&1; then
+    # 判据用日志中的 "Test Files"（有测试实际运行）而非产物文件：--changed 0 命中时
+    # --coverage.clean=false 会残留旧 coverage-final.json，直接查文件会拿过期产物误判。
+    if grep -q "Test Files" "$COV_LOG"; then
       # [fix:win] 临时日志清理容错：部分 Windows 环境（WorkBuddy safe-delete 层 /
-    # genie-trash）包装 rm 后对 /tmp 相对路径处理失败返回非零，set -e 下会中断
-    # hook（2026-08-05 v1.9.1 发版实证）。清理失败仅遗留垃圾文件，不影响正确性。
-    rm -f "$COV_LOG" 2>/dev/null || true
-      note_check "✅ diff-coverage"
+      # genie-trash）包装 rm 后对 /tmp 相对路径处理失败返回非零，set -e 下会中断
+      # hook（2026-08-05 v1.9.1 发版实证）。清理失败仅遗留垃圾文件，不影响正确性。
+      rm -f "$COV_LOG" 2>/dev/null || true
+      note_check "✅ vitest --changed（$(grep -oE '[0-9]+ tests' "$COV_LOG" | head -1 || echo '有命中')）"
+      echo "[pre-push] diff-coverage（新代码保护: 变更行 ≥60%）"
+      if npm run test:diff-coverage >"$COV_LOG" 2>&1; then
+        # [fix:win] 临时日志清理容错：部分 Windows 环境（WorkBuddy safe-delete 层 /
+        # genie-trash）包装 rm 后对 /tmp 相对路径处理失败返回非零，set -e 下会中断
+        # hook（2026-08-05 v1.9.1 发版实证）。清理失败仅遗留垃圾文件，不影响正确性。
+        rm -f "$COV_LOG" 2>/dev/null || true
+        note_check "✅ diff-coverage"
+      else
+        echo "❌ diff-coverage 失败：本次变更源码覆盖率不足 60%。明细："
+        grep -E "\[X\]|失败|低于|覆盖" "$COV_LOG" | head -15
+        # [fix:win] 临时日志清理容错：部分 Windows 环境（WorkBuddy safe-delete 层 /
+        # genie-trash）包装 rm 后对 /tmp 相对路径处理失败返回非零，set -e 下会中断
+        # hook（2026-08-05 v1.9.1 发版实证）。清理失败仅遗留垃圾文件，不影响正确性。
+        rm -f "$COV_LOG" 2>/dev/null || true
+        fail "变更行覆盖率不足 60%" "为上方 [X] 文件的改动逻辑补单测，重跑 cd frontend && npm run test:diff-coverage 验证后重推"
+      fi
     else
-      echo "❌ diff-coverage 失败：本次变更源码覆盖率不足 60%。明细："
-      grep -E "\[X\]|失败|低于|覆盖" "$COV_LOG" | head -15
-      # [fix:win] 临时日志清理容错：部分 Windows 环境（WorkBuddy safe-delete 层 /
-    # genie-trash）包装 rm 后对 /tmp 相对路径处理失败返回非零，set -e 下会中断
-    # hook（2026-08-05 v1.9.1 发版实证）。清理失败仅遗留垃圾文件，不影响正确性。
-    rm -f "$COV_LOG" 2>/dev/null || true
-      fail "变更行覆盖率不足 60%" "为上方 [X] 文件的改动逻辑补单测，重跑 cd frontend && npm run test:diff-coverage 验证后重推"
+      rm -f "$COV_LOG" 2>/dev/null || true
+      echo "[pre-push] 无受影响测试（纯配置/CI/文档变更），跳过 diff-coverage"
+      note_check "⏭️ vitest --changed（0 测试命中）"
     fi
   else
-    echo "❌ test:coverage 失败。明细如下："
+    echo "❌ vitest --changed 失败。明细如下："
     echo "── 失败测试 ──"
     grep -E "×|✗|FAIL" "$COV_LOG" | head -20
     echo "── 覆盖率阈值 ──"
@@ -278,7 +300,7 @@ if [ "$TS_CHANGED" = "true" ] && [ "$NPM_AVAILABLE" = "true" ]; then
     # genie-trash）包装 rm 后对 /tmp 相对路径处理失败返回非零，set -e 下会中断
     # hook（2026-08-05 v1.9.1 发版实证）。清理失败仅遗留垃圾文件，不影响正确性。
     rm -f "$COV_LOG" 2>/dev/null || true
-    fail "test:coverage 失败" "修复上方失败测试/覆盖率阈值后重推（完整输出: cd frontend && npm run test:coverage）"
+    fail "vitest --changed 失败" "修复上方失败测试/覆盖率阈值后重推（完整输出: cd frontend && npx vitest run --changed $CHANGED_BASE --coverage）"
   fi
 else
   echo "[pre-push] test:coverage（跳过：纯 Go / 纯文档变更 / npm 不可用）"
