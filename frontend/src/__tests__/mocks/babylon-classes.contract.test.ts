@@ -9,6 +9,12 @@
  * mock 若引用真实类型不存在的公开成员（字段/方法），本文件即编译失败。
  * 私有成员（`_` 前缀）不检查——mock 内部字段与真实实现细节无关。
  *
+ * 已知限制：
+ * 1. 仅检查成员名子集，不校验方法签名（签名漂移需引入 Parameters/条件类型）。
+ * 2. `_` 前缀成员完全豁免——mock 新增的 `_` 开头幻影公开成员不会被拦截。
+ * 3. 当前覆盖 5 个核心类（Engine/Scene/Vector3/Color3/Matrix）；
+ *    Mesh/Material/Texture 等其余类可仿照本文件逐类加入（先验证真实类型无同名成员）。
+ *
  * 仅 type-only import，不拖运行时依赖；类型断言在声明点即校验约束，无需运行。
  */
 import type { Engine as RealEngine } from '@babylonjs/core/Engines/engine';

@@ -82,6 +82,10 @@ export function createModel(id: string, overrides?: Partial<any>): string {
 
 export function cleanup(): void {
     modelRegistry.clear();
+    // 仅复位 get（本文件 mockImplementation 覆盖的键）；其余 mockModelManager
+    // 方法保持 mockModelManagerBase 默认实现（getPosition→[0,0,0] 等），
+    // 全量 mockReset 会清掉默认实现导致下游断言失真——如需打桩其他方法，
+    // 请在本函数中显式加入对应 mockReset（或用 createMockModelManager 每次新建）。
     mockModelManager.get.mockReset();
 }
 

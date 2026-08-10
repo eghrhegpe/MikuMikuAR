@@ -130,7 +130,10 @@ describe('WASM 物理契约测试', () => {
             // [fix] 原用例断言"高弹性方块反弹更明显"（tf[13]>0.4），与无弹性下落用例同断言，
             // restitution=0 时同样通过——假阳性。实测 SPR 引擎碰撞响应不使用
             // RigidBodyConstructionInfo.Restitution（0.9 与 0.0 两方块 2 秒后位置完全相同），
-            // 故改为验证字段读写契约（与 babylon-mmd 构造信息格式一致），不再声称覆盖反弹行为。
+            // 故降级为字段读写契约：
+            //   ① 回读断言验证本测试手写偏移表（PHYSICS_OFF）与写入自洽；
+            //   ② createRigidBody>0 验证引擎接受含该字段的构造信息。
+            // 注意：本用例不验证反弹行为（引擎不响应此字段），后续改引擎时勿误读为契约。
             const world = api.createPhysicsWorld();
             const shape = api.createBoxShape(1, 1, 1);
             const info = buildRigidBodyInfo(shape, { mass: 1.0, disableDeactivation: true });

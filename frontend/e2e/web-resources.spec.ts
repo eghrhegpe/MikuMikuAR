@@ -81,12 +81,19 @@ test.describe("Web Resources — PMX/ZIP/VMD 数据链路 (@web)", { tag: ["@web
                         req.onsuccess = () => resolve(req.result as Uint8Array);
                         req.onerror = () => reject(req.error);
                     });
-                    return { length: readBack?.length ?? 0 };
+                    // 字节级比对（首/末字节 + 长度），与标题「读回一致」口径一致
+                    const same =
+                        readBack !== undefined &&
+                        readBack.length === bytes.length &&
+                        readBack[0] === bytes[0] &&
+                        readBack[bytes.length - 1] === bytes[bytes.length - 1];
+                    return { length: readBack?.length ?? 0, same };
                 },
                 { filePath: c.file, key: c.key }
             );
 
             expect(result.length).toBeGreaterThan(0);
+            expect(result.same, "读回字节应与写入字节一致").toBe(true);
         });
     }
 

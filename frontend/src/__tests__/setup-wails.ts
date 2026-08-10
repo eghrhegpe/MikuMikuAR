@@ -101,9 +101,12 @@ vi.mock('@/core/backend/idb', async () => {
 // Individual test files can override with their own vi.mock() for more specific behavior.
 // Engine mock 单一源：vitest.config.ts 的 alias 已把 @babylonjs/core/Engines/engine
 // 指向 mocks/engine-mock.ts（其 re-export babylon-classes.MockEngine），此处 vi.mock
-// 复用同一份（不再内联拷贝，避免双注册漂移）。工厂内 async import——
-// 顶层 import 绑定会被 vi.mock hoist 提前引用致 TDZ（__vi_import_0__）。
+// 复用同一份（不再内联拷贝，避免双注册漂移）。工厂内用 vi.importActual 取真实模块，
+// 显式绕过 mock 注册表——顶层 import 绑定会被 hoist 提前引用致 TDZ（__vi_import_0__），
+// 且本工厂 mock 的正是 alias 解析到的同一 resolved id，直接 import 会自引用。
 vi.mock('@babylonjs/core/Engines/engine', async () => {
-    const { Engine } = await import('./mocks/engine-mock');
+    const { Engine } = await vi.importActual<typeof import('./mocks/engine-mock')>(
+        './mocks/engine-mock'
+    );
     return { Engine };
 });

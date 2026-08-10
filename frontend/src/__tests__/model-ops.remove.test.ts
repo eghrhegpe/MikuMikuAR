@@ -101,6 +101,8 @@ describe('removeModel', () => {
     it('resets playback state and hides UI when last model is removed', () => {
         removeModel('m1');
         expect(disposeAudio).toHaveBeenCalled();
+        // 源码 model-ops.ts:59-64：modelRegistry 空时隐藏播放栏
+        expect(document.getElementById('playbackBar')?.style.display).toBe('none');
     });
 
     it('does not clear playback state when other models remain', () => {
@@ -114,11 +116,6 @@ describe('removeFocusedModel', () => {
     beforeEach(resetState);
 
     it('is a no-op when focusedModelId is null', () => {
-        removeFocusedModel();
-        expect(mockModelManager.remove).not.toHaveBeenCalled();
-    });
-
-    it('is safe to call (API contract — delegates to removeModel when model focused)', () => {
         removeFocusedModel();
         expect(mockModelManager.remove).not.toHaveBeenCalled();
     });

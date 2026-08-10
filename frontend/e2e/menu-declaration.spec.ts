@@ -203,16 +203,17 @@ test.describe("声明式菜单引擎 (@dom, vitePage)", { tag: ["@dom", "@overla
         // 点击 tab（真实 locator.click）
         await page.getByTestId(firstTab.testid).click();
 
-        // 验证页面没有完全崩溃（body 仍有内容）——轮询等待新内容挂载，替代固定 sleep
-        await page.waitForFunction(() => {
-            const body = document.body;
-            return body && body.innerHTML.length > 100;
-        }, { timeout: 5000 });
-        const hasBodyContent = await page.evaluate(() => {
-            const body = document.body;
-            return body && body.innerHTML.length > 100;
-        });
-        expect(hasBodyContent, "点击 tab 后 body 应有内容").toBe(true);
+        // 验证点击后 tab 内容挂载：等待 overlay 内 data-testid 节点数超过点击前，
+        // 而非恒真的「body 有内容」——点击完全失败时节点数不变（替代固定 sleep + 弱断言）
+        const testidCountBefore = await page.evaluate(
+            () => document.querySelectorAll("#sceneOverlay [data-testid]").length
+        );
+        await page.waitForFunction(
+            (before) =>
+                document.querySelectorAll("#sceneOverlay [data-testid]").length > before,
+            testidCountBefore,
+            { timeout: 5000 }
+        );
 
         // 可选：检查 URL 是否变化（SPA 路由）
         const urlAfter = page.url();

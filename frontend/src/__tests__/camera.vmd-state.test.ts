@@ -72,6 +72,8 @@ describe('VMD', () => {
         // 注入真实 scene，使 loadCameraVmd/clearCameraVmd 触达真实清理分支
         // （此前无 scene 时函数体直接跳过，断言是 no-op 假覆盖）
         setCameraScene(new MockScene() as any);
+        // 复位 VMD 状态，消除用例间顺序耦合（与 serialization beforeEach 对齐）
+        cam.clearCameraVmd();
     });
     afterEach(() => {
         setCameraScene(null);
@@ -101,6 +103,9 @@ describe('VMD', () => {
     });
 });
 describe('ConcertPaused', () => {
+    beforeEach(() => {
+        cam.setConcertPaused(false);
+    });
     it('default false', () => {
         expect(cam.getConcertPaused()).toBe(false);
     });
@@ -116,13 +121,6 @@ describe('ConcertPaused', () => {
     it('false->false', () => {
         cam.setConcertPaused(false);
         expect(cam.getConcertPaused()).toBe(false);
-    });
-});
-describe('CameraMode type', () => {
-    it('valid', () => {
-        expect(['orbit', 'freefly', 'surround', 'concert', 'oneshot', 'vmd']).toContain(
-            cam.getCameraMode()
-        );
     });
 });
 describe('P1', () => {

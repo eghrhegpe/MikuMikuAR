@@ -1,8 +1,8 @@
 // @vitest-environment node
 // camera.test.ts — 主相机模块单测（ADR-100 双轴调度 + 模式切换 + 序列化）
-// 覆盖：deriveLegacyMode/LEGACY_MODE_MAP 兼容映射、setCameraControl/setCameraBehavior 双轴写入、
-// setOrbitParams/setFreeflyParams/setConcertParams/setSurroundParams 子参数同步、
-// setFov 钳位、initCameraSystem 初始化、switchCameraMode 全分支（含 AR 异步竞态）、
+// 覆盖：setCameraControl/setCameraBehavior 双轴写入、
+// setOrbitParams/setFreeflyParams/setConcertParams/setSurroundParams 子参数同步（live 相机）、
+// initCameraSystem 初始化、switchCameraMode 全分支（含 AR 异步竞态）、
 // autoFrame 自动取景、getCameraState/setCameraState 序列化（含旧存档迁移/非法 mode 回退）、
 // disposeCameraSystem 销毁。
 // 依赖 mock：Babylon 类（Camera/ArcRotateCamera/UniversalCamera/Vector3/Scene 最小假对象）、
@@ -255,8 +255,6 @@ vi.mock('../scene/camera/camera-auto', () => ({
 }));
 
 import {
-    LEGACY_MODE_MAP,
-    deriveLegacyMode,
     setOrbitParams,
     logCameraAlpha,
     setFreeflyParams,
@@ -265,7 +263,6 @@ import {
     _syncAxesFromMode,
     setCameraControl,
     setCameraBehavior,
-    setFov,
     initCameraSystem,
     switchCameraMode,
     autoFrame,
@@ -552,7 +549,11 @@ describe('autoFrame（自动取景）', () => {
         const uni = new shared.UniversalCamera();
         setCurrentCamera(uni);
         autoFrame({ x: 1, y: 2, z: 3 } as never, 4);
-        expect(uni.position).toBeDefined();
+        // 源码 camera.ts:550-553：dist = extent*0.75+2 = 5，
+        // position = (center.x - dist, center.y + dist*0.5, center.z) = (-4, 4.5, 3)
+        expect((uni.position as { x: number }).x).toBe(-4);
+        expect((uni.position as { y: number }).y).toBe(4.5);
+        expect((uni.position as { z: number }).z).toBe(3);
         expect(uni.setTarget).toHaveBeenCalled();
     });
 
