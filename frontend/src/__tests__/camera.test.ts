@@ -330,30 +330,12 @@ afterEach(() => {
     vi.unstubAllGlobals();
 });
 
-describe('LEGACY_MODE_MAP / deriveLegacyMode（双轴→旧模式反查）', () => {
-    it('正常：LEGACY_MODE_MAP 覆盖全部 8 种模式', () => {
-        expect(Object.keys(LEGACY_MODE_MAP)).toHaveLength(8);
-        expect(LEGACY_MODE_MAP.freefly).toEqual({ control: 'freefly', behavior: 'none' });
-        expect(LEGACY_MODE_MAP.ar).toEqual({ control: 'ar', behavior: 'none' });
-    });
-
-    it('正常：freefly/ar 控制轴直接返回', () => {
-        expect(deriveLegacyMode('freefly', 'none')).toBe('freefly');
-        expect(deriveLegacyMode('ar', 'none')).toBe('ar');
-    });
-
-    it('正常：orbit 控制轴按行为派生', () => {
-        expect(deriveLegacyMode('orbit', 'turntable')).toBe('surround');
-        expect(deriveLegacyMode('orbit', 'concert')).toBe('concert');
-        expect(deriveLegacyMode('orbit', 'beatcut')).toBe('beatcut');
-        expect(deriveLegacyMode('orbit', 'none')).toBe('orbit');
-    });
-
-    it('正常：scripted 行为按子态派生 vmd/oneshot', () => {
-        expect(deriveLegacyMode('orbit', 'scripted', 'oneshot')).toBe('oneshot');
-        expect(deriveLegacyMode('orbit', 'scripted', 'loop')).toBe('vmd');
-    });
-});
+// [doc:adr-204] camera.test.ts 保留「拆分文件未覆盖」的独有用例：
+// live 相机同步（参数 setter）、AR 异步竞态、autoFrame、非法 mode 回退、
+// 旧 concert 迁移、disposeCameraSystem 等。
+// LEGACY_MODE_MAP / deriveLegacyMode / setFov / setCameraControl/Behavior /
+// getCameraState 双写 / setCameraState 常规恢复 已由 vmd-state / presets /
+// guards / serialization 拆分文件覆盖，此处不重复维护。
 
 describe('_syncAxesFromMode（双轴派生）', () => {
     it('正常：surround 派生 orbit+turntable', () => {
@@ -431,11 +413,7 @@ describe('setCameraControl / setCameraBehavior（双轴写入）', () => {
         expect(shared.setAutoCameraEnabled).toHaveBeenCalledWith(false);
     });
 
-    it('守卫：非 orbit 控制下设置非 none 行为被忽略', () => {
-        setCameraControl('freefly');
-        setCameraBehavior('turntable');
-        expect(getCameraBehavior()).toBe('none');
-    });
+    // 守卫：非 orbit 下设置非 none 行为被忽略 → guards.test.ts（setCameraBehavior ignored in non-orbit）已覆盖
 
     it('正常：beatcut 行为开启自动运镜', () => {
         shared.isAutoCameraEnabled.mockReturnValue(true);
@@ -451,22 +429,7 @@ describe('setCameraControl / setCameraBehavior（双轴写入）', () => {
     });
 });
 
-describe('setFov（钳位）', () => {
-    it('正常：范围内直接设置', () => {
-        setFov(1.2);
-        expect(getFov()).toBe(1.2);
-    });
-
-    it('边界：超上限钳位到 3', () => {
-        setFov(5);
-        expect(getFov()).toBe(3);
-    });
-
-    it('边界：低于下限钳位到 0.1', () => {
-        setFov(0.01);
-        expect(getFov()).toBe(0.1);
-    });
-});
+// setFov 钳位已由 presets.test.ts（FOV describe：clamp min/max/negative/boundary/roundtrip）覆盖，此处不重复
 
 describe('initCameraSystem（初始化）', () => {
     it('正常：创建 orbit 相机并注入回调', () => {
@@ -682,21 +645,7 @@ describe('setCameraState（序列化恢复）', () => {
         expect(getCameraPreset().surround).toBeDefined();
     });
 
-    it('正常：仅 control 时逐字段兜底', () => {
-        setCameraState({
-            mode: 'orbit',
-            control: 'freefly',
-            preset: defaultCameraPreset(),
-            alpha: 0,
-            beta: 0,
-            radius: 16,
-            targetX: 0,
-            targetY: 8,
-            targetZ: 0,
-        });
-        expect(getCameraControl()).toBe('freefly');
-        expect(getCameraBehavior()).toBe('none');
-    });
+    // 仅 control 时逐字段兜底 → guards.test.ts（partial control→behavior fallback）已覆盖
 
     it('正常：beatcut 行为开启自动运镜', () => {
         shared.isAutoCameraEnabled.mockReturnValue(true);
@@ -717,20 +666,7 @@ describe('setCameraState（序列化恢复）', () => {
         expect(shared.restoreAutoCameraState).toHaveBeenCalled();
     });
 
-    it('正常：纯旧格式 + autoCameraEnabled 叠加 beatcut', () => {
-        shared.uiState.autoCameraEnabled = true;
-        setCameraState({
-            mode: 'orbit',
-            preset: defaultCameraPreset(),
-            alpha: 0,
-            beta: 0,
-            radius: 16,
-            targetX: 0,
-            targetY: 8,
-            targetZ: 0,
-        });
-        expect(shared.uiState.autoCameraEnabled).toBe(true);
-    });
+    // 纯旧格式 + autoCameraEnabled 叠加 beatcut → serialization.test.ts（old autoCameraEnabled→beatcut）已覆盖
 
     it('正常：ArcRotateCamera 恢复视角并反算 targetHeight', () => {
         const arc = new shared.ArcRotateCamera();

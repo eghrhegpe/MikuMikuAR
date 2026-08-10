@@ -61,7 +61,6 @@ export class MockScene {
     _viewMatrix: any = null;
     _projectionMatrix: any = null;
     _shadowsGenerator: any = {};
-    renderEnabled = true;
     autoClear = true;
     _activeMeshes = { _length: 0 };
     _activeMeshesFrozen = false;
@@ -82,9 +81,6 @@ export class MockScene {
     }
     getEngine() {
         return this._engine;
-    }
-    getScene() {
-        return this;
     }
     getClassName() {
         return 'Scene';
