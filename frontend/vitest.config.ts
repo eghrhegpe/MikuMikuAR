@@ -86,19 +86,16 @@ export default defineConfig({
         testTimeout: 10000,
         hookTimeout: 15000,
         forceExit: true,
-        // 并发上限：24 核机器上实测 12 路最优（32.6s），16/20 因每 worker 重复
-        // 编译 babylon-mmd 等重模块，边际收益转负。瓶颈是环境搭建+模块导入而非
-        // CPU 核数，故固定 12 而不吃满全核。isolate 保持默认 true（关掉会暴露
-        // 测试间状态污染，见 ADR/技术债），待清理污染后再评估 isolate=false。
-        // [2026-08] 308 文件/4994 用例规模复核：8/12/16 worker 墙钟全在 55-58s
-        // 噪声带内（55.42/55.95/56.21s），pool=threads 仅 54.34s（~3%，且 Babylon/
-        // WASM 场景在线程池下不如进程稳，ADR-219 已否决）。每文件固定成本
-        // （环境重建 + 重模块导入）是绝对瓶颈，worker 数/池类型均非杠杆——
-        // 唯一有效杠杆是「降低每文件成本」：environment 分流（ADR-255，55.95→~40s）；
-        // 重文件 import ~1.8s（预构建 core 单文件执行 ~470ms 是下限）暂不可再压。
-        // 改此配置前先重读 ADR-219/ADR-255。
-        maxWorkers: 12,
-        minWorkers: 12,
+        // [2026-08-11] maxWorkers 12→8（ADR-257）：并发实测双 AI 各 12 worker
+        // （24 核拉满）69.4s > 各 8 worker 64.3s——核占满后 CPU 竞争使墙钟反超；
+        // 单 AI 8 核仅慢 3.7s（43.7 vs 40.0s）。共享机器场景 8 核是资源甜点，
+        // 留 8 核余量给另一 AI/IDE/构建。4 核不可取（56.2s）。CI（2 核 runner）
+        // 不受影响（worker 数由机器核数钳制）。ADR-219 的 isolate/预构建决策保留。
+        // 历史参考：12 路在 308 文件/4994 用例时代单 AI 独占最优（55.95s→40s，
+        // ADR-255/256 合并后），但未考虑共享机器；16/20 因每 worker 重复编译
+        // babylon 边际收益转负（ADR-219 原文）。
+        maxWorkers: 8,
+        minWorkers: 8,
         exclude: [
             "e2e/**",
             "node_modules/**",

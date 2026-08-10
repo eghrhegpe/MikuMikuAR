@@ -1,6 +1,6 @@
 # ADR-219: 测试并发调优与 isolate 污染治理 — vitest 全量提速：maxWorkers 落地 + isolate=false 障碍清理
 
-> **状态**: 已完成（2026-08-01 决策 C 收口。Phase 1 maxWorkers 落地省 13%；Phase 2 idb 全局化落地，isolate=true 4135 全绿零回退；有界诊断判定「收集期蒸发」与「执行期污染」两债同土壤、不同修法，isolate=false 存在结构性风险 → 降级为非目标不采纳；剩余执行期污染债入测试卫生清单）
+> **状态**: 已完成（2026-08-01 决策 C 收口。Phase 1 maxWorkers 落地省 13%；Phase 2 idb 全局化落地，isolate=true 4135 全绿零回退；有界诊断判定「收集期蒸发」与「执行期污染」两债同土壤、不同修法，isolate=false 存在结构性风险 → 降级为非目标不采纳；剩余执行期污染债入测试卫生清单） ⚠️ 被 [ADR-257](adr-257-maxworkers-8.md) 取代（new-adr.mjs 自动标注）
 > **日期**: 2026-07-31
 
 ## 背景

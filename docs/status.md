@@ -15,6 +15,7 @@
 
 | ADR | 主题 | 状态 |
 |-----|------|------|
+| ADR-257 | maxWorkers 12→8：共享机器并发场景的资源经济学 — 并发实测：双 vitest 各 12 worker（24 核拉满）69.4s，各 8 worker 64.3s——24 核全占后 CPU 竞争使墙钟反超；单 AI 8 核仅慢 3.7s（9%） | ✅ 已采纳（2026-08-10） |
 | ADR-256 | 性能导向的单测文件组织：同系列合并取代一刀切拆分 — isolate 下每文件独立依赖图是墙钟税；importDurations 实测 self ~100ms 却付 ~5s total 的文件优先合并；行数/vi.mock 阈值让位于依赖图成本 | ✅ 已采纳（2026-08-10） |
 | ADR-255 | 测试环境分流：@vitest-environment node 削减每文件 happy-dom 成本 — isolate=true 下 happy-dom 每文件重建是墙钟大头；无 DOM 依赖测试文件切 node 环境，环境累加 255s → ~90-105s | ✅ 已采纳（2026-08-10） |
 | ADR-254 | 历轮审核 P4 遗留项登记簿 —— 低风险改进清单与技术债跟踪 | ✅ 已立（2026-08-07 立项；来源：历轮子代理审核 + code_review 中判定为 P4/可选改进、不阻塞的遗留项汇总）。本 ADR 固化「记录不修」项的完整清单与未来触发条件，避免逐轮口头记录丢失 |
@@ -52,7 +53,7 @@
 | ADR-222 | 水面深度差雾（Depth-Difference Fog）—— 从相机距离雾迁移至水柱厚度雾 | 规划（2026-08-01） |
 | ADR-221 | 逐材质透明度（alphaMul）—— 材质编辑器第 11 参数 | 已完成（2026-08-01） |
 | ADR-220 | Schema 完整性元测试 —— 不开浏览器，秒级捕获 schema 漂移 | 实施中（P0 精化完成：16 面板 1427 断言全绿 + 多语言包校验 + motionModule 动态校验 + folder 真空节点修复；P1 原型建成：16 面板 158 用例自动生成，分域导航已实现，settings 二级导航修复，mock 工厂扩展）（2026-07-31） |
-| ADR-219 | 测试并发调优与 isolate 污染治理 — vitest 全量提速：maxWorkers 落地 + isolate=false 障碍清理 | 已完成（2026-08-01 决策 C 收口。Phase 1 maxWorkers 落地省 13%；Phase 2 idb 全局化落地，isolate=true 4135 全绿零回退；有界诊断判定「收集期蒸发」与「执行期污染」两债同土壤、不同修法，isolate=false 存在结构性风险 → 降级为非目标不采纳；剩余执行期污染债入测试卫生清单）（2026-07-31） |
+| ADR-219 | 测试并发调优与 isolate 污染治理 — vitest 全量提速：maxWorkers 落地 + isolate=false 障碍清理 | 已完成（2026-08-01 决策 C 收口。Phase 1 maxWorkers 落地省 13%；Phase 2 idb 全局化落地，isolate=true 4135 全绿零回退；有界诊断判定「收集期蒸发」与「执行期污染」两债同土壤、不同修法，isolate=false 存在结构性风险 → 降级为非目标不采纳；剩余执行期污染债入测试卫生清单） ⚠️ 被 [ADR-257](adr/adr-257-maxworkers-8.md) 取代（new-adr.mjs 自动标注）（2026-07-31） |
 | ADR-218 | 知识库（docs/knowledge）分层治理 — 痛点与方案 | 已实施（工具治理线闭环：P1~P5 全部落地，2026-08-01）；剩余缺口在内容层 use_when 空桩 / routes 36% 覆盖（独立后续项，非本 ADR 范围）（2026-07-31） |
 | ADR-217 | 地水无限尺寸单源化 — 水面跟进 groundInfiniteEnabled | ✅ 已实施（2026-07-30） |
 | ADR-216 | 移除死状态字段 underwaterFogDensity / underwaterFogMultiplier | ✅ 已实施（2026-07-30） |
