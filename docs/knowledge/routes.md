@@ -16,7 +16,8 @@
 | 自然语言控场、NL 意图解析、LLM 动作解析、意图分发、intent dispatcher | [NL 意图解析 — LLM 文本 → 动作执行](./ai-intent-dispatcher.md) | [统一动作注册表 — 菜单/NL/快捷键共享真相源](./action-registry.md)、[环境弹窗（编排 + barrel）](./env-menu.md)、[资源库操作](./library-actions.md) |
 | 场景快照、诊断上下文、FPS / 模型数 | [场景运行时快照（AI 上下文）](./ai-scene-snapshot.md) | [AI 配置持久化（IndexedDB）](./ai-config-store.md)、[错误环形缓冲与全局捕获](./ai-error-buffer.md)、[内置 AI 诊断助手 — 双适配器服务层](./ai-service.md) |
 | AI 诊断助手、resolveAi、浏览器/Go 适配器、streamChat / testConnection | [内置 AI 诊断助手 — 双适配器服务层](./ai-service.md) | [应用启动引导](./init.md)、[AI 配置持久化（IndexedDB）](./ai-config-store.md)、[错误环形缓冲与全局捕获](./ai-error-buffer.md) |
-| 安卓 文件访问 SAF Storage Access Framework shared 模式 /sdcard 目录选择、网页 FSA 重选目录 授权引导 getFsaAuthState、SelectDir 在安卓弹 SAF 建树 ACTION_OPEN_DOCUMENT_TREE | [安卓文件访问（shared 模式）](./android-file-access.md) | [资源库初始化](./library-setup.md)、[风力物理注入（WASM Bullet）](./wind-physics.md) |
+| 安卓 文件访问 SAF Storage Access Framework shared 模式 /sdcard 目录选择、网页 FSA 重选目录 授权引导 getFsaAuthState、SelectDir 在安卓弹 SAF 建树 ACTION_OPEN_DOCUMENT_TREE | [安卓文件访问（shared 模式）](./android-file-access.md) | [安卓网页版文件管理诊断](./android-web-file-management.md)、[资源库初始化](./library-setup.md)、[风力物理注入（WASM Bullet）](./wind-physics.md) |
+| 安卓网页版文件管理在 FSA 与 shared 模式之间行为漂移、安卓端目录选择 / 授权 / 句柄持久化异常、排查 `window.wails` 冷启动竞态导致的后端选型错误 | [安卓网页版文件管理诊断](./android-web-file-management.md) | [安卓文件访问（shared 模式）](./android-file-access.md)、[应用启动引导](./init.md)、[资源库初始化](./library-setup.md) |
 | 外部动画、Mixamo、VRM、GLB、FBX、动作重定向、骨骼映射、人形动画导入 | [外部动作重定向桥](./animation-retargeter.md) | [场景序列化与自动保存](./scene-serialize.md) |
 | AR 摄像头、视频透传、前后摄切换 | [AR 摄像头视频透传](./ar-camera.md) | [AR 模式场景级协调](./ar-scene.md) |
 | AR 模式协调、接触阴影、AR 截图 | [AR 模式场景级协调](./ar-scene.md) | [AR 摄像头视频透传](./ar-camera.md) |
@@ -25,7 +26,7 @@
 | 骨骼覆盖、bone override、骨骼编辑、动作覆盖、欧拉角覆盖、混合权重、IK 保护、帧钩子注册、帧内时序（ADR-186） | [骨骼覆盖核心 API](./bone-override.md) | [场景序列化与自动保存](./scene-serialize.md)、[动作模块基类](./motion-module-base.md)、[模型注册表与生命周期管理](./model-manager.md) |
 | 相机状态、相机位置保存、scene/canvas 引用共享、freefly 输入状态 | [相机状态管理 + 运行时上下文](./camera-state.md) | [相机模式管理系统（MmdCamera）](./camera.md)、[环境状态写入入口（setEnvState + 中间件链）](./env-bridge.md)、[环境重力控制](./env-gravity.md) |
 | 相机模式、轨道相机、自由飞行、相机控制、视角切换、ArcRotate、Freefly | [相机模式管理系统（MmdCamera）](./camera.md) | [相机状态管理 + 运行时上下文](./camera-state.md)、[环境状态写入入口（setEnvState + 中间件链）](./env-bridge.md)、[环境重力控制](./env-gravity.md) |
-| 后端适配、浏览器后端、Go 后端、IndexedDB、存储适配、后端测试、测试桩、mock | [后端适配层](./core-backend.md) | [内置 AI 诊断助手 — 双适配器服务层](./ai-service.md)、[环境状态防抖持久化](./env-persist.md)、[时间流转与太阳角系统](./env-time-of-day.md) |
+| 后端适配、浏览器后端、Go 后端、IndexedDB、存储适配、后端测试、测试桩、mock | [后端适配层](./core-backend.md) | [内置 AI 诊断助手 — 双适配器服务层](./ai-service.md)、[安卓网页版文件管理诊断](./android-web-file-management.md)、[环境状态防抖持久化](./env-persist.md) |
 | DOM 契约、role 属性、aria 属性、选择器、e2e 断言、collapsible class | [渲染层 DOM 契约单源](./dom-contract.md) | — |
 | setEnvState、环境状态写入、中间件注册、预设动画状态 | [环境状态写入入口（setEnvState + 中间件链）](./env-bridge.md) | [相机状态管理 + 运行时上下文](./camera-state.md)、[相机模式管理系统（MmdCamera）](./camera.md)、[环境变更分发回调（破循环依赖）](./env-dispatcher.md) |
 | 碰撞开关、身体碰撞、地面碰撞、WASM 物理碰撞 | [环境碰撞控制](./env-collision.md) | [环境重力控制](./env-gravity.md) |
@@ -36,7 +37,7 @@
 | 环境实现、observer、fog、barrel 重导出 | [环境系统实现核心（barrel + observer + fog）](./env-impl.md) | [环境状态写入入口（setEnvState + 中间件链）](./env-bridge.md)、[环境变更分发回调（破循环依赖）](./env-dispatcher.md)、[环境状态防抖持久化](./env-persist.md) |
 | 环境灯光、灯光包装、灯光与场景集成、时间预设、灯光派生 | [环境灯光包装](./env-lighting.md) | [EnvState 单一源 Schema](./env-state-schema.md)、[场景光照与阴影（barrel）](./lighting.md) |
 | 环境弹窗、环境菜单、环境设置入口、env 菜单 | [环境弹窗（编排 + barrel）](./env-menu.md) | [场景弹窗（编排 + 路由）](./scene-menu.md)、[统一动作注册表 — 菜单/NL/快捷键共享真相源](./action-registry.md)、[NL 意图解析 — LLM 文本 → 动作执行](./ai-intent-dispatcher.md) |
-| 环境持久化、防抖保存、envState 持久化 | [环境状态防抖持久化](./env-persist.md) | [时间流转与太阳角系统](./env-time-of-day.md)、[内置 AI 诊断助手 — 双适配器服务层](./ai-service.md)、[相机状态管理 + 运行时上下文](./camera-state.md) |
+| 环境持久化、防抖保存、envState 持久化 | [环境状态防抖持久化](./env-persist.md) | [时间流转与太阳角系统](./env-time-of-day.md)、[内置 AI 诊断助手 — 双适配器服务层](./ai-service.md)、[安卓网页版文件管理诊断](./android-web-file-management.md) |
 | EnvState 默认值 | [EnvState 默认值派生](./env-state-defaults.md) | — |
 | EnvState、环境状态 schema、getEnvKeys、dispatch group | [EnvState 单一源 Schema](./env-state-schema.md) | [环境灯光包装](./env-lighting.md)、[场景光照与阴影（barrel）](./lighting.md)、[全局状态与场景运行时 Store](./state.md) |
 | 时间流转、太阳角、预设动画、环境预设 | [时间流转与太阳角系统](./env-time-of-day.md) | [环境状态防抖持久化](./env-persist.md)、[设置共享工具](./settings-shared.md)、[内置 AI 诊断助手 — 双适配器服务层](./ai-service.md) |
@@ -59,12 +60,12 @@
 | Go 场景保存加载 SaveSceneFile LoadSceneFile SaveLastScene、场景打包 BundleScene 场景 bundle、自动存档 SaveLastScene 韧性 | [Go 场景序列化与打包](./go-scene.md) | — |
 | Go 更新检查 CheckForUpdate GitHub Release、安装器 DownloadAndRunInstaller APK DownloadApk、版本比较 compareVersion isNewer | [Go 更新检查与安装](./go-update.md) | [事件处理与导航系统](./events.md)、[应用启动引导](./init.md) |
 | Go 下载目录监听 fsnotify 下载自动导入、本地文件导入 ImportLocalFile、watch:newfile 事件、去抖 800ms watchPending | [Go 下载目录监听与导入](./go-watch.md) | — |
-| Go ZIP 解压 ExtractZip ImportZip 缓存、解压缓存清理 CleanOrphanCache ClearAllCaches GetCacheStats、Shift-JIS GBK 文件名解码 bestDecode decodeZipName、文件 HTTP 服务 StartFileServer StopFileServer、COOP COEP 中间件 | [Go ZIP 解压与缓存管理](./go-zipextract.md) | [统一文件服务层](./fileservice.md)、[应用启动引导](./init.md)、[运行模式检测](./runtime-mode.md) |
+| Go ZIP 解压 ExtractZip ImportZip 缓存、解压缓存清理 CleanOrphanCache ClearAllCaches GetCacheStats、Shift-JIS GBK 文件名解码 bestDecode decodeZipName、文件 HTTP 服务 StartFileServer StopFileServer、COOP COEP 中间件 | [Go ZIP 解压与缓存管理](./go-zipextract.md) | [安卓网页版文件管理诊断](./android-web-file-management.md)、[统一文件服务层](./fileservice.md)、[应用启动引导](./init.md) |
 | GPU 能力、压缩纹理、KTX2、ASTC、BC7、ADR-189 | [GPU 压缩纹理能力探测](./gpu-capabilities.md) | [Go 模型库扫描](./go-library.md)、[PMX 模型加载与缩略图捕获](./model-loader.md)、[场景渲染管线与后处理](./renderer.md) |
-| 启动引导、初始化、bootstrap | [应用启动引导](./init.md) | [内置 AI 诊断助手 — 双适配器服务层](./ai-service.md)、[事件处理与导航系统](./events.md)、[运行模式检测](./runtime-mode.md) |
+| 启动引导、初始化、bootstrap | [应用启动引导](./init.md) | [安卓网页版文件管理诊断](./android-web-file-management.md)、[内置 AI 诊断助手 — 双适配器服务层](./ai-service.md)、[事件处理与导航系统](./events.md) |
 | 资源库操作、导入模型、替换模型、替换动作、标签浏览、模型行点击 | [资源库操作](./library-actions.md) | [资源库核心](./library-core.md)、[统一动作注册表 — 菜单/NL/快捷键共享真相源](./action-registry.md)、[NL 意图解析 — LLM 文本 → 动作执行](./ai-intent-dispatcher.md) |
 | 资源库核心、资源浏览层级、网格视图、缩略图流式加载、资源管理核心 | [资源库核心](./library-core.md) | [资源库操作](./library-actions.md)、[环境状态防抖持久化](./env-persist.md)、[时间流转与太阳角系统](./env-time-of-day.md) |
-| 资源库初始化、资源库设置、资源库启动 | [资源库初始化](./library-setup.md) | [安卓文件访问（shared 模式）](./android-file-access.md) |
+| 资源库初始化、资源库设置、资源库启动 | [资源库初始化](./library-setup.md) | [安卓文件访问（shared 模式）](./android-file-access.md)、[安卓网页版文件管理诊断](./android-web-file-management.md) |
 | 模型库、资源库、模型浏览、加载模型、library | [资源库入口与编排](./library.md) | [统一资源加载队列](./load-manager.md) |
 | 个人灯光、灯光跟随、跟随聚光灯 | [个人灯光跟随](./lighting-follow.md) | [灯光预设系统](./lighting-presets.md)、[场景光照与阴影（barrel）](./lighting.md)、[模型生命周期操作](./model-ops.md) |
 | 灯光预设、预设灯光、灯光配置 | [灯光预设系统](./lighting-presets.md) | [个人灯光跟随](./lighting-follow.md)、[场景光照与阴影（barrel）](./lighting.md)、[模型生命周期操作](./model-ops.md) |
@@ -105,8 +106,8 @@
 | 菜单渲染、schema 渲染、控件渲染、数据绑定 | [菜单渲染引擎](./render-menu.md) | [声明式菜单 Schema](./menu-schema.md) |
 | 渲染管线、后处理、tone mapping、SSR / SSAO | [场景渲染管线与后处理](./renderer.md) | [Go 模型库扫描](./go-library.md)、[GPU 压缩纹理能力探测](./gpu-capabilities.md)、[PMX 模型加载与缩略图捕获](./model-loader.md) |
 | 资源加载失败、纹理缺失、警告汇总、toast 提示 | [资源加载失败统一汇总](./resource-warning-sink.md) | — |
-| runtime bridge、Wails events、跨平台事件、runtime-bridge | [Runtime 隔离桥（Wails Events/Browser）](./runtime-bridge.md) | [应用启动引导](./init.md) |
-| 运行模式、桌面模式、浏览器模式、环境检测 | [运行模式检测](./runtime-mode.md) | [应用启动引导](./init.md)、[内置 AI 诊断助手 — 双适配器服务层](./ai-service.md)、[后端适配层](./core-backend.md) |
+| runtime bridge、Wails events、跨平台事件、runtime-bridge | [Runtime 隔离桥（Wails Events/Browser）](./runtime-bridge.md) | [安卓网页版文件管理诊断](./android-web-file-management.md)、[应用启动引导](./init.md) |
+| 运行模式、桌面模式、浏览器模式、环境检测 | [运行模式检测](./runtime-mode.md) | [安卓网页版文件管理诊断](./android-web-file-management.md)、[应用启动引导](./init.md)、[内置 AI 诊断助手 — 双适配器服务层](./ai-service.md) |
 | 场景弹窗、场景菜单、场景设置入口、场景路由 | [场景弹窗（编排 + 路由）](./scene-menu.md) | [环境弹窗（编排 + barrel）](./env-menu.md)、[统一动作注册表 — 菜单/NL/快捷键共享真相源](./action-registry.md)、[NL 意图解析 — LLM 文本 → 动作执行](./ai-intent-dispatcher.md) |
 | 场景序列化、场景保存、场景恢复、撤销/重做 | [场景序列化与自动保存](./scene-serialize.md) | [模型生命周期操作](./model-ops.md)、[场景核心编排器（纯组装器）](./scene.md)、[骨骼覆盖核心 API](./bone-override.md) |
 | 场景初始化、场景编排、场景生命周期 | [场景核心编排器（纯组装器）](./scene.md) | [场景序列化与自动保存](./scene-serialize.md)、[应用启动引导](./init.md)、[模型生命周期操作](./model-ops.md) |
@@ -123,8 +124,8 @@
 | 虚拟裙骨、物理裙摆、Bullet 弹簧链、skirt analyzer | [虚拟裙骨物理控制器（ADR-084 Phase 2-3）](./virtual-skirt.md) | [骨骼覆盖存储（多模块仲裁）](./bone-override-store.md)、[物理骨骼桥与每帧注册表](./physics-bridge.md) |
 | 多层动作、动作叠加、VMD 混合、composite animation、动作图层、动作优先级 | [多 VMD 叠加系统](./vmd-layers.md) | [程序化动作系统](./proc-motion-bridge.md)、[VMD 动作加载器](./vmd-loader.md) |
 | VMD 加载、动作文件导入、伴音自动加载、动作时长、文件格式校验、动作播放开始 | [VMD 动作加载器](./vmd-loader.md) | [环境状态防抖持久化](./env-persist.md)、[时间流转与太阳角系统](./env-time-of-day.md)、[统一文件服务层](./fileservice.md) |
-| 后端绑定、后端代理、resolveBackend、Wails bindings | [后端绑定聚合层（backend 代理化）](./wails-bindings.md) | [内置 AI 诊断助手 — 双适配器服务层](./ai-service.md)、[后端适配层](./core-backend.md)、[环境状态防抖持久化](./env-persist.md) |
-| 风力物理、风力注入、头发/裙子物理 | [风力物理注入（WASM Bullet）](./wind-physics.md) | [安卓文件访问（shared 模式）](./android-file-access.md)、[场景光照与阴影（barrel）](./lighting.md)、[babylon-mmd 适配边界](./mmd-adapter.md) |
+| 后端绑定、后端代理、resolveBackend、Wails bindings | [后端绑定聚合层（backend 代理化）](./wails-bindings.md) | [内置 AI 诊断助手 — 双适配器服务层](./ai-service.md)、[安卓网页版文件管理诊断](./android-web-file-management.md)、[后端适配层](./core-backend.md) |
+| 风力物理、风力注入、头发/裙子物理 | [风力物理注入（WASM Bullet）](./wind-physics.md) | [安卓文件访问（shared 模式）](./android-file-access.md)、[安卓网页版文件管理诊断](./android-web-file-management.md)、[场景光照与阴影（barrel）](./lighting.md) |
 
 ## 标准执行模板
 

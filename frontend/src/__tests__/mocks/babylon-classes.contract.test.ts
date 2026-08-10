@@ -86,6 +86,31 @@ type AssertPublicSubset<Mock, Real> = Exclude<PublicKeys<Mock>, PublicKeys<Real>
     ? true
     : never;
 
+/** 只取「双方都是函数」的公开成员名（签名级断言的目标） */
+type FuncKeys<Mock, Real> = {
+    [K in PublicKeys<Mock> & PublicKeys<Real>]: Mock[K] extends (...a: any[]) => any
+        ? Real[K] extends (...a: any[]) => any
+            ? K
+            : never
+        : never;
+}[PublicKeys<Mock> & PublicKeys<Real>];
+
+/** 签名级断言：mock 方法参数必须能接受真实类型同名方法的参数（参数逆变）。
+ *  注意只查参数，不查返回类型——精简 mock 的返回类型（自身类/宽松值）天然
+ *  不是真实类型的子类型，全签名 extends 检查必然误报。参数方向才有约束力：
+ *  真实调用方传入的参数，mock 方法必须收得下。
+ *  每个键内联双重函数性检查，避免 Parameters<Real[K]> 在 mapped type 中失窄。 */
+type AssertSignatures<Mock, Real> = {
+    [K in PublicKeys<Mock> & PublicKeys<Real>]:
+        Mock[K] extends (...a: any[]) => any
+            ? Real[K] extends (...a: any[]) => any
+                ? Parameters<Real[K]> extends Parameters<Mock[K]>
+                    ? true
+                    : never
+                : never
+            : never;
+}[PublicKeys<Mock> & PublicKeys<Real>];
+
 /** 在变量声明处校验：断言失败时类型为 never，赋 true 即编译报错 */
 type Assert<T extends true> = T;
 
@@ -103,6 +128,22 @@ const _vector2Shape: Assert<AssertPublicSubset<MockVector2, RealVector2>> = true
 const _vector3Shape: Assert<AssertPublicSubset<MockVector3, RealVector3>> = true;
 const _quatShape: Assert<AssertPublicSubset<MockQuaternion, RealQuaternion>> = true;
 const _matrixShape: Assert<AssertPublicSubset<MockMatrix, RealMatrix>> = true;
+
+// ===== 签名级断言（数学类 + 引擎/场景等核心类） =====
+const _vector3Sig: Assert<AssertSignatures<MockVector3, RealVector3>> = true;
+const _color3Sig: Assert<AssertSignatures<MockColor3, RealColor3>> = true;
+const _matrixSig: Assert<AssertSignatures<MockMatrix, RealMatrix>> = true;
+const _vector2Sig: Assert<AssertSignatures<MockVector2, RealVector2>> = true;
+const _color4Sig: Assert<AssertSignatures<MockColor4, RealColor4>> = true;
+const _quatSig: Assert<AssertSignatures<MockQuaternion, RealQuaternion>> = true;
+const _engineSig: Assert<AssertSignatures<MockEngine, RealEngine>> = true;
+const _sceneSig: Assert<AssertSignatures<MockScene, RealScene>> = true;
+const _nodeSig: Assert<AssertSignatures<MockNode, RealNode>> = true;
+const _lightSig: Assert<AssertSignatures<MockLight, RealLight>> = true;
+const _cameraSig: Assert<AssertSignatures<MockCamera, RealCamera>> = true;
+const _arcSig: Assert<AssertSignatures<MockArcRotateCamera, RealArcRotateCamera>> = true;
+const _materialSig: Assert<AssertSignatures<MockMaterial, RealMaterial>> = true;
+const _baseTexSig: Assert<AssertSignatures<MockBaseTexture, RealBaseTexture>> = true;
 const _materialShape: Assert<AssertPublicSubset<MockMaterial, RealMaterial>> = true;
 // MockStandardMaterial 的 toonTexture/sphereTexture 是 babylon-mmd 的 MmdStandardMaterial
 // 扩展字段（types.ts 声明），真实 Babylon StandardMaterial 无此成员——Omit 豁免。

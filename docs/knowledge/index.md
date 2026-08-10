@@ -2,7 +2,7 @@
 
 # 知识卡索引
 
-> 原子化架构知识层，共 **267** 张卡：记录「某个子系统**现在**长啥样、去哪找」。与 ADR（为什么这么决定）互补——知识卡引用而不复制 ADR 结论。
+> 原子化架构知识层，共 **268** 张卡：记录「某个子系统**现在**长啥样、去哪找」。与 ADR（为什么这么决定）互补——知识卡引用而不复制 ADR 结论。
 
 > 卡片格式规范、立卡判据、`source_files` 铁律见 [知识卡层导读](./README.md)；AI 检索入口见 [路由表](./routes.md)；菜单全景见 [menu-map](./menu-map.md)（机器生成）。
 
@@ -16,7 +16,7 @@
 | [rendering](#rendering) | 18 | 渲染系统 |
 | [motion](#motion) | 34 | 动作系统 |
 | [ui](#ui) | 58 | UI / 菜单 |
-| [core](#core) | 76 | 核心基础设施 |
+| [core](#core) | 77 | 核心基础设施 |
 | [backend](#backend) | 18 | 后端 |
 
 ## env
@@ -159,6 +159,7 @@
 | [场景运行时快照（AI 上下文）](./ai-scene-snapshot.md) | - ADR-196 |
 | [内置 AI 诊断助手 — 双适配器服务层](./ai-service.md) | - ADR-196 |
 | [安卓文件访问（shared 模式）](./android-file-access.md) | - ADR-017 |
+| [安卓网页版文件管理诊断](./android-web-file-management.md) | - ADR-017 |
 | [音频总线](./audio-bus.md) | - ADR-088 |
 | [后端适配层](./core-backend.md) | - ADR-176 |
 | [EnvState 默认值派生](./env-state-defaults.md) | - ADR-243 |
@@ -213,7 +214,7 @@
 | ADR | 主题 | 关联卡片 |
 |-----|------|----------|
 | [ADR-003](../adr/adr-003-download-strategy.md) | 下载监听策略（精简版） | [应用启动引导](./init.md) |
-| [ADR-017](../adr/adr-017-android-adaptation.md) | Android 平台适配（精简版） | [安卓文件访问（shared 模式）](./android-file-access.md) · [资源库初始化](./library-setup.md) |
+| [ADR-017](../adr/adr-017-android-adaptation.md) | Android 平台适配（精简版） | [安卓文件访问（shared 模式）](./android-file-access.md) · [安卓网页版文件管理诊断](./android-web-file-management.md) · [资源库初始化](./library-setup.md) |
 | [ADR-021](../adr/adr-021-procedural-motion.md) | 程序化动作系统（Idle/Auto Dance + LipSync + 视线追踪） | [口型同步桥](./lipsync-bridge.md) · [程序化动作系统](./proc-motion-bridge.md) |
 | [ADR-026](../adr/adr-026-environment-system-enhancement.md) | 环境系统增强 — 纹理地面、粒子系统、粒子溅射、水下后处理联动 | [粒子系统](./env-particles.md) |
 | [ADR-028](../adr/adr-028-wind-system-unification.md) | 风场系统统一 — 从碎片化到集中治理 | [统一风场辅助函数](./wind-utils.md) |
@@ -246,7 +247,7 @@
 | [ADR-092](../adr/adr-092-unified-texture-reflection.md) | 贴图与反射统一 —— 单一纹理工厂 + 单一平面反射引擎 | [统一贴图工厂](./env-texture.md) · [统一平面反射引擎](./planar-reflection.md) |
 | [ADR-093](../adr/adr-093-menu-declarative-schema.md) | 菜单声明式 Schema —— 单一数据源 + 单渲染器，根治「大」与「AI 难改」 | [AI 助手独立面板入口](./assistant-panel.md) · [声明式菜单 Schema 注册表](./menu-registry.md) · [声明式菜单 Schema 集中注册聚合器](./menu-schema-register.md) · [声明式菜单 Schema](./menu-schema.md) · [菜单渲染引擎](./render-menu.md) · [外观设置](./settings-appearance.md) · [AI 诊断助手面板（协调入口）](./settings-diagnostic.md) |
 | [ADR-096](../adr/adr-096-general-helper-consolidation.md) | 通用 Helper 单点收敛 | [VMD 动作加载器](./vmd-loader.md) |
-| [ADR-099](../adr/adr-099-mpr-coop-coep-poc.md) | babylon-mmd 未利用 API 接入 · Item 4 MPR 多线程 WASM 物理（Go 端 COOP/COEP 注入 POC） | [Go ZIP 解压与缓存管理](./go-zipextract.md) · [应用启动引导](./init.md) · [运行模式检测](./runtime-mode.md) · [场景核心编排器（纯组装器）](./scene.md) |
+| [ADR-099](../adr/adr-099-mpr-coop-coep-poc.md) | babylon-mmd 未利用 API 接入 · Item 4 MPR 多线程 WASM 物理（Go 端 COOP/COEP 注入 POC） | [安卓网页版文件管理诊断](./android-web-file-management.md) · [Go ZIP 解压与缓存管理](./go-zipextract.md) · [应用启动引导](./init.md) · [运行模式检测](./runtime-mode.md) · [场景核心编排器（纯组装器）](./scene.md) |
 | [ADR-100](../adr/adr-100-camera-control-behavior-dual-axis.md) | 相机系统「控制方案 × 运动行为」双轴拆分 | [节拍驱动自动运镜（beatcut）](./camera-auto.md) · [相机状态管理 + 运行时上下文](./camera-state.md) · [相机模式管理系统（MmdCamera）](./camera.md) |
 | [ADR-102](../adr/adr-102-main-ts-split.md) | main.ts 拆分（init / events / render-loop / dev-hooks） | [开发环境 E2E 钩子](./dev-hooks.md) · [事件处理与导航系统](./events.md) · [应用启动引导](./init.md) · [渲染循环与 FPS 时钟](./render-loop.md) · [应用快捷键定义](./shortcut-app.md) |
 | [ADR-104](../adr/adr-104-physics-outfit-design-debt-deferral.md) | 物理/换装/音频子系统设计债暂缓登记 | [风力物理注入（WASM Bullet）](./wind-physics.md) |
@@ -302,19 +303,20 @@
 | [ADR-172](../adr/adr-172-wet-body-effect.md) | 湿身效果：雨天角色材质湿润感 | [湿身效果系统](./env-wetness.md) |
 | [ADR-173](../adr/adr-173-env-bridge-middleware.md) | env-bridge setEnvState 中间件化重构 | [时间流转与太阳角系统](./env-time-of-day.md) · [基础行控件构建器](./ui-rows.md) |
 | [ADR-174](../adr/adr-174-quality-dimension-registry.md) | 质量维度注册表 — 统一 qualityProfile 扩展点 | [统一质量档位解析器](./quality-profile.md) |
-| [ADR-176](../adr/adr-176-frontend-backend-adapter.md) | 前端 Backend 适配器双实现（Web/Desktop 通杀） | [内置 AI 诊断助手 — 双适配器服务层](./ai-service.md) · [后端适配层](./core-backend.md) · [环境状态防抖持久化](./env-persist.md) · [时间流转与太阳角系统](./env-time-of-day.md) · [应用启动引导](./init.md) · [平台能力探测](./platform.md) · [运行模式检测](./runtime-mode.md) · [后端绑定聚合层（backend 代理化）](./wails-bindings.md) |
-| [ADR-177](../adr/adr-177-web-loader-main-app-unification.md) | Web Loader 与主应用统一路径 | [拖拽导入逻辑层](./drop-import.md) · [应用启动引导](./init.md) · [Runtime 隔离桥（Wails Events/Browser）](./runtime-bridge.md) |
+| [ADR-176](../adr/adr-176-frontend-backend-adapter.md) | 前端 Backend 适配器双实现（Web/Desktop 通杀） | [内置 AI 诊断助手 — 双适配器服务层](./ai-service.md) · [安卓网页版文件管理诊断](./android-web-file-management.md) · [后端适配层](./core-backend.md) · [环境状态防抖持久化](./env-persist.md) · [时间流转与太阳角系统](./env-time-of-day.md) · [应用启动引导](./init.md) · [平台能力探测](./platform.md) · [运行模式检测](./runtime-mode.md) · [后端绑定聚合层（backend 代理化）](./wails-bindings.md) |
+| [ADR-177](../adr/adr-177-web-loader-main-app-unification.md) | Web Loader 与主应用统一路径 | [安卓网页版文件管理诊断](./android-web-file-management.md) · [拖拽导入逻辑层](./drop-import.md) · [应用启动引导](./init.md) · [Runtime 隔离桥（Wails Events/Browser）](./runtime-bridge.md) |
+| [ADR-178](../adr/adr-178-capability-matrix-host-keys.md) | 能力矩阵补全宿主级键（四端统一收口） | [安卓网页版文件管理诊断](./android-web-file-management.md) |
 | [ADR-179](../adr/adr-179-update-install-launch-platform-tiered.md) | 更新安装拉起（按平台分级） | [事件处理与导航系统](./events.md) · [Go 更新检查与安装](./go-update.md) · [应用启动引导](./init.md) |
-| [ADR-180](../adr/adr-180-fsa-handle-persistence.md) | Web 资源库 FSA 句柄持久化与启动自动重扫 | [安卓文件访问（shared 模式）](./android-file-access.md) · [资源库初始化](./library-setup.md) |
+| [ADR-180](../adr/adr-180-fsa-handle-persistence.md) | Web 资源库 FSA 句柄持久化与启动自动重扫 | [安卓文件访问（shared 模式）](./android-file-access.md) · [安卓网页版文件管理诊断](./android-web-file-management.md) · [资源库初始化](./library-setup.md) |
 | [ADR-182](../adr/adr-182-web-zip-keyspace-namespacing.md) | 网页端 ZIP 导入键规约命名空间化（消除同名 PMX 纹理碰撞） | [资源库操作](./library-actions.md) · [PMX 模型加载与缩略图捕获](./model-loader.md) |
-| [ADR-183](../adr/adr-183-fsa-auth-guidance.md) | 网页端 FSA 根目录授权引导（四态探针 + 重授权兜底） | [安卓文件访问（shared 模式）](./android-file-access.md) · [资源库初始化](./library-setup.md) |
+| [ADR-183](../adr/adr-183-fsa-auth-guidance.md) | 网页端 FSA 根目录授权引导（四态探针 + 重授权兜底） | [安卓文件访问（shared 模式）](./android-file-access.md) · [安卓网页版文件管理诊断](./android-web-file-management.md) · [资源库初始化](./library-setup.md) |
 | [ADR-186](../adr/adr-186-bone-override-frame-timing.md) | bone-override 帧内时序图 | [骨骼覆盖核心 API](./bone-override.md) · [动作覆盖 UI 层级（模块化覆盖 + 高级骨骼覆盖）](./motion-override-levels.md) |
 | [ADR-188](../adr/adr-188-pbr-material-builder.md) | PBRMaterialBuilder 材质系统迁移 — PBR 渲染升级 | [分类材质系统](./material.md) |
 | [ADR-189](../adr/adr-189-ktx2-texture-compression.md) | 纹理加载路径优化（并行读取 + basename 共享 + LRU + KTX2 基础设施） | [Go 模型库扫描](./go-library.md) · [GPU 压缩纹理能力探测](./gpu-capabilities.md) · [PMX 模型加载与缩略图捕获](./model-loader.md) · [PMX 声明纹理缺失审计](./pmx-texture-audit.md) · [场景渲染管线与后处理](./renderer.md) · [场景核心编排器（纯组装器）](./scene.md) · [纹理路径 fallback 候选生成](./texture-fallback.md) · [纹理 LRU 缓存](./texture-lru.md) |
 | [ADR-190](../adr/adr-190-capability-declarative-consolidation.md) | 端能力声明式收口（淘汰散落 isAndroidPlatform 分支） | [核心零依赖叶模块](./core-leaf-modules.md) |
 | [ADR-191](../adr/adr-191-god-barrel-debarreling.md) | 神桶 `@/core/utils` 去桶化（零依赖叶下沉） | [核心零依赖叶模块](./core-leaf-modules.md) · [工具函数叶模块群](./core-utils.md) · [菜单 Overlay 与 Wrapper 管理](./menu-overlay.md) · [菜单栈共享指针（stackRegistry）](./menu-stack-registry.md) · [菜单渲染上下文栈（RenderContext）](./render-context.md) · [标题栏小型开关（createHeaderToggle）](./ui-header-toggle.md) · [基础行控件构建器](./ui-rows.md) |
 | [ADR-192](../adr/adr-192-upstream-adapter-layer.md) | 上游适配层重构（MmdAdapter） | [地面碰撞体（WASM Bullet 静态刚体）](./ground-collision.md) · [场景光照与阴影（barrel）](./lighting.md) · [babylon-mmd 适配边界](./mmd-adapter.md) · [VMD 动作加载器](./vmd-loader.md) · [风力物理注入（WASM Bullet）](./wind-physics.md) |
-| [ADR-194](../adr/adr-194-wind-physics-fix.md) | 风物理系统修复 — 从「假风」到真实风场 | [安卓文件访问（shared 模式）](./android-file-access.md) · [风力物理注入（WASM Bullet）](./wind-physics.md) |
+| [ADR-194](../adr/adr-194-wind-physics-fix.md) | 风物理系统修复 — 从「假风」到真实风场 | [安卓文件访问（shared 模式）](./android-file-access.md) · [安卓网页版文件管理诊断](./android-web-file-management.md) · [风力物理注入（WASM Bullet）](./wind-physics.md) |
 | [ADR-195](../adr/adr-195-download-folder-unification.md) | 下载文件夹统一修订（三平台系统下载目录 + 消除"二扫"） | [Go 文件与路径平台抽象](./go-fileaccess.md) · [资源库操作](./library-actions.md) · [资源库核心](./library-core.md) |
 | [ADR-196](../adr/adr-196-llm-diagnostic-assistant.md) | 内置 AI 诊断助手（LLM Diagnostic Assistant） | [AI 配置持久化（IndexedDB）](./ai-config-store.md) · [错误环形缓冲与全局捕获](./ai-error-buffer.md) · [场景运行时快照（AI 上下文）](./ai-scene-snapshot.md) · [内置 AI 诊断助手 — 双适配器服务层](./ai-service.md) · [SSE 流式解析器](./ai-sse.md) · [角色台词生成 — 人设约束 + 情绪解析 + TTS 朗读](./character-bible.md) · [诊断用动作注册](./diagnostic-actions.md) · [诊断助手 → 聊天 UI（子模块）](./diagnostic-chat.md) · [诊断助手 → 配置 UI（子模块）](./diagnostic-config.md) · [诊断助手 → 单例状态（子模块）](./diagnostic-state.md) · [应用启动引导](./init.md) · [轻量 Markdown→DOM 渲染器](./markdown.md) · [场景核心编排器（纯组装器）](./scene.md) · [AI 诊断助手面板（协调入口）](./settings-diagnostic.md) |
 | [ADR-197](../adr/adr-197-unified-action-registry.md) | 统一动作注册表 — 菜单可维护性归一化 | [统一动作注册表 — 菜单/NL/快捷键共享真相源](./action-registry.md) · [NL 意图解析 — LLM 文本 → 动作执行](./ai-intent-dispatcher.md) · [诊断用动作注册](./diagnostic-actions.md) · [诊断助手 → tool call 控制（子模块）](./diagnostic-control.md) |
