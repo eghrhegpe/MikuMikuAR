@@ -209,6 +209,7 @@ function describeSchemaPanel(
         // [ADR-229 §2.2] 交互行为自动化：存在性断言全部通过后，执行每个节点的 action
         // （拖滑块/点开关/选 chip）并经 window.__state 断言 state 值生效。
         // 仅对已渲染节点执行（conditional 缺失时跳过，与存在性断言一致）。
+        let guardSkipped = 0; // [fix:P2] 守卫域跳过计数（fail-visible 汇总）
         for (const node of interactiveNodes) {
             if (!node.action) continue;
             await test.step(`${node.id} action: ${node.action.type}`, async () => {
@@ -221,8 +222,16 @@ function describeSchemaPanel(
                 // inert），count>0 通过但 dispatchEvent 打到 inert 元素无效 → 断言误报。
                 // 派发前加可交互性守卫（元素缺失时 isVisible 亦返回 false）。
                 if (!(await page.getByTestId(node.id).first().isVisible())) return;
-                await executeAction(page, node);
+                const r = await executeAction(page, node);
+                if (r === 'guard-skip') guardSkipped++;
             });
+        }
+        // [fix:P2] fail-visible 汇总：跳过量不再静默——CI 日志可见「多少个 light./render.
+        // 域动作断言因环境未就绪被跳过」，避免「越跳过门禁越绿、守卫域 bug 越黑」。
+        if (guardSkipped > 0) {
+            console.log(
+                `[guard-skip 汇总] ${panel.panelId}: ${guardSkipped} 个 light./render. 域动作断言被跳过（@dom 无灯光/管线）——如需验证请用 @webgl 模式`
+            );
         }
     });
 }
@@ -291,21 +300,25 @@ async function executeAction(page: any, node: any): Promise<void> {
     }
     const sel = controlSelector(node);
 
-    // [fix:P1] 守卫域整域跳过：light./render. 域在 @dom 环境（无灯光/管线）写入被
-    // setLightState/setRenderState 守卫拦截（state 层静默不生效），动作断言必然误报。
+    // [fix:P1] 守卫域跳过（fail-visible）：light./render. 域在 @dom 环境（无灯光/管线）
+    // 写入被 setLightState/setRenderState 守卫拦截（state 层静默不生效），动作断言必然误报。
     // 探测 __state.isLightingReady/isRenderReady，未就绪则跳过该节点动作（DOM 渲染断言
     // 已在上一个循环完成；真实灯光环境 @webgl 下 ready=true 仍会执行完整断言）。
+    // [fix:P2] 跳过必须可见：返回 'guard-skip' 由调用方统计并在测试末尾汇总输出，
+    // 防止「整域静默跳过 → 门禁全绿 → 守卫域 bug 全黑」（此前静默 return 无任何日志）。
     if (bind.startsWith('light.')) {
         const ready = await page.evaluate(
             () => (window as any).__state?.isLightingReady ?? false
         );
         if (!ready) {
-            return;
+            console.log(`[guard-skip] ${node.id} (${bind}): isLightingReady=false，@dom 无灯光，动作断言跳过`);
+            return 'guard-skip';
         }
     } else if (bind.startsWith('render.')) {
         const ready = await page.evaluate(() => (window as any).__state?.isRenderReady ?? false);
         if (!ready) {
-            return;
+            console.log(`[guard-skip] ${node.id} (${bind}): isRenderReady=false，@dom 无渲染管线，动作断言跳过`);
+            return 'guard-skip';
         }
     }
 
