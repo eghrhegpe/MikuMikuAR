@@ -19,6 +19,7 @@
     "check:menumap": "node ../scripts/gen-menu-map.mjs --check",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:file": "vitest run",
     "test:unit": "vitest run --exclude \"**/*.int.test.ts\"",
     "test:int": "vitest run .int.test",
     "test:warm": "vitest run src/__tests__/goerr.test.ts --no-color",

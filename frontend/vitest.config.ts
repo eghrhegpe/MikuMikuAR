@@ -30,6 +30,13 @@ export default defineConfig({
         // 的未知风险（vite.config.ts 构建期排除同因）。ROI 为负 → 不采纳，
         // 保持 vitest 默认（optimizer 关闭）。若未来 CI 缓存 node_modules/.vite
         // 且需要再压时间，可重新评估。
+        // [2026-08] 全量 56s 的墙钟由每 worker 固定成本（环境+模块导入 ~40s）
+        // 主导，与测试数量弱相关：排除全部 14 个 int 文件（累加 36.7s）后
+        // test:unit 仍 53.3s（仅省 2.7s）——删/减测试救不了耗时，勿生此念。
+        // no-isolate 复测（2026-08-10）342 失败，比 ADR-219 判死时的 229 更差
+        // （债随用例增长），结构性提速仅剩「清偿 mock 形状债 → isolate=false」
+        // 一条大工程路。日常反馈用 npm run test:file -- <路径>（秒级），
+        // 全量留给提交前/CI。
         testTimeout: 10000,
         hookTimeout: 15000,
         forceExit: true,
