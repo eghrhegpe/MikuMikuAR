@@ -276,6 +276,16 @@ jobs:
             fi
             sleep 3
           done
+          # [fix:P5] 环境缺失显式红：轮询结束后 CDP 仍未 up（wails3 dev 编译失败/
+          # WebView2 缺失/端口占用）→ 立即 exit 1 并输出明确环境错误，避免 16 个
+          # @webgl 测试逐个 15s setup 超时（~240s）后 gate 才以「failedTests>8」
+          # 红（语义误导为测试失败，实为环境未起）。本步骤 continue-on-error 吞掉
+          # exit 1，但 playwright 未跑 → .last-run.json 缺失 → 下方 gate 必红，
+          # 红因从「16 个超时」变成「CDP 未起」，更快且语义清晰。
+          if ! curl -s http://127.0.0.1:9222/json/version >/dev/null; then
+            echo "::error title=@webgl env::Wails WebView2 CDP 未在 180s 内就绪（环境缺失，非测试失败）——检查 wails3 dev / WebView2 / MMCAR_DEBUG_PORT"
+            exit 1
+          fi
           cd frontend
           # [doc:e2e] @webgl 加 \b：防未来 @webglxxx 标签误抓（同 @web\b 教训）
           npx playwright test --grep "@webgl\b" --reporter=line

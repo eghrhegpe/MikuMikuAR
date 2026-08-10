@@ -244,7 +244,7 @@
 | `rgbToString()` | `core/color-helpers:32` | 将 {r,g,b} 转为 CSS rgb 字符串 "r, g, b"（供 --accent-rgb 等 CSS 变量）。 |
 | `debounce()` | `core/debounce:8` | 函数防抖：在等待指定时间后才执行函数，如果在等待期间再次调用则重置计时器。 |
 | `deepClone()` | `core/deep-clone:9` | 深拷贝对象（基于 JSON 序列化）。 |
-| `setupE2ECapture()` | `core/dev-hooks:20` | — |
+| `setupE2ECapture()` | `core/dev-hooks:24` | — |
 | `DialogOptions()` | `core/dialog:49` | — |
 | `Prompt2Options()` | `core/dialog:294` | — |
 | `disposeOverlay2()` | `core/dialog:370` | 移除 showPrompt2 创建的 overlay2 DOM（供 HMR 清理入口调用）。 |
@@ -259,10 +259,10 @@
 | `ROLE()` | `core/dom-contract:21` | 渲染层 role 常量——产出 role 属性时引用，勿手写字符串（ADR-229 §9） |
 | `SLIDER_BAR_CLASS()` | `core/dom-contract:52` | 滑动条本体 class（slider / colorSlider / modeSlider 共用 .cs-bar） |
 | `TOGGLE_INPUT_SELECTOR()` | `core/dom-contract:10` | toggle 的原生输入元素选择器（e2e 需点击/读 checked，故单列一份） |
-| `Disposable()` | `core/dom:60` | — |
-| `DomRefs()` | `core/dom:57` | — |
-| `addDisposableListener()` | `core/dom:68` | 添加事件监听器并返回 Disposable，便于在 dispose 链路中统一释放。 |
-| `dom()` | `core/dom:6` | — |
+| `Disposable()` | `core/dom:66` | — |
+| `DomRefs()` | `core/dom:63` | — |
+| `addDisposableListener()` | `core/dom:74` | 添加事件监听器并返回 Disposable，便于在 dispose 链路中统一释放。 |
+| `dom()` | `core/dom:12` | — |
 | `handleDropFile()` | `core/drop-import:31` | 处理已落地的路径（桌面绝对路径或浏览器 IndexedDB 键）。 |
 | `handleDroppedFile()` | `core/drop-import:80` | [doc:adr-177] 单个拖入文件落地：桌面走原生 path，浏览器读字节写 IndexedDB。 |
 | `StateReader()` | `core/e2e-state-bridge:7` | — |
@@ -373,10 +373,10 @@
 | `MmarPhase()` | `core/mmar-globals:7` | — |
 | `MmarSceneSnapshot()` | `core/mmar-globals:16` | — |
 | `MmarStatus()` | `core/mmar-globals:9` | — |
-| `refreshSceneSnapshot()` | `core/mmar-globals:96` | 刷新 window.__mmar.scene 快照。 |
-| `startSceneSnapshotPolling()` | `core/mmar-globals:190` | 启动周期快照刷新；重复调用安全（仅注册一个 timer）。 |
-| `stopSceneSnapshotPolling()` | `core/mmar-globals:200` | 停止周期快照刷新；未启动或重复调用均安全。 |
-| `updateMmarStatus()` | `core/mmar-globals:73` | — |
+| `refreshSceneSnapshot()` | `core/mmar-globals:103` | 刷新 window.__mmar.scene 快照。 |
+| `startSceneSnapshotPolling()` | `core/mmar-globals:197` | 启动周期快照刷新；重复调用安全（仅注册一个 timer）。 |
+| `stopSceneSnapshotPolling()` | `core/mmar-globals:207` | 停止周期快照刷新；未启动或重复调用均安全。 |
+| `updateMmarStatus()` | `core/mmar-globals:80` | — |
 | `CapabilityProbe()` | `core/mmd-adapter:366` | CapabilityProbe — 升级回归探测（ADR-192 Phase 2 守卫式反射）。 |
 | `applyForceToModelRigidBodies()` | `core/mmd-adapter:163` | — |
 | `applyForceToModelRigidBodiesNative()` | `core/mmd-adapter:210` | — |
@@ -2297,13 +2297,13 @@
 | `hideMotionPopup()` | `menus/motion-root-ui:279` | — |
 | `importExternalAnimation()` | `menus/motion-root-ui:362` | 外部动作导入：选文件 → 重定向骨骼 → 播放。 |
 | `openProcDetail()` | `menus/motion-root-ui:323` | [doc:adr-207] 行体点击进入程序化统一详情页。 |
-| `buildNavMaps()` | `menus/nav-actions:141` | — |
-| `disposeNavBindings()` | `menus/nav-actions:233` | 卸载导航按钮监听（HMR/dispose 用） |
-| `getNavLabel()` | `menus/nav-actions:298` | 供 core 侧读取导航标签（经桥，不直接 import menus） |
-| `initNavActions()` | `menus/nav-actions:243` | [doc:adr-238] nav-actions 启动入口：安装按钮接线 + 构建导航标签映射。 |
-| `navActions()` | `menus/nav-actions:105` | — |
-| `navLabels()` | `menus/nav-actions:26` | — |
-| `toggleOverlay()` | `menus/nav-actions:59` | — |
+| `buildNavMaps()` | `menus/nav-actions:163` | — |
+| `disposeNavBindings()` | `menus/nav-actions:257` | 卸载导航按钮监听（HMR/dispose 用） |
+| `getNavLabel()` | `menus/nav-actions:322` | 供 core 侧读取导航标签（经桥，不直接 import menus） |
+| `initNavActions()` | `menus/nav-actions:267` | [doc:adr-238] nav-actions 启动入口：安装按钮接线 + 构建导航标签映射。 |
+| `navActions()` | `menus/nav-actions:121` | — |
+| `navLabels()` | `menus/nav-actions:25` | — |
+| `toggleOverlay()` | `menus/nav-actions:58` | — |
 | `buildOutfitLevel()` | `menus/outfit-ui:158` | — |
 | `buildSiteTabs()` | `menus/plaza-browser:302` | — |
 | `buildToolbar()` | `menus/plaza-browser:686` | — |
