@@ -1,6 +1,8 @@
 // perception/gaze.int.test.ts — 视线追踪锥形限位 + _gazeAlpha 指数衰减 + gaze reset（ADR-204 P3，拆自旧 perception.test.ts）
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { Quaternion } from '@babylonjs/core';
+// 只引 math.vector 子路径：包根 @babylonjs/core 会拖全量 index（实测 import 1.59s），
+// SUT 链路（perception-shared）也只用该子路径，依赖图共享、成本 ~60ms 级。
+import { Quaternion } from '@babylonjs/core/Maths/math.vector';
 
 const mockState = vi.hoisted(() => ({
     focusedModelId: null as string | null,

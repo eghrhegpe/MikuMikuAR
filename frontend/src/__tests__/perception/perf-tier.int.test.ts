@@ -1,5 +1,5 @@
 // perception/perf-tier.int.test.ts — ADR-164 全员感知 + PerceptionPerfMonitor 性能档位（ADR-204 P3，拆自旧 perception.test.ts）
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
 
 const mockState = vi.hoisted(() => ({
     focusedModelId: null as string | null,
@@ -73,9 +73,21 @@ import {
     triggerLastObserver,
     type PerceptionSut,
 } from './perception-mocks';
-// 性能档位相关纯函数/类，静态导入
-import { PerceptionPerfMonitor } from '../../scene/motion/perception-shared';
-import { _getActiveContextsByTier } from '../../scene/motion/perception-observer';
+// 惰性加载：静态 import perception-observer 会拖 env/env → DefaultRenderingPipeline
+// 重渲染管线（实测 import 2.57s）；改 beforeAll 运行时动态 import，不计入加载时依赖图
+// （与 vitest.config.ts 注释的「源码模块惰性化解锁」同款手法）。
+// 类型用 Awaited<typeof import(...)> 推断——类型层不触发运行时加载。
+let PerceptionPerfMonitor: Awaited<
+    typeof import('../../scene/motion/perception-shared')
+>['PerceptionPerfMonitor'];
+let _getActiveContextsByTier: Awaited<
+    typeof import('../../scene/motion/perception-observer')
+>['_getActiveContextsByTier'];
+
+beforeAll(async () => {
+    ({ PerceptionPerfMonitor } = await import('../../scene/motion/perception-shared'));
+    ({ _getActiveContextsByTier } = await import('../../scene/motion/perception-observer'));
+});
 
 let sut: PerceptionSut;
 

@@ -1,6 +1,6 @@
 // @ts-nocheck — vi.mock 运行时替换
 // model-preset.test.ts — C 组合并（applyModelPreset / PBRMaterial roundtrip / serializeModelPreset / stopVMD）
-// 合并自：model-preset.apply.test.ts、model-preset.pbr.test.ts、model-preset.serialize.test.ts、model-preset.stopvmd.test.ts
+// 合并自：model-preset.apply.test.ts、model-preset.material.test.ts、model-preset.pbr.test.ts、model-preset.serialize.test.ts、model-preset.stopvmd.test.ts（5→1）
 // 目的：削减 vitest isolate 模式下重复依赖图加载（同类先例：model-detail-ui 3 文件合并、perception 8→5）。
 // 调整说明：
 //  - 4 文件 vi.mock 列表几乎相同，取并集去重为一份（pbr 独占的 @babylonjs/core/Materials/PBR/pbrMaterial 保留）。
