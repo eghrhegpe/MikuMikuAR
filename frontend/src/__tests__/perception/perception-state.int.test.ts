@@ -194,7 +194,9 @@ describe('activatePerception', () => {
             mmdModel: { mesh: { isDisposed: () => false } },
         });
         sut.activatePerception();
-        expect(mockState.scene.onBeforeRenderObservable.add).not.toHaveBeenCalled();
+        // [fix:2026-08] 原断言误复制「未加载」分支的 not.toHaveBeenCalled，
+        // 与用例名相反（加载成功应注册 observer）。注册走 mockPipeline.register。
+        expect(mockPipeline.register).toHaveBeenCalledOnce();
     });
 
     it('重复激活同一模型不重复注册', () => {

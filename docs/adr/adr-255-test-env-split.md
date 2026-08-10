@@ -1,4 +1,4 @@
-# ADR-255: 测试环境分流：@vitest-environment node 削减每文件 happy-dom 成本 — isolate=true 下 happy-dom 每文件重建是墙钟大头；181 个无 DOM 依赖测试文件切 node 环境，环境累加 255s → ~90s
+# ADR-255: 测试环境分流：@vitest-environment node 削减每文件 happy-dom 成本 — isolate=true 下 happy-dom 每文件重建是墙钟大头；无 DOM 依赖测试文件切 node 环境，环境累加 255s → ~90-105s
 
 > **状态**: ✅ 已采纳（2026-08-10）
 > **日期**: 2026-08-10
@@ -19,9 +19,12 @@ worker 数/池类型均非杠杆，isolate=false 结构性不可修。该结论�
 
 ## 决策
 
-1. **environment 分流**：给 181 个「无 DOM 依赖」的测试文件加文件头注释
-   `// @vitest-environment node`，使其跑 node 环境（环境成本 ~0ms）；其余 127 个
+1. **environment 分流**：给「无 DOM 依赖」的测试文件加文件头注释
+   `// @vitest-environment node`，使其跑 node 环境（环境成本 ~0ms）；
    依赖 `window`/`document`/canvas 渲染的保持默认 happy-dom。
+   首批 181 个文件加注释（含 2 个被 exclude 的 perf 文件，实际运行 179 node +
+   129 happy = 308）；后续提交增删测试文件后，以
+   `rg -l "@vitest-environment node" src --glob "*.test.ts" | wc -l` 为准。
 2. **识别方法**：`rg --files-without-match "<DOM 全局正则>" src --glob "*.test.ts"`
    得到 221 个候选 → 全量试跑 → 回滚失败的 → 首轮 135 个全绿。
 3. **第二轮：源码可测性修复解锁 46 个**。回滚文件中 46 个的失败根因是
@@ -54,9 +57,9 @@ worker 数/池类型均非杠杆，isolate=false 结构性不可修。该结论�
 - 181 个测试文件：新增首行 `// @vitest-environment node` 注释（git 可审查）。
 - 3 个源码模块惰性化（dom.ts / ui-fullscreen-overlay.ts / mmar-globals.ts），
   happy-dom/浏览器语义与原先一致（全量 4995 用例验证），node 下可安全加载。
-- 全量墙钟：**55.95s → ~40s（-29%）**；environment 累加 **255s → ~90s**。
-  本地 24 核下墙钟已入调度噪声带（import 成本占主导），CI（2 核 runner）
-  预期收益更大——环境成本是每文件串行付的，worker 排队越长收益越明显。
+- 全量墙钟：**55.95s → ~40s（-29%）**；environment 累加 **255s → ~90-105s**
+  （cold/hot cache 波动）。本地 24 核下墙钟已入调度噪声带（import 成本占主导），
+  CI（2 核 runner）预期收益更大——环境成本是每文件串行付的，worker 排队越长收益越明显。
 - 剩余 40 个 happy-dom 文件为真渲染/真 DOM 路径（babylon `OffscreenCanvas`、
   canvas 纹理、DOM 交互），切 node 需 polyfill 浏览器 API（伪 DOM），不采纳。
 - 不触及 ADR-219 决策：maxWorkers=12、isolate=true、预构建三件套均保留。

@@ -259,10 +259,10 @@
 | `ROLE()` | `core/dom-contract:21` | 渲染层 role 常量——产出 role 属性时引用，勿手写字符串（ADR-229 §9） |
 | `SLIDER_BAR_CLASS()` | `core/dom-contract:52` | 滑动条本体 class（slider / colorSlider / modeSlider 共用 .cs-bar） |
 | `TOGGLE_INPUT_SELECTOR()` | `core/dom-contract:10` | toggle 的原生输入元素选择器（e2e 需点击/读 checked，故单列一份） |
-| `Disposable()` | `core/dom:66` | — |
-| `DomRefs()` | `core/dom:63` | — |
-| `addDisposableListener()` | `core/dom:74` | 添加事件监听器并返回 Disposable，便于在 dispose 链路中统一释放。 |
-| `dom()` | `core/dom:12` | — |
+| `Disposable()` | `core/dom:67` | — |
+| `DomRefs()` | `core/dom:64` | — |
+| `addDisposableListener()` | `core/dom:75` | 添加事件监听器并返回 Disposable，便于在 dispose 链路中统一释放。 |
+| `dom()` | `core/dom:13` | — |
 | `handleDropFile()` | `core/drop-import:31` | 处理已落地的路径（桌面绝对路径或浏览器 IndexedDB 键）。 |
 | `handleDroppedFile()` | `core/drop-import:80` | [doc:adr-177] 单个拖入文件落地：桌面走原生 path，浏览器读字节写 IndexedDB。 |
 | `StateReader()` | `core/e2e-state-bridge:7` | — |

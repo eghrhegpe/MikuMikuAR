@@ -236,6 +236,17 @@ describe('ADR-164 PerceptionPerfMonitor tier', () => {
         const tier = sut.getPerceptionPerfTier();
         expect(tier).toBe('low');
         expect(sut.getPinnedModelIds()).toContain('m2');
+
+        // [fix:2026-08] 补全行为断言：low 档 _getActiveContextsByTier 只保留
+        // focused(m1) + pinned(m2)，非 pinned 非焦点模型被剔除。
+        // （微表情在 low 档整体跳过，故不可用 morph 权重断言，见 perception-observer.ts）
+        const contexts = new Map<string, { modelId: string; isActive: boolean; isPinned: boolean }>([
+            ['m1', { modelId: 'm1', isActive: true, isPinned: false }],
+            ['m2', { modelId: 'm2', isActive: true, isPinned: true }],
+            ['m3', { modelId: 'm3', isActive: true, isPinned: false }],
+        ]);
+        const active = _getActiveContextsByTier('low', contexts as any, 'm1');
+        expect(active.map((c) => c.modelId).sort()).toEqual(['m1', 'm2']);
     });
 
     // ════════════════════════════════════════════════

@@ -42,7 +42,7 @@
 
 | ADR | 主题 | 状态 |
 |-----|------|------|
-| [ADR-255](./adr-255-test-env-split.md) | 测试环境分流：@vitest-environment node 削减每文件 happy-dom 成本 — isolate=true 下 happy-dom 每文件重建是墙钟大头；181 个无 DOM 依赖测试文件切 node 环境，环境累加 255s → ~90s | ✅ 已采纳 |
+| [ADR-255](./adr-255-test-env-split.md) | 测试环境分流：@vitest-environment node 削减每文件 happy-dom 成本 — isolate=true 下 happy-dom 每文件重建是墙钟大头；无 DOM 依赖测试文件切 node 环境，环境累加 255s → ~90-105s | ✅ 已采纳 |
 | [ADR-254](./adr-254-p4-backlog-registry.md) | 历轮审核 P4 遗留项登记簿 —— 低风险改进清单与技术债跟踪 | ✅ 已立 |
 | [ADR-253](./adr-253-config-merge-partial-update.md) | 配置部分更新合并契约损坏 —— mergeUIState bool 覆盖 / mergeEnvState 零值覆盖 | ✅ 已立 |
 | [ADR-252](./adr-252-menu-dispose-chain.md) | 菜单资源释放链路缺失 —— disposeMenuWrapper/clearAllMenuWrappers 零调用与 _liveMenus 常驻 | ✅ 已立 |
