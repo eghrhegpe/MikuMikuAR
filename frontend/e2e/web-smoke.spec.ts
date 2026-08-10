@@ -10,7 +10,7 @@
 import { test, expect } from "@playwright/test";
 import { gotoWebEntry } from "./helpers";
 
-test.describe("Web Smoke — 主应用 Web 入口 (@web)", { tag: ["@web"] }, () => {
+test.describe("Web Smoke — 主应用 Web 入口 (@web)", { tag: ["@web", "@web-smoke"] }, () => {
     test("首屏渲染：canvas + 6 nav 按钮可见", async ({ page }) => {
         await gotoWebEntry(page);
 

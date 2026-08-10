@@ -210,7 +210,9 @@ jobs:
             echo "::error title=@webgl gate::test-results/.last-run.json 缺失（CDP 未起或测试被 7min timeout 中断）——report 不可靠，job 标红"
             exit 1
           fi
-          python3 -c "
+          # [fix:P3] windows-latest 上 python3 别名可能不存在（仅 python），
+          # 加 fallback；@dom/@web-smoke/@web-full 均在 ubuntu-latest，无需处理。
+          (python3 || python) -c "
           import json
           with open('test-results/.last-run.json') as f:
               d = json.load(f)
@@ -274,7 +276,10 @@ jobs:
           RUN_WEB_E2E: '1'
         # [doc:e2e] grep 必须用 @web\b 而非 @web：@webgl 测试标题含 @web 前缀，
         # 裸 @web 正则会把 42 个 @webgl（wailsPage/CDP）误抓进 @web job。
-        run: npx playwright test --grep "@web\b" --reporter=line
+        # [fix:P3] 子代理审核：@web-smoke 与 @web-full 原命令完全相同（纯冗余）。
+        # 已给 web-smoke.spec.ts 加 @web-smoke 专属标签，本 job 只跑 smoke 子集；
+        # @web-full 保持 @web\b 跑全量（含 smoke）。
+        run: npx playwright test --grep "@web-smoke\b" --reporter=line
 
       - name: E2E failure-count gate (@web-smoke)
         # [2026-08-10] 挂回 push 的假绿防线：smoke 为真门禁，last-run.json 缺失或
