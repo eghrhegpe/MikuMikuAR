@@ -93,10 +93,13 @@ jobs:
           status = d.get('status', '?')
           fa = len(d.get('failedTests', []))
           print(f'::notice title=@dom summary::status={status}, {fa} failed')
-          # [fix:P2] status 非 passed/flaky 但 0 failedTests → report 被 timeout 中断，不可靠，必须红。
-          if status not in ('passed', 'flaky') and fa == 0:
-              print(f'::error title=@dom gate::status={status} 但 0 failedTests — report 不可靠，job 标红')
-              exit(1)
+          # [fix:P1] 子代理审核：status 非 passed/flaky 时，interrupted/timedout（partial run
+          # 不可信）或 0 failedTests（report 被中断）一律红；仅 failed 且有失败记录才交下方
+          # 阈值裁决（@webgl/@web-full 容忍少量失败）。此前 `fa==0` 放行 partial run。
+          if status not in ('passed', 'flaky'):
+              if status in ('interrupted', 'timedout') or fa == 0:
+                  print(f'::error title=@dom gate::status={status} 且 failedTests={fa} — run 被中断/report 不可靠，job 标红')
+                  exit(1)
           if fa > 0:
               print(f'::error title=@dom gate::failed={fa} > 0 — @dom 门禁失败，job 标红')
               exit(1)
@@ -133,10 +136,15 @@ jobs:
           node-version: ${{ vars.NODE_VERSION || '24' }}
 
       - name: Setup Go
+        # [2026-08-10 fix] cache: false 关掉 setup-go 的 GOMODCACHE 缓存保存——
+        # post-action 会把整个 go mod cache tar 打包上传（run 31345266624 实测
+        # 18m12s，测试本身仅 6 分钟），拖垮 @webgl job。本 job 的 go 依赖只为
+        # `go install wails3` 服务，而 wails3 二进制已有下方独立 actions/cache
+        # 缓存（命中即跳过 go install），GOMODCACHE 缓存价值为零。
         uses: actions/setup-go@v6
         with:
           go-version: '1.25.0'
-          cache-dependency-path: go.sum
+          cache: false
 
       - name: Extract wails version (from go.mod, 与 release/cache-warm 同源)
         # [2026-08-10 fix] job 级 defaults.working-directory=frontend，但 go.mod 在
@@ -222,11 +230,12 @@ jobs:
           print(f'::notice title=@webgl summary::status={status}, {fa} failed')
           # [fix:P2] 阈值必须 < 测试总数：@webgl 实测 16 spec（playwright --list），旧阈值 20
           # > 16 → 全败仍放行（新假绿）。收紧为 8（容忍 ~50% 环境性失败，过半失败必红）。
-          # status 非 passed/flaky 且 0 failedTests → report 被中断，不可靠，必须红。
+          # [fix:P1] status 非 passed/flaky 时，interrupted/timedout 或 0 failedTests 一律红。
           THRESHOLD = 8
-          if status not in ('passed', 'flaky') and fa == 0:
-              print(f'::error title=@webgl gate::status={status} 但 0 failedTests — report 不可靠，job 标红')
-              exit(1)
+          if status not in ('passed', 'flaky'):
+              if status in ('interrupted', 'timedout') or fa == 0:
+                  print(f'::error title=@webgl gate::status={status} 且 failedTests={fa} — run 被中断/report 不可靠，job 标红')
+                  exit(1)
           if fa > THRESHOLD:
               print(f'::error title=@webgl gate::failed={fa} > {THRESHOLD} — 测试体系异常，job 标红')
               exit(1)
@@ -279,7 +288,10 @@ jobs:
         # [fix:P3] 子代理审核：@web-smoke 与 @web-full 原命令完全相同（纯冗余）。
         # 已给 web-smoke.spec.ts 加 @web-smoke 专属标签，本 job 只跑 smoke 子集；
         # @web-full 保持 @web\b 跑全量（含 smoke）。
-        run: npx playwright test --grep "@web-smoke\b" --reporter=line
+        # [fix:P3] 子代理审核：\b 只挡「单词字符后缀」，@web-smoke-v2 / @web-smoke.foo
+        # 会被 @web-smoke\b 误抓（'-' 和 '.' 都是非单词字符，\b 照样成立）。
+        # 改用负向前瞻 (?![A-Za-z0-9_-])：拒绝字母/数字/连字符/下划线后缀，杜绝变体误抓。
+        run: npx playwright test --grep "@web-smoke(?![A-Za-z0-9_-])" --reporter=line
 
       - name: E2E failure-count gate (@web-smoke)
         # [2026-08-10] 挂回 push 的假绿防线：smoke 为真门禁，last-run.json 缺失或
@@ -298,10 +310,11 @@ jobs:
           status = d.get('status', '?')
           fa = len(d.get('failedTests', []))
           print(f'::notice title=@web-smoke summary::status={status}, {fa} failed')
-          # [fix:P2] status 非 passed/flaky 但 0 failedTests → report 被中断，不可靠，必须红。
-          if status not in ('passed', 'flaky') and fa == 0:
-              print(f'::error title=@web-smoke gate::status={status} 但 0 failedTests — report 不可靠，job 标红')
-              exit(1)
+          # [fix:P1] status 非 passed/flaky 时，interrupted/timedout 或 0 failedTests 一律红。
+          if status not in ('passed', 'flaky'):
+              if status in ('interrupted', 'timedout') or fa == 0:
+                  print(f'::error title=@web-smoke gate::status={status} 且 failedTests={fa} — run 被中断/report 不可靠，job 标红')
+                  exit(1)
           if fa > 0:
               print(f'::error title=@web-smoke gate::failed={fa} > 0 — @web smoke 门禁失败，job 标红')
               exit(1)
@@ -345,7 +358,7 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Run all @web E2E tests
-        # [2026-08-10] 步骤级 continue-on-error：失败交给下方 gate 裁决（阈值 20）。
+        # [2026-08-10] 步骤级 continue-on-error：失败交给下方 gate 裁决（阈值 5）。
         timeout-minutes: 7
         continue-on-error: true
         # Playwright 的 config.webServer 在 RUN_WEB_E2E=1 时自动管理 4174 preview server，
@@ -353,7 +366,10 @@ jobs:
         env:
           RUN_WEB_E2E: '1'
         # [doc:e2e] 同 e2e-web-smoke：@web\b 精确匹配，避免 @webgl 误抓。
-        run: npx playwright test --grep "@web\b" --reporter=line
+        # [fix:P2] 子代理审核：@web-full 原含 smoke 5 个测试（smoke 双跑浪费 CI 且
+        # smoke 抖动同时影响两个 gate）——smoke 已由 @web-smoke 阻塞 job 独立验证，
+        # full 用 --grep-invert 排除，避免双跑。
+        run: npx playwright test --grep "@web\b" --grep-invert "@web-smoke" --reporter=line
 
       - name: E2E failure-count gate (@web-full)
         # [2026-08-10] 挂回 push 的假绿防线：failed > 20（full suite 环境性抖动容忍）
@@ -374,11 +390,12 @@ jobs:
           print(f'::notice title=@web-full summary::status={status}, {fa} failed')
           # [fix:P2] 阈值必须 < 测试总数：@web-full 实测 23 spec，旧阈值 20 → 仅 3 个通过即放行
           # （87% 失败率容忍，与「杜绝假绿」矛盾）。收紧为 5（ubuntu+Chromium 较稳，容忍少量抖动）。
-          # status 非 passed/flaky 且 0 failedTests → report 被中断，不可靠，必须红。
+          # [fix:P1] status 非 passed/flaky 时，interrupted/timedout 或 0 failedTests 一律红。
           THRESHOLD = 5
-          if status not in ('passed', 'flaky') and fa == 0:
-              print(f'::error title=@web-full gate::status={status} 但 0 failedTests — report 不可靠，job 标红')
-              exit(1)
+          if status not in ('passed', 'flaky'):
+              if status in ('interrupted', 'timedout') or fa == 0:
+                  print(f'::error title=@web-full gate::status={status} 且 failedTests={fa} — run 被中断/report 不可靠，job 标红')
+                  exit(1)
           if fa > THRESHOLD:
               print(f'::error title=@web-full gate::failed={fa} > {THRESHOLD} — 测试体系异常，job 标红')
               exit(1)

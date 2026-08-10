@@ -18,15 +18,19 @@ export default defineConfig({
     // [doc:e2e] 参数对齐隔壁 ysm-model-manager 实证（其 33s 全绿）：
     //   15s/项 快速失败，不再默认 30s 陪跑必败项；
     //   retries=1 而非 2（必败项少烧一轮）；
-    //   maxFailures=5 而非 10（headless 环境硬伤快速止损，见下）；
+    //   maxFailures=10（≥ @webgl/@web-full gate 阈值+1，详见下方 P0 注释）；
     //   globalTimeout 7min 总限兜底，防 81 个必败 spec 串行烧穿 CI。
     // 背景：@dom 集合混入大量「打开设置/场景面板 → 渲染 WebGL overlay」的 spec，
     // headless CI 无 GPU 时 waitForSelector 20s 必超时（run 31325621473: 49 failed），
     // 旧参数每个必败项 30s×2 重试=90s、串行 49 个 → 7 分钟护栏到点被杀。
+    // [fix:P0] 子代理审核：maxFailures 曾为 5（CI），失败数被截断到 ≤5 →
+    // @webgl gate 阈值 8 / @web-full 阈值 5 永远等不到 `fa > 阈值`（全败也只记
+    // 5 个失败）→ gate 形同虚设（纸老虎）。提到 10（≥ 最大阈值 8 + 1），
+    // 保证 failedTests 能记录到阈值+1 个失败；@dom 仅 7 测试且应全绿，无影响。
     timeout: 15000,
     globalTimeout: 7 * 60 * 1000,
     retries: process.env.CI ? 1 : 0,
-    maxFailures: process.env.CI ? 5 : 0,
+    maxFailures: process.env.CI ? 10 : 0,
     // 限制并发避免多 worker 同时打 Vite 5173 触发 babylon-mmd 重模块重复编译，
     // 该场景会导致 page.goto 在 10s 内达不到 domcontentloaded（实测 14/16 失败的根因）。
     workers: process.env.CI ? 1 : 2,
