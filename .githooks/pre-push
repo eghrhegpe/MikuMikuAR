@@ -256,7 +256,11 @@ if [ "$TS_CHANGED" = "true" ] && [ "$NPM_AVAILABLE" = "true" ]; then
   echo "[pre-push] vitest --changed $CHANGED_BASE（只跑受影响测试 + coverage，替代全量 ~66s；可用 git push --no-verify 跳过，不推荐）"
   COV_LOG="$(mktemp -t pre-push-cov.XXXXXX 2>/dev/null || echo "$ROOT/.pre-push-cov.log")"
   cd "$ROOT/frontend"
-  if npx vitest run --changed "$CHANGED_BASE" --coverage --coverage.clean=false >"$COV_LOG" 2>&1; then
+  # [fix:2026-08] --changed 只跑受影响测试，coverage 必然 < 全量阈值；
+  # 用 0 阈值关闭全局门槛（diff-coverage 才是新代码 ≥60% 的守卫）。
+  if npx vitest run --changed "$CHANGED_BASE" --coverage --coverage.clean=false \
+      --coverage.thresholds.lines=0 --coverage.thresholds.functions=0 \
+      --coverage.thresholds.branches=0 --coverage.thresholds.statements=0 >"$COV_LOG" 2>&1; then
     # P8-A: 新代码保护——本次变更源码的行覆盖率 ≥60%（复用 test:coverage 生成的 coverage-final.json）
     # 整体阈值 35% 只防「覆盖率回退」，不保护「新代码有测试」；diff-coverage 补上后者（vitest.config.ts 注释）
     # 判据用日志中的 "Test Files"（有测试实际运行）而非产物文件：--changed 0 命中时
