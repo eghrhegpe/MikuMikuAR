@@ -30,6 +30,11 @@ export default defineConfig({
         // 编译 babylon-mmd 等重模块，边际收益转负。瓶颈是环境搭建+模块导入而非
         // CPU 核数，故固定 12 而不吃满全核。isolate 保持默认 true（关掉会暴露
         // 测试间状态污染，见 ADR/技术债），待清理污染后再评估 isolate=false。
+        // [2026-08] 308 文件/4994 用例规模复核：8/12/16 worker 墙钟全在 55-58s
+        // 噪声带内（55.42/55.95/56.21s），pool=threads 仅 54.34s（~3%，且 Babylon/
+        // WASM 场景在线程池下不如进程稳，ADR-219 已否决）。每 worker 的
+        // environment+import 累加恒定 ~40s，即「环境搭建+重模块编译」是绝对瓶颈，
+        // 墙钟被其钉死，worker 数/池类型均非杠杆——改此配置前先重读 ADR-219。
         maxWorkers: 12,
         minWorkers: 12,
         exclude: [
