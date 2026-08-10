@@ -357,10 +357,14 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Run @web E2E smoke
-        # [2026-08-09] 防卡死护栏：测试步骤 7 分钟即杀（smoke 正常 ≤3 分钟，
+        # [2026-08-09] 防卡死护栏：测试步骤超时即杀（smoke 正常 ≤3 分钟，
         # 历史曾 grep 误抓 @webgl 导致全部 30s 超时拖 18 分钟）。
         # [2026-08-10] 步骤级 continue-on-error：失败交给下方 gate 裁决（阈值 0）。
-        timeout-minutes: 7
+        # [fix:P4] 子代理探索：webServer 构建需 5-7min（babylon-mmd 重模块 + CI 负载
+        # 波动），7min 步骤超时 = 构建+测试合计窗口太紧 → 负载波动时构建 7min 被
+        # kill → last-run.json 缺失 → gate 假红（构建慢而非测试失败）。放宽到 12min
+        # （构建 7min + 测试余量），假红窗口消除；@dom/@overlay 不构建 4174，保持 7min。
+        timeout-minutes: 12
         continue-on-error: true
         # Playwright 的 config.webServer 在 RUN_WEB_E2E=1 时自动管理 4174 preview server，
         # 含构建 + 启动 + 等待就绪，测试完成后自动清理。
@@ -442,7 +446,9 @@ jobs:
 
       - name: Run all @web E2E tests
         # [2026-08-10] 步骤级 continue-on-error：失败交给下方 gate 裁决（阈值 5）。
-        timeout-minutes: 7
+        # [fix:P4] 同 web-smoke：webServer 构建 5-7min + 测试 2min，7min 步骤超时在
+        # CI 负载波动时易被构建占用触发假红（last-run 缺失→红），放宽到 12min。
+        timeout-minutes: 12
         continue-on-error: true
         # Playwright 的 config.webServer 在 RUN_WEB_E2E=1 时自动管理 4174 preview server，
         # 含构建 + 启动 + 等待就绪，测试完成后自动清理。
