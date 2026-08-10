@@ -126,49 +126,27 @@ describe('WASM 物理契约测试', () => {
             api.destroyPhysicsWorld(world);
         });
 
-        it('restitution 影响反弹：高弹性方块反弹更明显', () => {
+        it('restitution 字段契约：写入构造信息可读回一致', () => {
+            // [fix] 原用例断言"高弹性方块反弹更明显"（tf[13]>0.4），与无弹性下落用例同断言，
+            // restitution=0 时同样通过——假阳性。实测 SPR 引擎碰撞响应不使用
+            // RigidBodyConstructionInfo.Restitution（0.9 与 0.0 两方块 2 秒后位置完全相同），
+            // 故改为验证字段读写契约（与 babylon-mmd 构造信息格式一致），不再声称覆盖反弹行为。
             const world = api.createPhysicsWorld();
-            api.physicsWorldSetGravity(world, 0, -9.8, 0);
+            const shape = api.createBoxShape(1, 1, 1);
+            const info = buildRigidBodyInfo(shape, { mass: 1.0, disableDeactivation: true });
+            const buf = new DataView(memory.buffer, info, INFO_SIZE);
+            buf.setFloat32(OFF.Restitution, 0.9, true);
+            expect(buf.getFloat32(OFF.Restitution, true)).toBeCloseTo(0.9, 5);
 
-            // 地面
-            const groundShape = api.createStaticPlaneShape(0, 1, 0, 0);
-            const groundInfo = buildRigidBodyInfo(groundShape, { mass: 0, motionType: 1 });
-            const ground = api.createRigidBody(groundInfo);
-            api.physicsWorldAddRigidBody(world, ground);
+            // 引擎接受该构造信息，刚体创建成功
+            const body = api.createRigidBody(info);
+            expect(body).toBeGreaterThan(0);
 
-            // 高弹性方块 (restitution = 0.9)
-            const boxShape = api.createBoxShape(1, 1, 1);
-            const boxInfo = buildRigidBodyInfo(boxShape, { mass: 1.0, disableDeactivation: true });
-            // 手动设置高 restitution
-            const boxBuf = new DataView(memory.buffer, boxInfo, INFO_SIZE);
-            boxBuf.setFloat32(OFF.Restitution, 0.9, true);
-            const box = api.createRigidBody(boxInfo);
-            api.physicsWorldAddRigidBody(world, box);
-            api.rigidBodyTranslate(box, 0, 5, 0);
-
-            // 记录初始位置
-            const tfPtr = api.rigidBodyGetWorldTransformPtr(box);
-
-            // 步进，让方块落地并反弹
-            for (let i = 0; i < 120; i++) {
-                api.physicsWorldStepSimulation(world, 1 / 60, 1, 1 / 60);
-            }
-
-            // 2 秒后，高弹性方块应该已经反弹离开地面
-            const tf = new Float32Array(memory.buffer, tfPtr, 16);
-            // 如果反弹了，Y 位置应该明显高于地面（> 0.5）
-            // 注意：碰撞后可能还在运动中，不做强断言，只验证不为负
-            expect(tf[13]).toBeGreaterThan(0.4);
-
-            // 清理
-            api.physicsWorldRemoveRigidBody(world, box);
-            api.physicsWorldRemoveRigidBody(world, ground);
-            api.destroyRigidBody(box);
-            api.destroyRigidBody(ground);
-            api.deallocateBuffer(boxInfo, INFO_SIZE);
-            api.deallocateBuffer(groundInfo, INFO_SIZE);
-            api.destroyShape(boxShape);
-            api.destroyShape(groundShape);
+            api.physicsWorldAddRigidBody(world, body);
+            api.physicsWorldRemoveRigidBody(world, body);
+            api.destroyRigidBody(body);
+            api.deallocateBuffer(info, INFO_SIZE);
+            api.destroyShape(shape);
             api.destroyPhysicsWorld(world);
         });
     });

@@ -41,8 +41,8 @@ test.describe("核心旅程: 真实模型加载 (@webgl, wailsPage)", { tag: ["@
         const meshCount = await page.evaluate(() => (window as any).__scene.meshCount);
         expect(meshCount).toBeGreaterThan(10);
 
-        const fps = await page.evaluate(() => (window as any).__scene.fps);
-        expect(fps).toBeGreaterThanOrEqual(30);
+        // 加载后首帧可能未渲染，用 waitForFunction 等 FPS 达到阈值（替代固定 sleep）
+        await page.waitForFunction(() => (window as any).__scene?.fps >= 30, { timeout: 20000 });
     });
 
     test("加载指定名称模型（确定性选择）", async ({ wailsPage: page }) => {

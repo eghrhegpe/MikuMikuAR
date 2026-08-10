@@ -47,8 +47,10 @@ test.describe("物理子系统健康检查", { tag: ["@webgl"] }, () => {
 
         // 激活风力
         await page.evaluate(() => (window as any).__scene.driver.setWindSpeed(10));
-        // 等待风力订阅生效（physics sync 下一帧触发）
-        await page.waitForTimeout(500);
+        // 等待风力订阅生效（physics sync 下一帧触发，用 waitForFunction 替代固定 sleep）
+        await page.waitForFunction(() => (window as any).__scene?.windPhysicsActive === true, {
+            timeout: 10000,
+        });
 
         const active = await page.evaluate(() => (window as any).__scene.windPhysicsActive);
         expect(active).toBe(true);
@@ -71,8 +73,26 @@ test.describe("物理子系统健康检查", { tag: ["@webgl"] }, () => {
 
         // 激活风力
         await page.evaluate(() => (window as any).__scene.driver.setWindSpeed(10));
-        // 等待物理模拟数帧（让风力生效）
-        await page.waitForTimeout(2000);
+        // 等待物理模拟让风力生效（轮询骨骼位置变化，替代固定 sleep 2000ms）
+        await page.waitForFunction(
+            (before) => {
+                const after = (window as any).__scene.getBoneWorldPositions([
+                    "髪先端_L", "髪先端_R", "スカート先端_L", "スカート先端_R",
+                ]);
+                for (const name of Object.keys(before)) {
+                    const b = before[name];
+                    const a = after[name];
+                    if (!b || !a) continue;
+                    const dx = a.x - b.x;
+                    const dy = a.y - b.y;
+                    const dz = a.z - b.z;
+                    if (Math.sqrt(dx * dx + dy * dy + dz * dz) > 0.001) return true;
+                }
+                return false;
+            },
+            before,
+            { timeout: 10000 }
+        );
 
         const after = await page.evaluate(() =>
             (window as any).__scene.getBoneWorldPositions([
@@ -105,13 +125,17 @@ test.describe("物理子系统健康检查", { tag: ["@webgl"] }, () => {
         await waitForSceneHook(page);
         await loadFirstModel(page);
 
-        // 先开启
+        // 先开启（等待订阅生效）
         await page.evaluate(() => (window as any).__scene.driver.setWindSpeed(10));
-        await page.waitForTimeout(500);
+        await page.waitForFunction(() => (window as any).__scene?.windPhysicsActive === true, {
+            timeout: 10000,
+        });
 
         // 再关闭
         await page.evaluate(() => (window as any).__scene.driver.setWindSpeed(0));
-        await page.waitForTimeout(500);
+        await page.waitForFunction(() => (window as any).__scene?.windPhysicsActive === true, {
+            timeout: 10000,
+        });
 
         const active = await page.evaluate(() => (window as any).__scene.windPhysicsActive);
         // windSpeed=0 时 isWindActive() 返回 false，_onPhysicsSync 跳过

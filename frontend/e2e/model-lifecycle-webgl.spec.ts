@@ -45,7 +45,11 @@ test.describe("模型生命周期: 加载→删除→重加载 (@webgl, wailsPag
 
         // 通过 __scene 钩子删除当前模型（模拟 removeSceneActor 路径）
         await page.evaluate(() => (window as any).__scene.driver.removeActiveModel());
-        await page.waitForTimeout(500);
+        await page.waitForFunction(
+            (before) => (window as any).__scene.meshCount < before,
+            meshCountAfterLoad,
+            { timeout: 10000 }
+        );
 
         const meshCountAfterDelete = await page.evaluate(() => (window as any).__scene.meshCount);
         // 删除模型后 meshCount 应降至背景 mesh 水平（天空球/地面等）
@@ -65,7 +69,10 @@ test.describe("模型生命周期: 加载→删除→重加载 (@webgl, wailsPag
 
         // 删除
         await page.evaluate(() => (window as any).__scene.driver.removeActiveModel());
-        await page.waitForTimeout(500);
+        await page.waitForFunction(() => {
+            const mm = (window as any).__scene?.modelManager;
+            return (mm?.size ?? 0) === 0;
+        }, { timeout: 10000 });
 
         // 确认 modelManager 为空
         const hasModelAfter = await page.evaluate(() => {
@@ -84,7 +91,10 @@ test.describe("模型生命周期: 加载→删除→重加载 (@webgl, wailsPag
 
         // 删除
         await page.evaluate(() => (window as any).__scene.driver.removeActiveModel());
-        await page.waitForTimeout(500);
+        await page.waitForFunction(() => {
+            const mm = (window as any).__scene?.modelManager;
+            return (mm?.size ?? 0) === 0;
+        }, { timeout: 10000 });
 
         // 重新加载
         await loadFirstModel(page);

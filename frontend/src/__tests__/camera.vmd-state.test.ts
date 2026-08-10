@@ -19,6 +19,7 @@ import {
     mockEnvPersist,
     mockCameraModule,
 } from './camera-adr100-mocks';
+import { setCameraScene } from '../scene/camera/camera-state';
 
 vi.mock('@babylonjs/core/Cameras/camera', () => ({ Camera: MockCamera }));
 vi.mock('@babylonjs/core/Cameras/arcRotateCamera', () => ({
@@ -67,21 +68,36 @@ beforeEach(() => {
 });
 
 describe('VMD', () => {
+    beforeEach(() => {
+        // 注入真实 scene，使 loadCameraVmd/clearCameraVmd 触达真实清理分支
+        // （此前无 scene 时函数体直接跳过，断言是 no-op 假覆盖）
+        setCameraScene(new MockScene() as any);
+    });
+    afterEach(() => {
+        setCameraScene(null);
+    });
     it('hasCameraVmd false default', () => {
         expect(cam.hasCameraVmd()).toBe(false);
     });
-    it('clearCameraVmd no throw', () => {
-        expect(() => cam.clearCameraVmd()).not.toThrow();
+    it('loadCameraVmd 后 hasCameraVmd true / 名称路径可读', () => {
+        cam.loadCameraVmd({} as any, 'D:/vmd/test.vmd', 'test.vmd');
+        expect(cam.hasCameraVmd()).toBe(true);
+        expect(cam.getCameraVmdName()).toBe('test.vmd');
+        expect(cam.getCameraVmdPath()).toBe('D:/vmd/test.vmd');
+    });
+    it('clearCameraVmd 释放相机并清空状态', () => {
+        cam.loadCameraVmd({} as any, 'D:/vmd/test.vmd', 'test.vmd');
+        expect(cam.hasCameraVmd()).toBe(true);
+        cam.clearCameraVmd();
+        expect(cam.hasCameraVmd()).toBe(false);
+        expect(cam.getCameraVmdName()).toBe('');
+        expect(cam.getCameraVmdPath()).toBe('');
     });
     it('getCameraVmdName empty', () => {
         expect(cam.getCameraVmdName()).toBe('');
     });
     it('getCameraVmdPath empty', () => {
         expect(cam.getCameraVmdPath()).toBe('');
-    });
-    it('clearCameraVmd stays false', () => {
-        cam.clearCameraVmd();
-        expect(cam.hasCameraVmd()).toBe(false);
     });
 });
 describe('ConcertPaused', () => {

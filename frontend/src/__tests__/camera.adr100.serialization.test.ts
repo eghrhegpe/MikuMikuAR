@@ -71,6 +71,19 @@ describe('P3 serialization', () => {
         cam.setAutoCameraEnabled(false);
         mockUiState.autoCameraEnabled = false;
         mockPBD.mockReturnValue(null);
+        // 全量复位 mode/control/behavior，消除用例间顺序耦合（与 guards 一致）
+        cam.setCameraState({
+            mode: 'orbit',
+            control: 'orbit',
+            behavior: 'none',
+            preset: cam.defaultCameraPreset(),
+            alpha: 0,
+            beta: 1,
+            radius: 16,
+            targetX: 0,
+            targetY: 8,
+            targetZ: 0,
+        });
         vi.clearAllMocks();
     });
     it('getCameraState dual-write', () => {
