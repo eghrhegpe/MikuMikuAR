@@ -75,15 +75,16 @@ export function setupE2ECapture(): void {
     if (_reader) {
         (window as unknown as Record<string, unknown>).__state = {
             get: (path: string, modelId?: string): unknown => _reader(path, modelId),
-            // [fix:P1] 守卫域就绪探测：light./render. 域在 @dom 环境（无灯光/管线）写入被守卫
-            // 拦截，e2e 动作断言前先探测，未就绪则整域跳过（避免「UI 可操作但 state 未生效」误报）
+            // [fix:P2] 移除 !isHeadless 前短路：initLighting/initRenderer 在 _doInitScene
+            // 无条件执行（scene.ts:435/436），NullEngine 下灯光/管线照常创建（probe 实证
+            // isLightingReady=true）。前短路使 headless 恒 false → schema-driven 守卫域
+            // 永远跳过 → 「越跳过门禁越绿、守卫域 bug 越黑」。现返回真实就绪状态：
+            // headless 且 initScene 完成 → true（@dom 全量断言）；未完成 → false（照实跳过）。
             get isLightingReady(): boolean {
-                // [doc:adr-229] headless（NullEngine）无真实灯光/渲染管线，保持 false，
-                // 使 schema-driven 的 light./render. 域断言继续跳过，避免「UI 可操作但 state 未生效」误报。
-                return !isHeadless && isLightingReady();
+                return isLightingReady();
             },
             get isRenderReady(): boolean {
-                return !isHeadless && isRenderReady();
+                return isRenderReady();
             },
         };
     }
