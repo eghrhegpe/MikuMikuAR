@@ -142,4 +142,18 @@ describe('captureSceneSnapshot', () => {
         expect(text).toContain('活动动画: (无)');
         expect(text).toContain('KTX2: 不支持');
     });
+
+    // [2026-08] 并入自 core/__tests__/scene-snapshot.test.ts（去双份）：NFR-3 文本长度上限
+    it('返回文本长度 ≤ 2048 字符（NFR-3）', () => {
+        registerAiSnapshotBridge(
+            makeBridge({
+                getFps: () => 60,
+                getModelCount: () => 3,
+                getMeshCount: () => 200,
+                getActiveMotions: () => ['walk'],
+                getPerformanceMode: () => 'balanced',
+            })
+        );
+        expect(captureSceneSnapshot().length).toBeLessThanOrEqual(2048);
+    });
 });
