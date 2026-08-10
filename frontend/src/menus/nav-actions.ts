@@ -101,14 +101,31 @@ export async function toggleOverlay(id: string, showFn: () => void): Promise<voi
     }
 }
 
+// ======== Library chunk 惰性加载（[fix:P1] 动态 import 收敛）========
+// ESM 保证模块单次求值，但每次点击都重新发起 import() 解析——慢加载下双击
+// 两个 handler 可能 await 同一 pending promise，resolve 后连续执行 toggleOverlay
+// 「先开后关」。缓存 promise 消除重复解析；失败 logWarn 而非 unhandled rejection
+// （对齐 library-actions.ts:661 safeCallAsync 模式），并允许下次重试。
+let _libPromise: Promise<typeof import('./library') | null> | null = null;
+async function loadLibrary(): Promise<typeof import('./library') | null> {
+    if (!_libPromise) {
+        _libPromise = import('./library').catch((err) => {
+            _libPromise = null; // 失败后允许下次点击重试
+            logWarn('nav-actions', 'library chunk 加载失败', err);
+            return null;
+        });
+    }
+    return _libPromise;
+}
+
 export const navActions: Record<number, () => void | Promise<void>> = {
     1: async () => {
-        const m = await import('./library');
-        toggleOverlay('sceneOverlay', m.showModelPopup);
+        const m = await loadLibrary();
+        if (m) toggleOverlay('sceneOverlay', m.showModelPopup);
     },
     2: async () => {
-        const m = await import('./library');
-        toggleOverlay('sceneOverlay', m.showMotionPopup);
+        const m = await loadLibrary();
+        if (m) toggleOverlay('sceneOverlay', m.showMotionPopup);
     },
     3: async () => {
         const m = await import('./scene-menu');
@@ -197,12 +214,12 @@ function installNavBindings(): void {
         _navDisposables.push(addDisposableListener(el, 'click', fn));
     };
     bindBtn('btnMainAction', dom.btnMainAction, async () => {
-        const m = await import('./library');
-        toggleOverlay('sceneOverlay', m.showModelPopup);
+        const m = await loadLibrary();
+        if (m) toggleOverlay('sceneOverlay', m.showModelPopup);
     });
     bindBtn('btnMotionPopup', dom.btnMotionPopup, async () => {
-        const m = await import('./library');
-        toggleOverlay('sceneOverlay', m.showMotionPopup);
+        const m = await loadLibrary();
+        if (m) toggleOverlay('sceneOverlay', m.showMotionPopup);
     });
     bindBtn('btnScene', dom.btnScene, async () => {
         const m = await import('./scene-menu');

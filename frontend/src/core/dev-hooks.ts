@@ -16,6 +16,10 @@ import { getE2EStateReader } from './e2e-state-bridge';
 // 守卫），e2e 需预检跳过 light./render. 域的动作断言，避免「UI 可操作但 state 未生效」误报。
 import { isLightingReady } from '../scene/render/lighting';
 import { isRenderReady } from '../scene/render/renderer';
+// [fix:P1] 程序化测试 mesh 工厂共享（子代理审核）：dev-hooks 与
+// mesh-lifecycle-headless.test.ts 同源调用，消灭双份实现（此前测试复制实现，
+// 生产代码真回归抓不到）。Babylon 实现在 test-mesh 内动态 import，不拉渲染器链。
+import { createTestMesh as createTestMeshShared, clearTestMeshes as clearTestMeshesShared } from './test-mesh';
 
 export function setupE2ECapture(): void {
     // [fix:P2] 钩子收敛：原编译期 DEV 门控在 dev 模式恒真，21 个可写全局对任何
@@ -112,28 +116,9 @@ export function setupE2ECapture(): void {
 
             // CI seed model — creates a programmatic Babylon mesh so @webgl E2E tests
             // can assert a real 3D scene without a PMX file on disk.
-            createTestMesh: async (): Promise<void> => {
-                const { MeshBuilder } = await import('@babylonjs/core/Meshes/meshBuilder');
-                const { StandardMaterial } = await import('@babylonjs/core/Materials/standardMaterial');
-                const { Color3 } = await import('@babylonjs/core/Maths/math.color');
-                // Dispose any previous test meshes first
-                for (const m of [...scene.meshes]) {
-                    if (m.name.startsWith('e2e-test-')) {
-                        m.dispose();
-                    }
-                }
-                const box = MeshBuilder.CreateBox('e2e-test-mesh', { size: 0.5 }, scene);
-                const mat = new StandardMaterial('e2e-test-mat', scene);
-                mat.diffuseColor = new Color3(1, 0, 0);
-                box.material = mat;
-            },
-            clearTestMeshes: (): void => {
-                for (const m of [...scene.meshes]) {
-                    if (m.name.startsWith('e2e-test-')) {
-                        m.dispose();
-                    }
-                }
-            },
+            // [fix:P1] 委托共享 test-mesh 模块（与单测同源，见 core/test-mesh.ts）。
+            createTestMesh: (): Promise<void> => createTestMeshShared(scene),
+            clearTestMeshes: (): void => clearTestMeshesShared(scene),
 
             // ======== Model Lifecycle Hooks (E2E @dom + @webgl) ========
             /** Remove the currently focused model (delegates to removeFocusedModel). */
