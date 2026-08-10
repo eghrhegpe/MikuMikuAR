@@ -147,16 +147,17 @@ function scanMenuTree(): { error: string | null; nodes: MenuNodeSnapshot[] } {
 
 // ======== 声明式测试套件 ========
 test.describe("声明式菜单引擎 (@dom, vitePage)", { tag: ["@dom", "@overlay"] }, () => {
-    let menuTree: MenuNodeSnapshot[] = [];
-
-    test("设置面板扫描：捕获 ≥8 个节点，分类覆盖 tab + folder + slider", async ({ vitePage: page }) => {
-        // 打开设置面板（真实 locator.click，带命中测试）
+    // 打开设置面板并扫描菜单树。每次测试独立 page，无 describe 级共享状态——
+    // 避免「依赖首测填充共享变量，首测失败时其余测试空数组恒绿」的假绿。
+    async function scanSettingsMenu(page: import("@playwright/test").Page): Promise<MenuNodeSnapshot[]> {
         await page.locator("#btnSettings").click();
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
         await page.waitForTimeout(300);
+        return (await page.evaluate(scanMenuTree)).nodes;
+    }
 
-        // 先扫描左侧 Tab 导航
-        menuTree = (await page.evaluate(scanMenuTree)).nodes;
+    test("设置面板扫描：捕获 ≥8 个节点，结构契约完整（唯一 id / 深度 ≤5 / tab 叶子）", async ({ vitePage: page }) => {
+        const menuTree = await scanSettingsMenu(page);
 
         // 基本断言
         expect(menuTree.length, "应捕获到 ≥8 个菜单节点").toBeGreaterThanOrEqual(8);
@@ -165,6 +166,20 @@ test.describe("声明式菜单引擎 (@dom, vitePage)", { tag: ["@dom", "@overla
         const kinds = new Set(menuTree.map((n) => n.kind));
         expect(kinds.has("tab"), "应至少存在 tab 类型节点").toBe(true);
 
+        // 结构契约：所有节点 testid 唯一
+        const ids = menuTree.map((n) => n.testid);
+        expect(new Set(ids).size).toBe(ids.length);
+
+        // 结构契约：嵌套深度 ≤ 5
+        const maxDepth = menuTree.reduce((m, n) => Math.max(m, n.depth), 0);
+        expect(maxDepth).toBeLessThanOrEqual(5);
+
+        // 结构契约：tab 是叶子导航项（无子节点）
+        const tabs = menuTree.filter((n) => n.kind === "tab");
+        for (const tab of tabs) {
+            expect(tab.childCount, `Tab ${tab.testid} 不应包含子节点`).toBe(0);
+        }
+
         // 打印报告
         console.log("\n📊 菜单扫描报告（Tab 层）:");
         menuTree.forEach((n) => {
@@ -172,24 +187,8 @@ test.describe("声明式菜单引擎 (@dom, vitePage)", { tag: ["@dom", "@overla
         });
     });
 
-    test("所有节点有唯一 testid", async () => {
-        const ids = menuTree.map((n) => n.testid);
-        expect(new Set(ids).size).toBe(ids.length);
-    });
-
-    test("嵌套深度 ≤ 5", async () => {
-        const maxDepth = menuTree.reduce((m, n) => Math.max(m, n.depth), 0);
-        expect(maxDepth).toBeLessThanOrEqual(5);
-    });
-
-    test("所有 tab 节点都没有子节点（tab 是叶子导航项）", async () => {
-        const tabs = menuTree.filter((n) => n.kind === "tab");
-        for (const tab of tabs) {
-            expect(tab.childCount, `Tab ${tab.testid} 不应包含子节点`).toBe(0);
-        }
-    });
-
     test("Tab 导航：点击 tab 后页面不崩溃，新内容加载", async ({ vitePage: page }) => {
+        const menuTree = await scanSettingsMenu(page);
         const tabs = menuTree.filter((n) => n.kind === "tab");
         expect(tabs.length, "应存在 tab 节点").toBeGreaterThan(0);
 
@@ -211,21 +210,5 @@ test.describe("声明式菜单引擎 (@dom, vitePage)", { tag: ["@dom", "@overla
         // 可选：检查 URL 是否变化（SPA 路由）
         const urlAfter = page.url();
         console.log(`  Tab ${firstTab.testid}: URL ${urlBefore} → ${urlAfter}`);
-    });
-
-    test("声明式覆盖报告", async () => {
-        // 即使 menuTree 在其他测试后被影响，也应有基础数据
-        const source = menuTree.length > 0
-            ? menuTree
-            : [{ testid: "fallback", kind: "tab", visible: false, depth: 0, path: "", hasInput: false, hasIcon: false, childCount: 0, children: [], text: "", className: "" }];
-
-        const byKind: Record<string, number> = {};
-        source.forEach((n) => {
-            byKind[n.kind] = (byKind[n.kind] || 0) + 1;
-        });
-        console.log("\n📊 类型分布:", JSON.stringify(byKind));
-
-        // 至少有 1 种节点
-        expect(Object.keys(byKind).length).toBeGreaterThanOrEqual(1);
     });
 });

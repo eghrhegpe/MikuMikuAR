@@ -133,11 +133,8 @@ describe('ModelManager bone overlay', function () {
     it('ensureBoneUpdateObserver creates scene observer', function () {
         mgr.setBoneLinesVis('m1', true);
 
-        const callbacks = scene._callbacks;
-        const boneCallbacks = callbacks.filter(function (cb) {
-            return cb !== mgr._clothUpdateObserver;
-        });
-        expect(boneCallbacks.length).toBeGreaterThanOrEqual(1);
+        expect(mgr._boneUpdateObserver).not.toBeNull();
+        expect(scene._callbacks.length).toBeGreaterThanOrEqual(1);
     });
 
     it('bone overlay is created only once (double toggle)', function () {

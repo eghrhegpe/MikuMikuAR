@@ -101,7 +101,7 @@ test.describe("物理子系统健康检查", { tag: ["@webgl"] }, () => {
         await page.evaluate(() => (window as any).__scene.driver.setWindSpeed(0));
     });
 
-    test("设置风速 0 后 windPhysicsActive 变回 false", async ({ wailsPage: page }) => {
+    test("设置风速 0 后风力停止，windPhysicsActive 保持订阅态（不崩溃）", async ({ wailsPage: page }) => {
         await waitForSceneHook(page);
         await loadFirstModel(page);
 
@@ -117,7 +117,6 @@ test.describe("物理子系统健康检查", { tag: ["@webgl"] }, () => {
         // windSpeed=0 时 isWindActive() 返回 false，_onPhysicsSync 跳过
         // 但 observer 仍订阅（只是回调内跳过），所以 windPhysicsActive 仍为 true
         // 这是预期行为：observer 订阅状态不变，但风力不施加
-        // 不强制断言 false，验证不崩溃即可
-        expect(typeof active).toBe("boolean");
+        expect(active, "observer 仍订阅，windPhysicsActive 保持 true").toBe(true);
     });
 });

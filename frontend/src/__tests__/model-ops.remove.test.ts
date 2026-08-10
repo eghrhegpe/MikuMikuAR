@@ -92,8 +92,10 @@ describe('removeModel', () => {
         getCameraMode.mockReturnValue('concert' as any);
         modelRegistry.set('m1', makeInst({ id: 'm1' }));
         modelRegistry.set('m2', makeInst({ id: 'm2' }));
+        setFocusedModelId('m2');
         removeModel('m1');
         expect(mockModelManager.remove).toHaveBeenCalledWith('m1');
+        expect(switchCameraMode).not.toHaveBeenCalled();
     });
 
     it('resets playback state and hides UI when last model is removed', () => {

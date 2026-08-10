@@ -30,13 +30,12 @@ test.describe("Shortcuts — DOM/overlay (vitePage, @dom)", { tag: ["@dom", "@ov
         await expect(overlay).not.toHaveClass(/visible/);
     });
 
-    test("快捷键: 空间/Space 切换播放状态（按钮存在）", async ({ vitePage: page }) => {
+    test("播放/暂停按钮在无模型时挂载（@dom fixture 无模型，仅验证存在性）", async ({ vitePage: page }) => {
         const playBtn = page.locator("#btnPlayPause");
         // Playback bar is hidden (display:none) until a model is loaded, so the
         // button is present in the DOM but not visible. Assert attachment (existence),
         // not visibility or clickability — clicking a 0×0 hidden button is meaningless
         // without a loaded model, and the @dom fixture has no model.
         await expect(playBtn).toBeAttached();
-        await expect(playBtn).toHaveAttribute("id", "btnPlayPause");
     });
 });

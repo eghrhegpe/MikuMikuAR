@@ -48,95 +48,47 @@ test.describe("Web Resources — PMX/ZIP/VMD 数据链路 (@web)", { tag: ["@web
         await gotoWebEntry(page);
     });
 
-    test("PMX: fetch fixture 字节 → 写入 IndexedDB → 读回一致", async ({ page }) => {
-        const result = await page.evaluate(async () => {
-            const resp = await fetch("/MikuMikuAR/fixtures/sample.pmx");
-            if (!resp.ok) throw new Error(`fetch pmx failed: ${resp.status}`);
-            const bytes = new Uint8Array(await resp.arrayBuffer());
+    // PMX/VMD/ZIP 三段同构（仅文件名与 IDB key 不同），循环化避免复制粘贴
+    const RESOURCE_CASES = [
+        { file: "sample.pmx", key: "file:sample", label: "PMX" },
+        { file: "sample.vmd", key: "file:sample-vmd", label: "VMD" },
+        { file: "sample.zip", key: "file:sample-zip", label: "ZIP" },
+    ];
 
-            const dbReq = indexedDB.open("mikumikuar-web");
-            const db = await new Promise<IDBDatabase>((resolve, reject) => {
-                dbReq.onsuccess = () => resolve(dbReq.result);
-                dbReq.onerror = () => reject(dbReq.error);
-            });
-            const tx = db.transaction("models", "readwrite");
-            await new Promise<void>((resolve, reject) => {
-                const req = tx.objectStore("models").put(bytes, "file:sample");
-                req.onsuccess = () => resolve();
-                req.onerror = () => reject(req.error);
-            });
+    for (const c of RESOURCE_CASES) {
+        test(`${c.label}: fetch fixture 字节 → 写入 IndexedDB → 读回一致`, async ({ page }) => {
+            const result = await page.evaluate(
+                async ({ filePath, key }) => {
+                    const resp = await fetch(`/MikuMikuAR/fixtures/${filePath}`);
+                    if (!resp.ok) throw new Error(`fetch ${filePath} failed: ${resp.status}`);
+                    const bytes = new Uint8Array(await resp.arrayBuffer());
 
-            const txRead = db.transaction("models", "readonly");
-            const readBack = await new Promise<Uint8Array>((resolve, reject) => {
-                const req = txRead.objectStore("models").get("file:sample");
-                req.onsuccess = () => resolve(req.result as Uint8Array);
-                req.onerror = () => reject(req.error);
-            });
-            return { length: readBack?.length ?? 0 };
+                    const dbReq = indexedDB.open("mikumikuar-web");
+                    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+                        dbReq.onsuccess = () => resolve(dbReq.result);
+                        dbReq.onerror = () => reject(dbReq.error);
+                    });
+                    const tx = db.transaction("models", "readwrite");
+                    await new Promise<void>((resolve, reject) => {
+                        const req = tx.objectStore("models").put(bytes, key);
+                        req.onsuccess = () => resolve();
+                        req.onerror = () => reject(req.error);
+                    });
+
+                    const txRead = db.transaction("models", "readonly");
+                    const readBack = await new Promise<Uint8Array>((resolve, reject) => {
+                        const req = txRead.objectStore("models").get(key);
+                        req.onsuccess = () => resolve(req.result as Uint8Array);
+                        req.onerror = () => reject(req.error);
+                    });
+                    return { length: readBack?.length ?? 0 };
+                },
+                { filePath: c.file, key: c.key }
+            );
+
+            expect(result.length).toBeGreaterThan(0);
         });
-
-        expect(result.length).toBeGreaterThan(0);
-    });
-
-    test("VMD: fetch fixture 字节 → 写入 IndexedDB → 读回一致", async ({ page }) => {
-        const result = await page.evaluate(async () => {
-            const resp = await fetch("/MikuMikuAR/fixtures/sample.vmd");
-            if (!resp.ok) throw new Error(`fetch vmd failed: ${resp.status}`);
-            const bytes = new Uint8Array(await resp.arrayBuffer());
-
-            const dbReq = indexedDB.open("mikumikuar-web");
-            const db = await new Promise<IDBDatabase>((resolve, reject) => {
-                dbReq.onsuccess = () => resolve(dbReq.result);
-                dbReq.onerror = () => reject(dbReq.error);
-            });
-            const tx = db.transaction("models", "readwrite");
-            await new Promise<void>((resolve, reject) => {
-                const req = tx.objectStore("models").put(bytes, "file:sample-vmd");
-                req.onsuccess = () => resolve();
-                req.onerror = () => reject(req.error);
-            });
-
-            const txRead = db.transaction("models", "readonly");
-            const readBack = await new Promise<Uint8Array>((resolve, reject) => {
-                const req = txRead.objectStore("models").get("file:sample-vmd");
-                req.onsuccess = () => resolve(req.result as Uint8Array);
-                req.onerror = () => reject(req.error);
-            });
-            return { length: readBack?.length ?? 0 };
-        });
-
-        expect(result.length).toBeGreaterThan(0);
-    });
-
-    test("ZIP: fetch fixture 字节 → 写入 IndexedDB → 读回一致", async ({ page }) => {
-        const result = await page.evaluate(async () => {
-            const resp = await fetch("/MikuMikuAR/fixtures/sample.zip");
-            if (!resp.ok) throw new Error(`fetch zip failed: ${resp.status}`);
-            const bytes = new Uint8Array(await resp.arrayBuffer());
-
-            const dbReq = indexedDB.open("mikumikuar-web");
-            const db = await new Promise<IDBDatabase>((resolve, reject) => {
-                dbReq.onsuccess = () => resolve(dbReq.result);
-                dbReq.onerror = () => reject(dbReq.error);
-            });
-            const tx = db.transaction("models", "readwrite");
-            await new Promise<void>((resolve, reject) => {
-                const req = tx.objectStore("models").put(bytes, "file:sample-zip");
-                req.onsuccess = () => resolve();
-                req.onerror = () => reject(req.error);
-            });
-
-            const txRead = db.transaction("models", "readonly");
-            const readBack = await new Promise<Uint8Array>((resolve, reject) => {
-                const req = txRead.objectStore("models").get("file:sample-zip");
-                req.onsuccess = () => resolve(req.result as Uint8Array);
-                req.onerror = () => reject(req.error);
-            });
-            return { length: readBack?.length ?? 0 };
-        });
-
-        expect(result.length).toBeGreaterThan(0);
-    });
+    }
 
     test("IndexedDB 读写：写入后可读回相同字节", async ({ page }) => {
         // 验证 IndexedDB 基础 CRUD（models store）

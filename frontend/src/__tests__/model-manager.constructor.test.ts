@@ -49,10 +49,6 @@ describe('ModelManager constructor + basic state', function () {
         expect(mgr.focusedMmdModel()).toBeNull();
     });
 
-    it('onChange and autoFrame are stored as constructor params', function () {
-        expect(onChange).not.toHaveBeenCalled();
-        expect(autoFrame).not.toHaveBeenCalled();
-    });
 });
 
 describe('ModelManager registry CRUD', function () {
