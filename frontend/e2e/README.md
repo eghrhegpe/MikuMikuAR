@@ -173,7 +173,7 @@ npm run test                   # 或 npx vitest run
 
 ---
 
-## 7.5. 测试覆盖全景（2026-07-31 更新）
+## 7.5. 测试覆盖全景（2026-08-10 更新）
 
 ### 两阶段测试策略
 
@@ -191,30 +191,30 @@ npm run test                   # 或 npx vitest run
 > - ✅ **CLI 友好**：只依赖 Playwright 自带 Chromium，跑 `npm run test:e2e -- --grep "@dom"` (或 `@web`)
 > - ⚠️ **需桌面环境**：必须有 Wails 运行时，跑 `npm run test:e2e -- --grep "@webgl"` 前需先启动 `wails3 dev`
 
-### @dom — 桌面 DOM 层（vitePage, 30 tests）✅ CLI 友好
+### @dom — 桌面 DOM 层（vitePage, 77 tests）✅ CLI 友好
 
 | Spec 文件 | 测试数 | 覆盖内容 |
 |-----------|--------|---------|
 | `smoke.spec.ts` | 3 | 首屏 canvas + nav 按钮 + Ctrl+1~5 快捷键切换 |
 | `a11y.spec.ts` | 1 | axe-core WCAG 无障碍扫描 |
+| `ai-control.spec.ts` | 3 | AI 控制面板 DOM 渲染 |
 | `library-panel-dom.spec.ts` | 3 | 模型库按钮渲染 + 首次提示 + 关闭重开 |
 | `motion-panel-dom.spec.ts` | 3 | 动作弹窗标题/区段 + 相机模式交互 + 返回 |
 | `motion-playback-dom.spec.ts` | 2 | 底部播放栏 DOM + 空态引导 |
 | `scene-panel-dom.spec.ts` | 3 | 场景区段 + 后处理迁移 + 舞台灯光 |
-| `scene-water-dom.spec.ts` | 2 | 水面预设 + 参数滑块 |
-| `scene-ground-dom.spec.ts` | 2 | 地面基本设置 + 折叠区段 |
+| `scene-water-dom.spec.ts` | 1 | 水面预设 + 参数滑块 |
 | `settings-panel-dom.spec.ts` | 4 | 设置区段 + 快捷键 + 外观 + 关闭重开 |
-| `shortcuts-dom.spec.ts` | 3 | 快捷键面板 + Ctrl+1~5 + 空格键 |
-| `env-sky.spec.ts` (DOM 部分) | 1 | 天空统一层级模式/预设/光照控制 |
-| `env-cloud-dom.spec.ts` | 2 | 体积云参数滑块 + 光照区段 |
-| `settings-theme-lang-dom.spec.ts` | 7 | 主题/外观 + 路径 + 性能 + 渲染 + 音频 + 完整性 |
-| `desktop-capabilities-dom.spec.ts` | 6 | nav 全集 + 相机入口 + 导入/重扫 + library/paths 区段 |
+| `shortcuts-dom.spec.ts` | 3 | 快捷键面板 + Ctrl+1~5 + 播放按钮挂载 |
+| `settings-theme-lang-dom.spec.ts` | 6 | 主题/外观 + 路径 + 性能 + 渲染 + 音频 + 完整性 |
+| `desktop-capabilities-dom.spec.ts` | 7 | nav 全集 + 相机入口 + 导入/重扫 + library/paths 区段 |
+| `schema-driven.spec.ts` | 30 | **声明式菜单引擎**：schema-snapshot 单源驱动，面板级聚合导航 + action 分级断言 |
+| `menu-declaration.spec.ts` | 2 | 声明式菜单扫描：结构契约（唯一 id/深度/tab 叶子）+ tab 导航 |
 | `model-load.spec.ts` (DOM 部分) | 2 | createTestMesh + clearTestMeshes 程序化 mesh 生命周期 |
 | `export-screenshot.spec.ts` (DOM 部分) | 1 | 设置面板「截图」入口 DOM 断言 |
 | `model-lifecycle-webgl.spec.ts` (DOM 部分) | 2 | 程序化 mesh 生命周期 + removeActiveModel 空场景安全调用 |
-| `menu-declaration.spec.ts` | 6 | **声明式菜单引擎**：自动扫描 DOM 中所有 `data-testid` 节点，验证分类/层级/唯一性，零手写维护成本 |
+| `env-sky.spec.ts` (DOM 部分) | 1 | 天空统一层级模式/预设/光照控制 |
 
-### @webgl — 桌面 3D 集成（wailsPage/CDP, 11 tests）⚠️ 需 Windows + Wails
+### @webgl — 桌面 3D 集成（wailsPage/CDP, 16 tests）⚠️ 需 Windows + Wails
 
 | Spec 文件 | 测试数 | 覆盖内容 |
 |-----------|--------|---------|
@@ -223,6 +223,7 @@ npm run test                   # 或 npx vitest run
 | `export-screenshot.spec.ts` (WebGL 部分) | 1 | __scene.capture() Babylon→PNG 管线 |
 | `env-sky.spec.ts` (WebGL 部分) | 2 | 夜景预设渲染 + 截图基线比对 |
 | `model-lifecycle-webgl.spec.ts` (WebGL 部分) | 3 | 真实模型加载→删除→重加载 + modelManager 状态验证 |
+| `physics-health.spec.ts` | 5 | 物理健康检查：刚体计数 + 风力订阅/骨骼位移 + 风速归零稳定性 |
 
 > **注意**：`@webgl` 测试需要 Windows + Wails v3 + WebView2，且依赖本地模型库配置。
 > 若 `wails3 dev` 未启动或 CDP 端口未开，这些测试会快速失败并出现在报告中，**不会阻塞合并**。
@@ -233,9 +234,9 @@ npm run test                   # 或 npx vitest run
 | Spec 文件 | 测试数 | 覆盖内容 |
 |-----------|--------|---------|
 | `web-smoke.spec.ts` | 5 | 首屏 + 环境菜单 + Ctrl 快捷键 + AR/广场门控 |
-| `web-resources.spec.ts` | 4 | PMX/VMD/ZIP 加载闭环 + IndexedDB CRUD |
-| `web-capabilities.spec.ts` | 7 | ar/plazaWindow/watchDir/windowsCopy 声明 + 完整清单 |
-| `web-fsa-auth.spec.ts` | 5 | FSA 授权状态探针 + dismissed 标志 + 导入/重扫入口 |
+| `web-resources.spec.ts` | 4 | PMX/VMD/ZIP 加载闭环（循环化）+ IndexedDB CRUD |
+| `web-capabilities.spec.ts` | 5 | ar/plazaWindow/watchDir 门控 + 广场内联 + nav 全集 |
+| `web-fsa-auth.spec.ts` | 4 | FSA 授权状态探针 + dismissed 标志 + 导入/重扫入口 |
 | `web-download-panel.spec.ts` | 5 | 下载入口 + 浏览区段 + 打开/关闭稳定性 |
 
 ---

@@ -152,7 +152,11 @@ test.describe("声明式菜单引擎 (@dom, vitePage)", { tag: ["@dom", "@overla
     async function scanSettingsMenu(page: import("@playwright/test").Page): Promise<MenuNodeSnapshot[]> {
         await page.locator("#btnSettings").click();
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
-        await page.waitForTimeout(300);
+        // 等菜单树挂载完成（≥8 个 testid 节点），替代固定 sleep——慢 CI 上也稳定
+        await page.waitForFunction(
+            () => document.querySelectorAll("[data-testid]").length >= 8,
+            { timeout: 5000 }
+        );
         return (await page.evaluate(scanMenuTree)).nodes;
     }
 
@@ -198,9 +202,12 @@ test.describe("声明式菜单引擎 (@dom, vitePage)", { tag: ["@dom", "@overla
 
         // 点击 tab（真实 locator.click）
         await page.getByTestId(firstTab.testid).click();
-        await page.waitForTimeout(500);
 
-        // 验证页面没有完全崩溃（body 仍有内容）
+        // 验证页面没有完全崩溃（body 仍有内容）——轮询等待新内容挂载，替代固定 sleep
+        await page.waitForFunction(() => {
+            const body = document.body;
+            return body && body.innerHTML.length > 100;
+        }, { timeout: 5000 });
         const hasBodyContent = await page.evaluate(() => {
             const body = document.body;
             return body && body.innerHTML.length > 100;
