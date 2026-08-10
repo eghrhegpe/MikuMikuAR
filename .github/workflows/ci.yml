@@ -192,6 +192,16 @@ jobs:
       - name: Go build
         run: go build ./...
 
+      # [2026-08] bindings freshness gate：Go 改方法但忘记重新生成时，契约测试查的是
+      # 陈旧 bindings，Go↔TS 漂移检测不到。此处安装与 go.mod 同源版本的 wails3，
+      # 重新生成 bindings 后比对入库版本——diff 非空 → CI 红。
+      - name: Bindings freshness gate
+        run: |
+          wails_ver=$(grep -oP 'wails/v3\s+\Kv[^\s]+' go.mod)
+          go install github.com/wailsapp/wails/v3/cmd/wails3@$wails_ver
+          wails3 generate bindings -ts -i -d frontend/bindings ./...
+          git diff --exit-code -- frontend/bindings/
+
   config-syntax:
     name: Config — Syntax Contract Test
     runs-on: ubuntu-latest
