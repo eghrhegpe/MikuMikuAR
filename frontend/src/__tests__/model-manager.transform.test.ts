@@ -1,3 +1,4 @@
+// @vitest-environment node
 // @ts-nocheck — Babylon.js mock 类型由 vi.mock 运行时替换（见 ./model-manager-mocks）
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {

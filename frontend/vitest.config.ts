@@ -37,9 +37,10 @@ export default defineConfig({
         // 全量留给提交前/CI。
         // [2026-08-10] environment 分流落地（见 ADR-255）：isolate=true 下 happy-dom
         // 环境是「每文件」重建（单文件实测 ~285ms，非每 worker 一次），
-        // 135 个无 DOM 依赖的测试文件加 `// @vitest-environment node` 注释分流，
-        // 全量墙钟 55.95s → ~40s（-29%）。新增测试若纯逻辑请同款标注；
-        // 依赖 window/document 的保持默认 happy-dom 即可。
+        // 181 个无 DOM 依赖的测试文件加 `// @vitest-environment node` 注释分流
+        // （含第二轮 3 个源码模块惰性化解锁的 46 个），
+        // 全量墙钟 55.95s → ~40s（-29%），环境累加 255s → ~90s。
+        // 新增测试若纯逻辑请同款标注；依赖 window/document 的保持默认 happy-dom 即可。
         // [2026-08] deps.optimizer 预构建（vitest 4 默认关闭）——CI 视角启用：
         // 本地 24 核 CPU 富余，预构建收益 ~4% 落在噪声带（ROI 负不成立）；
         // 但 CI 是 2 核 runner，CPU 是绝对瓶颈（实测 vitest 独占 ~2 分钟），

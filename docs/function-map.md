@@ -259,10 +259,10 @@
 | `ROLE()` | `core/dom-contract:21` | 渲染层 role 常量——产出 role 属性时引用，勿手写字符串（ADR-229 §9） |
 | `SLIDER_BAR_CLASS()` | `core/dom-contract:52` | 滑动条本体 class（slider / colorSlider / modeSlider 共用 .cs-bar） |
 | `TOGGLE_INPUT_SELECTOR()` | `core/dom-contract:10` | toggle 的原生输入元素选择器（e2e 需点击/读 checked，故单列一份） |
-| `Disposable()` | `core/dom:60` | — |
-| `DomRefs()` | `core/dom:57` | — |
-| `addDisposableListener()` | `core/dom:68` | 添加事件监听器并返回 Disposable，便于在 dispose 链路中统一释放。 |
-| `dom()` | `core/dom:6` | — |
+| `Disposable()` | `core/dom:66` | — |
+| `DomRefs()` | `core/dom:63` | — |
+| `addDisposableListener()` | `core/dom:74` | 添加事件监听器并返回 Disposable，便于在 dispose 链路中统一释放。 |
+| `dom()` | `core/dom:12` | — |
 | `handleDropFile()` | `core/drop-import:31` | 处理已落地的路径（桌面绝对路径或浏览器 IndexedDB 键）。 |
 | `handleDroppedFile()` | `core/drop-import:80` | [doc:adr-177] 单个拖入文件落地：桌面走原生 path，浏览器读字节写 IndexedDB。 |
 | `StateReader()` | `core/e2e-state-bridge:7` | — |
@@ -373,10 +373,10 @@
 | `MmarPhase()` | `core/mmar-globals:7` | — |
 | `MmarSceneSnapshot()` | `core/mmar-globals:16` | — |
 | `MmarStatus()` | `core/mmar-globals:9` | — |
-| `refreshSceneSnapshot()` | `core/mmar-globals:96` | 刷新 window.__mmar.scene 快照。 |
-| `startSceneSnapshotPolling()` | `core/mmar-globals:190` | 启动周期快照刷新；重复调用安全（仅注册一个 timer）。 |
-| `stopSceneSnapshotPolling()` | `core/mmar-globals:200` | 停止周期快照刷新；未启动或重复调用均安全。 |
-| `updateMmarStatus()` | `core/mmar-globals:73` | — |
+| `refreshSceneSnapshot()` | `core/mmar-globals:103` | 刷新 window.__mmar.scene 快照。 |
+| `startSceneSnapshotPolling()` | `core/mmar-globals:197` | 启动周期快照刷新；重复调用安全（仅注册一个 timer）。 |
+| `stopSceneSnapshotPolling()` | `core/mmar-globals:207` | 停止周期快照刷新；未启动或重复调用均安全。 |
+| `updateMmarStatus()` | `core/mmar-globals:80` | — |
 | `CapabilityProbe()` | `core/mmd-adapter:366` | CapabilityProbe — 升级回归探测（ADR-192 Phase 2 守卫式反射）。 |
 | `applyForceToModelRigidBodies()` | `core/mmd-adapter:163` | — |
 | `applyForceToModelRigidBodiesNative()` | `core/mmd-adapter:210` | — |

@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:adr-147 Phase 2] BoneOverrideStore 核心不变量锁死
 import { describe, it, expect, beforeEach } from 'vitest';
 import { Quaternion } from '@babylonjs/core';

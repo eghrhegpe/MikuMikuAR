@@ -1,3 +1,4 @@
+// @vitest-environment node
 // env-reflection.test.ts — ADR-151 修复回归
 //
 // 验证两处行为修复（纯函数层，无需 Babylon 场景实例）：

@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:adr-129] registry 单测拆分 — ownedBones 冲突仲裁
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {

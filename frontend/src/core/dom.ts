@@ -3,29 +3,35 @@
 
 import { t } from './i18n/t';
 
+// [fix:test-env] node 环境（@vitest-environment node 测试）无 document，顶层引用
+// 改惰性兜底：真实浏览器/happy-dom 行为与原先完全一致（加载时取一次引用），
+// node 下各引用为 null——依赖 dom 的消费方（status-bar 等）在 node 测试里不被
+// 调用，null 无害。保持属性可写，test helpers（model-preset-helpers）的注入赋值照常。
+const _doc = typeof document !== 'undefined' ? document : null;
+
 export const dom = {
-    canvas: document.getElementById('renderCanvas') as HTMLCanvasElement,
-    statusBar: document.getElementById('statusBar') as HTMLElement,
-    statusText: document.getElementById('statusText') as HTMLElement,
-    fpsClock: document.getElementById('fpsClock') as HTMLElement,
-    runtimeBadge: document.getElementById('runtimeBadge') as HTMLElement,
-    loadingEl: document.getElementById('loading') as HTMLElement,
-    btnMainAction: document.getElementById('btnMainAction') as HTMLButtonElement,
-    btnMotionPopup: document.getElementById('btnMotionPopup') as HTMLButtonElement,
-    playbackBar: document.getElementById('playbackBar') as HTMLElement,
-    btnPlayPause: document.getElementById('btnPlayPause') as HTMLButtonElement,
-    btnLoopToggle: document.getElementById('btnLoopToggle') as HTMLButtonElement,
-    timeDisplay: document.getElementById('timeDisplay') as HTMLElement,
-    seekBar: document.getElementById('seekBar') as HTMLElement,
-    seekProgress: document.getElementById('seekProgress') as HTMLElement,
-    loadingText: document.getElementById('loadingText') as HTMLElement,
-    btnSettings: document.getElementById('btnSettings') as HTMLButtonElement,
-    btnScene: document.getElementById('btnScene') as HTMLButtonElement,
-    btnEnv: document.getElementById('btnEnv') as HTMLButtonElement,
-    btnAssistant: document.getElementById('btnAssistant') as HTMLButtonElement,
-    btnPlaza: document.getElementById('btnPlaza') as HTMLButtonElement,
-    sceneOverlay: document.getElementById('sceneOverlay') as HTMLElement,
-    webviewLayer: document.getElementById('webviewLayer') as HTMLElement,
+    canvas: _doc?.getElementById('renderCanvas') as HTMLCanvasElement,
+    statusBar: _doc?.getElementById('statusBar') as HTMLElement,
+    statusText: _doc?.getElementById('statusText') as HTMLElement,
+    fpsClock: _doc?.getElementById('fpsClock') as HTMLElement,
+    runtimeBadge: _doc?.getElementById('runtimeBadge') as HTMLElement,
+    loadingEl: _doc?.getElementById('loading') as HTMLElement,
+    btnMainAction: _doc?.getElementById('btnMainAction') as HTMLButtonElement,
+    btnMotionPopup: _doc?.getElementById('btnMotionPopup') as HTMLButtonElement,
+    playbackBar: _doc?.getElementById('playbackBar') as HTMLElement,
+    btnPlayPause: _doc?.getElementById('btnPlayPause') as HTMLButtonElement,
+    btnLoopToggle: _doc?.getElementById('btnLoopToggle') as HTMLButtonElement,
+    timeDisplay: _doc?.getElementById('timeDisplay') as HTMLElement,
+    seekBar: _doc?.getElementById('seekBar') as HTMLElement,
+    seekProgress: _doc?.getElementById('seekProgress') as HTMLElement,
+    loadingText: _doc?.getElementById('loadingText') as HTMLElement,
+    btnSettings: _doc?.getElementById('btnSettings') as HTMLButtonElement,
+    btnScene: _doc?.getElementById('btnScene') as HTMLButtonElement,
+    btnEnv: _doc?.getElementById('btnEnv') as HTMLButtonElement,
+    btnAssistant: _doc?.getElementById('btnAssistant') as HTMLButtonElement,
+    btnPlaza: _doc?.getElementById('btnPlaza') as HTMLButtonElement,
+    sceneOverlay: _doc?.getElementById('sceneOverlay') as HTMLElement,
+    webviewLayer: _doc?.getElementById('webviewLayer') as HTMLElement,
 
     /** 引擎就绪后调用：隐藏 loading 遮罩，显示主应用 UI */
     showApp(): void {

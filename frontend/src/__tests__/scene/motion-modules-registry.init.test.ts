@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:adr-129] registry 单测拆分 — initMotionModules / getRegisteredModules
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {

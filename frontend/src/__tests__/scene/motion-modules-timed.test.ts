@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:adr-116 P3] 时间驱动模块接线单测 — 验证 riding 的每帧钩子真正写入骨骼覆盖。
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';

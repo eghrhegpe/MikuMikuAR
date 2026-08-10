@@ -1,3 +1,4 @@
+// @vitest-environment node
 // menu-schema.modelid.test.ts — modelId override（ADR-166 §6.13，拆自 menu-schema.test.ts）
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { mockScene, mockLighting, mockPerception, mockRegistry } from './menu-schema-mocks';

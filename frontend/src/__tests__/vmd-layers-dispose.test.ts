@@ -1,3 +1,4 @@
+// @vitest-environment node
 /**
  * VMD 图层动画句柄 dispose 测试
  *

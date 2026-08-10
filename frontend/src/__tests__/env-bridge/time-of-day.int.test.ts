@@ -1,3 +1,4 @@
+// @vitest-environment node
 // env-bridge/time-of-day.int.test.ts — 拆自 env-bridge.test.ts（ADR-204 P2）
 // Time of Day：start/stop/isActive/speed/_timeOfDayTick（24 用例）
 

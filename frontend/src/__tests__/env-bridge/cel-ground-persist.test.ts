@@ -1,3 +1,4 @@
+// @vitest-environment node
 // env-bridge/cel-ground-persist.test.ts — cel-shading 地面哑光临时切换的持久化行为
 // 修复验证（env-bridge.ts registerCelGroundCoupling + cancelEnvPersistTimer）：
 //   cel 激活临时关 groundPbr 用 skipAutoSave=true，但因契约 skipAutoSave 只跳过

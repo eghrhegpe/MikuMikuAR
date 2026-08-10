@@ -1,3 +1,4 @@
+// @vitest-environment node
 // renderer-transition.test.ts — transitionRenderState 单元测试
 //
 // 覆盖 renderer.ts 中 P1 修复：

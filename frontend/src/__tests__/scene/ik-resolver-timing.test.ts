@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:adr-202 §六] IK 重解双调用路径时序验证。
 // 核心断言：bone-override 的 _solvePosSlotIkWasm 与 feet-adjustment 的 mmdModelSolveIk
 // 在一帧内不会对同一条 IK 链同时调用——两者互斥（POS slot 有覆盖 → feet-adjustment skip）。

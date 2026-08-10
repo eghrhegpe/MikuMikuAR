@@ -1,3 +1,4 @@
+// @vitest-environment node
 // env-bridge/facade.int.test.ts — 拆自 env-bridge.test.ts（ADR-204 P2）
 // _applyEnvStateFacade via setEnvState（13）+ Module-level edge cases（1）= 14 用例
 

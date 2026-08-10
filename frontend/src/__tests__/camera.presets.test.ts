@@ -1,3 +1,4 @@
+// @vitest-environment node
 // @ts-nocheck — vi.hoisted mock 类运行时替换（camera 拆分测试用）
 import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
 const MockCamera = vi.hoisted(() => {

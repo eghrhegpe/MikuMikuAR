@@ -1,3 +1,4 @@
+// @vitest-environment node
 // @ts-nocheck — vi.mock 运行时替换
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {

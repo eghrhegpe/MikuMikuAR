@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:adr-215] 模型附属关系守护测试
 // 覆盖 attachModelToBone / detachModelFromBone / detachChildModels / DAG 校验 / 骨骼 guard，
 // 对应 ADR-215 §2.4（DAG/单父/骨骼名 guard）与 §7 不变量（附属不丢失、视觉位置一致、级联销毁）。

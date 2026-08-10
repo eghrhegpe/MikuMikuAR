@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:adr-129] registry 单测拆分 — disable 精确清除 / setTargetModel 作用域切换 / clearAllModulesForModel
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {

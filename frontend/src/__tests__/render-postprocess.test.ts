@@ -1,3 +1,4 @@
+// @vitest-environment node
 // render-postprocess.test.ts — Bloom / FXAA / 色调映射 / 曝光 / FOV / 预设 独立测试
 //
 // 覆盖 renderer.ts 中与 Babylon 环境无关的纯函数逻辑：

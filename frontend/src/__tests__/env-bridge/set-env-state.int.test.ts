@@ -1,3 +1,4 @@
+// @vitest-environment node
 // env-bridge/set-env-state.int.test.ts — 拆自 env-bridge.test.ts（ADR-204 P2）
 // setEnvState 中央入口（13 用例）
 

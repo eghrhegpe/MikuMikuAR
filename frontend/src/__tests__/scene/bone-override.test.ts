@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:adr-116 P1] 校验覆盖合成纯函数 computeOverride 的语义正确性。
 // 重点：位置覆盖应为「动画平移 + 偏移」的加法语义，且位置覆盖不得抹除动画旋转。
 import { describe, it, expect } from 'vitest';

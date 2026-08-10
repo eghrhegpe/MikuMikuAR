@@ -1,3 +1,4 @@
+// @vitest-environment node
 // env-bridge/presets.int.test.ts — 拆自 env-bridge.test.ts（ADR-204 P2）
 // applyEnvPreset（4）+ applyEnvPresetObject（6）+ _presetAnimId cancellation（2）= 12 用例
 

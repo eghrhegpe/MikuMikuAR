@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:adr-051] VMD 骨骼过滤单元测试
 // 测试 _filterVmdBones 的二进制级 VMD 骨骼帧过滤逻辑
 

@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // env-sky 重度 3D 耦合，但其 disposeSky() 自身对「未初始化天空」是幂等早返回结构：

@@ -1,3 +1,4 @@
+// @vitest-environment node
 // menu-schema.motion-module.test.ts — motionModule. StatePath 前缀（ADR-093 §6.10，拆自 menu-schema.test.ts）
 // 该 describe 依赖 vi.resetModules() + vi.doMock('@/core/state') 在隔离模块图内重绑 state，
 // 故 getStateValue/setStateValue 经动态 import 取用重置后的实例（与 vi.mock 工厂不可共享的规律一致）。

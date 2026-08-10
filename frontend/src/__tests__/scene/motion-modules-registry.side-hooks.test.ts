@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [round-12 P1 回归] 左右脚/左右手帧钩子独立注册 —
 // 修复：共享帧钩子管理器按 modelId 键控，createEnsureActive 的 has(modelId) 幂等检查
 // 无法区分左右侧模块，导致后启用一侧的位置偏移帧钩子永不注册（功能静默失效）。

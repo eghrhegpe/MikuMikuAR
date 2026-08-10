@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:adr-129] registry 单测拆分 — setModuleParam/enabled / per-motion 配置 / getState-setState 对称
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {

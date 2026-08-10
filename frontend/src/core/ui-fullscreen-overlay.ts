@@ -266,15 +266,19 @@ function createOverlayElement(options: FullscreenOverlayOptions): HTMLElement {
 
 // ======== CSS Animation ========
 
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
-    }
-    @keyframes fadeOut {
-        from { opacity: 1; }
-        to { opacity: 0; }
-    }
-`;
-document.head.appendChild(style);
+// [fix:test-env] 顶层 DOM 副作用守卫：node 环境（@vitest-environment node 测试）
+// 无 document，跳过 CSS 注入（仅渲染语义，测试不渲染无影响）；happy-dom/浏览器照常。
+if (typeof document !== 'undefined') {
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+    `;
+    document.head.appendChild(style);
+}

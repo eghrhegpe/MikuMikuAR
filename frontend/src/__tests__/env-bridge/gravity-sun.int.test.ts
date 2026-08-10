@@ -1,3 +1,4 @@
+// @vitest-environment node
 // env-bridge/gravity-sun.int.test.ts — 拆自 env-bridge.test.ts（ADR-204 P2）
 // Gravity（5）+ Sun Angle（4）= 9 用例
 

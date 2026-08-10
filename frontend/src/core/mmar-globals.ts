@@ -36,7 +36,14 @@ declare global {
     }
 }
 
-// ======== 初始化（幂等；模块加载时自动执行，保证 window.__mmar 始终就绪） ========
+// ======== 初始化（幂等；模块加载时自动执行，保证 __mmar 始终就绪） ========
+
+// [fix:test-env] 挂载目标选型：浏览器/happy-dom 用 window（外置 AI 读 window.__mmar），
+// node 环境（@vitest-environment node 测试）用 globalThis——测试文件 import 本模块
+// 不再因 window 未定义炸；node 下 __mmar 只是进程内对象，无人读取，语义无影响。
+const _root = (typeof window !== 'undefined' ? window : globalThis) as typeof globalThis & {
+    __mmar?: MmarGlobal;
+};
 
 function createInitialStatus(): MmarStatus {
     return { phase: 'idle', text: '', updatedAt: Date.now() };
@@ -53,16 +60,16 @@ function createInitialSceneSnapshot(): MmarSceneSnapshot {
     };
 }
 
-/** 幂等地确保 window.__mmar 就绪，返回已就绪的实例（消除对 `!` 断言的依赖）。 */
+/** 幂等地确保 __mmar 就绪，返回已就绪的实例（消除对 `!` 断言的依赖）。 */
 function ensureMmar(): MmarGlobal {
-    if (window.__mmar) {
-        return window.__mmar;
+    if (_root.__mmar) {
+        return _root.__mmar;
     }
-    window.__mmar = {
+    _root.__mmar = {
         status: createInitialStatus(),
         scene: createInitialSceneSnapshot(),
     };
-    return window.__mmar;
+    return _root.__mmar;
 }
 
 // 模块加载即初始化：任何读取方（含启动时序更早的模块）都能拿到合法对象。

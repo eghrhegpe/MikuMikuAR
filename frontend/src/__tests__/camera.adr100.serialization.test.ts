@@ -1,3 +1,4 @@
+// @vitest-environment node
 // @ts-nocheck — mock 类运行时替换（camera 拆分测试用）
 // [doc:adr-204] camera.adr100.test.ts 拆分：P3 serialization
 import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';

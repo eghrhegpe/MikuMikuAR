@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:adr-125] registry 单测拆分 — applyModuleSnapshot + setParam 集成测试
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {

@@ -1,3 +1,4 @@
+// @vitest-environment node
 // performance-snapshot.test.ts — 性能降级快照恢复路径单测
 //
 // 覆盖收口后的 `_restoreSnapshot`（applyDegrade level=0 与 resetPerformanceSnapshot 共用）：

@@ -1,3 +1,4 @@
+// @vitest-environment node
 // env-bridge/middleware.int.test.ts — 拆自 env-bridge.test.ts（ADR-204 P2）
 // ADR-173: setEnvState middleware（12 用例）
 

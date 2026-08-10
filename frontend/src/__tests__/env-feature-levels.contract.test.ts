@@ -1,3 +1,4 @@
+// @vitest-environment node
 // env-feature-levels.contract.test.ts — 导出函数存在性 + 签名契约
 //
 // 拆分前锁住 8 个 build*Level 函数的签名与返回值形状。

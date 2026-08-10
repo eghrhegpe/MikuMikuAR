@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, vi } from 'vitest';
 
 // 隔离 babylon-mmd / babylon 真实依赖，验证 _getBundles 从公开属性读取 bundle
