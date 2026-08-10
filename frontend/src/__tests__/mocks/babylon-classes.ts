@@ -548,26 +548,6 @@ export class MockStandardMaterial {
         };
     }
 
-    enableDiffuseTexture(level: number = 1): void {
-        this.diffuseTexture = this._makeTexture(level);
-    }
-
-    enableBumpTexture(level: number = 1): void {
-        this.bumpTexture = this._makeTexture(level);
-    }
-
-    enableToonTexture(level: number = 1): void {
-        this.toonTexture = this._makeTexture(level);
-    }
-
-    enableSphereTexture(level: number = 1): void {
-        this.sphereTexture = this._makeTexture(level);
-    }
-
-    enableEmissiveTexture(level: number = 1): void {
-        this.emissiveTexture = this._makeTexture(level);
-    }
-
     constructor(name: string) {
         this.name = name;
     }
@@ -655,10 +635,6 @@ export class MockTexture {
     clone() {
         return this;
     }
-    set onError(_: any) {}
-    get onError() {
-        return undefined;
-    }
 }
 
 export class MockCubeTexture {
@@ -694,7 +670,6 @@ export class MockDefaultRenderingPipeline {
     getClassName() {
         return 'DefaultRenderingPipeline';
     }
-    setRenderCamera() {}
     dispose() {}
 }
 
@@ -728,9 +703,6 @@ export class MockPBRMaterial {
     albedoTexture: { level: number; setLevel(l: number): void } | null = null;
     bumpTexture: { level: number; setLevel(l: number): void } | null = null;
     emissiveTexture: { level: number; setLevel(l: number): void } | null = null;
-    // PBRSubSurfaceConfiguration 插件 stub：让 applySssToMaterial 的
-    // `plugins.find(pl => typeof pl.isTranslucencyEnabled === 'boolean')` 能找到目标
-    plugins: unknown[] = [{ isTranslucencyEnabled: false, isScatteringEnabled: false }];
 
     private _makeColor(r: number, g: number, b: number) {
         const obj: any = {
@@ -770,27 +742,6 @@ export class MockPBRMaterial {
     }
     dispose() {}
     markDirty() {}
-    enableAlbedoTexture(level: number = 1): void {
-        let _level = level;
-        this.albedoTexture = {
-            get level() { return _level; },
-            setLevel(l: number) { _level = l; },
-        };
-    }
-    enableBumpTexture(level: number = 1): void {
-        let _level = level;
-        this.bumpTexture = {
-            get level() { return _level; },
-            setLevel(l: number) { _level = l; },
-        };
-    }
-    enableEmissiveTexture(level: number = 1): void {
-        let _level = level;
-        this.emissiveTexture = {
-            get level() { return _level; },
-            setLevel(l: number) { _level = l; },
-        };
-    }
 }
 
 export class MockGridMaterial {
