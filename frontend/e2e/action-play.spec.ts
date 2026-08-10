@@ -49,7 +49,7 @@ test.describe("核心旅程: 动作播放与换装", { tag: ["@webgl"] }, () => 
         const before = await page.evaluate(async () => (window as any).__scene.fingerprint());
         // 应用第二个变体（variants[0] 通常为「默认」）
         const ok = await page.evaluate(
-            async (v: string) => (window as any).__scene.applyOutfit(v),
+            async (v: string) => (window as any).__scene.driver.applyOutfit(v),
             result.variants[1]
         );
         expect(ok).toBe(true);

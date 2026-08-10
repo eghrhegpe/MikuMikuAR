@@ -46,7 +46,7 @@ test.describe("物理子系统健康检查", { tag: ["@webgl"] }, () => {
         await loadFirstModel(page);
 
         // 激活风力
-        await page.evaluate(() => (window as any).__scene.setWindSpeed(10));
+        await page.evaluate(() => (window as any).__scene.driver.setWindSpeed(10));
         // 等待风力订阅生效（physics sync 下一帧触发）
         await page.waitForTimeout(500);
 
@@ -54,7 +54,7 @@ test.describe("物理子系统健康检查", { tag: ["@webgl"] }, () => {
         expect(active).toBe(true);
 
         // 恢复（避免影响后续测试）
-        await page.evaluate(() => (window as any).__scene.setWindSpeed(0));
+        await page.evaluate(() => (window as any).__scene.driver.setWindSpeed(0));
     });
 
     test("设置风速 10 后骨骼位置发生变化（物理真的动了）", async ({ wailsPage: page }) => {
@@ -70,7 +70,7 @@ test.describe("物理子系统健康检查", { tag: ["@webgl"] }, () => {
         });
 
         // 激活风力
-        await page.evaluate(() => (window as any).__scene.setWindSpeed(10));
+        await page.evaluate(() => (window as any).__scene.driver.setWindSpeed(10));
         // 等待物理模拟数帧（让风力生效）
         await page.waitForTimeout(2000);
 
@@ -98,7 +98,7 @@ test.describe("物理子系统健康检查", { tag: ["@webgl"] }, () => {
         expect(movedAny).toBe(true);
 
         // 恢复
-        await page.evaluate(() => (window as any).__scene.setWindSpeed(0));
+        await page.evaluate(() => (window as any).__scene.driver.setWindSpeed(0));
     });
 
     test("设置风速 0 后 windPhysicsActive 变回 false", async ({ wailsPage: page }) => {
@@ -106,11 +106,11 @@ test.describe("物理子系统健康检查", { tag: ["@webgl"] }, () => {
         await loadFirstModel(page);
 
         // 先开启
-        await page.evaluate(() => (window as any).__scene.setWindSpeed(10));
+        await page.evaluate(() => (window as any).__scene.driver.setWindSpeed(10));
         await page.waitForTimeout(500);
 
         // 再关闭
-        await page.evaluate(() => (window as any).__scene.setWindSpeed(0));
+        await page.evaluate(() => (window as any).__scene.driver.setWindSpeed(0));
         await page.waitForTimeout(500);
 
         const active = await page.evaluate(() => (window as any).__scene.windPhysicsActive);

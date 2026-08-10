@@ -27,7 +27,7 @@ test.describe("Mesh 生命周期 (@dom, vitePage)", { tag: ["@dom"] }, () => {
     test("removeActiveModel does not throw on empty scene (graceful no-op)", async ({ vitePage: page }) => {
         await waitForSceneHook(page);
         // Should not throw when no model is focused
-        await page.evaluate(() => (window as any).__scene.removeActiveModel());
+        await page.evaluate(() => (window as any).__scene.driver.removeActiveModel());
         const meshCount = await page.evaluate(() => (window as any).__scene.meshCount);
         // meshCount should remain unchanged (background meshes still present)
         expect(meshCount).toBeGreaterThanOrEqual(0);
@@ -44,7 +44,7 @@ test.describe("模型生命周期: 加载→删除→重加载 (@webgl, wailsPag
         expect(meshCountAfterLoad).toBeGreaterThan(10);
 
         // 通过 __scene 钩子删除当前模型（模拟 removeSceneActor 路径）
-        await page.evaluate(() => (window as any).__scene.removeActiveModel());
+        await page.evaluate(() => (window as any).__scene.driver.removeActiveModel());
         await page.waitForTimeout(500);
 
         const meshCountAfterDelete = await page.evaluate(() => (window as any).__scene.meshCount);
@@ -64,7 +64,7 @@ test.describe("模型生命周期: 加载→删除→重加载 (@webgl, wailsPag
         expect(hasModelBefore).toBe(true);
 
         // 删除
-        await page.evaluate(() => (window as any).__scene.removeActiveModel());
+        await page.evaluate(() => (window as any).__scene.driver.removeActiveModel());
         await page.waitForTimeout(500);
 
         // 确认 modelManager 为空
@@ -83,7 +83,7 @@ test.describe("模型生命周期: 加载→删除→重加载 (@webgl, wailsPag
         expect(meshCountFirst).toBeGreaterThan(10);
 
         // 删除
-        await page.evaluate(() => (window as any).__scene.removeActiveModel());
+        await page.evaluate(() => (window as any).__scene.driver.removeActiveModel());
         await page.waitForTimeout(500);
 
         // 重新加载

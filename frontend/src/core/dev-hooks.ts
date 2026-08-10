@@ -93,6 +93,61 @@ export function setupE2ECapture(): void {
     // Exposes live Babylon.js scene state for Playwright numeric assertions.
     // Avoids fragile pixel-screenshot comparison for 3D correctness.
     (window as unknown as Record<string, unknown>).__scene = {
+        // [fix:P2] 写操作命名空间收敛：驱动性钩子（改场景/模型/物理状态）统一挪到
+        // __scene.driver，只读探针（fps/meshCount/currentAnimation/fingerprint 等）
+        // 保留在 __scene 顶层——读写分离，防测试误用写钩子做断言。
+        driver: {
+            // --- Outfit (换装) behavior hook (DEV only, on-strategy per ADR-060) ---
+            // Drives the REAL applyOutfitVariant path so E2E can assert a 3D change
+            // without fragile 3-4 level menu navigation.
+            applyOutfit: (variantName: string): Promise<boolean> => {
+                const inst = focusedModel();
+                if (!inst) {
+                    return Promise.resolve(false);
+                }
+                return applyOutfitVariant(inst.id, variantName)
+                    .then(() => true)
+                    .catch(() => false);
+            },
+
+            // CI seed model — creates a programmatic Babylon mesh so @webgl E2E tests
+            // can assert a real 3D scene without a PMX file on disk.
+            createTestMesh: async (): Promise<void> => {
+                const { MeshBuilder } = await import('@babylonjs/core/Meshes/meshBuilder');
+                const { StandardMaterial } = await import('@babylonjs/core/Materials/standardMaterial');
+                const { Color3 } = await import('@babylonjs/core/Maths/math.color');
+                // Dispose any previous test meshes first
+                for (const m of [...scene.meshes]) {
+                    if (m.name.startsWith('e2e-test-')) {
+                        m.dispose();
+                    }
+                }
+                const box = MeshBuilder.CreateBox('e2e-test-mesh', { size: 0.5 }, scene);
+                const mat = new StandardMaterial('e2e-test-mat', scene);
+                mat.diffuseColor = new Color3(1, 0, 0);
+                box.material = mat;
+            },
+            clearTestMeshes: (): void => {
+                for (const m of [...scene.meshes]) {
+                    if (m.name.startsWith('e2e-test-')) {
+                        m.dispose();
+                    }
+                }
+            },
+
+            // ======== Model Lifecycle Hooks (E2E @dom + @webgl) ========
+            /** Remove the currently focused model (delegates to removeFocusedModel). */
+            removeActiveModel: (): void => {
+                removeFocusedModel();
+            },
+
+            /** 临时设置风速（E2E 测试用，不持久化） */
+            setWindSpeed: (speed: number): void => {
+                envState.windSpeed = speed;
+                envState.windEnabled = speed > 0;
+            },
+        },
+
         get fps(): number {
             return engine.getFps();
         },
@@ -124,15 +179,6 @@ export function setupE2ECapture(): void {
                 return { variants: [], error: String(e) };
             }
         },
-        applyOutfit: (variantName: string): Promise<boolean> => {
-            const inst = focusedModel();
-            if (!inst) {
-                return Promise.resolve(false);
-            }
-            return applyOutfitVariant(inst.id, variantName)
-                .then(() => true)
-                .catch(() => false);
-        },
         // Coarse 16x16 luminance fingerprint of the current frame. Stable enough
         // for "did the picture change" assertions without decoding the PNG.
         // (Do NOT read a '2d' context from the WebGL canvas — getContext returns null.)
@@ -163,36 +209,6 @@ export function setupE2ECapture(): void {
         // '2d' context from the WebGL canvas — getContext('2d') returns null.
         capture: (): Promise<string> => window.__capture!(),
 
-        // CI seed model — creates a programmatic Babylon mesh so @webgl E2E tests
-        // can assert a real 3D scene without a PMX file on disk.
-        createTestMesh: async (): Promise<void> => {
-            const { MeshBuilder } = await import('@babylonjs/core/Meshes/meshBuilder');
-            const { StandardMaterial } = await import('@babylonjs/core/Materials/standardMaterial');
-            const { Color3 } = await import('@babylonjs/core/Maths/math.color');
-            // Dispose any previous test meshes first
-            for (const m of [...scene.meshes]) {
-                if (m.name.startsWith('e2e-test-')) {
-                    m.dispose();
-                }
-            }
-            const box = MeshBuilder.CreateBox('e2e-test-mesh', { size: 0.5 }, scene);
-            const mat = new StandardMaterial('e2e-test-mat', scene);
-            mat.diffuseColor = new Color3(1, 0, 0);
-            box.material = mat;
-        },
-        clearTestMeshes: (): void => {
-            for (const m of [...scene.meshes]) {
-                if (m.name.startsWith('e2e-test-')) {
-                    m.dispose();
-                }
-            }
-        },
-
-        // ======== Model Lifecycle Hooks (E2E @dom + @webgl) ========
-        /** Remove the currently focused model (delegates to removeFocusedModel). */
-        removeActiveModel: (): void => {
-            removeFocusedModel();
-        },
         /** Direct reference to the ModelManager instance for state inspection. */
         get modelManager() {
             return modelManager;
@@ -245,12 +261,6 @@ export function setupE2ECapture(): void {
         /** 风力物理是否已实际订阅（WASM Bullet onSyncObservable） */
         get windPhysicsActive(): boolean {
             return isWindPhysicsActive();
-        },
-
-        /** 临时设置风速（E2E 测试用，不持久化） */
-        setWindSpeed: (speed: number): void => {
-            envState.windSpeed = speed;
-            envState.windEnabled = speed > 0;
         },
 
         /** 获取指定骨骼名的世界位置（用于验证物理是否真的动了骨骼） */

@@ -23,7 +23,7 @@ test.describe("核心旅程: Seed model (@dom, vitePage)", { tag: ["@dom"] }, ()
     test("clearTestMeshes removes seed meshes", async ({ vitePage: page }) => {
         await waitForSceneHook(page);
         const beforeCount = await page.evaluate(() => (window as any).__scene.meshCount);
-        await page.evaluate(async () => (window as any).__scene.createTestMesh());
+        await page.evaluate(async () => (window as any).__scene.driver.createTestMesh());
         const afterCreate = await page.evaluate(() => (window as any).__scene.meshCount);
         expect(afterCreate).toBeGreaterThan(beforeCount);
         await clearSeedModel(page);

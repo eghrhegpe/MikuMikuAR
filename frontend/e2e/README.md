@@ -275,7 +275,7 @@ npx playwright test --grep "@web"
 ## 9. 新增 / 维护 spec 约定
 
 - 走 DOM：用 `vitePage`，仅断言菜单/overlay/滑块等真实渲染的节点（canvas 内无 DOM，勿用 `toBeVisible` 判 3D）。
-- 走 3D：用 `wailsPage` + `window.__scene` 数值断言（`fps` / `meshCount` / `constraintCount` / `currentAnimation` / `fingerprint()`）；换装走 `__scene.applyOutfit()` 钩子，勿做 3-4 层菜单 DOM 导航。
+- 走 3D：用 `wailsPage` + `window.__scene` 数值断言（`fps` / `meshCount` / `constraintCount` / `currentAnimation` / `fingerprint()`）；换装走 `__scene.driver.applyOutfit()` 钩子（写操作统一在 `__scene.driver`，只读探针在 `__scene` 顶层），勿做 3-4 层菜单 DOM 导航。
 - 每个 spec 顶层 `test.describe` 标注 `@dom` 或 `@webgl` 标签，CI 据此切分。
 - 改动 `core/main.ts`（`window.__scene` 钩子）前，按项目多 AI 铁律先在当日 `memory/YYYY-MM-DD.md` 认领。
 

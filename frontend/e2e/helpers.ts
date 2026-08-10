@@ -318,14 +318,14 @@ export async function clickOverlaySubLevel(page: Page, label: string): Promise<v
 export async function loadSeedModel(page: Page): Promise<number> {
     await waitForSceneHook(page);
     await page.evaluate(async () => {
-        await (window as any).__scene.createTestMesh();
+        await (window as any).__scene.driver.createTestMesh();
     });
     return await page.evaluate(() => (window as any).__scene.meshCount);
 }
 
 /** Clear all seed/e2e test meshes from the scene. */
 export async function clearSeedModel(page: Page): Promise<void> {
-    await page.evaluate(() => (window as any).__scene.clearTestMeshes());
+    await page.evaluate(() => (window as any).__scene.driver.clearTestMeshes());
 }
 
 // ======== Screenshot baseline (Phase 2, ADR-060) ========
