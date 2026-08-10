@@ -93,6 +93,10 @@ jobs:
           status = d.get('status', '?')
           fa = len(d.get('failedTests', []))
           print(f'::notice title=@dom summary::status={status}, {fa} failed')
+          # [fix:P2] status 非 passed/flaky 但 0 failedTests → report 被 timeout 中断，不可靠，必须红。
+          if status not in ('passed', 'flaky') and fa == 0:
+              print(f'::error title=@dom gate::status={status} 但 0 failedTests — report 不可靠，job 标红')
+              exit(1)
           if fa > 0:
               print(f'::error title=@dom gate::failed={fa} > 0 — @dom 门禁失败，job 标红')
               exit(1)
@@ -214,8 +218,15 @@ jobs:
           status = d.get('status', '?')
           fa = len(d.get('failedTests', []))
           print(f'::notice title=@webgl summary::status={status}, {fa} failed')
-          if fa > 20:
-              print(f'::error title=@webgl gate::failed={fa} > 20 — 测试体系异常，job 标红')
+          # [fix:P2] 阈值必须 < 测试总数：@webgl 实测 16 spec（playwright --list），旧阈值 20
+          # > 16 → 全败仍放行（新假绿）。收紧为 8（容忍 ~50% 环境性失败，过半失败必红）。
+          # status 非 passed/flaky 且 0 failedTests → report 被中断，不可靠，必须红。
+          THRESHOLD = 8
+          if status not in ('passed', 'flaky') and fa == 0:
+              print(f'::error title=@webgl gate::status={status} 但 0 failedTests — report 不可靠，job 标红')
+              exit(1)
+          if fa > THRESHOLD:
+              print(f'::error title=@webgl gate::failed={fa} > {THRESHOLD} — 测试体系异常，job 标红')
               exit(1)
           "
 
@@ -282,6 +293,10 @@ jobs:
           status = d.get('status', '?')
           fa = len(d.get('failedTests', []))
           print(f'::notice title=@web-smoke summary::status={status}, {fa} failed')
+          # [fix:P2] status 非 passed/flaky 但 0 failedTests → report 被中断，不可靠，必须红。
+          if status not in ('passed', 'flaky') and fa == 0:
+              print(f'::error title=@web-smoke gate::status={status} 但 0 failedTests — report 不可靠，job 标红')
+              exit(1)
           if fa > 0:
               print(f'::error title=@web-smoke gate::failed={fa} > 0 — @web smoke 门禁失败，job 标红')
               exit(1)
@@ -352,8 +367,15 @@ jobs:
           status = d.get('status', '?')
           fa = len(d.get('failedTests', []))
           print(f'::notice title=@web-full summary::status={status}, {fa} failed')
-          if fa > 20:
-              print(f'::error title=@web-full gate::failed={fa} > 20 — 测试体系异常，job 标红')
+          # [fix:P2] 阈值必须 < 测试总数：@web-full 实测 23 spec，旧阈值 20 → 仅 3 个通过即放行
+          # （87% 失败率容忍，与「杜绝假绿」矛盾）。收紧为 5（ubuntu+Chromium 较稳，容忍少量抖动）。
+          # status 非 passed/flaky 且 0 failedTests → report 被中断，不可靠，必须红。
+          THRESHOLD = 5
+          if status not in ('passed', 'flaky') and fa == 0:
+              print(f'::error title=@web-full gate::status={status} 但 0 failedTests — report 不可靠，job 标红')
+              exit(1)
+          if fa > THRESHOLD:
+              print(f'::error title=@web-full gate::failed={fa} > {THRESHOLD} — 测试体系异常，job 标红')
               exit(1)
           "
 

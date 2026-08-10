@@ -7,7 +7,7 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 133 | 804 |
+| 核心基础设施 | 134 | 807 |
 | 3D 场景 | 125 | 1226 |
 | 菜单 & UI | 76 | 394 |
 | 动作算法 | 18 | 138 |
@@ -244,7 +244,7 @@
 | `rgbToString()` | `core/color-helpers:32` | 将 {r,g,b} 转为 CSS rgb 字符串 "r, g, b"（供 --accent-rgb 等 CSS 变量）。 |
 | `debounce()` | `core/debounce:8` | 函数防抖：在等待指定时间后才执行函数，如果在等待期间再次调用则重置计时器。 |
 | `deepClone()` | `core/deep-clone:9` | 深拷贝对象（基于 JSON 序列化）。 |
-| `setupE2ECapture()` | `core/dev-hooks:20` | — |
+| `setupE2ECapture()` | `core/dev-hooks:24` | — |
 | `DialogOptions()` | `core/dialog:49` | — |
 | `Prompt2Options()` | `core/dialog:294` | — |
 | `disposeOverlay2()` | `core/dialog:370` | 移除 showPrompt2 创建的 overlay2 DOM（供 HMR 清理入口调用）。 |
@@ -503,6 +503,9 @@
 | `withLoadingStatus()` | `core/status-helpers:49` | 包装一个异步操作，自动管理 loading → success → error 三态状态栏。 |
 | `withLoadingStatusTargeted()` | `core/status-helpers:80` | 包装异步操作并附带目标名（target-aware 版本）。 |
 | `registerServiceWorker()` | `core/sw-register:11` | — |
+| `TEST_MESH_PREFIX()` | `core/test-mesh:10` | — |
+| `clearTestMeshes()` | `core/test-mesh:30` | 清除所有程序化测试 mesh。 |
+| `createTestMesh()` | `core/test-mesh:13` | 创建程序化测试 mesh（先清理旧 e2e-test- 网格；与 dev-hooks driver 行为对齐）。 |
 | `FONT_MAP()` | `core/theme:33` | — |
 | `SETTINGS_FONT_RESTORE()` | `core/theme:48` | — |
 | `generateTextColors()` | `core/theme:7` | — |
@@ -2294,11 +2297,11 @@
 | `hideMotionPopup()` | `menus/motion-root-ui:279` | — |
 | `importExternalAnimation()` | `menus/motion-root-ui:362` | 外部动作导入：选文件 → 重定向骨骼 → 播放。 |
 | `openProcDetail()` | `menus/motion-root-ui:323` | [doc:adr-207] 行体点击进入程序化统一详情页。 |
-| `buildNavMaps()` | `menus/nav-actions:146` | — |
-| `disposeNavBindings()` | `menus/nav-actions:240` | 卸载导航按钮监听（HMR/dispose 用） |
-| `getNavLabel()` | `menus/nav-actions:305` | 供 core 侧读取导航标签（经桥，不直接 import menus） |
-| `initNavActions()` | `menus/nav-actions:250` | [doc:adr-238] nav-actions 启动入口：安装按钮接线 + 构建导航标签映射。 |
-| `navActions()` | `menus/nav-actions:104` | — |
+| `buildNavMaps()` | `menus/nav-actions:163` | — |
+| `disposeNavBindings()` | `menus/nav-actions:257` | 卸载导航按钮监听（HMR/dispose 用） |
+| `getNavLabel()` | `menus/nav-actions:322` | 供 core 侧读取导航标签（经桥，不直接 import menus） |
+| `initNavActions()` | `menus/nav-actions:267` | [doc:adr-238] nav-actions 启动入口：安装按钮接线 + 构建导航标签映射。 |
+| `navActions()` | `menus/nav-actions:121` | — |
 | `navLabels()` | `menus/nav-actions:25` | — |
 | `toggleOverlay()` | `menus/nav-actions:58` | — |
 | `buildOutfitLevel()` | `menus/outfit-ui:158` | — |
