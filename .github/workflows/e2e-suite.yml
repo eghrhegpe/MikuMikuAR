@@ -116,10 +116,16 @@ jobs:
   # E2E — Overlay Best-Effort (@overlay, vitePage)
   # [2026-08-10] 新增：74 个 @overlay 测试此前完全真空（@dom 门禁 --grep-invert @overlay
   # 排除，无任何 CI job 承接）——设置/场景/环境面板 DOM 断言在 headless 无 GPU 时
-  # 点击不可达（probe 实锤：elementFromPoint 命中 BODY，非守卫/滚动/伪元素问题），
-  # 与 @webgl 同类环境硬伤。按 best-effort 模式承接：continue-on-error + failure-count
-  # gate（阈值 50%），不阻塞 push，但每次 push 都跑、报告可见、超阈值必红——
-  # 环境修复后自动转正，回归不再被真空吞掉。
+  # 点击不可达。根因排查（13 个 probe 实锤，2026-08-10）：
+  #   - 排除：滚动（scrollY=0）/伪元素（content:none）/loading/dialog 守卫（均已生效）/
+  #     canvas 覆盖（display:none 后仍命中 BODY）/z-index 层叠（bottomNav z:100 > canvas z:1）
+  #   - 定论：bodyCls=""、btnOpacity=1、pe:auto 全正常时 elementFromPoint 仍命中 BODY，
+  #     且同页多次探测结果漂移（有时命中按钮 ICONIFY-ICON，有时 BODY）→
+  #     headless+swiftshader 软渲染下 WebGL canvas 合成层与 DOM 命中测试的竞态，
+  #     属环境硬伤（非业务源码 bug，修 CSS/守卫无效），与 @webgl 同类。
+  # 处置：best-effort 模式承接——continue-on-error + failure-count gate（阈值 50%），
+  # 不阻塞 push，但每次 push 都跑、报告可见、超阈值必红；待带 GPU runner 或
+  # mock WebGL 后自动转正，回归不再被真空吞掉。
   # ------------------------------------------------------------
   e2e-overlay:
     name: E2E — Overlay Best-Effort (@overlay, vitePage)
