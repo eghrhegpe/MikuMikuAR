@@ -24,12 +24,10 @@ test.describe("Library — DOM/overlay (vitePage, @dom)", { tag: ["@dom", "@over
     });
 
     test("模型库: 无配置时显示首次使用提示", async ({ vitePage: page }) => {
-        // First-use hint appears when no resource_root is set
-        // This is a soft label hint about initial setup
-        const _hint = page.getByText("首次使用", { exact: false });
-        // The hint may or may not be visible depending on dev state,
-        // but the library panel container should be present
-        await expect(page.locator("#sceneOverlay")).toHaveClass(/visible/);
+        // First-use hint appears when no resource_root is set.
+        // vitePage 每 test 全新浏览器实例、localStorage 为空（ADR-229 §8），
+        // 正是「首次使用」场景——提示应可见（原实现仅断言 overlay 可见，纯空转）。
+        await expect(page.getByText("首次使用", { exact: false })).toBeVisible();
     });
 
     test("模型库: 关闭后重新打开不崩溃", async ({ vitePage: page }) => {

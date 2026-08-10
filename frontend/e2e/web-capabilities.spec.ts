@@ -25,13 +25,13 @@ test.describe("Web Capabilities — 能力门控 UI 验证 (@web)", { tag: ["@we
         await page.click("#btnScene");
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 8000 });
 
-        // 进入相机控制（场景菜单含 camera:main）
+        // 进入相机控制（场景菜单含 camera:main）——入口必须存在，否则 fail
+        // （原实现 count()>0 才断言，入口缺失时测试仍绿 = 假绿）
         const cameraRow = page.locator('[data-testid="folder:scene:camera"], [data-id="camera:main"]');
-        if (await cameraRow.count() > 0) {
-            await cameraRow.first().click();
-            // AR 选项不应出现在相机模式（capabilities.ar=false 过滤）
-            await expect(page.locator('text=AR')).toHaveCount(0);
-        }
+        await expect(cameraRow.first()).toBeVisible();
+        await cameraRow.first().click();
+        // AR 选项不应出现在相机模式（capabilities.ar=false 过滤）
+        await expect(page.locator('text=AR')).toHaveCount(0);
     });
 
     test("能力门控: 广场无「独立窗口」选项（plazaWindow === false）", async ({ page }) => {
@@ -47,11 +47,10 @@ test.describe("Web Capabilities — 能力门控 UI 验证 (@web)", { tag: ["@we
         await page.click("#btnSettings");
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 8000 });
 
-        // 进入资源页签
+        // 进入资源页签——入口必须存在，否则 fail（原实现 count()>0 才点击，假绿）
         const resourceTab = page.locator('[data-testid="folder:settings:resources"], [data-id="settings:resources"]');
-        if (await resourceTab.count() > 0) {
-            await resourceTab.first().click();
-        }
+        await expect(resourceTab.first()).toBeVisible();
+        await resourceTab.first().click();
         // watchDir=false → 无「下载监听」/「监听下载目录」文案
         await expect(page.locator('text=下载监听')).toHaveCount(0);
         await expect(page.locator('text=监听下载目录')).toHaveCount(0);

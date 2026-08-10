@@ -24,27 +24,20 @@ test.describe("Web Download — 下载管理面板 (@web)", { tag: ["@web"] }, (
         await page.click("#btnSettings");
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
 
-        // 下载管理区段（SETTINGS.DOWNLOADS 注册）
-        // 可能位于设置根级或模型库子层级
-        const downloadsEntry = page.getByTestId("folder:settings:downloads");
-        const visible = await downloadsEntry.isVisible().catch(() => false);
-        // 如果下载面板未注册（浏览器适配器不支持），这是合理的
-        if (visible) {
-            await expect(downloadsEntry).toBeVisible();
-        }
+        // 下载管理区段（SETTINGS.DOWNLOADS 注册）——入口必须存在，否则 fail
+        // （原实现 if(visible) 条件通过，面板缺失时测试仍绿 = 假绿）
+        await expect(page.getByTestId("folder:settings:downloads")).toBeVisible();
     });
 
-    test("下载管理: 打开后不崩溃（如果存在）", async ({ page }) => {
+    test("下载管理: 打开后不崩溃", async ({ page }) => {
         await page.click("#btnSettings");
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
 
         const downloadsEntry = page.getByTestId("folder:settings:downloads");
-        if (await downloadsEntry.isVisible().catch(() => false)) {
-            await downloadsEntry.click();
-            await page.waitForTimeout(500);
-            // 面板应保持可见（未崩溃）
-            await expect(page.locator("#sceneOverlay")).toHaveClass(/visible/);
-        }
+        await expect(downloadsEntry).toBeVisible();
+        await downloadsEntry.click();
+        // 面板应保持可见（未崩溃）
+        await expect(page.locator("#sceneOverlay")).toHaveClass(/visible/);
     });
 
     test("模型库: 浏览区段渲染正常", async ({ page }) => {

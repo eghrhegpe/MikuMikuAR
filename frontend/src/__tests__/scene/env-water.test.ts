@@ -618,21 +618,17 @@ describe('Water 开关材质守卫 — 材质不存在时拨开关不崩', () =>
 
 // ──────────────── Preset 应用 ────────────────
 describe('Water Preset — applyWaterPresetToCurrent', () => {
-    it('应用预设后 envState 的水相关字段被更新', () => {
-        const presetName = Object.keys(WATER_PRESETS)[0];
-        const preset = WATER_PRESETS[presetName];
-        const originalColor = envState.waterColor;
+    it('应用预设后写入材质 uniform（源码只写材质不写 envState）', () => {
+        createWater(makeWaterState({}));
+        const mat = _envSys.water.material as any;
+        expect(mat).toBeTruthy();
+        const setFloatSpy = vi.spyOn(mat, 'setFloat');
 
-        applyWaterPresetToCurrent(preset);
-
-        // 至少有一个水相关字段被更新（颜色或透明度等）
-        const _colorChanged =
-            envState.waterColor[0] !== originalColor[0] ||
-            envState.waterColor[1] !== originalColor[1] ||
-            envState.waterColor[2] !== originalColor[2];
-        // 预设可能颜色相同，检查 WATER_PRESETS 的 buildWaterPresetEnvState 返回值
-        const built = buildWaterPresetEnvState(preset);
-        expect(built).toHaveProperty('waterColor');
+        const preset = WATER_PRESETS[Object.keys(WATER_PRESETS)[0]];
+        expect(() => applyWaterPresetToCurrent(preset)).not.toThrow();
+        // calm 预设含 causticIntensity 等字段 → 至少一个 uniform 被写入
+        expect(setFloatSpy).toHaveBeenCalled();
+        setFloatSpy.mockRestore();
     });
 
     it('buildWaterPresetEnvState 返回的对象包含基础水参数', () => {
@@ -645,67 +641,11 @@ describe('Water Preset — applyWaterPresetToCurrent', () => {
 });
 
 // ──────────────── 平面反射 RT（ADR-062 P1）────────────────
-
-describe('mirror camera math', () => {
-    it('clipPlane 等效逻辑：保留 y >= waterLevel 的几何', () => {
-        // 模拟 _populateMirrorRenderList 的过滤逻辑
-        const waterLevel = 0;
-        const meshAbove = { getBoundingInfo: () => ({ boundingBox: { maximumWorld: { y: 5 } } }) };
-        const meshBelow = { getBoundingInfo: () => ({ boundingBox: { maximumWorld: { y: -3 } } }) };
-        const meshAtLevel = {
-            getBoundingInfo: () => ({ boundingBox: { maximumWorld: { y: 0 } } }),
-        };
-
-        const shouldInclude = (mesh: any) =>
-            mesh.getBoundingInfo().boundingBox.maximumWorld.y >= waterLevel;
-        expect(shouldInclude(meshAbove)).toBe(true);
-        expect(shouldInclude(meshAtLevel)).toBe(true);
-        expect(shouldInclude(meshBelow)).toBe(false);
-    });
-
-    it('水下判断逻辑：camera.y < waterLevel 时跳过反射', () => {
-        const waterLevel = 2;
-        const camAbove = { position: { y: 5 } };
-        const camBelow = { position: { y: 0 } };
-        const camAtLevel = { position: { y: 2 } };
-
-        const isUnderwater = (cam: any) => cam.position.y < waterLevel;
-        expect(isUnderwater(camAbove)).toBe(false);
-        expect(isUnderwater(camAtLevel)).toBe(false);
-        expect(isUnderwater(camBelow)).toBe(true);
-    });
-});
-
-describe('reflection quality tier', () => {
-    it('reflectionQuality=off 时不创建 RT（_setupMirrorRT 提前返回）', () => {
-        // 验证 resolutionMap[off] = 0 导致提前返回
-        const resolutionMap: Record<string, number> = { high: 512, medium: 256, low: 128, off: 0 };
-        expect(resolutionMap['off']).toBe(0);
-        expect(!!resolutionMap['off']).toBe(false); // falsy → early return
-    });
-
-    it('reflectionQuality=high 映射 512 分辨率', () => {
-        const resolutionMap: Record<string, number> = { high: 512, medium: 256, low: 128, off: 0 };
-        expect(resolutionMap['high']).toBe(512);
-    });
-
-    it('reflectionQuality=low 映射 128 分辨率', () => {
-        const resolutionMap: Record<string, number> = { high: 512, medium: 256, low: 128, off: 0 };
-        expect(resolutionMap['low']).toBe(128);
-    });
-
-    it('帧跳过逻辑：high 每帧渲染，low 每 4 帧渲染', () => {
-        const frameSkipMap: Record<string, number> = { high: 0, medium: 1, low: 3, off: 999 };
-        // high: 每帧（skip=0, mod 1 = 0 始终为 true）
-        expect(1 % (frameSkipMap['high'] + 1)).toBe(0);
-        expect(2 % (frameSkipMap['high'] + 1)).toBe(0);
-        // low: 每 4 帧（skip=3, mod 4 = 0 每 4 帧一次）
-        expect(0 % (frameSkipMap['low'] + 1)).toBe(0);
-        expect(1 % (frameSkipMap['low'] + 1)).not.toBe(0);
-        expect(3 % (frameSkipMap['low'] + 1)).not.toBe(0);
-        expect(4 % (frameSkipMap['low'] + 1)).toBe(0);
-    });
-});
+// 注：原「mirror camera math」「reflection quality tier」两个 describe 为测试内
+// 联重实现（shouldInclude/isUnderwater/resolutionMap/frameSkipMap 均本地定义后
+// 断言自己），属自证恒真且 resolutionMap 数值已与真实源（env-water-reflect.ts:
+// {high:2048,medium:1024,low:512,off:0}）脱节——删除。真实反射质量切换行为由
+// 下方「reflection quality toggle — P1 修复（ADR-114）」describe 覆盖。
 
 describe('reflection quality toggle — P1 修复（ADR-114）', () => {
     it('reflectionQuality off→on：惰性路径重建材质并启用 PLANAR_REFLECTION', () => {
