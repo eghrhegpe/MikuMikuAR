@@ -63,9 +63,13 @@ export default defineConfig({
         // [2026-08] 测试资产盘点结论（子代理审计，见 vitest.config.ts 同区注释）：
         // ① P0-1 perception int 8→5 文件合并 ✅（682b1ba4，累加 42.5s→30.3s）
         // ② P0-2 env-water mock 重纹理 ✅（b25ec5da，9.1s→2.4s）
-        // ③ P1-1 双份测试删 8 文件 ✅（4a79fd3d，删 61 重复用例）
-        // ④ P1-3 坏断言修复 ✅（a0c78e2f）
-        // ⑤ P2 目录整理 ❌ 不采纳：70 文件移动 + import 路径重写无 codemod
+        // ③ P0-3 同系列测试文件合并 ✅（本轮：model-detail-ui 3→1、
+        //    model-preset 5→1、material-editor 4→1、library-core 6→1，
+        //    import 累加 201s→154s；vitest isolate 每文件独立依赖图，
+        //    self 仅 ~100ms 却付 ~5s total import 的文件优先合并）
+        // ④ P1-1 双份测试删 8 文件 ✅（4a79fd3d，删 61 重复用例）
+        // ⑤ P1-3 坏断言修复 ✅（a0c78e2f）
+        // ⑥ P2 目录整理 ❌ 不采纳：70 文件移动 + import 路径重写无 codemod
         //    支持，纯组织收益零、破坏风险高——保持平铺命名约定。
         testTimeout: 10000,
         hookTimeout: 15000,
