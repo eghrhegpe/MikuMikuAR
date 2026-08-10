@@ -57,8 +57,13 @@ vi.mock('../../scene/env/_shared/env-texture', async (importOriginal) => {
     const actual = await importOriginal<typeof import('../../scene/env/_shared/env-texture')>();
     return {
         ...actual,
-        createCanvasTexture: (opts: { size: number; draw?: (ctx: unknown, s: number) => void; scene: Scene; name?: string; wrap?: string }) =>
-            actual.createCanvasTexture({ ...opts, size: 2, draw: () => {} }),
+        createCanvasTexture: (opts: {
+            size: number;
+            draw?: (ctx: unknown, s: number) => void;
+            scene: Scene;
+            name?: string;
+            wrap?: 'clamp' | 'wrap';
+        }) => actual.createCanvasTexture({ ...opts, size: 2, draw: () => {} }),
     };
 });
 
