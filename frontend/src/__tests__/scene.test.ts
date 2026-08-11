@@ -1146,7 +1146,7 @@ describe('_initMotionSubsystems（运动子系统回调）', () => {
         const out = collector();
         expect(out).toHaveLength(1);
         expect(out[0].id).toBe('m1');
-        expect(out[0].feet.enabled).toBe(true);
+        expect(out[0].feet.enabled).toBe(false);
     });
 
     it('守卫：startBoneOverride 回调——无 focusedModelId → 空数组', async () => {

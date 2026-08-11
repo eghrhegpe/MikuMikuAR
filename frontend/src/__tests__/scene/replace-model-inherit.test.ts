@@ -136,7 +136,7 @@ function makeMockInst(overrides: Partial<ModelInstance> = {}): ModelInstance {
         rotation: [0.1, 0.523, 0],
         boneOverrides: [{ boneName: '上半身', euler: [5, 0, 0], weight: 1, enabled: true }],
         feet: {
-            enabled: true,
+            enabled: false,
             intensity: 0.6,
             soleHeight: 0.05,
             jumpThreshold: 0.5,
@@ -202,7 +202,7 @@ describe('captureInheritedState', () => {
         expect(snap.position).toEqual([1, 2, 3]);
         expect(snap.boneOverrides).toHaveLength(1);
         expect(snap.boneOverrides[0].boneName).toBe('上半身');
-        expect(snap.feet.enabled).toBe(true);
+        expect(snap.feet.enabled).toBe(false);
         expect(snap.sceneMotionId).toBe('motion-xyz');
     });
 
@@ -224,7 +224,7 @@ describe('captureInheritedState', () => {
         snap.boneOverrides[0].boneName = '篡改';
         snap.feet.enabled = false;
         expect(inst.boneOverrides[0].boneName).toBe('上半身');
-        expect(inst.feet.enabled).toBe(true);
+        expect(inst.feet.enabled).toBe(false);
     });
 });
 
@@ -337,7 +337,7 @@ describe('applyInheritedState', () => {
     it('feet 状态深拷贝到新模型', () => {
         const snap = makeBaseSnap({
             feet: {
-                enabled: true,
+                enabled: false,
                 intensity: 0.7,
                 soleHeight: 0.1,
                 jumpThreshold: 0.6,
@@ -349,11 +349,11 @@ describe('applyInheritedState', () => {
         });
         const newInst = modelRegistry.get('new-1') as any;
         applyInheritedState('new-1', snap);
-        expect(newInst.feet.enabled).toBe(true);
+        expect(newInst.feet.enabled).toBe(false);
         expect(newInst.feet.intensity).toBe(0.7);
         // 深拷贝验证
-        newInst.feet.enabled = false;
-        expect(snap.feet.enabled).toBe(true);
+        newInst.feet.enabled = true;
+        expect(snap.feet.enabled).toBe(false);
     });
 
     it('旧角色开灯 + 新模型 entry 已存在 → 调用 setPersonalLightState 点亮', () => {

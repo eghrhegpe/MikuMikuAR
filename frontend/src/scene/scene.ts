@@ -711,7 +711,7 @@ async function _initMotionSubsystems(scene: Scene, _modelManager: ModelManager):
                     // [doc:adr-116 重构] 地面跟随 always-on：enabled=true, intensity=1
                     out.push({
                         id: inst.id,
-                        feet: { ...createDefaultFeetState(), enabled: true },
+                        feet: { ...createDefaultFeetState(), enabled: false },
                         runtimeBones: bones,
                     });
                 }
