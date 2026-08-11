@@ -56,14 +56,14 @@ export function orbitToCartesian(
 /**
  * 笛卡尔坐标 → 球面坐标。
  * 公式与 `lighting.ts` 对齐：azimuth = atan2(x, z)，elevation = asin(y / len)。
- * 距离下限取 0.1，避免原点处 asin 除零；len 非有限时返回原点轨道坐标（有限值）。
+ * len 为 0 或非有限时返回原点轨道坐标（有限值）；其余情况直接 y/len（|y/len|≤1 恒成立）。
  */
 export function cartesianToOrbit(x: number, y: number, z: number): OrbitCoords {
     const len = Math.sqrt(x * x + y * y + z * z);
-    if (!Number.isFinite(len)) {
+    if (!Number.isFinite(len) || len === 0) {
         return { azimuth: 0, elevation: 0, distance: 0 };
     }
     const azimuth = (Math.atan2(x, z) * 180) / Math.PI;
-    const elevation = (Math.asin(y / Math.max(0.1, len)) * 180) / Math.PI;
+    const elevation = (Math.asin(y / len) * 180) / Math.PI;
     return { azimuth, elevation, distance: len };
 }

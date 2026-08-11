@@ -218,6 +218,25 @@ describe('attachGizmo（创建/绑定/独占）', () => {
         expect(gizmo.getGizmoTargetId()).toBe('b');
         expect(gizmo.getActiveGizmoTypes()).toEqual(['rotation']);
     });
+
+    it('边界：types 为空 → 返回 true 但不创建 gizmo', () => {
+        gizmo.initTransformGizmo(scene);
+        const ok = gizmo.attachGizmo({ id: 'empty', node, types: [] });
+        expect(ok).toBe(true);
+        expect(shared.PositionGizmo).not.toHaveBeenCalled();
+        expect(shared.RotationGizmo).not.toHaveBeenCalled();
+        expect(shared.ScaleGizmo).not.toHaveBeenCalled();
+        expect(gizmo.getActiveGizmoTypes()).toEqual([]);
+    });
+
+    it('正常：detach 后重新 attach → 重建 layer', () => {
+        gizmo.initTransformGizmo(scene);
+        gizmo.attachGizmo({ id: 'a', node, types: ['position'] });
+        gizmo.detachGizmo();
+        gizmo.attachGizmo({ id: 'b', node, types: ['position'] });
+        // detachGizmo dispose layer → 重新 attach 创建新 layer
+        expect(shared.UtilityLayerRenderer).toHaveBeenCalledTimes(2);
+    });
 });
 
 describe('detachGizmo（清理 + 拖拽 flush）', () => {
@@ -290,5 +309,20 @@ describe('setGizmoSnapDistance / getGizmoSnapConfig（实时生效）', () => {
 
     it('边界：默认配置 enabled=false, step=1', () => {
         expect(gizmo.getGizmoSnapConfig()).toEqual({ enabled: false, step: 1 });
+    });
+
+    it('守卫：无激活 gizmo 时 set 不崩', () => {
+        expect(() => gizmo.setGizmoSnapDistance(true, 5)).not.toThrow();
+        expect(gizmo.getGizmoSnapConfig()).toEqual({ enabled: true, step: 5 });
+    });
+});
+
+describe('onGizmoDragObservable（连续拖拽通知）', () => {
+    it('正常：拖拽中 → notifyObservers 被调用', () => {
+        gizmo.initTransformGizmo(scene);
+        gizmo.attachGizmo({ id: 'd', node, types: ['position'] });
+        const spy = vi.spyOn(gizmo.onGizmoDragObservable, 'notifyObservers');
+        dragCb(shared.PositionGizmo)();
+        expect(spy).toHaveBeenCalled();
     });
 });

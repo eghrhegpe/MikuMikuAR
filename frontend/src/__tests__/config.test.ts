@@ -1,18 +1,18 @@
 // @vitest-environment node
 import { describe, it, expect, beforeEach } from 'vitest';
+import { formatTime, formatError } from '../core/format';
 import {
-    formatTime,
-    formatError,
     addRecentMotion,
     getRecentMotions,
+    clearRecentMotions,
     toggleExpandedFolder,
     expandedFolders,
     setLibraryRoot,
-} from '../core/config';
+} from '../core/library-state';
 import { computeLibraryRef, resolveLibraryRef } from '@/core/library-path';
 import { toBase64 } from '../core/image';
 import { escapeHtml } from '../core/escape-html';
-import { normPath } from '../core/fileservice';
+import { normPath } from '../core/path';
 import { getBaseName, getDirPath, isUnderRoot } from '../core/path';
 
 describe('config pure functions', () => {
@@ -42,6 +42,13 @@ describe('config pure functions', () => {
             expect(formatTime(NaN)).toBe('00:00.00');
             expect(formatTime(Infinity)).toBe('00:00.00');
             expect(formatTime(-Infinity)).toBe('00:00.00');
+        });
+
+        it('handles negative values without crashing', () => {
+            // Negative durations shouldn't occur in practice but must not throw
+            expect(() => formatTime(-1)).not.toThrow();
+            expect(typeof formatTime(-1)).toBe('string');
+            expect(formatTime(-1).length).toBeGreaterThan(0);
         });
     });
 
@@ -101,6 +108,35 @@ describe('config pure functions', () => {
                 },
             };
             expect(formatError(bad)).toBe('unknown error');
+        });
+
+        it('formats LibraryLoadError with [loadId/phase] prefix', () => {
+            const err = { name: 'LibraryLoadError', loadId: 'lib1', phase: 'scan', cause: 'timeout' };
+            const result = formatError(err);
+            expect(result).toBe('[lib1/scan] timeout');
+        });
+
+        it('LibraryLoadError with nested Error cause', () => {
+            const err = {
+                name: 'LibraryLoadError',
+                loadId: 'lib2',
+                phase: 'load',
+                cause: new Error('file not found'),
+            };
+            const result = formatError(err);
+            expect(result).toBe('[lib2/load] file not found');
+        });
+
+        it('LibraryLoadError truncates long combined output', () => {
+            const err = {
+                name: 'LibraryLoadError',
+                loadId: 'x'.repeat(50),
+                phase: 'scan',
+                cause: 'y'.repeat(200),
+            };
+            const result = formatError(err, 80);
+            expect(result.length).toBe(80);
+            expect(result.endsWith('...')).toBe(true);
         });
     });
 
@@ -170,6 +206,16 @@ describe('config pure functions', () => {
         it('handles empty string', () => {
             expect(normPath('')).toBe('');
         });
+
+        it('passes through content:// URIs (strip trailing slash only)', () => {
+            expect(normPath('content://a/b/c/')).toBe('content://a/b/c');
+            expect(normPath('content://a/b/c')).toBe('content://a/b/c');
+        });
+
+        it('strips ./ prefix and /./ segments', () => {
+            expect(normPath('./models/file.pmx')).toBe('models/file.pmx');
+            expect(normPath('a/./b/./c')).toBe('a/b/c');
+        });
     });
 });
 
@@ -189,6 +235,15 @@ describe('computeLibraryRef', () => {
     it('returns null when libraryRoot is empty', () => {
         setLibraryRoot('');
         expect(computeLibraryRef('C:/Users/test/MMD/models/scene.pmx')).toBeNull();
+    });
+
+    it('returns null for pseudo-folder prefix attack', () => {
+        // "MMDS" ≠ "MMD/" — must not match
+        expect(computeLibraryRef('C:/Users/test/MMDS/models/scene.pmx')).toBeNull();
+    });
+
+    it('is case-insensitive for root comparison', () => {
+        expect(computeLibraryRef('c:/users/test/mmd/models/scene.pmx')).toBe('models/scene.pmx');
     });
 });
 
@@ -258,9 +313,21 @@ describe('path helpers (getBaseName / getDirPath / isUnderRoot)', () => {
         expect(isUnderRoot('C:/text-model/PMX', 'C:/text-model/PMXSub')).toBe(false); // 伪文件夹防护
         expect(isUnderRoot('c:/text-model/PMX', 'C:/text-model/PMX/Sub')).toBe(true); // 盘符大小写
     });
+
+    it('isUnderRoot returns true for exact match', () => {
+        expect(isUnderRoot('C:/models', 'C:/models')).toBe(true);
+    });
+
+    it('isUnderRoot is case-insensitive', () => {
+        expect(isUnderRoot('C:/Models/PMX', 'c:/models/pmx/file.pmx')).toBe(true);
+    });
 });
 
 describe('recentMotions', () => {
+    beforeEach(() => {
+        clearRecentMotions();
+    });
+
     it('addRecentMotion adds to list', () => {
         addRecentMotion('/path/to/dance.vmd', 'dance');
         const motions = getRecentMotions();
@@ -290,6 +357,10 @@ describe('recentMotions', () => {
 });
 
 describe('toggleExpandedFolder', () => {
+    beforeEach(() => {
+        expandedFolders.clear();
+    });
+
     it('toggles folder path in expanded set', () => {
         const path = '/test/folder';
         const wasExpanded = expandedFolders.has(path);

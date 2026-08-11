@@ -79,6 +79,21 @@ describe('笛卡尔 ↔ 球面 往返一致性 (ADR §6 #2)', () => {
             expect(back[2]).toBeCloseTo(z, 5);
         }
     });
+
+    it('小向量（len < 0.1）往返无跳变', () => {
+        const smallCases: Array<[number, number, number]> = [
+            [0, 0.05, 0],
+            [0.01, 0.02, 0.03],
+            [0.001, 0, 0.001],
+        ];
+        for (const [x, y, z] of smallCases) {
+            const o = cartesianToOrbit(x, y, z);
+            const back = orbitToCartesian(o.azimuth, o.elevation, o.distance);
+            expect(back[0]).toBeCloseTo(x, 4);
+            expect(back[1]).toBeCloseTo(y, 4);
+            expect(back[2]).toBeCloseTo(z, 4);
+        }
+    });
 });
 
 describe('边界保护 — orbitToCartesian 绝不产生 NaN/退化', () => {
@@ -113,6 +128,18 @@ describe('边界保护 — orbitToCartesian 绝不产生 NaN/退化', () => {
         expectFiniteTriplet(orbitToCartesian(45, 30, Infinity));
         expectFiniteTriplet(orbitToCartesian(NaN, NaN, NaN));
     });
+
+    it('distance < 0 钳制到 MIN_ORBIT_DISTANCE', () => {
+        const t = orbitToCartesian(45, 30, -10);
+        expectFiniteTriplet(t);
+        const len = Math.sqrt(t[0] ** 2 + t[1] ** 2 + t[2] ** 2);
+        expect(len).toBeCloseTo(MIN_ORBIT_DISTANCE, 6);
+    });
+
+    it('极大坐标仍返回有限值', () => {
+        const t = orbitToCartesian(1e10, 89, 1e10);
+        expectFiniteTriplet(t);
+    });
 });
 
 describe('边界保护 — cartesianToOrbit 对原点与非有限输入安全', () => {
@@ -129,6 +156,13 @@ describe('边界保护 — cartesianToOrbit 对原点与非有限输入安全', 
         expect(Number.isFinite(o.azimuth)).toBe(true);
         expect(Number.isFinite(o.elevation)).toBe(true);
         expect(Number.isFinite(o.distance)).toBe(true);
+    });
+
+    it('极小向量（len < 旧硬编码 0.1）返回有限且 elevation 正确', () => {
+        const o = cartesianToOrbit(0, 0.0005, 0);
+        expect(Number.isFinite(o.elevation)).toBe(true);
+        expect(o.distance).toBe(0.0005);
+        expect(o.elevation).toBeCloseTo(90, 3);
     });
 });
 
@@ -153,5 +187,10 @@ describe('normalizeOrbit — 钳制存储值', () => {
     it('azimuth 非有限 → 0', () => {
         expect(normalizeOrbit(NaN, 30, 10).azimuth).toBe(0);
         expect(normalizeOrbit(Infinity, 30, 10).azimuth).toBe(0);
+    });
+
+    it('极大 azimuth 原样保留（仅校验有限性，不做角度归约）', () => {
+        expect(normalizeOrbit(720, 30, 10).azimuth).toBe(720);
+        expect(normalizeOrbit(-360, 30, 10).azimuth).toBe(-360);
     });
 });
