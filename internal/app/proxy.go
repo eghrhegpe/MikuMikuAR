@@ -421,20 +421,11 @@ func (a *App) StartProxy(target, mode string) (string, error) {
 			}
 			// Allow iframe embedding.
 			resp.Header.Del("X-Frame-Options")
-			if csp := resp.Header.Get("Content-Security-Policy"); csp != "" {
-				kept := make([]string, 0, 4)
-				for _, d := range strings.Split(csp, ";") {
-					if strings.HasPrefix(strings.TrimSpace(d), "frame-ancestors") {
-						continue
-					}
-					kept = append(kept, d)
-				}
-				if len(kept) == 0 {
-					resp.Header.Del("Content-Security-Policy")
-				} else {
-					resp.Header.Set("Content-Security-Policy", strings.Join(kept, "; "))
-				}
-			}
+			// 代理 origin 为 http://127.0.0.1:PORT，CSP 中的 'self' 和域名白名单
+			// 在此 origin 下全部失效——保留 CSP 反而会阻断 GitHub 等站点的 JS/CSS/图片
+			// 加载，导致页面崩坏。直接删除 CSP 头，安全边界由 iframe sandbox 兜底。
+			resp.Header.Del("Content-Security-Policy")
+			resp.Header.Del("Content-Security-Policy-Report-Only")
 			// [ADR-078] 注入下载拦截脚本到 HTML 响应
 			if ct := resp.Header.Get("Content-Type"); strings.Contains(ct, "text/html") && resp.Body != nil {
 				// [资源上限] 仅对已知且不超过上限的 HTML 注入脚本；超大响应直接
