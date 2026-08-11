@@ -1577,6 +1577,7 @@ export const ja: Record<string, string> = {
     'settings.about.maintenance.clearAll': 'すべてのキャッシュをクリア',
     'settings.about.maintenance.clearAllConfirm': 'すべてのキャッシュをクリアしますか？この操作は元に戻せません。',
     'settings.about.maintenance.openExtract': '抽出キャッシュディレクトリを開く',
+    'settings.about.maintenance.openLogPanel': 'ログパネルを開く',
     'settings.about.maintenance.openThumbnail': 'サムネイルキャッシュディレクトリを開く',
     'settings.about.settingsMgmt': '設定管理',
     'settings.about.settingsMgmt.export': '設定をエクスポート',

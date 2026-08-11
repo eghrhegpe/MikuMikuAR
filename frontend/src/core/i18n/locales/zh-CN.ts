@@ -1701,6 +1701,7 @@ export const zhCN: Record<string, string> = {
     'settings.about.maintenance.clearAll': '清除全部缓存',
     'settings.about.maintenance.clearAllConfirm': '确定清除全部缓存？此操作不可撤销。',
     'settings.about.maintenance.openExtract': '打开解压缓存目录',
+    'settings.about.maintenance.openLogPanel': '打开日志面板',
     'settings.about.maintenance.openThumbnail': '打开缩略图缓存目录',
     'settings.about.settingsMgmt': '设置管理',
     'settings.about.settingsMgmt.export': '导出设置',

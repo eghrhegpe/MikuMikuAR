@@ -650,13 +650,21 @@ const _IK_TARGET_CANDIDATES = [BONE_LEG_IK_L_CANDIDATES, BONE_LEG_IK_R_CANDIDATE
  * _applyWasmOverride 已先把 slot.pos 偏移写入 worldMatrix，
  * IkSolver.solve() 读 worldMatrix 作为 IK 目标，解出髋/膝/踝旋转并回写全链。
  */
+// [ADR-248] IK 诊断日志节流计数器：仅 feetDebug 开启时输出，且每 60 帧最多 1 条，
+// 根治 WASM POS slot IK 重解热路径每帧 logWarn 刷爆环形缓冲/console 导致的卡顿。
+let _ikWasmDbgFrame = 0;
+
 function _solvePosSlotIkWasm(
     boneMap: Map<string, IMmdRuntimeBone>,
     overrideMap: Map<string, _OverrideSlot>,
     modelId: string
 ): void {
+    // 诊断日志仅在 feetDebug 开启时启用，并按帧节流（复用 feet-adjustment 的 %60 节流模式）
+    const dbg = feetDebug.value && _ikWasmDbgFrame++ % 60 === 0;
     const slotCount = overrideMap.size;
-    logWarn('bone-override', `[IK-ENTRY] ${modelId} _solvePosSlotIkWasm called, slotCount=${slotCount}`);
+    if (dbg) {
+        logWarn('bone-override', `[IK-ENTRY] ${modelId} _solvePosSlotIkWasm called, slotCount=${slotCount}`);
+    }
     const boneNames = Array.from(boneMap.keys());
     for (const cands of _IK_TARGET_CANDIDATES) {
         const ikBoneName = matchBone(boneNames, cands as string[]);
@@ -669,7 +677,7 @@ function _solvePosSlotIkWasm(
         }
         const ikBone = boneMap.get(ikBoneName);
         if (!ikBone) {
-            logWarn('bone-override', `[IK-DEBUG] ${modelId} boneMap 中找不到 "${ikBoneName}"`);
+            if (dbg) logWarn('bone-override', `[IK-DEBUG] ${modelId} boneMap 中找不到 "${ikBoneName}"`);
             continue;
         }
 
@@ -679,10 +687,12 @@ function _solvePosSlotIkWasm(
             solver.solve(false);
             const buf = (ikBone as MmdRuntimeBoneExtended).worldMatrix;
             const afterY = buf ? buf[13] : 'no-buf';
-            logWarn(
-                'bone-override',
-                `[IK-SOLVE] ${modelId} bone="${ikBoneName}" via ikSolver.solve() worldY-after=${afterY}`
-            );
+            if (dbg) {
+                logWarn(
+                    'bone-override',
+                    `[IK-SOLVE] ${modelId} bone="${ikBoneName}" via ikSolver.solve() worldY-after=${afterY}`
+                );
+            }
             continue;
         }
 
@@ -691,16 +701,20 @@ function _solvePosSlotIkWasm(
         if (typeof ikSolverIndex === 'number' && ikSolverIndex >= 0 && _wasmIkResolver) {
             const buf = (ikBone as MmdRuntimeBoneExtended).worldMatrix;
             const beforeY = buf ? buf[13] : 'no-buf';
-            logWarn(
-                'bone-override',
-                `[IK-SOLVE-FALLBACK] ${modelId} bone="${ikBoneName}" ikSolverIndex=${ikSolverIndex} worldY-before=${beforeY}`
-            );
+            if (dbg) {
+                logWarn(
+                    'bone-override',
+                    `[IK-SOLVE-FALLBACK] ${modelId} bone="${ikBoneName}" ikSolverIndex=${ikSolverIndex} worldY-before=${beforeY}`
+                );
+            }
             _wasmIkResolver(modelId, ikSolverIndex, false);
             const afterY = buf ? buf[13] : 'no-buf';
-            logWarn(
-                'bone-override',
-                `[IK-SOLVE-FALLBACK] ${modelId} bone="${ikBoneName}" worldY-after=${afterY}`
-            );
+            if (dbg) {
+                logWarn(
+                    'bone-override',
+                    `[IK-SOLVE-FALLBACK] ${modelId} bone="${ikBoneName}" worldY-after=${afterY}`
+                );
+            }
         }
     }
 }

@@ -149,6 +149,30 @@ describe('IK 重解双调用路径时序（ADR-202 §六）', () => {
         // → resolverCalls 仍为 1（不新增）
     });
 
+    it('ADR-248：feetDebug 关闭时 IK 诊断日志不刷 console（退出热路径）', () => {
+        // 构造左足 IK 骨 + 设置 POS 覆盖，触发 _solvePosSlotIkWasm
+        const ikBone = makeWasmBone('左足ＩＫ', [0, 1.8, 0], 0);
+        const centerBone = makeWasmBone('センター', [0, 0, 0]);
+        const bones: IMmdRuntimeBone[] = [ikBone, centerBone];
+
+        startBoneOverride(() => bones, scene);
+        setBoneOverridePosition('左足ＩＫ', [0, -1.8, 0], 1, true, MODEL_ID);
+
+        // feetDebug 默认 false（afterEach 恢复），任意帧节流计数都不应输出诊断日志
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        try {
+            for (let i = 0; i < 120; i++) {
+                getMotionPipeline().runFrame({ scene });
+            }
+            const ikLogs = warnSpy.mock.calls.filter((c) =>
+                String(c[0]).includes('[IK-ENTRY]') || String(c[0]).includes('[IK-SOLVE]')
+            );
+            expect(ikLogs.length).toBe(0);
+        } finally {
+            warnSpy.mockRestore();
+        }
+    });
+
     it('场景B：IK 目标骨无覆盖、脚需贴地 → feet-adjustment 调 resolver，bone-override 不调', () => {
         // 构造骨骼：左足IK 在 Y=0.1（低于 jumpThreshold=0.5 → skip=false → 贴地）
         const ikBone = makeWasmBone('左足ＩＫ', [0, 0.1, 0], 0);

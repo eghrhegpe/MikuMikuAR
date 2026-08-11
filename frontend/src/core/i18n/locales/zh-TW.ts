@@ -1560,6 +1560,7 @@ export const zhTW: Record<string, string> = {
     'settings.about.maintenance.clearAll': '清除全部快取',
     'settings.about.maintenance.clearAllConfirm': '確定要清除全部快取嗎？此操作不可撤銷。',
     'settings.about.maintenance.openExtract': '開啟解壓快取目錄',
+    'settings.about.maintenance.openLogPanel': '開啟記錄面板',
     'settings.about.maintenance.openThumbnail': '開啟縮圖快取目錄',
     'settings.about.settingsMgmt': '設定管理',
     'settings.about.settingsMgmt.export': '匯出設定',

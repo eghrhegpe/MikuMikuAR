@@ -1719,6 +1719,7 @@ export const en: Record<string, string> = {
     'settings.about.maintenance.clearAll': 'Clear all cache',
     'settings.about.maintenance.clearAllConfirm': 'Clear all cache? This cannot be undone.',
     'settings.about.maintenance.openExtract': 'Open extract cache',
+    'settings.about.maintenance.openLogPanel': 'Open log panel',
     'settings.about.maintenance.openThumbnail': 'Open thumbnail cache',
     'settings.about.settingsMgmt': 'Settings Management',
     'settings.about.settingsMgmt.export': 'Export settings',

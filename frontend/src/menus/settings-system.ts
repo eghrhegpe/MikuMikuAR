@@ -48,6 +48,7 @@ import type { SlideMenu } from './menu';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
 import { getCachedCapabilities } from '../core/backend';
+import { toggleLogPanel } from '../core/debug-log-panel';
 
 // ======== 设置导入白名单校验（修复零校验污染 uiState） ========
 
@@ -384,6 +385,13 @@ function buildCacheSchema(): MenuNode[] {
                                     }
                                 }
                             )
+                    );
+                    slideRow(
+                        inner,
+                        'lucide:bug',
+                        t('settings.about.maintenance.openLogPanel'),
+                        false,
+                        () => toggleLogPanel()
                     );
                 });
 

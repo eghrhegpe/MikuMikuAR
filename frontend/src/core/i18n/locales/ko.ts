@@ -1575,6 +1575,7 @@ export const ko: Record<string, string> = {
     'settings.about.maintenance.clearAll': '모든 캐시 지우기',
     'settings.about.maintenance.clearAllConfirm': '모든 캐시를 지우시겠습니까? 이 작업은 되돌릴 수 없습니다.',
     'settings.about.maintenance.openExtract': '추출 캐시 디렉터리 열기',
+    'settings.about.maintenance.openLogPanel': '로그 패널 열기',
     'settings.about.maintenance.openThumbnail': '썸네일 캐시 디렉터리 열기',
     'settings.about.settingsMgmt': '설정 관리',
     'settings.about.settingsMgmt.export': '설정 내보내기',

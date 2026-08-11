@@ -1432,32 +1432,32 @@
 | `OverrideSlot()` | `scene/motion/bone-override-store:18` | 单骨覆盖槽位（原 _OverrideSlot 的共享命名版） |
 | `ReleaseListener()` | `scene/motion/bone-override-store:73` | 骨骼释放事件监听器 |
 | `getBoneOverrideStore()` | `scene/motion/bone-override-store:425` | 获取全局 BoneOverrideStore 单例（registry / module-base 等委托此存储骨骼所有权与冲突状态） |
-| `BoneHierarchyDump()` | `scene/motion/bone-override:1082` | 骨骼层级导出结果 |
-| `BoneHierarchyNode()` | `scene/motion/bone-override:1060` | 单根骨骼的层级与覆盖状态（dumpBoneHierarchy 输出元素） |
+| `BoneHierarchyDump()` | `scene/motion/bone-override:1096` | 骨骼层级导出结果 |
+| `BoneHierarchyNode()` | `scene/motion/bone-override:1074` | 单根骨骼的层级与覆盖状态（dumpBoneHierarchy 输出元素） |
 | `BoneOverrideEntry()` | `scene/motion/bone-override:24` | 持久化的单条骨骼覆盖配置 |
-| `FRAME_HOOK_ORDER()` | `scene/motion/bone-override:717` | [doc:adr-116 P3] 注册每帧渲染钩子。 |
-| `FrameHookSnapshot()` | `scene/motion/bone-override:747` | 帧钩子快照（供 UI 查询管线时序一览） |
+| `FRAME_HOOK_ORDER()` | `scene/motion/bone-override:731` | [doc:adr-116 P3] 注册每帧渲染钩子。 |
+| `FrameHookSnapshot()` | `scene/motion/bone-override:761` | 帧钩子快照（供 UI 查询管线时序一览） |
 | `OverrideSlotLike()` | `scene/motion/bone-override:252` | 覆盖槽的最小形态，供 _computeOverride 接收（与内部 _OverrideSlot 结构兼容） |
 | `OverrideType()` | `scene/motion/bone-override:478` | — |
 | `applyBoneOverrideIK()` | `scene/motion/bone-override:338` | [doc:adr-122 P1] IK 感知的骨骼覆盖。 |
 | `clearAllOverrides()` | `scene/motion/bone-override:547` | 清除所有骨骼覆盖。 |
 | `clearBoneOverride()` | `scene/motion/bone-override:440` | 清除指定骨骼的覆盖。 |
 | `computeOverride()` | `scene/motion/bone-override:268` | [doc:adr-116 P1] 计算单槽覆盖后的平移与旋转。 |
-| `dumpBoneHierarchy()` | `scene/motion/bone-override:1097` | 导出当前聚焦模型的骨骼层级与覆盖状态。 |
-| `getAllOverrides()` | `scene/motion/bone-override:762` | 获取当前所有覆盖的条目列表（用于持久化/UI 展示）。 |
-| `getFrameHooksSnapshot()` | `scene/motion/bone-override:753` | 按 order 升序返回当前注册的所有帧钩子快照（不含 hook 函数本身）。 |
+| `dumpBoneHierarchy()` | `scene/motion/bone-override:1111` | 导出当前聚焦模型的骨骼层级与覆盖状态。 |
+| `getAllOverrides()` | `scene/motion/bone-override:776` | 获取当前所有覆盖的条目列表（用于持久化/UI 展示）。 |
+| `getFrameHooksSnapshot()` | `scene/motion/bone-override:767` | 按 order 升序返回当前注册的所有帧钩子快照（不含 hook 函数本身）。 |
 | `getOverride()` | `scene/motion/bone-override:465` | [doc:adr-116] 读取单条骨骼的覆盖条目（用于 UI 回填）。不存在返回 undefined。 |
 | `getOverrideType()` | `scene/motion/bone-override:487` | 查询骨骼覆盖类型（零分配）。 |
-| `getWasmIkResolver()` | `scene/motion/bone-override:929` | [ADR-202 §六] 获取 WASM IK 重解回调（供 feet-adjustment 等外部模块调用）。 |
+| `getWasmIkResolver()` | `scene/motion/bone-override:943` | [ADR-202 §六] 获取 WASM IK 重解回调（供 feet-adjustment 等外部模块调用）。 |
 | `protectIkPosition()` | `scene/motion/bone-override:568` | 注册骨骼位置保护（帧钩子内调用）。 |
-| `registerBoneOverrideFrameHook()` | `scene/motion/bone-override:730` | — |
-| `restoreOverrides()` | `scene/motion/bone-override:784` | 从持久化的条目列表批量恢复覆盖。 |
+| `registerBoneOverrideFrameHook()` | `scene/motion/bone-override:744` | — |
+| `restoreOverrides()` | `scene/motion/bone-override:798` | 从持久化的条目列表批量恢复覆盖。 |
 | `setBoneOverride()` | `scene/motion/bone-override:304` | 设置单条骨骼覆盖。 |
 | `setBoneOverridePosition()` | `scene/motion/bone-override:409` | [doc:adr-116] 设置单条骨骼的位置覆盖（P2 引擎扩展）。 |
 | `setBoneOverrideQuat()` | `scene/motion/bone-override:375` | 设置单条骨骼覆盖（直接传四元数）。 |
-| `setWasmIkResolver()` | `scene/motion/bone-override:912` | [ADR-202 A-class] 注入 WASM IK 重解回调。 |
-| `startBoneOverride()` | `scene/motion/bone-override:934` | — |
-| `stopBoneOverride()` | `scene/motion/bone-override:1038` | 停止覆盖系统。 |
+| `setWasmIkResolver()` | `scene/motion/bone-override:926` | [ADR-202 A-class] 注入 WASM IK 重解回调。 |
+| `startBoneOverride()` | `scene/motion/bone-override:948` | — |
+| `stopBoneOverride()` | `scene/motion/bone-override:1052` | 停止覆盖系统。 |
 | `FeetModelProvider()` | `scene/motion/feet-adjustment:48` | 注入：返回需要处理脚部调整的模型及其 runtime bones |
 | `FootLandEvent()` | `scene/motion/feet-adjustment:35` | — |
 | `SolveFootInput()` | `scene/motion/feet-adjustment:40` | — |
@@ -2450,12 +2450,12 @@
 | `setDownloadWatchEnabledCached()` | `menus/settings-shared:54` | — |
 | `setTheme()` | `menus/settings-shared:81` | — |
 | `truncatePath()` | `menus/settings-shared:186` | 路径截断显示：超长时保留尾部（用户更关心文件名/末级目录） |
-| `addCustomSoftware()` | `menus/settings-system:432` | — |
-| `buildSettingsSystemLevel()` | `menus/settings-system:783` | — |
-| `buildSoftwareDetailLevel()` | `menus/settings-system:738` | — |
-| `scanSoftwareDir()` | `menus/settings-system:458` | — |
-| `setBlenderPath()` | `menus/settings-system:404` | — |
-| `setMMDPath()` | `menus/settings-system:418` | — |
+| `addCustomSoftware()` | `menus/settings-system:440` | — |
+| `buildSettingsSystemLevel()` | `menus/settings-system:791` | — |
+| `buildSoftwareDetailLevel()` | `menus/settings-system:746` | — |
+| `scanSoftwareDir()` | `menus/settings-system:466` | — |
+| `setBlenderPath()` | `menus/settings-system:412` | — |
+| `setMMDPath()` | `menus/settings-system:426` | — |
 | `SETTINGS()` | `menus/settings-targets:5` | 设置菜单文件夹导航 target（ADR-157：7 分类信息架构） |
 | `SETTINGS_ACTION()` | `menus/settings-targets:17` | 设置菜单动作 target（点击后执行操作，不导航） |
 | `SOFTWARE_DETAIL_PREFIX()` | `menus/settings-targets:33` | 动态 target 前缀 —— 用于 &#96;settings:software-detail:&lt;path&gt;&#96; 模式 |
