@@ -2,7 +2,7 @@
 
 # 知识卡索引
 
-> 原子化架构知识层，共 **270** 张卡：记录「某个子系统**现在**长啥样、去哪找」。与 ADR（为什么这么决定）互补——知识卡引用而不复制 ADR 结论。
+> 原子化架构知识层，共 **271** 张卡：记录「某个子系统**现在**长啥样、去哪找」。与 ADR（为什么这么决定）互补——知识卡引用而不复制 ADR 结论。
 
 > 卡片格式规范、立卡判据、`source_files` 铁律见 [知识卡层导读](./README.md)；AI 检索入口见 [路由表](./routes.md)；菜单全景见 [menu-map](./menu-map.md)（机器生成）。
 
@@ -16,7 +16,7 @@
 | [rendering](#rendering) | 18 | 渲染系统 |
 | [motion](#motion) | 34 | 动作系统 |
 | [ui](#ui) | 58 | UI / 菜单 |
-| [core](#core) | 79 | 核心基础设施 |
+| [core](#core) | 80 | 核心基础设施 |
 | [backend](#backend) | 18 | 后端 |
 
 ## env
@@ -182,7 +182,7 @@
 | [键盘导航工具](./ui-keyboard-nav.md) | - ADR-153 |
 | [后端绑定聚合层（backend 代理化）](./wails-bindings.md) | - ADR-176 |
 
-> 叶子模块 / 工具函数（50 张）：[ai-sse](./ai-sse.md) · [character-bible](./character-bible.md) · [chat-store](./chat-store.md) · [color-helpers](./color-helpers.md) · [config-barrel](./config-barrel.md) · [core-dom](./core-dom.md) · [core-leaf-modules](./core-leaf-modules.md) · [core-orbit](./core-orbit.md) · [core-types](./core-types.md) · [core-utils](./core-utils.md) · [dev-hooks](./dev-hooks.md) · [diagnostic-actions](./diagnostic-actions.md) · [dialog](./dialog.md) · [dispose-helpers](./dispose-helpers.md) · [drop-import](./drop-import.md) · [e2e-state-bridge](./e2e-state-bridge.md) · [goerr](./goerr.md) · [hash-noise](./hash-noise.md) · [i18n-t](./i18n-t.md) · [icons-bundle](./icons-bundle.md) · [logger](./logger.md) · [markdown](./markdown.md) · [mmar-globals](./mmar-globals.md) · [observer-handle](./observer-handle.md) · [outfits-spec](./outfits-spec.md) · [platform](./platform.md) · [pmx-meta](./pmx-meta.md) · [preset-meta](./preset-meta.md) · [reactivity](./reactivity.md) · [relay](./relay.md) · [render-context](./render-context.md) · [runtime-stub](./runtime-stub.md) · [safe-call](./safe-call.md) · [scene-action-bridge](./scene-action-bridge.md) · [shortcut-app](./shortcut-app.md) · [status-bar](./status-bar.md) · [test-mesh](./test-mesh.md) · [theme](./theme.md) · [toast](./toast.md) · [ui-action-bridge](./ui-action-bridge.md) · [ui-constants](./ui-constants.md) · [ui-focus-trap](./ui-focus-trap.md) · [ui-header-toggle](./ui-header-toggle.md) · [ui-nav-item](./ui-nav-item.md) · [ui-preset](./ui-preset.md) · [ui-slider-controller](./ui-slider-controller.md) · [ui-state](./ui-state.md) · [wind-utils](./wind-utils.md) · [zh-CN](./zh-CN.md) · [zh-TW](./zh-TW.md)
+> 叶子模块 / 工具函数（51 张）：[ai-sse](./ai-sse.md) · [character-bible](./character-bible.md) · [chat-store](./chat-store.md) · [color-helpers](./color-helpers.md) · [config-barrel](./config-barrel.md) · [core-dom](./core-dom.md) · [core-leaf-modules](./core-leaf-modules.md) · [core-orbit](./core-orbit.md) · [core-types](./core-types.md) · [core-utils](./core-utils.md) · [debug-log-panel](./debug-log-panel.md) · [dev-hooks](./dev-hooks.md) · [diagnostic-actions](./diagnostic-actions.md) · [dialog](./dialog.md) · [dispose-helpers](./dispose-helpers.md) · [drop-import](./drop-import.md) · [e2e-state-bridge](./e2e-state-bridge.md) · [goerr](./goerr.md) · [hash-noise](./hash-noise.md) · [i18n-t](./i18n-t.md) · [icons-bundle](./icons-bundle.md) · [logger](./logger.md) · [markdown](./markdown.md) · [mmar-globals](./mmar-globals.md) · [observer-handle](./observer-handle.md) · [outfits-spec](./outfits-spec.md) · [platform](./platform.md) · [pmx-meta](./pmx-meta.md) · [preset-meta](./preset-meta.md) · [reactivity](./reactivity.md) · [relay](./relay.md) · [render-context](./render-context.md) · [runtime-stub](./runtime-stub.md) · [safe-call](./safe-call.md) · [scene-action-bridge](./scene-action-bridge.md) · [shortcut-app](./shortcut-app.md) · [status-bar](./status-bar.md) · [test-mesh](./test-mesh.md) · [theme](./theme.md) · [toast](./toast.md) · [ui-action-bridge](./ui-action-bridge.md) · [ui-constants](./ui-constants.md) · [ui-focus-trap](./ui-focus-trap.md) · [ui-header-toggle](./ui-header-toggle.md) · [ui-nav-item](./ui-nav-item.md) · [ui-preset](./ui-preset.md) · [ui-slider-controller](./ui-slider-controller.md) · [ui-state](./ui-state.md) · [wind-utils](./wind-utils.md) · [zh-CN](./zh-CN.md) · [zh-TW](./zh-TW.md)
 
 ## backend
 
