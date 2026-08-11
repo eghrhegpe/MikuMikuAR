@@ -15,3 +15,6 @@ invariants:
   - 桌面端（Wails / go 适配器）由 Go 直连 API，无 CORS 问题，relay 不参与
   - browser-adapter 与诊断面板共用 relayTarget 判定，避免"显示启用、实际直连"漂移
   - isRemoteEndpoint 用正则排除 localhost/127.0.0.1（含端口和路径变体）
+---
+
+# AI Relay 生效判定 — 网页端 CORS 同源代理

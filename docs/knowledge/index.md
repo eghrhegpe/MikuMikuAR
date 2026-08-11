@@ -16,9 +16,9 @@
 | [rendering](#rendering) | 18 | 渲染系统 |
 | [motion](#motion) | 34 | 动作系统 |
 | [ui](#ui) | 58 | UI / 菜单 |
-| [core](#core) | 77 | 核心基础设施 |
+| [core](#core) | 78 | 核心基础设施 |
 | [backend](#backend) | 18 | 后端 |
-| [未分类](#未分类) | 2 | 未标注 category（待补） |
+| [testing](#testing) | 1 | 扩展分类 |
 
 ## env
 
@@ -183,7 +183,7 @@
 | [键盘导航工具](./ui-keyboard-nav.md) | - ADR-153 |
 | [后端绑定聚合层（backend 代理化）](./wails-bindings.md) | - ADR-176 |
 
-> 叶子模块 / 工具函数（48 张）：[ai-sse](./ai-sse.md) · [character-bible](./character-bible.md) · [chat-store](./chat-store.md) · [color-helpers](./color-helpers.md) · [config-barrel](./config-barrel.md) · [core-dom](./core-dom.md) · [core-leaf-modules](./core-leaf-modules.md) · [core-orbit](./core-orbit.md) · [core-types](./core-types.md) · [core-utils](./core-utils.md) · [dev-hooks](./dev-hooks.md) · [diagnostic-actions](./diagnostic-actions.md) · [dialog](./dialog.md) · [dispose-helpers](./dispose-helpers.md) · [drop-import](./drop-import.md) · [e2e-state-bridge](./e2e-state-bridge.md) · [goerr](./goerr.md) · [hash-noise](./hash-noise.md) · [i18n-t](./i18n-t.md) · [icons-bundle](./icons-bundle.md) · [logger](./logger.md) · [markdown](./markdown.md) · [mmar-globals](./mmar-globals.md) · [observer-handle](./observer-handle.md) · [outfits-spec](./outfits-spec.md) · [platform](./platform.md) · [pmx-meta](./pmx-meta.md) · [preset-meta](./preset-meta.md) · [reactivity](./reactivity.md) · [render-context](./render-context.md) · [runtime-stub](./runtime-stub.md) · [safe-call](./safe-call.md) · [scene-action-bridge](./scene-action-bridge.md) · [shortcut-app](./shortcut-app.md) · [status-bar](./status-bar.md) · [theme](./theme.md) · [toast](./toast.md) · [ui-action-bridge](./ui-action-bridge.md) · [ui-constants](./ui-constants.md) · [ui-focus-trap](./ui-focus-trap.md) · [ui-header-toggle](./ui-header-toggle.md) · [ui-nav-item](./ui-nav-item.md) · [ui-preset](./ui-preset.md) · [ui-slider-controller](./ui-slider-controller.md) · [ui-state](./ui-state.md) · [wind-utils](./wind-utils.md) · [zh-CN](./zh-CN.md) · [zh-TW](./zh-TW.md)
+> 叶子模块 / 工具函数（49 张）：[ai-sse](./ai-sse.md) · [character-bible](./character-bible.md) · [chat-store](./chat-store.md) · [color-helpers](./color-helpers.md) · [config-barrel](./config-barrel.md) · [core-dom](./core-dom.md) · [core-leaf-modules](./core-leaf-modules.md) · [core-orbit](./core-orbit.md) · [core-types](./core-types.md) · [core-utils](./core-utils.md) · [dev-hooks](./dev-hooks.md) · [diagnostic-actions](./diagnostic-actions.md) · [dialog](./dialog.md) · [dispose-helpers](./dispose-helpers.md) · [drop-import](./drop-import.md) · [e2e-state-bridge](./e2e-state-bridge.md) · [goerr](./goerr.md) · [hash-noise](./hash-noise.md) · [i18n-t](./i18n-t.md) · [icons-bundle](./icons-bundle.md) · [logger](./logger.md) · [markdown](./markdown.md) · [mmar-globals](./mmar-globals.md) · [observer-handle](./observer-handle.md) · [outfits-spec](./outfits-spec.md) · [platform](./platform.md) · [pmx-meta](./pmx-meta.md) · [preset-meta](./preset-meta.md) · [reactivity](./reactivity.md) · [relay](./relay.md) · [render-context](./render-context.md) · [runtime-stub](./runtime-stub.md) · [safe-call](./safe-call.md) · [scene-action-bridge](./scene-action-bridge.md) · [shortcut-app](./shortcut-app.md) · [status-bar](./status-bar.md) · [theme](./theme.md) · [toast](./toast.md) · [ui-action-bridge](./ui-action-bridge.md) · [ui-constants](./ui-constants.md) · [ui-focus-trap](./ui-focus-trap.md) · [ui-header-toggle](./ui-header-toggle.md) · [ui-nav-item](./ui-nav-item.md) · [ui-preset](./ui-preset.md) · [ui-slider-controller](./ui-slider-controller.md) · [ui-state](./ui-state.md) · [wind-utils](./wind-utils.md) · [zh-CN](./zh-CN.md) · [zh-TW](./zh-TW.md)
 
 ## backend
 
@@ -208,14 +208,10 @@
 
 > 叶子模块 / 工具函数（4 张）：[go-dialogs](./go-dialogs.md) · [go-i18nerr](./go-i18nerr.md) · [go-thumbnail](./go-thumbnail.md) · [go-util](./go-util.md)
 
-## 未分类
+## testing
 
-**未标注 `category` 字段**——补齐 frontmatter 后会自动归入对应分类。
 
-| 卡片 | 关联 ADR |
-|------|----------|
-| [relay](./relay.md) | — |
-| [test-mesh](./test-mesh.md) | — |
+> 叶子模块 / 工具函数（1 张）：[test-mesh](./test-mesh.md)
 
 ## ADR 反查
 

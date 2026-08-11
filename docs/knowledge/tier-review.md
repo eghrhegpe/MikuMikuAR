@@ -2,7 +2,7 @@
 
 > 生成时间：2026-08-11 ｜ 模式：preview
 > 机器自动判 architecture（import 广度 ≥ 2 顶层目录）：**0 张**（--apply 已写入 / 待写入）
-> 需人工复核：**2 张**
+> 需人工复核：**0 张**
 
 ## 一、机器已自动标 architecture（广度 ≥ 2）
 
@@ -13,5 +13,3 @@
 
 | 卡 | 广度 | 引用顶层目录 | 建议 | 理由 |
 |----|------|--------------|------|------|
-| relay.md | 0 | — | leaf | 无 source_files，无法算广度，建议 leaf 或补 source_files |
-| test-mesh.md | 0 | — | leaf | 无 source_files，无法算广度，建议 leaf 或补 source_files |
