@@ -436,3 +436,73 @@ describe('captureThumbnail 调用', () => {
         expect(h.renderInstanceThumbnail).toHaveBeenCalled();
     });
 });
+
+// ========== 新加载自动取消前一次加载（ADR-096 _loadAbortController）==========
+
+describe('loadPMXFile 自动取消前一次加载', () => {
+    let mm: ReturnType<typeof makeModelManager>;
+
+    beforeEach(async () => {
+        h.removeCalls.length = 0;
+        h.importMeshAsync.mockReset();
+        h.importMeshAsync.mockResolvedValue({ meshes: [new h.Mesh()] });
+        // 重置 readFileBytes，避免前序测试的 mockImplementation 泄漏
+        const { readFileBytes } = await import('@/core/wails-bindings');
+        (readFileBytes as any).mockReset();
+        (readFileBytes as any).mockResolvedValue(new Uint8Array([1, 2, 3]));
+        mm = makeModelManager();
+        initLoader(scene, mmdRuntime, mm as any, vi.fn(), vi.fn(), vi.fn(), vi.fn());
+    });
+
+    it('第二次 loadPMXFile 启动时自动 abort 前一次加载', async () => {
+        // 让第一次 readFileBytes 挂起，模拟真实异步窗口，
+        // 使 load1 在 Promise.all 处等待，load2 得以触发 _loadAbortController.abort()
+        const { readFileBytes } = await import('@/core/wails-bindings');
+        let deferred: (v: any) => void;
+        const deferredPromise = new Promise<any>((r) => { deferred = r; });
+        (readFileBytes as any).mockImplementationOnce(() => deferredPromise);
+
+        const load1 = loadPMXFile('/models/first.pmx', true);
+        // load2 启动 → line 435 abortCtrl1.abort() → effectiveSignal1 标记 aborted
+        const load2 = loadPMXFile('/models/second.pmx', true);
+
+        // 释放 load1 的 readFileBytes → Promise.all 解析 → line 473 effectiveSignal.aborted → return null
+        deferred!(new Uint8Array([1, 2, 3]));
+
+        const id1 = await load1;
+        const id2 = await load2;
+
+        expect(id1).toBeNull();
+        expect(id2).toBe('gen-id');
+    });
+});
+
+// ========== Actor createMmdModel 抛错清理路径（line 638 → catch 830-855）==========
+
+describe('loadPMXFile actor createMmdModel 错误', () => {
+    let mm: ReturnType<typeof makeModelManager>;
+
+    beforeEach(() => {
+        h.removeCalls.length = 0;
+        h.importMeshAsync.mockReset();
+        h.importMeshAsync.mockResolvedValue({ meshes: [new h.Mesh()] });
+        mm = makeModelManager();
+        initLoader(scene, mmdRuntime, mm as any, vi.fn(), vi.fn(), vi.fn(), vi.fn());
+    });
+
+    it('createMmdModel 抛错：mesh 被 dispose，模型不注册，返回 null', async () => {
+        const mesh = new h.Mesh();
+        h.importMeshAsync.mockResolvedValueOnce({ meshes: [mesh] });
+        mmdRuntime.createMmdModel.mockImplementationOnce(() => {
+            throw new Error('createMmdModel failed');
+        });
+        const id = await loadPMXFile('/models/err.pmx');
+        expect(id).toBeNull();
+        expect(mm.register).not.toHaveBeenCalled();
+        expect(mesh.dispose).toHaveBeenCalled();
+    });
+});
+
+// 注：loader 未初始化快速路径（line 430-432）无法在同文件测试——
+// _scene/_mmdRuntime 是模块级 let，前序 describe 已调用 initLoader 设置，
+// vi.resetModules() 会断开所有 mock 绑定。该 guard 由代码审核覆盖。

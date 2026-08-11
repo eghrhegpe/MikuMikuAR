@@ -17,9 +17,13 @@ vi.mock('../core/dispose-helpers', () => ({ safeDispose: __mocks.safeDispose }))
 
 import {
     registerShortcut,
+    registerShortcuts,
     getAllShortcuts,
     setKeyBinding,
     resetKeyBinding,
+    formatKeyBinding,
+    exportKeyBindings,
+    loadKeyBindings,
     _resetShortcutRegistry,
 } from '../core/shortcut-registry';
 import type { ShortcutDef } from '../core/shortcut-registry';
@@ -168,7 +172,7 @@ describe('冲突解除后 deferred 自动恢复', () => {
         // 3. B 成功重注册（KeyZ/h2）——成功路径清理 stale 的 b(Space)
         const h2 = vi.fn();
         registerShortcut(makeDef('b', 'KeyZ', { handler: h2 }));
-        // 4. B 再次以冲突绑定注册（Space/h4）——入队去重覆盖为最新意图
+        // 4. B 再次以冲突绑定注册（Space/h4）——入队去队覆盖为最新意图
         const h4 = vi.fn();
         registerShortcut(makeDef('b', 'Space', { handler: h4 }));
         // 5. 改绑 A 解除冲突 → flush：残留队列条目是 fresh 的 b(Space/h4)，
@@ -178,5 +182,175 @@ describe('冲突解除后 deferred 自动恢复', () => {
         expect(bAfterFlush).toBeDefined();
         expect(bAfterFlush!.defaultKey).toBe('Space'); // 最新冲突意图 Space，非 KeyZ
         expect(bAfterFlush!.handler).toBe(h4); // 最新 handler h4，非 h2
+    });
+
+    it('flush 互冲守卫：多个 deferred 项彼此冲突时，仅先入队者恢复，后者留队', () => {
+        // A 注册 Space
+        registerShortcut(makeDef('a', 'Space'));
+        // B 与 A 冲突 → 入 deferred
+        registerShortcut(makeDef('b', 'Space'));
+        // C 也与 A 冲突 → 入 deferred（B 与 C 彼此也冲突）
+        registerShortcut(makeDef('c', 'Space'));
+        expect(getAllShortcuts().map((s) => s.id)).toEqual(['a']);
+
+        // 改绑 A → flush：B 先恢复（占用 Space），C 与 B 冲突 → 留队
+        setKeyBinding('a', 'KeyX');
+        const ids = getAllShortcuts().map((s) => s.id);
+        expect(ids).toContain('b');
+        expect(ids).not.toContain('c'); // C 仍 deferred，不与 B 同时占 Space
+    });
+});
+
+describe('formatKeyBinding', () => {
+    it('普通键名原样输出', () => {
+        expect(formatKeyBinding('Tab', false, false, false)).toBe('Tab');
+    });
+
+    it('Ctrl+组合键', () => {
+        expect(formatKeyBinding('KeyS', true, false, false)).toBe('Ctrl+S');
+    });
+
+    it('Ctrl+Shift+组合键', () => {
+        expect(formatKeyBinding('KeyZ', true, true, false)).toBe('Ctrl+Shift+Z');
+    });
+
+    it('全修饰键', () => {
+        expect(formatKeyBinding('KeyA', true, true, true)).toBe('Ctrl+Shift+Alt+A');
+    });
+
+    it('Space 显示为 Space', () => {
+        expect(formatKeyBinding('Space', false, false, false)).toBe('Space');
+    });
+
+    it('Escape 显示为 Esc', () => {
+        expect(formatKeyBinding('Escape', false, false, false)).toBe('Esc');
+    });
+
+    it('方向键显示为箭头符号', () => {
+        expect(formatKeyBinding('ArrowLeft', false, false, false)).toBe('←');
+        expect(formatKeyBinding('ArrowRight', false, false, false)).toBe('→');
+        expect(formatKeyBinding('ArrowUp', false, false, false)).toBe('↑');
+        expect(formatKeyBinding('ArrowDown', false, false, false)).toBe('↓');
+    });
+
+    it('Digit 前缀剥离', () => {
+        expect(formatKeyBinding('Digit1', false, false, false)).toBe('1');
+        expect(formatKeyBinding('Digit5', true, false, false)).toBe('Ctrl+5');
+    });
+
+    it('Key 前缀剥离', () => {
+        expect(formatKeyBinding('KeyA', false, false, false)).toBe('A');
+    });
+
+    it('Enter 保持原样', () => {
+        expect(formatKeyBinding('Enter', false, false, false)).toBe('Enter');
+    });
+});
+
+describe('registerShortcuts 批量注册', () => {
+    it('批量注册多个不冲突的快捷键', () => {
+        registerShortcuts([
+            makeDef('a', 'KeyA'),
+            makeDef('b', 'KeyB'),
+            makeDef('c', 'KeyC'),
+        ]);
+        const ids = getAllShortcuts().map((s) => s.id);
+        expect(ids).toEqual(['a', 'b', 'c']);
+    });
+
+    it('批量注册中遇到冲突仍遵守守卫', () => {
+        registerShortcuts([
+            makeDef('a', 'Space'),
+            makeDef('b', 'Space'), // 与 a 冲突
+        ]);
+        const ids = getAllShortcuts().map((s) => s.id);
+        expect(ids).toContain('a');
+        expect(ids).not.toContain('b');
+    });
+});
+
+describe('exportKeyBindings / loadKeyBindings 持久化往返', () => {
+    it('无 override 时 export 返回空对象', () => {
+        registerShortcut(makeDef('a', 'Space'));
+        expect(exportKeyBindings()).toEqual({});
+    });
+
+    it('setKeyBinding 后 export 包含 override', () => {
+        registerShortcut(makeDef('a', 'Space'));
+        setKeyBinding('a', 'KeyX', true);
+        expect(exportKeyBindings()).toEqual({
+            a: { key: 'KeyX', ctrl: true, shift: undefined, alt: undefined },
+        });
+    });
+
+    it('export → reset → load 往返一致', () => {
+        registerShortcut(makeDef('a', 'Space'));
+        setKeyBinding('a', 'KeyY', false, true);
+        const exported = exportKeyBindings();
+
+        resetKeyBinding('a');
+        // reset 后 a 回到默认 Space
+        const aAfterReset = getAllShortcuts().find((s) => s.id === 'a');
+        expect(aAfterReset!.currentKey).toBe('Space');
+
+        loadKeyBindings(exported);
+        // load 后恢复 override
+        const aAfterLoad = getAllShortcuts().find((s) => s.id === 'a');
+        expect(aAfterLoad!.currentKey).toBe('KeyY');
+        expect(aAfterLoad!.currentShift).toBe(true);
+    });
+
+    it('loadKeyBindings 触发 deferred flush', () => {
+        registerShortcut(makeDef('a', 'Space'));
+        registerShortcut(makeDef('b', 'Space')); // b 冲突入 deferred
+        expect(getAllShortcuts().map((s) => s.id)).not.toContain('b');
+
+        // load 把 a 改绑到 KeyX → 解除冲突 → b 恢复
+        loadKeyBindings({ a: { key: 'KeyX' } });
+        expect(getAllShortcuts().map((s) => s.id)).toContain('b');
+    });
+});
+
+describe('getAllShortcuts 返回 effective bindings', () => {
+    it('无 override 时返回 defaultKey', () => {
+        registerShortcut(makeDef('a', 'Space', { defaultCtrl: true }));
+        const a = getAllShortcuts().find((s) => s.id === 'a');
+        expect(a!.currentKey).toBe('Space');
+        expect(a!.currentCtrl).toBe(true);
+        expect(a!.currentShift).toBe(false);
+    });
+
+    it('setKeyBinding 后 getAllShortcuts 反映 override', () => {
+        registerShortcut(makeDef('a', 'Space'));
+        setKeyBinding('a', 'KeyZ', false, false, true);
+        const a = getAllShortcuts().find((s) => s.id === 'a');
+        expect(a!.currentKey).toBe('KeyZ');
+        expect(a!.currentAlt).toBe(true);
+        expect(a!.currentCtrl).toBe(false);
+    });
+});
+
+describe('registerShortcut 边界', () => {
+    it('无 handler 时 logWarn 且不注册', () => {
+        const def = { id: 'x', label: 'x', defaultKey: 'KeyX', group: 'test' } as ShortcutDef;
+        registerShortcut(def);
+        expect(__mocks.logWarn).toHaveBeenCalledWith(
+            'shortcut-registry',
+            expect.stringContaining('no handler')
+        );
+        expect(getAllShortcuts().map((s) => s.id)).not.toContain('x');
+    });
+
+    it('setKeyBinding 返回冲突信息', () => {
+        registerShortcut(makeDef('a', 'Space'));
+        registerShortcut(makeDef('b', 'KeyB'));
+        const result = setKeyBinding('b', 'Space');
+        expect(result).toEqual({ ok: false, conflictId: 'a', conflictLabel: 'shortcuts.label.a' });
+    });
+
+    it('setKeyBinding 成功时返回 ok:true', () => {
+        registerShortcut(makeDef('a', 'Space'));
+        const result = setKeyBinding('a', 'KeyX');
+        expect(result).toEqual({ ok: true });
     });
 });

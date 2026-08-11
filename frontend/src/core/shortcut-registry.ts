@@ -125,6 +125,10 @@ function _flushDeferredShortcuts(): void {
         return;
     }
     const remaining: ShortcutDef[] = [];
+    // 本轮已恢复的绑定——防止多个 deferred 项彼此冲突时同时恢复
+    // （例：b=Space 与 c=Space 均因与 a=Space 冲突入队，a 改绑后 flush
+    // 若不加此守卫，b 和 c 会同时进入 _shortcuts 导致冲突泄漏）
+    const reclaimed: EffectiveBinding[] = [];
     for (const def of _deferredShortcuts) {
         // 注：不做 `_shortcuts.has(def.id)` 跳过——stale 清理已在 registerShortcut
         // 成功路径完成（set 时删队列同 id 条目），此处残留的同 id 条目必然都是
@@ -140,10 +144,19 @@ function _flushDeferredShortcuts(): void {
                 break;
             }
         }
+        if (!conflict) {
+            for (const rb of reclaimed) {
+                if (bindingsConflict(incoming, rb)) {
+                    conflict = true;
+                    break;
+                }
+            }
+        }
         if (conflict) {
             remaining.push(def);
         } else {
             _shortcuts.set(def.id, def);
+            reclaimed.push(incoming);
             logWarn('shortcut-registry', `Shortcut "${def.id}" 冲突已解除，恢复注册`);
         }
     }

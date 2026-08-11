@@ -79,12 +79,14 @@ describe('seekFromEvent', () => {
         };
         mockState.isPlaying = false;
         syncAudioPlayback.mockReset();
+        mockRuntime.seekAnimation.mockClear();
     });
 
     it('no-op when mmdRuntime is null', () => {
         mockState.mmdRuntime = null;
         seekFromEvent(mouseEvent);
         expect(mockRuntime.seekAnimation).not.toHaveBeenCalled();
+        expect(syncAudioPlayback).not.toHaveBeenCalled();
     });
 
     it('no-op when dom.seekBar is null', () => {
@@ -92,11 +94,19 @@ describe('seekFromEvent', () => {
         mockDom.seekBar = null;
         seekFromEvent(mouseEvent);
         expect(mockRuntime.seekAnimation).not.toHaveBeenCalled();
+        expect(syncAudioPlayback).not.toHaveBeenCalled();
         mockDom.seekBar = saved;
     });
 
     it('no-op when duration is 0', () => {
         mockState.mmdRuntime = { ...mockRuntime, animationDuration: 0 };
+        seekFromEvent(mouseEvent);
+        expect(mockRuntime.seekAnimation).not.toHaveBeenCalled();
+        expect(syncAudioPlayback).not.toHaveBeenCalled();
+    });
+
+    it('no-op when duration is negative', () => {
+        mockState.mmdRuntime = { ...mockRuntime, animationDuration: -5 };
         seekFromEvent(mouseEvent);
         expect(mockRuntime.seekAnimation).not.toHaveBeenCalled();
     });
@@ -116,9 +126,20 @@ describe('seekFromEvent', () => {
         expect(mockState.mmdRuntime.seekAnimation).toHaveBeenCalledWith(30, true);
     });
 
-    it('calls syncAudioPlayback after seek', () => {
+    it('calls syncAudioPlayback with correct arguments', () => {
+        // clientX=60, left=10, width=200 → ratio=0.25, target=30
         seekFromEvent(mouseEvent);
-        expect(syncAudioPlayback).toHaveBeenCalled();
+        expect(syncAudioPlayback).toHaveBeenCalledWith(30, false, 120);
+    });
+
+    it('passes isPlaying=true to syncAudioPlayback when playing', () => {
+        mockState.isPlaying = true;
+        seekFromEvent(mouseEvent);
+        expect(syncAudioPlayback).toHaveBeenCalledWith(
+            expect.any(Number),
+            true,
+            120
+        );
     });
 
     it('clamps ratio to [0, 1]', () => {
@@ -132,5 +153,10 @@ describe('seekFromEvent', () => {
         const eRight = { clientX: 500 } as MouseEvent;
         seekFromEvent(eRight);
         expect(mockState.mmdRuntime.seekAnimation).toHaveBeenCalledWith(120, true);
+    });
+
+    it('updates playbackBar display after seek', () => {
+        seekFromEvent(mouseEvent);
+        expect(mockDom.playbackBar.style.display).toBe('flex');
     });
 });

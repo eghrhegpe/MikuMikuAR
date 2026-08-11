@@ -486,18 +486,18 @@
 | `KeyBindingOverride()` | `core/shortcut-registry:23` | — |
 | `ShortcutDef()` | `core/shortcut-registry:9` | — |
 | `ShortcutWithBinding()` | `core/shortcut-registry:47` | — |
-| `_resetShortcutRegistry()` | `core/shortcut-registry:431` | Reset all internal state — only for use in tests. |
-| `exportKeyBindings()` | `core/shortcut-registry:358` | Get current custom bindings (for saving to uiState). |
-| `formatKeyBinding()` | `core/shortcut-registry:231` | 格式化按键绑定为可读字符串，如 "Ctrl+1"、"Shift+←" |
-| `getAllShortcuts()` | `core/shortcut-registry:215` | Get all registered shortcuts with their CURRENT effective bindings. |
-| `getAriaKeyshortcuts()` | `core/shortcut-registry:267` | 将 ShortcutDef 格式化为 aria-keyshortcuts 值，如 "Control+1" |
-| `initShortcutDispatcher()` | `core/shortcut-registry:373` | Initialize the dispatcher — call once at app startup. |
-| `loadKeyBindings()` | `core/shortcut-registry:350` | Load custom bindings from persisted state (call at app init). |
-| `registerShortcut()` | `core/shortcut-registry:161` | Register ONE shortcut. |
-| `registerShortcuts()` | `core/shortcut-registry:208` | Register MULTIPLE shortcuts at once. |
-| `resetAllKeyBindings()` | `core/shortcut-registry:342` | Reset ALL shortcuts to their default bindings. |
-| `resetKeyBinding()` | `core/shortcut-registry:335` | Reset one shortcut to its default binding. |
-| `setKeyBinding()` | `core/shortcut-registry:294` | Set custom key binding for a shortcut ID. |
+| `_resetShortcutRegistry()` | `core/shortcut-registry:444` | Reset all internal state — only for use in tests. |
+| `exportKeyBindings()` | `core/shortcut-registry:371` | Get current custom bindings (for saving to uiState). |
+| `formatKeyBinding()` | `core/shortcut-registry:244` | 格式化按键绑定为可读字符串，如 "Ctrl+1"、"Shift+←" |
+| `getAllShortcuts()` | `core/shortcut-registry:228` | Get all registered shortcuts with their CURRENT effective bindings. |
+| `getAriaKeyshortcuts()` | `core/shortcut-registry:280` | 将 ShortcutDef 格式化为 aria-keyshortcuts 值，如 "Control+1" |
+| `initShortcutDispatcher()` | `core/shortcut-registry:386` | Initialize the dispatcher — call once at app startup. |
+| `loadKeyBindings()` | `core/shortcut-registry:363` | Load custom bindings from persisted state (call at app init). |
+| `registerShortcut()` | `core/shortcut-registry:174` | Register ONE shortcut. |
+| `registerShortcuts()` | `core/shortcut-registry:221` | Register MULTIPLE shortcuts at once. |
+| `resetAllKeyBindings()` | `core/shortcut-registry:355` | Reset ALL shortcuts to their default bindings. |
+| `resetKeyBinding()` | `core/shortcut-registry:348` | Reset one shortcut to its default binding. |
+| `setKeyBinding()` | `core/shortcut-registry:307` | Set custom key binding for a shortcut ID. |
 | `envState()` | `core/state:27` | — |
 | `applyHudVisibility()` | `core/status-bar:31` | 按 uiState 开关应用顶部 HUD 显隐：帧率时钟（#fpsClock）与多线程徽标（#runtimeBadge）。 |
 | `disposeStatusBar()` | `core/status-bar:117` | 清理 status 定时器（供 HMR 清理入口调用）。 |

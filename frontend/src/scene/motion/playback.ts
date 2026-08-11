@@ -197,7 +197,11 @@ export function seekFromEvent(e: MouseEvent | PointerEvent): void {
     const rect = dom.seekBar.getBoundingClientRect();
     const ratio = clamp01((e.clientX - rect.left) / rect.width);
     const targetTime = ratio * duration;
-    mmdRuntime.seekAnimation(targetTime, true);
+    mmdRuntime
+        .seekAnimation(targetTime, true)
+        .catch((err: unknown) =>
+            console.error('[playback] seekAnimation failed:', err)
+        );
     updatePlaybackUI();
     getSceneAction('syncAudioPlayback')?.(targetTime, isPlaying, duration);
 }
