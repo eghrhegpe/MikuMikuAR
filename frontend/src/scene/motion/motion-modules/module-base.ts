@@ -77,10 +77,14 @@ export function getBakeActionId(): string | undefined {
  */
 const _moduleActionId = new Map<string, string>();
 
-/** 记录某模型当前激活模块的 actionId（enable/setParam 时调用） */
+/** 记录某模型当前激活模块的 actionId（enable/setParam 时调用）。
+ *  [fix:audit-P1] actionId 为 undefined（VMD/快照恢复路径）时**清除**该模型条目，
+ *  避免 proc→VMD 切换后帧钩子残留过期 'proc:xxx' 作用域导致静默错配。 */
 function _recordModuleActionId(modelId: string, actionId: string | undefined): void {
     if (actionId) {
         _moduleActionId.set(modelId, actionId);
+    } else {
+        _moduleActionId.delete(modelId);
     }
 }
 

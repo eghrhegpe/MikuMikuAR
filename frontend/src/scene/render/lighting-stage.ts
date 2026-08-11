@@ -426,7 +426,7 @@ function _readStageLightState(entry: StageLightEntry): StageLightState {
                 (((state as unknown as Record<string, unknown>).volumetricExposure as
                     number | undefined) ?? 1) * 0.5
             ),
-        coneLength: state.coneLength ?? 20,
+        coneLength: state.coneLength ?? 30,
         coneSoftness:
             state.coneSoftness ??
             1 -

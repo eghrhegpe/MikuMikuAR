@@ -42,7 +42,9 @@ vi.mock('@/scene/motion/motion-modules/registry', async (importActual) => ({
 function makeWasmBone(
     name: string,
     translation: [number, number, number],
-    ikSolverIndex?: number
+    ikSolverIndex?: number,
+    /** [audit] 原生 IkSolver（ADR-202 回退链路：优先原生，缺失才走 WASM 导出） */
+    ikSolver?: { solve: (usePhysics: boolean) => void }
 ): IMmdRuntimeBone {
     // worldMatrix: 4×4 单位矩阵，translation 在 [12,13,14]
     const worldMatrix = new Float32Array(16);
@@ -72,6 +74,7 @@ function makeWasmBone(
         },
         worldMatrix,
         ikSolverIndex,
+        ikSolver,
     } as unknown as IMmdRuntimeBone & MmdRuntimeBoneExtended;
     return bone;
 }
@@ -170,6 +173,48 @@ describe('IK 重解双调用路径时序（ADR-202 §六）', () => {
                 String(c[0]).includes('[OVERRIDE-APPLY]')
             );
             expect(ikLogs.length).toBe(0);
+        } finally {
+            warnSpy.mockRestore();
+        }
+    });
+
+    it('ADR-248/回退链路：原生 IkSolver 存在时优先 solve()，不调 WASM resolver', () => {
+        // 带原生 ikSolver 的 WASM 骨骼：_solvePosSlotIkWasm 应收敛到 solver.solve()，跳过 WASM 导出
+        const solveSpy = vi.fn();
+        const ikBone = makeWasmBone('左足ＩＫ', [0, 1.8, 0], 0, { solve: solveSpy });
+        const centerBone = makeWasmBone('センター', [0, 0, 0]);
+        const bones: IMmdRuntimeBone[] = [ikBone, centerBone];
+
+        startBoneOverride(() => bones, scene);
+        setBoneOverridePosition('左足ＩＫ', [0, -1.8, 0], 1, true, MODEL_ID);
+
+        getMotionPipeline().runFrame({ scene });
+
+        // 原生 solver 被调用（solve(false)），WASM resolver 不被调
+        expect(solveSpy).toHaveBeenCalledWith(false);
+        expect(resolverCalls.length).toBe(0);
+    });
+
+    it('ADR-248：OVERRIDE-APPLY 诊断日志 feetDebug 打开时帧节流（每 60 帧 1 条）', () => {
+        const ikBone = makeWasmBone('左足ＩＫ', [0, 1.8, 0], 0);
+        const centerBone = makeWasmBone('センター', [0, 0, 0]);
+        const bones: IMmdRuntimeBone[] = [ikBone, centerBone];
+
+        startBoneOverride(() => bones, scene);
+        setBoneOverridePosition('左足ＩＫ', [0, -1.8, 0], 1, true, MODEL_ID);
+
+        feetDebug.value = true;
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        try {
+            // 跑 120 帧：OVERRIDE-APPLY 每 60 帧最多 1 条（60 帧窗口内 1 条，120 帧共 2 条）
+            for (let i = 0; i < 120; i++) {
+                getMotionPipeline().runFrame({ scene });
+            }
+            const applyLogs = warnSpy.mock.calls.filter(
+                (c) => typeof c[0] === 'string' && c[0].includes('[OVERRIDE-APPLY]')
+            );
+            expect(applyLogs.length).toBeGreaterThanOrEqual(1); // 至少首帧输出
+            expect(applyLogs.length).toBeLessThanOrEqual(2); // 120 帧 / 60 节流 → ≤2 条
         } finally {
             warnSpy.mockRestore();
         }

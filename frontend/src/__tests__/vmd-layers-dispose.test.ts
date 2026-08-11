@@ -11,8 +11,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // ======== 共享 mock 状态 ========
-const disposeSpy = vi.fn();
-const mockCurrentAnimation = { dispose: disposeSpy };
+const mockDispose = vi.fn();
+const mockCurrentAnimation = { dispose: mockDispose };
 const mockMmdModel = {
     currentAnimation: mockCurrentAnimation as any,
     setRuntimeAnimation: vi.fn(),
@@ -26,6 +26,7 @@ const mockInst = {
     vmdData: null as ArrayBuffer | null,
     vmdName: '',
     meshes: [{ skeleton: { bones: [] } }],
+    animationDuration: 0,
 };
 const mockMmdRuntime = {
     seekAnimation: vi.fn().mockResolvedValue(undefined),
@@ -73,6 +74,18 @@ vi.mock('../core/i18n/t', () => ({
     t: (key: string) => key,
 }));
 
+vi.mock('../core/i18n/goerr', () => ({
+    translateGoError: (e: unknown) => String(e),
+}));
+
+vi.mock('../core/feedback', () => ({
+    feedbackStatus: vi.fn(),
+}));
+
+vi.mock('../core/toast', () => ({
+    showInfoToast: vi.fn(),
+}));
+
 vi.mock('encoding-japanese', () => ({
     default: {
         convert: (arr: Uint8Array) => arr,
@@ -90,8 +103,9 @@ vi.mock('../scene/scene', () => ({
 }));
 
 // mock VMD loader (复用 scene/motion 内部 dynamic import)
+const mockLoadVMDMotion = vi.fn().mockResolvedValue(undefined);
 vi.mock('../scene/motion/vmd-loader', () => ({
-    loadVMDMotion: vi.fn().mockResolvedValue(undefined),
+    loadVMDMotion: mockLoadVMDMotion,
     loadVMDFromPath: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -110,7 +124,7 @@ vi.mock('babylon-mmd/esm/Loader/vmdLoader', () => ({
 // mock MmdCompositeAnimation
 vi.mock('babylon-mmd/esm/Runtime/Animation/mmdCompositeAnimation', () => ({
     MmdCompositeAnimation: class {
-        spanes: any[] = [];
+        spans: any[] = [];
         addSpan() {}
     },
     MmdAnimationSpan: class {
@@ -127,52 +141,109 @@ vi.mock('../scene/motion/wasm-layers-blender', () => ({
     teardownWasmLayersBlender: vi.fn(),
 }));
 
-// ======== 导入被测模块 ========
-import { addVmdLayer } from '../scene/motion/vmd-layers';
+vi.mock('../scene/motion/proc-motion-bridge', () => ({
+    setGazeLayerActive: vi.fn(),
+}));
 
-/** 构建最小合法 VMD buffer */
-function fakeVmdBuffer(): ArrayBuffer {
+// ======== 导入被测模块 ========
+import {
+    addVmdLayer,
+    removeVmdLayer,
+    toggleVmdLayer,
+} from '../scene/motion/vmd-layers';
+
+/** 构建最小合法 VMD buffer（不同 byteLength 避免去重） */
+function fakeVmdBuffer(extraBytes = 0): ArrayBuffer {
     const header = new Uint8Array(54);
     header.set(new TextEncoder().encode('Vocaloid Motion Data 0002'), 0);
-    const buf = new ArrayBuffer(54 + 4 + 16);
+    const buf = new ArrayBuffer(54 + 4 + 16 + extraBytes);
     new Uint8Array(buf).set(header);
     return buf;
+}
+
+/** 重置模型到标准 composite 路径前置状态（2 层已启用 VMD） */
+function resetToCompositeState() {
+    mockInst.vmdData = null;
+    mockInst.vmdName = '';
+    mockInst.vmdLayers = [
+        {
+            id: 'layer_1',
+            kind: 'vmd',
+            name: 'layer1.vmd',
+            weight: 1.0,
+            enabled: true,
+            data: fakeVmdBuffer(),
+            boneFilter: [],
+            path: null,
+        },
+        {
+            id: 'layer_2',
+            kind: 'vmd',
+            name: 'layer2.vmd',
+            weight: 0.5,
+            enabled: true,
+            data: fakeVmdBuffer(1),
+            boneFilter: [],
+            path: null,
+        },
+    ];
+    mockMmdModel.currentAnimation = mockCurrentAnimation as any;
+    mockMmdModel.createRuntimeAnimation = vi.fn(() => ({ _handle: 1 }));
 }
 
 describe('vmd-layers — 旧动画句柄 dispose (composite 路径)', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        // 重置模型状态：无基础 VMD，2 层已启用 VMD 图层 → 触发 composite 路径
-        mockInst.vmdData = null;
-        mockInst.vmdName = '';
-        mockInst.vmdLayers = [
-            {
-                id: 'layer_1',
-                kind: 'vmd',
-                name: 'layer1.vmd',
-                weight: 1.0,
-                enabled: true,
-                data: fakeVmdBuffer(),
-            },
-            {
-                id: 'layer_2',
-                kind: 'vmd',
-                name: 'layer2.vmd',
-                weight: 0.5,
-                enabled: true,
-                data: fakeVmdBuffer(),
-            },
-        ];
-        mockMmdModel.currentAnimation = mockCurrentAnimation as any;
-        mockMmdModel.createRuntimeAnimation = vi.fn(() => ({ _handle: 1 }));
+        resetToCompositeState();
     });
 
     it('添加第三层触发 composite 重建时应 dispose 旧 animation handle', async () => {
-        // 当前 2 层 → composite 路径已执行过（创建了 animation handle）
-        // 添加第 3 层 → 再次进入 composite 路径 → 应 dispose 旧 handle
-        const vmd3 = fakeVmdBuffer();
+        const vmd3 = fakeVmdBuffer(2);
         await addVmdLayer(vmd3, 'layer3.vmd');
-        // 验证：旧 animation handle 的 dispose 被调用
-        expect(disposeSpy).toHaveBeenCalled();
+        // switchAnimation 内部取出 currentAnimation 并调用 dispose
+        expect(mockDispose).toHaveBeenCalled();
+        // 且新动画句柄被绑定
+        expect(mockMmdModel.setRuntimeAnimation).toHaveBeenCalled();
+    });
+
+    it('currentAnimation 为 null 时不崩溃、不调用 dispose', async () => {
+        mockMmdModel.currentAnimation = null as any;
+        const vmd3 = fakeVmdBuffer(2);
+        await addVmdLayer(vmd3, 'layer3.vmd');
+        expect(mockDispose).not.toHaveBeenCalled();
+        // 新动画仍应被绑定
+        expect(mockMmdModel.createRuntimeAnimation).toHaveBeenCalled();
+    });
+
+    it('旧句柄 dispose 抛异常时不阻断新动画绑定', async () => {
+        mockDispose.mockImplementationOnce(() => {
+            throw new Error('WASM dispose failed');
+        });
+        const vmd3 = fakeVmdBuffer(2);
+        await addVmdLayer(vmd3, 'layer3.vmd');
+        // switchAnimation 的 try-catch 应吞掉 dispose 异常
+        expect(mockMmdModel.createRuntimeAnimation).toHaveBeenCalled();
+        expect(mockMmdModel.setRuntimeAnimation).toHaveBeenCalled();
+    });
+
+    it('removeVmdLayer 移除后走 fallback 路径应调用 loadVMDMotion（其内部负责 dispose）', async () => {
+        await removeVmdLayer('layer_2');
+        // 移除后只剩 1 层且无 baseVmd → fallback 路径 → loadVMDMotion
+        // loadVMDMotion 内部调用 switchAnimation 完成旧句柄 dispose（见 vmd-loader.ts:148）
+        expect(mockLoadVMDMotion).toHaveBeenCalled();
+    });
+
+    it('toggleVmdLayer 禁用一层后走 fallback 路径应调用 loadVMDMotion', async () => {
+        await toggleVmdLayer('layer_2');
+        // 禁用一层后只剩 1 层 → fallback 路径 → loadVMDMotion
+        expect(mockLoadVMDMotion).toHaveBeenCalled();
+    });
+
+    it('重复添加同名同大小 VMD 应返回 null 且不触发 rebuild', async () => {
+        // 尝试添加与 layer_1 同名同 byteLength 的 VMD
+        const dupResult = await addVmdLayer(fakeVmdBuffer(), 'layer1.vmd');
+        expect(dupResult).toBeNull();
+        // 重复检测在 rebuild 之前，不应触发 dispose
+        expect(mockDispose).not.toHaveBeenCalled();
     });
 });

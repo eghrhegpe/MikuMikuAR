@@ -592,6 +592,27 @@ describe('getStageLightState', () => {
         const s = getStageLightState('missing');
         expect(s.id).toBe('light-1');
     });
+
+    it('正常：orbit 参数从 position 反算', () => {
+        const entry = seedEntry('light-1', 'spot', { posX: 10, posY: 0, posZ: 0 });
+        const s = getStageLightState('light-1');
+        expect(s.orbitDistance).toBeCloseTo(10);
+        expect(s.orbitAzimuth).toBeCloseTo(90);
+        expect(s.orbitElevation).toBeCloseTo(0);
+    });
+
+    it('守卫：position 在原点时 orbit 计算不崩溃', () => {
+        const entry = seedEntry('light-1', 'spot', { posX: 0, posY: 0, posZ: 0 });
+        expect(() => getStageLightState('light-1')).not.toThrow();
+        const s = getStageLightState('light-1');
+        expect(s.orbitDistance).toBe(0);
+    });
+
+    it('正常：coneLength 默认值与 _defaultStageLightState 一致', () => {
+        const entry = seedEntry('light-1', 'spot');
+        const s = getStageLightState('light-1');
+        expect(s.coneLength).toBe(30);
+    });
 });
 
 describe('setStageLightState', () => {
@@ -704,6 +725,19 @@ describe('setStageLightState', () => {
         expect(p.y).toBe(4);
         expect(p.z).toBe(5);
     });
+
+    it('正常：同时设置 enabled 和 intensity 时 intensity 生效', () => {
+        seedEntry('light-1', 'spot', { enabled: false });
+        setStageLightState({ enabled: true, intensity: 0.7 }, 'light-1');
+        expect(lightingState.stageLights.get('light-1')!.light.intensity).toBe(0.7);
+        expect(lightingState.stageLights.get('light-1')!.state.enabled).toBe(true);
+    });
+
+    it('守卫：disabled 时设置 intensity 不生效', () => {
+        seedEntry('light-1', 'spot', { enabled: false });
+        setStageLightState({ intensity: 0.9 }, 'light-1');
+        expect(lightingState.stageLights.get('light-1')!.light.intensity).toBe(0);
+    });
 });
 
 describe('光锥 ensure/dispose（经 setStageLightState 触发）', () => {
@@ -750,12 +784,27 @@ describe('光锥 ensure/dispose（经 setStageLightState 触发）', () => {
         expect(() => setStageLightState({ coneEnabled: true }, 'light-1')).not.toThrow();
         expect(shared.logWarn).toHaveBeenCalled();
     });
+
+    it('守卫：非 spot 灯 coneEnabled=true 时不创建光锥', () => {
+        seedEntry('light-1', 'point', { enabled: true, coneEnabled: true });
+        setStageLightState({ coneEnabled: true }, 'light-1');
+        expect(shared.createLightCone).not.toHaveBeenCalled();
+        expect(lightingState.stageCones.has('light-1')).toBe(false);
+    });
+
+    it('守卫：disabled 灯 coneEnabled=true 时不创建光锥', () => {
+        seedEntry('light-1', 'spot', { enabled: false, coneEnabled: true });
+        setStageLightState({ coneEnabled: true }, 'light-1');
+        expect(shared.createLightCone).not.toHaveBeenCalled();
+        expect(lightingState.stageCones.has('light-1')).toBe(false);
+    });
 });
 
 describe('_disposeStageLightEntry', () => {
     it('正常：释放指示器/灯/阴影/光锥', () => {
         const entry = seedEntry('light-1', 'spot', { enabled: true });
         entry.indicator = new shared.Mesh('ind') as never;
+        entry.indicator!.material = new shared.StandardMaterial('mat') as never;
         entry.dirLine = new shared.Mesh('dir') as never;
         lightingState.stageShadows.set('light-1', { dispose: vi.fn() } as never);
         lightingState.stageCones.set('light-1', {
@@ -770,6 +819,14 @@ describe('_disposeStageLightEntry', () => {
         expect((entry.light as unknown as { disposed: boolean }).disposed).toBe(true);
         expect(shared.disposeStageShadow).toHaveBeenCalledWith('light-1');
         expect(shared.disposeLightCone).toHaveBeenCalled();
+    });
+
+    it('正常：indicator 无 material 时不崩溃', () => {
+        const entry = seedEntry('light-1', 'spot');
+        entry.indicator = new shared.Mesh('ind') as never;
+        entry.indicator!.material = null;
+        expect(() => _disposeStageLightEntry('light-1', entry)).not.toThrow();
+        expect(entry.indicator).toBeNull();
     });
 });
 
@@ -819,6 +876,24 @@ describe('removeStageLight', () => {
         expect(lightingState.activeStageLightId).toBe('light-2');
         expect(shared.triggerAutoSave).toHaveBeenCalled();
     });
+
+    it('正常：删除非激活灯时激活 id 不变', () => {
+        addStageLight();
+        addStageLight();
+        lightingState.activeStageLightId = 'light-2';
+        expect(removeStageLight('light-1')).toBe(true);
+        expect(lightingState.activeStageLightId).toBe('light-2');
+    });
+
+    it('正常：删除多盏后激活 id 指向剩余灯', () => {
+        addStageLight();
+        addStageLight();
+        addStageLight();
+        lightingState.activeStageLightId = 'light-1';
+        expect(removeStageLight('light-1')).toBe(true);
+        expect(lightingState.stageLights.size).toBe(2);
+        expect(['light-2', 'light-3']).toContain(lightingState.activeStageLightId);
+    });
 });
 
 describe('loadStageLights', () => {
@@ -858,6 +933,25 @@ describe('loadStageLights', () => {
         const s3 = getStageLightState('light-3');
         expect(s3.coneEnabled).toBe(false);
         expect(s3.coneIntensity).toBe(0.5);
+    });
+
+    it('守卫：id 不含 light-N 模式时 counter 为 0', () => {
+        const custom = {
+            ...shared.defaultStageLightState('custom-light', '自定义'),
+        } as Record<string, unknown>;
+        loadStageLights([custom] as never);
+        expect(lightingState.stageLights.size).toBe(1);
+        expect(lightingState.stageLightCounter).toBe(0);
+        expect(lightingState.activeStageLightId).toBe('custom-light');
+    });
+
+    it('正常：加载前清空旧灯', () => {
+        seedEntry('old-1', 'spot');
+        expect(lightingState.stageLights.size).toBe(1);
+        loadStageLights([]);
+        expect(lightingState.stageLights.size).toBe(1);
+        expect(lightingState.stageLights.has('old-1')).toBe(false);
+        expect(lightingState.stageLights.has('light-1')).toBe(true);
     });
 });
 

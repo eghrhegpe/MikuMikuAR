@@ -1507,18 +1507,18 @@
 | `RIGHT_FOOT_DEF()` | `scene/motion/motion-modules/foot-modules:273` | — |
 | `LEFT_HAND_DEF()` | `scene/motion/motion-modules/hand-modules:454` | — |
 | `RIGHT_HAND_DEF()` | `scene/motion/motion-modules/hand-modules:482` | — |
-| `FrameHookManager()` | `scene/motion/motion-modules/module-base:256` | 帧钩子管理器的返回类型（供 createEnsureActive 复用） |
+| `FrameHookManager()` | `scene/motion/motion-modules/module-base:260` | 帧钩子管理器的返回类型（供 createEnsureActive 复用） |
 | `ModuleBaseMethods()` | `scene/motion/motion-modules/module-base:21` | createModuleBase 返回的方法子集（与 MotionOverrideModule 对应方法签名一致） |
 | `ModuleBaseOverrides()` | `scene/motion/motion-modules/module-base:27` | 模块基础行为覆盖 |
-| `ModuleShellConfig()` | `scene/motion/motion-modules/module-base:298` | [doc:adr-146 P3 主题12] 模块实例外壳 — 消除 6 个工厂末尾重复的 &#96;id/meta/priority/managedBones/buildSchema + |
-| `applyModuleSnapshot()` | `scene/motion/motion-modules/module-base:200` | [doc:adr-125] 将快照应用到指定模型的所有模块。 |
-| `createEnsureActive()` | `scene/motion/motion-modules/module-base:277` | [doc:adr-146 P3] ensureActive 公共工厂 — 消除 body-posture/foot/hand 复制粘贴的 「先 bake 重烤、再幂等注册帧钩子」模 |
-| `createFrameHookManager()` | `scene/motion/motion-modules/module-base:232` | [doc:adr-116 P3] 帧钩子管理器 — 消除 sway/riding 的 _xxxFrameHooks Map 重复模式。 |
-| `createModuleBase()` | `scene/motion/motion-modules/module-base:101` | 创建模块通用方法，减少 7 个模块间 ~105 行重复 boilerplate。 |
-| `createModuleShell()` | `scene/motion/motion-modules/module-base:308` | — |
+| `ModuleShellConfig()` | `scene/motion/motion-modules/module-base:302` | [doc:adr-146 P3 主题12] 模块实例外壳 — 消除 6 个工厂末尾重复的 &#96;id/meta/priority/managedBones/buildSchema + |
+| `applyModuleSnapshot()` | `scene/motion/motion-modules/module-base:204` | [doc:adr-125] 将快照应用到指定模型的所有模块。 |
+| `createEnsureActive()` | `scene/motion/motion-modules/module-base:281` | [doc:adr-146 P3] ensureActive 公共工厂 — 消除 body-posture/foot/hand 复制粘贴的 「先 bake 重烤、再幂等注册帧钩子」模 |
+| `createFrameHookManager()` | `scene/motion/motion-modules/module-base:236` | [doc:adr-116 P3] 帧钩子管理器 — 消除 sway/riding 的 _xxxFrameHooks Map 重复模式。 |
+| `createModuleBase()` | `scene/motion/motion-modules/module-base:105` | 创建模块通用方法，减少 7 个模块间 ~105 行重复 boilerplate。 |
+| `createModuleShell()` | `scene/motion/motion-modules/module-base:312` | — |
 | `getBakeActionId()` | `scene/motion/motion-modules/module-base:66` | 读取当前 bake 的 actionId（无则 undefined，回到 activeMotion/fallback 语义） |
-| `getModuleActionId()` | `scene/motion/motion-modules/module-base:88` | 读取某模型当前激活模块的 actionId（帧钩子内使用；无则 undefined 回退 activeMotion/fallback） |
-| `prepareBake()` | `scene/motion/motion-modules/module-base:328` | [doc:adr-146 P3 主题13] bake 头部守卫 — 消除 6 个 bake 重复的 &#96;getModuleState + enabled 守卫 + claimBone |
+| `getModuleActionId()` | `scene/motion/motion-modules/module-base:92` | 读取某模型当前激活模块的 actionId（帧钩子内使用；无则 undefined 回退 activeMotion/fallback） |
+| `prepareBake()` | `scene/motion/motion-modules/module-base:332` | [doc:adr-146 P3 主题13] bake 头部守卫 — 消除 6 个 bake 重复的 &#96;getModuleState + enabled 守卫 + claimBone |
 | `MotionHistoryEntry()` | `scene/motion/motion-modules/motion-history:10` | — |
 | `SnapshotApplier()` | `scene/motion/motion-modules/motion-history:44` | 应用快照到引擎的回调（调用方负责从 registry 读模块实例并 setState/enable/disable） |
 | `SnapshotBuilder()` | `scene/motion/motion-modules/motion-history:41` | 构建当前全量快照的回调（调用方负责从 registry 读状态） |

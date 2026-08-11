@@ -294,6 +294,48 @@ describe('serializeScene — 分段容错（ADR-198 方向①）', () => {
         expect((scene.models[0].procMotion as any).params.idle.intensity).toBe(0.9);
         expect((scene.models[0].procMotion as any).params.autodance.speed).toBe(1.6);
     });
+
+    it('P2#3 回归：serializeScene 深拷贝 procMotionModules（undo 快照不污染运行时）', () => {
+        const model = makeModel('a', '模型甲', '/models/a.pmx');
+        (model as any).procMotionModules = {
+            idle: [{ id: 'body-posture', enabled: true, params: { tilt: 5 } }],
+        };
+        registry.set('a', model);
+
+        const scene = serializeScene();
+        expect(scene.models[0].procMotionModules).toBeDefined();
+        expect((scene.models[0].procMotionModules as any).idle).toEqual([
+            { id: 'body-posture', enabled: true, params: { tilt: 5 } },
+        ]);
+
+        // 修改快照不应污染运行时 procMotionModules（引用隔离）
+        (scene.models[0].procMotionModules as any).idle[0].params.tilt = 99;
+        expect((model as any).procMotionModules.idle[0].params.tilt).toBe(5);
+    });
+
+    it('P2#3 回归：serialize → deserialize round-trip 一致性（procMotionModules 无损往返）', async () => {
+        vi.mocked(loadPMXFile).mockResolvedValueOnce('roundtrip-procmod');
+        const inst = makeModel('roundtrip-procmod', '模型RoundTrip', '/models/rt.pmx');
+        (inst as any).procMotionModules = {
+            idle: [{ id: 'body-posture', enabled: true, params: { tilt: 5, footHeight: 0.3 } }],
+            autodance: [{ id: 'left-hand', enabled: false, params: {} }],
+        };
+        registry.set('roundtrip-procmod', inst);
+
+        // 序列化 → 深拷贝落盘（模拟 structuredClone 行为）
+        const scene = serializeScene();
+        const serialized = JSON.parse(JSON.stringify(scene));
+
+        // 清空运行时存储，模拟恢复全新场景
+        registry.clear();
+        vi.mocked(loadPMXFile).mockResolvedValueOnce('roundtrip-procmod');
+        const restoredInst = makeModel('roundtrip-procmod', '模型RoundTrip', '/models/rt.pmx');
+        registry.set('roundtrip-procmod', restoredInst);
+
+        await deserializeScene(serialized as never);
+
+        expect((restoredInst as any).procMotionModules).toEqual((inst as any).procMotionModules);
+    });
 });
 
 describe('deserializeScene — suppress 泄漏防护（fix:suppress-leak）', () => {
@@ -391,6 +433,62 @@ describe('deserializeScene — suppress 泄漏防护（fix:suppress-leak）', ()
         expect(restored.mode).toBe('idle');
         expect(restored.params.idle.intensity).toBe(0.9);
         expect(restored.params.autodance.intensity).toBe(0.3);
+    });
+
+    it('P2#3 回归：deserializeScene 恢复 per-proc 模块配置（合法 + 畸形降级）', async () => {
+        vi.mocked(loadPMXFile).mockResolvedValueOnce('test-procmod-id');
+        const inst = makeModel('test-procmod-id', '模型ProcMod', '/models/procmod.pmx');
+        registry.set('test-procmod-id', inst);
+
+        const data = {
+            version: 1,
+            models: [{
+                name: '模型ProcMod',
+                filePath: '/models/procmod.pmx',
+                kind: 'actor' as const,
+                procMotionModules: {
+                    // 合法：idle 有完整模块状态
+                    idle: [{ id: 'body-posture', enabled: true, params: { tilt: 5 } }],
+                    // 畸形：autodance 值为字符串 → 应被丢弃
+                    autodance: 'garbage',
+                    // 畸形：元素缺 id → 过滤
+                    mixed: [{ nope: true }, { id: 'left-hand', enabled: false, params: {} }],
+                },
+            }],
+            camera: {},
+        } as never;
+
+        await deserializeScene(data);
+
+        const restored = (inst as any).procMotionModules;
+        expect(restored).toBeDefined();
+        // idle 完整保留
+        expect(restored.idle).toEqual([{ id: 'body-posture', enabled: true, params: { tilt: 5 } }]);
+        // autodance 字符串被丢弃
+        expect(restored.autodance).toBeUndefined();
+        // mixed 仅保留含 id 的元素
+        expect(restored.mixed).toEqual([{ id: 'left-hand', enabled: false, params: {} }]);
+    });
+
+    it('P2#3 回归：procMotionModules 缺失/空对象时 inst 不挂载（旧存档兼容）', async () => {
+        vi.mocked(loadPMXFile).mockResolvedValueOnce('test-procmod-none');
+        const inst = makeModel('test-procmod-none', '模型None', '/models/none.pmx');
+        registry.set('test-procmod-none', inst);
+
+        const data = {
+            version: 1,
+            models: [{
+                name: '模型None',
+                filePath: '/models/none.pmx',
+                kind: 'actor' as const,
+                // 无 procMotionModules 字段（旧存档）
+            }],
+            camera: {},
+        } as never;
+
+        await deserializeScene(data);
+
+        expect((inst as any).procMotionModules).toBeUndefined();
     });
 
     it('deserializeScene PBRMaterial wireframe 恢复', async () => {
