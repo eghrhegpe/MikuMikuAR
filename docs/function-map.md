@@ -7,7 +7,7 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 135 | 814 |
+| 核心基础设施 | 135 | 815 |
 | 3D 场景 | 125 | 1226 |
 | 菜单 & UI | 76 | 396 |
 | 动作算法 | 18 | 138 |
@@ -243,6 +243,7 @@
 | `rgbString()` | `core/color-helpers:37` | 将 Color3 转为 CSS &#96;rgb(r, g, b)&#96; 字符串（0–255 整数）。 |
 | `rgbToString()` | `core/color-helpers:32` | 将 {r,g,b} 转为 CSS rgb 字符串 "r, g, b"（供 --accent-rgb 等 CSS 变量）。 |
 | `debounce()` | `core/debounce:8` | 函数防抖：在等待指定时间后才执行函数，如果在等待期间再次调用则重置计时器。 |
+| `disposeLogPanel()` | `core/debug-log-panel:150` | — |
 | `hideLogPanel()` | `core/debug-log-panel:136` | — |
 | `showLogPanel()` | `core/debug-log-panel:60` | — |
 | `toggleLogPanel()` | `core/debug-log-panel:142` | — |

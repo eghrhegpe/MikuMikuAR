@@ -2,7 +2,7 @@
 
 # 知识卡索引
 
-> 原子化架构知识层，共 **268** 张卡：记录「某个子系统**现在**长啥样、去哪找」。与 ADR（为什么这么决定）互补——知识卡引用而不复制 ADR 结论。
+> 原子化架构知识层，共 **270** 张卡：记录「某个子系统**现在**长啥样、去哪找」。与 ADR（为什么这么决定）互补——知识卡引用而不复制 ADR 结论。
 
 > 卡片格式规范、立卡判据、`source_files` 铁律见 [知识卡层导读](./README.md)；AI 检索入口见 [路由表](./routes.md)；菜单全景见 [menu-map](./menu-map.md)（机器生成）。
 
@@ -18,6 +18,7 @@
 | [ui](#ui) | 58 | UI / 菜单 |
 | [core](#core) | 77 | 核心基础设施 |
 | [backend](#backend) | 18 | 后端 |
+| [未分类](#未分类) | 2 | 未标注 category（待补） |
 
 ## env
 
@@ -206,6 +207,15 @@
 | [Go ZIP 解压与缓存管理](./go-zipextract.md) | - ADR-057 |
 
 > 叶子模块 / 工具函数（4 张）：[go-dialogs](./go-dialogs.md) · [go-i18nerr](./go-i18nerr.md) · [go-thumbnail](./go-thumbnail.md) · [go-util](./go-util.md)
+
+## 未分类
+
+**未标注 `category` 字段**——补齐 frontmatter 后会自动归入对应分类。
+
+| 卡片 | 关联 ADR |
+|------|----------|
+| [relay](./relay.md) | — |
+| [test-mesh](./test-mesh.md) | — |
 
 ## ADR 反查
 

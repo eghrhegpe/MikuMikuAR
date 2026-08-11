@@ -1,10 +1,6 @@
 // @vitest-environment happy-dom
 // [ADR-248] 调试日志面板单测 — 覆盖 showLogPanel / hideLogPanel / toggleLogPanel /
-// 过滤渲染 / formatTime 输出 / 自动滚动 / 事件绑定
-//
-// ⚠️ 代码现状：debug-log-panel.ts 未导出 disposeLogPanel，仅有 showLogPanel /
-// hideLogPanel / toggleLogPanel。模块级 _panel 变量无清理路径（仅隐藏 display:none），
-// 属于 ADR-248 遗留缺口，建议后续补 disposeLogPanel 以支持彻底卸载。
+// disposeLogPanel / 过滤渲染 / formatTime / 自动滚动 / Console 按钮回归防护 / 事件绑定
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
@@ -45,7 +41,7 @@ vi.mock('../core/logger', () => ({
     },
 }));
 
-import { showLogPanel, hideLogPanel, toggleLogPanel } from '../core/debug-log-panel';
+import { showLogPanel, hideLogPanel, toggleLogPanel, disposeLogPanel } from '../core/debug-log-panel';
 
 function panel(): HTMLElement | null {
     return document.querySelector('.debug-log-panel') as HTMLElement | null;
@@ -328,7 +324,7 @@ describe('事件绑定 — 清空 / Console 切换 / 关闭', () => {
         ];
         mockState.subscribeFn?.();
         expect(listEl()!.querySelectorAll('.log-entry').length).toBe(1);
-        const clearBtn = panel()!.querySelector('[data-role="clear"]')!;
+        const clearBtn = panel()!.querySelector('[data-role="clear"]') as HTMLElement;
         clearBtn.click();
         expect(mockState.clearLogsCalls).toBe(1);
         expect(listEl()!.textContent).toContain('暂无日志');
@@ -356,19 +352,77 @@ describe('事件绑定 — 清空 / Console 切换 / 关闭', () => {
     it('点击「✕」关闭按钮隐藏面板', () => {
         showLogPanel();
         expect(panel()!.style.display).toBe('block');
-        const closeBtn = panel()!.querySelector('[data-role="close"]')!;
+        const closeBtn = panel()!.querySelector('[data-role="close"]') as HTMLElement;
         closeBtn.click();
         expect(panel()!.style.display).toBe('none');
     });
 });
 
+describe('disposeLogPanel — 彻底卸载', () => {
+    it('dispose 后面板 DOM 节点移除', () => {
+        showLogPanel();
+        expect(panel()).not.toBeNull();
+        disposeLogPanel();
+        expect(panel()).toBeNull();
+    });
+
+    it('dispose 后再次 show 创建新面板', () => {
+        showLogPanel();
+        disposeLogPanel();
+        showLogPanel();
+        expect(panel()).not.toBeNull();
+    });
+
+    it('dispose 后 subscribe 回调被取消（push 不再触发渲染）', () => {
+        showLogPanel();
+        const sub = mockState.subscribeFn;
+        expect(sub).not.toBeNull();
+        disposeLogPanel();
+        expect(mockState.subscribeFn).toBeNull();
+    });
+
+    it('dispose 在面板不存在时不报错', () => {
+        expect(() => disposeLogPanel()).not.toThrow();
+    });
+});
+
+describe('Console 按钮 — .includes("ON") 回归防护', () => {
+    it('OFF 状态不误判为 ON（避免 .includes("ON") 在含 ON 子串文案下翻车）', () => {
+        showLogPanel();
+        const btn = panel()!.querySelector('[data-role="console"]') as HTMLElement;
+        // 旧逻辑用 .includes('ON') 判定，遇到 "OFF (disabled)" 等含 "ON" 子串文案会误判
+        // 新逻辑用 /:\s*ON$/i 严格匹配尾部
+        btn.click();
+        expect(mockState.setConsoleOutputCalls).toEqual([true]);
+    });
+
+    it('ON 状态不误判为 OFF（防御未来文案 "ON (active)" 含 ON 前缀）', () => {
+        showLogPanel();
+        const btn = panel()!.querySelector('[data-role="console"]') as HTMLElement;
+        btn.click();
+        expect(btn.textContent).toBe('Console: ON');
+        // 模拟未来文案含 ON 前缀（旧逻辑 .includes('ON') 同样返回 true，不会误判）
+        // 但用 /:\s*ON$/i 严格匹配末尾才真正安全
+        btn.click();
+        expect(btn.textContent).toBe('Console: OFF');
+    });
+});
+
 describe('window.__logPanel 全局挂载', () => {
-    it('window.__logPanel 暴露 show/hide/toggle/clear', () => {
+    it('window.__logPanel 暴露 show/hide/toggle/clear/dispose', () => {
         expect(window.__logPanel).toBeDefined();
         expect(typeof window.__logPanel!.show).toBe('function');
         expect(typeof window.__logPanel!.hide).toBe('function');
         expect(typeof window.__logPanel!.toggle).toBe('function');
         expect(typeof window.__logPanel!.clear).toBe('function');
+        expect(typeof window.__logPanel!.dispose).toBe('function');
+    });
+
+    it('window.__logPanel.dispose 调用后移除面板', () => {
+        showLogPanel();
+        expect(panel()).not.toBeNull();
+        window.__logPanel!.dispose();
+        expect(panel()).toBeNull();
     });
 
     it('window.__logPanel.clear 调用后清除缓冲区', () => {

@@ -117,14 +117,14 @@ export function showLogPanel(): void {
 
     const consoleBtn = _panel.querySelector<HTMLElement>('[data-role="console"]');
     consoleBtn?.addEventListener('click', () => {
-        const enabled = consoleBtn.textContent?.includes('ON') ?? false;
+        const enabled = /:\s*ON$/i.test(consoleBtn.textContent ?? '');
         setConsoleOutput(!enabled);
         consoleBtn.textContent = `Console: ${!enabled ? 'ON' : 'OFF'}`;
         consoleBtn.style.background = !enabled ? '#27ae60' : '#2980b9';
     });
 
     _panel.querySelector('[data-role="close"]')?.addEventListener('click', () => {
-        if (_panel) _panel.style.display = 'none';
+        hideLogPanel();
     });
 
     document.body.appendChild(_panel);
@@ -147,6 +147,19 @@ export function toggleLogPanel(): void {
     }
 }
 
+export function disposeLogPanel(): void {
+    if (_unsubscribe) {
+        _unsubscribe();
+        _unsubscribe = null;
+    }
+    if (_panel) {
+        _panel.remove();
+        _panel = null;
+    }
+    _filterTag = '';
+    _minLevel = 'info';
+}
+
 // 注册到全局，方便控制台调用
 declare global {
     interface Window {
@@ -155,6 +168,7 @@ declare global {
             hide: typeof hideLogPanel;
             toggle: typeof toggleLogPanel;
             clear: typeof clearLogs;
+            dispose: typeof disposeLogPanel;
         };
     }
 }
@@ -165,5 +179,6 @@ if (typeof window !== 'undefined') {
         hide: hideLogPanel,
         toggle: toggleLogPanel,
         clear: clearLogs,
+        dispose: disposeLogPanel,
     };
 }
