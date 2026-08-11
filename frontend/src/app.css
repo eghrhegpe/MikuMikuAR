@@ -1958,6 +1958,8 @@ body.app-booting #webviewLayer {
 }
 .slide-label.wrap-2 {
     white-space: normal;
+    word-break: break-all;
+    flex-shrink: 1;
     overflow: visible;
     text-overflow: unset;
     line-height: 1.2;
