@@ -488,6 +488,18 @@ func (a *App) StartProxy(target, mode string) (string, error) {
 		mux.HandleFunc("/__plaza_url__", a.handlePlazaUrlPost)
 		// WebSocket 升级请求走专用 Hijack 通道，其余走标准 ReverseProxy。
 		mux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// CORS preflight：直接返回 204，不转发到上游。
+			// Bowlroll 等站点对 API 的 OPTIONS 请求返回 302，浏览器
+			// CORS 规范禁止 preflight 跟随重定向，会直接拦截。
+			if r.Method == http.MethodOptions {
+				w.Header().Set("Access-Control-Allow-Origin", r.Header.Get("Origin"))
+				w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+				w.Header().Set("Access-Control-Allow-Headers", r.Header.Get("Access-Control-Request-Headers"))
+				w.Header().Set("Access-Control-Allow-Credentials", "true")
+				w.Header().Set("Access-Control-Max-Age", "86400")
+				w.WriteHeader(http.StatusNoContent)
+				return
+			}
 			if isWebSocketUpgrade(r) {
 				a.proxyWebSocket(w, r, targetURL, sess)
 				return
