@@ -140,7 +140,11 @@ export function registerAppShortcuts(): void {
                 if (dur <= 0) {
                     return;
                 }
-                mmdRuntime.seekAnimation(Math.max(0, mmdRuntime.currentTime - 5), true);
+                mmdRuntime
+                    .seekAnimation(Math.max(0, mmdRuntime.currentTime - 5), true)
+                    .catch((err: unknown) =>
+                        console.error('[shortcut-app] seek-backward failed:', err)
+                    );
                 getSceneAction('updatePlaybackUI')?.();
             },
             group: 'shortcuts.group.playbackControl',
@@ -162,7 +166,11 @@ export function registerAppShortcuts(): void {
                 if (dur <= 0) {
                     return;
                 }
-                mmdRuntime.seekAnimation(Math.min(dur, mmdRuntime.currentTime + 5), true);
+                mmdRuntime
+                    .seekAnimation(Math.min(dur, mmdRuntime.currentTime + 5), true)
+                    .catch((err: unknown) =>
+                        console.error('[shortcut-app] seek-forward failed:', err)
+                    );
                 getSceneAction('updatePlaybackUI')?.();
             },
             group: 'shortcuts.group.playbackControl',
