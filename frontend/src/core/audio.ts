@@ -294,7 +294,7 @@ export async function loadAudioFile(filePath: string, signal?: AbortSignal): Pro
         reportResourceWarning(t('resource.audioLoadFailed', { name: filePath }));
         return;
     }
-    const blob = new Blob([bytes.buffer as ArrayBuffer], { type: 'audio/mpeg' });
+    const blob = new Blob([bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)], { type: 'audio/mpeg' });
     const url = URL.createObjectURL(blob);
     // [audit:round14 P2] readFileBytes 返回后、createObjectURL 前的窗口内 abort：
     // revoke 刚创建的 URL，避免泄漏 blob。
@@ -421,6 +421,7 @@ export function disposeAudio(): void {
     audioPath = '';
     _playlist = [];
     _playlistIndex = -1;
+    _lastEndedHandler = null;
 
     // 先释放 beatDetector（断开其 analyser/gain 与共享 source，但不关闭共享 ctx）
     if (beatDetector) {

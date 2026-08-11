@@ -269,6 +269,7 @@ import {
     getCameraState,
     setCameraState,
     disposeCameraSystem,
+    deriveLegacyMode,
 } from '../scene/camera/camera';
 import {
     setCameraMode,
@@ -729,5 +730,177 @@ describe('disposeCameraSystem（销毁）', () => {
     it('边界：无当前相机时幂等不崩', () => {
         setCurrentCamera(null);
         expect(() => disposeCameraSystem()).not.toThrow();
+    });
+
+    it('正常：clearCameraVmd 被调用', () => {
+        setCurrentCamera(new shared.ArcRotateCamera());
+        disposeCameraSystem();
+        expect(shared.clearCameraVmd).toHaveBeenCalled();
+    });
+});
+
+describe('deriveLegacyMode（双轴 → 旧模式反查）', () => {
+    it('正常：freefly 控制直接返回 freefly', () => {
+        expect(deriveLegacyMode('freefly', 'none')).toBe('freefly');
+    });
+
+    it('正常：ar 控制直接返回 ar', () => {
+        expect(deriveLegacyMode('ar', 'none')).toBe('ar');
+    });
+
+    it('正常：orbit + turntable → surround', () => {
+        expect(deriveLegacyMode('orbit', 'turntable')).toBe('surround');
+    });
+
+    it('正常：orbit + concert → concert', () => {
+        expect(deriveLegacyMode('orbit', 'concert')).toBe('concert');
+    });
+
+    it('正常：orbit + scripted + oneshot → oneshot', () => {
+        expect(deriveLegacyMode('orbit', 'scripted', 'oneshot')).toBe('oneshot');
+    });
+
+    it('正常：orbit + scripted + loop → vmd', () => {
+        expect(deriveLegacyMode('orbit', 'scripted', 'loop')).toBe('vmd');
+    });
+
+    it('正常：orbit + beatcut → beatcut', () => {
+        expect(deriveLegacyMode('orbit', 'beatcut')).toBe('beatcut');
+    });
+
+    it('正常：orbit + none → orbit', () => {
+        expect(deriveLegacyMode('orbit', 'none')).toBe('orbit');
+    });
+});
+
+describe('_syncAxesFromMode（补充：beatcut 叠加与 vmd/ar 派生）', () => {
+    it('正常：beatcut 模式下自动运镜开启时派生为 beatcut', () => {
+        shared.isAutoCameraEnabled.mockReturnValue(true);
+        _syncAxesFromMode('beatcut');
+        expect(getCameraControl()).toBe('orbit');
+        expect(getCameraBehavior()).toBe('beatcut');
+    });
+
+    it('正常：vmd 派生 scripted+loop', () => {
+        _syncAxesFromMode('vmd');
+        expect(getCameraControl()).toBe('orbit');
+        expect(getCameraBehavior()).toBe('scripted');
+        expect(getScriptedSubMode()).toBe('loop');
+    });
+
+    it('正常：ar 派生 ar+none', () => {
+        _syncAxesFromMode('ar');
+        expect(getCameraControl()).toBe('ar');
+        expect(getCameraBehavior()).toBe('none');
+    });
+});
+
+describe('switchCameraMode（补充：离开 surround/concert 停止副作用）', () => {
+    it('正常：离开 surround 时调用 stopSurround', () => {
+        setCameraMode('surround');
+        setCurrentCamera(new shared.ArcRotateCamera());
+        switchCameraMode('orbit');
+        expect(shared.stopSurround).toHaveBeenCalled();
+    });
+
+    it('正常：离开 concert 时调用 stopConcert', () => {
+        setCameraMode('concert');
+        setCurrentCamera(new shared.ArcRotateCamera());
+        switchCameraMode('orbit');
+        expect(shared.stopConcert).toHaveBeenCalled();
+    });
+
+    it('正常：切到 surround 启动 startSurround', () => {
+        setCurrentCamera(new shared.ArcRotateCamera());
+        switchCameraMode('surround');
+        expect(shared.startSurround).toHaveBeenCalled();
+        expect(getCameraMode()).toBe('surround');
+    });
+
+    it('正常：切到 concert 启动 startConcert', () => {
+        setCurrentCamera(new shared.ArcRotateCamera());
+        switchCameraMode('concert');
+        expect(shared.startConcert).toHaveBeenCalled();
+        expect(getCameraMode()).toBe('concert');
+    });
+
+    it('正常：离开 ar 时调用 setARMode(false)', () => {
+        const setARMode = vi.fn(() => Promise.resolve(true));
+        shared.actions.set('setARMode', setARMode);
+        setCameraMode('ar');
+        switchCameraMode('orbit');
+        expect(setARMode).toHaveBeenCalledWith(false);
+    });
+});
+
+describe('getCameraState（补充：UniversalCamera 导出）', () => {
+    it('正常：UniversalCamera 导出 position 和非 ArcRotate 默认值', () => {
+        const uni = new shared.UniversalCamera();
+        uni.position = { x: 1, y: 2, z: 3, clone: () => ({ x: 1, y: 2, z: 3 }) } as never;
+        setCurrentCamera(uni);
+        setCameraMode('freefly');
+        setStateControl('freefly');
+        setStateBehavior('none');
+        const s = getCameraState();
+        expect(s.alpha).toBe(0);
+        expect(s.beta).toBe(0);
+        expect(s.radius).toBe(16);
+        expect(s.positionX).toBe(1);
+        expect(s.positionY).toBe(2);
+        expect(s.positionZ).toBe(3);
+        expect(s.mode).toBe('freefly');
+        expect(s.control).toBe('freefly');
+    });
+});
+
+describe('setCameraState（补充：无 live 相机 + FOV 恢复）', () => {
+    it('边界：无 live 相机且非 beatcut 时静默返回', () => {
+        setCurrentCamera(null);
+        expect(() =>
+            setCameraState({
+                mode: 'orbit',
+                control: 'orbit',
+                behavior: 'none',
+                preset: defaultCameraPreset(),
+                alpha: 0,
+                beta: 0,
+                radius: 16,
+                targetX: 0,
+                targetY: 8,
+                targetZ: 0,
+            }),
+        ).not.toThrow();
+        expect(getCameraControl()).toBe('orbit');
+    });
+
+    it('正常：FOV 恢复并钳位', () => {
+        const arc = new shared.ArcRotateCamera();
+        setCurrentCamera(arc);
+        setCameraState({
+            mode: 'orbit',
+            control: 'orbit',
+            behavior: 'none',
+            preset: defaultCameraPreset(),
+            fov: 5, // 超出上限 3，应钳位
+            alpha: 0,
+            beta: 0,
+            radius: 16,
+            targetX: 0,
+            targetY: 8,
+            targetZ: 0,
+        });
+        expect(getFov()).toBe(3);
+        expect(arc.fov).toBe(3);
+    });
+});
+
+describe('logCameraAlpha（补充：非 orbit 模式静默）', () => {
+    it('正常：非 orbit 模式下不打印', () => {
+        const spy = vi.spyOn(console, 'info').mockImplementation(() => {});
+        setCameraMode('freefly');
+        setCurrentCamera(new shared.UniversalCamera());
+        logCameraAlpha();
+        expect(spy).not.toHaveBeenCalled();
+        spy.mockRestore();
     });
 });

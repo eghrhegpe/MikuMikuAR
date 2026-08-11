@@ -96,6 +96,12 @@ describe('loadAudioFile', () => {
         m.play.mockRejectedValueOnce(new Error('blocked'));
         await expect(loadAudioFile('music/song.mp3')).resolves.toBeUndefined();
     });
+
+    it('does not crash with valid bytes', async () => {
+        await expect(loadAudioFile('music/song.mp3')).resolves.toBeUndefined();
+        expect(getAudioName()).toBe('song.mp3');
+        expect(getAudioPath()).toBe('music/song.mp3');
+    });
 });
 
 describe('getAudioPath', () => {
@@ -310,11 +316,15 @@ describe('syncAudioPlayback', () => {
         m.paused = true;
         m.currentTime = 100;
         syncAudioPlayback(200, true, 250);
+        expect(m.currentTime).toBe(0);
+        expect(m.play).toHaveBeenCalled();
     });
 
-    it('detects loop restart when lastVmdTime > vmdTime + 0.5', () => {
+    it('seeks back to 0 on large backward jump (loop restart)', () => {
         syncAudioPlayback(50, true, 100);
+        expect(m.currentTime).toBe(50);
         syncAudioPlayback(0, true, 100);
+        expect(m.currentTime).toBe(0);
     });
 
     it('seeks to vmdTime+offset (not just offset) on mid-song backward seek', () => {
@@ -410,5 +420,64 @@ describe('setVolume applies gain', () => {
         expect(m.volume).toBe(0.7);
         setVolume(0.3);
         expect(m.volume).toBe(0.3);
+    });
+});
+
+// ======== 边界 / 异常路径补充 ========
+
+describe('loadAudioFile edge cases', () => {
+    it('returns early when signal is already aborted', async () => {
+        const controller = new AbortController();
+        controller.abort();
+        await loadAudioFile('music/song.mp3', controller.signal);
+        expect(getAudioName()).toBe('');
+        expect(m.play).not.toHaveBeenCalled();
+    });
+});
+
+describe('setAudioOffset edge cases', () => {
+    it('ignores NaN', () => {
+        setAudioOffset(5);
+        setAudioOffset(NaN);
+        expect(getAudioOffset()).toBe(5);
+    });
+
+    it('ignores Infinity', () => {
+        setAudioOffset(3);
+        setAudioOffset(Infinity);
+        expect(getAudioOffset()).toBe(3);
+    });
+
+    it('ignores -Infinity', () => {
+        setAudioOffset(3);
+        setAudioOffset(-Infinity);
+        expect(getAudioOffset()).toBe(3);
+    });
+});
+
+describe('seekAudio edge cases', () => {
+    it('is no-op when duration is NaN', () => {
+        m.duration = NaN;
+        void playAudio('test.mp3', 'test');
+        m.currentTime = 5;
+        seekAudio(10);
+        // getDuration() returns 0 when NaN → clamp(10, 0, 0) = 0
+        expect(m.currentTime).toBe(0);
+    });
+});
+
+describe('getVolume default', () => {
+    it('returns 0.7 when volume is undefined', () => {
+        delete (globalThis as any).__audioTestUiState.volume;
+        expect(getVolume()).toBe(0.7);
+    });
+});
+
+describe('applyGain without player', () => {
+    it('forwards volume to beatDetector even without player', () => {
+        disposeAudio();
+        attachBeatDetector(mockBeatDetector as any);
+        setVolume(0.4);
+        expect(mockBeatDetector.setVolume).toHaveBeenCalledWith(0.4);
     });
 });
