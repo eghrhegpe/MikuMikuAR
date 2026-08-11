@@ -1462,11 +1462,11 @@
 | `FootLandEvent()` | `scene/motion/feet-adjustment:35` | — |
 | `SolveFootInput()` | `scene/motion/feet-adjustment:40` | — |
 | `SolveFootOutput()` | `scene/motion/feet-adjustment:40` | — |
-| `isFeetAdjustmentRunning()` | `scene/motion/feet-adjustment:130` | 查询脚部跟随系统是否正在运行（observer 已注册）。 |
-| `setOnFootLand()` | `scene/motion/feet-adjustment:125` | 注入落地事件回调（null 取消）。脚步声控制器调用。 |
+| `isFeetAdjustmentRunning()` | `scene/motion/feet-adjustment:128` | 查询脚部跟随系统是否正在运行（observer 已注册）。 |
+| `setOnFootLand()` | `scene/motion/feet-adjustment:123` | 注入落地事件回调（null 取消）。脚步声控制器调用。 |
 | `solveFootTarget()` | `scene/motion/feet-adjustment:39` | — |
-| `startFeetAdjustment()` | `scene/motion/feet-adjustment:419` | 启动脚部调整系统：注册为 MotionPipeline bone-override 层（order=5）。 |
-| `stopFeetAdjustment()` | `scene/motion/feet-adjustment:494` | 停止脚部调整系统并清空缓存。 |
+| `startFeetAdjustment()` | `scene/motion/feet-adjustment:381` | 启动脚部调整系统：注册为 MotionPipeline bone-override 层（order=5）。 |
+| `stopFeetAdjustment()` | `scene/motion/feet-adjustment:456` | 停止脚部调整系统并清空缓存。 |
 | `startFallbackDetection()` | `scene/motion/footstep-detect-fallback:68` | 启动独立落地检测（fallback 模式）。 |
 | `stopFallbackDetection()` | `scene/motion/footstep-detect-fallback:133` | 停止独立落地检测。 |
 | `resolveGroundSfxKind()` | `scene/motion/footstep:54` | 依据当前地面类型推断脚步音色。 |
@@ -1926,49 +1926,49 @@
 | `triggerAutoSaveImpl()` | `scene/scene-serialize:1244` | — |
 | `tryRestoreLastScene()` | `scene/scene-serialize:1503` | — |
 | `AlphaCtx()` | `scene/scene:171` | — |
-| `CameraState()` | `scene/scene:919` | — |
+| `CameraState()` | `scene/scene:918` | — |
 | `DEFAULT_MAT_PARAMS()` | `scene/scene:147` | — |
-| `EnvState()` | `scene/scene:882` | — |
-| `LightState()` | `scene/scene:921` | — |
-| `LoadLastScene()` | `scene/scene:920` | — |
+| `EnvState()` | `scene/scene:881` | — |
+| `LightState()` | `scene/scene:920` | — |
+| `LoadLastScene()` | `scene/scene:919` | — |
 | `MaterialCategory()` | `scene/scene:171` | — |
 | `MaterialCategoryParams()` | `scene/scene:171` | — |
-| `ModelInstance()` | `scene/scene:882` | — |
-| `RenderState()` | `scene/scene:922` | — |
-| `SaveLastScene()` | `scene/scene:920` | — |
-| `SaveThumbnail()` | `scene/scene:920` | — |
-| `SetEnvState()` | `scene/scene:920` | — |
-| `StageLightState()` | `scene/scene:921` | — |
+| `ModelInstance()` | `scene/scene:881` | — |
+| `RenderState()` | `scene/scene:921` | — |
+| `SaveLastScene()` | `scene/scene:919` | — |
+| `SaveThumbnail()` | `scene/scene:919` | — |
+| `SetEnvState()` | `scene/scene:919` | — |
+| `StageLightState()` | `scene/scene:920` | — |
 | `__envDebug()` | `scene/scene:361` | — |
 | `_applyAll()` | `scene/scene:147` | — |
 | `_catState()` | `scene/scene:147` | — |
 | `_matEnabled()` | `scene/scene:147` | — |
 | `_matState()` | `scene/scene:147` | — |
-| `animateCameraVmd()` | `scene/scene:905` | — |
-| `applyEnvState()` | `scene/scene:892` | — |
+| `animateCameraVmd()` | `scene/scene:904` | — |
+| `applyEnvState()` | `scene/scene:891` | — |
 | `applyFrameControl()` | `scene/scene:261` | 统一应用帧率控制：帧率限制器开关 + 帧率上限。 |
 | `applyMatSssState()` | `scene/scene:173` | — |
 | `applyMatState()` | `scene/scene:147` | — |
 | `applySss()` | `scene/scene:173` | — |
 | `applyUnlitFallback()` | `scene/scene:147` | — |
-| `autoFrame()` | `scene/scene:905` | — |
-| `autoLoop()` | `scene/scene:863` | — |
-| `canUndo()` | `scene/scene:884` | — |
-| `captureThumbnail()` | `scene/scene:904` | — |
-| `clearCameraVmd()` | `scene/scene:905` | — |
+| `autoFrame()` | `scene/scene:904` | — |
+| `autoLoop()` | `scene/scene:862` | — |
+| `canUndo()` | `scene/scene:883` | — |
+| `captureThumbnail()` | `scene/scene:903` | — |
+| `clearCameraVmd()` | `scene/scene:904` | — |
 | `disposeModelSssState()` | `scene/scene:173` | — |
 | `disposeScene()` | `scene/scene:293` | 级联释放 Scene → Engine 及其所有子资源。 |
-| `dom()` | `scene/scene:863` | — |
+| `dom()` | `scene/scene:862` | — |
 | `engine()` | `scene/scene:234` | — |
-| `envState()` | `scene/scene:863` | — |
+| `envState()` | `scene/scene:862` | — |
 | `focusedMmdModel()` | `scene/scene:379` | — |
 | `focusedModel()` | `scene/scene:379` | — |
-| `focusedModelId()` | `scene/scene:863` | — |
-| `formatTime()` | `scene/scene:863` | — |
-| `getCameraMode()` | `scene/scene:905` | — |
-| `getCameraState()` | `scene/scene:905` | — |
-| `getCameraVmdName()` | `scene/scene:905` | — |
-| `getCameraVmdPath()` | `scene/scene:905` | — |
+| `focusedModelId()` | `scene/scene:862` | — |
+| `formatTime()` | `scene/scene:862` | — |
+| `getCameraMode()` | `scene/scene:904` | — |
+| `getCameraState()` | `scene/scene:904` | — |
+| `getCameraVmdName()` | `scene/scene:904` | — |
+| `getCameraVmdPath()` | `scene/scene:904` | — |
 | `getMatCatGroups()` | `scene/scene:147` | — |
 | `getMatCatParams()` | `scene/scene:147` | — |
 | `getMatDetailList()` | `scene/scene:147` | — |
@@ -1977,56 +1977,56 @@
 | `getMatSssState()` | `scene/scene:173` | — |
 | `getMatState()` | `scene/scene:147` | — |
 | `getMaterialCategory()` | `scene/scene:147` | — |
-| `getScene()` | `scene/scene:849` | — |
-| `hasCameraVmd()` | `scene/scene:905` | — |
-| `initCameraSystem()` | `scene/scene:905` | — |
-| `initLoader()` | `scene/scene:904` | — |
-| `initPlaybackObservables()` | `scene/scene:862` | — |
+| `getScene()` | `scene/scene:848` | — |
+| `hasCameraVmd()` | `scene/scene:904` | — |
+| `initCameraSystem()` | `scene/scene:904` | — |
+| `initLoader()` | `scene/scene:903` | — |
+| `initPlaybackObservables()` | `scene/scene:861` | — |
 | `initScene()` | `scene/scene:415` | 场景初始化入口。首次调用时创建 Scene/Engine/运行时； HMR 重入时先调用 _reinitSceneForHMR() 清理旧资源再重建。 |
 | `isHeadless()` | `scene/scene:214` | — |
 | `isMatCategoryAllEnabled()` | `scene/scene:147` | — |
 | `isMatEnabled()` | `scene/scene:147` | — |
 | `isPbrMaterial()` | `scene/scene:172` | — |
-| `isPlaying()` | `scene/scene:863` | — |
-| `loadCameraVmd()` | `scene/scene:905` | — |
-| `loadCameraVmdFromPath()` | `scene/scene:856` | — |
-| `loadPMXFile()` | `scene/scene:904` | — |
-| `loadVMDFromPath()` | `scene/scene:856` | — |
-| `loadVMDMotion()` | `scene/scene:856` | — |
-| `loadVPDPose()` | `scene/scene:856` | — |
-| `mmdRuntime()` | `scene/scene:863` | — |
+| `isPlaying()` | `scene/scene:862` | — |
+| `loadCameraVmd()` | `scene/scene:904` | — |
+| `loadCameraVmdFromPath()` | `scene/scene:855` | — |
+| `loadPMXFile()` | `scene/scene:903` | — |
+| `loadVMDFromPath()` | `scene/scene:855` | — |
+| `loadVMDMotion()` | `scene/scene:855` | — |
+| `loadVPDPose()` | `scene/scene:855` | — |
+| `mmdRuntime()` | `scene/scene:862` | — |
 | `modelManager()` | `scene/scene:352` | — |
-| `modelRegistry()` | `scene/scene:863` | — |
-| `normPath()` | `scene/scene:883` | — |
-| `offerSceneUndo()` | `scene/scene:884` | — |
-| `offerSceneUndoAndRefresh()` | `scene/scene:884` | — |
-| `popUndoSnapshot()` | `scene/scene:884` | — |
-| `pushUndoSnapshot()` | `scene/scene:884` | — |
+| `modelRegistry()` | `scene/scene:862` | — |
+| `normPath()` | `scene/scene:882` | — |
+| `offerSceneUndo()` | `scene/scene:883` | — |
+| `offerSceneUndoAndRefresh()` | `scene/scene:883` | — |
+| `popUndoSnapshot()` | `scene/scene:883` | — |
+| `pushUndoSnapshot()` | `scene/scene:883` | — |
 | `resetMatCatParams()` | `scene/scene:147` | — |
 | `resetPerMaterialParams()` | `scene/scene:147` | — |
 | `resetSingleMatParams()` | `scene/scene:147` | — |
-| `resolveFileUrl()` | `scene/scene:883` | — |
-| `restoreUndoSnapshot()` | `scene/scene:884` | — |
+| `resolveFileUrl()` | `scene/scene:882` | — |
+| `restoreUndoSnapshot()` | `scene/scene:883` | — |
 | `scene()` | `scene/scene:245` | — |
-| `seekDragging()` | `scene/scene:863` | — |
-| `seekFromEvent()` | `scene/scene:862` | — |
-| `setAutoLoop()` | `scene/scene:863` | — |
-| `setCameraState()` | `scene/scene:905` | — |
-| `setFocusedModelId()` | `scene/scene:863` | — |
-| `setIsPlaying()` | `scene/scene:863` | — |
+| `seekDragging()` | `scene/scene:862` | — |
+| `seekFromEvent()` | `scene/scene:861` | — |
+| `setAutoLoop()` | `scene/scene:862` | — |
+| `setCameraState()` | `scene/scene:904` | — |
+| `setFocusedModelId()` | `scene/scene:862` | — |
+| `setIsPlaying()` | `scene/scene:862` | — |
 | `setMatCatParams()` | `scene/scene:147` | — |
 | `setMatCategoryEnabled()` | `scene/scene:147` | — |
 | `setMatEnabled()` | `scene/scene:147` | — |
 | `setMatParams()` | `scene/scene:147` | — |
 | `setMatSssParams()` | `scene/scene:173` | — |
-| `setMmdRuntime()` | `scene/scene:863` | — |
-| `setModelRegistry()` | `scene/scene:863` | — |
-| `setSeekDragging()` | `scene/scene:863` | — |
-| `setStatus()` | `scene/scene:863` | — |
-| `setTriggerAutoSave()` | `scene/scene:881` | — |
-| `switchCameraMode()` | `scene/scene:905` | — |
-| `triggerAutoSave()` | `scene/scene:881` | — |
-| `updatePlaybackUI()` | `scene/scene:862` | — |
+| `setMmdRuntime()` | `scene/scene:862` | — |
+| `setModelRegistry()` | `scene/scene:862` | — |
+| `setSeekDragging()` | `scene/scene:862` | — |
+| `setStatus()` | `scene/scene:862` | — |
+| `setTriggerAutoSave()` | `scene/scene:880` | — |
+| `switchCameraMode()` | `scene/scene:904` | — |
+| `triggerAutoSave()` | `scene/scene:880` | — |
+| `updatePlaybackUI()` | `scene/scene:861` | — |
 | `ActionMenuCtx()` | `scene/shared/menu-node-types:16` | — |
 | `ControlSpec()` | `scene/shared/menu-node-types:37` | — |
 | `MenuKind()` | `scene/shared/menu-node-types:25` | — |
@@ -2147,17 +2147,17 @@
 | `getWaterSchema()` | `menus/env-water-levels:31` | 导出 water schema 供 menu-registry 静态分析（ADR-093 元测试） |
 | `buildWindLevel()` | `menus/env-wind-levels:44` | — |
 | `getWindSchema()` | `menus/env-wind-levels:12` | 导出 wind schema 供 menu-registry 静态分析（ADR-093 元测试） |
-| `buildTagDetailLevel()` | `menus/library-actions:739` | — |
-| `buildTagsOverviewLevel()` | `menus/library-actions:739` | — |
-| `findLibraryModelByName()` | `menus/library-actions:739` | 按名称模糊搜索模型（纯查询，不触发加载）。供 ADR-155/197 NL 控制 resolve 使用，避免 resolve 阶段误触发真实加载。 |
-| `findLibraryMotionByName()` | `menus/library-actions:739` | 按名称模糊搜索 VMD 动作（纯查询，不触发替换）。 |
-| `highlightRow()` | `menus/library-actions:739` | — |
-| `importFile()` | `menus/library-actions:694` | — |
-| `importFileByPath()` | `menus/library-actions:649` | — |
-| `onModelRowClick()` | `menus/library-actions:739` | — |
-| `prepareModelRestore()` | `menus/library-actions:124` | — |
-| `replaceModel()` | `menus/library-actions:739` | — |
-| `replaceMotion()` | `menus/library-actions:739` | — |
+| `buildTagDetailLevel()` | `menus/library-actions:725` | — |
+| `buildTagsOverviewLevel()` | `menus/library-actions:725` | — |
+| `findLibraryModelByName()` | `menus/library-actions:725` | 按名称模糊搜索模型（纯查询，不触发加载）。供 ADR-155/197 NL 控制 resolve 使用，避免 resolve 阶段误触发真实加载。 |
+| `findLibraryMotionByName()` | `menus/library-actions:725` | 按名称模糊搜索 VMD 动作（纯查询，不触发替换）。 |
+| `highlightRow()` | `menus/library-actions:725` | — |
+| `importFile()` | `menus/library-actions:680` | — |
+| `importFileByPath()` | `menus/library-actions:635` | — |
+| `onModelRowClick()` | `menus/library-actions:725` | — |
+| `prepareModelRestore()` | `menus/library-actions:110` | — |
+| `replaceModel()` | `menus/library-actions:725` | — |
+| `replaceMotion()` | `menus/library-actions:725` | — |
 | `makeModelMenu()` | `menus/library-browse:377` | — |
 | `showModelPopup()` | `menus/library-browse:346` | — |
 | `ResourceViewMode()` | `menus/library-core:43` | — |
@@ -2170,25 +2170,25 @@
 | `getPendingMetaGuard()` | `menus/library-core:67` | — |
 | `getRelativePathUnderDir()` | `menus/library-core:83` | — |
 | `getResourceViewMode()` | `menus/library-core:47` | — |
-| `importFile()` | `menus/library-core:1010` | — |
-| `initLibrary()` | `menus/library-core:1011` | — |
+| `importFile()` | `menus/library-core:1019` | — |
+| `initLibrary()` | `menus/library-core:1020` | — |
 | `isLeafFlattenDir()` | `menus/library-core:93` | — |
 | `isModelDirTarget()` | `menus/library-core:59` | — |
 | `loadThumbnailsStreaming()` | `menus/library-core:260` | 流式加载缩略图：并发控制，每加载一张立即更新缓存并通知面板刷新， 替代一次性 GetThumbnailBatch 的"全等"模式，实现缩略图逐张出现。 |
 | `modelToResourceItem()` | `menus/library-core:365` | — |
 | `modelToRow()` | `menus/library-core:349` | — |
-| `prepareModelRestore()` | `menus/library-core:1010` | — |
-| `refreshLibrary()` | `menus/library-core:1011` | — |
-| `refreshModelRoot()` | `menus/library-core:991` | — |
-| `reloadConfig()` | `menus/library-core:1011` | — |
-| `rescanAndSync()` | `menus/library-core:1011` | — |
+| `prepareModelRestore()` | `menus/library-core:1019` | — |
+| `refreshLibrary()` | `menus/library-core:1020` | — |
+| `refreshModelRoot()` | `menus/library-core:997` | 就地更新模型库根层级数据（刷新已注册的角色列表）。 |
+| `reloadConfig()` | `menus/library-core:1020` | — |
+| `rescanAndSync()` | `menus/library-core:1020` | — |
 | `resolveDisplayBrowseDir()` | `menus/library-core:140` | [修复] 解析模型在资源库中的"显示目录"——即用户点击该模型时实际看到的层级。 |
-| `selectOverridePath()` | `menus/library-core:1011` | — |
-| `selectResourceRoot()` | `menus/library-core:1011` | — |
+| `selectOverridePath()` | `menus/library-core:1020` | — |
+| `selectResourceRoot()` | `menus/library-core:1020` | — |
 | `setResourceViewMode()` | `menus/library-core:50` | — |
-| `showModelPopup()` | `menus/library-core:1009` | — |
+| `showModelPopup()` | `menus/library-core:1018` | — |
 | `splitSubdirSegments()` | `menus/library-core:73` | — |
-| `switchStorageMode()` | `menus/library-core:1011` | — |
+| `switchStorageMode()` | `menus/library-core:1020` | — |
 | `thumbnailKeyForModel()` | `menus/library-core:194` | — |
 | `LibraryLoadingState()` | `menus/library-session-store:51` | 资源库会话状态：加载守卫。 |
 | `LibraryRestoreState()` | `menus/library-session-store:32` | 资源库会话状态：恢复链路（上次浏览位置 + 高亮模型）。 |
@@ -2241,15 +2241,15 @@
 | `SlideMenu()` | `menus/menu:40` | — |
 | `getCurrentRenderingMenu()` | `menus/menu:40` | 获取当前正在渲染的 SlideMenu 实例（供 menus 层控件的自更新注册）。 |
 | `getOpenMenus()` | `menus/menu:48` | 获取所有当前存活的 SlideMenu 实例（已 dispose 的会自动移除，调用方仍需自行判断可见性） |
-| `buildBoneHierarchyLevel()` | `menus/model-detail:1530` | — |
-| `buildModelInfoLevel()` | `menus/model-detail:881` | — |
-| `buildModelLevel()` | `menus/model-detail:640` | — |
-| `buildModelTagsLevel()` | `menus/model-detail:1096` | — |
+| `buildBoneHierarchyLevel()` | `menus/model-detail:1517` | — |
+| `buildModelInfoLevel()` | `menus/model-detail:868` | — |
+| `buildModelLevel()` | `menus/model-detail:627` | — |
+| `buildModelTagsLevel()` | `menus/model-detail:1083` | — |
 | `buildModelToolsLevel()` | `menus/model-detail:583` | [doc:adr-167] 叠加动作次级菜单已移除（ADR-144 per-model overlay 废弃）。 |
-| `buildMorphPreviewLevel()` | `menus/model-detail:1206` | — |
+| `buildMorphPreviewLevel()` | `menus/model-detail:1193` | — |
 | `buildMotionSlotLevel()` | `menus/model-detail:442` | 构建动作1（基础）次级菜单：场景库选择 + 已加载动作 + 程序化动作 |
 | `buildOpenWithLevel()` | `menus/model-detail:281` | — |
-| `buildPersonalLightLevel()` | `menus/model-detail:1219` | — |
+| `buildPersonalLightLevel()` | `menus/model-detail:1206` | — |
 | `buildMatRootLevel()` | `menus/model-material:446` | — |
 | `ModelPresetEntry()` | `menus/model-preset:37` | — |
 | `ModelPresetFile()` | `menus/model-preset:46` | — |
