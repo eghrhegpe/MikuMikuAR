@@ -5,18 +5,22 @@
 
 ## 硬约束
 
-> 500 行文件先 grep 定位再读。
-> 按需读取 `docs/knowledge/index.md`（枢纽索引，自动生成）+ grep 卡正文定位功能作用，充实上下文。
-> 核实情况：直接 grep 关键符号在 当前源码 > `docs/adr/` > `docs/knowledge/` > `docs/architecture.md`/`docs/function-map.md` > `docs/research/` 是否还存在。
-> 新 ADR 落地前先 Grep `> \*\*状态\*\*:.*(规划|实施中|部分实现)` in `docs/adr` 看是否已有类似实现；若触及既有 ADR 决策，就在对方首部标注「被 [ADR-NNN] 取代」。编号只允许给 ADR、novel 写。
-> 批量重构（重命名/移函数/加参数）用 `npm run codemod`（AST 感知）。
-> UI 名查 `frontend/src/core/i18n` 翻译文件反查定位对应 UI 元素（意图识别），再跳源码。
-> 改完即测。有失败就修复，超出职责的就报告；通过则直接`git status --short` 抓清单 → 提交对应的文件夹，无需询问。先提交`docs/`,捎带了无关文件也别怕。
-> 如果测试写入难度较大，建议改进源码的可测性与潜在风险。
-> babymmd的换算关系是：1 unit = 0.1 米。
-> 禁止从 `@/core/utils` 神桶导入（ADR-191）——纯/叶子模块须引具体零依赖叶（`@/core/clamp`/`@/core/path`/`@/core/async`），整桶 import 会拖起 dom/state/fileservice 致 vitest fork worker 挂死。
-> 查日志/排查卡顿：先开**环形日志面板**看最近日志，而非死盯 console——面板入口：设置→系统→缓存占用→「打开日志面板」，或控制台 `window.__logPanel.toggle()`。
-> 热路径（每帧/高频回调）禁止裸调 logWarn/logInfo（ADR-248）：需诊断信息时用 `__feetDebug.value=true` 门控 + `% 60` 帧节流，参考 `bone-override._solvePosSlotIkWasm`。
+> 500 行文件先 grep 定位再读。核实符号：源码 > `docs/adr/` > `docs/knowledge/` > `docs/function-map.md`。
+> 批量重构用 `npm run codemod`。改完即测，失败就修复或报告。
+> babymmd：1 unit = 0.1 米。禁止 `@/core/utils` 整桶导入（ADR-191），引具体叶（`@/core/clamp`/`path`/`async`）。
+> 查日志先开环形日志面板（设置→系统→缓存占用→「打开日志面板」），别死盯 console。
+> 热路径禁止裸调 logWarn/logInfo（ADR-248），用 `__feetDebug.value=true` 门控 + `% 60` 帧节流。
+
+## 场景路由（遇到时优先查，别猜）
+
+| 当你看到… | 优先查 | 别做什么 |
+|-----------|--------|---------|
+| UI 文案/按钮文字/菜单名 | `Grep` 搜 `frontend/src/core/i18n/` 定位翻译键 → 再跳源码 | 别直接搜中文硬编码 |
+| 陌生函数/类/模块 | 先读 `docs/knowledge/index.md` 找知识卡 → grep 卡正文 → 跳 source_files | 别看代码猜用途 |
+| 3D 渲染/物理/动画/MMD | 知识卡 + 源码；babylon-mmd 是 fork | 别按标准 Babylon.js 文档猜 |
+| Wails Go↔TS 绑定 | `npm run generate:bindings`（必须 `-ts`）自动生成 | 别手写绑定代码 |
+| 改任何模块前 | 先读该模块知识卡了解设计意图 | 别直接看代码猜意图 |
+| 写新 ADR 前 | `grep docs/adr/` 检查是否取代既有决策 | 别跳过取代检查 |
 
 ```bash
 # 暂存（本地缓存）
@@ -36,22 +40,11 @@ git reset HEAD~1                      # 撤销最近一条 commit，把改动放
 | 建议避免 | `git stash push`/`git stash pop`/`git stash apply` 等会改动工作区的操作易丢失未提交改动；`list`/`show` 只读不受限 |
 
 
-## 钩子自动化（无需手动触发）
+## 钩子自动化
 
-> **Git 钩子（pre-commit / prepare-commit-msg 非阻断，pre-push 阻断）**：
-仓库钩子位于 `.githooks/`（非 `.git/hooks/`），克隆后需激活：`git config core.hooksPath .githooks`。
-pre-commit 自动同步文档/索引（秒级 gen）并 `git add docs/`；
-prepare-commit-msg 把变更行覆盖率缺口建议写入 commit message **body**；二者均不阻塞提交。
-逃生阀统一为 `git commit --no-verify`（仅跳过 pre-commit / prepare-commit-msg，不影响 pre-push）。
-这就是为什么提交常夹带 `docs/function-map.md` 等同步文件——是钩子自动补的，非手滑。
-
-| 钩子 | 功能 | 逃生阀 |
-|------|------|--------|
-| `pre-commit` | 自动跑 13 个秒级 gen 脚本（`gen-status-index`/`gen-funcmap`/`gen-docs-index`/`gen-novel-index`/`gen-menu-map`/`gen-knowledge-graph`/`gen-knowledge-h1`/`gen-knowledge-symbols`/`gen-knowledge-adr`/`gen-knowledge-tests`/`gen-tier`/`gen-routes`/`gen-ui-entry`）同步 `docs/` 并 `git add docs/` | `git commit --no-verify` |
-| `prepare-commit-msg` | 把变更行覆盖率缺口建议写入 commit message **body**（供 PR review 参考）；只提示覆盖率，**不**提示知识卡 | `MM_SKIP_COVERAGE_HINT=1` |
-| `pre-push` | 内联跑全量门禁（`gen-status-index`/`gen-funcmap`/`gen-docs-index`/`gen-novel-index`/`gen-guide-gap --strict`/`gen-menu-map` 的 `--check`、`check-deadcode-baseline`、`check-doc-drift --baseline`、`i18n-check --strict` 等），失败阻断推送。**不存在** `pre-push-gate.mjs` 包装脚本 | 无（硬门禁） |
-
-> **关键原则**：doctor 检查若输出 `[WARN]...skip`，必须手动运行 `node_modules/.bin/tsc` 验证类型。
+> `.githooks/`（需 `git config core.hooksPath .githooks` 激活）。
+> `pre-commit` 自动同步 docs/ 索引（提交常夹带 docs/ 是钩子行为，非手滑）。`pre-push` 全量门禁，失败阻断推送，无逃生阀。
+> `--no-verify` 跳过 pre-commit/prepare-commit-msg，不影响 pre-push。doctor 输出 `[WARN]...skip` 时须手动 `tsc` 验证。
 
 ## 去哪里查
 
@@ -65,32 +58,14 @@ prepare-commit-msg 把变更行覆盖率缺口建议写入 commit message **body
 | 符号消费者| `npm run check:consumers -- <符号>`| 重构前影响面分析|
 | Bug历史| `docs/buglog/`| 只关注🔴未修复/🟡搁置状态|
 
-## MCP 扩展（Context7 / Serena）
+## MCP 扩展
 
-项目级配置见根目录 `.mcp.json`（`mcpServers` 结构）。
-
-| 服务 | 干嘛用 | 前置依赖 | 用法提示 |
-|------|--------|----------|----------|
-| `serena` | "语义重构独占",符号级导航：查定义/引用、按符号跳转，精准定位 `frontend/` 下 365 个 .ts | Python + `uv`（`uvx`） | 先让 AI 用 Serena 在 `frontend/` 建索引，再做跨文件重构/审计 |
-
-注意：Serena 启动后默认不绑定项目，先在对话里让它「索引 `frontend/` 目录」再派活。
+`serena`：符号级导航（查定义/引用/跳转），语义重构独占。需 Python + `uv`。启动后先索引 `frontend/` 再派活。
 
 ## ADR 规则
 
-> 新 ADR 一律走叫号脚本：`node scripts/new-adr.mjs "标题" ["副标题"] ["状态"] [--slug kebab-name] [--related 关联内容] [--supersedes ADR-0XX,...] [--dry-run] [--reserve]`（双源取号 = 本地/远端最大号 +1、原子占位防并发、五段模板、`--supersedes` 自动在被取代方状态行标注「被 [ADR-NNN] 取代」且幂等、`--dry-run` 只算号不写文件；`--help` 退 0 / 未知 flag 退 1，绝不占号），禁止手写编号。
-> 状态值：`✅ 已采纳` / `🔄 部分采纳` / `🧊 已废弃` / `❌ 已取代`；状态变更同步更新登记表。
-> 新 ADR 落地时检查是否触及既有 ADR 决策；触及就在对方首部标注「被 [ADR-NNN] 取代」。
-
-### 取代判别（五层证据）
-| 证据层级 | 判定方式                  | 处置措施                     |
-|----------|--------------------------|------------------------------|
-| ① 已登记 | 旧ADR首部标注"被[NNN]取代"| 直接归档 |
-| ② 漏标   | 新ADR声明取代但旧ADR未标 | **立即补标**|
-| ③ 废弃   | 状态行含⚠️/🗑️未指明取代方 | 人工确认是否仅为搁置|
-| ④ 可疑   | 正文模糊提及"推翻/过时"  | 人工核查决策关联性 |
-| ⑤ 弱宣称 | 表格跨列自指替代关系     | 人工确认功能覆盖范围 |
-
-> **核心原则**：被取代=决策被推翻（ADR-012→113），≠功能演进。新ADR落地时**必须**检查并标注被取代方。
+> 新 ADR 走 `node scripts/new-adr.mjs` 取号，禁止手写编号。状态值：`✅ 已采纳` / `🔄 部分采纳` / `🧊 已废弃` / `❌ 已取代`。
+> 新 ADR 落地时检查是否取代既有决策；取代判别细则见 `docs/adr/supersede-rules.md`。
 
 ## 技术栈
 
