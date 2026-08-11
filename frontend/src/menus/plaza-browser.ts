@@ -16,6 +16,7 @@ import {
     getLayer,
     setPlazaProxyActive,
     setPlazaIframe,
+    setCurrentEmbedUrl,
     loadGlobalMode,
     saveGlobalMode,
     effectiveMode,
@@ -866,21 +867,68 @@ export function renderEmbed(site: PlazaSite): void {
     iframe.addEventListener('drop', (e) => e.preventDefault());
     setPlazaIframe(iframe);
     body.appendChild(iframe);
-    root.appendChild(
-        buildToolbar({
-            title: site.name,
-            onBack: renderHome,
-            onOpen: () => openExternal(site),
-            onRefresh: () => {
-                if (iframe.src) {
-                    spinner.classList.remove('is-hidden');
-                    const currentSrc = iframe.src;
-                    iframe.src = currentSrc;
-                }
-            },
-            onClose: closePlaza,
-        })
-    );
+
+    // 导航逻辑：提取为闭包供 toolbar 和地址栏复用
+    const navigate = (url: string) => {
+        // 清除上次可能遗留的错误提示
+        body.querySelectorAll('.plaza-error').forEach((el) => el.remove());
+        spinner.classList.remove('is-hidden');
+        setCurrentEmbedUrl(url);
+        if (site.directNavigate) {
+            setPlazaProxyActive(false);
+            iframe.src = url;
+        } else {
+            setPlazaProxyActive(true);
+            StartProxy(url, 'embed')
+                .then((proxyUrl) => {
+                    iframe.src = proxyUrl;
+                })
+                .catch((e) => {
+                    setPlazaProxyActive(false);
+                    spinner.classList.add('is-hidden');
+                    const err = document.createElement('div');
+                    err.className = 'plaza-error';
+                    err.textContent = t('plaza.proxyError', { err: translateGoError(e) });
+                    body.appendChild(err);
+                });
+        }
+    };
+
+    const toolbar = buildToolbar({
+        title: site.name,
+        onBack: renderHome,
+        onOpen: () => openExternal(site),
+        onRefresh: () => {
+            if (iframe.src) {
+                spinner.classList.remove('is-hidden');
+                const currentSrc = iframe.src;
+                iframe.src = currentSrc;
+            }
+        },
+        onClose: closePlaza,
+    });
+    // 地址栏：在站点名称后面插入可编辑 URL 栏
+    const titleEl = toolbar.querySelector('.plaza-title');
+    if (titleEl) {
+        const addressBar = document.createElement('input');
+        addressBar.id = 'plaza-address-bar';
+        addressBar.className = 'plaza-address-bar';
+        addressBar.type = 'text';
+        addressBar.value = site.url;
+        addressBar.placeholder = '输入网址导航…';
+        addressBar.spellcheck = false;
+        addressBar.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const url = addressBar.value.trim();
+                if (url) navigate(url);
+            }
+        });
+        // 点击时全选方便快速修改
+        addressBar.addEventListener('focus', () => addressBar.select());
+        titleEl.insertAdjacentElement('afterend', addressBar);
+    }
+    root.appendChild(toolbar);
     root.appendChild(body);
     el.appendChild(root);
 
@@ -890,25 +938,7 @@ export function renderEmbed(site: PlazaSite): void {
     // 代价：无代理注入，应用内下载接管（/__plaza_dl__）失效，下载退化为系统浏览器 + fsnotify 兜底（ADR-003）。
     // 仅 frame-hostile 站点（发 X-Frame-Options/CSP frame-ancestors 拒绝被框）应置 directNavigate:false 走代理剥离头，
     // 否则 embed 会白屏；window 模式不受此限，始终直连真实域名。
-    if (site.directNavigate) {
-        setPlazaProxyActive(false);
-        iframe.src = site.url;
-        return;
-    }
-
-    setPlazaProxyActive(true);
-    StartProxy(site.url, 'embed')
-        .then((proxyUrl) => {
-            iframe.src = proxyUrl;
-        })
-        .catch((e) => {
-            setPlazaProxyActive(false);
-            spinner.classList.add('is-hidden');
-            const err = document.createElement('div');
-            err.className = 'plaza-error';
-            err.textContent = t('plaza.proxyError', { err: translateGoError(e) });
-            body.appendChild(err);
-        });
+    navigate(site.url);
 }
 
 // ======== 入口函数 ========

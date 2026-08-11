@@ -31,6 +31,7 @@ import {
     setObserver,
     getLayer,
     stopProxy,
+    setCurrentEmbedUrl,
 } from './plaza-state';
 
 // ======== 下载监听 ========
@@ -41,17 +42,33 @@ export function installDownloadListener(): void {
     }
     setDownloadListenerInstalled(true);
     window.addEventListener('message', (e: MessageEvent) => {
-        if (e.data?.type !== 'plaza-download-request') {
+        // 下载请求：代理注入脚本拦截下载链接后 postMessage 到父窗口
+        if (e.data?.type === 'plaza-download-request') {
+            if (!plazaIframe || e.source !== plazaIframe.contentWindow) {
+                return;
+            }
+            const { url, filename } = e.data as { url: string; filename: string };
+            if (!url) {
+                return;
+            }
+            handlePlazaDownload(url, filename || 'download');
             return;
         }
-        if (!plazaIframe || e.source !== plazaIframe.contentWindow) {
+        // URL 上报：代理注入脚本在页面加载/SPA 路由变化时报告当前 URL
+        if (e.data?.type === 'plaza-url-report') {
+            if (!plazaIframe || e.source !== plazaIframe.contentWindow) {
+                return;
+            }
+            const { url } = e.data as { url: string; title: string };
+            if (!url) return;
+            setCurrentEmbedUrl(url);
+            // 更新地址栏（如果存在且用户未在编辑）
+            const bar = document.getElementById('plaza-address-bar') as HTMLInputElement | null;
+            if (bar && document.activeElement !== bar) {
+                bar.value = url;
+            }
             return;
         }
-        const { url, filename } = e.data as { url: string; filename: string };
-        if (!url) {
-            return;
-        }
-        handlePlazaDownload(url, filename || 'download');
     });
 }
 

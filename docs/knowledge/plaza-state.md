@@ -16,6 +16,7 @@ symbols:
   - allCreators
   - allSites
   - closePlaza
+  - currentEmbedUrl
   - currentSiteId
   - downloadListenerInstalled
   - effectiveMode
@@ -30,6 +31,7 @@ symbols:
   - saveGlobalMode
   - setAllCreators
   - setAllSites
+  - setCurrentEmbedUrl
   - setCurrentSiteId
   - setDownloadListenerInstalled
   - setEventListenersInstalled

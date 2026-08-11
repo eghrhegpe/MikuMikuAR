@@ -111,12 +111,28 @@ func TestPlazaInjectScript_InHTML(t *testing.T) {
 	if idx == -1 {
 		t.Fatal("expected </head> in test HTML")
 	}
-	injected := html[:idx] + plazaInjectScript("http://example.com") + html[idx:]
+	injected := html[:idx] + plazaInjectScript("embed") + html[idx:]
 	if !strings.Contains(injected, `data-plaza="1"`) {
 		t.Error("injected HTML should contain plaza script marker")
 	}
 	if !strings.Contains(injected, "plaza-download-request") {
 		t.Error("injected HTML should contain download intercept handler")
+	}
+	if !strings.Contains(injected, "plaza-url-report") {
+		t.Error("injected HTML should contain URL report handler in embed mode")
+	}
+	if !strings.Contains(injected, "readyState") {
+		t.Error("injected HTML should handle late DOMContentLoaded via readyState check")
+	}
+}
+
+func TestPlazaInjectScript_WindowMode(t *testing.T) {
+	script := plazaInjectScript("window")
+	if !strings.Contains(script, "__plaza_dl__") {
+		t.Error("window mode should contain __plaza_dl__ fetch endpoint")
+	}
+	if strings.Contains(script, "plaza-url-report") {
+		t.Error("window mode should NOT contain URL report (native address bar already present)")
 	}
 }
 
@@ -131,7 +147,7 @@ func TestPlazaInjectScript_NoHead(t *testing.T) {
 	for end < len(html) && html[end] != '>' {
 		end++
 	}
-	injected := html[:end+1] + plazaInjectScript("http://example.com") + html[end+1:]
+	injected := html[:end+1] + plazaInjectScript("embed") + html[end+1:]
 	if !strings.Contains(injected, `data-plaza="1"`) {
 		t.Error("fallback injection should still contain plaza script")
 	}

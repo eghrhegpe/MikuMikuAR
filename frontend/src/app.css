@@ -756,6 +756,29 @@ body.app-booting #webviewLayer {
     overflow: hidden;
     text-overflow: ellipsis;
 }
+/* 内嵌模式地址栏：显示当前 iframe 实际 URL，支持手动输入导航 */
+.plaza-address-bar {
+    flex: 1;
+    min-width: 140px;
+    max-width: 520px;
+    height: 32px;
+    padding: 0 12px;
+    border: 1px solid rgba(var(--plaza-teal-rgb), 0.28);
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.35);
+    color: var(--text, #e8f6f4);
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s, background 0.2s;
+}
+.plaza-address-bar:focus {
+    border-color: rgba(var(--plaza-teal-rgb), 0.6);
+    background: rgba(0, 0, 0, 0.5);
+}
+.plaza-address-bar::placeholder {
+    color: rgba(var(--plaza-text-rgb), 0.3);
+}
 /* 全局打开方式分段开关：自动 / iframe / chrome / wails */
 .plaza-modeswitch {
     display: flex;

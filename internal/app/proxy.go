@@ -43,11 +43,25 @@ import (
 // the explicit new URL() documents intent and is a no-op for absolute input.
 func plazaInjectScript(mode string) string {
 	var forward string
+	var urlReport string
 	switch mode {
 	case "window":
 		forward = `fetch(location.origin+'/__plaza_dl__',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:absUrl,filename:absUrl.split('/').pop()||'download'})}).catch(function(){})`
 	default: // "embed"
 		forward = `parent.postMessage({type:'plaza-download-request',url:absUrl,filename:absUrl.split('/').pop()||'download'},'*')`
+		// 内嵌模式下注入 URL 上报脚本：页面加载/SPA 路由变化时通过 postMessage
+		// 通知父窗口当前 URL，用于地址栏实时显示。
+		urlReport = `<script data-plaza="url-report">
+(function(){
+  function report(){parent.postMessage({type:'plaza-url-report',url:location.href,title:document.title},'*');}
+  if(document.readyState!=='loading'){report();}
+  else{window.addEventListener('DOMContentLoaded',report);}
+  window.addEventListener('popstate',report);
+  window.addEventListener('hashchange',report);
+  var _push=history.pushState;history.pushState=function(){_push.apply(this,arguments);report();};
+  var _replace=history.replaceState;history.replaceState=function(){_replace.apply(this,arguments);report();};
+})();
+</script>`
 	}
 	return fmt.Sprintf(`<script data-plaza="1">
 (function(){
@@ -65,7 +79,7 @@ func plazaInjectScript(mode string) string {
     %s;
   },true);
 })();
-</script>`, forward)
+</script>`, forward) + urlReport
 }
 
 // proxyServerKey is the fixed key under which the model-plaza reverse proxy is

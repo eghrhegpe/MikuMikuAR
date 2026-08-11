@@ -96,6 +96,14 @@ export function setPlazaIframe(el: HTMLIFrameElement | null): void {
     plazaIframe = el;
 }
 
+// ======== 内嵌地址栏 ========
+
+/** 内嵌模式下当前 iframe 实际访问的 URL（由注入脚本 postMessage 上报） */
+export let currentEmbedUrl: string = '';
+export function setCurrentEmbedUrl(url: string): void {
+    currentEmbedUrl = url;
+}
+
 // ======== 打开模式 ========
 
 export type OpenMode = 'embed' | 'external' | 'window';

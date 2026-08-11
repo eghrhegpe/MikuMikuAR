@@ -9,7 +9,7 @@
 |------|--------|-----------|
 | 核心基础设施 | 134 | 807 |
 | 3D 场景 | 125 | 1226 |
-| 菜单 & UI | 76 | 394 |
+| 菜单 & UI | 76 | 396 |
 | 动作算法 | 18 | 138 |
 | 顶层配置 | 1 | 1 |
 
@@ -2305,54 +2305,56 @@
 | `navLabels()` | `menus/nav-actions:25` | — |
 | `toggleOverlay()` | `menus/nav-actions:58` | — |
 | `buildOutfitLevel()` | `menus/outfit-ui:158` | — |
-| `buildSiteTabs()` | `menus/plaza-browser:302` | — |
-| `buildToolbar()` | `menus/plaza-browser:686` | — |
-| `ensureSitesLoaded()` | `menus/plaza-browser:236` | — |
-| `getCustomPresets()` | `menus/plaza-browser:286` | — |
-| `loadPlazaCache()` | `menus/plaza-browser:138` | 从 Go 用户目录缓存（plaza-cache/creators.json + workshop_sites.json）读取站点 + 创作者。缓存不存在时返回 null。 |
-| `mergeSites()` | `menus/plaza-browser:204` | — |
-| `normalizeCreator()` | `menus/plaza-browser:110` | — |
-| `normalizeSite()` | `menus/plaza-browser:81` | — |
-| `openExternal()` | `menus/plaza-browser:272` | — |
-| `openInWindow()` | `menus/plaza-browser:276` | — |
-| `openSiteByMode()` | `menus/plaza-browser:256` | — |
-| `preserveBuiltinRouting()` | `menus/plaza-browser:229` | — |
-| `renderEmbed()` | `menus/plaza-browser:842` | — |
-| `renderHome()` | `menus/plaza-browser:820` | — |
-| `renderSiteContent()` | `menus/plaza-browser:357` | — |
-| `saveCustomPresets()` | `menus/plaza-browser:294` | — |
-| `savePlazaCache()` | `menus/plaza-browser:177` | 将当前站点 + 创作者持久化到 Go 用户目录缓存（plaza-cache/）。 |
-| `showActionsMenu()` | `menus/plaza-browser:730` | — |
-| `showPlaza()` | `menus/plaza-browser:916` | — |
+| `buildSiteTabs()` | `menus/plaza-browser:303` | — |
+| `buildToolbar()` | `menus/plaza-browser:687` | — |
+| `ensureSitesLoaded()` | `menus/plaza-browser:237` | — |
+| `getCustomPresets()` | `menus/plaza-browser:287` | — |
+| `loadPlazaCache()` | `menus/plaza-browser:139` | 从 Go 用户目录缓存（plaza-cache/creators.json + workshop_sites.json）读取站点 + 创作者。缓存不存在时返回 null。 |
+| `mergeSites()` | `menus/plaza-browser:205` | — |
+| `normalizeCreator()` | `menus/plaza-browser:111` | — |
+| `normalizeSite()` | `menus/plaza-browser:82` | — |
+| `openExternal()` | `menus/plaza-browser:273` | — |
+| `openInWindow()` | `menus/plaza-browser:277` | — |
+| `openSiteByMode()` | `menus/plaza-browser:257` | — |
+| `preserveBuiltinRouting()` | `menus/plaza-browser:230` | — |
+| `renderEmbed()` | `menus/plaza-browser:843` | — |
+| `renderHome()` | `menus/plaza-browser:821` | — |
+| `renderSiteContent()` | `menus/plaza-browser:358` | — |
+| `saveCustomPresets()` | `menus/plaza-browser:295` | — |
+| `savePlazaCache()` | `menus/plaza-browser:178` | 将当前站点 + 创作者持久化到 Go 用户目录缓存（plaza-cache/）。 |
+| `showActionsMenu()` | `menus/plaza-browser:731` | — |
+| `showPlaza()` | `menus/plaza-browser:946` | — |
 | `PLAZA_CREATORS()` | `menus/plaza-creators:9` | — |
 | `PlazaCreator()` | `menus/plaza-creators:1` | — |
-| `ensureObserver()` | `menus/plaza-download:168` | — |
-| `handlePlazaDownload()` | `menus/plaza-download:58` | — |
-| `installDownloadListener()` | `menus/plaza-download:38` | — |
-| `installEventListeners()` | `menus/plaza-download:142` | — |
-| `installShortcuts()` | `menus/plaza-download:94` | — |
+| `ensureObserver()` | `menus/plaza-download:185` | — |
+| `handlePlazaDownload()` | `menus/plaza-download:75` | — |
+| `installDownloadListener()` | `menus/plaza-download:39` | — |
+| `installEventListeners()` | `menus/plaza-download:159` | — |
+| `installShortcuts()` | `menus/plaza-download:111` | — |
 | `PLAZA_SITES()` | `menus/plaza-sites:15` | — |
 | `PlazaSite()` | `menus/plaza-sites:1` | — |
 | `GLOBAL_MODE_KEY()` | `menus/plaza-state:14` | — |
-| `OpenMode()` | `menus/plaza-state:101` | — |
+| `OpenMode()` | `menus/plaza-state:109` | — |
 | `SITE_GROUPS()` | `menus/plaza-state:16` | — |
 | `allCreators()` | `menus/plaza-state:32` | — |
 | `allSites()` | `menus/plaza-state:31` | — |
-| `closePlaza()` | `menus/plaza-state:160` | — |
+| `closePlaza()` | `menus/plaza-state:168` | — |
+| `currentEmbedUrl()` | `menus/plaza-state:102` | 内嵌模式下当前 iframe 实际访问的 URL（由注入脚本 postMessage 上报） |
 | `currentSiteId()` | `menus/plaza-state:43` | — |
 | `downloadListenerInstalled()` | `menus/plaza-state:78` | — |
-| `effectiveMode()` | `menus/plaza-state:123` | — |
+| `effectiveMode()` | `menus/plaza-state:131` | — |
 | `eventListenersInstalled()` | `menus/plaza-state:79` | — |
 | `getCurrentSite()` | `menus/plaza-state:48` | — |
 | `getLayer()` | `menus/plaza-state:55` | — |
 | `layer()` | `menus/plaza-state:54` | — |
-| `loadGlobalMode()` | `menus/plaza-state:103` | — |
+| `loadGlobalMode()` | `menus/plaza-state:111` | — |
 | `observer()` | `menus/plaza-state:71` | — |
 | `plazaIframe()` | `menus/plaza-state:94` | — |
 | `plazaProxyActive()` | `menus/plaza-state:64` | — |
-| `saveGlobalMode()` | `menus/plaza-state:115` | — |
+| `saveGlobalMode()` | `menus/plaza-state:123` | — |
 | `setAllCreators()` | `menus/plaza-state:37` | — |
 | `setAllSites()` | `menus/plaza-state:34` | — |
+| `setCurrentEmbedUrl()` | `menus/plaza-state:103` | — |
 | `setCurrentSiteId()` | `menus/plaza-state:45` | — |
 | `setDownloadListenerInstalled()` | `menus/plaza-state:82` | — |
 | `setEventListenersInstalled()` | `menus/plaza-state:85` | — |
@@ -2361,7 +2363,7 @@
 | `setPlazaProxyActive()` | `menus/plaza-state:65` | — |
 | `setShortcutsRegistered()` | `menus/plaza-state:88` | — |
 | `shortcutsRegistered()` | `menus/plaza-state:80` | — |
-| `stopProxy()` | `menus/plaza-state:150` | — |
+| `stopProxy()` | `menus/plaza-state:158` | — |
 | `_plazaBtn()` | `menus/plaza-thumbnail:6` | — |
 | `_plazaSectionHeader()` | `menus/plaza-thumbnail:24` | — |
 | `PresetListViewerConfig()` | `menus/preset-list-viewer:15` | — |
