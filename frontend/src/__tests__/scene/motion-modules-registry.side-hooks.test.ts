@@ -18,6 +18,7 @@ import {
     createModule,
     setTargetModel,
 } from '@/scene/motion/motion-modules/registry';
+import { getModuleActionId } from '@/scene/motion/motion-modules/module-base';
 
 vi.mock('@/core/state', () => mockState());
 vi.mock('@/scene/motion/bone-override', () => mockBoneOverride());
@@ -177,5 +178,23 @@ describe('左右侧模块帧钩子独立注册（round-12 P1 回归）', () => {
 
         (rightHook![0] as (t: number, mid: string) => void)(0, 'm1');
         expect(posSpy.mock.calls.map((c) => c[0])).toEqual(['右足IK']);
+    });
+});
+
+describe('帧钩子 actionId 作用域（fix:audit-P1 残留清理）', () => {
+    it('proc 作用域启用后 getModuleActionId 记 proc:xxx；VMD 路径（无 actionId）启用后清除', () => {
+        shared.mockModelRegistry.set('m1', makeModelWithBones('m1'));
+        initMotionModules();
+        setActiveMotionWithModules();
+
+        // proc 作用域：createModule 带 proc actionId → 记录 proc:idle
+        const procMod = createModule('left-foot', 'm1', 'proc:idle')!;
+        procMod.enable();
+        expect(getModuleActionId('m1')).toBe('proc:idle');
+
+        // VMD 路径：createModule 无 actionId → enable 应清除残留，避免帧钩子读到过期 proc 作用域
+        const vmdMod = createModule('left-foot', 'm1')!;
+        vmdMod.enable();
+        expect(getModuleActionId('m1')).toBeUndefined();
     });
 });
