@@ -1,4 +1,5 @@
 ---
+kind: menu_schema
 tier: architecture
 source_files:
   - frontend/src/menus/menu-schema.ts
@@ -7,7 +8,6 @@ tests:
   - frontend/src/__tests__/menu-schema.conflict.test.ts
   - frontend/src/__tests__/menu-schema.integrity.test.ts
   - frontend/src/__tests__/menu-schema.test.ts
-  kind: menu_schema
 name: 声明式菜单 Schema
 category: ui
 scope:
