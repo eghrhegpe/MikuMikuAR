@@ -1013,8 +1013,8 @@
 | `switchCameraMode()` | `scene/camera/camera:337` | Switch to a different camera mode, preserving position as much as possible. |
 | `InvertableArcRotateCameraPointersInput()` | `scene/camera/invertablePointersInput:13` | 可反转 Y 轴的 ArcRotate 相机指针输入。 |
 | `applyEnvStateFacade()` | `scene/env/_bridge/env-bridge:49` | 等同于 scene-env.ts 的 applyEnvState，但避免循环依赖。 |
-| `registerEnvStateMiddleware()` | `scene/env/_bridge/env-bridge:378` | 注册 setEnvState 中间件（供 env-time-of-day/env-gravity 等子模块调用）。 |
-| `setEnvState()` | `scene/env/_bridge/env-bridge:323` | 环境状态唯一写入入口（ADR-173 中间件链），可选跳过自动保存。 |
+| `registerEnvStateMiddleware()` | `scene/env/_bridge/env-bridge:379` | 注册 setEnvState 中间件（供 env-time-of-day/env-gravity 等子模块调用）。 |
+| `setEnvState()` | `scene/env/_bridge/env-bridge:324` | 环境状态唯一写入入口（ADR-173 中间件链），可选跳过自动保存。 |
 | `setPresetAnimActive()` | `scene/env/_bridge/env-bridge:43` | 标记预设动画是否运行中（供 _applyEnvStateFacade 跳过方向光同步） |
 | `clearAllEnvCallbacks()` | `scene/env/_bridge/env-dispatcher:33` | 清空所有已注册的 env 回调（场景销毁 / HMR 重入时兜底清理）。 |
 | `clearEnvDtTickCallbacks()` | `scene/env/_bridge/env-dispatcher:93` | 清空所有 dt 回调（场景销毁 / HMR 重入时清理）。 |

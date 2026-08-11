@@ -312,30 +312,6 @@ describe('serializeScene — 分段容错（ADR-198 方向①）', () => {
         (scene.models[0].procMotionModules as any).idle[0].params.tilt = 99;
         expect((model as any).procMotionModules.idle[0].params.tilt).toBe(5);
     });
-
-    it('P2#3 回归：serialize → deserialize round-trip 一致性（procMotionModules 无损往返）', async () => {
-        vi.mocked(loadPMXFile).mockResolvedValueOnce('roundtrip-procmod');
-        const inst = makeModel('roundtrip-procmod', '模型RoundTrip', '/models/rt.pmx');
-        (inst as any).procMotionModules = {
-            idle: [{ id: 'body-posture', enabled: true, params: { tilt: 5, footHeight: 0.3 } }],
-            autodance: [{ id: 'left-hand', enabled: false, params: {} }],
-        };
-        registry.set('roundtrip-procmod', inst);
-
-        // 序列化 → 深拷贝落盘（模拟 structuredClone 行为）
-        const scene = serializeScene();
-        const serialized = JSON.parse(JSON.stringify(scene));
-
-        // 清空运行时存储，模拟恢复全新场景
-        registry.clear();
-        vi.mocked(loadPMXFile).mockResolvedValueOnce('roundtrip-procmod');
-        const restoredInst = makeModel('roundtrip-procmod', '模型RoundTrip', '/models/rt.pmx');
-        registry.set('roundtrip-procmod', restoredInst);
-
-        await deserializeScene(serialized as never);
-
-        expect((restoredInst as any).procMotionModules).toEqual((inst as any).procMotionModules);
-    });
 });
 
 describe('deserializeScene — suppress 泄漏防护（fix:suppress-leak）', () => {
@@ -515,5 +491,35 @@ describe('deserializeScene — suppress 泄漏防护（fix:suppress-leak）', ()
         await deserializeScene(data);
 
         expect(pbrMat.wireframe).toBe(true);
+    });
+});
+
+describe('serialize → deserialize round-trip（procMotionModules 无损往返）', () => {
+    // 放在文件末尾：deserializeScene 有全局副作用（模块/material 状态），
+    // 提前执行会污染后续 deserialize 测试（顺序依赖），故置于末尾。
+    it('P2#3 回归：round-trip 一致性（合法 procMotionModules 序列化→反序列化无损）', async () => {
+        vi.mocked(loadPMXFile).mockResolvedValueOnce('roundtrip-procmod');
+        const inst = makeModel('roundtrip-procmod', '模型RoundTrip', '/models/rt.pmx');
+        (inst as any).procMotionModules = {
+            idle: [{ id: 'body-posture', enabled: true, params: { tilt: 5, footHeight: 0.3 } }],
+            autodance: [{ id: 'left-hand', enabled: false, params: {} }],
+        };
+        registry.set('roundtrip-procmod', inst);
+
+        // 序列化 → 深拷贝落盘（模拟 structuredClone + JSON 存取）。
+        // 仅取 models 落盘，剥离 env（serializeScene 的 env 输出本身不对称，见既有 deserialize 测试均用 camera:{}）。
+        const scene = serializeScene();
+        const serialized = JSON.parse(JSON.stringify(scene));
+        const data = { version: 1, models: serialized.models, camera: {} };
+
+        // 清空运行时存储，模拟恢复全新场景
+        registry.clear();
+        vi.mocked(loadPMXFile).mockResolvedValueOnce('roundtrip-procmod');
+        const restoredInst = makeModel('roundtrip-procmod', '模型RoundTrip', '/models/rt.pmx');
+        registry.set('roundtrip-procmod', restoredInst);
+
+        await deserializeScene(data as never);
+
+        expect((restoredInst as any).procMotionModules).toEqual((inst as any).procMotionModules);
     });
 });
