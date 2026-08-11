@@ -291,11 +291,6 @@ export function solveIkNative(
     if (typeof ptr !== 'number') {
         return false;
     }
-    (wi.mmdModelSolveIk as (p: number, i: number, u: boolean) => void)(
-        ptr,
-        ikSolverIndex,
-        usePhysics
-    );
     // 调试日志：限频输出（每秒最多1次）
     const now = performance.now();
     if (now - _solveIkLastWarnTime > 1000) {

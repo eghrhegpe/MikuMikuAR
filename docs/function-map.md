@@ -384,19 +384,19 @@
 | `startSceneSnapshotPolling()` | `core/mmar-globals:197` | 启动周期快照刷新；重复调用安全（仅注册一个 timer）。 |
 | `stopSceneSnapshotPolling()` | `core/mmar-globals:207` | 停止周期快照刷新；未启动或重复调用均安全。 |
 | `updateMmarStatus()` | `core/mmar-globals:80` | — |
-| `CapabilityProbe()` | `core/mmd-adapter:382` | CapabilityProbe — 升级回归探测（ADR-192 Phase 2 守卫式反射）。 |
+| `CapabilityProbe()` | `core/mmd-adapter:377` | CapabilityProbe — 升级回归探测（ADR-192 Phase 2 守卫式反射）。 |
 | `applyForceToModelRigidBodies()` | `core/mmd-adapter:163` | — |
 | `applyForceToModelRigidBodiesNative()` | `core/mmd-adapter:210` | — |
-| `applyWindForceToModelRigidBodiesNative()` | `core/mmd-adapter:337` | — |
-| `getBoneWorldMatrix()` | `core/mmd-adapter:443` | 返回骨骼在世界坐标系下的 worldMatrix（固化自 adr-071 坐标系契约）。 |
+| `applyWindForceToModelRigidBodiesNative()` | `core/mmd-adapter:332` | — |
+| `getBoneWorldMatrix()` | `core/mmd-adapter:438` | 返回骨骼在世界坐标系下的 worldMatrix（固化自 adr-071 坐标系契约）。 |
 | `getPhysicsImpl()` | `core/mmd-adapter:39` | 从 IMmdRuntime 获取底层 MmdWasmPhysicsRuntimeImpl。 |
 | `getRigidBodyBundleMap()` | `core/mmd-adapter:75` | 返回所有 RigidBodyBundle 迭代器（条目 3 内化，ADR-192 Phase 2）。 |
 | `getRigidBodyMap()` | `core/mmd-adapter:96` | 返回所有**单数** RigidBody 迭代器（路径1 修正，ADR-200）。 |
 | `getStreamAudio()` | `core/mmd-adapter:111` | — |
-| `onBoneMatricesUpdated()` | `core/mmd-adapter:404` | 在骨骼 worldMatrix 已被 babylon-mmd 更新之后、渲染之前注册回调。 |
+| `onBoneMatricesUpdated()` | `core/mmd-adapter:399` | 在骨骼 worldMatrix 已被 babylon-mmd 更新之后、渲染之前注册回调。 |
 | `solveIkNative()` | `core/mmd-adapter:270` | — |
-| `switchAnimation()` | `core/mmd-adapter:470` | 切换模型当前动画到新动画，并归零运行时全局时钟到第 0 帧。 |
-| `transformWorldToRootLocal()` | `core/mmd-adapter:417` | 把世界坐标系下的点转换到 rootMesh 局部坐标系（固化自 perception-gaze.ts / adr-071）。 |
+| `switchAnimation()` | `core/mmd-adapter:465` | 切换模型当前动画到新动画，并归零运行时全局时钟到第 0 帧。 |
+| `transformWorldToRootLocal()` | `core/mmd-adapter:412` | 把世界坐标系下的点转换到 rootMesh 局部坐标系（固化自 perception-gaze.ts / adr-071）。 |
 | `ObserverHandle()` | `core/observer-handle:31` | 可释放的 Observer 句柄。 |
 | `ObserverRegistry()` | `core/observer-handle:91` | 管理器：收集多个 ObserverHandle，支持一次性 disposeAll()。 |
 | `observe()` | `core/observer-handle:60` | 订阅 Observable 并返回自动管理的句柄。 |
