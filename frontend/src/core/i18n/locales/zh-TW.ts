@@ -209,7 +209,6 @@ export const zhTW: Record<string, string> = {
     'model-detail.motionAssign': '分配動作',
     'model-detail.motionPrimary': '動作1（基礎）',
     'model-detail.loadedMotion': '已載入動作',
-    'model-detail.procActions': '程式化動作',
     'model-detail.procEdit': '編輯',
     'model-detail.procActive': '目前',
     'model-detail.procIdleHint': '待機呼吸',
@@ -507,6 +506,7 @@ export const zhTW: Record<string, string> = {
     'motion.model': '模型',
     'motion.camera': '相機',
     'motion.procMotion': '程式化動作',
+    'motion.procTools': '程式化工具',
     'motion.playbackSpeed': '播放速度',
 
     // ===== 布料 cloth =====

@@ -137,7 +137,6 @@ export const en: Record<string, string> = {
     'model-detail.motionAssign': 'Assign Motion',
     'model-detail.motionPrimary': 'Motion 1 (Base)',
     'model-detail.loadedMotion': 'Loaded Motion',
-    'model-detail.procActions': 'Procedural Motion',
     'model-detail.procEdit': 'Edit',
     'model-detail.procActive': 'Active',
     'model-detail.procIdleHint': 'Idle Breathing',
@@ -354,6 +353,7 @@ export const en: Record<string, string> = {
     'motion.model': 'Model',
     'motion.camera': 'Camera',
     'motion.procMotion': 'Procedural Motion',
+    'motion.procTools': 'Proc Tools',
     'motion.playbackSpeed': 'Playback Speed',
 
     // ===== Cloth =====

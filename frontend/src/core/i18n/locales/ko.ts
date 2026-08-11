@@ -213,7 +213,6 @@ export const ko: Record<string, string> = {
     'model-detail.motionAssign': '모션 할당',
     'model-detail.motionPrimary': '모션 1 (베이스)',
     'model-detail.loadedMotion': '로드된 모션',
-    'model-detail.procActions': '절차적 모션',
     'model-detail.procEdit': '편집',
     'model-detail.procActive': '활성',
     'model-detail.procIdleHint': '대기 호흡',
@@ -514,6 +513,7 @@ export const ko: Record<string, string> = {
     'motion.model': '모델',
     'motion.camera': '카메라',
     'motion.procMotion': '프로그래매틱 모션',
+    'motion.procTools': '프로그래매틱 도구',
     'motion.playbackSpeed': '재생 속도',
 
     // ===== 천 cloth =====

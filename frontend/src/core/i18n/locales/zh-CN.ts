@@ -136,7 +136,6 @@ export const zhCN: Record<string, string> = {
     'model-detail.motionAssign': '分配动作',
     'model-detail.motionPrimary': '动作1（基础）',
     'model-detail.loadedMotion': '已加载动作',
-    'model-detail.procActions': '程序化动作',
     'model-detail.procEdit': '编辑',
     'model-detail.procActive': '当前',
     'model-detail.procIdleHint': '待机呼吸',
@@ -352,6 +351,7 @@ export const zhCN: Record<string, string> = {
     'motion.model': '模型',
     'motion.camera': '相机',
     'motion.procMotion': '程序化动作',
+    'motion.procTools': '程序化工具',
     'motion.playbackSpeed': '播放速度',
 
     // ===== 布料 cloth =====

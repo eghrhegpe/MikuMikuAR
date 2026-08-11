@@ -165,7 +165,9 @@ export function registerMotionActions(): void {
             {
                 name: 'mode',
                 type: 'enum',
-                enum: ['idle', 'walking', 'running', 'dancing', 'breathing'] as const,
+                // [fix] 对齐 ProcMotionMode（off/idle/autodance）：旧 enum 残留
+                // walking/running/dancing/breathing 老模式名，AI 传非法值会污染 st.mode
+                enum: ['idle', 'autodance'] as const,
             },
         ],
         destructive: false,

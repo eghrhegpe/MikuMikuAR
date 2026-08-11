@@ -211,7 +211,6 @@ export const ja: Record<string, string> = {
     'model-detail.motionAssign': 'モーション割り当て',
     'model-detail.motionPrimary': 'モーション1（ベース）',
     'model-detail.loadedMotion': '読込済みモーション',
-    'model-detail.procActions': 'プロシージャルモーション',
     'model-detail.procEdit': '編集',
     'model-detail.procActive': '使用中',
     'model-detail.procIdleHint': '待機呼吸',
@@ -512,6 +511,7 @@ export const ja: Record<string, string> = {
     'motion.model': 'モデル',
     'motion.camera': 'カメラ',
     'motion.procMotion': 'プロシージャルモーション',
+    'motion.procTools': 'プロシージャルツール',
     'motion.playbackSpeed': '再生速度',
 
     // ===== クロス cloth =====

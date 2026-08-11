@@ -5,7 +5,6 @@ import { cardContainer, modelRegistry } from '../core/config';
 import type { PopupLevel, PopupRow } from '../core/config';
 import { addSliderRow, addToggleRow, addModeSlider, addSectionTitle, buildPresetChipGroup, addActionRow, addDangerRow, addEmptyRow } from '../core/ui-helpers';
 import {
-    setProcMotionMode,
     setProcMotionIntensity,
     setProcMotionSpeed,
     getProcMotionState,
@@ -26,6 +25,7 @@ import { DEFAULT_PROC_STATE } from '../motion-algos/procedural-motion';
 import { t } from '../core/i18n/t'; // [doc:adr-059]
 import { feedbackInfo } from '../core/feedback';
 import type { MenuNode } from './menu-schema';
+import { renderMenu } from './render-menu';
 import {
     getAllLoadableProcMotions,
     getLoadedProceduralMotions,
@@ -131,55 +131,10 @@ function _applyProcParam(
 }
 
 export function buildProcMotionSchema(modelId?: string, mode: ProcModeKey = 'idle'): MenuNode[] {
-    const st = _getProcState(modelId);
     const prm = _getProcParams(modelId, mode);
 
     return [
-        // 卡片 1：主开关
-        {
-            id: 'procmotion:main',
-            kind: 'custom',
-            renderCustom: (c) => {
-                cardContainer(c, (inner) => {
-                    addModeSlider(
-                        inner,
-                        t('motion.procMotion'),
-                        [
-                            { value: 'off' as const, label: t('motion.modeOff') },
-                            { value: 'idle' as const, label: t('motion.modeIdle') },
-                            { value: 'autodance' as const, label: t('motion.modeAutodance') },
-                        ],
-                        st.mode,
-                        (v) => {
-                            if (modelId) {
-                                const inst = modelRegistry.get(modelId);
-                                if (inst) {
-                                    inst.procMotion = {
-                                        ...(inst.procMotion ?? DEFAULT_PROC_STATE),
-                                        mode: v,
-                                    };
-                                }
-                                // [fix:persist] per-model 直写不触发 autosave，与全局分支
-                                // （setProcMotionMode 内部 triggerAutoSave）对齐后显式落盘
-                                triggerAutoSave();
-                                regenerateProcMotion(modelId);
-                            } else {
-                                setProcMotionMode(v);
-                                regenerateProcMotion();
-                            }
-                            // [audit] 模式切换后刷新详情页「当前动作」标签（proc 名跟随 mode）
-                            getMotionMenu()?.reRender();
-                        },
-                        'lucide:wind',
-                        undefined,
-                        {
-                            bind: () => _getProcState(modelId).mode,
-                        }
-                    );
-                });
-            },
-        },
-        // 卡片 2：参数预设（当前 mode 的内置预设 + 用户自定义预设）
+        // 卡片 1：参数预设（当前 mode 的内置预设 + 用户自定义预设）
         {
             id: 'procmotion:presets',
             kind: 'custom',
@@ -189,15 +144,29 @@ export function buildProcMotionSchema(modelId?: string, mode: ProcModeKey = 'idl
                     buildPresetChipGroup(
                         inner,
                         Object.entries(getProcPresetSet(mode)).map(([id, preset]) => {
-                            const current = _getProcParams(modelId, mode);
                             const presetParams = getProcParamsPreset(mode, id)?.params;
-                            const isActive = !!presetParams &&
-                                Math.abs(current.intensity - presetParams.intensity) < 1e-6 &&
-                                Math.abs(current.speed - presetParams.speed) < 1e-6 &&
-                                current.interpOverride === presetParams.interpOverride;
                             return {
                                 label: t(preset.label),
-                                isActive: () => isActive,
+                                // [fix] isActive 动态判定：每次 UI 更新（registerControl onUpdate）
+                                // 时重算，而非闭包捕获渲染时快照；并补 boneToggles 全键对比——
+                                // 预设差异含骨骼微动开关（如紧张僵立关眨眼/表情），漏比会高亮错乱。
+                                isActive: () => {
+                                    if (!presetParams) {
+                                        return false;
+                                    }
+                                    const current = _getProcParams(modelId, mode);
+                                    const toggles = presetParams.boneToggles;
+                                    return (
+                                        Math.abs(current.intensity - presetParams.intensity) < 1e-6 &&
+                                        Math.abs(current.speed - presetParams.speed) < 1e-6 &&
+                                        current.interpOverride === presetParams.interpOverride &&
+                                        Object.keys(toggles).every(
+                                            (k) =>
+                                                current.boneToggles[k as ProcMotionBoneCategory] ===
+                                                toggles[k as ProcMotionBoneCategory]
+                                        )
+                                    );
+                                },
                                 onClick: () => {
                                     _applyProcParam(modelId, mode, preset.params);
                                     regenerateProcMotion(modelId);
@@ -246,7 +215,7 @@ export function buildProcMotionSchema(modelId?: string, mode: ProcModeKey = 'idl
                 });
             },
         },
-        // 卡片 3：强度/速度（per-mode：绑定 mode 专属参数）
+        // 卡片 2：强度/速度（per-mode：绑定 mode 专属参数）
         {
             id: 'procmotion:params',
             kind: 'custom',
@@ -380,7 +349,7 @@ export function buildProcMotionSchema(modelId?: string, mode: ProcModeKey = 'idl
                 },
             ],
         },
-        // 卡片 5：高级设置
+        // 卡片 4：高级设置
         {
             id: 'procmotion:advanced',
             kind: 'custom',
@@ -407,6 +376,23 @@ export function buildProcMotionSchema(modelId?: string, mode: ProcModeKey = 'idl
             },
         },
     ] satisfies MenuNode[];
+}
+
+/**
+ * [doc:adr-207] 程序化工具栏 level——对齐 ADR-170「详情 vs 工具」分层：
+ * 程序化专属参数（预设/强度/速度/骨骼微动/插值）收敛到工具栏，
+ * 详情页只保留当前动作信息/播放/覆盖/预设，避免参数卡与动作覆盖抢位置。
+ * 入口：详情页「当前主动作」行尾 settings-2（与 VMD 行尾进工具页同构）。
+ */
+export function buildProcToolsLevel(modelId?: string, mode: ProcModeKey = 'idle'): PopupLevel {
+    return {
+        label: t('motion.procTools'),
+        dir: '',
+        items: [],
+        renderCustom: (container) => {
+            return renderMenu(buildProcMotionSchema(modelId, mode), container);
+        },
+    };
 }
 
 // [doc:adr-207] 程序化动作库子页（加载/卸载）

@@ -218,8 +218,8 @@ describe('action-defs/motion', () => {
     });
 
     it('motion:procmotion:set-mode：设置模式并重生成', async () => {
-        await getAction('motion:procmotion:set-mode')!.execute({ mode: 'dancing' });
-        expect(scene.get('setProcMotionMode')).toHaveBeenCalledWith('dancing');
+        await getAction('motion:procmotion:set-mode')!.execute({ mode: 'autodance' });
+        expect(scene.get('setProcMotionMode')).toHaveBeenCalledWith('autodance');
         expect(scene.get('regenerateProcMotion')).toHaveBeenCalled();
     });
 
