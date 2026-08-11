@@ -60,8 +60,9 @@ import {
 import { PBRMaterial as PBRMatClass } from '@babylonjs/core/Materials/PBR/pbrMaterial';
 
 import { applyModelPreset, serializeModelPreset, ModelPresetFile } from '../menus/library';
+import * as sceneModule from '../scene/scene';
 import { getMatState, applyMatState, stopVMD } from '../scene/scene';
-import { modelRegistry, setMmdRuntime, setIsPlaying, isPlaying, mmdRuntime } from '../core/config';
+import { modelRegistry, setMmdRuntime, setIsPlaying } from '../core/config';
 import { modelPresetBeforeEach, setupDomRefs, createModel, fakePbrMeshes } from './model-preset-helpers';
 
 vi.hoisted(() => {
@@ -197,6 +198,12 @@ describe('applyModelPreset', () => {
 
         await applyModelPreset('m1', JSON.stringify(preset));
 
+        // 断言真实调用参数（spy 参数），而非仅实例字段——实例字段由 applySpies
+        // 的 mock 实现写入，等于断言 mock 自身；spy 参数断言验证 scene API 被正确调用
+        expect(sceneModule.setModelPosition).toHaveBeenCalledWith('m1', 2, 1, -3);
+        expect(sceneModule.setModelScaling).toHaveBeenCalledWith('m1', 1.5);
+        expect(sceneModule.setModelRotationY).toHaveBeenCalledWith('m1', 1.57);
+
         const inst = modelRegistry.get('m1')!;
         expect(inst.meshes[0].position.x).toBe(2);
         expect(inst.meshes[0].position.y).toBe(1);
@@ -216,6 +223,11 @@ describe('applyModelPreset', () => {
         };
 
         await applyModelPreset('m1', JSON.stringify(preset));
+
+        // spy 参数断言：验证 scene API 被正确调用（而非仅断言 mock 写入的实例字段）
+        expect(sceneModule.setModelVisibility).toHaveBeenCalledWith('m1', false);
+        expect(sceneModule.setModelOpacity).toHaveBeenCalledWith('m1', 0.5);
+        expect(sceneModule.setModelWireframe).toHaveBeenCalledWith('m1', true);
 
         const inst = modelRegistry.get('m1')!;
         expect(inst.visible).toBe(false);
@@ -859,10 +871,6 @@ describe('stopVMD', () => {
         expect(() => stopVMD('nonexistent')).not.toThrow();
     });
 });
-
-// 保留 isPlaying / mmdRuntime 的引用以满足未使用导入检查（applySpies 内部使用）
-void isPlaying;
-void mmdRuntime;
 
 // =====================================================================
 // getMatState / applyMatState（原 model-preset.material.test.ts 并入；

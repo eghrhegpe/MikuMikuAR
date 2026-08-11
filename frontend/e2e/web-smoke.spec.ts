@@ -49,19 +49,17 @@ test.describe("Web Smoke — 主应用 Web 入口 (@web)", { tag: ["@web", "@web
 
     test("能力门控：AR 相机模式选项被隐藏", async ({ page }) => {
         // [doc:adr-177] A5 验证：browser-adapter capabilities().ar === false
+        // AR 门控在动作弹窗的相机控制层（motion:camera → camera:main），
+        // 场景菜单无相机行——原定位 folder:scene:camera 是错误前提（假绿）。
         await gotoWebEntry(page);
 
-        await page.click("#btnScene");
+        await page.click("#btnMotionPopup");
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 8000 });
+        await page.getByTestId("folder:motion:camera").click();
+        await page.waitForSelector('[data-testid="camera:main"]', { timeout: 8000 });
 
-        // 进入相机控制（场景菜单含 camera:main）
-        const cameraRow = page.locator('[data-testid="folder:scene:camera"], [data-id="camera:main"]');
-        if (await cameraRow.count() > 0) {
-            await cameraRow.first().click();
-            // AR 选项不应出现在相机模式滑块（capabilities.ar=false 过滤）
-            const arOption = page.locator('text=AR');
-            await expect(arOption).toHaveCount(0);
-        }
+        // AR 选项不应出现在相机模式滑块（capabilities.ar=false 过滤）
+        await expect(page.locator('text=AR')).toHaveCount(0);
     });
 
     test("能力门控：广场窗口模式选项被隐藏", async ({ page }) => {

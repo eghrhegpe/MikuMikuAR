@@ -127,6 +127,10 @@ beforeEach(() => {
     Object.assign(envState, createMockEnvState());
     // 初始化共享上下文，使 getScene 可用
     initEnvImpl(sceneMock, pipelineMock);
+    // 清调用记录：registerEnvCallback 注册的回调在用例间共享，若不清，
+    // 首个用例（changed=null 全分支）的调用残留会让后续 changed 集用例恒过
+    // （[fix P3] changed-set 判别逻辑实际未经验证 = 假绿）
+    vi.clearAllMocks();
 });
 
 describe('env-impl: registerEnvCallback 调度回调', () => {
@@ -145,6 +149,9 @@ describe('env-impl: registerEnvCallback 调度回调', () => {
         const state = { ...createMockEnvState() };
         h.registeredCallback!(new Set(['collisionEnabled']), state);
         expect(groundCollision.applyGroundCollision).toHaveBeenCalled();
+        // 负向：changed 集不含 sky/ground/fog 键 → 对应分支不应触发（判别逻辑真实生效）
+        expect(envSky.applySky).not.toHaveBeenCalled();
+        expect(envGround.applyGround).not.toHaveBeenCalled();
     });
 
     it('mirrorEnabled 开启且当前未激活 → createMirror', () => {
@@ -152,6 +159,8 @@ describe('env-impl: registerEnvCallback 调度回调', () => {
         vi.mocked(mirrorDebug.isMirrorActive).mockReturnValue(false);
         h.registeredCallback!(new Set(['mirrorEnabled']), state);
         expect(mirrorDebug.createMirror).toHaveBeenCalled();
+        // 负向：changed 集不含 collision/fog 键 → 其余分支不应触发
+        expect(groundCollision.applyGroundCollision).not.toHaveBeenCalled();
     });
 
     it('mirrorEnabled 关闭且当前激活 → disposeMirror', () => {
@@ -159,6 +168,8 @@ describe('env-impl: registerEnvCallback 调度回调', () => {
         vi.mocked(mirrorDebug.isMirrorActive).mockReturnValue(true);
         h.registeredCallback!(new Set(['mirrorEnabled']), state);
         expect(mirrorDebug.disposeMirror).toHaveBeenCalled();
+        // 负向：changed 集不含 collision/fog 键 → 其余分支不应触发
+        expect(groundCollision.applyGroundCollision).not.toHaveBeenCalled();
     });
 });
 

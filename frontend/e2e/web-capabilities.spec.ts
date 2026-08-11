@@ -22,14 +22,13 @@ test.describe("Web Capabilities — 能力门控 UI 验证 (@web)", { tag: ["@we
     });
 
     test("能力门控: 相机模式无 AR 选项（ar === false）", async ({ page }) => {
-        await page.click("#btnScene");
+        // AR 门控在动作弹窗的相机控制层：motion:camera → camera:main
+        // （场景菜单无相机行，原实现定位 folder:scene:camera 是错误前提 → 每跑必红）
+        await page.click("#btnMotionPopup");
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 8000 });
+        await page.getByTestId("folder:motion:camera").click();
+        await page.waitForSelector('[data-testid="camera:main"]', { timeout: 8000 });
 
-        // 进入相机控制（场景菜单含 camera:main）——入口必须存在，否则 fail
-        // （原实现 count()>0 才断言，入口缺失时测试仍绿 = 假绿）
-        const cameraRow = page.locator('[data-testid="folder:scene:camera"], [data-id="camera:main"]');
-        await expect(cameraRow.first()).toBeVisible();
-        await cameraRow.first().click();
         // AR 选项不应出现在相机模式（capabilities.ar=false 过滤）
         await expect(page.locator('text=AR')).toHaveCount(0);
     });
@@ -48,7 +47,7 @@ test.describe("Web Capabilities — 能力门控 UI 验证 (@web)", { tag: ["@we
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 8000 });
 
         // 进入资源页签——入口必须存在，否则 fail（原实现 count()>0 才点击，假绿）
-        const resourceTab = page.locator('[data-testid="folder:settings:resources"], [data-id="settings:resources"]');
+        const resourceTab = page.locator('[data-testid="folder:settings:resources"]');
         await expect(resourceTab.first()).toBeVisible();
         await resourceTab.first().click();
         // watchDir=false → 无「下载监听」/「监听下载目录」文案

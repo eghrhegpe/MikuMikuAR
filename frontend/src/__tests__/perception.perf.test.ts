@@ -580,6 +580,13 @@ function softAssert(label: string, actualMs: number, budgetMs: number): void {
     }
 }
 
+// 硬断言预算（60fps 感知预算）：CI 慢机可用 PERF_BUDGET_MULTIPLIER 环境变量放宽
+// （如 2 = 预算×2），避免 2 核 runner 上偶发超时导致非回归性红。
+function hardBudget(budgetMs: number): number {
+    const m = Number(process.env.PERF_BUDGET_MULTIPLIER ?? 1);
+    return budgetMs * (Number.isFinite(m) && m > 0 ? m : 1);
+}
+
 // ══════════════════════════════════════════════════════════════
 // 测试套件
 // ══════════════════════════════════════════════════════════════
@@ -618,8 +625,9 @@ test('ADR-155 感知层性能基准', async () => {
 
     console.info('\n[a] 单模型感知层单帧耗时（1000 帧）');
     console.info(`  P50: ${formatMs(p50A)}  P95: ${formatMs(p95A)}  P99: ${formatMs(p99A)}`);
-    softAssert('单模型 P50', p50A, 0.5);
     softAssert('单模型 P95', p95A, 0.5);
+    // 硬断言：单模型感知单帧 P50 应 < 0.5ms（原软断言恒绿无法拦截性能回归）
+    expect(p50A, `单模型感知 P50 ${formatMs(p50A)} 超预算`).toBeLessThanOrEqual(hardBudget(0.5));
 
     // ═══════════════════════════════════════════════════════
     // b) N 模型帧时间曲线（1/10/20/50/100 × 100 帧）
@@ -732,8 +740,11 @@ test('ADR-155 感知层性能基准', async () => {
 
     console.info('\n[d] 100 模型感知层帧时间（100 帧）');
     console.info(`  P50: ${formatMs(p50D)}  P95: ${formatMs(p95D)}  预算: 16.67ms (60fps)`);
-    softAssert('100 模型 P50', p50D, 16.67);
     softAssert('100 模型 P95', p95D, 16.67);
+    // 硬断言：100 模型感知帧 P50 应 < 16.67ms（60fps 预算，原软断言恒绿无法拦截回归）
+    expect(p50D, `100 模型感知 P50 ${formatMs(p50D)} 超 60fps 预算`).toBeLessThanOrEqual(
+        hardBudget(16.67)
+    );
 
     console.info('\n=== ADR-155 基准完成 ===\n');
 
