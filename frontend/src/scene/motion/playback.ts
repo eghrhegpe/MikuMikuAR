@@ -57,6 +57,7 @@ export function initPlaybackObservables(
 ): PlaybackObservablesDispose {
     _manager = manager;
     _disposed = false; // 重置 dispose guard，支持多轮 init/dispose
+    _loopPending = false; // [fix] 防止旧实例残留的 _loopPending 污染新实例
 
     const tickHandle = observe(runtime.onAnimationTickObservable, () => {
         // 每帧统一刷新节拍检测器（供 LipSync + Auto Dance 共享）
@@ -108,8 +109,8 @@ export function initPlaybackObservables(
                         _loopPending = false;
                         return;
                     }
-                    // [audit:P3] runtime 为 initPlaybackObservables 闭包参数，恒非空；仅校验 loop 与 _manager
-                    if (!loop || !_manager) {
+                    // [audit:P3] runtime 为 initPlaybackObservables 闭包参数，恒非空；loop 已在上方校验，仅需检查 _manager
+                    if (!_manager) {
                         _loopPending = false;
                         return;
                     }

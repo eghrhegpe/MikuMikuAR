@@ -1690,8 +1690,8 @@
 | `unpinPerception()` | `scene/motion/perception:648` | unpin 模型感知（非焦点模型同步 deactivate） |
 | `PlaybackObservablesDispose()` | `scene/motion/playback:47` | — |
 | `initPlaybackObservables()` | `scene/motion/playback:51` | — |
-| `seekFromEvent()` | `scene/motion/playback:189` | — |
-| `updatePlaybackUI()` | `scene/motion/playback:167` | — |
+| `seekFromEvent()` | `scene/motion/playback:190` | — |
+| `updatePlaybackUI()` | `scene/motion/playback:168` | — |
 | `ProcMotionController()` | `scene/motion/proc-motion-bridge:40` | — |
 | `activateGazeTracking()` | `scene/motion/proc-motion-bridge:121` | — |
 | `createProcBeatDetector()` | `scene/motion/proc-motion-bridge:60` | — |

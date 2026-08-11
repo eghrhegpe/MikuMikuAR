@@ -2,120 +2,42 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { envState } from '../core/config';
 import type { EnvState } from '../core/config';
 import { deriveDefaultEnvState } from '../core/env-state-defaults';
+import { ENV_STATE_SCHEMA, getEnvKeys } from '../core/env-state-schema';
 
 // 真实默认值（单一事实源：ENV_STATE_SCHEMA 派生，替代原文件内手写字面量自证）
 const defaultEnv: EnvState = deriveDefaultEnvState();
 
-describe('EnvState defaults', () => {
-    it('has all required fields', () => {
-        const keys: (keyof EnvState)[] = [
-            'skyMode',
-            'skyColorTop',
-            'skyColorMid',
-            'skyColorBot',
-            'skyTexture',
-            'skyRotationY',
-            'skyRotationSpeed',
-            'skyBrightness',
-            'starsEnabled',
-            'iblIntensity',
-            'groundVisibleEnabled',
-            'groundType',
-            'groundStyle',
-            'groundColor',
-            'groundAlpha',
-            'groundTexture',
-            'groundTextureEnabled',
-            'groundTextureScale',
-            'groundTextureRotation',
-            'groundGridSize',
-            'groundLineColor',
-            'groundTerrainHeight',
-            'groundTerrainScale',
-            'groundTerrainSeed',
-            'groundTerrainOctaves',
-            'groundPitch',
-            'groundRoll',
-            'groundScrollSpeedX',
-            'groundScrollSpeedZ',
-            'groundPattern',
-            'groundReflectionBlend',
-            'groundReflectionQuality',
-            'groundNormalTexture',
-            'groundNormalStrength',
-            'groundElevationColoringEnabled',
-            'groundEmissiveColor',
-            'groundEmissiveStrength',
-            'groundEmissiveReflectMix',
-            'groundEmissiveTexture',
-            'groundPbrEnabled',
-            'groundProceduralTexture',
-            'groundProceduralSeed',
-            'groundProceduralScale',
-            'groundRoughness',
-            'groundMetallic',
-            'groundReflectionBlur',
-            'groundReflectionDistort',
-            'windEnabled',
-            'windDirection',
-            'windSpeed',
-            'particleEnabled',
-            'particleType',
-            'groundLevel',
-            'groundSize',
-            'groundEdgeFade',
-            'waterEnabled',
-            'waterLevel',
-            'waterFlipEnabled',
-            'waterColor',
-            'waterTransparency',
-            'waterWaveHeight',
-            'waterAnimSpeed',
-            'underwaterChromaticAmount',
-            'underwaterToneIntensity',
-            'underwaterTintStrength',
-            'fresnelBias',
-            'fresnelPower',
-            'diffuseStrength',
-            'ambientStrength',
-            'rippleNormalStrength',
-            'rippleGlintStrength',
-            'causticColor1',
-            'causticColor2',
-            'causticScrollX',
-            'causticScrollY',
-            'fresnelAlphaInfluence',
-            'foamEnabled',
-            'foamThreshold',
-            'foamIntensity',
-            'foamOpacity',
-            'foamTransitionRange',
-            'foamColor',
-            'foamNoiseStrength',
-            'waterFogColor',
-            'waterFogStart',
-            'waterFogEnd',
-            'waterFogOpacityInfluence',
-            'qualityProfile',
-            'cloudEnabled',
-            'cloudCover',
-            'cloudScale',
-            'cloudHeight',
-            'cloudThickness',
-            'cloudGap',
-            'cloudVisibility',
-            'fogEnabled',
-            'fogColor',
-            'fogDensity',
-            'fogMode',
-            'fogStart',
-            'fogEnd',
-        ];
-        for (const k of keys) {
-            expect(k in defaultEnv).toBe(true);
+// ====================================================================
+// Schema 完整性：默认值必须覆盖 schema 全部 key
+// ====================================================================
+
+describe('EnvState schema completeness', () => {
+    it('deriveDefaultEnvState covers every schema key', () => {
+        const schemaKeys = Object.keys(ENV_STATE_SCHEMA) as (keyof EnvState)[];
+        for (const k of schemaKeys) {
+            expect(k in defaultEnv, `missing key: ${String(k)}`).toBe(true);
         }
     });
 
+    it('deriveDefaultEnvState produces no extra keys outside schema', () => {
+        const schemaKeys = new Set(Object.keys(ENV_STATE_SCHEMA));
+        for (const k of Object.keys(defaultEnv)) {
+            expect(schemaKeys.has(k as keyof EnvState), `extra key: ${k}`).toBe(true);
+        }
+    });
+
+    it('schema key count matches EnvState key count', () => {
+        const schemaCount = Object.keys(ENV_STATE_SCHEMA).length;
+        const envCount = Object.keys(defaultEnv).length;
+        expect(envCount).toBe(schemaCount);
+    });
+});
+
+// ====================================================================
+// 默认值类型与范围
+// ====================================================================
+
+describe('EnvState defaults', () => {
     it("skyMode defaults to 'color'", () => {
         expect(defaultEnv.skyMode).toBe('color');
     });
@@ -130,7 +52,7 @@ describe('EnvState defaults', () => {
         }
     });
 
-    it('wind direction is normalized', () => {
+    it('wind direction is a unit vector', () => {
         const d = defaultEnv.windDirection;
         const len = Math.sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
         expect(len).toBeCloseTo(1, 5);
@@ -140,13 +62,60 @@ describe('EnvState defaults', () => {
         expect(defaultEnv.cloudCover).toBeGreaterThanOrEqual(0);
         expect(defaultEnv.cloudCover).toBeLessThanOrEqual(1);
     });
+
+    it('iblIntensity default is 2 (not 1)', () => {
+        // 回归保护：旧测试硬编码 iblIntensity===1 是自证错误，schema 实际默认 2
+        expect(defaultEnv.iblIntensity).toBe(2);
+    });
 });
 
-// 默认值 merge 语义（不调用真实 setEnvState）：env-bridge 的 setEnvState 经
-// import { scene } from '../../scene' + renderer/lighting 拉入模块级 new Scene()
-// 重链（env-water 注释已明示同款风险），单测环境收集期即崩。此处验证的是
-// EnvState 默认值派生（deriveDefaultEnvState 单一事实源）+ partial merge 语义，
-// 真实 setEnvState 的写入链路由 env-water/env-bridge 契约测试覆盖。
+// ====================================================================
+// tuple3 字段克隆隔离（deriveDefaultEnvState 的 slice 策略）
+// ====================================================================
+
+describe('tuple3 clone isolation', () => {
+    it('two deriveDefaultEnvState calls produce independent tuple3 references', () => {
+        const a = deriveDefaultEnvState();
+        const b = deriveDefaultEnvState();
+        // 引用不同（slice 创建新数组）
+        expect(a.skyColorTop).not.toBe(b.skyColorTop);
+        expect(a.skyColorMid).not.toBe(b.skyColorMid);
+        expect(a.skyColorBot).not.toBe(b.skyColorBot);
+        // 值相等
+        expect(a.skyColorTop).toEqual(b.skyColorTop);
+    });
+
+    it('mutating one derive result tuple3 does not affect another', () => {
+        const a = deriveDefaultEnvState();
+        const b = deriveDefaultEnvState();
+        const originalB = [...b.skyColorTop];
+        (a.skyColorTop as number[])[0] = 999;
+        expect(b.skyColorTop).toEqual(originalB);
+    });
+
+    it('all tuple3 fields are cloned (not shared with schema defaults)', () => {
+        // 找出 schema 中所有 tuple3 字段
+        const tuple3Keys: string[] = [];
+        for (const [key, def] of Object.entries(ENV_STATE_SCHEMA)) {
+            if (def.type === 'tuple3') tuple3Keys.push(key);
+        }
+        expect(tuple3Keys.length).toBeGreaterThan(0);
+
+        const a = deriveDefaultEnvState();
+        const b = deriveDefaultEnvState();
+        for (const k of tuple3Keys) {
+            const valA = (a as Record<string, unknown>)[k];
+            const valB = (b as Record<string, unknown>)[k];
+            expect(valA).not.toBe(valB, `tuple3 field "${k}" shares reference`);
+            expect(valA).toEqual(valB);
+        }
+    });
+});
+
+// ====================================================================
+// partial merge 语义
+// ====================================================================
+
 describe('EnvState 默认值一致性（partial merge 语义）', () => {
     it('partial merge preserves other fields', () => {
         const state = { ...defaultEnv };
@@ -157,14 +126,62 @@ describe('EnvState 默认值一致性（partial merge 语义）', () => {
         expect(updated.skyMode).toBe('procedural');
         expect(updated.skyBrightness).toBe(1.5);
         expect(updated.groundVisibleEnabled).toBe(defaultEnv.groundVisibleEnabled);
-        // 对比真实默认值（schema 派生），不硬编码——原断言 iblIntensity===1 是
-        // 自证字面量错误（真实 schema 默认 2），改接真实默认值后暴露
         expect(updated.iblIntensity).toBe(defaultEnv.iblIntensity);
     });
 });
 
 // ====================================================================
-// EnvState 颜色字段隔离（env-state-integrity 合并）
+// getEnvKeys — dispatch 分组派生
+// ====================================================================
+
+describe('getEnvKeys', () => {
+    it('returns keys for known group "sky"', () => {
+        const keys = getEnvKeys('sky');
+        expect(keys.length).toBeGreaterThan(0);
+        expect(keys).toContain('skyMode');
+        expect(keys).toContain('skyColorTop');
+        expect(keys).toContain('iblIntensity');
+    });
+
+    it('returns keys for known group "water"', () => {
+        const keys = getEnvKeys('water');
+        expect(keys).toContain('waterEnabled');
+        expect(keys).toContain('waterLevel');
+        // 跨组字段：windEnabled group=['particle','water']
+        expect(keys).toContain('windEnabled');
+        // 跨组字段：groundSize group=['ground','water']
+        expect(keys).toContain('groundSize');
+    });
+
+    it('returns keys for known group "ground"', () => {
+        const keys = getEnvKeys('ground');
+        expect(keys).toContain('groundVisibleEnabled');
+        expect(keys).toContain('groundColor');
+    });
+
+    it('multi-group fields appear in all their groups', () => {
+        // windEnabled: group=['particle','water']
+        expect(getEnvKeys('particle')).toContain('windEnabled');
+        expect(getEnvKeys('water')).toContain('windEnabled');
+    });
+
+    it('fields without group are not in any dispatch list', () => {
+        // lightingPresetName has no group
+        const allGroups = ['sky', 'ground', 'fog', 'water', 'particle', 'cloud', 'reflection', 'mirror', 'collision'] as const;
+        for (const g of allGroups) {
+            expect(getEnvKeys(g)).not.toContain('lightingPresetName');
+        }
+    });
+
+    it('returns cached reference on second call', () => {
+        const a = getEnvKeys('sky');
+        const b = getEnvKeys('sky');
+        expect(a).toBe(b); // 同一引用（缓存命中）
+    });
+});
+
+// ====================================================================
+// envState 颜色字段隔离（env-state-integrity 合并）
 // ====================================================================
 
 function setColorField<K extends keyof typeof envState>(key: K, value: (typeof envState)[K]) {
@@ -238,7 +255,9 @@ describe('envState — color field isolation', () => {
         expect(envState.skyColorTop).toEqual([0.3, 0.5, 0.8]);
     });
 
-    it('never produces black from color manipulation', () => {
+    it('sequential writes keep all RGB channels positive', () => {
+        // 原名 "never produces black from color manipulation"——
+        // 实际验证的是 Object.assign 整体替换后各通道值 > 0，不涉及颜色计算
         for (let i = 0; i < 10; i++) {
             setColorField('skyColorTop', [0.3 + i * 0.05, 0.5, 0.8]);
             setColorField('skyColorBot', [0.2, 0.2 + i * 0.05, 0.25]);

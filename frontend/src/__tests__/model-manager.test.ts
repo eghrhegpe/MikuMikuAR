@@ -1074,3 +1074,274 @@ describe('ModelManager VMD / morph', function () {
         setFocusedModelId(null);
     });
 });
+
+// ======== rotation（全自由度 ADR-126） ========
+describe('ModelManager rotation', function () {
+    let mgr, scene, onChange, mesh;
+
+    beforeEach(function () {
+        setFocusedModelId(null);
+        onChange = vi.fn();
+        scene = makeObservableScene();
+        mgr = new ModelManager(scene, onChange, vi.fn());
+        mesh = createTestMesh('root');
+        mgr.register(makeModelInstance('m1', { meshes: [mesh] }));
+    });
+
+    it('setRotation sets all 3 axes and syncs mesh', function () {
+        const { Vector3 } = require('@babylonjs/core/Maths/math.vector');
+        const rot = new Vector3(0.1, 0.2, 0.3);
+        mgr.setRotation('m1', rot);
+
+        const inst = mgr.get('m1');
+        expect(inst.rotation[0]).toBeCloseTo(0.1);
+        expect(inst.rotation[1]).toBeCloseTo(0.2);
+        expect(inst.rotation[2]).toBeCloseTo(0.3);
+        expect(inst.rotationY).toBeCloseTo(0.2);
+        expect(mesh.rotation.x).toBeCloseTo(0.1);
+        expect(mesh.rotation.y).toBeCloseTo(0.2);
+        expect(mesh.rotation.z).toBeCloseTo(0.3);
+        expect(onChange).toHaveBeenCalled();
+    });
+
+    it('getRotation returns Vector3 of current rotation', function () {
+        const inst = mgr.get('m1');
+        inst.rotation = [0.5, 1.0, 1.5];
+        const result = mgr.getRotation('m1');
+        expect(result.x).toBeCloseTo(0.5);
+        expect(result.y).toBeCloseTo(1.0);
+        expect(result.z).toBeCloseTo(1.5);
+    });
+
+    it('getRotation returns null for unknown id', function () {
+        expect(mgr.getRotation('nope')).toBeNull();
+    });
+
+    it('setRotation is no-op for unknown id', function () {
+        expect(function () {
+            const { Vector3 } = require('@babylonjs/core/Maths/math.vector');
+            mgr.setRotation('nope', new Vector3(1, 2, 3));
+        }).not.toThrow();
+    });
+});
+
+// ======== orbit / positionMode（ADR-049） ========
+describe('ModelManager orbit + positionMode', function () {
+    let mgr, scene, onChange, mesh;
+
+    beforeEach(function () {
+        setFocusedModelId(null);
+        onChange = vi.fn();
+        scene = makeObservableScene();
+        mgr = new ModelManager(scene, onChange, vi.fn());
+        mesh = createTestMesh('root');
+        mgr.register(makeModelInstance('m1', { meshes: [mesh] }));
+    });
+
+    it('setOrbit stores orbit params and positions mesh', function () {
+        mgr.setOrbit('m1', 0, 0, 5);
+        const inst = mgr.get('m1');
+        expect(inst.positionMode).toBe('orbit');
+        expect(inst.orbitAzimuth).toBe(0);
+        expect(inst.orbitElevation).toBe(0);
+        expect(inst.orbitDistance).toBe(5);
+        expect(mesh.position.x).toBeCloseTo(0, 1);
+        expect(mesh.position.y).toBeCloseTo(0, 1);
+        expect(mesh.position.z).toBeCloseTo(5, 1);
+        expect(onChange).toHaveBeenCalled();
+    });
+
+    it('setOrbit clamps invalid elevation and distance', function () {
+        mgr.setOrbit('m1', NaN, 100, -1);
+        const inst = mgr.get('m1');
+        expect(inst.orbitAzimuth).toBe(0);
+        expect(inst.orbitElevation).toBe(90);
+        expect(inst.orbitDistance).toBeGreaterThan(0);
+    });
+
+    it('getOrbit returns stored orbit params when in orbit mode', function () {
+        mgr.setOrbit('m1', 45, 30, 10);
+        const orbit = mgr.getOrbit('m1');
+        expect(orbit.azimuth).toBe(45);
+        expect(orbit.elevation).toBe(30);
+        expect(orbit.distance).toBe(10);
+    });
+
+    it('getOrbit computes from cartesian when not in orbit mode', function () {
+        mesh.position.x = 3;
+        mesh.position.y = 4;
+        mesh.position.z = 0;
+        const orbit = mgr.getOrbit('m1');
+        expect(orbit.distance).toBeCloseTo(5, 1);
+        expect(orbit.azimuth).toBeCloseTo(Math.atan2(3, 0) * 180 / Math.PI, 0);
+    });
+
+    it('getOrbit returns null for unknown id', function () {
+        expect(mgr.getOrbit('nope')).toBeNull();
+    });
+
+    it('setPositionMode switches to orbit and back', function () {
+        mesh.position.x = 5;
+        mesh.position.y = 0;
+        mesh.position.z = 0;
+        mgr.setPositionMode('m1', 'orbit');
+        expect(mgr.get('m1').positionMode).toBe('orbit');
+        expect(mgr.get('m1').orbitDistance).toBeCloseTo(5, 1);
+
+        mgr.setPositionMode('m1', 'cartesian');
+        expect(mgr.get('m1').positionMode).toBe('cartesian');
+        expect(onChange).toHaveBeenCalled();
+    });
+
+    it('getPositionMode returns cartesian by default', function () {
+        expect(mgr.getPositionMode('m1')).toBe('cartesian');
+    });
+
+    it('getPositionMode returns cartesian for unknown id', function () {
+        expect(mgr.getPositionMode('nope')).toBe('cartesian');
+    });
+
+    it('setOrbit is no-op for unknown id', function () {
+        expect(function () {
+            mgr.setOrbit('nope', 0, 0, 5);
+        }).not.toThrow();
+    });
+
+    it('setPositionMode is no-op for unknown id', function () {
+        expect(function () {
+            mgr.setPositionMode('nope', 'orbit');
+        }).not.toThrow();
+    });
+});
+
+// ======== formation ========
+describe('ModelManager formation', function () {
+    let mgr, scene, onChange;
+
+    beforeEach(function () {
+        setFocusedModelId(null);
+        onChange = vi.fn();
+        scene = makeObservableScene();
+        mgr = new ModelManager(scene, onChange, vi.fn());
+    });
+
+    it('setFormation positions models in line formation', function () {
+        const meshA = createTestMesh('a');
+        const meshB = createTestMesh('b');
+        const meshC = createTestMesh('c');
+        mgr.register(makeModelInstance('a', { meshes: [meshA] }));
+        mgr.register(makeModelInstance('b', { meshes: [meshB] }));
+        mgr.register(makeModelInstance('c', { meshes: [meshC] }));
+
+        mgr.setFormation('line', 3);
+
+        expect(meshA.position.x).toBeCloseTo(-3, 1);
+        expect(meshB.position.x).toBeCloseTo(0, 1);
+        expect(meshC.position.x).toBeCloseTo(3, 1);
+        expect(onChange).toHaveBeenCalled();
+    });
+
+    it('getActiveFormation returns the active formation type', function () {
+        expect(mgr.getActiveFormation()).toBeNull();
+        mgr.setFormation('circle', 5);
+        expect(mgr.getActiveFormation()).toBe('circle');
+    });
+
+    it('getActiveFormationSpacing returns the spacing', function () {
+        expect(mgr.getActiveFormationSpacing()).toBe(3);
+        mgr.setFormation('line', 7);
+        expect(mgr.getActiveFormationSpacing()).toBe(7);
+    });
+
+    it('arrange clears active formation', function () {
+        mgr.setFormation('line', 3);
+        expect(mgr.getActiveFormation()).toBe('line');
+        mgr.arrange();
+        expect(mgr.getActiveFormation()).toBeNull();
+    });
+
+    it('setFormation with no models does not throw', function () {
+        expect(function () {
+            mgr.setFormation('circle', 3);
+        }).not.toThrow();
+    });
+});
+
+// ======== 边界 / 输入校验 ========
+describe('ModelManager input validation', function () {
+    let mgr, scene, onChange;
+
+    beforeEach(function () {
+        setFocusedModelId(null);
+        onChange = vi.fn();
+        scene = makeObservableScene();
+        mgr = new ModelManager(scene, onChange, vi.fn());
+        const mesh = createTestMesh('root');
+        mgr.register(makeModelInstance('m1', { meshes: [mesh] }));
+    });
+
+    it('setScaling with NaN is no-op (does not change scaling or call onChange)', function () {
+        expect(function () {
+            mgr.setScaling('m1', NaN);
+        }).not.toThrow();
+        expect(mgr.get('m1').scaling).toBe(1);
+        expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('setScaling with Infinity is no-op', function () {
+        expect(function () {
+            mgr.setScaling('m1', Infinity);
+        }).not.toThrow();
+        expect(mgr.get('m1').scaling).toBe(1);
+        expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('setPosition with NaN coordinates is no-op', function () {
+        expect(function () {
+            mgr.setPosition('m1', NaN, 0, 0);
+        }).not.toThrow();
+        expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('focus with frameCamera=false sets focus but skips autoFrame', function () {
+        const autoFrame = vi.fn();
+        const mgr2 = new ModelManager(scene, onChange, autoFrame);
+        const inst = makeModelInstance('m1');
+        mgr2.register(inst);
+
+        mgr2.focus('m1', false);
+
+        expect(mgr2.focusedModelId).toBe('m1');
+        expect(autoFrame).not.toHaveBeenCalled();
+        expect(onChange).toHaveBeenCalled();
+    });
+});
+
+// ======== dispose 清理骨骼覆盖 ========
+describe('ModelManager dispose bone overlay cleanup', function () {
+    let mgr, scene;
+
+    beforeEach(function () {
+        setFocusedModelId(null);
+        scene = makeObservableScene();
+        mgr = new ModelManager(scene, vi.fn(), vi.fn());
+    });
+
+    it('dispose cleans up bone overlay resources', function () {
+        const bones = [makeBone('center', []), makeBone('waist', [])];
+        bones[1].parentBone = bones[0];
+        const mmdModel = makeMmdModel(bones, []);
+        mgr.register(makeModelInstance('m1', { mmdModel: mmdModel }));
+        mgr.setBoneLinesVis('m1', true);
+
+        const entry = mgr._boneOverlayMap.get('m1');
+        expect(entry).toBeDefined();
+        expect(entry.joints.length).toBeGreaterThan(0);
+        const lineSystemDispose = entry.lineSystem.dispose; // vi.fn() from CreateLineSystem mock
+
+        mgr.dispose();
+
+        expect(lineSystemDispose).toHaveBeenCalled();
+        expect(mgr._boneOverlayMap.size).toBe(0);
+    });
+});

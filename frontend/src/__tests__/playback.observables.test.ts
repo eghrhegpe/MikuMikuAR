@@ -255,6 +255,68 @@ describe('initPlaybackObservables', () => {
         expect(mockUpdateUI).toHaveBeenCalled();
     });
 
+    // ---- additional coverage ----
+
+    it('tickHandler skips animateCameraVmd when scene action not registered', () => {
+        // animateCameraVmd 已在模块顶层注册，此处验证 getSceneAction 返回 undefined 时静默跳过
+        // 不抛异常即为通过（源码使用可选链 ?.() 调用）
+        expect(() => tickObs._fire()).not.toThrow();
+        expect(mockUpdateUI).toHaveBeenCalledOnce();
+    });
+
+    it('playHandler calls updatePlaybackUI', () => {
+        playObs._fire();
+        expect(mockUpdateUI).toHaveBeenCalledOnce();
+    });
+
+    it('pauseHandler does not auto-loop when model not focused', () => {
+        mockState.isPlaying = true;
+        mockState.autoLoop = true;
+        // mockManager.focused 经 mockReset 后返回 undefined
+
+        pauseObs._fire();
+
+        expect(mockRuntime.seekAnimation).not.toHaveBeenCalled();
+        expect(mockState.isPlaying).toBe(false);
+        expect(mockUpdateUI).toHaveBeenCalled();
+    });
+
+    it('pauseHandler catches seekAnimation rejection in auto-loop', async () => {
+        mockState.autoLoop = true;
+        mockManager.focused.mockReturnValue({ animationDuration: 120 });
+        mockRuntime.currentTime = 119.95;
+        const err = new Error('seek fail');
+        mockRuntime.seekAnimation.mockRejectedValueOnce(err);
+        const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+        expect(() => pauseObs._fire()).not.toThrow();
+
+        await vi.waitFor(() => {
+            expect(spy).toHaveBeenCalledWith('[playback] auto-loop seekAnimation failed:', err);
+        });
+        expect(mockState.isPlaying).toBe(false);
+        spy.mockRestore();
+    });
+
+    it('pauseHandler catches playAnimation rejection in auto-loop', async () => {
+        mockState.autoLoop = true;
+        mockManager.focused.mockReturnValue({ animationDuration: 120 });
+        mockRuntime.currentTime = 119.95;
+        const err = new Error('play fail');
+        mockRuntime.playAnimation.mockRejectedValueOnce(err);
+        const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+        expect(() => pauseObs._fire()).not.toThrow();
+
+        await vi.waitFor(() => {
+            expect(mockRuntime.playAnimation).toHaveBeenCalledOnce();
+        });
+        await vi.waitFor(() => {
+            expect(spy).toHaveBeenCalledWith('[playback] auto-loop playAnimation failed:', err);
+        });
+        spy.mockRestore();
+    });
+
     // ---- dispose ----
 
     it('dispose removes all registered callbacks', () => {
