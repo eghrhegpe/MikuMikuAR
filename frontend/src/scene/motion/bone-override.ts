@@ -645,19 +645,18 @@ const _IK_TARGET_CANDIDATES = [BONE_LEG_IK_L_CANDIDATES, BONE_LEG_IK_R_CANDIDATE
  * [ADR-202 §六] WASM 模式 POS slot IK 重解。
  *
  * 触发条件：isWasm && IK 目标骨有启用的 slot.pos。
- * 对每个有位置覆盖的 IK 目标骨，读其 ikSolverIndex，调 _wasmIkResolver 重解原生 IK 链。
- * mmdModelSolveIk 内部会读 IK 目标骨的 worldMatrix（已含 slot.pos 偏移）作为目标，
- * 解出髋/膝/踝旋转并回写全链 worldMatrix。
+ * 优先使用 babylon-mmd 原生 IkSolver.solve()（可靠）；
+ * 仅当原生 IkSolver 不存在时回退到 WASM 导出 mmdModelSolveIk（可信度存疑）。
+ * _applyWasmOverride 已先把 slot.pos 偏移写入 worldMatrix，
+ * IkSolver.solve() 读 worldMatrix 作为 IK 目标，解出髋/膝/踝旋转并回写全链。
  */
 function _solvePosSlotIkWasm(
     boneMap: Map<string, IMmdRuntimeBone>,
     overrideMap: Map<string, _OverrideSlot>,
     modelId: string
 ): void {
-    if (!_wasmIkResolver) {
-        return;
-    }
-
+    const slotCount = overrideMap.size;
+    logWarn('bone-override', `[IK-ENTRY] ${modelId} _solvePosSlotIkWasm called, slotCount=${slotCount}`);
     const boneNames = Array.from(boneMap.keys());
     for (const cands of _IK_TARGET_CANDIDATES) {
         const ikBoneName = matchBone(boneNames, cands as string[]);
@@ -665,17 +664,43 @@ function _solvePosSlotIkWasm(
             continue;
         }
         const slot = overrideMap.get(ikBoneName);
-        // 仅在 IK 目标骨有启用的位置覆盖时重解（纯旋转覆盖不触发）
         if (!slot?.enabled || !slot.pos) {
             continue;
         }
         const ikBone = boneMap.get(ikBoneName);
         if (!ikBone) {
+            logWarn('bone-override', `[IK-DEBUG] ${modelId} boneMap 中找不到 "${ikBoneName}"`);
             continue;
         }
+
+        // 优先使用 babylon-mmd 原生 IkSolver.solve()（ADR-202 WASM 导出不可靠）
+        const solver = (ikBone as MmdRuntimeBoneExtended).ikSolver;
+        if (solver) {
+            solver.solve(false);
+            const buf = (ikBone as MmdRuntimeBoneExtended).worldMatrix;
+            const afterY = buf ? buf[13] : 'no-buf';
+            logWarn(
+                'bone-override',
+                `[IK-SOLVE] ${modelId} bone="${ikBoneName}" via ikSolver.solve() worldY-after=${afterY}`
+            );
+            continue;
+        }
+
+        // 回退：WASM 导出（仅当原生 IkSolver 不存在时）
         const ikSolverIndex = (ikBone as { ikSolverIndex?: number }).ikSolverIndex;
-        if (typeof ikSolverIndex === 'number' && ikSolverIndex >= 0) {
+        if (typeof ikSolverIndex === 'number' && ikSolverIndex >= 0 && _wasmIkResolver) {
+            const buf = (ikBone as MmdRuntimeBoneExtended).worldMatrix;
+            const beforeY = buf ? buf[13] : 'no-buf';
+            logWarn(
+                'bone-override',
+                `[IK-SOLVE-FALLBACK] ${modelId} bone="${ikBoneName}" ikSolverIndex=${ikSolverIndex} worldY-before=${beforeY}`
+            );
             _wasmIkResolver(modelId, ikSolverIndex, false);
+            const afterY = buf ? buf[13] : 'no-buf';
+            logWarn(
+                'bone-override',
+                `[IK-SOLVE-FALLBACK] ${modelId} bone="${ikBoneName}" worldY-after=${afterY}`
+            );
         }
     }
 }
@@ -813,6 +838,13 @@ function _applyWasmOverride(slot: _OverrideSlot, rb: IMmdRuntimeBone): void {
     const oldQ = _q();
     Quaternion.FromRotationMatrixToRef(rotMat, oldQ);
     const { translation, rotation } = computeOverride(oldT, oldQ, slot);
+    // [DEBUG] 诊断：确认 POS 偏移是否写入
+    if (slot.pos && slot.pos.length() > 0.01) {
+        logWarn(
+            'bone-override',
+            `[OVERRIDE-APPLY] bone="${rb.name}" oldY=${oldT.y.toFixed(3)} posY=${slot.pos.y.toFixed(3)} newY=${translation.y.toFixed(3)}`
+        );
+    }
     const newMat = _m();
     Matrix.ComposeToRef(_ONE, rotation, translation, newMat);
     newMat.copyToArray(buf, 0);
