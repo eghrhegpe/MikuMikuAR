@@ -336,7 +336,6 @@ function loadModelNormal(m: LibraryModel, isStage: boolean): void {
     };
 
     if (m.container === 'zip') {
-        closeAllOverlays();
         feedbackStatus('library.extractingZip', getBaseName(m.file_path));
         librarySessionStore.setExtracting(m.file_path);
         ExtractZip(m.file_path, m.zip_inner)
@@ -376,7 +375,6 @@ function loadModelNormal(m: LibraryModel, isStage: boolean): void {
             });
         return;
     }
-    closeAllOverlays();
     if (m.format === 'pmx') {
         loadWithFallback(
             loadManager.load({ kind: isStage ? 'stage' : 'actor', path: m.file_path }, signal)
