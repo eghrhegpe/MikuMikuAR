@@ -138,8 +138,8 @@ describe('setModelRegistry / modelRegistry', () => {
     });
 
     it('setter replaces the registry', async () => {
-        const fakeInstance = { id: 'm1' } as unknown as import('./types').ModelInstance;
-        const newMap = new Map<string, import('./types').ModelInstance>([['m1', fakeInstance]]);
+        const fakeInstance = { id: 'm1' } as unknown as import('../core/types').ModelInstance;
+        const newMap = new Map<string, import('../core/types').ModelInstance>([['m1', fakeInstance]]);
         setModelRegistry(newMap);
         const mod = await import('../core/scene-state');
         expect(mod.modelRegistry).toBe(newMap);
@@ -147,7 +147,7 @@ describe('setModelRegistry / modelRegistry', () => {
     });
 
     it('setter accepts empty Map to clear', async () => {
-        const populated = new Map<string, import('./types').ModelInstance>([['x', {} as any]]);
+        const populated = new Map<string, import('../core/types').ModelInstance>([['x', {} as any]]);
         setModelRegistry(populated);
         setModelRegistry(new Map());
         const mod = await import('../core/scene-state');
