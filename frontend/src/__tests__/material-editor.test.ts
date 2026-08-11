@@ -145,13 +145,21 @@ function cleanupModels(): void {
     }
 }
 
+// [audit:round5] 统一清理样板：_catState/_matState/_matEnabled 三连 clear + cleanupModels。
+// 原 12 处 describe 各自内联重复（含 TEST_ID delete 冗余——cleanupModels 已覆盖
+// _applyAll_test），抽为单 helper 消除拷贝粘贴漂移。
+function resetMatEditorState(): void {
+    _catState.clear();
+    _matState.clear();
+    _matEnabled.clear();
+    cleanupModels();
+}
+
 describe('_applyAll ordering: per-material overrides category on re-apply', () => {
     const TEST_ID = '_applyAll_test';
 
     beforeEach(() => {
-        _catState.clear();
-        _matState.clear();
-        _matEnabled.clear();
+        resetMatEditorState();
         const old = modelRegistry.get(TEST_ID);
         if (old) {
             modelRegistry.delete(TEST_ID);
@@ -368,9 +376,7 @@ describe('P2 emissiveMul parameter', () => {
     const TEST_ID = 'emissive_test';
 
     beforeEach(() => {
-        _catState.clear();
-        _matState.clear();
-        _matEnabled.clear();
+        resetMatEditorState();
         const old = modelRegistry.get(TEST_ID);
         if (old) {
             modelRegistry.delete(TEST_ID);
@@ -427,9 +433,7 @@ describe('P1 texture level parameters', () => {
     const TEST_ID = 'texture_test';
 
     beforeEach(() => {
-        _catState.clear();
-        _matState.clear();
-        _matEnabled.clear();
+        resetMatEditorState();
         const old = modelRegistry.get(TEST_ID);
         if (old) {
             modelRegistry.delete(TEST_ID);
@@ -515,9 +519,7 @@ describe('resetMatCatParams restores P1+P2 values', () => {
     const TEST_ID = 'reset_test';
 
     beforeEach(() => {
-        _catState.clear();
-        _matState.clear();
-        _matEnabled.clear();
+        resetMatEditorState();
         const old = modelRegistry.get(TEST_ID);
         if (old) {
             modelRegistry.delete(TEST_ID);
@@ -558,9 +560,7 @@ describe('resetMatCatParams restores P1+P2 values', () => {
 
 describe('per-material parameter state management', () => {
     beforeEach(() => {
-        _catState.clear();
-        _matState.clear();
-        _matEnabled.clear();
+        resetMatEditorState();
         regModel('model1', 3);
         regModel('model2', 2);
     });
@@ -634,9 +634,7 @@ describe('per-material parameter state management', () => {
 
     describe('resetSingleMatParams', () => {
         beforeEach(() => {
-            _catState.clear();
-            _matState.clear();
-            _matEnabled.clear();
+            resetMatEditorState();
             regModel('model1', 3);
             regModel('model2', 2);
         });
@@ -678,9 +676,7 @@ describe('per-material parameter state management', () => {
 
     describe('model removal cleans up state', () => {
         beforeEach(() => {
-            _catState.clear();
-            _matState.clear();
-            _matEnabled.clear();
+            resetMatEditorState();
             regModel('model_rm', 2);
         });
 
@@ -709,9 +705,7 @@ describe('per-material parameter state management', () => {
 
 describe('category-level parameter state', () => {
     beforeEach(() => {
-        _catState.clear();
-        _matState.clear();
-        _matEnabled.clear();
+        resetMatEditorState();
         regModel('model_c', 2);
     });
     afterEach(() => {
@@ -736,9 +730,7 @@ describe('category-level parameter state', () => {
 
 describe('applyMatState MaterialCategory cast', () => {
     beforeEach(() => {
-        _catState.clear();
-        _matState.clear();
-        _matEnabled.clear();
+        resetMatEditorState();
         regModel('model_as', 5);
     });
     afterEach(() => {
@@ -799,9 +791,7 @@ describe('applyMatState MaterialCategory cast', () => {
 
 describe('alphaMul 逐材质透明度公式（ADR-221）', () => {
     beforeEach(() => {
-        _catState.clear();
-        _matState.clear();
-        _matEnabled.clear();
+        resetMatEditorState();
         regModel('model_alpha', 1);
     });
     afterEach(() => {
@@ -882,9 +872,7 @@ describe('alphaMul 逐材质透明度公式（ADR-221）', () => {
 
 describe('alphaMul 序列化（ADR-221 §5 用例 8/9）', () => {
     beforeEach(() => {
-        _catState.clear();
-        _matState.clear();
-        _matEnabled.clear();
+        resetMatEditorState();
         regModel('model_as2', 5);
     });
     afterEach(() => {
@@ -906,9 +894,7 @@ describe('alphaMul 序列化（ADR-221 §5 用例 8/9）', () => {
         expect(s).not.toBeNull();
         expect(s!.overrides[2].alphaMul).toBe(0.4);
 
-        _catState.clear();
-        _matState.clear();
-        _matEnabled.clear();
+        resetMatEditorState();
         regModel('model_as2', 5);
         applyMatState('model_as2', s!);
         expect(getMatParams('model_as2', 2)!.alphaMul).toBe(0.4);

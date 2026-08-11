@@ -31,8 +31,13 @@ test.describe("Web Capabilities — 能力门控 UI 验证 (@web)", { tag: ["@we
         // ——唯一真实锚点是 FOV 滑块 camera:main:fov（与 motion-panel-dom.spec.ts:30 一致）
         await page.waitForSelector('[data-testid="camera:main:fov"]', { timeout: 8000 });
 
-        // AR 选项不应出现在相机模式（capabilities.ar=false 过滤）
-        await expect(page.locator('text=AR')).toHaveCount(0);
+        // AR 选项不应出现在相机模式（capabilities.ar=false 过滤）。
+        // 原 text=AR 全页大小写不敏感子串会误红（英文面板 "Cartesian/Standard/Start"
+        // 含 ar 子串），且 modeSlider 选项标签不全量渲染本就无法用 getByText 命中
+        // （motion-panel-dom.spec.ts:36-37 实证）——改为断言控制方案 listbox 的
+        // aria-valuemax=1（仅 orbit/freefly 两项；ar=true 时含 AR 共 3 项 = valuemax 2）
+        const controlSlider = page.locator(".cs-top[role='listbox']").first();
+        await expect(controlSlider).toHaveAttribute("aria-valuemax", "1");
     });
 
     test("能力门控: 广场无「独立窗口」选项（plazaWindow === false）", async ({ page }) => {

@@ -375,49 +375,6 @@ describe('applyModelPreset', () => {
 });
 
 describe('PBRMaterial getMatState / applyMatState', () => {
-    it('PBRMaterial roundtrip: categories diffuseMul/shininess/specularMul → getMatState 返回原始 params', () => {
-        const { meshes } = createPbrModel('pbr1', 2);
-
-        applyMatState('pbr1', {
-            categories: {
-                皮肤: {
-                    diffuseMul: 1.5,
-                    specularMul: 0.6,
-                    shininess: 80,
-                    ambientMul: 1,
-                    emissiveMul: 1,
-                    diffuseTexLevel: 1,
-                    bumpTexLevel: 1,
-                    toonTexLevel: 1,
-                    sphereTexLevel: 1,
-                    emissiveTexLevel: 1,
-                    alphaMul: 1,
-                },
-                头发: {
-                    diffuseMul: 0.8,
-                    specularMul: 1.5,
-                    shininess: 30,
-                    ambientMul: 0.9,
-                    emissiveMul: 1,
-                    diffuseTexLevel: 1,
-                    bumpTexLevel: 1,
-                    toonTexLevel: 1,
-                    sphereTexLevel: 1,
-                    emissiveTexLevel: 1,
-                    alphaMul: 1,
-                },
-            },
-        });
-
-        const state = getMatState('pbr1');
-        expect(state).not.toBeNull();
-        // getMatState 返回原始 MaterialCategoryParams（非 PBR 属性），与 StandardMaterial 一致
-        expect(state!.categories['皮肤'].diffuseMul).toBe(1.5);
-        expect(state!.categories['皮肤'].shininess).toBe(80);
-        expect(state!.categories['皮肤'].specularMul).toBe(0.6);
-        expect(state!.categories['头发'].specularMul).toBe(1.5);
-    });
-
     it('PBRMaterial applyMatState 后 material.albedoColor 被 _applyPbrMatParams 修改', () => {
         const { meshes } = createPbrModel('pbr2', 1);
         const mat = meshes[0].material;
@@ -448,76 +405,6 @@ describe('PBRMaterial getMatState / applyMatState', () => {
         expect(mat.reflectionColor.r).toBe(0.5);
         // roughness = (200 - shininess) / 200 = (200 - 100) / 200 = 0.5
         expect(mat.roughness).toBe(0.5);
-    });
-
-    it('PBRMaterial overrides roundtrip: per-matIndex params 正确存储', () => {
-        const { meshes } = createPbrModel('pbr3', 3);
-
-        applyMatState('pbr3', {
-            overrides: {
-                0: {
-                    diffuseMul: 1.2,
-                    specularMul: 1,
-                    shininess: 50,
-                    ambientMul: 1,
-                    emissiveMul: 1,
-                    diffuseTexLevel: 1,
-                    bumpTexLevel: 1,
-                    toonTexLevel: 1,
-                    sphereTexLevel: 1,
-                    emissiveTexLevel: 1,
-                    alphaMul: 1,
-                },
-                2: {
-                    diffuseMul: 0.5,
-                    specularMul: 2,
-                    shininess: 200,
-                    ambientMul: 1,
-                    emissiveMul: 1,
-                    diffuseTexLevel: 1,
-                    bumpTexLevel: 1,
-                    toonTexLevel: 1,
-                    sphereTexLevel: 1,
-                    emissiveTexLevel: 1,
-                    alphaMul: 1,
-                },
-            },
-        });
-
-        const state = getMatState('pbr3');
-        expect(state).not.toBeNull();
-        expect(state!.overrides[0].diffuseMul).toBe(1.2);
-        expect(state!.overrides[2].diffuseMul).toBe(0.5);
-        // 未设置的 matIndex 1 不出现
-        expect(state!.overrides[1]).toBeUndefined();
-    });
-
-    it('PBRMaterial empty state → getMatState 返回 null', () => {
-        createPbrModel('pbr4');
-        applyMatState('pbr4', {});
-        expect(getMatState('pbr4')).toBeNull();
-    });
-
-    it('PBRMaterial string-keyed overrides (Object.entries cast)', () => {
-        const overrides: Record<string, any> = {
-            '1': {
-                diffuseMul: 1.8,
-                specularMul: 0.3,
-                shininess: 150,
-                ambientMul: 1.2,
-                emissiveMul: 1,
-                diffuseTexLevel: 1,
-                bumpTexLevel: 1,
-                toonTexLevel: 1,
-                sphereTexLevel: 1,
-                emissiveTexLevel: 1,
-                alphaMul: 1,
-            },
-        };
-        createPbrModel('pbr5', 2);
-        applyMatState('pbr5', { overrides });
-        const state = getMatState('pbr5');
-        expect(state!.overrides[1].diffuseMul).toBe(1.8);
     });
 
     it('PBRMaterial category 参数 shininess→roughness 反比映射正确', () => {
@@ -875,60 +762,124 @@ describe('stopVMD', () => {
 // =====================================================================
 // getMatState / applyMatState（原 model-preset.material.test.ts 并入；
 // import/mock 与上方完全重叠，钩子顶层已有，describe 内部不再重复注册）
+//
+// [audit:round5] 原底部 describe（StandardMaterial）与中部 PBRMaterial describe
+// 的场景矩阵（categories/overrides/empty/string-keyed roundtrip）逻辑同构、仅材质
+// 工厂不同——已合并为下方 describe.each(['standard','pbr']) 单一来源（4 场景 × 2 材质），
+// 此处仅保留 StandardMaterial 独有断言（null 态）。
 // =====================================================================
 describe('getMatState / applyMatState', () => {
     it('returns null when no material adjustments have been made', () => {
         createModel('m1');
         expect(getMatState('m1')).toBeNull();
     });
+});
 
-    it('roundtrips material categories through getMatState after applyMatState', () => {
-        createModel('m1');
-        applyMatState('m1', {
-            categories: {
-                皮肤: {
-                    diffuseMul: 1.2,
-                    specularMul: 0.8,
-                    shininess: 30,
-                    ambientMul: 1,
-                    emissiveMul: 1,
-                    diffuseTexLevel: 1,
-                    bumpTexLevel: 1,
-                    toonTexLevel: 1,
-                    sphereTexLevel: 1,
-                    emissiveTexLevel: 1,
-                    alphaMul: 1,
+describe.each(['standard', 'pbr'] as const)(
+    'getMatState / applyMatState roundtrip — %s',
+    (matType) => {
+        const factory = matType === 'standard' ? createModel : createPbrModel;
+
+        it('categories roundtrip：applyMatState → getMatState 返回原始 params', () => {
+            const id = `${matType}-cat`;
+            factory(id, 2);
+            applyMatState(id, {
+                categories: {
+                    皮肤: {
+                        diffuseMul: 1.2,
+                        specularMul: 0.8,
+                        shininess: 30,
+                        ambientMul: 1,
+                        emissiveMul: 1,
+                        diffuseTexLevel: 1,
+                        bumpTexLevel: 1,
+                        toonTexLevel: 1,
+                        sphereTexLevel: 1,
+                        emissiveTexLevel: 1,
+                        alphaMul: 1,
+                    },
+                    头发: {
+                        diffuseMul: 1,
+                        specularMul: 1.5,
+                        shininess: 80,
+                        ambientMul: 0.9,
+                        emissiveMul: 1,
+                        diffuseTexLevel: 1,
+                        bumpTexLevel: 1,
+                        toonTexLevel: 1,
+                        sphereTexLevel: 1,
+                        emissiveTexLevel: 1,
+                        alphaMul: 1,
+                    },
                 },
-                头发: {
-                    diffuseMul: 1,
-                    specularMul: 1.5,
-                    shininess: 80,
-                    ambientMul: 0.9,
-                    emissiveMul: 1,
-                    diffuseTexLevel: 1,
-                    bumpTexLevel: 1,
-                    toonTexLevel: 1,
-                    sphereTexLevel: 1,
-                    emissiveTexLevel: 1,
-                    alphaMul: 1,
-                },
-            },
+            });
+
+            const state = getMatState(id);
+            expect(state).not.toBeNull();
+            expect(state!.categories['皮肤'].diffuseMul).toBe(1.2);
+            expect(state!.categories['皮肤'].shininess).toBe(30);
+            expect(state!.categories['皮肤'].specularMul).toBe(0.8);
+            expect(state!.categories['头发'].specularMul).toBe(1.5);
         });
 
-        const state = getMatState('m1');
-        expect(state).not.toBeNull();
-        expect(state!.categories['皮肤'].diffuseMul).toBe(1.2);
-        expect(state!.categories['头发'].specularMul).toBe(1.5);
-    });
+        it('overrides roundtrip：per-matIndex params 正确存储', () => {
+            const id = `${matType}-ovr`;
+            factory(id, 4);
+            applyMatState(id, {
+                overrides: {
+                    0: {
+                        diffuseMul: 1.2,
+                        specularMul: 1,
+                        shininess: 50,
+                        ambientMul: 1,
+                        emissiveMul: 1,
+                        diffuseTexLevel: 1,
+                        bumpTexLevel: 1,
+                        toonTexLevel: 1,
+                        sphereTexLevel: 1,
+                        emissiveTexLevel: 1,
+                        alphaMul: 1,
+                    },
+                    3: {
+                        diffuseMul: 0.5,
+                        specularMul: 2,
+                        shininess: 200,
+                        ambientMul: 1,
+                        emissiveMul: 1,
+                        diffuseTexLevel: 1,
+                        bumpTexLevel: 1,
+                        toonTexLevel: 1,
+                        sphereTexLevel: 1,
+                        emissiveTexLevel: 1,
+                        alphaMul: 1,
+                    },
+                },
+            });
 
-    it('roundtrips per-material overrides', () => {
-        createModel('m1', 8);
-        applyMatState('m1', {
-            overrides: {
-                3: {
-                    diffuseMul: 1.5,
-                    specularMul: 0.5,
-                    shininess: 10,
+            const state = getMatState(id);
+            expect(state).not.toBeNull();
+            expect(state!.overrides[0].diffuseMul).toBe(1.2);
+            expect(state!.overrides[3].diffuseMul).toBe(0.5);
+            // 未设置的 matIndex 不出现
+            expect(state!.overrides[1]).toBeUndefined();
+        });
+
+        it('empty state → getMatState 返回 null', () => {
+            const id = `${matType}-empty`;
+            factory(id);
+            applyMatState(id, {});
+            expect(getMatState(id)).toBeNull();
+        });
+
+        it('string-keyed overrides (Object.entries cast)', () => {
+            const id = `${matType}-str`;
+            factory(id, 2);
+            // Simulate what JSON.parse produces: overrides as Record<string, T>
+            const overrides: Record<string, any> = {
+                '1': {
+                    diffuseMul: 1.8,
+                    specularMul: 0.3,
+                    shininess: 150,
                     ambientMul: 1.2,
                     emissiveMul: 1,
                     diffuseTexLevel: 1,
@@ -938,46 +889,10 @@ describe('getMatState / applyMatState', () => {
                     emissiveTexLevel: 1,
                     alphaMul: 1,
                 },
-                7: {
-                    diffuseMul: 0.8,
-                    specularMul: 1.2,
-                    shininess: 100,
-                    ambientMul: 0.9,
-                    emissiveMul: 1,
-                    diffuseTexLevel: 1,
-                    bumpTexLevel: 1,
-                    toonTexLevel: 1,
-                    sphereTexLevel: 1,
-                    emissiveTexLevel: 1,
-                    alphaMul: 1,
-                },
-            },
+            };
+            applyMatState(id, { overrides });
+            const state = getMatState(id);
+            expect(state!.overrides[1].diffuseMul).toBe(1.8);
         });
-
-        const state = getMatState('m1');
-        expect(state).not.toBeNull();
-        expect(state!.overrides[3].shininess).toBe(10);
-        expect(state!.overrides[7].diffuseMul).toBe(0.8);
-    });
-
-    it('empty state makes no changes', () => {
-        createModel('m1');
-        applyMatState('m1', {});
-        expect(getMatState('m1')).toBeNull();
-    });
-
-    it('applies state with string-keyed overrides (Object.entries cast)', () => {
-        createModel('m1', 4);
-        // Simulate what JSON.parse produces: overrides as Record<string, T>
-        const overrides: Record<
-            string,
-            { diffuseMul: number; specularMul: number; shininess: number; ambientMul: number }
-        > = {
-            '3': { diffuseMul: 1.5, specularMul: 0.5, shininess: 10, ambientMul: 1.2 },
-        };
-        applyMatState('m1', { overrides: overrides as any });
-
-        const state = getMatState('m1');
-        expect(state!.overrides[3].diffuseMul).toBe(1.5);
-    });
-});
+    }
+);

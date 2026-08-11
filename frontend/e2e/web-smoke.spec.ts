@@ -61,8 +61,11 @@ test.describe("Web Smoke — 主应用 Web 入口 (@web)", { tag: ["@web", "@web
         // FOV 滑块 camera:main:fov（与 motion-panel-dom.spec.ts:30 一致）
         await page.waitForSelector('[data-testid="camera:main:fov"]', { timeout: 8000 });
 
-        // AR 选项不应出现在相机模式滑块（capabilities.ar=false 过滤）
-        await expect(page.locator('text=AR')).toHaveCount(0);
+        // AR 选项不应出现在相机模式滑块（capabilities.ar=false 过滤）。
+        // 原 text=AR 全页子串会误红（"Cartesian/Standard/Start" 含 ar），且 modeSlider
+        // 选项标签不全量渲染——改为断言控制方案 listbox aria-valuemax=1（仅 2 项无 AR）
+        const controlSlider = page.locator(".cs-top[role='listbox']").first();
+        await expect(controlSlider).toHaveAttribute("aria-valuemax", "1");
     });
 
     test("能力门控：广场窗口模式选项被隐藏", async ({ page }) => {

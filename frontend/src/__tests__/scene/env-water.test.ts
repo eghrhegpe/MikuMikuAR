@@ -69,6 +69,8 @@ vi.mock('../../scene/env/_shared/env-texture', async (importOriginal) => {
 
 import { _envSys } from '../../scene/env/env-impl';
 import { envState } from '../../core/config';
+import { causticsController } from '../../scene/env/env-caustics';
+import { runEnvDtTickCallbacks } from '../../scene/env/_bridge/env-dispatcher';
 import {
     createWater,
     disposeWater,
@@ -710,7 +712,24 @@ describe('reflection quality toggle — P1 修复（ADR-114）', () => {
 // 变更行：resetCausticsSyncGuard() 将模块级 _causticsLastConfig 复位为 NaN，
 // 使 dispose 后下次 dt tick 的 diff 守卫（causticScrollX !== NaN 恒真）重新触发 setConfig。
 describe('Water 焦散 — resetCausticsSyncGuard 复位 diff guard', () => {
-    it('调用 resetCausticsSyncGuard 不抛错（覆盖变更行）', () => {
-        expect(() => resetCausticsSyncGuard()).not.toThrow();
+    it('复位后下次 dt tick 重新触发 setConfig（diff guard 从 NaN 复活）', () => {
+        // causticsController 是真实实例（本文件未 mock env-caustics），需显式 spy
+        const setConfigSpy = vi.spyOn(causticsController, 'setConfig');
+        try {
+            // 1. 先让 dt tick 消费一次当前 envState，_causticsLastConfig 同步为 {sx, sy}
+            envState.causticScrollX = 0.3;
+            envState.causticScrollY = 0.45;
+            runEnvDtTickCallbacks(0.016);
+            // 2. 清空调用记录，模拟"后续无变化"状态
+            setConfigSpy.mockClear();
+            // 3. 复位 guard → _causticsLastConfig = {sx: NaN, sy: NaN}
+            resetCausticsSyncGuard();
+            // 4. envState 未变，但 NaN !== 0.3 恒真 → setConfig 应重新触发（行为断言，
+            //    原 not.toThrow() 实现体删空也绿）
+            runEnvDtTickCallbacks(0.016);
+            expect(setConfigSpy).toHaveBeenCalled();
+        } finally {
+            setConfigSpy.mockRestore();
+        }
     });
 });

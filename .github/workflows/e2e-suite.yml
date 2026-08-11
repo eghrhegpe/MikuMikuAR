@@ -487,10 +487,12 @@ jobs:
           status = d.get('status', '?')
           fa = len(d.get('failedTests', []))
           print(f'::notice title=@web-full summary::status={status}, {fa} failed')
-          # [fix:P2] 阈值必须 < 测试总数：@web-full 实测 23 spec，旧阈值 20 → 仅 3 个通过即放行
-          # （87% 失败率容忍，与「杜绝假绿」矛盾）。收紧为 5（ubuntu+Chromium 较稳，容忍少量抖动）。
+          # [fix:P2] 阈值必须 < 测试总数：@web-full 实际 18 spec（playwright.config.ts
+          # 与本次修正后一致；旧注释 23 含被 --grep-invert @web-smoke 排除的 5 个已 stale）。
+          # 旧阈值 20 → 仅 3 个通过即放行（87% 失败率容忍）；后收紧 5 仍 = 28% 容忍，
+          # 共享 beforeEach/fixture 回归影响 ≤5 用例仍假绿。改比例阈值 2（≈11%）。
           # [fix:P1] status 非 passed/flaky 时，interrupted/timedout 或 0 failedTests 一律红。
-          THRESHOLD = 5
+          THRESHOLD = 2
           if status not in ('passed', 'flaky'):
               if status in ('interrupted', 'timedout') or fa == 0:
                   print(f'::error title=@web-full gate::status={status} 且 failedTests={fa} — run 被中断/report 不可靠，job 标红')
