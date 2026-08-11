@@ -336,6 +336,7 @@
 | [ADR-238](../adr/adr-238-循环依赖消解二期-core-scene-根环.md) | 循环依赖消解第二期 —— core→scene 根环与 motion/outfit 互依赖拆解 | [E2E 状态读取器注入桥](./e2e-state-bridge.md) · [环境状态防抖持久化](./env-persist.md) · [时间流转与太阳角系统](./env-time-of-day.md) · [资源库核心](./library-core.md) · [脚部地面跟随（MMD-native IK）](./motion-feet-adjustment.md) · [场景动作注入桥](./scene-action-bridge.md) · [设置共享工具](./settings-shared.md) · [主题纯函数叶](./theme.md) · [UI 行为注入桥](./ui-action-bridge.md) · [VMD 动作加载器](./vmd-loader.md) |
 | [ADR-242](../adr/adr-242-toplevel-layering-axiom.md) | 顶层目录分层公理 —— 「纯算法层」假说的证伪与重定性 | [换装叠加层](./outfit-overlay.md) · [换装系统](./outfit.md) |
 | [ADR-243](../adr/adr-243-env-state-defaults-from-schema.md) | EnvState 默认值从 Schema 自动推导 —— 消除 100+ 字段双源手工映射 | [EnvState 默认值派生](./env-state-defaults.md) |
+| [ADR-248](../adr/adr-248-derived-cache-reference-key.md) | 派生缓存依赖引用键 —— 缓存 key 必须携带依赖引用，依赖变更即失效 | [轻量日志工具（无依赖）](./logger.md) |
 
 ## 索引与路由（非卡片）
 

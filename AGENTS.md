@@ -16,7 +16,8 @@
 > 最后询问用户是否需要处理预料之外的报错。
 > babymmd的换算关系是：1 unit = 0.1 米。
 > 禁止从 `@/core/utils` 神桶导入（ADR-191）——纯/叶子模块须引具体零依赖叶（`@/core/clamp`/`@/core/path`/`@/core/async`），整桶 import 会拖起 dom/state/fileservice 致 vitest fork worker 挂死。
-> __logPanel.toggle()   // 显示/隐藏测试面板
+> 查日志/排查卡顿：先开**环形日志面板**看最近日志，而非死盯 console——面板入口：设置→系统→缓存占用→「打开日志面板」，或控制台 `window.__logPanel.toggle()`。
+> 热路径（每帧/高频回调）禁止裸调 logWarn/logInfo（ADR-248）：需诊断信息时用 `__feetDebug.value=true` 门控 + `% 60` 帧节流，参考 `bone-override._solvePosSlotIkWasm`。
 
 ```bash
 # 暂存（本地缓存）
