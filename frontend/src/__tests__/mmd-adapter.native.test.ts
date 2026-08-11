@@ -167,6 +167,97 @@ describe('solveIkNative (ADR-202 A-class)', () => {
         expect(r).toBe(false);
         expect(solve).not.toHaveBeenCalled();
     });
+
+    describe('限频日志（每秒最多一次）', () => {
+        let perfNowSpy: ReturnType<typeof vi.spyOn>;
+
+        beforeEach(() => {
+            vi.clearAllMocks();
+            perfNowSpy = vi.spyOn(performance, 'now');
+        });
+
+        afterEach(() => {
+            perfNowSpy.mockRestore();
+        });
+
+        it('首次调用：logWarn 被调用一次，参数含 ptr / ikSolverIndex / usePhysics', () => {
+            const solve = vi.fn();
+            const wi = { mmdModelSolveIk: solve };
+            const model = { ptr: 100 } as unknown as ModelArg;
+
+            perfNowSpy.mockReturnValue(1_000_000);
+            const r = solveIkNative(wi, model, 2, true);
+
+            expect(r).toBe(true);
+            expect(logWarn).toHaveBeenCalledTimes(1);
+            expect(logWarn).toHaveBeenCalledWith(
+                'mmd-adapter',
+                '[solveIkNative] ptr=100, ikSolverIndex=2, usePhysics=true'
+            );
+        });
+
+        it('1000ms 内再次调用：logWarn 不再被调用（限频生效）', () => {
+            const solve = vi.fn();
+            const wi = { mmdModelSolveIk: solve };
+            const model = { ptr: 200 } as unknown as ModelArg;
+
+            perfNowSpy.mockReturnValue(2_000_000);
+            solveIkNative(wi, model, 2, true);
+
+            perfNowSpy.mockReturnValue(2_000_500);
+            solveIkNative(wi, model, 2, true);
+
+            expect(logWarn).toHaveBeenCalledTimes(1);
+        });
+
+        it('1001ms 后再次调用：logWarn 被再次调用', () => {
+            const solve = vi.fn();
+            const wi = { mmdModelSolveIk: solve };
+            const model = { ptr: 300 } as unknown as ModelArg;
+
+            perfNowSpy.mockReturnValue(3_000_000);
+            solveIkNative(wi, model, 5, false);
+
+            logWarn.mockClear();
+            perfNowSpy.mockReturnValue(3_001_001);
+            solveIkNative(wi, model, 5, false);
+
+            expect(logWarn).toHaveBeenCalledTimes(1);
+        });
+
+        it('边界：恰好 1000ms 时 logWarn 不触发', () => {
+            const solve = vi.fn();
+            const wi = { mmdModelSolveIk: solve };
+            const model = { ptr: 400 } as unknown as ModelArg;
+
+            perfNowSpy.mockReturnValue(4_000_000);
+            solveIkNative(wi, model, 1, false);
+
+            logWarn.mockClear();
+            perfNowSpy.mockReturnValue(4_001_000);
+            solveIkNative(wi, model, 1, false);
+
+            expect(logWarn).not.toHaveBeenCalled();
+        });
+
+        it('多次限频后再放行：连续 3 次仅触发 2 次 logWarn', () => {
+            const solve = vi.fn();
+            const wi = { mmdModelSolveIk: solve };
+            const model = { ptr: 500 } as unknown as ModelArg;
+
+            perfNowSpy.mockReturnValue(5_000_000);
+            solveIkNative(wi, model, 3, false);
+
+            perfNowSpy.mockReturnValue(5_000_500);
+            solveIkNative(wi, model, 3, false);
+
+            perfNowSpy.mockReturnValue(5_002_000);
+            solveIkNative(wi, model, 3, false);
+
+            expect(logWarn).toHaveBeenCalledTimes(2);
+            expect(solve).toHaveBeenCalledTimes(3);
+        });
+    });
 });
 
 describe('applyWindForceToModelRigidBodiesNative (ADR-200 wind mass-aware)', () => {
