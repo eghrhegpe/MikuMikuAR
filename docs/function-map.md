@@ -2139,17 +2139,17 @@
 | `getWaterSchema()` | `menus/env-water-levels:31` | 导出 water schema 供 menu-registry 静态分析（ADR-093 元测试） |
 | `buildWindLevel()` | `menus/env-wind-levels:44` | — |
 | `getWindSchema()` | `menus/env-wind-levels:12` | 导出 wind schema 供 menu-registry 静态分析（ADR-093 元测试） |
-| `buildTagDetailLevel()` | `menus/library-actions:729` | — |
-| `buildTagsOverviewLevel()` | `menus/library-actions:729` | — |
-| `findLibraryModelByName()` | `menus/library-actions:729` | 按名称模糊搜索模型（纯查询，不触发加载）。供 ADR-155/197 NL 控制 resolve 使用，避免 resolve 阶段误触发真实加载。 |
-| `findLibraryMotionByName()` | `menus/library-actions:729` | 按名称模糊搜索 VMD 动作（纯查询，不触发替换）。 |
-| `highlightRow()` | `menus/library-actions:729` | — |
-| `importFile()` | `menus/library-actions:684` | — |
-| `importFileByPath()` | `menus/library-actions:639` | — |
-| `onModelRowClick()` | `menus/library-actions:729` | — |
-| `prepareModelRestore()` | `menus/library-actions:116` | — |
-| `replaceModel()` | `menus/library-actions:729` | — |
-| `replaceMotion()` | `menus/library-actions:729` | — |
+| `buildTagDetailLevel()` | `menus/library-actions:739` | — |
+| `buildTagsOverviewLevel()` | `menus/library-actions:739` | — |
+| `findLibraryModelByName()` | `menus/library-actions:739` | 按名称模糊搜索模型（纯查询，不触发加载）。供 ADR-155/197 NL 控制 resolve 使用，避免 resolve 阶段误触发真实加载。 |
+| `findLibraryMotionByName()` | `menus/library-actions:739` | 按名称模糊搜索 VMD 动作（纯查询，不触发替换）。 |
+| `highlightRow()` | `menus/library-actions:739` | — |
+| `importFile()` | `menus/library-actions:694` | — |
+| `importFileByPath()` | `menus/library-actions:649` | — |
+| `onModelRowClick()` | `menus/library-actions:739` | — |
+| `prepareModelRestore()` | `menus/library-actions:124` | — |
+| `replaceModel()` | `menus/library-actions:739` | — |
+| `replaceMotion()` | `menus/library-actions:739` | — |
 | `makeModelMenu()` | `menus/library-browse:377` | — |
 | `showModelPopup()` | `menus/library-browse:346` | — |
 | `ResourceViewMode()` | `menus/library-core:43` | — |

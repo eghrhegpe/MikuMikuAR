@@ -58,6 +58,31 @@ import { feedbackStatus, feedbackError } from '../core/feedback';
 // - extraction：原 _isExtracting，解压进行中标记（per-model 升级归 P1.2）
 // - replaceLoading：原 _isReplaceLoading，链式替换加载中标记
 
+/**
+ * 更新模型库根层级数据（刷新已注册的角色列表）。
+ * 仅当用户当前就在根层级时才触发 reRender，保留子目录中的滚动位置。
+ * @param forceRender 若为 true，无论当前层级强制 reRender（用于恢复场景）
+ */
+function refreshModelRootLevel(forceRender = false): void {
+    const stack = stackRegistry.modelStack;
+    if (!stack) {
+        return;
+    }
+    import('./library-core')
+        .then(({ buildModelRootItems }) => {
+            const rootLevel = stack.getLevel(0);
+            if (!rootLevel) {
+                return;
+            }
+            rootLevel.items = buildModelRootItems();
+            rootLevel.itemBuilder = buildModelRootItems;
+            if (forceRender || stack.currentLevel === rootLevel) {
+                stack.reRender();
+            }
+        })
+        .catch((err) => logWarn('library', 'refreshModelRootLevel failed', err));
+}
+
 // mmku:modelLoaded 事件：模型加载完成后刷新模型库弹窗根级列表
 // 用命名函数 + 模块级引用，支持 HMR 幂等清理
 let _mmkuDisp: Disposable | null = null;
@@ -72,24 +97,7 @@ function _onModelLoaded(): void {
                 dom.sceneOverlay.classList.contains('visible') &&
                 dom.sceneOverlay.dataset.popupType === 'model'
             ) {
-                const stack = stackRegistry.modelStack;
-                if (stack) {
-                    import('./library-core')
-                        .then(({ buildModelRootItems }) => {
-                            // [fix] 不再强制 setLevel(0) 重置菜单，改为就地更新根层级数据。
-                            // 仅当用户当前就在根层级时才 reRender，保留用户在子目录中的浏览位置。
-                            const rootLevel = stack.getLevel(0);
-                            if (!rootLevel) {
-                                return;
-                            }
-                            rootLevel.items = buildModelRootItems();
-                            rootLevel.itemBuilder = buildModelRootItems;
-                            if (stack.currentLevel === rootLevel) {
-                                stack.reRender();
-                            }
-                        })
-                        .catch((err) => logWarn('library', 'buildModelRootItems failed', err));
-                }
+                refreshModelRootLevel();
             }
         })
         .catch((err) => logWarn('library', 'refresh model root list on modelLoaded failed', err));
@@ -244,7 +252,7 @@ function startReplaceModel(m: LibraryModel, replaceId: string): void {
                 removeModel(replaceId);
                 // [doc:adr-127] 破坏性操作场景级撤销保护
                 offerSceneUndoAndRefresh(t('model-detail.replaced'), undoSnap, () =>
-                    stackRegistry.modelStack?.reRender()
+                    refreshModelRootLevel(true)
                 );
                 try {
                     // [doc:adr-195] 替换后保持浏览器打开，更新 outcome.modelId 指向新模型
@@ -252,7 +260,9 @@ function startReplaceModel(m: LibraryModel, replaceId: string): void {
                     if (stack?.currentLevel) {
                         stack.currentLevel.outcome = { mode: 'stay', modelId: handle.id };
                     }
-                    stack?.reRender();
+                    // [fix] 不再无条件 reRender（会销毁浏览中的子目录视图），
+                    // 改为就地更新根层级数据，仅当当前就在根层级时才刷新视图
+                    refreshModelRootLevel();
                     // [doc:adr-feedback] 最终态已由 offerSceneUndoAndRefresh 给出带撤销的 toast，
                     // 这里不再补一条 "完成" toast，避免重复反馈。
                 } catch (uiErr) {
@@ -263,7 +273,7 @@ function startReplaceModel(m: LibraryModel, replaceId: string): void {
             })
             .catch((err) => {
                 feedbackError('library.modelLoadFailed', getBaseName(m.file_path), err);
-                stackRegistry.modelStack?.reRender();
+                refreshModelRootLevel();
             })
             .finally(() => {
                 librarySessionStore.setReplaceLoading(false);
