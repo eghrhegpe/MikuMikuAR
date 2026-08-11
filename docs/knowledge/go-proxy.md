@@ -25,6 +25,7 @@ symbols:
   - maxPlazaDownloadBytes
   - maxPlazaDownloadReqBytes
   - maxPlazaHTMLBody
+  - plazaDialContext
   - plazaDownloadClient
   - plazaInjectScript
   - plazaSSRFGuard

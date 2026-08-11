@@ -230,10 +230,33 @@ func init() {
 // ssrfGuardedTransport returns a clone of http.DefaultTransport whose
 // DialContext is plazaSSRFGuard（逐连接重解析 + 拦截私网），供主反向代理 /
 // 下载客户端共用——任何代理到用户自定义 target 的出站连接都必须过 SSRF 校验。
+//
+// [doc:sys-proxy] Proxy 读取 HTTPS_PROXY/HTTP_PROXY 环境变量，使反向代理的出站
+// 流量可走系统代理（如 Clash）翻墙访问被墙站点。若系统代理存在，DialContext
+// 连接的是代理地址（通常 127.0.0.1），此时放行 loopback 不做 SSRF 拦截；
+// Proxy 返回 nil（直连）时仍走完整 SSRF 校验。
 func ssrfGuardedTransport() *http.Transport {
 	base := http.DefaultTransport.(*http.Transport).Clone()
-	base.DialContext = plazaSSRFGuard
+	base.Proxy = http.ProxyFromEnvironment
+	base.DialContext = plazaDialContext
 	return base
+}
+
+// plazaDialContext dials a TCP connection. When a system proxy is configured,
+// this connects to the proxy address (typically 127.0.0.1) — loopback is
+// allowed. When no proxy is configured, this performs the full SSRF guard
+// (DNS re-resolve + blocked-IP check) on the target address.
+func plazaDialContext(ctx context.Context, network, addr string) (net.Conn, error) {
+	host, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		host = addr
+	}
+	// 系统代理连接目标通常是 127.0.0.1，走普通拨号不做 SSRF 拦截
+	if ip := net.ParseIP(host); ip != nil && ip.IsLoopback() {
+		dialer := net.Dialer{}
+		return dialer.DialContext(ctx, network, addr)
+	}
+	return plazaSSRFGuard(ctx, network, addr)
 }
 
 // isBlockedIP reports whether ip is loopback, link-local, private (RFC1918 /
