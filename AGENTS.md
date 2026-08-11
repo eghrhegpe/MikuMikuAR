@@ -9,11 +9,10 @@
 > 按需读取 `docs/knowledge/index.md`（枢纽索引，自动生成）+ grep 卡正文定位功能作用，充实上下文。
 > 核实情况：直接 grep 关键符号在 当前源码 > `docs/adr/` > `docs/knowledge/` > `docs/architecture.md`/`docs/function-map.md` > `docs/research/` 是否还存在。
 > 新 ADR 落地前先 Grep `> \*\*状态\*\*:.*(规划|实施中|部分实现)` in `docs/adr` 看是否已有类似实现；若触及既有 ADR 决策，就在对方首部标注「被 [ADR-NNN] 取代」。编号只允许给 ADR、novel 写。
-> 批量重构（重命名/移函数/加参数）用 `npm run codemod`（AST 感知），禁止 Python re.sub 或手动跨文件改。
-> 用户描述 UI 文案/点击问题时，先查 `frontend/src/core/i18n` 翻译文件反查定位对应 UI 元素（意图识别），再跳源码。
-> 信任本机改动，提交代码时：先测试 → `git status --short` 抓清单 → 按功能 `git add <通过测试的路径...>` → `git commit`。正常的更改，无需询问。先提交`docs/`,捎带了无关文件也别怕。
+> 批量重构（重命名/移函数/加参数）用 `npm run codemod`（AST 感知）。
+> UI 名查 `frontend/src/core/i18n` 翻译文件反查定位对应 UI 元素（意图识别），再跳源码。
+> 改完即测。有失败就修复，超出职责的就报告；通过则直接`git status --short` 抓清单 → 提交对应的文件夹，无需询问。先提交`docs/`,捎带了无关文件也别怕。
 > 如果测试写入难度较大，建议改进源码的可测性与潜在风险。
-> 最后询问用户是否需要处理预料之外的报错。
 > babymmd的换算关系是：1 unit = 0.1 米。
 > 禁止从 `@/core/utils` 神桶导入（ADR-191）——纯/叶子模块须引具体零依赖叶（`@/core/clamp`/`@/core/path`/`@/core/async`），整桶 import 会拖起 dom/state/fileservice 致 vitest fork worker 挂死。
 > 查日志/排查卡顿：先开**环形日志面板**看最近日志，而非死盯 console——面板入口：设置→系统→缓存占用→「打开日志面板」，或控制台 `window.__logPanel.toggle()`。
@@ -127,7 +126,7 @@ http://localhost:9222/json 实际网页一览
 
 > 审核流水线： 用3个子代理继续分析3个测试文件，反推源码不足，改进测试与源码。主模型提交汇总子代理的合理改动，使用codereview复查。
 > 思路参考知识卡定位未审核的模块 → 审核相关代码的实现 → 核对风险修复的可行性，进行修复 → 提交改动 → 发起codereview（如果你的终端有审核工具）
-> 发现预料之外的缺陷时，只读，报告，给出精确的修复建议（diff 格式、文件:行号、修改原因）。
+> 改动完成后跑相关测试。有失败就修复或报告；全部通过则直接提交，无需询问。
 
 ## 代码健康度检测
 
