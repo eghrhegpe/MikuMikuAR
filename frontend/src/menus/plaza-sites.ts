@@ -65,4 +65,14 @@ export const PLAZA_SITES: PlazaSite[] = [
             { label: 'VRM', q: 'VRM' },
         ],
     },
+    {
+        id: 'github',
+        name: 'GitHub',
+        url: 'https://github.com/',
+        mode: 'embed',
+        directNavigate: false,
+        icon: 'lucide:github',
+        desc: '代码托管平台',
+        group: 'search',
+    },
 ];
