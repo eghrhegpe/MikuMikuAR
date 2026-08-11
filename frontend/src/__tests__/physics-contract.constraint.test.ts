@@ -25,6 +25,9 @@ beforeAll(() => {
 });
 
 // ======== 本地薄包装（保持调用代码不变，实现体共享） ========
+// [audit:round5] 资源释放：本文件用例为「创建→断言→清理」顺序链，断言失败会
+// 泄漏单指针——由 vitest worker 进程退出时统一回收，影响可接受；多资源端到端
+// 场景（collision-worlds / rigidbody）已用 try/finally + finally 空值守卫防护。
 const INFO_SIZE = PHYSICS_INFO_SIZE;
 const buildRigidBodyInfo = (
     shapePtr: number,

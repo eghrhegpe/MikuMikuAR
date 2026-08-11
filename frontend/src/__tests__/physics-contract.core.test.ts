@@ -12,6 +12,9 @@ import type { MinimalPhysicsImpl } from './helpers/minimal-physics-impl';
 import type * as sprWasm from 'babylon-mmd/esm/Runtime/Optimized/wasm/spr';
 
 // ======== 全局 WASM 实例（本文件所有测试共享） ========
+// [audit:round5] 资源释放：本文件用例均为单资源「创建→断言→销毁」短链，断言失败
+// 泄漏单指针由 vitest worker 进程退出统一回收，影响可接受；多资源端到端场景
+// （collision-worlds / rigidbody）已用 try/finally + finally 空值守卫防护。
 let phys: MinimalPhysicsImpl;
 let api: typeof sprWasm;
 let memory: WebAssembly.Memory;

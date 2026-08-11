@@ -37,80 +37,85 @@ const readLinearVelocity = (bodyPtr: number) => _readLinearVelocity(phys, bodyPt
 describe('WASM 物理契约测试', () => {
     describe('6. 刚体物理 — 端到端验证', () => {
         it('创建刚体 → 施力 → 步进 → 速度非零（物理真的在动）', () => {
-            // 1. 创建物理世界
             const world = api.createPhysicsWorld();
+            // 资源声明提升到 try 外：finally 需引用（try 内 const 块级不可见）
+            let shape: number, infoPtr: number, body: number;
+            try {
+                // 2. 创建形状
+                shape = api.createBoxShape(1, 1, 1);
 
-            // 2. 创建形状
-            const shape = api.createBoxShape(1, 1, 1);
+                // 3. 构造刚体信息
+                infoPtr = buildRigidBodyInfo(shape, { mass: 1.0, disableDeactivation: true });
 
-            // 3. 构造刚体信息
-            const infoPtr = buildRigidBodyInfo(shape, { mass: 1.0, disableDeactivation: true });
+                // 4. 创建刚体
+                body = api.createRigidBody(infoPtr);
+                expect(body).toBeGreaterThan(0);
 
-            // 4. 创建刚体
-            const body = api.createRigidBody(infoPtr);
-            expect(body).toBeGreaterThan(0);
+                // 5. 添加到世界
+                api.physicsWorldAddRigidBody(world, body);
 
-            // 5. 添加到世界
-            api.physicsWorldAddRigidBody(world, body);
+                // 6. 验证初始速度为 0
+                const [vx0, vy0, vz0] = readLinearVelocity(body);
+                expect(vx0).toBe(0);
+                expect(vy0).toBe(0);
+                expect(vz0).toBe(0);
 
-            // 6. 验证初始速度为 0
-            const [vx0, vy0, vz0] = readLinearVelocity(body);
-            expect(vx0).toBe(0);
-            expect(vy0).toBe(0);
-            expect(vz0).toBe(0);
+                // 7. 施加力 (0, 100, 0) — 向上
+                api.rigidBodyApplyCentralForce(body, 0, 100, 0);
 
-            // 7. 施加力 (0, 100, 0) — 向上
-            api.rigidBodyApplyCentralForce(body, 0, 100, 0);
+                // 8. 步进（1/60 秒，1 个子步）
+                api.physicsWorldStepSimulation(world, 1 / 60, 1, 1 / 60);
 
-            // 8. 步进（1/60 秒，1 个子步）
-            api.physicsWorldStepSimulation(world, 1 / 60, 1, 1 / 60);
-
-            // 9. 读取速度 — 应该非零
-            const [vx1, vy1, vz1] = readLinearVelocity(body);
-            // 力 = 质量 × 加速度 → 加速度 = 100/1 = 100
-            // deltaV = 100 × (1/60) ≈ 1.667
-            // 加上重力 (-9.8)，vy ≈ 1.667 - 0.163 ≈ 1.5
-            expect(vy1).toBeGreaterThan(0.1); // 至少向上动了
-            // 水平方向无外力，应为 0
-            expect(vx1).toBe(0);
-            expect(vz1).toBe(0);
-
-            // 10. 清理
-            api.physicsWorldRemoveRigidBody(world, body);
-            api.destroyRigidBody(body);
-            api.deallocateBuffer(infoPtr, INFO_SIZE);
-            api.destroyShape(shape);
-            api.destroyPhysicsWorld(world);
+                // 9. 读取速度 — 应该非零
+                const [vx1, vy1, vz1] = readLinearVelocity(body);
+                // 力 = 质量 × 加速度 → 加速度 = 100/1 = 100
+                // deltaV = 100 × (1/60) ≈ 1.667
+                // 加上重力 (-9.8)，vy ≈ 1.667 - 0.163 ≈ 1.5
+                expect(vy1).toBeGreaterThan(0.1); // 至少向上动了
+                // 水平方向无外力，应为 0
+                expect(vx1).toBe(0);
+                expect(vz1).toBe(0);
+            } finally {
+                // 清理（断言失败也执行，避免 WASM 指针泄漏）；空值守卫防 try 中途抛错
+                if (body !== undefined) api.physicsWorldRemoveRigidBody(world, body);
+                if (body !== undefined) api.destroyRigidBody(body);
+                if (infoPtr !== undefined) api.deallocateBuffer(infoPtr, INFO_SIZE);
+                if (shape !== undefined) api.destroyShape(shape);
+                api.destroyPhysicsWorld(world);
+            }
         });
 
         it('重力影响：无外力情况下刚体在重力作用下下落', () => {
             const world = api.createPhysicsWorld();
-            api.physicsWorldSetGravity(world, 0, -9.8, 0);
+            let shape: number, infoPtr: number, body: number;
+            try {
+                api.physicsWorldSetGravity(world, 0, -9.8, 0);
 
-            const shape = api.createBoxShape(1, 1, 1);
-            const infoPtr = buildRigidBodyInfo(shape, { mass: 1.0, disableDeactivation: true });
-            const body = api.createRigidBody(infoPtr);
-            api.physicsWorldAddRigidBody(world, body);
+                shape = api.createBoxShape(1, 1, 1);
+                infoPtr = buildRigidBodyInfo(shape, { mass: 1.0, disableDeactivation: true });
+                body = api.createRigidBody(infoPtr);
+                api.physicsWorldAddRigidBody(world, body);
 
-            // 初始速度为零
-            const [, vy0] = readLinearVelocity(body);
-            expect(vy0).toBe(0);
+                // 初始速度为零
+                const [, vy0] = readLinearVelocity(body);
+                expect(vy0).toBe(0);
 
-            // 步进 1 秒（60 帧 × 1/60）
-            for (let i = 0; i < 60; i++) {
-                api.physicsWorldStepSimulation(world, 1 / 60, 1, 1 / 60);
+                // 步进 1 秒（60 帧 × 1/60）
+                for (let i = 0; i < 60; i++) {
+                    api.physicsWorldStepSimulation(world, 1 / 60, 1, 1 / 60);
+                }
+
+                const [, vy1] = readLinearVelocity(body);
+                // 1 秒后 vy ≈ -9.8（忽略阻尼）
+                expect(vy1).toBeLessThan(-1); // 至少在下落
+            } finally {
+                // 清理（断言失败也执行，避免 WASM 指针泄漏）；空值守卫防 try 中途抛错
+                if (body !== undefined) api.physicsWorldRemoveRigidBody(world, body);
+                if (body !== undefined) api.destroyRigidBody(body);
+                if (infoPtr !== undefined) api.deallocateBuffer(infoPtr, INFO_SIZE);
+                if (shape !== undefined) api.destroyShape(shape);
+                api.destroyPhysicsWorld(world);
             }
-
-            const [, vy1] = readLinearVelocity(body);
-            // 1 秒后 vy ≈ -9.8（忽略阻尼）
-            expect(vy1).toBeLessThan(-1); // 至少在下落
-
-            // 清理
-            api.physicsWorldRemoveRigidBody(world, body);
-            api.destroyRigidBody(body);
-            api.deallocateBuffer(infoPtr, INFO_SIZE);
-            api.destroyShape(shape);
-            api.destroyPhysicsWorld(world);
         });
 
         it('rigidBodyGetMass 返回构造时设置的质量', () => {

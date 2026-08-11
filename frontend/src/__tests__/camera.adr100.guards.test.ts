@@ -64,7 +64,6 @@ describe('P4 guards', () => {
         cam.setAutoCameraEnabled(false);
         mockUiState.autoCameraEnabled = false;
         mockPBD.mockReturnValue(null);
-        vi.clearAllMocks();
         cam.setCameraState({
             mode: 'orbit',
             control: 'orbit',
@@ -77,6 +76,10 @@ describe('P4 guards', () => {
             targetY: 8,
             targetZ: 0,
         });
+        // [audit:round5] 顺序与 serialization/vmd-state 统一：先 setCameraState 复位、
+        // 后 clearAllMocks——若先清后设，复位触发的 mock 调用会残留进用例，未来加
+        // 调用次数断言会误判。
+        vi.clearAllMocks();
     });
     it('setCameraBehavior(beatcut) ignored in non-orbit', () => {
         cam.setCameraControl('freefly');

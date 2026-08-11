@@ -69,15 +69,16 @@ describe('WASM 物理契约测试', () => {
                 const tf = new Float32Array(memory.buffer, tfPtr, 16);
                 expect(tf[13]).toBeGreaterThan(0.4); // 方块半高 0.5，留一点容差
             } finally {
-                // 清理（断言失败也执行，避免 WASM 指针泄漏）
-                api.physicsWorldRemoveRigidBody(world, box);
-                api.physicsWorldRemoveRigidBody(world, ground);
-                api.destroyRigidBody(box);
-                api.destroyRigidBody(ground);
-                api.deallocateBuffer(boxInfo, INFO_SIZE);
-                api.deallocateBuffer(groundInfo, INFO_SIZE);
-                api.destroyShape(boxShape);
-                api.destroyShape(groundShape);
+                // 清理（断言失败也执行，避免 WASM 指针泄漏）；空值守卫：try 中途抛错时
+                // 未赋值变量为 undefined，直接传给 destroy* 会中断清理链
+                if (box !== undefined) api.physicsWorldRemoveRigidBody(world, box);
+                if (ground !== undefined) api.physicsWorldRemoveRigidBody(world, ground);
+                if (box !== undefined) api.destroyRigidBody(box);
+                if (ground !== undefined) api.destroyRigidBody(ground);
+                if (boxInfo !== undefined) api.deallocateBuffer(boxInfo, INFO_SIZE);
+                if (groundInfo !== undefined) api.deallocateBuffer(groundInfo, INFO_SIZE);
+                if (boxShape !== undefined) api.destroyShape(boxShape);
+                if (groundShape !== undefined) api.destroyShape(groundShape);
                 api.destroyPhysicsWorld(world);
             }
         });
@@ -124,14 +125,14 @@ describe('WASM 物理契约测试', () => {
                 // 碰撞后 B 的速度绝对值应小于初始 5
                 expect(Math.abs(vzB1)).toBeLessThan(5);
             } finally {
-                // 清理（断言失败也执行，避免 WASM 指针泄漏）
-                api.physicsWorldRemoveRigidBody(world, bodyA);
-                api.physicsWorldRemoveRigidBody(world, bodyB);
-                api.destroyRigidBody(bodyA);
-                api.destroyRigidBody(bodyB);
-                api.deallocateBuffer(infoA, INFO_SIZE);
-                api.deallocateBuffer(infoB, INFO_SIZE);
-                api.destroyShape(shape);
+                // 清理（断言失败也执行，避免 WASM 指针泄漏）；空值守卫见上用例注释
+                if (bodyA !== undefined) api.physicsWorldRemoveRigidBody(world, bodyA);
+                if (bodyB !== undefined) api.physicsWorldRemoveRigidBody(world, bodyB);
+                if (bodyA !== undefined) api.destroyRigidBody(bodyA);
+                if (bodyB !== undefined) api.destroyRigidBody(bodyB);
+                if (infoA !== undefined) api.deallocateBuffer(infoA, INFO_SIZE);
+                if (infoB !== undefined) api.deallocateBuffer(infoB, INFO_SIZE);
+                if (shape !== undefined) api.destroyShape(shape);
                 api.destroyPhysicsWorld(world);
             }
         });
@@ -160,11 +161,11 @@ describe('WASM 物理契约测试', () => {
 
                 api.physicsWorldAddRigidBody(world, body);
             } finally {
-                // 清理（断言失败也执行，避免 WASM 指针泄漏）
-                api.physicsWorldRemoveRigidBody(world, body);
-                api.destroyRigidBody(body);
-                api.deallocateBuffer(info, INFO_SIZE);
-                api.destroyShape(shape);
+                // 清理（断言失败也执行，避免 WASM 指针泄漏）；空值守卫见上用例注释
+                if (body !== undefined) api.physicsWorldRemoveRigidBody(world, body);
+                if (body !== undefined) api.destroyRigidBody(body);
+                if (info !== undefined) api.deallocateBuffer(info, INFO_SIZE);
+                if (shape !== undefined) api.destroyShape(shape);
                 api.destroyPhysicsWorld(world);
             }
         });

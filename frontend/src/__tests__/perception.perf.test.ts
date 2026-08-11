@@ -660,7 +660,9 @@ test('ADR-155 感知层性能基准', async () => {
         const p99 = percentile(samples, 99);
         // 统一 (b)/(d) 预算口径：60fps 总预算 16.67ms 按模型数均摊（16.67/100≈0.167ms/模型），
         // 与 (d) 段硬断言同源。实测 ~0.13ms/模型（本地 24 核），留 ~1.3 倍余量。
-        const budget = n * (16.67 / 100);
+        // 同样套用 hardBudget()：CI 放宽 PERF_BUDGET_MULTIPLIER 时 (b)/(d) 口径一致，
+        // 避免 (b) 表格显示 ✗ 而 (d) 绿的自相矛盾。
+        const budget = hardBudget(n * (16.67 / 100));
         const ok = p50 <= budget ? '✓' : '✗';
 
         console.info(
