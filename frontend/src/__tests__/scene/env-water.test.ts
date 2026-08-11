@@ -450,6 +450,36 @@ describe('Water dispose — 资源释放彻底', () => {
 
 // ──────────────── Underwater 过渡 ────────────────
 describe('Water Underwater — 相机入水触发过渡', () => {
+    // 保存/恢复共享 envState：用例直接改写 waterEnabled/waterLevel/underwaterEnabled/
+    // underwaterToneIntensity 且多数不恢复，靠后续用例覆盖自愈——脆弱顺序耦合，
+    // 新增用例易继承前一用例的水下状态。beforeEach 存快照、afterEach 恢复。
+    let savedUnderwater: {
+        waterEnabled: boolean;
+        waterLevel: number;
+        underwaterEnabled?: boolean;
+        underwaterToneIntensity: number;
+    };
+
+    beforeEach(() => {
+        savedUnderwater = {
+            waterEnabled: envState.waterEnabled,
+            waterLevel: envState.waterLevel,
+            underwaterEnabled: envState.underwaterEnabled,
+            underwaterToneIntensity: envState.underwaterToneIntensity,
+        };
+    });
+
+    afterEach(() => {
+        envState.waterEnabled = savedUnderwater.waterEnabled;
+        envState.waterLevel = savedUnderwater.waterLevel;
+        if (savedUnderwater.underwaterEnabled !== undefined) {
+            envState.underwaterEnabled = savedUnderwater.underwaterEnabled;
+        } else {
+            delete (envState as Record<string, unknown>).underwaterEnabled;
+        }
+        envState.underwaterToneIntensity = savedUnderwater.underwaterToneIntensity;
+    });
+
     // DefaultRenderingPipeline 需要最小桩：chromaticAberrationEnabled + chromaticAberration
     function makePipelineStub() {
         return {

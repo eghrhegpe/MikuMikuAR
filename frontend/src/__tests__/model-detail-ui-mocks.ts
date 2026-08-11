@@ -1,29 +1,22 @@
 // [doc:adr-204] model-detail-ui-mocks.ts — 共享 vi.mock 工厂（拆自 model-detail-ui.test.ts）
-// 通用 Babylon/babylon-mmd 工厂复用 model-preset-mocks.ts，此处只补缺口 + 应用模块桩。
-// 规矩同前：工厂同步 + Mock 类静态 import（禁 vi.importActual，hoist 期 TDZ）。
+// 通用 Babylon/babylon-mmd 工厂复用 babylon-factories.ts（单一规范源），此处只留
+// 应用模块桩。规矩同前：工厂同步 + Mock 类静态 import（禁 vi.importActual，hoist 期 TDZ）。
 // mockModelManager 为普通 const 单例——vitest 每测试文件独立模块图，天然隔离；
 // 各测试文件 beforeEach 里 cleanup() 复位（mockReset get）。
 import { vi } from 'vitest';
-import {
-    MockShadowGenerator,
-    MockGPUParticleSystem,
-    MockParticleSystem,
-    MockGridMaterial,
-    MockBaseTexture,
-    MockTexture,
-    MockCubeTexture,
-} from './mocks/babylon-classes';
 import { sceneMockSuperset, mockModelManagerBase } from './mocks/scene-superset';
 
-// ---- babylon.js 补缺工厂（model-preset-mocks 未覆盖的部分） ----
-export const mockShadowGenerator = () => ({ ShadowGenerator: MockShadowGenerator });
-export const mockGpuParticleSystem = () => ({ GPUParticleSystem: MockGPUParticleSystem });
-export const mockParticleSystem = () => ({ ParticleSystem: MockParticleSystem });
-export const mockGridMaterial = () => ({ GridMaterial: MockGridMaterial });
-export const mockBaseTexture = () => ({ BaseTexture: MockBaseTexture });
-export const mockTexture = () => ({ Texture: MockTexture });
-export const mockCubeTexture = () => ({ CubeTexture: MockCubeTexture });
-export const mockEmpty = () => ({});
+// ---- babylon.js 补缺工厂（单一规范源：babylon-factories.ts，此处 re-export 防双源漂移） ----
+export {
+    mockShadowGenerator,
+    mockGpuParticleSystem,
+    mockParticleSystem,
+    mockGridMaterial,
+    mockBaseTexture,
+    mockTexture,
+    mockCubeTexture,
+    mockEmpty,
+} from './mocks/babylon-factories';
 
 // ---- 应用模块桩 ----
 // 收敛单一源：与 scene-superset.mockModelManagerBase 同构，不再各自内联（防增键漂移）

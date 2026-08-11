@@ -29,6 +29,12 @@ import {
     MockImportMeshAsync,
     MockDefaultRenderingPipeline,
     MockTexture,
+    MockBaseTexture,
+    MockCubeTexture,
+    MockShadowGenerator,
+    MockGPUParticleSystem,
+    MockParticleSystem,
+    MockGridMaterial,
 } from './babylon-classes';
 import {
     MockMmdCamera,
@@ -75,6 +81,14 @@ export const mockDefaultRenderingPipeline = () => ({
 });
 export const mockPhysicsEngineComponent = () => ({});
 export const mockTgaTextureLoader = () => ({});
+// 补缺工厂（原 model-detail-ui-mocks 内联，收敛进单一规范源防增类漂移）
+export const mockShadowGenerator = () => ({ ShadowGenerator: MockShadowGenerator });
+export const mockGpuParticleSystem = () => ({ GPUParticleSystem: MockGPUParticleSystem });
+export const mockParticleSystem = () => ({ ParticleSystem: MockParticleSystem });
+export const mockGridMaterial = () => ({ GridMaterial: MockGridMaterial });
+export const mockBaseTexture = () => ({ BaseTexture: MockBaseTexture });
+export const mockCubeTexture = () => ({ CubeTexture: MockCubeTexture });
+export const mockEmpty = () => ({});
 
 // ---- babylon-mmd mocks ----
 export const mockMmdCamera = () => ({ MmdCamera: MockMmdCamera });

@@ -38,92 +38,102 @@ describe('WASM 物理契约测试', () => {
     describe('9. 碰撞检测', () => {
         it('方块落到静态地面上不会穿透（碰撞管线生效）', () => {
             const world = api.createPhysicsWorld();
-            api.physicsWorldSetGravity(world, 0, -9.8, 0);
+            // 资源声明提升到 try 外：finally 需引用（try 内 const 块级不可见）
+            let groundShape: number, groundInfo: number, ground: number;
+            let boxShape: number, boxInfo: number, box: number;
+            try {
+                api.physicsWorldSetGravity(world, 0, -9.8, 0);
 
-            // 地面：静态平面，法线向上，y=0
-            const groundShape = api.createStaticPlaneShape(0, 1, 0, 0);
-            const groundInfo = buildRigidBodyInfo(groundShape, { mass: 0, motionType: 1 });
-            const ground = api.createRigidBody(groundInfo);
-            api.physicsWorldAddRigidBody(world, ground);
+                // 地面：静态平面，法线向上，y=0
+                groundShape = api.createStaticPlaneShape(0, 1, 0, 0);
+                groundInfo = buildRigidBodyInfo(groundShape, { mass: 0, motionType: 1 });
+                ground = api.createRigidBody(groundInfo);
+                api.physicsWorldAddRigidBody(world, ground);
 
-            // 方块：在 (0, 5, 0) 高度，质量 1
-            const boxShape = api.createBoxShape(1, 1, 1);
-            const boxInfo = buildRigidBodyInfo(boxShape, { mass: 1.0, disableDeactivation: true });
-            const box = api.createRigidBody(boxInfo);
-            api.physicsWorldAddRigidBody(world, box);
+                // 方块：在 (0, 5, 0) 高度，质量 1
+                boxShape = api.createBoxShape(1, 1, 1);
+                boxInfo = buildRigidBodyInfo(boxShape, { mass: 1.0, disableDeactivation: true });
+                box = api.createRigidBody(boxInfo);
+                api.physicsWorldAddRigidBody(world, box);
 
-            // 把方块放到高处
-            api.rigidBodyTranslate(box, 0, 5, 0);
+                // 把方块放到高处
+                api.rigidBodyTranslate(box, 0, 5, 0);
 
-            // 步进 3 秒（180 帧）——足够方块落到地面
-            for (let i = 0; i < 180; i++) {
-                api.physicsWorldStepSimulation(world, 1 / 60, 1, 1 / 60);
+                // 步进 3 秒（180 帧）——足够方块落到地面
+                for (let i = 0; i < 180; i++) {
+                    api.physicsWorldStepSimulation(world, 1 / 60, 1, 1 / 60);
+                }
+
+                // 读取方块位置——不应穿透地面（Y 应 >= 0.5，方块半高）
+                const tfPtr = api.rigidBodyGetWorldTransformPtr(box);
+                const tf = new Float32Array(memory.buffer, tfPtr, 16);
+                expect(tf[13]).toBeGreaterThan(0.4); // 方块半高 0.5，留一点容差
+            } finally {
+                // 清理（断言失败也执行，避免 WASM 指针泄漏）
+                api.physicsWorldRemoveRigidBody(world, box);
+                api.physicsWorldRemoveRigidBody(world, ground);
+                api.destroyRigidBody(box);
+                api.destroyRigidBody(ground);
+                api.deallocateBuffer(boxInfo, INFO_SIZE);
+                api.deallocateBuffer(groundInfo, INFO_SIZE);
+                api.destroyShape(boxShape);
+                api.destroyShape(groundShape);
+                api.destroyPhysicsWorld(world);
             }
-
-            // 读取方块位置——不应穿透地面（Y 应 >= 0.5，方块半高）
-            const tfPtr = api.rigidBodyGetWorldTransformPtr(box);
-            const tf = new Float32Array(memory.buffer, tfPtr, 16);
-            expect(tf[13]).toBeGreaterThan(0.4); // 方块半高 0.5，留一点容差
-
-            // 清理
-            api.physicsWorldRemoveRigidBody(world, box);
-            api.physicsWorldRemoveRigidBody(world, ground);
-            api.destroyRigidBody(box);
-            api.destroyRigidBody(ground);
-            api.deallocateBuffer(boxInfo, INFO_SIZE);
-            api.deallocateBuffer(groundInfo, INFO_SIZE);
-            api.destroyShape(boxShape);
-            api.destroyShape(groundShape);
-            api.destroyPhysicsWorld(world);
         });
 
         it('两方块碰撞后动量传递（被撞的动起来）', () => {
             const world = api.createPhysicsWorld();
-            // 无重力，纯碰撞
-            api.physicsWorldSetGravity(world, 0, 0, 0);
+            // 资源声明提升到 try 外：finally 需引用（try 内 const 块级不可见）
+            let shape: number, infoA: number, infoB: number;
+            let bodyA: number, bodyB: number;
+            try {
+                // 无重力，纯碰撞
+                api.physicsWorldSetGravity(world, 0, 0, 0);
 
-            const shape = api.createBoxShape(1, 1, 1);
+                shape = api.createBoxShape(1, 1, 1);
 
-            // 方块 A：位于 (0, 0, 0)，初始静止
-            const infoA = buildRigidBodyInfo(shape, { mass: 1.0, disableDeactivation: true });
-            const bodyA = api.createRigidBody(infoA);
-            api.physicsWorldAddRigidBody(world, bodyA);
+                // 方块 A：位于 (0, 0, 0)，初始静止
+                infoA = buildRigidBodyInfo(shape, { mass: 1.0, disableDeactivation: true });
+                bodyA = api.createRigidBody(infoA);
+                api.physicsWorldAddRigidBody(world, bodyA);
 
-            // 方块 B：位于 (0, 0, 3)，向 A 方向运动
-            const infoB = buildRigidBodyInfo(shape, { mass: 1.0, disableDeactivation: true });
-            const bodyB = api.createRigidBody(infoB);
-            api.physicsWorldAddRigidBody(world, bodyB);
-            api.rigidBodyTranslate(bodyB, 0, 0, 3);
-            api.rigidBodySetLinearVelocity(bodyB, 0, 0, -5); // 向 A 撞去
+                // 方块 B：位于 (0, 0, 3)，向 A 方向运动
+                infoB = buildRigidBodyInfo(shape, { mass: 1.0, disableDeactivation: true });
+                bodyB = api.createRigidBody(infoB);
+                api.physicsWorldAddRigidBody(world, bodyB);
+                api.rigidBodyTranslate(bodyB, 0, 0, 3);
+                api.rigidBodySetLinearVelocity(bodyB, 0, 0, -5); // 向 A 撞去
 
-            // A 初始静止
-            const [, , vzA0] = readLinearVelocity(bodyA);
-            expect(vzA0).toBe(0);
+                // A 初始静止
+                const [, , vzA0] = readLinearVelocity(bodyA);
+                expect(vzA0).toBe(0);
 
-            // 步进 1 秒
-            for (let i = 0; i < 60; i++) {
-                api.physicsWorldStepSimulation(world, 1 / 60, 1, 1 / 60);
+                // 步进 1 秒
+                for (let i = 0; i < 60; i++) {
+                    api.physicsWorldStepSimulation(world, 1 / 60, 1, 1 / 60);
+                }
+
+                // A 被撞后应该有速度（动量传递）
+                const [, , vzA1] = readLinearVelocity(bodyA);
+                // A 被撞后沿 Z 轴应该有速度
+                expect(Math.abs(vzA1)).toBeGreaterThan(0.01);
+
+                // B 撞击后速度应该减小或反向
+                const [, , vzB1] = readLinearVelocity(bodyB);
+                // 碰撞后 B 的速度绝对值应小于初始 5
+                expect(Math.abs(vzB1)).toBeLessThan(5);
+            } finally {
+                // 清理（断言失败也执行，避免 WASM 指针泄漏）
+                api.physicsWorldRemoveRigidBody(world, bodyA);
+                api.physicsWorldRemoveRigidBody(world, bodyB);
+                api.destroyRigidBody(bodyA);
+                api.destroyRigidBody(bodyB);
+                api.deallocateBuffer(infoA, INFO_SIZE);
+                api.deallocateBuffer(infoB, INFO_SIZE);
+                api.destroyShape(shape);
+                api.destroyPhysicsWorld(world);
             }
-
-            // A 被撞后应该有速度（动量传递）
-            const [, , vzA1] = readLinearVelocity(bodyA);
-            // A 被撞后沿 Z 轴应该有速度
-            expect(Math.abs(vzA1)).toBeGreaterThan(0.01);
-
-            // B 撞击后速度应该减小或反向
-            const [, , vzB1] = readLinearVelocity(bodyB);
-            // 碰撞后 B 的速度绝对值应小于初始 5
-            expect(Math.abs(vzB1)).toBeLessThan(5);
-
-            // 清理
-            api.physicsWorldRemoveRigidBody(world, bodyA);
-            api.physicsWorldRemoveRigidBody(world, bodyB);
-            api.destroyRigidBody(bodyA);
-            api.destroyRigidBody(bodyB);
-            api.deallocateBuffer(infoA, INFO_SIZE);
-            api.deallocateBuffer(infoB, INFO_SIZE);
-            api.destroyShape(shape);
-            api.destroyPhysicsWorld(world);
         });
 
         it('restitution 字段契约：写入构造信息可读回一致', () => {
@@ -135,22 +145,28 @@ describe('WASM 物理契约测试', () => {
             //   ② createRigidBody>0 验证引擎接受含该字段的构造信息。
             // 注意：本用例不验证反弹行为（引擎不响应此字段），后续改引擎时勿误读为契约。
             const world = api.createPhysicsWorld();
-            const shape = api.createBoxShape(1, 1, 1);
-            const info = buildRigidBodyInfo(shape, { mass: 1.0, disableDeactivation: true });
-            const buf = new DataView(memory.buffer, info, INFO_SIZE);
-            buf.setFloat32(OFF.Restitution, 0.9, true);
-            expect(buf.getFloat32(OFF.Restitution, true)).toBeCloseTo(0.9, 5);
+            // 资源声明提升到 try 外：finally 需引用（try 内 const 块级不可见）
+            let shape: number, info: number, body: number;
+            try {
+                shape = api.createBoxShape(1, 1, 1);
+                info = buildRigidBodyInfo(shape, { mass: 1.0, disableDeactivation: true });
+                const buf = new DataView(memory.buffer, info, INFO_SIZE);
+                buf.setFloat32(OFF.Restitution, 0.9, true);
+                expect(buf.getFloat32(OFF.Restitution, true)).toBeCloseTo(0.9, 5);
 
-            // 引擎接受该构造信息，刚体创建成功
-            const body = api.createRigidBody(info);
-            expect(body).toBeGreaterThan(0);
+                // 引擎接受该构造信息，刚体创建成功
+                body = api.createRigidBody(info);
+                expect(body).toBeGreaterThan(0);
 
-            api.physicsWorldAddRigidBody(world, body);
-            api.physicsWorldRemoveRigidBody(world, body);
-            api.destroyRigidBody(body);
-            api.deallocateBuffer(info, INFO_SIZE);
-            api.destroyShape(shape);
-            api.destroyPhysicsWorld(world);
+                api.physicsWorldAddRigidBody(world, body);
+            } finally {
+                // 清理（断言失败也执行，避免 WASM 指针泄漏）
+                api.physicsWorldRemoveRigidBody(world, body);
+                api.destroyRigidBody(body);
+                api.deallocateBuffer(info, INFO_SIZE);
+                api.destroyShape(shape);
+                api.destroyPhysicsWorld(world);
+            }
         });
     });
 
