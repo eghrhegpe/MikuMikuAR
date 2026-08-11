@@ -158,31 +158,31 @@
 | `setSfxEnabled()` | `core/audio-bus:85` | — |
 | `setSfxVolume()` | `core/audio-bus:75` | — |
 | `BeatSink()` | `core/audio:27` | [doc:adr-242] 节拍检测器的结构契约。core 层不得依赖 &#96;motion-algos/beat-detector&#96; 的具体实现类——那会构成 &#96;core → moti |
-| `applyGain()` | `core/audio:562` | — |
-| `attachBeatDetector()` | `core/audio:555` | — |
+| `applyGain()` | `core/audio:563` | — |
+| `attachBeatDetector()` | `core/audio:556` | — |
 | `clearAudio()` | `core/audio:403` | — |
 | `disposeAudio()` | `core/audio:414` | — |
-| `getAudioName()` | `core/audio:505` | — |
-| `getAudioOffset()` | `core/audio:476` | — |
+| `getAudioName()` | `core/audio:506` | — |
+| `getAudioOffset()` | `core/audio:477` | — |
 | `getAudioPath()` | `core/audio:380` | — |
-| `getCurrentTime()` | `core/audio:482` | — |
-| `getDuration()` | `core/audio:486` | — |
+| `getCurrentTime()` | `core/audio:483` | — |
+| `getDuration()` | `core/audio:487` | — |
 | `getRepeatModeStr()` | `core/audio:357` | 获取当前重复模式。 |
-| `getStreamPlayer()` | `core/audio:579` | 暴露内部 StreamAudioPlayer 供 scene.ts 调用 MmdRuntime.setAudioPlayer()。 |
-| `getVolume()` | `core/audio:465` | — |
-| `isAudioPlaying()` | `core/audio:501` | — |
+| `getStreamPlayer()` | `core/audio:580` | 暴露内部 StreamAudioPlayer 供 scene.ts 调用 MmdRuntime.setAudioPlayer()。 |
+| `getVolume()` | `core/audio:466` | — |
+| `isAudioPlaying()` | `core/audio:502` | — |
 | `loadAudioFile()` | `core/audio:282` | — |
 | `nextTrack()` | `core/audio:343` | 切换到下一曲。 |
-| `notifyBeatDetectorReset()` | `core/audio:572` | — |
+| `notifyBeatDetectorReset()` | `core/audio:573` | — |
 | `pauseAudio()` | `core/audio:384` | — |
 | `playAudio()` | `core/audio:260` | — |
 | `resumeAudio()` | `core/audio:388` | — |
-| `seekAudio()` | `core/audio:491` | — |
-| `setAudioOffset()` | `core/audio:469` | — |
+| `seekAudio()` | `core/audio:492` | — |
+| `setAudioOffset()` | `core/audio:470` | — |
 | `setRepeatMode()` | `core/audio:352` | 设置重复模式（持久化）。 |
-| `setVolume()` | `core/audio:459` | — |
+| `setVolume()` | `core/audio:460` | — |
 | `stopAudio()` | `core/audio:395` | — |
-| `syncAudioPlayback()` | `core/audio:513` | — |
+| `syncAudioPlayback()` | `core/audio:514` | — |
 | `setTriggerAutoSave()` | `core/auto-save:10` | 注册自动保存的实现回调（由 scene-serialize.ts 在初始化时调用）。 |
 | `triggerAutoSave()` | `core/auto-save:15` | 触发自动保存（由动作/菜单/UI 层调用）。 |
 | `clearWebFlag()` | `core/backend/backend-mocks:13` | — |
