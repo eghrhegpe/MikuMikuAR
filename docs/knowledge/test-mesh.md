@@ -2,7 +2,7 @@
 kind: test_mesh_factory
 name: 程序化测试 Mesh 工厂 — E2E 与单测共享
 tier: leaf
-category: testing
+category: core
 scope:
   - frontend/src/core/test-mesh.ts
 source_files:
