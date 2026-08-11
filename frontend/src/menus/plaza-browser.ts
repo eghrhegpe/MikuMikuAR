@@ -259,7 +259,7 @@ export function openSiteByMode(site: PlazaSite, url?: string): void {
     const mode = getCachedCapabilities().inAppBrowser ? effectiveMode(site) : 'external';
     switch (mode) {
         case 'embed':
-            renderEmbed(site);
+            renderEmbed(site, url);
             break;
         case 'external':
             openExternal(site, url);
@@ -840,7 +840,7 @@ export async function renderHome(): Promise<void> {
     el.appendChild(root);
 }
 
-export function renderEmbed(site: PlazaSite): void {
+export function renderEmbed(site: PlazaSite, initialUrl?: string): void {
     stopProxy();
     const el = getLayer();
     if (!el) {
@@ -914,7 +914,7 @@ export function renderEmbed(site: PlazaSite): void {
         addressBar.id = 'plaza-address-bar';
         addressBar.className = 'plaza-address-bar';
         addressBar.type = 'text';
-        addressBar.value = site.url;
+        addressBar.value = initialUrl ?? site.url;
         addressBar.placeholder = '输入网址导航…';
         addressBar.spellcheck = false;
         addressBar.addEventListener('keydown', (e) => {
@@ -938,7 +938,7 @@ export function renderEmbed(site: PlazaSite): void {
     // 代价：无代理注入，应用内下载接管（/__plaza_dl__）失效，下载退化为系统浏览器 + fsnotify 兜底（ADR-003）。
     // 仅 frame-hostile 站点（发 X-Frame-Options/CSP frame-ancestors 拒绝被框）应置 directNavigate:false 走代理剥离头，
     // 否则 embed 会白屏；window 模式不受此限，始终直连真实域名。
-    navigate(site.url);
+    navigate(initialUrl ?? site.url);
 }
 
 // ======== 入口函数 ========
