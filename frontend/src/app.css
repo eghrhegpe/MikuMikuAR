@@ -748,6 +748,10 @@ body.app-booting #webviewLayer {
     align-items: center;
     gap: 8px;
 }
+.plaza-toolbar-left {
+    flex: 1;
+    min-width: 0;
+}
 .plaza-title {
     font-size: 14px;
     font-weight: 600;
