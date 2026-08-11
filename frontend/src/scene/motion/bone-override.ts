@@ -1034,8 +1034,10 @@ export interface BoneHierarchyNode {
     parentIndex: number;
     /** 子骨骼数量 */
     childCount: number;
-    /** 是否挂载 IK 求解器 */
+    /** 是否挂载 IK 求解器（JS: ikSolver / WASM: ikSolverIndex） */
     hasIkSolver: boolean;
+    /** WASM IK 求解器索引（仅 WASM 模式，JS 模式为 undefined） */
+    ikSolverIndex?: number;
     /** 是否受物理驱动（transformAfterPhysics） */
     afterPhysics: boolean;
     /** 当前是否被覆盖 */
@@ -1087,12 +1089,17 @@ export function dumpBoneHierarchy(modelId?: string): BoneHierarchyDump | null {
         if (isOverridden) {
             totalOverridden++;
         }
+        // [ADR-248] WASM 模式下 ikSolver 为 undefined，但 ikSolverIndex 存在
+        const ikSolver = (b as MmdRuntimeBoneExtended).ikSolver;
+        const ikSolverIndex = (b as { ikSolverIndex?: number }).ikSolverIndex;
+        const hasIkSolver = !!(ikSolver || (typeof ikSolverIndex === 'number' && ikSolverIndex >= 0));
         result.push({
             index: i,
             name: b.name,
             parentIndex,
             childCount: b.childBones.length,
-            hasIkSolver: !!(b as MmdRuntimeBoneExtended).ikSolver,
+            hasIkSolver,
+            ikSolverIndex: typeof ikSolverIndex === 'number' ? ikSolverIndex : undefined,
             afterPhysics: b.transformAfterPhysics,
             isOverridden,
             overrideEntry: isOverridden && slot ? _slotToEntry(b.name, slot) : undefined,

@@ -12,6 +12,8 @@ import '../menus/library-setup';
 import { bootstrap } from './init';
 import { registerServiceWorker } from './sw-register';
 import { isWebEntryMode } from './platform';
+// [ADR-248] 调试日志面板 — 注册到 window.__logPanel，供控制台调用
+import './debug-log-panel';
 
 bootstrap();
 

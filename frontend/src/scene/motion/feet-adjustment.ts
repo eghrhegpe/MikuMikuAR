@@ -49,6 +49,8 @@ export type FeetModelProvider = () => Iterable<{
     id: string;
     feet: FeetState;
     runtimeBones: readonly IMmdRuntimeBone[];
+    /** MMD 模型引用，用于访问 WASM 内部缓冲区 */
+    model: unknown;
 }>;
 
 interface _ModelCache {
@@ -172,7 +174,8 @@ function _adjustFoot(
     cache: _ModelCache,
     feet: FeetState,
     modelId: string,
-    dt: number
+    dt: number,
+    model: unknown
 ): void {
     if (!ikName) {
         return;
@@ -252,6 +255,7 @@ function _adjustFoot(
 
     if (feetDebug.value && _feetDbgFrame++ % 60 === 0) {
         const solver = (ik as MmdRuntimeBoneExtended).ikSolver;
+        const ikSolverIndex = (ik as { ikSolverIndex?: number }).ikSolverIndex;
         logWarn(
             'feet',
             `[WASM] ${modelId} ${side} ` +
@@ -261,6 +265,7 @@ function _adjustFoot(
                 `targetY=${res.targetY.toFixed(3)} ` +
                 `skip=${res.skip} ` +
                 `solver=${solver ? 'present' : 'null'} ` +
+                `ikSolverIndex=${ikSolverIndex ?? 'null'} ` +
                 `hip=${hip ? hip.name : 'null<-fallback'} ` +
                 `centerY=${cache.centerY !== null ? cache.centerY.toFixed(3) : '?'} ` +
                 `legLen=${legLength.toFixed(3)}`
@@ -321,27 +326,75 @@ function _adjustFoot(
 
     // 驱动 IK 目标骨骼世界坐标（保留 XZ，仅调整 Y）
     _vTarget.set(_vFoot.x, res.targetY, _vFoot.z);
-    ik.setWorldTranslation(_vTarget);
 
     // 重解该腿 IK（ADR-202 §六：JS/WASM 统一走原生求解器）
     // JS 模式：ikSolver.solve() 直接调用（solve 内部回写踝 + 链骨骼 worldMatrix）
-    // WASM 模式：经 mmdModelSolveIk 导出重解原生 IK 链（setWorldTranslation 已写入同一 bone buffer）
+    // WASM 模式：必须写入 boneAnimationStates（IK 求解器读取此缓冲区），而非 _worldMatrix（渲染缓冲区）
     if (isWasmRuntime(bones[0])) {
-        const ikSolverIndex = (ik as { ikSolverIndex?: number }).ikSolverIndex;
-        const resolver = getWasmIkResolver();
-        if (resolver && typeof ikSolverIndex === 'number' && ikSolverIndex >= 0) {
-            resolver(modelId, ikSolverIndex, false);
+        // [关键修复] WASM 模式下，IK 求解器从 boneAnimationStates 读取骨骼位置，
+        // 而非从 _worldMatrix。因此必须写入 boneAnimationStates[boneIndex * 12 + 0/1/2]
+        const ikBoneIndex = bones.findIndex((b) => b.name === ikName);
+        const wasmModel = model as { boneAnimationStates?: Float32Array } | null;
+        const boneAnimStates = wasmModel?.boneAnimationStates;
+
+        if (ikBoneIndex >= 0 && boneAnimStates) {
+            // 读取当前 LOCAL Y（boneAnimationStates 存储局部位置）
+            const localYIndex = ikBoneIndex * 12 + 1;
+            const currentLocalY = boneAnimStates[localYIndex];
+
+            // 计算 delta Y：世界坐标的变化量
+            const deltaWorldY = res.targetY - _vFoot.y;
+
+            // 写入新的 LOCAL Y（近似：假设父骨骼无 Y 轴旋转，delta 直接加到局部 Y）
+            const newLocalY = currentLocalY + deltaWorldY;
+            boneAnimStates[localYIndex] = newLocalY;
+
+            // 调试日志
+            if (feetDebug.value && _feetDbgFrame % 60 === 0) {
+                logWarn(
+                    'feet',
+                    `[BONE-STATE] ${modelId} ${side} ` +
+                        `boneIndex=${ikBoneIndex} ` +
+                        `localY: ${currentLocalY.toFixed(3)} → ${newLocalY.toFixed(3)} ` +
+                        `deltaWorldY=${deltaWorldY.toFixed(3)}`
+                );
+            }
         } else if (feetDebug.value && _feetDbgFrame % 60 === 0) {
             logWarn(
                 'feet',
-                `[WASM] ${modelId} ${side} IK 未重解: resolver=${resolver ? 'ok' : 'null'}, ikSolverIndex=${ikSolverIndex ?? 'null'}`
+                `[BONE-STATE-ERROR] ${modelId} ${side} ` +
+                    `ikBoneIndex=${ikBoneIndex}, boneAnimStates=${boneAnimStates ? 'ok' : 'null'}`
             );
         }
+
+        const ikSolverIndex = (ik as { ikSolverIndex?: number }).ikSolverIndex;
+        const resolver = getWasmIkResolver();
+        const canSolve = resolver && typeof ikSolverIndex === 'number' && ikSolverIndex >= 0;
+        if (feetDebug.value && _feetDbgFrame % 60 === 0) {
+            logWarn(
+                'feet',
+                `[WASM-DEBUG] ${modelId} ${side} ` +
+                    `ikSolverIndex=${ikSolverIndex ?? 'null'} (type=${typeof ikSolverIndex}) ` +
+                    `resolver=${resolver ? 'ok' : 'null'} ` +
+                    `canSolve=${canSolve}`
+            );
+        }
+        if (!canSolve && feetDebug.value && _feetDbgFrame % 60 === 0) {
+            logWarn(
+                'feet',
+                `[WASM-ERROR] ${modelId} ${side} IK 求解失败: ` +
+                    `ikSolverIndex=${ikSolverIndex ?? 'null'}, resolver=${resolver ? 'ok' : 'null'} ` +
+                    `骨骼名=${ikName}`
+            );
+        }
+        if (canSolve) {
+            resolver!(modelId, ikSolverIndex!, false);
+        }
     } else {
+        // JS 模式：ikSolver.solve() 直接调用
+        ik.setWorldTranslation(_vTarget);
         const solver = (ik as MmdRuntimeBoneExtended).ikSolver;
         if (solver) {
-            // 腿部链通常为 FollowBone（骨骼驱动刚体），usePhysics=false 即正确；
-            // 物理驱动模式下 canSkipWhenPhysicsEnabled=true → solve 自动跳过（已知限制）
             solver.solve(false);
         }
     }
@@ -424,8 +477,8 @@ export function startFeetAdjustment(getModels: FeetModelProvider): void {
                     logWarn('feet', '  模型中含"足/IK"的骨骼名：', hints);
                 }
             }
-            _adjustFoot(m.runtimeBones, cache.lName, 'L', cache, feet, m.id, dt);
-            _adjustFoot(m.runtimeBones, cache.rName, 'R', cache, feet, m.id, dt);
+            _adjustFoot(m.runtimeBones, cache.lName, 'L', cache, feet, m.id, dt, m.model);
+            _adjustFoot(m.runtimeBones, cache.rName, 'R', cache, feet, m.id, dt, m.model);
         }
     };
 

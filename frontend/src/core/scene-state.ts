@@ -49,7 +49,7 @@ export function createDefaultFeetState(): FeetState {
         enabled: false,
         intensity: 1,
         soleHeight: 0,
-        jumpThreshold: 0.5,
+        jumpThreshold: 9999,
         bodySmooth: 0.5,
         footSmooth: 0.5,
         maxAngle: 30,

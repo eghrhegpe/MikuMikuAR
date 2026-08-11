@@ -10,9 +10,13 @@ source_files:
 adr:
   - ADR-141
 symbols:
+  - LogEntry
+  - clearLogs
+  - getLogBuffer
+  - logError
   - logInfo
   - logWarn
-  - logError
+  - setConsoleOutput
 invariants:
   - 无依赖模块，不引入循环依赖（ADR-141 从 utils.ts 剥离）
   - 前缀格式固定为 [tag] message，message 为空时退化为 [tag]

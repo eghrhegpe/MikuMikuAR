@@ -80,6 +80,7 @@ function makeModel(opts: { lY?: number; rY?: number; solver?: { solve: ReturnTyp
             reachAngle: 15,
         },
         runtimeBones: [center, lIk, rIk],
+        model: { boneAnimationStates: new Float32Array(3 * 12) },
     };
 }
 
@@ -90,7 +91,12 @@ function runFrame(): void {
 /** 把 FakeBone 模型 cast 成 FeetModelProvider 元素类型（FakeBone 是 IMmdRuntimeBone 子集） */
 function startFor(model: ReturnType<typeof makeModel>): void {
     startFeetAdjustment(() => [
-        model as unknown as { id: string; feet: FeetState; runtimeBones: readonly IMmdRuntimeBone[] },
+        model as unknown as {
+            id: string;
+            feet: FeetState;
+            runtimeBones: readonly IMmdRuntimeBone[];
+            model: unknown;
+        },
     ]);
 }
 

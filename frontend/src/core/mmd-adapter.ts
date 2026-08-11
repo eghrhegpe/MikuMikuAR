@@ -266,6 +266,7 @@ export function applyForceToModelRigidBodiesNative(
  * @returns true=已调用 wasm 侧 solve_ik；false=缺导出或 model.ptr 不可用
  */
 let _solveIkMissingWarned = false;
+let _solveIkLastWarnTime = 0; // 限频日志时间戳
 export function solveIkNative(
     wasmInstance: unknown,
     model: RuntimeModel,
@@ -289,6 +290,21 @@ export function solveIkNative(
     const ptr = (model as unknown as { ptr?: number }).ptr;
     if (typeof ptr !== 'number') {
         return false;
+    }
+    (wi.mmdModelSolveIk as (p: number, i: number, u: boolean) => void)(
+        ptr,
+        ikSolverIndex,
+        usePhysics
+    );
+    // 调试日志：限频输出（每秒最多1次）
+    const now = performance.now();
+    if (now - _solveIkLastWarnTime > 1000) {
+        _solveIkLastWarnTime = now;
+        logWarn(
+            'mmd-adapter',
+            `[solveIkNative] ptr=${ptr}, ikSolverIndex=${ikSolverIndex}, usePhysics=${usePhysics}`
+        );
+        _solveIkLastWarnTime = now;
     }
     (wi.mmdModelSolveIk as (p: number, i: number, u: boolean) => void)(
         ptr,
