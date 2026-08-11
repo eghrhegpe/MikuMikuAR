@@ -298,3 +298,25 @@ export const mockCameraModule = () => ({
     setSurroundParams: vi.fn(),
     hasCameraVmd: vi.fn(() => false),
 });
+
+// ---- 共享 SUT 装配接线（guards/serialization/presets/vmd-state 4 文件原重复） ----
+// 封装 beforeAll(vi.importActual + setSyncAxesCallback) 与 beforeEach(复位 preset/fov)。
+// 关键：cam 是 beforeAll 异步赋值，不能通过返回值传递（返回的是求值期快照 undefined）。
+// 改为 setCam 回调把真实 cam 写回测试文件的 `let cam` 绑定（live 引用，用例可见）。
+// vi.mock 注册块受 Vitest hoist 限制保留在各测试文件。
+// 用法：测试文件顶层 `let cam: any; installCameraSUT((c) => { cam = c; });`
+export function installCameraSUT(setCam: (cam: any) => void): void {
+    const holder: { cam: any } = { cam: null };
+    beforeAll(async () => {
+        const m = await vi.importActual('../scene/camera/camera');
+        holder.cam = m as any;
+        setCam(m as any);
+        (m as any).setSyncAxesCallback(() =>
+            (m as any)._syncAxesFromMode((m as any).getCameraMode())
+        );
+    });
+    beforeEach(() => {
+        holder.cam.setCameraPreset(holder.cam.defaultCameraPreset());
+        holder.cam.setFov(0.8);
+    });
+}

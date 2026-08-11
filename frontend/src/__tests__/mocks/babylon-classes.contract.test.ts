@@ -14,6 +14,9 @@
  * 2. `_` 前缀成员完全豁免——mock 新增的 `_` 开头幻影公开成员不会被拦截。
  * 3. 若某 mock 类含真实类型没有的「有意扩展」成员（如测试辅助方法），
  *    需用 Omit 显式豁免并在此注释说明理由，避免误报。
+ * 4. 签名级断言（AssertSignatures，参数逆变方向）当前覆盖 14/28 类——
+ *    数学类 + Engine/Scene/Node/Light/Camera/ArcRotateCamera/Material/BaseTexture；
+ *    其余 14 类（Mesh/StandardMaterial/PBRMaterial/Texture 等）仅成员名子集断言。
  *
  * 仅 type-only import，不拖运行时依赖；类型断言在声明点即校验约束，无需运行。
  */

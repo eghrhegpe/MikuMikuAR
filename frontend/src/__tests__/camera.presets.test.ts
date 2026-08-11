@@ -1,7 +1,7 @@
 // @vitest-environment node
 // @ts-nocheck — mock 类运行时替换（camera 拆分测试用）
 // [doc:adr-204] camera.adr100.test.ts 拆分：P3 presets + FOV
-import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
     MockCamera,
     MockArcRotateCamera,
@@ -16,6 +16,7 @@ import {
     mockSceneModule,
     mockEnvPersist,
     mockCameraModule,
+    installCameraSUT,
 } from './camera-adr100-mocks';
 
 vi.mock('@babylonjs/core/Cameras/camera', () => ({ Camera: MockCamera }));
@@ -52,16 +53,8 @@ vi.mock('../scene/env/_bridge/env-persist', () => mockEnvPersist());
 vi.mock('../scene/camera/camera', () => mockCameraModule());
 
 let cam: any;
-beforeAll(async () => {
-    const m = await vi.importActual('../scene/camera/camera');
-    cam = m as any;
-    (cam as any).setSyncAxesCallback(() =>
-        (cam as any)._syncAxesFromMode((cam as any).getCameraMode())
-    );
-});
-beforeEach(() => {
-    cam.setCameraPreset(cam.defaultCameraPreset());
-    cam.setFov(0.8);
+installCameraSUT((c) => {
+    cam = c;
 });
 
 describe('defaultCameraPreset', () => {

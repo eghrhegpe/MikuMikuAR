@@ -18,6 +18,7 @@ import {
     mockSceneModule,
     mockEnvPersist,
     mockCameraModule,
+    installCameraSUT,
 } from './camera-adr100-mocks';
 import { setCameraScene } from '../scene/camera/camera-state';
 
@@ -55,16 +56,8 @@ vi.mock('../scene/env/_bridge/env-persist', () => mockEnvPersist());
 vi.mock('../scene/camera/camera', () => mockCameraModule());
 
 let cam: any;
-beforeAll(async () => {
-    const m = await vi.importActual('../scene/camera/camera');
-    cam = m as any;
-    (cam as any).setSyncAxesCallback(() =>
-        (cam as any)._syncAxesFromMode((cam as any).getCameraMode())
-    );
-});
-beforeEach(() => {
-    cam.setCameraPreset(cam.defaultCameraPreset());
-    cam.setFov(0.8);
+installCameraSUT((c) => {
+    cam = c;
 });
 
 describe('VMD', () => {

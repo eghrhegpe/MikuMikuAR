@@ -9,8 +9,8 @@
 // from ever loading the real Engine source file.
 //
 // Only Engine needs mocking — Scene/Mesh/Material etc. are left as real Babylon.js.
-// environment-integration.test.ts uses NullEngine (separate from Engine) and real
-// Scene/MeshBuilder, so those work fine.
+// (原 environment-integration.test.ts 已删除——纯 Babylon 库自测零应用关联；
+// NullEngine 用法由 env-water 等真实链路测试承接。)
 
 // [fix:test-locale] happy-dom 的 navigator.language 默认为 en-US，而项目以中文为
 // 基准语言，大量未显式 setLang('zh-CN') 的用例会因此拿到英文标签而失败。在模块
@@ -55,7 +55,6 @@ vi.mock('@wailsio/runtime', () => ({
         hide: vi.fn(),
         show: vi.fn(),
         focus: vi.fn(),
-        minimis: vi.fn(),
         isMaximised: vi.fn().mockResolvedValue(false),
         isMinimised: vi.fn().mockResolvedValue(false),
         isNormal: vi.fn().mockResolvedValue(true),
