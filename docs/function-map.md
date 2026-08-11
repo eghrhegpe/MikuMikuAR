@@ -2412,9 +2412,9 @@
 | `buildSettingsAppearanceLevel()` | `menus/settings-appearance:510` | — |
 | `buildCameraSchema()` | `menus/settings-controls:29` | — |
 | `buildSettingsControlsLevel()` | `menus/settings-controls:325` | — |
-| `buildDiagnosticSchema()` | `menus/settings-diagnostic:405` | — |
-| `buildSettingsDiagnosticLevel()` | `menus/settings-diagnostic:509` | — |
-| `renderDiagnosticPanel()` | `menus/settings-diagnostic:479` | — |
+| `buildDiagnosticSchema()` | `menus/settings-diagnostic:409` | — |
+| `buildSettingsDiagnosticLevel()` | `menus/settings-diagnostic:513` | — |
+| `renderDiagnosticPanel()` | `menus/settings-diagnostic:483` | — |
 | `buildSettingsDownloadsLevel()` | `menus/settings-downloads:446` | — |
 | `buildEffectsSchema()` | `menus/settings-graphics:204` | — |
 | `buildFrameQualitySchema()` | `menus/settings-graphics:102` | — |

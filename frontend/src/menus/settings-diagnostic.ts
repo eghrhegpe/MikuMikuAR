@@ -54,6 +54,7 @@ import {
     buildConfigSchema,
     updateStatusBadge,
     goKeyAllowsProceed,
+    loadInitialConfig,
 } from './diagnostic-config';
 
 // ======== 生命周期 ========
@@ -62,6 +63,9 @@ resolveAi()
         diagState.ai = ai;
         diagState.aiResolved = true;
         await loadActiveSession();
+        // 先加载持久化配置，再刷新能力/自动测试，避免 localConfig 停留在初始化默认值
+        // （ollama localhost）导致已保存的端点/模型读不到（此前 loadInitialConfig 只在配置页签 render 时执行）
+        await loadInitialConfig();
         await refreshCaps();
         diagState.callbacks.updateControlsEnabled?.();
         renderChat();
