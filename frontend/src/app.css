@@ -760,7 +760,7 @@ body.app-booting #webviewLayer {
 .plaza-address-bar {
     flex: 1;
     min-width: 140px;
-    max-width: 520px;
+    max-width: 1040px;
     height: 32px;
     padding: 0 12px;
     border: 1px solid rgba(var(--plaza-teal-rgb), 0.28);
