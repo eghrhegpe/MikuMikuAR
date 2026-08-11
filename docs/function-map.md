@@ -8,7 +8,7 @@
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
 | 核心基础设施 | 135 | 815 |
-| 3D 场景 | 125 | 1228 |
+| 3D 场景 | 125 | 1229 |
 | 菜单 & UI | 76 | 397 |
 | 动作算法 | 18 | 138 |
 | 顶层配置 | 1 | 1 |
@@ -1325,25 +1325,25 @@
 | `_isPbrMaterial()` | `scene/manager/material:444` | — |
 | `_matEnabled()` | `scene/manager/material:209` | 材质状态管理器 — 集中管理分类/逐材质/可见性状态，便于测试 mock 和未来扩展。 |
 | `_matState()` | `scene/manager/material:207` | 材质状态管理器 — 集中管理分类/逐材质/可见性状态，便于测试 mock 和未来扩展。 |
-| `applyMatState()` | `scene/manager/material:1047` | — |
-| `applyUnlitFallback()` | `scene/manager/material:782` | 光照兜底预设：让模型呈现"伪 unlit"状态，不依赖方向光即可正常显示。 |
-| `disposeModelMaterialState()` | `scene/manager/material:896` | 清理指定模型的全部材质状态（分类 + 逐材质 + 启用标记）。 |
+| `applyMatState()` | `scene/manager/material:1051` | — |
+| `applyUnlitFallback()` | `scene/manager/material:786` | 光照兜底预设：让模型呈现"伪 unlit"状态，不依赖方向光即可正常显示。 |
+| `disposeModelMaterialState()` | `scene/manager/material:900` | 清理指定模型的全部材质状态（分类 + 逐材质 + 启用标记）。 |
 | `getMatCatGroups()` | `scene/manager/material:715` | — |
 | `getMatCatParams()` | `scene/manager/material:735` | — |
-| `getMatDetailList()` | `scene/manager/material:812` | — |
-| `getMatParams()` | `scene/manager/material:841` | — |
-| `getMatState()` | `scene/manager/material:977` | — |
+| `getMatDetailList()` | `scene/manager/material:816` | — |
+| `getMatParams()` | `scene/manager/material:845` | — |
+| `getMatState()` | `scene/manager/material:981` | — |
 | `getMaterialCategory()` | `scene/manager/material:373` | Resolve the display category (皮肤 / 头发 / 眼睛 / 服装 …) for a material or its material name. |
-| `isMatCategoryAllEnabled()` | `scene/manager/material:905` | 检查指定分类的全部材质是否都已启用。 |
+| `isMatCategoryAllEnabled()` | `scene/manager/material:909` | 检查指定分类的全部材质是否都已启用。 |
 | `isMatEnabled()` | `scene/manager/material:688` | — |
 | `isPbrMaterial()` | `scene/manager/material:449` | — |
-| `resetMatCatParams()` | `scene/manager/material:758` | — |
-| `resetPerMaterialParams()` | `scene/manager/material:971` | 重置所有逐材质覆盖（per-material），保留分类调整（皮肤/头发等）。 |
-| `resetSingleMatParams()` | `scene/manager/material:877` | — |
-| `setMatCatParams()` | `scene/manager/material:743` | — |
-| `setMatCategoryEnabled()` | `scene/manager/material:933` | 按分类批量切换材质可见性。 |
+| `resetMatCatParams()` | `scene/manager/material:762` | — |
+| `resetPerMaterialParams()` | `scene/manager/material:975` | 重置所有逐材质覆盖（per-material），保留分类调整（皮肤/头发等）。 |
+| `resetSingleMatParams()` | `scene/manager/material:881` | — |
+| `setMatCatParams()` | `scene/manager/material:747` | — |
+| `setMatCategoryEnabled()` | `scene/manager/material:937` | 按分类批量切换材质可见性。 |
 | `setMatEnabled()` | `scene/manager/material:692` | — |
-| `setMatParams()` | `scene/manager/material:851` | — |
+| `setMatParams()` | `scene/manager/material:855` | — |
 | `resolveModelId()` | `scene/manager/model-id:9` | 解析模型运行时 id：优先复用存档 uuid（preferredId，由恢复路径传入）， 否则生成稳定 uuid。替代旧实现 &#96;model_${Date.now()}_${Math |
 | `captureThumbnail()` | `scene/manager/model-loader:153` | Captures a screenshot after model load for thumbnail cache. |
 | `initLoader()` | `scene/manager/model-loader:91` | — |
@@ -1501,23 +1501,24 @@
 | `setDefaultMotion()` | `scene/motion/motion-intent:178` | 设置默认动作 id。 |
 | `setLoadedProceduralMotions()` | `scene/motion/motion-intent:80` | 设置已加载集合（用于场景反序列化）。始终保证 'none' 存在。 |
 | `unloadProceduralMotion()` | `scene/motion/motion-intent:72` | 卸载一个程序化动作。'none' 不可卸载。 |
-| `BODY_POSTURE_DEF()` | `scene/motion/motion-modules/body-posture:285` | 身体姿态模块注册定义（供 registry BUILTIN_MODULE_DEFS 批量注册） |
-| `createBodyPostureModule()` | `scene/motion/motion-modules/body-posture:181` | 创建身体姿态模块实例 |
-| `LEFT_FOOT_DEF()` | `scene/motion/motion-modules/foot-modules:255` | — |
-| `RIGHT_FOOT_DEF()` | `scene/motion/motion-modules/foot-modules:272` | — |
-| `LEFT_HAND_DEF()` | `scene/motion/motion-modules/hand-modules:453` | — |
-| `RIGHT_HAND_DEF()` | `scene/motion/motion-modules/hand-modules:481` | — |
-| `FrameHookManager()` | `scene/motion/motion-modules/module-base:231` | 帧钩子管理器的返回类型（供 createEnsureActive 复用） |
+| `BODY_POSTURE_DEF()` | `scene/motion/motion-modules/body-posture:286` | 身体姿态模块注册定义（供 registry BUILTIN_MODULE_DEFS 批量注册） |
+| `createBodyPostureModule()` | `scene/motion/motion-modules/body-posture:182` | 创建身体姿态模块实例 |
+| `LEFT_FOOT_DEF()` | `scene/motion/motion-modules/foot-modules:256` | — |
+| `RIGHT_FOOT_DEF()` | `scene/motion/motion-modules/foot-modules:273` | — |
+| `LEFT_HAND_DEF()` | `scene/motion/motion-modules/hand-modules:454` | — |
+| `RIGHT_HAND_DEF()` | `scene/motion/motion-modules/hand-modules:482` | — |
+| `FrameHookManager()` | `scene/motion/motion-modules/module-base:256` | 帧钩子管理器的返回类型（供 createEnsureActive 复用） |
 | `ModuleBaseMethods()` | `scene/motion/motion-modules/module-base:21` | createModuleBase 返回的方法子集（与 MotionOverrideModule 对应方法签名一致） |
 | `ModuleBaseOverrides()` | `scene/motion/motion-modules/module-base:27` | 模块基础行为覆盖 |
-| `ModuleShellConfig()` | `scene/motion/motion-modules/module-base:273` | [doc:adr-146 P3 主题12] 模块实例外壳 — 消除 6 个工厂末尾重复的 &#96;id/meta/priority/managedBones/buildSchema + |
-| `applyModuleSnapshot()` | `scene/motion/motion-modules/module-base:175` | [doc:adr-125] 将快照应用到指定模型的所有模块。 |
-| `createEnsureActive()` | `scene/motion/motion-modules/module-base:252` | [doc:adr-146 P3] ensureActive 公共工厂 — 消除 body-posture/foot/hand 复制粘贴的 「先 bake 重烤、再幂等注册帧钩子」模 |
-| `createFrameHookManager()` | `scene/motion/motion-modules/module-base:207` | [doc:adr-116 P3] 帧钩子管理器 — 消除 sway/riding 的 _xxxFrameHooks Map 重复模式。 |
-| `createModuleBase()` | `scene/motion/motion-modules/module-base:79` | 创建模块通用方法，减少 7 个模块间 ~105 行重复 boilerplate。 |
-| `createModuleShell()` | `scene/motion/motion-modules/module-base:283` | — |
+| `ModuleShellConfig()` | `scene/motion/motion-modules/module-base:298` | [doc:adr-146 P3 主题12] 模块实例外壳 — 消除 6 个工厂末尾重复的 &#96;id/meta/priority/managedBones/buildSchema + |
+| `applyModuleSnapshot()` | `scene/motion/motion-modules/module-base:200` | [doc:adr-125] 将快照应用到指定模型的所有模块。 |
+| `createEnsureActive()` | `scene/motion/motion-modules/module-base:277` | [doc:adr-146 P3] ensureActive 公共工厂 — 消除 body-posture/foot/hand 复制粘贴的 「先 bake 重烤、再幂等注册帧钩子」模 |
+| `createFrameHookManager()` | `scene/motion/motion-modules/module-base:232` | [doc:adr-116 P3] 帧钩子管理器 — 消除 sway/riding 的 _xxxFrameHooks Map 重复模式。 |
+| `createModuleBase()` | `scene/motion/motion-modules/module-base:101` | 创建模块通用方法，减少 7 个模块间 ~105 行重复 boilerplate。 |
+| `createModuleShell()` | `scene/motion/motion-modules/module-base:308` | — |
 | `getBakeActionId()` | `scene/motion/motion-modules/module-base:66` | 读取当前 bake 的 actionId（无则 undefined，回到 activeMotion/fallback 语义） |
-| `prepareBake()` | `scene/motion/motion-modules/module-base:303` | [doc:adr-146 P3 主题13] bake 头部守卫 — 消除 6 个 bake 重复的 &#96;getModuleState + enabled 守卫 + claimBone |
+| `getModuleActionId()` | `scene/motion/motion-modules/module-base:88` | 读取某模型当前激活模块的 actionId（帧钩子内使用；无则 undefined 回退 activeMotion/fallback） |
+| `prepareBake()` | `scene/motion/motion-modules/module-base:328` | [doc:adr-146 P3 主题13] bake 头部守卫 — 消除 6 个 bake 重复的 &#96;getModuleState + enabled 守卫 + claimBone |
 | `MotionHistoryEntry()` | `scene/motion/motion-modules/motion-history:10` | — |
 | `SnapshotApplier()` | `scene/motion/motion-modules/motion-history:44` | 应用快照到引擎的回调（调用方负责从 registry 读模块实例并 setState/enable/disable） |
 | `SnapshotBuilder()` | `scene/motion/motion-modules/motion-history:41` | 构建当前全量快照的回调（调用方负责从 registry 读状态） |
@@ -1557,8 +1558,8 @@
 | `setModuleParam()` | `scene/motion/motion-modules/registry:226` | 写入模块参数到场景动作意图 |
 | `setTargetModel()` | `scene/motion/motion-modules/registry:342` | 切换目标模型：禁用当前模型的所有模块覆盖，启用新模型已保存的模块状态。 |
 | `unregisterModule()` | `scene/motion/motion-modules/registry:52` | 注销模块 |
-| `RIDING_MODEL_DEF()` | `scene/motion/motion-modules/riding-model:290` | 骑行模型模块注册定义（供 registry BUILTIN_MODULE_DEFS 批量注册） |
-| `createRidingModelModule()` | `scene/motion/motion-modules/riding-model:192` | 创建骑行模型模块实例 |
+| `RIDING_MODEL_DEF()` | `scene/motion/motion-modules/riding-model:291` | 骑行模型模块注册定义（供 registry BUILTIN_MODULE_DEFS 批量注册） |
+| `createRidingModelModule()` | `scene/motion/motion-modules/riding-model:193` | 创建骑行模型模块实例 |
 | `ModuleDef()` | `scene/motion/motion-modules/types:51` | 模块注册定义（工厂 + 元信息 + 优先级），用于 BUILTIN_MODULE_DEFS 批量注册 |
 | `ModuleFactory()` | `scene/motion/motion-modules/types:48` | 模块工厂函数：接受 modelId，返回绑定到该模型的模块实例。 |
 | `ModuleMeta()` | `scene/motion/motion-modules/types:9` | 模块元信息 |
@@ -2521,14 +2522,14 @@
 | `genWristBones()` | `motion-algos/proc-motion-autodance-bones:37` | — |
 | `resolveBones()` | `motion-algos/proc-motion-autodance-bones:130` | 解析骨骼候选名 → 实际骨骼名 |
 | `swayAt()` | `motion-algos/proc-motion-autodance-bones:125` | 重心左右摆动（2 拍周期，period = 2 * beatFrames）： +1 偏左、-1 偏右。用于重心转移与上下半身联动。 |
-| `EMOTION_CANDIDATES()` | `motion-algos/proc-motion-autodance-emotion:33` | — |
-| `EmotionCategory()` | `motion-algos/proc-motion-autodance-emotion:44` | — |
-| `findBestEmotionMorphs()` | `motion-algos/proc-motion-autodance-emotion:78` | 从 morph 列表中找出最佳情绪映射 |
-| `genAccentMorph()` | `motion-algos/proc-motion-autodance-emotion:172` | 生成情绪强调帧（surprise/wink 随机点缀） |
-| `genEmotionCycles()` | `motion-algos/proc-motion-autodance-emotion:134` | 生成情绪轮播帧（多个情绪依次出现） |
-| `genShyMorph()` | `motion-algos/proc-motion-autodance-emotion:203` | 生成害羞 morph（仅当存在时） |
-| `generateEmotionMorphs()` | `motion-algos/proc-motion-autodance-emotion:233` | 生成全部情绪 morph 帧 |
-| `scoreMorph()` | `motion-algos/proc-motion-autodance-emotion:57` | 计算 morph 名称对一组关键词的匹配得分 - 含关键词 +10 分（大小写不敏感） - 含黑名单模式 -10 分 ⚠️ P3: 使用字符串包含匹配精度较低，建议后续用正则或语义 |
+| `EMOTION_CANDIDATES()` | `motion-algos/proc-motion-autodance-emotion:32` | — |
+| `EmotionCategory()` | `motion-algos/proc-motion-autodance-emotion:43` | — |
+| `findBestEmotionMorphs()` | `motion-algos/proc-motion-autodance-emotion:77` | 从 morph 列表中找出最佳情绪映射 |
+| `genAccentMorph()` | `motion-algos/proc-motion-autodance-emotion:171` | 生成情绪强调帧（surprise/wink 随机点缀） |
+| `genEmotionCycles()` | `motion-algos/proc-motion-autodance-emotion:133` | 生成情绪轮播帧（多个情绪依次出现） |
+| `genShyMorph()` | `motion-algos/proc-motion-autodance-emotion:202` | 生成害羞 morph（仅当存在时） |
+| `generateEmotionMorphs()` | `motion-algos/proc-motion-autodance-emotion:232` | 生成全部情绪 morph 帧 |
+| `scoreMorph()` | `motion-algos/proc-motion-autodance-emotion:56` | 计算 morph 名称对一组关键词的匹配得分 - 含关键词 +10 分（大小写不敏感） - 含黑名单模式 -10 分 ⚠️ P3: 使用字符串包含匹配精度较低，建议后续用正则或语义 |
 | `generateAutoDanceVmd()` | `motion-algos/proc-motion-autodance:46` | 生成 AutoDance VMD |
 | `generateIdleVmd()` | `motion-algos/proc-motion-idle:25` | [audit] 待机呼吸生成：params 为 idle 模式专属参数；尊重 boneToggles，关闭的骨类别不生成。 |
 | `PROC_AUTODANCE_PRESETS()` | `motion-algos/proc-motion-presets:86` | autodance（自动舞蹈）预设集 |

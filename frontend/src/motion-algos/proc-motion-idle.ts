@@ -23,7 +23,8 @@ import {
 
 /** [audit] 待机呼吸生成：params 为 idle 模式专属参数；尊重 boneToggles，关闭的骨类别不生成。 */
 export function generateIdleVmd(params: ProcMotionParams, boneNames: string[] = []): ArrayBuffer {
-    const safeSpeed = Math.max(0.1, Math.min(10, params.speed));
+    const rawSpeed = Number.isNaN(params.speed) ? 1.0 : params.speed;
+    const safeSpeed = Math.max(0.1, Math.min(10, rawSpeed));
     const loopFrames = Math.min(MAX_FRAMES, Math.round(120 / safeSpeed));
     const intensity = params.intensity;
     const bones: BoneKeyFrame[] = [];

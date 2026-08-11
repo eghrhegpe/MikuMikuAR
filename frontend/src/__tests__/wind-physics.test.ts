@@ -9,10 +9,16 @@ vi.mock('@babylonjs/core/Maths/math.vector', () => ({
             public y = 0,
             public z = 0
         ) {}
-        copyFrom() {
+        copyFrom(source: { x: number; y: number; z: number }) {
+            this.x = source.x;
+            this.y = source.y;
+            this.z = source.z;
             return this;
         }
-        scaleInPlace() {
+        scaleInPlace(scale: number) {
+            this.x *= scale;
+            this.y *= scale;
+            this.z *= scale;
             return this;
         }
     },
@@ -38,5 +44,36 @@ describe('_getBundles reads public rigidBodyBundleReferenceCountMap', () => {
             ]),
         };
         expect([..._getBundles(impl)]).toEqual([a, b]);
+    });
+
+    it('returns empty iterable when map is empty', () => {
+        const impl: any = {
+            rigidBodyBundleReferenceCountMap: new Map(),
+        };
+        expect([..._getBundles(impl)]).toEqual([]);
+    });
+
+    it('returns single bundle key', () => {
+        const bundle = { count: 5, applyCentralForce() {} };
+        const impl: any = {
+            rigidBodyBundleReferenceCountMap: new Map([[bundle, 0]]),
+        };
+        const result = [..._getBundles(impl)];
+        expect(result).toHaveLength(1);
+        expect(result[0]).toBe(bundle);
+    });
+
+    it('returns all bundle keys regardless of reference count values', () => {
+        const a = { count: 1, applyCentralForce() {} };
+        const b = { count: 2, applyCentralForce() {} };
+        const c = { count: 3, applyCentralForce() {} };
+        const impl: any = {
+            rigidBodyBundleReferenceCountMap: new Map([
+                [a, 0],
+                [b, 5],
+                [c, 99],
+            ]),
+        };
+        expect([..._getBundles(impl)]).toEqual([a, b, c]);
     });
 });

@@ -737,7 +737,11 @@ export function getMatCatParams(id: string, cat: string): MaterialCategoryParams
         logWarn('material', `getMatCatParams: unknown category "${cat}"`);
         return { ...DEFAULT_MAT_PARAMS };
     }
-    return { ..._ensureState(id).get(cat)! };
+    const state = _catState.get(id);
+    if (!state) {
+        return { ...DEFAULT_MAT_PARAMS };
+    }
+    return { ...(state.get(cat) ?? DEFAULT_MAT_PARAMS) };
 }
 
 export function setMatCatParams(

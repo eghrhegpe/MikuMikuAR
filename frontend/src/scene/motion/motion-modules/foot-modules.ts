@@ -21,6 +21,7 @@ import {
     prepareBake,
     createFrameHookManager,
     createEnsureActive,
+    getModuleActionId,
 } from './module-base';
 import { matchBone, BONE_LEG_IK_L_CANDIDATES, BONE_LEG_IK_R_CANDIDATES } from '@/motion-algos/proc-motion-shared';
 
@@ -109,7 +110,7 @@ function createFootModuleFactory(cfg: FootSideConfig) {
                         if (m !== mid) {
                             return;
                         }
-                        const st = getModuleState(mid, cfg.moduleId);
+                        const st = getModuleState(mid, cfg.moduleId, getModuleActionId(mid));
                         if (!st.enabled) {
                             return;
                         }

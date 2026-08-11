@@ -7,8 +7,13 @@ import {
     shouldAutoDance,
     shouldIdle,
     DEFAULT_PROC_STATE,
+    migrateProcState,
+    matchBone,
+    BONE_CENTER_CANDIDATES,
+    BONE_LARM_CANDIDATES,
     type ProcMotionParams,
 } from '../motion-algos/procedural-motion';
+import { scoreMorph, findBestEmotionMorphs, EMOTION_CANDIDATES } from '../motion-algos/proc-motion-autodance-emotion';
 
 const params: ProcMotionParams = {
     ...DEFAULT_PROC_STATE.params.idle,
@@ -235,8 +240,7 @@ describe('generateAutoDanceVmd', () => {
         expect(buf2.byteLength).toBeGreaterThan(200);
     });
 
-    it('interpolation: arms use EASE_OUT, center/waist use SHARP', () => {
-        // 通过骨骼帧数验证各骨骼都被生成
+    it('generates frames for all major bone groups (center, upper, arms, etc.)', () => {
         const view = new DataView(buf);
         const boneCount = view.getUint32(50, true);
         expect(boneCount).toBeGreaterThanOrEqual(4); // center, upper, arms, etc.
@@ -478,5 +482,209 @@ describe('AutoDance 重构回归（节拍栅格 + 肘部 + 无缝循环）', () 
             }
         }
         expect(foundCenterX).toBe(true);
+    });
+});
+
+// ======== migrateProcState 迁移测试 ========
+
+describe('migrateProcState', () => {
+    it('returns defaults for null/undefined input', () => {
+        const state = migrateProcState(null);
+        expect(state.mode).toBe('off');
+        expect(state.params.idle.intensity).toBe(0.5);
+        expect(state.params.autodance.speed).toBe(1.0);
+        expect(state.params.idle.boneToggles.center).toBe(true);
+    });
+
+    it('returns defaults for empty object', () => {
+        const state = migrateProcState({});
+        expect(state.mode).toBe('off');
+        expect(state.params.idle.boneToggles.arm).toBe(true);
+    });
+
+    it('rejects invalid mode strings', () => {
+        const state = migrateProcState({ mode: 'invalid_mode' });
+        expect(state.mode).toBe('off');
+    });
+
+    it('accepts valid mode values', () => {
+        expect(migrateProcState({ mode: 'idle' }).mode).toBe('idle');
+        expect(migrateProcState({ mode: 'autodance' }).mode).toBe('autodance');
+        expect(migrateProcState({ mode: 'off' }).mode).toBe('off');
+    });
+
+    it('migrates legacy flat structure to per-mode params', () => {
+        const state = migrateProcState({
+            intensity: 0.8,
+            speed: 2.0,
+            boneToggles: { arm: false },
+        });
+        expect(state.params.idle.intensity).toBe(0.8);
+        expect(state.params.idle.speed).toBe(2.0);
+        expect(state.params.idle.boneToggles.arm).toBe(false);
+        // autodance gets same values (legacy migration copies to both)
+        expect(state.params.autodance.intensity).toBe(0.8);
+        expect(state.params.autodance.boneToggles.arm).toBe(false);
+    });
+
+    it('deep-merges boneToggles in per-mode structure (fills missing keys)', () => {
+        const state = migrateProcState({
+            params: {
+                idle: { boneToggles: { arm: false } },
+                autodance: { boneToggles: { wrist: false } },
+            },
+        });
+        // idle: arm=false, but other keys default to true
+        expect(state.params.idle.boneToggles.arm).toBe(false);
+        expect(state.params.idle.boneToggles.center).toBe(true);
+        expect(state.params.idle.boneToggles.wrist).toBe(true);
+        // autodance: wrist=false, but other keys default to true
+        expect(state.params.autodance.boneToggles.wrist).toBe(false);
+        expect(state.params.autodance.boneToggles.arm).toBe(true);
+    });
+
+    it('does not share boneToggles reference between idle and autodance', () => {
+        const state = migrateProcState({
+            params: { idle: { boneToggles: { arm: false } } },
+        });
+        state.params.idle.boneToggles.arm = true;
+        // autodance should not be affected
+        expect(state.params.autodance.boneToggles.arm).toBe(true);
+    });
+
+    it('fills missing boneToggles keys from defaults (prevents silent disable)', () => {
+        // Old save with only { center: true } — new keys like emotion/wrist/footIk must default to true
+        const state = migrateProcState({
+            params: { idle: { boneToggles: { center: true } } },
+        });
+        expect(state.params.idle.boneToggles.emotion).toBe(true);
+        expect(state.params.idle.boneToggles.wrist).toBe(true);
+        expect(state.params.idle.boneToggles.footIk).toBe(true);
+    });
+});
+
+// ======== matchBone 测试 ========
+
+describe('matchBone', () => {
+    it('returns first matching candidate', () => {
+        expect(matchBone(['センター', '上半身'], BONE_CENTER_CANDIDATES)).toBe('センター');
+    });
+
+    it('returns null when no candidate matches', () => {
+        expect(matchBone(['上半身', '頭'], BONE_CENTER_CANDIDATES)).toBeNull();
+    });
+
+    it('returns null for empty bone list', () => {
+        expect(matchBone([], BONE_CENTER_CANDIDATES)).toBeNull();
+    });
+
+    it('matches English bone names', () => {
+        expect(matchBone(['Center', 'Upper'], BONE_CENTER_CANDIDATES)).toBe('Center');
+    });
+
+    it('matches arm bones', () => {
+        expect(matchBone(['左腕', '右腕'], BONE_LARM_CANDIDATES)).toBe('左腕');
+    });
+
+    it('returns null for non-matching bones', () => {
+        expect(matchBone(['左足', '右足'], BONE_LARM_CANDIDATES)).toBeNull();
+    });
+});
+
+// ======== scoreMorph / findBestEmotionMorphs 测试 ========
+
+describe('scoreMorph', () => {
+    it('gives positive score for matching keyword', () => {
+        expect(scoreMorph('笑い', ['笑い', 'smile'])).toBeGreaterThan(0);
+    });
+
+    it('gives zero score for no match', () => {
+        expect(scoreMorph('unknown_morph', ['笑い', 'smile'])).toBe(0);
+    });
+
+    it('penalizes blacklist patterns', () => {
+        const score = scoreMorph('まばたき', EMOTION_CANDIDATES.smile);
+        // まばたき is in blacklist, so score should be negative
+        expect(score).toBeLessThan(0);
+    });
+
+    it('is case-insensitive for English keywords', () => {
+        const score = scoreMorph('Happy Face', ['happy']);
+        expect(score).toBeGreaterThan(0);
+    });
+});
+
+describe('findBestEmotionMorphs', () => {
+    it('finds smile morph', () => {
+        const result = findBestEmotionMorphs(['まばたき', '笑い', '悲しみ']);
+        expect(result.get('smile')).toBe('笑い');
+    });
+
+    it('finds sad morph', () => {
+        const result = findBestEmotionMorphs(['まばたき', '笑い', '悲しみ']);
+        expect(result.get('sad')).toBe('悲しみ');
+    });
+
+    it('excludes blink morph from emotion mapping', () => {
+        const result = findBestEmotionMorphs(['まばたき']);
+        // まばたき is blacklisted, should not appear as any emotion
+        for (const [, name] of result) {
+            expect(name).not.toBe('まばたき');
+        }
+    });
+
+    it('returns empty map for no matching morphs', () => {
+        const result = findBestEmotionMorphs(['unknown_morph', 'another_morph']);
+        expect(result.size).toBe(0);
+    });
+
+    it('finds wink morph', () => {
+        const result = findBestEmotionMorphs(['ウィンク', 'まばたき']);
+        expect(result.get('wink')).toBe('ウィンク');
+    });
+});
+
+// ======== 边界条件测试 ========
+
+describe('edge cases', () => {
+    it('clamps negative speed to 0.1', () => {
+        const buf = generateIdleVmd({ ...params, speed: -1 }, BONES_ALL);
+        const at01 = generateIdleVmd({ ...params, speed: 0.1 }, BONES_ALL);
+        expect(buf.byteLength).toBe(at01.byteLength);
+    });
+
+    it('clamps speed > 10 to 10', () => {
+        const buf = generateIdleVmd({ ...params, speed: 100 }, BONES_ALL);
+        const at10 = generateIdleVmd({ ...params, speed: 10 }, BONES_ALL);
+        expect(buf.byteLength).toBe(at10.byteLength);
+    });
+
+    it('handles NaN speed gracefully (defaults to 1.0)', () => {
+        const buf = generateIdleVmd({ ...params, speed: NaN }, BONES_ALL);
+        // NaN is replaced with 1.0 before clamping
+        const at1 = generateIdleVmd({ ...params, speed: 1.0 }, BONES_ALL);
+        expect(buf.byteLength).toBe(at1.byteLength);
+    });
+
+    it('handles Infinity speed gracefully (clamped to 10)', () => {
+        const buf = generateIdleVmd({ ...params, speed: Infinity }, BONES_ALL);
+        const at10 = generateIdleVmd({ ...params, speed: 10 }, BONES_ALL);
+        expect(buf.byteLength).toBe(at10.byteLength);
+    });
+
+    it('handles NaN BPM gracefully in AutoDance (defaults to 120)', () => {
+        const buf = generateAutoDanceVmd(params, NaN, [], BONES_ALL);
+        const at120 = generateAutoDanceVmd(params, 120, [], BONES_ALL);
+        expect(buf.byteLength).toBe(at120.byteLength);
+    });
+
+    it('intensity clamped to 0 produces identity rotation', () => {
+        const buf = generateIdleVmd({ ...params, intensity: 0 }, BONES_ALL);
+        const view = new DataView(buf);
+        const boneCount = view.getUint32(50, true);
+        // Check first bone frame rotation is identity (w=1)
+        const off = 54 + 15 + 4 + 12; // skip to rotation quaternion
+        const w = view.getFloat32(off + 12, true);
+        expect(w).toBeCloseTo(1, 2);
     });
 });

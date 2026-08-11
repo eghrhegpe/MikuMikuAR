@@ -21,6 +21,7 @@ symbols:
   - createModuleBase
   - createModuleShell
   - getBakeActionId
+  - getModuleActionId
   - prepareBake
 invariants:
   - 被 body-posture/hand-modules/foot-modules/riding-model 等 6 模块引用

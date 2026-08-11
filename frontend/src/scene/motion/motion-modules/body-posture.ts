@@ -33,6 +33,7 @@ import {
     prepareBake,
     createFrameHookManager,
     createEnsureActive,
+    getModuleActionId,
 } from './module-base';
 
 const MODULE_ID = 'body-posture';
@@ -132,7 +133,7 @@ function _registerBodyPositionHook(modelId: string): () => void {
             if (mid !== modelId) {
                 return;
             }
-            const st = getModuleState(modelId, MODULE_ID);
+            const st = getModuleState(modelId, MODULE_ID, getModuleActionId(modelId));
             if (!st.enabled) {
                 return;
             }

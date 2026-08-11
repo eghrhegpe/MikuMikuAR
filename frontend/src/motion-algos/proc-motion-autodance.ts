@@ -52,8 +52,9 @@ export function generateAutoDanceVmd(
     // ========================================================================
     // 1. 参数计算
     // ========================================================================
-    const safeSpeed = Math.max(0.1, Math.min(10, params.speed));
-    const clampedBpm = Math.max(60, Math.min(200, bpm));
+    const rawSpeed = Number.isNaN(params.speed) ? 1.0 : params.speed;
+    const safeSpeed = Math.max(0.1, Math.min(10, rawSpeed));
+    const clampedBpm = Math.max(60, Math.min(200, Number.isNaN(bpm) ? 120 : bpm));
     const beatFrames = Math.min(MAX_FRAMES, Math.round(((60 / clampedBpm) * FPS) / safeSpeed));
     const loopFrames = beatFrames * 8;
     const intensity = params.intensity;

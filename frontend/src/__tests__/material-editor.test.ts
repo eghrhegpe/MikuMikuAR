@@ -103,6 +103,7 @@ import {
     getMatParams,
     getMatState,
     modelRegistry,
+    resetMatCatParams,
     resetPerMaterialParams,
     resetSingleMatParams,
     setMatCatParams,
@@ -881,5 +882,153 @@ describe('alphaMul 序列化（ADR-221 §5 用例 8/9）', () => {
             },
         });
         expect(getMatParams('model_as2', 3)!.alphaMul).toBe(1);
+    });
+});
+
+describe('parameter clamp boundaries (CLAMP_RULES)', () => {
+    beforeEach(() => {
+        resetMatEditorState();
+        regModel('model_clamp', 1);
+    });
+    afterEach(() => {
+        cleanupModels();
+    });
+
+    it('diffuseMul clamped to [0, 2]', () => {
+        setMatParams('model_clamp', 0, { diffuseMul: 5 });
+        expect(getMatParams('model_clamp', 0)!.diffuseMul).toBe(2);
+        setMatParams('model_clamp', 0, { diffuseMul: -1 });
+        expect(getMatParams('model_clamp', 0)!.diffuseMul).toBe(0);
+    });
+
+    it('shininess clamped to [0, 200] and rounded', () => {
+        setMatParams('model_clamp', 0, { shininess: 300 });
+        expect(getMatParams('model_clamp', 0)!.shininess).toBe(200);
+        setMatParams('model_clamp', 0, { shininess: -10 });
+        expect(getMatParams('model_clamp', 0)!.shininess).toBe(0);
+        setMatParams('model_clamp', 0, { shininess: 55.7 });
+        expect(getMatParams('model_clamp', 0)!.shininess).toBe(56);
+    });
+
+    it('texture levels clamped to [0, 3]', () => {
+        setMatParams('model_clamp', 0, { diffuseTexLevel: 10 });
+        expect(getMatParams('model_clamp', 0)!.diffuseTexLevel).toBe(3);
+        setMatParams('model_clamp', 0, { diffuseTexLevel: -0.5 });
+        expect(getMatParams('model_clamp', 0)!.diffuseTexLevel).toBe(0);
+    });
+
+    it('alphaMul clamped to [0, 1]', () => {
+        setMatParams('model_clamp', 0, { alphaMul: 5 });
+        expect(getMatParams('model_clamp', 0)!.alphaMul).toBe(1);
+        setMatParams('model_clamp', 0, { alphaMul: -1 });
+        expect(getMatParams('model_clamp', 0)!.alphaMul).toBe(0);
+    });
+});
+
+describe('invalid model ID and matIndex handling', () => {
+    beforeEach(() => {
+        resetMatEditorState();
+    });
+
+    it('setMatParams with non-existent model does not throw', () => {
+        expect(() => {
+            setMatParams('nonexistent', 0, { diffuseMul: 0.5 });
+        }).not.toThrow();
+    });
+
+    it('setMatParams with negative matIndex does not throw', () => {
+        regModel('model_idx', 2);
+        expect(() => {
+            setMatParams('model_idx', -1, { diffuseMul: 0.5 });
+        }).not.toThrow();
+        cleanupModels();
+    });
+
+    it('setMatParams with out-of-range matIndex does not throw', () => {
+        regModel('model_idx2', 2);
+        expect(() => {
+            setMatParams('model_idx2', 5, { diffuseMul: 0.5 });
+        }).not.toThrow();
+        cleanupModels();
+    });
+
+    it('_applyAll with non-existent model does not throw', () => {
+        expect(() => _applyAll('nonexistent')).not.toThrow();
+    });
+
+    it('resetSingleMatParams with non-existent model does not throw', () => {
+        expect(() => resetSingleMatParams('nonexistent', 0)).not.toThrow();
+    });
+});
+
+describe('resetMatCatParams full reset', () => {
+    beforeEach(() => {
+        resetMatEditorState();
+        regModel('model_fullreset', 2);
+    });
+    afterEach(() => {
+        cleanupModels();
+    });
+
+    it('restores category params to defaults', () => {
+        setMatCatParams('model_fullreset', '皮肤', { diffuseMul: 1.5, emissiveMul: 2 });
+        expect(getMatCatParams('model_fullreset', '皮肤').diffuseMul).toBe(1.5);
+        resetMatCatParams('model_fullreset');
+        expect(getMatCatParams('model_fullreset', '皮肤').diffuseMul).toBe(1);
+        expect(getMatCatParams('model_fullreset', '皮肤').emissiveMul).toBe(1);
+    });
+
+    it('also clears per-material overrides', () => {
+        setMatParams('model_fullreset', 0, { diffuseMul: 0.3 });
+        expect(getMatParams('model_fullreset', 0)).not.toBeNull();
+        resetMatCatParams('model_fullreset');
+        expect(getMatParams('model_fullreset', 0)).toBeNull();
+    });
+});
+
+describe('getMatCatParams unknown category', () => {
+    beforeEach(() => {
+        resetMatEditorState();
+        regModel('model_unkcat', 1);
+    });
+    afterEach(() => {
+        cleanupModels();
+    });
+
+    it('returns defaults for unknown category without creating state', () => {
+        const p = getMatCatParams('model_unkcat', '不存在的分类');
+        expect(p.diffuseMul).toBe(1);
+        expect(p.emissiveMul).toBe(1);
+        // side-effect free: _catState should not have been created
+        expect(_catState.has('model_unkcat')).toBe(false);
+    });
+});
+
+describe('getMatState serialization filtering', () => {
+    beforeEach(() => {
+        resetMatEditorState();
+        regModel('model_ser', 3);
+    });
+    afterEach(() => {
+        cleanupModels();
+    });
+
+    it('returns null when no state exists', () => {
+        expect(getMatState('model_ser')).toBeNull();
+    });
+
+    it('returns null when all values are defaults', () => {
+        // _ensureState creates all-default entries via getMatCatParams path
+        setMatCatParams('model_ser', '皮肤', { diffuseMul: 1 });
+        expect(getMatState('model_ser')).toBeNull();
+    });
+
+    it('only includes non-default categories', () => {
+        setMatCatParams('model_ser', '皮肤', { diffuseMul: 1.5 });
+        setMatCatParams('model_ser', '头发', { diffuseMul: 1 }); // default
+        const s = getMatState('model_ser');
+        expect(s).not.toBeNull();
+        expect(s!.categories['皮肤']).toBeDefined();
+        expect(s!.categories['头发']).toBeUndefined();
     });
 });

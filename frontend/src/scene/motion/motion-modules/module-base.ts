@@ -68,6 +68,28 @@ export function getBakeActionId(): string | undefined {
 }
 
 /**
+ * [fix:proc-override] 帧钩子 actionId 记录（per-model）。
+ * bake 经 _runWithBakeActionId 感知 actionId，但各模块的**每帧帧钩子**（每帧调用，
+ * 不在 bake 上下文内）与 ensureActive 内读取模块状态时仍需正确作用域。程序化动作
+ * （activeMotion 为 null）下若用无 actionId 的 getModuleState 会读 fallback 而非
+ * per-proc 存储，导致帧钩子驱动参数（bodyHeight/footPos/autoPedal 等）静默失效。
+ * 模块实例 enable/setParam 时按 modelId 记录其 actionId，帧钩子内经 getModuleActionId 读取。
+ */
+const _moduleActionId = new Map<string, string>();
+
+/** 记录某模型当前激活模块的 actionId（enable/setParam 时调用） */
+function _recordModuleActionId(modelId: string, actionId: string | undefined): void {
+    if (actionId) {
+        _moduleActionId.set(modelId, actionId);
+    }
+}
+
+/** 读取某模型当前激活模块的 actionId（帧钩子内使用；无则 undefined 回退 activeMotion/fallback） */
+export function getModuleActionId(modelId: string): string | undefined {
+    return _moduleActionId.get(modelId);
+}
+
+/**
  * 创建模块通用方法，减少 7 个模块间 ~105 行重复 boilerplate。
  *
  * @param modelId  目标模型 ID
@@ -105,6 +127,8 @@ export function createModuleBase(
     function applyEnable(): void {
         const state = getModuleState(modelId, moduleId, actionId);
         state.enabled = true;
+        // [fix:proc-override] 记录帧钩子 actionId（frame hooks 每帧读取需要正确作用域）
+        _recordModuleActionId(modelId, actionId);
         // [fix:proc-override] bake 需感知 actionId（程序化动作读 per-proc 存储）
         _runWithBakeActionId(actionId, doAction, modelId);
     }
@@ -159,7 +183,8 @@ export function createModuleBase(
                     setModuleEnabled(modelId, moduleId, true, actionId);
                 }
             }
-            // [fix:proc-override] bake 需感知 actionId（程序化动作读 per-proc 存储）
+            // [fix:proc-override] 记录帧钩子 actionId，再触发 bake（均需正确作用域）
+            _recordModuleActionId(modelId, actionId);
             _runWithBakeActionId(actionId, doAction, modelId);
         },
 
