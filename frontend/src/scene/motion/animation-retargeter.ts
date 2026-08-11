@@ -88,13 +88,7 @@ export async function loadAndRetargetAnimation(
         animationGroups: AnimationGroup[];
     };
     try {
-        result = await ImportMeshAsync(url, scene, {
-            onProgress: (evt) => {
-                if (evt.lengthComputable) {
-                    // 可选：显示加载进度
-                }
-            },
-        });
+        result = await ImportMeshAsync(url, scene);
     } catch (err) {
         logWarn('retarget', 'load animation failed:', err);
         feedbackStatus('motion.retarget.loadFailed', undefined, false);

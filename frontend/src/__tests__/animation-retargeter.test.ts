@@ -224,6 +224,70 @@ describe('loadAndRetargetAnimation（加载 + 重定向 + 清理）', () => {
         expect(inst.setTargetSkeleton).toHaveBeenCalled();
     });
 
+    it('边界：vrm 预设使用 VrmMmdHumanoidBoneMap', async () => {
+        const skeleton = makeSkeleton();
+        const mesh = makeMesh(skeleton);
+        const group = makeAnimationGroup();
+        shared.ImportMeshAsync.mockResolvedValue({ meshes: [mesh], animationGroups: [group] });
+        const result = await loadAndRetargetAnimation({} as never, 'a.vrm', makeSkeleton() as never, 'vrm');
+        expect(result).not.toBeNull();
+        const inst = shared.retargeterInstances[0];
+        expect(inst.setBoneMap).toHaveBeenCalledWith({ vrmBone: 'mmdBone' });
+    });
+
+    it('正常：retargetAnimation 传入 cloneAnimation + removeBoneRotationOffset 选项', async () => {
+        const skeleton = makeSkeleton();
+        const mesh = makeMesh(skeleton);
+        const group = makeAnimationGroup();
+        shared.ImportMeshAsync.mockResolvedValue({ meshes: [mesh], animationGroups: [group] });
+        await loadAndRetargetAnimation({} as never, 'a.fbx', makeSkeleton() as never, 'mixamo');
+        const inst = shared.retargeterInstances[0];
+        expect(inst.retargetAnimation).toHaveBeenCalledWith(group, {
+            cloneAnimation: true,
+            removeBoneRotationOffset: false,
+        });
+    });
+
+    it('正常：加载开始时发送 loading 反馈', async () => {
+        const skeleton = makeSkeleton();
+        const mesh = makeMesh(skeleton);
+        const group = makeAnimationGroup();
+        shared.ImportMeshAsync.mockResolvedValue({ meshes: [mesh], animationGroups: [group] });
+        await loadAndRetargetAnimation({} as never, 'a.fbx', makeSkeleton() as never, 'mixamo');
+        expect(shared.feedbackStatus).toHaveBeenCalledWith('motion.retarget.loading', undefined, false);
+    });
+
+    it('正常：多 mesh 共享同一 skeleton → skeleton 只 dispose 一次', async () => {
+        const skeleton = makeSkeleton();
+        const mesh1 = makeMesh(skeleton);
+        const mesh2 = makeMesh(skeleton);
+        const group = makeAnimationGroup();
+        shared.ImportMeshAsync.mockResolvedValue({
+            meshes: [mesh1, mesh2],
+            animationGroups: [group],
+        });
+        await loadAndRetargetAnimation({} as never, 'a.fbx', makeSkeleton() as never, 'mixamo');
+        expect(skeleton.dispose).toHaveBeenCalledTimes(1);
+        expect(mesh1.dispose).toHaveBeenCalled();
+        expect(mesh2.dispose).toHaveBeenCalled();
+    });
+
+    it('正常：多动画组仅使用第一个', async () => {
+        const skeleton = makeSkeleton();
+        const mesh = makeMesh(skeleton);
+        const group1 = makeAnimationGroup();
+        const group2 = makeAnimationGroup();
+        shared.ImportMeshAsync.mockResolvedValue({
+            meshes: [mesh],
+            animationGroups: [group1, group2],
+        });
+        await loadAndRetargetAnimation({} as never, 'a.fbx', makeSkeleton() as never, 'mixamo');
+        const inst = shared.retargeterInstances[0];
+        expect(inst.retargetAnimation).toHaveBeenCalledWith(group1, expect.any(Object));
+        expect(group1.dispose).toHaveBeenCalled();
+        expect(group2.dispose).toHaveBeenCalled();
+    });
+
     it('边界：custom 预设无自定义映射 → 回退 mixamo 预设', async () => {
         const skeleton = makeSkeleton();
         const mesh = makeMesh(skeleton);
@@ -270,6 +334,21 @@ describe('playRetargetedAnimation（additive 播放 + stop 幂等）', () => {
         expect(group.dispose).toHaveBeenCalled();
         expect(getRetargetPlayState()).toBeNull();
     });
+
+    it('边界：播放新 retarget 自动停止前一个', () => {
+        const group1 = makeAnimationGroup();
+        const result1 = makeRetargetResult(group1, 'mixamo');
+        playRetargetedAnimation({} as never, result1 as never, 'f1.fbx');
+
+        const group2 = makeAnimationGroup();
+        const result2 = makeRetargetResult(group2, 'vrm');
+        playRetargetedAnimation({} as never, result2 as never, 'f2.fbx');
+
+        expect(group1.stop).toHaveBeenCalledTimes(1);
+        expect(group1.dispose).toHaveBeenCalledTimes(1);
+        expect(group2.isAdditive).toBe(true);
+        expect(getRetargetPlayState()).toEqual({ filePath: 'f2.fbx', boneMapPreset: 'vrm' });
+    });
 });
 
 // ======== stopCurrentRetarget / getRetargetPlayState ========
@@ -306,6 +385,20 @@ describe('restoreRetargetAnimation（场景反序列化恢复）', () => {
         const ok = await restoreRetargetAnimation('f.fbx', 'mixamo', 'm1');
         expect(ok).toBe(false);
         expect(shared.logWarn).toHaveBeenCalled();
+    });
+
+    it('守卫：loadAndRetargetAnimation 内部失败 → 返回 false，不更新播放状态', async () => {
+        const targetSkeleton = makeSkeleton();
+        const targetMesh = { skeleton: targetSkeleton, getScene: vi.fn(() => ({})) };
+        shared.modelRegistry.set('m1', { mmdModel: { mesh: targetMesh } });
+        shared.retargetedGroup = null;
+        shared.ImportMeshAsync.mockResolvedValue({
+            meshes: [makeMesh(makeSkeleton())],
+            animationGroups: [makeAnimationGroup()],
+        });
+        const ok = await restoreRetargetAnimation('f.fbx', 'mixamo', 'm1');
+        expect(ok).toBe(false);
+        expect(getRetargetPlayState()).toBeNull();
     });
 
     it('正常：成功恢复并播放 → 返回 true', async () => {

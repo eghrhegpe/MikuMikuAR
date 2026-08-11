@@ -13,6 +13,12 @@ vi.hoisted(() => {
         el.id = id;
         document.body.appendChild(el);
     }
+    if (typeof URL.createObjectURL !== 'function') {
+        URL.createObjectURL = (() => 'blob:mock') as any;
+    }
+    if (typeof URL.revokeObjectURL !== 'function') {
+        URL.revokeObjectURL = (() => {}) as any;
+    }
 });
 
 import {
@@ -78,6 +84,31 @@ vi.mock('babylon-mmd/esm/Runtime/Optimized/Animation/mmdWasmAnimation', () =>
 vi.mock('../scene/scene', () => mockSceneModule());
 vi.mock('../core/i18n/t', () => mockT());
 vi.mock('../core/toast', () => mockToast());
+vi.mock('../scene/shared/texture-lru', () => ({
+    readTextureWithLRU: vi.fn().mockResolvedValue(new ArrayBuffer(4)),
+}));
+vi.mock('../core/logger', () => ({
+    logWarn: vi.fn(),
+    logInfo: vi.fn(),
+}));
+vi.mock('../core/resource-warning-sink', () => ({
+    reportResourceWarning: vi.fn(),
+}));
+vi.mock('../scene/manager/outfit-overlay', () => ({
+    loadOverlay: vi.fn().mockResolvedValue({ meshes: [], retargetOk: true }),
+    hideMaterials: vi.fn(),
+    restoreMaterials: vi.fn(),
+    disposeOverlay: vi.fn(),
+}));
+vi.mock('../scene/manager/material', () => ({
+    getMaterialCategory: vi.fn().mockReturnValue('皮肤'),
+}));
+vi.mock('../core/wails-bindings', () => ({
+    LoadOutfitFile: vi.fn(),
+    ListSubDirs: vi.fn(),
+    readFileBytes: vi.fn(),
+    FileExists: vi.fn(),
+}));
 
 import { modelRegistry, setLibraryRoot } from '../core/config';
 import { createBaseInstance, createMockMaterial, createMockMesh } from './outfit-helpers';
@@ -163,6 +194,15 @@ describe('outfit helper functions (via integration)', () => {
         const { applyOutfitVariant } = await import('@/scene/manager/outfit');
         await applyOutfitVariant('m1', 'test');
         expect(inst.activeVariant).toBe('test');
+        // params: diffuseMul=0.8, specularMul=0.5, shininess=80, ambientMul=0.6
+        // + tint=[0.9,1.0,0.9] → diffuseColor = orig(1,1,1) * 0.8 * tint
+        const sm = inst.meshes[0].material;
+        expect(sm.diffuseColor.r).toBeCloseTo(0.72);
+        expect(sm.diffuseColor.g).toBeCloseTo(0.8);
+        expect(sm.diffuseColor.b).toBeCloseTo(0.72);
+        expect(sm.specularColor.r).toBeCloseTo(0.5);
+        expect(sm.specularPower).toBe(80);
+        expect(sm.ambientColor.r).toBeCloseTo(0.6);
     });
 
     it('should handle variant with byCategory params', async () => {
@@ -261,6 +301,14 @@ describe('resetOutfit', () => {
 });
 
 describe('loadOutfits', () => {
+    const origDiffuse = {
+        name: 'orig.png',
+        url: 'orig.png',
+        isReady: () => true,
+        dispose: vi.fn(),
+        onLoadObservable: { add: vi.fn(), remove: vi.fn() },
+    };
+
     beforeEach(() => {
         modelRegistry.clear();
         setLibraryRoot('');
@@ -279,6 +327,55 @@ describe('loadOutfits', () => {
         const { loadOutfits } = await import('@/scene/manager/outfit');
         const result = await loadOutfits('nonexistent');
         expect(result).toBeNull();
+    });
+
+    it('should auto-discover variants from subdirectories', async () => {
+        const { LoadOutfitFile, ListSubDirs, FileExists } = await import(
+            '../core/wails-bindings'
+        );
+        vi.mocked(LoadOutfitFile).mockRejectedValueOnce(new Error('no outfit json'));
+        vi.mocked(ListSubDirs).mockResolvedValueOnce(['variant_a']);
+        vi.mocked(FileExists).mockImplementation(async (p: string) => {
+            return p.endsWith('orig.png');
+        });
+
+        const sm = createMockMaterial('顔', { diffuseTexture: origDiffuse });
+        const inst = createBaseInstance({
+            meshes: [createMockMesh(sm)],
+            rootMesh: createMockMesh(sm),
+            outfitFile: undefined,
+        });
+        modelRegistry.set('m1', inst);
+
+        const { loadOutfits } = await import('@/scene/manager/outfit');
+        const result = await loadOutfits('m1');
+        expect(result).not.toBeNull();
+        expect(result!.variants).toHaveLength(1);
+        expect(result!.variants[0].name).toBe('variant_a');
+        expect(result!.variants[0].byMaterial).toBeDefined();
+        expect(inst.outfitFile).toBe(result);
+    });
+
+    it('should return null when auto-discovery finds no matching files', async () => {
+        const { LoadOutfitFile, ListSubDirs, FileExists } = await import(
+            '../core/wails-bindings'
+        );
+        vi.mocked(LoadOutfitFile).mockRejectedValueOnce(new Error('no outfit json'));
+        vi.mocked(ListSubDirs).mockResolvedValueOnce(['empty_dir']);
+        vi.mocked(FileExists).mockResolvedValue(false);
+
+        const sm = createMockMaterial('顔', { diffuseTexture: origDiffuse });
+        const inst = createBaseInstance({
+            meshes: [createMockMesh(sm)],
+            rootMesh: createMockMesh(sm),
+            outfitFile: undefined,
+        });
+        modelRegistry.set('m1', inst);
+
+        const { loadOutfits } = await import('@/scene/manager/outfit');
+        const result = await loadOutfits('m1');
+        expect(result).toBeNull();
+        expect(inst.outfitFile).toBeUndefined();
     });
 });
 
@@ -383,5 +480,39 @@ describe('applyOutfitVariant', () => {
         const firstCapture = inst._origTextures;
         await applyOutfitVariant('m1', '校服');
         expect(inst._origTextures).toBe(firstCapture);
+    });
+
+    it('should replace texture slots on material after apply', async () => {
+        const sm = inst.meshes[0].material;
+        expect(sm.diffuseTexture).toBe(origDiffuse);
+        const { applyOutfitVariant } = await import('@/scene/manager/outfit');
+        await applyOutfitVariant('m1', '校服');
+        // 校服 byMaterial 指定 顔 diffuse → 纹理应被替换（不再是 origDiffuse）
+        expect(sm.diffuseTexture).not.toBe(origDiffuse);
+    });
+
+    it('should restore textures and params on reset after apply', async () => {
+        const sm = inst.meshes[0].material;
+        const { applyOutfitVariant, resetOutfit } = await import('@/scene/manager/outfit');
+        await applyOutfitVariant('m1', '校服');
+        expect(sm.diffuseTexture).not.toBe(origDiffuse);
+        await resetOutfit('m1');
+        // reset 应恢复原始纹理
+        expect(sm.diffuseTexture).toBe(origDiffuse);
+        expect(sm.toonTexture).toBe(origToon);
+    });
+
+    it('should be a no-op for empty variants array', async () => {
+        inst.outfitFile = { version: 1, variants: [] };
+        const { applyOutfitVariant } = await import('@/scene/manager/outfit');
+        inst.activeVariant = undefined;
+        await applyOutfitVariant('m1', '任意');
+        expect(inst.activeVariant).toBeUndefined();
+    });
+
+    it('should be a no-op for unknown model id', async () => {
+        const { applyOutfitVariant } = await import('@/scene/manager/outfit');
+        await applyOutfitVariant('nonexistent', '泳装');
+        // Should not throw
     });
 });

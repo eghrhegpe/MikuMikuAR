@@ -15,6 +15,7 @@ import {
     buildMorphFrame,
     BONE_FRAME_SIZE,
     MORPH_FRAME_SIZE,
+    canEncodeName,
 } from '../motion-algos/vmd-writer';
 import type { BoneKeyFrame } from '../motion-algos/vmd-writer';
 
@@ -247,5 +248,111 @@ describe('loadVPDFromBuffer', () => {
     it('throws for empty VPD', () => {
         const buf = new TextEncoder().encode('Vocaloid Pose Data file\n{\n}').buffer;
         expect(() => loadVPDFromBuffer(buf as ArrayBuffer)).toThrow('VPD: no bone data found');
+    });
+});
+
+// ====================================================================
+// 补充测试 — 边界 / 异常 / 排序 / mutation
+// ====================================================================
+
+describe('decodeVPDData edge cases', () => {
+    it('throws for oversized buffer', () => {
+        const buf = new ArrayBuffer(1024 * 1024 + 1);
+        expect(() => decodeVPDData(buf)).toThrow('VPD file too large');
+    });
+});
+
+describe('vmd-writer custom interpolation', () => {
+    it('writes custom interpolation bytes in bone frame', () => {
+        const f: BoneKeyFrame = {
+            name: '頭',
+            frame: 0,
+            position: [0, 0, 0],
+            rotation: [0, 0, 0, 1],
+            interp: { x1: 30, y1: 10, x2: 90, y2: 107 },
+        };
+        const buf = new DataView(buildBoneFrame(f));
+        expect(buf.getUint8(47)).toBe(30);
+        expect(buf.getUint8(48)).toBe(10);
+        expect(buf.getUint8(49)).toBe(90);
+        expect(buf.getUint8(50)).toBe(107);
+    });
+});
+
+describe('vmd-writer non-ASCII bone names', () => {
+    it('encodes Japanese bone name in Shift-JIS within 15 bytes', () => {
+        const f: BoneKeyFrame = {
+            name: '上半身',
+            frame: 0,
+            position: [0, 0, 0],
+            rotation: [0, 0, 0, 1],
+        };
+        const buf = buildBoneFrame(f);
+        expect(buf.byteLength).toBe(BONE_FRAME_SIZE);
+        // name bytes should not be all zeros (Japanese chars encoded)
+        const nameBytes = new Uint8Array(buf, 0, 15);
+        expect(nameBytes.some((b) => b !== 0)).toBe(true);
+    });
+});
+
+describe('vmd-writer buildVmd sorts frames', () => {
+    it('sorts bone frames by frame number', () => {
+        const unsorted: BoneKeyFrame[] = [
+            { name: 'a', frame: 60, position: [0, 0, 0], rotation: [0, 0, 0, 1] },
+            { name: 'a', frame: 0, position: [0, 0, 0], rotation: [0, 0, 0, 1] },
+            { name: 'a', frame: 30, position: [0, 0, 0], rotation: [0, 0, 0, 1] },
+        ];
+        const buf = buildVmd(unsorted, []);
+        const view = new DataView(buf);
+        expect(view.getUint32(69, true)).toBe(0);
+        expect(view.getUint32(180, true)).toBe(30);
+        expect(view.getUint32(291, true)).toBe(60);
+    });
+    it('does not mutate the input array', () => {
+        const original: BoneKeyFrame[] = [
+            { name: 'a', frame: 60, position: [0, 0, 0], rotation: [0, 0, 0, 1] },
+            { name: 'a', frame: 0, position: [0, 0, 0], rotation: [0, 0, 0, 1] },
+        ];
+        const origCopy = original.map((f) => f.frame);
+        buildVmd(original, []);
+        expect(original.map((f) => f.frame)).toEqual(origCopy);
+    });
+});
+
+describe('parseVPDText with comments', () => {
+    it('handles // comments and semicolons in numeric lines', () => {
+        const text =
+            'Vocaloid Pose Data file\n{\nBone0:hip\n    0.0 0.0 0.0 ; pos\n    0.0 0.0 0.0 1.0 // rot\n}';
+        const r = parseVPDText(text);
+        expect(r.bones).toHaveLength(1);
+        expect(r.bones[0].position).toEqual([0, 0, 0]);
+        expect(r.bones[0].rotation).toEqual([0, 0, 0, 1]);
+    });
+});
+
+describe('canEncodeName', () => {
+    it('returns true for ASCII names', () => {
+        expect(canEncodeName('hip')).toBe(true);
+    });
+    it('returns true for Japanese names', () => {
+        expect(canEncodeName('上半身')).toBe(true);
+    });
+});
+
+describe('loadVPDFromBuffer roundtrip with morphs', () => {
+    it('produces VMD with both bone and morph frames', () => {
+        const text =
+            'Vocaloid Pose Data file\n{\n' +
+            'Bone0:hip\n    0.0 0.0 0.0\n    0.0 0.0 0.0 1.0\n' +
+            'Morph0:あ\n    0.800000\n}';
+        const buf = new TextEncoder().encode(text).buffer;
+        const vmd = loadVPDFromBuffer(buf as ArrayBuffer);
+        const view = new DataView(vmd);
+        // bone count = 1
+        expect(view.getUint32(50, true)).toBe(1);
+        // morph count at offset 54 + 111 = 165
+        expect(view.getUint32(165, true)).toBe(1);
+        // morph frame starts at 169 (165 + 4 count); weight at +19 (15 name + 4 frame)
+        expect(view.getFloat32(169 + 19, true)).toBeCloseTo(0.8);
     });
 });

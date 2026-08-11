@@ -1420,8 +1420,8 @@
 | `RetargetResult()` | `scene/motion/animation-retargeter:28` | — |
 | `getRetargetPlayState()` | `scene/motion/animation-retargeter:47` | 获取当前活跃的 retarget 动画播放状态，用于场景序列化。 |
 | `loadAndRetargetAnimation()` | `scene/motion/animation-retargeter:77` | 从外部动画文件加载并重定向到 MMD 骨骼。 |
-| `playRetargetedAnimation()` | `scene/motion/animation-retargeter:179` | 播放重定向后的动画（additive 模式，叠加在 VMD 之上）。 |
-| `restoreRetargetAnimation()` | `scene/motion/animation-retargeter:251` | 从已加载的模型恢复 retarget 动画（场景反序列化用）。 |
+| `playRetargetedAnimation()` | `scene/motion/animation-retargeter:173` | 播放重定向后的动画（additive 模式，叠加在 VMD 之上）。 |
+| `restoreRetargetAnimation()` | `scene/motion/animation-retargeter:245` | 从已加载的模型恢复 retarget 动画（场景反序列化用）。 |
 | `stopCurrentRetarget()` | `scene/motion/animation-retargeter:52` | 停止当前 retarget 动画并清理。 |
 | `BoneConflict()` | `scene/motion/bone-override-store:44` | 骨骼冲突记录（原 registry._boneConflicts 的统一版） |
 | `BoneOverrideStore()` | `scene/motion/bone-override-store:75` | — |
@@ -2609,10 +2609,10 @@
 | `VPDBoneData()` | `motion-algos/vpd-parser:14` | — |
 | `VPDMorphData()` | `motion-algos/vpd-parser:20` | — |
 | `VPDPoseData()` | `motion-algos/vpd-parser:25` | — |
-| `decodeVPDData()` | `motion-algos/vpd-parser:50` | 解码 VPD 文本（支持 UTF-8 / UTF-16 / Shift-JIS）。 |
-| `loadVPDFromBuffer()` | `motion-algos/vpd-parser:194` | 从 ArrayBuffer（VPD 文件内容）解析并生成 VMD。 |
-| `parseVPDText()` | `motion-algos/vpd-parser:93` | 解析 VPD 文本为结构化数据。 |
-| `poseDataToVmdBuffer()` | `motion-algos/vpd-parser:176` | 将 VPD 姿势数据转换为标准 VMD 二进制数据。 |
+| `decodeVPDData()` | `motion-algos/vpd-parser:51` | 解码 VPD 文本（支持 UTF-8 / UTF-16 / Shift-JIS）。 |
+| `loadVPDFromBuffer()` | `motion-algos/vpd-parser:195` | 从 ArrayBuffer（VPD 文件内容）解析并生成 VMD。 |
+| `parseVPDText()` | `motion-algos/vpd-parser:94` | 解析 VPD 文本为结构化数据。 |
+| `poseDataToVmdBuffer()` | `motion-algos/vpd-parser:177` | 将 VPD 姿势数据转换为标准 VMD 二进制数据。 |
 
 ## 顶层配置
 

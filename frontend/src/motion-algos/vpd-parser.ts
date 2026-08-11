@@ -37,7 +37,8 @@ function _cleanNumericLine(line: string): string {
         .replace(/<!ENTITY\s+[^>]*>/gi, '')
         .replace(/<!DOCTYPE\s+[^>]*>/gi, '')
         .replace(/\/\/.*$/, '')
-        .replace(/[;,]/g, ' ')
+        .replace(/;.*$/, '')  // ; starts a line comment (like MMD convention)
+        .replace(/,/g, ' ')   // commas → spaces (some VPD exporters use commas)
         .trim();
 }
 
