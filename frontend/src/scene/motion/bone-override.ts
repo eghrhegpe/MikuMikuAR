@@ -654,6 +654,10 @@ const _IK_TARGET_CANDIDATES = [BONE_LEG_IK_L_CANDIDATES, BONE_LEG_IK_R_CANDIDATE
 // 根治 WASM POS slot IK 重解热路径每帧 logWarn 刷爆环形缓冲/console 导致的卡顿。
 let _ikWasmDbgFrame = 0;
 
+// [ADR-248] POS 覆盖应用诊断日志节流计数器：与 _ikWasmDbgFrame 同模式，
+// 根治每帧 _applyWasmOverride 的无条件 logWarn 刷屏。
+let _overrideApplyDbgFrame = 0;
+
 function _solvePosSlotIkWasm(
     boneMap: Map<string, IMmdRuntimeBone>,
     overrideMap: Map<string, _OverrideSlot>,
@@ -852,8 +856,9 @@ function _applyWasmOverride(slot: _OverrideSlot, rb: IMmdRuntimeBone): void {
     const oldQ = _q();
     Quaternion.FromRotationMatrixToRef(rotMat, oldQ);
     const { translation, rotation } = computeOverride(oldT, oldQ, slot);
-    // [DEBUG] 诊断：确认 POS 偏移是否写入
-    if (slot.pos && slot.pos.length() > 0.01) {
+    // [ADR-248] 诊断：确认 POS 偏移是否写入。热路径每帧调用，必须 feetDebug 门控 + 帧节流，
+    // 否则无条件 logWarn 刷爆环形缓冲/console（与 _solvePosSlotIkWasm 同模式）。
+    if (slot.pos && slot.pos.length() > 0.01 && feetDebug.value && _overrideApplyDbgFrame++ % 60 === 0) {
         logWarn(
             'bone-override',
             `[OVERRIDE-APPLY] bone="${rb.name}" oldY=${oldT.y.toFixed(3)} posY=${slot.pos.y.toFixed(3)} newY=${translation.y.toFixed(3)}`

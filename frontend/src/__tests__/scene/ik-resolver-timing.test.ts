@@ -165,7 +165,9 @@ describe('IK 重解双调用路径时序（ADR-202 §六）', () => {
                 getMotionPipeline().runFrame({ scene });
             }
             const ikLogs = warnSpy.mock.calls.filter((c) =>
-                String(c[0]).includes('[IK-ENTRY]') || String(c[0]).includes('[IK-SOLVE]')
+                String(c[0]).includes('[IK-ENTRY]') ||
+                String(c[0]).includes('[IK-SOLVE]') ||
+                String(c[0]).includes('[OVERRIDE-APPLY]')
             );
             expect(ikLogs.length).toBe(0);
         } finally {
