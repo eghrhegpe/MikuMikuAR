@@ -48,7 +48,7 @@ const VMD_HEADER_MIN = 50; // 30(签名+模型名) + 4(骨骼帧数) 的最小�
 
 /** 验证 ArrayBuffer 是否为合法 VMD 格式：检查签名前缀。
  *  程序化生成的 VMD 也使用此签名（vmd-writer.ts SIGNATURE 常量）。 */
-function isValidVmd(data: ArrayBuffer): boolean {
+export function isValidVmd(data: ArrayBuffer): boolean {
     if (data.byteLength < VMD_HEADER_MIN) {
         return false;
     }
@@ -107,13 +107,6 @@ export async function loadVMDMotion(
         // babylon-mmd fork 的 VmdLoader 无实例状态需释放（解析结果已转移到 mmdAnimation），
         // 不存在 dispose() API；loader 为局部引用，GC 自动回收，无需手动释放。
 
-        // 检查是否在 await 期间有新的 loadVMDMotion 调用（同模型），过期则丢弃
-        if (_vmdLoadGenMap.get(targetId) !== capturedGen) {
-            logWarn('vmd-loader', 'Stale loadVMDMotion result discarded:', name);
-            feedbackStatus('scene.vmd.loadFailed', undefined, false);
-            return;
-        }
-
         // Create runtime animation from the loaded data
         // WASM 版需 MmdWasmAnimation 包装；JS 版直接用 mmdAnimation（实现 IMmdBindableModelAnimation）
         let runtimeAnimation: import('babylon-mmd/esm/Runtime/Animation/IMmdBindableAnimation').IMmdBindableModelAnimation;
@@ -121,6 +114,15 @@ export async function loadVMDMotion(
             runtimeAnimation = new MmdWasmAnimation(mmdAnimation, mmdRuntime.wasmInstance, scene);
         } else {
             runtimeAnimation = mmdAnimation;
+        }
+
+        // 检查是否在 await 期间有新的 loadVMDMotion 调用（同模型），过期则丢弃
+        // [fix] runtimeAnimation 已创建，stale 时须释放避免 WASM 内存泄漏
+        if (_vmdLoadGenMap.get(targetId) !== capturedGen) {
+            try { runtimeAnimation.dispose?.(); } catch { /* best-effort */ }
+            logWarn('vmd-loader', 'Stale loadVMDMotion result discarded:', name);
+            feedbackStatus('scene.vmd.loadFailed', undefined, false);
+            return;
         }
 
         // Extract camera track from VMD and apply to MmdCamera

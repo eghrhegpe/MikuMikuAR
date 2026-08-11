@@ -57,6 +57,15 @@ vi.mock('../core/status-bar', async () => {
 vi.mock('../core/ui-helpers', () => uiHelpersFactory(capturedSlideRows));
 vi.mock('../core/config', () => configModuleFactory(mockState));
 vi.mock('@/core/library-path', () => libraryPathFactory(mockState));
+vi.mock('../menus/library-setup', () => ({
+    refreshLibrary: vi.fn().mockResolvedValue(undefined),
+    initLibrary: vi.fn(),
+    selectResourceRoot: vi.fn(),
+    selectOverridePath: vi.fn(),
+    switchStorageMode: vi.fn(),
+    rescanAndSync: vi.fn(),
+    reloadConfig: vi.fn(),
+}));
 
 import {
     buildLevel,
@@ -279,6 +288,22 @@ describe('buildLevel', () => {
         const rows = extractLevelRows(level, capturedSlideRows);
         expect(rows).toHaveLength(0);
         expect(rows.some((r: any) => r.label === 'Sub')).toBe(false);
+    });
+
+    it('preserves sorted order for multiple non-leaf subdirs (not reversed)', () => {
+        mockState.libraryRoot = '/test';
+        mockState.allModels = [
+            makeModel({ file_path: '/test/models/alpha/deep/a.pmx', dir: '/test/models/alpha/deep' }),
+            makeModel({ file_path: '/test/models/beta/deep/b.pmx', dir: '/test/models/beta/deep' }),
+            makeModel({ file_path: '/test/models/gamma/deep/c.pmx', dir: '/test/models/gamma/deep' }),
+        ];
+        const level = buildLevel('/test/models', 'Models');
+        const rows = extractLevelRows(level, capturedSlideRows);
+        const folders = rows.filter((r: any) => r.isFolder);
+        expect(folders).toHaveLength(3);
+        expect(folders[0].label).toBe('alpha');
+        expect(folders[1].label).toBe('beta');
+        expect(folders[2].label).toBe('gamma');
     });
 
     it('does NOT create a ":" phantom folder when dir is a drive-letter-only prefix', () => {
@@ -651,6 +676,30 @@ describe('buildResourceItemsForDir', () => {
         const items = buildResourceItemsForDir('/nonexistent');
         expect(items).toHaveLength(0);
     });
+
+    it('filters by browseDir when provided (excludes models outside browseDir)', () => {
+        mockState.allModels = [
+            makeModel({ file_path: '/test/models/a.pmx', dir: '/test/models' }),
+            makeModel({ file_path: '/other/b.pmx', dir: '/other' }),
+        ];
+        const items = buildResourceItemsForDir('/test/models', undefined, '/test/models');
+        expect(items).toHaveLength(1);
+        expect(items[0].filePath).toBe('/test/models/a.pmx');
+    });
+
+    it('preserves sorted order for multiple non-leaf subdirs (not reversed)', () => {
+        mockState.allModels = [
+            makeModel({ file_path: '/test/models/alpha/deep/a.pmx', dir: '/test/models/alpha/deep' }),
+            makeModel({ file_path: '/test/models/beta/deep/b.pmx', dir: '/test/models/beta/deep' }),
+            makeModel({ file_path: '/test/models/gamma/deep/c.pmx', dir: '/test/models/gamma/deep' }),
+        ];
+        const items = buildResourceItemsForDir('/test/models');
+        const folders = items.filter((i: any) => i.isFolder);
+        expect(folders).toHaveLength(3);
+        expect(folders[0].label).toBe('alpha');
+        expect(folders[1].label).toBe('beta');
+        expect(folders[2].label).toBe('gamma');
+    });
 });
 
 describe('isLeafFlattenDir', () => {
@@ -740,6 +789,15 @@ describe('isLeafFlattenDir', () => {
         expect(isLeafFlattenDir('/test/models/sub', models, (m: any) => m.format === 'vmd')).toBe(
             true
         );
+    });
+
+    it('skips stale entries with empty dir field without crashing', () => {
+        const models = [
+            makeModel({ file_path: '/test/models/sub/a.pmx', dir: '/test/models/sub' }),
+            { file_path: '/test/stale.pmx', dir: '' } as any,
+            { file_path: '/test/nodir.pmx' } as any,
+        ];
+        expect(isLeafFlattenDir('/test/models/sub', models)).toBe(true);
     });
 });
 
@@ -971,6 +1029,26 @@ describe('importFile', () => {
         const { setStatus } = await import('../core/config');
         expect(setStatus).toHaveBeenCalledWith(expect.stringContaining('导入压缩包'), true);
     });
+
+    it('does not call load when SelectImportFile throws a non-cancel error', async () => {
+        const mockB = await import('../core/wails-bindings');
+        (mockB.SelectImportFile as any).mockRejectedValue(new Error('permission denied'));
+        await importFile();
+        expect(mockB.ImportZip).not.toHaveBeenCalled();
+        expect(mockLoad).not.toHaveBeenCalled();
+    });
+
+    it('zip import with returned file_path triggers loadManager.load for auto-load', async () => {
+        const mockB = await import('../core/wails-bindings');
+        (mockB.SelectImportFile as any).mockResolvedValue('/test/archive.zip');
+        (mockB.ImportZip as any).mockResolvedValue({ file_path: '/test/extracted/model.pmx' });
+        await importFile();
+        expect(mockB.ImportZip).toHaveBeenCalledWith('/test/archive.zip');
+        expect(mockLoad).toHaveBeenCalledWith({
+            kind: 'actor',
+            path: '/test/extracted/model.pmx',
+        });
+    });
 });
 
 describe('Resource View Mode', () => {
@@ -998,5 +1076,13 @@ describe('Resource View Mode', () => {
                 expect.objectContaining({ resourceViewMode: 'grid' })
             )
         );
+    });
+
+    it('setResourceViewMode does not throw when SetUIState rejects', async () => {
+        const { SetUIState } = await import('../core/wails-bindings');
+        (SetUIState as any).mockRejectedValueOnce(new Error('persist failed'));
+        expect(() => setResourceViewMode('grid')).not.toThrow();
+        // 本地状态仍更新
+        expect(getResourceViewMode()).toBe('grid');
     });
 });

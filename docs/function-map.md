@@ -8,7 +8,7 @@
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
 | 核心基础设施 | 135 | 815 |
-| 3D 场景 | 125 | 1230 |
+| 3D 场景 | 125 | 1231 |
 | 菜单 & UI | 76 | 397 |
 | 动作算法 | 18 | 138 |
 | 顶层配置 | 1 | 1 |
@@ -1729,10 +1729,11 @@
 | `removeVmdLayer()` | `scene/motion/vmd-layers:284` | 移除一个 VMD 图层 |
 | `setVmdLayerWeight()` | `scene/motion/vmd-layers:335` | 设置图层权重 |
 | `toggleVmdLayer()` | `scene/motion/vmd-layers:310` | 切换图层启用/禁用 |
-| `loadCameraVmdFromPath()` | `scene/motion/vmd-loader:307` | — |
-| `loadVMDFromPath()` | `scene/motion/vmd-loader:177` | — |
+| `isValidVmd()` | `scene/motion/vmd-loader:51` | 验证 ArrayBuffer 是否为合法 VMD 格式：检查签名前缀。 |
+| `loadCameraVmdFromPath()` | `scene/motion/vmd-loader:309` | — |
+| `loadVMDFromPath()` | `scene/motion/vmd-loader:179` | — |
 | `loadVMDMotion()` | `scene/motion/vmd-loader:60` | — |
-| `loadVPDPose()` | `scene/motion/vmd-loader:331` | — |
+| `loadVPDPose()` | `scene/motion/vmd-loader:333` | — |
 | `DEFAULT_LAYER_BONE_FILTER()` | `scene/motion/wasm-layers-blender:57` | — |
 | `WasmLayerConfig()` | `scene/motion/wasm-layers-blender:59` | — |
 | `addWasmLayer()` | `scene/motion/wasm-layers-blender:160` | — |
@@ -2166,33 +2167,33 @@
 | `showModelPopup()` | `menus/library-browse:346` | — |
 | `ResourceViewMode()` | `menus/library-core:43` | — |
 | `abortThumbnailStreaming()` | `menus/library-core:315` | [adr-136] 取消当前正在进行的缩略图流式加载批次（如弹窗关闭/重开时调用）。 |
-| `buildLevel()` | `menus/library-core:841` | — |
-| `buildModelFormationLevel()` | `menus/library-core:885` | — |
-| `buildModelRootItems()` | `menus/library-core:916` | — |
+| `buildLevel()` | `menus/library-core:851` | — |
+| `buildModelFormationLevel()` | `menus/library-core:895` | — |
+| `buildModelRootItems()` | `menus/library-core:926` | — |
 | `buildResourceItemsForDir()` | `menus/library-core:382` | — |
 | `computeRestoreSegments()` | `menus/library-core:161` | — |
 | `getPendingMetaGuard()` | `menus/library-core:67` | — |
 | `getRelativePathUnderDir()` | `menus/library-core:83` | — |
 | `getResourceViewMode()` | `menus/library-core:47` | — |
-| `importFile()` | `menus/library-core:1019` | — |
-| `initLibrary()` | `menus/library-core:1020` | — |
+| `importFile()` | `menus/library-core:1029` | — |
+| `initLibrary()` | `menus/library-core:1030` | — |
 | `isLeafFlattenDir()` | `menus/library-core:93` | — |
 | `isModelDirTarget()` | `menus/library-core:59` | — |
 | `loadThumbnailsStreaming()` | `menus/library-core:260` | 流式加载缩略图：并发控制，每加载一张立即更新缓存并通知面板刷新， 替代一次性 GetThumbnailBatch 的"全等"模式，实现缩略图逐张出现。 |
 | `modelToResourceItem()` | `menus/library-core:365` | — |
 | `modelToRow()` | `menus/library-core:349` | — |
-| `prepareModelRestore()` | `menus/library-core:1019` | — |
-| `refreshLibrary()` | `menus/library-core:1020` | — |
-| `refreshModelRoot()` | `menus/library-core:997` | 就地更新模型库根层级数据（刷新已注册的角色列表）。 |
-| `reloadConfig()` | `menus/library-core:1020` | — |
-| `rescanAndSync()` | `menus/library-core:1020` | — |
+| `prepareModelRestore()` | `menus/library-core:1029` | — |
+| `refreshLibrary()` | `menus/library-core:1030` | — |
+| `refreshModelRoot()` | `menus/library-core:1007` | 就地更新模型库根层级数据（刷新已注册的角色列表）。 |
+| `reloadConfig()` | `menus/library-core:1030` | — |
+| `rescanAndSync()` | `menus/library-core:1030` | — |
 | `resolveDisplayBrowseDir()` | `menus/library-core:140` | [修复] 解析模型在资源库中的"显示目录"——即用户点击该模型时实际看到的层级。 |
-| `selectOverridePath()` | `menus/library-core:1020` | — |
-| `selectResourceRoot()` | `menus/library-core:1020` | — |
+| `selectOverridePath()` | `menus/library-core:1030` | — |
+| `selectResourceRoot()` | `menus/library-core:1030` | — |
 | `setResourceViewMode()` | `menus/library-core:50` | — |
-| `showModelPopup()` | `menus/library-core:1018` | — |
+| `showModelPopup()` | `menus/library-core:1028` | — |
 | `splitSubdirSegments()` | `menus/library-core:73` | — |
-| `switchStorageMode()` | `menus/library-core:1020` | — |
+| `switchStorageMode()` | `menus/library-core:1030` | — |
 | `thumbnailKeyForModel()` | `menus/library-core:194` | — |
 | `LibraryLoadingState()` | `menus/library-session-store:51` | 资源库会话状态：加载守卫。 |
 | `LibraryRestoreState()` | `menus/library-session-store:32` | 资源库会话状态：恢复链路（上次浏览位置 + 高亮模型）。 |

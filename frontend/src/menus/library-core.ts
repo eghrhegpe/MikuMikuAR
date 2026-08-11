@@ -408,6 +408,8 @@ export function buildResourceItemsForDir(
         }
     }
     // Flatten leaf subdirs: single-model dirs show their model directly instead of as a folder
+    // [fix:unshift-order] 收集文件夹项后一次性 unshift，避免逐个 unshift 导致逆序
+    const folderItems: ResourceItem[] = [];
     for (const d of Array.from(subdirs).sort()) {
         const subdirPath = dir + '/' + d;
         if (isLeafFlattenDir(subdirPath, modelList, filter)) {
@@ -421,7 +423,7 @@ export function buildResourceItemsForDir(
                 }
             }
         } else {
-            items.unshift({
+            folderItems.push({
                 id: subdirPath,
                 label: d,
                 filePath: subdirPath,
@@ -429,6 +431,9 @@ export function buildResourceItemsForDir(
                 isFolder: true,
             });
         }
+    }
+    if (folderItems.length > 0) {
+        items.unshift(...folderItems);
     }
     return items;
 }
@@ -806,6 +811,13 @@ function buildPopupRows(
             }
         }
     }
+    // [fix:unshift-order] 收集文件夹项后一次性 unshift，避免逐个 unshift 导致逆序
+    const prefixRows: PopupRow[] = [];
+    if (extraFolders) {
+        for (const ef of extraFolders) {
+            prefixRows.push({ kind: 'folder', label: ef.label, icon: 'plug', target: ef.path });
+        }
+    }
     for (const d of Array.from(subdirs).sort()) {
         const fullPath = dir + '/' + d;
         if (subdirIsLeaf.has(d) && !isRoot && isLeafFlattenDir(fullPath, modelList, filter)) {
@@ -819,7 +831,7 @@ function buildPopupRows(
             }
             continue;
         }
-        items.unshift({
+        prefixRows.push({
             kind: 'folder',
             label: d,
             icon: 'folder',
@@ -827,10 +839,8 @@ function buildPopupRows(
             wrapLabel: true,
         });
     }
-    if (extraFolders) {
-        for (const ef of extraFolders) {
-            items.unshift({ kind: 'folder', label: ef.label, icon: 'plug', target: ef.path });
-        }
+    if (prefixRows.length > 0) {
+        items.unshift(...prefixRows);
     }
     if (librarySortMode === 'name') {
         items.sort((a, b) => a.label.localeCompare(b.label, getLang()));

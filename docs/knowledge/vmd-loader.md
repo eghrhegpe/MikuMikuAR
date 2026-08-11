@@ -18,6 +18,7 @@ adr:
   - ADR-192
   - ADR-238
 symbols:
+  - isValidVmd
   - loadCameraVmdFromPath
   - loadVMDFromPath
   - loadVMDMotion

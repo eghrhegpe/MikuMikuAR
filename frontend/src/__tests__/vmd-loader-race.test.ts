@@ -8,19 +8,9 @@
  * 本文件仅覆盖可隔离测试的单元。
  */
 import { describe, it, expect } from 'vitest';
+import { isValidVmd } from '@/scene/motion/vmd-loader';
 
-// ======== isValidVmd 签名校验（纯函数，手动提取逻辑测试） ========
-
-const VMD_SIGNATURE = 'Vocaloid Motion Data 0002';
-const VMD_HEADER_MIN = 50;
-
-function isValidVmd(data: ArrayBuffer): boolean {
-    if (data.byteLength < VMD_HEADER_MIN) {
-        return false;
-    }
-    const sig = new TextDecoder('ascii').decode(new Uint8Array(data, 0, 25));
-    return sig === VMD_SIGNATURE;
-}
+// ======== isValidVmd 签名校验（纯函数，直接测试源码） ========
 
 function buildVmdHeader(): Uint8Array {
     const header = new Uint8Array(54);
@@ -48,6 +38,32 @@ describe('isValidVmd — VMD 签名校验', () => {
 
     it('拒绝空 buffer', () => {
         expect(isValidVmd(new ArrayBuffer(0))).toBe(false);
+    });
+
+    it('恰好 50 字节 + 合法签名 → 接受（最小合法边界）', () => {
+        const buf = new ArrayBuffer(50);
+        new Uint8Array(buf).set(new TextEncoder().encode('Vocaloid Motion Data 0002'), 0);
+        expect(isValidVmd(buf)).toBe(true);
+    });
+
+    it('49 字节 + 合法签名 → 拒绝（最小合法边界下方）', () => {
+        const buf = new ArrayBuffer(49);
+        new Uint8Array(buf).set(new TextEncoder().encode('Vocaloid Motion Data 0002'), 0);
+        expect(isValidVmd(buf)).toBe(false);
+    });
+
+    it('25 字节签名 + null 填充至 30 字节（VMD 真实头部格式）', () => {
+        const buf = new ArrayBuffer(100);
+        const view = new Uint8Array(buf);
+        const sig = new TextEncoder().encode('Vocaloid Motion Data 0002');
+        view.set(sig, 0); // 25 字节签名，后续 5 字节为 0x00（null 填充）
+        expect(isValidVmd(buf)).toBe(true);
+    });
+
+    it('签名前缀部分匹配 → 拒绝', () => {
+        const buf = new ArrayBuffer(100);
+        new Uint8Array(buf).set(new TextEncoder().encode('Vocaloid Motion Data 000'), 0); // 24 字节，少 1 字符
+        expect(isValidVmd(buf)).toBe(false);
     });
 });
 

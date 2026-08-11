@@ -29,20 +29,33 @@ describe('WASM 物理契约测试', () => {
     describe('1. 模块加载', () => {
         it('WASM 模块成功加载，createPhysicsWorld 不抛异常', () => {
             const world = api.createPhysicsWorld();
-            expect(world).toBeGreaterThan(0);
-            api.destroyPhysicsWorld(world);
+            try {
+                expect(world).toBeGreaterThan(0);
+            } finally {
+                api.destroyPhysicsWorld(world);
+            }
         });
 
         it('initSync 返回的 memory 可用（buffer 非空）', () => {
             expect(memory.buffer.byteLength).toBeGreaterThan(0);
+        });
+
+        it('memory.buffer 为 ArrayBuffer 或 SharedArrayBuffer', () => {
+            expect(
+                memory.buffer instanceof ArrayBuffer ||
+                (typeof SharedArrayBuffer !== 'undefined' && memory.buffer instanceof SharedArrayBuffer)
+            ).toBe(true);
         });
     });
 
     describe('2. 物理世界生命周期', () => {
         it('createPhysicsWorld 返回非零指针', () => {
             const world = api.createPhysicsWorld();
-            expect(world).toBeGreaterThan(0);
-            api.destroyPhysicsWorld(world);
+            try {
+                expect(world).toBeGreaterThan(0);
+            } finally {
+                api.destroyPhysicsWorld(world);
+            }
         });
 
         it('destroyPhysicsWorld 不抛异常', () => {
@@ -52,77 +65,170 @@ describe('WASM 物理契约测试', () => {
 
         it('physicsWorldSetGravity 不抛异常', () => {
             const world = api.createPhysicsWorld();
-            expect(() => api.physicsWorldSetGravity(world, 0, -9.8, 0)).not.toThrow();
-            api.destroyPhysicsWorld(world);
+            try {
+                expect(() => api.physicsWorldSetGravity(world, 0, -9.8, 0)).not.toThrow();
+            } finally {
+                api.destroyPhysicsWorld(world);
+            }
         });
 
         it('physicsWorldStepSimulation 不抛异常（空世界步进）', () => {
             const world = api.createPhysicsWorld();
-            expect(() => api.physicsWorldStepSimulation(world, 1 / 60, 1, 1 / 60)).not.toThrow();
-            api.destroyPhysicsWorld(world);
+            try {
+                expect(() => api.physicsWorldStepSimulation(world, 1 / 60, 1, 1 / 60)).not.toThrow();
+            } finally {
+                api.destroyPhysicsWorld(world);
+            }
+        });
+
+        it('多个物理世界独立存在且互不干扰', () => {
+            const worldA = api.createPhysicsWorld();
+            const worldB = api.createPhysicsWorld();
+            try {
+                expect(worldA).toBeGreaterThan(0);
+                expect(worldB).toBeGreaterThan(0);
+                expect(worldA).not.toBe(worldB);
+                // 两个世界各自可设重力、步进
+                expect(() => api.physicsWorldSetGravity(worldA, 0, -9.8, 0)).not.toThrow();
+                expect(() => api.physicsWorldSetGravity(worldB, 0, -19.6, 0)).not.toThrow();
+                expect(() => api.physicsWorldStepSimulation(worldA, 1 / 60, 1, 1 / 60)).not.toThrow();
+                expect(() => api.physicsWorldStepSimulation(worldB, 1 / 60, 1, 1 / 60)).not.toThrow();
+            } finally {
+                api.destroyPhysicsWorld(worldA);
+                api.destroyPhysicsWorld(worldB);
+            }
+        });
+
+        it('连续多步模拟不抛异常', () => {
+            const world = api.createPhysicsWorld();
+            try {
+                api.physicsWorldSetGravity(world, 0, -9.8, 0);
+                for (let i = 0; i < 60; i++) {
+                    api.physicsWorldStepSimulation(world, 1 / 60, 1, 1 / 60);
+                }
+            } finally {
+                api.destroyPhysicsWorld(world);
+            }
+        });
+
+        it('physicsWorldUseMotionStateBuffer 不抛异常', () => {
+            const world = api.createPhysicsWorld();
+            try {
+                expect(() => api.physicsWorldUseMotionStateBuffer(world, true)).not.toThrow();
+                expect(() => api.physicsWorldUseMotionStateBuffer(world, false)).not.toThrow();
+            } finally {
+                api.destroyPhysicsWorld(world);
+            }
         });
     });
 
     describe('3. 形状生命周期', () => {
         it('createBoxShape 返回非零指针', () => {
             const shape = api.createBoxShape(1, 1, 1);
-            expect(shape).toBeGreaterThan(0);
-            api.destroyShape(shape);
+            try {
+                expect(shape).toBeGreaterThan(0);
+            } finally {
+                api.destroyShape(shape);
+            }
         });
 
         it('createSphereShape 返回非零指针', () => {
             const shape = api.createSphereShape(1);
-            expect(shape).toBeGreaterThan(0);
-            api.destroyShape(shape);
+            try {
+                expect(shape).toBeGreaterThan(0);
+            } finally {
+                api.destroyShape(shape);
+            }
         });
 
         it('createCapsuleShape 返回非零指针', () => {
             const shape = api.createCapsuleShape(0.5, 1.5);
-            expect(shape).toBeGreaterThan(0);
-            api.destroyShape(shape);
+            try {
+                expect(shape).toBeGreaterThan(0);
+            } finally {
+                api.destroyShape(shape);
+            }
         });
 
         it('createStaticPlaneShape 返回非零指针', () => {
             const shape = api.createStaticPlaneShape(0, 1, 0, 0);
-            expect(shape).toBeGreaterThan(0);
-            api.destroyShape(shape);
+            try {
+                expect(shape).toBeGreaterThan(0);
+            } finally {
+                api.destroyShape(shape);
+            }
         });
 
         it('destroyShape 不抛异常', () => {
             const shape = api.createBoxShape(1, 1, 1);
             expect(() => api.destroyShape(shape)).not.toThrow();
         });
+
+        it('极小尺寸形状不抛异常', () => {
+            const shape = api.createBoxShape(0.001, 0.001, 0.001);
+            try {
+                expect(shape).toBeGreaterThan(0);
+            } finally {
+                api.destroyShape(shape);
+            }
+        });
     });
 
     describe('4. 内存管理', () => {
         it('allocateBuffer 返回非零指针', () => {
             const ptr = api.allocateBuffer(64);
-            expect(ptr).toBeGreaterThan(0);
-            api.deallocateBuffer(ptr, 64);
+            try {
+                expect(ptr).toBeGreaterThan(0);
+            } finally {
+                api.deallocateBuffer(ptr, 64);
+            }
         });
 
         it('allocateBuffer 分配的 buffer 可读写', () => {
             const ptr = api.allocateBuffer(16);
-            const view = new Float32Array(memory.buffer, ptr, 4);
-            view[0] = 3.14;
-            view[1] = 2.72;
-            expect(view[0]).toBeCloseTo(3.14);
-            expect(view[1]).toBeCloseTo(2.72);
-            api.deallocateBuffer(ptr, 16);
+            try {
+                const view = new Float32Array(memory.buffer, ptr, 4);
+                view[0] = 3.14;
+                view[1] = 2.72;
+                expect(view[0]).toBeCloseTo(3.14);
+                expect(view[1]).toBeCloseTo(2.72);
+            } finally {
+                api.deallocateBuffer(ptr, 16);
+            }
         });
 
         it('deallocateBuffer 不抛异常', () => {
             const ptr = api.allocateBuffer(32);
             expect(() => api.deallocateBuffer(ptr, 32)).not.toThrow();
         });
+
+        it('零尺寸分配返回有效指针或零', () => {
+            const ptr = api.allocateBuffer(0);
+            // WASM malloc(0) 行为：返回有效指针或 0，不应崩溃
+            expect(typeof ptr).toBe('number');
+            if (ptr > 0) {
+                api.deallocateBuffer(ptr, 0);
+            }
+        });
+
+        it('多次分配-释放不崩溃', () => {
+            for (let i = 0; i < 10; i++) {
+                const ptr = api.allocateBuffer(128);
+                expect(ptr).toBeGreaterThan(0);
+                api.deallocateBuffer(ptr, 128);
+            }
+        });
     });
 
     describe('5. MmdRuntime', () => {
-        it('createMmdRuntime 返回非零指针', () => {
+        it('createMmdRuntime 返回有效对象', () => {
             const runtime = api.createMmdRuntime();
-            expect(runtime).not.toBeNull();
-            // MmdRuntime 是对象而非裸指针，free 释放
-            runtime.free();
+            try {
+                expect(runtime).toBeTruthy();
+                expect(typeof runtime.free).toBe('function');
+            } finally {
+                runtime.free();
+            }
         });
 
         it('MmdRuntime.free() 不抛异常', () => {
