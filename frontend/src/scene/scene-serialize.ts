@@ -194,6 +194,8 @@ export interface SceneFile {
         procPresets?: ProcPreset[];
         /** [doc:adr-233] per-model 程序化动作状态（per-mode 独立参数），序列化/恢复时过 migrateProcState */
         procMotion?: Partial<ProcMotionState>;
+        /** [fix:proc-override] 程序化动作模块配置（per-procRole），随模型持久化 */
+        procMotionModules?: Record<string, MotionModuleState[]>;
         /** [doc:adr-121] 双槽位动作分配（仅 primary.source==='pinned' 落盘，inherit 不落盘） */
         motionSlots?: {
             primary: {
@@ -415,6 +417,8 @@ function serializeModel(inst: ModelInstance): SceneFile['models'][number] {
         // [fix:P3] 深拷贝：浅拷贝会让快照的 params.*.boneToggles 与运行时状态共引用，
         // 快照若驻留内存（undo）会被后续编辑回写污染。
         procMotion: inst.procMotion ? structuredClone(inst.procMotion) : undefined,
+        // [fix:proc-override] 序列化程序化动作模块配置（per-procRole）
+        procMotionModules: inst.procMotionModules,
         // [audit] 序列化程序化自定义预设（参数快照，深拷贝防与运行时共引用）
         procPresets:
             inst.procPresets && inst.procPresets.length > 0
@@ -719,6 +723,10 @@ async function deserializeModels(
             // [doc:adr-233] 恢复 per-model 程序化动作状态（统一过 migrateProcState，兼容旧扁平存档）
             if (m.procMotion) {
                 inst.procMotion = migrateProcState(m.procMotion);
+            }
+            // [fix:proc-override] 恢复程序化动作模块配置（per-procRole）
+            if (m.procMotionModules) {
+                inst.procMotionModules = m.procMotionModules;
             }
             // [audit] 恢复程序化自定义预设（纯数据，无需迁移）
             if (m.procPresets && Array.isArray(m.procPresets)) {

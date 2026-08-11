@@ -29,6 +29,8 @@ import {
 import { BeatDetector } from '@/motion-algos/beat-detector';
 import { ProcMotionControllerBase } from './proc-motion-controller';
 import { ProcMotionParamsMixin } from './proc-motion-params';
+import { applyProcMotionModulesToModel } from './motion-modules/registry';
+import { modelManager, focusedModel } from '../scene';
 
 // ═══════════════════════════════════════════════════════════
 // ProcMotionController — 状态机核心（基类）+ 参数 setter 群（mixin）
@@ -124,6 +126,16 @@ export function setGazeLayerActive(active: boolean, intensity: number): void {
 }
 export function regenerateProcMotion(modelId?: string): void {
     _getCtrl().regenerateProcMotion(modelId);
+    // [fix:proc-override] 程序化重生成后，应用该模型的 per-proc 模块配置（持久化 → 运行时）。
+    // 确保场景恢复 / 激活 / 参数变更后，模块状态从 ModelInstance.procMotionModules 落到引擎。
+    const targetId = modelId ?? focusedModel()?.id ?? undefined;
+    if (targetId) {
+        const inst = modelManager.get(targetId);
+        const role = inst?.procMotion?.mode;
+        if (role && role !== 'off') {
+            applyProcMotionModulesToModel(targetId, role);
+        }
+    }
 }
 
 /** 释放程序化动作模块全部资源并销毁单例。应用关闭 / 模块卸载时调用。 */

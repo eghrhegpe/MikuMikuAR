@@ -14,6 +14,7 @@ source_files:
 symbols:
   - BoneConflict
   - applyMotionModulesToModel
+  - applyProcMotionModulesToModel
   - claimBones
   - clearAllModulesForModel
   - createModule

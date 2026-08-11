@@ -42,6 +42,32 @@ export interface ModuleBaseOverrides {
 }
 
 /**
+ * [fix:proc-override] 模块级「当前 bake actionId」上下文。
+ * 模块的 bake 函数本身不接收 actionId（签名 `(modelId) => void`），其内部 prepareBake
+ * 用无 actionId 的 getModuleState 读取状态。程序化动作（activeMotion 为 null）时这会把
+ * bake 引向 fallback 而非 per-proc 存储，导致「UI 显示已启用但骨骼从不写入」。
+ * applyEnable/setParam 在触发 doAction（bake）前设置本上下文，prepareBake 读取它，
+ * 使 bake 读到与 UI 读写一致的 per-proc 配置。bake 为同步调用，无并发重入问题。
+ */
+let _bakeActionId: string | undefined;
+
+/** 触发 bake 前设置 actionId 上下文，同步执行完即清除 */
+function _runWithBakeActionId(actionId: string | undefined, fn: (modelId: string) => void, modelId: string): void {
+    const prev = _bakeActionId;
+    _bakeActionId = actionId;
+    try {
+        fn(modelId);
+    } finally {
+        _bakeActionId = prev;
+    }
+}
+
+/** 读取当前 bake 的 actionId（无则 undefined，回到 activeMotion/fallback 语义） */
+export function getBakeActionId(): string | undefined {
+    return _bakeActionId;
+}
+
+/**
  * 创建模块通用方法，减少 7 个模块间 ~105 行重复 boilerplate。
  *
  * @param modelId  目标模型 ID
@@ -79,7 +105,8 @@ export function createModuleBase(
     function applyEnable(): void {
         const state = getModuleState(modelId, moduleId, actionId);
         state.enabled = true;
-        doAction(modelId);
+        // [fix:proc-override] bake 需感知 actionId（程序化动作读 per-proc 存储）
+        _runWithBakeActionId(actionId, doAction, modelId);
     }
 
     /** 应用禁用：置 enabled=false 并释放骨骼/注销帧钩子（setState/disable 共用） */
@@ -132,7 +159,8 @@ export function createModuleBase(
                     setModuleEnabled(modelId, moduleId, true, actionId);
                 }
             }
-            doAction(modelId);
+            // [fix:proc-override] bake 需感知 actionId（程序化动作读 per-proc 存储）
+            _runWithBakeActionId(actionId, doAction, modelId);
         },
 
         enable: applyEnable,
@@ -277,7 +305,9 @@ export function prepareBake(
     moduleId: string,
     bones: readonly string[]
 ): { state: MotionModuleState; claimed: string[] } | null {
-    const state = getModuleState(modelId, moduleId);
+    // [fix:proc-override] bake 经 _runWithBakeActionId 设置 actionId 上下文，
+    // 使程序化动作（activeMotion 为 null）时 bake 读到 per-proc 存储而非 fallback。
+    const state = getModuleState(modelId, moduleId, getBakeActionId());
     if (!state.enabled) {
         return null;
     }

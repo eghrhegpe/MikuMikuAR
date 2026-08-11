@@ -301,7 +301,6 @@ use_when:
 
 ### Schema: buildProcMotionSchema()
 
-- **custom** `procmotion:main` · —
 - **custom** `procmotion:presets` · —
 - **custom** `procmotion:params` · —
 - **folder** `procmotion:bone-micro` · `motion.boneMicro` lucide:activity

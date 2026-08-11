@@ -9,7 +9,7 @@ import {
     mockMotionIntent,
     mockMotionHistory,
 } from './motion-modules-registry-mocks';
-import { makeModel, setActiveMotionWithModules } from './motion-modules-registry-helpers';
+import { makeModel, makeModelWithBones, setActiveMotionWithModules } from './motion-modules-registry-helpers';
 import {
     initMotionModules,
     createModule,
@@ -17,6 +17,7 @@ import {
     setModuleParam,
     setModuleEnabled,
     setTargetModel,
+    applyProcMotionModulesToModel,
 } from '@/scene/motion/motion-modules/registry';
 
 vi.mock('@/core/state', () => mockState());
@@ -56,6 +57,74 @@ describe('setModuleParam / setModuleEnabled', () => {
         setModuleEnabled('m1', 'body-posture', true);
         const state = getModuleState('m1', 'body-posture');
         expect(state.enabled).toBe(true);
+    });
+});
+
+describe('程序化动作模块配置（proc:actionId 持久化，fix:proc-override）', () => {
+    // 无 activeMotion（mockActiveMotion 默认 null）= 程序化动作场景，走 per-model+per-proc 存储
+    it('无 activeMotion 时 proc:idle 写入 per-model 持久化存储', () => {
+        const m1 = makeModel('m1');
+        shared.mockModelRegistry.set('m1', m1);
+        initMotionModules();
+        setModuleEnabled('m1', 'body-posture', true, 'proc:idle');
+        setModuleParam('m1', 'body-posture', 'tilt', 10, 'proc:idle');
+        const state = getModuleState('m1', 'body-posture', 'proc:idle');
+        expect(state.enabled).toBe(true);
+        expect(state.params.tilt).toBe(10);
+        // 状态落到 ModelInstance.procMotionModules.idle（可序列化）
+        expect(m1.procMotionModules?.idle).toBeDefined();
+        expect(m1.procMotionModules.idle.find((s: any) => s.id === 'body-posture')?.enabled).toBe(true);
+    });
+
+    it('不同 procRole（idle vs autodance）互不串扰', () => {
+        const m1 = makeModel('m1');
+        shared.mockModelRegistry.set('m1', m1);
+        initMotionModules();
+        setModuleEnabled('m1', 'body-posture', true, 'proc:idle');
+        setModuleParam('m1', 'body-posture', 'tilt', 10, 'proc:idle');
+        // autodance 模式保持默认（未启用、参数默认）
+        const autodance = getModuleState('m1', 'body-posture', 'proc:autodance');
+        expect(autodance.enabled).toBe(false);
+        expect(autodance.params.tilt).toBe(0);
+        // idle 不受影响
+        expect(getModuleState('m1', 'body-posture', 'proc:idle').enabled).toBe(true);
+    });
+
+    it('不同模型（m1 vs m2）互不串扰', () => {
+        const m1 = makeModel('m1');
+        const m2 = makeModel('m2');
+        shared.mockModelRegistry.set('m1', m1);
+        shared.mockModelRegistry.set('m2', m2);
+        initMotionModules();
+        setModuleEnabled('m1', 'body-posture', true, 'proc:idle');
+        setModuleParam('m1', 'body-posture', 'tilt', 10, 'proc:idle');
+        // m2 的 idle 保持默认
+        const m2State = getModuleState('m2', 'body-posture', 'proc:idle');
+        expect(m2State.enabled).toBe(false);
+        expect(m2State.params.tilt).toBe(0);
+        // m1 不受影响
+        expect(getModuleState('m1', 'body-posture', 'proc:idle').enabled).toBe(true);
+    });
+
+    it('applyProcMotionModulesToModel 将持久化状态应用到运行时（setState 生效）', () => {
+        const m1 = makeModelWithBones('m1'); // 含 上半身 骨骼，使 body-posture bake 可认领
+        shared.mockModelRegistry.set('m1', m1);
+        initMotionModules();
+        setModuleEnabled('m1', 'body-posture', true, 'proc:idle');
+        setModuleParam('m1', 'body-posture', 'tilt', 10, 'proc:idle');
+        shared.setBoneOverrideSpy.mockClear();
+        // 应用：body-posture 启用 → bake 触发 setBoneOverride('上半身', ...)
+        applyProcMotionModulesToModel('m1', 'idle');
+        expect(shared.setBoneOverrideSpy.mock.calls.length).toBeGreaterThan(0);
+    });
+
+    it('applyProcMotionModulesToModel 无存储时静默跳过', () => {
+        const m1 = makeModel('m1');
+        shared.mockModelRegistry.set('m1', m1);
+        initMotionModules();
+        shared.setBoneOverrideSpy.mockClear();
+        applyProcMotionModulesToModel('m1', 'idle');
+        expect(shared.setBoneOverrideSpy).not.toHaveBeenCalled();
     });
 });
 

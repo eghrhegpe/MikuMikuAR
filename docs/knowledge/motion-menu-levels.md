@@ -27,6 +27,7 @@ symbols:
   - buildPoseStudioLevel
   - buildProcLibraryLevel
   - buildProcMotionSchema
+  - buildProcToolsLevel
   - buildRetargetLevel
   - buildVirtualSkirtLevel
   - disposeAllVirtualSkirts

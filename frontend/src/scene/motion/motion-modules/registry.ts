@@ -7,7 +7,7 @@
 // 注册表仅作 releaseOwnedBones 的透传入口（claimBones 在 perception.ts 内部绕过本注册表）。
 
 import type { MotionModuleState, ParamValue, SceneMotionIntent } from '@/core/types';
-import { triggerAutoSave } from '@/core/config';
+import { triggerAutoSave, modelRegistry } from '@/core/config';
 import type { MotionOverrideModule, ModuleFactory, ModuleMeta } from './types';
 import { getBoneOverrideStore } from '../bone-override-store';
 import type { ModuleDef } from './types';
@@ -89,11 +89,77 @@ function _resolveIntent(actionId?: string): SceneMotionIntent | null {
 }
 
 /**
+ * [fix:proc-override] 从 per-model + per-procRole 存储读写模块状态（不存在则创建 + 种入 defaults）。
+ * 程序化动作（idle/autodance）无 SceneMotionIntent，过去回落扁平内存 `_fallbackModuleStates`，
+ * 导致配置「重启丢失 + 跨模型/跨模式串扰」。本函数把状态落到 ModelInstance.procMotionModules，
+ * 随场景自动保存/恢复。
+ * @returns 找到或新建的模块状态；模型实例不存在时返回 null
+ */
+function _getOrCreateProcModuleState(
+    modelId: string,
+    procRole: string,
+    moduleId: string
+): MotionModuleState | null {
+    const inst = modelRegistry.get(modelId);
+    if (!inst) {
+        return null;
+    }
+    if (!inst.procMotionModules) {
+        inst.procMotionModules = {};
+    }
+    let modules = inst.procMotionModules[procRole];
+    if (!modules) {
+        modules = [];
+        inst.procMotionModules[procRole] = modules;
+    }
+    let state = modules.find((m) => m.id === moduleId);
+    if (!state) {
+        state = { id: moduleId, enabled: false, params: {} };
+        const entry = _registry.get(moduleId);
+        if (entry?.meta.defaults) {
+            state.params = { ...entry.meta.defaults };
+        }
+        modules.push(state);
+    }
+    return state;
+}
+
+/** [fix:proc-override] actionId 前缀：标识程序化动作的模块作用域（`proc:${procRole}`） */
+const PROC_ACTION_PREFIX = 'proc:';
+
+/**
+ * [fix:proc-override] 应用程序化动作的模块配置到指定模型（持久化状态 → 运行时）。
+ * 在程序化动作激活 / 场景恢复 / 重生成时调用，确保 per-proc 模块状态在运行时生效。
+ * 与 applyMotionModulesToModel（VMD 路径）对称，单模块异常不阻断其余模块应用。
+ */
+export function applyProcMotionModulesToModel(modelId: string, procRole: string): void {
+    const inst = modelRegistry.get(modelId);
+    const modules = inst?.procMotionModules?.[procRole];
+    if (!modules) {
+        return;
+    }
+    for (const state of modules) {
+        try {
+            const mod = createModule(state.id, modelId, `${PROC_ACTION_PREFIX}${procRole}`);
+            if (!mod) {
+                continue;
+            }
+            // 与 applyModuleSnapshot 同模式：setState 自生效（enabled → 重烤；disabled → 释放骨骼）
+            mod.setState({ id: state.id, enabled: state.enabled, params: state.params });
+        } catch (e) {
+            console.warn(`[registry] applyProcMotionModulesToModel 模块 "${state.id}" 应用失败`, e);
+        }
+    }
+}
+
+/**
  * 获取动作的模块配置（不存在则创建默认状态，种入 defaults）。
  * [doc:adr-121 P4-4] _modelId 未使用：ADR-129 将配置存储从 per-model 改为 per-motion（随动作走），
  * 保留参数仅为维持接口兼容（UI 调用方均传入 modelId）。
  * [fix:P2] actionId 指定「写入哪个动作」：UI 查看动作 A 时传 A 的 id，
  * 使覆盖参数落在被查看的动作而非激活动作；缺省回退激活动作（运行时路径不变）。
+ * [fix:proc-override] actionId 为 `proc:${procRole}` 时走 per-model+per-proc 持久化存储，
+ * 替代扁平内存 fallback（跨模型/跨模式串扰 + 重启丢失）。
  */
 export function getModuleState(
     _modelId: string,
@@ -102,6 +168,15 @@ export function getModuleState(
 ): MotionModuleState {
     initMotionModules(); // 幂等兜底
     const intent = _resolveIntent(actionId);
+
+    // [fix:proc-override] 程序化动作作用域：无 VMD intent，读 per-model+per-proc 持久化存储
+    if (!intent && actionId?.startsWith(PROC_ACTION_PREFIX)) {
+        const procRole = actionId.slice(PROC_ACTION_PREFIX.length);
+        const state = _getOrCreateProcModuleState(_modelId, procRole, moduleId);
+        if (state) {
+            return state;
+        }
+    }
 
     // [doc:pose-debug] 无 VMD 时使用回退存储，避免 enable/bake 读写不一致
     if (!intent) {

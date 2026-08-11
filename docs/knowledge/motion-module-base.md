@@ -11,15 +11,16 @@ adr:
   - ADR-116
   - ADR-126
 symbols:
+  - FrameHookManager
   - ModuleBaseMethods
   - ModuleBaseOverrides
-  - createModuleBase
-  - applyModuleSnapshot
-  - createFrameHookManager
-  - FrameHookManager
-  - createEnsureActive
   - ModuleShellConfig
+  - applyModuleSnapshot
+  - createEnsureActive
+  - createFrameHookManager
+  - createModuleBase
   - createModuleShell
+  - getBakeActionId
   - prepareBake
 invariants:
   - 被 body-posture/hand-modules/foot-modules/riding-model 等 6 模块引用

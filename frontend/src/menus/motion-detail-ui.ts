@@ -35,7 +35,7 @@ import {
     renderOverrideCard,
     renderPresetCard,
 } from './motion-override-levels';
-import { buildProcMotionSchema, procLabel } from './motion-procmotion-levels';
+import { buildProcToolsLevel, procLabel } from './motion-procmotion-levels';
 // 循环依赖安全：getMotionMenu 仅在函数体内调用
 import { getMotionMenu } from './motion-popup';
 
@@ -217,7 +217,28 @@ function buildMotionDetailSchema(
                         undefined,
                         undefined,
                         undefined,
-                        { wrapLabel: true }
+                        {
+                            wrapLabel: true,
+                            // [doc:adr-207] 程序化动作：行尾 settings-2 进「程序化工具栏」
+                            // （参数预设/强度/速度/骨骼微动/插值），对齐 VMD「详情 vs 工具」
+                            // 分层，避免参数卡与动作覆盖/动作预设抢位置。
+                            trailing:
+                                procActive || viewingProc
+                                    ? {
+                                          icon: 'lucide:settings-2',
+                                          title: t('motion.procTools'),
+                                          onClick: () => {
+                                              const targetMode: import('../motion-algos/procedural-motion').ProcModeKey =
+                                                  viewingProc
+                                                      ? (procId as import('../motion-algos/procedural-motion').ProcModeKey)
+                                                      : (procState.mode as import('../motion-algos/procedural-motion').ProcModeKey);
+                                              getMotionMenu()?.push(
+                                                  buildProcToolsLevel(modelId, targetMode)
+                                              );
+                                          },
+                                      }
+                                    : undefined,
+                        }
                     );
                 });
             },
@@ -295,37 +316,32 @@ function buildMotionDetailSchema(
     // [doc:pose-debug] 无 VMD 时仍显示覆盖/预设面板，用于姿势调整和骨骼调试
     // [fix:P2] 传入解析后的动作 id（motion?.id）：查看动作 A 时覆盖/预设读写落到 A；
     // 未传或无效 sceneMotionId 时 motion 回退激活动作 → 写激活动作（兼容旧行为）。
+    // [fix:proc-override] 程序化动作（procId 非空）用 `proc:${procId}` 作为覆盖/预设的
+    // actionId 作用域，使模块配置落到 per-model+per-procRole 持久化存储，而非激活动作/fallback。
     if (modelId) {
+        const overrideActionId = procId ? `proc:${procId}` : motion?.id;
         nodes.push({
             id: 'detail:override',
             kind: 'custom',
             renderCustom: (c) => {
                 renderOverrideCard(c, modelId, {
                     onEnter: (modId) =>
-                        getMotionMenu()?.push(buildModuleParamLevel(modId, motion?.id)),
-                }, motion?.id);
+                        getMotionMenu()?.push(buildModuleParamLevel(modId, overrideActionId)),
+                }, overrideActionId);
             },
         });
         nodes.push({
             id: 'detail:presets',
             kind: 'custom',
             renderCustom: (c) => {
-                renderPresetCard(c, modelId, motion?.id);
+                renderPresetCard(c, modelId, overrideActionId);
             },
         });
     }
 
-    // [doc:adr-207] 程序化激活时，把参数卡并入统一详情页：模式切换/强度/速度/骨骼微动/插值。
-    // 覆盖/预设本就 model-scoped 始终可达，至此程序化动作与 VMD 共享全部动作功能。
-    // [audit-fix] 行体点击查看某 proc（viewingProc）时即使未激活也显示参数卡（仅查看/预配置）。
-    // [audit] per-mode：参数卡绑定目标模式——优先查看的 proc，否则当前激活模式（'none' 无参数卡）。
-    if (procActive || (viewingProc && procId !== 'none')) {
-        const targetMode: import('../motion-algos/procedural-motion').ProcModeKey = viewingProc
-            ? (procId as import('../motion-algos/procedural-motion').ProcModeKey)
-            : (procState.mode as import('../motion-algos/procedural-motion').ProcModeKey);
-        nodes.push(...buildProcMotionSchema(modelId, targetMode));
-    }
-
+    // [doc:adr-207] 程序化参数卡已收敛到「程序化工具栏」（buildProcToolsLevel）：
+    // 详情页不再并入参数卡，入口在卡片 1「当前主动作」行尾 settings-2，
+    // 避免参数卡与动作覆盖/动作预设抢位置（对齐 ADR-170「详情 vs 工具」分层）。
     return nodes;
 }
 

@@ -260,6 +260,10 @@ export type ModelInstance = {
     motionPresets?: MotionPreset[];
     /** 程序化动作状态（per-model），未设置时使用全局默认值 */
     procMotion?: ProcMotionState;
+    /** [fix:proc-override] 程序化动作模块配置（per-model + per-procRole），
+     *  解决程序化动作覆盖无自有存储导致的「重启丢失 + 跨模型串扰」。
+     *  key = procRole（'idle' | 'autodance'），value = 该模式下模块状态数组 */
+    procMotionModules?: Record<string, MotionModuleState[]>;
     /** [audit] 程序化动作自定义预设列表（per-model 参数快照） */
     procPresets?: ProcPreset[];
     /** [doc:adr-085] 足部 IK 调整状态（per-model），未设置时使用全局默认值 */
