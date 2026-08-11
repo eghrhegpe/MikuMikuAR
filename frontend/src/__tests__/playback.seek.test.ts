@@ -159,4 +159,14 @@ describe('seekFromEvent', () => {
         seekFromEvent(mouseEvent);
         expect(mockDom.playbackBar.style.display).toBe('flex');
     });
+
+    it('seekAnimation reject → catch 捕获，不抛 unhandled rejection', async () => {
+        mockRuntime.seekAnimation.mockRejectedValueOnce(new Error('seek failed'));
+        seekFromEvent(mouseEvent);
+        // 等 .catch 微任务执行
+        await vi.waitFor(() => {
+            expect(mockRuntime.seekAnimation).toHaveBeenCalled();
+        });
+        // 不抛错即通过
+    });
 });

@@ -11,12 +11,15 @@ const __mocks = vi.hoisted(() => ({
     setStatus: vi.fn(),
     getSceneAction: vi.fn(),
     focusedModelId: { value: '' as string },
+    mmdRuntime: null as { seekAnimation: ReturnType<typeof vi.fn>; animationDuration: number; currentTime: number } | null,
 }));
 
 vi.mock('../core/logger', () => ({ logWarn: __mocks.logWarn }));
 vi.mock('../core/config', () => ({
     dom: { btnPlayPause: { click: vi.fn() } },
-    mmdRuntime: undefined,
+    get mmdRuntime() {
+        return __mocks.mmdRuntime;
+    },
     setStatus: __mocks.setStatus,
 }));
 vi.mock('../core/dom', () => ({
@@ -44,12 +47,23 @@ function undoHandler() {
     return def.handler();
 }
 
+function seekHandler(id: 'playback:seek-back' | 'playback:seek-forward') {
+    const def = getAllShortcuts().find((s) => s.id === id);
+    if (!def) throw new Error(`${id} 未注册`);
+    return def.handler();
+}
+
 beforeEach(() => {
     _resetShortcutRegistry();
     __mocks.logWarn.mockClear();
     __mocks.setStatus.mockClear();
     __mocks.getSceneAction.mockReset();
     __mocks.focusedModelId.value = '';
+    __mocks.mmdRuntime = {
+        seekAnimation: vi.fn().mockResolvedValue(undefined),
+        animationDuration: 120,
+        currentTime: 50,
+    };
 });
 
 describe('motion:undo 幽灵路径守卫', () => {
@@ -112,5 +126,95 @@ describe('motion:undo 幽灵路径守卫', () => {
 
         expect(restore).toHaveBeenCalledWith(snap);
         expect(__mocks.setStatus).not.toHaveBeenCalled();
+    });
+});
+
+describe('seek-backward/forward .catch 守卫', () => {
+    function setupFocusedModel(duration = 120) {
+        __mocks.getSceneAction.mockImplementation((key: string) => {
+            if (key === 'focusedModel') return () => ({ animationDuration: duration });
+            if (key === 'updatePlaybackUI') return vi.fn();
+            return undefined;
+        });
+    }
+
+    it('seek-back: no-op when mmdRuntime is null', () => {
+        registerAppShortcuts();
+        __mocks.mmdRuntime = null;
+        expect(() => seekHandler('playback:seek-back')).not.toThrow();
+    });
+
+    it('seek-back: no-op when focusedModel is missing', () => {
+        registerAppShortcuts();
+        __mocks.getSceneAction.mockReturnValue(undefined);
+        expect(() => seekHandler('playback:seek-back')).not.toThrow();
+        expect(__mocks.mmdRuntime!.seekAnimation).not.toHaveBeenCalled();
+    });
+
+    it('seek-back: no-op when duration <= 0', () => {
+        registerAppShortcuts();
+        setupFocusedModel(0);
+        expect(() => seekHandler('playback:seek-back')).not.toThrow();
+        expect(__mocks.mmdRuntime!.seekAnimation).not.toHaveBeenCalled();
+    });
+
+    it('seek-back: normal path calls seekAnimation with clamped time', () => {
+        registerAppShortcuts();
+        setupFocusedModel();
+        __mocks.mmdRuntime!.currentTime = 50;
+        seekHandler('playback:seek-back');
+        // max(0, 50 - 5) = 45
+        expect(__mocks.mmdRuntime!.seekAnimation).toHaveBeenCalledWith(45, true);
+    });
+
+    it('seek-back: seekAnimation reject → catch 捕获，不抛 unhandled rejection', async () => {
+        registerAppShortcuts();
+        setupFocusedModel();
+        __mocks.mmdRuntime!.seekAnimation.mockRejectedValueOnce(new Error('seek failed'));
+
+        expect(() => seekHandler('playback:seek-back')).not.toThrow();
+        await vi.waitFor(() => {
+            expect(__mocks.mmdRuntime!.seekAnimation).toHaveBeenCalled();
+        });
+    });
+
+    it('seek-forward: no-op when mmdRuntime is null', () => {
+        registerAppShortcuts();
+        __mocks.mmdRuntime = null;
+        expect(() => seekHandler('playback:seek-forward')).not.toThrow();
+    });
+
+    it('seek-forward: no-op when focusedModel is missing', () => {
+        registerAppShortcuts();
+        __mocks.getSceneAction.mockReturnValue(undefined);
+        expect(() => seekHandler('playback:seek-forward')).not.toThrow();
+        expect(__mocks.mmdRuntime!.seekAnimation).not.toHaveBeenCalled();
+    });
+
+    it('seek-forward: no-op when duration <= 0', () => {
+        registerAppShortcuts();
+        setupFocusedModel(0);
+        expect(() => seekHandler('playback:seek-forward')).not.toThrow();
+        expect(__mocks.mmdRuntime!.seekAnimation).not.toHaveBeenCalled();
+    });
+
+    it('seek-forward: normal path calls seekAnimation with clamped time', () => {
+        registerAppShortcuts();
+        setupFocusedModel();
+        __mocks.mmdRuntime!.currentTime = 50;
+        seekHandler('playback:seek-forward');
+        // min(120, 50 + 5) = 55
+        expect(__mocks.mmdRuntime!.seekAnimation).toHaveBeenCalledWith(55, true);
+    });
+
+    it('seek-forward: seekAnimation reject → catch 捕获，不抛 unhandled rejection', async () => {
+        registerAppShortcuts();
+        setupFocusedModel();
+        __mocks.mmdRuntime!.seekAnimation.mockRejectedValueOnce(new Error('seek failed'));
+
+        expect(() => seekHandler('playback:seek-forward')).not.toThrow();
+        await vi.waitFor(() => {
+            expect(__mocks.mmdRuntime!.seekAnimation).toHaveBeenCalled();
+        });
     });
 });
