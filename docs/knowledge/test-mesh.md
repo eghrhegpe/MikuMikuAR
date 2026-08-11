@@ -14,4 +14,3 @@ invariants:
   - createTestMesh 先清理所有既有 e2e-test-* 网格，再新建红色 box + StandardMaterial
   - 生产代码真回归时单测自动捕获（P1 fix：消灭 dev-hooks.ts 与测试的双份实现）
   - Babylon 实现用动态 import 避免模块加载即拉渲染器链
-</content>
