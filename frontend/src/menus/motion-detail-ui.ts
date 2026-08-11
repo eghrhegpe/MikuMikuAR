@@ -36,6 +36,7 @@ import {
     renderPresetCard,
 } from './motion-override-levels';
 import { buildProcToolsLevel, procLabel } from './motion-procmotion-levels';
+import { PROC_ACTION_PREFIX } from '../scene/motion/motion-modules/registry';
 // 循环依赖安全：getMotionMenu 仅在函数体内调用
 import { getMotionMenu } from './motion-popup';
 
@@ -319,7 +320,10 @@ function buildMotionDetailSchema(
     // [fix:proc-override] 程序化动作（procId 非空）用 `proc:${procId}` 作为覆盖/预设的
     // actionId 作用域，使模块配置落到 per-model+per-procRole 持久化存储，而非激活动作/fallback。
     if (modelId) {
-        const overrideActionId = procId ? `proc:${procId}` : motion?.id;
+        // [fix:P3] procId 为 'none' 时无应用端（bridge 仅 role!=='off' 应用），避免配置埋入死桶，
+        // 回退到激活动作作用域；用 PROC_ACTION_PREFIX 常量与 registry 保持单一来源。
+        const overrideActionId =
+            procId && procId !== 'none' ? `${PROC_ACTION_PREFIX}${procId}` : motion?.id;
         nodes.push({
             id: 'detail:override',
             kind: 'custom',

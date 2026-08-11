@@ -13,6 +13,7 @@ source_files:
   - frontend/src/scene/motion/motion-modules/registry.ts
 symbols:
   - BoneConflict
+  - PROC_ACTION_PREFIX
   - applyMotionModulesToModel
   - applyProcMotionModulesToModel
   - claimBones

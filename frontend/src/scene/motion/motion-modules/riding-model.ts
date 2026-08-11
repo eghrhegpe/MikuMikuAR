@@ -32,6 +32,7 @@ import {
     createFrameHookManager,
     createModuleShell,
     prepareBake,
+    getModuleActionId,
 } from './module-base';
 
 const MODULE_ID = 'riding-model';
@@ -147,7 +148,7 @@ function bake(modelId: string): void {
  */
 function ensureActive(modelId: string): void {
     bake(modelId); // 写静态骨骼 + 记录认领足骨
-    const st = getModuleState(modelId, MODULE_ID);
+    const st = getModuleState(modelId, MODULE_ID, getModuleActionId(modelId));
     const autoPedal = (st.params.autoPedal as boolean) ?? false;
     const hasHook = _ridingFrameHooks.has(modelId);
     if (autoPedal && !hasHook) {
@@ -156,7 +157,7 @@ function ensureActive(modelId: string): void {
                 if (mid !== modelId) {
                     return;
                 }
-                const s = getModuleState(modelId, MODULE_ID);
+                const s = getModuleState(modelId, MODULE_ID, getModuleActionId(modelId));
                 if (!s.enabled) {
                     return;
                 }

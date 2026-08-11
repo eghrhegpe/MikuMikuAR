@@ -418,7 +418,11 @@ function serializeModel(inst: ModelInstance): SceneFile['models'][number] {
         // 快照若驻留内存（undo）会被后续编辑回写污染。
         procMotion: inst.procMotion ? structuredClone(inst.procMotion) : undefined,
         // [fix:proc-override] 序列化程序化动作模块配置（per-procRole）
-        procMotionModules: inst.procMotionModules,
+        // [fix:P2] 深拷贝：与 procMotion/procPresets 对齐，避免 undo 快照与运行时
+        // procMotionModules 共引用，后续编辑回写污染已驻留内存的快照。
+        procMotionModules: inst.procMotionModules
+            ? structuredClone(inst.procMotionModules)
+            : undefined,
         // [audit] 序列化程序化自定义预设（参数快照，深拷贝防与运行时共引用）
         procPresets:
             inst.procPresets && inst.procPresets.length > 0
@@ -725,8 +729,20 @@ async function deserializeModels(
                 inst.procMotion = migrateProcState(m.procMotion);
             }
             // [fix:proc-override] 恢复程序化动作模块配置（per-procRole）
-            if (m.procMotionModules) {
-                inst.procMotionModules = m.procMotionModules;
+            // [fix:P3] 形状校验：仅接受「role → 模块状态数组」结构，畸形存档（值非数组/元素缺 id）
+            // 降级为 undefined，避免后续 getModuleState/applyProcMotionModulesToModel 错迭代抛错。
+            if (m.procMotionModules && typeof m.procMotionModules === 'object') {
+                const clean: Record<string, MotionModuleState[]> = {};
+                for (const [role, states] of Object.entries(m.procMotionModules)) {
+                    if (Array.isArray(states)) {
+                        clean[role] = states.filter(
+                            (s) => s && typeof s === 'object' && typeof s.id === 'string'
+                        );
+                    }
+                }
+                if (Object.keys(clean).length > 0) {
+                    inst.procMotionModules = clean;
+                }
             }
             // [audit] 恢复程序化自定义预设（纯数据，无需迁移）
             if (m.procPresets && Array.isArray(m.procPresets)) {

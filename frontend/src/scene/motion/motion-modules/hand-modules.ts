@@ -32,6 +32,7 @@ import {
     createModuleShell,
     prepareBake,
     createEnsureActive,
+    getModuleActionId,
 } from './module-base';
 
 // ── 手指预设（与原 finger-pose 一致）──
@@ -169,7 +170,7 @@ function createHandModuleFactory(cfg: HandSideConfig) {
                         if (m !== mid) {
                             return;
                         }
-                        const st = getModuleState(mid, cfg.moduleId);
+                        const st = getModuleState(mid, cfg.moduleId, getModuleActionId(mid));
                         const dbgEnabled = feetDebug.value && _handDbgFrame++ % 60 === 0;
                         if (!st.enabled) {
                             if (dbgEnabled) {

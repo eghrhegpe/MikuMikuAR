@@ -8,7 +8,7 @@
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
 | 核心基础设施 | 135 | 815 |
-| 3D 场景 | 125 | 1229 |
+| 3D 场景 | 125 | 1230 |
 | 菜单 & UI | 76 | 397 |
 | 动作算法 | 18 | 138 |
 | 顶层配置 | 1 | 1 |
@@ -1537,26 +1537,27 @@
 | `applyMotionPreset()` | `scene/motion/motion-modules/preset-types:23` | 应用预设到指定模型。 |
 | `generatePresetId()` | `scene/motion/motion-modules/preset-types:45` | — |
 | `modulesToPresetMap()` | `scene/motion/motion-modules/preset-types:9` | MotionModuleState[] → MotionPreset['modules'] |
-| `BoneConflict()` | `scene/motion/motion-modules/registry:278` | — |
-| `applyMotionModulesToModel()` | `scene/motion/motion-modules/registry:387` | [doc:adr-129] 将场景级模块配置应用到指定模型 用于动作广播时应用配置到所有 inherit 模型 |
-| `applyProcMotionModulesToModel()` | `scene/motion/motion-modules/registry:135` | [fix:proc-override] 应用程序化动作的模块配置到指定模型（持久化状态 → 运行时）。 |
-| `claimBones()` | `scene/motion/motion-modules/registry:264` | 为模块声明对一组骨骼的所有权（bake 前调用）。 |
-| `clearAllModulesForModel()` | `scene/motion/motion-modules/registry:378` | 清除指定模型的所有模块覆盖（删除模型时调用） |
+| `BoneConflict()` | `scene/motion/motion-modules/registry:279` | — |
+| `PROC_ACTION_PREFIX()` | `scene/motion/motion-modules/registry:129` | [fix:proc-override] actionId 前缀：标识程序化动作的模块作用域（&#96;proc:${procRole}&#96;）。 |
+| `applyMotionModulesToModel()` | `scene/motion/motion-modules/registry:388` | [doc:adr-129] 将场景级模块配置应用到指定模型 用于动作广播时应用配置到所有 inherit 模型 |
+| `applyProcMotionModulesToModel()` | `scene/motion/motion-modules/registry:136` | [fix:proc-override] 应用程序化动作的模块配置到指定模型（持久化状态 → 运行时）。 |
+| `claimBones()` | `scene/motion/motion-modules/registry:265` | 为模块声明对一组骨骼的所有权（bake 前调用）。 |
+| `clearAllModulesForModel()` | `scene/motion/motion-modules/registry:379` | 清除指定模型的所有模块覆盖（删除模型时调用） |
 | `createModule()` | `scene/motion/motion-modules/registry:70` | 为指定模型创建模块实例 |
-| `getAllConflicts()` | `scene/motion/motion-modules/registry:303` | 获取某模型全部模块的冲突明细（按 loser 模块分组） |
-| `getBuiltinModuleDefs()` | `scene/motion/motion-modules/registry:420` | 内置模块定义聚合（供 initMotionModules 批量注册，消除 6 个 registerXxx 分散调用）。 |
-| `getConflictCount()` | `scene/motion/motion-modules/registry:325` | 获取某模型冲突总数（骨骼数） |
-| `getModuleConflicts()` | `scene/motion/motion-modules/registry:290` | 获取某模块被其他模块抢占的骨骼明细（loser 视角：本模块想要但被谁抢） |
-| `getModuleDefaultParam()` | `scene/motion/motion-modules/registry:220` | [doc:adr-116] 读取模块注册的默认参数值。 |
-| `getModuleState()` | `scene/motion/motion-modules/registry:164` | 获取动作的模块配置（不存在则创建默认状态，种入 defaults）。 |
-| `getOwnedBones()` | `scene/motion/motion-modules/registry:270` | 获取模块当前 owned 的骨骼（disable 时用于精确清除） |
+| `getAllConflicts()` | `scene/motion/motion-modules/registry:304` | 获取某模型全部模块的冲突明细（按 loser 模块分组） |
+| `getBuiltinModuleDefs()` | `scene/motion/motion-modules/registry:421` | 内置模块定义聚合（供 initMotionModules 批量注册，消除 6 个 registerXxx 分散调用）。 |
+| `getConflictCount()` | `scene/motion/motion-modules/registry:326` | 获取某模型冲突总数（骨骼数） |
+| `getModuleConflicts()` | `scene/motion/motion-modules/registry:291` | 获取某模块被其他模块抢占的骨骼明细（loser 视角：本模块想要但被谁抢） |
+| `getModuleDefaultParam()` | `scene/motion/motion-modules/registry:221` | [doc:adr-116] 读取模块注册的默认参数值。 |
+| `getModuleState()` | `scene/motion/motion-modules/registry:165` | 获取动作的模块配置（不存在则创建默认状态，种入 defaults）。 |
+| `getOwnedBones()` | `scene/motion/motion-modules/registry:271` | 获取模块当前 owned 的骨骼（disable 时用于精确清除） |
 | `getRegisteredModules()` | `scene/motion/motion-modules/registry:63` | 获取所有已注册模块的元信息（按优先级排序） |
-| `initMotionModules()` | `scene/motion/motion-modules/registry:432` | 注册所有内置模块（幂等，重复调用安全） |
+| `initMotionModules()` | `scene/motion/motion-modules/registry:433` | 注册所有内置模块（幂等，重复调用安全） |
 | `registerModule()` | `scene/motion/motion-modules/registry:39` | 注册一个动作覆盖模块。 |
-| `releaseOwnedBones()` | `scene/motion/motion-modules/registry:330` | 释放模块的 ownedBones 记录并级联清引擎槽（由 store.releaseBones 负责清除） |
-| `setModuleEnabled()` | `scene/motion/motion-modules/registry:242` | 设置模块启用/禁用状态到场景动作意图 |
-| `setModuleParam()` | `scene/motion/motion-modules/registry:226` | 写入模块参数到场景动作意图 |
-| `setTargetModel()` | `scene/motion/motion-modules/registry:342` | 切换目标模型：禁用当前模型的所有模块覆盖，启用新模型已保存的模块状态。 |
+| `releaseOwnedBones()` | `scene/motion/motion-modules/registry:331` | 释放模块的 ownedBones 记录并级联清引擎槽（由 store.releaseBones 负责清除） |
+| `setModuleEnabled()` | `scene/motion/motion-modules/registry:243` | 设置模块启用/禁用状态到场景动作意图 |
+| `setModuleParam()` | `scene/motion/motion-modules/registry:227` | 写入模块参数到场景动作意图 |
+| `setTargetModel()` | `scene/motion/motion-modules/registry:343` | 切换目标模型：禁用当前模型的所有模块覆盖，启用新模型已保存的模块状态。 |
 | `unregisterModule()` | `scene/motion/motion-modules/registry:52` | 注销模块 |
 | `RIDING_MODEL_DEF()` | `scene/motion/motion-modules/riding-model:291` | 骑行模型模块注册定义（供 registry BUILTIN_MODULE_DEFS 批量注册） |
 | `createRidingModelModule()` | `scene/motion/motion-modules/riding-model:193` | 创建骑行模型模块实例 |
@@ -1694,7 +1695,7 @@
 | `ProcMotionController()` | `scene/motion/proc-motion-bridge:40` | — |
 | `activateGazeTracking()` | `scene/motion/proc-motion-bridge:121` | — |
 | `createProcBeatDetector()` | `scene/motion/proc-motion-bridge:60` | — |
-| `disposeProcMotion()` | `scene/motion/proc-motion-bridge:142` | 释放程序化动作模块全部资源并销毁单例。应用关闭 / 模块卸载时调用。 |
+| `disposeProcMotion()` | `scene/motion/proc-motion-bridge:144` | 释放程序化动作模块全部资源并销毁单例。应用关闭 / 模块卸载时调用。 |
 | `getBpmQuantizeEnabled()` | `scene/motion/proc-motion-bridge:112` | — |
 | `getProcBeatDetector()` | `scene/motion/proc-motion-bridge:57` | — |
 | `getProcMotionState()` | `scene/motion/proc-motion-bridge:81` | — |
@@ -1915,19 +1916,19 @@
 | `migratePerceptionData()` | `scene/scene-migrate:46` | 旧存档 perception 格式迁移：PerceptionState → { focused, pinned }。 |
 | `migratePerceptionFromProcMotion()` | `scene/scene-migrate:71` | 旧存档 ProcMotionState → 新版 PerceptionState 迁移。 |
 | `SceneFile()` | `scene/scene-serialize:145` | — |
-| `canUndo()` | `scene/scene-serialize:1284` | — |
-| `deserializeScene()` | `scene/scene-serialize:948` | Restore scene state from a SceneFile. |
-| `offerSceneUndo()` | `scene/scene-serialize:1328` | 破坏性操作后调用：弹出中性撤销 toast（复用 action-button toast，info 变体）。 |
-| `offerSceneUndoAndRefresh()` | `scene/scene-serialize:1355` | offerSceneUndo 的常见变体：撤销恢复后执行 reRender 回调并统一提示 &#96;undoApplied&#96;。 |
-| `popUndoSnapshot()` | `scene/scene-serialize:1289` | 弹出最近一次撤销快照（LIFO），供全局撤销按钮 / Ctrl+Z 使用。返回快照字符串，无快照时返回 null。 |
-| `pushUndoSnapshot()` | `scene/scene-serialize:1270` | 破坏性操作前调用：抓当前整场景快照压栈（环形，上限 UNDO_LIMIT），返回快照字符串供撤销绑定。 |
+| `canUndo()` | `scene/scene-serialize:1300` | — |
+| `deserializeScene()` | `scene/scene-serialize:964` | Restore scene state from a SceneFile. |
+| `offerSceneUndo()` | `scene/scene-serialize:1344` | 破坏性操作后调用：弹出中性撤销 toast（复用 action-button toast，info 变体）。 |
+| `offerSceneUndoAndRefresh()` | `scene/scene-serialize:1371` | offerSceneUndo 的常见变体：撤销恢复后执行 reRender 回调并统一提示 &#96;undoApplied&#96;。 |
+| `popUndoSnapshot()` | `scene/scene-serialize:1305` | 弹出最近一次撤销快照（LIFO），供全局撤销按钮 / Ctrl+Z 使用。返回快照字符串，无快照时返回 null。 |
+| `pushUndoSnapshot()` | `scene/scene-serialize:1286` | 破坏性操作前调用：抓当前整场景快照压栈（环形，上限 UNDO_LIMIT），返回快照字符串供撤销绑定。 |
 | `resolvePathFromRef()` | `scene/scene-serialize:133` | Resolve a file path from either a libraryRef or a raw absolute path. |
-| `restoreUndoSnapshot()` | `scene/scene-serialize:1305` | 恢复特定快照到整场景。返回是否成功恢复。 |
-| `saveSceneImmediate()` | `scene/scene-serialize:1373` | — |
-| `serializeScene()` | `scene/scene-serialize:497` | 序列化当前场景为 SceneFile（分段容错，单模型失败跳过并记录）。 |
-| `setSuppressAutoSave()` | `scene/scene-serialize:1243` | — |
-| `triggerAutoSaveImpl()` | `scene/scene-serialize:1252` | — |
-| `tryRestoreLastScene()` | `scene/scene-serialize:1511` | — |
+| `restoreUndoSnapshot()` | `scene/scene-serialize:1321` | 恢复特定快照到整场景。返回是否成功恢复。 |
+| `saveSceneImmediate()` | `scene/scene-serialize:1389` | — |
+| `serializeScene()` | `scene/scene-serialize:501` | 序列化当前场景为 SceneFile（分段容错，单模型失败跳过并记录）。 |
+| `setSuppressAutoSave()` | `scene/scene-serialize:1259` | — |
+| `triggerAutoSaveImpl()` | `scene/scene-serialize:1268` | — |
+| `tryRestoreLastScene()` | `scene/scene-serialize:1527` | — |
 | `AlphaCtx()` | `scene/scene:171` | — |
 | `CameraState()` | `scene/scene:918` | — |
 | `DEFAULT_MAT_PARAMS()` | `scene/scene:147` | — |
@@ -2274,11 +2275,11 @@
 | `buildVirtualSkirtLevel()` | `menus/motion-cloth-levels:340` | — |
 | `disposeAllVirtualSkirts()` | `menus/motion-cloth-levels:68` | 释放全部虚拟裙骨控制器 |
 | `disposeVirtualSkirtForModel()` | `menus/motion-cloth-levels:77` | 释放指定模型的虚拟裙骨控制器（供模型卸载流程调用） |
-| `buildLayerLevel()` | `menus/motion-detail-ui:47` | 单图层次级菜单：启用开关 / 权重滑块 / 删除。 |
-| `buildMotionDetailLevel()` | `menus/motion-detail-ui:352` | [doc:adr-167] 构建动作详情页 level。 |
-| `buildMotionToolsLevel()` | `menus/motion-detail-ui:372` | [doc:adr-170] 动作工具页 level——对齐 buildModelToolsLevel 的「详情 vs 工具」分层： 行点击进详情（图层/覆盖），行尾 setting |
-| `buildPlaybackSpeedLevel()` | `menus/motion-detail-ui:456` | — |
-| `syncPlaybackSpeedToRuntime()` | `menus/motion-detail-ui:424` | 将记忆中的播放速度同步到新的 mmdRuntime 实例（防状态漂移）。 |
+| `buildLayerLevel()` | `menus/motion-detail-ui:48` | 单图层次级菜单：启用开关 / 权重滑块 / 删除。 |
+| `buildMotionDetailLevel()` | `menus/motion-detail-ui:356` | [doc:adr-167] 构建动作详情页 level。 |
+| `buildMotionToolsLevel()` | `menus/motion-detail-ui:376` | [doc:adr-170] 动作工具页 level——对齐 buildModelToolsLevel 的「详情 vs 工具」分层： 行点击进详情（图层/覆盖），行尾 setting |
+| `buildPlaybackSpeedLevel()` | `menus/motion-detail-ui:460` | — |
+| `syncPlaybackSpeedToRuntime()` | `menus/motion-detail-ui:428` | 将记忆中的播放速度同步到新的 mmdRuntime 实例（防状态漂移）。 |
 | `buildGazeTrackingLevel()` | `menus/motion-gaze-levels:501` | — |
 | `getGazeSchema()` | `menus/motion-gaze-levels:55` | 导出 gaze schema 供 menu-registry 静态分析（ADR-093 元测试） |
 | `renderPerceptionConflictBanners()` | `menus/motion-gaze-levels:474` | [doc:adr-166 P2-3] 渲染「焦点 + 全部 pinned」模型的感知层冲突 banner。 |

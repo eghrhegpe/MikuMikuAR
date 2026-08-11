@@ -110,6 +110,9 @@ export function mockConfig(s: ReturnType<typeof createProcMockState>) {
         get mmdRuntime() {
             return s.mmdRuntime;
         },
+        // [fix:proc-override] registry.applyProcMotionModulesToModel 从 @/core/config 读 modelRegistry，
+        // mock 需提供有效 Map（否则 get 访问 undefined 抛错）。测试模型无 procMotionModules 时静默跳过。
+        modelRegistry: new Map(),
         triggerAutoSave: s.triggerAutoSave,
         setUIState: (..._args: unknown[]) => undefined,
     };

@@ -124,8 +124,9 @@ function _getOrCreateProcModuleState(
     return state;
 }
 
-/** [fix:proc-override] actionId 前缀：标识程序化动作的模块作用域（`proc:${procRole}`） */
-const PROC_ACTION_PREFIX = 'proc:';
+/** [fix:proc-override] actionId 前缀：标识程序化动作的模块作用域（`proc:${procRole}`）。
+ *  导出供 UI（motion-detail-ui / motion-root-ui）复用，避免消费方硬编码前缀导致失配。 */
+export const PROC_ACTION_PREFIX = 'proc:';
 
 /**
  * [fix:proc-override] 应用程序化动作的模块配置到指定模型（持久化状态 → 运行时）。

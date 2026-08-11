@@ -128,10 +128,12 @@ export function regenerateProcMotion(modelId?: string): void {
     _getCtrl().regenerateProcMotion(modelId);
     // [fix:proc-override] 程序化重生成后，应用该模型的 per-proc 模块配置（持久化 → 运行时）。
     // 确保场景恢复 / 激活 / 参数变更后，模块状态从 ModelInstance.procMotionModules 落到引擎。
+    // [fix:P3] role 取 per-model 优先、全局回落：模型无 per-model procMotion 但全局默认激活
+    // idle/autodance 时 inst.procMotion 为 undefined，直接跳过会导致模块覆盖静默失效。
     const targetId = modelId ?? focusedModel()?.id ?? undefined;
     if (targetId) {
         const inst = modelManager.get(targetId);
-        const role = inst?.procMotion?.mode;
+        const role = inst?.procMotion?.mode ?? getProcMotionState().mode;
         if (role && role !== 'off') {
             applyProcMotionModulesToModel(targetId, role);
         }
