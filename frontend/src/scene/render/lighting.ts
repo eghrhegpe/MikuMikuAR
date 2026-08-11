@@ -87,7 +87,7 @@ export interface StageLightState {
     // 真实光锥（锥形光柱可视化）
     coneEnabled: boolean;
     coneIntensity: number; // 0-2, default 0.5
-    coneLength: number; // 1-50, default 20
+    coneLength: number; // 1-50, default 30
     coneSoftness: number; // 0-1, default 0.5
     // [doc:adr-168] 跟随目标（null = 静态模式，向后兼容）
     followTarget: {
