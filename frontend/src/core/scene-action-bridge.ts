@@ -82,6 +82,8 @@ export interface SceneActions {
     syncAudioPlayback: (vmdTime: number, isPlaying: boolean, vmdDuration: number) => void;
     /** 加载音频文件（scene/motion 调用），由 core/audio 注册 */
     loadAudioFile: (filePath: string) => Promise<void>;
+    /** 应用帧率控制（core/init 调用），由 scene 注册 */
+    applyFrameControl: () => Promise<void> | void;
     /** 动画相机 VMD（scene/motion 调用），由 scene/camera 注册 */
     animateCameraVmd: (frameTime: number) => void;
     /** 加载相机 VMD（scene/motion 调用），由 scene/camera 注册 */

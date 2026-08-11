@@ -115,7 +115,7 @@ export function showLogPanel(): void {
         renderPanel();
     });
 
-    const consoleBtn = _panel.querySelector('[data-role="console"]');
+    const consoleBtn = _panel.querySelector<HTMLElement>('[data-role="console"]');
     consoleBtn?.addEventListener('click', () => {
         const enabled = consoleBtn.textContent?.includes('ON') ?? false;
         setConsoleOutput(!enabled);
