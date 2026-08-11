@@ -484,8 +484,17 @@ describe('ADR-093 Menu Schema — ControlSpec get/set 衍生控件', () => {
                 },
             ];
             renderMenu(schema, container);
-            // 模拟用户点击 modeSlider 选项 — 验证 onChange 在渲染时注册
-            expect(container.children.length).toBeGreaterThan(0);
+            // [audit:round6] 原测试名声称「onChange 在值变更后触发」但仅断言容器非空、
+            // 从未触发 onChange——名实不符（覆盖虚报）。改为真实交互：聚焦 modeSlider
+            // 并按下 ArrowRight（addModeSlider keydown → cycleIdx → onChange，与 L519-523
+            // slider 交互同构），断言 onChange 确实被调用。
+            const top = container.querySelector('.cs-top[role="slider"]') as HTMLElement;
+            expect(top).toBeTruthy();
+            top.focus();
+            top.dispatchEvent(
+                new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true })
+            );
+            expect(onChange).toHaveBeenCalled();
         });
     });
 

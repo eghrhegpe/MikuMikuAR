@@ -64,7 +64,7 @@ test.describe("Web Smoke — 主应用 Web 入口 (@web)", { tag: ["@web", "@web
         // AR 选项不应出现在相机模式滑块（capabilities.ar=false 过滤）。
         // 原 text=AR 全页子串会误红（"Cartesian/Standard/Start" 含 ar），且 modeSlider
         // 选项标签不全量渲染——改为断言控制方案 listbox aria-valuemax=1（仅 2 项无 AR）
-        const controlSlider = page.locator(".cs-top[role='listbox']").first();
+        const controlSlider = page.locator(".cs-top[role='slider']").first();
         await expect(controlSlider).toHaveAttribute("aria-valuemax", "1");
     });
 

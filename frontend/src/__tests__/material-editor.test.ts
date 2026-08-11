@@ -136,6 +136,9 @@ function cleanupModels(): void {
         if (
             key.startsWith('model') ||
             key === '_applyAll_test' ||
+            key === 'emissive_test' ||
+            key === 'texture_test' ||
+            key === 'reset_test' ||
             key === 'model_rm' ||
             key === 'model_c' ||
             key === 'model_as'
@@ -160,16 +163,6 @@ describe('_applyAll ordering: per-material overrides category on re-apply', () =
 
     beforeEach(() => {
         resetMatEditorState();
-        const old = modelRegistry.get(TEST_ID);
-        if (old) {
-            modelRegistry.delete(TEST_ID);
-        }
-    });
-
-    afterEach(() => {
-        if (modelRegistry.get(TEST_ID)) {
-            modelRegistry.delete(TEST_ID);
-        }
     });
 
     it('per-material diffuse overrides category after category re-apply', () => {
@@ -377,16 +370,6 @@ describe('P2 emissiveMul parameter', () => {
 
     beforeEach(() => {
         resetMatEditorState();
-        const old = modelRegistry.get(TEST_ID);
-        if (old) {
-            modelRegistry.delete(TEST_ID);
-        }
-    });
-
-    afterEach(() => {
-        if (modelRegistry.get(TEST_ID)) {
-            modelRegistry.delete(TEST_ID);
-        }
     });
 
     it('setMatCatParams applies emissiveMul to emissiveColor', () => {
@@ -434,16 +417,6 @@ describe('P1 texture level parameters', () => {
 
     beforeEach(() => {
         resetMatEditorState();
-        const old = modelRegistry.get(TEST_ID);
-        if (old) {
-            modelRegistry.delete(TEST_ID);
-        }
-    });
-
-    afterEach(() => {
-        if (modelRegistry.get(TEST_ID)) {
-            modelRegistry.delete(TEST_ID);
-        }
     });
 
     it('setMatCatParams applies diffuseTexLevel to diffuseTexture', () => {
@@ -520,16 +493,6 @@ describe('resetMatCatParams restores P1+P2 values', () => {
 
     beforeEach(() => {
         resetMatEditorState();
-        const old = modelRegistry.get(TEST_ID);
-        if (old) {
-            modelRegistry.delete(TEST_ID);
-        }
-    });
-
-    afterEach(() => {
-        if (modelRegistry.get(TEST_ID)) {
-            modelRegistry.delete(TEST_ID);
-        }
     });
 
     it('restores emissiveColor to original', () => {

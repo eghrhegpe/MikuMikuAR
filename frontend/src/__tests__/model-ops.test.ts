@@ -7,9 +7,9 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
     modelOpsShared,
     mockSceneModule,
-    mockMaterial,
+    mockMaterialState,
     mockEnv,
-    mockCamera,
+    mockCameraModule,
     mockPlayback,
     mockAudio,
 } from './model-ops-mocks';
@@ -91,9 +91,9 @@ vi.hoisted(() => {
 vi.mock('../scene/scene', () => mockSceneModule(modelOpsShared.mockModelManager));
 // 注意：vi.mock 工厂必须直接引用 imported 绑定 modelOpsShared.mockModelManager，
 // 不能引用下方局部 const mockModelManager（vi.mock 被 hoist，工厂求值时局部 const 尚未初始化）。
-vi.mock('../scene/manager/material', () => mockMaterial());
+vi.mock('../scene/manager/material', () => mockMaterialState());
 vi.mock('../scene/env/env', () => mockEnv());
-vi.mock('../scene/camera/camera', () => mockCamera());
+vi.mock('../scene/camera/camera', () => mockCameraModule());
 vi.mock('../scene/motion/playback', () => mockPlayback());
 vi.mock('@/core/audio', () => mockAudio());
 vi.mock('@babylonjs/core/Maths/math.vector', async () => {

@@ -201,7 +201,7 @@ jobs:
   # Wails on Linux 用 WebKitGTK 不兼容 CDP → 必须 windows-latest。
   # 复用 cache-warm/release 的 wails3 二进制缓存（同 key，命中免 go install）。
   # [2026-08-10] 挂回 push：job 级 continue-on-error 去掉，改测试步骤级 + 下方
-  # failure-count gate（阈值 20）——环境性失败容忍，超阈值才红，杜绝假绿。
+  # failure-count gate（@webgl 阈值 8）——环境性失败容忍，超阈值才红，杜绝假绿。
   # ------------------------------------------------------------
   e2e-wails:
     name: E2E — Full Integration (@webgl, wailsPage)
@@ -432,8 +432,9 @@ jobs:
   e2e-web-full:
     name: E2E — Web Full Suite (@web, all specs)
     runs-on: ubuntu-latest
-    # [2026-08-10] 挂回 push：job 级 continue-on-error 去掉 → 步骤级 + gate（阈值 20，
-    # 缺失即红）。full suite 量大、个别环境性抖动容忍，超阈值才红，杜绝假绿。
+    # [2026-08-10] 挂回 push：job 级 continue-on-error 去掉 → 步骤级 + gate（阈值 2，
+    # 缺失即红；[audit:round6] 原注释「阈值 20」为 @web-full 旧值残留，实际 2 = 18 spec
+    # 的 ≈11% 容忍）。full suite 量大、个别环境性抖动容忍，超阈值才红，杜绝假绿。
     timeout-minutes: 30
     defaults:
       run:

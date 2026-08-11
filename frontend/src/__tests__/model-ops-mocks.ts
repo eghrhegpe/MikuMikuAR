@@ -33,7 +33,11 @@ export function mockSceneModule(mm: ReturnType<typeof createMockModelManager>) {
     };
 }
 
-export function mockMaterial() {
+// [audit:round6] 命名消歧：本文件 mock 的是「应用模块」形状（camera.ts 的
+// getCameraMode/switchCameraMode、material.ts 的 _catState 等），与 babylon-factories.ts
+// 的 mockCamera({Camera})/mockMaterial({Material}) 同名不同形——同目录双源漂移隐患。
+// 改用语义化后缀：mockCameraModule / mockMaterialState。
+export function mockMaterialState() {
     return {
         _catState: {},
         _matState: {},
@@ -46,7 +50,7 @@ export function mockEnv() {
     return { refreshWaterRenderList: vi.fn() };
 }
 
-export function mockCamera() {
+export function mockCameraModule() {
     return { getCameraMode: vi.fn(() => 'orbit'), switchCameraMode: vi.fn() };
 }
 

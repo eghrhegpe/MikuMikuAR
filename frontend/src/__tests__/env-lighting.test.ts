@@ -217,10 +217,12 @@ describe('scene-lighting — transitionLighting smoke', () => {
         vi.useRealTimers();
     });
 
-    it('transitionLighting 在缺少 Babylon 对象时提前返回（不抛异常）', () => {
-        expect(() => {
-            sceneLighting.transitionLighting({ dirIntensity: 0.5 }, 2000);
-        }).not.toThrow();
+    it('transitionLighting 在缺少 Babylon 对象时提前返回（守卫拦截返回 false）', () => {
+        // [audit:round6] 原 smoke 仅 not.toThrow()——实现体删空也绿（恒真级弱断言）。
+        // 补返回值断言：守卫拦截明确返回 false（lighting.ts:442/449），删空实现
+        // 返回 undefined ≠ false 会红，恢复回归拦截能力。
+        const result = sceneLighting.transitionLighting({ dirIntensity: 0.5 }, 2000);
+        expect(result).toBe(false);
     });
 });
 

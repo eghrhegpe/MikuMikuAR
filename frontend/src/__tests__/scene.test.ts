@@ -640,6 +640,14 @@ let sceneModule: SceneModule;
 /** 冲刷 fire-and-forget 动态 import 的微任务/宏任务（swallowError 不 await）。 */
 const flushAsync = () => new Promise((resolve) => setTimeout(resolve, 0));
 
+// [audit:round6] 共享 helper：原「onRemoveModel 回调」与「onRemoveModel 异步清理」
+// 两 describe 各内联一份逐字相同的 getOnRemove/getOnRemoveCb，合并为模块级一份。
+async function getOnRemove(): Promise<(id: string) => void> {
+    await sceneModule.initScene();
+    const mm = sceneModule.modelManager as unknown as { onRemoveModel: (id: string) => void };
+    return mm.onRemoveModel;
+}
+
 beforeEach(async () => {
     vi.clearAllMocks();
     vi.resetModules();
@@ -915,12 +923,6 @@ describe('onModelLoaded 回调（模型加载完成）', () => {
 });
 
 describe('onRemoveModel 回调（模型删除清理）', () => {
-    async function getOnRemove(): Promise<(id: string) => void> {
-        await sceneModule.initScene();
-        const mm = sceneModule.modelManager as unknown as { onRemoveModel: (id: string) => void };
-        return mm.onRemoveModel;
-    }
-
     it('正常：销毁 MMD 模型 + 清理历史/程序化动作/个人灯', async () => {
         const onRemove = await getOnRemove();
         shared.modelRegistry.set('m1', { id: 'm1', mmdModel: { runtimeBones: [] } });
@@ -1234,14 +1236,8 @@ describe('initScene 动作编排（attachBeatDetector / tryAutoApplyPreset / loa
 });
 
 describe('onRemoveModel 异步清理（scene.isDisposed 守卫）', () => {
-    async function getOnRemoveCb(): Promise<(id: string) => void> {
-        await sceneModule.initScene();
-        const mm = sceneModule.modelManager as unknown as { onRemoveModel: (id: string) => void };
-        return mm.onRemoveModel;
-    }
-
     it('守卫：scene 已 dispose → 跳过 wasm-layers-blender / virtual-skirt 清理', async () => {
-        const onRemove = await getOnRemoveCb();
+        const onRemove = await getOnRemove();
         (sceneModule.scene as unknown as { isDisposed: boolean }).isDisposed = true;
         shared.modelRegistry.set('m1', { id: 'm1', mmdModel: {} });
         onRemove('m1');
@@ -1251,7 +1247,7 @@ describe('onRemoveModel 异步清理（scene.isDisposed 守卫）', () => {
     });
 
     it('正常：scene 未 dispose → 执行异步清理', async () => {
-        const onRemove = await getOnRemoveCb();
+        const onRemove = await getOnRemove();
         (sceneModule.scene as unknown as { isDisposed: boolean }).isDisposed = false;
         shared.modelRegistry.set('m1', { id: 'm1', mmdModel: {} });
         onRemove('m1');

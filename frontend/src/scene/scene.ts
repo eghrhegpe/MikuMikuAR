@@ -267,6 +267,10 @@ export function applyFrameControl(): void {
     engine.maxFPS = limit > 0 ? limit : undefined;
 }
 
+// [doc:adr-238] 注册帧率控制供 core/init 经 scene-action-bridge 调用
+import { registerSceneAction } from '@/core/scene-action-bridge';
+registerSceneAction('applyFrameControl', () => applyFrameControl());
+
 /**
  * [fix:round14 P1] 子系统 dispose 安全包装：捕获抛错确保级联不被中断。
  * 用于 disposeScene() 中段——任一子系统抛错不得阻断后续 scene/engine.dispose()。

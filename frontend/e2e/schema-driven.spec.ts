@@ -84,8 +84,19 @@ async function navigateToPanel(page: any, nav: PanelNav): Promise<void> {
     //    但 maxHeight:0 + inert → toBeVisible 失败。点击 header 展开（headerToggle 有
     //    stopPropagation，不会误触开关）。[ADR-229 §2.2 审核修正]
     //    ⚠️ 点击 subLevel 后面板内容可能异步挂载（实测 env:water 9 个 folder 分批渲染），
-    //    立即 querySelectorAll 会漏掉未挂载的 header → 先等一帧再展开。
-    await page.waitForTimeout(250);
+    //    立即 querySelectorAll 会漏掉未挂载的 header → 先等挂载稳定再展开。
+    //    [audit:round6] 原固定 waitForTimeout(250)——慢 CI 下可能不足致偶发漏断言；
+    //    改轮询 header 数量连续两次采样相同（稳定）即视为挂载完成，最长 5s。
+    let prevHeaderCount = -1;
+    const headerStableDeadline = Date.now() + 5000;
+    while (Date.now() < headerStableDeadline) {
+        const cur = await page.locator(COLLAPSED_HEADER_SELECTOR).count();
+        if (cur > 0 && cur === prevHeaderCount) {
+            break; // 分批渲染完成，数量稳定
+        }
+        prevHeaderCount = cur;
+        await page.waitForTimeout(50);
+    }
     const headers = page.locator(COLLAPSED_HEADER_SELECTOR);
     const count = await headers.count();
     for (let i = 0; i < count; i++) {
@@ -164,8 +175,9 @@ function describeSchemaPanel(
                     }
                 }
 
-                // 3. modeSlider: 验证 options 数量（addModeSlider 渲染 role="listbox"，
-                // aria-valuemax = options.length - 1；无 .chip 类）
+                // 3. modeSlider: 验证 options 数量（addModeSlider 渲染 role="slider"，
+                // aria-valuemax = options.length - 1；无 .chip 类；[audit:round6] ARIA
+                // 合规 role=listbox→slider）
                 if (node.kind === 'modeSlider' && node.control?.options?.length && node.dom) {
                     const listbox = el.locator(node.dom).first();
                     const cnt = await listbox.count();

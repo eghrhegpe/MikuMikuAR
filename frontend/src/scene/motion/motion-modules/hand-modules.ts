@@ -13,7 +13,10 @@ import {
     setBoneOverridePosition,
     registerBoneOverrideFrameHook,
     FRAME_HOOK_ORDER,
+    getWasmIkResolver,
 } from '../bone-override';
+import { isWasmRuntime, feetDebug } from '../perception-shared';
+import { logWarn } from '@/core/logger';
 import {
     matchBone,
     BONE_ARM_IK_L_CANDIDATES,
@@ -95,6 +98,8 @@ function createHandModuleFactory(cfg: HandSideConfig) {
     // createEnsureActive 的 has(modelId) 幂等检查误判，导致后启用一侧的手臂位置偏移
     // 帧钩子永不注册（round-12 P1 修复）。
     const _handFrameHooks = createFrameHookManager();
+    // 日志限频计数器（每60帧输出一次，避免刷屏）
+    let _handDbgFrame = 0;
     return (modelId: string, actionId?: string): MotionOverrideModule => {
         const fingerBones = buildFingerBones(cfg.fingerPrefix);
         const managedBones = [cfg.wristBone, cfg.shoulderBone, ...fingerBones];
@@ -165,12 +170,19 @@ function createHandModuleFactory(cfg: HandSideConfig) {
                             return;
                         }
                         const st = getModuleState(mid, cfg.moduleId);
+                        const dbgEnabled = feetDebug.value && _handDbgFrame++ % 60 === 0;
                         if (!st.enabled) {
+                            if (dbgEnabled) {
+                                logWarn('hand', `[SKIP] ${cfg.side} hand: module disabled`);
+                            }
                             return;
                         }
                         const inst = modelRegistry.get(mid);
                         const bones = inst?.mmdModel?.runtimeBones;
                         if (!bones?.length) {
+                            if (dbgEnabled) {
+                                logWarn('hand', `[SKIP] ${cfg.side} hand: no bones (model=${inst ? 'exists' : 'null'})`);
+                            }
                             return;
                         }
 
@@ -178,6 +190,9 @@ function createHandModuleFactory(cfg: HandSideConfig) {
                         const hy = (st.params.handPosY as number) ?? 0;
                         const hz = (st.params.handPosZ as number) ?? 0;
                         if (hx === 0 && hy === 0 && hz === 0) {
+                            if (dbgEnabled) {
+                                logWarn('hand', `[SKIP] ${cfg.side} hand: zero offset [${hx},${hy},${hz}]`);
+                            }
                             return;
                         }
 
@@ -197,16 +212,22 @@ function createHandModuleFactory(cfg: HandSideConfig) {
                                 bones.map((b) => b.name),
                                 ikCandidates
                             );
+                            if (dbgEnabled) {
+                                logWarn('hand', `[MATCH] ${cfg.side} IK bone: ${cache[ikKey] ?? 'NOT FOUND'} (candidates: ${ikCandidates.length})`);
+                            }
                         }
                         if (cache[rootKey] === undefined) {
                             cache[rootKey] = matchBone(
                                 bones.map((b) => b.name),
                                 shoulderCandidates
                             );
+                            if (dbgEnabled) {
+                                logWarn('hand', `[MATCH] ${cfg.side} shoulder bone: ${cache[rootKey] ?? 'NOT FOUND'} (candidates: ${shoulderCandidates.length})`);
+                            }
                         }
 
                         const rootName = cache[rootKey] ?? cfg.shoulderBone;
-                        _driveArm(bones, cache[ikKey], rootName, [hx, hy, hz], mid);
+                        _driveArm(bones, cache[ikKey], rootName, [hx, hy, hz], mid, dbgEnabled);
                     },
                     FRAME_HOOK_ORDER.HAND_SYMMETRY,
                     cfg.moduleId
@@ -219,28 +240,72 @@ function createHandModuleFactory(cfg: HandSideConfig) {
             ikName: string | null | undefined,
             rootName: string,
             offset: [number, number, number],
-            modelId: string
+            modelId: string,
+            debugEnabled: boolean
         ): void {
             if (ikName) {
                 const ik = bones.find((b) => b.name === ikName);
-                const solver = ik ? (ik as MmdRuntimeBoneExtended).ikSolver : undefined;
-                if (ik && solver) {
-                    ik.getWorldTranslationToRef(_vOffset);
-                    _vOffset.x += offset[0];
-                    _vOffset.y += offset[1];
-                    _vOffset.z += offset[2];
-                    ik.setWorldTranslation(_vOffset);
-                    solver.solve(false);
-                    const lb = (
-                        ik as unknown as {
-                            linkedBone?: { getSkeleton?: () => { _markAsDirty?: () => void } };
+                if (ik) {
+                    // [ADR-202 §六] 区分 JS/WASM 路径
+                    if (isWasmRuntime(bones[0])) {
+                        // WASM 模式：MmdWasmRuntimeBone 无 ikSolver 字段，用 ikSolverIndex 经 mmdModelSolveIk 重解
+                        ik.getWorldTranslationToRef(_vOffset);
+                        _vOffset.x += offset[0];
+                        _vOffset.y += offset[1];
+                        _vOffset.z += offset[2];
+                        ik.setWorldTranslation(_vOffset);
+
+                        const ikSolverIndex = (ik as { ikSolverIndex?: number }).ikSolverIndex;
+                        const resolver = getWasmIkResolver();
+                        if (resolver && typeof ikSolverIndex === 'number' && ikSolverIndex >= 0) {
+                            resolver(modelId, ikSolverIndex, false);
+                            if (debugEnabled) {
+                                logWarn(
+                                    'hand',
+                                    `[WASM] ${modelId} ${ikName} IK 重解: ikIdx=${ikSolverIndex} offset=[${offset.join(',')}]`
+                                );
+                            }
+                        } else if (debugEnabled) {
+                            logWarn(
+                                'hand',
+                                `[WASM] ${modelId} ${ikName} IK 未重解: resolver=${resolver ? 'ok' : 'null'}, ikSolverIndex=${ikSolverIndex ?? 'null'}`
+                            );
                         }
-                    ).linkedBone;
-                    lb?.getSkeleton?.()._markAsDirty?.();
-                    return;
+                        return;
+                    } else {
+                        // JS 模式：直接调用 IkSolver.solve()
+                        const solver = (ik as MmdRuntimeBoneExtended).ikSolver;
+                        if (solver) {
+                            ik.getWorldTranslationToRef(_vOffset);
+                            _vOffset.x += offset[0];
+                            _vOffset.y += offset[1];
+                            _vOffset.z += offset[2];
+                            ik.setWorldTranslation(_vOffset);
+                            solver.solve(false);
+                            const lb = (
+                                ik as unknown as {
+                                    linkedBone?: { getSkeleton?: () => { _markAsDirty?: () => void } };
+                                }
+                            ).linkedBone;
+                            lb?.getSkeleton?.()._markAsDirty?.();
+                            if (debugEnabled) {
+                                logWarn(
+                                    'hand',
+                                    `[JS] ${modelId} ${ikName} IK 重解: offset=[${offset.join(',')}]`
+                                );
+                            }
+                            return;
+                        }
+                    }
                 }
             }
             setBoneOverridePosition(rootName, offset, 1, true, modelId);
+            if (debugEnabled && feetDebug.value) {
+                logWarn(
+                    'hand',
+                    `[FK] ${modelId} ${rootName} FK 位移: offset=[${offset.join(',')}] (ik=${ikName ?? 'none'})`
+                );
+            }
         }
 
         const base = createModuleBase(modelId, cfg.moduleId, DEFAULTS, bake, {

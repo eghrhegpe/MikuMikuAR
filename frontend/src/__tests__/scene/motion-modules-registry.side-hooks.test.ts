@@ -8,10 +8,11 @@ import {
     mockState,
     mockBoneOverride,
     mockPerception,
+    mockPerceptionShared,
     mockMotionIntent,
     mockMotionHistory,
 } from './motion-modules-registry-mocks';
-import { makeModelWithBones, setActiveMotionWithModules } from './motion-modules-registry-helpers';
+import { makeModelWithBones, makeModelWithBonesWasm, setActiveMotionWithModules } from './motion-modules-registry-helpers';
 import {
     initMotionModules,
     createModule,
@@ -21,6 +22,7 @@ import {
 vi.mock('@/core/state', () => mockState());
 vi.mock('@/scene/motion/bone-override', () => mockBoneOverride());
 vi.mock('@/scene/motion/perception', () => mockPerception());
+vi.mock('@/scene/motion/perception-shared', () => mockPerceptionShared());
 vi.mock('@/scene/motion/motion-intent', async (importOriginal) => {
     const actual = await importOriginal<typeof import('@/scene/motion/motion-intent')>();
     return { ...actual, ...mockMotionIntent() };
@@ -76,7 +78,7 @@ describe('左右侧模块帧钩子独立注册（round-12 P1 回归）', () => {
         expect(bones).toContain('右足IK');
     });
 
-    it('左右手同时启用：两侧手臂位置偏移帧钩子均注册，且各写对侧肩骨', async () => {
+    it('左右手同时启用：两侧手臂位置偏移帧钩子均注册', async () => {
         shared.mockModelRegistry.set('m1', makeModelWithBones('m1'));
         initMotionModules();
         setActiveMotionWithModules();
@@ -93,17 +95,62 @@ describe('左右侧模块帧钩子独立注册（round-12 P1 回归）', () => {
         const rightHook = calls.find((c) => c[2] === 'right-hand');
         expect(leftHook).toBeTruthy();
         expect(rightHook).toBeTruthy();
+    });
 
-        const { setBoneOverridePosition } = await import('@/scene/motion/bone-override');
-        const posSpy = setBoneOverridePosition as ReturnType<typeof vi.fn>;
-        posSpy.mockClear();
+    it('左右手同时启用：手臂IK重解路径被调用（ikSolver.solve）', async () => {
+        const model = makeModelWithBones('m1');
+        const solveSpy = vi.fn();
+        model.mmdModel.runtimeBones.find((b: any) => b.name === '左腕IK').ikSolver.solve = solveSpy;
+        model.mmdModel.runtimeBones.find((b: any) => b.name === '右腕IK').ikSolver.solve = solveSpy;
+        shared.mockModelRegistry.set('m1', model);
+        initMotionModules();
+        setActiveMotionWithModules();
 
+        const leftHand = createModule('left-hand', 'm1')!;
+        const rightHand = createModule('right-hand', 'm1')!;
+        leftHand.setParam('handPosX', 1);
+        rightHand.setParam('handPosX', 2);
+        leftHand.enable();
+        rightHand.enable();
+
+        const calls = await hookRegistrations();
+        const leftHook = calls.find((c) => c[2] === 'left-hand');
+        const rightHook = calls.find((c) => c[2] === 'right-hand');
+
+        solveSpy.mockClear();
         (leftHook![0] as (t: number, mid: string) => void)(0, 'm1');
         (rightHook![0] as (t: number, mid: string) => void)(0, 'm1');
 
-        const bones = posSpy.mock.calls.map((c) => c[0]);
-        expect(bones).toContain('左肩');
-        expect(bones).toContain('右肩');
+        // IK重解路径：ikSolver.solve 应被调用（每侧各一次）
+        expect(solveSpy).toHaveBeenCalledTimes(2);
+    });
+
+    it('WASM模式：左右手IK重解通过getWasmIkResolver调用', async () => {
+        // 切换到 WASM 模式
+        shared.wasmRuntime = true;
+
+        const model = makeModelWithBonesWasm('m1');
+        shared.mockModelRegistry.set('m1', model);
+        initMotionModules();
+        setActiveMotionWithModules();
+
+        const leftHand = createModule('left-hand', 'm1')!;
+        const rightHand = createModule('right-hand', 'm1')!;
+        leftHand.setParam('handPosX', 1);
+        rightHand.setParam('handPosX', 2);
+        leftHand.enable();
+        rightHand.enable();
+
+        const calls = await hookRegistrations();
+        const leftHook = calls.find((c) => c[2] === 'left-hand');
+        const rightHook = calls.find((c) => c[2] === 'right-hand');
+
+        shared.wasmIkResolverSpy.mockClear();
+        (leftHook![0] as (t: number, mid: string) => void)(0, 'm1');
+        (rightHook![0] as (t: number, mid: string) => void)(0, 'm1');
+
+        // WASM模式：wasmIkResolver 应被调用（每侧各一次）
+        expect(shared.wasmIkResolverSpy).toHaveBeenCalledTimes(2);
     });
 
     it('左右脚同时启用后，禁用其中一侧不影响另一侧钩子', async () => {

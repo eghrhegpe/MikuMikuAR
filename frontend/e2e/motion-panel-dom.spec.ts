@@ -33,7 +33,7 @@ test.describe("Motion — DOM/overlay (vitePage, @dom)", { tag: ["@dom", "@overl
         // 均渲染且可 focus，即满足「可交互」契约。
         // 注：切换会触发 setCameraBehavior/setCameraControl 的场景副作用，在 vite 纯模式下
         // 缺 Wails runtime 会致页面崩溃，故切换行为本身的覆盖留给 wailsPage 模式或单测。
-        const sliders = page.locator(".cs-top[role='listbox']");
+        const sliders = page.locator(".cs-top[role='slider']");
         await expect(sliders).toHaveCount(2);
         await sliders.nth(0).focus();
         await sliders.nth(1).focus();

@@ -181,45 +181,49 @@ describe('WASM 物理契约测试', () => {
 
         it('批量施力后每个刚体都有速度（轻的飘得更多）', () => {
             const world = api.createPhysicsWorld();
-            // 无重力，纯粹看风力效果
-            api.physicsWorldSetGravity(world, 0, 0, 0);
+            // 资源声明提升到 try 外：finally 需引用（try 内 const 块级不可见）
+            let shape: number, listPtr: number, bundle: number;
+            try {
+                // 无重力，纯粹看风力效果
+                api.physicsWorldSetGravity(world, 0, 0, 0);
 
-            const shape = api.createBoxShape(1, 1, 1);
-            const listPtr = buildBundleInfoList(shape, 3, [0.5, 1.0, 2.0]);
-            const bundle = api.createRigidBodyBundle(listPtr, 3);
-            api.physicsWorldAddRigidBodyBundle(world, bundle);
+                shape = api.createBoxShape(1, 1, 1);
+                listPtr = buildBundleInfoList(shape, 3, [0.5, 1.0, 2.0]);
+                bundle = api.createRigidBodyBundle(listPtr, 3);
+                api.physicsWorldAddRigidBodyBundle(world, bundle);
 
-            // 初始速度全为零
-            for (let i = 0; i < 3; i++) {
-                const [, vy] = readBundleLinearVelocity(bundle, i);
-                expect(vy).toBe(0);
+                // 初始速度全为零
+                for (let i = 0; i < 3; i++) {
+                    const [, vy] = readBundleLinearVelocity(bundle, i);
+                    expect(vy).toBe(0);
+                }
+
+                // 对每个刚体施加相同的向上力 (0, 10, 0)
+                for (let i = 0; i < 3; i++) {
+                    api.rigidBodyBundleApplyCentralForce(bundle, i, 0, 10, 0);
+                }
+
+                // 步进
+                api.physicsWorldStepSimulation(world, 1 / 60, 1, 1 / 60);
+
+                // 读取速度：质量越轻，速度越大
+                const [, vy0] = readBundleLinearVelocity(bundle, 0); // mass 0.5
+                const [, vy1] = readBundleLinearVelocity(bundle, 1); // mass 1.0
+                const [, vy2] = readBundleLinearVelocity(bundle, 2); // mass 2.0
+
+                expect(vy0).toBeGreaterThan(0);
+                expect(vy1).toBeGreaterThan(0);
+                expect(vy2).toBeGreaterThan(0);
+                // 轻的（mass 0.5）比重的（mass 2.0）速度更大
+                expect(vy0).toBeGreaterThan(vy2);
+            } finally {
+                // 清理（断言失败也执行，避免 WASM 指针泄漏）；空值守卫防 try 中途抛错
+                if (bundle !== undefined) api.physicsWorldRemoveRigidBodyBundle(world, bundle);
+                if (bundle !== undefined) api.destroyRigidBodyBundle(bundle);
+                if (listPtr !== undefined) api.deallocateBuffer(listPtr, INFO_SIZE * 3);
+                if (shape !== undefined) api.destroyShape(shape);
+                api.destroyPhysicsWorld(world);
             }
-
-            // 对每个刚体施加相同的向上力 (0, 10, 0)
-            for (let i = 0; i < 3; i++) {
-                api.rigidBodyBundleApplyCentralForce(bundle, i, 0, 10, 0);
-            }
-
-            // 步进
-            api.physicsWorldStepSimulation(world, 1 / 60, 1, 1 / 60);
-
-            // 读取速度：质量越轻，速度越大
-            const [, vy0] = readBundleLinearVelocity(bundle, 0); // mass 0.5
-            const [, vy1] = readBundleLinearVelocity(bundle, 1); // mass 1.0
-            const [, vy2] = readBundleLinearVelocity(bundle, 2); // mass 2.0
-
-            expect(vy0).toBeGreaterThan(0);
-            expect(vy1).toBeGreaterThan(0);
-            expect(vy2).toBeGreaterThan(0);
-            // 轻的（mass 0.5）比重的（mass 2.0）速度更大
-            expect(vy0).toBeGreaterThan(vy2);
-
-            // 清理
-            api.physicsWorldRemoveRigidBodyBundle(world, bundle);
-            api.destroyRigidBodyBundle(bundle);
-            api.deallocateBuffer(listPtr, INFO_SIZE * 3);
-            api.destroyShape(shape);
-            api.destroyPhysicsWorld(world);
         });
 
         it('bundleSetMassProps 可修改质量', () => {

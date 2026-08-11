@@ -190,6 +190,8 @@ async function _initRestorePhase(): Promise<void> {
     await restoreUIState();
     // 应用顶部 HUD 显隐开关（在 restoreUIState 之后，确保读到持久化值）
     applyHudVisibility();
+    // 应用帧率控制（在 restoreUIState 之后，确保 fpsLimit/frameCapEnabled 已恢复）
+    getSceneAction('applyFrameControl')?.();
     // 启动时自动检查更新（若用户在设置中开启）
     if (uiState.autoUpdateEnabled) {
         safeCallAsync('init', '', () => CheckForUpdate()).then((r) => {
@@ -385,6 +387,10 @@ async function restoreUIState(): Promise<void> {
     // 恢复原会话级字段（跨重启持久化）
     if (s.fpsLimit !== undefined) {
         uiState.fpsLimit = s.fpsLimit;
+    }
+    // frameCapEnabled 恢复（undefined 视为 true = 开启限制器）
+    if (s.frameCapEnabled !== undefined) {
+        uiState.frameCapEnabled = s.frameCapEnabled;
     }
     // frameCapEnabled 由 Go UnmarshalJSON 兼容旧 "vsync" key
     if (s.defaultPhysicsEnabled !== undefined) {

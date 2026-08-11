@@ -741,14 +741,14 @@ export class SlideMenu implements RenderContext {
         this.panel
             .querySelectorAll<HTMLElement>('.toggle-row')
             .forEach((el) => mark(el, { focusSelector: 'input[type="checkbox"]' }));
-        // 控件行 .cs-row：滑块聚焦 .cs-bar、模式切换器聚焦 .cs-top[role="listbox"]，
+        // 控件行 .cs-row：滑块聚焦 .cs-bar、模式切换器聚焦 .cs-top[role="slider"]，
         // 二者 ←→ 均让给控件自身调值；无控件的提示行（都不含）跳过不标记。
         this.panel.querySelectorAll<HTMLElement>('.cs-row').forEach((el) => {
             if (el.querySelector(`.${SLIDER_BAR_CLASS}`)) {
                 mark(el, { focusSelector: `.${SLIDER_BAR_CLASS}`, horizontalAdjust: true });
-            } else if (el.querySelector(`.cs-top[role="${ROLE.listbox}"]`)) {
+            } else if (el.querySelector(`.cs-top[role="${ROLE.slider}"]`)) {
                 mark(el, {
-                    focusSelector: `.cs-top[role="${ROLE.listbox}"]`,
+                    focusSelector: `.cs-top[role="${ROLE.slider}"]`,
                     horizontalAdjust: true,
                 });
             }

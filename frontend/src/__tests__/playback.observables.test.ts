@@ -181,7 +181,7 @@ describe('initPlaybackObservables', () => {
         expect(mockState.isPlaying).toBe(false);
     });
 
-    it('pauseHandler does not set isPlaying when loopPending', () => {
+    it('pauseHandler loopPending 时跳过 setIsPlaying(false)，auto-loop 恢复播放', async () => {
         // Trigger auto-loop first to set _loopPending
         mockState.autoLoop = true;
         mockManager.focused.mockReturnValue({ animationDuration: 120 });
@@ -189,11 +189,16 @@ describe('initPlaybackObservables', () => {
 
         pauseObs._fire();
 
-        // After auto-loop triggers, _loopPending is true, so setIsPlaying(false) is skipped
-        // The exact behavior depends on async execution - the seekAnimation promise resolves immediately
-        // So _loopPending gets reset in the .then chain
-        // Let's just verify it doesn't crash and proceeds with auto-loop
+        // [audit:round6] 原用例名「does not set isPlaying when loopPending」但无任何
+        // isPlaying 断言——名实脱节。补断言：loopPending 分支跳过 setIsPlaying(false)，
+        // 异步链最终 setIsPlaying(true) 恢复播放（与 L199-215 参照同构）
         expect(mockRuntime.seekAnimation).toHaveBeenCalledWith(0, true);
+        await vi.waitFor(() => {
+            expect(mockRuntime.playAnimation).toHaveBeenCalledOnce();
+        });
+        await vi.waitFor(() => {
+            expect(mockState.isPlaying).toBe(true);
+        });
     });
 
     it('pauseHandler seeks and plays when auto-loop condition met', async () => {

@@ -1497,8 +1497,8 @@
 | `createBodyPostureModule()` | `scene/motion/motion-modules/body-posture:181` | 创建身体姿态模块实例 |
 | `LEFT_FOOT_DEF()` | `scene/motion/motion-modules/foot-modules:228` | — |
 | `RIGHT_FOOT_DEF()` | `scene/motion/motion-modules/foot-modules:244` | — |
-| `LEFT_HAND_DEF()` | `scene/motion/motion-modules/hand-modules:443` | — |
-| `RIGHT_HAND_DEF()` | `scene/motion/motion-modules/hand-modules:471` | — |
+| `LEFT_HAND_DEF()` | `scene/motion/motion-modules/hand-modules:453` | — |
+| `RIGHT_HAND_DEF()` | `scene/motion/motion-modules/hand-modules:481` | — |
 | `FrameHookManager()` | `scene/motion/motion-modules/module-base:203` | 帧钩子管理器的返回类型（供 createEnsureActive 复用） |
 | `ModuleBaseMethods()` | `scene/motion/motion-modules/module-base:21` | createModuleBase 返回的方法子集（与 MotionOverrideModule 对应方法签名一致） |
 | `ModuleBaseOverrides()` | `scene/motion/motion-modules/module-base:27` | 模块基础行为覆盖 |

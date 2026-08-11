@@ -332,7 +332,10 @@ export function addModeSlider<T extends string | number>(
     const top = document.createElement('div');
     top.className = 'cs-top';
     top.tabIndex = 0;
-    top.setAttribute('role', ROLE.listbox);
+    // [audit:round6] ARIA 合规：modeSlider 是循环步进控件（键盘方向键 cycleIdx），
+    // 语义为 slider——原 role=listbox + aria-valuemin/max/now 违反 ARIA 规范
+    // （valuenow 等仅允许 slider/scrollbar/spinbutton/progressbar/meter）。
+    top.setAttribute('role', ROLE.slider);
     top.setAttribute(ARIA_ATTR.label, label);
     top.setAttribute(ARIA_ATTR.valuenow, String(currentIndex));
     top.setAttribute(ARIA_ATTR.valuemin, '0');

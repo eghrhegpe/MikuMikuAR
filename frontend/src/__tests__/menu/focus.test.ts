@@ -90,20 +90,20 @@ describe('SlideMenu — 焦点全面 (setupFocus/clearFocus/applyFocus/activateF
         expect(items.filter((el) => el.classList.contains('cs-row')).length).toBe(1);
     });
 
-    it('panelItems 纳入模式切换器(.cs-row+.cs-top[role=listbox])与 type-row', async () => {
+    it('panelItems 纳入模式切换器(.cs-row+.cs-top[role=slider])与 type-row', async () => {
         // 回归防护：mode-slider / type-row 曾因无 .cs-bar 而被遗漏，契约制应纳入
         const level: PopupLevel = {
             label: 'F',
             dir: '',
             items: [],
             renderCustom: (c) => {
-                // 模式切换器（listbox，无 .cs-bar）
+                // 模式切换器（slider，无 .cs-bar；[audit:round6] ARIA 合规 role=listbox→slider）
                 const modeRow = document.createElement('div');
                 modeRow.className = 'cs-row';
                 const top = document.createElement('div');
                 top.className = 'cs-top';
                 top.tabIndex = 0;
-                top.setAttribute('role', 'listbox');
+                top.setAttribute('role', 'slider');
                 modeRow.appendChild(top);
                 c.appendChild(modeRow);
                 // type-row
@@ -124,7 +124,7 @@ describe('SlideMenu — 焦点全面 (setupFocus/clearFocus/applyFocus/activateF
         // 模式切换器声明了 ←→ 调值让位
         const modeItem = items.find((el) => el.classList.contains('cs-row'))!;
         expect(modeItem.getAttribute('data-nav-adjust')).toBe('horizontal');
-        expect(modeItem.getAttribute('data-nav-focus')).toBe('.cs-top[role="listbox"]');
+        expect(modeItem.getAttribute('data-nav-focus')).toBe('.cs-top[role="slider"]');
     });
 
     it('preset-group chips 组标记为二维导航站（data-nav-group）', async () => {

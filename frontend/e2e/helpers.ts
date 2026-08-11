@@ -252,8 +252,9 @@ export async function loadFirstModel(page: Page): Promise<void> {
     );
     if (overlayOpen) {
         await page.keyboard.press("Escape");
-        // Small wait for close animation to settle
-        await page.waitForTimeout(200);
+        // [audit:round6] 原固定 waitForTimeout(200) 等关闭动画——时序假设脆弱，
+        // 改轮询 overlay 关闭（.visible 类移除）即视为动画结束，慢 CI 不超时
+        await page.waitForSelector("#sceneOverlay:not(.visible)", { timeout: 5000 });
     }
     await page.locator("#btnMainAction").click();
     await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
@@ -269,7 +270,8 @@ export async function loadModelByName(page: Page, name: string): Promise<void> {
     );
     if (overlayOpen) {
         await page.keyboard.press("Escape");
-        await page.waitForTimeout(200);
+        // [audit:round6] 同 loadFirstModel：固定 sleep 改轮询 overlay 关闭
+        await page.waitForSelector("#sceneOverlay:not(.visible)", { timeout: 5000 });
     }
     await page.locator("#btnMainAction").click();
     await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });

@@ -17,6 +17,12 @@ export const shared = {
     mockActiveMotion: { value: null as any },
     pushHistorySpy: vi.fn(),
     triggerAutoSaveSpy: vi.fn(),
+    // WASM IK resolver mock（供 hand-modules IK 重解测试）
+    wasmIkResolverSpy: vi.fn(),
+    // WASM runtime 标志（供 isWasmRuntime 判断）
+    // 默认 false（JS 模式），测试 WASM 时设为 true
+    wasmRuntime: false,
+    feetDebug: { value: false },
     reset(): void {
         this.mockModelRegistry.clear();
         this.setBoneOverrideSpy.mockClear();
@@ -25,6 +31,9 @@ export const shared = {
         this.mockActiveMotion.value = null;
         this.pushHistorySpy.mockClear();
         this.triggerAutoSaveSpy.mockClear();
+        this.wasmIkResolverSpy.mockClear();
+        this.wasmRuntime = false;
+        this.feetDebug.value = false;
     },
 };
 
@@ -40,6 +49,15 @@ export function mockBoneOverride(): Record<string, any> {
         protectIkPosition: shared.protectIkPositionSpy,
         registerBoneOverrideFrameHook: vi.fn(() => () => {}),
         FRAME_HOOK_ORDER: { BODY_POSITION: 5, RIDING: 10, SWAY: 20, HAND_SYMMETRY: 30 },
+        getWasmIkResolver: () => shared.wasmIkResolverSpy,
+    };
+}
+
+export function mockPerceptionShared(): Record<string, any> {
+    return {
+        // isWasmRuntime 返回共享标志，测试时可动态切换
+        isWasmRuntime: () => shared.wasmRuntime,
+        feetDebug: shared.feetDebug,
     };
 }
 
