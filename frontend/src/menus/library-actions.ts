@@ -76,13 +76,17 @@ function _onModelLoaded(): void {
                 if (stack) {
                     import('./library-core')
                         .then(({ buildModelRootItems }) => {
-                            stack.setLevel(0, {
-                                label: t('library.model'),
-                                dir: '',
-                                items: buildModelRootItems(),
-                                itemBuilder: buildModelRootItems,
-                            });
-                            stack.reRender();
+                            // [fix] 不再强制 setLevel(0) 重置菜单，改为就地更新根层级数据。
+                            // 仅当用户当前就在根层级时才 reRender，保留用户在子目录中的浏览位置。
+                            const rootLevel = stack.getLevel(0);
+                            if (!rootLevel) {
+                                return;
+                            }
+                            rootLevel.items = buildModelRootItems();
+                            rootLevel.itemBuilder = buildModelRootItems;
+                            if (stack.currentLevel === rootLevel) {
+                                stack.reRender();
+                            }
                         })
                         .catch((err) => logWarn('library', 'buildModelRootItems failed', err));
                 }
