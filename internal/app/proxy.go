@@ -467,7 +467,15 @@ func (a *App) StartProxy(target, mode string) (string, error) {
 			}
 			// Keep same-host redirects inside the proxy.
 			if loc := resp.Header.Get("Location"); loc != "" {
-				if u, e := url.Parse(loc); e == nil && u.Host == targetURL.Host {
+				u, e := url.Parse(loc)
+				if e != nil {
+					return nil
+				}
+				// 相对路径（如 /file/index）：用上游请求 URL 解析为绝对路径
+				if u.Host == "" {
+					u = resp.Request.URL.ResolveReference(u)
+				}
+				if u.Host == targetURL.Host {
 					u.Scheme = "http"
 					u.Host = resp.Request.Host
 					resp.Header.Set("Location", u.String())
