@@ -894,10 +894,27 @@ export function renderEmbed(site: PlazaSite, initialUrl?: string): void {
         }
     };
 
+    // 地址栏：先创建，供 toolbar 按钮引用
+    const addressBar = document.createElement('input');
+    addressBar.id = 'plaza-address-bar';
+    addressBar.className = 'plaza-address-bar';
+    addressBar.type = 'text';
+    addressBar.value = initialUrl ?? site.url;
+    addressBar.placeholder = '输入网址导航…';
+    addressBar.spellcheck = false;
+    addressBar.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const url = addressBar.value.trim();
+            if (url) navigate(url);
+        }
+    });
+    addressBar.addEventListener('focus', () => addressBar.select());
+
     const toolbar = buildToolbar({
         title: site.name,
         onBack: renderHome,
-        onOpen: () => openExternal(site),
+        onOpen: () => openExternalLink(addressBar.value || site.url),
         onRefresh: () => {
             if (iframe.src) {
                 spinner.classList.remove('is-hidden');
@@ -907,25 +924,9 @@ export function renderEmbed(site: PlazaSite, initialUrl?: string): void {
         },
         onClose: closePlaza,
     });
-    // 地址栏：在站点名称后面插入可编辑 URL 栏
+    // 将地址栏插入站点名称后面
     const titleEl = toolbar.querySelector('.plaza-title');
     if (titleEl) {
-        const addressBar = document.createElement('input');
-        addressBar.id = 'plaza-address-bar';
-        addressBar.className = 'plaza-address-bar';
-        addressBar.type = 'text';
-        addressBar.value = initialUrl ?? site.url;
-        addressBar.placeholder = '输入网址导航…';
-        addressBar.spellcheck = false;
-        addressBar.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                const url = addressBar.value.trim();
-                if (url) navigate(url);
-            }
-        });
-        // 点击时全选方便快速修改
-        addressBar.addEventListener('focus', () => addressBar.select());
         titleEl.insertAdjacentElement('afterend', addressBar);
     }
     root.appendChild(toolbar);

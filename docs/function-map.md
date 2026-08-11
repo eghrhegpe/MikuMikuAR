@@ -2323,7 +2323,7 @@
 | `saveCustomPresets()` | `menus/plaza-browser:295` | — |
 | `savePlazaCache()` | `menus/plaza-browser:178` | 将当前站点 + 创作者持久化到 Go 用户目录缓存（plaza-cache/）。 |
 | `showActionsMenu()` | `menus/plaza-browser:731` | — |
-| `showPlaza()` | `menus/plaza-browser:946` | — |
+| `showPlaza()` | `menus/plaza-browser:947` | — |
 | `PLAZA_CREATORS()` | `menus/plaza-creators:9` | — |
 | `PlazaCreator()` | `menus/plaza-creators:1` | — |
 | `ensureObserver()` | `menus/plaza-download:185` | — |
