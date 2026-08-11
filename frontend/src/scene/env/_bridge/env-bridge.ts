@@ -59,10 +59,11 @@ export function applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>
     dispatchEnvChange(changed, state);
 
     // 半球光 — 强度跟随当前灯光状态，颜色随天空色（灯光未初始化时跳过）
+    // [fix:audit-P3] skyColorTop/Bot 可能未初始化（旧存档/测试 mock 不完整），加可选链守卫
     const skyMid = state.skyColorMid ?? [
-        (state.skyColorTop[0] + state.skyColorBot[0]) / 2,
-        (state.skyColorTop[1] + state.skyColorBot[1]) / 2,
-        (state.skyColorTop[2] + state.skyColorBot[2]) / 2,
+        ((state.skyColorTop?.[0] ?? 0) + (state.skyColorBot?.[0] ?? 0)) / 2,
+        ((state.skyColorTop?.[1] ?? 0) + (state.skyColorBot?.[1] ?? 0)) / 2,
+        ((state.skyColorTop?.[2] ?? 0) + (state.skyColorBot?.[2] ?? 0)) / 2,
     ];
     const hemi = getHemiLight();
     if (hemi) {
