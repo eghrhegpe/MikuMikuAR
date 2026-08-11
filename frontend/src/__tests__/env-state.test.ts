@@ -142,8 +142,13 @@ describe('EnvState defaults', () => {
     });
 });
 
-describe('setEnvState partial merge', () => {
-    it('partial update preserves other fields', () => {
+// 默认值 merge 语义（不调用真实 setEnvState）：env-bridge 的 setEnvState 经
+// import { scene } from '../../scene' + renderer/lighting 拉入模块级 new Scene()
+// 重链（env-water 注释已明示同款风险），单测环境收集期即崩。此处验证的是
+// EnvState 默认值派生（deriveDefaultEnvState 单一事实源）+ partial merge 语义，
+// 真实 setEnvState 的写入链路由 env-water/env-bridge 契约测试覆盖。
+describe('EnvState 默认值一致性（partial merge 语义）', () => {
+    it('partial merge preserves other fields', () => {
         const state = { ...defaultEnv };
         const updated = Object.assign(state, {
             skyMode: 'procedural' as const,

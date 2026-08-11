@@ -56,7 +56,10 @@ test.describe("Web Smoke — 主应用 Web 入口 (@web)", { tag: ["@web", "@web
         await page.click("#btnMotionPopup");
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 8000 });
         await page.getByTestId("folder:motion:camera").click();
-        await page.waitForSelector('[data-testid="camera:main"]', { timeout: 8000 });
+        // camera:main 是 custom 节点 id（motion-camera-levels.ts:90），renderMenu 对
+        // kind:'custom' 不 emit data-testid（render-menu.ts:72-76）——唯一真实锚点是
+        // FOV 滑块 camera:main:fov（与 motion-panel-dom.spec.ts:30 一致）
+        await page.waitForSelector('[data-testid="camera:main:fov"]', { timeout: 8000 });
 
         // AR 选项不应出现在相机模式滑块（capabilities.ar=false 过滤）
         await expect(page.locator('text=AR')).toHaveCount(0);

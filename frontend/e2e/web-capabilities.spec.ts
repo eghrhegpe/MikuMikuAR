@@ -27,7 +27,9 @@ test.describe("Web Capabilities — 能力门控 UI 验证 (@web)", { tag: ["@we
         await page.click("#btnMotionPopup");
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 8000 });
         await page.getByTestId("folder:motion:camera").click();
-        await page.waitForSelector('[data-testid="camera:main"]', { timeout: 8000 });
+        // camera:main 是 custom 节点 id，renderMenu 对 kind:'custom' 不 emit data-testid
+        // ——唯一真实锚点是 FOV 滑块 camera:main:fov（与 motion-panel-dom.spec.ts:30 一致）
+        await page.waitForSelector('[data-testid="camera:main:fov"]', { timeout: 8000 });
 
         // AR 选项不应出现在相机模式（capabilities.ar=false 过滤）
         await expect(page.locator('text=AR')).toHaveCount(0);

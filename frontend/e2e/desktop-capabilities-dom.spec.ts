@@ -71,15 +71,19 @@ test.describe("Desktop Capabilities — DOM 入口 (@dom)", { tag: ["@dom"] }, (
         await page.click("#btnSettings");
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
 
-        await expect(page.getByTestId("folder:settings:library")).toBeVisible();
+        // 原 folder:settings:library 在 settings.ts 根项不存在（settings.ts:57-99 仅有
+        // appearance/graphics/controls/resources/downloads/media/system/about）——
+        // 改用真实存在的 resources 区段（含资源路径/库排序）
+        await expect(page.getByTestId("folder:settings:resources")).toBeVisible();
     });
 
-    test("设置面板: 路径区段可见", { tag: ["@overlay"] }, async ({ vitePage: page }) => {
+    test("设置面板: 资源区段可见", { tag: ["@overlay"] }, async ({ vitePage: page }) => {
         await dismissErrorDialog(page);
         await page.click("#btnSettings");
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
 
-        await expect(page.getByTestId("folder:settings:paths")).toBeVisible();
+        // 原 folder:settings:paths 不存在，resources 面板真实行 testid 见 settings-resources.ts
+        await expect(page.getByTestId("folder:settings:resources")).toBeVisible();
     });
 
     test("设置面板: 抗锯齿档位选择器可见（AA 唯一入口）", { tag: ["@overlay"] }, async ({ vitePage: page }) => {

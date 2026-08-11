@@ -161,12 +161,20 @@ describe('action-defs/motion', () => {
         expect(resolved).toEqual({ id: 'm-9' });
     });
 
-    it('motion UI 分支转发（load/clear/browse/open/detail/set-mode/lipsync）', async () => {
+    // [audit:round4] 原 mega it 103 行串测 11 个 action，含脆索引（menuGetLevel i===0、
+    // menuPush.mock.calls[0][0]、browseCalls[len-1]），中途失败仅报一个 it 定位差。
+    // 拆分：共享 mock 装配抽 beforeEach，每 action 独立 it（mock 调用互不污染）。
+    let ui: Map<string, ReturnType<typeof vi.fn>>;
+    let scene: Map<string, ReturnType<typeof vi.fn>>;
+    let menuPush: ReturnType<typeof vi.fn>;
+    let menuGetLevel: ReturnType<typeof vi.fn>;
+
+    beforeEach(() => {
         registerMotionActions();
-        const ui = new Map<string, ReturnType<typeof vi.fn>>();
-        const scene = new Map<string, ReturnType<typeof vi.fn>>();
-        const menuPush = vi.fn();
-        const menuGetLevel = vi.fn((i: number) => (i === 0 ? { items: [] } : undefined));
+        ui = new Map<string, ReturnType<typeof vi.fn>>();
+        scene = new Map<string, ReturnType<typeof vi.fn>>();
+        menuPush = vi.fn();
+        menuGetLevel = vi.fn((i: number) => (i === 0 ? { items: [] } : undefined));
         ui.set('getMotionMenu', vi.fn(() => ({ push: menuPush, getLevel: menuGetLevel })));
         ui.set('buildBrowseLevel', vi.fn(() => ({ level: 1 })));
         ui.set('getBrowseDir', vi.fn((kind: string) => `/lib/${kind}`));
@@ -194,41 +202,48 @@ describe('action-defs/motion', () => {
             (name: string) => (scene.get(name) ?? undefined) as never
         );
         vi.mocked(showConfirm).mockResolvedValue(true);
+    });
 
-        // lipsync toggle：getLipSyncState.enabled=false → setLipSyncEnabled(true)
+    it('motion:lipsync:toggle：enabled=false → setLipSyncEnabled(true)', async () => {
         await getAction('motion:lipsync:toggle')!.execute({});
         expect(scene.get('setLipSyncEnabled')).toHaveBeenCalledWith(true);
+    });
 
-        // clear-all：确认后清空场景并撤销快照
+    it('motion:clear-all：确认后清空场景并撤销快照', async () => {
         await getAction('motion:clear-all')!.execute({});
         expect(showConfirm).toHaveBeenCalled();
         expect(scene.get('clearAllSceneMotions')).toHaveBeenCalled();
         expect(triggerAutoSave).toHaveBeenCalled();
         expect(scene.get('offerSceneUndoAndRefresh')).toHaveBeenCalled();
+    });
 
-        // procmotion set-mode
+    it('motion:procmotion:set-mode：设置模式并重生成', async () => {
         await getAction('motion:procmotion:set-mode')!.execute({ mode: 'dancing' });
         expect(scene.get('setProcMotionMode')).toHaveBeenCalledWith('dancing');
         expect(scene.get('regenerateProcMotion')).toHaveBeenCalled();
+    });
 
-        // load-camera-vmd / load-vpd：直接转 loadManager / loadVPDPose
+    it('motion:load-camera-vmd / load-vpd：转发 loadManager / loadVPDPose', async () => {
         await getAction('motion:load-camera-vmd')!.execute({ path: '/a/c.vmd' });
         expect(loadManager.load).toHaveBeenCalledWith({ kind: 'camera-vmd', path: '/a/c.vmd' });
         await getAction('motion:load-vpd')!.execute({ path: '/a/p.vpd' });
         expect(scene.get('loadVPDPose')).toHaveBeenCalledWith('/a/p.vpd');
+    });
 
-        // add-scene-vmd：带 name 直传
+    it('motion:add-scene-vmd：带 name 直传', async () => {
         await getAction('motion:add-scene-vmd')!.execute({ path: '/a/m.vmd', name: 'M' });
         expect(scene.get('addSceneMotion')).toHaveBeenCalledWith(
             expect.objectContaining({ vmdPath: '/a/m.vmd', vmdName: 'M', source: 'vmd' })
         );
+    });
 
-        // load-audio：转 loadManager + toast（名称来自 getAudioName）
+    it('motion:load-audio：转发 loadManager + toast（名称来自 getAudioName）', async () => {
         await getAction('motion:load-audio')!.execute({ path: '/a/bgm.mp3' });
         expect(loadManager.load).toHaveBeenCalledWith({ kind: 'audio', path: '/a/bgm.mp3' });
         expect(showInfoToast).toHaveBeenCalled();
+    });
 
-        // open-binding：构建层级后推入菜单（itemBuilder 惰性刷新）
+    it('motion:open-binding：构建层级后推入菜单（itemBuilder 惰性刷新）', async () => {
         await getAction('motion:open-binding')!.execute({ modelId: 'm-1' });
         expect(ui.get('resetFocusedLayerId')).toHaveBeenCalled();
         expect(ui.get('buildActionBindingLevel')).toHaveBeenCalledWith('m-1');
@@ -236,13 +251,15 @@ describe('action-defs/motion', () => {
         const bindingLevel = menuPush.mock.calls[0][0] as { itemBuilder?: () => unknown[] };
         bindingLevel.itemBuilder?.(); // 触发惰性 itemBuilder
         expect(ui.get('buildActionBindingLevel')).toHaveBeenCalledTimes(2);
+    });
 
-        // browse-music：目录层级推入菜单
+    it('motion:browse-music：目录层级推入菜单', async () => {
         await getAction('motion:browse-music')!.execute({});
         expect(ui.get('getBrowseDir')).toHaveBeenCalledWith('audio');
         expect(ui.get('buildBrowseLevel')).toHaveBeenCalled();
+    });
 
-        // browse-scene-motions：outcome 回调 onVmdPick / onVmdReplace 刷新根菜单
+    it('motion:browse-scene-motions：outcome 回调 onVmdPick / onVmdReplace 刷新根菜单', async () => {
         await getAction('motion:browse-scene-motions')!.execute({});
         const browseCalls = ui.get('buildBrowseLevel').mock.calls;
         const browseArg = browseCalls[browseCalls.length - 1][0] as {
@@ -259,8 +276,9 @@ describe('action-defs/motion', () => {
             expect.objectContaining({ vmdPath: '/x/2.vmd', vmdName: '2' })
         );
         expect(menuGetLevel).toHaveBeenCalledWith(0);
+    });
 
-        // open-detail：详情层级推入菜单（itemBuilder 惰性求值）
+    it('motion:open-detail：详情层级推入菜单（itemBuilder 惰性求值）', async () => {
         await getAction('motion:open-detail')!.execute({ sceneMotionId: 'sm-1' });
         expect(ui.get('buildMotionDetailLevel')).toHaveBeenCalledWith('sm-1');
         expect(menuPush).toHaveBeenCalled();

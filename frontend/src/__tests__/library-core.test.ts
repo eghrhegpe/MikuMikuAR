@@ -353,27 +353,20 @@ describe('modelToResourceItem', () => {
         expect(item.icon).toBe('user');
     });
 
-    it('always uses filename as label regardless of displayNamePriority', () => {
-        mockState.displayNamePriority = 'name_en';
-        const model = makeModel({
-            file_path: '/test/a.pmx',
-            dir: '/test',
-        });
-        const item = modelToResourceItem(model);
-        expect(item.label).toBe('a.pmx');
-    });
+    it.each(['name_en', 'name_jp'])(
+        'always uses filename as label regardless of displayNamePriority=%s',
+        (priority) => {
+            mockState.displayNamePriority = priority as any;
+            const model = makeModel({
+                file_path: '/test/a.pmx',
+                dir: '/test',
+            });
+            const item = modelToResourceItem(model);
+            expect(item.label).toBe('a.pmx');
+        }
+    );
 
-    it('always uses filename when displayNamePriority is name_jp', () => {
-        mockState.displayNamePriority = 'name_jp';
-        const model = makeModel({
-            file_path: '/test/a.pmx',
-            dir: '/test',
-        });
-        const item = modelToResourceItem(model);
-        expect(item.label).toBe('a.pmx');
-    });
-
-    it('falls back to cached metadata when available', () => {
+    it('cached metadata does not affect label (source resolveModelLabel 不读缓存，仍用文件名)', () => {
         mockState.displayNamePriority = 'name_en';
         mockState.modelMetaCache.set('/test/a.pmx', {
             name_en: 'Cached English',
@@ -999,9 +992,11 @@ describe('Resource View Mode', () => {
     it('setResourceViewMode persists via SetUIState', async () => {
         const { SetUIState } = await import('../core/wails-bindings');
         setResourceViewMode('grid');
-        await new Promise((r) => setTimeout(r, 10));
-        expect(SetUIState).toHaveBeenCalledWith(
-            expect.objectContaining({ resourceViewMode: 'grid' })
+        // 原 setTimeout(10) 裸等易受负载抖动，改 waitFor 轮询直至持久化调用落定
+        await vi.waitFor(() =>
+            expect(SetUIState).toHaveBeenCalledWith(
+                expect.objectContaining({ resourceViewMode: 'grid' })
+            )
         );
     });
 });
