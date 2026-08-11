@@ -84,6 +84,19 @@ use_when:
 - 依赖撤销系统 `pushUndoSnapshot` / `offerSceneUndoAndRefresh`（ADR-127）、反馈 `feedbackStatus` / `feedbackError` / `withLoadingStatus*`。
 - 下游 UI：`stackRegistry.modelStack.reRender()`、`getMotionMenu()?.reRender()`。
 
+## 常见陷阱与风险（Pitfalls）
+> 本节记录高频踩坑点，便于 AI 和开发者快速规避。
+
+1.  **异步加载未完成就关闭弹窗**
+    *   **现象**：点击加载后，弹窗立即消失，用户需要重新打开菜单。
+    *   **原因**：在 `loadModelNormal` 中，`closeAllOverlays()` 被放在 `loadManager.load()` 异步调用**之前**执行。
+    *   **修正**：移除加载前的 `closeAllOverlays()`，让菜单保持打开状态，直到加载完成（由 UI 交互或撤销系统决定何时关闭）。
+
+2.  **模型替换后菜单强制重置（丢失浏览位置）**
+    *   **现象**：在子目录（如 "MMD 资源"）中替换模型后，菜单强制跳回根目录，导致长列表场景下丢失滚动位置。
+    *   **原因**：`startReplaceModel` 成功后调用了 `stack.reRender()`，该方法会销毁并重建整个 DOM 结构，导致滚动状态重置。
+    *   **修正**：不要在替换流程中调用全量 `reRender`。改为抽取 `refreshModelRootLevel()` 辅助函数，就地更新根层级数据，仅当用户当前就在根层级时才刷新视图，保留子目录中的浏览位置。
+
 ## UI 入口
 
 - 菜单层级 / 入口函数 / 快捷键统一由 [menu-map.md](./menu-map.md) 机器生成（勿手改）。
