@@ -13,7 +13,7 @@
  * - model.ptr 缺失（非 WASM 模型）→ 返回 0；
  * - len<=0 → 返回 0 且不施力。
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
     applyForceToModelRigidBodiesNative,
     solveIkNative,
@@ -177,6 +177,7 @@ describe('solveIkNative (ADR-202 A-class)', () => {
         });
 
         afterEach(() => {
+            vi.clearAllMocks();
             perfNowSpy.mockRestore();
         });
 
@@ -218,7 +219,7 @@ describe('solveIkNative (ADR-202 A-class)', () => {
             perfNowSpy.mockReturnValue(3_000_000);
             solveIkNative(wi, model, 5, false);
 
-            logWarn.mockClear();
+            vi.clearAllMocks();
             perfNowSpy.mockReturnValue(3_001_001);
             solveIkNative(wi, model, 5, false);
 
@@ -233,7 +234,7 @@ describe('solveIkNative (ADR-202 A-class)', () => {
             perfNowSpy.mockReturnValue(4_000_000);
             solveIkNative(wi, model, 1, false);
 
-            logWarn.mockClear();
+            vi.clearAllMocks();
             perfNowSpy.mockReturnValue(4_001_000);
             solveIkNative(wi, model, 1, false);
 
