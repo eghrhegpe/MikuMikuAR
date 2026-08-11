@@ -702,8 +702,8 @@ async function _initMotionSubsystems(scene: Scene, _modelManager: ModelManager):
     // 使用默认 FeetState（enabled=true, intensity=1），始终贴地修正。
     const { startFeetAdjustment } = await import('./motion/feet-adjustment');
     startFeetAdjustment(
-        (): { id: string; feet: FeetState; runtimeBones: readonly IMmdRuntimeBone[]; model: unknown }[] => {
-            const out: { id: string; feet: FeetState; runtimeBones: readonly IMmdRuntimeBone[]; model: unknown }[] =
+        (): { id: string; feet: FeetState; runtimeBones: readonly IMmdRuntimeBone[] }[] => {
+            const out: { id: string; feet: FeetState; runtimeBones: readonly IMmdRuntimeBone[] }[] =
                 [];
             for (const inst of modelRegistry.values()) {
                 const bones = inst.mmdModel?.runtimeBones;
@@ -713,7 +713,6 @@ async function _initMotionSubsystems(scene: Scene, _modelManager: ModelManager):
                         id: inst.id,
                         feet: { ...createDefaultFeetState(), enabled: true },
                         runtimeBones: bones,
-                        model: inst.mmdModel,
                     });
                 }
             }

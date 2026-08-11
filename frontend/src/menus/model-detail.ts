@@ -609,27 +609,14 @@ export function buildModelToolsLevel(id: string): PopupLevel {
                     const snap = pushUndoSnapshot();
                     removeModel(id);
                     offerSceneUndo(t('settings.unloaded', { name: inst.name }), snap, () => {
-                        // 撤销恢复后刷新模型列表，使已恢复的模型可见
-                        import('./library-core').then((m) => {
-                            stackRegistry.modelStack?.setLevel(0, {
-                                label: t('model-detail.model'),
-                                dir: '',
-                                items: m.buildModelRootItems(),
-                            });
-                            stackRegistry.modelStack?.reRender();
-                        });
+                        // 撤销恢复后刷新模型列表，使已恢复的模型可见（就地更新，保留浏览位置）
+                        import('./library-core').then((m) => m.refreshModelRoot());
                         feedbackInfo('motion.undoApplied', undefined);
                     });
                     if (stackRegistry.modelStack) {
                         stackRegistry.modelStack.popTo(0);
-                        import('./library-core').then((m) => {
-                            stackRegistry.modelStack?.setLevel(0, {
-                                label: t('model-detail.model'),
-                                dir: '',
-                                items: m.buildModelRootItems(),
-                            });
-                            stackRegistry.modelStack?.reRender();
-                        });
+                        // 就地更新根层级数据，保留用户当前可能正在浏览的子目录视图
+                        import('./library-core').then((m) => m.refreshModelRoot());
                     }
                 });
             });

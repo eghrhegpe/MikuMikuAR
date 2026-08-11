@@ -131,7 +131,6 @@ describe('IK 重解双调用路径时序（ADR-202 §六）', () => {
                 id: MODEL_ID,
                 feet: defaultFeet(),
                 runtimeBones: bones,
-                model: {},
             },
         ]);
 
@@ -164,7 +163,6 @@ describe('IK 重解双调用路径时序（ADR-202 §六）', () => {
                 id: MODEL_ID,
                 feet: defaultFeet(),
                 runtimeBones: bones,
-                model: {},
             },
         ]);
 
@@ -194,7 +192,6 @@ describe('IK 重解双调用路径时序（ADR-202 §六）', () => {
                 id: MODEL_ID,
                 feet: defaultFeet(),
                 runtimeBones: bones,
-                model: {},
             },
         ]);
 
@@ -220,7 +217,6 @@ describe('IK 重解双调用路径时序（ADR-202 §六）', () => {
                 id: MODEL_ID,
                 feet: defaultFeet(),
                 runtimeBones: bones,
-                model: {},
             },
         ]);
 

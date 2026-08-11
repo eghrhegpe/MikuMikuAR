@@ -988,17 +988,26 @@ export function buildModelRootItems(): PopupRow[] {
     return items;
 }
 
-export function refreshModelRoot(): void {
+/**
+ * 就地更新模型库根层级数据（刷新已注册的角色列表）。
+ * 仅当用户当前就在根层级时才触发 reRender，保留子目录中的浏览位置。
+ * 不走 setLevel(0) 重置，避免销毁用户正在浏览的子目录视图。
+ * @param forceRender 若为 true，无论当前层级强制 reRender（用于恢复场景）
+ */
+export function refreshModelRoot(forceRender = false): void {
     const stack = stackRegistry.modelStack;
     if (!stack) {
         return;
     }
-    stack.setLevel(0, {
-        label: t('library.model'),
-        dir: '',
-        items: buildModelRootItems(),
-        itemBuilder: buildModelRootItems,
-    });
+    const rootLevel = stack.getLevel(0);
+    if (!rootLevel) {
+        return;
+    }
+    rootLevel.items = buildModelRootItems();
+    rootLevel.itemBuilder = buildModelRootItems;
+    if (forceRender || stack.currentLevel === rootLevel) {
+        stack.reRender();
+    }
 }
 
 // Register buildLevel for use by motion-popup.ts (avoids circular import)

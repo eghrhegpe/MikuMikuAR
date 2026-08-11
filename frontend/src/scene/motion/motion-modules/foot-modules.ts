@@ -5,6 +5,7 @@
 // 帧管线顺序: 帧钩子(order=0) 先写偏移 → feet-adjustment(order=5) 再修正位置+重解 IK。
 
 import type { ParamValue } from '@/core/types';
+import { modelRegistry } from '@/core/state';
 import {
     setBoneOverride,
     setBoneOverridePosition,
@@ -21,15 +22,36 @@ import {
     createFrameHookManager,
     createEnsureActive,
 } from './module-base';
+import { matchBone, BONE_LEG_IK_L_CANDIDATES, BONE_LEG_IK_R_CANDIDATES } from '@/motion-algos/proc-motion-shared';
 
 // ── 工厂函数 ──
 
 interface FootSideConfig {
     moduleId: string;
     ikBone: string;
+    /** 左右侧标识，用于运行时解析实际骨骼名 */
+    side: 'L' | 'R';
     labelKey: string;
     icon: string;
 }
+
+/** 解析并缓存模型的实际足 IK 骨骼名（首次惰性匹配，与 body-posture.ts 模式一致） */
+function _resolveIkBone(modelId: string, side: 'L' | 'R'): string | null {
+    const cache = side === 'L' ? _lIkBoneCache : _rIkBoneCache;
+    const cached = cache.get(modelId);
+    if (cached !== undefined) {
+        return cached;
+    }
+    const inst = modelRegistry.get(modelId);
+    const boneNames = inst?.mmdModel?.runtimeBones?.map((b) => b.name) ?? [];
+    const candidates = side === 'L' ? BONE_LEG_IK_L_CANDIDATES : BONE_LEG_IK_R_CANDIDATES;
+    const result = boneNames.length > 0 ? matchBone(boneNames, candidates) : null;
+    cache.set(modelId, result);
+    return result;
+}
+
+const _lIkBoneCache = new Map<string, string | null>();
+const _rIkBoneCache = new Map<string, string | null>();
 
 /** 创建左脚或右脚模块 */
 function createFootModuleFactory(cfg: FootSideConfig) {
@@ -60,19 +82,20 @@ function createFootModuleFactory(cfg: FootSideConfig) {
             defaults: DEFAULTS,
         };
 
-        /** 烘焙：将旋转覆盖写入足 IK 骨骼 */
+        /** 烘焙：将旋转覆盖写入足 IK 骨骼（使用运行时解析的实际骨骼名） */
         function bake(modelId: string): void {
-            const prep = prepareBake(modelId, cfg.moduleId, managedBones);
+            const actualBoneName = _resolveIkBone(modelId, cfg.side) ?? cfg.ikBone;
+            const prep = prepareBake(modelId, cfg.moduleId, [actualBoneName]);
             if (!prep) {
                 return;
             }
             const { state, claimed } = prep;
 
-            if (claimed.includes(cfg.ikBone)) {
+            if (claimed.includes(actualBoneName)) {
                 const pitch = (state.params.pitch as number) ?? 0;
                 const yaw = (state.params.yaw as number) ?? 0;
                 const roll = (state.params.roll as number) ?? 0;
-                setBoneOverride(cfg.ikBone, [pitch, yaw, roll], 1, true, modelId);
+                setBoneOverride(actualBoneName, [pitch, yaw, roll], 1, true, modelId);
             }
         }
 
@@ -91,6 +114,10 @@ function createFootModuleFactory(cfg: FootSideConfig) {
                             return;
                         }
 
+                        // [P0 fix] 运行时解析实际骨骼名（MMD 标准名为全角「左足ＩＫ」/「右足ＩＫ」）
+                        const actualBoneName =
+                            _resolveIkBone(mid, cfg.side) ?? cfg.ikBone;
+
                         const fx = (st.params.footPosX as number) ?? 0;
                         const fy = (st.params.footPosY as number) ?? 0;
                         const fz = (st.params.footPosZ as number) ?? 0;
@@ -103,16 +130,16 @@ function createFootModuleFactory(cfg: FootSideConfig) {
                             // 清后重建仅旋转槽（保留 bake 的 pitch/yaw/roll 语义）。
                             if (_footPosWritten.has(mid)) {
                                 _footPosWritten.delete(mid);
-                                clearBoneOverride(cfg.ikBone, mid);
+                                clearBoneOverride(actualBoneName, mid);
                                 const pitch = (st.params.pitch as number) ?? 0;
                                 const yaw = (st.params.yaw as number) ?? 0;
                                 const roll = (st.params.roll as number) ?? 0;
-                                setBoneOverride(cfg.ikBone, [pitch, yaw, roll], 1, true, mid);
+                                setBoneOverride(actualBoneName, [pitch, yaw, roll], 1, true, mid);
                             }
                             return;
                         }
 
-                        setBoneOverridePosition(cfg.ikBone, [fx, fy, fz], 1, true, mid);
+                        setBoneOverridePosition(actualBoneName, [fx, fy, fz], 1, true, mid);
                         _footPosWritten.add(mid);
                     },
                     FRAME_HOOK_ORDER.FEET,
@@ -236,6 +263,7 @@ export const LEFT_FOOT_DEF: ModuleDef = {
     factory: createFootModuleFactory({
         moduleId: 'left-foot',
         ikBone: '左足IK',
+        side: 'L',
         labelKey: 'motion.override.module.leftFoot',
         icon: 'lucide:footprints',
     }),
@@ -252,6 +280,7 @@ export const RIGHT_FOOT_DEF: ModuleDef = {
     factory: createFootModuleFactory({
         moduleId: 'right-foot',
         ikBone: '右足IK',
+        side: 'R',
         labelKey: 'motion.override.module.rightFoot',
         icon: 'lucide:footprints',
     }),

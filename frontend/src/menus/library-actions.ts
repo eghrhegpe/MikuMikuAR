@@ -64,22 +64,8 @@ import { feedbackStatus, feedbackError } from '../core/feedback';
  * @param forceRender 若为 true，无论当前层级强制 reRender（用于恢复场景）
  */
 function refreshModelRootLevel(forceRender = false): void {
-    const stack = stackRegistry.modelStack;
-    if (!stack) {
-        return;
-    }
     import('./library-core')
-        .then(({ buildModelRootItems }) => {
-            const rootLevel = stack.getLevel(0);
-            if (!rootLevel) {
-                return;
-            }
-            rootLevel.items = buildModelRootItems();
-            rootLevel.itemBuilder = buildModelRootItems;
-            if (forceRender || stack.currentLevel === rootLevel) {
-                stack.reRender();
-            }
-        })
+        .then(({ refreshModelRoot }) => refreshModelRoot(forceRender))
         .catch((err) => logWarn('library', 'refreshModelRootLevel failed', err));
 }
 
