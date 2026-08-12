@@ -794,6 +794,7 @@ export const zhCN: Record<string, string> = {
 
     // —— 舞台层级 scene-stage-levels ——
     'scene.loadedStages': '已加载舞台',
+    'scene.toggleVisibility': '切换可见性',
     'scene.stageShown': '✓ 舞台已显示',
     'scene.stageHidden': '✓ 舞台已隐藏',
     'scene.unloadStage': '卸载此舞台',

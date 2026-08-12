@@ -209,47 +209,6 @@ function _adjustFoot(
         feet,
     });
 
-    // ADR-088：落地事件（贴地上升沿 + 去抖）。grounded = 本帧未跳过 IK 重解（脚被拉到地面）
-    const grounded = !res.skip;
-    const now = performance.now();
-    const footYPrev = side === 'L' ? cache.lFootYPrev : cache.rFootYPrev;
-    const prevGrounded = side === 'L' ? cache.lPrevGrounded : cache.rPrevGrounded;
-    const prevStepTime = side === 'L' ? cache.lLastLandTime : cache.rLastLandTime;
-    const det = detectFootLanding({
-        prevGrounded,
-        grounded,
-        footYPrev,
-        footY: _vFoot.y,
-        dt,
-        prevStepTime,
-        now,
-        minInterval: FOOT_STEP_MIN_INTERVAL,
-    });
-    if (det.landed && _onFootLand) {
-        _onFootLand({
-            modelId,
-            foot: side,
-            groundY,
-            impactSpeed: det.impactSpeed,
-            worldX: _vFoot.x,
-            worldZ: _vFoot.z,
-        });
-    }
-    // 更新上一帧状态（无论是否落地都更新，供下一帧上升沿判定）
-    if (side === 'L') {
-        cache.lPrevGrounded = grounded;
-        cache.lFootYPrev = _vFoot.y;
-        if (det.landed) {
-            cache.lLastLandTime = now;
-        }
-    } else {
-        cache.rPrevGrounded = grounded;
-        cache.rFootYPrev = _vFoot.y;
-        if (det.landed) {
-            cache.rLastLandTime = now;
-        }
-    }
-
     if (feetDebug.value && _feetDbgFrame++ % 60 === 0) {
         const solver = (ik as MmdRuntimeBoneExtended).ikSolver;
         const ikSolverIndex = (ik as { ikSolverIndex?: number }).ikSolverIndex;
@@ -299,6 +258,48 @@ function _adjustFoot(
     }
     if (foundOverride) {
         return;
+    }
+
+    // ADR-088：落地事件（贴地上升沿 + 去抖）。grounded = 本帧未被手动覆盖且未跳过 IK 重解
+    // （脚被本系统拉到地面）。置于覆盖检查之后：用户手动控制脚时不触发落地事件、不污染 grounded 缓存。
+    const grounded = !res.skip;
+    const now = performance.now();
+    const footYPrev = side === 'L' ? cache.lFootYPrev : cache.rFootYPrev;
+    const prevGrounded = side === 'L' ? cache.lPrevGrounded : cache.rPrevGrounded;
+    const prevStepTime = side === 'L' ? cache.lLastLandTime : cache.rLastLandTime;
+    const det = detectFootLanding({
+        prevGrounded,
+        grounded,
+        footYPrev,
+        footY: _vFoot.y,
+        dt,
+        prevStepTime,
+        now,
+        minInterval: FOOT_STEP_MIN_INTERVAL,
+    });
+    if (det.landed && _onFootLand) {
+        _onFootLand({
+            modelId,
+            foot: side,
+            groundY,
+            impactSpeed: det.impactSpeed,
+            worldX: _vFoot.x,
+            worldZ: _vFoot.z,
+        });
+    }
+    // 更新上一帧状态（无论是否落地都更新，供下一帧上升沿判定）
+    if (side === 'L') {
+        cache.lPrevGrounded = grounded;
+        cache.lFootYPrev = _vFoot.y;
+        if (det.landed) {
+            cache.lLastLandTime = now;
+        }
+    } else {
+        cache.rPrevGrounded = grounded;
+        cache.rFootYPrev = _vFoot.y;
+        if (det.landed) {
+            cache.rLastLandTime = now;
+        }
     }
     // [ADR-202 §六 debug] 仅在 feetDebug 开启时输出一次诊断（_feetWarnOnce 跨帧复用）
     if (feetDebug.value && !_feetWarnOnce) {
@@ -460,4 +461,5 @@ export function stopFeetAdjustment(): void {
     }
     _cache.clear();
     _lastTickTime = 0; // 重置时间戳，避免重启后首帧 dt 异常
+    _feetWarnOnce = false; // 重置一次性诊断标记，重启后重新输出
 }

@@ -41,6 +41,7 @@ interface FakeBone {
     world: Vector3;
     ikSolver?: { solve: ReturnType<typeof vi.fn> };
     ikSolverIndex?: number;
+    linkedBone?: { getSkeleton?: () => { _markAsDirty?: () => void } };
     getWorldTranslationToRef(ref: Vector3): void;
     setWorldTranslation(v: Vector3): void;
 }
@@ -59,13 +60,33 @@ function makeBone(name: string, y: number, parent: FakeBone | null = null): Fake
     };
 }
 
-function makeModel(opts: { lY?: number; rY?: number; solver?: { solve: ReturnType<typeof vi.fn> } } = {}) {
-    const center = makeBone('センター', 0);
-    const lIk = makeBone('左足IK', opts.lY ?? -0.2, center);
-    const rIk = makeBone('右足IK', opts.rY ?? -0.2, center);
+function makeModel(
+    opts: {
+        lY?: number;
+        rY?: number;
+        solver?: { solve: ReturnType<typeof vi.fn> };
+        /** 沿 IK parent 链加大腿骨（左足/右足，y=1.0），触发 _findHip 腿长估算 */
+        hips?: boolean;
+        /** 自定义骨骼名 [センター, 左足IK, 右足IK]（用于无 IK 骨场景） */
+        names?: [string, string, string];
+        /** 附加到 IK 骨的 linkedBone（骨架脏标记），验证 JS 模式 _markAsDirty 接线 */
+        linkedDirty?: () => void;
+    } = {}
+) {
+    const [cName, lName, rName] = opts.names ?? ['センター', '左足IK', '右足IK'];
+    const center = makeBone(cName, 0);
+    const hipL = opts.hips ? makeBone('左足', 1.0, center) : null;
+    const hipR = opts.hips ? makeBone('右足', 1.0, center) : null;
+    const lIk = makeBone(lName, opts.lY ?? -0.2, hipL ?? center);
+    const rIk = makeBone(rName, opts.rY ?? -0.2, hipR ?? center);
     if (opts.solver) {
         lIk.ikSolver = opts.solver;
         rIk.ikSolver = opts.solver;
+    }
+    if (opts.linkedDirty) {
+        const dirty = opts.linkedDirty;
+        lIk.linkedBone = { getSkeleton: () => ({ _markAsDirty: dirty }) };
+        rIk.linkedBone = { getSkeleton: () => ({ _markAsDirty: dirty }) };
     }
     return {
         id: 'm1',
@@ -99,6 +120,7 @@ beforeEach(() => {
     getGroundHeightAt.mockReturnValue(0);
     getModuleState.mockReturnValue(undefined);
     getOverride.mockReturnValue(null);
+    getWasmIkResolver.mockReturnValue(null);
     isWasmRuntime.mockReturnValue(false);
 });
 
@@ -199,5 +221,219 @@ describe('落地事件接线（ADR-088）', () => {
         expect(e.foot).toBe('L');
         expect(e.groundY).toBe(0);
         expect(e.impactSpeed).toBeGreaterThan(0);
+    });
+
+    it('左右脚各触发一次落地事件', () => {
+        const landed = vi.fn();
+        setOnFootLand(landed);
+        const model = makeModel({ lY: -0.2, rY: -0.2 });
+        startFor(model);
+        runFrame();
+        expect(landed).toHaveBeenCalledTimes(2);
+        const feet = landed.mock.calls.map((c) => c[0].foot).sort();
+        expect(feet).toEqual(['L', 'R']);
+    });
+
+    it('用户手动覆盖时贴地不触发落地事件（事件在覆盖检查之后）', () => {
+        const landed = vi.fn();
+        setOnFootLand(landed);
+        const solver = { solve: vi.fn() };
+        const model = makeModel({ lY: -0.2, rY: -0.2, solver });
+        getModuleState.mockReturnValue({
+            params: { pitch: 10, yaw: 0, roll: 0, footPosX: 0, footPosY: 0, footPosZ: 0 },
+        });
+        startFor(model);
+        runFrame();
+        expect(landed).not.toHaveBeenCalled();
+    });
+
+    it('上升沿：离地→贴地才触发，连续贴地帧不重复', () => {
+        const landed = vi.fn();
+        setOnFootLand(landed);
+        const nowSpy = vi.spyOn(performance, 'now').mockReturnValue(1000);
+        try {
+            const model = makeModel({ lY: -0.2, rY: -0.2 });
+            startFor(model);
+            runFrame(); // 首帧贴地 → 首次落地
+            expect(landed).toHaveBeenCalledTimes(2);
+            landed.mockClear();
+            nowSpy.mockReturnValue(1200);
+            runFrame(); // 仍贴地 → 无上升沿
+            expect(landed).not.toHaveBeenCalled();
+            nowSpy.mockReturnValue(1300);
+            model.runtimeBones[1].world.y = 2;
+            model.runtimeBones[2].world.y = 2;
+            runFrame(); // 脚在空中 → skip
+            expect(landed).not.toHaveBeenCalled();
+            nowSpy.mockReturnValue(1600);
+            model.runtimeBones[1].world.y = -0.2;
+            model.runtimeBones[2].world.y = -0.2;
+            runFrame(); // 新上升沿（距首次 >120ms）→ 再次触发
+            expect(landed).toHaveBeenCalledTimes(2);
+        } finally {
+            nowSpy.mockRestore();
+        }
+    });
+
+    it('去抖：两次落地间隔 <120ms 时第二次不触发', () => {
+        const landed = vi.fn();
+        setOnFootLand(landed);
+        const nowSpy = vi.spyOn(performance, 'now').mockReturnValue(1000);
+        try {
+            const model = makeModel({ lY: -0.2, rY: -0.2 });
+            startFor(model);
+            runFrame(); // t=1000 贴地 → 首次落地
+            expect(landed).toHaveBeenCalledTimes(2);
+            // 脚抬起再落下（50ms 去抖期内）
+            nowSpy.mockReturnValue(1030);
+            model.runtimeBones[1].world.y = 2;
+            model.runtimeBones[2].world.y = 2;
+            runFrame(); // skip → grounded=false
+            nowSpy.mockReturnValue(1050);
+            model.runtimeBones[1].world.y = -0.2;
+            model.runtimeBones[2].world.y = -0.2;
+            runFrame(); // 上升沿但 50ms < 120ms → 不触发
+            expect(landed).toHaveBeenCalledTimes(2);
+            // 再抬起、越过去抖窗后落地（距首次 250ms）→ 触发第二次
+            nowSpy.mockReturnValue(1200);
+            model.runtimeBones[1].world.y = 2;
+            model.runtimeBones[2].world.y = 2;
+            runFrame();
+            nowSpy.mockReturnValue(1250);
+            model.runtimeBones[1].world.y = -0.2;
+            model.runtimeBones[2].world.y = -0.2;
+            runFrame();
+            expect(landed).toHaveBeenCalledTimes(4);
+        } finally {
+            nowSpy.mockRestore();
+        }
+    });
+});
+
+describe('边界与降级路径（反推源码补齐）', () => {
+    it('stop 注销后 runFrame 不再调整脚', () => {
+        const solver = { solve: vi.fn() };
+        const model = makeModel({ lY: -0.2, rY: -0.2, solver });
+        startFor(model);
+        runFrame();
+        expect(model.runtimeBones[1].world.y).toBeCloseTo(0);
+        stopFeetAdjustment();
+        solver.solve.mockClear();
+        model.runtimeBones[1].world.y = -0.2;
+        model.runtimeBones[2].world.y = -0.2;
+        runFrame();
+        expect(model.runtimeBones[1].world.y).toBeCloseTo(-0.2);
+        expect(model.runtimeBones[2].world.y).toBeCloseTo(-0.2);
+        expect(solver.solve).not.toHaveBeenCalled();
+    });
+
+    it('模型无 IK 骨（matchBone 未命中）时静默跳过不崩溃', () => {
+        const solver = { solve: vi.fn() };
+        const model = makeModel({
+            lY: -0.2,
+            rY: -0.2,
+            solver,
+            names: ['センター', '左足首', '右足首'],
+        });
+        startFor(model);
+        expect(() => runFrame()).not.toThrow();
+        expect(model.runtimeBones[1].world.y).toBeCloseTo(-0.2);
+        expect(model.runtimeBones[2].world.y).toBeCloseTo(-0.2);
+        expect(solver.solve).not.toHaveBeenCalled();
+    });
+
+    it('JS 模式 ikSolver 缺失时仍写目标 Y 但不崩溃', () => {
+        const model = makeModel({ lY: -0.2, rY: -0.2 }); // 无 solver
+        startFor(model);
+        expect(() => runFrame()).not.toThrow();
+        expect(model.runtimeBones[1].world.y).toBeCloseTo(0);
+        expect(model.runtimeBones[2].world.y).toBeCloseTo(0);
+    });
+
+    it('JS 模式重解后调用 linkedBone.getSkeleton()._markAsDirty', () => {
+        const solver = { solve: vi.fn() };
+        const dirty = vi.fn();
+        const model = makeModel({ lY: -0.2, rY: -0.2, solver, linkedDirty: dirty });
+        startFor(model);
+        runFrame();
+        expect(dirty).toHaveBeenCalledTimes(2); // L/R 各一次
+    });
+
+    it('feet.enabled=false 时跳过（不清 IK、不重解）', () => {
+        const solver = { solve: vi.fn() };
+        const model = makeModel({ lY: -0.2, rY: -0.2, solver });
+        model.feet.enabled = false;
+        startFor(model);
+        runFrame();
+        expect(model.runtimeBones[1].world.y).toBeCloseTo(-0.2);
+        expect(model.runtimeBones[2].world.y).toBeCloseTo(-0.2);
+        expect(solver.solve).not.toHaveBeenCalled();
+    });
+
+    it('feet.intensity<=0 时跳过', () => {
+        const solver = { solve: vi.fn() };
+        const model = makeModel({ lY: -0.2, rY: -0.2, solver });
+        model.feet.intensity = 0;
+        startFor(model);
+        runFrame();
+        expect(model.runtimeBones[1].world.y).toBeCloseTo(-0.2);
+        expect(solver.solve).not.toHaveBeenCalled();
+    });
+
+    it('地形地面（groundY 非零）时脚贴到该高度', () => {
+        getGroundHeightAt.mockReturnValue(1.5);
+        const solver = { solve: vi.fn() };
+        const model = makeModel({ lY: -0.2, rY: -0.2, solver });
+        startFor(model);
+        runFrame();
+        expect(model.runtimeBones[1].world.y).toBeCloseTo(1.5);
+        expect(model.runtimeBones[2].world.y).toBeCloseTo(1.5);
+        expect(solver.solve).toHaveBeenCalledTimes(2);
+    });
+
+    it('params 含 NaN/缺失字段时不被误判为手动覆盖（仍自动贴地）', () => {
+        const solver = { solve: vi.fn() };
+        const model = makeModel({ lY: -0.2, rY: -0.2, solver });
+        getModuleState.mockReturnValue({
+            params: { pitch: NaN, yaw: undefined, roll: 0, footPosX: 0, footPosY: 0, footPosZ: 0 },
+        } as never);
+        startFor(model);
+        runFrame();
+        expect(model.runtimeBones[1].world.y).toBeCloseTo(0);
+        expect(solver.solve).toHaveBeenCalledTimes(2);
+    });
+
+    it('maxAngle 钳制单帧下拉量（_findHip 沿 parent 链估算腿长）', () => {
+        const solver = { solve: vi.fn() };
+        // hips=true：大腿骨 y=1.0，IK 骨动画 y=0.4 → legLength=0.6 → maxDrop=sin(30°)*0.6=0.3
+        // 需要下拉 0.4 → 钳到 0.4-0.3=0.1
+        const model = makeModel({ lY: 0.4, rY: 0.4, solver, hips: true });
+        startFor(model);
+        runFrame();
+        expect(model.runtimeBones[1].world.y).toBeCloseTo(0.1, 5);
+        expect(model.runtimeBones[2].world.y).toBeCloseTo(0.1, 5);
+        expect(solver.solve).toHaveBeenCalledTimes(2);
+    });
+
+    it('WASM 模式 ikSolverIndex 缺失时不调用 resolver（不崩溃）', () => {
+        isWasmRuntime.mockReturnValue(true);
+        const resolver = vi.fn();
+        getWasmIkResolver.mockReturnValue(resolver);
+        const model = makeModel({ lY: -0.2, rY: -0.2 }); // 无 ikSolverIndex
+        startFor(model);
+        expect(() => runFrame()).not.toThrow();
+        expect(resolver).not.toHaveBeenCalled();
+    });
+
+    it('WASM 模式 resolver 缺失时不崩溃（世界 Y 仍写入目标）', () => {
+        isWasmRuntime.mockReturnValue(true);
+        getWasmIkResolver.mockReturnValue(null);
+        const model = makeModel({ lY: -0.2, rY: -0.2 });
+        model.runtimeBones[1].ikSolverIndex = 0;
+        model.runtimeBones[2].ikSolverIndex = 1;
+        startFor(model);
+        expect(() => runFrame()).not.toThrow();
+        expect(model.runtimeBones[1].world.y).toBeCloseTo(0);
+        expect(model.runtimeBones[2].world.y).toBeCloseTo(0);
     });
 });

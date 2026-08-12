@@ -1,11 +1,32 @@
-import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
+import { describe, it, expect, vi, beforeEach, beforeAll, afterEach } from 'vitest';
 import { stateMockSuperset } from './mocks/state-superset';
 
 // ── hoisted mocks ──
 
+interface MockStageInst {
+    kind: string;
+    name: string;
+    visible?: boolean;
+    meshes?: unknown[];
+}
+
 const mockEnvState = vi.hoisted(() => ({ groundVisibleEnabled: true, waterEnabled: false }));
 const mockSetEnvState = vi.hoisted(() => vi.fn());
 const mockPush = vi.hoisted(() => vi.fn());
+const mockPop = vi.hoisted(() => vi.fn());
+const mockReRender = vi.hoisted(() => vi.fn());
+const mockModelRegistry = vi.hoisted(() => new Map<string, MockStageInst>());
+const mockPushUndoSnapshot = vi.hoisted(() => vi.fn());
+const mockOfferSceneUndo = vi.hoisted(() => vi.fn());
+const mockRemoveModel = vi.hoisted(() => vi.fn());
+const mockSetModelVisibility = vi.hoisted(() => vi.fn());
+const mockFeedbackStatus = vi.hoisted(() => vi.fn());
+const mockFeedbackInfo = vi.hoisted(() => vi.fn());
+const mockGetBrowseDir = vi.hoisted(() => vi.fn());
+const mockBuildLevel = vi.hoisted(() => vi.fn());
+const mockBuildTransformCard = vi.hoisted(() => vi.fn());
+const mockBuildMaterialCard = vi.hoisted(() => vi.fn());
+const mockBuildDangerCard = vi.hoisted(() => vi.fn());
 const _mockCreateIconifyIcon = vi.hoisted(() =>
     vi.fn(() => {
         const el = document.createElement('span');
@@ -25,7 +46,7 @@ vi.mock('../core/config', async (importOriginal) => {
             fn(card);
             container.appendChild(card);
         },
-        modelRegistry: new Map(),
+        modelRegistry: mockModelRegistry,
         overridePaths: {},
         libraryRoot: '',
         escapeHtml: (s: string) => s,
@@ -71,9 +92,38 @@ vi.mock('./env-ground-levels', () => ({ buildGroundLevel: vi.fn(() => ({ label: 
 vi.mock('./env-water-levels', () => ({ buildWaterLevel: vi.fn(() => ({ label: 'water' })) }));
 
 // 阻断 Babylon.js Scene 初始化（scene/scene.ts 模块级 new Scene()）
+// 补齐源码依赖的 undo 快照 API（scene-stage-levels / resource-detail-helpers 均 import）
 vi.mock('../scene/scene', () => ({
     modelManager: { modelRegistry: new Map(), size: 0, focused: vi.fn(), get: vi.fn() },
     setEnvState: (...args: unknown[]) => mockSetEnvState(...args),
+    pushUndoSnapshot: (...args: unknown[]) => mockPushUndoSnapshot(...args),
+    offerSceneUndo: (...args: unknown[]) => mockOfferSceneUndo(...args),
+}));
+
+// 列表卸载/可见性操作走 model-ops，直接 mock 掉以避免真实模块依赖 Babylon/camera 环境
+vi.mock('../scene/manager/model-ops', () => ({
+    removeModel: (...args: unknown[]) => mockRemoveModel(...args),
+    setModelVisibility: (...args: unknown[]) => mockSetModelVisibility(...args),
+}));
+
+vi.mock('../core/feedback', () => ({
+    feedbackStatus: (...args: unknown[]) => mockFeedbackStatus(...args),
+    feedbackInfo: (...args: unknown[]) => mockFeedbackInfo(...args),
+}));
+
+// load stage 按钮动态 import 的两个模块
+vi.mock('@/core/library-path', () => ({
+    getBrowseDir: (...args: unknown[]) => mockGetBrowseDir(...args),
+}));
+vi.mock('../menus/library-core', () => ({
+    buildLevel: (...args: unknown[]) => mockBuildLevel(...args),
+}));
+
+// buildStageTransformLevel 的三个区块构建器（各自有独立测试，此处聚焦接线逻辑）
+vi.mock('../menus/resource-detail-helpers', () => ({
+    buildTransformCard: (...args: unknown[]) => mockBuildTransformCard(...args),
+    buildMaterialCard: (...args: unknown[]) => mockBuildMaterialCard(...args),
+    buildDangerCard: (...args: unknown[]) => mockBuildDangerCard(...args),
 }));
 
 import { bundles } from '../core/i18n/t';
@@ -86,9 +136,16 @@ beforeAll(() => {
 
 // ── SUT ──
 
-import { buildStageLevel } from '../menus/scene-stage-levels';
+import { buildStageLevel, buildStageTransformLevel } from '../menus/scene-stage-levels';
+import { setSceneMenu, getSceneMenu } from '../menus/scene-menu-state';
 
 // ── helpers ──
+
+type FakeSlideMenu = NonNullable<ReturnType<typeof getSceneMenu>>;
+
+function makeFakeMenu(): FakeSlideMenu {
+    return { push: mockPush, pop: mockPop, reRender: mockReRender } as unknown as FakeSlideMenu;
+}
 
 function renderLevel(level: ReturnType<typeof buildStageLevel>): HTMLElement {
     const container = document.createElement('div');
@@ -148,6 +205,25 @@ describe('Stage level', () => {
         mockEnvState.waterEnabled = false;
         mockSetEnvState.mockReset();
         mockPush.mockReset();
+        mockPop.mockReset();
+        mockReRender.mockReset();
+        mockModelRegistry.clear();
+        mockPushUndoSnapshot.mockReset();
+        mockPushUndoSnapshot.mockImplementation(() => 'snap-1');
+        mockOfferSceneUndo.mockReset();
+        mockRemoveModel.mockReset();
+        mockSetModelVisibility.mockReset();
+        mockFeedbackStatus.mockReset();
+        mockFeedbackInfo.mockReset();
+        mockGetBrowseDir.mockReset();
+        mockBuildLevel.mockReset();
+        mockBuildTransformCard.mockReset();
+        mockBuildMaterialCard.mockReset();
+        mockBuildDangerCard.mockReset();
+    });
+
+    afterEach(() => {
+        setSceneMenu(null);
     });
 
     it('renders load stage button', () => {
@@ -168,10 +244,209 @@ describe('Stage level', () => {
         expect(container.textContent).toContain('暂无已加载舞台');
     });
 
+    it('empty state shows load hint', () => {
+        const level = buildStageLevel();
+        const container = renderLevel(level);
+        expect(container.textContent).toContain('点击上方按钮加载舞台');
+    });
+
     it('load stage button has testId for E2E', () => {
         const level = buildStageLevel();
         const container = renderLevel(level);
         const loadStage = container.querySelector('[data-testid="menu:scene:load-stage"]');
         expect(loadStage).not.toBeNull();
+    });
+
+    it('renders loaded stage list when stage models exist', () => {
+        mockModelRegistry.set('stage-1', { kind: 'stage', name: '主舞台', visible: true });
+        const level = buildStageLevel();
+        const container = renderLevel(level);
+        const labels = Array.from(container.querySelectorAll('.slide-label')).map(
+            (el) => el.textContent
+        );
+        expect(labels).toContain('主舞台');
+        expect(container.textContent).not.toContain('暂无已加载舞台');
+    });
+
+    it('filters out non-stage models from loaded list', () => {
+        mockModelRegistry.set('actor-1', { kind: 'actor', name: '初音未来' });
+        const level = buildStageLevel();
+        const container = renderLevel(level);
+        expect(container.textContent).not.toContain('初音未来');
+        expect(container.textContent).toContain('暂无已加载舞台');
+    });
+
+    it('stage row click opens transform level via menu push', () => {
+        mockModelRegistry.set('stage-1', { kind: 'stage', name: '主舞台', visible: true });
+        const menu = makeFakeMenu();
+        setSceneMenu(menu);
+        const level = buildStageLevel();
+        const container = renderLevel(level);
+        const row = Array.from(container.querySelectorAll('.slide-item')).find(
+            (el) => el.textContent?.includes('主舞台')
+        );
+        expect(row).toBeDefined();
+        row!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        expect(mockPush).toHaveBeenCalledTimes(1);
+        const pushedLevel = mockPush.mock.calls[0][0] as ReturnType<typeof buildStageTransformLevel>;
+        expect(pushedLevel.label).toContain('主舞台');
+        expect(pushedLevel.renderCustom).toBeDefined();
+    });
+
+    it('visibility toggle button calls setModelVisibility and feedbackInfo', () => {
+        mockModelRegistry.set('stage-1', { kind: 'stage', name: '主舞台', visible: true });
+        const level = buildStageLevel();
+        const container = renderLevel(level);
+        const btn = container.querySelector('.slide-lead-btn') as HTMLElement | null;
+        expect(btn).not.toBeNull();
+        expect(btn!.title).toBe('切换可见性');
+        btn!.click();
+        expect(mockSetModelVisibility).toHaveBeenCalledWith('stage-1', false);
+        expect(mockFeedbackInfo).toHaveBeenCalledWith('scene.stageHidden', undefined);
+    });
+
+    it('unload button pushes undo snapshot, removes model and offers undo', () => {
+        mockModelRegistry.set('stage-1', { kind: 'stage', name: '主舞台', visible: true });
+        const level = buildStageLevel();
+        const container = renderLevel(level);
+        const btn = container.querySelector('.slide-add-btn') as HTMLElement | null;
+        expect(btn).not.toBeNull();
+        expect(btn!.title).toBe('卸载此舞台');
+        btn!.click();
+        expect(mockPushUndoSnapshot).toHaveBeenCalledTimes(1);
+        expect(mockRemoveModel).toHaveBeenCalledWith('stage-1');
+        expect(mockOfferSceneUndo).toHaveBeenCalledTimes(1);
+        const [msg, snap, onRestored] = mockOfferSceneUndo.mock.calls[0] as [
+            string,
+            string | null,
+            () => void
+        ];
+        expect(msg).toBe('✓ 已卸载: 主舞台');
+        expect(snap).toBe('snap-1');
+        expect(typeof onRestored).toBe('function');
+    });
+
+    it('load stage button reports missing library dir', async () => {
+        mockGetBrowseDir.mockReturnValue(null);
+        const level = buildStageLevel();
+        const container = renderLevel(level);
+        const btn = container.querySelector(
+            '[data-testid="menu:scene:load-stage"]'
+        ) as HTMLElement | null;
+        expect(btn).not.toBeNull();
+        btn!.click();
+        await vi.waitFor(() => expect(mockFeedbackStatus).toHaveBeenCalled());
+        expect(mockFeedbackStatus).toHaveBeenCalledWith('scene.statusNoModelLib', undefined, false);
+        expect(mockBuildLevel).not.toHaveBeenCalled();
+        expect(mockPush).not.toHaveBeenCalled();
+    });
+
+    it('load stage button opens browse level on success', async () => {
+        mockGetBrowseDir.mockReturnValue('/lib/stage');
+        const browseLevel = { label: 'browse' };
+        mockBuildLevel.mockReturnValue(browseLevel);
+        const menu = makeFakeMenu();
+        setSceneMenu(menu);
+        const level = buildStageLevel();
+        const container = renderLevel(level);
+        const btn = container.querySelector(
+            '[data-testid="menu:scene:load-stage"]'
+        ) as HTMLElement | null;
+        btn!.click();
+        await vi.waitFor(() => expect(mockPush).toHaveBeenCalledTimes(1));
+        expect(mockBuildLevel).toHaveBeenCalledTimes(1);
+        const [dir, label, filter, sm] = mockBuildLevel.mock.calls[0] as [
+            string,
+            string,
+            (m: unknown) => boolean,
+            FakeSlideMenu
+        ];
+        expect(dir).toBe('/lib/stage');
+        expect(label).toBe('加载舞台');
+        expect(typeof filter).toBe('function');
+        expect(sm).toBe(menu);
+        expect(mockPush.mock.calls[0][0]).toBe(browseLevel);
+    });
+
+    it('load stage button catches browse errors', async () => {
+        mockGetBrowseDir.mockReturnValue('/lib/stage');
+        mockBuildLevel.mockImplementation(() => {
+            throw new Error('boom');
+        });
+        // 源码在 getSceneMenu() 为 null 时早退（buildLevel 不会执行），需注入菜单走到错误分支
+        setSceneMenu(makeFakeMenu());
+        const level = buildStageLevel();
+        const container = renderLevel(level);
+        const btn = container.querySelector(
+            '[data-testid="menu:scene:load-stage"]'
+        ) as HTMLElement | null;
+        const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        try {
+            btn!.click();
+            await vi.waitFor(() =>
+                expect(mockFeedbackStatus).toHaveBeenCalledWith(
+                    'scene.statusOpenStageLibFailed',
+                    undefined,
+                    false
+                )
+            );
+        } finally {
+            errSpy.mockRestore();
+        }
+        expect(mockPush).not.toHaveBeenCalled();
+    });
+});
+
+describe('Stage transform level', () => {
+    beforeEach(() => {
+        mockPush.mockReset();
+        mockPop.mockReset();
+        mockReRender.mockReset();
+        mockModelRegistry.clear();
+        mockBuildTransformCard.mockReset();
+        mockBuildMaterialCard.mockReset();
+        mockBuildDangerCard.mockReset();
+    });
+
+    afterEach(() => {
+        setSceneMenu(null);
+    });
+
+    it('renders transform panel blocks with stage name', () => {
+        mockModelRegistry.set('stage-1', { kind: 'stage', name: '主舞台' });
+        const level = buildStageTransformLevel('stage-1');
+        expect(level.label).toContain('主舞台');
+        const container = renderLevel(level);
+        expect(mockBuildTransformCard).toHaveBeenCalledTimes(1);
+        expect(mockBuildMaterialCard).toHaveBeenCalledTimes(1);
+        expect(mockBuildDangerCard).toHaveBeenCalledTimes(1);
+        const labels = Array.from(container.querySelectorAll('.collapsible-label')).map(
+            (el) => el.textContent
+        );
+        expect(labels).toContain('拖拽操控');
+        const handle = mockBuildTransformCard.mock.calls[0][1];
+        expect(handle).toEqual({ id: 'stage-1', kind: 'stage', name: '主舞台' });
+    });
+
+    it('falls back to id when stage instance is missing', () => {
+        const level = buildStageTransformLevel('ghost-1');
+        expect(level.label).toContain('ghost-1');
+        const container = renderLevel(level);
+        expect(container.querySelector('.collapsible-label')).not.toBeNull();
+        expect(mockBuildDangerCard).toHaveBeenCalledTimes(1);
+        const handle = mockBuildDangerCard.mock.calls[0][1];
+        expect(handle.name).toBe('ghost-1');
+    });
+
+    it('danger card onRemoved re-renders menu and pops back to root', () => {
+        setSceneMenu(makeFakeMenu());
+        const level = buildStageTransformLevel('stage-1');
+        renderLevel(level);
+        expect(mockBuildDangerCard).toHaveBeenCalledTimes(1);
+        const onRemoved = mockBuildDangerCard.mock.calls[0][2] as () => void;
+        expect(typeof onRemoved).toBe('function');
+        onRemoved();
+        expect(mockReRender).toHaveBeenCalledTimes(1);
+        expect(mockPop).toHaveBeenCalledTimes(1);
     });
 });

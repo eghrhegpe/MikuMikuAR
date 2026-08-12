@@ -1,7 +1,7 @@
 # 函数映射表
 
 > AI 找代码用。改前端功能时先 grep 此表定位文件。
-> **自动生成**（2026-08-11）— 由 `scripts/gen-funcmap.mjs` 生成。
+> **自动生成**（2026-08-12）— 由 `scripts/gen-funcmap.mjs` 生成。
 
 ## 总览
 
@@ -1465,8 +1465,8 @@
 | `isFeetAdjustmentRunning()` | `scene/motion/feet-adjustment:128` | 查询脚部跟随系统是否正在运行（observer 已注册）。 |
 | `setOnFootLand()` | `scene/motion/feet-adjustment:123` | 注入落地事件回调（null 取消）。脚步声控制器调用。 |
 | `solveFootTarget()` | `scene/motion/feet-adjustment:39` | — |
-| `startFeetAdjustment()` | `scene/motion/feet-adjustment:381` | 启动脚部调整系统：注册为 MotionPipeline bone-override 层（order=5）。 |
-| `stopFeetAdjustment()` | `scene/motion/feet-adjustment:456` | 停止脚部调整系统并清空缓存。 |
+| `startFeetAdjustment()` | `scene/motion/feet-adjustment:382` | 启动脚部调整系统：注册为 MotionPipeline bone-override 层（order=5）。 |
+| `stopFeetAdjustment()` | `scene/motion/feet-adjustment:457` | 停止脚部调整系统并清空缓存。 |
 | `startFallbackDetection()` | `scene/motion/footstep-detect-fallback:68` | 启动独立落地检测（fallback 模式）。 |
 | `stopFallbackDetection()` | `scene/motion/footstep-detect-fallback:133` | 停止独立落地检测。 |
 | `resolveGroundSfxKind()` | `scene/motion/footstep:54` | 依据当前地面类型推断脚步音色。 |
