@@ -74,3 +74,4 @@ use_when:
 - 脚 IK 骨骼必须是 IK 目标骨骼（左足IK/右足IK）。
 - 重解 IK 在动画解算后同帧执行。
 - VMD 下一帧覆盖 IK 骨骼后由本模块再次重解。
+- 默认 `enabled=false`：scene.ts 初始化不再 always-on 默认开启（`createDefaultFeetState()` + enabled:false，29850f00 起），需用户/动作显式启用；仅 `intensity > 0` 且 `feet.enabled` 时才逐帧驱动。
