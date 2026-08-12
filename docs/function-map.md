@@ -2268,9 +2268,9 @@
 | `tryAutoApplyPreset()` | `menus/model-preset:216` | — |
 | `DEFAULT_MOTION_SLOTS()` | `menus/motion-binding-ui:121` | — |
 | `applyIntentToModel()` | `menus/motion-binding-ui:137` | — |
-| `buildActionBindingLevel()` | `menus/motion-binding-ui:374` | — |
+| `buildActionBindingLevel()` | `menus/motion-binding-ui:373` | — |
 | `ensureMotionSlots()` | `menus/motion-binding-ui:126` | [doc:adr-167] 确保 inst.motionSlots 存在并返回（懒初始化；overlay 槽位已移除） |
-| `handleModelAction()` | `menus/motion-binding-ui:394` | 处理 per-model 动作控制指令（pause / reset / pose / loop）。 |
+| `handleModelAction()` | `menus/motion-binding-ui:393` | 处理 per-model 动作控制指令（pause / reset / pose / loop）。 |
 | `initMotionBroadcast()` | `menus/motion-binding-ui:199` | — |
 | `renderModuleToggleList()` | `menus/motion-binding-ui:59` | 渲染动作模块开关列表到指定容器。 |
 | `resetFocusedLayerId()` | `menus/motion-binding-ui:116` | 重置焦点图层 ID（进入动作绑定面板 / 场景级浏览时调用）。 |
