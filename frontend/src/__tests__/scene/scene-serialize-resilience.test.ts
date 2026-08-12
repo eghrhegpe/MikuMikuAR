@@ -2,7 +2,7 @@
 // 覆盖 ADR-198 方向①：单个模型序列化抛错时跳过该条 + 记录，其余模型仍落盘（能存多少存多少）。
 // 策略：重依赖统一空 mock（仅在序列化未走到的分支内使用）；让 computeLibraryRef 对特定
 // filePath 抛错，模拟单个模型序列化过程崩溃，验证其余模型未受牵连。
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { ModelInstance } from '../../core/types';
 
 const registry = vi.hoisted(() => new Map<string, unknown>());
@@ -522,4 +522,8 @@ describe('serialize → deserialize round-trip（procMotionModules 无损往返�
 
         expect((restoredInst as any).procMotionModules).toEqual((inst as any).procMotionModules);
     });
+});
+
+afterEach(() => {
+    vi.restoreAllMocks();
 });

@@ -31,6 +31,7 @@ afterEach(() => {
     vi.useRealTimers();
     vi.unstubAllGlobals();
     document.body.innerHTML = '';
+    vi.restoreAllMocks();
 });
 
 describe('showToast（P2#9 document 守卫 + 渲染）', () => {

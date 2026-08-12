@@ -11,6 +11,7 @@ import { StreamAudioPlayer } from 'babylon-mmd/esm/Runtime/Audio/streamAudioPlay
 import { readFileBytes } from './wails-bindings';
 import { triggerAutoSave, setUIState } from './config';
 import { clamp01 } from '@/core/clamp';
+import { guardNum } from '@/core/guards';
 import { logWarn } from '@/core/logger';
 import { t } from '@/core/i18n/t';
 import { reportResourceWarning } from '@/core/resource-warning-sink';
@@ -467,7 +468,7 @@ export function setVolume(v: number): void {
 }
 
 export function getVolume(): number {
-    return uiState.volume ?? 0.7;
+    return guardNum(uiState.volume, 0.7);
 }
 
 export function setAudioOffset(seconds: number): void {
@@ -478,7 +479,7 @@ export function setAudioOffset(seconds: number): void {
 }
 
 export function getAudioOffset(): number {
-    return uiState.audioOffset ?? 0;
+    return guardNum(uiState.audioOffset, 0);
 }
 
 // ======== 状态查询 ========

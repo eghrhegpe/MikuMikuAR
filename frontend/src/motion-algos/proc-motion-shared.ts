@@ -1,5 +1,6 @@
 import { canEncodeName, type BoneKeyFrame } from './vmd-writer';
 import { clamp } from '@/core/clamp';
+import { guardNum } from '@/core/guards';
 import { logWarn } from '@/core/logger';
 
 export type ProcMotionMode = 'off' | 'idle' | 'autodance';
@@ -138,8 +139,8 @@ export function migrateProcState(raw: unknown): ProcMotionState {
         };
     }
     const per = {
-        intensity: r.intensity ?? _fallbackParams.intensity,
-        speed: r.speed ?? _fallbackParams.speed,
+        intensity: guardNum(r.intensity, _fallbackParams.intensity),
+        speed: guardNum(r.speed, _fallbackParams.speed),
         // [fix:P2#1] 与新结构分支对称：逐类别补默认，防旧存档缺 emotion/wrist/footIk 键时
         // 消费侧 `if (params.boneToggles.wrist)` 读到 undefined 而静默关闭该类别。
         boneToggles: { ..._fallbackParams.boneToggles, ...(r.boneToggles ?? {}) },

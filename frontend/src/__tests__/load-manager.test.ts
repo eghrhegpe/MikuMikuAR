@@ -4,7 +4,7 @@
 // 本文件直接测 LoadManager 实例：串行排队顺序、signal.aborted 短路抛 AbortError、
 // 错误包装为 LibraryLoadError（含 loadId/phase）、getCurrentLoad 结构化快照。
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Mock 底层 loader（dispatch 内 dynamic import 的模块）
 const __mocks = vi.hoisted(() => {
@@ -290,4 +290,8 @@ describe('排队中 abort 与队列健康', () => {
             warnSpy.mockRestore();
         }
     });
+});
+
+afterEach(() => {
+    vi.restoreAllMocks();
 });

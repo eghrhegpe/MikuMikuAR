@@ -35,6 +35,10 @@ const mockDom = vi.hoisted(
         }) as any
 );
 
+vi.mock('@/scene/motion/perception-shared', () => ({
+    feetDebug: { value: false },
+}));
+
 vi.mock('../core/config', () => ({
     get mmdRuntime() {
         return mockState.mmdRuntime;
@@ -110,6 +114,8 @@ describe('initPlaybackObservables', () => {
 
     afterEach(() => {
         dispose();
+        feetDebug.value = false;
+        vi.restoreAllMocks();
     });
 
     // ---- handler registration ----

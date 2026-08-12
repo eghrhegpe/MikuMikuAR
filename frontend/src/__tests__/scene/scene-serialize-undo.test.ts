@@ -2,7 +2,7 @@
 // 覆盖 P3 去重辅助 offerSceneUndoAndRefresh 的接线与守卫路径。
 // 策略：snap 是入参，可直传字符串测 toast 接线；scene-serialize 的重依赖统一空 mock
 // （仅在未触发的函数体内使用，模块加载期只执行 debounce——保留真实 utils）。
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // 捕获 showInfoToast(message, sub, actions, duration) 调用
 const toastState = vi.hoisted(() => ({
@@ -109,6 +109,10 @@ describe('offerSceneUndo — 守卫与 toast 接线', () => {
         expect(onRestored).not.toHaveBeenCalled();
         warn.mockRestore();
     });
+});
+
+afterEach(() => {
+    vi.restoreAllMocks();
 });
 
 describe('offerSceneUndoAndRefresh — 去重辅助（P3）', () => {

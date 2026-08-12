@@ -1,6 +1,6 @@
 // @vitest-environment node
 // [doc:adr-204] playback.test.ts 拆分：updatePlaybackUI
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // ----- hoisted mocks（vi.mock 工厂引用，不可 export 跨文件，必须内联）-----
 const mockState = vi.hoisted(() => ({

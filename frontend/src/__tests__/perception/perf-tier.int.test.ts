@@ -1,6 +1,5 @@
 // perception/perf-tier.int.test.ts — ADR-164 全员感知 + PerceptionPerfMonitor 性能档位（ADR-204 P3，拆自旧 perception.test.ts）
 import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
-
 const mockState = vi.hoisted(() => ({
     focusedModelId: null as string | null,
     triggerAutoSave: vi.fn(),
@@ -92,6 +91,11 @@ beforeAll(async () => {
     PerceptionPerfMonitor = shared.PerceptionPerfMonitor;
     feetDebug = shared.feetDebug;
     ({ _getActiveContextsByTier } = await import('../../scene/motion/perception-observer'));
+});
+
+// [ADR-248] feetDebug 是模块级单例，beforeEach 重置防止跨用例污染
+beforeEach(() => {
+    feetDebug.value = false;
 });
 
 let sut: PerceptionSut;

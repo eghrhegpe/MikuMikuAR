@@ -7,7 +7,7 @@
 // 注：proc-motion-idle mock 采用 lifecycle 的转发版（...args → mockState.generateIdleVmd），
 // 使 P2#1 回归能断言生成器被调用（其他文件原用 ArrayBuffer(0) 直返桩，行为等价）。
 // @vitest-environment node
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
     DEFAULT_PROC_STATE,
     PROC_MOTION_BONE_CATEGORIES,
@@ -151,6 +151,10 @@ describe('updateProcMotion — 程序化动作保持生效', () => {
         // 用户/场景 VMD 应优先：程序化被停止（vmdData 因 userVmdPresent 不被清空，属预期行为）
         expect(sut.isProcVmdActive()).toBe(false);
     });
+});
+
+afterEach(() => {
+    vi.restoreAllMocks();
 });
 
 describe('P2#1 回归 — updateProcMotion 自动重生成使用 per-model 参数', () => {

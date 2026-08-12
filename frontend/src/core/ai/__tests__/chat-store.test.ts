@@ -2,7 +2,7 @@
 // [doc:adr-203] chat-store 守护测试 —— 多会话 CRUD + 排序 + 标题派生 + 降级。
 // 用内存 Map mock backend/idb，隔离真实 IndexedDB。
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // 内存版 idb：按 store 分桶的 Map。
 const _stores: Record<string, Map<string, unknown>> = {};
@@ -169,4 +169,8 @@ describe('chat-store', () => {
         expect(warnSpy.mock.calls[0][0]).toContain('setActiveId');
         warnSpy.mockRestore();
     });
+});
+
+afterEach(() => {
+    vi.restoreAllMocks();
 });

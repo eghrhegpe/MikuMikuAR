@@ -11,6 +11,7 @@ import { MeshBuilder } from '@babylonjs/core/Meshes/meshBuilder';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { lightingState } from './lighting-state';
 import { modelRegistry, type ModelInstance } from '@/core/config';
+import { guardNum } from '@/core/guards';
 import { safeDispose } from '@/core/dispose-helpers';
 // [fix code_review P3] 已改用 TransformCoordinatesToRef + scratch，不再调用 getBoneWorldMatrix
 import { setTransformMetadata } from '../transform/transform-pick';
@@ -207,7 +208,7 @@ export function attachPersonalLight(
         scene
     );
     light.intensity = settings.enabled ? settings.intensity : 0;
-    light.diffuse = new Color3(settings.color[0], settings.color[1], settings.color[2]);
+    light.diffuse = new Color3(guardNum(settings.color[0]), guardNum(settings.color[1]), guardNum(settings.color[2]));
     light.specular = new Color3(0.3, 0.3, 0.3);
     light.range = settings.height * 3;
 
@@ -412,7 +413,7 @@ function _ensurePersonalCone(modelId: string): void {
         return;
     }
 
-    const color = new Color3(settings.color[0], settings.color[1], settings.color[2]);
+    const color = new Color3(guardNum(settings.color[0]), guardNum(settings.color[1]), guardNum(settings.color[2]));
 
     if (entry.cone) {
         rebuildLightConeGeometry(entry.cone, scene, light, settings.coneLength);
