@@ -1459,15 +1459,15 @@
 | `setWasmIkResolver()` | `scene/motion/bone-override:931` | [ADR-202 A-class] 注入 WASM IK 重解回调。 |
 | `startBoneOverride()` | `scene/motion/bone-override:953` | — |
 | `stopBoneOverride()` | `scene/motion/bone-override:1062` | 停止覆盖系统。 |
-| `FeetModelProvider()` | `scene/motion/feet-adjustment:48` | 注入：返回需要处理脚部调整的模型及其 runtime bones |
+| `FeetModelProvider()` | `scene/motion/feet-adjustment:49` | 注入：返回需要处理脚部调整的模型及其 runtime bones |
 | `FootLandEvent()` | `scene/motion/feet-adjustment:35` | — |
-| `SolveFootInput()` | `scene/motion/feet-adjustment:40` | — |
-| `SolveFootOutput()` | `scene/motion/feet-adjustment:40` | — |
-| `isFeetAdjustmentRunning()` | `scene/motion/feet-adjustment:128` | 查询脚部跟随系统是否正在运行（observer 已注册）。 |
-| `setOnFootLand()` | `scene/motion/feet-adjustment:123` | 注入落地事件回调（null 取消）。脚步声控制器调用。 |
-| `solveFootTarget()` | `scene/motion/feet-adjustment:39` | — |
-| `startFeetAdjustment()` | `scene/motion/feet-adjustment:385` | 启动脚部调整系统：注册为 MotionPipeline bone-override 层（order=5）。 |
-| `stopFeetAdjustment()` | `scene/motion/feet-adjustment:460` | 停止脚部调整系统并清空缓存。 |
+| `SolveFootInput()` | `scene/motion/feet-adjustment:41` | — |
+| `SolveFootOutput()` | `scene/motion/feet-adjustment:41` | — |
+| `isFeetAdjustmentRunning()` | `scene/motion/feet-adjustment:129` | 查询脚部跟随系统是否正在运行（observer 已注册）。 |
+| `setOnFootLand()` | `scene/motion/feet-adjustment:124` | 注入落地事件回调（null 取消）。脚步声控制器调用。 |
+| `solveFootTarget()` | `scene/motion/feet-adjustment:40` | — |
+| `startFeetAdjustment()` | `scene/motion/feet-adjustment:387` | 启动脚部调整系统：注册为 MotionPipeline bone-override 层（order=5）。 |
+| `stopFeetAdjustment()` | `scene/motion/feet-adjustment:462` | 停止脚部调整系统并清空缓存。 |
 | `startFallbackDetection()` | `scene/motion/footstep-detect-fallback:68` | 启动独立落地检测（fallback 模式）。 |
 | `stopFallbackDetection()` | `scene/motion/footstep-detect-fallback:133` | 停止独立落地检测。 |
 | `resolveGroundSfxKind()` | `scene/motion/footstep:54` | 依据当前地面类型推断脚步音色。 |

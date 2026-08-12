@@ -561,6 +561,26 @@ describe('migrateProcState', () => {
         expect(state.params.idle.boneToggles.wrist).toBe(true);
         expect(state.params.idle.boneToggles.footIk).toBe(true);
     });
+
+    it('falls back intensity to 0.5 when legacy flat intensity is NaN', () => {
+        const state = migrateProcState({ intensity: NaN, speed: 1.0 });
+        expect(state.params.idle.intensity).toBe(0.5);
+        expect(state.params.autodance.intensity).toBe(0.5);
+    });
+
+    it('falls back speed to 1.0 when legacy flat speed is NaN', () => {
+        const state = migrateProcState({ intensity: 0.8, speed: NaN });
+        expect(state.params.idle.speed).toBe(1.0);
+        expect(state.params.autodance.speed).toBe(1.0);
+    });
+
+    it('falls back both intensity and speed to defaults when both are NaN', () => {
+        const state = migrateProcState({ intensity: NaN, speed: NaN });
+        expect(state.params.idle.intensity).toBe(0.5);
+        expect(state.params.idle.speed).toBe(1.0);
+        expect(state.params.autodance.intensity).toBe(0.5);
+        expect(state.params.autodance.speed).toBe(1.0);
+    });
 });
 
 // ======== matchBone 测试 ========

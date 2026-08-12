@@ -147,7 +147,7 @@ export function buildBoneFrame(frame: BoneKeyFrame): ArrayBuffer {
     // 64 bytes 插值：16 组 × 4 字节 [x1,y1,x2,y2]，默认 LINEAR
     // 值域 0-127（VMD 规范）：钳制越界值，避免 setUint8 对负数/超 255 静默截断
     const interp = frame.interp ?? INTERP_LINEAR;
-    const clamp = (v: number) => Math.max(0, Math.min(127, Math.round(v)));
+    const clamp = (v: number) => Math.max(0, Math.min(127, Math.round(Number.isFinite(v) ? v : 0)));
     for (let i = 0; i < 16; i++) {
         view.setUint8(off++, clamp(interp.x1));
         view.setUint8(off++, clamp(interp.y1));

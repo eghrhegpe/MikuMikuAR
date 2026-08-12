@@ -35,6 +35,7 @@ import type { FootLandEvent } from '@/motion-algos/feet-event';
 export type { FootLandEvent };
 import { logWarn } from '../../core/logger';
 import { getMotionPipeline } from './motion-pipeline';
+import { guardNum } from '@/core/guards';
 import { isWasmRuntime, feetDebug } from './perception-shared';
 export { solveFootTarget };
 export type { SolveFootInput, SolveFootOutput } from '@/motion-algos/feet-adjustment-math';
@@ -210,21 +211,22 @@ function _adjustFoot(
     });
 
     if (feetDebug.value && _feetDbgFrame++ % 60 === 0) {
+        const f = (v: number) => Number.isFinite(v) ? v.toFixed(3) : '?';
         const solver = (ik as MmdRuntimeBoneExtended).ikSolver;
         const ikSolverIndex = (ik as { ikSolverIndex?: number }).ikSolverIndex;
         logWarn(
             'feet',
             `[WASM] ${modelId} ${side} ` +
                 `ik=${ikName} ` +
-                `footY=${_vFoot.y.toFixed(3)} ` +
-                `groundY=${groundY.toFixed(3)} ` +
-                `targetY=${res.targetY.toFixed(3)} ` +
+                `footY=${f(_vFoot.y)} ` +
+                `groundY=${f(groundY)} ` +
+                `targetY=${f(res.targetY)} ` +
                 `skip=${res.skip} ` +
                 `solver=${solver ? 'present' : 'null'} ` +
                 `ikSolverIndex=${ikSolverIndex ?? 'null'} ` +
                 `hip=${hip ? hip.name : 'null<-fallback'} ` +
-                `centerY=${cache.centerY !== null ? cache.centerY.toFixed(3) : '?'} ` +
-                `legLen=${legLength.toFixed(3)}`
+                `centerY=${cache.centerY !== null ? f(cache.centerY) : '?'}` +
+                `legLen=${f(legLength)}`
         );
     }
 

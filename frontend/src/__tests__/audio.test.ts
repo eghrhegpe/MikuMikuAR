@@ -469,6 +469,14 @@ describe('setAudioOffset edge cases', () => {
     });
 });
 
+describe('NaN 防护 — getAudioOffset', () => {
+    it('returns 0 when audioOffset is NaN', () => {
+        setAudioOffset(2);
+        (globalThis as any).__audioTestUiState.audioOffset = NaN;
+        expect(getAudioOffset()).toBe(0);
+    });
+});
+
 describe('seekAudio edge cases', () => {
     it('is no-op when duration is NaN', () => {
         m.duration = NaN;
@@ -483,6 +491,11 @@ describe('seekAudio edge cases', () => {
 describe('getVolume default', () => {
     it('returns 0.7 when volume is undefined', () => {
         delete (globalThis as any).__audioTestUiState.volume;
+        expect(getVolume()).toBe(0.7);
+    });
+
+    it('returns 0.7 when volume is NaN', () => {
+        (globalThis as any).__audioTestUiState.volume = NaN;
         expect(getVolume()).toBe(0.7);
     });
 });
