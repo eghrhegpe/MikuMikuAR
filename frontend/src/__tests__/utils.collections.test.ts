@@ -15,6 +15,17 @@ describe('ADR-101 P3: pure collection & json helpers', () => {
             expect(ensureArray([1, 2, 3])).toEqual([1, 2, 3]);
             expect(ensureArray<number>([])).toEqual([]);
         });
+
+        it('wraps falsy non-array values correctly', () => {
+            expect(ensureArray(false)).toEqual([false]);
+            expect(ensureArray(0)).toEqual([0]);
+            expect(ensureArray('')).toEqual(['']);
+        });
+
+        it('wraps null and undefined as single-element array', () => {
+            expect(ensureArray(null)).toEqual([null]);
+            expect(ensureArray(undefined)).toEqual([undefined]);
+        });
     });
 
     describe('filterKeys', () => {
@@ -40,6 +51,20 @@ describe('ADR-101 P3: pure collection & json helpers', () => {
             const obj = { a: 1, b: 2 };
             filterKeys(obj, (k) => k === 'a');
             expect(obj).toEqual({ a: 1, b: 2 });
+        });
+
+        it('handles empty object', () => {
+            const result = filterKeys({}, () => true);
+            expect(result).toEqual({});
+        });
+
+        it('predicate receives actual key names', () => {
+            const keys: string[] = [];
+            filterKeys({ x: 1, y: 2 }, (k) => {
+                keys.push(k as string);
+                return true;
+            });
+            expect(keys).toEqual(['x', 'y']);
         });
     });
 
@@ -90,6 +115,26 @@ describe('ADR-101 P3: pure collection & json helpers', () => {
             cache.delete('a');
             expect(cache.size).toBe(1);
         });
+
+        it('set undefined value is indistinguishable from missing key', () => {
+            const cache = new Cache<string, number | undefined>();
+            cache.set('a', undefined);
+            expect(cache.get('a')).toBeUndefined();
+            expect(cache.has('a')).toBe(true);
+        });
+
+        it('delete on empty cache returns false', () => {
+            const cache = new Cache<string, number>();
+            expect(cache.delete('x')).toBe(false);
+        });
+
+        it('clear on empty cache is idempotent', () => {
+            const cache = new Cache<string, number>();
+            cache.clear();
+            expect(cache.size).toBe(0);
+            cache.clear();
+            expect(cache.size).toBe(0);
+        });
     });
 
     describe('allSettledFilter', () => {
@@ -123,6 +168,25 @@ describe('ADR-101 P3: pure collection & json helpers', () => {
             const results = await allSettledFilter([]);
             expect(results).toEqual([]);
         });
+
+        it('presolves undefined values (not filtered out)', async () => {
+            const results = await allSettledFilter([Promise.resolve(undefined)]);
+            expect(results).toHaveLength(1);
+            expect(results[0].value).toBeUndefined();
+        });
+
+        it('preserves order of mixed types', async () => {
+            const results = await allSettledFilter([
+                Promise.resolve(1),
+                Promise.reject(new Error('x')),
+                Promise.resolve('b'),
+                Promise.resolve(true),
+            ]);
+            expect(results).toHaveLength(3);
+            expect(results[0].value).toBe(1);
+            expect(results[1].value).toBe('b');
+            expect(results[2].value).toBe(true);
+        });
     });
 
     describe('jsonStringify', () => {
@@ -135,6 +199,22 @@ describe('ADR-101 P3: pure collection & json helpers', () => {
             expect(jsonStringify(42)).toBe('42');
             expect(jsonStringify('x')).toBe('"x"');
             expect(jsonStringify(null)).toBe('null');
+        });
+
+        it('normalizes undefined to "null" string', () => {
+            expect(jsonStringify(undefined)).toBe('null');
+        });
+
+        it('serializes NaN and Infinity as null (JSON spec)', () => {
+            expect(jsonStringify(NaN)).toBe('null');
+            expect(jsonStringify(Infinity)).toBe('null');
+            expect(jsonStringify(-Infinity)).toBe('null');
+        });
+
+        it('throws on circular reference', () => {
+            const obj: Record<string, unknown> = { a: 1 };
+            obj.self = obj;
+            expect(() => jsonStringify(obj)).toThrow();
         });
     });
 
@@ -152,6 +232,16 @@ describe('ADR-101 P3: pure collection & json helpers', () => {
 
         it('returns null for empty string', () => {
             expect(jsonParse('')).toBeNull();
+        });
+
+        it('parses null literal (ambiguous with error null)', () => {
+            expect(jsonParse('null')).toBeNull();
+        });
+
+        it('parses boolean and array edge cases', () => {
+            expect(jsonParse<boolean>('true')).toBe(true);
+            expect(jsonParse<boolean>('false')).toBe(false);
+            expect(jsonParse<unknown[]>('[]')).toEqual([]);
         });
     });
 });

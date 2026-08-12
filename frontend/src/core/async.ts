@@ -43,14 +43,16 @@ export function waitForFrame(): Promise<void> {
 export function makeLazyLoader<T>(loader: () => Promise<T>): () => Promise<T> {
     let _cached: T | null = null;
     let _loading: Promise<T> | null = null;
+    let _resolved = false;
     return async () => {
-        if (_cached) {
-            return _cached;
+        if (_resolved) {
+            return _cached!;
         }
         if (!_loading) {
             _loading = loader().then(
                 (mod) => {
                     _cached = mod;
+                    _resolved = true;
                     _loading = null;
                     return mod;
                 },

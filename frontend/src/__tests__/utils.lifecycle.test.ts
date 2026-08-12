@@ -1,7 +1,7 @@
 // @vitest-environment node
 // [doc:adr-101] P2 工具函数单测：lifecycle guards
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { LoadingGuard, DebouncedTimer, Abortable } from '../core/async';
+import { LoadingGuard, DebouncedTimer, Abortable, makeLazyLoader } from '../core/async';
 
 describe('ADR-101 P2: lifecycle guards', () => {
     afterEach(() => {
@@ -53,6 +53,43 @@ describe('ADR-101 P2: lifecycle guards', () => {
             guard.clear();
             expect(guard.tryEnter('a')).toBe(true);
             expect(guard.tryEnter('b')).toBe(true);
+        });
+
+        it('leave without enter is a safe no-op', () => {
+            const guard = new LoadingGuard();
+            expect(() => guard.leave()).not.toThrow();
+            expect(() => guard.leave('x')).not.toThrow();
+            expect(guard.isLoading()).toBe(false);
+        });
+
+        it('leave non-existent key: does not affect other keys', () => {
+            const guard = new LoadingGuard();
+            guard.tryEnter('a');
+            guard.leave('b');
+            expect(guard.isLoading('a')).toBe(true);
+            expect(guard.tryEnter('b')).toBe(true);
+        });
+
+        it('isLoading before any enter returns false', () => {
+            const guard = new LoadingGuard();
+            expect(guard.isLoading()).toBe(false);
+            expect(guard.isLoading('any')).toBe(false);
+        });
+
+        it('boolean mode: multiple enter/leave cycles', () => {
+            const guard = new LoadingGuard();
+            for (let i = 0; i < 5; i++) {
+                expect(guard.tryEnter()).toBe(true);
+                guard.leave();
+            }
+            expect(guard.tryEnter()).toBe(true);
+        });
+
+        it('set mode: re-enter same key after leave', () => {
+            const guard = new LoadingGuard();
+            guard.tryEnter('k');
+            guard.leave('k');
+            expect(guard.tryEnter('k')).toBe(true);
         });
     });
 
@@ -131,6 +168,130 @@ describe('ADR-101 P2: lifecycle guards', () => {
             const a = new Abortable();
             a.dispose();
             expect(a.signal.aborted).toBe(true);
+        });
+
+        it('multiple aborts: each creates a fresh non-aborted signal', () => {
+            const a = new Abortable();
+            a.abort();
+            const s1 = a.signal;
+            expect(s1.aborted).toBe(false);
+            a.abort();
+            const s2 = a.signal;
+            expect(s2.aborted).toBe(false);
+            expect(s1.aborted).toBe(true);
+            expect(s2).not.toBe(s1);
+        });
+
+        it('signal after dispose stays aborted', () => {
+            const a = new Abortable();
+            a.dispose();
+            expect(a.signal.aborted).toBe(true);
+            // signal 不会自动重置
+            expect(a.signal.aborted).toBe(true);
+        });
+
+        it('abort after dispose creates new usable controller', () => {
+            const a = new Abortable();
+            a.dispose();
+            expect(a.signal.aborted).toBe(true);
+            a.abort();
+            expect(a.signal.aborted).toBe(false);
+        });
+
+        it('controller getter returns AbortController instance', () => {
+            const a = new Abortable();
+            expect(a.controller).toBeInstanceOf(AbortController);
+            expect(a.controller.signal).toBe(a.signal);
+        });
+    });
+
+    describe('makeLazyLoader', () => {
+        it('caches result after first successful load', async () => {
+            let callCount = 0;
+            const loader = makeLazyLoader(async () => {
+                callCount++;
+                return 42;
+            });
+            const r1 = await loader();
+            expect(r1).toBe(42);
+            expect(callCount).toBe(1);
+            const r2 = await loader();
+            expect(r2).toBe(42);
+            expect(callCount).toBe(1);
+        });
+
+        it('concurrent calls share the same promise and call loader once', async () => {
+            let callCount = 0;
+            const loader = makeLazyLoader(async () => {
+                callCount++;
+                return 'shared';
+            });
+            const [r1, r2, r3] = await Promise.all([loader(), loader(), loader()]);
+            expect(r1).toBe('shared');
+            expect(r2).toBe('shared');
+            expect(r3).toBe('shared');
+            expect(callCount).toBe(1);
+        });
+
+        it('retries on failure: next call invokes loader again', async () => {
+            let callCount = 0;
+            const loader = makeLazyLoader(async () => {
+                callCount++;
+                if (callCount === 1) throw new Error('fail');
+                return 'recovered';
+            });
+            await expect(loader()).rejects.toThrow('fail');
+            expect(callCount).toBe(1);
+            const r = await loader();
+            expect(r).toBe('recovered');
+            expect(callCount).toBe(2);
+        });
+
+        it('concurrent calls on failure: all get same rejection, then next retries', async () => {
+            let callCount = 0;
+            const loader = makeLazyLoader(async () => {
+                callCount++;
+                if (callCount === 1) throw new Error('first fail');
+                return 'ok';
+            });
+            const results = await Promise.allSettled([loader(), loader(), loader()]);
+            expect(results.filter((r) => r.status === 'rejected')).toHaveLength(3);
+            expect(callCount).toBe(1);
+            const r = await loader();
+            expect(r).toBe('ok');
+            expect(callCount).toBe(2);
+        });
+
+        it('multiple failures: retries each time', async () => {
+            let callCount = 0;
+            const loader = makeLazyLoader(async () => {
+                callCount++;
+                if (callCount <= 2) throw new Error(`fail ${callCount}`);
+                return 'finally';
+            });
+            await expect(loader()).rejects.toThrow('fail 1');
+            expect(callCount).toBe(1);
+            await expect(loader()).rejects.toThrow('fail 2');
+            expect(callCount).toBe(2);
+            const r = await loader();
+            expect(r).toBe('finally');
+            expect(callCount).toBe(3);
+        });
+
+        it('caches null-like values correctly', async () => {
+            const loader = makeLazyLoader(async () => null);
+            const r1 = await loader();
+            expect(r1).toBeNull();
+            const r2 = await loader();
+            expect(r2).toBeNull();
+        });
+
+        it('caches zero/falsy values correctly', async () => {
+            const loader = makeLazyLoader(async () => 0);
+            const r1 = await loader();
+            expect(r1).toBe(0);
+            const r2 = await loader();
+            expect(r2).toBe(0);
         });
     });
 });
