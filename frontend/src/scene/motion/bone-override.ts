@@ -954,12 +954,15 @@ export function startBoneOverride(
     getRuntimeBones: () => readonly IMmdRuntimeBone[],
     scene: import('@babylonjs/core/scene').Scene
 ): void {
-    if (_observerHandle) {
-        return;
-    } // 已启动
-
-    // 保存回调供 dumpBoneHierarchy 使用
+    // [fix:round19 P2] 守卫同时校验 _driverScene：原 `if (_observerHandle) return` 使
+    // 「scene 变更后未 stop 直接 start」的重建分支成为死代码——系统会静默绑定旧 scene
+    // 的 observable，整个 pipeline 停摆且无报错。_getRuntimeBones 更新须在守卫之前。
+    // scene 不一致时继续执行：下方 register 同 id 覆盖旧 layer，_driverHandle 按
+    // `_driverScene !== scene` 重建（见回调后绑定逻辑）。
     _getRuntimeBones = getRuntimeBones;
+    if (_observerHandle && _driverScene === scene) {
+        return;
+    } // 已启动且场景一致
 
     const callback = () => {
         // 帧首重置 Matrix/Vector3 池（WASM 路径复用，避免每帧分配）
@@ -967,6 +970,10 @@ export function startBoneOverride(
         _vReset();
         // [ADR-202 §六] 帧首重置 IK 重解守护状态（覆盖整个 bone-override stage，含 feet-adjustment order=5）
         _resetIkResolveGuard();
+        // [fix:round19 P2] 帧首清空 IK 保护集合：原帧末 clear 会被下方三个提前 return
+        // 路径（无聚焦/overrideMap 空/bones 空）跳过，遗留陈旧条目在后续帧被快照全量回滚，
+        // 抹掉其它模块对该骨的传播/覆盖。帧首清空 + 帧钩子期间重填（与 _resetIkResolveGuard 同模式）。
+        _protectedIkBoneNames.clear();
 
         // 只对当前聚焦模型生效（per-model 存储，单模型应用）
         const focusedId = _resolveModelId();
@@ -1032,8 +1039,6 @@ export function startBoneOverride(
         if (isWasm) {
             _solvePosSlotIkWasm(boneMap, overrideMap, focusedId);
         }
-
-        _protectedIkBoneNames.clear();
     };
 
     // 单一驱动 observer：每帧按 (stage, order) 显式调度所有骨骼写入层，

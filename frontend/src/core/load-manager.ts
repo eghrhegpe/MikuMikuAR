@@ -171,6 +171,12 @@ class LoadManager {
                         signal
                     );
                     if (!id) {
+                        // [fix:round19 P2] 区分「取消」与「失败」：底层 loader（loadPMXFile）把
+                        // AbortError 吞掉返回 null，此处若直接 return null 会被调用方误报「加载失败」。
+                        // signal 已 abort → 抛 AbortError 与排队期短路路径语义统一。
+                        if (signal?.aborted) {
+                            throw new DOMException('Aborted', 'AbortError');
+                        }
                         return null;
                     }
                     this._phase = 'register';
@@ -239,6 +245,11 @@ class LoadManager {
                     return null;
             }
         } catch (err) {
+            // [fix:round19 P2] abort 语义统一：底层 loader 抛出的 AbortError 直接重抛原始对象，
+            // 调用方可统一以 err.name === 'AbortError' 判定「取消」，无需依赖 signal 或 null。
+            if (err instanceof DOMException && err.name === 'AbortError') {
+                throw err;
+            }
             // [doc:adr-135] P0.2: 包装为结构化 LibraryLoadError，让 formatError 自动加 [loadId/phase] 前缀。
             // 不继承 Error：避免堆栈丢失 + 跨 realm 问题；plain object + name 标记即可被 formatError 识别。
             const wrapped: LibraryLoadError = {

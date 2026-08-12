@@ -322,3 +322,12 @@ registerUiAction('handleAndroidBack', handleAndroidBack);
 export function getNavLabel(index: number): string {
     return navLabels[index] || '';
 }
+
+// [fix:round19 P2] HMR dispose 接线：模块被替换重求值前释放旧按钮监听器，
+// 否则旧监听泄漏 + 新监听叠加（原注释声称"disposeEventHandlers 兜底"但该函数只清
+// _eventDisposables，不碰 _navDisposables——此处是唯一实际清理路径）。
+if (import.meta.hot) {
+    import.meta.hot.dispose(() => {
+        disposeNavBindings();
+    });
+}

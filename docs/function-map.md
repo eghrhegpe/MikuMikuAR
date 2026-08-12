@@ -360,7 +360,7 @@
 | `LoadRequest()` | `core/load-manager:45` | — |
 | `ResourceHandle()` | `core/load-manager:73` | — |
 | `ResourceKind()` | `core/load-manager:11` | — |
-| `loadManager()` | `core/load-manager:267` | 单例。 |
+| `loadManager()` | `core/load-manager:278` | 单例。 |
 | `registerLibraryScannedHook()` | `core/load-refresh-registry:57` | 注册一个「库扫描完成」钩子。 |
 | `registerLoadRefreshHook()` | `core/load-refresh-registry:21` | 注册一个「模型加载后刷新」钩子。 |
 | `runLoadRefreshHooks()` | `core/load-refresh-registry:33` | 执行所有已注册的加载后刷新钩子。 |
@@ -1433,8 +1433,8 @@
 | `OverrideSlot()` | `scene/motion/bone-override-store:18` | 单骨覆盖槽位（原 _OverrideSlot 的共享命名版） |
 | `ReleaseListener()` | `scene/motion/bone-override-store:73` | 骨骼释放事件监听器 |
 | `getBoneOverrideStore()` | `scene/motion/bone-override-store:425` | 获取全局 BoneOverrideStore 单例（registry / module-base 等委托此存储骨骼所有权与冲突状态） |
-| `BoneHierarchyDump()` | `scene/motion/bone-override:1101` | 骨骼层级导出结果 |
-| `BoneHierarchyNode()` | `scene/motion/bone-override:1079` | 单根骨骼的层级与覆盖状态（dumpBoneHierarchy 输出元素） |
+| `BoneHierarchyDump()` | `scene/motion/bone-override:1106` | 骨骼层级导出结果 |
+| `BoneHierarchyNode()` | `scene/motion/bone-override:1084` | 单根骨骼的层级与覆盖状态（dumpBoneHierarchy 输出元素） |
 | `BoneOverrideEntry()` | `scene/motion/bone-override:24` | 持久化的单条骨骼覆盖配置 |
 | `FRAME_HOOK_ORDER()` | `scene/motion/bone-override:735` | [doc:adr-116 P3] 注册每帧渲染钩子。 |
 | `FrameHookSnapshot()` | `scene/motion/bone-override:765` | 帧钩子快照（供 UI 查询管线时序一览） |
@@ -1444,7 +1444,7 @@
 | `clearAllOverrides()` | `scene/motion/bone-override:547` | 清除所有骨骼覆盖。 |
 | `clearBoneOverride()` | `scene/motion/bone-override:440` | 清除指定骨骼的覆盖。 |
 | `computeOverride()` | `scene/motion/bone-override:268` | [doc:adr-116 P1] 计算单槽覆盖后的平移与旋转。 |
-| `dumpBoneHierarchy()` | `scene/motion/bone-override:1116` | 导出当前聚焦模型的骨骼层级与覆盖状态。 |
+| `dumpBoneHierarchy()` | `scene/motion/bone-override:1121` | 导出当前聚焦模型的骨骼层级与覆盖状态。 |
 | `getAllOverrides()` | `scene/motion/bone-override:780` | 获取当前所有覆盖的条目列表（用于持久化/UI 展示）。 |
 | `getFrameHooksSnapshot()` | `scene/motion/bone-override:771` | 按 order 升序返回当前注册的所有帧钩子快照（不含 hook 函数本身）。 |
 | `getOverride()` | `scene/motion/bone-override:465` | [doc:adr-116] 读取单条骨骼的覆盖条目（用于 UI 回填）。不存在返回 undefined。 |
@@ -1458,7 +1458,7 @@
 | `setBoneOverrideQuat()` | `scene/motion/bone-override:375` | 设置单条骨骼覆盖（直接传四元数）。 |
 | `setWasmIkResolver()` | `scene/motion/bone-override:931` | [ADR-202 A-class] 注入 WASM IK 重解回调。 |
 | `startBoneOverride()` | `scene/motion/bone-override:953` | — |
-| `stopBoneOverride()` | `scene/motion/bone-override:1057` | 停止覆盖系统。 |
+| `stopBoneOverride()` | `scene/motion/bone-override:1062` | 停止覆盖系统。 |
 | `FeetModelProvider()` | `scene/motion/feet-adjustment:48` | 注入：返回需要处理脚部调整的模型及其 runtime bones |
 | `FootLandEvent()` | `scene/motion/feet-adjustment:35` | — |
 | `SolveFootInput()` | `scene/motion/feet-adjustment:40` | — |
