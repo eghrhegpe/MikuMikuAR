@@ -70,9 +70,12 @@ vi.mock('../scene/camera/camera', () => ({
 }));
 
 import { updatePlaybackUI } from '../scene/motion/playback';
+import { feetDebug } from '../scene/motion/perception-shared';
 import { mockRuntime } from './playback-helpers';
 
 describe('updatePlaybackUI', () => {
+    const origSeekBar = mockDom.seekBar;
+
     beforeEach(() => {
         mockState.mmdRuntime = { ...mockRuntime, currentTime: 30, animationDuration: 120 };
         mockState.isPlaying = false;
@@ -82,31 +85,33 @@ describe('updatePlaybackUI', () => {
         mockDom.btnLoopToggle.style.opacity = '';
         mockDom.timeDisplay.textContent = '';
         mockDom.seekProgress.style.width = '';
+        // [ADR-248] 默认关闭告警门控；seekBar 恢复原始对象（防前置用例断言失败泄漏 null）
+        feetDebug.value = false;
+        mockDom.seekBar = origSeekBar;
     });
 
-    it('warns and skips when mmdRuntime is null (graceful degradation)', () => {
+    afterEach(() => {
+        feetDebug.value = false;
+        mockDom.seekBar = origSeekBar;
+        vi.restoreAllMocks();
+    });
+
+    it('mmdRuntime 为 null 时降级：不崩溃、DOM 不动、默认不刷告警', () => {
         mockState.mmdRuntime = null;
         const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
         updatePlaybackUI();
-        expect(spy).toHaveBeenCalledWith(
-            '[playback] updatePlaybackUI: mmdRuntime 或 seekBar 未就绪，跳过本帧'
-        );
+        // [ADR-248] 告警经 feetDebug 门控：生产默认关闭，热路径不刷日志
+        expect(spy).not.toHaveBeenCalled();
         // DOM 不应被修改
         expect(mockDom.playbackBar.style.display).toBe('');
-        spy.mockRestore();
     });
 
-    it('warns and skips when dom.seekBar is null (graceful degradation)', () => {
-        const saved = mockDom.seekBar;
+    it('dom.seekBar 为 null 时降级：不崩溃、DOM 不动、默认不刷告警', () => {
         mockDom.seekBar = null;
         const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
         updatePlaybackUI();
-        expect(spy).toHaveBeenCalledWith(
-            '[playback] updatePlaybackUI: mmdRuntime 或 seekBar 未就绪，跳过本帧'
-        );
+        expect(spy).not.toHaveBeenCalled();
         expect(mockDom.playbackBar.style.display).toBe('');
-        spy.mockRestore();
-        mockDom.seekBar = saved;
     });
 
     it('shows playbackBar and sets play button when not playing', () => {
@@ -153,12 +158,14 @@ describe('updatePlaybackUI', () => {
         expect(mockDom.seekProgress.style.width).toBe('100%');
     });
 
-    it('warns and skips when mmdRuntime is null and dom.playbackBar exists', () => {
+    it('feetDebug 开启时 mmdRuntime 为 null 会告警一次（门控合同）', () => {
+        feetDebug.value = true;
         mockState.mmdRuntime = null;
         const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
         updatePlaybackUI();
-        expect(spy).toHaveBeenCalled();
+        expect(spy).toHaveBeenCalledWith(
+            '[playback] updatePlaybackUI: mmdRuntime 或 seekBar 未就绪，跳过本帧'
+        );
         expect(mockDom.timeDisplay.textContent).toBe('');
-        spy.mockRestore();
     });
 });
