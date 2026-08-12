@@ -543,13 +543,13 @@ export class SlideMenu implements RenderContext {
             this._lastLang = lang;
             if (level?.onLangChange) {
                 level.onLangChange();
-            } else if (level?.renderCustom && this.panel.querySelector('.slide-list')) {
+            } else if (level?.renderCustom && this._getSlideList()) {
                 this.reRender({ preserveFocus: true });
             }
         }
         // [doc:adr-065] 纯 items 层级语言热刷新：当前层持有 itemBuilder 时，
         // 重建 items 并增量 patch（仅当面板已渲染——避免对未打开/已 dispose 的菜单误触发全量 buildPanel）。
-        if (level?.itemBuilder && this.panel.querySelector('.slide-list')) {
+        if (level?.itemBuilder && this._getSlideList()) {
             level.items = level.itemBuilder();
             this.patchPanel(level.items);
         }
@@ -592,7 +592,7 @@ export class SlideMenu implements RenderContext {
 
         if (level.reRenderCustom) {
             // === 增量路径：patch items（非空时）+ reRenderCustom ===
-            const list = this.panel.querySelector('.slide-list');
+            const list = this._getSlideList();
             if (list) {
                 if (level.items.length > 0) {
                     this.patchPanel(level.items);
@@ -718,6 +718,19 @@ export class SlideMenu implements RenderContext {
             this._pendingReRender = null;
             this.reRender(pending.opts);
         }
+    }
+
+    /**
+     * [fix:P3] 获取 .slide-list 引用：走 ref 缓存，失效时回退 querySelector 并回填。
+     * buildPanel 每次重写 panel.innerHTML 会重建 list，因此在 buildPanel 成功 append 后重置 ref。
+     */
+    private _getSlideList(): HTMLElement | null {
+        if (this._slideListRef && this._slideListRef.parentNode === this.panel) {
+            return this._slideListRef;
+        }
+        const el = this.panel.querySelector('.slide-list') as HTMLElement | null;
+        this._slideListRef = el;
+        return el;
     }
 
     /** 记录一个由动画生命周期管理的 setTimeout */
@@ -881,7 +894,7 @@ export class SlideMenu implements RenderContext {
         if (items.length === 0) {
             return;
         }
-        const list = this.panel.querySelector('.slide-list');
+        const list = this._getSlideList();
         if (!list) {
             this.buildPanel(this.currentLevel!);
             return;
