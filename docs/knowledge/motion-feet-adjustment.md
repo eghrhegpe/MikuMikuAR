@@ -47,6 +47,13 @@ use_when:
 ## 核心职责
 - `feet-adjustment.ts` — 脚部 IK 目标骨骼世界坐标到地面 + 重解 IK。
 
+## JS/WASM 双模式重解（ADR-202 §六）
+统一流程：`ik.setWorldTranslation(target)` 把 IK 目标骨骼世界坐标写到地面高度（保留 XZ），再按运行时重解该腿 IK。
+- **JS 模式**：直接调 `ikSolver.solve(false)`，solve 内部回写踝 + 链骨骼 `worldMatrix`；随后 `_markAsDirty()` 通知 skeleton 重算蒙皮。
+- **WASM 模式**：`setWorldTranslation` 直写 IK 目标骨骼的 `worldMatrix` buffer，经 `getWasmIkResolver()`（bone-override 注册）调 `mmdModelSolveIk` 重解原生 IK 链——求解器读同一 buffer 作为 IK 目标（双缓冲一致性要点：写入必须落在 IK 求解器读取的缓冲，否则修改不生效）。WASM 直写 buffer，无需 `_markAsDirty`（只会造成冗余重算）。
+- **IK 骨骼名解析**：用 `matchBone(names, BONE_LEG_IK_L/R_CANDIDATES)` 按模型解析实际骨骼名（首帧惰性匹配，结果缓存于 per-model cache）。
+- **调试日志**：`[A-skip]` / `[WASM-DEBUG]` / `[WASM-ERROR]` 均 `feetDebug` 门控 + 帧节流（%60），热路径不裸打日志（ADR-248）。
+
 ## 对外 API（节选）
 - `type FeetModelProvider` — 注入函数，返回需要处理脚部调整的模型及 bones。
 - `interface FeetState` — 脚部状态。

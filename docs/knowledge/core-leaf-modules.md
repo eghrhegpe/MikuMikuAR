@@ -9,6 +9,7 @@ scope:
   - frontend/src/core/debounce.ts
   - frontend/src/core/deep-clone.ts
   - frontend/src/core/format-timestamp.ts
+  - frontend/src/core/guards.ts
   - frontend/src/core/path.ts
   - frontend/src/core/set-key.ts
 source_files:
@@ -17,6 +18,7 @@ source_files:
   - frontend/src/core/debounce.ts
   - frontend/src/core/deep-clone.ts
   - frontend/src/core/format-timestamp.ts
+  - frontend/src/core/guards.ts
   - frontend/src/core/path.ts
   - frontend/src/core/set-key.ts
 adr:
@@ -38,6 +40,7 @@ symbols:
   - formatTimestamp
   - getBaseName
   - getDirPath
+  - guardNum
   - isStageLike
   - isUnderRoot
   - lerp
@@ -59,6 +62,8 @@ use_when:
   - 零依赖叶
   - 路径工具
   - 数学工具
+  - 数值守卫
+  - NaN 防护
   - 异步工具
   - 防抖
   - 深拷贝
@@ -90,6 +95,9 @@ use_when:
 - `lerp(a, b, t)` — 线性插值
 - `lerpArray(a, b, t)` — 逐元素线性插值数组
 - `clampPct(v)` — 百分比钳制到 [0, 100]
+
+### 数值守卫（`guards.ts`）
+- `guardNum(v, fallback = 0)` — 将 `undefined` / `NaN` / 非数字归一为 fallback，防止 NaN 污染 Babylon.js 数学类型与 CSS 串。替代 `??` 空值合并（`??` 不挡 NaN）。被 audio / env-bridge / lighting-follow / feet-adjustment / proc-motion-shared 等 6+ 模块引用。
 
 ### 函数防抖（`debounce.ts`）
 - `debounce(fn, ms)` — 函数防抖，返回带 `cancel()` 方法的防抖函数

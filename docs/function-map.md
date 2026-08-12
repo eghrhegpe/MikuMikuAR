@@ -1846,10 +1846,10 @@
 | `lightingState()` | `scene/render/lighting-state:97` | — |
 | `_disposeSunDisc()` | `scene/render/lighting-sun:51` | — |
 | `_updateSunDisc()` | `scene/render/lighting-sun:30` | 更新方向光参考圆盘位置和颜色。圆盘始终在光线来源方向（视线反方向）。 |
-| `_cancelAllLightingTweens()` | `scene/render/lighting-tween:12` | — |
-| `_tweenColor3()` | `scene/render/lighting-tween:58` | — |
-| `_tweenValue()` | `scene/render/lighting-tween:19` | — |
-| `applyLightingPresetFromEnv()` | `scene/render/lighting-tween:86` | 应用灯光预设——复用现有灯光，平滑过渡参数。 |
+| `_cancelAllLightingTweens()` | `scene/render/lighting-tween:13` | — |
+| `_tweenColor3()` | `scene/render/lighting-tween:59` | — |
+| `_tweenValue()` | `scene/render/lighting-tween:20` | — |
+| `applyLightingPresetFromEnv()` | `scene/render/lighting-tween:87` | 应用灯光预设——复用现有灯光，平滑过渡参数。 |
 | `LightState()` | `scene/render/lighting:37` | — |
 | `StageLightState()` | `scene/render/lighting:55` | — |
 | `StageLightType()` | `scene/render/lighting:53` | — |

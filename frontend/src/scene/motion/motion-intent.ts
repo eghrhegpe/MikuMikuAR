@@ -347,7 +347,7 @@ export function resolveCompatibility(
         }
         return {
             compatible: false,
-            reason: `VMD 骨骼命中率 ${(ratio * 100).toFixed(0)}%（${matched}/${vmdBoneNames.length}），不兼容当前动作`,
+            reason: `VMD 骨骼命中率 ${Number.isFinite(ratio) ? (ratio * 100).toFixed(0) : '0'}%（${matched}/${vmdBoneNames.length}），不兼容当前动作`,
         };
     }
     const matched = countBoneMatches(actualBones, STANDARD_MMD_BONES);

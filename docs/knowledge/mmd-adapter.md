@@ -66,6 +66,9 @@ use_when:
 ### 切换契约固化
 - `switchAnimation(runtime, model, animation)` — 切换模型当前动画到新动画，归零运行时全局时钟到第 0 帧，释放旧 WASM 句柄
 
+### WASM IK 重解
+- `solveIkNative(wasmInstance, model, ikSolverIndex, usePhysics)` — WASM 模式下重解原生 IK 链的收敛入口：经 `mmdModelSolveIk` 导出重解指定索引的 IK 求解器（ADR-202 A-class 补丁）。WASM 实例缺 `mmdModelSolveIk` 导出时**一次性**告警（`_solveIkMissingWarned` 门控，提示 vendor wasm 需同步含补丁的构建），不重复刷日志。被 `feet-adjustment` / `bone-override` 的 WASM IK 路径调用。
+
 ## 对外 API（节选）
 
 - `getPhysicsImpl(runtime)` — 获取物理 impl

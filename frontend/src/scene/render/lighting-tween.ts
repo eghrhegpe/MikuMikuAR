@@ -4,6 +4,7 @@
 import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { lightingState, type LightingTween } from './lighting-state';
 import { col3FromTriple } from '@/core/color-helpers';
+import { guardNum } from '@/core/guards';
 import { addStageLight, removeStageLight, setStageLightState } from './lighting-stage';
 import { LIGHTING_PRESETS } from './lighting-presets';
 import { getAllPersonalLights, setPersonalLightState } from './lighting-follow';
@@ -255,7 +256,7 @@ export function applyLightingPresetFromEnv(presetName: string | null): void {
                 );
             }
             if (plOverride.color !== undefined) {
-                const from = new Color3(settings.color[0], settings.color[1], settings.color[2]);
+                const from = new Color3(guardNum(settings.color[0]), guardNum(settings.color[1]), guardNum(settings.color[2]));
                 const to = col3FromTriple(plOverride.color);
                 pendingTweens++;
                 _tweenColor3(

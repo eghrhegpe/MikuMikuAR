@@ -62,6 +62,11 @@ use_when:
 ## 核心职责
 - `scene-serialize.ts` — SceneFile 类型、场景序列化/反序列化、自动保存防抖、上次场景恢复
 
+## `procMotionModules` 字段（程序化动作覆盖持久化）
+`SceneFile.motionInstances[].procMotionModules`（`Record<procRole, MotionModuleState[]>`）承载程序化动作（idle/autodance）per-model + per-procRole 的动作覆盖模块配置，随场景序列化恢复（[motion-modules-registry](./motion-modules-registry.md) per-proc 持久化存储）：
+- **序列化**：`structuredClone(inst.procMotionModules)` 深拷贝——字段为对象引用，直接写入会让后续编辑回写污染已驻留内存的快照。
+- **反序列化**：逐 role 清洗——`procMotionModules` 非对象时降级为 `undefined`，并过滤非法模块状态，避免 `getModuleState` / `applyProcMotionModulesToModel` 错迭代抛错（韧性）。
+
 ## 对外 API（节选）
 - `serializeScene()` / `deserializeScene()` — 场景 ↔ SceneFile
 - `SaveLastScene` / `LoadLastScene` 封装（Go 后端）
