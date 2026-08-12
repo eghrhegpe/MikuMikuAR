@@ -21,6 +21,7 @@ const {
     getModuleState,
     isWasmRuntime,
     feetDebug,
+    logWarn,
 } = vi.hoisted(() => ({
     getGroundHeightAt: vi.fn(() => 0),
     getWasmIkResolver: vi.fn(() => null),
@@ -28,12 +29,14 @@ const {
     getModuleState: vi.fn(() => undefined),
     isWasmRuntime: vi.fn(() => false),
     feetDebug: { value: false },
+    logWarn: vi.fn(),
 }));
 
 vi.mock('@/scene/env/env-impl', () => ({ getGroundHeightAt }));
 vi.mock('@/scene/motion/bone-override', () => ({ getWasmIkResolver, getOverride }));
 vi.mock('@/scene/motion/motion-modules/registry', () => ({ getModuleState }));
 vi.mock('@/scene/motion/perception-shared', () => ({ isWasmRuntime, feetDebug }));
+vi.mock('@/core/logger', () => ({ logWarn }));
 
 interface FakeBone {
     name: string;
@@ -536,4 +539,34 @@ describe('边界与降级路径（反推源码补齐）', () => {
         expect(rIk.world.y).toBeCloseTo(0);
         expect(solver.solve).toHaveBeenCalledTimes(2);
     });
+});
+
+describe('NaN 防护（f() 辅助兜底显示 ?）', () => {
+    /** 找出 _adjustFoot debug 分支产出的 logWarn 调用（含 footY/groundY 字段） */
+    function findDebugCall() {
+        return logWarn.mock.calls.find(
+            (c: Parameters<typeof logWarn>) =>
+                typeof c[1] === 'string' && (c[1] as string).includes('footY=')
+        );
+    }
+
+    beforeEach(() => {
+        feetDebug.value = false;
+        logWarn.mockClear();
+    });
+
+    it('脚部坐标含 NaN 时 debug 日志不崩溃，NaN 显示为 ?（f() 辅助兜底）', () => {
+        feetDebug.value = true;
+        getGroundHeightAt.mockReturnValue(NaN);
+        const solver = { solve: vi.fn() };
+        const model = makeModel({ lY: -0.2, rY: -0.2, solver });
+        startFor(model);
+        runFrame();
+        const call = findDebugCall();
+        expect(call).toBeDefined();
+        const msg = call![1] as string;
+        expect(msg).toContain('?');
+        expect(msg).not.toContain('NaN');
+    });
+
 });
