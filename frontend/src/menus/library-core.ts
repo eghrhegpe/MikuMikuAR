@@ -258,12 +258,14 @@ let _thumbAbortController: AbortController | null = null;
  *               且丢弃已拉取但未写入的过期结果。与内部「当前批次」控制器合并，两者任一 abort 即生效。
  */
 export async function loadThumbnailsStreaming(keys: string[], signal?: AbortSignal): Promise<void> {
-    if (keys.length === 0) {
-        return;
-    }
     // [adr-136] 取消上一批次（快速切换文件夹时避免请求堆积）
+    // 空 keys 也须先 abort：契约「每次新调用都取消上一批次」恒定，
+    // 否则空目录渲染时旧批次仍会向已不可见的面板写缓存/通知。
     if (_thumbAbortController) {
         _thumbAbortController.abort();
+    }
+    if (keys.length === 0) {
+        return;
     }
     const internalCtrl = new AbortController();
     _thumbAbortController = internalCtrl;

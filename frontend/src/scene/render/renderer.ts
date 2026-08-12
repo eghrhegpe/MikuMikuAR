@@ -192,7 +192,9 @@ export function getRenderState(): RenderState {
         bloomThreshold: pipeline.bloomThreshold ?? 0.5,
         bloomKernel: pipeline.bloomKernel ?? 64,
         outlineEnabled: _outlineEnabled,
-        outlineColor: _outlineColor,
+        // 防御性拷贝：返回全新数组，避免调用方修改返回值时污染模块级 _outlineColor 状态
+        // （此前直接返回 _outlineColor 引用，与 defaultRenderState() 返回全新数组不一致）
+        outlineColor: [..._outlineColor],
         fxaaEnabled: pipeline.fxaaEnabled,
         msaaSamples: pipeline.samples ?? 1,
         toneMapping: clamp(pipeline.imageProcessing.toneMappingType ?? 0, 0, 2),

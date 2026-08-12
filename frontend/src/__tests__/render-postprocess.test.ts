@@ -39,6 +39,10 @@ describe('ToneMappingMode 常量', () => {
             expect(Number.isInteger(v)).toBe(true);
         }
     });
+
+    it('键集合精确为 OFF/ACES/NEUTRAL（无额外别名漏出）', () => {
+        expect(Object.keys(ToneMappingMode).sort()).toEqual(['ACES', 'NEUTRAL', 'OFF']);
+    });
 });
 
 // ─── defaultRenderState() ───────────────────────────────────────
@@ -71,6 +75,8 @@ describe('defaultRenderState()', () => {
         // DOF
         expect(state).toHaveProperty('dofEnabled', false);
         expect(state.dofAperture).toBeCloseTo(0);
+        expect(state).toHaveProperty('dofFocusDistance', 22);
+        expect(state).toHaveProperty('dofFocalLength', 50);
         // Vignette
         expect(state).toHaveProperty('vignetteEnabled', false);
         expect(state).toHaveProperty('vignetteDarkness', 0);
@@ -128,6 +134,18 @@ describe('defaultRenderState()', () => {
         const state = defaultRenderState();
         expect(state.toneMapping).toBe(0);
     });
+
+    it('每次调用返回独立对象（防共享可变状态回归）', () => {
+        const a = defaultRenderState();
+        const b = defaultRenderState();
+        // 对象与 outlineColor 数组均须为独立引用，避免调用方修改返回值污染后续状态
+        expect(a).not.toBe(b);
+        expect(a.outlineColor).not.toBe(b.outlineColor);
+        a.bloomWeight = 0.9;
+        a.outlineColor[0] = 1;
+        expect(b.bloomWeight).toBe(0);
+        expect(b.outlineColor).toEqual([0, 0, 0]);
+    });
 });
 
 // ─── RenderState 边界值 ─────────────────────────────────────────
@@ -157,6 +175,9 @@ describe('RenderState 参数边界值', () => {
         { key: 'ssaoRadius', min: 0, max: 1 },
         { key: 'ssaoSamples', min: 4, max: 32 },
         { key: 'dofAperture', min: 0, max: 1 },
+        // 对焦距离/焦距（_applyRenderState 中 clamp 范围：focusDistance 1-300, focalLength 20-200）
+        { key: 'dofFocusDistance', min: 1, max: 300 },
+        { key: 'dofFocalLength', min: 20, max: 200 },
         { key: 'celColorLevels', min: 2, max: 8 },
         { key: 'celEdgeThreshold', min: 0, max: 1 },
         { key: 'celEdgeStrength', min: 0, max: 1 },
@@ -193,11 +214,13 @@ describe('RenderState 参数边界值', () => {
 describe('FOV 参数约束', () => {
     let getFov: () => number;
     let setFov: (v: number) => void;
+    let resetCameraState: () => void;
 
     beforeAll(async () => {
         const camState = await import('../scene/camera/camera-state');
         getFov = camState.getFov;
         setFov = camState.setFov;
+        resetCameraState = camState.resetCameraState;
     });
 
     beforeEach(() => {
@@ -236,5 +259,11 @@ describe('FOV 参数约束', () => {
             setFov(v);
             expect(getFov()).toBeCloseTo(v, 6);
         }
+    });
+
+    it('resetCameraState() 将 FOV 复位到默认 0.8', () => {
+        setFov(2.5);
+        resetCameraState();
+        expect(getFov()).toBe(0.8);
     });
 });

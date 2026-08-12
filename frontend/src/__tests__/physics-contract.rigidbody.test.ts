@@ -34,6 +34,22 @@ const buildRigidBodyInfo = (
 ) => _buildRigidBodyInfo(phys, shapePtr, overrides);
 const readLinearVelocity = (bodyPtr: number) => _readLinearVelocity(phys, bodyPtr);
 
+/**
+ * 通用 Vec3 读取器：分配 12 字节 out 缓冲，调用 getter 写入，读取 3 个 float 后释放。
+ * 覆盖角速度/总力/总力矩/冲量速度/局部惯量等「out 指针」型 getter，与 helper 中
+ * readLinearVelocity 的释放惯例一致（try/finally）。
+ */
+const readVec3 = (getter: (outPtr: number) => void): [number, number, number] => {
+    const outPtr = api.allocateBuffer(12);
+    try {
+        getter(outPtr);
+        const view = new Float32Array(memory.buffer, outPtr, 3);
+        return [view[0], view[1], view[2]];
+    } finally {
+        api.deallocateBuffer(outPtr, 12);
+    }
+};
+
 describe('WASM 物理契约测试', () => {
     describe('6. 刚体物理 — 端到端验证', () => {
         it('创建刚体 → 施力 → 步进 → 速度非零（物理真的在动）', () => {
@@ -145,6 +161,190 @@ describe('WASM 物理契约测试', () => {
             api.destroyRigidBody(body);
             api.deallocateBuffer(infoPtr, INFO_SIZE);
             api.destroyShape(shape);
+        });
+
+        it('rigidBodySetDamping 往返一致', () => {
+            const shape = api.createBoxShape(1, 1, 1);
+            const infoPtr = buildRigidBodyInfo(shape, { mass: 1.0 });
+            const body = api.createRigidBody(infoPtr);
+
+            api.rigidBodySetDamping(body, 0.3, 0.7);
+            expect(api.rigidBodyGetLinearDamping(body)).toBeCloseTo(0.3, 4);
+            expect(api.rigidBodyGetAngularDamping(body)).toBeCloseTo(0.7, 4);
+
+            api.destroyRigidBody(body);
+            api.deallocateBuffer(infoPtr, INFO_SIZE);
+            api.destroyShape(shape);
+        });
+
+        it('rigidBodySetMassProps 更新质量与局部惯量', () => {
+            const shape = api.createBoxShape(1, 1, 1);
+            const infoPtr = buildRigidBodyInfo(shape, { mass: 1.0 });
+            const body = api.createRigidBody(infoPtr);
+
+            api.rigidBodySetMassProps(body, 5.0, 1, 2, 3);
+            expect(api.rigidBodyGetMass(body)).toBeCloseTo(5.0, 1);
+            const [ix, iy, iz] = readVec3((p) => api.rigidBodyGetLocalInertia(body, p));
+            expect(ix).toBeCloseTo(1, 4);
+            expect(iy).toBeCloseTo(2, 4);
+            expect(iz).toBeCloseTo(3, 4);
+
+            api.destroyRigidBody(body);
+            api.deallocateBuffer(infoPtr, INFO_SIZE);
+            api.destroyShape(shape);
+        });
+
+        it('rigidBodySetAngularVelocity / rigidBodyGetAngularVelocity 往返一致', () => {
+            const shape = api.createBoxShape(1, 1, 1);
+            const infoPtr = buildRigidBodyInfo(shape, { mass: 1.0 });
+            const body = api.createRigidBody(infoPtr);
+
+            api.rigidBodySetAngularVelocity(body, 1, 2, 3);
+            const [wx, wy, wz] = readVec3((p) => api.rigidBodyGetAngularVelocity(body, p));
+            expect(wx).toBeCloseTo(1, 4);
+            expect(wy).toBeCloseTo(2, 4);
+            expect(wz).toBeCloseTo(3, 4);
+
+            api.destroyRigidBody(body);
+            api.deallocateBuffer(infoPtr, INFO_SIZE);
+            api.destroyShape(shape);
+        });
+
+        it('rigidBodyApplyCentralImpulse 立即改变线速度（Δv = I/m）', () => {
+            const shape = api.createBoxShape(1, 1, 1);
+            const infoPtr = buildRigidBodyInfo(shape, { mass: 1.0, disableDeactivation: true });
+            const body = api.createRigidBody(infoPtr);
+
+            // 冲量 I = m·Δv；m=1，I=(0,10,0) → Δv_y = 10（对 body 直接生效，无需步进）
+            api.rigidBodyApplyCentralImpulse(body, 0, 10, 0);
+            const [, vy] = readLinearVelocity(body);
+            expect(vy).toBeGreaterThan(5);
+
+            api.destroyRigidBody(body);
+            api.deallocateBuffer(infoPtr, INFO_SIZE);
+            api.destroyShape(shape);
+        });
+
+        it('rigidBodyApplyTorqueImpulse 立即改变角速度', () => {
+            const shape = api.createBoxShape(1, 1, 1);
+            const infoPtr = buildRigidBodyInfo(shape, { mass: 1.0, disableDeactivation: true });
+            const body = api.createRigidBody(infoPtr);
+
+            api.rigidBodyApplyTorqueImpulse(body, 0, 0, 5);
+            const [, , wz] = readVec3((p) => api.rigidBodyGetAngularVelocity(body, p));
+            expect(wz).not.toBe(0);
+
+            api.destroyRigidBody(body);
+            api.deallocateBuffer(infoPtr, INFO_SIZE);
+            api.destroyShape(shape);
+        });
+
+        it('rigidBodySetPushVelocity / rigidBodyGetPushVelocity 往返一致', () => {
+            const shape = api.createBoxShape(1, 1, 1);
+            const infoPtr = buildRigidBodyInfo(shape, { mass: 1.0 });
+            const body = api.createRigidBody(infoPtr);
+
+            api.rigidBodySetPushVelocity(body, 4, 5, 6);
+            const [pvx, pvy, pvz] = readVec3((p) => api.rigidBodyGetPushVelocity(body, p));
+            expect(pvx).toBeCloseTo(4, 4);
+            expect(pvy).toBeCloseTo(5, 4);
+            expect(pvz).toBeCloseTo(6, 4);
+
+            api.destroyRigidBody(body);
+            api.deallocateBuffer(infoPtr, INFO_SIZE);
+            api.destroyShape(shape);
+        });
+
+        it('rigidBodySetTurnVelocity / rigidBodyGetTurnVelocity 往返一致', () => {
+            const shape = api.createBoxShape(1, 1, 1);
+            const infoPtr = buildRigidBodyInfo(shape, { mass: 1.0 });
+            const body = api.createRigidBody(infoPtr);
+
+            api.rigidBodySetTurnVelocity(body, -1, -2, -3);
+            const [tvx, tvy, tvz] = readVec3((p) => api.rigidBodyGetTurnVelocity(body, p));
+            expect(tvx).toBeCloseTo(-1, 4);
+            expect(tvy).toBeCloseTo(-2, 4);
+            expect(tvz).toBeCloseTo(-3, 4);
+
+            api.destroyRigidBody(body);
+            api.deallocateBuffer(infoPtr, INFO_SIZE);
+            api.destroyShape(shape);
+        });
+
+        it('rigidBodyTranslate 更新世界变换指针（平移 Y=5）', () => {
+            const shape = api.createBoxShape(1, 1, 1);
+            const infoPtr = buildRigidBodyInfo(shape, { mass: 1.0, disableDeactivation: true });
+            const body = api.createRigidBody(infoPtr);
+
+            const tfPtr = api.rigidBodyGetWorldTransformPtr(body);
+            expect(tfPtr).toBeGreaterThan(0);
+
+            api.rigidBodyTranslate(body, 0, 5, 0);
+            const tf = new Float32Array(memory.buffer, tfPtr, 16);
+            expect(tf[12]).toBeCloseTo(0, 4);
+            expect(tf[13]).toBeCloseTo(5, 4);
+            expect(tf[14]).toBeCloseTo(0, 4);
+
+            api.destroyRigidBody(body);
+            api.deallocateBuffer(infoPtr, INFO_SIZE);
+            api.destroyShape(shape);
+        });
+
+        it('rigidBodyGetMotionStatePtr 返回非零（wrapper 依赖）', () => {
+            const shape = api.createBoxShape(1, 1, 1);
+            const infoPtr = buildRigidBodyInfo(shape, { mass: 1.0, disableDeactivation: true });
+            const body = api.createRigidBody(infoPtr);
+
+            expect(api.rigidBodyGetMotionStatePtr(body)).toBeGreaterThan(0);
+
+            api.destroyRigidBody(body);
+            api.deallocateBuffer(infoPtr, INFO_SIZE);
+            api.destroyShape(shape);
+        });
+
+        it('rigidBodyClearForces 清零累积总力', () => {
+            const shape = api.createBoxShape(1, 1, 1);
+            const infoPtr = buildRigidBodyInfo(shape, { mass: 1.0, disableDeactivation: true });
+            const body = api.createRigidBody(infoPtr);
+
+            api.rigidBodyApplyCentralForce(body, 0, 100, 0);
+            const [, fyBefore] = readVec3((p) => api.rigidBodyGetTotalForce(body, p));
+            expect(fyBefore).toBeGreaterThan(0);
+
+            api.rigidBodyClearForces(body);
+            const [, fyAfter] = readVec3((p) => api.rigidBodyGetTotalForce(body, p));
+            expect(fyAfter).toBeCloseTo(0, 4);
+
+            api.destroyRigidBody(body);
+            api.deallocateBuffer(infoPtr, INFO_SIZE);
+            api.destroyShape(shape);
+        });
+
+        it('rigidBodyApplyTorque 经步进累积出角速度（世界内）', () => {
+            const world = api.createPhysicsWorld();
+            let shape: number, infoPtr: number, body: number;
+            try {
+                api.physicsWorldSetGravity(world, 0, 0, 0);
+                shape = api.createBoxShape(1, 1, 1);
+                infoPtr = buildRigidBodyInfo(shape, { mass: 1.0, disableDeactivation: true });
+                body = api.createRigidBody(infoPtr);
+                api.physicsWorldAddRigidBody(world, body);
+
+                api.rigidBodyApplyTorque(body, 0, 0, 5);
+                for (let i = 0; i < 60; i++) {
+                    api.physicsWorldStepSimulation(world, 1 / 60, 1, 1 / 60);
+                }
+
+                const [, , wz] = readVec3((p) => api.rigidBodyGetAngularVelocity(body, p));
+                expect(wz).not.toBe(0);
+            } finally {
+                // 清理（断言失败也执行，避免 WASM 指针泄漏）；空值守卫防 try 中途抛错
+                if (body !== undefined) api.physicsWorldRemoveRigidBody(world, body);
+                if (body !== undefined) api.destroyRigidBody(body);
+                if (infoPtr !== undefined) api.deallocateBuffer(infoPtr, INFO_SIZE);
+                if (shape !== undefined) api.destroyShape(shape);
+                api.destroyPhysicsWorld(world);
+            }
         });
     });
 
@@ -294,6 +494,128 @@ describe('WASM 物理契约测试', () => {
             const bundle = api.createRigidBodyBundle(listPtr, 1);
             expect(() => api.destroyRigidBodyBundle(bundle)).not.toThrow();
 
+            api.deallocateBuffer(listPtr, INFO_SIZE);
+            api.destroyShape(shape);
+        });
+
+        it('bundleSetDamping 往返一致', () => {
+            const shape = api.createBoxShape(1, 1, 1);
+            const listPtr = buildBundleInfoList(shape, 1);
+            const bundle = api.createRigidBodyBundle(listPtr, 1);
+
+            api.rigidBodyBundleSetDamping(bundle, 0, 0.3, 0.7);
+            expect(api.rigidBodyBundleGetLinearDamping(bundle, 0)).toBeCloseTo(0.3, 4);
+            expect(api.rigidBodyBundleGetAngularDamping(bundle, 0)).toBeCloseTo(0.7, 4);
+
+            api.destroyRigidBodyBundle(bundle);
+            api.deallocateBuffer(listPtr, INFO_SIZE);
+            api.destroyShape(shape);
+        });
+
+        it('bundleSetAngularVelocity / bundleGetAngularVelocity 往返一致', () => {
+            const shape = api.createBoxShape(1, 1, 1);
+            const listPtr = buildBundleInfoList(shape, 1);
+            const bundle = api.createRigidBodyBundle(listPtr, 1);
+
+            api.rigidBodyBundleSetAngularVelocity(bundle, 0, 1, 2, 3);
+            const [wx, wy, wz] = readVec3((p) =>
+                api.rigidBodyBundleGetAngularVelocity(bundle, 0, p)
+            );
+            expect(wx).toBeCloseTo(1, 4);
+            expect(wy).toBeCloseTo(2, 4);
+            expect(wz).toBeCloseTo(3, 4);
+
+            api.destroyRigidBodyBundle(bundle);
+            api.deallocateBuffer(listPtr, INFO_SIZE);
+            api.destroyShape(shape);
+        });
+
+        it('bundleApplyCentralImpulse 立即改变线速度', () => {
+            const shape = api.createBoxShape(1, 1, 1);
+            const listPtr = buildBundleInfoList(shape, 1, [1.0]);
+            const bundle = api.createRigidBodyBundle(listPtr, 1);
+
+            api.rigidBodyBundleApplyCentralImpulse(bundle, 0, 0, 10, 0);
+            const [, vy] = readBundleLinearVelocity(bundle, 0);
+            expect(vy).toBeGreaterThan(5);
+
+            api.destroyRigidBodyBundle(bundle);
+            api.deallocateBuffer(listPtr, INFO_SIZE);
+            api.destroyShape(shape);
+        });
+
+        it('bundleSetPushVelocity / bundleGetPushVelocity 往返一致', () => {
+            const shape = api.createBoxShape(1, 1, 1);
+            const listPtr = buildBundleInfoList(shape, 1);
+            const bundle = api.createRigidBodyBundle(listPtr, 1);
+
+            api.rigidBodyBundleSetPushVelocity(bundle, 0, 4, 5, 6);
+            const [pvx, pvy, pvz] = readVec3((p) =>
+                api.rigidBodyBundleGetPushVelocity(bundle, 0, p)
+            );
+            expect(pvx).toBeCloseTo(4, 4);
+            expect(pvy).toBeCloseTo(5, 4);
+            expect(pvz).toBeCloseTo(6, 4);
+
+            api.destroyRigidBodyBundle(bundle);
+            api.deallocateBuffer(listPtr, INFO_SIZE);
+            api.destroyShape(shape);
+        });
+
+        it('bundleSetTurnVelocity / bundleGetTurnVelocity 往返一致', () => {
+            const shape = api.createBoxShape(1, 1, 1);
+            const listPtr = buildBundleInfoList(shape, 1);
+            const bundle = api.createRigidBodyBundle(listPtr, 1);
+
+            api.rigidBodyBundleSetTurnVelocity(bundle, 0, -1, -2, -3);
+            const [tvx, tvy, tvz] = readVec3((p) =>
+                api.rigidBodyBundleGetTurnVelocity(bundle, 0, p)
+            );
+            expect(tvx).toBeCloseTo(-1, 4);
+            expect(tvy).toBeCloseTo(-2, 4);
+            expect(tvz).toBeCloseTo(-3, 4);
+
+            api.destroyRigidBodyBundle(bundle);
+            api.deallocateBuffer(listPtr, INFO_SIZE);
+            api.destroyShape(shape);
+        });
+
+        it('bundleGetLocalInertia 与 setMassProps 的局部惯量一致', () => {
+            const shape = api.createBoxShape(1, 1, 1);
+            const listPtr = buildBundleInfoList(shape, 1, [1.0]);
+            const bundle = api.createRigidBodyBundle(listPtr, 1);
+
+            api.rigidBodyBundleSetMassProps(bundle, 0, 4.0, 1, 2, 3);
+            const [ix, iy, iz] = readVec3((p) =>
+                api.rigidBodyBundleGetLocalInertia(bundle, 0, p)
+            );
+            expect(ix).toBeCloseTo(1, 4);
+            expect(iy).toBeCloseTo(2, 4);
+            expect(iz).toBeCloseTo(3, 4);
+
+            api.destroyRigidBodyBundle(bundle);
+            api.deallocateBuffer(listPtr, INFO_SIZE);
+            api.destroyShape(shape);
+        });
+
+        it('bundleClearForces 清零累积总力', () => {
+            const shape = api.createBoxShape(1, 1, 1);
+            const listPtr = buildBundleInfoList(shape, 1, [1.0]);
+            const bundle = api.createRigidBodyBundle(listPtr, 1);
+
+            api.rigidBodyBundleApplyCentralForce(bundle, 0, 0, 50, 0);
+            const [, fyBefore] = readVec3((p) =>
+                api.rigidBodyBundleGetTotalForce(bundle, 0, p)
+            );
+            expect(fyBefore).toBeGreaterThan(0);
+
+            api.rigidBodyBundleClearForces(bundle, 0);
+            const [, fyAfter] = readVec3((p) =>
+                api.rigidBodyBundleGetTotalForce(bundle, 0, p)
+            );
+            expect(fyAfter).toBeCloseTo(0, 4);
+
+            api.destroyRigidBodyBundle(bundle);
             api.deallocateBuffer(listPtr, INFO_SIZE);
             api.destroyShape(shape);
         });

@@ -174,6 +174,67 @@ describe('loadThumbnailsStreaming — AbortSignal (adr-136)', () => {
         expect(getThumb).not.toHaveBeenCalled();
     });
 
+    it('空 keys 也 abort 上一批次：契约「每次新调用取消上一批次」恒定（回归）', async () => {
+        // 起一个慢批次（在飞请求）
+        getThumb.mockImplementation((k: string) =>
+            cancellable(new Promise<string>((r) => setTimeout(() => r(`data-${k}`), 0)))
+        );
+        const p1 = loadThumbnailsStreaming(['a', 'b', 'c']);
+        // 随即以空 keys「切到」空目录：应中止 p1，丢弃其过期结果
+        await loadThumbnailsStreaming([]);
+        await p1;
+        expect(mockState.thumbnailCache.size).toBeLessThan(3);
+    });
+
+    it('已缓存 key 跳过拉取，且不被覆盖', async () => {
+        mockState.thumbnailCache.set('a', 'cached-a');
+        getThumb.mockImplementation((k: string) => cancellable(Promise.resolve(`data-${k}`)));
+        await loadThumbnailsStreaming(['a', 'b', 'c']);
+        expect(getThumb).toHaveBeenCalledTimes(2);
+        expect(getThumb).not.toHaveBeenCalledWith('a');
+        expect(mockState.thumbnailCache.get('a')).toBe('cached-a');
+        expect(mockState.thumbnailCache.get('b')).toBe('data-b');
+    });
+
+    it('GetThumbnail 拒绝：不向调用方抛、不写该 key、不影响后续 key', async () => {
+        getThumb.mockImplementation((k: string) =>
+            k === 'bad'
+                ? cancellable(Promise.reject(new Error('boom')))
+                : cancellable(Promise.resolve(`data-${k}`))
+        );
+        await expect(loadThumbnailsStreaming(['bad', 'ok'])).resolves.toBeUndefined();
+        expect(mockState.thumbnailCache.get('bad')).toBeUndefined();
+        expect(mockState.thumbnailCache.get('ok')).toBe('data-ok');
+        expect(notify).toHaveBeenCalled();
+    });
+
+    it('GetThumbnail 返回空值：不写缓存、不通知', async () => {
+        notify.mockClear();
+        getThumb.mockImplementation((k: string) => cancellable(Promise.resolve('')));
+        await loadThumbnailsStreaming(['empty1', 'empty2']);
+        expect(mockState.thumbnailCache.size).toBe(0);
+        expect(notify).not.toHaveBeenCalled();
+    });
+
+    it('新批次取代旧批次：前者在飞结果被丢弃，后者正常写入', async () => {
+        getThumb.mockImplementation((k: string) =>
+            cancellable(new Promise<string>((r) => setTimeout(() => r(`data-${k}`), 0)))
+        );
+        const p1 = loadThumbnailsStreaming(['a', 'b', 'c']);
+        await loadThumbnailsStreaming(['x', 'y', 'z']);
+        await p1;
+        expect(mockState.thumbnailCache.get('a')).toBeUndefined();
+        expect(mockState.thumbnailCache.get('x')).toBe('data-x');
+        expect(mockState.thumbnailCache.get('z')).toBe('data-z');
+    });
+
+    it('abortThumbnailStreaming 无在飞批次：幂等 no-op', async () => {
+        expect(() => abortThumbnailStreaming()).not.toThrow();
+        await loadThumbnailsStreaming(['a', 'b', 'c']);
+        abortThumbnailStreaming(); // 批次已结束，清引用后再次调用
+        expect(() => abortThumbnailStreaming()).not.toThrow();
+    });
+
     it('已 abort 的 signal：协作式停止，0 次 GetThumbnail 且不写缓存', async () => {
         const ctrl = new AbortController();
         ctrl.abort();
