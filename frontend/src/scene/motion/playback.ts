@@ -110,6 +110,12 @@ export function initPlaybackObservables(
             runtime
                 .seekAnimation(0, true)
                 .then(() => {
+                    // [fix:round20 P2] _disposed 守卫：dispose 后不再执行任何回调（不变量）。
+                    // 原实现仅靠 !_manager 间接判断——dispose 后新 init 已注入新 _manager，
+                    // 旧链会误清新 _loopPending、误置 isPlaying，污染新实例。
+                    if (_disposed) {
+                        return;
+                    }
                     if (!loop) {
                         _loopPending = false;
                         return;
@@ -122,6 +128,9 @@ export function initPlaybackObservables(
                     runtime
                         .playAnimation()
                         .then(() => {
+                            if (_disposed) {
+                                return;
+                            }
                             _loopPending = false;
                             setIsPlaying(true);
                             updatePlaybackUI();

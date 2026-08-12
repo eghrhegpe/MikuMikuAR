@@ -22,6 +22,7 @@ invariants:
   - 物理分类规则 PHYSICS_CAT_RULES（skirt/chest/hair/accessory 多语言关键词），加载时构建 PHYSICS_CAT_PATTERNS；注：uiState.physicsCategoryMap 覆盖机制为历史注释声明，当前源码未实现
   - 不直接 import triggerAutoSave / scene.ts → 经构造函数注入回调，防循环依赖
   - dispose 级联释放骨骼覆盖（lineSystem/joints/overrideLines）、override 材质、outfit overlay；VMD 数据仅由 clearVmdData 显式清除（dispose 不清理）
+  - 删除**非焦点**模型不隐式 `focus()`：焦点状态只在删除焦点模型分支维护（自动切到剩余第一个），删除任意模型不再重置相机视角（autoFrame）+ 冗余 autoSave（round13 P3）
 
 use_when:
   - 模型注册表

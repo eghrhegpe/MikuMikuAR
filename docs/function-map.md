@@ -100,9 +100,9 @@
 | `toDiagnosticContext()` | `core/ai/error-buffer:305` | — |
 | `uninstallLoggingPatch()` | `core/ai/error-buffer:219` | 卸载 console.error 补丁，恢复原始实现。 |
 | `GoAiAdapter()` | `core/ai/go-adapter:30` | — |
-| `goAiAdapter()` | `core/ai/go-adapter:357` | — |
+| `goAiAdapter()` | `core/ai/go-adapter:367` | — |
 | `goKeyAllowsProceed()` | `core/ai/go-key-allows-proceed:11` | Go 桌面端 key 不可回读，当 isGo=true &amp;&amp; keyConfigured=true 时， missingKey 不应阻止前端发起请求（key 由 Go 后端持有）。 |
-| `resolveAi()` | `core/ai/index:28` | — |
+| `resolveAi()` | `core/ai/index:29` | — |
 | `ActionResult()` | `core/ai/intent-dispatcher:4` | — |
 | `executeAction()` | `core/ai/intent-dispatcher:56` | — |
 | `parseActionFromLLM()` | `core/ai/intent-dispatcher:23` | — |
@@ -445,7 +445,7 @@
 | `pushRenderingContext()` | `core/render-context:29` | 进入一个渲染上下文（renderCustom 前调用）。 |
 | `calcHardwareScaling()` | `core/render-loop:28` | 根据 DPR + renderScale 计算安全的 hardwareScalingLevel， 钳位帧缓冲不超过 GL_MAX_TEXTURE_SIZE（防 DPR×render |
 | `startRenderLoop()` | `core/render-loop:55` | 启动渲染循环（幂等：先停旧实例，避免 setInterval / render-loop 泄漏）。 |
-| `stopRenderLoop()` | `core/render-loop:143` | 停止渲染循环并清理 FPS 时钟。 |
+| `stopRenderLoop()` | `core/render-loop:157` | 停止渲染循环并清理 FPS 时钟。 |
 | `reportResourceWarning()` | `core/resource-warning-sink:38` | 上报一条资源加载警告（自动去重）。 |
 | `EventCallback()` | `core/runtime-bridge:18` | — |
 | `RuntimeBridge()` | `core/runtime-bridge:32` | — |
@@ -1691,8 +1691,8 @@
 | `unpinPerception()` | `scene/motion/perception:648` | unpin 模型感知（非焦点模型同步 deactivate） |
 | `PlaybackObservablesDispose()` | `scene/motion/playback:52` | — |
 | `initPlaybackObservables()` | `scene/motion/playback:56` | — |
-| `seekFromEvent()` | `scene/motion/playback:199` | — |
-| `updatePlaybackUI()` | `scene/motion/playback:173` | — |
+| `seekFromEvent()` | `scene/motion/playback:208` | — |
+| `updatePlaybackUI()` | `scene/motion/playback:182` | — |
 | `ProcMotionController()` | `scene/motion/proc-motion-bridge:40` | — |
 | `activateGazeTracking()` | `scene/motion/proc-motion-bridge:121` | — |
 | `createProcBeatDetector()` | `scene/motion/proc-motion-bridge:60` | — |

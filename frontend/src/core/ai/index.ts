@@ -14,6 +14,7 @@ import type { AiService } from './types';
 import { browserAiAdapter } from './browser-adapter';
 import { awaitWailsBridge, isWebEntryMode, readDeclaredAdapter } from '../platform';
 import { makeLazyLoader } from '../async';
+import { logWarn } from '@/core/logger';
 
 // go-adapter 动态加载：web 入口短路路径完全不拉进 bundle，
 // 避免把 Go 侧 Wails 调用链带入纯浏览器构建。桌面/安卓路径首次调用时按需加载。
@@ -34,42 +35,52 @@ export function resolveAi(): Promise<AiService> {
     }
 
     _resolving = (async (): Promise<AiService> => {
-        // Tier 0 — 入口显式声明（最高优先级）。
-        const declared = readDeclaredAdapter('__MMKU_AI_BACKEND__');
-        if (declared === 'browser') {
-            _resolved = browserAiAdapter;
-            return _resolved;
-        }
-        if (declared === 'go') {
-            const ready = await awaitWailsBridge(3000);
-            _resolved =
-                ready && typeof window.wails === 'object'
-                    ? await _getGoAdapter()
-                    : browserAiAdapter;
-            return _resolved;
-        }
+        // [fix:round20 P1] 顶层 try/catch：go-adapter 动态 import 失败（chunk 加载失败 /
+        // CSP）时，若 IIFE reject 会让 _resolving 永久持有 rejected promise——之后所有
+        // resolveAi() 复用该 rejected promise，AI 功能全局锁死，破坏「resolveAi 不 reject」
+        // 不变量。降级 browserAiAdapter（功能降级不死锁），与 backend/index.ts:83-87 同模式。
+        try {
+            // Tier 0 — 入口显式声明（最高优先级）。
+            const declared = readDeclaredAdapter('__MMKU_AI_BACKEND__');
+            if (declared === 'browser') {
+                _resolved = browserAiAdapter;
+                return _resolved;
+            }
+            if (declared === 'go') {
+                const ready = await awaitWailsBridge(3000);
+                _resolved =
+                    ready && typeof window.wails === 'object'
+                        ? await _getGoAdapter()
+                        : browserAiAdapter;
+                return _resolved;
+            }
 
-        // Tier 1 — 旧 web 短路标记 / 构建模式。
-        if (isWebEntryMode()) {
+            // Tier 1 — 旧 web 短路标记 / 构建模式。
+            if (isWebEntryMode()) {
+                _resolved = browserAiAdapter;
+                return _resolved;
+            }
+
+            // Tier 2 — 桌面入口（dev 浏览器 / Wails / Android 共享同一 bundle）。
+            // 纯浏览器 dev 下 window.wails 永不存在，缩短探测避免 3s 白等；
+            // 生产 Wails/Android 保留 3000ms 以消化冷启动桥接延迟。
+            const dev = (import.meta as unknown as { env?: { DEV?: boolean } }).env?.DEV === true;
+            const timeout = dev && typeof window.wails === 'undefined' ? 500 : 3000;
+            const ready = await awaitWailsBridge(timeout);
+            if (ready && typeof window.wails === 'object') {
+                _resolved = await _getGoAdapter();
+            } else {
+                console.warn(
+                    `[ai] resolveAi: ${timeout}ms 内未探测到 window.wails，降级 browserAiAdapter`
+                );
+                _resolved = browserAiAdapter;
+            }
+            return _resolved;
+        } catch (err) {
+            logWarn('ai', 'resolveAi failed, degrade to browserAiAdapter:', err);
             _resolved = browserAiAdapter;
             return _resolved;
         }
-
-        // Tier 2 — 桌面入口（dev 浏览器 / Wails / Android 共享同一 bundle）。
-        // 纯浏览器 dev 下 window.wails 永不存在，缩短探测避免 3s 白等；
-        // 生产 Wails/Android 保留 3000ms 以消化冷启动桥接延迟。
-        const dev = (import.meta as unknown as { env?: { DEV?: boolean } }).env?.DEV === true;
-        const timeout = dev && typeof window.wails === 'undefined' ? 500 : 3000;
-        const ready = await awaitWailsBridge(timeout);
-        if (ready && typeof window.wails === 'object') {
-            _resolved = await _getGoAdapter();
-        } else {
-            console.warn(
-                `[ai] resolveAi: ${timeout}ms 内未探测到 window.wails，降级 browserAiAdapter`
-            );
-            _resolved = browserAiAdapter;
-        }
-        return _resolved;
     })();
 
     return _resolving;

@@ -172,8 +172,18 @@ export class GoAiAdapter implements AiService {
     }
 
     async *streamChat(req: ChatRequest): AsyncIterable<ChatChunk> {
-        const b = await _getB();
-        const evt = await _getEvents();
+        // [fix:round20 P2] await 移入 try：动态 import（@wailsio/runtime / bindings）失败时
+        // 统一 yield error 收尾，与 browser 适配器「所有失败均 yield {type:'error'}」契约一致；
+        // 否则 generator 直接 throw 会让消费方 for-await 跳过 tool_call/done 收尾逻辑。
+        let b: Awaited<ReturnType<typeof _getB>>;
+        let evt: Awaited<ReturnType<typeof _getEvents>>;
+        try {
+            b = await _getB();
+            evt = await _getEvents();
+        } catch (err) {
+            yield { type: 'error', error: translateGoError(err) };
+            return;
+        }
 
         const queue: ChatChunk[] = [];
         let done = false;

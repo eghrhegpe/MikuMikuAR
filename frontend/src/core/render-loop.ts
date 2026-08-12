@@ -64,15 +64,23 @@ export function startRenderLoop(): void {
         _renderBeforeTime = performance.now();
     });
     _afterObs = observe(scene.onAfterRenderObservable, () => {
-        const _gpuElapsed = performance.now() - _renderBeforeTime;
-        if (_gpuElapsed > 30) {
-            const _obsCount = scene.onBeforeRenderObservable.observers
-                ? scene.onBeforeRenderObservable.observers.length
-                : 0;
-            logWarn(
-                'perf:gpu',
-                `[${formatTimestamp()}] before→after render took ${_gpuElapsed.toFixed(1)}ms (observers=${_obsCount})`
-            );
+        // [fix:round20 P2] perf:gpu 热路径日志门控：与 perf:render 对齐（DEV-only + 帧节流），
+        // 且变量更名 _frameElapsed（实为 before→after 墙钟时间，含 CPU，非纯 GPU 耗时）。
+        _frameCounter++;
+        if (
+            import.meta.env.DEV &&
+            _frameCounter % PERF_SAMPLE_INTERVAL === 0
+        ) {
+            const _frameElapsed = performance.now() - _renderBeforeTime;
+            if (_frameElapsed > 30) {
+                const _obsCount = scene.onBeforeRenderObservable.observers
+                    ? scene.onBeforeRenderObservable.observers.length
+                    : 0;
+                logWarn(
+                    'perf:gpu',
+                    `[${formatTimestamp()}] before→after render took ${_frameElapsed.toFixed(1)}ms (observers=${_obsCount})`
+                );
+            }
         }
     });
     engine.runRenderLoop(() => {
@@ -81,34 +89,40 @@ export function startRenderLoop(): void {
             stopRenderLoop();
             return;
         }
-        const _obsBefore = scene.onBeforeRenderObservable.observers
-            ? scene.onBeforeRenderObservable.observers.length
-            : 0;
-        const _rStart = performance.now();
-        scene.render();
-        const _rElapsed = performance.now() - _rStart;
-        const _obsAfter = scene.onBeforeRenderObservable.observers
-            ? scene.onBeforeRenderObservable.observers.length
-            : 0;
-        const _obsDelta = _obsAfter - _obsBefore;
-        // 采样降频 + DEV-only：降低日志噪音（P4）
-        _frameCounter++;
-        if (
-            _frameCounter % PERF_SAMPLE_INTERVAL === 0 &&
-            (_rElapsed > 30 || (_obsDelta > 0 && _obsAfter > 100)) &&
-            import.meta.env.DEV
-        ) {
-            logWarn(
-                'perf:render',
-                `[${formatTimestamp()}] scene.render took ${_rElapsed.toFixed(1)}ms, observers=${_obsBefore}→${_obsAfter} (Δ=${_obsDelta})`
-            );
-        }
-        updatePerformance();
-        // 降级系统改了 renderScale 乘数时立即重算 hardwareScalingLevel
-        const _mulNow = getPerfRenderScaleMul();
-        if (_mulNow !== _lastMul) {
-            _lastMul = _mulNow;
-            applyScaling();
+        // [fix:round20 P2] 帧回调异常降级：Babylon _renderLoop 中回调抛错会中断 rAF 重调度链
+        // → 渲染循环静默死亡且无恢复。捕获后记一次错误并自停（FPS 时钟同时停止，故障可察觉）。
+        try {
+            const _obsBefore = scene.onBeforeRenderObservable.observers
+                ? scene.onBeforeRenderObservable.observers.length
+                : 0;
+            const _rStart = performance.now();
+            scene.render();
+            const _rElapsed = performance.now() - _rStart;
+            const _obsAfter = scene.onBeforeRenderObservable.observers
+                ? scene.onBeforeRenderObservable.observers.length
+                : 0;
+            const _obsDelta = _obsAfter - _obsBefore;
+            // 采样降频 + DEV-only：降低日志噪音（P4）
+            if (
+                _frameCounter % PERF_SAMPLE_INTERVAL === 0 &&
+                (_rElapsed > 30 || (_obsDelta > 0 && _obsAfter > 100)) &&
+                import.meta.env.DEV
+            ) {
+                logWarn(
+                    'perf:render',
+                    `[${formatTimestamp()}] scene.render took ${_rElapsed.toFixed(1)}ms, observers=${_obsBefore}→${_obsAfter} (Δ=${_obsDelta})`
+                );
+            }
+            updatePerformance();
+            // 降级系统改了 renderScale 乘数时立即重算 hardwareScalingLevel
+            const _mulNow = getPerfRenderScaleMul();
+            if (_mulNow !== _lastMul) {
+                _lastMul = _mulNow;
+                applyScaling();
+            }
+        } catch (err) {
+            console.error('[render-loop] scene.render 抛错，渲染循环自停:', err);
+            stopRenderLoop();
         }
     });
     _resizeHandler = () => {
