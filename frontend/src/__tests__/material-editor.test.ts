@@ -1234,3 +1234,44 @@ describe('resetPerMaterialParams defensiveness', () => {
         expect(() => resetPerMaterialParams('nonexistent')).not.toThrow();
     });
 });
+
+describe('NaN 防护（_clampAndAssign 非有限值跳过）', () => {
+    beforeEach(() => {
+        resetMatEditorState();
+        regModel('model_nan', 1);
+    });
+    afterEach(() => {
+        cleanupModels();
+    });
+
+    it('NaN diffuseMul 被忽略：不写入 NaN，参数保持默认', () => {
+        setMatParams('model_nan', 0, { diffuseMul: NaN });
+        expect(getMatParams('model_nan', 0)!.diffuseMul).toBe(1);
+    });
+
+    it('NaN 值不污染材质颜色（set 前 mat 保持原始）', () => {
+        const mat = modelRegistry.get('model_nan').meshes[0].material;
+        setMatCatParams('model_nan', '皮肤', { diffuseMul: NaN });
+        expect(mat.diffuseColor.r).not.toBeNaN();
+        expect(mat.diffuseColor.r).toBeCloseTo(1);
+        expect(mat.diffuseColor.g).toBeCloseTo(1);
+        expect(mat.diffuseColor.b).toBeCloseTo(1);
+    });
+
+    it('NaN shininess 不进入 round 分支制造 NaN', () => {
+        setMatParams('model_nan', 0, { shininess: NaN });
+        expect(getMatParams('model_nan', 0)!.shininess).toBe(50);
+    });
+
+    it('NaN 不影响同次调用中其它合法字段', () => {
+        setMatParams('model_nan', 0, { diffuseMul: 0.5, emissiveMul: NaN });
+        const params = getMatParams('model_nan', 0)!;
+        expect(params.diffuseMul).toBe(0.5);
+        expect(params.emissiveMul).toBe(1);
+    });
+
+    it('setMatCatParams 中 NaN 不写入分类状态', () => {
+        setMatCatParams('model_nan', '皮肤', { alphaMul: NaN });
+        expect(getMatCatParams('model_nan', '皮肤').alphaMul).toBe(1);
+    });
+});

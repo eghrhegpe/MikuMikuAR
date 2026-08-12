@@ -99,7 +99,10 @@ function _clampAndAssign(
 ): void {
     for (const key of Object.keys(params) as (keyof MaterialCategoryParams)[]) {
         const val = params[key];
-        if (val === undefined) {
+        // [fix NaN] 跳过 undefined 及非有限值（NaN/±Infinity）：NaN 会经 Math.min/max
+        // 传播并污染材质颜色（o.diffuse.r * NaN = NaN），且一旦写入状态 Map 便持续生效。
+        // 非法输入等价于「未设置」，不走 clamp 分支。
+        if (val === undefined || !Number.isFinite(val)) {
             continue;
         }
         const [min, max, round] = CLAMP_RULES[key];

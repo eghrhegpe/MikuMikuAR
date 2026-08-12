@@ -239,3 +239,55 @@ describe('边界与兜底', () => {
         expect(loadManager.current).toBeNull();
     });
 });
+
+describe('loadId 生成健壮性', () => {
+    it('Math.random 返回极端值（0.5）时 loadId 仍保持 4 位随机段格式', async () => {
+        // 缺陷复现：_generateLoadId 用 Math.random().toString(36).slice(2,6)，
+        // 当随机值使 toString(36) 过短（如 0.5 → '0.i'）时随机段不足 4 位，破坏契约正则。
+        const spy = vi.spyOn(Math, 'random').mockReturnValue(0.5);
+        try {
+            __mocks.loadPMXFile.mockRejectedValueOnce(new Error('id-probe'));
+            const err = (await loadManager
+                .load({ kind: 'actor', path: '/probe.pmx' })
+                .catch((e: LibraryLoadError) => e)) as LibraryLoadError;
+            expect(err.loadId).toMatch(/^l_[0-9a-z]+_[0-9a-z]{4}$/);
+        } finally {
+            spy.mockRestore();
+        }
+    });
+});
+
+describe('排队中 abort 与队列健康', () => {
+    it('排队中 abort 第二个请求：不影响正在执行的前导任务，且被 abort 请求短路不启动 loader', async () => {
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        try {
+            const order: string[] = [];
+            let releaseA!: () => void;
+            const gateA = new Promise<void>((r) => (releaseA = r));
+            __mocks.loadPMXFile.mockImplementation((path: string) => {
+                order.push(path);
+                if (path === '/a.pmx') return gateA.then(() => 'm1');
+                return Promise.resolve('m1');
+            });
+            const p1 = loadManager.load({ kind: 'actor', path: '/a.pmx' });
+            const ctrl = new AbortController();
+            ctrl.abort();
+            const p2 = loadManager.load({ kind: 'actor', path: '/b.pmx' }, ctrl.signal);
+            // 等 p1 进入 loadPMXFile 后释放门闩
+            await vi.waitFor(() => expect(order).toContain('/a.pmx'));
+            releaseA();
+            const h1 = await p1;
+            expect(h1).toEqual({ id: 'm1', kind: 'actor', name: '测试模型', filePath: '/a.pmx' });
+            await expect(p2).rejects.toSatisfy(
+                (e: unknown) => e instanceof DOMException && e.name === 'AbortError'
+            );
+            // b 的 loader 不应被启动（排队期间已短路）
+            expect(order).not.toContain('/b.pmx');
+            // 队列健康：abort 后不残留 current
+            expect(loadManager.getCurrentLoad()).toBeNull();
+            expect(loadManager.current).toBeNull();
+        } finally {
+            warnSpy.mockRestore();
+        }
+    });
+});

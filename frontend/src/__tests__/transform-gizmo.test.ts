@@ -392,3 +392,99 @@ describe('onGizmoDragObservable（连续拖拽通知）', () => {
         expect(spy).toHaveBeenCalled();
     });
 });
+
+describe('attachGizmo 拖拽中 flush 的异常与多回调（边界）', () => {
+    it('守卫：拖拽中二次 attach 时 flush 回调抛异常 → attach 不崩且 logWarn', () => {
+        const boom = vi.fn(() => {
+            throw new Error('boom');
+        });
+        gizmo.initTransformGizmo(scene);
+        gizmo.attachGizmo({ id: 'a', node, types: ['position'], onPositionDragEnd: boom });
+        dragStartCb(shared.PositionGizmo)();
+        expect(gizmo.isGizmoDragging()).toBe(true);
+        // attachGizmo 内部 detachGizmo → flush [boom] 抛异常 → 捕获 logWarn 后继续建新 gizmo
+        expect(() =>
+            gizmo.attachGizmo({ id: 'b', node, types: ['position'] })
+        ).not.toThrow();
+        expect(shared.logWarn).toHaveBeenCalled();
+        expect(gizmo.getGizmoTargetId()).toBe('b');
+        expect(gizmo.isGizmoDragging()).toBe(false);
+    });
+
+    it('正常：多类型 drag-end 回调在拖拽中 detach 时全部 flush 一次', () => {
+        const onPos = vi.fn();
+        const onRot = vi.fn();
+        const onScl = vi.fn();
+        gizmo.initTransformGizmo(scene);
+        gizmo.attachGizmo({
+            id: 'm',
+            node,
+            types: ['position', 'rotation', 'scale'],
+            onPositionDragEnd: onPos,
+            onRotationDragEnd: onRot,
+            onScaleDragEnd: onScl,
+        });
+        dragStartCb(shared.PositionGizmo)();
+        expect(gizmo.isGizmoDragging()).toBe(true);
+        gizmo.detachGizmo();
+        expect(onPos).toHaveBeenCalledTimes(1);
+        expect(onRot).toHaveBeenCalledTimes(1);
+        expect(onScl).toHaveBeenCalledTimes(1);
+        expect(onPos).toHaveBeenCalledWith(node);
+    });
+
+    it('守卫：正常拖拽结束后 detach → 不再重复 flush 回调', () => {
+        const onPos = vi.fn();
+        gizmo.initTransformGizmo(scene);
+        gizmo.attachGizmo({ id: 'd', node, types: ['position'], onPositionDragEnd: onPos });
+        dragStartCb(shared.PositionGizmo)();
+        dragEndCb(shared.PositionGizmo)(node); // 正常结束 → onPos 一次
+        expect(onPos).toHaveBeenCalledTimes(1);
+        gizmo.detachGizmo(); // 非拖拽中（_isDragging=false）→ 不 flush
+        expect(onPos).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe('computeSnapDistance 零/负 step 边界', () => {
+    it('边界：step=0 → snapDistance=0（Babylon 禁用语义）', () => {
+        expect(gizmo.computeSnapDistance('position', true, 0)).toBe(0);
+        expect(gizmo.computeSnapDistance('rotation', true, 0)).toBe(0);
+        expect(gizmo.computeSnapDistance('scale', true, 0)).toBe(0);
+    });
+
+    it('边界：负 step → 返回负 snapDistance（不崩，调用方应避免）', () => {
+        expect(gizmo.computeSnapDistance('position', true, -2)).toBe(-2);
+        expect(gizmo.computeSnapDistance('rotation', true, -2)).toBeCloseTo(
+            -2 * (Math.PI / 12)
+        );
+    });
+});
+
+describe('attachGizmo types 含未知类型（边界）', () => {
+    it('边界：types 混入未知类型 → 忽略且不泄漏不崩', () => {
+        gizmo.initTransformGizmo(scene);
+        const ok = gizmo.attachGizmo({
+            id: 'u',
+            node,
+            types: ['position', 'foo' as never, 'bar' as never],
+        });
+        expect(ok).toBe(true);
+        expect(shared.PositionGizmo).toHaveBeenCalledTimes(1);
+        expect(shared.RotationGizmo).not.toHaveBeenCalled();
+        expect(shared.ScaleGizmo).not.toHaveBeenCalled();
+        expect(gizmo.getActiveGizmoTypes()).toEqual(['position']);
+        expect(gizmo.getGizmoTargetId()).toBe('u');
+    });
+
+    it('边界：types 仅含未知类型 → 不创建 gizmo 但 id 仍记录', () => {
+        gizmo.initTransformGizmo(scene);
+        const ok = gizmo.attachGizmo({ id: 'only', node, types: ['nope' as never] });
+        expect(ok).toBe(true);
+        expect(shared.PositionGizmo).not.toHaveBeenCalled();
+        expect(shared.RotationGizmo).not.toHaveBeenCalled();
+        expect(shared.ScaleGizmo).not.toHaveBeenCalled();
+        expect(gizmo.getActiveGizmoTypes()).toEqual([]);
+        expect(gizmo.isGizmoActive()).toBe(true);
+        expect(gizmo.getGizmoTargetId()).toBe('only');
+    });
+});
