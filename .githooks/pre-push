@@ -137,6 +137,28 @@ if [ -n "$CHANGED" ]; then
   fi
 fi
 
+# ── 纯 infra 变更快速放行（.github/ 或 *.yml） ──
+# [2026-08-12] 改 CI 工作流/*.yml 不碰源码、文档、ADR，全量生成类门禁
+# （funcmap/docsindex/lint/vitest/deadcode 等）无意义且拖慢 push + 吃满单核。
+# 此处直接放行，由 push 后 CI（scripts-hygiene / lint / test）兜底。
+# 注：仅当变更全部落在 .github/ 或 .yml/.yaml 时短路；改动任一源码/文档仍走全量。
+INFRA_ONLY=false
+if [ -n "$CHANGED" ]; then
+  if echo "$CHANGED" | grep -qvE '^(\.github/|.*\.(yml|yaml)$)'; then
+    INFRA_ONLY=false
+  else
+    INFRA_ONLY=true
+  fi
+fi
+if [ "$INFRA_ONLY" = "true" ]; then
+  echo ""
+  echo "════════ [pre-push] 结论摘要 ════════"
+  echo "  纯 GitHub Actions / YAML 配置变更，跳过源码与文档门禁（CI 兜底）"
+  echo "════════════════════════════════════"
+  echo "[pre-push] ✅ 全部通过"
+  exit 0
+fi
+
 # ── P6: bindings 同步性（Go 变动时检查；不可自动修复） ──
 # 实跑 generate:bindings 对比工作区：
 #   - 生成结果与当前一致（含"Go 改了但 bindings 内容恰好没变"的合法场景）→ 放行
