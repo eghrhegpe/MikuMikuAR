@@ -954,6 +954,22 @@ describe('setFov（FOV 写入）', () => {
         expect(() => setFov(2)).not.toThrow();
         expect(getFov()).toBe(2);
     });
+
+    it('边界：FOV 为 NaN 时回退默认 0.8，不污染 state 与 live camera', () => {
+        const arc = new shared.ArcRotateCamera();
+        setCurrentCamera(arc);
+        setFov(NaN);
+        expect(getFov()).toBe(0.8);
+        expect(arc.fov).toBe(0.8);
+    });
+
+    it('边界：FOV 为 Infinity 时钳位至上限 3', () => {
+        const arc = new shared.ArcRotateCamera();
+        setCurrentCamera(arc);
+        setFov(Infinity);
+        expect(getFov()).toBe(3);
+        expect(arc.fov).toBe(3);
+    });
 });
 
 describe('setCameraState（补充：AR 模式跳过 switchCameraMode）', () => {

@@ -950,67 +950,67 @@
 | `hasCameraAnimationHandle()` | `scene/camera/camera-vmd:119` | VMD 相机动画句柄是否就绪（switchCameraMode 在 vmd 分支前置检查）。 |
 | `loadCameraVmd()` | `scene/camera/camera-vmd:37` | Load camera animation from a VMD (MmdAnimation) and create an MmdCamera. |
 | `setSwitchCameraModeCallback()` | `scene/camera/camera-vmd:32` | camera.ts 启动时注入 switchCameraMode 回调。 |
-| `CameraBehavior()` | `scene/camera/camera:313` | — |
-| `CameraControl()` | `scene/camera/camera:291` | — |
+| `CameraBehavior()` | `scene/camera/camera:319` | — |
+| `CameraControl()` | `scene/camera/camera:297` | — |
 | `CameraMode()` | `scene/camera/camera:270` | — |
-| `CameraPreset()` | `scene/camera/camera:807` | — |
-| `CameraState()` | `scene/camera/camera:596` | — |
+| `CameraPreset()` | `scene/camera/camera:813` | — |
+| `CameraState()` | `scene/camera/camera:602` | — |
 | `ConcertParams()` | `scene/camera/camera:210` | — |
 | `FreeflyParams()` | `scene/camera/camera:197` | — |
 | `LEGACY_MODE_MAP()` | `scene/camera/camera:110` | ADR-100 §6.1 — 旧模式 → 双轴映射（迁移 / shim 共用）。 |
 | `OrbitParams()` | `scene/camera/camera:170` | — |
-| `ScriptedSubMode()` | `scene/camera/camera:807` | — |
+| `ScriptedSubMode()` | `scene/camera/camera:813` | — |
 | `SurroundParams()` | `scene/camera/camera:214` | — |
 | `_syncAxesFromMode()` | `scene/camera/camera:270` | ADR-100：由旧 mode 派生双轴状态。switchCameraMode 提交 _cameraMode 时同步调用，作为唯一写入点。 |
-| `animateCameraVmd()` | `scene/camera/camera:839` | — |
-| `autoFrame()` | `scene/camera/camera:572` | Auto-frame the camera to centre on a bounding box. |
-| `clearCameraVmd()` | `scene/camera/camera:839` | — |
-| `defaultCameraPreset()` | `scene/camera/camera:838` | — |
+| `animateCameraVmd()` | `scene/camera/camera:845` | — |
+| `autoFrame()` | `scene/camera/camera:578` | Auto-frame the camera to centre on a bounding box. |
+| `clearCameraVmd()` | `scene/camera/camera:845` | — |
+| `defaultCameraPreset()` | `scene/camera/camera:844` | — |
 | `deriveLegacyMode()` | `scene/camera/camera:128` | ADR-100 §6.2 — 双轴 → 旧模式反查（getCameraState 降级双写 / shim 内部路由）。 |
-| `disposeCameraSystem()` | `scene/camera/camera:776` | 顶层销毁相机系统（HMR / 页面卸载 / scene 销毁时调用）。幂等。 |
-| `getAutoCameraBeatsPerSwitch()` | `scene/camera/camera:848` | — |
-| `getBoneLockDamping()` | `scene/camera/camera:841` | — |
-| `getCameraBehavior()` | `scene/camera/camera:818` | — |
-| `getCameraControl()` | `scene/camera/camera:818` | — |
-| `getCameraMode()` | `scene/camera/camera:818` | — |
-| `getCameraState()` | `scene/camera/camera:617` | — |
-| `getCameraVmdName()` | `scene/camera/camera:818` | — |
-| `getCameraVmdPath()` | `scene/camera/camera:818` | — |
-| `getConcertParams()` | `scene/camera/camera:818` | — |
-| `getConcertPaused()` | `scene/camera/camera:818` | — |
-| `getCurrentCamera()` | `scene/camera/camera:818` | — |
-| `getFocusedModelBoneNames()` | `scene/camera/camera:841` | — |
-| `getFov()` | `scene/camera/camera:818` | — |
-| `getFreeflyParams()` | `scene/camera/camera:818` | — |
-| `getOrbitBoneLock()` | `scene/camera/camera:841` | — |
-| `getOrbitParams()` | `scene/camera/camera:818` | — |
-| `getScriptedSubMode()` | `scene/camera/camera:818` | — |
-| `getSurroundParams()` | `scene/camera/camera:818` | — |
-| `getSurroundPaused()` | `scene/camera/camera:818` | — |
-| `hasCameraVmd()` | `scene/camera/camera:818` | — |
-| `initCameraSystem()` | `scene/camera/camera:346` | Initialise the camera system and create the default Orbit camera. |
-| `isAutoCameraEnabled()` | `scene/camera/camera:855` | — |
-| `loadCameraVmd()` | `scene/camera/camera:839` | — |
+| `disposeCameraSystem()` | `scene/camera/camera:782` | 顶层销毁相机系统（HMR / 页面卸载 / scene 销毁时调用）。幂等。 |
+| `getAutoCameraBeatsPerSwitch()` | `scene/camera/camera:854` | — |
+| `getBoneLockDamping()` | `scene/camera/camera:847` | — |
+| `getCameraBehavior()` | `scene/camera/camera:824` | — |
+| `getCameraControl()` | `scene/camera/camera:824` | — |
+| `getCameraMode()` | `scene/camera/camera:824` | — |
+| `getCameraState()` | `scene/camera/camera:623` | — |
+| `getCameraVmdName()` | `scene/camera/camera:824` | — |
+| `getCameraVmdPath()` | `scene/camera/camera:824` | — |
+| `getConcertParams()` | `scene/camera/camera:824` | — |
+| `getConcertPaused()` | `scene/camera/camera:824` | — |
+| `getCurrentCamera()` | `scene/camera/camera:824` | — |
+| `getFocusedModelBoneNames()` | `scene/camera/camera:847` | — |
+| `getFov()` | `scene/camera/camera:824` | — |
+| `getFreeflyParams()` | `scene/camera/camera:824` | — |
+| `getOrbitBoneLock()` | `scene/camera/camera:847` | — |
+| `getOrbitParams()` | `scene/camera/camera:824` | — |
+| `getScriptedSubMode()` | `scene/camera/camera:824` | — |
+| `getSurroundParams()` | `scene/camera/camera:824` | — |
+| `getSurroundPaused()` | `scene/camera/camera:824` | — |
+| `hasCameraVmd()` | `scene/camera/camera:824` | — |
+| `initCameraSystem()` | `scene/camera/camera:352` | Initialise the camera system and create the default Orbit camera. |
+| `isAutoCameraEnabled()` | `scene/camera/camera:861` | — |
+| `loadCameraVmd()` | `scene/camera/camera:845` | — |
 | `logCameraAlpha()` | `scene/camera/camera:188` | Log current camera alpha for diagnostics. |
-| `refreshCameraUserSettings()` | `scene/camera/camera:840` | — |
-| `restoreAutoCameraState()` | `scene/camera/camera:848` | — |
-| `setAutoCameraBeatsPerSwitch()` | `scene/camera/camera:848` | — |
-| `setAutoCameraEnabled()` | `scene/camera/camera:855` | — |
-| `setBoneLockDamping()` | `scene/camera/camera:841` | — |
-| `setCameraBehavior()` | `scene/camera/camera:313` | ADR-100 P4 — 直接设置运动行为轴（轴 B，仅 orbit 有效）。 |
-| `setCameraControl()` | `scene/camera/camera:291` | ADR-100 P4 — 直接设置控制方案轴（轴 A）。 |
-| `setCameraPreset()` | `scene/camera/camera:838` | — |
-| `setCameraState()` | `scene/camera/camera:647` | — |
+| `refreshCameraUserSettings()` | `scene/camera/camera:846` | — |
+| `restoreAutoCameraState()` | `scene/camera/camera:854` | — |
+| `setAutoCameraBeatsPerSwitch()` | `scene/camera/camera:854` | — |
+| `setAutoCameraEnabled()` | `scene/camera/camera:861` | — |
+| `setBoneLockDamping()` | `scene/camera/camera:847` | — |
+| `setCameraBehavior()` | `scene/camera/camera:319` | ADR-100 P4 — 直接设置运动行为轴（轴 B，仅 orbit 有效）。 |
+| `setCameraControl()` | `scene/camera/camera:297` | ADR-100 P4 — 直接设置控制方案轴（轴 A）。 |
+| `setCameraPreset()` | `scene/camera/camera:844` | — |
+| `setCameraState()` | `scene/camera/camera:653` | — |
 | `setConcertParams()` | `scene/camera/camera:210` | — |
-| `setConcertPaused()` | `scene/camera/camera:818` | — |
-| `setFov()` | `scene/camera/camera:336` | — |
+| `setConcertPaused()` | `scene/camera/camera:824` | — |
+| `setFov()` | `scene/camera/camera:342` | — |
 | `setFreeflyParams()` | `scene/camera/camera:197` | — |
-| `setOrbitBoneLock()` | `scene/camera/camera:841` | — |
+| `setOrbitBoneLock()` | `scene/camera/camera:847` | — |
 | `setOrbitParams()` | `scene/camera/camera:170` | — |
 | `setSurroundParams()` | `scene/camera/camera:214` | — |
-| `setSurroundPaused()` | `scene/camera/camera:818` | — |
-| `setSyncAxesCallback()` | `scene/camera/camera:855` | — |
-| `switchCameraMode()` | `scene/camera/camera:367` | Switch to a different camera mode, preserving position as much as possible. |
+| `setSurroundPaused()` | `scene/camera/camera:824` | — |
+| `setSyncAxesCallback()` | `scene/camera/camera:861` | — |
+| `switchCameraMode()` | `scene/camera/camera:373` | Switch to a different camera mode, preserving position as much as possible. |
 | `InvertableArcRotateCameraPointersInput()` | `scene/camera/invertablePointersInput:13` | 可反转 Y 轴的 ArcRotate 相机指针输入。 |
 | `applyEnvStateFacade()` | `scene/env/_bridge/env-bridge:49` | 等同于 scene-env.ts 的 applyEnvState，但避免循环依赖。 |
 | `registerEnvStateMiddleware()` | `scene/env/_bridge/env-bridge:379` | 注册 setEnvState 中间件（供 env-time-of-day/env-gravity 等子模块调用）。 |
@@ -1397,9 +1397,9 @@
 | `hideMaterials()` | `scene/manager/outfit-overlay:301` | 隐藏指定材质名的 PMX mesh（保存原始可见性用于恢复）。 |
 | `loadOverlay()` | `scene/manager/outfit-overlay:202` | 加载 FBX overlay 并尝试绑定到模型 skeleton。 |
 | `restoreMaterials()` | `scene/manager/outfit-overlay:333` | 恢复被 hideMaterials 隐藏的 PMX mesh 可见性。 |
-| `applyOutfitVariant()` | `scene/manager/outfit:570` | — |
+| `applyOutfitVariant()` | `scene/manager/outfit:574` | — |
 | `loadOutfits()` | `scene/manager/outfit:118` | — |
-| `resetOutfit()` | `scene/manager/outfit:761` | — |
+| `resetOutfit()` | `scene/manager/outfit:765` | — |
 | `setSceneRef()` | `scene/manager/outfit:38` | 由 scene.ts 在场景初始化完成后注入当前 scene 实例 |
 | `tryApplyPbrMaterialBuilder()` | `scene/manager/pbr-builder-init:12` | 动态导入 PBRMaterialBuilder 并覆盖 MmdModelLoader.SharedMaterialBuilder。 |
 | `auditMissingTextures()` | `scene/manager/pmx-texture-audit:46` | 识别 PMX 声明但目录中缺失的纹理。 |

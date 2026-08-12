@@ -406,11 +406,15 @@ async function _applySlot(
             }
         }
     } else {
+        // [fix reset-null-orig] 恢复原始纹理：若素材原本无此纹理槽（origTex 为 null），
+        // 应用变体时添加的纹理必须被清除并 dispose——否则 reset 后残留变体纹理且泄漏。
+        if (cur && cur !== origTex) {
+            cur.dispose();
+        }
         if (origTex) {
-            if (cur && cur !== origTex) {
-                cur.dispose();
-            }
             mmdSm[slot] = origTex;
+        } else {
+            mmdSm[slot] = null;
         }
     }
 }

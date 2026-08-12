@@ -41,6 +41,13 @@ describe('orbitToCartesian — 已知坐标 (ADR §6 #1)', () => {
         expect(y).toBeCloseTo(5, 6);
         expect(z).toBeCloseTo(0, 6);
     });
+
+    it('elevation=-90, distance=5 落在 -Y 轴（正下方）', () => {
+        const [x, y, z] = orbitToCartesian(77, -90, 5);
+        expect(x).toBeCloseTo(0, 6);
+        expect(y).toBeCloseTo(-5, 6);
+        expect(z).toBeCloseTo(0, 6);
+    });
 });
 
 describe('笛卡尔 ↔ 球面 往返一致性 (ADR §6 #2)', () => {
@@ -164,6 +171,44 @@ describe('边界保护 — cartesianToOrbit 对原点与非有限输入安全', 
         expect(o.distance).toBe(0.0005);
         expect(o.elevation).toBeCloseTo(90, 3);
     });
+
+    it('基本方向向量方位角正确（atan2(x,z) 约定）', () => {
+        // +X 东 → 90°，-X 西 → -90°，+Z 北 → 0°，-Z 南 → 180°
+        expect(cartesianToOrbit(1, 0, 0).azimuth).toBeCloseTo(90, 5);
+        expect(cartesianToOrbit(-1, 0, 0).azimuth).toBeCloseTo(-90, 5);
+        expect(cartesianToOrbit(0, 0, 1).azimuth).toBeCloseTo(0, 5);
+        expect(cartesianToOrbit(0, 0, -1).azimuth).toBeCloseTo(180, 5);
+    });
+
+    it('南极点 (0,-5,0) → elevation=-90', () => {
+        const o = cartesianToOrbit(0, -5, 0);
+        expect(o.elevation).toBeCloseTo(-90, 5);
+        expect(o.distance).toBe(5);
+    });
+
+    it('elevation 极点 ±90 往返不产生 NaN（方位角丢失属 gimbal lock 数学固有，但数值须有限且仰角/距离一致）', () => {
+        for (const a of [30, -30, 180]) {
+            const up = cartesianToOrbit(...orbitToCartesian(a, 90, 10));
+            expect(Number.isFinite(up.elevation)).toBe(true);
+            expect(Number.isFinite(up.azimuth)).toBe(true);
+            expect(up.elevation).toBeCloseTo(90, 5);
+            expect(up.distance).toBeCloseTo(10, 5);
+
+            const down = cartesianToOrbit(...orbitToCartesian(a, -90, 10));
+            expect(Number.isFinite(down.elevation)).toBe(true);
+            expect(Number.isFinite(down.azimuth)).toBe(true);
+            expect(down.elevation).toBeCloseTo(-90, 5);
+            expect(down.distance).toBeCloseTo(10, 5);
+        }
+    });
+
+    it('大向量 cartesianToOrbit 返回有限值（平方不溢出）', () => {
+        const o = cartesianToOrbit(1e150, -1e150, 1e150);
+        expect(Number.isFinite(o.azimuth)).toBe(true);
+        expect(Number.isFinite(o.elevation)).toBe(true);
+        expect(Number.isFinite(o.distance)).toBe(true);
+        expect(o.distance).toBeGreaterThan(0);
+    });
 });
 
 describe('normalizeOrbit — 钳制存储值', () => {
@@ -182,6 +227,11 @@ describe('normalizeOrbit — 钳制存储值', () => {
         expect(normalizeOrbit(0, 100, 10).elevation).toBe(90);
         expect(normalizeOrbit(0, -100, 10).elevation).toBe(-90);
         expect(normalizeOrbit(0, NaN, 10).elevation).toBe(0);
+    });
+
+    it('elevation 恰为 ±90 边界值原样保留（不误收窄）', () => {
+        expect(normalizeOrbit(0, 90, 10).elevation).toBe(90);
+        expect(normalizeOrbit(0, -90, 10).elevation).toBe(-90);
     });
 
     it('azimuth 非有限 → 0', () => {

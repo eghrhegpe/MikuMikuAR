@@ -314,6 +314,32 @@ describe('resetOutfit', () => {
         expect(inst._origTextures).toBeUndefined();
         expect(inst._origParams).toBeUndefined();
     });
+
+    it('should clear a variant-added texture slot when the original had no texture', async () => {
+        // 材质原本无 diffuse 纹理；应用变体后加上纹理；reset 应清除该槽并 dispose 变体纹理
+        const sm = createMockMaterial('顔', {});
+        inst.meshes = [createMockMesh(sm)];
+        inst._origTextures = new Map([
+            [0, { diffuse: null, toon: null, spa: null, normal: null, emissive: null }],
+        ]);
+        inst._origParams = new Map([
+            [0, { diffuseR: 1, diffuseG: 1, diffuseB: 1, specularR: 1, specularG: 1, specularB: 1, specularPower: 50, ambientR: 1, ambientG: 1, ambientB: 1 }],
+        ]);
+        inst.outfitFile = {
+            version: 1,
+            variants: [{ name: '补肤', byMaterial: { 顔: { diffuse: 'new.png' } } }],
+        };
+        const { applyOutfitVariant, resetOutfit } = await import('@/scene/manager/outfit');
+        await applyOutfitVariant('m1', '补肤');
+        expect(sm.diffuseTexture).not.toBeNull();
+        const variantTex = sm.diffuseTexture;
+        // MockTexture.dispose 为普通函数，改造为 spy 以断言变体纹理被回收
+        const disposeSpy = vi.spyOn(variantTex, 'dispose');
+        await resetOutfit('m1');
+        // reset 应清除由变体添加、原始为 null 的纹理槽，并 dispose 变体纹理
+        expect(sm.diffuseTexture).toBeNull();
+        expect(disposeSpy).toHaveBeenCalled();
+    });
 });
 
 describe('loadOutfits', () => {
@@ -408,6 +434,57 @@ describe('loadOutfits', () => {
         const { loadOutfits } = await import('@/scene/manager/outfit');
         const result = await loadOutfits('m1', ac.signal);
         expect(result).toBeNull();
+    });
+
+    it('returns valid outfit JSON from LoadOutfitFile without auto-discovery', async () => {
+        const { LoadOutfitFile, ListSubDirs } = await import('../core/wails-bindings');
+        vi.mocked(LoadOutfitFile).mockResolvedValueOnce(
+            JSON.stringify({
+                version: 1,
+                variants: [{ name: '官方', byMaterial: { 顔: { diffuse: 'gui.png' } } }],
+            })
+        );
+        const lsd = vi.mocked(ListSubDirs);
+        const sm = createMockMaterial('顔', { diffuseTexture: origDiffuse });
+        const inst = createBaseInstance({
+            meshes: [createMockMesh(sm)],
+            rootMesh: createMockMesh(sm),
+            outfitFile: undefined,
+        });
+        modelRegistry.set('m1', inst);
+
+        const { loadOutfits } = await import('@/scene/manager/outfit');
+        const result = await loadOutfits('m1');
+        expect(result).not.toBeNull();
+        expect(result!.version).toBe(1);
+        expect(result!.variants).toHaveLength(1);
+        expect(result!.variants[0].name).toBe('官方');
+        expect(inst.outfitFile).toBe(result);
+        // 有效 JSON 命中后不应再走子目录自动发现
+        expect(lsd).not.toHaveBeenCalled();
+    });
+
+    it('returns null when LoadOutfitFile returns invalid JSON (no version/variants)', async () => {
+        const { LoadOutfitFile, ListSubDirs, FileExists } = await import(
+            '../core/wails-bindings'
+        );
+        vi.mocked(LoadOutfitFile).mockResolvedValueOnce(JSON.stringify({ name: 'junk' }));
+        vi.mocked(ListSubDirs).mockResolvedValueOnce(['variant_a']);
+        vi.mocked(FileExists).mockImplementation((async (p: string) =>
+            p.endsWith('orig.png')) as any);
+        const sm = createMockMaterial('顔', { diffuseTexture: origDiffuse });
+        const inst = createBaseInstance({
+            meshes: [createMockMesh(sm)],
+            rootMesh: createMockMesh(sm),
+            outfitFile: undefined,
+        });
+        modelRegistry.set('m1', inst);
+
+        const { loadOutfits } = await import('@/scene/manager/outfit');
+        const result = await loadOutfits('m1');
+        // 无效 JSON 回退到子目录自动发现并命中
+        expect(result).not.toBeNull();
+        expect(result!.variants[0].name).toBe('variant_a');
     });
 });
 

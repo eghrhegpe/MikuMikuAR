@@ -277,6 +277,12 @@ export function _syncAxesFromMode(mode: CameraMode): void {
 }
 
 function clampFov(v: number): number {
+    // [fix] NaN/Infinity 防护：clamp(NaN,lo,hi) 会传播 NaN 污染 _fov 与 camera.fov，
+    // 损坏存档（如 fov 为 NaN）加载后会导致渲染异常。NaN 回退默认 0.8，
+    // +/-Infinity 自然被 clamp 钳到边界。
+    if (Number.isNaN(v)) {
+        return 0.8;
+    }
     return clamp(v, 0.1, 3);
 }
 
