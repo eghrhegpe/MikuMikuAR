@@ -153,6 +153,18 @@ function buildMirrorLevel(): PopupLevel {
 
 /** 场景弹窗根级 items 构建器——items-based，支持增量 patch */
 function buildSceneRootItems(): PopupRow[] {
+    // [cache] 缓存：避免 RAF 每帧全量重建根 items
+    const _cache = (buildSceneRootItems as typeof buildSceneRootItems & { _cached?: { _key: string; _items: PopupRow[] } })._cached;
+    const groundEnabled = envState.groundVisibleEnabled;
+    const waterEnabled = envState.waterEnabled;
+    const dragEnabled = isDragModeEnabled();
+    const mirrorActive = isMirrorActive();
+    const reflectionQuality = envState.reflectionQuality;
+    const reflectionMode = envState.reflectionMode;
+    const key = `${groundEnabled},${waterEnabled},${dragEnabled},${mirrorActive},${reflectionQuality},${reflectionMode}`;
+    if (_cache && _cache._key === key) {
+        return _cache._items;
+    }
     const items: PopupRow[] = [];
     // 高频功能前置：灯光 > 地面/水面（带开关）> 舞台 > 物理 > 预设场景/镜像/撤销/保存
     items.push({
@@ -268,6 +280,7 @@ function buildSceneRootItems(): PopupRow[] {
             getSceneMenu()?.updateControls();
         },
     });
+    (buildSceneRootItems as typeof buildSceneRootItems & { _cached?: { _key: string; _items: PopupRow[] } })._cached = { _key: key, _items: items };
     return items;
 }
 
