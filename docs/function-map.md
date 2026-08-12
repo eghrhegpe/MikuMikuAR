@@ -8,7 +8,7 @@
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
 | 核心基础设施 | 135 | 815 |
-| 3D 场景 | 125 | 1231 |
+| 3D 场景 | 125 | 1233 |
 | 菜单 & UI | 76 | 397 |
 | 动作算法 | 18 | 138 |
 | 顶层配置 | 1 | 1 |
@@ -1729,6 +1729,8 @@
 | `removeVmdLayer()` | `scene/motion/vmd-layers:284` | 移除一个 VMD 图层 |
 | `setVmdLayerWeight()` | `scene/motion/vmd-layers:335` | 设置图层权重 |
 | `toggleVmdLayer()` | `scene/motion/vmd-layers:310` | 切换图层启用/禁用 |
+| `VMD_HEADER_MIN()` | `scene/motion/vmd-loader:47` | — |
+| `VMD_SIGNATURE()` | `scene/motion/vmd-loader:46` | — |
 | `isValidVmd()` | `scene/motion/vmd-loader:51` | 验证 ArrayBuffer 是否为合法 VMD 格式：检查签名前缀。 |
 | `loadCameraVmdFromPath()` | `scene/motion/vmd-loader:309` | — |
 | `loadVMDFromPath()` | `scene/motion/vmd-loader:179` | — |

@@ -18,6 +18,8 @@ adr:
   - ADR-192
   - ADR-238
 symbols:
+  - VMD_HEADER_MIN
+  - VMD_SIGNATURE
   - isValidVmd
   - loadCameraVmdFromPath
   - loadVMDFromPath

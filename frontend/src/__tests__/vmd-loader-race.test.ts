@@ -8,13 +8,15 @@
  * 本文件仅覆盖可隔离测试的单元。
  */
 import { describe, it, expect } from 'vitest';
-import { isValidVmd } from '@/scene/motion/vmd-loader';
+import { isValidVmd, VMD_SIGNATURE, VMD_HEADER_MIN } from '@/scene/motion/vmd-loader';
 
 // ======== isValidVmd 签名校验（纯函数，直接测试源码） ========
 
+// 真实 VMD 头部 = 30(签名+模型名) + 20(模型名余量) 共 50，外加 4 字节骨骼帧数前缀 = 54。
+// 用源码常量推导，避免与 VMD_HEADER_MIN 漂移。
 function buildVmdHeader(): Uint8Array {
-    const header = new Uint8Array(54);
-    header.set(new TextEncoder().encode('Vocaloid Motion Data 0002'), 0);
+    const header = new Uint8Array(VMD_HEADER_MIN + 4);
+    header.set(new TextEncoder().encode(VMD_SIGNATURE), 0);
     return header;
 }
 

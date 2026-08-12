@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
-import { createMinimalPhysicsImpl } from './helpers/minimal-physics-impl';
+import { createMinimalPhysicsImpl, buildRigidBodyInfo, readLinearVelocity, PHYSICS_INFO_SIZE } from './helpers/minimal-physics-impl';
 import type { MinimalPhysicsImpl } from './helpers/minimal-physics-impl';
 import type * as sprWasm from 'babylon-mmd/esm/Runtime/Optimized/wasm/spr';
 
@@ -81,18 +81,49 @@ describe('WASM 物理契约测试', () => {
             }
         });
 
-        it('多个物理世界独立存在且互不干扰', () => {
+        it('多个物理世界真正隔离：A 世界重力不影响 B 世界静止体', () => {
             const worldA = api.createPhysicsWorld();
             const worldB = api.createPhysicsWorld();
             try {
                 expect(worldA).toBeGreaterThan(0);
                 expect(worldB).toBeGreaterThan(0);
                 expect(worldA).not.toBe(worldB);
-                // 两个世界各自可设重力、步进
-                expect(() => api.physicsWorldSetGravity(worldA, 0, -9.8, 0)).not.toThrow();
-                expect(() => api.physicsWorldSetGravity(worldB, 0, -19.6, 0)).not.toThrow();
-                expect(() => api.physicsWorldStepSimulation(worldA, 1 / 60, 1, 1 / 60)).not.toThrow();
-                expect(() => api.physicsWorldStepSimulation(worldB, 1 / 60, 1, 1 / 60)).not.toThrow();
+
+                // A 世界：dynamic body + 重力，应下落
+                api.physicsWorldSetGravity(worldA, 0, -9.8, 0);
+                const shapeA = api.createBoxShape(1, 1, 1);
+                const infoA = buildRigidBodyInfo(phys, shapeA, { mass: 1.0, disableDeactivation: true });
+                const bodyA = api.createRigidBody(infoA);
+                api.physicsWorldAddRigidBody(worldA, bodyA);
+                api.deallocateBuffer(infoA, PHYSICS_INFO_SIZE);
+
+                // B 世界：static body（mass 0），无重力，应保持静止
+                api.physicsWorldSetGravity(worldB, 0, 0, 0);
+                const shapeB = api.createBoxShape(1, 1, 1);
+                const infoB = buildRigidBodyInfo(phys, shapeB, { mass: 0, disableDeactivation: true });
+                const bodyB = api.createRigidBody(infoB);
+                api.physicsWorldAddRigidBody(worldB, bodyB);
+                api.deallocateBuffer(infoB, PHYSICS_INFO_SIZE);
+
+                // 步进两个世界各 30 次
+                for (let i = 0; i < 30; i++) {
+                    api.physicsWorldStepSimulation(worldA, 1 / 60, 1, 1 / 60);
+                    api.physicsWorldStepSimulation(worldB, 1 / 60, 1, 1 / 60);
+                }
+
+                const velA = readLinearVelocity(phys, bodyA);
+                const velB = readLinearVelocity(phys, bodyB);
+                // A 世界的 dynamic body 受重力应获得向下速度
+                expect(velA[1]).toBeLessThan(-0.1);
+                // B 世界的 static body 不受任何力，速度恒为 0（隔离验证）
+                expect(velB[0]).toBeCloseTo(0);
+                expect(velB[1]).toBeCloseTo(0);
+                expect(velB[2]).toBeCloseTo(0);
+
+                api.destroyShape(shapeA);
+                api.destroyShape(shapeB);
+                api.destroyRigidBody(bodyA);
+                api.destroyRigidBody(bodyB);
             } finally {
                 api.destroyPhysicsWorld(worldA);
                 api.destroyPhysicsWorld(worldB);
