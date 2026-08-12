@@ -10,6 +10,8 @@
 // camera-vmd/factory/behaviors/bone-lock/auto 子模块。camera-state 用真实实现（纯状态）。
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import type { CameraMode, CameraBehavior } from '../scene/camera/camera-state';
+import type { CameraControl } from '../core/types';
 
 const shared = vi.hoisted(() => {
     function makeVec(x = 0, y = 0, z = 0) {

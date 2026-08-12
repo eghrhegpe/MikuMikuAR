@@ -41,9 +41,10 @@ describe('WASM 物理契约测试', () => {
         });
 
         it('memory.buffer 为 ArrayBuffer 或 SharedArrayBuffer', () => {
+            const b: unknown = memory.buffer;
             expect(
-                memory.buffer instanceof ArrayBuffer ||
-                (typeof SharedArrayBuffer !== 'undefined' && memory.buffer instanceof SharedArrayBuffer)
+                b instanceof ArrayBuffer ||
+                (typeof SharedArrayBuffer !== 'undefined' && b instanceof SharedArrayBuffer)
             ).toBe(true);
         });
     });

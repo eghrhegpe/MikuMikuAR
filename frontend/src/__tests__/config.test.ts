@@ -6,14 +6,21 @@ import {
     getRecentMotions,
     clearRecentMotions,
     toggleExpandedFolder,
+    clearExpandedFolders,
     expandedFolders,
     setLibraryRoot,
 } from '../core/library-state';
 import { computeLibraryRef, resolveLibraryRef } from '@/core/library-path';
-import { toBase64 } from '../core/image';
+import { toBase64, thumbDataUrl } from '../core/image';
 import { escapeHtml } from '../core/escape-html';
-import { normPath } from '../core/path';
-import { getBaseName, getDirPath, isUnderRoot } from '../core/path';
+import {
+    normPath,
+    getBaseName,
+    getDirPath,
+    isUnderRoot,
+    isStageLike,
+    computeLibraryRef as pureComputeLibraryRef,
+} from '../core/path';
 
 describe('config pure functions', () => {
     describe('formatTime', () => {
@@ -36,6 +43,16 @@ describe('config pure functions', () => {
 
         it('handles large values', () => {
             expect(formatTime(59999)).toBe('999:59.00');
+        });
+
+        it('60 seconds → "01:00.00" (minute carry)', () => {
+            expect(formatTime(60)).toBe('01:00.00');
+            expect(formatTime(3600)).toBe('60:00.00');
+        });
+
+        it('sub-second values keep centisecond precision', () => {
+            expect(formatTime(0.5)).toBe('00:00.50');
+            expect(formatTime(0.05)).toBe('00:00.05');
         });
 
         it('NaN / Infinity → "00:00.00" (safe fallback)', () => {
@@ -138,6 +155,23 @@ describe('config pure functions', () => {
             expect(result.length).toBe(80);
             expect(result.endsWith('...')).toBe(true);
         });
+
+        it('LibraryLoadError with null cause → "[loadId/phase] unknown error"', () => {
+            const err = { name: 'LibraryLoadError', loadId: 'lib3', phase: 'scan', cause: null };
+            expect(formatError(err)).toBe('[lib3/scan] unknown error');
+        });
+
+        it('plain object without LibraryLoadError name goes through String()', () => {
+            expect(formatError({ name: 'Other', detail: 'x' })).toBe('[object Object]');
+        });
+
+        it('tiny maxLen (< 3) does not crash and keeps 3-char ellipsis semantics', () => {
+            // limit 下限为 3：内容必被截断为 3 字符的 "..."
+            expect(formatError('abcdef', 0)).toBe('...');
+            expect(formatError('abcdef', 3)).toBe('...');
+            expect(formatError('abcdef', 4)).toBe('a...');
+            expect(() => formatError('abcdef', -5)).not.toThrow();
+        });
     });
 
     describe('toBase64', () => {
@@ -159,6 +193,29 @@ describe('config pure functions', () => {
         it('round-trips with atob', () => {
             const original = 'test 123 !@#';
             expect(atob(toBase64(original))).toBe(original);
+        });
+    });
+
+    describe('thumbDataUrl', () => {
+        it('sniffs PNG header', () => {
+            expect(thumbDataUrl('iVBORw0KGgoAAAANSUhEUg==')).toBe(
+                'data:image/png;base64,iVBORw0KGgoAAAANSUhEUg=='
+            );
+        });
+
+        it('sniffs JPEG header', () => {
+            expect(thumbDataUrl('/9j/4AAQSkZJRg==')).toBe('data:image/jpeg;base64,/9j/4AAQSkZJRg==');
+        });
+
+        it('sniffs WebP header', () => {
+            expect(thumbDataUrl('UklGRlIAAABXRUJQVlA4')).toBe(
+                'data:image/webp;base64,UklGRlIAAABXRUJQVlA4'
+            );
+        });
+
+        it('falls back to PNG for unknown / empty input', () => {
+            expect(thumbDataUrl('')).toBe('data:image/png;base64,');
+            expect(thumbDataUrl('abc123')).toBe('data:image/png;base64,abc123');
         });
     });
 
@@ -216,6 +273,32 @@ describe('config pure functions', () => {
             expect(normPath('./models/file.pmx')).toBe('models/file.pmx');
             expect(normPath('a/./b/./c')).toBe('a/b/c');
         });
+
+        it('strips multiple trailing slashes', () => {
+            expect(normPath('C:/a/b///')).toBe('C:/a/b');
+            expect(normPath('content://a/b//')).toBe('content://a/b');
+        });
+
+        it('collapses leading /./ segment', () => {
+            expect(normPath('/./a')).toBe('/a');
+        });
+
+        it('root "/" normalizes to empty string', () => {
+            expect(normPath('/')).toBe('');
+        });
+    });
+
+    describe('isStageLike', () => {
+        it('returns true for stage and scene', () => {
+            expect(isStageLike('stage')).toBe(true);
+            expect(isStageLike('scene')).toBe(true);
+        });
+
+        it('returns false for other kinds', () => {
+            expect(isStageLike('pmx')).toBe(false);
+            expect(isStageLike('vmd')).toBe(false);
+            expect(isStageLike('')).toBe(false);
+        });
     });
 });
 
@@ -244,6 +327,25 @@ describe('computeLibraryRef', () => {
 
     it('is case-insensitive for root comparison', () => {
         expect(computeLibraryRef('c:/users/test/mmd/models/scene.pmx')).toBe('models/scene.pmx');
+    });
+
+    it('strips trailing slash from file path before computing ref', () => {
+        expect(computeLibraryRef('C:/Users/test/MMD/models/')).toBe('models');
+    });
+
+    it('returns null when filePath equals the root itself', () => {
+        expect(computeLibraryRef('C:/Users/test/MMD')).toBeNull();
+    });
+
+    it('pure function returns null for null/undefined root', () => {
+        expect(pureComputeLibraryRef('C:/Users/test/MMD/models/scene.pmx', null)).toBeNull();
+        expect(pureComputeLibraryRef('C:/Users/test/MMD/models/scene.pmx', undefined)).toBeNull();
+    });
+
+    it('pure function matches case-insensitively (normPath cache may keep first-seen case)', () => {
+        const ref = pureComputeLibraryRef('C:/Users/TEST/MMD/Models/Scene.pmx', 'c:/users/test/mmd');
+        expect(ref).not.toBeNull();
+        expect(ref!.toLowerCase()).toBe('models/scene.pmx');
     });
 });
 
@@ -291,6 +393,27 @@ describe('resolveLibraryRef', () => {
         const result = resolveLibraryRef('a/b/c/model.pmx');
         expect(result).toContain('a/b/c/model.pmx');
     });
+
+    it('normalizes backslash refs to forward slashes', () => {
+        const result = resolveLibraryRef('models\\scene.pmx');
+        expect(result).toBe('C:/Users/test/MMD/models/scene.pmx');
+    });
+
+    it('rejects backslash absolute paths (bypass attempt)', () => {
+        expect(resolveLibraryRef('\\etc\\passwd')).toBeNull();
+    });
+
+    it('collapses ./ segments in ref before resolving', () => {
+        const result = resolveLibraryRef('a/./b.pmx');
+        expect(result).toBe('C:/Users/test/MMD/a/b.pmx');
+    });
+
+    it('is case-insensitive for lowercase libraryRoot', () => {
+        setLibraryRoot('c:/users/test/mmd');
+        const result = resolveLibraryRef('models/scene.pmx');
+        expect(result).not.toBeNull();
+        expect(result!.toLowerCase()).toBe('c:/users/test/mmd/models/scene.pmx');
+    });
 });
 
 describe('path helpers (getBaseName / getDirPath / isUnderRoot)', () => {
@@ -301,10 +424,22 @@ describe('path helpers (getBaseName / getDirPath / isUnderRoot)', () => {
         expect(getBaseName('foo.pmx')).toBe('foo.pmx');
     });
 
+    it('getBaseName handles multiple trailing slashes and content:// URIs', () => {
+        expect(getBaseName('C:/a/b///')).toBe('b');
+        expect(getBaseName('content://a/b')).toBe('b');
+        expect(getBaseName('/')).toBe(''); // 根路径无文件名
+    });
+
     it('getDirPath extracts parent directory', () => {
         expect(getDirPath('C:/x/y.pmx')).toBe('C:/x');
         expect(getDirPath('actors/miku.pmx')).toBe('actors');
         expect(getDirPath('foo.pmx')).toBe(''); // 无父目录
+    });
+
+    it('getDirPath handles trailing slash and content:// URIs', () => {
+        expect(getDirPath('a/b/')).toBe('a');
+        expect(getDirPath('content://a/b')).toBe('content://a');
+        expect(getDirPath('/')).toBe(''); // 根路径无父目录
     });
 
     it('isUnderRoot rejects ".." traversal segments', () => {
@@ -312,6 +447,17 @@ describe('path helpers (getBaseName / getDirPath / isUnderRoot)', () => {
         expect(isUnderRoot('C:/text-model/PMX', 'C:/text-model/PMX/Sub')).toBe(true);
         expect(isUnderRoot('C:/text-model/PMX', 'C:/text-model/PMXSub')).toBe(false); // 伪文件夹防护
         expect(isUnderRoot('c:/text-model/PMX', 'C:/text-model/PMX/Sub')).toBe(true); // 盘符大小写
+    });
+
+    it('isUnderRoot rejects bare ".." and ".."-prefixed/suffixed children', () => {
+        expect(isUnderRoot('C:/x', '..')).toBe(false);
+        expect(isUnderRoot('C:/x', '../evil')).toBe(false);
+        expect(isUnderRoot('C:/x', 'C:/x/..')).toBe(false);
+        expect(isUnderRoot('C:/x', 'C:/x/a/../b')).toBe(false);
+    });
+
+    it('isUnderRoot tolerates trailing slash on base', () => {
+        expect(isUnderRoot('C:/text-model/PMX/', 'C:/text-model/PMX/Sub')).toBe(true);
     });
 
     it('isUnderRoot returns true for exact match', () => {
@@ -343,6 +489,26 @@ describe('recentMotions', () => {
         expect(matches.length).toBe(1);
     });
 
+    it('deduplication keeps the latest name and moves entry to front', () => {
+        addRecentMotion('/path/a.vmd', 'a1');
+        addRecentMotion('/path/b.vmd', 'b1');
+        addRecentMotion('/path/a.vmd', 'a2');
+        const motions = getRecentMotions();
+        expect(motions[0].path).toBe('/path/a.vmd');
+        expect(motions[0].name).toBe('a2');
+        expect(motions.length).toBe(2);
+    });
+
+    it('getRecentMotions returns a defensive copy (external mutation is ignored)', () => {
+        addRecentMotion('/path/a.vmd', 'a1');
+        const first = getRecentMotions() as { path: string; name: string; timestamp: number }[];
+        first[0].name = 'hacked';
+        (first as any).push({ path: '/fake.vmd', name: 'fake', timestamp: 0 });
+        const second = getRecentMotions();
+        expect(second[0].name).toBe('a1');
+        expect(second.length).toBe(1);
+    });
+
     it('addRecentMotion caps at 10 entries', () => {
         for (let i = 0; i < 15; i++) {
             addRecentMotion(`/path/${i}.vmd`, `${i}`);
@@ -368,5 +534,12 @@ describe('toggleExpandedFolder', () => {
         expect(expandedFolders.has(path)).toBe(!wasExpanded);
         toggleExpandedFolder(path);
         expect(expandedFolders.has(path)).toBe(wasExpanded);
+    });
+
+    it('clearExpandedFolders empties the set', () => {
+        toggleExpandedFolder('/a');
+        toggleExpandedFolder('/b');
+        clearExpandedFolders();
+        expect(expandedFolders.size).toBe(0);
     });
 });

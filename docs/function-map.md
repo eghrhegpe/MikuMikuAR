@@ -330,15 +330,15 @@
 | `resolveLibraryRef()` | `core/library-path:14` | — |
 | `addRecentMotion()` | `core/library-state:91` | — |
 | `allModels()` | `core/library-state:29` | — |
-| `clearExpandedFolders()` | `core/library-state:134` | [fix:round14 P3] 清空已展开文件夹集合。 |
-| `clearRecentMotions()` | `core/library-state:107` | [fix:round14 P3] 清空最近动作列表。 |
+| `clearExpandedFolders()` | `core/library-state:136` | [fix:round14 P3] 清空已展开文件夹集合。 |
+| `clearRecentMotions()` | `core/library-state:109` | [fix:round14 P3] 清空最近动作列表。 |
 | `clearThumbnailCache()` | `core/library-state:59` | [fix:round14 P3] 清空缩略图缓存。 |
 | `displayNamePriority()` | `core/library-state:74` | [fix:round14 P3] 清空缩略图缓存。 |
-| `expandedFolders()` | `core/library-state:120` | — |
+| `expandedFolders()` | `core/library-state:122` | — |
 | `getRecentMotions()` | `core/library-state:99` | — |
 | `libraryRoot()` | `core/library-state:10` | — |
 | `librarySortMode()` | `core/library-state:81` | — |
-| `modelMetaCache()` | `core/library-state:113` | — |
+| `modelMetaCache()` | `core/library-state:115` | — |
 | `overridePaths()` | `core/library-state:22` | — |
 | `recentModels()` | `core/library-state:66` | — |
 | `resourceRoot()` | `core/library-state:15` | — |
@@ -346,14 +346,14 @@
 | `setDisplayNamePriority()` | `core/library-state:75` | — |
 | `setLibraryRoot()` | `core/library-state:11` | — |
 | `setLibrarySortMode()` | `core/library-state:82` | — |
-| `setModelMetaCache()` | `core/library-state:114` | — |
+| `setModelMetaCache()` | `core/library-state:116` | — |
 | `setOverridePaths()` | `core/library-state:23` | — |
 | `setRecentModels()` | `core/library-state:67` | — |
 | `setResourceRoot()` | `core/library-state:17` | [audit:P2] 同时同步 libraryRoot（历史兼容：二者语义相同，resourceRoot 为新名称）。 |
 | `setThumbnailCache()` | `core/library-state:44` | — |
 | `setThumbnailUpdateCallback()` | `core/library-state:40` | — |
 | `thumbnailCache()` | `core/library-state:36` | — |
-| `toggleExpandedFolder()` | `core/library-state:122` | — |
+| `toggleExpandedFolder()` | `core/library-state:124` | — |
 | `LibraryLoadError()` | `core/load-manager:36` | [doc:adr-135] P0.2 加载错误结构化对象。 |
 | `LoadPhase()` | `core/load-manager:26` | [doc:adr-135] P0.2 加载阶段标签。dispatch 内部按 phase 更新， 错误时包装进 LibraryLoadError，便于 formatError 加 |
 | `LoadRequest()` | `core/load-manager:45` | — |

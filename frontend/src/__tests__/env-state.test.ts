@@ -106,7 +106,7 @@ describe('tuple3 clone isolation', () => {
         for (const k of tuple3Keys) {
             const valA = (a as Record<string, unknown>)[k];
             const valB = (b as Record<string, unknown>)[k];
-            expect(valA).not.toBe(valB, `tuple3 field "${k}" shares reference`);
+            expect(valA).not.toBe(valB);
             expect(valA).toEqual(valB);
         }
     });

@@ -234,7 +234,7 @@ describe('addCollapsible', () => {
         });
 
         const header = container.querySelector('.collapsible-header')!;
-        const panel = container.querySelector('.collapsible-panel')!;
+        const panel = container.querySelector<HTMLElement>('.collapsible-panel')!;
 
         // Initially closed (defaultOpen is undefined = false)
         expect(panel.classList.contains('open')).toBe(false);
@@ -275,7 +275,7 @@ describe('addCollapsible', () => {
             },
         });
 
-        const panel = container.querySelector('.collapsible-panel')!;
+        const panel = container.querySelector<HTMLElement>('.collapsible-panel')!;
         // openWhen=true 会在 requestAnimationFrame 中展开
         return new Promise<void>((resolve) => {
             requestAnimationFrame(() => {
@@ -295,7 +295,7 @@ describe('addCollapsible', () => {
         });
 
         const header = container.querySelector('.collapsible-header')!;
-        const panel = container.querySelector('.collapsible-panel')!;
+        const panel = container.querySelector<HTMLElement>('.collapsible-panel')!;
 
         // Initially closed
         expect(panel.style.maxHeight).toBe('0');

@@ -351,9 +351,9 @@ describe('loadOutfits', () => {
         );
         vi.mocked(LoadOutfitFile).mockRejectedValueOnce(new Error('no outfit json'));
         vi.mocked(ListSubDirs).mockResolvedValueOnce(['variant_a']);
-        vi.mocked(FileExists).mockImplementation(async (p: string) => {
+        vi.mocked(FileExists).mockImplementation((async (p: string) => {
             return p.endsWith('orig.png');
-        });
+        }) as any);
 
         const sm = createMockMaterial('顔', { diffuseTexture: origDiffuse });
         const inst = createBaseInstance({

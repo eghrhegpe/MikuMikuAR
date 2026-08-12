@@ -1,5 +1,5 @@
 // [doc:adr-101] P1-a 工具函数单测：error & async helpers
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { swallowError, fireAndForget, delay, waitForFrame, makeLazyLoader, LoadingGuard, DebouncedTimer, Abortable } from '../core/async';
 import { logWarn, logError } from '../core/logger';
 
