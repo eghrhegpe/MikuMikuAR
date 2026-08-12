@@ -17,6 +17,9 @@ const BPM_WINDOW = 8; // 最近 8 次 beat 间隔求均值
 const COMMON_BPMS = [80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180];
 const QUANTIZE_THRESHOLD = 5;
 function quantizeBpm(raw: number): number {
+    if (raw <= 0) {
+        return 120;
+    }
     for (const bpm of COMMON_BPMS) {
         if (Math.abs(raw - bpm) <= QUANTIZE_THRESHOLD) {
             return bpm;
@@ -277,6 +280,7 @@ export class BeatDetector {
     ): number[] {
         const beats: number[] = [];
         const history: number[] = [];
+        const safeMinInterval = Math.max(1, minInterval);
         let sum = 0;
         for (let i = 0; i < energies.length; i++) {
             history.push(energies[i]);
@@ -285,20 +289,21 @@ export class BeatDetector {
                 sum -= history.shift()!;
             }
             const avg = sum / history.length;
-            const lastBeat = beats.length > 0 ? beats[beats.length - 1] : -minInterval;
-            if (energies[i] > avg * threshold && energies[i] > 30 && i - lastBeat >= minInterval) {
+            const lastBeat = beats.length > 0 ? beats[beats.length - 1] : -safeMinInterval;
+            if (energies[i] > avg * threshold && energies[i] > 30 && i - lastBeat >= safeMinInterval) {
                 beats.push(i);
             }
         }
         return beats;
     }
 
-    /** 纯逻辑：从 beat 时间戳数组计算 BPM。 */
+    /** 纯逻辑：从 beat 时间戳数组计算 BPM。过滤非正间隔。 */
     static bpmFromIntervals(intervalsMs: number[]): number {
-        if (intervalsMs.length === 0) {
+        const valid = intervalsMs.filter((v) => v > 0);
+        if (valid.length === 0) {
             return 120;
         }
-        const avg = intervalsMs.reduce((a, b) => a + b, 0) / intervalsMs.length;
+        const avg = valid.reduce((a, b) => a + b, 0) / valid.length;
         return avg > 0 ? Math.round(60000 / avg) : 120;
     }
 

@@ -222,12 +222,38 @@ export function setSurroundParams(p: Partial<SurroundParams>): void {
  * beatcut 是运行时叠加行为：仅当自动运镜开启、且基底行为为 none(orbit) 时生效；
  * 与 concert/turntable/scripted 互斥（这些基底行为存在时 beatcut 被抑制）。
  */
-function _resolveBehavior(mode: CameraMode): CameraBehavior {
-    const m = LEGACY_MODE_MAP[mode];
-    if (!m) {
-        logWarn('camera', `[_resolveBehavior] 未知 mode "${mode}"，回退 none`);
-        return 'none';
+/** 编译期穷尽：未知 CameraMode 在此报 TS 错误，而非运行时兜底。 */
+function _legacyEntry(mode: CameraMode): {
+    control: CameraControl;
+    behavior: CameraBehavior;
+    scripted?: ScriptedSubMode;
+} {
+    switch (mode) {
+        case 'orbit':
+            return LEGACY_MODE_MAP.orbit;
+        case 'surround':
+            return LEGACY_MODE_MAP.surround;
+        case 'concert':
+            return LEGACY_MODE_MAP.concert;
+        case 'vmd':
+            return LEGACY_MODE_MAP.vmd;
+        case 'oneshot':
+            return LEGACY_MODE_MAP.oneshot;
+        case 'freefly':
+            return LEGACY_MODE_MAP.freefly;
+        case 'ar':
+            return LEGACY_MODE_MAP.ar;
+        case 'beatcut':
+            return LEGACY_MODE_MAP.beatcut;
+        default:
+            return ((_: never): never => {
+                throw new Error(`[_legacyEntry] 未覆盖的 CameraMode: ${String(_)}`);
+            })(mode);
     }
+}
+
+function _resolveBehavior(mode: CameraMode): CameraBehavior {
+    const m = _legacyEntry(mode);
     if (isAutoCameraEnabled() && m.control === 'orbit' && m.behavior === 'none') {
         return 'beatcut';
     }
@@ -242,13 +268,7 @@ function _resolveBehavior(mode: CameraMode): CameraBehavior {
  * 也允许测试在不调用完整 initCameraSystem 的前提下手动派生双轴。
  */
 export function _syncAxesFromMode(mode: CameraMode): void {
-    const m = LEGACY_MODE_MAP[mode];
-    if (!m) {
-        logWarn('camera', `[_syncAxesFromMode] 未知 mode "${mode}"，回退 orbit`);
-        _setCameraControlState('orbit');
-        _setCameraBehaviorState('none');
-        return;
-    }
+    const m = _legacyEntry(mode);
     _setCameraControlState(m.control);
     _setCameraBehaviorState(_resolveBehavior(mode));
     if (m.scripted) {
@@ -480,11 +500,16 @@ export function switchCameraMode(mode: CameraMode): void {
             }
             newCam = createVmdCamera();
             break;
-        default:
-            logWarn('camera', `[switchCameraMode] 未知 mode "${mode}"，回退 orbit`);
-            mode = 'orbit';
+        case 'beatcut':
+            // beatcut = orbit 控制方案 + beatcut 行为（由 _resolveBehavior 派生）；
+            // 相机创建与 orbit 完全相同，无需独立实现。
             newCam = createOrbitCamera(scene, canvas);
             break;
+        default:
+            // 编译期穷尽：新增 CameraMode 值时此处必报 TS 错误，强制补 case。
+            return ((_: never): never => {
+                throw new Error(`[switchCameraMode] 未覆盖的 CameraMode: ${String(_)}`);
+            })(mode);
     }
 
     // Restore position (best-effort)

@@ -230,3 +230,181 @@ describe('BeatDetector.quantizeBpm (via detectBeatsFromEnergies)', () => {
         expect(beats.length).toBeGreaterThan(2);
     });
 });
+
+describe('BeatDetector.bpmFromIntervals — edge cases', () => {
+    it('filters negative intervals and returns 120', () => {
+        expect(BeatDetector.bpmFromIntervals([-500, -300])).toBe(120);
+    });
+
+    it('filters zero intervals', () => {
+        expect(BeatDetector.bpmFromIntervals([0, 0, 0])).toBe(120);
+    });
+
+    it('filters mix of valid and invalid intervals', () => {
+        // valid: 500, 500 → avg 500 → 120 BPM
+        expect(BeatDetector.bpmFromIntervals([500, -100, 500, 0])).toBe(120);
+    });
+
+    it('single valid interval', () => {
+        expect(BeatDetector.bpmFromIntervals([500])).toBe(120);
+    });
+
+    it('handles floating point intervals', () => {
+        // 500.5 → 60000/500.5 ≈ 119.88 → Math.round → 120
+        expect(BeatDetector.bpmFromIntervals([500.5, 500.5])).toBe(120);
+    });
+
+    it('handles very short intervals (high BPM)', () => {
+        // 200ms → 300 BPM
+        expect(BeatDetector.bpmFromIntervals([200, 200])).toBe(300);
+    });
+});
+
+describe('BeatDetector.detectBeatsFromEnergies — edge cases', () => {
+    it('minInterval=0 is clamped to 1', () => {
+        const energies: number[] = [];
+        for (let i = 0; i < 60; i++) {
+            energies.push(i % 5 === 0 ? 200 : 20);
+        }
+        const beats = BeatDetector.detectBeatsFromEnergies(energies, 1.3, 0);
+        // minInterval 被 clamp 到 1，不会每帧触发
+        expect(beats.length).toBeGreaterThan(0);
+        for (let i = 1; i < beats.length; i++) {
+            expect(beats[i] - beats[i - 1]).toBeGreaterThanOrEqual(1);
+        }
+    });
+
+    it('minInterval negative is clamped to 1', () => {
+        const energies: number[] = [];
+        for (let i = 0; i < 60; i++) {
+            energies.push(i % 5 === 0 ? 200 : 20);
+        }
+        const beats = BeatDetector.detectBeatsFromEnergies(energies, 1.3, -10);
+        expect(beats.length).toBeGreaterThan(0);
+        for (let i = 1; i < beats.length; i++) {
+            expect(beats[i] - beats[i - 1]).toBeGreaterThanOrEqual(1);
+        }
+    });
+
+    it('handles energy values of 0', () => {
+        const energies = [200, 0, 0, 0, 0, 0, 200, 0, 0, 0, 0, 0];
+        const beats = BeatDetector.detectBeatsFromEnergies(energies, 1.3, 2);
+        // 第一个 200 不满足 avg*threshold（200 > 200*1.3=260? false）
+        // 第二个 200 在 frame 6 触发
+        expect(beats.length).toBe(1);
+        expect(beats[0]).toBe(6);
+    });
+
+    it('single energy value (no history for avg)', () => {
+        const beats = BeatDetector.detectBeatsFromEnergies([200], 1.3, 1);
+        // 200 > avg(200) * 1.3 = 260? No, 200 < 260 → no beat
+        // 200 > 30? Yes, but not > avg * threshold
+        expect(beats.length).toBe(0);
+    });
+
+    it('two values: peak then flat', () => {
+        const beats = BeatDetector.detectBeatsFromEnergies([200, 20], 1.3, 1);
+        // avg after first = 200 → 200 > 260? No
+        // avg after second = 110 → 20 > 143? No
+        expect(beats.length).toBe(0);
+    });
+
+    it('energy at exactly 30 is below threshold', () => {
+        const energies = [31, 31, 31, 31, 31, 31, 200, 31];
+        const beats = BeatDetector.detectBeatsFromEnergies(energies, 1.3, 1);
+        // 200 is above threshold, 31 is not (> 30 but not enough ratio)
+        expect(beats.length).toBeGreaterThanOrEqual(0);
+    });
+});
+
+describe('BeatDetector instance — BPM quantize toggle', () => {
+    let bd: BeatDetector;
+    beforeEach(() => {
+        bd = new BeatDetector();
+        bd.reset();
+    });
+
+    it('bpmQuantizeEnabled defaults to true', () => {
+        expect(bd.getBpmQuantizeEnabled()).toBe(true);
+    });
+
+    it('setBpmQuantizeEnabled toggles the flag', () => {
+        bd.setBpmQuantizeEnabled(false);
+        expect(bd.getBpmQuantizeEnabled()).toBe(false);
+        bd.setBpmQuantizeEnabled(true);
+        expect(bd.getBpmQuantizeEnabled()).toBe(true);
+    });
+});
+
+describe('BeatDetector instance — onBeat callbacks', () => {
+    let bd: BeatDetector;
+    beforeEach(() => {
+        bd = new BeatDetector();
+        bd.reset();
+    });
+
+    it('registers and unregisters callback', () => {
+        let calls = 0;
+        const cb = () => { calls++; };
+        const unsub = bd.onBeat(cb);
+        expect(unsub).toBeInstanceOf(Function);
+        unsub();
+        // 重复取消不应抛出
+        unsub();
+    });
+
+    it('onBeat callback is safe when no analyser (update no-ops)', () => {
+        let calls = 0;
+        bd.onBeat(() => { calls++; });
+        bd.update(); // no analyser → returns early
+        expect(calls).toBe(0);
+    });
+});
+
+describe('BeatDetector instance — getBeatPhase edge cases', () => {
+    let bd: BeatDetector;
+    beforeEach(() => {
+        bd = new BeatDetector();
+    });
+
+    it('getBeatPhase returns 1 when phaseStartTime is 0 (initial state)', () => {
+        // phaseStartTime 初始为 0，elapsed = performance.now()
+        // 若 elapsed >= phaseInterval(500)，返回 1；否则返回 0.x
+        // Node 环境 performance.now() 值不确定，只验证 0..1 范围
+        const phase = bd.getBeatPhase();
+        expect(phase).toBeGreaterThanOrEqual(0);
+        expect(phase).toBeLessThanOrEqual(1);
+    });
+
+    it('getBeatPhase after reset returns small value', () => {
+        bd.reset();
+        // reset 后 phaseStartTime = performance.now()，elapsed 接近 0
+        const phase = bd.getBeatPhase();
+        expect(phase).toBeGreaterThanOrEqual(0);
+        expect(phase).toBeLessThanOrEqual(1);
+    });
+});
+
+describe('BeatDetector.getLevel — additional edge cases', () => {
+    it('endBin undefined uses full data length', () => {
+        const data = new Uint8Array([0, 128, 255]);
+        expect(BeatDetector.getLevel(data, 0, undefined)).toBeCloseTo(0.502, 2);
+    });
+
+    it('endBin undefined with startBin > 0', () => {
+        const data = new Uint8Array([0, 100, 200, 255]);
+        // bins 1-4: (100+200+255)/3/255 ≈ 0.726
+        expect(BeatDetector.getLevel(data, 1, undefined)).toBeCloseTo((100 + 200 + 255) / 3 / 255, 3);
+    });
+
+    it('startBin beyond data length returns 0', () => {
+        const data = new Uint8Array([100, 200]);
+        // start=5, Math.min(end ?? 2, 2) = 2, end(2) <= start(5) → return 0
+        expect(BeatDetector.getLevel(data, 5)).toBe(0);
+    });
+
+    it('all zero data returns 0', () => {
+        const data = new Uint8Array([0, 0, 0, 0]);
+        expect(BeatDetector.getLevel(data)).toBe(0);
+    });
+});

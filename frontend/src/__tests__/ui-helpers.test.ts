@@ -57,6 +57,9 @@ describe('isIkBone', () => {
         expect(isIkBone('上半身')).toBe(false);
         expect(isIkBone('左腕')).toBe(false);
     });
+    it('returns false for empty string', () => {
+        expect(isIkBone('')).toBe(false);
+    });
 });
 
 describe('buildBoneGroups', () => {
@@ -68,6 +71,18 @@ describe('buildBoneGroups', () => {
         expect(groupMap.get('その他')).toEqual(['未知骨']);
         // 空组被剔除
         expect(groupMap.has('左腕')).toBe(false);
+    });
+
+    it('matches bones by prefix (e.g. 上半身2 in 上半身 group)', () => {
+        const groups = buildBoneGroups(['上半身2', '左腕ねじれ']);
+        const groupMap = new Map(groups);
+        expect(groupMap.get('上半身')).toEqual(['上半身2']);
+        expect(groupMap.get('左腕')).toEqual(['左腕ねじれ']);
+    });
+
+    it('empty input yields only その他 as empty which is dropped', () => {
+        const groups = buildBoneGroups([]);
+        expect(groups.length).toBe(0);
     });
 });
 
@@ -123,6 +138,63 @@ describe('addBoneSelectRow', () => {
         const rightOpt = select.querySelector('option[value="右腕"]') as HTMLElement;
         expect(leftOpt.style.display).toBe('');
         expect(rightOpt.style.display).toBe('none');
+    });
+
+    it('search clear restores all options to visible', () => {
+        const container = document.createElement('div');
+        const select = addBoneSelectRow(
+            container,
+            '',
+            ['上半身', '左足IK', '右腕'],
+            '上半身',
+            () => {}
+        );
+        const search = container.querySelector('input')!;
+        // 先过滤
+        search.value = '左';
+        search.dispatchEvent(new Event('input'));
+        // 再清空
+        search.value = '';
+        search.dispatchEvent(new Event('input'));
+
+        const leftOpt = select.querySelector('option[value="左足IK"]') as HTMLElement;
+        const rightOpt = select.querySelector('option[value="右腕"]') as HTMLElement;
+        expect(leftOpt.style.display).toBe('');
+        expect(rightOpt.style.display).toBe('');
+    });
+
+    it('empty boneNames produces no optgroups', () => {
+        const container = document.createElement('div');
+        const select = addBoneSelectRow(container, '骨骼', [], 'none', () => {});
+        expect(select.querySelectorAll('optgroup').length).toBe(0);
+    });
+
+    it('uses custom searchPlaceholder from opts', () => {
+        const container = document.createElement('div');
+        addBoneSelectRow(
+            container,
+            '骨骼',
+            ['上半身'],
+            '上半身',
+            () => {},
+            { searchPlaceholder: '自定义搜索...' }
+        );
+        const search = container.querySelector('input')!;
+        expect(search.placeholder).toBe('自定义搜索...');
+    });
+
+    it('applies testId to wrapper', () => {
+        const container = document.createElement('div');
+        addBoneSelectRow(
+            container,
+            '骨骼',
+            ['上半身'],
+            '上半身',
+            () => {},
+            { testId: 'bone-select-test' }
+        );
+        const wrapper = container.querySelector('[data-testid="bone-select-test"]')!;
+        expect(wrapper).not.toBeNull();
     });
 });
 
@@ -191,6 +263,50 @@ describe('addCollapsible', () => {
         (toggle as HTMLElement).click();
 
         expect(onToggle).toHaveBeenCalledWith(false);
+    });
+
+    it('openWhen: true auto-opens panel', () => {
+        const container = document.createElement('div');
+        addCollapsible(container, {
+            title: 'Auto Open',
+            openWhen: true,
+            renderContent: (inner) => {
+                inner.textContent = 'content';
+            },
+        });
+
+        const panel = container.querySelector('.collapsible-panel')!;
+        // openWhen=true 会在 requestAnimationFrame 中展开
+        return new Promise<void>((resolve) => {
+            requestAnimationFrame(() => {
+                expect(panel.style.maxHeight).not.toBe('0');
+                resolve();
+            });
+        });
+    });
+
+    it('keyboard Enter toggles panel', () => {
+        const container = document.createElement('div');
+        addCollapsible(container, {
+            title: 'Keyboard Test',
+            renderContent: (inner) => {
+                inner.textContent = 'content';
+            },
+        });
+
+        const header = container.querySelector('.collapsible-header')!;
+        const panel = container.querySelector('.collapsible-panel')!;
+
+        // Initially closed
+        expect(panel.style.maxHeight).toBe('0');
+
+        // Press Enter to open
+        header.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+        expect(panel.style.maxHeight).not.toBe('0');
+
+        // Press Enter to close
+        header.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+        expect(panel.style.maxHeight).toBe('0');
     });
 });
 
@@ -490,6 +606,105 @@ describe('addSliderRow', () => {
         bar.dispatchEvent(new KeyboardEvent('keydown', { key: 'End' }));
         expect(onChange).toHaveBeenCalledWith(100);
     });
+
+    it('keyboard ArrowLeft decreases the value', () => {
+        const container = document.createElement('div');
+        const onChange = vi.fn();
+        addSliderRow(container, 'Test', 50, 0, 100, 1, onChange);
+
+        const bar = container.querySelector('.cs-bar')!;
+        bar.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft' }));
+        expect(onChange).toHaveBeenCalledWith(49);
+    });
+
+    it('ctrl+ArrowRight uses 100x step multiplier', () => {
+        const container = document.createElement('div');
+        const onChange = vi.fn();
+        addSliderRow(container, 'Test', 0, 0, 1000, 1, onChange);
+
+        const bar = container.querySelector('.cs-bar')!;
+        bar.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', ctrlKey: true }));
+        expect(onChange).toHaveBeenCalledWith(100);
+    });
+
+    it('shift+ArrowRight uses 10x step multiplier', () => {
+        const container = document.createElement('div');
+        const onChange = vi.fn();
+        addSliderRow(container, 'Test', 0, 0, 1000, 1, onChange);
+
+        const bar = container.querySelector('.cs-bar')!;
+        bar.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', shiftKey: true }));
+        expect(onChange).toHaveBeenCalledWith(10);
+    });
+
+    it('cs-top leftmost quarter clicks large negative step', () => {
+        const container = document.createElement('div');
+        const onChange = vi.fn();
+        addSliderRow(container, 'Test', 50, 0, 100, 1, onChange);
+
+        const top = container.querySelector('.cs-top')! as HTMLDivElement;
+        top.getBoundingClientRect = () =>
+            ({ left: 0, width: 200, top: 0, height: 20, right: 200, bottom: 20, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect;
+
+        // 左 1/4 区域: delta = -(range * LARGE_STEP)
+        top.dispatchEvent(new MouseEvent('click', { clientX: 10 }));
+        expect(onChange).toHaveBeenCalled();
+        // LARGE_STEP=0.15 → delta = -15 → 50 - 15 = 35
+        expect(onChange).toHaveBeenCalledWith(35);
+    });
+
+    it('cs-top rightmost quarter clicks large positive step', () => {
+        const container = document.createElement('div');
+        const onChange = vi.fn();
+        addSliderRow(container, 'Test', 50, 0, 100, 1, onChange);
+
+        const top = container.querySelector('.cs-top')! as HTMLDivElement;
+        top.getBoundingClientRect = () =>
+            ({ left: 0, width: 200, top: 0, height: 20, right: 200, bottom: 20, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect;
+
+        // 右 1/4 区域: delta = range * LARGE_STEP
+        top.dispatchEvent(new MouseEvent('click', { clientX: 190 }));
+        // LARGE_STEP=0.15 → delta = +15 → 50 + 15 = 65
+        expect(onChange).toHaveBeenCalledWith(65);
+    });
+
+    it('cs-top left-mid quarter clicks small negative step', () => {
+        const container = document.createElement('div');
+        const onChange = vi.fn();
+        addSliderRow(container, 'Test', 50, 0, 100, 1, onChange);
+
+        const top = container.querySelector('.cs-top')! as HTMLDivElement;
+        top.getBoundingClientRect = () =>
+            ({ left: 0, width: 200, top: 0, height: 20, right: 200, bottom: 20, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect;
+
+        // 左 2/4 区域 (25%-50%): delta = -(range * SMALL_STEP) = -5
+        top.dispatchEvent(new MouseEvent('click', { clientX: 60 }));
+        expect(onChange).toHaveBeenCalledWith(45);
+    });
+
+    it('cs-top right-mid quarter clicks small positive step', () => {
+        const container = document.createElement('div');
+        const onChange = vi.fn();
+        addSliderRow(container, 'Test', 50, 0, 100, 1, onChange);
+
+        const top = container.querySelector('.cs-top')! as HTMLDivElement;
+        top.getBoundingClientRect = () =>
+            ({ left: 0, width: 200, top: 0, height: 20, right: 200, bottom: 20, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect;
+
+        // 右 2/4 区域 (50%-75%): delta = range * SMALL_STEP = +5
+        top.dispatchEvent(new MouseEvent('click', { clientX: 120 }));
+        expect(onChange).toHaveBeenCalledWith(55);
+    });
+
+    it('defends against NaN initial value by falling back to min', () => {
+        const container = document.createElement('div');
+        const onChange = vi.fn();
+        expect(() => {
+            addSliderRow(container, 'Test', NaN, 0, 100, 1, onChange);
+        }).not.toThrow();
+        const val = container.querySelector('.cs-value')!;
+        expect(val.textContent).toBe('0');
+    });
 });
 
 describe('sliderRow', () => {
@@ -517,6 +732,31 @@ describe('sliderRow', () => {
         bar.dispatchEvent(new MouseEvent('mousedown', { clientX: 80 }));
         document.dispatchEvent(new MouseEvent('mouseup', { clientX: 80 }));
 
+        expect(onDragEnd).toHaveBeenCalled();
+    });
+
+    it('cs-top quarter-step click calls onDragEnd', () => {
+        // 验证 cs-top 四分区域点击也会触发 onDragEnd（修复后应通过）
+        const container = document.createElement('div');
+        const onDragEnd = vi.fn();
+        sliderRowFn(container, 'Volume', 5, 0, 10, 1, 'icon', onDragEnd);
+
+        const top = container.querySelector('.cs-top')! as HTMLDivElement;
+        top.getBoundingClientRect = () =>
+            ({
+                left: 0,
+                width: 200,
+                top: 0,
+                height: 20,
+                right: 200,
+                bottom: 20,
+                x: 0,
+                y: 0,
+                toJSON: () => ({}),
+            }) as DOMRect;
+
+        // 右半区 click → 正方向大步（range * SLIDER_QUARTER_LARGE_STEP）
+        top.dispatchEvent(new MouseEvent('click', { clientX: 190 }));
         expect(onDragEnd).toHaveBeenCalled();
     });
 });
@@ -611,6 +851,42 @@ describe('addVector3SliderRow', () => {
         const last = onChange.mock.calls[onChange.mock.calls.length - 1][0];
         expect(last[0]).toBe(11);
     });
+
+    it('keyboard ArrowLeft decreases X by step', () => {
+        const container = document.createElement('div');
+        const onChange = vi.fn();
+        addVector3SliderRow(container, 'Pos', [10, 0, 0], 0, 100, 1, onChange);
+
+        const bar = container.querySelectorAll('.vec3-row .cs-bar')[0]!;
+        bar.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft' }));
+
+        const last = onChange.mock.calls[onChange.mock.calls.length - 1][0];
+        expect(last[0]).toBe(9);
+    });
+
+    it('keyboard Home jumps X to minimum', () => {
+        const container = document.createElement('div');
+        const onChange = vi.fn();
+        addVector3SliderRow(container, 'Pos', [50, 0, 0], 0, 100, 1, onChange);
+
+        const bar = container.querySelectorAll('.vec3-row .cs-bar')[0]!;
+        bar.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home' }));
+
+        const last = onChange.mock.calls[onChange.mock.calls.length - 1][0];
+        expect(last[0]).toBe(0);
+    });
+
+    it('keyboard End jumps X to maximum', () => {
+        const container = document.createElement('div');
+        const onChange = vi.fn();
+        addVector3SliderRow(container, 'Pos', [50, 0, 0], 0, 100, 1, onChange);
+
+        const bar = container.querySelectorAll('.vec3-row .cs-bar')[0]!;
+        bar.dispatchEvent(new KeyboardEvent('keydown', { key: 'End' }));
+
+        const last = onChange.mock.calls[onChange.mock.calls.length - 1][0];
+        expect(last[0]).toBe(100);
+    });
 });
 
 describe('addModeSlider', () => {
@@ -690,5 +966,61 @@ describe('addModeSlider', () => {
         top.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }));
 
         expect(onChange).toHaveBeenCalledWith('mid');
+    });
+
+    it('keyboard ArrowLeft moves to previous option', () => {
+        const container = document.createElement('div');
+        const onChange = vi.fn();
+        addModeSlider(container, 'Mode', opts, 'mid', onChange);
+
+        const top = container.querySelector('.cs-top')!;
+        top.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft' }));
+
+        expect(onChange).toHaveBeenCalledWith('low');
+    });
+
+    it('keyboard at minimum boundary does not cycle below 0', () => {
+        const container = document.createElement('div');
+        const onChange = vi.fn();
+        addModeSlider(container, 'Mode', opts, 'low', onChange);
+
+        const top = container.querySelector('.cs-top')!;
+        top.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft' }));
+
+        // Should not change (already at index 0)
+        expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('empty options returns early without crash', () => {
+        const container = document.createElement('div');
+        const onChange = vi.fn();
+        expect(() => {
+            addModeSlider(container, 'Empty', [], 'x' as string, onChange);
+        }).not.toThrow();
+        // No DOM appended
+        expect(container.children.length).toBe(0);
+    });
+
+    it('single option shows 100% fill and does not cycle', () => {
+        const container = document.createElement('div');
+        const onChange = vi.fn();
+        const singleOpt = [{ value: 'only', label: 'Only' }];
+        addModeSlider(container, 'Single', singleOpt, 'only', onChange);
+
+        const fill = container.querySelector('.cs-fill') as HTMLElement;
+        expect(fill.style.width).toBe('100%');
+
+        const top = container.querySelector('.cs-top')!;
+        top.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }));
+        expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('currentValue not in options falls back to first', () => {
+        const container = document.createElement('div');
+        const onChange = vi.fn();
+        addModeSlider(container, 'Mode', opts, 'unknown' as string, onChange);
+
+        const val = container.querySelector('.cs-value')!;
+        expect(val.textContent).toBe('Low');
     });
 });

@@ -664,26 +664,26 @@
 | `ResourcePanelOptions()` | `core/ui-resource-panel:17` | — |
 | `createResourcePanel()` | `core/ui-resource-panel:71` | — |
 | `notifyThumbnailUpdate()` | `core/ui-resource-panel:516` | — |
-| `BoneSelectOptions()` | `core/ui-rows:743` | — |
-| `addActionRow()` | `core/ui-rows:571` | 创建一个可点击的操作按钮行（替代手写 cs-row + button）。 |
-| `addBoneSelectRow()` | `core/ui-rows:754` | 创建骨骼选择行：label + 搜索框 + 分组下拉（含 IK 标记）。 |
-| `addCardTitle()` | `core/ui-rows:345` | 创建 card-title 标题行并追加到容器 |
-| `addDangerRow()` | `core/ui-rows:360` | 创建危险操作行（icon + red label），替代手动拼接 &#96;div.slide-item &gt; icon + label.danger-text&#96; |
-| `addDisabledRow()` | `core/ui-rows:608` | 创建一个不可交互的提示行（替代手写 cs-row + opacity 0.4 + pointer-events none）。 |
-| `addEmptyRow()` | `core/ui-rows:322` | 创建空状态占位行（灰色文字，不可点击），替代手动 &#96;el.style.opacity = '0.5'&#96; 模式 |
-| `addFieldRow()` | `core/ui-rows:392` | 创建字段行（左 label + 右 value），替代手动拼接的 &#96;div.slide-item &gt; span.slide-label.field-label + span.fie |
-| `addInfoCard()` | `core/ui-rows:432` | — |
-| `addInfoGrid()` | `core/ui-rows:425` | — |
-| `addInlineToggleRow()` | `core/ui-rows:639` | 创建一个内联 toggle 行（替代手写 toggle-row + toggle-label + toggle-switch）。 |
-| `addModeRow()` | `core/ui-rows:287` | — |
+| `BoneSelectOptions()` | `core/ui-rows:744` | — |
+| `addActionRow()` | `core/ui-rows:572` | 创建一个可点击的操作按钮行（替代手写 cs-row + button）。 |
+| `addBoneSelectRow()` | `core/ui-rows:755` | 创建骨骼选择行：label + 搜索框 + 分组下拉（含 IK 标记）。 |
+| `addCardTitle()` | `core/ui-rows:346` | 创建 card-title 标题行并追加到容器 |
+| `addDangerRow()` | `core/ui-rows:361` | 创建危险操作行（icon + red label），替代手动拼接 &#96;div.slide-item &gt; icon + label.danger-text&#96; |
+| `addDisabledRow()` | `core/ui-rows:609` | 创建一个不可交互的提示行（替代手写 cs-row + opacity 0.4 + pointer-events none）。 |
+| `addEmptyRow()` | `core/ui-rows:323` | 创建空状态占位行（灰色文字，不可点击），替代手动 &#96;el.style.opacity = '0.5'&#96; 模式 |
+| `addFieldRow()` | `core/ui-rows:393` | 创建字段行（左 label + 右 value），替代手动拼接的 &#96;div.slide-item &gt; span.slide-label.field-label + span.fie |
+| `addInfoCard()` | `core/ui-rows:433` | — |
+| `addInfoGrid()` | `core/ui-rows:426` | — |
+| `addInlineToggleRow()` | `core/ui-rows:640` | 创建一个内联 toggle 行（替代手写 toggle-row + toggle-label + toggle-switch）。 |
+| `addModeRow()` | `core/ui-rows:288` | — |
 | `addSliderRow()` | `core/ui-rows:149` | 数字滑块行。ADR-140：内部统一由 {@link DragSliderController} 驱动 （拖拽 + 键盘 + 游标点击），行为与其他滑块 builder 保持一致。 |
 | `addToggleRow()` | `core/ui-rows:23` | — |
-| `addWatchDirRow()` | `core/ui-rows:507` | — |
-| `buildBoneGroups()` | `core/ui-rows:714` | 按类别分组骨骼名，未匹配的归入「その他」。空组被剔除。 |
+| `addWatchDirRow()` | `core/ui-rows:508` | — |
+| `buildBoneGroups()` | `core/ui-rows:715` | 按类别分组骨骼名，未匹配的归入「その他」。空组被剔除。 |
 | `initControl()` | `core/ui-rows:114` | 封装 registerControl + immediate update 模式。 |
-| `isIkBone()` | `core/ui-rows:688` | [doc:adr-122 P3] 判断骨骼是否为 IK 相关骨骼 |
-| `sliderRow()` | `core/ui-rows:465` | — |
-| `toggleRow()` | `core/ui-rows:482` | — |
+| `isIkBone()` | `core/ui-rows:689` | [doc:adr-122 P3] 判断骨骼是否为 IK 相关骨骼 |
+| `sliderRow()` | `core/ui-rows:466` | — |
+| `toggleRow()` | `core/ui-rows:483` | — |
 | `HeaderToggleConfig()` | `core/ui-slide-row:9` | — |
 | `SlideRowExtra()` | `core/ui-slide-row:67` | — |
 | `TrailingAction()` | `core/ui-slide-row:11` | — |
@@ -950,67 +950,67 @@
 | `hasCameraAnimationHandle()` | `scene/camera/camera-vmd:119` | VMD 相机动画句柄是否就绪（switchCameraMode 在 vmd 分支前置检查）。 |
 | `loadCameraVmd()` | `scene/camera/camera-vmd:37` | Load camera animation from a VMD (MmdAnimation) and create an MmdCamera. |
 | `setSwitchCameraModeCallback()` | `scene/camera/camera-vmd:32` | camera.ts 启动时注入 switchCameraMode 回调。 |
-| `CameraBehavior()` | `scene/camera/camera:293` | — |
-| `CameraControl()` | `scene/camera/camera:271` | — |
-| `CameraMode()` | `scene/camera/camera:244` | — |
-| `CameraPreset()` | `scene/camera/camera:782` | — |
-| `CameraState()` | `scene/camera/camera:571` | — |
+| `CameraBehavior()` | `scene/camera/camera:313` | — |
+| `CameraControl()` | `scene/camera/camera:291` | — |
+| `CameraMode()` | `scene/camera/camera:270` | — |
+| `CameraPreset()` | `scene/camera/camera:807` | — |
+| `CameraState()` | `scene/camera/camera:596` | — |
 | `ConcertParams()` | `scene/camera/camera:210` | — |
 | `FreeflyParams()` | `scene/camera/camera:197` | — |
 | `LEGACY_MODE_MAP()` | `scene/camera/camera:110` | ADR-100 §6.1 — 旧模式 → 双轴映射（迁移 / shim 共用）。 |
 | `OrbitParams()` | `scene/camera/camera:170` | — |
-| `ScriptedSubMode()` | `scene/camera/camera:782` | — |
+| `ScriptedSubMode()` | `scene/camera/camera:807` | — |
 | `SurroundParams()` | `scene/camera/camera:214` | — |
-| `_syncAxesFromMode()` | `scene/camera/camera:244` | ADR-100：由旧 mode 派生双轴状态。switchCameraMode 提交 _cameraMode 时同步调用，作为唯一写入点。 |
-| `animateCameraVmd()` | `scene/camera/camera:814` | — |
-| `autoFrame()` | `scene/camera/camera:547` | Auto-frame the camera to centre on a bounding box. |
-| `clearCameraVmd()` | `scene/camera/camera:814` | — |
-| `defaultCameraPreset()` | `scene/camera/camera:813` | — |
+| `_syncAxesFromMode()` | `scene/camera/camera:270` | ADR-100：由旧 mode 派生双轴状态。switchCameraMode 提交 _cameraMode 时同步调用，作为唯一写入点。 |
+| `animateCameraVmd()` | `scene/camera/camera:839` | — |
+| `autoFrame()` | `scene/camera/camera:572` | Auto-frame the camera to centre on a bounding box. |
+| `clearCameraVmd()` | `scene/camera/camera:839` | — |
+| `defaultCameraPreset()` | `scene/camera/camera:838` | — |
 | `deriveLegacyMode()` | `scene/camera/camera:128` | ADR-100 §6.2 — 双轴 → 旧模式反查（getCameraState 降级双写 / shim 内部路由）。 |
-| `disposeCameraSystem()` | `scene/camera/camera:751` | 顶层销毁相机系统（HMR / 页面卸载 / scene 销毁时调用）。幂等。 |
-| `getAutoCameraBeatsPerSwitch()` | `scene/camera/camera:823` | — |
-| `getBoneLockDamping()` | `scene/camera/camera:816` | — |
-| `getCameraBehavior()` | `scene/camera/camera:793` | — |
-| `getCameraControl()` | `scene/camera/camera:793` | — |
-| `getCameraMode()` | `scene/camera/camera:793` | — |
-| `getCameraState()` | `scene/camera/camera:592` | — |
-| `getCameraVmdName()` | `scene/camera/camera:793` | — |
-| `getCameraVmdPath()` | `scene/camera/camera:793` | — |
-| `getConcertParams()` | `scene/camera/camera:793` | — |
-| `getConcertPaused()` | `scene/camera/camera:793` | — |
-| `getCurrentCamera()` | `scene/camera/camera:793` | — |
-| `getFocusedModelBoneNames()` | `scene/camera/camera:816` | — |
-| `getFov()` | `scene/camera/camera:793` | — |
-| `getFreeflyParams()` | `scene/camera/camera:793` | — |
-| `getOrbitBoneLock()` | `scene/camera/camera:816` | — |
-| `getOrbitParams()` | `scene/camera/camera:793` | — |
-| `getScriptedSubMode()` | `scene/camera/camera:793` | — |
-| `getSurroundParams()` | `scene/camera/camera:793` | — |
-| `getSurroundPaused()` | `scene/camera/camera:793` | — |
-| `hasCameraVmd()` | `scene/camera/camera:793` | — |
-| `initCameraSystem()` | `scene/camera/camera:326` | Initialise the camera system and create the default Orbit camera. |
-| `isAutoCameraEnabled()` | `scene/camera/camera:830` | — |
-| `loadCameraVmd()` | `scene/camera/camera:814` | — |
+| `disposeCameraSystem()` | `scene/camera/camera:776` | 顶层销毁相机系统（HMR / 页面卸载 / scene 销毁时调用）。幂等。 |
+| `getAutoCameraBeatsPerSwitch()` | `scene/camera/camera:848` | — |
+| `getBoneLockDamping()` | `scene/camera/camera:841` | — |
+| `getCameraBehavior()` | `scene/camera/camera:818` | — |
+| `getCameraControl()` | `scene/camera/camera:818` | — |
+| `getCameraMode()` | `scene/camera/camera:818` | — |
+| `getCameraState()` | `scene/camera/camera:617` | — |
+| `getCameraVmdName()` | `scene/camera/camera:818` | — |
+| `getCameraVmdPath()` | `scene/camera/camera:818` | — |
+| `getConcertParams()` | `scene/camera/camera:818` | — |
+| `getConcertPaused()` | `scene/camera/camera:818` | — |
+| `getCurrentCamera()` | `scene/camera/camera:818` | — |
+| `getFocusedModelBoneNames()` | `scene/camera/camera:841` | — |
+| `getFov()` | `scene/camera/camera:818` | — |
+| `getFreeflyParams()` | `scene/camera/camera:818` | — |
+| `getOrbitBoneLock()` | `scene/camera/camera:841` | — |
+| `getOrbitParams()` | `scene/camera/camera:818` | — |
+| `getScriptedSubMode()` | `scene/camera/camera:818` | — |
+| `getSurroundParams()` | `scene/camera/camera:818` | — |
+| `getSurroundPaused()` | `scene/camera/camera:818` | — |
+| `hasCameraVmd()` | `scene/camera/camera:818` | — |
+| `initCameraSystem()` | `scene/camera/camera:346` | Initialise the camera system and create the default Orbit camera. |
+| `isAutoCameraEnabled()` | `scene/camera/camera:855` | — |
+| `loadCameraVmd()` | `scene/camera/camera:839` | — |
 | `logCameraAlpha()` | `scene/camera/camera:188` | Log current camera alpha for diagnostics. |
-| `refreshCameraUserSettings()` | `scene/camera/camera:815` | — |
-| `restoreAutoCameraState()` | `scene/camera/camera:823` | — |
-| `setAutoCameraBeatsPerSwitch()` | `scene/camera/camera:823` | — |
-| `setAutoCameraEnabled()` | `scene/camera/camera:830` | — |
-| `setBoneLockDamping()` | `scene/camera/camera:816` | — |
-| `setCameraBehavior()` | `scene/camera/camera:293` | ADR-100 P4 — 直接设置运动行为轴（轴 B，仅 orbit 有效）。 |
-| `setCameraControl()` | `scene/camera/camera:271` | ADR-100 P4 — 直接设置控制方案轴（轴 A）。 |
-| `setCameraPreset()` | `scene/camera/camera:813` | — |
-| `setCameraState()` | `scene/camera/camera:622` | — |
+| `refreshCameraUserSettings()` | `scene/camera/camera:840` | — |
+| `restoreAutoCameraState()` | `scene/camera/camera:848` | — |
+| `setAutoCameraBeatsPerSwitch()` | `scene/camera/camera:848` | — |
+| `setAutoCameraEnabled()` | `scene/camera/camera:855` | — |
+| `setBoneLockDamping()` | `scene/camera/camera:841` | — |
+| `setCameraBehavior()` | `scene/camera/camera:313` | ADR-100 P4 — 直接设置运动行为轴（轴 B，仅 orbit 有效）。 |
+| `setCameraControl()` | `scene/camera/camera:291` | ADR-100 P4 — 直接设置控制方案轴（轴 A）。 |
+| `setCameraPreset()` | `scene/camera/camera:838` | — |
+| `setCameraState()` | `scene/camera/camera:647` | — |
 | `setConcertParams()` | `scene/camera/camera:210` | — |
-| `setConcertPaused()` | `scene/camera/camera:793` | — |
-| `setFov()` | `scene/camera/camera:316` | — |
+| `setConcertPaused()` | `scene/camera/camera:818` | — |
+| `setFov()` | `scene/camera/camera:336` | — |
 | `setFreeflyParams()` | `scene/camera/camera:197` | — |
-| `setOrbitBoneLock()` | `scene/camera/camera:816` | — |
+| `setOrbitBoneLock()` | `scene/camera/camera:841` | — |
 | `setOrbitParams()` | `scene/camera/camera:170` | — |
 | `setSurroundParams()` | `scene/camera/camera:214` | — |
-| `setSurroundPaused()` | `scene/camera/camera:793` | — |
-| `setSyncAxesCallback()` | `scene/camera/camera:830` | — |
-| `switchCameraMode()` | `scene/camera/camera:347` | Switch to a different camera mode, preserving position as much as possible. |
+| `setSurroundPaused()` | `scene/camera/camera:818` | — |
+| `setSyncAxesCallback()` | `scene/camera/camera:855` | — |
+| `switchCameraMode()` | `scene/camera/camera:367` | Switch to a different camera mode, preserving position as much as possible. |
 | `InvertableArcRotateCameraPointersInput()` | `scene/camera/invertablePointersInput:13` | 可反转 Y 轴的 ArcRotate 相机指针输入。 |
 | `applyEnvStateFacade()` | `scene/env/_bridge/env-bridge:49` | 等同于 scene-env.ts 的 applyEnvState，但避免循环依赖。 |
 | `registerEnvStateMiddleware()` | `scene/env/_bridge/env-bridge:379` | 注册 setEnvState 中间件（供 env-time-of-day/env-gravity 等子模块调用）。 |
@@ -2475,7 +2475,7 @@
 
 | 符号 | 文件:行 | 说明 |
 |------|--------|------|
-| `BeatDetector()` | `motion-algos/beat-detector:28` | — |
+| `BeatDetector()` | `motion-algos/beat-detector:31` | — |
 | `SolveFootInput()` | `motion-algos/feet-adjustment-math:8` | — |
 | `SolveFootOutput()` | `motion-algos/feet-adjustment-math:25` | — |
 | `solveFootTarget()` | `motion-algos/feet-adjustment-math:46` | 解算单脚应处的世界 Y 坐标。 |

@@ -906,23 +906,25 @@ describe('logCameraAlpha（补充：非 orbit 模式静默）', () => {
     });
 });
 
-// ======== 防御性修复覆盖 ========
+// ======== 编译期穷尽路由（替代原运行时兜底测试）========
+// 非法 mode 已由 CameraMode 字面量联合 + never 断言在编译期拦截，
+// 运行时不再需要守卫；此处验证穷尽路由对全部 8 个合法值正确派生双轴。
 
-describe('_syncAxesFromMode（防御：非法 mode）', () => {
-    it('守卫：非法 mode 回退 orbit 并告警', () => {
-        _syncAxesFromMode('bogus' as never);
-        expect(getCameraControl()).toBe('orbit');
-        expect(getCameraBehavior()).toBe('none');
-        expect(shared.logWarn).toHaveBeenCalled();
-    });
-});
-
-describe('switchCameraMode（防御：非法 mode default 分支）', () => {
-    it('守卫：非法 mode 回退 orbit 并告警', () => {
-        setCurrentCamera(new shared.ArcRotateCamera());
-        switchCameraMode('bogus' as never);
-        expect(getCameraMode()).toBe('orbit');
-        expect(shared.logWarn).toHaveBeenCalled();
+describe('_syncAxesFromMode（穷尽路由：合法 mode 派生双轴）', () => {
+    const cases: Array<[CameraMode, CameraControl, CameraBehavior]> = [
+        ['orbit', 'orbit', 'none'],
+        ['surround', 'orbit', 'turntable'],
+        ['concert', 'orbit', 'concert'],
+        ['oneshot', 'orbit', 'scripted'],
+        ['freefly', 'freefly', 'none'],
+        ['ar', 'ar', 'none'],
+        ['beatcut', 'orbit', 'beatcut'],
+        ['vmd', 'orbit', 'scripted'],
+    ];
+    it.each(cases)('mode=%s → control=%s behavior=%s', (mode, ctrl, beh) => {
+        _syncAxesFromMode(mode);
+        expect(getCameraControl()).toBe(ctrl);
+        expect(getCameraBehavior()).toBe(beh);
     });
 });
 

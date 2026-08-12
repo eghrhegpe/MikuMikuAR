@@ -262,6 +262,7 @@ export function addSliderRow(
             currentValue = clamped;
             updateDisplay(clamped);
             onChange(clamped);
+            onDragEndCb?.(clamped);
         }
     });
 
