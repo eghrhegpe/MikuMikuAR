@@ -395,6 +395,112 @@ describe('Stage level', () => {
         }
         expect(mockPush).not.toHaveBeenCalled();
     });
+
+    it('visibility toggle: hidden stage click sets visible true and reports shown', () => {
+        mockModelRegistry.set('stage-1', { kind: 'stage', name: '主舞台', visible: false });
+        const level = buildStageLevel();
+        const container = renderLevel(level);
+        const btn = container.querySelector('.slide-lead-btn') as HTMLElement | null;
+        expect(btn).not.toBeNull();
+        btn!.click();
+        expect(mockSetModelVisibility).toHaveBeenCalledWith('stage-1', true);
+        expect(mockFeedbackInfo).toHaveBeenCalledWith('scene.stageShown', undefined);
+    });
+
+    it('visibility toggle click does not bubble to row click', () => {
+        setSceneMenu(makeFakeMenu());
+        mockModelRegistry.set('stage-1', { kind: 'stage', name: '主舞台', visible: true });
+        const level = buildStageLevel();
+        const container = renderLevel(level);
+        const btn = container.querySelector('.slide-lead-btn') as HTMLElement | null;
+        btn!.click();
+        expect(mockPush).not.toHaveBeenCalled();
+    });
+
+    it('stage row click with no menu registered is a safe no-op', () => {
+        // afterEach 已清空菜单注册，覆盖源码 getSceneMenu() 为 null 的早退分支
+        mockModelRegistry.set('stage-1', { kind: 'stage', name: '主舞台', visible: true });
+        const level = buildStageLevel();
+        const container = renderLevel(level);
+        const row = Array.from(container.querySelectorAll('.slide-item')).find((el) =>
+            el.textContent?.includes('主舞台')
+        );
+        expect(row).toBeDefined();
+        expect(() => row!.dispatchEvent(new MouseEvent('click', { bubbles: true }))).not.toThrow();
+        expect(mockPush).not.toHaveBeenCalled();
+    });
+
+    it('unload button onRestored callback triggers menu re-render', () => {
+        setSceneMenu(makeFakeMenu());
+        mockModelRegistry.set('stage-1', { kind: 'stage', name: '主舞台', visible: true });
+        const level = buildStageLevel();
+        const container = renderLevel(level);
+        const btn = container.querySelector('.slide-add-btn') as HTMLElement | null;
+        btn!.click();
+        const [, , onRestored] = mockOfferSceneUndo.mock.calls[0] as [
+            string,
+            string | null,
+            () => void
+        ];
+        mockReRender.mockClear();
+        onRestored();
+        expect(mockReRender).toHaveBeenCalledTimes(1);
+    });
+
+    it('load stage filter accepts stage/scene and rejects other kinds', async () => {
+        mockGetBrowseDir.mockReturnValue('/lib/stage');
+        mockBuildLevel.mockReturnValue({ label: 'browse' });
+        setSceneMenu(makeFakeMenu());
+        const level = buildStageLevel();
+        const container = renderLevel(level);
+        const btn = container.querySelector(
+            '[data-testid="menu:scene:load-stage"]'
+        ) as HTMLElement | null;
+        btn!.click();
+        await vi.waitFor(() => expect(mockBuildLevel).toHaveBeenCalledTimes(1));
+        const filter = mockBuildLevel.mock.calls[0][2] as (m: { type?: string }) => boolean;
+        expect(filter({ type: 'stage' })).toBe(true);
+        expect(filter({ type: 'scene' })).toBe(true);
+        expect(filter({ type: 'actor' })).toBe(false);
+        expect(filter({ type: 'prop' })).toBe(false);
+        expect(filter({ type: 'light' })).toBe(false);
+        expect(filter({})).toBe(false);
+    });
+
+    it('load stage button bails out when scene menu is gone after browse dir', async () => {
+        mockGetBrowseDir.mockReturnValue('/lib/stage');
+        const level = buildStageLevel();
+        const container = renderLevel(level);
+        const btn = container.querySelector(
+            '[data-testid="menu:scene:load-stage"]'
+        ) as HTMLElement | null;
+        btn!.click();
+        await vi.waitFor(() => expect(mockGetBrowseDir).toHaveBeenCalledTimes(1));
+        // 让 buildLevel 动态 import + getSceneMenu 检查完成
+        await new Promise((r) => setTimeout(r, 0));
+        expect(mockBuildLevel).not.toHaveBeenCalled();
+        expect(mockPush).not.toHaveBeenCalled();
+        expect(mockFeedbackStatus).not.toHaveBeenCalled();
+    });
+
+    it('renders every loaded stage as a row', () => {
+        mockModelRegistry.set('stage-1', { kind: 'stage', name: '主舞台', visible: true });
+        mockModelRegistry.set('stage-2', { kind: 'stage', name: '副舞台', visible: false });
+        const level = buildStageLevel();
+        const container = renderLevel(level);
+        const labels = Array.from(container.querySelectorAll('.slide-label')).map(
+            (el) => el.textContent
+        );
+        expect(labels).toContain('主舞台');
+        expect(labels).toContain('副舞台');
+    });
+
+    it('renderCustom returns a dispose function', () => {
+        const level = buildStageLevel();
+        const container = document.createElement('div');
+        const dispose = level.renderCustom!(container);
+        expect(typeof dispose).toBe('function');
+    });
 });
 
 describe('Stage transform level', () => {
@@ -448,5 +554,31 @@ describe('Stage transform level', () => {
         onRemoved();
         expect(mockReRender).toHaveBeenCalledTimes(1);
         expect(mockPop).toHaveBeenCalledTimes(1);
+    });
+
+    it('material card receives current scene menu as target stack', () => {
+        const menu = makeFakeMenu();
+        setSceneMenu(menu);
+        const level = buildStageTransformLevel('stage-1');
+        renderLevel(level);
+        expect(mockBuildMaterialCard).toHaveBeenCalledTimes(1);
+        expect(mockBuildMaterialCard.mock.calls[0][2]).toBe(menu);
+    });
+
+    it('material card receives null target stack when no scene menu', () => {
+        const level = buildStageTransformLevel('stage-1');
+        renderLevel(level);
+        expect(mockBuildMaterialCard).toHaveBeenCalledTimes(1);
+        expect(mockBuildMaterialCard.mock.calls[0][2]).toBeNull();
+    });
+
+    it('danger card onRemoved tolerates missing scene menu', () => {
+        // 无菜单注册：reRender/pop 均为 no-op，不抛异常
+        const level = buildStageTransformLevel('stage-1');
+        renderLevel(level);
+        const onRemoved = mockBuildDangerCard.mock.calls[0][2] as () => void;
+        expect(() => onRemoved()).not.toThrow();
+        expect(mockPop).not.toHaveBeenCalled();
+        expect(mockReRender).not.toHaveBeenCalled();
     });
 });

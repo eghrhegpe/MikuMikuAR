@@ -668,6 +668,19 @@ describe('ModelManager physics categories', function () {
         }).not.toThrow();
     });
 
+    it('setPhysicsCategory enables category with 1 when init state is shorter than current', function () {
+        const states = new Uint8Array([0, 0, 0]);
+        const bones = [makeBone('skirt', [1])];
+        const mmd = makeMmdModel(bones, [], states);
+        mgr.register(makeModelInstance('m1', { mmdModel: mmd }));
+        // init 比当前 rigidBodyStates 短（rbi=1 越界）——启用类别应回退 1，而非把 undefined 强转 0 假停用
+        mgr.storeRigidBodyState('m1', new Uint8Array([5]));
+
+        mgr.setPhysicsCategory('m1', 'skirt', true);
+
+        expect(states[1]).toBe(1);
+    });
+
     // [fix:physics-cat-persist] serialize→reload→restore 回合：分类开关跨重载还原
     it('physics category state survives serialize->reload roundtrip via stable id', function () {
         const stableId = 'uuid-1234-stable';
@@ -996,6 +1009,21 @@ describe('ModelManager VMD / morph', function () {
         }).not.toThrow();
     });
 
+    it('clearVmdData also clears vmdLayers', function () {
+        const inst = makeModelInstance('m1', {
+            vmdData: new ArrayBuffer(10),
+            vmdName: 'test.vmd',
+            vmdPath: '/test.vmd',
+            animationDuration: 60,
+            vmdLayers: [{ layerId: 1 }],
+        });
+        mgr.register(inst);
+
+        mgr.clearVmdData('m1');
+
+        expect(inst.vmdLayers).toEqual([]);
+    });
+
     it('getMorphs returns morph array from mmdModel', function () {
         const mmd = makeMmdModel(
             [],
@@ -1265,6 +1293,30 @@ describe('ModelManager formation', function () {
             mgr.setFormation('circle', 3);
         }).not.toThrow();
     });
+
+    it('setFormation with NaN spacing falls back to default 3', function () {
+        const meshA = createTestMesh('a');
+        const meshB = createTestMesh('b');
+        mgr.register(makeModelInstance('a', { meshes: [meshA] }));
+        mgr.register(makeModelInstance('b', { meshes: [meshB] }));
+
+        mgr.setFormation('line', NaN);
+
+        expect(mgr.getActiveFormationSpacing()).toBe(3);
+        expect(meshA.position.x).toBeCloseTo(-1.5, 1);
+        expect(meshB.position.x).toBeCloseTo(1.5, 1);
+    });
+
+    it('setFormation with zero/negative spacing falls back to default 3', function () {
+        const mesh = createTestMesh('a');
+        mgr.register(makeModelInstance('a', { meshes: [mesh] }));
+
+        mgr.setFormation('line', 0);
+        expect(mgr.getActiveFormationSpacing()).toBe(3);
+
+        mgr.setFormation('line', -2);
+        expect(mgr.getActiveFormationSpacing()).toBe(3);
+    });
 });
 
 // ======== 边界 / 输入校验 ========
@@ -1300,6 +1352,34 @@ describe('ModelManager input validation', function () {
         expect(function () {
             mgr.setPosition('m1', NaN, 0, 0);
         }).not.toThrow();
+        expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('setOpacity with NaN is no-op (does not change opacity or call onChange)', function () {
+        expect(function () {
+            mgr.setOpacity('m1', NaN);
+        }).not.toThrow();
+        expect(mgr.get('m1').opacity).toBe(1);
+        expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('setRotationY with NaN is no-op', function () {
+        expect(function () {
+            mgr.setRotationY('m1', NaN);
+        }).not.toThrow();
+        expect(mgr.get('m1').rotationY).toBe(0);
+        expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('setRotation with NaN component is no-op', function () {
+        const { Vector3 } = require('@babylonjs/core/Maths/math.vector');
+        expect(function () {
+            mgr.setRotation('m1', new Vector3(NaN, 0, 0));
+        }).not.toThrow();
+        const inst = mgr.get('m1');
+        expect(inst.rotation[0]).toBe(0);
+        expect(inst.rotation[1]).toBe(0);
+        expect(inst.rotation[2]).toBe(0);
         expect(onChange).not.toHaveBeenCalled();
     });
 

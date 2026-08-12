@@ -85,6 +85,10 @@ describe('WASM 物理契约测试', () => {
         it('多个物理世界真正隔离：A 世界重力不影响 B 世界静止体', () => {
             const worldA = api.createPhysicsWorld();
             const worldB = api.createPhysicsWorld();
+            // 资源声明提升到 try 外：finally 需引用（try 内 const 块级不可见）；
+            // 空值守卫防 try 中途抛错时未赋值变量中断清理链
+            let shapeA = 0, infoA = 0, bodyA = 0;
+            let shapeB = 0, infoB = 0, bodyB = 0;
             try {
                 expect(worldA).toBeGreaterThan(0);
                 expect(worldB).toBeGreaterThan(0);
@@ -92,19 +96,17 @@ describe('WASM 物理契约测试', () => {
 
                 // A 世界：dynamic body + 重力，应下落
                 api.physicsWorldSetGravity(worldA, 0, -9.8, 0);
-                const shapeA = api.createBoxShape(1, 1, 1);
-                const infoA = buildRigidBodyInfo(phys, shapeA, { mass: 1.0, disableDeactivation: true });
-                const bodyA = api.createRigidBody(infoA);
+                shapeA = api.createBoxShape(1, 1, 1);
+                infoA = buildRigidBodyInfo(phys, shapeA, { mass: 1.0, disableDeactivation: true });
+                bodyA = api.createRigidBody(infoA);
                 api.physicsWorldAddRigidBody(worldA, bodyA);
-                api.deallocateBuffer(infoA, PHYSICS_INFO_SIZE);
 
                 // B 世界：static body（mass 0），无重力，应保持静止
                 api.physicsWorldSetGravity(worldB, 0, 0, 0);
-                const shapeB = api.createBoxShape(1, 1, 1);
-                const infoB = buildRigidBodyInfo(phys, shapeB, { mass: 0, disableDeactivation: true });
-                const bodyB = api.createRigidBody(infoB);
+                shapeB = api.createBoxShape(1, 1, 1);
+                infoB = buildRigidBodyInfo(phys, shapeB, { mass: 0, disableDeactivation: true });
+                bodyB = api.createRigidBody(infoB);
                 api.physicsWorldAddRigidBody(worldB, bodyB);
-                api.deallocateBuffer(infoB, PHYSICS_INFO_SIZE);
 
                 // 步进两个世界各 30 次
                 for (let i = 0; i < 30; i++) {
@@ -120,12 +122,18 @@ describe('WASM 物理契约测试', () => {
                 expect(velB[0]).toBeCloseTo(0);
                 expect(velB[1]).toBeCloseTo(0);
                 expect(velB[2]).toBeCloseTo(0);
-
-                api.destroyShape(shapeA);
-                api.destroyShape(shapeB);
-                api.destroyRigidBody(bodyA);
-                api.destroyRigidBody(bodyB);
             } finally {
+                // 清理（断言失败也执行，避免 WASM 指针泄漏）：先 remove 再 destroy body，
+                // body 先于 shape 销毁（world 持有 body 引用、body 持有 shape 引用），
+                // 顺序与 rigidbody/collision-worlds 测试惯例一致
+                if (bodyA > 0) api.physicsWorldRemoveRigidBody(worldA, bodyA);
+                if (bodyB > 0) api.physicsWorldRemoveRigidBody(worldB, bodyB);
+                if (bodyA > 0) api.destroyRigidBody(bodyA);
+                if (bodyB > 0) api.destroyRigidBody(bodyB);
+                if (infoA > 0) api.deallocateBuffer(infoA, PHYSICS_INFO_SIZE);
+                if (infoB > 0) api.deallocateBuffer(infoB, PHYSICS_INFO_SIZE);
+                if (shapeA > 0) api.destroyShape(shapeA);
+                if (shapeB > 0) api.destroyShape(shapeB);
                 api.destroyPhysicsWorld(worldA);
                 api.destroyPhysicsWorld(worldB);
             }
@@ -138,6 +146,29 @@ describe('WASM 物理契约测试', () => {
                 for (let i = 0; i < 60; i++) {
                     api.physicsWorldStepSimulation(world, 1 / 60, 1, 1 / 60);
                 }
+            } finally {
+                api.destroyPhysicsWorld(world);
+            }
+        });
+
+        it('stepSimulation 极端时间参数不抛异常（0 / 负 / 超大）', () => {
+            const world = api.createPhysicsWorld();
+            try {
+                // timeStep=0：内部 m_localTime 不增长，无子步执行
+                expect(() => api.physicsWorldStepSimulation(world, 0, 1, 1 / 60)).not.toThrow();
+                // 负 timeStep：m_localTime 减少，同样不触发子步
+                expect(() => api.physicsWorldStepSimulation(world, -1 / 60, 1, 1 / 60)).not.toThrow();
+                // 超大 timeStep：受 maxSubSteps=1 限制，只执行一个子步，不会失控循环
+                expect(() => api.physicsWorldStepSimulation(world, 100, 1, 1 / 60)).not.toThrow();
+            } finally {
+                api.destroyPhysicsWorld(world);
+            }
+        });
+
+        it('stepSimulation 固定子步长参数为 0 时不抛异常', () => {
+            const world = api.createPhysicsWorld();
+            try {
+                expect(() => api.physicsWorldStepSimulation(world, 1 / 60, 1, 0)).not.toThrow();
             } finally {
                 api.destroyPhysicsWorld(world);
             }
@@ -204,6 +235,61 @@ describe('WASM 物理契约测试', () => {
                 api.destroyShape(shape);
             }
         });
+
+        it('零尺寸 box 不抛异常且返回有效指针', () => {
+            const shape = api.createBoxShape(0, 0, 0);
+            try {
+                expect(shape).toBeGreaterThan(0);
+            } finally {
+                api.destroyShape(shape);
+            }
+        });
+
+        it('负半尺寸 box 不抛异常', () => {
+            // Bullet btBoxShape 不校验半尺寸符号，负值不会崩溃；契约仅保证创建/销毁安全
+            const shape = api.createBoxShape(-1, -1, -1);
+            try {
+                expect(typeof shape).toBe('number');
+            } finally {
+                api.destroyShape(shape);
+            }
+        });
+
+        it('超大尺寸 box 不抛异常', () => {
+            const shape = api.createBoxShape(1000, 1000, 1000);
+            try {
+                expect(shape).toBeGreaterThan(0);
+            } finally {
+                api.destroyShape(shape);
+            }
+        });
+
+        it('零半径 sphere 不抛异常', () => {
+            const shape = api.createSphereShape(0);
+            try {
+                expect(shape).toBeGreaterThan(0);
+            } finally {
+                api.destroyShape(shape);
+            }
+        });
+
+        it('零尺寸 capsule 不抛异常', () => {
+            const shape = api.createCapsuleShape(0, 0);
+            try {
+                expect(shape).toBeGreaterThan(0);
+            } finally {
+                api.destroyShape(shape);
+            }
+        });
+
+        it('静态平面非单位法线不抛异常（内部归一化）', () => {
+            const shape = api.createStaticPlaneShape(0, 2, 0, 0);
+            try {
+                expect(shape).toBeGreaterThan(0);
+            } finally {
+                api.destroyShape(shape);
+            }
+        });
     });
 
     describe('4. 内存管理', () => {
@@ -248,6 +334,36 @@ describe('WASM 物理契约测试', () => {
                 const ptr = api.allocateBuffer(128);
                 expect(ptr).toBeGreaterThan(0);
                 api.deallocateBuffer(ptr, 128);
+            }
+        });
+
+        it('大块分配（1 MiB）首尾可写读回', () => {
+            const ptr = api.allocateBuffer(1024 * 1024);
+            try {
+                expect(ptr).toBeGreaterThan(0);
+                const view = new Float32Array(memory.buffer, ptr, (1024 * 1024) / 4);
+                view[0] = 1.5;
+                view[view.length - 1] = -2.5;
+                expect(view[0]).toBeCloseTo(1.5);
+                expect(view[view.length - 1]).toBeCloseTo(-2.5);
+            } finally {
+                api.deallocateBuffer(ptr, 1024 * 1024);
+            }
+        });
+
+        it('分配的 512 字节可整块写入读回（字节级一致性）', () => {
+            const ptr = api.allocateBuffer(512);
+            try {
+                expect(ptr).toBeGreaterThan(0);
+                const u8 = new Uint8Array(memory.buffer, ptr, 512);
+                for (let i = 0; i < 512; i++) {
+                    u8[i] = i % 256;
+                }
+                for (let i = 0; i < 512; i++) {
+                    expect(u8[i]).toBe(i % 256);
+                }
+            } finally {
+                api.deallocateBuffer(ptr, 512);
             }
         });
     });

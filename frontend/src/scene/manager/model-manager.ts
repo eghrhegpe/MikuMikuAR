@@ -442,13 +442,14 @@ export class ModelManager {
     /** Apply a formation preset to all models. */
     setFormation(type: FormationType, spacing?: number): void {
         this._activeFormation = type;
-        this._activeFormationSpacing = spacing ?? 3;
+        // 边界保护：spacing 非有限或 <= 0 时回退默认（损坏场景文件反序列化也不会产生退化/NaN 布局）
+        const s = spacing !== undefined && Number.isFinite(spacing) && spacing > 0 ? spacing : 3;
+        this._activeFormationSpacing = s;
         const models = Array.from(this.modelRegistry.values());
         const n = models.length;
         if (n === 0) {
             return;
         }
-        const s = this._activeFormationSpacing;
         for (let i = 0; i < n; i++) {
             const inst = models[i];
             if (inst.meshes.length === 0) {
@@ -475,6 +476,10 @@ export class ModelManager {
     setOpacity(id: string, opacity: number): void {
         const inst = this.modelRegistry.get(id);
         if (!inst) {
+            return;
+        }
+        if (!Number.isFinite(opacity)) {
+            logWarn('model-manager', 'setOpacity: 无效值', opacity);
             return;
         }
         inst.opacity = clamp01(opacity);
@@ -578,6 +583,10 @@ export class ModelManager {
         if (!inst) {
             return;
         }
+        if (!Number.isFinite(rotationY)) {
+            logWarn('model-manager', 'setRotationY: 无效值', rotationY);
+            return;
+        }
         inst.rotationY = rotationY;
         inst.rotation[1] = rotationY;
         syncModelTransform(inst);
@@ -588,6 +597,14 @@ export class ModelManager {
     setRotation(id: string, rotation: Vector3): void {
         const inst = this.modelRegistry.get(id);
         if (!inst) {
+            return;
+        }
+        if (
+            !Number.isFinite(rotation.x) ||
+            !Number.isFinite(rotation.y) ||
+            !Number.isFinite(rotation.z)
+        ) {
+            logWarn('model-manager', 'setRotation: 无效欧拉角', rotation);
             return;
         }
         inst.rotation[0] = rotation.x;
@@ -798,7 +815,8 @@ export class ModelManager {
             if (c !== cat || rbi >= states.length) {
                 continue;
             }
-            states[rbi] = enabled ? (init ? init[rbi] : 1) : 0;
+            // init 可能比当前 rigidBodyStates 短（历史场景/类别后加），越界时回退 1，避免写 0 假停用
+            states[rbi] = enabled ? (init && rbi < init.length ? init[rbi] : 1) : 0;
         }
         let physMap = this._physicsCatState.get(id);
         if (!physMap) {
