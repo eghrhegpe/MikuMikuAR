@@ -2266,14 +2266,14 @@
 | `savePresetToLibDialog()` | `menus/model-preset:337` | — |
 | `serializeModelPreset()` | `menus/model-preset:80` | — |
 | `tryAutoApplyPreset()` | `menus/model-preset:216` | — |
-| `DEFAULT_MOTION_SLOTS()` | `menus/motion-binding-ui:122` | — |
-| `applyIntentToModel()` | `menus/motion-binding-ui:138` | — |
-| `buildActionBindingLevel()` | `menus/motion-binding-ui:375` | — |
-| `ensureMotionSlots()` | `menus/motion-binding-ui:127` | [doc:adr-167] 确保 inst.motionSlots 存在并返回（懒初始化；overlay 槽位已移除） |
-| `handleModelAction()` | `menus/motion-binding-ui:395` | 处理 per-model 动作控制指令（pause / reset / pose / loop）。 |
-| `initMotionBroadcast()` | `menus/motion-binding-ui:200` | — |
+| `DEFAULT_MOTION_SLOTS()` | `menus/motion-binding-ui:121` | — |
+| `applyIntentToModel()` | `menus/motion-binding-ui:137` | — |
+| `buildActionBindingLevel()` | `menus/motion-binding-ui:374` | — |
+| `ensureMotionSlots()` | `menus/motion-binding-ui:126` | [doc:adr-167] 确保 inst.motionSlots 存在并返回（懒初始化；overlay 槽位已移除） |
+| `handleModelAction()` | `menus/motion-binding-ui:394` | 处理 per-model 动作控制指令（pause / reset / pose / loop）。 |
+| `initMotionBroadcast()` | `menus/motion-binding-ui:199` | — |
 | `renderModuleToggleList()` | `menus/motion-binding-ui:59` | 渲染动作模块开关列表到指定容器。 |
-| `resetFocusedLayerId()` | `menus/motion-binding-ui:117` | 重置焦点图层 ID（进入动作绑定面板 / 场景级浏览时调用）。 |
+| `resetFocusedLayerId()` | `menus/motion-binding-ui:116` | 重置焦点图层 ID（进入动作绑定面板 / 场景级浏览时调用）。 |
 | `buildCameraLevel()` | `menus/motion-camera-levels:355` | — |
 | `buildVirtualSkirtLevel()` | `menus/motion-cloth-levels:340` | — |
 | `disposeAllVirtualSkirts()` | `menus/motion-cloth-levels:68` | 释放全部虚拟裙骨控制器 |
@@ -2307,12 +2307,12 @@
 | `buildProcMotionSchema()` | `menus/motion-procmotion-levels:133` | — |
 | `buildProcToolsLevel()` | `menus/motion-procmotion-levels:387` | [doc:adr-207] 程序化工具栏 level——对齐 ADR-170「详情 vs 工具」分层： 程序化专属参数（预设/强度/速度/骨骼微动/插值）收敛到工具栏， 详情页只保 |
 | `procLabel()` | `menus/motion-procmotion-levels:408` | [doc:adr-207] 程序化动作 ID → 显示名（跨模块复用，避免标签逻辑重复）。 |
-| `buildMotionRootItems()` | `menus/motion-root-ui:45` | — |
-| `buildMotionRootLevel()` | `menus/motion-root-ui:270` | — |
-| `buildRetargetLevel()` | `menus/motion-root-ui:331` | — |
-| `hideMotionPopup()` | `menus/motion-root-ui:279` | — |
-| `importExternalAnimation()` | `menus/motion-root-ui:362` | 外部动作导入：选文件 → 重定向骨骼 → 播放。 |
-| `openProcDetail()` | `menus/motion-root-ui:323` | [doc:adr-207] 行体点击进入程序化统一详情页。 |
+| `buildMotionRootItems()` | `menus/motion-root-ui:51` | — |
+| `buildMotionRootLevel()` | `menus/motion-root-ui:295` | — |
+| `buildRetargetLevel()` | `menus/motion-root-ui:356` | — |
+| `hideMotionPopup()` | `menus/motion-root-ui:304` | — |
+| `importExternalAnimation()` | `menus/motion-root-ui:387` | 外部动作导入：选文件 → 重定向骨骼 → 播放。 |
+| `openProcDetail()` | `menus/motion-root-ui:348` | [doc:adr-207] 行体点击进入程序化统一详情页。 |
 | `buildNavMaps()` | `menus/nav-actions:163` | — |
 | `disposeNavBindings()` | `menus/nav-actions:257` | 卸载导航按钮监听（HMR/dispose 用） |
 | `getNavLabel()` | `menus/nav-actions:322` | 供 core 侧读取导航标签（经桥，不直接 import menus） |

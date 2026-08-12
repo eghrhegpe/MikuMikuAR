@@ -261,7 +261,9 @@ jobs:
       - name: Start Wails dev + run @webgl E2E
         # [2026-08-10] 步骤级 continue-on-error：吞环境性失败（WebView2 启动不稳/无
         # GPU 渲染必崩），失败与否交给下方 failure-count gate 裁决——超阈值才红。
-        timeout-minutes: 7
+        # [2026-08-12] 步骤级 timeout 从 7 扩到 12：CDP 轮询 90×5=450s 已占 7.5min，
+        # 原 7min(420s) 在轮询耗尽前就 kill 了步骤，测试永远跑不了。12min = 450s 轮询 + 测试余量。
+        timeout-minutes: 12
         continue-on-error: true
         env:
           # Expose CDP on WebView2 via MMCAR_DEBUG_PORT — main.go reads it and
