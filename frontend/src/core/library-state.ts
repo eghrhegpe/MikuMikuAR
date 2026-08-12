@@ -97,7 +97,9 @@ export function addRecentMotion(path: string, name: string): void {
 }
 
 export function getRecentMotions(): readonly RecentMotion[] {
-    return [..._recentMotions]; // [audit:P2] 返回副本，防外部绕过 setter 直接 mutate
+    // [audit:P2] 返回深拷贝，防外部绕过 setter 直接 mutate（浅拷贝只挡数组级 push/splice，
+    // 元素级改 name/path 仍会污染内部状态）。
+    return _recentMotions.map((r) => ({ ...r }));
 }
 
 /**

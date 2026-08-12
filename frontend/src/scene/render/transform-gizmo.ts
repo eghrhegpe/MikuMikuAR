@@ -93,6 +93,8 @@ export function computeSnapDistance(type: GizmoType, enabled: boolean, step: num
             return step * (Math.PI / 12); // step=1 → 15°（π/12 rad）
         case 'scale':
             return step * 0.1; // step=1 → 0.1 缩放增量
+        default:
+            return 0; // 未知类型 → 0（Babylon 禁用语义），避免隐式 undefined 传播到 snapDistance
     }
 }
 
@@ -137,7 +139,11 @@ export function attachGizmo(options: GizmoAttachOptions): boolean {
     // 使用 AbstractMesh 达到 Gizmo.attachedNode 的类型要求
     const node = options.node as AbstractMesh;
 
-    for (const type of options.types) {
+    // [fix P4] 去重：types 含重复项（如 ['position','position']）时循环会创建多个同类
+    // gizmo，后者覆盖前者导致前者泄漏（未 dispose + 拖拽订阅残留）。Set 去重后同类仅建一个。
+    const types = [...new Set(options.types)];
+
+    for (const type of types) {
         switch (type) {
             case 'position': {
                 const g = new PositionGizmo(layer);

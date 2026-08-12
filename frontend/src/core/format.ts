@@ -20,6 +20,8 @@ export function formatTime(seconds: number): string {
  * 识别 `LibraryLoadError` 结构化对象并附加 `[loadId/phase]` 前缀（ADR-135）。
  */
 export function formatError(err: unknown, maxLen = 120): string {
+    // 防御极端 maxLen（0/负值）：limit 至少 3，避免 slice(0, 负数) 从尾部截断产生非预期结果。
+    const limit = Math.max(3, maxLen);
     if (err === null || err === undefined) {
         return 'unknown error';
     }
@@ -35,18 +37,18 @@ export function formatError(err: unknown, maxLen = 120): string {
         const causeStr = formatError(e.cause, Math.max(20, maxLen - 30));
         const prefix = `[${e.loadId}/${e.phase}] `;
         const full = prefix + causeStr;
-        return full.length > maxLen ? full.slice(0, maxLen - 3) + '...' : full;
+        return full.length > limit ? full.slice(0, limit - 3) + '...' : full;
     }
     if (err instanceof Error) {
         const msg = err.message;
-        return msg.length > maxLen ? msg.slice(0, maxLen - 3) + '...' : msg;
+        return msg.length > limit ? msg.slice(0, limit - 3) + '...' : msg;
     }
     if (typeof err === 'string') {
-        return err.length > maxLen ? err.slice(0, maxLen - 3) + '...' : err;
+        return err.length > limit ? err.slice(0, limit - 3) + '...' : err;
     }
     try {
         const s = String(err);
-        return s.length > maxLen ? s.slice(0, maxLen - 3) + '...' : s;
+        return s.length > limit ? s.slice(0, limit - 3) + '...' : s;
     } catch {
         return 'unknown error';
     }

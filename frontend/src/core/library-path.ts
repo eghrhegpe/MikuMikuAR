@@ -15,11 +15,15 @@ export function resolveLibraryRef(libraryRef: string): string | null {
     if (!libraryRef) {
         return null;
     }
-    if (libraryRef.startsWith('/') || libraryRef.includes('..')) {
+    // 先归一化（反斜杠→正斜杠、折叠 '.' 段）再做安全校验，双保险：
+    // 1) "\\etc\\passwd"（反斜杠绝对路径）不归一化会绕过 startsWith('/') 拦截；
+    // 2) 返回给调用方的路径统一正斜杠，避免混合分隔符传给文件系统。
+    const refNorm = normPath(libraryRef);
+    if (!refNorm || refNorm.startsWith('/') || refNorm.includes('..')) {
         logWarn('resolveLibraryRef', `suspicious libraryRef rejected: "${libraryRef}"`);
         return null;
     }
-    const colonIdx = libraryRef.indexOf(':');
+    const colonIdx = refNorm.indexOf(':');
     if (colonIdx > 0) {
         // External library refs (e.g. "MyLib:PMX/model.pmx") are no longer supported;
         // reject any ref containing a colon that isn't a drive letter.
@@ -27,7 +31,7 @@ export function resolveLibraryRef(libraryRef: string): string | null {
         return null;
     }
     if (libraryRoot) {
-        const resolved = normPath(libraryRoot) + '/' + libraryRef;
+        const resolved = normPath(libraryRoot) + '/' + refNorm;
         if (!isUnderRoot(libraryRoot, resolved)) {
             logWarn('resolveLibraryRef', `path traversal blocked: "${resolved}"`);
             return null;

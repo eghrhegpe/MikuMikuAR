@@ -49,6 +49,23 @@ import {
     Vector3,
 } from './virtual-skirt-helpers';
 
+// 封闭立方体 mesh：每条边被 2 个三角形共享，无 boundary edge → analyzer 判定无裙摆
+function closedCubeMeshData(): { positions: Float32Array; indices: Uint32Array } {
+    const positions = new Float32Array([
+        -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, -0.5, 0.5, -0.5, // 背面
+        -0.5, -0.5, 0.5, 0.5, -0.5, 0.5, 0.5, 0.5, 0.5, -0.5, 0.5, 0.5, // 正面
+    ]);
+    const indices = new Uint32Array([
+        0, 2, 1, 0, 3, 2, // 背面
+        4, 5, 6, 4, 6, 7, // 正面
+        0, 7, 3, 0, 4, 7, // 左面
+        1, 2, 6, 1, 6, 5, // 右面
+        0, 5, 1, 0, 4, 5, // 底面
+        3, 7, 6, 3, 6, 2, // 顶面
+    ]);
+    return { positions, indices };
+}
+
 // ======== 坐标转换纯函数（原 virtual-skirt.coord.test.ts） ========
 describe('坐标转换纯函数 (P1)', () => {
     it('localToWorld: 含平移的 mesh 世界矩阵 → 世界坐标', () => {
@@ -117,16 +134,19 @@ describe('VirtualSkirtController — P1 坐标空间一致性', () => {
         const ok = ctrl.build();
         expect(ok).toBe(true);
 
-        // 所有骨节 transform 的 x 应被 mesh 平移 +10 推到 [9,11]（局部 x∈[-1,1]）
-        const segTransforms = hoisted.initialTransforms.filter((t) => t[0] > 5);
+        // setInitialTransform 按 build 顺序：第 1 个为锚定体，其余为链身骨节
+        const anchorTransform = hoisted.initialTransforms[0];
+        const segTransforms = hoisted.initialTransforms.slice(1);
         expect(segTransforms.length).toBe(ctrl.segmentCount);
-        // 锚定体在世界原点附近（腰骨世界位 (0,0,0)），其 x 不被 mesh 平移影响：
-        // 验证锚定体（世界）与骨节（世界）处于同一坐标系
-        const anchorTransforms = hoisted.initialTransforms.filter((t) => t[0] <= 5);
-        expect(anchorTransforms.length).toBe(1);
-        expect(anchorTransforms[0][0]).toBeCloseTo(0, 5);
-        expect(anchorTransforms[0][1]).toBeCloseTo(0, 5);
-        expect(anchorTransforms[0][2]).toBeCloseTo(0, 5);
+        // 锚定体初始位也经 localToWorld：腰骨局部位 (0,0,0) + mesh 平移 (10,0,0) → 世界 (10,0,0)，
+        // 与骨节同处世界坐标系（验证锚定体（世界）与骨节（世界）处于同一坐标系）
+        expect(anchorTransform[0]).toBeCloseTo(10, 5);
+        expect(anchorTransform[1]).toBeCloseTo(0, 5);
+        expect(anchorTransform[2]).toBeCloseTo(0, 5);
+        // 所有骨节 transform 的 x 应被 mesh 平移 +10 推到 [9,11]（局部 x∈[-1,1]）
+        const xs = segTransforms.map((t) => t[0]);
+        expect(Math.min(...xs)).toBeGreaterThan(9);
+        expect(Math.max(...xs)).toBeLessThan(11);
     });
 
     it('每帧写回在平移 mesh 下不抛错，且顶点 Buffer 被更新', () => {
@@ -250,6 +270,65 @@ describe('VirtualSkirtController — Phase 2 注入', () => {
 
         expect(ok).toBe(false);
     });
+
+    it('dispose 后重建复用 worldId（nextWorldId 不单调增长）', () => {
+        const mesh = createOpenBottomCylinder(1.0, 2.0, 12, 6);
+        const model = makeModel(mesh, [{ name: 'Waist', worldMatrix: new Float32Array(16) }]);
+        const { physics } = makePhysics();
+        const runtime = makeRuntime(physics);
+        const { scene } = makeScene();
+
+        const ctrl1 = new VirtualSkirtController(model, scene, runtime, testConfig());
+        expect(ctrl1.build()).toBe(true);
+        expect(physics.nextWorldId).toBe(6); // 5 → 6
+        ctrl1.dispose();
+
+        // freeList 归还 5，重建时复用，nextWorldId 不再递增
+        const ctrl2 = new VirtualSkirtController(model, scene, runtime, testConfig());
+        expect(ctrl2.build()).toBe(true);
+        expect(physics.nextWorldId).toBe(6);
+        ctrl2.dispose();
+    });
+
+    it('build 成功后再次 build() 返回 false（防重复注入/资源泄漏）', () => {
+        const mesh = createOpenBottomCylinder(1.0, 2.0, 12, 6);
+        const model = makeModel(mesh, [{ name: 'Waist', worldMatrix: new Float32Array(16) }]);
+        const { physics, impl } = makePhysics();
+        const runtime = makeRuntime(physics);
+        const { scene } = makeScene();
+
+        const ctrl = new VirtualSkirtController(model, scene, runtime, testConfig());
+        expect(ctrl.build()).toBe(true);
+        const rbCalls = 1 + ctrl.segmentCount;
+        const conCalls = ctrl.segmentCount;
+
+        expect(ctrl.build()).toBe(false);
+        // 不重复注入：addRigidBody/addConstraint 次数保持首次注入的计数
+        expect(impl.addRigidBody).toHaveBeenCalledTimes(rbCalls);
+        expect(impl.addConstraint).toHaveBeenCalledTimes(conCalls);
+    });
+
+    it('封闭 mesh（无裙摆边界边）→ build() 返回 false', () => {
+        const model = makeModel(
+            createOpenBottomCylinder(1.0, 2.0, 12, 6),
+            [{ name: 'Waist', worldMatrix: new Float32Array(16) }]
+        );
+        const cube = closedCubeMeshData();
+        const meshAny = model.mesh as unknown as {
+            getVerticesData: () => Float32Array;
+            getIndices: () => Uint32Array;
+        };
+        meshAny.getVerticesData = () => cube.positions;
+        meshAny.getIndices = () => cube.indices;
+
+        const { physics, impl } = makePhysics();
+        const runtime = makeRuntime(physics);
+        const { scene } = makeScene();
+
+        const ctrl = new VirtualSkirtController(model, scene, runtime, testConfig());
+        expect(ctrl.build()).toBe(false);
+        expect(impl.addRigidBody).not.toHaveBeenCalled();
+    });
 });
 
 // ======== P3a build 异常清理（原 virtual-skirt.build-cleanup.test.ts） ========
@@ -312,6 +391,44 @@ describe('VirtualSkirtController — P3a build 异常清理', () => {
         expect(impl.removeRigidBody).toHaveBeenCalledTimes(2);
         expect(ctrl.segmentCount).toBe(0);
         expect(ctrl.constraintCount).toBe(0);
+    });
+
+    it('addConstraint 返回 false → build 返回 false 且清理已注入刚体', () => {
+        const mesh = createOpenBottomCylinder(1.0, 2.0, 12, 6);
+        const model = makeModel(mesh, [{ name: 'Waist', worldMatrix: new Float32Array(16) }]);
+        const { physics, impl } = makePhysics();
+        const runtime = makeRuntime(physics);
+        const { scene } = makeScene();
+
+        // 第一个约束 add 即失败（锚定体 + 首个骨节已注入成功）
+        impl.addConstraint.mockReturnValue(false);
+
+        const ctrl = new VirtualSkirtController(model, scene, runtime, testConfig());
+        const ok = ctrl.build();
+
+        expect(ok).toBe(false);
+        // 已注入的锚定体 + 首个骨节被 remove；已 push 的约束被 remove + dispose
+        expect(impl.removeRigidBody).toHaveBeenCalledTimes(2);
+        expect(impl.removeConstraint).toHaveBeenCalledTimes(1);
+        expect(ctrl.segmentCount).toBe(0);
+        expect(ctrl.constraintCount).toBe(0);
+    });
+
+    it('mesh.getWorldMatrix 抛错（mesh 已销毁）→ build() 返回 false 而非向上抛异常', () => {
+        const mesh = createOpenBottomCylinder(1.0, 2.0, 12, 6);
+        const model = makeModel(mesh, [{ name: 'Waist', worldMatrix: new Float32Array(16) }]);
+        const { physics } = makePhysics();
+        const runtime = makeRuntime(physics);
+        const { scene } = makeScene();
+
+        const meshAny = model.mesh as unknown as { getWorldMatrix: () => Matrix };
+        meshAny.getWorldMatrix = () => {
+            throw new Error('mesh disposed');
+        };
+
+        const ctrl = new VirtualSkirtController(model, scene, runtime, testConfig());
+        expect(() => ctrl.build()).not.toThrow();
+        expect(ctrl.build()).toBe(false);
     });
 });
 
@@ -410,6 +527,28 @@ describe('VirtualSkirtController — 每帧更新', () => {
         expect(meshAny.updateVerticesData).toHaveBeenCalled();
         // 锚定体 setTransformMatrix 被调用（跟随腰骨）
         // 通过场景的 onBeforeRenderObservable.add 捕获的回调已执行，无异常
+    });
+
+    it('mesh 已销毁（模型卸载）→ 每帧 self-dispose 释放物理资源', () => {
+        const mesh = createOpenBottomCylinder(1.0, 2.0, 12, 6);
+        const model = makeModel(mesh, [{ name: 'Waist', worldMatrix: new Float32Array(16) }]);
+        const { physics, impl } = makePhysics();
+        const runtime = makeRuntime(physics);
+        const { scene, getCb } = makeScene();
+
+        const ctrl = new VirtualSkirtController(model, scene, runtime, testConfig());
+        ctrl.build();
+        const segCount = ctrl.segmentCount;
+        expect(segCount).toBeGreaterThan(0);
+
+        // 模拟 mesh 被外部销毁（模型卸载/切换场景）
+        (model.mesh as unknown as { isDisposed: () => boolean }).isDisposed = () => true;
+
+        expect(() => getCb()()).not.toThrow();
+        // self-dispose：锚定 + 骨节刚体全部移除，不再悬空回写
+        expect(impl.removeRigidBody).toHaveBeenCalledTimes(1 + segCount);
+        expect(ctrl.segmentCount).toBe(0);
+        expect(ctrl.constraintCount).toBe(0);
     });
 });
 

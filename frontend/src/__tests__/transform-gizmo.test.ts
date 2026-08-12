@@ -117,6 +117,11 @@ describe('computeSnapDistance（三轴吸附派生）', () => {
         expect(gizmo.computeSnapDistance('scale', true, 1)).toBeCloseTo(0.1);
         expect(gizmo.computeSnapDistance('scale', true, 3)).toBeCloseTo(0.3);
     });
+
+    it('防御：未知类型 → 0（禁用语义，不传播 undefined 到 snapDistance）', () => {
+        expect(gizmo.computeSnapDistance('foo' as never, true, 1)).toBe(0);
+        expect(gizmo.computeSnapDistance('foo' as never, false, 1)).toBe(0);
+    });
 });
 
 describe('initTransformGizmo（场景重建守卫）', () => {
@@ -229,6 +234,34 @@ describe('attachGizmo（创建/绑定/独占）', () => {
         expect(gizmo.getActiveGizmoTypes()).toEqual([]);
     });
 
+    it('边界：types 含重复项 → 同类仅建一个（修复泄漏）', () => {
+        gizmo.initTransformGizmo(scene);
+        const ok = gizmo.attachGizmo({
+            id: 'dup',
+            node,
+            types: ['position', 'position', 'scale', 'position'],
+        });
+        expect(ok).toBe(true);
+        expect(shared.PositionGizmo).toHaveBeenCalledTimes(1); // 重复项只建一个，无泄漏
+        expect(shared.ScaleGizmo).toHaveBeenCalledTimes(1);
+        expect(gizmo.getActiveGizmoTypes()).toEqual(['position', 'scale']);
+    });
+
+    it('守卫：拖拽中二次 attach → flush 旧 gizmo 回写一次', () => {
+        const onPosEndA = vi.fn();
+        const onPosEndB = vi.fn();
+        gizmo.initTransformGizmo(scene);
+        gizmo.attachGizmo({ id: 'a', node, types: ['position'], onPositionDragEnd: onPosEndA });
+        dragStartCb(shared.PositionGizmo)();
+        expect(gizmo.isGizmoDragging()).toBe(true);
+        // attachGizmo 内部先 detach → 拖拽中 flush 旧回写，再建新 gizmo
+        gizmo.attachGizmo({ id: 'b', node, types: ['position'], onPositionDragEnd: onPosEndB });
+        expect(onPosEndA).toHaveBeenCalledWith(node);
+        expect(onPosEndB).not.toHaveBeenCalled(); // 新 gizmo 尚未拖拽
+        expect(gizmo.getGizmoTargetId()).toBe('b');
+        expect(gizmo.isGizmoDragging()).toBe(false);
+    });
+
     it('正常：detach 后重新 attach → 重建 layer', () => {
         gizmo.initTransformGizmo(scene);
         gizmo.attachGizmo({ id: 'a', node, types: ['position'] });
@@ -273,6 +306,30 @@ describe('detachGizmo（清理 + 拖拽 flush）', () => {
         expect(shared.logWarn).toHaveBeenCalled();
     });
 
+    it('守卫：拖拽中 detach 后再 detach → 回写仅 flush 一次（幂等）', () => {
+        const onPositionDragEnd = vi.fn();
+        gizmo.initTransformGizmo(scene);
+        gizmo.attachGizmo({ id: 'i', node, types: ['position'], onPositionDragEnd });
+        dragStartCb(shared.PositionGizmo)();
+        gizmo.detachGizmo();
+        expect(onPositionDragEnd).toHaveBeenCalledTimes(1);
+        gizmo.detachGizmo();
+        expect(onPositionDragEnd).toHaveBeenCalledTimes(1); // 不重复 flush
+    });
+
+    it('守卫：drag-end 用户回调抛异常 → 拖拽态已复位不卡死（fix P3）', () => {
+        const boom = vi.fn(() => {
+            throw new Error('boom');
+        });
+        gizmo.initTransformGizmo(scene);
+        gizmo.attachGizmo({ id: 'e', node, types: ['position'], onPositionDragEnd: boom });
+        dragStartCb(shared.PositionGizmo)();
+        expect(gizmo.isGizmoDragging()).toBe(true);
+        expect(() => dragEndCb(shared.PositionGizmo)(node)).toThrow('boom');
+        // 回调内部先复位 _isDragging 再调用户回调 → 异常不卡拖拽态
+        expect(gizmo.isGizmoDragging()).toBe(false);
+    });
+
     it('守卫：未 attach 时 detach 幂等不崩', () => {
         expect(() => gizmo.detachGizmo()).not.toThrow();
     });
@@ -305,6 +362,15 @@ describe('setGizmoSnapDistance / getGizmoSnapConfig（实时生效）', () => {
         gizmo.setGizmoSnapDistance(false);
         expect(lastInstance(shared.PositionGizmo).snapDistance).toBe(0);
         expect(gizmo.getGizmoSnapConfig()).toEqual({ enabled: false, step: 3 });
+    });
+
+    it('正常：先 set 配置再 attach → 新 gizmo 应用当前配置', () => {
+        gizmo.initTransformGizmo(scene);
+        gizmo.setGizmoSnapDistance(true, 2);
+        gizmo.attachGizmo({ id: 'pre', node, types: ['position', 'rotation', 'scale'] });
+        expect(lastInstance(shared.PositionGizmo).snapDistance).toBe(2);
+        expect(lastInstance(shared.RotationGizmo).snapDistance).toBeCloseTo(2 * (Math.PI / 12));
+        expect(lastInstance(shared.ScaleGizmo).snapDistance).toBeCloseTo(0.2);
     });
 
     it('边界：默认配置 enabled=false, step=1', () => {

@@ -233,6 +233,11 @@ export class VirtualSkirtController {
         if (this._disposed) {
             return false;
         }
+        // 防重入：已成功注入后再次 build 直接拒绝，避免重复注入 + worldId/资源泄漏。
+        // （build 失败路径会 dispose 并把 impl 置 null，故 impl 非空仅意味着已构建成功）
+        if (this.impl) {
+            return false;
+        }
 
         // Phase 5: 质量档位解析 → LOD 上限 + 降频步长 + 顶点硬上限
         // [doc:adr-178] 走能力层：无 crossOriginIsolated（安卓应用 / 网页模式无 MPR）即单线程物理，自动降品质
@@ -292,17 +297,19 @@ export class VirtualSkirtController {
         }
         this.impl = impl;
 
-        // P1: 捕获 mesh 世界矩阵（WASM 物理世界为世界坐标，骨节初始位置与写回均依赖它）
-        const mw0 = this.model.mesh.getWorldMatrix();
-        this._meshWorld.copyFrom(mw0);
-        mw0.invertToRef(this._meshWorldInv);
-
         // worldId：始终分配专用 world（不与 PMX 刚体同 world，避免坐标系/碰撞干扰；
         // 也规避 _physicsModel 私有字段访问的脆弱性，见 ADR-084 §九 P1 修复）
         // P1-fix: 优先从 freeList 复用，避免 nextWorldId 单调增长
         this.worldId = acquireWorldId(physicsRuntime);
 
         try {
+            // P1: 捕获 mesh 世界矩阵（WASM 物理世界为世界坐标，骨节初始位置与写回均依赖它）。
+            // 置于 try 内：mesh 已销毁 / 奇异矩阵时 getWorldMatrix / invertToRef 抛错 →
+            // 走 catch → dispose 已分配资源 → 返回 false，维持 build() 布尔契约（而非向上抛异常）。
+            const mw0 = this.model.mesh.getWorldMatrix();
+            this._meshWorld.copyFrom(mw0);
+            mw0.invertToRef(this._meshWorldInv);
+
             const wasmInstance = impl.wasmInstance;
 
             // --- 锚定体（Kinematic 盒子，跟随腰骨） ---
@@ -326,7 +333,13 @@ export class VirtualSkirtController {
             this.anchorInfo.shape = this.anchorShape;
             this.anchorInfo.motionType = MotionType.Kinematic;
             this.anchorInfo.mass = 0;
-            this.anchorInfo.setInitialTransform(Matrix.Translation(ax, ay, az));
+            // P1: 锚定体初始位与链身骨节一致走 localToWorld（骨骼 worldMatrix 为 rootMesh
+            // 局部系，WASM 物理世界为世界系）；否则模型被平移时锚定体与裙链首帧前错位。
+            this._tmpLocal.set(ax, ay, az);
+            localToWorld(this._tmpLocal, this._meshWorld, this._tmpVec);
+            this.anchorInfo.setInitialTransform(
+                Matrix.Translation(this._tmpVec.x, this._tmpVec.y, this._tmpVec.z)
+            );
             this.anchorRb = new RigidBody(impl, this.anchorInfo);
             if (!impl.addRigidBody(this.anchorRb, this.worldId)) {
                 logWarn('virtual-skirt', 'addRigidBody(anchor) failed', {
