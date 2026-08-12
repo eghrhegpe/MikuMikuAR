@@ -18,19 +18,28 @@ ROOT="$(git rev-parse --show-toplevel)"
 # 修复：把系统 Node + 系统 Git 的 Unix 工具放到 PATH 最前，确保 npm/node 正确解析。
 # 检测：若修正后 npm 仍不可用，warn 跳过 lint/test（环境问题不该阻断代码推送）。
 NPM_AVAILABLE=true
-command -v npm >/dev/null 2>&1 || {
-  # 尝试修正 PATH：系统 Node + 系统 Git Unix 工具
-  SYS_NODE="/c/Program Files/nodejs"
-  SYS_GIT_USR_BIN="/c/Program Files/Git/usr/bin"
-  [ -d "$SYS_NODE" ] && PATH="$SYS_NODE:$PATH"
-  [ -d "$SYS_GIT_USR_BIN" ] && PATH="$SYS_GIT_USR_BIN:$PATH"
-  export PATH
-  command -v npm >/dev/null 2>&1 || {
-    echo "⚠️  hook 环境中 npm 不可用（PATH 异常）。lint/test 将被跳过。"
-    echo "   手动推送: 用 PowerShell/CMD 运行 git push"
-    NPM_AVAILABLE=false
-  }
+NPM_SKIP_REASON=""
+# 用一个能真实执行的函数验证 npm 可用（避免 PATH 里有坏 shim 却 command -v 命中）
+_npm_usable() {
+  command -v npm >/dev/null 2>&1 && npm --version >/dev/null 2>&1
 }
+if ! _npm_usable; then
+  # 尝试修正 PATH：系统 Node + 系统 Git Unix 工具（兼容非 C 盘 / nvm / fnm 常见安装点）
+  for CAND in \
+    "/c/Program Files/nodejs" \
+    "/c/Program Files (x86)/nodejs" \
+    "/c/Users/$USER/AppData/Roaming/nvm/current" \
+    "/c/Users/$USER/.fnm/current" \
+    "/usr/local/bin" \
+    "/opt/homebrew/bin"; do
+    [ -d "$CAND" ] && PATH="$CAND:$PATH"
+  done
+  export PATH
+  if ! _npm_usable; then
+    NPM_AVAILABLE=false
+    NPM_SKIP_REASON="hook 环境中 npm 不可用（PATH 异常；已尝试常见安装点仍失败）"
+  fi
+fi
 
 # ── 结论摘要累积（末尾输出，避免 AI 只读最后几行漏掉中间 WARN/INFO） ──
 SUMMARY_FIXED=""
@@ -89,6 +98,13 @@ $(git diff --name-only "$r" 2>/dev/null || true)"
   done
   # 去重 + 去空行
   CHANGED="$(echo "$CHANGED" | sort -u | sed '/^$/d')"
+fi
+
+# ── 兜底：RANGES 为空（本地已与远端同步）但有未提交改动时，
+# 仍纳入工作区 diff，避免「改了 TS 没 commit 就 push」场景下 hook 静默全过。
+# （注：此时 git push 本身会因 nothing to push 失败，此处仅让提示更友好、检查更真实）
+if [ -z "$CHANGED" ]; then
+  CHANGED="$(git diff --name-only HEAD 2>/dev/null || true)"
 fi
 
 # ── 判断变更域 ──
@@ -231,8 +247,13 @@ if [ "$TS_CHANGED" = "true" ] && [ "$NPM_AVAILABLE" = "true" ]; then
   fi
   note_check "✅ lint"
 else
-  echo "[pre-push] lint（跳过：未涉及 TS/JS 源码 或 npm 不可用）"
-  note_check "⏭️ lint（未涉及 TS 或 npm 不可用）"
+  if [ "$TS_CHANGED" = "true" ]; then
+    echo "[pre-push] lint（跳过：$NPM_SKIP_REASON）"
+    note_check "⏭️ lint（npm 不可用 → $NPM_SKIP_REASON）"
+  else
+    echo "[pre-push] lint（跳过：未涉及 TS/JS 源码）"
+    note_check "⏭️ lint（未涉及 TS 或 npm 不可用）"
+  fi
 fi
 
 # ── test:coverage（仅 TS/JS 变更时；不可自动修复） ──
@@ -307,8 +328,13 @@ if [ "$TS_CHANGED" = "true" ] && [ "$NPM_AVAILABLE" = "true" ]; then
     fail "vitest --changed 失败" "修复上方失败测试/覆盖率阈值后重推（完整输出: cd frontend && npx vitest run --changed $CHANGED_BASE --coverage）"
   fi
 else
-  echo "[pre-push] test:coverage（跳过：纯 Go / 纯文档变更 / npm 不可用）"
-  note_check "⏭️ test:coverage（未涉及 TS 或 npm 不可用）"
+  if [ "$TS_CHANGED" = "true" ]; then
+    echo "[pre-push] test:coverage（跳过：$NPM_SKIP_REASON）"
+    note_check "⏭️ test:coverage（npm 不可用 → $NPM_SKIP_REASON）"
+  else
+    echo "[pre-push] test:coverage（跳过：纯 Go / 纯文档变更）"
+    note_check "⏭️ test:coverage（未涉及 TS 或 npm 不可用）"
+  fi
 fi
 
 # ── P7: deadcode 基线（阻断式：超基线必须人工显式 --update，不自动 amend 吸收） ──
@@ -327,8 +353,8 @@ if [ "$TS_CHANGED" = "true" ] && [ "$NPM_AVAILABLE" = "true" ]; then
   fi
   note_check "✅ deadcode 基线"
 elif [ "$TS_CHANGED" = "true" ]; then
-  echo "[pre-push] deadcode（跳过：npm 不可用）"
-  note_check "⏭️ deadcode（npm 不可用）"
+  echo "[pre-push] deadcode（跳过：$NPM_SKIP_REASON）"
+  note_check "⏭️ deadcode（npm 不可用 → $NPM_SKIP_REASON）"
 fi
 
 # ── check:docs（ERROR 阻断；INFO 基线自动修复 + amend） ──
@@ -380,8 +406,8 @@ if [ "$NPM_AVAILABLE" = "true" ]; then
   }
   note_check "✅ i18n"
 else
-  echo "[pre-push] i18n（跳过：npm 不可用）"
-  note_check "⏭️ i18n（npm 不可用）"
+  echo "[pre-push] i18n（跳过：$NPM_SKIP_REASON）"
+  note_check "⏭️ i18n（npm 不可用 → $NPM_SKIP_REASON）"
 fi
 
 # ── check:md-links（Python 契约测试；不可自动修复） ──
@@ -420,8 +446,8 @@ if [ "$NPM_AVAILABLE" = "true" ]; then
   }
   note_check "✅ link:check（JS strict 门禁）"
 else
-  echo "[pre-push] link:check（跳过：npm 不可用）"
-  note_check "⏭️ link:check（npm 不可用）"
+  echo "[pre-push] link:check（跳过：$NPM_SKIP_REASON）"
+  note_check "⏭️ link:check（npm 不可用 → $NPM_SKIP_REASON）"
 fi
 
 # ── 结论摘要（AI 友好：末尾聚合关键结果，避免只读最后几行漏掉中间 WARN/INFO） ──
