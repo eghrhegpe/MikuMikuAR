@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { envState } from '../core/config';
 import type { EnvState } from '../core/config';
 import { deriveDefaultEnvState } from '../core/env-state-defaults';
-import { ENV_STATE_SCHEMA, getEnvKeys } from '../core/env-state-schema';
+import { ENV_STATE_SCHEMA, getEnvKeys, type EnvDispatchGroup } from '../core/env-state-schema';
 
 // 真实默认值（单一事实源：ENV_STATE_SCHEMA 派生，替代原文件内手写字面量自证）
 const defaultEnv: EnvState = deriveDefaultEnvState();
@@ -66,6 +66,29 @@ describe('EnvState defaults', () => {
     it('iblIntensity default is 2 (not 1)', () => {
         // 回归保护：旧测试硬编码 iblIntensity===1 是自证错误，schema 实际默认 2
         expect(defaultEnv.iblIntensity).toBe(2);
+    });
+});
+
+// ====================================================================
+// deriveDefaultEnvState — schema 值忠实度（核心契约：派生值 == schema default）
+// ====================================================================
+
+describe('deriveDefaultEnvState — schema value faithfulness', () => {
+    it('every derived value deep-equals its schema default', () => {
+        // 反推源码不足：原测试只抽验零散字段（skyMode/iblIntensity），
+        // 未验证「遍历 schema 派生」的核心契约——每个字段值必须忠实等于对应 default。
+        // 这是推导逻辑的回归防线：schema 改 default 而 derivive 漏同步会在全量下暴露。
+        for (const [key, def] of Object.entries(ENV_STATE_SCHEMA)) {
+            const derived = (defaultEnv as Record<string, unknown>)[key];
+            expect(derived, `derived mismatch for key: ${key}`).toEqual(
+                (def as { default: unknown }).default,
+            );
+        }
+    });
+
+    it('optional-string field defaults to undefined', () => {
+        // lightingPresetName type='optional-string' default=undefined，走 derive 的 else 分支
+        expect(defaultEnv.lightingPresetName).toBeUndefined();
     });
 });
 
@@ -177,6 +200,42 @@ describe('getEnvKeys', () => {
         const a = getEnvKeys('sky');
         const b = getEnvKeys('sky');
         expect(a).toBe(b); // 同一引用（缓存命中）
+    });
+
+    it('every declared-group field appears in all its groups', () => {
+        // 反推源码不足：原测试只抽样验证 windEnabled/groundSize 等个别跨组字段，
+        // 未全量验证 getEnvKeys 的派生契约——每个声明了 group 的字段必须出现在其所有声明组。
+        for (const [key, def] of Object.entries(ENV_STATE_SCHEMA)) {
+            const g = (def as { group?: string | readonly string[] }).group;
+            if (!g) continue;
+            const groups = typeof g === 'string' ? [g] : g;
+            for (const grp of groups) {
+                expect(
+                    getEnvKeys(grp as EnvDispatchGroup),
+                    `key ${key} missing in declared group ${grp}`,
+                ).toContain(key);
+            }
+        }
+    });
+
+    it('single-group fields appear in exactly their declared group', () => {
+        // 组归属精确性：单组字段只应出现在其声明组，不得泄漏进其他任一 dispatch 组。
+        const allGroups: EnvDispatchGroup[] = [
+            'sky', 'ground', 'fog', 'water', 'particle', 'cloud', 'reflection', 'mirror', 'collision',
+        ];
+        for (const [key, def] of Object.entries(ENV_STATE_SCHEMA)) {
+            const g = (def as { group?: string | readonly string[] }).group;
+            if (typeof g !== 'string') continue; // 跨组数组字段由上一测试全量覆盖
+            for (const grp of allGroups) {
+                const inList = getEnvKeys(grp).includes(key);
+                expect(inList, `key ${key}: expect ${g === grp ? 'in' : 'NOT in'} group ${grp}`).toBe(g === grp);
+            }
+        }
+    });
+
+    it('unknown group returns empty array (runtime guard)', () => {
+        // EnvDispatchGroup 在编译期收窄，但运行时误传非法组名也应安全返回空数组而非抛错
+        expect(getEnvKeys('nonexistent' as unknown as EnvDispatchGroup)).toEqual([]);
     });
 });
 

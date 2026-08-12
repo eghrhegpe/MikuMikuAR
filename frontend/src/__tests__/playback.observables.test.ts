@@ -59,7 +59,8 @@ vi.mock('../core/config', () => ({
     },
 }));
 
-import { initPlaybackObservables } from '../scene/motion/playback';
+import { initPlaybackObservables, updatePlaybackUI } from '../scene/motion/playback';
+import { feetDebug } from '../scene/motion/perception-shared';
 import { mockRuntime, tickObs, playObs, pauseObs, mockManager } from './playback-helpers';
 import { registerSceneAction } from '../core/scene-action-bridge';
 
@@ -315,6 +316,69 @@ describe('initPlaybackObservables', () => {
             expect(spy).toHaveBeenCalledWith('[playback] auto-loop playAnimation failed:', err);
         });
         spy.mockRestore();
+    });
+
+    // ---- 盲区补充：auto-loop 条件不满足的两种分支 ----
+
+    it('pauseHandler does not auto-loop when focused model animationDuration <= 0', () => {
+        mockState.isPlaying = true;
+        mockState.autoLoop = true;
+        mockManager.focused.mockReturnValue({ animationDuration: 0 });
+        mockRuntime.currentTime = 119.95;
+
+        pauseObs._fire();
+
+        expect(mockRuntime.seekAnimation).not.toHaveBeenCalled();
+        expect(mockState.isPlaying).toBe(false);
+        expect(mockUpdateUI).toHaveBeenCalled();
+    });
+
+    it('pauseHandler does not auto-loop when currentTime not near end', () => {
+        mockState.isPlaying = true;
+        mockState.autoLoop = true;
+        mockManager.focused.mockReturnValue({ animationDuration: 120 });
+        mockRuntime.currentTime = 30; // 远未到结尾（119.9）
+
+        pauseObs._fire();
+
+        expect(mockRuntime.seekAnimation).not.toHaveBeenCalled();
+        expect(mockState.isPlaying).toBe(false);
+        expect(mockUpdateUI).toHaveBeenCalled();
+    });
+
+    // ---- 盲区补充：isAudioPlaying 场景动作未注册 ----
+
+    it('tickHandler skips beat detector when isAudioPlaying scene action unregistered', () => {
+        const beatDetector = { update: vi.fn() };
+        mockGetBeatDetector.mockReturnValue(beatDetector);
+        isAudioPlaying.mockReturnValue(true);
+
+        // 覆盖注册 → 注销 → getSceneAction 返回 undefined → ?? false → 跳过
+        const unregister = registerSceneAction('isAudioPlaying', () => true);
+        unregister();
+
+        tickObs._fire();
+        expect(beatDetector.update).not.toHaveBeenCalled();
+
+        // 恢复原注册，避免影响后续用例
+        registerSceneAction('isAudioPlaying', () => isAudioPlaying());
+    });
+
+    // ---- 修复点：ADR-248 热路径告警门控 ----
+
+    it('ADR-248: updatePlaybackUI 未就绪告警经 feetDebug 门控 + 60 帧节流', () => {
+        feetDebug.value = true;
+        mockState.mmdRuntime = null; // 触发 !mmdRuntime 守卫分支
+        const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+        // 60 帧内仅第 0 帧触发（% 60 === 0），其余帧被节流
+        for (let i = 0; i < 60; i++) {
+            updatePlaybackUI();
+        }
+        expect(spy).toHaveBeenCalledTimes(1);
+
+        spy.mockRestore();
+        feetDebug.value = false;
     });
 
     // ---- dispose ----

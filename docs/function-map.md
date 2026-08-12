@@ -1688,10 +1688,10 @@
 | `setPerceptionState()` | `scene/motion/perception:429` | 设置感知状态（从存储恢复时使用） |
 | `setPerceptionStateFor()` | `scene/motion/perception:687` | 设置感知状态（场景级单例；参数对所有模型一致，modelId 参数保留仅为兼容旧调用） |
 | `unpinPerception()` | `scene/motion/perception:648` | unpin 模型感知（非焦点模型同步 deactivate） |
-| `PlaybackObservablesDispose()` | `scene/motion/playback:47` | — |
-| `initPlaybackObservables()` | `scene/motion/playback:51` | — |
-| `seekFromEvent()` | `scene/motion/playback:190` | — |
-| `updatePlaybackUI()` | `scene/motion/playback:168` | — |
+| `PlaybackObservablesDispose()` | `scene/motion/playback:52` | — |
+| `initPlaybackObservables()` | `scene/motion/playback:56` | — |
+| `seekFromEvent()` | `scene/motion/playback:199` | — |
+| `updatePlaybackUI()` | `scene/motion/playback:173` | — |
 | `ProcMotionController()` | `scene/motion/proc-motion-bridge:40` | — |
 | `activateGazeTracking()` | `scene/motion/proc-motion-bridge:121` | — |
 | `createProcBeatDetector()` | `scene/motion/proc-motion-bridge:60` | — |

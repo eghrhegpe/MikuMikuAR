@@ -21,6 +21,8 @@ import type { ModelManager } from '../manager/model-manager';
 import type { BeatDetector } from '@/motion-algos/beat-detector';
 import { clamp01 } from '@/core/clamp';
 import { observe } from '@/core/observer-handle';
+// [ADR-248] 热路径日志门控（updatePlaybackUI 每帧被 onAnimationTickObservable 调用）
+import { feetDebug } from './perception-shared';
 
 // ======== 辅助函数 ========
 
@@ -41,6 +43,9 @@ let _manager: ModelManager | null = null;
 
 /** Dispose guard: prevents double-cleanup if dispose() called more than once. */
 let _disposed = false;
+
+/** [ADR-248] updatePlaybackUI 未就绪告警帧计数器：feetDebug 门控 + 60 帧节流。 */
+let _uiWarnFrame = 0;
 
 // ======== Playback Callbacks Initialization ========
 
@@ -173,7 +178,11 @@ export function updatePlaybackUI(): void {
     // 安全守卫：scene 重建期间 observer 可能尚未清完，此时 mmdRuntime / seekBar 为 null。
     // 本函数被 onAnimationTickObservable 每帧调用，throw 会炸掉整帧渲染，因此降级为 warn + 跳过。
     if (!mmdRuntime || !dom.seekBar) {
-        console.warn('[playback] updatePlaybackUI: mmdRuntime 或 seekBar 未就绪，跳过本帧');
+        // [ADR-248] 热路径（每帧由 onAnimationTickObservable 调用）禁止裸调日志：
+        // feetDebug 门控 + 60 帧节流，避免 scene 重建期间每帧刷 warn。
+        if (feetDebug.value && _uiWarnFrame++ % 60 === 0) {
+            console.warn('[playback] updatePlaybackUI: mmdRuntime 或 seekBar 未就绪，跳过本帧');
+        }
         return;
     }
     dom.playbackBar.style.display = 'flex';

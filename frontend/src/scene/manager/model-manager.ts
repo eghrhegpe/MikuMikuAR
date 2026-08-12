@@ -1267,6 +1267,11 @@ export class ModelManager {
         if (!childInst) {
             return;
         }
+        // [doc:adr-215] 未附属的模型无需 detach：跳过 detachFromBone / toast / autoSave，
+        // 避免对未挂载网格产生无意义的世界矩阵快照与副作用。
+        if (!childInst.parentId) {
+            return;
+        }
 
         const target = childInst.rootMesh;
         const worldMat = target.getWorldMatrix().clone();

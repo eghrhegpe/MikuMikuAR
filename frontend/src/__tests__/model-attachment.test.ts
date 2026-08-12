@@ -90,6 +90,64 @@ describe('[adr-215] 模型附属关系', () => {
         expect(mm.get('child')?.parentId).toBeUndefined();
     });
 
+    it('child 不存在时拒绝附属', () => {
+        seed('parent', ['head']);
+        expect(mm.attachModelToBone('ghost', 'parent', 'head')).toBe(false);
+    });
+
+    it('parent 不存在时拒绝附属', () => {
+        seed('child');
+        expect(mm.attachModelToBone('child', 'ghost', 'head')).toBe(false);
+        expect(mm.get('child')?.parentId).toBeUndefined();
+    });
+
+    it('parent 存在但无 mmdModel 时拒绝附属', () => {
+        seed('child');
+        seed('plain'); // 无 runtime 骨骼
+        expect(mm.attachModelToBone('child', 'plain', 'head')).toBe(false);
+        expect(mm.get('child')?.parentId).toBeUndefined();
+    });
+
+    it('骨骼存在但无 linkedBone 时拒绝附属', () => {
+        seed('child');
+        const parent = seed('parent'); // 空骨骼
+        // 手动构造：名为 head 的骨骼但缺失 linkedBone（模拟运行时未绑定）
+        (parent as any).mmdModel = { runtimeBones: [{ name: 'head' }] };
+        expect(mm.attachModelToBone('child', 'parent', 'head')).toBe(false);
+        expect(mm.get('child')?.parentId).toBeUndefined();
+    });
+
+    it('成功附属：offset 写入 position、rotation 转 Quaternion 写入 rotationQuaternion', () => {
+        const child = seed('child');
+        seed('parent', ['head']);
+        const ok = mm.attachModelToBone('child', 'parent', 'head', [1, 2, 3], [90, 0, 0]);
+        expect(ok).toBe(true);
+        expect((child.rootMesh as any).position.set).toHaveBeenCalledWith(1, 2, 3);
+        // rotation 90° → 角度制转弧度后构造 Quaternion
+        expect((child.rootMesh as any).rotationQuaternion).toBeDefined();
+    });
+
+    it('detach：未附属的模型调用为 no-op，不触发 detachFromBone / toast / autoSave', () => {
+        const child = seed('child');
+        const autoSave = vi.fn();
+        mm = new ModelManager({} as any, autoSave, vi.fn());
+        mm.modelRegistry.set('child', child);
+        mm.detachModelFromBone('child');
+        expect((child.rootMesh as any).detachFromBone).not.toHaveBeenCalled();
+        expect(autoSave).not.toHaveBeenCalled();
+    });
+
+    it('reattachAllAttachments：跳过 parentId 已置但 attachedBone 缺失的半附属态', () => {
+        const child = seed('child');
+        seed('parent', ['head']);
+        // 模拟异常半态：有 parent 但无骨骼名
+        child.parentId = 'parent';
+        child.attachedBone = undefined;
+        mm.reattachAllAttachments();
+        expect((child.rootMesh as any).attachToBone).not.toHaveBeenCalled();
+        expect(child.parentId).toBe('parent');
+    });
+
     it('成功附属：写入 parentId/attachedBone/offset/rotation 并调用 attachToBone', () => {
         const child = seed('child');
         seed('parent', ['head']);
