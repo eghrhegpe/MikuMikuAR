@@ -85,7 +85,10 @@ export function getBrowseDir(category: string): string {
     // 使用与实际目录名一致的子目录名（与 Go 端 GetPath 保持大小写一致）
     // 网页端扫描已将文件映射到虚拟子目录（web://selected-dir/PMX 等），无需特殊处理。
     const subdir = CATEGORY_DIR[category] ?? category;
-    return normPath(libraryRoot) + '/' + subdir;
+    // 对整体拼接结果 normPath，而非仅 root 段：未知类别走 fallback 用 category
+    // 本身，可能携带反斜杠/尾斜杠/`.`段，若不归一化整体会残留混合分隔符，
+    // 违反「返回值统一经 normPath 归一化」契约，破坏下游 buildLevel 等依赖。
+    return normPath(normPath(libraryRoot) + '/' + subdir);
 }
 
 // [doc:adr-238] 注册浏览目录读取供 core/action-defs 经 ui-action-bridge 调用

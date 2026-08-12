@@ -238,10 +238,10 @@
 | `allSettledFilter()` | `core/collections:49` | 等待全部 promise 结束，仅返回 fulfilled 结果（rejected 被静默丢弃）。 |
 | `ensureArray()` | `core/collections:6` | 确保值为数组；非数组则包裹为单元素数组。 |
 | `filterKeys()` | `core/collections:11` | 按谓词过滤对象键，返回仅含满足条件键值对的新对象。 |
-| `col3FromTriple()` | `core/color-helpers:12` | 从 &#96;[r, g, b]&#96; 三元组构造 Color3。 |
-| `hexToRgb()` | `core/color-helpers:19` | 将 #rrggbb 解析为 {r,g,b}（0–255）。非法输入回退主题默认 74,108,247。 |
-| `rgbString()` | `core/color-helpers:37` | 将 Color3 转为 CSS &#96;rgb(r, g, b)&#96; 字符串（0–255 整数，clamp 到 [0,255]）。 |
-| `rgbToString()` | `core/color-helpers:32` | 将 {r,g,b} 转为 CSS rgb 字符串 "r, g, b"（供 --accent-rgb 等 CSS 变量）。 |
+| `col3FromTriple()` | `core/color-helpers:17` | 从 &#96;[r, g, b]&#96; 三元组构造 Color3。 |
+| `hexToRgb()` | `core/color-helpers:24` | 将 #rrggbb 解析为 {r,g,b}（0–255）。非法输入回退主题默认 74,108,247。 |
+| `rgbString()` | `core/color-helpers:42` | 将 Color3 转为 CSS &#96;rgb(r, g, b)&#96; 字符串（0–255 整数，clamp 到 [0,255]）。 |
+| `rgbToString()` | `core/color-helpers:37` | 将 {r,g,b} 转为 CSS rgb 字符串 "r, g, b"（供 --accent-rgb 等 CSS 变量）。 |
 | `debounce()` | `core/debounce:8` | 函数防抖：在等待指定时间后才执行函数，如果在等待期间再次调用则重置计时器。 |
 | `disposeLogPanel()` | `core/debug-log-panel:150` | — |
 | `hideLogPanel()` | `core/debug-log-panel:136` | — |
@@ -568,8 +568,8 @@
 | `registerUiAction()` | `core/ui-action-bridge:68` | 注册单个 UI 行为（menus 侧各模块启动时调用，可重复注册覆盖）。 |
 | `unregisterUiAction()` | `core/ui-action-bridge:78` | 兼容旧调用点：按 key 注销（不区分注册实例，慎用；优先用 registerUiAction 返回的 token）。 |
 | `addColorSliderRow()` | `core/ui-advanced-rows:17` | — |
-| `addModeSlider()` | `core/ui-advanced-rows:305` | — |
-| `addVector3SliderRow()` | `core/ui-advanced-rows:149` | — |
+| `addModeSlider()` | `core/ui-advanced-rows:318` | — |
+| `addVector3SliderRow()` | `core/ui-advanced-rows:156` | — |
 | `cardContainer()` | `core/ui-card:9` | Card container helper: removes render-card bg, wraps content in an lcard. |
 | `addCollapsible()` | `core/ui-collapsible:23` | 通用折叠面板组件 |
 | `addPresetChip()` | `core/ui-collapsible:163` | 创建一个 preset-chip 按钮并追加到 container（通常是 .preset-group div）。 |

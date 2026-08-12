@@ -81,4 +81,22 @@ describe('getBrowseDir', () => {
         setOverridePaths({ pmx: '' });
         expect(getBrowseDir('pmx')).toBe('D:/MikuMikuAR/PMX');
     });
+
+    // —— 缺陷回归：libraryRoot 分支拼接后未整体 normPath，未知类别（fallback 用
+    // category 本身）传入反斜杠/尾斜杠/`.`段时残留未归一化，违反函数契约
+    // 「返回值统一经 normPath 归一化」。getBrowseDir 注册为 UI action，kind 来自外部输入。
+    it('未知 category 带反斜杠 → 整体归一化为正斜杠（契约：返回值统一 normPath）', () => {
+        setLibraryRoot('D:/MikuMikuAR');
+        expect(getBrowseDir('MD\\dress_extra')).toBe('D:/MikuMikuAR/MD/dress_extra');
+    });
+
+    it('未知 category 带尾部斜杠 → 去尾部斜杠（契约：返回值统一去尾斜杠）', () => {
+        setLibraryRoot('D:/MikuMikuAR');
+        expect(getBrowseDir('extra/')).toBe('D:/MikuMikuAR/extra');
+    });
+
+    it('未知 category 含 . 段 → 折叠为 .（契约：返回值统一 normPath）', () => {
+        setLibraryRoot('D:/MikuMikuAR');
+        expect(getBrowseDir('a/./b')).toBe('D:/MikuMikuAR/a/b');
+    });
 });

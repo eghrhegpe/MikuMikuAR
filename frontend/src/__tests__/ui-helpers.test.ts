@@ -800,6 +800,19 @@ describe('addColorSliderRow', () => {
         expect(last.length).toBe(3);
         expect(last[0]).toBeCloseTo(0);
     });
+
+    it('defends against NaN channel values without crashing (fallback to 0)', () => {
+        // 与 addSliderRow 的非有限值防御对齐：NaN 通道回落到 0，不渲染 "NaN"
+        const container = document.createElement('div');
+        const onChange = vi.fn();
+        expect(() => {
+            addColorSliderRow(container, 'Color', [NaN, 0.5, 0.8], onChange);
+        }).not.toThrow();
+        const vals = container.querySelectorAll('.clr-value');
+        expect(vals[0].textContent).toBe('0.00');
+        expect(vals[1].textContent).toBe('0.50');
+        expect(vals[2].textContent).toBe('0.80');
+    });
 });
 
 describe('addVector3SliderRow', () => {
@@ -886,6 +899,19 @@ describe('addVector3SliderRow', () => {
 
         const last = onChange.mock.calls[onChange.mock.calls.length - 1][0];
         expect(last[0]).toBe(100);
+    });
+
+    it('defends against NaN axis values without crashing (fallback to min)', () => {
+        // 与 addSliderRow 的非有限值防御对齐：NaN 轴回落到 min，不渲染 "NaN"
+        const container = document.createElement('div');
+        const onChange = vi.fn();
+        expect(() => {
+            addVector3SliderRow(container, 'Pos', [NaN, 0, 0], 0, 100, 1, onChange);
+        }).not.toThrow();
+        const vals = container.querySelectorAll('.vec3-value');
+        expect(vals[0].textContent).toBe('0');
+        expect(vals[1].textContent).toBe('0');
+        expect(vals[2].textContent).toBe('0');
     });
 });
 

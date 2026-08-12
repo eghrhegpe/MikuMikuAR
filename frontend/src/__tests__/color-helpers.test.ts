@@ -33,6 +33,13 @@ describe('color-helpers', () => {
             expect(c.g).toBeCloseTo(-1);
             expect(c.b).toBeCloseTo(-2);
         });
+
+        it('coerces NaN components to 0 (avoid NaN Color3 propagation)', () => {
+            const c = col3FromTriple([NaN, 0.5, NaN]);
+            expect(c.r).toBe(0);
+            expect(c.g).toBeCloseTo(0.5);
+            expect(c.b).toBe(0);
+        });
     });
 
     describe('hexToRgb', () => {
@@ -104,6 +111,10 @@ describe('color-helpers', () => {
 
         it('clamps mixed out-of-range values', () => {
             expect(rgbString(new Color3(-0.1, 0.5, 1.5))).toBe('rgb(0, 128, 255)');
+        });
+
+        it('coerces NaN channels to 0 (avoid invalid rgb(NaN,...) CSS)', () => {
+            expect(rgbString(new Color3(NaN, 0.5, NaN))).toBe('rgb(0, 128, 0)');
         });
     });
 });

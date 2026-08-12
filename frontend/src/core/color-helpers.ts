@@ -5,12 +5,17 @@
 
 import { Color3 } from '@babylonjs/core/Maths/math.color';
 
+/** 将 undefined/NaN 归一为 0，防止 NaN 污染 Color3 与 CSS rgb 串。 */
+function guardNum(v: number | undefined): number {
+    return typeof v === 'number' && !Number.isNaN(v) ? v : 0;
+}
+
 /**
  * 从 `[r, g, b]` 三元组构造 Color3。
- * 接受元组或 number[]；索引缺失时回退 0，兼容 noUncheckedIndexedAccess。
+ * 接受元组或 number[]；索引缺失或 NaN 时回退 0，兼容 noUncheckedIndexedAccess。
  */
 export function col3FromTriple(t: readonly number[]): Color3 {
-    return new Color3(t[0] ?? 0, t[1] ?? 0, t[2] ?? 0);
+    return new Color3(guardNum(t[0]), guardNum(t[1]), guardNum(t[2]));
 }
 
 const HEX_RGB_RE = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i;
@@ -35,6 +40,6 @@ export function rgbToString(rgb: { r: number; g: number; b: number }): string {
 
 /** 将 Color3 转为 CSS `rgb(r, g, b)` 字符串（0–255 整数，clamp 到 [0,255]）。 */
 export function rgbString(c: Color3): string {
-    const clamp8 = (v: number) => Math.max(0, Math.min(255, Math.round(v * 255)));
+    const clamp8 = (v: number) => Math.max(0, Math.min(255, Math.round(guardNum(v) * 255)));
     return `rgb(${clamp8(c.r)}, ${clamp8(c.g)}, ${clamp8(c.b)})`;
 }

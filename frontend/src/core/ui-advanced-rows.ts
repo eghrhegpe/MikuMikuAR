@@ -22,6 +22,13 @@ export function addColorSliderRow(
     opts?: ControlOptions<[number, number, number]>,
     testId?: string
 ): void {
+    // [defense] 与 addSliderRow 对齐：非有限通道值回落到 0，避免 .toFixed()/width 渲染 "NaN"
+    const safeColor: [number, number, number] = [
+        Number.isFinite(color[0]) ? color[0] : 0,
+        Number.isFinite(color[1]) ? color[1] : 0,
+        Number.isFinite(color[2]) ? color[2] : 0,
+    ];
+
     const block = document.createElement('div');
     block.className = 'clr-block';
     if (testId) {
@@ -36,11 +43,11 @@ export function addColorSliderRow(
     header.appendChild(title);
     const swatch = document.createElement('span');
     swatch.className = 'clr-swatch';
-    swatch.style.background = rgbString(col3FromTriple(color));
+    swatch.style.background = rgbString(col3FromTriple(safeColor));
     header.appendChild(swatch);
     block.appendChild(header);
     const channelColors = ['#f66', '#6f6', '#66f'];
-    const current: [number, number, number] = [color[0], color[1], color[2]];
+    const current: [number, number, number] = [safeColor[0], safeColor[1], safeColor[2]];
     const controllers: DragSliderController[] = [];
 
     for (let ci = 0; ci < 3; ci++) {
@@ -55,7 +62,7 @@ export function addColorSliderRow(
 
         const val = document.createElement('span');
         val.className = 'clr-value';
-        val.textContent = color[ci].toFixed(2);
+        val.textContent = safeColor[ci].toFixed(2);
 
         const bar = document.createElement('div');
         bar.className = SLIDER_BAR_CLASS;
@@ -64,17 +71,17 @@ export function addColorSliderRow(
         bar.setAttribute(ARIA_ATTR.label, `${label} ${['Red', 'Green', 'Blue'][ci]} channel`);
         bar.setAttribute(ARIA_ATTR.valuemin, '0');
         bar.setAttribute(ARIA_ATTR.valuemax, '1');
-        bar.setAttribute(ARIA_ATTR.valuenow, String(color[ci]));
+        bar.setAttribute(ARIA_ATTR.valuenow, String(safeColor[ci]));
         bar.setAttribute(ARIA_ATTR.labelledby, ch.id);
 
         const fill = document.createElement('div');
         fill.className = 'cs-fill';
         fill.style.background = channelColors[ci];
-        fill.style.width = color[ci] * 100 + '%';
+        fill.style.width = safeColor[ci] * 100 + '%';
 
         const thumb = document.createElement('div');
         thumb.className = 'cs-thumb';
-        thumb.style.left = color[ci] * 100 + '%';
+        thumb.style.left = safeColor[ci] * 100 + '%';
 
         bar.appendChild(fill);
         bar.appendChild(thumb);
@@ -90,7 +97,7 @@ export function addColorSliderRow(
         }
 
         const controller = new DragSliderController({
-            value: color[ci],
+            value: safeColor[ci],
             min: 0,
             max: 1,
             step: 0.01,
@@ -118,7 +125,7 @@ export function addColorSliderRow(
             thumbs[i] = row.querySelector('.cs-thumb') as HTMLElement;
             bars[i] = row.querySelector('.cs-bar') as HTMLElement;
         });
-        initControl(block, opts, [color[0], color[1], color[2]], (v, cached) => {
+        initControl(block, opts, [safeColor[0], safeColor[1], safeColor[2]], (v, cached) => {
             if (!Array.isArray(v) || v.length < 3) {
                 return false;
             }
@@ -162,6 +169,12 @@ export function addVector3SliderRow(
 ): void {
     const axes: [string, string, string] = axisLabels ?? ['X', 'Y', 'Z'];
     const range = max - min;
+    // [defense] 与 addSliderRow 对齐：非有限轴值回落到 min，避免 .toFixed()/width 渲染 "NaN"
+    const safeValue: [number, number, number] = [
+        Number.isFinite(value[0]) ? value[0] : min,
+        Number.isFinite(value[1]) ? value[1] : min,
+        Number.isFinite(value[2]) ? value[2] : min,
+    ];
 
     const block = document.createElement('div');
     block.className = 'vec3-block';
@@ -192,7 +205,7 @@ export function addVector3SliderRow(
     header.appendChild(title);
     block.appendChild(header);
 
-    const current: [number, number, number] = [value[0], value[1], value[2]];
+    const current: [number, number, number] = [safeValue[0], safeValue[1], safeValue[2]];
     const axisColors = ['var(--accent)', 'var(--success)', 'var(--warning)'];
 
     const controllers: DragSliderController[] = [];
@@ -275,7 +288,7 @@ export function addVector3SliderRow(
 
     // === 自更新支持 ===
     if (opts) {
-        initControl(block, opts, [value[0], value[1], value[2]], (v, cached) => {
+        initControl(block, opts, [safeValue[0], safeValue[1], safeValue[2]], (v, cached) => {
             if (!Array.isArray(v) || v.length < 3) {
                 return false;
             }
