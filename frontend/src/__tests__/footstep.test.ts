@@ -149,6 +149,16 @@ describe('resolveGroundSfxKind（地面 → 音色映射）', () => {
         shared.envState.groundStyle = 'color';
         expect(resolveGroundSfxKind()).toBe('default');
     });
+
+    it('groundTexture 为空/null/undefined 时不抛错 → default', () => {
+        shared.envState.groundStyle = 'texture';
+        shared.envState.groundTexture = '';
+        expect(resolveGroundSfxKind()).toBe('default');
+        shared.envState.groundTexture = undefined as unknown as string;
+        expect(resolveGroundSfxKind()).toBe('default');
+        shared.envState.groundTexture = null as unknown as string;
+        expect(resolveGroundSfxKind()).toBe('default');
+    });
 });
 
 describe('startFootstep / stopFootstep（生命周期）', () => {
@@ -236,6 +246,13 @@ describe('落地回调（合成音色触发）', () => {
         const cb = captureCallback({ activeCamera: null });
         cb(makeEvent({ worldX: 100 }));
         expect(shared.playSfx.mock.calls[0][1].pan).toBe(0);
+    });
+
+    it('AudioContext 不可用时静默降级（variants 为空不抛错）', () => {
+        shared.getAudioContext.mockReturnValue(null);
+        const cb = captureCallback(scene);
+        expect(() => cb(makeEvent())).not.toThrow();
+        expect(shared.playSfx).not.toHaveBeenCalled();
     });
 });
 

@@ -158,6 +158,14 @@ describe('amplitudeToWeight', () => {
         // amp=0.65 → (0.65-0.3)/0.7 = 0.5 → 0.5*1.0 = 0.5
         expect(amplitudeToWeight(0.65, 0.3, 1.0)).toBeCloseTo(0.5, 3);
     });
+
+    it('returns 0 for negative amplitude', () => {
+        expect(amplitudeToWeight(-0.5, 0.2, 0.8)).toBe(0);
+    });
+
+    it('handles sensitivity out of range (>1) gracefully', () => {
+        expect(amplitudeToWeight(0.5, 1.5, 0.8)).toBe(0);
+    });
 });
 
 describe('DEFAULT_LIPSYNC_STATE', () => {
@@ -170,5 +178,9 @@ describe('DEFAULT_LIPSYNC_STATE', () => {
         expect(DEFAULT_LIPSYNC_STATE.sensitivity).toBeLessThan(1);
         expect(DEFAULT_LIPSYNC_STATE.intensity).toBeGreaterThan(0);
         expect(DEFAULT_LIPSYNC_STATE.intensity).toBeLessThanOrEqual(1);
+    });
+
+    it('has multiMorphEnabled defaulting to false', () => {
+        expect(DEFAULT_LIPSYNC_STATE.multiMorphEnabled).toBe(false);
     });
 });

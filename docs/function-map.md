@@ -1471,7 +1471,7 @@
 | `stopFallbackDetection()` | `scene/motion/footstep-detect-fallback:133` | 停止独立落地检测。 |
 | `resolveGroundSfxKind()` | `scene/motion/footstep:54` | 依据当前地面类型推断脚步音色。 |
 | `startFootstep()` | `scene/motion/footstep:137` | 启动脚步声系统：注入落地事件回调。 |
-| `stopFootstep()` | `scene/motion/footstep:169` | 停止脚步声系统并清空合成缓存。 |
+| `stopFootstep()` | `scene/motion/footstep:170` | 停止脚步声系统并清空合成缓存。 |
 | `getLipSyncState()` | `scene/motion/lipsync-bridge:57` | — |
 | `initLipSync()` | `scene/motion/lipsync-bridge:17` | — |
 | `resetLipSyncOnFocusChange()` | `scene/motion/lipsync-bridge:65` | — |

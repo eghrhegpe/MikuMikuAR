@@ -60,7 +60,7 @@ export function resolveGroundSfxKind(): GroundSfxKind {
     }
     switch (envState.groundStyle) {
         case 'texture': {
-            const t = envState.groundTexture.toLowerCase();
+            const t = (envState.groundTexture ?? '').toLowerCase();
             if (/grass|草/.test(t)) {
                 return 'grass';
             }
@@ -144,6 +144,7 @@ export function startFootstep(scene: import('@babylonjs/core/scene').Scene): voi
         }
         const kind = resolveGroundSfxKind();
         const variants = _getVariants(kind);
+        if (variants.length === 0) return;
         const buf = variants[Math.floor(Math.random() * variants.length)];
         const impactVol = Math.max(0.2, Math.min(1, e.impactSpeed / REF_IMPACT_SPEED));
         const footstepVol = getFootstepVolume();
