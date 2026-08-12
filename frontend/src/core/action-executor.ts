@@ -4,6 +4,7 @@
 import { getAction } from './action-registry';
 import { adaptParam } from './ai/param-adapters';
 import { translateGoError } from './i18n/goerr';
+import { t } from './i18n/t';
 
 export interface ActionResult {
     success: boolean;
@@ -49,7 +50,8 @@ export async function executeActionById(
             ? ` (${def.params.map((p) => `${p.name}=${JSON.stringify(translated[p.name])}`).join(', ')})`
             : '';
         const data = (execResult as { data?: unknown } | undefined)?.data;
-        return { success: true, message: `✓ ${def.label}${paramsDesc}`, data };
+        // [fix:round18 P3] label 是 i18n key（ai.actions.*），经 t() 翻译后再发给 LLM/用户
+        return { success: true, message: `✓ ${t(def.label)}${paramsDesc}`, data };
     } catch (err) {
         return {
             success: false,

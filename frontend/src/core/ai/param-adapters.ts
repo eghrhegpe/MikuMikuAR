@@ -79,9 +79,22 @@ const ADAPTERS: Record<
     // string：直通适配器（原样透传字符串，不做实体解析/校验）。
     // 与 entity 的区别：entity 必须配 resolve 做模糊匹配，string 用于任意自由文本（如文件路径）。
     string: (_def, raw) => ({ ok: true, value: String(raw) }) as AdapterResult,
-    boolean: (_def, raw) => ({ ok: true, value: Boolean(raw) }) as AdapterResult,
-    toggle: (_def, raw) => ({ ok: true, value: Boolean(raw) }) as AdapterResult,
+    // [fix:round18 P3] boolean/toggle 字符串黑名单解析：LLM 可能传 "false"/"0"/"off" 等
+    // 字符串，直接 Boolean(raw) 会得 true（语义反转）。布尔字面量保持原语义。
+    boolean: (_def, raw) => ({ ok: true, value: parseBoolean(raw) }) as AdapterResult,
+    toggle: (_def, raw) => ({ ok: true, value: parseBoolean(raw) }) as AdapterResult,
 };
+
+/** [fix:round18 P3] 布尔值解析：字符串黑名单 → false；其余走 Boolean 语义。 */
+function parseBoolean(raw: unknown): boolean {
+    if (typeof raw === 'string') {
+        const s = raw.trim().toLowerCase();
+        if (s === '' || s === 'false' || s === '0' || s === 'off' || s === 'no' || s === 'null' || s === 'undefined') {
+            return false;
+        }
+    }
+    return Boolean(raw);
+}
 
 export function adaptParam(def: ParamDef, raw: unknown): AdapterResult | Promise<AdapterResult> {
     const adapter = ADAPTERS[def.type];

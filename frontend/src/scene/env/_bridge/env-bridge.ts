@@ -10,6 +10,7 @@ import { envState, type EnvState, triggerAutoSave } from '@/core/config';
 import { ENV_STATE_SCHEMA } from '@/core/env-state-schema';
 import { ENV_LIGHT_MAX } from '@/core/ui-constants';
 import { col3FromTriple } from '@/core/color-helpers';
+import { guardNum } from '@/core/guards';
 import { deriveLighting } from '../env-lighting';
 import { dispatchEnvChange } from './env-dispatcher';
 import { GROUND_PRESET_KEYS } from '../env-ground-presets';
@@ -61,9 +62,9 @@ export function applyEnvStateFacade(state: EnvState, partial?: Partial<EnvState>
     // 半球光 — 强度跟随当前灯光状态，颜色随天空色（灯光未初始化时跳过）
     // [fix:audit-P3] skyColorTop/Bot 可能未初始化（旧存档/测试 mock 不完整），加可选链守卫
     const skyMid = state.skyColorMid ?? [
-        ((state.skyColorTop?.[0] ?? 0) + (state.skyColorBot?.[0] ?? 0)) / 2,
-        ((state.skyColorTop?.[1] ?? 0) + (state.skyColorBot?.[1] ?? 0)) / 2,
-        ((state.skyColorTop?.[2] ?? 0) + (state.skyColorBot?.[2] ?? 0)) / 2,
+        (guardNum(state.skyColorTop?.[0], 0) + guardNum(state.skyColorBot?.[0], 0)) / 2,
+        (guardNum(state.skyColorTop?.[1], 0) + guardNum(state.skyColorBot?.[1], 0)) / 2,
+        (guardNum(state.skyColorTop?.[2], 0) + guardNum(state.skyColorBot?.[2], 0)) / 2,
     ];
     const hemi = getHemiLight();
     if (hemi) {
@@ -313,7 +314,9 @@ function migrateEnvState(input: Partial<EnvState>): Partial<EnvState> {
     // 白名单收窄：仅保留 Schema 已知 key，杜绝迁移残留的未知字段写入 envState
     const result: Partial<EnvState> = {};
     for (const k of Object.keys(out)) {
-        if (k in ENV_STATE_SCHEMA) {
+        // [fix:round18 P3] Object.hasOwn 而非 `in`：后者走原型链，constructor/toString
+        // 等 Object.prototype 键会误通过白名单。
+        if (Object.hasOwn(ENV_STATE_SCHEMA, k)) {
             (result as Record<string, unknown>)[k] = out[k];
         }
     }
@@ -334,12 +337,17 @@ export function setEnvState(partial: Partial<EnvState>, skipAutoSave = false): v
     // ADR-173: 执行 pre-facade middleware（补全 envState/migrated 后、派发前）
     _runMiddlewares('pre-facade', envState, migrated, { skipAutoSave });
 
-    applyEnvStateFacade(envState, migrated);
+    // [fix:round18 P2] 主链路异常兜底：applyEnvStateFacade/post-facade 抛错不得丢失
+    // 持久化调度——内存态已写入（Object.assign），schedulePersistEnvState 必须执行，
+    // 否则本次变更永不落盘（last_scene.json 停留在旧值）。
+    try {
+        applyEnvStateFacade(envState, migrated);
 
-    // ADR-173: 执行 post-facade middleware（派发后处理副作用）
-    _runMiddlewares('post-facade', envState, migrated, { skipAutoSave });
-
-    schedulePersistEnvState();
+        // ADR-173: 执行 post-facade middleware（派发后处理副作用）
+        _runMiddlewares('post-facade', envState, migrated, { skipAutoSave });
+    } finally {
+        schedulePersistEnvState();
+    }
 
     if (!skipAutoSave) {
         triggerAutoSave();

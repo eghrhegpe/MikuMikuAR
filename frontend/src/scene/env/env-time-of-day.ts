@@ -155,6 +155,10 @@ export function syncTimeOfDayFromEnv(): void {
     // applyEnvPresetObject 的 `=== null` 检查失败，不再捕获 time-of-day 原始状态，
     // 动画完成后可能错误恢复/不恢复暂停。此处与 _timeOfDayPaused 对称复位。
     _timeOfDayBeforePreset = null;
+    // [fix:round18 P2] 同源复位 _presetAnimActive：scene dispose 静默移除 observer 时
+    // catch 不触发，若残留 true 则 env-bridge 的 _LIGHT_SYNC_KEYS 方向光同步被永久跳过，
+    // 用户手动调 sunAngle/skyColor 无响应（与 _timeOfDayBeforePreset 同一修复模式）。
+    setPresetAnimActive(false);
 }
 
 // ======== Environment Presets ========

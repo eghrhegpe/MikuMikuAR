@@ -7,7 +7,7 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 135 | 815 |
+| 核心基础设施 | 136 | 816 |
 | 3D 场景 | 125 | 1233 |
 | 菜单 & UI | 76 | 397 |
 | 动作算法 | 18 | 138 |
@@ -23,8 +23,8 @@
 | `registerMotionActions()` | `core/action-defs/motion-actions:89` | — |
 | `registerSceneActions()` | `core/action-defs/scene-actions:7` | — |
 | `registerSettingsActions()` | `core/action-defs/settings-actions:34` | — |
-| `ActionResult()` | `core/action-executor:8` | — |
-| `executeActionById()` | `core/action-executor:16` | 按 ID 执行 AI 动作（含参数校验与结果结构化返回）。 |
+| `ActionResult()` | `core/action-executor:9` | — |
+| `executeActionById()` | `core/action-executor:17` | 按 ID 执行 AI 动作（含参数校验与结果结构化返回）。 |
 | `ActionDef()` | `core/action-registry:24` | — |
 | `ParamDef()` | `core/action-registry:7` | — |
 | `ParamType()` | `core/action-registry:5` | — |
@@ -108,7 +108,7 @@
 | `parseActionFromLLM()` | `core/ai/intent-dispatcher:23` | — |
 | `renderMarkdownInto()` | `core/ai/markdown:55` | 把 Markdown 文本渲染为 DOM 片段，追加进目标容器。 |
 | `AdapterResult()` | `core/ai/param-adapters:4` | — |
-| `adaptParam()` | `core/ai/param-adapters:86` | — |
+| `adaptParam()` | `core/ai/param-adapters:99` | — |
 | `colorAdapter()` | `core/ai/param-adapters:33` | — |
 | `entityAdapter()` | `core/ai/param-adapters:52` | — |
 | `enumAdapter()` | `core/ai/param-adapters:6` | — |
@@ -157,32 +157,32 @@
 | `setFootstepVolume()` | `core/audio-bus:98` | — |
 | `setSfxEnabled()` | `core/audio-bus:85` | — |
 | `setSfxVolume()` | `core/audio-bus:75` | — |
-| `BeatSink()` | `core/audio:27` | [doc:adr-242] 节拍检测器的结构契约。core 层不得依赖 &#96;motion-algos/beat-detector&#96; 的具体实现类——那会构成 &#96;core → moti |
-| `applyGain()` | `core/audio:567` | — |
-| `attachBeatDetector()` | `core/audio:560` | — |
-| `clearAudio()` | `core/audio:403` | — |
-| `disposeAudio()` | `core/audio:414` | — |
-| `getAudioName()` | `core/audio:509` | — |
-| `getAudioOffset()` | `core/audio:480` | — |
-| `getAudioPath()` | `core/audio:380` | — |
-| `getCurrentTime()` | `core/audio:486` | — |
-| `getDuration()` | `core/audio:490` | — |
-| `getRepeatModeStr()` | `core/audio:357` | 获取当前重复模式。 |
-| `getStreamPlayer()` | `core/audio:584` | 暴露内部 StreamAudioPlayer 供 scene.ts 调用 MmdRuntime.setAudioPlayer()。 |
-| `getVolume()` | `core/audio:469` | — |
-| `isAudioPlaying()` | `core/audio:505` | — |
-| `loadAudioFile()` | `core/audio:282` | — |
-| `nextTrack()` | `core/audio:343` | 切换到下一曲。 |
-| `notifyBeatDetectorReset()` | `core/audio:577` | — |
-| `pauseAudio()` | `core/audio:384` | — |
-| `playAudio()` | `core/audio:260` | — |
-| `resumeAudio()` | `core/audio:388` | — |
-| `seekAudio()` | `core/audio:495` | — |
-| `setAudioOffset()` | `core/audio:473` | — |
-| `setRepeatMode()` | `core/audio:352` | 设置重复模式（持久化）。 |
-| `setVolume()` | `core/audio:460` | — |
-| `stopAudio()` | `core/audio:395` | — |
-| `syncAudioPlayback()` | `core/audio:517` | — |
+| `BeatSink()` | `core/audio:28` | [doc:adr-242] 节拍检测器的结构契约。core 层不得依赖 &#96;motion-algos/beat-detector&#96; 的具体实现类——那会构成 &#96;core → moti |
+| `applyGain()` | `core/audio:568` | — |
+| `attachBeatDetector()` | `core/audio:561` | — |
+| `clearAudio()` | `core/audio:404` | — |
+| `disposeAudio()` | `core/audio:415` | — |
+| `getAudioName()` | `core/audio:510` | — |
+| `getAudioOffset()` | `core/audio:481` | — |
+| `getAudioPath()` | `core/audio:381` | — |
+| `getCurrentTime()` | `core/audio:487` | — |
+| `getDuration()` | `core/audio:491` | — |
+| `getRepeatModeStr()` | `core/audio:358` | 获取当前重复模式。 |
+| `getStreamPlayer()` | `core/audio:585` | 暴露内部 StreamAudioPlayer 供 scene.ts 调用 MmdRuntime.setAudioPlayer()。 |
+| `getVolume()` | `core/audio:470` | — |
+| `isAudioPlaying()` | `core/audio:506` | — |
+| `loadAudioFile()` | `core/audio:283` | — |
+| `nextTrack()` | `core/audio:344` | 切换到下一曲。 |
+| `notifyBeatDetectorReset()` | `core/audio:578` | — |
+| `pauseAudio()` | `core/audio:385` | — |
+| `playAudio()` | `core/audio:261` | — |
+| `resumeAudio()` | `core/audio:389` | — |
+| `seekAudio()` | `core/audio:496` | — |
+| `setAudioOffset()` | `core/audio:474` | — |
+| `setRepeatMode()` | `core/audio:353` | 设置重复模式（持久化）。 |
+| `setVolume()` | `core/audio:461` | — |
+| `stopAudio()` | `core/audio:396` | — |
+| `syncAudioPlayback()` | `core/audio:518` | — |
 | `setTriggerAutoSave()` | `core/auto-save:10` | 注册自动保存的实现回调（由 scene-serialize.ts 在初始化时调用）。 |
 | `triggerAutoSave()` | `core/auto-save:15` | 触发自动保存（由动作/菜单/UI 层调用）。 |
 | `clearWebFlag()` | `core/backend/backend-mocks:13` | — |
@@ -298,6 +298,7 @@
 | `Ktx2PreferredFormat()` | `core/gpu-capabilities:6` | — |
 | `_resetKtx2CacheForTest()` | `core/gpu-capabilities:58` | 仅供测试使用：重置缓存。 |
 | `detectKtx2Support()` | `core/gpu-capabilities:20` | 探测 GPU 对 KTX2 压缩纹理的支持。 |
+| `guardNum()` | `core/guards:5` | 将 undefined/NaN/非数字归一为 fallback，防止 NaN 污染 Babylon.js 数学类型与 CSS 串。 |
 | `translateGoError()` | `core/i18n/goerr:25` | [doc:adr-117] 将 Go 端返回的 error 翻译为当前语言。 |
 | `LangCode()` | `core/i18n/locale:6` | — |
 | `SUPPORTED_LANGS()` | `core/i18n/locale:15` | 规划支持的语言清单（与竞品 DanceXR 对齐：简/繁中、英、日、韩）。 |
@@ -1012,10 +1013,10 @@
 | `setSyncAxesCallback()` | `scene/camera/camera:861` | — |
 | `switchCameraMode()` | `scene/camera/camera:373` | Switch to a different camera mode, preserving position as much as possible. |
 | `InvertableArcRotateCameraPointersInput()` | `scene/camera/invertablePointersInput:13` | 可反转 Y 轴的 ArcRotate 相机指针输入。 |
-| `applyEnvStateFacade()` | `scene/env/_bridge/env-bridge:49` | 等同于 scene-env.ts 的 applyEnvState，但避免循环依赖。 |
-| `registerEnvStateMiddleware()` | `scene/env/_bridge/env-bridge:379` | 注册 setEnvState 中间件（供 env-time-of-day/env-gravity 等子模块调用）。 |
-| `setEnvState()` | `scene/env/_bridge/env-bridge:324` | 环境状态唯一写入入口（ADR-173 中间件链），可选跳过自动保存。 |
-| `setPresetAnimActive()` | `scene/env/_bridge/env-bridge:43` | 标记预设动画是否运行中（供 _applyEnvStateFacade 跳过方向光同步） |
+| `applyEnvStateFacade()` | `scene/env/_bridge/env-bridge:50` | 等同于 scene-env.ts 的 applyEnvState，但避免循环依赖。 |
+| `registerEnvStateMiddleware()` | `scene/env/_bridge/env-bridge:387` | 注册 setEnvState 中间件（供 env-time-of-day/env-gravity 等子模块调用）。 |
+| `setEnvState()` | `scene/env/_bridge/env-bridge:327` | 环境状态唯一写入入口（ADR-173 中间件链），可选跳过自动保存。 |
+| `setPresetAnimActive()` | `scene/env/_bridge/env-bridge:44` | 标记预设动画是否运行中（供 _applyEnvStateFacade 跳过方向光同步） |
 | `clearAllEnvCallbacks()` | `scene/env/_bridge/env-dispatcher:33` | 清空所有已注册的 env 回调（场景销毁 / HMR 重入时兜底清理）。 |
 | `clearEnvDtTickCallbacks()` | `scene/env/_bridge/env-dispatcher:93` | 清空所有 dt 回调（场景销毁 / HMR 重入时清理）。 |
 | `clearSceneTickCallbacks()` | `scene/env/_bridge/env-dispatcher:62` | 清空所有场景 tick 回调（场景销毁 / HMR 重入时清理）。 |
@@ -1188,9 +1189,9 @@
 | `generateTerrainHeightmapURL()` | `scene/env/env-terrain:43` | 程序化生成灰度高度图（data URL），亮=高峰、暗=低谷。经统一工厂创建（受约束环境返回 ''）。 |
 | `hash2()` | `scene/env/env-terrain:22` | — |
 | `valueNoise()` | `scene/env/env-terrain:22` | — |
-| `applyEnvPreset()` | `scene/env/env-time-of-day:165` | — |
-| `applyEnvPresetByCategory()` | `scene/env/env-time-of-day:367` | [adr-120] 按类别应用用户自定义预设。 |
-| `applyEnvPresetObject()` | `scene/env/env-time-of-day:266` | 应用任意 EnvPreset 对象（支持用户自定义预设）。 |
+| `applyEnvPreset()` | `scene/env/env-time-of-day:169` | — |
+| `applyEnvPresetByCategory()` | `scene/env/env-time-of-day:371` | [adr-120] 按类别应用用户自定义预设。 |
+| `applyEnvPresetObject()` | `scene/env/env-time-of-day:270` | 应用任意 EnvPreset 对象（支持用户自定义预设）。 |
 | `getEnvSunAngle()` | `scene/env/env-time-of-day:49` | — |
 | `getTimeOfDaySpeed()` | `scene/env/env-time-of-day:140` | — |
 | `isTimeOfDayActive()` | `scene/env/env-time-of-day:136` | — |
@@ -1800,20 +1801,20 @@
 | `setLightConeEnabled()` | `scene/render/light-cone:244` | 设置光锥可见性 |
 | `updateLightConeTransform()` | `scene/render/light-cone:189` | 更新光锥的 transform（位置/朝向），每帧或灯光移动时调用 |
 | `updateLightConeUniforms()` | `scene/render/light-cone:203` | 更新光锥的 shader uniforms（颜色/亮度/柔和度） |
-| `DEFAULT_PERSONAL_LIGHT()` | `scene/render/lighting-follow:70` | — |
-| `PersonalLightSettings()` | `scene/render/lighting-follow:32` | — |
-| `attachPersonalLight()` | `scene/render/lighting-follow:169` | — |
-| `detachPersonalLight()` | `scene/render/lighting-follow:294` | — |
-| `disposeAllPersonalLights()` | `scene/render/lighting-follow:441` | — |
-| `getAllPersonalLights()` | `scene/render/lighting-follow:450` | 导出所有个人灯状态（仅非默认值差异落盘由调用方决定） |
-| `getPersonalLightDefault()` | `scene/render/lighting-follow:124` | 获取用户保存的个人灯默认值，无则返回 null。 |
-| `getPersonalLightState()` | `scene/render/lighting-follow:346` | 返回设置深拷贝（含 color 数组，避免外部误改绕过 setPersonalLightState 的灯同步） |
-| `resetPersonalLightDefault()` | `scene/render/lighting-follow:129` | 重置用户默认值回出厂硬编码值。 |
-| `restorePersonalLights()` | `scene/render/lighting-follow:462` | 场景反序列化后，按 modelId 恢复个人灯设置（attach 已由 onModelLoaded 触发，此处仅覆盖参数） |
-| `setPersonalLightDefault()` | `scene/render/lighting-follow:114` | 将当前个人灯参数保存为用户默认值。 |
-| `setPersonalLightState()` | `scene/render/lighting-follow:309` | — |
-| `tickPersonalLights()` | `scene/render/lighting-follow:351` | — |
-| `tickStageLightFollow()` | `scene/render/lighting-follow:501` | 舞台灯追光 tick：更新所有绑定了 followTarget 的舞台灯 |
+| `DEFAULT_PERSONAL_LIGHT()` | `scene/render/lighting-follow:71` | — |
+| `PersonalLightSettings()` | `scene/render/lighting-follow:33` | — |
+| `attachPersonalLight()` | `scene/render/lighting-follow:170` | — |
+| `detachPersonalLight()` | `scene/render/lighting-follow:295` | — |
+| `disposeAllPersonalLights()` | `scene/render/lighting-follow:442` | — |
+| `getAllPersonalLights()` | `scene/render/lighting-follow:451` | 导出所有个人灯状态（仅非默认值差异落盘由调用方决定） |
+| `getPersonalLightDefault()` | `scene/render/lighting-follow:125` | 获取用户保存的个人灯默认值，无则返回 null。 |
+| `getPersonalLightState()` | `scene/render/lighting-follow:347` | 返回设置深拷贝（含 color 数组，避免外部误改绕过 setPersonalLightState 的灯同步） |
+| `resetPersonalLightDefault()` | `scene/render/lighting-follow:130` | 重置用户默认值回出厂硬编码值。 |
+| `restorePersonalLights()` | `scene/render/lighting-follow:463` | 场景反序列化后，按 modelId 恢复个人灯设置（attach 已由 onModelLoaded 触发，此处仅覆盖参数） |
+| `setPersonalLightDefault()` | `scene/render/lighting-follow:115` | 将当前个人灯参数保存为用户默认值。 |
+| `setPersonalLightState()` | `scene/render/lighting-follow:310` | — |
+| `tickPersonalLights()` | `scene/render/lighting-follow:352` | — |
+| `tickStageLightFollow()` | `scene/render/lighting-follow:502` | 舞台灯追光 tick：更新所有绑定了 followTarget 的舞台灯 |
 | `LIGHTING_PRESETS()` | `scene/render/lighting-presets:21` | — |
 | `LightingPreset()` | `scene/render/lighting-presets:12` | — |
 | `LightingPresetLight()` | `scene/render/lighting-presets:6` | — |
@@ -2545,48 +2546,48 @@
 | `makeProcPreset()` | `motion-algos/proc-motion-presets:137` | 由当前参数构造自定义预设快照（深拷贝，防与运行时状态共引用） |
 | `removeProcPreset()` | `motion-algos/proc-motion-presets:168` | 按 id 删除自定义预设（返回新数组） |
 | `upsertProcPreset()` | `motion-algos/proc-motion-presets:154` | 增改自定义预设（同 id 覆盖，否则追加；返回新数组） |
-| `BONE_ALLPARENT_CANDIDATES()` | `motion-algos/proc-motion-shared:212` | — |
-| `BONE_ARM_IK_L_CANDIDATES()` | `motion-algos/proc-motion-shared:277` | — |
-| `BONE_ARM_IK_R_CANDIDATES()` | `motion-algos/proc-motion-shared:285` | — |
-| `BONE_CENTER_CANDIDATES()` | `motion-algos/proc-motion-shared:158` | — |
-| `BONE_ELBOW_L_CANDIDATES()` | `motion-algos/proc-motion-shared:187` | — |
-| `BONE_ELBOW_R_CANDIDATES()` | `motion-algos/proc-motion-shared:188` | — |
-| `BONE_GROOVE_CANDIDATES()` | `motion-algos/proc-motion-shared:213` | — |
-| `BONE_HEAD_CANDIDATES()` | `motion-algos/proc-motion-shared:162` | — |
-| `BONE_KNEE_L_CANDIDATES()` | `motion-algos/proc-motion-shared:256` | — |
-| `BONE_KNEE_R_CANDIDATES()` | `motion-algos/proc-motion-shared:264` | — |
-| `BONE_LARM_CANDIDATES()` | `motion-algos/proc-motion-shared:164` | — |
-| `BONE_LEG_IK_L_CANDIDATES()` | `motion-algos/proc-motion-shared:216` | — |
-| `BONE_LEG_IK_R_CANDIDATES()` | `motion-algos/proc-motion-shared:224` | — |
-| `BONE_NECK_CANDIDATES()` | `motion-algos/proc-motion-shared:161` | — |
-| `BONE_RARM_CANDIDATES()` | `motion-algos/proc-motion-shared:173` | — |
-| `BONE_SHOULDER_L_CANDIDATES()` | `motion-algos/proc-motion-shared:190` | — |
-| `BONE_SHOULDER_R_CANDIDATES()` | `motion-algos/proc-motion-shared:200` | — |
-| `BONE_THIGH_L_CANDIDATES()` | `motion-algos/proc-motion-shared:236` | — |
-| `BONE_THIGH_R_CANDIDATES()` | `motion-algos/proc-motion-shared:245` | — |
-| `BONE_UPPER2_CANDIDATES()` | `motion-algos/proc-motion-shared:160` | — |
-| `BONE_UPPER_CANDIDATES()` | `motion-algos/proc-motion-shared:159` | — |
-| `BONE_WAIST_CANDIDATES()` | `motion-algos/proc-motion-shared:211` | — |
-| `BONE_WRIST_L_CANDIDATES()` | `motion-algos/proc-motion-shared:183` | — |
-| `BONE_WRIST_R_CANDIDATES()` | `motion-algos/proc-motion-shared:184` | — |
-| `DEFAULT_PROC_STATE()` | `motion-algos/proc-motion-shared:86` | — |
-| `FPS()` | `motion-algos/proc-motion-shared:320` | — |
-| `MAX_FRAMES()` | `motion-algos/proc-motion-shared:321` | — |
-| `MORPH_BLINK_CANDIDATES()` | `motion-algos/proc-motion-shared:307` | — |
-| `PROC_MOTION_BONE_CATEGORIES()` | `motion-algos/proc-motion-shared:13` | — |
-| `PROC_VMD_NAME_AUTODANCE()` | `motion-algos/proc-motion-shared:11` | — |
-| `PROC_VMD_NAME_IDLE()` | `motion-algos/proc-motion-shared:10` | — |
-| `ProcModeKey()` | `motion-algos/proc-motion-shared:8` | 可编辑参数的程序化模式（'off' 无参数）。每个模式独立一套 ProcMotionParams。 |
-| `ProcMotionBoneCategory()` | `motion-algos/proc-motion-shared:29` | — |
-| `ProcMotionMode()` | `motion-algos/proc-motion-shared:5` | — |
-| `ProcMotionParams()` | `motion-algos/proc-motion-shared:36` | [audit] per-mode 可调参数：待机呼吸 / 自动舞蹈 各自独立一套 |
-| `ProcMotionState()` | `motion-algos/proc-motion-shared:45` | — |
-| `clamp1()` | `motion-algos/proc-motion-shared:323` | — |
-| `closingFrame()` | `motion-algos/proc-motion-shared:330` | 循环末尾的 identity 闭合帧（确保动画无缝循环） |
-| `getProcMotionBoneCategories()` | `motion-algos/proc-motion-shared:31` | — |
-| `matchBone()` | `motion-algos/proc-motion-shared:294` | — |
-| `migrateProcState()` | `motion-algos/proc-motion-shared:113` | — |
-| `quatW()` | `motion-algos/proc-motion-shared:326` | 四元数 w 分量：sqrt(max(0, 1 - x² - y² - z²)) |
+| `BONE_ALLPARENT_CANDIDATES()` | `motion-algos/proc-motion-shared:213` | — |
+| `BONE_ARM_IK_L_CANDIDATES()` | `motion-algos/proc-motion-shared:278` | — |
+| `BONE_ARM_IK_R_CANDIDATES()` | `motion-algos/proc-motion-shared:286` | — |
+| `BONE_CENTER_CANDIDATES()` | `motion-algos/proc-motion-shared:159` | — |
+| `BONE_ELBOW_L_CANDIDATES()` | `motion-algos/proc-motion-shared:188` | — |
+| `BONE_ELBOW_R_CANDIDATES()` | `motion-algos/proc-motion-shared:189` | — |
+| `BONE_GROOVE_CANDIDATES()` | `motion-algos/proc-motion-shared:214` | — |
+| `BONE_HEAD_CANDIDATES()` | `motion-algos/proc-motion-shared:163` | — |
+| `BONE_KNEE_L_CANDIDATES()` | `motion-algos/proc-motion-shared:257` | — |
+| `BONE_KNEE_R_CANDIDATES()` | `motion-algos/proc-motion-shared:265` | — |
+| `BONE_LARM_CANDIDATES()` | `motion-algos/proc-motion-shared:165` | — |
+| `BONE_LEG_IK_L_CANDIDATES()` | `motion-algos/proc-motion-shared:217` | — |
+| `BONE_LEG_IK_R_CANDIDATES()` | `motion-algos/proc-motion-shared:225` | — |
+| `BONE_NECK_CANDIDATES()` | `motion-algos/proc-motion-shared:162` | — |
+| `BONE_RARM_CANDIDATES()` | `motion-algos/proc-motion-shared:174` | — |
+| `BONE_SHOULDER_L_CANDIDATES()` | `motion-algos/proc-motion-shared:191` | — |
+| `BONE_SHOULDER_R_CANDIDATES()` | `motion-algos/proc-motion-shared:201` | — |
+| `BONE_THIGH_L_CANDIDATES()` | `motion-algos/proc-motion-shared:237` | — |
+| `BONE_THIGH_R_CANDIDATES()` | `motion-algos/proc-motion-shared:246` | — |
+| `BONE_UPPER2_CANDIDATES()` | `motion-algos/proc-motion-shared:161` | — |
+| `BONE_UPPER_CANDIDATES()` | `motion-algos/proc-motion-shared:160` | — |
+| `BONE_WAIST_CANDIDATES()` | `motion-algos/proc-motion-shared:212` | — |
+| `BONE_WRIST_L_CANDIDATES()` | `motion-algos/proc-motion-shared:184` | — |
+| `BONE_WRIST_R_CANDIDATES()` | `motion-algos/proc-motion-shared:185` | — |
+| `DEFAULT_PROC_STATE()` | `motion-algos/proc-motion-shared:87` | — |
+| `FPS()` | `motion-algos/proc-motion-shared:321` | — |
+| `MAX_FRAMES()` | `motion-algos/proc-motion-shared:322` | — |
+| `MORPH_BLINK_CANDIDATES()` | `motion-algos/proc-motion-shared:308` | — |
+| `PROC_MOTION_BONE_CATEGORIES()` | `motion-algos/proc-motion-shared:14` | — |
+| `PROC_VMD_NAME_AUTODANCE()` | `motion-algos/proc-motion-shared:12` | — |
+| `PROC_VMD_NAME_IDLE()` | `motion-algos/proc-motion-shared:11` | — |
+| `ProcModeKey()` | `motion-algos/proc-motion-shared:9` | 可编辑参数的程序化模式（'off' 无参数）。每个模式独立一套 ProcMotionParams。 |
+| `ProcMotionBoneCategory()` | `motion-algos/proc-motion-shared:30` | — |
+| `ProcMotionMode()` | `motion-algos/proc-motion-shared:6` | — |
+| `ProcMotionParams()` | `motion-algos/proc-motion-shared:37` | [audit] per-mode 可调参数：待机呼吸 / 自动舞蹈 各自独立一套 |
+| `ProcMotionState()` | `motion-algos/proc-motion-shared:46` | — |
+| `clamp1()` | `motion-algos/proc-motion-shared:324` | — |
+| `closingFrame()` | `motion-algos/proc-motion-shared:331` | 循环末尾的 identity 闭合帧（确保动画无缝循环） |
+| `getProcMotionBoneCategories()` | `motion-algos/proc-motion-shared:32` | — |
+| `matchBone()` | `motion-algos/proc-motion-shared:295` | — |
+| `migrateProcState()` | `motion-algos/proc-motion-shared:114` | — |
+| `quatW()` | `motion-algos/proc-motion-shared:327` | 四元数 w 分量：sqrt(max(0, 1 - x² - y² - z²)) |
 | `generateAutoDanceVmd()` | `motion-algos/procedural-motion:3` | — |
 | `generateIdleVmd()` | `motion-algos/procedural-motion:2` | — |
 | `shouldAutoDance()` | `motion-algos/procedural-motion:7` | — |
