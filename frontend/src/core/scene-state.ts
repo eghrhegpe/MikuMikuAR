@@ -31,6 +31,10 @@ export function getMmdRuntimeType(): 'wasm' | 'js' {
 }
 
 export function setMmdRuntimeType(v: 'wasm' | 'js'): void {
+    // [doc:adr-105] Fail-Fast：运行时输入校验，非法值直接抛错，避免污染持久化状态
+    if (v !== 'wasm' && v !== 'js') {
+        throw new TypeError(`[scene-state] invalid mmd runtime type: ${String(v)}`);
+    }
     localStorage.setItem(MMD_RUNTIME_TYPE_KEY, v);
 }
 

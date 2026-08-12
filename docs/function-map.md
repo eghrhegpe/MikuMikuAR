@@ -158,31 +158,31 @@
 | `setSfxEnabled()` | `core/audio-bus:85` | — |
 | `setSfxVolume()` | `core/audio-bus:75` | — |
 | `BeatSink()` | `core/audio:27` | [doc:adr-242] 节拍检测器的结构契约。core 层不得依赖 &#96;motion-algos/beat-detector&#96; 的具体实现类——那会构成 &#96;core → moti |
-| `applyGain()` | `core/audio:563` | — |
-| `attachBeatDetector()` | `core/audio:556` | — |
+| `applyGain()` | `core/audio:567` | — |
+| `attachBeatDetector()` | `core/audio:560` | — |
 | `clearAudio()` | `core/audio:403` | — |
 | `disposeAudio()` | `core/audio:414` | — |
-| `getAudioName()` | `core/audio:506` | — |
-| `getAudioOffset()` | `core/audio:477` | — |
+| `getAudioName()` | `core/audio:509` | — |
+| `getAudioOffset()` | `core/audio:480` | — |
 | `getAudioPath()` | `core/audio:380` | — |
-| `getCurrentTime()` | `core/audio:483` | — |
-| `getDuration()` | `core/audio:487` | — |
+| `getCurrentTime()` | `core/audio:486` | — |
+| `getDuration()` | `core/audio:490` | — |
 | `getRepeatModeStr()` | `core/audio:357` | 获取当前重复模式。 |
-| `getStreamPlayer()` | `core/audio:580` | 暴露内部 StreamAudioPlayer 供 scene.ts 调用 MmdRuntime.setAudioPlayer()。 |
-| `getVolume()` | `core/audio:466` | — |
-| `isAudioPlaying()` | `core/audio:502` | — |
+| `getStreamPlayer()` | `core/audio:584` | 暴露内部 StreamAudioPlayer 供 scene.ts 调用 MmdRuntime.setAudioPlayer()。 |
+| `getVolume()` | `core/audio:469` | — |
+| `isAudioPlaying()` | `core/audio:505` | — |
 | `loadAudioFile()` | `core/audio:282` | — |
 | `nextTrack()` | `core/audio:343` | 切换到下一曲。 |
-| `notifyBeatDetectorReset()` | `core/audio:573` | — |
+| `notifyBeatDetectorReset()` | `core/audio:577` | — |
 | `pauseAudio()` | `core/audio:384` | — |
 | `playAudio()` | `core/audio:260` | — |
 | `resumeAudio()` | `core/audio:388` | — |
-| `seekAudio()` | `core/audio:492` | — |
-| `setAudioOffset()` | `core/audio:470` | — |
+| `seekAudio()` | `core/audio:495` | — |
+| `setAudioOffset()` | `core/audio:473` | — |
 | `setRepeatMode()` | `core/audio:352` | 设置重复模式（持久化）。 |
 | `setVolume()` | `core/audio:460` | — |
 | `stopAudio()` | `core/audio:395` | — |
-| `syncAudioPlayback()` | `core/audio:514` | — |
+| `syncAudioPlayback()` | `core/audio:517` | — |
 | `setTriggerAutoSave()` | `core/auto-save:10` | 注册自动保存的实现回调（由 scene-serialize.ts 在初始化时调用）。 |
 | `triggerAutoSave()` | `core/auto-save:15` | 触发自动保存（由动作/菜单/UI 层调用）。 |
 | `clearWebFlag()` | `core/backend/backend-mocks:13` | — |
@@ -472,15 +472,15 @@
 | `SceneActions()` | `core/scene-action-bridge:10` | — |
 | `getSceneAction()` | `core/scene-action-bridge:188` | — |
 | `registerSceneAction()` | `core/scene-action-bridge:173` | 注册单个场景操作（scene 侧启动时调用）。 |
-| `createDefaultFeetState()` | `core/scene-state:47` | [doc:adr-085] 脚部地面跟随默认状态（Phase A 参数） |
-| `focusedModelId()` | `core/scene-state:62` | — |
+| `createDefaultFeetState()` | `core/scene-state:51` | [doc:adr-085] 脚部地面跟随默认状态（Phase A 参数） |
+| `focusedModelId()` | `core/scene-state:66` | — |
 | `getMmdRuntimeType()` | `core/scene-state:25` | — |
 | `mmdRuntime()` | `core/scene-state:15` | — |
-| `modelRegistry()` | `core/scene-state:39` | — |
-| `setFocusedModelId()` | `core/scene-state:63` | — |
+| `modelRegistry()` | `core/scene-state:43` | — |
+| `setFocusedModelId()` | `core/scene-state:67` | — |
 | `setMmdRuntime()` | `core/scene-state:16` | — |
 | `setMmdRuntimeType()` | `core/scene-state:33` | — |
-| `setModelRegistry()` | `core/scene-state:40` | — |
+| `setModelRegistry()` | `core/scene-state:44` | — |
 | `setKey()` | `core/set-key:8` | 泛型键值写入工具，避免大量 &#96;obj[key] = value&#96; 重复。 |
 | `registerAppShortcuts()` | `core/shortcut-app:18` | — |
 | `KeyBindingOverride()` | `core/shortcut-registry:23` | — |

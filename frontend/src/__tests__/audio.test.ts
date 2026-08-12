@@ -35,6 +35,9 @@ import {
     getVolume,
     setAudioOffset,
     getAudioOffset,
+    nextTrack,
+    setRepeatMode,
+    getRepeatModeStr,
 } from '@/core/audio';
 
 const m = createAudioMockState();
@@ -336,6 +339,17 @@ describe('syncAudioPlayback', () => {
         // 漂移分支：audioTargetTime = 20+2 = 22 -> seek to 22
         expect(m.currentTime).toBe(22);
     });
+
+    it('resumes audio when audioTargetTime is negative (offset below 0)', () => {
+        setAudioOffset(-2);
+        m.paused = true;
+        m.currentTime = 0;
+        m.play.mockClear(); // 隔离 beforeEach playAudio 已触发的 play
+        syncAudioPlayback(0, true, 100);
+        // VMD 播放中音频不得因 offset 为负而卡在暂停态
+        expect(m.play).toHaveBeenCalled();
+        expect(m.currentTime).toBe(0);
+    });
 });
 
 describe('attachBeatDetector', () => {
@@ -479,5 +493,63 @@ describe('applyGain without player', () => {
         attachBeatDetector(mockBeatDetector as any);
         setVolume(0.4);
         expect(mockBeatDetector.setVolume).toHaveBeenCalledWith(0.4);
+    });
+});
+
+describe('setVolume edge cases', () => {
+    it('ignores NaN / Infinity, keeping previous value', () => {
+        void playAudio('test.mp3', 'test'); // 建 player，验证 applyGain 不被 NaN 污染
+        setVolume(0.5);
+        setVolume(NaN);
+        expect(getVolume()).toBe(0.5);
+        expect(m.volume).toBe(0.5);
+        setVolume(Infinity);
+        expect(getVolume()).toBe(0.5);
+        setVolume(-Infinity);
+        expect(getVolume()).toBe(0.5);
+    });
+});
+
+// ======== Phase C 播放列表 / 循环模式（此前零覆盖） ========
+describe('playlist / repeat mode', () => {
+    it('setRepeatMode/getRepeatModeStr roundtrip', () => {
+        expect(getRepeatModeStr()).toBe('none');
+        setRepeatMode('all');
+        expect(getRepeatModeStr()).toBe('all');
+        setRepeatMode('shuffle');
+        expect(getRepeatModeStr()).toBe('shuffle');
+        setRepeatMode('one');
+        expect(getRepeatModeStr()).toBe('one');
+        setRepeatMode('none');
+        expect(getRepeatModeStr()).toBe('none');
+    });
+
+    it('nextTrack advances to next playlist entry (repeat all wraps)', async () => {
+        vi.useFakeTimers();
+        try {
+            await playAudio('http://a.mp3', 'a.mp3');
+            await playAudio('http://b.mp3', 'b.mp3'); // index 1
+            setRepeatMode('all');
+            await nextTrack(); // (1+1) % 2 = 0 -> a.mp3
+            expect(m.source).toBe('http://a.mp3');
+            expect(getAudioName()).toBe('a.mp3');
+            vi.runAllTimers();
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('nextTrack is no-op when single track and mode none (end of list)', async () => {
+        vi.useFakeTimers();
+        try {
+            await playAudio('http://a.mp3', 'a.mp3');
+            setRepeatMode('none');
+            await nextTrack();
+            expect(m.source).toBe('http://a.mp3');
+            expect(getAudioName()).toBe('a.mp3');
+            vi.runAllTimers();
+        } finally {
+            vi.useRealTimers();
+        }
     });
 });

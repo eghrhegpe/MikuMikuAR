@@ -198,6 +198,31 @@ describe('[adr-215] 模型附属关系', () => {
         expect(child.attachedBone).toBe('neck');
     });
 
+    it('单父限制：跨父换父时先 detach 旧父的 attach 状态（ADR-215 §2.4）', () => {
+        const child = seed('child');
+        seed('p1', ['head']);
+        seed('p2', ['neck']);
+        mm.attachModelToBone('child', 'p1', 'head');
+        expect((child.rootMesh as any).detachFromBone).not.toHaveBeenCalled();
+        // 换到 p2：必须先解除 p1 的 attach，否则 mesh 同时 attach 两个骨骼
+        mm.attachModelToBone('child', 'p2', 'neck');
+        expect((child.rootMesh as any).detachFromBone).toHaveBeenCalledTimes(1);
+        expect(child.parentId).toBe('p2');
+        expect(child.attachedBone).toBe('neck');
+    });
+
+    it('重挂载到同一父：换骨不触发 detach，attachToBone 再次调用', () => {
+        const child = seed('child');
+        seed('parent', ['head', 'neck']);
+        expect(mm.attachModelToBone('child', 'parent', 'head')).toBe(true);
+        expect((child.rootMesh as any).detachFromBone).not.toHaveBeenCalled();
+        // 同一父换骨：不构成换父，无需 detach，直接重挂
+        expect(mm.attachModelToBone('child', 'parent', 'neck')).toBe(true);
+        expect((child.rootMesh as any).detachFromBone).not.toHaveBeenCalled();
+        expect(child.attachedBone).toBe('neck');
+        expect((child.rootMesh as any).attachToBone).toHaveBeenCalledTimes(2);
+    });
+
     it('detach：清空附属字段并回到场景坐标', () => {
         const child = seed('child');
         seed('parent', ['head']);

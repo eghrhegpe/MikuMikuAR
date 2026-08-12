@@ -458,6 +458,9 @@ export function disposeAudio(): void {
 // ======== 音量 / 偏移 ========
 
 export function setVolume(v: number): void {
+    if (!Number.isFinite(v)) {
+        return;
+    }
     const val = clamp01(v);
     setUIState({ volume: val });
     applyGain();
@@ -524,13 +527,14 @@ export function syncAudioPlayback(vmdTime: number, isPlaying: boolean, vmdDurati
         if (isPlaying && streamPlayer.paused) {
             if (audioTargetTime >= 0 && audioTargetTime < audioDur) {
                 streamPlayer.currentTime = audioTargetTime;
-                streamPlayer.play().catch(() => {
-                    /* autoplay 拦截 */
-                });
-            } else if (audioTargetTime >= audioDur) {
+            } else {
+                // 目标越界（audioTargetTime < 0 或 >= audioDur）：归零后播放，
+                // 避免 audioOffset 为负或音频比 VMD 短时音频卡在暂停态
                 streamPlayer.currentTime = 0;
-                streamPlayer.play().catch(() => {});
             }
+            streamPlayer.play().catch(() => {
+                /* autoplay 拦截 */
+            });
         } else if (!isPlaying && !streamPlayer.paused) {
             streamPlayer.pause();
         }

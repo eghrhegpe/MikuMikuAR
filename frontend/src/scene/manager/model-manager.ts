@@ -1237,6 +1237,13 @@ export class ModelManager {
             return false;
         }
 
+        // [adr-215] 单父限制：换父需先 detach 再 attach。
+        // 若 child 已附属到其他父（parentId 存在且 ≠ 新父），必须先解除旧父的
+        // bone attach 状态，否则 mesh 会同时 attach 到多个骨骼，造成变换叠加。
+        if (childInst.parentId && childInst.parentId !== parentId) {
+            childInst.rootMesh.detachFromBone();
+        }
+
         // 记录附属关系
         childInst.parentId = parentId;
         childInst.attachedBone = boneName;

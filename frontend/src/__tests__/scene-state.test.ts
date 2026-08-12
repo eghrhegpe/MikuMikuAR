@@ -126,6 +126,17 @@ describe('getMmdRuntimeType / setMmdRuntimeType', () => {
         setMmdRuntimeType('wasm');
         expect(getMmdRuntimeType()).toBe('wasm');
     });
+
+    it('rejects invalid runtime type (fail-fast, no localStorage pollution)', () => {
+        expect(() => setMmdRuntimeType('invalid' as any)).toThrow();
+        expect(store.has('mmdRuntimeType')).toBe(false);
+        expect(getMmdRuntimeType()).toBe('wasm');
+    });
+
+    it('rejects empty string runtime type', () => {
+        expect(() => setMmdRuntimeType('' as any)).toThrow();
+        expect(store.has('mmdRuntimeType')).toBe(false);
+    });
 });
 
 // ======== setModelRegistry / modelRegistry ========
