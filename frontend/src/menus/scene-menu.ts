@@ -30,6 +30,7 @@ import { reconcileTransformSelection } from './resource-detail-helpers';
 import { registerLoadRefreshHook, registerLibraryScannedHook } from '../core/load-refresh-registry';
 import { focusModel } from '../scene/scene';
 import { t } from '../core/i18n/t';
+import { getLang } from '../core/i18n/locale';
 import { translateGoError } from '../core/i18n/goerr';
 import { canvasToBase64 } from '../core/image';
 
@@ -161,7 +162,9 @@ function buildSceneRootItems(): PopupRow[] {
     const mirrorActive = isMirrorActive();
     const reflectionQuality = envState.reflectionQuality;
     const reflectionMode = envState.reflectionMode;
-    const key = `${groundEnabled},${waterEnabled},${dragEnabled},${mirrorActive},${reflectionQuality},${reflectionMode}`;
+    // [cache] key 含 getLang()：items 内 t() 标签依赖语言，缺语言维度会导致切换语言后
+    // 根级标签停留旧语言（ADR-065 语言热刷新契约）。getLang() 廉价且极少变化，纳入 key 无性能负担。
+    const key = `${getLang()},${groundEnabled},${waterEnabled},${dragEnabled},${mirrorActive},${reflectionQuality},${reflectionMode}`;
     if (_cache && _cache._key === key) {
         return _cache._items;
     }

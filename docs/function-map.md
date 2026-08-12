@@ -2400,14 +2400,14 @@
 | `refreshSceneRoot()` | `menus/scene-menu-state:35` | — |
 | `setRefreshSceneRoot()` | `menus/scene-menu-state:31` | — |
 | `setSceneMenu()` | `menus/scene-menu-state:12` | — |
-| `buildStageTransformLevel()` | `menus/scene-menu:57` | — |
-| `disposeSceneMenu()` | `menus/scene-menu:98` | 释放 scene-menu 模块资源（取消注册 hooks + UI actions + HMR/清理时调用） |
-| `getSceneMenu()` | `menus/scene-menu:80` | — |
-| `refreshSceneRoot()` | `menus/scene-menu:92` | — |
-| `saveScene()` | `menus/scene-menu:436` | 保存场景（自动编号到预设目录） |
-| `screenshotBatch()` | `menus/scene-menu:353` | 批量截图所有已加载模型 |
-| `screenshotCurrent()` | `menus/scene-menu:325` | 截图当前焦点模型 |
-| `showSceneMenu()` | `menus/scene-menu:80` | — |
+| `buildStageTransformLevel()` | `menus/scene-menu:58` | — |
+| `disposeSceneMenu()` | `menus/scene-menu:99` | 释放 scene-menu 模块资源（取消注册 hooks + UI actions + HMR/清理时调用） |
+| `getSceneMenu()` | `menus/scene-menu:81` | — |
+| `refreshSceneRoot()` | `menus/scene-menu:93` | — |
+| `saveScene()` | `menus/scene-menu:439` | 保存场景（自动编号到预设目录） |
+| `screenshotBatch()` | `menus/scene-menu:356` | 批量截图所有已加载模型 |
+| `screenshotCurrent()` | `menus/scene-menu:328` | 截图当前焦点模型 |
+| `showSceneMenu()` | `menus/scene-menu:81` | — |
 | `buildPhysicsDebugLevel()` | `menus/scene-physics-levels:155` | 构建物理调试子页（材质线框/骨骼 — WASM 相关，由模型详情页调用） |
 | `buildPhysicsLevel()` | `menus/scene-physics-levels:37` | 构建 WASM 物理子页（Bullet 骨髁物理 — per-model） |
 | `buildWasmPhysicsLevel()` | `menus/scene-physics-levels:88` | 构建 WASM 物理子页（Bullet 骨髁物理信息 + 全局开关） |
