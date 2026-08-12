@@ -757,6 +757,26 @@ describe('stopVMD', () => {
     it('handles non-existent model without throwing', () => {
         expect(() => stopVMD('nonexistent')).not.toThrow();
     });
+
+    it('does not crash when isPlaying is true but mmdRuntime is null', () => {
+        createModel('m1', 1, {
+            vmdData: new ArrayBuffer(10),
+            vmdName: 'dance',
+            vmdPath: 'dance.vmd',
+            animationDuration: 30,
+        });
+        setIsPlaying(true);
+        // 不调用 setMmdRuntime —— mmdRuntime 为 null
+        // 应安全降级：清 vmd 状态，但不调 pauseAnimation
+
+        expect(() => stopVMD('m1')).not.toThrow();
+
+        const inst = modelRegistry.get('m1')!;
+        expect(inst.vmdData).toBeNull();
+        expect(inst.vmdName).toBe('');
+        expect(inst.vmdPath).toBeNull();
+        expect(inst.animationDuration).toBe(0);
+    });
 });
 
 // =====================================================================

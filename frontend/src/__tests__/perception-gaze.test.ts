@@ -331,3 +331,112 @@ describe('lookDir 方向不变量', () => {
         ).not.toThrow();
     });
 });
+
+// ── 6. Swing-Twist 回归（修复 swingAngle 从 desiredLocal.w 误算导致 swing 过度限位） ─
+
+describe('_clampImpl Swing-Twist 回归', () => {
+    it('纯 Y 旋转（无 pitch）不应被 swing 限位错误钳制', () => {
+        // 构造纯 Y 旋转 90°：大幅偏航，零 pitch
+        const yawAngle = (90 * Math.PI) / 180;
+        const targetWorldQ = Quaternion.RotationAxis(Vector3.Up(), yawAngle);
+        const oldWorldQ = Quaternion.Identity();
+        const parentWorldQ = Quaternion.Identity();
+
+        const result = gaze._clampHeadGazeTarget(oldWorldQ, targetWorldQ, parentWorldQ);
+
+        // 结果应是 Y 旋转被 limited 到 ±75°（head max yaw），
+        // 但 swing（x/z 分量）应 ≈ 0（无 pitch/roll 残留）
+        expect(Math.abs(result.y)).toBeGreaterThan(0.05);
+        expect(Math.abs(result.x)).toBeLessThan(1e-6);
+        expect(Math.abs(result.z)).toBeLessThan(1e-6);
+    });
+
+    it('大 yaw + 小 pitch 混合时，swing 不应被 yaw 连累过度限位', () => {
+        // 40° yaw + 15° pitch（15° < maxPitch=35°，不应被限位缩放）
+        const yawAngle = (40 * Math.PI) / 180;
+        const pitchAngle = (15 * Math.PI) / 180;
+        const yawQ = Quaternion.RotationAxis(Vector3.Up(), yawAngle);
+        const pitchQ = Quaternion.RotationAxis(Vector3.Right(), pitchAngle);
+        // 组合：yawQ * pitchQ（先 pitch 后 yaw）
+        const targetWorldQ = new Quaternion();
+        yawQ.multiplyToRef(pitchQ, targetWorldQ);
+        const oldWorldQ = Quaternion.Identity();
+        const parentWorldQ = Quaternion.Identity();
+
+        const result = gaze._clampHeadGazeTarget(oldWorldQ, targetWorldQ, parentWorldQ);
+
+        // 修复前：swingAngle 从 desiredLocal.w（含 yaw 贡献 ≈40°）算得 > 35°，swing 被缩放到 ~11°
+        // 修复后：swingAngle 从纯 swing.w 算得 ≈ 15° < 35°，swing 保留原值
+        // 验证：pitch 分量（x）应显著非零（≈ 15° pitch → quat x 分量 ≈ sin(7.5°) ≈ 0.13）
+        expect(Math.abs(result.x)).toBeGreaterThan(0.02);
+    });
+});
+
+// ── 7. 眼部 Gaze 基本行为测试 ──────────────────────────────────────────
+
+describe('_applyEyeGazeJS 策略', () => {
+    it('非重合时写入 linkedBone.rotationQuaternion（有 gaze offset）', () => {
+        const eye = makeBone({ name: '右目', js: true });
+        const beforeQ = (eye.linkedBone as any).rotationQuaternion.clone();
+        gazeJs._applyEyeGazeJS([eye], new Vector3(5, 1.5, 0), 0.016, undefined);
+        const afterQ = (eye.linkedBone as any).rotationQuaternion;
+        expect(afterQ.equalsWithEpsilon(beforeQ, 1e-6)).toBe(false);
+    });
+
+    it('非重合时不修改 worldMatrix', () => {
+        const eye = makeBone({ name: '右目', js: true });
+        const beforeBuf = [...(eye as any).worldMatrix];
+        gazeJs._applyEyeGazeJS([eye], new Vector3(5, 1.5, 0), 0.016, undefined);
+        expect([...((eye as any).worldMatrix as Float32Array)]).toEqual(beforeBuf);
+    });
+});
+
+describe('_applyEyeGazeWasm 策略', () => {
+    it('写入 worldMatrix 缓冲区', () => {
+        const eye = makeBone({ name: '右目', js: false });
+        const beforeBuf = [...(eye as any).worldMatrix];
+        gazeWasm._applyEyeGazeWasm([eye], new Vector3(5, 1.5, 0), 0.016, undefined);
+        expect((eye as any).worldMatrix).not.toEqual(beforeBuf);
+    });
+
+    it('不修改 linkedBone.rotationQuaternion', () => {
+        const eye = makeBone({ name: '右目', js: false });
+        const beforeQ = (eye.linkedBone as any).rotationQuaternion.clone();
+        gazeWasm._applyEyeGazeWasm([eye], new Vector3(5, 1.5, 0), 0.016, undefined);
+        const afterQ = (eye.linkedBone as any).rotationQuaternion;
+        expect(afterQ.equalsWithEpsilon(beforeQ, 1e-6)).toBe(true);
+    });
+
+    it('worldMatrix 平移部分保持不变', () => {
+        const eye = makeBone({ name: '右目', js: false });
+        const beforeTrans = [
+            (eye as any).worldMatrix[12],
+            (eye as any).worldMatrix[13],
+            (eye as any).worldMatrix[14],
+        ];
+        gazeWasm._applyEyeGazeWasm([eye], new Vector3(5, 1.5, 0), 0.016, undefined);
+        const afterTrans = [
+            (eye as any).worldMatrix[12],
+            (eye as any).worldMatrix[13],
+            (eye as any).worldMatrix[14],
+        ];
+        expect(afterTrans).toEqual(beforeTrans);
+    });
+
+    it('cache.eyeLocalQ 被维护（首次调用创建）', () => {
+        const eye = makeBone({ name: '右目', js: false });
+        const cache = { headWorldQ: null, eyeLocalQ: new Map() };
+        gazeWasm._applyEyeGazeWasm([eye], new Vector3(5, 1.5, 0), 0.016, cache);
+        const cached = cache.eyeLocalQ.get('右目');
+        expect(cached).not.toBeUndefined();
+        expect(cached instanceof Quaternion).toBe(true);
+    });
+
+    it('lookDir=0 时安全返回不抛异常', () => {
+        const eye = makeBone({ name: '右目', js: false });
+        // gazeTarget == eyePos (0,0,0) → lookDir 长度 = 0
+        expect(() =>
+            gazeWasm._applyEyeGazeWasm([eye], new Vector3(0, 0, 0), 0.016, undefined)
+        ).not.toThrow();
+    });
+});

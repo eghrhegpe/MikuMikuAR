@@ -89,21 +89,19 @@ function _clampImpl(
     const clampedTwist = _q().copyFrom(Quaternion.RotationAxis(Vector3.Up(), clampedTwistAngle));
 
     // 限位 swing：限制 swing 与 Identity 的总夹角（涵盖 pitch + roll）
-    const swingAngle = 2 * Math.acos(Math.min(Math.abs(desiredLocal.w), 1));
+    // swing = desiredLocal × twist⁻¹（必须在角度计算前提取，否则 w 分量含 twist 贡献导致过度限位）
+    const invTwist = _q().copyFrom(twist).invert();
+    const swing = _q().copyFrom(desiredLocal).multiplyInPlace(invTwist);
+    const swingAngle = 2 * Math.acos(Math.min(Math.abs(swing.w), 1));
     // swing 总角 ≈ sqrt(pitch² + roll²)，用 maxPitchRad 作为 swing 上限
     const maxSwingRad = maxPitchRad;
     const clampedSwing = _q();
     if (swingAngle > maxSwingRad && swingAngle > 1e-6) {
         // 等比缩放 swing 四元数的旋转角度
         const scale = maxSwingRad / swingAngle;
-        // swing = desiredLocal × twist⁻¹
-        const invTwist = _q().copyFrom(twist).invert();
-        const swing = _q().copyFrom(desiredLocal).multiplyInPlace(invTwist);
-        // 缩放：对 swing 做 slerp(Identity, swing, scale)
         Quaternion.SlerpToRef(Quaternion.Identity(), swing, scale, clampedSwing);
     } else {
-        const invTwist = _q().copyFrom(twist).invert();
-        clampedSwing.copyFrom(desiredLocal).multiplyInPlace(invTwist);
+        clampedSwing.copyFrom(swing);
     }
 
     // 重组：clampedLocal = clampedSwing × clampedTwist

@@ -63,6 +63,10 @@ export class SlideMenu implements RenderContext {
     private _cachedExtraBtns: HTMLElement[] | null = null;
     /** 记录未决的 RAF reRender，用于去抖 */
     private _reRenderPending = false;
+    /** [fix:P0] transitioning 期间缓存的 reRender 请求（merged opts），过渡结束后补执行 */
+    private _pendingReRender: { opts?: { preserveFocus?: boolean } } | null = null;
+    /** [fix:P3] 缓存 slide-list 引用，buildPanel/重建时重置，避免每帧 querySelector */
+    private _slideListRef: HTMLElement | null = null;
     /** 触屏滑动手势起始坐标 */
     private _swipeStartX = 0;
     private _swipeStartY = 0;
@@ -355,10 +359,7 @@ export class SlideMenu implements RenderContext {
             const onFadeIn = () => {
                 fadeInDisp = safeDispose(fadeInDisp);
                 this._cancelTimeout();
-                this.transitioning = false;
-                this.setupFocus();
-                this.onAfterRender?.(level, this);
-                this.onLevelEnter?.(level, this);
+                this._endTransition(level);
             };
             fadeInDisp = addDisposableListener(this.panel, 'transitionend', onFadeIn);
             this._pushTimeout(
@@ -366,10 +367,7 @@ export class SlideMenu implements RenderContext {
                     if (this.transitioning) {
                         this.panel.style.opacity = '1';
                         this.panel.style.transform = 'translateX(0)';
-                        this.transitioning = false;
-                        this.setupFocus();
-                        this.onAfterRender?.(level, this);
-                        this.onLevelEnter?.(level, this);
+                        this._endTransition(level);
                     }
                 }, 200)
             );
@@ -424,10 +422,7 @@ export class SlideMenu implements RenderContext {
             const onFadeIn = () => {
                 fadeInDisp = safeDispose(fadeInDisp);
                 this._cancelTimeout();
-                this.transitioning = false;
-                this.setupFocus();
-                this.onAfterRender?.(prevLevel, this);
-                this.onLevelEnter?.(prevLevel, this);
+                this._endTransition(prevLevel);
             };
             fadeInDisp = addDisposableListener(this.panel, 'transitionend', onFadeIn);
             this._pushTimeout(
@@ -435,10 +430,7 @@ export class SlideMenu implements RenderContext {
                     if (this.transitioning) {
                         this.panel.style.opacity = '1';
                         this.panel.style.transform = 'translateX(0)';
-                        this.transitioning = false;
-                        this.setupFocus();
-                        this.onAfterRender?.(prevLevel, this);
-                        this.onLevelEnter?.(prevLevel, this);
+                        this._endTransition(prevLevel);
                     }
                 }, 200)
             );
@@ -486,6 +478,18 @@ export class SlideMenu implements RenderContext {
 
     reRender(opts?: { preserveFocus?: boolean }): void {
         if (this.transitioning) {
+            // [fix:P0] 过渡动画期间不直接丢弃，缓存为 pending，过渡结束后补执行；
+            // 合并规则：preserveFocus 只要任一方为 true 即保持（优先不抢焦点，保守原则）。
+            if (this._pendingReRender) {
+                this._pendingReRender.opts = {
+                    preserveFocus:
+                        (this._pendingReRender.opts?.preserveFocus ?? false) ||
+                        (opts?.preserveFocus ?? false) ||
+                        undefined,
+                } as { preserveFocus?: boolean } | undefined;
+            } else {
+                this._pendingReRender = { opts };
+            }
             return;
         }
         // RAF 去抖：同帧内多次 reRender 合并为一次
@@ -692,10 +696,28 @@ export class SlideMenu implements RenderContext {
     private _cancelAnim(): void {
         this.transitioning = false;
         this._reRenderPending = false;
+        this._pendingReRender = null;
         this._cancelTimeout();
         this.panel.style.transition = 'none';
         this.panel.style.opacity = '1';
         this.panel.style.transform = 'translateX(0)';
+    }
+
+    /**
+     * [fix:P0] 统一过渡结束收尾：置 transitioning=false + flush pending reRender。
+     * push/pop 的 transitionend 回调与 setTimeout 兜底都调用此方法，
+     * 杜绝"过渡期间 reRender 被静默丢弃，永不刷新"的时序漏洞。
+     */
+    private _endTransition(nextLevel: PopupLevel): void {
+        this.transitioning = false;
+        this.setupFocus();
+        this.onAfterRender?.(nextLevel, this);
+        this.onLevelEnter?.(nextLevel, this);
+        const pending = this._pendingReRender;
+        if (pending) {
+            this._pendingReRender = null;
+            this.reRender(pending.opts);
+        }
     }
 
     /** 记录一个由动画生命周期管理的 setTimeout */

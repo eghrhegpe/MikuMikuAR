@@ -333,6 +333,7 @@ export class PerceptionPerfMonitor {
     private _framesForUp = 120;
     private _forceLowModelCount = 50;
     private _forceHighModelCount = 20;
+    private _warnThrottleFrame = 0;
 
     /** 每帧调用（内部按 _sampleInterval 采样 fps） */
     update(scene: { getEngine(): { getFps(): number } } | null, modelCount: number): void {
@@ -342,7 +343,13 @@ export class PerceptionPerfMonitor {
         // 手动覆盖优先
         if (this._manualTier !== 'auto') {
             // [doc:adr-164] 手动档下帧率持续偏低时 warn 用户（阈值与自动档一致）
-            if (this.fps < 45 && modelCount > 20) {
+            // [ADR-248] 热路径 logWarn 必须 feetDebug 门控 + 帧节流（% 60）
+            if (
+                this.fps < 45 &&
+                modelCount > 20 &&
+                feetDebug.value &&
+                ++this._warnThrottleFrame % 60 === 0
+            ) {
                 logWarn(
                     'perception',
                     `手动档 ${this._manualTier} 但 fps=${this.fps.toFixed(0)} 模型=${modelCount}，建议切回 auto`

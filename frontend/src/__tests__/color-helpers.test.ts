@@ -26,6 +26,13 @@ describe('color-helpers', () => {
             expect(c.g).toBe(0);
             expect(c.b).toBe(0);
         });
+
+        it('passes through negative values (Color3 allows out-of-range)', () => {
+            const c = col3FromTriple([-0.5, -1, -2]);
+            expect(c.r).toBeCloseTo(-0.5);
+            expect(c.g).toBeCloseTo(-1);
+            expect(c.b).toBeCloseTo(-2);
+        });
     });
 
     describe('hexToRgb', () => {
@@ -42,6 +49,15 @@ describe('color-helpers', () => {
         it('falls back to theme default (74,108,247) for invalid input', () => {
             expect(hexToRgb('not-a-hex')).toEqual({ r: 74, g: 108, b: 247 });
             expect(hexToRgb('#xyz')).toEqual({ r: 74, g: 108, b: 247 });
+        });
+
+        it('parses #000000 and #ffffff', () => {
+            expect(hexToRgb('#000000')).toEqual({ r: 0, g: 0, b: 0 });
+            expect(hexToRgb('#ffffff')).toEqual({ r: 255, g: 255, b: 255 });
+        });
+
+        it('falls back for empty string', () => {
+            expect(hexToRgb('')).toEqual({ r: 74, g: 108, b: 247 });
         });
     });
 
@@ -76,6 +92,18 @@ describe('color-helpers', () => {
         it('rounds fractional values to nearest integer', () => {
             // 用 2 的幂次精确值避免浮点误差：0.25*255=63.75→64, 0.5*255=127.5→128, 0.75*255=191.25→191
             expect(rgbString(new Color3(0.25, 0.5, 0.75))).toBe('rgb(64, 128, 191)');
+        });
+
+        it('clamps negative values to 0', () => {
+            expect(rgbString(new Color3(-0.5, -1, -2))).toBe('rgb(0, 0, 0)');
+        });
+
+        it('clamps values above 1.0 to 255', () => {
+            expect(rgbString(new Color3(1.5, 2.0, 10))).toBe('rgb(255, 255, 255)');
+        });
+
+        it('clamps mixed out-of-range values', () => {
+            expect(rgbString(new Color3(-0.1, 0.5, 1.5))).toBe('rgb(0, 128, 255)');
         });
     });
 });

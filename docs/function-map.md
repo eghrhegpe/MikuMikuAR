@@ -240,7 +240,7 @@
 | `filterKeys()` | `core/collections:11` | 按谓词过滤对象键，返回仅含满足条件键值对的新对象。 |
 | `col3FromTriple()` | `core/color-helpers:12` | 从 &#96;[r, g, b]&#96; 三元组构造 Color3。 |
 | `hexToRgb()` | `core/color-helpers:19` | 将 #rrggbb 解析为 {r,g,b}（0–255）。非法输入回退主题默认 74,108,247。 |
-| `rgbString()` | `core/color-helpers:37` | 将 Color3 转为 CSS &#96;rgb(r, g, b)&#96; 字符串（0–255 整数）。 |
+| `rgbString()` | `core/color-helpers:37` | 将 Color3 转为 CSS &#96;rgb(r, g, b)&#96; 字符串（0–255 整数，clamp 到 [0,255]）。 |
 | `rgbToString()` | `core/color-helpers:32` | 将 {r,g,b} 转为 CSS rgb 字符串 "r, g, b"（供 --accent-rgb 等 CSS 变量）。 |
 | `debounce()` | `core/debounce:8` | 函数防抖：在等待指定时间后才执行函数，如果在等待期间再次调用则重置计时器。 |
 | `disposeLogPanel()` | `core/debug-log-panel:150` | — |
@@ -1581,18 +1581,18 @@
 | `_applyHeadGazeJS()` | `scene/motion/perception-gaze-js:55` | JS 模式：头部跟随（薄包装：调用 core + 注入 JS 写入策略） |
 | `_applyEyeGazeWasm()` | `scene/motion/perception-gaze-wasm:49` | WASM 模式：眼部跟随（薄包装：调用 core + 注入 WASM 写入策略） |
 | `_applyHeadGazeWasm()` | `scene/motion/perception-gaze-wasm:39` | WASM 模式：头部跟随（薄包装：调用 core + 注入 WASM 写入策略） |
-| `EYE_BONE_CANDIDATES()` | `scene/motion/perception-gaze:457` | 眼球骨骼候选名（JS/WASM 路径共用） |
-| `EyeGazeWriteStrategy()` | `scene/motion/perception-gaze:218` | 眼部跟随写入策略（JS/WASM 各自实现） |
-| `HEAD_BONE_CANDIDATES()` | `scene/motion/perception-gaze:455` | 头部骨骼候选名（JS/WASM 路径共用） |
-| `HeadGazeWriteStrategy()` | `scene/motion/perception-gaze:199` | 头部跟随写入策略（JS/WASM 各自实现） |
-| `_applyEyeGazeCore()` | `scene/motion/perception-gaze:298` | 眼部跟随共用骨架（eyeCenter → lookDir → targetWorldQ → 每眼 clamp/Slerp/cache → strategy.writeEye） |
-| `_applyGaze()` | `scene/motion/perception-gaze:385` | 统一调度入口（perception.ts observer 调用） |
-| `_applyHeadGazeCore()` | `scene/motion/perception-gaze:237` | 头部跟随共用骨架（lookDir → targetWorldQ → clamp → Slerp → cache → strategy.writeHead） |
-| `_clampEyeGazeTarget()` | `scene/motion/perception-gaze:180` | 眼球专用包装（相对头部坐标系，用更紧的生理锥形） |
+| `EYE_BONE_CANDIDATES()` | `scene/motion/perception-gaze:455` | 眼球骨骼候选名（JS/WASM 路径共用） |
+| `EyeGazeWriteStrategy()` | `scene/motion/perception-gaze:216` | 眼部跟随写入策略（JS/WASM 各自实现） |
+| `HEAD_BONE_CANDIDATES()` | `scene/motion/perception-gaze:453` | 头部骨骼候选名（JS/WASM 路径共用） |
+| `HeadGazeWriteStrategy()` | `scene/motion/perception-gaze:197` | 头部跟随写入策略（JS/WASM 各自实现） |
+| `_applyEyeGazeCore()` | `scene/motion/perception-gaze:296` | 眼部跟随共用骨架（eyeCenter → lookDir → targetWorldQ → 每眼 clamp/Slerp/cache → strategy.writeEye） |
+| `_applyGaze()` | `scene/motion/perception-gaze:383` | 统一调度入口（perception.ts observer 调用） |
+| `_applyHeadGazeCore()` | `scene/motion/perception-gaze:235` | 头部跟随共用骨架（lookDir → targetWorldQ → clamp → Slerp → cache → strategy.writeHead） |
+| `_clampEyeGazeTarget()` | `scene/motion/perception-gaze:178` | 眼球专用包装（相对头部坐标系，用更紧的生理锥形） |
 | `_clampGazeTargetInParentFrame()` | `scene/motion/perception-gaze:55` | 将"转向相机的目标世界旋转"钳制在相对父骨骼坐标系的 yaw/pitch 锥形内。 |
-| `_clampHeadGazeTarget()` | `scene/motion/perception-gaze:165` | 头部专用包装（维持已有回归测试签名不变） |
-| `_getGazeTarget()` | `scene/motion/perception-gaze:138` | 获取视线目标点（AR 模式沿相机朝向投射，普通模式用相机位置） |
-| `applyGazeWasm()` | `scene/motion/perception-gaze:469` | WASM 模式下的 gaze 应用（供 wasm-layers-blender.ts 调用） |
+| `_clampHeadGazeTarget()` | `scene/motion/perception-gaze:163` | 头部专用包装（维持已有回归测试签名不变） |
+| `_getGazeTarget()` | `scene/motion/perception-gaze:136` | 获取视线目标点（AR 模式沿相机朝向投射，普通模式用相机位置） |
+| `applyGazeWasm()` | `scene/motion/perception-gaze:467` | WASM 模式下的 gaze 应用（供 wasm-layers-blender.ts 调用） |
 | `getEyeGazeMaxPitch()` | `scene/motion/perception-gaze:36` | — |
 | `getEyeGazeMaxYaw()` | `scene/motion/perception-gaze:36` | — |
 | `getEyeGazeSmooth()` | `scene/motion/perception-gaze:36` | — |
@@ -1615,18 +1615,18 @@
 | `PerceptionTier()` | `scene/motion/perception-shared:317` | — |
 | `_createPerceptionPool()` | `scene/motion/perception-shared:110` | 创建单 context 对象池 |
 | `_gazeAlpha()` | `scene/motion/perception-shared:259` | 计算 gaze Slerp alpha（基于 deltaTime 的指数衰减，帧率无关） |
-| `_gazeLog()` | `scene/motion/perception-shared:456` | — |
-| `_incGazeLogFrame()` | `scene/motion/perception-shared:453` | — |
+| `_gazeLog()` | `scene/motion/perception-shared:463` | — |
+| `_incGazeLogFrame()` | `scene/motion/perception-shared:460` | — |
 | `_isWasmRuntime()` | `scene/motion/perception-shared:220` | — |
 | `_m()` | `scene/motion/perception-shared:151` | — |
 | `_propagateChildrenWasm()` | `scene/motion/perception-shared:187` | 递归传播子骨骼 worldMatrix |
 | `_q()` | `scene/motion/perception-shared:161` | — |
-| `_qAngleDeg()` | `scene/motion/perception-shared:465` | 两四元数夹角（度） |
+| `_qAngleDeg()` | `scene/motion/perception-shared:472` | 两四元数夹角（度） |
 | `_resetContextPool()` | `scene/motion/perception-shared:133` | 重置当前池的 index（context 切换时重置，避免跨帧累积） |
 | `_setContextPool()` | `scene/motion/perception-shared:128` | 切换到指定 context 的池（进入该 context 感知管线前调用） |
 | `_v3()` | `scene/motion/perception-shared:141` | — |
 | `_writeMatToBuffer()` | `scene/motion/perception-shared:175` | 把 Matrix 写回 Float32Array(16) |
-| `feetDebug()` | `scene/motion/perception-shared:474` | — |
+| `feetDebug()` | `scene/motion/perception-shared:481` | — |
 | `getEyeGazeMaxPitch()` | `scene/motion/perception-shared:245` | 获取眼部跟随最大俯仰角（弧度） |
 | `getEyeGazeMaxYaw()` | `scene/motion/perception-shared:241` | 获取眼部跟随最大偏航角（弧度） |
 | `getEyeGazeSmooth()` | `scene/motion/perception-shared:249` | 获取眼部跟随平滑度 |

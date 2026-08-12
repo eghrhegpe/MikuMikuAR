@@ -235,7 +235,7 @@ export function applySpies(): void {
         inst.vmdName = '';
         inst.vmdPath = null;
         inst.animationDuration = 0;
-        if (isPlaying) {
+        if (isPlaying && mmdRuntime) {
             mmdRuntime.pauseAnimation();
             setIsPlaying(false);
         }

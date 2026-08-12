@@ -245,7 +245,7 @@ export function stopVMD(id: string): void {
         inst.mmdModel.setRuntimeAnimation(null);
     }
     modelManager?.clearVmdData(id);
-    if (isPlaying) {
+    if (isPlaying && mmdRuntime) {
         mmdRuntime.pauseAnimation();
         setIsPlaying(false);
     }

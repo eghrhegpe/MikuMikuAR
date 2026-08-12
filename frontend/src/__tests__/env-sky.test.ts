@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('../scene/env/_shared/env-context', () => ({
   _envSys: { sky: { skyMesh: null, skyCubeTexture: null, skyDynamicTex: null } },
