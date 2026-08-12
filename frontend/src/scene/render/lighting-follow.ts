@@ -342,10 +342,10 @@ export function setPersonalLightState(
     _ensurePersonalCone(modelId);
 }
 
-/** 返回设置副本（不改内部引用，避免外部误改绕过 setPersonalLightState 的灯同步） */
+/** 返回设置深拷贝（含 color 数组，避免外部误改绕过 setPersonalLightState 的灯同步） */
 export function getPersonalLightState(modelId: string): PersonalLightSettings | null {
     const entry = _entries.get(modelId);
-    return entry ? { ...entry.settings } : null;
+    return entry ? { ...entry.settings, color: [...entry.settings.color] } : null;
 }
 
 export function tickPersonalLights(): void {

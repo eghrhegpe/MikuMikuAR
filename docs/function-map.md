@@ -1807,7 +1807,7 @@
 | `disposeAllPersonalLights()` | `scene/render/lighting-follow:441` | — |
 | `getAllPersonalLights()` | `scene/render/lighting-follow:450` | 导出所有个人灯状态（仅非默认值差异落盘由调用方决定） |
 | `getPersonalLightDefault()` | `scene/render/lighting-follow:124` | 获取用户保存的个人灯默认值，无则返回 null。 |
-| `getPersonalLightState()` | `scene/render/lighting-follow:346` | 返回设置副本（不改内部引用，避免外部误改绕过 setPersonalLightState 的灯同步） |
+| `getPersonalLightState()` | `scene/render/lighting-follow:346` | 返回设置深拷贝（含 color 数组，避免外部误改绕过 setPersonalLightState 的灯同步） |
 | `resetPersonalLightDefault()` | `scene/render/lighting-follow:129` | 重置用户默认值回出厂硬编码值。 |
 | `restorePersonalLights()` | `scene/render/lighting-follow:462` | 场景反序列化后，按 modelId 恢复个人灯设置（attach 已由 onModelLoaded 触发，此处仅覆盖参数） |
 | `setPersonalLightDefault()` | `scene/render/lighting-follow:114` | 将当前个人灯参数保存为用户默认值。 |
