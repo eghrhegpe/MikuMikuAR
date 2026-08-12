@@ -320,53 +320,83 @@ describe('WASM 物理契约测试', () => {
             api.destroyPhysicsWorld(worldB);
         });
 
-        it('不同世界的刚体不互相碰撞（跨世界隔离）', () => {
+        it('跨世界隔离：同世界重叠会碰撞推开，跨世界重叠互不干扰', () => {
+            // 对照实验验证「隔离」真定义：
+            //  ① 同世界：body1 静止于原点，body2 在 (0,0,0.9) 向 -Z 运动 → 应被碰撞挡住/推开
+            //  ② 跨世界：同样布局分属两世界 → 互不交互，body2 匀速穿过
+            const shape = api.createBoxShape(1, 1, 1);
+
+            // ---- 对照 ①：同世界 ----
+            const sameWorld = api.createPhysicsWorld();
+            api.physicsWorldSetGravity(sameWorld, 0, 0, 0);
+            const infoA = buildRigidBodyInfo(shape, { mass: 1.0, disableDeactivation: true });
+            const bodyA = api.createRigidBody(infoA);
+            api.physicsWorldAddRigidBody(sameWorld, bodyA);
+
+            const infoB = buildRigidBodyInfo(shape, { mass: 1.0, disableDeactivation: true });
+            const bodyB = api.createRigidBody(infoB);
+            api.physicsWorldAddRigidBody(sameWorld, bodyB);
+            api.rigidBodyTranslate(bodyB, 0, 0, 0.9); // 两 1×1×1 方块半边长 0.5，间距 0.9 < 1.0 重叠
+            api.rigidBodySetLinearVelocity(bodyB, 0, 0, -5); // 向 bodyA 撞去
+
+            for (let i = 0; i < 30; i++) {
+                api.physicsWorldStepSimulation(sameWorld, 1 / 60, 1, 1 / 60);
+            }
+
+            // 同世界：bodyA 应被撞动（碰撞传递）
+            const [, , vzA] = readLinearVelocity(bodyA);
+            expect(Math.abs(vzA)).toBeGreaterThan(0.01); // 碰撞生效
+
+            // 清理对照 ①
+            api.physicsWorldRemoveRigidBody(sameWorld, bodyA);
+            api.physicsWorldRemoveRigidBody(sameWorld, bodyB);
+            api.destroyRigidBody(bodyA);
+            api.destroyRigidBody(bodyB);
+            api.deallocateBuffer(infoA, INFO_SIZE);
+            api.deallocateBuffer(infoB, INFO_SIZE);
+            api.destroyPhysicsWorld(sameWorld);
+
+            // ---- 对照 ②：跨世界（同样布局分属两世界）----
             const world1 = api.createPhysicsWorld();
             const world2 = api.createPhysicsWorld();
-
-            // 无重力，纯碰撞测试
             api.physicsWorldSetGravity(world1, 0, 0, 0);
             api.physicsWorldSetGravity(world2, 0, 0, 0);
 
-            const shape = api.createBoxShape(1, 1, 1);
-
-            // 世界 1：方块在原点，静止
             const info1 = buildRigidBodyInfo(shape, { mass: 1.0, disableDeactivation: true });
             const body1 = api.createRigidBody(info1);
-            api.physicsWorldAddRigidBody(world1, body1);
+            api.physicsWorldAddRigidBody(world1, body1); // 世界1：原点静止
 
-            // 世界 2：方块在原点，向 Z 轴运动
             const info2 = buildRigidBodyInfo(shape, { mass: 1.0, disableDeactivation: true });
             const body2 = api.createRigidBody(info2);
-            api.physicsWorldAddRigidBody(world2, body2);
-            api.rigidBodySetLinearVelocity(body2, 0, 0, 5);
+            api.physicsWorldAddRigidBody(world2, body2); // 世界2：同坐标布局
+            api.rigidBodyTranslate(body2, 0, 0, 0.9);
+            api.rigidBodySetLinearVelocity(body2, 0, 0, -5);
 
-            // 分别步进两个世界
-            for (let i = 0; i < 60; i++) {
+            for (let i = 0; i < 30; i++) {
                 api.physicsWorldStepSimulation(world1, 1 / 60, 1, 1 / 60);
                 api.physicsWorldStepSimulation(world2, 1 / 60, 1, 1 / 60);
             }
 
-            // 世界 1 的方块应保持静止（无外力，也不应被世界 2 的刚体碰撞）
+            // 跨世界：世界1的 body1 应保持静止（不被世界2的 body2 碰撞）
             const [vx1, vy1, vz1] = readLinearVelocity(body1);
             expect(vx1).toBe(0);
             expect(vy1).toBe(0);
             expect(vz1).toBe(0);
 
-            // 世界 2 的方块应保持匀速运动（无重力、无碰撞物）
+            // 跨世界：世界2的 body2 匀速穿过（无碰撞物）
             const [, , vz2] = readLinearVelocity(body2);
-            expect(vz2).toBeCloseTo(5, 1);
+            expect(vz2).toBeCloseTo(-5, 1);
 
-            // 清理
+            // 清理对照 ②
             api.physicsWorldRemoveRigidBody(world1, body1);
             api.physicsWorldRemoveRigidBody(world2, body2);
             api.destroyRigidBody(body1);
             api.destroyRigidBody(body2);
             api.deallocateBuffer(info1, INFO_SIZE);
             api.deallocateBuffer(info2, INFO_SIZE);
-            api.destroyShape(shape);
             api.destroyPhysicsWorld(world1);
             api.destroyPhysicsWorld(world2);
+            api.destroyShape(shape);
         });
     });
 });
