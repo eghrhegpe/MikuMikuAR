@@ -137,9 +137,9 @@
 | `ChatRequest()` | `core/ai/types:46` | 流式聊天请求参数 |
 | `ToolCall()` | `core/ai/types:19` | 工具调用（assistant 消息中） |
 | `ToolSchema()` | `core/ai/types:36` | JSON Schema 工具定义（OpenAI function_calling 格式） |
-| `Abortable()` | `core/async:142` | 可复用的 AbortController 封装——abort 后自动重置，使对象可重复使用。 |
-| `DebouncedTimer()` | `core/async:107` | 防抖定时器——封装 setTimeout 的 schedule/cancel 样板。 |
-| `LoadingGuard()` | `core/async:75` | 并发加载守卫——防止同一 key 的异步操作重复触发。 |
+| `Abortable()` | `core/async:144` | 可复用的 AbortController 封装——abort 后自动重置，使对象可重复使用。 |
+| `DebouncedTimer()` | `core/async:109` | 防抖定时器——封装 setTimeout 的 schedule/cancel 样板。 |
+| `LoadingGuard()` | `core/async:77` | 并发加载守卫——防止同一 key 的异步操作重复触发。 |
 | `delay()` | `core/async:22` | Promise 包装的延迟。 |
 | `fireAndForget()` | `core/async:17` | 启动一个异步操作但不等待，异常由 swallowError 兜底。 |
 | `makeLazyLoader()` | `core/async:43` | 创建惰性动态 import 加载器（带并发守卫 + 失败重试）。 |
@@ -322,7 +322,7 @@
 | `thumbDataUrl()` | `core/image:64` | Build a data URL from a base64 thumbnail, sniffing PNG/JPEG/WebP from the header. |
 | `toBase64()` | `core/image:54` | Encode a string as base64 (UTF-8 safe). |
 | `bootstrap()` | `core/init:638` | 应用启动入口：接线 dev-hooks / render-loop / events 并启动渲染循环。 |
-| `jsonParse()` | `core/json-stringify:10` | Safely parse JSON; returns null on failure instead of throwing. |
+| `jsonParse()` | `core/json-stringify:12` | Safely parse JSON; returns null on failure instead of throwing. |
 | `jsonStringify()` | `core/json-stringify:5` | Format a value as pretty-printed JSON (2-space indent). |
 | `CATEGORY_DIR()` | `core/library-path:52` | — |
 | `computeLibraryRef()` | `core/library-path:10` | Backwards-compatible wrapper: reads libraryRoot and delegates to the pure path leaf. |

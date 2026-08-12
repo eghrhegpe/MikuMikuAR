@@ -109,20 +109,26 @@ export async function loadVMDMotion(
 
         // Create runtime animation from the loaded data
         // WASM 版需 MmdWasmAnimation 包装；JS 版直接用 mmdAnimation（实现 IMmdBindableModelAnimation）
-        let runtimeAnimation: import('babylon-mmd/esm/Runtime/Animation/IMmdBindableAnimation').IMmdBindableModelAnimation;
-        if (mmdRuntime instanceof MmdWasmRuntime) {
-            runtimeAnimation = new MmdWasmAnimation(mmdAnimation, mmdRuntime.wasmInstance, scene);
-        } else {
-            runtimeAnimation = mmdAnimation;
-        }
+        const runtimeAnimation = mmdRuntime instanceof MmdWasmRuntime
+            ? new MmdWasmAnimation(mmdAnimation, mmdRuntime.wasmInstance, scene)
+            : mmdAnimation;
+
+        // [fix] 用 using 守卫收口 WASM 释放：所有权移交 model 前（stale / stage / 绑定失败）
+        // 任何早期 return 或异常都会自动 dispose，编译器保证不会遗漏释放点。
+        let transferred = false;
+        using _animGuard = {
+            [Symbol.dispose]() {
+                if (!transferred) {
+                    try { runtimeAnimation.dispose?.(); } catch { /* best-effort */ }
+                }
+            },
+        };
 
         // 检查是否在 await 期间有新的 loadVMDMotion 调用（同模型），过期则丢弃
-        // [fix] runtimeAnimation 已创建，stale 时须释放避免 WASM 内存泄漏
         if (_vmdLoadGenMap.get(targetId) !== capturedGen) {
-            try { runtimeAnimation.dispose?.(); } catch { /* best-effort */ }
             logWarn('vmd-loader', 'Stale loadVMDMotion result discarded:', name);
             feedbackStatus('scene.vmd.loadFailed', undefined, false);
-            return;
+            return; // _animGuard 自动 dispose
         }
 
         // Extract camera track from VMD and apply to MmdCamera
@@ -134,20 +140,14 @@ export async function loadVMDMotion(
 
         // Bind to model
         if (!inst.mmdModel) {
-            // 动画已创建但模型是 Stage，无法绑定 — 清理避免泄漏（仅 WASM 版有资源需释放）
-            if (runtimeAnimation instanceof MmdWasmAnimation) {
-                try {
-                    runtimeAnimation.dispose?.();
-                } catch {
-                    // Intentionally empty — 舞台模型动画句柄清理失败不影响后续流程
-                }
-            }
+            // 动画已创建但模型是 Stage，无法绑定 — _animGuard 退出时自动释放
             feedbackStatus('scene.vmd.stageNoVmd', undefined, false);
             return;
         }
         // 切换 VMD：释放旧句柄 + 绑定新动画 + 归零时钟（封装于 mmd-adapter PlaybackContract，见 ADR-192）。
         // 固化 setRuntimeAnimation 不重置时钟 + WASM 句柄需显式 dispose 的 babylon-mmd 行为缺陷。
         await switchAnimation(mmdRuntime, inst.mmdModel, runtimeAnimation);
+        transferred = true; // 所有权已移交 model，_animGuard 不再释放
 
         inst.vmdData = data;
         // 停止程序化动作（延迟到 vmdData 赋值后，确保 stopProcMotion 内 userVmdPresent=true，
