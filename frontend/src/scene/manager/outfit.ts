@@ -597,10 +597,13 @@ async function _applyOutfitVariantCore(id: string, variantName: string): Promise
     if (!inst.outfitFile) {
         return;
     }
+    const variants = inst.outfitFile.variants;
     const variant =
         variantName === RESET_VARIANT
             ? undefined
-            : inst.outfitFile.variants.find((v) => v.name === variantName);
+            : Array.isArray(variants)
+              ? variants.find((v) => v.name === variantName)
+              : undefined;
     if (!variant && variantName !== RESET_VARIANT) {
         return;
     }

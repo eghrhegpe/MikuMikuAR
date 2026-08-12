@@ -298,6 +298,22 @@ describe('resetOutfit', () => {
         await resetOutfit('m1');
         expect(inst._origParams).toBeUndefined();
     });
+
+    it('should handle model with null material in a mesh', async () => {
+        // 构造一个 mesh 的 material 为 null 的场景
+        inst.meshes = [createMockMesh(null)];
+        inst._origTextures = new Map([
+            [0, { diffuse: origDiffuse, toon: null, spa: null, normal: null, emissive: null }],
+        ]);
+        inst._origParams = new Map([
+            [0, { diffuseR: 1, diffuseG: 1, diffuseB: 1, specularR: 1, specularG: 1, specularB: 1, specularPower: 50, ambientR: 1, ambientG: 1, ambientB: 1 }],
+        ]);
+        const { resetOutfit } = await import('@/scene/manager/outfit');
+        await resetOutfit('m1');
+        expect(inst.activeVariant).toBeUndefined();
+        expect(inst._origTextures).toBeUndefined();
+        expect(inst._origParams).toBeUndefined();
+    });
 });
 
 describe('loadOutfits', () => {
@@ -376,6 +392,22 @@ describe('loadOutfits', () => {
         const result = await loadOutfits('m1');
         expect(result).toBeNull();
         expect(inst.outfitFile).toBeUndefined();
+    });
+
+    it('should return null when AbortSignal is already aborted', async () => {
+        const sm = createMockMaterial('顔', { diffuseTexture: origDiffuse });
+        const inst = createBaseInstance({
+            meshes: [createMockMesh(sm)],
+            rootMesh: createMockMesh(sm),
+            outfitFile: undefined,
+        });
+        modelRegistry.set('m1', inst);
+
+        const ac = new AbortController();
+        ac.abort();
+        const { loadOutfits } = await import('@/scene/manager/outfit');
+        const result = await loadOutfits('m1', ac.signal);
+        expect(result).toBeNull();
     });
 });
 
@@ -514,5 +546,82 @@ describe('applyOutfitVariant', () => {
         const { applyOutfitVariant } = await import('@/scene/manager/outfit');
         await applyOutfitVariant('nonexistent', '泳装');
         // Should not throw
+    });
+
+    it('should apply tint without params', async () => {
+        inst.outfitFile.variants.push({
+            name: 'tintOnly',
+            byMaterial: { 顔: { tint: [0.5, 0.8, 0.5] } },
+        });
+        // 重置 diffuseColor 到原始白色
+        inst.meshes[0].material.diffuseColor.set(1, 1, 1);
+        const { applyOutfitVariant } = await import('@/scene/manager/outfit');
+        await applyOutfitVariant('m1', 'tintOnly');
+        expect(inst.activeVariant).toBe('tintOnly');
+        const sm = inst.meshes[0].material;
+        // orig diffuseMul=undefined → mul=1，diffuseColor = orig(1,1,1) * 1 * tint
+        expect(sm.diffuseColor.r).toBeCloseTo(0.5);
+        expect(sm.diffuseColor.g).toBeCloseTo(0.8);
+        expect(sm.diffuseColor.b).toBeCloseTo(0.5);
+        // params not set → specular/ambient should stay at original (1,1,1)
+        expect(sm.specularColor.r).toBeCloseTo(1);
+        expect(sm.specularPower).toBe(50);
+    });
+
+    it('should apply params without tint', async () => {
+        inst.outfitFile.variants.push({
+            name: 'paramsOnly',
+            byMaterial: {
+                顔: {
+                    params: { specularMul: 0.3, shininess: 120 },
+                },
+            },
+        });
+        const { applyOutfitVariant } = await import('@/scene/manager/outfit');
+        await applyOutfitVariant('m1', 'paramsOnly');
+        expect(inst.activeVariant).toBe('paramsOnly');
+        const sm = inst.meshes[0].material;
+        // specularMul=0.3, shininess=120, diffuseMul/ambientMul not set
+        expect(sm.specularColor.r).toBeCloseTo(0.3);
+        expect(sm.specularPower).toBe(120);
+        // 未设置 diffuseMul/ambientMul：保持原始颜色
+        expect(sm.diffuseColor.r).toBeCloseTo(1);
+        expect(sm.ambientColor.r).toBeCloseTo(1);
+    });
+
+    it('should apply only diffuseMul without affecting other params', async () => {
+        inst.outfitFile.variants.push({
+            name: 'diffuseOnly',
+            byMaterial: { 顔: { params: { diffuseMul: 0.6 } } },
+        });
+        const { applyOutfitVariant } = await import('@/scene/manager/outfit');
+        await applyOutfitVariant('m1', 'diffuseOnly');
+        const sm = inst.meshes[0].material;
+        expect(sm.diffuseColor.r).toBeCloseTo(0.6);
+        // specular/ambient untouched (orig = 1)
+        expect(sm.specularColor.r).toBeCloseTo(1);
+        expect(sm.specularPower).toBe(50);
+        expect(sm.ambientColor.r).toBeCloseTo(1);
+    });
+
+    it('should apply params only without texture changes', async () => {
+        inst.outfitFile.variants.push({
+            name: 'paramsNoTex',
+            byMaterial: { 顔: { params: { shininess: 200 } } },
+        });
+        const { applyOutfitVariant } = await import('@/scene/manager/outfit');
+        await applyOutfitVariant('m1', 'paramsNoTex');
+        const sm = inst.meshes[0].material;
+        expect(sm.specularPower).toBe(200);
+        // 纹理不应被替换
+        expect(sm.diffuseTexture).toBe(origDiffuse);
+    });
+
+    it('should be a no-op when outfitFile.variants is null', async () => {
+        inst.outfitFile = { version: 1, variants: null as any };
+        const { applyOutfitVariant } = await import('@/scene/manager/outfit');
+        inst.activeVariant = undefined;
+        await applyOutfitVariant('m1', '泳装');
+        expect(inst.activeVariant).toBeUndefined();
     });
 });

@@ -1399,7 +1399,7 @@
 | `restoreMaterials()` | `scene/manager/outfit-overlay:333` | 恢复被 hideMaterials 隐藏的 PMX mesh 可见性。 |
 | `applyOutfitVariant()` | `scene/manager/outfit:570` | — |
 | `loadOutfits()` | `scene/manager/outfit:118` | — |
-| `resetOutfit()` | `scene/manager/outfit:758` | — |
+| `resetOutfit()` | `scene/manager/outfit:761` | — |
 | `setSceneRef()` | `scene/manager/outfit:38` | 由 scene.ts 在场景初始化完成后注入当前 scene 实例 |
 | `tryApplyPbrMaterialBuilder()` | `scene/manager/pbr-builder-init:12` | 动态导入 PBRMaterialBuilder 并覆盖 MmdModelLoader.SharedMaterialBuilder。 |
 | `auditMissingTextures()` | `scene/manager/pmx-texture-audit:46` | 识别 PMX 声明但目录中缺失的纹理。 |
@@ -1770,10 +1770,10 @@
 | `resolveVirtualSkirtQuality()` | `scene/physics/virtual-skirt:88` | Phase 5: 解析有效质量档位。 |
 | `worldDeltaToLocal()` | `scene/physics/virtual-skirt:119` | 世界位移向量 → 局部位移向量（仅取旋转/缩放分量，忽略平移）。 |
 | `_getBundles()` | `scene/physics/wind-physics:43` | — |
-| `disposeWindPhysics()` | `scene/physics/wind-physics:203` | 销毁风力物理注入。 |
-| `initWindPhysics()` | `scene/physics/wind-physics:145` | 初始化风力物理注入。 |
-| `isWindPhysicsActive()` | `scene/physics/wind-physics:224` | 当前运行时是否实际启用了风力物理（WASM Bullet）。 |
-| `retryWindPhysicsSubscription()` | `scene/physics/wind-physics:164` | [adr-104] 模型加载成功后由 model-loader 显式调用，重试订阅 physics impl （此时 physics impl 已就绪）。替代原 monkey-pa |
+| `disposeWindPhysics()` | `scene/physics/wind-physics:205` | 销毁风力物理注入。 |
+| `initWindPhysics()` | `scene/physics/wind-physics:147` | 初始化风力物理注入。 |
+| `isWindPhysicsActive()` | `scene/physics/wind-physics:226` | 当前运行时是否实际启用了风力物理（WASM Bullet）。 |
+| `retryWindPhysicsSubscription()` | `scene/physics/wind-physics:166` | [adr-104] 模型加载成功后由 model-loader 显式调用，重试订阅 physics impl （此时 physics impl 已就绪）。替代原 monkey-pa |
 | `CAMERA_PRESETS()` | `scene/pose/camera-angle:23` | 预设相机角度列表 |
 | `CameraAnglePreset()` | `scene/pose/camera-angle:10` | 预设角度定义 |
 | `applyCameraPreset()` | `scene/pose/camera-angle:68` | 切换到指定预设角度。 |

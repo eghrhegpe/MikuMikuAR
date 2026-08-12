@@ -30,8 +30,21 @@ vi.mock('../core/wind-utils', () => ({
     getWindVector: () => ({ x: 0, y: 0, z: 0 }),
     isWindActive: () => true,
 }));
+vi.mock('../core/mmd-adapter', () => ({
+    getRigidBodyBundleMap: (impl: any) => impl.rigidBodyBundleReferenceCountMap?.keys() ?? [],
+    getRigidBodyMap: () => [],
+    getPhysicsImpl: vi.fn(() => ({
+        onSyncObservable: { add: vi.fn(() => ({ dispose: vi.fn() })), remove: vi.fn(), hasObservers: () => false },
+    })),
+    applyForceToModelRigidBodiesNative: vi.fn(),
+    applyWindForceToModelRigidBodiesNative: vi.fn(),
+}));
 
-import { _getBundles } from '@/scene/physics/wind-physics';
+import { MmdWasmRuntime as MmdWasmRuntimeClass } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime';
+import { _getBundles, isWindPhysicsActive, initWindPhysics, disposeWindPhysics } from '@/scene/physics/wind-physics';
+import { getPhysicsImpl } from '@/core/mmd-adapter';
+
+const mockGetPhysicsImpl = getPhysicsImpl as ReturnType<typeof vi.fn>;
 
 describe('_getBundles reads public rigidBodyBundleReferenceCountMap', () => {
     it('returns bundle keys from public API', () => {
@@ -75,5 +88,39 @@ describe('_getBundles reads public rigidBodyBundleReferenceCountMap', () => {
             ]),
         };
         expect([..._getBundles(impl)]).toEqual([a, b, c]);
+    });
+});
+
+describe('isWindPhysicsActive', () => {
+    it('returns false when no runtime registered', () => {
+        expect(isWindPhysicsActive()).toBe(false);
+    });
+
+    it('returns true after initWindPhysics with WASM runtime', () => {
+        const runtime = new (MmdWasmRuntimeClass as any)() as InstanceType<typeof MmdWasmRuntimeClass>;
+        initWindPhysics(runtime);
+        expect(isWindPhysicsActive()).toBe(true);
+    });
+
+    it('returns false after disposeWindPhysics clears all', () => {
+        const runtime = new (MmdWasmRuntimeClass as any)() as InstanceType<typeof MmdWasmRuntimeClass>;
+        initWindPhysics(runtime);
+        disposeWindPhysics();
+        expect(isWindPhysicsActive()).toBe(false);
+    });
+
+    it('returns false after per-runtime dispose', () => {
+        const runtime = new (MmdWasmRuntimeClass as any)() as InstanceType<typeof MmdWasmRuntimeClass>;
+        initWindPhysics(runtime);
+        disposeWindPhysics(runtime);
+        expect(isWindPhysicsActive()).toBe(false);
+    });
+
+    it('returns false when WASM runtime registered but impl missing (not subscribed)', () => {
+        // impl 缺失时 _trySubscribe 不建立 observer，isWindPhysicsActive 应返回 false
+        mockGetPhysicsImpl.mockReturnValueOnce(null);
+        const runtime = new (MmdWasmRuntimeClass as any)() as InstanceType<typeof MmdWasmRuntimeClass>;
+        initWindPhysics(runtime);
+        expect(isWindPhysicsActive()).toBe(false);
     });
 });

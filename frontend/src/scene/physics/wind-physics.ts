@@ -111,21 +111,23 @@ function _onPhysicsSync(impl: MmdWasmPhysicsRuntimeImpl): void {
     // 只对 actor（stage 无需风）；applyWindForceToModelRigidBodiesNative 在 wasm 侧按
     // mass/referenceMass 缩放，重质量（衣服）满力、轻质量（头发）降力，避免头发乱飘。
     // FollowBone 由 wasm 跳过。降级：若缺 wind mass-aware 导出，回退旧版等力施力。
-    _tmpModelWind.copyFrom(wind).scaleInPlace(MODEL_WIND_FORCE_SCALE);
-    for (const inst of modelRegistry.values()) {
-        if (inst.kind !== 'actor' || !inst.mmdModel) {
-            continue;
-        }
-        const applied = applyWindForceToModelRigidBodiesNative(
-            impl.wasmInstance,
-            inst.mmdModel,
-            _tmpModelWind,
-            MODEL_WIND_REFERENCE_MASS,
-            MODEL_WIND_MIN_SCALE
-        );
-        if (applied === 0) {
-            // 降级：wind mass-aware 导出缺失，回退旧版等力施力
-            applyForceToModelRigidBodiesNative(impl.wasmInstance, inst.mmdModel, _tmpModelWind);
+    if (impl.wasmInstance) {
+        _tmpModelWind.copyFrom(wind).scaleInPlace(MODEL_WIND_FORCE_SCALE);
+        for (const inst of modelRegistry.values()) {
+            if (inst.kind !== 'actor' || !inst.mmdModel) {
+                continue;
+            }
+            const applied = applyWindForceToModelRigidBodiesNative(
+                impl.wasmInstance,
+                inst.mmdModel,
+                _tmpModelWind,
+                MODEL_WIND_REFERENCE_MASS,
+                MODEL_WIND_MIN_SCALE
+            );
+            if (applied === 0) {
+                // 降级：wind mass-aware 导出缺失，回退旧版等力施力
+                applyForceToModelRigidBodiesNative(impl.wasmInstance, inst.mmdModel, _tmpModelWind);
+            }
         }
     }
 }

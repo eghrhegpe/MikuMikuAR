@@ -97,16 +97,21 @@ import {
     _matState,
     _matEnabled,
     applyMatState,
+    applyUnlitFallback,
+    getMatCatGroups,
     getMatCatParams,
     getMatDetailList,
     getMaterialCategory,
     getMatParams,
     getMatState,
+    isMatEnabled,
+    isPbrMaterial,
     modelRegistry,
     resetMatCatParams,
     resetPerMaterialParams,
     resetSingleMatParams,
     setMatCatParams,
+    setMatEnabled,
     setMatParams,
 } from '../scene/scene';
 
@@ -126,7 +131,7 @@ function regModel(
 ): void {
     const meshes = Array.from({ length: meshCount }, (_, i) => {
         const mat = new StandardMaterial((names && names[i]) ?? `mat${i}`);
-        return { material: mat };
+        return { material: mat, setEnabled: vi.fn() };
     });
     // @ts-expect-error duck-typed mock meshes
     modelRegistry.set(id, { meshes, opacity: 1, ...inst });
@@ -1030,5 +1035,202 @@ describe('getMatState serialization filtering', () => {
         expect(s).not.toBeNull();
         expect(s!.categories['皮肤']).toBeDefined();
         expect(s!.categories['头发']).toBeUndefined();
+    });
+});
+
+describe('isPbrMaterial type guard', () => {
+    it('returns false for StandardMaterial', () => {
+        const mat = new StandardMaterial('test');
+        expect(isPbrMaterial(mat)).toBe(false);
+        mat.dispose();
+    });
+
+    it('returns false for Material base class', () => {
+        // Material base is not PBRMaterial
+        const mat = new StandardMaterial('base');
+        expect(isPbrMaterial(mat as Material)).toBe(false);
+        mat.dispose();
+    });
+});
+
+describe('remaining parameter clamp boundaries', () => {
+    beforeEach(() => {
+        resetMatEditorState();
+        regModel('model_clamp2', 1);
+    });
+    afterEach(() => {
+        cleanupModels();
+    });
+
+    it('specularMul clamped to [0, 2]', () => {
+        setMatParams('model_clamp2', 0, { specularMul: 5 });
+        expect(getMatParams('model_clamp2', 0)!.specularMul).toBe(2);
+        setMatParams('model_clamp2', 0, { specularMul: -0.5 });
+        expect(getMatParams('model_clamp2', 0)!.specularMul).toBe(0);
+    });
+
+    it('ambientMul clamped to [0, 2]', () => {
+        setMatParams('model_clamp2', 0, { ambientMul: 5 });
+        expect(getMatParams('model_clamp2', 0)!.ambientMul).toBe(2);
+        setMatParams('model_clamp2', 0, { ambientMul: -0.5 });
+        expect(getMatParams('model_clamp2', 0)!.ambientMul).toBe(0);
+    });
+
+    it('emissiveMul clamped to [0, 2]', () => {
+        setMatParams('model_clamp2', 0, { emissiveMul: 5 });
+        expect(getMatParams('model_clamp2', 0)!.emissiveMul).toBe(2);
+        setMatParams('model_clamp2', 0, { emissiveMul: -0.5 });
+        expect(getMatParams('model_clamp2', 0)!.emissiveMul).toBe(0);
+    });
+});
+
+describe('isMatEnabled', () => {
+    it('returns true as default for any index', () => {
+        expect(isMatEnabled('none', 0)).toBe(true);
+        expect(isMatEnabled('none', 5)).toBe(true);
+    });
+
+    it('returns true for unresolved model', () => {
+        expect(isMatEnabled('no_such_model', 3)).toBe(true);
+    });
+});
+
+describe('setMatEnabled state management', () => {
+    beforeEach(() => {
+        resetMatEditorState();
+        regModel('model_en', 3);
+    });
+    afterEach(() => {
+        cleanupModels();
+    });
+
+    it('disabling a material sets isMatEnabled to false', () => {
+        setMatEnabled('model_en', 0, false);
+        expect(isMatEnabled('model_en', 0)).toBe(false);
+    });
+
+    it('re-enabling restores isMatEnabled to true', () => {
+        setMatEnabled('model_en', 0, false);
+        expect(isMatEnabled('model_en', 0)).toBe(false);
+        setMatEnabled('model_en', 0, true);
+        expect(isMatEnabled('model_en', 0)).toBe(true);
+    });
+
+    it('calls setEnabled on the mesh', () => {
+        const inst = modelRegistry.get('model_en')!;
+        const spy = inst.meshes[1].setEnabled as ReturnType<typeof vi.fn>;
+        setMatEnabled('model_en', 1, false);
+        expect(spy).toHaveBeenCalledWith(false);
+    });
+
+    it('no-ops on same-state reapply', () => {
+        // _matEnabled already defaults to true
+        setMatEnabled('model_en', 0, true);
+        // No throw, no state change
+        expect(isMatEnabled('model_en', 0)).toBe(true);
+    });
+
+    it('handles out-of-range matIndex gracefully', () => {
+        expect(() => setMatEnabled('model_en', 99, false)).not.toThrow();
+        expect(() => setMatEnabled('model_en', -1, true)).not.toThrow();
+    });
+
+    it('handles non-existent model gracefully', () => {
+        expect(() => setMatEnabled('no_model', 0, false)).not.toThrow();
+    });
+});
+
+describe('applyUnlitFallback', () => {
+    beforeEach(() => {
+        resetMatEditorState();
+        regModel('model_unlit', 2);
+    });
+    afterEach(() => {
+        cleanupModels();
+    });
+
+    it('sets diffuseMul=0 and specularMul=0 across all categories', () => {
+        applyUnlitFallback('model_unlit');
+        for (const cat of ['皮肤', '头发', '眼睛', '服装', '配件', '道具']) {
+            const p = getMatCatParams('model_unlit', cat);
+            expect(p.diffuseMul).toBe(0);
+            expect(p.specularMul).toBe(0);
+        }
+    });
+
+    it('sets ambientMul=2 and emissiveMul=2 across all categories', () => {
+        applyUnlitFallback('model_unlit');
+        for (const cat of ['皮肤', '头发', '眼睛', '服装', '配件', '道具']) {
+            const p = getMatCatParams('model_unlit', cat);
+            expect(p.ambientMul).toBe(2);
+            expect(p.emissiveMul).toBe(2);
+        }
+    });
+
+    it('sets toonTexLevel=0, sphereTexLevel=0, emissiveTexLevel=2', () => {
+        applyUnlitFallback('model_unlit');
+        const p = getMatCatParams('model_unlit', '皮肤');
+        expect(p.toonTexLevel).toBe(0);
+        expect(p.sphereTexLevel).toBe(0);
+        expect(p.emissiveTexLevel).toBe(2);
+    });
+
+    it('keeps shininess and bumpTexLevel at defaults', () => {
+        applyUnlitFallback('model_unlit');
+        const p = getMatCatParams('model_unlit', '皮肤');
+        expect(p.shininess).toBe(50);
+        expect(p.bumpTexLevel).toBe(1);
+    });
+
+    it('clears existing per-material overrides', () => {
+        setMatParams('model_unlit', 0, { diffuseMul: 0.5 });
+        expect(getMatParams('model_unlit', 0)).not.toBeNull();
+        applyUnlitFallback('model_unlit');
+        expect(getMatParams('model_unlit', 0)).toBeNull();
+    });
+});
+
+describe('getMatCatGroups', () => {
+    beforeEach(() => {
+        resetMatEditorState();
+    });
+    afterEach(() => {
+        cleanupModels();
+    });
+
+    it('returns empty Map for non-existent model', () => {
+        const groups = getMatCatGroups('nonexistent');
+        expect(groups.size).toBe(0);
+    });
+
+    it('groups materials by category based on material names', () => {
+        // skin + face → 皮肤; hair → 头发; eye → 眼睛; skirt → 服装
+        regModel('model_grp', 4, ['skin', 'hair', 'eye', 'skirt']);
+        const groups = getMatCatGroups('model_grp');
+        expect(groups.has('皮肤')).toBe(true);
+        expect(groups.has('头发')).toBe(true);
+        expect(groups.has('眼睛')).toBe(true);
+        expect(groups.has('服装')).toBe(true);
+        expect(groups.get('皮肤')!.length).toBe(1);
+    });
+
+    it('includes both entry and material reference', () => {
+        regModel('model_grp2', 1, ['skin']);
+        const groups = getMatCatGroups('model_grp2');
+        const entries = groups.get('皮肤')!;
+        expect(entries[0].name).toBe('skin');
+        expect(entries[0].mat).toBeDefined();
+    });
+});
+
+describe('getMatDetailList edge cases', () => {
+    it('returns empty array for non-existent model', () => {
+        expect(getMatDetailList('nonexistent')).toEqual([]);
+    });
+});
+
+describe('resetPerMaterialParams defensiveness', () => {
+    it('does not throw for non-existent model', () => {
+        expect(() => resetPerMaterialParams('nonexistent')).not.toThrow();
     });
 });
