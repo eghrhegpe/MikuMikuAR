@@ -132,15 +132,13 @@ function deferRestore(menu: SlideMenu, dir: string, seg: string): void {
 // ======== 模型菜单创建 ========
 
 const makeModelMenu = (container: HTMLElement): SlideMenu => {
-    return new SlideMenu({
+    const menu = new SlideMenu({
         container,
         onClose: () => {
-            // [audit:round13 P3] 模型菜单关闭时清空 modelStack 引用，
-            // 避免悬垂 SlideMenu（容器已移除）残留：若后续 disposeMenuWrapper('model-popup')
-            // 命中，仍会拿到已无容器的菜单实例（现无调用者，但保持引用一致是防御性正确）。
             if (stackRegistry.modelStack) {
                 stackRegistry.modelStack = null;
             }
+            menu.dispose();
             closeAllOverlays();
         },
         onAfterRender: () => reconcileTransformSelection(),
@@ -339,6 +337,7 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
             }
         },
     });
+    return menu;
 };
 
 // ======== 弹窗入口 ========

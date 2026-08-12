@@ -923,7 +923,18 @@ export function buildModelFormationLevel(): PopupLevel {
 
 // ======== 根级菜单项 ========
 
+let _cachedRootItems: PopupRow[] | null = null;
+let _cachedRegSize: number = -1;
+let _cachedFocusId: string | null = null;
+
 export function buildModelRootItems(): PopupRow[] {
+    if (
+        _cachedRootItems !== null &&
+        _cachedRegSize === modelRegistry.size &&
+        _cachedFocusId === focusedModelId
+    ) {
+        return _cachedRootItems;
+    }
     const items: PopupRow[] = [];
     const actors = Array.from(modelRegistry.entries()).filter(([, inst]) => inst.kind === 'actor');
     for (const [id, inst] of actors) {
@@ -995,6 +1006,9 @@ export function buildModelRootItems(): PopupRow[] {
         icon: 'lucide:tag',
         target: '__tags__',
     });
+    _cachedRootItems = items;
+    _cachedRegSize = modelRegistry.size;
+    _cachedFocusId = focusedModelId;
     return items;
 }
 
