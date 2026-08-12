@@ -118,8 +118,8 @@ export async function loadVMDMotion(
         let transferred = false;
         using _animGuard = {
             [Symbol.dispose]() {
-                if (!transferred) {
-                    try { runtimeAnimation.dispose?.(); } catch { /* best-effort */ }
+                if (!transferred && 'dispose' in runtimeAnimation) {
+                    try { runtimeAnimation.dispose(); } catch { /* best-effort */ }
                 }
             },
         };

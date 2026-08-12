@@ -176,7 +176,7 @@ describe('ADR-101 P3: pure collection & json helpers', () => {
         });
 
         it('preserves order of mixed types', async () => {
-            const results = await allSettledFilter([
+            const results = await allSettledFilter<string | number | boolean>([
                 Promise.resolve(1),
                 Promise.reject(new Error('x')),
                 Promise.resolve('b'),
