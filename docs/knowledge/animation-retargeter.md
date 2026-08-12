@@ -61,3 +61,4 @@ Babylon.js `AnimationGroup`，通过预设的骨骼映射表（`MixamoMmdHumanoi
 ## 不变量
 - 同时只允许一个 retarget 活跃；新播放自动停止旧播放。
 - retarget 动画叠加于 VMD 之上，不替换 VMD 内容。
+- **骨骼映射回退**：`custom` 预设仅在传入非空映射时采用；空对象 / 未传 / 未知预设字符串一律回退 `mixamo`——避免空映射产生退化重定向（空动画）或 `setBoneMap(undefined)` 崩溃。

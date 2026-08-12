@@ -118,3 +118,7 @@ bone-override stage 内部按以下顺序执行：
 - **重解入口**：`setWasmIkResolver(resolver)` 注册 WASM IK 重解回调，所有调用方（bone-override 内部 + feet-adjustment 经 `getWasmIkResolver`）统一走 `_guardedResolve` 包装——feetDebug 开启时检测同帧内同一 `(modelId, ikSolverIndex)` 的重复调用（重复 `mmdModelSolveIk` 求解），双重节流（帧内最多 1 条 + 2 秒窗口 1 条）。
 - **求解优先序**：`_solvePosSlotIkWasm` 仅当原生 `IkSolver` 不存在时才回退 WASM 导出 `mmdModelSolveIk`（可信度存疑路径）。`_applyWasmOverride` 已先把 `slot.pos` 偏移写入 `worldMatrix`，`IkSolver.solve()` 读同一 `worldMatrix` 作为 IK 目标，解出髋/膝/踝旋转并回写全链。
 - **诊断日志**：`[IK-ENTRY]`（slotCount 诊断）/ `[OVERRIDE-APPLY]`（POS 偏移写入确认）均 `feetDebug.value` 门控 + `%60` 帧节流——热路径每帧调用，无条件 logWarn 会刷爆环形缓冲/console（ADR-248 教训）。
+
+## 生命周期守卫（round19）
+- **`startBoneOverride` 守卫升级**：`if (_observerHandle && _driverScene === scene) return`——已启动且场景一致才短路。scene 变更后未 stop 直接 start 时走重建分支（`registerBoneOverrideFrameHook` 同 id 覆盖旧 layer，`_driverScene !== scene` 触发 observer 重建），修复原 `if (_observerHandle) return` 使重建分支成为死代码、静默绑定旧 scene observable 导致整个 pipeline 停摆无报错的问题。
+- **帧首清空 IK 保护集合**：`_protectedIkBoneNames.clear()` 移入帧回调开头（原帧末 clear 会被下方提前 return 路径——无聚焦/overrideMap 空/bones 空——跳过，遗留陈旧条目在后续帧被 `_snapshotProtectedPositions` 全量回滚，抹掉其它模块对该骨的传播/覆盖）。与 `_resetIkResolveGuard()` 同为帧首重置模式。

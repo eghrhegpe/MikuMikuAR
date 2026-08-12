@@ -53,6 +53,8 @@ Env Bridge：环境系统核心调度层。ADR-148 Phase 5 拆分后聚焦于 `s
 - setEnvState 经 dispatcher 分发；中间件链在 dispatch 之前执行
 - applyEnvStateFacade 直接调用 dispatchEnvChange，不走 setEnvState 全链路（避免每帧防抖持久化）
 - 预设动画期间 setPresetAnimActive(true)，applyEnvStateFacade 跳过方向光同步（动画自己管光照过渡）
+- **迁移白名单用 `Object.hasOwn` 而非 `in`**：`in` 走原型链，`constructor`/`toString` 等 Object.prototype 键会误通过白名单写入 envState（round18 P3）
+- **主链路持久化兜底**：`applyEnvStateFacade` / post-facade 中间件抛错时 try/catch，但 `schedulePersistEnvState` 必须照常执行——内存态已写入（Object.assign），持久化调度丢失会导致本次变更永不落盘（last_scene.json 停留旧值，round18 P2）
 
 ## 与其他子系统关系
 - 依赖 `env-dispatcher.ts`（破循环依赖，ADR-138）、`env-persist.ts`（持久化）、`render/lighting.ts`、`render/renderer.ts`、`render/quality-profile.ts`、`render/performance-env-bridge.ts`

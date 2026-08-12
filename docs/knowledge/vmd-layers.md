@@ -66,3 +66,5 @@ use_when:
 - 每次层变更必须调用 `rebuildCompositeAnimation` 重建复合动画。
 - 层 ID 全局唯一，使用 `crypto.randomUUID()` 生成。
 - VMD 文件编码为 Shift-JIS，必须解码后才能正确匹配骨骼名。
+- **`_filterVmdBones` 入口签名/长度校验**：数据 < 54B（VMD 头 50B + boneCount 4B）直接放行原数据；`boneCount` 钳制到实际可容纳的帧数上限——损坏或非 VMD 文件不得进入解码路径（round17 P2）。
+- **blender 重建 gen 代际校验**：`_tryWasmBlender` 每个 `await` 后校验 gen，过期结果（旧 rebuild）teardown 已 setup 状态并返回 false，防止旧结果覆盖新 rebuild（ADR-237 P2）。

@@ -43,6 +43,7 @@ use_when:
 - 请求按入队顺序执行，后续请求不能绕过当前请求。
 - `AbortSignal` 必须透传到底层 loader。
 - 错误包装不能丢失原始异常和请求上下文。
+- **取消语义统一以 `err.name === 'AbortError'` 判定**：底层 loader（如 loadPMXFile）把 AbortError 吞掉返回 null 时，若 `signal.aborted` 则重抛 `DOMException('Aborted', 'AbortError')`；catch 中对 `DOMException` 且 `name === 'AbortError'` 直接重抛原始对象。调用方统一用 `err.name === 'AbortError'` 判定「取消」，不依赖 signal 或 null（round19 P2）。
 
 ## 验证入口
 - 测试：当前缺少专属单元测试，后续应优先覆盖串行队列、取消和错误包装。

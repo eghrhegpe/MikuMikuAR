@@ -39,7 +39,7 @@ use_when:
 - `SlideMenu` — `levels` 栈、`container`/`viewport`/`panel`/`headerEl`、焦点索引 `focusIndex`、过渡锁 `transitioning`
 - 渲染上下文栈 `_renderingStack` + `getCurrentRenderingMenu()` — 供 ui-helpers 控件函数自动注册到当前菜单
 - 资源清理：`_pendingTimeouts`（cancelAnims 清除）、`_keydownHandler`、`_swipe*Touch*Handler` 在 dispose 释放，避免监听器泄漏
-- RAF 去抖 `_reRenderPending`；头部额外按钮缓存 `_cachedExtraBtns` 避免每次重建
+- RAF 去抖 `_reRenderPending`；头部额外按钮缓存 `_cachedExtraBtns` 避免每次重建；`.slide-list` 引用缓存 `_slideListRef`（避免每帧 querySelector，buildPanel 重写 innerHTML 后重置，失效回退 querySelector 并回填）
 - 过渡时长常量（与 app.css `--menu-transition-duration` 同步）：0.15s / 0.12s
 
 ## 对外 API（节选）
