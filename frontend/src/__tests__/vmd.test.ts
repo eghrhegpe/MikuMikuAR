@@ -16,6 +16,7 @@ import {
     BONE_FRAME_SIZE,
     MORPH_FRAME_SIZE,
     canEncodeName,
+    INTERP_EASE_OUT,
 } from '../motion-algos/vmd-writer';
 import type { BoneKeyFrame } from '../motion-algos/vmd-writer';
 
@@ -354,5 +355,144 @@ describe('loadVPDFromBuffer roundtrip with morphs', () => {
         expect(view.getUint32(165, true)).toBe(1);
         // morph frame starts at 169 (165 + 4 count); weight at +19 (15 name + 4 frame)
         expect(view.getFloat32(169 + 19, true)).toBeCloseTo(0.8);
+    });
+});
+
+// ====================================================================
+// 修复点回归 — morph 权重行注释清理 / 插值值域钳制
+// ====================================================================
+
+describe('parseVPDText morph weight line cleanup', () => {
+    it('parses morph weight even when followed by a ; comment', () => {
+        const text =
+            'Vocaloid Pose Data file\n{\nBone0:hip\n    0 0 0\n    0 0 0 1\nMorph0:あ\n    0.800000 ; まばたき weight\n}';
+        const r = parseVPDText(text);
+        expect(r.morphs).toHaveLength(1);
+        expect(r.morphs[0]).toEqual({ name: 'あ', weight: 0.8 });
+    });
+    it('parses morph weight with // comment', () => {
+        const text =
+            'Vocaloid Pose Data file\n{\nMorph0:笑い\n    0.500000 // weight\n}';
+        const r = parseVPDText(text);
+        expect(r.morphs).toHaveLength(1);
+        expect(r.morphs[0].weight).toBeCloseTo(0.5);
+    });
+});
+
+describe('vmd-writer interpolation clamping', () => {
+    it('clamps out-of-range interp values to 0-127', () => {
+        const f: BoneKeyFrame = {
+            name: '頭',
+            frame: 0,
+            position: [0, 0, 0],
+            rotation: [0, 0, 0, 1],
+            interp: { x1: 200, y1: -5, x2: 60, y2: 300 },
+        };
+        const buf = new DataView(buildBoneFrame(f));
+        expect(buf.getUint8(47)).toBe(127);
+        expect(buf.getUint8(48)).toBe(0);
+        expect(buf.getUint8(49)).toBe(60);
+        expect(buf.getUint8(50)).toBe(127);
+    });
+    it('writes EASE_OUT preset bytes', () => {
+        const f: BoneKeyFrame = {
+            name: '頭',
+            frame: 0,
+            position: [0, 0, 0],
+            rotation: [0, 0, 0, 1],
+            interp: INTERP_EASE_OUT,
+        };
+        const buf = new DataView(buildBoneFrame(f));
+        expect(buf.getUint8(47)).toBe(20);
+        expect(buf.getUint8(48)).toBe(80);
+        expect(buf.getUint8(49)).toBe(107);
+        expect(buf.getUint8(50)).toBe(107);
+    });
+});
+
+// ====================================================================
+// 补充盲区 — 长名截断 / 空名 / 编码 / 逗号 / 花括号 / 空输入 / UTF-16BE
+// ====================================================================
+
+describe('vmd-writer long bone name truncation', () => {
+    it('truncates a long Japanese name at a character boundary within 15 bytes', () => {
+        // 8 个日文假名 = 16 个 SJIS 字节，超出 15 字节 → 截断为 7 个完整字符 (14 bytes)
+        const f: BoneKeyFrame = {
+            name: 'あいうえおかきく',
+            frame: 0,
+            position: [0, 0, 0],
+            rotation: [0, 0, 0, 1],
+        };
+        const buf = buildBoneFrame(f);
+        expect(buf.byteLength).toBe(BONE_FRAME_SIZE);
+        const nameBytes = new Uint8Array(buf, 0, 15);
+        // 前 14 字节为有效 SJIS 双字节字符，第 15 字节为填充 0，且不出现孤立 lead byte
+        expect(nameBytes[14]).toBe(0);
+        expect(nameBytes[13]).not.toBe(0);
+    });
+});
+
+describe('vmd-writer sanitizeName empty', () => {
+    it('encodes a name made only of unsafe chars as underscore', () => {
+        const f: BoneKeyFrame = {
+            name: '<>',
+            frame: 0,
+            position: [0, 0, 0],
+            rotation: [0, 0, 0, 1],
+        };
+        const buf = new Uint8Array(buildBoneFrame(f), 0, 15);
+        expect(buf[0]).toBe(0x5f); // '_'
+    });
+});
+
+describe('canEncodeName', () => {
+    it('returns false for names that cannot be Shift-JIS encoded', () => {
+        expect(canEncodeName('😀')).toBe(false);
+    });
+});
+
+describe('parseVPDText format variants', () => {
+    it('parses comma-separated numeric lines', () => {
+        const text =
+            'Vocaloid Pose Data file\n{\nBone0:hip\n    0.0,0.0,0.0\n    0.0,0.0,0.0,1.0\n}';
+        const r = parseVPDText(text);
+        expect(r.bones).toHaveLength(1);
+        expect(r.bones[0].position).toEqual([0, 0, 0]);
+        expect(r.bones[0].rotation).toEqual([0, 0, 0, 1]);
+    });
+    it('parses brace-prefixed bone names (Bone0{name})', () => {
+        const text =
+            'Vocaloid Pose Data file\n{\nBone0{あ\n    0.0 0.0 0.0\n    0.0 0.0 0.0 1.0\n}';
+        const r = parseVPDText(text);
+        expect(r.bones).toHaveLength(1);
+        expect(r.bones[0].name).toBe('あ');
+    });
+    it('parses empty text without error', () => {
+        const r = parseVPDText('');
+        expect(r.bones).toHaveLength(0);
+        expect(r.morphs).toHaveLength(0);
+        expect(r.modelName).toBe('');
+    });
+});
+
+describe('decodeVPDData encoding variants', () => {
+    it('decodes UTF-16BE BOM content', () => {
+        // "test" 的 UTF-16BE 码元，前置 FE FF BOM
+        const bytes = new Uint8Array([
+            0xfe, 0xff, 0x00, 0x74, 0x00, 0x65, 0x00, 0x73, 0x00, 0x74,
+        ]);
+        const result = decodeVPDData(bytes.buffer as ArrayBuffer);
+        expect(result).toBe('test');
+    });
+    it('returns empty string for empty buffer', () => {
+        expect(decodeVPDData(new ArrayBuffer(0))).toBe('');
+    });
+});
+
+describe('loadVPDFromBuffer morph-only VPD', () => {
+    it('throws when only morphs present and no bones', () => {
+        const text = 'Vocaloid Pose Data file\n{\nMorph0:あ\n    0.800000\n}';
+        const buf = new TextEncoder().encode(text).buffer;
+        expect(() => loadVPDFromBuffer(buf as ArrayBuffer)).toThrow('VPD: no bone data found');
     });
 });

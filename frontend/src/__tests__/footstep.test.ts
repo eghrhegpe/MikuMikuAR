@@ -123,6 +123,19 @@ describe('resolveGroundSfxKind（地面 → 音色映射）', () => {
         expect(resolveGroundSfxKind()).toBe('concrete');
     });
 
+    it('terrain 优先级高于 texture 纹理（terrain+grass 纹理 → concrete）', () => {
+        shared.envState.groundType = 'terrain';
+        shared.envState.groundStyle = 'texture';
+        shared.envState.groundTexture = 'grass_01';
+        expect(resolveGroundSfxKind()).toBe('concrete');
+    });
+
+    it('water 优先级高于 terrain（water+terrain → water）', () => {
+        shared.envState.waterEnabled = true;
+        shared.envState.groundType = 'terrain';
+        expect(resolveGroundSfxKind()).toBe('water');
+    });
+
     it('texture 含 grass/草 → grass', () => {
         shared.envState.groundStyle = 'texture';
         shared.envState.groundTexture = 'grass_01';
@@ -227,6 +240,25 @@ describe('落地回调（合成音色触发）', () => {
         expect(shared.playSfx.mock.calls[0][1].volume).toBeCloseTo(0.8, 5);
         cb(makeEvent({ impactSpeed: 0 })); // 0/6 → clamp 0.2
         expect(shared.playSfx.mock.calls[1][1].volume).toBeCloseTo(0.16, 5);
+    });
+
+    it('impactSpeed 为 NaN/Infinity 时按 0 处理钳制到下限，不产生 NaN 音量', () => {
+        installAudioContext();
+        const cb = captureCallback(scene);
+        cb(makeEvent({ impactSpeed: NaN })); // NaN → 0 → clamp 0.2 → 0.2×0.8
+        expect(shared.playSfx.mock.calls[0][1].volume).toBeCloseTo(0.16, 5);
+        expect(shared.playSfx.mock.calls[0][1].volume).not.toBeNaN();
+        cb(makeEvent({ impactSpeed: Infinity })); // Infinity → 0
+        expect(shared.playSfx.mock.calls[1][1].volume).toBeCloseTo(0.16, 5);
+    });
+
+    it('playSfx 抛错时回调静默降级（不冒泡到落地事件）', () => {
+        installAudioContext();
+        shared.playSfx.mockImplementation(() => {
+            throw new Error('AudioContext closed');
+        });
+        const cb = captureCallback(scene);
+        expect(() => cb(makeEvent())).not.toThrow();
     });
 
     it('左右声像：落点相对相机 x 偏移映射到 [-1,1]', () => {

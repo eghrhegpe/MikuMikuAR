@@ -337,6 +337,30 @@ describe('setPersonalLightState / getPersonalLightState', () => {
         unregisterModel(modelId);
     });
 
+    it('getPersonalLightState 返回副本，修改返回值不影响内部状态（避免绕过 setPersonalLightState 同步）', () => {
+        const modelId = 'pl-get-copy';
+        registerModel(modelId);
+        attachPersonalLight(modelId, { intensity: 2, height: 20 });
+
+        const snapshot = getPersonalLightState(modelId)!;
+        snapshot.intensity = 999;
+        snapshot.height = 999;
+        snapshot.color = [0, 0, 0];
+
+        // 内部状态不受外部误改影响
+        const fresh = getPersonalLightState(modelId)!;
+        expect(fresh.intensity).toBe(2);
+        expect(fresh.height).toBe(20);
+        expect(fresh.color).toEqual([1, 1, 1]);
+
+        // 灯对象也未受影响（未走 setPersonalLightState 的同步）
+        const light = findPersonalLight(modelId);
+        expect(light.intensity).toBe(2);
+
+        detachPersonalLight(modelId);
+        unregisterModel(modelId);
+    });
+
     it('boneName 变更后重新解析 waistName，基准点切换到新骨骼（含改回 null 重匹配腰骨）', () => {
         const modelId = 'pl-bonechange';
         const wmWaist = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 10, 5, 0, 1]);

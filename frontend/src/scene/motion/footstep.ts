@@ -146,7 +146,9 @@ export function startFootstep(scene: import('@babylonjs/core/scene').Scene): voi
         const variants = _getVariants(kind);
         if (variants.length === 0) return;
         const buf = variants[Math.floor(Math.random() * variants.length)];
-        const impactVol = Math.max(0.2, Math.min(1, e.impactSpeed / REF_IMPACT_SPEED));
+        // [audit] 防御 NaN/Infinity impactSpeed（检测算法偶发异常值）→ 视为 0（钳制到下限 0.2）
+        const impact = Number.isFinite(e.impactSpeed) ? e.impactSpeed : 0;
+        const impactVol = Math.max(0.2, Math.min(1, impact / REF_IMPACT_SPEED));
         const footstepVol = getFootstepVolume();
         const vol = impactVol * footstepVol;
         const detune = Math.random() * 160 - 80;
@@ -155,7 +157,12 @@ export function startFootstep(scene: import('@babylonjs/core/scene').Scene): voi
         const cam = scene.activeCamera;
         const pan = cam ? Math.max(-1, Math.min(1, (e.worldX - cam.position.x) / 5)) : 0;
 
-        playSfx(buf, { volume: vol, detune, pan });
+        // [ADR-248] 热路径静默降级：AudioContext 被关闭/设备切走时播放可能抛错，不冒泡到落地回调
+        try {
+            playSfx(buf, { volume: vol, detune, pan });
+        } catch {
+            /* 静默降级：单步脚步声音量丢失可接受 */
+        }
     };
 
     setOnFootLand(callback);

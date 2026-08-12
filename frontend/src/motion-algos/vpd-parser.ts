@@ -61,6 +61,10 @@ export function decodeVPDData(buffer: ArrayBuffer): string {
     if (u8[0] === 0xff && u8[1] === 0xfe) {
         return new TextDecoder('utf-16le').decode(buffer);
     }
+    // UTF-16BE BOM (0xFE 0xFF) — 显式处理，避免 FE FF 落入编码探测被误判为 UTF-16LE
+    if (u8[0] === 0xfe && u8[1] === 0xff) {
+        return new TextDecoder('utf-16be').decode(buffer);
+    }
     // 无 BOM → 用 encoding-japanese 探测编码，统计式探测可正确区分
     // 「字节恰好合法 UTF-8 的 Shift-JIS 内容」，避免原生启发式误判。
     const detected = Encoding.detect(u8);
@@ -128,8 +132,9 @@ export function parseVPDText(text: string): VPDPoseData {
         const morphMatch = line.match(_morphLine);
         if (morphMatch && i + 1 < lines.length) {
             const mName = morphMatch[1].trim();
-            const wLine = lines[i + 1].trim();
-            const w = Number(wLine);
+        // 与骨骼行一致：清理注释/分号/逗号后再解析，避免 "0.8 ; comment" 被 Number 判为 NaN 而静默丢弃
+        const wLine = _cleanNumericLine(lines[i + 1]);
+        const w = Number(wLine);
             if (isFinite(w)) {
                 morphs.push({ name: mName, weight: w });
                 i += 2;

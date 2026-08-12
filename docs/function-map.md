@@ -1471,7 +1471,7 @@
 | `stopFallbackDetection()` | `scene/motion/footstep-detect-fallback:133` | 停止独立落地检测。 |
 | `resolveGroundSfxKind()` | `scene/motion/footstep:54` | 依据当前地面类型推断脚步音色。 |
 | `startFootstep()` | `scene/motion/footstep:137` | 启动脚步声系统：注入落地事件回调。 |
-| `stopFootstep()` | `scene/motion/footstep:170` | 停止脚步声系统并清空合成缓存。 |
+| `stopFootstep()` | `scene/motion/footstep:177` | 停止脚步声系统并清空合成缓存。 |
 | `getLipSyncState()` | `scene/motion/lipsync-bridge:57` | — |
 | `initLipSync()` | `scene/motion/lipsync-bridge:17` | — |
 | `resetLipSyncOnFocusChange()` | `scene/motion/lipsync-bridge:65` | — |
@@ -1804,16 +1804,16 @@
 | `PersonalLightSettings()` | `scene/render/lighting-follow:32` | — |
 | `attachPersonalLight()` | `scene/render/lighting-follow:169` | — |
 | `detachPersonalLight()` | `scene/render/lighting-follow:294` | — |
-| `disposeAllPersonalLights()` | `scene/render/lighting-follow:439` | — |
-| `getAllPersonalLights()` | `scene/render/lighting-follow:448` | 导出所有个人灯状态（仅非默认值差异落盘由调用方决定） |
+| `disposeAllPersonalLights()` | `scene/render/lighting-follow:441` | — |
+| `getAllPersonalLights()` | `scene/render/lighting-follow:450` | 导出所有个人灯状态（仅非默认值差异落盘由调用方决定） |
 | `getPersonalLightDefault()` | `scene/render/lighting-follow:124` | 获取用户保存的个人灯默认值，无则返回 null。 |
-| `getPersonalLightState()` | `scene/render/lighting-follow:345` | — |
+| `getPersonalLightState()` | `scene/render/lighting-follow:346` | 返回设置副本（不改内部引用，避免外部误改绕过 setPersonalLightState 的灯同步） |
 | `resetPersonalLightDefault()` | `scene/render/lighting-follow:129` | 重置用户默认值回出厂硬编码值。 |
-| `restorePersonalLights()` | `scene/render/lighting-follow:460` | 场景反序列化后，按 modelId 恢复个人灯设置（attach 已由 onModelLoaded 触发，此处仅覆盖参数） |
+| `restorePersonalLights()` | `scene/render/lighting-follow:462` | 场景反序列化后，按 modelId 恢复个人灯设置（attach 已由 onModelLoaded 触发，此处仅覆盖参数） |
 | `setPersonalLightDefault()` | `scene/render/lighting-follow:114` | 将当前个人灯参数保存为用户默认值。 |
 | `setPersonalLightState()` | `scene/render/lighting-follow:309` | — |
-| `tickPersonalLights()` | `scene/render/lighting-follow:349` | — |
-| `tickStageLightFollow()` | `scene/render/lighting-follow:499` | 舞台灯追光 tick：更新所有绑定了 followTarget 的舞台灯 |
+| `tickPersonalLights()` | `scene/render/lighting-follow:351` | — |
+| `tickStageLightFollow()` | `scene/render/lighting-follow:501` | 舞台灯追光 tick：更新所有绑定了 followTarget 的舞台灯 |
 | `LIGHTING_PRESETS()` | `scene/render/lighting-presets:21` | — |
 | `LightingPreset()` | `scene/render/lighting-presets:12` | — |
 | `LightingPresetLight()` | `scene/render/lighting-presets:6` | — |
@@ -2605,16 +2605,16 @@
 | `MORPH_FRAME_SIZE()` | `motion-algos/vmd-writer:36` | — |
 | `MorphKeyFrame()` | `motion-algos/vmd-writer:17` | — |
 | `buildBoneFrame()` | `motion-algos/vmd-writer:123` | 构建单个骨骼关键帧 (111 bytes)。插值用线性默认值。 |
-| `buildMorphFrame()` | `motion-algos/vmd-writer:159` | 构建单个 morph 关键帧 (23 bytes)。 |
-| `buildVmd()` | `motion-algos/vmd-writer:177` | 构建完整 VMD ArrayBuffer。 |
+| `buildMorphFrame()` | `motion-algos/vmd-writer:161` | 构建单个 morph 关键帧 (23 bytes)。 |
+| `buildVmd()` | `motion-algos/vmd-writer:179` | 构建完整 VMD ArrayBuffer。 |
 | `canEncodeName()` | `motion-algos/vmd-writer:108` | 检查名称能否被完整编码为 Shift-JIS（round-trip 无误）。 |
 | `VPDBoneData()` | `motion-algos/vpd-parser:14` | — |
 | `VPDMorphData()` | `motion-algos/vpd-parser:20` | — |
 | `VPDPoseData()` | `motion-algos/vpd-parser:25` | — |
 | `decodeVPDData()` | `motion-algos/vpd-parser:51` | 解码 VPD 文本（支持 UTF-8 / UTF-16 / Shift-JIS）。 |
-| `loadVPDFromBuffer()` | `motion-algos/vpd-parser:195` | 从 ArrayBuffer（VPD 文件内容）解析并生成 VMD。 |
-| `parseVPDText()` | `motion-algos/vpd-parser:94` | 解析 VPD 文本为结构化数据。 |
-| `poseDataToVmdBuffer()` | `motion-algos/vpd-parser:177` | 将 VPD 姿势数据转换为标准 VMD 二进制数据。 |
+| `loadVPDFromBuffer()` | `motion-algos/vpd-parser:200` | 从 ArrayBuffer（VPD 文件内容）解析并生成 VMD。 |
+| `parseVPDText()` | `motion-algos/vpd-parser:98` | 解析 VPD 文本为结构化数据。 |
+| `poseDataToVmdBuffer()` | `motion-algos/vpd-parser:182` | 将 VPD 姿势数据转换为标准 VMD 二进制数据。 |
 
 ## 顶层配置
 

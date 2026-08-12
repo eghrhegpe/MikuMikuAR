@@ -145,12 +145,14 @@ export function buildBoneFrame(frame: BoneKeyFrame): ArrayBuffer {
     view.setFloat32(off, frame.rotation[3], true);
     off += 4;
     // 64 bytes 插值：16 组 × 4 字节 [x1,y1,x2,y2]，默认 LINEAR
+    // 值域 0-127（VMD 规范）：钳制越界值，避免 setUint8 对负数/超 255 静默截断
     const interp = frame.interp ?? INTERP_LINEAR;
+    const clamp = (v: number) => Math.max(0, Math.min(127, Math.round(v)));
     for (let i = 0; i < 16; i++) {
-        view.setUint8(off++, interp.x1);
-        view.setUint8(off++, interp.y1);
-        view.setUint8(off++, interp.x2);
-        view.setUint8(off++, interp.y2);
+        view.setUint8(off++, clamp(interp.x1));
+        view.setUint8(off++, clamp(interp.y1));
+        view.setUint8(off++, clamp(interp.x2));
+        view.setUint8(off++, clamp(interp.y2));
     }
     return buf;
 }
