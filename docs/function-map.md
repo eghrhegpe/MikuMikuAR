@@ -2308,11 +2308,11 @@
 | `buildProcToolsLevel()` | `menus/motion-procmotion-levels:387` | [doc:adr-207] 程序化工具栏 level——对齐 ADR-170「详情 vs 工具」分层： 程序化专属参数（预设/强度/速度/骨骼微动/插值）收敛到工具栏， 详情页只保 |
 | `procLabel()` | `menus/motion-procmotion-levels:408` | [doc:adr-207] 程序化动作 ID → 显示名（跨模块复用，避免标签逻辑重复）。 |
 | `buildMotionRootItems()` | `menus/motion-root-ui:51` | — |
-| `buildMotionRootLevel()` | `menus/motion-root-ui:295` | — |
-| `buildRetargetLevel()` | `menus/motion-root-ui:356` | — |
-| `hideMotionPopup()` | `menus/motion-root-ui:304` | — |
-| `importExternalAnimation()` | `menus/motion-root-ui:387` | 外部动作导入：选文件 → 重定向骨骼 → 播放。 |
-| `openProcDetail()` | `menus/motion-root-ui:348` | [doc:adr-207] 行体点击进入程序化统一详情页。 |
+| `buildMotionRootLevel()` | `menus/motion-root-ui:291` | — |
+| `buildRetargetLevel()` | `menus/motion-root-ui:352` | — |
+| `hideMotionPopup()` | `menus/motion-root-ui:300` | — |
+| `importExternalAnimation()` | `menus/motion-root-ui:383` | 外部动作导入：选文件 → 重定向骨骼 → 播放。 |
+| `openProcDetail()` | `menus/motion-root-ui:344` | [doc:adr-207] 行体点击进入程序化统一详情页。 |
 | `buildNavMaps()` | `menus/nav-actions:163` | — |
 | `disposeNavBindings()` | `menus/nav-actions:257` | 卸载导航按钮监听（HMR/dispose 用） |
 | `getNavLabel()` | `menus/nav-actions:322` | 供 core 侧读取导航标签（经桥，不直接 import menus） |

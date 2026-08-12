@@ -141,10 +141,6 @@ export function buildMotionRootItems(): PopupRow[] {
         icon: '',
         target: '',
     });
-    const loadedProc = getLoadedProceduralMotions();
-    // [doc:adr-207] 跨两区选中互斥：场景默认是唯一指针。VMD 默认（activeId 非空）存在时，
-    // 程序化区一律不显选中——'off'/'none' 只在「无 VMD 默认」时才是真正的场景默认。
-    const curProcMode = getProcMotionState().mode;
     const hasVmdDefault = activeId != null;
     for (const procId of loadedProc) {
         const mode = _procIdToMode(procId);
