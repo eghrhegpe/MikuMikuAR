@@ -117,7 +117,9 @@ function settingsOnFolderEnter(row: PopupRow) {
         if (builder) {
             // [doc:adr-065] 挂 itemBuilder 使纯 items 子层随语言热刷新
             const lvl = builder();
-            lvl.itemBuilder = () => builder().items;
+            if (!lvl.itemBuilder) {
+                lvl.itemBuilder = () => builder().items;
+            }
             return lvl;
         }
 

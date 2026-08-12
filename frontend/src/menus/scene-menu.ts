@@ -298,7 +298,9 @@ function sceneOnFolderEnter(row: PopupRow): PopupLevel | null {
     const builder = SCENE_FOLDER_ROUTES[row.target as string];
     if (builder) {
         const lvl = builder();
-        lvl.itemBuilder = () => builder().items;
+        if (!lvl.itemBuilder) {
+            lvl.itemBuilder = () => builder().items;
+        }
         return lvl;
     }
     return null;
