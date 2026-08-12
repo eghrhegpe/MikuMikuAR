@@ -42,10 +42,30 @@ import { getMotionMenu } from './motion-popup';
 // 根菜单构建
 // ═══════════════════════════════════════════════════════════
 
+let _cachedMotionItems: PopupRow[] | null = null;
+let _cachedMotionRegSize: number = -1;
+let _cachedActiveId: string | null = null;
+let _cachedProcMode: string = '';
+let _cachedLoadedProcSize: number = -1;
+
 export function buildMotionRootItems(): PopupRow[] {
-    const items: PopupRow[] = [];
     const sceneMotions = getSceneMotions();
     const activeId = getActiveMotionId();
+    const procState = getProcMotionState();
+    const curProcMode = procState.mode;
+    const loadedProc = getLoadedProceduralMotions();
+
+    if (
+        _cachedMotionItems !== null &&
+        _cachedMotionRegSize === sceneMotions.length &&
+        _cachedActiveId === activeId &&
+        _cachedProcMode === curProcMode &&
+        _cachedLoadedProcSize === loadedProc.size
+    ) {
+        return _cachedMotionItems;
+    }
+
+    const items: PopupRow[] = [];
 
     // ===== [doc:adr-207] Section 1: 已加载动作 =====
     items.push({
@@ -244,6 +264,11 @@ export function buildMotionRootItems(): PopupRow[] {
             target: 'motion:retarget',
         });
     }
+    _cachedMotionItems = items;
+    _cachedMotionRegSize = sceneMotions.length;
+    _cachedActiveId = activeId;
+    _cachedProcMode = curProcMode;
+    _cachedLoadedProcSize = loadedProc.size;
     return items;
 }
 

@@ -97,7 +97,6 @@ export function renderModuleToggleList(
                         v ? 'motion.override.enabled' : 'motion.override.disabled',
                         t(mod.meta.labelKey)
                     );
-                    getMotionMenu()?.reRender();
                 },
                 bind: () => getModuleState(modelId, mod.id, actionId).enabled,
             }
@@ -352,7 +351,6 @@ function buildActionBindingSchema(id: string): MenuNode[] {
                             enabled,
                             (v) => {
                                 setPhysicsCategory(id, cat, v);
-                                getMotionMenu()?.updateControls();
                                 const catLabel = t(CAT_KEYS[cat] || cat);
                                 showInfoToast(
                                     v
