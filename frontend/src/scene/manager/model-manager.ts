@@ -254,6 +254,13 @@ export class ModelManager {
 
     /** Register a new model instance. */
     register(inst: ModelInstance): void {
+        // [fix:round17 P2] 同 ID 覆盖防御：若已存在不同实例，先释放旧实例再注册，
+        // 防止旧 mesh/材质泄漏（model-loader 已预检，此处为 API 层兜底）。
+        const existing = this.modelRegistry.get(inst.id);
+        if (existing && existing !== inst) {
+            logWarn('model-manager', `register: 同 ID "${inst.id}" 覆盖旧实例，先释放旧资源`);
+            this.remove(inst.id);
+        }
         this.modelRegistry.set(inst.id, inst);
         applyWetnessToInst(inst);
     }
@@ -309,7 +316,13 @@ export class ModelManager {
         // 否则下一帧渲染循环中 mmdWasmModel.skeleton 为 null 会抛 TypeError。
         // onRemoveModel 也必须在 modelRegistry.delete 之前调用，
         // 因为外部回调需要通过 modelRegistry.get(id) 获取模型实例。
-        this.onRemoveModel?.(id);
+        // [fix:round17 P2] try/catch 隔离：外部回调抛错不得中断清理链，
+        // 否则 mesh 未 dispose、registry 未 delete → 半删除 + GPU 泄漏。
+        try {
+            this.onRemoveModel?.(id);
+        } catch (e) {
+            logWarn('model-manager', `onRemoveModel failed for "${id}"; continuing cleanup`, e);
+        }
 
         // [fix:gpu-texture-leak] 显式释放材质及其纹理（mesh.dispose 只释放几何体，不释放材质）。
         // restoreMaterials 已将原始材质恢复到 mesh 上，此处统一 dispose 防止 GPU 纹理泄漏。

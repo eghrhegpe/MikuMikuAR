@@ -1720,15 +1720,15 @@
 | `_clearVmdData()` | `scene/motion/proc-motion-controller:35` | 清除模型上的 vmdData/vmdName（纯工具函数，无状态依赖）。 |
 | `ProcMotionParamsMixin()` | `scene/motion/proc-motion-params:50` | 参数 setter 群 mixin —— 混入 ProcMotionControllerBase。 |
 | `_filterVmdBones()` | `scene/motion/vmd-layers:67` | 过滤 VMD 二进制数据，只保留指定骨骼的关键帧。 |
-| `addGazeLayer()` | `scene/motion/vmd-layers:247` | 添加一个视线追踪（gaze）图层。 |
-| `addVmdLayer()` | `scene/motion/vmd-layers:122` | 添加一个 VMD 图层到模型。 |
-| `addVmdLayersFromPaths()` | `scene/motion/vmd-layers:172` | 批量添加 VMD 图层（场景恢复用）。 |
-| `disposeVmdLayerState()` | `scene/motion/vmd-layers:691` | [fix P2] 模型销毁时清理 vmd-layers 模块级 per-model 状态。 |
-| `getVmdLayers()` | `scene/motion/vmd-layers:674` | 获取模型的图层列表 |
-| `rebuildCompositeAnimation()` | `scene/motion/vmd-layers:681` | 触发复合动画重建（程序化/外部修改 vmdData/vmdLayers 后调用）。 |
-| `removeVmdLayer()` | `scene/motion/vmd-layers:284` | 移除一个 VMD 图层 |
-| `setVmdLayerWeight()` | `scene/motion/vmd-layers:335` | 设置图层权重 |
-| `toggleVmdLayer()` | `scene/motion/vmd-layers:310` | 切换图层启用/禁用 |
+| `addGazeLayer()` | `scene/motion/vmd-layers:255` | 添加一个视线追踪（gaze）图层。 |
+| `addVmdLayer()` | `scene/motion/vmd-layers:130` | 添加一个 VMD 图层到模型。 |
+| `addVmdLayersFromPaths()` | `scene/motion/vmd-layers:180` | 批量添加 VMD 图层（场景恢复用）。 |
+| `disposeVmdLayerState()` | `scene/motion/vmd-layers:732` | [fix P2] 模型销毁时清理 vmd-layers 模块级 per-model 状态。 |
+| `getVmdLayers()` | `scene/motion/vmd-layers:715` | 获取模型的图层列表 |
+| `rebuildCompositeAnimation()` | `scene/motion/vmd-layers:722` | 触发复合动画重建（程序化/外部修改 vmdData/vmdLayers 后调用）。 |
+| `removeVmdLayer()` | `scene/motion/vmd-layers:292` | 移除一个 VMD 图层 |
+| `setVmdLayerWeight()` | `scene/motion/vmd-layers:343` | 设置图层权重 |
+| `toggleVmdLayer()` | `scene/motion/vmd-layers:318` | 切换图层启用/禁用 |
 | `VMD_HEADER_MIN()` | `scene/motion/vmd-loader:47` | — |
 | `VMD_SIGNATURE()` | `scene/motion/vmd-loader:46` | — |
 | `isValidVmd()` | `scene/motion/vmd-loader:51` | 验证 ArrayBuffer 是否为合法 VMD 格式：检查签名前缀。 |
@@ -1919,19 +1919,19 @@
 | `migratePerceptionData()` | `scene/scene-migrate:46` | 旧存档 perception 格式迁移：PerceptionState → { focused, pinned }。 |
 | `migratePerceptionFromProcMotion()` | `scene/scene-migrate:71` | 旧存档 ProcMotionState → 新版 PerceptionState 迁移。 |
 | `SceneFile()` | `scene/scene-serialize:145` | — |
-| `canUndo()` | `scene/scene-serialize:1300` | — |
+| `canUndo()` | `scene/scene-serialize:1304` | — |
 | `deserializeScene()` | `scene/scene-serialize:964` | Restore scene state from a SceneFile. |
-| `offerSceneUndo()` | `scene/scene-serialize:1344` | 破坏性操作后调用：弹出中性撤销 toast（复用 action-button toast，info 变体）。 |
-| `offerSceneUndoAndRefresh()` | `scene/scene-serialize:1371` | offerSceneUndo 的常见变体：撤销恢复后执行 reRender 回调并统一提示 &#96;undoApplied&#96;。 |
-| `popUndoSnapshot()` | `scene/scene-serialize:1305` | 弹出最近一次撤销快照（LIFO），供全局撤销按钮 / Ctrl+Z 使用。返回快照字符串，无快照时返回 null。 |
-| `pushUndoSnapshot()` | `scene/scene-serialize:1286` | 破坏性操作前调用：抓当前整场景快照压栈（环形，上限 UNDO_LIMIT），返回快照字符串供撤销绑定。 |
+| `offerSceneUndo()` | `scene/scene-serialize:1348` | 破坏性操作后调用：弹出中性撤销 toast（复用 action-button toast，info 变体）。 |
+| `offerSceneUndoAndRefresh()` | `scene/scene-serialize:1375` | offerSceneUndo 的常见变体：撤销恢复后执行 reRender 回调并统一提示 &#96;undoApplied&#96;。 |
+| `popUndoSnapshot()` | `scene/scene-serialize:1309` | 弹出最近一次撤销快照（LIFO），供全局撤销按钮 / Ctrl+Z 使用。返回快照字符串，无快照时返回 null。 |
+| `pushUndoSnapshot()` | `scene/scene-serialize:1290` | 破坏性操作前调用：抓当前整场景快照压栈（环形，上限 UNDO_LIMIT），返回快照字符串供撤销绑定。 |
 | `resolvePathFromRef()` | `scene/scene-serialize:133` | Resolve a file path from either a libraryRef or a raw absolute path. |
-| `restoreUndoSnapshot()` | `scene/scene-serialize:1321` | 恢复特定快照到整场景。返回是否成功恢复。 |
-| `saveSceneImmediate()` | `scene/scene-serialize:1389` | — |
+| `restoreUndoSnapshot()` | `scene/scene-serialize:1325` | 恢复特定快照到整场景。返回是否成功恢复。 |
+| `saveSceneImmediate()` | `scene/scene-serialize:1393` | — |
 | `serializeScene()` | `scene/scene-serialize:501` | 序列化当前场景为 SceneFile（分段容错，单模型失败跳过并记录）。 |
-| `setSuppressAutoSave()` | `scene/scene-serialize:1259` | — |
-| `triggerAutoSaveImpl()` | `scene/scene-serialize:1268` | — |
-| `tryRestoreLastScene()` | `scene/scene-serialize:1527` | — |
+| `setSuppressAutoSave()` | `scene/scene-serialize:1263` | — |
+| `triggerAutoSaveImpl()` | `scene/scene-serialize:1272` | — |
+| `tryRestoreLastScene()` | `scene/scene-serialize:1531` | — |
 | `AlphaCtx()` | `scene/scene:171` | — |
 | `CameraState()` | `scene/scene:918` | — |
 | `DEFAULT_MAT_PARAMS()` | `scene/scene:147` | — |

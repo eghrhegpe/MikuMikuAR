@@ -968,6 +968,10 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
     // [fix:suppress-leak] 主体任何一步抛异常（数据损坏致 setter throw）也必须复位
     // suppress，否则 auto-save 永久失效、last_scene.json 不再更新。
     try {
+        // [fix:round17 P2] 版本迁移下沉到本入口：预设加载 / bundle 导入等所有调用方
+        // 统一经 migrateScene 迁移，杜绝第三个入口再漏（migrateScene 幂等，重复调用无害）。
+        migrateScene(data as unknown as Record<string, unknown>);
+
         // --- Load all models and apply post-load config ---
         const [, errors] = await deserializeModels(data.models);
 

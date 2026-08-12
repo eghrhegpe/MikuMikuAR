@@ -68,10 +68,18 @@ export function _filterVmdBones(data: ArrayBuffer, boneFilter: string[]): ArrayB
     if (boneFilter.length === 0) {
         return data;
     }
+    // [fix:round17 P2] VMD 签名/长度校验：损坏或非 VMD 文件不得进入解码路径。
+    // ① 最小长度：VMD 头 50B + boneCount 4B = 54B；② boneCount 钳制到实际可容纳的帧数上限。
+    if (data.byteLength < 54) {
+        return data;
+    }
     const src = new Uint8Array(data);
     const view = new DataView(data);
     // VMD 头部: 30(signature) + 20(modelName) = 50, 之后 4 字节骨骼帧数
-    const boneCount = view.getUint32(50, true);
+    const boneCount = Math.min(
+        view.getUint32(50, true),
+        Math.floor((data.byteLength - 54) / VMD_BONE_FRAME_SIZE)
+    );
     if (boneCount === 0) {
         return data;
     }
@@ -570,9 +578,13 @@ async function _rebuildComposite(
         // WASM 运行时：优先 JS 帧流合并的 blender 方案，失败降级单层
         if (mmdRuntime instanceof MmdWasmRuntime) {
             if (sources.length > 1 && import.meta.env.VITE_WASM_LAYERS_BLEND !== '0') {
-                if (await _tryWasmBlender(modelId, inst, sources, maxEndFrame, scene)) {
+                if (await _tryWasmBlender(modelId, gen, inst, sources, maxEndFrame, scene)) {
                     return;
                 }
+            }
+            // [fix:round17 P2] blender 路径（含降级）等待后再次校验 gen，防止过期结果覆盖新状态
+            if (_rebuildGenMap.get(modelId) !== gen) {
+                return;
             }
             const primarySrc = sources[0];
             const { loadVMDMotion } = await import('./vmd-loader');
@@ -617,9 +629,12 @@ async function _rebuildComposite(
  * WASM blender 专用路径：init 依赖注入 + setup 基础层 + addWasmLayer 各图层。
  * 成功返回 true；失败（含 blender 模块不可用）返回 false 并提示降级。
  * 共享状态显式传参；保持动态 import 避免与 wasm-layers-blender 静态循环（ADR-236）。
+ * [fix:round17 P2] gen 参数：每个 await 后校验，过期则 teardown 刚 setup 的状态并返回 false，
+ * 防止旧 rebuild 的 addWasmLayer 覆盖新 rebuild 的结果。
  */
 async function _tryWasmBlender(
     modelId: string,
+    gen: number,
     inst: import('../../core/config').ModelInstance,
     sources: {
         data: ArrayBuffer;
@@ -638,8 +653,24 @@ async function _tryWasmBlender(
 
         initWasmLayersBlender({ scene, modelManager, loadVMDMotion });
 
+        // gen 校验：等待 import 后若已有新 rebuild，直接放弃
+        if (_rebuildGenMap.get(modelId) !== gen) {
+            return false;
+        }
+
         const baseSrc = sources[0];
         await setupWasmLayersBlender(modelId, baseSrc.data, baseSrc.name);
+
+        // gen 校验：setup 等待后若过期，teardown 刚 setup 的状态避免 observer 泄漏
+        if (_rebuildGenMap.get(modelId) !== gen) {
+            try {
+                const { teardownWasmLayersBlender } = await import('./wasm-layers-blender');
+                teardownWasmLayersBlender(modelId);
+            } catch {
+                // teardown 失败不影响 return false
+            }
+            return false;
+        }
 
         for (let i = 1; i < sources.length; i++) {
             const src = sources[i];
@@ -650,6 +681,16 @@ async function _tryWasmBlender(
                 boneFilter: src.boneFilter,
                 name: src.name,
             });
+            // gen 校验：每层添加后若过期，同样 teardown 并放弃
+            if (_rebuildGenMap.get(modelId) !== gen) {
+                try {
+                    const { teardownWasmLayersBlender } = await import('./wasm-layers-blender');
+                    teardownWasmLayersBlender(modelId);
+                } catch {
+                    // teardown 失败不影响 return false
+                }
+                return false;
+            }
         }
 
         inst.animationDuration = maxEndFrame / 30;
