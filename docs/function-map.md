@@ -324,9 +324,9 @@
 | `bootstrap()` | `core/init:638` | 应用启动入口：接线 dev-hooks / render-loop / events 并启动渲染循环。 |
 | `jsonParse()` | `core/json-stringify:12` | Safely parse JSON; returns null on failure instead of throwing. |
 | `jsonStringify()` | `core/json-stringify:5` | Format a value as pretty-printed JSON (2-space indent). |
-| `CATEGORY_DIR()` | `core/library-path:52` | — |
+| `CATEGORY_DIR()` | `core/library-path:56` | — |
 | `computeLibraryRef()` | `core/library-path:10` | Backwards-compatible wrapper: reads libraryRoot and delegates to the pure path leaf. |
-| `getBrowseDir()` | `core/library-path:67` | 统一的资源浏览目录解析。 |
+| `getBrowseDir()` | `core/library-path:71` | 统一的资源浏览目录解析。 |
 | `resolveLibraryRef()` | `core/library-path:14` | — |
 | `addRecentMotion()` | `core/library-state:91` | — |
 | `allModels()` | `core/library-state:29` | — |
@@ -1899,20 +1899,20 @@
 | `setRenderState()` | `scene/render/renderer:683` | — |
 | `setSSRFromReflection()` | `scene/render/renderer:966` | 反射系统专用 SSR 控制接口（不触发 auto-save）。 |
 | `transitionRenderState()` | `scene/render/renderer:723` | 平滑过渡渲染状态到目标值，默认 2 秒。 |
-| `GizmoAttachOptions()` | `scene/render/transform-gizmo:104` | — |
+| `GizmoAttachOptions()` | `scene/render/transform-gizmo:106` | — |
 | `GizmoType()` | `scene/render/transform-gizmo:17` | — |
-| `attachGizmo()` | `scene/render/transform-gizmo:124` | 为指定 Node 激活变换 Gizmo。 |
+| `attachGizmo()` | `scene/render/transform-gizmo:126` | 为指定 Node 激活变换 Gizmo。 |
 | `computeSnapDistance()` | `scene/render/transform-gizmo:85` | 纯函数：给定轴类型与吸附配置，计算吸附步长（场景单位）。 |
-| `detachGizmo()` | `scene/render/transform-gizmo:216` | 移除当前 Gizmo。 |
-| `getActiveGizmoTypes()` | `scene/render/transform-gizmo:268` | 获取当前激活的 Gizmo 轴类型组合（用于判断拖拽中是否在改缩放）。 |
-| `getGizmoNode()` | `scene/render/transform-gizmo:263` | 获取当前 Gizmo 绑定的实时 Node（拖拽中其 transform 已被 Babylon 实时改写，供数值滑杆读取）。 |
-| `getGizmoSnapConfig()` | `scene/render/transform-gizmo:304` | 读取当前网格吸附配置（enabled 默认 false，step 默认 1.0）。 |
-| `getGizmoTargetId()` | `scene/render/transform-gizmo:258` | 获取当前 Gizmo 绑定的实体 ID。 |
+| `detachGizmo()` | `scene/render/transform-gizmo:222` | 移除当前 Gizmo。 |
+| `getActiveGizmoTypes()` | `scene/render/transform-gizmo:274` | 获取当前激活的 Gizmo 轴类型组合（用于判断拖拽中是否在改缩放）。 |
+| `getGizmoNode()` | `scene/render/transform-gizmo:269` | 获取当前 Gizmo 绑定的实时 Node（拖拽中其 transform 已被 Babylon 实时改写，供数值滑杆读取）。 |
+| `getGizmoSnapConfig()` | `scene/render/transform-gizmo:310` | 读取当前网格吸附配置（enabled 默认 false，step 默认 1.0）。 |
+| `getGizmoTargetId()` | `scene/render/transform-gizmo:264` | 获取当前 Gizmo 绑定的实体 ID。 |
 | `initTransformGizmo()` | `scene/render/transform-gizmo:46` | — |
-| `isGizmoActive()` | `scene/render/transform-gizmo:248` | 当前是否有 Gizmo 激活。 |
-| `isGizmoDragging()` | `scene/render/transform-gizmo:253` | 当前是否正在拖拽 Gizmo（drag start → drag end 之间为 true）。 |
+| `isGizmoActive()` | `scene/render/transform-gizmo:254` | 当前是否有 Gizmo 激活。 |
+| `isGizmoDragging()` | `scene/render/transform-gizmo:259` | 当前是否正在拖拽 Gizmo（drag start → drag end 之间为 true）。 |
 | `onGizmoDragObservable()` | `scene/render/transform-gizmo:42` | 拖拽进行中（连续）可观察量：任一 Gizmo 轴被拖动时每帧触发， 供数值滑杆实时同步显示（ADR-126 Phase 2 双模态）。 |
-| `setGizmoSnapDistance()` | `scene/render/transform-gizmo:287` | 设置网格吸附配置。 |
+| `setGizmoSnapDistance()` | `scene/render/transform-gizmo:293` | 设置网格吸附配置。 |
 | `exportSceneBundle()` | `scene/scene-bundle:136` | 导出场景为 bundle zip 文件。 |
 | `importSceneBundle()` | `scene/scene-bundle:165` | 导入场景 bundle zip 文件。 |
 | `migrateLipSyncFromOldState()` | `scene/scene-migrate:11` | 旧存档 lipSync → 新版 PerceptionState lipSync 字段。 |
