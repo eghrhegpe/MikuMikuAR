@@ -41,4 +41,44 @@ describe('getBrowseDir', () => {
         setOverridePaths({ pmx: 'web://custom' });
         expect(getBrowseDir('pmx')).toBe('web://custom');
     });
+
+    it('未知类别 → 回落类别名本身作为子目录（与 Go 端 GetPath 未知类别返回 root 不同，此处锁定 TS 语义）', () => {
+        setLibraryRoot('D:/MikuMikuAR');
+        expect(getBrowseDir('vpd')).toBe('D:/MikuMikuAR/vpd');
+        expect(getBrowseDir('motion')).toBe('D:/MikuMikuAR/motion');
+    });
+
+    it('prop/md_dress/environment/setting 类别 → 各自标准子目录（对齐 Go 端 GetPath defs 与 OverridePaths 键集）', () => {
+        setLibraryRoot('D:/MikuMikuAR');
+        expect(getBrowseDir('prop')).toBe('D:/MikuMikuAR/prop');
+        expect(getBrowseDir('md_dress')).toBe('D:/MikuMikuAR/MD-dress');
+        expect(getBrowseDir('environment')).toBe('D:/MikuMikuAR/environment');
+        expect(getBrowseDir('setting')).toBe('D:/MikuMikuAR/setting');
+    });
+
+    it('libraryRoot 尾部斜杠 → 归一化去掉尾斜杠，不产生双斜杠', () => {
+        setLibraryRoot('D:/MikuMikuAR/');
+        expect(getBrowseDir('pmx')).toBe('D:/MikuMikuAR/PMX');
+        expect(getBrowseDir('vmd')).toBe('D:/MikuMikuAR/VMD');
+    });
+
+    it('libraryRoot 反斜杠（Windows filepath.Join 风格）→ 统一为正斜杠', () => {
+        setLibraryRoot('D:\\MikuMikuAR');
+        expect(getBrowseDir('pmx')).toBe('D:/MikuMikuAR/PMX');
+        expect(getBrowseDir('audio')).toBe('D:/MikuMikuAR/audio');
+    });
+
+    it('override 值带尾部斜杠/反斜杠 → 归一化后返回', () => {
+        setLibraryRoot('D:/MikuMikuAR');
+        setOverridePaths({ pmx: 'E:/custom/models/' });
+        expect(getBrowseDir('pmx')).toBe('E:/custom/models');
+        setOverridePaths({ vmd: 'E:\\custom\\motions\\' });
+        expect(getBrowseDir('vmd')).toBe('E:/custom/motions');
+    });
+
+    it('override 值为空字符串 → 视为未设置，回落 libraryRoot 子目录', () => {
+        setLibraryRoot('D:/MikuMikuAR');
+        setOverridePaths({ pmx: '' });
+        expect(getBrowseDir('pmx')).toBe('D:/MikuMikuAR/PMX');
+    });
 });

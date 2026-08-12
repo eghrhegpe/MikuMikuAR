@@ -222,6 +222,7 @@ class LoadManager {
                     return {
                         id: '',
                         kind: 'audio',
+                        // [fix] 与 vmd 分支的 /\.vmd$/i 保持一致：扩展名匹配不区分大小写，.MP3 等大写扩展名同样去除
                         name: fileName.replace(/\.(mp3|wav|ogg|flac)$/i, ''),
                         filePath: req.path,
                     };

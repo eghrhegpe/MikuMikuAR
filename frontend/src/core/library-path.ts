@@ -41,22 +41,24 @@ export function resolveLibraryRef(libraryRef: string): string | null {
     return null;
 }
 
-/** 资源类别到 OverridePaths 键名的映射 */
+/** 资源类别到 OverridePaths 键名的映射（与 core/types.ts OverridePaths 键集一致） */
 const CATEGORY_KEY: Record<string, string> = {
     pmx: 'pmx',
     vmd: 'vmd',
     audio: 'audio',
+    prop: 'prop',
     stage: 'stage',
     environment: 'environment',
     md_dress: 'md_dress',
     setting: 'setting',
 };
 
-// Go 端 GetPath 使用的实际目录名（大小写敏感）
+// Go 端 GetPath 使用的实际目录名（大小写敏感，与 internal/app/app.go defs 对齐）
 export const CATEGORY_DIR: Record<string, string> = {
     pmx: 'PMX',
     vmd: 'VMD',
     audio: 'audio',
+    prop: 'prop',
     stage: 'stage',
     environment: 'environment',
     md_dress: 'MD-dress',
@@ -66,13 +68,16 @@ export const CATEGORY_DIR: Record<string, string> = {
 /**
  * 统一的资源浏览目录解析。
  * 优先级：overridePaths[category] > libraryRoot/subdir
+ * 返回值统一经 normPath 归一化（反斜杠→正斜杠、去尾部斜杠），
+ * 消除 Windows 配置（filepath.Join 反斜杠 / 用户手填尾斜杠）带来的
+ * 混合分隔符与双斜杠，保证 buildLevel 等下游直接用而无需自行 normPath。
  * @returns 解析后的目录路径，如果 libraryRoot 未设置则返回空字符串
  */
 export function getBrowseDir(category: string): string {
     const key = CATEGORY_KEY[category] ?? category;
     const override = (overridePaths as Record<string, string>)[key];
     if (override) {
-        return override;
+        return normPath(override);
     }
     if (!libraryRoot) {
         return '';
@@ -80,7 +85,7 @@ export function getBrowseDir(category: string): string {
     // 使用与实际目录名一致的子目录名（与 Go 端 GetPath 保持大小写一致）
     // 网页端扫描已将文件映射到虚拟子目录（web://selected-dir/PMX 等），无需特殊处理。
     const subdir = CATEGORY_DIR[category] ?? category;
-    return libraryRoot + '/' + subdir;
+    return normPath(libraryRoot) + '/' + subdir;
 }
 
 // [doc:adr-238] 注册浏览目录读取供 core/action-defs 经 ui-action-bridge 调用

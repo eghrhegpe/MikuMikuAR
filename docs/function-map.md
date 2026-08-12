@@ -324,9 +324,9 @@
 | `bootstrap()` | `core/init:638` | 应用启动入口：接线 dev-hooks / render-loop / events 并启动渲染循环。 |
 | `jsonParse()` | `core/json-stringify:12` | Safely parse JSON; returns null on failure instead of throwing. |
 | `jsonStringify()` | `core/json-stringify:5` | Format a value as pretty-printed JSON (2-space indent). |
-| `CATEGORY_DIR()` | `core/library-path:56` | — |
+| `CATEGORY_DIR()` | `core/library-path:57` | — |
 | `computeLibraryRef()` | `core/library-path:10` | Backwards-compatible wrapper: reads libraryRoot and delegates to the pure path leaf. |
-| `getBrowseDir()` | `core/library-path:71` | 统一的资源浏览目录解析。 |
+| `getBrowseDir()` | `core/library-path:76` | 统一的资源浏览目录解析。 |
 | `resolveLibraryRef()` | `core/library-path:14` | — |
 | `addRecentMotion()` | `core/library-state:91` | — |
 | `allModels()` | `core/library-state:29` | — |
@@ -359,7 +359,7 @@
 | `LoadRequest()` | `core/load-manager:45` | — |
 | `ResourceHandle()` | `core/load-manager:73` | — |
 | `ResourceKind()` | `core/load-manager:11` | — |
-| `loadManager()` | `core/load-manager:263` | 单例。 |
+| `loadManager()` | `core/load-manager:264` | 单例。 |
 | `registerLibraryScannedHook()` | `core/load-refresh-registry:57` | 注册一个「库扫描完成」钩子。 |
 | `registerLoadRefreshHook()` | `core/load-refresh-registry:21` | 注册一个「模型加载后刷新」钩子。 |
 | `runLoadRefreshHooks()` | `core/load-refresh-registry:33` | 执行所有已注册的加载后刷新钩子。 |
@@ -2077,8 +2077,8 @@
 |------|--------|------|
 | `showAssistant()` | `menus/assistant-panel:27` | — |
 | `addAssistantMessage()` | `menus/diagnostic-chat:20` | 添加助手消息 |
-| `buildChatSchema()` | `menus/diagnostic-chat:389` | 构建 chat schema（纯 DOM 构建） |
-| `buildSystemMessage()` | `menus/diagnostic-chat:343` | 构造 system message |
+| `buildChatSchema()` | `menus/diagnostic-chat:392` | 构建 chat schema（纯 DOM 构建） |
+| `buildSystemMessage()` | `menus/diagnostic-chat:346` | 构造 system message |
 | `finalizeStream()` | `menus/diagnostic-chat:260` | 流式完成收尾（非 dialogue 模式） |
 | `finalizeStreamRow()` | `menus/diagnostic-chat:239` | 定格 streaming row（移除 streaming class + Markdown 渲染） |
 | `pruneHistory()` | `menus/diagnostic-chat:319` | 历史截断 |
@@ -2086,8 +2086,8 @@
 | `renderDialogueCards()` | `menus/diagnostic-chat:295` | 渲染情绪卡片（台词模式） |
 | `renderStreamingChunk()` | `menus/diagnostic-chat:178` | 流式追加 chunk 到当前 streaming row |
 | `showPendingBubble()` | `menus/diagnostic-chat:155` | 显示"思考中"占位气泡 |
-| `updateSendButton()` | `menus/diagnostic-chat:372` | 更新发送/停止按钮 |
-| `updateSpeakToggle()` | `menus/diagnostic-chat:355` | 更新朗读开关 UI（不支持时隐藏） |
+| `updateSendButton()` | `menus/diagnostic-chat:375` | 更新发送/停止按钮 |
+| `updateSpeakToggle()` | `menus/diagnostic-chat:358` | 更新朗读开关 UI（不支持时隐藏） |
 | `applyProvider()` | `menus/diagnostic-config:267` | — |
 | `buildConfigSchema()` | `menus/diagnostic-config:481` | — |
 | `goKeyAllowsProceed()` | `menus/diagnostic-config:26` | — |

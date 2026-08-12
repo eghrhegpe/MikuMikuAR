@@ -317,23 +317,26 @@ export function renderDialogueCards(lines: DialogueLine[]): void {
 
 /** 历史截断 */
 export function pruneHistory(messages: ChatMessage[], maxPairs = 10): ChatMessage[] {
+    // 防御：负值/NaN 视为 0，非整数向下取整，避免 slice(NaN) 意外全量保留
+    const pairs = Math.max(0, Math.trunc(maxPairs) || 0);
     const systemMsg = messages[0]?.role === 'system' ? messages[0] : null;
     const body = systemMsg ? messages.slice(1) : messages;
-    if (body.length <= maxPairs * 2) {
+    if (body.length <= pairs * 2) {
         return messages;
     }
-    const keepFromIdx = body.length - maxPairs * 2;
+    const keepFromIdx = body.length - pairs * 2;
     let start = keepFromIdx;
-    while (start > 0 && body[start]?.role === 'tool') {
-        start--;
-    }
-    if (start > 0 && body[start]?.role === 'assistant') {
-        const asst = body[start] as Extract<ChatMessage, { role: 'assistant' }>;
-        if (asst.tool_calls) {
-            while (start > 0 && body[start - 1]?.role === 'tool') {
-                start--;
-            }
+    // 前移到安全起点，保证 assistant(tool_calls)+tool 配对链完整：
+    // tool 不能作起点；assistant(tool_calls) 前方若紧邻 tool 需一并纳入，否则结果会以孤立 tool 开头
+    while (start > 0) {
+        const cur = body[start];
+        const isTool = cur?.role === 'tool';
+        const isAsstCall = cur?.role === 'assistant' && cur.tool_calls !== undefined;
+        if (isTool || (isAsstCall && body[start - 1]?.role === 'tool')) {
+            start--;
+            continue;
         }
+        break;
     }
     const pruned = body.slice(start);
     return systemMsg ? [systemMsg, ...pruned] : pruned;
