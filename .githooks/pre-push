@@ -100,6 +100,15 @@ $(git diff --name-only "$r" 2>/dev/null || true)"
   CHANGED="$(echo "$CHANGED" | sort -u | sed '/^$/d')"
 fi
 
+# ── 未提交改动提示：diff-coverage 基于 --changed（已提交范围），
+# 未提交 TS 改动不在其内，会导致 coverage 产物缺失 → 误报「未找到覆盖率文件」。
+# 此处醒目提示，避免误判为代码问题（主模型曾因此误停）。
+UNCOMMITTED_TS="$(git diff --name-only HEAD 2>/dev/null | grep -E '\.(ts|tsx|js|jsx)$' || true)"
+if [ -n "$UNCOMMITTED_TS" ]; then
+  echo "[pre-push] ⚠️  检测到未提交的 TS/JS 改动（${UNCOMMITTED_TS}），diff-coverage 仅审计已 commit 范围。"
+  echo "           若门禁报「未找到覆盖率文件」，多为未提交导致，请先 commit 改动再 push。"
+fi
+
 # ── 兜底：RANGES 为空（本地已与远端同步）但有未提交改动时，
 # 仍纳入工作区 diff，避免「改了 TS 没 commit 就 push」场景下 hook 静默全过。
 # （注：此时 git push 本身会因 nothing to push 失败，此处仅让提示更友好、检查更真实）

@@ -316,7 +316,10 @@ function main() {
             process.exit(0);
         }
         console.error(`[diff-coverage] 未找到覆盖率文件：${coveragePath}`);
-        console.error(`[diff-coverage] 请先运行 \`vitest run --coverage\` 生成 coverage-final.json。`);
+        console.error(`[diff-coverage] 常见原因与对策：`);
+        console.error(`   1) 改动尚未 commit → --changed 模式不会命中未提交文件的测试，coverage 产物缺失。`);
+        console.error(`      对策：先 git add + commit 改动再 push；或本地预检加 --uncommitted 参数。`);
+        console.error(`   2) 尚未生成 coverage → 先运行 \`vitest run --coverage\` 生成 coverage-final.json。`);
         process.exit(USAGE_ERROR);
     }
 
