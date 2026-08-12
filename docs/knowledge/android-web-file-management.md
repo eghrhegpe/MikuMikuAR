@@ -8,10 +8,6 @@ scope:
   - frontend/src/core
   - frontend/src/core/backend
 source_files:
-  - build/android/app/src/main/java/com/wails/app/MainActivity.java
-  - build/android/app/src/main/java/com/wails/app/WailsBridge.java
-  - build/android/app/src/main/java/com/wails/app/WailsJSBridge.java
-  - build/android/app/src/main/java/com/wails/app/WailsPathHandler.java
   - frontend/src/core/platform.ts
   - frontend/src/core/backend/go-adapter.ts
   - frontend/src/core/backend/browser-adapter.ts
