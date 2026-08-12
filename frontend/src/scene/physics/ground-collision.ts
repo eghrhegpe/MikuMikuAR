@@ -68,12 +68,22 @@ export function enableGroundCollision(groundY: number = DEFAULT_GROUND_Y): void 
     // 地板顶面位于 groundY：中心下移 half.y
     info.setInitialTransform(Matrix.Translation(0, groundY - GROUND_HALF.y, 0));
 
-    const body = new RigidBody(impl, info);
-    if (!impl.addRigidBodyToGlobal(body)) {
-        // 注入失败：释放已分配资源，保持未启用态
-        body.dispose();
-        info.dispose();
-        shape.dispose();
+    let body: RigidBody | null = null;
+    try {
+        body = new RigidBody(impl, info);
+        if (!impl.addRigidBodyToGlobal(body)) {
+            // 注入失败（返回 false）：释放已分配资源，保持未启用态
+            safeDispose(body);
+            safeDispose(info);
+            safeDispose(shape);
+            return;
+        }
+    } catch {
+        // 注入抛异常（如 WASM 内存不足/形状创建失败）：同样释放已分配资源，
+        // 避免 shape/info/body 泄漏且 _groundBody 未置位导致状态不一致。
+        safeDispose(body);
+        safeDispose(info);
+        safeDispose(shape);
         return;
     }
     _groundBody = body;
@@ -82,21 +92,25 @@ export function enableGroundCollision(groundY: number = DEFAULT_GROUND_Y): void 
 }
 
 /** 禁用地面碰撞：从所有世界移除并释放资源。
- *  remove 阶段失败（如 impl 已销毁）不阻断后续 dispose，避免资源泄漏。 */
+ *  remove 阶段失败（如 impl 已销毁）不阻断后续 dispose，避免资源泄漏。
+ *  impl 不可用（运行时被销毁/替换）时仍须释放已注入资源，避免状态泄漏。 */
 export function disableGroundCollision(): void {
     const impl = _getImpl();
-    if (!impl || !_groundBody) {
+    if (!_groundBody) {
         return;
     }
-    try {
-        impl.removeRigidBodyFromGlobal(_groundBody);
-    } catch (e) {
-        logWarn('ground-collision', 'removeRigidBodyFromGlobal failed', e);
-    } finally {
-        _groundBody = safeDispose(_groundBody);
-        _groundInfo = safeDispose(_groundInfo);
-        _groundShape = safeDispose(_groundShape);
+    if (impl) {
+        try {
+            impl.removeRigidBodyFromGlobal(_groundBody);
+        } catch (e) {
+            logWarn('ground-collision', 'removeRigidBodyFromGlobal failed', e);
+        }
     }
+    // impl 可为 null（运行时已销毁）：shape/info/body 的 dispose 走各自 WeakRef 的
+    // wasmInstance，不依赖当前 impl，故无论 impl 是否可用都须释放，避免状态泄漏。
+    _groundBody = safeDispose(_groundBody);
+    _groundInfo = safeDispose(_groundInfo);
+    _groundShape = safeDispose(_groundShape);
 }
 
 /** 根据当前 envState 还原地面碰撞状态（运行时就绪 / 场景加载后调用）。

@@ -171,6 +171,41 @@ describe('ground-collision', () => {
         expect(isGroundCollisionEnabled()).toBe(false);
     });
 
+    it('addRigidBodyToGlobal 抛异常时仍释放资源并保持未启用', () => {
+        const impl = new shared.MockImpl();
+        impl.addRigidBodyToGlobal = vi.fn(() => {
+            throw new Error('inject failed');
+        });
+        setRuntime(impl);
+        enableGroundCollision();
+
+        expect(shared.rbDispose).toHaveBeenCalledTimes(1);
+        expect(shared.infoDispose).toHaveBeenCalledTimes(1);
+        expect(shared.shapeDispose).toHaveBeenCalledTimes(1);
+        expect(isGroundCollisionEnabled()).toBe(false);
+    });
+
+    it('impl 不可用（运行时被销毁/替换）时 disable 仍释放已注入资源', () => {
+        setRuntime();
+        enableGroundCollision();
+        expect(isGroundCollisionEnabled()).toBe(true);
+
+        shared.rbDispose.mockClear();
+        shared.infoDispose.mockClear();
+        shared.shapeDispose.mockClear();
+        shared.removeRigidBodyFromGlobal.mockClear();
+
+        // 运行时被销毁：_getImpl() 返回 null，但已注入资源仍须释放，避免状态泄漏
+        cfg.mmdRuntime = null;
+        disableGroundCollision();
+
+        expect(shared.removeRigidBodyFromGlobal).not.toHaveBeenCalled();
+        expect(shared.rbDispose).toHaveBeenCalledTimes(1);
+        expect(shared.infoDispose).toHaveBeenCalledTimes(1);
+        expect(shared.shapeDispose).toHaveBeenCalledTimes(1);
+        expect(isGroundCollisionEnabled()).toBe(false);
+    });
+
     it('disableGroundCollision 移除并释放资源（顺序：remove → rb → info → shape）', () => {
         setRuntime();
         enableGroundCollision();

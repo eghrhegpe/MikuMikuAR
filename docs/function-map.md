@@ -1746,8 +1746,8 @@
 | `teardownWasmLayersBlender()` | `scene/motion/wasm-layers-blender:140` | — |
 | `updateWasmLayerWeight()` | `scene/motion/wasm-layers-blender:198` | — |
 | `DEFAULT_LAYER_BONE_FILTER()` | `scene/motion/wasm-layers-config:1` | — |
-| `applyGroundCollision()` | `scene/physics/ground-collision:104` | 根据当前 envState 还原地面碰撞状态（运行时就绪 / 场景加载后调用）。 |
-| `disableGroundCollision()` | `scene/physics/ground-collision:86` | 禁用地面碰撞：从所有世界移除并释放资源。 |
+| `applyGroundCollision()` | `scene/physics/ground-collision:118` | 根据当前 envState 还原地面碰撞状态（运行时就绪 / 场景加载后调用）。 |
+| `disableGroundCollision()` | `scene/physics/ground-collision:97` | 禁用地面碰撞：从所有世界移除并释放资源。 |
 | `enableGroundCollision()` | `scene/physics/ground-collision:51` | 启用地面碰撞：注入静态地板刚体到所有物理世界。幂等。 |
 | `isGroundCollisionEnabled()` | `scene/physics/ground-collision:44` | 地面碰撞是否处于启用状态 |
 | `AttachmentAnchors()` | `scene/physics/physics-bridge:71` | — |

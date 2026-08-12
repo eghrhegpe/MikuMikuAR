@@ -430,3 +430,142 @@ describe('vmd-evaluator: shutdownVmdEvaluator', () => {
         expect(() => shutdownVmdEvaluator()).not.toThrow();
     });
 });
+
+describe('vmd-evaluator: 单帧轨道', () => {
+    it('单帧 bone track 返回该帧旋转且 position 为 null', async () => {
+        const rot = Quaternion.FromEulerAngles(0.3, 0.2, 0.1);
+        const frames: BoneKeyFrame[] = [
+            {
+                name: '腕',
+                frame: 7,
+                position: [0, 0, 0],
+                rotation: [rot.x, rot.y, rot.z, rot.w],
+                interp: INTERP_LINEAR,
+            },
+        ];
+        const buf = buildVmd(frames);
+        const evaluator = await createVmdEvaluator(buf);
+        const f = evaluator.evalBoneFrame('腕', 0)!;
+        expect(f.position).toBeNull();
+        expect(f.rotation.x).toBeCloseTo(rot.x, 4);
+        expect(f.rotation.y).toBeCloseTo(rot.y, 4);
+        expect(f.rotation.w).toBeCloseTo(rot.w, 4);
+        // 任意帧号都返回同一帧
+        expect(evaluator.evalBoneFrame('腕', 100)!.rotation.x).toBeCloseTo(rot.x, 4);
+        evaluator.dispose();
+    });
+
+    it('单帧 movable track 返回该帧位置 + 旋转', async () => {
+        const frames: BoneKeyFrame[] = [
+            {
+                name: '腰',
+                frame: 3,
+                position: [1, -2, 3],
+                rotation: [0, 0, 0, 1],
+                interp: INTERP_LINEAR,
+            },
+        ];
+        const buf = buildVmd(frames);
+        const evaluator = await createVmdEvaluator(buf);
+        const f = evaluator.evalBoneFrame('腰', 0)!;
+        expect(f.position).not.toBeNull();
+        expect(f.position!.x).toBeCloseTo(1, 4);
+        expect(f.position!.y).toBeCloseTo(-2, 4);
+        expect(f.position!.z).toBeCloseTo(3, 4);
+        evaluator.dispose();
+    });
+});
+
+describe('vmd-evaluator: 异常帧号', () => {
+    it('负帧号 → 返回首帧', async () => {
+        const rotA = Quaternion.FromEulerAngles(0.1, 0, 0);
+        const rotB = Quaternion.FromEulerAngles(0.2, 0, 0);
+        const frames: BoneKeyFrame[] = [
+            { name: '腕', frame: 10, position: [0, 0, 0], rotation: [rotA.x, rotA.y, rotA.z, rotA.w], interp: INTERP_LINEAR },
+            { name: '腕', frame: 20, position: [0, 0, 0], rotation: [rotB.x, rotB.y, rotB.z, rotB.w], interp: INTERP_LINEAR },
+        ];
+        const buf = buildVmd(frames);
+        const evaluator = await createVmdEvaluator(buf);
+        const f = evaluator.evalBoneFrame('腕', -5)!;
+        expect(f.rotation.x).toBeCloseTo(rotA.x, 4);
+        evaluator.dispose();
+    });
+
+    it('NaN 帧号不崩（回退首帧）', async () => {
+        const rotA = Quaternion.FromEulerAngles(0.1, 0, 0);
+        const rotB = Quaternion.FromEulerAngles(0.2, 0, 0);
+        const frames: BoneKeyFrame[] = [
+            { name: '腕', frame: 10, position: [0, 0, 0], rotation: [rotA.x, rotA.y, rotA.z, rotA.w], interp: INTERP_LINEAR },
+            { name: '腕', frame: 20, position: [0, 0, 0], rotation: [rotB.x, rotB.y, rotB.z, rotB.w], interp: INTERP_LINEAR },
+        ];
+        const buf = buildVmd(frames);
+        const evaluator = await createVmdEvaluator(buf);
+        const f = evaluator.evalBoneFrame('腕', NaN)!;
+        expect(f).not.toBeNull();
+        expect(Number.isNaN(f.rotation.x)).toBe(false);
+        evaluator.dispose();
+    });
+
+    it('Infinity 帧号 → 返回末帧', async () => {
+        const rotA = Quaternion.FromEulerAngles(0.1, 0, 0);
+        const rotB = Quaternion.FromEulerAngles(0.2, 0, 0);
+        const frames: BoneKeyFrame[] = [
+            { name: '腕', frame: 10, position: [0, 0, 0], rotation: [rotA.x, rotA.y, rotA.z, rotA.w], interp: INTERP_LINEAR },
+            { name: '腕', frame: 20, position: [0, 0, 0], rotation: [rotB.x, rotB.y, rotB.z, rotB.w], interp: INTERP_LINEAR },
+        ];
+        const buf = buildVmd(frames);
+        const evaluator = await createVmdEvaluator(buf);
+        const f = evaluator.evalBoneFrame('腕', Infinity)!;
+        expect(f.rotation.x).toBeCloseTo(rotB.x, 4);
+        evaluator.dispose();
+    });
+});
+
+describe('vmd-evaluator: 返回值引用独立性', () => {
+    it('两次求值返回不同对象（无缓存引用泄漏）', async () => {
+        const rotA = Quaternion.Identity();
+        const rotB = Quaternion.FromEulerAngles(0.5, 0, 0);
+        const frames: BoneKeyFrame[] = [
+            { name: '上半身', frame: 0, position: [0, 0, 0], rotation: [rotA.x, rotA.y, rotA.z, rotA.w], interp: INTERP_LINEAR },
+            { name: '上半身', frame: 10, position: [0, 0, 0], rotation: [rotB.x, rotB.y, rotB.z, rotB.w], interp: INTERP_LINEAR },
+        ];
+        const buf = buildVmd(frames);
+        const evaluator = await createVmdEvaluator(buf);
+        const a = evaluator.evalBoneFrame('上半身', 5)!;
+        const b = evaluator.evalBoneFrame('上半身', 5)!;
+        expect(a.rotation).not.toBe(b.rotation);
+        // 修改 a 不影响 b
+        a.rotation.x = 999;
+        expect(b.rotation.x).not.toBe(999);
+        evaluator.dispose();
+    });
+});
+
+describe('vmd-evaluator: movable 位置插值非线性', () => {
+    it('EASE_IN_OUT 位置中点应缓入（< 线性中点）', async () => {
+        const frames: BoneKeyFrame[] = [
+            {
+                name: '腰',
+                frame: 0,
+                position: [0, 0, 0],
+                rotation: [0, 0, 0, 1],
+                interp: INTERP_EASE_IN_OUT,
+            },
+            {
+                name: '腰',
+                frame: 10,
+                position: [10, 0, 0],
+                rotation: [0, 0, 0, 1],
+                interp: INTERP_EASE_IN_OUT,
+            },
+        ];
+        const buf = buildVmd(frames);
+        const evaluator = await createVmdEvaluator(buf);
+        const f5 = evaluator.evalBoneFrame('腰', 5)!;
+        // 缓入：插值 weight < 0.5，位置应 < 线性中点 5
+        expect(f5.position!.x).not.toBeNull();
+        expect(f5.position!.x).toBeLessThan(5);
+        expect(f5.position!.x).toBeGreaterThan(0);
+        evaluator.dispose();
+    });
+});
