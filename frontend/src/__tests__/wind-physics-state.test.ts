@@ -285,6 +285,13 @@ describe('wind-physics 状态机', () => {
 
             expect(observe).toHaveBeenCalledTimes(2);
         });
+
+        it('对未注册 runtime 重试不抛异常、不订阅', () => {
+            mocks.implReturn = mocks.mockImpl;
+            const rt = makeWasmRuntime(); // 未经 initWindPhysics 注册
+            expect(() => retryWindPhysicsSubscription(rt)).not.toThrow();
+            expect(observe).not.toHaveBeenCalled();
+        });
     });
 
     describe('disposeWindPhysics', () => {
@@ -311,6 +318,12 @@ describe('wind-physics 状态机', () => {
 
         it('空 dispose 不抛异常', () => {
             expect(() => disposeWindPhysics()).not.toThrow();
+        });
+
+        it('对未注册 runtime dispose 不抛异常', () => {
+            const rt = makeWasmRuntime(); // 未经 initWindPhysics 注册
+            expect(() => disposeWindPhysics(rt)).not.toThrow();
+            expect(mocks.observerHandle.dispose).not.toHaveBeenCalled();
         });
 
         it('per-runtime dispose：仅清理指定 runtime 的 observer，其他 runtime 保持订阅', () => {
@@ -466,6 +479,9 @@ describe('wind-physics 状态机', () => {
             const fallCall = mocks.applyForceToModelRigidBodiesNative.mock.calls[0];
             expect(fallCall[0]).toBe(mocks.wasmInstance);
             expect(fallCall[1]).toBe(mocks.actorModel);
+            // 降级施力同样带 MODEL_WIND_FORCE_SCALE(5.0) 缩放：(3,0,4)×5=(15,0,20)
+            expect(fallCall[2].x).toBeCloseTo(15);
+            expect(fallCall[2].z).toBeCloseTo(20);
         });
 
         it('风力不活跃时不对模型原生刚体施力', () => {
@@ -476,6 +492,47 @@ describe('wind-physics 状态机', () => {
             mocks.onSyncObservable._notify();
 
             expect(mocks.applyForceToModelRigidBodiesNative).not.toHaveBeenCalled();
+        });
+
+        it('impl.wasmInstance 为空时跳过模型原生刚体施力（自建刚体仍受风）', () => {
+            const origWasm = mocks.mockImpl.wasmInstance;
+            // 模拟 WASM 实例未就绪：wasm 侧无法解析原生 bundle，应跳过模型施力
+            (mocks.mockImpl as { wasmInstance: unknown }).wasmInstance = null;
+            try {
+                const runtime = makeWasmRuntime();
+                initWindPhysics(runtime);
+
+                mocks.onSyncObservable._notify();
+
+                // 模型原生刚体施力（含降级）整体跳过
+                expect(mocks.applyWindForceToModelRigidBodiesNative).not.toHaveBeenCalled();
+                expect(mocks.applyForceToModelRigidBodiesNative).not.toHaveBeenCalled();
+                // 自建刚体（bundle + 单数容器）不依赖 wasmInstance，仍受风
+                expect(mocks.bundleA.applyCentralForce).toHaveBeenCalledTimes(3);
+                expect(mocks.bodyA.applyCentralForce).toHaveBeenCalledTimes(1);
+            } finally {
+                (mocks.mockImpl as { wasmInstance: unknown }).wasmInstance = origWasm;
+            }
+        });
+
+        it('actor 的 mmdModel 为 null 时跳过该实例（不施力、不降级）', () => {
+            mocks.modelRegistry.set('actorNull', { kind: 'actor', mmdModel: null });
+            try {
+                const runtime = makeWasmRuntime();
+                initWindPhysics(runtime);
+
+                mocks.onSyncObservable._notify();
+
+                // 仅 actor1（有 mmdModel）被施力；mmdModel=null 的 actor 被跳过
+                expect(mocks.applyWindForceToModelRigidBodiesNative).toHaveBeenCalledTimes(1);
+                expect(mocks.applyWindForceToModelRigidBodiesNative.mock.calls[0][1]).toBe(
+                    mocks.actorModel
+                );
+                // 未被施力的 actor 不触发降级
+                expect(mocks.applyForceToModelRigidBodiesNative).not.toHaveBeenCalled();
+            } finally {
+                mocks.modelRegistry.delete('actorNull');
+            }
         });
     });
 });

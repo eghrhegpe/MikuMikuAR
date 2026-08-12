@@ -363,10 +363,13 @@ function _adjustFoot(
     }
 
     // JS 运行时：通知 skeleton 重算蒙皮（WASM 直写 worldTransformMatrices buffer，无需）
-    const lb = (
-        ik as unknown as { linkedBone?: { getSkeleton?: () => { _markAsDirty?: () => void } } }
-    ).linkedBone;
-    lb?.getSkeleton?.()._markAsDirty?.();
+    // [fix] 限定 JS 模式调用，与注释意图一致：WASM 直写 buffer，_markAsDirty 只会造成冗余重算
+    if (!isWasmRuntime(bones[0])) {
+        const lb = (
+            ik as unknown as { linkedBone?: { getSkeleton?: () => { _markAsDirty?: () => void } } }
+        ).linkedBone;
+        lb?.getSkeleton?.()._markAsDirty?.();
+    }
 
     if (side === 'L') {
         cache.lTargetY = res.targetY;

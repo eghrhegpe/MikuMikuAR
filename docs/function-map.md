@@ -1420,8 +1420,8 @@
 | `RetargetResult()` | `scene/motion/animation-retargeter:28` | — |
 | `getRetargetPlayState()` | `scene/motion/animation-retargeter:47` | 获取当前活跃的 retarget 动画播放状态，用于场景序列化。 |
 | `loadAndRetargetAnimation()` | `scene/motion/animation-retargeter:77` | 从外部动画文件加载并重定向到 MMD 骨骼。 |
-| `playRetargetedAnimation()` | `scene/motion/animation-retargeter:173` | 播放重定向后的动画（additive 模式，叠加在 VMD 之上）。 |
-| `restoreRetargetAnimation()` | `scene/motion/animation-retargeter:245` | 从已加载的模型恢复 retarget 动画（场景反序列化用）。 |
+| `playRetargetedAnimation()` | `scene/motion/animation-retargeter:176` | 播放重定向后的动画（additive 模式，叠加在 VMD 之上）。 |
+| `restoreRetargetAnimation()` | `scene/motion/animation-retargeter:248` | 从已加载的模型恢复 retarget 动画（场景反序列化用）。 |
 | `stopCurrentRetarget()` | `scene/motion/animation-retargeter:52` | 停止当前 retarget 动画并清理。 |
 | `BoneConflict()` | `scene/motion/bone-override-store:44` | 骨骼冲突记录（原 registry._boneConflicts 的统一版） |
 | `BoneOverrideStore()` | `scene/motion/bone-override-store:75` | — |
@@ -1465,8 +1465,8 @@
 | `isFeetAdjustmentRunning()` | `scene/motion/feet-adjustment:128` | 查询脚部跟随系统是否正在运行（observer 已注册）。 |
 | `setOnFootLand()` | `scene/motion/feet-adjustment:123` | 注入落地事件回调（null 取消）。脚步声控制器调用。 |
 | `solveFootTarget()` | `scene/motion/feet-adjustment:39` | — |
-| `startFeetAdjustment()` | `scene/motion/feet-adjustment:382` | 启动脚部调整系统：注册为 MotionPipeline bone-override 层（order=5）。 |
-| `stopFeetAdjustment()` | `scene/motion/feet-adjustment:457` | 停止脚部调整系统并清空缓存。 |
+| `startFeetAdjustment()` | `scene/motion/feet-adjustment:385` | 启动脚部调整系统：注册为 MotionPipeline bone-override 层（order=5）。 |
+| `stopFeetAdjustment()` | `scene/motion/feet-adjustment:460` | 停止脚部调整系统并清空缓存。 |
 | `startFallbackDetection()` | `scene/motion/footstep-detect-fallback:68` | 启动独立落地检测（fallback 模式）。 |
 | `stopFallbackDetection()` | `scene/motion/footstep-detect-fallback:133` | 停止独立落地检测。 |
 | `resolveGroundSfxKind()` | `scene/motion/footstep:54` | 依据当前地面类型推断脚步音色。 |

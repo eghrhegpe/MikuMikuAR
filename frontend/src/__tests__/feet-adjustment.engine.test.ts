@@ -436,4 +436,104 @@ describe('边界与降级路径（反推源码补齐）', () => {
         expect(model.runtimeBones[1].world.y).toBeCloseTo(0);
         expect(model.runtimeBones[2].world.y).toBeCloseTo(0);
     });
+
+    it('WASM 模式不调用 _markAsDirty（直写 buffer，无需重算蒙皮）', () => {
+        isWasmRuntime.mockReturnValue(true);
+        const resolver = vi.fn();
+        getWasmIkResolver.mockReturnValue(resolver);
+        const dirty = vi.fn();
+        const model = makeModel({ lY: -0.2, rY: -0.2, linkedDirty: dirty });
+        model.runtimeBones[1].ikSolverIndex = 0;
+        model.runtimeBones[2].ikSolverIndex = 1;
+        startFor(model);
+        runFrame();
+        expect(resolver).toHaveBeenCalledTimes(2);
+        expect(dirty).not.toHaveBeenCalled();
+    });
+
+    it('getGroundHeightAt 携带 IK 骨世界 X/Z 查询地面', () => {
+        const solver = { solve: vi.fn() };
+        const model = makeModel({ lY: -0.2, rY: -0.2, solver });
+        model.runtimeBones[1].world.x = 3;
+        model.runtimeBones[1].world.z = 4;
+        model.runtimeBones[2].world.x = -5;
+        model.runtimeBones[2].world.z = 6;
+        startFor(model);
+        runFrame();
+        expect(getGroundHeightAt).toHaveBeenCalledWith(3, 4);
+        expect(getGroundHeightAt).toHaveBeenCalledWith(-5, 6);
+    });
+
+    it('模型抬高（center 世界 Y 非零）时以自然脚高为基准，不硬拽到 groundY', () => {
+        const solver = { solve: vi.fn() };
+        const model = makeModel({ lY: 0.5, rY: 0.5, solver, hips: true });
+        model.runtimeBones[0].world.y = 1.0; // center 抬高
+        startFor(model);
+        runFrame();
+        // centerY=1.0, hip=1.0 → legLength=0.5 → modelGroundY=max(0,1.0-0.5)=0.5
+        // foot=0.5, 0.5-0.5=0 不 skip → desiredY=0 → maxDrop=sin30°*0.5=0.25 → target=0.25
+        expect(model.runtimeBones[1].world.y).toBeCloseTo(0.25, 5);
+        expect(model.runtimeBones[2].world.y).toBeCloseTo(0.25, 5);
+    });
+
+    it('_findHip 全量搜索：大腿骨不在 IK parent 链但存在于骨骼列表时仍能定位', () => {
+        const solver = { solve: vi.fn() };
+        // IK 骨 parent = center（非大腿），大腿骨作为独立根骨存在 → 触发全量搜索路径
+        const center = makeBone('センター', 0);
+        const hipL = makeBone('左足', 1.0, center);
+        const hipR = makeBone('右足', 1.0, center);
+        const lIk = makeBone('左足IK', 0.4, center);
+        const rIk = makeBone('右足IK', 0.4, center);
+        lIk.ikSolver = solver;
+        rIk.ikSolver = solver;
+        startFor({
+            id: 'm1',
+            feet: {
+                enabled: true,
+                intensity: 1,
+                soleHeight: 0,
+                jumpThreshold: 0.5,
+                bodySmooth: 0.5,
+                footSmooth: 0.5,
+                maxAngle: 30,
+                reachAngle: 15,
+            },
+            runtimeBones: [center, hipL, hipR, lIk, rIk],
+        });
+        runFrame();
+        // legLength=|1.0-0.4|=0.6 → maxDrop=sin30°*0.6=0.3 → target=0.4-0.3=0.1
+        expect(lIk.world.y).toBeCloseTo(0.1, 5);
+        expect(rIk.world.y).toBeCloseTo(0.1, 5);
+        expect(solver.solve).toHaveBeenCalledTimes(2);
+    });
+
+    it('_findHip 回退：无大腿骨时静默降级（第 3 级父为空）不崩溃仍贴地', () => {
+        const solver = { solve: vi.fn() };
+        const center = makeBone('センター', 0);
+        const grand = makeBone('先祖', 2.0);
+        const parent = makeBone('中骨', 1.0, grand);
+        const lIk = makeBone('左足IK', 0.4, parent);
+        const rIk = makeBone('右足IK', 0.4, parent);
+        lIk.ikSolver = solver;
+        rIk.ikSolver = solver;
+        startFor({
+            id: 'm1',
+            feet: {
+                enabled: true,
+                intensity: 1,
+                soleHeight: 0,
+                jumpThreshold: 0.5,
+                bodySmooth: 0.5,
+                footSmooth: 0.5,
+                maxAngle: 30,
+                reachAngle: 15,
+            },
+            runtimeBones: [center, grand, parent, lIk, rIk],
+        });
+        expect(() => runFrame()).not.toThrow();
+        // 无大腿骨 → legLength=1 默认 → 落到地面 0
+        expect(lIk.world.y).toBeCloseTo(0);
+        expect(rIk.world.y).toBeCloseTo(0);
+        expect(solver.solve).toHaveBeenCalledTimes(2);
+    });
 });

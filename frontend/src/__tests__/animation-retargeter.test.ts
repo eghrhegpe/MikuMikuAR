@@ -298,6 +298,48 @@ describe('loadAndRetargetAnimation（加载 + 重定向 + 清理）', () => {
         const inst = shared.retargeterInstances[0];
         expect(inst.setBoneMap).toHaveBeenCalledWith({ mixBone: 'mmdBone' });
     });
+
+    it('边界：空的 custom 映射对象（{}）→ 回退 mixamo 预设', async () => {
+        const skeleton = makeSkeleton();
+        const mesh = makeMesh(skeleton);
+        const group = makeAnimationGroup();
+        shared.ImportMeshAsync.mockResolvedValue({ meshes: [mesh], animationGroups: [group] });
+        const result = await loadAndRetargetAnimation({} as any, 'a.fbx', makeSkeleton() as never, 'custom', {});
+        expect(result).not.toBeNull();
+        const inst = shared.retargeterInstances[0];
+        // 空映射不得被采用，应回退 mixamo，避免退化空重定向
+        expect(inst.setBoneMap).toHaveBeenCalledWith({ mixBone: 'mmdBone' });
+    });
+
+    it('边界：未知预设字符串 → 回退 mixamo 预设', async () => {
+        const skeleton = makeSkeleton();
+        const mesh = makeMesh(skeleton);
+        const group = makeAnimationGroup();
+        shared.ImportMeshAsync.mockResolvedValue({ meshes: [mesh], animationGroups: [group] });
+        const result = await loadAndRetargetAnimation({} as any, 'a.fbx', makeSkeleton() as never, '_unknown_' as never);
+        expect(result).not.toBeNull();
+        const inst = shared.retargeterInstances[0];
+        // 未知预设不得导致 setBoneMap(undefined)，应回退 mixamo
+        expect(inst.setBoneMap).toHaveBeenCalledWith({ mixBone: 'mmdBone' });
+    });
+
+    it('正常：重定向阶段发送 retargeting 反馈', async () => {
+        const skeleton = makeSkeleton();
+        const mesh = makeMesh(skeleton);
+        const group = makeAnimationGroup();
+        shared.ImportMeshAsync.mockResolvedValue({ meshes: [mesh], animationGroups: [group] });
+        await loadAndRetargetAnimation({} as never, 'a.fbx', makeSkeleton() as never, 'mixamo');
+        expect(shared.feedbackStatus).toHaveBeenCalledWith('motion.retarget.retargeting', undefined, false);
+    });
+
+    it('守卫：animationGroups 为 undefined → 返回 null 并清理网格', async () => {
+        const mesh = makeMesh(makeSkeleton());
+        shared.ImportMeshAsync.mockResolvedValue({ meshes: [mesh], animationGroups: undefined });
+        const result = await loadAndRetargetAnimation({} as any, 'a.fbx', makeSkeleton() as never, 'mixamo');
+        expect(result).toBeNull();
+        expect(shared.feedbackStatus).toHaveBeenCalledWith('motion.retarget.noAnimation', undefined, false);
+        expect(mesh.dispose).toHaveBeenCalled();
+    });
 });
 
 // ======== playRetargetedAnimation ========
@@ -414,5 +456,36 @@ describe('restoreRetargetAnimation（场景反序列化恢复）', () => {
         const ok = await restoreRetargetAnimation('f.fbx', 'mixamo', 'm1');
         expect(ok).toBe(true);
         expect(getRetargetPlayState()).toEqual({ filePath: 'f.fbx', boneMapPreset: 'mixamo' });
+    });
+
+    it('正常：vrm 预设透传到加载重定向', async () => {
+        const targetSkeleton = makeSkeleton();
+        const targetMesh = { skeleton: targetSkeleton, getScene: vi.fn(() => ({})) };
+        shared.modelRegistry.set('m1', { mmdModel: { mesh: targetMesh } });
+        shared.ImportMeshAsync.mockResolvedValue({
+            meshes: [makeMesh(makeSkeleton())],
+            animationGroups: [makeAnimationGroup()],
+        });
+        const ok = await restoreRetargetAnimation('f.vrm', 'vrm', 'm1');
+        expect(ok).toBe(true);
+        const inst = shared.retargeterInstances[0];
+        expect(inst.setBoneMap).toHaveBeenCalledWith({ vrmBone: 'mmdBone' });
+        expect(getRetargetPlayState()).toEqual({ filePath: 'f.vrm', boneMapPreset: 'vrm' });
+    });
+
+    it('正常：恢复成功后以 additive 模式播放', async () => {
+        const targetSkeleton = makeSkeleton();
+        const targetMesh = { skeleton: targetSkeleton, getScene: vi.fn(() => ({})) };
+        shared.modelRegistry.set('m1', { mmdModel: { mesh: targetMesh } });
+        shared.ImportMeshAsync.mockResolvedValue({
+            meshes: [makeMesh(makeSkeleton())],
+            animationGroups: [makeAnimationGroup()],
+        });
+        const ok = await restoreRetargetAnimation('f.fbx', 'mixamo', 'm1');
+        expect(ok).toBe(true);
+        const played = shared.retargetedGroup as ReturnType<typeof makeAnimationGroup>;
+        expect(played.isAdditive).toBe(true);
+        expect(played.weight).toBe(1);
+        expect(played.play).toHaveBeenCalledWith(true);
     });
 });

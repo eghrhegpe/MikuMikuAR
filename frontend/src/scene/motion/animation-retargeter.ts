@@ -121,12 +121,15 @@ export async function loadAndRetargetAnimation(
     }
 
     // 3. 获取骨骼映射
-    let boneNameMap: Record<string, string>;
-    if (boneMapPreset === 'custom' && customBoneMap) {
-        boneNameMap = customBoneMap;
-    } else {
-        boneNameMap = PRESET_BONE_MAPS[boneMapPreset === 'custom' ? 'mixamo' : boneMapPreset];
-    }
+    // [fix] custom 预设仅在传入非空映射时采用；空对象（{}）或未传 → 回退 mixamo，
+    // 否则空映射会产生退化重定向（空动画）。未知预设字符串同样回退 mixamo，
+    // 避免 PRESET_BONE_MAPS[...] 为 undefined 导致 setBoneMap(undefined) 崩溃。
+    const hasCustomMap =
+        boneMapPreset === 'custom' && !!customBoneMap && Object.keys(customBoneMap).length > 0;
+    const boneNameMap = hasCustomMap
+        ? customBoneMap!
+        : (PRESET_BONE_MAPS[boneMapPreset === 'custom' ? 'mixamo' : boneMapPreset] ??
+          PRESET_BONE_MAPS.mixamo);
 
     // 4. 执行重定向
     feedbackStatus('motion.retarget.retargeting', undefined, false);
