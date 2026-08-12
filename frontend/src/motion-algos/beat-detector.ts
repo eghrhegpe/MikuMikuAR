@@ -283,6 +283,10 @@ export class BeatDetector {
         const safeMinInterval = Math.max(1, minInterval);
         let sum = 0;
         for (let i = 0; i < energies.length; i++) {
+            // 跳过非有限值（NaN/Infinity），避免污染滑动均值的 running sum
+            if (!Number.isFinite(energies[i])) {
+                continue;
+            }
             history.push(energies[i]);
             sum += energies[i];
             if (history.length > ENERGY_HISTORY_SIZE) {
@@ -299,7 +303,7 @@ export class BeatDetector {
 
     /** 纯逻辑：从 beat 时间戳数组计算 BPM。过滤非正间隔。 */
     static bpmFromIntervals(intervalsMs: number[]): number {
-        const valid = intervalsMs.filter((v) => v > 0);
+        const valid = intervalsMs.filter((v) => Number.isFinite(v) && v > 0);
         if (valid.length === 0) {
             return 120;
         }
@@ -312,8 +316,8 @@ export class BeatDetector {
         if (freqData.length === 0) {
             return 0;
         }
-        const start = Math.max(0, startBin);
-        const end = Math.min(endBin ?? freqData.length, freqData.length);
+        const start = Math.max(0, Number.isFinite(startBin) ? startBin : 0);
+        const end = Math.min(Number.isFinite(endBin) ? endBin! : freqData.length, freqData.length);
         if (end <= start) {
             return 0;
         }

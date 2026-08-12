@@ -339,6 +339,27 @@ describe('skirt-analyzer — 退化 & 边界情况', () => {
         // skirt 区域可能只有底层 3 个 → 低于 MIN_SKIRT_VERTICES(6)
         expect(result.totalSegments).toBe(0);
     });
+
+    it('索引长度非 3 倍数（残缺三角形）→ 返回空，不产生 NaN/垃圾链', () => {
+        // 4 个顶点；索引长度 4，不是 3 的倍数（残缺三角形）
+        const positions = new Float32Array([0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 1, 1]);
+        const indices = new Uint32Array([0, 1, 2, 0]);
+        const result = analyzeSkirt(positions, indices, defaultOpts);
+
+        expect(result.chains).toEqual([]);
+        expect(result.totalSegments).toBe(0);
+        expect(result.boundaryEdgeCount).toBe(0);
+    });
+
+    it('位置数组长度非 3 倍数 → 返回空，不产生 NaN', () => {
+        // 长度 7，不是 3 的倍数（残缺顶点）
+        const positions = new Float32Array([0, 0, 0, 1, 0, 0, 0, 0, 1, 1]);
+        const indices = new Uint32Array([0, 1, 2]);
+        const result = analyzeSkirt(positions, indices, defaultOpts);
+
+        expect(result.chains).toEqual([]);
+        expect(result.totalSegments).toBe(0);
+    });
 });
 
 describe('skirt-analyzer — 参数边界', () => {

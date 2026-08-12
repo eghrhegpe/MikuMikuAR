@@ -408,3 +408,54 @@ describe('BeatDetector.getLevel — additional edge cases', () => {
         expect(BeatDetector.getLevel(data)).toBe(0);
     });
 });
+
+describe('源码缺陷 — 非有限值传播', () => {
+    it('detectBeatsFromEnergies 中的 NaN 样本不污染后续检测', () => {
+        // 第 21 帧出现 NaN，其后 (i=42) 的峰值仍应被检出
+        const energies: number[] = [];
+        for (let i = 0; i < 60; i++) {
+            energies.push(i === 21 ? NaN : (i % 21 === 0 ? 200 : 20));
+        }
+        const beats = BeatDetector.detectBeatsFromEnergies(energies, 1.3, 6);
+        // NaN 帧之后的峰值应仍触发 beat
+        expect(beats.some((b) => b > 21)).toBe(true);
+    });
+
+    it('detectBeatsFromEnergies 中 Infinity 样本不污染后续检测', () => {
+        const energies: number[] = [];
+        for (let i = 0; i < 60; i++) {
+            energies.push(i === 21 ? Infinity : (i % 21 === 0 ? 200 : 20));
+        }
+        const beats = BeatDetector.detectBeatsFromEnergies(energies, 1.3, 6);
+        expect(beats.some((b) => b > 21)).toBe(true);
+    });
+
+    it('getLevel 对 NaN startBin 不再返回 NaN（视为 0）', () => {
+        const data = new Uint8Array([100, 200, 255]);
+        // NaN startBin 应被解析为默认 0，返回全波段均值而非 NaN
+        const result = BeatDetector.getLevel(data, NaN);
+        expect(Number.isFinite(result)).toBe(true);
+        expect(result).toBeCloseTo(0.725, 2);
+    });
+
+    it('getLevel 对 Infinity endBin 返回 0', () => {
+        const data = new Uint8Array([100, 200, 255]);
+        // endBin=Infinity 被 clamp 到 data.length，应正常计算而非 NaN
+        expect(BeatDetector.getLevel(data, 0, Infinity)).toBeCloseTo((100 + 200 + 255) / 3 / 255, 3);
+    });
+
+    it('getLevel 对 NaN endBin 不再返回 NaN（视为 length）', () => {
+        const data = new Uint8Array([100, 200, 255]);
+        const result = BeatDetector.getLevel(data, 0, NaN);
+        expect(Number.isFinite(result)).toBe(true);
+        expect(result).toBeCloseTo(0.725, 2);
+    });
+
+    it('bpmFromIntervals 过滤 Infinity 间隔并返回 120', () => {
+        expect(BeatDetector.bpmFromIntervals([Infinity, Infinity])).toBe(120);
+    });
+
+    it('bpmFromIntervals 过滤 NaN 间隔并返回 120', () => {
+        expect(BeatDetector.bpmFromIntervals([NaN, NaN])).toBe(120);
+    });
+});

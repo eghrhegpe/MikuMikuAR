@@ -246,12 +246,10 @@ export class VirtualSkirtController {
             !getCachedCapabilities().crossOriginIsolated
         );
         const preset = QUALITY_PRESETS[effQuality];
-        this._effectiveQuality = effQuality;
-        this._throttleEvery = preset.throttleEvery;
+        // [fix] LOD/quality 状态仅在 build 成功时落地（见成功路径赋值），
+        // 失败路径不残留，避免 UI 依据 effective* 误判「已注入」。
         const effChains = Math.min(this.config.chains, preset.chainsCap);
         const effSegments = Math.min(this.config.segmentsPerChain, preset.segmentsCap);
-        this._effectiveChains = effChains;
-        this._effectiveSegments = effSegments;
         const maxVerts = Math.min(this.config.maxVertices, preset.maxVertices);
         this._frame = 0;
 
@@ -284,7 +282,7 @@ export class VirtualSkirtController {
         if (result.totalSegments === 0) {
             return false;
         }
-        this.analysis = result;
+        // [fix] analysis 仅在成功路径落地（return true 前），失败路径不残留半初始化状态
 
         // 获取物理运行时 impl
         const physicsRuntime = this.wasmRuntime.physics as MmdWasmPhysicsRuntime | null;
@@ -353,9 +351,9 @@ export class VirtualSkirtController {
             const radius =
                 this.config.radius > 0
                     ? this.config.radius
-                    : (this.analysis.chains[0]?.segments[0]?.radius ?? 0.02);
+                    : (result.chains[0]?.segments[0]?.radius ?? 0.02);
 
-            for (const chain of this.analysis.chains) {
+            for (const chain of result.chains) {
                 let parent: RigidBody = this.anchorRb;
                 for (const seg of chain.segments) {
                     const shape = new PhysicsSphereShape(impl, seg.radius || radius);
@@ -441,6 +439,13 @@ export class VirtualSkirtController {
         // --- 每帧更新 ---
         this.registry = new PerFrameUpdateRegistry(this.scene);
         this.registry.register('virtual-skirt', () => this._update());
+
+        // [fix] 成功路径才落地 analysis + LOD/quality 状态（失败路径不残留）
+        this.analysis = result;
+        this._effectiveQuality = effQuality;
+        this._effectiveChains = effChains;
+        this._effectiveSegments = effSegments;
+        this._throttleEvery = preset.throttleEvery;
 
         return true;
     }
@@ -646,6 +651,11 @@ export class VirtualSkirtController {
         this._workBuf = null;
         this._waistBone = null;
         this._frame = 0;
+        // [fix] 释放后 LOD/quality 状态归零，避免 dispose 后仍报告「已注入」配置
+        this._effectiveQuality = 'high';
+        this._effectiveChains = 0;
+        this._effectiveSegments = 0;
+        this._throttleEvery = 1;
     }
 
     /** 已注入的骨节总数 */

@@ -185,9 +185,16 @@ export function analyzeSkirt(
               ? new Uint32Array(indices)
               : new Uint32Array(indices);
 
-    const vertexCount = posArr.length / 3;
-    const triangleCount = idxArr.length / 3;
-    if (vertexCount < 3 || triangleCount < 1) {
+    const vertexCount = Math.floor(posArr.length / 3);
+    const triangleCount = Math.floor(idxArr.length / 3);
+    // 顶点/索引长度必须为 3 的倍数，否则存在残缺三角形/顶点，
+    // 会触发越界读 → NaN 传播污染整个分析结果。
+    if (
+        posArr.length % 3 !== 0 ||
+        idxArr.length % 3 !== 0 ||
+        vertexCount < 3 ||
+        triangleCount < 1
+    ) {
         return empty;
     }
 

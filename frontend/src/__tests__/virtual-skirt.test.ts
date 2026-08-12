@@ -688,6 +688,47 @@ describe('VirtualSkirtController — Phase 5 性能/LOD/降频', () => {
         expect(ctrlHigh.build()).toBe(true);
     });
 
+    it('build 失败（顶点超限）不残留 LOD 状态: effective* 归零, throttle=默认', () => {
+        // 约 1641 顶点 > low 上限 1500 → build 返回 false
+        const mesh = createOpenBottomCylinder(1.0, 2.0, 40, 40);
+        const model = makeModel(mesh, [{ name: 'Waist', worldMatrix: new Float32Array(16) }]);
+        const { physics } = makePhysics();
+        const runtime = makeRuntime(physics);
+        const { scene } = makeScene();
+
+        const ctrl = new VirtualSkirtController(
+            model,
+            scene,
+            runtime,
+            testConfig({ quality: 'low', chains: 32, segmentsPerChain: 16 })
+        );
+        expect(ctrl.build()).toBe(false);
+        // 未构建成功 → 不应残留 'low' 档的 LOD 状态（避免 UI 误判已注入）
+        expect(ctrl.effectiveChains).toBe(0);
+        expect(ctrl.effectiveSegments).toBe(0);
+        // throttle 应回退默认（未生效），而非 low 档的 3
+        expect(ctrl.throttleEvery).toBe(1);
+    });
+
+    it('build 失败（顶点超限）不残留 analysis 半初始化状态: 再次 build 仍可尝试', () => {
+        const mesh = createOpenBottomCylinder(1.0, 2.0, 40, 40);
+        const model = makeModel(mesh, [{ name: 'Waist', worldMatrix: new Float32Array(16) }]);
+        const { physics } = makePhysics();
+        const runtime = makeRuntime(physics);
+        const { scene } = makeScene();
+
+        const ctrl = new VirtualSkirtController(
+            model,
+            scene,
+            runtime,
+            testConfig({ quality: 'low', chains: 32, segmentsPerChain: 16 })
+        );
+        expect(ctrl.build()).toBe(false);
+        // 失败后 dispose 语义：segmentCount/constraintCount 必须归零（无半初始化刚体）
+        expect(ctrl.segmentCount).toBe(0);
+        expect(ctrl.constraintCount).toBe(0);
+    });
+
     it('降频: low(throttle=3) 每 6 帧写回 2 次, high(throttle=1) 写回 6 次', () => {
         const mesh = createOpenBottomCylinder(1.0, 2.0, 12, 6);
 
