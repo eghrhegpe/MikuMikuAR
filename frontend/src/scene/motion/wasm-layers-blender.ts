@@ -24,6 +24,7 @@ import {
 import { DEFAULT_LAYER_BONE_FILTER } from './wasm-layers-config';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 import { clamp01 } from '@/core/clamp';
+import { guardNum } from '@/core/guards';
 import { getMotionPipeline } from './motion-pipeline';
 import type { ModelManager } from '../manager/model-manager';
 
@@ -290,10 +291,20 @@ function _applyLayersBlending(modelId: string): void {
 
             const newMat = new Matrix();
             if (blendedPos !== null) {
-                newMat.copyFrom(Matrix.Compose(Vector3.One(), blendedRot, blendedPos));
+                const safeBlendedPos = new Vector3(
+                    guardNum(blendedPos.x),
+                    guardNum(blendedPos.y),
+                    guardNum(blendedPos.z)
+                );
+                newMat.copyFrom(Matrix.Compose(Vector3.One(), blendedRot, safeBlendedPos));
             } else {
                 const pos = oldMat.getTranslation();
-                newMat.copyFrom(Matrix.Compose(Vector3.One(), blendedRot, pos));
+                const safePos = new Vector3(
+                    guardNum(pos.x),
+                    guardNum(pos.y),
+                    guardNum(pos.z)
+                );
+                newMat.copyFrom(Matrix.Compose(Vector3.One(), blendedRot, safePos));
             }
 
             // perception.ts 扩展了 MmdRuntimeBone 添加 worldMatrix 属性，

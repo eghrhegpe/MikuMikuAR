@@ -38,6 +38,7 @@ Scene Menu：场景弹窗（核心 + barrel export）。职责：MenuStack 场�
 ## 关键约定
 - 环境/程序化动作已拆分到各自弹窗域，本文件仅做场景根路由
 - 错误经 `translateGoError` 翻译后 `showErrorToast` 呈现（可理解性）
+- **根 items 缓存 key 含 `getLang()`**：`buildSceneRootItems` 避免 RAF 每帧全量重建，命中缓存直接复用；key 为 `` `${getLang()},${groundEnabled},...` ``——items 内 `t()` 标签依赖语言，缺语言维度会导致切换语言后根级标签停留旧语言（ADR-065 语言热刷新契约）
 
 ## 与其他子系统关系
 - 依赖 `scene/scene.ts`（序列化/聚焦/撤销）、`core/wails-bindings`（backend 调用）

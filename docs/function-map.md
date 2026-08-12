@@ -1580,8 +1580,8 @@
 | `_applyMicroExpression()` | `scene/motion/perception-expression:21` | — |
 | `_applyEyeGazeJS()` | `scene/motion/perception-gaze-js:65` | JS 模式：眼部跟随（薄包装：调用 core + 注入 JS 写入策略） |
 | `_applyHeadGazeJS()` | `scene/motion/perception-gaze-js:55` | JS 模式：头部跟随（薄包装：调用 core + 注入 JS 写入策略） |
-| `_applyEyeGazeWasm()` | `scene/motion/perception-gaze-wasm:49` | WASM 模式：眼部跟随（薄包装：调用 core + 注入 WASM 写入策略） |
-| `_applyHeadGazeWasm()` | `scene/motion/perception-gaze-wasm:39` | WASM 模式：头部跟随（薄包装：调用 core + 注入 WASM 写入策略） |
+| `_applyEyeGazeWasm()` | `scene/motion/perception-gaze-wasm:60` | WASM 模式：眼部跟随（薄包装：调用 core + 注入 WASM 写入策略） |
+| `_applyHeadGazeWasm()` | `scene/motion/perception-gaze-wasm:50` | WASM 模式：头部跟随（薄包装：调用 core + 注入 WASM 写入策略） |
 | `EYE_BONE_CANDIDATES()` | `scene/motion/perception-gaze:455` | 眼球骨骼候选名（JS/WASM 路径共用） |
 | `EyeGazeWriteStrategy()` | `scene/motion/perception-gaze:216` | 眼部跟随写入策略（JS/WASM 各自实现） |
 | `HEAD_BONE_CANDIDATES()` | `scene/motion/perception-gaze:453` | 头部骨骼候选名（JS/WASM 路径共用） |
@@ -1737,15 +1737,15 @@
 | `loadVMDFromPath()` | `scene/motion/vmd-loader:179` | — |
 | `loadVMDMotion()` | `scene/motion/vmd-loader:60` | — |
 | `loadVPDPose()` | `scene/motion/vmd-loader:333` | — |
-| `DEFAULT_LAYER_BONE_FILTER()` | `scene/motion/wasm-layers-blender:57` | — |
-| `WasmLayerConfig()` | `scene/motion/wasm-layers-blender:59` | — |
-| `addWasmLayer()` | `scene/motion/wasm-layers-blender:160` | — |
-| `initWasmLayersBlender()` | `scene/motion/wasm-layers-blender:53` | 初始化 blender 的场景级依赖（必须在 setupWasmLayersBlender 之前调用）。 |
-| `isWasmLayersBlenderActive()` | `scene/motion/wasm-layers-blender:155` | — |
-| `removeWasmLayer()` | `scene/motion/wasm-layers-blender:185` | — |
-| `setupWasmLayersBlender()` | `scene/motion/wasm-layers-blender:114` | — |
-| `teardownWasmLayersBlender()` | `scene/motion/wasm-layers-blender:140` | — |
-| `updateWasmLayerWeight()` | `scene/motion/wasm-layers-blender:198` | — |
+| `DEFAULT_LAYER_BONE_FILTER()` | `scene/motion/wasm-layers-blender:58` | — |
+| `WasmLayerConfig()` | `scene/motion/wasm-layers-blender:60` | — |
+| `addWasmLayer()` | `scene/motion/wasm-layers-blender:161` | — |
+| `initWasmLayersBlender()` | `scene/motion/wasm-layers-blender:54` | 初始化 blender 的场景级依赖（必须在 setupWasmLayersBlender 之前调用）。 |
+| `isWasmLayersBlenderActive()` | `scene/motion/wasm-layers-blender:156` | — |
+| `removeWasmLayer()` | `scene/motion/wasm-layers-blender:186` | — |
+| `setupWasmLayersBlender()` | `scene/motion/wasm-layers-blender:115` | — |
+| `teardownWasmLayersBlender()` | `scene/motion/wasm-layers-blender:141` | — |
+| `updateWasmLayerWeight()` | `scene/motion/wasm-layers-blender:199` | — |
 | `DEFAULT_LAYER_BONE_FILTER()` | `scene/motion/wasm-layers-config:1` | — |
 | `applyGroundCollision()` | `scene/physics/ground-collision:118` | 根据当前 envState 还原地面碰撞状态（运行时就绪 / 场景加载后调用）。 |
 | `disableGroundCollision()` | `scene/physics/ground-collision:97` | 禁用地面碰撞：从所有世界移除并释放资源。 |

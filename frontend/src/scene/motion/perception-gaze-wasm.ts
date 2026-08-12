@@ -5,6 +5,7 @@
 import { Vector3, Matrix } from '@babylonjs/core/Maths/math.vector';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 
+import { guardNum } from '@/core/guards';
 import type { MmdRuntimeBoneExtended } from '@/core/types';
 import { _m, _writeMatToBuffer, _propagateChildrenWasm, type GazeCache } from './perception-shared';
 import {
@@ -18,7 +19,12 @@ import {
 const _wasmHeadStrategy: HeadGazeWriteStrategy = {
     writeHead(headRuntime, finalQ, headPos, oldHeadMat, _parentWorldQ): void {
         const headBuf = (headRuntime as MmdRuntimeBoneExtended).worldMatrix;
-        const newHeadMat = _m().copyFrom(Matrix.Compose(Vector3.One(), finalQ, headPos));
+        const safeHeadPos = new Vector3(
+            guardNum(headPos.x),
+            guardNum(headPos.y),
+            guardNum(headPos.z)
+        );
+        const newHeadMat = _m().copyFrom(Matrix.Compose(Vector3.One(), finalQ, safeHeadPos));
         _writeMatToBuffer(headBuf, newHeadMat);
         _propagateChildrenWasm(headRuntime, oldHeadMat, newHeadMat);
     },
@@ -29,7 +35,12 @@ const _wasmEyeStrategy: EyeGazeWriteStrategy = {
     writeEye(eyeRb, finalEyeQ, _localQ, eyeMat, _parentWorldQ): void {
         const eyeBuf = (eyeRb as MmdRuntimeBoneExtended).worldMatrix;
         const eyePos = eyeMat.getTranslation();
-        const newEyeMat = _m().copyFrom(Matrix.Compose(Vector3.One(), finalEyeQ, eyePos));
+        const safeEyePos = new Vector3(
+            guardNum(eyePos.x),
+            guardNum(eyePos.y),
+            guardNum(eyePos.z)
+        );
+        const newEyeMat = _m().copyFrom(Matrix.Compose(Vector3.One(), finalEyeQ, safeEyePos));
         _writeMatToBuffer(eyeBuf, newEyeMat);
         _propagateChildrenWasm(eyeRb, eyeMat, newEyeMat);
     },

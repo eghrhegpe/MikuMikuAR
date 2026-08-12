@@ -113,3 +113,8 @@ bone-override stage 内部按以下顺序执行：
 5. feet-adjustment 层（order=5，独立层）读取修复后的 IK 目标位置
 
 > ⚠️ 传播是「每骨立即」而非「批量」。新增帧钩子若写入会被传播到 IK 目标的骨骼，需调用 `protectIkPosition()` 注册保护。
+
+## WASM IK 重解与诊断日志门控（ADR-202 §六 / ADR-248）
+- **重解入口**：`setWasmIkResolver(resolver)` 注册 WASM IK 重解回调，所有调用方（bone-override 内部 + feet-adjustment 经 `getWasmIkResolver`）统一走 `_guardedResolve` 包装——feetDebug 开启时检测同帧内同一 `(modelId, ikSolverIndex)` 的重复调用（重复 `mmdModelSolveIk` 求解），双重节流（帧内最多 1 条 + 2 秒窗口 1 条）。
+- **求解优先序**：`_solvePosSlotIkWasm` 仅当原生 `IkSolver` 不存在时才回退 WASM 导出 `mmdModelSolveIk`（可信度存疑路径）。`_applyWasmOverride` 已先把 `slot.pos` 偏移写入 `worldMatrix`，`IkSolver.solve()` 读同一 `worldMatrix` 作为 IK 目标，解出髋/膝/踝旋转并回写全链。
+- **诊断日志**：`[IK-ENTRY]`（slotCount 诊断）/ `[OVERRIDE-APPLY]`（POS 偏移写入确认）均 `feetDebug.value` 门控 + `%60` 帧节流——热路径每帧调用，无条件 logWarn 会刷爆环形缓冲/console（ADR-248 教训）。
