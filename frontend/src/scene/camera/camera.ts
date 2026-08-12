@@ -224,6 +224,10 @@ export function setSurroundParams(p: Partial<SurroundParams>): void {
  */
 function _resolveBehavior(mode: CameraMode): CameraBehavior {
     const m = LEGACY_MODE_MAP[mode];
+    if (!m) {
+        logWarn('camera', `[_resolveBehavior] 未知 mode "${mode}"，回退 none`);
+        return 'none';
+    }
     if (isAutoCameraEnabled() && m.control === 'orbit' && m.behavior === 'none') {
         return 'beatcut';
     }
@@ -239,6 +243,12 @@ function _resolveBehavior(mode: CameraMode): CameraBehavior {
  */
 export function _syncAxesFromMode(mode: CameraMode): void {
     const m = LEGACY_MODE_MAP[mode];
+    if (!m) {
+        logWarn('camera', `[_syncAxesFromMode] 未知 mode "${mode}"，回退 orbit`);
+        _setCameraControlState('orbit');
+        _setCameraBehaviorState('none');
+        return;
+    }
     _setCameraControlState(m.control);
     _setCameraBehaviorState(_resolveBehavior(mode));
     if (m.scripted) {
@@ -471,6 +481,8 @@ export function switchCameraMode(mode: CameraMode): void {
             newCam = createVmdCamera();
             break;
         default:
+            logWarn('camera', `[switchCameraMode] 未知 mode "${mode}"，回退 orbit`);
+            mode = 'orbit';
             newCam = createOrbitCamera(scene, canvas);
             break;
     }

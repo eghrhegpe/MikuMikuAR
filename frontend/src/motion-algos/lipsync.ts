@@ -79,6 +79,10 @@ export function amplitudeToWeight(
     sensitivity: number,
     intensity: number
 ): number {
+    // 守卫：NaN 传播会污染 morph 权重；intensity 非有限值也会产生非法权重
+    if (Number.isNaN(amplitude) || Number.isNaN(sensitivity) || !Number.isFinite(intensity)) {
+        return 0;
+    }
     if (amplitude < sensitivity) {
         return 0;
     }

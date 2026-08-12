@@ -781,7 +781,11 @@ export async function loadPMXFile(
         // [fix] 感知层激活和角色个人灯附着必须在 VMD 继承完成后进行，
         // 避免 activatePerception 读到无 VMD 帧状态。
         if (_onModelLoaded) {
-            swallowError(Promise.resolve(_onModelLoaded(id)));
+            try {
+                swallowError(Promise.resolve(_onModelLoaded(id)));
+            } catch {
+                // 回调同步抛错不影响模型加载主流程
+            }
         }
 
         _modelManager.focus(id, uiState.autoCenterModel);

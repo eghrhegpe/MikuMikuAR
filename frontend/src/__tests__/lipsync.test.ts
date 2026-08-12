@@ -111,6 +111,30 @@ describe('findAllLipMorphs', () => {
         expect(result.pucker).toBeNull();
         expect(result.smile).toBeNull();
     });
+
+    it('falls back to lowercase Latin names', () => {
+        const result = findAllLipMorphs(['a', 'i', 'u', 'e']);
+        expect(result.open).toBe('a');
+        expect(result.close).toBe('i');
+        expect(result.pucker).toBe('u');
+        expect(result.smile).toBe('e');
+    });
+
+    it('handles mixed Japanese/Latin candidates', () => {
+        const result = findAllLipMorphs(['あ', 'イ', 'う', 'E']);
+        expect(result.open).toBe('あ');
+        expect(result.close).toBe('イ');
+        expect(result.pucker).toBe('う');
+        expect(result.smile).toBe('E');
+    });
+
+    it('finds only available categories in partial match', () => {
+        const result = findAllLipMorphs(['あ', 'い']);
+        expect(result.open).toBe('あ');
+        expect(result.close).toBe('い');
+        expect(result.pucker).toBeNull();
+        expect(result.smile).toBeNull();
+    });
 });
 
 describe('amplitudeToWeight', () => {
@@ -165,6 +189,30 @@ describe('amplitudeToWeight', () => {
 
     it('handles sensitivity out of range (>1) gracefully', () => {
         expect(amplitudeToWeight(0.5, 1.5, 0.8)).toBe(0);
+    });
+
+    it('returns 0 for NaN amplitude', () => {
+        expect(amplitudeToWeight(NaN, 0.2, 0.8)).toBe(0);
+    });
+
+    it('returns 0 for NaN sensitivity', () => {
+        expect(amplitudeToWeight(0.5, NaN, 0.8)).toBe(0);
+    });
+
+    it('returns 0 for NaN intensity', () => {
+        expect(amplitudeToWeight(1.0, 0.2, NaN)).toBe(0);
+    });
+
+    it('handles Infinity amplitude (clamped to intensity)', () => {
+        expect(amplitudeToWeight(Infinity, 0.2, 0.8)).toBeCloseTo(0.8, 3);
+    });
+
+    it('returns 0 for -Infinity amplitude', () => {
+        expect(amplitudeToWeight(-Infinity, 0.2, 0.8)).toBe(0);
+    });
+
+    it('returns 0 for Infinity intensity', () => {
+        expect(amplitudeToWeight(1.0, 0.2, Infinity)).toBe(0);
     });
 });
 

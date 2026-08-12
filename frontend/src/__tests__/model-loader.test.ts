@@ -503,6 +503,120 @@ describe('loadPMXFile actor createMmdModel 错误', () => {
     });
 });
 
+// ========== _onModelLoaded 回调同步抛错不阻塞模型加载 ==========
+
+describe('_onModelLoaded 回调异常防护', () => {
+    let mm: ReturnType<typeof makeModelManager>;
+
+    beforeEach(async () => {
+        h.removeCalls.length = 0;
+        h.importMeshAsync.mockReset();
+        h.importMeshAsync.mockResolvedValue({ meshes: [new h.Mesh()] });
+        mm = makeModelManager();
+        setOnMeshesReady(null as any);
+        setOnModelLoaded(null as any);
+        const { getSceneAction } = await import('@/core/scene-action-bridge');
+        (getSceneAction as any).mockReset();
+        (getSceneAction as any).mockReturnValue(undefined);
+        const { readFileBytes } = await import('@/core/wails-bindings');
+        (readFileBytes as any).mockReset();
+        (readFileBytes as any).mockResolvedValue(new Uint8Array([1, 2, 3]));
+        initLoader(scene, mmdRuntime, mm as any, vi.fn(), vi.fn(), vi.fn(), vi.fn());
+    });
+
+    it('_onModelLoaded 同步抛错：模型仍成功注册并返回 id', async () => {
+        setOnModelLoaded(() => {
+            throw new Error('callback boom');
+        });
+        const id = await loadPMXFile('/models/crash-cb.pmx');
+        expect(id).toBe('gen-id');
+        expect(mm.register).toHaveBeenCalledTimes(1);
+    });
+
+    it('_onModelLoaded 返回 rejected Promise：模型仍成功注册', async () => {
+        setOnModelLoaded(() => Promise.reject(new Error('async callback boom')));
+        const id = await loadPMXFile('/models/async-crash-cb.pmx');
+        expect(id).toBe('gen-id');
+        expect(mm.register).toHaveBeenCalledTimes(1);
+    });
+});
+
+// ========== _applySceneMotion abort 清理路径 ==========
+
+describe('_applySceneMotion abort 后清理', () => {
+    let mm: ReturnType<typeof makeModelManager>;
+
+    beforeEach(async () => {
+        h.removeCalls.length = 0;
+        h.importMeshAsync.mockReset();
+        h.importMeshAsync.mockResolvedValue({ meshes: [new h.Mesh()] });
+        mm = makeModelManager();
+        setOnMeshesReady(null as any);
+        setOnModelLoaded(null as any);
+        const { getSceneAction } = await import('@/core/scene-action-bridge');
+        (getSceneAction as any).mockReset();
+        (getSceneAction as any).mockReturnValue(undefined);
+        const { readFileBytes } = await import('@/core/wails-bindings');
+        (readFileBytes as any).mockReset();
+        (readFileBytes as any).mockResolvedValue(new Uint8Array([1, 2, 3]));
+        initLoader(scene, mmdRuntime, mm as any, vi.fn(), vi.fn(), vi.fn(), vi.fn());
+    });
+
+    it('effectiveSignal aborted 在 VMD 加载后 → _applySceneMotion 清理 registeredId', async () => {
+        const { getSceneAction } = await import('@/core/scene-action-bridge');
+        let ctrl: AbortController;
+        (getSceneAction as any).mockImplementation((key: string) => {
+            if (key === 'getActiveMotion') return () => ({ vmdPath: '/test.vmd', vmdName: 'dance.vmd' });
+            if (key === 'getMotionGen') return () => 0;
+            if (key === 'resolveCompatibility') return () => ({ compatible: true });
+            return undefined;
+        });
+        mmdRuntime.createMmdModel.mockReturnValue({
+            rigidBodyStates: null,
+            runtimeBones: [{ name: '頭' }],
+        });
+
+        ctrl = new AbortController();
+        // readFileBytes 第一次成功（PMX），第二次在 VMD 加载后 abort
+        let callCount = 0;
+        const { readFileBytes } = await import('@/core/wails-bindings');
+        (readFileBytes as any).mockImplementation(async () => {
+            callCount++;
+            if (callCount >= 2) {
+                ctrl.abort();
+                return new Uint8Array([4, 5, 6]);
+            }
+            return new Uint8Array([1, 2, 3]);
+        });
+
+        const id = await loadPMXFile('/models/abort-after-vmd.pmx', false, true, undefined, undefined, ctrl.signal);
+        expect(id).toBeNull();
+        // 模型注册后被 abort 清理
+        expect(mm.register).toHaveBeenCalledTimes(1);
+        expect(mm.remove).toHaveBeenCalled();
+    });
+});
+
+// ========== preferredId 参数传递 ==========
+
+describe('preferredId 参数', () => {
+    let mm: ReturnType<typeof makeModelManager>;
+
+    beforeEach(async () => {
+        h.removeCalls.length = 0;
+        h.importMeshAsync.mockReset();
+        h.importMeshAsync.mockResolvedValue({ meshes: [new h.Mesh()] });
+        mm = makeModelManager();
+        initLoader(scene, mmdRuntime, mm as any, vi.fn(), vi.fn(), vi.fn(), vi.fn());
+    });
+
+    it('preferredId 传入时 resolveModelId 返回该值作为模型 id', async () => {
+        // mock resolveModelId: preferredId ?? 'gen-id', preferredId 传入应直接返回
+        const id = await loadPMXFile('/models/p.pmx', true, false, undefined, undefined, undefined, 'custom-uuid-123');
+        expect(id).toBe('custom-uuid-123');
+    });
+});
+
 // 注：loader 未初始化快速路径（line 430-432）无法在同文件测试——
 // _scene/_mmdRuntime 是模块级 let，前序 describe 已调用 initLoader 设置，
 // vi.resetModules() 会断开所有 mock 绑定。该 guard 由代码审核覆盖。

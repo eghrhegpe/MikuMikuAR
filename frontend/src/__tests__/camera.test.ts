@@ -263,6 +263,7 @@ import {
     _syncAxesFromMode,
     setCameraControl,
     setCameraBehavior,
+    setFov,
     initCameraSystem,
     switchCameraMode,
     autoFrame,
@@ -902,5 +903,118 @@ describe('logCameraAlpha（补充：非 orbit 模式静默）', () => {
         logCameraAlpha();
         expect(spy).not.toHaveBeenCalled();
         spy.mockRestore();
+    });
+});
+
+// ======== 防御性修复覆盖 ========
+
+describe('_syncAxesFromMode（防御：非法 mode）', () => {
+    it('守卫：非法 mode 回退 orbit 并告警', () => {
+        _syncAxesFromMode('bogus' as never);
+        expect(getCameraControl()).toBe('orbit');
+        expect(getCameraBehavior()).toBe('none');
+        expect(shared.logWarn).toHaveBeenCalled();
+    });
+});
+
+describe('switchCameraMode（防御：非法 mode default 分支）', () => {
+    it('守卫：非法 mode 回退 orbit 并告警', () => {
+        setCurrentCamera(new shared.ArcRotateCamera());
+        switchCameraMode('bogus' as never);
+        expect(getCameraMode()).toBe('orbit');
+        expect(shared.logWarn).toHaveBeenCalled();
+    });
+});
+
+describe('setFov（FOV 写入）', () => {
+    it('正常：FOV 钳位写入 state 和 live camera', () => {
+        const arc = new shared.ArcRotateCamera();
+        setCurrentCamera(arc);
+        setFov(1.5);
+        expect(getFov()).toBe(1.5);
+        expect(arc.fov).toBe(1.5);
+    });
+
+    it('正常：FOV 超下限钳位至 0.1', () => {
+        setFov(-0.5);
+        expect(getFov()).toBe(0.1);
+    });
+
+    it('正常：FOV 超上限钳位至 3', () => {
+        setFov(99);
+        expect(getFov()).toBe(3);
+    });
+
+    it('边界：无 live camera 时仅写 state 不崩', () => {
+        setCurrentCamera(null);
+        expect(() => setFov(2)).not.toThrow();
+        expect(getFov()).toBe(2);
+    });
+});
+
+describe('setCameraState（补充：AR 模式跳过 switchCameraMode）', () => {
+    it('守卫：mode=ar 时跳过 switchCameraMode，仅写双轴', () => {
+        const arc = new shared.ArcRotateCamera();
+        setCurrentCamera(arc);
+        setCameraState({
+            mode: 'ar',
+            control: 'ar',
+            behavior: 'none',
+            preset: defaultCameraPreset(),
+            alpha: 0,
+            beta: 0,
+            radius: 16,
+            targetX: 0,
+            targetY: 8,
+            targetZ: 0,
+        });
+        // AR 模式跳过 switchCameraMode（不请求摄像头权限），相机不应被重建
+        expect(getCurrentCamera()).toBe(arc);
+        // 双轴已写入
+        expect(getCameraControl()).toBe('ar');
+        expect(getCameraBehavior()).toBe('none');
+    });
+});
+
+describe('setOrbitParams / setFreeflyParams（补充：类型不匹配）', () => {
+    it('边界：orbit 模式但 camera 非 ArcRotateCamera 时不同步', () => {
+        const uni = new shared.UniversalCamera();
+        setCurrentCamera(uni);
+        setCameraMode('orbit');
+        setOrbitParams({ distance: 99 });
+        // 非 ArcRotateCamera，不会同步到 live camera
+        expect(uni).not.toHaveProperty('radius');
+        // 但 preset 仍写入
+        expect(getCameraPreset().orbit.distance).toBe(99);
+    });
+
+    it('边界：freefly 模式但 camera 非 UniversalCamera 时不同步', () => {
+        const arc = new shared.ArcRotateCamera();
+        setCurrentCamera(arc);
+        setCameraMode('freefly');
+        setFreeflyParams({ speed: 99 });
+        // 非 UniversalCamera，不会同步到 live camera
+        expect(arc).not.toHaveProperty('speed');
+        // 但 preset 仍写入
+        expect(getCameraPreset().freefly.speed).toBe(99);
+    });
+});
+
+describe('setCameraState（补充：显式非 beatcut 行为清除自动运镜标志）', () => {
+    it('守卫：显式 behavior=none 清除 autoCameraEnabled', () => {
+        shared.uiState.autoCameraEnabled = true;
+        setCameraState({
+            mode: 'orbit',
+            control: 'orbit',
+            behavior: 'none',
+            preset: defaultCameraPreset(),
+            alpha: 0,
+            beta: 0,
+            radius: 16,
+            targetX: 0,
+            targetY: 8,
+            targetZ: 0,
+        });
+        expect(shared.uiState.autoCameraEnabled).toBe(false);
     });
 });

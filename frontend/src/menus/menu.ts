@@ -1046,6 +1046,8 @@ export class SlideMenu implements RenderContext {
     private async buildPanel(level: PopupLevel): Promise<void> {
         const seq = ++this._buildSeq;
         this.panel.innerHTML = '';
+        // [fix:P3] panel 重置，slide-list ref 必然失效，提前清空避免返回悬挂引用
+        this._slideListRef = null;
         // 释放上一次 renderCustom 返回的 dispose
         this._customDispose?.();
         this._customDispose = null;
@@ -1109,6 +1111,7 @@ export class SlideMenu implements RenderContext {
         // 只有最新的 build 才 appendChild，防止并发导致重复
         if (seq === this._buildSeq) {
             this.panel.appendChild(list);
+            this._slideListRef = list;
         }
     }
 
