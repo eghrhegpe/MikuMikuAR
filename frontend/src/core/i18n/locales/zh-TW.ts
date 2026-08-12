@@ -833,6 +833,7 @@ export const zhTW: Record<string, string> = {
     'scene.celEdgeThreshold': '描邊靈敏度',
     'scene.celEdgeStrength': '描邊強度',
     'scene.loadedStages': '已載入舞台',
+    'scene.toggleVisibility': '切換可見性',
     'scene.stageShown': '✓ 舞台已顯示',
     'scene.stageHidden': '✓ 舞台已隱藏',
     'scene.unloadStage': '卸載此舞台',

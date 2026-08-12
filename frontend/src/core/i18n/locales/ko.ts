@@ -837,6 +837,7 @@ export const ko: Record<string, string> = {
     'scene.celEdgeThreshold': '엣지 감도',
     'scene.celEdgeStrength': '엣지 강도',
     'scene.loadedStages': '로드된 무대',
+    'scene.toggleVisibility': '표시 전환',
     'scene.stageShown': '✓ 무대 표시됨',
     'scene.stageHidden': '✓ 무대 숨겨짐',
     'scene.unloadStage': '이 무대 언로드',

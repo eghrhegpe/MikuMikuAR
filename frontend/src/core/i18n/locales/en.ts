@@ -797,6 +797,7 @@ export const en: Record<string, string> = {
 
     // —— Stage levels ——
     'scene.loadedStages': 'Loaded Stages',
+    'scene.toggleVisibility': 'Toggle visibility',
     'scene.stageShown': '✓ Stage shown',
     'scene.stageHidden': '✓ Stage hidden',
     'scene.unloadStage': 'Unload this stage',

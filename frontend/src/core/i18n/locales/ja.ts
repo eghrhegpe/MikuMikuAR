@@ -836,6 +836,7 @@ export const ja: Record<string, string> = {
     'scene.celEdgeThreshold': 'エッジ感度',
     'scene.celEdgeStrength': 'エッジ強度',
     'scene.loadedStages': '読み込んだステージ',
+    'scene.toggleVisibility': '表示を切り替え',
     'scene.stageShown': '✓ ステージを表示',
     'scene.stageHidden': '✓ ステージを非表示',
     'scene.unloadStage': 'このステージをアンロード',
