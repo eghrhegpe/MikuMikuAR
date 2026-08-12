@@ -80,12 +80,17 @@ import {
 let PerceptionPerfMonitor: Awaited<
     typeof import('../../scene/motion/perception-shared')
 >['PerceptionPerfMonitor'];
+let feetDebug: Awaited<
+    typeof import('../../scene/motion/perception-shared')
+>['feetDebug'];
 let _getActiveContextsByTier: Awaited<
     typeof import('../../scene/motion/perception-observer')
 >['_getActiveContextsByTier'];
 
 beforeAll(async () => {
-    ({ PerceptionPerfMonitor } = await import('../../scene/motion/perception-shared'));
+    const shared = await import('../../scene/motion/perception-shared');
+    PerceptionPerfMonitor = shared.PerceptionPerfMonitor;
+    feetDebug = shared.feetDebug;
     ({ _getActiveContextsByTier } = await import('../../scene/motion/perception-observer'));
 });
 
@@ -355,6 +360,7 @@ describe('ADR-164 PerceptionPerfMonitor tier', () => {
     });
 
     it('F. 手动档 + fps 偏低 + 模型数多时 warn', () => {
+        feetDebug.value = true;
         const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
         const monitor = new PerceptionPerfMonitor();
         const lowFpsMock = { getFps: () => 25 };
@@ -366,6 +372,9 @@ describe('ADR-164 PerceptionPerfMonitor tier', () => {
             monitor.update(sceneMock, 30);
         }
 
+        // ADR-248 帧节流：预热 _warnThrottleFrame 到 59，使下次 update 恰好命中 % 60 === 0
+        (monitor as any)._warnThrottleFrame = 59;
+
         // 此时 this.fps = 25（已采样）+ 模型数 30 > 20
         // 切手动后，下次 update 应命中 fps<30 + modelCount>20 条件
         monitor.setManualTier('low');
@@ -376,5 +385,6 @@ describe('ADR-164 PerceptionPerfMonitor tier', () => {
         expect(callArg).toContain('手动档');
         expect(callArg).toContain('fps');
         warnSpy.mockRestore();
+        feetDebug.value = false;
     });
 });
