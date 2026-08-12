@@ -1752,8 +1752,8 @@
 | `isGroundCollisionEnabled()` | `scene/physics/ground-collision:44` | 地面碰撞是否处于启用状态 |
 | `AttachmentAnchors()` | `scene/physics/physics-bridge:71` | — |
 | `AttachmentFit()` | `scene/physics/physics-bridge:76` | — |
-| `FrameUpdateFn()` | `scene/physics/physics-bridge:115` | — |
-| `PerFrameUpdateRegistry()` | `scene/physics/physics-bridge:122` | 单一 onBeforeRenderObservable 调度多个按 key 注册的每帧回调。 |
+| `FrameUpdateFn()` | `scene/physics/physics-bridge:121` | — |
+| `PerFrameUpdateRegistry()` | `scene/physics/physics-bridge:128` | 单一 onBeforeRenderObservable 调度多个按 key 注册的每帧回调。 |
 | `autoFitAttachment()` | `scene/physics/physics-bridge:96` | 从模型尺寸启发式推算挂件几何参数。 |
 | `findRuntimeBone()` | `scene/physics/physics-bridge:31` | 在模型 runtimeBones 中按名查找。WASM / JS runtime 都暴露 runtimeBones，故后端无关。 |
 | `getBoneLocalMatrix()` | `scene/physics/physics-bridge:48` | 取骨骼在 rootMesh **局部坐标系**下的矩阵（列主序 Float32Array[16]），用于挂件锚点跟随。 |

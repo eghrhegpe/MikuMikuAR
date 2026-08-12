@@ -83,5 +83,6 @@ export function applyCameraPreset(preset: CameraAnglePreset): void {
  * 获取所有预设的列表（用于 UI 展示）。
  */
 export function getAllPresets(): CameraAnglePreset[] {
-    return [...CAMERA_PRESETS];
+    // 深拷贝：返回元素副本，避免调用方修改返回对象污染全局预设表
+    return CAMERA_PRESETS.map((p) => ({ ...p }));
 }

@@ -82,6 +82,17 @@ describe('physics-bridge autoFitAttachment', () => {
         expect(fit.particleSpacing).toBeCloseTo(0.1);
         expect(fit.particleRadius).toBeCloseTo(0.05);
     });
+
+    it('falls back to default density for non-positive / non-finite density', () => {
+        // density=0：旧实现会得到 particleRadius=0 的退化几何
+        expect(autoFitAttachment({ modelSize: { x: 0.5, y: 1.6, z: 0.3 } }, { density: 0 }).particleRadius).toBeCloseTo(0.03);
+        // density 负数：旧实现会得到负 particleRadius
+        expect(autoFitAttachment({ modelSize: { x: 0.5, y: 1.6, z: 0.3 } }, { density: -0.1 }).particleRadius).toBeGreaterThan(0);
+        // density NaN：旧实现会让 particleRadius 扩散为 NaN
+        expect(autoFitAttachment({ modelSize: { x: 0.5, y: 1.6, z: 0.3 } }, { density: NaN }).particleRadius).toBeCloseTo(0.03);
+        // density Infinity：同样回退默认
+        expect(autoFitAttachment({ modelSize: { x: 0.5, y: 1.6, z: 0.3 } }, { density: Infinity }).particleRadius).toBeGreaterThan(0);
+    });
 });
 
 describe('PerFrameUpdateRegistry', () => {
@@ -143,5 +154,126 @@ describe('PerFrameUpdateRegistry', () => {
         cb();
         expect(fn).not.toHaveBeenCalled();
         reg.unregister('a');
+    });
+
+    it('skip update when dt === 0 or dt < 0', () => {
+        for (const d of [0, -5]) {
+            const scene = {
+                deltaTime: d,
+                onBeforeRenderObservable: { add: vi.fn(() => ({})), remove: vi.fn() },
+            } as unknown as Scene;
+            const reg = new PerFrameUpdateRegistry(scene as Scene);
+            const fn = vi.fn();
+            reg.register('a', fn);
+            const cb = (scene as any).onBeforeRenderObservable.add.mock.calls[0][0];
+            cb();
+            expect(fn).not.toHaveBeenCalled();
+            reg.unregister('a');
+        }
+    });
+
+    it('single observer dispatches to all registered keys', () => {
+        const scene = {
+            deltaTime: 16.7,
+            onBeforeRenderObservable: { add: vi.fn(() => ({})), remove: vi.fn() },
+        } as unknown as Scene;
+        const reg = new PerFrameUpdateRegistry(scene as Scene);
+        const a = vi.fn();
+        const b = vi.fn();
+        reg.register('a', a);
+        reg.register('b', b);
+        expect((scene as any).onBeforeRenderObservable.add).toHaveBeenCalledTimes(1);
+        const cb = (scene as any).onBeforeRenderObservable.add.mock.calls[0][0];
+        cb();
+        expect(a).toHaveBeenCalledWith(0.0167);
+        expect(b).toHaveBeenCalledWith(0.0167);
+        reg.dispose();
+    });
+
+    it('unregistering one of two keeps observer alive for the other', () => {
+        const scene = {
+            deltaTime: 16.7,
+            onBeforeRenderObservable: { add: vi.fn(() => ({})), remove: vi.fn() },
+        } as unknown as Scene;
+        const reg = new PerFrameUpdateRegistry(scene as Scene);
+        const a = vi.fn();
+        const b = vi.fn();
+        reg.register('a', a);
+        reg.register('b', b);
+        reg.unregister('a');
+        // observer 不应被移除（还有 b）
+        expect((scene as any).onBeforeRenderObservable.remove).not.toHaveBeenCalled();
+        const cb = (scene as any).onBeforeRenderObservable.add.mock.calls[0][0];
+        cb();
+        expect(a).not.toHaveBeenCalled();
+        expect(b).toHaveBeenCalledTimes(1);
+        reg.dispose();
+    });
+
+    it('re-register after full unregister recreates the observer', () => {
+        const scene = {
+            deltaTime: 16.7,
+            onBeforeRenderObservable: { add: vi.fn(() => ({})), remove: vi.fn() },
+        } as unknown as Scene;
+        const reg = new PerFrameUpdateRegistry(scene as Scene);
+        const fn = vi.fn();
+        reg.register('a', fn);
+        reg.unregister('a');
+        expect((scene as any).onBeforeRenderObservable.add).toHaveBeenCalledTimes(1);
+        reg.register('b', fn);
+        expect((scene as any).onBeforeRenderObservable.add).toHaveBeenCalledTimes(2);
+        reg.dispose();
+    });
+
+    it('a throwing fn does not block other registered fns (safeCallVoid)', () => {
+        const scene = {
+            deltaTime: 16.7,
+            onBeforeRenderObservable: { add: vi.fn(() => ({})), remove: vi.fn() },
+        } as unknown as Scene;
+        const reg = new PerFrameUpdateRegistry(scene as Scene);
+        const boom = vi.fn(() => {
+            throw new Error('boom');
+        });
+        const ok = vi.fn();
+        reg.register('boom', boom);
+        reg.register('ok', ok);
+        const cb = (scene as any).onBeforeRenderObservable.add.mock.calls[0][0];
+        expect(() => cb()).not.toThrow();
+        expect(boom).toHaveBeenCalledTimes(1);
+        expect(ok).toHaveBeenCalledTimes(1);
+        reg.dispose();
+    });
+
+    it('dispose removes observer, clears callbacks and disposes onDispose handle', () => {
+        const scene = {
+            deltaTime: 16.7,
+            onBeforeRenderObservable: { add: vi.fn(() => ({})), remove: vi.fn() },
+            onDisposeObservable: { add: vi.fn(() => ({})), remove: vi.fn() },
+        } as unknown as Scene;
+        const reg = new PerFrameUpdateRegistry(scene as Scene);
+        reg.register('a', vi.fn());
+        reg.dispose();
+        // observer 与 onDispose 句柄都被移除
+        expect((scene as any).onBeforeRenderObservable.remove).toHaveBeenCalledTimes(1);
+        expect((scene as any).onDisposeObservable.remove).toHaveBeenCalledTimes(1);
+        // dispose 后回调整合（fns 已清空），不抛错且不产生新 observer
+        const cb = (scene as any).onBeforeRenderObservable.add.mock.calls[0][0];
+        expect(() => cb()).not.toThrow();
+        expect((scene as any).onBeforeRenderObservable.add).toHaveBeenCalledTimes(1);
+    });
+
+    it('scene onDisposeObservable triggers automatic cleanup', () => {
+        let disposeCb: (() => void) | null = null;
+        const scene = {
+            deltaTime: 16.7,
+            onBeforeRenderObservable: { add: vi.fn(() => ({})), remove: vi.fn() },
+            onDisposeObservable: { add: vi.fn((cb: () => void) => { disposeCb = cb; return {}; }), remove: vi.fn() },
+        } as unknown as Scene;
+        const reg = new PerFrameUpdateRegistry(scene as Scene);
+        reg.register('a', vi.fn());
+        // 触发 scene 销毁 → 自动 dispose
+        disposeCb!();
+        expect((scene as any).onBeforeRenderObservable.remove).toHaveBeenCalledTimes(1);
+        expect((scene as any).onDisposeObservable.remove).toHaveBeenCalledTimes(1);
     });
 });

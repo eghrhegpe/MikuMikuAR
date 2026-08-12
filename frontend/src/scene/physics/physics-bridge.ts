@@ -97,7 +97,13 @@ export function autoFitAttachment(
     anchor: AttachmentAnchors,
     opts?: { density?: number }
 ): AttachmentFit {
-    const density = opts?.density ?? 0.06; // 期望粒子间距（米）
+    // 期望粒子间距（米）。守卫非法 density（<=0 / NaN / Infinity）：
+    // 否则 particleRadius=0 甚至负数、circumference/density 扩散成非有限值。
+    const rawDensity = opts?.density;
+    const density =
+        rawDensity !== undefined && Number.isFinite(rawDensity) && rawDensity > 0
+            ? rawDensity
+            : 0.06;
     const h = Math.max(anchor.modelSize.y, 1e-3);
     const length = clamp(h * 0.3, 0.1, 2.0); // 挂件下垂长度 ≈ 模型高度 30%
     const innerRadius = clamp(h * 0.12, 0.03, 0.6); // 锚点环半径

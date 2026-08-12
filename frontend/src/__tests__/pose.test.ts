@@ -29,6 +29,7 @@ vi.mock('@/scene/camera/camera', () => ({ setOrbitParams: shared.setOrbitParams 
 vi.mock('@babylonjs/core/Cameras/arcRotateCamera', () => ({
     ArcRotateCamera: shared.ArcRotateCamera,
 }));
+vi.mock('@/core/logger', () => ({ logWarn: vi.fn() }));
 
 import {
     CAMERA_PRESETS,
@@ -44,6 +45,7 @@ import {
     computeWatermarkPosition,
     DEFAULT_WATERMARK,
 } from '../scene/pose/watermark';
+import { logWarn } from '@/core/logger';
 
 // ═══════════════════════════════════════════════════════
 // camera-angle — 预设相机角（纯函数 + applyCameraPreset）
@@ -109,6 +111,51 @@ describe('pose/camera-angle', () => {
         shared.sceneObj.activeCamera = { alpha: 1.0 };
         expect(() => applyCameraPreset(CAMERA_PRESETS[0])).not.toThrow();
         expect((shared.sceneObj.activeCamera as { alpha: number }).alpha).toBe(1.0);
+    });
+
+    it('applyCameraPreset 无 activeCamera 时不抛错，setOrbitParams 仍被调用', () => {
+        shared.sceneObj.activeCamera = null;
+        expect(() => applyCameraPreset(CAMERA_PRESETS[0])).not.toThrow();
+        expect(shared.setOrbitParams).toHaveBeenCalledTimes(1);
+    });
+
+    it('applyCameraPreset 按 elevation 换算 beta（俯视 45° → π/4）', () => {
+        const top = CAMERA_PRESETS.find((p) => p.name === '俯视')!;
+        const cam = new shared.ArcRotateCamera();
+        shared.sceneObj.activeCamera = cam;
+        applyCameraPreset(top);
+        expect(shared.setOrbitParams).toHaveBeenCalledWith({
+            beta: Math.PI / 4,
+            distance: 28,
+        });
+    });
+
+    it('applyCameraPreset 使用预设 distance（特写 = 12）', () => {
+        const closeUp = CAMERA_PRESETS.find((p) => p.name === '特写')!;
+        shared.sceneObj.activeCamera = new shared.ArcRotateCamera();
+        applyCameraPreset(closeUp);
+        expect(shared.setOrbitParams).toHaveBeenCalledWith({
+            beta: Math.PI / 2 - (5 * Math.PI) / 180,
+            distance: 12,
+        });
+    });
+
+    it('applyCameraPreset 聚焦模型不在 registry 时按 yaw=0 处理', () => {
+        shared.focusedModelId = 'ghost';
+        shared.modelRegistry.get.mockReturnValue(undefined);
+        const cam = new shared.ArcRotateCamera();
+        shared.sceneObj.activeCamera = cam;
+        applyCameraPreset(CAMERA_PRESETS[0]);
+        expect(cam.alpha).toBeCloseTo(-Math.PI / 2, 6);
+    });
+
+    it('getAllPresets 深拷贝，修改返回元素的属性不影响内部表', () => {
+        const list = getAllPresets();
+        list[0].azimuth = 999;
+        list[0].distance = 1;
+        const front = CAMERA_PRESETS.find((p) => p.name === '正面')!;
+        expect(front.azimuth).toBe(0);
+        expect(front.distance).toBe(22);
     });
 });
 
@@ -177,6 +224,25 @@ describe('pose/composition-guide', () => {
         expect(document.getElementById('composition-guide-overlay')).toBeTruthy();
         setGuideMode('off');
         expect(document.getElementById('composition-guide-overlay')).toBeNull();
+    });
+
+    it('setGuideMode(goldenRatio) 挂载 overlay 并画出 4 条线', () => {
+        setGuideMode('goldenRatio');
+        const overlay = document.getElementById('composition-guide-overlay');
+        expect(overlay).toBeTruthy();
+        expect(overlay?.querySelectorAll('line')).toHaveLength(4);
+    });
+
+    it('diagonal 辅助线 strokeWidth 为 0.15（主对角线为 0.3）', () => {
+        const lines = getGuideLines('diagonal');
+        const helperWidths = lines
+            .filter((l) => l.stroke === 'rgba(255,255,255,0.15)')
+            .map((l) => l.strokeWidth);
+        const mainWidths = lines
+            .filter((l) => l.stroke === 'rgba(255,255,255,0.4)')
+            .map((l) => l.strokeWidth);
+        expect(helperWidths).toEqual(['0.15', '0.15']);
+        expect(mainWidths).toEqual(['0.3', '0.3']);
     });
 });
 
@@ -290,6 +356,146 @@ describe('pose/watermark', () => {
         } finally {
             (globalThis as Record<string, unknown>).Image = origImage;
             vi.restoreAllMocks();
+        }
+    });
+
+    it('applyWatermark canvas.getContext 返回 null 时走 logWarn 并原样返回', async () => {
+        class FakeImage {
+            width = 100;
+            height = 50;
+            onload: (() => void) | null = null;
+            onerror: (() => void) | null = null;
+            set src(_v: string) {
+                this.onload?.();
+            }
+        }
+        const fakeCanvas = {
+            width: 0,
+            height: 0,
+            getContext: vi.fn(() => null),
+            toBlob: vi.fn(),
+            toDataURL: vi.fn(),
+        };
+        const origImage = globalThis.Image;
+        const origCreateElement = document.createElement.bind(document);
+        (vi.mocked(logWarn) as ReturnType<typeof vi.fn>).mockClear();
+        (globalThis as Record<string, unknown>).Image = FakeImage;
+        vi.spyOn(document, 'createElement').mockImplementation((tag: string) =>
+            tag === 'canvas' ? (fakeCanvas as unknown as HTMLCanvasElement) : origCreateElement(tag)
+        );
+
+        try {
+            setWatermarkConfig({ enabled: true });
+            await expect(applyWatermark('abc123', 'image/png', 0.9)).resolves.toBe('abc123');
+            expect(logWarn).toHaveBeenCalled();
+        } finally {
+            (globalThis as Record<string, unknown>).Image = origImage;
+            vi.restoreAllMocks();
+        }
+    });
+
+    it('applyWatermark toBlob 成功返回 blob 时走 FileReader 路径', async () => {
+        class FakeImage {
+            width = 100;
+            height = 50;
+            onload: (() => void) | null = null;
+            onerror: (() => void) | null = null;
+            set src(_v: string) {
+                this.onload?.();
+            }
+        }
+        class FakeFileReader {
+            result: string | null = 'data:image/png;base64,fromblob';
+            onload: (() => void) | null = null;
+            onerror: (() => void) | null = null;
+            readAsDataURL() {
+                this.onload?.();
+            }
+        }
+        const fakeCtx = {
+            save: vi.fn(),
+            restore: vi.fn(),
+            drawImage: vi.fn(),
+            fillText: vi.fn(),
+            measureText: vi.fn(() => ({ width: 40 })),
+            globalAlpha: 1,
+            font: '',
+            fillStyle: '',
+            textBaseline: 'bottom',
+            shadowColor: '',
+            shadowBlur: 0,
+            shadowOffsetX: 0,
+            shadowOffsetY: 0,
+        };
+        const fakeCanvas = {
+            width: 0,
+            height: 0,
+            getContext: vi.fn(() => fakeCtx),
+            toBlob: vi.fn((cb: (b: Blob | null) => void) => cb(new Blob(['x']))),
+            toDataURL: vi.fn(),
+        };
+        const origImage = globalThis.Image;
+        const origFileReader = globalThis.FileReader;
+        const origCreateElement = document.createElement.bind(document);
+        (globalThis as Record<string, unknown>).Image = FakeImage;
+        (globalThis as Record<string, unknown>).FileReader = FakeFileReader;
+        vi.spyOn(document, 'createElement').mockImplementation((tag: string) =>
+            tag === 'canvas' ? (fakeCanvas as unknown as HTMLCanvasElement) : origCreateElement(tag)
+        );
+
+        try {
+            setWatermarkConfig({ enabled: true, text: 'WM' });
+            await expect(applyWatermark('abc123', 'image/png', 0.9)).resolves.toBe('fromblob');
+        } finally {
+            (globalThis as Record<string, unknown>).Image = origImage;
+            (globalThis as Record<string, unknown>).FileReader = origFileReader;
+            vi.restoreAllMocks();
+        }
+    });
+
+    it('applyWatermark 图片加载失败 → reject', async () => {
+        class FailImage {
+            width = 100;
+            height = 50;
+            onload: (() => void) | null = null;
+            onerror: (() => void) | null = null;
+            set src(_v: string) {
+                this.onerror?.();
+            }
+        }
+        const origImage = globalThis.Image;
+        (globalThis as Record<string, unknown>).Image = FailImage;
+        try {
+            setWatermarkConfig({ enabled: true });
+            await expect(applyWatermark('abc123', 'image/png', 0.9)).rejects.toThrow(
+                'Failed to load image for watermark'
+            );
+        } finally {
+            (globalThis as Record<string, unknown>).Image = origImage;
+            vi.restoreAllMocks();
+        }
+    });
+
+    it('applyWatermark 图片加载超时 → reject 超时错误', async () => {
+        vi.useFakeTimers();
+        class HangingImage {
+            onload: (() => void) | null = null;
+            onerror: (() => void) | null = null;
+            set src(_v: string) {
+                /* 永不触发加载回调 */
+            }
+        }
+        const origImage = globalThis.Image;
+        (globalThis as Record<string, unknown>).Image = HangingImage;
+        try {
+            setWatermarkConfig({ enabled: true });
+            const pending = applyWatermark('abc123', 'image/png', 0.9);
+            const assertion = expect(pending).rejects.toThrow('Watermark image load timeout');
+            vi.advanceTimersByTime(10001);
+            await assertion;
+        } finally {
+            (globalThis as Record<string, unknown>).Image = origImage;
+            vi.useRealTimers();
         }
     });
 });

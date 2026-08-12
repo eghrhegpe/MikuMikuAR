@@ -80,6 +80,10 @@ import {
     importFile,
     getResourceViewMode,
     setResourceViewMode,
+    isModelDirTarget,
+    buildModelFormationLevel,
+    thumbnailKeyForModel,
+    buildModelRootItems,
 } from '../menus/library-core';
 import { isUnderRoot } from '../core/path';
 import { normPath } from '../core/fileservice';
@@ -422,6 +426,16 @@ describe('modelToResourceItem', () => {
         const item = modelToResourceItem(model);
         expect(item.data).toBe(model);
     });
+
+    it('uses 16/9 thumbAspect for stage models', () => {
+        const item = modelToResourceItem(makeModel({ type: 'stage' }));
+        expect(item.thumbAspect).toBe('16/9');
+    });
+
+    it('uses 2/3 thumbAspect for actor models', () => {
+        const item = modelToResourceItem(makeModel({ type: 'actor' }));
+        expect(item.thumbAspect).toBe('2/3');
+    });
 });
 
 describe('modelToRow', () => {
@@ -486,6 +500,16 @@ describe('modelToRow', () => {
             const m = makeModel({ file_path: '' });
             const row = modelToRow(m);
             expect(row.label).toBe('未知');
+        });
+
+        it('falls back to zip file_path basename when zip_inner is empty', () => {
+            const m = makeModel({
+                container: 'zip',
+                file_path: '/root/zips/model.zip',
+                zip_inner: '',
+            });
+            const row = modelToRow(m);
+            expect(row.label).toBe('model.zip');
         });
     });
 
@@ -1084,5 +1108,98 @@ describe('Resource View Mode', () => {
         expect(() => setResourceViewMode('grid')).not.toThrow();
         // 本地状态仍更新
         expect(getResourceViewMode()).toBe('grid');
+    });
+});
+
+describe('isModelDirTarget', () => {
+    it('returns true for models: targets', () => {
+        expect(isModelDirTarget('models:import-file')).toBe(true);
+        expect(isModelDirTarget('models:browse')).toBe(true);
+    });
+    it('returns false for non-model targets', () => {
+        expect(isModelDirTarget('scene:x1')).toBe(false);
+        expect(isModelDirTarget('formation:set:line')).toBe(false);
+    });
+    it('returns false for undefined/empty', () => {
+        expect(isModelDirTarget(undefined)).toBe(false);
+        expect(isModelDirTarget('')).toBe(false);
+    });
+});
+
+describe('buildModelFormationLevel', () => {
+    it('builds a level with six formation actions', () => {
+        const level = buildModelFormationLevel();
+        expect(level.dir).toBe('');
+        expect(level.items).toHaveLength(6);
+        expect(level.items[0].target).toBe('formation:set:line');
+        expect(level.items[5].target).toBe('formation:set:arc');
+        expect(level.items.every((r: any) => r.kind === 'action')).toBe(true);
+    });
+
+    it('exposes itemBuilder producing the same six actions', () => {
+        const level = buildModelFormationLevel();
+        expect(typeof level.itemBuilder).toBe('function');
+        if (level.itemBuilder) {
+            expect(level.itemBuilder()).toHaveLength(6);
+        }
+    });
+});
+
+describe('thumbnailKeyForModel', () => {
+    it('builds key with default resolution and actor aspect', () => {
+        const m = makeModel({ file_path: '/test/models/a.pmx', dir: '/test/models' });
+        expect(thumbnailKeyForModel(m)).toBe('/test/models/a.pmx::512::2/3');
+    });
+
+    it('appends zip_inner to baseKey for zip containers', () => {
+        const m = makeModel({ container: 'zip', file_path: '/test/m.zip', zip_inner: 'm.pmx' });
+        expect(thumbnailKeyForModel(m)).toBe('/test/m.zip::m.pmx::512::2/3');
+    });
+
+    it('uses 16/9 aspect and stage baseKey for stage models', () => {
+        const m = makeModel({ type: 'stage', file_path: '/test/st.pmx' });
+        expect(thumbnailKeyForModel(m)).toBe('/test/st.pmx::512::16/9');
+    });
+});
+
+describe('buildModelRootItems', () => {
+    it('builds fixed menu entries when no actors registered', () => {
+        const items = buildModelRootItems();
+        expect(items.some((r: any) => r.target === 'models:import-file')).toBe(true);
+        expect(items.some((r: any) => r.target === 'models:rescan')).toBe(true);
+        expect(items.some((r: any) => r.target === 'models:browse')).toBe(true);
+        expect(items.some((r: any) => r.target === '__recent__')).toBe(true);
+        expect(items.some((r: any) => r.target === '__tags__')).toBe(true);
+        expect(items.some((r: any) => r.target === 'models:formation')).toBe(false);
+    });
+
+    it('includes an actor row with focused state when an actor is registered', async () => {
+        const config = await import('../core/config');
+        (config as any).modelRegistry.set('x1', { kind: 'actor', name: 'Miku' });
+        mockState.focusedModelId = 'x1';
+        const items = buildModelRootItems();
+        const actorRow = items.find((r: any) => r.target === 'scene:x1');
+        expect(actorRow).toBeDefined();
+        expect(actorRow.label).toBe('Miku');
+        expect(actorRow.focused).toBe(true);
+        expect(actorRow.rowKey).toBe('actor:x1:on');
+        expect(actorRow.trailing).toBeDefined();
+        // 清理注册，避免污染后续用例（buildModelRootItems 内部按 regSize 缓存）
+        (config as any).modelRegistry.clear();
+    });
+
+    it('rebuilds after focus changes (cache keyed on regSize + focus)', async () => {
+        const config = await import('../core/config');
+        (config as any).modelRegistry.set('x2', { kind: 'actor', name: 'Rin' });
+        mockState.focusedModelId = null;
+        const off = buildModelRootItems().find((r: any) => r.target === 'scene:x2');
+        expect(off).toBeDefined();
+        expect(off.focused).toBe(false);
+        expect(off.rowKey).toBe('actor:x2:off');
+        mockState.focusedModelId = 'x2';
+        const on = buildModelRootItems().find((r: any) => r.target === 'scene:x2');
+        expect(on!.focused).toBe(true);
+        expect(on!.rowKey).toBe('actor:x2:on');
+        (config as any).modelRegistry.clear();
     });
 });
