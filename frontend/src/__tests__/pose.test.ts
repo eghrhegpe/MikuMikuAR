@@ -81,6 +81,12 @@ describe('pose/camera-angle', () => {
         );
     });
 
+    it('presetCameraAlpha 随预设方位角旋转（右45° azimuth=45 → alpha 增大 π/4）', () => {
+        const right = CAMERA_PRESETS.find((p) => p.name === '右45°')!;
+        expect(right.azimuth).toBe(45);
+        expect(presetCameraAlpha(right, 0)).toBeCloseTo(-Math.PI / 2 + Math.PI / 4, 6);
+    });
+
     it('getAllPresets 返回副本，修改返回值不影响内部表', () => {
         const list = getAllPresets();
         list.length = 0;
@@ -392,6 +398,13 @@ describe('pose/watermark', () => {
             (globalThis as Record<string, unknown>).Image = origImage;
             vi.restoreAllMocks();
         }
+    });
+
+    it('computeWatermarkPosition 文字比图宽时 x 收敛到 margin（不画到画布外）', () => {
+        // textWidth=200 > imgWidth=100：右对齐/居中若按原公式会得到负 x，文字被裁剪
+        expect(computeWatermarkPosition('bottomRight', 200, 100, 50, 12).x).toBe(12);
+        expect(computeWatermarkPosition('topRight', 200, 100, 50, 12).x).toBe(12);
+        expect(computeWatermarkPosition('center', 200, 100, 50, 12).x).toBe(12);
     });
 
     it('applyWatermark toBlob 成功返回 blob 时走 FileReader 路径', async () => {

@@ -46,6 +46,18 @@ export interface SolveFootOutput {
 export function solveFootTarget(input: SolveFootInput): SolveFootOutput {
     const { footY, groundY, feet, prevTargetY, hipToFootDist, legLength, centerY } = input;
 
+    // NaN 守卫：任一位置输入失效（地形查询失败/未初始化）时跳过校正，
+    // 避免把 NaN 写入骨骼导致骨架污染。skip 时引擎不写骨骼，targetY 仅作信息回传。
+    if (
+        !Number.isFinite(footY) ||
+        !Number.isFinite(groundY) ||
+        !Number.isFinite(centerY) ||
+        !Number.isFinite(hipToFootDist) ||
+        !Number.isFinite(legLength)
+    ) {
+        return { skip: true, targetY: footY, grounded: false };
+    }
+
     // 模型自然脚高（站直时脚 IK 的预期世界 Y）= centerY - legLength
     // 与 groundY 取高者作为基准面：groundY 处理地形起伏，modelGround 处理模型偏移
     // 脚离基准面超过 jumpThreshold 视为有意抬脚/跳跃，跳过校正。
@@ -57,8 +69,10 @@ export function solveFootTarget(input: SolveFootInput): SolveFootOutput {
     let desiredY = groundY + feet.soleHeight;
 
     // 触及倾角：腿伸展仍够不到地面时，趾尖额外下沉补偿
+    // 仅当脚位于/高于地面（footY >= groundY）时生效——脚已穿透地面时再下沉会把脚
+    // 卡在地面下方无法贴地，此时应走「上推防穿插」分支而非下沉。
     const reach = (feet.reachAngle * Math.PI) / 180;
-    if (hipToFootDist > legLength && legLength > 1e-4) {
+    if (footY >= groundY && hipToFootDist > legLength && legLength > 1e-4) {
         const overshoot = hipToFootDist - legLength;
         desiredY -= Math.sin(reach) * overshoot;
     }

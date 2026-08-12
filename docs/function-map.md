@@ -1789,7 +1789,7 @@
 | `DEFAULT_WATERMARK()` | `scene/pose/watermark:19` | — |
 | `WatermarkConfig()` | `scene/pose/watermark:6` | — |
 | `WatermarkPosition()` | `scene/pose/watermark:41` | 水印文字锚点计算结果。 |
-| `applyWatermark()` | `scene/pose/watermark:88` | 在 base64 图片数据上叠加水印。 |
+| `applyWatermark()` | `scene/pose/watermark:93` | 在 base64 图片数据上叠加水印。 |
 | `computeWatermarkPosition()` | `scene/pose/watermark:51` | 计算水印文字绘制位置（纯函数，可独立测试）。 |
 | `getWatermarkConfig()` | `scene/pose/watermark:31` | 获取当前水印配置。 |
 | `setWatermarkConfig()` | `scene/pose/watermark:36` | 设置水印配置（部分更新）。 |
@@ -2077,8 +2077,8 @@
 |------|--------|------|
 | `showAssistant()` | `menus/assistant-panel:27` | — |
 | `addAssistantMessage()` | `menus/diagnostic-chat:20` | 添加助手消息 |
-| `buildChatSchema()` | `menus/diagnostic-chat:392` | 构建 chat schema（纯 DOM 构建） |
-| `buildSystemMessage()` | `menus/diagnostic-chat:346` | 构造 system message |
+| `buildChatSchema()` | `menus/diagnostic-chat:397` | 构建 chat schema（纯 DOM 构建） |
+| `buildSystemMessage()` | `menus/diagnostic-chat:351` | 构造 system message |
 | `finalizeStream()` | `menus/diagnostic-chat:260` | 流式完成收尾（非 dialogue 模式） |
 | `finalizeStreamRow()` | `menus/diagnostic-chat:239` | 定格 streaming row（移除 streaming class + Markdown 渲染） |
 | `pruneHistory()` | `menus/diagnostic-chat:319` | 历史截断 |
@@ -2086,8 +2086,8 @@
 | `renderDialogueCards()` | `menus/diagnostic-chat:295` | 渲染情绪卡片（台词模式） |
 | `renderStreamingChunk()` | `menus/diagnostic-chat:178` | 流式追加 chunk 到当前 streaming row |
 | `showPendingBubble()` | `menus/diagnostic-chat:155` | 显示"思考中"占位气泡 |
-| `updateSendButton()` | `menus/diagnostic-chat:375` | 更新发送/停止按钮 |
-| `updateSpeakToggle()` | `menus/diagnostic-chat:358` | 更新朗读开关 UI（不支持时隐藏） |
+| `updateSendButton()` | `menus/diagnostic-chat:380` | 更新发送/停止按钮 |
+| `updateSpeakToggle()` | `menus/diagnostic-chat:363` | 更新朗读开关 UI（不支持时隐藏） |
 | `applyProvider()` | `menus/diagnostic-config:267` | — |
 | `buildConfigSchema()` | `menus/diagnostic-config:481` | — |
 | `goKeyAllowsProceed()` | `menus/diagnostic-config:26` | — |

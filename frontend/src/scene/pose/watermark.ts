@@ -60,18 +60,23 @@ export function computeWatermarkPosition(
         case 'topLeft':
             return { x: margin, y: fontSize + margin, textBaseline: 'top' };
         case 'topRight':
-            return { x: imgWidth - textWidth - margin, y: fontSize + margin, textBaseline: 'top' };
+            // 文字比图宽时会算出负 x，clamp 到左侧 margin 避免画到画布外
+            return {
+                x: Math.max(margin, imgWidth - textWidth - margin),
+                y: fontSize + margin,
+                textBaseline: 'top',
+            };
         case 'bottomLeft':
             return { x: margin, y: imgHeight - margin, textBaseline: 'bottom' };
         case 'center':
             return {
-                x: (imgWidth - textWidth) / 2,
+                x: Math.max(margin, (imgWidth - textWidth) / 2),
                 y: imgHeight / 2 + fontSize / 2,
                 textBaseline: 'middle',
             };
         default: // bottomRight
             return {
-                x: imgWidth - textWidth - margin,
+                x: Math.max(margin, imgWidth - textWidth - margin),
                 y: imgHeight - margin,
                 textBaseline: 'bottom',
             };

@@ -165,4 +165,52 @@ describe('pruneHistory', () => {
         expect(pruned[0].role).toBe('user');
         expect(pruned.some((m) => m.role === 'system')).toBe(false);
     });
+
+    it('不修改传入的原数组（纯函数）', () => {
+        const msgs: ChatMessage[] = Array.from({ length: 25 }, (_, i) => msg('user', `m${i}`));
+        const snapshot = msgs.map((m) => ({ ...m }));
+        pruneHistory(msgs, 10);
+        expect(msgs).toEqual(snapshot);
+    });
+
+    it('发生裁剪时返回新数组引用，不泄漏输入引用', () => {
+        const msgs = Array.from({ length: 25 }, (_, i) => msg('user', `m${i}`));
+        expect(pruneHistory(msgs, 10)).not.toBe(msgs);
+    });
+
+    it('裁剪边界因工具链前移到数组开头时，不以孤立 tool 开头', () => {
+        const msgs: ChatMessage[] = [
+            msg('tool', 'orphan', 'call_z'),
+            msg('assistant', null, 'call_1'),
+            msg('tool', 'out1', 'call_1'),
+            msg('assistant', null, 'call_2'),
+            msg('tool', 'out2', 'call_2'),
+            msg('user', 'u1'),
+        ];
+        const pruned = pruneHistory(msgs, 1);
+        expect(pruned[0].role).not.toBe('tool');
+        expect(pruned[0]).toEqual(msg('assistant', null, 'call_1'));
+    });
+
+    it('工具链比预算更长时整链保留、不以孤立 tool 开头', () => {
+        const msgs: ChatMessage[] = [
+            msg('user', 'u0'),
+            msg('assistant', null, 'a1'),
+            msg('tool', 't1', 'a1'),
+            msg('assistant', null, 'a2'),
+            msg('tool', 't2', 'a2'),
+            msg('assistant', null, 'a3'),
+            msg('tool', 't3', 'a3'),
+            msg('user', 'u1'),
+        ];
+        const pruned = pruneHistory(msgs, 1);
+        expect(pruned[0].role).toBe('assistant');
+        expect(pruned.length).toBe(7);
+        expect(pruned.some((m) => m.content === 't1')).toBe(true);
+    });
+
+    it('maxPairs 大于消息数时保留全部', () => {
+        const msgs = Array.from({ length: 3 }, (_, i) => msg('user', `m${i}`));
+        expect(pruneHistory(msgs, 100)).toEqual(msgs);
+    });
 });

@@ -338,7 +338,12 @@ export function pruneHistory(messages: ChatMessage[], maxPairs = 10): ChatMessag
         }
         break;
     }
-    const pruned = body.slice(start);
+    let pruned = body.slice(start);
+    // 防御：若工具链前移到数组开头且 body[0] 是孤立 tool（畸形输入），
+    // 丢弃开头的孤立 tool，保证结果不以 tool 开头
+    while (pruned[0]?.role === 'tool') {
+        pruned = pruned.slice(1);
+    }
     return systemMsg ? [systemMsg, ...pruned] : pruned;
 }
 

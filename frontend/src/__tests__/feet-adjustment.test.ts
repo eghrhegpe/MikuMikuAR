@@ -131,4 +131,57 @@ describe('solveFootTarget', () => {
         expect(r.skip).toBe(true);
         expect(r.targetY).toBe(5.5);
     });
+
+    it('reach 穿地缺陷：脚已穿透地面且腿过伸时不额外下沉（reach 仅对离地脚生效）', () => {
+        // footY=-0.5 已穿地，hipToFootDist=2 > legLength=1 触发 reach。
+        // 缺陷行为：reach 把 desiredY 拉到 -0.5，脚卡在地面下不贴地。
+        // 修复后：脚在地面下 → reach 不生效 → desiredY=0 → 上推到地面。
+        const r = solveFootTarget(
+            input({
+                footY: -0.5,
+                groundY: 0,
+                hipToFootDist: 2,
+                legLength: 1,
+                feet: defaultFeet({ reachAngle: 30 }),
+            })
+        );
+        expect(r.skip).toBe(false);
+        expect(r.targetY).toBeCloseTo(0);
+    });
+
+    it('reach 边界：脚恰在地面高度（footY==groundY）仍可额外下沉', () => {
+        // 回归保护：reach 门控用 footY>=groundY，脚恰贴地时髋过伸仍应下沉趾尖
+        const r = solveFootTarget(
+            input({
+                footY: 0,
+                groundY: 0,
+                hipToFootDist: 2,
+                legLength: 1,
+                feet: defaultFeet({ reachAngle: 30 }),
+            })
+        );
+        expect(r.skip).toBe(false);
+        expect(r.targetY).toBeCloseTo(-0.5);
+    });
+
+    it('NaN 守卫：groundY 为 NaN 时安全跳过（不向骨骼写入 NaN）', () => {
+        const r = solveFootTarget(input({ footY: 0, groundY: NaN }));
+        expect(r.skip).toBe(true);
+        expect(r.grounded).toBe(false);
+        expect(r.targetY).toBe(0);
+    });
+
+    it('NaN 守卫：footY 为 NaN 时安全跳过', () => {
+        const r = solveFootTarget(input({ footY: NaN, groundY: 0 }));
+        expect(r.skip).toBe(true);
+        expect(r.grounded).toBe(false);
+    });
+
+    it('legLength=0 时 reach/maxAngle 不除零不产生 NaN', () => {
+        const r = solveFootTarget(
+            input({ footY: 0, groundY: 0, legLength: 0, hipToFootDist: 2 })
+        );
+        expect(Number.isFinite(r.targetY)).toBe(true);
+        expect(r.skip).toBe(false);
+    });
 });
