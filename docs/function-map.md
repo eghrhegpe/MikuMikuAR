@@ -1,13 +1,13 @@
 # 函数映射表
 
 > AI 找代码用。改前端功能时先 grep 此表定位文件。
-> **自动生成**（2026-08-12）— 由 `scripts/gen-funcmap.mjs` 生成。
+> **自动生成**（2026-08-14）— 由 `scripts/gen-funcmap.mjs` 生成。
 
 ## 总览
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 136 | 816 |
+| 核心基础设施 | 136 | 817 |
 | 3D 场景 | 125 | 1233 |
 | 菜单 & UI | 76 | 397 |
 | 动作算法 | 18 | 138 |
@@ -238,10 +238,10 @@
 | `allSettledFilter()` | `core/collections:49` | 等待全部 promise 结束，仅返回 fulfilled 结果（rejected 被静默丢弃）。 |
 | `ensureArray()` | `core/collections:6` | 确保值为数组；非数组则包裹为单元素数组。 |
 | `filterKeys()` | `core/collections:11` | 按谓词过滤对象键，返回仅含满足条件键值对的新对象。 |
-| `col3FromTriple()` | `core/color-helpers:17` | 从 &#96;[r, g, b]&#96; 三元组构造 Color3。 |
-| `hexToRgb()` | `core/color-helpers:24` | 将 #rrggbb 解析为 {r,g,b}（0–255）。非法输入回退主题默认 74,108,247。 |
-| `rgbString()` | `core/color-helpers:42` | 将 Color3 转为 CSS &#96;rgb(r, g, b)&#96; 字符串（0–255 整数，clamp 到 [0,255]）。 |
-| `rgbToString()` | `core/color-helpers:37` | 将 {r,g,b} 转为 CSS rgb 字符串 "r, g, b"（供 --accent-rgb 等 CSS 变量）。 |
+| `col3FromTriple()` | `core/color-helpers:15` | 从 &#96;[r, g, b]&#96; 三元组构造 Color3。 |
+| `hexToRgb()` | `core/color-helpers:22` | 将 #rrggbb 解析为 {r,g,b}（0–255）。非法输入回退主题默认 74,108,247。 |
+| `rgbString()` | `core/color-helpers:40` | 将 Color3 转为 CSS &#96;rgb(r, g, b)&#96; 字符串（0–255 整数，clamp 到 [0,255]）。 |
+| `rgbToString()` | `core/color-helpers:35` | 将 {r,g,b} 转为 CSS rgb 字符串 "r, g, b"（供 --accent-rgb 等 CSS 变量）。 |
 | `debounce()` | `core/debounce:8` | 函数防抖：在等待指定时间后才执行函数，如果在等待期间再次调用则重置计时器。 |
 | `disposeLogPanel()` | `core/debug-log-panel:150` | — |
 | `hideLogPanel()` | `core/debug-log-panel:136` | — |
@@ -268,7 +268,7 @@
 | `addDisposableListener()` | `core/dom:75` | 添加事件监听器并返回 Disposable，便于在 dispose 链路中统一释放。 |
 | `dom()` | `core/dom:13` | — |
 | `handleDropFile()` | `core/drop-import:31` | 处理已落地的路径（桌面绝对路径或浏览器 IndexedDB 键）。 |
-| `handleDroppedFile()` | `core/drop-import:80` | [doc:adr-177] 单个拖入文件落地：桌面走原生 path，浏览器读字节写 IndexedDB。 |
+| `handleDroppedFile()` | `core/drop-import:85` | [doc:adr-177] 单个拖入文件落地：桌面走原生 path，浏览器读字节写 IndexedDB。 |
 | `StateReader()` | `core/e2e-state-bridge:7` | — |
 | `getE2EStateReader()` | `core/e2e-state-bridge:17` | 读取 E2E 状态读取器（core/dev-hooks 侧调用；未注册返回 null） |
 | `setE2EStateReader()` | `core/e2e-state-bridge:12` | 注册 E2E 状态读取器（menus/menu-schema 侧调用，模块加载即注册） |
@@ -520,9 +520,10 @@
 | `generateTextColors()` | `core/theme:7` | — |
 | `ToastAction()` | `core/toast:3` | — |
 | `ToastVariant()` | `core/toast:8` | — |
-| `showErrorToast()` | `core/toast:233` | — |
-| `showInfoToast()` | `core/toast:242` | — |
-| `showToast()` | `core/toast:192` | — |
+| `_resetToastForTest()` | `core/toast:257` | — |
+| `showErrorToast()` | `core/toast:237` | — |
+| `showInfoToast()` | `core/toast:246` | — |
+| `showToast()` | `core/toast:196` | — |
 | `BoneOverrideEntry()` | `core/types:22` | [doc:adr-061] Motion Override — 持久化的单条骨骼覆盖配置 |
 | `BrowseOutcome()` | `core/types:392` | — |
 | `CameraBehavior()` | `core/types:602` | ADR-100 轴 B — 运动行为：相机如何自动运动，仅当控制轴为 &#96;orbit&#96;(ArcRotate) 时生效。 |

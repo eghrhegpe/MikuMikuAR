@@ -12,6 +12,7 @@ import {
     showToast,
     showErrorToast,
     showInfoToast,
+    _resetToastForTest,
 } from '../core/toast';
 
 function container(): HTMLElement | null {
@@ -24,6 +25,8 @@ function toastCount(): number {
 
 beforeEach(() => {
     vi.useFakeTimers();
+    // [audit:round16 P2] 重置模块级 _activeToasts，杜绝跨用例残留污染 MAX_VISIBLE 语义
+    _resetToastForTest();
     document.body.innerHTML = '';
 });
 
@@ -39,7 +42,8 @@ describe('showToast（P2#9 document 守卫 + 渲染）', () => {
         const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
         vi.stubGlobal('document', undefined);
         expect(() => showToast('标题')).not.toThrow();
-        expect(warn).toHaveBeenCalled();
+        // [audit:round16 P4] 校验告警带 [toast] 前缀，防误告警其他模块
+        expect(warn).toHaveBeenCalledWith(expect.stringContaining('[toast]'));
     });
 
     it('首次调用创建容器（含 aria-live 属性）', () => {
@@ -72,7 +76,8 @@ describe('showToast（P2#9 document 守卫 + 渲染）', () => {
         for (let i = 0; i < 6; i++) {
             showToast(`t${i}`);
         }
-        expect(toastCount()).toBeLessThanOrEqual(5);
+        // [audit:round16 P3] 同步裁剪语义下必然恰为 5，收紧断言防裁剪过头/不足漂移
+        expect(toastCount()).toBe(5);
         // 最旧的 t0 被移除
         expect(container()!.textContent).not.toContain('t0');
         expect(container()!.textContent).toContain('t5');
@@ -100,12 +105,27 @@ describe('showToast（P2#9 document 守卫 + 渲染）', () => {
     it('close 按钮点击淡出并移除 toast', () => {
         showToast('标题');
         expect(toastCount()).toBe(1);
-        const close = container()!.querySelector('span[aria-label="common.close"]')!;
+        // [audit:round16 P2] close 已从 span 改原生 button（键盘可操作），选择器同步
+        const close = container()!.querySelector('button[aria-label="common.close"]')!;
         close.dispatchEvent(new MouseEvent('click'));
         // fadeAndRemoveToast: 50ms 后开始淡出，再 150ms 后移除
         vi.advanceTimersByTime(50);
         vi.advanceTimersByTime(150);
         expect(toastCount()).toBe(0);
+    });
+
+    it('最后一个 error toast 移除后容器回退 status/polite（aria 回退路径）', () => {
+        // [audit:round16 P3] _syncToastAriaLive 回退是唯一有状态逻辑，此前未测
+        showErrorToast('错误');
+        const c = container()!;
+        expect(c.getAttribute('role')).toBe('alert');
+        // 自动移除：duration 8000 → 淡出 50ms → 淡出完成 300ms → removeToast
+        vi.advanceTimersByTime(8000);
+        vi.advanceTimersByTime(50);
+        vi.advanceTimersByTime(300);
+        expect(toastCount()).toBe(0);
+        expect(c.getAttribute('role')).toBe('status');
+        expect(c.getAttribute('aria-live')).toBe('polite');
     });
 
     it('duration 到期后自动淡出移除', () => {

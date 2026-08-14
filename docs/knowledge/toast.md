@@ -10,6 +10,7 @@ source_files:
 symbols:
   - ToastAction
   - ToastVariant
+  - _resetToastForTest
   - showErrorToast
   - showInfoToast
   - showToast
@@ -37,5 +38,5 @@ use_when:
 - 用户可见文案由调用方传入已翻译文本，复制按钮使用 i18n。
 
 ## 验证入口
-- 测试：Toast 当前主要由 UI 调用链间接覆盖。
+- 测试：`frontend/src/__tests__/toast.test.ts` 专用单测（12+ 用例，直接覆盖渲染/aria-live/MAX_VISIBLE/close/copy/document 守卫/aria 回退）。
 

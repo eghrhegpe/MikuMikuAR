@@ -35,7 +35,7 @@ import type { FootLandEvent } from '@/motion-algos/feet-event';
 export type { FootLandEvent };
 import { logWarn } from '../../core/logger';
 import { getMotionPipeline } from './motion-pipeline';
-import { guardNum } from '@/core/guards';
+// [audit:round16 P4] 移除未使用的 guardNum 导入（死代码）
 import { isWasmRuntime, feetDebug } from './perception-shared';
 export { solveFootTarget };
 export type { SolveFootInput, SolveFootOutput } from '@/motion-algos/feet-adjustment-math';

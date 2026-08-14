@@ -4,11 +4,9 @@
 // - hexToRgb / rgbToString：主题色解析唯一实现（原散落于 core/main.ts 与 menus/settings-shared.ts）。
 
 import { Color3 } from '@babylonjs/core/Maths/math.color';
-
-/** 将 undefined/NaN 归一为 0，防止 NaN 污染 Color3 与 CSS rgb 串。 */
-function guardNum(v: number | undefined): number {
-    return typeof v === 'number' && !Number.isNaN(v) ? v : 0;
-}
+// [audit:round16 P2] 收敛数字守卫到 guards.ts 单一出口（本地版 `!Number.isNaN` 放行
+// Infinity，会污染 Color3 与 CSS rgb 串；guards.ts 用 Number.isFinite 拦截语义更完整）。
+import { guardNum } from './guards';
 
 /**
  * 从 `[r, g, b]` 三元组构造 Color3。

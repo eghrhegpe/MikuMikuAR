@@ -16,7 +16,7 @@ import { ImportZip, ExtractZip } from './wails-bindings';
 import { idbSet, saveModel } from './backend/idb';
 import { setStatus, formatError } from './config';
 import { t } from './i18n/t';
-import { safeCallAsync } from './safe-call';
+// [audit:round16 P3] 移除未使用的 safeCallAsync 导入（死代码，连带测试死 mock）
 // [doc:adr-238] 移除对 menus/library 的静态 import（core 不反向依赖 UI 层）：
 // zip 落盘后经 mmar:zip-imported 事件通知 menus/library-setup 重扫库。
 
@@ -39,6 +39,10 @@ export async function handleDropFile(path: string, zipBytes?: Uint8Array): Promi
                 const result = await ExtractZip(path, '');
                 if (result?.file_path) {
                     await loadManager.load({ kind: 'actor', path: result.file_path });
+                } else {
+                    // [audit:round16 P3] ExtractZip 可返回 null（zip 缺失 / 超 MAX_ZIP_FILE_SIZE），
+                    // 显式报失败而非「导入成功」——否则用户看到成功提示实则零加载。
+                    throw new Error('ExtractZip returned empty result');
                 }
             } else {
                 await ImportZip(path);
@@ -49,7 +53,8 @@ export async function handleDropFile(path: string, zipBytes?: Uint8Array): Promi
             window.dispatchEvent(new CustomEvent('mmar:zip-imported'));
         } catch (err) {
             setStatus(t('main.importFailedDetail') + formatError(err), false);
-            console.error('ImportZip failed:', err);
+            // [audit:round16 P3] 中性错误标签：失败点可能是 ExtractZip / 事件派发而非 ImportZip
+            console.error('zip import failed:', err);
         }
     } else if (lower.endsWith('.pmx')) {
         setStatus(t('main.loadingModel'), false);

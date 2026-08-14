@@ -9,7 +9,7 @@ describe('resolveCompatibility ratio 兜底', () => {
     it('vmdBoneNames 非空且命中率低 → compatible=false，reason 不含 Infinity/NaN', () => {
         const result = resolveCompatibility(
             ['頭', '左足IK'],
-            { kind: 'vmd', vmdPath: '/test.vmd' },
+            { source: 'vmd', vmdPath: '/test.vmd', vmdName: 'test', vmdLayers: [] },
             ['頭', '左足IK', '右足IK', '左腕', '右腕', 'センター']
         );
         expect(result.compatible).toBe(false);
@@ -21,7 +21,7 @@ describe('resolveCompatibility ratio 兜底', () => {
     it('vmdBoneNames 非空且命中率高 → compatible=true', () => {
         const result = resolveCompatibility(
             ['頭', '左足IK', '右足IK', '左腕', '右腕', 'センター'],
-            { kind: 'vmd', vmdPath: '/test.vmd' },
+            { source: 'vmd', vmdPath: '/test.vmd', vmdName: 'test', vmdLayers: [] },
             ['頭', '左足IK', '右足IK', '左腕', '右腕', 'センター']
         );
         expect(result.compatible).toBe(true);
@@ -31,7 +31,7 @@ describe('resolveCompatibility ratio 兜底', () => {
     it('vmdBoneNames 为空数组 → 走 STANDARD_MMD_BONES 分支 → 少量骨骼不兼容', () => {
         const result = resolveCompatibility(
             ['頭'],
-            { kind: 'vmd', vmdPath: '/test.vmd' },
+            { source: 'vmd', vmdPath: '/test.vmd', vmdName: 'test', vmdLayers: [] },
             []
         );
         // '頭' 单个骨骼不足以通过 STANDARD_MMD_BONES 检查
@@ -44,7 +44,7 @@ describe('resolveCompatibility ratio 兜底', () => {
     });
 
     it('actualBones 为空 → compatible=false，reason 不含 Infinity/NaN', () => {
-        const result = resolveCompatibility([], { kind: 'vmd', vmdPath: '/test.vmd' }, ['頭']);
+        const result = resolveCompatibility([], { source: 'vmd', vmdPath: '/test.vmd', vmdName: 'test', vmdLayers: [] }, ['頭']);
         expect(result.compatible).toBe(false);
         expect(result.reason).toContain('无骨骼数据');
     });

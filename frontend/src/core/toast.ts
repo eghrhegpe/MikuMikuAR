@@ -173,11 +173,15 @@ function buildToastElement(
         }
     }
 
-    const closeBtn = document.createElement('span');
+    // [audit:round16 P2] close 用原生 button（可 Tab 聚焦 + Enter/Space 键盘激活），
+    // 而非 span+aria-label——键盘用户与屏幕阅读器均可操作（ADR-153 Phase 3.1 补全）。
+    const closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
     closeBtn.textContent = '✕';
     closeBtn.setAttribute('aria-label', t('common.close'));
     closeBtn.style.cssText =
-        'font-size:11px;color:var(--text-dim);cursor:pointer;padding:2px 4px;line-height:1';
+        'font-size:11px;color:var(--text-dim);cursor:pointer;padding:2px 4px;line-height:1;' +
+        'background:none;border:none';
     closeBtn.addEventListener('click', () => {
         if (toastId != null) {
             fadeAndRemoveToast(toastId, toast, 150);
@@ -246,4 +250,19 @@ export function showInfoToast(
     duration = 3000
 ): void {
     showToast(title, detail, actions, duration, 'info');
+}
+
+// [audit:round16 P2] 测试专用重置钩子：清空模块级 _activeToasts 状态与定时器，
+// 供单测 beforeEach 隔离用例（生产零调用）。此前测试靠 removeToast 幂等性偶然通过。
+export function _resetToastForTest(): void {
+    for (const entry of _activeToasts) {
+        if (entry.timer !== null) {
+            clearTimeout(entry.timer);
+        }
+        if (entry.fadeTimer) {
+            clearTimeout(entry.fadeTimer);
+        }
+    }
+    _activeToasts.length = 0;
+    _toastIdCounter = 0;
 }
