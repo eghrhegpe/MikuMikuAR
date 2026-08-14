@@ -1,7 +1,9 @@
-// [ADR-248] 轻量日志调试面板 — 避免 console source map 卡顿
-// 通过 DOM 面板显示日志缓冲区内容，支持过滤和实时更新
+// 轻量日志调试面板（git commit ce02492d）— 避免 console source map 卡顿
+// 通过 DOM 面板显示日志缓冲区内容，支持过滤和实时更新。
+// 注意：日志面板决策无正式 ADR，勿引用 ADR-248（该编号已被其他决策占用，audit:round18）。
 
-import { getLogBuffer, clearLogs, setConsoleOutput, type LogEntry } from './logger';
+import { getLogBuffer, getConsoleOutput, clearLogs, setConsoleOutput, type LogEntry } from './logger';
+import { escapeHtml } from './escape-html';
 
 let _panel: HTMLElement | null = null;
 let _unsubscribe: (() => void) | null = null;
@@ -25,6 +27,16 @@ function formatTime(ts: number): string {
     return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}.${String(d.getMilliseconds()).padStart(3, '0')}`;
 }
 
+/** [audit:round18 P2] 同步 Console 按钮文案/背景到实际 console 输出状态。
+ * 每次 showLogPanel（含面板已存在复用）都调用，避免初始文案与实际状态不同步。 */
+function syncConsoleButton(): void {
+    const btn = _panel?.querySelector<HTMLElement>('[data-role="console"]');
+    if (!btn) return;
+    const on = getConsoleOutput();
+    btn.textContent = `Console: ${on ? 'ON' : 'OFF'}`;
+    btn.style.background = on ? '#27ae60' : '#2980b9';
+}
+
 function renderPanel(): void {
     if (!_panel) return;
     const entries = getLogBuffer().getAll().filter((e) => {
@@ -42,10 +54,13 @@ function renderPanel(): void {
     const html = entries.map((e) => {
         const color = LEVEL_COLORS[e.level];
         const time = formatTime(e.time);
+        // [audit:round18 P2] message 可能含用户可控文本（文件名/错误信息），
+        // innerHTML 拼入前必须转义，防注入。
+        const safeMsg = escapeHtml(e.message);
         return `<div class="log-entry" style="border-left:3px solid ${color};padding:4px 8px;font-family:monospace;font-size:11px;line-height:1.4;color:#fff;">
             <span style="color:#aaa">${time}</span>
             <span style="color:${color};font-weight:bold">[${e.level.toUpperCase()}]</span>
-            <span>${e.message}</span>
+            <span>${safeMsg}</span>
         </div>`;
     }).join('');
 
@@ -61,6 +76,7 @@ export function showLogPanel(): void {
     if (_panel) {
         _panel.style.display = 'block';
         renderPanel();
+        syncConsoleButton();
         return;
     }
 
@@ -93,6 +109,7 @@ export function showLogPanel(): void {
                 <option value="error">ERROR</option>
             </select>
             <button data-role="clear" style="background:#c0392b;color:#fff;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:11px;">清空</button>
+            <!-- [audit:round18 P2] 初始文案由 syncConsoleButton() 按实际状态同步 -->
             <button data-role="console" style="background:#2980b9;color:#fff;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:11px;">Console: OFF</button>
             <button data-role="close" style="background:#555;color:#fff;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:11px;">✕</button>
         </div>
@@ -119,8 +136,7 @@ export function showLogPanel(): void {
     consoleBtn?.addEventListener('click', () => {
         const enabled = /:\s*ON$/i.test(consoleBtn.textContent ?? '');
         setConsoleOutput(!enabled);
-        consoleBtn.textContent = `Console: ${!enabled ? 'ON' : 'OFF'}`;
-        consoleBtn.style.background = !enabled ? '#27ae60' : '#2980b9';
+        syncConsoleButton();
     });
 
     _panel.querySelector('[data-role="close"]')?.addEventListener('click', () => {
@@ -130,6 +146,7 @@ export function showLogPanel(): void {
     document.body.appendChild(_panel);
 
     _unsubscribe = getLogBuffer().subscribe(renderPanel);
+    syncConsoleButton();
     renderPanel();
 }
 

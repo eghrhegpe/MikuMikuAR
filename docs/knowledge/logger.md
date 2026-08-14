@@ -13,6 +13,7 @@ adr:
 symbols:
   - LogEntry
   - clearLogs
+  - getConsoleOutput
   - getLogBuffer
   - logError
   - logInfo

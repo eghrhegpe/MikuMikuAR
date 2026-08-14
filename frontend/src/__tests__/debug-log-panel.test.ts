@@ -39,6 +39,7 @@ vi.mock('../core/logger', () => ({
         mockState.consoleOutput = v;
         mockState.setConsoleOutputCalls.push(v);
     },
+    getConsoleOutput: () => mockState.consoleOutput,
 }));
 
 import { showLogPanel, hideLogPanel, toggleLogPanel, disposeLogPanel } from '../core/debug-log-panel';
@@ -330,23 +331,26 @@ describe('事件绑定 — 清空 / Console 切换 / 关闭', () => {
         expect(listEl()!.textContent).toContain('暂无日志');
     });
 
-    it('点击「Console」按钮（初始 OFF）→ 切换 ON', () => {
+    it('点击「Console」按钮（初始 ON，与默认 _consoleOutput=true 同步）→ 切换 OFF', () => {
+        // [audit:round18 P2] 初始文案此前硬编码 OFF 与实际状态不同步（首击空操作）；
+        // 修复后初始跟随 getConsoleOutput()。
         showLogPanel();
         const btn = panel()!.querySelector('[data-role="console"]') as HTMLElement;
-        expect(btn.textContent).toBe('Console: OFF');
-        btn.click();
-        expect(mockState.setConsoleOutputCalls).toEqual([true]);
         expect(btn.textContent).toBe('Console: ON');
+        btn.click();
+        expect(mockState.setConsoleOutputCalls).toEqual([false]);
+        expect(btn.textContent).toBe('Console: OFF');
     });
 
-    it('点击「Console」按钮（ON）→ 切换 OFF', () => {
+    it('点击「Console」按钮往返切换 ON↔OFF', () => {
         showLogPanel();
         const btn = panel()!.querySelector('[data-role="console"]') as HTMLElement;
-        btn.click();
         expect(btn.textContent).toBe('Console: ON');
         btn.click();
         expect(btn.textContent).toBe('Console: OFF');
-        expect(mockState.setConsoleOutputCalls).toEqual([true, false]);
+        btn.click();
+        expect(btn.textContent).toBe('Console: ON');
+        expect(mockState.setConsoleOutputCalls).toEqual([false, true]);
     });
 
     it('点击「✕」关闭按钮隐藏面板', () => {
@@ -390,21 +394,24 @@ describe('Console 按钮 — .includes("ON") 回归防护', () => {
     it('OFF 状态不误判为 ON（避免 .includes("ON") 在含 ON 子串文案下翻车）', () => {
         showLogPanel();
         const btn = panel()!.querySelector('[data-role="console"]') as HTMLElement;
+        // 初始 ON（默认 _consoleOutput=true，audit:round18 修复状态同步后）
+        expect(btn.textContent).toBe('Console: ON');
         // 旧逻辑用 .includes('ON') 判定，遇到 "OFF (disabled)" 等含 "ON" 子串文案会误判
         // 新逻辑用 /:\s*ON$/i 严格匹配尾部
         btn.click();
-        expect(mockState.setConsoleOutputCalls).toEqual([true]);
+        expect(mockState.setConsoleOutputCalls).toEqual([false]);
     });
 
     it('ON 状态不误判为 OFF（防御未来文案 "ON (active)" 含 ON 前缀）', () => {
         showLogPanel();
         const btn = panel()!.querySelector('[data-role="console"]') as HTMLElement;
-        btn.click();
         expect(btn.textContent).toBe('Console: ON');
+        btn.click();
+        expect(btn.textContent).toBe('Console: OFF');
         // 模拟未来文案含 ON 前缀（旧逻辑 .includes('ON') 同样返回 true，不会误判）
         // 但用 /:\s*ON$/i 严格匹配末尾才真正安全
         btn.click();
-        expect(btn.textContent).toBe('Console: OFF');
+        expect(btn.textContent).toBe('Console: ON');
     });
 });
 

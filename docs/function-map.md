@@ -7,7 +7,7 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 136 | 817 |
+| 核心基础设施 | 136 | 818 |
 | 3D 场景 | 125 | 1233 |
 | 菜单 & UI | 76 | 397 |
 | 动作算法 | 18 | 138 |
@@ -243,10 +243,10 @@
 | `rgbString()` | `core/color-helpers:40` | 将 Color3 转为 CSS &#96;rgb(r, g, b)&#96; 字符串（0–255 整数，clamp 到 [0,255]）。 |
 | `rgbToString()` | `core/color-helpers:35` | 将 {r,g,b} 转为 CSS rgb 字符串 "r, g, b"（供 --accent-rgb 等 CSS 变量）。 |
 | `debounce()` | `core/debounce:8` | 函数防抖：在等待指定时间后才执行函数，如果在等待期间再次调用则重置计时器。 |
-| `disposeLogPanel()` | `core/debug-log-panel:150` | — |
-| `hideLogPanel()` | `core/debug-log-panel:136` | — |
-| `showLogPanel()` | `core/debug-log-panel:60` | — |
-| `toggleLogPanel()` | `core/debug-log-panel:142` | — |
+| `disposeLogPanel()` | `core/debug-log-panel:167` | — |
+| `hideLogPanel()` | `core/debug-log-panel:153` | — |
+| `showLogPanel()` | `core/debug-log-panel:75` | — |
+| `toggleLogPanel()` | `core/debug-log-panel:159` | — |
 | `deepClone()` | `core/deep-clone:9` | 深拷贝对象（基于 JSON 序列化）。 |
 | `setupE2ECapture()` | `core/dev-hooks:24` | — |
 | `DialogOptions()` | `core/dialog:49` | — |
@@ -365,12 +365,13 @@
 | `registerLoadRefreshHook()` | `core/load-refresh-registry:21` | 注册一个「模型加载后刷新」钩子。 |
 | `runLoadRefreshHooks()` | `core/load-refresh-registry:33` | 执行所有已注册的加载后刷新钩子。 |
 | `LogEntry()` | `core/logger:9` | — |
-| `clearLogs()` | `core/logger:68` | 清空日志 |
-| `getLogBuffer()` | `core/logger:63` | 获取日志缓冲区（供调试面板使用） |
-| `logError()` | `core/logger:99` | 统一标签格式的 error 日志。 |
-| `logInfo()` | `core/logger:73` | 统一标签格式的 info 日志。 |
-| `logWarn()` | `core/logger:86` | 统一标签格式的 warn 日志。 |
-| `setConsoleOutput()` | `core/logger:58` | 设置是否同时输出到 console |
+| `clearLogs()` | `core/logger:81` | 清空日志 |
+| `getConsoleOutput()` | `core/logger:71` | [audit:round18 P2] 读取 console 输出开关（调试面板初始文案须与实际状态一致） |
+| `getLogBuffer()` | `core/logger:76` | 获取日志缓冲区（供调试面板使用） |
+| `logError()` | `core/logger:112` | 统一标签格式的 error 日志。 |
+| `logInfo()` | `core/logger:86` | 统一标签格式的 info 日志。 |
+| `logWarn()` | `core/logger:99` | 统一标签格式的 warn 日志。 |
+| `setConsoleOutput()` | `core/logger:66` | 设置是否同时输出到 console |
 | `degToRad()` | `core/math-geometry:24` | 角度 → 弧度。 |
 | `dist2d()` | `core/math-geometry:6` | 2D 欧几里得距离。 |
 | `dist3d()` | `core/math-geometry:13` | 3D 欧几里得距离。 |

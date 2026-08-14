@@ -3,8 +3,8 @@
 // 从 utils.ts 拆分而来（ADR-141），消除 state ↔ utils 循环依赖。
 // 所有模块都应通过此文件 import logWarn，而非从 utils.ts 导入。
 //
-// [ADR-248] 日志缓冲区：避免 console.warn 的 source map 展开导致卡顿。
-// 使用环形缓冲区存储最近 N 条日志，通过 DOM 调试面板查看。
+// 日志缓冲区 + 调试面板决策（git commit ce02492d）尚未登记正式 ADR；
+// 注意不要引用 ADR-248（该编号已被「派生缓存依赖引用键」决策占用，audit:round18）。
 
 export interface LogEntry {
     tag: string;
@@ -28,7 +28,15 @@ class LogBuffer {
         if (this.buffer.length > this.maxSize) {
             this.buffer.shift();
         }
-        this._listeners.forEach((fn) => fn());
+        // [audit:round18 P3] listener 异常隔离：面板渲染等订阅回调抛错不污染业务日志路径。
+        // 不经 logWarn 记录（避免递归）；console 直出一次便于排查。
+        for (const fn of this._listeners) {
+            try {
+                fn();
+            } catch (err) {
+                console.error('[logger] listener error:', err);
+            }
+        }
     }
 
     getAll(): LogEntry[] {
@@ -57,6 +65,11 @@ let _consoleOutput = true;
 /** 设置是否同时输出到 console */
 export function setConsoleOutput(enabled: boolean): void {
     _consoleOutput = enabled;
+}
+
+/** [audit:round18 P2] 读取 console 输出开关（调试面板初始文案须与实际状态一致） */
+export function getConsoleOutput(): boolean {
+    return _consoleOutput;
 }
 
 /** 获取日志缓冲区（供调试面板使用） */
