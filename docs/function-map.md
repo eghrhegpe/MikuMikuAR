@@ -2091,14 +2091,14 @@
 | `showPendingBubble()` | `menus/diagnostic-chat:155` | 显示"思考中"占位气泡 |
 | `updateSendButton()` | `menus/diagnostic-chat:380` | 更新发送/停止按钮 |
 | `updateSpeakToggle()` | `menus/diagnostic-chat:363` | 更新朗读开关 UI（不支持时隐藏） |
-| `applyProvider()` | `menus/diagnostic-config:267` | — |
-| `buildConfigSchema()` | `menus/diagnostic-config:481` | — |
-| `goKeyAllowsProceed()` | `menus/diagnostic-config:26` | — |
-| `loadInitialConfig()` | `menus/diagnostic-config:81` | — |
-| `persistConfig()` | `menus/diagnostic-config:226` | — |
-| `refreshCaps()` | `menus/diagnostic-config:108` | — |
-| `refreshModelList()` | `menus/diagnostic-config:312` | — |
-| `updateStatusBadge()` | `menus/diagnostic-config:378` | — |
+| `applyProvider()` | `menus/diagnostic-config:259` | — |
+| `buildConfigSchema()` | `menus/diagnostic-config:473` | — |
+| `goKeyAllowsProceed()` | `menus/diagnostic-config:30` | — |
+| `loadInitialConfig()` | `menus/diagnostic-config:73` | — |
+| `persistConfig()` | `menus/diagnostic-config:218` | — |
+| `refreshCaps()` | `menus/diagnostic-config:100` | — |
+| `refreshModelList()` | `menus/diagnostic-config:304` | — |
+| `updateStatusBadge()` | `menus/diagnostic-config:370` | — |
 | `advancePendingQueue()` | `menus/diagnostic-control:222` | 推进队列 |
 | `applyPendingAction()` | `menus/diagnostic-control:160` | 应用 pending action |
 | `cancelPendingAction()` | `menus/diagnostic-control:205` | 取消 pending action |

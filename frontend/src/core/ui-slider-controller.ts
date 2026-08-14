@@ -45,6 +45,10 @@ export class DragSliderController {
             el.focus();
             this.dragRect = el.getBoundingClientRect();
             this.dragging = false;
+            // [audit:round19 P2] 先释放旧 document 监听再注册：mouseup 丢失（窗口外释放/切应用）
+            // 后再次 mousedown 会直接覆盖引用，旧监听永久滞留并跨滑块串扰（幽灵调值）。
+            this.moveDisp?.dispose();
+            this.endDisp?.dispose();
             this.moveDisp = addDisposableListener(document, 'mousemove', this.onDragMove);
             this.endDisp = addDisposableListener(document, 'mouseup', this.onDragEnd);
         };

@@ -18,26 +18,18 @@ import { relayTarget } from '../core/ai/relay';
 import { isWebPlatform } from '../core/platform';
 import { resolveAi } from '../core/ai';
 import type { AiErrorKind } from '../core/ai/types';
+// [audit:round19 P1/P2] 收敛到 core/ai/go-key-allows-proceed 严格版（errors 全量过滤）：
+// 此前本地同名实现仅判 kind==='missingKey'，[missingKey+missingModel] 组合会放行空 model 请求；
+// 且 core 版生产零消费者导致集成测试测的是不存在路径。现 menus 版成为薄包装，语义单一。
+import { goKeyAllowsProceed as coreGoKeyAllowsProceed } from '../core/ai/go-key-allows-proceed';
 
 // Local
 import { diagState } from './diagnostic-state';
 import type { MenuNode } from './menu-schema';
 
 export function goKeyAllowsProceed(validation: ReturnType<typeof validateAiConfig>): boolean {
-    if (validation.ok) {
-        return true;
-    }
-    if (diagState.ai?.kind !== 'go') {
-        return false;
-    }
-    if (!diagState.goKeyConfigured) {
-        return false;
-    }
-    // go 模式 key 不可回读但已配置：允许 missingKey 通过
-    if (validation.kind === 'missingKey') {
-        return true;
-    }
-    return false;
+    // [audit:round19] 薄包装：isGo/keyConfigured 来自 diagState，判定语义统一走 core 严格版
+    return coreGoKeyAllowsProceed(validation, diagState.ai?.kind === 'go', !!diagState.goKeyConfigured);
 }
 
 async function ensureTestModel(): Promise<void> {

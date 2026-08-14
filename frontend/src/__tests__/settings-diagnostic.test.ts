@@ -44,4 +44,12 @@ describe('goKeyAllowsProceed (integration)', () => {
         expect(goKeyAllowsProceed(v, false, false)).toBe(false);
         expect(goKeyAllowsProceed(v, true, true)).toBe(false);
     });
+
+    it('[missingKey+missingModel] 组合 → Go 模式不放行（audit:round19 语义收敛回归锁）', () => {
+        // 历史 bug：menus 本地版仅判 kind==='missingKey'，此组合下放行空 model 请求；
+        // core 版按 errors 全量过滤（nonKey 含 missingModel）必然拦截。
+        const v = validateAiConfig({ ...VALID, apiKey: '', model: '' });
+        expect(goKeyAllowsProceed(v, true, true)).toBe(false);
+        expect(goKeyAllowsProceed(v, true, false)).toBe(false);
+    });
 });
