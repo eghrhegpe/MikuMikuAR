@@ -108,11 +108,11 @@
 | `parseActionFromLLM()` | `core/ai/intent-dispatcher:23` | — |
 | `renderMarkdownInto()` | `core/ai/markdown:55` | 把 Markdown 文本渲染为 DOM 片段，追加进目标容器。 |
 | `AdapterResult()` | `core/ai/param-adapters:4` | — |
-| `adaptParam()` | `core/ai/param-adapters:99` | — |
-| `colorAdapter()` | `core/ai/param-adapters:33` | — |
-| `entityAdapter()` | `core/ai/param-adapters:52` | — |
+| `adaptParam()` | `core/ai/param-adapters:117` | — |
+| `colorAdapter()` | `core/ai/param-adapters:46` | — |
+| `entityAdapter()` | `core/ai/param-adapters:70` | — |
 | `enumAdapter()` | `core/ai/param-adapters:6` | — |
-| `rangeAdapter()` | `core/ai/param-adapters:20` | — |
+| `rangeAdapter()` | `core/ai/param-adapters:23` | — |
 | `isRemoteEndpoint()` | `core/ai/relay:10` | 端点是否为远程 API（非 localhost/127.0.0.1），远程端点才需要 relay 代理。 |
 | `relayTarget()` | `core/ai/relay:15` | 获取 relay 目标 URL：网页端 + 远程端点 + relayUrl 已配置时返回 relayUrl，否则 null（直连）。 |
 | `SceneSnapshotBridge()` | `core/ai/scene-snapshot:11` | AI 快照所需的引擎运行时读取桥接（由 scene.ts 注入）。 |
@@ -400,9 +400,9 @@
 | `switchAnimation()` | `core/mmd-adapter:465` | 切换模型当前动画到新动画，并归零运行时全局时钟到第 0 帧。 |
 | `transformWorldToRootLocal()` | `core/mmd-adapter:412` | 把世界坐标系下的点转换到 rootMesh 局部坐标系（固化自 perception-gaze.ts / adr-071）。 |
 | `ObserverHandle()` | `core/observer-handle:31` | 可释放的 Observer 句柄。 |
-| `ObserverRegistry()` | `core/observer-handle:91` | 管理器：收集多个 ObserverHandle，支持一次性 disposeAll()。 |
-| `observe()` | `core/observer-handle:60` | 订阅 Observable 并返回自动管理的句柄。 |
-| `observeOnce()` | `core/observer-handle:74` | 一次性订阅：回调执行后自动移除，等价于 observable.addOnce()。 |
+| `ObserverRegistry()` | `core/observer-handle:93` | 管理器：收集多个 ObserverHandle，支持一次性 disposeAll()。 |
+| `observe()` | `core/observer-handle:62` | 订阅 Observable 并返回自动管理的句柄。 |
+| `observeOnce()` | `core/observer-handle:76` | 一次性订阅：回调执行后自动移除，等价于 observable.addOnce()。 |
 | `orbitInput()` | `core/orbit-state:10` | — |
 | `MIN_ORBIT_DISTANCE()` | `core/orbit:15` | 轨道距离下限：distance&lt;=0 或非有限时钳制到此值，避免塌缩到原点或 NaN。 |
 | `OrbitCoords()` | `core/orbit:5` | — |
@@ -1885,22 +1885,22 @@
 | `QualityProfileSettings()` | `scene/render/quality-profile:60` | 从注册表派生 QualityProfileSettings 类型。 |
 | `inferQualityProfile()` | `scene/render/quality-profile:85` | 从 EnvState 的独立质量字段反推当前 qualityProfile。 |
 | `resolveQualityProfile()` | `scene/render/quality-profile:70` | 将 qualityProfile 解析为各域质量设置。 |
-| `RenderState()` | `scene/render/renderer:35` | — |
-| `ToneMappingMode()` | `scene/render/renderer:27` | — |
-| `defaultRenderState()` | `scene/render/renderer:233` | — |
-| `disposeRenderer()` | `scene/render/renderer:145` | 释放渲染管线及相关资源。在场景销毁时调用。 |
-| `getRenderState()` | `scene/render/renderer:185` | — |
-| `initRenderer()` | `scene/render/renderer:113` | — |
-| `isRenderReady()` | `scene/render/renderer:655` | [fix:P1] 渲染管线是否就绪（@dom/e2e 环境无 pipeline/scene 时返回 false，供 UI/测试预检跳过守卫域）。 |
-| `isRendererReady()` | `scene/render/renderer:140` | 检查渲染器是否已初始化。外部代码在调用 setRenderState 前可先检查。 |
-| `isSSRActive()` | `scene/render/renderer:956` | SSR 管线当前是否激活（供 env-reflection 检查，尊重用户手动关闭）。 |
-| `pipeline()` | `scene/render/renderer:81` | — |
-| `reattachPipeline()` | `scene/render/renderer:898` | Re-attach the rendering pipeline to the current active camera (call after camera switch). |
-| `rebuildOutlineState()` | `scene/render/renderer:1015` | 当模型注册表更新时，重新应用边缘高亮状态。 |
-| `registerCelGroundCoupling()` | `scene/render/renderer:105` | — |
-| `setRenderState()` | `scene/render/renderer:685` | — |
-| `setSSRFromReflection()` | `scene/render/renderer:968` | 反射系统专用 SSR 控制接口（不触发 auto-save）。 |
-| `transitionRenderState()` | `scene/render/renderer:725` | 平滑过渡渲染状态到目标值，默认 2 秒。 |
+| `RenderState()` | `scene/render/renderer:36` | — |
+| `ToneMappingMode()` | `scene/render/renderer:28` | — |
+| `defaultRenderState()` | `scene/render/renderer:234` | — |
+| `disposeRenderer()` | `scene/render/renderer:146` | 释放渲染管线及相关资源。在场景销毁时调用。 |
+| `getRenderState()` | `scene/render/renderer:186` | — |
+| `initRenderer()` | `scene/render/renderer:114` | — |
+| `isRenderReady()` | `scene/render/renderer:656` | [fix:P1] 渲染管线是否就绪（@dom/e2e 环境无 pipeline/scene 时返回 false，供 UI/测试预检跳过守卫域）。 |
+| `isRendererReady()` | `scene/render/renderer:141` | 检查渲染器是否已初始化。外部代码在调用 setRenderState 前可先检查。 |
+| `isSSRActive()` | `scene/render/renderer:957` | SSR 管线当前是否激活（供 env-reflection 检查，尊重用户手动关闭）。 |
+| `pipeline()` | `scene/render/renderer:82` | — |
+| `reattachPipeline()` | `scene/render/renderer:899` | Re-attach the rendering pipeline to the current active camera (call after camera switch). |
+| `rebuildOutlineState()` | `scene/render/renderer:1016` | 当模型注册表更新时，重新应用边缘高亮状态。 |
+| `registerCelGroundCoupling()` | `scene/render/renderer:106` | — |
+| `setRenderState()` | `scene/render/renderer:686` | — |
+| `setSSRFromReflection()` | `scene/render/renderer:969` | 反射系统专用 SSR 控制接口（不触发 auto-save）。 |
+| `transitionRenderState()` | `scene/render/renderer:726` | 平滑过渡渲染状态到目标值，默认 2 秒。 |
 | `GizmoAttachOptions()` | `scene/render/transform-gizmo:106` | — |
 | `GizmoType()` | `scene/render/transform-gizmo:17` | — |
 | `attachGizmo()` | `scene/render/transform-gizmo:126` | 为指定 Node 激活变换 Gizmo。 |

@@ -6,8 +6,11 @@ export type AdapterResult<T = unknown> = { ok: true; value: T } | { ok: false; e
 export function enumAdapter(def: ParamDef, raw: unknown): AdapterResult<string> {
     const val = String(raw);
     const allowed = def.enum ?? [];
-    if (allowed.includes(val)) {
-        return { ok: true, value: val };
+    // [audit:round17 P3] 直接值匹配与同义词侧一致地大小写不敏感（'ORBIT' 匹配 'orbit'），
+    // 返回 enum 定义原值保持规范大小写。
+    const direct = allowed.find((a) => a.toLowerCase() === val.toLowerCase());
+    if (direct !== undefined) {
+        return { ok: true, value: direct };
     }
     const synonyms = def.synonyms ?? {};
     const mapped = synonyms[val.toLowerCase()];
@@ -18,7 +21,17 @@ export function enumAdapter(def: ParamDef, raw: unknown): AdapterResult<string> 
 }
 
 export function rangeAdapter(def: ParamDef, raw: unknown): AdapterResult<number> {
-    const val = Number(raw);
+    // [audit:round17 P3] 严格化输入：Number(null)=0 / Number('')=0 / Number(true)=1 /
+    // Number([])=0 等宽松转换会把非法输入静默当作 0 并执行动作；仅接受有限数字或
+    // 非空数字字符串（'0.5' 仍支持）。
+    let val: number;
+    if (typeof raw === 'number') {
+        val = raw;
+    } else if (typeof raw === 'string' && raw.trim() !== '') {
+        val = Number(raw);
+    } else {
+        return { ok: false, error: `"${raw}" 不是有效数值` };
+    }
     if (!isFinite(val)) {
         return { ok: false, error: `"${raw}" 不是有效数值` };
     }
@@ -34,7 +47,12 @@ export function colorAdapter(
     _def: ParamDef,
     raw: unknown
 ): AdapterResult<[number, number, number]> {
-    if (Array.isArray(raw) && raw.length === 3 && raw.every((v) => typeof v === 'number')) {
+    // [audit:round17 P3] RGB 数组校验值域 [0,1] + 有限数：拒绝越界/NaN 元素污染 Babylon 颜色
+    if (
+        Array.isArray(raw) &&
+        raw.length === 3 &&
+        raw.every((v) => typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 1)
+    ) {
         return { ok: true, value: [raw[0], raw[1], raw[2]] };
     }
     const str = String(raw);

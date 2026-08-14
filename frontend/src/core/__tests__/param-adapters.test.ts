@@ -1,5 +1,7 @@
 // @vitest-environment node
-import { describe, it, expect } from 'vitest';
+// [doc:adr-155] param-adapters 守护测试（合并 ai/__tests__ 同版，audit:round17 P3）。
+// 纯函数测试，不依赖场景模块（entityAdapter 的 resolve 用 mock）。
+import { describe, it, expect, vi } from 'vitest';
 import {
     enumAdapter,
     rangeAdapter,
@@ -8,10 +10,14 @@ import {
     adaptParam,
 } from '../ai/param-adapters';
 import type { ParamDef } from '../action-registry';
+import type { AdapterResult } from '../ai/param-adapters';
 
 function def(overrides: Partial<ParamDef>): ParamDef {
     return { name: 'test', type: 'string', ...overrides } as ParamDef;
 }
+
+/** 提取 error 消息（将 "ok:false" 结果的 error 字段转为 string）。 */
+const errMsg = (r: AdapterResult): string => (r as { error: string }).error;
 
 describe('enumAdapter', () => {
     it('匹配有效值', () => {
@@ -38,11 +44,17 @@ describe('enumAdapter', () => {
     it('非法值返回错误', () => {
         const r = enumAdapter(def({ type: 'enum', enum: ['a', 'b'] }), 'c');
         expect(r.ok).toBe(false);
+        expect(errMsg(r)).toContain('不在可选范围');
     });
 
     it('空 enum 列表总是返回错误', () => {
         const r = enumAdapter(def({ type: 'enum', enum: [] }), 'anything');
         expect(r.ok).toBe(false);
+    });
+
+    it('直接值匹配大小写不敏感（audit:round17）', () => {
+        const r = enumAdapter(def({ type: 'enum', enum: ['orbit', 'freefly'] }), 'ORBIT');
+        expect(r).toEqual({ ok: true, value: 'orbit' });
     });
 });
 
@@ -65,16 +77,30 @@ describe('rangeAdapter', () => {
     it('大于最大值', () => {
         const r = rangeAdapter(def({ type: 'range', min: 0, max: 1 }), 2);
         expect(r.ok).toBe(false);
+        expect(errMsg(r)).toContain('超出范围');
     });
 
     it('NaN 返回错误', () => {
         const r = rangeAdapter(def({ type: 'range' }), NaN);
         expect(r.ok).toBe(false);
+        expect(errMsg(r)).toContain('不是有效数值');
     });
 
     it('无 min/max 时无限范围', () => {
         const r = rangeAdapter(def({ type: 'range' }), 1e9);
         expect(r).toEqual({ ok: true, value: 1e9 });
+    });
+
+    it('宽松转换拒绝 null/空串/布尔/数组（audit:round17）', () => {
+        expect(rangeAdapter(def({ type: 'range', min: 0, max: 1 }), null).ok).toBe(false);
+        expect(rangeAdapter(def({ type: 'range', min: 0, max: 1 }), '').ok).toBe(false);
+        expect(rangeAdapter(def({ type: 'range', min: 0, max: 1 }), true).ok).toBe(false);
+        expect(rangeAdapter(def({ type: 'range', min: 0, max: 1 }), []).ok).toBe(false);
+        // 非空数字字符串仍支持
+        expect(rangeAdapter(def({ type: 'range', min: 0, max: 1 }), '0.5')).toEqual({
+            ok: true,
+            value: 0.5,
+        });
     });
 });
 
@@ -112,24 +138,32 @@ describe('colorAdapter', () => {
     it('非法 hex', () => {
         const r = colorAdapter(def({ type: 'color' }), 'not-a-color');
         expect(r.ok).toBe(false);
+        expect(errMsg(r)).toContain('不是有效 hex 颜色');
     });
 
     it('空字符串', () => {
         const r = colorAdapter(def({ type: 'color' }), '');
         expect(r.ok).toBe(false);
     });
+
+    it('RGB 数组值域越界/NaN 拒绝（audit:round17）', () => {
+        expect(colorAdapter(def({ type: 'color' }), [2, 0, 0]).ok).toBe(false);
+        expect(colorAdapter(def({ type: 'color' }), [-1, 0, 0]).ok).toBe(false);
+        expect(colorAdapter(def({ type: 'color' }), [NaN, 0, 0]).ok).toBe(false);
+        // 边界值 0 与 1 合法
+        expect(colorAdapter(def({ type: 'color' }), [0, 1, 0.5])).toEqual({
+            ok: true,
+            value: [0, 1, 0.5],
+        });
+    });
 });
 
 describe('entityAdapter', () => {
     it('名称匹配时返回已解析实体', async () => {
-        const r = await entityAdapter(
-            def({
-                type: 'entity',
-                resolve: async (name: string) => (name === 'miku' ? { id: 1 } : null),
-            }),
-            'miku'
-        );
+        const resolve = vi.fn(async (name: string) => (name === 'miku' ? { id: 1 } : null));
+        const r = await entityAdapter(def({ type: 'entity', resolve }), 'miku');
         expect(r).toEqual({ ok: true, value: { id: 1 } });
+        expect(resolve).toHaveBeenCalledWith('miku');
     });
 
     it('名称不匹配时返回错误', async () => {
@@ -141,6 +175,7 @@ describe('entityAdapter', () => {
             'unknown'
         );
         expect(r.ok).toBe(false);
+        expect(errMsg(r)).toContain('未找到');
     });
 
     it('空名称', async () => {
@@ -152,11 +187,13 @@ describe('entityAdapter', () => {
             ''
         );
         expect(r.ok).toBe(false);
+        expect(errMsg(r)).toContain('为空');
     });
 
     it('无 resolve 函数时返回错误', async () => {
         const r = await entityAdapter(def({ type: 'entity' }), 'miku');
         expect(r.ok).toBe(false);
+        expect(errMsg(r)).toContain('不支持运行时解析');
     });
 
     it('resolve 抛异常时返回错误', async () => {
@@ -197,5 +234,21 @@ describe('adaptParam', () => {
     it('toggle 适配器', () => {
         const r = adaptParam(def({ type: 'toggle' }), false);
         expect(r).toEqual({ ok: true, value: false });
+    });
+
+    it('boolean 字符串黑名单 → false（round18 修复守护，audit:round17）', () => {
+        // LLM 可能传字符串 "false"/"0"/"off" 等，直接 Boolean(s)===true 会语义反转；
+        // 该修复此前无回归测试守护（ADR-219 同型风险）。
+        for (const s of ['false', '0', 'off', 'no', 'null', 'undefined', '']) {
+            const r = adaptParam(def({ type: 'boolean' }), s) as { ok: true; value: boolean };
+            expect(r.value).toBe(false);
+        }
+        // 真值字符串保持 true
+        expect(
+            (adaptParam(def({ type: 'boolean' }), 'true') as { ok: true; value: boolean }).value
+        ).toBe(true);
+        expect(
+            (adaptParam(def({ type: 'boolean' }), 'yes') as { ok: true; value: boolean }).value
+        ).toBe(true);
     });
 });

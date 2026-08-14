@@ -32,7 +32,9 @@ export class ObserverHandle<T = unknown> {
     private _observable: Observable<T> | null;
     private _observer: Observer<T> | null;
 
-    constructor(observable: Observable<T>, observer: Observer<T>) {
+    // [audit:round17 P3] 参数声明为可空，与实现/测试的 null 空安全语义一致
+    // （dispose() 对 null 引用安全；测试直接 new ObserverHandle(null, null)）。
+    constructor(observable: Observable<T> | null, observer: Observer<T> | null) {
         this._observable = observable;
         this._observer = observer;
     }

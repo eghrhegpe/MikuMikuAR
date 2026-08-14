@@ -11,7 +11,8 @@ import { Color4 } from '@babylonjs/core/Maths/math.color';
 import type { Camera } from '@babylonjs/core/Cameras/camera';
 import { GlowLayer } from '@babylonjs/core/Layers/glowLayer';
 // ADR-151: ReflectionProbe 已迁移至 env-reflection.ts 统一管理
-import { observe, observeOnce, type ObserverHandle } from '@/core/observer-handle';
+// [audit:round17 P4] observeOnce 已无调用点（P1 修复后 :889 全部改用 observe）
+import { observe, type ObserverHandle } from '@/core/observer-handle';
 import { safeDispose } from '@/core/dispose-helpers';
 import { scheduleRefresh } from '@/core/reactivity';
 import { resetPerformanceSnapshot, isSnapshotResetSuppressed } from './performance';

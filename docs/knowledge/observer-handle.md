@@ -33,7 +33,7 @@ use_when:
 - `ObserverHandle<T>` — 包裹单个 Observable+Observer，`.dispose()` 移除并释放引用，幂等（`isDisposed` 可读）
 - `observe(observable, cb)` — 等价于 `add()` 但返回 `ObserverHandle`（add 返回 null 时抛错）
 - `observeOnce(observable, cb)` — 一次性订阅，回调执行后自动移除
-- `ObserverRegistry` — 收集多个句柄，`disposeAll()` 一次性清理，幂等；支持 `add` / `register` / `remove` / `size` / `clear`
+- `ObserverRegistry` — 收集多个句柄，`disposeAll()` 一次性清理，幂等；支持 `add` / `register` / `remove` / `size`（无 `clear` 方法，清理统一走 `disposeAll`）
 
 ## 对外 API（节选）
 - `observe<T>(observable, cb): ObserverHandle<T>`
