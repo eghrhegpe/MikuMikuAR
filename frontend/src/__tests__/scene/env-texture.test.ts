@@ -7,6 +7,7 @@ import { Texture } from '@babylonjs/core/Materials/Textures/texture';
 
 import {
     createCanvasTexture,
+    createCanvasDataURL,
     getOrCreateCanvasTexture,
     disposeTextureCache,
 } from '../../scene/env/_shared/env-texture';
@@ -151,5 +152,80 @@ describe('disposeTextureCache', () => {
         getOrCreateCanvasTexture('d-key', { size: 16, draw, scene });
         getOrCreateCanvasTexture('d-key-2', { size: 16, draw, scene });
         expect(() => disposeTextureCache()).not.toThrow();
+    });
+
+    it('dispose 后同 key 重新创建新贴图', () => {
+        const draw = vi.fn();
+        const t1 = getOrCreateCanvasTexture('fresh-key', { size: 16, draw, scene });
+        disposeTextureCache();
+        const t2 = getOrCreateCanvasTexture('fresh-key', { size: 16, draw, scene });
+        expect(t2).not.toBe(t1);
+        expect(draw).toHaveBeenCalledTimes(2);
+    });
+});
+
+describe('边界补强', () => {
+    let engine: NullEngine;
+    let scene: Scene;
+
+    beforeEach(() => {
+        engine = new NullEngine();
+        scene = new Scene(engine);
+    });
+
+    afterEach(() => {
+        disposeTextureCache();
+        scene.dispose();
+        engine.dispose();
+    });
+
+    it('draw 抛错时回退且不泄漏 DynamicTexture', () => {
+        const draw = vi.fn(() => {
+            throw new Error('boom');
+        });
+        const tex = createCanvasTexture({ size: 16, draw, scene, name: 'fallback' });
+        expect(tex).toBeInstanceOf(Texture);
+        expect(scene.textures.length).toBe(1);
+        tex.dispose();
+    });
+
+    it('非法 wrap 回退到 clamp', () => {
+        const draw = vi.fn(() => {
+            throw new Error('boom');
+        });
+        const tex = createCanvasTexture({
+            size: 16,
+            draw,
+            scene,
+            wrap: 'bogus' as 'clamp' | 'wrap',
+        });
+        expect(tex.wrapU).toBe(Texture.CLAMP_ADDRESSMODE);
+        expect(tex.wrapV).toBe(Texture.CLAMP_ADDRESSMODE);
+        tex.dispose();
+    });
+
+    it('非正/非有限尺寸归一为 1', () => {
+        for (const size of [0, -1, Number.NaN, Number.POSITIVE_INFINITY]) {
+            const draw = vi.fn();
+            const tex = createCanvasTexture({ size, draw, scene });
+            const w = tex.getSize().width;
+            expect(Number.isFinite(w)).toBe(true);
+            expect(w).toBeGreaterThan(0);
+            tex.dispose();
+        }
+    });
+
+    it('scene dispose 后创建不抛异常', () => {
+        scene.dispose();
+        const draw = vi.fn();
+        expect(() => createCanvasTexture({ size: 16, draw, scene })).not.toThrow();
+    });
+
+    it('createCanvasDataURL 非法尺寸归一为 1', () => {
+        const draw = vi.fn((_ctx: CanvasRenderingContext2D, size: number) => {
+            expect(size).toBe(1);
+        });
+        expect(createCanvasDataURL({ size: 0, draw })).toBe('data:image/png;base64,');
+        expect(draw).toHaveBeenCalledOnce();
     });
 });

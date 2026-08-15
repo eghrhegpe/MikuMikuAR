@@ -1,7 +1,7 @@
 // @vitest-environment node
 // [doc:adr-125] motion-history 单测 — push/undo/redo 循环、多模型隔离、合并策略
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
     pushHistory,
     undo,
@@ -28,6 +28,12 @@ function makeApplier(log: string[]): (snap: Snap) => void {
         log.push(JSON.stringify(snap));
     };
 }
+
+afterEach(() => {
+    clearHistory('model-1');
+    clearHistory('model-2');
+    vi.useRealTimers();
+});
 
 describe('motion-history', () => {
     beforeEach(() => {
@@ -69,6 +75,18 @@ describe('motion-history', () => {
         expect(log).toHaveLength(0);
     });
 
+    it('undo applier 抛错时 cursor 不前进', () => {
+        pushHistory('model-1', 'mod1', 'tilt', 0, 5, makeBuilder());
+
+        expect(() =>
+            undo('model-1', () => {
+                throw new Error('applier boom');
+            })
+        ).toThrow('applier boom');
+        expect(getHistoryCursor('model-1')).toBe(0);
+        expect(canUndo('model-1')).toBe(true);
+    });
+
     it('redo 恢复到下一条快照', () => {
         const log: string[] = [];
         const applier = makeApplier(log);
@@ -105,6 +123,20 @@ describe('motion-history', () => {
 
         expect(canRedo('model-1')).toBe(false);
         expect(getHistoryEntries('model-1')).toHaveLength(2);
+    });
+
+    it('历史条数超过上限时裁剪最早记录', () => {
+        for (let i = 0; i < 51; i++) {
+            pushHistory('model-1', 'mod1', 'tilt', i, i + 1, makeBuilder());
+            vi.advanceTimersByTime(501);
+        }
+
+        const entries = getHistoryEntries('model-1');
+        expect(entries).toHaveLength(50);
+        expect(entries[0].description).toBe('mod1.tilt: 1 → 2');
+        expect(entries[49].description).toBe('mod1.tilt: 50 → 51');
+        expect(getHistoryCursor('model-1')).toBe(49);
+        expect(canRedo('model-1')).toBe(false);
     });
 
     it('多模型隔离', () => {
@@ -173,6 +205,21 @@ describe('motion-history', () => {
         expect(canUndo('model-2')).toBe(true);
     });
 
+    it('clearHistory 幂等且清空合并窗口，清后首推必然新建', () => {
+        pushHistory('model-1', 'mod1', 'tilt', 0, 5, makeBuilder());
+        pushHistory('model-1', 'mod1', 'tilt', 5, 10, makeBuilder());
+        expect(getHistoryEntries('model-1')).toHaveLength(1); // 已合并，pendingEntry 非空
+
+        clearHistory('model-1');
+        clearHistory('model-1');
+        expect(getHistoryEntries('model-1')).toHaveLength(0);
+        expect(getHistoryCursor('model-1')).toBe(-1);
+
+        pushHistory('model-1', 'mod1', 'tilt', 0, 5, makeBuilder());
+        expect(getHistoryEntries('model-1')).toHaveLength(1);
+        expect(getHistoryCursor('model-1')).toBe(0);
+    });
+
     it('时间窗口合并：同参数连续变更只保留一条', () => {
         pushHistory('model-1', 'mod1', 'tilt', 0, 1, makeBuilder());
         pushHistory('model-1', 'mod1', 'tilt', 1, 2, makeBuilder());
@@ -198,6 +245,33 @@ describe('motion-history', () => {
 
         const entries = getHistoryEntries('model-1');
         expect(entries).toHaveLength(2);
+    });
+
+    it('合并窗口边界：499ms 内合并，500ms 时新建', () => {
+        pushHistory('model-1', 'mod1', 'tilt', 0, 5, makeBuilder());
+        vi.advanceTimersByTime(499);
+        pushHistory('model-1', 'mod1', 'tilt', 5, 10, makeBuilder());
+        expect(getHistoryEntries('model-1')).toHaveLength(1);
+
+        vi.advanceTimersByTime(500);
+        pushHistory('model-1', 'mod1', 'tilt', 10, 15, makeBuilder());
+        expect(getHistoryEntries('model-1')).toHaveLength(2);
+    });
+
+    it('合并分支 builder 抛错时不部分更新原条目', () => {
+        pushHistory('model-1', 'mod1', 'tilt', 0, 5, makeBuilder());
+
+        expect(() =>
+            pushHistory('model-1', 'mod1', 'tilt', 5, 10, () => {
+                throw new Error('builder boom');
+            })
+        ).toThrow('builder boom');
+
+        const entries = getHistoryEntries('model-1');
+        expect(entries).toHaveLength(1);
+        expect(entries[0].description).toBe('mod1.tilt: 0 → 5');
+        expect(entries[0].snapshot.mod1.params.tilt).toBe(0);
+        expect(getHistoryCursor('model-1')).toBe(0);
     });
 
     it('[fix P1] undo 到初始后同参数 500ms 内重推 → 新建条目而非合并（cursor 前进到 0）', () => {
@@ -293,6 +367,21 @@ describe('jumpToHistory', () => {
         pushHistory('model-1', 'mod1', 'tilt', 0, 5, makeBuilder());
         expect(jumpToHistory('model-1', 5, () => {})).toBe(false);
         expect(jumpToHistory('model-1', -2, () => {})).toBe(false);
+    });
+
+    it('非整数/NaN 目标返回 false 且不污染 cursor', () => {
+        const log: string[] = [];
+        const applier = makeApplier(log);
+
+        pushHistory('model-1', 'mod1', 'tilt', 0, 5, makeBuilder());
+        expect(jumpToHistory('model-1', Number.NaN, applier)).toBe(false);
+        expect(jumpToHistory('model-1', 0.5, applier)).toBe(false);
+        expect(jumpToHistory('model-1', Number.POSITIVE_INFINITY, applier)).toBe(false);
+        expect(jumpToHistory('model-1', Number.NEGATIVE_INFINITY, applier)).toBe(false);
+
+        expect(log).toHaveLength(0);
+        expect(getHistoryCursor('model-1')).toBe(0);
+        expect(canUndo('model-1')).toBe(true);
     });
 
     it('跳转后 canUndo/canRedo 正确', () => {

@@ -25,13 +25,20 @@ export interface CanvasTextureOptions {
 }
 
 function _applyWrap(tex: Texture, wrap: 'clamp' | 'wrap'): void {
-    if (wrap === 'clamp') {
-        tex.wrapU = Texture.CLAMP_ADDRESSMODE;
-        tex.wrapV = Texture.CLAMP_ADDRESSMODE;
-    } else if (wrap === 'wrap') {
+    if (wrap === 'wrap') {
         tex.wrapU = Texture.WRAP_ADDRESSMODE;
         tex.wrapV = Texture.WRAP_ADDRESSMODE;
+    } else {
+        // 非法值（运行时越界）也统一回退到默认 CLAMP，避免 DynamicTexture(CLAMP)
+        // 与回退 Texture(默认 WRAP) 行为不一致。
+        tex.wrapU = Texture.CLAMP_ADDRESSMODE;
+        tex.wrapV = Texture.CLAMP_ADDRESSMODE;
     }
+}
+
+/** 画布边长归一化：非法/非正/非有限尺寸统一按 1px 处理，避免产生 0 尺寸 GPU 纹理。 */
+function _normalizeCanvasSize(size: number): number {
+    return Number.isFinite(size) && size > 0 ? Math.max(1, Math.floor(size)) : 1;
 }
 
 /**
@@ -50,15 +57,17 @@ export function createCanvasTexture(opts: CanvasTextureOptions): Texture {
         hasAlpha = false,
         generateMipMaps = false,
     } = opts;
+    const canvasSize = _normalizeCanvasSize(size);
 
     // 优先 DynamicTexture
+    let dt: DynamicTexture | null = null;
     try {
-        const dt = new DynamicTexture(name, size, scene, generateMipMaps);
+        dt = new DynamicTexture(name, canvasSize, scene, generateMipMaps);
         const dtCtx = getCanvasCtx(dt);
         if (!dtCtx) {
             throw new Error('DynamicTexture 无 2D 上下文');
         }
-        draw(dtCtx, size);
+        draw(dtCtx, canvasSize);
         dt.update(false);
         if (getAlphaFromRGB) {
             dt.getAlphaFromRGB = true;
@@ -69,14 +78,20 @@ export function createCanvasTexture(opts: CanvasTextureOptions): Texture {
         _applyWrap(dt, wrap);
         return dt;
     } catch {
+        // DynamicTexture 已创建但后续失败时立即释放，避免回退后残留无效 GPU 纹理。
+        try {
+            dt?.dispose();
+        } catch {
+            // 释放失败不阻断回退路径
+        }
         // 回退：普通 canvas 绘制 → toDataURL → Texture。受约束环境下绘制异常一并吞掉。
         const canvas = document.createElement('canvas');
-        canvas.width = size;
-        canvas.height = size;
+        canvas.width = canvasSize;
+        canvas.height = canvasSize;
         const ctx = canvas.getContext('2d');
         try {
             if (ctx) {
-                draw(ctx, size);
+                draw(ctx, canvasSize);
             }
         } catch {
             // 受约束环境（无 fillRect 等）下忽略绘制，使用空纹理
@@ -171,15 +186,16 @@ export function createCanvasDataURL(opts: {
     size: number;
     draw: (ctx: CanvasRenderingContext2D, size: number) => void;
 }): string {
+    const canvasSize = _normalizeCanvasSize(opts.size);
     try {
         const canvas = document.createElement('canvas');
-        canvas.width = opts.size;
-        canvas.height = opts.size;
+        canvas.width = canvasSize;
+        canvas.height = canvasSize;
         const ctx = canvas.getContext('2d');
         if (!ctx) {
             return '';
         }
-        opts.draw(ctx, opts.size);
+        opts.draw(ctx, canvasSize);
         return canvas.toDataURL();
     } catch {
         return '';

@@ -106,9 +106,11 @@ export function pushHistory(
 ): void {
     const merge = _getMerge(modelId);
     if (_shouldMerge(modelId, moduleId, paramName)) {
+        // [audit] 先构建快照再改 pendingEntry：builder 抛错时不会留下已更新描述/旧快照的不一致条目。
+        const snapshot = buildSnapshot();
         if (merge.pendingEntry) {
             merge.pendingEntry.description = `${moduleId}.${paramName}: ${prev} → ${next}`;
-            merge.pendingEntry.snapshot = buildSnapshot();
+            merge.pendingEntry.snapshot = snapshot;
             _recordLast(modelId, moduleId, paramName);
             return;
         }
@@ -202,7 +204,8 @@ export function jumpToHistory(
     applySnapshot: SnapshotApplier
 ): boolean {
     const state = _getState(modelId);
-    if (targetIndex < -1 || targetIndex >= state.entries.length) {
+    // [audit] 拒绝 NaN/±Infinity/小数：这类 targetIndex 会绕过越界检查并污染 cursor。
+    if (!Number.isInteger(targetIndex) || targetIndex < -1 || targetIndex >= state.entries.length) {
         return false;
     }
     if (targetIndex === state.cursor) {

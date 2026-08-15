@@ -24,8 +24,9 @@ interface RegistryEntry {
     priority: number;
 }
 
-/** [doc:pose-debug] 无 VMD 时的模块状态回退存储，确保覆盖/预设面板可用 */
-const _fallbackModuleStates = new Map<string, MotionModuleState>();
+/** [doc:pose-debug] 无 VMD 时的模块状态回退存储，确保覆盖/预设面板可用。
+ *  按 modelId → moduleId 分键，避免多个无 VMD 模型共享同一份回退状态导致串扰。 */
+const _fallbackModuleStates = new Map<string, Map<string, MotionModuleState>>();
 
 const _registry = new Map<string, RegistryEntry>();
 
@@ -181,14 +182,19 @@ export function getModuleState(
 
     // [doc:pose-debug] 无 VMD 时使用回退存储，避免 enable/bake 读写不一致
     if (!intent) {
-        let state = _fallbackModuleStates.get(moduleId);
+        let byModel = _fallbackModuleStates.get(_modelId);
+        if (!byModel) {
+            byModel = new Map<string, MotionModuleState>();
+            _fallbackModuleStates.set(_modelId, byModel);
+        }
+        let state = byModel.get(moduleId);
         if (!state) {
             state = { id: moduleId, enabled: false, params: {} };
             const entry = _registry.get(moduleId);
             if (entry?.meta.defaults) {
                 state.params = { ...entry.meta.defaults };
             }
-            _fallbackModuleStates.set(moduleId, state);
+            byModel.set(moduleId, state);
         }
         return state;
     }
@@ -351,8 +357,12 @@ export function setTargetModel(modelId: string | null): void {
         for (const moduleId of _registry.keys()) {
             const mod = createModule(moduleId, _currentModelId);
             if (mod) {
-                // 禁用模块，释放 ownedBones
+                // 禁用模块以释放 ownedBones + 注销帧钩子；
+                // 但模块配置随动作走，不能把场景级 enabled 一并清掉（否则切换模型即全局失忆）。
+                const state = getModuleState(_currentModelId, moduleId);
+                const wasEnabled = state.enabled;
                 mod.disable();
+                state.enabled = wasEnabled;
             }
         }
     }
@@ -379,6 +389,8 @@ export function setTargetModel(modelId: string | null): void {
 export function clearAllModulesForModel(modelId: string): void {
     // 释放并清除所有 ownedBones + 引擎槽（委托 store.disposeModel）
     getBoneOverrideStore().disposeModel(modelId);
+    // 同步清理该模型的无 VMD 回退状态，避免 per-model 内存随模型增删累积
+    _fallbackModuleStates.delete(modelId);
 }
 
 /**
