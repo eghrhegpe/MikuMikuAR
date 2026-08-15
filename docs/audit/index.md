@@ -2,12 +2,15 @@
 
 # 代码审核索引
 
-> 审核台账共 **94** 篇：69 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
+> 审核台账共 **97** 篇：72 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
 
 > 汇总视图（执行摘要 / 风险全景 / 改进优先级）见 [审核总索引](./README.md)。
 
-## 2026 年 8 月（58）
+## 2026 年 8 月（61）
 
+- `2026-08-15` [round31-utils-math — 审核结果](./2026-08-15-round31-utils-math.md)
+- `2026-08-15` [round-31 审核 — playback.seek.test.ts + seekFromEvent](./2026-08-15-round31-playback-seek.md)
+- `2026-08-15` [审核报告：motion-intent-ratio-guards 测试 + resolveCompatibility（round-31 / 测试 1/3）](./2026-08-15-round31-motion-intent-ratio-guards.md)
 - `2026-08-15` [round30 — thumbnail-key 双源对齐契约审核](./2026-08-15-round30-thumbnail-key.md)
 - `2026-08-15` [第 30 轮审核（子代理 3/3）— scene-serialize-resilience.test.ts（ADR-198 分段容错）](./2026-08-15-round30-scene-serialize-resilience.md)
 - `2026-08-15` [round30 — 缩略图流式加载 AbortSignal 协作式取消审核（ADR-136）](./2026-08-15-round30-library-thumbnail-streaming.md)
