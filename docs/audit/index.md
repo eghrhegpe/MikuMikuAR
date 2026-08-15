@@ -2,12 +2,15 @@
 
 # 代码审核索引
 
-> 审核台账共 **91** 篇：66 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
+> 审核台账共 **94** 篇：69 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
 
 > 汇总视图（执行摘要 / 风险全景 / 改进优先级）见 [审核总索引](./README.md)。
 
-## 2026 年 8 月（55）
+## 2026 年 8 月（58）
 
+- `2026-08-15` [round30 — thumbnail-key 双源对齐契约审核](./2026-08-15-round30-thumbnail-key.md)
+- `2026-08-15` [第 30 轮审核（子代理 3/3）— scene-serialize-resilience.test.ts（ADR-198 分段容错）](./2026-08-15-round30-scene-serialize-resilience.md)
+- `2026-08-15` [round30 — 缩略图流式加载 AbortSignal 协作式取消审核（ADR-136）](./2026-08-15-round30-library-thumbnail-streaming.md)
 - `2026-08-15` [wind-physics 集成契约 — 审核结果（round-29 / 真实 WASM 物理真实性）](./2026-08-15-round29-wind-physics-integration.md)
 - `2026-08-15` [Round 29 · thumbnail-capture — 审核结果](./2026-08-15-round29-thumbnail-capture.md)
 - `2026-08-15` [round-29-perception-perf — 感知层性能基准测试审核](./2026-08-15-round29-perception-perf.md)
