@@ -1,5 +1,5 @@
 // [doc:adr-153] 导航项契约辅助单测
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import {
     markNavItem,
     navFocusTarget,
@@ -11,6 +11,10 @@ import {
 } from '../core/ui-nav-item';
 
 describe('ui-nav-item 契约', () => {
+    afterEach(() => {
+        document.body.innerHTML = '';
+    });
+
     it('markNavItem 打上 data-nav-item 标记', () => {
         const el = document.createElement('div');
         markNavItem(el);
@@ -81,9 +85,76 @@ describe('ui-nav-item 契约', () => {
         c1.focus();
         expect(navGroupMove(row, 1)).toBe(true);
         expect(document.activeElement).toBe(c2);
-        navGroupMove(row, 1); // wrap 回 c1
+        expect(navGroupMove(row, 1)).toBe(true); // wrap 回 c1
         expect(document.activeElement).toBe(c1);
+    });
+
+    it('markNavItem 重复调用以最新选项覆盖旧标记', () => {
+        const el = document.createElement('div');
+        markNavItem(el, { focusSelector: '.cs-bar', groupSelector: '.preset-chip' });
+        markNavItem(el);
+        expect(el.hasAttribute(NAV_ITEM_ATTR)).toBe(true);
+        expect(navGroupSelector(el)).toBeNull();
+        expect(navHasHorizontalAdjust(el)).toBe(false);
+        expect(navFocusTarget(el)).toBe(el);
+    });
+
+    it('focusSelector 非法时 navFocusTarget 回退行本身', () => {
+        const row = document.createElement('div');
+        markNavItem(row, { focusSelector: '[' });
+        expect(navFocusTarget(row)).toBe(row);
+    });
+
+    it('groupSelector 无匹配或非法时 navFocusTarget 回退行本身', () => {
+        const missing = document.createElement('div');
+        markNavItem(missing, { groupSelector: '.missing' });
+        expect(navFocusTarget(missing)).toBe(missing);
+
+        const invalid = document.createElement('div');
+        markNavItem(invalid, { groupSelector: '[' });
+        expect(navFocusTarget(invalid)).toBe(invalid);
+    });
+
+    it('navGroupMove 空组或非法 groupSelector 返回 false', () => {
+        const empty = document.createElement('div');
+        markNavItem(empty, { groupSelector: '.missing' });
+        expect(navGroupMove(empty, 1)).toBe(false);
+
+        const invalid = document.createElement('div');
+        document.body.appendChild(invalid);
+        markNavItem(invalid, { groupSelector: '[' });
+        expect(navGroupMove(invalid, 1)).toBe(false);
+    });
+
+    it('navGroupMove 单元素组保持焦点并返回 true', () => {
+        const row = document.createElement('div');
+        const c = document.createElement('button');
+        c.className = 'preset-chip';
+        row.appendChild(c);
+        document.body.appendChild(row);
+        markNavItem(row, { groupSelector: '.preset-chip' });
+        c.focus();
+        expect(navGroupMove(row, 1)).toBe(true);
+        expect(document.activeElement).toBe(c);
+    });
+
+    it('navGroupMove 已移除行返回 false', () => {
+        const row = document.createElement('div');
+        const c = document.createElement('button');
+        c.className = 'preset-chip';
+        row.appendChild(c);
+        document.body.appendChild(row);
+        markNavItem(row, { groupSelector: '.preset-chip' });
+        c.focus();
         row.remove();
+        expect(navGroupMove(row, 1)).toBe(false);
+    });
+
+    it('navGroupMove 非法 dir 返回 false', () => {
+        const row = document.createElement('div');
+        document.body.appendChild(row);
+        markNavItem(row, { groupSelector: '.preset-chip' });
+        expect(navGroupMove(row, 0 as -1 | 1)).toBe(false);
     });
 
     it('navGroupMove 非组行返回 false', () => {

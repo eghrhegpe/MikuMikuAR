@@ -41,13 +41,36 @@ export function markNavItem(row: HTMLElement, opts: NavItemOptions = {}): void {
     row.setAttribute(NAV_ITEM_ATTR, '');
     if (opts.focusSelector) {
         row.setAttribute(NAV_FOCUS_ATTR, opts.focusSelector);
+    } else {
+        row.removeAttribute(NAV_FOCUS_ATTR);
     }
     if (opts.groupSelector) {
         row.setAttribute(NAV_GROUP_ATTR, opts.groupSelector);
         // 组行 ←→ 用于组内移动，菜单必须让出
         row.setAttribute(NAV_ADJUST_ATTR, 'horizontal');
-    } else if (opts.horizontalAdjust) {
-        row.setAttribute(NAV_ADJUST_ATTR, 'horizontal');
+    } else {
+        row.removeAttribute(NAV_GROUP_ATTR);
+        if (opts.horizontalAdjust) {
+            row.setAttribute(NAV_ADJUST_ATTR, 'horizontal');
+        } else {
+            row.removeAttribute(NAV_ADJUST_ATTR);
+        }
+    }
+}
+
+function safeQueryAll(root: HTMLElement, selector: string): HTMLElement[] {
+    try {
+        return Array.from(root.querySelectorAll<HTMLElement>(selector));
+    } catch {
+        return [];
+    }
+}
+
+function safeQuery(root: HTMLElement, selector: string): HTMLElement | null {
+    try {
+        return root.querySelector<HTMLElement>(selector);
+    } catch {
+        return null;
     }
 }
 
@@ -56,15 +79,15 @@ export function navFocusTarget(row: HTMLElement): HTMLElement {
     // 组行：聚焦当前 active 子项，否则首个子项
     const group = row.getAttribute(NAV_GROUP_ATTR);
     if (group) {
-        const items = row.querySelectorAll<HTMLElement>(group);
+        const items = safeQueryAll(row, group);
         if (items.length > 0) {
-            const active = Array.from(items).find((el) => el.classList.contains('active'));
+            const active = items.find((el) => el.classList.contains('active'));
             return active ?? items[0];
         }
     }
     const sel = row.getAttribute(NAV_FOCUS_ATTR);
     if (sel) {
-        const el = row.querySelector<HTMLElement>(sel);
+        const el = safeQuery(row, sel);
         if (el) {
             return el;
         }
@@ -87,11 +110,17 @@ export function navGroupSelector(row: HTMLElement): string | null {
  * dir: -1 = 左/上一项，+1 = 右/下一项。
  */
 export function navGroupMove(row: HTMLElement, dir: -1 | 1): boolean {
+    if (dir !== -1 && dir !== 1) {
+        return false;
+    }
+    if (!row.isConnected) {
+        return false;
+    }
     const group = row.getAttribute(NAV_GROUP_ATTR);
     if (!group) {
         return false;
     }
-    const items = Array.from(row.querySelectorAll<HTMLElement>(group));
+    const items = safeQueryAll(row, group);
     if (items.length === 0) {
         return false;
     }

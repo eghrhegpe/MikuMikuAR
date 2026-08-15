@@ -235,8 +235,8 @@
 | `clampPct()` | `core/clamp:29` | 百分比钳制到 [0, 100]。 |
 | `lerp()` | `core/clamp:19` | 线性插值。 |
 | `lerpArray()` | `core/clamp:24` | 逐元素线性插值数组。 |
-| `Cache()` | `core/collections:22` | 轻量泛型缓存——Map 封装，统一 get/set/has/delete/clear 接口。 |
-| `allSettledFilter()` | `core/collections:49` | 等待全部 promise 结束，仅返回 fulfilled 结果（rejected 被静默丢弃）。 |
+| `Cache()` | `core/collections:31` | 轻量泛型缓存——Map 封装，统一 get/set/has/delete/clear 接口。 |
+| `allSettledFilter()` | `core/collections:59` | 等待全部 promise 结束，仅返回 fulfilled 结果（rejected 被静默丢弃）。 |
 | `ensureArray()` | `core/collections:6` | 确保值为数组；非数组则包裹为单元素数组。 |
 | `filterKeys()` | `core/collections:11` | 按谓词过滤对象键，返回仅含满足条件键值对的新对象。 |
 | `col3FromTriple()` | `core/color-helpers:15` | 从 &#96;[r, g, b]&#96; 三元组构造 Color3。 |
@@ -656,10 +656,10 @@
 | `NAV_ITEM_SELECTOR()` | `core/ui-nav-item:21` | 方向键导航项统一选择器（panelItems 用） |
 | `NavItemOptions()` | `core/ui-nav-item:23` | — |
 | `markNavItem()` | `core/ui-nav-item:40` | 给一个行元素打上方向键导航项标记。控件工厂在创建行后调用一次即可， 无需再改 menu.ts。 |
-| `navFocusTarget()` | `core/ui-nav-item:55` | 读取行的内部聚焦目标（缺省返回行本身） |
-| `navGroupMove()` | `core/ui-nav-item:89` | 组内 ←→ 移动焦点：在 row 的组内子项间循环移动，返回是否处理了该键。 |
-| `navGroupSelector()` | `core/ui-nav-item:81` | 读取组行的组内子项 selector（非组行返回 null） |
-| `navHasHorizontalAdjust()` | `core/ui-nav-item:76` | 该行是否声明了 ←→ 水平调值（菜单应让位） |
+| `navFocusTarget()` | `core/ui-nav-item:78` | 读取行的内部聚焦目标（缺省返回行本身） |
+| `navGroupMove()` | `core/ui-nav-item:112` | 组内 ←→ 移动焦点：在 row 的组内子项间循环移动，返回是否处理了该键。 |
+| `navGroupSelector()` | `core/ui-nav-item:104` | 读取组行的组内子项 selector（非组行返回 null） |
+| `navHasHorizontalAdjust()` | `core/ui-nav-item:99` | 该行是否声明了 ←→ 水平调值（菜单应让位） |
 | `PresetChipItem()` | `core/ui-preset:15` | 单个预设芯片的描述。 |
 | `addClearRow()` | `core/ui-preset:72` | 渲染一行右对齐的「清除」按钮（统一 cs-btn cs-btn-sm 样式）。 |
 | `buildPresetChipGroup()` | `core/ui-preset:34` | 渲染一组 preset-chip（统一 .preset-group 容器 + addPresetChip 布局）。 |

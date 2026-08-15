@@ -76,13 +76,50 @@ describe('createKeyboardNav — 默认路径（:focus 反查）', () => {
         key(items[0], 'ArrowDown');
         expect(document.activeElement).toBe(items[0]);
     });
+
+    it('无焦点项时 ArrowUp wrap 到末项（idx=-1 边界）', () => {
+        disp = createKeyboardNav(container, { selector: '.slide-item' });
+        key(container, 'ArrowUp');
+        expect(document.activeElement).toBe(items[2]);
+    });
+
+    it('逗号选择器时 :focus 反查只认实际焦点项', () => {
+        const header = document.createElement('div');
+        header.className = 'collapsible-header';
+        header.tabIndex = 0;
+        header.textContent = 'header';
+        container.appendChild(header);
+        disp = createKeyboardNav(container, { selector: '.slide-item, .collapsible-header' });
+        header.focus();
+        key(header, 'ArrowDown');
+        expect(document.activeElement).toBe(items[0]);
+    });
+
+    it('dispose 后监听器移除，不再响应按键', () => {
+        disp = createKeyboardNav(container, { selector: '.slide-item' });
+        items[0].focus();
+        disp.dispose();
+        key(items[0], 'ArrowDown');
+        expect(document.activeElement).toBe(items[0]);
+    });
 });
 
 describe('createKeyboardNav — roving tabIndex（tablist 路径，ADR-196）', () => {
+    let container: HTMLElement;
+    let items: HTMLElement[];
+    let disp: { dispose: () => void };
+
+    beforeEach(() => {
+        ({ container, items } = makeContainer(3));
+    });
+    afterEach(() => {
+        disp?.dispose();
+        container.remove();
+    });
+
     it('移动后新元素 tabIndex=0、旧元素 tabIndex=-1，并触发 onArrowActivate', () => {
-        const { container, items } = makeContainer(3);
         const onArrowActivate = vi.fn();
-        const disp = createKeyboardNav(container, {
+        disp = createKeyboardNav(container, {
             selector: '.slide-item',
             rovingTabIndex: true,
             onArrowActivate,
@@ -92,8 +129,6 @@ describe('createKeyboardNav — roving tabIndex（tablist 路径，ADR-196）', 
         expect(items[0].tabIndex).toBe(-1);
         expect(items[1].tabIndex).toBe(0);
         expect(onArrowActivate).toHaveBeenCalledWith(items[1]);
-        disp.dispose();
-        container.remove();
     });
 });
 
@@ -149,14 +184,16 @@ describe('createKeyboardNav — 全大统一增强（menu.ts 接入路径）', (
 
     it('onArrowBack：ArrowLeft 触发返回而非移动焦点', () => {
         const onArrowBack = vi.fn();
+        const setActiveIndex = vi.fn();
         disp = createKeyboardNav(container, {
             selector: '.slide-item',
             getActiveIndex: () => 1,
-            setActiveIndex: vi.fn(),
+            setActiveIndex,
             onArrowBack,
         });
         key(container, 'ArrowLeft');
         expect(onArrowBack).toHaveBeenCalledOnce();
+        expect(setActiveIndex).not.toHaveBeenCalled();
     });
 
     it('perKeySkip：horizontal 跳过 button，vertical 不跳', () => {
@@ -178,18 +215,20 @@ describe('createKeyboardNav — 全大统一增强（menu.ts 接入路径）', (
         expect(enterEv.defaultPrevented).toBe(false);
         // vertical（↓）不跳过，正常移动
         key(btn, 'ArrowDown');
-        expect(setActiveIndex).toHaveBeenCalled();
+        expect(setActiveIndex).toHaveBeenCalledWith(expect.any(Array), 1);
     });
 
     it('Enter 用 getActiveIndex 定位当前项激活（无 :focus）', () => {
         const onEnter = vi.fn();
+        const setActiveIndex = vi.fn();
         disp = createKeyboardNav(container, {
             selector: '.slide-item',
             getActiveIndex: () => 2,
-            setActiveIndex: vi.fn(),
+            setActiveIndex,
             onEnter,
         });
         key(container, 'Enter');
         expect(onEnter).toHaveBeenCalledWith(items[2]);
+        expect(setActiveIndex).not.toHaveBeenCalled();
     });
 });

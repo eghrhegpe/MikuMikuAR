@@ -94,8 +94,8 @@ export function createKeyboardNav(
         const idx = options.getActiveIndex
             ? options.getActiveIndex(list)
             : (() => {
-                  const f = container.querySelector<HTMLElement>(`${selector}:focus`);
-                  return f ? list.indexOf(f) : -1;
+                  const f = container.querySelector<HTMLElement>(':focus');
+                  return f && list.includes(f) ? list.indexOf(f) : -1;
               })();
         const activeEl = idx >= 0 && idx < list.length ? list[idx] : null;
 
@@ -135,7 +135,7 @@ export function createKeyboardNav(
                     return;
                 }
                 e.preventDefault();
-                const prev = wrap ? (idx - 1 + list.length) % list.length : Math.max(idx - 1, 0);
+                const prev = wrap ? (idx <= 0 ? list.length - 1 : idx - 1) : Math.max(idx - 1, 0);
                 _moveFocus(list, idx, prev, options);
                 break;
             }
@@ -149,7 +149,7 @@ export function createKeyboardNav(
                     break;
                 }
                 e.preventDefault();
-                const prev = wrap ? (idx - 1 + list.length) % list.length : Math.max(idx - 1, 0);
+                const prev = wrap ? (idx <= 0 ? list.length - 1 : idx - 1) : Math.max(idx - 1, 0);
                 _moveFocus(list, idx, prev, options);
                 break;
             }

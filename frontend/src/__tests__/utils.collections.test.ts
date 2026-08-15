@@ -26,6 +26,20 @@ describe('ADR-101 P3: pure collection & json helpers', () => {
             expect(ensureArray(null)).toEqual([null]);
             expect(ensureArray(undefined)).toEqual([undefined]);
         });
+
+        it('wraps Set/arguments/array-likes as single elements (documented non-array behavior)', () => {
+            const set = new Set([1, 2]);
+            expect(ensureArray(set)).toEqual([set]);
+
+            function captureArgs(..._xs: number[]): IArguments {
+                return arguments;
+            }
+            const args = captureArgs(1, 2);
+            expect(ensureArray(args)).toEqual([args]);
+
+            const arrayLike = { 0: 'a', 1: 'b', length: 2 };
+            expect(ensureArray(arrayLike)).toEqual([arrayLike]);
+        });
     });
 
     describe('filterKeys', () => {
@@ -65,6 +79,33 @@ describe('ADR-101 P3: pure collection & json helpers', () => {
                 return true;
             });
             expect(keys).toEqual(['x', 'y']);
+        });
+
+        it('returns empty object for nullish input', () => {
+            expect(filterKeys(null as unknown as { a: number }, () => true)).toEqual({});
+            expect(filterKeys(undefined as unknown as { a: number }, () => true)).toEqual({});
+        });
+
+        it('ignores inherited enumerable keys', () => {
+            const proto = { inherited: 1 };
+            const obj = Object.assign(Object.create(proto), { own: 2 });
+            expect(filterKeys(obj, () => true)).toEqual({ own: 2 });
+        });
+
+        it('preserves own __proto__ key without polluting result prototype', () => {
+            const obj: Record<string, unknown> = { safe: 1 };
+            Object.defineProperty(obj, '__proto__', {
+                value: { polluted: true },
+                enumerable: true,
+                configurable: true,
+                writable: true,
+            });
+
+            const result = filterKeys(obj, () => true);
+            expect(Object.keys(result)).toEqual(['safe', '__proto__']);
+            expect(Object.getPrototypeOf(result)).toBe(Object.prototype);
+            expect((result as Record<string, unknown>).polluted).toBeUndefined();
+            expect(Object.prototype.hasOwnProperty.call(result, '__proto__')).toBe(true);
         });
     });
 
@@ -123,6 +164,17 @@ describe('ADR-101 P3: pure collection & json helpers', () => {
             expect(cache.has('a')).toBe(true);
         });
 
+        it('supports undefined and NaN keys via Map semantics', () => {
+            const cache = new Cache<string | number | undefined, string>();
+            cache.set(undefined, 'undefined-key');
+            cache.set(NaN, 'nan-key');
+            expect(cache.get(undefined)).toBe('undefined-key');
+            expect(cache.has(undefined)).toBe(true);
+            expect(cache.get(NaN)).toBe('nan-key');
+            expect(cache.has(NaN)).toBe(true);
+            expect(cache.size).toBe(2);
+        });
+
         it('delete on empty cache returns false', () => {
             const cache = new Cache<string, number>();
             expect(cache.delete('x')).toBe(false);
@@ -169,6 +221,23 @@ describe('ADR-101 P3: pure collection & json helpers', () => {
             expect(results).toEqual([]);
         });
 
+        it('accepts non-Promise values as already fulfilled', async () => {
+            const results = await allSettledFilter<number>([1, Promise.resolve(2)]);
+            expect(results).toHaveLength(2);
+            expect(results[0].value).toBe(1);
+            expect(results[1].value).toBe(2);
+        });
+
+        it('treats synchronously throwing thenables as rejected', async () => {
+            const syncThrowThenable = {
+                then(): never {
+                    throw new Error('sync-then');
+                },
+            };
+            const results = await allSettledFilter<unknown>([syncThrowThenable]);
+            expect(results).toEqual([]);
+        });
+
         it('presolves undefined values (not filtered out)', async () => {
             const results = await allSettledFilter([Promise.resolve(undefined)]);
             expect(results).toHaveLength(1);
@@ -209,6 +278,15 @@ describe('ADR-101 P3: pure collection & json helpers', () => {
             expect(jsonStringify(NaN)).toBe('null');
             expect(jsonStringify(Infinity)).toBe('null');
             expect(jsonStringify(-Infinity)).toBe('null');
+        });
+
+        it('normalizes top-level function and symbol to "null" string', () => {
+            expect(jsonStringify(() => 1)).toBe('null');
+            expect(jsonStringify(Symbol('s'))).toBe('null');
+        });
+
+        it('throws on BigInt (JSON.stringify native limitation)', () => {
+            expect(() => jsonStringify(123n)).toThrow();
         });
 
         it('throws on circular reference', () => {
