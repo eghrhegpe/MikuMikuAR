@@ -2,12 +2,15 @@
 
 # 代码审核索引
 
-> 审核台账共 **127** 篇：102 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
+> 审核台账共 **130** 篇：105 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
 
 > 汇总视图（执行摘要 / 风险全景 / 改进优先级）见 [审核总索引](./README.md)。
 
-## 2026 年 8 月（91）
+## 2026 年 8 月（94）
 
+- `2026-08-15` [perception-state — 状态生命周期集成审计（round-42）](./2026-08-15-round42-perception-state.md)
+- `2026-08-15` [Round-42 舞台灯模块（lighting-stage）审核报告](./2026-08-15-round42-lighting-stage.md)
+- `2026-08-15` [[perception-gaze] 视线追踪锥形限位 + _gazeAlpha 衰减 + gaze reset — 审核结果（round-42）](./2026-08-15-round42-gaze.md)
 - `2026-08-15` [Round 41 — vmd-layers-filter 审核（ADR-051 VMD 骨骼过滤）](./2026-08-15-round41-vmd-layers-filter.md)
 - `2026-08-15` [Round 41 — scene-model 审核报告](./2026-08-15-round41-scene-model.md)
 - `2026-08-15` [round-41 perception-morph 集成测试审核报告（微表情 + 唇形同步）](./2026-08-15-round41-perception-morph.md)
