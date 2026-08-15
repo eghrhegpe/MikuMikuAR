@@ -1307,14 +1307,14 @@
 | `getStandardMaterialProxy()` | `scene/manager/material-proxy-resolver:22` | 返回标准材质代理（MmdStandardMaterialProxy）— 用于 Lambert + Blinn-Phong 渲染 |
 | `resolveMaterialProxy()` | `scene/manager/material-proxy-resolver:44` | 返回当前材质的代理构造函数（同步） （PBR 模式下的材质代理仍使用标准代理，因 PMX 加载阶段已由 PBRMaterialBuilder 构建材质， MmdStandardMa |
 | `DEFAULT_SSS_PARAMS()` | `scene/manager/material-sss:31` | SSS 默认参数 |
-| `SssColorInput()` | `scene/manager/material-sss:54` | — |
+| `SssColorInput()` | `scene/manager/material-sss:60` | — |
 | `SssParams()` | `scene/manager/material-sss:17` | SSS 参数 |
-| `applyMatSssState()` | `scene/manager/material-sss:210` | 反序列化 SSS 状态并应用到模型 |
-| `applySss()` | `scene/manager/material-sss:106` | 应用 SSS 参数到指定分类的所有 PBRMaterial 材质 内部实现： 1. |
-| `disposeModelSssState()` | `scene/manager/material-sss:178` | 重置指定模型的所有 SSS 状态 |
-| `getMatSssParams()` | `scene/manager/material-sss:45` | 获取指定分类的 SSS 参数 |
-| `getMatSssState()` | `scene/manager/material-sss:186` | 序列化指定模型的 SSS 状态为 JSON 兼容结构 用于场景/预设保存。仅返回非默认值，避免默认值噪声。 |
-| `setMatSssParams()` | `scene/manager/material-sss:63` | 设置指定分类的 SSS 参数并立即应用到所有该分类材质 sssColor 可传入 Color3 或 { r, g, b } 形式 |
+| `applyMatSssState()` | `scene/manager/material-sss:218` | 反序列化 SSS 状态并应用到模型 |
+| `applySss()` | `scene/manager/material-sss:114` | 应用 SSS 参数到指定分类的所有 PBRMaterial 材质 内部实现： 1. |
+| `disposeModelSssState()` | `scene/manager/material-sss:186` | 重置指定模型的所有 SSS 状态 |
+| `getMatSssParams()` | `scene/manager/material-sss:51` | 获取指定分类的 SSS 参数 |
+| `getMatSssState()` | `scene/manager/material-sss:194` | 序列化指定模型的 SSS 状态为 JSON 兼容结构 用于场景/预设保存。仅返回非默认值，避免默认值噪声。 |
+| `setMatSssParams()` | `scene/manager/material-sss:69` | 设置指定分类的 SSS 参数并立即应用到所有该分类材质 sssColor 可传入 Color3 或 { r, g, b } 形式 |
 | `AlphaCtx()` | `scene/manager/material:20` | — |
 | `DEFAULT_MAT_PARAMS()` | `scene/manager/material:65` | 材质参数默认值 — 所有新增字段在此维护，消除散落硬编码。 |
 | `MaterialCategory()` | `scene/manager/material:47` | — |
@@ -2573,9 +2573,9 @@
 | `BONE_WRIST_L_CANDIDATES()` | `motion-algos/proc-motion-shared:184` | — |
 | `BONE_WRIST_R_CANDIDATES()` | `motion-algos/proc-motion-shared:185` | — |
 | `DEFAULT_PROC_STATE()` | `motion-algos/proc-motion-shared:87` | — |
-| `FPS()` | `motion-algos/proc-motion-shared:321` | — |
-| `MAX_FRAMES()` | `motion-algos/proc-motion-shared:322` | — |
-| `MORPH_BLINK_CANDIDATES()` | `motion-algos/proc-motion-shared:308` | — |
+| `FPS()` | `motion-algos/proc-motion-shared:323` | — |
+| `MAX_FRAMES()` | `motion-algos/proc-motion-shared:324` | — |
+| `MORPH_BLINK_CANDIDATES()` | `motion-algos/proc-motion-shared:310` | — |
 | `PROC_MOTION_BONE_CATEGORIES()` | `motion-algos/proc-motion-shared:14` | — |
 | `PROC_VMD_NAME_AUTODANCE()` | `motion-algos/proc-motion-shared:12` | — |
 | `PROC_VMD_NAME_IDLE()` | `motion-algos/proc-motion-shared:11` | — |
@@ -2584,12 +2584,12 @@
 | `ProcMotionMode()` | `motion-algos/proc-motion-shared:6` | — |
 | `ProcMotionParams()` | `motion-algos/proc-motion-shared:37` | [audit] per-mode 可调参数：待机呼吸 / 自动舞蹈 各自独立一套 |
 | `ProcMotionState()` | `motion-algos/proc-motion-shared:46` | — |
-| `clamp1()` | `motion-algos/proc-motion-shared:324` | — |
-| `closingFrame()` | `motion-algos/proc-motion-shared:331` | 循环末尾的 identity 闭合帧（确保动画无缝循环） |
+| `clamp1()` | `motion-algos/proc-motion-shared:326` | — |
+| `closingFrame()` | `motion-algos/proc-motion-shared:333` | 循环末尾的 identity 闭合帧（确保动画无缝循环） |
 | `getProcMotionBoneCategories()` | `motion-algos/proc-motion-shared:32` | — |
 | `matchBone()` | `motion-algos/proc-motion-shared:295` | — |
 | `migrateProcState()` | `motion-algos/proc-motion-shared:114` | — |
-| `quatW()` | `motion-algos/proc-motion-shared:327` | 四元数 w 分量：sqrt(max(0, 1 - x² - y² - z²)) |
+| `quatW()` | `motion-algos/proc-motion-shared:329` | 四元数 w 分量：sqrt(max(0, 1 - x² - y² - z²)) |
 | `generateAutoDanceVmd()` | `motion-algos/procedural-motion:3` | — |
 | `generateIdleVmd()` | `motion-algos/procedural-motion:2` | — |
 | `shouldAutoDance()` | `motion-algos/procedural-motion:7` | — |

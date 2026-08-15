@@ -198,6 +198,15 @@ export function analyzeSkirt(
         return empty;
     }
 
+    // [audit:round21 P2] 索引值越界防御：长度合法但元素越界（含 Int32Array 负值经
+    // Uint32Array 回绕成巨大正值，如 -1 → 4294967295）会让 posArr[v*3+1] 越界读
+    // undefined → NaN 污染 hem 判定/骨节位置并可能注入物理。一次性 O(n) 校验。
+    for (let k = 0; k < idxArr.length; k++) {
+        if (idxArr[k] >= vertexCount) {
+            return empty;
+        }
+    }
+
     // --- 1. 已有裙骨检测 ---
     if (options?.boneNames && options.boneNames.length > 0) {
         const hasSkirt = options.boneNames.some((n) => SKIRT_BONE_PATTERN.test(n));

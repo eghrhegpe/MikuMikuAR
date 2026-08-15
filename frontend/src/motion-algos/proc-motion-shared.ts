@@ -298,8 +298,10 @@ export function matchBone(actualBones: string[], candidates: string[]): string |
             if (canEncodeName(c)) {
                 return c;
             }
+            // [audit:round21] 修复 round-15 遗留 P1：无法编码的候选应继续尝试下一个，
+            // 而非 return null 终止整个查找（否则首个无法编码的匹配直接让后续可编码候选失效）。
             logWarn('procedural-motion', `骨骼 "${c}" 无法编码为 Shift-JIS，跳过`);
-            return null;
+            continue;
         }
     }
     return null;

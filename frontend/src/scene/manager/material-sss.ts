@@ -39,16 +39,22 @@ export const DEFAULT_SSS_PARAMS: SssParams = {
 /** 分类级 SSS 参数缓存 */
 const _sssState = new Map<string, Map<string, SssParams>>();
 
+/** [audit:round21 P2] 深拷贝 SssParams：sssColor 是 Color3 对象，浅拷贝会让调用方
+ *  写入返回对象时污染模块级 DEFAULT_SSS_PARAMS 与缓存值（全局默认色漂移）。 */
+function cloneSssParams(p: SssParams): SssParams {
+    return { ...p, sssColor: p.sssColor.clone() };
+}
+
 /**
  * 获取指定分类的 SSS 参数
  */
 export function getMatSssParams(id: string, cat: string): SssParams {
     const catMap = _sssState.get(id);
     if (!catMap) {
-        return { ...DEFAULT_SSS_PARAMS };
+        return cloneSssParams(DEFAULT_SSS_PARAMS);
     }
     const p = catMap.get(cat);
-    return p ? { ...p } : { ...DEFAULT_SSS_PARAMS };
+    return p ? cloneSssParams(p) : cloneSssParams(DEFAULT_SSS_PARAMS);
 }
 
 export type SssColorInput = Color3 | { r: number; g: number; b: number };
@@ -70,8 +76,10 @@ export function setMatSssParams(
         catMap = new Map();
         _sssState.set(id, catMap);
     }
-    const existing = catMap.get(cat) ?? { ...DEFAULT_SSS_PARAMS };
-    const merged: SssParams = { ...existing };
+    // [audit:round21 P2] 深拷贝起点：existing 若是 catMap 值或 DEFAULT，clone 后
+    // merged.sssColor 不与任何共享对象同引用（未传 sssColor 时也安全）。
+    const existing = catMap.get(cat) ?? DEFAULT_SSS_PARAMS;
+    const merged: SssParams = cloneSssParams(existing);
 
     // 钳制
     if (params.sssPower !== undefined) {
