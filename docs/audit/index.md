@@ -2,12 +2,15 @@
 
 # 代码审核索引
 
-> 审核台账共 **130** 篇：105 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
+> 审核台账共 **133** 篇：108 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
 
 > 汇总视图（执行摘要 / 风险全景 / 改进优先级）见 [审核总索引](./README.md)。
 
-## 2026 年 8 月（94）
+## 2026 年 8 月（97）
 
+- `2026-08-15` [[physics-contract.core.test.ts 真实 WASM 契约层] — 审核结果](./2026-08-15-round43-physics-contract-core.md)
+- `2026-08-15` [physics-contract.constraint.test.ts — 审核结果（round-43 / 真实 WASM 6DOF Spring 约束契约）](./2026-08-15-round43-physics-contract-constraint.md)
+- `2026-08-15` [round-43 perception-multi-model — 骨骼认领/冲突 banner + 多模型激活/隔离集成审计](./2026-08-15-round43-perception-multi-model.md)
 - `2026-08-15` [perception-state — 状态生命周期集成审计（round-42）](./2026-08-15-round42-perception-state.md)
 - `2026-08-15` [Round-42 舞台灯模块（lighting-stage）审核报告](./2026-08-15-round42-lighting-stage.md)
 - `2026-08-15` [[perception-gaze] 视线追踪锥形限位 + _gazeAlpha 衰减 + gaze reset — 审核结果（round-42）](./2026-08-15-round42-gaze.md)
