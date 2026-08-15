@@ -2,12 +2,15 @@
 
 # 代码审核索引
 
-> 审核台账共 **136** 篇：111 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
+> 审核台账共 **139** 篇：114 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
 
 > 汇总视图（执行摘要 / 风险全景 / 改进优先级）见 [审核总索引](./README.md)。
 
-## 2026 年 8 月（100）
+## 2026 年 8 月（103）
 
+- `2026-08-15` [[stable-identity-material-roundtrip] — 审核结果（round-45 测试 3）](./2026-08-15-round45-stable-identity-material.md)
+- `2026-08-15` [Round 45 审核报告：resolveModelId（stable-identity 决策点）](./2026-08-15-round45-resolve-model-id.md)
+- `2026-08-15` [Round 45 审核报告：proc-bone-override（程序化动作 + 骨骼覆盖管线契约）](./2026-08-15-round45-proc-bone-override.md)
 - `2026-08-15` [physics-contract.rigidbody.test.ts — 审核结果（round-44 / 真实 WASM 刚体 + RigidBodyBundle 批量刚体契约）](./2026-08-15-round44-physics-contract-rigidbody.md)
 - `2026-08-15` [physics-contract.collision-worlds.test.ts — 审核结果（round-44 / 碰撞检测 + 多物理世界共存契约）](./2026-08-15-round44-physics-contract-collision-worlds.md)
 - `2026-08-15` [审核报告：perception-breathing（ADR-071 呼吸轴向回归）— round44](./2026-08-15-round44-perception-breathing.md)

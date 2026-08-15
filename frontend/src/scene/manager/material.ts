@@ -661,7 +661,9 @@ export function isMatEnabled(id: string, matIndex: number): boolean {
 
 export function setMatEnabled(id: string, matIndex: number, enabled: boolean): void {
     const meshes = _getMeshesById(id);
-    if (!meshes || matIndex < 0 || matIndex >= meshes.length) {
+    // [audit:round45 P2] 与 setMatParams(:833) 同款 NaN 守卫：损坏 JSON 键（如 "abc"）经
+    // parseInt 变 NaN 后穿透比较，写 NaN key 幽灵 entry 并抛未捕获 TypeError。
+    if (!meshes || !Number.isFinite(matIndex) || matIndex < 0 || matIndex >= meshes.length) {
         return;
     }
     const current = isMatEnabled(id, matIndex);
