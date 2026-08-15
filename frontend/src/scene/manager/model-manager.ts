@@ -1219,16 +1219,14 @@ export class ModelManager {
             return false;
         }
 
-        // DAG 校验：防止成环。
-        // 从 parent 沿 parentId 链向上追溯，若能到达 child，说明 child 是 parent 的祖先，
-        // 建立 child←parent 会成环（child 自身旧 parentId 指向别处不影响此追溯）。
-        // 反向也需检查：若 child 沿 parentId 链向上能到达 parent，说明 child 已为 parent 后代，
-        // 直接建立 child←parent 也会成环。但排除 child 已直接附属到此 parent 的情况（重挂载）。
-        const childIsDescendant =
-            childInst.parentId !== undefined &&
-            childInst.parentId !== parentId &&
-            this._hasAncestor(childInst.parentId, parentId);
-        if (childId === parentId || this._hasAncestor(parentId, childId) || childIsDescendant) {
+        // DAG 校验：防止成环。建立 child←parent 会成环的两种情况：
+        // 1) 自环（childId === parentId）
+        // 2) parent 已是 child 的后代（_hasAncestor(parentId, childId)）：child→…→parent 已存在，
+        //    再挂 parent←child 形成环。
+        // [audit:round22 P2] 移除原 childIsDescendant 检查：child 已是 parent 后代时重挂到祖先
+        // （如 c→b→a 后再挂 c→a）经下方换父逻辑（detachFromBone + parentId 覆盖）解除旧边后
+        // 不构成环，是合法操作；原实现误拒并报 "would create cycle"。
+        if (childId === parentId || this._hasAncestor(parentId, childId)) {
             logWarn('model-manager', 'attachModelToBone: would create cycle');
             feedbackStatus('scene.accessory.cycleDetected', undefined, false);
             return false;

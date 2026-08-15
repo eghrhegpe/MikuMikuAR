@@ -1,7 +1,8 @@
 // @vitest-environment node
 // [bugfix:web-library-empty] getBrowseDir 路径解析回归测试
-// 网页端虚拟根（web://）为扁平目录结构，不应拼接 PMX/VMD 等子目录，
-// 否则扫描到的模型（dir=web://selected-dir）不在拼接路径之下，资源库显示为空。
+// [audit:round22 P3] 注释修正：web:// 虚拟根同样统一拼接标准子目录（web://root/PMX）。
+// web-library-empty 的根因修复在扫描侧（browser-adapter 扁平→虚拟子目录映射），
+// 本测试锁定 getBrowseDir 契约侧：无 web:// 特判、统一拼接 + 整体 normPath。
 import { describe, it, expect, beforeEach } from 'vitest';
 import { getBrowseDir } from '@/core/library-path';
 import { setLibraryRoot, setOverridePaths } from '../core/state';
