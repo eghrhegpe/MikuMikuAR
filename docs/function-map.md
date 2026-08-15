@@ -515,8 +515,8 @@
 | `withLoadingStatusTargeted()` | `core/status-helpers:80` | 包装异步操作并附带目标名（target-aware 版本）。 |
 | `registerServiceWorker()` | `core/sw-register:11` | — |
 | `TEST_MESH_PREFIX()` | `core/test-mesh:10` | — |
-| `clearTestMeshes()` | `core/test-mesh:30` | 清除所有程序化测试 mesh。 |
-| `createTestMesh()` | `core/test-mesh:13` | 创建程序化测试 mesh（先清理旧 e2e-test- 网格；与 dev-hooks driver 行为对齐）。 |
+| `clearTestMeshes()` | `core/test-mesh:46` | 清除所有程序化测试 mesh（含对应 material）。 |
+| `createTestMesh()` | `core/test-mesh:33` | 创建程序化测试 mesh（先清理旧 e2e-test- 资源；与 dev-hooks driver 行为对齐）。 |
 | `FONT_MAP()` | `core/theme:33` | — |
 | `SETTINGS_FONT_RESTORE()` | `core/theme:48` | — |
 | `generateTextColors()` | `core/theme:7` | — |

@@ -31,6 +31,7 @@ describe('程序化 mesh 生命周期（happy-dom，无渲染器）', () => {
 
     it('createTestMesh 增加 meshCount 且命名/材质符合契约', async () => {
         const before = scene.meshes.length;
+        const beforeMaterials = scene.materials.length;
         await createTestMesh(scene);
         expect(scene.meshes.length).toBeGreaterThan(before);
         // [fix:P2] 断言收紧：验证 e2e loadSeedModel 依赖的命名/材质契约，
@@ -38,6 +39,8 @@ describe('程序化 mesh 生命周期（happy-dom，无渲染器）', () => {
         const mesh = scene.getMeshByName(`${TEST_MESH_PREFIX}mesh`);
         expect(mesh).toBeTruthy();
         expect(mesh?.material?.name).toBe(`${TEST_MESH_PREFIX}mat`);
+        // 每次 create 应且只应新增一个程序化 material；防止 material 泄漏。
+        expect(scene.materials.length).toBe(beforeMaterials + 1);
         // [fix:P3] 子代理审核：diffuseColor 红色通道是 applyOutfit 换装断言的
         // 视觉锚点（指纹亮度变化依赖），补断言保护 Color3 构造不被意外破坏。
         const c = (mesh?.material as { diffuseColor?: { r: number } } | undefined)?.diffuseColor;
@@ -46,21 +49,32 @@ describe('程序化 mesh 生命周期（happy-dom，无渲染器）', () => {
 
     it('clearTestMeshes 移除 seed meshes（回到 before 计数）', async () => {
         const before = scene.meshes.length;
+        const beforeMaterials = scene.materials.length;
         await createTestMesh(scene);
         const afterCreate = scene.meshes.length;
         expect(afterCreate).toBeGreaterThan(before);
+        expect(scene.materials.length).toBe(beforeMaterials + 1);
         clearTestMeshes(scene);
         // [fix:P2] 断言回到初始计数（此前 toBeLessThan 抓不住「删过头/删错对象」）
         expect(scene.meshes.length).toBe(before);
         expect(scene.getMeshByName(`${TEST_MESH_PREFIX}mesh`)).toBeNull();
+        // [fix:P2] 资源释放：clear 不仅要删 mesh，还要释放对应 material，
+        // 否则长跑 E2E 反复 create/clear 会持续累积 scene.materials。
+        expect(scene.materials.length).toBe(beforeMaterials);
     });
 
-    it('幂等性：clear 后再 createTestMesh 仍正常（无残留 disposed mesh 干扰）', async () => {
+    it('幂等性：clear 后再 createTestMesh 仍正常（无残留 disposed mesh/material 干扰）', async () => {
         // [fix:P3] 子代理审核：createTestMesh 内部有「先清理旧 test mesh」逻辑，
         // clear 后若遗留 disposed mesh 在 scene.meshes 会污染下一次 create。
+        const beforeMaterials = scene.materials.length;
         await createTestMesh(scene);
+        expect(scene.materials.length).toBe(beforeMaterials + 1);
         clearTestMeshes(scene);
+        expect(scene.materials.length).toBe(beforeMaterials);
         await createTestMesh(scene);
         expect(scene.getMeshByName(`${TEST_MESH_PREFIX}mesh`)).toBeTruthy();
+        // create 自身清理也应释放旧 material，重复调用不得累积资源。
+        expect(scene.meshes.filter((m) => m.name.startsWith(TEST_MESH_PREFIX)).length).toBe(1);
+        expect(scene.materials.length).toBe(beforeMaterials + 1);
     });
 });

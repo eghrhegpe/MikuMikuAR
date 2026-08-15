@@ -9,28 +9,40 @@ import type { Scene } from '@babylonjs/core/scene';
 
 export const TEST_MESH_PREFIX = 'e2e-test-';
 
-/** 创建程序化测试 mesh（先清理旧 e2e-test- 网格；与 dev-hooks driver 行为对齐）。 */
-export async function createTestMesh(scene: Scene): Promise<void> {
-    const { MeshBuilder } = await import('@babylonjs/core/Meshes/meshBuilder');
-    const { StandardMaterial } = await import('@babylonjs/core/Materials/standardMaterial');
-    const { Color3 } = await import('@babylonjs/core/Maths/math.color');
-    // Dispose any previous test meshes first
+/** 释放所有程序化测试资源（mesh + material；避免重复 create/clear 时 material 泄漏）。 */
+function disposeTestResources(scene: Scene): void {
     for (const m of [...scene.meshes]) {
         if (m.name.startsWith(TEST_MESH_PREFIX)) {
             m.dispose();
         }
     }
+    // 真实 Scene 必有 materials 数组；dev-hooks 单测用最小 mock 时可能没有，
+    // 这里做防御性判断，避免共享模块破坏既有 mock 契约。
+    if (Array.isArray(scene.materials)) {
+        for (const mat of [...scene.materials]) {
+            if (mat.name.startsWith(TEST_MESH_PREFIX)) {
+                // mesh 已先释放，第三个参数 true 表示该 material 已知不绑定 mesh，
+                // 避免对已释放 mesh 重复做资源清理。
+                mat.dispose(false, true, true);
+            }
+        }
+    }
+}
+
+/** 创建程序化测试 mesh（先清理旧 e2e-test- 资源；与 dev-hooks driver 行为对齐）。 */
+export async function createTestMesh(scene: Scene): Promise<void> {
+    const { MeshBuilder } = await import('@babylonjs/core/Meshes/meshBuilder');
+    const { StandardMaterial } = await import('@babylonjs/core/Materials/standardMaterial');
+    const { Color3 } = await import('@babylonjs/core/Maths/math.color');
+    // Dispose any previous test meshes and materials first
+    disposeTestResources(scene);
     const box = MeshBuilder.CreateBox(`${TEST_MESH_PREFIX}mesh`, { size: 0.5 }, scene);
     const mat = new StandardMaterial(`${TEST_MESH_PREFIX}mat`, scene);
     mat.diffuseColor = new Color3(1, 0, 0);
     box.material = mat;
 }
 
-/** 清除所有程序化测试 mesh。 */
+/** 清除所有程序化测试 mesh（含对应 material）。 */
 export function clearTestMeshes(scene: Scene): void {
-    for (const m of [...scene.meshes]) {
-        if (m.name.startsWith(TEST_MESH_PREFIX)) {
-            m.dispose();
-        }
-    }
+    disposeTestResources(scene);
 }

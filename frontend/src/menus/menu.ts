@@ -69,6 +69,8 @@ export class SlideMenu implements RenderContext {
     private _transitionDisposables: Disposable[] = [];
     /** [fix:P0] transitioning 期间缓存的 reRender 请求（merged opts），过渡结束后补执行 */
     private _pendingReRender: { opts?: { preserveFocus?: boolean } } | null = null;
+    /** [fix:P2] 同帧 RAF 去抖期间缓存的合并 opts，避免第二次 reRender({ preserveFocus: true }) 被静默丢弃 */
+    private _pendingReRenderOpts: { preserveFocus?: boolean } | null = null;
     /** [fix:P3] 缓存 slide-list 引用，buildPanel/重建时重置，避免每帧 querySelector */
     private _slideListRef: HTMLElement | null = null;
     /** 触屏滑动手势起始坐标 */
@@ -492,7 +494,9 @@ export class SlideMenu implements RenderContext {
     }
 
     popTo(index: number): void {
-        if (index < 0 || index >= this.levels.length || this.transitioning) {
+        // [fix:P2] NaN/小数索引会导致 slice 截断出意外栈（NaN 甚至清空 levels），
+        // 公开 API 只接受整数深度，非整数一律按无效索引忽略。
+        if (!Number.isInteger(index) || index < 0 || index >= this.levels.length || this.transitioning) {
             return;
         }
         if (index === this.levels.length - 1) {
@@ -541,13 +545,21 @@ export class SlideMenu implements RenderContext {
         }
         // RAF 去抖：同帧内多次 reRender 合并为一次
         if (this._reRenderPending) {
+            // 与 transitioning 分支同规则：preserveFocus 只要任一方为 true 即保留，
+            // 避免后到的 { preserveFocus: true } 被去抖吞掉后焦点被重置。
+            if (opts?.preserveFocus) {
+                this._pendingReRenderOpts = { preserveFocus: true };
+            }
             return;
         }
         this._reRenderPending = true;
+        this._pendingReRenderOpts = opts ?? null;
         this._reRenderRaf = requestAnimationFrame(() => {
+            const mergedOpts = this._pendingReRenderOpts ?? undefined;
+            this._pendingReRenderOpts = null;
             this._reRenderRaf = null;
             this._reRenderPending = false;
-            this._doReRender(opts);
+            this._doReRender(mergedOpts);
         });
     }
 
@@ -760,6 +772,7 @@ export class SlideMenu implements RenderContext {
         }
         this._reRenderPending = false;
         this._pendingReRender = null;
+        this._pendingReRenderOpts = null;
         this._cancelTimeout();
         for (const d of this._transitionDisposables) {
             d.dispose();
@@ -964,6 +977,12 @@ export class SlideMenu implements RenderContext {
 
     /** 增量 patch 当前 panel：只创建/替换/删除有变化的行 */
     private patchPanel(items: PopupRow[]): void {
+        // [fix] 导航栈被并发 pop/reset 清空时 currentLevel 为 undefined：
+        // 调用方（updateControls/_doReRender）守卫的是局部 level，此处重读
+        // this.currentLevel 可能已变空，直接 buildPanel(undefined) 会崩。
+        if (!this.currentLevel) {
+            return;
+        }
         // [fix] itemBuilder 返回空列表时不能静默保留旧行：回退到 buildPanel，
         // 与 _doReRender 的空 items 路径一致（渲染空态并清空旧 DOM/控件注册表）。
         if (items.length === 0) {

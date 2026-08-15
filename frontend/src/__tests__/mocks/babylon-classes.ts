@@ -13,25 +13,26 @@ export class MockEngine {
             this._renderLoops.push(cb);
         }
     }
-    stopRenderLoop() {
+    stopRenderLoop(_renderFunction?: () => void) {
         this._renderLoops = [];
     }
-    getRenderWidth() {
+    getRenderWidth(_useScreen?: boolean) {
         return 800;
     }
-    getRenderHeight() {
+    getRenderHeight(_useScreen?: boolean) {
         return 600;
     }
-    resize() {}
-    clear() {}
+    resize(_forceSetSize?: boolean) {}
+    clear(_color: any, _backBuffer: boolean, _depth: boolean, _stencil?: boolean, _stencilClearValue?: number) {}
     getClassName() {
-        return 'Engine';
+        // 真实 Babylon Engine.getClassName() 继承自 ThinEngine，返回 'ThinEngine'
+        return 'ThinEngine';
     }
-    setHardwareScalingLevel() {}
+    setHardwareScalingLevel(_level: number) {}
     getHardwareScalingLevel() {
         return 1;
     }
-    createRenderPassId() {
+    createRenderPassId(_name?: string) {
         const id = this._renderPassIdCounter++;
         this._renderPassIds.push(id);
         return id;
@@ -88,11 +89,11 @@ export class MockScene {
     getUniqueId() {
         return this._uniqueIdCounter++;
     }
-    registerBeforeRender() {}
-    unregisterBeforeRender() {}
-    executeWhenReady() {}
-    addCamera() {}
-    removeCamera() {}
+    registerBeforeRender(_func: () => void) {}
+    unregisterBeforeRender(_func: () => void) {}
+    executeWhenReady(_func: () => void, _checkRenderTargets?: boolean) {}
+    addCamera(_camera: any) {}
+    removeCamera(_camera: any) {}
     addLight(l: any) {
         this.lights.push(l);
     }
@@ -103,27 +104,31 @@ export class MockScene {
         }
     }
     sortLightsByPriority() {}
-    createDefaultCameraOrLight() {}
+    createDefaultCameraOrLight(
+        _createArcRotateCamera?: boolean,
+        _replace?: boolean,
+        _attachCameraControls?: boolean
+    ) {}
     _notifyIdleControllers() {}
     getBoundingBoxRenderer() {
         return { isEnabled: false };
     }
-    attachControl() {}
+    attachControl(_attachUp?: boolean, _attachDown?: boolean, _attachMove?: boolean) {}
     detachControl() {}
-    getLightByName() {
+    getLightByName(_name: string) {
         return null;
     }
-    getMeshByName() {
+    getMeshByName(_name: string) {
         return null;
     }
     getTransformMatrix() {
         return this._transformMatrix;
     }
-    updateTransformMatrix() {}
+    updateTransformMatrix(_force?: boolean) {}
     getProjectionMatrix() {
         return { clone: () => ({}) };
     }
-    markAllMaterialsAsDirty() {}
+    markAllMaterialsAsDirty(_flag: number, _predicate?: any) {}
 }
 
 // ===== Node =====
@@ -159,7 +164,7 @@ export class MockLight {
     getScene() {
         return this._scene;
     }
-    dispose() {}
+    dispose(_doNotRecurse?: boolean, _disposeMaterialAndTextures?: boolean) {}
     getClassName() {
         return 'Light';
     }
@@ -179,7 +184,7 @@ export class MockHemisphericLight {
             scene.addLight(this);
         }
     }
-    dispose() {
+    dispose(_doNotRecurse?: boolean, _disposeMaterialAndTextures?: boolean) {
         if (this._scene?.removeLight) {
             this._scene.removeLight(this);
         }
@@ -202,7 +207,7 @@ export class MockDirectionalLight {
             scene.addLight(this);
         }
     }
-    dispose() {
+    dispose(_doNotRecurse?: boolean, _disposeMaterialAndTextures?: boolean) {
         if (this._scene?.removeLight) {
             this._scene.removeLight(this);
         }
@@ -222,9 +227,9 @@ export class MockCamera {
     getClassName() {
         return 'Camera';
     }
-    attachControl() {}
-    detachControl() {}
-    dispose() {}
+    attachControl(_noPreventDefault?: boolean, _useCtrlForPanning?: boolean) {}
+    detachControl(_ignored?: any) {}
+    dispose(_doNotRecurse?: boolean, _disposeMaterialAndTextures?: boolean) {}
 }
 
 export class MockArcRotateCamera {
@@ -255,8 +260,10 @@ export class MockArcRotateCamera {
     getClassName() {
         return 'ArcRotateCamera';
     }
-    attachControl() {}
-    setTarget() {}
+    // 真实 ArcRotateCamera.attachControl 有多个重载（含 3 个必选参数的重载），
+    // 用 rest 参数收下所有合法调用形态。
+    attachControl(..._args: any[]) {}
+    setTarget(_target: any, ..._args: any[]) {}
     dispose() {}
 }
 
@@ -270,6 +277,9 @@ export class MockColor3 {
         this.g = g;
         this.b = b;
     }
+    getClassName() {
+        return 'Color3';
+    }
     set(r: number, g: number, b: number) {
         this.r = r;
         this.g = g;
@@ -279,13 +289,13 @@ export class MockColor3 {
     clone() {
         return new MockColor3(this.r, this.g, this.b);
     }
-    toArray() {
+    toArray(_array?: any, _index?: number) {
         return [this.r, this.g, this.b];
     }
-    toLinearSpace() {
+    toLinearSpace(_exact?: boolean) {
         return this;
     }
-    toGammaSpace() {
+    toGammaSpace(_exact?: boolean) {
         return this;
     }
     scale(s: number) {
@@ -304,6 +314,9 @@ export class MockColor4 {
         this.b = b;
         this.a = a;
     }
+    getClassName() {
+        return 'Color4';
+    }
     set(r: number, g: number, b: number, a = this.a) {
         this.r = r;
         this.g = g;
@@ -314,7 +327,7 @@ export class MockColor4 {
     clone() {
         return new MockColor4(this.r, this.g, this.b, this.a);
     }
-    toArray() {
+    toArray(_array?: any, _index?: number) {
         return [this.r, this.g, this.b, this.a];
     }
     scale(s: number) {
@@ -332,10 +345,13 @@ export class MockVector3 {
         this.y = y;
         this.z = z;
     }
+    getClassName() {
+        return 'Vector3';
+    }
     clone() {
         return new MockVector3(this.x, this.y, this.z);
     }
-    add(v: MockVector3) {
+    add(v: any) {
         return new MockVector3(this.x + v.x, this.y + v.y, this.z + v.z);
     }
     scale(s: number) {
@@ -383,13 +399,16 @@ export class MockVector2 {
         this.x = x;
         this.y = y;
     }
+    getClassName() {
+        return 'Vector2';
+    }
     clone() {
         return new MockVector2(this.x, this.y);
     }
-    add(v: MockVector2) {
+    add(v: any) {
         return new MockVector2(this.x + v.x, this.y + v.y);
     }
-    subtract(v: MockVector2) {
+    subtract(v: any) {
         return new MockVector2(this.x - v.x, this.y - v.y);
     }
     scale(s: number) {
@@ -430,6 +449,9 @@ export class MockQuaternion {
         this.z = z;
         this.w = w;
     }
+    getClassName() {
+        return 'Quaternion';
+    }
     clone() {
         return new MockQuaternion(this.x, this.y, this.z, this.w);
     }
@@ -449,10 +471,16 @@ export class MockMatrix {
     getClassName() {
         return 'Matrix';
     }
-    invertToRef() {}
-    multiplyToRef() {}
-    getRotationMatrixToRef() {}
-    decompose() {
+    invertToRef(_other: any) {}
+    multiplyToRef(_other: any, _result: any) {}
+    getRotationMatrixToRef(_result: any) {}
+    decompose(
+        _scale?: any,
+        _rotation?: any,
+        _translation?: any,
+        _preserveScalingNode?: any,
+        _useAbsoluteScaling?: boolean
+    ) {
         return {
             translation: new MockVector3(),
             rotation: new MockVector3(),
@@ -477,8 +505,8 @@ export class MockMaterial {
     getClassName() {
         return 'Material';
     }
-    dispose() {}
-    clone() {
+    dispose(_forceDisposeEffect?: boolean, _forceDisposeTextures?: boolean, _notBoundToMesh?: boolean) {}
+    clone(_name: string) {
         return this;
     }
 }
@@ -559,10 +587,10 @@ export class MockStandardMaterial {
         // `if (!scene) return;` 早退契约一致（model-manager.remove 经此路径）。
         return null;
     }
-    clone() {
+    clone(_name: string, ..._args: any[]) {
         return this;
     }
-    dispose() {}
+    dispose(_forceDisposeEffect?: boolean, _forceDisposeTextures?: boolean) {}
 }
 
 // ===== Meshes =====
@@ -575,8 +603,8 @@ export class MockAbstractMesh {
     getClassName() {
         return 'AbstractMesh';
     }
-    setEnabled() {}
-    dispose() {}
+    setEnabled(_value?: boolean) {}
+    dispose(_doNotRecurse?: boolean, _disposeMaterialAndTextures?: boolean) {}
 }
 
 export class MockMesh {
@@ -592,14 +620,14 @@ export class MockMesh {
     getClassName() {
         return 'Mesh';
     }
-    setEnabled() {}
+    setEnabled(_value?: boolean) {}
     getTotalVertices() {
         return 1000;
     }
     getTotalIndices() {
         return 3000;
     }
-    dispose() {}
+    dispose(_doNotRecurse?: boolean, _disposeMaterialAndTextures?: boolean) {}
 }
 
 // ===== Textures =====
@@ -652,7 +680,7 @@ export class MockShadowGenerator {
     getClassName() {
         return 'ShadowGenerator';
     }
-    addShadowCaster() {}
+    addShadowCaster(_mesh: any, _includeDescendants?: boolean) {}
     getShadowMap() {
         return null;
     }
@@ -737,11 +765,11 @@ export class MockPBRMaterial {
     getScene() {
         return null;
     }
-    clone() {
+    clone(_name: string, ..._args: any[]) {
         return this;
     }
-    dispose() {}
-    markDirty() {}
+    dispose(_forceDisposeEffect?: boolean, _forceDisposeTextures?: boolean) {}
+    markDirty(_forceMaterialDirty?: boolean) {}
 }
 
 export class MockGridMaterial {
@@ -750,7 +778,7 @@ export class MockGridMaterial {
     getClassName() {
         return 'GridMaterial';
     }
-    dispose() {}
+    dispose(_forceDisposeEffect?: boolean) {}
 }
 
 // ===== SceneLoader =====

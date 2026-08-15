@@ -1,18 +1,34 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest';
 import type { SlideMenu } from '../../menus/menu';
 import type { PopupLevel } from '../../core/config';
 import { makeTestLevel, makeTestMenu } from '../fixtures/menu';
+import { bundles } from '../../core/i18n/t';
+import { zhCN } from '../../core/i18n/locales/zh-CN';
 
 // ─── SlideMenu 测试：层级栈管理 + 渲染 ─────────────────────────────
 // 过渡动画基于 CSS，jsdom/happy-dom 中不触发 transitionend；
 // 通过手动清除 transitioning 标志来测试同步状态变更。
 
+beforeAll(() => {
+    // [doc:perf] 语言包运行时加载；测试环境直接预填基准包，避免 t() 缺失 key 告警
+    bundles['zh-CN'] = zhCN;
+});
+
 describe('SlideMenu — 层级栈管理', () => {
+    let container: HTMLElement;
     let menu: SlideMenu;
 
     beforeEach(() => {
         const m = makeTestMenu();
+        container = m.container;
         menu = m.menu;
+    });
+
+    afterEach(() => {
+        // dispose 会取消 push/pop 留下的未决定时器并移出全局存活集合；
+        // 移除 DOM 容器避免测试间污染。
+        menu.dispose();
+        container.remove();
     });
 
     it('reset 创建初始层级', () => {
@@ -46,6 +62,15 @@ describe('SlideMenu — 层级栈管理', () => {
         expect(menu.levelCount).toBe(1);
     });
 
+    it('pop 不会清空最后一层（currentLevel 保留）', () => {
+        menu.reset(makeTestLevel('X'));
+        menu.pop();
+        (menu as any).transitioning = false;
+        // SlideMenu 设计上不允许完全空栈：pop 到最后一层时保留当前层
+        expect(menu.levelCount).toBe(1);
+        expect(menu.currentLevel?.label).toBe('X');
+    });
+
     it('popTo 回退到指定深度', () => {
         // 直接设置 levels 数组，绕过 push 的 transitioning 守卫
         (menu as any).levels = [makeTestLevel('L0'), makeTestLevel('L1'), makeTestLevel('L2')];
@@ -63,15 +88,6 @@ describe('SlideMenu — 层级栈管理', () => {
         menu.reset(makeTestLevel('Z'));
         expect(menu.levelCount).toBe(1);
         expect(menu.currentLevel?.label).toBe('Z');
-    });
-
-    it('currentLevel 在 pop 完所有层级后为 undefined', () => {
-        menu.reset(makeTestLevel('X'));
-        menu.pop();
-        (menu as any).transitioning = false;
-        // pop 最后一层的 fallback：levels 至少保留 reset 设置的那一层
-        // SlideMenu 设计上不允许完全空栈，pop 到 0 时保留当前层
-        expect(menu.levelCount).toBeGreaterThanOrEqual(0);
     });
 
     it('push 在 transitioning 时被阻止', () => {
@@ -111,6 +127,22 @@ describe('SlideMenu — 层级栈管理', () => {
         expect(menu.levelCount).toBe(before);
     });
 
+    it('popTo NaN 索引被忽略', () => {
+        (menu as any).levels = [makeTestLevel('L0'), makeTestLevel('L1')];
+        const before = menu.levelCount;
+        menu.popTo(Number.NaN);
+        expect(menu.levelCount).toBe(before);
+        expect(menu.currentLevel?.label).toBe('L1');
+    });
+
+    it('popTo 非整数索引被忽略', () => {
+        (menu as any).levels = [makeTestLevel('L0'), makeTestLevel('L1'), makeTestLevel('L2')];
+        const before = menu.levelCount;
+        menu.popTo(1.5);
+        expect(menu.levelCount).toBe(before);
+        expect(menu.currentLevel?.label).toBe('L2');
+    });
+
     it('resetToRoot 清除多余层级至根', () => {
         (menu as any).levels = [makeTestLevel('根'), makeTestLevel('A'), makeTestLevel('B')];
         menu.resetToRoot();
@@ -136,6 +168,11 @@ describe('SlideMenu — 渲染', () => {
         menu = m.menu;
     });
 
+    afterEach(() => {
+        menu.dispose();
+        container.remove();
+    });
+
     it('reset 构建面板 DOM', () => {
         const level: PopupLevel = {
             label: '测试',
@@ -148,6 +185,8 @@ describe('SlideMenu — 渲染', () => {
         menu.reset(level);
         const items = container.querySelectorAll('.slide-item');
         expect(items.length).toBe(2);
+        expect(items[0]?.textContent).toContain('项目1');
+        expect(items[1]?.textContent).toContain('项目2');
     });
 
     it('renderCustom 回调创建自定义 DOM', async () => {
@@ -167,10 +206,10 @@ describe('SlideMenu — 渲染', () => {
             rendered = true;
         };
         menu.reset(level);
-        // 等待 buildPanel 的 async 回调 + onAfterRender
-        while (!rendered) {
-            await new Promise((r) => setTimeout(r, 5));
-        }
+        // buildPanel 的 renderCustom 是 async 流程，用 RAF 冲刷微任务；
+        // 不使用裸 setTimeout 忙等，避免无超时死循环与真实定时器抖动。
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+        expect(rendered).toBe(true);
         const custom = container.querySelectorAll('.custom-content');
         expect(custom.length).toBe(1);
         expect(custom[0]?.textContent).toBe('Hello');
@@ -190,5 +229,28 @@ describe('SlideMenu — 渲染', () => {
         // reRender 使用 RAF 去抖，需等待下一帧
         await new Promise((resolve) => requestAnimationFrame(resolve));
         expect(container.querySelectorAll('.slide-item').length).toBe(2);
+    });
+
+    it('同帧多次 reRender 合并时保留 preserveFocus', async () => {
+        const level: PopupLevel = {
+            label: 'R',
+            dir: '',
+            items: [
+                { kind: 'action' as const, label: 'A', icon: 'i', target: 'a' },
+                { kind: 'action' as const, label: 'B', icon: 'i', target: 'b' },
+            ],
+        };
+        menu.reset(level);
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+        // 先把焦点移到第二项，preserveFocus=true 的 reRender 不应重置焦点
+        (menu as any).focusNext();
+        expect((menu as any).focusIndex).toBe(1);
+
+        // 同帧内先普通 reRender，再 preserveFocus reRender：后者不能被去抖吞掉
+        menu.reRender();
+        menu.reRender({ preserveFocus: true });
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+
+        expect((menu as any).focusIndex).toBe(1);
     });
 });
