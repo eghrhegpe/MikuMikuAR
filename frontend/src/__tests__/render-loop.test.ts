@@ -7,7 +7,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 const shared = vi.hoisted(() => {
     const engine = {
-        getCaps: vi.fn(() => ({ maxTextureSize: 4096 })),
+        getCaps: vi.fn((): { maxTextureSize?: number } => ({ maxTextureSize: 4096 })),
         getRenderWidth: vi.fn(() => 1920),
         getRenderHeight: vi.fn(() => 1080),
         getHardwareScalingLevel: vi.fn(() => 1),
@@ -32,10 +32,23 @@ const shared = vi.hoisted(() => {
     const formatTimestamp = vi.fn(() => '12:00:00');
     const logWarn = vi.fn();
     const observe = vi.fn(() => ({ dispose: vi.fn() }));
-    const safeDispose = vi.fn((o: unknown) => o);
+    const safeDispose = vi.fn((o: unknown) => {
+        (o as { dispose?: () => void } | null)?.dispose?.();
+        return null;
+    });
     return {
-        engine, scene, applyFrameControl, updatePerformance, getPerfRenderScaleMul,
-        recalcPerformanceReference, uiState, dom, formatTimestamp, logWarn, observe, safeDispose,
+        engine,
+        scene,
+        applyFrameControl,
+        updatePerformance,
+        getPerfRenderScaleMul,
+        recalcPerformanceReference,
+        uiState,
+        dom,
+        formatTimestamp,
+        logWarn,
+        observe,
+        safeDispose,
     };
 });
 
@@ -66,11 +79,7 @@ vi.mock('../core/dispose-helpers', () => ({
     safeDispose: shared.safeDispose,
 }));
 
-import {
-    calcHardwareScaling,
-    startRenderLoop,
-    stopRenderLoop,
-} from '../core/render-loop';
+import { calcHardwareScaling, startRenderLoop, stopRenderLoop } from '../core/render-loop';
 
 beforeEach(() => {
     vi.clearAllMocks();
@@ -90,11 +99,33 @@ beforeEach(() => {
 afterEach(() => {
     vi.unstubAllGlobals();
     stopRenderLoop();
+    vi.restoreAllMocks();
 });
 
 describe('calcHardwareScaling（DPR×renderScale 钳位）', () => {
     it('无 maxTextureSize → 返回 base', () => {
         shared.engine.getCaps.mockReturnValue({ maxTextureSize: 0 });
+        expect(calcHardwareScaling(2, 1)).toBeCloseTo(0.5);
+    });
+
+    it('renderScale=0 → 回退 1，不放大为 1000', () => {
+        expect(calcHardwareScaling(1, 0)).toBeCloseTo(1);
+    });
+
+    it('负数/NaN/Infinity 入参回退 1 且结果有限', () => {
+        expect(Number.isFinite(calcHardwareScaling(-2, 1))).toBe(true);
+        expect(calcHardwareScaling(-2, 1)).toBeCloseTo(1);
+        expect(calcHardwareScaling(2, -1)).toBeCloseTo(0.5); // 仅 renderScale 回退，dpr=2 保留
+        expect(calcHardwareScaling(Number.NaN, 1)).toBeCloseTo(1);
+        expect(calcHardwareScaling(1, Number.POSITIVE_INFINITY)).toBeCloseTo(1);
+    });
+
+    it('maxTextureSize 为负数/NaN/缺失时跳过钳位', () => {
+        shared.engine.getCaps.mockReturnValue({ maxTextureSize: -1 });
+        expect(calcHardwareScaling(2, 1)).toBeCloseTo(0.5);
+        shared.engine.getCaps.mockReturnValue({ maxTextureSize: Number.NaN });
+        expect(calcHardwareScaling(2, 1)).toBeCloseTo(0.5);
+        shared.engine.getCaps.mockReturnValue({});
         expect(calcHardwareScaling(2, 1)).toBeCloseTo(0.5);
     });
 
@@ -124,12 +155,24 @@ describe('startRenderLoop（幂等 + 生命周期）', () => {
         expect(shared.applyFrameControl).toHaveBeenCalled();
     });
 
-    it('帧回调：scene 已 dispose → 停止循环（P1 守卫）', () => {
+    it('重复 start 会先移除旧 resize 监听，不叠加', () => {
+        const addSpy = vi.spyOn(window, 'addEventListener');
+        const removeSpy = vi.spyOn(window, 'removeEventListener');
+        startRenderLoop();
+        startRenderLoop();
+        const resizeAdds = addSpy.mock.calls.filter(([type]) => type === 'resize').length;
+        const resizeRemoves = removeSpy.mock.calls.filter(([type]) => type === 'resize').length;
+        expect(resizeAdds).toBe(2);
+        expect(resizeRemoves).toBe(1);
+    });
+
+    it('帧回调：scene 已 dispose → 不渲染并停止循环（P1 守卫）', () => {
         startRenderLoop();
         const cb = shared.engine.runRenderLoop.mock.calls[0][0] as () => void;
         shared.scene.isDisposed = true;
         shared.engine.stopRenderLoop.mockClear();
         cb();
+        expect(shared.scene.render).not.toHaveBeenCalled();
         expect(shared.engine.stopRenderLoop).toHaveBeenCalled();
     });
 
@@ -141,6 +184,19 @@ describe('startRenderLoop（幂等 + 生命周期）', () => {
         expect(shared.updatePerformance).toHaveBeenCalled();
     });
 
+    it('帧回调：scene.render 抛错 → 记录并自停', () => {
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        startRenderLoop();
+        const cb = shared.engine.runRenderLoop.mock.calls[0][0] as () => void;
+        shared.scene.render.mockImplementationOnce(() => {
+            throw new Error('boom');
+        });
+        shared.engine.stopRenderLoop.mockClear();
+        cb();
+        expect(shared.engine.stopRenderLoop).toHaveBeenCalled();
+        expect(errorSpy).toHaveBeenCalled();
+    });
+
     it('降级乘数变化时立即重算 hardwareScalingLevel', () => {
         startRenderLoop();
         shared.getPerfRenderScaleMul.mockReturnValue(0.7);
@@ -148,6 +204,15 @@ describe('startRenderLoop（幂等 + 生命周期）', () => {
         shared.engine.setHardwareScalingLevel.mockClear();
         cb();
         expect(shared.engine.setHardwareScalingLevel).toHaveBeenCalled();
+    });
+
+    it('启动时已降级 → 首帧不重复 applyScaling', () => {
+        shared.getPerfRenderScaleMul.mockReturnValue(0.7);
+        startRenderLoop();
+        const cb = shared.engine.runRenderLoop.mock.calls[0][0] as () => void;
+        shared.engine.setHardwareScalingLevel.mockClear();
+        cb();
+        expect(shared.engine.setHardwareScalingLevel).not.toHaveBeenCalled();
     });
 
     it('FPS 时钟每 500ms 更新 dom.fpsClock', () => {
@@ -172,10 +237,30 @@ describe('startRenderLoop（幂等 + 生命周期）', () => {
 
 describe('stopRenderLoop（资源清理 + 幂等）', () => {
     it('清理 FPS 时钟 / resize 监听 / observer / render loop', () => {
+        const addSpy = vi.spyOn(window, 'addEventListener');
+        const removeSpy = vi.spyOn(window, 'removeEventListener');
+        vi.useFakeTimers();
         startRenderLoop();
+        const resizeHandler = addSpy.mock.calls.find(([type]) => type === 'resize')?.[1];
         stopRenderLoop();
         expect(shared.engine.stopRenderLoop).toHaveBeenCalled();
-        expect(shared.safeDispose).toHaveBeenCalled(); // _beforeObs/_afterObs
+        expect(shared.safeDispose).toHaveBeenCalledTimes(2); // _beforeObs/_afterObs
+        const observerDisposeMocks = shared.observe.mock.results.map(
+            (r) => (r.value as { dispose: ReturnType<typeof vi.fn> }).dispose
+        );
+        expect(observerDisposeMocks).toHaveLength(2);
+        expect(observerDisposeMocks[0]).toHaveBeenCalled();
+        expect(observerDisposeMocks[1]).toHaveBeenCalled();
+        expect(removeSpy).toHaveBeenCalledWith('resize', resizeHandler);
+        expect(vi.getTimerCount()).toBe(0);
+    });
+
+    it('已启动后重复 stop 不重复清理 observer', () => {
+        startRenderLoop();
+        stopRenderLoop();
+        const calls = shared.safeDispose.mock.calls.length;
+        stopRenderLoop();
+        expect(shared.safeDispose.mock.calls.length).toBe(calls);
     });
 
     it('未启动时 stop 幂等不崩', () => {

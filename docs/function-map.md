@@ -446,8 +446,8 @@
 | `popRenderingContext()` | `core/render-context:34` | 退出当前渲染上下文（renderCustom 后调用，须在 finally 中配对）。 |
 | `pushRenderingContext()` | `core/render-context:29` | 进入一个渲染上下文（renderCustom 前调用）。 |
 | `calcHardwareScaling()` | `core/render-loop:28` | 根据 DPR + renderScale 计算安全的 hardwareScalingLevel， 钳位帧缓冲不超过 GL_MAX_TEXTURE_SIZE（防 DPR×render |
-| `startRenderLoop()` | `core/render-loop:55` | 启动渲染循环（幂等：先停旧实例，避免 setInterval / render-loop 泄漏）。 |
-| `stopRenderLoop()` | `core/render-loop:157` | 停止渲染循环并清理 FPS 时钟。 |
+| `startRenderLoop()` | `core/render-loop:63` | 启动渲染循环（幂等：先停旧实例，避免 setInterval / render-loop 泄漏）。 |
+| `stopRenderLoop()` | `core/render-loop:162` | 停止渲染循环并清理 FPS 时钟。 |
 | `reportResourceWarning()` | `core/resource-warning-sink:38` | 上报一条资源加载警告（自动去重）。 |
 | `EventCallback()` | `core/runtime-bridge:18` | — |
 | `RuntimeBridge()` | `core/runtime-bridge:32` | — |
@@ -459,12 +459,12 @@
 | `getRuntimeBridge()` | `core/runtime-bridge:171` | — |
 | `initRuntimeBridge()` | `core/runtime-bridge:192` | bootstrap 早期调用：桌面/Android 侧强制加载 @wailsio/runtime 并绑定 events 实例。 |
 | `RuntimeMode()` | `core/runtime-mode:6` | — |
-| `detectRuntimeMode()` | `core/runtime-mode:22` | 探测运行时模式（COOP/COEP + SharedArrayBuffer + MPR 构建标志）。 |
-| `initRuntimeBadge()` | `core/runtime-mode:104` | bootstrap 早期调用：立即渲染上次持久化的模式，刷新后不丢失 |
-| `loadPersistedRuntimeMode()` | `core/runtime-mode:39` | — |
-| `persistRuntimeMode()` | `core/runtime-mode:31` | — |
-| `renderRuntimeBadge()` | `core/runtime-mode:84` | — |
-| `setBackendBadge()` | `core/runtime-mode:95` | 渲染实际选中的后端（go / browser）到运行时徽标，与 MPR/SPR 状态合成显示 |
+| `detectRuntimeMode()` | `core/runtime-mode:39` | 探测运行时模式（COOP/COEP + SharedArrayBuffer + MPR 构建标志）。 |
+| `initRuntimeBadge()` | `core/runtime-mode:136` | bootstrap 早期调用：立即渲染上次持久化的模式，刷新后不丢失 |
+| `loadPersistedRuntimeMode()` | `core/runtime-mode:64` | — |
+| `persistRuntimeMode()` | `core/runtime-mode:53` | — |
+| `renderRuntimeBadge()` | `core/runtime-mode:113` | — |
+| `setBackendBadge()` | `core/runtime-mode:127` | 渲染实际选中的后端（go / browser）到运行时徽标，与 MPR/SPR 状态合成显示 |
 | `Browser()` | `core/runtime-stub:53` | — |
 | `Call()` | `core/runtime-stub:15` | — |
 | `CancellablePromise()` | `core/runtime-stub:16` | — |
@@ -2325,25 +2325,25 @@
 | `navLabels()` | `menus/nav-actions:25` | — |
 | `toggleOverlay()` | `menus/nav-actions:71` | — |
 | `buildOutfitLevel()` | `menus/outfit-ui:158` | — |
-| `buildSiteTabs()` | `menus/plaza-browser:303` | — |
-| `buildToolbar()` | `menus/plaza-browser:688` | — |
-| `ensureSitesLoaded()` | `menus/plaza-browser:237` | — |
-| `getCustomPresets()` | `menus/plaza-browser:287` | — |
-| `loadPlazaCache()` | `menus/plaza-browser:139` | 从 Go 用户目录缓存（plaza-cache/creators.json + workshop_sites.json）读取站点 + 创作者。缓存不存在时返回 null。 |
-| `mergeSites()` | `menus/plaza-browser:205` | — |
-| `normalizeCreator()` | `menus/plaza-browser:111` | — |
-| `normalizeSite()` | `menus/plaza-browser:82` | — |
-| `openExternal()` | `menus/plaza-browser:273` | — |
-| `openInWindow()` | `menus/plaza-browser:277` | — |
-| `openSiteByMode()` | `menus/plaza-browser:257` | — |
-| `preserveBuiltinRouting()` | `menus/plaza-browser:230` | — |
-| `renderEmbed()` | `menus/plaza-browser:848` | — |
-| `renderHome()` | `menus/plaza-browser:826` | — |
-| `renderSiteContent()` | `menus/plaza-browser:358` | — |
-| `saveCustomPresets()` | `menus/plaza-browser:295` | — |
-| `savePlazaCache()` | `menus/plaza-browser:178` | 将当前站点 + 创作者持久化到 Go 用户目录缓存（plaza-cache/）。 |
-| `showActionsMenu()` | `menus/plaza-browser:732` | — |
-| `showPlaza()` | `menus/plaza-browser:952` | — |
+| `buildSiteTabs()` | `menus/plaza-browser:326` | — |
+| `buildToolbar()` | `menus/plaza-browser:711` | — |
+| `ensureSitesLoaded()` | `menus/plaza-browser:255` | — |
+| `getCustomPresets()` | `menus/plaza-browser:310` | — |
+| `loadPlazaCache()` | `menus/plaza-browser:157` | 从 Go 用户目录缓存（plaza-cache/creators.json + workshop_sites.json）读取站点 + 创作者。缓存不存在时返回 null。 |
+| `mergeSites()` | `menus/plaza-browser:223` | — |
+| `normalizeCreator()` | `menus/plaza-browser:129` | — |
+| `normalizeSite()` | `menus/plaza-browser:91` | — |
+| `openExternal()` | `menus/plaza-browser:291` | — |
+| `openInWindow()` | `menus/plaza-browser:295` | — |
+| `openSiteByMode()` | `menus/plaza-browser:275` | — |
+| `preserveBuiltinRouting()` | `menus/plaza-browser:248` | — |
+| `renderEmbed()` | `menus/plaza-browser:871` | — |
+| `renderHome()` | `menus/plaza-browser:849` | — |
+| `renderSiteContent()` | `menus/plaza-browser:381` | — |
+| `saveCustomPresets()` | `menus/plaza-browser:318` | — |
+| `savePlazaCache()` | `menus/plaza-browser:196` | 将当前站点 + 创作者持久化到 Go 用户目录缓存（plaza-cache/）。 |
+| `showActionsMenu()` | `menus/plaza-browser:755` | — |
+| `showPlaza()` | `menus/plaza-browser:983` | — |
 | `PLAZA_CREATORS()` | `menus/plaza-creators:9` | — |
 | `PlazaCreator()` | `menus/plaza-creators:1` | — |
 | `ensureObserver()` | `menus/plaza-download:185` | — |

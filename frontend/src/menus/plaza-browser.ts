@@ -79,32 +79,50 @@ interface RawCreatorInput {
     tier?: 'gold' | 'silver';
 }
 
+function isHttpUrl(value: string): boolean {
+    try {
+        const parsed = new URL(value);
+        return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+    } catch {
+        return false;
+    }
+}
+
 export function normalizeSite(raw: RawSiteInput): PlazaSite | null {
-    if (!raw || !raw.id) {
+    if (!raw) {
         return null;
     }
-    const name = raw.name || raw.label || raw.id;
-    const url = raw.url || '';
-    if (!name || !url) {
+    const id = typeof raw.id === 'string' ? raw.id.trim() : '';
+    const name =
+        (typeof raw.name === 'string' ? raw.name.trim() : '') ||
+        (typeof raw.label === 'string' ? raw.label.trim() : '') ||
+        id;
+    const url = typeof raw.url === 'string' ? raw.url.trim() : '';
+    if (!id || !name || !url || !isHttpUrl(url)) {
         return null;
     }
     const mode: 'embed' | 'external' | 'window' =
         raw.mode === 'window' ? 'window' : raw.mode === 'embed' ? 'embed' : 'external';
-    let icon = raw.icon;
+    let icon = typeof raw.icon === 'string' ? raw.icon : undefined;
     if (icon && /^[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]$/u.test(icon)) {
         icon = `data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><text y=%2220%22 font-size=%2220%22>${icon}</text></svg>`;
     }
     return {
-        id: raw.id,
+        id,
         name,
         url,
         mode,
         icon: icon || 'lucide:globe',
-        desc: raw.desc || '',
-        group: raw.group || 'search',
-        searchUrl: raw.searchUrl,
-        presetSearches: raw.presetSearches || [],
-        directNavigate: raw.directNavigate ?? true,
+        desc: typeof raw.desc === 'string' ? raw.desc : '',
+        group: typeof raw.group === 'string' && raw.group ? raw.group : 'search',
+        searchUrl: typeof raw.searchUrl === 'string' ? raw.searchUrl : undefined,
+        presetSearches: Array.isArray(raw.presetSearches)
+            ? raw.presetSearches.filter(
+                  (p): p is { label: string; q?: string } =>
+                      !!p && typeof p.label === 'string' && p.label.length > 0
+              )
+            : [],
+        directNavigate: raw.directNavigate !== false,
     };
 }
 
@@ -279,8 +297,13 @@ export function openInWindow(site: PlazaSite, url?: string): void {
     // 否则代理 origin (127.0.0.1:PORT) 触发 api CORS 白屏。
     const direct = site.directNavigate ?? false;
     setPlazaProxyActive(!direct);
-    safeCallAsync('plaza', '', () => NavigatePlazaWindow(url ?? site.url, direct)).catch(() => {
-        setPlazaProxyActive(false);
+    safeCallAsync('plaza', 'NavigatePlazaWindow failed', async () => {
+        try {
+            await NavigatePlazaWindow(url ?? site.url, direct);
+        } catch (e) {
+            setPlazaProxyActive(false);
+            throw e;
+        }
     });
 }
 
@@ -520,7 +543,7 @@ export function renderSiteContent(site: PlazaSite): HTMLElement {
             if (stJson) {
                 const raw = JSON.parse(stJson) as RawSiteInput[];
                 const remote = raw.map(normalizeSite).filter(Boolean) as PlazaSite[];
-                setAllSites(mergeSites(PLAZA_SITES, remote));
+                setAllSites(preserveBuiltinRouting(mergeSites(PLAZA_SITES, remote)));
             }
             if (crJson) {
                 const raw = JSON.parse(crJson) as RawCreatorInput[];
@@ -874,7 +897,9 @@ export function renderEmbed(site: PlazaSite, initialUrl?: string): void {
     body.appendChild(iframe);
 
     // 导航逻辑：提取为闭包供 toolbar 和地址栏复用
+    let navToken = 0;
     const navigate = (url: string) => {
+        const token = ++navToken;
         // 清除上次可能遗留的错误提示
         body.querySelectorAll('.plaza-error').forEach((el) => el.remove());
         spinner.classList.remove('is-hidden');
@@ -886,9 +911,15 @@ export function renderEmbed(site: PlazaSite, initialUrl?: string): void {
             setPlazaProxyActive(true);
             StartProxy(url, 'embed')
                 .then((proxyUrl) => {
+                    if (token !== navToken) {
+                        return;
+                    }
                     iframe.src = proxyUrl;
                 })
                 .catch((e) => {
+                    if (token !== navToken) {
+                        return;
+                    }
                     setPlazaProxyActive(false);
                     spinner.classList.add('is-hidden');
                     const err = document.createElement('div');

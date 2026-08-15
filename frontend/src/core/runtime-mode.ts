@@ -18,17 +18,42 @@ export interface RuntimeMode {
 
 const STORAGE_KEY = 'mmcar.runtimeMode.v1';
 
+function isRuntimeMode(value: unknown): value is RuntimeMode {
+    if (typeof value !== 'object' || value === null) {
+        return false;
+    }
+    const mode = value as Record<string, unknown>;
+    return (
+        typeof mode.mprBuild === 'boolean' &&
+        typeof mode.coi === 'boolean' &&
+        typeof mode.sab === 'boolean' &&
+        typeof mode.mpr === 'boolean' &&
+        typeof mode.threads === 'number' &&
+        Number.isFinite(mode.threads) &&
+        mode.threads >= 0 &&
+        mode.mpr === (mode.mprBuild && mode.coi && mode.sab)
+    );
+}
+
 /** 探测运行时模式（COOP/COEP + SharedArrayBuffer + MPR 构建标志）。 */
 export function detectRuntimeMode(): RuntimeMode {
-    const coi = typeof crossOriginIsolated !== 'undefined' && crossOriginIsolated === true;
-    const sab = typeof SharedArrayBuffer === 'function';
-    const mprBuild = typeof __MMD_ENABLE_MPR__ !== 'undefined' && __MMD_ENABLE_MPR__ === true;
-    const mpr = mprBuild && coi && sab;
-    const threads = (typeof navigator !== 'undefined' && navigator.hardwareConcurrency) || 0;
-    return { mprBuild, coi, sab, mpr, threads };
+    try {
+        const coi = typeof crossOriginIsolated !== 'undefined' && crossOriginIsolated === true;
+        const sab = typeof SharedArrayBuffer === 'function';
+        const mprBuild = typeof __MMD_ENABLE_MPR__ !== 'undefined' && __MMD_ENABLE_MPR__ === true;
+        const mpr = mprBuild && coi && sab;
+        const threads = (typeof navigator !== 'undefined' && navigator.hardwareConcurrency) || 0;
+        return { mprBuild, coi, sab, mpr, threads };
+    } catch {
+        // 探测源缺失/异常（如 getter 抛错）时整体回退 SPR，避免启动探测中断 bootstrap
+        return { mprBuild: false, coi: false, sab: false, mpr: false, threads: 0 };
+    }
 }
 
 export function persistRuntimeMode(mode: RuntimeMode): void {
+    if (!isRuntimeMode(mode)) {
+        return;
+    }
     try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(mode));
     } catch {
@@ -39,7 +64,11 @@ export function persistRuntimeMode(mode: RuntimeMode): void {
 export function loadPersistedRuntimeMode(): RuntimeMode | null {
     try {
         const raw = localStorage.getItem(STORAGE_KEY);
-        return raw ? (JSON.parse(raw) as RuntimeMode) : null;
+        if (!raw) {
+            return null;
+        }
+        const parsed: unknown = JSON.parse(raw);
+        return isRuntimeMode(parsed) ? parsed : null;
     } catch {
         // 损坏 JSON / localStorage 不可用时降级 null，避免抛错冒泡中断 bootstrap（round-12 P2）
         return null;
@@ -82,6 +111,9 @@ function _composeTitle(mode: RuntimeMode): string {
 }
 
 export function renderRuntimeBadge(mode: RuntimeMode): void {
+    if (!isRuntimeMode(mode)) {
+        return;
+    }
     _lastMode = mode;
     if (!dom.runtimeBadge) {
         return;

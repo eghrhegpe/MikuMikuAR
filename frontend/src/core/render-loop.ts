@@ -26,18 +26,23 @@ const PERF_SAMPLE_INTERVAL = 60; // 每 60 帧评估一次性能日志（采样�
  * 钳位帧缓冲不超过 GL_MAX_TEXTURE_SIZE（防 DPR×renderScale 越界 OOM）。
  */
 export function calcHardwareScaling(dpr: number, renderScale: number): number {
-    const base = 1 / Math.max(dpr * renderScale, 0.001);
+    // 入参防御：非正/非有限值回退 1，避免 NaN/Infinity/负 scaling 或 0 除后放大到 1000。
+    const safeDpr = Number.isFinite(dpr) && dpr > 0 ? dpr : 1;
+    const safeScale = Number.isFinite(renderScale) && renderScale > 0 ? renderScale : 1;
+    const base = 1 / (safeDpr * safeScale);
     const caps = engine.getCaps();
-    if (!caps.maxTextureSize) {
+    const maxTextureSize = caps?.maxTextureSize;
+    // maxTextureSize 缺失/0/NaN/负数时不具备钳位依据，直接返回 base。
+    if (!Number.isFinite(maxTextureSize) || maxTextureSize <= 0) {
         return base;
     }
     // 反推 CSS 宽高：renderWidth = cssW / scalingLevel ⇒ cssW = renderWidth × scalingLevel
     const cssW = engine.getRenderWidth() * engine.getHardwareScalingLevel();
     const cssH = engine.getRenderHeight() * engine.getHardwareScalingLevel();
-    const bufW = Math.round(cssW * dpr * renderScale);
-    const bufH = Math.round(cssH * dpr * renderScale);
-    if (bufW > caps.maxTextureSize || bufH > caps.maxTextureSize) {
-        const s = Math.min(caps.maxTextureSize / bufW, caps.maxTextureSize / bufH);
+    const bufW = Math.round(cssW * safeDpr * safeScale);
+    const bufH = Math.round(cssH * safeDpr * safeScale);
+    if (bufW > maxTextureSize || bufH > maxTextureSize) {
+        const s = Math.min(maxTextureSize / bufW, maxTextureSize / bufH);
         return base * s;
     }
     return base;
@@ -47,8 +52,11 @@ export function calcHardwareScaling(dpr: number, renderScale: number): number {
 function applyScaling(): void {
     const dpr = window.devicePixelRatio || 1;
     // 用户 renderScale × 降级乘数（Level 2/3 时自动降至 0.7）
-    const effectiveScale = (uiState.renderScale ?? 1) * getPerfRenderScaleMul();
+    const mul = getPerfRenderScaleMul();
+    const effectiveScale = (uiState.renderScale ?? 1) * mul;
     engine.setHardwareScalingLevel(calcHardwareScaling(dpr, effectiveScale));
+    // 记录本次已应用的降级乘数，避免首帧/重算后重复 applyScaling。
+    _lastMul = mul;
 }
 
 /** 启动渲染循环（幂等：先停旧实例，避免 setInterval / render-loop 泄漏）。 */
@@ -67,10 +75,7 @@ export function startRenderLoop(): void {
         // [fix:round20 P2] perf:gpu 热路径日志门控：与 perf:render 对齐（DEV-only + 帧节流），
         // 且变量更名 _frameElapsed（实为 before→after 墙钟时间，含 CPU，非纯 GPU 耗时）。
         _frameCounter++;
-        if (
-            import.meta.env.DEV &&
-            _frameCounter % PERF_SAMPLE_INTERVAL === 0
-        ) {
+        if (import.meta.env.DEV && _frameCounter % PERF_SAMPLE_INTERVAL === 0) {
             const _frameElapsed = performance.now() - _renderBeforeTime;
             if (_frameElapsed > 30) {
                 const _obsCount = scene.onBeforeRenderObservable.observers

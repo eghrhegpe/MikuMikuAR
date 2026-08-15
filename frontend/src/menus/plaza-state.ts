@@ -166,6 +166,7 @@ export function stopProxy(): void {
 // ======== 关闭广场 ========
 
 export function closePlaza(): void {
+    const frame = plazaIframe;
     setPlazaIframe(null);
     stopProxy();
     closeAllOverlays();
@@ -176,11 +177,13 @@ export function closePlaza(): void {
         setObserver(null);
     }
     // iframe 元素移除：打开时重新 innerHTML 重建，此处直接移出 DOM 停止远程站点加载。
+    // 先移除记录在案的 iframe（即使已被移出 webviewLayer 也能释放），再兜底清理层内残留 iframe。
+    frame?.remove();
     const el = getLayer();
     if (el) {
-        const frame = el.querySelector('iframe');
-        if (frame) {
-            frame.remove();
+        const current = el.querySelector('iframe');
+        if (current && current !== frame) {
+            current.remove();
         }
     }
 }
