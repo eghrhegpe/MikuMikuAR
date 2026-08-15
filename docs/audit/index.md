@@ -2,12 +2,15 @@
 
 # 代码审核索引
 
-> 审核台账共 **160** 篇：135 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
+> 审核台账共 **163** 篇：138 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
 
 > 汇总视图（执行摘要 / 风险全景 / 改进优先级）见 [审核总索引](./README.md)。
 
-## 2026 年 8 月（124）
+## 2026 年 8 月（127）
 
+- `2026-08-15` [第 53 轮审核报告（测试 #2/3）— env-bridge setEnvState middleware 专项](./2026-08-15-round53-middleware.md)
+- `2026-08-15` [Round 53 审核报告 — env-persist 防抖持久化直接单测](./2026-08-15-round53-env-persist.md)
+- `2026-08-15` [cel-shading 地面哑光临时切换持久化 — 审核结果（round-53）](./2026-08-15-round53-cel-ground-persist.md)
 - `2026-08-15` [Round 52 审核报告：motion-pipeline 排序不变量单测](./2026-08-15-round52-motion-pipeline.md)
 - `2026-08-15` [round-52-3 lipsync-bridge 桥接层审核报告](./2026-08-15-round52-lipsync-bridge.md)
 - `2026-08-15` [Round52 审核报告 — lighting-follow（个人灯跟随 + fix P2 u_cameraPos 补测）](./2026-08-15-round52-lighting-follow.md)
