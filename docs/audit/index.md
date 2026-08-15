@@ -2,12 +2,15 @@
 
 # 代码审核索引
 
-> 审核台账共 **133** 篇：108 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
+> 审核台账共 **136** 篇：111 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
 
 > 汇总视图（执行摘要 / 风险全景 / 改进优先级）见 [审核总索引](./README.md)。
 
-## 2026 年 8 月（97）
+## 2026 年 8 月（100）
 
+- `2026-08-15` [physics-contract.rigidbody.test.ts — 审核结果（round-44 / 真实 WASM 刚体 + RigidBodyBundle 批量刚体契约）](./2026-08-15-round44-physics-contract-rigidbody.md)
+- `2026-08-15` [physics-contract.collision-worlds.test.ts — 审核结果（round-44 / 碰撞检测 + 多物理世界共存契约）](./2026-08-15-round44-physics-contract-collision-worlds.md)
+- `2026-08-15` [审核报告：perception-breathing（ADR-071 呼吸轴向回归）— round44](./2026-08-15-round44-perception-breathing.md)
 - `2026-08-15` [[physics-contract.core.test.ts 真实 WASM 契约层] — 审核结果](./2026-08-15-round43-physics-contract-core.md)
 - `2026-08-15` [physics-contract.constraint.test.ts — 审核结果（round-43 / 真实 WASM 6DOF Spring 约束契约）](./2026-08-15-round43-physics-contract-constraint.md)
 - `2026-08-15` [round-43 perception-multi-model — 骨骼认领/冲突 banner + 多模型激活/隔离集成审计](./2026-08-15-round43-perception-multi-model.md)

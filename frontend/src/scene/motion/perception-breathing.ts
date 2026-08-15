@@ -44,7 +44,10 @@ export function _applyBreathing(
         return;
     }
 
-    const curQ = spine.linkedBone.rotationQuaternion;
+    // [audit:round44 P2] linkedBone 可能为 null（round-15 P1-2 遗留）：不加守卫时
+    // 每帧抛 TypeError（observer try-catch 降级为 logWarn + 呼吸静默失效）。
+    // 与 perception-balance.ts:78/92 的 bone?.linkedBone 模式对齐。
+    const curQ = spine.linkedBone?.rotationQuaternion;
     if (!curQ) {
         return;
     }

@@ -1578,7 +1578,7 @@
 | `_resetBalanceSwayState()` | `scene/motion/perception-balance:38` | 重置增量状态到默认值（每个模型 context 独立持有 balanceState，避免跨模型污染） |
 | `_applyBlinking()` | `scene/motion/perception-blinking:16` | — |
 | `_applyBreathing()` | `scene/motion/perception-breathing:23` | — |
-| `_updateBoneChain()` | `scene/motion/perception-breathing:74` | — |
+| `_updateBoneChain()` | `scene/motion/perception-breathing:77` | — |
 | `_applyMicroExpression()` | `scene/motion/perception-expression:21` | — |
 | `_applyEyeGazeJS()` | `scene/motion/perception-gaze-js:65` | JS 模式：眼部跟随（薄包装：调用 core + 注入 JS 写入策略） |
 | `_applyHeadGazeJS()` | `scene/motion/perception-gaze-js:55` | JS 模式：头部跟随（薄包装：调用 core + 注入 JS 写入策略） |
