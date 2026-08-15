@@ -48,8 +48,12 @@ export function loadCameraVmd(mmdAnimation: MmdAnimation, vmdPath: string, vmdNa
     if (_mmdCamera) {
         // 顺序：先 removeCamera（从 scene.cameras 数组移除 + 清除 activeCamera 引用），
         // 再 dispose（释放 GPU 资源）。反之 dispose 后 removeCamera 仍能工作但语义不清。
-        scene.removeCamera(_mmdCamera);
-        _mmdCamera.dispose(); // 释放 GPU 资源（渲染目标、贴图等）
+        // 注意：vmd→orbit→vmd 切换时 switchCameraMode 已 dispose 旧 MmdCamera，
+        // 但本模块级引用会保留到下次 createVmdCamera 重建；重载不得二次 remove/dispose。
+        if (!_mmdCamera.isDisposed()) {
+            scene.removeCamera(_mmdCamera);
+            _mmdCamera.dispose();
+        }
         _mmdCamera = null;
         _cameraAnimationHandle = null;
     }
@@ -79,8 +83,11 @@ export function clearCameraVmd(): void {
             _switchModeCallback('orbit');
         } else {
             // 非 vmd 模式（如 orbit 下预载 VMD 后清除）回调不会处理，手动释放 GPU 资源。
-            scene.removeCamera(_mmdCamera);
-            _mmdCamera.dispose();
+            // 若 _mmdCamera 已在 vmd→orbit 切换中被 switchCameraMode dispose，则跳过二次释放。
+            if (!_mmdCamera.isDisposed()) {
+                scene.removeCamera(_mmdCamera);
+                _mmdCamera.dispose();
+            }
         }
         _mmdCamera = null;
         _cameraAnimationHandle = null;

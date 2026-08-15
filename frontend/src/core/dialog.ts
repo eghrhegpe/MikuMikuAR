@@ -169,8 +169,6 @@ function _showDialogInner(opts: DialogOptions): Promise<string | boolean | null>
             inputEl.style.display = '';
             inputEl.placeholder = opts.placeholder ?? '';
             inputEl.value = opts.defaultValue ?? '';
-            inputEl.focus();
-            inputEl.select();
         } else {
             inputEl.style.display = 'none';
             inputEl.value = '';
@@ -180,7 +178,14 @@ function _showDialogInner(opts: DialogOptions): Promise<string | boolean | null>
         cancelBtn.textContent = opts.cancelLabel ?? t('dialog.cancel');
         cancelBtn.style.display = opts.cancelLabel === '' ? 'none' : '';
 
+        let settled = false;
         const cleanup = (result: string | boolean | null) => {
+            // 幂等关闭：双击按钮或 focus-trap 与 document keydown 双路径触发时，
+            // 不能二次 unfreeze 外层对话框的背景冻结（引用计数会失衡）。
+            if (settled) {
+                return;
+            }
+            settled = true;
             _trapRestore?.();
             _trapRestore = null;
             unfreezeBackground();
@@ -246,6 +251,20 @@ function _showDialogInner(opts: DialogOptions): Promise<string | boolean | null>
         overlay.classList.add('mmd-dialog-visible');
         dialog.style.display = '';
         overlay.removeAttribute('inert');
+        // 焦点必须在 overlay 可见且自身 inert 已移除后移入对话框：
+        // 1) confirm 模式若无初始焦点，焦点会停留在已被 inert 的背景上，Tab 无法被 trap；
+        // 2) prompt 模式此前在隐藏态 focus()，真实浏览器不会成功。
+        if (opts.input) {
+            inputEl.focus();
+            inputEl.select();
+        } else {
+            // _replaceButtonListeners 会用 clone 替换按钮，原 confirmBtn 已脱离 DOM，
+            // 必须重新查询当前可见按钮再聚焦。
+            const visibleConfirmBtn = overlay.querySelector(
+                '.mmd-dialog-confirm'
+            ) as HTMLButtonElement;
+            visibleConfirmBtn.focus();
+        }
         freezeBackground(overlay);
         _trapRestore = createFocusTrap({ container: dialog, onEscape: onCancel });
     });
@@ -380,6 +399,12 @@ export function disposeOverlay2(): void {
     _prompt2Active = false;
     _pendingPrompt2.length = 0;
     if (_overlay2) {
+        // 若清理时 showPrompt2 仍打开，先触发取消关闭，让当前 Promise 正常 resolve，
+        // 并让 cleanup 移除 document/overlay 监听，避免调用方永久挂起或监听泄漏。
+        if (_overlay2.classList.contains('mmd-dialog-visible')) {
+            const cancel = _overlay2.querySelector<HTMLButtonElement>('.mmd-dialog-cancel');
+            cancel?.click();
+        }
         _overlay2.remove();
         _overlay2 = null;
     }
@@ -435,7 +460,14 @@ function _showPrompt2Inner(opts: Prompt2Options): Promise<[string, string] | nul
         confirmBtn.textContent = opts.confirmLabel ?? t('dialog.confirm');
         cancelBtn.textContent = opts.cancelLabel ?? t('dialog.cancel');
 
+        let settled = false;
         const cleanup = (result: [string, string] | null) => {
+            // 幂等关闭：双击按钮或 focus-trap 与 document keydown 双路径触发时，
+            // 不能二次 unfreeze 外层对话框的背景冻结（引用计数会失衡）。
+            if (settled) {
+                return;
+            }
+            settled = true;
             _trapRestore2?.();
             _trapRestore2 = null;
             unfreezeBackground();
@@ -487,8 +519,9 @@ function _showPrompt2Inner(opts: Prompt2Options): Promise<[string, string] | nul
 
         overlay.classList.add('mmd-dialog-visible');
         dialog.style.display = '';
-        fields[0].focus();
         overlay.removeAttribute('inert');
+        // 先移除自身 inert 再聚焦，否则残留的 inert 会阻止首字段获得焦点
+        fields[0].focus();
         freezeBackground(overlay);
         _overlay2Frozen = true;
         _trapRestore2 = createFocusTrap({ container: dialog, onEscape: onCancel });

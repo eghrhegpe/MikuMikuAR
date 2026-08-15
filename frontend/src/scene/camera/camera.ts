@@ -604,7 +604,8 @@ export interface CameraState {
     control?: CameraControl; // ADR-100 轴 A（新）
     behavior?: CameraBehavior; // ADR-100 轴 B（新）
     scriptedSubMode?: ScriptedSubMode; // ADR-100 §6.4（新，仅 scripted 行为有意义）
-    preset: CameraPreset;
+    /** 反序列化时可选：旧存档/不完整 JSON 可能缺失，setCameraState 已做默认合并。 */
+    preset?: CameraPreset;
     fov?: number; // FOV in radians, default 0.8 (migrated from RenderState in Phase 9)
     alpha: number;
     beta: number;
@@ -707,6 +708,12 @@ export function setCameraState(s: CameraState): void {
         behavior = s.behavior ?? m.behavior;
         sub = s.scriptedSubMode ?? m.scripted ?? 'loop';
     }
+    // ADR-100 P4 约束：行为轴仅对 orbit 控制有效，非 orbit 强制 none。
+    // 序列化入口必须与 setCameraControl/setCameraBehavior 一致，
+    // 否则 freefly+beatcut 这类矛盾存档会产生“行为 none 但 autoCameraEnabled=true”的不一致状态。
+    if (control !== 'orbit' && behavior !== 'none') {
+        behavior = 'none';
+    }
     // 旧存档仅以 UIState.autoCameraEnabled 标记自动运镜 → 叠加为 beatcut（§6.2 step3）。
     // ADR-100 P3 收紧：仅当 control/behavior 双轴均缺失（纯旧格式）才叠加，
     // 避免部分新字段存档（已显式声明 behavior）被陈旧 autoCameraEnabled 覆盖（P2 权威原则）。
@@ -723,11 +730,17 @@ export function setCameraState(s: CameraState): void {
         setAutoCameraEnabledFlag(true);
         uiState.autoCameraEnabled = true;
         setAutoCameraBeatsPerSwitch(uiState.autoCameraBeatsPerSwitch || 4);
+        // 与 setAutoCameraEnabled(true) 的开启路径一致，复位节拍计数/预设索引，
+        // 避免旧计数残留导致恢复 beatcut 后第一拍立即切镜。
+        _setAutoCameraBeatCount(0);
+        _setAutoCameraPresetIdx(0);
     } else {
         // ADR-100 P3 边界修复：显式非 beatcut 行为须清除自动运镜标志，
         // 否则陈旧 uiState.autoCameraEnabled（启动期 restoreAutoCameraState 先于 setCameraState 执行）
         // 会覆盖已加载的显式行为（如 none），导致自动运镜意外开启。
-        setAutoCameraEnabledFlag(false);
+        // 同时必须走 setAutoCameraEnabled(false) 释放旧 beat 订阅/过渡动画，
+        // 仅翻转标志位会让已启用的 auto camera 订阅与 transition observer 残留。
+        setAutoCameraEnabled(false);
         uiState.autoCameraEnabled = false;
     }
     const finalMode = deriveLegacyMode(control, behavior, sub);
@@ -739,6 +752,10 @@ export function setCameraState(s: CameraState): void {
     if (finalMode && finalMode !== 'ar') {
         switchCameraMode(finalMode);
     }
+    // 与 setCameraControl/setCameraBehavior 的 headless 补提交一致：
+    // switchCameraMode 在无 scene/canvas 时早退，不写 _cameraMode，这里必须显式提交兼容别名。
+    // 注意必须放在 switchCameraMode 之后：先提交会让 switchCameraMode 的 `mode === getCameraMode()` 守卫误判并跳过重建。
+    setCameraMode(finalMode);
 
     // Restore FOV (from new scene files; old scenes store it in render.fov)
     if (s.fov !== undefined) {
