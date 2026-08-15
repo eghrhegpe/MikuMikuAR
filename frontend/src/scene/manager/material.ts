@@ -828,7 +828,9 @@ export function setMatParams(
     params: Partial<MaterialCategoryParams>
 ): void {
     const meshes = _getMeshesById(id);
-    if (!meshes || matIndex < 0 || matIndex >= meshes.length) {
+    // [audit:round40 P3] NaN matIndex 会穿透 `< 0 / >= length` 比较（NaN 比较恒 false），
+    // 产生 NaN key 幽灵 entry（序列化变 "null" 键）；先拦截非有限值。
+    if (!meshes || !Number.isFinite(matIndex) || matIndex < 0 || matIndex >= meshes.length) {
         logWarn(
             'material',
             `setMatParams: invalid matIndex ${matIndex} for target "${id}" (${meshes ? meshes.length : 0} meshes)`

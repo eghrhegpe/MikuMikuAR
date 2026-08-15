@@ -186,8 +186,9 @@ export async function applyModelPreset(id: string, jsonStr: string): Promise<voi
         // 跨模型保护：overrides/enabled 按 matIndex 索引，不同模型 matIndex 不通用，
         // 跨模型应用会导致头发参数覆盖到眼睛等错位。仅 categories 走名称匹配兜底。
         const inst = modelRegistry.get(id);
+        // [audit:round40 P3] 可选链防非法预设（缺 model 字段）抛裸 TypeError
         const isSameModel =
-            inst && preset.model.filePath && inst.filePath === preset.model.filePath;
+            inst && preset.model?.filePath && inst.filePath === preset.model.filePath;
         applyMatState(id, {
             categories: preset.materialCategories,
             overrides: isSameModel ? preset.materialOverrides : undefined,
