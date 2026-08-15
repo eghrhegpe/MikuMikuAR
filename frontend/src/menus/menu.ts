@@ -83,7 +83,9 @@ export class SlideMenu implements RenderContext {
     private _swipeTouchEndDisp: Disposable | null = null;
     /**
      * 自更新控件注册表 — 每个元素有 update() 方法 + 可选的 pathHint 键路径提示。
-     * [doc:PACU] pathHint 不为 undefined 时，仅当该 key 在本帧发生过 set 变更才调用 update。
+     * [doc:PACU] pathHint 为 reactivity 收集的顶层 key（叶名），例如
+     * ctrl.bind='env.skyMode' 时传 'skyMode'；不为 undefined 时仅当该 key
+     * 在本帧发生过 set 变更才调用 update。
      * pathHint === undefined 保持旧行为（每帧都更新，保守兼容）。
      */
     private _controls: Array<{ update: () => void; pathHint?: string }> = [];
@@ -506,7 +508,7 @@ export class SlideMenu implements RenderContext {
     /**
      * 注册一个自更新控件，由 updateControls() 统一驱动刷新。
      * @param update 更新函数
-     * @param pathHint [doc:PACU] 可选的状态 key 提示。
+     * @param pathHint [doc:PACU] 可选的状态 key 提示（顶层 key/叶名）。
      *   提供后，仅当该 key 在本帧发生过 set 变更时才调用 update。
      *   不提供则保持旧行为（每帧 updateControls 都更新）。
      */
@@ -517,7 +519,7 @@ export class SlideMenu implements RenderContext {
     /**
      * 增量刷新所有已注册的自更新控件（不重建 DOM）。
      * [doc:PACU] 接收 changedKeys 集合，仅更新 pathHint 匹配的控件。
-     * @param changedKeys 本帧变更的 state key 集合，从 reactive layer 传入。
+     * @param changedKeys 本帧变更的 state key 集合（顶层 key/叶名），从 reactive layer 传入。
      */
     updateControls(changedKeys?: Set<string>): void {
         const _start = performance.now();
@@ -891,7 +893,10 @@ export class SlideMenu implements RenderContext {
 
     /** 增量 patch 当前 panel：只创建/替换/删除有变化的行 */
     private patchPanel(items: PopupRow[]): void {
+        // [fix] itemBuilder 返回空列表时不能静默保留旧行：回退到 buildPanel，
+        // 与 _doReRender 的空 items 路径一致（渲染空态并清空旧 DOM/控件注册表）。
         if (items.length === 0) {
+            this.buildPanel(this.currentLevel!);
             return;
         }
         const list = this._getSlideList();

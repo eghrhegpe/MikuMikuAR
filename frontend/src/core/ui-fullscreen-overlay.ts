@@ -1,6 +1,6 @@
 // [doc:architecture] FullscreenOverlay — 全屏覆盖层组件
-// 状态机：CLOSED → EMBEDDED_GRID → FULLSCREEN → EMBEDDED_GRID
-// 所有关闭入口统一调用 closeFullscreen()
+// 状态机：CLOSED → FULLSCREEN → CLOSED
+// 所有关闭入口统一调用 closeFullscreen()，onBack 由 closeFullscreen 统一触发一次
 
 import { logWarn } from './logger';
 import { addDisposableListener } from './dom';
@@ -38,7 +38,7 @@ export type OverlayState = 'CLOSED' | 'FULLSCREEN';
 
 let currentState: OverlayState = 'CLOSED';
 let currentOverlay: FullscreenOverlayHandle | null = null;
-let _slideMenuFrozen = false;
+let currentOnBack: (() => void) | null = null;
 let frozenSlideMenuElement: HTMLElement | null = null;
 let _trapRestore: (() => void) | null = null;
 
@@ -57,6 +57,7 @@ export function openFullscreen(options: FullscreenOverlayOptions): FullscreenOve
     // 冻结 SlideMenu
     freezeSlideMenu();
 
+    currentOnBack = options.onBack;
     currentOverlay = {
         close: () => closeFullscreen(),
         getElement: () => overlay,
@@ -71,6 +72,9 @@ export function closeFullscreen(): void {
     if (currentState !== 'FULLSCREEN') {
         return;
     }
+
+    const onBack = currentOnBack;
+    currentOnBack = null;
 
     // 移除 Overlay 并清理事件监听
     _trapRestore?.();
@@ -90,6 +94,7 @@ export function closeFullscreen(): void {
     unfreezeSlideMenu();
 
     currentState = 'CLOSED';
+    onBack?.();
 }
 
 export function getCurrentState(): OverlayState {
@@ -110,7 +115,6 @@ function freezeSlideMenu(): void {
         if (el.style.display !== 'none') {
             el.dataset.previousDisplay = el.style.display;
             el.style.display = 'none';
-            _slideMenuFrozen = true;
             frozenSlideMenuElement = el;
         }
     });
@@ -121,7 +125,6 @@ function unfreezeSlideMenu(): void {
         const prevDisplay = frozenSlideMenuElement.dataset.previousDisplay || '';
         frozenSlideMenuElement.style.display = prevDisplay;
         frozenSlideMenuElement = null;
-        _slideMenuFrozen = false;
     }
 }
 
@@ -172,7 +175,6 @@ function createOverlayElement(options: FullscreenOverlayOptions): HTMLElement {
             prev.render(content);
         } else {
             closeFullscreen();
-            options.onBack();
         }
     });
 
@@ -193,7 +195,6 @@ function createOverlayElement(options: FullscreenOverlayOptions): HTMLElement {
     closeBtn.title = '关闭';
     closeBtn.addEventListener('click', () => {
         closeFullscreen();
-        options.onBack();
     });
 
     header.appendChild(backBtn);
@@ -232,7 +233,6 @@ function createOverlayElement(options: FullscreenOverlayOptions): HTMLElement {
         if (e.key === 'Escape') {
             cleanup();
             closeFullscreen();
-            options.onBack();
             return;
         }
     };
@@ -248,7 +248,6 @@ function createOverlayElement(options: FullscreenOverlayOptions): HTMLElement {
         if (e.target === overlay && currentState === 'FULLSCREEN') {
             cleanup();
             closeFullscreen();
-            options.onBack();
         }
     });
 

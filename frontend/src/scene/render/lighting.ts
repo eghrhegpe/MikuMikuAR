@@ -573,6 +573,9 @@ export function disposeLighting(): void {
     if (lightingState.envSysShadow?.generator) {
         lightingState.envSysShadow.generator = safeDispose(lightingState.envSysShadow.generator);
     }
+    // [audit] disposeLighting 应把注入的环境阴影引用一并复位，避免 lightingState 残留
+    // 已释放场景的外部对象引用（与 scene/triggerAutoSave 的置空语义对齐）。
+    lightingState.envSysShadow = null;
     lightingState.scene = null;
     lightingState.triggerAutoSave = null;
     // 补全阴影参数重置：避免场景重建后携带上一场景的脏值

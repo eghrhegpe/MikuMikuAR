@@ -588,10 +588,10 @@
 | `FullscreenOverlayHandle()` | `core/ui-fullscreen-overlay:28` | — |
 | `FullscreenOverlayOptions()` | `core/ui-fullscreen-overlay:16` | — |
 | `OverlayState()` | `core/ui-fullscreen-overlay:37` | — |
-| `closeFullscreen()` | `core/ui-fullscreen-overlay:70` | — |
-| `getCurrentState()` | `core/ui-fullscreen-overlay:95` | — |
+| `closeFullscreen()` | `core/ui-fullscreen-overlay:71` | — |
+| `getCurrentState()` | `core/ui-fullscreen-overlay:100` | — |
 | `openFullscreen()` | `core/ui-fullscreen-overlay:47` | — |
-| `setCurrentState()` | `core/ui-fullscreen-overlay:99` | — |
+| `setCurrentState()` | `core/ui-fullscreen-overlay:104` | — |
 | `HeaderToggleConfig()` | `core/ui-header-toggle:8` | — |
 | `createHeaderToggle()` | `core/ui-header-toggle:26` | 创建标题栏小型开关。返回 &#96;&lt;label class="toggle header-toggle"&gt;&#96;， 含双触发去重（跳过 target===input 的 synthetic |
 | `BoneSelectOptions()` | `core/ui-helpers:28` | — |
