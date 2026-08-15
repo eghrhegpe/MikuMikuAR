@@ -934,6 +934,11 @@ export async function dismissFsaAuthPrompt(): Promise<void> {
     await idbSet('config', 'fsaAuthPromptDismissed', true);
 }
 
+/** [doc:adr-183] 清除跳过标志：用户手动设置根目录后，后续无根目录启动应重新获得引导机会。 */
+export async function resetFsaAuthPromptDismissed(): Promise<void> {
+    await idbDelete('config', 'fsaAuthPromptDismissed');
+}
+
 /** [doc:adr-183] 对持久化的 FSA 句柄重新请求授权（不重选目录）。
  * 须在用户手势上下文中调用（如 confirm 框点击），否则 requestPermission 会被浏览器拦截。
  * 成功写入内存句柄并返回 true；无句柄 / 用户拒绝 / 句柄失效返回 false。

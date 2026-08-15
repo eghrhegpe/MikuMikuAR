@@ -40,6 +40,7 @@ import {
     getFsaAuthState,
     isFsaAuthPromptDismissed,
     dismissFsaAuthPrompt,
+    resetFsaAuthPromptDismissed,
     reauthorizeFsaRoot,
 } from '../core/backend/browser-adapter';
 import { t } from '../core/i18n/t';
@@ -201,6 +202,9 @@ export async function selectResourceRoot(requireConfirm = true): Promise<void> {
     }
     await tryCatchStatus(async () => {
         await SetResourceRoot(dir);
+        // [doc:adr-183] 手动设置根目录 = 用户已主动授权，清除“跳过引导”记忆，
+        // 避免将来根目录缺失时不再弹出引导。
+        await resetFsaAuthPromptDismissed();
         await reloadConfig();
         await refreshLibrary();
     }, t('library.dirSetFailed'));

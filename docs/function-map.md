@@ -7,7 +7,7 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 136 | 818 |
+| 核心基础设施 | 136 | 819 |
 | 3D 场景 | 125 | 1233 |
 | 菜单 & UI | 76 | 397 |
 | 动作算法 | 18 | 138 |
@@ -196,18 +196,19 @@
 | `resetMem()` | `core/backend/browser-adapter-mocks:15` | — |
 | `setStore()` | `core/backend/browser-adapter-mocks:8` | — |
 | `FsaAuthState()` | `core/backend/browser-adapter:897` | — |
-| `browserAdapter()` | `core/backend/browser-adapter:1373` | — |
+| `browserAdapter()` | `core/backend/browser-adapter:1378` | — |
 | `dismissFsaAuthPrompt()` | `core/backend/browser-adapter:933` | — |
 | `getFsaAuthState()` | `core/backend/browser-adapter:904` | [doc:adr-183] 查询 FSA 根目录授权状态，供 UI 启动引导（不触发任何权限弹窗）。 |
-| `getFsaDownloadAuthState()` | `core/backend/browser-adapter:971` | 查询下载文件夹 FSA 授权状态（不触发权限弹窗），供 UI 引导。 |
-| `getFsaDownloadHandle()` | `core/backend/browser-adapter:1036` | 读取持久化的下载文件夹句柄（供扫描使用），不触发权限弹窗；无句柄返回 null。 |
+| `getFsaDownloadAuthState()` | `core/backend/browser-adapter:976` | 查询下载文件夹 FSA 授权状态（不触发权限弹窗），供 UI 引导。 |
+| `getFsaDownloadHandle()` | `core/backend/browser-adapter:1041` | 读取持久化的下载文件夹句柄（供扫描使用），不触发权限弹窗；无句柄返回 null。 |
 | `ingestModelBytes()` | `core/backend/browser-adapter:649` | [doc:adr-195] 写入单文件（名+字节）到资源库，不加载到场景。供下载面板批量摄入复用。 |
 | `ingestModelFile()` | `core/backend/browser-adapter:639` | 写入单个模型/动作文件（File）到 IndexedDB 资源库（file:+entry:），不加载到场景。 |
 | `ingestModelFiles()` | `core/backend/browser-adapter:658` | [doc:adr-195] P3 批量摄入：单事务写入该批次所有 file:/entry: 键，避免逐条 idbSet 并发写竞态。 |
 | `isFsaAuthPromptDismissed()` | `core/backend/browser-adapter:929` | [doc:adr-183] 用户跳过启动授权引导后写入「已跳过」标志，避免纯导入用户每次启动被弹窗骚扰。 |
-| `reauthorizeFsaDownload()` | `core/backend/browser-adapter:995` | 对持久化的下载文件夹句柄重新请求授权（须用户手势上下文）。成功返回 true。 |
-| `reauthorizeFsaRoot()` | `core/backend/browser-adapter:941` | [doc:adr-183] 对持久化的 FSA 句柄重新请求授权（不重选目录）。 |
-| `selectFsaDownloadDir()` | `core/backend/browser-adapter:1019` | 选择下载文件夹（独立 FSA 句柄），持久化到 _FSA_DOWNLOAD_KEY。 |
+| `reauthorizeFsaDownload()` | `core/backend/browser-adapter:1000` | 对持久化的下载文件夹句柄重新请求授权（须用户手势上下文）。成功返回 true。 |
+| `reauthorizeFsaRoot()` | `core/backend/browser-adapter:946` | [doc:adr-183] 对持久化的 FSA 句柄重新请求授权（不重选目录）。 |
+| `resetFsaAuthPromptDismissed()` | `core/backend/browser-adapter:938` | [doc:adr-183] 清除跳过标志：用户手动设置根目录后，后续无根目录启动应重新获得引导机会。 |
+| `selectFsaDownloadDir()` | `core/backend/browser-adapter:1024` | 选择下载文件夹（独立 FSA 句柄），持久化到 _FSA_DOWNLOAD_KEY。 |
 | `setScanProgressCallback()` | `core/backend/browser-adapter:744` | [doc:adr-183] 注册扫描进度回调，供 UI 层节流增量刷新。 |
 | `goAdapter()` | `core/backend/go-adapter:21` | — |
 | `STORES()` | `core/backend/idb:10` | — |
@@ -2204,13 +2205,13 @@
 | `LibraryRestoreState()` | `menus/library-session-store:32` | 资源库会话状态：恢复链路（上次浏览位置 + 高亮模型）。 |
 | `LibraryRestoreStatus()` | `menus/library-session-store:17` | [doc:adr-135] P0.3 deferRestore 状态机。 |
 | `librarySessionStore()` | `menus/library-session-store:253` | 单例。 |
-| `initLibrary()` | `menus/library-setup:83` | — |
-| `refreshLibrary()` | `menus/library-setup:447` | — |
-| `reloadConfig()` | `menus/library-setup:369` | — |
-| `rescanAndSync()` | `menus/library-setup:277` | — |
-| `selectOverridePath()` | `menus/library-setup:209` | — |
-| `selectResourceRoot()` | `menus/library-setup:184` | — |
-| `switchStorageMode()` | `menus/library-setup:228` | — |
+| `initLibrary()` | `menus/library-setup:84` | — |
+| `refreshLibrary()` | `menus/library-setup:451` | — |
+| `reloadConfig()` | `menus/library-setup:373` | — |
+| `rescanAndSync()` | `menus/library-setup:281` | — |
+| `selectOverridePath()` | `menus/library-setup:213` | — |
+| `selectResourceRoot()` | `menus/library-setup:185` | — |
+| `switchStorageMode()` | `menus/library-setup:232` | — |
 | `ModelPresetFile()` | `menus/library:6` | — |
 | `applyModelPreset()` | `menus/library:7` | — |
 | `initLibrary()` | `menus/library:4` | — |
@@ -2434,7 +2435,7 @@
 | `buildDiagnosticSchema()` | `menus/settings-diagnostic:417` | — |
 | `buildSettingsDiagnosticLevel()` | `menus/settings-diagnostic:522` | — |
 | `renderDiagnosticPanel()` | `menus/settings-diagnostic:492` | — |
-| `buildSettingsDownloadsLevel()` | `menus/settings-downloads:446` | — |
+| `buildSettingsDownloadsLevel()` | `menus/settings-downloads:450` | — |
 | `buildEffectsSchema()` | `menus/settings-graphics:204` | — |
 | `buildFrameQualitySchema()` | `menus/settings-graphics:102` | — |
 | `buildPhysicsHudSchema()` | `menus/settings-graphics:309` | — |

@@ -155,7 +155,7 @@ async function runDownloadManagerWeb(
     // 非 zip（pmx/vmd/音频）→ ingestModelFiles 单事务写 file:/entry: 键；
     // zip → 写 file:<stem> 后 ImportZip 展开（读 file:<stem>，不加载场景）。
     const modelFiles: { name: string; bytes: Uint8Array }[] = [];
-    const zipTasks: { stem: string; bytes: Uint8Array }[] = [];
+    const zipTasks: { name: string; stem: string; bytes: Uint8Array }[] = [];
     for (const f of files) {
         const lower = f.name.toLowerCase();
         // [doc:adr-195] stem 仅用于 zip 落库键 file:${stem}；去重必须用完整文件名，
@@ -169,20 +169,23 @@ async function runDownloadManagerWeb(
             if (_ingestedStems.has(f.name)) {
                 continue;
             }
-            zipTasks.push({ stem, bytes: f.bytes });
-            _ingestedStems.add(f.name);
+            zipTasks.push({ name: f.name, stem, bytes: f.bytes });
         } else {
             if (_ingestedStems.has(f.name)) {
                 continue;
             }
             modelFiles.push({ name: f.name, bytes: f.bytes });
-            _ingestedStems.add(f.name);
         }
     }
 
     if (modelFiles.length) {
         try {
-            ok += await ingestModelFiles(modelFiles);
+            const ingested = await ingestModelFiles(modelFiles);
+            ok += ingested;
+            // 仅在整批事务成功后标记去重，避免失败文件在本次会话被静默跳过。
+            for (const f of modelFiles) {
+                _ingestedStems.add(f.name);
+            }
         } catch (err) {
             console.warn('[downloads] batch ingest failed', err);
             fail += modelFiles.length;
@@ -193,6 +196,7 @@ async function runDownloadManagerWeb(
         try {
             await idbSet('models', `file:${z.stem}`, z.bytes);
             await ImportZip(`file:${z.stem}`);
+            _ingestedStems.add(z.name);
             ok++;
         } catch (err) {
             console.warn('[downloads] zip import failed:', z.stem, err);

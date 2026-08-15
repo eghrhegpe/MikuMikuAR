@@ -52,6 +52,7 @@ symbols:
   - openDB
   - reauthorizeFsaDownload
   - reauthorizeFsaRoot
+  - resetFsaAuthPromptDismissed
   - resetIdb
   - resetMem
   - resolveBackend

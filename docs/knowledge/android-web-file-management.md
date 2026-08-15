@@ -47,6 +47,7 @@ symbols:
   - refreshLibrary
   - reloadConfig
   - rescanAndSync
+  - resetFsaAuthPromptDismissed
   - selectFsaDownloadDir
   - selectOverridePath
   - selectResourceRoot
