@@ -2153,7 +2153,7 @@
 | `getShadowSchema()` | `menus/env-shadow-levels:15` | 导出 shadow schema 供 menu-registry 静态分析（ADR-093 元测试） |
 | `buildSkyLevel()` | `menus/env-sky-levels:202` | — |
 | `getSkySchema()` | `menus/env-sky-levels:17` | 导出 sky schema 供 menu-registry 静态分析（ADR-093 元测试） |
-| `buildWaterLevel()` | `menus/env-water-levels:482` | — |
+| `buildWaterLevel()` | `menus/env-water-levels:488` | — |
 | `getWaterSchema()` | `menus/env-water-levels:31` | 导出 water schema 供 menu-registry 静态分析（ADR-093 元测试） |
 | `buildWindLevel()` | `menus/env-wind-levels:44` | — |
 | `getWindSchema()` | `menus/env-wind-levels:12` | 导出 wind schema 供 menu-registry 静态分析（ADR-093 元测试） |
@@ -2428,7 +2428,7 @@
 | `buildStageLightLevel()` | `menus/scene-stage-lights:823` | — |
 | `buildSettingsAboutLevel()` | `menus/settings-about:247` | — |
 | `handleSettingsAction()` | `menus/settings-actions:21` | 全局设置项点击分发：语言切换 + 动作表。settings.ts 的 onItemClick 使用。 |
-| `buildSettingsAppearanceLevel()` | `menus/settings-appearance:510` | — |
+| `buildSettingsAppearanceLevel()` | `menus/settings-appearance:513` | — |
 | `buildCameraSchema()` | `menus/settings-controls:29` | — |
 | `buildSettingsControlsLevel()` | `menus/settings-controls:325` | — |
 | `buildDiagnosticSchema()` | `menus/settings-diagnostic:417` | — |
@@ -2464,17 +2464,17 @@
 | `scanSoftwareDir()` | `menus/settings-system:466` | — |
 | `setBlenderPath()` | `menus/settings-system:412` | — |
 | `setMMDPath()` | `menus/settings-system:426` | — |
-| `SETTINGS()` | `menus/settings-targets:5` | 设置菜单文件夹导航 target（ADR-157：7 分类信息架构） |
+| `SETTINGS()` | `menus/settings-targets:5` | 设置菜单文件夹导航 target（ADR-157 的 7 分类 + downloads = 8 个根区段） |
 | `SETTINGS_ACTION()` | `menus/settings-targets:17` | 设置菜单动作 target（点击后执行操作，不导航） |
 | `SOFTWARE_DETAIL_PREFIX()` | `menus/settings-targets:33` | 动态 target 前缀 —— 用于 &#96;settings:software-detail:&lt;path&gt;&#96; 模式 |
 | `SettingsActionTarget()` | `menus/settings-targets:39` | 所有动作 target 的联合类型 |
 | `SettingsFolderTarget()` | `menus/settings-targets:36` | 所有文件夹 target 的联合类型 |
-| `generateTextColors()` | `menus/settings:13` | — |
-| `getSettingsMenu()` | `menus/settings:18` | — |
-| `preloadAutoImportState()` | `menus/settings:13` | — |
-| `preloadDownloadWatchState()` | `menus/settings:13` | — |
-| `refreshSettingsRoot()` | `menus/settings:18` | — |
-| `showSettings()` | `menus/settings:18` | — |
+| `generateTextColors()` | `menus/settings:14` | — |
+| `getSettingsMenu()` | `menus/settings:19` | — |
+| `preloadAutoImportState()` | `menus/settings:14` | — |
+| `preloadDownloadWatchState()` | `menus/settings:14` | — |
+| `refreshSettingsRoot()` | `menus/settings:19` | — |
+| `showSettings()` | `menus/settings:19` | — |
 
 ## 动作算法
 

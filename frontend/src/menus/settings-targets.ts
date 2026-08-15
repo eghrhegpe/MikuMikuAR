@@ -1,7 +1,7 @@
 // [doc:architecture] Settings target constants — 消除 settings.ts 中的硬编码字符串
 // 职责: 定义所有 settings 导航/动作 target 常量，供 settings.ts 及各调用方引用。
 
-/** 设置菜单文件夹导航 target（ADR-157：7 分类信息架构） */
+/** 设置菜单文件夹导航 target（ADR-157 的 7 分类 + downloads = 8 个根区段） */
 export const SETTINGS = {
     APPEARANCE: 'settings:appearance',
     GRAPHICS: 'settings:graphics',

@@ -3,14 +3,14 @@
  *
  * Water moved from Environment to Scene (scene-menu.ts root).
  * Uses vitePage (headless Chromium → localhost:5173), no Wails needed.
- * Reuses buildWaterLevel() from env-feature-levels.ts.
+ * Reuses buildWaterLevel() from env-water-levels.ts.
  *
  * [ADR-229 §8 去重] 仅保留 schema-driven 不覆盖的独有断言：
  * 预设芯片（custom 渲染，无 schema 节点）；其余滑块/开关断言
  * 由 e2e/schema-driven.spec.ts 自动覆盖（env:water 面板）。
  *
  * @see scene-menu.ts — 'scene:water' → buildWaterLevel
- * @see env-feature-levels.ts — buildWaterLevel()
+ * @see env-water-levels.ts — buildWaterLevel()
  */
 import { test, expect } from "./wails-fixture";
 
@@ -21,6 +21,9 @@ test.describe("Scene — Water Panel (vitePage, @dom)", { tag: ["@dom", "@overla
         // 销毁执行上下文（曾报 "Execution context was destroyed"）。
         // ② 真实 locator.click：vitePage fixture 已强制移除 app-booting 并保持
         // #loading pointer-events:none，命中测试可通过；若被拦截会失败并暴露 app bug。
+        // ③ 与 library/motion-panel 同因：纯 Vite 下 FSA 引导可能给 #app 留 inert，
+        // 先解除再点击（见 e2e/library-panel-dom.spec.ts:13-17）。
+        await page.evaluate(() => document.getElementById("app")?.removeAttribute("inert"));
         await page.locator("#btnScene").click();
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
         // Navigate into 水面 sub-level (folder in scene root with headerToggle)
@@ -28,14 +31,14 @@ test.describe("Scene — Water Panel (vitePage, @dom)", { tag: ["@dom", "@overla
     });
 
     test("水面面板: 预设芯片渲染", async ({ vitePage: page }) => {
-        // 5 种水预设芯片（纯文本 button，无 testId → getByText 回退；
-        // custom 渲染，schema-driven 不覆盖 → 本文件独有断言）。
-        // [ADR-229 §8 修复] headless Chromium 默认语言为英文（en.ts），
-        // 原断言中文（平静/涟漪…）在当前环境必失败，改用运行时语言标签。
-        await expect(page.getByText("Calm", { exact: true })).toBeVisible();
-        await expect(page.getByText("Ripple", { exact: true })).toBeVisible();
-        await expect(page.getByText("Ocean", { exact: true })).toBeVisible();
-        await expect(page.getByText("Storm", { exact: true })).toBeVisible();
-        await expect(page.getByText("Tropical", { exact: true })).toBeVisible();
+        // 5 种水预设芯片（纯文本 button，custom 渲染，schema-driven 不覆盖 →
+        // 本文件独有断言）。
+        // [ADR-229 §8 修复] 原先 getByText("Calm"/...) 依赖英文文案，在 zh-CN/ja/ko/zh-TW
+        // locale 下必失败；现改用 env-water-levels.ts 注入的稳定 testid，locale 无关。
+        await expect(page.getByTestId("env:water:preset:calm")).toBeVisible();
+        await expect(page.getByTestId("env:water:preset:ripple")).toBeVisible();
+        await expect(page.getByTestId("env:water:preset:ocean")).toBeVisible();
+        await expect(page.getByTestId("env:water:preset:storm")).toBeVisible();
+        await expect(page.getByTestId("env:water:preset:tropical")).toBeVisible();
     });
 });

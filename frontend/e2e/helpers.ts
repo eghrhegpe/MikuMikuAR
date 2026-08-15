@@ -210,20 +210,28 @@ export async function clickMotionSubLevel(page: Page, label: string): Promise<vo
     }
 }
 
-/** Navigate into a sub-level of the settings panel by clicking its folder row. */
+/** Navigate into a root-level folder of the settings panel by clicking its folder row. */
 export async function clickSettingsSubLevel(page: Page, label: string): Promise<void> {
+    // ADR-157 后设置根区段为 8 个；旧“库/性能/渲染/路径/音频/快捷键”保留为兼容别名，
+    // 映射到合并后的真实区段。旧二级卡片（相机/画质/特效/物理）已不是根 folder，不映射。
     const SETTINGS_SUB_TESTID: Record<string, string> = {
+        // 当前真实根区段
         外观: "folder:settings:appearance",
-        库: "folder:settings:library",
-        性能: "folder:settings:performance",
-        渲染: "folder:settings:rendering",
-        路径: "folder:settings:paths",
-        音频: "folder:settings:audio",
-        快捷键: "folder:settings:shortcuts",
-        相机: "folder:settings:camera",
-        画质: "folder:settings:frame-quality",
-        特效: "folder:settings:effects",
-        物理: "folder:settings:physics-hud",
+        画面: "folder:settings:graphics",
+        操控: "folder:settings:controls",
+        资源: "folder:settings:resources",
+        下载文件夹: "folder:settings:downloads",
+        下载: "folder:settings:downloads",
+        媒体: "folder:settings:media",
+        系统: "folder:settings:system",
+        关于: "folder:settings:about",
+        // 旧根区段兼容别名
+        库: "folder:settings:resources",
+        性能: "folder:settings:graphics",
+        渲染: "folder:settings:graphics",
+        路径: "folder:settings:resources",
+        音频: "folder:settings:media",
+        快捷键: "folder:settings:controls",
     };
     const testId = SETTINGS_SUB_TESTID[label];
     if (testId) {

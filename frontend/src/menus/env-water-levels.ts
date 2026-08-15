@@ -3,7 +3,7 @@
 
 import { envState } from '../core/config';
 import type { PopupLevel } from '../core/config';
-import { buildPresetChipGroup } from '../core/ui-helpers';
+import { addPresetChip } from '../core/ui-helpers';
 import { setEnvState } from '../scene/scene';
 import { t } from '../core/i18n/t';
 import {
@@ -34,20 +34,26 @@ export function getWaterSchema(): MenuNode[] {
             id: 'env:water:presets',
             kind: 'custom',
             renderCustom: (cc) => {
-                buildPresetChipGroup(
-                    cc,
-                    Object.entries(WATER_PRESETS).map(([key, wp]) => ({
-                        label: t(WATER_PRESET_I18N[key] ?? wp.label),
-                        onClick: () => {
+                // [e2e] 预设芯片补稳定 testid（locale 无关），替代 getByText 英文/中文文案定位。
+                const group = document.createElement('div');
+                group.className = 'preset-group';
+                for (const [key, wp] of Object.entries(WATER_PRESETS)) {
+                    const chip = addPresetChip(
+                        group,
+                        t(WATER_PRESET_I18N[key] ?? wp.label),
+                        false,
+                        () => {
                             setEnvState({
                                 ...buildWaterPresetEnvState(wp),
                                 waterEnabled: true,
                             });
                             applyWaterPresetToCurrent(wp);
                             getEnvMenu()?.reRender();
-                        },
-                    }))
-                );
+                        }
+                    );
+                    chip.dataset.testid = `env:water:preset:${key}`;
+                }
+                cc.appendChild(group);
             },
         },
         {

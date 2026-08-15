@@ -106,6 +106,7 @@ function _renderThemePresetList(
         const row = document.createElement('div');
         row.className = 'slide-item' + (isActive ? ' slide-focused' : '');
         row.dataset.themeColor = p.color;
+        row.dataset.testid = 'settings:appearance:theme:' + p.color.replace('#', '');
         row.innerHTML = `<span class="slide-icon"><iconify-icon icon="lucide:${isActive ? 'check-circle' : 'circle'}"></iconify-icon></span><span class="slide-label">${t(p.labelKey)}</span>`;
         const swatch = document.createElement('span');
         swatch.className = 'theme-swatch';
@@ -455,7 +456,9 @@ function buildAppearanceSchema(getSettingsMenu: () => SettingsMenuHandle): MenuN
                             },
                             undefined,
                             undefined,
-                            isActive
+                            isActive,
+                            undefined,
+                            { testId: `settings:appearance:lang:${l.code}` }
                         );
                         row.dataset.langCode = l.code;
                         langRows.push(row);

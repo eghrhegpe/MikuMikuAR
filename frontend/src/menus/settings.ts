@@ -1,7 +1,8 @@
 // [doc:architecture] Settings — 设置页路由 + barrel re-export
 // 规范文档: docs/architecture.md §模型库管理
 // 职责: 菜单注册、路由表、re-export 公开符号
-// ADR-157: 信息架构重组为 7 分类（外观/画面/操控/资源/媒体/系统/关于）。
+// ADR-157: 信息架构重组为 7 分类；后续 downloads 独立为根项，当前共 8 个根区段
+// （外观/画面/操控/资源/下载文件夹/媒体/系统/关于）。
 // 各子页面实现在 settings-*.ts 子模块中。
 
 import { registerPopupMenu } from './menu-factory';
@@ -46,7 +47,7 @@ const {
     },
 });
 
-// ======== Root items（ADR-157：7 分类） ========
+// ======== Root items（ADR-157：7 分类 + downloads = 8 分类） ========
 
 function buildSettingsRootItems(): PopupRow[] {
     const items: PopupRow[] = [];
