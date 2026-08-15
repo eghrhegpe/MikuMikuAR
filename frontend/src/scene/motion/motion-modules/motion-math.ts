@@ -1,5 +1,8 @@
 // [doc:adr-116 P3] 动作覆盖时间驱动纯数学函数（与渲染解耦，便于单测）
-// 这些函数只做数值计算，不触碰引擎/状态，由 sway/riding 的每帧钩子调用。
+// 这些函数只做数值计算，不触碰引擎/状态。
+// [audit:round46 P2] computeSwayYaw 当前无生产调用方——ADR-116 P3 规划的 sway-motion.ts
+// 尚未落地（registry 仅注册 6 模块），本函数由测试锁定、待接线后启用；computePedalPhase/
+// computeFootPitch 由 riding-model 帧钩子调用。
 
 /**
  * 摇摆正弦 yaw（度）。

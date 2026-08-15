@@ -1534,9 +1534,9 @@
 | `pushHistory()` | `scene/motion/motion-modules/motion-history:99` | 记录一次参数变更到历史栈。 |
 | `redo()` | `scene/motion/motion-modules/motion-history:162` | 重做一步（恢复到下一条快照），返回是否成功 |
 | `undo()` | `scene/motion/motion-modules/motion-history:145` | 撤销一步（恢复到上一条快照），返回是否成功 |
-| `computeFootPitch()` | `scene/motion/motion-modules/motion-math:39` | 单足俯仰角（度）。 |
-| `computePedalPhase()` | `scene/motion/motion-modules/motion-math:27` | 踏板相位（度，0-360 自然循环）。 |
-| `computeSwayYaw()` | `scene/motion/motion-modules/motion-math:12` | 摇摆正弦 yaw（度）。 |
+| `computeFootPitch()` | `scene/motion/motion-modules/motion-math:42` | 单足俯仰角（度）。 |
+| `computePedalPhase()` | `scene/motion/motion-modules/motion-math:30` | 踏板相位（度，0-360 自然循环）。 |
+| `computeSwayYaw()` | `scene/motion/motion-modules/motion-math:15` | 摇摆正弦 yaw（度）。 |
 | `applyMotionPreset()` | `scene/motion/motion-modules/preset-types:23` | 应用预设到指定模型。 |
 | `generatePresetId()` | `scene/motion/motion-modules/preset-types:45` | — |
 | `modulesToPresetMap()` | `scene/motion/motion-modules/preset-types:9` | MotionModuleState[] → MotionPreset['modules'] |

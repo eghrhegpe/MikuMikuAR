@@ -2,12 +2,15 @@
 
 # 代码审核索引
 
-> 审核台账共 **139** 篇：114 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
+> 审核台账共 **142** 篇：117 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
 
 > 汇总视图（执行摘要 / 风险全景 / 改进优先级）见 [审核总索引](./README.md)。
 
-## 2026 年 8 月（103）
+## 2026 年 8 月（106）
 
+- `2026-08-15` [scene-pbr-init — 审核结果（round-46）](./2026-08-15-round46-scene-pbr-init.md)
+- `2026-08-15` [[motion-math 数学层] — 审核结果（round-46 / motion-math）](./2026-08-15-round46-motion-math.md)
+- `2026-08-15` [round-46 — menu-schema motionModule StatePath 前缀专项审核报告](./2026-08-15-round46-menu-schema-motion-module.md)
 - `2026-08-15` [[stable-identity-material-roundtrip] — 审核结果（round-45 测试 3）](./2026-08-15-round45-stable-identity-material.md)
 - `2026-08-15` [Round 45 审核报告：resolveModelId（stable-identity 决策点）](./2026-08-15-round45-resolve-model-id.md)
 - `2026-08-15` [Round 45 审核报告：proc-bone-override（程序化动作 + 骨骼覆盖管线契约）](./2026-08-15-round45-proc-bone-override.md)
