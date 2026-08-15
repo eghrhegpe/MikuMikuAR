@@ -2,7 +2,7 @@
 
 # 代码审核索引
 
-> 审核台账共 **177** 篇：152 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
+> 审核台账共 **178** 篇：152 篇按日期归档、9 篇轮次记录、17 篇专题审核。每篇记录审核范围、发现与结论。
 
 > 汇总视图（执行摘要 / 风险全景 / 改进优先级）见 [审核总索引](./README.md)。
 
@@ -176,7 +176,7 @@
 - [第⑧轮审核 — 感知层拆分（ADR-071 Phase 1-3 + ADR-079 后续）](./round-8-perception-split.md)
 - [第⑨轮审核 — 镜面反射功能](./round-9-mirror-reflection.md)
 
-## 专题审核（16）
+## 专题审核（17）
 
 > 无统一日期/轮次前缀的审核记录（命名规范确立前），按标题排序。
 
@@ -184,6 +184,7 @@
 - [ADR-151 审核记录（反射系统统一架构）](./adr-151-review.md)
 - [三色统一审核报告](./color-unification-audit.md)
 - [deadcode-baseline-2026-07-24](./deadcode-baseline-2026-07-24.md)
+- [Env / Lighting / Camera 模块级状态 Dispose 复位矩阵](./dispose-reset-matrix.md)
 - [历史文档陈旧度审计 — 2026-07-21](./doc-staleness-audit-2026-07-21.md)
 - [环境系统代码审核 — 验证性 Triage（2026-07-14）](./env-review-triage-2026-07-14.md)
 - [frontend-src-audit](./frontend-src-audit.md)
