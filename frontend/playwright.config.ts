@@ -35,7 +35,9 @@ export default defineConfig({
     maxFailures: process.env.CI ? 38 : 0,
     // 限制并发避免多 worker 同时打 Vite 5173 触发 babylon-mmd 重模块重复编译，
     // 该场景会导致 page.goto 在 10s 内达不到 domcontentloaded（实测 14/16 失败的根因）。
-    workers: process.env.CI ? 1 : 2,
+    // 同时固定为 1：@webgl 通过 CDP 共享同一个 Wails WebView2 页面，跨文件并行会互相
+    // 踩踏（一个用例加载/删除模型时另一个用例也在操作同一实例），全局串行最稳。
+    workers: 1,
     reporter: "html",
 
     // [doc:adr-177] Phase 4 双 webServer：5173 桌面 dev（@dom/@webgl）+ 4174 web preview（@web）
@@ -61,9 +63,12 @@ export default defineConfig({
             // index.html），本 server 只负责 preview——避免 CI 2 核上 build(300-600s) 与
             // preview 绑在同一 command 里、被步骤 timeout 一起 kill（@web 两个 job 假红根因）。
             // 先杀掉残留的 4174 进程（CI runner 上前一个 workflow 遗留），再 preview。
-            // sudo 是必要的：CI runner 上前一个 workflow 的 preview server 可能属不同用户，
-            // 普通 fuser 无权限杀掉。用 || true 而非 2>/dev/null 以便排错时可见 stderr。
-            command: "sudo fuser -k 4174/tcp 2>/dev/null || true; npx vite preview --config vite.web.config.ts --port 4174 --strictPort",
+            // Linux/macOS 用 sudo fuser：CI runner 上前一个 workflow 的 preview server
+            // 可能属不同用户，普通 fuser 无权限杀掉。Windows 没有 sudo/fuser，直接走
+            // strictPort；如端口被占会快速失败并提示，避免启动脚本本身不可用。
+            command: process.platform === "win32"
+                ? "npx vite preview --config vite.web.config.ts --port 4174 --strictPort"
+                : "sudo fuser -k 4174/tcp 2>/dev/null || true; npx vite preview --config vite.web.config.ts --port 4174 --strictPort",
             // base = '/MikuMikuAR/app/'，preview 实际服务在 /MikuMikuAR/app/（web-smoke.spec 的 WEB_URL 同步）。
             url: "http://localhost:4174/MikuMikuAR/app/",
             reuseExistingServer: true,

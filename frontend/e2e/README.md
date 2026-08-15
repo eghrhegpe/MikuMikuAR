@@ -292,7 +292,7 @@ npx playwright test --grep "@web"
 [menu-declaration.spec.ts](file:///C:/Users/zhujieling11/MikuMikuAR/frontend/e2e/menu-declaration.spec.ts) 实现了一个自动扫描引擎：
 
 1. **`scanMenuTree()`**：在浏览器中递归扫描所有 `[data-testid]` 元素
-2. **复合分类器**：基于 CSS class（`collapsible-wrapper`→folder, `slide-item`→tab, `cs-row`→slider 等）+ testid 前缀判断节点类型
+2. **复合分类器**：基于 CSS class（`collapsible-wrapper`→folder, `slide-item`→nav, `type-row[role=tab]`→tab, `cs-row`→slider/modeSlider 等）+ testid 前缀判断节点类型
 3. **树结构重建**：通过向上追溯最近 testid 祖先，确定 parent-child 关系
 4. **自动断言**：验证唯一性、深度限制、分类合理性、导航可达性
 

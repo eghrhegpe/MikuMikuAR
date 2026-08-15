@@ -19,9 +19,7 @@ import { gotoWebEntry } from "./helpers";
 test.describe("Web Capabilities — 能力门控 UI 验证 (@web)", { tag: ["@web"] }, () => {
     test.beforeEach(async ({ page }) => {
         await gotoWebEntry(page);
-        // [workaround] 与 motion-panel-dom.spec.ts:14-15 同因：FSA 引导的 dialog 可能给 #app 留 inert，
-        // 导致后续真实 click 被 body 拦截。根因在 helpers.gotoWebEntry 未统一处理（锁外文件）。
-        await page.evaluate(() => document.getElementById("app")?.removeAttribute("inert"));
+        // #app.inert 已由 helpers.installOverlayGuards（gotoWebEntry 内调用）统一清理。
     });
 
     test("能力门控: 相机模式无 AR 选项（ar === false）", async ({ page }) => {

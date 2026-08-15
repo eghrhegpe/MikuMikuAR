@@ -9,9 +9,7 @@ import { test, expect } from "./wails-fixture";
 
 test.describe("Shortcuts — DOM/overlay (vitePage, @dom)", { tag: ["@dom", "@overlay"] }, () => {
     test.beforeEach(async ({ vitePage: page }) => {
-        // [workaround] 同 settings-panel-dom：纯 Vite 下 FSA 引导可能先弹确认框，
-        // dialog 冻结背景会给 #app 留下 inert，导致后续真实 click 被 body 拦截。
-        await page.evaluate(() => document.getElementById("app")?.removeAttribute("inert"));
+        // #app.inert 已由 helpers.installOverlayGuards 统一清理。
         await page.click("#btnSettings");
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
     });

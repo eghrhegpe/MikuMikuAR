@@ -21,9 +21,7 @@ test.describe("Scene — Water Panel (vitePage, @dom)", { tag: ["@dom", "@overla
         // 销毁执行上下文（曾报 "Execution context was destroyed"）。
         // ② 真实 locator.click：vitePage fixture 已强制移除 app-booting 并保持
         // #loading pointer-events:none，命中测试可通过；若被拦截会失败并暴露 app bug。
-        // ③ 与 library/motion-panel 同因：纯 Vite 下 FSA 引导可能给 #app 留 inert，
-        // 先解除再点击（见 e2e/library-panel-dom.spec.ts:13-17）。
-        await page.evaluate(() => document.getElementById("app")?.removeAttribute("inert"));
+        // ③ #app.inert 已由 helpers.installOverlayGuards 统一清理。
         await page.locator("#btnScene").click();
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
         // Navigate into 水面 sub-level (folder in scene root with headerToggle)

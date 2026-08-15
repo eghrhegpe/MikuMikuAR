@@ -10,11 +10,7 @@ test.describe("Library — DOM/overlay (vitePage, @dom)", { tag: ["@dom", "@over
     test.beforeEach(async ({ vitePage: page }) => {
         // [ADR-229 §8] vitePage 每 test 全新浏览器实例，localStorage 本为空，
         // clear() 反而触发应用 storage 监听导致页面导航——不调用。
-        // [workaround] 纯 Vite 下 initLibrary 的 FSA 引导可能先弹 showConfirm：
-        // installOverlayGuards 会移除 #mmd-dialog-overlay 的 visible class，但 dialog.ts
-        // 的 freezeBackground 仍给 #app 留下 inert，导致后续真实 click 全部被 body 拦截。
-        // 本 spec 在打开面板前先解除 #app.inert（对应 dialog.ts:32/43 的冻结状态）。
-        await page.evaluate(() => document.getElementById("app")?.removeAttribute("inert"));
+        // #app.inert 已由 helpers.installOverlayGuards 统一清理，无需 spec 再 workaround。
         await page.click("#btnMainAction");
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
     });

@@ -8,24 +8,8 @@
  *
  * 断言基于 window.__scene 数值钩子（见 ADR-060 Phase 0），不依赖像素截图。
  */
-import type { Page } from "@playwright/test";
 import { test, expect } from "./wails-fixture";
-import { waitForSceneHook, loadSeedModel, clearSeedModel } from "./helpers";
-
-/** 打开模型库 → 进入“加载模型”浏览层（当前 DOM 契约：folder:models:browse）。 */
-async function openLibraryBrowse(page: Page): Promise<void> {
-    await page.click("#btnMainAction");
-    await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
-    await page.getByTestId("folder:models:browse").click({ timeout: 5000 });
-    await page.waitForSelector('[data-testid^="model:"]', { timeout: 5000 });
-}
-
-/** 进入模型库浏览层并加载第一个真实模型条目。 */
-async function loadFirstModelFromLibrary(page: Page): Promise<void> {
-    await openLibraryBrowse(page);
-    await page.locator('[data-testid^="model:"]').first().click();
-    await page.waitForFunction(() => (window as any).__scene?.meshCount > 10, { timeout: 20000 });
-}
+import { waitForSceneHook, loadSeedModel, clearSeedModel, loadFirstModel } from "./helpers";
 
 // ======== @dom: Seed model (programmatic mesh, no Wails needed) ========
 test.describe("核心旅程: Seed model (@dom, vitePage)", { tag: ["@dom"] }, () => {
@@ -57,7 +41,7 @@ test.describe("核心旅程: 真实模型加载 (@webgl, wailsPage)", { tag: ["@
 
     test("加载首个模型后，meshCount 显著增加且渲染循环活跃（fps > 0）", async ({ wailsPage: page }) => {
         await waitForSceneHook(page);
-        await loadFirstModelFromLibrary(page);
+        await loadFirstModel(page);
 
         const meshCount = await page.evaluate(() => (window as any).__scene.meshCount);
         expect(meshCount).toBeGreaterThan(10);
@@ -69,9 +53,7 @@ test.describe("核心旅程: 真实模型加载 (@webgl, wailsPage)", { tag: ["@
 
     test("加载模型库首个模型（确定性选择）", async ({ wailsPage: page }) => {
         await waitForSceneHook(page);
-        await openLibraryBrowse(page);
-        await page.locator('[data-testid^="model:"]').first().click();
-        await page.waitForFunction(() => (window as any).__scene?.meshCount > 10, { timeout: 20000 });
+        await loadFirstModel(page);
         const meshCount = await page.evaluate(() => (window as any).__scene.meshCount);
         expect(meshCount).toBeGreaterThan(10);
     });

@@ -19,35 +19,7 @@
 
 import type { Page } from "@playwright/test";
 import { test, expect } from "./wails-fixture";
-import { waitForSceneHook } from "./helpers";
-
-/** 打开模型库 → 进入“加载模型”浏览层（当前 DOM 契约：folder:models:browse）。 */
-async function openLibraryBrowse(page: Page): Promise<void> {
-    // 若上个用例残留 overlay，先 Escape 关闭，避免 #btnMainAction 被当成“关闭”再点。
-    const overlayOpen = await page.evaluate(() =>
-        document.getElementById("sceneOverlay")?.classList.contains("visible") ?? false
-    );
-    if (overlayOpen) {
-        await page.keyboard.press("Escape");
-        await page.waitForSelector("#sceneOverlay:not(.visible)", { timeout: 5000 });
-    }
-    await page.click("#btnMainAction");
-    await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
-    await page.getByTestId("folder:models:browse").click({ timeout: 5000 });
-    await page.waitForSelector('[data-testid^="model:"]', { timeout: 5000 });
-}
-
-/** 加载模型库第一个真实模型条目（替代 helpers.loadFirstModel 已过期的 actor:model 选择器）。 */
-async function loadFirstModelFromLibrary(page: Page): Promise<void> {
-    await openLibraryBrowse(page);
-    await page.locator('[data-testid^="model:"]').first().click();
-    // meshCount 可能在 ImportMeshAsync 完成前就 >10；必须等到 modelManager 已注册且已聚焦，
-    // 才能保证 createMmdModel → retryWindPhysicsSubscription → register → focus 已走完。
-    await page.waitForFunction(() => {
-        const mm = (window as any).__scene?.modelManager;
-        return mm && mm.size > 0 && !!mm.focused?.() && (window as any).__scene?.meshCount > 10;
-    }, { timeout: 20000 });
-}
+import { waitForSceneHook, loadFirstModel } from "./helpers";
 
 /** 清空当前 modelManager 中所有模型，避免共享 Wails 页面状态残留。 */
 async function clearAllModels(page: Page): Promise<void> {
@@ -95,7 +67,7 @@ test.describe("物理子系统健康检查", { tag: ["@webgl"] }, () => {
 
     test("加载模型后 rigidBodyCount > 0（WASM 物理已运行 + 联邦自建刚体已登记）", async ({ wailsPage: page }) => {
         await waitForSceneHook(page);
-        await loadFirstModelFromLibrary(page);
+        await loadFirstModel(page);
 
         // 注意：联邦自建刚体（地面碰撞默认开启 / 虚拟裙骨）走单数容器
         // rigidBodyReferenceCountMap，不进 bundle 容器，故须断言 rigidBodyCount（>0），
@@ -106,7 +78,7 @@ test.describe("物理子系统健康检查", { tag: ["@webgl"] }, () => {
 
     test("加载模型后风力物理已订阅（model-loader 显式 retry 建立订阅）", async ({ wailsPage: page }) => {
         await waitForSceneHook(page);
-        await loadFirstModelFromLibrary(page);
+        await loadFirstModel(page);
 
         const active = await page.evaluate(() => (window as any).__scene.windPhysicsActive);
         // 源码语义：model-loader.ts:644 在 actor 模型创建后调用
@@ -118,7 +90,7 @@ test.describe("物理子系统健康检查", { tag: ["@webgl"] }, () => {
 
     test("设置风速 10 后风力物理保持活跃（订阅已建立）", async ({ wailsPage: page }) => {
         await waitForSceneHook(page);
-        await loadFirstModelFromLibrary(page);
+        await loadFirstModel(page);
 
         // 激活风力（订阅在模型加载时已建立，此调用只改 envState.windSpeed）
         await page.evaluate(() => (window as any).__scene.driver.setWindSpeed(10));
@@ -136,7 +108,7 @@ test.describe("物理子系统健康检查", { tag: ["@webgl"] }, () => {
 
     test("设置风速 10 后骨骼位置发生变化（物理真的动了）", async ({ wailsPage: page }) => {
         await waitForSceneHook(page);
-        await loadFirstModelFromLibrary(page);
+        await loadFirstModel(page);
 
         // 从当前模型运行时骨骼中动态筛选疑似物理骨骼，降低对固定日文骨骼名的依赖。
         const boneNames = await findPhysicsBoneNames(page);
@@ -200,7 +172,7 @@ test.describe("物理子系统健康检查", { tag: ["@webgl"] }, () => {
 
     test("设置风速 0 后风力停止，windPhysicsActive 保持订阅态（不崩溃）", async ({ wailsPage: page }) => {
         await waitForSceneHook(page);
-        await loadFirstModelFromLibrary(page);
+        await loadFirstModel(page);
 
         // 先开启（等待订阅生效）
         await page.evaluate(() => (window as any).__scene.driver.setWindSpeed(10));

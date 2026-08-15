@@ -29,9 +29,7 @@ test.describe("Motion — Playback Controls (vitePage, @dom)", { tag: ["@dom", "
     });
 
     test("动作弹窗: 空态引导提示渲染", async ({ vitePage: page }) => {
-        // 与 motion-panel-dom.spec.ts 相同的纯 Vite 守卫：FSA 引导可能给 #app 加 inert，
-        // 导致 body 拦截真实点击（本 spec 曾在此超时）。
-        await page.evaluate(() => document.getElementById("app")?.removeAttribute("inert"));
+        // #app.inert 已由 helpers.installOverlayGuards 统一清理。
         await page.click("#btnMotionPopup");
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
 

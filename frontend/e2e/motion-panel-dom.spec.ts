@@ -9,10 +9,7 @@ import { test, expect } from "./wails-fixture";
 test.describe("Motion — DOM/overlay (vitePage, @dom)", { tag: ["@dom", "@overlay"] }, () => {
     test.beforeEach(async ({ vitePage: page }) => {
         // [ADR-229 §8] vitePage 每 test 全新浏览器实例，localStorage 本为空，不调用 clear()
-        // [workaround] 与 library-panel-dom.spec.ts 同因：纯 Vite 下 FSA 引导可能先弹
-        // showConfirm，installOverlayGuards 移除 dialog 的 visible class 后，dialog.ts 的
-        // freezeBackground 仍给 #app 留下 inert，导致后续真实 click 被 body 拦截。
-        await page.evaluate(() => document.getElementById("app")?.removeAttribute("inert"));
+        // #app.inert 已由 helpers.installOverlayGuards 统一清理，无需 spec 再 workaround。
         await page.click("#btnMotionPopup");
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
     });

@@ -269,7 +269,10 @@ jobs:
           # Expose CDP on WebView2 via MMCAR_DEBUG_PORT — main.go reads it and
           # injects --remote-debugging-port. WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS
           # is suppressed by Wails v3 (AdditionalBrowserArgs set explicitly).
+          # VITE_E2E_MODE=true lets dev-hooks inject __scene/__capture in the
+          # Wails-built page (wailsPage doesn't use ?e2e=1).
           MMCAR_DEBUG_PORT: "9222"
+          VITE_E2E_MODE: "true"
         working-directory: .
         run: |
           export PATH="$HOME/go/bin:$PATH"

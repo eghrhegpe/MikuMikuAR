@@ -54,6 +54,8 @@ if ($stillBusy) {
 
 $env:MMCAR_DEBUG_PORT = '9222'
 Write-Host "`nMMCAR_DEBUG_PORT set to 9222 (main.go injects --remote-debugging-port)"
+$env:VITE_E2E_MODE = 'true'
+Write-Host "VITE_E2E_MODE set to true (wailsPage 下注入 __scene/__capture)"
 Write-Host "Starting wails3 dev...`n"
 Write-Host "After wails3 dev is up, verify CDP endpoint in another terminal:"
 Write-Host "  Invoke-WebRequest http://127.0.0.1:9222/json/version"

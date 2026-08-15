@@ -96,6 +96,20 @@ export async function installOverlayGuards(page: Page): Promise<void> {
             });
         }
 
+        // 2.5) #app.inert → 强制移除（dialog.ts freezeBackground 可能异步残留 inert，
+        //      导致后续真实 click 被 body 拦截；这里统一收敛，spec 不再各自 workaround）
+        const app = document.getElementById("app");
+        const removeAppInert = () => {
+            app?.removeAttribute("inert");
+        };
+        removeAppInert();
+        if (app) {
+            new MutationObserver(removeAppInert).observe(app, {
+                attributes: true,
+                attributeFilter: ["inert"],
+            });
+        }
+
         // 3) #mmd-dialog-overlay → 移除 mmd-dialog-visible。
         //    若 dialog 尚未创建（init 失败异步弹窗），用一次性 childList 监听等待创建；
         //    创建后立即转成对该 dialog 的 class 监听，childList observer 即 disconnect，
@@ -199,8 +213,8 @@ export async function clickMotionSubLevel(page: Page, label: string): Promise<vo
     const MOTION_SUB_TESTID: Record<string, string> = {
         相机: "folder:motion:camera",
         视线: "folder:motion:gaze",
-        程序化: "folder:motion:procmotion",
-        姿势库: "folder:motion:pose",
+        程序化: "folder:motion:proc-library",
+        姿势库: "folder:motion:poseStudio",
     };
     const testId = MOTION_SUB_TESTID[label];
     if (testId) {
@@ -246,11 +260,10 @@ export async function waitForSceneHook(page: Page): Promise<void> {
     await page.waitForFunction(() => !!(window as any).__scene, { timeout: 10000 });
 }
 
-/** Open the model library popup (#btnMainAction) and load the first available model entry.
- *  Prereq: a model library with >=1 model must be configured (resource_root scanned).
- *  NOTE: the first .slide-item may be a folder row; callers should seed a known model or
- *  use loadModelByName() for deterministic selection. */
-export async function loadFirstModel(page: Page): Promise<void> {
+/** Open the model library popup (#btnMainAction) and navigate into “加载模型” browse layer.
+ *  当前 DOM 契约：folder:models:browse → [data-testid^="model:"] 文件行。
+ *  旧 [data-testid^="actor:model"] 已不匹配 UUID 方案下的 actor 行，统一在这里收敛。 */
+export async function openLibraryBrowse(page: Page): Promise<void> {
     // Only Escape if an overlay is actually visible — an extra Escape when no
     // overlay exists can confuse the app's state machine (it might toggle or
     // intercept the subsequent nav click). The fixture already Escapes on setup,
@@ -266,25 +279,32 @@ export async function loadFirstModel(page: Page): Promise<void> {
     }
     await page.locator("#btnMainAction").click();
     await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
-    await page.waitForSelector('[data-testid^="actor:model"]', { timeout: 5000 });
-    await page.locator('[data-testid^="actor:model"]').first().click();
-    await page.waitForFunction(() => (window as any).__scene?.meshCount > 10, { timeout: 20000 });
+    await page.getByTestId("folder:models:browse").click({ timeout: 5000 });
+    await page.waitForSelector('[data-testid^="model:"]', { timeout: 5000 });
+}
+
+/** Wait until a real model load has registered in modelManager and meshes are present. */
+async function waitForModelLoaded(page: Page): Promise<void> {
+    await page.waitForFunction(() => {
+        const scene = (window as any).__scene;
+        const mm = scene?.modelManager;
+        return mm && mm.size > 0 && !!mm.focused?.() && scene.meshCount > 10;
+    }, { timeout: 20000 });
+}
+
+/** Open the model library popup and load the first available model entry.
+ *  Prereq: a model library with >=1 model must be configured (resource_root scanned). */
+export async function loadFirstModel(page: Page): Promise<void> {
+    await openLibraryBrowse(page);
+    await page.locator('[data-testid^="model:"]').first().click();
+    await waitForModelLoaded(page);
 }
 
 /** Open the model library popup and load a model by its visible label. */
 export async function loadModelByName(page: Page, name: string): Promise<void> {
-    const overlayOpen = await page.evaluate(() =>
-        document.getElementById("sceneOverlay")?.classList.contains("visible") ?? false
-    );
-    if (overlayOpen) {
-        await page.keyboard.press("Escape");
-        // [audit:round6] 同 loadFirstModel：固定 sleep 改轮询 overlay 关闭
-        await page.waitForSelector("#sceneOverlay:not(.visible)", { timeout: 5000 });
-    }
-    await page.locator("#btnMainAction").click();
-    await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
-    await page.locator('[data-testid^="actor:model"]', { hasText: name }).first().click();
-    await page.waitForFunction(() => (window as any).__scene?.meshCount > 10, { timeout: 20000 });
+    await openLibraryBrowse(page);
+    await page.locator('[data-testid^="model:"]', { hasText: name }).first().click();
+    await waitForModelLoaded(page);
 }
 
 /** Open the motion/animation popup (#btnMotionPopup).
