@@ -37,8 +37,8 @@ function _cleanNumericLine(line: string): string {
         .replace(/<!ENTITY\s+[^>]*>/gi, '')
         .replace(/<!DOCTYPE\s+[^>]*>/gi, '')
         .replace(/\/\/.*$/, '')
-        .replace(/;.*$/, '')  // ; starts a line comment (like MMD convention)
-        .replace(/,/g, ' ')   // commas → spaces (some VPD exporters use commas)
+        .replace(/;.*$/, '') // ; starts a line comment (like MMD convention)
+        .replace(/,/g, ' ') // commas → spaces (some VPD exporters use commas)
         .trim();
 }
 
@@ -132,9 +132,9 @@ export function parseVPDText(text: string): VPDPoseData {
         const morphMatch = line.match(_morphLine);
         if (morphMatch && i + 1 < lines.length) {
             const mName = morphMatch[1].trim();
-        // 与骨骼行一致：清理注释/分号/逗号后再解析，避免 "0.8 ; comment" 被 Number 判为 NaN 而静默丢弃
-        const wLine = _cleanNumericLine(lines[i + 1]);
-        const w = Number(wLine);
+            // 与骨骼行一致：清理注释/分号/逗号后再解析，避免 "0.8 ; comment" 被 Number 判为 NaN 而静默丢弃
+            const wLine = _cleanNumericLine(lines[i + 1]);
+            const w = Number(wLine);
             if (isFinite(w)) {
                 morphs.push({ name: mName, weight: w });
                 i += 2;

@@ -2,12 +2,15 @@
 
 # 代码审核索引
 
-> 审核台账共 **85** 篇：60 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
+> 审核台账共 **88** 篇：63 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
 
 > 汇总视图（执行摘要 / 风险全景 / 改进优先级）见 [审核总索引](./README.md)。
 
-## 2026 年 8 月（49）
+## 2026 年 8 月（52）
 
+- `2026-08-15` [wind-physics 状态机/时序 — 审核结果（round-28 / 测试反推源码）](./2026-08-15-round28-wind-physics-state.md)
+- `2026-08-15` [Round-28 审核 — vmd.test.ts（VMD 格式综合测试：vmd-writer 二进制打包 + vpd-parser VPD 文本解析 → VMD Buffer）](./2026-08-15-round28-vmd.md)
+- `2026-08-15` [Round 28 — vmd-layers-dispose 审核](./2026-08-15-round28-vmd-layers-dispose.md)
 - `2026-08-15` [Round-27 审核 — vmd-loader-race.test.ts（VMD 加载基础校验 + gen counter）](./2026-08-15-round27-vmd-loader-race.md)
 - `2026-08-15` [第 27 轮审核报告 — color-helpers（round-16 guardNum 修复后首次专项核验）](./2026-08-15-round27-color-helpers.md)
 - `2026-08-15` [[round27] action-defs 覆盖缺口补测（scene / library / diagnostic）— 审核结果](./2026-08-15-round27-action-defs-extra.md)
