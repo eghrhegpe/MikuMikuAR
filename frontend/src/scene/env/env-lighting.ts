@@ -185,6 +185,7 @@ export const ENV_PRESET_FIELDS: Record<EnvPresetCategory, (keyof EnvState)[]> = 
     ],
     'env:ground': [
         'groundVisibleEnabled',
+        'groundPreset',
         'groundType',
         'groundStyle',
         'groundOverlay',
@@ -206,9 +207,11 @@ export const ENV_PRESET_FIELDS: Record<EnvPresetCategory, (keyof EnvState)[]> = 
         'groundScrollSpeedZ',
         'groundPattern',
         'groundReflectionBlend',
+        'groundReflectionQuality',
         'groundNormalTexture',
         'groundNormalStrength',
         'groundElevationColoringEnabled',
+        'groundInfiniteEnabled',
         'groundPbrEnabled',
         'groundProceduralTexture',
         'groundProceduralSeed',
@@ -220,6 +223,10 @@ export const ENV_PRESET_FIELDS: Record<EnvPresetCategory, (keyof EnvState)[]> = 
         'groundLevel',
         'groundSize',
         'groundEdgeFade',
+        'groundEmissiveColor',
+        'groundEmissiveStrength',
+        'groundEmissiveReflectMix',
+        'groundEmissiveTexture',
     ],
     'env:water': [
         'waterEnabled',
@@ -228,24 +235,45 @@ export const ENV_PRESET_FIELDS: Record<EnvPresetCategory, (keyof EnvState)[]> = 
         'waterColor',
         'waterTransparency',
         'waterWaveHeight',
+        'bigWaveHeight',
+        'bigWaveEnabled',
+        'smallWaveHeight',
+        'smallWaveEnabled',
         'waterAnimSpeed',
+        'waterDispersionEnabled',
         'planarReflectionBlend',
         'reflectionQuality',
         'waterFogColor',
         'waterFogStart',
         'waterFogEnd',
         'waterFogOpacityInfluence',
+        'waterHorizonFade',
+        'waterSkyColorBlend',
         'fresnelBias',
         'fresnelPower',
         'diffuseStrength',
         'ambientStrength',
+        'waterRippleSlots',
         'rippleNormalStrength',
         'rippleGlintStrength',
+        'waterNormalStrength',
+        'waterGlintStrength',
+        'lowFreqNormalStrength',
+        'causticIntensity',
+        'causticEnabled',
         'causticColor1',
         'causticColor2',
         'causticScrollX',
         'causticScrollY',
         'fresnelAlphaInfluence',
+        'foamEnabled',
+        'foamThreshold',
+        'foamIntensity',
+        'foamOpacity',
+        'foamTransitionRange',
+        'foamColor',
+        'foamNoiseStrength',
+        'underwaterEnabled',
         'underwaterChromaticAmount',
         'underwaterToneIntensity',
         'underwaterTintStrength',
@@ -261,6 +289,7 @@ export const ENV_PRESET_FIELDS: Record<EnvPresetCategory, (keyof EnvState)[]> = 
         'particleSpeed',
         'particleSplashEnabled',
         'particleCustomTexture',
+        'particleQuality',
         'cloudEnabled',
         'debugCloudsEnabled',
         'cloudCover',
@@ -269,6 +298,11 @@ export const ENV_PRESET_FIELDS: Record<EnvPresetCategory, (keyof EnvState)[]> = 
         'cloudThickness',
         'cloudVisibility',
         'cloudGap',
+        'cloudErosion',
+        'cloudWeatherStrength',
+        'cloudBacklight',
+        'cloudPowder',
+        'cloudQuality',
         'fogEnabled',
         'fogMode',
         'fogColor',
@@ -334,6 +368,10 @@ export function importCategorizedEnvPreset(json: string): CategorizedEnvPreset |
         }
         // version 3：有 fields + category（兼容旧版零级 category 值）
         if (raw.version === 3 && raw.fields && typeof raw.category === 'string') {
+            // 防御：fields 必须是普通对象，拒绝数组/字符串等会被 setEnvState 误当键集合的值。
+            if (typeof raw.fields !== 'object' || Array.isArray(raw.fields)) {
+                return null;
+            }
             const resolved = LEGACY_CATEGORY_MAP[raw.category] ?? raw.category;
             const validCats: string[] = ['env:sky', 'env:ground', 'env:water', 'env:atmosphere'];
             if (!validCats.includes(resolved)) {
@@ -350,6 +388,8 @@ export function importCategorizedEnvPreset(json: string): CategorizedEnvPreset |
         if (
             Array.isArray(raw.skyColorTop) &&
             Array.isArray(raw.skyColorBot) &&
+            raw.skyColorTop.length === 3 &&
+            raw.skyColorBot.length === 3 &&
             typeof raw.sunAngle === 'number'
         ) {
             const azimuth = typeof raw.azimuth === 'number' ? raw.azimuth : DEFAULT_AZIMUTH_DEG;

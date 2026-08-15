@@ -63,8 +63,8 @@ export async function resolveFileUrl(
     const normalized = normPath(filePath);
     const safeDir = await IsolateModelDir(normalized);
     const fileName = normalized.substring(normalized.lastIndexOf('/') + 1);
-    // [doc:adr-176] 浏览器端 StartFileServer 抛 NotSupportedError，
-    // 此时回退到 readFileBytes + Blob URL，构造 chrome-extension:// 或 blob: 前缀。
+    // [doc:adr-176] 浏览器端不使用 StartFileServer；后端选型后直接走
+    // readFileBytes + Blob URL，构造 blob: 前缀。
     const backend = await getBackend();
     // [doc:adr-017][doc:adr-176][doc:adr-178] 浏览器端、Android 应用或无 crossOriginIsolated（单线程物理）宿主
     // 均不使用 127.0.0.1 HTTP 文件服务：改用 readFileBytes + Blob URL，彻底消除 http:// 子资源，从而可移除
@@ -72,9 +72,15 @@ export async function resolveFileUrl(
     // 桌面端（crossOriginIsolated=true）仍走 StartFileServer（localhost HTTP）以维持既有流式性能与行为。
     // `backend.kind === 'browser'` 为保底：避免带 COOP/COEP 的网页部署误判 crossOriginIsolated=true 而走 http 崩溃。
     if (backend.kind === 'browser' || !getCachedCapabilities().crossOriginIsolated) {
-        const bytes = await backend.readFileBytes(safeDir + '/' + fileName);
+        // 浏览器分支的 IsolateModelDir 已返回虚拟模型目录 web://model/<encStem>，
+        // 它本身就是 browser-adapter 的加载路径（file:<encStem> 的规范入口）。
+        // 再拼一次原始 fileName 会变成 web://model/<encStem>/<原始文件名>，非 ASCII
+        // 文件名因 encStem 与裸文件名不一致而无法命中 IndexedDB 键，导致主文件读取失败。
+        // 但 Android/go 降级分支的 safeDir 仍是真实隔离目录，必须保留 /fileName。
+        const readPath = backend.kind === 'browser' ? safeDir : `${safeDir}/${fileName}`;
+        const bytes = await backend.readFileBytes(readPath);
         if (!bytes) {
-            throw new Error(`[fileservice] readFileBytes failed for ${safeDir}/${fileName}`);
+            throw new Error(`[fileservice] readFileBytes failed for ${readPath}`);
         }
         const blobUrl = URL.createObjectURL(
             new Blob([bytes as BlobPart], { type: 'application/octet-stream' })

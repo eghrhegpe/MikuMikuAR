@@ -31,13 +31,36 @@ describe('ADR-101 P2: addDisposableListener', () => {
         expect(fn).not.toHaveBeenCalled();
     });
 
-    it('passes options through to addEventListener', () => {
+    it('passes options through to addEventListener and removes with captured capture', () => {
         const el = document.createElement('button');
         const fn = vi.fn();
-        const spy = vi.spyOn(el, 'addEventListener');
-        addDisposableListener(el, 'click', fn, { passive: true, once: true });
-        expect(spy).toHaveBeenCalledWith('click', fn, { passive: true, once: true });
-        spy.mockRestore();
+        const addSpy = vi.spyOn(el, 'addEventListener');
+        const removeSpy = vi.spyOn(el, 'removeEventListener');
+        const d = addDisposableListener(el, 'click', fn, {
+            passive: true,
+            once: true,
+            capture: true,
+        });
+        expect(addSpy).toHaveBeenCalledWith('click', fn, {
+            passive: true,
+            once: true,
+            capture: true,
+        });
+        d.dispose();
+        expect(removeSpy).toHaveBeenCalledWith('click', fn, true);
+        addSpy.mockRestore();
+        removeSpy.mockRestore();
+    });
+
+    it('removes a capture listener even if options object is mutated after attach', () => {
+        const el = document.createElement('button');
+        const fn = vi.fn();
+        const options = { capture: true };
+        const d = addDisposableListener(el, 'click', fn, options);
+        options.capture = false;
+        d.dispose();
+        el.dispatchEvent(new Event('click'));
+        expect(fn).not.toHaveBeenCalled();
     });
 
     it('returns Disposable compatible with interface', () => {

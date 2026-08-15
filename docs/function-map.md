@@ -287,10 +287,10 @@
 | `feedbackInfo()` | `core/feedback:53` | Info 级 toast 反馈。标题 =「动作 + 目标」。 |
 | `feedbackStatus()` | `core/feedback:70` | 通用状态栏反馈。auto-detect 成功与否：title 以 ✗ 开头则为失败。 |
 | `encodeFileRef()` | `core/fileservice:45` | 编码文件名为查询参数值（base64url 无填充）。 |
-| `normPath()` | `core/fileservice:115` | — |
+| `normPath()` | `core/fileservice:121` | — |
 | `resolveFileUrl()` | `core/fileservice:60` | 从文件路径解析出 HTTP URL 及对应服务器信息。 |
-| `resolveModelDir()` | `core/fileservice:108` | 从文件路径解析出隔离后的目录路径（不启动 HTTP 服务器）。 |
-| `revokeFileUrl()` | `core/fileservice:94` | 释放 resolveFileUrl 浏览器分支产生的 blob: URL（调用方用完必须调用，配对释放）。 |
+| `resolveModelDir()` | `core/fileservice:114` | 从文件路径解析出隔离后的目录路径（不启动 HTTP 服务器）。 |
+| `revokeFileUrl()` | `core/fileservice:100` | 释放 resolveFileUrl 浏览器分支产生的 blob: URL（调用方用完必须调用，配对释放）。 |
 | `formatTimestamp()` | `core/format-timestamp:6` | 格式化日期为 HH:MM:SS.mmm 字符串。 |
 | `formatError()` | `core/format:22` | 将任意错误值转换为人类可读字符串，带截断保护。 |
 | `formatTime()` | `core/format:8` | 格式化秒数为 &#96;MM:SS.CC&#96; 字符串（分:秒.百分秒）。 |
@@ -1149,7 +1149,7 @@
 | `updateParticleTexture()` | `scene/env/env-impl:69` | — |
 | `updateParticleWind()` | `scene/env/env-impl:69` | — |
 | `updateWaterAnimSpeed()` | `scene/env/env-impl:23` | — |
-| `CategorizedEnvPreset()` | `scene/env/env-lighting:287` | 分类预设（version 3 格式）。 |
+| `CategorizedEnvPreset()` | `scene/env/env-lighting:321` | 分类预设（version 3 格式）。 |
 | `DerivedLighting()` | `scene/env/env-lighting:37` | — |
 | `ENV_PRESET_FIELDS()` | `scene/env/env-lighting:166` | 各类别包含的 EnvState 字段白名单。未列入的字段（如 collision*）不参与任何预设。 |
 | `EnvPreset()` | `scene/env/env-lighting:29` | — |
@@ -1158,9 +1158,9 @@
 | `TIME_OF_DAY_PRESETS()` | `scene/env/env-lighting:101` | 预设数据表。按时间线排列：黎明 → 正午 → 夕阳 → 夜景 → 阴天 → 霓虹夜 |
 | `calcLuminance()` | `scene/env/env-lighting:48` | — |
 | `deriveLighting()` | `scene/env/env-lighting:56` | 从天空色和太阳角度推算光照参数。 |
-| `exportCategorizedEnvPreset()` | `scene/env/env-lighting:312` | 序列化分类预设为 JSON 字符串。 |
-| `importCategorizedEnvPreset()` | `scene/env/env-lighting:329` | 从 JSON 字符串反序列化分类预设，失败返回 null。 |
-| `snapshotEnvPresetByCategory()` | `scene/env/env-lighting:295` | 从当前 envState 快照指定类别的字段。数组字段做浅拷贝避免别名。 |
+| `exportCategorizedEnvPreset()` | `scene/env/env-lighting:346` | 序列化分类预设为 JSON 字符串。 |
+| `importCategorizedEnvPreset()` | `scene/env/env-lighting:363` | 从 JSON 字符串反序列化分类预设，失败返回 null。 |
+| `snapshotEnvPresetByCategory()` | `scene/env/env-lighting:329` | 从当前 envState 快照指定类别的字段。数组字段做浅拷贝避免别名。 |
 | `applyWetnessToInst()` | `scene/env/env-particles:36` | — |
 | `applyWindToParticles()` | `scene/env/env-particles:837` | — |
 | `createParticleEmitter()` | `scene/env/env-particles:408` | — |
@@ -1857,7 +1857,7 @@
 | `StageLightState()` | `scene/render/lighting:55` | — |
 | `StageLightType()` | `scene/render/lighting:53` | — |
 | `_defaultStageLightState()` | `scene/render/lighting:105` | — |
-| `disposeLighting()` | `scene/render/lighting:520` | 整体清理光照模块（场景销毁时调用） |
+| `disposeLighting()` | `scene/render/lighting:533` | 整体清理光照模块（场景销毁时调用） |
 | `getDirLight()` | `scene/render/lighting:149` | 主方向光（未初始化时为 null）。 |
 | `getHemiLight()` | `scene/render/lighting:144` | 主半球光（未初始化时为 null）。导出 getter 替代原 &#96;export let&#96;，消除导出可变绑定。 |
 | `getLightState()` | `scene/render/lighting:257` | — |

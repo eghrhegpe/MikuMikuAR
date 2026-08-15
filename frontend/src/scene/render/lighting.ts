@@ -448,6 +448,19 @@ export function transitionLighting(
         );
         return false;
     }
+    // [fix:P3] 非正/非有限 duration 直接应用目标值，避免 0/NaN/负数导致
+    // elapsed/duration 为 NaN/负数、t 永远到不了 1，observer 泄漏在渲染循环上。
+    if (!Number.isFinite(duration) || duration <= 0) {
+        if (lightingState.activeTransitionObs) {
+            lightingState.activeTransitionObs.dispose();
+            lightingState.activeTransitionObs = null;
+        }
+        setLightState(target);
+        if (onComplete) {
+            onComplete();
+        }
+        return true;
+    }
     _clearGuardWarn();
     const source = getLightState(); // 当前完整状态
     const startTime = performance.now();
