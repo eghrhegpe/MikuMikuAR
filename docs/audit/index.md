@@ -2,12 +2,15 @@
 
 # 代码审核索引
 
-> 审核台账共 **166** 篇：141 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
+> 审核台账共 **169** 篇：144 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
 
 > 汇总视图（执行摘要 / 风险全景 / 改进优先级）见 [审核总索引](./README.md)。
 
-## 2026 年 8 月（130）
+## 2026 年 8 月（133）
 
+- `2026-08-15` [Round55 审核 — env-time-of-day（Time of Day 集成 L2）](./2026-08-15-round55-time-of-day.md)
+- `2026-08-15` [round55-set-env-state — setEnvState 中央入口审核报告](./2026-08-15-round55-set-env-state.md)
+- `2026-08-15` [round55-env-feature-levels 审核报告 — env-feature-levels 契约测试与其守护目标](./2026-08-15-round55-env-feature-levels.md)
 - `2026-08-15` [第 54 轮审核报告（测试 #2/3）— env-bridge 环境预设应用与动画取消（L2 集成）](./2026-08-15-round54-presets.md)
 - `2026-08-15` [env-bridge Gravity + Sun Angle 集成测试 — 审核结果（round-54 / 测试 3）](./2026-08-15-round54-gravity-sun.md)
 - `2026-08-15` [第 54 轮审核报告（测试 #1/3）— env-bridge applyEnvStateFacade 专项](./2026-08-15-round54-facade.md)
