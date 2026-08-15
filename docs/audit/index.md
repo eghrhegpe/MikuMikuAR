@@ -2,12 +2,15 @@
 
 # 代码审核索引
 
-> 审核台账共 **70** 篇：45 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
+> 审核台账共 **73** 篇：48 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
 
 > 汇总视图（执行摘要 / 风险全景 / 改进优先级）见 [审核总索引](./README.md)。
 
-## 2026 年 8 月（34）
+## 2026 年 8 月（37）
 
+- `2026-08-15` [library-session-store 模块 — 审核结果（round-23 / ADR-135 回归测试）](./2026-08-15-round23-library-session-store.md)
+- `2026-08-15` [[round-23] feet-adjustment 引擎 + 补测 — 审核结果](./2026-08-15-round23-feet-adjustment-engine.md)
+- `2026-08-15` [审核报告 — env-caustics（共享焦散纹理控制器）模块 + 单测](./2026-08-15-round23-env-caustics.md)
 - `2026-08-15` [wind-physics 模块 — 审核结果（round-22 / 测试反推源码）](./2026-08-15-round22-wind-physics.md)
 - `2026-08-15` [[ADR-215 模型附属关系守护] — 审核结果（round22 · 测试反推）](./2026-08-15-round22-model-attachment.md)
 - `2026-08-15` [browse-dir 模块 — 审核结果（round-22 / web-library-empty bugfix 回归测试）](./2026-08-15-round22-browse-dir.md)
