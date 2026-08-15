@@ -2,12 +2,15 @@
 
 # 代码审核索引
 
-> 审核台账共 **115** 篇：90 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
+> 审核台账共 **118** 篇：93 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
 
 > 汇总视图（执行摘要 / 风险全景 / 改进优先级）见 [审核总索引](./README.md)。
 
-## 2026 年 8 月（79）
+## 2026 年 8 月（82）
 
+- `2026-08-15` [第 38 轮审核报告 — pose 三件套低洼区补测（camera-angle / composition-guide / watermark）](./2026-08-15-round38-pose.md)
+- `2026-08-15` [round-38 审核报告 — goerr.test.ts + translateGoError](./2026-08-15-round38-goerr.md)
+- `2026-08-15` [第 38 轮审核（2/3）— animation-retargeter 外部动作重定向桥](./2026-08-15-round38-animation-retargeter.md)
 - `2026-08-15` [round-37 审核报告 — orbit.test.ts + core/orbit.ts（球面坐标轨道控制数学层）](./2026-08-15-round37-orbit.md)
 - `2026-08-15` [round-37 — menu-schema 渲染主测试（7 文件合并）审核报告](./2026-08-15-round37-menu-schema.md)
 - `2026-08-15` [[camera] 主相机模块审核 — 第 37 轮（测试 2/3）](./2026-08-15-round37-camera.md)
