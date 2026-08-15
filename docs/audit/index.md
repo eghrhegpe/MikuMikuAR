@@ -2,12 +2,15 @@
 
 # 代码审核索引
 
-> 审核台账共 **97** 篇：72 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
+> 审核台账共 **100** 篇：75 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
 
 > 汇总视图（执行摘要 / 风险全景 / 改进优先级）见 [审核总索引](./README.md)。
 
-## 2026 年 8 月（61）
+## 2026 年 8 月（64）
 
+- `2026-08-15` [texture-lru — 审核结果（round-32 / 测试 2）](./2026-08-15-round32-texture-lru.md)
+- `2026-08-15` [[SSS PBR 材质本体] — 第 32 轮审核结果](./2026-08-15-round32-sss-pbr-material.md)
+- `2026-08-15` [[render-postprocess] 测试与纯函数层审核 — 第 32 轮](./2026-08-15-round32-render-postprocess.md)
 - `2026-08-15` [round31-utils-math — 审核结果](./2026-08-15-round31-utils-math.md)
 - `2026-08-15` [round-31 审核 — playback.seek.test.ts + seekFromEvent](./2026-08-15-round31-playback-seek.md)
 - `2026-08-15` [审核报告：motion-intent-ratio-guards 测试 + resolveCompatibility（round-31 / 测试 1/3）](./2026-08-15-round31-motion-intent-ratio-guards.md)
