@@ -97,8 +97,8 @@ function getOverlay(): HTMLDivElement {
     _overlay = document.createElement('div');
     _overlay.id = 'mmd-dialog-overlay';
     _overlay.innerHTML = `
-        <div class="mmd-dialog" role="dialog" aria-modal="true">
-            <div class="mmd-dialog-title"></div>
+        <div class="mmd-dialog" role="dialog" aria-modal="true" aria-labelledby="mmd-dialog-title">
+            <div class="mmd-dialog-title" id="mmd-dialog-title"></div>
             <div class="mmd-dialog-message"></div>
             <input class="mmd-dialog-input" type="text" style="display:none" />
             <div class="mmd-dialog-actions">
@@ -344,8 +344,8 @@ function getOverlay2(): HTMLDivElement {
     _overlay2 = document.createElement('div');
     _overlay2.id = 'mmd-dialog-overlay-2';
     _overlay2.innerHTML = `
-        <div class="mmd-dialog" role="dialog" aria-modal="true">
-            <div class="mmd-dialog-title"></div>
+        <div class="mmd-dialog" role="dialog" aria-modal="true" aria-labelledby="mmd-dialog-title-2">
+            <div class="mmd-dialog-title" id="mmd-dialog-title-2"></div>
             <div class="mmd-dialog-2fields">
                 <div class="mmd-dialog-field">
                     <label class="mmd-dialog-field-label"></label>

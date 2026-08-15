@@ -6,7 +6,11 @@
 import { scene, engine, focusedModel, modelManager, isHeadless } from '../scene/scene';
 import { loadOutfits, applyOutfitVariant } from '@/scene/manager/outfit';
 import { envState, mmdRuntime } from './config';
-import { isWindPhysicsActive } from '@/scene/physics/wind-physics';
+import {
+    isWindPhysicsActive,
+    disposeWindPhysics,
+    initWindPhysics,
+} from '@/scene/physics/wind-physics';
 import { removeFocusedModel } from '../scene/manager/model-ops';
 import { logInfo } from './logger';
 // [doc:adr-229] 通用状态读取器：window.__state 由 menus/menu-schema 经 core/e2e-state-bridge 注入，
@@ -134,6 +138,16 @@ export function setupE2ECapture(): void {
             setWindSpeed: (speed: number): void => {
                 envState.windSpeed = speed;
                 envState.windEnabled = speed > 0;
+            },
+
+            /** 重置风力物理订阅状态（E2E 隔离用）：
+             *  先清空全部 observer，再对当前 runtime 重新 init。
+             *  这样 windPhysicsActive 能证明“本次模型加载是否真的重新订阅”。 */
+            resetWindPhysics: (): void => {
+                disposeWindPhysics();
+                if (mmdRuntime) {
+                    initWindPhysics(mmdRuntime);
+                }
             },
         },
 

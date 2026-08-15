@@ -82,6 +82,7 @@ export function buildMotionRootItems(): PopupRow[] {
             icon: 'lucide:inbox',
             target: '',
             wrapLabel: true,
+            rowKey: 'motion:empty-hint',
         });
     } else {
         for (const motion of sceneMotions) {

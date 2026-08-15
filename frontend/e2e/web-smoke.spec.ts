@@ -56,15 +56,14 @@ test.describe("Web Smoke — 主应用 Web 入口 (@web)", { tag: ["@web", "@web
         await page.click("#btnMotionPopup");
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 8000 });
         await page.getByTestId("folder:motion:camera").click();
-        // camera:main 是 custom 节点 id（motion-camera-levels.ts:90），renderMenu 对
-        // kind:'custom' 不 emit data-testid（render-menu.ts:72-76）——唯一真实锚点是
-        // FOV 滑块 camera:main:fov（与 motion-panel-dom.spec.ts:30 一致）
+        // camera:main 是 custom 节点，renderMenu 已为 custom 容器补稳定 testid；
+        // modeSlider 控件由 motion-camera-levels 注入 camera:main:control，不再依赖 .first()。
         await page.waitForSelector('[data-testid="camera:main:fov"]', { timeout: 8000 });
 
         // AR 选项不应出现在相机模式滑块（capabilities.ar=false 过滤）。
         // 原 text=AR 全页子串会误红（"Cartesian/Standard/Start" 含 ar），且 modeSlider
-        // 选项标签不全量渲染——改为断言控制方案 listbox aria-valuemax=1（仅 2 项无 AR）
-        const controlSlider = page.locator(".cs-top[role='slider']").first();
+        // 选项标签不全量渲染——改为断言控制方案 aria-valuemax=1（仅 2 项无 AR）
+        const controlSlider = page.getByTestId("camera:main:control").locator(".cs-top[role='slider']");
         await expect(controlSlider).toHaveAttribute("aria-valuemax", "1");
     });
 
@@ -73,10 +72,12 @@ test.describe("Web Smoke — 主应用 Web 入口 (@web)", { tag: ["@web", "@web
         await gotoWebEntry(page);
 
         await page.click("#btnPlaza");
-        await page.waitForSelector("#sceneOverlay.visible", { timeout: 8000 });
+        // #btnPlaza 打开的是 webviewLayer（非 #sceneOverlay）
+        await page.waitForSelector("#webviewLayer.visible", { timeout: 8000 });
 
-        // 独立窗口选项不应出现
-        const windowOption = page.locator('text=独立窗口');
-        await expect(windowOption).toHaveCount(0);
+        // 必须真正打开“更多”动作菜单后再断言，否则选项根本没渲染，测试假绿。
+        await page.getByTestId("plaza:more").click();
+        await expect(page.getByTestId("plaza:actions-menu")).toBeVisible();
+        await expect(page.getByTestId("plaza:mode:window")).toHaveCount(0);
     });
 });

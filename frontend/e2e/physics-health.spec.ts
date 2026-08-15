@@ -56,11 +56,14 @@ test.describe("物理子系统健康检查", { tag: ["@webgl"] }, () => {
 
     test.beforeEach(async ({ wailsPage: page }) => {
         await waitForSceneHook(page);
+        // 先重置风力订阅，确保 windPhysicsActive 只反映“本次加载”的 retry 结果。
+        await page.evaluate(() => (window as any).__scene?.driver.resetWindPhysics());
         await page.evaluate(() => (window as any).__scene?.driver.setWindSpeed(0));
         await clearAllModels(page);
     });
 
     test.afterEach(async ({ wailsPage: page }) => {
+        await page.evaluate(() => (window as any).__scene?.driver.resetWindPhysics()).catch(() => {});
         await page.evaluate(() => (window as any).__scene?.driver.setWindSpeed(0)).catch(() => {});
         await clearAllModels(page).catch(() => {});
     });

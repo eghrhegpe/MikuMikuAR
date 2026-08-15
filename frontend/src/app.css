@@ -3184,12 +3184,15 @@ body.app-booting #webviewLayer {
     align-items: center;
     justify-content: center;
     opacity: 0;
-    transition: opacity 0.2s ease;
+    transition: opacity 0.2s ease, visibility 0s linear 0.2s;
     pointer-events: none;
+    visibility: hidden;
 }
 #mmd-dialog-overlay.mmd-dialog-visible {
     opacity: 1;
     pointer-events: auto;
+    visibility: visible;
+    transition: opacity 0.2s ease, visibility 0s;
 }
 .mmd-dialog {
     background: #2a2a38;
@@ -3252,7 +3255,8 @@ body.app-booting #webviewLayer {
     opacity: 0.7;
 }
 .mmd-dialog-confirm {
-    background: var(--accent, #4a6cf7);
+    /* WCAG AA：白字在 #4263eb 上对比度 4.98:1（原 #4a6cf7 仅 4.39:1）。 */
+    background: #4263eb;
     color: #fff;
 }
 .mmd-dialog-cancel {
@@ -3272,12 +3276,15 @@ body.app-booting #webviewLayer {
     align-items: center;
     justify-content: center;
     opacity: 0;
-    transition: opacity 0.2s ease;
+    transition: opacity 0.2s ease, visibility 0s linear 0.2s;
     pointer-events: none;
+    visibility: hidden;
 }
 #mmd-dialog-overlay-2.mmd-dialog-visible {
     opacity: 1;
     pointer-events: auto;
+    visibility: visible;
+    transition: opacity 0.2s ease, visibility 0s;
 }
 #mmd-dialog-overlay-2.mmd-dialog-visible .mmd-dialog {
     transform: translateY(0) scale(1);

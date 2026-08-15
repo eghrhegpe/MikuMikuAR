@@ -436,6 +436,7 @@ export function renderSiteContent(site: PlazaSite): HTMLElement {
         () => {},
         'plaza-btn'
     );
+    moreBtn.dataset.testid = 'plaza:more';
     moreBtn.onclick = (e) => {
         e.stopPropagation();
         showActionsMenu(site, moreBtn);
@@ -735,29 +736,31 @@ export function showActionsMenu(site: PlazaSite, anchor: HTMLElement): void {
     }
     const menu = document.createElement('div');
     menu.className = 'plaza-actions-menu';
+    menu.dataset.testid = 'plaza:actions-menu';
     const modeTitle = document.createElement('div');
     modeTitle.className = 'plaza-actions-menu-title';
-    modeTitle.textContent = '打开方式';
+    modeTitle.textContent = t('plaza.openMode');
     menu.appendChild(modeTitle);
     const modes = document.createElement('div');
     modes.className = 'plaza-actions-menu-modes';
     const opts: { key: OpenMode | 'auto'; label: string }[] = [
-        { key: 'auto', label: '自动' },
+        { key: 'auto', label: t('plaza.modeAuto') },
         ...(getCachedCapabilities().inAppBrowser
             ? [
-                  { key: 'embed' as const, label: '内嵌页' },
+                  { key: 'embed' as const, label: t('plaza.modeEmbed') },
                   // [doc:adr-177] A5 能力门控：plazaWindow===false 时隐藏「独立窗口」选项
                   ...(getCachedCapabilities().plazaWindow
-                      ? [{ key: 'window' as const, label: '独立窗口' }]
+                      ? [{ key: 'window' as const, label: t('plaza.modeWindow') }]
                       : []),
-                  { key: 'external' as const, label: '系统浏览器' },
+                  { key: 'external' as const, label: t('plaza.modeExternal') },
               ]
-            : [{ key: 'external' as const, label: '系统浏览器' }]),
+            : [{ key: 'external' as const, label: t('plaza.modeExternal') }]),
     ];
     const current = loadGlobalMode() ?? 'auto';
     for (const o of opts) {
         const b = document.createElement('button');
         b.className = 'plaza-actions-menu-item' + (current === o.key ? ' active' : '');
+        b.dataset.testid = `plaza:mode:${o.key}`;
         b.textContent = o.label;
         b.onclick = () => {
             if (o.key === 'auto') {
@@ -784,22 +787,24 @@ export function showActionsMenu(site: PlazaSite, anchor: HTMLElement): void {
     divider.className = 'plaza-actions-menu-divider';
     menu.appendChild(divider);
     const openBtn = _plazaBtn(
-        '<iconify-icon icon="lucide:external-link"></iconify-icon><span>打开网站</span>',
+        `<iconify-icon icon="lucide:external-link"></iconify-icon><span>${t('plaza.openSite')}</span>`,
         () => {
             openSiteByMode(site);
             menu.remove();
         },
         'plaza-actions-menu-item plaza-actions-menu-item-accent'
     );
+    openBtn.dataset.testid = 'plaza:open';
     menu.appendChild(openBtn);
     const closeBtn = _plazaBtn(
-        '<iconify-icon icon="lucide:x"></iconify-icon><span>关闭</span>',
+        `<iconify-icon icon="lucide:x"></iconify-icon><span>${t('plaza.close')}</span>`,
         () => {
             closePlaza();
             menu.remove();
         },
         'plaza-actions-menu-item'
     );
+    closeBtn.dataset.testid = 'plaza:close';
     menu.appendChild(closeBtn);
     document.body.appendChild(menu);
     const anchorRect = anchor.getBoundingClientRect();

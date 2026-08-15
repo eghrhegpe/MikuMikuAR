@@ -46,15 +46,11 @@ test.describe("Web Capabilities — 能力门控 UI 验证 (@web)", { tag: ["@we
         await page.waitForSelector("#webviewLayer.visible", { timeout: 8000 });
 
         // 必须真正打开“更多”动作菜单后再断言，否则选项根本没渲染，测试假绿。
-        // plaza-browser.ts 尚未给 more/action item 加 testid，先用图标选择器定位；
-        // 建议在锁外补充稳定 testid（见报告）。
-        const moreButton = page
-            .locator("button.plaza-btn")
-            .filter({ has: page.locator('iconify-icon[icon="lucide:more-horizontal"]') });
+        const moreButton = page.getByTestId("plaza:more");
         await expect(moreButton).toBeVisible({ timeout: 8000 });
         await moreButton.click();
-        await expect(page.locator(".plaza-actions-menu")).toBeVisible();
-        await expect(page.getByText("独立窗口", { exact: true })).toHaveCount(0);
+        await expect(page.getByTestId("plaza:actions-menu")).toBeVisible();
+        await expect(page.getByTestId("plaza:mode:window")).toHaveCount(0);
     });
 
     test("能力门控: 设置-资源无「下载监听」卡片（watchDir === false）", async ({ page }) => {

@@ -27,6 +27,8 @@ const h = vi.hoisted(() => {
         Mesh,
         importMeshAsync: vi.fn(),
         logWarn: vi.fn(),
+        logError: vi.fn(),
+        retryWindPhysicsSubscription: vi.fn(),
         auditMissingTextures: vi.fn(() => Promise.resolve([])),
         parsePmxTexturePaths: vi.fn(() => []),
         renderInstanceThumbnail: vi.fn(() => Promise.resolve()),
@@ -56,7 +58,7 @@ vi.mock('@/core/async', async (importOriginal) => {
     };
 });
 vi.mock('../scene/manager/model-id', () => ({ resolveModelId: (id?: string) => id ?? 'gen-id' }));
-vi.mock('@/core/logger', () => ({ logWarn: h.logWarn }));
+vi.mock('@/core/logger', () => ({ logWarn: h.logWarn, logError: h.logError }));
 vi.mock('@/core/pmx-meta', () => ({ parsePmxComment: vi.fn(() => '') }));
 vi.mock('@/core/scene-action-bridge', () => ({
     getSceneAction: vi.fn(() => undefined),
@@ -81,7 +83,9 @@ vi.mock('../scene/manager/texture-fallback', () => ({
 }));
 vi.mock('@/core/resource-warning-sink', () => ({ reportResourceWarning: vi.fn() }));
 vi.mock('@/core/i18n/t', () => ({ t: (k: string) => k }));
-vi.mock('@/scene/physics/wind-physics', () => ({ retryWindPhysicsSubscription: vi.fn() }));
+vi.mock('@/scene/physics/wind-physics', () => ({
+    retryWindPhysicsSubscription: h.retryWindPhysicsSubscription,
+}));
 vi.mock('../scene/manager/material', () => ({ _capture: vi.fn() }));
 vi.mock('../scene/render/lighting', () => ({ rebuildShadowCasters: vi.fn() }));
 vi.mock('../scene/env/env-impl', () => ({
@@ -176,6 +180,8 @@ describe('loadPMXFile actor 路径', () => {
         h.removeCalls.length = 0;
         h.importMeshAsync.mockReset();
         h.importMeshAsync.mockResolvedValue({ meshes: mockMeshes });
+        h.retryWindPhysicsSubscription.mockClear();
+        h.logError.mockClear();
         mm = makeModelManager();
         setOnMeshesReady(null as any);
         setOnModelLoaded(null as any);
@@ -188,13 +194,15 @@ describe('loadPMXFile actor 路径', () => {
         expect(mmdRuntime.createMmdModel).toHaveBeenCalledTimes(1);
         expect(mm.register).toHaveBeenCalledTimes(1);
         expect(mm.focus).toHaveBeenCalledWith('gen-id', undefined);
+        expect(h.retryWindPhysicsSubscription).toHaveBeenCalledWith(mmdRuntime);
     });
 
-    it('import 抛错：不注册模型，返回 null', async () => {
+    it('import 抛错：不注册模型，返回 null，并写入日志面板', async () => {
         h.importMeshAsync.mockRejectedValueOnce(new Error('file not found'));
         const id = await loadPMXFile('/models/bad.pmx');
         expect(id).toBeNull();
         expect(mm.register).not.toHaveBeenCalled();
+        expect(h.logError).toHaveBeenCalledWith('model-loader', 'loadPMXFile:', expect.any(Error));
     });
 
     it('import 返回空 meshes：反馈 noMeshes，返回 null', async () => {

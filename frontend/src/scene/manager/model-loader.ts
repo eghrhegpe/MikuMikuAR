@@ -24,7 +24,7 @@ import type { ModelMotionSlots } from '@/core/types';
 import { getBaseName } from '@/core/path';
 import { swallowError, fireAndForget } from '@/core/async';
 import { resolveModelId } from './model-id';
-import { logWarn } from '@/core/logger';
+import { logWarn, logError } from '@/core/logger';
 import { parsePmxComment } from '@/core/pmx-meta';
 // [doc:adr-238] 动作状态读取经 scene-action-bridge（motion-intent 注册）
 import { getSceneAction } from '@/core/scene-action-bridge';
@@ -858,7 +858,7 @@ export async function loadPMXFile(
             });
         }
         dom.loadingEl.style.display = 'none';
-        console.error('loadPMXFile:', err);
+        logError('model-loader', 'loadPMXFile:', err);
         feedbackStatus('scene.loader.loadFailed', undefined, false, { error: formatError(err) });
         return null;
     } finally {

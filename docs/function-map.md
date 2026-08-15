@@ -248,7 +248,7 @@
 | `showLogPanel()` | `core/debug-log-panel:75` | — |
 | `toggleLogPanel()` | `core/debug-log-panel:159` | — |
 | `deepClone()` | `core/deep-clone:9` | 深拷贝对象（基于 JSON 序列化）。 |
-| `setupE2ECapture()` | `core/dev-hooks:28` | — |
+| `setupE2ECapture()` | `core/dev-hooks:32` | — |
 | `DialogOptions()` | `core/dialog:49` | — |
 | `Prompt2Options()` | `core/dialog:294` | — |
 | `disposeOverlay2()` | `core/dialog:370` | 移除 showPrompt2 创建的 overlay2 DOM（供 HMR 清理入口调用）。 |
@@ -2311,11 +2311,11 @@
 | `buildProcToolsLevel()` | `menus/motion-procmotion-levels:387` | [doc:adr-207] 程序化工具栏 level——对齐 ADR-170「详情 vs 工具」分层： 程序化专属参数（预设/强度/速度/骨骼微动/插值）收敛到工具栏， 详情页只保 |
 | `procLabel()` | `menus/motion-procmotion-levels:408` | [doc:adr-207] 程序化动作 ID → 显示名（跨模块复用，避免标签逻辑重复）。 |
 | `buildMotionRootItems()` | `menus/motion-root-ui:51` | — |
-| `buildMotionRootLevel()` | `menus/motion-root-ui:291` | — |
-| `buildRetargetLevel()` | `menus/motion-root-ui:352` | — |
-| `hideMotionPopup()` | `menus/motion-root-ui:300` | — |
-| `importExternalAnimation()` | `menus/motion-root-ui:383` | 外部动作导入：选文件 → 重定向骨骼 → 播放。 |
-| `openProcDetail()` | `menus/motion-root-ui:344` | [doc:adr-207] 行体点击进入程序化统一详情页。 |
+| `buildMotionRootLevel()` | `menus/motion-root-ui:292` | — |
+| `buildRetargetLevel()` | `menus/motion-root-ui:353` | — |
+| `hideMotionPopup()` | `menus/motion-root-ui:301` | — |
+| `importExternalAnimation()` | `menus/motion-root-ui:384` | 外部动作导入：选文件 → 重定向骨骼 → 播放。 |
+| `openProcDetail()` | `menus/motion-root-ui:345` | [doc:adr-207] 行体点击进入程序化统一详情页。 |
 | `buildNavMaps()` | `menus/nav-actions:163` | — |
 | `disposeNavBindings()` | `menus/nav-actions:257` | 卸载导航按钮监听（HMR/dispose 用） |
 | `getNavLabel()` | `menus/nav-actions:322` | 供 core 侧读取导航标签（经桥，不直接 import menus） |
@@ -2325,7 +2325,7 @@
 | `toggleOverlay()` | `menus/nav-actions:58` | — |
 | `buildOutfitLevel()` | `menus/outfit-ui:158` | — |
 | `buildSiteTabs()` | `menus/plaza-browser:303` | — |
-| `buildToolbar()` | `menus/plaza-browser:687` | — |
+| `buildToolbar()` | `menus/plaza-browser:688` | — |
 | `ensureSitesLoaded()` | `menus/plaza-browser:237` | — |
 | `getCustomPresets()` | `menus/plaza-browser:287` | — |
 | `loadPlazaCache()` | `menus/plaza-browser:139` | 从 Go 用户目录缓存（plaza-cache/creators.json + workshop_sites.json）读取站点 + 创作者。缓存不存在时返回 null。 |
@@ -2336,13 +2336,13 @@
 | `openInWindow()` | `menus/plaza-browser:277` | — |
 | `openSiteByMode()` | `menus/plaza-browser:257` | — |
 | `preserveBuiltinRouting()` | `menus/plaza-browser:230` | — |
-| `renderEmbed()` | `menus/plaza-browser:843` | — |
-| `renderHome()` | `menus/plaza-browser:821` | — |
+| `renderEmbed()` | `menus/plaza-browser:848` | — |
+| `renderHome()` | `menus/plaza-browser:826` | — |
 | `renderSiteContent()` | `menus/plaza-browser:358` | — |
 | `saveCustomPresets()` | `menus/plaza-browser:295` | — |
 | `savePlazaCache()` | `menus/plaza-browser:178` | 将当前站点 + 创作者持久化到 Go 用户目录缓存（plaza-cache/）。 |
-| `showActionsMenu()` | `menus/plaza-browser:731` | — |
-| `showPlaza()` | `menus/plaza-browser:947` | — |
+| `showActionsMenu()` | `menus/plaza-browser:732` | — |
+| `showPlaza()` | `menus/plaza-browser:952` | — |
 | `PLAZA_CREATORS()` | `menus/plaza-creators:9` | — |
 | `PlazaCreator()` | `menus/plaza-creators:1` | — |
 | `ensureObserver()` | `menus/plaza-download:185` | — |
