@@ -5,7 +5,7 @@
 
 ## 摘要
 
-- 精读测试文件：3。
+- 精读测试文件：3（`frontend/src/__tests__/menu/focus.test.ts`、`frontend/src/__tests__/menu/level-management.test.ts`、`frontend/src/__tests__/menu/level-write.test.ts`）。
 - 发现总数：7（P0×0 / P1×0 / P2×2 / P3×5）。
 - 实际修复文件：3 个测试 + 1 个源码。
 - 验证：`npm run check` ✅；`src/__tests__/menu` 18 文件 / 1649 用例 ✅；全量前端 Vitest 253 文件 / 5849 用例 ✅；`git diff --check` ✅。
