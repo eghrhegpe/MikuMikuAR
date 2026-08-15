@@ -39,7 +39,7 @@ export type OverlayState = 'CLOSED' | 'FULLSCREEN';
 let currentState: OverlayState = 'CLOSED';
 let currentOverlay: FullscreenOverlayHandle | null = null;
 let currentOnBack: (() => void) | null = null;
-let frozenSlideMenuElement: HTMLElement | null = null;
+let frozenSlideMenuElements: HTMLElement[] = [];
 let _trapRestore: (() => void) | null = null;
 
 // ======== State Transitions ========
@@ -108,24 +108,24 @@ export function setCurrentState(state: OverlayState): void {
 // ======== SlideMenu Freeze/Unfreeze ========
 
 function freezeSlideMenu(): void {
-    // 找到 SlideMenu 容器并隐藏
-    const slideMenuContainers = document.querySelectorAll('.slide-menu-container');
-    slideMenuContainers.forEach((container) => {
-        const el = container as HTMLElement;
+    // 找到 SlideMenu 容器并隐藏（真实菜单根类为 .slide-menu，见 menus/menu.ts）
+    const slideMenus = document.querySelectorAll<HTMLElement>('.slide-menu');
+    slideMenus.forEach((el) => {
         if (el.style.display !== 'none') {
             el.dataset.previousDisplay = el.style.display;
             el.style.display = 'none';
-            frozenSlideMenuElement = el;
+            frozenSlideMenuElements.push(el);
         }
     });
 }
 
 function unfreezeSlideMenu(): void {
-    if (frozenSlideMenuElement) {
-        const prevDisplay = frozenSlideMenuElement.dataset.previousDisplay || '';
-        frozenSlideMenuElement.style.display = prevDisplay;
-        frozenSlideMenuElement = null;
+    for (const el of frozenSlideMenuElements) {
+        const prevDisplay = el.dataset.previousDisplay || '';
+        el.style.display = prevDisplay;
+        delete el.dataset.previousDisplay;
     }
+    frozenSlideMenuElements = [];
 }
 
 // ======== Overlay Element Creation ========

@@ -35,14 +35,14 @@ describe('FullscreenOverlay navigation', () => {
         closeFullscreen();
         setCurrentState('CLOSED');
         document
-            .querySelectorAll('.fullscreen-overlay, .slide-menu-container')
+            .querySelectorAll('.fullscreen-overlay, .slide-menu, .slide-menu-container')
             .forEach((el) => el.remove());
     });
 
     afterEach(() => {
         closeFullscreen();
         document
-            .querySelectorAll('.fullscreen-overlay, .slide-menu-container')
+            .querySelectorAll('.fullscreen-overlay, .slide-menu, .slide-menu-container')
             .forEach((el) => el.remove());
     });
 
@@ -202,7 +202,7 @@ describe('FullscreenOverlay navigation', () => {
 
     it('freezes and restores SlideMenu display', () => {
         const menu = document.createElement('div');
-        menu.className = 'slide-menu-container';
+        menu.className = 'slide-menu';
         menu.style.display = 'block';
         document.body.appendChild(menu);
 
@@ -219,6 +219,34 @@ describe('FullscreenOverlay navigation', () => {
         closeFullscreen();
 
         expect(menu.style.display).toBe('block');
+        expect(onBack).toHaveBeenCalledTimes(1);
+    });
+
+    it('freezes and restores every visible SlideMenu, preserving original display', () => {
+        const menuA = document.createElement('div');
+        menuA.className = 'slide-menu';
+        menuA.style.display = 'block';
+        document.body.appendChild(menuA);
+
+        const menuB = document.createElement('div');
+        menuB.className = 'slide-menu';
+        menuB.style.display = 'flex';
+        document.body.appendChild(menuB);
+
+        const onBack = vi.fn();
+        openFullscreen({
+            title: 'Root',
+            onBack,
+            renderContent: () => {},
+        });
+
+        expect(menuA.style.display).toBe('none');
+        expect(menuB.style.display).toBe('none');
+
+        closeFullscreen();
+
+        expect(menuA.style.display).toBe('block');
+        expect(menuB.style.display).toBe('flex');
         expect(onBack).toHaveBeenCalledTimes(1);
     });
 });
