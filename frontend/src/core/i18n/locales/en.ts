@@ -240,7 +240,6 @@ export const en: Record<string, string> = {
     'motion.intent.incompatible': 'This model is incompatible with the active motion',
     'motion.intent.noGlobalHint':
         'Without a global motion, each model plays its own VMD independently',
-    'motion.noMotionHint': 'Select a motion to start',
     'motion.context.pinMotion': 'Pin this motion',
     'motion.context.unpin': 'Follow global motion',
     'motion.changeMotion': 'Change Motion',

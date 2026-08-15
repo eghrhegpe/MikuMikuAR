@@ -30,6 +30,7 @@ import {
     getFsaAuthState,
     isFsaAuthPromptDismissed,
     dismissFsaAuthPrompt,
+    resetFsaAuthPromptDismissed,
     reauthorizeFsaRoot,
 } from './browser-adapter';
 
@@ -91,6 +92,18 @@ describe('fsaAuthPrompt dismissed 标志（adr-177 跳过不再弹）', () => {
         expect(await isFsaAuthPromptDismissed()).toBe(false);
         await dismissFsaAuthPrompt();
         expect(await isFsaAuthPromptDismissed()).toBe(true);
+    });
+
+    it('reset 清除跳过标志：手动设置根目录后重新获得引导机会（adr-183）', async () => {
+        await dismissFsaAuthPrompt();
+        expect(await isFsaAuthPromptDismissed()).toBe(true);
+        await resetFsaAuthPromptDismissed();
+        expect(await isFsaAuthPromptDismissed()).toBe(false);
+    });
+
+    it('reset 在未跳过时是幂等 no-op（不抛错）', async () => {
+        await resetFsaAuthPromptDismissed();
+        expect(await isFsaAuthPromptDismissed()).toBe(false);
     });
 });
 
