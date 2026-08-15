@@ -2,11 +2,11 @@
 
 # 代码审核索引
 
-> 审核台账共 **171** 篇：146 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
+> 审核台账共 **172** 篇：147 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
 
 > 汇总视图（执行摘要 / 风险全景 / 改进优先级）见 [审核总索引](./README.md)。
 
-## 2026 年 8 月（135）
+## 2026 年 8 月（136）
 
 - `2026-08-15` [round56-performance-snapshot — 性能降级快照恢复路径审核](./2026-08-15-round56-performance-snapshot.md)
 - `2026-08-15` [round56-env-context 审核报告 — env 共享上下文测试与其生产源码](./2026-08-15-round56-env-context.md)
@@ -130,6 +130,7 @@
 - `2026-08-15` [第 16 轮审核报告 — toast（全局 Toast 通知系统，ADR-153）](./2026-08-15-round16-toast.md)
 - `2026-08-15` [第 16 轮审核报告 — guards（guardNum）模块](./2026-08-15-round16-guards.md)
 - `2026-08-15` [审核报告 — drop-import（ADR-177 Phase 2 A4 闭环）— 第 16 轮 · 测试 2](./2026-08-15-round16-drop-import.md)
+- `2026-08-15` [测试反推源码 · 子代理批量审计阶段性汇报](./2026-08-15-audit-batch-report.md)
 - `2026-08-07` [第 15 轮审核报告 — scene 共享 / pose / 序列化 / env 共享层](./2026-08-07-round15-scene-shared-pose-serialize-env.md)
 - `2026-08-07` [第 15 轮审核报告 — motion 管线 / 播放 / 感知 / 程序化](./2026-08-07-round15-motion-pipeline-perception-proc.md)
 - `2026-08-07` [Round 15 — Motion 全量系统审核报告](./2026-08-07-round15-motion-full.md)
