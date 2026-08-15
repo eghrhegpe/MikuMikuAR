@@ -487,6 +487,7 @@ export const en: Record<string, string> = {
     'motion.perceptionTierMedium': 'Medium',
     'motion.perceptionTierLow': 'Low',
     'motion.perceptionDegraded': 'Some perception items degraded',
+    'motion.conflictHint': '⚠ Conflicts with {module}',
     'motion.pinModel': 'Pin Perception to Model',
     'motion.unpinModel': 'Unpin',
     // ── Perception adjustable params (doc:adr-116) ──

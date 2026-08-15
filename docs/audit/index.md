@@ -2,12 +2,15 @@
 
 # 代码审核索引
 
-> 审核台账共 **151** 篇：126 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
+> 审核台账共 **154** 篇：129 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
 
 > 汇总视图（执行摘要 / 风险全景 / 改进优先级）见 [审核总索引](./README.md)。
 
-## 2026 年 8 月（115）
+## 2026 年 8 月（118）
 
+- `2026-08-15` [motion-modules registry 快照专项（applyModuleSnapshot + setParam 集成）— 审核结果](./2026-08-15-round50-registry-snapshot.md)
+- `2026-08-15` [motion-modules riding 时间驱动接线（帧钩子→骨骼覆盖）— 审核结果](./2026-08-15-round50-motion-modules-timed.md)
+- `2026-08-15` [round-50 menu-schema-conflict — conflictHint 冲突标记专项审核报告](./2026-08-15-round50-menu-schema-conflict.md)
 - `2026-08-15` [审核报告：motion-intent-replace-default 测试 + replaceDefaultMotion（round-49 / 测试 2/3）](./2026-08-15-round49-motion-intent-replace-default.md)
 - `2026-08-15` [round-49 — menu-schema modelId override 专项审核报告](./2026-08-15-round49-menu-schema-modelid.md)
 - `2026-08-15` [round-49 — menu-schema.integrity 元测试（Schema 完整性）审核报告](./2026-08-15-round49-menu-schema-integrity.md)
