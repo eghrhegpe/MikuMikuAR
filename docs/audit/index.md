@@ -2,12 +2,15 @@
 
 # 代码审核索引
 
-> 审核台账共 **88** 篇：63 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
+> 审核台账共 **91** 篇：66 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
 
 > 汇总视图（执行摘要 / 风险全景 / 改进优先级）见 [审核总索引](./README.md)。
 
-## 2026 年 8 月（52）
+## 2026 年 8 月（55）
 
+- `2026-08-15` [wind-physics 集成契约 — 审核结果（round-29 / 真实 WASM 物理真实性）](./2026-08-15-round29-wind-physics-integration.md)
+- `2026-08-15` [Round 29 · thumbnail-capture — 审核结果](./2026-08-15-round29-thumbnail-capture.md)
+- `2026-08-15` [round-29-perception-perf — 感知层性能基准测试审核](./2026-08-15-round29-perception-perf.md)
 - `2026-08-15` [wind-physics 状态机/时序 — 审核结果（round-28 / 测试反推源码）](./2026-08-15-round28-wind-physics-state.md)
 - `2026-08-15` [Round-28 审核 — vmd.test.ts（VMD 格式综合测试：vmd-writer 二进制打包 + vpd-parser VPD 文本解析 → VMD Buffer）](./2026-08-15-round28-vmd.md)
 - `2026-08-15` [Round 28 — vmd-layers-dispose 审核](./2026-08-15-round28-vmd-layers-dispose.md)
