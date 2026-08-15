@@ -2,23 +2,24 @@
  * E2E DOM-only test for the motion playback controls.
  *
  * Dual focus:
- *   1. Verify the bottom playback bar DOM elements (static HTML) exist,
- *      even when no motion is active (display: none by default).
- *   2. Verify the motion popup root renders the "动作详情" row that
- *      leads to playback speed control.
+ *   1. Verify the bottom playback bar DOM elements (static HTML) exist
+ *      and stay hidden until a motion starts.
+ *   2. Verify the motion popup empty-state guidance renders when no
+ *      motion is loaded.
  *
  * Uses vitePage (headless Chromium → localhost:5173), no Wails needed.
  *
  * @see index.html — #playbackBar / #btnPlayPause / #btnLoopToggle / #seekBar / #timeDisplay
- * @see motion-popup.ts — buildMotionRootItems() action:__motion_detail__
+ * @see motion-root-ui.ts — buildMotionRootItems() empty-state row
  */
 import { test, expect } from "./wails-fixture";
 
 test.describe("Motion — Playback Controls (vitePage, @dom)", { tag: ["@dom", "@overlay"] }, () => {
     test("底部播放栏: DOM 元素存在", async ({ vitePage: page }) => {
         // 底部播放栏是 index.html 静态元素，默认 display:none，但始终在 DOM 中。
-        // 使用 toHaveCount(1) 断言元素存在于文档中，无视可见性。
+        // toHaveCount(1) 断言元素存在于文档中，无视可见性；再显式验证默认隐藏。
         await expect(page.locator("#playbackBar")).toHaveCount(1);
+        await expect(page.locator("#playbackBar")).toBeHidden();
         await expect(page.locator("#btnPlayPause")).toHaveCount(1);
         await expect(page.locator("#btnLoopToggle")).toHaveCount(1);
         await expect(page.locator("#seekBar")).toHaveCount(1);
@@ -27,15 +28,16 @@ test.describe("Motion — Playback Controls (vitePage, @dom)", { tag: ["@dom", "
         await expect(page.locator("#seekProgress")).toHaveCount(1);
     });
 
-    test("动作弹窗: 空态引导文案渲染", async ({ vitePage: page }) => {
+    test("动作弹窗: 空态引导提示渲染", async ({ vitePage: page }) => {
+        // 与 motion-panel-dom.spec.ts 相同的纯 Vite 守卫：FSA 引导可能给 #app 加 inert，
+        // 导致 body 拦截真实点击（本 spec 曾在此超时）。
+        await page.evaluate(() => document.getElementById("app")?.removeAttribute("inert"));
         await page.click("#btnMotionPopup");
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
 
-        // 无已加载动作时，首行显示"选择动作开始"引导提示（motion.noMotionHint）。
-        // action:__motion_detail__ 只在有动作时渲染，这里验证空态回退正确。
-        await expect(page.getByText("选择动作开始", { exact: true })).toBeVisible();
-
-        // 核心区段行（与 motion-panel-dom 重复验证，但确保弹窗整体正常渲染）
-        await expect(page.getByTestId("folder:motion:camera")).toBeVisible();
+        // 无已加载动作时，根级渲染空态引导行。当前该行未声明语义化 rowKey，
+        // menu.ts 自动推导为 `action:`（kind:action + target 为空）；待主模型在
+        // motion-root-ui.ts 补 `motion:empty-hint` 后应改用语义 testid。
+        await expect(page.getByTestId("action:")).toBeVisible();
     });
 });

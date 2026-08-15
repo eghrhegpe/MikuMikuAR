@@ -14,10 +14,11 @@ test.describe("Scene — DOM/overlay (vitePage, @dom)", { tag: ["@dom", "@overla
     });
 
     test("场景面板: 核心区段渲染", async ({ vitePage: page }) => {
-        // 使用 slide-title 类定位弹窗标题，避免匹配导航按钮的 nav-label
-        await expect(page.locator('.slide-title').filter({ hasText: '场景' })).toBeVisible();
+        // 使用 scene-menu wrapper + .slide-title 定位弹窗标题，避免匹配导航按钮的 nav-label，
+        // 也避免依赖可见文案（locale 切换后仍稳定）。
+        await expect(page.locator('#sceneOverlay [data-menu-id="scene-menu"] .slide-title')).toBeVisible();
         // Core scene menu root sections (post refactor).
-        // 道具 / 舞台灯光 / 队形 live inside the 舞台 sub-level, not at root.
+        // 舞台灯光在根级；舞台子层只含加载舞台/已加载舞台列表。
         await expect(page.getByTestId("folder:scene:render:stage")).toBeVisible();
         // 后处理 / 渲染预设 已随 ADR-111 迁至环境菜单（env:postprocess）与场景→高级子层（scene:presets）
         // 场景根级不再直接挂 scene:render:postprocess / scene:render:presets，相关断言见 env-panel 测试
@@ -32,14 +33,18 @@ test.describe("Scene — DOM/overlay (vitePage, @dom)", { tag: ["@dom", "@overla
         await page.click("#btnEnv");
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
         await page.getByTestId("folder:env:postprocess").click();
+        // 颗粒/色差位于后处理面板的「视觉效果」折叠组内，需先展开再断言
+        await page.getByTestId("postprocess:optical").click();
         await expect(page.getByTestId("postprocess:optical:grain")).toBeVisible();
+        await expect(page.getByTestId("postprocess:optical:chromatic")).toBeVisible();
         await expect(page.getByTestId("postprocess:vignette")).toBeVisible();
     });
 
-    test("场景面板: 舞台区段含舞台灯光", async ({ vitePage: page }) => {
-        await page.getByTestId("folder:scene:render:stage").click();
-        // 舞台灯光 / 加载舞台 live inside the 舞台 sub-level.
+    test("场景面板: 舞台灯光在根级，舞台子层含加载舞台", async ({ vitePage: page }) => {
+        // 舞台灯光是场景根级独立入口（docs/knowledge/menu-map.md：场景菜单 → 舞台灯光设置）
         await expect(page.getByTestId("folder:scene:stageLight")).toBeVisible();
+        await page.getByTestId("folder:scene:render:stage").click();
+        // 加载舞台 live inside the 舞台 sub-level.
         await expect(page.getByTestId("menu:scene:load-stage")).toBeVisible();
     });
 });

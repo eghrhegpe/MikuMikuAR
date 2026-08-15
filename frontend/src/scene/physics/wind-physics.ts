@@ -217,6 +217,9 @@ export function disposeWindPhysics(runtime?: IMmdRuntime): void {
         }
     }
     _subs.clear();
+    // 全局 dispose 是完整状态重置：同时复位 impl 缺失告警标志，避免 HMR/场景重建后
+    // 新会话的同类真实失败被旧会话的“仅告警一次”吞掉。
+    _implMissingWarned = false;
 }
 
 /**

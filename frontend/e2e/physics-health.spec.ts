@@ -17,13 +17,85 @@
  * @requires 已加载一个带物理（头发/裙子）的 PMX 模型
  */
 
+import type { Page } from "@playwright/test";
 import { test, expect } from "./wails-fixture";
-import { waitForSceneHook, loadFirstModel } from "./helpers";
+import { waitForSceneHook } from "./helpers";
+
+/** 打开模型库 → 进入“加载模型”浏览层（当前 DOM 契约：folder:models:browse）。 */
+async function openLibraryBrowse(page: Page): Promise<void> {
+    // 若上个用例残留 overlay，先 Escape 关闭，避免 #btnMainAction 被当成“关闭”再点。
+    const overlayOpen = await page.evaluate(() =>
+        document.getElementById("sceneOverlay")?.classList.contains("visible") ?? false
+    );
+    if (overlayOpen) {
+        await page.keyboard.press("Escape");
+        await page.waitForSelector("#sceneOverlay:not(.visible)", { timeout: 5000 });
+    }
+    await page.click("#btnMainAction");
+    await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
+    await page.getByTestId("folder:models:browse").click({ timeout: 5000 });
+    await page.waitForSelector('[data-testid^="model:"]', { timeout: 5000 });
+}
+
+/** 加载模型库第一个真实模型条目（替代 helpers.loadFirstModel 已过期的 actor:model 选择器）。 */
+async function loadFirstModelFromLibrary(page: Page): Promise<void> {
+    await openLibraryBrowse(page);
+    await page.locator('[data-testid^="model:"]').first().click();
+    // meshCount 可能在 ImportMeshAsync 完成前就 >10；必须等到 modelManager 已注册且已聚焦，
+    // 才能保证 createMmdModel → retryWindPhysicsSubscription → register → focus 已走完。
+    await page.waitForFunction(() => {
+        const mm = (window as any).__scene?.modelManager;
+        return mm && mm.size > 0 && !!mm.focused?.() && (window as any).__scene?.meshCount > 10;
+    }, { timeout: 20000 });
+}
+
+/** 清空当前 modelManager 中所有模型，避免共享 Wails 页面状态残留。 */
+async function clearAllModels(page: Page): Promise<void> {
+    await page.evaluate(() => {
+        const mm = (window as any).__scene?.modelManager;
+        if (!mm) return;
+        for (const id of [...mm.modelRegistry.keys()]) {
+            mm.remove(id);
+        }
+    });
+}
+
+/** 物理骨骼候选关键词：覆盖常见 MMD 日文名与英文名，避免只认四个固定骨骼名。 */
+const PHYSICS_BONE_KEYWORDS = [
+    "髪", "hair", "スカート", "skirt", "フリル", "frill", "袖", "sleeve",
+    "リボン", "ribbon", "胸", "bust", "chest",
+];
+
+/** 从当前焦点模型 runtimeBones 中选出疑似物理骨骼的名字；无则返回空数组。 */
+async function findPhysicsBoneNames(page: Page): Promise<string[]> {
+    return page.evaluate((keywords) => {
+        const mm = (window as any).__scene?.modelManager;
+        const inst = mm?.focused?.();
+        const bones = inst?.mmdModel?.runtimeBones;
+        if (!Array.isArray(bones)) return [];
+        const names = bones.map((b: { name?: string }) => b?.name ?? "");
+        return names.filter((n) => keywords.some((k) => n.toLowerCase().includes(k)));
+    }, PHYSICS_BONE_KEYWORDS);
+}
 
 test.describe("物理子系统健康检查", { tag: ["@webgl"] }, () => {
+    // @webgl 共享同一个 Wails WebView2 页面：串行 + 每个用例清空模型/风，避免状态残留。
+    test.describe.configure({ mode: "serial" });
+
+    test.beforeEach(async ({ wailsPage: page }) => {
+        await waitForSceneHook(page);
+        await page.evaluate(() => (window as any).__scene?.driver.setWindSpeed(0));
+        await clearAllModels(page);
+    });
+
+    test.afterEach(async ({ wailsPage: page }) => {
+        await page.evaluate(() => (window as any).__scene?.driver.setWindSpeed(0)).catch(() => {});
+        await clearAllModels(page).catch(() => {});
+    });
+
     test("加载模型后 rigidBodyCount > 0（WASM 物理已运行 + 联邦自建刚体已登记）", async ({ wailsPage: page }) => {
         await waitForSceneHook(page);
-        await loadFirstModel(page);
+        await loadFirstModelFromLibrary(page);
 
         // 注意：联邦自建刚体（地面碰撞默认开启 / 虚拟裙骨）走单数容器
         // rigidBodyReferenceCountMap，不进 bundle 容器，故须断言 rigidBodyCount（>0），
@@ -34,7 +106,7 @@ test.describe("物理子系统健康检查", { tag: ["@webgl"] }, () => {
 
     test("加载模型后风力物理已订阅（model-loader 显式 retry 建立订阅）", async ({ wailsPage: page }) => {
         await waitForSceneHook(page);
-        await loadFirstModel(page);
+        await loadFirstModelFromLibrary(page);
 
         const active = await page.evaluate(() => (window as any).__scene.windPhysicsActive);
         // 源码语义：model-loader.ts:644 在 actor 模型创建后调用
@@ -46,7 +118,7 @@ test.describe("物理子系统健康检查", { tag: ["@webgl"] }, () => {
 
     test("设置风速 10 后风力物理保持活跃（订阅已建立）", async ({ wailsPage: page }) => {
         await waitForSceneHook(page);
-        await loadFirstModel(page);
+        await loadFirstModelFromLibrary(page);
 
         // 激活风力（订阅在模型加载时已建立，此调用只改 envState.windSpeed）
         await page.evaluate(() => (window as any).__scene.driver.setWindSpeed(10));
@@ -64,31 +136,27 @@ test.describe("物理子系统健康检查", { tag: ["@webgl"] }, () => {
 
     test("设置风速 10 后骨骼位置发生变化（物理真的动了）", async ({ wailsPage: page }) => {
         await waitForSceneHook(page);
-        await loadFirstModel(page);
+        await loadFirstModelFromLibrary(page);
 
-        // 先获取初始骨骼位置（风力关闭）
-        const before = await page.evaluate(() => {
-            // 尝试获取典型受物理影响的骨骼（头发/裙子末端）
-            return (window as any).__scene.getBoneWorldPositions([
-                "髪先端_L", "髪先端_R", "スカート先端_L", "スカート先端_R",
-            ]);
-        });
-
-        // 种子模型可能不含这些日文骨骼名——缺失时明确 skip，而非 10s 超时后失败
-        const boneNames = Object.keys(before);
+        // 从当前模型运行时骨骼中动态筛选疑似物理骨骼，降低对固定日文骨骼名的依赖。
+        const boneNames = await findPhysicsBoneNames(page);
         if (boneNames.length === 0) {
-            test.skip("当前模型无典型物理骨骼（髪先端/スカート先端），跳过位移验证");
+            test.skip("当前模型无可识别的物理骨骼（髪/スカート/フリル/袖/リボン/胸 等），跳过位移验证");
             return;
         }
+
+        // 先获取初始骨骼位置（风力关闭）
+        const before = await page.evaluate(
+            (names) => (window as any).__scene.getBoneWorldPositions(names),
+            boneNames
+        );
 
         // 激活风力
         await page.evaluate(() => (window as any).__scene.driver.setWindSpeed(10));
         // 等待物理模拟让风力生效（轮询骨骼位置变化，替代固定 sleep 2000ms）
         await page.waitForFunction(
-            (before) => {
-                const after = (window as any).__scene.getBoneWorldPositions([
-                    "髪先端_L", "髪先端_R", "スカート先端_L", "スカート先端_R",
-                ]);
+            ({ names, before }) => {
+                const after = (window as any).__scene.getBoneWorldPositions(names);
                 for (const name of Object.keys(before)) {
                     const b = before[name];
                     const a = after[name];
@@ -100,14 +168,13 @@ test.describe("物理子系统健康检查", { tag: ["@webgl"] }, () => {
                 }
                 return false;
             },
-            before,
+            { names: boneNames, before },
             { timeout: 10000 }
         );
 
-        const after = await page.evaluate(() =>
-            (window as any).__scene.getBoneWorldPositions([
-                "髪先端_L", "髪先端_R", "スカート先端_L", "スカート先端_R",
-            ])
+        const after = await page.evaluate(
+            (names) => (window as any).__scene.getBoneWorldPositions(names),
+            boneNames
         );
 
         // 至少有一个骨骼位置发生了变化（风力确实推动了刚体）
@@ -133,7 +200,7 @@ test.describe("物理子系统健康检查", { tag: ["@webgl"] }, () => {
 
     test("设置风速 0 后风力停止，windPhysicsActive 保持订阅态（不崩溃）", async ({ wailsPage: page }) => {
         await waitForSceneHook(page);
-        await loadFirstModel(page);
+        await loadFirstModelFromLibrary(page);
 
         // 先开启（等待订阅生效）
         await page.evaluate(() => (window as any).__scene.driver.setWindSpeed(10));
