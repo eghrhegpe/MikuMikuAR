@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi, beforeAll } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, afterAll, vi, beforeAll } from 'vitest';
 import type { SlideMenu } from '../../menus/menu';
 import { makeTestLevel, makeTestMenu } from '../fixtures/menu';
 import { setLang } from '../../core/i18n/locale';
@@ -23,6 +23,11 @@ describe('SlideMenu — 层级管理 (getLevel/setLevel/updateRow/refreshHeader)
         const m = makeTestMenu();
         container = m.container;
         menu = m.menu;
+    });
+
+    afterEach(() => {
+        menu.dispose();
+        container.remove();
     });
 
     it('getLevel 返回指定层级', () => {
@@ -82,6 +87,7 @@ describe('SlideMenu — 层级管理 (getLevel/setLevel/updateRow/refreshHeader)
         (menu as any).levels = [makeTestLevel('L0'), makeTestLevel('L1'), makeTestLevel('L2')];
         menu.setLevel(1, makeTestLevel('中间层'));
         expect(spy).not.toHaveBeenCalled();
+        expect(menu.getLevel(1)?.label).toBe('中间层');
         spy.mockRestore();
     });
 
@@ -111,6 +117,7 @@ describe('SlideMenu — 层级管理 (getLevel/setLevel/updateRow/refreshHeader)
         menu.updateRow(-1, { kind: 'action' as const, label: 'B', icon: 'i', target: 'b' });
         menu.updateRow(5, { kind: 'action' as const, label: 'C', icon: 'i', target: 'c' });
         expect(menu.currentLevel?.items.length).toBe(1);
+        expect(menu.currentLevel?.items[0].label).toBe('A');
     });
 
     it('updateRow 无 panel 时正常跳过', () => {
@@ -155,6 +162,11 @@ describe('SlideMenu — ADR-065 纯 items 层级语言热刷新', () => {
     afterEach(() => {
         menu.dispose();
         container.remove();
+    });
+
+    afterAll(() => {
+        // 恢复全局语言，避免污染同 worker 中后续测试
+        setLang('zh-CN');
     });
 
     it('itemBuilder 使 updateControls 原地刷新标签（key 不变只改文本）', async () => {
@@ -208,6 +220,55 @@ describe('SlideMenu — ADR-065 纯 items 层级语言热刷新', () => {
         const items = (menu as any).panelItems as HTMLElement[];
         expect(items.length).toBe(2);
         expect(items.every((el) => el.hasAttribute('data-nav-item'))).toBe(true);
+    });
+
+    it('增量 patch 保留前导 divider 结构（不把 divider 塞进 lcard）', async () => {
+        let extra = false;
+        const divider = { kind: 'divider' as const, label: '', icon: '', target: '' };
+        const level: PopupLevel = {
+            label: '根',
+            dir: '',
+            items: [{ kind: 'action' as const, label: 'A', icon: 'i', target: 'a' }],
+            itemBuilder: () =>
+                extra
+                    ? [divider, { kind: 'action' as const, label: 'A', icon: 'i', target: 'a' }]
+                    : [{ kind: 'action' as const, label: 'A', icon: 'i', target: 'a' }],
+        };
+        menu.reset(level);
+        await new Promise((r) => requestAnimationFrame(r));
+        expect(container.querySelectorAll('.lcard')).toHaveLength(1);
+        expect(container.querySelector('.lcard')?.querySelector('.slide-divider')).toBeNull();
+
+        // 增量 patch 加入前导 divider：应与 buildPanel 一致，只保留 1 个 lcard，divider 不生成行 DOM
+        extra = true;
+        menu.updateControls();
+        expect(container.querySelectorAll('.lcard')).toHaveLength(1);
+        expect(container.querySelector('.lcard')?.querySelector('.slide-divider')).toBeNull();
+        expect(container.querySelectorAll('.slide-item')).toHaveLength(1);
+    });
+
+    it('增量 patch 保留尾随 divider 结构（不把 divider 塞进 lcard）', async () => {
+        let extra = false;
+        const divider = { kind: 'divider' as const, label: '', icon: '', target: '' };
+        const level: PopupLevel = {
+            label: '根',
+            dir: '',
+            items: [{ kind: 'action' as const, label: 'A', icon: 'i', target: 'a' }],
+            itemBuilder: () =>
+                extra
+                    ? [{ kind: 'action' as const, label: 'A', icon: 'i', target: 'a' }, divider]
+                    : [{ kind: 'action' as const, label: 'A', icon: 'i', target: 'a' }],
+        };
+        menu.reset(level);
+        await new Promise((r) => requestAnimationFrame(r));
+        expect(container.querySelectorAll('.lcard')).toHaveLength(1);
+        expect(container.querySelector('.lcard')?.querySelector('.slide-divider')).toBeNull();
+
+        extra = true;
+        menu.updateControls();
+        expect(container.querySelectorAll('.lcard')).toHaveLength(1);
+        expect(container.querySelector('.lcard')?.querySelector('.slide-divider')).toBeNull();
+        expect(container.querySelectorAll('.slide-item')).toHaveLength(1);
     });
 
     it('无 itemBuilder 时 updateControls 不会刷新纯 items 标签（回归基线）', async () => {

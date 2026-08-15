@@ -1,10 +1,12 @@
 // menu/level-write.test.ts — SlideMenu 状态写路径（setLevel / replaceCurrentLevel / updateRow / refreshHeader）
 // + 模块级函数（getOpenMenus / getCurrentRenderingMenu）。对照 menu.ts 公开面 audit：这些方法零覆盖。
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest';
 import type { SlideMenu } from '../../menus/menu';
 import { getOpenMenus, getCurrentRenderingMenu } from '../../menus/menu';
 import { makeTestLevel, makeTestMenu } from '../fixtures/menu';
 import { pushRenderingContext, popRenderingContext } from '../../core/render-context';
+import { bundles } from '../../core/i18n/t';
+import { zhCN } from '../../core/i18n/locales/zh-CN';
 import type { PopupLevel, PopupRow } from '../../core/config';
 
 const actionRow = (label: string, target: string): PopupRow => ({
@@ -18,11 +20,21 @@ describe('SlideMenu — 状态写路径', () => {
     let menu: SlideMenu;
     let container: HTMLElement;
 
+    beforeAll(() => {
+        // [doc:perf] 语言包运行时加载；测试环境直接预填基准包，避免 t() 缺失 key 告警
+        bundles['zh-CN'] = zhCN;
+    });
+
     beforeEach(() => {
         const m = makeTestMenu();
         menu = m.menu;
         container = m.container;
         menu.reset(makeTestLevel('根'));
+    });
+
+    afterEach(() => {
+        menu.dispose();
+        container.remove();
     });
 
     describe('setLevel', () => {
@@ -60,9 +72,15 @@ describe('SlideMenu — 状态写路径', () => {
         });
 
         it('空栈静默返回', () => {
-            const fresh = makeTestMenu().menu;
-            expect(() => fresh.replaceCurrentLevel(makeTestLevel('x'))).not.toThrow();
-            expect(fresh.currentLevel).toBeUndefined();
+            const m = makeTestMenu();
+            const fresh = m.menu;
+            try {
+                expect(() => fresh.replaceCurrentLevel(makeTestLevel('x'))).not.toThrow();
+                expect(fresh.currentLevel).toBeUndefined();
+            } finally {
+                fresh.dispose();
+                m.container.remove();
+            }
         });
     });
 
@@ -88,6 +106,7 @@ describe('SlideMenu — 状态写路径', () => {
             menu.reset(makeTestLevel('根', '', [actionRow('A', 'a')]));
             expect(() => menu.updateRow(5, actionRow('X', 'x'))).not.toThrow();
             expect(container.querySelectorAll('.slide-label')).toHaveLength(1);
+            expect(container.querySelector('.slide-label')?.textContent).toBe('A');
         });
 
         it('含 divider 时按 items 下标对齐 DOM 行（跳过占位）', () => {
@@ -116,8 +135,8 @@ describe('SlideMenu — 状态写路径', () => {
     describe('refreshHeader', () => {
         it('只刷新标题栏（label 变化反映到 header）', async () => {
             menu.reset(makeTestLevel('根'));
-            // 等 buildPanel.then 里的 updateHeader 渲染完成
-            await new Promise((r) => setTimeout(r, 10));
+            // 等 buildPanel.then 里的 updateHeader 渲染完成（用 RAF，不依赖裸 setTimeout）
+            await new Promise((r) => requestAnimationFrame(r));
             const level = menu.getLevel(0)!;
             level.label = '改名后';
 
@@ -129,15 +148,27 @@ describe('SlideMenu — 状态写路径', () => {
 });
 
 describe('menu 模块级函数', () => {
+    let menu: SlideMenu;
+    let container: HTMLElement;
+
+    beforeEach(() => {
+        const m = makeTestMenu();
+        menu = m.menu;
+        container = m.container;
+    });
+
+    afterEach(() => {
+        menu.dispose();
+        container.remove();
+    });
+
     it('getOpenMenus 返回存活实例，dispose 后移除', () => {
-        const { menu } = makeTestMenu();
         expect(getOpenMenus()).toContain(menu);
         menu.dispose();
         expect(getOpenMenus()).not.toContain(menu);
     });
 
     it('getCurrentRenderingMenu 返回当前渲染上下文', () => {
-        const { menu } = makeTestMenu();
         pushRenderingContext(menu);
         try {
             expect(getCurrentRenderingMenu()).toBe(menu);

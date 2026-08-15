@@ -1,6 +1,8 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest';
 import type { SlideMenu } from '../../menus/menu';
 import type { PopupLevel, PopupRow } from '../../core/config';
+import { bundles } from '../../core/i18n/t';
+import { zhCN } from '../../core/i18n/locales/zh-CN';
 import { makeTestMenu } from '../fixtures/menu';
 
 // ─── SlideMenu 测试：焦点全面（setupFocus/clearFocus/applyFocus/activateFocused） ───
@@ -9,10 +11,20 @@ describe('SlideMenu — 焦点全面 (setupFocus/clearFocus/applyFocus/activateF
     let container: HTMLElement;
     let menu: SlideMenu;
 
+    beforeAll(() => {
+        // [doc:perf] 语言包运行时加载；测试环境直接预填基准包，避免 t() 缺失 key 告警
+        bundles['zh-CN'] = zhCN;
+    });
+
     beforeEach(() => {
         const m = makeTestMenu();
         container = m.container;
         menu = m.menu;
+    });
+
+    afterEach(() => {
+        menu.dispose();
+        container.remove();
     });
 
     async function initWithItems(items: PopupRow[]): Promise<void> {
@@ -174,8 +186,9 @@ describe('SlideMenu — 焦点全面 (setupFocus/clearFocus/applyFocus/activateF
     it('applyFocus 越界索引不操作', async () => {
         await initWithItems([{ kind: 'action' as const, label: 'A', icon: 'i', target: 'a' }]);
         (menu as any).focusIndex = 99;
-        // 不应抛异常
+        // 不应抛异常，也不应误加焦点样式
         expect(() => (menu as any).applyFocus()).not.toThrow();
+        expect(container.querySelector('.slide-focused')).toBeFalsy();
     });
 
     it('activateFocused 点击聚焦项', async () => {
@@ -188,6 +201,7 @@ describe('SlideMenu — 焦点全面 (setupFocus/clearFocus/applyFocus/activateF
         (menu as any).focusIndex = 1;
         (menu as any).activateFocused();
         expect(onClick).toHaveBeenCalledTimes(1);
+        expect(onClick).toHaveBeenCalledWith(expect.objectContaining({ label: 'B' }), menu);
     });
 
     it('activateFocused 越界不操作', async () => {

@@ -908,7 +908,9 @@ export class SlideMenu implements RenderContext {
         // [doc:adr-NNN] 多 lcard（card-per-divider）场景：按 divider 分割 items，
         // 分别 patch 到对应的 lcard，避免全量重建
         const cards = list.querySelectorAll(':scope > .lcard') as NodeListOf<HTMLElement>;
-        if (cards.length > 1) {
+        // 只要 items 含 divider，统一走多 card 分段 patch：单 lcard 的前导/尾随 divider
+        // 也能按 buildPanel 语义跳过占位，避免把 divider 误塞进 lcard 或逐行错位。
+        if (cards.length > 1 || items.some((row) => row.kind === 'divider')) {
             this._patchMultiCard(cards, items);
             return;
         }
