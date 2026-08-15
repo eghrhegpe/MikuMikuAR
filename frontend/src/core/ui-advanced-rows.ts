@@ -4,7 +4,7 @@
 import { createIconifyIcon } from './icons';
 import { ControlOptions } from './ui-types';
 import { initControl } from './ui-rows';
-import { clampPct } from '@/core/clamp';
+import { clampPct, clamp01 } from '@/core/clamp';
 import { col3FromTriple, rgbString } from './color-helpers';
 import { DragSliderController } from './ui-slider-controller';
 // [doc:adr-229] DOM 契约单源：role/class 由 dom-contract 提供，禁止手写字符串
@@ -22,11 +22,12 @@ export function addColorSliderRow(
     opts?: ControlOptions<[number, number, number]>,
     testId?: string
 ): void {
-    // [defense] 与 addSliderRow 对齐：非有限通道值回落到 0，避免 .toFixed()/width 渲染 "NaN"
+    // [defense] 与 addSliderRow 对齐：非有限通道值回落到 0，避免 .toFixed()/width 渲染 "NaN"；
+    // 同时把越界通道钳到 [0,1]，防止外部状态异常时渲染出 150% 宽或 aria-valuenow=2
     const safeColor: [number, number, number] = [
-        Number.isFinite(color[0]) ? color[0] : 0,
-        Number.isFinite(color[1]) ? color[1] : 0,
-        Number.isFinite(color[2]) ? color[2] : 0,
+        Number.isFinite(color[0]) ? clamp01(color[0]) : 0,
+        Number.isFinite(color[1]) ? clamp01(color[1]) : 0,
+        Number.isFinite(color[2]) ? clamp01(color[2]) : 0,
     ];
 
     const block = document.createElement('div');
@@ -131,18 +132,19 @@ export function addColorSliderRow(
             }
             let changed = false;
             for (let i = 0; i < 3; i++) {
-                if (v[i] !== cached[i]) {
+                const safe = Number.isFinite(v[i]) ? clamp01(v[i]) : 0;
+                if (safe !== cached[i]) {
                     changed = true;
-                    current[i] = v[i];
-                    vals[i].textContent = v[i].toFixed(2);
-                    fills[i].style.width = v[i] * 100 + '%';
-                    thumbs[i].style.left = v[i] * 100 + '%';
-                    bars[i].setAttribute(ARIA_ATTR.valuenow, String(v[i]));
-                    controllers[i].setValue(v[i]);
+                    current[i] = safe;
+                    vals[i].textContent = safe.toFixed(2);
+                    fills[i].style.width = safe * 100 + '%';
+                    thumbs[i].style.left = safe * 100 + '%';
+                    bars[i].setAttribute(ARIA_ATTR.valuenow, String(safe));
+                    controllers[i].setValue(safe);
                 }
             }
             if (changed) {
-                swatch.style.background = rgbString(col3FromTriple(v));
+                swatch.style.background = rgbString(col3FromTriple(current));
             }
             return changed;
         });
@@ -169,11 +171,13 @@ export function addVector3SliderRow(
 ): void {
     const axes: [string, string, string] = axisLabels ?? ['X', 'Y', 'Z'];
     const range = max - min;
-    // [defense] 与 addSliderRow 对齐：非有限轴值回落到 min，避免 .toFixed()/width 渲染 "NaN"
+    const hasRange = Number.isFinite(range) && range > 0;
+    // [defense] 与 addSliderRow 对齐：非有限轴值回落到 min，避免 .toFixed()/width 渲染 "NaN"；
+    // 越界轴值钳到 [min,max]，保持显示、ARIA 与控制器状态一致
     const safeValue: [number, number, number] = [
-        Number.isFinite(value[0]) ? value[0] : min,
-        Number.isFinite(value[1]) ? value[1] : min,
-        Number.isFinite(value[2]) ? value[2] : min,
+        Number.isFinite(value[0]) ? Math.min(max, Math.max(min, value[0])) : min,
+        Number.isFinite(value[1]) ? Math.min(max, Math.max(min, value[1])) : min,
+        Number.isFinite(value[2]) ? Math.min(max, Math.max(min, value[2])) : min,
     ];
 
     const block = document.createElement('div');
@@ -241,7 +245,7 @@ export function addVector3SliderRow(
         bar.setAttribute(ARIA_ATTR.labelledby, ch.id);
         barEls[ai] = bar;
 
-        const pct = ((current[ai] - min) / range) * 100;
+        const pct = hasRange ? ((current[ai] - min) / range) * 100 : 0;
 
         const fill = document.createElement('div');
         fill.className = 'cs-fill';
@@ -258,13 +262,14 @@ export function addVector3SliderRow(
         bar.appendChild(thumb);
 
         function updateDisplay(v: number): void {
-            current[ai] = v;
-            val.textContent = step < 1 ? v.toFixed(2) : String(Math.round(v));
-            const newPct = ((v - min) / range) * 100;
+            const safe = Number.isFinite(v) ? Math.min(max, Math.max(min, v)) : min;
+            current[ai] = safe;
+            val.textContent = step < 1 ? safe.toFixed(2) : String(Math.round(safe));
+            const newPct = hasRange ? ((safe - min) / range) * 100 : 0;
             const clamped = clampPct(newPct);
             fill.style.width = clamped + '%';
             thumb.style.left = clamped + '%';
-            bar.setAttribute(ARIA_ATTR.valuenow, String(v));
+            bar.setAttribute(ARIA_ATTR.valuenow, String(safe));
             onChange([current[0], current[1], current[2]]);
         }
 
@@ -294,16 +299,17 @@ export function addVector3SliderRow(
             }
             let changed = false;
             for (let i = 0; i < 3; i++) {
-                if (v[i] !== cached[i]) {
+                const safe = Number.isFinite(v[i]) ? Math.min(max, Math.max(min, v[i])) : min;
+                if (safe !== cached[i]) {
                     changed = true;
-                    current[i] = v[i];
-                    valEls[i].textContent = step < 1 ? v[i].toFixed(2) : String(Math.round(v[i]));
-                    const newPct = ((v[i] - min) / range) * 100;
+                    current[i] = safe;
+                    valEls[i].textContent = step < 1 ? safe.toFixed(2) : String(Math.round(safe));
+                    const newPct = hasRange ? ((safe - min) / range) * 100 : 0;
                     const clamped = clampPct(newPct);
                     fillEls[i].style.width = clamped + '%';
                     thumbEls[i].style.left = clamped + '%';
-                    barEls[i].setAttribute(ARIA_ATTR.valuenow, String(v[i]));
-                    controllers[i].setValue(v[i]);
+                    barEls[i].setAttribute(ARIA_ATTR.valuenow, String(safe));
+                    controllers[i].setValue(safe);
                 }
             }
             return changed;
@@ -429,7 +435,7 @@ export function addModeSlider<T extends string | number>(
     top.addEventListener('click', (e) => {
         e.stopPropagation();
         const rect = top.getBoundingClientRect();
-        const x = (e.clientX - rect.left) / rect.width;
+        const x = clamp01((e.clientX - rect.left) / (rect.width || 1));
         cycleIdx(x < 0.5 ? -1 : 1);
     });
 
@@ -443,9 +449,9 @@ export function addModeSlider<T extends string | number>(
             return false;
         }
         const idx = options.findIndex((o) => o.value === v);
-        if (idx >= 0) {
-            updateDisplay(idx);
-        }
+        // 外部值不在选项内时显示回落到第一个选项；仍返回 true 让缓存跟踪原始值，
+        // 以便后续从非法值恢复合法值时能触发更新
+        updateDisplay(idx >= 0 ? idx : 0);
         return true;
     });
 }

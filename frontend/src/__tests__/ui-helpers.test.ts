@@ -732,7 +732,7 @@ describe('sliderRow', () => {
         bar.dispatchEvent(new MouseEvent('mousedown', { clientX: 80 }));
         document.dispatchEvent(new MouseEvent('mouseup', { clientX: 80 }));
 
-        expect(onDragEnd).toHaveBeenCalled();
+        expect(onDragEnd).toHaveBeenCalledWith(80);
     });
 
     it('cs-top quarter-step click calls onDragEnd', () => {
@@ -756,8 +756,9 @@ describe('sliderRow', () => {
             }) as DOMRect;
 
         // 右半区 click → 正方向大步（range * SLIDER_QUARTER_LARGE_STEP）
+        // range=10, LARGE_STEP=0.15 → delta=1.5 → 5 + 1.5 = 6.5，step=1 吸附到 7
         top.dispatchEvent(new MouseEvent('click', { clientX: 190 }));
-        expect(onDragEnd).toHaveBeenCalled();
+        expect(onDragEnd).toHaveBeenCalledWith(7);
     });
 });
 
@@ -799,6 +800,46 @@ describe('addColorSliderRow', () => {
         const last = onChange.mock.calls[onChange.mock.calls.length - 1][0];
         expect(last.length).toBe(3);
         expect(last[0]).toBeCloseTo(0);
+        // 只应改动 R 通道，G/B 保持初始值
+        expect(last[1]).toBeCloseTo(0.5);
+        expect(last[2]).toBeCloseTo(0.8);
+    });
+
+    it('clamps out-of-range bind values into [0,1] and sanitizes NaN', () => {
+        const container = document.createElement('div');
+        addColorSliderRow(
+            container,
+            'Color',
+            [0.2, 0.5, 0.8],
+            vi.fn(),
+            { bind: () => [1.5, -0.2, NaN] }
+        );
+
+        const vals = container.querySelectorAll('.clr-value');
+        const fills = Array.from(container.querySelectorAll('.cs-fill')) as HTMLElement[];
+        const bars = container.querySelectorAll('.cs-bar');
+        expect(vals[0].textContent).toBe('1.00');
+        expect(vals[1].textContent).toBe('0.00');
+        expect(vals[2].textContent).toBe('0.00');
+        expect(fills[0].style.width).toBe('100%');
+        expect(fills[1].style.width).toBe('0%');
+        expect(fills[2].style.width).toBe('0%');
+        expect(bars[0].getAttribute('aria-valuenow')).toBe('1');
+        expect(bars[1].getAttribute('aria-valuenow')).toBe('0');
+        expect(bars[2].getAttribute('aria-valuenow')).toBe('0');
+    });
+
+    it('clamps initial out-of-range channels to [0,1]', () => {
+        const container = document.createElement('div');
+        addColorSliderRow(container, 'Color', [1.5, -1, NaN], vi.fn());
+
+        const vals = container.querySelectorAll('.clr-value');
+        const fills = Array.from(container.querySelectorAll('.cs-fill')) as HTMLElement[];
+        expect(vals[0].textContent).toBe('1.00');
+        expect(vals[1].textContent).toBe('0.00');
+        expect(vals[2].textContent).toBe('0.00');
+        expect(fills[0].style.width).toBe('100%');
+        expect(fills[1].style.width).toBe('0%');
     });
 
     it('defends against NaN channel values without crashing (fallback to 0)', () => {
@@ -912,6 +953,70 @@ describe('addVector3SliderRow', () => {
         expect(vals[0].textContent).toBe('0');
         expect(vals[1].textContent).toBe('0');
         expect(vals[2].textContent).toBe('0');
+    });
+
+    it('clamps out-of-range bind values into [min,max] and sanitizes NaN', () => {
+        const container = document.createElement('div');
+        addVector3SliderRow(
+            container,
+            'Pos',
+            [0, 0, 0],
+            0,
+            100,
+            1,
+            vi.fn(),
+            undefined,
+            undefined,
+            undefined,
+            { bind: () => [150, -5, NaN] }
+        );
+
+        const vals = container.querySelectorAll('.vec3-value');
+        const fills = Array.from(container.querySelectorAll('.cs-fill')) as HTMLElement[];
+        const bars = container.querySelectorAll('.cs-bar');
+        expect(vals[0].textContent).toBe('100');
+        expect(vals[1].textContent).toBe('0');
+        expect(vals[2].textContent).toBe('0');
+        expect(fills[0].style.width).toBe('100%');
+        expect(fills[1].style.width).toBe('0%');
+        expect(fills[2].style.width).toBe('0%');
+        expect(bars[0].getAttribute('aria-valuenow')).toBe('100');
+        expect(bars[1].getAttribute('aria-valuenow')).toBe('0');
+        expect(bars[2].getAttribute('aria-valuenow')).toBe('0');
+    });
+
+    it('clamps initial out-of-range axes to [min,max]', () => {
+        const container = document.createElement('div');
+        addVector3SliderRow(container, 'Pos', [150, -5, NaN], 0, 100, 1, vi.fn());
+
+        const vals = container.querySelectorAll('.vec3-value');
+        const fills = Array.from(container.querySelectorAll('.cs-fill')) as HTMLElement[];
+        expect(vals[0].textContent).toBe('100');
+        expect(vals[1].textContent).toBe('0');
+        expect(vals[2].textContent).toBe('0');
+        expect(fills[0].style.width).toBe('100%');
+        expect(fills[1].style.width).toBe('0%');
+    });
+
+    it('handles min === max without rendering NaN width', () => {
+        const container = document.createElement('div');
+        addVector3SliderRow(container, 'Fixed', [5, 5, 5], 5, 5, 1, vi.fn());
+
+        const fills = Array.from(container.querySelectorAll('.cs-fill')) as HTMLElement[];
+        expect(fills.length).toBe(3);
+        for (const fill of fills) {
+            expect(fill.style.width).not.toContain('NaN');
+        }
+    });
+
+    it('shows icon fallback when createIconifyIcon returns null', () => {
+        mockIconify.mockReturnValue(null);
+        const container = document.createElement('div');
+        addVector3SliderRow(container, 'Pos', [0, 0, 0], -100, 100, 1, vi.fn(), undefined, 'some-icon');
+
+        const fallback = container.querySelector('.cs-icon-fallback')!;
+        expect(fallback).not.toBeNull();
+        expect(fallback.textContent).toBe('P');
     });
 });
 
@@ -1048,5 +1153,35 @@ describe('addModeSlider', () => {
 
         const val = container.querySelector('.cs-value')!;
         expect(val.textContent).toBe('Low');
+    });
+
+    it('shows icon fallback when createIconifyIcon returns null', () => {
+        mockIconify.mockReturnValue(null);
+        const container = document.createElement('div');
+        addModeSlider(container, 'Mode', opts, 'low', vi.fn(), 'some-icon');
+
+        const fallback = container.querySelector('.cs-icon-fallback')!;
+        expect(fallback).not.toBeNull();
+        expect(fallback.textContent).toBe('M');
+    });
+
+    it('keyboard change calls onDragEndCb with the new value', () => {
+        const container = document.createElement('div');
+        const onChange = vi.fn();
+        const onDragEnd = vi.fn();
+        addModeSlider(container, 'Mode', opts, 'low', onChange, undefined, onDragEnd);
+
+        const top = container.querySelector('.cs-top')!;
+        top.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }));
+
+        expect(onChange).toHaveBeenCalledWith('mid');
+        expect(onDragEnd).toHaveBeenCalledWith('mid');
+    });
+
+    it('applies testId to row wrapper', () => {
+        const container = document.createElement('div');
+        addModeSlider(container, 'Mode', opts, 'low', vi.fn(), undefined, undefined, undefined, 'mode-slider-test');
+
+        expect(container.querySelector('[data-testid="mode-slider-test"]')).not.toBeNull();
     });
 });

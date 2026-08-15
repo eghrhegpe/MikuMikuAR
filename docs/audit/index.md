@@ -2,12 +2,13 @@
 
 # 代码审核索引
 
-> 审核台账共 **188** 篇：162 篇按日期归档、9 篇轮次记录、17 篇专题审核。每篇记录审核范围、发现与结论。
+> 审核台账共 **189** 篇：163 篇按日期归档、9 篇轮次记录、17 篇专题审核。每篇记录审核范围、发现与结论。
 
 > 汇总视图（执行摘要 / 风险全景 / 改进优先级）见 [审核总索引](./README.md)。
 
-## 2026 年 8 月（151）
+## 2026 年 8 月（152）
 
+- `2026-08-15` [Round 72 审核报告 — sw-register / ui-action-bridge / ui-helpers](./2026-08-15-round72-sw-ui-bridge-helpers.md)
 - `2026-08-15` [Round 71 审核报告 — registry.param / renderer-transition / shortcut-app](./2026-08-15-round71-param-renderer-shortcut.md)
 - `2026-08-15` [Round 70 审核报告 — motion-modules-registry disable / ik / init](./2026-08-15-round70-registry-disable-ik-init.md)
 - `2026-08-15` [Round 69 审核报告 — env-texture / motion-history / motion-modules-registry.create](./2026-08-15-round69-texture-history-registry.md)

@@ -8,13 +8,23 @@
 // crossOriginIsolated 仍为 false。监听 controllerchange（SW 首次取得控制权），若此时尚未跨源
 // 隔离则 reload 一次，让浏览器用带头的响应重新评估→ SharedArrayBuffer/MPR 解锁。
 // 已隔离（二次访问）或不支持 credentialless 的浏览器不重载，避免无限刷新。
+let registrationScheduled = false;
+
 export function registerServiceWorker(enabled: boolean): void {
-    if (!enabled) {
+    if (!enabled || registrationScheduled) {
         return;
     }
-    if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) {
+    // 有些环境/旧浏览器里 navigator.serviceWorker 属性存在但值为 undefined，
+    // 只用 `in` 判断会漏掉这种「不支持」形态，后续访问 .register 会抛错。
+    if (
+        typeof navigator === 'undefined' ||
+        !('serviceWorker' in navigator) ||
+        navigator.serviceWorker == null ||
+        typeof navigator.serviceWorker.register !== 'function'
+    ) {
         return;
     }
+    registrationScheduled = true;
     // SW 首次接管后，若页面尚未跨源隔离，主动 reload 一次让补入的 COOP/COEP 生效。
     // 仅在首次 controllerchange 时触发（controller 从 null → 非 null），防重复刷新。
     if (
@@ -33,10 +43,14 @@ export function registerServiceWorker(enabled: boolean): void {
         });
     }
     // 等首屏资源加载完再注册，避免 SW 抢先于关键路径、影响首次启动速度
-    window.addEventListener('load', () => {
-        const base = import.meta.env.BASE_URL; // 如 '/MikuMikuAR/'
-        navigator.serviceWorker
-            .register(`${base}sw.js`, { scope: base })
-            .catch((err) => console.warn('[sw] register failed:', err));
-    });
+    window.addEventListener(
+        'load',
+        () => {
+            const base = import.meta.env.BASE_URL; // 如 '/MikuMikuAR/'
+            navigator.serviceWorker
+                .register(`${base}sw.js`, { scope: base })
+                .catch((err) => console.warn('[sw] register failed:', err));
+        },
+        { once: true }
+    );
 }

@@ -92,8 +92,9 @@ export function getUiAction<K extends keyof UiActions>(key: K): UiActions[K] | u
     return fn;
 }
 
-// 兼容旧调用点（shortcut-app 的 closeAllOverlays/screenshotCurrent 用 getUiActions）
-/** 读取 UI 行为集（未完整注册时返回 null） */
+// 兼容旧调用点：早期 shortcut-app 曾按集合读取 closeAllOverlays/screenshotCurrent，
+// 当前已改为单字段 getUiAction；本函数暂留作兼容层，无活跃消费者时可由主模型决定清理。
+/** 读取 UI 行为集（至少 closeAllOverlays + screenshotCurrent 已注册时返回当前已注册字段的普通对象，否则 null） */
 export function getUiActions(): UiActions | null {
     const needed: (keyof UiActions)[] = ['closeAllOverlays', 'screenshotCurrent'];
     for (const k of needed) {
@@ -101,5 +102,6 @@ export function getUiActions(): UiActions | null {
             return null;
         }
     }
-    return _uiActions as unknown as UiActions;
+    // 返回普通对象视图而非 Map，保持 getUiActions() 旧调用点的属性访问语义。
+    return Object.fromEntries(_uiActions) as unknown as UiActions;
 }

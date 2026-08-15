@@ -513,7 +513,7 @@
 | `tryCatchStatus()` | `core/status-helpers:19` | Execute a function with automatic error handling that shows errors in the status bar. |
 | `withLoadingStatus()` | `core/status-helpers:49` | 包装一个异步操作，自动管理 loading → success → error 三态状态栏。 |
 | `withLoadingStatusTargeted()` | `core/status-helpers:80` | 包装异步操作并附带目标名（target-aware 版本）。 |
-| `registerServiceWorker()` | `core/sw-register:11` | — |
+| `registerServiceWorker()` | `core/sw-register:13` | — |
 | `TEST_MESH_PREFIX()` | `core/test-mesh:10` | — |
 | `clearTestMeshes()` | `core/test-mesh:46` | 清除所有程序化测试 mesh（含对应 material）。 |
 | `createTestMesh()` | `core/test-mesh:33` | 创建程序化测试 mesh（先清理旧 e2e-test- 资源；与 dev-hooks driver 行为对齐）。 |
@@ -568,12 +568,12 @@
 | `VmdLayer()` | `core/types:116` | VMD 动画图层 — 支持多 VMD 叠加（Motion Layers） |
 | `UiActions()` | `core/ui-action-bridge:8` | — |
 | `getUiAction()` | `core/ui-action-bridge:85` | 读取单个 UI 行为（core 侧调用；未注册返回 undefined） |
-| `getUiActions()` | `core/ui-action-bridge:97` | 读取 UI 行为集（未完整注册时返回 null） |
+| `getUiActions()` | `core/ui-action-bridge:98` | 读取 UI 行为集（至少 closeAllOverlays + screenshotCurrent 已注册时返回当前已注册字段的普通对象，否则 null） |
 | `registerUiAction()` | `core/ui-action-bridge:68` | 注册单个 UI 行为（menus 侧各模块启动时调用，可重复注册覆盖）。 |
 | `unregisterUiAction()` | `core/ui-action-bridge:78` | 兼容旧调用点：按 key 注销（不区分注册实例，慎用；优先用 registerUiAction 返回的 token）。 |
 | `addColorSliderRow()` | `core/ui-advanced-rows:17` | — |
-| `addModeSlider()` | `core/ui-advanced-rows:318` | — |
-| `addVector3SliderRow()` | `core/ui-advanced-rows:156` | — |
+| `addModeSlider()` | `core/ui-advanced-rows:324` | — |
+| `addVector3SliderRow()` | `core/ui-advanced-rows:158` | — |
 | `cardContainer()` | `core/ui-card:9` | Card container helper: removes render-card bg, wraps content in an lcard. |
 | `addCollapsible()` | `core/ui-collapsible:23` | 通用折叠面板组件 |
 | `addPresetChip()` | `core/ui-collapsible:163` | 创建一个 preset-chip 按钮并追加到 container（通常是 .preset-group div）。 |
