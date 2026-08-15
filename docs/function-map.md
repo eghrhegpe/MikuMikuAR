@@ -2388,7 +2388,7 @@
 | `PresetListViewerConfig()` | `menus/preset-list-viewer:15` | — |
 | `buildPresetListLevel()` | `menus/preset-list-viewer:156` | 构建完整 PopupLevel（适用于纯预设列表场景，如模型预设） |
 | `presetListContent()` | `menus/preset-list-viewer:53` | 渲染预设列表内容到现有 container 中。用于混合内容的 PopupLevel（场景预设） |
-| `buildSchemaLevel()` | `menus/render-menu:350` | [doc:P6] 构建一个含增量 i18n 刷新的 schema 层级。 |
+| `buildSchemaLevel()` | `menus/render-menu:364` | [doc:P6] 构建一个含增量 i18n 刷新的 schema 层级。 |
 | `renderMenu()` | `menus/render-menu:26` | 渲染一个 MenuNode 树到 container 中。返回 dispose 函数，调用时级联释放所有 renderCustom 资源 |
 | `ResourceHandle()` | `menus/resource-detail-helpers:40` | — |
 | `buildAttachmentCard()` | `menus/resource-detail-helpers:388` | [doc:adr-215] 模型附属关系卡片。 |

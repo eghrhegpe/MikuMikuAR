@@ -119,6 +119,11 @@ describe('ADR-093 Menu Schema — 各 kind 渲染 + modeRow', () => {
             renderMenu(schema, container);
             expect(renderCustom).toHaveBeenCalledWith(container);
             expect(container.querySelector('#custom-el')).toBeTruthy();
+            // [audit:menu-declaration] custom 节点应包一层带 node.id 的稳定 testid，
+            // 且 renderCustom 写入的内容仍在该 host 内，E2E 扫描才不会让 custom 面板隐身。
+            const customHost = container.querySelector('[data-testid="t:custom"]');
+            expect(customHost).not.toBeNull();
+            expect(customHost?.querySelector('#custom-el')).toBeTruthy();
         });
 
         it('folder 渲染折叠面板 + 子节点', () => {

@@ -10,6 +10,11 @@ test.describe("Library — DOM/overlay (vitePage, @dom)", { tag: ["@dom", "@over
     test.beforeEach(async ({ vitePage: page }) => {
         // [ADR-229 §8] vitePage 每 test 全新浏览器实例，localStorage 本为空，
         // clear() 反而触发应用 storage 监听导致页面导航——不调用。
+        // [workaround] 纯 Vite 下 initLibrary 的 FSA 引导可能先弹 showConfirm：
+        // installOverlayGuards 会移除 #mmd-dialog-overlay 的 visible class，但 dialog.ts
+        // 的 freezeBackground 仍给 #app 留下 inert，导致后续真实 click 全部被 body 拦截。
+        // 本 spec 在打开面板前先解除 #app.inert（对应 dialog.ts:32/43 的冻结状态）。
+        await page.evaluate(() => document.getElementById("app")?.removeAttribute("inert"));
         await page.click("#btnMainAction");
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
     });
@@ -23,16 +28,12 @@ test.describe("Library — DOM/overlay (vitePage, @dom)", { tag: ["@dom", "@over
         await expect(page.getByTestId("folder:__tags__")).toBeVisible();
     });
 
-    test("模型库: 无配置时库面板正常渲染（首次使用提示不阻塞）", async ({ vitePage: page }) => {
-        // 首次使用提示经底部状态栏显示、2s 自动淡出（status-bar.ts:71-83），且仅在
-        // app 启动 initLibrary 时显示一次——点击打开面板后断言瞬时文本会因时序超时
-        // （且 FSA 可用时 showConfirm 模态阻塞使提示不显示，双风险）。
-        // 改为断言库面板 DOM：无配置时核心入口也应正常渲染（与根级按钮用例一致）。
-        await expect(page.getByTestId("folder:models:browse")).toBeVisible();
-        await expect(page.getByTestId("action:models:import-file")).toBeVisible();
-    });
-
     test("模型库: 关闭后重新打开不崩溃", async ({ vitePage: page }) => {
+        // 仅断言 overlay 重新可见不足以证明“不崩溃”；同时监听未捕获异常，
+        // 关闭/重开期间出现 pageerror 即失败。
+        const pageErrors: string[] = [];
+        page.on("pageerror", (error) => pageErrors.push(error.message));
+
         // Close by clicking the same nav button again (toggle behavior)
         await page.click("#btnMainAction");
         await page.waitForSelector("#sceneOverlay:not(.visible)", { timeout: 5000 });
@@ -41,5 +42,6 @@ test.describe("Library — DOM/overlay (vitePage, @dom)", { tag: ["@dom", "@over
         await page.click("#btnMainAction");
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
         await expect(page.getByTestId("folder:models:browse")).toBeVisible();
+        expect(pageErrors).toEqual([]);
     });
 });

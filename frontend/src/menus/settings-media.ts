@@ -259,7 +259,7 @@ function buildScreenshotSchema(getSettingsMenu: () => SettingsMenuHandle): MenuN
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
-                    addSectionTitle(inner, t('settings.screenshot.format'));
+                    addSectionTitle(inner, t('settings.screenshot.format'), 'settings:screenshot:format');
                     const formats: Array<{
                         key: 'image/png' | 'image/jpeg' | 'image/webp';
                         label: string;
@@ -315,7 +315,7 @@ function buildScreenshotSchema(getSettingsMenu: () => SettingsMenuHandle): MenuN
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
-                    addSectionTitle(inner, t('settings.screenshot.quality'));
+                    addSectionTitle(inner, t('settings.screenshot.quality'), 'settings:screenshot:quality');
                     const qualitySchema: MenuNode[] = [
                         {
                             id: 'media:screenshot-quality-slider',
@@ -342,7 +342,7 @@ function buildScreenshotSchema(getSettingsMenu: () => SettingsMenuHandle): MenuN
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
-                    addSectionTitle(inner, t('settings.screenshot.thumbRes'));
+                    addSectionTitle(inner, t('settings.screenshot.thumbRes'), 'settings:screenshot:thumb-res');
                     const resolutions: Array<{ key: number; label: string }> = [
                         { key: 512, label: '512px' },
                         { key: 1024, label: '1024px' },
@@ -396,7 +396,7 @@ function buildScreenshotSchema(getSettingsMenu: () => SettingsMenuHandle): MenuN
             kind: 'custom',
             renderCustom: (c) => {
                 cardContainer(c, (inner) => {
-                    addSectionTitle(inner, t('settings.screenshot.saveDir'));
+                    addSectionTitle(inner, t('settings.screenshot.saveDir'), 'settings:screenshot:save-dir');
                     const dir = uiState.screenshotDir ?? '';
                     const dirSub = dir ? truncatePath(dir) : t('settings.screenshot.dirNotSet');
 

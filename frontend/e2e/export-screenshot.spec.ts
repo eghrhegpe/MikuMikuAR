@@ -17,7 +17,7 @@ import { waitForSceneHook } from "./helpers";
 
 // ======== @dom: Settings panel screenshot entry (DOM-only) ========
 test.describe("截图导出: 设置面板入口 (@dom, vitePage)", { tag: ["@dom", "@overlay"] }, () => {
-    test("设置面板可打开且 __scene.capture 管线就绪", async ({ vitePage: page }) => {
+    test("设置面板可打开，截图入口与 __scene.capture 管线就绪", async ({ vitePage: page }) => {
         // 真实 locator.click（带命中测试）；vitePage fixture 已移除 app-booting 拦截
         await page.locator("#btnSettings").click();
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
@@ -27,6 +27,10 @@ test.describe("截图导出: 设置面板入口 (@dom, vitePage)", { tag: ["@dom
             return overlay?.classList.contains("visible") ?? false;
         });
         expect(overlayVisible).toBe(true);
+        // 真实 DOM 入口：设置 → 媒体 → 截图区段（settings-media.ts）
+        await expect(page.getByTestId("folder:settings:media")).toBeVisible();
+        await page.getByTestId("folder:settings:media").click();
+        await expect(page.getByTestId("settings:screenshot:format")).toBeVisible();
         // 验证截图管线在 __scene 钩子中就绪（@webgl 测试会进一步验证返回值）
         const captureReady = await page.evaluate(() => {
             const s = (window as any).__scene;

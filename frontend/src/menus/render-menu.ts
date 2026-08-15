@@ -70,7 +70,21 @@ function renderNode(node: MenuNode, container: HTMLElement): (() => void) | unde
             // 无操作
             return undefined;
         case 'custom': {
+            // [audit:menu-declaration] custom 节点也必须拥有稳定 DOM testid，
+            // 否则设置面板（外观/系统等大量 custom 卡片）在 E2E 扫描中“隐身”。
+            // 保持 renderCustom(container) 调用契约不变，渲染后把本次新增的子节点
+            // 收进带 data-testid 的 host，避免污染前序节点。
+            const startChildCount = container.childElementCount;
             const d = node.renderCustom?.(container);
+            if (node.id) {
+                const host = document.createElement('div');
+                host.className = 'schema-custom';
+                host.dataset.testid = node.id;
+                while (container.childElementCount > startChildCount) {
+                    host.insertBefore(container.lastChild!, host.firstChild);
+                }
+                container.appendChild(host);
+            }
             return typeof d === 'function' ? d : undefined;
         }
     }
