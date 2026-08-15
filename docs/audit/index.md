@@ -2,12 +2,15 @@
 
 # 代码审核索引
 
-> 审核台账共 **154** 篇：129 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
+> 审核台账共 **157** 篇：132 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
 
 > 汇总视图（执行摘要 / 风险全景 / 改进优先级）见 [审核总索引](./README.md)。
 
-## 2026 年 8 月（118）
+## 2026 年 8 月（121）
 
+- `2026-08-15` [round51-utils-async — 审核结果](./2026-08-15-round51-utils-async.md)
+- `2026-08-15` [perception-gaze — 审核结果（round-51 测试 3：双路径行为契约）](./2026-08-15-round51-perception-gaze.md)
+- `2026-08-15` [审核报告：config.test.ts（format + library-state 组合测试）（round51-1）](./2026-08-15-round51-config.md)
 - `2026-08-15` [motion-modules registry 快照专项（applyModuleSnapshot + setParam 集成）— 审核结果](./2026-08-15-round50-registry-snapshot.md)
 - `2026-08-15` [motion-modules riding 时间驱动接线（帧钩子→骨骼覆盖）— 审核结果](./2026-08-15-round50-motion-modules-timed.md)
 - `2026-08-15` [round-50 menu-schema-conflict — conflictHint 冲突标记专项审核报告](./2026-08-15-round50-menu-schema-conflict.md)
