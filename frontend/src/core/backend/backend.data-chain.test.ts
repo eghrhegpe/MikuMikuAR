@@ -56,6 +56,22 @@ describe('ADR-177 Phase 2 A4：browser-adapter 数据链补齐', () => {
             expect(r).toBeNull();
         });
 
+        it('web://model/<stem> 含点号 → 直查规范键 file:<stem>（不误剥扩展名）', async () => {
+            // [fix] 回归：model.1.pmx 的 encStem = model.1，兜底链 _stripExt 会把
+            // `.1` 误当扩展名剥掉导致 file:model 落空；修复后按原始 stem 直查。
+            const bytes = new Uint8Array([9, 9]);
+            idbStore.set('file:model.1', bytes);
+            const r = await browserAdapter.readFileBytes('web://model/model.1');
+            expect(r).toBe(bytes);
+        });
+
+        it('web://model/<stem> 无点号 → 直查规范键 file:<stem>', async () => {
+            const bytes = new Uint8Array([9, 8]);
+            idbStore.set('file:初音ミク', bytes);
+            const r = await browserAdapter.readFileBytes('web://model/初音ミク');
+            expect(r).toBe(bytes);
+        });
+
         it('web://selected-dir/ 路径 → 剥离类别段后 file:<relIdStem>', async () => {
             const bytes = new Uint8Array([8, 8]);
             idbStore.set('file:分类1/miku', bytes);

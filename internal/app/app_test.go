@@ -386,3 +386,25 @@ func TestMergeUIStateNoPresentLegacy(t *testing.T) {
 		t.Error("Animations must be overwritten by legacy unconditional bool copy")
 	}
 }
+
+// TestMergeUIStatePresenceMaskNullIsAbsent verifies a JSON null value is NOT
+// treated as an explicitly-present field: null semantics are "absent/clear",
+// so dst keeps its old value instead of being overwritten with the Go zero value.
+func TestMergeUIStatePresenceMaskNullIsAbsent(t *testing.T) {
+	var src UIState
+	if err := json.Unmarshal([]byte(`{"fpsLimit":null,"volume":null,"animations":null}`), &src); err != nil {
+		t.Fatalf("Unmarshal: %v", err)
+	}
+	dst := UIState{FpsLimit: 60, Volume: 0.5, Animations: true}
+	mergeUIState(&dst, src)
+
+	if dst.FpsLimit != 60 {
+		t.Errorf("FpsLimit = %d, want 60 (null must NOT overwrite with zero)", dst.FpsLimit)
+	}
+	if dst.Volume != 0.5 {
+		t.Errorf("Volume = %v, want 0.5 (null must NOT overwrite with zero)", dst.Volume)
+	}
+	if !dst.Animations {
+		t.Error("Animations must survive null payload")
+	}
+}

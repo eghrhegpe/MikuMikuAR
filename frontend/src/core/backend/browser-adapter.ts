@@ -1387,6 +1387,20 @@ export const browserAdapter: BackendService = {
         if (bytes) {
             return bytes;
         }
+        // [fix] model-stem 直查规范键 file:<encStem>：_resolveIdbKey 对无 relPath 的
+        // web://model/<stem> 原样返回（历史行为），但主 PMX 存键是 file:<encStem>
+        // （见 _encModelStem / idbSet file: 写入）。若 encStem 含点号（如 `model.1.pmx`
+        // → stem `model.1`），下方兜底链的 _stripExt 会把 `.1` 误剥成 `model`，
+        // fallback 3 键 file:model 落空 → 加载失败。此处按原始 stem 直查规范键，
+        // 命中即返回（无点号情形同样命中，顺带消除非 ASCII 名的误导性 fallback warn）。
+        const pathInfo = _classifyPath(path);
+        if (pathInfo.kind === 'model-stem') {
+            const canonicalKey = `file:${pathInfo.stem}`;
+            const canonicalBytes = (await idbGet<Uint8Array>('models', canonicalKey)) ?? null;
+            if (canonicalBytes) {
+                return canonicalBytes;
+            }
+        }
         // 兜底 1：bare stem fallback（FSA 扫描场景，路径含类别前缀）
         // _classifyPath regex 只取第一个 / 前段作为 stem，尝试所有可能的 bare stem 边界
         const modelMatch = path.match(/^web:\/\/model\/(.+)$/);

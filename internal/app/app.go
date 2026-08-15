@@ -407,7 +407,12 @@ func (u *UIState) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	u.present = make(map[string]bool, len(keySet))
-	for k := range keySet {
+	for k, raw := range keySet {
+		// [fix] JSON null 语义是「未提供/清空」，不是「显式零值」：跳过 null 值键，
+		// 避免 mergeUIState 误当显式字段用 Go 零值覆盖 dst 旧配置。
+		if strings.TrimSpace(string(raw)) == "null" {
+			continue
+		}
 		u.present[k] = true
 	}
 

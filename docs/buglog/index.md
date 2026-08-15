@@ -2,12 +2,13 @@
 
 # Bug 日志索引
 
-> 排障记录共 **53** 篇：34 篇按日期归档、19 篇早期记录（命名规范确立前）。每篇记录现象、根因、修复与验证方式，供回归时快速比对。
+> 排障记录共 **54** 篇：35 篇按日期归档、19 篇早期记录（命名规范确立前）。每篇记录现象、根因、修复与验证方式，供回归时快速比对。
 
 > 写作规范见 [Buglog 规范](./README.md)。
 
-## 2026 年 8 月（12）
+## 2026 年 8 月（13）
 
+- `2026-08-16` [多子代理审计 P3 观察项（2026-08-16 批次，未修复）](./2026-08-16-audit-p3-observations.md)
 - `2026-08-10` [@overlay 测试在 headless 下点击不可达（环境硬伤，未修复）](./2026-08-10-overlay-click-unreachable-headless.md)
 - `2026-08-09` [model-manager 测试：`@ts-nocheck` 全局抑制 + 直接访问 private 字段](./2026-08-09-model-manager-test-ts-nocheck-private-access.md)
 - `2026-08-03` [E2E @web 冒烟失败：web 入口加载后未渲染 #btnMainAction](./2026-08-03-web-entry-btnMainAction-not-rendered.md)

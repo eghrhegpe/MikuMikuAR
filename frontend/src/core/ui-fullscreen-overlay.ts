@@ -231,7 +231,8 @@ function createOverlayElement(options: FullscreenOverlayOptions): HTMLElement {
             return;
         }
         if (e.key === 'Escape') {
-            cleanup();
+            // [fix] 不再提前外部调 cleanup()：closeFullscreen 内部会从
+            // _cleanupMap 取同一 cleanup 并 delete，重复执行会双重 dispose。
             closeFullscreen();
             return;
         }
@@ -246,7 +247,7 @@ function createOverlayElement(options: FullscreenOverlayOptions): HTMLElement {
     // Overlay 背景点击关闭
     overlay.addEventListener('click', (e) => {
         if (e.target === overlay && currentState === 'FULLSCREEN') {
-            cleanup();
+            // [fix] 同 Escape 路径：不提前外部调 cleanup()，统一由 closeFullscreen 内部清理一次
             closeFullscreen();
         }
     });
