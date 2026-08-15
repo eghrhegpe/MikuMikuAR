@@ -100,10 +100,11 @@ describe('vmd-writer interpolation', () => {
             rotation: [0, 0, 0, 1],
         };
         const buf = new DataView(buildBoneFrame(f));
-        expect(buf.getUint8(47)).toBe(20);
-        expect(buf.getUint8(48)).toBe(20);
-        expect(buf.getUint8(49)).toBe(107);
-        expect(buf.getUint8(50)).toBe(107);
+        // [audit:round48 P1] 插值字节序 [x1,x2,y1,y2]（VMD 规范 + babylon-mmd loader 读取约定）
+        expect(buf.getUint8(47)).toBe(20); // x1
+        expect(buf.getUint8(48)).toBe(107); // x2
+        expect(buf.getUint8(49)).toBe(20); // y1
+        expect(buf.getUint8(50)).toBe(107); // y2
         expect(buf.getUint8(47 + 64 - 1)).toBe(107);
     });
 });
@@ -273,10 +274,11 @@ describe('vmd-writer custom interpolation', () => {
             interp: { x1: 30, y1: 10, x2: 90, y2: 107 },
         };
         const buf = new DataView(buildBoneFrame(f));
-        expect(buf.getUint8(47)).toBe(30);
-        expect(buf.getUint8(48)).toBe(10);
-        expect(buf.getUint8(49)).toBe(90);
-        expect(buf.getUint8(50)).toBe(107);
+        // [audit:round48 P1] 字节序 [x1,x2,y1,y2]
+        expect(buf.getUint8(47)).toBe(30); // x1
+        expect(buf.getUint8(48)).toBe(90); // x2
+        expect(buf.getUint8(49)).toBe(10); // y1
+        expect(buf.getUint8(50)).toBe(107); // y2
     });
 });
 
@@ -389,10 +391,11 @@ describe('vmd-writer interpolation clamping', () => {
             interp: { x1: 200, y1: -5, x2: 60, y2: 300 },
         };
         const buf = new DataView(buildBoneFrame(f));
-        expect(buf.getUint8(47)).toBe(127);
-        expect(buf.getUint8(48)).toBe(0);
-        expect(buf.getUint8(49)).toBe(60);
-        expect(buf.getUint8(50)).toBe(127);
+        // [audit:round48 P1] 字节序 [x1,x2,y1,y2]
+        expect(buf.getUint8(47)).toBe(127); // clamp(x1=200)
+        expect(buf.getUint8(48)).toBe(60); // x2=60
+        expect(buf.getUint8(49)).toBe(0); // clamp(y1=-5)
+        expect(buf.getUint8(50)).toBe(127); // clamp(y2=300)
     });
     it('writes EASE_OUT preset bytes', () => {
         const f: BoneKeyFrame = {
@@ -403,10 +406,11 @@ describe('vmd-writer interpolation clamping', () => {
             interp: INTERP_EASE_OUT,
         };
         const buf = new DataView(buildBoneFrame(f));
-        expect(buf.getUint8(47)).toBe(20);
-        expect(buf.getUint8(48)).toBe(80);
-        expect(buf.getUint8(49)).toBe(107);
-        expect(buf.getUint8(50)).toBe(107);
+        // [audit:round48 P1] 字节序 [x1,x2,y1,y2]
+        expect(buf.getUint8(47)).toBe(20); // x1
+        expect(buf.getUint8(48)).toBe(107); // x2
+        expect(buf.getUint8(49)).toBe(80); // y1
+        expect(buf.getUint8(50)).toBe(107); // y2
     });
 });
 

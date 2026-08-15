@@ -2608,8 +2608,8 @@
 | `MORPH_FRAME_SIZE()` | `motion-algos/vmd-writer:36` | — |
 | `MorphKeyFrame()` | `motion-algos/vmd-writer:17` | — |
 | `buildBoneFrame()` | `motion-algos/vmd-writer:123` | 构建单个骨骼关键帧 (111 bytes)。插值用线性默认值。 |
-| `buildMorphFrame()` | `motion-algos/vmd-writer:161` | 构建单个 morph 关键帧 (23 bytes)。 |
-| `buildVmd()` | `motion-algos/vmd-writer:179` | 构建完整 VMD ArrayBuffer。 |
+| `buildMorphFrame()` | `motion-algos/vmd-writer:165` | 构建单个 morph 关键帧 (23 bytes)。 |
+| `buildVmd()` | `motion-algos/vmd-writer:183` | 构建完整 VMD ArrayBuffer。 |
 | `canEncodeName()` | `motion-algos/vmd-writer:108` | 检查名称能否被完整编码为 Shift-JIS（round-trip 无误）。 |
 | `VPDBoneData()` | `motion-algos/vpd-parser:14` | — |
 | `VPDMorphData()` | `motion-algos/vpd-parser:20` | — |

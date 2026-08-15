@@ -2,12 +2,15 @@
 
 # 代码审核索引
 
-> 审核台账共 **145** 篇：120 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
+> 审核台账共 **148** 篇：123 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
 
 > 汇总视图（执行摘要 / 风险全景 / 改进优先级）见 [审核总索引](./README.md)。
 
-## 2026 年 8 月（109）
+## 2026 年 8 月（112）
 
+- `2026-08-15` [Round-48 审核 — vmd-evaluator.test.ts（VMD 求值器主测试） + vmd-evaluator.ts](./2026-08-15-round48-vmd-evaluator.md)
+- `2026-08-15` [[scene-action-bridge 注销 token] — 审核结果（round-48 测试 3）](./2026-08-15-round48-scene-action-bridge.md)
+- `2026-08-15` [第 48 轮审核 · 测试 1/3 — env-reflection 修复回归](./2026-08-15-round48-env-reflection.md)
 - `2026-08-15` [motion-modules 共享帧钩子管理器（左右侧独立注册）— 审核结果](./2026-08-15-round47-side-hooks.md)
 - `2026-08-15` [Round 47 — 统一平面反射引擎互斥测试审核（planar-reflection）](./2026-08-15-round47-planar-reflection.md)
 - `2026-08-15` [round47-performance-reflection — 性能↔反射联动桥 + 质量档位注册表审核](./2026-08-15-round47-performance-reflection.md)

@@ -144,14 +144,18 @@ export function buildBoneFrame(frame: BoneKeyFrame): ArrayBuffer {
     off += 4;
     view.setFloat32(off, frame.rotation[3], true);
     off += 4;
-    // 64 bytes 插值：16 组 × 4 字节 [x1,y1,x2,y2]，默认 LINEAR
-    // 值域 0-127（VMD 规范）：钳制越界值，避免 setUint8 对负数/超 255 静默截断
+    // 64 bytes 插值：16 组 × 4 字节，值域 0-127（VMD 规范）
+    // [audit:round48 P1] 字节序必须为 [x1, x2, y1, y2]（先两个 x 控制点再两个 y）：
+    // babylon-mmd loader 按 BezierInterpolate(x1,x2,y1,y2) 读取（mmdModelAnimationContainer.js
+    // positionInterpolations[i*12+0..3]）。此前写 [x1,y1,x2,y2] 使 x2/y1 互换，
+    // 全部缓动预设（EASE_IN_OUT 等）经真实管线退化为线性。
+    // 钳制越界值，避免 setUint8 对负数/超 255 静默截断
     const interp = frame.interp ?? INTERP_LINEAR;
     const clamp = (v: number) => Math.max(0, Math.min(127, Math.round(Number.isFinite(v) ? v : 0)));
     for (let i = 0; i < 16; i++) {
         view.setUint8(off++, clamp(interp.x1));
-        view.setUint8(off++, clamp(interp.y1));
         view.setUint8(off++, clamp(interp.x2));
+        view.setUint8(off++, clamp(interp.y1));
         view.setUint8(off++, clamp(interp.y2));
     }
     return buf;
