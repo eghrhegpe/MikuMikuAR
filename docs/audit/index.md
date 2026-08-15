@@ -2,12 +2,15 @@
 
 # 代码审核索引
 
-> 审核台账共 **82** 篇：57 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
+> 审核台账共 **85** 篇：60 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
 
 > 汇总视图（执行摘要 / 风险全景 / 改进优先级）见 [审核总索引](./README.md)。
 
-## 2026 年 8 月（46）
+## 2026 年 8 月（49）
 
+- `2026-08-15` [Round-27 审核 — vmd-loader-race.test.ts（VMD 加载基础校验 + gen counter）](./2026-08-15-round27-vmd-loader-race.md)
+- `2026-08-15` [第 27 轮审核报告 — color-helpers（round-16 guardNum 修复后首次专项核验）](./2026-08-15-round27-color-helpers.md)
+- `2026-08-15` [[round27] action-defs 覆盖缺口补测（scene / library / diagnostic）— 审核结果](./2026-08-15-round27-action-defs-extra.md)
 - `2026-08-15` [transform-gizmo 模块 — 审核结果（round-26 / 测试反推源码）](./2026-08-15-round26-transform-gizmo.md)
 - `2026-08-15` [mmd-adapter.native 模块 — 审核结果（round-26 / 测试反推源码）](./2026-08-15-round26-mmd-adapter-native.md)
 - `2026-08-15` [[round26] audio（音乐播放器/查询/同步/音量）— 审核结果](./2026-08-15-round26-audio.md)

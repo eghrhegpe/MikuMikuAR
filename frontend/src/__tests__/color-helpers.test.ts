@@ -40,6 +40,15 @@ describe('color-helpers', () => {
             expect(c.g).toBeCloseTo(0.5);
             expect(c.b).toBe(0);
         });
+
+        it('coerces ±Infinity to 0（round-16 guardNum 收敛护栏，audit:round27）', () => {
+            // 修复前本地版 `!Number.isNaN` 放行 Infinity，会污染 Color3；
+            // 收敛到 core/guards（Number.isFinite）后 ±Infinity → 0。此为动机行为回归锁。
+            const c = col3FromTriple([Infinity, -Infinity, 0.5]);
+            expect(c.r).toBe(0);
+            expect(c.g).toBe(0);
+            expect(c.b).toBeCloseTo(0.5);
+        });
     });
 
     describe('hexToRgb', () => {
@@ -115,6 +124,12 @@ describe('color-helpers', () => {
 
         it('coerces NaN channels to 0 (avoid invalid rgb(NaN,...) CSS)', () => {
             expect(rgbString(new Color3(NaN, 0.5, NaN))).toBe('rgb(0, 128, 0)');
+        });
+
+        it('coerces ±Infinity to 0（round-16 guardNum 收敛护栏，audit:round27）', () => {
+            // 修复前 rgbString 的 Infinity 经 Math.min(255,Infinity)=255 钳成 255；
+            // 收敛到 Number.isFinite 后 → 0。锁定统一语义。
+            expect(rgbString(new Color3(Infinity, 0.5, -Infinity))).toBe('rgb(0, 128, 0)');
         });
     });
 });
