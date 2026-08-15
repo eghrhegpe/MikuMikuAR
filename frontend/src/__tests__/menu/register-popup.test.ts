@@ -2,6 +2,8 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { PopupRow } from '../../core/config';
 import { dom } from '../../core/config';
 import { registerPopupMenu } from '../../menus/menu-factory';
+import { getOpenMenus } from '../../menus/menu';
+import { disposeMenuWrapper } from '../../menus/menu-overlay';
 import { makeTestLevel } from '../fixtures/menu';
 
 // ─── registerPopupMenu 生命周期测试：注册、显示、刷新、关闭 ───
@@ -18,6 +20,11 @@ describe('registerPopupMenu — 生命周期', () => {
     });
 
     afterEach(() => {
+        // 每个用例都可能创建/复用菜单，统一释放存活实例和 wrapper 注册表，避免跨用例泄漏。
+        for (const m of getOpenMenus()) {
+            m.dispose();
+        }
+        disposeMenuWrapper('test-menu');
         sceneOverlay.remove();
         (dom as any).sceneOverlay = null;
     });
@@ -111,23 +118,30 @@ describe('registerPopupMenu — 生命周期', () => {
         refreshRoot();
         await new Promise((resolve) => requestAnimationFrame(resolve));
         expect(getMenu()?.currentLevel?.items.length).toBe(2);
+        // 不仅状态数组更新，已渲染 DOM 也必须同步刷新
+        const labels = Array.from(sceneOverlay.querySelectorAll('.slide-label')).map(
+            (el) => el.textContent
+        );
+        expect(labels).toEqual(['A', 'B']);
     });
 
     it('refreshRoot 在无菜单时静默返回', () => {
-        const { refreshRoot } = registerPopupMenu({
+        const { getMenu, refreshRoot } = registerPopupMenu({
             wrapperKey: 'test-menu',
             popupType: 'test',
             buildRoot: () => makeTestLevel('根'),
             buildRootItems: () => [],
             handlers: {},
         });
-        // 不应抛异常
+        expect(getMenu()).toBeNull();
+        // 不应抛异常，也不应创建菜单
         expect(() => refreshRoot()).not.toThrow();
+        expect(getMenu()).toBeNull();
     });
 
-    it('onShow 回调在每次 show 时调用', async () => {
+    it('onShow 回调在每次 show 时调用', () => {
         const onShow = vi.fn();
-        const { show } = registerPopupMenu({
+        const { getMenu, show } = registerPopupMenu({
             wrapperKey: 'test-menu',
             popupType: 'test',
             buildRoot: () => makeTestLevel('根'),
@@ -135,10 +149,14 @@ describe('registerPopupMenu — 生命周期', () => {
             onShow,
         });
         show();
+        const firstMenu = getMenu();
+        expect(firstMenu).not.toBeNull();
         expect(onShow).toHaveBeenCalledTimes(1);
+        expect(onShow).toHaveBeenCalledWith(firstMenu);
 
         show(); // 再次调用
         expect(onShow).toHaveBeenCalledTimes(2);
+        expect(onShow).toHaveBeenCalledWith(firstMenu);
     });
 
     it('菜单 dispose 后 SlideMenu 实例被清理', async () => {
@@ -153,8 +171,10 @@ describe('registerPopupMenu — 生命周期', () => {
         const menu = getMenu();
         expect(menu).not.toBeNull();
 
-        // dispose 应成功执行且不抛异常
+        // dispose 应成功执行且不抛异常，并同步清空内部引用/存活集合
         expect(() => menu?.dispose()).not.toThrow();
+        expect(getMenu()).toBeNull();
+        expect(getOpenMenus()).not.toContain(menu);
     });
 
     it('菜单 dispose 后可以重新 show', async () => {
@@ -170,6 +190,7 @@ describe('registerPopupMenu — 生命周期', () => {
 
         // dispose 后重新 show 应创建新实例
         firstMenu?.dispose();
+        expect(getMenu()).toBeNull();
         show();
         await new Promise((resolve) => requestAnimationFrame(resolve));
         const secondMenu = getMenu();

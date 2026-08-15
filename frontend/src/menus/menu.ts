@@ -63,6 +63,10 @@ export class SlideMenu implements RenderContext {
     private _cachedExtraBtns: HTMLElement[] | null = null;
     /** 记录未决的 RAF reRender，用于去抖 */
     private _reRenderPending = false;
+    /** 未决 RAF 的句柄，供 _cancelAnim/dispose 真正取消，避免取消后仍执行旧渲染 */
+    private _reRenderRaf: ReturnType<typeof requestAnimationFrame> | null = null;
+    /** 当前过渡动画注册的 transitionend Disposable，dispose/_cancelAnim 时统一释放 */
+    private _transitionDisposables: Disposable[] = [];
     /** [fix:P0] transitioning 期间缓存的 reRender 请求（merged opts），过渡结束后补执行 */
     private _pendingReRender: { opts?: { preserveFocus?: boolean } } | null = null;
     /** [fix:P3] 缓存 slide-list 引用，buildPanel/重建时重置，避免每帧 querySelector */
@@ -314,14 +318,19 @@ export class SlideMenu implements RenderContext {
         this.panel.style.transition = 'none';
         this.panel.style.opacity = '1';
         this.panel.style.transform = 'translateX(0)';
-        safeCallAsync('menu', 'buildPanel failed:', () =>
-            this.buildPanel(level).then(() => {
-                this.updateHeader(level);
-                this.setupFocus();
-                this.onAfterRender?.(level, this);
-                this.onLevelEnter?.(level, this);
-            })
-        );
+        safeCallAsync('menu', 'buildPanel failed:', async () => {
+            const p = this.buildPanel(level);
+            const seq = this._buildSeq;
+            await p;
+            // [fix] dispose 或后续 reset/popTo 已使本次 build 过期时，不再对已释放菜单做 finalize
+            if (seq !== this._buildSeq) {
+                return;
+            }
+            this.updateHeader(level);
+            this.setupFocus();
+            this.onAfterRender?.(level, this);
+            this.onLevelEnter?.(level, this);
+        });
     }
 
     /**
@@ -348,9 +357,22 @@ export class SlideMenu implements RenderContext {
         this.panel.style.transform = 'translateX(-8px)';
 
         let fadeOutDisp: Disposable | null = null;
+        let fadeOutStarted = false;
         const onFadeOut = async () => {
+            // [fix] transitionend 与 150ms 兜底定时器可能先后触发；二者都仍处于
+            // transitioning 状态，若不幂等会重复 buildPanel/updateHeader/fadeIn 注册。
+            if (fadeOutStarted) {
+                return;
+            }
+            fadeOutStarted = true;
             fadeOutDisp = safeDispose(fadeOutDisp);
-            await this.buildPanel(level);
+            const p = this.buildPanel(level);
+            const seq = this._buildSeq;
+            await p;
+            // dispose/_cancelAnim 后不再继续旧过渡的渲染与淡入注册
+            if (seq !== this._buildSeq) {
+                return;
+            }
             this.updateHeader(level);
             // 新内容从下方淡入
             this.panel.style.transition = 'none';
@@ -368,6 +390,7 @@ export class SlideMenu implements RenderContext {
                 this._endTransition(level);
             };
             fadeInDisp = addDisposableListener(this.panel, 'transitionend', onFadeIn);
+            this._transitionDisposables.push(fadeInDisp);
             this._pushTimeout(
                 setTimeout(() => {
                     if (this.transitioning) {
@@ -380,6 +403,7 @@ export class SlideMenu implements RenderContext {
         };
 
         fadeOutDisp = addDisposableListener(this.panel, 'transitionend', onFadeOut);
+        this._transitionDisposables.push(fadeOutDisp);
         this._pushTimeout(
             setTimeout(() => {
                 if (this.transitioning) {
@@ -412,9 +436,20 @@ export class SlideMenu implements RenderContext {
         this.panel.style.transform = 'translateX(8px)';
 
         let fadeOutDisp: Disposable | null = null;
+        let fadeOutStarted = false;
         const onFadeOut = async () => {
+            // [fix] 与 push 同：transitionend 与兜底定时器双触发时只执行一次淡出。
+            if (fadeOutStarted) {
+                return;
+            }
+            fadeOutStarted = true;
             fadeOutDisp = safeDispose(fadeOutDisp);
-            await this.buildPanel(prevLevel);
+            const p = this.buildPanel(prevLevel);
+            const seq = this._buildSeq;
+            await p;
+            if (seq !== this._buildSeq) {
+                return;
+            }
             this.updateHeader(prevLevel);
             this.panel.style.transition = 'none';
             this.panel.style.opacity = '0';
@@ -431,6 +466,7 @@ export class SlideMenu implements RenderContext {
                 this._endTransition(prevLevel);
             };
             fadeInDisp = addDisposableListener(this.panel, 'transitionend', onFadeIn);
+            this._transitionDisposables.push(fadeInDisp);
             this._pushTimeout(
                 setTimeout(() => {
                     if (this.transitioning) {
@@ -443,6 +479,7 @@ export class SlideMenu implements RenderContext {
         };
 
         fadeOutDisp = addDisposableListener(this.panel, 'transitionend', onFadeOut);
+        this._transitionDisposables.push(fadeOutDisp);
         this._pushTimeout(
             setTimeout(() => {
                 if (this.transitioning) {
@@ -472,14 +509,18 @@ export class SlideMenu implements RenderContext {
         this.panel.style.transition = 'none';
         this.panel.style.opacity = '1';
         this.panel.style.transform = 'translateX(0)';
-        safeCallAsync('menu', 'buildPanel failed:', () =>
-            this.buildPanel(level).then(() => {
-                this.updateHeader(level);
-                this.setupFocus();
-                this.onAfterRender?.(level, this);
-                this.onLevelEnter?.(level, this);
-            })
-        );
+        safeCallAsync('menu', 'buildPanel failed:', async () => {
+            const p = this.buildPanel(level);
+            const seq = this._buildSeq;
+            await p;
+            if (seq !== this._buildSeq) {
+                return;
+            }
+            this.updateHeader(level);
+            this.setupFocus();
+            this.onAfterRender?.(level, this);
+            this.onLevelEnter?.(level, this);
+        });
     }
 
     reRender(opts?: { preserveFocus?: boolean }): void {
@@ -503,7 +544,8 @@ export class SlideMenu implements RenderContext {
             return;
         }
         this._reRenderPending = true;
-        requestAnimationFrame(() => {
+        this._reRenderRaf = requestAnimationFrame(() => {
+            this._reRenderRaf = null;
             this._reRenderPending = false;
             this._doReRender(opts);
         });
@@ -596,6 +638,17 @@ export class SlideMenu implements RenderContext {
                 return Promise.resolve();
             });
 
+        const buildAndFinalize = () => {
+            const p = this.buildPanel(level);
+            const seq = this._buildSeq;
+            return p.then(() => {
+                // 仅当本次 build 仍是最新（未被 dispose/新 build 取代）时才执行 finalize
+                if (seq === this._buildSeq) {
+                    return safeFinalize();
+                }
+            });
+        };
+
         if (level.reRenderCustom) {
             // === 增量路径：patch items（非空时）+ reRenderCustom ===
             const list = this._getSlideList();
@@ -608,26 +661,26 @@ export class SlideMenu implements RenderContext {
                 return;
             }
             // 没有旧 DOM → 退化为全量重建
-            safeCallAsync('menu', 'buildPanel failed:', () =>
-                this.buildPanel(level).then(safeFinalize)
-            );
+            safeCallAsync('menu', 'buildPanel failed:', buildAndFinalize);
         } else if (level.renderCustom || level.items.length === 0) {
             // === 自定义渲染 / 空列表 → 全量重建 ===
-            safeCallAsync('menu', 'buildPanel failed:', () =>
-                this.buildPanel(level).then(safeFinalize)
-            );
+            safeCallAsync('menu', 'buildPanel failed:', buildAndFinalize);
         } else {
             // === 纯 items → 全量重建（card-per-divider 结构不支持增量 patch） ===
             // [fix P2] 仅经 safeCallAsync 异步 finalize（buildPanel 完成后执行一次），
             // 删除下方同步 finalize() 调用，避免 onAfterRender/setupFocus 重复触发。
-            safeCallAsync('menu', 'buildPanel failed:', () =>
-                this.buildPanel(level).then(safeFinalize)
-            );
+            safeCallAsync('menu', 'buildPanel failed:', buildAndFinalize);
         }
     }
 
     /** 重置导航栈到根层级，不触发渲染 */
     resetToRoot(): void {
+        // [fix] 若当前正处于 push/pop 过渡，必须先取消动画/定时器；
+        // 否则旧的过渡回调仍会按已出栈的 level 继续 buildPanel/updateHeader，
+        // 造成“栈已回根、面板却渲染子层”的状态错位。
+        if (this.transitioning) {
+            this._cancelAnim();
+        }
         if (this.levels.length > 1) {
             this.levels = [this.levels[0]];
         }
@@ -701,9 +754,17 @@ export class SlideMenu implements RenderContext {
     /** 强制结束当前动画，清除所有未决定时器，重置过渡状态 */
     private _cancelAnim(): void {
         this.transitioning = false;
+        if (this._reRenderRaf !== null) {
+            cancelAnimationFrame(this._reRenderRaf);
+            this._reRenderRaf = null;
+        }
         this._reRenderPending = false;
         this._pendingReRender = null;
         this._cancelTimeout();
+        for (const d of this._transitionDisposables) {
+            d.dispose();
+        }
+        this._transitionDisposables = [];
         this.panel.style.transition = 'none';
         this.panel.style.opacity = '1';
         this.panel.style.transform = 'translateX(0)';
@@ -716,6 +777,12 @@ export class SlideMenu implements RenderContext {
      */
     private _endTransition(nextLevel: PopupLevel): void {
         this.transitioning = false;
+        // 过渡结束（无论 transitionend 还是兜底定时器触发）统一释放 transitionend 监听，
+        // 避免 dispose/_cancelAnim 前在 panel 上残留监听器。
+        for (const d of this._transitionDisposables) {
+            d.dispose();
+        }
+        this._transitionDisposables = [];
         this.setupFocus();
         this.onAfterRender?.(nextLevel, this);
         this.onLevelEnter?.(nextLevel, this);
@@ -1350,7 +1417,7 @@ export class SlideMenu implements RenderContext {
                 }
             });
         } else {
-            el.addEventListener('click', () => this.onItemClick(row, this));
+            el.addEventListener('click', () => this.onItemClick?.(row, this));
         }
 
         el.addEventListener('mouseenter', () => {

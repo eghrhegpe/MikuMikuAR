@@ -63,6 +63,23 @@ describe('SlideMenu — 创建行 (createRow DOM 类型)', () => {
         expect(addClick).toHaveBeenCalledTimes(1);
     });
 
+    it('action 行点击触发 onItemClick', () => {
+        const onItemClick = vi.fn();
+        (menu as any).onItemClick = onItemClick;
+        const el = (menu as any).createRow({
+            kind: 'action' as const,
+            label: '点击项',
+            icon: 'i',
+            target: 'click-target',
+        });
+        el.click();
+        expect(onItemClick).toHaveBeenCalledTimes(1);
+        expect(onItemClick).toHaveBeenCalledWith(
+            expect.objectContaining({ label: '点击项', target: 'click-target' }),
+            menu
+        );
+    });
+
     it('folder 行生成含右箭头的 slide-item', () => {
         const el = (menu as any).createRow({
             kind: 'folder' as const,
@@ -105,6 +122,11 @@ describe('SlideMenu — 创建行 (createRow DOM 类型)', () => {
         // el 是 slideRow wrapper 中的 firstChild
         expect(el.className).toBe('collapsible-header');
         expect(el.querySelector('.collapsible-label')?.textContent).toBe('可折叠菜单');
+        // headerToggle 渲染为真实开关，点击触发 onChange
+        const toggle = el.querySelector('.header-toggle');
+        expect(toggle).toBeTruthy();
+        toggle?.click();
+        expect(toggleChange).toHaveBeenCalledWith(false);
     });
 
     it('slider 行生成滑块控件 wrapper', () => {
@@ -139,7 +161,13 @@ describe('SlideMenu — 创建行 (createRow DOM 类型)', () => {
         expect(el).toBeTruthy();
         expect(el.dataset.rowKey).toBe('toggle:tg');
         // 内部有 toggle-row 结构
-        expect(el.querySelector('.toggle-row') || el.querySelector('.toggle-label')).toBeTruthy();
+        const row = el.querySelector('.toggle-row');
+        expect(row).toBeTruthy();
+        // 点击行主体切换开关并回调
+        row?.click();
+        expect(onChange).toHaveBeenCalledWith(false);
+        const checkbox = row?.querySelector('input[type="checkbox"]') as HTMLInputElement | null;
+        expect(checkbox?.checked).toBe(false);
     });
 
     it('chips 行生成芯片组', () => {
