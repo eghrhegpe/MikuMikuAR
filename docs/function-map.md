@@ -1402,7 +1402,7 @@
 | `restoreMaterials()` | `scene/manager/outfit-overlay:333` | 恢复被 hideMaterials 隐藏的 PMX mesh 可见性。 |
 | `applyOutfitVariant()` | `scene/manager/outfit:574` | — |
 | `loadOutfits()` | `scene/manager/outfit:118` | — |
-| `resetOutfit()` | `scene/manager/outfit:765` | — |
+| `resetOutfit()` | `scene/manager/outfit:770` | — |
 | `setSceneRef()` | `scene/manager/outfit:38` | 由 scene.ts 在场景初始化完成后注入当前 scene 实例 |
 | `tryApplyPbrMaterialBuilder()` | `scene/manager/pbr-builder-init:12` | 动态导入 PBRMaterialBuilder 并覆盖 MmdModelLoader.SharedMaterialBuilder。 |
 | `auditMissingTextures()` | `scene/manager/pmx-texture-audit:46` | 识别 PMX 声明但目录中缺失的纹理。 |

@@ -757,12 +757,20 @@ async function _applyOutfitVariantCore(id: string, variantName: string): Promise
     }
 
     await Promise.all(promises);
-    inst.activeVariant = variantName;
-    showInfoToast(t('outfit.switched', { name: variantName }));
-    triggerAutoSave();
+    // [audit:round25 P2] 回填前检查 token 代次：resetOutfit 或新变体已使 token 过期时
+    // 丢弃本次回填——否则「点变体→立刻 reset」时晚完成的 apply 会无条件写回 activeVariant，
+    // 造成 reset 后状态复活（纹理侧有 token 保护，状态侧此前无）。
+    if (inst._textureLoadToken === token) {
+        inst.activeVariant = variantName;
+        showInfoToast(t('outfit.switched', { name: variantName }));
+        triggerAutoSave();
+    }
 }
 
 export async function resetOutfit(id: string): Promise<void> {
+    // [audit:round25 P2] reset 语义优先：清除排队中的变体，使 guard 释放后不再执行
+    // pending 变体（否则「点变体→立刻 reset」时 reset 后变体仍会被应用）。
+    _pendingVariant.delete(id);
     const inst = modelRegistry.get(id);
     if (!inst) {
         return;
