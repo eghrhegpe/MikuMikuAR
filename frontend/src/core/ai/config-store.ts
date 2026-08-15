@@ -119,9 +119,10 @@ export function normalizeEndpoint(endpoint: string): string {
  *  若不 await，失败不会抛出，仅在 DEV 环境打印警告。 */
 export async function saveAiConfig(partial: Partial<AiConfig>): Promise<AiConfig> {
     const merged: AiConfig = { ...(_cache ?? DEFAULT_AI_CONFIG), ...partial };
-    if (merged.endpoint) {
-        merged.endpoint = normalizeEndpoint(merged.endpoint);
-    }
+    // [audit:round20 P3] 防御非字符串 endpoint（null/数字等脏数据）：normalizeEndpoint 依赖
+    // .trim()，脏值会穿透缓存到 browser-adapter 的 .trim() 崩溃；统一归一为空串。
+    const rawEndpoint = typeof merged.endpoint === 'string' ? merged.endpoint : '';
+    merged.endpoint = rawEndpoint ? normalizeEndpoint(rawEndpoint) : '';
     _cache = merged;
     try {
         await idbSet(CONFIG_STORE, CONFIG_KEY, merged);
@@ -151,6 +152,11 @@ export function normalizeTimeout(v: unknown): number {
 /** 迁移旧配置：无 provider 字段时按 endpoint 推断，无法推断则回落 ollama。 */
 function migrateAiConfig(stored: Partial<AiConfig>): AiConfig {
     const base = { ...DEFAULT_AI_CONFIG, ...stored };
+    // [audit:round20 P3] 防御非字符串 endpoint（旧配置/手写 IDB 脏数据）：下方
+    // .includes/.trim 依赖字符串，非字符串会崩溃；归一为空串走 custom provider 推断。
+    if (typeof base.endpoint !== 'string') {
+        base.endpoint = '';
+    }
     if (!base.provider || !PROVIDER_PRESETS[base.provider]) {
         const matched = (Object.keys(PROVIDER_PRESETS) as AiConfigProvider[])
             .filter((p) => p !== 'custom')

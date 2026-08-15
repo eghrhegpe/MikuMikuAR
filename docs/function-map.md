@@ -1,7 +1,7 @@
 # 函数映射表
 
 > AI 找代码用。改前端功能时先 grep 此表定位文件。
-> **自动生成**（2026-08-14）— 由 `scripts/gen-funcmap.mjs` 生成。
+> **自动生成**（2026-08-15）— 由 `scripts/gen-funcmap.mjs` 生成。
 
 ## 总览
 
@@ -71,13 +71,13 @@
 | `MIN_TIMEOUT_MS()` | `core/ai/config-store:23` | [doc:adr-199 P2-3] 超时下限（防误设过小掐断正常请求）。 |
 | `PROVIDER_PRESETS()` | `core/ai/config-store:38` | 服务商预设：端点、默认模型、是否需要 Key、文案 key、文档链接。 |
 | `ProviderPreset()` | `core/ai/config-store:29` | — |
-| `classifyAiError()` | `core/ai/config-store:213` | 根据 testConnection / streamChat 的错误消息分类错误类型。 |
-| `ensureAiConfigLoaded()` | `core/ai/config-store:138` | 主动预加载（建议 init 后台调用，使首次读取即命中缓存，避免回退默认窗口）。 |
+| `classifyAiError()` | `core/ai/config-store:219` | 根据 testConnection / streamChat 的错误消息分类错误类型。 |
+| `ensureAiConfigLoaded()` | `core/ai/config-store:139` | 主动预加载（建议 init 后台调用，使首次读取即命中缓存，避免回退默认窗口）。 |
 | `loadAiConfig()` | `core/ai/config-store:95` | 同步读取：优先内存缓存；未加载时回退默认并触发异步回源（不阻塞调用方）。 |
 | `normalizeEndpoint()` | `core/ai/config-store:105` | 补全 chat completions 路径：输入 &#96;/v1&#96; 自动补全为 &#96;/v1/chat/completions&#96;，已有完整路径则原样返回。 |
-| `normalizeTimeout()` | `core/ai/config-store:146` | [doc:adr-199 P2-3] 将超时值归一到 [MIN, MAX]；非法/缺失回落缺省。 |
+| `normalizeTimeout()` | `core/ai/config-store:147` | [doc:adr-199 P2-3] 将超时值归一到 [MIN, MAX]；非法/缺失回落缺省。 |
 | `saveAiConfig()` | `core/ai/config-store:120` | 保存配置：写内存缓存（同步即时生效）+ 异步落盘 IndexedDB。 |
-| `validateAiConfig()` | `core/ai/config-store:192` | 校验配置是否足够发起一次对话。全量收集所有错误，一次性返回。 |
+| `validateAiConfig()` | `core/ai/config-store:198` | 校验配置是否足够发起一次对话。全量收集所有错误，一次性返回。 |
 | `buildDialogueSystemPrompt()` | `core/ai/dialogue-session:32` | 转发：为当前角色构建台词 system prompt。 |
 | `getActiveBible()` | `core/ai/dialogue-session:17` | 当前选中的角色圣经。 |
 | `listBibles()` | `core/ai/dialogue-session:27` | 可选角色列表（供 UI 下拉/切换）。 |

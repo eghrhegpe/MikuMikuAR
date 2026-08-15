@@ -13,7 +13,8 @@
  * - 秒级运行（vitest，不开浏览器）
  *
  * 注意: 本文件 mock 需求较重（需完整状态数据），故保持内联定义。
- *       通用 mock 工厂见 menu-schema-mocks.ts。
+ *       menu-schema 系列测试的共享 mock 工厂见 menu-schema-mocks.ts（本文件未复用，
+ *       因内联形状已分化——audit:round20 P2 登记：应切换共享工厂消除重复）。
  */
 import { describe, it, expect, beforeAll, vi } from 'vitest';
 import { writeFileSync, readFileSync, mkdirSync } from 'node:fs';

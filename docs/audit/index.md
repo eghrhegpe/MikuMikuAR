@@ -2,12 +2,15 @@
 
 # 代码审核索引
 
-> 审核台账共 **61** 篇：36 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
+> 审核台账共 **64** 篇：39 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
 
 > 汇总视图（执行摘要 / 风险全景 / 改进优先级）见 [审核总索引](./README.md)。
 
-## 2026 年 8 月（25）
+## 2026 年 8 月（28）
 
+- `2026-08-15` [[round20] Schema Snapshot Generator — 审核结果](./2026-08-15-round20-schema-snapshot.md)
+- `2026-08-15` [审核报告：setupE2ECapture 双运行时开关（ADR-229 P8-A 补测）](./2026-08-15-round20-dev-hooks.md)
+- `2026-08-15` [审核报告：config-store 持久化路径（save/load/merge/cache 语义）](./2026-08-15-round20-config-store.md)
 - `2026-08-15` [[vendored-patch 守护测试 + apply-vendored-wasm.mjs] — 审核结果](./2026-08-15-round19-vendored-patch.md)
 - `2026-08-15` [Round19-1: DragSliderController 滑块控制器 — 审核结果](./2026-08-15-round19-slider-controller.md)
 - `2026-08-15` [审核报告：settings-diagnostic 测试 + validateAiConfig/goKeyAllowsProceed 联合路径](./2026-08-15-round19-settings-diagnostic.md)
