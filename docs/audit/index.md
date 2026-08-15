@@ -2,12 +2,13 @@
 
 # 代码审核索引
 
-> 审核台账共 **186** 篇：160 篇按日期归档、9 篇轮次记录、17 篇专题审核。每篇记录审核范围、发现与结论。
+> 审核台账共 **187** 篇：161 篇按日期归档、9 篇轮次记录、17 篇专题审核。每篇记录审核范围、发现与结论。
 
 > 汇总视图（执行摘要 / 风险全景 / 改进优先级）见 [审核总索引](./README.md)。
 
-## 2026 年 8 月（149）
+## 2026 年 8 月（150）
 
+- `2026-08-15` [Round 70 审核报告 — motion-modules-registry disable / ik / init](./2026-08-15-round70-registry-disable-ik-init.md)
 - `2026-08-15` [Round 69 审核报告 — env-texture / motion-history / motion-modules-registry.create](./2026-08-15-round69-texture-history-registry.md)
 - `2026-08-15` [Round 68 审核报告 — bone-override-store / env-ground-spec / env-particles](./2026-08-15-round68-bone-ground-particles.md)
 - `2026-08-15` [Round 67 审核报告 — plaza.contract / render-loop / runtime-mode](./2026-08-15-round67-plaza-render-runtime.md)

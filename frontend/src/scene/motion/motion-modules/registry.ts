@@ -53,9 +53,19 @@ export function registerModule(
 export function unregisterModule(id: string): void {
     // 先清理该模块已 claim 的 ownedBones + 帧钩子（round-12 P2），再删注册表条目。
     // 对每个持有该模块骨骼的模型，创建实例并 disable()（onDisable 注销帧钩子 + releaseOwnedBones）。
+    // 除 store 记录的拥有者外，也扫描 modelRegistry：模块可能因冲突/未认领骨骼而
+    // ownedBones 为空，但帧钩子已注册；仅靠 getModelsOwningModule 会漏清理。
     // 必须在 _registry.delete 之前调用，否则 createModule 查不到条目返回 null。
-    for (const modelId of getBoneOverrideStore().getModelsOwningModule(id)) {
+    const models = new Set<string>([
+        ...getBoneOverrideStore().getModelsOwningModule(id),
+        ...modelRegistry.keys(),
+    ]);
+    for (const modelId of models) {
         createModule(id, modelId)?.disable();
+    }
+    // 同步清除该模块在无 VMD 回退存储中的残留状态，避免注销后重注册读到旧配置。
+    for (const byModel of _fallbackModuleStates.values()) {
+        byModel.delete(id);
     }
     _registry.delete(id);
 }
@@ -89,6 +99,14 @@ function _resolveIntent(actionId?: string): SceneMotionIntent | null {
     return getActiveMotion();
 }
 
+/** 将模块注册的默认参数补入 state.params（已有值优先，避免旧存档/缺参 state 读到 undefined）。 */
+function _seedDefaultParams(state: MotionModuleState, moduleId: string): void {
+    const defs = _registry.get(moduleId)?.meta.defaults;
+    if (defs) {
+        state.params = { ...defs, ...state.params };
+    }
+}
+
 /**
  * [fix:proc-override] 从 per-model + per-procRole 存储读写模块状态（不存在则创建 + 种入 defaults）。
  * 程序化动作（idle/autodance）无 SceneMotionIntent，过去回落扁平内存 `_fallbackModuleStates`，
@@ -116,11 +134,11 @@ function _getOrCreateProcModuleState(
     let state = modules.find((m) => m.id === moduleId);
     if (!state) {
         state = { id: moduleId, enabled: false, params: {} };
-        const entry = _registry.get(moduleId);
-        if (entry?.meta.defaults) {
-            state.params = { ...entry.meta.defaults };
-        }
+        _seedDefaultParams(state, moduleId);
         modules.push(state);
+    } else {
+        // 旧存档可能缺少新增的默认参数，读取时补齐（不覆盖已有值）
+        _seedDefaultParams(state, moduleId);
     }
     return state;
 }
@@ -190,11 +208,11 @@ export function getModuleState(
         let state = byModel.get(moduleId);
         if (!state) {
             state = { id: moduleId, enabled: false, params: {} };
-            const entry = _registry.get(moduleId);
-            if (entry?.meta.defaults) {
-                state.params = { ...entry.meta.defaults };
-            }
+            _seedDefaultParams(state, moduleId);
             byModel.set(moduleId, state);
+        } else {
+            // 旧存档/旧内存状态可能缺少新增默认参数，读取时补齐
+            _seedDefaultParams(state, moduleId);
         }
         return state;
     }
@@ -203,6 +221,8 @@ export function getModuleState(
     if (intent.motionModules) {
         const existing = intent.motionModules.find((m) => m.id === moduleId);
         if (existing) {
+            // 旧动作文件/旧存档可能缺新增默认参数，读取时补齐（不覆盖已有值）
+            _seedDefaultParams(existing, moduleId);
             return existing;
         }
     }
@@ -211,11 +231,7 @@ export function getModuleState(
     const state = findOrCreateModuleState(intent, moduleId);
 
     // 将模块注册的默认值种入 params，避免 schema 首次渲染读到 undefined
-    const entry = _registry.get(moduleId);
-    const defs = entry?.meta.defaults;
-    if (defs) {
-        state.params = { ...defs };
-    }
+    _seedDefaultParams(state, moduleId);
     return state;
 }
 
@@ -387,10 +403,27 @@ export function setTargetModel(modelId: string | null): void {
 
 /** 清除指定模型的所有模块覆盖（删除模型时调用） */
 export function clearAllModulesForModel(modelId: string): void {
+    // 先遍历所有已注册模块调用 disable()：负责注销帧钩子/释放 ownedBones。
+    // 不能只依赖 store.disposeModel，后者不知道各模块的 per-model 帧钩子管理器。
+    // 与 setTargetModel 清理一致，保存并恢复 enabled，避免删除模型时误清场景级配置。
+    for (const moduleId of _registry.keys()) {
+        const mod = createModule(moduleId, modelId);
+        if (!mod) {
+            continue;
+        }
+        const state = getModuleState(modelId, moduleId);
+        const wasEnabled = state.enabled;
+        mod.disable();
+        state.enabled = wasEnabled;
+    }
     // 释放并清除所有 ownedBones + 引擎槽（委托 store.disposeModel）
     getBoneOverrideStore().disposeModel(modelId);
     // 同步清理该模型的无 VMD 回退状态，避免 per-model 内存随模型增删累积
     _fallbackModuleStates.delete(modelId);
+    // 删除的是当前目标模型时，避免 _currentModelId 悬挂指向已销毁模型
+    if (_currentModelId === modelId) {
+        _currentModelId = null;
+    }
 }
 
 /**

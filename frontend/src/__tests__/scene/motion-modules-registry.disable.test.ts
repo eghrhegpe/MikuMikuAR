@@ -14,6 +14,7 @@ import {
     initMotionModules,
     createModule,
     getModuleState,
+    getOwnedBones,
     setModuleEnabled,
     setTargetModel,
     clearAllModulesForModel,
@@ -49,12 +50,11 @@ describe('disable 精确清除（P2-1）', () => {
         // 模块 disable 时应只清 ownedBones（上半身/上半身2/センター）
         mod.disable();
 
-        // disable 应调用 clearBoneOverride 3 次（上半身/上半身2/センター）
+        // disable 应调用 clearBoneOverride 3 次，且只清这三个 ownedBones（不误伤手动覆盖）
         expect(shared.clearBoneOverrideSpy).toHaveBeenCalledTimes(3);
         const clearedBones = shared.clearBoneOverrideSpy.mock.calls.map((c) => c[0]);
-        expect(clearedBones).toContain('上半身');
-        expect(clearedBones).toContain('上半身2');
-        expect(clearedBones).toContain('センター');
+        expect(clearedBones).toEqual(expect.arrayContaining(['上半身', '上半身2', 'センター']));
+        expect(clearedBones).toHaveLength(3);
     });
 });
 
@@ -73,8 +73,11 @@ describe('setTargetModel 作用域切换', () => {
         // 切换到 m2（m1 的 body-posture 应被 disable）
         setTargetModel('m2');
 
-        // m1 的 body-posture disable 应触发 clearBoneOverride
+        // m1 的 body-posture disable 应触发 clearBoneOverride，且运行时骨骼已释放
         expect(shared.clearBoneOverrideSpy).toHaveBeenCalled();
+        expect(getOwnedBones('m1', 'body-posture').size).toBe(0);
+        // 场景级配置不被切换抹掉
+        expect(getModuleState('m1', 'body-posture').enabled).toBe(true);
     });
 
     it('场景级配置在模型切换时保持不变', () => {
@@ -124,8 +127,10 @@ describe('setTargetModel 作用域切换', () => {
         shared.clearBoneOverrideSpy.mockClear();
         setTargetModel(null);
 
-        // 旧模型模块被 disable → clearBoneOverride 被调用
+        // 旧模型模块被 disable → clearBoneOverride 被调用，ownedBones 已释放，场景级 enabled 保留
         expect(shared.clearBoneOverrideSpy).toHaveBeenCalled();
+        expect(getOwnedBones('m1', 'body-posture').size).toBe(0);
+        expect(getModuleState('m1', 'body-posture').enabled).toBe(true);
     });
 });
 
@@ -141,5 +146,6 @@ describe('clearAllModulesForModel', () => {
 
         // [doc:adr-129] motionModules 已移至场景级，不再在 ModelInstance 上
         expect(shared.clearBoneOverrideSpy).toHaveBeenCalled();
+        expect(getOwnedBones('m1', 'body-posture').size).toBe(0);
     });
 });

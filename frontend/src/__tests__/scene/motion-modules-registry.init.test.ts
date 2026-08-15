@@ -9,10 +9,12 @@ import {
     mockMotionIntent,
     mockMotionHistory,
 } from './motion-modules-registry-mocks';
-import {} from './motion-modules-registry-helpers';
+import { makeModel, setActiveMotionWithModules } from './motion-modules-registry-helpers';
 import {
     initMotionModules,
     getRegisteredModules,
+    getModuleState,
+    setModuleEnabled,
     setTargetModel,
     registerModule,
     unregisterModule,
@@ -125,5 +127,64 @@ describe('getRegisteredModules', () => {
 
         unregisterModule('test-claim');
         expect(getBoneOverrideStore().getOwnedBones('m1', 'test-claim').size).toBe(0);
+    });
+
+    it('unregisterModule 清理无 ownedBones 但已启用/挂帧钩子的模块，并清除回退状态', () => {
+        shared.mockModelRegistry.set('m1', makeModel('m1'));
+        initMotionModules();
+        let disabled = false;
+        registerModule(
+            'test-hook-only',
+            { labelKey: 'test' },
+            5,
+            () =>
+                ({
+                    id: 'test-hook-only',
+                    meta: { labelKey: 'test' },
+                    priority: 5,
+                    managedBones: [],
+                    buildSchema: () => [],
+                    getState: () => ({ id: 'test-hook-only', enabled: true, params: {} }),
+                    setState: () => {},
+                    setParam: () => {},
+                    enable: () => {
+                        disabled = false;
+                    },
+                    disable: () => {
+                        disabled = true;
+                    },
+                }) as any
+        );
+
+        // 无 activeMotion 时启用会写入回退状态；该模块不 claim 任何骨骼，因此 store 中无 ownedBones
+        setModuleEnabled('m1', 'test-hook-only', true);
+        expect(getModuleState('m1', 'test-hook-only').enabled).toBe(true);
+
+        unregisterModule('test-hook-only');
+
+        // 即使 ownedBones 为空，也要对 modelRegistry 中的模型执行 disable（清理帧钩子等运行时资源）
+        expect(disabled).toBe(true);
+        // 回退存储中的旧状态同步清除，重注册后不会读到残留 enabled
+        expect(getModuleState('m1', 'test-hook-only').enabled).toBe(false);
+        expect(getRegisteredModules().map((m) => m.id)).not.toContain('test-hook-only');
+    });
+});
+
+describe('getModuleState 旧状态兼容', () => {
+    it('已存在但缺少默认参数的旧 state 读取时补默认值（不覆盖已有值）', () => {
+        shared.mockModelRegistry.set('m1', makeModel('m1'));
+        initMotionModules();
+        setActiveMotionWithModules();
+        // 模拟旧动作存档：只保存了 tilt，缺少 bend/twist/bodyHeight/bodyDepth
+        shared.mockActiveMotion.value.motionModules = [
+            { id: 'body-posture', enabled: false, params: { tilt: 3 } },
+        ];
+
+        const state = getModuleState('m1', 'body-posture');
+        expect(state.params.tilt).toBe(3); // 已有值不被覆盖
+        expect(state.params.bend).toBe(0);
+        expect(state.params.twist).toBe(0);
+        expect(state.params.bodyHeight).toBe(0);
+        expect(state.params.bodyDepth).toBe(0);
     });
 });

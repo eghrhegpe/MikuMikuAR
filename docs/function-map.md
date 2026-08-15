@@ -1541,27 +1541,27 @@
 | `applyMotionPreset()` | `scene/motion/motion-modules/preset-types:23` | 应用预设到指定模型。 |
 | `generatePresetId()` | `scene/motion/motion-modules/preset-types:45` | — |
 | `modulesToPresetMap()` | `scene/motion/motion-modules/preset-types:9` | MotionModuleState[] → MotionPreset['modules'] |
-| `BoneConflict()` | `scene/motion/motion-modules/registry:285` | — |
-| `PROC_ACTION_PREFIX()` | `scene/motion/motion-modules/registry:130` | [fix:proc-override] actionId 前缀：标识程序化动作的模块作用域（&#96;proc:${procRole}&#96;）。 |
-| `applyMotionModulesToModel()` | `scene/motion/motion-modules/registry:400` | [doc:adr-129] 将场景级模块配置应用到指定模型 用于动作广播时应用配置到所有 inherit 模型 |
-| `applyProcMotionModulesToModel()` | `scene/motion/motion-modules/registry:137` | [fix:proc-override] 应用程序化动作的模块配置到指定模型（持久化状态 → 运行时）。 |
-| `claimBones()` | `scene/motion/motion-modules/registry:271` | 为模块声明对一组骨骼的所有权（bake 前调用）。 |
-| `clearAllModulesForModel()` | `scene/motion/motion-modules/registry:389` | 清除指定模型的所有模块覆盖（删除模型时调用） |
-| `createModule()` | `scene/motion/motion-modules/registry:71` | 为指定模型创建模块实例 |
-| `getAllConflicts()` | `scene/motion/motion-modules/registry:310` | 获取某模型全部模块的冲突明细（按 loser 模块分组） |
-| `getBuiltinModuleDefs()` | `scene/motion/motion-modules/registry:433` | 内置模块定义聚合（供 initMotionModules 批量注册，消除 6 个 registerXxx 分散调用）。 |
-| `getConflictCount()` | `scene/motion/motion-modules/registry:332` | 获取某模型冲突总数（骨骼数） |
-| `getModuleConflicts()` | `scene/motion/motion-modules/registry:297` | 获取某模块被其他模块抢占的骨骼明细（loser 视角：本模块想要但被谁抢） |
-| `getModuleDefaultParam()` | `scene/motion/motion-modules/registry:227` | [doc:adr-116] 读取模块注册的默认参数值。 |
-| `getModuleState()` | `scene/motion/motion-modules/registry:166` | 获取动作的模块配置（不存在则创建默认状态，种入 defaults）。 |
-| `getOwnedBones()` | `scene/motion/motion-modules/registry:277` | 获取模块当前 owned 的骨骼（disable 时用于精确清除） |
-| `getRegisteredModules()` | `scene/motion/motion-modules/registry:64` | 获取所有已注册模块的元信息（按优先级排序） |
-| `initMotionModules()` | `scene/motion/motion-modules/registry:445` | 注册所有内置模块（幂等，重复调用安全） |
+| `BoneConflict()` | `scene/motion/motion-modules/registry:301` | — |
+| `PROC_ACTION_PREFIX()` | `scene/motion/motion-modules/registry:148` | [fix:proc-override] actionId 前缀：标识程序化动作的模块作用域（&#96;proc:${procRole}&#96;）。 |
+| `applyMotionModulesToModel()` | `scene/motion/motion-modules/registry:433` | [doc:adr-129] 将场景级模块配置应用到指定模型 用于动作广播时应用配置到所有 inherit 模型 |
+| `applyProcMotionModulesToModel()` | `scene/motion/motion-modules/registry:155` | [fix:proc-override] 应用程序化动作的模块配置到指定模型（持久化状态 → 运行时）。 |
+| `claimBones()` | `scene/motion/motion-modules/registry:287` | 为模块声明对一组骨骼的所有权（bake 前调用）。 |
+| `clearAllModulesForModel()` | `scene/motion/motion-modules/registry:405` | 清除指定模型的所有模块覆盖（删除模型时调用） |
+| `createModule()` | `scene/motion/motion-modules/registry:81` | 为指定模型创建模块实例 |
+| `getAllConflicts()` | `scene/motion/motion-modules/registry:326` | 获取某模型全部模块的冲突明细（按 loser 模块分组） |
+| `getBuiltinModuleDefs()` | `scene/motion/motion-modules/registry:466` | 内置模块定义聚合（供 initMotionModules 批量注册，消除 6 个 registerXxx 分散调用）。 |
+| `getConflictCount()` | `scene/motion/motion-modules/registry:348` | 获取某模型冲突总数（骨骼数） |
+| `getModuleConflicts()` | `scene/motion/motion-modules/registry:313` | 获取某模块被其他模块抢占的骨骼明细（loser 视角：本模块想要但被谁抢） |
+| `getModuleDefaultParam()` | `scene/motion/motion-modules/registry:243` | [doc:adr-116] 读取模块注册的默认参数值。 |
+| `getModuleState()` | `scene/motion/motion-modules/registry:184` | 获取动作的模块配置（不存在则创建默认状态，种入 defaults）。 |
+| `getOwnedBones()` | `scene/motion/motion-modules/registry:293` | 获取模块当前 owned 的骨骼（disable 时用于精确清除） |
+| `getRegisteredModules()` | `scene/motion/motion-modules/registry:74` | 获取所有已注册模块的元信息（按优先级排序） |
+| `initMotionModules()` | `scene/motion/motion-modules/registry:478` | 注册所有内置模块（幂等，重复调用安全） |
 | `registerModule()` | `scene/motion/motion-modules/registry:40` | 注册一个动作覆盖模块。 |
-| `releaseOwnedBones()` | `scene/motion/motion-modules/registry:337` | 释放模块的 ownedBones 记录并级联清引擎槽（由 store.releaseBones 负责清除） |
-| `setModuleEnabled()` | `scene/motion/motion-modules/registry:249` | 设置模块启用/禁用状态到场景动作意图 |
-| `setModuleParam()` | `scene/motion/motion-modules/registry:233` | 写入模块参数到场景动作意图 |
-| `setTargetModel()` | `scene/motion/motion-modules/registry:349` | 切换目标模型：禁用当前模型的所有模块覆盖，启用新模型已保存的模块状态。 |
+| `releaseOwnedBones()` | `scene/motion/motion-modules/registry:353` | 释放模块的 ownedBones 记录并级联清引擎槽（由 store.releaseBones 负责清除） |
+| `setModuleEnabled()` | `scene/motion/motion-modules/registry:265` | 设置模块启用/禁用状态到场景动作意图 |
+| `setModuleParam()` | `scene/motion/motion-modules/registry:249` | 写入模块参数到场景动作意图 |
+| `setTargetModel()` | `scene/motion/motion-modules/registry:365` | 切换目标模型：禁用当前模型的所有模块覆盖，启用新模型已保存的模块状态。 |
 | `unregisterModule()` | `scene/motion/motion-modules/registry:53` | 注销模块 |
 | `RIDING_MODEL_DEF()` | `scene/motion/motion-modules/riding-model:291` | 骑行模型模块注册定义（供 registry BUILTIN_MODULE_DEFS 批量注册） |
 | `createRidingModelModule()` | `scene/motion/motion-modules/riding-model:193` | 创建骑行模型模块实例 |
