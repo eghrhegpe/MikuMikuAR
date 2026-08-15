@@ -2,12 +2,15 @@
 
 # 代码审核索引
 
-> 审核台账共 **157** 篇：132 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
+> 审核台账共 **160** 篇：135 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
 
 > 汇总视图（执行摘要 / 风险全景 / 改进优先级）见 [审核总索引](./README.md)。
 
-## 2026 年 8 月（121）
+## 2026 年 8 月（124）
 
+- `2026-08-15` [Round 52 审核报告：motion-pipeline 排序不变量单测](./2026-08-15-round52-motion-pipeline.md)
+- `2026-08-15` [round-52-3 lipsync-bridge 桥接层审核报告](./2026-08-15-round52-lipsync-bridge.md)
+- `2026-08-15` [Round52 审核报告 — lighting-follow（个人灯跟随 + fix P2 u_cameraPos 补测）](./2026-08-15-round52-lighting-follow.md)
 - `2026-08-15` [round51-utils-async — 审核结果](./2026-08-15-round51-utils-async.md)
 - `2026-08-15` [perception-gaze — 审核结果（round-51 测试 3：双路径行为契约）](./2026-08-15-round51-perception-gaze.md)
 - `2026-08-15` [审核报告：config.test.ts（format + library-state 组合测试）（round51-1）](./2026-08-15-round51-config.md)
