@@ -2,12 +2,15 @@
 
 # 代码审核索引
 
-> 审核台账共 **109** 篇：84 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
+> 审核台账共 **112** 篇：87 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
 
 > 汇总视图（执行摘要 / 风险全景 / 改进优先级）见 [审核总索引](./README.md)。
 
-## 2026 年 8 月（73）
+## 2026 年 8 月（76）
 
+- `2026-08-15` [round-36 审核 — playback.observables.test.ts + initPlaybackObservables](./2026-08-15-round36-playback-observables.md)
+- `2026-08-15` [round36 — model-loader Stage/Actor 全路径 + abort 清理 + 回调验证审核](./2026-08-15-round36-model-loader.md)
+- `2026-08-15` [round36 — library-core 主测试（1205 行合并版）审核](./2026-08-15-round36-library-core.md)
 - `2026-08-15` [第 35 轮审核（子代理 3/3）— scene-serialize-undo.test.ts（ADR-158 撤销 UX 层）](./2026-08-15-round35-scene-serialize-undo.md)
 - `2026-08-15` [Round-35 审核报告 — procedural-motion 主测试 + 程序化动作生成链路](./2026-08-15-round35-procedural-motion.md)
 - `2026-08-15` [round-35 审核 — playback.ui.test.ts + updatePlaybackUI](./2026-08-15-round35-playback-ui.md)

@@ -226,7 +226,7 @@ describe('initPlaybackObservables', () => {
         });
     });
 
-    it('pauseHandler cancels auto-loop when autoLoop becomes false mid-seek', async () => {
+    it('pauseHandler 快照语义：mid-seek 改变 autoLoop 不影响本次循环（audit:round36 修正假阳性）', async () => {
         mockState.autoLoop = true;
         mockManager.focused.mockReturnValue({ animationDuration: 120 });
         mockRuntime.currentTime = 119.95;
@@ -239,9 +239,11 @@ describe('initPlaybackObservables', () => {
         pauseObs._fire();
         expect(mockRuntime.seekAnimation).toHaveBeenCalledWith(0, true);
 
-        // _loopPending should be reset after the .then chain
+        // 生产语义：onPause 时 autoLoop 已快照为 true（playback.ts:109 `const loop = autoLoop`），
+        // mid-seek 的 autoLoop 变化不影响本次 seek 完成后的循环 → playAnimation 仍被调用。
+        // 原断言 not.toHaveBeenCalled() 因 vi.waitFor 同步首查提前通过，属假阳性。
         await vi.waitFor(() => {
-            expect(mockRuntime.playAnimation).not.toHaveBeenCalled();
+            expect(mockRuntime.playAnimation).toHaveBeenCalled();
         });
     });
 
