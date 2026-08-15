@@ -34,6 +34,9 @@ export function handleControlFallback(
         return false;
     }
     const queued = tryQueuePendingAction(fallback.action, fallback.params, null);
+    if (!queued) {
+        diagState.messages.push({ role: 'assistant', content: t('ai.control.unsupported') });
+    }
     diagState.isStreaming = false;
     diagState.abortController = null;
     afterFallback(queued);

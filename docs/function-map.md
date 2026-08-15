@@ -2099,15 +2099,15 @@
 | `refreshCaps()` | `menus/diagnostic-config:100` | — |
 | `refreshModelList()` | `menus/diagnostic-config:304` | — |
 | `updateStatusBadge()` | `menus/diagnostic-config:370` | — |
-| `advancePendingQueue()` | `menus/diagnostic-control:222` | 推进队列 |
-| `applyPendingAction()` | `menus/diagnostic-control:160` | 应用 pending action |
-| `cancelPendingAction()` | `menus/diagnostic-control:205` | 取消 pending action |
-| `finalizePendingBatch()` | `menus/diagnostic-control:233` | 本批处理完成：回填 tool 消息，触发后续 stream |
+| `advancePendingQueue()` | `menus/diagnostic-control:225` | 推进队列 |
+| `applyPendingAction()` | `menus/diagnostic-control:163` | 应用 pending action |
+| `cancelPendingAction()` | `menus/diagnostic-control:208` | 取消 pending action |
+| `finalizePendingBatch()` | `menus/diagnostic-control:236` | 本批处理完成：回填 tool 消息，触发后续 stream |
 | `handleControlFallback()` | `menus/diagnostic-control:28` | 处理 LLM 文本回退（无 tool_call 时） |
-| `renderControlHint()` | `menus/diagnostic-control:44` | 渲染 pending 区域（仅有可撤销操作时显示） |
-| `renderPendingAction()` | `menus/diagnostic-control:95` | 渲染待确认操作卡 |
+| `renderControlHint()` | `menus/diagnostic-control:47` | 渲染 pending 区域（仅有可撤销操作时显示） |
+| `renderPendingAction()` | `menus/diagnostic-control:98` | 渲染待确认操作卡 |
 | `tryQueuePendingAction()` | `menus/diagnostic-control:10` | 将 LLM 文本回退解析的 action 入待确认队列 |
-| `undoLastAction()` | `menus/diagnostic-control:77` | 撤销上一个破坏性动作 |
+| `undoLastAction()` | `menus/diagnostic-control:80` | 撤销上一个破坏性动作 |
 | `buildSessionsSchema()` | `menus/diagnostic-session:127` | — |
 | `createSession()` | `menus/diagnostic-session:73` | 由 entry point 调用——通过 callbacks 通知 UI 更新 |
 | `deleteSessionAndAdjust()` | `menus/diagnostic-session:111` | — |
@@ -2431,9 +2431,9 @@
 | `buildSettingsAppearanceLevel()` | `menus/settings-appearance:510` | — |
 | `buildCameraSchema()` | `menus/settings-controls:29` | — |
 | `buildSettingsControlsLevel()` | `menus/settings-controls:325` | — |
-| `buildDiagnosticSchema()` | `menus/settings-diagnostic:409` | — |
-| `buildSettingsDiagnosticLevel()` | `menus/settings-diagnostic:513` | — |
-| `renderDiagnosticPanel()` | `menus/settings-diagnostic:483` | — |
+| `buildDiagnosticSchema()` | `menus/settings-diagnostic:417` | — |
+| `buildSettingsDiagnosticLevel()` | `menus/settings-diagnostic:522` | — |
+| `renderDiagnosticPanel()` | `menus/settings-diagnostic:492` | — |
 | `buildSettingsDownloadsLevel()` | `menus/settings-downloads:446` | — |
 | `buildEffectsSchema()` | `menus/settings-graphics:204` | — |
 | `buildFrameQualitySchema()` | `menus/settings-graphics:102` | — |

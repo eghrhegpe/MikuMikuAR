@@ -2,12 +2,14 @@
 
 # 代码审核索引
 
-> 审核台账共 **169** 篇：144 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
+> 审核台账共 **171** 篇：146 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
 
 > 汇总视图（执行摘要 / 风险全景 / 改进优先级）见 [审核总索引](./README.md)。
 
-## 2026 年 8 月（133）
+## 2026 年 8 月（135）
 
+- `2026-08-15` [round56-performance-snapshot — 性能降级快照恢复路径审核](./2026-08-15-round56-performance-snapshot.md)
+- `2026-08-15` [round56-env-context 审核报告 — env 共享上下文测试与其生产源码](./2026-08-15-round56-env-context.md)
 - `2026-08-15` [Round55 审核 — env-time-of-day（Time of Day 集成 L2）](./2026-08-15-round55-time-of-day.md)
 - `2026-08-15` [round55-set-env-state — setEnvState 中央入口审核报告](./2026-08-15-round55-set-env-state.md)
 - `2026-08-15` [round55-env-feature-levels 审核报告 — env-feature-levels 契约测试与其守护目标](./2026-08-15-round55-env-feature-levels.md)

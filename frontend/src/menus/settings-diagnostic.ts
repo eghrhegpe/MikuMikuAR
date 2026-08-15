@@ -182,11 +182,13 @@ async function runStream(opts?: { allowTools?: boolean }): Promise<void> {
                 return { actionId: tc.name, params, toolCallId: tc.id };
             });
             const writable: typeof parsed = [];
+            let hasUnsupported = false;
             diagState.pendingToolResults = [];
             diagState.pendingBatchHasToolCalls = true;
             for (const p of parsed) {
                 const def = getAction(p.actionId);
                 if (!def) {
+                    hasUnsupported = true;
                     diagState.pendingToolResults.push({
                         toolCallId: p.toolCallId ?? '',
                         content: JSON.stringify({ success: false, message: '不支持的操作' }),
@@ -219,6 +221,12 @@ async function runStream(opts?: { allowTools?: boolean }): Promise<void> {
             // 标记本次 stream 已自行收尾，finally 不得再用 fullResponse 二次 push
             thisStreamDone = true;
             if (writable.length === 0) {
+                if (hasUnsupported) {
+                    diagState.messages.push({
+                        role: 'assistant',
+                        content: t('ai.control.unsupported'),
+                    });
+                }
                 await finalizePendingBatch(() => {
                     renderChat();
                     renderControlHint();
@@ -417,6 +425,7 @@ export function buildDiagnosticSchema(opts?: { withSessions?: boolean }): MenuNo
 
                 const tabBar = document.createElement('div');
                 tabBar.className = 'type-row';
+                tabBar.setAttribute('data-testid', 'diagnostic:mode-switch');
                 type PanelTab = 'diagnostic:chat' | 'diagnostic:config';
                 const tabs: { id: PanelTab; label: string }[] = [
                     { id: 'diagnostic:chat', label: t('ai.chat.title') },
