@@ -56,7 +56,9 @@ export function generateAutoDanceVmd(
     const safeSpeed = Math.max(0.1, Math.min(10, rawSpeed));
     const clampedBpm = Math.max(60, Math.min(200, Number.isNaN(bpm) ? 120 : bpm));
     const beatFrames = Math.min(MAX_FRAMES, Math.round(((60 / clampedBpm) * FPS) / safeSpeed));
-    const loopFrames = beatFrames * 8;
+    // [audit:round35 P2] loopFrames 同样封顶：此前只封 beatFrames 再 ×8，极端参数
+    // （speed=0.1）下可达 2400，容量封顶被静默绕开，与 idle 分支（600）语义不一致。
+    const loopFrames = Math.min(MAX_FRAMES, beatFrames * 8);
     const intensity = params.intensity;
 
     // ========================================================================

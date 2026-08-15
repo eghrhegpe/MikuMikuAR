@@ -609,6 +609,13 @@ describe('matchBone', () => {
     it('returns null for non-matching bones', () => {
         expect(matchBone(['左足', '右足'], BONE_LARM_CANDIDATES)).toBeNull();
     });
+
+    it('首个候选无法 Shift-JIS 编码时跳过并继续匹配（round-15 P1 修复回归锁，audit:round35）', () => {
+        // 旧实现 return null 终止查找；修复后 continue 尝试后续候选。
+        // '🦴' 无法 round-trip 编码（canEncodeName=false），'センター' 可编码。
+        expect(matchBone(['センター'], ['🦴', 'センター'])).toBe('センター');
+        expect(matchBone(['センター'], ['🦴', '左腕', 'センター'])).toBe('センター');
+    });
 });
 
 // ======== scoreMorph / findBestEmotionMorphs 测试 ========

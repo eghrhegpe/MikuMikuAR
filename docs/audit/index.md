@@ -2,12 +2,15 @@
 
 # 代码审核索引
 
-> 审核台账共 **106** 篇：81 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
+> 审核台账共 **109** 篇：84 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
 
 > 汇总视图（执行摘要 / 风险全景 / 改进优先级）见 [审核总索引](./README.md)。
 
-## 2026 年 8 月（70）
+## 2026 年 8 月（73）
 
+- `2026-08-15` [第 35 轮审核（子代理 3/3）— scene-serialize-undo.test.ts（ADR-158 撤销 UX 层）](./2026-08-15-round35-scene-serialize-undo.md)
+- `2026-08-15` [Round-35 审核报告 — procedural-motion 主测试 + 程序化动作生成链路](./2026-08-15-round35-procedural-motion.md)
+- `2026-08-15` [round-35 审核 — playback.ui.test.ts + updatePlaybackUI](./2026-08-15-round35-playback-ui.md)
 - `2026-08-15` [Round-34 审核：模型替换状态继承（ADR-150 补测）](./2026-08-15-round34-replace-model-inherit.md)
 - `2026-08-15` [第 34 轮审核报告（测试 #2）— pose-preset 测试 + 发生器源码](./2026-08-15-round34-pose-preset.md)
 - `2026-08-15` [[round-34] feet-adjustment 纯数学层 solveFootTarget — 审核结果](./2026-08-15-round34-feet-adjustment.md)
