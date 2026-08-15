@@ -280,7 +280,8 @@ export function applyEnvPresetObject(preset: {
 }): boolean {
     _presetAnimId++;
     const myId = _presetAnimId;
-    envSunAngle = preset.sunAngle;
+    // [audit:round54 P3] 与 setEnvSunAngle 同款钳制 [-15,90]：越界自定义预设破坏滑块不变量
+    envSunAngle = Math.max(-15, Math.min(90, preset.sunAngle));
 
     if (_timeOfDayBeforePreset === null) {
         _timeOfDayBeforePreset = envState.timeOfDayActive && !_timeOfDayPaused;
@@ -388,7 +389,8 @@ registerEnvStateMiddleware({
     phase: 'pre-facade',
     fn: (_envState, migrated) => {
         if (migrated.sunAngle !== undefined) {
-            envSunAngle = migrated.sunAngle;
+            // [audit:round54 P3] 钳制 [-15,90] 与 setEnvSunAngle 一致（round-12/53 遗留收敛）
+            envSunAngle = Math.max(-15, Math.min(90, migrated.sunAngle));
         }
     },
 });

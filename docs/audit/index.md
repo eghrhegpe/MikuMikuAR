@@ -2,12 +2,15 @@
 
 # 代码审核索引
 
-> 审核台账共 **163** 篇：138 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
+> 审核台账共 **166** 篇：141 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
 
 > 汇总视图（执行摘要 / 风险全景 / 改进优先级）见 [审核总索引](./README.md)。
 
-## 2026 年 8 月（127）
+## 2026 年 8 月（130）
 
+- `2026-08-15` [第 54 轮审核报告（测试 #2/3）— env-bridge 环境预设应用与动画取消（L2 集成）](./2026-08-15-round54-presets.md)
+- `2026-08-15` [env-bridge Gravity + Sun Angle 集成测试 — 审核结果（round-54 / 测试 3）](./2026-08-15-round54-gravity-sun.md)
+- `2026-08-15` [第 54 轮审核报告（测试 #1/3）— env-bridge applyEnvStateFacade 专项](./2026-08-15-round54-facade.md)
 - `2026-08-15` [第 53 轮审核报告（测试 #2/3）— env-bridge setEnvState middleware 专项](./2026-08-15-round53-middleware.md)
 - `2026-08-15` [Round 53 审核报告 — env-persist 防抖持久化直接单测](./2026-08-15-round53-env-persist.md)
 - `2026-08-15` [cel-shading 地面哑光临时切换持久化 — 审核结果（round-53）](./2026-08-15-round53-cel-ground-persist.md)
