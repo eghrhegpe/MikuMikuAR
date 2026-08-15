@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, afterAll, vi } from 'vitest';
 import { NullEngine } from '@babylonjs/core/Engines/nullEngine';
 import { Scene } from '@babylonjs/core/scene';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
@@ -6,23 +6,7 @@ import { PBRMaterial } from '@babylonjs/core/Materials/PBR/pbrMaterial';
 import { FreeCamera } from '@babylonjs/core/Cameras/freeCamera';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 
-// 隔离 env-impl 重型依赖
-vi.mock('../../scene/env/env-impl', () => {
-    if (!(globalThis as any).__particlesTestEnvSys) {
-        (globalThis as any).__particlesTestEnvSys = {
-            particles: { system: null as any, followObserver: null as any },
-            splash: { observer: null as any },
-        };
-    }
-    return {
-        _envSys: (globalThis as any).__particlesTestEnvSys,
-        getScene: () => (globalThis as any).__particlesTestScene as Scene,
-        ensureEnvUpdateObserver: () => {},
-        addRipple: () => {},
-        getGroundHeightAt: () => 0,
-    };
-});
-// env-particles.ts 从 env-context 而非 env-impl 获取 getScene，故需额外 mock
+// env-particles.ts 从 env-context 获取 _envSys/getScene；不再 mock env-impl
 vi.mock('../../scene/env/_shared/env-context', () => {
     if (!(globalThis as any).__particlesTestEnvSys) {
         (globalThis as any).__particlesTestEnvSys = {
@@ -44,11 +28,20 @@ vi.mock('../../scene/env/_shared/env-context', () => {
 });
 vi.mock('../../scene/env/env', () => ({
     ensureEnvUpdateObserver: () => {},
+    addRipple: () => {},
+    addGroundRipple: () => {},
+    getGroundHeightAt: () => 0,
 }));
 
-// mock wind-utils
+// mock wind-utils：返回非零风向量，用于验证 applyWindToParticles 确实叠加风。
+// Babylon Vector3.add/addInPlace 直接读写 _x/_y/_z，mock 必须保留该内部形状。
 vi.mock('../../core/wind-utils', () => ({
-    getWindVector: () => ({ x: 0, y: 0, z: 0, scale: () => ({ x: 0, y: 0, z: 0 }) }),
+    getWindVector: () => ({
+        _x: 1,
+        _y: 0,
+        _z: 2,
+        scale: (factor: number) => ({ _x: 1 * factor, _y: 0, _z: 2 * factor }),
+    }),
 }));
 
 // fix P2 测试需实例化 GPUParticleSystem（splash burst 池 / firework burst）。
@@ -87,7 +80,7 @@ vi.mock('@babylonjs/core/Particles/gpuParticleSystem', () => {
     return { GPUParticleSystem: FakeGPUParticleSystem };
 });
 
-import { _envSys } from '../../scene/env/env-impl';
+import { _envSys } from '../../scene/env/_shared/env-context';
 import { envState } from '../../core/config';
 import { modelRegistry } from '../../core/scene-state';
 import {
@@ -102,6 +95,9 @@ import {
 
 let engine: NullEngine;
 let scene: Scene;
+
+// happy-dom 无真实 2D canvas；保存原 createElement，避免测试间/跨文件污染
+const realCreateElement = document.createElement.bind(document);
 
 // happy-dom 无真实 2D canvas
 beforeEach(() => {
@@ -147,9 +143,8 @@ beforeEach(() => {
         }),
         toDataURL: () => 'data:image/png;base64,',
     };
-    const origCreate = document.createElement.bind(document);
     (document as any).createElement = (tag: string) =>
-        tag === 'canvas' ? (fakeCanvas as any) : origCreate(tag);
+        tag === 'canvas' ? (fakeCanvas as any) : realCreateElement(tag);
 
     // 重置状态
     _envSys.particles.system = null;
@@ -160,8 +155,16 @@ afterEach(() => {
     disposeParticles();
     _envSys.particles.system = null;
     _envSys.particles.followObserver = null;
+    _envSys.splash.observer = null;
+    (document as any).createElement = realCreateElement;
+    (globalThis as any).__particlesTestScene = null;
     scene.dispose();
     engine.dispose();
+});
+
+afterAll(() => {
+    delete (globalThis as any).__particlesTestEnvSys;
+    delete (globalThis as any).__particlesTestScene;
 });
 
 describe('env-particles', () => {
@@ -236,6 +239,14 @@ describe('env-particles', () => {
             disposeParticles(); // 不抛错
             expect(_envSys.particles.system).toBeNull();
         });
+
+        it('非法 type 不销毁现有系统且不污染当前类型', () => {
+            createParticleEmitter('sakura', false);
+            const first = _envSys.particles.system;
+            createParticleEmitter('bogus' as any, false);
+            expect(_envSys.particles.system).toBe(first);
+            expect(getCurrentParticleType()).toBe('sakura');
+        });
     });
 
     describe('getCurrentParticleType', () => {
@@ -273,6 +284,34 @@ describe('env-particles', () => {
             envState.particleSize = 1;
             envState.particleSpeed = 1;
         });
+
+        it('创建与更新时对 NaN/Infinity/负数参数做防护', () => {
+            envState.particleEmitRate = Number.NaN;
+            envState.particleSize = Number.POSITIVE_INFINITY;
+            envState.particleSpeed = -2;
+            createParticleEmitter('sakura', false);
+            const ps = _envSys.particles.system as any;
+            expect(Number.isFinite(ps.emitRate)).toBe(true);
+            expect(ps.emitRate).toBeGreaterThanOrEqual(0);
+            expect(Number.isFinite(ps.minSize)).toBe(true);
+            expect(ps.minSize).toBeGreaterThanOrEqual(0);
+            expect(Number.isFinite(ps.maxEmitPower)).toBe(true);
+            expect(ps.maxEmitPower).toBeGreaterThanOrEqual(0);
+
+            envState.particleEmitRate = 2;
+            envState.particleSize = 0.5;
+            envState.particleSpeed = 1.5;
+            updateParticleParams();
+            expect(Number.isFinite(ps.emitRate)).toBe(true);
+            expect(ps.emitRate).toBeGreaterThanOrEqual(0);
+            expect(Number.isFinite(ps.minSize)).toBe(true);
+            expect(ps.minSize).toBeGreaterThanOrEqual(0);
+
+            // 恢复默认值
+            envState.particleEmitRate = 1;
+            envState.particleSize = 1;
+            envState.particleSpeed = 1;
+        });
     });
 
     describe('applyWindToParticles', () => {
@@ -282,6 +321,25 @@ describe('env-particles', () => {
                 direction2: { clone: () => ({ add: () => ({}) }) },
             } as any;
             expect(() => applyWindToParticles(ps)).not.toThrow();
+        });
+
+        it('有初始方向时把风叠加到 direction 与 gravity', () => {
+            createParticleEmitter('rain', false);
+            const ps = _envSys.particles.system as any;
+            const dir1 = ps.direction1.clone();
+            const dir2 = ps.direction2.clone();
+            const gravity = ps.gravity.clone();
+
+            applyWindToParticles(ps);
+
+            // emitWind = wind.scale(0.2) => x +0.2, z +0.4
+            expect(ps.direction1.x).toBeCloseTo(dir1.x + 0.2);
+            expect(ps.direction1.z).toBeCloseTo(dir1.z + 0.4);
+            expect(ps.direction2.x).toBeCloseTo(dir2.x + 0.2);
+            expect(ps.direction2.z).toBeCloseTo(dir2.z + 0.4);
+            // 持续风加速度 = baseGravity + wind => x +1, z +2
+            expect(ps.gravity.x).toBeCloseTo(gravity.x + 1);
+            expect(ps.gravity.z).toBeCloseTo(gravity.z + 2);
         });
     });
 
@@ -380,6 +438,21 @@ describe('env-particles', () => {
             expect(pbr.roughness).toBe(origRoughness);
             expect(std.specularPower).toBe(origSpecPower);
             expect(std.specularColor.r).toBe(origSpecR);
+        });
+
+        it('dispose 后重新进入 rain 会重新应用湿身', () => {
+            const pbr = modelRegistry.get('testModel')!.meshes[0].material as PBRMaterial;
+            pbr.roughness = 0.8;
+
+            createParticleEmitter('rain', false);
+            disposeParticles();
+            expect(isWetnessActive()).toBe(false);
+            expect(pbr.roughness).toBeCloseTo(0.8);
+
+            // 自动恢复路径：_currentParticleType 仍保留为 rain，但湿身已被 dispose 清除
+            createParticleEmitter('rain', false);
+            expect(isWetnessActive()).toBe(true);
+            expect(pbr.roughness).toBeCloseTo(0.4);
         });
 
         it('applyWetnessToInst 对后加载模型生效', () => {

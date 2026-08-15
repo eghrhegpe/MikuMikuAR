@@ -184,4 +184,105 @@ describe('BoneOverrideStore (ADR-147 Phase 2)', () => {
             winnerPriority: 0,
         });
     });
+
+    it('M6 补充：无 sourceModuleId 不能绕过 setSlot 所有权守卫', () => {
+        store.claimBones('m1', 'A', 1, ['上半身']);
+        store.setSlot('m1', '上半身', slot({ sourceModuleId: 'A', weight: 1 }));
+        // 匿名（无归属）slot 试图覆盖 A 的已认领骨 → 拒绝
+        store.setSlot('m1', '上半身', slot({ sourceModuleId: null, weight: 0.5 }));
+        expect(store.getSlot('m1', '上半身')?.sourceModuleId).toBe('A');
+        expect(store.getSlot('m1', '上半身')?.weight).toBe(1);
+        // 未认领骨也不允许写入无归属 slot（防孤儿 slot）
+        store.setSlot('m1', '未认领骨', slot({ sourceModuleId: null }));
+        expect(store.getSlot('m1', '未认领骨')).toBeUndefined();
+    });
+
+    it('M6 补充：clearSlot 在 store 无 slot 时也按 owner 守卫', () => {
+        const cleared: string[] = [];
+        const s = new InMemoryBoneOverrideStore({
+            onClearEngineSlot: (modelId, bone) => cleared.push(`${modelId}:${bone}`),
+        });
+        s.claimBones('m1', 'A', 1, ['上半身']);
+        s.clearSlot('m1', '上半身', 'A');
+        expect(cleared).toEqual(['m1:上半身']);
+        cleared.length = 0;
+        // B 越权清：即使逻辑 slot 已被 A 清掉，owner 仍是 A，应拒绝且不触发引擎清除
+        s.clearSlot('m1', '上半身', 'B');
+        expect(cleared).toHaveLength(0);
+    });
+
+    it('claimBones 接管时清掉其他模块预置 slot（无孤儿 slot）', () => {
+        store.setSlot('m1', '上半身', slot({ sourceModuleId: 'B' }));
+        store.claimBones('m1', 'A', 1, ['上半身']);
+        expect(store.getSlot('m1', '上半身')).toBeUndefined();
+        expect(store.getOwnedBones('m1', 'A').has('上半身')).toBe(true);
+    });
+
+    it('M5 补充：releaseBones 清 winner 视角冲突（释放抢占方后不残留幽灵卡片）', () => {
+        store.claimBones('m1', 'A', 1, ['上半身']);
+        store.claimBones('m1', 'B', 2, ['上半身']); // B 落败 → loser=B
+        expect(store.getConflicts('m1')).toHaveLength(1);
+        store.releaseBones('m1', 'A'); // 抢占方释放
+        expect(store.getConflicts('m1')).toHaveLength(0);
+    });
+
+    it('M4 补充：抢占反转后旧冲突被清理', () => {
+        store.claimBones('m1', 'A', 2, ['上半身']);
+        store.claimBones('m1', 'B', 1, ['上半身']); // B 抢占 A → loser=A
+        expect(store.getConflicts('m1')).toHaveLength(1);
+        store.claimBones('m1', 'A', 0, ['上半身']); // A 以更高优先级抢回
+        const conflicts = store.getConflicts('m1');
+        expect(conflicts).toHaveLength(1);
+        expect(conflicts[0]).toMatchObject({
+            bone: '上半身',
+            loserModuleId: 'B',
+            winnerModuleId: 'A',
+            loserPriority: 1,
+            winnerPriority: 0,
+        });
+    });
+
+    it('releaseBones 后 getModelsOwningModule 不再返回该模型', () => {
+        store.claimBones('m1', 'A', 1, ['上半身']);
+        expect(store.getModelsOwningModule('A')).toEqual(['m1']);
+        store.releaseBones('m1', 'A');
+        expect(store.getModelsOwningModule('A')).toEqual([]);
+    });
+
+    it('releaseBones 重复释放幂等且只通知一次', () => {
+        const notifications: number[] = [];
+        store.addReleaseListener((_modelId, _moduleId, bones) =>
+            notifications.push(bones.size)
+        );
+        store.claimBones('m1', 'A', 1, ['上半身']);
+        expect(store.releaseBones('m1', 'A').size).toBe(1);
+        expect(store.releaseBones('m1', 'A').size).toBe(0);
+        expect(notifications).toEqual([1]);
+    });
+
+    it('disposeModel 幂等：重复释放不抛错', () => {
+        store.claimBones('m1', 'A', 1, ['上半身']);
+        store.disposeModel('m1');
+        expect(() => store.disposeModel('m1')).not.toThrow();
+        expect(store.getOwnedBones('m1', 'A').size).toBe(0);
+        expect(store.getConflicts('m1')).toHaveLength(0);
+    });
+
+    it('M4 补充：同一 loser 重复落败时刷新 loserPriority', () => {
+        store.claimBones('m1', 'A', 1, ['上半身']);
+        store.claimBones('m1', 'B', 5, ['上半身']);
+        expect(store.getConflicts('m1')[0].loserPriority).toBe(5);
+        store.claimBones('m1', 'B', 3, ['上半身']); // 仍落败，但优先级变化应反映到冲突卡片
+        const c = store.getConflicts('m1')[0];
+        expect(c).toMatchObject({ loserModuleId: 'B', loserPriority: 3, winnerModuleId: 'A' });
+    });
+
+    it('M9 补充：winner 重复 claim 时刷新 winnerPriority', () => {
+        store.claimBones('m1', 'A', 5, ['上半身']);
+        store.claimBones('m1', 'B', 6, ['上半身']); // B 落败 → winner=A(5)
+        expect(store.getConflicts('m1')[0].winnerPriority).toBe(5);
+        store.claimBones('m1', 'A', 0, ['上半身']); // A 仍拥有，但优先级提升
+        const c = store.getConflicts('m1')[0];
+        expect(c).toMatchObject({ loserModuleId: 'B', winnerModuleId: 'A', winnerPriority: 0 });
+    });
 });

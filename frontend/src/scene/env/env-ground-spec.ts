@@ -85,6 +85,7 @@ export interface GroundStructuralSpec {
     reflectionQuality: string;
     alpha: number; // terrain 模式下进结构性（历史一致性）
     level: number; // terrain 模式下进结构性
+    elevationColoring: boolean; // terrain 模式进结构性（切换需重建材质类型/纹理）
 }
 
 /** 外观性字段：可增量 mutate，不触发重建。 */
@@ -180,6 +181,7 @@ export function buildGroundMaterialSpec(state: EnvState): GroundMaterialSpec {
         // 非 terrain 由原地路径增量更新，不触发重建。此处统一存值，specKey 负责取舍。
         alpha: state.groundAlpha,
         level: state.groundLevel,
+        elevationColoring: state.groundElevationColoringEnabled,
     };
 
     const appearance: GroundAppearanceSpec = {
@@ -232,6 +234,7 @@ export function specKey(spec: GroundMaterialSpec): string {
             s.size,
             s.color.join(','),
             s.alpha,
+            s.elevationColoring ? 1 : 0,
             s.textureEnabled ? 1 : 0,
             s.textureUrl,
             s.textureScale,
@@ -348,10 +351,24 @@ export function applyGroundMaterialSpec(
     }
 
     // ---- 原地专属：UV 密度 + 滚动 offset（重建由各 source 分支自行设 uScale）----
+    // [fix] 程序化来源的密度由 proceduralScale 决定（重建时三件套均用该值）；
+    // 原地增量若误用 ap.textureScale 会把 albedo 单独缩放成与 roughness/normal 不一致，
+    // 并破坏「重建产物 == 原地产物」合约（非默认 proceduralScale 时复现）。
     if (!isRebuild) {
+        const densityScale =
+            sk.sourceKind === 'procedural' ? sk.proceduralScale : ap.textureScale;
+        const uvScale = meshSize / 10 / Math.max(0.1, densityScale);
         const albedoTex = _getAlbedoTex(mat);
         if (albedoTex && albedoTex instanceof Texture) {
-            albedoTex.uScale = albedoTex.vScale = meshSize / 10 / Math.max(0.1, ap.textureScale);
+            albedoTex.uScale = albedoTex.vScale = uvScale;
+            if (mat instanceof PBRMaterial) {
+                if (mat.bumpTexture instanceof Texture) {
+                    mat.bumpTexture.uScale = mat.bumpTexture.vScale = uvScale;
+                }
+                if (mat.metallicTexture instanceof Texture) {
+                    mat.metallicTexture.uScale = mat.metallicTexture.vScale = uvScale;
+                }
+            }
             _syncAllTextureOffsets(mat, state);
         }
     }
@@ -361,13 +378,17 @@ export function applyGroundMaterialSpec(
     // 仅用户显式提供外部法线贴图才覆盖。否则 _syncGroundNormalTexture 的 else
     // 分支会把程序化 normal 清掉（与 legacy 重建路径一致，且修复 legacy 原地路径
     // 清掉程序化法线的历史 bug）。见 ADR-226。
+    // [fix] 必须先解除已挂载的涟漪纹理再同步 normal：_syncGroundNormalTexture 的
+    // else 分支会 dispose bumpTexture，若当前 bump 是 env-water-fx 拥有的
+    // groundRippleTex，会把共享纹理误销毁（非程序化地面 + 涟漪激活 + 原地更新可复现）。
+    if (!isElevation) {
+        _disableGroundRippleTexture(mat);
+    }
     if (!isElevation && (sk.sourceKind !== 'procedural' || state.groundNormalTexture)) {
         _syncGroundNormalTexture(mat, state);
     }
     if (!isElevation && hasActiveGroundRipples()) {
         _syncGroundRippleTexture(mat, scene);
-    } else if (!isElevation) {
-        _disableGroundRippleTexture(mat);
     }
     if (mat instanceof PBRMaterial) {
         _syncPbrProperties(mat, state);

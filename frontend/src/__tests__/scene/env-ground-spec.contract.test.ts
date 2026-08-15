@@ -18,6 +18,8 @@ import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { PBRMaterial } from '@babylonjs/core';
 import { Texture } from '@babylonjs/core/Materials/Textures/texture';
 import { Color3 } from '@babylonjs/core/Maths/math.color';
+import { Vector3 } from '@babylonjs/core/Maths/math.vector';
+import { addGroundRipple } from '../../scene/env/env-water';
 
 // 隔离 env-impl / env-context / env-reflection，避免重型链（clouds/particles/renderer→scene）
 vi.mock('../../scene/env/env-impl', () => {
@@ -153,6 +155,8 @@ interface MatFingerprint {
     uScale: number | null;
     vScale: number | null;
     hasOpacity: boolean;
+    emissiveColor: [number, number, number];
+    hasEmissiveTex: boolean;
 }
 
 function fingerprint(mat: Material | null): MatFingerprint {
@@ -164,6 +168,7 @@ function fingerprint(mat: Material | null): MatFingerprint {
     const pm = mat as PBRMaterial;
     const tex = (isPBR ? pm.albedoTexture : sm.diffuseTexture) as Texture | null;
     const color = isPBR ? pm.albedoColor : sm.diffuseColor;
+    const em = mat as unknown as { emissiveColor: Color3; emissiveTexture?: unknown };
     return {
         isPBR,
         alpha: mat.alpha,
@@ -178,6 +183,8 @@ function fingerprint(mat: Material | null): MatFingerprint {
         uScale: tex instanceof Texture ? tex.uScale : null,
         vScale: tex instanceof Texture ? tex.vScale : null,
         hasOpacity: !!(mat as unknown as { opacityTexture?: unknown }).opacityTexture,
+        emissiveColor: [em.emissiveColor.r, em.emissiveColor.g, em.emissiveColor.b],
+        hasEmissiveTex: !!em.emissiveTexture,
     };
 }
 
@@ -436,6 +443,26 @@ describe('ADR-226 重建产物 == 原地产物（spec 内部）', () => {
             expect(rebuildSpec(stateB)).toEqual(inplaceSpec(stateA, stateB));
         });
     }
+
+    it('[procedural/flat 非默认 proceduralScale] 重建(stateB) == 原地(A→B)', () => {
+        const base: Partial<EnvState> = {
+            groundProceduralTexture: 'wood',
+            groundPbrEnabled: true,
+            groundStyle: 'texture',
+            groundProceduralScale: 2,
+            groundTextureScale: 1,
+        };
+        const stateA = makeState(base);
+        const stateB = makeState({ ...base, groundRoughness: 0.2 });
+        expect(
+            groundSpecNeedsRebuild(
+                buildGroundMaterialSpec(stateA),
+                buildGroundMaterialSpec(stateB)
+            ),
+            'A→B 必须是同结构性 spec（否则测试无效）'
+        ).toBe(false);
+        expect(rebuildSpec(stateB)).toEqual(inplaceSpec(stateA, stateB));
+    });
 });
 
 // ──────────────── Suite 4 — 迁移护栏：legacy 重建 == spec 重建 ────────────────
@@ -570,6 +597,25 @@ describe('ADR-226 terrain — [P3-2] elevation 收敛守卫', () => {
         expect(mat.metallicTexture).not.toBeNull();
         expect(hasBump(mat)).toBe(true);
     });
+
+    it('elevationColoring 切换必须触发重建（否则原地路径无法更换 Standard/PBR 材质与程序化三件套）', () => {
+        const on = makeState({
+            groundType: 'terrain',
+            groundElevationColoringEnabled: true,
+            groundProceduralTexture: 'wood',
+            groundPbrEnabled: true,
+        });
+        const off = makeState({
+            groundType: 'terrain',
+            groundElevationColoringEnabled: false,
+            groundProceduralTexture: 'wood',
+            groundPbrEnabled: true,
+        });
+        expect(
+            groundSpecNeedsRebuild(buildGroundMaterialSpec(on), buildGroundMaterialSpec(off)),
+            'elevationColoring 开关应视为 terrain 结构性变更'
+        ).toBe(true);
+    });
 });
 
 // ──────────────── Suite 7 — terrain canvas/texture 重建路径（从 legacy 死代码激活）────────────
@@ -613,5 +659,49 @@ describe('ADR-226 terrain — [P3] canvas/texture 重建路径激活', () => {
         applyGroundMaterialSpec(mat, state, scene, false);
         expect(mat.diffuseTexture, 'elevation 材质不应被覆盖为程序化 albedo').toBeNull();
         expect(hasBump(mat), 'elevation 材质不应获得程序化法线').toBe(false);
+    });
+});
+
+// ──────────────── Suite 8 — 涟漪纹理所有权：非程序化原地更新 ────────────────
+// [fix] applyGroundMaterialSpec 原地路径原先先 _syncGroundNormalTexture 后
+// _disableGroundRippleTexture；非程序化地面在涟漪激活时，normal 同步会把当前
+// bumpTexture（groundRippleTex，归 env-water-fx 所有）当普通法线贴图 dispose，
+// 再 _syncGroundRippleTexture 把已销毁引用挂回材质。锁死该回归。
+describe('ADR-226 涟漪激活时非程序化原地更新 — ripple 纹理所有权', () => {
+    it('canvas 地面涟漪激活时，原地外观更新不 dispose 且继续复用同一 ripple 纹理', () => {
+        const stateA = makeState({ groundStyle: 'checker' });
+        const stateB = makeState({ groundStyle: 'checker', groundRoughness: 0.3 });
+        expect(
+            groundSpecNeedsRebuild(
+                buildGroundMaterialSpec(stateA),
+                buildGroundMaterialSpec(stateB)
+            ),
+            'A→B 必须是同结构性 spec（否则测试无效）'
+        ).toBe(false);
+
+        addGroundRipple(new Vector3(0, 0, 0), 3, 0.5, 1.5, 2);
+        applyGround(stateA);
+        const mat = _envSys.ground.mesh?.material as GroundMat | null;
+        expect(mat, 'applyGround 应已构建网格').not.toBeNull();
+        const rippleTex = (mat as unknown as { bumpTexture?: Texture | null }).bumpTexture ?? null;
+        expect(rippleTex?.name, '涟漪激活后 bumpTexture 应为 groundRippleTex').toBe(
+            'groundRippleTex'
+        );
+
+        const disposeSpy = vi.spyOn(rippleTex as Texture, 'dispose');
+        try {
+            applyGround(stateB);
+
+            expect(
+                disposeSpy,
+                'env-water-fx 拥有的 ripple 纹理不得被原地更新误 dispose'
+            ).not.toHaveBeenCalled();
+            const matAfter = _envSys.ground.mesh?.material as GroundMat | null;
+            expect((matAfter as unknown as { bumpTexture?: Texture | null }).bumpTexture).toBe(
+                rippleTex
+            );
+        } finally {
+            disposeSpy.mockRestore();
+        }
     });
 });

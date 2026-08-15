@@ -134,11 +134,18 @@ export class InMemoryBoneOverrideStore implements BoneOverrideStore {
     // —— 槽位 ——
 
     setSlot(modelId: string, bone: string, slot: OverrideSlot): void {
-        // M6 所有权守卫：slot 归属 sourceModuleId 时，禁止为「其他模块」写的骨写入 slot（防 R3 幽灵 slot 换壳）
+        // M6 所有权守卫：禁止为「其他模块」写的骨写入 slot（防 R3 幽灵 slot 换壳）。
+        // 已认领的骨必须由当前 owner 写；未认领的骨也必须带 sourceModuleId，避免无归属孤儿 slot。
         const owner = this._ownerMap(modelId).get(bone);
-        if (slot.sourceModuleId && owner && owner.moduleId !== slot.sourceModuleId) {
+        if (owner && owner.moduleId !== slot.sourceModuleId) {
             console.warn(
-                `[adr-147] setSlot 越权：${slot.sourceModuleId} 写 bone="${bone}" 但已被 ${owner.moduleId} 认领，已忽略`
+                `[adr-147] setSlot 越权：${slot.sourceModuleId ?? '(无归属)'} 写 bone="${bone}" 但已被 ${owner.moduleId} 认领，已忽略`
+            );
+            return;
+        }
+        if (!slot.sourceModuleId) {
+            console.warn(
+                `[adr-147] setSlot 拒绝：bone="${bone}" 的 slot 缺少 sourceModuleId（无归属 = 孤儿），已忽略`
             );
             return;
         }
@@ -155,18 +162,22 @@ export class InMemoryBoneOverrideStore implements BoneOverrideStore {
     }
 
     clearSlot(modelId: string, bone: string, expectedModuleId?: string): void {
-        // M6 所有权守卫：提供 expectedModuleId 时，仅当 slot 归属匹配才清，否则 warn 并忽略
+        // M6 所有权守卫：提供 expectedModuleId 时，仅当 slot/owner 归属匹配才清，否则 warn 并忽略。
+        // 同时校验 owner map，防止「store 无 slot 记录」或「slot 无 sourceModuleId」时绕过守卫清他人引擎槽。
         const existing = this._slots.get(modelId)?.get(bone);
-        if (
-            expectedModuleId &&
-            existing &&
-            existing.sourceModuleId &&
-            existing.sourceModuleId !== expectedModuleId
-        ) {
-            console.warn(
-                `[adr-147] clearSlot 越权：${expectedModuleId} 清 bone="${bone}" 但 slot 归属 ${existing.sourceModuleId}，已忽略`
-            );
-            return;
+        const owner = this._ownerMap(modelId).get(bone);
+        if (expectedModuleId) {
+            const ownerBlocked = owner && owner.moduleId !== expectedModuleId;
+            const slotBlocked =
+                existing?.sourceModuleId && existing.sourceModuleId !== expectedModuleId;
+            if (ownerBlocked || slotBlocked) {
+                console.warn(
+                    `[adr-147] clearSlot 越权：${expectedModuleId} 清 bone="${bone}" 但归属 ${
+                        owner?.moduleId ?? existing?.sourceModuleId ?? '(未知)'
+                    }，已忽略`
+                );
+                return;
+            }
         }
         this._slots.get(modelId)?.delete(bone);
         // M7：清真实引擎槽（store 只维护逻辑副本，引擎清理委托回调）
@@ -226,9 +237,24 @@ export class InMemoryBoneOverrideStore implements BoneOverrideStore {
                 }
             }
             // 认领成功：写所有权 + 模块 ownedBones
+            // 若存在其他模块预置/遗留的 slot，先清掉，避免新 owner 下出现幽灵 slot。
+            const preSlot = this._slots.get(modelId)?.get(bone);
+            if (preSlot && preSlot.sourceModuleId !== moduleId) {
+                this.clearSlot(modelId, bone, preSlot.sourceModuleId ?? undefined);
+            }
             ownerByBone.set(bone, { moduleId, priority });
             owned.add(bone);
             claimed.push(bone);
+            // 重复 claim 已拥有骨时刷新冲突中的 winner 优先级（动态优先级场景）
+            const conflicts = this._conflicts.get(modelId);
+            if (conflicts) {
+                for (const c of conflicts) {
+                    if (c.bone === bone && c.winnerModuleId === moduleId) {
+                        c.winnerPriority = priority;
+                        c.winnerStage = this._opts.stageOf?.(moduleId);
+                    }
+                }
+            }
         }
 
         return claimed;
@@ -236,7 +262,9 @@ export class InMemoryBoneOverrideStore implements BoneOverrideStore {
 
     releaseBones(modelId: string, moduleId: string): Set<string> {
         const owned = this._ownedMap(modelId).get(moduleId);
-        if (!owned) {
+        // 已释放/从未认领：仍清掉本模块的冲突卡片，但不触发空通知，保持 release 事件幂等
+        if (!owned || owned.size === 0) {
+            this._clearModuleConflicts(modelId, moduleId);
             return new Set();
         }
         const _ownerByBone = this._ownerMap(modelId);
@@ -247,14 +275,8 @@ export class InMemoryBoneOverrideStore implements BoneOverrideStore {
             released.add(bone);
         }
         owned.clear();
-        // M5：清本模块作为 loser 的冲突卡片（对齐 registry._clearConflict）
-        const list = this._conflicts.get(modelId);
-        if (list) {
-            this._conflicts.set(
-                modelId,
-                list.filter((c) => c.loserModuleId !== moduleId)
-            );
-        }
+        // M5：清本模块涉及的冲突卡片（loser 或 winner，避免释放抢占方后残留幽灵冲突）
+        this._clearModuleConflicts(modelId, moduleId);
         // 通知 release 监听器（P2-1 reclaim 触发链路）
         for (const l of this._releaseListeners) {
             l(modelId, moduleId, released);
@@ -298,7 +320,7 @@ export class InMemoryBoneOverrideStore implements BoneOverrideStore {
     getModelsOwningModule(moduleId: string): string[] {
         const result: string[] = [];
         for (const [modelId, ownedMap] of this._ownedBones) {
-            if (ownedMap.has(moduleId)) {
+            if (ownedMap.get(moduleId)?.size) {
                 result.push(modelId);
             }
         }
@@ -337,16 +359,8 @@ export class InMemoryBoneOverrideStore implements BoneOverrideStore {
     // —— 内部辅助 ——
 
     private _ensureModule(modelId: string, moduleId: string): void {
-        let perModel = this._moduleState.get(modelId);
-        if (!perModel) {
-            perModel = new Map();
-            this._moduleState.set(modelId, perModel);
-        }
-        if (!perModel.has(moduleId)) {
-            // 仅首建时置默认 priority=0；后续权威优先级由 claimBones 的 `state.priority = priority` 统一写入（M9 去哨兵）
-            perModel.set(moduleId, { enabled: true, priority: 0, ownedBones: new Set() });
-        }
-        // 同步确保 _ownedBones 的 per-module set 存在（避免 claimBones 取 owned 时 undefined）
+        // 先确保 _ownedBones 的 per-module set 存在（避免 claimBones 取 owned 时 undefined），
+        // 再让 _moduleState.ownedBones 与它共享同一 Set，避免出现两份不同步的 ownedBones。
         let ownedPerModel = this._ownedBones.get(modelId);
         if (!ownedPerModel) {
             ownedPerModel = new Map();
@@ -354,6 +368,20 @@ export class InMemoryBoneOverrideStore implements BoneOverrideStore {
         }
         if (!ownedPerModel.has(moduleId)) {
             ownedPerModel.set(moduleId, new Set());
+        }
+
+        let perModel = this._moduleState.get(modelId);
+        if (!perModel) {
+            perModel = new Map();
+            this._moduleState.set(modelId, perModel);
+        }
+        if (!perModel.has(moduleId)) {
+            // 仅首建时置默认 priority=0；后续权威优先级由 claimBones 的 `state.priority = priority` 统一写入（M9 去哨兵）
+            perModel.set(moduleId, {
+                enabled: true,
+                priority: 0,
+                ownedBones: ownedPerModel.get(moduleId)!,
+            });
         }
     }
 
@@ -378,6 +406,36 @@ export class InMemoryBoneOverrideStore implements BoneOverrideStore {
     private _releaseBoneFromOwner(modelId: string, moduleId: string, bone: string): void {
         this._ownerMap(modelId).delete(bone);
         this._ownedMap(modelId).get(moduleId)?.delete(bone);
+        // 该骨所有权消失/转移后，旧冲突卡片全部失效，避免 winner 释放或抢占反转后残留幽灵冲突。
+        this._clearConflictsForBone(modelId, bone);
+    }
+
+    private _clearConflictsForBone(modelId: string, bone: string): void {
+        const list = this._conflicts.get(modelId);
+        if (!list) {
+            return;
+        }
+        const next = list.filter((c) => c.bone !== bone);
+        if (next.length === 0) {
+            this._conflicts.delete(modelId);
+        } else {
+            this._conflicts.set(modelId, next);
+        }
+    }
+
+    private _clearModuleConflicts(modelId: string, moduleId: string): void {
+        const list = this._conflicts.get(modelId);
+        if (!list) {
+            return;
+        }
+        const next = list.filter(
+            (c) => c.loserModuleId !== moduleId && c.winnerModuleId !== moduleId
+        );
+        if (next.length === 0) {
+            this._conflicts.delete(modelId);
+        } else {
+            this._conflicts.set(modelId, next);
+        }
     }
 
     private _recordConflict(
@@ -393,15 +451,19 @@ export class InMemoryBoneOverrideStore implements BoneOverrideStore {
             list = [];
             this._conflicts.set(modelId, list);
         }
-        // 去重（对齐 registry._recordConflict 的 some 检查，避免同 (bone,loser,winner) 重复累加）
-        if (
-            list.some(
-                (c) =>
-                    c.bone === bone &&
-                    c.loserModuleId === loserModuleId &&
-                    c.winnerModuleId === winnerModuleId
-            )
-        ) {
+        // 去重（对齐 registry._recordConflict 的 some 检查，避免同 (bone,loser,winner) 重复累加）；
+        // 若同一对 loser/winner 再次出现，刷新优先级与 stage，避免动态优先级下 UI 显示旧值。
+        const existing = list.find(
+            (c) =>
+                c.bone === bone &&
+                c.loserModuleId === loserModuleId &&
+                c.winnerModuleId === winnerModuleId
+        );
+        if (existing) {
+            existing.loserPriority = loserPriority;
+            existing.winnerPriority = winnerPriority;
+            existing.loserStage = this._opts.stageOf?.(loserModuleId);
+            existing.winnerStage = this._opts.stageOf?.(winnerModuleId);
             return;
         }
         list.push({

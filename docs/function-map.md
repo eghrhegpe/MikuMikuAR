@@ -1077,16 +1077,16 @@
 | `GroundPreset()` | `scene/env/env-ground-presets:9` | — |
 | `GroundProceduralKind()` | `scene/env/env-ground-presets:7` | 程序化地面纹理类型 |
 | `buildGroundPresetEnvState()` | `scene/env/env-ground-presets:344` | 预设 → EnvState 字段映射，供 UI chip handler 调用并持久化。 |
-| `GroundAppearanceSpec()` | `scene/env/env-ground-spec:91` | 外观性字段：可增量 mutate，不触发重建。 |
+| `GroundAppearanceSpec()` | `scene/env/env-ground-spec:92` | 外观性字段：可增量 mutate，不触发重建。 |
 | `GroundGeometryKind()` | `scene/env/env-ground-spec:59` | — |
-| `GroundMaterialSpec()` | `scene/env/env-ground-spec:114` | — |
+| `GroundMaterialSpec()` | `scene/env/env-ground-spec:115` | — |
 | `GroundSourceKind()` | `scene/env/env-ground-spec:60` | — |
 | `GroundStructuralSpec()` | `scene/env/env-ground-spec:63` | 结构性字段：任一变化都要求重建几何/材质（取代手拼 typeKey 的判别符集合）。 |
-| `applyGroundMaterialSpec()` | `scene/env/env-ground-spec:278` | 统一「填材质」逻辑。 |
-| `buildGroundMaterialSpec()` | `scene/env/env-ground-spec:124` | 由 EnvState 派生完整 Spec。新增材质相关字段只需在此赋值，specKey 自动纳入。 |
-| `createGroundMeshFromSpec()` | `scene/env/env-ground-spec:390` | 创建地面 mesh 并落好材质。Phase 1 已接入：applyGround 非 terrain 重建路径调用本函数。 |
-| `groundSpecNeedsRebuild()` | `scene/env/env-ground-spec:262` | diffSpec 的结构性结论：是否需要重建。 |
-| `specKey()` | `scene/env/env-ground-spec:215` | 稳定 key：仅序列化结构性字段。新增结构性字段自动纳入，无遗漏风险。 |
+| `applyGroundMaterialSpec()` | `scene/env/env-ground-spec:281` | 统一「填材质」逻辑。 |
+| `buildGroundMaterialSpec()` | `scene/env/env-ground-spec:125` | 由 EnvState 派生完整 Spec。新增材质相关字段只需在此赋值，specKey 自动纳入。 |
+| `createGroundMeshFromSpec()` | `scene/env/env-ground-spec:411` | 创建地面 mesh 并落好材质。Phase 1 已接入：applyGround 非 terrain 重建路径调用本函数。 |
+| `groundSpecNeedsRebuild()` | `scene/env/env-ground-spec:265` | diffSpec 的结构性结论：是否需要重建。 |
+| `specKey()` | `scene/env/env-ground-spec:217` | 稳定 key：仅序列化结构性字段。新增结构性字段自动纳入，无遗漏风险。 |
 | `GROUND_PRESETS()` | `scene/env/env-ground:1386` | — |
 | `GroundMat()` | `scene/env/env-ground:52` | — |
 | `GroundPreset()` | `scene/env/env-ground:1385` | — |
@@ -1162,16 +1162,16 @@
 | `importCategorizedEnvPreset()` | `scene/env/env-lighting:363` | 从 JSON 字符串反序列化分类预设，失败返回 null。 |
 | `snapshotEnvPresetByCategory()` | `scene/env/env-lighting:329` | 从当前 envState 快照指定类别的字段。数组字段做浅拷贝避免别名。 |
 | `applyWetnessToInst()` | `scene/env/env-particles:36` | — |
-| `applyWindToParticles()` | `scene/env/env-particles:837` | — |
-| `createParticleEmitter()` | `scene/env/env-particles:408` | — |
-| `disposeParticles()` | `scene/env/env-particles:507` | — |
-| `disposeSplash()` | `scene/env/env-particles:689` | 销毁 splash burst 池 |
-| `getCurrentParticleType()` | `scene/env/env-particles:536` | 获取当前粒子类型（用于 particleEnabled 自动启停） |
+| `applyWindToParticles()` | `scene/env/env-particles:849` | — |
+| `createParticleEmitter()` | `scene/env/env-particles:413` | — |
+| `disposeParticles()` | `scene/env/env-particles:518` | — |
+| `disposeSplash()` | `scene/env/env-particles:701` | 销毁 splash burst 池 |
+| `getCurrentParticleType()` | `scene/env/env-particles:547` | 获取当前粒子类型（用于 particleEnabled 自动启停） |
 | `isWetnessActive()` | `scene/env/env-particles:36` | — |
-| `syncSplashState()` | `scene/env/env-particles:711` | 溅射开关切换（由 env-impl 检测 particleSplashEnabled 变化时调用） |
-| `updateParticleParams()` | `scene/env/env-particles:862` | 运行时更新粒子参数（密度/大小/速度），响应滑条变化 |
-| `updateParticleTexture()` | `scene/env/env-particles:879` | — |
-| `updateParticleWind()` | `scene/env/env-particles:855` | — |
+| `syncSplashState()` | `scene/env/env-particles:723` | 溅射开关切换（由 env-impl 检测 particleSplashEnabled 变化时调用） |
+| `updateParticleParams()` | `scene/env/env-particles:874` | 运行时更新粒子参数（密度/大小/速度），响应滑条变化 |
+| `updateParticleTexture()` | `scene/env/env-particles:891` | — |
+| `updateParticleWind()` | `scene/env/env-particles:867` | — |
 | `ReflectionMode()` | `scene/env/env-reflection:31` | — |
 | `ResolvedReflectionMode()` | `scene/env/env-reflection:33` | — |
 | `applyReflection()` | `scene/env/env-reflection:413` | 反射子系统统一入口。参考 applySky 模式： 1. |
@@ -1435,7 +1435,7 @@
 | `ModuleRuntimeState()` | `scene/motion/bone-override-store:37` | 模块运行时状态（合并原 intent.motionModules + _ownedBones 的职责） |
 | `OverrideSlot()` | `scene/motion/bone-override-store:18` | 单骨覆盖槽位（原 _OverrideSlot 的共享命名版） |
 | `ReleaseListener()` | `scene/motion/bone-override-store:73` | 骨骼释放事件监听器 |
-| `getBoneOverrideStore()` | `scene/motion/bone-override-store:425` | 获取全局 BoneOverrideStore 单例（registry / module-base 等委托此存储骨骼所有权与冲突状态） |
+| `getBoneOverrideStore()` | `scene/motion/bone-override-store:487` | 获取全局 BoneOverrideStore 单例（registry / module-base 等委托此存储骨骼所有权与冲突状态） |
 | `BoneHierarchyDump()` | `scene/motion/bone-override:1106` | 骨骼层级导出结果 |
 | `BoneHierarchyNode()` | `scene/motion/bone-override:1084` | 单根骨骼的层级与覆盖状态（dumpBoneHierarchy 输出元素） |
 | `BoneOverrideEntry()` | `scene/motion/bone-override:24` | 持久化的单条骨骼覆盖配置 |

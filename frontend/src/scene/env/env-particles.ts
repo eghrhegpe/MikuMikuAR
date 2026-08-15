@@ -9,7 +9,7 @@ import { getEnvKeys } from '@/core/env-state-schema';
 import { ensureEnvUpdateObserver, addRipple, addGroundRipple, getGroundHeightAt } from './env';
 import { _envSys, getScene } from './_shared/env-context';
 import { createCanvasTexture } from './_shared/env-texture';
-import { applyWetnessToAllModels, removeWetnessFromAllModels } from './env-wetness';
+import { applyWetnessToAllModels, removeWetnessFromAllModels, isWetnessActive } from './env-wetness';
 
 // ======== Particle System ========
 let _currentParticleType: EnvState['particleType'] = 'none';
@@ -58,6 +58,11 @@ function resolveParticleQualityMultiplier(quality: 'high' | 'medium' | 'low'): n
         case 'low':
             return 0.3;
     }
+}
+
+/** 防止外部/持久化状态注入 NaN/Infinity：非有限值回退到默认系数。 */
+function finiteOrFallback(value: number, fallback: number): number {
+    return Number.isFinite(value) ? value : fallback;
 }
 
 // ---------- 全景天气 vs 局部效果参数 ----------
@@ -407,6 +412,12 @@ function _getEmitterY(type: string, groundY: number): number {
 
 export function createParticleEmitter(type: EnvState['particleType'], windEnabled: boolean): void {
     ensureEnvUpdateObserver();
+    // 非法 type 在改动任何状态前拦截，避免销毁现有粒子或污染 _currentParticleType
+    const cfg = type === 'none' ? undefined : PARTICLE_CONFIGS[type];
+    if (type !== 'none' && !cfg) {
+        logWarn('env', `unknown particle type: ${type}`);
+        return;
+    }
     if (_envSys.particles.system && _currentParticleType === type) {
         return;
     }
@@ -419,8 +430,10 @@ export function createParticleEmitter(type: EnvState['particleType'], windEnable
     _currentParticleType = type;
     // 湿身效果：进入/退出雨天时切换
     // [fix P2] 旧逻辑 `isWeatherType(prevType) && !isWeatherType(type)` 在 rain→snow
-    // 时两者皆 true 不移除湿身（状态泄漏）；改为显式判断「离开 rain」即移除
-    if (isWeatherType(type) && type === 'rain' && !isWeatherType(prevType)) {
+    // 时两者皆 true 不移除湿身（状态泄漏）；显式判断「离开 rain」即移除。
+    // 额外修复：dispose 后 _currentParticleType 仍为 rain 的自动恢复路径也必须重新激活，
+    // 因此进入 rain 的依据是「湿身尚未激活」，而不是「prevType 不是 rain」。
+    if (type === 'rain' && !isWetnessActive()) {
         applyWetnessToAllModels();
     } else if (prevType === 'rain' && type !== 'rain') {
         removeWetnessFromAllModels();
@@ -430,11 +443,6 @@ export function createParticleEmitter(type: EnvState['particleType'], windEnable
     }
 
     const scene = getScene();
-    const cfg = PARTICLE_CONFIGS[type];
-    if (!cfg) {
-        logWarn('env', `unknown particle type: ${type}`);
-        return;
-    }
 
     const ps = new ParticleSystem('envParticles', 15000, scene);
     ps.particleTexture = makeParticleTexture(type, envState.particleCustomTexture || undefined);
@@ -463,14 +471,17 @@ export function createParticleEmitter(type: EnvState['particleType'], windEnable
     _particleQualityMultiplier = resolveParticleQualityMultiplier(
         envState.particleQuality ?? 'high'
     );
-    ps.emitRate = Math.max(0, ps.emitRate * envState.particleEmitRate * _particleQualityMultiplier);
-    if (envState.particleSize !== 1) {
-        ps.minSize *= envState.particleSize;
-        ps.maxSize *= envState.particleSize;
+    const emitRateMul = Math.max(0, finiteOrFallback(envState.particleEmitRate, 1));
+    const sizeMul = Math.max(0, finiteOrFallback(envState.particleSize, 1));
+    const speedMul = Math.max(0, finiteOrFallback(envState.particleSpeed, 1));
+    ps.emitRate = Math.max(0, ps.emitRate * emitRateMul * _particleQualityMultiplier);
+    if (sizeMul !== 1) {
+        ps.minSize *= sizeMul;
+        ps.maxSize *= sizeMul;
     }
-    if (envState.particleSpeed !== 1) {
-        ps.minEmitPower *= envState.particleSpeed;
-        ps.maxEmitPower *= envState.particleSpeed;
+    if (speedMul !== 1) {
+        ps.minEmitPower *= speedMul;
+        ps.maxEmitPower *= speedMul;
     }
     if (windEnabled) {
         applyWindToParticles(ps);
@@ -626,7 +637,8 @@ function startCollisionDetection(ps: ParticleSystem, type: EnvState['particleTyp
     const scene = getScene();
     _collisionObserver = safeDispose(_collisionObserver);
 
-    const splashProb = type === 'rain' ? 0.15 : type === 'snow' ? 0.3 : 0.4;
+    // splash 池仅由 syncSplashState 为 rain/snow 初始化，其他天气不应尝试 spawnSplashAt
+    const splashProb = type === 'rain' ? 0.15 : type === 'snow' ? 0.3 : 0;
     const frameSkip = type === 'rain' ? 4 : 2;
     let frameIdx = 0;
 
@@ -864,14 +876,14 @@ export function updateParticleParams(): void {
     if (!ps) {
         return;
     }
-    ps.emitRate = Math.max(
-        0,
-        _baseEmitRate * envState.particleEmitRate * _particleQualityMultiplier
-    );
-    ps.minSize = _baseMinSize * envState.particleSize;
-    ps.maxSize = _baseMaxSize * envState.particleSize;
-    ps.minEmitPower = _baseMinEmitPower * envState.particleSpeed;
-    ps.maxEmitPower = _baseMaxEmitPower * envState.particleSpeed;
+    const emitRateMul = Math.max(0, finiteOrFallback(envState.particleEmitRate, 1));
+    const sizeMul = Math.max(0, finiteOrFallback(envState.particleSize, 1));
+    const speedMul = Math.max(0, finiteOrFallback(envState.particleSpeed, 1));
+    ps.emitRate = Math.max(0, _baseEmitRate * emitRateMul * _particleQualityMultiplier);
+    ps.minSize = Math.max(0, _baseMinSize * sizeMul);
+    ps.maxSize = Math.max(0, _baseMaxSize * sizeMul);
+    ps.minEmitPower = Math.max(0, _baseMinEmitPower * speedMul);
+    ps.maxEmitPower = Math.max(0, _baseMaxEmitPower * speedMul);
 }
 
 /** 运行时更新粒子纹理（响应自定义纹理变化） */
