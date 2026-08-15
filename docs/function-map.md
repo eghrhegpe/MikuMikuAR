@@ -248,7 +248,7 @@
 | `showLogPanel()` | `core/debug-log-panel:75` | — |
 | `toggleLogPanel()` | `core/debug-log-panel:159` | — |
 | `deepClone()` | `core/deep-clone:9` | 深拷贝对象（基于 JSON 序列化）。 |
-| `setupE2ECapture()` | `core/dev-hooks:24` | — |
+| `setupE2ECapture()` | `core/dev-hooks:28` | — |
 | `DialogOptions()` | `core/dialog:49` | — |
 | `Prompt2Options()` | `core/dialog:294` | — |
 | `disposeOverlay2()` | `core/dialog:370` | 移除 showPrompt2 创建的 overlay2 DOM（供 HMR 清理入口调用）。 |
@@ -2277,7 +2277,7 @@
 | `initMotionBroadcast()` | `menus/motion-binding-ui:199` | — |
 | `renderModuleToggleList()` | `menus/motion-binding-ui:59` | 渲染动作模块开关列表到指定容器。 |
 | `resetFocusedLayerId()` | `menus/motion-binding-ui:116` | 重置焦点图层 ID（进入动作绑定面板 / 场景级浏览时调用）。 |
-| `buildCameraLevel()` | `menus/motion-camera-levels:355` | — |
+| `buildCameraLevel()` | `menus/motion-camera-levels:357` | — |
 | `buildVirtualSkirtLevel()` | `menus/motion-cloth-levels:340` | — |
 | `disposeAllVirtualSkirts()` | `menus/motion-cloth-levels:68` | 释放全部虚拟裙骨控制器 |
 | `disposeVirtualSkirtForModel()` | `menus/motion-cloth-levels:77` | 释放指定模型的虚拟裙骨控制器（供模型卸载流程调用） |

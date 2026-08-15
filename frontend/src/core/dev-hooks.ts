@@ -19,7 +19,11 @@ import { isRenderReady } from '../scene/render/renderer';
 // [fix:P1] 程序化测试 mesh 工厂共享（子代理审核）：dev-hooks 与
 // mesh-lifecycle-headless.test.ts 同源调用，消灭双份实现（此前测试复制实现，
 // 生产代码真回归抓不到）。Babylon 实现在 test-mesh 内动态 import，不拉渲染器链。
-import { createTestMesh as createTestMeshShared, clearTestMeshes as clearTestMeshesShared } from './test-mesh';
+import {
+    createTestMesh as createTestMeshShared,
+    clearTestMeshes as clearTestMeshesShared,
+    TEST_MESH_PREFIX,
+} from './test-mesh';
 
 export function setupE2ECapture(): void {
     // [fix:P2] 钩子收敛：原编译期 DEV 门控在 dev 模式恒真，21 个可写全局对任何
@@ -140,6 +144,11 @@ export function setupE2ECapture(): void {
             // Babylon keeps a flat meshes array (incl. system meshes like
             // ground/helpers). Assert a threshold, not an exact number.
             return scene.meshes.length;
+        },
+        get testMeshCount(): number {
+            // Programmatic seed meshes only: deterministic lifecycle assertions
+            // are not disturbed by async background/system mesh creation.
+            return scene.meshes.filter((m) => m.name.startsWith(TEST_MESH_PREFIX)).length;
         },
         get currentAnimation(): string {
             // Use focusedModel().vmdName instead of mmdRuntime.runtimeAnimation

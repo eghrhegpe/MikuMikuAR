@@ -109,7 +109,8 @@ function buildCameraSchema(): MenuNode[] {
                         },
                         'lucide:camera',
                         undefined,
-                        { bind: () => getCameraControl() }
+                        { bind: () => getCameraControl() },
+                        'camera:main:control'
                     );
 
                     addSliderRow(
@@ -156,7 +157,8 @@ function buildCameraSchema(): MenuNode[] {
                         },
                         'lucide:activity',
                         undefined,
-                        { bind: () => getCameraBehavior() }
+                        { bind: () => getCameraBehavior() },
+                        'camera:behavior:mode'
                     );
                 });
             },
