@@ -2317,13 +2317,13 @@
 | `hideMotionPopup()` | `menus/motion-root-ui:301` | — |
 | `importExternalAnimation()` | `menus/motion-root-ui:384` | 外部动作导入：选文件 → 重定向骨骼 → 播放。 |
 | `openProcDetail()` | `menus/motion-root-ui:345` | [doc:adr-207] 行体点击进入程序化统一详情页。 |
-| `buildNavMaps()` | `menus/nav-actions:163` | — |
-| `disposeNavBindings()` | `menus/nav-actions:257` | 卸载导航按钮监听（HMR/dispose 用） |
-| `getNavLabel()` | `menus/nav-actions:322` | 供 core 侧读取导航标签（经桥，不直接 import menus） |
-| `initNavActions()` | `menus/nav-actions:267` | [doc:adr-238] nav-actions 启动入口：安装按钮接线 + 构建导航标签映射。 |
-| `navActions()` | `menus/nav-actions:121` | — |
+| `buildNavMaps()` | `menus/nav-actions:172` | — |
+| `disposeNavBindings()` | `menus/nav-actions:266` | 卸载导航按钮监听（HMR/dispose 用） |
+| `getNavLabel()` | `menus/nav-actions:331` | 供 core 侧读取导航标签（经桥，不直接 import menus） |
+| `initNavActions()` | `menus/nav-actions:276` | [doc:adr-238] nav-actions 启动入口：安装按钮接线 + 构建导航标签映射。 |
+| `navActions()` | `menus/nav-actions:130` | — |
 | `navLabels()` | `menus/nav-actions:25` | — |
-| `toggleOverlay()` | `menus/nav-actions:58` | — |
+| `toggleOverlay()` | `menus/nav-actions:67` | — |
 | `buildOutfitLevel()` | `menus/outfit-ui:158` | — |
 | `buildSiteTabs()` | `menus/plaza-browser:303` | — |
 | `buildToolbar()` | `menus/plaza-browser:688` | — |

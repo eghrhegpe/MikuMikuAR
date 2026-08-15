@@ -233,7 +233,11 @@ export class SlideMenu implements RenderContext {
             }
         };
         this._swipeTouchEndHandler = (e: TouchEvent) => {
-            if (!this._swipeActive || this.transitioning || this.levels.length <= 1) {
+            // 手势已结束：无论是否触发返回，都复位滑动判定，避免旧状态残留
+            // 影响下一次 touchend/touchcancel 后的误判。
+            const wasActive = this._swipeActive;
+            this._swipeActive = false;
+            if (!wasActive || this.transitioning || this.levels.length <= 1) {
                 return;
             }
             const ct = e.changedTouches[0];
@@ -915,19 +919,27 @@ export class SlideMenu implements RenderContext {
             return;
         }
 
-        // 单容器（无 lcard 或仅一个）→ 原有逻辑
+        // 单容器（无 lcard 或仅一个）→ 复用公共逐行 patch
         const card = cards.length === 1 ? cards[0] : null;
-        const container = card || list;
+        this._patchContainer(card || list, items);
+    }
+
+    /**
+     * 增量 patch 单个容器：把 rows 逐行对齐到 container 现有子元素。
+     * patchPanel 单容器路径与 _patchMultiCard 逐 card 共用此核心：
+     * 删除多余行 → 逐行按 data-row-key 比较（不匹配替换 / 匹配原地刷新 / 缺少追加）。
+     */
+    private _patchContainer(container: HTMLElement, rows: PopupRow[]): void {
         const oldChildren = Array.from(container.children) as HTMLElement[];
 
         // 1. 删除多余的行（从后往前，避免索引偏移）
-        for (let i = oldChildren.length - 1; i >= items.length; i--) {
+        for (let i = oldChildren.length - 1; i >= rows.length; i--) {
             oldChildren[i].remove();
         }
 
         // 2. 逐行比较
-        for (let i = 0; i < items.length; i++) {
-            const newRow = items[i];
+        for (let i = 0; i < rows.length; i++) {
+            const newRow = rows[i];
             const newKey = this.rowKey(newRow);
 
             if (i < oldChildren.length) {
@@ -979,40 +991,9 @@ export class SlideMenu implements RenderContext {
             return;
         }
 
-        // 逐个 lcard 独立 patch
+        // 逐个 lcard 独立 patch（复用公共逐行 patch）
         for (let c = 0; c < cards.length; c++) {
-            const container = cards[c];
-            const seg = segments[c];
-            const oldChildren = Array.from(container.children) as HTMLElement[];
-
-            // 删除多余的行
-            for (let i = oldChildren.length - 1; i >= seg.length; i--) {
-                oldChildren[i].remove();
-            }
-
-            // 逐行比较
-            for (let i = 0; i < seg.length; i++) {
-                const newRow = seg[i];
-                const newKey = this.rowKey(newRow);
-
-                if (i < oldChildren.length) {
-                    const oldEl = oldChildren[i];
-                    const oldKey = oldEl.dataset.rowKey || '';
-                    if (oldKey !== newKey) {
-                        const newEl = this.createRow(newRow);
-                        if (newEl) {
-                            oldEl.replaceWith(newEl);
-                        }
-                    } else {
-                        this.refreshRowText(oldEl, newRow);
-                    }
-                } else {
-                    const newEl = this.createRow(newRow);
-                    if (newEl) {
-                        container.appendChild(newEl);
-                    }
-                }
-            }
+            this._patchContainer(cards[c], segments[c]);
         }
     }
 
