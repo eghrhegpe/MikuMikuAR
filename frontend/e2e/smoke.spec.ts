@@ -8,6 +8,13 @@
 import { test, expect } from "./wails-fixture";
 
 test.describe("Smoke — DOM/overlay (vitePage, @dom)", { tag: ["@dom"] }, () => {
+    test.beforeEach(async ({ vitePage: page }) => {
+        // [workaround] 同 library/motion/settings-panel-dom：纯 Vite 下 FSA 引导可能先弹
+        // showConfirm，installOverlayGuards 移除 dialog 的 visible class 后，dialog.ts 的
+        // freezeBackground 仍给 #app 留下 inert，导致后续真实 click 被 body 拦截。
+        await page.evaluate(() => document.getElementById("app")?.removeAttribute("inert"));
+    });
+
     test("app loaded: canvas and nav bar present", async ({ vitePage: page }) => {
         const canvas = page.locator("#renderCanvas");
         await expect(canvas).toBeVisible({ timeout: 5000 });

@@ -3,31 +3,26 @@
  * and the registered shortcuts respond correctly.
  *
  * Uses vitePage (headless Chromium → localhost:5173), no Wails needed.
- * Navigate: Settings → 快捷键 to view the shortcuts panel.
+ * ADR-157 后原“快捷键”根区段已并入“操控”：Navigate: Settings → 操控.
  */
 import { test, expect } from "./wails-fixture";
 
 test.describe("Shortcuts — DOM/overlay (vitePage, @dom)", { tag: ["@dom", "@overlay"] }, () => {
-    test("快捷键面板: 通过设置 → 快捷键导航可见", async ({ vitePage: page }) => {
+    test.beforeEach(async ({ vitePage: page }) => {
+        // [workaround] 同 settings-panel-dom：纯 Vite 下 FSA 引导可能先弹确认框，
+        // dialog 冻结背景会给 #app 留下 inert，导致后续真实 click 被 body 拦截。
+        await page.evaluate(() => document.getElementById("app")?.removeAttribute("inert"));
         await page.click("#btnSettings");
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 5000 });
-        await page.getByTestId("folder:settings:shortcuts").click();
-
-        // The shortcut list should display registered shortcuts
-        // (at minimum the Ctrl+N nav shortcuts). Use exact match — the
-        // shortcuts level also renders a "恢复默认快捷键" button.
-        await expect(page.getByTestId("folder:settings:shortcuts")).toBeVisible();
     });
 
-    test("Ctrl+1 ~ 5 切换各导航菜单（已在 smoke 覆盖，这里验证无冲突）", async ({ vitePage: page }) => {
-        const overlay = page.locator("#sceneOverlay");
-        for (const n of [1, 2, 3, 4, 5]) {
-            await page.keyboard.press(`Control+Digit${n}`);
-            await page.waitForSelector("#sceneOverlay.visible", { timeout: 6000 });
-            await page.keyboard.press(`Control+Digit${n}`);
-            await page.waitForSelector("#sceneOverlay:not(.visible)", { timeout: 6000 });
-        }
-        await expect(overlay).not.toHaveClass(/visible/);
+    test("快捷键面板: 通过设置 → 操控导航可见", async ({ vitePage: page }) => {
+        await page.getByTestId("folder:settings:controls").click();
+
+        // 进入操控子层后根级 folder 不再可见；改断言稳定 custom host，
+        // 覆盖快捷键分组卡片与“恢复默认快捷键”按钮（不依赖本地化文案）。
+        await expect(page.getByTestId("settings:perf:shortcut-groups")).toBeVisible();
+        await expect(page.getByTestId("settings:perf:shortcut-reset-all")).toBeVisible();
     });
 
     test("播放/暂停按钮在无模型时挂载（@dom fixture 无模型，仅验证存在性）", async ({ vitePage: page }) => {

@@ -19,6 +19,9 @@ import { gotoWebEntry } from "./helpers";
 test.describe("Web Capabilities — 能力门控 UI 验证 (@web)", { tag: ["@web"] }, () => {
     test.beforeEach(async ({ page }) => {
         await gotoWebEntry(page);
+        // [workaround] 与 motion-panel-dom.spec.ts:14-15 同因：FSA 引导的 dialog 可能给 #app 留 inert，
+        // 导致后续真实 click 被 body 拦截。根因在 helpers.gotoWebEntry 未统一处理（锁外文件）。
+        await page.evaluate(() => document.getElementById("app")?.removeAttribute("inert"));
     });
 
     test("能力门控: 相机模式无 AR 选项（ar === false）", async ({ page }) => {
@@ -27,24 +30,33 @@ test.describe("Web Capabilities — 能力门控 UI 验证 (@web)", { tag: ["@we
         await page.click("#btnMotionPopup");
         await page.waitForSelector("#sceneOverlay.visible", { timeout: 8000 });
         await page.getByTestId("folder:motion:camera").click();
-        // camera:main 是 custom 节点 id，renderMenu 对 kind:'custom' 不 emit data-testid
-        // ——唯一真实锚点是 FOV 滑块 camera:main:fov（与 motion-panel-dom.spec.ts:30 一致）
-        await page.waitForSelector('[data-testid="camera:main:fov"]', { timeout: 8000 });
+        // renderMenu 对 kind:'custom' 现在会包一层带 data-testid=<node.id> 的 div.schema-custom
+        // （render-menu.ts:72-87）；控件行 camera:main:control 是 modeSlider 的稳定 testid
+        // （motion-camera-levels.ts:113），不再依赖 .cs-top 首个或 DOM 顺序。
+        const controlSlider = page.getByTestId("camera:main:control").locator(".cs-top");
+        await expect(controlSlider).toBeVisible({ timeout: 8000 });
 
         // AR 选项不应出现在相机模式（capabilities.ar=false 过滤）。
-        // 原 text=AR 全页大小写不敏感子串会误红（英文面板 "Cartesian/Standard/Start"
-        // 含 ar 子串），且 modeSlider 选项标签不全量渲染本就无法用 getByText 命中
-        // （motion-panel-dom.spec.ts:36-37 实证）——改为断言控制方案 listbox 的
-        // aria-valuemax=1（仅 orbit/freefly 两项；ar=true 时含 AR 共 3 项 = valuemax 2）
-        const controlSlider = page.locator(".cs-top[role='slider']").first();
+        // modeSlider 选项标签不全量渲染，故断言控制方案（role=slider）的
+        // aria-valuemax=1（仅 orbit/freefly 两项；ar=true 时含 AR 共 3 项 = valuemax 2）。
         await expect(controlSlider).toHaveAttribute("aria-valuemax", "1");
     });
 
     test("能力门控: 广场无「独立窗口」选项（plazaWindow === false）", async ({ page }) => {
         await page.click("#btnPlaza");
-        await page.waitForSelector("#sceneOverlay.visible", { timeout: 8000 });
+        // #btnPlaza 打开的是 webviewLayer（非 #sceneOverlay），原等待目标是错误前提。
+        await page.waitForSelector("#webviewLayer.visible", { timeout: 8000 });
 
-        await expect(page.locator('text=独立窗口')).toHaveCount(0);
+        // 必须真正打开“更多”动作菜单后再断言，否则选项根本没渲染，测试假绿。
+        // plaza-browser.ts 尚未给 more/action item 加 testid，先用图标选择器定位；
+        // 建议在锁外补充稳定 testid（见报告）。
+        const moreButton = page
+            .locator("button.plaza-btn")
+            .filter({ has: page.locator('iconify-icon[icon="lucide:more-horizontal"]') });
+        await expect(moreButton).toBeVisible({ timeout: 8000 });
+        await moreButton.click();
+        await expect(page.locator(".plaza-actions-menu")).toBeVisible();
+        await expect(page.getByText("独立窗口", { exact: true })).toHaveCount(0);
     });
 
     test("能力门控: 设置-资源无「下载监听」卡片（watchDir === false）", async ({ page }) => {
@@ -57,9 +69,10 @@ test.describe("Web Capabilities — 能力门控 UI 验证 (@web)", { tag: ["@we
         const resourceTab = page.locator('[data-testid="folder:settings:resources"]');
         await expect(resourceTab.first()).toBeVisible();
         await resourceTab.first().click();
-        // watchDir=false → 无「下载监听」/「监听下载目录」文案
-        await expect(page.locator('text=下载监听')).toHaveCount(0);
-        await expect(page.locator('text=监听下载目录')).toHaveCount(0);
+        // watchDir=false → resources:watch 卡片不渲染。
+        // 用 custom host 的稳定 testid 断言，而非中文文案：文案会随 locale 变化，
+        // 英文 locale 下即使卡片存在也可能测不到中文 → 假绿。
+        await expect(page.getByTestId("resources:watch")).toHaveCount(0);
     });
 
     test("广场按钮存在（web 端有内联 plaza，无独立窗口）", async ({ page }) => {

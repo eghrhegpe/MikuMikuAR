@@ -2441,7 +2441,7 @@
 | `buildSettingsGraphicsLevel()` | `menus/settings-graphics:432` | — |
 | `buildSettingsLanguageLevel()` | `menus/settings-language:7` | — |
 | `buildSettingsMediaLevel()` | `menus/settings-media:469` | — |
-| `buildSettingsResourcesLevel()` | `menus/settings-resources:520` | — |
+| `buildSettingsResourcesLevel()` | `menus/settings-resources:526` | — |
 | `FONT_MAP()` | `menus/settings-shared:127` | — |
 | `SETTINGS_FONT_RESTORE()` | `menus/settings-shared:127` | — |
 | `SettingsMenuHandle()` | `menus/settings-shared:172` | — |

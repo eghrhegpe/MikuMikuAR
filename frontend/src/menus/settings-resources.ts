@@ -215,17 +215,23 @@ function buildStorageSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode
                     });
                     return;
                 }
-                // Android：异步取存储模式后再渲染；disposed 守卫防止卸载后写 DOM
+                // Android：异步取存储模式后再渲染；disposed 守卫防止卸载后写 DOM。
+                // renderMenu 对 kind:'custom' 会在 renderCustom 返回后把同步子节点收进
+                // div.schema-custom[data-testid=...]，因此异步渲染必须落到该 host 内，
+                // 否则卡片会出现在 host 外、E2E 按 testid 定位不到。
                 let disposed = false;
+                const resolveHost = (): HTMLElement =>
+                    (c.querySelector(':scope > .schema-custom[data-testid="resources:storage"]') as HTMLElement | null) ??
+                    c;
                 GetStorageMode()
                     .then((mode) => {
                         if (!disposed) {
-                            renderAndroidStorage(c, mode || 'private', getSettingsMenu);
+                            renderAndroidStorage(resolveHost(), mode || 'private', getSettingsMenu);
                         }
                     })
                     .catch(() => {
                         if (!disposed) {
-                            renderAndroidStorage(c, 'private', getSettingsMenu);
+                            renderAndroidStorage(resolveHost(), 'private', getSettingsMenu);
                         }
                     });
                 return () => {
