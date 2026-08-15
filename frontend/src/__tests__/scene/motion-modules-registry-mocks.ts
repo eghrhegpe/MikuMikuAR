@@ -14,6 +14,8 @@ export const shared = {
     setBoneOverrideSpy: vi.fn(),
     clearBoneOverrideSpy: vi.fn(),
     protectIkPositionSpy: vi.fn(),
+    registerBoneOverrideFrameHookSpy: vi.fn(() => () => {}),
+    setBoneOverridePositionSpy: vi.fn(),
     mockActiveMotion: { value: null as any },
     pushHistorySpy: vi.fn(),
     triggerAutoSaveSpy: vi.fn(),
@@ -45,9 +47,9 @@ export function mockBoneOverride(): Record<string, any> {
     return {
         setBoneOverride: shared.setBoneOverrideSpy,
         clearBoneOverride: shared.clearBoneOverrideSpy,
-        setBoneOverridePosition: vi.fn(),
+        setBoneOverridePosition: shared.setBoneOverridePositionSpy,
         protectIkPosition: shared.protectIkPositionSpy,
-        registerBoneOverrideFrameHook: vi.fn(() => () => {}),
+        registerBoneOverrideFrameHook: shared.registerBoneOverrideFrameHookSpy,
         FRAME_HOOK_ORDER: { BODY_POSITION: 5, RIDING: 10, SWAY: 20, HAND_SYMMETRY: 30 },
         getWasmIkResolver: () => shared.wasmIkResolverSpy,
     };

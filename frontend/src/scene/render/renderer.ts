@@ -740,6 +740,10 @@ export function transitionRenderState(
     // 取消上一次过渡动画，避免多个动画循环互相覆盖
     _cancelRenderTransition();
 
+    // [audit] 非法 duration（NaN/Infinity/负数）回退默认时长，避免 t 越界或 observer 永不取消。
+    const safeDuration =
+        Number.isFinite(duration) && duration > 0 ? duration : duration === 0 ? 1 : 2000;
+
     const source = getRenderState();
     const startTime = performance.now();
 
@@ -836,22 +840,25 @@ export function transitionRenderState(
             return;
         }
         const elapsed = performance.now() - startTime;
-        const t = Math.min(elapsed / duration, 1.0);
+        // [audit] 始终将进度钳制到 [0,1]，杜绝负 elapsed/浮点误差导致 t 越界。
+        const t = clamp01(elapsed / safeDuration);
         const interp: Partial<RenderState> = {};
 
-        // 数值字段插值
+        // 数值字段插值（跳过非有限目标，避免 NaN/Infinity 污染管线状态）
         for (const key of numericKeys) {
-            if (target[key] !== undefined) {
+            const value = target[key] as number | undefined;
+            if (value !== undefined && Number.isFinite(value)) {
                 const a = source[key] as number;
-                const b = target[key] as number;
+                const b = value;
                 setKey(interp, key, lerp(a, b, t) as RenderState[typeof key]);
             }
         }
-        // 颜色字段插值（逐通道）
+        // 颜色字段插值（逐通道，任一通道非有限则跳过该字段）
         for (const key of colorKeys) {
-            if (target[key] !== undefined) {
+            const value = target[key] as number[] | undefined;
+            if (value !== undefined && value.every((v) => Number.isFinite(v))) {
                 const a = source[key] as number[];
-                const b = target[key] as number[];
+                const b = value;
                 setKey(interp, key, lerpArray(a, b, t) as RenderState[typeof key]);
             }
         }
@@ -863,12 +870,9 @@ export function transitionRenderState(
         }
         // 枚举字段：t >= 1 时切换到目标值，否则保持当前值
         for (const key of enumKeys) {
-            if (target[key] !== undefined) {
-                setKey(
-                    interp,
-                    key,
-                    (t >= 1 ? target[key] : source[key]) as RenderState[typeof key]
-                );
+            const value = target[key] as number | undefined;
+            if (value !== undefined && Number.isFinite(value)) {
+                setKey(interp, key, (t >= 1 ? value : source[key]) as RenderState[typeof key]);
             }
         }
 
@@ -876,14 +880,24 @@ export function transitionRenderState(
         if (t >= 1) {
             // [audit:round13 P2] try/finally：onComplete 抛错也保证 _cancelRenderTransition 执行，
             // 否则 observer 泄漏且 animLoop 以 t=1 反复 setRenderState（无限自动保存）。
+            // [audit] 只取消“当前这个” observer：onComplete 若启动新过渡，不能被旧帧的 finally 误杀。
+            const currentObserver = _renderTransitionObserver;
             try {
                 setRenderState(interp);
                 onComplete?.();
             } finally {
-                _cancelRenderTransition();
+                if (_renderTransitionObserver === currentObserver) {
+                    _cancelRenderTransition();
+                }
             }
         } else {
-            _applyRenderState(interp);
+            // [audit] 中间帧应用状态若抛错也要取消 observer，避免每帧重复抛错造成泄漏。
+            try {
+                _applyRenderState(interp);
+            } catch (err) {
+                _cancelRenderTransition();
+                throw err;
+            }
         }
     };
 

@@ -67,6 +67,19 @@ export function unregisterModule(id: string): void {
     for (const byModel of _fallbackModuleStates.values()) {
         byModel.delete(id);
     }
+    // [fix] 同样清理 per-proc 持久化存储中的残留状态；否则注销插件模块后，
+    // procMotionModules 仍会序列化死配置，重注册同名模块时旧状态被意外复活。
+    for (const inst of modelRegistry.values()) {
+        if (inst?.procMotionModules) {
+            for (const modules of Object.values(inst.procMotionModules)) {
+                for (let i = modules.length - 1; i >= 0; i--) {
+                    if (modules[i]?.id === id) {
+                        modules.splice(i, 1);
+                    }
+                }
+            }
+        }
+    }
     _registry.delete(id);
 }
 
@@ -103,8 +116,27 @@ function _resolveIntent(actionId?: string): SceneMotionIntent | null {
 function _seedDefaultParams(state: MotionModuleState, moduleId: string): void {
     const defs = _registry.get(moduleId)?.meta.defaults;
     if (defs) {
-        state.params = { ...defs, ...state.params };
+        const seeded: Record<string, ParamValue> = { ...defs, ...state.params };
+        for (const [key] of Object.entries(defs)) {
+            const value = seeded[key];
+            if (typeof value === 'number' && !Number.isFinite(value)) {
+                seeded[key] = _sanitizeParamValue(moduleId, key, value);
+            }
+        }
+        state.params = seeded;
     }
+}
+
+/** 写入 setModuleParam 前归一化非有限数值，避免 NaN/Infinity 污染状态与序列化（guardNum 语义对齐）。 */
+function _sanitizeParamValue(moduleId: string, param: string, value: ParamValue): ParamValue {
+    if (typeof value === 'number' && !Number.isFinite(value)) {
+        const fallback = _registry.get(moduleId)?.meta.defaults?.[param];
+        if (typeof fallback === 'number' && !Number.isFinite(fallback)) {
+            return 0;
+        }
+        return fallback ?? 0;
+    }
+    return value;
 }
 
 /**
@@ -164,8 +196,15 @@ export function applyProcMotionModulesToModel(modelId: string, procRole: string)
             if (!mod) {
                 continue;
             }
-            // 与 applyModuleSnapshot 同模式：setState 自生效（enabled → 重烤；disabled → 释放骨骼）
-            mod.setState({ id: state.id, enabled: state.enabled, params: state.params });
+            // 与 applyModuleSnapshot 同模式：setState 自生效（enabled → 重烤；disabled → 释放骨骼）。
+            // 先补默认值并归一化非有限数值，避免旧 proc 存档把 NaN/Infinity 写回运行时/持久层。
+            const params: Record<string, ParamValue> = {
+                ...(_registry.get(state.id)?.meta.defaults ?? {}),
+            };
+            for (const [key, value] of Object.entries(state.params)) {
+                params[key] = _sanitizeParamValue(state.id, key, value);
+            }
+            mod.setState({ id: state.id, enabled: state.enabled, params });
         } catch (e) {
             console.warn(`[registry] applyProcMotionModulesToModel 模块 "${state.id}" 应用失败`, e);
         }
@@ -254,7 +293,7 @@ export function setModuleParam(
     actionId?: string
 ): void {
     const state = getModuleState(_modelId, moduleId, actionId);
-    state.params[param] = value;
+    state.params[param] = _sanitizeParamValue(moduleId, param, value);
     // 仅持久化：配置已写入 intent.motionModules（随动作走）。
     // 注意：不再调用 setActiveMotion 重新广播——否则会触发 VMD 重载 + seekAnimation(0)，
     // 每次调参都把动画重启到帧 0，表现为角色持续抖动 + 进度重置（ADR-129 回归）。

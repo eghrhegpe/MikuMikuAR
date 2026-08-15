@@ -4,14 +4,20 @@
 // 覆盖变更：popUndoSnapshot 有快照但 restoreUndoSnapshot 未注册时，
 // 显式 logWarn + 提前 return（不再吞快照、不再静默失败）。
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 const __mocks = vi.hoisted(() => ({
     logWarn: vi.fn(),
     setStatus: vi.fn(),
     getSceneAction: vi.fn(),
+    getUiAction: vi.fn(),
+    addDisposableListener: vi.fn(() => ({ dispose: vi.fn() })),
     focusedModelId: { value: '' as string },
-    mmdRuntime: null as { seekAnimation: ReturnType<typeof vi.fn>; animationDuration: number; currentTime: number } | null,
+    mmdRuntime: null as {
+        seekAnimation: ReturnType<typeof vi.fn>;
+        animationDuration: number;
+        currentTime: number;
+    } | null,
 }));
 
 vi.mock('../core/logger', () => ({ logWarn: __mocks.logWarn }));
@@ -23,21 +29,24 @@ vi.mock('../core/config', () => ({
     setStatus: __mocks.setStatus,
 }));
 vi.mock('../core/dom', () => ({
-    addDisposableListener: vi.fn(() => ({ dispose: vi.fn() })),
+    addDisposableListener: __mocks.addDisposableListener,
     dom: { btnPlayPause: { click: vi.fn() } },
 }));
-vi.mock('../core/dispose-helpers', () => ({ safeDispose: vi.fn((x: unknown) => x) }));
+vi.mock('../core/dispose-helpers', () => ({ safeDispose: vi.fn(() => null) }));
 vi.mock('../core/state', () => ({
     get focusedModelId() {
         return __mocks.focusedModelId.value;
     },
 }));
 vi.mock('../core/scene-action-bridge', () => ({ getSceneAction: __mocks.getSceneAction }));
+vi.mock('../core/ui-action-bridge', () => ({ getUiAction: __mocks.getUiAction }));
 vi.mock('../core/i18n/t', () => ({ t: (k: string) => k }));
 
 import { registerAppShortcuts } from '../core/shortcut-app';
 import {
     getAllShortcuts,
+    initShortcutDispatcher,
+    registerShortcut,
     _resetShortcutRegistry,
 } from '../core/shortcut-registry';
 
@@ -58,6 +67,8 @@ beforeEach(() => {
     __mocks.logWarn.mockClear();
     __mocks.setStatus.mockClear();
     __mocks.getSceneAction.mockReset();
+    __mocks.getUiAction.mockReset();
+    __mocks.addDisposableListener.mockClear();
     __mocks.focusedModelId.value = '';
     __mocks.mmdRuntime = {
         seekAnimation: vi.fn().mockResolvedValue(undefined),
@@ -66,22 +77,29 @@ beforeEach(() => {
     };
 });
 
+afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+});
+
 describe('motion:undo 幽灵路径守卫', () => {
     it('registerAppShortcuts 注册了 motion:undo', () => {
         registerAppShortcuts();
         expect(getAllShortcuts().some((s) => s.id === 'motion:undo')).toBe(true);
     });
 
-    it('popUndoSnapshot 有快照但 restoreUndoSnapshot 未注册 → logWarn + return（不抛错）', () => {
+    it('restoreUndoSnapshot 未注册 → 不弹出快照 + logWarn + return（不抛错）', () => {
         registerAppShortcuts();
         __mocks.focusedModelId.value = ''; // 跳过 motion 级撤销分支
+        const pop = vi.fn(() => ({ snap: 1 })); // 有快照可弹
         __mocks.getSceneAction.mockImplementation((key: string) => {
-            if (key === 'popUndoSnapshot') return () => ({ snap: 1 }); // 有快照
+            if (key === 'popUndoSnapshot') return pop;
             if (key === 'restoreUndoSnapshot') return undefined; // 未注册
             return undefined;
         });
 
         expect(() => undoHandler()).not.toThrow();
+        expect(pop).not.toHaveBeenCalled(); // 幽灵路径不再吞快照
         expect(__mocks.logWarn).toHaveBeenCalledWith(
             'undo',
             expect.stringContaining('restoreUndoSnapshot 未注册')
@@ -167,14 +185,18 @@ describe('seek-backward/forward .catch 守卫', () => {
         expect(__mocks.mmdRuntime!.seekAnimation).toHaveBeenCalledWith(45, true);
     });
 
-    it('seek-back: seekAnimation reject → catch 捕获，不抛 unhandled rejection', async () => {
+    it('seek-back: seekAnimation reject → catch 捕获并记录 error，不抛 unhandled rejection', async () => {
         registerAppShortcuts();
         setupFocusedModel();
         __mocks.mmdRuntime!.seekAnimation.mockRejectedValueOnce(new Error('seek failed'));
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
         expect(() => seekHandler('playback:seek-back')).not.toThrow();
         await vi.waitFor(() => {
-            expect(__mocks.mmdRuntime!.seekAnimation).toHaveBeenCalled();
+            expect(errorSpy).toHaveBeenCalledWith(
+                expect.stringContaining('[shortcut-app] seek-backward failed:'),
+                expect.any(Error)
+            );
         });
     });
 
@@ -207,14 +229,147 @@ describe('seek-backward/forward .catch 守卫', () => {
         expect(__mocks.mmdRuntime!.seekAnimation).toHaveBeenCalledWith(55, true);
     });
 
-    it('seek-forward: seekAnimation reject → catch 捕获，不抛 unhandled rejection', async () => {
+    it('seek-forward: seekAnimation reject → catch 捕获并记录 error，不抛 unhandled rejection', async () => {
         registerAppShortcuts();
         setupFocusedModel();
         __mocks.mmdRuntime!.seekAnimation.mockRejectedValueOnce(new Error('seek failed'));
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
         expect(() => seekHandler('playback:seek-forward')).not.toThrow();
         await vi.waitFor(() => {
-            expect(__mocks.mmdRuntime!.seekAnimation).toHaveBeenCalled();
+            expect(errorSpy).toHaveBeenCalledWith(
+                expect.stringContaining('[shortcut-app] seek-forward failed:'),
+                expect.any(Error)
+            );
+        });
+    });
+});
+
+describe('registerAppShortcuts 重复注册/清理', () => {
+    it('重复调用不产生重复 id，且仍只保留一份定义', () => {
+        registerAppShortcuts();
+        const first = getAllShortcuts()
+            .map((s) => s.id)
+            .sort();
+        registerAppShortcuts();
+        const second = getAllShortcuts()
+            .map((s) => s.id)
+            .sort();
+
+        expect(second).toEqual(first);
+        expect(new Set(second).size).toBe(second.length);
+    });
+
+    it('_resetShortcutRegistry 可重复调用且清空全部注册', () => {
+        registerAppShortcuts();
+        _resetShortcutRegistry();
+        expect(getAllShortcuts()).toHaveLength(0);
+
+        expect(() => _resetShortcutRegistry()).not.toThrow();
+        expect(getAllShortcuts()).toHaveLength(0);
+    });
+});
+
+describe('ui-action 缺失依赖降级', () => {
+    it('screenshot:current 在 closeAllOverlays 缺失时仍可截图', () => {
+        registerAppShortcuts();
+        const screenshot = vi.fn();
+        __mocks.getUiAction.mockImplementation((key: string) =>
+            key === 'screenshotCurrent' ? screenshot : undefined
+        );
+
+        const def = getAllShortcuts().find((s) => s.id === 'screenshot:current');
+        expect(def).toBeDefined();
+        expect(() => def!.handler()).not.toThrow();
+        expect(screenshot).toHaveBeenCalled();
+    });
+
+    it('global:close 在 screenshotCurrent 缺失时仍可关闭 overlay', () => {
+        registerAppShortcuts();
+        const close = vi.fn();
+        const removeClass = vi.fn();
+        __mocks.getUiAction.mockImplementation((key: string) =>
+            key === 'closeAllOverlays' ? close : undefined
+        );
+        vi.stubGlobal('document', { body: { classList: { remove: removeClass } } });
+
+        const def = getAllShortcuts().find((s) => s.id === 'global:close');
+        expect(def).toBeDefined();
+        expect(() => def!.handler()).not.toThrow();
+        expect(close).toHaveBeenCalled();
+        expect(removeClass).toHaveBeenCalledWith('ui-hidden');
+    });
+});
+
+describe('shortcut-registry handler 抛错隔离', () => {
+    function dispatcherListener(): (e: unknown) => void {
+        const call = __mocks.addDisposableListener.mock.calls.at(-1) as unknown[] | undefined;
+        if (!call) {
+            throw new Error('initShortcutDispatcher 未调用 addDisposableListener');
+        }
+        return call[2] as (e: unknown) => void;
+    }
+
+    it('同步 throw 被 logWarn 捕获，不冒泡到 keydown listener', () => {
+        const handler = vi.fn(() => {
+            throw new Error('sync boom');
+        });
+        registerShortcut({
+            id: 'test:throw',
+            label: 'x',
+            defaultKey: 'KeyX',
+            handler,
+            group: 'g',
+        });
+        vi.stubGlobal('window', {});
+        initShortcutDispatcher();
+
+        const listener = dispatcherListener();
+        expect(() =>
+            listener({
+                code: 'KeyX',
+                ctrlKey: false,
+                shiftKey: false,
+                altKey: false,
+                target: null,
+                preventDefault: vi.fn(),
+            })
+        ).not.toThrow();
+        expect(handler).toHaveBeenCalledTimes(1);
+        expect(__mocks.logWarn).toHaveBeenCalledWith(
+            'shortcut-registry',
+            expect.stringContaining('"test:throw" handler threw'),
+            expect.any(Error)
+        );
+    });
+
+    it('rejected promise 被 catch 记录，不产生 unhandled rejection', async () => {
+        const handler = vi.fn(() => Promise.reject(new Error('async boom')));
+        registerShortcut({
+            id: 'test:reject',
+            label: 'x',
+            defaultKey: 'KeyX',
+            handler,
+            group: 'g',
+        });
+        vi.stubGlobal('window', {});
+        initShortcutDispatcher();
+
+        const listener = dispatcherListener();
+        listener({
+            code: 'KeyX',
+            ctrlKey: false,
+            shiftKey: false,
+            altKey: false,
+            target: null,
+            preventDefault: vi.fn(),
+        });
+        await vi.waitFor(() => {
+            expect(__mocks.logWarn).toHaveBeenCalledWith(
+                'shortcut-registry',
+                expect.stringContaining('"test:reject" handler failed'),
+                expect.any(Error)
+            );
         });
     });
 });

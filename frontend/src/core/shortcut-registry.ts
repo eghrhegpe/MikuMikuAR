@@ -428,7 +428,16 @@ export function initShortcutDispatcher(): void {
                 if (def.prevent) {
                     e.preventDefault();
                 }
-                def.handler();
+                // [audit] handler 抛错隔离：单个快捷键 handler 抛错/返回 rejected promise
+                // 不应把异常冒泡到 window keydown 监听器（会影响同事件其它监听器/开发者体验），
+                // 统一经 logWarn 记录后继续返回。
+                try {
+                    Promise.resolve(def.handler()).catch((err: unknown) =>
+                        logWarn('shortcut-registry', `Shortcut "${def.id}" handler failed`, err)
+                    );
+                } catch (err) {
+                    logWarn('shortcut-registry', `Shortcut "${def.id}" handler threw`, err);
+                }
                 return;
             }
         }

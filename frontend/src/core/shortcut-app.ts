@@ -3,7 +3,7 @@
 import { dom, mmdRuntime, setStatus } from './config';
 // [doc:adr-238] UI 行为（closeAllOverlays/screenshotCurrent/navAction/navLabel）经
 // ui-action-bridge 注入（navActions 已下沉 menus/nav-actions），本模块不直接 import menus。
-import { getUiAction, getUiActions } from './ui-action-bridge';
+import { getUiAction } from './ui-action-bridge';
 import { t } from './i18n/t';
 import { logWarn } from './logger';
 import { focusedModelId } from './state';
@@ -118,7 +118,7 @@ export function registerAppShortcuts(): void {
             label: 'shortcuts.label.closePopup',
             defaultKey: 'Escape',
             handler: () => {
-                getUiActions()?.closeAllOverlays();
+                getUiAction('closeAllOverlays')?.();
                 document.body.classList.remove('ui-hidden');
             },
             group: 'shortcuts.group.global',
@@ -181,7 +181,7 @@ export function registerAppShortcuts(): void {
             defaultKey: 'F2',
             defaultCtrl: false,
             prevent: true,
-            handler: () => void getUiActions()?.screenshotCurrent(),
+            handler: () => void getUiAction('screenshotCurrent')?.(),
             group: 'shortcuts.group.screenshot',
         },
         // [doc:adr-125 P2] 模块层撤销/重做
@@ -199,17 +199,21 @@ export function registerAppShortcuts(): void {
                     return;
                 }
                 // 无 motion 撤销时，尝试场景级撤销（Ctrl+Z 兼顾全局）
+                // 先确认 restore 再 pop：若 restoreUndoSnapshot 未注册，不应先把快照弹出
+                // （否则幽灵路径不仅静默失效，还会吞掉用户唯一一次撤销机会）。
+                const restore = getSceneAction('restoreUndoSnapshot');
+                if (!restore) {
+                    // 仅当 pop 已注册才告警（真正可能发生“有快照却无法恢复”的加载时序问题）
+                    if (getSceneAction('popUndoSnapshot')) {
+                        logWarn(
+                            'undo',
+                            'popUndoSnapshot 有快照但 restoreUndoSnapshot 未注册，Ctrl+Z 未生效'
+                        );
+                    }
+                    return;
+                }
                 const snap = getSceneAction('popUndoSnapshot')?.();
                 if (snap) {
-                    const restore = getSceneAction('restoreUndoSnapshot');
-                    if (!restore) {
-                        // [fix P2] 幽灵路径拦截：popUndoSnapshot 有快照但 restoreUndoSnapshot
-                        // 未注册（模块加载顺序异常/HMR 时序）时，此前 `?.() ?? Promise.resolve(false)`
-                        // 让快照被弹出但无 restore、无反馈——用户以为撤销成功实则状态未变。
-                        // 显式告警 + 不再吞快照（snap 已弹出，无法回退，只能提示）。
-                        logWarn('undo', 'popUndoSnapshot 有快照但 restoreUndoSnapshot 未注册，Ctrl+Z 未生效');
-                        return;
-                    }
                     void restore(snap)
                         .then((ok) => {
                             if (ok) {

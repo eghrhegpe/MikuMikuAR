@@ -18,6 +18,8 @@ import {
     setModuleEnabled,
     setTargetModel,
     applyProcMotionModulesToModel,
+    registerModule,
+    unregisterModule,
 } from '@/scene/motion/motion-modules/registry';
 
 vi.mock('@/core/state', () => mockState());
@@ -35,6 +37,10 @@ vi.mock('@/scene/motion/motion-modules/motion-history', () => mockMotionHistory(
 
 function resetAll(): void {
     shared.reset();
+    // 帧钩子相关 spy 不在 shared.reset 中清理（side-hooks 依赖跨用例累积快照），
+    // 本文件自行清空避免用例间误读；模块级帧钩子由各用例 disable 时注销。
+    shared.registerBoneOverrideFrameHookSpy.mockClear();
+    shared.setBoneOverridePositionSpy.mockClear();
     setTargetModel(null);
 }
 
@@ -57,6 +63,19 @@ describe('setModuleParam / setModuleEnabled', () => {
         setModuleEnabled('m1', 'body-posture', true);
         const state = getModuleState('m1', 'body-posture');
         expect(state.enabled).toBe(true);
+    });
+
+    it('setModuleParam 拒绝 NaN/Infinity，落库为模块默认值', () => {
+        shared.mockModelRegistry.set('m1', makeModel('m1'));
+        initMotionModules();
+        setActiveMotionWithModules();
+        setModuleParam('m1', 'body-posture', 'tilt', NaN);
+        setModuleParam('m1', 'body-posture', 'bend', Infinity);
+        setModuleParam('m1', 'body-posture', 'twist', -Infinity);
+        const state = getModuleState('m1', 'body-posture');
+        expect(state.params.tilt).toBe(0);
+        expect(state.params.bend).toBe(0);
+        expect(state.params.twist).toBe(0);
     });
 });
 
@@ -116,6 +135,7 @@ describe('程序化动作模块配置（proc:actionId 持久化，fix:proc-overr
         // 应用：body-posture 启用 → bake 触发 setBoneOverride('上半身', ...)
         applyProcMotionModulesToModel('m1', 'idle');
         expect(shared.setBoneOverrideSpy.mock.calls.length).toBeGreaterThan(0);
+        createModule('body-posture', 'm1', 'proc:idle')?.disable(); // 清理帧钩子/ownedBones
     });
 
     it('applyProcMotionModulesToModel 无存储时静默跳过', () => {
@@ -125,6 +145,89 @@ describe('程序化动作模块配置（proc:actionId 持久化，fix:proc-overr
         shared.setBoneOverrideSpy.mockClear();
         applyProcMotionModulesToModel('m1', 'idle');
         expect(shared.setBoneOverrideSpy).not.toHaveBeenCalled();
+    });
+
+    it('applyProcMotionModulesToModel 对禁用状态清理运行时覆盖', () => {
+        const m1 = makeModelWithBones('m1');
+        shared.mockModelRegistry.set('m1', m1);
+        initMotionModules();
+        setModuleEnabled('m1', 'body-posture', true, 'proc:idle');
+        setModuleParam('m1', 'body-posture', 'tilt', 10, 'proc:idle');
+        applyProcMotionModulesToModel('m1', 'idle');
+        expect(shared.setBoneOverrideSpy).toHaveBeenCalled();
+
+        shared.clearBoneOverrideSpy.mockClear();
+        setModuleEnabled('m1', 'body-posture', false, 'proc:idle');
+        applyProcMotionModulesToModel('m1', 'idle');
+        expect(shared.clearBoneOverrideSpy).toHaveBeenCalled();
+        createModule('body-posture', 'm1', 'proc:idle')?.disable();
+    });
+
+    it('applyProcMotionModulesToModel 幂等：重复应用不重复注册帧钩子', async () => {
+        const modelId = 'm-apply-idem';
+        const m1 = makeModelWithBones(modelId);
+        shared.mockModelRegistry.set(modelId, m1);
+        initMotionModules();
+        setModuleEnabled(modelId, 'body-posture', true, 'proc:idle');
+        setModuleParam(modelId, 'body-posture', 'bodyHeight', -2, 'proc:idle');
+
+        const { registerBoneOverrideFrameHook } = await import('@/scene/motion/bone-override');
+        const hookSpy = registerBoneOverrideFrameHook as ReturnType<typeof vi.fn>;
+        hookSpy.mockClear();
+
+        applyProcMotionModulesToModel(modelId, 'idle');
+        const first = hookSpy.mock.calls.filter((c: any[]) => c[2] === 'body-posture').length;
+        applyProcMotionModulesToModel(modelId, 'idle');
+        const second = hookSpy.mock.calls.filter((c: any[]) => c[2] === 'body-posture').length;
+
+        expect(second).toBe(first);
+        expect(first).toBeGreaterThan(0);
+        createModule('body-posture', modelId, 'proc:idle')?.disable();
+    });
+
+    it('applyProcMotionModulesToModel 旧 proc 存档 NaN/Infinity 不写回状态', () => {
+        const m1 = makeModelWithBones('m1');
+        shared.mockModelRegistry.set('m1', m1);
+        initMotionModules();
+        m1.procMotionModules = {
+            idle: [{ id: 'body-posture', enabled: true, params: { tilt: NaN, bend: Infinity } }],
+        };
+
+        applyProcMotionModulesToModel('m1', 'idle');
+
+        expect(m1.procMotionModules.idle[0].params.tilt).toBe(0);
+        expect(m1.procMotionModules.idle[0].params.bend).toBe(0);
+        createModule('body-posture', 'm1', 'proc:idle')?.disable();
+    });
+
+    it('unregisterModule 清理 procMotionModules 残留状态', () => {
+        const m1 = makeModel('m1');
+        shared.mockModelRegistry.set('m1', m1);
+        initMotionModules();
+        registerModule(
+            'test-proc-cleanup',
+            { labelKey: 'test', defaults: { x: 0 } },
+            99,
+            () =>
+                ({
+                    id: 'test-proc-cleanup',
+                    meta: { labelKey: 'test', defaults: { x: 0 } },
+                    priority: 99,
+                    managedBones: [],
+                    buildSchema: () => [],
+                    getState: () => ({ id: 'test-proc-cleanup', enabled: false, params: { x: 0 } }),
+                    setState: () => {},
+                    setParam: () => {},
+                    enable: () => {},
+                    disable: () => {},
+                }) as any
+        );
+        setModuleEnabled('m1', 'test-proc-cleanup', true, 'proc:idle');
+        expect(m1.procMotionModules.idle.some((s: any) => s.id === 'test-proc-cleanup')).toBe(true);
+
+        unregisterModule('test-proc-cleanup');
+
+        expect(m1.procMotionModules.idle.some((s: any) => s.id === 'test-proc-cleanup')).toBe(false);
     });
 });
 
@@ -160,6 +263,18 @@ describe('getState / setState 对称', () => {
         const snap = mod.getState();
         expect(snap.params.tilt).toBe(8);
         expect(snap.params.bend).toBe(0); // 默认值兜底
+    });
+
+    it('旧状态中的 NaN/Infinity 读取时兜底为默认值', () => {
+        shared.mockModelRegistry.set('m1', makeModel('m1'));
+        initMotionModules();
+        setActiveMotionWithModules();
+        shared.mockActiveMotion.value.motionModules = [
+            { id: 'body-posture', enabled: false, params: { tilt: NaN, bend: Infinity } },
+        ];
+        const state = getModuleState('m1', 'body-posture');
+        expect(state.params.tilt).toBe(0);
+        expect(state.params.bend).toBe(0);
     });
 
     it('setState 恢复后 getState 一致', () => {

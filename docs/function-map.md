@@ -489,7 +489,7 @@
 | `KeyBindingOverride()` | `core/shortcut-registry:23` | — |
 | `ShortcutDef()` | `core/shortcut-registry:9` | — |
 | `ShortcutWithBinding()` | `core/shortcut-registry:47` | — |
-| `_resetShortcutRegistry()` | `core/shortcut-registry:444` | Reset all internal state — only for use in tests. |
+| `_resetShortcutRegistry()` | `core/shortcut-registry:453` | Reset all internal state — only for use in tests. |
 | `exportKeyBindings()` | `core/shortcut-registry:371` | Get current custom bindings (for saving to uiState). |
 | `formatKeyBinding()` | `core/shortcut-registry:244` | 格式化按键绑定为可读字符串，如 "Ctrl+1"、"Shift+←" |
 | `getAllShortcuts()` | `core/shortcut-registry:228` | Get all registered shortcuts with their CURRENT effective bindings. |
@@ -1541,27 +1541,27 @@
 | `applyMotionPreset()` | `scene/motion/motion-modules/preset-types:23` | 应用预设到指定模型。 |
 | `generatePresetId()` | `scene/motion/motion-modules/preset-types:45` | — |
 | `modulesToPresetMap()` | `scene/motion/motion-modules/preset-types:9` | MotionModuleState[] → MotionPreset['modules'] |
-| `BoneConflict()` | `scene/motion/motion-modules/registry:301` | — |
-| `PROC_ACTION_PREFIX()` | `scene/motion/motion-modules/registry:148` | [fix:proc-override] actionId 前缀：标识程序化动作的模块作用域（&#96;proc:${procRole}&#96;）。 |
-| `applyMotionModulesToModel()` | `scene/motion/motion-modules/registry:433` | [doc:adr-129] 将场景级模块配置应用到指定模型 用于动作广播时应用配置到所有 inherit 模型 |
-| `applyProcMotionModulesToModel()` | `scene/motion/motion-modules/registry:155` | [fix:proc-override] 应用程序化动作的模块配置到指定模型（持久化状态 → 运行时）。 |
-| `claimBones()` | `scene/motion/motion-modules/registry:287` | 为模块声明对一组骨骼的所有权（bake 前调用）。 |
-| `clearAllModulesForModel()` | `scene/motion/motion-modules/registry:405` | 清除指定模型的所有模块覆盖（删除模型时调用） |
-| `createModule()` | `scene/motion/motion-modules/registry:81` | 为指定模型创建模块实例 |
-| `getAllConflicts()` | `scene/motion/motion-modules/registry:326` | 获取某模型全部模块的冲突明细（按 loser 模块分组） |
-| `getBuiltinModuleDefs()` | `scene/motion/motion-modules/registry:466` | 内置模块定义聚合（供 initMotionModules 批量注册，消除 6 个 registerXxx 分散调用）。 |
-| `getConflictCount()` | `scene/motion/motion-modules/registry:348` | 获取某模型冲突总数（骨骼数） |
-| `getModuleConflicts()` | `scene/motion/motion-modules/registry:313` | 获取某模块被其他模块抢占的骨骼明细（loser 视角：本模块想要但被谁抢） |
-| `getModuleDefaultParam()` | `scene/motion/motion-modules/registry:243` | [doc:adr-116] 读取模块注册的默认参数值。 |
-| `getModuleState()` | `scene/motion/motion-modules/registry:184` | 获取动作的模块配置（不存在则创建默认状态，种入 defaults）。 |
-| `getOwnedBones()` | `scene/motion/motion-modules/registry:293` | 获取模块当前 owned 的骨骼（disable 时用于精确清除） |
-| `getRegisteredModules()` | `scene/motion/motion-modules/registry:74` | 获取所有已注册模块的元信息（按优先级排序） |
-| `initMotionModules()` | `scene/motion/motion-modules/registry:478` | 注册所有内置模块（幂等，重复调用安全） |
+| `BoneConflict()` | `scene/motion/motion-modules/registry:340` | — |
+| `PROC_ACTION_PREFIX()` | `scene/motion/motion-modules/registry:180` | [fix:proc-override] actionId 前缀：标识程序化动作的模块作用域（&#96;proc:${procRole}&#96;）。 |
+| `applyMotionModulesToModel()` | `scene/motion/motion-modules/registry:472` | [doc:adr-129] 将场景级模块配置应用到指定模型 用于动作广播时应用配置到所有 inherit 模型 |
+| `applyProcMotionModulesToModel()` | `scene/motion/motion-modules/registry:187` | [fix:proc-override] 应用程序化动作的模块配置到指定模型（持久化状态 → 运行时）。 |
+| `claimBones()` | `scene/motion/motion-modules/registry:326` | 为模块声明对一组骨骼的所有权（bake 前调用）。 |
+| `clearAllModulesForModel()` | `scene/motion/motion-modules/registry:444` | 清除指定模型的所有模块覆盖（删除模型时调用） |
+| `createModule()` | `scene/motion/motion-modules/registry:94` | 为指定模型创建模块实例 |
+| `getAllConflicts()` | `scene/motion/motion-modules/registry:365` | 获取某模型全部模块的冲突明细（按 loser 模块分组） |
+| `getBuiltinModuleDefs()` | `scene/motion/motion-modules/registry:505` | 内置模块定义聚合（供 initMotionModules 批量注册，消除 6 个 registerXxx 分散调用）。 |
+| `getConflictCount()` | `scene/motion/motion-modules/registry:387` | 获取某模型冲突总数（骨骼数） |
+| `getModuleConflicts()` | `scene/motion/motion-modules/registry:352` | 获取某模块被其他模块抢占的骨骼明细（loser 视角：本模块想要但被谁抢） |
+| `getModuleDefaultParam()` | `scene/motion/motion-modules/registry:282` | [doc:adr-116] 读取模块注册的默认参数值。 |
+| `getModuleState()` | `scene/motion/motion-modules/registry:223` | 获取动作的模块配置（不存在则创建默认状态，种入 defaults）。 |
+| `getOwnedBones()` | `scene/motion/motion-modules/registry:332` | 获取模块当前 owned 的骨骼（disable 时用于精确清除） |
+| `getRegisteredModules()` | `scene/motion/motion-modules/registry:87` | 获取所有已注册模块的元信息（按优先级排序） |
+| `initMotionModules()` | `scene/motion/motion-modules/registry:517` | 注册所有内置模块（幂等，重复调用安全） |
 | `registerModule()` | `scene/motion/motion-modules/registry:40` | 注册一个动作覆盖模块。 |
-| `releaseOwnedBones()` | `scene/motion/motion-modules/registry:353` | 释放模块的 ownedBones 记录并级联清引擎槽（由 store.releaseBones 负责清除） |
-| `setModuleEnabled()` | `scene/motion/motion-modules/registry:265` | 设置模块启用/禁用状态到场景动作意图 |
-| `setModuleParam()` | `scene/motion/motion-modules/registry:249` | 写入模块参数到场景动作意图 |
-| `setTargetModel()` | `scene/motion/motion-modules/registry:365` | 切换目标模型：禁用当前模型的所有模块覆盖，启用新模型已保存的模块状态。 |
+| `releaseOwnedBones()` | `scene/motion/motion-modules/registry:392` | 释放模块的 ownedBones 记录并级联清引擎槽（由 store.releaseBones 负责清除） |
+| `setModuleEnabled()` | `scene/motion/motion-modules/registry:304` | 设置模块启用/禁用状态到场景动作意图 |
+| `setModuleParam()` | `scene/motion/motion-modules/registry:288` | 写入模块参数到场景动作意图 |
+| `setTargetModel()` | `scene/motion/motion-modules/registry:404` | 切换目标模型：禁用当前模型的所有模块覆盖，启用新模型已保存的模块状态。 |
 | `unregisterModule()` | `scene/motion/motion-modules/registry:53` | 注销模块 |
 | `RIDING_MODEL_DEF()` | `scene/motion/motion-modules/riding-model:291` | 骑行模型模块注册定义（供 registry BUILTIN_MODULE_DEFS 批量注册） |
 | `createRidingModelModule()` | `scene/motion/motion-modules/riding-model:193` | 创建骑行模型模块实例 |
@@ -1895,13 +1895,13 @@
 | `initRenderer()` | `scene/render/renderer:114` | — |
 | `isRenderReady()` | `scene/render/renderer:656` | [fix:P1] 渲染管线是否就绪（@dom/e2e 环境无 pipeline/scene 时返回 false，供 UI/测试预检跳过守卫域）。 |
 | `isRendererReady()` | `scene/render/renderer:141` | 检查渲染器是否已初始化。外部代码在调用 setRenderState 前可先检查。 |
-| `isSSRActive()` | `scene/render/renderer:957` | SSR 管线当前是否激活（供 env-reflection 检查，尊重用户手动关闭）。 |
+| `isSSRActive()` | `scene/render/renderer:971` | SSR 管线当前是否激活（供 env-reflection 检查，尊重用户手动关闭）。 |
 | `pipeline()` | `scene/render/renderer:82` | — |
-| `reattachPipeline()` | `scene/render/renderer:899` | Re-attach the rendering pipeline to the current active camera (call after camera switch). |
-| `rebuildOutlineState()` | `scene/render/renderer:1016` | 当模型注册表更新时，重新应用边缘高亮状态。 |
+| `reattachPipeline()` | `scene/render/renderer:913` | Re-attach the rendering pipeline to the current active camera (call after camera switch). |
+| `rebuildOutlineState()` | `scene/render/renderer:1030` | 当模型注册表更新时，重新应用边缘高亮状态。 |
 | `registerCelGroundCoupling()` | `scene/render/renderer:106` | — |
 | `setRenderState()` | `scene/render/renderer:686` | — |
-| `setSSRFromReflection()` | `scene/render/renderer:969` | 反射系统专用 SSR 控制接口（不触发 auto-save）。 |
+| `setSSRFromReflection()` | `scene/render/renderer:983` | 反射系统专用 SSR 控制接口（不触发 auto-save）。 |
 | `transitionRenderState()` | `scene/render/renderer:726` | 平滑过渡渲染状态到目标值，默认 2 秒。 |
 | `GizmoAttachOptions()` | `scene/render/transform-gizmo:106` | — |
 | `GizmoType()` | `scene/render/transform-gizmo:17` | — |
