@@ -2,12 +2,15 @@
 
 # 代码审核索引
 
-> 审核台账共 **124** 篇：99 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
+> 审核台账共 **127** 篇：102 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
 
 > 汇总视图（执行摘要 / 风险全景 / 改进优先级）见 [审核总索引](./README.md)。
 
-## 2026 年 8 月（88）
+## 2026 年 8 月（91）
 
+- `2026-08-15` [Round 41 — vmd-layers-filter 审核（ADR-051 VMD 骨骼过滤）](./2026-08-15-round41-vmd-layers-filter.md)
+- `2026-08-15` [Round 41 — scene-model 审核报告](./2026-08-15-round41-scene-model.md)
+- `2026-08-15` [round-41 perception-morph 集成测试审核报告（微表情 + 唇形同步）](./2026-08-15-round41-perception-morph.md)
 - `2026-08-15` [[model-preset] — 审核结果（round-40 测试 2）](./2026-08-15-round40-model-preset.md)
 - `2026-08-15` [mmd-adapter 契约层 — 审核结果（round-40 / 契约测试反推源码）](./2026-08-15-round40-mmd-adapter-contract.md)
 - `2026-08-15` [round40-env-sky 审核报告 — env-sky 测试与其生产源码](./2026-08-15-round40-env-sky.md)
