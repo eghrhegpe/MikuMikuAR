@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { sceneMockSuperset } from '../mocks/scene-superset';
 
 // ─── nav 按钮 → overlay 渲染（happy-dom 试点）────────────────────────
 // [fix:P1] 证明「点 nav 按钮 → sceneOverlay 渲染」链路可在 happy-dom 直测，
@@ -9,27 +10,23 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 // plaza-browser → plaza-download 静态拉 library → library-core → scene.ts，
 // 本改动是韧性提升而非「切断渲染器链」根因修复。
 // 隔离方式：vi.mock scene 模块（顶层 `new Scene(engine)` 依赖真实 WebGL，
-// happy-dom 无 GPU 必崩）+ mock env-menu/library（点击 handler 的动态 import 目标，
-// 断言其 showFn 被调用——不拉真实 env-* 依赖树）。plaza 链 mock 同理（循环依赖）。
+// happy-dom 无 GPU 必崩）+ mock env-menu/library/scene-menu/settings/assistant
+// （点击 handler 的动态 import 目标，断言其 showFn 被调用——不拉真实依赖树）。
+// plaza 链 mock 同理（循环依赖 + 独立 webviewLayer 关闭语义）。
 // ⚠️ 单用例约束：dom.ts 模块级捕获按钮引用，跨用例重建 DOM 后 dom.btn* 指向旧节点
-// （新按钮无 listener），故全部断言必须同批节点完成（此前「单用例规避」注释同因）。
-vi.mock('../../scene/scene', () => ({
-    scene: { meshes: [] },
-    engine: {},
-    isHeadless: true,
-    focusedModel: () => null,
-    focusModel: () => undefined,
-    modelManager: { models: [] },
-    getRenderState: () => ({}),
-    setRenderState: () => true,
-    setEnvState: () => undefined,
+// （新按钮无 listener），故 beforeEach 先 vi.resetModules() 再 setup DOM + 动态 import，
+// 保证每个用例拿到重新捕获的 dom 引用。
+vi.mock('../../scene/scene', () => sceneMockSuperset());
+const plazaMock = vi.hoisted(() => ({
+    showPlaza: vi.fn(() => undefined),
+    // 真实 closePlaza 负责移除 webviewLayer 的 visible；mock 同步模拟该副作用，
+    // 否则「再点广场按钮 → closePlaza」无法断言 overlay 关闭。
+    closePlaza: vi.fn(() => {
+        document.getElementById('webviewLayer')?.classList.remove('visible');
+    }),
 }));
-vi.mock('../../menus/plaza-browser', () => ({
-    showPlaza: () => undefined,
-}));
-vi.mock('../../menus/plaza-state', () => ({
-    closePlaza: () => undefined,
-}));
+vi.mock('../../menus/plaza-browser', () => ({ showPlaza: plazaMock.showPlaza }));
+vi.mock('../../menus/plaza-state', () => ({ closePlaza: plazaMock.closePlaza }));
 // [fix:P1] mock env-menu：点击 #btnEnv 走动态 import('./env-menu')，真模块会拉起
 // env-sky/env-wind/lighting 等整棵依赖树（happy-dom 求值 >10ms 且脆弱），
 // mock 后 showEnvMenu 可被 spy 断言「点击确实触发了面板渲染函数」。
@@ -42,6 +39,16 @@ const libMock = vi.hoisted(() => ({
     showMotionPopup: vi.fn(() => undefined),
 }));
 vi.mock('../../menus/library', () => libMock);
+const sceneMenuMock = vi.hoisted(() => ({ showSceneMenu: vi.fn(() => undefined) }));
+vi.mock('../../menus/scene-menu', () => ({ showSceneMenu: sceneMenuMock.showSceneMenu }));
+const settingsMock = vi.hoisted(() => ({
+    showSettings: vi.fn(() => undefined),
+    preloadAutoImportState: vi.fn(() => Promise.resolve()),
+    preloadDownloadWatchState: vi.fn(() => Promise.resolve()),
+}));
+vi.mock('../../menus/settings', () => settingsMock);
+const assistantMock = vi.hoisted(() => ({ showAssistant: vi.fn(() => undefined) }));
+vi.mock('../../menus/assistant-panel', () => ({ showAssistant: assistantMock.showAssistant }));
 
 function setupDomSkeleton(): void {
     document.body.innerHTML = `
@@ -51,8 +58,8 @@ function setupDomSkeleton(): void {
         <div id="fpsClock"></div>
         <div id="runtimeBadge"></div>
         <div id="loading" style="display:none"></div>
-        <button id="btnMainAction"></button>
-        <button id="btnMotionPopup"></button>
+        <button id="btnMainAction" aria-controls="sceneOverlay" data-popup-type="model"></button>
+        <button id="btnMotionPopup" aria-controls="sceneOverlay" data-popup-type="motion"></button>
         <div id="playbackBar"></div>
         <button id="btnPlayPause"></button>
         <button id="btnLoopToggle"></button>
@@ -60,32 +67,47 @@ function setupDomSkeleton(): void {
         <div id="seekBar"></div>
         <div id="seekProgress"></div>
         <div id="loadingText"></div>
-        <button id="btnSettings"></button>
-        <button id="btnScene"></button>
-        <button id="btnEnv"></button>
-        <button id="btnAssistant"></button>
-        <button id="btnPlaza"></button>
-        <div id="sceneOverlay"></div>
-        <div id="webviewLayer"></div>
+        <button id="btnSettings" aria-controls="sceneOverlay" data-popup-type="settings"></button>
+        <button id="btnScene" aria-controls="sceneOverlay" data-popup-type="scene"></button>
+        <button id="btnEnv" aria-controls="sceneOverlay" data-popup-type="env"></button>
+        <button id="btnAssistant" aria-controls="sceneOverlay" data-popup-type="assistant"></button>
+        <button id="btnPlaza" aria-controls="sceneOverlay" data-popup-type="plaza"></button>
+        <div id="sceneOverlay" data-overlay></div>
+        <div id="webviewLayer" data-overlay></div>
     `;
 }
 
 describe('nav 按钮 → overlay 渲染（happy-dom 试点，渲染器已隔离）', () => {
+    let navModule: typeof import('../../menus/nav-actions') | undefined;
+
     beforeEach(() => {
+        vi.resetModules();
         envMock.showEnvMenu.mockClear();
         libMock.showModelPopup.mockClear();
         libMock.showMotionPopup.mockClear();
+        sceneMenuMock.showSceneMenu.mockClear();
+        settingsMock.showSettings.mockClear();
+        settingsMock.preloadAutoImportState.mockClear();
+        settingsMock.preloadDownloadWatchState.mockClear();
+        assistantMock.showAssistant.mockClear();
+        plazaMock.showPlaza.mockClear();
+        plazaMock.closePlaza.mockClear();
     });
 
-    afterEach(() => {
+    afterEach(async () => {
+        navModule?.disposeNavBindings();
+        navModule = undefined;
+        const overlayModule = await import('../../menus/menu-overlay');
+        overlayModule.closeAllOverlays();
         document.body.innerHTML = '';
     });
 
-    it('点击 #btnEnv/#btnMainAction + navActions[1] 均触发 showFn 且 overlay 切换', async () => {
+    it('点击 #btnEnv/#btnMainAction/#btnMotionPopup 均触发 showFn 且 overlay 切换', async () => {
         setupDomSkeleton();
         const nav = await import('../../menus/nav-actions');
+        navModule = nav;
         // [fix:P1] 显式重接线：模块加载顶层 initNavActions() 已执行一次（绑定当前 DOM），
-        // 单用例下 DOM 未重建，listener 有效；此处幂等调用仅为语义明确。
+        // 幂等调用仅为语义明确；配合 beforeEach resetModules，DOM 引用已重新捕获。
         nav.initNavActions();
         const overlay = document.getElementById('sceneOverlay')!;
 
@@ -109,11 +131,69 @@ describe('nav 按钮 → overlay 渲染（happy-dom 试点，渲染器已隔离�
             expect(overlay.classList.contains('visible')).toBe(false);
         });
 
-        // 4) navActions[1] 快捷键 → 与 click handler 同源（shortcut 映射）
+        // 4) #btnMotionPopup → showMotionPopup + 打开，再点关闭
+        document.getElementById('btnMotionPopup')!.click();
+        await vi.waitFor(() => {
+            expect(libMock.showMotionPopup).toHaveBeenCalled();
+            expect(overlay.classList.contains('visible')).toBe(true);
+        });
+        document.getElementById('btnMotionPopup')!.click();
+        await vi.waitFor(() => {
+            expect(overlay.classList.contains('visible')).toBe(false);
+        });
+
+        // 5) navActions[1] 快捷键 → 与 click handler 同源（shortcut 映射）
         await nav.navActions[1]();
-        expect(libMock.showModelPopup).toHaveBeenCalled();
         expect(overlay.classList.contains('visible')).toBe(true);
         await nav.navActions[1]();
         expect(overlay.classList.contains('visible')).toBe(false);
+    });
+
+    it('点击 #btnScene/#btnSettings/#btnAssistant 触发对应 showFn 且 overlay 打开', async () => {
+        setupDomSkeleton();
+        const nav = await import('../../menus/nav-actions');
+        navModule = nav;
+        nav.initNavActions();
+        const overlay = document.getElementById('sceneOverlay')!;
+
+        document.getElementById('btnScene')!.click();
+        await vi.waitFor(() => {
+            expect(sceneMenuMock.showSceneMenu).toHaveBeenCalled();
+            expect(overlay.classList.contains('visible')).toBe(true);
+        });
+
+        document.getElementById('btnSettings')!.click();
+        await vi.waitFor(() => {
+            expect(settingsMock.showSettings).toHaveBeenCalled();
+            expect(settingsMock.preloadAutoImportState).toHaveBeenCalled();
+            expect(settingsMock.preloadDownloadWatchState).toHaveBeenCalled();
+            expect(overlay.classList.contains('visible')).toBe(true);
+        });
+
+        document.getElementById('btnAssistant')!.click();
+        await vi.waitFor(() => {
+            expect(assistantMock.showAssistant).toHaveBeenCalled();
+            expect(overlay.classList.contains('visible')).toBe(true);
+        });
+    });
+
+    it('点击 #btnPlaza 打开 webviewLayer，再次点击走 closePlaza 关闭', async () => {
+        setupDomSkeleton();
+        const nav = await import('../../menus/nav-actions');
+        navModule = nav;
+        nav.initNavActions();
+        const layer = document.getElementById('webviewLayer')!;
+
+        document.getElementById('btnPlaza')!.click();
+        await vi.waitFor(() => {
+            expect(plazaMock.showPlaza).toHaveBeenCalled();
+            expect(layer.classList.contains('visible')).toBe(true);
+        });
+
+        document.getElementById('btnPlaza')!.click();
+        await vi.waitFor(() => {
+            expect(plazaMock.closePlaza).toHaveBeenCalled();
+            expect(layer.classList.contains('visible')).toBe(false);
+        });
     });
 });

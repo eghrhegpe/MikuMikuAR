@@ -2,12 +2,13 @@
 
 # 代码审核索引
 
-> 审核台账共 **179** 篇：153 篇按日期归档、9 篇轮次记录、17 篇专题审核。每篇记录审核范围、发现与结论。
+> 审核台账共 **180** 篇：154 篇按日期归档、9 篇轮次记录、17 篇专题审核。每篇记录审核范围、发现与结论。
 
 > 汇总视图（执行摘要 / 风险全景 / 改进优先级）见 [审核总索引](./README.md)。
 
-## 2026 年 8 月（142）
+## 2026 年 8 月（143）
 
+- `2026-08-15` [Round 63 审核报告 — menu nav-buttons / nav-click / nav-touch](./2026-08-15-round63-menu-nav.md)
 - `2026-08-15` [Round 62 审核报告 — menu focus / level-management / level-write](./2026-08-15-round62-menu-focus-levels.md)
 - `2026-08-15` [Round 61 审核报告 — fullscreen-overlay / lighting-headless / menu-controls](./2026-08-15-round61-fullscreen-lighting-headless-menu-controls.md)
 - `2026-08-15` [Round 60 审核报告 — dom / env-lighting / fileservice](./2026-08-15-round60-dom-env-lighting-fileservice.md)

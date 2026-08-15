@@ -1,15 +1,29 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest';
 import { SlideMenu } from '../../menus/menu';
 import { makeTestLevel, makeTestMenu } from '../fixtures/menu';
+import { bundles } from '../../core/i18n/t';
+import { zhCN } from '../../core/i18n/locales/zh-CN';
+
+beforeAll(() => {
+    // [doc:perf] 语言包运行时加载；测试环境直接预填基准包，避免缺失 key 告警噪声。
+    bundles['zh-CN'] = zhCN;
+});
 
 // ─── SlideMenu 测试：键盘导航 + 触屏手势守卫与平台适配 ───
 
 describe('SlideMenu — 键盘导航', () => {
+    let container: HTMLElement;
     let menu: SlideMenu;
 
     beforeEach(() => {
         const m = makeTestMenu();
+        container = m.container;
         menu = m.menu;
+    });
+
+    afterEach(() => {
+        menu.dispose();
+        container.remove();
     });
 
     async function waitForRender(m: SlideMenu): Promise<void> {
@@ -74,26 +88,35 @@ describe('SlideMenu — 触屏手势守卫与平台适配', () => {
     afterEach(() => {
         vi.restoreAllMocks();
         menu.dispose();
+        container.remove();
     });
 
-    it('单指 touchstart 置 _swipeActive=true，右滑触发 pop', () => {
+    function dispatchTouch(
+        type: 'touchstart' | 'touchend',
+        points: Array<{ clientX: number; clientY: number }>
+    ): void {
+        const event = new TouchEvent(type, { bubbles: true });
+        if (type === 'touchstart') {
+            Object.defineProperty(event, 'touches', { value: points });
+        } else {
+            Object.defineProperty(event, 'changedTouches', { value: points });
+        }
+        container.dispatchEvent(event);
+    }
+
+    it('单指 touchstart 置 _swipeActive=true，右滑触发 pop 后复位', () => {
         menu.reset(makeTestLevel('根'));
         (menu as any).levels.push(makeTestLevel('子级'));
         (menu as any).transitioning = false;
         const before = menu.levelCount;
 
-        const touchStart = new TouchEvent('touchstart', { bubbles: true });
-        Object.defineProperty(touchStart, 'touches', { value: [{ clientX: 0, clientY: 0 }] });
-        container.dispatchEvent(touchStart);
+        dispatchTouch('touchstart', [{ clientX: 0, clientY: 0 }]);
         expect((menu as any)._swipeActive).toBe(true);
 
-        const touchEnd = new TouchEvent('touchend', { bubbles: true });
-        Object.defineProperty(touchEnd, 'changedTouches', {
-            value: [{ clientX: 100, clientY: 0 }],
-        });
-        container.dispatchEvent(touchEnd);
+        dispatchTouch('touchend', [{ clientX: 100, clientY: 0 }]);
 
         expect(menu.levelCount).toBe(before - 1);
+        expect((menu as any)._swipeActive).toBe(false);
     });
 
     it('双指触摸置 _swipeActive=false，不触发 pop', () => {
@@ -102,23 +125,16 @@ describe('SlideMenu — 触屏手势守卫与平台适配', () => {
         (menu as any).transitioning = false;
         const before = menu.levelCount;
 
-        const touchStart = new TouchEvent('touchstart', { bubbles: true });
-        Object.defineProperty(touchStart, 'touches', {
-            value: [
-                { clientX: 0, clientY: 0 },
-                { clientX: 10, clientY: 10 },
-            ],
-        });
-        container.dispatchEvent(touchStart);
+        dispatchTouch('touchstart', [
+            { clientX: 0, clientY: 0 },
+            { clientX: 10, clientY: 10 },
+        ]);
         expect((menu as any)._swipeActive).toBe(false);
 
-        const touchEnd = new TouchEvent('touchend', { bubbles: true });
-        Object.defineProperty(touchEnd, 'changedTouches', {
-            value: [{ clientX: 200, clientY: 0 }],
-        });
-        container.dispatchEvent(touchEnd);
+        dispatchTouch('touchend', [{ clientX: 200, clientY: 0 }]);
 
         expect(menu.levelCount).toBe(before);
+        expect((menu as any)._swipeActive).toBe(false);
     });
 
     it('_isOpen 构造后为 true，close/dispose 后变 false', () => {
@@ -126,8 +142,10 @@ describe('SlideMenu — 触屏手势守卫与平台适配', () => {
         menu.close();
         expect((menu as any)._isOpen).toBe(false);
 
+        const m2Container = document.createElement('div');
+        document.body.appendChild(m2Container);
         const m2 = new SlideMenu({
-            container,
+            container: m2Container,
             onItemClick: vi.fn(),
             onFolderEnter: vi.fn(),
             onAfterRender: vi.fn(),
@@ -136,6 +154,7 @@ describe('SlideMenu — 触屏手势守卫与平台适配', () => {
         expect((m2 as any)._isOpen).toBe(true);
         m2.dispose();
         expect((m2 as any)._isOpen).toBe(false);
+        m2Container.remove();
     });
 
     it('isVisible 在 close 后为 false，即便容器有布局尺寸（_isOpen 短路，不误判）', () => {
@@ -149,25 +168,41 @@ describe('SlideMenu — 触屏手势守卫与平台适配', () => {
     });
 
     describe('平台适配（坐标右滑手势注册）', () => {
-        it('非安卓平台注册触摸监听器', () => {
-            expect((menu as any)._swipeTouchStartDisp).not.toBeNull();
-            expect((menu as any)._swipeTouchEndDisp).not.toBeNull();
-        });
-
-        it('安卓平台不注册坐标右滑手势（交由系统返回键）', () => {
-            vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(
-                'Mozilla/5.0 (Linux; Android 13; Pixel) AppleWebKit/537.36 (KHTML, like Gecko) Chrome Mobile'
-            );
-            const androidMenu = new SlideMenu({
-                container,
+        function makePlatformMenu(userAgent: string): {
+            platformContainer: HTMLElement;
+            platformMenu: SlideMenu;
+        } {
+            vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(userAgent);
+            const platformContainer = document.createElement('div');
+            document.body.appendChild(platformContainer);
+            const platformMenu = new SlideMenu({
+                container: platformContainer,
                 onItemClick: vi.fn(),
                 onFolderEnter: vi.fn(),
                 onAfterRender: vi.fn(),
                 onClose: vi.fn(),
             });
-            expect((androidMenu as any)._swipeTouchStartDisp).toBeNull();
-            expect((androidMenu as any)._swipeTouchEndDisp).toBeNull();
-            androidMenu.dispose();
+            return { platformContainer, platformMenu };
+        }
+
+        it('非安卓平台注册触摸监听器', () => {
+            const { platformContainer, platformMenu } = makePlatformMenu(
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36'
+            );
+            expect((platformMenu as any)._swipeTouchStartDisp).not.toBeNull();
+            expect((platformMenu as any)._swipeTouchEndDisp).not.toBeNull();
+            platformMenu.dispose();
+            platformContainer.remove();
+        });
+
+        it('安卓平台不注册坐标右滑手势（交由系统返回键）', () => {
+            const { platformContainer, platformMenu } = makePlatformMenu(
+                'Mozilla/5.0 (Linux; Android 13; Pixel) AppleWebKit/537.36 (KHTML, like Gecko) Chrome Mobile'
+            );
+            expect((platformMenu as any)._swipeTouchStartDisp).toBeNull();
+            expect((platformMenu as any)._swipeTouchEndDisp).toBeNull();
+            platformMenu.dispose();
+            platformContainer.remove();
         });
     });
 });

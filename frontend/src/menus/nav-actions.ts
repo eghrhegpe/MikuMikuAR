@@ -5,7 +5,7 @@
 // 全部为 UI 导航逻辑，归 menus 层；core（shortcut-app/events）经
 // core/ui-action-bridge 的 navAction/navLabel 调用，不再 import menus。
 import { dom, setPopupOpen } from '@/core/config';
-import { addDisposableListener } from '@/core/dom';
+import { addDisposableListener, type Disposable } from '@/core/dom';
 import { getAllShortcuts, getAriaKeyshortcuts } from '@/core/shortcut-registry';
 import { registerUiAction } from '@/core/ui-action-bridge';
 import { closeAllOverlays, setOnCloseAllOverlays } from './menu-overlay';
@@ -42,15 +42,28 @@ function waitForTransition(el: HTMLElement, propertyName?: string): Promise<void
             resolve();
             return;
         }
-        const disp = addDisposableListener(el, 'transitionend', (e) => {
+        let disp: Disposable | null = null;
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        let settled = false;
+        const finish = () => {
+            if (settled) {
+                return;
+            }
+            settled = true;
+            if (timer) {
+                clearTimeout(timer);
+            }
+            disp?.dispose();
+            resolve();
+        };
+        disp = addDisposableListener(el, 'transitionend', (e) => {
             if (propertyName && (e as TransitionEvent).propertyName !== propertyName) {
                 return;
             }
-            disp.dispose();
-            resolve();
+            finish();
         });
         const timeout = Math.max(dur * 2, 500); // D1: 安全网 ≥ 2× 时长且下限 500ms
-        setTimeout(resolve, timeout);
+        timer = setTimeout(finish, timeout);
     });
 }
 
