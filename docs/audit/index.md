@@ -2,12 +2,15 @@
 
 # 代码审核索引
 
-> 审核台账共 **73** 篇：48 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
+> 审核台账共 **76** 篇：51 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
 
 > 汇总视图（执行摘要 / 风险全景 / 改进优先级）见 [审核总索引](./README.md)。
 
-## 2026 年 8 月（37）
+## 2026 年 8 月（40）
 
+- `2026-08-15` [[scene-stage] 审核结果 — 第 24 轮 · 测试 3/3](./2026-08-15-round24-scene-stage.md)
+- `2026-08-15` [审核报告：material-editor 测试与生产源码（round24-2）](./2026-08-15-round24-material-editor.md)
+- `2026-08-15` [审核报告：library-state 测试与生产源码（round24-1）](./2026-08-15-round24-library-state.md)
 - `2026-08-15` [library-session-store 模块 — 审核结果（round-23 / ADR-135 回归测试）](./2026-08-15-round23-library-session-store.md)
 - `2026-08-15` [[round-23] feet-adjustment 引擎 + 补测 — 审核结果](./2026-08-15-round23-feet-adjustment-engine.md)
 - `2026-08-15` [审核报告 — env-caustics（共享焦散纹理控制器）模块 + 单测](./2026-08-15-round23-env-caustics.md)

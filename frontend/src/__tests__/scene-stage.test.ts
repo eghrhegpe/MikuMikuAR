@@ -82,14 +82,9 @@ vi.mock('../scene/env/env', () => ({
 }));
 
 // scene-stage-levels.ts → ./scene-menu-state（scene-menu-state.ts 默认返回 null，无需显式 mock）
-// 保留 scene-menu mock 防止 importActual 链意外加载真实 scene-menu 模块触发 side-effect
-vi.mock('./scene-menu', () => ({
-    reRenderSceneMenu: vi.fn(),
-    getSceneMenu: vi.fn(() => ({ push: mockPush })),
-}));
-
-vi.mock('./env-ground-levels', () => ({ buildGroundLevel: vi.fn(() => ({ label: 'ground' })) }));
-vi.mock('./env-water-levels', () => ({ buildWaterLevel: vi.fn(() => ({ label: 'water' })) }));
+// [audit:round24 P3] 删除 3 个死 mock：./scene-menu、./env-ground-levels、./env-water-levels
+// 相对测试文件解析到不存在的 src/__tests__/ 路径（被测链路只依赖 scene-menu-state，
+// 不加载这些模块），是无效 mock 且注释宣称的防护未生效。
 
 // 阻断 Babylon.js Scene 初始化（scene/scene.ts 模块级 new Scene()）
 // 补齐源码依赖的 undo 快照 API（scene-stage-levels / resource-detail-helpers 均 import）

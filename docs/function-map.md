@@ -1321,32 +1321,32 @@
 | `MaterialCategoryParams()` | `scene/manager/material:32` | — |
 | `MaterialStateManager()` | `scene/manager/material:184` | 材质状态管理器 — 集中管理分类/逐材质/可见性状态，便于测试 mock 和未来扩展。 |
 | `SssMaterial()` | `scene/manager/material:18` | — |
-| `_applyAll()` | `scene/manager/material:656` | 将 MaterialCategoryParams 映射为 PBRMaterial 属性 映射关系（与 StandardMaterial 语义对齐）： - diffuseMul |
+| `_applyAll()` | `scene/manager/material:623` | [audit:round24 P2] 单个材质应用（PBR/Standard 双分支 + category/per-mat 合并 + DEFAULT 兜底）。 |
 | `_capture()` | `scene/manager/material:407` | Per-material category cache. |
 | `_capturePbr()` | `scene/manager/material:455` | PBRMaterial 参数捕获（对应 _capture 的 PBR 版） |
 | `_catState()` | `scene/manager/material:208` | 材质状态管理器 — 集中管理分类/逐材质/可见性状态，便于测试 mock 和未来扩展。 |
 | `_isPbrMaterial()` | `scene/manager/material:447` | — |
 | `_matEnabled()` | `scene/manager/material:212` | 材质状态管理器 — 集中管理分类/逐材质/可见性状态，便于测试 mock 和未来扩展。 |
 | `_matState()` | `scene/manager/material:210` | 材质状态管理器 — 集中管理分类/逐材质/可见性状态，便于测试 mock 和未来扩展。 |
-| `applyMatState()` | `scene/manager/material:1054` | — |
-| `applyUnlitFallback()` | `scene/manager/material:789` | 光照兜底预设：让模型呈现"伪 unlit"状态，不依赖方向光即可正常显示。 |
-| `disposeModelMaterialState()` | `scene/manager/material:903` | 清理指定模型的全部材质状态（分类 + 逐材质 + 启用标记）。 |
-| `getMatCatGroups()` | `scene/manager/material:718` | — |
-| `getMatCatParams()` | `scene/manager/material:738` | — |
-| `getMatDetailList()` | `scene/manager/material:819` | — |
-| `getMatParams()` | `scene/manager/material:848` | — |
-| `getMatState()` | `scene/manager/material:984` | — |
+| `applyMatState()` | `scene/manager/material:1021` | — |
+| `applyUnlitFallback()` | `scene/manager/material:756` | 光照兜底预设：让模型呈现"伪 unlit"状态，不依赖方向光即可正常显示。 |
+| `disposeModelMaterialState()` | `scene/manager/material:870` | 清理指定模型的全部材质状态（分类 + 逐材质 + 启用标记）。 |
+| `getMatCatGroups()` | `scene/manager/material:685` | — |
+| `getMatCatParams()` | `scene/manager/material:705` | — |
+| `getMatDetailList()` | `scene/manager/material:786` | — |
+| `getMatParams()` | `scene/manager/material:815` | — |
+| `getMatState()` | `scene/manager/material:951` | — |
 | `getMaterialCategory()` | `scene/manager/material:376` | Resolve the display category (皮肤 / 头发 / 眼睛 / 服装 …) for a material or its material name. |
-| `isMatCategoryAllEnabled()` | `scene/manager/material:912` | 检查指定分类的全部材质是否都已启用。 |
-| `isMatEnabled()` | `scene/manager/material:691` | — |
+| `isMatCategoryAllEnabled()` | `scene/manager/material:879` | 检查指定分类的全部材质是否都已启用。 |
+| `isMatEnabled()` | `scene/manager/material:658` | — |
 | `isPbrMaterial()` | `scene/manager/material:452` | — |
-| `resetMatCatParams()` | `scene/manager/material:765` | — |
-| `resetPerMaterialParams()` | `scene/manager/material:978` | 重置所有逐材质覆盖（per-material），保留分类调整（皮肤/头发等）。 |
-| `resetSingleMatParams()` | `scene/manager/material:884` | — |
-| `setMatCatParams()` | `scene/manager/material:750` | — |
-| `setMatCategoryEnabled()` | `scene/manager/material:940` | 按分类批量切换材质可见性。 |
-| `setMatEnabled()` | `scene/manager/material:695` | — |
-| `setMatParams()` | `scene/manager/material:858` | — |
+| `resetMatCatParams()` | `scene/manager/material:732` | — |
+| `resetPerMaterialParams()` | `scene/manager/material:945` | 重置所有逐材质覆盖（per-material），保留分类调整（皮肤/头发等）。 |
+| `resetSingleMatParams()` | `scene/manager/material:851` | — |
+| `setMatCatParams()` | `scene/manager/material:717` | — |
+| `setMatCategoryEnabled()` | `scene/manager/material:907` | 按分类批量切换材质可见性。 |
+| `setMatEnabled()` | `scene/manager/material:662` | — |
+| `setMatParams()` | `scene/manager/material:825` | — |
 | `resolveModelId()` | `scene/manager/model-id:9` | 解析模型运行时 id：优先复用存档 uuid（preferredId，由恢复路径传入）， 否则生成稳定 uuid。替代旧实现 &#96;model_${Date.now()}_${Math |
 | `captureThumbnail()` | `scene/manager/model-loader:153` | Captures a screenshot after model load for thumbnail cache. |
 | `initLoader()` | `scene/manager/model-loader:91` | — |

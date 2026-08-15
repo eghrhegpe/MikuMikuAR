@@ -527,39 +527,29 @@ function _applyPbrMatParams(
     }
 }
 
-function _applyMaterial(id: string, mi: number, alphaCtx?: AlphaCtx): void {
-    const meshes = _getMeshesById(id);
-    if (!meshes || mi < 0 || mi >= meshes.length) {
-        return;
-    }
-    const m = meshes[mi].material;
-    if (!m) {
-        return;
-    }
+/** [audit:round24 P2] 单个材质应用（PBR/Standard 双分支 + category/per-mat 合并 + DEFAULT 兜底）。
+ *  从 _applyMaterial/_applyCategory 提取的共享内部函数，消除约 60 行重复。 */
+function _applySingleMaterial(
+    m: Material,
+    mi: number,
+    base: MaterialCategoryParams | undefined,
+    perMat: Map<number, Partial<MaterialCategoryParams>> | undefined,
+    alphaCtx?: AlphaCtx
+): void {
     // PBR 分支（ADR-188）
     if (m instanceof PBRMaterial) {
         _capturePbr(m, mi, alphaCtx?.origAlpha ?? []);
         const o = _origPbrValues.get(m)!;
         let applied = false;
-        // [fix P2] category 参数提到外层，per-mat 合并时继承
-        let catParams: MaterialCategoryParams | undefined;
-        const state = _catState.get(id);
-        if (state) {
-            const p = state.get(categoryOfMaterial(m));
-            if (p) {
-                _applyPbrMatParams(m, o, p, alphaCtx);
-                applied = true;
-                catParams = p;
-            }
+        if (base) {
+            _applyPbrMatParams(m, o, base, alphaCtx);
+            applied = true;
         }
-        const perMat = _matState.get(id);
-        if (perMat) {
-            const mp = perMat.get(mi);
-            if (mp) {
-                // [fix P2] 仅 per-mat 显式字段覆盖；未设置字段继承 category 结果
-                _applyPbrMatParams(m, o, _mergedMatParams(catParams, mp), alphaCtx);
-                applied = true;
-            }
+        const mp = perMat?.get(mi);
+        if (mp) {
+            // [fix P2] 仅 per-mat 显式字段覆盖；未设置字段继承 base 结果
+            _applyPbrMatParams(m, o, _mergedMatParams(base, mp), alphaCtx);
+            applied = true;
         }
         if (!applied && alphaCtx) {
             _applyPbrMatParams(m, o, DEFAULT_MAT_PARAMS, alphaCtx);
@@ -574,29 +564,33 @@ function _applyMaterial(id: string, mi: number, alphaCtx?: AlphaCtx): void {
     _capture(m, mi, alphaCtx?.origAlpha ?? []);
     const o = _origValues.get(m)!;
     let applied = false;
-    // [fix P2] category 参数提到外层，per-mat 合并时继承
-    let catParams: MaterialCategoryParams | undefined;
-    const state = _catState.get(id);
-    if (state) {
-        const p = state.get(categoryOfMaterial(m));
-        if (p) {
-            _applyParamsToMaterial(m, mmdMat, o, p, alphaCtx);
-            applied = true;
-            catParams = p;
-        }
+    if (base) {
+        _applyParamsToMaterial(m, mmdMat, o, base, alphaCtx);
+        applied = true;
     }
-    const perMat = _matState.get(id);
-    if (perMat) {
-        const mp = perMat.get(mi);
-        if (mp) {
-            // [fix P2] 仅 per-mat 显式字段覆盖；未设置字段继承 category 结果
-            _applyParamsToMaterial(m, mmdMat, o, _mergedMatParams(catParams, mp), alphaCtx);
-            applied = true;
-        }
+    const mp = perMat?.get(mi);
+    if (mp) {
+        // [fix P2] 仅 per-mat 显式字段覆盖；未设置字段继承 base 结果
+        _applyParamsToMaterial(m, mmdMat, o, _mergedMatParams(base, mp), alphaCtx);
+        applied = true;
     }
     if (!applied && alphaCtx) {
         _applyParamsToMaterial(m, mmdMat, o, DEFAULT_MAT_PARAMS, alphaCtx);
     }
+}
+
+function _applyMaterial(id: string, mi: number, alphaCtx?: AlphaCtx): void {
+    const meshes = _getMeshesById(id);
+    if (!meshes || mi < 0 || mi >= meshes.length) {
+        return;
+    }
+    const m = meshes[mi].material;
+    if (!m) {
+        return;
+    }
+    const state = _catState.get(id);
+    const base = state?.get(categoryOfMaterial(m));
+    _applySingleMaterial(m, mi, base, _matState.get(id), alphaCtx);
 }
 
 function _applyCategory(id: string, cat: string, alphaCtx?: AlphaCtx): void {
@@ -612,43 +606,16 @@ function _applyCategory(id: string, cat: string, alphaCtx?: AlphaCtx): void {
     if (!p) {
         return;
     }
-    const perMat = _matState.get(id) ?? new Map();
+    const perMat = _matState.get(id);
     for (let mi = 0; mi < meshes.length; mi++) {
         const m = meshes[mi].material;
         if (!m) {
             continue;
         }
-        // PBR 分支（ADR-188）
-        if (m instanceof PBRMaterial) {
-            if (categoryOfMaterial(m) !== cat) {
-                continue;
-            }
-            _capturePbr(m, mi, alphaCtx?.origAlpha ?? []);
-            const o = _origPbrValues.get(m)!;
-            _applyPbrMatParams(m, o, p, alphaCtx);
-            const mp = perMat.get(mi);
-            if (mp) {
-                // [fix P2] 仅 per-mat 显式字段覆盖；未设置字段继承分类结果 p
-                _applyPbrMatParams(m, o, _mergedMatParams(p, mp), alphaCtx);
-            }
-            continue;
-        }
-        // StandardMaterial 分支
-        if (!(m instanceof StandardMaterial)) {
-            continue;
-        }
         if (categoryOfMaterial(m) !== cat) {
             continue;
         }
-        const mmdMat = m as MmdStandardMaterial;
-        _capture(m, mi, alphaCtx?.origAlpha ?? []);
-        const o = _origValues.get(m)!;
-        _applyParamsToMaterial(m, mmdMat, o, p, alphaCtx);
-        const mp = perMat.get(mi);
-        if (mp) {
-            // [fix P2] 仅 per-mat 显式字段覆盖；未设置字段继承分类结果 p
-            _applyParamsToMaterial(m, mmdMat, o, _mergedMatParams(p, mp), alphaCtx);
-        }
+        _applySingleMaterial(m, mi, p, perMat, alphaCtx);
     }
 }
 
