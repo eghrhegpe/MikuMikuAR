@@ -26,8 +26,6 @@ let _facing: CameraFacing = 'user';
 let _stream: MediaStream | null = null;
 let _videoEl: HTMLVideoElement | null = null;
 let _mirrorOverridden = false; // 用户是否手动设置过镜像
-type ARModeChangeListener = (active: boolean) => void;
-const _listeners: ARModeChangeListener[] = [];
 
 // 代数令牌：每次发起/终止 AR 都会自增，用于作废在途的异步 getUserMedia。
 // 典型竞态：进入 AR 时 getUserMedia 弹窗未关闭，用户已切走——stopARCamera 会 bump
@@ -36,16 +34,6 @@ const _listeners: ARModeChangeListener[] = [];
 let _arGen = 0;
 // 防重入：避免并发双 getUserMedia 泄漏摄像头流。
 let _starting = false;
-
-function _notifyARModeChange(active: boolean): void {
-    for (const fn of _listeners) {
-        try {
-            fn(active);
-        } catch (e) {
-            console.error('[ar-camera] listener error:', e);
-        }
-    }
-}
 
 // ======== Video Element ========
 function getVideoEl(): HTMLVideoElement {
@@ -164,12 +152,26 @@ export async function startARCamera(facing: CameraFacing = 'user'): Promise<bool
         video.srcObject = _stream;
         await video.play();
 
+        // [fix] stopARCamera 可能发生在 video.play() 挂起期间（真实 play() 是异步的）。
+        // 这里必须再次校验代数，否则停止后 play resolve 会把 AR 重新激活成“幽灵 AR”。
+        if (myGen !== _arGen) {
+            if (_stream) {
+                _stream.getTracks().forEach((tr) => tr.stop());
+                _stream = null;
+            }
+            if (_videoEl) {
+                _videoEl.srcObject = null;
+            }
+            _active = false;
+            _hideVideo();
+            return false;
+        }
+
         _applyVideoMirror();
         _active = true;
         _showVideo();
 
         feedbackInfo('scene.ar.enabled', undefined);
-        _notifyARModeChange(true);
         return true;
     } catch (err) {
         logWarn('AR', 'startARCamera failed:', err);
@@ -205,7 +207,6 @@ export function stopARCamera(): void {
     }
     _active = false;
     _hideVideo();
-    _notifyARModeChange(false);
     // 注：不复位 _mirrorOverridden——用户手动镜像偏好经 motion-camera-levels
     // setARMirror + triggerAutoSave 持久化，跨 AR 会话保留是设计意图（code_review
     // 复核：此前一次「清零」会静默回退用户显式选择，已撤销）。
@@ -249,48 +250,49 @@ export function captureARScreenshot(
     format: string = 'image/png',
     quality: number = 0.9
 ): Promise<string> {
-    return canvasToBase64(dom.canvas, format, quality).then((fallbackBase64) => {
-        if (!_active || !_videoEl) {
-            return fallbackBase64;
-        }
-        const video = _videoEl;
-        const out = document.createElement('canvas');
-        out.width = dom.canvas.width;
-        out.height = dom.canvas.height;
-        const ctx = out.getContext('2d');
-        if (!ctx) {
-            return fallbackBase64;
-        }
+    // 未激活时直接编码主 canvas 作为 fallback，避免激活路径为“可能用不到的 fallback”
+    // 先编码一次主 canvas、再编码合成 canvas 的重复开销。
+    if (!_active || !_videoEl) {
+        return canvasToBase64(dom.canvas, format, quality);
+    }
 
-        const vw = video.videoWidth || dom.canvas.width;
-        const vh = video.videoHeight || dom.canvas.height;
-        const cw = dom.canvas.width;
-        const ch = dom.canvas.height;
+    const video = _videoEl;
+    const out = document.createElement('canvas');
+    out.width = dom.canvas.width;
+    out.height = dom.canvas.height;
+    const ctx = out.getContext('2d');
+    if (!ctx) {
+        return canvasToBase64(dom.canvas, format, quality);
+    }
 
-        const vRatio = vw / vh;
-        const cRatio = cw / ch;
+    const vw = video.videoWidth || dom.canvas.width;
+    const vh = video.videoHeight || dom.canvas.height;
+    const cw = dom.canvas.width;
+    const ch = dom.canvas.height;
 
-        let sx = 0,
-            sy = 0,
-            sw = vw,
-            sh = vh;
-        if (vRatio > cRatio) {
-            sw = vh * cRatio;
-            sx = (vw - sw) / 2;
-        } else {
-            sh = vw / cRatio;
-            sy = (vh - sh) / 2;
-        }
+    const vRatio = vw / vh;
+    const cRatio = cw / ch;
 
-        try {
-            ctx.drawImage(video, sx, sy, sw, sh, 0, 0, cw, ch);
-        } catch (e) {
-            logWarn('AR', 'drawImage video failed:', e);
-        }
+    let sx = 0,
+        sy = 0,
+        sw = vw,
+        sh = vh;
+    if (vRatio > cRatio) {
+        sw = vh * cRatio;
+        sx = (vw - sw) / 2;
+    } else {
+        sh = vw / cRatio;
+        sy = (vh - sh) / 2;
+    }
 
-        ctx.drawImage(dom.canvas, 0, 0, cw, ch);
-        return canvasToBase64(out, format, quality);
-    });
+    try {
+        ctx.drawImage(video, sx, sy, sw, sh, 0, 0, cw, ch);
+    } catch (e) {
+        logWarn('AR', 'drawImage video failed:', e);
+    }
+
+    ctx.drawImage(dom.canvas, 0, 0, cw, ch);
+    return canvasToBase64(out, format, quality);
 }
 
 // ======== Internal Helpers ========
@@ -318,26 +320,30 @@ function ensureAndroidCameraPermission(): Promise<boolean> {
     }
     return new Promise<boolean>((resolve) => {
         const prev = window.__onArcCameraPermission;
-        // [fix P2] 15s 超时兜底：系统授权框不响应或回调丢失时不再永久挂起
-        // （否则 startARCamera 的 await 永远 pending，AR 功能挂死）。
-        const timer = setTimeout(() => {
-            window.__onArcCameraPermission = prev;
-            resolve(false);
-        }, 15000);
-        window.__onArcCameraPermission = (granted: boolean) => {
-            clearTimeout(timer);
+        let settled = false;
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        const settle = (granted: boolean): void => {
+            if (settled) {
+                return; // 超时后的迟到回调不得再触发 prev / 二次 resolve
+            }
+            settled = true;
+            if (timer) {
+                clearTimeout(timer);
+            }
             window.__onArcCameraPermission = prev;
             resolve(granted);
         };
+        // [fix P2] 15s 超时兜底：系统授权框不响应或回调丢失时不再永久挂起
+        // （否则 startARCamera 的 await 永远 pending，AR 功能挂死）。
+        timer = setTimeout(() => settle(false), 15000);
+        window.__onArcCameraPermission = (granted: boolean) => settle(granted);
         try {
             w.requestCameraPermission();
         } catch (err) {
             // [fix P1] 调用抛异常（Go 绑定层错误）：恢复回调并 resolve(false)，
             // 保证 Promise 绝不 reject——startARCamera 的 _starting 由此永不泄漏。
-            clearTimeout(timer);
-            window.__onArcCameraPermission = prev;
             logWarn('AR', 'requestCameraPermission failed:', err);
-            resolve(false);
+            settle(false);
         }
     });
 }

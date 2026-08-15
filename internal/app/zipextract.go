@@ -366,7 +366,7 @@ type CacheStats struct {
 	ThumbnailCount int   `json:"thumbnailCount"`
 	ServeBytes     int64 `json:"serveBytes"`
 	ServeCount     int   `json:"serveCount"`
-	ResourceBytes  int64 `json:"resourceBytes"`  // user asset library (ResourceRoot categories)
+	ResourceBytes  int64 `json:"resourceBytes"` // user asset library (ResourceRoot categories)
 	ResourceCount  int   `json:"resourceCount"`
 	TotalBytes     int64 `json:"totalBytes"`
 }
@@ -414,7 +414,7 @@ func (a *App) GetCacheStats() (*CacheStats, error) {
 			stats.ResourceCount += count
 		}
 	}
-	stats.TotalBytes = stats.ResourceBytes + stats.ExtractedBytes + stats.ThumbnailBytes
+	stats.TotalBytes = stats.ResourceBytes + stats.ExtractedBytes + stats.ThumbnailBytes + stats.ServeBytes
 	return &stats, nil
 }
 

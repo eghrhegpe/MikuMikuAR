@@ -576,9 +576,17 @@ export type PhysicsCategory = 'skirt' | 'chest' | 'hair' | 'accessory';
 /**
  * @deprecated ADR-100：单枚举混淆「控制方案」与「运动行为」两条正交轴。
  * 保留为兼容别名（存档 / 旧调用点），新代码请用 {@link CameraControl} × {@link CameraBehavior}。
- * 双写于 `scene/camera/camera.ts`，改动须两处同步。
+ * 双写于 `scene/camera/camera-state.ts`（camera.ts 经其 re-export），改动须两处同步。
  */
-export type CameraMode = 'orbit' | 'freefly' | 'surround' | 'concert' | 'oneshot' | 'vmd' | 'ar';
+export type CameraMode =
+    | 'orbit'
+    | 'freefly'
+    | 'surround'
+    | 'concert'
+    | 'oneshot'
+    | 'vmd'
+    | 'ar'
+    | 'beatcut';
 
 /**
  * ADR-100 轴 A — 控制方案：决定相机类 + 输入方式。

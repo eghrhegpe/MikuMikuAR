@@ -402,6 +402,7 @@ func mergeUIState(dst *UIState, src UIState) {
 	dst.BpmQuantizeEnabled = src.BpmQuantizeEnabled
 	dst.AutoLoadCompanionAudio = src.AutoLoadCompanionAudio
 	dst.SfxEnabled = src.SfxEnabled
+	dst.Ktx2Transcode = src.Ktx2Transcode
 	if src.SfxVolume != 0 {
 		dst.SfxVolume = src.SfxVolume
 	}
@@ -414,6 +415,13 @@ func mergeUIState(dst *UIState, src UIState) {
 	}
 	if src.KeyBindings != nil {
 		dst.KeyBindings = src.KeyBindings
+	}
+	// 顶部 HUD 显隐开关（指针区分 nil=默认显示 vs false=显式关闭）
+	if src.ShowFpsClock != nil {
+		dst.ShowFpsClock = src.ShowFpsClock
+	}
+	if src.ShowRuntimeBadge != nil {
+		dst.ShowRuntimeBadge = src.ShowRuntimeBadge
 	}
 	// Android 屏幕常亮（指针区分 nil=开启 vs false=关闭）
 	if src.KeepAwake != nil {

@@ -19,12 +19,40 @@ import type {
     UIState,
 } from '../../../bindings/mikumikuar/internal/app/models';
 
+// 本文件锁定的 22 个高风险 Go 后端 binding 函数。
+const HIGH_RISK_FUNCTIONS = [
+    'GetAppVersion',
+    'GetBuildInfo',
+    'GetCacheStats',
+    'GetConfig',
+    'GetLibraryIndex',
+    'GetModelMeta',
+    'GetModelPresets',
+    'GetRecentModels',
+    'GetRenderPresets',
+    'ListEnvPresets',
+    'ScanModelDir',
+    'SetEnvState',
+    'SetUIState',
+    'SetUIAccent',
+    'SetUIScale',
+    'OpenInBlender',
+    'SaveSceneFile',
+    'LoadLastScene',
+    'BundleScene',
+    'SaveModelPreset',
+    'StartFileServer',
+    'StopFileServer',
+] as const;
+
 // ---------- 总存在性快照 ----------
 
 describe('app.ts binding surface sanity', () => {
-    it('exports ≥ 100 binding functions', () => {
-        const k = Object.keys(App);
-        expect(k.length).toBeGreaterThanOrEqual(100);
+    it('exports all 22 high-risk binding functions as functions', () => {
+        const mod = App as unknown as Record<string, unknown>;
+        for (const name of HIGH_RISK_FUNCTIONS) {
+            expect(typeof mod[name], `${name} should be exported as a function`).toBe('function');
+        }
     });
 });
 
@@ -274,31 +302,3 @@ describe('StopFileServer signature', () => {
     });
 });
 
-// ---------- 总导出存在性检查 ----------
-
-describe('app.ts binding surface — no unexpected top-level keys drift', () => {
-    it('all 22 target functions are exported on App namespace', () => {
-        expect(App).toHaveProperty('GetAppVersion');
-        expect(App).toHaveProperty('GetBuildInfo');
-        expect(App).toHaveProperty('GetCacheStats');
-        expect(App).toHaveProperty('GetConfig');
-        expect(App).toHaveProperty('GetLibraryIndex');
-        expect(App).toHaveProperty('GetModelMeta');
-        expect(App).toHaveProperty('GetModelPresets');
-        expect(App).toHaveProperty('GetRecentModels');
-        expect(App).toHaveProperty('GetRenderPresets');
-        expect(App).toHaveProperty('ListEnvPresets');
-        expect(App).toHaveProperty('ScanModelDir');
-        expect(App).toHaveProperty('SetEnvState');
-        expect(App).toHaveProperty('SetUIState');
-        expect(App).toHaveProperty('SetUIAccent');
-        expect(App).toHaveProperty('SetUIScale');
-        expect(App).toHaveProperty('OpenInBlender');
-        expect(App).toHaveProperty('SaveSceneFile');
-        expect(App).toHaveProperty('LoadLastScene');
-        expect(App).toHaveProperty('BundleScene');
-        expect(App).toHaveProperty('SaveModelPreset');
-        expect(App).toHaveProperty('StartFileServer');
-        expect(App).toHaveProperty('StopFileServer');
-    });
-});

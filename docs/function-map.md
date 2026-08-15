@@ -528,17 +528,17 @@
 | `showToast()` | `core/toast:196` | — |
 | `BoneOverrideEntry()` | `core/types:22` | [doc:adr-061] Motion Override — 持久化的单条骨骼覆盖配置 |
 | `BrowseOutcome()` | `core/types:392` | — |
-| `CameraBehavior()` | `core/types:602` | ADR-100 轴 B — 运动行为：相机如何自动运动，仅当控制轴为 &#96;orbit&#96;(ArcRotate) 时生效。 |
-| `CameraControl()` | `core/types:590` | ADR-100 轴 A — 控制方案：决定相机类 + 输入方式。 |
+| `CameraBehavior()` | `core/types:610` | ADR-100 轴 B — 运动行为：相机如何自动运动，仅当控制轴为 &#96;orbit&#96;(ArcRotate) 时生效。 |
+| `CameraControl()` | `core/types:598` | ADR-100 轴 A — 控制方案：决定相机类 + 输入方式。 |
 | `CameraMode()` | `core/types:581` | 保留为兼容别名（存档 / 旧调用点），新代码请用 {@link CameraControl} × {@link CameraBehavior}。 |
 | `DisplayNamePriority()` | `core/types:572` | — |
 | `EnvState()` | `core/types:544` | 从 schema 派生 EnvState interface（-readonly 保证可写）。[doc:adr-137] |
 | `FeetState()` | `core/types:91` | [doc:adr-085] 脚部地面跟随（按模型）状态 |
 | `GoUIState()` | `core/types:17` | — |
 | `LibraryModel()` | `core/types:319` | — |
-| `LibrarySortMode()` | `core/types:611` | — |
+| `LibrarySortMode()` | `core/types:619` | — |
 | `MmdRuntimeBoneExtended()` | `core/types:552` | — |
-| `MmdStandardMaterial()` | `core/types:620` | MmdStandardMaterial 扩展 — 用于材质系统和换装系统共享的类型定义 |
+| `MmdStandardMaterial()` | `core/types:628` | MmdStandardMaterial 扩展 — 用于材质系统和换装系统共享的类型定义 |
 | `ModelInstance()` | `core/types:188` | — |
 | `ModelKind()` | `core/types:113` | — |
 | `ModelMotionSlots()` | `core/types:165` | [doc:adr-167] 单槽位：overlay 槽位已移除（ADR-144 废弃） |
@@ -559,10 +559,10 @@
 | `PresetModuleState()` | `core/types:53` | [doc:adr-145] 单模块在预设中的状态快照 |
 | `ProcMotionConfig()` | `core/types:76` | [doc:adr-XX] 程序化动作配置（per-motion，随动作走） 参数存 SceneMotionIntent.procMotion（多角色共享）， 启用/分配权在每角色 |
 | `ProcPreset()` | `core/types:80` | [audit] 程序化动作自定义预设（per-model 参数快照，仿 MotionPreset 模式）。 |
-| `RecentMotion()` | `core/types:613` | — |
+| `RecentMotion()` | `core/types:621` | — |
 | `RuntimeModel()` | `core/types:176` | IMmdModel 接口不含 setRuntimeAnimation / createRuntimeAnimation （这两个方法在 MmdModel 和 MmdWasmMode |
 | `SceneMotionIntent()` | `core/types:134` | 场景级动作意图（「场上在跳什么」） |
-| `ScriptedSubMode()` | `core/types:609` | ADR-100 §6.4 — &#96;scripted&#96; 行为的子模式。 |
+| `ScriptedSubMode()` | `core/types:617` | ADR-100 §6.4 — &#96;scripted&#96; 行为的子模式。 |
 | `SlotSource()` | `core/types:149` | 槽位来源 |
 | `UIState()` | `core/types:448` | — |
 | `VmdLayer()` | `core/types:116` | VMD 动画图层 — 支持多 VMD 叠加（Motion Layers） |
@@ -842,14 +842,14 @@
 | 符号 | 文件:行 | 说明 |
 |------|--------|------|
 | `CameraFacing()` | `scene/ar/ar-camera:13` | — |
-| `captureARScreenshot()` | `scene/ar/ar-camera:248` | 截取 AR 合成画面（视频底 + 3D 模型层）。 |
-| `getARFacing()` | `scene/ar/ar-camera:83` | — |
-| `isARActive()` | `scene/ar/ar-camera:79` | — |
-| `isARMirrored()` | `scene/ar/ar-camera:235` | 当前是否镜像显示。 |
-| `setARMirror()` | `scene/ar/ar-camera:228` | 设置是否镜像显示（前置默认镜像，后置默认不镜像）。用户手动调用后标记为 overridden，切换摄像头时保持用户设置。 |
-| `startARCamera()` | `scene/ar/ar-camera:92` | 启动 AR 摄像头并显示视频背景。 |
-| `stopARCamera()` | `scene/ar/ar-camera:193` | 停止 AR 摄像头，释放资源并隐藏视频背景。 |
-| `switchARCameraFacing()` | `scene/ar/ar-camera:215` | 切换前后摄像头。 |
+| `captureARScreenshot()` | `scene/ar/ar-camera:249` | 截取 AR 合成画面（视频底 + 3D 模型层）。 |
+| `getARFacing()` | `scene/ar/ar-camera:71` | — |
+| `isARActive()` | `scene/ar/ar-camera:67` | — |
+| `isARMirrored()` | `scene/ar/ar-camera:236` | 当前是否镜像显示。 |
+| `setARMirror()` | `scene/ar/ar-camera:229` | 设置是否镜像显示（前置默认镜像，后置默认不镜像）。用户手动调用后标记为 overridden，切换摄像头时保持用户设置。 |
+| `startARCamera()` | `scene/ar/ar-camera:80` | 启动 AR 摄像头并显示视频背景。 |
+| `stopARCamera()` | `scene/ar/ar-camera:195` | 停止 AR 摄像头，释放资源并隐藏视频背景。 |
+| `switchARCameraFacing()` | `scene/ar/ar-camera:216` | 切换前后摄像头。 |
 | `isARModeActive()` | `scene/ar/ar-scene:244` | — |
 | `setARMode()` | `scene/ar/ar-scene:162` | 切换 AR 模式（摄像头视频背景 + 透明 canvas）。 |
 | `takeARScreenshot()` | `scene/ar/ar-scene:240` | AR 合成截图（视频底 + 3D 层），供截图功能调用。异步版（ADR-017 A2-04）。 |

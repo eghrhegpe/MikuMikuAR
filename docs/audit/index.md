@@ -2,12 +2,13 @@
 
 # 代码审核索引
 
-> 审核台账共 **173** 篇：148 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
+> 审核台账共 **174** 篇：149 篇按日期归档、9 篇轮次记录、16 篇专题审核。每篇记录审核范围、发现与结论。
 
 > 汇总视图（执行摘要 / 风险全景 / 改进优先级）见 [审核总索引](./README.md)。
 
-## 2026 年 8 月（137）
+## 2026 年 8 月（138）
 
+- `2026-08-15` [Round 58 审核报告 — ar-camera / app.functions.contract / camera-mode-guard](./2026-08-15-round58-ar-camera-bindings-camera-mode.md)
 - `2026-08-15` [Round 57 审核报告 — web-download-panel / web-fsa-auth / web-resources](./2026-08-15-round57-web-download-fsa-resources.md)
 - `2026-08-15` [round56-performance-snapshot — 性能降级快照恢复路径审核](./2026-08-15-round56-performance-snapshot.md)
 - `2026-08-15` [round56-env-context 审核报告 — env 共享上下文测试与其生产源码](./2026-08-15-round56-env-context.md)

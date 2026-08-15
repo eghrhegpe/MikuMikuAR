@@ -292,8 +292,11 @@ func (a *App) GetModelMeta(pmxPath string) (ModelMeta, error) {
 	// [doc:adr-189] Phase 0 体积埋点：记录 PMX 文件大小，为 ADR-187 触发判据提供数据源
 	// （P90 PMX 体积直方图，判定是否启动 BPMX/BVMD Converter）
 	a.safeLogInfo("pmx_scan: path=%s size=%d name=%s", pmxPath, meta.FileSize, meta.NameJp)
-	m := ModelMeta{}
-	m.Comment = meta.CommentJp
+	m := ModelMeta{
+		NameJp:  meta.NameJp,
+		NameEn:  meta.NameEn,
+		Comment: meta.CommentJp,
+	}
 	return m, nil
 }
 
