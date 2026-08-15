@@ -5,6 +5,7 @@
 // 帧管线顺序: 帧钩子(order=0) 先写偏移 → feet-adjustment(order=5) 再修正位置+重解 IK。
 
 import type { ParamValue } from '@/core/types';
+import { guardNum } from '@/core/guards';
 import { modelRegistry } from '@/core/state';
 import {
     setBoneOverride,
@@ -93,9 +94,9 @@ function createFootModuleFactory(cfg: FootSideConfig) {
             const { state, claimed } = prep;
 
             if (claimed.includes(actualBoneName)) {
-                const pitch = (state.params.pitch as number) ?? 0;
-                const yaw = (state.params.yaw as number) ?? 0;
-                const roll = (state.params.roll as number) ?? 0;
+                const pitch = guardNum(state.params.pitch);
+                const yaw = guardNum(state.params.yaw);
+                const roll = guardNum(state.params.roll);
                 setBoneOverride(actualBoneName, [pitch, yaw, roll], 1, true, modelId);
             }
         }
@@ -119,9 +120,9 @@ function createFootModuleFactory(cfg: FootSideConfig) {
                         const actualBoneName =
                             _resolveIkBone(mid, cfg.side) ?? cfg.ikBone;
 
-                        const fx = (st.params.footPosX as number) ?? 0;
-                        const fy = (st.params.footPosY as number) ?? 0;
-                        const fz = (st.params.footPosZ as number) ?? 0;
+                        const fx = guardNum(st.params.footPosX);
+                        const fy = guardNum(st.params.footPosY);
+                        const fz = guardNum(st.params.footPosZ);
                         if (fx === 0 && fy === 0 && fz === 0) {
                             // [fix P2] 归零时清除残留位置覆盖：此前直接 return 导致上一帧
                             // setBoneOverridePosition 写入的 slot.pos 残留（与 body-posture
@@ -132,9 +133,9 @@ function createFootModuleFactory(cfg: FootSideConfig) {
                             if (_footPosWritten.has(mid)) {
                                 _footPosWritten.delete(mid);
                                 clearBoneOverride(actualBoneName, mid);
-                                const pitch = (st.params.pitch as number) ?? 0;
-                                const yaw = (st.params.yaw as number) ?? 0;
-                                const roll = (st.params.roll as number) ?? 0;
+                                const pitch = guardNum(st.params.pitch);
+                                const yaw = guardNum(st.params.yaw);
+                                const roll = guardNum(st.params.roll);
                                 setBoneOverride(actualBoneName, [pitch, yaw, roll], 1, true, mid);
                             }
                             return;

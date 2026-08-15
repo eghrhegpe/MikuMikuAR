@@ -1505,10 +1505,10 @@
 | `setDefaultMotion()` | `scene/motion/motion-intent:178` | 设置默认动作 id。 |
 | `setLoadedProceduralMotions()` | `scene/motion/motion-intent:80` | 设置已加载集合（用于场景反序列化）。始终保证 'none' 存在。 |
 | `unloadProceduralMotion()` | `scene/motion/motion-intent:72` | 卸载一个程序化动作。'none' 不可卸载。 |
-| `BODY_POSTURE_DEF()` | `scene/motion/motion-modules/body-posture:286` | 身体姿态模块注册定义（供 registry BUILTIN_MODULE_DEFS 批量注册） |
-| `createBodyPostureModule()` | `scene/motion/motion-modules/body-posture:182` | 创建身体姿态模块实例 |
-| `LEFT_FOOT_DEF()` | `scene/motion/motion-modules/foot-modules:256` | — |
-| `RIGHT_FOOT_DEF()` | `scene/motion/motion-modules/foot-modules:273` | — |
+| `BODY_POSTURE_DEF()` | `scene/motion/motion-modules/body-posture:287` | 身体姿态模块注册定义（供 registry BUILTIN_MODULE_DEFS 批量注册） |
+| `createBodyPostureModule()` | `scene/motion/motion-modules/body-posture:183` | 创建身体姿态模块实例 |
+| `LEFT_FOOT_DEF()` | `scene/motion/motion-modules/foot-modules:257` | — |
+| `RIGHT_FOOT_DEF()` | `scene/motion/motion-modules/foot-modules:274` | — |
 | `LEFT_HAND_DEF()` | `scene/motion/motion-modules/hand-modules:454` | — |
 | `RIGHT_HAND_DEF()` | `scene/motion/motion-modules/hand-modules:482` | — |
 | `FrameHookManager()` | `scene/motion/motion-modules/module-base:260` | 帧钩子管理器的返回类型（供 createEnsureActive 复用） |
@@ -2317,13 +2317,13 @@
 | `hideMotionPopup()` | `menus/motion-root-ui:301` | — |
 | `importExternalAnimation()` | `menus/motion-root-ui:384` | 外部动作导入：选文件 → 重定向骨骼 → 播放。 |
 | `openProcDetail()` | `menus/motion-root-ui:345` | [doc:adr-207] 行体点击进入程序化统一详情页。 |
-| `buildNavMaps()` | `menus/nav-actions:172` | — |
-| `disposeNavBindings()` | `menus/nav-actions:266` | 卸载导航按钮监听（HMR/dispose 用） |
-| `getNavLabel()` | `menus/nav-actions:331` | 供 core 侧读取导航标签（经桥，不直接 import menus） |
-| `initNavActions()` | `menus/nav-actions:276` | [doc:adr-238] nav-actions 启动入口：安装按钮接线 + 构建导航标签映射。 |
-| `navActions()` | `menus/nav-actions:130` | — |
+| `buildNavMaps()` | `menus/nav-actions:176` | — |
+| `disposeNavBindings()` | `menus/nav-actions:270` | 卸载导航按钮监听（HMR/dispose 用） |
+| `getNavLabel()` | `menus/nav-actions:335` | 供 core 侧读取导航标签（经桥，不直接 import menus） |
+| `initNavActions()` | `menus/nav-actions:280` | [doc:adr-238] nav-actions 启动入口：安装按钮接线 + 构建导航标签映射。 |
+| `navActions()` | `menus/nav-actions:134` | — |
 | `navLabels()` | `menus/nav-actions:25` | — |
-| `toggleOverlay()` | `menus/nav-actions:67` | — |
+| `toggleOverlay()` | `menus/nav-actions:71` | — |
 | `buildOutfitLevel()` | `menus/outfit-ui:158` | — |
 | `buildSiteTabs()` | `menus/plaza-browser:303` | — |
 | `buildToolbar()` | `menus/plaza-browser:688` | — |

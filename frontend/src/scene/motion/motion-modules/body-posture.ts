@@ -10,6 +10,7 @@
 //   feet-adjustment 钉住原始位置 → 腿部 IK 重解 → 下蹲/跪姿/后躺。
 
 import type { ParamValue } from '@/core/types';
+import { guardNum } from '@/core/guards';
 import { modelRegistry } from '@/core/state';
 import {
     setBoneOverride,
@@ -79,9 +80,9 @@ function bake(modelId: string): void {
         return; // 门控：未启用时不烘焙（P1-2 修复）
     }
     const { state, claimed } = prep;
-    const tilt = (state.params.tilt as number) ?? 0;
-    const bend = (state.params.bend as number) ?? 0;
-    const twist = (state.params.twist as number) ?? 0;
+    const tilt = guardNum(state.params.tilt);
+    const bend = guardNum(state.params.bend);
+    const twist = guardNum(state.params.twist);
 
     if (claimed.includes('上半身')) {
         // tilt + bend 合并为上半身总俯仰角（避免操作 腰 带动腿骨旋转）
@@ -137,8 +138,8 @@ function _registerBodyPositionHook(modelId: string): () => void {
             if (!st.enabled) {
                 return;
             }
-            const height = (st.params.bodyHeight as number) ?? 0;
-            const depth = (st.params.bodyDepth as number) ?? 0;
+            const height = guardNum(st.params.bodyHeight);
+            const depth = guardNum(st.params.bodyDepth);
             const centerName = _resolveCenterBone(modelId);
             if (!centerName) {
                 return;
