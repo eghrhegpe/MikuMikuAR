@@ -49,6 +49,10 @@ let _playlist: string[] = [];
 let _playlistIndex = -1;
 /** 跨淡入淡出用的 GainNode（串联在 StreamAudioPlayer 的 _audio 之后）。 */
 let _fadeGain: GainNode | null = null;
+// [audit:round26 P2] 淡入淡出定时器句柄：快速切歌/切歌途中 dispose 时清理，
+// 防止残留定时器触碰已释放 player。
+let _fadeTimer: ReturnType<typeof setTimeout> | null = null;
+let _fadeInterval: ReturnType<typeof setInterval> | null = null;
 /**
  * 唯一的 AudioContext 与 MediaElementAudioSourceNode。
  * pool:false 下 StreamAudioPlayer 的 _audio 元素稳定，故只需创建一次；
@@ -201,6 +205,8 @@ async function _playIndex(index: number): Promise<void> {
     _playlistIndex = index;
     const url = _playlist[index];
     const fileName = url.split('/').pop()?.split('?')[0] || `Track ${index + 1}`;
+    // [audit:round26 P2] blob URL 尾段是 UUID 垃圾名，不覆盖已有曲名（保留 loadAudioFile 传入名）
+    audioName = url.startsWith('blob:') ? audioName : fileName;
 
     const player = ensurePlayer();
     player.source = url;
@@ -216,6 +222,15 @@ async function _playIndex(index: number): Promise<void> {
  * 先快速将 volume 降到 0，换源后渐回原值。
  */
 function _crossfadeTo(player: StreamAudioPlayer): void {
+    // [audit:round26 P2] 清理上一次未完成的淡入淡出定时器（快速切歌/切歌途中 dispose）
+    if (_fadeTimer) {
+        clearTimeout(_fadeTimer);
+        _fadeTimer = null;
+    }
+    if (_fadeInterval) {
+        clearInterval(_fadeInterval);
+        _fadeInterval = null;
+    }
     const targetVol = getVolume();
     const fadeMs = 150;
     const steps = 6;
@@ -229,7 +244,8 @@ function _crossfadeTo(player: StreamAudioPlayer): void {
         player.volume = 0;
     }
 
-    setTimeout(() => {
+    _fadeTimer = setTimeout(() => {
+        _fadeTimer = null;
         // 切换源（已在 _playIndex 中设了 source，但需确保播放）
         player.play().catch(() => {
             /* autoplay 拦截 */
@@ -245,11 +261,14 @@ function _crossfadeTo(player: StreamAudioPlayer): void {
         } else {
             // 无 GainNode 时逐步渐入
             let step = 0;
-            const rampUp = setInterval(() => {
+            _fadeInterval = setInterval(() => {
                 step++;
                 player.volume = (targetVol * step) / steps;
                 if (step >= steps) {
-                    clearInterval(rampUp);
+                    if (_fadeInterval) {
+                        clearInterval(_fadeInterval);
+                        _fadeInterval = null;
+                    }
                 }
             }, intervalMs);
         }
@@ -310,6 +329,15 @@ export async function loadAudioFile(filePath: string, signal?: AbortSignal): Pro
     if (prevUrl && prevUrl !== url && _ownedBlobUrls.has(prevUrl)) {
         URL.revokeObjectURL(prevUrl);
         _ownedBlobUrls.delete(prevUrl);
+        // [audit:round26 P2] 已 revoke 的 URL 从播放列表移除——否则 repeat-all/ended
+        // 自动切歌会切到失效 URL 导致播放失败。索引同步下移。
+        const staleIdx = _playlist.indexOf(prevUrl);
+        if (staleIdx >= 0) {
+            _playlist.splice(staleIdx, 1);
+            if (_playlistIndex > staleIdx) {
+                _playlistIndex--;
+            }
+        }
     }
     _ownedBlobUrls.add(url);
     // 添加到播放列表
@@ -413,6 +441,15 @@ export function clearAudio(): void {
 }
 
 export function disposeAudio(): void {
+    // [audit:round26 P2] 先取消淡入淡出定时器，防止残留定时器在 dispose 后触碰已释放 player
+    if (_fadeTimer) {
+        clearTimeout(_fadeTimer);
+        _fadeTimer = null;
+    }
+    if (_fadeInterval) {
+        clearInterval(_fadeInterval);
+        _fadeInterval = null;
+    }
     if (streamPlayer) {
         streamPlayer.pause();
         streamPlayer.source = '';

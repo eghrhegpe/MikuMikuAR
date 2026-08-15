@@ -158,31 +158,31 @@
 | `setSfxEnabled()` | `core/audio-bus:85` | — |
 | `setSfxVolume()` | `core/audio-bus:75` | — |
 | `BeatSink()` | `core/audio:28` | [doc:adr-242] 节拍检测器的结构契约。core 层不得依赖 &#96;motion-algos/beat-detector&#96; 的具体实现类——那会构成 &#96;core → moti |
-| `applyGain()` | `core/audio:568` | — |
-| `attachBeatDetector()` | `core/audio:561` | — |
-| `clearAudio()` | `core/audio:404` | — |
-| `disposeAudio()` | `core/audio:415` | — |
-| `getAudioName()` | `core/audio:510` | — |
-| `getAudioOffset()` | `core/audio:481` | — |
-| `getAudioPath()` | `core/audio:381` | — |
-| `getCurrentTime()` | `core/audio:487` | — |
-| `getDuration()` | `core/audio:491` | — |
-| `getRepeatModeStr()` | `core/audio:358` | 获取当前重复模式。 |
-| `getStreamPlayer()` | `core/audio:585` | 暴露内部 StreamAudioPlayer 供 scene.ts 调用 MmdRuntime.setAudioPlayer()。 |
-| `getVolume()` | `core/audio:470` | — |
-| `isAudioPlaying()` | `core/audio:506` | — |
-| `loadAudioFile()` | `core/audio:283` | — |
-| `nextTrack()` | `core/audio:344` | 切换到下一曲。 |
-| `notifyBeatDetectorReset()` | `core/audio:578` | — |
-| `pauseAudio()` | `core/audio:385` | — |
-| `playAudio()` | `core/audio:261` | — |
-| `resumeAudio()` | `core/audio:389` | — |
-| `seekAudio()` | `core/audio:496` | — |
-| `setAudioOffset()` | `core/audio:474` | — |
-| `setRepeatMode()` | `core/audio:353` | 设置重复模式（持久化）。 |
-| `setVolume()` | `core/audio:461` | — |
-| `stopAudio()` | `core/audio:396` | — |
-| `syncAudioPlayback()` | `core/audio:518` | — |
+| `applyGain()` | `core/audio:605` | — |
+| `attachBeatDetector()` | `core/audio:598` | — |
+| `clearAudio()` | `core/audio:432` | — |
+| `disposeAudio()` | `core/audio:443` | — |
+| `getAudioName()` | `core/audio:547` | — |
+| `getAudioOffset()` | `core/audio:518` | — |
+| `getAudioPath()` | `core/audio:409` | — |
+| `getCurrentTime()` | `core/audio:524` | — |
+| `getDuration()` | `core/audio:528` | — |
+| `getRepeatModeStr()` | `core/audio:386` | 获取当前重复模式。 |
+| `getStreamPlayer()` | `core/audio:622` | 暴露内部 StreamAudioPlayer 供 scene.ts 调用 MmdRuntime.setAudioPlayer()。 |
+| `getVolume()` | `core/audio:507` | — |
+| `isAudioPlaying()` | `core/audio:543` | — |
+| `loadAudioFile()` | `core/audio:302` | — |
+| `nextTrack()` | `core/audio:372` | 切换到下一曲。 |
+| `notifyBeatDetectorReset()` | `core/audio:615` | — |
+| `pauseAudio()` | `core/audio:413` | — |
+| `playAudio()` | `core/audio:280` | — |
+| `resumeAudio()` | `core/audio:417` | — |
+| `seekAudio()` | `core/audio:533` | — |
+| `setAudioOffset()` | `core/audio:511` | — |
+| `setRepeatMode()` | `core/audio:381` | 设置重复模式（持久化）。 |
+| `setVolume()` | `core/audio:498` | — |
+| `stopAudio()` | `core/audio:424` | — |
+| `syncAudioPlayback()` | `core/audio:555` | — |
 | `setTriggerAutoSave()` | `core/auto-save:10` | 注册自动保存的实现回调（由 scene-serialize.ts 在初始化时调用）。 |
 | `triggerAutoSave()` | `core/auto-save:15` | 触发自动保存（由动作/菜单/UI 层调用）。 |
 | `clearWebFlag()` | `core/backend/backend-mocks:13` | — |
@@ -387,19 +387,19 @@
 | `startSceneSnapshotPolling()` | `core/mmar-globals:197` | 启动周期快照刷新；重复调用安全（仅注册一个 timer）。 |
 | `stopSceneSnapshotPolling()` | `core/mmar-globals:207` | 停止周期快照刷新；未启动或重复调用均安全。 |
 | `updateMmarStatus()` | `core/mmar-globals:80` | — |
-| `CapabilityProbe()` | `core/mmd-adapter:377` | CapabilityProbe — 升级回归探测（ADR-192 Phase 2 守卫式反射）。 |
+| `CapabilityProbe()` | `core/mmd-adapter:390` | CapabilityProbe — 升级回归探测（ADR-192 Phase 2 守卫式反射）。 |
 | `applyForceToModelRigidBodies()` | `core/mmd-adapter:163` | — |
 | `applyForceToModelRigidBodiesNative()` | `core/mmd-adapter:210` | — |
 | `applyWindForceToModelRigidBodiesNative()` | `core/mmd-adapter:332` | — |
-| `getBoneWorldMatrix()` | `core/mmd-adapter:438` | 返回骨骼在世界坐标系下的 worldMatrix（固化自 adr-071 坐标系契约）。 |
+| `getBoneWorldMatrix()` | `core/mmd-adapter:451` | 返回骨骼在世界坐标系下的 worldMatrix（固化自 adr-071 坐标系契约）。 |
 | `getPhysicsImpl()` | `core/mmd-adapter:39` | 从 IMmdRuntime 获取底层 MmdWasmPhysicsRuntimeImpl。 |
 | `getRigidBodyBundleMap()` | `core/mmd-adapter:75` | 返回所有 RigidBodyBundle 迭代器（条目 3 内化，ADR-192 Phase 2）。 |
 | `getRigidBodyMap()` | `core/mmd-adapter:96` | 返回所有**单数** RigidBody 迭代器（路径1 修正，ADR-200）。 |
 | `getStreamAudio()` | `core/mmd-adapter:111` | — |
-| `onBoneMatricesUpdated()` | `core/mmd-adapter:399` | 在骨骼 worldMatrix 已被 babylon-mmd 更新之后、渲染之前注册回调。 |
+| `onBoneMatricesUpdated()` | `core/mmd-adapter:412` | 在骨骼 worldMatrix 已被 babylon-mmd 更新之后、渲染之前注册回调。 |
 | `solveIkNative()` | `core/mmd-adapter:270` | — |
-| `switchAnimation()` | `core/mmd-adapter:465` | 切换模型当前动画到新动画，并归零运行时全局时钟到第 0 帧。 |
-| `transformWorldToRootLocal()` | `core/mmd-adapter:412` | 把世界坐标系下的点转换到 rootMesh 局部坐标系（固化自 perception-gaze.ts / adr-071）。 |
+| `switchAnimation()` | `core/mmd-adapter:478` | 切换模型当前动画到新动画，并归零运行时全局时钟到第 0 帧。 |
+| `transformWorldToRootLocal()` | `core/mmd-adapter:425` | 把世界坐标系下的点转换到 rootMesh 局部坐标系（固化自 perception-gaze.ts / adr-071）。 |
 | `ObserverHandle()` | `core/observer-handle:31` | 可释放的 Observer 句柄。 |
 | `ObserverRegistry()` | `core/observer-handle:93` | 管理器：收集多个 ObserverHandle，支持一次性 disposeAll()。 |
 | `observe()` | `core/observer-handle:62` | 订阅 Observable 并返回自动管理的句柄。 |

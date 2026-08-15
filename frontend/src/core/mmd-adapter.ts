@@ -351,8 +351,21 @@ export function applyWindForceToModelRigidBodiesNative(
     if (typeof ptr !== 'number') {
         return 0;
     }
+    // [audit:round26 P3] len 导出守卫：wasm 有 wind 导出但缺 getMmdModelRigidBodyBundleLen
+    // 时，直接调用 undefined 会抛 TypeError；与 _windForceMissingWarned 同模式降级返回 0。
+    const lenFn = wi.getMmdModelRigidBodyBundleLen;
+    if (typeof lenFn !== 'function') {
+        if (!_windForceMissingWarned) {
+            _windForceMissingWarned = true;
+            logWarn(
+                'mmd-adapter',
+                'wasm 实例缺少 getMmdModelRigidBodyBundleLen 导出（wind mass-aware 补丁不完整）。降级为无质量感知风力。检查 vendor wasm 是否已同步。'
+            );
+        }
+        return 0;
+    }
     // 先取 bundle len 用于返回值（wasm 导出不返回数量，需另调 getMmdModelRigidBodyBundleLen）
-    const len = (wi.getMmdModelRigidBodyBundleLen as (p: number) => number)(ptr);
+    const len = (lenFn as (p: number) => number)(ptr);
     if (len <= 0) {
         return 0;
     }
