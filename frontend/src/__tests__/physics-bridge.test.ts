@@ -8,6 +8,7 @@ import {
     getBoneWorldPosition,
     autoFitAttachment,
     PerFrameUpdateRegistry,
+    type AttachmentAnchors,
 } from '@/scene/physics/physics-bridge';
 
 function makeModel(bones: { name: string; worldMatrix: Float32Array }[]): IMmdModel {
@@ -37,6 +38,7 @@ describe('physics-bridge bone read bridge', () => {
         expect(findRuntimeBone(model, 'Nope')).toBeNull();
         expect(findRuntimeBone(null, 'x')).toBeNull();
         expect(findRuntimeBone(undefined, 'x')).toBeNull();
+        expect(findRuntimeBone(makeModel([]), 'x')).toBeNull();
     });
 
     it('getBoneLocalMatrix returns the bone matrix or null', () => {
@@ -48,7 +50,7 @@ describe('physics-bridge bone read bridge', () => {
         expect(getBoneLocalMatrix(model, 'Nope')).toBeNull();
     });
 
-    it('getBoneWorldPosition extracts translation', () => {
+    it('getBoneWorldPosition extracts local translation (legacy world-named API)', () => {
         const p = getBoneWorldPosition(model, 'Waist');
         expect(p).not.toBeNull();
         expect(p!.x).toBe(1);
@@ -62,19 +64,22 @@ describe('physics-bridge bone read bridge', () => {
 describe('physics-bridge autoFitAttachment', () => {
     it('produces sane geometry for a typical model', () => {
         const fit = autoFitAttachment({ modelSize: { x: 0.5, y: 1.6, z: 0.3 } });
-        expect(fit.length).toBeGreaterThan(0.1);
-        expect(fit.innerRadius).toBeGreaterThan(0.03);
-        expect(fit.segmentsV).toBeGreaterThanOrEqual(4);
-        expect(fit.segmentsH).toBeGreaterThanOrEqual(6);
+        expect(fit.length).toBeCloseTo(0.48);
+        expect(fit.innerRadius).toBeCloseTo(0.192);
+        expect(fit.segmentsV).toBe(8);
+        expect(fit.segmentsH).toBe(20);
         expect(fit.particleRadius).toBeCloseTo(0.03);
         expect(fit.particleSpacing).toBeCloseTo(0.06);
     });
 
     it('clamps results within bounds for oversized models', () => {
         const fit = autoFitAttachment({ modelSize: { x: 99, y: 99, z: 99 } });
-        expect(fit.length).toBeLessThanOrEqual(2.0);
-        expect(fit.segmentsV).toBeLessThanOrEqual(32);
-        expect(fit.segmentsH).toBeLessThanOrEqual(64);
+        expect(fit.length).toBe(2.0);
+        expect(fit.innerRadius).toBe(0.6);
+        expect(fit.segmentsV).toBe(32);
+        expect(fit.segmentsH).toBe(63);
+        expect(fit.particleRadius).toBeCloseTo(0.03);
+        expect(fit.particleSpacing).toBeCloseTo(0.06);
     });
 
     it('honors custom density', () => {
@@ -85,13 +90,49 @@ describe('physics-bridge autoFitAttachment', () => {
 
     it('falls back to default density for non-positive / non-finite density', () => {
         // density=0：旧实现会得到 particleRadius=0 的退化几何
-        expect(autoFitAttachment({ modelSize: { x: 0.5, y: 1.6, z: 0.3 } }, { density: 0 }).particleRadius).toBeCloseTo(0.03);
+        expect(
+            autoFitAttachment({ modelSize: { x: 0.5, y: 1.6, z: 0.3 } }, { density: 0 })
+                .particleRadius
+        ).toBeCloseTo(0.03);
         // density 负数：旧实现会得到负 particleRadius
-        expect(autoFitAttachment({ modelSize: { x: 0.5, y: 1.6, z: 0.3 } }, { density: -0.1 }).particleRadius).toBeGreaterThan(0);
+        expect(
+            autoFitAttachment({ modelSize: { x: 0.5, y: 1.6, z: 0.3 } }, { density: -0.1 })
+                .particleRadius
+        ).toBeGreaterThan(0);
         // density NaN：旧实现会让 particleRadius 扩散为 NaN
-        expect(autoFitAttachment({ modelSize: { x: 0.5, y: 1.6, z: 0.3 } }, { density: NaN }).particleRadius).toBeCloseTo(0.03);
+        expect(
+            autoFitAttachment({ modelSize: { x: 0.5, y: 1.6, z: 0.3 } }, { density: NaN })
+                .particleRadius
+        ).toBeCloseTo(0.03);
         // density Infinity：同样回退默认
-        expect(autoFitAttachment({ modelSize: { x: 0.5, y: 1.6, z: 0.3 } }, { density: Infinity }).particleRadius).toBeGreaterThan(0);
+        expect(
+            autoFitAttachment({ modelSize: { x: 0.5, y: 1.6, z: 0.3 } }, { density: Infinity })
+                .particleRadius
+        ).toBeGreaterThan(0);
+    });
+
+    it('returns finite defaults for missing, empty, non-finite or non-positive model size', () => {
+        const cases: unknown[] = [
+            null,
+            undefined,
+            {},
+            { modelSize: undefined },
+            { modelSize: { y: NaN } },
+            { modelSize: { y: Infinity } },
+            { modelSize: { y: -Infinity } },
+            { modelSize: { y: 0 } },
+            { modelSize: { y: -1 } },
+        ];
+        for (const anchor of cases) {
+            const fit = autoFitAttachment(anchor as AttachmentAnchors);
+            expect(Number.isFinite(fit.length)).toBe(true);
+            expect(Number.isFinite(fit.innerRadius)).toBe(true);
+            expect(Number.isFinite(fit.segmentsV)).toBe(true);
+            expect(Number.isFinite(fit.segmentsH)).toBe(true);
+            expect(fit.length).toBeGreaterThan(0);
+            expect(fit.innerRadius).toBeGreaterThan(0);
+            expect(fit.particleRadius).toBeGreaterThan(0);
+        }
     });
 });
 
@@ -225,6 +266,41 @@ describe('PerFrameUpdateRegistry', () => {
         reg.dispose();
     });
 
+    it('duplicate register replaces the callback without adding a second observer', () => {
+        const scene = {
+            deltaTime: 16.7,
+            onBeforeRenderObservable: { add: vi.fn(() => ({})), remove: vi.fn() },
+        } as unknown as Scene;
+        const reg = new PerFrameUpdateRegistry(scene as Scene);
+        const first = vi.fn();
+        const second = vi.fn();
+        reg.register('a', first);
+        reg.register('a', second);
+        expect((scene as any).onBeforeRenderObservable.add).toHaveBeenCalledTimes(1);
+        const cb = (scene as any).onBeforeRenderObservable.add.mock.calls[0][0];
+        cb();
+        expect(first).not.toHaveBeenCalled();
+        expect(second).toHaveBeenCalledTimes(1);
+        expect(second).toHaveBeenCalledWith(0.0167);
+        reg.dispose();
+    });
+
+    it('unregistering an unknown key is a no-op and keeps the observer', () => {
+        const scene = {
+            deltaTime: 16.7,
+            onBeforeRenderObservable: { add: vi.fn(() => ({})), remove: vi.fn() },
+        } as unknown as Scene;
+        const reg = new PerFrameUpdateRegistry(scene as Scene);
+        const fn = vi.fn();
+        reg.register('a', fn);
+        reg.unregister('nope');
+        expect((scene as any).onBeforeRenderObservable.remove).not.toHaveBeenCalled();
+        const cb = (scene as any).onBeforeRenderObservable.add.mock.calls[0][0];
+        cb();
+        expect(fn).toHaveBeenCalledTimes(1);
+        reg.dispose();
+    });
+
     it('a throwing fn does not block other registered fns (safeCallVoid)', () => {
         const scene = {
             deltaTime: 16.7,
@@ -267,7 +343,13 @@ describe('PerFrameUpdateRegistry', () => {
         const scene = {
             deltaTime: 16.7,
             onBeforeRenderObservable: { add: vi.fn(() => ({})), remove: vi.fn() },
-            onDisposeObservable: { add: vi.fn((cb: () => void) => { disposeCb = cb; return {}; }), remove: vi.fn() },
+            onDisposeObservable: {
+                add: vi.fn((cb: () => void) => {
+                    disposeCb = cb;
+                    return {};
+                }),
+                remove: vi.fn(),
+            },
         } as unknown as Scene;
         const reg = new PerFrameUpdateRegistry(scene as Scene);
         reg.register('a', vi.fn());
@@ -275,5 +357,62 @@ describe('PerFrameUpdateRegistry', () => {
         disposeCb!();
         expect((scene as any).onBeforeRenderObservable.remove).toHaveBeenCalledTimes(1);
         expect((scene as any).onDisposeObservable.remove).toHaveBeenCalledTimes(1);
+    });
+
+    it('dispose is idempotent and clears once', () => {
+        const scene = {
+            deltaTime: 16.7,
+            onBeforeRenderObservable: { add: vi.fn(() => ({})), remove: vi.fn() },
+            onDisposeObservable: { add: vi.fn(() => ({})), remove: vi.fn() },
+        } as unknown as Scene;
+        const reg = new PerFrameUpdateRegistry(scene as Scene);
+        reg.register('a', vi.fn());
+        reg.dispose();
+        reg.dispose();
+        expect((scene as any).onBeforeRenderObservable.remove).toHaveBeenCalledTimes(1);
+        expect((scene as any).onDisposeObservable.remove).toHaveBeenCalledTimes(1);
+        const cb = (scene as any).onBeforeRenderObservable.add.mock.calls[0][0];
+        expect(() => cb()).not.toThrow();
+        expect((scene as any).onBeforeRenderObservable.add).toHaveBeenCalledTimes(1);
+    });
+
+    it('stops remaining callbacks in the same dispatch after reentrant dispose', () => {
+        const scene = {
+            deltaTime: 16.7,
+            onBeforeRenderObservable: { add: vi.fn(() => ({})), remove: vi.fn() },
+        } as unknown as Scene;
+        const reg = new PerFrameUpdateRegistry(scene as Scene);
+        const first = vi.fn(() => reg.dispose());
+        const second = vi.fn();
+        reg.register('first', first);
+        reg.register('second', second);
+        const cb = (scene as any).onBeforeRenderObservable.add.mock.calls[0][0];
+        cb();
+        expect(first).toHaveBeenCalledTimes(1);
+        expect(second).not.toHaveBeenCalled();
+        expect((scene as any).onBeforeRenderObservable.remove).toHaveBeenCalledTimes(1);
+    });
+
+    it('register after dispose re-arms onDispose auto cleanup', () => {
+        const disposeCbs: Array<() => void> = [];
+        const scene = {
+            deltaTime: 16.7,
+            onBeforeRenderObservable: { add: vi.fn(() => ({})), remove: vi.fn() },
+            onDisposeObservable: {
+                add: vi.fn((cb: () => void) => {
+                    disposeCbs.push(cb);
+                    return {};
+                }),
+                remove: vi.fn(),
+            },
+        } as unknown as Scene;
+        const reg = new PerFrameUpdateRegistry(scene as Scene);
+        reg.register('a', vi.fn());
+        reg.dispose();
+        reg.register('b', vi.fn());
+        expect((scene as any).onDisposeObservable.add).toHaveBeenCalledTimes(2);
+        disposeCbs[1]!();
+        expect((scene as any).onBeforeRenderObservable.remove).toHaveBeenCalledTimes(2);
+        expect((scene as any).onDisposeObservable.remove).toHaveBeenCalledTimes(2);
     });
 });

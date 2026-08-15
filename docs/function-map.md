@@ -1600,8 +1600,8 @@
 | `getEyeGazeMaxPitch()` | `scene/motion/perception-gaze:36` | — |
 | `getEyeGazeMaxYaw()` | `scene/motion/perception-gaze:36` | — |
 | `getEyeGazeSmooth()` | `scene/motion/perception-gaze:36` | — |
-| `_applyLipSync()` | `scene/motion/perception-lipsync:52` | — |
-| `_disposeLipSyncRuntime()` | `scene/motion/perception-lipsync:48` | 释放指定模型的 lip-sync 运行时（模型移除时调用，防 Map 泄漏） |
+| `_applyLipSync()` | `scene/motion/perception-lipsync:57` | — |
+| `_disposeLipSyncRuntime()` | `scene/motion/perception-lipsync:53` | 释放指定模型的 lip-sync 运行时（模型移除时调用，防 Map 泄漏） |
 | `_applyPerceptionForContext()` | `scene/motion/perception-observer:57` | 对单个 context 应用完整感知管线 |
 | `_getActiveContextsByTier()` | `scene/motion/perception-observer:32` | [doc:adr-164] 根据 tier 返回应激活的 context 列表 |
 | `getMediumMaxOthers()` | `scene/motion/perception-observer:27` | 获取 medium 档非焦点模型上限 |
@@ -1619,18 +1619,18 @@
 | `PerceptionTier()` | `scene/motion/perception-shared:317` | — |
 | `_createPerceptionPool()` | `scene/motion/perception-shared:110` | 创建单 context 对象池 |
 | `_gazeAlpha()` | `scene/motion/perception-shared:259` | 计算 gaze Slerp alpha（基于 deltaTime 的指数衰减，帧率无关） |
-| `_gazeLog()` | `scene/motion/perception-shared:463` | — |
-| `_incGazeLogFrame()` | `scene/motion/perception-shared:460` | — |
+| `_gazeLog()` | `scene/motion/perception-shared:468` | — |
+| `_incGazeLogFrame()` | `scene/motion/perception-shared:465` | — |
 | `_isWasmRuntime()` | `scene/motion/perception-shared:220` | — |
 | `_m()` | `scene/motion/perception-shared:151` | — |
 | `_propagateChildrenWasm()` | `scene/motion/perception-shared:187` | 递归传播子骨骼 worldMatrix |
 | `_q()` | `scene/motion/perception-shared:161` | — |
-| `_qAngleDeg()` | `scene/motion/perception-shared:472` | 两四元数夹角（度） |
+| `_qAngleDeg()` | `scene/motion/perception-shared:477` | 两四元数夹角（度） |
 | `_resetContextPool()` | `scene/motion/perception-shared:133` | 重置当前池的 index（context 切换时重置，避免跨帧累积） |
 | `_setContextPool()` | `scene/motion/perception-shared:128` | 切换到指定 context 的池（进入该 context 感知管线前调用） |
 | `_v3()` | `scene/motion/perception-shared:141` | — |
 | `_writeMatToBuffer()` | `scene/motion/perception-shared:175` | 把 Matrix 写回 Float32Array(16) |
-| `feetDebug()` | `scene/motion/perception-shared:481` | — |
+| `feetDebug()` | `scene/motion/perception-shared:486` | — |
 | `getEyeGazeMaxPitch()` | `scene/motion/perception-shared:245` | 获取眼部跟随最大俯仰角（弧度） |
 | `getEyeGazeMaxYaw()` | `scene/motion/perception-shared:241` | 获取眼部跟随最大偏航角（弧度） |
 | `getEyeGazeSmooth()` | `scene/motion/perception-shared:249` | 获取眼部跟随平滑度 |
@@ -1643,55 +1643,55 @@
 | `GazeConfig()` | `scene/motion/perception:58` | — |
 | `PerceptionContext()` | `scene/motion/perception:58` | — |
 | `PerceptionState()` | `scene/motion/perception:58` | — |
-| `__testOnlyGetContext()` | `scene/motion/perception:809` | 测试用：获取指定模型的 context（含 lastOffsets） |
+| `__testOnlyGetContext()` | `scene/motion/perception:841` | 测试用：获取指定模型的 context（含 lastOffsets） |
 | `_clampEyeGazeTarget()` | `scene/motion/perception:59` | — |
 | `_clampHeadGazeTarget()` | `scene/motion/perception:59` | — |
-| `_getGazeResetTick()` | `scene/motion/perception:382` | 获取 gaze 重置计数（供测试验证调用时机） |
+| `_getGazeResetTick()` | `scene/motion/perception:400` | 获取 gaze 重置计数（供测试验证调用时机） |
 | `_isWasmRuntime()` | `scene/motion/perception:59` | — |
 | `_propagateChildrenWasm()` | `scene/motion/perception:59` | — |
-| `_resetGazeState()` | `scene/motion/perception:387` | 重置 gaze 增量状态（清理跨帧缓存，避免切换/开关后出现跳跃） |
+| `_resetGazeState()` | `scene/motion/perception:405` | 重置 gaze 增量状态（清理跨帧缓存，避免切换/开关后出现跳跃） |
 | `_writeMatToBuffer()` | `scene/motion/perception:59` | — |
-| `activatePerception()` | `scene/motion/perception:316` | 激活感知层（呼吸/眨眼/gaze） |
+| `activatePerception()` | `scene/motion/perception:328` | 激活感知层（呼吸/眨眼/gaze） |
 | `applyGazeWasm()` | `scene/motion/perception:59` | — |
-| `deactivatePerception()` | `scene/motion/perception:396` | 注销感知层 |
-| `disableAllPerception()` | `scene/motion/perception:723` | 全员关闭感知层（仅焦点 + pinned 保留） |
-| `enableAllPerception()` | `scene/motion/perception:697` | 全员激活感知层（受 tier 限制） |
-| `getPerceptionPerfManualTier()` | `scene/motion/perception:760` | [doc:adr-164] 获取手动档位设置（'auto' 表示自动降级模式） |
-| `getPerceptionPerfTier()` | `scene/motion/perception:755` | 获取当前性能档位 |
-| `getPerceptionState()` | `scene/motion/perception:424` | 获取感知状态（焦点 context 状态，兼容旧 API） |
-| `getPerceptionStateFor()` | `scene/motion/perception:682` | 获取感知状态（场景级单例；参数对所有模型一致，modelId 参数保留仅为兼容旧调用） |
-| `getPinnedModelIds()` | `scene/motion/perception:675` | 获取当前 pinned 模型 ID 列表 |
-| `isAllPerceptionEnabled()` | `scene/motion/perception:771` | [doc:adr-164] 获取全员感知开关状态 |
-| `onPerceptionModelRemoved()` | `scene/motion/perception:814` | 兼容接口：模型移除时清理（供 proc-motion-bridge.ts 调用） |
-| `pinPerception()` | `scene/motion/perception:627` | [doc:adr-164] pin 模型感知（原 ≤5 上限已移除，全员感知由 tier 控制）。 |
-| `setAllPerceptionEnabled()` | `scene/motion/perception:776` | [doc:adr-164] 设置全员感知开关状态 |
-| `setBalanceSwayAmplitude()` | `scene/motion/perception:512` | 设置重心微动振幅（全局乘数，钳制 0–2.0） |
-| `setBalanceSwayEnabled()` | `scene/motion/perception:500` | 设置重心微动开关（[doc:adr-079] Phase 2） |
-| `setBalanceSwayPeriod()` | `scene/motion/perception:506` | 设置重心微动周期（秒，钳制 0.5–5.0） |
-| `setBlinkAmplitude()` | `scene/motion/perception:568` | 设置眨眼幅度（0–1，钳制） |
-| `setBlinkEnabled()` | `scene/motion/perception:474` | 设置眨眼开关 |
-| `setBlinkFrequency()` | `scene/motion/perception:562` | 设置眨眼频率（Hz，钳制 0.05–0.5） |
-| `setBreathAmplitude()` | `scene/motion/perception:556` | 设置呼吸幅度（弧度，钳制 0–0.05） |
-| `setBreathEnabled()` | `scene/motion/perception:468` | 设置呼吸开关 |
-| `setBreathFrequency()` | `scene/motion/perception:550` | 设置呼吸频率（Hz，钳制 0.1–1.0） |
-| `setEmotion()` | `scene/motion/perception:518` | 设置情绪类型 |
-| `setEyeGazeMaxPitch()` | `scene/motion/perception:595` | 设置眼部跟随最大俯仰角（度，钳制 0–15） |
-| `setEyeGazeMaxYaw()` | `scene/motion/perception:588` | 设置眼部跟随最大偏航角（度，钳制 0–15） |
-| `setEyeGazeSmooth()` | `scene/motion/perception:602` | 设置眼部跟随平滑度（0–1） |
-| `setEyeTrackingEnabled()` | `scene/motion/perception:487` | 设置眼部跟随开关 |
-| `setGazeConfig()` | `scene/motion/perception:789` | 兼容接口：设置 gaze 配置（供 proc-motion-bridge.ts 调用） |
-| `setHeadGazeMaxPitch()` | `scene/motion/perception:581` | 设置头部跟随最大俯仰角（度，钳制 0–90） |
-| `setHeadGazeMaxYaw()` | `scene/motion/perception:574` | 设置头部跟随最大偏航角（度，钳制 0–90） |
-| `setHeadTrackingEnabled()` | `scene/motion/perception:480` | 设置头部跟随开关 |
-| `setLipSyncEnabled()` | `scene/motion/perception:524` | 设置 lip-sync 开关 |
-| `setLipSyncIntensity()` | `scene/motion/perception:536` | 设置 lip-sync 强度（钳制 0..1） |
-| `setLipSyncMultiMorphEnabled()` | `scene/motion/perception:542` | 设置多口型 morph 开关 |
-| `setLipSyncSensitivity()` | `scene/motion/perception:530` | 设置 lip-sync 灵敏度（钳制 0..1） |
-| `setMicroExpressionEnabled()` | `scene/motion/perception:494` | 设置微表情开关 |
-| `setPerceptionPerfTier()` | `scene/motion/perception:765` | 手动设置性能档位（auto/high/medium/low） |
-| `setPerceptionState()` | `scene/motion/perception:429` | 设置感知状态（从存储恢复时使用） |
-| `setPerceptionStateFor()` | `scene/motion/perception:687` | 设置感知状态（场景级单例；参数对所有模型一致，modelId 参数保留仅为兼容旧调用） |
-| `unpinPerception()` | `scene/motion/perception:648` | unpin 模型感知（非焦点模型同步 deactivate） |
+| `deactivatePerception()` | `scene/motion/perception:414` | 注销感知层 |
+| `disableAllPerception()` | `scene/motion/perception:753` | 全员关闭感知层（仅焦点 + pinned 保留） |
+| `enableAllPerception()` | `scene/motion/perception:722` | 全员激活感知层（受 tier 限制） |
+| `getPerceptionPerfManualTier()` | `scene/motion/perception:792` | [doc:adr-164] 获取手动档位设置（'auto' 表示自动降级模式） |
+| `getPerceptionPerfTier()` | `scene/motion/perception:787` | 获取当前性能档位 |
+| `getPerceptionState()` | `scene/motion/perception:449` | 获取感知状态（焦点 context 状态，兼容旧 API） |
+| `getPerceptionStateFor()` | `scene/motion/perception:707` | 获取感知状态（场景级单例；参数对所有模型一致，modelId 参数保留仅为兼容旧调用） |
+| `getPinnedModelIds()` | `scene/motion/perception:700` | 获取当前 pinned 模型 ID 列表 |
+| `isAllPerceptionEnabled()` | `scene/motion/perception:803` | [doc:adr-164] 获取全员感知开关状态 |
+| `onPerceptionModelRemoved()` | `scene/motion/perception:846` | 兼容接口：模型移除时清理（供 proc-motion-bridge.ts 调用） |
+| `pinPerception()` | `scene/motion/perception:652` | [doc:adr-164] pin 模型感知（原 ≤5 上限已移除，全员感知由 tier 控制）。 |
+| `setAllPerceptionEnabled()` | `scene/motion/perception:808` | [doc:adr-164] 设置全员感知开关状态 |
+| `setBalanceSwayAmplitude()` | `scene/motion/perception:537` | 设置重心微动振幅（全局乘数，钳制 0–2.0） |
+| `setBalanceSwayEnabled()` | `scene/motion/perception:525` | 设置重心微动开关（[doc:adr-079] Phase 2） |
+| `setBalanceSwayPeriod()` | `scene/motion/perception:531` | 设置重心微动周期（秒，钳制 0.5–5.0） |
+| `setBlinkAmplitude()` | `scene/motion/perception:593` | 设置眨眼幅度（0–1，钳制） |
+| `setBlinkEnabled()` | `scene/motion/perception:499` | 设置眨眼开关 |
+| `setBlinkFrequency()` | `scene/motion/perception:587` | 设置眨眼频率（Hz，钳制 0.05–0.5） |
+| `setBreathAmplitude()` | `scene/motion/perception:581` | 设置呼吸幅度（弧度，钳制 0–0.05） |
+| `setBreathEnabled()` | `scene/motion/perception:493` | 设置呼吸开关 |
+| `setBreathFrequency()` | `scene/motion/perception:575` | 设置呼吸频率（Hz，钳制 0.1–1.0） |
+| `setEmotion()` | `scene/motion/perception:543` | 设置情绪类型 |
+| `setEyeGazeMaxPitch()` | `scene/motion/perception:620` | 设置眼部跟随最大俯仰角（度，钳制 0–15） |
+| `setEyeGazeMaxYaw()` | `scene/motion/perception:613` | 设置眼部跟随最大偏航角（度，钳制 0–15） |
+| `setEyeGazeSmooth()` | `scene/motion/perception:627` | 设置眼部跟随平滑度（0–1） |
+| `setEyeTrackingEnabled()` | `scene/motion/perception:512` | 设置眼部跟随开关 |
+| `setGazeConfig()` | `scene/motion/perception:821` | 兼容接口：设置 gaze 配置（供 proc-motion-bridge.ts 调用） |
+| `setHeadGazeMaxPitch()` | `scene/motion/perception:606` | 设置头部跟随最大俯仰角（度，钳制 0–90） |
+| `setHeadGazeMaxYaw()` | `scene/motion/perception:599` | 设置头部跟随最大偏航角（度，钳制 0–90） |
+| `setHeadTrackingEnabled()` | `scene/motion/perception:505` | 设置头部跟随开关 |
+| `setLipSyncEnabled()` | `scene/motion/perception:549` | 设置 lip-sync 开关 |
+| `setLipSyncIntensity()` | `scene/motion/perception:561` | 设置 lip-sync 强度（钳制 0..1） |
+| `setLipSyncMultiMorphEnabled()` | `scene/motion/perception:567` | 设置多口型 morph 开关 |
+| `setLipSyncSensitivity()` | `scene/motion/perception:555` | 设置 lip-sync 灵敏度（钳制 0..1） |
+| `setMicroExpressionEnabled()` | `scene/motion/perception:519` | 设置微表情开关 |
+| `setPerceptionPerfTier()` | `scene/motion/perception:797` | 手动设置性能档位（auto/high/medium/low） |
+| `setPerceptionState()` | `scene/motion/perception:454` | 设置感知状态（从存储恢复时使用） |
+| `setPerceptionStateFor()` | `scene/motion/perception:712` | 设置感知状态（场景级单例；参数对所有模型一致，modelId 参数保留仅为兼容旧调用） |
+| `unpinPerception()` | `scene/motion/perception:673` | unpin 模型感知（非焦点模型同步 deactivate） |
 | `PlaybackObservablesDispose()` | `scene/motion/playback:52` | — |
 | `initPlaybackObservables()` | `scene/motion/playback:56` | — |
 | `seekFromEvent()` | `scene/motion/playback:208` | — |
@@ -1754,14 +1754,14 @@
 | `disableGroundCollision()` | `scene/physics/ground-collision:97` | 禁用地面碰撞：从所有世界移除并释放资源。 |
 | `enableGroundCollision()` | `scene/physics/ground-collision:51` | 启用地面碰撞：注入静态地板刚体到所有物理世界。幂等。 |
 | `isGroundCollisionEnabled()` | `scene/physics/ground-collision:44` | 地面碰撞是否处于启用状态 |
-| `AttachmentAnchors()` | `scene/physics/physics-bridge:71` | — |
-| `AttachmentFit()` | `scene/physics/physics-bridge:76` | — |
-| `FrameUpdateFn()` | `scene/physics/physics-bridge:121` | — |
-| `PerFrameUpdateRegistry()` | `scene/physics/physics-bridge:128` | 单一 onBeforeRenderObservable 调度多个按 key 注册的每帧回调。 |
-| `autoFitAttachment()` | `scene/physics/physics-bridge:96` | 从模型尺寸启发式推算挂件几何参数。 |
+| `AttachmentAnchors()` | `scene/physics/physics-bridge:75` | — |
+| `AttachmentFit()` | `scene/physics/physics-bridge:80` | — |
+| `FrameUpdateFn()` | `scene/physics/physics-bridge:130` | — |
+| `PerFrameUpdateRegistry()` | `scene/physics/physics-bridge:137` | 单一 onBeforeRenderObservable 调度多个按 key 注册的每帧回调。 |
+| `autoFitAttachment()` | `scene/physics/physics-bridge:100` | 从模型尺寸启发式推算挂件几何参数。 |
 | `findRuntimeBone()` | `scene/physics/physics-bridge:31` | 在模型 runtimeBones 中按名查找。WASM / JS runtime 都暴露 runtimeBones，故后端无关。 |
 | `getBoneLocalMatrix()` | `scene/physics/physics-bridge:48` | 取骨骼在 rootMesh **局部坐标系**下的矩阵（列主序 Float32Array[16]），用于挂件锚点跟随。 |
-| `getBoneWorldPosition()` | `scene/physics/physics-bridge:56` | 从骨骼局部矩阵提取世界位置（米，场景单位）。 |
+| `getBoneWorldPosition()` | `scene/physics/physics-bridge:60` | 从骨骼局部矩阵提取位置（米，场景单位）。 |
 | `SkirtAnalysisResult()` | `scene/physics/skirt-analyzer:40` | — |
 | `SkirtAnalyzerOptions()` | `scene/physics/skirt-analyzer:55` | — |
 | `SkirtChain()` | `scene/physics/skirt-analyzer:35` | — |

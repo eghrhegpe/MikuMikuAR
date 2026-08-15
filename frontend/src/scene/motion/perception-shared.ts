@@ -342,6 +342,11 @@ export class PerceptionPerfMonitor {
 
         // 手动覆盖优先
         if (this._manualTier !== 'auto') {
+            // [fix:round66] 手动档也要按采样周期刷新 fps，否则从启动即手动档时
+            // fps 永远停留在初始值 60，低帧率 warn 永远不会触发。
+            if (this._frameCounter % this._sampleInterval === 0) {
+                this.fps = scene?.getEngine().getFps() ?? 60;
+            }
             // [doc:adr-164] 手动档下帧率持续偏低时 warn 用户（阈值与自动档一致）
             // [ADR-248] 热路径 logWarn 必须 feetDebug 门控 + 帧节流（% 60）
             if (

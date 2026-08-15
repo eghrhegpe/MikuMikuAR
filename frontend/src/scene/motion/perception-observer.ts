@@ -130,6 +130,14 @@ export function _applyPerceptionForContext(
             } catch (e) {
                 logWarn('perception', 'lipsync 异常:', e);
             }
+        } else {
+            // [fix:round66] 低档不驱动口型，但必须复位已激活的口型 morph，
+            // 避免从高/中档切到 low 时口型冻结在最后值。
+            try {
+                _applyLipSync(mmdModel, time, false, ctx.modelId, state, tier);
+            } catch (e) {
+                logWarn('perception', 'lipsync 复位异常:', e);
+            }
         }
 
         if (tier !== 'low') {

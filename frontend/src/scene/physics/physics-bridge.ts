@@ -7,7 +7,7 @@
  * 仅作为将来实现挂载布料 / ragdoll / attachment 时的基础设施备用。
  *
  * 职责边界：
- *  - 骨骼 READ（锚点跟随）：读取 runtimeBones 的世界矩阵/位置，后端无关。
+ *  - 骨骼 READ（锚点跟随）：读取 runtimeBones 的局部矩阵/位置（历史 API 名含 World，实际为 rootMesh 局部系），后端无关。
  *  - auto-fit：从模型尺寸推算挂件几何参数（纯数学，无求解器依赖）。
  *  - PerFrameUpdateRegistry：原 XPBD 在 model-manager 中重复的「每帧 update observer」编排模式抽取。
  *  - 不在此处：求解器内部的步进/写回（writeBack），因其随后端语义不同，应在具体实现里处理。
@@ -52,7 +52,11 @@ export function getBoneLocalMatrix(
     return findRuntimeBone(model, boneName)?.worldMatrix ?? null;
 }
 
-/** 从骨骼局部矩阵提取世界位置（米，场景单位）。 */
+/**
+ * 从骨骼局部矩阵提取位置（米，场景单位）。
+ * 注意：函数名沿用历史 `getBoneWorldPosition`，实际返回的是 rootMesh **局部坐标系**平移；
+ * 需要世界位置时应与 rootMesh 世界矩阵相乘（virtual-skirt 已按此语义使用）。
+ */
 export function getBoneWorldPosition(
     model: IMmdModel | null | undefined,
     boneName: string
@@ -104,7 +108,12 @@ export function autoFitAttachment(
         rawDensity !== undefined && Number.isFinite(rawDensity) && rawDensity > 0
             ? rawDensity
             : 0.06;
-    const h = Math.max(anchor.modelSize.y, 1e-3);
+    // 模型高度缺失 / 非有限 / 非正数时回退 1e-3，避免 NaN/Infinity 扩散到全部几何参数
+    const rawHeight = anchor?.modelSize?.y;
+    const h =
+        typeof rawHeight === 'number' && Number.isFinite(rawHeight) && rawHeight > 0
+            ? Math.max(rawHeight, 1e-3)
+            : 1e-3;
     const length = clamp(h * 0.3, 0.1, 2.0); // 挂件下垂长度 ≈ 模型高度 30%
     const innerRadius = clamp(h * 0.12, 0.03, 0.6); // 锚点环半径
     const segmentsV = clampInt(length / density, 4, 32);
@@ -129,22 +138,37 @@ export class PerFrameUpdateRegistry {
     private observer: ObserverHandle | null = null;
     private readonly fns = new Map<string, FrameUpdateFn>();
     private _disposeHandle: ObserverHandle | null = null;
+    private _disposed = false;
 
     constructor(private readonly scene: Scene) {
         // P2-fix: 绑定 scene.onDisposeObservable，scene 销毁时自动清理，
         // 避免 HMR 重建场景时旧注册表残留 observer 挂在已销毁 scene 上
         // 防御：部分 mock scene（单测）无 onDisposeObservable，容忍跳过
-        if (this.scene.onDisposeObservable) {
-            this._disposeHandle = observe(this.scene.onDisposeObservable, () => this.dispose());
+        this._bindDisposeHandle();
+    }
+
+    private _bindDisposeHandle(): void {
+        if (this._disposeHandle || !this.scene.onDisposeObservable) {
+            return;
         }
+        this._disposeHandle = observe(this.scene.onDisposeObservable, () => this.dispose());
     }
 
     register(key: string, fn: FrameUpdateFn): void {
+        if (this._disposed) {
+            // 允许 dispose 后重新使用：恢复生命周期绑定，避免新 observer 失去
+            // scene.onDisposeObservable 自动清理而泄漏。
+            this._disposed = false;
+            this._bindDisposeHandle();
+        }
         this.fns.set(key, fn);
         this.ensure();
     }
 
     unregister(key: string): void {
+        if (this._disposed) {
+            return;
+        }
         if (!this.fns.delete(key)) {
             return;
         }
@@ -164,7 +188,7 @@ export class PerFrameUpdateRegistry {
     }
 
     private ensure(): void {
-        if (this.observer) {
+        if (this._disposed || this.observer) {
             return;
         }
         this.observer = observe(this.scene.onBeforeRenderObservable, () => {
@@ -176,12 +200,21 @@ export class PerFrameUpdateRegistry {
             const dt = Math.min(rawDt, 0.05);
             // [fix:round16 P2] 快照迭代：防止回调内 register/unregister 修改 Map 导致迭代器行为不确定
             for (const fn of [...this.fns.values()]) {
+                // dispose 可能在回调内被调用（如 virtual-skirt 自毁）：置位后立即停止
+                // 本帧剩余回调，避免已释放注册表继续调度。
+                if (this._disposed) {
+                    break;
+                }
                 safeCallVoid('PerFrameUpdateRegistry', 'update error', () => fn(dt));
             }
         });
     }
 
     dispose(): void {
+        if (this._disposed) {
+            return;
+        }
+        this._disposed = true;
         this._removeObserver();
         if (this._disposeHandle) {
             this._disposeHandle.dispose();

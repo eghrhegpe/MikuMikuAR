@@ -5,8 +5,10 @@
 //  2) 各模型 morph 缓存独立构建（不因交替渲染每帧重建，O(M) 扫描）
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+const mockBeat = vi.hoisted(() => ({ level: 1.0 }));
+
 vi.mock('../scene/motion/proc-motion-bridge', () => ({
-    getProcBeatDetector: () => ({ getLevel: () => 1.0 }),
+    getProcBeatDetector: () => ({ getLevel: () => mockBeat.level }),
 }));
 vi.mock('@/core/scene-action-bridge', () => ({
     getSceneAction: (key: string) => {
@@ -48,6 +50,7 @@ const _state = {
 } as never;
 
 beforeEach(async () => {
+    mockBeat.level = 1.0;
     vi.resetModules();
     sut = await import('../scene/motion/perception-lipsync');
 });
@@ -76,18 +79,53 @@ describe('_applyLipSync per-model 隔离', () => {
         expect(b.mm.targets.find((t) => t.name === 'あ')!.influence).toBe(0);
     });
 
-    it('per-model 缓存独立：两模型交替渲染不触发对方缓存重建（getTarget 调用稳定）', () => {
+    it('per-model 缓存独立：不同 morph 表的两模型交替渲染不触发对方缓存重建', () => {
         const a = makeModel(['あ', '笑み']);
-        const b = makeModel(['あ', '笑み']);
+        const b = makeModel(['ア', 'え']);
         const getTargetASpy = vi.spyOn(a.mm, 'getTarget');
+        const getTargetBSpy = vi.spyOn(b.mm, 'getTarget');
 
         sut._applyLipSync(a.model, 1, true, 'modelA', _state, 'high');
         sut._applyLipSync(b.model, 1, true, 'modelB', _state, 'high');
-        const callsAfterFirstRound = getTargetASpy.mock.calls.length;
+        const aCallsAfterFirstRound = getTargetASpy.mock.calls.length;
+        const bCallsAfterFirstRound = getTargetBSpy.mock.calls.length;
+        expect(aCallsAfterFirstRound).toBeGreaterThan(0);
+        expect(bCallsAfterFirstRound).toBeGreaterThan(0);
 
-        // 再次交替渲染：A 的缓存已建，不应再调用 getTarget（修复前每帧重建）
+        // 再次交替渲染：各模型缓存已建，不应再调用 getTarget
         sut._applyLipSync(a.model, 1, true, 'modelA', _state, 'high');
         sut._applyLipSync(b.model, 1, true, 'modelB', _state, 'high');
-        expect(getTargetASpy.mock.calls.length).toBe(callsAfterFirstRound);
+        expect(getTargetASpy.mock.calls.length).toBe(aCallsAfterFirstRound);
+        expect(getTargetBSpy.mock.calls.length).toBe(bCallsAfterFirstRound);
+    });
+
+    it('dispose 后删除 per-model 运行时，下次调用会重建缓存', () => {
+        const a = makeModel(['あ', '笑み']);
+        const getTargetSpy = vi.spyOn(a.mm, 'getTarget');
+
+        sut._applyLipSync(a.model, 1, true, 'modelA', _state, 'high');
+        const callsAfterBuild = getTargetSpy.mock.calls.length;
+        sut._applyLipSync(a.model, 1, true, 'modelA', _state, 'high');
+        expect(getTargetSpy.mock.calls.length).toBe(callsAfterBuild);
+
+        sut._disposeLipSyncRuntime('modelA');
+        sut._applyLipSync(a.model, 1, true, 'modelA', _state, 'high');
+        expect(getTargetSpy.mock.calls.length).toBeGreaterThan(callsAfterBuild);
+    });
+
+    it('BeatDetector 返回 NaN/Infinity 时不会污染平滑状态，恢复有限值后继续工作', () => {
+        const a = makeModel(['あ']);
+
+        mockBeat.level = Number.NaN;
+        sut._applyLipSync(a.model, 1, true, 'modelA', _state, 'high');
+        expect(a.mm.targets[0].influence).toBe(0);
+
+        mockBeat.level = Number.POSITIVE_INFINITY;
+        sut._applyLipSync(a.model, 1, true, 'modelA', _state, 'high');
+        expect(a.mm.targets[0].influence).toBe(0);
+
+        mockBeat.level = 1.0;
+        sut._applyLipSync(a.model, 1, true, 'modelA', _state, 'high');
+        expect(a.mm.targets[0].influence).toBeGreaterThan(0);
     });
 });

@@ -154,6 +154,7 @@ export async function setupPerceptionTest(
     mockState.focusedModelId = null;
     mockState.triggerAutoSave.mockReset();
     mockState.modelManager.get.mockReset();
+    mockState.modelManager.modelRegistry.clear();
     mockState.scene.isDisposed = false;
     // ADR-147 管线 mock 重置：register 返回 unregister 函数，记录 run 回调供 triggerLastObserver 触发
     mockPipeline.register.mockReset();

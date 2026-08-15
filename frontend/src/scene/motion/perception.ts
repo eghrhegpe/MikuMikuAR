@@ -38,7 +38,7 @@ import {
     EYE_BONE_CANDIDATES,
 } from './perception-gaze';
 import { _resetBalanceSwayState } from './perception-balance';
-import { _disposeLipSyncRuntime } from './perception-lipsync';
+import { _applyLipSync, _disposeLipSyncRuntime } from './perception-lipsync';
 import {
     BONE_UPPER_CANDIDATES,
     BONE_NECK_CANDIDATES,
@@ -163,6 +163,14 @@ function _resetContextOffsets(ctx: PerceptionContext): void {
     ctx.gazeCache.eyeLocalQ.clear();
 }
 
+/** 对仍存活的模型执行 lip-sync 复位，防止停用/降档后口型 morph 冻结在最后值 */
+function _resetLipSyncForModel(modelId: string): void {
+    const inst = modelManager.get(modelId);
+    if (inst?.mmdModel) {
+        _applyLipSync(inst.mmdModel, 0, false, modelId, _perceptionState, 'high');
+    }
+}
+
 /** [doc:adr-163] 为指定模型认领感知层骨骼（P3=100） */
 function _claimPerceptionBones(modelId: string): void {
     const store = getBoneOverrideStore();
@@ -277,6 +285,10 @@ function _ensureObserverRegistered(): void {
                 if (perceptionObserver) {
                     perceptionObserver();
                     perceptionObserver = null;
+                    // [fix:round66] 与 deactivatePerception 保持对称：observer 注销时
+                    // 一并移除 reclaim listener，避免无观察者时仍挂监听。
+                    getBoneOverrideStore().removeReleaseListener(_onBoneOverrideRelease);
+                    _reclaimListenerAdded = false;
                 }
                 return;
             }
@@ -326,12 +338,16 @@ export function activatePerception(modelId?: string): void {
         return;
     }
 
-    // [doc:adr-164] 非焦点模型激活（全员感知模式）：不切换焦点，仅激活 context
-    if (_allEnabled && modelId && modelId !== _focusedContextId) {
+    // [doc:adr-164] 全员感知模式：targetId 是当前 UI 焦点时同步感知焦点，
+    // 否则视为「非焦点模型激活」，仅激活 context、不切换焦点。
+    if (_allEnabled && targetId && targetId !== _focusedContextId) {
         const ctx = _getOrCreateContext(targetId);
         _resetContextOffsets(ctx);
         ctx.isActive = true;
         _claimPerceptionBones(targetId);
+        if (targetId === focusedModelId) {
+            _focusedContextId = targetId;
+        }
         _ensureObserverRegistered();
         return;
     }
@@ -348,6 +364,8 @@ export function activatePerception(modelId?: string): void {
     if (_focusedContextId && _focusedContextId !== targetId) {
         const oldCtx = _contexts.get(_focusedContextId);
         if (oldCtx && !oldCtx.isPinned) {
+            // [fix:round66] 切换焦点时同样复位旧模型口型，避免 morph 残留
+            _resetLipSyncForModel(oldCtx.modelId);
             oldCtx.isActive = false;
             _releasePerceptionBones(oldCtx.modelId);
             _resetContextOffsets(oldCtx);
@@ -395,9 +413,14 @@ export function _resetGazeState(): void {
 /** 注销感知层 */
 export function deactivatePerception(): void {
     const hasPinned = Array.from(_contexts.values()).some((c) => c.isPinned && c.isActive);
+    // [fix:round66] 全员感知下可能仍有其他非 pinned 活跃 context；此时保留 observer，
+    // 仅清理焦点状态，避免注销焦点时把其余模型的感知一起停掉。
+    const hasOtherActive = Array.from(_contexts.values()).some(
+        (c) => c.isActive && c.modelId !== _focusedContextId
+    );
 
-    // 有 pinned 模型时保留 observer，只清理焦点状态
-    if (!hasPinned && perceptionObserver) {
+    // 有 pinned 或其他活跃模型时保留 observer，只清理焦点状态
+    if (!hasPinned && !hasOtherActive && perceptionObserver) {
         perceptionObserver();
         perceptionObserver = null;
         // [doc:adr-166 P2-1] 无 observer 时一并清理 reclaim listener，保持对称（审计 P4 fix）
@@ -407,6 +430,8 @@ export function deactivatePerception(): void {
     _resetGazeState(); // 重置 gaze 状态，避免关闭后重新开启出现跳跃
 
     if (_focusedContextId) {
+        // [fix:round66] 注销前复位口型 morph，避免关闭感知后口型冻结在最后值
+        _resetLipSyncForModel(_focusedContextId);
         _releasePerceptionBones(_focusedContextId);
         const ctx = _contexts.get(_focusedContextId);
         if (ctx) {
@@ -715,6 +740,11 @@ export function enableAllPerception(): void {
             }
         }
     }
+    // [fix:round66] 全员开启前若未单独 activate，感知焦点应跟随当前 UI 焦点，
+    // 否则 low/medium 档会因 focusedContextId=null 而把非 pinned 模型全部过滤掉。
+    if (focusedModelId && _contexts.has(focusedModelId)) {
+        _focusedContextId = focusedModelId;
+    }
     _ensureObserverRegistered();
     logWarn('perception', '全员感知已开启');
 }
@@ -744,6 +774,8 @@ export function disableAllPerception(): void {
             _perceptionOwnedBones.delete(ctx.modelId);
             continue;
         }
+        // [fix:round66] 停用前先复位口型 morph，避免从全员/高帧档关闭后冻结在最后值
+        _resetLipSyncForModel(ctx.modelId);
         ctx.isActive = false;
         _releasePerceptionBones(ctx.modelId);
         _resetContextOffsets(ctx);

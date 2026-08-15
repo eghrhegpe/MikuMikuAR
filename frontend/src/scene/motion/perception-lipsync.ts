@@ -12,6 +12,11 @@ const VOICE_BIN_END = 50;
 const HIGH_BIN_START = 25;
 const HIGH_BIN_END = 50;
 
+/** BeatDetector 能量仅接受有限非负值；NaN/Infinity/负数视为 0，避免污染低通平滑状态 */
+function _finiteLevel(value: number): number {
+    return Number.isFinite(value) && value > 0 ? value : 0;
+}
+
 /** 单模型 lip-sync 运行时状态（per-model 隔离：全员感知多模型互不污染 morph 缓存/平滑值/关闭复位） */
 interface LipSyncRuntimeState {
     morphName: string | null;
@@ -57,8 +62,9 @@ export function _applyLipSync(
     perceptionState: PerceptionState,
     tier?: PerceptionTier
 ): void {
-    // [doc:adr-164] tier 守卫：low 跳过
-    if (tier === 'low') {
+    // [doc:adr-164] tier 守卫：low 跳过实际口型驱动；
+    // 但 low + enabled=false 仍需进入复位路径，避免从高/中档切到低档时 morph 冻结。
+    if (tier === 'low' && enabled) {
         return;
     }
     const morphManager = mmdModel.mesh?.morphTargetManager;
@@ -160,10 +166,10 @@ export function _applyLipSync(
         return;
     }
 
-    // 从 BeatDetector 取频段能量
+    // 从 BeatDetector 取频段能量（NaN/Infinity/负数按 0 处理，防止平滑状态被污染后永久失效）
     const beatDetector = getProcBeatDetector();
-    const lowLevel = beatDetector ? beatDetector.getLevel(VOICE_BIN_START, VOICE_BIN_END) : 0;
-    const highLevel = beatDetector ? beatDetector.getLevel(HIGH_BIN_START, HIGH_BIN_END) : 0;
+    const lowLevel = _finiteLevel(beatDetector ? beatDetector.getLevel(VOICE_BIN_START, VOICE_BIN_END) : 0);
+    const highLevel = _finiteLevel(beatDetector ? beatDetector.getLevel(HIGH_BIN_START, HIGH_BIN_END) : 0);
 
     // 低通滤波（音频播放时才平滑，衰减期保留衰减值）
     if (getSceneAction('isAudioPlaying')?.() ?? false) {

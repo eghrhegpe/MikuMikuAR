@@ -2,12 +2,13 @@
 
 # 代码审核索引
 
-> 审核台账共 **182** 篇：156 篇按日期归档、9 篇轮次记录、17 篇专题审核。每篇记录审核范围、发现与结论。
+> 审核台账共 **183** 篇：157 篇按日期归档、9 篇轮次记录、17 篇专题审核。每篇记录审核范围、发现与结论。
 
 > 汇总视图（执行摘要 / 风险全景 / 改进优先级）见 [审核总索引](./README.md)。
 
-## 2026 年 8 月（145）
+## 2026 年 8 月（146）
 
+- `2026-08-15` [Round 66 审核报告 — perception-lipsync / perf-tier / physics-bridge](./2026-08-15-round66-perception-physics.md)
 - `2026-08-15` [Round 65 审核报告 — menu stack-render / mesh-lifecycle-headless / babylon-classes.contract](./2026-08-15-round65-stack-mesh-babylon.md)
 - `2026-08-15` [Round 64 审核报告 — menu popup-overlay / register-popup / rows](./2026-08-15-round64-menu-popup-register-rows.md)
 - `2026-08-15` [Round 63 审核报告 — menu nav-buttons / nav-click / nav-touch](./2026-08-15-round63-menu-nav.md)

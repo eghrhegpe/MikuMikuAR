@@ -1,5 +1,5 @@
 // perception/perf-tier.int.test.ts — ADR-164 全员感知 + PerceptionPerfMonitor 性能档位（ADR-204 P3，拆自旧 perception.test.ts）
-import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
+import { describe, it, expect, vi, beforeEach, beforeAll, afterEach } from 'vitest';
 const mockState = vi.hoisted(() => ({
     focusedModelId: null as string | null,
     triggerAutoSave: vi.fn(),
@@ -29,7 +29,7 @@ const mockPipeline = vi.hoisted(() => ({
 }));
 
 vi.mock('../../scene/scene', () => sceneModuleFactory(mockState));
-vi.mock('../../ar/ar-camera', () => arCameraModuleMock);
+vi.mock('../../scene/ar/ar-camera', () => arCameraModuleMock);
 vi.mock('../../core/wails-bindings', () => wailsBindingsModuleMock);
 vi.mock('../../core/i18n/t', () => i18nTModuleMock);
 vi.mock('@babylonjs/core/Materials/standardMaterial', () => standardMaterialModuleMock);
@@ -70,6 +70,7 @@ import {
     makeMockMorphManager,
     makeMockModelWithMorphManager,
     triggerLastObserver,
+    getBoneOverrideStoreForTest,
     type PerceptionSut,
 } from './perception-mocks';
 // 惰性加载：静态 import perception-observer 会拖 env/env → DefaultRenderingPipeline
@@ -93,15 +94,23 @@ beforeAll(async () => {
     ({ _getActiveContextsByTier } = await import('../../scene/motion/perception-observer'));
 });
 
-// [ADR-248] feetDebug 是模块级单例，beforeEach 重置防止跨用例污染
-beforeEach(() => {
-    feetDebug.value = false;
-});
-
 let sut: PerceptionSut;
 
+// [ADR-248] feetDebug 是模块级单例，beforeEach 重置防止跨用例污染。
+// setupPerceptionTest 会 vi.resetModules() 并重导 SUT，因此这里必须在 reset 后
+// 重新抓取 fresh perception-shared / perception-observer 引用，否则本文件持有的
+// 是 reset 前的旧模块单例，重置不到 SUT 实际使用的 feetDebug。
 beforeEach(async () => {
     sut = await setupPerceptionTest(mockState, mockPipeline);
+    const shared = await import('../../scene/motion/perception-shared');
+    PerceptionPerfMonitor = shared.PerceptionPerfMonitor;
+    feetDebug = shared.feetDebug;
+    feetDebug.value = false;
+    ({ _getActiveContextsByTier } = await import('../../scene/motion/perception-observer'));
+});
+
+afterEach(() => {
+    vi.restoreAllMocks();
 });
 
 describe('ADR-164 enableAllPerception / disableAllPerception', () => {
@@ -177,6 +186,109 @@ describe('ADR-164 enableAllPerception / disableAllPerception', () => {
 
         vi.restoreAllMocks();
     });
+
+    it('8. enableAll 未先 activate 时同步感知焦点，low 档不空转', () => {
+        const mockMorphManager = makeMockMorphManager(['笑み']);
+        const mockMmdModel = makeMockModelWithMorphManager(mockMorphManager);
+        // 给 mock 模型一个上半身骨，让 _applyBreathing 真正写入 lastOffsets
+        mockMmdModel.runtimeBones = [
+            {
+                name: '上半身',
+                linkedBone: { rotationQuaternion: { copyFrom: vi.fn(), setAll: vi.fn() } },
+                childBones: [],
+            },
+        ];
+        const inst = { mmdModel: mockMmdModel };
+        mockState.modelManager.get.mockReturnValue(inst);
+        mockState.modelManager.modelRegistry.set('m1', inst);
+        mockState.focusedModelId = 'm1';
+
+        // 不先 activatePerception，直接全员开启
+        sut.enableAllPerception();
+        sut.setPerceptionPerfTier('low');
+        triggerLastObserver(mockPipeline);
+
+        // low 档只保留焦点；若 enableAll 未把 _focusedContextId 同步到 m1，
+        // 这里 activeContexts 为空，呼吸不会写入 lastOffsets
+        expect(sut.__testOnlyGetContext('m1')?.lastOffsets.breath).not.toBe(0);
+    });
+
+    it('9. 全员模式下 activatePerception() 切换焦点保留旧模型 active', () => {
+        const inst1 = { mmdModel: { mesh: { isDisposed: () => false }, runtimeBones: [] } };
+        const inst2 = { mmdModel: { mesh: { isDisposed: () => false }, runtimeBones: [] } };
+        mockState.modelManager.get.mockImplementation((id: string) =>
+            id === 'm1' ? inst1 : id === 'm2' ? inst2 : null
+        );
+        mockState.modelManager.modelRegistry.set('m1', inst1);
+        mockState.modelManager.modelRegistry.set('m2', inst2);
+        mockState.focusedModelId = 'm1';
+
+        sut.enableAllPerception();
+        expect(sut.__testOnlyGetContext('m1')?.isActive).toBe(true);
+        expect(sut.__testOnlyGetContext('m2')?.isActive).toBe(true);
+
+        // 用户把 UI 焦点切到 m2 后调用 activatePerception()（菜单无参调用）
+        mockState.focusedModelId = 'm2';
+        sut.activatePerception();
+
+        // 全员模式不应把旧焦点 m1 停掉
+        expect(sut.__testOnlyGetContext('m1')?.isActive).toBe(true);
+        expect(sut.__testOnlyGetContext('m2')?.isActive).toBe(true);
+    });
+
+    it('10. 无活跃 context 时 observer 自动注销并同步移除 release listener', async () => {
+        const store = await getBoneOverrideStoreForTest();
+        const removeSpy = vi.spyOn(store, 'removeReleaseListener');
+
+        // 没有任何模型时 enableAll 仍会注册 observer，首帧 activeContexts 为空触发自注销
+        sut.enableAllPerception();
+        triggerLastObserver(mockPipeline);
+
+        expect(mockPipeline.unregister).toHaveBeenCalled();
+        expect(removeSpy).toHaveBeenCalled();
+    });
+
+    it('11. disableAll 停用非焦点模型时复位其 lip-sync morph', () => {
+        const mm1 = makeMockMorphManager(['笑み']);
+        const mm2 = makeMockMorphManager(['笑み']);
+        const inst1 = { mmdModel: makeMockModelWithMorphManager(mm1) };
+        const inst2 = { mmdModel: makeMockModelWithMorphManager(mm2) };
+        mockState.modelManager.get.mockImplementation((id: string) =>
+            id === 'm1' ? inst1 : id === 'm2' ? inst2 : null
+        );
+        mockState.modelManager.modelRegistry.set('m1', inst1);
+        mockState.modelManager.modelRegistry.set('m2', inst2);
+        mockState.focusedModelId = 'm1';
+        mockState.isAudioPlaying.mockReturnValue(true);
+        mockState.getAudioPath.mockReturnValue('voice.mp3');
+        mockState.getProcBeatDetector.mockReturnValue({ getLevel: () => 1 });
+        mockState.findLipMorph.mockReturnValue('笑み');
+        mockState.findAllLipMorphs.mockReturnValue({
+            open: '笑み',
+            close: null,
+            pucker: null,
+            smile: null,
+        });
+        mockState.amplitudeToWeight.mockImplementation(() => 1);
+        sut.setPerceptionState({
+            lipSyncEnabled: true,
+            lipSyncSensitivity: 0.2,
+            lipSyncIntensity: 0.8,
+        });
+        sut.activatePerception('m1');
+        sut.enableAllPerception();
+
+        // high 档触发：焦点 m1 与非焦点 m2 的口型都驱动
+        sut.setPerceptionPerfTier('high');
+        triggerLastObserver(mockPipeline);
+        expect(mm1.getInfluence('笑み')).toBeGreaterThan(0);
+        expect(mm2.getInfluence('笑み')).toBeGreaterThan(0);
+
+        // 全员关闭：m2 被停用并复位，m1（焦点）保留驱动值
+        sut.disableAllPerception();
+        expect(mm2.getInfluence('笑み')).toBe(0);
+        expect(mm1.getInfluence('笑み')).toBeGreaterThan(0);
+    });
 });
 
 describe('ADR-164 PerceptionPerfMonitor tier', () => {
@@ -210,6 +322,42 @@ describe('ADR-164 PerceptionPerfMonitor tier', () => {
         triggerLastObserver(mockPipeline);
 
         // low 档下 expression 应被跳过（morph 权重为 0）
+        expect(mockMorphManager.getInfluence('笑み')).toBe(0);
+        nowSpy.mockRestore();
+    });
+
+    it('5b. 从 high 切到 low 会复位已激活的 lip-sync morph，而不是冻结', () => {
+        const nowSpy = vi.spyOn(performance, 'now').mockReturnValue(1000);
+        const mockMorphManager = makeMockMorphManager(['笑み']);
+        const mmdModel = makeMockModelWithMorphManager(mockMorphManager);
+        mockState.modelManager.get.mockReturnValue({ mmdModel });
+        mockState.focusedModelId = 'm1';
+        mockState.isAudioPlaying.mockReturnValue(true);
+        mockState.getAudioPath.mockReturnValue('voice.mp3');
+        mockState.getProcBeatDetector.mockReturnValue({ getLevel: () => 1 });
+        mockState.findLipMorph.mockReturnValue('笑み');
+        mockState.findAllLipMorphs.mockReturnValue({
+            open: '笑み',
+            close: null,
+            pucker: null,
+            smile: null,
+        });
+        mockState.amplitudeToWeight.mockImplementation(() => 1);
+        sut.setPerceptionState({
+            lipSyncEnabled: true,
+            lipSyncSensitivity: 0.2,
+            lipSyncIntensity: 0.8,
+        });
+        sut.activatePerception('m1');
+
+        // high 档触发一帧：口型 morph 应被驱动
+        sut.setPerceptionPerfTier('high');
+        triggerLastObserver(mockPipeline);
+        expect(mockMorphManager.getInfluence('笑み')).toBeGreaterThan(0);
+
+        // 切到 low 后再触发：口型应复位为 0（修复前会冻结）
+        sut.setPerceptionPerfTier('low');
+        triggerLastObserver(mockPipeline);
         expect(mockMorphManager.getInfluence('笑み')).toBe(0);
         nowSpy.mockRestore();
     });
@@ -390,5 +538,30 @@ describe('ADR-164 PerceptionPerfMonitor tier', () => {
         expect(callArg).toContain('fps');
         warnSpy.mockRestore();
         feetDebug.value = false;
+    });
+
+    it('G. 手动档从开启即持续低 fps 也会采样并 warn（不依赖 auto 预热）', () => {
+        feetDebug.value = true;
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        const monitor = new PerceptionPerfMonitor();
+        const lowFpsMock = { getFps: () => 25 };
+        const sceneMock = { getEngine: () => lowFpsMock };
+
+        monitor.setManualTier('low');
+        (monitor as any)._warnThrottleFrame = 59;
+
+        // 前 29 帧未到采样边界，fps 仍为初始 60，不应 warn
+        for (let i = 0; i < 29; i++) {
+            monitor.update(sceneMock, 30);
+        }
+        expect(warnSpy).not.toHaveBeenCalled();
+
+        // 第 30 帧：手动档内也应采样 fps=25，并命中 %60 节流
+        monitor.update(sceneMock, 30);
+
+        expect(warnSpy).toHaveBeenCalled();
+        const callArg = warnSpy.mock.calls[0][0] as string;
+        expect(callArg).toContain('手动档');
+        expect(callArg).toContain('fps');
     });
 });
