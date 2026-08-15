@@ -281,3 +281,108 @@ func TestUpdateConfigRescanConcurrent(t *testing.T) {
 		}
 	}
 }
+
+// —— mergeUIState presence mask（ADR-253 partial 更新语义）——
+
+// TestMergeUIStatePresenceMaskZeroValues verifies legal zero values are persisted
+// when the field is explicitly present in the JSON payload (FpsLimit=0, Volume=0,
+// AudioOffset=0 were previously dropped by the != 0 guard).
+func TestMergeUIStatePresenceMaskZeroValues(t *testing.T) {
+	var src UIState
+	if err := json.Unmarshal([]byte(`{"fpsLimit":0,"volume":0,"audioOffset":0,"screenOrientation":"portrait"}`), &src); err != nil {
+		t.Fatalf("Unmarshal: %v", err)
+	}
+	dst := UIState{FpsLimit: 120, Volume: 0.5, AudioOffset: 1.5, ScreenOrientation: "auto"}
+	mergeUIState(&dst, src)
+
+	if dst.FpsLimit != 0 {
+		t.Errorf("FpsLimit = %d, want 0 (explicit zero must persist)", dst.FpsLimit)
+	}
+	if dst.Volume != 0 {
+		t.Errorf("Volume = %v, want 0 (explicit zero must persist)", dst.Volume)
+	}
+	if dst.AudioOffset != 0 {
+		t.Errorf("AudioOffset = %v, want 0 (explicit zero must persist)", dst.AudioOffset)
+	}
+	if dst.ScreenOrientation != "portrait" {
+		t.Errorf("ScreenOrientation = %q, want portrait", dst.ScreenOrientation)
+	}
+}
+
+// TestMergeUIStatePresenceMaskPartialNoWipe verifies a partial payload does NOT
+// clobber bool fields that were not provided (old code overwrote them with false).
+func TestMergeUIStatePresenceMaskPartialNoWipe(t *testing.T) {
+	var src UIState
+	if err := json.Unmarshal([]byte(`{"scale":1.3}`), &src); err != nil {
+		t.Fatalf("Unmarshal: %v", err)
+	}
+	dst := UIState{Animations: true, BlurBg: true, AutoCameraEnabled: true, Scale: 1.0}
+	mergeUIState(&dst, src)
+
+	if dst.Scale != 1.3 {
+		t.Errorf("Scale = %v, want 1.3", dst.Scale)
+	}
+	if !dst.Animations {
+		t.Error("Animations must survive a partial {scale} update")
+	}
+	if !dst.BlurBg {
+		t.Error("BlurBg must survive a partial {scale} update")
+	}
+	if !dst.AutoCameraEnabled {
+		t.Error("AutoCameraEnabled must survive a partial {scale} update")
+	}
+}
+
+// TestMergeUIStatePresenceMaskExplicitBoolFalse verifies an explicitly provided
+// false bool is persisted (mask distinguishes "absent" from "false").
+func TestMergeUIStatePresenceMaskExplicitBoolFalse(t *testing.T) {
+	var src UIState
+	if err := json.Unmarshal([]byte(`{"animations":false,"blurBg":false}`), &src); err != nil {
+		t.Fatalf("Unmarshal: %v", err)
+	}
+	dst := UIState{Animations: true, BlurBg: true}
+	mergeUIState(&dst, src)
+
+	if dst.Animations {
+		t.Error("Animations must be false after explicit false update")
+	}
+	if dst.BlurBg {
+		t.Error("BlurBg must be false after explicit false update")
+	}
+}
+
+// TestMergeUIStatePresenceMaskFullPayload verifies a full payload updates every
+// field (browser-adapter sends {...cur, field: v} which contains all keys).
+func TestMergeUIStatePresenceMaskFullPayload(t *testing.T) {
+	var src UIState
+	raw := `{"scale":1.2,"animations":false,"fpsLimit":0,"volume":0.7}`
+	if err := json.Unmarshal([]byte(raw), &src); err != nil {
+		t.Fatalf("Unmarshal: %v", err)
+	}
+	dst := UIState{Scale: 1.0, Animations: true, FpsLimit: 60, Volume: 0.3}
+	mergeUIState(&dst, src)
+
+	if dst.Scale != 1.2 || dst.Animations || dst.FpsLimit != 0 || dst.Volume != 0.7 {
+		t.Errorf("full payload merge mismatch: %+v", dst)
+	}
+}
+
+// TestMergeUIStateNoPresentLegacy verifies that when UIState is constructed
+// directly in Go (present == nil, no JSON round-trip), the legacy semantics are
+// preserved so existing internal callers behave identically: non-zero scalars are
+// copied, zero scalars do NOT overwrite, and bool fields are unconditionally
+// overwritten (the pre-mask behavior).
+func TestMergeUIStateNoPresentLegacy(t *testing.T) {
+	dst := UIState{Scale: 1.0, FpsLimit: 60, Animations: true}
+	mergeUIState(&dst, UIState{Scale: 1.3, FpsLimit: 0, Animations: false})
+
+	if dst.Scale != 1.3 {
+		t.Errorf("Scale = %v, want 1.3 (non-zero legacy copy)", dst.Scale)
+	}
+	if dst.FpsLimit != 60 {
+		t.Errorf("FpsLimit = %d, want 60 (zero legacy value must NOT overwrite)", dst.FpsLimit)
+	}
+	if dst.Animations {
+		t.Error("Animations must be overwritten by legacy unconditional bool copy")
+	}
+}

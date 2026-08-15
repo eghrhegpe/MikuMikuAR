@@ -338,97 +338,138 @@ func (a *App) SetUIState(ui UIState) error {
 	return a.updateConfig(func(cfg *Config) { mergeUIState(&cfg.UIState, ui) }, false)
 }
 
-// mergeUIState copies only the non-zero fields from src into dst, preserving
-// any dst fields not present in src. This keeps partial updates safe.
+// mergeUIState copies only the fields explicitly present in the incoming JSON
+// payload into dst, preserving dst fields that were not provided. Presence is
+// captured by UIState.UnmarshalJSON into src.present (the presence mask), so
+// legal zero values (FpsLimit=0, Volume=0, AudioOffset=0, ...) can be persisted
+// and partial payloads no longer wipe omitted bool fields (see ADR-253).
+// When src.present is nil (UIState constructed directly in Go, not via JSON),
+// the legacy semantics apply: non-zero / non-nil / non-empty fields are merged.
 func mergeUIState(dst *UIState, src UIState) {
-	if src.Scale != 0 {
+	// hasField reports whether the field should be merged: JSON path follows the
+	// presence mask; direct-construction path falls back to the legacy check.
+	hasField := func(jsonKey string, legacy func() bool) bool {
+		if src.present == nil {
+			return legacy()
+		}
+		return src.present[jsonKey]
+	}
+	if hasField("scale", func() bool { return src.Scale != 0 }) {
 		dst.Scale = src.Scale
 	}
-	if src.PopupWidth != 0 {
+	if hasField("popupWidth", func() bool { return src.PopupWidth != 0 }) {
 		dst.PopupWidth = src.PopupWidth
 	}
-	if src.Accent != "" {
+	if hasField("accent", func() bool { return src.Accent != "" }) {
 		dst.Accent = src.Accent
 	}
-	if src.FontFamily != "" {
+	if hasField("fontFamily", func() bool { return src.FontFamily != "" }) {
 		dst.FontFamily = src.FontFamily
 	}
-	// bool 字段无零值歧义，直接覆盖（false 是有效值）
-	dst.Animations = src.Animations
-	dst.BlurBg = src.BlurBg
-	if src.PerformanceMode != "" {
+	// bool 字段旧语义为无条件覆盖（false 是有效值）；JSON 路径按 mask 决定。
+	if hasField("animations", func() bool { return true }) {
+		dst.Animations = src.Animations
+	}
+	if hasField("blurBg", func() bool { return true }) {
+		dst.BlurBg = src.BlurBg
+	}
+	if hasField("performanceMode", func() bool { return src.PerformanceMode != "" }) {
 		dst.PerformanceMode = src.PerformanceMode
 	}
-	if src.ScreenshotFormat != "" {
+	if hasField("screenshotFormat", func() bool { return src.ScreenshotFormat != "" }) {
 		dst.ScreenshotFormat = src.ScreenshotFormat
 	}
-	if src.ScreenshotQuality != 0 {
+	if hasField("screenshotQuality", func() bool { return src.ScreenshotQuality != 0 }) {
 		dst.ScreenshotQuality = src.ScreenshotQuality
 	}
-	if src.ScreenshotDir != "" {
+	if hasField("screenshotDir", func() bool { return src.ScreenshotDir != "" }) {
 		dst.ScreenshotDir = src.ScreenshotDir
 	}
-	dst.AutoCameraEnabled = src.AutoCameraEnabled
-	if src.AutoCameraBeatsPerSwitch != 0 {
+	if hasField("autoCameraEnabled", func() bool { return true }) {
+		dst.AutoCameraEnabled = src.AutoCameraEnabled
+	}
+	if hasField("autoCameraBeatsPerSwitch", func() bool { return src.AutoCameraBeatsPerSwitch != 0 }) {
 		dst.AutoCameraBeatsPerSwitch = src.AutoCameraBeatsPerSwitch
 	}
-	dst.AutoUpdateEnabled = src.AutoUpdateEnabled
-	if src.FpsLimit != 0 {
+	if hasField("autoUpdateEnabled", func() bool { return true }) {
+		dst.AutoUpdateEnabled = src.AutoUpdateEnabled
+	}
+	if hasField("fpsLimit", func() bool { return src.FpsLimit != 0 }) {
 		dst.FpsLimit = src.FpsLimit
 	}
-	dst.FrameCapEnabled = src.FrameCapEnabled
-	dst.DefaultPhysicsEnabled = src.DefaultPhysicsEnabled
-	if src.RenderScale != 0 {
+	if hasField("frameCapEnabled", func() bool { return true }) {
+		dst.FrameCapEnabled = src.FrameCapEnabled
+	}
+	if hasField("defaultPhysicsEnabled", func() bool { return true }) {
+		dst.DefaultPhysicsEnabled = src.DefaultPhysicsEnabled
+	}
+	if hasField("renderScale", func() bool { return src.RenderScale != 0 }) {
 		dst.RenderScale = src.RenderScale
 	}
-	if src.CameraSensitivity != 0 {
+	if hasField("cameraSensitivity", func() bool { return src.CameraSensitivity != 0 }) {
 		dst.CameraSensitivity = src.CameraSensitivity
 	}
-	dst.InvertYAxis = src.InvertYAxis
-	dst.AutoScaleModel = src.AutoScaleModel
-	dst.AutoCenterModel = src.AutoCenterModel
-	if src.MaterialCategoryMap != nil {
+	if hasField("invertYAxis", func() bool { return true }) {
+		dst.InvertYAxis = src.InvertYAxis
+	}
+	if hasField("autoScaleModel", func() bool { return true }) {
+		dst.AutoScaleModel = src.AutoScaleModel
+	}
+	if hasField("autoCenterModel", func() bool { return true }) {
+		dst.AutoCenterModel = src.AutoCenterModel
+	}
+	if hasField("materialCategoryMap", func() bool { return src.MaterialCategoryMap != nil }) {
 		dst.MaterialCategoryMap = src.MaterialCategoryMap
 	}
-	if src.ResourceViewMode != "" {
+	if hasField("resourceViewMode", func() bool { return src.ResourceViewMode != "" }) {
 		dst.ResourceViewMode = src.ResourceViewMode
 	}
-	if src.Volume != 0 {
+	if hasField("volume", func() bool { return src.Volume != 0 }) {
 		dst.Volume = src.Volume
 	}
-	if src.AudioOffset != 0 {
+	if hasField("audioOffset", func() bool { return src.AudioOffset != 0 }) {
 		dst.AudioOffset = src.AudioOffset
 	}
-	dst.BpmQuantizeEnabled = src.BpmQuantizeEnabled
-	dst.AutoLoadCompanionAudio = src.AutoLoadCompanionAudio
-	dst.SfxEnabled = src.SfxEnabled
-	dst.Ktx2Transcode = src.Ktx2Transcode
-	if src.SfxVolume != 0 {
+	if hasField("bpmQuantizeEnabled", func() bool { return true }) {
+		dst.BpmQuantizeEnabled = src.BpmQuantizeEnabled
+	}
+	if hasField("autoLoadCompanionAudio", func() bool { return true }) {
+		dst.AutoLoadCompanionAudio = src.AutoLoadCompanionAudio
+	}
+	if hasField("sfxEnabled", func() bool { return true }) {
+		dst.SfxEnabled = src.SfxEnabled
+	}
+	if hasField("ktx2Transcode", func() bool { return true }) {
+		dst.Ktx2Transcode = src.Ktx2Transcode
+	}
+	if hasField("sfxVolume", func() bool { return src.SfxVolume != 0 }) {
 		dst.SfxVolume = src.SfxVolume
 	}
-	dst.FootstepEnabled = src.FootstepEnabled
-	if src.FootstepVolume != 0 {
+	if hasField("footstepEnabled", func() bool { return true }) {
+		dst.FootstepEnabled = src.FootstepEnabled
+	}
+	if hasField("footstepVolume", func() bool { return src.FootstepVolume != 0 }) {
 		dst.FootstepVolume = src.FootstepVolume
 	}
-	if src.ThumbnailResolution != 0 {
+	if hasField("thumbnailResolution", func() bool { return src.ThumbnailResolution != 0 }) {
 		dst.ThumbnailResolution = src.ThumbnailResolution
 	}
-	if src.KeyBindings != nil {
+	if hasField("keyBindings", func() bool { return src.KeyBindings != nil }) {
 		dst.KeyBindings = src.KeyBindings
 	}
 	// 顶部 HUD 显隐开关（指针区分 nil=默认显示 vs false=显式关闭）
-	if src.ShowFpsClock != nil {
+	if hasField("showFpsClock", func() bool { return src.ShowFpsClock != nil }) {
 		dst.ShowFpsClock = src.ShowFpsClock
 	}
-	if src.ShowRuntimeBadge != nil {
+	if hasField("showRuntimeBadge", func() bool { return src.ShowRuntimeBadge != nil }) {
 		dst.ShowRuntimeBadge = src.ShowRuntimeBadge
 	}
 	// Android 屏幕常亮（指针区分 nil=开启 vs false=关闭）
-	if src.KeepAwake != nil {
+	if hasField("keepAwake", func() bool { return src.KeepAwake != nil }) {
 		dst.KeepAwake = src.KeepAwake
 	}
 	// Android 屏幕方向（空=auto，显式保存 "auto"/"portrait"/"landscape"）
-	if src.ScreenOrientation != "" {
+	if hasField("screenOrientation", func() bool { return src.ScreenOrientation != "" }) {
 		dst.ScreenOrientation = src.ScreenOrientation
 	}
 }

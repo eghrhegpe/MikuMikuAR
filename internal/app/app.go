@@ -388,6 +388,12 @@ type UIState struct {
 
 	// --- Android 屏幕方向（2026-07-20 新增，ADR-017 A1-05）---
 	ScreenOrientation string `json:"screenOrientation,omitempty"` // Android 屏幕方向："auto"|"portrait"|"landscape"；空=auto
+
+	// presence mask（不入 JSON）：记录本次反序列化载荷中实际出现的字段名。
+	// 由 UnmarshalJSON 填充，供 mergeUIState 精确判断「哪些字段被显式提供」——
+	// 使合法零值（FpsLimit=0 不限帧、Volume=0 静音、AudioOffset=0 无偏移等）可持久化，
+	// 且 partial 载荷不会清空未提供的 bool 字段（旧实现无条件覆盖）。
+	present map[string]bool
 }
 
 // UnmarshalJSON reads UIState while tolerating the legacy field name
@@ -395,6 +401,16 @@ type UIState struct {
 // Old config.json files persisted the legacy key; without this fallback
 // the frame cap setting would silently reset on old configs.
 func (u *UIState) UnmarshalJSON(data []byte) error {
+	// 先收集载荷中实际出现的字段名（presence mask），供 mergeUIState 使用。
+	var keySet map[string]json.RawMessage
+	if err := json.Unmarshal(data, &keySet); err != nil {
+		return err
+	}
+	u.present = make(map[string]bool, len(keySet))
+	for k := range keySet {
+		u.present[k] = true
+	}
+
 	type uiStateAlias UIState // avoid recursion
 	aux := struct {
 		*uiStateAlias
