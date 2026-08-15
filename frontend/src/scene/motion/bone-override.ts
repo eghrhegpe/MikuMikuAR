@@ -650,11 +650,11 @@ const _IK_TARGET_CANDIDATES = [BONE_LEG_IK_L_CANDIDATES, BONE_LEG_IK_R_CANDIDATE
  * _applyWasmOverride 已先把 slot.pos 偏移写入 worldMatrix，
  * IkSolver.solve() 读 worldMatrix 作为 IK 目标，解出髋/膝/踝旋转并回写全链。
  */
-// [ADR-248] IK 诊断日志节流计数器：仅 feetDebug 开启时输出，且每 60 帧最多 1 条，
+// [ADR-202 §六] IK 诊断日志节流计数器：仅 feetDebug 开启时输出，且每 60 帧最多 1 条，
 // 根治 WASM POS slot IK 重解热路径每帧 logWarn 刷爆环形缓冲/console 导致的卡顿。
 let _ikWasmDbgFrame = 0;
 
-// [ADR-248] POS 覆盖应用诊断日志节流计数器：与 _ikWasmDbgFrame 同模式，
+// [ADR-202 §六] POS 覆盖应用诊断日志节流计数器：与 _ikWasmDbgFrame 同模式，
 // 根治每帧 _applyWasmOverride 的无条件 logWarn 刷屏。
 let _overrideApplyDbgFrame = 0;
 
@@ -856,7 +856,7 @@ function _applyWasmOverride(slot: _OverrideSlot, rb: IMmdRuntimeBone): void {
     const oldQ = _q();
     Quaternion.FromRotationMatrixToRef(rotMat, oldQ);
     const { translation, rotation } = computeOverride(oldT, oldQ, slot);
-    // [ADR-248] 诊断：确认 POS 偏移是否写入。热路径每帧调用，必须 feetDebug 门控 + 帧节流，
+    // [ADR-202 §六] 诊断：确认 POS 偏移是否写入。热路径每帧调用，必须 feetDebug 门控 + 帧节流，
     // 否则无条件 logWarn 刷爆环形缓冲/console（与 _solvePosSlotIkWasm 同模式）。
     if (slot.pos && slot.pos.length() > 0.01 && feetDebug.value && _overrideApplyDbgFrame++ % 60 === 0) {
         logWarn(
@@ -1145,7 +1145,7 @@ export function dumpBoneHierarchy(modelId?: string): BoneHierarchyDump | null {
         if (isOverridden) {
             totalOverridden++;
         }
-        // [ADR-248] WASM 模式下 ikSolver 为 undefined，但 ikSolverIndex 存在
+        // [ADR-202 §六] WASM 模式下 ikSolver 为 undefined，但 ikSolverIndex 存在
         const ikSolver = (b as MmdRuntimeBoneExtended).ikSolver;
         const ikSolverIndex = (b as { ikSolverIndex?: number }).ikSolverIndex;
         const hasIkSolver = !!(ikSolver || (typeof ikSolverIndex === 'number' && ikSolverIndex >= 0));

@@ -902,27 +902,31 @@ function buildModelTagsSchema(id: string): MenuNode[] {
                         if (!libRef) {
                             return;
                         }
-                        const tags = await GetTagsByModel(libRef);
-                        if (!container.isConnected) {
-                            return;
-                        }
-                        const isFav = tags && tags.includes('收藏');
-                        favRow.innerHTML = `<span class="slide-icon"><iconify-icon icon="lucide:star" style="color:${isFav ? 'var(--accent)' : 'var(--text-muted)'};"></iconify-icon></span><span class="slide-label" style="color:${isFav ? 'var(--accent)' : 'var(--text)'};">${isFav ? t('model-detail.faved') : t('model-detail.addFav')}</span>`;
-                        favRow.onclick = async () => {
-                            if (!libRef || !container.isConnected) {
+                        // [audit:round33 P2] GetTagsByModel 此前裸 await 无 catch——后端失败时
+                        // unhandled rejection + favRow 永久空白无反馈；用 tryCatchStatus 包裹（同文件惯例）。
+                        await tryCatchStatus(async () => {
+                            const tags = await GetTagsByModel(libRef);
+                            if (!container.isConnected) {
                                 return;
                             }
-                            await tryCatchStatus(async () => {
-                                if (isFav) {
-                                    await RemoveTag(libRef, '收藏');
-                                    feedbackInfo('model-detail.unfaved', undefined);
-                                } else {
-                                    await AddTag(libRef, '收藏');
-                                    feedbackInfo('model-detail.favedStatus', undefined);
+                            const isFav = tags && tags.includes('收藏');
+                            favRow.innerHTML = `<span class="slide-icon"><iconify-icon icon="lucide:star" style="color:${isFav ? 'var(--accent)' : 'var(--text-muted)'};"></iconify-icon></span><span class="slide-label" style="color:${isFav ? 'var(--accent)' : 'var(--text)'};">${isFav ? t('model-detail.faved') : t('model-detail.addFav')}</span>`;
+                            favRow.onclick = async () => {
+                                if (!libRef || !container.isConnected) {
+                                    return;
                                 }
-                                refreshFav();
-                            }, t('model-detail.favFailed'));
-                        };
+                                await tryCatchStatus(async () => {
+                                    if (isFav) {
+                                        await RemoveTag(libRef, '收藏');
+                                        feedbackInfo('model-detail.unfaved', undefined);
+                                    } else {
+                                        await AddTag(libRef, '收藏');
+                                        feedbackInfo('model-detail.favedStatus', undefined);
+                                    }
+                                    refreshFav();
+                                }, t('model-detail.favFailed'));
+                            };
+                        }, t('model-detail.favFailed'));
                     };
                     refreshFav();
                     c.appendChild(favRow);

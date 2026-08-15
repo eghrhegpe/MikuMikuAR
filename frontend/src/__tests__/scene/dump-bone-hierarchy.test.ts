@@ -1,5 +1,5 @@
 // @vitest-environment node
-// [ADR-248] dumpBoneHierarchy 的 IK 求解器字段推导逻辑测试。
+// [ADR-202 §六] dumpBoneHierarchy 的 IK 求解器字段推导逻辑测试。
 // 核心断言：hasIkSolver 同时支持 JS（ikSolver 字段）与 WASM（ikSolverIndex 字段）两种模式，
 // 且 ikSolverIndex 为负数时表示「无求解器」（WASM 约定：-1=无 IK），不被误判为有 IK。
 import { describe, it, expect, beforeEach, vi } from 'vitest';
@@ -55,7 +55,7 @@ async function shutdownBones(): Promise<void> {
     stopBoneOverride();
 }
 
-describe('dumpBoneHierarchy IK 求解器推导 (ADR-248)', () => {
+describe('dumpBoneHierarchy IK 求解器推导 (ADR-202 §六)', () => {
     beforeEach(() => {
         clearAllOverrides(MODEL_ID);
     });

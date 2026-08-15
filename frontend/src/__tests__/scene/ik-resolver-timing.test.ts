@@ -152,7 +152,7 @@ describe('IK 重解双调用路径时序（ADR-202 §六）', () => {
         // → resolverCalls 仍为 1（不新增）
     });
 
-    it('ADR-248：feetDebug 关闭时 IK 诊断日志不刷 console（退出热路径）', () => {
+    it('ADR-202 §六：feetDebug 关闭时 IK 诊断日志不刷 console（退出热路径）', () => {
         // 构造左足 IK 骨 + 设置 POS 覆盖，触发 _solvePosSlotIkWasm
         const ikBone = makeWasmBone('左足ＩＫ', [0, 1.8, 0], 0);
         const centerBone = makeWasmBone('センター', [0, 0, 0]);
@@ -178,7 +178,7 @@ describe('IK 重解双调用路径时序（ADR-202 §六）', () => {
         }
     });
 
-    it('ADR-248/回退链路：原生 IkSolver 存在时优先 solve()，不调 WASM resolver', () => {
+    it('ADR-202 §六/回退链路：原生 IkSolver 存在时优先 solve()，不调 WASM resolver', () => {
         // 带原生 ikSolver 的 WASM 骨骼：_solvePosSlotIkWasm 应收敛到 solver.solve()，跳过 WASM 导出
         const solveSpy = vi.fn();
         const ikBone = makeWasmBone('左足ＩＫ', [0, 1.8, 0], 0, { solve: solveSpy });
@@ -195,7 +195,7 @@ describe('IK 重解双调用路径时序（ADR-202 §六）', () => {
         expect(resolverCalls.length).toBe(0);
     });
 
-    it('ADR-248：OVERRIDE-APPLY 诊断日志 feetDebug 打开时帧节流（每 60 帧 1 条）', () => {
+    it('ADR-202 §六：OVERRIDE-APPLY 诊断日志 feetDebug 打开时帧节流（每 60 帧 1 条）', () => {
         const ikBone = makeWasmBone('左足ＩＫ', [0, 1.8, 0], 0);
         const centerBone = makeWasmBone('センター', [0, 0, 0]);
         const bones: IMmdRuntimeBone[] = [ikBone, centerBone];
