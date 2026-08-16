@@ -510,15 +510,12 @@ if [ "$TS_CHANGED" = "true" ] && [ "$NPM_AVAILABLE" = "true" ]; then
       cache_write "lint" $CHANGED_TS_FILES "pass"
     fi
   else
-    echo "[pre-push] lint:changed（跳过：无 TS/JS 变更）"
     note_check "⏭️ lint:changed（无 TS/JS 变更）"
   fi
 else
   if [ "$TS_CHANGED" = "true" ]; then
-    echo "[pre-push] lint:changed（跳过：$NPM_SKIP_REASON）"
     note_check "⏭️ lint:changed（npm 不可用 → $NPM_SKIP_REASON）"
   else
-    echo "[pre-push] lint:changed（跳过：纯 Go / 纯文档变更）"
     note_check "⏭️ lint:changed（未涉及 TS 或 npm 不可用）"
   fi
 fi
@@ -579,7 +576,6 @@ if [ "$TS_CHANGED" = "true" ] && [ "$NPM_AVAILABLE" = "true" ]; then
     fi
   fi
 else
-  echo "[pre-push] tsc（跳过：未涉及 TS 或 npm 不可用）"
   note_check "⏭️ tsc（未涉及 TS 或 npm 不可用）"
 fi
 
@@ -694,17 +690,14 @@ if [ "$TS_CHANGED" = "true" ] && [ "$NPM_AVAILABLE" = "true" ]; then
   fi
 else
   if [ "$TS_CHANGED" = "true" ]; then
-    echo "[pre-push] test:coverage（跳过：$NPM_SKIP_REASON）"
     note_check "⏭️ test:coverage（npm 不可用 → $NPM_SKIP_REASON）"
   else
-    echo "[pre-push] test:coverage（跳过：纯 Go / 纯文档变更）"
     note_check "⏭️ test:coverage（未涉及 TS 或 npm 不可用）"
   fi
 fi
 
 # ── deadcode（已移除：push 时不跑死代码检查）
 # 死代码检查对用户使用无影响，仅消耗算力。保留在 CI 中作为参考。
-echo "[pre-push] deadcode（跳过：push 时不跑死代码检查，由 CI 兜底）"
 note_check "⏭️ deadcode（push 时跳过，CI 兜底）"
 
 # ── check:docs（ERROR 阻断；INFO 基线自动修复 + amend） ──
