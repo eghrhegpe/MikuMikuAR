@@ -687,12 +687,10 @@ export class SlideMenu implements RenderContext {
 
     /** 重置导航栈到根层级，不触发渲染 */
     resetToRoot(): void {
-        // [fix] 若当前正处于 push/pop 过渡，必须先取消动画/定时器；
-        // 否则旧的过渡回调仍会按已出栈的 level 继续 buildPanel/updateHeader，
-        // 造成“栈已回根、面板却渲染子层”的状态错位。
-        if (this.transitioning) {
-            this._cancelAnim();
-        }
+        // [fix] 无条件清 timer：transitioning=false 时（如 showModelPopup 在过渡结束后被调用），
+        // _pendingTimeouts 中 _endTransition 的 100ms reRender 调度不会被清理，
+        // 会在 resetToRoot 后继续执行 → buildPanel → 面板重建 → onLevelEnter 触发残留 auto-expand。
+        this._cancelAnim();
         if (this.levels.length > 1) {
             this.levels = [this.levels[0]];
         }

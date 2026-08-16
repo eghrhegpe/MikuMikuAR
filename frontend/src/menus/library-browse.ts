@@ -168,6 +168,9 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
             if (stackRegistry.modelStack) {
                 stackRegistry.modelStack = null;
             }
+            // [fix] 清理模块级 in-flight 守卫：dispose 路径不经过 showModelPopup，
+            // _autoExpandInFlight 残留会导致下次弹窗时旧守卫误拦截合法 auto-expand。
+            _autoExpandInFlight = null;
             menu.dispose();
             closeAllOverlays();
         },
