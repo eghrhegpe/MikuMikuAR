@@ -41,6 +41,22 @@ git reset --soft HEAD~1               # 撤销最近一条 commit，把改动留
 git reset HEAD~1                      # 撤销最近一条 commit，把改动放回工作区（unstaged）
 ```
 
+## 测试命令选择（agent 必读）
+
+> **核心原则**：agent 对话中禁止运行全量测试（~52s），会拖慢对话节奏、浪费算力。
+
+| 场景 | 命令 | 耗时 | 说明 |
+|------|------|------|------|
+| 改完一段代码后验证 | `npm run test:quick` | ~30s | 2 workers，足够日常验证 |
+| 改动涉及特定模块 | `npm run test:changed` | ~20s | 只跑受影响测试（相对 origin/main） |
+| 单文件测试 | `npm run test -- src/path/to/file.test.ts` | <1s | 精准验证 |
+| 提交前最终检查 | `npm run test` | ~52s | 全量，仅限 commit 前 |
+| CI 兜底 | 自动触发 | ~2min | push/PR 时 CI 跑全量 + 覆盖率 |
+
+**禁止行为**：
+- ❌ 在 agent 对话中间跑 `npm run test` 全量（除非明确需要）
+- ❌ 为覆盖率补测试而阻断推送（历史遗留债记录到 ADR-254 待办清单）
+
 ## 钩子自动化
 
 > `.githooks/`（需 `git config core.hooksPath .githooks` 激活）。
