@@ -133,3 +133,6 @@ scope-*.txt
 subagent-audit-guide.md
 test-files.txt
 3d-ui-DESIGN.md
+
+# Third-party upstream docs (babylon-mmd docs with videos/screenshots, not our source)
+docs/upstream/
