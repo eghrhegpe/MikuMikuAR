@@ -1,3 +1,4 @@
+// @vitest-environment node
 // @ts-nocheck — vi.mock 运行时替换（见 ./material-editor-mocks）
 //
 // 合并说明：原 material-editor.apply-all / cat-of / p1p2 / state 四个测试文件在
