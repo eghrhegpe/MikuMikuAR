@@ -16,10 +16,12 @@
 | `npm run build` | 生产构建 | = `tsc && vite build`，先类型检查再打包 |
 | `npm run build:dev` | 仅 vite build（跳过 tsc） | 快速验证 bundle 能否产出 |
 | `npm run check` | 类型检查（`tsc --noEmit`） | **改完前端必跑**，验证未新增 tsc 错误 |
-| `npm run test` | Vitest 单元测试（run 模式） | 一次性跑全量测试 |
+| `npm run test` | Vitest 单元测试（run 模式） | ⚠️ **不推荐 agent 使用**：~52s 全量测试，agent 对话中易拖死。改用下方快速命令 |
+| `npm run test:quick` | 快速单元测试 | ✅ **推荐 agent 使用**：2 workers，~30s，足够日常验证 |
+| `npm run test:changed` | 增量单元测试 | ✅ **推荐 agent 使用**：只跑受影响测试（相对 origin/main），~20s |
 | `npm run test:warm` | 预热 esbuild transform cache | 首跑前执行，避免冷启动静默期迷惑 AI；跑最小测试 `goerr.test.ts`，~2-3s |
 | `npm run test:watch` | Vitest 监听模式 | 修改测试文件自动重跑 |
-| `npm run test:coverage` | Vitest + 覆盖率 | v8 provider |
+| `npm run test:coverage` | Vitest + 覆盖率 | v8 provider（CI schedule 跑，本地不用） |
 | `npm run test:e2e` | Playwright E2E | 端到端测试 |
 | `npm run test:e2e:headed` | Playwright 有界面模式 | 调试用 |
 | `npm run lint` | ESLint 检查 | `eslint src --ext .ts,.tsx,.js,.jsx` |
@@ -30,9 +32,28 @@
 ### 高频最小集
 
 ```bash
-# 改完一段代码后
-npm run check && npm run test && npm run build
+# 改完一段代码后（推荐快速验证）
+npm run check && npm run test:quick && npm run build
+
+# 或只跑受影响测试（更快）
+npm run check && npm run test:changed && npm run build
 ```
+
+### Agent 测试命令选择
+
+> **核心原则**：agent 对话中禁止运行全量测试（~52s），会拖慢对话节奏、浪费算力。
+
+| 场景 | 命令 | 耗时 | 说明 |
+|------|------|------|------|
+| 改完一段代码后验证 | `npm run test:quick` | ~30s | 2 workers，足够日常验证 |
+| 改动涉及特定模块 | `npm run test:changed` | ~20s | 只跑受影响测试（相对 origin/main） |
+| 单文件测试 | `npm run test -- src/path/to/file.test.ts` | <1s | 精准验证 |
+| 提交前最终检查 | `npm run test` | ~52s | 全量，仅限 commit 前 |
+| CI 兜底 | 自动触发 | ~2min | push/PR 时 CI 跑全量 + 覆盖率 |
+
+**禁止行为**：
+- ❌ 在 agent 对话中间跑 `npm run test` 全量（除非明确需要）
+- ❌ 为覆盖率补测试而阻断推送（历史遗留债记录到 ADR-254 待办清单）
 
 ### tsc 基线检查（多 AI 协作时）
 
