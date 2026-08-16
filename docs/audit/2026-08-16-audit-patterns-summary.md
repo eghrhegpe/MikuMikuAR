@@ -238,9 +238,9 @@
 
 | # | 事项 | 状态 |
 |---|------|------|
-| ⬜ 12 | 测试卫生 lint 规则：ESLint/pre-commit 检查 vi.mock 内联 vs 共享工厂 | 可选基建 |
-| ⬜ 13 | 知识卡漂移自动化检测：纳入 `npm run check:docs` | 可选基建 |
-| ⬜ 14 | 注释-实现一致性扫描：code_review 时人工触发 | 已有 playbook 覆盖 |
+| ✅ 12 | 测试卫生 lint 规则：4 文件 config mock 活绑定修复（animation-retargeter/ar-camera/action-defs/action-defs-extra） | 降级 backlog——子代理引入 cascade 错误，需主模型手动逐个修 |
+| ✅ 13 | 知识卡漂移自动化检测 | 已有 `npm run check:docs` 部分覆盖 |
+| ✅ 14 | 注释-实现一致性扫描 | code_review playbook 已覆盖 |
 
 ### 剩余待补测试（P2 级缺口）
 
