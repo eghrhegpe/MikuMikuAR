@@ -802,7 +802,19 @@ export class SlideMenu implements RenderContext {
         const pending = this._pendingReRender;
         if (pending) {
             this._pendingReRender = null;
-            this.reRender(pending.opts);
+            // [fix] 过渡刚结束时不立即 flush _pendingReRender：此时 fadeIn 的 CSS 过渡
+            // 刚刚结束，浏览器尚未将最终帧绘制到屏幕——若立即 reRender → _doReRender
+            // → buildPanel → panel.innerHTML=''，刚淡入完成的内容会被清空，用户感知
+            // "闪现即隐藏"。延后 100ms 让浏览器完成最终帧渲染后再重建。
+            this._pushTimeout(
+                setTimeout(() => {
+                    if (this._pendingReRender) {
+                        // 窗口期又有新的 reRender 请求——保留最新的，丢弃当前 pending
+                        return;
+                    }
+                    this.reRender(pending.opts);
+                }, 100)
+            );
         }
     }
 
