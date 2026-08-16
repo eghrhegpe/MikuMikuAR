@@ -90,7 +90,10 @@ function _onModelLoaded(): void {
 }
 // 先移除旧监听器再注册，确保 HMR 重载不重复绑定
 _mmkuDisp?.dispose();
-_mmkuDisp = addDisposableListener(document, 'mmku:modelLoaded', _onModelLoaded);
+// node 环境下无 document，跳过注册（测试导入链不再崩溃）
+if (typeof document !== 'undefined') {
+    _mmkuDisp = addDisposableListener(document, 'mmku:modelLoaded', _onModelLoaded);
+}
 
 // ======== 模型恢复（上次浏览目录高亮）========
 
