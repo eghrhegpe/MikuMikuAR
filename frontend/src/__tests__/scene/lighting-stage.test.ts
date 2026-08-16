@@ -1,3 +1,4 @@
+// @vitest-environment node
 // lighting-stage.test.ts — 舞台灯生命周期单测（NullEngine 真实驱动）
 //
 // 覆盖收口后的 `_registerStageLight` / `_disposeStageLightEntry`：
@@ -9,6 +10,23 @@
 //
 // lighting.ts L36 从 './performance' 导入（经 '../scene' 触发模块级 new Scene），
 // 故 mock './performance' 断链；gizmo/transform-adapter 桩为 no-op 聚焦舞台灯生命周期。
+
+// node 环境无 localStorage，补一个让 import 链上 transform-mode.ts 顶层可正常加载
+vi.hoisted(() => {
+    if (typeof localStorage === 'undefined') {
+        const store: Record<string, string> = {};
+        Object.defineProperty(globalThis, 'localStorage', {
+            value: {
+                getItem: (k: string) => store[k] ?? null,
+                setItem: (k: string, v: string) => { store[k] = v; },
+                removeItem: (k: string) => { delete store[k]; },
+                clear: () => { for (const k in store) delete store[k]; },
+            },
+            writable: true,
+            configurable: true,
+        });
+    }
+});
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { NullEngine } from '@babylonjs/core/Engines/nullEngine';

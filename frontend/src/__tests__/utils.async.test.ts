@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:adr-101] P1-a 工具函数单测：error & async helpers
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { swallowError, fireAndForget, delay, waitForFrame, makeLazyLoader, LoadingGuard, DebouncedTimer, Abortable } from '../core/async';
@@ -135,6 +136,11 @@ describe('ADR-101 P1-a: error & async helpers', () => {
     });
 
     describe('waitForFrame', () => {
+        beforeEach(() => {
+            if (typeof globalThis.requestAnimationFrame === 'undefined') {
+                (globalThis as any).requestAnimationFrame = vi.fn();
+            }
+        });
         it('resolves when rAF callback fires', async () => {
             let rafCb: FrameRequestCallback | null = null;
             const rafSpy = vi

@@ -1,3 +1,4 @@
+// @vitest-environment node
 // lighting-headless.test.ts — NullEngine 下光照模块真实初始化/就绪/释放
 //
 // 覆盖：
@@ -8,6 +9,23 @@
 //
 // 不 mock 被测模块，使用真实 NullEngine + Scene + 真实 Babylon Light/StandardMaterial；
 // 与 lighting-stage.test.ts / lighting-follow.test.ts 的生命周期测试互补。
+
+// node 环境无 localStorage，补一个让 import 链上 transform-mode.ts 顶层可正常加载
+vi.hoisted(() => {
+    if (typeof localStorage === 'undefined') {
+        const store: Record<string, string> = {};
+        Object.defineProperty(globalThis, 'localStorage', {
+            value: {
+                getItem: (k: string) => store[k] ?? null,
+                setItem: (k: string, v: string) => { store[k] = v; },
+                removeItem: (k: string) => { delete store[k]; },
+                clear: () => { for (const k in store) delete store[k]; },
+            },
+            writable: true,
+            configurable: true,
+        });
+    }
+});
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { NullEngine } from '@babylonjs/core/Engines/nullEngine';
@@ -30,6 +48,11 @@ describe('光照 headless/NullEngine 初始化与释放', () => {
     let saveCalls: number;
 
     beforeEach(() => {
+        // node 环境无 requestAnimationFrame，补一个（用 setTimeout 调度，确保回调执行）
+        if (typeof globalThis.requestAnimationFrame === 'undefined') {
+            (globalThis as any).requestAnimationFrame = (cb: FrameRequestCallback) =>
+                setTimeout(() => cb(0), 0);
+        }
         // 防御性复位模块级单例，保证用例间无 lightingState 残留
         disposeLighting();
         engine = new NullEngine();

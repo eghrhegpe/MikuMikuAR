@@ -1,4 +1,5 @@
-// [doc:adr-117] translateGoError 单测 —— 验证 Wails 跨桥后（error stringify 成纯文本）
+// @vitest-environment node
+// [doc:adr-117] translateGoError 单测
 // 前端仍能从哨兵信封提取 code/params 并翻译。
 import { describe, it, expect, afterEach, beforeAll } from 'vitest';
 import { translateGoError } from '../core/i18n/goerr';

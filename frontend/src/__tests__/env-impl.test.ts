@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createMockEnvState } from './mocks/binding-factories';
 
@@ -123,6 +124,9 @@ const sceneMock: any = {
 const pipelineMock: any = { tag: 'pipeline' };
 
 beforeEach(() => {
+    if (typeof globalThis.requestAnimationFrame === 'undefined') {
+        (globalThis as any).requestAnimationFrame = vi.fn();
+    }
     vi.mocked(mirrorDebug.isMirrorActive).mockReturnValue(false);
     Object.assign(envState, createMockEnvState());
     // 初始化共享上下文，使 getScene 可用

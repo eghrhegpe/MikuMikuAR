@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, vi } from 'vitest';
 import { Matrix, Vector3 } from '@babylonjs/core/Maths/math.vector';
 import type { Scene } from '@babylonjs/core/scene';
@@ -114,7 +115,7 @@ describe('MmdAdapter — babylon-mmd 私有字段网关（ADR-192）', () => {
 
     describe('getStreamAudio', () => {
         it('audio 存在时返回', () => {
-            const el = new Audio();
+            const el = {} as HTMLAudioElement;
             expect(getStreamAudio(mockPlayer(el))).toBe(el);
         });
 
@@ -125,7 +126,7 @@ describe('MmdAdapter — babylon-mmd 私有字段网关（ADR-192）', () => {
 
     describe('CapabilityProbe', () => {
         it('hasStreamAudio 探测字段存在性', () => {
-            expect(CapabilityProbe.hasStreamAudio(mockPlayer(new Audio()))).toBe(true);
+            expect(CapabilityProbe.hasStreamAudio(mockPlayer({} as HTMLAudioElement))).toBe(true);
             expect(CapabilityProbe.hasStreamAudio(mockPlayer(undefined))).toBe(false);
         });
     });
