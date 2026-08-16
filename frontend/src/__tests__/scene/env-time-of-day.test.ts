@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 // ======== mock 基础设施（hoisted 供 vi.mock 工厂与断言共用） ========

@@ -1,3 +1,4 @@
+// @vitest-environment node
 // [doc:adr-150] 模型替换状态继承单元测试
 // 策略：captureInheritedState/applyInheritedState 是纯函数，仅依赖 modelManager setter、
 // setBoneOverride、camera 的 getOrbitBoneLock/setOrbitBoneLock/getFocusedModelBoneNames。
