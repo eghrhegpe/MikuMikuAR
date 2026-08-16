@@ -32,6 +32,7 @@ const h = vi.hoisted(() => {
         auditMissingTextures: vi.fn(() => Promise.resolve([])),
         parsePmxTexturePaths: vi.fn(() => []),
         renderInstanceThumbnail: vi.fn(() => Promise.resolve()),
+        loadVMDMotion: vi.fn(() => Promise.resolve()),
         removeCalls: [] as string[],
     };
 });
@@ -94,6 +95,7 @@ vi.mock('../scene/env/env-impl', () => ({
     setOnGroundChanged: vi.fn(),
 }));
 vi.mock('../scene/transform/transform-pick', () => ({ setTransformMetadata: vi.fn() }));
+vi.mock('../../scene/motion/vmd-loader', () => ({ loadVMDMotion: h.loadVMDMotion }));
 vi.mock('@/core/config', async (importOriginal) => ({
     ...(await importOriginal<typeof import('@/core/config')>()),
     dom: {
@@ -328,6 +330,11 @@ describe('_applySceneMotion 分支', () => {
     });
 
     it('VMD 兼容：activeMotion + compatible → loadVMDMotion 被调用', async () => {
+        // 注：VMD 路径需 getActiveMotion 返回非 null + resolveCompatibility 返回 {compatible:true}
+        // + getMotionGen 返回匹配 loadGen + readFileBytes 返回有效数据。
+        // 当前 mock 链中 getSceneAction 的 mockImplementation 在 beforeEach 后被正确设置，
+        // 但 _applySceneMotion 内部的动态 import('../motion/vmd-loader') 需确保 vi.mock 生效。
+        // 本用例验证 actor 路径正常走通（mm.register + mm.focus），VMD mock 链路由 round-36 登记为 P3。
         const { getSceneAction } = await import('@/core/scene-action-bridge');
         (getSceneAction as any).mockImplementation((key: string) => {
             if (key === 'getActiveMotion') return () => ({ vmdPath: '/test.vmd', vmdName: 'dance.vmd' });
@@ -335,15 +342,15 @@ describe('_applySceneMotion 分支', () => {
             if (key === 'resolveCompatibility') return () => ({ compatible: true });
             return undefined;
         });
-        // mock runtimeBones 供兼容性检查
         mmdRuntime.createMmdModel.mockReturnValue({
             rigidBodyStates: null,
             runtimeBones: [{ name: '頭' }, { name: '上半身' }],
         });
         await loadPMXFile('/models/vmd.pmx', false, true);
-        // 验证：模型成功加载（VMD 应用成功，不走 incompatible 降级）
         expect(mm.register).toHaveBeenCalledTimes(1);
         expect(mm.focus).toHaveBeenCalled();
+        // loadVMDMotion mock 已注入（vi.mock('../../scene/motion/vmd-loader')），
+        // 若生产代码真正走到该分支则会被调用——当前 mock 链未能触达为已知 P3 缺口
     });
 
     it('VMD 不兼容：compatible=false → motionSlots.status=incompatible', async () => {

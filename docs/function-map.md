@@ -1866,7 +1866,7 @@
 | `rebakeEnvBrightness()` | `scene/render/lighting:233` | [doc:adr-132] 当 envBrightness 变化时 rebake 存储的光照强度 |
 | `setLightState()` | `scene/render/lighting:342` | 写入灯光状态。守卫未就绪时 logWarn + 返回 false（不再静默吞写）， 使「UI 可操作但 state 未生效」可被观测（@dom 测试环境无灯光对象时会命中）。 |
 | `setSkipLightAutoSave()` | `scene/render/lighting:154` | 预设动画期间临时抑制 setLightState 内的自动保存，由 applyEnvPreset 控制 |
-| `transitionLighting()` | `scene/render/lighting:432` | 平滑过渡当前灯光到目标灯光参数，默认 2 秒。 |
+| `transitionLighting()` | `scene/render/lighting:440` | 平滑过渡当前灯光到目标灯光参数，默认 2 秒。 |
 | `isAutoDegradingReflection()` | `scene/render/performance-env-bridge:18` | env-bridge.ts 调用此函数检查当前是否处于自动降级反射质量变更中 |
 | `registerSetEnvState()` | `scene/render/performance-env-bridge:26` | env-bridge.ts 初始化时注册 setEnvState 函数 |
 | `setAutoDegradingReflection()` | `scene/render/performance-env-bridge:13` | performance.ts 调用此函数通知 env-bridge 当前反射质量变更来自自动降级 |

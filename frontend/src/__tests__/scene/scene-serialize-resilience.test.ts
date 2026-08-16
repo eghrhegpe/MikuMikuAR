@@ -167,7 +167,7 @@ vi.mock('../../motion-algos/procedural-motion', () => ({
 }));
 vi.mock('../../motion-algos/lipsync', () => ({ DEFAULT_LIPSYNC_STATE: {} }));
 
-import { serializeScene, deserializeScene, triggerAutoSaveImpl, tryRestoreLastScene } from '../../scene/scene-serialize';
+import { serializeScene, deserializeScene, triggerAutoSaveImpl, tryRestoreLastScene, saveSceneImmediate } from '../../scene/scene-serialize';
 import { LoadLastScene } from '../../core/wails-bindings';
 import { setCameraState } from '../../scene/camera/camera';
 import { getMatState, applyMatState, loadPMXFile } from '../../scene/scene';
@@ -519,6 +519,8 @@ describe('serialize → deserialize round-trip（procMotionModules 无损往返�
         expect((restoredInst as any).procMotionModules).toEqual((inst as any).procMotionModules);
     });
 });
+
+
 
 afterEach(() => {
     vi.restoreAllMocks();
