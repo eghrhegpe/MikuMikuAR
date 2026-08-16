@@ -44,24 +44,40 @@ fi
 # ── 结论摘要累积（末尾输出，避免 AI 只读最后几行漏掉中间 WARN/INFO） ──
 SUMMARY_FIXED=""
 SUMMARY_CHECKS=""
+SUMMARY_FAILURES=""
 note_fixed() { SUMMARY_FIXED="${SUMMARY_FIXED}${SUMMARY_FIXED:+ · }$1"; }
-# 记录每个检查项的最终状态（✅ 通过 / 🔧 自动修复 / ⏭️ 跳过），末尾摘要统一展示
+# 记录每个检查项的最终状态（✅ 通过 / 🔧 自动修复 / ⏭️ 跳过 / ❌ 失败），末尾摘要统一展示
 note_check() { SUMMARY_CHECKS="${SUMMARY_CHECKS}
   $1"; }
-# 失败结论：替代裸 exit 1，输出「结论 + 已通过项 + 下一步」，避免 AI 只拿失败明细裸奔
-# 用法: fail "<失败阶段简述>" "<下一步建议>"
-fail() {
+# 收集失败项（不立即 exit，等所有检查跑完再统一报告）
+collect_fail() {
+  SUMMARY_FAILURES="${SUMMARY_FAILURES}${SUMMARY_FAILURES:+
+}❌ $1"
+}
+# 最终结论：所有检查跑完后统一报告，避免 AI 只看到第一个错误
+finalize_results() {
   echo ""
-  echo "════════ [pre-push] 失败 ════════"
-  echo "  ❌ $1"
+  echo "════════ [pre-push] 结论摘要 ════════"
+  echo "  检查项:"
   if [ -n "$SUMMARY_CHECKS" ]; then
-    echo "  已通过:"
-    printf '%s\n' "$SUMMARY_CHECKS"
+    echo "$SUMMARY_CHECKS"
+  else
+    echo "    （无检查项记录）"
   fi
-  echo ""
-  echo "  下一步: $2"
-  echo "════════════════════════════════"
-  exit 1
+  if [ -n "$SUMMARY_FIXED" ]; then
+    echo "  🔧 自动修复并 amend: $SUMMARY_FIXED"
+  fi
+  if [ -n "$SUMMARY_FAILURES" ]; then
+    echo ""
+    echo "  ❌ 失败项:"
+    echo "$SUMMARY_FAILURES"
+    echo ""
+    echo "  下一步: 修复上方失败项后重推（完整输出见上方详情）"
+    echo "════════════════════════════════════"
+    exit 1
+  fi
+  echo "════════════════════════════════════"
+  echo "[pre-push] ✅ 全部通过"
 }
 
 # ── 解析推送范围（从 stdin 读取 pre-push refs，支持多 ref 推送） ──
@@ -167,18 +183,18 @@ if [ "$GO_CHANGED" = "true" ]; then
   echo "[pre-push] check:bindings（实跑 generate:bindings 验证同步性）"
   if [ ! -d "$ROOT/frontend/bindings" ] || [ -z "$(ls -A "$ROOT/frontend/bindings" 2>/dev/null)" ]; then
     echo "❌ frontend/bindings/ 为空。请运行: cd frontend && npm run generate:bindings"
-    fail "frontend/bindings/ 为空" "运行 cd frontend && npm run generate:bindings 生成绑定后重推"
+    collect_fail "frontend/bindings/ 为空: 运行 cd frontend && npm run generate:bindings 生成绑定后重推"
   fi
   if ! (cd "$ROOT/frontend" && npm run generate:bindings >/dev/null 2>&1); then
     echo "❌ generate:bindings 执行失败。请检查 Go 代码是否能编译。"
     echo "   手动运行: cd frontend && npm run generate:bindings 查看错误"
-    fail "generate:bindings 执行失败" "检查 Go 编译错误: cd frontend && npm run generate:bindings"
+    collect_fail "generate:bindings 执行失败: 检查 Go 编译错误 cd frontend && npm run generate:bindings"
   fi
   if ! git diff --quiet -- frontend/bindings/ 2>/dev/null; then
     echo "❌ Go 文件已变更但 frontend/bindings/ 未同步。"
     echo "   hook 已运行 generate:bindings 生成最新版本，请检查 diff 后 amend："
     echo "     git add frontend/bindings/ && git commit --amend --no-edit"
-    fail "Go 变更但 frontend/bindings/ 未同步（hook 已生成最新版）" "检查 diff 后: git add frontend/bindings/ && git commit --amend --no-edit，再重推"
+    collect_fail "Go 变更但 frontend/bindings/ 未同步: git add frontend/bindings/ && git commit --amend --no-edit，再重推"
   fi
   note_check "✅ check:bindings 同步性"
 fi
@@ -272,7 +288,7 @@ if [ "$TS_CHANGED" = "true" ] && [ "$NPM_AVAILABLE" = "true" ]; then
     echo "[pre-push] lint:changed（增量扫描，只查变更文件）"
     LINT_OUT="$(cd "$ROOT/frontend" && echo "$CHANGED_TS_FILES" | xargs npx eslint --ext .ts,.tsx,.js,.jsx 2>&1)" || {
       printf '%s\n' "$LINT_OUT" | tail -30
-      fail "ESLint 检出 error" "cd frontend && npx eslint <文件> 修复后重推"
+      collect_fail "ESLint 检出 error: cd frontend && npx eslint <文件> 修复后重推"
     }
     WARN_COUNT="$(printf '%s\n' "$LINT_OUT" | grep -oE '[0-9]+ warnings?' | tail -1 | grep -oE '[0-9]+')"
     [ -z "$WARN_COUNT" ] && WARN_COUNT=0
@@ -403,12 +419,12 @@ if [ "$DOCS_ONLY" = "false" ]; then
       if ! run_check_docs; then
         echo "❌ 文档漂移 ERROR，需人工修复。详情："
         cd "$ROOT" && node scripts/check-doc-drift.mjs --baseline 2>&1 | tail -30
-        fail "文档漂移 ERROR（INFO 基线更新后仍存在）" "按上方详情修复 ERROR 级漂移后重推"
+        collect_fail "文档漂移 ERROR（INFO 基线更新后仍存在）: 按上方详情修复 ERROR 级漂移后重推"
       fi
     else
       echo "❌ 文档漂移 ERROR，需人工修复。详情："
       cd "$ROOT" && node scripts/check-doc-drift.mjs --baseline 2>&1 | tail -30
-      fail "文档漂移 ERROR" "按上方详情修复 ERROR 级漂移后重推"
+      collect_fail "文档漂移 ERROR: 按上方详情修复 ERROR 级漂移后重推"
     fi
   fi
   note_check "✅ check:docs 漂移"
@@ -474,29 +490,5 @@ else
   note_check "⏭️ link:check（npm 不可用 → $NPM_SKIP_REASON）"
 fi
 
-# ── 结论摘要（AI 友好：末尾聚合关键结果，避免只读最后几行漏掉中间 WARN/INFO） ──
-echo ""
-echo "════════ [pre-push] 结论摘要 ════════"
-echo "  检查项:"
-if [ -n "$SUMMARY_CHECKS" ]; then
-  echo "$SUMMARY_CHECKS"
-else
-  echo "    （无检查项记录）"
-fi
-if [ -n "$SUMMARY_FIXED" ]; then
-  echo "  🔧 自动修复并 amend: $SUMMARY_FIXED"
-fi
-if [ -f "$ROOT/docs/.doc-check-last.json" ] && command -v node >/dev/null 2>&1; then
-  node -e '
-    const fs = require("fs");
-    const j = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
-    const notes = [];
-    if (j.errors && j.errors.length) notes.push(`❌ ERROR 漂移 ${j.errors.length} 条（阻断，见上方详情）`);
-    if (j.reverse && j.reverse.total > 0) notes.push(`⚠️ 知识卡未覆盖源文件 ${j.reverse.total} 个: ${j.reverse.files.join(", ")}`);
-    if (j.coverage && j.coverage.undocumented > 0) notes.push(`ℹ️ 符号 0% 未文档化模块 ${j.coverage.undocumented} 个`);
-    if (j.agentsWarns && j.agentsWarns.length) notes.push(`⚠️ AGENTS 手写事实索引 ${j.agentsWarns.length} 项`);
-    if (notes.length) console.log(notes.join("\n"));
-  ' "$ROOT/docs/.doc-check-last.json" 2>/dev/null || true
-fi
-echo "════════════════════════════════════"
-echo "[pre-push] ✅ 全部通过"
+# ── 最终结论（所有检查跑完后统一报告，避免 AI 只看到第一个错误） ──
+finalize_results
