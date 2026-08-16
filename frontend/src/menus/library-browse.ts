@@ -328,6 +328,14 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
                 librarySessionStore.setPendingFocusModel(null);
             }
             if (pendingAuto && pendingAuto.length > 0) {
+                // [fix] 数据未就绪时 deferRestore 持有 polling 状态；onLevelEnter 再次
+                // 被调用（如 _endTransition 中 setupFocus 触发 reRender flush）时，
+                // 检测到 polling 则跳过 auto-expand——让 deferRestore 独占展开，
+                // 避免 deferRestore 的 setTimeout 与 onLevelEnter 的 setTimeout 并发。
+                const restoreStatus = librarySessionStore.getRestoreStatus();
+                if (restoreStatus === 'polling') {
+                    return;
+                }
                 const seg = pendingAuto[0];
                 const nextDir = normPath(dir + '/' + seg);
                 // [修复] 数据守卫：仅当 allModels 已扫描到该目录的 pmx 才进入，

@@ -1923,19 +1923,19 @@
 | `migratePerceptionData()` | `scene/scene-migrate:46` | 旧存档 perception 格式迁移：PerceptionState → { focused, pinned }。 |
 | `migratePerceptionFromProcMotion()` | `scene/scene-migrate:71` | 旧存档 ProcMotionState → 新版 PerceptionState 迁移。 |
 | `SceneFile()` | `scene/scene-serialize:145` | — |
-| `canUndo()` | `scene/scene-serialize:1304` | — |
-| `deserializeScene()` | `scene/scene-serialize:964` | Restore scene state from a SceneFile. |
-| `offerSceneUndo()` | `scene/scene-serialize:1348` | 破坏性操作后调用：弹出中性撤销 toast（复用 action-button toast，info 变体）。 |
-| `offerSceneUndoAndRefresh()` | `scene/scene-serialize:1375` | offerSceneUndo 的常见变体：撤销恢复后执行 reRender 回调并统一提示 &#96;undoApplied&#96;。 |
-| `popUndoSnapshot()` | `scene/scene-serialize:1309` | 弹出最近一次撤销快照（LIFO），供全局撤销按钮 / Ctrl+Z 使用。返回快照字符串，无快照时返回 null。 |
-| `pushUndoSnapshot()` | `scene/scene-serialize:1290` | 破坏性操作前调用：抓当前整场景快照压栈（环形，上限 UNDO_LIMIT），返回快照字符串供撤销绑定。 |
+| `canUndo()` | `scene/scene-serialize:1306` | — |
+| `deserializeScene()` | `scene/scene-serialize:966` | Restore scene state from a SceneFile. |
+| `offerSceneUndo()` | `scene/scene-serialize:1350` | 破坏性操作后调用：弹出中性撤销 toast（复用 action-button toast，info 变体）。 |
+| `offerSceneUndoAndRefresh()` | `scene/scene-serialize:1377` | offerSceneUndo 的常见变体：撤销恢复后执行 reRender 回调并统一提示 &#96;undoApplied&#96;。 |
+| `popUndoSnapshot()` | `scene/scene-serialize:1311` | 弹出最近一次撤销快照（LIFO），供全局撤销按钮 / Ctrl+Z 使用。返回快照字符串，无快照时返回 null。 |
+| `pushUndoSnapshot()` | `scene/scene-serialize:1292` | 破坏性操作前调用：抓当前整场景快照压栈（环形，上限 UNDO_LIMIT），返回快照字符串供撤销绑定。 |
 | `resolvePathFromRef()` | `scene/scene-serialize:133` | Resolve a file path from either a libraryRef or a raw absolute path. |
-| `restoreUndoSnapshot()` | `scene/scene-serialize:1325` | 恢复特定快照到整场景。返回是否成功恢复。 |
-| `saveSceneImmediate()` | `scene/scene-serialize:1393` | — |
+| `restoreUndoSnapshot()` | `scene/scene-serialize:1327` | 恢复特定快照到整场景。返回是否成功恢复。 |
+| `saveSceneImmediate()` | `scene/scene-serialize:1395` | — |
 | `serializeScene()` | `scene/scene-serialize:501` | 序列化当前场景为 SceneFile（分段容错，单模型失败跳过并记录）。 |
-| `setSuppressAutoSave()` | `scene/scene-serialize:1263` | — |
-| `triggerAutoSaveImpl()` | `scene/scene-serialize:1272` | — |
-| `tryRestoreLastScene()` | `scene/scene-serialize:1531` | — |
+| `setSuppressAutoSave()` | `scene/scene-serialize:1265` | — |
+| `triggerAutoSaveImpl()` | `scene/scene-serialize:1274` | — |
+| `tryRestoreLastScene()` | `scene/scene-serialize:1534` | — |
 | `AlphaCtx()` | `scene/scene:171` | — |
 | `CameraState()` | `scene/scene:918` | — |
 | `DEFAULT_MAT_PARAMS()` | `scene/scene:147` | — |
@@ -2169,8 +2169,8 @@
 | `prepareModelRestore()` | `menus/library-actions:110` | — |
 | `replaceModel()` | `menus/library-actions:725` | — |
 | `replaceMotion()` | `menus/library-actions:725` | — |
-| `makeModelMenu()` | `menus/library-browse:426` | — |
-| `showModelPopup()` | `menus/library-browse:394` | — |
+| `makeModelMenu()` | `menus/library-browse:434` | — |
+| `showModelPopup()` | `menus/library-browse:402` | — |
 | `ResourceViewMode()` | `menus/library-core:43` | — |
 | `abortThumbnailStreaming()` | `menus/library-core:317` | [adr-136] 取消当前正在进行的缩略图流式加载批次（如弹窗关闭/重开时调用）。 |
 | `buildLevel()` | `menus/library-core:853` | — |
