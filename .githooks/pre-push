@@ -86,6 +86,19 @@ _par_merge() {
     [ "$_t" = "FIXED" ] && note_fixed "$_v"
   done < "$_PAR_DIR/fixed"
 }
+# 合并指定 _par 目录的结果（供 A∥C 双组并行后分别 merge）
+_par_merge_dir() {
+  local _d="$1"
+  [ -f "$_d/checks" ] && while IFS='|' read -r _t _v; do
+    [ "$_t" = "CHECK" ] && note_check "$_v"
+  done < "$_d/checks"
+  [ -f "$_d/fails" ] && while IFS='|' read -r _t _v; do
+    [ "$_t" = "FAIL" ] && collect_fail "$_v"
+  done < "$_d/fails"
+  [ -f "$_d/fixed" ] && while IFS='|' read -r _t _v; do
+    [ "$_t" = "FIXED" ] && note_fixed "$_v"
+  done < "$_d/fixed"
+}
 _parallel_wait() {
   local rc=0
   for _pid in "$@"; do
@@ -456,23 +469,23 @@ _check_menumap() {
 #   2. 当前 commit 的 menu-map.md 已是最新版本（amend 操作在后续组中串行处理）
 # 为最大化并行度，将 guide-gap 也放入并行组；若出现竞争条件，
 # 最坏情况是 guide-gap 使用了旧版 menu-map.md 产生误报，用户重推即可。
+# 初始化 A/C 两组临时目录，供 A∥C 并行使用
+_PAR_DIR_A="$(mktemp -d 2>/dev/null || echo "/tmp/pre-push-par-a.$$")"
+mkdir -p "$_PAR_DIR_A" 2>/dev/null || true
+: > "$_PAR_DIR_A/checks" && : > "$_PAR_DIR_A/fails" && : > "$_PAR_DIR_A/fixed"
+_PAR_DIR_C="$(mktemp -d 2>/dev/null || echo "/tmp/pre-push-par-c.$$")"
+mkdir -p "$_PAR_DIR_C" 2>/dev/null || true
+: > "$_PAR_DIR_C/checks" && : > "$_PAR_DIR_C/fails" && : > "$_PAR_DIR_C/fixed"
+
+ALL_PIDS=""
 if [ -n "$_NEED_DOCS_GEN" ]; then
-  _par_init
-  _check_status &
-  _pid_a1=$!
-  _check_funcmap &
-  _pid_a2=$!
-  _check_docsindex &
-  _pid_a3=$!
-  _check_novelindex &
-  _pid_a4=$!
-  _check_guide_gap &
-  _pid_a5=$!
-  _check_menumap &
-  _pid_a6=$!
-  _parallel_wait $_pid_a1 $_pid_a2 $_pid_a3 $_pid_a4 $_pid_a5 $_pid_a6 || true
-  _par_merge
-  _par_cleanup
+  _PAR_DIR="$_PAR_DIR_A"
+  _check_status & ALL_PIDS="$ALL_PIDS $!"
+  _check_funcmap & ALL_PIDS="$ALL_PIDS $!"
+  _check_docsindex & ALL_PIDS="$ALL_PIDS $!"
+  _check_novelindex & ALL_PIDS="$ALL_PIDS $!"
+  _check_guide_gap & ALL_PIDS="$ALL_PIDS $!"
+  _check_menumap & ALL_PIDS="$ALL_PIDS $!"
 else
   echo "[pre-push] 文档生成物检查（跳过：纯 Go/frontend 变更）"
   note_check "⏭️ 文档生成物（全部跳过）"
@@ -792,18 +805,18 @@ _check_link() {
 
 # ── 组 C：独立检查（并行执行） ──
 # check:docs / i18n / check:md-links / link:check 完全独立，无状态共享
-_par_init
-_check_docs &
-_pid_c1=$!
-_check_i18n &
-_pid_c2=$!
-_check_md_links &
-_pid_c3=$!
-_check_link &
-_pid_c4=$!
-_parallel_wait $_pid_c1 $_pid_c2 $_pid_c3 $_pid_c4 || true
-_par_merge
-_par_cleanup
+# 与组 A 同时启动（A∥C），通过独立的 _PAR_DIR_A / _PAR_DIR_C 避免文件冲突
+_PAR_DIR="$_PAR_DIR_C"
+_check_docs & ALL_PIDS="$ALL_PIDS $!"
+_check_i18n & ALL_PIDS="$ALL_PIDS $!"
+_check_md_links & ALL_PIDS="$ALL_PIDS $!"
+_check_link & ALL_PIDS="$ALL_PIDS $!"
+
+# 等待 A∥C 全部完成后再 merge
+_parallel_wait $ALL_PIDS || true
+_par_merge_dir "$_PAR_DIR_A"
+_par_merge_dir "$_PAR_DIR_C"
+rm -rf "$_PAR_DIR_A" "$_PAR_DIR_C" 2>/dev/null || true
 
 # ── 最终结论（所有检查跑完后统一报告，避免 AI 只看到第一个错误） ──
 finalize_results
