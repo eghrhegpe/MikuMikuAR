@@ -213,24 +213,41 @@
 
 ## 五、行动建议
 
-### 🔴 立即处理（P1/P2 级，本周内）
-1. **`model-loader.ts:197`** — 修正注释：`return;` 是静默降级，非"抛错"
-2. **`model-loader.ts:708`** — 替换 `[adr-XX]` 占位符为真实 ADR 编号（或删除）
-3. **`perception.perf.test.ts`** — 修正 ADR-155/154 → ADR-164/165
-4. **`scene-serialize.ts:952,1430,1535`** — 修正过时 JSDoc/注释
-5. **`scene-serialize-resilience.test.ts:26,40`** — 改用 `sceneMockSuperset` + `importOriginal` spread
-6. **`model-loader.test.ts:97`** — 同上，改用 `importOriginal` spread
+### 🔴 立即处理（P1/P2 级）—— 已完成
 
-### 🟠 中期处理（P3 级，两周内）
-7. **修复提交强制回归测试门禁**：在 code_review 流程中标注「此提交修改的函数/路径当前无测试覆盖」
-8. **`model-loader.ts:834-859`** — 加 `meshesDisposing` 守卫防双重释放
-9. **统一日志标签**：`scene:serialize` vs `scene-serialize` 全仓收敛
-10. **`wind-physics.test.ts`** — `_getBundles` 块改用 `vi.importActual`，补 `_onPhysicsSync` 触发用例
+| # | 事项 | 提交 |
+|---|------|------|
+| ✅ 1 | `model-loader.ts:197` 超时注释改为静默降级 | `76a10504` |
+| ✅ 2 | `model-loader.ts:708,716` [adr-XX] → [doc:adr-167] | `76a10504` |
+| ✅ 3 | `perception.perf.test.ts` ADR-155/154 → 164/165 | `76a10504` |
+| ✅ 4 | `scene-serialize.ts:952,1430,1535` 修正过时注释 | `4879f92b` |
+| ✅ 5 | `scene-serialize-resilience.test.ts:26` config mock 改用 importOriginal spread | `4879f92b` |
+| ✅ 6 | `model-loader.test.ts:97` config mock 改用 importOriginal spread | `4879f92b` |
+
+### 🟠 中期处理（P3 级）—— 部分完成
+
+| # | 事项 | 状态 |
+|---|------|------|
+| ✅ 7 | `wind-physics.test.ts` `_getBundles` 改用真实 mmd-adapter + 补 `_onPhysicsSync` 触发测试 | `4879f92b` |
+| ✅ 8 | `vmd-layers.ts:701` catch 补 teardown 防止 blender state 泄漏 | `4879f92b` |
+| ⬜ 9 | 修复提交强制回归测试门禁（流程改进，非代码改动） | 待产品决策 |
+| ⬜ 10 | `model-loader.ts:834-859` meshesDisposing 守卫防双重释放 | 低优先级，Babylon 幂等兜底 |
+| ⬜ 11 | 统一日志标签 `scene:serialize` vs `scene-serialize` 全仓收敛 | P4，随下次触碰顺手清理 |
 
 ### 🟡 长期治理（P4 级）
-11. **测试卫生 lint 规则**：ESLint/pre-commit 检查 `vi.mock` 内联构造 vs 共享工厂
-12. **知识卡漂移自动化检测**：纳入 `npm run check:docs`
-13. **注释-实现一致性扫描**：code_review 时人工触发
+
+| # | 事项 | 状态 |
+|---|------|------|
+| ⬜ 12 | 测试卫生 lint 规则：ESLint/pre-commit 检查 vi.mock 内联 vs 共享工厂 | 可选基建 |
+| ⬜ 13 | 知识卡漂移自动化检测：纳入 `npm run check:docs` | 可选基建 |
+| ⬜ 14 | 注释-实现一致性扫描：code_review 时人工触发 | 已有 playbook 覆盖 |
+
+### 剩余待补测试（P2 级缺口）
+
+| 文件 | 缺口 | 建议 |
+|------|------|------|
+| `scene-serialize-resilience.test.ts` | ADR-198 方向② saveSceneImmediate 整体抛错 → abort+feedbackError 全仓零覆盖 | 补 saveSceneImmediate 单测 |
+| `model-loader.test.ts` | VMD 兼容分支：真实模块树拉起，失败不报红 | mock vmd-loader + 断言 loadVMDMotion 调用参数 |
 
 ---
 
