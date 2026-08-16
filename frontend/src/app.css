@@ -3375,6 +3375,13 @@ body.app-booting #webviewLayer {
     border-bottom: calc(1px * var(--ui-scale)) solid var(--white-06);
 }
 
+.lcard > .toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--lcard-bg);
+}
+
 /* 滑块轨道 */
 .slider-track {
     flex: 1;
