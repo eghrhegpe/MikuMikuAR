@@ -310,6 +310,20 @@ else
   fi
 fi
 
+# ── tsc 类型检查（TS 变更时触发） ──
+# [ADR-258] 类型安全是项目底线，3s 成本 vs 20 倍修复成本差
+if [ "$TS_CHANGED" = "true" ] && [ "$NPM_AVAILABLE" = "true" ]; then
+  echo "[pre-push] tsc（类型检查，~3s）"
+  TSC_OUT="$(cd "$ROOT/frontend" && npx tsc --noEmit 2>&1)" || {
+    printf '%s\n' "$TSC_OUT" | tail -20
+    collect_fail "tsc 类型错误: 修复上方错误后重推"
+  }
+  note_check "✅ tsc 类型检查"
+else
+  echo "[pre-push] tsc（跳过：未涉及 TS 或 npm 不可用）"
+  note_check "⏭️ tsc（未涉及 TS 或 npm 不可用）"
+fi
+
 # ── test:coverage（仅 TS/JS 变更时；不可自动修复） ──
 # 纯 Go 变更有 Go 测试覆盖，纯文档变更无逻辑可测，均跳过前端测试
 # npm 不可用时跳过；成功静默（coverage summary 大表由 CI 门禁兜底），失败时打印失败测试明细 + 覆盖率差距
