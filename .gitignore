@@ -126,3 +126,10 @@ docs/.doc-check-last.json
 docs/.doc-check-next-steps.md
 _tmp_atomgit_cli/
 base_export/
+
+# Audit working documents (temporary, not part of source)
+audit-pending.md
+scope-*.txt
+subagent-audit-guide.md
+test-files.txt
+3d-ui-DESIGN.md
