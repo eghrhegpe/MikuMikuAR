@@ -94,8 +94,10 @@ export default defineConfig({
         // 历史参考：12 路在 308 文件/4994 用例时代单 AI 独占最优（55.95s→40s，
         // ADR-255/256 合并后），但未考虑共享机器；16/20 因每 worker 重复编译
         // babylon 边际收益转负（ADR-219 原文）。
-        maxWorkers: 8,
-        minWorkers: 8,
+        // [2026-08] maxWorkers 8→4：agent 对话中全量测试易拖 15min+，限制并发防算力饥饿
+        // 实测 4 worker 全量 ~52s vs 8 worker ~40s（慢 30%），但 agent 不会因等待崩溃
+        maxWorkers: 4,
+        minWorkers: 4,
         exclude: [
             "e2e/**",
             "node_modules/**",
