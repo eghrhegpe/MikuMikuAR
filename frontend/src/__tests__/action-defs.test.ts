@@ -1,3 +1,4 @@
+// @vitest-environment node
 // action-defs.test.ts — action-defs（settings/motion/env）同构注册分支行为测试
 // 目标：低洼区 core/action-defs（覆盖率 2.3%）——经 action-registry 全链路验证
 // execute 转发正确，为「同构样板抽 helper」重构提供安全网（基线绿 → 重构 → 零回归）。
@@ -46,6 +47,20 @@ beforeEach(() => {
 // settings — 路径选择器（同构分支）+ 缓存清理 + 语言切换
 // ═══════════════════════════════════════════════════════
 describe('action-defs/settings', () => {
+    beforeEach(() => {
+        // node 环境无 window，补一个事件总线让缓存清理 action 可派发/监听事件
+        if (typeof window === 'undefined') {
+            const _listeners: Record<string, Array<(...args: unknown[]) => void>> = {};
+            vi.stubGlobal('window', {
+                addEventListener: (event: string, cb: (...args: unknown[]) => void) => {
+                    (_listeners[event] ??= []).push(cb);
+                },
+                dispatchEvent: (event: { type: string }) => {
+                    (_listeners[event.type] || []).forEach(cb => cb(event));
+                },
+            });
+        }
+    });
     it('7 个 override path action 存在且 execute 转发对应 kind', async () => {
         registerSettingsActions();
         const selectOverridePath = vi.fn();

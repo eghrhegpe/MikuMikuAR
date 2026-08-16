@@ -1,3 +1,4 @@
+// @vitest-environment node
 // runtime-mode.test.ts — 运行时模式徽标单测（ADR-099）
 // 覆盖 P2#8 防御（persist/load 的 try/catch 降级）+ detectRuntimeMode 探测逻辑 +
 // renderRuntimeBadge/setBackendBadge/initRuntimeBadge 渲染与持久化优先。
@@ -165,14 +166,14 @@ describe('persistRuntimeMode / loadPersistedRuntimeMode（round-12 P2#8 防御�
     });
 
     it('localStorage.getItem 抛错 → 降级 null（P2#8）', () => {
-        vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+        vi.spyOn(localStorage, 'getItem').mockImplementation(() => {
             throw new Error('storage unavailable');
         });
         expect(loadPersistedRuntimeMode()).toBeNull();
     });
 
     it('localStorage.setItem 抛错 → persist 静默降级（P2#8）', () => {
-        vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+        vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
             throw new Error('quota exceeded');
         });
         stubDetectGlobals({});

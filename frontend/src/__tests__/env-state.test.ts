@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, beforeEach } from 'vitest';
 import { envState } from '../core/config';
 import type { EnvState } from '../core/config';
