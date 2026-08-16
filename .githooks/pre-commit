@@ -27,8 +27,14 @@ command -v node >/dev/null 2>&1 || {
 
 cd "$ROOT"
 
-# ── 秒级文档同步（全部输出在 docs/ 下；失败不阻断） ──
+# ── 秒级文档同步：快照 diff → 只 stage gen 改动的文件 ──
 echo "[pre-commit] 文档自动同步..."
+# 快照 gen 前的 dirty 状态（排除手写文档的干扰，防捎带）
+_GEN_BEFORE_TRACKED="$(git diff --name-only HEAD -- docs/ 2>/dev/null || true)"
+_GEN_BEFORE_NEW="$(git ls-files --others --exclude-standard -- docs/ 2>/dev/null || true)"
+echo "$_GEN_BEFORE_TRACKED" > /tmp/pre-commit-docs-before.$$
+echo "$_GEN_BEFORE_NEW" > /tmp/pre-commit-docs-new-before.$$
+
 GEN_CMDS='gen-status-index.mjs --reverse
 gen-funcmap.mjs
 gen-docs-index.mjs
@@ -50,8 +56,22 @@ echo "$GEN_CMDS" | while IFS= read -r line; do
   node scripts/$line >/dev/null || echo "⚠️  scripts/$line 执行失败（不阻断）"
 done
 
-# ── stage 生成的文档（无 diff 则无副作用） ──
-git add docs/ 2>/dev/null || true
+# 快照 gen 后的 dirty 状态
+_GEN_AFTER_TRACKED="$(git diff --name-only HEAD -- docs/ 2>/dev/null || true)"
+_GEN_AFTER_NEW="$(git ls-files --others --exclude-standard -- docs/ 2>/dev/null || true)"
+echo "$_GEN_AFTER_TRACKED" > /tmp/pre-commit-docs-after.$$
+echo "$_GEN_AFTER_NEW" > /tmp/pre-commit-docs-new-after.$$
+
+# 只 stage gen 实际改动的文件（排除 gen 前已 dirty 的手写文件）
+_GEN_STAGE="$(grep -vxFf /tmp/pre-commit-docs-before.$$ /tmp/pre-commit-docs-after.$$ || true)"
+_GEN_STAGE_NEW="$(grep -vxFf /tmp/pre-commit-docs-new-before.$$ /tmp/pre-commit-docs-new-after.$$ || true)"
+
+for _f in $_GEN_STAGE $_GEN_STAGE_NEW; do
+  [ -n "$_f" ] && git add "$_f" 2>/dev/null || true
+done
+
+# 清理临时文件
+rm -f /tmp/pre-commit-docs-*.$$ 2>/dev/null || true
 
 echo "[pre-commit] ✅ 文档已同步并 stage"
 exit 0

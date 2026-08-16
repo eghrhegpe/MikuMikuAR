@@ -118,7 +118,7 @@ finalize_results() {
     echo "    （无检查项记录）"
   fi
   if [ -n "$SUMMARY_FIXED" ]; then
-    echo "  🔧 自动修复并 amend: $SUMMARY_FIXED"
+    echo "  🔧 自动修复并 stage: $SUMMARY_FIXED"
   fi
   if [ -n "$SUMMARY_FAILURES" ]; then
     echo ""
@@ -366,7 +366,7 @@ _check_status() {
     echo "⚠️  status.md 未同步，自动修复中..."
     cd "$ROOT" && node scripts/gen-status-index.mjs --reverse
     git add docs/status.md 2>/dev/null || true
-    git commit --amend --no-edit 2>/dev/null && echo "⚠️  已自动更新 docs/status.md 并 amend 进当前 commit。" || echo "⚠️  已 stage docs/status.md（无 HEAD 可 amend，请手动 commit）。"
+    echo "⚠️  已 stage docs/status.md（请运行 git commit --allow-empty --no-edit 触发 pre-commit 同步后重推）"
     _par_note_fixed "status.md 已同步"
   }
   _par_note_check "✅ check:status 索引同步"
@@ -384,7 +384,7 @@ _check_funcmap() {
     echo "⚠️  function-map.md 未同步，自动修复中..."
     cd "$ROOT" && node scripts/gen-funcmap.mjs
     git add docs/function-map.md 2>/dev/null || true
-    git commit --amend --no-edit 2>/dev/null && echo "⚠️  已自动更新 docs/function-map.md 并 amend 进当前 commit。" || echo "⚠️  已 stage docs/function-map.md（无 HEAD 可 amend，请手动 commit）。"
+    echo "⚠️  已 stage docs/function-map.md（请运行 git commit --allow-empty --no-edit 触发 pre-commit 同步后重推）"
     _par_note_fixed "function-map.md 已同步"
   }
   _par_note_check "✅ check:funcmap 已同步"
@@ -402,7 +402,7 @@ _check_docsindex() {
     echo "⚠️  分区索引（guide/adr/knowledge/buglog/releases）未同步，自动修复中..."
     cd "$ROOT" && node scripts/gen-docs-index.mjs
     git add docs/guide/index.md docs/adr/index.md docs/knowledge/index.md docs/buglog/index.md docs/releases/index.md 2>/dev/null || true
-    git commit --amend --no-edit 2>/dev/null && echo "⚠️  已自动更新分区索引并 amend 进当前 commit。" || echo "⚠️  已 stage 分区索引（无 HEAD 可 amend，请手动 commit）。"
+    echo "⚠️  已 stage 分区索引（请运行 git commit --allow-empty --no-edit 触发 pre-commit 同步后重推）"
     _par_note_fixed "分区索引已同步"
   }
   _par_note_check "✅ check:docsindex 分区索引同步"
@@ -422,7 +422,7 @@ _check_novelindex() {
     echo "⚠️  小说章节索引（docs/novel/index.md）未同步，自动修复中..."
     cd "$ROOT" && node scripts/gen-novel-index.mjs
     git add docs/novel/index.md 2>/dev/null || true
-    git commit --amend --no-edit 2>/dev/null && echo "⚠️  已自动更新小说索引并 amend 进当前 commit。" || echo "⚠️  已 stage 小说索引（无 HEAD 可 amend，请手动 commit）。"
+    echo "⚠️  已 stage 小说索引（请运行 git commit --allow-empty --no-edit 触发 pre-commit 同步后重推）"
     _par_note_fixed "小说索引已同步"
   fi
 }
@@ -455,7 +455,7 @@ _check_menumap() {
     echo "⚠️  menu-map.md 未同步，自动修复中..."
     cd "$ROOT" && node scripts/gen-menu-map.mjs
     git add docs/knowledge/menu-map.md 2>/dev/null || true
-    git commit --amend --no-edit 2>/dev/null && echo "⚠️  已自动更新 menu-map.md 并 amend 进当前 commit。" || echo "⚠️  已 stage menu-map.md（无 HEAD 可 amend，请手动 commit）。"
+    echo "⚠️  已 stage menu-map.md（请运行 git commit --allow-empty --no-edit 触发 pre-commit 同步后重推）"
     _par_note_fixed "menu-map.md 已同步"
   }
   _par_note_check "✅ check:menumap 同步"
@@ -732,9 +732,9 @@ _check_docs() {
   if ! _run_check_docs; then
     # 先尝试自动更新 INFO 基线
     if cd "$ROOT" && node scripts/check-doc-drift.mjs --baseline-update 2>/dev/null; then
-      echo "⚠️  INFO 基线已自动更新，amend 进当前 commit..."
+      echo "⚠️  INFO 基线已自动更新..."
       git add docs/.doc-check-baseline.json 2>/dev/null || true
-      git commit --amend --no-edit 2>/dev/null && echo "⚠️  已 amend。" || echo "⚠️  已 stage（无 HEAD 可 amend）。"
+      echo "⚠️  已 stage 基线（请运行 git commit --allow-empty --no-edit 触发 pre-commit 同步后重推）"
       _par_note_fixed "doc 漂移 INFO 基线已更新"
       # 重新跑确认是否只剩 ERROR
       if ! _run_check_docs; then
