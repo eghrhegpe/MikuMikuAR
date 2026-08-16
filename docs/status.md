@@ -15,6 +15,7 @@
 
 | ADR | 主题 | 状态 |
 |-----|------|------|
+| ADR-258 | pre-push 门禁分层与改动面分流 | 🔄 部分采纳（2026-08-16） |
 | ADR-257 | maxWorkers 12→8：共享机器并发场景的资源经济学 — 并发实测：双 vitest 各 12 worker（24 核拉满）69.4s，各 8 worker 64.3s——24 核全占后 CPU 竞争使墙钟反超；单 AI 8 核仅慢 3.7s（9%） | ✅ 已采纳（2026-08-10） |
 | ADR-256 | 性能导向的单测文件组织：同系列合并取代一刀切拆分 — isolate 下每文件独立依赖图是墙钟税；importDurations 实测 self ~100ms 却付 ~5s total 的文件优先合并；行数/vi.mock 阈值让位于依赖图成本 | ✅ 已采纳（2026-08-10） |
 | ADR-255 | 测试环境分流：@vitest-environment node 削减每文件 happy-dom 成本 — isolate=true 下 happy-dom 每文件重建是墙钟大头；无 DOM 依赖测试文件切 node 环境，环境累加 255s → ~90-105s | ✅ 已采纳（2026-08-10） |
