@@ -395,7 +395,7 @@ export class SlideMenu implements RenderContext {
             this._transitionDisposables.push(fadeInDisp);
             this._pushTimeout(
                 setTimeout(() => {
-                    if (this.transitioning) {
+                    if (this.transitioning && this.currentLevel === level) {
                         this.panel.style.opacity = '1';
                         this.panel.style.transform = 'translateX(0)';
                         this._endTransition(level);
@@ -408,7 +408,7 @@ export class SlideMenu implements RenderContext {
         this._transitionDisposables.push(fadeOutDisp);
         this._pushTimeout(
             setTimeout(() => {
-                if (this.transitioning) {
+                if (this.transitioning && this.currentLevel === level) {
                     this.panel.style.opacity = '0';
                     this.panel.style.transform = 'translateX(-8px)';
                     onFadeOut();
@@ -471,7 +471,7 @@ export class SlideMenu implements RenderContext {
             this._transitionDisposables.push(fadeInDisp);
             this._pushTimeout(
                 setTimeout(() => {
-                    if (this.transitioning) {
+                    if (this.transitioning && this.currentLevel === prevLevel) {
                         this.panel.style.opacity = '1';
                         this.panel.style.transform = 'translateX(0)';
                         this._endTransition(prevLevel);
@@ -484,7 +484,7 @@ export class SlideMenu implements RenderContext {
         this._transitionDisposables.push(fadeOutDisp);
         this._pushTimeout(
             setTimeout(() => {
-                if (this.transitioning) {
+                if (this.transitioning && this.currentLevel === prevLevel) {
                     this.panel.style.opacity = '0';
                     this.panel.style.transform = 'translateX(8px)';
                     onFadeOut();
