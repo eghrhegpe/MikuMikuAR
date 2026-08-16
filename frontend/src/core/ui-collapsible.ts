@@ -96,6 +96,15 @@ export function addCollapsible(
     let isOpen = config.openWhen ?? config.defaultOpen ?? false;
 
     function applyState(open: boolean) {
+        // [fix:P2] 防抖：若 panel 正经历 CSS max-height 过渡（closing 中途被打开会
+        // 导致 scrollHeight 基于中间态计算偏小），跳过本次状态变更，等动画稳定后再处理。
+        // 通过 CSS transition-duration 检测：transition 非 none 且 panel 有 openClass
+        // 变化中的窗口期内忽略反向 toggle。
+        const curTransition = getComputedStyle(panel).transitionDuration;
+        const isAnimating = curTransition !== '0s' && parseFloat(curTransition) > 0;
+        if (isAnimating && open !== isOpen) {
+            return;
+        }
         // [audit:round13 P3] 引用 dom-contract 常量（ADR-229 §9 契约：禁手写字符串）
         panel.classList.toggle(COLLAPSIBLE.openClass, open);
         header.classList.toggle(COLLAPSIBLE.openClass, open);

@@ -154,18 +154,15 @@ describe('transitionRenderState', () => {
         ['NaN', NaN],
         ['Infinity', Infinity],
         ['负数', -1000],
-    ])('非法 duration（%s）回退默认时长并正常收尾', (_label, duration) => {
-        vi.useFakeTimers();
+        ['零', 0],
+    ])('非法/零 duration（%s）立即应用目标值且不注册 observer', (_label, duration) => {
         const onComplete = vi.fn();
         const result = transitionRenderState({ exposure: 2 }, duration, onComplete);
         expect(result).toBe(true);
 
-        // 非法 duration 应按安全默认时长完成，而不是 t 越界/永不取消
-        vi.advanceTimersByTime(2000);
-        scene.onBeforeRenderObservable.emit();
-
+        // 非正/非有限 duration 应立即应用，不注册 observer，同步调用 onComplete
+        expect(scene.onBeforeRenderObservable.add).not.toHaveBeenCalled();
         expect(onComplete).toHaveBeenCalledTimes(1);
-        expect(scene.onBeforeRenderObservable.remove).toHaveBeenCalledTimes(1);
         expect(pipeline?.imageProcessing.exposure).toBe(2);
     });
 

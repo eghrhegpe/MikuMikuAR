@@ -576,8 +576,8 @@
 | `addVector3SliderRow()` | `core/ui-advanced-rows:158` | — |
 | `cardContainer()` | `core/ui-card:9` | Card container helper: removes render-card bg, wraps content in an lcard. |
 | `addCollapsible()` | `core/ui-collapsible:23` | 通用折叠面板组件 |
-| `addPresetChip()` | `core/ui-collapsible:163` | 创建一个 preset-chip 按钮并追加到 container（通常是 .preset-group div）。 |
-| `addSectionTitle()` | `core/ui-collapsible:138` | 区块标题（section-title），用于 cardContainer 内的视觉分组。 |
+| `addPresetChip()` | `core/ui-collapsible:172` | 创建一个 preset-chip 按钮并追加到 container（通常是 .preset-group div）。 |
+| `addSectionTitle()` | `core/ui-collapsible:147` | 区块标题（section-title），用于 cardContainer 内的视觉分组。 |
 | `AUTO_LINK_THRESHOLD_DEG()` | `core/ui-constants:18` | time-of-day 与 lighting 联动判定阈值（度） |
 | `DEFAULT_GRAVITY()` | `core/ui-constants:14` | 默认重力（m/s²） |
 | `ENV_LIGHT_MAX()` | `core/ui-constants:16` | 环境光强度上限 |
@@ -1895,13 +1895,13 @@
 | `initRenderer()` | `scene/render/renderer:114` | — |
 | `isRenderReady()` | `scene/render/renderer:656` | [fix:P1] 渲染管线是否就绪（@dom/e2e 环境无 pipeline/scene 时返回 false，供 UI/测试预检跳过守卫域）。 |
 | `isRendererReady()` | `scene/render/renderer:141` | 检查渲染器是否已初始化。外部代码在调用 setRenderState 前可先检查。 |
-| `isSSRActive()` | `scene/render/renderer:971` | SSR 管线当前是否激活（供 env-reflection 检查，尊重用户手动关闭）。 |
+| `isSSRActive()` | `scene/render/renderer:981` | SSR 管线当前是否激活（供 env-reflection 检查，尊重用户手动关闭）。 |
 | `pipeline()` | `scene/render/renderer:82` | — |
-| `reattachPipeline()` | `scene/render/renderer:913` | Re-attach the rendering pipeline to the current active camera (call after camera switch). |
-| `rebuildOutlineState()` | `scene/render/renderer:1030` | 当模型注册表更新时，重新应用边缘高亮状态。 |
+| `reattachPipeline()` | `scene/render/renderer:923` | Re-attach the rendering pipeline to the current active camera (call after camera switch). |
+| `rebuildOutlineState()` | `scene/render/renderer:1040` | 当模型注册表更新时，重新应用边缘高亮状态。 |
 | `registerCelGroundCoupling()` | `scene/render/renderer:106` | — |
 | `setRenderState()` | `scene/render/renderer:686` | — |
-| `setSSRFromReflection()` | `scene/render/renderer:983` | 反射系统专用 SSR 控制接口（不触发 auto-save）。 |
+| `setSSRFromReflection()` | `scene/render/renderer:993` | 反射系统专用 SSR 控制接口（不触发 auto-save）。 |
 | `transitionRenderState()` | `scene/render/renderer:726` | 平滑过渡渲染状态到目标值，默认 2 秒。 |
 | `GizmoAttachOptions()` | `scene/render/transform-gizmo:106` | — |
 | `GizmoType()` | `scene/render/transform-gizmo:17` | — |
@@ -2252,15 +2252,15 @@
 | `SlideMenu()` | `menus/menu:40` | — |
 | `getCurrentRenderingMenu()` | `menus/menu:40` | 获取当前正在渲染的 SlideMenu 实例（供 menus 层控件的自更新注册）。 |
 | `getOpenMenus()` | `menus/menu:48` | 获取所有当前存活的 SlideMenu 实例（已 dispose 的会自动移除，调用方仍需自行判断可见性） |
-| `buildBoneHierarchyLevel()` | `menus/model-detail:1521` | — |
-| `buildModelInfoLevel()` | `menus/model-detail:868` | — |
-| `buildModelLevel()` | `menus/model-detail:627` | — |
-| `buildModelTagsLevel()` | `menus/model-detail:1087` | — |
+| `buildBoneHierarchyLevel()` | `menus/model-detail:1518` | — |
+| `buildModelInfoLevel()` | `menus/model-detail:865` | — |
+| `buildModelLevel()` | `menus/model-detail:624` | — |
+| `buildModelTagsLevel()` | `menus/model-detail:1084` | — |
 | `buildModelToolsLevel()` | `menus/model-detail:583` | [doc:adr-167] 叠加动作次级菜单已移除（ADR-144 per-model overlay 废弃）。 |
-| `buildMorphPreviewLevel()` | `menus/model-detail:1197` | — |
+| `buildMorphPreviewLevel()` | `menus/model-detail:1194` | — |
 | `buildMotionSlotLevel()` | `menus/model-detail:442` | 构建动作1（基础）次级菜单：场景库选择 + 已加载动作 + 程序化动作 |
 | `buildOpenWithLevel()` | `menus/model-detail:281` | — |
-| `buildPersonalLightLevel()` | `menus/model-detail:1210` | — |
+| `buildPersonalLightLevel()` | `menus/model-detail:1207` | — |
 | `buildMatRootLevel()` | `menus/model-material:446` | — |
 | `ModelPresetEntry()` | `menus/model-preset:37` | — |
 | `ModelPresetFile()` | `menus/model-preset:46` | — |

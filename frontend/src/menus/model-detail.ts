@@ -260,8 +260,8 @@ function buildOpenWithSchema(id: string): MenuNode[] {
                                         items: m.buildModelRootItems(),
                                     });
                                     stackRegistry.modelStack?.reRender();
+                                    dom.btnSettings.click();
                                 });
-                                dom.btnSettings.click();
                             },
                             undefined,
                             undefined,
@@ -608,16 +608,13 @@ export function buildModelToolsLevel(id: string): PopupLevel {
                 slideRow(c, 'lucide:trash-2', t('model-detail.unloadModel'), false, async () => {
                     const snap = pushUndoSnapshot();
                     removeModel(id);
+                    // 同步返回根层级，无需等待异步
+                    stackRegistry.modelStack?.popTo(0);
                     offerSceneUndo(t('settings.unloaded', { name: inst.name }), snap, () => {
                         // 撤销恢复后刷新模型列表，使已恢复的模型可见（就地更新，保留浏览位置）
                         import('./library-core').then((m) => m.refreshModelRoot());
                         feedbackInfo('motion.undoApplied', undefined);
                     });
-                    if (stackRegistry.modelStack) {
-                        stackRegistry.modelStack.popTo(0);
-                        // 就地更新根层级数据，保留用户当前可能正在浏览的子目录视图
-                        import('./library-core').then((m) => m.refreshModelRoot());
-                    }
                 });
             });
         },

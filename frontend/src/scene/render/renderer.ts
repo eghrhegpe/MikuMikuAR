@@ -740,9 +740,15 @@ export function transitionRenderState(
     // 取消上一次过渡动画，避免多个动画循环互相覆盖
     _cancelRenderTransition();
 
-    // [audit] 非法 duration（NaN/Infinity/负数）回退默认时长，避免 t 越界或 observer 永不取消。
-    const safeDuration =
-        Number.isFinite(duration) && duration > 0 ? duration : duration === 0 ? 1 : 2000;
+    // [fix:P0] 非正/非有限 duration 直接应用目标值，避免 0/NaN/负数导致
+    // elapsed/duration 为 NaN/负数、t 永远到不了 1，observer 泄漏在渲染循环上。
+    if (!Number.isFinite(duration) || duration <= 0) {
+        setRenderState(target);
+        if (onComplete) {
+            onComplete();
+        }
+        return true;
+    }
 
     const source = getRenderState();
     const startTime = performance.now();
@@ -841,7 +847,7 @@ export function transitionRenderState(
         }
         const elapsed = performance.now() - startTime;
         // [audit] 始终将进度钳制到 [0,1]，杜绝负 elapsed/浮点误差导致 t 越界。
-        const t = clamp01(elapsed / safeDuration);
+        const t = clamp01(elapsed / duration);
         const interp: Partial<RenderState> = {};
 
         // 数值字段插值（跳过非有限目标，避免 NaN/Infinity 污染管线状态）
@@ -884,11 +890,15 @@ export function transitionRenderState(
             const currentObserver = _renderTransitionObserver;
             try {
                 setRenderState(interp);
-                onComplete?.();
             } finally {
                 if (_renderTransitionObserver === currentObserver) {
                     _cancelRenderTransition();
                 }
+            }
+            try {
+                onComplete?.();
+            } catch (err) {
+                logWarn('renderer', 'transitionRenderState onComplete threw:', err);
             }
         } else {
             // [audit] 中间帧应用状态若抛错也要取消 observer，避免每帧重复抛错造成泄漏。
