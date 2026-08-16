@@ -3,6 +3,22 @@
 import { vi } from 'vitest';
 import { sceneMockSuperset } from './mocks/scene-superset';
 
+// node 环境无 document，补一个虚拟 div 让菜单渲染 mock 可用
+const _doc = typeof document !== 'undefined' ? document : null;
+function _createDiv(): HTMLDivElement {
+    if (_doc) return _doc.createElement('div') as HTMLDivElement;
+    // node 环境：返回一个满足基本 DOM 契约的虚拟 div
+    return {
+        childNodes: [],
+        appendChild: (child: Node) => { /* no-op */ },
+        querySelector: (_selector: string) => null,
+        querySelectorAll: (_selector: string) => [],
+        classList: { contains: () => false, add: vi.fn(), remove: vi.fn() },
+        dataset: {} as Record<string, string>,
+        style: {} as CSSStyleDeclaration,
+    } as unknown as HTMLDivElement;
+}
+
 // ---- vi.hoisted state 工厂（由各测试文件通过 vi.hoisted(() => createMockState()) 调用）----
 
 export function createMockState() {
@@ -114,7 +130,7 @@ export function configModuleFactory(ms: any) {
             return '/test/root/models';
         },
         cardContainer: (container: HTMLElement, fn: (c: HTMLElement) => void) => {
-            const card = document.createElement('div');
+            const card = _createDiv();
             fn(card);
             container.appendChild(card);
         },
@@ -126,7 +142,7 @@ export function configModuleFactory(ms: any) {
                 dataset: {} as Record<string, string>,
             },
         },
-        getMenuWrapper: () => document.createElement('div'),
+        getMenuWrapper: () => _createDiv(),
         stackRegistry: { modelStack: null, buildLevel: null },
         uiState: {} as Record<string, unknown>,
 
@@ -228,7 +244,7 @@ export function makeModel(overrides: Record<string, any> = {}): any {
 
 export function extractLevelRows(level: any, capturedRows: any[]): any[] {
     capturedRows.length = 0;
-    const container = document.createElement('div');
+    const container = _createDiv();
     if (typeof level.renderCustom === 'function') {
         level.renderCustom(container);
     }
