@@ -72,7 +72,7 @@ _par_cleanup() {
 }
 # 并行子进程中使用这些函数记录结果
 _par_note_check() { echo "CHECK|$1" >> "$_PAR_DIR/checks"; }
-_par_collect_fail() { echo "FAIL|$1" >> "$_PAR_DIR/fails"; }
+_par_collect_fail() { echo "FAIL|${1}${2:+: $2}" >> "$_PAR_DIR/fails"; }
 _par_note_fixed() { echo "FIXED|$1" >> "$_PAR_DIR/fixed"; }
 # 主进程合并并行组结果
 _par_merge() {
@@ -689,7 +689,7 @@ if [ "$TS_CHANGED" = "true" ] && [ "$NPM_AVAILABLE" = "true" ]; then
       # genie-trash）包装 rm 后对 /tmp 相对路径处理失败返回非零，set -e 下会中断
       # hook（2026-08-05 v1.9.1 发版实证）。清理失败仅遗留垃圾文件，不影响正确性。
       rm -f "$COV_LOG" 2>/dev/null || true
-      fail "vitest --changed 失败" "修复上方失败测试/覆盖率阈值后重推（完整输出: cd frontend && npx vitest run --changed $CHANGED_BASE --coverage）"
+      collect_fail "vitest --changed 失败: 修复上方失败测试/覆盖率阈值后重推（详情见上方明细，或手动运行: cd frontend && npx vitest run --changed $CHANGED_BASE --coverage）"
     fi
   fi
 else
