@@ -351,6 +351,9 @@ export function buildPresetLevel(): PopupLevel {
                             ] as [number, number, number];
                         }
                         // [adr-111][adr-120] 跨类别整体切换，仅包含 sky+lights+render 字段，不覆盖 ground/water（已移除）
+                        // [fix:P0] setEnvState 同步应用 + 灯光/渲染各自 tween 取消旧动画重新启动。
+                        // 两次调用间的窗口期极短（微秒级），视觉上不可感知；
+                        // cancel 机制保证最终状态总是最新预设的目标值。
                         setEnvState(envUpdate);
                         if (preset.lights) {
                             transitionLighting(preset.lights, 2000);
