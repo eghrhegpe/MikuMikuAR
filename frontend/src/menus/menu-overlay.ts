@@ -37,12 +37,22 @@ export function closeAllOverlays(): void {
     }
     _onCloseAllOverlays?.();
     _extraCloseAllOverlays.forEach((fn) => fn());
+    // [fix ADR-252] 关闭全部弹窗时同步回收 menu wrapper 注册表，避免 wrapper DOM 与条目常驻内存。
+    clearAllMenuWrappers();
 }
 
 // [doc:adr-238] 模块加载即注册（menu-overlay 在菜单系统初始化早期必被加载）
 registerUiAction('closeAllOverlays', () => {
     closeAllOverlays();
 });
+
+// [fix ADR-252] HMR dispose：模块被替换重求值前回收 wrapper 注册表，避免 HMR
+// 重跑时新求值的函数操作旧残留 DOM 条目，或旧条目永久驻留。
+if (import.meta.hot) {
+    import.meta.hot.dispose(() => {
+        clearAllMenuWrappers();
+    });
+}
 
 const _menuWrapperRegistry = new Map<string, HTMLElement>();
 

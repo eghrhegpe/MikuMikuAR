@@ -63,10 +63,11 @@ const _liveMenus = new Set<SlideMenu>();   // constructor 时 add，仅 dispose(
 
 - 不取代 [ADR-065](adr-065-pure-items-hot-render.md)/[ADR-093](adr-093-menu-declarative-schema.md)——本 ADR 管菜单**资源生命周期**（dispose 链路），ADR-065/093 管菜单**声明与渲染**（schema 结构），正交。
 - 不取代 [ADR-191](adr-191-god-barrel-debarreling.md)——ADR-191 管 menu-overlay 的模块边界（抽离/de-barrel）；本 ADR 管其内部释放语义。
-- 触及 menu-overlay.md 知识卡「disposeMenuWrapper/clearAllMenuWrappers 被各菜单/弹窗浮层消费」——**该表述与事实不符**（零调用），本 ADR 登记为偏差，实现接线后知识卡同步更正。
+- 触及 menu-overlay.md 知识卡「disposeMenuWrapper/clearAllMenuWrappers 被各菜单/弹窗浮层消费」——**该表述与事实不符**（零调用），本 ADR 登记为偏差，实现接线后知识卡同步更正（现已由 closeAllOverlays + HMR 两条路径消费）。
 
 ## 影响与验收
 
 - **验收标准**：`grep -rn "disposeMenuWrapper\|clearAllMenuWrappers" frontend/src --include="*.ts"` 的调用方 ≥ 2 处（closeAllOverlays / HMR 链）；隐藏菜单关闭后 `_liveMenus` 无残留条目。
+- **实施记录**（2026-08-11）：Phase A（closeAllOverlays 内联 `clearAllMenuWrappers()`）+ Phase B（`import.meta.hot.dispose` 接线）已落地；调用方计数 = 2（closeAllOverlays L41 + HMR L53）✅；全量相关测试 163/163 绿。`_liveMenus` 管理由 menu-factory 的 onClose 链已接 dispose，无需额外改动。
 - **风险**：决策 2-A 改动涉及所有弹窗（settings/motion/library 等），需逐个验证关闭行为不变；建议拆独立 PR 分批落地，每批保持全量测试绿。
 - **回退**：逐批独立，任一批回退不影响其他批。
