@@ -415,6 +415,7 @@ export const en: Record<string, string> = {
     'motion.retarget.loaded': 'External animation loaded ({preset})',
     'motion.retarget.title': 'External Animation Import',
     'motion.retarget.mixamo': 'Mixamo → MMD',
+    // ADR-PENDING: Mixamo 骨骼映射提示（占位符 XXX 待填充）
     'motion.retarget.mixamoHint': 'mixamorig:XXX bones',
     'motion.retarget.vrm': 'VRM → MMD',
     'motion.retarget.vrmHint': 'VRM standard bones',

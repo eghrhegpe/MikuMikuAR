@@ -573,6 +573,7 @@ export const ja: Record<string, string> = {
     'motion.retarget.loaded': '外部アニメーションを読み込みました（{preset}）',
     'motion.retarget.title': '外部アニメーションインポート',
     'motion.retarget.mixamo': 'Mixamo → MMD',
+    // ADR-PENDING: Mixamo ボーンマッピングヒント（XXX はプレースホルダー）
     'motion.retarget.mixamoHint': 'mixamorig:XXX ボーン',
     'motion.retarget.vrm': 'VRM → MMD',
     'motion.retarget.vrmHint': 'VRM 標準ボーン',

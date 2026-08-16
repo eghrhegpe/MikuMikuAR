@@ -62,14 +62,27 @@ const _logBuffer = new LogBuffer(200);
 /** 是否同时输出到 console（默认 true，面板打开后可切到 OFF 避免 source map 卡顿） */
 let _consoleOutput = true;
 
-/** 设置是否同时输出到 console */
+/** 是否同时输出到 console（默认 true，面板打开后可切到 OFF 避免 source map 卡顿） */
 export function setConsoleOutput(enabled: boolean): void {
     _consoleOutput = enabled;
 }
 
+/** 是否开启 debug 日志（默认 false，热路径禁止裸调 logInfo） */
+export const __debugLog = { value: false };
+
 /** [audit:round18 P2] 读取 console 输出开关（调试面板初始文案须与实际状态一致） */
 export function getConsoleOutput(): boolean {
     return _consoleOutput;
+}
+
+/** [audit:round18 P2] 读取 debug 门控状态 */
+export function getDebugLog(): boolean {
+    return __debugLog.value;
+}
+
+/** 设置 debug 门控（运行时切换，无需重建 bundle） */
+export function setDebugLog(enabled: boolean): void {
+    __debugLog.value = enabled;
 }
 
 /** 获取日志缓冲区（供调试面板使用） */
@@ -82,8 +95,24 @@ export function clearLogs(): void {
     _logBuffer.clear();
 }
 
-/** 统一标签格式的 info 日志。 */
+/** 统一标签格式的 info 日志（始终写入 buffer + console，供非热路径诊断）。 */
 export function logInfo(tag: string, message: string, ...args: unknown[]): void {
+    const prefix = message ? `[${tag}] ${message}` : `[${tag}]`;
+    _logBuffer.push({ tag, level: 'info', message: prefix, time: Date.now() });
+    if (_consoleOutput) {
+        if (args.length > 0) {
+            console.info(prefix, ...args);
+        } else {
+            console.info(prefix);
+        }
+    }
+}
+
+/** 门控调试日志（仅 __debugLog.value=true 时输出，热路径用此替代 logInfo）。 */
+export function logDebug(tag: string, message: string, ...args: unknown[]): void {
+    if (!__debugLog.value) {
+        return;
+    }
     const prefix = message ? `[${tag}] ${message}` : `[${tag}]`;
     _logBuffer.push({ tag, level: 'info', message: prefix, time: Date.now() });
     if (_consoleOutput) {

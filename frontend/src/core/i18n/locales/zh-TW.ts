@@ -568,6 +568,7 @@ export const zhTW: Record<string, string> = {
     'motion.retarget.loaded': '外部動作已載入（{preset}）',
     'motion.retarget.title': '外部動作匯入',
     'motion.retarget.mixamo': 'Mixamo → MMD',
+    // ADR-PENDING: Mixamo 骨骼映射提示（占位符 XXX 待填充）
     'motion.retarget.mixamoHint': 'mixamorig:XXX 骨骼',
     'motion.retarget.vrm': 'VRM → MMD',
     'motion.retarget.vrmHint': 'VRM 標準骨骼',

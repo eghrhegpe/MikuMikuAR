@@ -81,7 +81,7 @@ export function computeWaveDirs(windDir: [number, number, number]): number[] {
     return arr;
 }
 
-// === LOD 水面：记录所有 LOD 子网格（兄弟根网格），用于同步缩放/位置和手动可见性控制 ===
+// === LOD 水面：记录所有 LOD 子网格（兄弟根网格），同步缩放/位置 + 手动可见性控制 ===
 let _waterLODs: Mesh[] = [];
 let _activeWaterLOD = -1; // 手动 LOD 当前层级：-1=未初始化, 0=high, 1=mid, 2=low
 
@@ -223,7 +223,7 @@ let _groundRippleScene: Scene | null = null;
 let _groundRippleDirty = false;
 
 // 地面几何提供者（由 env-ground 注入，避免 env-water→env-ground 循环依赖）。
-// 用于将涟漪世界坐标映射到地面 mesh 的 UV 空间。默认原点居中、尺寸 60。
+// 涟漪世界坐标 → 地面 mesh UV 映射；默认原点居中、尺寸 60。
 let _groundGeomProvider: () => { centerX: number; centerZ: number; size: number } = () => ({
     centerX: 0,
     centerZ: 0,
@@ -378,7 +378,7 @@ export function updateGroundRipples(dt: number): void {
     const geom = _groundGeomProvider();
     const safeSize = geom.size || 60;
     const halfSize = safeSize / 2;
-    // 世界单位 → 像素比例（用于半径换算，使涟漪大小与地面尺度一致）
+    // 世界单位 → 像素比例（半径换算，涟漪大小与地面尺度一致）
     const worldToPixel = S / safeSize;
 
     for (const r of _groundRipples) {

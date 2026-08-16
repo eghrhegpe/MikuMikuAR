@@ -17,7 +17,7 @@ import { swallowError } from '../core/async';
 import { computeLibraryRef } from '@/core/path';
 import type { ModelInstance } from '../core/types';
 import { resolveLibraryRef } from '@/core/library-path';
-import { logWarn } from '../core/logger';
+import { logWarn, logInfo } from '../core/logger';
 import {
     getActiveMotionId,
     getSceneMotions,
@@ -1298,7 +1298,7 @@ export function pushUndoSnapshot(): string | null {
         }
         return snap;
     } catch (e) {
-        console.warn('[undo] pushUndoSnapshot failed:', e);
+        logWarn('undo', 'pushUndoSnapshot failed:', e);
         return null;
     }
 }
@@ -1331,14 +1331,14 @@ export async function restoreUndoSnapshot(snap: string): Promise<boolean> {
         const raw = JSON.parse(snap);
         const data = migrateScene(raw);
         if (!SUPPORTED_VERSIONS.includes(data.version as number) || !Array.isArray(data.models)) {
-            console.warn('[undo] snapshot unsupported/malformed — abort undo');
+            logWarn('undo', 'snapshot unsupported/malformed — abort undo');
             return false;
         }
         await deserializeScene(data as unknown as SceneFile, true);
         await saveSceneImmediate(true);
         return true;
     } catch (e) {
-        console.warn('[undo] restoreUndoSnapshot failed:', e);
+        logWarn('undo', 'restoreUndoSnapshot failed:', e);
         return false;
     } finally {
         // 三条出口路径（malformed return / success / catch）统一复位，杜绝 suppress 泄漏。
@@ -1435,7 +1435,7 @@ export async function saveSceneImmediate(suppressToast = false, force = false): 
         console.info('[auto-save] SaveLastScene succeeded');
     } catch (_err) {
         // 序列化已在上方单独捕获并 return，这里到达即写盘（SaveLastScene）失败。
-        console.warn('[auto-save] SaveLastScene FAILED (write):', _err);
+        logWarn('auto-save', 'SaveLastScene FAILED (write):', _err);
         if (!suppressToast) {
             feedbackError('scene.serialize.autosaveFailed', undefined, _err);
         }

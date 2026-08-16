@@ -21,6 +21,7 @@ import type { ModelManager } from '../manager/model-manager';
 import type { BeatDetector } from '@/motion-algos/beat-detector';
 import { clamp01 } from '@/core/clamp';
 import { observe } from '@/core/observer-handle';
+import { logWarn, logError } from '@/core/logger';
 // [ADR-248] 热路径日志门控（updatePlaybackUI 每帧被 onAnimationTickObservable 调用）
 import { feetDebug } from './perception-shared';
 
@@ -75,7 +76,7 @@ export function initPlaybackObservables(
         // updateProcMotion 是 async 函数，在同步回调中 fire-and-forget
         // 添加 .catch 防止未处理的 Promise 拒绝导致静默崩溃
         updateProcMotion().catch((err: unknown) =>
-            console.error('[playback] updateProcMotion:', err)
+            logError('playback', 'updateProcMotion:', err)
         );
     });
 
@@ -137,12 +138,12 @@ export function initPlaybackObservables(
                         })
                         .catch((err: unknown) => {
                             _loopPending = false;
-                            console.error('[playback] auto-loop playAnimation failed:', err);
+                            logError('playback', 'auto-loop playAnimation failed:', err);
                         });
                 })
                 .catch((err: unknown) => {
                     _loopPending = false;
-                    console.error('[playback] auto-loop seekAnimation failed:', err);
+                    logError('playback', 'auto-loop seekAnimation failed:', err);
                 });
             return;
         }
@@ -190,7 +191,7 @@ export function updatePlaybackUI(): void {
         // [ADR-248] 热路径（每帧由 onAnimationTickObservable 调用）禁止裸调日志：
         // feetDebug 门控 + 60 帧节流，避免 scene 重建期间每帧刷 warn。
         if (feetDebug.value && _uiWarnFrame++ % 60 === 0) {
-            console.warn('[playback] updatePlaybackUI: mmdRuntime 或 seekBar 未就绪，跳过本帧');
+            logWarn('playback', 'updatePlaybackUI: mmdRuntime 或 seekBar 未就绪，跳过本帧');
         }
         return;
     }
@@ -219,7 +220,7 @@ export function seekFromEvent(e: MouseEvent | PointerEvent): void {
     mmdRuntime
         .seekAnimation(targetTime, true)
         .catch((err: unknown) =>
-            console.error('[playback] seekAnimation failed:', err)
+            logError('playback', 'seekAnimation failed:', err)
         );
     updatePlaybackUI();
     getSceneAction('syncAudioPlayback')?.(targetTime, isPlaying, duration);

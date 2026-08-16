@@ -23,6 +23,7 @@ import {
 import { applyLightingPresetFromEnv } from '../../render/lighting';
 import { registerCelGroundCoupling } from '../../render/renderer';
 import { resolveQualityProfile, type QualityProfile } from '../../render/quality-profile';
+import { logWarn } from '@/core/logger';
 import { scene } from '../../scene';
 import {
     isAutoDegradingReflection,
@@ -31,7 +32,8 @@ import {
 import { setPerformanceMode, getPerformanceMode } from '../../render/performance';
 import { schedulePersistEnvState, cancelEnvPersistTimer } from './env-persist';
 
-// [doc:adr-132] 上一次 envBrightness 值，用于变化时 rebake 光照强度
+// [doc:adr-132] 上一次 envBrightness 值（变化时 rebake 光照强度）
+// 对应 schema 字段: globalBrightness（env-state-schema.ts）
 let _prevEnvBrightness = 1;
 
 // ======== Preset Anim Active Flag ========
@@ -360,8 +362,8 @@ export function setEnvState(partial: Partial<EnvState>, skipAutoSave = false): v
 // 新增跨系统字段只需注册一个新 middleware，不触及核心流程。
 //
 // middleware 分两阶段执行：
-// - pre-facade: 在 applyEnvStateFacade 之前，用于补全 envState/migrated
-// - post-facade: 在 applyEnvStateFacade 之后，用于处理副作用（如调用 setPerformanceMode）
+// - pre-facade: applyEnvStateFacade 前补全 envState/migrated
+// - post-facade: applyEnvStateFacade 后处理副作用（如调用 setPerformanceMode）
 //
 // 错误隔离：单个 middleware 抛异常不影响后续 middleware 和 persist/autoSave。
 
@@ -409,7 +411,7 @@ function _runMiddlewares(
         try {
             mw.fn(envState, migrated, ctx);
         } catch (e) {
-            console.warn(`[env-mw] ${mw.name} failed`, e);
+            logWarn('env-mw', `${mw.name} failed`, e);
         }
     }
 }

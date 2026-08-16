@@ -575,6 +575,7 @@ export const ko: Record<string, string> = {
     'motion.retarget.loaded': '외부 애니메이션 로드됨 ({preset})',
     'motion.retarget.title': '외부 애니메이션 가져오기',
     'motion.retarget.mixamo': 'Mixamo → MMD',
+    // ADR-PENDING: Mixamo 뼈대 매핑 힌트（XXX 는 플레이스홀더）
     'motion.retarget.mixamoHint': 'mixamorig:XXX 뼈대',
     'motion.retarget.vrm': 'VRM → MMD',
     'motion.retarget.vrmHint': 'VRM 표준 뼈대',

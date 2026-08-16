@@ -195,21 +195,21 @@
 | `mem()` | `core/backend/browser-adapter-mocks:6` | — |
 | `resetMem()` | `core/backend/browser-adapter-mocks:15` | — |
 | `setStore()` | `core/backend/browser-adapter-mocks:8` | — |
-| `FsaAuthState()` | `core/backend/browser-adapter:896` | — |
-| `browserAdapter()` | `core/backend/browser-adapter:1377` | — |
-| `dismissFsaAuthPrompt()` | `core/backend/browser-adapter:932` | — |
-| `getFsaAuthState()` | `core/backend/browser-adapter:903` | [doc:adr-183] 查询 FSA 根目录授权状态，供 UI 启动引导（不触发任何权限弹窗）。 |
-| `getFsaDownloadAuthState()` | `core/backend/browser-adapter:975` | 查询下载文件夹 FSA 授权状态（不触发权限弹窗），供 UI 引导。 |
-| `getFsaDownloadHandle()` | `core/backend/browser-adapter:1040` | 读取持久化的下载文件夹句柄（供扫描使用），不触发权限弹窗；无句柄返回 null。 |
-| `ingestModelBytes()` | `core/backend/browser-adapter:648` | [doc:adr-195] 写入单文件（名+字节）到资源库，不加载到场景。供下载面板批量摄入复用。 |
-| `ingestModelFile()` | `core/backend/browser-adapter:638` | 写入单个模型/动作文件（File）到 IndexedDB 资源库（file:+entry:），不加载到场景。 |
-| `ingestModelFiles()` | `core/backend/browser-adapter:657` | [doc:adr-195] P3 批量摄入：单事务写入该批次所有 file:/entry: 键，避免逐条 idbSet 并发写竞态。 |
-| `isFsaAuthPromptDismissed()` | `core/backend/browser-adapter:928` | [doc:adr-183] 用户跳过启动授权引导后写入「已跳过」标志，避免纯导入用户每次启动被弹窗骚扰。 |
-| `reauthorizeFsaDownload()` | `core/backend/browser-adapter:999` | 对持久化的下载文件夹句柄重新请求授权（须用户手势上下文）。成功返回 true。 |
-| `reauthorizeFsaRoot()` | `core/backend/browser-adapter:945` | [doc:adr-183] 对持久化的 FSA 句柄重新请求授权（不重选目录）。 |
-| `resetFsaAuthPromptDismissed()` | `core/backend/browser-adapter:937` | [doc:adr-183] 清除跳过标志：用户手动设置根目录后，后续无根目录启动应重新获得引导机会。 |
-| `selectFsaDownloadDir()` | `core/backend/browser-adapter:1023` | 选择下载文件夹（独立 FSA 句柄），持久化到 _FSA_DOWNLOAD_KEY。 |
-| `setScanProgressCallback()` | `core/backend/browser-adapter:743` | [doc:adr-183] 注册扫描进度回调，供 UI 层节流增量刷新。 |
+| `FsaAuthState()` | `core/backend/browser-adapter:897` | — |
+| `browserAdapter()` | `core/backend/browser-adapter:1378` | — |
+| `dismissFsaAuthPrompt()` | `core/backend/browser-adapter:933` | — |
+| `getFsaAuthState()` | `core/backend/browser-adapter:904` | [doc:adr-183] 查询 FSA 根目录授权状态，供 UI 启动引导（不触发任何权限弹窗）。 |
+| `getFsaDownloadAuthState()` | `core/backend/browser-adapter:976` | 查询下载文件夹 FSA 授权状态（不触发权限弹窗），供 UI 引导。 |
+| `getFsaDownloadHandle()` | `core/backend/browser-adapter:1041` | 读取持久化的下载文件夹句柄（供扫描使用），不触发权限弹窗；无句柄返回 null。 |
+| `ingestModelBytes()` | `core/backend/browser-adapter:649` | [doc:adr-195] 写入单文件（名+字节）到资源库，不加载到场景。供下载面板批量摄入复用。 |
+| `ingestModelFile()` | `core/backend/browser-adapter:639` | 写入单个模型/动作文件（File）到 IndexedDB 资源库（file:+entry:），不加载到场景。 |
+| `ingestModelFiles()` | `core/backend/browser-adapter:658` | [doc:adr-195] P3 批量摄入：单事务写入该批次所有 file:/entry: 键，避免逐条 idbSet 并发写竞态。 |
+| `isFsaAuthPromptDismissed()` | `core/backend/browser-adapter:929` | [doc:adr-183] 用户跳过启动授权引导后写入「已跳过」标志，避免纯导入用户每次启动被弹窗骚扰。 |
+| `reauthorizeFsaDownload()` | `core/backend/browser-adapter:1000` | 对持久化的下载文件夹句柄重新请求授权（须用户手势上下文）。成功返回 true。 |
+| `reauthorizeFsaRoot()` | `core/backend/browser-adapter:946` | [doc:adr-183] 对持久化的 FSA 句柄重新请求授权（不重选目录）。 |
+| `resetFsaAuthPromptDismissed()` | `core/backend/browser-adapter:938` | [doc:adr-183] 清除跳过标志：用户手动设置根目录后，后续无根目录启动应重新获得引导机会。 |
+| `selectFsaDownloadDir()` | `core/backend/browser-adapter:1024` | 选择下载文件夹（独立 FSA 句柄），持久化到 _FSA_DOWNLOAD_KEY。 |
+| `setScanProgressCallback()` | `core/backend/browser-adapter:744` | [doc:adr-183] 注册扫描进度回调，供 UI 层节流增量刷新。 |
 | `goAdapter()` | `core/backend/go-adapter:21` | — |
 | `STORES()` | `core/backend/idb:10` | — |
 | `Store()` | `core/backend/idb:24` | — |
@@ -1153,7 +1153,7 @@
 | `updateParticleTexture()` | `scene/env/env-impl:69` | — |
 | `updateParticleWind()` | `scene/env/env-impl:69` | — |
 | `updateWaterAnimSpeed()` | `scene/env/env-impl:23` | — |
-| `CategorizedEnvPreset()` | `scene/env/env-lighting:321` | 分类预设（version 3 格式）。 |
+| `CategorizedEnvPreset()` | `scene/env/env-lighting:324` | 分类预设（version 3 格式）。 |
 | `DerivedLighting()` | `scene/env/env-lighting:37` | — |
 | `ENV_PRESET_FIELDS()` | `scene/env/env-lighting:166` | 各类别包含的 EnvState 字段白名单。未列入的字段（如 collision*）不参与任何预设。 |
 | `EnvPreset()` | `scene/env/env-lighting:29` | — |
@@ -1162,9 +1162,9 @@
 | `TIME_OF_DAY_PRESETS()` | `scene/env/env-lighting:101` | 预设数据表。按时间线排列：黎明 → 正午 → 夕阳 → 夜景 → 阴天 → 霓虹夜 |
 | `calcLuminance()` | `scene/env/env-lighting:48` | — |
 | `deriveLighting()` | `scene/env/env-lighting:56` | 从天空色和太阳角度推算光照参数。 |
-| `exportCategorizedEnvPreset()` | `scene/env/env-lighting:346` | 序列化分类预设为 JSON 字符串。 |
-| `importCategorizedEnvPreset()` | `scene/env/env-lighting:363` | 从 JSON 字符串反序列化分类预设，失败返回 null。 |
-| `snapshotEnvPresetByCategory()` | `scene/env/env-lighting:329` | 从当前 envState 快照指定类别的字段。数组字段做浅拷贝避免别名。 |
+| `exportCategorizedEnvPreset()` | `scene/env/env-lighting:349` | 序列化分类预设为 JSON 字符串。 |
+| `importCategorizedEnvPreset()` | `scene/env/env-lighting:366` | 从 JSON 字符串反序列化分类预设，失败返回 null。 |
+| `snapshotEnvPresetByCategory()` | `scene/env/env-lighting:332` | 从当前 envState 快照指定类别的字段。数组字段做浅拷贝避免别名。 |
 | `applyWetnessToInst()` | `scene/env/env-particles:36` | — |
 | `applyWindToParticles()` | `scene/env/env-particles:849` | — |
 | `createParticleEmitter()` | `scene/env/env-particles:413` | — |
@@ -1861,16 +1861,16 @@
 | `StageLightState()` | `scene/render/lighting:55` | — |
 | `StageLightType()` | `scene/render/lighting:53` | — |
 | `_defaultStageLightState()` | `scene/render/lighting:105` | — |
-| `disposeLighting()` | `scene/render/lighting:534` | 整体清理光照模块（场景销毁时调用） |
+| `disposeLighting()` | `scene/render/lighting:533` | 整体清理光照模块（场景销毁时调用） |
 | `getDirLight()` | `scene/render/lighting:149` | 主方向光（未初始化时为 null）。 |
 | `getHemiLight()` | `scene/render/lighting:144` | 主半球光（未初始化时为 null）。导出 getter 替代原 &#96;export let&#96;，消除导出可变绑定。 |
-| `getLightState()` | `scene/render/lighting:258` | — |
+| `getLightState()` | `scene/render/lighting:257` | — |
 | `initLighting()` | `scene/render/lighting:158` | — |
-| `isLightingReady()` | `scene/render/lighting:304` | [fix:P1] 灯光运行时是否就绪（@dom/e2e 环境无灯光/管线时返回 false，供 UI/测试预检跳过守卫域）。 |
-| `rebakeEnvBrightness()` | `scene/render/lighting:234` | [doc:adr-132] 当 globalBrightness 变化时 rebake 存储的光照强度 对应 schema 字段: globalBrightness（env-sta |
-| `setLightState()` | `scene/render/lighting:343` | 写入灯光状态。守卫未就绪时 logWarn + 返回 false（不再静默吞写）， 使「UI 可操作但 state 未生效」可被观测（@dom 测试环境无灯光对象时会命中）。 |
+| `isLightingReady()` | `scene/render/lighting:303` | [fix:P1] 灯光运行时是否就绪（@dom/e2e 环境无灯光/管线时返回 false，供 UI/测试预检跳过守卫域）。 |
+| `rebakeEnvBrightness()` | `scene/render/lighting:233` | [doc:adr-132] 当 envBrightness 变化时 rebake 存储的光照强度 |
+| `setLightState()` | `scene/render/lighting:342` | 写入灯光状态。守卫未就绪时 logWarn + 返回 false（不再静默吞写）， 使「UI 可操作但 state 未生效」可被观测（@dom 测试环境无灯光对象时会命中）。 |
 | `setSkipLightAutoSave()` | `scene/render/lighting:154` | 预设动画期间临时抑制 setLightState 内的自动保存，由 applyEnvPreset 控制 |
-| `transitionLighting()` | `scene/render/lighting:441` | 平滑过渡当前灯光到目标灯光参数，默认 2 秒。 |
+| `transitionLighting()` | `scene/render/lighting:440` | 平滑过渡当前灯光到目标灯光参数，默认 2 秒。 |
 | `isAutoDegradingReflection()` | `scene/render/performance-env-bridge:18` | env-bridge.ts 调用此函数检查当前是否处于自动降级反射质量变更中 |
 | `registerSetEnvState()` | `scene/render/performance-env-bridge:26` | env-bridge.ts 初始化时注册 setEnvState 函数 |
 | `setAutoDegradingReflection()` | `scene/render/performance-env-bridge:13` | performance.ts 调用此函数通知 env-bridge 当前反射质量变更来自自动降级 |

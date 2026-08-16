@@ -277,6 +277,9 @@ export const ENV_PRESET_FIELDS: Record<EnvPresetCategory, (keyof EnvState)[]> = 
         'underwaterChromaticAmount',
         'underwaterToneIntensity',
         'underwaterTintStrength',
+        // ADR-222: 深度差雾
+        'waterDepthFogDensity',
+        'waterDepthFogStrength',
     ],
     'env:atmosphere': [
         'windEnabled',
