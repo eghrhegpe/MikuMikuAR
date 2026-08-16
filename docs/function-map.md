@@ -2169,8 +2169,8 @@
 | `prepareModelRestore()` | `menus/library-actions:110` | — |
 | `replaceModel()` | `menus/library-actions:725` | — |
 | `replaceMotion()` | `menus/library-actions:725` | — |
-| `makeModelMenu()` | `menus/library-browse:376` | — |
-| `showModelPopup()` | `menus/library-browse:345` | — |
+| `makeModelMenu()` | `menus/library-browse:385` | — |
+| `showModelPopup()` | `menus/library-browse:354` | — |
 | `ResourceViewMode()` | `menus/library-core:43` | — |
 | `abortThumbnailStreaming()` | `menus/library-core:317` | [adr-136] 取消当前正在进行的缩略图流式加载批次（如弹窗关闭/重开时调用）。 |
 | `buildLevel()` | `menus/library-core:853` | — |

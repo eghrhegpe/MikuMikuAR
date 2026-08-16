@@ -119,9 +119,13 @@ function deferRestore(menu: SlideMenu, dir: string, seg: string): void {
             return;
         }
         librarySessionStore.setPendingAutoExpand(pa.length > 1 ? pa.slice(1) : null);
-        menu.push(
-            buildLevel(nextDir, seg, (m) => m.format === 'pmx', stackRegistry.modelStack!, [])
-        );
+        // [fix] 与 onLevelEnter 路径同：延后一帧执行 push，让父目录内容先完整绘制
+        // 再触发下一轮展开动画，避免"文件闪现即隐藏"。
+        requestAnimationFrame(() => {
+            menu.push(
+                buildLevel(nextDir, seg, (m) => m.format === 'pmx', stackRegistry.modelStack!, [])
+            );
+        });
         // [doc:adr-135] P0.3: 标记 ready，UI 显示「已展开 X」（短暂提示，2 秒自动消失）
         librarySessionStore.markRestoreReady();
         showInfoToast(t('library.expanded', { dir: seg }));
@@ -312,21 +316,26 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
                 librarySessionStore.setPendingAutoExpand(
                     pendingAuto.length > 1 ? pendingAuto.slice(1) : null
                 );
-                logWarn('library-browse', '[restore] autoExpand push', {
+                // [fix] 延后一帧执行 push：让前一轮 fade-in 先完整绘制到屏幕，
+                // 避免 _endTransition 内 onLevelEnter 被调用时菜单仍在过渡态、
+                // push 立即启动第二轮动画导致父目录文件"闪现即隐藏"。
+                logWarn('library-browse', '[restore] autoExpand push (next frame)', {
                     from: dir,
                     seg,
                     nextDir,
                     transitioning: menu.isTransitioning,
                 });
-                menu.push(
-                    buildLevel(
-                        nextDir,
-                        seg,
-                        (m) => m.format === 'pmx',
-                        stackRegistry.modelStack!,
-                        []
-                    )
-                );
+                requestAnimationFrame(() => {
+                    menu.push(
+                        buildLevel(
+                            nextDir,
+                            seg,
+                            (m) => m.format === 'pmx',
+                            stackRegistry.modelStack!,
+                            []
+                        )
+                    );
+                });
                 return;
             }
             if (dir === browseRoot) {
