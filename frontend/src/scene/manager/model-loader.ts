@@ -194,7 +194,7 @@ export async function captureThumbnail(
                 THUMBNAIL_TIMEOUT_MS
             );
         } catch {
-            // 超时直接抛错，不静默降级
+            // 超时静默放弃缩略图捕获（finally 恢复物理冻结），不阻断加载主流程
             return;
         }
         if (gen !== _thumbCaptureGen) {
@@ -705,7 +705,7 @@ export async function loadPMXFile(
         }
         // Register via ModelManager only — it owns the registry
         // Must register BEFORE VMD load because loadVMDMotion queries modelRegistry
-        // [adr-XX per-motion] 加载继承：注册前记录"上一个角色"，注册后继承槽位1 策略
+        // [doc:adr-167] 加载继承：注册前记录"上一个角色"，注册后继承槽位1 策略
         const prevInst =
             _modelManager && _modelManager.getAll().length > 0
                 ? _modelManager.getAll()[_modelManager.getAll().length - 1]
@@ -713,7 +713,7 @@ export async function loadPMXFile(
         _modelManager.register(inst);
         registeredId = id;
         setTransformMetadata(inst.rootMesh, 'actor', id);
-        // [adr-XX per-motion] 继承上一个角色的槽位1 source/procRole（不继承 pinned 快照）
+        // [doc:adr-167] 继承上一个角色的槽位1 source/procRole（不继承 pinned 快照）
         // [doc:adr-167] overlay 槽位已移除
         if (prevInst && prevInst.motionSlots) {
             const prevPrimary = prevInst.motionSlots.primary;

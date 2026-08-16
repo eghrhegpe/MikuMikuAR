@@ -1,7 +1,7 @@
 // @vitest-environment node
-// [doc:adr-155] 感知层性能基准测试（headless）
+// [doc:adr-165] 感知层性能基准测试（headless）
 //
-// 目的：为 ADR-154「全员感知降级」提供阈值数据。
+// 目的：为 ADR-164「全员感知降级」提供阈值数据。
 //
 // 策略：
 //   - 用合成骨骼图建立模型 stub（自包含，不依赖外部 PMX 资产）
@@ -591,7 +591,7 @@ function hardBudget(budgetMs: number): number {
 // 测试套件
 // ══════════════════════════════════════════════════════════════
 
-test('ADR-155 感知层性能基准', async () => {
+test('ADR-165 感知层性能基准', async () => {
     const baseStub = createSyntheticModelStub();
     const totalBones = baseStub.runtimeBones.length;
     expect(totalBones).toBeGreaterThan(0);
@@ -750,7 +750,7 @@ test('ADR-155 感知层性能基准', async () => {
         hardBudget(16.67)
     );
 
-    console.info('\n=== ADR-155 基准完成 ===\n');
+    console.info('\n=== ADR-165 基准完成 ===\n');
 
     // 硬断言：至少模型加载成功且骨骼数 > 0
     expect(totalBones).toBeGreaterThan(0);
