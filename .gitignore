@@ -136,3 +136,8 @@ test-files.txt
 
 # Third-party upstream docs (babylon-mmd docs with videos/screenshots, not our source)
 docs/upstream/
+
+# Third-party SDK / build artifacts (large binaries, not source)
+build/android/app/libs/
+build/android/app/src/main/jniLibs/
+build/android/app/src/main/assets/
