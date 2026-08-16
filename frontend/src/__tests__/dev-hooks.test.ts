@@ -18,6 +18,8 @@ const state = vi.hoisted(() => ({
     isHeadless: true,
     // 可切换的 focusedModel 返回值（driver.applyOutfit 分支）
     model: null as { id: string } | null,
+    // 可切换的 mmdRuntime（resetWindPhysics 分支用）
+    mmdRuntime: null as unknown,
 }));
 
 vi.mock('../scene/scene', () => ({
@@ -35,10 +37,14 @@ vi.mock('@/scene/manager/outfit', () => ({
 }));
 vi.mock('../core/config', () => ({
     envState: { windSpeed: 0, windEnabled: false },
-    mmdRuntime: null,
+    get mmdRuntime() {
+        return state.mmdRuntime;
+    },
 }));
 vi.mock('@/scene/physics/wind-physics', () => ({
     isWindPhysicsActive: () => false,
+    disposeWindPhysics: vi.fn(),
+    initWindPhysics: vi.fn(),
 }));
 vi.mock('../scene/manager/model-ops', () => ({
     removeFocusedModel: vi.fn(),
@@ -90,6 +96,7 @@ function clearHooks(): void {
 describe('setupE2ECapture 双运行时开关（钩子收敛，ADR-229）', () => {
     beforeEach(() => {
         clearHooks();
+        vi.clearAllMocks();
     });
 
     it('e2e 模式（isHeadless=true）：注入 __dumpBones + 全部 e2e 钩子', () => {
@@ -154,7 +161,7 @@ describe('setupE2ECapture 双运行时开关（钩子收敛，ADR-229）', () =>
         await expect(scene.driver.applyOutfit('variant-a')).resolves.toBe(false);
     });
 
-    it('__scene.driver.setWindSpeed / removeActiveModel / clearTestMeshes 可调用（写钩子收敛到 driver）', () => {
+    it('__scene.driver.setWindSpeed / removeActiveModel / clearTestMeshes / resetWindPhysics 可调用（写钩子收敛到 driver）', () => {
         state.isHeadless = true;
         setupE2ECapture();
         const scene = (window as unknown as { __scene: { driver: Record<string, unknown> } }).__scene;
@@ -162,10 +169,12 @@ describe('setupE2ECapture 双运行时开关（钩子收敛，ADR-229）', () =>
         expect(typeof scene.driver.removeActiveModel).toBe('function');
         expect(typeof scene.driver.createTestMesh).toBe('function');
         expect(typeof scene.driver.clearTestMeshes).toBe('function');
+        expect(typeof scene.driver.resetWindPhysics).toBe('function');
         // 实际调用不抛（headless + mock scene.meshes=[]）
         (scene.driver.setWindSpeed as (s: number) => void)(2.5);
         (scene.driver.removeActiveModel as () => void)();
         (scene.driver.clearTestMeshes as () => void)();
+        (scene.driver.resetWindPhysics as () => void)();
     });
 
     it('__scene.driver.createTestMesh 走通 Babylon mock 创建（meshCount 增长）', async () => {
@@ -189,5 +198,27 @@ describe('setupE2ECapture 双运行时开关（钩子收敛，ADR-229）', () =>
         expect(scene.rigidBodyCount).toBe(0); // mmdRuntime = null → 0
         expect(scene.rigidBodyBundleCount).toBe(0);
         await expect(scene.outfitVariants()).resolves.toEqual({ variants: [], error: null }); // focusedModel = null
+    });
+
+    it('resetWindPhysics 无 runtime 时仅 dispose 不 init', async () => {
+        state.isHeadless = true;
+        state.mmdRuntime = null;
+        setupE2ECapture();
+        const { disposeWindPhysics, initWindPhysics } = await import('@/scene/physics/wind-physics');
+        const scene = (window as unknown as { __scene: { driver: { resetWindPhysics: () => void } } }).__scene;
+        scene.driver.resetWindPhysics();
+        expect(disposeWindPhysics).toHaveBeenCalledTimes(1);
+        expect(initWindPhysics).not.toHaveBeenCalled();
+    });
+
+    it('resetWindPhysics 有 runtime 时 dispose 并 init', async () => {
+        state.isHeadless = true;
+        state.mmdRuntime = { foo: 'bar' };
+        setupE2ECapture();
+        const { disposeWindPhysics, initWindPhysics } = await import('@/scene/physics/wind-physics');
+        const scene = (window as unknown as { __scene: { driver: { resetWindPhysics: () => void } } }).__scene;
+        scene.driver.resetWindPhysics();
+        expect(disposeWindPhysics).toHaveBeenCalledTimes(1);
+        expect(initWindPhysics).toHaveBeenCalledWith(state.mmdRuntime);
     });
 });
