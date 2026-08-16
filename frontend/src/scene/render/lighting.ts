@@ -424,6 +424,14 @@ export function setLightState(s: Partial<LightState>): boolean {
     return true;
 }
 
+/** 取消当前灯光过渡动画（若有）。 */
+function _cancelLightingTransition(): void {
+    if (lightingState.activeTransitionObs) {
+        lightingState.activeTransitionObs.dispose();
+        lightingState.activeTransitionObs = null;
+    }
+}
+
 /**
  * 平滑过渡当前灯光到目标灯光参数，默认 2 秒。
  * [fix:P2] 守卫与 isLightingReady 同口径（hemiLight/dirLight/triggerAutoSave 三条件），
@@ -451,10 +459,7 @@ export function transitionLighting(
     // [fix:P3] 非正/非有限 duration 直接应用目标值，避免 0/NaN/负数导致
     // elapsed/duration 为 NaN/负数、t 永远到不了 1，observer 泄漏在渲染循环上。
     if (!Number.isFinite(duration) || duration <= 0) {
-        if (lightingState.activeTransitionObs) {
-            lightingState.activeTransitionObs.dispose();
-            lightingState.activeTransitionObs = null;
-        }
+        _cancelLightingTransition();
         setLightState(target);
         if (onComplete) {
             onComplete();
@@ -468,16 +473,12 @@ export function transitionLighting(
     const rebuildShadowKeys = new Set<string>(['shadowResolution', 'shadowType', 'shadowEnabled']);
 
     // P4-fix: 取消任何在途过渡，避免重复调用堆叠多个渲染循环 observer（并发打架、旧动画覆盖新值）
-    if (lightingState.activeTransitionObs) {
-        lightingState.activeTransitionObs.dispose();
-        lightingState.activeTransitionObs = null;
-    }
+    _cancelLightingTransition();
 
     const animLoop = () => {
         // 防御：场景/主光已被销毁（disposeLighting 已清理）则立即退出并移除 observer，避免对已释放对象操作
         if (!lightingState.scene || !lightingState.hemiLight || !lightingState.dirLight) {
-            lightingState.activeTransitionObs?.dispose();
-            lightingState.activeTransitionObs = null;
+            _cancelLightingTransition();
             return;
         }
         const elapsed = performance.now() - startTime;
@@ -513,8 +514,7 @@ export function transitionLighting(
         setLightState(interpState);
         if (t >= 1) {
             // 动画结束，移除自身 observer
-            lightingState.activeTransitionObs?.dispose();
-            lightingState.activeTransitionObs = null;
+            _cancelLightingTransition();
             if (onComplete) {
                 onComplete();
             }
@@ -558,10 +558,7 @@ export function disposeLighting(): void {
         lightingState.stageFollowTickHandle = null;
     }
     // P4-fix: 释放在途主光过渡 observer，避免场景销毁后其仍挂在旧 scene 的渲染循环上
-    if (lightingState.activeTransitionObs) {
-        lightingState.activeTransitionObs.dispose();
-        lightingState.activeTransitionObs = null;
-    }
+    _cancelLightingTransition();
     lightingState.stageLightCounter = 0;
     lightingState.activeStageLightId = null;
     // 清理主灯光

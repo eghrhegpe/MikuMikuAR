@@ -229,3 +229,60 @@ describe('transitionRenderState — 销毁守卫', () => {
         expect(isRendererReady()).toBe(true);
     });
 });
+
+describe('transitionRenderState — onComplete 异常隔离', () => {
+    let scene: any;
+
+    beforeEach(() => {
+        scene = createMockScene();
+        initRenderer(scene, new Map(), vi.fn());
+    });
+
+    afterEach(() => {
+        disposeRenderer();
+        vi.useRealTimers();
+    });
+
+    it('onComplete 抛异常时 observer 仍被正确清理，异常通过 logWarn 记录不抛出', () => {
+        vi.useFakeTimers();
+        const onComplete = vi.fn(() => {
+            throw new Error('boom');
+        });
+        transitionRenderState({ exposure: 2 }, 100, onComplete);
+
+        vi.advanceTimersByTime(100);
+        scene.onBeforeRenderObservable.emit();
+
+        // observer 已被移除（防止无限循环）
+        expect(scene.onBeforeRenderObservable.remove).toHaveBeenCalledTimes(1);
+        // onComplete 被调用但异常被吞掉
+        expect(onComplete).toHaveBeenCalledTimes(1);
+    });
+
+    it('onComplete 启动新过渡不被旧 observer 的 finally 误取消', () => {
+        vi.useFakeTimers();
+        let nestedCalled = false;
+        const onNestedComplete = vi.fn(() => {
+            nestedCalled = true;
+        });
+        const onOuterComplete = vi.fn(() => {
+            // onComplete 内启动新过渡
+            transitionRenderState({ exposure: 3 }, 100, onNestedComplete);
+        });
+        transitionRenderState({ exposure: 2 }, 100, onOuterComplete);
+
+        vi.advanceTimersByTime(100);
+        scene.onBeforeRenderObservable.emit();
+
+        // 外层 observer 已清理
+        expect(scene.onBeforeRenderObservable.remove).toHaveBeenCalledTimes(1);
+        // 内层过渡已启动
+        expect(nestedCalled).toBe(false); // 还没到内层完成帧
+        expect(scene.onBeforeRenderObservable.add).toHaveBeenCalledTimes(2);
+
+        // 推进内层动画完成
+        vi.advanceTimersByTime(100);
+        scene.onBeforeRenderObservable.emit();
+        expect(onNestedComplete).toHaveBeenCalledTimes(1);
+    });
+});
