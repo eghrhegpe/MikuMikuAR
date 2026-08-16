@@ -1,3 +1,4 @@
+// @vitest-environment node
 // lighting-follow.test.ts — 覆盖 fix P2 变更行：
 //   tickPersonalLights 中个人灯锥每帧同步相机位置：
 //     const cam = lightingState.scene?.activeCamera;

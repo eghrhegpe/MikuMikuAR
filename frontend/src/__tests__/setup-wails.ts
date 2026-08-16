@@ -12,6 +12,29 @@
 // (原 environment-integration.test.ts 已删除——纯 Babylon 库自测零应用关联；
 // NullEngine 用法由 env-water 等真实链路测试承接。)
 
+// ── node 环境兜底注入 ─────────────────────────────────────
+// happy-dom 已提供 requestAnimationFrame/localStorage，node 环境缺。
+// 在 setup 层统一补上，避免每个测试文件各自 beforeEach 重复。
+if (typeof globalThis.requestAnimationFrame === 'undefined') {
+    globalThis.requestAnimationFrame = ((cb: FrameRequestCallback) =>
+        setTimeout(() => cb(0), 0)) as unknown as typeof globalThis.requestAnimationFrame;
+}
+if (typeof localStorage === 'undefined') {
+    const _store: Record<string, string> = {};
+    Object.defineProperty(globalThis, 'localStorage', {
+        value: {
+            getItem: (k: string) => _store[k] ?? null,
+            setItem: (k: string, v: string) => { _store[k] = v; },
+            removeItem: (k: string) => { delete _store[k]; },
+            clear: () => { for (const k in _store) delete _store[k]; },
+            key: (_i: number) => Object.keys(_store)[_i] ?? null,
+            get length() { return Object.keys(_store).length; },
+        },
+        writable: true,
+        configurable: true,
+    });
+}
+
 // [fix:test-locale] happy-dom 的 navigator.language 默认为 en-US，而项目以中文为
 // 基准语言，大量未显式 setLang('zh-CN') 的用例会因此拿到英文标签而失败。在模块
 // 加载前把 localStorage 写为 zh-CN，让 locale.ts 的 loadLang() 读到正确默认值。
