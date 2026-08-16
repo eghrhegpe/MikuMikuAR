@@ -58,15 +58,19 @@ export function registerLibraryScannedHook(hook: () => void): () => void {
     _scannedHooks.add(hook);
     if (!_scannedListenerInstalled) {
         _scannedListenerInstalled = true;
-        addDisposableListener(window, 'mmar:library-scanned', () => {
-            for (const h of _scannedHooks) {
-                try {
-                    h();
-                } catch (e) {
-                    console.error('[load-refresh] scanned hook error:', e);
+        // 惰性引用 window：node 下无 window 对象，跳过注册避免 import 期崩溃。
+        // 浏览器/happy-dom 下 window 存在，正常注册事件监听。
+        if (typeof window !== 'undefined') {
+            addDisposableListener(window, 'mmar:library-scanned', () => {
+                for (const h of _scannedHooks) {
+                    try {
+                        h();
+                    } catch (e) {
+                        console.error('[load-refresh] scanned hook error:', e);
+                    }
                 }
-            }
-        });
+            });
+        }
     }
     return () => {
         _scannedHooks.delete(hook);
