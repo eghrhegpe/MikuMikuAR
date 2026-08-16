@@ -37,6 +37,7 @@
     "test:e2e:ui": "playwright test --ui",
     "lint": "eslint src --ext .ts,.tsx,.js,.jsx",
     "lint:fix": "eslint src --ext .ts,.tsx,.js,.jsx --fix",
+    "lint:changed": "git diff --name-only HEAD origin/main -- '*.ts' '*.tsx' '*.js' '*.jsx' | xargs -r eslint --ext .ts,.tsx,.js,.jsx",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,css,json,md}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,css,json,md}\"",
     "generate:bindings": "cd .. && wails3 generate bindings -ts -i -d frontend/bindings ./...",
