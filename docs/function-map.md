@@ -1727,9 +1727,9 @@
 | `addGazeLayer()` | `scene/motion/vmd-layers:255` | 添加一个视线追踪（gaze）图层。 |
 | `addVmdLayer()` | `scene/motion/vmd-layers:130` | 添加一个 VMD 图层到模型。 |
 | `addVmdLayersFromPaths()` | `scene/motion/vmd-layers:180` | 批量添加 VMD 图层（场景恢复用）。 |
-| `disposeVmdLayerState()` | `scene/motion/vmd-layers:732` | [fix P2] 模型销毁时清理 vmd-layers 模块级 per-model 状态。 |
-| `getVmdLayers()` | `scene/motion/vmd-layers:715` | 获取模型的图层列表 |
-| `rebuildCompositeAnimation()` | `scene/motion/vmd-layers:722` | 触发复合动画重建（程序化/外部修改 vmdData/vmdLayers 后调用）。 |
+| `disposeVmdLayerState()` | `scene/motion/vmd-layers:737` | [fix P2] 模型销毁时清理 vmd-layers 模块级 per-model 状态。 |
+| `getVmdLayers()` | `scene/motion/vmd-layers:720` | 获取模型的图层列表 |
+| `rebuildCompositeAnimation()` | `scene/motion/vmd-layers:727` | 触发复合动画重建（程序化/外部修改 vmdData/vmdLayers 后调用）。 |
 | `removeVmdLayer()` | `scene/motion/vmd-layers:292` | 移除一个 VMD 图层 |
 | `setVmdLayerWeight()` | `scene/motion/vmd-layers:343` | 设置图层权重 |
 | `toggleVmdLayer()` | `scene/motion/vmd-layers:318` | 切换图层启用/禁用 |

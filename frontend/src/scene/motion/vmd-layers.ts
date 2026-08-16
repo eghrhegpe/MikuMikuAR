@@ -699,6 +699,11 @@ async function _tryWasmBlender(
         triggerAutoSave();
         return true;
     } catch (err) {
+        // 清理可能已部分 setup 的 blender state，防止 _blenderStates 残留 enabled=true
+        try {
+            const { teardownWasmLayersBlender } = await import('./wasm-layers-blender');
+            teardownWasmLayersBlender(modelId);
+        } catch {}
         console.error('[MotionLayers] WASM blender failed, falling back to single layer', err);
         // P3-fix: 明确告知用户多图层混合失败已降级，而非静默回退
         setStatus(

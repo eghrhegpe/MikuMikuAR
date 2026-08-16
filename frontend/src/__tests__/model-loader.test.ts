@@ -94,7 +94,8 @@ vi.mock('../scene/env/env-impl', () => ({
     setOnGroundChanged: vi.fn(),
 }));
 vi.mock('../scene/transform/transform-pick', () => ({ setTransformMetadata: vi.fn() }));
-vi.mock('@/core/config', () => ({
+vi.mock('@/core/config', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('@/core/config')>()),
     dom: {
         loadingEl: { style: { display: '' } },
         loadingText: { textContent: '' },
@@ -105,7 +106,6 @@ vi.mock('@/core/config', () => ({
     triggerAutoSave: vi.fn(),
     formatError: (e: unknown) => String(e),
     uiState: {},
-    modelRegistry: new Map(),
 }));
 
 import { initLoader, loadPMXFile, setOnMeshesReady, setOnModelLoaded } from '../scene/manager/model-loader';

@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect, vi } from 'vitest';
 
-// 隔离 babylon-mmd / babylon 真实依赖，验证 _getBundles 从公开属性读取 bundle
+// 隔离 babylon-mmd / babylon 真实依赖
 vi.mock('@babylonjs/core/Maths/math.vector', () => ({
     Vector3: class {
         constructor(
@@ -30,23 +30,32 @@ vi.mock('../core/wind-utils', () => ({
     getWindVector: () => ({ x: 0, y: 0, z: 0 }),
     isWindActive: () => true,
 }));
-vi.mock('../core/mmd-adapter', () => ({
-    getRigidBodyBundleMap: (impl: any) => impl.rigidBodyBundleReferenceCountMap?.keys() ?? [],
-    getRigidBodyMap: () => [],
-    getPhysicsImpl: vi.fn(() => ({
+vi.mock('../core/mmd-adapter', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../core/mmd-adapter')>();
+    // 共享 mock impl，测试用例可通过 vi.mocked(mockGetPhysicsImpl).mockReturnValue 替换
+    const mockImpl = {
+        rigidBodyBundleReferenceCountMap: new Map() as Map<unknown, number>,
+        rigidBodyReferenceCountMap: new Map() as Map<unknown, number>,
         onSyncObservable: { add: vi.fn(() => ({ dispose: vi.fn() })), remove: vi.fn(), hasObservers: () => false },
-    })),
-    applyForceToModelRigidBodiesNative: vi.fn(),
-    applyWindForceToModelRigidBodiesNative: vi.fn(),
-}));
+    };
+    return {
+        // getRigidBodyBundleMap / getRigidBodyMap 走真实实现（测试其契约）
+        getRigidBodyBundleMap: actual.getRigidBodyBundleMap,
+        getRigidBodyMap: actual.getRigidBodyMap,
+        // getPhysicsImpl 返回 mock，避免真实 runtime.physics 访问
+        getPhysicsImpl: vi.fn(() => mockImpl),
+        applyForceToModelRigidBodiesNative: vi.fn(),
+        applyWindForceToModelRigidBodiesNative: vi.fn(),
+    };
+});
 
 import { MmdWasmRuntime as MmdWasmRuntimeClass } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime';
-import { _getBundles, isWindPhysicsActive, initWindPhysics, disposeWindPhysics } from '@/scene/physics/wind-physics';
-import { getPhysicsImpl } from '@/core/mmd-adapter';
+import { isWindPhysicsActive, initWindPhysics, disposeWindPhysics } from '@/scene/physics/wind-physics';
+import { getPhysicsImpl, getRigidBodyBundleMap } from '@/core/mmd-adapter';
 
 const mockGetPhysicsImpl = getPhysicsImpl as ReturnType<typeof vi.fn>;
 
-describe('_getBundles reads public rigidBodyBundleReferenceCountMap', () => {
+describe('getRigidBodyBundleMap (真实 mmd-adapter 实现)', () => {
     it('returns bundle keys from public API', () => {
         const a = { count: 1, applyCentralForce() {} };
         const b = { count: 2, applyCentralForce() {} };
@@ -56,14 +65,14 @@ describe('_getBundles reads public rigidBodyBundleReferenceCountMap', () => {
                 [b, 1],
             ]),
         };
-        expect([..._getBundles(impl)]).toEqual([a, b]);
+        expect([...getRigidBodyBundleMap(impl)]).toEqual([a, b]);
     });
 
     it('returns empty iterable when map is empty', () => {
         const impl: any = {
             rigidBodyBundleReferenceCountMap: new Map(),
         };
-        expect([..._getBundles(impl)]).toEqual([]);
+        expect([...getRigidBodyBundleMap(impl)]).toEqual([]);
     });
 
     it('returns single bundle key', () => {
@@ -71,7 +80,7 @@ describe('_getBundles reads public rigidBodyBundleReferenceCountMap', () => {
         const impl: any = {
             rigidBodyBundleReferenceCountMap: new Map([[bundle, 0]]),
         };
-        const result = [..._getBundles(impl)];
+        const result = [...getRigidBodyBundleMap(impl)];
         expect(result).toHaveLength(1);
         expect(result[0]).toBe(bundle);
     });
@@ -87,7 +96,7 @@ describe('_getBundles reads public rigidBodyBundleReferenceCountMap', () => {
                 [c, 99],
             ]),
         };
-        expect([..._getBundles(impl)]).toEqual([a, b, c]);
+        expect([...getRigidBodyBundleMap(impl)]).toEqual([a, b, c]);
     });
 });
 
@@ -122,5 +131,55 @@ describe('isWindPhysicsActive', () => {
         const runtime = new (MmdWasmRuntimeClass as any)() as InstanceType<typeof MmdWasmRuntimeClass>;
         initWindPhysics(runtime);
         expect(isWindPhysicsActive()).toBe(false);
+    });
+});
+
+// _onPhysicsSync 是私有函数；通过 initWindPhysics 建立 observer 后模拟 onSyncObservable 回调触发它。
+describe('_onPhysicsSync 施力路径（经 onSyncObservable._notify() 触发）', () => {
+    it('calls applyCentralForce on each bundle member', () => {
+        const forceSpy = vi.fn();
+        const bundle = { count: 2, applyCentralForce: forceSpy } as any;
+        const impl = {
+            rigidBodyBundleReferenceCountMap: new Map([[bundle, 0]]),
+            rigidBodyReferenceCountMap: new Map(),
+            onSyncObservable: { add: vi.fn(() => ({ dispose: vi.fn() })), remove: vi.fn(), hasObservers: () => false },
+        };
+        mockGetPhysicsImpl.mockReturnValue(impl);
+        const runtime = new (MmdWasmRuntimeClass as any)() as InstanceType<typeof MmdWasmRuntimeClass>;
+        initWindPhysics(runtime);
+        // 触发 observer 回调 → _onPhysicsSync(impl)
+        const call = (impl.onSyncObservable.add as ReturnType<typeof vi.fn>).mock.calls[0];
+        const callback = call[0];
+        callback();
+        // count=2 → 两次调用，每次 force 参数相同
+        expect(forceSpy).toHaveBeenCalledTimes(2);
+        disposeWindPhysics(runtime);
+    });
+
+    it('calls _onPhysicsSync once per bundle member with correct force', () => {
+        // 验证施力路径的核心契约：每个 bundle 成员的 applyCentralForce 被按 count 调用
+        const forceArgs: any[] = [];
+        const makeBundle = (count: number) => ({
+            count,
+            applyCentralForce: (idx: number, force: any) => {
+                forceArgs.push({ idx, force });
+            },
+        });
+        const impl = {
+            rigidBodyBundleReferenceCountMap: new Map([
+                [makeBundle(1), 0],
+                [makeBundle(3), 1],
+            ]),
+            rigidBodyReferenceCountMap: new Map(), // 单数刚体为空（联邦当前无 addRigidBody 调用）
+            onSyncObservable: { add: vi.fn(() => ({ dispose: vi.fn() })), remove: vi.fn(), hasObservers: () => false },
+        };
+        mockGetPhysicsImpl.mockReturnValue(impl);
+        const runtime = new (MmdWasmRuntimeClass as any)() as InstanceType<typeof MmdWasmRuntimeClass>;
+        initWindPhysics(runtime);
+        const call = (impl.onSyncObservable.add as ReturnType<typeof vi.fn>).mock.calls[0];
+        (call[0] as () => void)();
+        // 1 + 3 = 4 次 applyCentralForce 调用
+        expect(forceArgs).toHaveLength(4);
+        disposeWindPhysics(runtime);
     });
 });

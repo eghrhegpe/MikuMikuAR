@@ -23,15 +23,11 @@ vi.mock('@/core/path', () => ({
     isStageLike: () => false,
 }));
 
-vi.mock('../../core/config', () => ({
-    computeLibraryRef: () => '',
-    resolveLibraryRef: () => '',
+vi.mock('../../core/config', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('../../core/config')>()),
     libraryRoot: '',
     envState: {},
     modelRegistry: registry,
-    showErrorToast: vi.fn(),
-    setStatus: vi.fn(),
-    triggerAutoSave: vi.fn(),
 }));
 
 vi.mock('../../core/i18n/t', () => ({ t: (k: string) => k }));

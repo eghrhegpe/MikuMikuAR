@@ -950,11 +950,13 @@ async function deserializeModels(
 /**
  * Restore scene state from a SceneFile.
  *
- * Model loading uses a **two-phase** approach to avoid the race condition where
+ * Model loading uses a **three-phase** approach to avoid the race condition where
  * a failed model load leaves `focusedModel()` pointing to the wrong instance:
  *   1. Phase 1: Load all models sequentially, record runtime IDs on success.
  *   2. Phase 2: Apply VMD animations and outfit variants by looking up the
  *      recorded runtime IDs (never relying on global `focusedModel()`).
+ *   3. Phase 3: Deferred reattach — rebuild parent-child attachment chain after
+ *      all models loaded (ADR-215), avoiding时序问题 where parent not ready.
  *
  * @param data  The serialized scene data to restore.
  * @param skipEnv  If true, skip environment state restoration.
@@ -1427,7 +1429,8 @@ export async function saveSceneImmediate(suppressToast = false, force = false): 
             );
         }
 
-        // Go 端作为唯一存储（Fail-Fast：失败直接抛错）
+        // Go 端作为唯一存储；写盘失败时 logWarn + feedbackError，不向上抛错
+        // （避免单次保存失败阻断后续 auto-save 调度）。
         await SaveLastScene(json);
         console.info('[auto-save] SaveLastScene succeeded');
     } catch (_err) {
@@ -1532,7 +1535,7 @@ export async function tryRestoreLastScene(): Promise<void> {
     console.info('[auto-load] tryRestoreLastScene() called — attempting to load last scene');
     let json: string | null = null;
 
-    // Go 端作为唯一存储（Fail-Fast：失败直接抛错）
+    // Go 端作为唯一存储；读盘失败时上层 try/catch 捕获并降级，不向上抛错
     json = await LoadLastScene();
 
     if (!json) {
