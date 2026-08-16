@@ -1171,6 +1171,44 @@
               "step": 0.05,
               "transformed": false
             }
+          },
+          {
+            "id": "env:water:depth-fog-density",
+            "kind": "slider",
+            "conditional": false,
+            "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
+            "label": "env.waterDepthFogDensity",
+            "icon": "lucide:cloud-fog",
+            "control": {
+              "bind": "env.waterDepthFogDensity",
+              "min": 0,
+              "max": 0.1,
+              "step": 0.001,
+              "transformed": false
+            }
+          },
+          {
+            "id": "env:water:depth-fog-strength",
+            "kind": "slider",
+            "conditional": false,
+            "dom": "[role=\"slider\"]",
+            "action": {
+              "type": "drag",
+              "target": "midpoint"
+            },
+            "label": "env.waterDepthFogStrength",
+            "icon": "lucide:droplet",
+            "control": {
+              "bind": "env.waterDepthFogStrength",
+              "min": 0,
+              "max": 1,
+              "step": 0.05,
+              "transformed": false
+            }
           }
         ]
       },
