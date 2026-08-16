@@ -369,25 +369,10 @@ else
   fi
 fi
 
-# ── P7: deadcode 基线（阻断式：超基线必须人工显式 --update，不自动 amend 吸收） ──
-# [P1 2026-08-08] 旧实现 exit 1 时自动 --update + git commit --amend 吸纳入基线 →
-# 「防新增死代码回归」退化为「基线单向膨胀」，新增死代码无人工审查即入基线。
-# 改为阻断：fail + 展开明细，要求人工核对后显式 --update 并单独提交基线。
-if [ "$TS_CHANGED" = "true" ] && [ "$NPM_AVAILABLE" = "true" ]; then
-  echo "[pre-push] deadcode（基线治理：knip + jscpd；超基线阻断）"
-  # [P1 2026-08-08] `! cd x && node y` 中 `!` 只否定 cd（POSIX sh 语法）→ 正常路径
-  # `! cd`=1 → && 短路 → 检查从不执行，门禁静默假绿。子 shell 包裹使 `!` 否定整个
-  # `cd && node` 列表（同 :125 generate:bindings 的写法）。
-  if ! (cd "$ROOT/frontend" && node ../scripts/check-deadcode-baseline.mjs) >/dev/null 2>&1; then
-    echo "❌ 死代码/重复代码超过基线："
-    (cd "$ROOT/frontend" && node ../scripts/check-deadcode-baseline.mjs) 2>&1 | grep -E "unused|clones|duplicated|超过|↑|↓|新增" | head -20
-    fail "死代码/重复代码超过基线" "清理新增死代码；或确认合理后显式运行 cd frontend && node ../scripts/check-deadcode-baseline.mjs --update 并单独提交基线更新"
-  fi
-  note_check "✅ deadcode 基线"
-elif [ "$TS_CHANGED" = "true" ]; then
-  echo "[pre-push] deadcode（跳过：$NPM_SKIP_REASON）"
-  note_check "⏭️ deadcode（npm 不可用 → $NPM_SKIP_REASON）"
-fi
+# ── deadcode（已移除：push 时不跑死代码检查）
+# 死代码检查对用户使用无影响，仅消耗算力。保留在 CI 中作为参考。
+echo "[pre-push] deadcode（跳过：push 时不跑死代码检查，由 CI 兜底）"
+note_check "⏭️ deadcode（push 时跳过，CI 兜底）"
 
 # ── check:docs（ERROR 阻断；INFO 基线自动修复 + amend） ──
 # 漂移分级：ERROR（架构树/ADR 失效等）必须人工修复；INFO（符号覆盖率缺口）可自动更新基线
