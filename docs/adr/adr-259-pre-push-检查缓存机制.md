@@ -113,5 +113,27 @@ node scripts/domain-map.mjs --cache-clear                  # 清除缓存
 ## 相关文档
 
 - [ADR-258](./adr-258-pre-push-门禁分层与改动面分流.md) — pre-push 门禁分层设计
+- [ADR-260](./adr-260-pre-push-parallel.md) — pre-push 检查并行化
 - `scripts/domain-map.mjs` — 领域分类 + 缓存工具
 - `.githooks/pre-push` — 门禁实现
+
+## 演进
+
+### 2026-08-18：pre-commit 精准 stage + pre-push 移除 amend
+
+**背景**：兄弟项目指出当前 `git add docs/` 扫射可能捎带手写文档，且 pre-push 的 `git commit --amend` 在脏工作区有捎带风险。
+
+**改动**：
+
+1. **pre-commit 快照 diff**：gen 前记录 `docs/` 的 dirty 状态，gen 后对比，只 stage gen 实际改动的文件，替代 `git add docs/` 扫射。消除手写文档被意外 stage 的风险。
+
+2. **pre-push 移除所有 amend**：6 处 `git commit --amend --no-edit` 全部改为 `git add` + 提示用户"运行 `git commit --allow-empty --no-edit` 触发 pre-commit 同步后重推"。不再自动改 HEAD，消除捎带文件风险。
+
+**影响**：
+- 用户需要手动 `git commit --allow-empty --no-edit` 来触发 pre-commit 同步（如果文档不同步）
+- Pre-push 不再自动修复文档不同步，只做检查 + stage
+- 摘要标签从 `"🔧 自动修复并 amend"` 改为 `"🔧 自动修复并 stage"`
+
+**修改文件**：
+- `.githooks/pre-commit` — 快照 diff 替代 `git add docs/`
+- `.githooks/pre-push` — 移除所有 `commit --amend`
