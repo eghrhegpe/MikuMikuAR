@@ -67,7 +67,13 @@ function _isDirDataReady(targetDir: string): boolean {
     );
 }
 
+// [fix] 自动展开 in-flight 守卫：150ms 延迟窗口期防止重复触发。
+// pendingAuto 的 seg 消费已移入 setTimeout 回调内，在延迟窗口期 pendingAuto[0]
+// 保持不变——若不防重复，onLevelEnter 再次被调用时会重新消费同一段 seg。
+let _autoExpandInFlight: string | null = null;
+
 function deferRestore(menu: SlideMenu, dir: string, seg: string): void {
+    _autoExpandInFlight = null;
     librarySessionStore.clearRestoreTimer();
     // [doc:adr-135] P0.3: 进入 polling 状态，UI 显示「正在扫描 X…（已等待 Ys）」
     librarySessionStore.markRestorePolling(seg);
@@ -118,17 +124,37 @@ function deferRestore(menu: SlideMenu, dir: string, seg: string): void {
             librarySessionStore.clearRestoreStatus();
             return;
         }
-        librarySessionStore.setPendingAutoExpand(pa.length > 1 ? pa.slice(1) : null);
-        // [fix] 与 onLevelEnter 路径同：延后一帧执行 push，让父目录内容先完整绘制
-        // 再触发下一轮展开动画，避免"文件闪现即隐藏"。
-        requestAnimationFrame(() => {
-            menu.push(
-                buildLevel(nextDir, seg, (m) => m.format === 'pmx', stackRegistry.modelStack!, [])
+        // [fix] 延后 150ms 执行 push（与 fade-in 时长 TRANSITION_DURATION 对齐）：
+        // rAF 只延后 ~16ms 不足以让前一轮 fade-in 完整绘制到屏幕，导致父目录
+        // 内容在淡入刚完成时就被下一轮 buildPanel 清空，用户感知"闪现即隐藏"。
+        //
+        // seg 消费（slice）移入 setTimeout 回调内：与 push 在同一 tick 配对，
+        // 消除"slice 同步先执行、push 异步后执行"的窗口期中间态，避免窗口期
+        // 内外部 onLevelEnter 读到已消费但未 push 的 seg（导致 seg 错位丢失）。
+        const seg1 = seg;
+        const nextDir1 = nextDir;
+        _autoExpandInFlight = dir;
+        const expandTimer = setTimeout(() => {
+            _autoExpandInFlight = null;
+            // [fix] 窗口期校验：150ms 延迟期间 pendingAuto 可能被其他路径消费
+            const currentPa = librarySessionStore.getPendingAutoExpand();
+            if (!currentPa || currentPa[0] !== seg1) {
+                librarySessionStore.clearRestoreStatus();
+                return;
+            }
+            // seg 消费与 push 在同一 tick 配对
+            librarySessionStore.setPendingAutoExpand(
+                currentPa.length > 1 ? currentPa.slice(1) : null
             );
-        });
-        // [doc:adr-135] P0.3: 标记 ready，UI 显示「已展开 X」（短暂提示，2 秒自动消失）
-        librarySessionStore.markRestoreReady();
-        showInfoToast(t('library.expanded', { dir: seg }));
+            menu.push(
+                buildLevel(nextDir1, seg1, (m) => m.format === 'pmx', stackRegistry.modelStack!, [])
+            );
+            // [doc:adr-135] P0.3: 标记 ready，UI 显示「已展开 X」（短暂提示，2 秒自动消失）
+            librarySessionStore.markRestoreReady();
+            showInfoToast(t('library.expanded', { dir: seg1 }));
+        }, 150);
+        // 记录定时器，以便 deferRestore 重入时清理（避免累积）
+        librarySessionStore.setRestoreTimer(expandTimer);
     };
     librarySessionStore.setRestoreTimer(setTimeout(tick, 150));
 }
@@ -313,29 +339,43 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
                     deferRestore(menu, dir, seg);
                     return;
                 }
-                librarySessionStore.setPendingAutoExpand(
-                    pendingAuto.length > 1 ? pendingAuto.slice(1) : null
-                );
-                // [fix] 延后一帧执行 push：让前一轮 fade-in 先完整绘制到屏幕，
-                // 避免 _endTransition 内 onLevelEnter 被调用时菜单仍在过渡态、
-                // push 立即启动第二轮动画导致父目录文件"闪现即隐藏"。
-                logWarn('library-browse', '[restore] autoExpand push (next frame)', {
+                // [fix] in-flight 守卫：150ms 延迟窗口期防止重复触发
+                if (_autoExpandInFlight === dir) {
+                    return;
+                }
+                _autoExpandInFlight = dir;
+                logWarn('library-browse', '[restore] autoExpand push (delayed 150ms)', {
                     from: dir,
                     seg,
                     nextDir,
                     transitioning: menu.isTransitioning,
                 });
-                requestAnimationFrame(() => {
+                // [fix] 延后 150ms 执行 push（与 fade-in 时长对齐），
+                // seg 消费（slice）移入 setTimeout 回调内与 push 同 tick 配对：
+                const seg1 = seg;
+                const nextDir1 = nextDir;
+                const expandTimer = setTimeout(() => {
+                    _autoExpandInFlight = null;
+                    // 窗口期校验：150ms 延迟期间 pendingAuto 可能被其他路径消费
+                    const currentPa = librarySessionStore.getPendingAutoExpand();
+                    if (!currentPa || currentPa[0] !== seg1) {
+                        return;
+                    }
+                    // seg 消费与 push 在同一 tick 配对
+                    librarySessionStore.setPendingAutoExpand(
+                        currentPa.length > 1 ? currentPa.slice(1) : null
+                    );
                     menu.push(
                         buildLevel(
-                            nextDir,
-                            seg,
+                            nextDir1,
+                            seg1,
                             (m) => m.format === 'pmx',
                             stackRegistry.modelStack!,
                             []
                         )
                     );
-                });
+                }, 150);
+                librarySessionStore.setRestoreTimer(expandTimer);
                 return;
             }
             if (dir === browseRoot) {
@@ -357,6 +397,7 @@ export function showModelPopup(): void {
     dom.sceneOverlay.dataset.popupType = 'model';
     // [doc:adr-135] 重置菜单前清理上一次会话残留的 restore 态（pendingAutoExpand / pendingFocusModel / timer），
     // 防止重开弹窗时误触发上次的 autoExpand。loading 不重置（解压/替换可能跨弹窗重置进行）。
+    _autoExpandInFlight = null;
     librarySessionStore.reset();
     // [adr-136] 取消上一次会话残留的缩略图流式加载批次（快速切弹窗不再堆积 GetThumbnail）
     abortThumbnailStreaming();

@@ -2,12 +2,13 @@
 
 # 代码审核索引
 
-> 审核台账共 **190** 篇：164 篇按日期归档、9 篇轮次记录、17 篇专题审核。每篇记录审核范围、发现与结论。
+> 审核台账共 **191** 篇：165 篇按日期归档、9 篇轮次记录、17 篇专题审核。每篇记录审核范围、发现与结论。
 
 > 汇总视图（执行摘要 / 风险全景 / 改进优先级）见 [审核总索引](./README.md)。
 
-## 2026 年 8 月（153）
+## 2026 年 8 月（154）
 
+- `2026-08-16` [审核规律与存量风险汇总报告](./2026-08-16-audit-patterns-summary.md)
 - `2026-08-15` [Round 73 审核报告 — ui-keyboard-nav / ui-nav-item / utils.collections](./2026-08-15-round73-keyboard-nav-item-collections.md)
 - `2026-08-15` [Round 72 审核报告 — sw-register / ui-action-bridge / ui-helpers](./2026-08-15-round72-sw-ui-bridge-helpers.md)
 - `2026-08-15` [Round 71 审核报告 — registry.param / renderer-transition / shortcut-app](./2026-08-15-round71-param-renderer-shortcut.md)
