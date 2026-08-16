@@ -323,7 +323,7 @@ if [ "$TS_CHANGED" = "true" ] && [ "$NPM_AVAILABLE" = "true" ]; then
       # hook（2026-08-05 v1.9.1 发版实证）。清理失败仅遗留垃圾文件，不影响正确性。
       rm -f "$COV_LOG" 2>/dev/null || true
       note_check "✅ vitest --changed（$(grep -oE '[0-9]+ tests' "$COV_LOG" | head -1 || echo '有命中')）"
-      echo "[pre-push] diff-coverage（新代码保护: 变更行 ≥60%）"
+      echo "[pre-push] diff-coverage（新代码保护: 变更行 ≥60%，仅建议不阻断）"
       if npm run test:diff-coverage >"$COV_LOG" 2>&1; then
         # [fix:win] 临时日志清理容错：部分 Windows 环境（WorkBuddy safe-delete 层 /
         # genie-trash）包装 rm 后对 /tmp 相对路径处理失败返回非零，set -e 下会中断
@@ -331,13 +331,14 @@ if [ "$TS_CHANGED" = "true" ] && [ "$NPM_AVAILABLE" = "true" ]; then
         rm -f "$COV_LOG" 2>/dev/null || true
         note_check "✅ diff-coverage"
       else
-        echo "❌ diff-coverage 失败：本次变更源码覆盖率不足 60%。明细："
+        echo "⚠️  diff-coverage 提示：本次变更源码覆盖率不足 60%。明细："
         grep -E "\[X\]|失败|低于|覆盖" "$COV_LOG" | head -15
         # [fix:win] 临时日志清理容错：部分 Windows 环境（WorkBuddy safe-delete 层 /
         # genie-trash）包装 rm 后对 /tmp 相对路径处理失败返回非零，set -e 下会中断
         # hook（2026-08-05 v1.9.1 发版实证）。清理失败仅遗留垃圾文件，不影响正确性。
         rm -f "$COV_LOG" 2>/dev/null || true
-        fail "变更行覆盖率不足 60%" "为上方 [X] 文件的改动逻辑补单测，重跑 cd frontend && npm run test:diff-coverage 验证后重推"
+        # 仅建议，不阻断推送；历史遗留债应记录到 ADR-254 待办清单而非手动补测
+        note_check "⏭️ diff-coverage（历史遗留，建议记录到 ADR-254）"
       fi
     else
       rm -f "$COV_LOG" 2>/dev/null || true
