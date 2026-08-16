@@ -20,7 +20,7 @@
 | ADR-255 | 测试环境分流：@vitest-environment node 削减每文件 happy-dom 成本 — isolate=true 下 happy-dom 每文件重建是墙钟大头；无 DOM 依赖测试文件切 node 环境，环境累加 255s → ~90-105s | ✅ 已采纳（2026-08-10） |
 | ADR-254 | 历轮审核 P4 遗留项登记簿 —— 低风险改进清单与技术债跟踪 | ✅ 已立（2026-08-07 立项；来源：历轮子代理审核 + code_review 中判定为 P4/可选改进、不阻塞的遗留项汇总）。本 ADR 固化「记录不修」项的完整清单与未来触发条件，避免逐轮口头记录丢失 |
 | ADR-253 | 配置部分更新合并契约损坏 —— mergeUIState bool 覆盖 / mergeEnvState 零值覆盖 | ✅ 已立（2026-08-06 立项；来源审核第 14 轮：`docs/audit/2026-08-06-round14-*.md` Go 后端核心模块审核 P1#1/P1#2）。本 ADR 固化缺陷认知与治理方案，实现分批跟进 |
-| ADR-252 | 菜单资源释放链路缺失 —— disposeMenuWrapper/clearAllMenuWrappers 零调用与 _liveMenus 常驻 | ✅ 已立（2026-08-06 立项；来源审核第 13 轮：`docs/audit/2026-08-06-round13-scene-render-core-ui.md` 跨模块模式问题 #3「状态直写绕过 setter」与 P3「menu-overlay dispose 链路缺失」）。本 ADR 固化现状认知与治理方向，实现分批跟进 |
+| ADR-252 | 菜单资源释放链路缺失 —— disposeMenuWrapper/clearAllMenuWrappers 零调用与 _liveMenus 常驻 | ✅ 已采纳（2026-08-11 实施；closeAllOverlays 内联 clearAllMenuWrappers + HMR dispose 接线，消除零调用死代码）（2026-08-06） |
 | ADR-251 | scene 反向 import 循环依赖治理 —— model-ops/camera 对 `../scene` 的真实静态循环 | ✅ 已立（2026-08-06 立项；来源审核第 13 轮：`docs/audit/2026-08-06-round13-scene-render-core-ui.md` 跨模块模式问题 #2「坐标系契约混淆 / 循环依赖」）。本 ADR 固化现状认知与治理方向，实现分批跟进 |
 | ADR-250 | 场景初始化重入与异常一致性 —— initScene 重入守护 + 中途异常状态复位 | ✅ 已立（2026-08-06 立项；来源审核第 15 轮：`scene.ts` 编排器幽灵路径——`initScene` 无重入守护、`_sceneInitialized` 中途抛异常不复位。本 ADR 固化决策，实现可后续跟进） |
 | ADR-249 | IndexedDB 事务异常契约 —— complete/error/abort 三事件必须全部接线 | ✅ 已立（2026-08-06 立项；`core/backend/idb.ts` 的 `idbSet` / `idbDelete` / `idbBatchSet` 已补 `tx.onabort`，Promise 不再因 QuotaExceeded 等 abort 场景永不 settle） |

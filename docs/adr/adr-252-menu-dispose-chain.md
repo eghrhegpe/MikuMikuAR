@@ -1,7 +1,7 @@
 # ADR-252: 菜单资源释放链路缺失 —— disposeMenuWrapper/clearAllMenuWrappers 零调用与 _liveMenus 常驻
 
 > **日期**: 2026-08-06
-> **状态**: ✅ 已立（2026-08-06 立项；来源审核第 13 轮：`docs/audit/2026-08-06-round13-scene-render-core-ui.md` 跨模块模式问题 #3「状态直写绕过 setter」与 P3「menu-overlay dispose 链路缺失」）。本 ADR 固化现状认知与治理方向，实现分批跟进
+> **状态**: ✅ 已采纳（2026-08-11 实施；closeAllOverlays 内联 clearAllMenuWrappers + HMR dispose 接线，消除零调用死代码）
 > **编号**: 252
 >
 > **关联**: [ADR-065](adr-065-pure-items-hot-render.md)（菜单 Schema / 声明式菜单）、[ADR-093](adr-093-menu-declarative-schema.md)（菜单 Schema 注册与渲染）、[ADR-191](adr-191-god-barrel-debarreling.md)（menu-overlay 抽离与 de-barrel）、[ADR-106](adr-106-timing-audit-and-async-lifecycle.md)（HMR 幂等生命周期）

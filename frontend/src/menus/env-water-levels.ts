@@ -311,6 +311,31 @@ export function getWaterSchema(): MenuNode[] {
                         step: 0.05,
                     },
                 },
+                // —— ADR-222: 水面深度差雾 ——
+                {
+                    id: 'env:water:depth-fog-density',
+                    kind: 'slider',
+                    label: 'env.waterDepthFogDensity',
+                    control: {
+                        bind: 'env.waterDepthFogDensity',
+                        min: 0,
+                        max: 0.1,
+                        step: 0.001,
+                    },
+                    icon: 'lucide:cloud-fog',
+                },
+                {
+                    id: 'env:water:depth-fog-strength',
+                    kind: 'slider',
+                    label: 'env.waterDepthFogStrength',
+                    control: {
+                        bind: 'env.waterDepthFogStrength',
+                        min: 0,
+                        max: 1,
+                        step: 0.05,
+                    },
+                    icon: 'lucide:droplet',
+                },
             ],
         },
         // —— 焦散（密度 + 颜色 + 滚动 + 翻转）——

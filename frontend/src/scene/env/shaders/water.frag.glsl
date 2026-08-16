@@ -47,6 +47,14 @@ uniform vec3 uUnderwaterFogColor;   // 水下雾色（联动天空底色）
 uniform float uUnderwaterFogStart;  // 无雾阈值（距相机 ≤ 此值无雾）
 uniform float uUnderwaterFogEnd;    // 满雾阈值（距相机 ≥ 此值满雾）
 
+// ======== ADR-222: 水面深度差雾（水柱厚度驱动） ========
+uniform sampler2D sceneDepthTexture;  // 场景深度贴图（背景深度）
+uniform float cameraNear;             // 相机 near plane
+uniform float cameraFar;              // 相机 far plane
+uniform float waterDepthFogDensity;   // 深度差雾密度（默认 0.015）
+uniform vec3 waterDepthFogColor;      // 深度差雾颜色（深蓝青，从 waterColor 派生）
+uniform float waterDepthFogStrength;  // 深度差雾强度（默认 1.0，0=关闭零回归）
+
 // ======== ADR-115 P1: 高频法线扰动层 + Sun Glitter ========
 uniform sampler2D uDetailNormalTex;   // 程序化生成的法线细节纹理
 uniform float uDetailNormalStrength;  // 细节法线整体强度（默认 0.3，0=关闭零回归）
@@ -147,12 +155,18 @@ void main() {
     // ADR-115 P5: 低频滚动法线层 — 大尺度滚动光带（格 ≈25 单位）
     vec2 nUV3 = camXZ * uLowFreqNormalTiling + wind * wavePhase * uLowFreqNormalSpeed;
     vec3 n3 = texture2D(uDetailNormalTex, nUV3).rgb * 2.0 - 1.0;
-    vec3 detailNormal = normalize(n1 + n2 * 0.5 + n3 * uLowFreqNormalStrength);
+    // ======== ADR-223 P0: 法线混合加法→乘法 ========
+    // 双层反向法线相乘 → 有机织网图案（原加法模式：detailNormal = normalize(n1 + n2*0.5 + n3*...),
+    // 然后 normal = normal*gerstnerScale + vec3(dx,1,dz)，各系统独立运动导致不和谐）
+    // 乘法混合：dn 的 y 分量接近 1 时保持原貌，xy 分量产生编织式扰动
+    vec3 dn = n1.xyz * n2.xyz * 2.0;
+    dn = mix(vec3(0.0, 1.0, 0.0), dn, uDetailNormalStrength);
 
-    normal = normalize(
-        normal * gerstnerScale +
-        vec3(detailNormal.x * uDetailNormalStrength, 1.0, detailNormal.y * uDetailNormalStrength)
-    );
+    // n3 低频层保留加法（大尺度滚动光带 ≠ 高频细节，语义不同）
+    vec3 lowFreqOffset = vec3(n3.x, 0.0, n3.y) * uLowFreqNormalStrength;
+
+    // 最终合成：gerstner 基底 × 乘法织网 + 低频加法偏移
+    normal = normalize(normal * gerstnerScale * dn + lowFreqOffset);
 
     vec3 reflectDir = reflect(-viewDir, normal);
 
@@ -181,7 +195,7 @@ void main() {
         #endif
     #endif
 
-    // P2: 泡沫区域反射衰减 — 提前计算 foam，用于压低反射
+    // P2: 泡沫区域反射衰减（提前计算 foam 压低反射）
     float foamH = vHeight - waterLevel;
     // 泡沫阈值随波高动态缩放：高波时泡沫只集中在波峰尖端，避免大面积白色条纹
     float waveHeightScale = 1.0 + waveHeight * 1.0;
@@ -260,6 +274,7 @@ void main() {
     float dcdx = (cx1 - c1) / eps;
     float dcdy = (cy1 - c1) / eps;
     // 将梯度转为法线偏移（强度由 causticIntensity 控制，0.5x 让正常视角也可见涟漪）
+    // ⚠️ ADR-223 P0 后 A/B 对比：乘法混合下 causticNormalOffset 可能冗余，保留以观察
     vec3 causticNormalOffset = vec3(dcdx, 1.0, dcdy) * uCausticIntensity * 0.5;
     normal = normalize(normal + causticNormalOffset.xyz);
 
@@ -318,6 +333,22 @@ void main() {
     float depth = length(vWorldPos - cameraPosition);
     float waterFog = smoothstep(waterFogStart, waterFogEnd, depth);
     color = mix(color, finalFogColor * lightExposure, waterFog);
+
+    // ======== ADR-222: 水面深度差雾 —— 水柱厚度 = 背景深度 - 水面深度 ========
+    // 背景深度线性化：(2.0 * near) / (far + near - rawDepth * (far - near))
+    // waterThickness = bgLinearDepth - surfaceDepth, max(..., 0)
+    // waterDepthFog = 1.0 - exp(-density * waterThickness)
+    // mix(color, fogColor * lightExposure, waterDepthFog * strength)
+    if (waterDepthFogDensity > 0.0 && waterDepthFogStrength > 0.0) {
+        vec4 sceneDepthSV = texture(sceneDepthTexture, vScreenCoord);
+        float rawDepth = sceneDepthSV.r;
+        // 背景深度线性化（OpenGL 范围 [0,1] → 世界空间线性深度）
+        float bgLinearDepth = (2.0 * cameraNear) / (cameraFar + cameraNear - rawDepth * (cameraFar - cameraNear));
+        // 水柱厚度 = 背景深度 - 水面深度，负值取 0
+        float waterThickness = max(bgLinearDepth - depth, 0.0);
+        float depthFogFactor = 1.0 - exp(-waterDepthFogDensity * waterThickness);
+        color = mix(color, waterDepthFogColor * lightExposure, depthFogFactor * waterDepthFogStrength);
+    }
 
     // ======== ADR-115 P3: 地平线淡出 ========
     // uHorizonFade=0 时 horizonFade=1，完全不混合（零回归）

@@ -333,6 +333,22 @@ export function _syncWaterUniforms(state: EnvState, scene: Scene): void {
 
     // ——— 平面反射（ADR-062）———
     mat.setFloat('planarReflectionBlend', state.planarReflectionBlend ?? 0.5);
+
+    // ——— ADR-222: 水面深度差雾 — 水柱厚度驱动雾效 ——
+    const depthMap = (scene as any).depthRenderer?.getDepthMap?.() ?? null;
+    if (depthMap) {
+        mat.setTexture('sceneDepthTexture', depthMap);
+    }
+    const cam = scene.activeCamera;
+    if (cam) {
+        mat.setFloat('cameraNear', cam.minZ ?? 0.01);
+        mat.setFloat('cameraFar', cam.maxZ ?? 10000);
+    }
+    // 颜色从 waterColor 派生：深蓝青色调
+    const wc = col3FromTriple(state.waterColor);
+    mat.setColor3('waterDepthFogColor', new Color3(wc.r * 0.4, wc.g * 0.5, wc.b * 0.9));
+    mat.setFloat('waterDepthFogDensity', state.waterDepthFogDensity ?? 0.015);
+    mat.setFloat('waterDepthFogStrength', state.waterDepthFogStrength ?? 1.0);
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -413,6 +429,12 @@ const WATER_UNIFORMS = [
     'uUnderwaterFogColor',
     'uUnderwaterFogStart',
     'uUnderwaterFogEnd',
+    // ADR-222: 水面深度差雾
+    'waterDepthFogDensity',
+    'waterDepthFogColor',
+    'waterDepthFogStrength',
+    'cameraNear',
+    'cameraFar',
 ];
 
 export function _createWaterMaterial(scene: Scene, state: EnvState): ShaderMaterial {
@@ -428,7 +450,8 @@ export function _createWaterMaterial(scene: Scene, state: EnvState): ShaderMater
             uniformBuffers: [],
             samplers: ['uCausticTex', 'uDetailNormalTex']
                 .concat(hasEnv ? ['envTexture'] : [])
-                .concat(hasReflection ? ['reflectionTexture'] : []),
+                .concat(hasReflection ? ['reflectionTexture'] : [])
+                .concat(['sceneDepthTexture']),
             defines: (hasEnv ? ['ENV_TEXTURE'] : []).concat(
                 hasReflection ? ['PLANAR_REFLECTION'] : []
             ),

@@ -12,13 +12,17 @@ adr:
   - ADR-248
 symbols:
   - LogEntry
+  - __debugLog
   - clearLogs
   - getConsoleOutput
+  - getDebugLog
   - getLogBuffer
+  - logDebug
   - logError
   - logInfo
   - logWarn
   - setConsoleOutput
+  - setDebugLog
 invariants:
   - 无依赖模块，不引入循环依赖（ADR-141 从 utils.ts 剥离）
   - 前缀格式固定为 [tag] message，message 为空时退化为 [tag]

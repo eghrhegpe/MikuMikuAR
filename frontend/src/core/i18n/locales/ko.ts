@@ -1292,6 +1292,8 @@ export const ko: Record<string, string> = {
     'env.waterGlintStrength': '햇빛 반짝임',
     'env.lowFreqNormalStrength': '큰 파 광택',
     'env.waterHorizonFade': '수평선 페이드',
+    'env.waterDepthFogDensity': '깊이 안개 밀도',
+    'env.waterDepthFogStrength': '깊이 안개 강도',
     'env.waterSkyColorBlend': '하늘색 연동',
     'env.causticScrollX': '카우스틱 가로 스크롤',
     'env.causticScrollY': '카우스틱 세로 스크롤',

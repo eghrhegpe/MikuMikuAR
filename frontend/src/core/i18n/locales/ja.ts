@@ -1294,6 +1294,8 @@ export const ja: Record<string, string> = {
     'env.waterGlintStrength': '太陽きらめき',
     'env.lowFreqNormalStrength': '大波の光帯',
     'env.waterHorizonFade': '地平線フェード',
+    'env.waterDepthFogDensity': '深度差雾密度',
+    'env.waterDepthFogStrength': '深度差雾强度',
     'env.waterSkyColorBlend': '空色連動',
     'env.causticScrollX': 'コースティクス横スクロール',
     'env.causticScrollY': 'コースティクス縦スクロール',

@@ -90,6 +90,7 @@ import {
     setUnderwaterFog,
     applyWaterPresetToCurrent,
 } from '../../scene/env/env-water';
+import { _syncWaterUniforms } from '../../scene/env/env-water-material';
 
 let engine: NullEngine;
 let scene: Scene;
@@ -708,9 +709,68 @@ describe('reflection quality toggle — P1 修复（ADR-114）', () => {
     });
 });
 
-// ──────────────── 焦散 config diff guard 复位（fix code_review P2）────────────────
-// 变更行：resetCausticsSyncGuard() 将模块级 _causticsLastConfig 复位为 NaN，
-// 使 dispose 后下次 dt tick 的 diff 守卫（causticScrollX !== NaN 恒真）重新触发 setConfig。
+// ──────────────── ADR-222: 水面深度差雾 ────────────────
+describe('Water 深度差雾 — ADR-222', () => {
+    function captureDepthFogUniforms(state: Partial<typeof envState>): Record<string, number> {
+        const calls: Array<[string, number]> = [];
+        const spy = vi.spyOn(ShaderMaterial.prototype, 'setFloat').mockImplementation(function (
+            this: ShaderMaterial,
+            name: string,
+            value: number
+        ) {
+            calls.push([name, value]);
+            return this;
+        });
+        try {
+            createWater(makeWaterState({ waterLevel: 0, ...state }));
+        } finally {
+            spy.mockRestore();
+        }
+        const record: Record<string, number> = {};
+        for (const [name, value] of calls) {
+            record[name] = value;
+        }
+        return record;
+    }
+
+    it('waterDepthFogDensity 默认值 0.015 写入 shader uniform', () => {
+        const uniforms = captureDepthFogUniforms({});
+        expect(uniforms['waterDepthFogDensity']).toBe(0.015);
+    });
+
+    it('waterDepthFogStrength 默认值 1.0 写入 shader uniform', () => {
+        const uniforms = captureDepthFogUniforms({});
+        expect(uniforms['waterDepthFogStrength']).toBe(1.0);
+    });
+
+    it('waterDepthFogDensity=0 时密度 uniform 为 0（零回归：shader 跳过分支）', () => {
+        const uniforms = captureDepthFogUniforms({ waterDepthFogDensity: 0 });
+        expect(uniforms['waterDepthFogDensity']).toBe(0);
+    });
+
+    it('自定义 waterDepthFogDensity 正确写入 shader', () => {
+        const uniforms = captureDepthFogUniforms({ waterDepthFogDensity: 0.05 });
+        expect(uniforms['waterDepthFogDensity']).toBe(0.05);
+    });
+
+    it('自定义 waterDepthFogStrength 正确写入 shader', () => {
+        const uniforms = captureDepthFogUniforms({ waterDepthFogStrength: 0.5 });
+        expect(uniforms['waterDepthFogStrength']).toBe(0.5);
+    });
+
+    it('_syncWaterUniforms 在材质为 null 时安全早返回（不崩）', () => {
+        expect(() => _syncWaterUniforms(makeWaterState({ waterLevel: 0 }), scene)).not.toThrow();
+    });
+
+    it('cameraNear/cameraFar 随 activeCamera 写入', () => {
+        camera.minZ = 0.1;
+        camera.maxZ = 1000;
+        const uniforms = captureDepthFogUniforms({});
+        expect(uniforms['cameraNear']).toBe(0.1);
+        expect(uniforms['cameraFar']).toBe(1000);
+    });
+});
+
 describe('Water 焦散 — resetCausticsSyncGuard 复位 diff guard', () => {
     it('复位后下次 dt tick 重新触发 setConfig（diff guard 从 NaN 复活）', () => {
         // causticsController 是真实实例（本文件未 mock env-caustics），需显式 spy

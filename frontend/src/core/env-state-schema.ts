@@ -258,6 +258,9 @@ export const ENV_STATE_SCHEMA = {
     waterFogStart: { type: 'number', default: 150, group: 'water' },
     waterFogEnd: { type: 'number', default: 800, group: 'water' },
     waterFogOpacityInfluence: { type: 'number', default: 0, group: 'water' },
+    // ADR-222: 水面深度差雾 — 基于背景深度与水面深度之差驱动（水柱厚度）
+    waterDepthFogDensity: { type: 'number', default: 0.015, group: 'water' },
+    waterDepthFogStrength: { type: 'number', default: 1.0, group: 'water' },
     waterHorizonFade: { type: 'number', default: 0.8, group: 'water' },
     waterSkyColorBlend: { type: 'number', default: 0.2, group: 'water' },
     fresnelBias: { type: 'number', default: 0.02, group: 'water' },

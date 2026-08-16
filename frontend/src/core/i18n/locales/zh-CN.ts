@@ -1401,6 +1401,8 @@ export const zhCN: Record<string, string> = {
     'env.waterGlintStrength': '波光闪烁',
     'env.lowFreqNormalStrength': '大尺度波光',
     'env.waterHorizonFade': '地平线淡出',
+    'env.waterDepthFogDensity': '深度差雾密度',
+    'env.waterDepthFogStrength': '深度差雾强度',
     'env.waterSkyColorBlend': '天空色联动',
     'env.causticScrollX': '焦散滚动X',
     'env.causticScrollY': '焦散滚动Y',

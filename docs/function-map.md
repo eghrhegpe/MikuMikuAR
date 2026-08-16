@@ -7,7 +7,7 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 136 | 819 |
+| 核心基础设施 | 136 | 823 |
 | 3D 场景 | 125 | 1233 |
 | 菜单 & UI | 76 | 397 |
 | 动作算法 | 18 | 138 |
@@ -195,21 +195,21 @@
 | `mem()` | `core/backend/browser-adapter-mocks:6` | — |
 | `resetMem()` | `core/backend/browser-adapter-mocks:15` | — |
 | `setStore()` | `core/backend/browser-adapter-mocks:8` | — |
-| `FsaAuthState()` | `core/backend/browser-adapter:897` | — |
-| `browserAdapter()` | `core/backend/browser-adapter:1378` | — |
-| `dismissFsaAuthPrompt()` | `core/backend/browser-adapter:933` | — |
-| `getFsaAuthState()` | `core/backend/browser-adapter:904` | [doc:adr-183] 查询 FSA 根目录授权状态，供 UI 启动引导（不触发任何权限弹窗）。 |
-| `getFsaDownloadAuthState()` | `core/backend/browser-adapter:976` | 查询下载文件夹 FSA 授权状态（不触发权限弹窗），供 UI 引导。 |
-| `getFsaDownloadHandle()` | `core/backend/browser-adapter:1041` | 读取持久化的下载文件夹句柄（供扫描使用），不触发权限弹窗；无句柄返回 null。 |
-| `ingestModelBytes()` | `core/backend/browser-adapter:649` | [doc:adr-195] 写入单文件（名+字节）到资源库，不加载到场景。供下载面板批量摄入复用。 |
-| `ingestModelFile()` | `core/backend/browser-adapter:639` | 写入单个模型/动作文件（File）到 IndexedDB 资源库（file:+entry:），不加载到场景。 |
-| `ingestModelFiles()` | `core/backend/browser-adapter:658` | [doc:adr-195] P3 批量摄入：单事务写入该批次所有 file:/entry: 键，避免逐条 idbSet 并发写竞态。 |
-| `isFsaAuthPromptDismissed()` | `core/backend/browser-adapter:929` | [doc:adr-183] 用户跳过启动授权引导后写入「已跳过」标志，避免纯导入用户每次启动被弹窗骚扰。 |
-| `reauthorizeFsaDownload()` | `core/backend/browser-adapter:1000` | 对持久化的下载文件夹句柄重新请求授权（须用户手势上下文）。成功返回 true。 |
-| `reauthorizeFsaRoot()` | `core/backend/browser-adapter:946` | [doc:adr-183] 对持久化的 FSA 句柄重新请求授权（不重选目录）。 |
-| `resetFsaAuthPromptDismissed()` | `core/backend/browser-adapter:938` | [doc:adr-183] 清除跳过标志：用户手动设置根目录后，后续无根目录启动应重新获得引导机会。 |
-| `selectFsaDownloadDir()` | `core/backend/browser-adapter:1024` | 选择下载文件夹（独立 FSA 句柄），持久化到 _FSA_DOWNLOAD_KEY。 |
-| `setScanProgressCallback()` | `core/backend/browser-adapter:744` | [doc:adr-183] 注册扫描进度回调，供 UI 层节流增量刷新。 |
+| `FsaAuthState()` | `core/backend/browser-adapter:896` | — |
+| `browserAdapter()` | `core/backend/browser-adapter:1377` | — |
+| `dismissFsaAuthPrompt()` | `core/backend/browser-adapter:932` | — |
+| `getFsaAuthState()` | `core/backend/browser-adapter:903` | [doc:adr-183] 查询 FSA 根目录授权状态，供 UI 启动引导（不触发任何权限弹窗）。 |
+| `getFsaDownloadAuthState()` | `core/backend/browser-adapter:975` | 查询下载文件夹 FSA 授权状态（不触发权限弹窗），供 UI 引导。 |
+| `getFsaDownloadHandle()` | `core/backend/browser-adapter:1040` | 读取持久化的下载文件夹句柄（供扫描使用），不触发权限弹窗；无句柄返回 null。 |
+| `ingestModelBytes()` | `core/backend/browser-adapter:648` | [doc:adr-195] 写入单文件（名+字节）到资源库，不加载到场景。供下载面板批量摄入复用。 |
+| `ingestModelFile()` | `core/backend/browser-adapter:638` | 写入单个模型/动作文件（File）到 IndexedDB 资源库（file:+entry:），不加载到场景。 |
+| `ingestModelFiles()` | `core/backend/browser-adapter:657` | [doc:adr-195] P3 批量摄入：单事务写入该批次所有 file:/entry: 键，避免逐条 idbSet 并发写竞态。 |
+| `isFsaAuthPromptDismissed()` | `core/backend/browser-adapter:928` | [doc:adr-183] 用户跳过启动授权引导后写入「已跳过」标志，避免纯导入用户每次启动被弹窗骚扰。 |
+| `reauthorizeFsaDownload()` | `core/backend/browser-adapter:999` | 对持久化的下载文件夹句柄重新请求授权（须用户手势上下文）。成功返回 true。 |
+| `reauthorizeFsaRoot()` | `core/backend/browser-adapter:945` | [doc:adr-183] 对持久化的 FSA 句柄重新请求授权（不重选目录）。 |
+| `resetFsaAuthPromptDismissed()` | `core/backend/browser-adapter:937` | [doc:adr-183] 清除跳过标志：用户手动设置根目录后，后续无根目录启动应重新获得引导机会。 |
+| `selectFsaDownloadDir()` | `core/backend/browser-adapter:1023` | 选择下载文件夹（独立 FSA 句柄），持久化到 _FSA_DOWNLOAD_KEY。 |
+| `setScanProgressCallback()` | `core/backend/browser-adapter:743` | [doc:adr-183] 注册扫描进度回调，供 UI 层节流增量刷新。 |
 | `goAdapter()` | `core/backend/go-adapter:21` | — |
 | `STORES()` | `core/backend/idb:10` | — |
 | `Store()` | `core/backend/idb:24` | — |
@@ -275,9 +275,9 @@
 | `setE2EStateReader()` | `core/e2e-state-bridge:12` | 注册 E2E 状态读取器（menus/menu-schema 侧调用，模块加载即注册） |
 | `deriveDefaultEnvState()` | `core/env-state-defaults:18` | 从 ENV_STATE_SCHEMA 派生默认 EnvState。 |
 | `ENV_STATE_SCHEMA()` | `core/env-state-schema:34` | — |
-| `EnvDispatchGroup()` | `core/env-state-schema:384` | 已定义的 dispatch 分组名称 |
-| `EnvStateSchema()` | `core/env-state-schema:379` | — |
-| `getEnvKeys()` | `core/env-state-schema:405` | 从 Schema 派生指定 dispatch 分组的 key 列表。 |
+| `EnvDispatchGroup()` | `core/env-state-schema:387` | 已定义的 dispatch 分组名称 |
+| `EnvStateSchema()` | `core/env-state-schema:382` | — |
+| `getEnvKeys()` | `core/env-state-schema:408` | 从 Schema 派生指定 dispatch 分组的 key 列表。 |
 | `escapeHtml()` | `core/escape-html:5` | Escape HTML special characters to prevent injection. |
 | `disposeEventHandlers()` | `core/events:44` | — |
 | `initDropHandler()` | `core/events:373` | — |
@@ -366,13 +366,17 @@
 | `registerLoadRefreshHook()` | `core/load-refresh-registry:21` | 注册一个「模型加载后刷新」钩子。 |
 | `runLoadRefreshHooks()` | `core/load-refresh-registry:33` | 执行所有已注册的加载后刷新钩子。 |
 | `LogEntry()` | `core/logger:9` | — |
-| `clearLogs()` | `core/logger:81` | 清空日志 |
-| `getConsoleOutput()` | `core/logger:71` | [audit:round18 P2] 读取 console 输出开关（调试面板初始文案须与实际状态一致） |
-| `getLogBuffer()` | `core/logger:76` | 获取日志缓冲区（供调试面板使用） |
-| `logError()` | `core/logger:112` | 统一标签格式的 error 日志。 |
-| `logInfo()` | `core/logger:86` | 统一标签格式的 info 日志。 |
-| `logWarn()` | `core/logger:99` | 统一标签格式的 warn 日志。 |
-| `setConsoleOutput()` | `core/logger:66` | 设置是否同时输出到 console |
+| `__debugLog()` | `core/logger:71` | 是否开启 debug 日志（默认 false，热路径禁止裸调 logInfo） |
+| `clearLogs()` | `core/logger:94` | 清空日志 |
+| `getConsoleOutput()` | `core/logger:74` | [audit:round18 P2] 读取 console 输出开关（调试面板初始文案须与实际状态一致） |
+| `getDebugLog()` | `core/logger:79` | [audit:round18 P2] 读取 debug 门控状态 |
+| `getLogBuffer()` | `core/logger:89` | 获取日志缓冲区（供调试面板使用） |
+| `logDebug()` | `core/logger:112` | 门控调试日志（仅 __debugLog.value=true 时输出，热路径用此替代 logInfo）。 |
+| `logError()` | `core/logger:141` | 统一标签格式的 error 日志。 |
+| `logInfo()` | `core/logger:99` | 统一标签格式的 info 日志（始终写入 buffer + console，供非热路径诊断）。 |
+| `logWarn()` | `core/logger:128` | 统一标签格式的 warn 日志。 |
+| `setConsoleOutput()` | `core/logger:66` | 是否同时输出到 console（默认 true，面板打开后可切到 OFF 避免 source map 卡顿） |
+| `setDebugLog()` | `core/logger:84` | 设置 debug 门控（运行时切换，无需重建 bundle） |
 | `degToRad()` | `core/math-geometry:24` | 角度 → 弧度。 |
 | `dist2d()` | `core/math-geometry:6` | 2D 欧几里得距离。 |
 | `dist3d()` | `core/math-geometry:13` | 3D 欧几里得距离。 |
@@ -1016,10 +1020,10 @@
 | `setSyncAxesCallback()` | `scene/camera/camera:878` | — |
 | `switchCameraMode()` | `scene/camera/camera:373` | Switch to a different camera mode, preserving position as much as possible. |
 | `InvertableArcRotateCameraPointersInput()` | `scene/camera/invertablePointersInput:13` | 可反转 Y 轴的 ArcRotate 相机指针输入。 |
-| `applyEnvStateFacade()` | `scene/env/_bridge/env-bridge:50` | 等同于 scene-env.ts 的 applyEnvState，但避免循环依赖。 |
-| `registerEnvStateMiddleware()` | `scene/env/_bridge/env-bridge:387` | 注册 setEnvState 中间件（供 env-time-of-day/env-gravity 等子模块调用）。 |
-| `setEnvState()` | `scene/env/_bridge/env-bridge:327` | 环境状态唯一写入入口（ADR-173 中间件链），可选跳过自动保存。 |
-| `setPresetAnimActive()` | `scene/env/_bridge/env-bridge:44` | 标记预设动画是否运行中（供 _applyEnvStateFacade 跳过方向光同步） |
+| `applyEnvStateFacade()` | `scene/env/_bridge/env-bridge:52` | 等同于 scene-env.ts 的 applyEnvState，但避免循环依赖。 |
+| `registerEnvStateMiddleware()` | `scene/env/_bridge/env-bridge:389` | 注册 setEnvState 中间件（供 env-time-of-day/env-gravity 等子模块调用）。 |
+| `setEnvState()` | `scene/env/_bridge/env-bridge:329` | 环境状态唯一写入入口（ADR-173 中间件链），可选跳过自动保存。 |
+| `setPresetAnimActive()` | `scene/env/_bridge/env-bridge:46` | 标记预设动画是否运行中（供 _applyEnvStateFacade 跳过方向光同步） |
 | `clearAllEnvCallbacks()` | `scene/env/_bridge/env-dispatcher:33` | 清空所有已注册的 env 回调（场景销毁 / HMR 重入时兜底清理）。 |
 | `clearEnvDtTickCallbacks()` | `scene/env/_bridge/env-dispatcher:93` | 清空所有 dt 回调（场景销毁 / HMR 重入时清理）。 |
 | `clearSceneTickCallbacks()` | `scene/env/_bridge/env-dispatcher:62` | 清空所有场景 tick 回调（场景销毁 / HMR 重入时清理）。 |
@@ -1226,17 +1230,17 @@
 | `updateGroundRipples()` | `scene/env/env-water-fx:337` | 每帧更新地面涟漪纹理（由 env-ground 的 update observer 驱动） |
 | `updateRipples()` | `scene/env/env-water-fx:172` | 每帧涟漪衰减 + 死亡清理（由材质更新回调驱动；dt&lt;=0 时跳过避免零时距死循环） |
 | `updateUnderwaterTransition()` | `scene/env/env-water-fx:461` | — |
-| `WATER_PRESETS()` | `scene/env/env-water-material:543` | — |
-| `WaterPreset()` | `scene/env/env-water-material:507` | — |
-| `_WATER_KEYS()` | `scene/env/env-water-material:786` | — |
-| `_createWaterMaterial()` | `scene/env/env-water-material:418` | — |
-| `_rebuildWaterMaterial()` | `scene/env/env-water-material:444` | 重建水面材质（切换 PLANAR_REFLECTION define 时必须），保持网格与 LOD 引用一致。 |
+| `WATER_PRESETS()` | `scene/env/env-water-material:566` | — |
+| `WaterPreset()` | `scene/env/env-water-material:530` | — |
+| `_WATER_KEYS()` | `scene/env/env-water-material:809` | — |
+| `_createWaterMaterial()` | `scene/env/env-water-material:440` | — |
+| `_rebuildWaterMaterial()` | `scene/env/env-water-material:467` | 重建水面材质（切换 PLANAR_REFLECTION define 时必须），保持网格与 LOD 引用一致。 |
 | `_syncWaterUniforms()` | `scene/env/env-water-material:183` | 同步水面材质的全部 uniform 参数（非破坏性，不销毁/重建材质）。 |
-| `_waterUpdateCallback()` | `scene/env/env-water-material:457` | — |
-| `applyWaterPresetToCurrent()` | `scene/env/env-water-material:715` | — |
-| `buildWaterPresetEnvState()` | `scene/env/env-water-material:665` | 预设 → EnvState 完整字段映射（含扩展参数），供 UI chip handler 调用并持久化。 |
+| `_waterUpdateCallback()` | `scene/env/env-water-material:480` | — |
+| `applyWaterPresetToCurrent()` | `scene/env/env-water-material:738` | — |
+| `buildWaterPresetEnvState()` | `scene/env/env-water-material:688` | 预设 → EnvState 完整字段映射（含扩展参数），供 UI chip handler 调用并持久化。 |
 | `disposeDetailNormalTexture()` | `scene/env/env-water-material:74` | 宿主 disposeWater 委托：释放法线细节纹理（ADR-115 P1） |
-| `getWaterPhase()` | `scene/env/env-water-material:656` | 测试/调试用：读取当前累计波相位。 |
+| `getWaterPhase()` | `scene/env/env-water-material:679` | 测试/调试用：读取当前累计波相位。 |
 | `resetWaterPhaseState()` | `scene/env/env-water-material:42` | 宿主 disposeWater 委托：重置相位/波速状态 |
 | `setUnderwaterFog()` | `scene/env/env-water-material:163` | 由水下雾控制器同步水下雾参数到水面材质（含材质重建后的恢复由 _syncWaterUniforms 负责）。 |
 | `setWaterWaveSpeed()` | `scene/env/env-water-material:37` | 宿主 updateWaterAnimSpeed 委托：只更新累加速率，相位由每帧 observer 累加（改波速不跳变） |
@@ -1692,10 +1696,10 @@
 | `setPerceptionState()` | `scene/motion/perception:454` | 设置感知状态（从存储恢复时使用） |
 | `setPerceptionStateFor()` | `scene/motion/perception:712` | 设置感知状态（场景级单例；参数对所有模型一致，modelId 参数保留仅为兼容旧调用） |
 | `unpinPerception()` | `scene/motion/perception:673` | unpin 模型感知（非焦点模型同步 deactivate） |
-| `PlaybackObservablesDispose()` | `scene/motion/playback:52` | — |
-| `initPlaybackObservables()` | `scene/motion/playback:56` | — |
-| `seekFromEvent()` | `scene/motion/playback:208` | — |
-| `updatePlaybackUI()` | `scene/motion/playback:182` | — |
+| `PlaybackObservablesDispose()` | `scene/motion/playback:53` | — |
+| `initPlaybackObservables()` | `scene/motion/playback:57` | — |
+| `seekFromEvent()` | `scene/motion/playback:209` | — |
+| `updatePlaybackUI()` | `scene/motion/playback:183` | — |
 | `ProcMotionController()` | `scene/motion/proc-motion-bridge:40` | — |
 | `activateGazeTracking()` | `scene/motion/proc-motion-bridge:121` | — |
 | `createProcBeatDetector()` | `scene/motion/proc-motion-bridge:60` | — |
@@ -1857,16 +1861,16 @@
 | `StageLightState()` | `scene/render/lighting:55` | — |
 | `StageLightType()` | `scene/render/lighting:53` | — |
 | `_defaultStageLightState()` | `scene/render/lighting:105` | — |
-| `disposeLighting()` | `scene/render/lighting:533` | 整体清理光照模块（场景销毁时调用） |
+| `disposeLighting()` | `scene/render/lighting:534` | 整体清理光照模块（场景销毁时调用） |
 | `getDirLight()` | `scene/render/lighting:149` | 主方向光（未初始化时为 null）。 |
 | `getHemiLight()` | `scene/render/lighting:144` | 主半球光（未初始化时为 null）。导出 getter 替代原 &#96;export let&#96;，消除导出可变绑定。 |
-| `getLightState()` | `scene/render/lighting:257` | — |
+| `getLightState()` | `scene/render/lighting:258` | — |
 | `initLighting()` | `scene/render/lighting:158` | — |
-| `isLightingReady()` | `scene/render/lighting:303` | [fix:P1] 灯光运行时是否就绪（@dom/e2e 环境无灯光/管线时返回 false，供 UI/测试预检跳过守卫域）。 |
-| `rebakeEnvBrightness()` | `scene/render/lighting:233` | [doc:adr-132] 当 envBrightness 变化时 rebake 存储的光照强度 |
-| `setLightState()` | `scene/render/lighting:342` | 写入灯光状态。守卫未就绪时 logWarn + 返回 false（不再静默吞写）， 使「UI 可操作但 state 未生效」可被观测（@dom 测试环境无灯光对象时会命中）。 |
+| `isLightingReady()` | `scene/render/lighting:304` | [fix:P1] 灯光运行时是否就绪（@dom/e2e 环境无灯光/管线时返回 false，供 UI/测试预检跳过守卫域）。 |
+| `rebakeEnvBrightness()` | `scene/render/lighting:234` | [doc:adr-132] 当 globalBrightness 变化时 rebake 存储的光照强度 对应 schema 字段: globalBrightness（env-sta |
+| `setLightState()` | `scene/render/lighting:343` | 写入灯光状态。守卫未就绪时 logWarn + 返回 false（不再静默吞写）， 使「UI 可操作但 state 未生效」可被观测（@dom 测试环境无灯光对象时会命中）。 |
 | `setSkipLightAutoSave()` | `scene/render/lighting:154` | 预设动画期间临时抑制 setLightState 内的自动保存，由 applyEnvPreset 控制 |
-| `transitionLighting()` | `scene/render/lighting:440` | 平滑过渡当前灯光到目标灯光参数，默认 2 秒。 |
+| `transitionLighting()` | `scene/render/lighting:441` | 平滑过渡当前灯光到目标灯光参数，默认 2 秒。 |
 | `isAutoDegradingReflection()` | `scene/render/performance-env-bridge:18` | env-bridge.ts 调用此函数检查当前是否处于自动降级反射质量变更中 |
 | `registerSetEnvState()` | `scene/render/performance-env-bridge:26` | env-bridge.ts 初始化时注册 setEnvState 函数 |
 | `setAutoDegradingReflection()` | `scene/render/performance-env-bridge:13` | performance.ts 调用此函数通知 env-bridge 当前反射质量变更来自自动降级 |
@@ -2154,7 +2158,7 @@
 | `getShadowSchema()` | `menus/env-shadow-levels:15` | 导出 shadow schema 供 menu-registry 静态分析（ADR-093 元测试） |
 | `buildSkyLevel()` | `menus/env-sky-levels:202` | — |
 | `getSkySchema()` | `menus/env-sky-levels:17` | 导出 sky schema 供 menu-registry 静态分析（ADR-093 元测试） |
-| `buildWaterLevel()` | `menus/env-water-levels:488` | — |
+| `buildWaterLevel()` | `menus/env-water-levels:513` | — |
 | `getWaterSchema()` | `menus/env-water-levels:31` | 导出 water schema 供 menu-registry 静态分析（ADR-093 元测试） |
 | `buildWindLevel()` | `menus/env-wind-levels:44` | — |
 | `getWindSchema()` | `menus/env-wind-levels:12` | 导出 wind schema 供 menu-registry 静态分析（ADR-093 元测试） |
@@ -2226,10 +2230,10 @@
 | `registerPopupMenu()` | `menus/menu-factory:73` | 注册弹窗菜单——工厂内部维护引用，返回统一的 handle。 |
 | `showPopupMenu()` | `menus/menu-factory:159` | — |
 | `addOnCloseAllOverlays()` | `menus/menu-overlay:18` | 追加注册关闭回调（不覆盖主回调，供面板化拖拽卸载等场景用） |
-| `clearAllMenuWrappers()` | `menus/menu-overlay:72` | — |
+| `clearAllMenuWrappers()` | `menus/menu-overlay:82` | — |
 | `closeAllOverlays()` | `menus/menu-overlay:23` | Close all visible overlays, reset popup state, and invoke the registered callbacks. |
-| `disposeMenuWrapper()` | `menus/menu-overlay:64` | — |
-| `getMenuWrapper()` | `menus/menu-overlay:49` | — |
+| `disposeMenuWrapper()` | `menus/menu-overlay:74` | — |
+| `getMenuWrapper()` | `menus/menu-overlay:59` | — |
 | `setOnCloseAllOverlays()` | `menus/menu-overlay:13` | — |
 | `PanelNav()` | `menus/menu-registry:13` | 面板导航元数据（ADR-229 §2.1）。 |
 | `RegisteredSchema()` | `menus/menu-registry:26` | — |
