@@ -179,7 +179,7 @@ async function _renderThumbnailImpl(
 
     // 渲染前临时冻结物理：WASM Bullet 物理在 onBeforeRenderObservable 中推进，
     // 若在物理已更新帧截取缩略图，刚体位置变化导致骨骼跟随 → 裙子/头发等物理刚体
-    // 处于「飞行中」姿态（ADR-XXX 缩略图物理干扰）。
+    // 处于「飞行中」姿态（ADR-PENDING 缩略图物理干扰）。
     // 做法与 model-manager.ts:setPhysics 相同：保存 → 填 0（禁用）→ 渲染 → 恢复。
     const mmdModel = inst.mmdModel;
     const states = mmdModel?.rigidBodyStates;

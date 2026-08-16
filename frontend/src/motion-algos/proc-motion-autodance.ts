@@ -2,7 +2,7 @@
  * proc-motion-autodance.ts
  * 程序化舞蹈 VMD 生成 — 主入口
  *
- * 架构（ADR-XXX Phase 2 重构）：
+ * 架构（ADR-PENDING Phase 2 重构）：
  * - proc-motion-autodance-bones.ts  │ 骨骼帧生成 + 三角函数预计算
  * - proc-motion-autodance-emotion.ts│ 情绪引擎：morph 评分 + 帧生成
  * - proc-motion-autodance.ts  ← 本文件 │ 主入口 + 插值覆写 + VMD 组装
