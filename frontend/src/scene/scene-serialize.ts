@@ -509,7 +509,7 @@ export function serializeScene(): SceneFile {
             models.push(serializeModel(inst));
         } catch (err) {
             logWarn(
-                'scene:serialize',
+                'scene-serialize',
                 `model "${inst.name}" (${inst.id}) serialize failed, skipped: ${String(err)}`
             );
         }
@@ -1410,7 +1410,7 @@ export async function saveSceneImmediate(suppressToast = false, force = false): 
         try {
             data = serializeScene();
         } catch (serErr) {
-            logWarn('scene:serialize', `serializeScene() threw, save aborted: ${String(serErr)}`);
+            logWarn('scene-serialize', `serializeScene() threw, save aborted: ${String(serErr)}`);
             if (!suppressToast) {
                 feedbackError('scene.serialize.autosaveFailed', undefined, serErr);
             }

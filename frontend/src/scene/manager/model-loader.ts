@@ -443,6 +443,8 @@ export async function loadPMXFile(
     let loadedMeshes: Mesh[] = [];
     let wasmModel: IMmdModel | null = null;
     let registeredId: string | null = null;
+    // [fix:mesh-double-dispose] 守卫标记：防止 abort 路径与 catch 块双重 dispose 同一批 mesh
+    let _meshesDisposing = false;
     try {
         // Check if already loaded — switch focus via ModelManager
         const existing = _modelManager?.findByFilePath(filePath);
@@ -514,6 +516,8 @@ export async function loadPMXFile(
                     logWarn('model-loader', 'dispose after abort failed');
                 }
             });
+            // [fix:mesh-double-dispose] 标记已释放，防止后续 catch 块二次 dispose
+            _meshesDisposing = true;
             return null;
         }
         loadedMeshes = result.meshes.filter((m) => m instanceof Mesh) as Mesh[];
@@ -849,13 +853,17 @@ export async function loadPMXFile(
                     logWarn('model-loader', 'destroyMmdModel in cleanup:', destroyErr);
                 }
             }
-            loadedMeshes.forEach((m) => {
-                try {
-                    m.dispose(false, true);
-                } catch {
-                    logWarn('model-loader', 'dispose after error failed');
-                }
-            });
+            // [fix:mesh-double-dispose] 防止 abort 路径已 dispose 后 catch 块二次释放
+            if (!_meshesDisposing) {
+                _meshesDisposing = true;
+                loadedMeshes.forEach((m) => {
+                    try {
+                        m.dispose(false, true);
+                    } catch {
+                        logWarn('model-loader', 'dispose after error failed');
+                    }
+                });
+            }
         }
         dom.loadingEl.style.display = 'none';
         logError('model-loader', 'loadPMXFile:', err);
@@ -863,6 +871,8 @@ export async function loadPMXFile(
         return null;
     } finally {
         dom.loadingEl.style.display = 'none';
+        // [fix:mesh-double-dispose] 重置守卫，确保后续加载走 fresh 状态
+        _meshesDisposing = false;
         if (_loadAbortController === abortCtrl) {
             _loadAbortController = null;
         }
