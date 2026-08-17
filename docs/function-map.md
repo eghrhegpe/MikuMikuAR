@@ -1741,10 +1741,10 @@
 | `VMD_HEADER_MIN()` | `scene/motion/vmd-loader:47` | — |
 | `VMD_SIGNATURE()` | `scene/motion/vmd-loader:46` | — |
 | `isValidVmd()` | `scene/motion/vmd-loader:51` | 验证 ArrayBuffer 是否为合法 VMD 格式：检查签名前缀。 |
-| `loadCameraVmdFromPath()` | `scene/motion/vmd-loader:309` | — |
-| `loadVMDFromPath()` | `scene/motion/vmd-loader:179` | — |
+| `loadCameraVmdFromPath()` | `scene/motion/vmd-loader:324` | — |
+| `loadVMDFromPath()` | `scene/motion/vmd-loader:192` | — |
 | `loadVMDMotion()` | `scene/motion/vmd-loader:60` | — |
-| `loadVPDPose()` | `scene/motion/vmd-loader:333` | — |
+| `loadVPDPose()` | `scene/motion/vmd-loader:348` | — |
 | `DEFAULT_LAYER_BONE_FILTER()` | `scene/motion/wasm-layers-blender:58` | — |
 | `WasmLayerConfig()` | `scene/motion/wasm-layers-blender:60` | — |
 | `addWasmLayer()` | `scene/motion/wasm-layers-blender:161` | — |

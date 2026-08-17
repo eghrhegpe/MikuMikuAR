@@ -109,67 +109,80 @@ export async function loadVMDMotion(
 
         // Create runtime animation from the loaded data
         // WASM 版需 MmdWasmAnimation 包装；JS 版直接用 mmdAnimation（实现 IMmdBindableModelAnimation）
-        const runtimeAnimation = mmdRuntime instanceof MmdWasmRuntime
-            ? new MmdWasmAnimation(mmdAnimation, mmdRuntime.wasmInstance, scene)
-            : mmdAnimation;
+        const runtimeAnimation =
+            mmdRuntime instanceof MmdWasmRuntime
+                ? new MmdWasmAnimation(mmdAnimation, mmdRuntime.wasmInstance, scene)
+                : mmdAnimation;
 
-        // [fix] 用 using 守卫收口 WASM 释放：所有权移交 model 前（stale / stage / 绑定失败）
-        // 任何早期 return 或异常都会自动 dispose，编译器保证不会遗漏释放点。
+        // [fix] WASM 释放收口守卫：所有权移交 model 前（stale / stage / 绑定失败）
+        // 任何早期 return 或异常都会触发 dispose，保证不遗漏释放点。
+        // 注意：不采用 `using ... [Symbol.dispose]`（ES2025）——System WebView 104~126
+        // 不支持 Explicit Resource Management，会报 "Unexpected identifier" 解析错（仅有
+        // 桌面 WebView2 Chromium 130+ 支持）。改用 try/finally 提供等价 RAII，语义不变。
         let transferred = false;
-        using _animGuard = {
-            [Symbol.dispose]() {
-                if (!transferred && 'dispose' in runtimeAnimation) {
-                    try { runtimeAnimation.dispose(); } catch { /* best-effort */ }
+        const disposeAnimation = () => {
+            if (!transferred && 'dispose' in runtimeAnimation) {
+                try {
+                    runtimeAnimation.dispose();
+                } catch {
+                    /* best-effort */
                 }
-            },
+            }
         };
-
-        // 检查是否在 await 期间有新的 loadVMDMotion 调用（同模型），过期则丢弃
-        if (_vmdLoadGenMap.get(targetId) !== capturedGen) {
-            logWarn('vmd-loader', 'Stale loadVMDMotion result discarded:', name);
-            feedbackStatus('scene.vmd.loadFailed', undefined, false);
-            return; // _animGuard 自动 dispose
-        }
-
-        // Extract camera track from VMD and apply to MmdCamera
         try {
-            getSceneAction('loadCameraVmd')?.(mmdAnimation, '', name);
-        } catch {
-            // 程序化动作的 VMD 不含相机轨道，此处跳过是正常行为
-        }
+            // 检查是否在 await 期间有新的 loadVMDMotion 调用（同模型），过期则丢弃
+            if (_vmdLoadGenMap.get(targetId) !== capturedGen) {
+                logWarn('vmd-loader', 'Stale loadVMDMotion result discarded:', name);
+                feedbackStatus('scene.vmd.loadFailed', undefined, false);
+                return; // finally 触发 disposeAnimation
+            }
 
-        // Bind to model
-        if (!inst.mmdModel) {
-            // 动画已创建但模型是 Stage，无法绑定 — _animGuard 退出时自动释放
-            feedbackStatus('scene.vmd.stageNoVmd', undefined, false);
-            return;
-        }
-        // 切换 VMD：释放旧句柄 + 绑定新动画 + 归零时钟（封装于 mmd-adapter PlaybackContract，见 ADR-192）。
-        // 固化 setRuntimeAnimation 不重置时钟 + WASM 句柄需显式 dispose 的 babylon-mmd 行为缺陷。
-        await switchAnimation(mmdRuntime, inst.mmdModel, runtimeAnimation);
-        transferred = true; // 所有权已移交 model，_animGuard 不再释放
+            // Extract camera track from VMD and apply to MmdCamera
+            try {
+                getSceneAction('loadCameraVmd')?.(mmdAnimation, '', name);
+            } catch {
+                // 程序化动作的 VMD 不含相机轨道，此处跳过是正常行为
+            }
 
-        inst.vmdData = data;
-        // 停止程序化动作（延迟到 vmdData 赋值后，确保 stopProcMotion 内 userVmdPresent=true，
-        // 不会清空刚绑定的动画——否则缩略图截帧时动画已被清空，截到空姿态）
-        // [fix:P2] 仅停止目标模型的程序化，不误杀其他活跃模型
-        if (isProcVmdActive() && name !== PROC_VMD_NAME_IDLE && name !== PROC_VMD_NAME_AUTODANCE) {
-            stopProcMotion(targetId);
-        }
-        _companionAudioCache.clear();
-        inst.vmdName = name;
-        // Convert from 30fps frames to seconds（异常 VMD 兜底，避免 NaN 时长）
-        const endFrame = Number(mmdAnimation.endFrame);
-        inst.animationDuration = Number.isFinite(endFrame) && endFrame > 0 ? endFrame / 30 : 0;
+            // Bind to model
+            if (!inst.mmdModel) {
+                // 动画已创建但模型是 Stage，无法绑定 — finally 触发 disposeAnimation
+                feedbackStatus('scene.vmd.stageNoVmd', undefined, false);
+                return;
+            }
+            // 切换 VMD：释放旧句柄 + 绑定新动画 + 归零时钟（封装于 mmd-adapter PlaybackContract，见 ADR-192）。
+            // 固化 setRuntimeAnimation 不重置时钟 + WASM 句柄需显式 dispose 的 babylon-mmd 行为缺陷。
+            await switchAnimation(mmdRuntime, inst.mmdModel, runtimeAnimation);
+            transferred = true; // 所有权已移交 model，_animGuard 不再释放
 
-        if (!isPlaying && autoLoop) {
-            await mmdRuntime.playAnimation();
-            setIsPlaying(true);
+            inst.vmdData = data;
+            // 停止程序化动作（延迟到 vmdData 赋值后，确保 stopProcMotion 内 userVmdPresent=true，
+            // 不会清空刚绑定的动画——否则缩略图截帧时动画已被清空，截到空姿态）
+            // [fix:P2] 仅停止目标模型的程序化，不误杀其他活跃模型
+            if (
+                isProcVmdActive() &&
+                name !== PROC_VMD_NAME_IDLE &&
+                name !== PROC_VMD_NAME_AUTODANCE
+            ) {
+                stopProcMotion(targetId);
+            }
+            _companionAudioCache.clear();
+            inst.vmdName = name;
+            // Convert from 30fps frames to seconds（异常 VMD 兜底，避免 NaN 时长）
+            const endFrame = Number(mmdAnimation.endFrame);
+            inst.animationDuration = Number.isFinite(endFrame) && endFrame > 0 ? endFrame / 30 : 0;
+
+            if (!isPlaying && autoLoop) {
+                await mmdRuntime.playAnimation();
+                setIsPlaying(true);
+            }
+            // [doc:adr-feedback] VMD 加载是中间步骤，走状态栏；若为模型替换流程的伴音 VMD，
+            // 后续 loadCompanionAudio 完成时仍由状态栏汇总反馈，避免与"模型已替换"toast 叠加。
+            feedbackStatus('scene.vmd.loaded', undefined, undefined, { name });
+            triggerAutoSave();
+        } finally {
+            disposeAnimation();
         }
-        // [doc:adr-feedback] VMD 加载是中间步骤，走状态栏；若为模型替换流程的伴音 VMD，
-        // 后续 loadCompanionAudio 完成时仍由状态栏汇总反馈，避免与"模型已替换"toast 叠加。
-        feedbackStatus('scene.vmd.loaded', undefined, undefined, { name });
-        triggerAutoSave();
     } catch (err) {
         console.error('VMD load failed:', err);
         feedbackStatus('scene.vmd.loadFailed', undefined, false);
@@ -294,7 +307,9 @@ async function _tryLoadCompanionAudio(
             return; // VMD 已被切换，丢弃本次伴音
         }
 
-        await (getSceneAction('loadAudioFile') as ((p: string) => Promise<void>) | undefined)?.(audioPath);
+        await (getSceneAction('loadAudioFile') as ((p: string) => Promise<void>) | undefined)?.(
+            audioPath
+        );
         _companionAudioCache.add(basePath);
         // [doc:adr-feedback] 伴音加载是中间步骤，走状态栏；模型替换的最终态由"模型已替换"toast 承担。
         feedbackStatus('scene.vmd.loadedWithAudio', undefined, undefined, { name: audioName });
