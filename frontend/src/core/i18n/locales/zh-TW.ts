@@ -1665,6 +1665,7 @@ export const zhTW: Record<string, string> = {
     'common.model': '模型',
 
     'common.close': '關閉',
+    'common.back': '返回',
     'common.delete': '刪除',
     'common.items': '項',
     'common.unknown': '未知',

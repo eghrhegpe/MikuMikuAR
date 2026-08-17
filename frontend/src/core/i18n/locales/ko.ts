@@ -1687,6 +1687,7 @@ export const ko: Record<string, string> = {
     'common.model': '모델',
 
     'common.close': '닫기',
+    'common.back': '뒤로',
     'common.delete': '삭제',
     'common.items': '개',
     'common.unknown': '알 수 없음',

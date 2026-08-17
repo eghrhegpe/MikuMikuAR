@@ -1523,6 +1523,7 @@ export const zhCN: Record<string, string> = {
     'common.model': '模型',
 
     'common.close': '关闭',
+    'common.back': '返回',
     'common.delete': '删除',
     'common.items': '项',
     'common.unknown': '未知',

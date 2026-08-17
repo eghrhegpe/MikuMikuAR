@@ -1539,6 +1539,7 @@ export const en: Record<string, string> = {
     'common.model': 'model',
 
     'common.close': 'Close',
+    'common.back': 'Back',
     'common.delete': 'Delete',
     'common.items': 'items',
     'common.unknown': 'Unknown',

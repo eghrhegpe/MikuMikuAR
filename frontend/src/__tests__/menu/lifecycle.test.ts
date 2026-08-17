@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { SlideMenu } from '../../menus/menu';
 import { makeTestLevel, makeTestMenu } from '../fixtures/menu';
+import { t } from '../../core/i18n/t';
 
 // ─── SlideMenu 测试：生命周期 (dispose / 动画) + 高阶功能 ───
 
@@ -152,6 +153,25 @@ describe('SlideMenu — 高阶功能 (extraButtonFactory / onClose / 手势)', (
         expect(backBtn).toBeTruthy();
         (backBtn as HTMLElement).click();
         expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('返回按钮可被脚本/无障碍探测（button + aria-label + data-testid）', async () => {
+        const m = makeTestMenu({ container });
+        menu = m.menu;
+        menu.reset(makeTestLevel('根'));
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+        const backBtn = container.querySelector<HTMLElement>('.slide-back')!;
+        expect(backBtn.tagName).toBe('BUTTON');
+        expect(backBtn.getAttribute('data-testid')).toBe('menu:header-back');
+        // 根层级：关闭语义
+        expect(backBtn.getAttribute('aria-label')).toBe(t('common.close'));
+        expect(backBtn.title).toBe(t('common.close'));
+
+        // 子层级：返回语义
+        (menu as any).levels.push(makeTestLevel('子级'));
+        (menu as any).updateHeader((menu as any).currentLevel);
+        const backBtn2 = container.querySelector<HTMLElement>('.slide-back')!;
+        expect(backBtn2.getAttribute('aria-label')).toBe(t('common.back'));
     });
 
     it('updateHeader 根层级显示 X 图标, 子层级显示返回箭头', async () => {

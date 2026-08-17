@@ -300,6 +300,14 @@ export class SlideMenu implements RenderContext {
         return this._isOpen && this.container.getClientRects().length > 0;
     }
 
+    /** [fix:menu-rebuild] 菜单容器是否仍挂载在文档中。
+     *  ADR-252 下 closeAllOverlays 会回收 wrapper（移除 DOM + 清注册表）但不会 dispose
+     *  存活实例；复用这样的实例会渲染进已脱离文档的容器，导致弹窗「无法再次重建」。
+     *  工厂层据此判断是复用还是丢弃重建。 */
+    get isContainerAttached(): boolean {
+        return this.container.isConnected;
+    }
+
     /** 关闭整个菜单（触发 onClose，通常内部会 closeAllOverlays + dispose 当前 SlideMenu）。
      * 注意：close() ≠ dispose()——close 仅翻转可见状态并通知 onClose，不释放监听器/存活集合条目，
      * 实例仍留在 _liveMenus 中；menu-factory 的 onClose 回调负责随后的显式 dispose（见 menu-factory.ts）。
@@ -1232,15 +1240,23 @@ export class SlideMenu implements RenderContext {
 
     private updateHeader(level: PopupLevel): void {
         this.headerEl.innerHTML = '';
-        const backBtn = document.createElement('span');
+        // 返回/关闭按钮必须用 <button> + 可访问名（aria-label/title/data-testid）：
+        // 纯图标 span 在无障碍树、OCR、AI 脚本探测中不可见（历史问题：探测不到返回按钮）。
+        const isBack = this.levels.length > 1;
+        const backBtn = document.createElement('button');
+        backBtn.type = 'button';
         backBtn.className = 'slide-back';
+        const backLabel = isBack ? t('common.back') : t('common.close');
+        backBtn.setAttribute('aria-label', backLabel);
+        backBtn.title = backLabel;
+        backBtn.setAttribute('data-testid', 'menu:header-back');
         const backIcon = createIconifyIcon(
-            this.levels.length > 1 ? 'lucide:chevron-left' : 'lucide:x'
+            isBack ? 'lucide:chevron-left' : 'lucide:x'
         );
         if (backIcon) {
             backBtn.appendChild(backIcon);
         }
-        if (this.levels.length > 1) {
+        if (isBack) {
             backBtn.addEventListener('click', () => this.pop());
         } else {
             // [fix P2] optional 链：外部直接构造 SlideMenu 且未传 onClose 时，点 X 不抛 TypeError

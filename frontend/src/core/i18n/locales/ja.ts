@@ -1693,6 +1693,7 @@ export const ja: Record<string, string> = {
     'common.model': 'モデル',
 
     'common.close': '閉じる',
+    'common.back': '戻る',
     'common.delete': '削除',
     'common.items': '件',
     'common.unknown': '不明',

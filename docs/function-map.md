@@ -2175,8 +2175,8 @@
 | `prepareModelRestore()` | `menus/library-actions:113` | — |
 | `replaceModel()` | `menus/library-actions:728` | — |
 | `replaceMotion()` | `menus/library-actions:728` | — |
-| `makeModelMenu()` | `menus/library-browse:437` | — |
-| `showModelPopup()` | `menus/library-browse:405` | — |
+| `makeModelMenu()` | `menus/library-browse:445` | — |
+| `showModelPopup()` | `menus/library-browse:406` | — |
 | `ResourceViewMode()` | `menus/library-core:43` | — |
 | `abortThumbnailStreaming()` | `menus/library-core:317` | [adr-136] 取消当前正在进行的缩略图流式加载批次（如弹窗关闭/重开时调用）。 |
 | `buildLevel()` | `menus/library-core:853` | — |
@@ -2225,12 +2225,12 @@
 | `serializeModelPreset()` | `menus/library:7` | — |
 | `showModelPopup()` | `menus/library:4` | — |
 | `showMotionPopup()` | `menus/library:5` | — |
-| `PopupMenuConfig()` | `menus/menu-factory:145` | 轻量级弹窗入口：适用于不需要注册 handle 的一次性场景。 |
+| `PopupMenuConfig()` | `menus/menu-factory:153` | 轻量级弹窗入口：适用于不需要注册 handle 的一次性场景。 |
 | `PopupMenuHandle()` | `menus/menu-factory:46` | 注册后的菜单句柄——提供 get/refresh 能力 |
 | `PopupMenuHandlers()` | `menus/menu-factory:11` | 不含 container/onClose 的菜单回调（由工厂统一注入） |
 | `RegisteredPopupMenuConfig()` | `menus/menu-factory:20` | 注册式菜单配置——工厂内部维护引用，返回 handle |
 | `registerPopupMenu()` | `menus/menu-factory:73` | 注册弹窗菜单——工厂内部维护引用，返回统一的 handle。 |
-| `showPopupMenu()` | `menus/menu-factory:159` | — |
+| `showPopupMenu()` | `menus/menu-factory:167` | — |
 | `addOnCloseAllOverlays()` | `menus/menu-overlay:18` | 追加注册关闭回调（不覆盖主回调，供面板化拖拽卸载等场景用） |
 | `clearAllMenuWrappers()` | `menus/menu-overlay:82` | — |
 | `closeAllOverlays()` | `menus/menu-overlay:23` | Close all visible overlays, reset popup state, and invoke the registered callbacks. |
