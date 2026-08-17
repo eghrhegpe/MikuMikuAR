@@ -105,6 +105,43 @@ describe('SlideMenu — 创建行 (createRow DOM 类型)', () => {
         expect(folderEnter).toHaveBeenCalledTimes(1);
     });
 
+    it('transitioning 期间 folder 点击被忽略（与键盘导航同语义）', () => {
+        const folderEnter = vi.fn(() => makeTestLevel('进入'));
+        (menu as any).onFolderEnter = folderEnter;
+        (menu as any).transitioning = true;
+        const el = (menu as any).createRow({
+            kind: 'folder' as const,
+            label: '子菜单',
+            icon: 'folder',
+            target: 'sub',
+        });
+        el.click();
+        expect(folderEnter).not.toHaveBeenCalled();
+    });
+
+    it('folder async 点击：await 期间内容版本变化时丢弃过期结果', async () => {
+        let resolveFolder: (v: unknown) => void = () => {};
+        const folderEnter = vi.fn(
+            () => new Promise((res) => { resolveFolder = res; })
+        );
+        (menu as any).onFolderEnter = folderEnter;
+        const pushSpy = vi.spyOn(menu, 'push').mockImplementation(() => {});
+        const el = (menu as any).createRow({
+            kind: 'folder' as const,
+            label: '子菜单',
+            icon: 'folder',
+            target: 'sub',
+        });
+        el.click();
+        // await 窗口内：模拟其他操作触发内容重建（_buildSeq 递增）
+        (menu as any)._buildSeq += 1;
+        resolveFolder(makeTestLevel('进入'));
+        await Promise.resolve();
+        expect(folderEnter).toHaveBeenCalledTimes(1);
+        expect(pushSpy).not.toHaveBeenCalled();
+        pushSpy.mockRestore();
+    });
+
     it('folder 行带 headerToggle 生成折叠式行', () => {
         const toggleChange = vi.fn();
         const el = (menu as any).createRow({

@@ -1456,7 +1456,18 @@ export class SlideMenu implements RenderContext {
                 if ((e.target as HTMLElement).closest('.slide-add-btn')) {
                     return;
                 }
+                // [fix] 与键盘导航 transitioningGuard 同语义：过渡/动画期间忽略点击，
+                // 避免 async 窗口竞态——await onFolderEnter 期间发生 pop/push/重渲染时，
+                // 过期 push 会静默失灵或层级错乱（键盘经锁在入口就挡，鼠标曾漏网）。
+                if (this.transitioning) {
+                    return;
+                }
+                const seq = this._buildSeq;
                 const next = await this.onFolderEnter?.(row, this);
+                // await 期间内容版本已变（_buildSeq 递增）或进入过渡 → 丢弃过期结果
+                if (seq !== this._buildSeq || this.transitioning) {
+                    return;
+                }
                 if (next) {
                     this.push(next);
                 }
