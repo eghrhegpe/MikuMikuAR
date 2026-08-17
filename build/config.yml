@@ -6,8 +6,8 @@ info:
   productIdentifier: "com.mikumikuar.app"
   description: "PMX Player with physics simulation"
   copyright: "(c) 2025, MikuMikuAR"
-  comments: "MikuMikuAR �?PMX Player"
-  version: "1.5.3"
+  comments: "MikuMikuAR — PMX Player"
+  version: "1.10.2"
 
 dev_mode:
   root_path: .
