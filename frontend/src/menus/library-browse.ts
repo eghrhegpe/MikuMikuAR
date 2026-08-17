@@ -21,6 +21,7 @@ import { loadManager } from '../core/load-manager';
 import { SlideMenu } from './menu';
 import { t } from '../core/i18n/t';
 import { logWarn } from '../core/logger';
+import { safeDispose } from '../core/dispose-helpers';
 import { SetLastBrowseDir } from '../core/wails-bindings';
 import { buildModelLevel } from './model-detail';
 import { buildStageTransformLevel } from './scene-menu';
@@ -415,15 +416,22 @@ export function showModelPopup(): void {
 
     const wrapper = getMenuWrapper('model-popup');
     if (stackRegistry.modelStack) {
-        stackRegistry.modelStack.resetToRoot();
-        stackRegistry.modelStack.setLevel(0, {
-            label: t('library.model'),
-            dir: '',
-            items: buildModelRootItems(),
-            itemBuilder: buildModelRootItems,
-        });
-        stackRegistry.modelStack.reRender();
-        return;
+        // [fix:menu-rebuild] 复用前校验容器是否仍挂载：closeAllOverlays（跨根切换）会
+        // 回收 model-popup 的 wrapper DOM 而不 dispose 存活实例，复用会把内容渲染进已
+        // 脱离文档的旧容器，模型弹窗「无法再次重建」。脱离 → 丢弃实例，走新建分支。
+        if (stackRegistry.modelStack.isContainerAttached) {
+            stackRegistry.modelStack.resetToRoot();
+            stackRegistry.modelStack.setLevel(0, {
+                label: t('library.model'),
+                dir: '',
+                items: buildModelRootItems(),
+                itemBuilder: buildModelRootItems,
+            });
+            stackRegistry.modelStack.reRender();
+            return;
+        }
+        safeDispose(stackRegistry.modelStack);
+        stackRegistry.modelStack = null;
     }
     stackRegistry.modelStack = makeModelMenu(wrapper);
     stackRegistry.modelStack.reset({

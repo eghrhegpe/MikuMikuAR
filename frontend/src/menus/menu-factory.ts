@@ -100,10 +100,18 @@ export function registerPopupMenu(config: RegisteredPopupMenuConfig): PopupMenuH
 
         const wrapper = getMenuWrapper(config.wrapperKey);
         if (menu) {
-            config.onShow?.(menu);
-            menu.resetToRoot();
-            menu.reRender();
-            return;
+            // [fix:menu-rebuild] 复用前校验容器是否仍挂载在文档中。closeAllOverlays（跨根
+            // 切换/普通关闭）会回收 wrapper DOM，但既往实现不会 dispose 存活实例——复用
+            // 它会把内容渲染进已脱离文档的旧容器，弹窗「无法再次重建」。容器已脱离 →
+            // 按已销毁处理：dispose（覆写 dispose 会置空局部 menu 引用）后落回新建分支。
+            if (!menu.isContainerAttached) {
+                menu = safeDispose(menu);
+            } else {
+                config.onShow?.(menu);
+                menu.resetToRoot();
+                menu.reRender();
+                return;
+            }
         }
 
         const newMenu = new SlideMenu({
@@ -172,12 +180,18 @@ export function showPopupMenu(config: PopupMenuConfig): void {
     const wrapper = getMenuWrapper(config.wrapperKey);
     const existing = config.getMenu();
     if (existing) {
-        config.onShow?.(existing);
-        existing.resetToRoot();
-        existing.reRender();
-        return;
+        // [fix:menu-rebuild] 同 registerPopupMenu：容器被 closeAllOverlays 回收出文档后
+        // 不得复用于渲染，否则弹窗无法重建。脱离 → dispose + 置空，走新建分支。
+        if (!existing.isContainerAttached) {
+            existing.dispose();
+            config.setMenu(null);
+        } else {
+            config.onShow?.(existing);
+            existing.resetToRoot();
+            existing.reRender();
+            return;
+        }
     }
-
     const menu = new SlideMenu({
         container: wrapper,
         onClose: () => {
