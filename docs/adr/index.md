@@ -11,8 +11,7 @@
 | [推进中](#推进中) | 6 | 已开工，尚未收口（含部分实施） |
 | [规划中](#规划中) | 7 | 已立项，等待实施 |
 | [已落地](#已落地) | 235 | 实施完成，代码已合入 |
-| [已归档](#已归档) | 11 | 被取代、放弃、过时或搁置，保留供追溯 |
-| [其他](#其他) | 1 | 状态行缺失或表述不可归类 |
+| [已归档](#已归档) | 12 | 被取代、放弃、过时或搁置，保留供追溯 |
 
 > 本文件为 ADR **规范索引**（按状态分组导航，可锚点跳转）。带日期的全量列表见 [项目现状 · ADR 索引](../status.md)（附表，由 `scripts/gen-status-index.mjs` 生成）。
 
@@ -283,6 +282,7 @@
 
 | ADR | 主题 | 状态 |
 |-----|------|------|
+| [ADR-258](./adr-258-data-report.md) | 数据报告：pre-push 门禁量化证据 | 📊 参考文档 |
 | [ADR-199](./adr-199-llm-capability-boundaries.md) | LLM 能力边界与缓解策略（归档） | 📋 归档登记 |
 | [ADR-154](./adr-154-llm-chat-panel-route.md) | 引入大模型交流能力 — 推荐路线（聊天面板打底） | 🗑️ 已被 ADR-196 取代 |
 | [ADR-149](./adr-149-material-outfit-baseline-conflict.md) | 材质系统 × 换装系统基线冲突登记 | 已登记 |
@@ -294,9 +294,3 @@
 | [ADR-043](./adr-043-dancexr-gap-analysis.md) | DanceXR 功能差距挖掘 | 已完成 — 调研归档 |
 | [ADR-019](./adr-019-xpbd-cloth-simulation.md) | XPBD 布料模拟引擎选型与架构 | 已完成 — xpbd-solver/collid… |
 | [ADR-012](./adr-012-cloud-rendering.md) | 云渲染改进 — Perlin 噪声 + 双分层 | ⚠️ 已过时 — 被 **[ADR-113] |
-
-## 其他
-
-| ADR | 主题 | 状态 |
-|-----|------|------|
-| [ADR-258](./adr-258-data-report.md) | 数据报告：pre-push 门禁量化证据 | 📊 参考文档 |
