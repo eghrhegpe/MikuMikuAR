@@ -5,6 +5,7 @@ import { executeAction, parseActionFromLLM } from '../core/ai/intent-dispatcher'
 import { showConfirm } from '../core/dialog';
 import { showErrorToast } from '../core/toast';
 import { diagState } from './diagnostic-state';
+import { ROLE } from '../core/dom-contract';
 
 /** 将 LLM 文本回退解析的 action 入待确认队列 */
 export function tryQueuePendingAction(
@@ -110,7 +111,7 @@ export function renderPendingAction(): void {
 
     const card = document.createElement('div');
     card.className = 'diag-pending-card';
-    card.setAttribute('role', 'alert');
+    card.setAttribute('role', ROLE.alert);
     card.setAttribute('data-testid', 'ai:control:pending-card');
 
     const title = document.createElement('div');
