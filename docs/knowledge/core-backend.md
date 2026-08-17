@@ -104,11 +104,25 @@ use_when:
 - `backend/backend-mocks.ts` — 后端测试共享 Mock 工厂（ADR-206 Phase 4 拆自 backend.test.ts）。
 - `backend/browser-adapter-mocks.ts` — 浏览器适配器测试共享 Mock 工厂（ADR-206 Phase 4 拆自 browser-adapter.test.ts）。
 
-## 测试基础设施（ADR-206 Phase 4）
+## 测试基础设施（ADR-206 Phase 4 / ADR-262 治理）
 `go-adapter` 依赖 `@bindings` 运行时（Wails），`idb` 在 Node/happy-dom 下无 IndexedDB 实现，故两个 mock 工厂提供内存桩将单测与真实浏览器/桌面存储隔离：
 - `backend-mocks.ts` — `idbStore`（内存 Map）/ `setWindow` / `clearWebFlag` / `resetIdb` 环境控制 + `goAdapterMock`（Go 后端能力桩）。
 - `browser-adapter-mocks.ts` — `mem`（双层 Map store）/ `setStore` / `resetMem` 控制 + `eqBytes` 二进制相等断言。
 - 坑：`mem` 必须普通 `const` 导出（Vite 禁止把 `vi.hoisted` 结果跨文件 export）；`vi.mock('./idb')` 因 hoist 约束在各测试文件内联，但共享同一 `mem` 实例；跨用例复用共享桩须 `resetIdb()` / `resetMem()` 防状态泄漏。
+
+### idb 全局 mock（ADR-219 / ADR-262 治理）
+`setup-wails.ts:104-118` 在**全局 setup** 层一次性 `vi.mock('@/core/backend/idb')`，
+复用 `backend-mocks.ts` 的单源工厂 `makeIdbMock()`。isolate=false 下模块图全 worker
+共享，per-file `vi.mock` 会触发"先到先得绑定锁定"污染（第一个加载者锁定 mock 绑定，
+后续文件静默失效）；全局 setup mock 确保全 worker 唯一 mock 入口，从源头消除顺序敏感。
+`backend.*.test.ts` 系列已移除冗余 per-file `vi.mock('./idb')`（ADR-262），依赖全局
+setup mock；`browser-adapter.*.test.ts` 系列保留差异化 inline mock（使用 `mem` 双层
+store，语义与 `makeIdbMock` 的单层 `idbStore` 不同，属合法例外）。
+`config-store.test.ts` 使用 `vi.resetModules()` + 动态 import 做 per-test 隔离，
+也是合法例外（见 ADR-262 §三）。
+
+**护栏 CLI**：`npm run check:test-pollution`（`scripts/check-test-pollution.mjs`）
+静态扫描检测冗余/形状漂移的 per-file `vi.mock`，warn 不阻断。
 
 ## 对外 API（节选）
 - `BackendAdapter` — 后端适配器接口。

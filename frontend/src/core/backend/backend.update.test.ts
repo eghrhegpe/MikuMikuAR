@@ -1,10 +1,7 @@
 // @vitest-environment node
 // [doc:test] ADR-179 更新安装（拆自 backend.test.ts）
 import { describe, it, expect, vi } from 'vitest';
-import { makeIdbMock } from './backend-mocks';
-
 vi.mock('./go-adapter', () => ({ goAdapter: {} }));
-vi.mock('./idb', () => makeIdbMock());
 
 import { browserAdapter } from './browser-adapter';
 

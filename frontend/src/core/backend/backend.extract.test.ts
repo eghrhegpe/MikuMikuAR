@@ -1,10 +1,9 @@
 // @vitest-environment node
 // [doc:test] ADR-177 Phase 2 A4 p2-5 伴生文件 + ExtractZip（拆自 backend.test.ts）
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { idbStore, resetIdb, makeIdbMock } from './backend-mocks';
+import { idbStore, resetIdb } from './backend-mocks';
 
 vi.mock('./go-adapter', () => ({ goAdapter: {} }));
-vi.mock('./idb', () => makeIdbMock());
 
 import { zipSync } from 'fflate';
 import { browserAdapter } from './browser-adapter';

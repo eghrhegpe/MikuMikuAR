@@ -1,9 +1,8 @@
 // [doc:test] ADR-176 backend 能力矩阵 + 降级契约（拆自 backend.test.ts）
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { setWindow, clearWebFlag, makeIdbMock } from './backend-mocks';
+import { setWindow, clearWebFlag } from './backend-mocks';
 
 vi.mock('./go-adapter', () => ({ goAdapter: {} }));
-vi.mock('./idb', () => makeIdbMock());
 
 import { browserAdapter } from './browser-adapter';
 import { isWebPlatform, isAndroidPlatform, guardExternalAction } from '../platform';

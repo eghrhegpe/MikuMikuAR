@@ -89,6 +89,7 @@ npm run check                                          # 确认未新增错误
 - **核心模块 mock 优先复用共享工厂** —— idb 用 `makeIdbMock`（setup-wails.ts 全局化）、scene/scene 用 `sceneMockSuperset`（`src/__tests__/mocks/scene-superset.ts`）、core/state 用 `stateMockSuperset`（`src/__tests__/mocks/state-superset.ts`）。同模块 mock 形状保持超集一致，禁止各自内联出差异化形状。
 - **`async importOriginal` spread 禁静态化** —— god-barrel（如 core/config）依赖活绑定（`export let`），静态超集 spread 会断开活绑定致读写分离（isolate=true 22 用例回归教训）。此类 mock 必须保留 `...(await importOriginal())` 原样。
 - **vi.mock 工厂只可引用 hoisted/import 绑定** —— 工厂体引用模块级运行期变量会命中 hoist 期 TDZ；需要共享状态用 `vi.hoisted()` 或 `globalThis` 约定键。
+- **per-file vi.mock 与全局 setup mock 不可同模块并存**（ADR-262）—— `isolate:false` 下模块图全 worker 共享，per-file `vi.mock` 触发"先到先得绑定锁定"：第一个加载者锁定 mock 绑定，后续文件的同名 `vi.mock` 静默失效。全局 setup mock（`setup-wails.ts`）保证全 worker 唯一 mock 入口。需要差异化形状的（如 `config-store.test.ts` 的 per-test 隔离）走 `vi.doMock` + `vi.resetModules()` + 动态 import，并在文件头注释声明理由。
 
 ---
 
