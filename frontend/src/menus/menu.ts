@@ -379,8 +379,11 @@ export class SlideMenu implements RenderContext {
             const p = this.buildPanel(level);
             const seq = this._buildSeq;
             await p;
-            // dispose/_cancelAnim 后不再继续旧过渡的渲染与淡入注册
+            // dispose/_cancelAnim 后不再继续旧过渡的渲染与淡入注册；
+            // [fix:P0] 但若只是「更新的 build 接管」（非 dispose），必须兜底恢复
+            // transitioning + opacity，否则永久卡死（见 _recoverStaleTransition）。
             if (seq !== this._buildSeq) {
+                this._recoverStaleTransition(level);
                 return;
             }
             this.updateHeader(level);
@@ -457,7 +460,10 @@ export class SlideMenu implements RenderContext {
             const p = this.buildPanel(prevLevel);
             const seq = this._buildSeq;
             await p;
+            // [fix:P0] 与 push 同：seq 过期时若直接 return，transitioning 永久 true +
+            // opacity 卡 0（内容渲染不出、累及上级菜单）。必须兜底恢复。
             if (seq !== this._buildSeq) {
+                this._recoverStaleTransition(prevLevel);
                 return;
             }
             this.updateHeader(prevLevel);
@@ -827,6 +833,23 @@ export class SlideMenu implements RenderContext {
                 }, 100)
             );
         }
+    }
+
+    /**
+     * [fix:P0] seq guard 过期兜底：当前 buildPanel 尚未完成时已有更新的 build 接管
+     * （dispose 的 _buildSeq++ / updateControls 重入的裸 buildPanel 等）。
+     * 裸 buildPanel 路径完成后不负责 fadeIn 与 _endTransition——若 seq 过期处直接 return，
+     * transitioning 将永久为 true（后续 push/pop 全被拒 = 累及上级菜单）、opacity 卡 0
+     * （内容已渲染但看不见，即用户 DOM 快照中的卡死现象）。
+     * 统一兜底：立即恢复可见并结束过渡，保证状态必然收敛。若之后还有新的 push/pop，
+     * 其自身会重新走完整过渡流程（push/pop 仅在本方法把 transitioning 复位后才能进入），
+     * 不会与这里的收尾冲突。
+     */
+    private _recoverStaleTransition(level: PopupLevel): void {
+        this.panel.style.transition = 'none';
+        this.panel.style.opacity = '1';
+        this.panel.style.transform = 'translateX(0)';
+        this._endTransition(this.currentLevel ?? level);
     }
 
     /**

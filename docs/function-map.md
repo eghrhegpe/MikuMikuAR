@@ -527,10 +527,10 @@
 | `generateTextColors()` | `core/theme:7` | — |
 | `ToastAction()` | `core/toast:3` | — |
 | `ToastVariant()` | `core/toast:8` | — |
-| `_resetToastForTest()` | `core/toast:257` | — |
-| `showErrorToast()` | `core/toast:237` | — |
-| `showInfoToast()` | `core/toast:246` | — |
-| `showToast()` | `core/toast:196` | — |
+| `_resetToastForTest()` | `core/toast:263` | — |
+| `showErrorToast()` | `core/toast:243` | — |
+| `showInfoToast()` | `core/toast:252` | — |
+| `showToast()` | `core/toast:202` | — |
 | `BoneOverrideEntry()` | `core/types:22` | [doc:adr-061] Motion Override — 持久化的单条骨骼覆盖配置 |
 | `BrowseOutcome()` | `core/types:392` | — |
 | `CameraBehavior()` | `core/types:610` | ADR-100 轴 B — 运动行为：相机如何自动运动，仅当控制轴为 &#96;orbit&#96;(ArcRotate) 时生效。 |
