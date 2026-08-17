@@ -167,4 +167,25 @@ describe('copy 按钮（clipboard）', () => {
         // 降级错误 toast 出现
         expect(container()!.textContent).toContain('motion.clipboardUnavailable');
     });
+
+    it('await 期间 toast 被移除 → copyBtn 不操作孤儿节点（isConnected 守卫）', async () => {
+        let resolveWrite: () => void = () => {};
+        const writeText = vi.fn(
+            () => new Promise<void>((res) => { resolveWrite = res; })
+        );
+        vi.stubGlobal('navigator', { clipboard: { writeText } });
+        showToast('标题', '详情');
+        const copyBtn = Array.from(container()!.querySelectorAll("button")).find(
+            (b) => b.textContent === 'toast.copy'
+        )!;
+        copyBtn.click();
+        // await 窗口内：手动移除 toast（模拟用户点 ✕ 或超时）
+        const toastEl = container()!.lastElementChild!;
+        toastEl.remove();
+        // 模拟 clipboard API 完成
+        resolveWrite();
+        await vi.advanceTimersByTimeAsync(0);
+        // copyBtn 已被移除，不应有文案变化（无 throw）
+        expect(copyBtn.textContent).toBe('toast.copy'); // 未改变（守卫生效）
+    });
 });

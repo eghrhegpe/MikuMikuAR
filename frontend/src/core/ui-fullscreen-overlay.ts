@@ -167,6 +167,11 @@ function createOverlayElement(options: FullscreenOverlayOptions): HTMLElement {
     backBtn.textContent = '←';
     backBtn.title = '返回';
     backBtn.addEventListener('click', () => {
+        // [fix] 过渡期间阻断：currentState 已从 FULLSCREEN 变为 CLOSED 时（如 closeFullscreen
+        // 动画期间被重复调用），避免对已移除 DOM 的操作产生孤儿写入。
+        if (currentState !== 'FULLSCREEN') {
+            return;
+        }
         if (navStack.length > 0) {
             const prev = navStack.pop()!;
             titleEl.textContent = prev.title;

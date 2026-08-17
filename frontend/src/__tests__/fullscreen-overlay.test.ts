@@ -249,4 +249,38 @@ describe('FullscreenOverlay navigation', () => {
         expect(menuB.style.display).toBe('flex');
         expect(onBack).toHaveBeenCalledTimes(1);
     });
+
+    it('back button in CLOSED state is a no-op (currentState guard)', () => {
+        const renders: string[] = [];
+        openFullscreen({
+            title: 'Root',
+            onBack: () => {},
+            renderContent: (container, navigate) => {
+                renders.push('root');
+                const trigger = document.createElement('button');
+                trigger.className = 'folder-trigger';
+                trigger.addEventListener('click', () => {
+                    navigate('Child', () => {
+                        renders.push('child');
+                    });
+                });
+                container.appendChild(trigger);
+            },
+        });
+
+        // 进入子页面
+        (document.querySelector('.folder-trigger') as HTMLButtonElement).click();
+        expect(renders).toEqual(['root', 'child']);
+        expect(getCurrentState()).toBe('FULLSCREEN');
+
+        // 模拟外部强制关闭（不通过正常 closeFullscreen 路径，
+        // 而是直接改状态，保留 overlay 在 DOM 以测试 guarded click）
+        setCurrentState('CLOSED');
+
+        // 关闭后点击 backBtn → 应静默忽略，不操作孤儿 DOM
+        const backBtn = findOverlayButton('←');
+        expect(() => backBtn.click()).not.toThrow();
+        // renders 不应再增加
+        expect(renders).toEqual(['root', 'child']);
+    });
 });

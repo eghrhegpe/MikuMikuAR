@@ -144,9 +144,15 @@ function buildToastElement(
         copyBtn.addEventListener('click', async () => {
             try {
                 await navigator.clipboard.writeText(copyText);
+                // [fix] await 期间 toast 可能已被移除，检查 isConnected 防止操作孤儿节点
+                if (!copyBtn.isConnected) {
+                    return;
+                }
                 copyBtn.textContent = t('toast.copied');
                 setTimeout(() => {
-                    copyBtn.textContent = t('toast.copy');
+                    if (copyBtn.isConnected) {
+                        copyBtn.textContent = t('toast.copy');
+                    }
                 }, 1500);
             } catch {
                 // clipboard API 可能不可用（需用户手势 / Android WebView 限制）

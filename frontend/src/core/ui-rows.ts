@@ -538,7 +538,7 @@ export function addWatchDirRow(
     selectBtn.setAttribute(ARIA_ATTR.label, t('settings.paths.watchDirPlaceholder'));
     selectBtn.addEventListener('click', async () => {
         const dir = await onSelectDir();
-        if (!dir) {
+        if (!dir || !container.isConnected) {
             return;
         }
         dirInput.value = dir;
