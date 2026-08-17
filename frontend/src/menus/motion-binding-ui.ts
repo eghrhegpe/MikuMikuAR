@@ -438,15 +438,21 @@ export async function handleModelAction(action: string, id: string): Promise<voi
             break;
         case 'pose':
             (async () => {
+                // [fix] 过渡期守卫：动画窗口内 push 会递增 _buildSeq，顶掉正在进行的
+                // push/pop onFadeOut 序号（已有 _recoverStaleTransition 兜底不卡死）。
+                const menu = getMotionMenu();
+                if (menu?.isTransitioning) {
+                    return;
+                }
                 const level = stackRegistry.buildLevel!(
                     getBrowseDir('vpd'),
                     t('motion.poseLibrary'),
                     (m) => m.format === 'vpd',
-                    getMotionMenu() ?? undefined
+                    menu ?? undefined
                 );
                 level.label = t('motion.poseTo', { name: inst.name });
-                if (getMotionMenu()) {
-                    getMotionMenu()?.push(level);
+                if (menu) {
+                    menu.push(level);
                 }
             })();
             break;

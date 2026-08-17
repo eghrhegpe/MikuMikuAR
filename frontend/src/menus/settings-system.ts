@@ -648,6 +648,12 @@ function buildSoftwareDetailManagedSchema(
                         'lucide:trash-2',
                         t('settings.software.delete'),
                         async () => {
+                            // [fix] 过渡期守卫：动画窗口内 pop 会递增 _buildSeq，顶掉正在进行的
+                            // push/pop onFadeOut 序号（已有 _recoverStaleTransition 兜底不卡死）。
+                            const menu = getSettingsMenu();
+                            if (menu?.isTransitioning) {
+                                return;
+                            }
                             const r = await tryCatchStatus(
                                 async () => {
                                     await RemoveCustomSoftware(entry.path);
@@ -660,7 +666,6 @@ function buildSoftwareDetailManagedSchema(
                                     (e) => e.path !== entry.path
                                 );
                                 showInfoToast(t('settings.softwareDeleted', { name: entry.name }));
-                                const menu = getSettingsMenu();
                                 menu?.pop();
                                 menu?.reRender();
                             }
@@ -720,6 +725,12 @@ function buildSoftwareDetailAutoSchema(
                         t('settings.software.convertToCustom'),
                         false,
                         async () => {
+                            // [fix] 过渡期守卫：动画窗口内 pop 会递增 _buildSeq，顶掉正在进行的
+                            // push/pop onFadeOut 序号（已有 _recoverStaleTransition 兜底不卡死）。
+                            const menu = getSettingsMenu();
+                            if (menu?.isTransitioning) {
+                                return;
+                            }
                             const args = await showPrompt(t('settings.software.argsHint'), '');
                             if (args === null) {
                                 return;
@@ -731,7 +742,6 @@ function buildSoftwareDetailAutoSchema(
                             if (r) {
                                 cachedSoftwareEntries = await ScanSoftwareDir();
                                 showInfoToast(t('settings.softwareToCustom', { name: entry.name }));
-                                const menu = getSettingsMenu();
                                 menu?.pop();
                                 menu?.reRender();
                             }

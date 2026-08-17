@@ -2258,15 +2258,15 @@
 | `SlideMenu()` | `menus/menu:40` | — |
 | `getCurrentRenderingMenu()` | `menus/menu:40` | 获取当前正在渲染的 SlideMenu 实例（供 menus 层控件的自更新注册）。 |
 | `getOpenMenus()` | `menus/menu:48` | 获取所有当前存活的 SlideMenu 实例（已 dispose 的会自动移除，调用方仍需自行判断可见性） |
-| `buildBoneHierarchyLevel()` | `menus/model-detail:1518` | — |
-| `buildModelInfoLevel()` | `menus/model-detail:865` | — |
-| `buildModelLevel()` | `menus/model-detail:624` | — |
-| `buildModelTagsLevel()` | `menus/model-detail:1084` | — |
+| `buildBoneHierarchyLevel()` | `menus/model-detail:1525` | — |
+| `buildModelInfoLevel()` | `menus/model-detail:872` | — |
+| `buildModelLevel()` | `menus/model-detail:631` | — |
+| `buildModelTagsLevel()` | `menus/model-detail:1091` | — |
 | `buildModelToolsLevel()` | `menus/model-detail:583` | [doc:adr-167] 叠加动作次级菜单已移除（ADR-144 per-model overlay 废弃）。 |
-| `buildMorphPreviewLevel()` | `menus/model-detail:1194` | — |
+| `buildMorphPreviewLevel()` | `menus/model-detail:1201` | — |
 | `buildMotionSlotLevel()` | `menus/model-detail:442` | 构建动作1（基础）次级菜单：场景库选择 + 已加载动作 + 程序化动作 |
 | `buildOpenWithLevel()` | `menus/model-detail:281` | — |
-| `buildPersonalLightLevel()` | `menus/model-detail:1207` | — |
+| `buildPersonalLightLevel()` | `menus/model-detail:1214` | — |
 | `buildMatRootLevel()` | `menus/model-material:446` | — |
 | `ModelPresetEntry()` | `menus/model-preset:37` | — |
 | `ModelPresetFile()` | `menus/model-preset:46` | — |
@@ -2466,8 +2466,8 @@
 | `setTheme()` | `menus/settings-shared:81` | — |
 | `truncatePath()` | `menus/settings-shared:186` | 路径截断显示：超长时保留尾部（用户更关心文件名/末级目录） |
 | `addCustomSoftware()` | `menus/settings-system:440` | — |
-| `buildSettingsSystemLevel()` | `menus/settings-system:791` | — |
-| `buildSoftwareDetailLevel()` | `menus/settings-system:746` | — |
+| `buildSettingsSystemLevel()` | `menus/settings-system:801` | — |
+| `buildSoftwareDetailLevel()` | `menus/settings-system:756` | — |
 | `scanSoftwareDir()` | `menus/settings-system:466` | — |
 | `setBlenderPath()` | `menus/settings-system:412` | — |
 | `setMMDPath()` | `menus/settings-system:426` | — |

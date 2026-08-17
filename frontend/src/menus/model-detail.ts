@@ -606,10 +606,17 @@ export function buildModelToolsLevel(id: string): PopupLevel {
                 // 卸载模型：场景级撤销保护（pushUndoSnapshot + offerSceneUndo），
                 // 材质/morph/换装等未保存调整可通过撤销恢复，无需额外确认弹窗。
                 slideRow(c, 'lucide:trash-2', t('model-detail.unloadModel'), false, async () => {
+                    // [fix] 过渡期守卫：动画窗口内 popTo 会递增 _buildSeq，顶掉正在进行的
+                    // push/pop onFadeOut 序号（已有 _recoverStaleTransition 兜底不卡死，
+                    // 但避免无谓全量重建与闪烁）。
+                    const menu = stackRegistry.modelStack;
+                    if (menu?.isTransitioning) {
+                        return;
+                    }
                     const snap = pushUndoSnapshot();
                     removeModel(id);
                     // 同步返回根层级，无需等待异步
-                    stackRegistry.modelStack?.popTo(0);
+                    menu?.popTo(0);
                     offerSceneUndo(t('settings.unloaded', { name: inst.name }), snap, () => {
                         // 撤销恢复后刷新模型列表，使已恢复的模型可见（就地更新，保留浏览位置）
                         import('./library-core').then((m) => m.refreshModelRoot());
