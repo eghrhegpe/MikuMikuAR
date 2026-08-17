@@ -267,6 +267,17 @@ export function applyForceToModelRigidBodiesNative(
  */
 let _solveIkMissingWarned = false;
 let _solveIkLastWarnTime = 0; // 限频日志时间戳
+
+/** 测试用：重置所有模块级守卫状态（isolate:false 下防跨文件泄漏）。
+ * 生产代码不引用；仅测试 beforeEach 调用。 */
+export function resetMmdAdapterTestState(): void {
+    _streamAudioMissingWarned = false;
+    _modelPhysicsMissingWarned = false;
+    _nativeMissingWarned = false;
+    _solveIkMissingWarned = false;
+    _solveIkLastWarnTime = 0;
+    _windForceMissingWarned = false;
+}
 export function solveIkNative(
     wasmInstance: unknown,
     model: RuntimeModel,

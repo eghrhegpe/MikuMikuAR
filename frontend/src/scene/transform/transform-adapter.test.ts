@@ -1,8 +1,9 @@
 // @vitest-environment node
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import {
     registerTransformAdapter,
     getTransformAdapter,
+    clearTransformAdapters,
     type TransformAdapter,
 } from './transform-adapter';
 
@@ -21,6 +22,11 @@ function makeAdapter(kinds: string[], scale = 1, opacity = 1): TransformAdapter 
 }
 
 describe('transform-adapter registry (ADR-126)', () => {
+    // [fix:isolate-pollution] isolate:false 下 _adapters Map 被前序文件注册，
+    // 'returns null for unregistered kind' 拿到非 null。beforeEach 强制清空。
+    beforeEach(() => {
+        clearTransformAdapters();
+    });
     it('returns null for unregistered kind', () => {
         expect(getTransformAdapter('actor')).toBeNull();
     });

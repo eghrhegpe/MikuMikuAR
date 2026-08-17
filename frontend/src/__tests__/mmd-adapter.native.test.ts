@@ -18,6 +18,7 @@ import {
     applyForceToModelRigidBodiesNative,
     solveIkNative,
     applyWindForceToModelRigidBodiesNative,
+    resetMmdAdapterTestState,
 } from '@/core/mmd-adapter';
 import { logWarn } from '@/core/logger';
 
@@ -37,6 +38,14 @@ function makeWasmInstance(len: number): Record<string, unknown> {
 
 describe('applyForceToModelRigidBodiesNative (P2 / ADR-201)', () => {
     beforeEach(() => {
+        vi.clearAllMocks();
+        // [fix:isolate-pollution] isolate:false 下 mmd-adapter.ts 模块级限频/守卫状态
+        // （_solveIkLastWarnTime / _solveIkMissingWarned 等 6 个变量）被前序文件遗留，
+        // 限频守卫测试拿到被污染的调用计数。重置到初始态。
+        resetMmdAdapterTestState();
+    });
+
+    afterEach(() => {
         vi.clearAllMocks();
     });
 

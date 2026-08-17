@@ -7,8 +7,8 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 136 | 823 |
-| 3D 场景 | 125 | 1233 |
+| 核心基础设施 | 136 | 824 |
+| 3D 场景 | 125 | 1234 |
 | 菜单 & UI | 76 | 397 |
 | 动作算法 | 18 | 138 |
 | 顶层配置 | 1 | 1 |
@@ -392,19 +392,20 @@
 | `startSceneSnapshotPolling()` | `core/mmar-globals:197` | 启动周期快照刷新；重复调用安全（仅注册一个 timer）。 |
 | `stopSceneSnapshotPolling()` | `core/mmar-globals:207` | 停止周期快照刷新；未启动或重复调用均安全。 |
 | `updateMmarStatus()` | `core/mmar-globals:80` | — |
-| `CapabilityProbe()` | `core/mmd-adapter:390` | CapabilityProbe — 升级回归探测（ADR-192 Phase 2 守卫式反射）。 |
+| `CapabilityProbe()` | `core/mmd-adapter:401` | CapabilityProbe — 升级回归探测（ADR-192 Phase 2 守卫式反射）。 |
 | `applyForceToModelRigidBodies()` | `core/mmd-adapter:163` | — |
 | `applyForceToModelRigidBodiesNative()` | `core/mmd-adapter:210` | — |
-| `applyWindForceToModelRigidBodiesNative()` | `core/mmd-adapter:332` | — |
-| `getBoneWorldMatrix()` | `core/mmd-adapter:451` | 返回骨骼在世界坐标系下的 worldMatrix（固化自 adr-071 坐标系契约）。 |
+| `applyWindForceToModelRigidBodiesNative()` | `core/mmd-adapter:343` | — |
+| `getBoneWorldMatrix()` | `core/mmd-adapter:462` | 返回骨骼在世界坐标系下的 worldMatrix（固化自 adr-071 坐标系契约）。 |
 | `getPhysicsImpl()` | `core/mmd-adapter:39` | 从 IMmdRuntime 获取底层 MmdWasmPhysicsRuntimeImpl。 |
 | `getRigidBodyBundleMap()` | `core/mmd-adapter:75` | 返回所有 RigidBodyBundle 迭代器（条目 3 内化，ADR-192 Phase 2）。 |
 | `getRigidBodyMap()` | `core/mmd-adapter:96` | 返回所有**单数** RigidBody 迭代器（路径1 修正，ADR-200）。 |
 | `getStreamAudio()` | `core/mmd-adapter:111` | — |
-| `onBoneMatricesUpdated()` | `core/mmd-adapter:412` | 在骨骼 worldMatrix 已被 babylon-mmd 更新之后、渲染之前注册回调。 |
-| `solveIkNative()` | `core/mmd-adapter:270` | — |
-| `switchAnimation()` | `core/mmd-adapter:478` | 切换模型当前动画到新动画，并归零运行时全局时钟到第 0 帧。 |
-| `transformWorldToRootLocal()` | `core/mmd-adapter:425` | 把世界坐标系下的点转换到 rootMesh 局部坐标系（固化自 perception-gaze.ts / adr-071）。 |
+| `onBoneMatricesUpdated()` | `core/mmd-adapter:423` | 在骨骼 worldMatrix 已被 babylon-mmd 更新之后、渲染之前注册回调。 |
+| `resetMmdAdapterTestState()` | `core/mmd-adapter:273` | 测试用：重置所有模块级守卫状态（isolate:false 下防跨文件泄漏）。 |
+| `solveIkNative()` | `core/mmd-adapter:281` | — |
+| `switchAnimation()` | `core/mmd-adapter:489` | 切换模型当前动画到新动画，并归零运行时全局时钟到第 0 帧。 |
+| `transformWorldToRootLocal()` | `core/mmd-adapter:436` | 把世界坐标系下的点转换到 rootMesh 局部坐标系（固化自 perception-gaze.ts / adr-071）。 |
 | `ObserverHandle()` | `core/observer-handle:31` | 可释放的 Observer 句柄。 |
 | `ObserverRegistry()` | `core/observer-handle:93` | 管理器：收集多个 ObserverHandle，支持一次性 disposeAll()。 |
 | `observe()` | `core/observer-handle:62` | 订阅 Observable 并返回自动管理的句柄。 |
@@ -2053,18 +2054,19 @@
 | `textureLRUSize()` | `scene/shared/texture-lru:99` | 返回当前缓存条目数（供测试使用）。 |
 | `TransformAdapter()` | `scene/transform/transform-adapter:28` | — |
 | `TransformCapability()` | `scene/transform/transform-adapter:26` | — |
-| `attachGizmoForKind()` | `scene/transform/transform-adapter:69` | 统一 Gizmo 入口：替代三个 attachXxxGizmo。 |
-| `detachGizmo()` | `scene/transform/transform-adapter:86` | — |
-| `getActiveGizmoTypes()` | `scene/transform/transform-adapter:86` | — |
-| `getGizmoNode()` | `scene/transform/transform-adapter:86` | — |
-| `getGizmoSnapConfig()` | `scene/transform/transform-adapter:86` | — |
-| `getGizmoTargetId()` | `scene/transform/transform-adapter:86` | — |
+| `attachGizmoForKind()` | `scene/transform/transform-adapter:74` | 统一 Gizmo 入口：替代三个 attachXxxGizmo。 |
+| `clearTransformAdapters()` | `scene/transform/transform-adapter:66` | 测试用：清空适配器注册表（isolate:false 下防跨文件泄漏） |
+| `detachGizmo()` | `scene/transform/transform-adapter:91` | — |
+| `getActiveGizmoTypes()` | `scene/transform/transform-adapter:91` | — |
+| `getGizmoNode()` | `scene/transform/transform-adapter:91` | — |
+| `getGizmoSnapConfig()` | `scene/transform/transform-adapter:91` | — |
+| `getGizmoTargetId()` | `scene/transform/transform-adapter:91` | — |
 | `getTransformAdapter()` | `scene/transform/transform-adapter:61` | — |
-| `isGizmoActive()` | `scene/transform/transform-adapter:86` | — |
-| `isGizmoDragging()` | `scene/transform/transform-adapter:86` | — |
-| `onGizmoDragObservable()` | `scene/transform/transform-adapter:86` | — |
+| `isGizmoActive()` | `scene/transform/transform-adapter:91` | — |
+| `isGizmoDragging()` | `scene/transform/transform-adapter:91` | — |
+| `onGizmoDragObservable()` | `scene/transform/transform-adapter:91` | — |
 | `registerTransformAdapter()` | `scene/transform/transform-adapter:55` | 注册变换适配器；同一适配器可声明多个 kind（如 actor + stage） |
-| `setGizmoSnapDistance()` | `scene/transform/transform-adapter:86` | — |
+| `setGizmoSnapDistance()` | `scene/transform/transform-adapter:91` | — |
 | `isDragModeEnabled()` | `scene/transform/transform-mode:7` | — |
 | `setDragModeEnabled()` | `scene/transform/transform-mode:11` | — |
 | `TransformPickResult()` | `scene/transform/transform-pick:7` | — |

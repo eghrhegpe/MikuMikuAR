@@ -201,6 +201,24 @@ R4（无 shuffle）失败数 **108** 反而最多，说明某些固定执行顺�
 | P2 | `library-thumbnail-streaming.test.ts` | 缩略图缓存跨文件共享 | 用例级 clearThumbnailCache |
 | P3 | `water-preset-repro.test.ts` / `init.test.ts` | 仅特定顺序触发 | 金丝雀观察，暂不处理 |
 
+### 修复实证（2026-08-16 二轮）
+
+用金丝雀扫描结果指导修复，三类污染源对应三种修复模式：
+
+| 污染源 | 文件 | 修复模式 | 结果（isolate:false + shuffle 3 轮） |
+|--------|------|---------|--------------------------------------|
+| 模块级单例状态 | `wind-physics.test.ts` | `beforeEach` 调用 `disposeWindPhysics()` 强制复位 | **3/3 全绿** ✅（原 1/4 轮失败） |
+| 模块级注册表 Map | `transform-adapter.test.ts` | 源加 `clearTransformAdapters()` + 测试 `beforeEach` 清空 | **3/3 全绿** ✅（原 4/4 轮失败） |
+| 模块级限频/守卫状态 | `mmd-adapter.native.test.ts` | 源加 `resetMmdAdapterTestState()` + 测试 `beforeEach` 重置 | **部分修复** ⚠️（3/4 → 3/4 轮仍失败，`vi.mock('@/core/logger')` 形状被锁——深水区，需全局 setup mock 或动态 import 重构） |
+| vi.mock 先到先得锁 | `playback.observables.test.ts` | 尝试两轮修复（文件级 observable + scene-action-bridge mock）均使情况恶化，已回退 | **未修** ❌（与 `mmd-adapter.native` 同源，需全局 setup mock 统一入口） |
+
+**关键发现**：模块级**注册表/状态变量**泄漏（wind-physics / transform-adapter）可
+通过「源加 reset API + 测试 beforeEach 调用」低成本修复。模块级 **vi.mock 形状锁**
+（mmd-adapter.native / playback.observables）需全局 setup mock 统一入口或 per-file
+动态 import，是更深层的结构性问题，超出"测试内修复"可控范围。
+
+**全量回归**：isolate:true 6016/6016 全绿，零副作用。
+
 ## 相关文档
 
 > ADR-219 测试并发调优与 isolate 污染治理（isolate=false 判死依据）

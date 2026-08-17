@@ -62,6 +62,11 @@ export function getTransformAdapter(kind: ResourceKind): TransformAdapter | null
     return adapters.get(kind) ?? null;
 }
 
+/** 测试用：清空适配器注册表（isolate:false 下防跨文件泄漏） */
+export function clearTransformAdapters(): void {
+    adapters.clear();
+}
+
 /**
  * 统一 Gizmo 入口：替代三个 attachXxxGizmo。
  * 根据 kind 取适配器 → 取 node → attachGizmo（独占策略，自动 detach 上一个）。
