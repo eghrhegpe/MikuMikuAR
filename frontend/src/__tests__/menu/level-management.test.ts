@@ -247,6 +247,25 @@ describe('SlideMenu — ADR-065 纯 items 层级语言热刷新', () => {
         expect(container.querySelectorAll('.slide-item')).toHaveLength(1);
     });
 
+    it('buildPanel 为 slide-list 与 lcard 提供稳定 testid（脚本/代理可定位）', async () => {
+        const level: PopupLevel = {
+            label: '根',
+            dir: '',
+            items: [
+                { kind: 'action' as const, label: 'A', icon: 'i', target: 'a' },
+                { kind: 'divider' as const, label: '', icon: '', target: '' },
+                { kind: 'action' as const, label: 'B', icon: 'i', target: 'b' },
+            ],
+        };
+        menu.reset(level);
+        await new Promise((r) => requestAnimationFrame(r));
+        expect(container.querySelector('[data-testid="menu:slide-list"]')).toBeTruthy();
+        const cards = container.querySelectorAll('[data-testid^="menu:card:"]');
+        expect(cards).toHaveLength(2);
+        expect(cards[0].getAttribute('data-testid')).toBe('menu:card:0');
+        expect(cards[1].getAttribute('data-testid')).toBe('menu:card:1');
+    });
+
     it('增量 patch 保留尾随 divider 结构（不把 divider 塞进 lcard）', async () => {
         let extra = false;
         const divider = { kind: 'divider' as const, label: '', icon: '', target: '' };

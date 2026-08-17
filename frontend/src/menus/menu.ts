@@ -1147,12 +1147,15 @@ export class SlideMenu implements RenderContext {
         this._controls = [];
         const list = document.createElement('div');
         list.className = 'slide-list';
+        // 稳定根级钩子：供脚本/浏览器代理定位整个列表
+        list.dataset.testid = 'menu:slide-list';
 
         if (level.items.length === 0 && !level.renderCustom) {
             list.innerHTML = '<div class="slide-empty">' + t('common.empty') + '</div>';
         } else if (level.items.length > 0 && !level.renderCustom) {
             // 纯 items 菜单：按 divider 分组，每组包一个 lcard
             let card: HTMLElement | null = null;
+            let cardIdx = 0;
             for (const row of level.items) {
                 if (row.kind === 'divider') {
                     card = null; // 关闭当前组，下一个非 divider 行开启新组
@@ -1161,6 +1164,7 @@ export class SlideMenu implements RenderContext {
                 if (!card) {
                     card = document.createElement('div');
                     card.className = 'lcard';
+                    card.dataset.testid = `menu:card:${cardIdx++}`;
                     list.appendChild(card);
                 }
                 const el = this.createRow(row);
