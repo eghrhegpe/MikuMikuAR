@@ -14,6 +14,7 @@ import {
 } from '../core/ai/chat-store';
 import { diagState } from './diagnostic-state';
 import type { MenuNode } from './menu-schema';
+import { ROLE, ARIA_ATTR } from '../core/dom-contract';
 
 export async function doPersistSession(): Promise<void> {
     if (!diagState.sessionLoaded) {
@@ -144,7 +145,7 @@ export async function renderSessionList(container: HTMLElement): Promise<void> {
     const newBtn = document.createElement('button');
     newBtn.className = 'preset-chip diag-session-new';
     newBtn.textContent = '\uFF0B ' + t('ai.chat.newSession');
-    newBtn.setAttribute('aria-label', t('ai.chat.newSession'));
+    newBtn.setAttribute(ARIA_ATTR.label, t('ai.chat.newSession'));
     newBtn.addEventListener('click', () => void createSession());
     container.appendChild(newBtn);
     const sessions = await listSessions();
@@ -158,9 +159,9 @@ function createSessionRow(s: ChatSession): HTMLElement {
     row.className =
         'diag-session-row' +
         (s.id === diagState.activeSessionId ? ' diag-session-row--active' : '');
-    row.setAttribute('role', 'button');
+    row.setAttribute('role', ROLE.button);
     row.setAttribute('tabindex', '0');
-    row.setAttribute('aria-label', s.title || t('ai.chat.untitled'));
+    row.setAttribute(ARIA_ATTR.label, s.title || t('ai.chat.untitled'));
     row.addEventListener('click', () => void switchSession(s.id));
     row.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -176,7 +177,7 @@ function createSessionRow(s: ChatSession): HTMLElement {
     renameBtn.className = 'diag-session-btn';
     renameBtn.textContent = '\u270E';
     renameBtn.setAttribute('title', t('ai.chat.rename'));
-    renameBtn.setAttribute('aria-label', t('ai.chat.rename'));
+    renameBtn.setAttribute(ARIA_ATTR.label, t('ai.chat.rename'));
     renameBtn.addEventListener('click', async (e) => {
         e.stopPropagation();
         const name = await showPrompt(t('ai.chat.rename'), s.title);
@@ -195,7 +196,7 @@ function createSessionRow(s: ChatSession): HTMLElement {
     delBtn.className = 'diag-session-btn diag-session-btn--danger';
     delBtn.textContent = '\u2715';
     delBtn.setAttribute('title', t('ai.chat.delete'));
-    delBtn.setAttribute('aria-label', t('ai.chat.delete'));
+    delBtn.setAttribute(ARIA_ATTR.label, t('ai.chat.delete'));
     delBtn.addEventListener('click', async (e) => {
         e.stopPropagation();
         const ok = await showConfirm(t('ai.chat.deleteConfirm', { title: s.title }));

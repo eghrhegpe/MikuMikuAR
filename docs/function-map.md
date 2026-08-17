@@ -2106,25 +2106,25 @@
 | `refreshCaps()` | `menus/diagnostic-config:101` | — |
 | `refreshModelList()` | `menus/diagnostic-config:305` | — |
 | `updateStatusBadge()` | `menus/diagnostic-config:371` | — |
-| `advancePendingQueue()` | `menus/diagnostic-control:225` | 推进队列 |
-| `applyPendingAction()` | `menus/diagnostic-control:163` | 应用 pending action |
-| `cancelPendingAction()` | `menus/diagnostic-control:208` | 取消 pending action |
-| `finalizePendingBatch()` | `menus/diagnostic-control:236` | 本批处理完成：回填 tool 消息，触发后续 stream |
-| `handleControlFallback()` | `menus/diagnostic-control:28` | 处理 LLM 文本回退（无 tool_call 时） |
-| `renderControlHint()` | `menus/diagnostic-control:47` | 渲染 pending 区域（仅有可撤销操作时显示） |
-| `renderPendingAction()` | `menus/diagnostic-control:98` | 渲染待确认操作卡 |
-| `tryQueuePendingAction()` | `menus/diagnostic-control:10` | 将 LLM 文本回退解析的 action 入待确认队列 |
-| `undoLastAction()` | `menus/diagnostic-control:80` | 撤销上一个破坏性动作 |
-| `buildSessionsSchema()` | `menus/diagnostic-session:127` | — |
-| `createSession()` | `menus/diagnostic-session:73` | 由 entry point 调用——通过 callbacks 通知 UI 更新 |
-| `deleteSessionAndAdjust()` | `menus/diagnostic-session:111` | — |
-| `doPersistSession()` | `menus/diagnostic-session:18` | — |
-| `flushSession()` | `menus/diagnostic-session:45` | — |
-| `fmtTime()` | `menus/diagnostic-session:210` | — |
-| `loadActiveSession()` | `menus/diagnostic-session:50` | — |
-| `renderSessionList()` | `menus/diagnostic-session:142` | — |
-| `schedulePersistSession()` | `menus/diagnostic-session:41` | — |
-| `switchSession()` | `menus/diagnostic-session:84` | — |
+| `advancePendingQueue()` | `menus/diagnostic-control:226` | 推进队列 |
+| `applyPendingAction()` | `menus/diagnostic-control:164` | 应用 pending action |
+| `cancelPendingAction()` | `menus/diagnostic-control:209` | 取消 pending action |
+| `finalizePendingBatch()` | `menus/diagnostic-control:237` | 本批处理完成：回填 tool 消息，触发后续 stream |
+| `handleControlFallback()` | `menus/diagnostic-control:29` | 处理 LLM 文本回退（无 tool_call 时） |
+| `renderControlHint()` | `menus/diagnostic-control:48` | 渲染 pending 区域（仅有可撤销操作时显示） |
+| `renderPendingAction()` | `menus/diagnostic-control:99` | 渲染待确认操作卡 |
+| `tryQueuePendingAction()` | `menus/diagnostic-control:11` | 将 LLM 文本回退解析的 action 入待确认队列 |
+| `undoLastAction()` | `menus/diagnostic-control:81` | 撤销上一个破坏性动作 |
+| `buildSessionsSchema()` | `menus/diagnostic-session:128` | — |
+| `createSession()` | `menus/diagnostic-session:74` | 由 entry point 调用——通过 callbacks 通知 UI 更新 |
+| `deleteSessionAndAdjust()` | `menus/diagnostic-session:112` | — |
+| `doPersistSession()` | `menus/diagnostic-session:19` | — |
+| `flushSession()` | `menus/diagnostic-session:46` | — |
+| `fmtTime()` | `menus/diagnostic-session:211` | — |
+| `loadActiveSession()` | `menus/diagnostic-session:51` | — |
+| `renderSessionList()` | `menus/diagnostic-session:143` | — |
+| `schedulePersistSession()` | `menus/diagnostic-session:42` | — |
+| `switchSession()` | `menus/diagnostic-session:85` | — |
 | `DiagnosticState()` | `menus/diagnostic-state:19` | — |
 | `PendingAction()` | `menus/diagnostic-state:8` | — |
 | `PendingToolResult()` | `menus/diagnostic-state:14` | — |
