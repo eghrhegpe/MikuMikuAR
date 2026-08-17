@@ -58,6 +58,8 @@
     "build:linux": "bash scripts/build-linux.sh",
     "build:android": "powershell -ExecutionPolicy Bypass -File scripts/build-android.ps1 -Arch arm64",
     "build:android:release": "powershell -ExecutionPolicy Bypass -File scripts/build-android.ps1 -Arch arm64 -Production",
+    "android:build": "node scripts/android-build.mjs",
+    "android:install": "node scripts/android-install.mjs",
     "check:cache": "node scripts/domain-map.mjs --cache-clear",
     "check:cache:status": "node scripts/domain-map.mjs --cache-key frontend \"$(git diff --name-only HEAD~1)\" | xargs -I{} node scripts/domain-map.mjs --cache-path {}"
   }
