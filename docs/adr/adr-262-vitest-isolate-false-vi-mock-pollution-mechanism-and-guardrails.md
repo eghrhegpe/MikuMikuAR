@@ -132,6 +132,75 @@ export function makeIdbMock() {
 - **无行为变化**：全局 mock 与 per-file mock 使用同一 `makeIdbMock()` 工厂，读写同一
   `idbStore`，测试行为不变。
 
+## 五、实证：isolate:false 技术债务扫描（2026-08-16）
+
+ADR-219 判 isolate:false "结构性不可修"，但未说清**哪些债务在污染**。本节用
+`isolate:false` 作为金丝雀扫描器，四轮实验（3 轮 shuffle + 1 轮无 shuffle）定位
+隐性时序耦合的分布与性质。
+
+### 实验设置
+
+| 轮次 | 命令 | 失败用例 | 失败文件 | 墙钟 |
+|------|------|---------|---------|------|
+| 基线 | `test:unit`（isolate:true，4 workers） | **0** | **0** | 63.43s |
+| R1 | `test:unit --no-isolate --sequence.shuffle` | 65 | 12 | 26.60s |
+| R2 | `test:unit --no-isolate --sequence.shuffle` | 59 | 10 | 25.46s |
+| R3 | `test:unit --no-isolate --sequence.shuffle` | 61 | 11 | — |
+| R4 | `test:unit --no-isolate`（无 shuffle） | 108 | 12 | 26.70s |
+
+### 交叉比对结果：稳定 vs 飘移
+
+四轮失败文件按出现频次分类：
+
+| 类别 | 轮次命中 | 文件数 | 文件列表 | 性质 |
+|------|---------|--------|---------|------|
+| **🔴 稳定失败** | 4/4 | **6** | `camera.test.ts` / `library-core.test.ts` / `library-thumbnail-streaming.test.ts` / `lighting-stage.test.ts` / `mmd-adapter.contract.test.ts` / `model-manager.test.ts` | 结构性债务：与执行顺序无关，模块级单例状态（`env-context._scene`、engine 实例、observable 订阅）被共享后必然泄漏 |
+| **🟠 强信号** | 3/4 | **5** | `env-ground.test.ts` / `lighting-follow.test.ts` / `performance-snapshot.test.ts` / `playback.observables.test.ts` / `thumbnail-capture.test.ts` | 结构性 + 顺序叠加：共享状态污染存在，但某些顺序下恰好不被触发 |
+| **🟡 飘移失败** | 1/4 | **6** | `init.test.ts` / `library-actions.test.ts` / `motion-modules-registry.conflict.test.ts` / `motion-modules-registry.param.test.ts` / `motion-modules-registry.side-hooks.test.ts` / `water-preset-repro.test.ts` | 纯顺序敏感：是 ADR-262 金丝雀视角真正捕获的目标 |
+
+**无中间态**（无 2/4 轮文件）——债务分布很干净：要么与顺序无关（结构性），要么
+与顺序强相关（飘移），没有"偶尔碰巧"的灰色地带。
+
+### 诊断公式
+
+```
+稳定失败（4/4轮）  =  模块级单例状态泄漏     →  需要源码重构（参数化/DI/工厂）
+强信号（3/4轮）    =  结构性污染 + 顺序屏蔽    →  结构性修 + 可暂不处理
+飘移失败（1/4轮）  =  纯顺序敏感                →  金丝雀真正指向的 bug，优先修
+```
+
+R4（无 shuffle）失败数 **108** 反而最多，说明某些固定执行顺序下积累的污染更集中
+（如 `camera.test.ts` 75/75 全挂——前序测试 dispose 了 engine，camera 测试的
+`initCameraSystem` 拿不到引擎）。shuffle 反而打散了某些污染路径，让部分用例"侥幸"
+通过。这印证了 ADR-262 §一的"三条件合取"公式：**隔离税消掉后，模块级单例状态
+这个第四条件才是真正的主污染源**。
+
+### 与 ADR-219 判死的修正关系
+
+- **ADR-219 结论保留**：`isolate:false` 在当前代码库不可用。
+- **ADR-219 理由修正**：原表述"vi.mock 单例穿透结构性不可修"——实际 vi.mock 只是
+  入口（入口污染 3300 用例），深层污染源是**模块级单例状态**（`env-context._scene`、
+  engine 实例、observable 订阅），vi.mock 修复后从 3300 降到 60~110 用例，但结构性
+  债务仍在。ADR-262 的护栏（全局 setup mock + per-file mock 纪律）只覆盖入口层，
+  深层债务需要源码级重构（参数化 / DI / 工厂模式）。
+- **速度收益真实但代价沉重**：26s vs 63s = 2.4 倍加速，但 60~110 用例（1~2%）失败
+  且 shuffle 下不可预测。这是"用不确定性换速度"，不值得。
+
+### 技术债务清单（待修，优先级按出现频次）
+
+| 优先级 | 文件 | 根因推断 | 修复方向 |
+|--------|------|---------|---------|
+| P0 | `camera.test.ts` | engine 实例被前序测试释放 | 每个用例独立 initCameraSystem + disposeCameraSystem（当前已有但跨文件泄漏） |
+| P0 | `library-core.test.ts` | modelRegistry/uiState 模块级单例 | 用例级 reset，或改 DI 注入 |
+| P0 | `model-manager.test.ts` | mmdRuntime 模块级单例 | 用例级 createMmdRuntime + disposeMmdRuntime |
+| P0 | `lighting-stage.test.ts` | 场景灯注册表跨文件共享 | 用例级创建独立 scene + disposeLighting |
+| P1 | `env-ground.test.ts` | `env-context._scene` 被前序测试置空 | 用例级 initScene 保证，或改工厂返回 |
+| P1 | `playback.observables.test.ts` | observable 订阅状态跨文件累积 | 用例级 unsubscribe + reset |
+| P1 | `mmd-adapter.contract.test.ts` | mmdRuntime 跨文件共享 | 用例级独立 runtime |
+| P2 | `motion-modules-registry.*` | 模块启用状态跨文件累积 | 用例级 setModuleEnabled(false) 或 reset |
+| P2 | `library-thumbnail-streaming.test.ts` | 缩略图缓存跨文件共享 | 用例级 clearThumbnailCache |
+| P3 | `water-preset-repro.test.ts` / `init.test.ts` | 仅特定顺序触发 | 金丝雀观察，暂不处理 |
+
 ## 相关文档
 
 > ADR-219 测试并发调优与 isolate 污染治理（isolate=false 判死依据）
