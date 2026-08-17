@@ -31,7 +31,7 @@ import {
     SaveScenePreset,
 } from '../core/wails-bindings';
 import { presetListContent } from './preset-list-viewer';
-import { reRenderSceneMenu } from './scene-menu-state';
+import { getSceneMenu, reRenderSceneMenu } from './scene-menu-state';
 import { FILTER_PRESET_LABELS, getFilterPreset } from './scene-render-presets';
 import { t } from '../core/i18n/t';
 import { translateGoError } from '../core/i18n/goerr';
@@ -136,21 +136,28 @@ export function buildPresetScenesLevel(): PopupLevel {
                     });
                 });
                 slideRow(c, 'lucide:save', t('scene.saveScene'), false, async () => {
-                    const json = JSON.stringify(serializeScene(), null, 2);
-                    try {
-                        const filename = await SaveScenePreset(json);
+                    // [doc:adr] 统一异步守卫：transitioning 期间忽略点击 + await 后 stale 复查
+                    const menu = getSceneMenu();
+                    await menu?.guardedRun(async (stale) => {
+                        const json = JSON.stringify(serializeScene(), null, 2);
                         try {
-                            await navigator.clipboard.writeText(json);
-                            showInfoToast(t('scene.statusSceneSavedClipboard', { filename }));
-                        } catch {
-                            showInfoToast(t('scene.statusSceneSaved', { filename }));
+                            const filename = await SaveScenePreset(json);
+                            try {
+                                await navigator.clipboard.writeText(json);
+                                showInfoToast(t('scene.statusSceneSavedClipboard', { filename }));
+                            } catch {
+                                showInfoToast(t('scene.statusSceneSaved', { filename }));
+                            }
+                            if (stale()) {
+                                return;
+                            }
+                            reRenderSceneMenu();
+                        } catch (err) {
+                            const msg = translateGoError(err);
+                            feedbackStatus('scene.statusSaveFailed', undefined, false);
+                            showErrorToast(t('scene.toastSaveSceneFailed'), msg);
                         }
-                        reRenderSceneMenu();
-                    } catch (err) {
-                        const msg = translateGoError(err);
-                        feedbackStatus('scene.statusSaveFailed', undefined, false);
-                        showErrorToast(t('scene.toastSaveSceneFailed'), msg);
-                    }
+                    });
                 });
             });
             // 卡片 3：导入 / 导出场景包（低频操作置底）

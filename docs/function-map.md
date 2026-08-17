@@ -2086,26 +2086,26 @@
 | 符号 | 文件:行 | 说明 |
 |------|--------|------|
 | `showAssistant()` | `menus/assistant-panel:27` | — |
-| `addAssistantMessage()` | `menus/diagnostic-chat:20` | 添加助手消息 |
-| `buildChatSchema()` | `menus/diagnostic-chat:397` | 构建 chat schema（纯 DOM 构建） |
-| `buildSystemMessage()` | `menus/diagnostic-chat:351` | 构造 system message |
-| `finalizeStream()` | `menus/diagnostic-chat:260` | 流式完成收尾（非 dialogue 模式） |
-| `finalizeStreamRow()` | `menus/diagnostic-chat:239` | 定格 streaming row（移除 streaming class + Markdown 渲染） |
-| `pruneHistory()` | `menus/diagnostic-chat:319` | 历史截断 |
-| `renderChat()` | `menus/diagnostic-chat:25` | 全量重绘对话区 |
-| `renderDialogueCards()` | `menus/diagnostic-chat:295` | 渲染情绪卡片（台词模式） |
-| `renderStreamingChunk()` | `menus/diagnostic-chat:178` | 流式追加 chunk 到当前 streaming row |
-| `showPendingBubble()` | `menus/diagnostic-chat:155` | 显示"思考中"占位气泡 |
-| `updateSendButton()` | `menus/diagnostic-chat:380` | 更新发送/停止按钮 |
-| `updateSpeakToggle()` | `menus/diagnostic-chat:363` | 更新朗读开关 UI（不支持时隐藏） |
-| `applyProvider()` | `menus/diagnostic-config:259` | — |
-| `buildConfigSchema()` | `menus/diagnostic-config:473` | — |
-| `goKeyAllowsProceed()` | `menus/diagnostic-config:30` | — |
-| `loadInitialConfig()` | `menus/diagnostic-config:73` | — |
-| `persistConfig()` | `menus/diagnostic-config:218` | — |
-| `refreshCaps()` | `menus/diagnostic-config:100` | — |
-| `refreshModelList()` | `menus/diagnostic-config:304` | — |
-| `updateStatusBadge()` | `menus/diagnostic-config:370` | — |
+| `addAssistantMessage()` | `menus/diagnostic-chat:21` | 添加助手消息 |
+| `buildChatSchema()` | `menus/diagnostic-chat:398` | 构建 chat schema（纯 DOM 构建） |
+| `buildSystemMessage()` | `menus/diagnostic-chat:352` | 构造 system message |
+| `finalizeStream()` | `menus/diagnostic-chat:261` | 流式完成收尾（非 dialogue 模式） |
+| `finalizeStreamRow()` | `menus/diagnostic-chat:240` | 定格 streaming row（移除 streaming class + Markdown 渲染） |
+| `pruneHistory()` | `menus/diagnostic-chat:320` | 历史截断 |
+| `renderChat()` | `menus/diagnostic-chat:26` | 全量重绘对话区 |
+| `renderDialogueCards()` | `menus/diagnostic-chat:296` | 渲染情绪卡片（台词模式） |
+| `renderStreamingChunk()` | `menus/diagnostic-chat:179` | 流式追加 chunk 到当前 streaming row |
+| `showPendingBubble()` | `menus/diagnostic-chat:156` | 显示"思考中"占位气泡 |
+| `updateSendButton()` | `menus/diagnostic-chat:381` | 更新发送/停止按钮 |
+| `updateSpeakToggle()` | `menus/diagnostic-chat:364` | 更新朗读开关 UI（不支持时隐藏） |
+| `applyProvider()` | `menus/diagnostic-config:260` | — |
+| `buildConfigSchema()` | `menus/diagnostic-config:474` | — |
+| `goKeyAllowsProceed()` | `menus/diagnostic-config:31` | — |
+| `loadInitialConfig()` | `menus/diagnostic-config:74` | — |
+| `persistConfig()` | `menus/diagnostic-config:219` | — |
+| `refreshCaps()` | `menus/diagnostic-config:101` | — |
+| `refreshModelList()` | `menus/diagnostic-config:305` | — |
+| `updateStatusBadge()` | `menus/diagnostic-config:371` | — |
 | `advancePendingQueue()` | `menus/diagnostic-control:225` | 推进队列 |
 | `applyPendingAction()` | `menus/diagnostic-control:163` | 应用 pending action |
 | `cancelPendingAction()` | `menus/diagnostic-control:208` | 取消 pending action |
@@ -2258,16 +2258,16 @@
 | `SlideMenu()` | `menus/menu:40` | — |
 | `getCurrentRenderingMenu()` | `menus/menu:40` | 获取当前正在渲染的 SlideMenu 实例（供 menus 层控件的自更新注册）。 |
 | `getOpenMenus()` | `menus/menu:48` | 获取所有当前存活的 SlideMenu 实例（已 dispose 的会自动移除，调用方仍需自行判断可见性） |
-| `buildBoneHierarchyLevel()` | `menus/model-detail:1525` | — |
-| `buildModelInfoLevel()` | `menus/model-detail:872` | — |
-| `buildModelLevel()` | `menus/model-detail:631` | — |
-| `buildModelTagsLevel()` | `menus/model-detail:1091` | — |
+| `buildBoneHierarchyLevel()` | `menus/model-detail:1527` | — |
+| `buildModelInfoLevel()` | `menus/model-detail:874` | — |
+| `buildModelLevel()` | `menus/model-detail:633` | — |
+| `buildModelTagsLevel()` | `menus/model-detail:1093` | — |
 | `buildModelToolsLevel()` | `menus/model-detail:583` | [doc:adr-167] 叠加动作次级菜单已移除（ADR-144 per-model overlay 废弃）。 |
-| `buildMorphPreviewLevel()` | `menus/model-detail:1201` | — |
+| `buildMorphPreviewLevel()` | `menus/model-detail:1203` | — |
 | `buildMotionSlotLevel()` | `menus/model-detail:442` | 构建动作1（基础）次级菜单：场景库选择 + 已加载动作 + 程序化动作 |
 | `buildOpenWithLevel()` | `menus/model-detail:281` | — |
-| `buildPersonalLightLevel()` | `menus/model-detail:1214` | — |
-| `buildMatRootLevel()` | `menus/model-material:446` | — |
+| `buildPersonalLightLevel()` | `menus/model-detail:1216` | — |
+| `buildMatRootLevel()` | `menus/model-material:453` | — |
 | `ModelPresetEntry()` | `menus/model-preset:37` | — |
 | `ModelPresetFile()` | `menus/model-preset:46` | — |
 | `applyModelPreset()` | `menus/model-preset:127` | — |
@@ -2297,11 +2297,11 @@
 | `getGazeSchema()` | `menus/motion-gaze-levels:55` | 导出 gaze schema 供 menu-registry 静态分析（ADR-093 元测试） |
 | `renderPerceptionConflictBanners()` | `menus/motion-gaze-levels:474` | [doc:adr-166 P2-3] 渲染「焦点 + 全部 pinned」模型的感知层冲突 banner。 |
 | `updatePerceptionConflictBanner()` | `menus/motion-gaze-levels:436` | [doc:adr-163/adr-164/adr-166] 渲染指定模型的感知层骨骼冲突 banner |
-| `buildAdvancedBoneOverrideLevel()` | `menus/motion-override-levels:964` | — |
-| `buildModuleParamLevel()` | `menus/motion-override-levels:477` | 模块参数子页：渲染模块的 buildSchema() |
-| `renderOverrideCard()` | `menus/motion-override-levels:203` | [doc:adr-116/125] 动作覆盖卡片：标题栏（撤销/重做/历史）+ 骨骼冲突 banner + 模块开关列表 + 高级骨骼覆盖入口。提取自已移除的独立覆盖页（原死路由 |
+| `buildAdvancedBoneOverrideLevel()` | `menus/motion-override-levels:975` | — |
+| `buildModuleParamLevel()` | `menus/motion-override-levels:484` | 模块参数子页：渲染模块的 buildSchema() |
+| `renderOverrideCard()` | `menus/motion-override-levels:210` | [doc:adr-116/125] 动作覆盖卡片：标题栏（撤销/重做/历史）+ 骨骼冲突 banner + 模块开关列表 + 高级骨骼覆盖入口。提取自已移除的独立覆盖页（原死路由 |
 | `renderPresetCard()` | `menus/motion-override-levels:74` | [doc:adr-145] 动作预设卡片：标题栏（保存按钮）+ 预设列表 / 空状态。 |
-| `syncOverrideToInstance()` | `menus/motion-override-levels:978` | 将 bone-override.ts 的运行时状态同步回 ModelInstance.boneOverrides 用于持久化 |
+| `syncOverrideToInstance()` | `menus/motion-override-levels:989` | 将 bone-override.ts 的运行时状态同步回 ModelInstance.boneOverrides 用于持久化 |
 | `applyIntentToModel()` | `menus/motion-popup:30` | — |
 | `buildMotionRootItems()` | `menus/motion-popup:36` | — |
 | `disposeMotionPopup()` | `menus/motion-popup:78` | 释放 motion-popup 模块资源（取消注册 hooks + UI actions + HMR/清理时调用） |
@@ -2421,9 +2421,9 @@
 | `buildPhysicsDebugLevel()` | `menus/scene-physics-levels:155` | 构建物理调试子页（材质线框/骨骼 — WASM 相关，由模型详情页调用） |
 | `buildPhysicsLevel()` | `menus/scene-physics-levels:37` | 构建 WASM 物理子页（Bullet 骨髁物理 — per-model） |
 | `buildWasmPhysicsLevel()` | `menus/scene-physics-levels:88` | 构建 WASM 物理子页（Bullet 骨髁物理信息 + 全局开关） |
-| `buildPostProcessColorSchema()` | `menus/scene-render-levels:419` | 后处理 schema — 色彩层（色调映射） |
-| `buildPostProcessCoreSchema()` | `menus/scene-render-levels:198` | 后处理 schema — 核心层（高频效果）+ 高级层（光学/环境效果） |
-| `buildPostProcessLevel()` | `menus/scene-render-levels:516` | — |
+| `buildPostProcessColorSchema()` | `menus/scene-render-levels:426` | 后处理 schema — 色彩层（色调映射） |
+| `buildPostProcessCoreSchema()` | `menus/scene-render-levels:205` | 后处理 schema — 核心层（高频效果）+ 高级层（光学/环境效果） |
+| `buildPostProcessLevel()` | `menus/scene-render-levels:523` | — |
 | `buildPresetScenesLevel()` | `menus/scene-render-levels:104` | — |
 | `FILTER_PRESET_LABELS()` | `menus/scene-render-presets:149` | — |
 | `USER_FILTER_PRESETS()` | `menus/scene-render-presets:293` | — |
@@ -2432,7 +2432,7 @@
 | `showPresetSaveDialog()` | `menus/scene-render-presets:267` | — |
 | `buildStageLevel()` | `menus/scene-stage-levels:161` | — |
 | `buildStageTransformLevel()` | `menus/scene-stage-levels:175` | — |
-| `buildStageLightLevel()` | `menus/scene-stage-lights:823` | — |
+| `buildStageLightLevel()` | `menus/scene-stage-lights:833` | — |
 | `buildSettingsAboutLevel()` | `menus/settings-about:247` | — |
 | `handleSettingsAction()` | `menus/settings-actions:21` | 全局设置项点击分发：语言切换 + 动作表。settings.ts 的 onItemClick 使用。 |
 | `buildSettingsAppearanceLevel()` | `menus/settings-appearance:513` | — |
@@ -2466,8 +2466,8 @@
 | `setTheme()` | `menus/settings-shared:81` | — |
 | `truncatePath()` | `menus/settings-shared:186` | 路径截断显示：超长时保留尾部（用户更关心文件名/末级目录） |
 | `addCustomSoftware()` | `menus/settings-system:440` | — |
-| `buildSettingsSystemLevel()` | `menus/settings-system:801` | — |
-| `buildSoftwareDetailLevel()` | `menus/settings-system:756` | — |
+| `buildSettingsSystemLevel()` | `menus/settings-system:810` | — |
+| `buildSoftwareDetailLevel()` | `menus/settings-system:765` | — |
 | `scanSoftwareDir()` | `menus/settings-system:466` | — |
 | `setBlenderPath()` | `menus/settings-system:412` | — |
 | `setMMDPath()` | `menus/settings-system:426` | — |

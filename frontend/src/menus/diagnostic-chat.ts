@@ -15,6 +15,7 @@ import {
 } from '../core/ai/dialogue-session';
 import { renderPendingAction, renderControlHint } from './diagnostic-control';
 import type { MenuNode } from './menu-schema';
+import { ROLE, ARIA_ATTR } from '../core/dom-contract';
 
 /** 添加助手消息 */
 export function addAssistantMessage(text: string): void {
@@ -372,8 +373,8 @@ export function updateSpeakToggle(): void {
     diagState.speakToggleBtn.textContent = diagState.speakEnabled
         ? t('ai.dialogue.speakOn')
         : t('ai.dialogue.speakOff');
-    diagState.speakToggleBtn.setAttribute('aria-checked', String(diagState.speakEnabled));
-    diagState.speakToggleBtn.setAttribute('aria-label', t('ai.dialogue.speakToggle'));
+    diagState.speakToggleBtn.setAttribute(ARIA_ATTR.checked, String(diagState.speakEnabled));
+    diagState.speakToggleBtn.setAttribute(ARIA_ATTR.label, t('ai.dialogue.speakToggle'));
 }
 
 /** 更新发送/停止按钮 */
@@ -384,11 +385,11 @@ export function updateSendButton(): void {
     }
     if (diagState.isStreaming) {
         sendBtn.innerHTML = '\u25A0';
-        sendBtn.setAttribute('aria-label', t('ai.chat.stop'));
+        sendBtn.setAttribute(ARIA_ATTR.label, t('ai.chat.stop'));
         sendBtn.disabled = false;
     } else {
         sendBtn.innerHTML = '\u25B6';
-        sendBtn.setAttribute('aria-label', t('ai.chat.send'));
+        sendBtn.setAttribute(ARIA_ATTR.label, t('ai.chat.send'));
         sendBtn.disabled = diagState.pendingAction !== null || !diagState.aiResolved;
     }
 }
@@ -401,7 +402,7 @@ export function buildChatSchema(): MenuNode[] {
             kind: 'custom',
             renderCustom: (c) => {
                 diagState.chatContainer = document.createElement('div');
-                diagState.chatContainer.setAttribute('aria-live', 'polite');
+                diagState.chatContainer.setAttribute(ARIA_ATTR.live, 'polite');
                 diagState.chatContainer.setAttribute('aria-relevant', 'additions');
                 diagState.chatContainer.className = 'diag-chat-box';
                 c.appendChild(diagState.chatContainer);
@@ -410,7 +411,7 @@ export function buildChatSchema(): MenuNode[] {
                 inputRow.className = 'diag-input-row';
                 diagState.inputEl = document.createElement('textarea');
                 diagState.inputEl.placeholder = t('ai.chat.placeholder');
-                diagState.inputEl.setAttribute('aria-label', t('ai.chat.placeholder'));
+                diagState.inputEl.setAttribute(ARIA_ATTR.label, t('ai.chat.placeholder'));
                 diagState.inputEl.className = 'diag-textarea';
                 diagState.inputEl.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
@@ -427,14 +428,14 @@ export function buildChatSchema(): MenuNode[] {
                 const sendBtn = document.createElement('button');
                 sendBtn.id = 'diag-send-btn';
                 sendBtn.className = 'preset-chip diag-btn-icon';
-                sendBtn.setAttribute('aria-label', t('ai.chat.send'));
+                sendBtn.setAttribute(ARIA_ATTR.label, t('ai.chat.send'));
                 sendBtn.innerHTML = '\u25B6';
                 btnRow.appendChild(sendBtn);
 
                 const clearBtn = document.createElement('button');
                 clearBtn.id = 'diag-clear-btn';
                 clearBtn.className = 'preset-chip diag-btn-icon';
-                clearBtn.setAttribute('aria-label', t('ai.chat.clear'));
+                clearBtn.setAttribute(ARIA_ATTR.label, t('ai.chat.clear'));
                 clearBtn.innerHTML = '\u2715';
                 btnRow.appendChild(clearBtn);
 
@@ -446,14 +447,14 @@ export function buildChatSchema(): MenuNode[] {
                 dialogueToggle.id = 'diag-dialogue-toggle';
                 dialogueToggle.className = 'preset-chip diag-btn-icon';
                 dialogueToggle.setAttribute('aria-pressed', 'false');
-                dialogueToggle.setAttribute('aria-label', t('ai.mode.dialogue'));
+                dialogueToggle.setAttribute(ARIA_ATTR.label, t('ai.mode.dialogue'));
                 dialogueToggle.innerHTML = '\uD83D\uDCAC';
                 btnRow.appendChild(dialogueToggle);
 
                 const roleSelect = document.createElement('select');
                 roleSelect.className = 'diag-role-select';
                 roleSelect.style.display = 'none';
-                roleSelect.setAttribute('aria-label', t('ai.dialogue.roleSelect'));
+                roleSelect.setAttribute(ARIA_ATTR.label, t('ai.dialogue.roleSelect'));
                 for (const bible of listBibles()) {
                     const opt = document.createElement('option');
                     opt.value = bible.id;
@@ -494,7 +495,7 @@ export function buildChatSchema(): MenuNode[] {
                 diagState.speakToggleBtn = document.createElement('button');
                 diagState.speakToggleBtn.id = 'diag-speak-toggle';
                 diagState.speakToggleBtn.className = 'preset-chip diag-btn-icon';
-                diagState.speakToggleBtn.setAttribute('role', 'switch');
+                diagState.speakToggleBtn.setAttribute('role', ROLE.switch);
                 diagState.speakToggleBtn.innerHTML = '\uD83D\uDD0A';
                 diagState.speakToggleBtn.addEventListener('click', () => {
                     diagState.speakEnabled = !diagState.speakEnabled;

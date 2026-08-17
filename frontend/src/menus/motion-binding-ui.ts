@@ -418,43 +418,47 @@ export async function handleModelAction(action: string, id: string): Promise<voi
             break;
         case 'reset':
             if (inst.mmdModel && mmdRuntime) {
-                if (!(await showConfirm(t('motion.resetConfirm')))) {
-                    return;
-                }
-                // [doc:adr-167] 清空整个场景动作库 + 默认动作
-                clearAllSceneMotions();
-                if (isPlaying) {
-                    mmdRuntime.pauseAnimation();
-                    setIsPlaying(false);
-                }
-                updatePlaybackUI();
-                if (getMotionMenu()) {
-                    getMotionMenu()?.reRender();
-                }
-                // [fix] 同步刷新模型详情栈：「动作根」卡片翻成「无动作」
-                stackRegistry.modelStack?.reRender();
-                feedbackInfo('motion.motionReset', undefined);
+                // [doc:adr] 统一异步守卫：transitioning 期间忽略点击 + await 后 stale 复查
+                const menu = getMotionMenu();
+                await menu?.guardedRun(async (stale) => {
+                    if (!(await showConfirm(t('motion.resetConfirm')))) {
+                        return;
+                    }
+                    if (stale()) {
+                        return;
+                    }
+                    // [doc:adr-167] 清空整个场景动作库 + 默认动作
+                    clearAllSceneMotions();
+                    if (isPlaying) {
+                        mmdRuntime.pauseAnimation();
+                        setIsPlaying(false);
+                    }
+                    updatePlaybackUI();
+                    menu?.reRender();
+                    // [fix] 同步刷新模型详情栈：「动作根」卡片翻成「无动作」
+                    stackRegistry.modelStack?.reRender();
+                    feedbackInfo('motion.motionReset', undefined);
+                });
             }
             break;
         case 'pose':
-            (async () => {
-                // [fix] 过渡期守卫：动画窗口内 push 会递增 _buildSeq，顶掉正在进行的
-                // push/pop onFadeOut 序号（已有 _recoverStaleTransition 兜底不卡死）。
+            {
+                // [doc:adr] 统一异步守卫：transitioning 期间忽略点击 + stale 复查后再 push
                 const menu = getMotionMenu();
-                if (menu?.isTransitioning) {
-                    return;
-                }
-                const level = stackRegistry.buildLevel!(
-                    getBrowseDir('vpd'),
-                    t('motion.poseLibrary'),
-                    (m) => m.format === 'vpd',
-                    menu ?? undefined
-                );
-                level.label = t('motion.poseTo', { name: inst.name });
-                if (menu) {
-                    menu.push(level);
-                }
-            })();
+                await menu?.guardedRun(async (stale) => {
+                    const level = stackRegistry.buildLevel!(
+                        getBrowseDir('vpd'),
+                        t('motion.poseLibrary'),
+                        (m) => m.format === 'vpd',
+                        menu ?? undefined
+                    );
+                    level.label = t('motion.poseTo', { name: inst.name });
+                    if (stale()) {
+                        return;
+                    }
+                    menu?.push(level);
+                });
+            }
             break;
         case 'loop':
             setAutoLoop(!autoLoop);

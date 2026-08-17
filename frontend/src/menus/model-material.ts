@@ -403,17 +403,24 @@ function buildMatRootSchema(
                         t('model-material.unlitFallback'),
                         false,
                         async () => {
-                            const ok = await showConfirm(
-                                t('model-material.unlitFallbackConfirm'),
-                                t('model-material.unlitFallbackTitle')
-                            );
-                            if (!ok) {
-                                return;
-                            }
-                            applyUnlitFallback(id);
-                            _selectedMat = null;
-                            (targetStack ?? stackRegistry.modelStack)?.reRender();
-                            feedbackInfo('model-material.unlitFallbackDone', undefined);
+                            // [doc:adr] 统一异步守卫：transitioning 期间忽略点击 + await 后 stale 复查
+                            const menu = targetStack ?? stackRegistry.modelStack;
+                            await menu?.guardedRun(async (stale) => {
+                                const ok = await showConfirm(
+                                    t('model-material.unlitFallbackConfirm'),
+                                    t('model-material.unlitFallbackTitle')
+                                );
+                                if (!ok) {
+                                    return;
+                                }
+                                applyUnlitFallback(id);
+                                _selectedMat = null;
+                                if (stale()) {
+                                    return;
+                                }
+                                menu?.reRender();
+                                feedbackInfo('model-material.unlitFallbackDone', undefined);
+                            });
                         }
                     );
                 });

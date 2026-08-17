@@ -788,30 +788,40 @@ function buildStageLightSchema(): MenuNode[] {
                         'lucide:trash-2',
                         t('scene.deleteLight', { name: state.name }),
                         async () => {
-                            try {
-                                if (
-                                    !(await showConfirm(
-                                        t('scene.confirmDeleteLight', { name: state.name })
-                                    ))
-                                ) {
-                                    return;
+                            // [doc:adr] 统一异步守卫：transitioning 期间忽略点击 + await 后 stale 复查
+                            const menu = getSceneMenu();
+                            await menu?.guardedRun(async (stale) => {
+                                try {
+                                    if (
+                                        !(await showConfirm(
+                                            t('scene.confirmDeleteLight', { name: state.name })
+                                        ))
+                                    ) {
+                                        return;
+                                    }
+                                    if (stale()) {
+                                        return;
+                                    }
+                                    if (!getStageLights().find((l) => l.id === state.id)) {
+                                        menu?.reRender();
+                                        return;
+                                    }
+                                    // [doc:adr-127] 场景级撤销保护：快照含 stageLights，可完整还原（ADR-130 Phase 2.6 缺口 B）
+                                    const snap = pushUndoSnapshot();
+                                    removeStageLight(state.id);
+                                    if (stale()) {
+                                        return;
+                                    }
+                                    menu?.reRender();
+                                    offerSceneUndo(t('scene.statusLightDeleted'), snap, () =>
+                                        reRenderSceneMenu()
+                                    );
+                                } catch (err) {
+                                    // [fix P3] async onClick 经 slideRow 同步调用无 .catch 兜底——
+                                    // 任一步骤抛异常产生 unhandled rejection 且删除状态不一致
+                                    logWarn('scene-stage-lights', 'delete light failed', err);
                                 }
-                                if (!getStageLights().find((l) => l.id === state.id)) {
-                                    reRenderSceneMenu();
-                                    return;
-                                }
-                                // [doc:adr-127] 场景级撤销保护：快照含 stageLights，可完整还原（ADR-130 Phase 2.6 缺口 B）
-                                const snap = pushUndoSnapshot();
-                                removeStageLight(state.id);
-                                reRenderSceneMenu();
-                                offerSceneUndo(t('scene.statusLightDeleted'), snap, () =>
-                                    reRenderSceneMenu()
-                                );
-                            } catch (err) {
-                                // [fix P3] async onClick 经 slideRow 同步调用无 .catch 兜底——
-                                // 任一步骤抛异常产生 unhandled rejection 且删除状态不一致
-                                logWarn('scene-stage-lights', 'delete light failed', err);
-                            }
+                            });
                         }
                     );
                 });

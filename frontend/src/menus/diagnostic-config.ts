@@ -26,6 +26,7 @@ import { goKeyAllowsProceed as coreGoKeyAllowsProceed } from '../core/ai/go-key-
 // Local
 import { diagState } from './diagnostic-state';
 import type { MenuNode } from './menu-schema';
+import { ROLE, ARIA_ATTR } from '../core/dom-contract';
 
 export function goKeyAllowsProceed(validation: ReturnType<typeof validateAiConfig>): boolean {
     // [audit:round19] 薄包装：isGo/keyConfigured 来自 diagState，判定语义统一走 core 严格版
@@ -511,7 +512,7 @@ function renderConfigCard(c: HTMLElement): void {
     const adviceEl = document.createElement('div');
     adviceEl.className = 'diag-advice';
     adviceEl.style.display = 'none';
-    adviceEl.setAttribute('role', 'status');
+    adviceEl.setAttribute('role', ROLE.status);
     c.appendChild(adviceEl);
     diagState.adviceEl = adviceEl;
 
@@ -537,7 +538,7 @@ function renderConfigCard(c: HTMLElement): void {
     const docLink = document.createElement('a');
     docLink.target = '_blank';
     docLink.className = 'diag-link';
-    docLink.setAttribute('aria-label', t('ai.config.doc', { provider: '' }));
+    docLink.setAttribute(ARIA_ATTR.label, t('ai.config.doc', { provider: '' }));
     providerRow.appendChild(docLink);
     diagState.activeDocLink = docLink;
     c.appendChild(providerRow);
@@ -545,7 +546,7 @@ function renderConfigCard(c: HTMLElement): void {
     diagState.corsWarningEl = document.createElement('div');
     diagState.corsWarningEl.textContent = t('ai.config.corsWarning');
     diagState.corsWarningEl.className = 'diag-warning';
-    diagState.corsWarningEl.setAttribute('role', 'alert');
+    diagState.corsWarningEl.setAttribute('role', ROLE.alert);
     c.appendChild(diagState.corsWarningEl);
 
     diagState.relayStatusEl = document.createElement('div');
@@ -616,7 +617,7 @@ function renderConfigCard(c: HTMLElement): void {
     modelInput.className = 'diag-input';
     modelInput.value = diagState.localConfig.model;
     modelInput.setAttribute('list', 'diag-model-list');
-    modelInput.setAttribute('aria-label', t('ai.config.model'));
+    modelInput.setAttribute(ARIA_ATTR.label, t('ai.config.model'));
     modelInput.addEventListener('input', () => {
         diagState.localConfig.model = modelInput.value;
         if (diagState.modelListEl) {
@@ -634,7 +635,7 @@ function renderConfigCard(c: HTMLElement): void {
     modelRefresh.textContent = t('ai.config.refreshModels');
     modelRefresh.className = 'preset-chip';
     modelRefresh.setAttribute('title', t('ai.config.refreshModels'));
-    modelRefresh.setAttribute('aria-label', t('ai.config.refreshModels'));
+    modelRefresh.setAttribute(ARIA_ATTR.label, t('ai.config.refreshModels'));
     modelRefresh.style.padding = '2px 10px';
     modelRefresh.style.fontSize = 'var(--font-ui-sm)';
     modelBtnRow.appendChild(modelRefresh);
@@ -643,7 +644,7 @@ function renderConfigCard(c: HTMLElement): void {
     modelToggleBtn.textContent = '\u25BC';
     modelToggleBtn.className = 'preset-chip';
     modelToggleBtn.setAttribute('title', t('ai.config.showModels'));
-    modelToggleBtn.setAttribute('aria-label', t('ai.config.showModels'));
+    modelToggleBtn.setAttribute(ARIA_ATTR.label, t('ai.config.showModels'));
     modelToggleBtn.style.padding = '2px 10px';
     modelToggleBtn.style.fontSize = 'var(--font-ui-sm)';
     modelToggleBtn.addEventListener('click', () => {
@@ -677,14 +678,14 @@ function renderConfigCard(c: HTMLElement): void {
     const saveBtn = document.createElement('button');
     saveBtn.textContent = t('ai.config.save');
     saveBtn.className = 'preset-chip';
-    saveBtn.setAttribute('aria-label', t('ai.config.save'));
+    saveBtn.setAttribute(ARIA_ATTR.label, t('ai.config.save'));
     testRow.appendChild(saveBtn);
 
     const testBtn = document.createElement('button');
     testBtn.id = 'diag-test-btn';
     testBtn.textContent = t('ai.config.test');
     testBtn.className = 'preset-chip';
-    testBtn.setAttribute('aria-label', t('ai.config.test'));
+    testBtn.setAttribute(ARIA_ATTR.label, t('ai.config.test'));
     testRow.appendChild(testBtn);
 
     const statusEl = document.createElement('span');

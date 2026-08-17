@@ -655,12 +655,19 @@ function renderARParams(container: HTMLElement): void {
         getARFacing() === 'user' ? t('motion.toBack') : t('motion.toFront'),
         false,
         async () => {
-            try {
-                await switchARCameraFacing();
-            } catch {
-                feedbackStatus('motion.arSwitchFailed', undefined, false);
-            }
-            refreshCameraLevel();
+            // [doc:adr] 统一异步守卫：transitioning 期间忽略点击 + await 后 stale 复查
+            const menu = getMotionMenu();
+            await menu?.guardedRun(async (stale) => {
+                try {
+                    await switchARCameraFacing();
+                } catch {
+                    feedbackStatus('motion.arSwitchFailed', undefined, false);
+                }
+                if (stale()) {
+                    return;
+                }
+                refreshCameraLevel();
+            });
         }
     );
     if (!isARActive()) {
@@ -716,20 +723,27 @@ function renderWebXRProbeSection(container: HTMLElement): void {
 
     // 深度探针按钮（会触发 AR session + 权限弹窗）
     slideRow(container, 'lucide:scan', t('scene.ar.webxrDeepProbe'), false, async () => {
-        if (_probing) {
-            return;
-        }
-        _probing = true;
-        refreshCameraLevel();
-        try {
-            _probeResult = await probeWebXRFeatures();
-            setStatus(_verdictText(_probeResult.verdict), _probeResult.verdict !== 'none');
-        } catch {
-            // [fix] 不在错误消息中暴露 String(e)，仅用固定 i18n key
-            feedbackStatus('motion.webxrDeepProbeError', undefined, false);
-        }
-        _probing = false;
-        refreshCameraLevel();
+        // [doc:adr] 统一异步守卫：transitioning 期间忽略点击 + await 后 stale 复查
+        const menu = getMotionMenu();
+        await menu?.guardedRun(async (stale) => {
+            if (_probing) {
+                return;
+            }
+            _probing = true;
+            refreshCameraLevel();
+            try {
+                _probeResult = await probeWebXRFeatures();
+                setStatus(_verdictText(_probeResult.verdict), _probeResult.verdict !== 'none');
+            } catch {
+                // [fix] 不在错误消息中暴露 String(e)，仅用固定 i18n key
+                feedbackStatus('motion.webxrDeepProbeError', undefined, false);
+            }
+            _probing = false;
+            if (stale()) {
+                return;
+            }
+            refreshCameraLevel();
+        });
     });
 
     // 复制报告按钮（仅在有结果时显示）

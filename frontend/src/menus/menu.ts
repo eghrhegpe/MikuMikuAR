@@ -322,6 +322,42 @@ export class SlideMenu implements RenderContext {
         return this.transitioning;
     }
 
+    /**
+     * [doc:adr] 统一异步交互守卫（长治久安版）：把分散在各 async click handler 里的
+     * 「前置 transitioning 检查 + _buildSeq 快照 + 事后过期复查」收敛成一处。
+     * 返回 stale 检测器；返回 null 表示菜单正在过渡/动画中，调用方应直接忽略本次操作。
+     * 用法：
+     *   const stale = menu.guard();
+     *   if (!stale) return;     // 前置：过渡期忽略
+     *   await doAsync();         // 业务（可含副作用）
+     *   if (stale()) return;     // 事后：await 期间菜单已重建/进入过渡 → 丢弃过期操作
+     *   menu.pop();              // 导航
+     */
+    guard(): (() => boolean) | null {
+        if (this.transitioning) {
+            return null;
+        }
+        const seq = this._buildSeq;
+        return () => seq !== this._buildSeq || this.transitioning;
+    }
+
+    /**
+     * [doc:adr] 全包式守卫：前置拒绝 + 向 fn 注入 stale 检测器。与 guard() 同一 stale 语义，
+     * 适合「前置检查 + 事后复查都交给封装」的简洁写法。
+     *   menu.guardedRun(async (stale) => {
+     *       await doAsync();
+     *       if (stale()) return;
+     *       menu.pop();
+     *   });
+     */
+    guardedRun<T>(fn: (stale: () => boolean) => T | Promise<T>): T | Promise<T> | undefined {
+        const stale = this.guard();
+        if (!stale) {
+            return undefined;
+        }
+        return fn(stale);
+    }
+
     reset(level: PopupLevel): void {
         this._cancelAnim();
         this.levels = [level];

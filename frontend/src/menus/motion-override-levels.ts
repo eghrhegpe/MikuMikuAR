@@ -169,21 +169,28 @@ export function renderPresetCard(
                 const delBtn = createIconButton('lucide:trash-2', t('motion-preset.delete'));
                 delBtn.style.cssText = 'font-size:11px;color:var(--danger);';
                 delBtn.addEventListener('click', async () => {
-                    if (!inst?.motionPresets) {
-                        return;
-                    }
-                    const ok = await showConfirm(
-                        t('motion-preset.confirmDelete', { name: preset.name })
-                    );
-                    if (!ok) {
-                        return;
-                    }
-                    const idx = inst.motionPresets.indexOf(preset);
-                    if (idx !== -1) {
-                        inst.motionPresets.splice(idx, 1);
-                    }
-                    feedbackInfo('motion-preset.deleted', preset.name);
-                    menuRefForPreset?.reRender();
+                    // [doc:adr] 统一异步守卫：transitioning 期间忽略点击 + await 后 stale 复查
+                    const menu = menuRefForPreset;
+                    await menu?.guardedRun(async (stale) => {
+                        if (!inst?.motionPresets) {
+                            return;
+                        }
+                        const ok = await showConfirm(
+                            t('motion-preset.confirmDelete', { name: preset.name })
+                        );
+                        if (!ok) {
+                            return;
+                        }
+                        const idx = inst.motionPresets.indexOf(preset);
+                        if (idx !== -1) {
+                            inst.motionPresets.splice(idx, 1);
+                        }
+                        if (stale()) {
+                            return;
+                        }
+                        feedbackInfo('motion-preset.deleted', preset.name);
+                        menu?.reRender();
+                    });
                 });
                 row.appendChild(delBtn);
 
@@ -841,10 +848,14 @@ function buildBoneOverrideSchema(): MenuNode[] {
                         false,
                         () => {
                             // [doc:adr-116 P3] 破坏性操作：先确认（仍可事后撤销）
-                            void (async () => {
+                            // [doc:adr] 统一异步守卫：transitioning 期间忽略点击 + await 后 stale 复查
+                            void menu?.guardedRun(async (stale) => {
                                 if (
                                     !(await showConfirm(t('motion.boneOverride.clearAllConfirm')))
                                 ) {
+                                    return;
+                                }
+                                if (stale()) {
                                     return;
                                 }
                                 const snap = pushUndoSnapshot();
@@ -860,7 +871,7 @@ function buildBoneOverrideSchema(): MenuNode[] {
                                         menu?.reRender();
                                     }
                                 );
-                            })();
+                            });
                         },
                         { variant: 'danger' }
                     );

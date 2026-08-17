@@ -552,9 +552,16 @@ function buildSoftwareListSchema(getSettingsMenu: () => SlideMenu | null): MenuN
                         t('settings.software.addCustom'),
                         false,
                         async () => {
-                            if (await addCustomSoftware()) {
-                                getSettingsMenu()?.reRender();
-                            }
+                            // [doc:adr] 统一异步守卫：过渡期忽略点击 + await 后 stale 复查再 reRender
+                            const menu = getSettingsMenu();
+                            await menu?.guardedRun(async (stale) => {
+                                if (await addCustomSoftware()) {
+                                    if (stale()) {
+                                        return;
+                                    }
+                                    menu?.reRender();
+                                }
+                            });
                         }
                     );
                     slideRow(inner, 'lucide:folder', t('settings.software.setMmdPath'), false, () =>
@@ -648,27 +655,28 @@ function buildSoftwareDetailManagedSchema(
                         'lucide:trash-2',
                         t('settings.software.delete'),
                         async () => {
-                            // [fix] 过渡期守卫：动画窗口内 pop 会递增 _buildSeq，顶掉正在进行的
-                            // push/pop onFadeOut 序号（已有 _recoverStaleTransition 兜底不卡死）。
+                            // [doc:adr] 统一异步守卫：前置拒绝过渡期点击 + await 后 stale 复查再导航
                             const menu = getSettingsMenu();
-                            if (menu?.isTransitioning) {
-                                return;
-                            }
-                            const r = await tryCatchStatus(
-                                async () => {
-                                    await RemoveCustomSoftware(entry.path);
-                                    return true;
-                                },
-                                t('settings.softwareDeleteFail', { name: entry.name })
-                            );
-                            if (r) {
-                                cachedSoftwareEntries = (cachedSoftwareEntries || []).filter(
-                                    (e) => e.path !== entry.path
+                            await menu?.guardedRun(async (stale) => {
+                                const r = await tryCatchStatus(
+                                    async () => {
+                                        await RemoveCustomSoftware(entry.path);
+                                        return true;
+                                    },
+                                    t('settings.softwareDeleteFail', { name: entry.name })
                                 );
-                                showInfoToast(t('settings.softwareDeleted', { name: entry.name }));
-                                menu?.pop();
-                                menu?.reRender();
-                            }
+                                if (r) {
+                                    cachedSoftwareEntries = (cachedSoftwareEntries || []).filter(
+                                        (e) => e.path !== entry.path
+                                    );
+                                    showInfoToast(t('settings.softwareDeleted', { name: entry.name }));
+                                    if (stale()) {
+                                        return;
+                                    }
+                                    menu?.pop();
+                                    menu?.reRender();
+                                }
+                            });
                         }
                     );
                 });
@@ -725,26 +733,27 @@ function buildSoftwareDetailAutoSchema(
                         t('settings.software.convertToCustom'),
                         false,
                         async () => {
-                            // [fix] 过渡期守卫：动画窗口内 pop 会递增 _buildSeq，顶掉正在进行的
-                            // push/pop onFadeOut 序号（已有 _recoverStaleTransition 兜底不卡死）。
+                            // [doc:adr] 统一异步守卫：前置拒绝过渡期点击 + await 后 stale 复查再导航
                             const menu = getSettingsMenu();
-                            if (menu?.isTransitioning) {
-                                return;
-                            }
-                            const args = await showPrompt(t('settings.software.argsHint'), '');
-                            if (args === null) {
-                                return;
-                            }
-                            const r = await tryCatchStatus(async () => {
-                                await AddCustomSoftware(entry.path, entry.name, args);
-                                return true;
-                            }, t('settings.software.convertFailed'));
-                            if (r) {
-                                cachedSoftwareEntries = await ScanSoftwareDir();
-                                showInfoToast(t('settings.softwareToCustom', { name: entry.name }));
-                                menu?.pop();
-                                menu?.reRender();
-                            }
+                            await menu?.guardedRun(async (stale) => {
+                                const args = await showPrompt(t('settings.software.argsHint'), '');
+                                if (args === null) {
+                                    return;
+                                }
+                                const r = await tryCatchStatus(async () => {
+                                    await AddCustomSoftware(entry.path, entry.name, args);
+                                    return true;
+                                }, t('settings.software.convertFailed'));
+                                if (r) {
+                                    cachedSoftwareEntries = await ScanSoftwareDir();
+                                    showInfoToast(t('settings.softwareToCustom', { name: entry.name }));
+                                    if (stale()) {
+                                        return;
+                                    }
+                                    menu?.pop();
+                                    menu?.reRender();
+                                }
+                            });
                         }
                     );
                 });
