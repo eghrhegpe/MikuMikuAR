@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { SlideMenu } from '../../menus/menu';
-import type { PopupRow } from '../../core/config';
+import type { PopupLevel, PopupRow } from '../../core/config';
 import { makeTestLevel, makeTestMenu } from '../fixtures/menu';
 
 // ─── 回归：seq guard 过期时的卡死（transitioning 永久 true + opacity 卡 0）───
@@ -24,7 +24,7 @@ function rows(n: number): PopupRow[] {
 function makeAsyncLevel(
     label: string,
     onRender?: (list: HTMLElement) => void
-): { level: ReturnType<typeof makeTestLevel> & { renderCustom: (c: HTMLElement) => Promise<void> }; release: () => void } {
+): { level: PopupLevel; release: () => void } {
     let release: () => void = () => {};
     const level = makeTestLevel(label, '', []);
     level.renderCustom = (list) => {

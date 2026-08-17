@@ -449,8 +449,14 @@ function _buildViewToggleButtons(toolbar: HTMLElement, targetStack?: SlideMenu):
         btn.textContent = icon;
         btn.title = t(titleKey);
         btn.addEventListener('click', () => {
-            setResourceViewMode(mode);
             const stack = targetStack || stackRegistry.modelStack;
+            // [fix] 过渡期忽略视图切换：动画窗口内 replaceCurrentLevel → reRender →
+            // buildPanel 会递增 _buildSeq，顶掉正在进行的 push/pop onFadeOut 序号
+            // （已有 _recoverStaleTransition 兜底不卡死，但避免无谓全量重建与闪烁）。
+            if (stack?.isTransitioning) {
+                return;
+            }
+            setResourceViewMode(mode);
             const cl = stack?.currentLevel;
             if (cl) {
                 stack!.replaceCurrentLevel(buildLevel(cl.dir, cl.label, cl.filter, targetStack));

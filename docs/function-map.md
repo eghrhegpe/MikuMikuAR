@@ -2179,33 +2179,33 @@
 | `showModelPopup()` | `menus/library-browse:406` | — |
 | `ResourceViewMode()` | `menus/library-core:43` | — |
 | `abortThumbnailStreaming()` | `menus/library-core:317` | [adr-136] 取消当前正在进行的缩略图流式加载批次（如弹窗关闭/重开时调用）。 |
-| `buildLevel()` | `menus/library-core:853` | — |
-| `buildModelFormationLevel()` | `menus/library-core:897` | — |
-| `buildModelRootItems()` | `menus/library-core:932` | — |
+| `buildLevel()` | `menus/library-core:859` | — |
+| `buildModelFormationLevel()` | `menus/library-core:903` | — |
+| `buildModelRootItems()` | `menus/library-core:938` | — |
 | `buildResourceItemsForDir()` | `menus/library-core:384` | — |
 | `computeRestoreSegments()` | `menus/library-core:161` | — |
 | `getPendingMetaGuard()` | `menus/library-core:67` | — |
 | `getRelativePathUnderDir()` | `menus/library-core:83` | — |
 | `getResourceViewMode()` | `menus/library-core:47` | — |
-| `importFile()` | `menus/library-core:1045` | — |
-| `initLibrary()` | `menus/library-core:1046` | — |
+| `importFile()` | `menus/library-core:1051` | — |
+| `initLibrary()` | `menus/library-core:1052` | — |
 | `isLeafFlattenDir()` | `menus/library-core:93` | — |
 | `isModelDirTarget()` | `menus/library-core:59` | — |
 | `loadThumbnailsStreaming()` | `menus/library-core:260` | 流式加载缩略图：并发控制，每加载一张立即更新缓存并通知面板刷新， 替代一次性 GetThumbnailBatch 的"全等"模式，实现缩略图逐张出现。 |
 | `modelToResourceItem()` | `menus/library-core:367` | — |
 | `modelToRow()` | `menus/library-core:351` | — |
-| `prepareModelRestore()` | `menus/library-core:1045` | — |
-| `refreshLibrary()` | `menus/library-core:1046` | — |
-| `refreshModelRoot()` | `menus/library-core:1023` | 就地更新模型库根层级数据（刷新已注册的角色列表）。 |
-| `reloadConfig()` | `menus/library-core:1046` | — |
-| `rescanAndSync()` | `menus/library-core:1046` | — |
+| `prepareModelRestore()` | `menus/library-core:1051` | — |
+| `refreshLibrary()` | `menus/library-core:1052` | — |
+| `refreshModelRoot()` | `menus/library-core:1029` | 就地更新模型库根层级数据（刷新已注册的角色列表）。 |
+| `reloadConfig()` | `menus/library-core:1052` | — |
+| `rescanAndSync()` | `menus/library-core:1052` | — |
 | `resolveDisplayBrowseDir()` | `menus/library-core:140` | [修复] 解析模型在资源库中的"显示目录"——即用户点击该模型时实际看到的层级。 |
-| `selectOverridePath()` | `menus/library-core:1046` | — |
-| `selectResourceRoot()` | `menus/library-core:1046` | — |
+| `selectOverridePath()` | `menus/library-core:1052` | — |
+| `selectResourceRoot()` | `menus/library-core:1052` | — |
 | `setResourceViewMode()` | `menus/library-core:50` | — |
-| `showModelPopup()` | `menus/library-core:1044` | — |
+| `showModelPopup()` | `menus/library-core:1050` | — |
 | `splitSubdirSegments()` | `menus/library-core:73` | — |
-| `switchStorageMode()` | `menus/library-core:1046` | — |
+| `switchStorageMode()` | `menus/library-core:1052` | — |
 | `thumbnailKeyForModel()` | `menus/library-core:194` | — |
 | `LibraryLoadingState()` | `menus/library-session-store:51` | 资源库会话状态：加载守卫。 |
 | `LibraryRestoreState()` | `menus/library-session-store:32` | 资源库会话状态：恢复链路（上次浏览位置 + 高亮模型）。 |
