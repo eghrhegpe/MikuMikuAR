@@ -302,6 +302,12 @@ export interface EnvState {
     "waterFogOpacityInfluence": number;
 
     /**
+     * 深度差雾（对齐 TS env-state-schema water 组；前端读取时 ?? 默认兜底，零值=未设置）
+     */
+    "waterDepthFogDensity": number;
+    "waterDepthFogStrength": number;
+
+    /**
      * 水下效果
      */
     "underwaterEnabled": boolean;

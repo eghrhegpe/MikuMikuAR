@@ -615,6 +615,9 @@ type EnvState struct {
 	WaterFogEnd              float64    `json:"waterFogEnd"`
 	WaterFogDensity          float64    `json:"waterFogDensity"`
 	WaterFogOpacityInfluence float64    `json:"waterFogOpacityInfluence"`
+	// 深度差雾（对齐 TS env-state-schema water 组；前端读取时 ?? 默认兜底，零值=未设置）
+	WaterDepthFogDensity  float64 `json:"waterDepthFogDensity"`
+	WaterDepthFogStrength float64 `json:"waterDepthFogStrength"`
 
 	// 水下效果
 	UnderwaterEnabled         bool    `json:"underwaterEnabled"`

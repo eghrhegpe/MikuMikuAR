@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 /**
- * 一键编译并安装 Android 调试版到已连接设备（gradle installDebug + 自动拉起应用）。
+ * 一键安装 Android 调试版到已连接设备（gradle installDebug + 自动拉起应用）。
+ * 注意：本脚本只做 gradle 安装，不编前端/Go；全新环境请先跑 android-build.mjs，
+ * 否则 installDebug 会打包仓库检入的旧 jniLibs/assets（静默装旧版）。
  * 解决「打指令装安卓版折腾」：仓库根一条口令 → 设备检查 → installDebug → am start。
  * 依赖：Android SDK（ANDROID_HOME，platform-tools/adb）+ JDK（gradle wrapper 自带下载）。
- * 子进程统一走 _lib/proc.mjs run()（数组参数，无 shell 拼接，ADR-043）。
+ * 子进程统一走 _lib/proc.mjs run()（数组参数，无 shell 拼接）。
  * 用法：
  *   node scripts/android-install.mjs              # 编译安装 + 自动拉起应用
  *   node scripts/android-install.mjs --no-launch  # 只安装，不拉起
@@ -67,6 +69,17 @@ if (!fs.existsSync(path.join(ANDROID_DIR, 'settings.gradle'))) {
   fail(`未找到 ${path.relative(ROOT, ANDROID_DIR)}，确认在仓库根运行`);
 }
 
+// 防呆：全新 checkout 未跑过 android-build.mjs 时，installDebug 会用仓库检入的旧 jniLibs，
+// 提示用户先构建，避免静默装旧版 Go/前端代码
+const jniBase = path.join(ANDROID_DIR, 'app', 'src', 'main', 'jniLibs');
+const soCount = fs.existsSync(jniBase)
+  ? fs.readdirSync(jniBase).filter((abi) => fs.existsSync(path.join(jniBase, abi, 'libwails.so'))).length
+  : 0;
+if (soCount === 0) {
+  console.warn('[android-install] 警告：未在 jniLibs 检测到 libwails.so（Go 侧未构建），将打包仓库检入的旧产物。');
+  console.warn('[android-install] 建议先运行：node scripts/android-build.mjs');
+}
+
 const adb = findAdb();
 const devices = connectedDevices(adb);
 if (devices.length === 0) {
@@ -89,7 +102,7 @@ if (os.platform() !== 'win32') {
 
 /** 编译并安装 debug 版；失败返回 { ok, out }（out 含 gradle 输出，供 INSTALL_FAILED 判定） */
 function installDebug() {
-  return run(gradlew, [':app:installDebug'], { cwd: ANDROID_DIR, timeout: 0, shell: os.platform() === 'win32' });
+  return run(gradlewPath, [':app:installDebug'], { cwd: ANDROID_DIR, timeout: 0, shell: os.platform() === 'win32' });
 }
 
 /** 卸载旧版（对每个设备；包不存在/已卸载时忽略错误） */

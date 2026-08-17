@@ -6,7 +6,7 @@
  * assembleDebug，产出全新 APK。
  * 依赖：Android SDK（ANDROID_HOME/ANDROID_SDK_ROOT，含 NDK）+ Go（cgo 交叉编译）
  *       + JDK 17+（gradle wrapper 自带下载）。
- * 子进程统一走 _lib/proc.mjs run()（数组参数，无 shell 拼接，ADR-043）。
+ * 子进程统一走 _lib/proc.mjs run()（数组参数，无 shell 拼接）。
  * ADR-059：前端必须走 build:dev（= generate-locale-json && vite build），
  * 不能裸 vite build——locales/*.json 是预构建产物且被 .gitignore 排除，裸构建
  * 会致 dist 缺语言包（安卓端 i18n 全显示 key）。
@@ -57,7 +57,16 @@ function findNdk() {
     const versions = fs
       .readdirSync(path.join(sdk, 'ndk'))
       .filter((d) => fs.statSync(path.join(sdk, 'ndk', d)).isDirectory())
-      .sort();
+      .sort((a, b) => {
+        // 数字段比较：避免字典序把 26.10 排在 26.2 之前而选错旧版
+        const pa = a.split('.').map(Number);
+        const pb = b.split('.').map(Number);
+        for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+          const d = (pa[i] ?? 0) - (pb[i] ?? 0);
+          if (d) return d;
+        }
+        return 0;
+      });
     if (versions.length > 0) return path.join(sdk, 'ndk', versions[versions.length - 1]);
   }
   return null;
@@ -156,7 +165,7 @@ for (const arch of arches) {
   const r = run('go', ['build', '-buildmode=c-shared', `-overlay=${OVERLAY}`, ...buildFlags, '-o', out, '.'], {
     cwd: ROOT,
     timeout: 0,
-    env: { CC: cc, CGO_ENABLED: '1', GOOS: 'android', GOARCH: a.goarch },
+    env: { CC: cc, CXX: `${cc}++`, CGO_ENABLED: '1', GOOS: 'android', GOARCH: a.goarch },
   });
   if (!r.ok) fail(`Go 交叉编译 ${arch} 失败：\n${r.out.slice(-1000)}`);
   console.log(`[android-build] ✅ ${out}（${(fs.statSync(out).size / 1024 / 1024).toFixed(1)} MB）`);
@@ -173,7 +182,7 @@ if (os.platform() !== 'win32') {
     fs.chmodSync(gradlewPath, 0o755);
   } catch { /* 忽略 */ }
 }
-const g = run(gradlew, [`:app:${task}`], {
+const g = run(gradlewPath, [`:app:${task}`], {
   cwd: ANDROID_DIR,
   timeout: 0,
   shell: os.platform() === 'win32', // gradlew.bat 非原生 exe，Windows 必须 shell

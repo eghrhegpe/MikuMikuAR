@@ -1,7 +1,7 @@
 /**
  * proc.mjs — 统一子进程执行封装（跨平台、超时、错误分类、cwd 约定）。
  *
- * 背景（ADR-043 / 审核实证）：各脚本内联 execFileSync 反复踩同样的坑——
+ * 背景（审核实证）：各脚本内联 execFileSync 反复踩同样的坑——
  *   - Windows MSYS 吞反斜杠、cmd.exe 解析 `2>/dev/null` 出错；
  *   - npx/tsc 无扩展名 shim 需 shell:true（cmd.exe），原生可执行文件则不应 shell；
  *   - cwd 缺省按调用方 process.cwd() 解析相对路径；
@@ -50,19 +50,19 @@ export function run(bin, args, { cwd = process.cwd(), timeout = DEFAULT_TIMEOUT,
       return { ok: false, rc: -1, out: '', err: `command not found: ${bin}` };
     }
     const out = String((e.stdout || '') + (e.stderr || ''));
-    if (e.killed) {
+    if (e.code === 'ETIMEDOUT') {
       return { ok: false, rc: -2, out, err: `command timed out after ${timeout}ms: ${bin} ${args.join(' ')}` };
     }
     if (e.status === 1 && allowExit1) {
       return { ok: true, rc: 1, out };
     }
-    return { ok: false, rc: e.status ?? -1, out, err: `${bin} 执行失败（rc=${e.status ?? 'unknown'}）` };
+    return { ok: false, rc: e.status ?? -1, out, err: `${bin} 执行失败（rc=${e.status ?? 'unknown'}${e.code ? `, ${e.code}` : ''}）` };
   }
 }
 
 /**
  * 容错版 run：失败返回 ''（供「恒 exit 0」的提示工具用）。
- * 注意：失败打 stderr WARN（ADR-043：不得静默假绿，仍能被用户/AI 察觉扫描不可用）。
+ * 注意：失败打 stderr WARN（不得静默假绿，仍能被用户/AI 察觉扫描不可用）。
  * @param {string} bin
  * @param {string[]} args
  * @param {object} [opts] 同 run()

@@ -9,15 +9,13 @@
  * 退出码：0（无 process.exit 调用）
  * release-notes-gen.mjs — 发布说明生成器
  */
-import { execFileSync } from 'node:child_process';
 import { ROOT } from './_lib/scan-files.mjs';
+import { run as procRun } from './_lib/proc.mjs';
 
 
 function run(cmd) {
-  try {
-    const stdout = execFileSync(cmd[0], cmd.slice(1), { encoding: 'utf-8', timeout: 30000, cwd: ROOT });
-    return stdout.trim();
-  } catch { return ''; }
+  const r = procRun(cmd[0], cmd.slice(1), { cwd: ROOT });
+  return r.ok ? r.out.trim() : '';
 }
 
 function collect() {
