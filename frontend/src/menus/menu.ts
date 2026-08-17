@@ -414,7 +414,15 @@ export class SlideMenu implements RenderContext {
             fadeOutDisp = safeDispose(fadeOutDisp);
             const p = this.buildPanel(level);
             const seq = this._buildSeq;
-            await p;
+            // [fix:P0] buildPanel 异常绝不允许卡死过渡：立即恢复 transitioning+opacity，
+            // 否则 panel 永久停在淡出态（opacity:0）+ transitioning 卡 true 累及上级菜单。
+            try {
+                await p;
+            } catch (err) {
+                console.error('[SlideMenu] push buildPanel failed, recovering transition:', err);
+                this._recoverStaleTransition(level);
+                return;
+            }
             // dispose/_cancelAnim 后不再继续旧过渡的渲染与淡入注册；
             // [fix:P0] 但若只是「更新的 build 接管」（非 dispose），必须兜底恢复
             // transitioning + opacity，否则永久卡死（见 _recoverStaleTransition）。
@@ -495,7 +503,14 @@ export class SlideMenu implements RenderContext {
             fadeOutDisp = safeDispose(fadeOutDisp);
             const p = this.buildPanel(prevLevel);
             const seq = this._buildSeq;
-            await p;
+            // [fix:P0] 与 push 同：buildPanel 异常不卡死过渡，立即恢复。
+            try {
+                await p;
+            } catch (err) {
+                console.error('[SlideMenu] pop buildPanel failed, recovering transition:', err);
+                this._recoverStaleTransition(prevLevel);
+                return;
+            }
             // [fix:P0] 与 push 同：seq 过期时若直接 return，transitioning 永久 true +
             // opacity 卡 0（内容渲染不出、累及上级菜单）。必须兜底恢复。
             if (seq !== this._buildSeq) {
@@ -1231,17 +1246,27 @@ export class SlideMenu implements RenderContext {
                     card.dataset.testid = `menu:card:${cardIdx++}`;
                     list.appendChild(card);
                 }
-                const el = this.createRow(row);
-                if (el) {
-                    card.appendChild(el);
+                // [fix] 单行渲染异常不残及整个 buildPanel（reject → onFadeOut 卡死 opacity:0）
+                try {
+                    const el = this.createRow(row);
+                    if (el) {
+                        card.appendChild(el);
+                    }
+                } catch (err) {
+                    console.error('[SlideMenu] createRow failed:', err, row);
                 }
             }
         } else {
             // 有 renderCustom：先渲染 items 导航行，再调自定义回调
             for (const row of level.items) {
-                const el = this.createRow(row);
-                if (el) {
-                    list.appendChild(el);
+                // [fix] 同纯 items 路径：单行异常不 reject buildPanel
+                try {
+                    const el = this.createRow(row);
+                    if (el) {
+                        list.appendChild(el);
+                    }
+                } catch (err) {
+                    console.error('[SlideMenu] createRow failed:', err, row);
                 }
             }
             pushRenderingContext(this);
