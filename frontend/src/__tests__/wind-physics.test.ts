@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // 隔离 babylon-mmd / babylon 真实依赖
 vi.mock('@babylonjs/core/Maths/math.vector', () => ({
@@ -101,6 +101,11 @@ describe('getRigidBodyBundleMap (真实 mmd-adapter 实现)', () => {
 });
 
 describe('isWindPhysicsActive', () => {
+    // [fix:isolate-pollution] isolate:false 下 wind-physics.ts 模块级状态（runtime/subscriber）
+    // 被前序文件遗留，"returns false when no runtime" 拿到 true。beforeEach 强制复位。
+    beforeEach(() => {
+        disposeWindPhysics();
+    });
     it('returns false when no runtime registered', () => {
         expect(isWindPhysicsActive()).toBe(false);
     });
