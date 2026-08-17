@@ -617,7 +617,12 @@ export class SlideMenu implements RenderContext {
         }
         // [doc:adr-065] 纯 items 层级语言热刷新：当前层持有 itemBuilder 时，
         // 重建 items 并增量 patch（仅当面板已渲染——避免对未打开/已 dispose 的菜单误触发全量 buildPanel）。
-        if (level?.itemBuilder && this._getSlideList()) {
+        // [fix] 含 renderCustom 的层级跳过 itemBuilder patch：renderCustom 层级的 items
+        // 常为空数组（如 envOnFolderEnter 对粒子级挂的 `() => builder().items` = []），
+        // 此 patch 会走 patchPanel([]) → 全量 buildPanel，导致任何状态变更都全量重建
+        // 面板（滑块拖动被打断、过渡期重建与 push/pop 的 seq 守卫竞态 → 内容空白）。
+        // 与 types.ts 契约一致：itemBuilder 仅用于「无 registerControl 的纯导航/动作行」层级。
+        if (level?.itemBuilder && !level.renderCustom && this._getSlideList()) {
             level.items = level.itemBuilder();
             this.patchPanel(level.items);
         }
@@ -1371,7 +1376,18 @@ export class SlideMenu implements RenderContext {
                 row.label,
                 true,
                 async () => {
+                    // [fix] 与普通 folder 路径（下方）同语义：双守卫，堵住 async 窗口竞态。
+                    // 曾缺失：鼠标在过渡中点击该行会直通 onFolderEnter → 陈旧 push 在
+                    // await 窗口内被吞或污染层级栈（键盘经 createKeyboardNav 的
+                    // transitioningGuard 在入口就挡，鼠标曾漏网——与普通 folder 修复同源）。
+                    if (this.transitioning) {
+                        return;
+                    }
+                    const seq = this._buildSeq;
                     const next = await this.onFolderEnter?.(row, this);
+                    if (seq !== this._buildSeq || this.transitioning) {
+                        return;
+                    }
                     if (next) {
                         this.push(next);
                     }

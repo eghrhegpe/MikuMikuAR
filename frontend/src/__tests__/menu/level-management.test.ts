@@ -266,6 +266,24 @@ describe('SlideMenu — ADR-065 纯 items 层级语言热刷新', () => {
         expect(cards[1].getAttribute('data-testid')).toBe('menu:card:1');
     });
 
+    it('renderCustom 层级 + itemBuilder：updateControls 不触发全量 buildPanel', async () => {
+        const level: PopupLevel = {
+            label: '根',
+            dir: '',
+            items: [],
+            renderCustom: (c) => { c.textContent = 'custom'; },
+            itemBuilder: () => [],
+        };
+        menu.reset(level);
+        await new Promise((r) => requestAnimationFrame(r));
+        const seqBefore = (menu as any)._buildSeq;
+        menu.updateControls();
+        // renderCustom 级 items 恒空，itemBuilder patch 若执行会退化为全量重建；
+        // 契约（types.ts）要求跳过 → _buildSeq 不变
+        expect((menu as any)._buildSeq).toBe(seqBefore);
+        expect(container.textContent).toContain('custom');
+    });
+
     it('增量 patch 保留尾随 divider 结构（不把 divider 塞进 lcard）', async () => {
         let extra = false;
         const divider = { kind: 'divider' as const, label: '', icon: '', target: '' };
