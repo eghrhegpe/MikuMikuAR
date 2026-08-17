@@ -5,7 +5,7 @@
 > **编号**: 258
 >
 > **关联**: [ADR-230](adr-230-docs-automation-toolchain.md)（文档自动化工具链）、[ADR-206](adr-206-test-infra-consolidation-and-assertion-quality.md)（测试基础设施收敛）、[ADR-254](adr-254-p4-backlog-registry.md)（历轮审核 P4 遗留项）
-> **数据来源**: [ADR-258-data-report.md](./adr-258-data-report.md)（耗时与价值量化）、[ADR-258-risk-analysis.md](./ADR-258-risk-analysis.md)（风险收益分析）
+> **数据来源**: [ADR-258-data-report.md](./adr-258-data-report.md)（耗时与价值量化）、[ADR-258-risk-analysis.md](./adr-258-risk-analysis.md)（风险收益分析）
 > **方法**: 正反方辩论 + 数据实证 + 风险分析三角验证
 
 ---
