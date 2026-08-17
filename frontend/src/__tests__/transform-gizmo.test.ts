@@ -17,7 +17,7 @@ const shared = vi.hoisted(() => {
         observers: [] as unknown[],
     });
     const makeGizmo = () => ({
-        attachedNode: null,
+        attachedNode: null as unknown,
         snapDistance: 0,
         onDragStartObservable: makeObservable(),
         onDragEndObservable: makeObservable(),
@@ -403,9 +403,7 @@ describe('attachGizmo 拖拽中 flush 的异常与多回调（边界）', () => 
         dragStartCb(shared.PositionGizmo)();
         expect(gizmo.isGizmoDragging()).toBe(true);
         // attachGizmo 内部 detachGizmo → flush [boom] 抛异常 → 捕获 logWarn 后继续建新 gizmo
-        expect(() =>
-            gizmo.attachGizmo({ id: 'b', node, types: ['position'] })
-        ).not.toThrow();
+        expect(() => gizmo.attachGizmo({ id: 'b', node, types: ['position'] })).not.toThrow();
         expect(shared.logWarn).toHaveBeenCalled();
         expect(gizmo.getGizmoTargetId()).toBe('b');
         expect(gizmo.isGizmoDragging()).toBe(false);
@@ -454,9 +452,7 @@ describe('computeSnapDistance 零/负 step 边界', () => {
 
     it('边界：负 step → 返回负 snapDistance（不崩，调用方应避免）', () => {
         expect(gizmo.computeSnapDistance('position', true, -2)).toBe(-2);
-        expect(gizmo.computeSnapDistance('rotation', true, -2)).toBeCloseTo(
-            -2 * (Math.PI / 12)
-        );
+        expect(gizmo.computeSnapDistance('rotation', true, -2)).toBeCloseTo(-2 * (Math.PI / 12));
     });
 });
 

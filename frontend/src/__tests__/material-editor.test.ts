@@ -292,9 +292,18 @@ describe('_applyAll ordering: per-material overrides category on re-apply', () =
         // @ts-expect-error duck-typed mock material
         modelRegistry.set(TEST_ID, { meshes: [{ material: mats[0] }] });
         setMatCatParams(TEST_ID, '皮肤', {
-            diffuseMul: 1, specularMul: 1, shininess: 50, ambientMul: 1,
+            diffuseMul: 1,
+            specularMul: 1,
+            shininess: 50,
+            ambientMul: 1,
         });
-        setMatParams(TEST_ID, 0, { alphaMul: 0.5, diffuseMul: 1, specularMul: 1, shininess: 50, ambientMul: 1 });
+        setMatParams(TEST_ID, 0, {
+            alphaMul: 0.5,
+            diffuseMul: 1,
+            specularMul: 1,
+            shininess: 50,
+            ambientMul: 1,
+        });
         _applyAll(TEST_ID, { opacity: 0.8, origAlpha: [] });
         expect(mats[0].alpha).toBeCloseTo(1 * 0.8 * 0.5);
     });
@@ -304,7 +313,10 @@ describe('_applyAll ordering: per-material overrides category on re-apply', () =
         // @ts-expect-error duck-typed mock material
         modelRegistry.set(TEST_ID, { meshes: [{ material: mats[0] }] });
         setMatCatParams(TEST_ID, '皮肤', {
-            diffuseMul: 1, specularMul: 1, shininess: 50, ambientMul: 1,
+            diffuseMul: 1,
+            specularMul: 1,
+            shininess: 50,
+            ambientMul: 1,
         });
         _matState.set(TEST_ID, new Map());
         expect(() => _applyAll(TEST_ID)).not.toThrow();

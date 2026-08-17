@@ -24,13 +24,13 @@ vi.mock('../../scene/transform/transform-adapter', () => ({
     attachGizmoForKind: () => {},
     isGizmoActive: () => false,
     isGizmoDragging: () => false,
-    getGizmoTargetId: () => null,
+    getGizmoTargetId: (): null => null,
 }));
 vi.mock('@/scene/physics/physics-bridge', () => ({
-    getBoneWorldPosition: () => null,
+    getBoneWorldPosition: (): null => null,
 }));
 vi.mock('../../scene/render/light-cone', () => ({
-    createLightCone: () => null,
+    createLightCone: (): null => null,
     updateLightConeTransform: () => {},
     updateLightConeUniforms: () => {},
     rebuildLightConeGeometry: () => {},
@@ -172,7 +172,7 @@ describe('PersonalLight 阴影开关', () => {
         return {
             rootMesh: new Mesh(`root_${id}`, scene),
             meshes: [new Mesh(`m_${id}`, scene)],
-            mmdModel: undefined,
+            mmdModel: undefined as unknown,
         };
     }
 

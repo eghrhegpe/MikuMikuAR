@@ -49,6 +49,9 @@
         system-ui, sans-serif;
     --font-ui: calc(13px * var(--ui-scale));
     --font-ui-sm: calc(11px * var(--ui-scale));
+    /* 弱化/提示文字档位（dim 说明、警告小字）。介于 --font-ui-sm(11) 与 --font-ui(13) 之间，
+       内联样式与 .card-title-text / .cs-label-sm 长期共用 12px，收成令牌随 --ui-scale 缩放 */
+    --font-hint: calc(12px * var(--ui-scale));
     --font-ui-xs: calc(10px * var(--ui-scale));
     --font-title: calc(14px * var(--ui-scale));
     --font-title-lg: calc(16px * var(--ui-scale));
@@ -111,6 +114,10 @@
 
     /* 全局水平内边距基准 */
     --content-px: calc(12px * var(--ui-scale));
+    /* 卡片内行级水平内边距（ADR-228 起的 14px 基准）。
+       注意与 --content-px(12px) 有意并存：.slide-item 走 12px，卡片内标题栏/列表行走 14px。
+       这 2px 差是既有视觉语言，未与设计确认前勿单向统一；要改就两边一起改。 */
+    --row-pad-x: calc(14px * var(--ui-scale));
 
     /* Slide Item（列表行） */
     --slide-item-gap: calc(8px * var(--ui-scale));
@@ -774,7 +781,9 @@ body.app-booting #webviewLayer {
     font-size: 13px;
     font-family: inherit;
     outline: none;
-    transition: border-color 0.2s, background 0.2s;
+    transition:
+        border-color 0.2s,
+        background 0.2s;
 }
 .plaza-address-bar:focus {
     border-color: rgba(var(--plaza-teal-rgb), 0.6);
@@ -1380,7 +1389,6 @@ body.app-booting #webviewLayer {
 
 .plaza-cr-ring-gold {
     border-color: rgba(255, 215, 0, 0.4);
-    animation: spin 3s linear infinite;
 }
 
 .plaza-cr-ring-silver {
@@ -2612,24 +2620,6 @@ body.app-booting #webviewLayer {
     background: linear-gradient(to bottom, rgba(255, 255, 255, 0.3), transparent);
     border-radius: var(--cs-bar-radius) var(--cs-bar-radius) 0 0;
 }
-.cs-fill::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-    animation: csShimmer 2s infinite;
-}
-@keyframes csShimmer {
-    0% {
-        left: -100%;
-    }
-    100% {
-        left: 100%;
-    }
-}
 .cs-thumb {
     position: absolute;
     top: 0;
@@ -3094,6 +3084,17 @@ body.app-booting #webviewLayer {
     font-size: var(--font-ui-sm);
 }
 
+/* ===== 动效总开关（设置 → 动效 →「滑动动画」） =====
+   与下方 prefers-reduced-motion 同法：用 0.01ms 而非 0s / none。
+   零时长不产生过渡 → transitionend 不触发 → SlideMenu 的 transitioning 锁
+   只能等 150/200ms 兜底定时器，关动画反而更卡。 */
+:root[data-ui-animations='0'] *,
+:root[data-ui-animations='0'] *::before,
+:root[data-ui-animations='0'] *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+}
+
 /* ===== ADR-153 Phase 2: 无障碍系统偏好媒体查询 ===== */
 
 /* 减少动态效果：关闭 CSS 动画/过渡 */
@@ -3184,7 +3185,9 @@ body.app-booting #webviewLayer {
     align-items: center;
     justify-content: center;
     opacity: 0;
-    transition: opacity 0.2s ease, visibility 0s linear 0.2s;
+    transition:
+        opacity 0.2s ease,
+        visibility 0s linear 0.2s;
     pointer-events: none;
     visibility: hidden;
 }
@@ -3192,7 +3195,9 @@ body.app-booting #webviewLayer {
     opacity: 1;
     pointer-events: auto;
     visibility: visible;
-    transition: opacity 0.2s ease, visibility 0s;
+    transition:
+        opacity 0.2s ease,
+        visibility 0s;
 }
 .mmd-dialog {
     background: #2a2a38;
@@ -3276,7 +3281,9 @@ body.app-booting #webviewLayer {
     align-items: center;
     justify-content: center;
     opacity: 0;
-    transition: opacity 0.2s ease, visibility 0s linear 0.2s;
+    transition:
+        opacity 0.2s ease,
+        visibility 0s linear 0.2s;
     pointer-events: none;
     visibility: hidden;
 }
@@ -3284,7 +3291,9 @@ body.app-booting #webviewLayer {
     opacity: 1;
     pointer-events: auto;
     visibility: visible;
-    transition: opacity 0.2s ease, visibility 0s;
+    transition:
+        opacity 0.2s ease,
+        visibility 0s;
 }
 #mmd-dialog-overlay-2.mmd-dialog-visible .mmd-dialog {
     transform: translateY(0) scale(1);
@@ -3770,8 +3779,7 @@ body.app-booting #webviewLayer {
     display: flex;
     flex-wrap: wrap;
     gap: calc(4px * var(--ui-scale));
-    margin: calc(4px * var(--ui-scale)) 0 calc(8px * var(--ui-scale))
-        calc(0px * var(--ui-scale));
+    margin: calc(4px * var(--ui-scale)) 0 calc(8px * var(--ui-scale)) calc(0px * var(--ui-scale));
     padding: calc(4px * var(--ui-scale));
     background: var(--surface2);
     border-radius: calc(4px * var(--ui-scale));
@@ -3802,7 +3810,8 @@ body.app-booting #webviewLayer {
 }
 
 .diag-error-row--error {
-    border-left: calc(3px * var(--ui-scale)) solid color-mix(in srgb, var(--danger) 60%, transparent);
+    border-left: calc(3px * var(--ui-scale)) solid
+        color-mix(in srgb, var(--danger) 60%, transparent);
 }
 
 .diag-error-row--warn {
@@ -3810,7 +3819,8 @@ body.app-booting #webviewLayer {
 }
 
 .diag-error-row--info {
-    border-left: calc(3px * var(--ui-scale)) solid color-mix(in srgb, var(--accent) 60%, transparent);
+    border-left: calc(3px * var(--ui-scale)) solid
+        color-mix(in srgb, var(--accent) 60%, transparent);
 }
 
 .diag-error-row:hover {

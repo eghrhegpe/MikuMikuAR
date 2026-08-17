@@ -15,6 +15,8 @@ vi.mock('../../scene/env/env', () => ({
 }));
 vi.mock('../../scene/env/_bridge/env-dispatcher', () => ({
     registerEnvCallback: vi.fn(),
+    requestEnvObserver: vi.fn(),
+    registerEnvObserverHandler: vi.fn(() => vi.fn()),
 }));
 vi.mock('@/core/env-state-schema', async (importOriginal) => ({
     ...(await importOriginal<typeof import('@/core/env-state-schema')>()),

@@ -3,7 +3,7 @@
 
 import { ArcRotateCamera } from '@babylonjs/core/Cameras/arcRotateCamera';
 import { setOrbitParams } from '../camera/camera';
-import { scene } from '../scene';
+import { scene } from '../scene-context';
 import { modelRegistry, focusedModelId } from '../../core/config';
 
 /** 预设角度定义 */

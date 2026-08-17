@@ -16,7 +16,7 @@ import { Scene } from '@babylonjs/core/scene';
 import type { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
 import type { BaseTexture } from '@babylonjs/core/Materials/Textures/baseTexture';
 import type { Color3 } from '@babylonjs/core/Maths/math.color';
-import { observe, type ObserverHandle } from '@/core/observer-handle';
+import { getFrameRegistry } from '@/core/frame-registry';
 import { safeDispose } from '@/core/dispose-helpers';
 import { logWarn } from '@/core/logger';
 import type { EnvState } from '@/core/config';
@@ -70,7 +70,10 @@ const QUALITY_PRESETS: Record<string, ReflectionQualityPreset> = {
 // ======== 模块状态 ========
 
 let _reflectionProbe: ReflectionProbe | null = null;
-let _probeRefreshObserver: ObserverHandle | null = null;
+// Probe 自动刷新回调走 core/frame-registry 的**场景键共享表**（getFrameRegistry）：
+// 读 scene.meshes / fps，写 probe.renderList，无帧内前序状态依赖。
+// _probeScene 保留：_disableCurrentMode / disposeReflection 需要拿到那张表摘 key。
+let _probeScene: Scene | null = null;
 let _lastProbeRefresh = 0;
 let _currentMode: ResolvedReflectionMode = 'none';
 
@@ -284,7 +287,13 @@ function _createProbe(scene: Scene, resolution = 256): void {
 
     // 自动刷新 observer：每 10 秒检查环境变化
     _lastProbeRefresh = performance.now();
-    _probeRefreshObserver = observe(scene.onBeforeRenderObservable, () => {
+    // 场景更换（HMR / 重建）时旧 scene 的表里还留着 key：先摘干净再注册，
+    // 否则每帧刷新会继续打到已废弃的 scene 上。
+    if (_probeScene && _probeScene !== scene) {
+        getFrameRegistry(_probeScene).unregister('env.reflection.probeRefresh');
+    }
+    _probeScene = scene;
+    getFrameRegistry(scene).register('env.reflection.probeRefresh', () => {
         if (!_reflectionProbe || !scene || scene.isDisposed) {
             return;
         }
@@ -382,7 +391,10 @@ function _disposeProbe(_scene: Scene): void {
     _savedReflectionColors.clear();
 
     // 释放 observer + probe
-    _probeRefreshObserver = safeDispose(_probeRefreshObserver);
+    if (_probeScene) {
+        getFrameRegistry(_probeScene).unregister('env.reflection.probeRefresh');
+        _probeScene = null;
+    }
     _reflectionProbe = safeDispose(_reflectionProbe);
     _lastProbeRefresh = 0;
 }
@@ -577,7 +589,10 @@ export function disposeReflection(): void {
         _disableCurrentMode(scene);
     } else {
         // scene 已不可用，直接清理引用
-        _probeRefreshObserver = safeDispose(_probeRefreshObserver);
+        if (_probeScene) {
+            getFrameRegistry(_probeScene).unregister('env.reflection.probeRefresh');
+            _probeScene = null;
+        }
         _reflectionProbe = safeDispose(_reflectionProbe);
     }
     _currentMode = 'none';

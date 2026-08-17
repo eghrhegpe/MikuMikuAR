@@ -128,10 +128,7 @@ describe('dumpBoneHierarchy IK 求解器推导 (ADR-202 §六)', () => {
 
     it('两种 IK 标记均缺失 → hasIkSolver=false', async () => {
         const parent = makeBone('センター');
-        const bones: IMmdRuntimeBone[] = [
-            parent,
-            makeBone('左手首', { parentBone: parent }),
-        ];
+        const bones: IMmdRuntimeBone[] = [parent, makeBone('左手首', { parentBone: parent })];
         await launchBones(bones);
 
         const dump = dumpBoneHierarchy(MODEL_ID);

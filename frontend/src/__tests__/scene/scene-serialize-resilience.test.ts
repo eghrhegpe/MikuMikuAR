@@ -36,7 +36,7 @@ vi.mock('../../core/i18n/t', () => ({ t: (k: string) => k }));
 vi.mock('../../scene/scene', () => ({
     getLightState: () => ({}),
     setLightState: vi.fn(),
-    getStageLights: () => [],
+    getStageLights: (): unknown[] => [],
     loadStageLights: vi.fn(),
     getRenderState: () => ({}),
     setRenderState: vi.fn(),
@@ -54,12 +54,12 @@ vi.mock('../../scene/scene', () => ({
     setModelBoneLinesVis: vi.fn(),
     setModelBoneJointsVis: vi.fn(),
     setModelPhysics: vi.fn(),
-    getPhysicsCatState: () => null,
+    getPhysicsCatState: (): null => null,
     setPhysicsCategory: vi.fn(),
     loadVMDFromPath: vi.fn(),
     getMatState: vi.fn(() => null),
     applyMatState: vi.fn(),
-    getActiveFormation: () => null,
+    getActiveFormation: (): null => null,
     getActiveFormationSpacing: () => 0,
     setModelFormation: vi.fn(),
     disposeScene: vi.fn(),
@@ -86,11 +86,11 @@ vi.mock('../../scene/motion/lipsync-bridge', () => ({
 }));
 vi.mock('../../scene/motion/perception', () => ({
     getPerceptionState: () => ({}),
-    getPinnedModelIds: () => [],
+    getPinnedModelIds: (): unknown[] => [],
     getPerceptionStateFor: () => ({}),
-    getAllPerceptionStates: () => [],
+    getAllPerceptionStates: (): unknown[] => [],
     restorePerceptionStateFor: vi.fn(),
-    getPerceptionPerfManualTier: () => null,
+    getPerceptionPerfManualTier: (): null => null,
     isAllPerceptionEnabled: () => false,
     setPerceptionState: vi.fn(),
     pinPerception: vi.fn(),
@@ -99,17 +99,17 @@ vi.mock('../../scene/motion/perception', () => ({
     activatePerception: vi.fn(),
 }));
 vi.mock('../../scene/motion/animation-retargeter', () => ({
-    getRetargetPlayState: () => null,
+    getRetargetPlayState: (): null => null,
     restoreRetargetAnimation: vi.fn(() => Promise.resolve()),
 }));
 vi.mock('../../scene/render/lighting-follow', () => ({
-    getPersonalLightState: () => null,
+    getPersonalLightState: (): null => null,
     DEFAULT_PERSONAL_LIGHT: {},
 }));
 vi.mock('../../scene/motion/motion-intent', () => ({
-    getActiveMotionId: () => null,
-    getSceneMotions: () => [],
-    getLoadedProceduralMotions: () => [],
+    getActiveMotionId: (): null => null,
+    getSceneMotions: (): unknown[] => [],
+    getLoadedProceduralMotions: (): unknown[] => [],
     addSceneMotion: vi.fn(() => 'id'),
     setDefaultMotion: vi.fn(),
     clearAllSceneMotions: vi.fn(),
@@ -167,7 +167,13 @@ vi.mock('../../motion-algos/procedural-motion', () => ({
 }));
 vi.mock('../../motion-algos/lipsync', () => ({ DEFAULT_LIPSYNC_STATE: {} }));
 
-import { serializeScene, deserializeScene, triggerAutoSaveImpl, tryRestoreLastScene, saveSceneImmediate } from '../../scene/scene-serialize';
+import {
+    serializeScene,
+    deserializeScene,
+    triggerAutoSaveImpl,
+    tryRestoreLastScene,
+    saveSceneImmediate,
+} from '../../scene/scene-serialize';
 import { LoadLastScene } from '../../core/wails-bindings';
 import { setCameraState } from '../../scene/camera/camera';
 import { getMatState, applyMatState, loadPMXFile } from '../../scene/scene';
@@ -342,7 +348,9 @@ describe('deserializeScene — suppress 泄漏防护（fix:suppress-leak）', ()
         const info = vi.spyOn(console, 'info').mockImplementation(() => {});
         triggerAutoSaveImpl();
         const logs = info.mock.calls.map((c) => String(c[0]));
-        expect(logs.some((l) => l.includes('triggerAutoSaveImpl() called — debounce scheduled'))).toBe(true);
+        expect(
+            logs.some((l) => l.includes('triggerAutoSaveImpl() called — debounce scheduled'))
+        ).toBe(true);
         expect(logs.some((l) => l.includes('suppressed'))).toBe(false);
         info.mockRestore();
         vi.mocked(LoadLastScene).mockReset();
@@ -354,14 +362,20 @@ describe('deserializeScene — suppress 泄漏防护（fix:suppress-leak）', ()
 
         const data = {
             version: 1,
-            models: [{
-                name: '模型SSS',
-                filePath: '/models/sss.pmx',
-                kind: 'actor' as const,
-                materialSssCategories: {
-                    '皮肤': { sssPower: 0.8, sssColor: { r: 1, g: 0.6, b: 0.4 }, sssDistance: 0.3 },
+            models: [
+                {
+                    name: '模型SSS',
+                    filePath: '/models/sss.pmx',
+                    kind: 'actor' as const,
+                    materialSssCategories: {
+                        皮肤: {
+                            sssPower: 0.8,
+                            sssColor: { r: 1, g: 0.6, b: 0.4 },
+                            sssDistance: 0.3,
+                        },
+                    },
                 },
-            }],
+            ],
             camera: {},
         } as never;
 
@@ -370,8 +384,10 @@ describe('deserializeScene — suppress 泄漏防护（fix:suppress-leak）', ()
         expect(vi.mocked(applyMatState)).toHaveBeenCalledWith(
             'test-sss-id',
             expect.objectContaining({
-                sssCategories: { '皮肤': { sssPower: 0.8, sssColor: { r: 1, g: 0.6, b: 0.4 }, sssDistance: 0.3 } },
-            }),
+                sssCategories: {
+                    皮肤: { sssPower: 0.8, sssColor: { r: 1, g: 0.6, b: 0.4 }, sssDistance: 0.3 },
+                },
+            })
         );
     });
 
@@ -382,19 +398,21 @@ describe('deserializeScene — suppress 泄漏防护（fix:suppress-leak）', ()
 
         const data = {
             version: 1,
-            models: [{
-                name: '模型Proc',
-                filePath: '/models/proc.pmx',
-                kind: 'actor' as const,
-                // 嵌套结构（migrateProcState 在本测试被 mock 为恒等透传；迁移细节见 proc-motion-migrate.test.ts）
-                procMotion: {
-                    mode: 'idle',
-                    params: {
-                        idle: { intensity: 0.9, speed: 1.4 },
-                        autodance: { intensity: 0.3 },
+            models: [
+                {
+                    name: '模型Proc',
+                    filePath: '/models/proc.pmx',
+                    kind: 'actor' as const,
+                    // 嵌套结构（migrateProcState 在本测试被 mock 为恒等透传；迁移细节见 proc-motion-migrate.test.ts）
+                    procMotion: {
+                        mode: 'idle',
+                        params: {
+                            idle: { intensity: 0.9, speed: 1.4 },
+                            autodance: { intensity: 0.3 },
+                        },
                     },
                 },
-            }],
+            ],
             camera: {},
         } as never;
 
@@ -414,19 +432,21 @@ describe('deserializeScene — suppress 泄漏防护（fix:suppress-leak）', ()
 
         const data = {
             version: 1,
-            models: [{
-                name: '模型ProcMod',
-                filePath: '/models/procmod.pmx',
-                kind: 'actor' as const,
-                procMotionModules: {
-                    // 合法：idle 有完整模块状态
-                    idle: [{ id: 'body-posture', enabled: true, params: { tilt: 5 } }],
-                    // 畸形：autodance 值为字符串 → 应被丢弃
-                    autodance: 'garbage',
-                    // 畸形：元素缺 id → 过滤
-                    mixed: [{ nope: true }, { id: 'left-hand', enabled: false, params: {} }],
+            models: [
+                {
+                    name: '模型ProcMod',
+                    filePath: '/models/procmod.pmx',
+                    kind: 'actor' as const,
+                    procMotionModules: {
+                        // 合法：idle 有完整模块状态
+                        idle: [{ id: 'body-posture', enabled: true, params: { tilt: 5 } }],
+                        // 畸形：autodance 值为字符串 → 应被丢弃
+                        autodance: 'garbage',
+                        // 畸形：元素缺 id → 过滤
+                        mixed: [{ nope: true }, { id: 'left-hand', enabled: false, params: {} }],
+                    },
                 },
-            }],
+            ],
             camera: {},
         } as never;
 
@@ -449,12 +469,14 @@ describe('deserializeScene — suppress 泄漏防护（fix:suppress-leak）', ()
 
         const data = {
             version: 1,
-            models: [{
-                name: '模型None',
-                filePath: '/models/none.pmx',
-                kind: 'actor' as const,
-                // 无 procMotionModules 字段（旧存档）
-            }],
+            models: [
+                {
+                    name: '模型None',
+                    filePath: '/models/none.pmx',
+                    kind: 'actor' as const,
+                    // 无 procMotionModules 字段（旧存档）
+                },
+            ],
             camera: {},
         } as never;
 
@@ -468,19 +490,25 @@ describe('deserializeScene — suppress 泄漏防护（fix:suppress-leak）', ()
         // 用 Object.create 绕过 PBRMaterial 构造函数（需要 Babylon.js Engine），
         // 再用 defineProperty 覆盖 wireframe setter（继承自 Material，调用 markAsDirty 依赖 _scene）
         const pbrMat = Object.create(PBRMaterial.prototype) as PBRMaterial;
-        Object.defineProperty(pbrMat, 'wireframe', { value: false, writable: true, configurable: true });
+        Object.defineProperty(pbrMat, 'wireframe', {
+            value: false,
+            writable: true,
+            configurable: true,
+        });
         const model = makeModel('test-pbr-id', '模型PBR', '/models/pbr.pmx');
         model.meshes = [{ position: { x: 0, y: 0, z: 0 }, material: pbrMat }] as never;
         registry.set('test-pbr-id', model);
 
         const data = {
             version: 1,
-            models: [{
-                name: '模型PBR',
-                filePath: '/models/pbr.pmx',
-                kind: 'actor' as const,
-                wireframe: true,
-            }],
+            models: [
+                {
+                    name: '模型PBR',
+                    filePath: '/models/pbr.pmx',
+                    kind: 'actor' as const,
+                    wireframe: true,
+                },
+            ],
             camera: {},
         } as never;
 
@@ -519,8 +547,6 @@ describe('serialize → deserialize round-trip（procMotionModules 无损往返�
         expect((restoredInst as any).procMotionModules).toEqual((inst as any).procMotionModules);
     });
 });
-
-
 
 afterEach(() => {
     vi.restoreAllMocks();

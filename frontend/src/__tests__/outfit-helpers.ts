@@ -1,4 +1,5 @@
 // outfit-helpers.ts — 纯 fixture 构建助手（无 mock 依赖）
+import type { ModelInstance } from '../core/config';
 import { vi } from 'vitest';
 
 export function makeColor(r: number, g: number, b: number) {
@@ -32,7 +33,7 @@ export function createMockMaterial(name: string, textures: Record<string, any>) 
 }
 
 export function createMockMesh(material: any) {
-    return { material, _positions: null, name: 'mesh' };
+    return { material, _positions: null as Float32Array | null, name: 'mesh' };
 }
 
 export function createBaseInstance(overrides: Record<string, any> = {}) {
@@ -41,8 +42,8 @@ export function createBaseInstance(overrides: Record<string, any> = {}) {
         name: 'test',
         filePath: '/models/test.pmx',
         port: 12345,
-        meshes: [],
-        rootMesh: null,
+        meshes: [] as ModelInstance['meshes'],
+        rootMesh: null as ModelInstance['rootMesh'],
         scaling: 1,
         rotationY: 0,
         rotation: [0, 0, 0] as [number, number, number],
@@ -53,17 +54,17 @@ export function createBaseInstance(overrides: Record<string, any> = {}) {
         showBoneJoints: false,
         physicsEnabled: false,
         kind: 'actor' as const,
-        vmdData: null,
+        vmdData: null as ModelInstance['vmdData'],
         vmdName: '',
-        vmdPath: null,
+        vmdPath: null as ModelInstance['vmdPath'],
         animationDuration: 0,
-        vmdLayers: [],
-        boneOverrides: [],
+        vmdLayers: [] as ModelInstance['vmdLayers'],
+        boneOverrides: [] as ModelInstance['boneOverrides'],
         modelDir: '/models',
-        outfitFile: undefined,
-        activeVariant: undefined,
-        _origTextures: undefined,
-        _origParams: undefined,
+        outfitFile: undefined as ModelInstance['outfitFile'],
+        activeVariant: undefined as ModelInstance['activeVariant'],
+        _origTextures: undefined as ModelInstance['_origTextures'],
+        _origParams: undefined as ModelInstance['_origParams'],
         ...overrides,
     };
 }

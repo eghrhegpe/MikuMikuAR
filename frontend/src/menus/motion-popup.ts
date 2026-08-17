@@ -22,6 +22,13 @@ import {
     openProcDetail,
 } from './motion-root-ui';
 import type { LoadableProcId } from '../scene/motion/motion-intent';
+// [doc:adr-271] 菜单实例与根级刷新改由状态叶子承载，切断 popup ↔ levels 互指
+import {
+    setMotionMenuGetter,
+    setRefreshMotionRoot,
+    getMotionMenu,
+    refreshMotionRoot,
+} from './motion-menu-state';
 
 // ═══════════════════════════════════════════════════════════
 // Barrel Re-Exports（外部调用方继续从 ./motion-popup 导入）
@@ -40,8 +47,8 @@ export { hideMotionPopup, buildMotionRootItems } from './motion-root-ui';
 // ═══════════════════════════════════════════════════════════
 
 const {
-    getMenu: getMotionMenu,
-    refreshRoot: refreshMotionRoot,
+    getMenu: _popupGetMenu,
+    refreshRoot: _popupRefreshRoot,
     show: showMotionPopup,
 } = registerPopupMenu({
     wrapperKey: 'motion-popup',
@@ -54,6 +61,11 @@ const {
         onFolderEnter: motionOnFolderEnter,
     },
 });
+
+// [doc:adr-271] 把菜单 getter 与根级刷新注册进状态叶子，供各 motion-*-levels 读取调用。
+// 存 getter 而非实例：菜单由 buildRoot 惰性构建，加载期求值会永久拿到 null。
+setMotionMenuGetter(_popupGetMenu);
+setRefreshMotionRoot(_popupRefreshRoot);
 
 // [doc:P4] 加载模型后刷新根菜单 items（使动作列表等即时更新）
 const _unregisterLoadRefresh = registerLoadRefreshHook(() => {
@@ -72,7 +84,9 @@ export { getMotionMenu, refreshMotionRoot, showMotionPopup };
 // dispose 只删本实例闭包，不误删后续替换模块的注册。
 import { registerUiAction } from '@/core/ui-action-bridge';
 const _unregisterGetMotionMenu = registerUiAction('getMotionMenu', () => getMotionMenu());
-const _unregisterRefreshMotionRoot = registerUiAction('refreshMotionRoot', () => refreshMotionRoot());
+const _unregisterRefreshMotionRoot = registerUiAction('refreshMotionRoot', () =>
+    refreshMotionRoot()
+);
 
 /** 释放 motion-popup 模块资源（取消注册 hooks + UI actions + HMR/清理时调用） */
 export function disposeMotionPopup(): void {

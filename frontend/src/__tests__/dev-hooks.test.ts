@@ -53,7 +53,10 @@ vi.mock('../core/logger', () => ({
     logInfo: vi.fn(),
 }));
 vi.mock('../core/e2e-state-bridge', () => ({
-    getE2EStateReader: () => (path: string): unknown => path,
+    getE2EStateReader:
+        () =>
+        (path: string): unknown =>
+            path,
 }));
 vi.mock('../scene/render/lighting', () => ({
     isLightingReady: () => true,
@@ -68,7 +71,9 @@ vi.mock('../scene/motion/bone-override', () => ({
     }),
 }));
 vi.mock('@babylonjs/core/Meshes/meshBuilder', () => ({
-    MeshBuilder: { CreateBox: vi.fn(() => ({ name: 'e2e-test-mesh', material: null, dispose: vi.fn() })) },
+    MeshBuilder: {
+        CreateBox: vi.fn(() => ({ name: 'e2e-test-mesh', material: null, dispose: vi.fn() })),
+    },
 }));
 vi.mock('@babylonjs/core/Materials/standardMaterial', () => ({
     StandardMaterial: class {
@@ -146,7 +151,13 @@ describe('setupE2ECapture 双运行时开关（钩子收敛，ADR-229）', () =>
     it('__state 注入且 isLightingReady/isRenderReady 返回真实就绪状态（守卫域探测）', () => {
         state.isHeadless = true;
         setupE2ECapture();
-        const w = window as unknown as { __state: { get: (p: string) => unknown; isLightingReady: boolean; isRenderReady: boolean } };
+        const w = window as unknown as {
+            __state: {
+                get: (p: string) => unknown;
+                isLightingReady: boolean;
+                isRenderReady: boolean;
+            };
+        };
         expect(w.__state).toBeDefined();
         expect(w.__state.get('light.foo')).toBe('light.foo'); // mock reader 原样返回 path
         expect(w.__state.isLightingReady).toBe(true); // mock isLightingReady
@@ -157,14 +168,19 @@ describe('setupE2ECapture 双运行时开关（钩子收敛，ADR-229）', () =>
         state.isHeadless = true;
         state.model = null;
         setupE2ECapture();
-        const scene = (window as unknown as { __scene: { driver: { applyOutfit: (v: string) => Promise<boolean> } } }).__scene;
+        const scene = (
+            window as unknown as {
+                __scene: { driver: { applyOutfit: (v: string) => Promise<boolean> } };
+            }
+        ).__scene;
         await expect(scene.driver.applyOutfit('variant-a')).resolves.toBe(false);
     });
 
     it('__scene.driver.setWindSpeed / removeActiveModel / clearTestMeshes / resetWindPhysics 可调用（写钩子收敛到 driver）', () => {
         state.isHeadless = true;
         setupE2ECapture();
-        const scene = (window as unknown as { __scene: { driver: Record<string, unknown> } }).__scene;
+        const scene = (window as unknown as { __scene: { driver: Record<string, unknown> } })
+            .__scene;
         expect(typeof scene.driver.setWindSpeed).toBe('function');
         expect(typeof scene.driver.removeActiveModel).toBe('function');
         expect(typeof scene.driver.createTestMesh).toBe('function');
@@ -180,7 +196,9 @@ describe('setupE2ECapture 双运行时开关（钩子收敛，ADR-229）', () =>
     it('__scene.driver.createTestMesh 走通 Babylon mock 创建（meshCount 增长）', async () => {
         state.isHeadless = true;
         setupE2ECapture();
-        const scene = (window as unknown as { __scene: { driver: { createTestMesh: () => Promise<void> } } }).__scene;
+        const scene = (
+            window as unknown as { __scene: { driver: { createTestMesh: () => Promise<void> } } }
+        ).__scene;
         await expect(scene.driver.createTestMesh()).resolves.toBeUndefined();
     });
 
@@ -188,13 +206,15 @@ describe('setupE2ECapture 双运行时开关（钩子收敛，ADR-229）', () =>
         state.isHeadless = true;
         state.model = null;
         setupE2ECapture();
-        const scene = (window as unknown as {
-            __scene: {
-                rigidBodyCount: number;
-                rigidBodyBundleCount: number;
-                outfitVariants: () => Promise<{ variants: string[]; error: string | null }>;
-            };
-        }).__scene;
+        const scene = (
+            window as unknown as {
+                __scene: {
+                    rigidBodyCount: number;
+                    rigidBodyBundleCount: number;
+                    outfitVariants: () => Promise<{ variants: string[]; error: string | null }>;
+                };
+            }
+        ).__scene;
         expect(scene.rigidBodyCount).toBe(0); // mmdRuntime = null → 0
         expect(scene.rigidBodyBundleCount).toBe(0);
         await expect(scene.outfitVariants()).resolves.toEqual({ variants: [], error: null }); // focusedModel = null
@@ -204,8 +224,11 @@ describe('setupE2ECapture 双运行时开关（钩子收敛，ADR-229）', () =>
         state.isHeadless = true;
         state.mmdRuntime = null;
         setupE2ECapture();
-        const { disposeWindPhysics, initWindPhysics } = await import('@/scene/physics/wind-physics');
-        const scene = (window as unknown as { __scene: { driver: { resetWindPhysics: () => void } } }).__scene;
+        const { disposeWindPhysics, initWindPhysics } =
+            await import('@/scene/physics/wind-physics');
+        const scene = (
+            window as unknown as { __scene: { driver: { resetWindPhysics: () => void } } }
+        ).__scene;
         scene.driver.resetWindPhysics();
         expect(disposeWindPhysics).toHaveBeenCalledTimes(1);
         expect(initWindPhysics).not.toHaveBeenCalled();
@@ -215,8 +238,11 @@ describe('setupE2ECapture 双运行时开关（钩子收敛，ADR-229）', () =>
         state.isHeadless = true;
         state.mmdRuntime = { foo: 'bar' };
         setupE2ECapture();
-        const { disposeWindPhysics, initWindPhysics } = await import('@/scene/physics/wind-physics');
-        const scene = (window as unknown as { __scene: { driver: { resetWindPhysics: () => void } } }).__scene;
+        const { disposeWindPhysics, initWindPhysics } =
+            await import('@/scene/physics/wind-physics');
+        const scene = (
+            window as unknown as { __scene: { driver: { resetWindPhysics: () => void } } }
+        ).__scene;
         scene.driver.resetWindPhysics();
         expect(disposeWindPhysics).toHaveBeenCalledTimes(1);
         expect(initWindPhysics).toHaveBeenCalledWith(state.mmdRuntime);

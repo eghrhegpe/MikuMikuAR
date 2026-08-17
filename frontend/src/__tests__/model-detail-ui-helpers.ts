@@ -1,4 +1,5 @@
 // [doc:adr-204] model-detail-ui-helpers.ts — 纯 fixture（拆自 model-detail-ui.test.ts）
+import type { ModelInstance } from '../core/config';
 import { modelRegistry } from '../core/config';
 import type { PopupLevel } from '../core/config';
 import { mockModelManager } from './model-detail-ui-mocks';
@@ -57,9 +58,9 @@ export function createModel(id: string, overrides?: Partial<any>): string {
         modelDir: 'D:/models',
         meshes: [fakeMesh('mat0')],
         rootMesh: fakeMesh('root'),
-        vmdData: null,
+        vmdData: null as ModelInstance['vmdData'],
         vmdName: '',
-        vmdPath: null,
+        vmdPath: null as ModelInstance['vmdPath'],
         animationDuration: 0,
         kind: 'actor' as const,
         visible: true,

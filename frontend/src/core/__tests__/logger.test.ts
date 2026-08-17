@@ -1,6 +1,16 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { logInfo, logWarn, logError, logDebug, __debugLog, setDebugLog, getDebugLog, getLogBuffer, clearLogs } from '../logger';
+import {
+    logInfo,
+    logWarn,
+    logError,
+    logDebug,
+    __debugLog,
+    setDebugLog,
+    getDebugLog,
+    getLogBuffer,
+    clearLogs,
+} from '../logger';
 
 describe('logger', () => {
     beforeEach(() => {

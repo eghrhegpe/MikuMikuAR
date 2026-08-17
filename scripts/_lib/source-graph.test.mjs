@@ -123,6 +123,33 @@ function createTypeInsideImportFixture() {
   return { root, srcDir };
 }
 
+function createImportTypeFixture() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'miku-source-graph-'));
+  const srcDir = path.join(root, 'src');
+  fs.mkdirSync(srcDir, { recursive: true });
+  fs.writeFileSync(path.join(srcDir, 'consumer.ts'), [
+    'import type { Foo } from \'./types.js\';',
+    "import type {",
+    '  Bar,',
+    '  Baz,',
+    "} from './other.js';",
+  ].join('\n'));
+  fs.writeFileSync(path.join(srcDir, 'types.ts'), 'export interface Foo { x: number }');
+  fs.writeFileSync(path.join(srcDir, 'other.ts'), 'export interface Bar { y: number }');
+  return { root, srcDir };
+}
+
+function createMixedTypeValueFixture() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'miku-source-graph-'));
+  const srcDir = path.join(root, 'src');
+  fs.mkdirSync(srcDir, { recursive: true });
+  fs.writeFileSync(path.join(srcDir, 'mixed.ts'), [
+    "import { type Foo, makeFoo } from './runtime.js';",
+  ].join('\n'));
+  fs.writeFileSync(path.join(srcDir, 'runtime.ts'), 'export const makeFoo = () => ({});');
+  return { root, srcDir };
+}
+
 function createStringContextFixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'miku-source-graph-'));
   const srcDir = path.join(root, 'src');
@@ -280,11 +307,35 @@ test('resolves multi-line export { } from statements', () => {
   }
 });
 
-test('resolves inline type imports like import { type X } from', () => {
+// [fix 2026-10-23] 口径反转：纯类型导入不再计入依赖图。
+// 旧测试固化的是「type-only 也算运行时边」的旧行为，与 check-layering 的
+// isTypeOnlyBody 豁免口径冲突（同一仓库两种口径）。现改为断言「不产生边」，
+// 并补一条混合形式（`import { type Foo, bar }` 中 bar 是运行时值 → 仍要保留边）。
+test('does not create edges for pure type imports (import { type X } from)', () => {
   const fixture = createTypeInsideImportFixture();
   try {
     const { graph } = scanSourceGraph(fixture.srcDir);
-    assert.deepEqual([...graph.get('user.ts')], ['types.ts']);
+    assert.deepEqual([...graph.get('user.ts')], []);
+  } finally {
+    fs.rmSync(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('does not create edges for import type { X } from', () => {
+  const fixture = createImportTypeFixture();
+  try {
+    const { graph } = scanSourceGraph(fixture.srcDir);
+    assert.deepEqual([...graph.get('consumer.ts')], []);
+  } finally {
+    fs.rmSync(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('keeps edges for mixed imports (import { type X, value } from)', () => {
+  const fixture = createMixedTypeValueFixture();
+  try {
+    const { graph } = scanSourceGraph(fixture.srcDir);
+    assert.deepEqual([...graph.get('mixed.ts')], ['runtime.ts']);
   } finally {
     fs.rmSync(fixture.root, { recursive: true, force: true });
   }

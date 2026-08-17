@@ -11,17 +11,20 @@ import {
     mmdRuntime,
 } from '@/core/config';
 import { refreshWaterRenderList } from '../env/env';
+// [doc:adr-269 补充] 原先整体从 '../camera/camera' 取 5 个符号，使 scene/manager 与
+// scene/camera 互相引用（camera.ts → camera-auto → ... 亦回指本文件所在分量）。
+// 这 5 个符号的真实定义都在 camera 叶子模块里（camera-state / camera-bone-lock），
+// 改指叶子即可断开与装配器 camera.ts 的边，模块对 scene/manager→scene/camera 保持不变。
+import { getCameraMode } from '../camera/camera-state';
 import {
-    getCameraMode,
-    switchCameraMode,
     getOrbitBoneLock,
     setOrbitBoneLock,
     getFocusedModelBoneNames,
-} from '../camera/camera';
+} from '../camera/camera-bone-lock';
 import { updatePlaybackUI } from '../motion/playback';
 // [doc:adr-238] 音频释放经 scene-action-bridge（outfit 注册）
 import { getSceneAction } from '@/core/scene-action-bridge';
-import { modelManager } from '../scene';
+import { modelManager } from '../scene-context';
 import { setTargetModel } from '../motion/motion-modules/registry'; // [doc:adr-116]
 import { setBoneOverride } from '../motion/bone-override'; // [doc:adr-150]
 import type { FormationType } from './model-manager';
@@ -54,7 +57,9 @@ export function removeModel(id: string): void {
     refreshWaterRenderList();
 
     if (focusedModelId === null && getCameraMode() === 'concert') {
-        switchCameraMode('orbit');
+        // [doc:adr-269 补充] 相机模式切换经 scene-action-bridge（camera.ts:898 注册），
+        // 与下方 disposeAudio 同一范式——切断 scene/manager → scene/camera 的静态边。
+        getSceneAction('switchCameraMode')?.('orbit');
     }
     if (modelRegistry.size === 0) {
         setIsPlaying(false);

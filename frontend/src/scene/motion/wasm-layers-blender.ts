@@ -299,11 +299,7 @@ function _applyLayersBlending(modelId: string): void {
                 newMat.copyFrom(Matrix.Compose(Vector3.One(), blendedRot, safeBlendedPos));
             } else {
                 const pos = oldMat.getTranslation();
-                const safePos = new Vector3(
-                    guardNum(pos.x),
-                    guardNum(pos.y),
-                    guardNum(pos.z)
-                );
+                const safePos = new Vector3(guardNum(pos.x), guardNum(pos.y), guardNum(pos.z));
                 newMat.copyFrom(Matrix.Compose(Vector3.One(), blendedRot, safePos));
             }
 

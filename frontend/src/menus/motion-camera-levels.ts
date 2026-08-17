@@ -50,7 +50,8 @@ import {
 } from '../scene/camera/camera';
 import { triggerAutoSave, pushUndoSnapshot, offerSceneUndoAndRefresh } from '../scene/scene';
 import { getRenderState, setRenderState } from '../scene/render/renderer';
-import { getMotionMenu } from './motion-popup';
+// [doc:adr-271] 菜单实例改从状态叶子读取，切断与 motion-popup 的互指
+import { getMotionMenu } from './motion-menu-state';
 import {
     switchARCameraFacing,
     setARMirror,

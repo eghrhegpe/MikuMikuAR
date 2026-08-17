@@ -13,6 +13,7 @@ outfits-spec.md      👗 换装系统规格
 security-audit-CVE.md 🔒 安全审计 CVE 记录
 targets.md           🎯 四端目标能力矩阵（能力真相源 SSOT）
 dep-graph.md         🕸️ 模块依赖图（自动生成，npm run dep:graph）
+dep-metrics.md       📐 依赖耦合台账 Ca/Ce/I/环（自动生成，npm run gen:dep-metrics）
 grand-blueprint.md   🧭 联邦大统一蓝图（历史规划快照，非当前真相源）
 web-data-origin-isolation.md 🛡️ 网页端数据存储与 Origin 隔离说明
 adr/                 📜 架构决策记录（权威状态源，见各 ADR 首部状态行）

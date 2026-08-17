@@ -79,6 +79,9 @@ const FOOT_STEP_MIN_INTERVAL = 120;
 
 let _feetDbgFrame = 0;
 let _feetTick = 0;
+// [doc:adr-275] 上一帧是否有模型真正启用脚部跟随（enabled && intensity>0）。
+// 脚步声用它判断"事件源是否存在"——observer 注册过 ≠ 有落地事件产出。
+let _anyEnabled = false;
 /** [ADR-202 §六] 一次性诊断已输出标记（避免刷屏） */
 let _feetWarnOnce = false;
 
@@ -128,6 +131,17 @@ export function setOnFootLand(cb: ((e: FootLandEvent) => void) | null): void {
 /** 查询脚部跟随系统是否正在运行（observer 已注册）。 */
 export function isFeetAdjustmentRunning(): boolean {
     return _unregisterHandle !== null;
+}
+
+/**
+ * 查询脚部跟随当前是否**真的**对至少一个模型生效（取上一帧结果）。
+ *
+ * [doc:adr-275] `isFeetAdjustmentRunning()` 只回答"observer 注册过没有"。
+ * 脚部跟随废弃后（88d75986）它恒为 `true`，但谱上每个模型都是 `enabled: false`，
+ * 落地事件永不产生——脚步声若据此跳过降级检测，就变成"开关打开却永远没声音"。
+ */
+export function isFeetAdjustmentEnabled(): boolean {
+    return _anyEnabled;
 }
 
 /** 找大腿根骨骼（用于估算髋世界坐标与腿长）。
@@ -211,7 +225,7 @@ function _adjustFoot(
     });
 
     if (feetDebug.value && _feetDbgFrame++ % 60 === 0) {
-        const f = (v: number) => Number.isFinite(v) ? v.toFixed(3) : '?';
+        const f = (v: number) => (Number.isFinite(v) ? v.toFixed(3) : '?');
         const solver = (ik as MmdRuntimeBoneExtended).ikSolver;
         const ikSolverIndex = (ik as { ikSolverIndex?: number }).ikSolverIndex;
         logWarn(
@@ -399,6 +413,7 @@ export function startFeetAdjustment(getModels: FeetModelProvider): void {
                 .join(' ');
             logWarn('feet', '[WASM] models', summary);
         }
+        _anyEnabled = false;
         for (const m of getModels()) {
             const cache = _getCache(m.id);
             const feet = m.feet;
@@ -412,6 +427,7 @@ export function startFeetAdjustment(getModels: FeetModelProvider): void {
                 cache.rLastLandTime = 0;
                 continue;
             }
+            _anyEnabled = true;
             // 解析 IK 骨骼名（按模型缓存，首次解析）
             if (cache.lName === '') {
                 const names = m.runtimeBones.map((b) => b.name);
@@ -465,6 +481,7 @@ export function stopFeetAdjustment(): void {
         _unregisterHandle = null;
     }
     _cache.clear();
+    _anyEnabled = false;
     _lastTickTime = 0; // 重置时间戳，避免重启后首帧 dt 异常
     _feetWarnOnce = false; // 重置一次性诊断标记，重启后重新输出
 }

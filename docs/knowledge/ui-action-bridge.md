@@ -9,6 +9,7 @@ source_files:
   - frontend/src/core/ui-action-bridge.ts
 adr:
   - ADR-238
+  - ADR-265
 symbols:
   - UiActions
   - getUiAction
@@ -17,6 +18,7 @@ symbols:
   - unregisterUiAction
 invariants:
   - core 持注入点，menus 侧注册，方向单向（与 e2e-state-bridge / scene-action-bridge 同模式）
+  - register/get/warnOnce 机械部分立于 core/bridge-slot createActionBridge（ADR-265），导出签名不变
   - 未注册调用一次性告警后静默返回 undefined
   - getUiActions 需 closeAllOverlays + screenshotCurrent 均注册才返回全集（旧调用点兼容）
 tests: []

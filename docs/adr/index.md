@@ -2,7 +2,7 @@
 
 # 决策记录（ADR）
 
-> 架构决策日志，共 **261** 篇（ADR-001 起按编号递增）。决策一旦写下即不可变；状态变化以各 ADR 文件首部「状态」行为准。
+> 架构决策日志，共 **274** 篇（ADR-001 起按编号递增）。决策一旦写下即不可变；状态变化以各 ADR 文件首部「状态」行为准。
 
 ## 按状态分布
 
@@ -10,7 +10,7 @@
 |------|------|------|
 | [推进中](#推进中) | 6 | 已开工，尚未收口（含部分实施） |
 | [规划中](#规划中) | 7 | 已立项，等待实施 |
-| [已落地](#已落地) | 235 | 实施完成，代码已合入 |
+| [已落地](#已落地) | 248 | 实施完成，代码已合入 |
 | [已归档](#已归档) | 13 | 被取代、放弃、过时或搁置，保留供追溯 |
 
 > 本文件为 ADR **规范索引**（按状态分组导航，可锚点跳转）。带日期的全量列表见 [项目现状 · ADR 索引](../status.md)（附表，由 `scripts/gen-status-index.mjs` 生成）。
@@ -42,6 +42,19 @@
 
 | ADR | 主题 | 状态 |
 |-----|------|------|
+| [ADR-275](./adr-275-feet-adjustment-deprecation-landing-source.md) | 脚部地面跟随即刻废弃的收尾 — 落地事件源以「是否真在解算」为准 | ✅ 已采纳 |
+| [ADR-274](./adr-274-strict-rollout.md) | 严格模式渐进收敛：Stage 1 打开 noImplicitAny — 编译器接管隐式 any，148 处清零的三级阶梯 | ✅ 已采纳 |
+| [ADR-273](./adr-273-scene-boot-plan.md) | 场景启动顺序显式化 — 把装配序列从语句位置变成可校验清单（boot plan） | 🔄 部分采纳 |
+| [ADR-272](./adr-272-typed-state-path.md) | 状态路径类型化：把「schema 与菜单 bind 必须同步」交给编译器 | ✅ 已采纳 |
+| [ADR-271](./adr-271-file-scc-splitting.md) | 文件级 SCC 拆分——IoC 挂载、菜单状态叶子、barrel 转发收口 | ✅ 已采纳 |
+| [ADR-270](./adr-270-structural-coupling-gate.md) | 结构耦合门禁 — 首次出现的跨模块通道与文件级 SCC 只许收紧 | ✅ 已采纳 |
+| [ADR-269](./adr-269-scene-context-slot-extraction.md) | scene 共享状态槽下移与耦合度量口径修正 — SCC 取代环计数作为判读指标 + type-only 边剔除 + scene-context 抽离 | ✅ 已采纳 |
+| [ADR-268](./adr-268-circular-dynamic-import-exclusion.md) | 循环依赖口径收窄到加载期：动态 import 不计入环 — check-circular 与白名单抗漂移整改 | ✅ 已采纳 |
+| [ADR-267](./adr-267-static-asset-compression-declined.md) | 静态资源压缩不下发 — 桌面 loopback 与 Pages CDN 已覆盖，预压缩实测净负 | ✅ 已采纳 |
+| [ADR-266](./adr-266-babylon-umd-supply-chain.md) | Babylon UMD 供应源字节级对齐 — vendored UMD 从 devDependency 同步，check:babylon-lib 守护 | ✅ 已采纳 |
+| [ADR-265](./adr-265-bridge-slot.md) | 通用注入桥原语 bridge-slot | ✅ 已采纳 |
+| [ADR-264](./adr-264-inline-px-token-ratchet.md) | 内联样式写死 px 收敛：等值换令牌 + 棘轮闸门 | 🔄 部分采纳 |
+| [ADR-263](./adr-263-frame-registry-convergence-inventory.md) | 每帧回调收口：frame-registry 剩余裸 observer 清单与阶段锚点 | 🔄 部分采纳 |
 | [ADR-262](./adr-262-vitest-isolate-false-vi-mock-pollution-mechanism-and-guardrails.md) | Vitest isolate:false + vi.mock 污染机制、金丝雀诊断与护栏 | ✅ 已采纳 |
 | [ADR-261](./adr-261-测试环境分流实证修正-隐式-dom-依赖不是表面嗅探能捕捉的.md) | 测试环境分流实证修正 — 隐式 DOM 依赖不是表面嗅探能捕捉的 | ✅ 已采纳 |
 | [ADR-260](./adr-260-pre-push-parallel.md) | pre-push 检查并行化 | ✅ 已采纳 |
@@ -52,7 +65,7 @@
 | [ADR-256](./adr-256-test-file-merge-perf.md) | 性能导向的单测文件组织：同系列合并取代一刀切拆分 — isolate 下每文件独立依赖图是墙钟税；importDurations 实测 self ~100ms 却付 ~5s total 的文件优先合并；行数/vi.mock 阈值让位于依赖图成本 | ✅ 已采纳 |
 | [ADR-255](./adr-255-test-env-split.md) | 测试环境分流：@vitest-environment node 削减每文件 happy-dom 成本 — isolate=true 下 happy-dom 每文件重建是墙钟大头；无 DOM 依赖测试文件切 node 环境，环境累加 255s → ~90-105s | ✅ 已采纳 |
 | [ADR-254](./adr-254-p4-backlog-registry.md) | 历轮审核 P4 遗留项登记簿 —— 低风险改进清单与技术债跟踪 | ✅ 已立 |
-| [ADR-253](./adr-253-config-merge-partial-update.md) | 配置部分更新合并契约损坏 —— mergeUIState bool 覆盖 / mergeEnvState 零值覆盖 | ✅ 已立 |
+| [ADR-253](./adr-253-config-merge-partial-update.md) | 配置部分更新合并契约损坏 —— mergeUIState bool 覆盖 / mergeEnvState 零值覆盖 | ✅ 已完成 |
 | [ADR-252](./adr-252-menu-dispose-chain.md) | 菜单资源释放链路缺失 —— disposeMenuWrapper/clearAllMenuWrappers 零调用与 _liveMenus 常驻 | ✅ 已采纳 |
 | [ADR-251](./adr-251-scene-circular-import-cleanup.md) | scene 反向 import 循环依赖治理 —— model-ops/camera 对 `../scene` 的真实静态循环 | ✅ 已立 |
 | [ADR-250](./adr-250-scene-init-reentrancy.md) | 场景初始化重入与异常一致性 —— initScene 重入守护 + 中途异常状态复位 | ✅ 已立 |

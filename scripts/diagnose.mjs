@@ -48,7 +48,11 @@ function run(label, cmd, opts = {}) {
     const { cwd = ROOT, critical = true, timeout = 120000 } = opts;
     process.stdout.write(`  ${CYAN}▶${RESET} ${label}... `);
     try {
-        execSync(cmd, { cwd, stdio: "pipe", encoding: "utf8", timeout });
+        // [P1 2026-10-23] stdio:"pipe" 下 execSync 默认 maxBuffer 仅 1MB：ESLint 全量诊断
+        // 输出约 2900 条（约 1.6MB）会抛 ENOBUFS，把「有警告」误报成「步骤崩溃」，
+        // 并让后续 check:layering / check:babylon-lib / check:docs 根本没机会跑。
+        // 按 scripts/_lib/ripgrep.mjs 的既有惯例放大到 64MB。
+        execSync(cmd, { cwd, stdio: "pipe", encoding: "utf8", timeout, maxBuffer: 64 * 1024 * 1024 });
         ok(label);
         return true;
     } catch (e) {

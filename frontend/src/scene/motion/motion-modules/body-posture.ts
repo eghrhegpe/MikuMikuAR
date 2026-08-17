@@ -26,8 +26,9 @@ import {
     BONE_LEG_IK_L_CANDIDATES,
     BONE_LEG_IK_R_CANDIDATES,
 } from '@/motion-algos/proc-motion-shared';
-import { getModuleState } from './registry';
+import { getModuleState } from './registry-core';
 import type { MotionOverrideModule, ModuleMeta, ModuleDef } from './types';
+import type { MenuNode } from '@/scene/shared/menu-node-types';
 import {
     createModuleBase,
     createModuleShell,
@@ -36,17 +37,21 @@ import {
     createEnsureActive,
     getModuleActionId,
 } from './module-base';
+import type { BodyPostureParamKey } from './module-param-keys';
 
 const MODULE_ID = 'body-posture';
 
-/** 默认参数 */
-const DEFAULTS: Record<string, ParamValue> = {
+/**
+ * 默认参数。键集用 `satisfies` 双向钉在 `ModuleParamKeys['body-posture']` 上（ADR-272）：
+ * 多一个键 = 无默认值、运行时 undefined；少一个键 = 菜单 bind 到不存在的参数。两者都编译失败。
+ */
+const DEFAULTS = {
     tilt: 0, // 上半身 pitch: -15~15
     bend: 0, // 上半身 pitch（与 tilt 累加）: -30~30
     twist: 0, // 上半身2 yaw: -30~30
     bodyHeight: 0, // センター Y 偏移（世界空间）: 负值下蹲
     bodyDepth: 0, // センター Z 偏移（世界空间）: 正值前移跪姿，负值后躺
-};
+} satisfies Record<BodyPostureParamKey, ParamValue>;
 
 /** 模块元信息（注册用，与实例 meta 同源） */
 const META: ModuleMeta = {
@@ -181,19 +186,28 @@ const ensureActive = createEnsureActive(bake, _bodyFrameHooks, _registerBodyPosi
 
 /** 创建身体姿态模块实例 */
 export function createBodyPostureModule(modelId: string, actionId?: string): MotionOverrideModule {
-    const base = createModuleBase(modelId, MODULE_ID, DEFAULTS, bake, {
-        action: ensureActive,
-        onDisable: (mid) => {
-            _bodyFrameHooks.unregister(mid);
+    const base = createModuleBase(
+        modelId,
+        MODULE_ID,
+        DEFAULTS,
+        bake,
+        {
+            action: ensureActive,
+            onDisable: (mid) => {
+                _bodyFrameHooks.unregister(mid);
+            },
         },
-    }, actionId);
+        actionId
+    );
     return createModuleShell({
         id: MODULE_ID,
         meta: META,
         priority: 1,
         managedBones: MANAGED_BONES,
 
-        buildSchema: () => {
+        // 显式返回类型：给数组字面量上下文类型，bind 的错误才会落在具体滑块上
+        // （否则整个 buildSchema 变成一个巨型联合，tsc 只说「不是 MenuNode[]」）。
+        buildSchema: (): MenuNode[] => {
             return [
                 {
                     id: 'body-posture:tilt',

@@ -1,5 +1,6 @@
 // perception-multi-model.int.test.ts — 骨骼认领/冲突 banner + 多模型激活/隔离（2026-08-10 合并 claim-bones + multi-model）
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { Camera } from '@babylonjs/core/Cameras/camera';
 
 const mockState = vi.hoisted(() => ({
     focusedModelId: null as string | null,
@@ -13,7 +14,7 @@ const mockState = vi.hoisted(() => ({
             add: vi.fn(() => ({})),
             remove: vi.fn(),
         },
-        activeCamera: null,
+        activeCamera: null as Camera | null,
         isDisposed: false,
     },
     isAudioPlaying: vi.fn(() => false),
@@ -30,6 +31,8 @@ const mockPipeline = vi.hoisted(() => ({
 }));
 
 vi.mock('../../scene/scene', () => sceneModuleFactory(mockState));
+// [doc:adr-269 补充] perception/camera 的焦点访问器已迁到窄门面 scene-focus
+vi.mock('../../scene/scene-focus', () => sceneModuleFactory(mockState));
 vi.mock('../../ar/ar-camera', () => arCameraModuleMock);
 vi.mock('../../core/wails-bindings', () => wailsBindingsModuleMock);
 vi.mock('../../core/i18n/t', () => i18nTModuleMock);
@@ -204,7 +207,9 @@ describe('ADR-163 claimBones', () => {
 
 describe('ADR-164 模型加载自动激活', () => {
     it('8. 全员感知模式下新模型加载时自动激活', () => {
-        const inst1 = { mmdModel: { mesh: { isDisposed: () => false }, runtimeBones: [] } };
+        const inst1 = {
+            mmdModel: { mesh: { isDisposed: () => false }, runtimeBones: [] as unknown[] },
+        };
         mockState.modelManager.get.mockImplementation((id: string) => (id === 'm1' ? inst1 : null));
         mockState.modelManager.modelRegistry.set('m1', inst1);
         mockState.focusedModelId = 'm1';
@@ -212,7 +217,9 @@ describe('ADR-164 模型加载自动激活', () => {
         sut.enableAllPerception();
 
         // 模拟新模型 m2 加载
-        const inst2 = { mmdModel: { mesh: { isDisposed: () => false }, runtimeBones: [] } };
+        const inst2 = {
+            mmdModel: { mesh: { isDisposed: () => false }, runtimeBones: [] as unknown[] },
+        };
         mockState.modelManager.get.mockImplementation((id: string) =>
             id === 'm1' ? inst1 : id === 'm2' ? inst2 : null
         );

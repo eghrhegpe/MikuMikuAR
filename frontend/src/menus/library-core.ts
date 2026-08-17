@@ -581,7 +581,7 @@ function renderItemsWithRAF(
         const empty = document.createElement('div');
         empty.className = 'slide-empty';
         empty.style.cssText =
-            'padding:24px;text-align:center;color:var(--text-muted);font-size:13px;';
+            'padding:24px;text-align:center;color:var(--text-muted);font-size:var(--font-ui);';
         empty.textContent = t('library.noModels');
         card.appendChild(empty);
         return;
@@ -1046,18 +1046,9 @@ export function refreshModelRoot(forceRender = false): void {
 stackRegistry.buildLevel = buildLevel;
 
 // ======== Re-exports（向后兼容，外部通过 library-core 或 library 导入）========
-
-export { showModelPopup } from './library-browse';
-export { importFile, prepareModelRestore } from './library-actions';
-export {
-    initLibrary,
-    selectResourceRoot,
-    selectOverridePath,
-    switchStorageMode,
-    rescanAndSync,
-    reloadConfig,
-    refreshLibrary,
-} from './library-setup';
+// [doc:adr-271] 删掉指向 library-browse / library-actions / library-setup 的转发：
+// 这三个文件本来都 import library-core，转发边正好把「core ↔ 三者」闭合成环，
+// 让 menus 的 library 子系统 8 个文件互相可达。消费者改直连真实定义处。
 
 // [doc:adr-238] 注册菜单浏览层级构建供 core/action-defs 经 ui-action-bridge 调用
 import { registerUiAction } from '@/core/ui-action-bridge';

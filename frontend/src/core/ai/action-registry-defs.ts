@@ -37,7 +37,10 @@ export function registerControlActions(): void {
         domain: 'scene',
         params: [{ name: 'dirIntensity', type: 'range', min: 0, max: 1, step: 0.05 }],
         execute: (p) => {
-            _reportLightWrite(getSceneAction('setLightState')?.({ dirIntensity: p.dirIntensity as number }) ?? false);
+            _reportLightWrite(
+                getSceneAction('setLightState')?.({ dirIntensity: p.dirIntensity as number }) ??
+                    false
+            );
         },
     });
 
@@ -48,7 +51,11 @@ export function registerControlActions(): void {
         domain: 'scene',
         params: [{ name: 'dirColor', type: 'color' }],
         execute: (p) => {
-            _reportLightWrite(getSceneAction('setLightState')?.({ dirColor: p.dirColor as [number, number, number] }) ?? false);
+            _reportLightWrite(
+                getSceneAction('setLightState')?.({
+                    dirColor: p.dirColor as [number, number, number],
+                }) ?? false
+            );
         },
     });
 
@@ -94,7 +101,10 @@ export function registerControlActions(): void {
         label: 'ai.actions.control.toggleGround',
         domain: 'env',
         params: [],
-        execute: () => getSceneAction('setEnvState')?.({ groundVisibleEnabled: !getSceneAction('getEnvGroundVisible')?.() }),
+        execute: () =>
+            getSceneAction('setEnvState')?.({
+                groundVisibleEnabled: !getSceneAction('getEnvGroundVisible')?.(),
+            }),
     });
 
     // model:load

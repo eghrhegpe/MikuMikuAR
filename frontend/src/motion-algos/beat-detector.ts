@@ -294,7 +294,11 @@ export class BeatDetector {
             }
             const avg = sum / history.length;
             const lastBeat = beats.length > 0 ? beats[beats.length - 1] : -safeMinInterval;
-            if (energies[i] > avg * threshold && energies[i] > 30 && i - lastBeat >= safeMinInterval) {
+            if (
+                energies[i] > avg * threshold &&
+                energies[i] > 30 &&
+                i - lastBeat >= safeMinInterval
+            ) {
                 beats.push(i);
             }
         }

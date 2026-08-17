@@ -373,8 +373,7 @@ describe('parseVPDText morph weight line cleanup', () => {
         expect(r.morphs[0]).toEqual({ name: 'あ', weight: 0.8 });
     });
     it('parses morph weight with // comment', () => {
-        const text =
-            'Vocaloid Pose Data file\n{\nMorph0:笑い\n    0.500000 // weight\n}';
+        const text = 'Vocaloid Pose Data file\n{\nMorph0:笑い\n    0.500000 // weight\n}';
         const r = parseVPDText(text);
         expect(r.morphs).toHaveLength(1);
         expect(r.morphs[0].weight).toBeCloseTo(0.5);
@@ -482,9 +481,7 @@ describe('parseVPDText format variants', () => {
 describe('decodeVPDData encoding variants', () => {
     it('decodes UTF-16BE BOM content', () => {
         // "test" 的 UTF-16BE 码元，前置 FE FF BOM
-        const bytes = new Uint8Array([
-            0xfe, 0xff, 0x00, 0x74, 0x00, 0x65, 0x00, 0x73, 0x00, 0x74,
-        ]);
+        const bytes = new Uint8Array([0xfe, 0xff, 0x00, 0x74, 0x00, 0x65, 0x00, 0x73, 0x00, 0x74]);
         const result = decodeVPDData(bytes.buffer as ArrayBuffer);
         expect(result).toBe('test');
     });

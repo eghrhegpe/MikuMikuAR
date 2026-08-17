@@ -11,7 +11,9 @@ import { ArcRotateCamera } from '@babylonjs/core/Cameras/arcRotateCamera';
 import { uiState } from '@/core/config';
 import { schedulePersistUI } from '../env/_bridge/env-persist';
 import { observe } from '@/core/observer-handle';
-import { getProcBeatDetector } from '../scene';
+// [doc:adr-269 补充] 节拍检测器改经 scene-action-bridge（proc-motion-bridge.ts 注册），
+// 断开 scene/camera → scene/motion 的静态边；scene-focus 已不含此符号。
+import { getSceneAction } from '@/core/scene-action-bridge';
 import {
     getAutoCameraBeatCount,
     getAutoCameraPresetIdx,
@@ -69,7 +71,12 @@ function _subscribeAutoCameraBeat(
     detector?: { onBeat: (cb: () => void) => () => void } | null
 ): void {
     _unsubscribeAutoCameraBeat();
-    const bd = detector ?? getProcBeatDetector();
+    // [doc:adr-269 补充] 走桥取检测器；未注册（早期启动/HMR 竞态）时按「无 detector」处理，
+    // 与原先返回 null 的语义一致——_subscribeAutoCameraBeat 本就允许 detector 为 null。
+    const bd =
+        detector ??
+        (getSceneAction('getProcBeatDetector')?.() as
+            { onBeat: (cb: () => void) => () => void } | null | undefined);
     if (bd) {
         _autoCameraUnsub = bd.onBeat(_onAutoCameraBeat);
     }

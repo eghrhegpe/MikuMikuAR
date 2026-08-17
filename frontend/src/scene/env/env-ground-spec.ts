@@ -42,11 +42,15 @@ import {
     _syncGroundNormalTexture,
     _syncGroundEmissive,
     _syncPbrProperties,
-    _effectiveBumpLevel,
-    triggerTerrainReady,
-    setGroundMesh,
-    setGroundActualSize,
 } from './env-ground';
+// [doc:adr-271] 地面回写与 bump 强度改从叶子取：本文件原从 env-ground 取 4 个符号，
+// 而 env-ground 又 import 本文件建材质 → size=3 环。现依赖方向为 spec → 叶子（单向）。
+import { _effectiveBumpLevel } from './_shared/ground-bump';
+import {
+    requestTerrainReady,
+    publishGroundMesh,
+    publishGroundActualSize,
+} from './_bridge/ground-dispatcher';
 import { createHeightmapGround, applyTerrainMaterial } from './env-terrain';
 import { hasActiveGroundRipples } from './env-water';
 import { underwaterFogController } from './env-underwater-fog';
@@ -355,8 +359,7 @@ export function applyGroundMaterialSpec(
     // 原地增量若误用 ap.textureScale 会把 albedo 单独缩放成与 roughness/normal 不一致，
     // 并破坏「重建产物 == 原地产物」合约（非默认 proceduralScale 时复现）。
     if (!isRebuild) {
-        const densityScale =
-            sk.sourceKind === 'procedural' ? sk.proceduralScale : ap.textureScale;
+        const densityScale = sk.sourceKind === 'procedural' ? sk.proceduralScale : ap.textureScale;
         const uvScale = meshSize / 10 / Math.max(0.1, densityScale);
         const albedoTex = _getAlbedoTex(mat);
         if (albedoTex && albedoTex instanceof Texture) {
@@ -421,11 +424,11 @@ export function createGroundMeshFromSpec(state: EnvState, scene: Scene): Mesh {
             // emissive（避免水下重建时 orig 误捕获焦散纹理，出水后残留焦散）。
             underwaterFogController.install(mat);
             applyGroundMaterialSpec(mat, state, scene, true);
-            triggerTerrainReady();
+            requestTerrainReady();
         });
-        setGroundMesh(hg);
+        publishGroundMesh(hg);
         // [fix P3-2] 地形重建也要同步 _groundActualSize（否则原地纹理密度/滚动用陈旧值计算）
-        setGroundActualSize(state.groundSize);
+        publishGroundActualSize(state.groundSize);
         buildGroundReflection(state);
         return hg;
     }
@@ -447,12 +450,12 @@ export function createGroundMeshFromSpec(state: EnvState, scene: Scene): Mesh {
     mat.backFaceCulling = false; // 与历史 legacy applyGround 重建路径对齐（legacy 重建块已删，行为保留）
     ground.material = mat;
 
-    setGroundActualSize(meshSize);
+    publishGroundActualSize(meshSize);
     // [adr-230 P1] 先 install 再 applyGroundMaterialSpec（理由同上：避免水下重建
     // 时 orig 误捕获焦散纹理）。
     underwaterFogController.install(mat);
     applyGroundMaterialSpec(mat, state, scene, true);
-    setGroundMesh(ground);
+    publishGroundMesh(ground);
     buildGroundReflection(state);
     return ground;
 }

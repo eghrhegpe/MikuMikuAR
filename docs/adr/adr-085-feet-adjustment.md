@@ -1,7 +1,7 @@
 # ADR-085: 脚部地面跟随（Feet Adjustment）
 
 > **日期**: 2026-07-11
-> **状态**: Phase A 已完成；Phase B/C 降级搁置（2026-07-19）· 已纳入代码审核 4 项修正（纯文档，无代码变更）· 方案C（WASM 手动 IK）已实施（2026-07-26）· **方案A 迁移全部完成（2026-07-29，ADR-202 §六）**
+> **状态**: Phase A 已完成；Phase B/C 降级搁置（2026-07-19）· 已纳入代码审核 4 项修正（纯文档，无代码变更）· 方案C（WASM 手动 IK）已实施（2026-07-26）· **方案A 迁移全部完成（2026-07-29，ADR-202 §六）** ⚠️ 被 [ADR-275](adr-275-feet-adjustment-deprecation-landing-source.md) 取代（new-adr.mjs 自动标注）
 >
 > **方案A 迁移（2026-07-29，ADR-202 §六）**：两处方案C 全部迁移到方案A——经 `mmdModelSolveIk` 导出重解原生 IK 链。①feet-adjustment 的 `_solveWasmLegIK`/`_findKnee`/`_propagateChildrenWasmSimple`/`BONE_KNEE_L/R` 已移除；②bone-override 的 `_solveManualLegIK`/`_resolveLegChains`/`_legChainCache`/`LEG_IK_CHAIN_CONFIG`/`invalidateLegChainCache` 已移除，替换为 `_solvePosSlotIkWasm`。`motion-algos/two-bone-ik.ts` + 测试已删除。§6.3 两项关键验证（buffer 同步 + `ikSolverIndex` 可用性）均通过。
 >

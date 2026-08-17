@@ -327,13 +327,13 @@ function buildDownloadSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNod
 
                     const statusEl = document.createElement('div');
                     statusEl.style.cssText =
-                        'font-size:11px;color:var(--text-muted,inherit);margin:4px 0 8px;word-break:break-all;';
+                        'font-size:var(--font-ui-sm);color:var(--text-muted,inherit);margin:4px 0 8px;word-break:break-all;';
                     inner.appendChild(statusEl);
 
                     // [doc:adr-195] 决策 1：显示支持格式与扫描范围，解决"扫啥不知道"
                     const hintEl = document.createElement('div');
                     hintEl.style.cssText =
-                        'font-size:11px;color:var(--text-muted,inherit);margin:0 0 8px;';
+                        'font-size:var(--font-ui-sm);color:var(--text-muted,inherit);margin:0 0 8px;';
                     hintEl.textContent = t('downloads.supportedHint');
                     inner.appendChild(hintEl);
 
@@ -403,7 +403,7 @@ function buildDownloadSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNod
 
                     const msgEl = document.createElement('div');
                     msgEl.style.cssText =
-                        'font-size:11px;color:var(--text-muted,inherit);margin:4px 0 8px;min-height:16px;';
+                        'font-size:var(--font-ui-sm);color:var(--text-muted,inherit);margin:4px 0 8px;min-height:16px;';
                     inner.appendChild(msgEl);
 
                     let running = false;

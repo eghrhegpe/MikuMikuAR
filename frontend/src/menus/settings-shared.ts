@@ -11,6 +11,7 @@ import { showInfoToast } from '../core/toast';
 import { clamp01 } from '../core/clamp';
 import { tryCatchStatus } from '../core/status-helpers';
 import { hexToRgb, rgbToString } from '../core/color-helpers';
+import { applyUiMotionDom } from '../core/ui-motion';
 import { t } from '../core/i18n/t';
 
 // ======== Auto-import state cache ========
@@ -65,8 +66,6 @@ export function setAutoLoadCompanionAudio(v: boolean): void {
 
 // ======== Color utilities ========
 // 实现下沉至 @/core/color-helpers。
-
-
 
 // ======== Theme helper ========
 
@@ -158,7 +157,7 @@ export function applyUIAppearanceDom(s: UIState): void {
     if (s.fontFamily && SETTINGS_FONT_RESTORE[s.fontFamily]) {
         root.style.setProperty('--font', SETTINGS_FONT_RESTORE[s.fontFamily]);
     }
-    root.style.setProperty('--ui-animations', s.animations === false ? '0' : '1');
+    applyUiMotionDom(s.animations !== false);
     root.style.setProperty('--ui-blur', s.blurBg ? '1' : '0');
     document
         .querySelectorAll<HTMLElement>('.overlay')

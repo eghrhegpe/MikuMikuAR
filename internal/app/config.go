@@ -310,22 +310,73 @@ func (a *App) SetPerformanceMode(mode string) error {
 func (a *App) SetEnvState(env EnvState) error {
 	a.safeLogInfo("[env-persist] SetEnvState: skyMode=%s groundVisibleEnabled=%v waterEnabled=%v",
 		env.SkyMode, env.GroundVisibleEnabled, env.WaterEnabled)
-	return a.updateConfig(func(cfg *Config) { mergeEnvState(&cfg.Env, env) }, false)
+	var mergeErr error
+	cfgErr := a.updateConfig(func(cfg *Config) {
+		mergeErr = mergeEnvState(&cfg.Env, env)
+	}, false)
+	if mergeErr != nil {
+		// 合并失败 → 本次 env 设置未落盘。必须报出来，否则表现为
+		//「UI 改了、重启回滚」且日志无迹可查。
+		a.safeLogError("[env-persist] SetEnvState merge failed: %v", mergeErr)
+		return mergeErr
+	}
+	return cfgErr
 }
 
-// mergeEnvState merges src into dst using JSON marshal/unmarshal, preserving
-// any dst fields not present in src. Uses JSON round-trip so struct tags are
-// authoritative — the same tags the frontend uses for serialization.
-func mergeEnvState(dst **EnvState, src EnvState) {
+// mergeEnvState merges src into dst, preserving any dst fields that src did not
+// provide. Presence is captured by EnvState.UnmarshalJSON into src.present (the
+// presence mask), so legal zero values (WaterAnimSpeed=0, GroundLevel=0, ...)
+// can be persisted and partial payloads no longer wipe omitted fields
+// (see ADR-253). When src.present is nil (EnvState constructed directly in Go,
+// not via JSON) every field is treated as present — the legacy semantics.
+//
+// The merge runs over raw JSON so that struct tags stay authoritative — the same
+// tags the frontend uses for serialization — and newly added fields participate
+// automatically, without a hand-written per-field copy list.
+//
+// 返回 error 而非静默 return：合并失败意味着这次 env 设置没有落盘，调用方必须
+// 能感知并记日志，否则表现为「用户调了但没生效」的幽灵态（ADR-253 补强）。
+// 失败时 *dst 保持原值——解码先解到副本再回写，杜绝半更新。
+func mergeEnvState(dst **EnvState, src EnvState) error {
 	if *dst == nil {
-		*dst = &src
-		return
+		v := src
+		*dst = &v
+		return nil
 	}
-	data, err := json.Marshal(src)
+	srcData, err := json.Marshal(src)
 	if err != nil {
-		return
+		return util.WrapError("mergeEnvState: marshal src", err)
 	}
-	_ = json.Unmarshal(data, *dst)
+	var srcMap map[string]json.RawMessage
+	if err := json.Unmarshal(srcData, &srcMap); err != nil {
+		return util.WrapError("mergeEnvState: decode src", err)
+	}
+	dstData, err := json.Marshal(*dst)
+	if err != nil {
+		return util.WrapError("mergeEnvState: marshal dst", err)
+	}
+	var dstMap map[string]json.RawMessage
+	if err := json.Unmarshal(dstData, &dstMap); err != nil {
+		return util.WrapError("mergeEnvState: decode dst", err)
+	}
+	for key, raw := range srcMap {
+		if src.present != nil && !src.present[key] {
+			continue // 未显式提供 → 保留 dst 旧值
+		}
+		dstMap[key] = raw
+	}
+	merged, err := json.Marshal(dstMap)
+	if err != nil {
+		return util.WrapError("mergeEnvState: marshal merged", err)
+	}
+	// 解到副本 out 再整体回写：若解码中途失败，*dst 仍是合并前的完整旧值，
+	// 不会出现「前一半字段已更新、后一半还是旧值」的半更新配置。
+	out := **dst
+	if err := json.Unmarshal(merged, &out); err != nil {
+		return util.WrapError("mergeEnvState: decode merged", err)
+	}
+	*dst = &out
+	return nil
 }
 
 // SetUIState merges the provided UI state fields into the persisted config.

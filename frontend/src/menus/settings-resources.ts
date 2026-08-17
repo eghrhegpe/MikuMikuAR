@@ -36,8 +36,10 @@ import {
 } from '../core/ui-helpers';
 import { showPrompt2 } from '../core/dialog';
 import { getCurrentRenderingMenu } from './menu';
-import { switchStorageMode, refreshLibrary } from './library-core';
+// [doc:adr-271] 直连真实定义处（library-core 的转发边已删，那是 library 子系统成环的来源）
+import { switchStorageMode, refreshLibrary } from './library-setup';
 import { t, bundles } from '../core/i18n/t';
+import { translateGoError } from '../core/i18n/goerr';
 import { CATEGORY_DIR } from '@/core/library-path';
 import { logWarn } from '../core/logger';
 import { SETTINGS_ACTION } from './settings-targets';
@@ -126,7 +128,7 @@ function renderAndroidStorage(
         inner.appendChild(desc);
         const diag = document.createElement('div');
         diag.style.cssText =
-            'margin:6px 12px 8px;padding:8px 10px;background:rgba(0,0,0,0.12);border-radius:6px;font-size:11px;color:var(--text-secondary);line-height:1.7;word-break:break-all';
+            'margin:6px 12px 8px;padding:8px 10px;background:rgba(0,0,0,0.12);border-radius:6px;font-size:var(--font-ui-sm);color:var(--text-secondary);line-height:1.7;word-break:break-all';
 
         const modeRow = document.createElement('div');
         modeRow.textContent =
@@ -221,8 +223,9 @@ function buildStorageSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode
                 // 否则卡片会出现在 host 外、E2E 按 testid 定位不到。
                 let disposed = false;
                 const resolveHost = (): HTMLElement =>
-                    (c.querySelector(':scope > .schema-custom[data-testid="resources:storage"]') as HTMLElement | null) ??
-                    c;
+                    (c.querySelector(
+                        ':scope > .schema-custom[data-testid="resources:storage"]'
+                    ) as HTMLElement | null) ?? c;
                 GetStorageMode()
                     .then((mode) => {
                         if (!disposed) {
@@ -485,7 +488,8 @@ function buildWatchSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                                 showInfoToast(t('settings.watchDirSet', { dir }));
                             } catch (err) {
                                 logWarn('watch', 'SetDownloadWatchDir failed', err);
-                                showInfoToast(t('settings.watchDirFail', { err }));
+                                const reason = translateGoError(err);
+                                showInfoToast(t('settings.watchDirFail', { err: reason }));
                             }
                             return dir;
                         }

@@ -7,7 +7,12 @@
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
-import { createMinimalPhysicsImpl, buildRigidBodyInfo, readLinearVelocity, PHYSICS_INFO_SIZE } from './helpers/minimal-physics-impl';
+import {
+    createMinimalPhysicsImpl,
+    buildRigidBodyInfo,
+    readLinearVelocity,
+    PHYSICS_INFO_SIZE,
+} from './helpers/minimal-physics-impl';
 import type { MinimalPhysicsImpl } from './helpers/minimal-physics-impl';
 import type * as sprWasm from 'babylon-mmd/esm/Runtime/Optimized/wasm/spr';
 
@@ -44,7 +49,7 @@ describe('WASM 物理契约测试', () => {
             const b: unknown = memory.buffer;
             expect(
                 b instanceof ArrayBuffer ||
-                (typeof SharedArrayBuffer !== 'undefined' && b instanceof SharedArrayBuffer)
+                    (typeof SharedArrayBuffer !== 'undefined' && b instanceof SharedArrayBuffer)
             ).toBe(true);
         });
     });
@@ -76,7 +81,9 @@ describe('WASM 物理契约测试', () => {
         it('physicsWorldStepSimulation 不抛异常（空世界步进）', () => {
             const world = api.createPhysicsWorld();
             try {
-                expect(() => api.physicsWorldStepSimulation(world, 1 / 60, 1, 1 / 60)).not.toThrow();
+                expect(() =>
+                    api.physicsWorldStepSimulation(world, 1 / 60, 1, 1 / 60)
+                ).not.toThrow();
             } finally {
                 api.destroyPhysicsWorld(world);
             }
@@ -87,8 +94,12 @@ describe('WASM 物理契约测试', () => {
             const worldB = api.createPhysicsWorld();
             // 资源声明提升到 try 外：finally 需引用（try 内 const 块级不可见）；
             // 空值守卫防 try 中途抛错时未赋值变量中断清理链
-            let shapeA = 0, infoA = 0, bodyA = 0;
-            let shapeB = 0, infoB = 0, bodyB = 0;
+            let shapeA = 0,
+                infoA = 0,
+                bodyA = 0;
+            let shapeB = 0,
+                infoB = 0,
+                bodyB = 0;
             try {
                 expect(worldA).toBeGreaterThan(0);
                 expect(worldB).toBeGreaterThan(0);
@@ -157,7 +168,9 @@ describe('WASM 物理契约测试', () => {
                 // timeStep=0：内部 m_localTime 不增长，无子步执行
                 expect(() => api.physicsWorldStepSimulation(world, 0, 1, 1 / 60)).not.toThrow();
                 // 负 timeStep：m_localTime 减少，同样不触发子步
-                expect(() => api.physicsWorldStepSimulation(world, -1 / 60, 1, 1 / 60)).not.toThrow();
+                expect(() =>
+                    api.physicsWorldStepSimulation(world, -1 / 60, 1, 1 / 60)
+                ).not.toThrow();
                 // 超大 timeStep：受 maxSubSteps=1 限制，只执行一个子步，不会失控循环
                 expect(() => api.physicsWorldStepSimulation(world, 100, 1, 1 / 60)).not.toThrow();
             } finally {

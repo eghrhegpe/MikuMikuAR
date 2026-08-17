@@ -9,7 +9,8 @@
  * 设计约束（ADR-081 教训）：本模块不被 scene.ts 启动期 eager 导入，
  * 仅由用户显式开启虚拟裙骨时按需 `await import()`。
  *
- * 关联：skirt-analyzer.ts（Phase 1）、physics-bridge.ts（PerFrameUpdateRegistry / getBoneWorldPosition）
+ * 关联：skirt-analyzer.ts（Phase 1）、physics-bridge.ts（getBoneWorldPosition）、
+ *   core/frame-registry.ts（PerFrameUpdateRegistry）
  */
 
 import { Matrix, Vector3 } from '@babylonjs/core/Maths/math.vector';
@@ -28,7 +29,8 @@ import {
 } from 'babylon-mmd/esm/Runtime/Optimized/Physics/Bind/physicsShape';
 import { MotionType } from 'babylon-mmd/esm/Runtime/Optimized/Physics/Bind/motionType';
 import { analyzeSkirt } from './skirt-analyzer';
-import { PerFrameUpdateRegistry, getBoneWorldPosition } from './physics-bridge';
+import { PerFrameUpdateRegistry } from '../../core/frame-registry';
+import { getBoneWorldPosition } from './physics-bridge';
 import { getCachedCapabilities } from '../../core/backend';
 import { logWarn } from '../../core/logger';
 

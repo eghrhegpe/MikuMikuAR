@@ -20,7 +20,8 @@ import {
     isAllPerceptionEnabled,
 } from '../scene/motion/perception';
 import { triggerAutoSave } from '../core/auto-save';
-import { getMotionMenu } from './motion-popup';
+// [doc:adr-271] 菜单实例改从状态叶子读取，切断与 motion-popup 的互指
+import { getMotionMenu } from './motion-menu-state';
 import { t } from '../core/i18n/t';
 import { renderMenu } from './render-menu';
 import type { MenuNode } from './menu-schema';
@@ -83,7 +84,8 @@ export function getGazeSchema(): MenuNode[] {
             kind: 'custom',
             renderCustom: (c) => {
                 const row = document.createElement('div');
-                row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 14px;';
+                row.style.cssText =
+                    'display:flex;align-items:center;gap:8px;padding:6px var(--row-pad-x);';
                 const label = document.createElement('span');
                 label.className = 'slider-label';
                 label.textContent = t('motion.perceptionTier');
@@ -110,7 +112,7 @@ export function getGazeSchema(): MenuNode[] {
                 };
                 // 降级警示：实际档位被自动降到节能时显示 ⚠️
                 const warn = document.createElement('span');
-                warn.style.cssText = 'font-size:12px;flex-shrink:0;';
+                warn.style.cssText = 'font-size:var(--font-hint);flex-shrink:0;';
                 const updateWarn = () => {
                     warn.textContent = getPerceptionPerfTier() === 'low' ? '⚠️' : '';
                 };
@@ -355,7 +357,7 @@ export function getGazeSchema(): MenuNode[] {
             kind: 'custom',
             renderCustom: (c) => {
                 const wrap = document.createElement('div');
-                wrap.style.cssText = 'display:flex;gap:8px;padding:6px 14px;';
+                wrap.style.cssText = 'display:flex;gap:8px;padding:6px var(--row-pad-x);';
                 const pinBtn = document.createElement('button');
                 pinBtn.className = 'btn btn-sm btn-primary';
                 pinBtn.textContent = t('motion.pinModel');

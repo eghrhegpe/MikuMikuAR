@@ -232,12 +232,12 @@ const ENTRY_TESTID: Record<string, string> = {
 /** 从 panelId + 可选 nav 覆写推导完整导航元数据 */
 function deriveNav(panelId: string, nav?: PanelNav): PanelNav {
     const [domainRaw, ...rest] = panelId.split(':');
-    const domain: 'env' | 'motion' | 'settings' | 'scene' = nav?.domain ?? domainRaw as 'env' | 'motion' | 'settings' | 'scene';
+    const domain: 'env' | 'motion' | 'settings' | 'scene' =
+        nav?.domain ?? (domainRaw as 'env' | 'motion' | 'settings' | 'scene');
     const slug = rest.join(':');
     // settings 域无一级子面板（走二级 folder），不推导 subLevelTestId
     const subLevelTestId =
-        nav?.subLevelTestId ??
-        (domain === 'settings' ? undefined : `folder:${domain}:${slug}`);
+        nav?.subLevelTestId ?? (domain === 'settings' ? undefined : `folder:${domain}:${slug}`);
     const result: PanelNav = {
         domain,
         entryTestId: ENTRY_TESTID[domain],
@@ -269,9 +269,7 @@ function cleanNode(node: any): any {
         conditional: !!node.visibleWhen,
         // [ADR-229 §9] DOM 契约单源：写入 kind → 控件选择器，e2e 从快照读（不手写
         // KIND_SELECTOR_MAP）；契约变更时快照 diff 触发 CI 门禁
-        ...(KIND_CONTROL_SELECTOR[node.kind]
-            ? { dom: KIND_CONTROL_SELECTOR[node.kind] }
-            : {}),
+        ...(KIND_CONTROL_SELECTOR[node.kind] ? { dom: KIND_CONTROL_SELECTOR[node.kind] } : {}),
         // [ADR-229 §2.2] action 交互策略描述（非静态目标值——运行时初始值不可预知，
         // 目标由 spec 运行时计算；colorSlider 值域是 [r,g,b] 三元组，首轮跳过）
         ...(action ? { action } : {}),
@@ -354,12 +352,18 @@ describe('Schema Snapshot Generator', () => {
             expect(s.nav.domain, `${s.panelId} nav.domain 缺失`).toBeDefined();
             expect(s.nav.entryTestId, `${s.panelId} nav.entryTestId 缺失`).toBeTruthy();
             if (s.nav.domain === 'settings') {
-                expect(s.nav.subLevel2TestId, `${s.panelId} settings 域缺 subLevel2TestId`).toBeTruthy();
+                expect(
+                    s.nav.subLevel2TestId,
+                    `${s.panelId} settings 域缺 subLevel2TestId`
+                ).toBeTruthy();
             } else {
                 expect(s.nav.subLevelTestId, `${s.panelId} 缺 subLevelTestId`).toBeTruthy();
             }
             // [ADR-229 §9] 结构契约完整性：e2e 的展开/toggle 交互直接读 meta，缺失即失败
-            expect(s.meta.collapsibleHeader, `${s.panelId} meta.collapsibleHeader 缺失`).toBeTruthy();
+            expect(
+                s.meta.collapsibleHeader,
+                `${s.panelId} meta.collapsibleHeader 缺失`
+            ).toBeTruthy();
             expect(s.meta.toggleInput, `${s.panelId} meta.toggleInput 缺失`).toBeTruthy();
         }
 

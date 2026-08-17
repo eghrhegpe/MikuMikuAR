@@ -31,7 +31,9 @@ export function getAudioContext(): AudioContext | null {
             .webkitAudioContext;
     if (!Ctor) {
         _ctxUnsupported = true;
-        console.warn('[audio] AudioContext 不受支持（缺 AudioContext/webkitAudioContext），音效静默降级');
+        console.warn(
+            '[audio] AudioContext 不受支持（缺 AudioContext/webkitAudioContext），音效静默降级'
+        );
         return null;
     }
     try {

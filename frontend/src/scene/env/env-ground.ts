@@ -31,7 +31,8 @@ import {
     isCacheOwnedTexture,
 } from './_shared/env-texture';
 import { _envSys, getScene } from './_shared/env-context';
-import { ensureEnvUpdateObserver } from './env';
+// [doc:adr-269 补充] 观察器挂载改走 dispatcher 请求，断开「子系统 → 调度器」向上依赖
+import { requestEnvObserver } from './_bridge/env-dispatcher';
 import { underwaterFogController } from './env-underwater-fog';
 import {
     getGroundRippleTexture,
@@ -46,6 +47,8 @@ import {
     specKey,
     buildGroundMaterialSpec,
 } from './env-ground-spec';
+// [doc:adr-271] 地面回写走分发器：spec 不再 import 本文件，环消失。
+import { registerGroundHandlers } from './_bridge/ground-dispatcher';
 
 // ======== ADR-114: 材质适配层（StandardMaterial ↔ PBRMaterial）========
 
@@ -125,14 +128,11 @@ export function _effectiveRoughness(state: EnvState): number {
     return Math.max(0, Math.min(1, state.groundRoughness + state.groundReflectionBlur * 0.4));
 }
 
-/** ADR-114 Phase 2: 法线扭曲映射到 bumpTexture.level 增强（distort=1 时额外 +2.0）；低质量模式自动关闭 */
-export function _effectiveBumpLevel(state: EnvState): number {
-    // 低质量模式自动关闭法线扭曲
-    if (state.reflectionQuality === 'low' || state.reflectionQuality === 'off') {
-        return state.groundNormalStrength;
-    }
-    return state.groundNormalStrength + state.groundReflectionDistort * 2.0;
-}
+// [doc:adr-271] _effectiveBumpLevel 已下移到 ./_shared/ground-bump（纯函数叶子）：
+// env-terrain 与 env-ground-spec 都要它，而本文件又 import 这两个模块，
+// 原先构成 size=3 强连通分量。此处 import + 转发，保持外部导入路径与本文件内部调用都不变。
+import { _effectiveBumpLevel } from './_shared/ground-bump';
+export { _effectiveBumpLevel } from './_shared/ground-bump';
 
 export function createGroundMaterial(state: EnvState, scene: Scene): GroundMat {
     if (!state.groundPbrEnabled) {
@@ -809,20 +809,28 @@ export function setOnTerrainReady(cb: (() => void) | null): void {
     _onTerrainReady = cb;
 }
 
-/** ADR-226: 供 env-ground-spec.ts 的地形 onReady 回调触发已注册监听（避免直接访问模块局部 _onTerrainReady）。 */
-export function triggerTerrainReady(): void {
-    _onTerrainReady?.();
-}
+/**
+ * [doc:adr-271] 地面回写分发器注册：把三个 setter 交给 dispatcher，
+ * 使 env-ground-spec 不必 import 本文件即可回写地面状态（断开 size=3 环）。
+ * 保留下方三个具名导出：内部代码与既有调用方仍可直接使用。
+ */
+registerGroundHandlers({
+    terrainReady: () => {
+        _onTerrainReady?.();
+    },
+    setMesh: (mesh) => {
+        _envSys.ground.mesh = mesh as Mesh | null;
+    },
+    setActualSize: (size) => {
+        _groundActualSize = size;
+    },
+});
 
-/** ADR-226: 供 env-ground-spec.ts 在建地面后同步模块局部状态（_envSys.ground.mesh / _groundActualSize）。 */
-export function setGroundMesh(mesh: Mesh | null): void {
-    _envSys.ground.mesh = mesh;
-}
-
-export function setGroundActualSize(v: number): void {
-    _groundActualSize = v;
-}
-
+/**
+ * [doc:adr-271] 原先的 triggerTerrainReady / setGroundMesh / setGroundActualSize 三个导出已删除：
+ * env-ground-spec 改经 ./_bridge/ground-dispatcher 请求回写，全仓再无外部消费者。
+ * 回写实现由上方 registerGroundHandlers 注册，语义与行为不变。
+ */
 export function setOnGroundChanged(cb: (() => void) | null): void {
     _onGroundChanged = cb;
 }
@@ -945,7 +953,14 @@ function _drawGroundCanvas(
                 }
                 break;
             case 'radial': {
-                const grad = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+                const grad = ctx.createRadialGradient(
+                    size / 2,
+                    size / 2,
+                    0,
+                    size / 2,
+                    size / 2,
+                    size / 2
+                );
                 grad.addColorStop(0, c0);
                 grad.addColorStop(1, c1);
                 ctx.fillStyle = grad;
@@ -973,7 +988,8 @@ function _drawGroundCanvas(
 
 export function _generateGroundTexture(state: EnvState, scene: Scene, scanPhase = 0): Texture {
     const size = 512;
-    const draw = (ctx: CanvasRenderingContext2D, s: number) => _drawGroundCanvas(ctx, s, state, scanPhase);
+    const draw = (ctx: CanvasRenderingContext2D, s: number) =>
+        _drawGroundCanvas(ctx, s, state, scanPhase);
     return createCanvasTexture({ size, draw, scene, name: 'envGround', wrap: 'clamp' });
 }
 
@@ -1256,7 +1272,7 @@ export function _syncPbrProperties(mat: PBRMaterial, state: EnvState): void {
 
 export function applyGround(state: EnvState): void {
     const scene = getScene();
-    ensureEnvUpdateObserver();
+    requestEnvObserver();
     // ADR-226 Phase 4: 用 spec 单源 specKey 取代手拼 typeKey，消除双比较路径。
     // 新增结构性字段只需在 buildGroundMaterialSpec 赋值，specKey 自动纳入，
     // 无需再到此处同步手拼（历史上加字段需改 2 处，易遗漏）。

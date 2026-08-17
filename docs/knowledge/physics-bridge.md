@@ -14,8 +14,6 @@ adr:
 symbols:
   - AttachmentAnchors
   - AttachmentFit
-  - FrameUpdateFn
-  - PerFrameUpdateRegistry
   - autoFitAttachment
   - findRuntimeBone
   - getBoneLocalMatrix

@@ -19,7 +19,7 @@ vi.mock('../../scene/env/_shared/env-context', () => {
         getScene: () => (globalThis as any).__particlesTestScene as Scene,
         initEnvImpl: () => {},
         isInitialized: () => true,
-        getPipeline: () => null,
+        getPipeline: (): null => null,
         // ADR-217: 地水共享尺寸单源
         INFINITE_GROUND_SIZE: 2000,
         effectiveGroundSize: (groundSize: number, infiniteEnabled: boolean) =>
@@ -148,13 +148,13 @@ beforeEach(() => {
 
     // 重置状态
     _envSys.particles.system = null;
-    _envSys.particles.followObserver = null;
+    _envSys.particles.followScene = null;
 });
 
 afterEach(() => {
     disposeParticles();
     _envSys.particles.system = null;
-    _envSys.particles.followObserver = null;
+    _envSys.particles.followScene = null;
     _envSys.splash.observer = null;
     (document as any).createElement = realCreateElement;
     (globalThis as any).__particlesTestScene = null;
@@ -230,7 +230,7 @@ describe('env-particles', () => {
             expect(_envSys.particles.system).not.toBeNull();
             disposeParticles();
             expect(_envSys.particles.system).toBeNull();
-            expect(_envSys.particles.followObserver).toBeNull();
+            expect(_envSys.particles.followScene).toBeNull();
         });
 
         it('dispose 可重复调用（幂等）', () => {
@@ -558,7 +558,11 @@ describe('env-particles fix P2 — firework emitStop timer 清理', () => {
         envState.particleEnabled = true;
         // spawnFireworkBurst 需要 scene.activeCamera（真实相机，避免 dispose 异常）
         if ((globalThis as any).__particlesTestScene) {
-            const cam = new FreeCamera('fwcam', new Vector3(0, 5, 10), (globalThis as any).__particlesTestScene);
+            const cam = new FreeCamera(
+                'fwcam',
+                new Vector3(0, 5, 10),
+                (globalThis as any).__particlesTestScene
+            );
             (globalThis as any).__particlesTestScene.activeCamera = cam;
         }
     });

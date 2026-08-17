@@ -667,7 +667,10 @@ function _solvePosSlotIkWasm(
     const dbg = feetDebug.value && _ikWasmDbgFrame++ % 60 === 0;
     const slotCount = overrideMap.size;
     if (dbg) {
-        logWarn('bone-override', `[IK-ENTRY] ${modelId} _solvePosSlotIkWasm called, slotCount=${slotCount}`);
+        logWarn(
+            'bone-override',
+            `[IK-ENTRY] ${modelId} _solvePosSlotIkWasm called, slotCount=${slotCount}`
+        );
     }
     const boneNames = Array.from(boneMap.keys());
     for (const cands of _IK_TARGET_CANDIDATES) {
@@ -681,7 +684,8 @@ function _solvePosSlotIkWasm(
         }
         const ikBone = boneMap.get(ikBoneName);
         if (!ikBone) {
-            if (dbg) logWarn('bone-override', `[IK-DEBUG] ${modelId} boneMap 中找不到 "${ikBoneName}"`);
+            if (dbg)
+                logWarn('bone-override', `[IK-DEBUG] ${modelId} boneMap 中找不到 "${ikBoneName}"`);
             continue;
         }
 
@@ -858,7 +862,12 @@ function _applyWasmOverride(slot: _OverrideSlot, rb: IMmdRuntimeBone): void {
     const { translation, rotation } = computeOverride(oldT, oldQ, slot);
     // [ADR-202 §六] 诊断：确认 POS 偏移是否写入。热路径每帧调用，必须 feetDebug 门控 + 帧节流，
     // 否则无条件 logWarn 刷爆环形缓冲/console（与 _solvePosSlotIkWasm 同模式）。
-    if (slot.pos && slot.pos.length() > 0.01 && feetDebug.value && _overrideApplyDbgFrame++ % 60 === 0) {
+    if (
+        slot.pos &&
+        slot.pos.length() > 0.01 &&
+        feetDebug.value &&
+        _overrideApplyDbgFrame++ % 60 === 0
+    ) {
         logWarn(
             'bone-override',
             `[OVERRIDE-APPLY] bone="${rb.name}" oldY=${oldT.y.toFixed(3)} posY=${slot.pos.y.toFixed(3)} newY=${translation.y.toFixed(3)}`
@@ -1148,7 +1157,10 @@ export function dumpBoneHierarchy(modelId?: string): BoneHierarchyDump | null {
         // [ADR-202 §六] WASM 模式下 ikSolver 为 undefined，但 ikSolverIndex 存在
         const ikSolver = (b as MmdRuntimeBoneExtended).ikSolver;
         const ikSolverIndex = (b as { ikSolverIndex?: number }).ikSolverIndex;
-        const hasIkSolver = !!(ikSolver || (typeof ikSolverIndex === 'number' && ikSolverIndex >= 0));
+        const hasIkSolver = !!(
+            ikSolver ||
+            (typeof ikSolverIndex === 'number' && ikSolverIndex >= 0)
+        );
         result.push({
             index: i,
             name: b.name,

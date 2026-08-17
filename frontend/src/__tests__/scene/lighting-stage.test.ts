@@ -18,9 +18,15 @@ vi.hoisted(() => {
         Object.defineProperty(globalThis, 'localStorage', {
             value: {
                 getItem: (k: string) => store[k] ?? null,
-                setItem: (k: string, v: string) => { store[k] = v; },
-                removeItem: (k: string) => { delete store[k]; },
-                clear: () => { for (const k in store) delete store[k]; },
+                setItem: (k: string, v: string) => {
+                    store[k] = v;
+                },
+                removeItem: (k: string) => {
+                    delete store[k];
+                },
+                clear: () => {
+                    for (const k in store) delete store[k];
+                },
             },
             writable: true,
             configurable: true,
@@ -43,7 +49,7 @@ vi.mock('../../scene/transform/transform-adapter', () => ({
     registerTransformAdapter: () => {},
     attachGizmoForKind: () => {},
     isGizmoActive: () => false,
-    getGizmoTargetId: () => null,
+    getGizmoTargetId: (): null => null,
 }));
 
 import {

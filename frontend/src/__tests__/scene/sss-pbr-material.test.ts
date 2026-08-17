@@ -6,12 +6,12 @@ import { Color3 } from '@babylonjs/core/Maths/math.color';
 const mockScene = vi.hoisted(() => ({
     engine: {} as any,
     isDisposed: false,
-    activeCamera: null,
+    activeCamera: null as unknown,
     onBeforeRenderObservable: { add: vi.fn(() => ({ remove: vi.fn() })), remove: vi.fn() },
     onAfterRenderObservable: { add: vi.fn(() => ({ remove: vi.fn() })), remove: vi.fn() },
-    renderTargets: [],
-    cameras: [],
-    lights: [],
+    renderTargets: [] as unknown[],
+    cameras: [] as unknown[],
+    lights: [] as unknown[],
 }));
 
 vi.mock('@babylonjs/core/scene', () => ({ Scene: vi.fn(() => mockScene) }));
@@ -27,7 +27,7 @@ const MockPBR = vi.hoisted(() => {
         tintColor: new Color3(1, 1, 1),
         tintColorAtDistance: 0.5,
         diffusionDistance: new Color3(1, 1, 1),
-        scatteringDiffusionProfile: null,
+        scatteringDiffusionProfile: null as unknown,
         minimumThickness: 0.0,
         maximumThickness: 1.0,
         useThicknessAsDepth: false,
@@ -74,7 +74,7 @@ vi.mock('@babylonjs/core/Materials/PBR/pbrSubSurfaceConfiguration', () => ({
             tintColor: new Color3(1, 1, 1),
             tintColorAtDistance: 0.5,
             diffusionDistance: new Color3(1, 1, 1),
-            scatteringDiffusionProfile: null,
+            scatteringDiffusionProfile: null as unknown,
             minimumThickness: 0.0,
             maximumThickness: 1.0,
             useThicknessAsDepth: false,

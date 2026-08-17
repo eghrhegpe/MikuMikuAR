@@ -95,6 +95,7 @@ const shared = vi.hoisted(() => {
     const stopSurround = vi.fn();
     const startConcert = vi.fn();
     const stopConcert = vi.fn();
+    const disposeCameraBehaviors = vi.fn();
 
     const stopBoneLock = vi.fn();
     const restoreBoneLockIfEnabled = vi.fn();
@@ -158,6 +159,7 @@ const shared = vi.hoisted(() => {
         stopSurround,
         startConcert,
         stopConcert,
+        disposeCameraBehaviors,
         stopBoneLock,
         restoreBoneLockIfEnabled,
         setOrbitBoneLock,
@@ -204,6 +206,12 @@ vi.mock('../scene/scene', () => ({
     focusModel: shared.focusModel,
     reattachPipeline: shared.reattachPipeline,
 }));
+// [doc:adr-269 补充] camera.ts 的焦点/管线访问器已迁到窄门面 scene-focus，
+// 只 mock 装配器 scene.ts 拦不住，必须同内容补一条同源 mock。
+vi.mock('../scene/scene-focus', () => ({
+    focusModel: shared.focusModel,
+    reattachPipeline: shared.reattachPipeline,
+}));
 vi.mock('@/core/scene-action-bridge', () => ({
     registerSceneAction: shared.registerSceneAction,
     getSceneAction: shared.getSceneAction,
@@ -237,6 +245,7 @@ vi.mock('../scene/camera/camera-behaviors', () => ({
     stopSurround: shared.stopSurround,
     startConcert: shared.startConcert,
     stopConcert: shared.stopConcert,
+    disposeCameraBehaviors: shared.disposeCameraBehaviors,
 }));
 vi.mock('../scene/camera/camera-bone-lock', () => ({
     stopBoneLock: shared.stopBoneLock,
@@ -505,7 +514,10 @@ describe('switchCameraMode（模式切换）', () => {
     });
 
     it('守卫：切到 ar 失败（resolve false）还原模式', async () => {
-        shared.actions.set('setARMode', vi.fn(() => Promise.resolve(false)));
+        shared.actions.set(
+            'setARMode',
+            vi.fn(() => Promise.resolve(false))
+        );
         switchCameraMode('ar');
         await flush();
         expect(getCameraMode()).toBe('orbit');
@@ -513,7 +525,10 @@ describe('switchCameraMode（模式切换）', () => {
     });
 
     it('守卫：ar 激活 reject 还原模式', async () => {
-        shared.actions.set('setARMode', vi.fn(() => Promise.reject(new Error('cam fail'))));
+        shared.actions.set(
+            'setARMode',
+            vi.fn(() => Promise.reject(new Error('cam fail')))
+        );
         switchCameraMode('ar');
         await flush();
         expect(getCameraMode()).toBe('orbit');
@@ -871,7 +886,7 @@ describe('setCameraState（补充：无 live 相机 + FOV 恢复）', () => {
                 targetX: 0,
                 targetY: 8,
                 targetZ: 0,
-            }),
+            })
         ).not.toThrow();
         expect(getCameraControl()).toBe('orbit');
     });

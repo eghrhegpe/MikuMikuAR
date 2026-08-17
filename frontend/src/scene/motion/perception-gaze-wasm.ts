@@ -1,5 +1,6 @@
 // [doc:adr-071] 感知层 — 视线追踪 WASM 路径写入策略
-// 共用骨架见 perception-gaze.ts:_applyHeadGazeCore / _applyEyeGazeCore
+// 共用骨架见 perception-gaze-core.ts:_applyHeadGazeCore / _applyEyeGazeCore
+// [doc:adr-271] 直连 core 叶子：原从 perception-gaze 取会造成 gaze ⇄ 实现模块的 size=3 环。
 // 本文件仅实现 WASM 路径的写入差异：直写 worldMatrix frontBuffer + _propagateChildrenWasm 传播
 
 import { Vector3, Matrix } from '@babylonjs/core/Maths/math.vector';
@@ -13,7 +14,7 @@ import {
     _applyEyeGazeCore,
     type HeadGazeWriteStrategy,
     type EyeGazeWriteStrategy,
-} from './perception-gaze';
+} from './perception-gaze-core';
 
 /** WASM 路径头部写入策略：直写 worldMatrix frontBuffer + 递归传播子骨骼 */
 const _wasmHeadStrategy: HeadGazeWriteStrategy = {
@@ -35,11 +36,7 @@ const _wasmEyeStrategy: EyeGazeWriteStrategy = {
     writeEye(eyeRb, finalEyeQ, _localQ, eyeMat, _parentWorldQ): void {
         const eyeBuf = (eyeRb as MmdRuntimeBoneExtended).worldMatrix;
         const eyePos = eyeMat.getTranslation();
-        const safeEyePos = new Vector3(
-            guardNum(eyePos.x),
-            guardNum(eyePos.y),
-            guardNum(eyePos.z)
-        );
+        const safeEyePos = new Vector3(guardNum(eyePos.x), guardNum(eyePos.y), guardNum(eyePos.z));
         const newEyeMat = _m().copyFrom(Matrix.Compose(Vector3.One(), finalEyeQ, safeEyePos));
         _writeMatToBuffer(eyeBuf, newEyeMat);
         _propagateChildrenWasm(eyeRb, eyeMat, newEyeMat);

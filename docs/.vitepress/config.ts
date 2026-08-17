@@ -15,7 +15,7 @@ const docsRoot = path.resolve(__dirname, '..'); // docs/（srcDir 根）
  * 下方 srcExclude（阻止页面构建）与 ARCH_EXCLUDE（阻止 sidebar 收录）均从此派生，
  * 避免两处手工同步漏排（dep-graph 曾因此生成指向不存在路由的死链条目）。
  */
-const ROOT_NOBUILD = ['AGENTS.md', 'dep-graph.md'];
+const ROOT_NOBUILD = ['AGENTS.md', 'dep-graph.md', 'dep-metrics.md'];
 const asPosix = (p) => p.split(path.sep).join('/');
 
 /**

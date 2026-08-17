@@ -187,7 +187,10 @@ function _trySubscribe(runtime: IMmdRuntime): void {
         // 每次模型加载都会重试，仅首次告警；订阅成功后复位（后续真实失败可观测）。
         if (!_implMissingWarned) {
             _implMissingWarned = true;
-            logWarn('wind-physics', 'physics impl 未就绪，风力注入暂未订阅（等待 retryWindPhysicsSubscription）');
+            logWarn(
+                'wind-physics',
+                'physics impl 未就绪，风力注入暂未订阅（等待 retryWindPhysicsSubscription）'
+            );
         }
         return;
     }

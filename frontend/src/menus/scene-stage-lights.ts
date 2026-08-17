@@ -606,7 +606,7 @@ function buildStageLightSchema(): MenuNode[] {
                             const modelSelect = document.createElement('select');
                             modelSelect.style.cssText =
                                 'width:100%;padding:6px 8px;margin:4px 0;border-radius:6px;' +
-                                'background:var(--surface2);color:var(--text);border:1px solid var(--border);font-size:12px;';
+                                'background:var(--surface2);color:var(--text);border:1px solid var(--border);font-size:var(--font-hint);';
                             const noneOpt = document.createElement('option');
                             noneOpt.value = '';
                             noneOpt.textContent = t('scene.followNone');
@@ -626,7 +626,7 @@ function buildStageLightSchema(): MenuNode[] {
                             const boneSelect = document.createElement('select');
                             boneSelect.style.cssText =
                                 'width:100%;padding:6px 8px;margin:4px 0;border-radius:6px;' +
-                                'background:var(--surface2);color:var(--text);border:1px solid var(--border);font-size:12px;';
+                                'background:var(--surface2);color:var(--text);border:1px solid var(--border);font-size:var(--font-hint);';
                             boneSelect.style.display = 'none';
                             ci.appendChild(boneSelect);
 

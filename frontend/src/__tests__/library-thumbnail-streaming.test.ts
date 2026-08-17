@@ -157,7 +157,7 @@ const notify = vi.mocked(notifyThumbnailUpdate);
 // mock 用此 helper 包裹，类型与绑定一致（cancel/cancelOn 在本测试中不被 SUT 调用，给 stub）。
 function cancellable<T>(p: Promise<T>): CancellablePromise<T> {
     return Object.assign(p, {
-        cancel: () => undefined,
+        cancel: (): void => undefined,
         cancelOn: () => p,
     }) as unknown as CancellablePromise<T>;
 }

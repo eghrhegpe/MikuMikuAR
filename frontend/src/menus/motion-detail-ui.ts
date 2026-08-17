@@ -20,11 +20,7 @@ import {
     setVmdLayerWeight,
     removeVmdLayer,
 } from '../scene/motion/vmd-layers';
-import {
-    getActiveMotion,
-    getSceneMotions,
-    removeSceneMotion,
-} from '../scene/motion/motion-intent';
+import { getActiveMotion, getSceneMotions, removeSceneMotion } from '../scene/motion/motion-intent';
 import type { LoadableProcId } from '../scene/motion/motion-intent';
 import { showInfoToast } from '../core/toast';
 import { t } from '../core/i18n/t';
@@ -37,8 +33,8 @@ import {
 } from './motion-override-levels';
 import { buildProcToolsLevel, procLabel } from './motion-procmotion-levels';
 import { PROC_ACTION_PREFIX } from '../scene/motion/motion-modules/registry';
-// 循环依赖安全：getMotionMenu 仅在函数体内调用
-import { getMotionMenu } from './motion-popup';
+// [doc:adr-271] 菜单实例改从状态叶子读取，切断与 motion-popup 的互指
+import { getMotionMenu } from './motion-menu-state';
 
 // ═══════════════════════════════════════════════════════════
 // 图层次级菜单
@@ -171,7 +167,11 @@ function buildMotionDetailSchema(
     const viewingProc = procId != null;
     const viewingInactiveProc = viewingProc && !procActive;
     const currentIcon =
-        procActive || viewingProc ? 'lucide:wand-sparkles' : motion ? 'lucide:clapperboard' : 'lucide:circle-slash';
+        procActive || viewingProc
+            ? 'lucide:wand-sparkles'
+            : motion
+              ? 'lucide:clapperboard'
+              : 'lucide:circle-slash';
     const currentLabel = viewingInactiveProc
         ? procLabel(procId!)
         : procActive
@@ -193,7 +193,7 @@ function buildMotionDetailSchema(
                           cardContainer(c, (inner) => {
                               const hint = document.createElement('div');
                               hint.style.cssText =
-                                  'font-size:12px;color:var(--warn);padding:2px 14px;line-height:1.5;';
+                                  'font-size:var(--font-hint);color:var(--warn);padding:2px var(--row-pad-x);line-height:1.5;';
                               hint.textContent = t('motion.override.nonFocusedHint');
                               inner.appendChild(hint);
                           });
@@ -328,10 +328,15 @@ function buildMotionDetailSchema(
             id: 'detail:override',
             kind: 'custom',
             renderCustom: (c) => {
-                renderOverrideCard(c, modelId, {
-                    onEnter: (modId) =>
-                        getMotionMenu()?.push(buildModuleParamLevel(modId, overrideActionId)),
-                }, overrideActionId);
+                renderOverrideCard(
+                    c,
+                    modelId,
+                    {
+                        onEnter: (modId) =>
+                            getMotionMenu()?.push(buildModuleParamLevel(modId, overrideActionId)),
+                    },
+                    overrideActionId
+                );
             },
         });
         nodes.push({

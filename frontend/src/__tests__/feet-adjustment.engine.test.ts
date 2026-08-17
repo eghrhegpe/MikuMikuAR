@@ -11,6 +11,7 @@ import {
     stopFeetAdjustment,
     setOnFootLand,
     isFeetAdjustmentRunning,
+    isFeetAdjustmentEnabled,
 } from '@/scene/motion/feet-adjustment';
 import { getMotionPipeline } from '@/scene/motion/motion-pipeline';
 
@@ -114,7 +115,11 @@ function runFrame(): void {
 /** 把 FakeBone 模型 cast 成 FeetModelProvider 元素类型（FakeBone 是 IMmdRuntimeBone 子集） */
 function startFor(model: ReturnType<typeof makeModel>): void {
     startFeetAdjustment(() => [
-        model as unknown as { id: string; feet: FeetState; runtimeBones: readonly IMmdRuntimeBone[] },
+        model as unknown as {
+            id: string;
+            feet: FeetState;
+            runtimeBones: readonly IMmdRuntimeBone[];
+        },
     ]);
 }
 
@@ -146,6 +151,24 @@ describe('startFeetAdjustment / stopFeetAdjustment 生命周期', () => {
         startFeetAdjustment(() => []);
         startFeetAdjustment(() => []);
         expect(getMotionPipeline().size).toBe(1);
+    });
+
+    // [doc:adr-275] 脚步声据此选事件源：注册过 ≠ 真在解算
+    it('isFeetAdjustmentEnabled 反映上一帧是否真有模型启用', () => {
+        const model = makeModel({});
+        startFor(model);
+        // 还没跑过帧，没有观测结果 → false（不能乐观假定 true）
+        expect(isFeetAdjustmentEnabled()).toBe(false);
+
+        runFrame();
+        expect(isFeetAdjustmentEnabled()).toBe(true);
+
+        model.feet.enabled = false;
+        runFrame();
+        expect(isFeetAdjustmentEnabled()).toBe(false);
+
+        stopFeetAdjustment();
+        expect(isFeetAdjustmentEnabled()).toBe(false);
     });
 });
 
@@ -568,5 +591,4 @@ describe('NaN 防护（f() 辅助兜底显示 ?）', () => {
         expect(msg).toContain('?');
         expect(msg).not.toContain('NaN');
     });
-
 });

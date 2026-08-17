@@ -412,13 +412,26 @@ export const CapabilityProbe = {
 /**
  * 在骨骼 worldMatrix 已被 babylon-mmd 更新之后、渲染之前注册回调。
  *
- * 时序契约（固化自 lighting.ts / perception-gaze.ts 的逆工程注释）：
- * babylon-mmd 在 scene.onBeforeRenderObservable 中更新骨骼 worldMatrix，
- * 而 onAfterAnimationsObservable 在 onBeforeRenderObservable 『之前』触发。
- * 因此读取本帧骨骼矩阵必须在 onBeforeRenderObservable（或之后）注册回调，
- * 否则读到的是上一帧旧值。
+ * [ADR-263 核实修正] 旧注释称本函数是「时序契约固化点」，但实现只是
+ * `observe(scene.onBeforeRenderObservable, callback)` 的改名——**它本身不提供任何排序保证**。
+ * 真实契约是「注册时刻」决定的：
  *
- * 这是「逆工程行为」固化点：集中此处，业务代码不再各自注释时序陷阱。
+ * 1. babylon-mmd 的 runtime 在**场景初始化期**就把自己的 observer 挂上
+ *    （`scene/scene.ts:434` `_initMmdRuntime()` → `:839 runtime.register(scene)` →
+ *    `babylon-mmd/esm/Runtime/mmdRuntime.js` 的 `register(scene)` →
+ *    `scene.onBeforeRenderObservable.add(this._afterPhysicsBinded)`），
+ *    该回调跑物理求解、写骨骼局部矩阵；
+ * 2. Babylon 的 `scene.onBeforeRenderObservable` 按 observer **插入序**执行，
+ *    所以只要本回调在 `scene.ts:434` **之后**注册，就排在 mmd 的物理求解之后 → 读到本帧骨骼。
+ *    这条性质是**依赖插入序的隐式契约**，不是本函数提供的保证——
+ *    谁把注册时机挪到 434 之前，契约就静默失效；
+ * 3. 骨骼**绝对**世界矩阵由 Babylon 在渲染期的 `mesh.computeWorldMatrix()` 里重算，
+ *    但 `bone.getAbsolutePosition()` 会按需重算，故绝对坐标读取不受 (3) 影响。
+ *
+ * 另注：本表共享的 `core/frame-registry` 首次 register 落在 `scene.ts:435`（晚于 434），
+ * 故共享表内读到的是**本帧**骨骼；真正被打破的是 **override 前后**——共享表排在
+ * bone-override driver（`scene.ts:731`）**之前**，读到的是尚未应用 override 的矩阵。
+ * 需要 override 后骨骼的回调必须留在 driver 之后的 observer 上（ADR-263）。
  */
 export function onBoneMatricesUpdated(scene: Scene, callback: () => void): ObserverHandle {
     return observe(scene.onBeforeRenderObservable, callback);
@@ -457,7 +470,9 @@ export function transformWorldToRootLocal(
  * 本函数乘以 rootMesh 的世界矩阵，得到世界坐标系矩阵，使调用方无需自行处理坐标系陷阱。
  *
  * 注意：每次调用分配新 Matrix。当前仅在非热路径使用；若需每帧批量读取，
- * 应改用缓存策略（见 ADR-192「BoneFrameClock 缓存优化」项）。
+ * 应改用缓存策略（见 ADR-192 条目 12 的「适配层缓存策略」待办——
+ * 该条目规划的服务名为 `BoneFrameClock`，实际落地为下面这些自由函数，
+ * 全仓不存在名为 `BoneFrameClock` 的类）。
  */
 export function getBoneWorldMatrix(
     bone: IMmdRuntimeBone,

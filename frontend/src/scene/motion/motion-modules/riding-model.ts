@@ -24,8 +24,9 @@ import {
     registerBoneOverrideFrameHook,
     FRAME_HOOK_ORDER,
 } from '../bone-override';
-import { getModuleState, getOwnedBones } from './registry';
+import { getModuleState, getOwnedBones } from './registry-core';
 import type { MotionOverrideModule, ModuleMeta, ModuleDef } from './types';
+import type { MenuNode } from '@/scene/shared/menu-node-types';
 import { computePedalPhase, computeFootPitch } from './motion-math';
 import {
     createModuleBase,
@@ -34,6 +35,7 @@ import {
     prepareBake,
     getModuleActionId,
 } from './module-base';
+import type { RidingModelParamKey } from './module-param-keys';
 
 const MODULE_ID = 'riding-model';
 
@@ -51,14 +53,14 @@ const _ridingFrameHooks = createFrameHookManager();
 /** 每模型已认领的足部骨名（左/右），供帧钩子驱动 */
 const _ridingFeet = new Map<string, string[]>();
 
-/** 默认参数 */
-const DEFAULTS: Record<string, ParamValue> = {
+/** 默认参数。键集由 `satisfies` 双向钉在 `ModuleParamKeys['riding-model']` 上（ADR-272）。 */
+const DEFAULTS = {
     preset: 'bicycle',
     saddleHeight: 0.6, // 0=最低（膝盖全弯）, 1=最高（膝盖伸直）
     pedalAngle: 0, // 0-360 度（autoPedal 关闭时的静态踏板相位）
     autoPedal: false, // true=踏板自动循环（Pedal Speed 生效），false=静态 pedalAngle
     pedalSpeed: 0.5, // 踏板循环速度（Hz，0.1-2）
-};
+} satisfies Record<RidingModelParamKey, ParamValue>;
 
 const META: ModuleMeta = {
     labelKey: 'motion.override.module.ridingModel',
@@ -191,20 +193,29 @@ function ensureActive(modelId: string): void {
 
 /** 创建骑行模型模块实例 */
 export function createRidingModelModule(modelId: string, actionId?: string): MotionOverrideModule {
-    const base = createModuleBase(modelId, MODULE_ID, DEFAULTS, bake, {
-        action: ensureActive,
-        onDisable: (mid) => {
-            _ridingFrameHooks.unregister(mid);
-            _ridingFeet.delete(mid);
+    const base = createModuleBase(
+        modelId,
+        MODULE_ID,
+        DEFAULTS,
+        bake,
+        {
+            action: ensureActive,
+            onDisable: (mid) => {
+                _ridingFrameHooks.unregister(mid);
+                _ridingFeet.delete(mid);
+            },
         },
-    }, actionId);
+        actionId
+    );
     return createModuleShell({
         id: MODULE_ID,
         meta: META,
         priority: 3,
         managedBones: MANAGED_BONES,
 
-        buildSchema: () => {
+        // 显式返回类型：给数组字面量上下文类型，bind 的错误才会落在具体滑块上
+        // （否则整个 buildSchema 变成一个巨型联合，tsc 只说「不是 MenuNode[]」）。
+        buildSchema: (): MenuNode[] => {
             return [
                 {
                     id: 'riding-model:preset',

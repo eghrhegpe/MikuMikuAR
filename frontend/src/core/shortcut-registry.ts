@@ -107,9 +107,7 @@ function scopeMatches(shortcutScope: string | undefined, currentScope: string): 
 
 /** 两个有效绑定是否按键组合冲突（key + 修饰键组合完全一致）。 */
 function bindingsConflict(a: EffectiveBinding, b: EffectiveBinding): boolean {
-    return (
-        a.key === b.key && a.ctrl === b.ctrl && a.shift === b.shift && a.alt === b.alt
-    );
+    return a.key === b.key && a.ctrl === b.ctrl && a.shift === b.shift && a.alt === b.alt;
 }
 
 /**

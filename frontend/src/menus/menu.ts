@@ -32,9 +32,41 @@ import {
     type NavItemOptions,
 } from '../core/ui-nav-item';
 
-/** 菜单过渡时间常量（与 app.css :root --menu-transition-duration 同步） */
-const TRANSITION_DURATION = '0.15s';
-const TRANSITION_DURATION_FAST = '0.12s';
+/** 菜单过渡时长 CSS 变量名（与 app.css :root 同步，改一处即全站生效） */
+const TRANSITION_DURATION_VAR = '--menu-transition-duration';
+const TRANSITION_DURATION_FAST_VAR = '--menu-transition-duration-fast';
+/** CSS 变量缺省值（jsdom / 样式表未加载时的兜底） */
+const TRANSITION_DURATION_FALLBACK = '0.15s';
+const TRANSITION_DURATION_FAST_FALLBACK = '0.12s';
+/** 关闭动效时的极短时长：0s 不产生过渡、transitionend 不触发；0.01ms 会触发（与 app.css prefers-reduced-motion 同法） */
+const TRANSITION_DURATION_OFF = '0.01ms';
+
+/**
+ * 解析菜单过渡时长。
+ * [fix] 原先是硬编码 '0.15s'/'0.12s'，绕过了 app.css 的 --menu-transition-duration，
+ * 导致设置里的「滑动动画」开关对菜单滑动完全无效（开关只覆盖了 #sceneOverlay 一条规则）。
+ * 现以 CSS 变量为准，并叠加 --ui-animations 门控，与全局降级规则同一语义。
+ */
+function resolveTransitionDuration(fast = false): string {
+    const fallback = fast ? TRANSITION_DURATION_FAST_FALLBACK : TRANSITION_DURATION_FALLBACK;
+    if (typeof document === 'undefined' || !document.documentElement) {
+        return fallback;
+    }
+    const rootStyle = getComputedStyle(document.documentElement);
+    if (rootStyle.getPropertyValue('--ui-animations').trim() === '0') {
+        return TRANSITION_DURATION_OFF;
+    }
+    const raw = rootStyle
+        .getPropertyValue(fast ? TRANSITION_DURATION_FAST_VAR : TRANSITION_DURATION_VAR)
+        .trim();
+    return raw || fallback;
+}
+
+/** 生成面板过渡声明（透明度 + 位移同步，时长统一走 resolveTransitionDuration） */
+function panelTransition(fast = false): string {
+    const dur = resolveTransitionDuration(fast);
+    return `opacity ${dur} ease, transform ${dur} ease`;
+}
 
 /** 获取当前正在渲染的 SlideMenu 实例（供 menus 层控件的自更新注册）。 */
 export function getCurrentRenderingMenu(): SlideMenu | null {
@@ -145,7 +177,7 @@ export class SlideMenu implements RenderContext {
         this.panel = document.createElement('div');
         this.panel.className = 'slide-panel';
         // 内联样式由 CSS 控制，只设置必要的过渡
-        this.panel.style.transition = `opacity ${TRANSITION_DURATION} ease, transform ${TRANSITION_DURATION} ease`;
+        this.panel.style.transition = panelTransition();
         this.panel.style.opacity = '1';
         this.panel.style.transform = 'translateX(0)';
         this.panel.style.display = 'flex';
@@ -398,7 +430,7 @@ export class SlideMenu implements RenderContext {
         this.levels.push(level);
 
         // 旧内容淡出
-        this.panel.style.transition = `opacity ${TRANSITION_DURATION_FAST} ease, transform ${TRANSITION_DURATION_FAST} ease`;
+        this.panel.style.transition = panelTransition(true);
         this.panel.style.opacity = '0';
         this.panel.style.transform = 'translateX(-8px)';
 
@@ -414,7 +446,15 @@ export class SlideMenu implements RenderContext {
             fadeOutDisp = safeDispose(fadeOutDisp);
             const p = this.buildPanel(level);
             const seq = this._buildSeq;
-            await p;
+            // [fix:P0] buildPanel 异常绝不允许卡死过渡：立即恢复 transitioning+opacity，
+            // 否则 panel 永久停在淡出态（opacity:0）+ transitioning 卡 true 累及上级菜单。
+            try {
+                await p;
+            } catch (err) {
+                console.error('[SlideMenu] push buildPanel failed, recovering transition:', err);
+                this._recoverStaleTransition(level);
+                return;
+            }
             // dispose/_cancelAnim 后不再继续旧过渡的渲染与淡入注册；
             // [fix:P0] 但若只是「更新的 build 接管」（非 dispose），必须兜底恢复
             // transitioning + opacity，否则永久卡死（见 _recoverStaleTransition）。
@@ -428,7 +468,7 @@ export class SlideMenu implements RenderContext {
             this.panel.style.opacity = '0';
             this.panel.style.transform = 'translateX(8px)';
             void this.panel.offsetHeight;
-            this.panel.style.transition = `opacity ${TRANSITION_DURATION} ease, transform ${TRANSITION_DURATION} ease`;
+            this.panel.style.transition = panelTransition();
             this.panel.style.opacity = '1';
             this.panel.style.transform = 'translateX(0)';
 
@@ -480,7 +520,7 @@ export class SlideMenu implements RenderContext {
             prevLevel.items = prevLevel.itemBuilder();
         }
 
-        this.panel.style.transition = `opacity ${TRANSITION_DURATION_FAST} ease, transform ${TRANSITION_DURATION_FAST} ease`;
+        this.panel.style.transition = panelTransition(true);
         this.panel.style.opacity = '0';
         this.panel.style.transform = 'translateX(8px)';
 
@@ -495,7 +535,14 @@ export class SlideMenu implements RenderContext {
             fadeOutDisp = safeDispose(fadeOutDisp);
             const p = this.buildPanel(prevLevel);
             const seq = this._buildSeq;
-            await p;
+            // [fix:P0] 与 push 同：buildPanel 异常不卡死过渡，立即恢复。
+            try {
+                await p;
+            } catch (err) {
+                console.error('[SlideMenu] pop buildPanel failed, recovering transition:', err);
+                this._recoverStaleTransition(prevLevel);
+                return;
+            }
             // [fix:P0] 与 push 同：seq 过期时若直接 return，transitioning 永久 true +
             // opacity 卡 0（内容渲染不出、累及上级菜单）。必须兜底恢复。
             if (seq !== this._buildSeq) {
@@ -507,7 +554,7 @@ export class SlideMenu implements RenderContext {
             this.panel.style.opacity = '0';
             this.panel.style.transform = 'translateX(-8px)';
             void this.panel.offsetHeight;
-            this.panel.style.transition = `opacity ${TRANSITION_DURATION} ease, transform ${TRANSITION_DURATION} ease`;
+            this.panel.style.transition = panelTransition();
             this.panel.style.opacity = '1';
             this.panel.style.transform = 'translateX(0)';
 
@@ -546,7 +593,12 @@ export class SlideMenu implements RenderContext {
     popTo(index: number): void {
         // [fix:P2] NaN/小数索引会导致 slice 截断出意外栈（NaN 甚至清空 levels），
         // 公开 API 只接受整数深度，非整数一律按无效索引忽略。
-        if (!Number.isInteger(index) || index < 0 || index >= this.levels.length || this.transitioning) {
+        if (
+            !Number.isInteger(index) ||
+            index < 0 ||
+            index >= this.levels.length ||
+            this.transitioning
+        ) {
             return;
         }
         if (index === this.levels.length - 1) {
@@ -733,9 +785,20 @@ export class SlideMenu implements RenderContext {
             // === 自定义渲染 / 空列表 → 全量重建 ===
             safeCallAsync('menu', 'buildPanel failed:', buildAndFinalize);
         } else {
-            // === 纯 items → 全量重建（card-per-divider 结构不支持增量 patch） ===
-            // [fix P2] 仅经 safeCallAsync 异步 finalize（buildPanel 完成后执行一次），
-            // 删除下方同步 finalize() 调用，避免 onAfterRender/setupFocus 重复触发。
+            // === 纯 items → 优先增量 patch，无旧 DOM / 结构变化才全量重建 ===
+            // 与 updateControls 的 itemBuilder 热路径（:707-714）同机制：patchPanel 只
+            // 创建/替换/删除有变化的行，未变的行保留 DOM、监听器与键盘焦点。
+            // card-per-divider 结构由 _patchMultiCard 按 divider 分段 patch，
+            // lcard 数与分组数不匹配时该函数内部回退全量重建。
+            // [fix P2] finalize 仅经 safeCallAsync 执行一次（patchPanel 同步完成，
+            // 不存在 buildPanel 的异步竞态），避免 onAfterRender/setupFocus 重复触发。
+            const list = this._getSlideList();
+            if (list && this._canPatchIncrementally(level.items)) {
+                this.patchPanel(level.items);
+                safeFinalize();
+                return;
+            }
+            // 没有旧 DOM → 退化为全量重建
             safeCallAsync('menu', 'buildPanel failed:', buildAndFinalize);
         }
     }
@@ -1057,39 +1120,60 @@ export class SlideMenu implements RenderContext {
         return `${row.kind}:${row.target}`;
     }
 
-    /** 增量 patch 当前 panel：只创建/替换/删除有变化的行 */
-    private patchPanel(items: PopupRow[]): void {
-        // [fix] 导航栈被并发 pop/reset 清空时 currentLevel 为 undefined：
-        // 调用方（updateControls/_doReRender）守卫的是局部 level，此处重读
-        // this.currentLevel 可能已变空，直接 buildPanel(undefined) 会崩。
-        if (!this.currentLevel) {
-            return;
-        }
-        // [fix] itemBuilder 返回空列表时不能静默保留旧行：回退到 buildPanel，
-        // 与 _doReRender 的空 items 路径一致（渲染空态并清空旧 DOM/控件注册表）。
-        if (items.length === 0) {
-            this.buildPanel(this.currentLevel!);
-            return;
+    /**
+     * 判定 items 能否走增量 patch（patchPanel 内部回退条件的单一真相源）。
+     * 三种不能：导航栈已被清空（currentLevel 空）、items 为空、无旧 DOM（面板未渲染），
+     * 以及多 lcard 时分组数与 lcard 数不匹配（结构变化，须全量重建）。
+     * 调用方（_doReRender）据此二选一，避免「patchPanel 内部已回退 buildPanel、
+     * 调用方又调一次 buildAndFinalize」的双重构建。
+     */
+    private _canPatchIncrementally(items: PopupRow[]): boolean {
+        if (!this.currentLevel || items.length === 0) {
+            return false;
         }
         const list = this._getSlideList();
         if (!list) {
-            this.buildPanel(this.currentLevel!);
-            return;
+            return false;
         }
-
-        // [doc:adr-NNN] 多 lcard（card-per-divider）场景：按 divider 分割 items，
-        // 分别 patch 到对应的 lcard，避免全量重建
         const cards = list.querySelectorAll(':scope > .lcard') as NodeListOf<HTMLElement>;
         // 只要 items 含 divider，统一走多 card 分段 patch：单 lcard 的前导/尾随 divider
         // 也能按 buildPanel 语义跳过占位，避免把 divider 误塞进 lcard 或逐行错位。
         if (cards.length > 1 || items.some((row) => row.kind === 'divider')) {
-            this._patchMultiCard(cards, items);
-            return;
+            return cards.length === this._segmentByDivider(items).length;
+        }
+        return true;
+    }
+
+    /**
+     * 增量 patch 当前 panel：只创建/替换/删除有变化的行。
+     * @returns true=已增量 patch；false=已回退全量重建（或导航栈已空、无需动作）。
+     */
+    private patchPanel(items: PopupRow[]): boolean {
+        // [fix] 导航栈被并发 pop/reset 清空时 currentLevel 为 undefined：
+        // 调用方（updateControls/_doReRender）守卫的是局部 level，此处重读
+        // this.currentLevel 可能已变空，直接 buildPanel(undefined) 会崩。
+        if (!this.currentLevel) {
+            return false;
+        }
+        if (!this._canPatchIncrementally(items)) {
+            // [fix] itemBuilder 返回空列表时不能静默保留旧行：回退到 buildPanel，
+            // 与 _doReRender 的空 items 路径一致（渲染空态并清空旧 DOM/控件注册表）。
+            this.buildPanel(this.currentLevel);
+            return false;
+        }
+
+        // [doc:adr-NNN] 多 lcard（card-per-divider）场景：按 divider 分割 items，
+        // 分别 patch 到对应的 lcard，避免全量重建
+        const list = this._getSlideList()!;
+        const cards = list.querySelectorAll(':scope > .lcard') as NodeListOf<HTMLElement>;
+        if (cards.length > 1 || items.some((row) => row.kind === 'divider')) {
+            return this._patchMultiCard(cards, items);
         }
 
         // 单容器（无 lcard 或仅一个）→ 复用公共逐行 patch
         const card = cards.length === 1 ? cards[0] : null;
         this._patchContainer(card || list, items);
+        return true;
     }
 
     /**
@@ -1134,9 +1218,8 @@ export class SlideMenu implements RenderContext {
         }
     }
 
-    /** 多 lcard 场景：按 divider 分割 items，逐 card patch */
-    private _patchMultiCard(cards: NodeListOf<HTMLElement>, items: PopupRow[]): void {
-        // 按 divider 分割 items（与 buildPanel 分组逻辑一致：divider 本身不归属任何组）
+    /** 按 divider 分割 items（与 buildPanel 分组逻辑一致：divider 本身不归属任何组） */
+    private _segmentByDivider(items: PopupRow[]): PopupRow[][] {
         const segments: PopupRow[][] = [];
         let cur: PopupRow[] = [];
         for (const row of items) {
@@ -1152,17 +1235,27 @@ export class SlideMenu implements RenderContext {
         if (cur.length > 0) {
             segments.push(cur);
         }
+        return segments;
+    }
+
+    /**
+     * 多 lcard 场景：按 divider 分割 items，逐 card patch。
+     * @returns true=已增量 patch；false=lcard 数与分组数不匹配，已回退全量重建。
+     */
+    private _patchMultiCard(cards: NodeListOf<HTMLElement>, items: PopupRow[]): boolean {
+        const segments = this._segmentByDivider(items);
 
         // lcard 数与分组数不匹配 → items 结构变化，回退全量重建
         if (cards.length !== segments.length) {
             this.buildPanel(this.currentLevel!);
-            return;
+            return false;
         }
 
         // 逐个 lcard 独立 patch（复用公共逐行 patch）
         for (let c = 0; c < cards.length; c++) {
             this._patchContainer(cards[c], segments[c]);
         }
+        return true;
     }
 
     /**
@@ -1231,17 +1324,27 @@ export class SlideMenu implements RenderContext {
                     card.dataset.testid = `menu:card:${cardIdx++}`;
                     list.appendChild(card);
                 }
-                const el = this.createRow(row);
-                if (el) {
-                    card.appendChild(el);
+                // [fix] 单行渲染异常不残及整个 buildPanel（reject → onFadeOut 卡死 opacity:0）
+                try {
+                    const el = this.createRow(row);
+                    if (el) {
+                        card.appendChild(el);
+                    }
+                } catch (err) {
+                    console.error('[SlideMenu] createRow failed:', err, row);
                 }
             }
         } else {
             // 有 renderCustom：先渲染 items 导航行，再调自定义回调
             for (const row of level.items) {
-                const el = this.createRow(row);
-                if (el) {
-                    list.appendChild(el);
+                // [fix] 同纯 items 路径：单行异常不 reject buildPanel
+                try {
+                    const el = this.createRow(row);
+                    if (el) {
+                        list.appendChild(el);
+                    }
+                } catch (err) {
+                    console.error('[SlideMenu] createRow failed:', err, row);
                 }
             }
             pushRenderingContext(this);
@@ -1318,9 +1421,7 @@ export class SlideMenu implements RenderContext {
         backBtn.setAttribute('aria-label', backLabel);
         backBtn.title = backLabel;
         backBtn.setAttribute('data-testid', 'menu:header-back');
-        const backIcon = createIconifyIcon(
-            isBack ? 'lucide:chevron-left' : 'lucide:x'
-        );
+        const backIcon = createIconifyIcon(isBack ? 'lucide:chevron-left' : 'lucide:x');
         if (backIcon) {
             backBtn.appendChild(backIcon);
         }

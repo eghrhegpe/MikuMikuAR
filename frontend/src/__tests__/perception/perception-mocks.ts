@@ -17,6 +17,8 @@
 // NOTE: vi.mock specifier 必须与 SUT 导入解析到同一绝对路径；
 // 拆分文件位于 src/__tests__/perception/，相对前缀为 '../../'（= src/）。
 
+import type { Camera } from '@babylonjs/core/Cameras/camera';
+import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 import { vi } from 'vitest';
 import { sceneMockSuperset } from '../mocks/scene-superset';
 
@@ -33,7 +35,7 @@ export function createMockState() {
                 add: vi.fn(() => ({})),
                 remove: vi.fn(),
             },
-            activeCamera: null,
+            activeCamera: null as Camera | null,
             isDisposed: false,
         },
         // Lip-sync 依赖 mock（audio 管道 + 口型算法）
@@ -218,7 +220,7 @@ export function makeMockModelWithMorphManager(
 ) {
     return {
         mesh: { morphTargetManager: morphManager, isDisposed: () => false },
-        runtimeBones: [],
+        runtimeBones: [] as IMmdRuntimeBone[],
     };
 }
 

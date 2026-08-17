@@ -15,10 +15,10 @@ import {
 } from '@babylonjs/core';
 import { EnvState } from '@/core/config';
 import { getScene } from './_shared/env-context';
-import { ensureEnvUpdateObserver } from './env';
-import { registerEnvCallback } from './_bridge/env-dispatcher';
+// [doc:adr-269 补充] 观察器挂载改走 dispatcher 请求，断开「子系统 → 调度器」向上依赖
+import { registerEnvCallback, requestEnvObserver } from './_bridge/env-dispatcher';
 import { getEnvKeys } from '@/core/env-state-schema';
-import { observe, type ObserverHandle } from '@/core/observer-handle';
+import { getFrameRegistry } from '@/core/frame-registry';
 import { safeDispose } from '@/core/dispose-helpers';
 
 // ======== Cloud System Constants ========
@@ -251,8 +251,20 @@ let _debugCloudMarkers: Mesh[] = [];
 let _debugCloudDeck: Mesh | null = null;
 
 // ======== Observer 句柄（替代 metadata 存储） ========
-let _cloudFollowHandle: ObserverHandle | null = null;
-let _cloudUpdateHandle: ObserverHandle | null = null;
+// 云层的两个每帧回调（球壳跟随相机 / uniform 同步）走 core/frame-registry 的
+// **场景键共享表**（getFrameRegistry），取代原先各自挂一条裸 onBeforeRenderObservable：
+// 两个回调都只读 scene.activeCamera / getLightByName('dir') / fogColor，
+// 写自己的 mesh 与 material，无帧内前序状态依赖，可与相机/env 其它子系统共用一张表。
+let _cloudScene: Scene | null = null;
+
+/** 注销云层两个每帧 key（createClouds 重建前与 disposeClouds 各调一次）。 */
+function _unregisterCloudUpdates(): void {
+    if (_cloudScene) {
+        const reg = getFrameRegistry(_cloudScene);
+        reg.unregister('env.cloud.follow');
+        reg.unregister('env.cloud.uniforms');
+    }
+}
 
 /** 清理所有调试可视化对象（含 mesh 上挂载的材质，Mesh.dispose 不自动释放 material）。 */
 function _clearDebugVisuals(): void {
@@ -603,6 +615,10 @@ export function createClouds(state: EnvState): void {
     if (_volCloudMesh && _volCloudMesh.getScene() !== scene) {
         disposeClouds();
     }
+    // 重建前摘掉旧 scene 上注册的两个 key，避免同一 scene 的重复注册叠加（
+    // register 同 key 直接覆盖，但跨 scene 时旧表引用会残留）
+    _unregisterCloudUpdates();
+    _cloudScene = scene;
     // 球体直径 = min(40000, camera.maxZ * 1.8)，确保地平线附近顶点不被远平面裁剪
     const cam = scene.activeCamera;
     const farZ = cam?.maxZ ?? 10000;
@@ -665,7 +681,7 @@ export function createClouds(state: EnvState): void {
     // 记录 cloudQuality 和 farZ，供下次 createClouds 检测是否需重建
     mesh.metadata = { farZ, cloudQuality: state.cloudQuality ?? 'high' };
 
-    _cloudFollowHandle = observe(scene.onBeforeRenderObservable, () => {
+    getFrameRegistry(scene).register('env.cloud.follow', () => {
         const cam = scene.activeCamera;
         if (!cam) {
             return;
@@ -754,7 +770,7 @@ export function createClouds(state: EnvState): void {
     mat.setColor3('sceneFogColor', new Color3(0.53, 0.7, 0.92));
 
     const startTime = performance.now();
-    _cloudUpdateHandle = observe(scene.onBeforeRenderObservable, () => {
+    getFrameRegistry(scene).register('env.cloud.uniforms', () => {
         const cam = scene.activeCamera;
         if (!cam) {
             return;
@@ -798,7 +814,7 @@ export function createClouds(state: EnvState): void {
     _volCloudMesh = mesh;
     _volCloudMat = mat;
 
-    ensureEnvUpdateObserver();
+    requestEnvObserver();
 
     console.info('[VolCloud] Cloud system created successfully');
 }
@@ -808,8 +824,8 @@ export function disposeClouds(): void {
     _clearDebugVisuals();
 
     // Remove observers first (before disposing mesh/material)
-    _cloudFollowHandle = safeDispose(_cloudFollowHandle);
-    _cloudUpdateHandle = safeDispose(_cloudUpdateHandle);
+    _unregisterCloudUpdates();
+    _cloudScene = null;
 
     // Dispose material before mesh (material may reference mesh)
     _volCloudMat = safeDispose(_volCloudMat);

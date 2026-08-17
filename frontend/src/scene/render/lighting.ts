@@ -12,6 +12,7 @@ import type { ShadowGenerator } from '@babylonjs/core/Lights/Shadows/shadowGener
 
 import { observe } from '@/core/observer-handle';
 import { onBoneMatricesUpdated } from '@/core/mmd-adapter';
+import { getFrameRegistry } from '@/core/frame-registry';
 import { initTransformGizmo } from './transform-gizmo';
 import { scheduleRefresh } from '@/core/reactivity';
 import { resetPerformanceSnapshot, isSnapshotResetSuppressed } from './performance';
@@ -22,8 +23,13 @@ import { col3FromTriple } from '@/core/color-helpers';
 import { envState } from '@/core/config';
 import { clamp } from '@/core/clamp';
 import { lightingState } from './lighting-state';
-import { _createStageLight, _updateIndicator, _disposeStageLightEntry } from './lighting-stage';
-import { _ensureShadow } from './lighting-shadow';
+import {
+    _createStageLight,
+    _updateIndicator,
+    _disposeStageLightEntry,
+    rebuildStageLightShadows,
+} from './lighting-stage';
+import { _ensureShadow, _rebuildShadowCasters } from './lighting-shadow';
 import { _updateSunDisc, _disposeSunDisc } from './lighting-sun';
 import { _cancelAllLightingTweens } from './lighting-tween';
 import {
@@ -34,109 +40,20 @@ import {
 
 // ======== Light State ========
 
-export interface LightState {
-    hemiIntensity: number;
-    dirIntensity: number;
-    dirX: number;
-    dirY: number;
-    dirZ: number;
-    dirColor: [number, number, number];
-    hemiColor: [number, number, number];
-    groundColor: [number, number, number];
-    shadowEnabled: boolean;
-    shadowType: 'hard' | 'soft' | 'pcf';
-    shadowCascades: number;
-    shadowResolution: number; // 新增
-    shadowBias: number; // 新增
-}
-
-export type StageLightType = 'spot' | 'point' | 'directional';
-
-export interface StageLightState {
-    id: string; // 唯一标识
-    name: string; // 显示名
-    enabled: boolean;
-    type: StageLightType; // 灯光类型
-    intensity: number;
-    color: [number, number, number];
-    // SpotLight 专属
-    angle: number; // 锥角（弧度）
-    exponent: number; // 衰减指数
-    // PointLight 专属
-    range: number; // 衰减距离
-    // 阴影投射
-    shadowEnabled: boolean;
-    shadowType: 'hard' | 'soft' | 'pcf';
-    shadowResolution: number;
-    shadowBias: number;
-    // 位置
-    posX: number;
-    posY: number;
-    posZ: number;
-    // 目标点（spot 用；directional 用其反推方向）
-    targetX: number;
-    targetY: number;
-    targetZ: number;
-    // 轨道控制参数（从 posX/Y/Z 实时推导，写回时反算）
-    orbitAzimuth: number; // -180~180 度，水平绕 Y 轴
-    orbitElevation: number; // -90~90 度，垂直仰角
-    orbitDistance: number; // 距原点距离
-    // 指示球体缩放/透明度（UI 大统一 — 与模型/道具共享 buildTransformCard）
-    indicatorScale: number;
-    indicatorOpacity: number;
-    // 真实光锥（锥形光柱可视化）
-    coneEnabled: boolean;
-    coneIntensity: number; // 0-2, default 0.5
-    coneLength: number; // 1-50, default 30
-    coneSoftness: number; // 0-1, default 0.5
-    // [doc:adr-168] 跟随目标（null = 静态模式，向后兼容）
-    followTarget: {
-        modelId: string;
-        boneName: string | null;
-        offset: [number, number, number];
-        smoothing: number; // 0-1, default 0.15
-        moveWithTarget: boolean; // default false
-        // P3-fix: 缓存自动匹配的腰骨名，避免 tickStageLightFollow 每帧 find
-        // boneName 非 null 时此字段不使用；boneName=null 首次匹配后缓存
-        cachedWaistBone: string | null;
-    } | null;
-}
-
-export function _defaultStageLightState(id: string, name: string): StageLightState {
-    return {
-        id,
-        name,
-        enabled: false,
-        type: 'spot',
-        intensity: 0.8,
-        color: [1, 1, 1],
-        angle: 0.8,
-        exponent: 2,
-        range: 50,
-        shadowEnabled: false,
-        shadowType: 'soft',
-        shadowResolution: 1024,
-        shadowBias: 0.0001,
-        posX: 0,
-        posY: 35,
-        posZ: 0,
-        targetX: 0,
-        targetY: 0,
-        targetZ: 0,
-        orbitAzimuth: 180,
-        orbitElevation: 90,
-        orbitDistance: 35,
-        indicatorScale: 1,
-        indicatorOpacity: 1,
-        // 光锥默认关闭
-        coneEnabled: false,
-        coneIntensity: 0.5,
-        coneLength: 30,
-        coneSoftness: 0.5,
-        // [doc:adr-168] 默认静态模式
-        followTarget: null, // 注意：创建 followTarget 时须初始化 cachedWaistBone: null
-    };
-}
+// [doc:adr-271] LightState 下移到 ./lighting-stage-types 叶子（menus 的 bind 类型需要纯类型叶）。
+// 舞台灯光状态类型与默认值同在叶子，这里 import 供本文件使用，并 re-export 保持既有导入路径。
+import {
+    _defaultStageLightState,
+    type LightState,
+    type StageLightState,
+    type StageLightType,
+} from './lighting-stage-types';
+export {
+    _defaultStageLightState,
+    type LightState,
+    type StageLightState,
+    type StageLightType,
+} from './lighting-stage-types';
 
 // ======== Lights (module-level state) ========
 
@@ -186,18 +103,24 @@ export function initLighting(
     _updateIndicator(lightingState.stageLights.get(def.id)!);
 
     // 每帧更新光锥的相机位置 uniform（fresnel 计算需要）
-    lightingState.coneUpdateHandle = observe(lightingState.scene.onBeforeRenderObservable, () => {
-        const cam = lightingState.scene?.activeCamera;
-        if (!cam) {
-            return;
-        }
-        for (const [, cone] of lightingState.stageCones) {
-            cone.material.setVector3('u_cameraPos', cam.position);
-        }
-    });
+    // 走 core/frame-registry 场景键共享表（getFrameRegistry）：只读 activeCamera，
+    // 写自己的 cone material uniform，无帧内前序状态依赖。
+    if (lightingState.scene) {
+        getFrameRegistry(lightingState.scene).register('render.lighting.cone', () => {
+            const cam = lightingState.scene?.activeCamera;
+            if (!cam) {
+                return;
+            }
+            for (const [, cone] of lightingState.stageCones) {
+                cone.material.setVector3('u_cameraPos', cam.position);
+            }
+        });
+    }
 
     // [doc:adr-192] 个人灯 tick 必须在骨骼 worldMatrix 更新后读取（onBeforeRender 时序）。
-    // 时序契约固化于 mmd-adapter BoneFrameClock.onBoneMatricesUpdated（原逆工程注释已收口）。
+    // 时序契约固化于 mmd-adapter 的 onBoneMatricesUpdated（原逆工程注释已收口）。
+    // [ADR-263] 注意该函数只保证「排在 mmd 物理求解之后」——它排在 bone-override
+    // driver 之前，故这里读到的是**尚未应用 override** 的骨骼矩阵（与迁移前一致）。
     lightingState.personalLightTickHandle = onBoneMatricesUpdated(
         lightingState.scene,
         tickPersonalLights
@@ -542,9 +465,8 @@ export function disposeLighting(): void {
     lightingState.stageLights.clear();
     lightingState.stageShadows.clear();
     lightingState.stageCones.clear();
-    if (lightingState.coneUpdateHandle) {
-        lightingState.coneUpdateHandle.dispose();
-        lightingState.coneUpdateHandle = null;
+    if (lightingState.scene) {
+        getFrameRegistry(lightingState.scene).unregister('render.lighting.cone');
     }
     // [doc:adr-168] 释放个人灯 tick observer + 所有个人灯
     if (lightingState.personalLightTickHandle) {
@@ -595,6 +517,17 @@ export * from './lighting-shadow';
 export * from './lighting-sun';
 export * from './lighting-tween';
 export * from './lighting-follow';
+
+/**
+ * 模型/道具注册表变化后重建全部阴影投射者：env 阴影（shadow 模块）+ 舞台灯光阴影（stage 模块）。
+ * [doc:adr-271] 组合动作放在装配面：两个模块各自只实现自己那半，
+ * 避免 shadow ⇄ stage 互相 import 形成 size=2 强连通分量。
+ * 本地声明会覆盖上面 `export *` 透传的同名符号。
+ */
+export function rebuildShadowCasters(): void {
+    _rebuildShadowCasters();
+    rebuildStageLightShadows();
+}
 
 // [doc:adr-238] 注册灯光写入供 core/action-defs 经 scene-action-bridge 调用
 // （定义留 core、实现归 scene 层分散注册，避免聚合注册器成环）。

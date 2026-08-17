@@ -314,7 +314,10 @@ export async function loadAudioFile(filePath: string, signal?: AbortSignal): Pro
         reportResourceWarning(t('resource.audioLoadFailed', { name: filePath }));
         return;
     }
-    const blob = new Blob([new Uint8Array(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength))], { type: 'audio/mpeg' });
+    const blob = new Blob(
+        [new Uint8Array(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength))],
+        { type: 'audio/mpeg' }
+    );
     const url = URL.createObjectURL(blob);
     // [audit:round14 P2] readFileBytes 返回后、createObjectURL 前的窗口内 abort：
     // revoke 刚创建的 URL，避免泄漏 blob。
@@ -630,9 +633,12 @@ registerSceneAction('getAudioName', () => getAudioName());
 // [doc:adr-238] 注册音频操作供 scene/motion 经 scene-action-bridge 调用（历史上用于切断 scene/motion→outfit 反向边；ADR-242 后 audio 归 core，注册链保留）
 registerSceneAction('isAudioPlaying', () => isAudioPlaying());
 registerSceneAction('getAudioPath', () => getAudioPath());
-registerSceneAction('syncAudioPlayback', (vmdTime: number, isPlaying: boolean, vmdDuration: number) => {
-    syncAudioPlayback(vmdTime, isPlaying, vmdDuration);
-});
+registerSceneAction(
+    'syncAudioPlayback',
+    (vmdTime: number, isPlaying: boolean, vmdDuration: number) => {
+        syncAudioPlayback(vmdTime, isPlaying, vmdDuration);
+    }
+);
 
 // [doc:adr-238] 补充注册音频加载供 scene/motion 经 scene-action-bridge 调用
 registerSceneAction('loadAudioFile', (filePath: string) => loadAudioFile(filePath));

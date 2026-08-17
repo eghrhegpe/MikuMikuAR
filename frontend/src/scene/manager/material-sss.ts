@@ -227,4 +227,3 @@ export function applyMatSssState(
         setMatSssParams(id, cat, { ...params });
     }
 }
-

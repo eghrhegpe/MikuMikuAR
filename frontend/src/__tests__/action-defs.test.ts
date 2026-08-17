@@ -56,7 +56,7 @@ describe('action-defs/settings', () => {
                     (_listeners[event] ??= []).push(cb);
                 },
                 dispatchEvent: (event: { type: string }) => {
-                    (_listeners[event.type] || []).forEach(cb => cb(event));
+                    (_listeners[event.type] || []).forEach((cb) => cb(event));
                 },
             });
         }
@@ -170,8 +170,9 @@ describe('action-defs/motion', () => {
         );
         const def = getAction('motion:model:pause');
         expect(def!.params?.[0]).toMatchObject({ name: 'modelId', type: 'entity' });
-        const resolved = await (def!.params![0] as { resolve?: (n: string) => Promise<unknown> })
-            .resolve?.('初音ミク');
+        const resolved = await (
+            def!.params![0] as { resolve?: (n: string) => Promise<unknown> }
+        ).resolve?.('初音ミク');
         expect(findSceneModelByName).toHaveBeenCalledWith('初音ミク');
         expect(resolved).toEqual({ id: 'm-9' });
     });
@@ -190,23 +191,50 @@ describe('action-defs/motion', () => {
         scene = new Map<string, ReturnType<typeof vi.fn>>();
         menuPush = vi.fn();
         menuGetLevel = vi.fn((i: number) => (i === 0 ? { items: [] } : undefined));
-        ui.set('getMotionMenu', vi.fn(() => ({ push: menuPush, getLevel: menuGetLevel })));
-        ui.set('buildBrowseLevel', vi.fn(() => ({ level: 1 })));
-        ui.set('getBrowseDir', vi.fn((kind: string) => `/lib/${kind}`));
-        ui.set('buildMotionRootItems', vi.fn(() => ['root-a']));
-        ui.set('buildActionBindingLevel', vi.fn(() => ({ itemBuilder: () => [], items: ['i'] })));
-        ui.set('buildMotionDetailLevel', vi.fn(() => ({ itemBuilder: () => [] })));
+        ui.set(
+            'getMotionMenu',
+            vi.fn(() => ({ push: menuPush, getLevel: menuGetLevel }))
+        );
+        ui.set(
+            'buildBrowseLevel',
+            vi.fn(() => ({ level: 1 }))
+        );
+        ui.set(
+            'getBrowseDir',
+            vi.fn((kind: string) => `/lib/${kind}`)
+        );
+        ui.set(
+            'buildMotionRootItems',
+            vi.fn(() => ['root-a'])
+        );
+        ui.set(
+            'buildActionBindingLevel',
+            vi.fn(() => ({ itemBuilder: (): unknown[] => [], items: ['i'] }))
+        );
+        ui.set(
+            'buildMotionDetailLevel',
+            vi.fn(() => ({ itemBuilder: (): unknown[] => [] }))
+        );
         ui.set('resetFocusedLayerId', vi.fn());
         ui.set('refreshMotionRoot', vi.fn());
         scene.set('setLipSyncEnabled', vi.fn());
-        scene.set('getLipSyncState', vi.fn(() => ({ enabled: false })));
+        scene.set(
+            'getLipSyncState',
+            vi.fn(() => ({ enabled: false }))
+        );
         scene.set('setProcMotionMode', vi.fn());
         scene.set('regenerateProcMotion', vi.fn());
         scene.set('addSceneMotion', vi.fn());
         scene.set('replaceDefaultMotion', vi.fn());
         scene.set('loadVPDPose', vi.fn());
-        scene.set('getAudioName', vi.fn(() => 'bgm.mp3'));
-        scene.set('pushUndoSnapshot', vi.fn(() => ({ snap: 1 })));
+        scene.set(
+            'getAudioName',
+            vi.fn(() => 'bgm.mp3')
+        );
+        scene.set(
+            'pushUndoSnapshot',
+            vi.fn(() => ({ snap: 1 }))
+        );
         scene.set('clearAllSceneMotions', vi.fn());
         scene.set('updatePlaybackUI', vi.fn());
         scene.set('offerSceneUndoAndRefresh', vi.fn());
@@ -278,7 +306,10 @@ describe('action-defs/motion', () => {
         await getAction('motion:browse-scene-motions')!.execute({});
         const browseCalls = ui.get('buildBrowseLevel').mock.calls;
         const browseArg = browseCalls[browseCalls.length - 1][0] as {
-            outcome?: { onVmdPick?: (p: string, n: string) => void; onVmdReplace?: (p: string, n: string) => void };
+            outcome?: {
+                onVmdPick?: (p: string, n: string) => void;
+                onVmdReplace?: (p: string, n: string) => void;
+            };
         };
         expect(browseArg.outcome).toBeDefined();
         browseArg.outcome?.onVmdPick?.('/x/1.vmd', '1.vmd');

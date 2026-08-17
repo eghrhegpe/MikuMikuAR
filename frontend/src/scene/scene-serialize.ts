@@ -73,11 +73,7 @@ import {
     disposeScene,
 } from './scene';
 import { _applyAll, type AlphaCtx, type MaterialCategoryParams } from './manager/material';
-import {
-    getMatSssState,
-    applyMatSssState,
-    type SssParams,
-} from './manager/material-sss';
+import { getMatSssState, applyMatSssState, type SssParams } from './manager/material-sss';
 
 import { setEnvState } from './env/_bridge/env-bridge';
 import { setEnvSunAngle } from './env/env-time-of-day';
@@ -531,18 +527,23 @@ export function serializeScene(): SceneFile {
                   active: getCameraMode() === 'vmd',
               }
             : undefined,
-        audio: getSceneAction('getAudioName')?.() ?? ''
-            ? {
-                  path: getSceneAction('getAudioPath')?.() ?? '',
-                  libraryRef: getSceneAction('getAudioPath')?.() ?? ''
-                      ? computeLibraryRef(getSceneAction('getAudioPath')?.() ?? '', libraryRoot) || undefined
-                      : undefined,
-                  name: getSceneAction('getAudioName')?.() ?? '',
-                  volume: getSceneAction('getVolume')?.() ?? 1,
-                  offset: getSceneAction('getAudioOffset')?.() ?? 0,
-                  playing: getSceneAction('isAudioPlaying')?.() ?? false,
-              }
-            : undefined,
+        audio:
+            (getSceneAction('getAudioName')?.() ?? '')
+                ? {
+                      path: getSceneAction('getAudioPath')?.() ?? '',
+                      libraryRef:
+                          (getSceneAction('getAudioPath')?.() ?? '')
+                              ? computeLibraryRef(
+                                    getSceneAction('getAudioPath')?.() ?? '',
+                                    libraryRoot
+                                ) || undefined
+                              : undefined,
+                      name: getSceneAction('getAudioName')?.() ?? '',
+                      volume: getSceneAction('getVolume')?.() ?? 1,
+                      offset: getSceneAction('getAudioOffset')?.() ?? 0,
+                      playing: getSceneAction('isAudioPlaying')?.() ?? false,
+                  }
+                : undefined,
         // [fix:P3] 与 serializeModel 一致：深拷贝防嵌套 params 与运行时状态共引用
         procMotion: structuredClone(procState),
         perception: {
@@ -908,7 +909,12 @@ async function deserializeModels(
         }
         // [fix:material-persist] 恢复材质状态（categories + overrides + enabled + SSS）
         // _capture 已在 model-loader.ts 加载时调用，_origValues 就绪，可安全 apply
-        if (m.materialCategories || m.materialOverrides || m.materialEnabled || m.materialSssCategories) {
+        if (
+            m.materialCategories ||
+            m.materialOverrides ||
+            m.materialEnabled ||
+            m.materialSssCategories
+        ) {
             try {
                 applyMatState(id, {
                     categories: m.materialCategories,
@@ -1625,18 +1631,19 @@ export async function tryRestoreLastScene(): Promise<void> {
 // [doc:adr-238] 注册撤销/模型列表供 core/action-defs 经 scene-action-bridge 调用
 import { registerSceneAction } from '@/core/scene-action-bridge';
 registerSceneAction('popUndoSnapshot', () => popUndoSnapshot());
-registerSceneAction('restoreUndoSnapshot', (snap: unknown) =>
-    restoreUndoSnapshot(snap as string)
-);
+registerSceneAction('restoreUndoSnapshot', (snap: unknown) => restoreUndoSnapshot(snap as string));
 registerSceneAction('listModels', () =>
     modelManager.getAll().map((m) => ({ id: m.id, name: m.name }))
 );
 
 // [doc:adr-238] 补充注册撤销快照供 core/action-defs 经 scene-action-bridge 调用
 registerSceneAction('pushUndoSnapshot', () => pushUndoSnapshot());
-registerSceneAction('offerSceneUndoAndRefresh', (label: string, snap: unknown, afterApply?: () => void) => {
-    offerSceneUndoAndRefresh(label, snap as string, afterApply);
-});
+registerSceneAction(
+    'offerSceneUndoAndRefresh',
+    (label: string, snap: unknown, afterApply?: () => void) => {
+        offerSceneUndoAndRefresh(label, snap as string, afterApply);
+    }
+);
 
 // [doc:adr-238] 注册场景恢复/保存供 core/init 经 scene-action-bridge 调用
 registerSceneAction('tryRestoreLastScene', () => tryRestoreLastScene());

@@ -61,6 +61,7 @@ const mk = vi.hoisted(() => ({
 }));
 
 vi.mock('../../scene/scene', () => ({ scene: h.scene }));
+vi.mock('../../scene/scene-context', () => ({ scene: h.scene }));
 vi.mock('../../scene/env/env-impl', () => ({ ensureEnvUpdateObserver: vi.fn() }));
 vi.mock('../../scene/env/_bridge/env-bridge', () => ({
     setEnvState: mk.setEnvState,
@@ -71,6 +72,8 @@ vi.mock('../../scene/env/_bridge/env-bridge', () => ({
 vi.mock('../../scene/env/_bridge/env-dispatcher', () => ({
     dispatchEnvChange: mk.dispatchEnvChange,
     registerSceneTickCallback: mk.registerSceneTickCallback,
+    requestEnvObserver: vi.fn(),
+    registerEnvObserverHandler: vi.fn(() => vi.fn()),
 }));
 vi.mock('../../scene/env/_bridge/env-persist', () => ({
     persistEnvState: mk.persistEnvState,
@@ -160,10 +163,7 @@ describe('env-time-of-day — _timeOfDayTick 幽灵路径修复（fix P3）', ()
 
         // [fix P3] 关键点：envState.sunAngle 被同步为最新角度（此前走幽灵路径漏写）
         expect(envState.sunAngle).toBeCloseTo(45.45, 5);
-        expect(mk.dispatchEnvChange).toHaveBeenCalledWith(
-            new Set(['sunAngle']),
-            envState
-        );
+        expect(mk.dispatchEnvChange).toHaveBeenCalledWith(new Set(['sunAngle']), envState);
     });
 });
 
@@ -220,11 +220,18 @@ describe('env-time-of-day — applyEnvPresetObject 正常完成恢复 time-of-da
 
 describe('env-time-of-day — 分类预设 / 预设应用（导出 API）', () => {
     it('applyEnvPresetByCategory：空 fields 返回 false', () => {
-        expect(applyEnvPresetByCategory({ version: 3, category: 'env:sky', label: 'test', fields: {} })).toBe(false);
+        expect(
+            applyEnvPresetByCategory({ version: 3, category: 'env:sky', label: 'test', fields: {} })
+        ).toBe(false);
     });
 
     it('applyEnvPresetByCategory：env:sky 且含 sunAngle 时调用 setEnvSunAngle 并 setEnvState', () => {
-        const ok = applyEnvPresetByCategory({ version: 3, category: 'env:sky', label: 'test', fields: { sunAngle: 30 } });
+        const ok = applyEnvPresetByCategory({
+            version: 3,
+            category: 'env:sky',
+            label: 'test',
+            fields: { sunAngle: 30 },
+        });
         expect(ok).toBe(true);
         expect(getEnvSunAngle()).toBeCloseTo(30, 5);
         expect(mk.setEnvState).toHaveBeenCalled();

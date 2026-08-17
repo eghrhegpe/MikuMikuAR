@@ -42,7 +42,10 @@ const shared = vi.hoisted(() => {
             dim: 'rgb(200,200,200)',
             muted: 'rgb(150,150,150)',
         })),
-        SETTINGS_FONT_RESTORE: { system: "'Segoe UI', sans-serif", noto: "'Noto Sans', sans-serif" },
+        SETTINGS_FONT_RESTORE: {
+            system: "'Segoe UI', sans-serif",
+            noto: "'Noto Sans', sans-serif",
+        },
         initRuntimeBadge: vi.fn(),
         setBackendBadge: vi.fn(),
         applyHudVisibility: vi.fn(),
@@ -56,9 +59,8 @@ const shared = vi.hoisted(() => {
             p.catch(() => {});
         }),
         showInfoToast: vi.fn(),
-        safeCallAsync: vi.fn(
-            async (_tag: string, _msg: string, fn: () => unknown) =>
-                typeof fn === 'function' ? fn() : undefined
+        safeCallAsync: vi.fn(async (_tag: string, _msg: string, fn: () => unknown) =>
+            typeof fn === 'function' ? fn() : undefined
         ),
         installGlobalErrorCapture: vi.fn(() => () => {}),
         installLoggingPatch: vi.fn(),
@@ -264,12 +266,8 @@ describe('场景与库阶段（_initScenePhase）', () => {
     it('守卫：initScene / initLibrary 桥未注册 → console.warn 提示', async () => {
         const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
         await bootAndSettle();
-        expect(warn).toHaveBeenCalledWith(
-            expect.stringContaining('initScene bridge 未注册')
-        );
-        expect(warn).toHaveBeenCalledWith(
-            expect.stringContaining('initLibrary bridge 未注册')
-        );
+        expect(warn).toHaveBeenCalledWith(expect.stringContaining('initScene bridge 未注册'));
+        expect(warn).toHaveBeenCalledWith(expect.stringContaining('initLibrary bridge 未注册'));
         warn.mockRestore();
     });
 
@@ -421,6 +419,8 @@ describe('restoreUIState（UI 状态持久化恢复）', () => {
         expect(style.getPropertyValue('--text-bright')).toBe('rgb(255,255,255)');
         expect(style.getPropertyValue('--font')).toBe("'Noto Sans', sans-serif");
         expect(style.getPropertyValue('--ui-animations')).toBe('0');
+        // 动效开关同时落到根节点属性上（app.css 的全局降级规则靠它命中）
+        expect(document.documentElement.dataset.uiAnimations).toBe('0');
         expect(style.getPropertyValue('--ui-blur')).toBe('1');
         // uiState 会话字段恢复
         expect(shared.uiState.autoUpdateEnabled).toBe(true);
@@ -500,7 +500,10 @@ describe('更新检查（_initRestorePhase）', () => {
 describe('checkAndroidStoragePermission（Android 存储权限）', () => {
     it('守卫：非 Android 平台直接返回', async () => {
         const request = vi.fn();
-        window.wails = { hasStoragePermission: vi.fn(() => false), requestStoragePermission: request };
+        window.wails = {
+            hasStoragePermission: vi.fn(() => false),
+            requestStoragePermission: request,
+        };
         shared.isAndroidPlatform.mockReturnValue(false);
         await bootAndSettle();
         expect(request).not.toHaveBeenCalled();

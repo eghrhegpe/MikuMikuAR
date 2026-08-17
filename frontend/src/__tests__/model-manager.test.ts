@@ -64,7 +64,6 @@ describe('ModelManager constructor + basic state', function () {
     it('focusedMmdModel() returns null when no model is focused', function () {
         expect(mgr.focusedMmdModel()).toBeNull();
     });
-
 });
 
 describe('ModelManager registry CRUD', function () {
@@ -1201,7 +1200,7 @@ describe('ModelManager orbit + positionMode', function () {
         mesh.position.z = 0;
         const orbit = mgr.getOrbit('m1');
         expect(orbit.distance).toBeCloseTo(5, 1);
-        expect(orbit.azimuth).toBeCloseTo(Math.atan2(3, 0) * 180 / Math.PI, 0);
+        expect(orbit.azimuth).toBeCloseTo((Math.atan2(3, 0) * 180) / Math.PI, 0);
     });
 
     it('getOrbit returns null for unknown id', function () {

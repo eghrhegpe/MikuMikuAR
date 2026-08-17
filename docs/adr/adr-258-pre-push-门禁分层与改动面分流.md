@@ -1,7 +1,7 @@
 # ADR-258: pre-push 门禁分层与改动面分流
 
 > **状态**: ✅ 已采纳（2026-08-17）
-> **日期**: 2026-08-16（初版）/ 2026-08-17（数据驱动修订）
+> **日期**: 2026-08-16（初版）/ 2026-08-17（数据驱动修订）/ 2026-10-23（以 CI 为唯一权威修订）
 > **编号**: 258
 >
 > **关联**: [ADR-230](adr-230-docs-automation-toolchain.md)（文档自动化工具链）、[ADR-206](adr-206-test-infra-consolidation-and-assertion-quality.md)（测试基础设施收敛）、[ADR-254](adr-254-p4-backlog-registry.md)（历轮审核 P4 遗留项）
@@ -239,3 +239,60 @@ pre-push 已支持按变更域分流（`GO_CHANGED` / `TS_CHANGED` / `DOCS_ONLY`
 - `.githooks/pre-push`：当前 pre-push 门禁完整实现
 - `scripts/check-diff-coverage.mjs`：diff-coverage 检查脚本（支持 `--suggest` 非阻断模式）
 - `scripts/check-deadcode-baseline.mjs`：deadcode 基线检查脚本
+
+---
+
+## 修订记录（2026-10-23）：收敛到「以 CI 为唯一权威」
+
+**触发**：体检发现本地门禁与 CI 是两套实现，必然漂移。典型证据：pre-push 的
+`lint:changed` 只查变更文件、CI 的 `npm run lint` 查全量 → 184 个文件格式漂移
+本地从不报，CI 一红到底；pre-push 里还留着「python 不可用 → 跳过」
+「npm 不可用 → 跳过」分支，环境问题直接变成「跳过 = 通过」。
+
+**判据**：检查留在本地必须满足其一，否则归 CI。
+1. 能自动修（gen 生成物、INFO 基线）
+2. 秒级且能精确指路（lint / tsc / i18n / layering / circular / doc-drift）
+3. 能省一轮 CI 往返（vitest --changed）
+
+**移除（移交 CI）**
+
+| 检查 | 移交对象 | 理由 |
+|---|---|---|
+| status / funcmap / docsindex / novelindex / guide-gap / menumap | pre-commit 生成 + CI「Generated docs sync check」19 条 `--check` | 第三重保险；六套 `--check` + 自动修复 + `git add` 分支只增维护面，不增保障 |
+| bindings 同步性 | CI「Bindings freshness gate」（`wails3 generate bindings -ts -i -d`） | CI 口径更权威（多 `-i`/`-d`）；本地提示语要求 `--amend`，与「不恢复 amend」相抵 |
+| `check:md-links` | CI config-syntax job（`python tests/test_markdown_links.py`） | 依赖 python，缺失即跳过 → 假门禁 |
+| `link:check` | CI config-syntax job（`npm run link:check`） | 1131 篇 md 全量断链，与 md-links 功能重叠 |
+| `DOMAINS` / `_dm_bool` 细粒度分流 | —（随文档生成物组一并移除） | 唯一消费者就是被移除的那组检查 |
+
+**保留 9 项**：`lint:changed` · `check:layering` · `check:circular` ·
+`check:dep-docs` · `check:babylon-lib` · `tsc` · `vitest --changed`（+ diff-coverage）·
+`check:docs` · `i18n`。
+
+**顺带修掉三个静默假门禁**（原实现从未真正生效）：
+
+1. `lint:changed` 用 `$CHANGED_BASE` 取变更文件，而该变量在 vitest 段（本行之后）才定义
+   → 此处恒为空，断言退化成「工作区 vs HEAD」，**已提交的变更永远不触发 lint**。
+   改用上方已算好的 `CHANGED` 并集。
+2. 同一段的 `cd frontend && echo "$CHANGED_TS_FILES" | xargs npx eslint` 有两个硬伤：
+   路径是仓库根相对（`frontend/src/…`），进 `frontend/` 后变成 `frontend/frontend/…`
+   （全部 "No files matching"）；Windows 单命令行约 32K 上限，200+ 文件一次传入会
+   "The command line is too long."。改为剥前缀 + `xargs -0 -r -n 25` 分批，并只保留
+   `src/` 下文件（与 CI 的 `eslint src` 同口径，避免把 `vite.config.ts` 这类根配置
+   喂给只对 `src/**` 生效的 TS parser 而误报 "Parsing error"）。
+3. vitest 段先 `rm "$COV_LOG"` 再 grep 同一文件 → 摘要恒为空，并抛出
+   `grep: /tmp/pre-push-cov.xxx: No such file or directory`。改为先取摘要再删。
+
+**规模**：903 → 689 行（-214）。
+
+**实测**（22 个待推提交 / 284 个变更文件 / 其中 212 个 src 文件；Windows + git bash）：
+
+| 阶段 | 结果 |
+|---|---|
+| 全套（lint 把 217 个文件一次性传给 npx） | 失败：`The command line is too long.`（cmd.exe 8K 上限） |
+| lint 分批 `-n 25` / `-n 60` / `-n 120` | 78s / 39s / 24s（瓶颈是 npx 每次启动 ~8s，不是 eslint 本身） |
+| 全套（`-n 120`，tsc 与 vitest 缓存均命中） | **119s**，exit 0，10 项全绿 |
+
+日常单提交的变更面远小于此。主要成本是 `vitest --changed`（~60s），换来的是
+省掉一轮 CI 全量（~2min+）的往返。
+
+**未变**：ADR-259 的缓存机制、ADR-260 的并行框架保持原样。

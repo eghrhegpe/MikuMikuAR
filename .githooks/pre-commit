@@ -1,7 +1,7 @@
 #!/bin/sh
 # MikuMikuAR pre-commit — 秒级文档自动同步（非阻断）
-# 职责：commit 前自动跑全部秒级 gen 脚本（实测 74ms–849ms，合计 ~2.5s），
-#       同步文档/索引/知识卡机器生成区，并 stage 生成文件。
+# 职责：commit 前自动跑全部 gen 脚本（秒级组实测 74ms–849ms；dep 组各 ~2s 换全仓耦合台账零人工，
+#       合计 ~7s），同步文档/索引/知识卡机器生成区，并 stage 生成文件。
 #       文档与源码同步在 commit 时自动完成，push 时 pre-push 全量门禁兜底。
 # 安装：git config core.hooksPath .githooks
 # 跳过：git commit --no-verify（不推荐）
@@ -47,7 +47,9 @@ gen-knowledge-adr.mjs
 gen-knowledge-tests.mjs
 gen-tier.mjs
 gen-routes.mjs
-gen-ui-entry.mjs'
+gen-ui-entry.mjs
+gen-dep-graph.mjs --file docs/dep-graph.md
+dep-metrics.mjs --file docs/dep-metrics.md'
 echo "$GEN_CMDS" | while IFS= read -r line; do
   [ -z "$line" ] && continue
   # shellcheck disable=SC2086（有意分词以携带 --file 等参数）

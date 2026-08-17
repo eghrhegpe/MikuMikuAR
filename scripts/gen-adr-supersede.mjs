@@ -33,6 +33,7 @@ import {
   RE_CLAIM_B,
   RE_DEPRECATED_WORD,
   RE_NEGATED_CLAIM,
+  RE_HYPOTHETICAL_CLAIM,
   RE_TABLE_FIRST_COL,
   RE_TABLE_VERB,
   RE_TABLE_NEGATED,
@@ -61,6 +62,7 @@ if (_UNK.length) {
 const RE_CLAIM_A_G = globalOf(RE_CLAIM_A);
 const RE_CLAIM_B_G = globalOf(RE_CLAIM_B);
 const RE_NEGATED_CLAIM_G = globalOf(RE_NEGATED_CLAIM);
+const RE_HYPOTHETICAL_CLAIM_G = globalOf(RE_HYPOTHETICAL_CLAIM);
 
 const ADR_DIR = path.join(ROOT, 'docs', 'adr');
 
@@ -138,9 +140,15 @@ function main() {
       // 旧实现整行含否定宣称词即 continue，会把「不取代 ADR-100，同时取代 ADR-200」这类
       // 混排行里 ADR-200 的真实宣称也吞掉（② 漏标假绿）。改为仅剔除被否定词直接修饰的
       // 目标编号（RE_NEGATED_CLAIM 带捕获组），其余目标继续走 ②/④ 判定。
+      // [fix 2026-10-23] 反事实语气同步剔除：「那会推翻 ADR-228 的既有判断」是推演而非宣称
+      // （ADR-264 实测触发 ② 漏标，阻塞 check:docs）。与否定词同属「非宣称」语境。
+      const hypotheticalTargets = new Set(
+        [...line.matchAll(RE_HYPOTHETICAL_CLAIM_G)].map((m) => parseInt(m[1], 10))
+      );
       const negatedTargets = new Set(
         [...line.matchAll(RE_NEGATED_CLAIM_G)].map((m) => parseInt(m[1], 10))
       );
+      for (const n of hypotheticalTargets) negatedTargets.add(n);
 
       // ② 明确宣称结构:行内「取代/替代…ADR-NNN」或「ADR-NNN…已废弃」,抽取全部目标
       const targets = [];

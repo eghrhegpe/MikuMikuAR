@@ -306,7 +306,21 @@ describe('resetOutfit', () => {
             [0, { diffuse: origDiffuse, toon: null, spa: null, normal: null, emissive: null }],
         ]);
         inst._origParams = new Map([
-            [0, { diffuseR: 1, diffuseG: 1, diffuseB: 1, specularR: 1, specularG: 1, specularB: 1, specularPower: 50, ambientR: 1, ambientG: 1, ambientB: 1 }],
+            [
+                0,
+                {
+                    diffuseR: 1,
+                    diffuseG: 1,
+                    diffuseB: 1,
+                    specularR: 1,
+                    specularG: 1,
+                    specularB: 1,
+                    specularPower: 50,
+                    ambientR: 1,
+                    ambientG: 1,
+                    ambientB: 1,
+                },
+            ],
         ]);
         const { resetOutfit } = await import('@/scene/manager/outfit');
         await resetOutfit('m1');
@@ -323,7 +337,21 @@ describe('resetOutfit', () => {
             [0, { diffuse: null, toon: null, spa: null, normal: null, emissive: null }],
         ]);
         inst._origParams = new Map([
-            [0, { diffuseR: 1, diffuseG: 1, diffuseB: 1, specularR: 1, specularG: 1, specularB: 1, specularPower: 50, ambientR: 1, ambientG: 1, ambientB: 1 }],
+            [
+                0,
+                {
+                    diffuseR: 1,
+                    diffuseG: 1,
+                    diffuseB: 1,
+                    specularR: 1,
+                    specularG: 1,
+                    specularB: 1,
+                    specularPower: 50,
+                    ambientR: 1,
+                    ambientG: 1,
+                    ambientB: 1,
+                },
+            ],
         ]);
         inst.outfitFile = {
             version: 1,
@@ -372,9 +400,7 @@ describe('loadOutfits', () => {
     });
 
     it('should auto-discover variants from subdirectories', async () => {
-        const { LoadOutfitFile, ListSubDirs, FileExists } = await import(
-            '../core/wails-bindings'
-        );
+        const { LoadOutfitFile, ListSubDirs, FileExists } = await import('../core/wails-bindings');
         vi.mocked(LoadOutfitFile).mockRejectedValueOnce(new Error('no outfit json'));
         vi.mocked(ListSubDirs).mockResolvedValueOnce(['variant_a']);
         vi.mocked(FileExists).mockImplementation((async (p: string) => {
@@ -399,9 +425,7 @@ describe('loadOutfits', () => {
     });
 
     it('should return null when auto-discovery finds no matching files', async () => {
-        const { LoadOutfitFile, ListSubDirs, FileExists } = await import(
-            '../core/wails-bindings'
-        );
+        const { LoadOutfitFile, ListSubDirs, FileExists } = await import('../core/wails-bindings');
         vi.mocked(LoadOutfitFile).mockRejectedValueOnce(new Error('no outfit json'));
         vi.mocked(ListSubDirs).mockResolvedValueOnce(['empty_dir']);
         vi.mocked(FileExists).mockResolvedValue(false);
@@ -465,9 +489,7 @@ describe('loadOutfits', () => {
     });
 
     it('returns null when LoadOutfitFile returns invalid JSON (no version/variants)', async () => {
-        const { LoadOutfitFile, ListSubDirs, FileExists } = await import(
-            '../core/wails-bindings'
-        );
+        const { LoadOutfitFile, ListSubDirs, FileExists } = await import('../core/wails-bindings');
         vi.mocked(LoadOutfitFile).mockResolvedValueOnce(JSON.stringify({ name: 'junk' }));
         vi.mocked(ListSubDirs).mockResolvedValueOnce(['variant_a']);
         vi.mocked(FileExists).mockImplementation((async (p: string) =>

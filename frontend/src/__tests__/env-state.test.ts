@@ -82,7 +82,7 @@ describe('deriveDefaultEnvState — schema value faithfulness', () => {
         for (const [key, def] of Object.entries(ENV_STATE_SCHEMA)) {
             const derived = (defaultEnv as Record<string, unknown>)[key];
             expect(derived, `derived mismatch for key: ${key}`).toEqual(
-                (def as { default: unknown }).default,
+                (def as { default: unknown }).default
             );
         }
     });
@@ -191,7 +191,17 @@ describe('getEnvKeys', () => {
 
     it('fields without group are not in any dispatch list', () => {
         // lightingPresetName has no group
-        const allGroups = ['sky', 'ground', 'fog', 'water', 'particle', 'cloud', 'reflection', 'mirror', 'collision'] as const;
+        const allGroups = [
+            'sky',
+            'ground',
+            'fog',
+            'water',
+            'particle',
+            'cloud',
+            'reflection',
+            'mirror',
+            'collision',
+        ] as const;
         for (const g of allGroups) {
             expect(getEnvKeys(g)).not.toContain('lightingPresetName');
         }
@@ -213,7 +223,7 @@ describe('getEnvKeys', () => {
             for (const grp of groups) {
                 expect(
                     getEnvKeys(grp as EnvDispatchGroup),
-                    `key ${key} missing in declared group ${grp}`,
+                    `key ${key} missing in declared group ${grp}`
                 ).toContain(key);
             }
         }
@@ -222,14 +232,25 @@ describe('getEnvKeys', () => {
     it('single-group fields appear in exactly their declared group', () => {
         // 组归属精确性：单组字段只应出现在其声明组，不得泄漏进其他任一 dispatch 组。
         const allGroups: EnvDispatchGroup[] = [
-            'sky', 'ground', 'fog', 'water', 'particle', 'cloud', 'reflection', 'mirror', 'collision',
+            'sky',
+            'ground',
+            'fog',
+            'water',
+            'particle',
+            'cloud',
+            'reflection',
+            'mirror',
+            'collision',
         ];
         for (const [key, def] of Object.entries(ENV_STATE_SCHEMA)) {
             const g = (def as { group?: string | readonly string[] }).group;
             if (typeof g !== 'string') continue; // 跨组数组字段由上一测试全量覆盖
             for (const grp of allGroups) {
                 const inList = getEnvKeys(grp).includes(key);
-                expect(inList, `key ${key}: expect ${g === grp ? 'in' : 'NOT in'} group ${grp}`).toBe(g === grp);
+                expect(
+                    inList,
+                    `key ${key}: expect ${g === grp ? 'in' : 'NOT in'} group ${grp}`
+                ).toBe(g === grp);
             }
         }
     });

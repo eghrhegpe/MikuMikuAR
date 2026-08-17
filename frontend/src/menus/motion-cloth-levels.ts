@@ -8,7 +8,7 @@ import { setStatus, cardContainer, focusedModelId } from '../core/config';
 import { feedbackStatus } from '../core/feedback';
 import { showInfoToast } from '../core/toast';
 import { addSliderRow, addToggleRow, addModeRow } from '../core/ui-helpers';
-import { scene, modelManager } from '../scene/scene';
+import { scene, modelManager } from '../scene/scene-context';
 import { mmdRuntime } from '../core/state';
 import type { MmdWasmRuntime } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime';
 import type { VirtualSkirtConfig } from '../scene/physics/virtual-skirt';

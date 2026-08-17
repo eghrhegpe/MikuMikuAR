@@ -3,6 +3,7 @@
 // 仅 mock 渲染链路依赖的副作用模块；@/core/state 保持真实（部分用例直接断言其 getter/setter）。
 import { vi } from 'vitest';
 import { sceneMockSuperset } from './mocks/scene-superset';
+import type { DefaultRenderingPipeline } from '@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline';
 
 // —— 通用默认值 ——
 const DEFAULT_RENDER_STATE = {
@@ -174,7 +175,7 @@ export const mockRenderer = () => ({
     setSSRFromReflection: vi.fn(),
     rebuildOutlineState: vi.fn(),
     ToneMappingMode: {},
-    pipeline: undefined,
+    pipeline: undefined as DefaultRenderingPipeline | undefined,
 });
 
 export const mockRenderPerformance = () => ({

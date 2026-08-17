@@ -10,7 +10,9 @@ function _createDiv(): HTMLDivElement {
     // node 环境：返回一个满足基本 DOM 契约的虚拟 div
     return {
         childNodes: [],
-        appendChild: (child: Node) => { /* no-op */ },
+        appendChild: (child: Node) => {
+            /* no-op */
+        },
         querySelector: (_selector: string) => null,
         querySelectorAll: (_selector: string) => [],
         classList: { contains: () => false, add: vi.fn(), remove: vi.fn() },

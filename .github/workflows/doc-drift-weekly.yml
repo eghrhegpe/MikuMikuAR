@@ -16,10 +16,8 @@
 
 name: Doc Drift Weekly
 
+# [2026-10-19] 项目退坑：每周定时已停用，仅保留手动触发。
 on:
-  schedule:
-    # Every Monday at 06:00 UTC (off-peak from webgl-weekly's Sunday run)
-    - cron: '0 6 * * 1'
   workflow_dispatch: # manual trigger
 
 permissions:

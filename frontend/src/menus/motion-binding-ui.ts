@@ -45,8 +45,8 @@ import type { PopupLevel } from '../core/config';
 import { renderMenu } from './render-menu';
 import { logWarn } from '../core/logger';
 import { showConfirm } from '../core/dialog';
-// 循环依赖安全：getMotionMenu 仅在函数体内调用，不在模块求值期访问
-import { getMotionMenu } from './motion-popup';
+// [doc:adr-271] 菜单实例改从状态叶子读取，切断与 motion-popup 的互指
+import { getMotionMenu } from './motion-menu-state';
 
 // ═══════════════════════════════════════════════════════════
 // 模块开关列表（ADR-146 主题 11 收敛）
@@ -292,7 +292,8 @@ function buildActionBindingSchema(id: string): MenuNode[] {
 
                     if (isIncompatible) {
                         const warn = document.createElement('div');
-                        warn.style.cssText = 'color:var(--warn);padding:4px 0;font-size:12px;';
+                        warn.style.cssText =
+                            'color:var(--warn);padding:4px 0;font-size:var(--font-hint);';
                         warn.textContent = t('motion.intent.incompatible');
                         inner.appendChild(warn);
                     }

@@ -68,7 +68,11 @@ export type MotionPreset = {
 
 // ======== Procedural Motion Config (ADR-XX per-motion) ========
 
-import type { ProcMotionState, ProcModeKey, ProcMotionParams } from '@/motion-algos/procedural-motion';
+import type {
+    ProcMotionState,
+    ProcModeKey,
+    ProcMotionParams,
+} from '@/motion-algos/procedural-motion';
 
 /** [doc:adr-XX] 程序化动作配置（per-motion，随动作走）
  *  参数存 SceneMotionIntent.procMotion（多角色共享），
@@ -579,14 +583,7 @@ export type PhysicsCategory = 'skirt' | 'chest' | 'hair' | 'accessory';
  * 双写于 `scene/camera/camera-state.ts`（camera.ts 经其 re-export），改动须两处同步。
  */
 export type CameraMode =
-    | 'orbit'
-    | 'freefly'
-    | 'surround'
-    | 'concert'
-    | 'oneshot'
-    | 'vmd'
-    | 'ar'
-    | 'beatcut';
+    'orbit' | 'freefly' | 'surround' | 'concert' | 'oneshot' | 'vmd' | 'ar' | 'beatcut';
 
 /**
  * ADR-100 轴 A — 控制方案：决定相机类 + 输入方式。

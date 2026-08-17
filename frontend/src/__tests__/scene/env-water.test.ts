@@ -34,7 +34,7 @@ vi.mock('../../scene/env/_shared/env-context', () => {
         getScene: () => (globalThis as any).__waterTestScene as Scene,
         initEnvImpl: () => {},
         isInitialized: () => true,
-        getPipeline: () => null,
+        getPipeline: (): null => null,
         // 与真实 env-context 一致：地水共享尺寸单源（ADR-217）
         INFINITE_GROUND_SIZE: 2000,
         effectiveGroundSize: (groundSize: number, infiniteEnabled: boolean) =>
@@ -45,7 +45,7 @@ vi.mock('../../scene/env/_shared/env-context', () => {
 // renderer→performance→scene 重链（模块级 new Scene()）。单测只关注纯函数，
 // 此处桩掉避免测试环境收集期崩溃。
 vi.mock('../../scene/env/env-reflection', () => ({
-    getPlanarQualityOverride: () => null,
+    getPlanarQualityOverride: (): null => null,
 }));
 
 // [2026-08] 性能：createCanvasTexture 是 env-water-material/env-caustics 的重纹理

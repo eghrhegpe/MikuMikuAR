@@ -135,11 +135,7 @@ describe('seekFromEvent', () => {
     it('passes isPlaying=true to syncAudioPlayback when playing', () => {
         mockState.isPlaying = true;
         seekFromEvent(mouseEvent);
-        expect(syncAudioPlayback).toHaveBeenCalledWith(
-            expect.any(Number),
-            true,
-            120
-        );
+        expect(syncAudioPlayback).toHaveBeenCalledWith(expect.any(Number), true, 120);
     });
 
     it('clamps ratio to [0, 1]', () => {

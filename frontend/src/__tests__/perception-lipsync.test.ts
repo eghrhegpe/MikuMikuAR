@@ -7,11 +7,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockBeat = vi.hoisted(() => ({ level: 1.0 }));
 
-vi.mock('../scene/motion/proc-motion-bridge', () => ({
-    getProcBeatDetector: () => ({ getLevel: () => mockBeat.level }),
-}));
+// [doc:adr-271] getProcBeatDetector 改经 scene-action-bridge 取，mock 挂到桥的 switch 里
 vi.mock('@/core/scene-action-bridge', () => ({
     getSceneAction: (key: string) => {
+        if (key === 'getProcBeatDetector') {
+            return () => ({ getLevel: () => mockBeat.level });
+        }
         if (key === 'isAudioPlaying') {
             return () => true;
         }

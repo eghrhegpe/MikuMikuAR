@@ -10,15 +10,16 @@ source_files:
 adr:
   - ADR-148
 symbols:
-  - initFreeflyUpdate
+  - disposeCameraBehaviors
   - initFreeflyTouch
-  - stopFreefly
-  - startSurround
-  - stopSurround
-  - startConcert
-  - stopConcert
+  - initFreeflyUpdate
   - initOrbitUpdate
+  - startConcert
+  - startSurround
+  - stopConcert
+  - stopFreefly
   - stopOrbit
+  - stopSurround
 invariants:
   - 行为循环通过 observe(scene.onBeforeRenderObservable, ...) 注册，返回 ObserverHandle
   - stop* 函数显式 dispose ObserverHandle，避免回调残留

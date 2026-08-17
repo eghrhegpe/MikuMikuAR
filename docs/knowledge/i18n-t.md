@@ -12,7 +12,6 @@ adr:
 symbols:
   - AVAILABLE_LANGS
   - bundles
-  - loadLocale
   - t
 invariants:
   - 单例，无状态

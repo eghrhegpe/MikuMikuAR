@@ -15,9 +15,6 @@ tests:
   - frontend/src/__tests__/scene/lighting-follow.test.ts
   - frontend/src/__tests__/scene/lighting-stage.test.ts
 symbols:
-  - LightState
-  - StageLightState
-  - StageLightType
   - _defaultStageLightState
   - disposeLighting
   - getDirLight
@@ -26,6 +23,7 @@ symbols:
   - initLighting
   - isLightingReady
   - rebakeEnvBrightness
+  - rebuildShadowCasters
   - setLightState
   - setSkipLightAutoSave
   - transitionLighting

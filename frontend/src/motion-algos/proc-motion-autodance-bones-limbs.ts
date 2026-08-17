@@ -10,8 +10,8 @@
  */
 import type { BoneKeyFrame } from './vmd-writer';
 import { type ProcMotionParams, clamp1, quatW } from './proc-motion-shared';
-import type { TrigCache } from './proc-motion-autodance-bones';
-import { beatInfo, beatBounce, downbeatWeight, swayAt } from './proc-motion-autodance-bones';
+import type { TrigCache } from './proc-motion-autodance-beat';
+import { beatInfo, beatBounce, downbeatWeight, swayAt } from './proc-motion-autodance-beat';
 
 const STEP = 3;
 

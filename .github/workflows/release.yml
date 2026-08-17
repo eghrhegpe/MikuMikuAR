@@ -53,10 +53,23 @@ jobs:
           echo "wails_ver=$WAILS_VER" >> $GITHUB_OUTPUT
           echo "Version: $VER  Wails: $WAILS_VER"
 
+  # ── 测试门禁（复用 ci.yml，与 push CI 同一份实现）──────────
+  # [2026-10-23] 原先 tag 一推就 prepare → build-*，CI 红也照发。
+  # 改为先跑 ci.yml 全套（workflow_call），红则三平台 build 都不启动。
+  # 代价：发版多约 8-10min；收益：发布物不可能来自一个测试不绿的 commit。
+  test:
+    name: Test Gate (reuse ci.yml)
+    needs: [prepare]
+    uses: ./.github/workflows/ci.yml
+    with:
+      # [2026-10-23] tag push 的 event.before 只含一个提交，按域裁剪会误跳过门禁。
+      # 发版强制全量跑（ci.yml changes job 的 FORCE_ALL 哨兵）。
+      force-all: true
+
   # ── Windows 构建 ───────────────────────────────────────
   build-windows:
     name: Windows
-    needs: prepare
+    needs: [prepare, test]
     runs-on: windows-latest
     timeout-minutes: 20
     defaults:
@@ -104,7 +117,7 @@ jobs:
       - name: Build
         run: .\scripts\build-windows.ps1 -Production
       - name: Upload artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: windows-amd64
           path: dist/*.exe
@@ -113,7 +126,7 @@ jobs:
   # ── Linux 构建 ─────────────────────────────────────────
   build-linux:
     name: Linux
-    needs: prepare
+    needs: [prepare, test]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -197,7 +210,7 @@ jobs:
             -ldflags="-X main.AppVersion=${{ needs.prepare.outputs.version }} -X main.BuildTime=${BUILD_TIME} -X main.CommitHash=${COMMIT_HASH} -s -w" \
             -o "bin/mikumikuar-${{ needs.prepare.outputs.version }}-linux-amd64"
       - name: Upload artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: linux-amd64
           path: bin/mikumikuar-*
@@ -206,7 +219,7 @@ jobs:
   # ── Android 构建 ───────────────────────────────────────
   build-android:
     name: Android
-    needs: prepare
+    needs: [prepare, test]
     runs-on: windows-latest
     timeout-minutes: 30
     defaults:
@@ -314,7 +327,7 @@ jobs:
           powershell -ExecutionPolicy Bypass -File scripts\build-android.ps1 -Arch arm64
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: android-arm64
           path: dist/*.apk

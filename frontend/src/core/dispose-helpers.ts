@@ -19,6 +19,7 @@
 // type-only import：不引入运行时依赖，保持本模块为零依赖叶子。
 import type { Material } from '@babylonjs/core/Materials/material';
 import type { BaseTexture } from '@babylonjs/core/Materials/Textures/baseTexture';
+import type { Scene } from '@babylonjs/core/scene';
 
 /**
  * 安全释放对象并置空。
@@ -62,7 +63,9 @@ const SHAREABLE_TEXTURE_SLOTS = [
  * @param disposing 即将被 dispose 的材质集合（须为 Set，用于 O(1) 判定归属）
  */
 export function detachSharedTextures(disposing: Set<Material>): void {
-    const scene = disposing.values().next().value?.getScene();
+    // 显式标注 scene：`.values().next().value` 的 TReturn 默认 any，不锚定就会把
+    // materials/filter 回调全染成隐式 any（ADR-274 Stage 1）。
+    const scene: Scene | null = disposing.values().next().value?.getScene();
     if (!scene) {
         return;
     }

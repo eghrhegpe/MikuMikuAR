@@ -1,7 +1,7 @@
 // [doc:architecture] Camera Behaviors — freefly/surround/concert 行为
 // 从 camera.ts 拆出（ADR-148 阶段 3：camera.ts 瘦身）
 // 职责: freefly 输入/触控、surround 整圈自转、concert 粉丝机位扫掠
-// 依赖: camera-state（preset/camera 引用）+ freeflyInput + observer-handle
+// 依赖: camera-state（preset/camera 引用）+ freeflyInput + frame-registry
 
 import { ArcRotateCamera } from '@babylonjs/core/Cameras/arcRotateCamera';
 import { UniversalCamera } from '@babylonjs/core/Cameras/universalCamera';
@@ -12,8 +12,8 @@ import { focusedModelId, modelRegistry } from '@/core/config';
 import { freeflyInput } from '@/core/freefly-state';
 import { orbitInput } from '@/core/orbit-state';
 import { addDisposableListener, type Disposable } from '@/core/dom';
-import { observe, type ObserverHandle } from '@/core/observer-handle';
 import { safeDispose } from '@/core/dispose-helpers';
+import { getFrameRegistry } from '@/core/frame-registry';
 import {
     getCameraMode,
     getCameraPreset,
@@ -22,14 +22,22 @@ import {
     isTouchDevice,
 } from './camera-state';
 
-// 模块级 handle：surround/concert/freefly/orbit 的 onBeforeRender 回调
-let _concertUpdateHandle: ObserverHandle | null = null;
-let _surroundUpdateHandle: ObserverHandle | null = null;
-let _freeflyUpdateHandle: ObserverHandle | null = null;
-let _orbitUpdateHandle: ObserverHandle | null = null;
+// 相机四模式的每帧更新走 core/frame-registry 的**场景键共享表**（getFrameRegistry）：
+// 原先 freefly/surround/concert/orbit 各挂一条独立 observer，注册顺序随模式进入时机漂移。
+// 四者读写的都是相机自身、已在加载期定稿的 rootMesh.position、preset 值与输入标记
+// （全仓 grep 证实无任何 observer 在帧内写 rootMesh.position，唯一写入点是
+// model-loader.ts:751-753 的加载期地面贴合），故无帧内前序状态依赖，可安全与其它
+// 子系统（env 等）共用同一张表，同时统一获得「单个回调抛错不拖垮整帧」的隔离与
+// scene 销毁自动清理。
+//
+// 键名带 `camera.` 前缀：共享表按 key 分发给多个子系统，前缀即命名空间，
+// 避免与 env./physics. 等其它子系统的 key 撞车。
 let _concertT = 0;
 let _surroundAngle = 0;
-// Cached target vector for concert/surround modes (avoids per-frame Vector3 allocation)
+// 注册时捕获的 scene 引用：stop 路径（stopFreefly/stopOrbit/...）没有 scene 形参，
+// 但 getFrameRegistry 是 scene 键的，必须拿到同一张表才能摘对 key。
+let _cameraScene: Scene | null = null;
+// surround/concert 共用的目标点缓存向量（避免每帧 new Vector3）
 const _concertTarget = new Vector3(0, 8, 0);
 
 // 移动速度映射系数：preset.freefly.speed 乘此为每帧位移（@60fps）。
@@ -40,12 +48,8 @@ const _FREEFLY_SPEED_SCALE = 0.6;
 // ======== Freefly ========
 
 export function initFreeflyUpdate(scene: Scene): void {
-    // 释放之前的 observer
-    if (_freeflyUpdateHandle) {
-        _freeflyUpdateHandle.dispose();
-    }
-
-    _freeflyUpdateHandle = observe(scene.onBeforeRenderObservable, () => {
+    _cameraScene = scene;
+    getFrameRegistry(scene).register('camera.freefly', () => {
         const cam = getCurrentCamera();
         if (!cam || !(cam instanceof UniversalCamera)) {
             return;
@@ -176,8 +180,9 @@ export function stopFreefly(): void {
 
     stopFreeflyTouch();
 
-    if (_freeflyUpdateHandle) {
-        _freeflyUpdateHandle = safeDispose(_freeflyUpdateHandle);
+    // 共享表按 scene 取用：stop 路径拿不到 scene 实参时退回注册时捕获的引用。
+    if (_cameraScene) {
+        getFrameRegistry(_cameraScene).unregister('camera.freefly');
     }
 }
 
@@ -192,10 +197,8 @@ const _orbitRight = new Vector3();
 const _orbitMove = new Vector3();
 
 export function initOrbitUpdate(scene: Scene): void {
-    if (_orbitUpdateHandle) {
-        _orbitUpdateHandle.dispose();
-    }
-    _orbitUpdateHandle = observe(scene.onBeforeRenderObservable, () => {
+    _cameraScene = scene;
+    getFrameRegistry(scene).register('camera.orbit', () => {
         if (getCameraMode() !== 'orbit') {
             return;
         }
@@ -256,8 +259,8 @@ export function stopOrbit(): void {
     orbitInput.right = false;
     orbitInput.up = false;
     orbitInput.down = false;
-    if (_orbitUpdateHandle) {
-        _orbitUpdateHandle = safeDispose(_orbitUpdateHandle);
+    if (_cameraScene) {
+        getFrameRegistry(_cameraScene).unregister('camera.orbit');
     }
 }
 
@@ -265,10 +268,8 @@ export function stopOrbit(): void {
 
 export function startSurround(scene: Scene): void {
     _surroundAngle = 0;
-    if (_surroundUpdateHandle) {
-        _surroundUpdateHandle.dispose();
-    }
-    _surroundUpdateHandle = observe(scene.onBeforeRenderObservable, () => {
+    _cameraScene = scene;
+    getFrameRegistry(scene).register('camera.surround', () => {
         const cam = getCurrentCamera();
         if (!cam || !(cam instanceof ArcRotateCamera)) {
             return;
@@ -298,8 +299,8 @@ export function startSurround(scene: Scene): void {
 }
 
 export function stopSurround(): void {
-    if (_surroundUpdateHandle) {
-        _surroundUpdateHandle = safeDispose(_surroundUpdateHandle);
+    if (_cameraScene) {
+        getFrameRegistry(_cameraScene).unregister('camera.surround');
     }
 }
 
@@ -307,10 +308,8 @@ export function stopSurround(): void {
 
 export function startConcert(scene: Scene): void {
     _concertT = 0;
-    if (_concertUpdateHandle) {
-        _concertUpdateHandle.dispose();
-    }
-    _concertUpdateHandle = observe(scene.onBeforeRenderObservable, () => {
+    _cameraScene = scene;
+    getFrameRegistry(scene).register('camera.concert', () => {
         const cam = getCurrentCamera();
         if (!cam || !(cam instanceof ArcRotateCamera)) {
             return;
@@ -343,7 +342,26 @@ export function startConcert(scene: Scene): void {
 }
 
 export function stopConcert(): void {
-    if (_concertUpdateHandle) {
-        _concertUpdateHandle = safeDispose(_concertUpdateHandle);
+    if (_cameraScene) {
+        getFrameRegistry(_cameraScene).unregister('camera.concert');
     }
+}
+
+/**
+ * 相机 behavior 分发表总销毁（供 disposeCameraSystem 调用）。
+ *
+ * 注意：共享表是 scene 键的，不随相机销毁——env/其它子系统可能仍在使用。
+ * 这里只摘掉相机自己的四个 key（unregister 不会移除别的子系统的回调），
+ * scene 销毁时由 getFrameRegistry 的 WeakMap 自动回收。
+ */
+export function disposeCameraBehaviors(): void {
+    const scene = _cameraScene;
+    if (scene) {
+        const reg = getFrameRegistry(scene);
+        reg.unregister('camera.freefly');
+        reg.unregister('camera.orbit');
+        reg.unregister('camera.surround');
+        reg.unregister('camera.concert');
+    }
+    _cameraScene = null;
 }

@@ -192,7 +192,9 @@ describe('texture-lru', () => {
 
         // readFileBytes reject → readTextureWithLRU 抛错（非返回 null）；
         // .finally 仍清理 _inFlight，第二次调用重新读而非复用 rejected promise
-        await expect(readTextureWithLRU('web://model/a', 'tex/face.png')).rejects.toThrow('io fail');
+        await expect(readTextureWithLRU('web://model/a', 'tex/face.png')).rejects.toThrow(
+            'io fail'
+        );
 
         const r2 = await readTextureWithLRU('web://model/a', 'tex/face.png');
         expect(r2).not.toBeNull(); // in-flight 已清理，第二次重新读

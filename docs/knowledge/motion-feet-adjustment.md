@@ -20,6 +20,7 @@ symbols:
   - FootLandEvent
   - SolveFootInput
   - SolveFootOutput
+  - isFeetAdjustmentEnabled
   - isFeetAdjustmentRunning
   - setOnFootLand
   - solveFootTarget

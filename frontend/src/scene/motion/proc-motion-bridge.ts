@@ -30,7 +30,8 @@ import { BeatDetector } from '@/motion-algos/beat-detector';
 import { ProcMotionControllerBase } from './proc-motion-controller';
 import { ProcMotionParamsMixin } from './proc-motion-params';
 import { applyProcMotionModulesToModel } from './motion-modules/registry';
-import { modelManager, focusedModel } from '../scene';
+// [doc:adr-269 补充] 改走窄门面 scene-focus，断开与装配器 scene.ts 的双向引用
+import { modelManager, focusedModel } from '../scene-focus';
 
 // ═══════════════════════════════════════════════════════════
 // ProcMotionController — 状态机核心（基类）+ 参数 setter 群（mixin）
@@ -154,3 +155,5 @@ registerSceneAction('setProcMotionMode', (mode: string) => {
     setProcMotionMode(mode as Parameters<typeof setProcMotionMode>[0]);
 });
 registerSceneAction('regenerateProcMotion', () => regenerateProcMotion());
+// [doc:adr-269 补充] 供 scene/camera/camera-auto 取节拍检测器，断开 camera→motion 静态边
+registerSceneAction('getProcBeatDetector', () => getProcBeatDetector());

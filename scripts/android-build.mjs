@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 /**
- * 一键构建 Android 调试/生产 APK（Windows/macOS/Linux 宿主通用）。
+ * android-build.mjs — 一键构建 Android 调试/生产 APK（Windows/macOS/Linux 宿主通用）。
+ * 设计意图：把「前端 build:dev → NDK 交叉编译 libwails.so → gradle assembleDebug」
+ * 三步手工流程收成一条可复现口令，让 APK 产物不依赖人记命令与执行顺序。
  * 补齐 android-install.mjs 的缺口：它直接装 jniLibs 已有或需重新编译的
  * libwails.so；本脚本先做前端构建 + NDK 交叉编译 libwails.so + gradle
  * assembleDebug，产出全新 APK。

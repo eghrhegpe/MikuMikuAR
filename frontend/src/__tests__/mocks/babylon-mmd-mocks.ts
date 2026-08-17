@@ -57,6 +57,6 @@ export class MockVmdLoader {
 
 export const MockRegisterMmdModelLoaders = () => {};
 export const MockRegisterDxBmpTextureLoader = () => {};
-export const MockGetMmdWasmInstance = async () => null;
+export const MockGetMmdWasmInstance = async (): Promise<null> => null;
 
 export const emptyModule = {};

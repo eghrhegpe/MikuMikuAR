@@ -3,6 +3,8 @@
 // 应用模块桩。规矩同前：工厂同步 + Mock 类静态 import（禁 vi.importActual，hoist 期 TDZ）。
 // mockModelManager 为普通 const 单例——vitest 每测试文件独立模块图，天然隔离；
 // 各测试文件 beforeEach 里 cleanup() 复位（mockReset get）。
+import type { SlideMenu } from '../menus/menu';
+import type { OutfitFile } from '../core/config';
 import { vi } from 'vitest';
 import { sceneMockSuperset, mockModelManagerBase } from './mocks/scene-superset';
 
@@ -46,11 +48,11 @@ export const mockSceneScene = () => ({
 });
 
 export const mockSceneMenu = () => ({
-    getSceneMenu: () => null,
+    getSceneMenu: (): SlideMenu | null => null,
 });
 
 export const mockOutfitModule = () => ({
-    loadOutfits: async () => null,
+    loadOutfits: async (): Promise<OutfitFile | null> => null,
     applyOutfitVariant: () => {},
     resetOutfit: () => {},
 });
@@ -58,7 +60,7 @@ export const mockOutfitModule = () => ({
 export const mockLipsync = () => ({
     LipSyncState: {},
     DEFAULT_LIPSYNC_STATE: { mode: 'off', intensity: 0.5, phonemeMap: {} },
-    findLipMorph: () => null,
+    findLipMorph: (): string | null => null,
     amplitudeToWeight: () => 0,
 });
 
@@ -119,7 +121,7 @@ export const mockProceduralMotion = () => ({
 
 export const mockBeatDetectorModule = () => ({
     BeatDetector: class MockBeatDetector {
-        detectBeatsFromEnergies() {
+        detectBeatsFromEnergies(): number[] {
             return [];
         }
         bpmFromIntervals() {

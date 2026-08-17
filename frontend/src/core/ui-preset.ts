@@ -80,7 +80,8 @@ export function addClearRow(
         return;
     }
     const clearRow = document.createElement('div');
-    clearRow.style.cssText = 'display:flex;justify-content:flex-end;padding:0 14px 4px;';
+    clearRow.style.cssText =
+        'display:flex;justify-content:flex-end;padding:0 var(--row-pad-x) 4px;';
     if (testId) {
         clearRow.setAttribute('data-testid', testId);
     }

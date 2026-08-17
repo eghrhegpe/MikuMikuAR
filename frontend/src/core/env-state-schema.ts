@@ -7,11 +7,11 @@
 
 /** type → default 类型互锁映射：[doc:adr-243] default 的类型必须与 type 声明一致（编译期防线） */
 type FieldDefaultMap = {
-    enum: string;
-    number: number;
-    boolean: boolean;
-    string: string;
-    tuple3: readonly [number, number, number];
+    'enum': string;
+    'number': number;
+    'boolean': boolean;
+    'string': string;
+    'tuple3': readonly [number, number, number];
     'optional-string': string | undefined;
 };
 
@@ -374,7 +374,9 @@ export const ENV_STATE_SCHEMA = {
     sunAngle: { type: 'number', default: 45, group: 'sky' },
     // azimuth 决定方向光入射方向（dirDirection: [x,y,z]）→ 阴影落点。
     azimuth: { type: 'number', default: -45, group: 'sky' },
-    lightingPresetName: { type: 'optional-string', default: undefined },
+    // optional-string 的 default 必须显式标注：strictNullChecks 未开时 `undefined` 会加宽成 any
+    // （ADR-274 Stage 1 / TS7018）。标注后仍满足 FieldDefaultMap['optional-string'] 的 type↔default 互锁。
+    lightingPresetName: { type: 'optional-string', default: undefined as string | undefined },
     timeOfDayActive: { type: 'boolean', default: false, group: 'sky' },
     timeOfDaySpeed: { type: 'number', default: 3, group: 'sky' },
 } as const satisfies Record<string, _AnyFieldDef>;

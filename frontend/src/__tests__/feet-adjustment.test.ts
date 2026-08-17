@@ -178,9 +178,7 @@ describe('solveFootTarget', () => {
     });
 
     it('legLength=0 时 reach/maxAngle 不除零不产生 NaN', () => {
-        const r = solveFootTarget(
-            input({ footY: 0, groundY: 0, legLength: 0, hipToFootDist: 2 })
-        );
+        const r = solveFootTarget(input({ footY: 0, groundY: 0, legLength: 0, hipToFootDist: 2 }));
         expect(Number.isFinite(r.targetY)).toBe(true);
         expect(r.skip).toBe(false);
     });

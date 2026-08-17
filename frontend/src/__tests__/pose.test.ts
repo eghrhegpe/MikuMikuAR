@@ -12,8 +12,8 @@ const shared = vi.hoisted(() => {
     return {
         ArcRotateCamera,
         modelRegistry: { get: vi.fn() },
-        focusedModelId: null,
-        sceneObj: { activeCamera: null },
+        focusedModelId: null as string | null,
+        sceneObj: { activeCamera: null as unknown },
         setOrbitParams: vi.fn(),
     };
 });
@@ -25,6 +25,7 @@ vi.mock('@/core/config', () => ({
     },
 }));
 vi.mock('@/scene/scene', () => ({ scene: shared.sceneObj }));
+vi.mock('@/scene/scene-context', () => ({ scene: shared.sceneObj }));
 vi.mock('@/scene/camera/camera', () => ({ setOrbitParams: shared.setOrbitParams }));
 vi.mock('@babylonjs/core/Cameras/arcRotateCamera', () => ({
     ArcRotateCamera: shared.ArcRotateCamera,

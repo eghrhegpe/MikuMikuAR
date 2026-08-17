@@ -171,28 +171,18 @@ describe('addBoneSelectRow', () => {
 
     it('uses custom searchPlaceholder from opts', () => {
         const container = document.createElement('div');
-        addBoneSelectRow(
-            container,
-            '骨骼',
-            ['上半身'],
-            '上半身',
-            () => {},
-            { searchPlaceholder: '自定义搜索...' }
-        );
+        addBoneSelectRow(container, '骨骼', ['上半身'], '上半身', () => {}, {
+            searchPlaceholder: '自定义搜索...',
+        });
         const search = container.querySelector('input')!;
         expect(search.placeholder).toBe('自定义搜索...');
     });
 
     it('applies testId to wrapper', () => {
         const container = document.createElement('div');
-        addBoneSelectRow(
-            container,
-            '骨骼',
-            ['上半身'],
-            '上半身',
-            () => {},
-            { testId: 'bone-select-test' }
-        );
+        addBoneSelectRow(container, '骨骼', ['上半身'], '上半身', () => {}, {
+            testId: 'bone-select-test',
+        });
         const wrapper = container.querySelector('[data-testid="bone-select-test"]')!;
         expect(wrapper).not.toBeNull();
     });
@@ -644,7 +634,17 @@ describe('addSliderRow', () => {
 
         const top = container.querySelector('.cs-top')! as HTMLDivElement;
         top.getBoundingClientRect = () =>
-            ({ left: 0, width: 200, top: 0, height: 20, right: 200, bottom: 20, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect;
+            ({
+                left: 0,
+                width: 200,
+                top: 0,
+                height: 20,
+                right: 200,
+                bottom: 20,
+                x: 0,
+                y: 0,
+                toJSON: () => ({}),
+            }) as DOMRect;
 
         // 左 1/4 区域: delta = -(range * LARGE_STEP)
         top.dispatchEvent(new MouseEvent('click', { clientX: 10 }));
@@ -660,7 +660,17 @@ describe('addSliderRow', () => {
 
         const top = container.querySelector('.cs-top')! as HTMLDivElement;
         top.getBoundingClientRect = () =>
-            ({ left: 0, width: 200, top: 0, height: 20, right: 200, bottom: 20, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect;
+            ({
+                left: 0,
+                width: 200,
+                top: 0,
+                height: 20,
+                right: 200,
+                bottom: 20,
+                x: 0,
+                y: 0,
+                toJSON: () => ({}),
+            }) as DOMRect;
 
         // 右 1/4 区域: delta = range * LARGE_STEP
         top.dispatchEvent(new MouseEvent('click', { clientX: 190 }));
@@ -675,7 +685,17 @@ describe('addSliderRow', () => {
 
         const top = container.querySelector('.cs-top')! as HTMLDivElement;
         top.getBoundingClientRect = () =>
-            ({ left: 0, width: 200, top: 0, height: 20, right: 200, bottom: 20, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect;
+            ({
+                left: 0,
+                width: 200,
+                top: 0,
+                height: 20,
+                right: 200,
+                bottom: 20,
+                x: 0,
+                y: 0,
+                toJSON: () => ({}),
+            }) as DOMRect;
 
         // 左 2/4 区域 (25%-50%): delta = -(range * SMALL_STEP) = -5
         top.dispatchEvent(new MouseEvent('click', { clientX: 60 }));
@@ -689,7 +709,17 @@ describe('addSliderRow', () => {
 
         const top = container.querySelector('.cs-top')! as HTMLDivElement;
         top.getBoundingClientRect = () =>
-            ({ left: 0, width: 200, top: 0, height: 20, right: 200, bottom: 20, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect;
+            ({
+                left: 0,
+                width: 200,
+                top: 0,
+                height: 20,
+                right: 200,
+                bottom: 20,
+                x: 0,
+                y: 0,
+                toJSON: () => ({}),
+            }) as DOMRect;
 
         // 右 2/4 区域 (50%-75%): delta = range * SMALL_STEP = +5
         top.dispatchEvent(new MouseEvent('click', { clientX: 120 }));
@@ -807,13 +837,9 @@ describe('addColorSliderRow', () => {
 
     it('clamps out-of-range bind values into [0,1] and sanitizes NaN', () => {
         const container = document.createElement('div');
-        addColorSliderRow(
-            container,
-            'Color',
-            [0.2, 0.5, 0.8],
-            vi.fn(),
-            { bind: () => [1.5, -0.2, NaN] }
-        );
+        addColorSliderRow(container, 'Color', [0.2, 0.5, 0.8], vi.fn(), {
+            bind: () => [1.5, -0.2, NaN],
+        });
 
         const vals = container.querySelectorAll('.clr-value');
         const fills = Array.from(container.querySelectorAll('.cs-fill')) as HTMLElement[];
@@ -1012,7 +1038,17 @@ describe('addVector3SliderRow', () => {
     it('shows icon fallback when createIconifyIcon returns null', () => {
         mockIconify.mockReturnValue(null);
         const container = document.createElement('div');
-        addVector3SliderRow(container, 'Pos', [0, 0, 0], -100, 100, 1, vi.fn(), undefined, 'some-icon');
+        addVector3SliderRow(
+            container,
+            'Pos',
+            [0, 0, 0],
+            -100,
+            100,
+            1,
+            vi.fn(),
+            undefined,
+            'some-icon'
+        );
 
         const fallback = container.querySelector('.cs-icon-fallback')!;
         expect(fallback).not.toBeNull();
@@ -1180,7 +1216,17 @@ describe('addModeSlider', () => {
 
     it('applies testId to row wrapper', () => {
         const container = document.createElement('div');
-        addModeSlider(container, 'Mode', opts, 'low', vi.fn(), undefined, undefined, undefined, 'mode-slider-test');
+        addModeSlider(
+            container,
+            'Mode',
+            opts,
+            'low',
+            vi.fn(),
+            undefined,
+            undefined,
+            undefined,
+            'mode-slider-test'
+        );
 
         expect(container.querySelector('[data-testid="mode-slider-test"]')).not.toBeNull();
     });

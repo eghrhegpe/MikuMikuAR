@@ -24,14 +24,22 @@ export function makeModelWithBones(id: string): any {
                 {
                     name: '左腕IK',
                     ikSolver: { solve: () => {} },
-                    getWorldTranslationToRef: (ref: any) => { ref.x = 0; ref.y = 0; ref.z = 0; },
+                    getWorldTranslationToRef: (ref: any) => {
+                        ref.x = 0;
+                        ref.y = 0;
+                        ref.z = 0;
+                    },
                     setWorldTranslation: () => {},
                     linkedBone: { getSkeleton: () => ({ _markAsDirty: () => {} }) },
                 },
                 {
                     name: '右腕IK',
                     ikSolver: { solve: () => {} },
-                    getWorldTranslationToRef: (ref: any) => { ref.x = 0; ref.y = 0; ref.z = 0; },
+                    getWorldTranslationToRef: (ref: any) => {
+                        ref.x = 0;
+                        ref.y = 0;
+                        ref.z = 0;
+                    },
                     setWorldTranslation: () => {},
                     linkedBone: { getSkeleton: () => ({ _markAsDirty: () => {} }) },
                 },
@@ -56,13 +64,21 @@ export function makeModelWithBonesWasm(id: string): any {
                 {
                     name: '左腕IK',
                     ikSolverIndex: 0,
-                    getWorldTranslationToRef: (ref: any) => { ref.x = 0; ref.y = 0; ref.z = 0; },
+                    getWorldTranslationToRef: (ref: any) => {
+                        ref.x = 0;
+                        ref.y = 0;
+                        ref.z = 0;
+                    },
                     setWorldTranslation: () => {},
                 },
                 {
                     name: '右腕IK',
                     ikSolverIndex: 1,
-                    getWorldTranslationToRef: (ref: any) => { ref.x = 0; ref.y = 0; ref.z = 0; },
+                    getWorldTranslationToRef: (ref: any) => {
+                        ref.x = 0;
+                        ref.y = 0;
+                        ref.z = 0;
+                    },
                     setWorldTranslation: () => {},
                 },
                 { name: '左肩' },

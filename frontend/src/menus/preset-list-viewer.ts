@@ -59,12 +59,12 @@ export async function presetListContent<T>(
 ): Promise<void> {
     container.classList.remove('render-card');
 
-    const items: T[] = preloadedItems ?? (await config.loadItems?.().catch(() => [])) ?? [];
+    const items: T[] = preloadedItems ?? (await config.loadItems?.().catch((): T[] => [])) ?? [];
 
     if (items.length === 0) {
         const empty = document.createElement('div');
         empty.style.cssText =
-            'font-size:12px;color:var(--text-dim);text-align:center;padding:24px;';
+            'font-size:var(--font-hint);color:var(--text-dim);text-align:center;padding:24px;';
         empty.textContent = config.emptyText || t('model-preset.noPresets');
         container.appendChild(empty);
         return;
@@ -95,7 +95,8 @@ export async function presetListContent<T>(
             const sub = config.getSublabel?.(item);
             if (sub) {
                 const subSpan = document.createElement('span');
-                subSpan.style.cssText = 'font-size:11px;color:var(--text-dim);margin-right:4px;';
+                subSpan.style.cssText =
+                    'font-size:var(--font-ui-sm);color:var(--text-dim);margin-right:4px;';
                 subSpan.textContent = sub;
                 row.appendChild(subSpan);
             }
@@ -114,7 +115,7 @@ export async function presetListContent<T>(
                 delBtn.setAttribute('aria-label', t('common.delete'));
                 delBtn.title = '删除';
                 delBtn.style.cssText =
-                    'font-size:10px;color:var(--text-dim);cursor:pointer;padding:2px 6px;background:none;border:none;';
+                    'font-size:var(--font-ui-xs);color:var(--text-dim);cursor:pointer;padding:2px 6px;background:none;border:none;';
                 delBtn.addEventListener('click', async (ev) => {
                     ev.stopPropagation();
                     const msg =

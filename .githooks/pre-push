@@ -3,10 +3,19 @@
 # 全部 stdout → stderr，避免 Windows git hook 管道断裂
 # 安装: git config core.hooksPath .githooks
 # 跳过: git push --no-verify（不推荐）
-# 设计原则：
-#   - 可自动生成的（status/funcmap/baseline）→ 自动修复 + warn，不阻断
-#   - 需人工介入的（lint error/测试失败/文档漂移 ERROR）→ 阻断
-#   - 阻断时输出「结论 + 已通过项 + 下一步」块（fail()），AI 不裸奔
+# 设计原则（2026-10-23 起以 CI 为唯一权威）：
+#   留在本地的检查必须满足其一，否则归 CI：
+#     ① 能自动修（gen 生成物、INFO 基线）
+#     ② 秒级且能精确指路（lint/tsc/i18n/layering/circular/doc-drift）
+#     ③ 能省一轮 CI 往返（vitest --changed）
+# 当前 10 项：lint:changed · check:layering · check:circular · check:coupling ·
+#   check:dep-docs · check:babylon-lib · tsc · vitest --changed(+diff-coverage) · check:docs · i18n
+# 本文件不做的事（已移交 CI，别再加回来）：
+#   - 文档生成物 6 项（status/funcmap/docsindex/novelindex/guide-gap/menumap）
+#     → pre-commit 生成 + CI「Generated docs sync check」19 条 --check
+#   - bindings 同步性 → CI「Bindings freshness gate」（wails3 generate bindings -ts -i -d）
+#   - md 断链（check:md-links / link:check）→ CI config-syntax job
+#   - deadcode → CI deadcode-baseline job
 #
 exec 1>&2
 set -e
@@ -56,37 +65,14 @@ collect_fail() {
 }
 # ── 并行执行辅助 ───────────────────────────────────────────────
 # 在 set -e 下安全并发：用 & 启动后台任务，wait || true 收集退出码。
-# 策略：将完全独立的 node/python/npm 命令并行化；shell 逻辑（amend/条件判断）保持串行。
-# 结果传递：并行组通过临时文件写入 note_check/collect_fail/note_fixed 调用，
-#           主进程在 wait 后读取并应用。
-_PAR_DIR=""
-_par_init() {
-  _PAR_DIR="$(mktemp -d 2>/dev/null || echo "/tmp/pre-push-par.$$")"
-  mkdir -p "$_PAR_DIR" 2>/dev/null || true
-  : > "$_PAR_DIR/checks"
-  : > "$_PAR_DIR/fails"
-  : > "$_PAR_DIR/fixed"
-}
-_par_cleanup() {
-  rm -rf "$_PAR_DIR" 2>/dev/null || true
-}
+# 策略：将完全独立的 node 命令并行化；shell 逻辑（条件判断）保持串行。
+# 结果传递：并行组通过临时文件写入 _par_note_check/_par_collect_fail/_par_note_fixed，
+#           主进程在 wait 后由 _par_merge_dir 读回。
 # 并行子进程中使用这些函数记录结果
 _par_note_check() { echo "CHECK|$1" >> "$_PAR_DIR/checks"; }
 _par_collect_fail() { echo "FAIL|${1}${2:+: $2}" >> "$_PAR_DIR/fails"; }
 _par_note_fixed() { echo "FIXED|$1" >> "$_PAR_DIR/fixed"; }
-# 主进程合并并行组结果
-_par_merge() {
-  [ -f "$_PAR_DIR/checks" ] && while IFS='|' read -r _t _v; do
-    [ "$_t" = "CHECK" ] && note_check "$_v"
-  done < "$_PAR_DIR/checks"
-  [ -f "$_PAR_DIR/fails" ] && while IFS='|' read -r _t _v; do
-    [ "$_t" = "FAIL" ] && collect_fail "$_v"
-  done < "$_PAR_DIR/fails"
-  [ -f "$_PAR_DIR/fixed" ] && while IFS='|' read -r _t _v; do
-    [ "$_t" = "FIXED" ] && note_fixed "$_v"
-  done < "$_PAR_DIR/fixed"
-}
-# 合并指定 _par 目录的结果（供 A∥C 双组并行后分别 merge）
+# 合并指定 _par 目录的结果（组 C 并行结束后调用）
 _par_merge_dir() {
   local _d="$1"
   [ -f "$_d/checks" ] && while IFS='|' read -r _t _v; do
@@ -254,42 +240,10 @@ if [ -n "$CHANGED" ]; then
   fi
 fi
 
-# ── 细粒度分流：调用 domain-map.mjs 解析变更文件领域分布 ──
-# 输出格式：{"docs":false,"frontend":true,"go":false,"infra":false,"mixed":false}
-# 若 node 不可用则兜底为空 JSON，所有检查照常运行（fail-safe）
-DOMAINS='{}'
-DOMAINS_NODE_CMD="cd \"\$ROOT\" && node scripts/domain-map.mjs"
-if [ -n "$CHANGED" ] && command -v node >/dev/null 2>&1; then
-  # 将 CHANGED 每行作为独立参数传入（避免 bash 管道性能问题）
-  _dm_args=""
-  while IFS= read -r _f; do
-    [ -n "$_f" ] && _dm_args="$_dm_args \"$_f\""
-  done <<EOF
-$CHANGED
-EOF
-  _dm_out="$($DOMAINS_NODE_CMD $_dm_args 2>/dev/null)" || _dm_out=""
-  # 校验输出是否为合法 JSON（以 { 开头、} 结尾），否则兜底
-  case "$_dm_out" in
-    '{'*) case "$_dm_out" in *'}') DOMAINS="$_dm_out" ;; esac ;;
-  esac
-  unset _dm_args _dm_out
-fi
-# 辅助函数：从 DOMAINS JSON 提取布尔值（jq 不可用时用 grep 兜底）
-_dm_bool() {
-  # 用法: _dm_bool key → 输出 "true" 或 "false"
-  local _k="$1"
-  if command -v jq >/dev/null 2>&1; then
-    echo "$DOMAINS" | jq -r ".${_k}" 2>/dev/null || echo "false"
-  else
-    echo "$DOMAINS" | grep -oE "\"${_k}\":[[:space:]]*(true|false)" | grep -oE '(true|false)' || echo "false"
-  fi
-}
-DOM_DOCS="$(_dm_bool docs)"
-DOM_FRONTEND="$(_dm_bool frontend)"
-DOM_GO="$(_dm_bool go)"
-DOM_INFRA="$(_dm_bool infra)"
-DOM_MIXED="$(_dm_bool mixed)"
-unset _dm_bool
+# ── 细粒度领域分流（已移除） ──
+# [2026-10-23] 这一段（DOMAINS + _dm_bool + DOM_*）只服务于「文档生成物检查」的
+# 分组决策，该组检查已移交 pre-commit（生成）与 CI（--check 兜底），故整段删除。
+# 粗粒度的 GO_CHANGED / TS_CHANGED / DOCS_ONLY 仍在上方，lint / tsc / vitest / check:docs 继续使用。
 
 # ── 纯 infra 变更快速放行（.github/ 或 *.yml） ──
 # [2026-08-12] 改 CI 工作流/*.yml 不碰源码、文档、ADR，全量生成类门禁
@@ -313,184 +267,19 @@ if [ "$INFRA_ONLY" = "true" ]; then
   exit 0
 fi
 
-# ── P6: bindings 同步性（Go 变动时检查；不可自动修复） ──
-# 实跑 generate:bindings 对比工作区：
-#   - 生成结果与当前一致（含"Go 改了但 bindings 内容恰好没变"的合法场景）→ 放行
-#   - 生成结果有 diff（bindings 过期）→ 阻断，提示用户 amend
-if [ "$GO_CHANGED" = "true" ]; then
-  echo "[pre-push] check:bindings（实跑 generate:bindings 验证同步性）"
-  if [ ! -d "$ROOT/frontend/bindings" ] || [ -z "$(ls -A "$ROOT/frontend/bindings" 2>/dev/null)" ]; then
-    echo "❌ frontend/bindings/ 为空。请运行: cd frontend && npm run generate:bindings"
-    collect_fail "frontend/bindings/ 为空: 运行 cd frontend && npm run generate:bindings 生成绑定后重推"
-  fi
-  if ! (cd "$ROOT/frontend" && npm run generate:bindings >/dev/null 2>&1); then
-    echo "❌ generate:bindings 执行失败。请检查 Go 代码是否能编译。"
-    echo "   手动运行: cd frontend && npm run generate:bindings 查看错误"
-    collect_fail "generate:bindings 执行失败: 检查 Go 编译错误 cd frontend && npm run generate:bindings"
-  fi
-  if ! git diff --quiet -- frontend/bindings/ 2>/dev/null; then
-    echo "❌ Go 文件已变更但 frontend/bindings/ 未同步。"
-    echo "   hook 已运行 generate:bindings 生成最新版本，请检查 diff 后 amend："
-    echo "     git add frontend/bindings/ && git commit --amend --no-edit"
-    collect_fail "Go 变更但 frontend/bindings/ 未同步: git add frontend/bindings/ && git commit --amend --no-edit，再重推"
-  fi
-  note_check "✅ check:bindings 同步性"
-fi
+# ── bindings 同步性（已移交 CI） ──
+# [2026-10-23] CI 的「Bindings freshness gate」（ci.yml:271）跑
+#   wails3 generate bindings -ts -i -d frontend/bindings ./... && git diff --exit-code
+# 比这里的 `npm run generate:bindings` 更权威（多 -i/-d 两个参数），
+# 本地再跑一遍只是两套实现漂移的开销；且本地提示语要求 --amend，
+# 与「不恢复 amend」的约定相抵。本地需要时手动: cd frontend && npm run generate:bindings
 
-# ── 文档生成物检查分流决策（细粒度 Phase 2） ──
-# 纯 Go 或纯 frontend 变更时跳过全部文档生成物（status/funcmap/docsindex/novelindex/menumap/guide-gap），
-# 因为这类变更不触碰 docs/ 索引，跑起来是无效算力消耗。
-# DOCS_ONLY 或 mixed（含 docs 领域）场景仍需运行。
-_NEED_DOCS_GEN=true
-if [ "$DOCS_ONLY" = "false" ]; then
-  if [ "$DOM_FRONTEND" = "true" ] && [ "$DOM_DOCS" = "false" ] && [ "$DOM_GO" = "false" ]; then
-    # 纯 frontend → 跳过所有文档生成物
-    _NEED_DOCS_GEN=false
-  elif [ "$DOM_GO" = "true" ] && [ "$DOM_DOCS" = "false" ] && [ "$DOM_FRONTEND" = "false" ]; then
-    # 纯 Go → 跳过所有文档生成物（bindings 在下方单独处理）
-    _NEED_DOCS_GEN=false
-  fi
-fi
-unset DOM_DOCS DOM_FRONTEND DOM_GO DOM_MIXED
-
-# ── check:status（可自动修复，amend 进当前 commit） ──
-# 成功静默（末尾摘要已聚合状态），仅未同步/修复时输出
-_check_status() {
-  if [ "$_NEED_DOCS_GEN" != "true" ]; then
-    echo "[pre-push] check:status（跳过：纯 Go/frontend 变更，无需索引同步）"
-    _par_note_check "⏭️ check:status（文档生成物跳过）"
-    return 0
-  fi
-  echo "[pre-push] check:status"
-  cd "$ROOT" && node scripts/gen-status-index.mjs --reverse --check >/dev/null 2>&1 || {
-    echo "⚠️  status.md 未同步，自动修复中..."
-    cd "$ROOT" && node scripts/gen-status-index.mjs --reverse
-    git add docs/status.md 2>/dev/null || true
-    echo "⚠️  已 stage docs/status.md（请运行 git commit --allow-empty --no-edit 触发 pre-commit 同步后重推）"
-    _par_note_fixed "status.md 已同步"
-  }
-  _par_note_check "✅ check:status 索引同步"
-}
-
-# ── check:funcmap（可自动修复，amend 进当前 commit） ──
-_check_funcmap() {
-  if [ "$_NEED_DOCS_GEN" != "true" ]; then
-    echo "[pre-push] check:funcmap（跳过：纯 Go/frontend 变更，无需索引同步）"
-    _par_note_check "⏭️ check:funcmap（文档生成物跳过）"
-    return 0
-  fi
-  echo "[pre-push] check:funcmap"
-  cd "$ROOT" && node scripts/gen-funcmap.mjs --check >/dev/null 2>&1 || {
-    echo "⚠️  function-map.md 未同步，自动修复中..."
-    cd "$ROOT" && node scripts/gen-funcmap.mjs
-    git add docs/function-map.md 2>/dev/null || true
-    echo "⚠️  已 stage docs/function-map.md（请运行 git commit --allow-empty --no-edit 触发 pre-commit 同步后重推）"
-    _par_note_fixed "function-map.md 已同步"
-  }
-  _par_note_check "✅ check:funcmap 已同步"
-}
-
-# ── check:docsindex（可自动修复，amend 进当前 commit） ──
-_check_docsindex() {
-  if [ "$_NEED_DOCS_GEN" != "true" ]; then
-    echo "[pre-push] check:docsindex（跳过：纯 Go/frontend 变更，无需索引同步）"
-    _par_note_check "⏭️ check:docsindex（文档生成物跳过）"
-    return 0
-  fi
-  echo "[pre-push] check:docsindex"
-  cd "$ROOT" && node scripts/gen-docs-index.mjs --check >/dev/null 2>&1 || {
-    echo "⚠️  分区索引（guide/adr/knowledge/buglog/releases）未同步，自动修复中..."
-    cd "$ROOT" && node scripts/gen-docs-index.mjs
-    git add docs/guide/index.md docs/adr/index.md docs/knowledge/index.md docs/buglog/index.md docs/releases/index.md 2>/dev/null || true
-    echo "⚠️  已 stage 分区索引（请运行 git commit --allow-empty --no-edit 触发 pre-commit 同步后重推）"
-    _par_note_fixed "分区索引已同步"
-  }
-  _par_note_check "✅ check:docsindex 分区索引同步"
-}
-
-# ── check:novelindex（可自动修复，amend 进当前 commit） ──
-_check_novelindex() {
-  if [ "$_NEED_DOCS_GEN" != "true" ]; then
-    echo "[pre-push] check:novelindex（跳过：纯 Go/frontend 变更，无需索引同步）"
-    _par_note_check "⏭️ check:novelindex（文档生成物跳过）"
-    return 0
-  fi
-  echo "[pre-push] check:novelindex"
-  if cd "$ROOT" && node scripts/gen-novel-index.mjs --check >/dev/null 2>&1; then
-    _par_note_check "✅ check:novelindex 小说索引同步"
-  else
-    echo "⚠️  小说章节索引（docs/novel/index.md）未同步，自动修复中..."
-    cd "$ROOT" && node scripts/gen-novel-index.mjs
-    git add docs/novel/index.md 2>/dev/null || true
-    echo "⚠️  已 stage 小说索引（请运行 git commit --allow-empty --no-edit 触发 pre-commit 同步后重推）"
-    _par_note_fixed "小说索引已同步"
-  fi
-}
-
-# ── check:guide-gap（菜单面板 ↔ 指南覆盖缺口；人工补写，不可自动修复） ──
-_check_guide_gap() {
-  if [ "$_NEED_DOCS_GEN" != "true" ]; then
-    echo "[pre-push] check:guide-gap（跳过：纯 Go/frontend 变更，无需索引同步）"
-    _par_note_check "⏭️ check:guide-gap（文档生成物跳过）"
-    return 0
-  fi
-  echo "[pre-push] check:guide-gap（缺口即阻断）"
-  if ! cd "$ROOT" && node scripts/gen-guide-gap.mjs --strict >/dev/null 2>&1; then
-    echo "❌ 菜单面板存在 guide 覆盖缺口，需人工补写指南页。详情："
-    cd "$ROOT" && node scripts/gen-guide-gap.mjs --strict 2>&1 | tail -15
-    _par_collect_fail "菜单面板存在 guide 覆盖缺口" "按上方详情补写对应指南页后重推"
-  fi
-  _par_note_check "✅ check:guide-gap（guide 全覆盖）"
-}
-
-# ── check:menumap（可自动修复，amend 进当前 commit） ──
-_check_menumap() {
-  if [ "$_NEED_DOCS_GEN" != "true" ]; then
-    echo "[pre-push] check:menumap（跳过：纯 Go/frontend 变更，无需索引同步）"
-    _par_note_check "⏭️ check:menumap（文档生成物跳过）"
-    return 0
-  fi
-  echo "[pre-push] check:menumap"
-  cd "$ROOT" && node scripts/gen-menu-map.mjs --check >/dev/null 2>&1 || {
-    echo "⚠️  menu-map.md 未同步，自动修复中..."
-    cd "$ROOT" && node scripts/gen-menu-map.mjs
-    git add docs/knowledge/menu-map.md 2>/dev/null || true
-    echo "⚠️  已 stage menu-map.md（请运行 git commit --allow-empty --no-edit 触发 pre-commit 同步后重推）"
-    _par_note_fixed "menu-map.md 已同步"
-  }
-  _par_note_check "✅ check:menumap 同步"
-}
-
-# ── 组 A：文档生成物检查（并行执行） ──
-# status/funcmap/docsindex/novelindex/menumap 互相独立，guide-gap 依赖 menu-map 但
-# 实际运行时 gen-guide-gap 读取的是磁盘上的 menu-map.md（已被 menumap 生成），
-# 因此严格来说 guide-gap 应放在 menumap 之后。但考虑到：
-#   1. guide-gap 仅做只读检查（--strict），不修改文件
-#   2. 当前 commit 的 menu-map.md 已是最新版本（amend 操作在后续组中串行处理）
-# 为最大化并行度，将 guide-gap 也放入并行组；若出现竞争条件，
-# 最坏情况是 guide-gap 使用了旧版 menu-map.md 产生误报，用户重推即可。
-# 初始化 A/C 两组临时目录，供 A∥C 并行使用
-_PAR_DIR_A="$(mktemp -d 2>/dev/null || echo "/tmp/pre-push-par-a.$$")"
-mkdir -p "$_PAR_DIR_A" 2>/dev/null || true
-: > "$_PAR_DIR_A/checks" && : > "$_PAR_DIR_A/fails" && : > "$_PAR_DIR_A/fixed"
-_PAR_DIR_C="$(mktemp -d 2>/dev/null || echo "/tmp/pre-push-par-c.$$")"
-mkdir -p "$_PAR_DIR_C" 2>/dev/null || true
-: > "$_PAR_DIR_C/checks" && : > "$_PAR_DIR_C/fails" && : > "$_PAR_DIR_C/fixed"
-
-ALL_PIDS=""
-if [ -n "$_NEED_DOCS_GEN" ]; then
-  _PAR_DIR="$_PAR_DIR_A"
-  _check_status & ALL_PIDS="$ALL_PIDS $!"
-  _check_funcmap & ALL_PIDS="$ALL_PIDS $!"
-  _check_docsindex & ALL_PIDS="$ALL_PIDS $!"
-  _check_novelindex & ALL_PIDS="$ALL_PIDS $!"
-  _check_guide_gap & ALL_PIDS="$ALL_PIDS $!"
-  _check_menumap & ALL_PIDS="$ALL_PIDS $!"
-else
-  echo "[pre-push] 文档生成物检查（跳过：纯 Go/frontend 变更）"
-  note_check "⏭️ 文档生成物（全部跳过）"
-fi
-unset _NEED_DOCS_GEN
+# ── 文档生成物检查（已移交 pre-commit + CI） ──
+# [2026-10-23] status/funcmap/docsindex/novelindex/guide-gap/menumap 这六项留在
+# pre-push 是第三重保险：pre-commit 已经跑同一批 gen 脚本生成并 stage，
+# CI 的「Generated docs sync check」再跑 19 条 --check 兜底。这里再查一遍只增加
+# 维护面（六个函数各带一套 --check + 自动修复 + git add 分支），不增加保障。
+# 本地需要时手动: npm run check:docs
 
 # ── lint（仅 TS/JS 变更时；增量扫描加速 + 缓存） ──
 # 纯 Go / 纯文档变更不触发前端 lint（Go 有 go vet，文档无 lint 必要）
@@ -498,8 +287,11 @@ unset _NEED_DOCS_GEN
 # 增量扫描：只查变更文件（~2-3s vs 全量 ~16s）
 # 缓存：同文件组合命中则跳过（24h TTL）
 if [ "$TS_CHANGED" = "true" ] && [ "$NPM_AVAILABLE" = "true" ]; then
-  # 取变更的 TS/JS 文件列表
-  CHANGED_TS_FILES="$(git diff --name-only $CHANGED_BASE HEAD -- '*.ts' '*.tsx' '*.js' '*.jsx' 2>/dev/null || git diff --name-only origin/main HEAD -- '*.ts' '*.tsx' '*.js' '*.jsx' 2>/dev/null || true)"
+  # 取变更的 TS/JS 文件列表。
+  # [2026-10-23 fix] 旧实现用 $CHANGED_BASE，而 CHANGED_BASE 在本行之后（vitest 段）
+  # 才定义 → 此处恒为空，断言退化成「工作区 vs HEAD」，已提交的变更永远不触发 lint，
+  # 是个静默假门禁。改用上方已算好的 CHANGED 并集（覆盖所有待推提交）。
+  CHANGED_TS_FILES="$(printf '%s\n' "$CHANGED" | grep -E '\.(ts|tsx|js|jsx)$' || true)"
   if [ -n "$CHANGED_TS_FILES" ]; then
     # 检查缓存
     _CACHE_STATUS="$(cache_lookup "lint" $CHANGED_TS_FILES 2>/dev/null)" || _CACHE_STATUS="miss"
@@ -509,11 +301,29 @@ if [ "$TS_CHANGED" = "true" ] && [ "$NPM_AVAILABLE" = "true" ]; then
       note_check "⏭️ lint:changed（缓存命中）"
     else
       echo "[pre-push] lint:changed（增量扫描，只查变更文件）"
-      LINT_OUT="$(cd "$ROOT/frontend" && echo "$CHANGED_TS_FILES" | xargs npx eslint --ext .ts,.tsx,.js,.jsx 2>&1)" || {
+      # [2026-10-23 fix] 这两处不修，这段就从来跑不出真结果：
+      #  1. git diff 给的是仓库根相对路径（frontend/src/…），而这里已 cd 进 frontend/，
+      #     直接传给 eslint 会解析成 frontend/frontend/src/… → 全部 "No files matching"。
+      #     先剥掉 frontend/ 前缀。
+      #  2. Windows 的 npx shim 走 cmd.exe，单条命令行上限约 8K 字符（不是 32K），
+      #     200+ 文件一次传入会 "The command line is too long."。按 120 个一批分批跑：
+      #     实测 212 个 src 文件 -n 25 → 78s / -n 60 → 39s / -n 120 → 24s
+      #     （瓶颈是 npx 每次启动 ~8s，不是 eslint 本身）。
+      # [2026-10-23 fix] 只保留 src/ 下的文件，与 CI 的 `npm run lint`（eslint src）同口径。
+      # 否则 vite.config.ts 这类仓库根配置也会被传进来，而 eslint 的 TS parser 只对
+      # src/** 生效 → 误报 "Parsing error: Unexpected token )"。
+      _lint_files="$(printf '%s\n' "$CHANGED_TS_FILES" | sed 's|^frontend/||' | grep -E '^src/' || true)"
+      if [ -z "$_lint_files" ]; then
+        note_check "⏭️ lint:changed（变更不含 src/ 下文件）"
+      fi
+      _lint_rc=0
+      # -r：空输入不执行命令（无 src/ 变更时不会跑一次裸 eslint）
+      LINT_OUT="$(cd "$ROOT/frontend" && printf '%s\n' "$_lint_files" | tr '\n' '\0' | xargs -0 -r -n 120 npx eslint --ext .ts,.tsx,.js,.jsx 2>&1)" || _lint_rc=$?
+      if [ "$_lint_rc" -ne 0 ]; then
         printf '%s\n' "$LINT_OUT" | tail -30
         collect_fail "ESLint 检出 error: cd frontend && npx eslint <文件> 修复后重推"
-      }
-      WARN_COUNT="$(printf '%s\n' "$LINT_OUT" | grep -oE '[0-9]+ warnings?' | tail -1 | grep -oE '[0-9]+')"
+      fi
+      WARN_COUNT="$(printf '%s\n' "$LINT_OUT" | grep -oE '[0-9]+ warnings?' | tail -1 | grep -oE '[0-9]+' || true)"
       [ -z "$WARN_COUNT" ] && WARN_COUNT=0
       if [ "$WARN_COUNT" -gt 0 ] 2>/dev/null; then
         echo "⚠️  lint 通过（${WARN_COUNT} 个结构性 warnings，不阻断）"
@@ -532,6 +342,103 @@ else
     note_check "⏭️ lint:changed（未涉及 TS 或 npm 不可用）"
   fi
 fi
+
+# ── check:layering（ADR-242 分层方向；前端源码变更时跑，~0.3s） ──
+# 旧实现的跨行正则在 frontend/src/shared/dev-hooks.ts 上灾难性回溯（单线程 >300s），
+# 因此分层门禁长期未接入任何检查。改用 scripts/_lib/import-scan.mjs 线性扫描后成本可忽略。
+# R1（算法层 → menus）零容忍；R2/R3 超基线即阻断（基线只允许收紧）。
+if [ "$TS_CHANGED" = "true" ]; then
+  echo "[pre-push] check:layering（ADR-242）"
+  if ! (cd "$ROOT" && node scripts/check-layering.mjs >/dev/null 2>&1); then
+    echo "❌ 分层反向边超出基线，详情："
+    cd "$ROOT" && node scripts/check-layering.mjs 2>&1 | tail -20
+    collect_fail "分层检查未通过（ADR-242）: 重构 import 方向，或经评审后 node scripts/check-layering.mjs --update 收紧基线"
+  fi
+  note_check "✅ check:layering（ADR-242）"
+else
+  note_check "⏭️ check:layering（无前端源码变更）"
+fi
+
+# ── check:circular（ADR-268 环门禁；前端源码变更时跑，~0.35s） ──
+# 体检现场：本检查从 ADR-238 起就被文档记作「已挂入 check:docs / pre-push」，实际只挂在
+# scripts/diagnose.mjs 的手动诊断任务里。于是 source-graph 的解析缺陷修好后，同一份源码
+# 冒出 265 个白名单外环，闸门红着，推送链路却全绿——仪表盘在报数，闸门没关。
+# 口径 = 模块加载期依赖（动态 import() 不计入），与 dep:metrics / dep:graph 同一把尺子。
+# 白名单判定走节点集合 key（cycleSetKey），最短路径改道不再制造假新增。
+if [ "$TS_CHANGED" = "true" ]; then
+  echo "[pre-push] check:circular（ADR-268）"
+  if ! (cd "$ROOT" && node scripts/check-circular.mjs --strict >/dev/null 2>&1); then
+    echo "❌ 循环依赖门禁未通过，详情："
+    cd "$ROOT" && node scripts/check-circular.mjs --strict 2>&1 | tail -20
+    collect_fail "循环依赖检查未通过（ADR-268）: 修复环或移除依赖方向；确认为已知环请人工编辑 scripts/circular-allowlist.json（只减不增）"
+  fi
+  note_check "✅ check:circular（ADR-268）"
+else
+  note_check "⏭️ check:circular（无前端源码变更）"
+fi
+
+# ── check:coupling（ADR-270 结构耦合门禁；前端源码变更时跑，~0.4s） ──
+# 为什么环门禁不够：模块图已是 DAG（ADR-269 实测真实跨模块 SCC = 0），check:circular
+# 只能拦住「反向新增依赖」，**正向新增跨模块依赖会静默通过**——那才是耦合恶化的形态。
+# 本检查盯两件事：首次出现的有向模块对（新耦合通道）、文件级 SCC 的覆盖面与最大块。
+if [ "$TS_CHANGED" = "true" ]; then
+  echo "[pre-push] check:coupling（ADR-270）"
+  if ! (cd "$ROOT" && node scripts/check-coupling.mjs >/dev/null 2>&1); then
+    echo "❌ 结构耦合门禁未通过，详情："
+    cd "$ROOT" && node scripts/check-coupling.mjs 2>&1 | tail -20
+    collect_fail "结构耦合恶化（ADR-270）: 消除新增的跨模块通道或子系统内部互指；确属有意请人工编辑 docs/.coupling-baseline.json 并写明理由"
+  fi
+  note_check "✅ check:coupling（ADR-270）"
+else
+  note_check "⏭️ check:coupling（无前端源码变更）"
+fi
+
+# ── check:dep-docs（耦合台账 / 依赖图同步；前端源码变更时跑，~0.7s） ──
+# 体检现场：docs/dep-metrics.md 与 docs/dep-graph.md 只在 pre-commit 里被静默重写，CI 与
+# pre-push 都没有比对——而 pre-push 的文档生成物组对「纯 frontend 变更」是整体跳过的，
+# 于是**恰好在前端代码变化时**，那份记录前端耦合的台账没人验。锐评现场：18:05 的台账
+# 到 18:47 仍写着 2003 边 / 696 环，全链路绿灯。
+# 注意：本检查按 TS_CHANGED 触发，与上面「文档生成物跳过」相反——它跟踪的正是前端源码。
+if [ "$TS_CHANGED" = "true" ]; then
+  echo "[pre-push] check:dep-docs（ADR-268）"
+  _depdocs_fail=""
+  if ! (cd "$ROOT" && node scripts/dep-metrics.mjs --file docs/dep-metrics.md --check >/dev/null 2>&1); then
+    echo "⚠️  docs/dep-metrics.md 未同步，自动修复中..."
+    if (cd "$ROOT" && node scripts/dep-metrics.mjs --file docs/dep-metrics.md >/dev/null 2>&1); then
+      git add docs/dep-metrics.md 2>/dev/null || true
+      note_fixed "dep-metrics 台账已同步"
+    else
+      _depdocs_fail="dep-metrics 台账重算失败"
+    fi
+  fi
+  if ! (cd "$ROOT" && node scripts/gen-dep-graph.mjs --file docs/dep-graph.md --check >/dev/null 2>&1); then
+    echo "⚠️  docs/dep-graph.md 未同步，自动修复中..."
+    if (cd "$ROOT" && node scripts/gen-dep-graph.mjs --file docs/dep-graph.md >/dev/null 2>&1); then
+      git add docs/dep-graph.md 2>/dev/null || true
+      note_fixed "dep-graph 依赖图已同步"
+    else
+      _depdocs_fail="dep-graph 依赖图重算失败"
+    fi
+  fi
+  if [ -n "$_depdocs_fail" ]; then
+    collect_fail "耦合文档同步失败（$_depdocs_fail）: 本地跑 npm run gen:dep-metrics / npm run dep:graph 排查"
+  fi
+  note_check "✅ check:dep-docs（ADR-268）"
+else
+  note_check "⏭️ check:dep-docs（无前端源码变更）"
+fi
+
+# ── check:babylon-lib（ADR-266 vendored UMD 供应源；任意推送都跑，毫秒级） ──
+# 生产走 public/lib 的 vendored UMD，开发/测试走 node_modules 的 ESM。
+# 体检现场：UMD 停在 9.14.0 而依赖已 9.19.0，且无任何门禁——测试全绿、生产黑屏的温床。
+# 校验 UMD 与 devDependency 供应源字节相等 + 无悬挂 sourceMappingURL + 三处版本号一致。
+echo "[pre-push] check:babylon-lib（ADR-266）"
+if ! (cd "$ROOT" && node scripts/sync-babylon-lib.mjs >/dev/null 2>&1); then
+  echo "❌ vendored Babylon UMD 与依赖不一致，详情："
+  (cd "$ROOT" && node scripts/sync-babylon-lib.mjs 2>&1 | tail -10)
+  collect_fail "vendored Babylon UMD 与依赖漂移（ADR-266）: cd frontend && npm run sync:babylon-lib 后提交"
+fi
+note_check "✅ check:babylon-lib（ADR-266）"
 
 # ── tsc 类型检查（TS 变更时触发 + 缓存） ──
 # [ADR-258] 类型安全是项目底线，3s 成本 vs 20 倍修复成本差
@@ -655,8 +562,11 @@ if [ "$TS_CHANGED" = "true" ] && [ "$NPM_AVAILABLE" = "true" ]; then
         # [fix:win] 临时日志清理容错：部分 Windows 环境（WorkBuddy safe-delete 层 /
         # genie-trash）包装 rm 后对 /tmp 相对路径处理失败返回非零，set -e 下会中断
         # hook（2026-08-05 v1.9.1 发版实证）。清理失败仅遗留垃圾文件，不影响正确性。
+        # [2026-10-23 fix] 先取摘要再删日志：原顺序是先 rm 再 grep 同一文件，
+        # 导致摘要恒为空，还会打出 "grep: /tmp/pre-push-cov.xxx: No such file or directory"。
+        _VITEST_LINE="$(grep -oE '[0-9]+ tests' "$COV_LOG" | head -1 || true)"
         rm -f "$COV_LOG" 2>/dev/null || true
-        note_check "✅ vitest --changed（$(grep -oE '[0-9]+ tests' "$COV_LOG" | head -1 || echo '有命中')）"
+        note_check "✅ vitest --changed（${_VITEST_LINE:-有命中}）"
         echo "[pre-push] diff-coverage（新代码保护: 变更行 ≥60%，仅建议不阻断）"
         if npm run test:diff-coverage >"$COV_LOG" 2>&1; then
           # [fix:win] 临时日志清理容错：部分 Windows 环境（WorkBuddy safe-delete 层 /
@@ -767,56 +677,29 @@ _check_i18n() {
   _par_note_check "✅ i18n"
 }
 
-# ── check:md-links（Python 契约测试；不可自动修复） ──
-_check_md_links() {
-  local _py_avail=true
-  command -v python >/dev/null 2>&1 || {
-    echo "⚠️  hook 环境中 python 不可用，check:md-links 跳过。"
-    _py_avail=false
-  }
-  if [ "$_py_avail" = "false" ]; then
-    echo "[pre-push] check:md-links（跳过：python 不可用）"
-    _par_note_check "⏭️ check:md-links（python 不可用）"
-    return 0
-  fi
-  echo "[pre-push] check:md-links"
-  cd "$ROOT" && python tests/test_markdown_links.py >/dev/null 2>&1 || {
-    echo "❌ Markdown 链接契约测试执行失败（脚本崩溃）。"
-    _par_collect_fail "check:md-links 脚本崩溃" "运行 python tests/test_markdown_links.py 查看崩溃详情后重推"
-  }
-  _par_note_check "✅ check:md-links"
-}
-
-# ── link:check（JS 严格门禁；依赖 npm，须 NPM_AVAILABLE 守卫） ──
-_check_link() {
-  if [ "$NPM_AVAILABLE" != "true" ]; then
-    echo "[pre-push] link:check（跳过：$NPM_SKIP_REASON）"
-    _par_note_check "⏭️ link:check（npm 不可用 → $NPM_SKIP_REASON）"
-    return 0
-  fi
-  echo "[pre-push] link:check（JS strict 门禁）"
-  cd "$ROOT" && npm run link:check >/dev/null 2>&1 || {
-    echo "❌ Markdown 断链（link:check --strict）："
-    cd "$ROOT" && npm run link:check 2>&1 | grep -E "broken|❌|✗" | head -15
-    _par_collect_fail "Markdown 断链" "修复 docs/ 下的断链（相对链接目标不存在），重跑 npm run link:check 验证后重推"
-  }
-  _par_note_check "✅ link:check（JS strict 门禁）"
-}
+# ── check:md-links / link:check（已移交 CI） ──
+# [2026-10-23] 二者都是「Markdown 断链」检查，功能重叠：
+#   - check:md-links 走 python，python 不可用时直接跳过 → 假门禁
+#   - link:check 走 npm，1131 篇 md 全量扫描，属于 CI 的 config-syntax job 职责
+# 本地留一份只会与 CI 漂移，故整体移交。本地需要时手动: npm run link:check
 
 # ── 组 C：独立检查（并行执行） ──
-# check:docs / i18n / check:md-links / link:check 完全独立，无状态共享
-# 与组 A 同时启动（A∥C），通过独立的 _PAR_DIR_A / _PAR_DIR_C 避免文件冲突
-_PAR_DIR="$_PAR_DIR_C"
+# [2026-10-23] 只留两项，判据是「秒级且能精确指路」：
+#   - check:docs：秒级，INFO 基线可自动修（判据①+②）
+#   - i18n：秒级，直接指到缺失的 key（判据②）
+# 移交给 CI 的两项：
+#   - check:md-links：依赖 python，缺失即「跳过 = 通过」，是假门禁
+#   - link:check：1131 篇 md 全量断链，CI 的 config-syntax job 已经跑
+_PAR_DIR="$(mktemp -d 2>/dev/null || echo "/tmp/pre-push-par.$$")"
+mkdir -p "$_PAR_DIR" 2>/dev/null || true
+: > "$_PAR_DIR/checks" && : > "$_PAR_DIR/fails" && : > "$_PAR_DIR/fixed"
+ALL_PIDS=""
 _check_docs & ALL_PIDS="$ALL_PIDS $!"
 _check_i18n & ALL_PIDS="$ALL_PIDS $!"
-_check_md_links & ALL_PIDS="$ALL_PIDS $!"
-_check_link & ALL_PIDS="$ALL_PIDS $!"
 
-# 等待 A∥C 全部完成后再 merge
 _parallel_wait $ALL_PIDS || true
-_par_merge_dir "$_PAR_DIR_A"
-_par_merge_dir "$_PAR_DIR_C"
-rm -rf "$_PAR_DIR_A" "$_PAR_DIR_C" 2>/dev/null || true
+_par_merge_dir "$_PAR_DIR"
+rm -rf "$_PAR_DIR" 2>/dev/null || true
 
 # ── 最终结论（所有检查跑完后统一报告，避免 AI 只看到第一个错误） ──
 finalize_results

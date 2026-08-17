@@ -408,3 +408,134 @@ func TestMergeUIStatePresenceMaskNullIsAbsent(t *testing.T) {
 		t.Error("Animations must survive null payload")
 	}
 }
+
+// —— mergeEnvState presence mask（ADR-253 partial 更新语义）——
+
+// TestMergeEnvStatePresenceMaskPartialNoWipe verifies a partial env payload does
+// NOT clobber fields that were not provided. Before ADR-253 the merge was a full
+// replace: every non-omitempty field of src (including zero values) overwrote
+// dst, so a {skyMode} update silently reset water/ground/fog to defaults.
+func TestMergeEnvStatePresenceMaskPartialNoWipe(t *testing.T) {
+	var src EnvState
+	if err := json.Unmarshal([]byte(`{"skyMode":"sunset"}`), &src); err != nil {
+		t.Fatalf("Unmarshal: %v", err)
+	}
+	dst := &EnvState{
+		SkyMode:             "day",
+		WaterEnabled:        true,
+		GroundVisibleEnabled: true,
+		WaterAnimSpeed:      2.5,
+		FogEnabled:          true,
+	}
+	mergeEnvState(&dst, src)
+
+	if dst.SkyMode != "sunset" {
+		t.Errorf("SkyMode = %q, want sunset", dst.SkyMode)
+	}
+	if !dst.WaterEnabled {
+		t.Error("WaterEnabled must survive a partial {skyMode} update")
+	}
+	if !dst.GroundVisibleEnabled {
+		t.Error("GroundVisibleEnabled must survive a partial {skyMode} update")
+	}
+	if dst.WaterAnimSpeed != 2.5 {
+		t.Errorf("WaterAnimSpeed = %v, want 2.5 (must survive a partial update)", dst.WaterAnimSpeed)
+	}
+	if !dst.FogEnabled {
+		t.Error("FogEnabled must survive a partial {skyMode} update")
+	}
+}
+
+// TestMergeEnvStatePresenceMaskZeroValues verifies legal zero values are
+// persisted when the field is explicitly present in the payload.
+func TestMergeEnvStatePresenceMaskZeroValues(t *testing.T) {
+	var src EnvState
+	if err := json.Unmarshal([]byte(`{"waterAnimSpeed":0,"groundLevel":0,"waterEnabled":false}`), &src); err != nil {
+		t.Fatalf("Unmarshal: %v", err)
+	}
+	dst := &EnvState{WaterAnimSpeed: 3, GroundLevel: 1.5, WaterEnabled: true}
+	mergeEnvState(&dst, src)
+
+	if dst.WaterAnimSpeed != 0 {
+		t.Errorf("WaterAnimSpeed = %v, want 0 (explicit zero must persist)", dst.WaterAnimSpeed)
+	}
+	if dst.GroundLevel != 0 {
+		t.Errorf("GroundLevel = %v, want 0 (explicit zero must persist)", dst.GroundLevel)
+	}
+	if dst.WaterEnabled {
+		t.Error("WaterEnabled must be false after an explicit false update")
+	}
+}
+
+// TestMergeEnvStatePresenceMaskFullPayload verifies a full payload updates every
+// provided field (the frontend sends the complete envState on the debounced path).
+func TestMergeEnvStatePresenceMaskFullPayload(t *testing.T) {
+	var src EnvState
+	raw := `{"skyMode":"night","waterEnabled":false,"waterAnimSpeed":0,"sunAngle":120,"fogEnabled":true}`
+	if err := json.Unmarshal([]byte(raw), &src); err != nil {
+		t.Fatalf("Unmarshal: %v", err)
+	}
+	dst := &EnvState{SkyMode: "day", WaterEnabled: true, WaterAnimSpeed: 2, SunAngle: 30, FogEnabled: false}
+	mergeEnvState(&dst, src)
+
+	if dst.SkyMode != "night" || dst.WaterEnabled || dst.WaterAnimSpeed != 0 || dst.SunAngle != 120 || !dst.FogEnabled {
+		t.Errorf("full payload merge mismatch: %+v", dst)
+	}
+}
+
+// TestMergeEnvStatePresenceMaskNullIsAbsent verifies a JSON null value is NOT
+// treated as an explicitly-present field: null means "absent/clear", so dst
+// keeps its old value instead of being overwritten with the Go zero value.
+func TestMergeEnvStatePresenceMaskNullIsAbsent(t *testing.T) {
+	var src EnvState
+	if err := json.Unmarshal([]byte(`{"skyMode":null,"waterEnabled":null}`), &src); err != nil {
+		t.Fatalf("Unmarshal: %v", err)
+	}
+	dst := &EnvState{SkyMode: "day", WaterEnabled: true}
+	mergeEnvState(&dst, src)
+
+	if dst.SkyMode != "day" {
+		t.Errorf("SkyMode = %q, want day (null must NOT overwrite)", dst.SkyMode)
+	}
+	if !dst.WaterEnabled {
+		t.Error("WaterEnabled must survive a null payload")
+	}
+}
+
+// TestMergeEnvStatePresenceMaskLegacyAlias verifies a legacy key (ADR-210/212)
+// still reaches dst: the alias fallback marks the new field as explicitly
+// provided, so the merge does not skip it.
+func TestMergeEnvStatePresenceMaskLegacyAlias(t *testing.T) {
+	var src EnvState
+	if err := json.Unmarshal([]byte(`{"envIntensity":0.8,"groundVisible":true}`), &src); err != nil {
+		t.Fatalf("Unmarshal: %v", err)
+	}
+	dst := &EnvState{IblIntensity: 0.1, GroundVisibleEnabled: false}
+	mergeEnvState(&dst, src)
+
+	if dst.IblIntensity != 0.8 {
+		t.Errorf("IblIntensity = %v, want 0.8 (legacy envIntensity must be merged)", dst.IblIntensity)
+	}
+	if !dst.GroundVisibleEnabled {
+		t.Error("GroundVisibleEnabled must be true after legacy groundVisible payload")
+	}
+}
+
+// TestMergeEnvStateNoPresentLegacy verifies that when EnvState is constructed
+// directly in Go (present == nil, no JSON round-trip) the legacy semantics are
+// preserved: every field of src is treated as present, exactly like the
+// pre-ADR-253 full-replace behaviour.
+func TestMergeEnvStateNoPresentLegacy(t *testing.T) {
+	dst := &EnvState{SkyMode: "day", WaterEnabled: true, WaterAnimSpeed: 2}
+	mergeEnvState(&dst, EnvState{SkyMode: "night"})
+
+	if dst.SkyMode != "night" {
+		t.Errorf("SkyMode = %q, want night", dst.SkyMode)
+	}
+	if dst.WaterEnabled {
+		t.Error("WaterEnabled must be overwritten by the legacy unconditional copy")
+	}
+	if dst.WaterAnimSpeed != 0 {
+		t.Errorf("WaterAnimSpeed = %v, want 0 (legacy full-replace semantics)", dst.WaterAnimSpeed)
+	}
+}

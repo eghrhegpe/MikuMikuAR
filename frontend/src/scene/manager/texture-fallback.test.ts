@@ -11,7 +11,9 @@ import {
 
 describe('textureFallbackCandidates', () => {
     it('深子目录文件：生成 首段+裸名 / 去首段 / 裸名 三类候选', () => {
-        const cands = textureFallbackCandidates('textures/Normalmap/T_player_019_mint_nighty_02_d.png');
+        const cands = textureFallbackCandidates(
+            'textures/Normalmap/T_player_019_mint_nighty_02_d.png'
+        );
         expect(cands).toEqual([
             'T_player_019_mint_nighty_02_d.png', // 裸名
             'textures/T_player_019_mint_nighty_02_d.png', // 首段+裸名（命中声明 textures\xxx.png）
@@ -92,7 +94,12 @@ describe('expandFallbackCandidates（批量候选展开 + 候选 vs 真实路径
         const src = mk('textures/Normalmap/face.png', 4);
         const out = expandFallbackCandidates([src]);
         const paths = out.map((f) => f.relativePath);
-        expect(paths).toEqual(['textures/Normalmap/face.png', 'face.png', 'textures/face.png', 'Normalmap/face.png']);
+        expect(paths).toEqual([
+            'textures/Normalmap/face.png',
+            'face.png',
+            'textures/face.png',
+            'Normalmap/face.png',
+        ]);
         for (const f of out) {
             expect(f.data).toBe(src.data); // 全部共享引用，无复制
         }

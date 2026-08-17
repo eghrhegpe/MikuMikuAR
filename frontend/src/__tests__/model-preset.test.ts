@@ -63,7 +63,12 @@ import { applyModelPreset, serializeModelPreset, ModelPresetFile } from '../menu
 import * as sceneModule from '../scene/scene';
 import { getMatState, applyMatState, stopVMD } from '../scene/scene';
 import { modelRegistry, setMmdRuntime, setIsPlaying } from '../core/config';
-import { modelPresetBeforeEach, setupDomRefs, createModel, fakePbrMeshes } from './model-preset-helpers';
+import {
+    modelPresetBeforeEach,
+    setupDomRefs,
+    createModel,
+    fakePbrMeshes,
+} from './model-preset-helpers';
 
 vi.hoisted(() => {
     const ids = [
@@ -413,13 +418,41 @@ describe('PBRMaterial getMatState / applyMatState', () => {
 
         // shininess=0 → roughness=1 (极粗糙)
         applyMatState('pbr6', {
-            categories: { 皮肤: { diffuseMul: 1, specularMul: 1, shininess: 0, ambientMul: 1, emissiveMul: 1, diffuseTexLevel: 1, bumpTexLevel: 1, toonTexLevel: 1, sphereTexLevel: 1, emissiveTexLevel: 1, alphaMul: 1 } },
+            categories: {
+                皮肤: {
+                    diffuseMul: 1,
+                    specularMul: 1,
+                    shininess: 0,
+                    ambientMul: 1,
+                    emissiveMul: 1,
+                    diffuseTexLevel: 1,
+                    bumpTexLevel: 1,
+                    toonTexLevel: 1,
+                    sphereTexLevel: 1,
+                    emissiveTexLevel: 1,
+                    alphaMul: 1,
+                },
+            },
         });
         expect(mat.roughness).toBe(1);
 
         // shininess=200 → roughness=0 (极光滑)
         applyMatState('pbr6', {
-            categories: { 皮肤: { diffuseMul: 1, specularMul: 1, shininess: 200, ambientMul: 1, emissiveMul: 1, diffuseTexLevel: 1, bumpTexLevel: 1, toonTexLevel: 1, sphereTexLevel: 1, emissiveTexLevel: 1, alphaMul: 1 } },
+            categories: {
+                皮肤: {
+                    diffuseMul: 1,
+                    specularMul: 1,
+                    shininess: 200,
+                    ambientMul: 1,
+                    emissiveMul: 1,
+                    diffuseTexLevel: 1,
+                    bumpTexLevel: 1,
+                    toonTexLevel: 1,
+                    sphereTexLevel: 1,
+                    emissiveTexLevel: 1,
+                    alphaMul: 1,
+                },
+            },
         });
         expect(mat.roughness).toBe(0);
     });

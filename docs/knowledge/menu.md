@@ -14,7 +14,7 @@ tests:
   - frontend/src/__tests__/menu-schema.conflict.test.ts
   - frontend/src/__tests__/menu-schema.integrity.test.ts
   - frontend/src/__tests__/menu-schema.test.ts
-  symbols:
+symbols:
   - SlideMenu
   - getCurrentRenderingMenu
   - getOpenMenus
@@ -40,7 +40,7 @@ use_when:
 - 渲染上下文栈 `_renderingStack` + `getCurrentRenderingMenu()` — 供 ui-helpers 控件函数自动注册到当前菜单
 - 资源清理：`_pendingTimeouts`（cancelAnims 清除）、`_keydownHandler`、`_swipe*Touch*Handler` 在 dispose 释放，避免监听器泄漏
 - RAF 去抖 `_reRenderPending`；头部额外按钮缓存 `_cachedExtraBtns` 避免每次重建；`.slide-list` 引用缓存 `_slideListRef`（避免每帧 querySelector，buildPanel 重写 innerHTML 后重置，失效回退 querySelector 并回填）
-- 过渡时长常量（与 app.css `--menu-transition-duration` 同步）：0.15s / 0.12s
+- 过渡时长由 `resolveTransitionDuration(fast?)` 解析：读 app.css 的 `--menu-transition-duration` / `--menu-transition-duration-fast`（缺省兜底 0.15s / 0.12s），并受 `--ui-animations` 门控——关闭动效时返回 `0.01ms`（0s 不触发 transitionend，会让 `transitioning` 锁退化到兜底定时器）
 
 ## 对外 API（节选）
 - `class SlideMenu` — `push(level)` / `pop()` / `updateControls()` / `dispose()`

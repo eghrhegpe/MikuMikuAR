@@ -7,12 +7,16 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const onSpy = vi.fn((_name: string, _cb: unknown) => () => undefined);
+const onSpy = vi.fn(
+    (_name: string, _cb: unknown): (() => void) =>
+        () =>
+            undefined
+);
 
 vi.mock('@wailsio/runtime', () => ({
     Events: {
         On: onSpy,
-        Once: vi.fn(() => () => undefined),
+        Once: vi.fn((): (() => void) => () => undefined),
         Off: vi.fn(),
         OffAll: vi.fn(),
         Emit: vi.fn(() => Promise.resolve(true)),

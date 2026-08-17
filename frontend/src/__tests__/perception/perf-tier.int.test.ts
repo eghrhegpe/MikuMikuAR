@@ -1,5 +1,7 @@
 // perception/perf-tier.int.test.ts — ADR-164 全员感知 + PerceptionPerfMonitor 性能档位（ADR-204 P3，拆自旧 perception.test.ts）
 import { describe, it, expect, vi, beforeEach, beforeAll, afterEach } from 'vitest';
+import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
+import type { Camera } from '@babylonjs/core/Cameras/camera';
 const mockState = vi.hoisted(() => ({
     focusedModelId: null as string | null,
     triggerAutoSave: vi.fn(),
@@ -12,7 +14,7 @@ const mockState = vi.hoisted(() => ({
             add: vi.fn(() => ({})),
             remove: vi.fn(),
         },
-        activeCamera: null,
+        activeCamera: null as Camera | null,
         isDisposed: false,
     },
     isAudioPlaying: vi.fn(() => false),
@@ -29,6 +31,8 @@ const mockPipeline = vi.hoisted(() => ({
 }));
 
 vi.mock('../../scene/scene', () => sceneModuleFactory(mockState));
+// [doc:adr-269 补充] perception/camera 的焦点访问器已迁到窄门面 scene-focus
+vi.mock('../../scene/scene-focus', () => sceneModuleFactory(mockState));
 vi.mock('../../scene/ar/ar-camera', () => arCameraModuleMock);
 vi.mock('../../core/wails-bindings', () => wailsBindingsModuleMock);
 vi.mock('../../core/i18n/t', () => i18nTModuleMock);
@@ -80,9 +84,7 @@ import {
 let PerceptionPerfMonitor: Awaited<
     typeof import('../../scene/motion/perception-shared')
 >['PerceptionPerfMonitor'];
-let feetDebug: Awaited<
-    typeof import('../../scene/motion/perception-shared')
->['feetDebug'];
+let feetDebug: Awaited<typeof import('../../scene/motion/perception-shared')>['feetDebug'];
 let _getActiveContextsByTier: Awaited<
     typeof import('../../scene/motion/perception-observer')
 >['_getActiveContextsByTier'];
@@ -115,7 +117,9 @@ afterEach(() => {
 
 describe('ADR-164 enableAllPerception / disableAllPerception', () => {
     it('1. enableAllPerception 后所有已加载模型有 context', () => {
-        const inst = { mmdModel: { mesh: { isDisposed: () => false }, runtimeBones: [] } };
+        const inst = {
+            mmdModel: { mesh: { isDisposed: () => false }, runtimeBones: [] as IMmdRuntimeBone[] },
+        };
         mockState.modelManager.get.mockImplementation((id: string) =>
             id === 'm1' || id === 'm2' ? inst : null
         );
@@ -155,7 +159,7 @@ describe('ADR-164 enableAllPerception / disableAllPerception', () => {
                 linkedBone: { rotationQuaternion: { copyFrom: vi.fn(), setAll: vi.fn() } },
                 childBones: [],
             },
-        ];
+        ] as unknown as IMmdRuntimeBone[];
         const inst = { mmdModel: mockMmdModel };
         mockState.modelManager.get.mockImplementation(() => inst);
         mockState.modelManager.modelRegistry.set('m1', inst);
@@ -197,7 +201,7 @@ describe('ADR-164 enableAllPerception / disableAllPerception', () => {
                 linkedBone: { rotationQuaternion: { copyFrom: vi.fn(), setAll: vi.fn() } },
                 childBones: [],
             },
-        ];
+        ] as unknown as IMmdRuntimeBone[];
         const inst = { mmdModel: mockMmdModel };
         mockState.modelManager.get.mockReturnValue(inst);
         mockState.modelManager.modelRegistry.set('m1', inst);
@@ -214,8 +218,12 @@ describe('ADR-164 enableAllPerception / disableAllPerception', () => {
     });
 
     it('9. 全员模式下 activatePerception() 切换焦点保留旧模型 active', () => {
-        const inst1 = { mmdModel: { mesh: { isDisposed: () => false }, runtimeBones: [] } };
-        const inst2 = { mmdModel: { mesh: { isDisposed: () => false }, runtimeBones: [] } };
+        const inst1 = {
+            mmdModel: { mesh: { isDisposed: () => false }, runtimeBones: [] as IMmdRuntimeBone[] },
+        };
+        const inst2 = {
+            mmdModel: { mesh: { isDisposed: () => false }, runtimeBones: [] as IMmdRuntimeBone[] },
+        };
         mockState.modelManager.get.mockImplementation((id: string) =>
             id === 'm1' ? inst1 : id === 'm2' ? inst2 : null
         );
@@ -409,11 +417,13 @@ describe('ADR-164 PerceptionPerfMonitor tier', () => {
         // [fix:2026-08] 补全行为断言：low 档 _getActiveContextsByTier 只保留
         // focused(m1) + pinned(m2)，非 pinned 非焦点模型被剔除。
         // （微表情在 low 档整体跳过，故不可用 morph 权重断言，见 perception-observer.ts）
-        const contexts = new Map<string, { modelId: string; isActive: boolean; isPinned: boolean }>([
-            ['m1', { modelId: 'm1', isActive: true, isPinned: false }],
-            ['m2', { modelId: 'm2', isActive: true, isPinned: true }],
-            ['m3', { modelId: 'm3', isActive: true, isPinned: false }],
-        ]);
+        const contexts = new Map<string, { modelId: string; isActive: boolean; isPinned: boolean }>(
+            [
+                ['m1', { modelId: 'm1', isActive: true, isPinned: false }],
+                ['m2', { modelId: 'm2', isActive: true, isPinned: true }],
+                ['m3', { modelId: 'm3', isActive: true, isPinned: false }],
+            ]
+        );
         const active = _getActiveContextsByTier('low', contexts as any, 'm1');
         expect(active.map((c) => c.modelId).sort()).toEqual(['m1', 'm2']);
     });

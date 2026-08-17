@@ -6,7 +6,7 @@ import test from 'node:test';
 import { walkSourceFiles, getExportedSymbols, parseSourceImports, resolveSourceImport } from './source-graph.mjs';
 // [P2 2026-08-06] 直测生产真身（去副本）：此前测试重实现 getModule/detectCycles 副本，
 // 副本与生产同缺陷、给虚假信心。内部函数已 export，此处全部改为直测。
-import { getModule, buildModuleGraph, detectCycles } from '../check-circular.mjs';
+import { getModule, buildModuleGraph, detectCycles, cycleSetKey, representativeCycles, normalizeCycleKey } from '../check-circular.mjs';
 
 // Helper: create temp fixture dir
 function createFixtureDir() {
@@ -353,3 +353,55 @@ test('parseSourceImports: import type before actual import', () => {
     assert.equal(imports[0].path, 'real.ts');
   } finally { cleanup(root); }
 });
+
+// ── [ADR-268] 环口径 = 加载期依赖；白名单 key = 节点集合 ──
+
+test('parseSourceImports: includeDynamic=false 排除动态 import()', () => {
+  const { root } = createFixtureDir();
+  const file = path.join(root, 'dyn.ts');
+  fs.writeFileSync(
+    file,
+    'import "./static.js";\nconst m = import("./lazy.js");\n',
+    'utf8',
+  );
+  fs.writeFileSync(path.join(root, 'static.ts'), 'export const a = 1;\n', 'utf8');
+  fs.writeFileSync(path.join(root, 'lazy.ts'), 'export const b = 2;\n', 'utf8');
+  try {
+    const withDynamic = parseSourceImports(file, root);
+    assert.deepEqual(withDynamic.map((i) => i.path).sort(), ['lazy.ts', 'static.ts']);
+
+    const withoutDynamic = parseSourceImports(file, root, { includeDynamic: false });
+    assert.deepEqual(withoutDynamic.map((i) => i.path), ['static.ts']);
+  } finally { cleanup(root); }
+});
+
+test('cycleSetKey: 同一组节点的不同路径 → 同一个 key（白名单抗漂移）', () => {
+  // 同一组节点 {a,b,c} 的三条路径变体（含旋转/反向起点）必须归一到同一 key
+  const k1 = cycleSetKey(['a', 'b', 'c', 'a']);
+  const k2 = cycleSetKey(['b', 'c', 'a', 'b']);
+  const k3 = cycleSetKey(['c', 'a', 'b', 'c']);
+  assert.equal(k1, k2);
+  assert.equal(k2, k3);
+  assert.equal(k1, 'a+b+c');
+  // 对照：旧路径口径对同一组节点的**不同走法**给出不同 key —— 这正是假漂移的机制
+  // （新增一条更短的边 → 代表环改走另一条路径 → 旧 key 再也匹配不上）
+  assert.notEqual(normalizeCycleKey(['a', 'b', 'c', 'a']), normalizeCycleKey(['a', 'c', 'b', 'a']));
+});
+
+test('cycleSetKey: 不同节点集合 → 不同 key', () => {
+  assert.notEqual(cycleSetKey(['a', 'b', 'a']), cycleSetKey(['a', 'b', 'c', 'a']));
+});
+
+test('representativeCycles: 归并键与 cycleSetKey 同源（白名单判定不会漏）', () => {
+  const cycles = [
+    ['a', 'b', 'a'],
+    ['a', 'b', 'c', 'a'],
+    ['c', 'a', 'b', 'c'], // 与上一条同节点集合 → 应被归并
+  ];
+  const reps = representativeCycles(cycles);
+  // {a,b} 与 {a,b,c} 两组，各留最短环
+  assert.equal(reps.length, 2);
+  const setKeys = reps.map(cycleSetKey).sort();
+  assert.deepEqual(setKeys, ['a+b', 'a+b+c']);
+});
+

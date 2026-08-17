@@ -13,7 +13,7 @@ import {
     getRegisteredModules,
     createModule,
     claimBones,
-} from './registry';
+} from './registry-core';
 import { pushHistory } from './motion-history';
 import type { MotionOverrideModule, ModuleMeta } from './types';
 // [doc:adr-122 P2] 在 module-base 暴露 IK 辅助函数，供新模块复用
@@ -52,7 +52,11 @@ export interface ModuleBaseOverrides {
 let _bakeActionId: string | undefined;
 
 /** 触发 bake 前设置 actionId 上下文，同步执行完即清除 */
-function _runWithBakeActionId(actionId: string | undefined, fn: (modelId: string) => void, modelId: string): void {
+function _runWithBakeActionId(
+    actionId: string | undefined,
+    fn: (modelId: string) => void,
+    modelId: string
+): void {
     const prev = _bakeActionId;
     _bakeActionId = actionId;
     try {

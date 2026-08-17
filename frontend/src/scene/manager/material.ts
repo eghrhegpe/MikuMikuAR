@@ -12,7 +12,12 @@ import { triggerAutoSave } from '@/core/config';
 import { clamp01 } from '@/core/clamp';
 import { logWarn } from '../../core/logger';
 import type { MmdStandardMaterial } from '../../core/types';
-import { getMatSssState, applyMatSssState, disposeModelSssState, type SssParams } from './material-sss';
+import {
+    getMatSssState,
+    applyMatSssState,
+    disposeModelSssState,
+    type SssParams,
+} from './material-sss';
 
 // [ADR-188] SSS 材质类型定义（PBRMaterial 子类，由材料系统识别）
 export type SssMaterial = PBRMaterial;
@@ -986,7 +991,10 @@ export function getMatState(id: string): {
             // 全部为默认值时整个 entry 跳过（与「无调整」语义一致）。
             const filtered: Record<string, number> = {};
             for (const [k, v] of Object.entries(params)) {
-                if (v !== undefined && v !== DEFAULT_MAT_PARAMS[k as keyof MaterialCategoryParams]) {
+                if (
+                    v !== undefined &&
+                    v !== DEFAULT_MAT_PARAMS[k as keyof MaterialCategoryParams]
+                ) {
                     filtered[k] = v;
                 }
             }

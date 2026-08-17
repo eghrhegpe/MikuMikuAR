@@ -120,9 +120,7 @@ describe('_applyBreathing 轴向', () => {
 describe('_applyBreathing 边界路径', () => {
     it('rotationQuaternion 为 null 时安全返回，不写 lastOffsets', () => {
         const model = {
-            runtimeBones: [
-                { name: '上半身', linkedBone: { rotationQuaternion: null } },
-            ],
+            runtimeBones: [{ name: '上半身', linkedBone: { rotationQuaternion: null } }],
         } as any;
         expect(() => sut._applyBreathing(model, 1, ctx)).not.toThrow();
         // 提前 return → lastOffsets.breath 保持 0
@@ -195,7 +193,7 @@ describe('_updateBoneChain', () => {
             updateWorldMatrix: () => {
                 calls.push('grandChild');
             },
-            childBones: [],
+            childBones: [] as unknown[],
         };
         const child = {
             name: '上半身2',
@@ -211,7 +209,7 @@ describe('_updateBoneChain', () => {
     it('对无 updateWorldMatrix 的骨骼安全跳过（WASM runtime）', () => {
         const bone = {
             name: '上半身2',
-            childBones: [{ name: '首', childBones: [] }],
+            childBones: [{ name: '首', childBones: [] as unknown[] }] as unknown[],
         };
         // 不含 updateWorldMatrix → 不进入递归，不抛异常
         expect(() => sut._updateBoneChain(bone as any)).not.toThrow();

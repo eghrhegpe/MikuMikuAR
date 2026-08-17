@@ -336,6 +336,9 @@ export const envDispatcherModule = {
     clearSceneTickCallbacks: vi.fn(),
     runSceneTickCallbacks: vi.fn(),
     clearAllEnvCallbacks: vi.fn(),
+    // [doc:adr-269 补充] 子系统改走 dispatcher 请求式挂载 observer
+    registerEnvObserverHandler: vi.fn(() => vi.fn()),
+    requestEnvObserver: mockEnsureEnvUpdateObserver,
 };
 
 const hemiLight = {

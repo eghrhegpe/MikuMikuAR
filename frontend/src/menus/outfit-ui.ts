@@ -45,7 +45,7 @@ function buildOutfitSchema(id: string): MenuNode[] {
                     if (!outfit || !outfit.variants || outfit.variants.length === 0) {
                         const empty = document.createElement('div');
                         empty.style.cssText =
-                            'font-size:11px;color:var(--text-dim);text-align:center;padding:20px;line-height:1.6;';
+                            'font-size:var(--font-ui-sm);color:var(--text-dim);text-align:center;padding:20px;line-height:1.6;';
                         empty.textContent = t('outfit.noOutfitsConfig');
                         c.appendChild(empty);
                         return;

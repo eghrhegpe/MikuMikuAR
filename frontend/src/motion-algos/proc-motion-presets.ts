@@ -117,10 +117,7 @@ export function getProcPresetSet(mode: ProcModeKey): Record<string, ProcParamsPr
 }
 
 /** 取单个预设（缺失返回 undefined，UI 层需兜底） */
-export function getProcParamsPreset(
-    mode: ProcModeKey,
-    id: string
-): ProcParamsPreset | undefined {
+export function getProcParamsPreset(mode: ProcModeKey, id: string): ProcParamsPreset | undefined {
     return getProcPresetSet(mode)[id];
 }
 

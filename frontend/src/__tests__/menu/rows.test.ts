@@ -122,7 +122,10 @@ describe('SlideMenu — 创建行 (createRow DOM 类型)', () => {
     it('folder async 点击：await 期间内容版本变化时丢弃过期结果', async () => {
         let resolveFolder: (v: unknown) => void = () => {};
         const folderEnter = vi.fn(
-            () => new Promise((res) => { resolveFolder = res; })
+            () =>
+                new Promise((res) => {
+                    resolveFolder = res;
+                })
         );
         (menu as any).onFolderEnter = folderEnter;
         const pushSpy = vi.spyOn(menu, 'push').mockImplementation(() => {});
@@ -184,7 +187,10 @@ describe('SlideMenu — 创建行 (createRow DOM 类型)', () => {
     it('headerToggle folder 行：async await 窗口内容版本变化时丢弃过期结果', async () => {
         let resolveFolder: (v: unknown) => void = () => {};
         const folderEnter = vi.fn(
-            () => new Promise((res) => { resolveFolder = res; })
+            () =>
+                new Promise((res) => {
+                    resolveFolder = res;
+                })
         );
         (menu as any).onFolderEnter = folderEnter;
         const pushSpy = vi.spyOn(menu, 'push').mockImplementation(() => {});

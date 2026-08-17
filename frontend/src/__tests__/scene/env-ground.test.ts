@@ -8,7 +8,11 @@ import { MeshBuilder } from '@babylonjs/core/Meshes/meshBuilder';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { DynamicTexture } from '@babylonjs/core/Materials/Textures/dynamicTexture';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
-import { addGroundRipple, clearGroundRipples, disposeGroundRipples } from '../../scene/env/env-water';
+import {
+    addGroundRipple,
+    clearGroundRipples,
+    disposeGroundRipples,
+} from '../../scene/env/env-water';
 
 // 隔离 env-impl，避免其重型依赖（clouds/particles/sky 等）干扰；
 // _envSys 通过 globalThis 共享同对象，与 env-context mock 一致。
@@ -36,7 +40,7 @@ vi.mock('../../scene/env/_shared/env-context', () => {
         getScene: () => (globalThis as any).__groundTestScene as Scene,
         initEnvImpl: () => {},
         isInitialized: () => true,
-        getPipeline: () => null,
+        getPipeline: (): null => null,
         // ADR-217: 地水共享尺寸单源
         INFINITE_GROUND_SIZE: 2000,
         effectiveGroundSize: (groundSize: number, infiniteEnabled: boolean) =>
@@ -50,7 +54,7 @@ vi.mock('../../scene/env/env', () => ({
 // renderer→performance→scene 重链（模块级 new Scene()）。单测只关注纯函数，
 // 此处桩掉避免测试环境收集期崩溃。
 vi.mock('../../scene/env/env-reflection', () => ({
-    getPlanarQualityOverride: () => null,
+    getPlanarQualityOverride: (): null => null,
 }));
 
 import { _envSys } from '../../scene/env/env-impl';

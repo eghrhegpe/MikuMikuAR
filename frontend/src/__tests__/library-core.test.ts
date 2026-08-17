@@ -77,7 +77,6 @@ import {
     isLeafFlattenDir,
     resolveDisplayBrowseDir,
     computeRestoreSegments,
-    importFile,
     getResourceViewMode,
     setResourceViewMode,
     isModelDirTarget,
@@ -85,6 +84,8 @@ import {
     thumbnailKeyForModel,
     buildModelRootItems,
 } from '../menus/library-core';
+// [doc:adr-271] library-core 不再转发 library-actions/library-setup 的符号，直连真实定义处
+import { importFile } from '../menus/library-actions';
 import { isUnderRoot } from '../core/path';
 import { normPath } from '../core/fileservice';
 
@@ -297,9 +298,15 @@ describe('buildLevel', () => {
     it('preserves sorted order for multiple non-leaf subdirs (not reversed)', () => {
         mockState.libraryRoot = '/test';
         mockState.allModels = [
-            makeModel({ file_path: '/test/models/alpha/deep/a.pmx', dir: '/test/models/alpha/deep' }),
+            makeModel({
+                file_path: '/test/models/alpha/deep/a.pmx',
+                dir: '/test/models/alpha/deep',
+            }),
             makeModel({ file_path: '/test/models/beta/deep/b.pmx', dir: '/test/models/beta/deep' }),
-            makeModel({ file_path: '/test/models/gamma/deep/c.pmx', dir: '/test/models/gamma/deep' }),
+            makeModel({
+                file_path: '/test/models/gamma/deep/c.pmx',
+                dir: '/test/models/gamma/deep',
+            }),
         ];
         const level = buildLevel('/test/models', 'Models');
         const rows = extractLevelRows(level, capturedSlideRows);
@@ -713,9 +720,15 @@ describe('buildResourceItemsForDir', () => {
 
     it('preserves sorted order for multiple non-leaf subdirs (not reversed)', () => {
         mockState.allModels = [
-            makeModel({ file_path: '/test/models/alpha/deep/a.pmx', dir: '/test/models/alpha/deep' }),
+            makeModel({
+                file_path: '/test/models/alpha/deep/a.pmx',
+                dir: '/test/models/alpha/deep',
+            }),
             makeModel({ file_path: '/test/models/beta/deep/b.pmx', dir: '/test/models/beta/deep' }),
-            makeModel({ file_path: '/test/models/gamma/deep/c.pmx', dir: '/test/models/gamma/deep' }),
+            makeModel({
+                file_path: '/test/models/gamma/deep/c.pmx',
+                dir: '/test/models/gamma/deep',
+            }),
         ];
         const items = buildResourceItemsForDir('/test/models');
         const folders = items.filter((i: any) => i.isFolder);

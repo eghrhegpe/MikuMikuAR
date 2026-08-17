@@ -24,7 +24,7 @@ import {
     BONE_SHOULDER_L_CANDIDATES,
     BONE_SHOULDER_R_CANDIDATES,
 } from '@/motion-algos/proc-motion-shared';
-import { getModuleState } from './registry';
+import { getModuleState } from './registry-core';
 import type { MotionOverrideModule, ModuleMeta, ModuleDef } from './types';
 import {
     createModuleBase,
@@ -34,6 +34,7 @@ import {
     createEnsureActive,
     getModuleActionId,
 } from './module-base';
+import type { HandModuleId, HandParamKey } from './module-param-keys';
 
 // ── 手指预设（与原 finger-pose 一致）──
 
@@ -74,7 +75,8 @@ const _vOffset = new Vector3();
 
 interface HandSideConfig {
     side: 'L' | 'R';
-    moduleId: string;
+    /** 左右手是同一套工厂代码，moduleId 是唯一变量；类型收窄后 bind 模板拼接保持字面量类型 */
+    moduleId: HandModuleId;
     wristBone: string;
     shoulderBone: string;
     fingerPrefix: string;
@@ -105,7 +107,8 @@ function createHandModuleFactory(cfg: HandSideConfig) {
         const fingerBones = buildFingerBones(cfg.fingerPrefix);
         const managedBones = [cfg.wristBone, cfg.shoulderBone, ...fingerBones];
 
-        const DEFAULTS: Record<string, ParamValue> = {
+        // 键集由 `satisfies` 双向钉在 `ModuleParamKeys['left-hand' | 'right-hand']` 上（ADR-272）
+        const DEFAULTS = {
             pitch: 0,
             yaw: 0,
             roll: 0,
@@ -114,7 +117,7 @@ function createHandModuleFactory(cfg: HandSideConfig) {
             handPosZ: 0,
             fingerPreset: 'relax',
             fingerIntensity: 1,
-        };
+        } satisfies Record<HandParamKey, ParamValue>;
 
         const META: ModuleMeta = {
             labelKey: cfg.labelKey,
@@ -161,78 +164,85 @@ function createHandModuleFactory(cfg: HandSideConfig) {
         }
 
         // ── 帧钩子：手臂位置偏移（FK 父根骨平移 / IK 重解）──
-        const ensureActive = createEnsureActive(
-            bake,
-            _handFrameHooks,
-            (mid) =>
-                registerBoneOverrideFrameHook(
-                    (_t, m) => {
-                        if (m !== mid) {
-                            return;
+        const ensureActive = createEnsureActive(bake, _handFrameHooks, (mid) =>
+            registerBoneOverrideFrameHook(
+                (_t, m) => {
+                    if (m !== mid) {
+                        return;
+                    }
+                    const st = getModuleState(mid, cfg.moduleId, getModuleActionId(mid));
+                    const dbgEnabled = feetDebug.value && _handDbgFrame++ % 60 === 0;
+                    if (!st.enabled) {
+                        if (dbgEnabled) {
+                            logWarn('hand', `[SKIP] ${cfg.side} hand: module disabled`);
                         }
-                        const st = getModuleState(mid, cfg.moduleId, getModuleActionId(mid));
-                        const dbgEnabled = feetDebug.value && _handDbgFrame++ % 60 === 0;
-                        if (!st.enabled) {
-                            if (dbgEnabled) {
-                                logWarn('hand', `[SKIP] ${cfg.side} hand: module disabled`);
-                            }
-                            return;
-                        }
-                        const inst = modelRegistry.get(mid);
-                        const bones = inst?.mmdModel?.runtimeBones;
-                        if (!bones?.length) {
-                            if (dbgEnabled) {
-                                logWarn('hand', `[SKIP] ${cfg.side} hand: no bones (model=${inst ? 'exists' : 'null'})`);
-                            }
-                            return;
-                        }
-
-                        const hx = (st.params.handPosX as number) ?? 0;
-                        const hy = (st.params.handPosY as number) ?? 0;
-                        const hz = (st.params.handPosZ as number) ?? 0;
-                        if (hx === 0 && hy === 0 && hz === 0) {
-                            if (dbgEnabled) {
-                                logWarn('hand', `[SKIP] ${cfg.side} hand: zero offset [${hx},${hy},${hz}]`);
-                            }
-                            return;
-                        }
-
-                        const cache = _getArmIkCache(mid);
-                        const ikCandidates =
-                            cfg.side === 'L' ? BONE_ARM_IK_L_CANDIDATES : BONE_ARM_IK_R_CANDIDATES;
-                        const shoulderCandidates =
-                            cfg.side === 'L'
-                                ? BONE_SHOULDER_L_CANDIDATES
-                                : BONE_SHOULDER_R_CANDIDATES;
-
-                        const ikKey = cfg.side === 'L' ? 'lIk' : 'rIk';
-                        const rootKey = cfg.side === 'L' ? 'lRoot' : 'rRoot';
-
-                        if (cache[ikKey] === undefined) {
-                            cache[ikKey] = matchBone(
-                                bones.map((b) => b.name),
-                                ikCandidates
+                        return;
+                    }
+                    const inst = modelRegistry.get(mid);
+                    const bones = inst?.mmdModel?.runtimeBones;
+                    if (!bones?.length) {
+                        if (dbgEnabled) {
+                            logWarn(
+                                'hand',
+                                `[SKIP] ${cfg.side} hand: no bones (model=${inst ? 'exists' : 'null'})`
                             );
-                            if (dbgEnabled) {
-                                logWarn('hand', `[MATCH] ${cfg.side} IK bone: ${cache[ikKey] ?? 'NOT FOUND'} (candidates: ${ikCandidates.length})`);
-                            }
                         }
-                        if (cache[rootKey] === undefined) {
-                            cache[rootKey] = matchBone(
-                                bones.map((b) => b.name),
-                                shoulderCandidates
-                            );
-                            if (dbgEnabled) {
-                                logWarn('hand', `[MATCH] ${cfg.side} shoulder bone: ${cache[rootKey] ?? 'NOT FOUND'} (candidates: ${shoulderCandidates.length})`);
-                            }
-                        }
+                        return;
+                    }
 
-                        const rootName = cache[rootKey] ?? cfg.shoulderBone;
-                        _driveArm(bones, cache[ikKey], rootName, [hx, hy, hz], mid, dbgEnabled);
-                    },
-                    FRAME_HOOK_ORDER.HAND_SYMMETRY,
-                    cfg.moduleId
-                )
+                    const hx = (st.params.handPosX as number) ?? 0;
+                    const hy = (st.params.handPosY as number) ?? 0;
+                    const hz = (st.params.handPosZ as number) ?? 0;
+                    if (hx === 0 && hy === 0 && hz === 0) {
+                        if (dbgEnabled) {
+                            logWarn(
+                                'hand',
+                                `[SKIP] ${cfg.side} hand: zero offset [${hx},${hy},${hz}]`
+                            );
+                        }
+                        return;
+                    }
+
+                    const cache = _getArmIkCache(mid);
+                    const ikCandidates =
+                        cfg.side === 'L' ? BONE_ARM_IK_L_CANDIDATES : BONE_ARM_IK_R_CANDIDATES;
+                    const shoulderCandidates =
+                        cfg.side === 'L' ? BONE_SHOULDER_L_CANDIDATES : BONE_SHOULDER_R_CANDIDATES;
+
+                    const ikKey = cfg.side === 'L' ? 'lIk' : 'rIk';
+                    const rootKey = cfg.side === 'L' ? 'lRoot' : 'rRoot';
+
+                    if (cache[ikKey] === undefined) {
+                        cache[ikKey] = matchBone(
+                            bones.map((b) => b.name),
+                            ikCandidates
+                        );
+                        if (dbgEnabled) {
+                            logWarn(
+                                'hand',
+                                `[MATCH] ${cfg.side} IK bone: ${cache[ikKey] ?? 'NOT FOUND'} (candidates: ${ikCandidates.length})`
+                            );
+                        }
+                    }
+                    if (cache[rootKey] === undefined) {
+                        cache[rootKey] = matchBone(
+                            bones.map((b) => b.name),
+                            shoulderCandidates
+                        );
+                        if (dbgEnabled) {
+                            logWarn(
+                                'hand',
+                                `[MATCH] ${cfg.side} shoulder bone: ${cache[rootKey] ?? 'NOT FOUND'} (candidates: ${shoulderCandidates.length})`
+                            );
+                        }
+                    }
+
+                    const rootName = cache[rootKey] ?? cfg.shoulderBone;
+                    _driveArm(bones, cache[ikKey], rootName, [hx, hy, hz], mid, dbgEnabled);
+                },
+                FRAME_HOOK_ORDER.HAND_SYMMETRY,
+                cfg.moduleId
+            )
         );
 
         /** 驱动单臂位置偏移（FK 父根骨平移主路径 + IK 重解增强路径） */
@@ -285,7 +295,9 @@ function createHandModuleFactory(cfg: HandSideConfig) {
                             solver.solve(false);
                             const lb = (
                                 ik as unknown as {
-                                    linkedBone?: { getSkeleton?: () => { _markAsDirty?: () => void } };
+                                    linkedBone?: {
+                                        getSkeleton?: () => { _markAsDirty?: () => void };
+                                    };
                                 }
                             ).linkedBone;
                             lb?.getSkeleton?.()._markAsDirty?.();
@@ -309,12 +321,19 @@ function createHandModuleFactory(cfg: HandSideConfig) {
             }
         }
 
-        const base = createModuleBase(modelId, cfg.moduleId, DEFAULTS, bake, {
-            action: ensureActive,
-            onDisable: (mid) => {
-                _handFrameHooks.unregister(mid);
+        const base = createModuleBase(
+            modelId,
+            cfg.moduleId,
+            DEFAULTS,
+            bake,
+            {
+                action: ensureActive,
+                onDisable: (mid) => {
+                    _handFrameHooks.unregister(mid);
+                },
             },
-        }, actionId);
+            actionId
+        );
 
         return createModuleShell({
             id: cfg.moduleId,
@@ -465,7 +484,7 @@ export const LEFT_HAND_DEF: ModuleDef = {
             handPosZ: 0,
             fingerPreset: 'relax',
             fingerIntensity: 1,
-        },
+        } satisfies Record<HandParamKey, ParamValue>,
     },
     priority: 1,
     factory: createHandModuleFactory({
@@ -493,7 +512,7 @@ export const RIGHT_HAND_DEF: ModuleDef = {
             handPosZ: 0,
             fingerPreset: 'relax',
             fingerIntensity: 1,
-        },
+        } satisfies Record<HandParamKey, ParamValue>,
     },
     priority: 1,
     factory: createHandModuleFactory({

@@ -1,5 +1,6 @@
 // perception-state.int.test.ts — 感知状态 setter/生命周期 + balanceSway/pin/迁移（2026-08-10 合并 state-lifecycle + balance-sway-pin）
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { Camera } from '@babylonjs/core/Cameras/camera';
 
 // mockState / mockPipeline 必须 vi.hoisted 留在本文件：beforeEach 的 vi.resetModules() 会驱逐
 // 外部模块，若放 perception-mocks.ts 会生成「新实例」与测试持有的 mockState 脱节（SUT 调新实例的
@@ -16,7 +17,7 @@ const mockState = vi.hoisted(() => ({
             add: vi.fn(() => ({})),
             remove: vi.fn(),
         },
-        activeCamera: null,
+        activeCamera: null as Camera | null,
         isDisposed: false,
     },
     isAudioPlaying: vi.fn(() => false),
@@ -33,6 +34,8 @@ const mockPipeline = vi.hoisted(() => ({
 }));
 
 vi.mock('../../scene/scene', () => sceneModuleFactory(mockState));
+// [doc:adr-269 补充] perception/camera 的焦点访问器已迁到窄门面 scene-focus
+vi.mock('../../scene/scene-focus', () => sceneModuleFactory(mockState));
 vi.mock('../../ar/ar-camera', () => arCameraModuleMock);
 vi.mock('../../core/wails-bindings', () => wailsBindingsModuleMock);
 vi.mock('../../core/i18n/t', () => i18nTModuleMock);

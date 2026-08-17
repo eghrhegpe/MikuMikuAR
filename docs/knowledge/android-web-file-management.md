@@ -56,7 +56,7 @@ symbols:
 invariants:
   - 安卓 APK 内前端运行于 origin `https://wails.localhost`（WebViewAssetLoader `setDomain`，MainActivity.java:62-63/149/298），属安全上下文，FSA 句柄按此 origin 持久化
   - 安卓文件访问后端走 shared 模式（MANAGE_EXTERNAL_STORAGE + os.ReadDir /sdcard），与网页 FSA 是两套机制，检索与讨论时务必区分
-  - `window.wails` 经 `addJavascriptInterface(WailsJSBridge,"wails")` 注入（MainActivity.java:294），`wails.platform()` 返回 "android"（WailsJSBridge.java:103），冷启动存在注入延迟
+  - 注入的 `window.wails` 来自 `addJavascriptInterface(WailsJSBridge,"wails")`（MainActivity.java:294），`wails.platform()` 返回 "android"（WailsJSBridge.java:103），冷启动存在注入延迟
 use_when:
   - 安卓网页版文件管理在 FSA 与 shared 模式之间行为漂移
   - 安卓端目录选择 / 授权 / 句柄持久化异常

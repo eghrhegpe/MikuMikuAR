@@ -496,9 +496,7 @@ describe('ADR-093 Menu Schema — ControlSpec get/set 衍生控件', () => {
             const top = container.querySelector('.cs-top[role="slider"]') as HTMLElement;
             expect(top).toBeTruthy();
             top.focus();
-            top.dispatchEvent(
-                new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true })
-            );
+            top.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
             expect(onChange).toHaveBeenCalled();
         });
     });

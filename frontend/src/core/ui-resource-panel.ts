@@ -337,6 +337,7 @@ function createGridCard(
         overflow: hidden;
         text-overflow: ellipsis;
     `;
+
     label.textContent = item.label;
     label.title = item.label;
 
@@ -478,7 +479,7 @@ function createListRow(
     // 箭头
     if (item.isFolder) {
         const arrow = document.createElement('span');
-        arrow.style.cssText = 'color: var(--text-dim); font-size: 12px;';
+        arrow.style.cssText = 'color: var(--text-dim); font-size: var(--font-hint);';
         arrow.textContent = '›';
         row.appendChild(arrow);
     }

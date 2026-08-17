@@ -24,7 +24,7 @@ import { applyLightingPresetFromEnv } from '../../render/lighting';
 import { registerCelGroundCoupling } from '../../render/renderer';
 import { resolveQualityProfile, type QualityProfile } from '../../render/quality-profile';
 import { logWarn } from '@/core/logger';
-import { scene } from '../../scene';
+import { scene } from '../../scene-context';
 import {
     isAutoDegradingReflection,
     registerSetEnvState,
@@ -387,9 +387,7 @@ const _middlewares: EnvStateMiddleware[] = [];
  * 注：无 clearAll 导出——中间件仅模块顶层注册、无 init 重注册路径，dispose 清空
  * 会导致注册表永久为空（clearAllEnvCallbacks 同源 P2 回归）；去重已足够兜底 HMR。 */
 export function registerEnvStateMiddleware(mw: EnvStateMiddleware): void {
-    const existingIdx = _middlewares.findIndex(
-        (e) => e.name === mw.name && e.phase === mw.phase
-    );
+    const existingIdx = _middlewares.findIndex((e) => e.name === mw.name && e.phase === mw.phase);
     if (existingIdx >= 0) {
         _middlewares[existingIdx] = mw;
         return;

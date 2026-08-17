@@ -68,7 +68,10 @@ describe('migrateProcState（旧扁平 → per-mode 嵌套）', () => {
             mode: 'idle' as const,
             params: {
                 idle: { intensity: 0.3, boneToggles: { arm: false } as Record<string, boolean> },
-                autodance: { intensity: 0.9, boneToggles: { wrist: false } as Record<string, boolean> },
+                autodance: {
+                    intensity: 0.9,
+                    boneToggles: { wrist: false } as Record<string, boolean>,
+                },
             },
         });
         // idle：仅 arm 显式关闭，其余类别应保持默认 true（修复前其余类别变 undefined）

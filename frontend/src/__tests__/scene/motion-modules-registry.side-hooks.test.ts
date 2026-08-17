@@ -12,7 +12,11 @@ import {
     mockMotionIntent,
     mockMotionHistory,
 } from './motion-modules-registry-mocks';
-import { makeModelWithBones, makeModelWithBonesWasm, setActiveMotionWithModules } from './motion-modules-registry-helpers';
+import {
+    makeModelWithBones,
+    makeModelWithBonesWasm,
+    setActiveMotionWithModules,
+} from './motion-modules-registry-helpers';
 import {
     initMotionModules,
     createModule,
@@ -38,7 +42,9 @@ function resetAll(): void {
 beforeEach(resetAll);
 
 /** 动态取 mock 的 registerBoneOverrideFrameHook 调用记录（第 3 参为 moduleId） */
-async function hookRegistrations(): Promise<Array<[(t: number, mid: string) => void, number, string]>> {
+async function hookRegistrations(): Promise<
+    Array<[(t: number, mid: string) => void, number, string]>
+> {
     const { registerBoneOverrideFrameHook } = await import('@/scene/motion/bone-override');
     return (
         registerBoneOverrideFrameHook as unknown as {

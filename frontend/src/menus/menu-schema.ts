@@ -6,17 +6,29 @@ import { envState } from '@/core/config';
 import { setEnvState, getRenderState, setRenderState } from '@/scene/scene';
 import { getLightState, setLightState } from '@/scene/render/lighting';
 import { uiState, setUIState, focusedModelId, modelRegistry } from '@/core/state';
+import { getPerceptionState, setPerceptionState } from '@/scene/motion/perception';
 import {
-    getPerceptionState,
-    setPerceptionState,
-} from '@/scene/motion/perception';
-import { getModuleDefaultParam, getModuleState, setModuleParam } from '@/scene/motion/motion-modules/registry';
+    getModuleDefaultParam,
+    getModuleState,
+    setModuleParam,
+} from '@/scene/motion/motion-modules/registry';
 
 // [doc:adr-238] MenuNode 类型契约下沉 scene/shared/menu-node-types（纯类型叶），
 // 此处引入 + re-export 保持既有消费者兼容（scene/motion 模块从叶引用，不再 import menus）。
-import type { StatePath, ActionMenuCtx, MenuKind, ControlSpec, MenuNode } from '../scene/shared/menu-node-types';
-export type { StatePath, ActionMenuCtx, MenuKind, ControlSpec, MenuNode } from '../scene/shared/menu-node-types';
-
+import type {
+    StatePath,
+    ActionMenuCtx,
+    MenuKind,
+    ControlSpec,
+    MenuNode,
+} from '../scene/shared/menu-node-types';
+export type {
+    StatePath,
+    ActionMenuCtx,
+    MenuKind,
+    ControlSpec,
+    MenuNode,
+} from '../scene/shared/menu-node-types';
 
 // ======== 状态路径解析器 ========
 

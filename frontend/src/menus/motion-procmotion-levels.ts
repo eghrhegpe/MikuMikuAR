@@ -3,7 +3,16 @@
 
 import { cardContainer, modelRegistry } from '../core/config';
 import type { PopupLevel, PopupRow } from '../core/config';
-import { addSliderRow, addToggleRow, addModeSlider, addSectionTitle, buildPresetChipGroup, addActionRow, addDangerRow, addEmptyRow } from '../core/ui-helpers';
+import {
+    addSliderRow,
+    addToggleRow,
+    addModeSlider,
+    addSectionTitle,
+    buildPresetChipGroup,
+    addActionRow,
+    addDangerRow,
+    addEmptyRow,
+} from '../core/ui-helpers';
 import {
     setProcMotionIntensity,
     setProcMotionSpeed,
@@ -14,7 +23,13 @@ import {
 } from '../scene/scene';
 import { setProcMotionBoneToggles } from '../scene/motion/proc-motion-bridge';
 import { getProcMotionBoneCategories } from '../motion-algos/procedural-motion';
-import { getProcPresetSet, getProcParamsPreset, makeProcPreset, upsertProcPreset, removeProcPreset } from '../motion-algos/proc-motion-presets';
+import {
+    getProcPresetSet,
+    getProcParamsPreset,
+    makeProcPreset,
+    upsertProcPreset,
+    removeProcPreset,
+} from '../motion-algos/proc-motion-presets';
 import type {
     ProcMotionState,
     ProcModeKey,
@@ -33,7 +48,8 @@ import {
     unloadProceduralMotion,
 } from '../scene/motion/motion-intent';
 import type { LoadableProcId } from '../scene/motion/motion-intent';
-import { getMotionMenu, refreshMotionRoot } from './motion-popup';
+// [doc:adr-271] 菜单实例与根级刷新改从状态叶子读取，切断与 motion-popup 的互指
+import { getMotionMenu, refreshMotionRoot } from './motion-menu-state';
 
 // [doc:adr-059] 骨骼微动类别 → i18n key（模块级，运行时 t() 支持热切换）
 const BONE_LABEL_KEYS: Record<string, string> = {
@@ -92,7 +108,10 @@ function _setProcParams(
                 ...cur,
                 params: {
                     ...cur.params,
-                    [mode]: { ...(cur.params?.[mode] ?? DEFAULT_PROC_STATE.params[mode]), ...patch },
+                    [mode]: {
+                        ...(cur.params?.[mode] ?? DEFAULT_PROC_STATE.params[mode]),
+                        ...patch,
+                    },
                 },
             };
         }
@@ -157,7 +176,8 @@ export function buildProcMotionSchema(modelId?: string, mode: ProcModeKey = 'idl
                                     const current = _getProcParams(modelId, mode);
                                     const toggles = presetParams.boneToggles;
                                     return (
-                                        Math.abs(current.intensity - presetParams.intensity) < 1e-6 &&
+                                        Math.abs(current.intensity - presetParams.intensity) <
+                                            1e-6 &&
                                         Math.abs(current.speed - presetParams.speed) < 1e-6 &&
                                         current.interpOverride === presetParams.interpOverride &&
                                         Object.keys(toggles).every(
@@ -186,7 +206,11 @@ export function buildProcMotionSchema(modelId?: string, mode: ProcModeKey = 'idl
                             feedbackInfo('motion.procPresetTooMany', undefined);
                             return;
                         }
-                        const snapshot = makeProcPreset(mode, t('motion.procPresetName'), _getProcParams(modelId, mode));
+                        const snapshot = makeProcPreset(
+                            mode,
+                            t('motion.procPresetName'),
+                            _getProcParams(modelId, mode)
+                        );
                         inst.procPresets = upsertProcPreset(inst.procPresets ?? [], snapshot);
                         triggerAutoSave();
                         getMotionMenu()?.reRender();
@@ -199,11 +223,16 @@ export function buildProcMotionSchema(modelId?: string, mode: ProcModeKey = 'idl
                         addEmptyRow(inner, t('motion.procPresetEmpty'));
                     }
                     for (const p of userPresets) {
-                        addActionRow(inner, p.name, () => {
-                            _applyProcParam(modelId, mode, p.params);
-                            regenerateProcMotion(modelId);
-                            getMotionMenu()?.reRender();
-                        }, { icon: 'lucide:wand-sparkles' });
+                        addActionRow(
+                            inner,
+                            p.name,
+                            () => {
+                                _applyProcParam(modelId, mode, p.params);
+                                regenerateProcMotion(modelId);
+                                getMotionMenu()?.reRender();
+                            },
+                            { icon: 'lucide:wand-sparkles' }
+                        );
                         addDangerRow(inner, 'lucide:trash-2', p.name, () => {
                             if (inst) {
                                 inst.procPresets = removeProcPreset(inst.procPresets ?? [], p.id);
@@ -294,7 +323,8 @@ export function buildProcMotionSchema(modelId?: string, mode: ProcModeKey = 'idl
                                         (v) => toggleBone(cat, v),
                                         icons[cat] ?? 'lucide:circle',
                                         {
-                                            bind: () => _getProcParams(modelId, mode).boneToggles[cat],
+                                            bind: () =>
+                                                _getProcParams(modelId, mode).boneToggles[cat],
                                         }
                                     );
                                 }
@@ -309,7 +339,8 @@ export function buildProcMotionSchema(modelId?: string, mode: ProcModeKey = 'idl
                                         (v) => toggleBone(cat, v),
                                         icons[cat] ?? 'lucide:circle',
                                         {
-                                            bind: () => _getProcParams(modelId, mode).boneToggles[cat],
+                                            bind: () =>
+                                                _getProcParams(modelId, mode).boneToggles[cat],
                                         }
                                     );
                                 }
@@ -324,7 +355,8 @@ export function buildProcMotionSchema(modelId?: string, mode: ProcModeKey = 'idl
                                         (v) => toggleBone(cat, v),
                                         icons[cat] ?? 'lucide:circle',
                                         {
-                                            bind: () => _getProcParams(modelId, mode).boneToggles[cat],
+                                            bind: () =>
+                                                _getProcParams(modelId, mode).boneToggles[cat],
                                         }
                                     );
                                 }
@@ -339,7 +371,8 @@ export function buildProcMotionSchema(modelId?: string, mode: ProcModeKey = 'idl
                                         (v) => toggleBone(cat, v),
                                         icons[cat] ?? 'lucide:circle',
                                         {
-                                            bind: () => _getProcParams(modelId, mode).boneToggles[cat],
+                                            bind: () =>
+                                                _getProcParams(modelId, mode).boneToggles[cat],
                                         }
                                     );
                                 }

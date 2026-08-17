@@ -28,7 +28,8 @@ export const ja: Record<string, string> = {
     'settings.orientationPortrait': '縦画面',
     'settings.orientationLandscape': '横画面',
     'settings.resetAppearance': '外観をリセット',
-    'settings.resetAppearanceConfirm': '外観をデフォルトにリセットしますか？すべての外観設定が初期化されます',
+    'settings.resetAppearanceConfirm':
+        '外観をデフォルトにリセットしますか？すべての外観設定が初期化されます',
     'settings.filename': 'ファイル名',
     'settings.library': 'ライブラリ',
     'settings.performance': 'パフォーマンス',
@@ -1451,7 +1452,8 @@ export const ja: Record<string, string> = {
     // settings.performance
     'settings.performance.title': 'パフォーマンス',
     'settings.perfModeSet': '✓ パフォーマンスモード: {label}',
-    'settings.perfModePersistFailed': 'パフォーマンスモードの保存に失敗しました。再起動後に戻る可能性があります',
+    'settings.perfModePersistFailed':
+        'パフォーマンスモードの保存に失敗しました。再起動後に戻る可能性があります',
     'settings.perfFpsUnlimited': '✓ FPS 制限なし',
     'settings.perfFpsLimit': '✓ FPS 上限: {limit} FPS',
     'settings.perfVsync': '✓ フレームレート制限: {state}',
@@ -1575,11 +1577,13 @@ export const ja: Record<string, string> = {
     'settings.about.update.installLaunched': 'インストール開始',
     'settings.about.maintenance': 'メンテナンスツール',
     'settings.about.maintenance.clearExtract': '抽出キャッシュをクリア',
-    'settings.about.maintenance.clearExtractConfirm': '抽出キャッシュをクリアしますか？次回モデル読み込み時に自動再生成されます。',
+    'settings.about.maintenance.clearExtractConfirm':
+        '抽出キャッシュをクリアしますか？次回モデル読み込み時に自動再生成されます。',
     'settings.about.maintenance.clearThumbnail': 'サムネイルキャッシュをクリア',
     'settings.about.maintenance.clearThumbnailConfirm': 'サムネイルキャッシュをクリアしますか？',
     'settings.about.maintenance.clearAll': 'すべてのキャッシュをクリア',
-    'settings.about.maintenance.clearAllConfirm': 'すべてのキャッシュをクリアしますか？この操作は元に戻せません。',
+    'settings.about.maintenance.clearAllConfirm':
+        'すべてのキャッシュをクリアしますか？この操作は元に戻せません。',
     'settings.about.maintenance.openExtract': '抽出キャッシュディレクトリを開く',
     'settings.about.maintenance.openLogPanel': 'ログパネルを開く',
     'settings.about.maintenance.openThumbnail': 'サムネイルキャッシュディレクトリを開く',

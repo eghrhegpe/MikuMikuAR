@@ -346,11 +346,26 @@ describe('ADR-120 分类预设', () => {
             const expected: Record<EnvPresetCategory, string[]> = {
                 'env:sky': byFamily(
                     ['sky', 'stars', 'timeOfDay'],
-                    ['iblIntensity', 'globalBrightness', 'sunAngle', 'azimuth', 'lightingPresetName']
+                    [
+                        'iblIntensity',
+                        'globalBrightness',
+                        'sunAngle',
+                        'azimuth',
+                        'lightingPresetName',
+                    ]
                 ),
                 'env:ground': byFamily(['ground']),
                 'env:water': byFamily(
-                    ['water', 'bigWave', 'smallWave', 'foam', 'fresnel', 'ripple', 'caustic', 'underwater'],
+                    [
+                        'water',
+                        'bigWave',
+                        'smallWave',
+                        'foam',
+                        'fresnel',
+                        'ripple',
+                        'caustic',
+                        'underwater',
+                    ],
                     [
                         'planarReflectionBlend',
                         'reflectionQuality',

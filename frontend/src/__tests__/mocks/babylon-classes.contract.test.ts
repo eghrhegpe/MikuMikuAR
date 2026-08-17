@@ -90,9 +90,8 @@ import {
 type PublicKeys<T> = Exclude<keyof T, `_${string}`>;
 
 /** mock 公开成员必须全部存在于真实类型（子集断言） */
-type AssertPublicSubset<Mock, Real> = Exclude<PublicKeys<Mock>, PublicKeys<Real>> extends never
-    ? true
-    : never;
+type AssertPublicSubset<Mock, Real> =
+    Exclude<PublicKeys<Mock>, PublicKeys<Real>> extends never ? true : never;
 
 /** 签名级断言：mock 方法参数必须能接受真实类型同名方法的参数（参数逆变）。
  *  注意只查参数，不查返回类型——精简 mock 的返回类型（自身类/宽松值）天然
@@ -101,15 +100,16 @@ type AssertPublicSubset<Mock, Real> = Exclude<PublicKeys<Mock>, PublicKeys<Real>
  *  每个键内联双重函数性检查，避免 Parameters<Real[K]> 在 mapped type 中失窄。
  *  失败键用 false 而非 never 保留在联合中，避免 never 被联合吸收导致假阳性。 */
 type AssertSignatures<Mock, Real> = {
-    [K in PublicKeys<Mock> & PublicKeys<Real>]:
-        Mock[K] extends (...a: any[]) => any
-            ? Real[K] extends (...a: any[]) => any
-                ? Parameters<Real[K]> extends Parameters<Mock[K]>
-                    ? true
-                    : false
-                : true
-            : true;
-}[PublicKeys<Mock> & PublicKeys<Real>] extends true ? true : never;
+    [K in PublicKeys<Mock> & PublicKeys<Real>]: Mock[K] extends (...a: any[]) => any
+        ? Real[K] extends (...a: any[]) => any
+            ? Parameters<Real[K]> extends Parameters<Mock[K]>
+                ? true
+                : false
+            : true
+        : true;
+}[PublicKeys<Mock> & PublicKeys<Real>] extends true
+    ? true
+    : never;
 
 /** 在变量声明处校验：断言失败时类型为 never，赋 true 即编译报错 */
 type Assert<T extends true> = T;
@@ -131,11 +131,15 @@ const _matrixShape: Assert<AssertPublicSubset<MockMatrix, RealMatrix>> = true;
 
 // ===== 静态成员子集断言（mock 有静态公开成员时，静态名也必须存在于真实类） =====
 const _nodeStaticShape: Assert<AssertPublicSubset<typeof MockNode, typeof RealNode>> = true;
-const _vector2StaticShape: Assert<AssertPublicSubset<typeof MockVector2, typeof RealVector2>> = true;
-const _vector3StaticShape: Assert<AssertPublicSubset<typeof MockVector3, typeof RealVector3>> = true;
-const _quatStaticShape: Assert<AssertPublicSubset<typeof MockQuaternion, typeof RealQuaternion>> = true;
+const _vector2StaticShape: Assert<AssertPublicSubset<typeof MockVector2, typeof RealVector2>> =
+    true;
+const _vector3StaticShape: Assert<AssertPublicSubset<typeof MockVector3, typeof RealVector3>> =
+    true;
+const _quatStaticShape: Assert<AssertPublicSubset<typeof MockQuaternion, typeof RealQuaternion>> =
+    true;
 const _matrixStaticShape: Assert<AssertPublicSubset<typeof MockMatrix, typeof RealMatrix>> = true;
-const _materialStaticShape: Assert<AssertPublicSubset<typeof MockMaterial, typeof RealMaterial>> = true;
+const _materialStaticShape: Assert<AssertPublicSubset<typeof MockMaterial, typeof RealMaterial>> =
+    true;
 
 // ===== 签名级断言（数学类 + 引擎/场景等核心类） =====
 const _vector3Sig: Assert<AssertSignatures<MockVector3, RealVector3>> = true;
@@ -164,9 +168,8 @@ const _postSig: Assert<AssertSignatures<MockPostProcess, RealPostProcess>> = tru
 const _pipelineSig: Assert<
     AssertSignatures<MockDefaultRenderingPipeline, RealDefaultRenderingPipeline>
 > = true;
-const _gpuParticleSig: Assert<
-    AssertSignatures<MockGPUParticleSystem, RealGPUParticleSystem>
-> = true;
+const _gpuParticleSig: Assert<AssertSignatures<MockGPUParticleSystem, RealGPUParticleSystem>> =
+    true;
 const _particleSig: Assert<AssertSignatures<MockParticleSystem, RealParticleSystem>> = true;
 const _pbrSig: Assert<AssertSignatures<MockPBRMaterial, RealPBRMaterial>> = true;
 const _gridSig: Assert<AssertSignatures<MockGridMaterial, RealGridMaterial>> = true;
@@ -174,7 +177,10 @@ const _materialShape: Assert<AssertPublicSubset<MockMaterial, RealMaterial>> = t
 // MockStandardMaterial 的 toonTexture/sphereTexture 是 babylon-mmd 的 MmdStandardMaterial
 // 扩展字段（types.ts 声明），真实 Babylon StandardMaterial 无此成员——Omit 豁免。
 const _stdMatShape: Assert<
-    AssertPublicSubset<Omit<MockStandardMaterial, 'toonTexture' | 'sphereTexture'>, RealStandardMaterial>
+    AssertPublicSubset<
+        Omit<MockStandardMaterial, 'toonTexture' | 'sphereTexture'>,
+        RealStandardMaterial
+    >
 > = true;
 const _abstractMeshShape: Assert<AssertPublicSubset<MockAbstractMesh, RealAbstractMesh>> = true;
 const _meshShape: Assert<AssertPublicSubset<MockMesh, RealMesh>> = true;
@@ -218,8 +224,16 @@ const realClassModules = [
     ['MockCubeTexture', '@babylonjs/core/Materials/Textures/cubeTexture.js', 'CubeTexture'],
     ['MockShadowGenerator', '@babylonjs/core/Lights/Shadows/shadowGenerator.js', 'ShadowGenerator'],
     ['MockPostProcess', '@babylonjs/core/PostProcesses/postProcess.js', 'PostProcess'],
-    ['MockDefaultRenderingPipeline', '@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline.js', 'DefaultRenderingPipeline'],
-    ['MockGPUParticleSystem', '@babylonjs/core/Particles/gpuParticleSystem.js', 'GPUParticleSystem'],
+    [
+        'MockDefaultRenderingPipeline',
+        '@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline.js',
+        'DefaultRenderingPipeline',
+    ],
+    [
+        'MockGPUParticleSystem',
+        '@babylonjs/core/Particles/gpuParticleSystem.js',
+        'GPUParticleSystem',
+    ],
     ['MockParticleSystem', '@babylonjs/core/Particles/particleSystem.js', 'ParticleSystem'],
     ['MockPBRMaterial', '@babylonjs/core/Materials/PBR/pbrMaterial.js', 'PBRMaterial'],
     ['MockGridMaterial', '@babylonjs/materials/grid/gridMaterial.js', 'GridMaterial'],
@@ -274,13 +288,14 @@ describe('babylon-classes mock 形状契约', () => {
         realClassModules.forEach(([mockName, , realExportName], index) => {
             const MockClass = mockClassByName[mockName as keyof typeof mockClassByName];
             const RealClass = (realModules[index] as Record<string, unknown>)[realExportName] as
-                | { prototype?: { getClassName?(this: unknown): unknown } }
-                | undefined;
+                { prototype?: { getClassName?(this: unknown): unknown } } | undefined;
             if (!MockClass) {
                 throw new Error(`Mock class not found in mockClassByName: ${mockName}`);
             }
             if (!RealClass || typeof RealClass.prototype?.getClassName !== 'function') {
-                throw new Error(`Real class ${realExportName} from ${realClassModules[index][1]} has no getClassName`);
+                throw new Error(
+                    `Real class ${realExportName} from ${realClassModules[index][1]} has no getClassName`
+                );
             }
             if (typeof MockClass.prototype?.getClassName !== 'function') {
                 throw new Error(`Mock class ${mockName} has no getClassName`);

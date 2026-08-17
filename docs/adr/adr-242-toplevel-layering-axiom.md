@@ -113,21 +113,29 @@
 | 规则 | 内容 | 执法强度 | 当前值 |
 |---|---|---|---|
 | **R1** | 顶层算法目录 不得运行时 import `@/menus/**` | 零容忍，任一违规即失败 | ✅ 0 条 |
-| **R2** | `core/**` 不得运行时 import `@/menus/**` 或 `@/scene/**` | 基线防回退 | 8 条 |
-| **R3** | 顶层算法目录 不得运行时 import `@/scene/**` | 基线防回退 | 2 条 |
+| **R2** | `core/**` 不得运行时 import `@/menus/**` 或 `@/scene/**` | 基线防回退 | 13 条 |
+| **R3** | 顶层算法目录 不得运行时 import `@/scene/**` | 基线防回退 | 0 条 |
 
 设计要点：
 
 - **`import type` 一律豁免**——type-only 导入不构成运行时耦合，不是分层违规。
-- **基线机制**（`docs/.layering-baseline.json`）：R2/R3 存量 10 条唯一反向边登记在册，只防新增；消除后脚本主动提示收紧基线，形成棘轮。
+- **基线机制**（`docs/.layering-baseline.json`）：R2/R3 存量 13 条唯一反向边登记在册，只防新增；消除后脚本主动提示收紧基线，形成棘轮。
 - 同时解析 `@/` 别名与相对路径两种写法，避免绕过；副作用导入（`import 'x'`）视为运行时。
 
 接入方式：
 
 ```bash
-npm run check:layering        # 检查（已挂入 check:all）
+npm run check:layering        # 检查（已挂入 check:all + CI + pre-push）
 npm run gen:layering-baseline # 消除反向边后收紧基线
 ```
+
+> **[2026-10-23] 门禁接线修复**：本检查此前**没有**真正接进 CI / pre-push —— 旧实现用跨行正则
+> `(?:import|export)\b((?:[^;"'`]|\/\/[^\n]*|\/\*[\s\S]*?\*\/)*?)\bfrom` 匹配 import 语句，
+> 「排除字符集」与「可选块注释单元」共享 `/` 前缀，未命中 `from` 时回溯路径指数爆炸：
+> 扫描到 `frontend/src/shared/dev-hooks.ts` 的 `export function` 即单线程卡死 >300s。
+> 现改为 `scripts/_lib/import-scan.mjs` 线性状态机（单遍扫描、跳过字符串/注释、括号深度定界），
+> 全量 frontend/src 源码 ~0.26s，并统一了 type-only 判定（含类型位置的 `import('x').T`，不构成运行时耦合）。
+> 同时补进 `ci.yml`（Frontend job）与 `.githooks/pre-push`（TS 变更时）。
 
 ## Phase 2 进行中
 
@@ -143,6 +151,6 @@ npm run gen:layering-baseline # 消除反向边后收紧基线
      - **附带修复**：迁入 core 后，原 `import type { BeatDetector } from '@/motion-algos/beat-detector'` 会构成新环 `core → motion-algos → core`（本仓 `check-circular` 依据 `_lib/source-graph.mjs` 将 type import 一并计边）。处置方式为**消除依赖本身而非放宽检查**：在 `core/audio.ts` 定义最小结构接口 `BeatSink`（`attach`/`setVolume`/`reset`/`dispose` 四方法），调用方传入的 `BeatDetector` 实例按结构类型自动兼容。环总数回落至迁移前的 20（白名单 8 / 阻断 12）。
    - 🅱️ ✅ **已完成（Phase 2-5b）** `outfit/outfit.ts`(804 行) + `outfit/outfit-overlay.ts`(385 行) → `scene/manager/`。两者均持运行时 Babylon 依赖（`Texture`/`StandardMaterial`/`Mesh`/`Bone`/`Skeleton`）+ 模块级 `_sceneRef` 状态 + `disposeOverlay` 生命周期，属场景绑定层无疑；语义邻居 `material.ts` / `model-loader.ts` 均在 `scene/manager/`。
      - **收益**：两条 R3 反向边（`→scene/manager/material` 的 `_catOf`、`→scene/shared/texture-lru`）降级为同域引用自动消解，分层基线 10 → 9；活环 `core → outfit → core` 消失，CI 阻断环 12 → **11**。
-     - **代价**：`core/dev-hooks.ts:7` 的 `loadOutfits`/`applyOutfitVariant` 引用显式化为 R2 边 `core → scene/manager/outfit`。至此 `dev-hooks.ts` 已累计 **6 条** core→scene 反向边，占基线总量 2/3 —— 它是调试钩子聚合点，本质上是「core 位置上的 scene 消费者」，**建议后续整体迁至 `scene/` 或全量改走 ADR-238 桥接注册**，单独立项处置。
+     - **代价**：`core/dev-hooks.ts:7` 的 `loadOutfits`/`applyOutfitVariant` 引用显式化为 R2 边 `core → scene/manager/outfit`。至此 `dev-hooks.ts` 已累计 **7 条** core→scene 反向边（第 7 条 `core/dev-hooks.ts:50 → scene/motion/bone-override` 于 2026-10-23 扫描器修复后首次被识别：旧实现只认 `await import(`，`return import(…).then(…)` 整类漏检），占基线总量过半 —— 它是调试钩子聚合点，本质上是「core 位置上的 scene 消费者」，**建议后续整体迁至 `scene/` 或全量改走 ADR-238 桥接注册**，单独立项处置。
      - **顶层目录归零**：`frontend/src/` 顶层算法目录 2 → **1**，仅剩 `motion-algos/`（ADR-242 认定的唯一名实相符者）。`check-layering.mjs` 的 `TOPLEVEL_ALGO` 同步收敛。
 5. ~~`motion-algos/footstep-detect-fallback.ts` → `scene/motion/`~~ ✅ **已完成（Phase 2-4）**：迁至 `scene/motion/footstep-detect-fallback.ts`。持 observer 生命周期 + 运行时 `Scene` 依赖，属绑定层，顶层安置为分层颠倒。收益：R3 反向边 `→scene/env/env-impl` 随迁移自动消解，分层基线 11 → 10。副作用：环白名单中 5 条含 `motion-algos` 段的 key 因拓扑重命名失配（`motion-algos` → `scene/motion`），已外科式改写；环总数 20（白名单 8 / 阻断 12）与迁移前完全一致。

@@ -60,7 +60,12 @@ import {
     offerSceneUndoAndRefresh,
     triggerAutoSave,
 } from '../scene/scene';
-import { AddRecentModel, ExtractZip, GetModelsByTag, SetLastBrowseDir } from '../core/wails-bindings';
+import {
+    AddRecentModel,
+    ExtractZip,
+    GetModelsByTag,
+    SetLastBrowseDir,
+} from '../core/wails-bindings';
 import { setStatus } from '../core/status-bar';
 import { showErrorToast } from '../core/toast';
 import { modelRegistry } from '../core/config';
@@ -316,7 +321,10 @@ describe('library-actions — 行点击 / 替换 / 动作 / 标签 / 导入', ()
         it('.pmx 路径走 loadManager(actor)', async () => {
             loadManager.load.mockResolvedValue({ id: 'x' });
             await importFileByPath('/tmp/model.pmx');
-            expect(loadManager.load).toHaveBeenCalledWith({ kind: 'actor', path: '/tmp/model.pmx' });
+            expect(loadManager.load).toHaveBeenCalledWith({
+                kind: 'actor',
+                path: '/tmp/model.pmx',
+            });
         });
 
         it('.vmd 路径走 loadManager(vmd)', async () => {

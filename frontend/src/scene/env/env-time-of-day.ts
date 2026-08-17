@@ -12,8 +12,12 @@ import { logWarn } from '@/core/logger';
 import { setKey } from '@/core/set-key';
 import { AUTO_LINK_THRESHOLD_DEG } from '@/core/ui-constants';
 import { deriveLighting, TIME_OF_DAY_PRESETS, type CategorizedEnvPreset } from './env-lighting';
-import { ensureEnvUpdateObserver } from './env-impl';
-import { dispatchEnvChange, registerSceneTickCallback } from './_bridge/env-dispatcher';
+// [doc:adr-269 补充] 观察器挂载改走 dispatcher 请求，断开「子系统 → 调度器」向上依赖
+import {
+    dispatchEnvChange,
+    registerSceneTickCallback,
+    requestEnvObserver,
+} from './_bridge/env-dispatcher';
 import {
     setLightState,
     getLightState,
@@ -24,7 +28,7 @@ import {
     isLightingReady,
 } from '../render/lighting';
 import type { LightState } from '../render/lighting';
-import { scene } from '../scene';
+import { scene } from '../scene-context';
 import {
     setEnvState,
     setPresetAnimActive,
@@ -115,7 +119,7 @@ export function startTimeOfDay(speed?: number): void {
     _timeOfDayPaused = false;
     _lastSkySunAngle = envSunAngle;
     _lastAutoLinkSunAngle = envSunAngle;
-    ensureEnvUpdateObserver();
+    requestEnvObserver();
     _unregisterTimeOfDay = registerSceneTickCallback(_timeOfDayTick);
 }
 

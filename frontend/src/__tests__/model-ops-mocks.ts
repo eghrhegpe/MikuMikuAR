@@ -50,6 +50,20 @@ export function mockEnv() {
     return { refreshWaterRenderList: vi.fn() };
 }
 
+// [doc:adr-269 补充] model-ops 已改指 camera 叶子模块（camera-state / camera-bone-lock），
+// 原先整体 mock '../scene/camera/camera' 拦不住叶子，故按真实定义处拆成两条工厂。
+export function mockCameraStateModule() {
+    return { getCameraMode: vi.fn(() => 'orbit') };
+}
+
+export function mockCameraBoneLockModule() {
+    return {
+        getOrbitBoneLock: vi.fn(() => ({ enabled: false, boneName: null })),
+        setOrbitBoneLock: vi.fn(),
+        getFocusedModelBoneNames: vi.fn(() => []),
+    };
+}
+
 export function mockCameraModule() {
     return { getCameraMode: vi.fn(() => 'orbit'), switchCameraMode: vi.fn() };
 }

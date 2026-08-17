@@ -107,7 +107,15 @@ const ADAPTERS: Record<
 function parseBoolean(raw: unknown): boolean {
     if (typeof raw === 'string') {
         const s = raw.trim().toLowerCase();
-        if (s === '' || s === 'false' || s === '0' || s === 'off' || s === 'no' || s === 'null' || s === 'undefined') {
+        if (
+            s === '' ||
+            s === 'false' ||
+            s === '0' ||
+            s === 'off' ||
+            s === 'no' ||
+            s === 'null' ||
+            s === 'undefined'
+        ) {
             return false;
         }
     }

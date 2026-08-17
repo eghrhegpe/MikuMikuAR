@@ -5,10 +5,7 @@
 // dispose 时只删除本实例注册的闭包，不会误删后续替换模块的注册。
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import {
-    registerSceneAction,
-    getSceneAction,
-} from '../core/scene-action-bridge';
+import { registerSceneAction, getSceneAction } from '../core/scene-action-bridge';
 
 // 用未参与生产的键，避免污染全局 Map（桥是模块级 Map）
 type TestKey = 'getMotionMenu';

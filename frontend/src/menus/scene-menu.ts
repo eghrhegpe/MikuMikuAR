@@ -155,7 +155,11 @@ function buildMirrorLevel(): PopupLevel {
 /** 场景弹窗根级 items 构建器——items-based，支持增量 patch */
 function buildSceneRootItems(): PopupRow[] {
     // [cache] 缓存：避免 RAF 每帧全量重建根 items
-    const _cache = (buildSceneRootItems as typeof buildSceneRootItems & { _cached?: { _key: string; _items: PopupRow[] } })._cached;
+    const _cache = (
+        buildSceneRootItems as typeof buildSceneRootItems & {
+            _cached?: { _key: string; _items: PopupRow[] };
+        }
+    )._cached;
     const groundEnabled = envState.groundVisibleEnabled;
     const waterEnabled = envState.waterEnabled;
     const dragEnabled = isDragModeEnabled();
@@ -283,7 +287,11 @@ function buildSceneRootItems(): PopupRow[] {
             getSceneMenu()?.updateControls();
         },
     });
-    (buildSceneRootItems as typeof buildSceneRootItems & { _cached?: { _key: string; _items: PopupRow[] } })._cached = { _key: key, _items: items };
+    (
+        buildSceneRootItems as typeof buildSceneRootItems & {
+            _cached?: { _key: string; _items: PopupRow[] };
+        }
+    )._cached = { _key: key, _items: items };
     return items;
 }
 

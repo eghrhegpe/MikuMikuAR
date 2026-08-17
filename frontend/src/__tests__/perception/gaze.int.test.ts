@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // 只引 math.vector 子路径：包根 @babylonjs/core 会拖全量 index（实测 import 1.59s），
 // SUT 链路（perception-shared）也只用该子路径，依赖图共享、成本 ~60ms 级。
 import { Quaternion } from '@babylonjs/core/Maths/math.vector';
+import type { Camera } from '@babylonjs/core/Cameras/camera';
 
 const mockState = vi.hoisted(() => ({
     focusedModelId: null as string | null,
@@ -16,7 +17,7 @@ const mockState = vi.hoisted(() => ({
             add: vi.fn(() => ({})),
             remove: vi.fn(),
         },
-        activeCamera: null,
+        activeCamera: null as Camera | null,
         isDisposed: false,
     },
     isAudioPlaying: vi.fn(() => false),
@@ -33,6 +34,8 @@ const mockPipeline = vi.hoisted(() => ({
 }));
 
 vi.mock('../../scene/scene', () => sceneModuleFactory(mockState));
+// [doc:adr-269 补充] perception/camera 的焦点访问器已迁到窄门面 scene-focus
+vi.mock('../../scene/scene-focus', () => sceneModuleFactory(mockState));
 vi.mock('../../ar/ar-camera', () => arCameraModuleMock);
 vi.mock('../../core/wails-bindings', () => wailsBindingsModuleMock);
 vi.mock('../../core/i18n/t', () => i18nTModuleMock);

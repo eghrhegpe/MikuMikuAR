@@ -279,7 +279,7 @@ describe('ADR-101 P2: lifecycle guards', () => {
         });
 
         it('caches null-like values correctly', async () => {
-            const loader = makeLazyLoader(async () => null);
+            const loader = makeLazyLoader(async (): Promise<null> => null);
             const r1 = await loader();
             expect(r1).toBeNull();
             const r2 = await loader();

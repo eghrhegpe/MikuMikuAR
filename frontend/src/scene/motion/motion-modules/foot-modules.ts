@@ -14,7 +14,7 @@ import {
     registerBoneOverrideFrameHook,
     FRAME_HOOK_ORDER,
 } from '../bone-override';
-import { getModuleState } from './registry';
+import { getModuleState } from './registry-core';
 import type { MotionOverrideModule, ModuleMeta, ModuleDef } from './types';
 import {
     createModuleBase,
@@ -24,12 +24,18 @@ import {
     createEnsureActive,
     getModuleActionId,
 } from './module-base';
-import { matchBone, BONE_LEG_IK_L_CANDIDATES, BONE_LEG_IK_R_CANDIDATES } from '@/motion-algos/proc-motion-shared';
+import type { FootModuleId, FootParamKey } from './module-param-keys';
+import {
+    matchBone,
+    BONE_LEG_IK_L_CANDIDATES,
+    BONE_LEG_IK_R_CANDIDATES,
+} from '@/motion-algos/proc-motion-shared';
 
 // ── 工厂函数 ──
 
 interface FootSideConfig {
-    moduleId: string;
+    /** 左右足是同一套工厂代码，moduleId 是唯一变量；类型收窄后 bind 模板拼接保持字面量类型 */
+    moduleId: FootModuleId;
     ikBone: string;
     /** 左右侧标识，用于运行时解析实际骨骼名 */
     side: 'L' | 'R';
@@ -69,14 +75,15 @@ function createFootModuleFactory(cfg: FootSideConfig) {
     return (modelId: string, actionId?: string): MotionOverrideModule => {
         const managedBones = [cfg.ikBone];
 
-        const DEFAULTS: Record<string, ParamValue> = {
+        // 键集由 `satisfies` 双向钉在 `ModuleParamKeys['left-foot' | 'right-foot']` 上（ADR-272）
+        const DEFAULTS = {
             pitch: 0,
             yaw: 0,
             roll: 0,
             footPosX: 0,
             footPosY: 0,
             footPosZ: 0,
-        };
+        } satisfies Record<FootParamKey, ParamValue>;
 
         const META: ModuleMeta = {
             labelKey: cfg.labelKey,
@@ -102,59 +109,62 @@ function createFootModuleFactory(cfg: FootSideConfig) {
         }
 
         /** 启用时：每帧按当前参数重烤脚旋转覆盖 + 幂等注册位置偏移帧钩子 */
-        const ensureActive = createEnsureActive(
-            bake,
-            _footFrameHooks,
-            (mid) =>
-                registerBoneOverrideFrameHook(
-                    (_t, m) => {
-                        if (m !== mid) {
-                            return;
-                        }
-                        const st = getModuleState(mid, cfg.moduleId, getModuleActionId(mid));
-                        if (!st.enabled) {
-                            return;
-                        }
+        const ensureActive = createEnsureActive(bake, _footFrameHooks, (mid) =>
+            registerBoneOverrideFrameHook(
+                (_t, m) => {
+                    if (m !== mid) {
+                        return;
+                    }
+                    const st = getModuleState(mid, cfg.moduleId, getModuleActionId(mid));
+                    if (!st.enabled) {
+                        return;
+                    }
 
-                        // [P0 fix] 运行时解析实际骨骼名（MMD 标准名为全角「左足ＩＫ」/「右足ＩＫ」）
-                        const actualBoneName =
-                            _resolveIkBone(mid, cfg.side) ?? cfg.ikBone;
+                    // [P0 fix] 运行时解析实际骨骼名（MMD 标准名为全角「左足ＩＫ」/「右足ＩＫ」）
+                    const actualBoneName = _resolveIkBone(mid, cfg.side) ?? cfg.ikBone;
 
-                        const fx = guardNum(st.params.footPosX);
-                        const fy = guardNum(st.params.footPosY);
-                        const fz = guardNum(st.params.footPosZ);
-                        if (fx === 0 && fy === 0 && fz === 0) {
-                            // [fix P2] 归零时清除残留位置覆盖：此前直接 return 导致上一帧
-                            // setBoneOverridePosition 写入的 slot.pos 残留（与 body-posture
-                            // 同模式，round-P2 修复对齐），用户把 footPos 拖回 0 后脚不归位。
-                            // [fix code_review P1] 仅当本模块写过非零位置才清整槽（clearBoneOverride
-                            // 删除含旋转覆盖的整个槽，无条件清除会误伤旋转-only 用户）；
-                            // 清后重建仅旋转槽（保留 bake 的 pitch/yaw/roll 语义）。
-                            if (_footPosWritten.has(mid)) {
-                                _footPosWritten.delete(mid);
-                                clearBoneOverride(actualBoneName, mid);
-                                const pitch = guardNum(st.params.pitch);
-                                const yaw = guardNum(st.params.yaw);
-                                const roll = guardNum(st.params.roll);
-                                setBoneOverride(actualBoneName, [pitch, yaw, roll], 1, true, mid);
-                            }
-                            return;
+                    const fx = guardNum(st.params.footPosX);
+                    const fy = guardNum(st.params.footPosY);
+                    const fz = guardNum(st.params.footPosZ);
+                    if (fx === 0 && fy === 0 && fz === 0) {
+                        // [fix P2] 归零时清除残留位置覆盖：此前直接 return 导致上一帧
+                        // setBoneOverridePosition 写入的 slot.pos 残留（与 body-posture
+                        // 同模式，round-P2 修复对齐），用户把 footPos 拖回 0 后脚不归位。
+                        // [fix code_review P1] 仅当本模块写过非零位置才清整槽（clearBoneOverride
+                        // 删除含旋转覆盖的整个槽，无条件清除会误伤旋转-only 用户）；
+                        // 清后重建仅旋转槽（保留 bake 的 pitch/yaw/roll 语义）。
+                        if (_footPosWritten.has(mid)) {
+                            _footPosWritten.delete(mid);
+                            clearBoneOverride(actualBoneName, mid);
+                            const pitch = guardNum(st.params.pitch);
+                            const yaw = guardNum(st.params.yaw);
+                            const roll = guardNum(st.params.roll);
+                            setBoneOverride(actualBoneName, [pitch, yaw, roll], 1, true, mid);
                         }
+                        return;
+                    }
 
-                        setBoneOverridePosition(actualBoneName, [fx, fy, fz], 1, true, mid);
-                        _footPosWritten.add(mid);
-                    },
-                    FRAME_HOOK_ORDER.FEET,
-                    cfg.moduleId
-                )
+                    setBoneOverridePosition(actualBoneName, [fx, fy, fz], 1, true, mid);
+                    _footPosWritten.add(mid);
+                },
+                FRAME_HOOK_ORDER.FEET,
+                cfg.moduleId
+            )
         );
 
-        const base = createModuleBase(modelId, cfg.moduleId, DEFAULTS, bake, {
-            action: ensureActive,
-            onDisable: (mid) => {
-                _footFrameHooks.unregister(mid);
+        const base = createModuleBase(
+            modelId,
+            cfg.moduleId,
+            DEFAULTS,
+            bake,
+            {
+                action: ensureActive,
+                onDisable: (mid) => {
+                    _footFrameHooks.unregister(mid);
+                },
             },
-        }, actionId);
+            actionId
+        );
 
         return createModuleShell({
             id: cfg.moduleId,
@@ -259,7 +269,14 @@ export const LEFT_FOOT_DEF: ModuleDef = {
     meta: {
         labelKey: 'motion.override.module.leftFoot',
         icon: 'lucide:footprints',
-        defaults: { pitch: 0, yaw: 0, roll: 0, footPosX: 0, footPosY: 0, footPosZ: 0 },
+        defaults: {
+            pitch: 0,
+            yaw: 0,
+            roll: 0,
+            footPosX: 0,
+            footPosY: 0,
+            footPosZ: 0,
+        } satisfies Record<FootParamKey, ParamValue>,
     },
     priority: 8,
     factory: createFootModuleFactory({
@@ -276,7 +293,14 @@ export const RIGHT_FOOT_DEF: ModuleDef = {
     meta: {
         labelKey: 'motion.override.module.rightFoot',
         icon: 'lucide:footprints',
-        defaults: { pitch: 0, yaw: 0, roll: 0, footPosX: 0, footPosY: 0, footPosZ: 0 },
+        defaults: {
+            pitch: 0,
+            yaw: 0,
+            roll: 0,
+            footPosX: 0,
+            footPosY: 0,
+            footPosZ: 0,
+        } satisfies Record<FootParamKey, ParamValue>,
     },
     priority: 8,
     factory: createFootModuleFactory({

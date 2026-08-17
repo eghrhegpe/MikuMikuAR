@@ -13,20 +13,12 @@ adr:
   - ADR-166
 symbols:
   - EYE_BONE_CANDIDATES
-  - EyeGazeWriteStrategy
   - HEAD_BONE_CANDIDATES
-  - HeadGazeWriteStrategy
-  - _applyEyeGazeCore
   - _applyGaze
-  - _applyHeadGazeCore
   - _clampEyeGazeTarget
-  - _clampGazeTargetInParentFrame
   - _clampHeadGazeTarget
   - _getGazeTarget
   - applyGazeWasm
-  - getEyeGazeMaxPitch
-  - getEyeGazeMaxYaw
-  - getEyeGazeSmooth
 invariants:
   - 视线追踪主模块
   - JS/WASM 调度

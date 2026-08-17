@@ -39,6 +39,7 @@ import { NotSupportedError } from './types';
 import type { BackendService, BackendCapabilities } from './types';
 import { idbGet, idbSet, idbDelete, idbKeys, idbBatchSet, closeIDB, type Store } from './idb';
 import { detectKtx2Support } from '../gpu-capabilities';
+import { translateGoError } from '../i18n/goerr';
 
 // —— 路径工具函数（消除 6 处 "split + pop + replace" 重复）——
 
@@ -2414,9 +2415,20 @@ export const browserAdapter: BackendService = {
         }
     },
     async SavePlazaConfig(creators: string, sites: string): Promise<void> {
+        // 解析失败绝不能落盘空数组——那会把用户已保存的广场配置清空。
+        // 抛错交给调用方（savePlazaCache 已有 try/catch + logWarn）显式感知。
+        let parsedSites: unknown;
+        let parsedCreators: unknown;
+        try {
+            parsedSites = JSON.parse(sites || '[]');
+            parsedCreators = JSON.parse(creators || '[]');
+        } catch (err) {
+            const reason = translateGoError(err);
+            throw new Error(`SavePlazaConfig: plaza payload is not valid JSON (${reason})`);
+        }
         const data = {
-            sites: JSON.parse(sites || '[]'),
-            creators: JSON.parse(creators || '[]'),
+            sites: parsedSites,
+            creators: parsedCreators,
         };
         await this.WriteTextFile('plaza_cache.json', JSON.stringify(data, null, 2));
     },

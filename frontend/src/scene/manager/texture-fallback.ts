@@ -80,7 +80,9 @@ export function registerDeclaredAliases(
         seen.add(norm);
         extra.push({ relativePath: norm, data: src.data }); // 共享 data
     }
-    return extra.length > 0 ? [...files, ...extra] : (files as Array<{ relativePath: string; data: ArrayBuffer }>);
+    return extra.length > 0
+        ? [...files, ...extra]
+        : (files as Array<{ relativePath: string; data: ArrayBuffer }>);
 }
 
 /**
@@ -90,9 +92,9 @@ export function registerDeclaredAliases(
  * （如根目录 face.png 与 tex/face.png 并存）时不生成重复条目，避免 referenceFiles
  * 出现同 relativePath 双条目导致 babylon-mmd resolver 按 key 覆盖时错配贴图。
  */
-export function expandFallbackCandidates<T extends { readonly relativePath: string; readonly data: ArrayBuffer }>(
-    files: readonly T[]
-): T[] {
+export function expandFallbackCandidates<
+    T extends { readonly relativePath: string; readonly data: ArrayBuffer },
+>(files: readonly T[]): T[] {
     if (files.length === 0) {
         return [];
     }

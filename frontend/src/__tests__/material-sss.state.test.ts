@@ -15,10 +15,20 @@ import { Color3 } from '@babylonjs/core/Maths/math.color';
 // 最小 Babylon mock：仅 Color3（内联，vi.mock 不支持异步）
 vi.mock('@babylonjs/core/Maths/math.color', () => {
     class MockColor3 {
-        r = 0; g = 0; b = 0;
-        constructor(r = 0, g = 0, b = 0) { this.r = r; this.g = g; this.b = b; }
-        clone() { return new MockColor3(this.r, this.g, this.b); }
-        toArray() { return [this.r, this.g, this.b]; }
+        r = 0;
+        g = 0;
+        b = 0;
+        constructor(r = 0, g = 0, b = 0) {
+            this.r = r;
+            this.g = g;
+            this.b = b;
+        }
+        clone() {
+            return new MockColor3(this.r, this.g, this.b);
+        }
+        toArray() {
+            return [this.r, this.g, this.b];
+        }
     }
     return { Color3: MockColor3 };
 });

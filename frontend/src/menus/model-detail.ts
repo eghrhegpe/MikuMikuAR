@@ -1,13 +1,7 @@
 // [doc:architecture] Model — 模型子菜单（从 library.ts 提取）
 // 职责: 模型各层级构建（外观/信息/标签/表情/材质）
 
-import {
-    cardContainer,
-    PopupLevel,
-    modelMetaCache,
-    setModelMetaCache,
-    dom,
-} from '../core/config';
+import { cardContainer, PopupLevel, modelMetaCache, setModelMetaCache, dom } from '../core/config';
 import { stackRegistry } from './menu-stack-registry';
 import { computeLibraryRef, getBrowseDir } from '@/core/library-path';
 import { escapeHtml } from '../core/escape-html';
@@ -559,13 +553,13 @@ export function buildMotionSlotLevel(id: string, inst: ModelInstance): PopupLeve
                                 t('model-detail.procEdit'),
                                 false,
                                 () => {
-                                _setProcForModel(id, inst, procId);
-                                // [doc:adr-207] procEdit 统一进动作详情页（含覆盖/预设/参数），
-                                // 与场景级入口一致；按该模型 id 取 model-scoped 覆盖/预设，
-                                // 传 procId 绑定该模式专属参数。
-                                stackRegistry.modelStack?.push(
-                                    buildMotionDetailLevel(undefined, id, procId)
-                                );
+                                    _setProcForModel(id, inst, procId);
+                                    // [doc:adr-207] procEdit 统一进动作详情页（含覆盖/预设/参数），
+                                    // 与场景级入口一致；按该模型 id 取 model-scoped 覆盖/预设，
+                                    // 传 procId 绑定该模式专属参数。
+                                    stackRegistry.modelStack?.push(
+                                        buildMotionDetailLevel(undefined, id, procId)
+                                    );
                                 },
                                 { marginLeft: 'auto', stopPropagation: true }
                             );
@@ -667,7 +661,7 @@ function openModelDetailFullscreen(id: string): void {
         renderContent: (container) => {
             container.style.display = 'flex';
             container.style.flexDirection = 'column';
-            container.style.gap = '12px';
+            container.style.gap = 'var(--content-px)';
 
             const tabs = document.createElement('div');
             tabs.className = 'type-row model-detail-tabs';
@@ -992,7 +986,7 @@ function buildModelTagsSchema(id: string): MenuNode[] {
 
                     const pickerLabel = document.createElement('div');
                     pickerLabel.style.cssText =
-                        'font-size:11px;color:var(--text-dim);margin:8px 0 4px;';
+                        'font-size:var(--font-ui-sm);color:var(--text-dim);margin:8px 0 4px;';
                     pickerLabel.textContent = t('model-detail.addExistingTag');
                     c.appendChild(pickerLabel);
 
@@ -1008,7 +1002,7 @@ function buildModelTagsSchema(id: string): MenuNode[] {
                                 // [fix P3] libRef 可为 null（inst.filePath 为空时 L876 得 null），
                                 // 移除裸 `!`，显式守卫避免向后端传 null
                                 (libRef ? GetTagsByModel(libRef) : Promise.resolve(null)).then(
-                                    (modelTags) => {
+                                    (modelTags: string[] | null) => {
                                         if (!container.isConnected) {
                                             return;
                                         }
@@ -1039,47 +1033,48 @@ function buildModelTagsSchema(id: string): MenuNode[] {
                                                 ? t('model-detail.tagAddedRemove')
                                                 : t('model-detail.tagAdd');
                                             chip.addEventListener('click', () => {
-                                            if (!libRef || !container.isConnected) {
-                                                return;
-                                            }
-                                            if (assigned.has(tag)) {
-                                                RemoveTag(libRef, tag)
-                                                    .then(() => {
-                                                        refreshTags();
-                                                    })
-                                                    .catch((e) =>
-                                                        logWarn(
-                                                            'model-detail',
-                                                            'remove tag failed:',
-                                                            e
-                                                        )
-                                                    );
-                                            } else {
-                                                AddTag(libRef, tag)
-                                                    .then(() => {
-                                                        refreshTags();
-                                                    })
-                                                    .catch((e) =>
-                                                        logWarn(
-                                                            'model-detail',
-                                                            'add tag failed:',
-                                                            e
-                                                        )
-                                                    );
-                                            }
+                                                if (!libRef || !container.isConnected) {
+                                                    return;
+                                                }
+                                                if (assigned.has(tag)) {
+                                                    RemoveTag(libRef, tag)
+                                                        .then(() => {
+                                                            refreshTags();
+                                                        })
+                                                        .catch((e) =>
+                                                            logWarn(
+                                                                'model-detail',
+                                                                'remove tag failed:',
+                                                                e
+                                                            )
+                                                        );
+                                                } else {
+                                                    AddTag(libRef, tag)
+                                                        .then(() => {
+                                                            refreshTags();
+                                                        })
+                                                        .catch((e) =>
+                                                            logWarn(
+                                                                'model-detail',
+                                                                'add tag failed:',
+                                                                e
+                                                            )
+                                                        );
+                                                }
+                                            });
+                                            picker.appendChild(chip);
                                         });
-                                        picker.appendChild(chip);
-                                    });
-                                    if (
-                                        !allTags ||
-                                        allTags.filter((tg) => tg !== '收藏').length === 0
-                                    ) {
-                                        picker.innerHTML =
-                                            '<span style="color:var(--text-muted);font-size:11px;">' +
-                                            t('model-detail.noGlobalTags') +
-                                            '</span>';
+                                        if (
+                                            !allTags ||
+                                            allTags.filter((tg) => tg !== '收藏').length === 0
+                                        ) {
+                                            picker.innerHTML =
+                                                '<span style="color:var(--text-muted);font-size:11px;">' +
+                                                t('model-detail.noGlobalTags') +
+                                                '</span>';
+                                        }
                                     }
-                                })
+                                )
                             );
                         })
                     );
@@ -1237,7 +1232,7 @@ export function buildPersonalLightLevel(id: string): PopupLevel {
                     const sel = document.createElement('select');
                     sel.style.cssText =
                         'width:100%;padding:6px 8px;border-radius:6px;' +
-                        'background:var(--surface2);color:var(--text);border:1px solid var(--border);font-size:12px;';
+                        'background:var(--surface2);color:var(--text);border:1px solid var(--border);font-size:var(--font-hint);';
                     const autoOpt = document.createElement('option');
                     autoOpt.value = '';
                     autoOpt.textContent = t('model-detail.personalLightBoneAuto');
@@ -1432,14 +1427,14 @@ function buildBoneHierarchySchema(id: string): MenuNode[] {
                 cardContainer(container, (c) => {
                     const header = document.createElement('div');
                     header.style.cssText =
-                        'font-size:var(--font-ui-sm);color:var(--text-bright);padding:4px 14px 8px;';
+                        'font-size:var(--font-ui-sm);color:var(--text-bright);padding:4px var(--row-pad-x) 8px;';
                     header.textContent = t('model-detail.boneCount', { n: bones.length });
                     c.appendChild(header);
 
                     function renderBoneTree(parent: HTMLElement, idx: number, depth: number): void {
                         const bone = bones[idx];
                         const row = document.createElement('div');
-                        row.style.cssText = `display:flex;align-items:center;padding:2px 14px 2px ${14 + depth * 16}px;font-size:var(--font-ui);color:var(--text);gap:6px;`;
+                        row.style.cssText = `display:flex;align-items:center;padding:2px var(--row-pad-x) 2px ${14 + depth * 16}px;font-size:var(--font-ui);color:var(--text);gap:6px;`;
 
                         // Collapse/expand for non-leaf
                         const hasChildren = (childrenMap.get(idx)?.length ?? 0) > 0;
@@ -1508,7 +1503,7 @@ function buildBoneHierarchySchema(id: string): MenuNode[] {
                             }
                             badge.title = t('model-detail.hasPhysics');
                             badge.style.cssText =
-                                'font-size:11px;flex:none;color:var(--accent);display:inline-flex;';
+                                'font-size:var(--font-ui-sm);flex:none;color:var(--accent);display:inline-flex;';
                             row.appendChild(badge);
                         }
                     }

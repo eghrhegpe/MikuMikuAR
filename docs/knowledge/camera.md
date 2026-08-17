@@ -50,6 +50,7 @@ symbols:
   - createVmdCamera
   - defaultCameraPreset
   - deriveLegacyMode
+  - disposeCameraBehaviors
   - disposeCameraSystem
   - disposeViewMatrixHandle
   - getAutoCameraBeatCount

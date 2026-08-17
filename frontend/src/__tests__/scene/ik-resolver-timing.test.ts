@@ -35,7 +35,7 @@ vi.mock('@/scene/env/env-impl', () => ({
 // mock getModuleState 返回 null（无脚部模块激活）
 vi.mock('@/scene/motion/motion-modules/registry', async (importActual) => ({
     ...(await importActual<typeof import('@/scene/motion/motion-modules/registry')>()),
-    getModuleState: () => null,
+    getModuleState: (): null => null,
 }));
 
 /** 构造最小 WASM 骨骼 mock（无 updateWorldMatrix → isWasmRuntime 返回 true） */
@@ -167,10 +167,11 @@ describe('IK 重解双调用路径时序（ADR-202 §六）', () => {
             for (let i = 0; i < 120; i++) {
                 getMotionPipeline().runFrame({ scene });
             }
-            const ikLogs = warnSpy.mock.calls.filter((c) =>
-                String(c[0]).includes('[IK-ENTRY]') ||
-                String(c[0]).includes('[IK-SOLVE]') ||
-                String(c[0]).includes('[OVERRIDE-APPLY]')
+            const ikLogs = warnSpy.mock.calls.filter(
+                (c) =>
+                    String(c[0]).includes('[IK-ENTRY]') ||
+                    String(c[0]).includes('[IK-SOLVE]') ||
+                    String(c[0]).includes('[OVERRIDE-APPLY]')
             );
             expect(ikLogs.length).toBe(0);
         } finally {

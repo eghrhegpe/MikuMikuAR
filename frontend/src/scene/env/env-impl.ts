@@ -7,10 +7,16 @@ import { EnvState, envState } from '@/core/config';
 import { getEnvKeys } from '@/core/env-state-schema';
 import { col3FromTriple } from '@/core/color-helpers';
 import { logWarn } from '@/core/logger';
-import { observe, type ObserverHandle } from '@/core/observer-handle';
+import { getFrameRegistry } from '@/core/frame-registry';
 import { safeDispose } from '@/core/dispose-helpers';
 import { disposeTextureCache } from './_shared/env-texture';
-import { _envSys, getScene, getPipeline, isInitialized, resetEnvContext } from './_shared/env-context';
+import {
+    _envSys,
+    getScene,
+    getPipeline,
+    isInitialized,
+    resetEnvContext,
+} from './_shared/env-context';
 import { clearSceneTickCallbacks, runSceneTickCallbacks } from './_bridge/env-dispatcher';
 import { clearEnvDtTickCallbacks, runEnvDtTickCallbacks } from './_bridge/env-dispatcher';
 import { causticsController } from './env-caustics';
@@ -30,7 +36,12 @@ export {
     clearGroundRipples,
     updateWaterAnimSpeed,
 } from './env-water';
-import { updateUnderwaterTransition, resetUnderwaterState, updateGroundRipples, resetCausticsSyncGuard } from './env-water';
+import {
+    updateUnderwaterTransition,
+    resetUnderwaterState,
+    updateGroundRipples,
+    resetCausticsSyncGuard,
+} from './env-water';
 export { createClouds, disposeClouds } from './env-clouds';
 import {
     createMirror,
@@ -75,7 +86,7 @@ export { registerSceneTickCallback } from './_bridge/env-dispatcher';
 export { initEnvImpl } from './_shared/env-context';
 
 // [ADR-138] 注册 env-dispatcher 回调，响应 setEnvState 变化，破除 env-bridge → env-impl 循环依赖
-import { registerEnvCallback } from './_bridge/env-dispatcher';
+import { registerEnvCallback, registerEnvObserverHandler } from './_bridge/env-dispatcher';
 
 // 从 Schema 自动派生 dispatch key 列表，新增字段无需手工维护
 const _SKY_KEYS = getEnvKeys('sky');
@@ -117,7 +128,15 @@ registerEnvCallback((changed, state) => {
 });
 
 // ======== Env Update Observer ========
-let _envUpdateObserver: ObserverHandle | null = null;
+// [doc:adr-269 补充] 把「确保 observer 已挂载」注册给 dispatcher，供子系统请求式调用，
+// 替代它们此前直接 import './env' 的向上依赖（函数声明提升，注册放在定义之前也有效）。
+registerEnvObserverHandler(() => ensureEnvUpdateObserver());
+
+// env 每帧总分发器走 core/frame-registry 场景键共享表（getFrameRegistry）：
+// 单一 observer 下按 key 注册，取代原先自己挂一条裸 onBeforeRenderObservable。
+// 被派发者（runSceneTickCallbacks / runEnvDtTickCallbacks / registerEnvCallback）
+// 均不读骨骼 worldMatrix，合入共享表不改变时序语义。
+let _envUpdateObserver: import('@babylonjs/core').Scene | null = null;
 let _prevParticleEnabled = true;
 let _prevSplash = false;
 let _prevCustomTexture = '';
@@ -129,7 +148,8 @@ export function ensureEnvUpdateObserver(): void {
         return;
     }
 
-    _envUpdateObserver = observe(scene.onBeforeRenderObservable, () => {
+    _envUpdateObserver = scene;
+    getFrameRegistry(scene).register('env.update', () => {
         const dt = scene.deltaTime / 1000;
 
         // P2 修复：旧版平面纹理云的漂移逻辑（_envSys.clouds.postProcess/postProcess2）
@@ -202,7 +222,10 @@ export function disposeEnvUpdateObserver(): void {
     }
     const scene = getScene();
     const pipeline = getPipeline();
-    _envUpdateObserver = safeDispose(_envUpdateObserver);
+    if (_envUpdateObserver) {
+        getFrameRegistry(_envUpdateObserver).unregister('env.update');
+        _envUpdateObserver = null;
+    }
     // 清理所有场景 tick 回调（如 time-of-day），避免 HMR 重入时泄漏
     clearSceneTickCallbacks();
     clearEnvDtTickCallbacks();

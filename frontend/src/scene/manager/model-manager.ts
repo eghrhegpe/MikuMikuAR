@@ -1007,10 +1007,7 @@ export class ModelManager {
                 }
 
                 // [doc:bone-override] 覆盖线段着色
-                const ovLineColors: Record<
-                    OverrideType | 'default',
-                    Color3
-                > = {
+                const ovLineColors: Record<OverrideType | 'default', Color3> = {
                     rotation: new Color3(1, 0.3, 0.3), // 红
                     position: new Color3(0.3, 0.5, 1), // 蓝
                     both: new Color3(1, 0.3, 1), // 紫
@@ -1025,7 +1022,8 @@ export class ModelManager {
                         continue;
                     }
                     const childOv = getSceneAction('getOverrideType')?.(childBone.name, id) ?? null;
-                    const parentOv = getSceneAction('getOverrideType')?.(parentBone.name, id) ?? null;
+                    const parentOv =
+                        getSceneAction('getOverrideType')?.(parentBone.name, id) ?? null;
                     const ovType = childOv ?? parentOv;
                     if (!ovType) {
                         overrideLines[i].setEnabled(false);

@@ -5,6 +5,9 @@
  * 触发"先到先得绑定锁定"污染。setup-wails.ts 已为 idb 等模块提供全局 mock，
  * 测试文件内的重复 vi.mock 是冗余代码——一旦工厂形状飘移即静默污染。
  *
+ * 设计意图：把 ADR-262 的「三条件合取才污染」判据静态化——在 review 之前就用脚本
+ * 拦下与 setup 全局 mock 重复或工厂漂移的 vi.mock，让串味在提交期暴露而非随机复现。
+ *
  * 检测内容：
  *   1. 文件级 vi.mock 与 setup 全局 mock 指向同一模块（冗余，warn）
  *   2. 文件级 vi.mock 与 setup 全局 mock 指向同一模块但工厂不同（形状漂移，warn）
@@ -20,14 +23,14 @@
  */
 
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { dirname, join, normalize, relative } from 'node:path';
+import { ROOT } from './_lib/scan-files.mjs';
 
 const JSON_OUT = process.argv.includes('--json');
 const _FILES = process.argv.slice(2).filter((a) => !a.startsWith('--'));
 
 // ── 路径常量 ──
-const ROOT_DIR = dirname(dirname(fileURLToPath(import.meta.url)));
+const ROOT_DIR = ROOT;
 const FRONTEND_DIR = join(ROOT_DIR, 'frontend');
 const SRC_DIR = join(FRONTEND_DIR, 'src');
 const SETUP_FILE = join(SRC_DIR, '__tests__', 'setup-wails.ts');

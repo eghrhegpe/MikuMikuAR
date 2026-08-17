@@ -8,7 +8,10 @@
 
 import { getMotionPipeline } from './motion-pipeline';
 
-import { modelManager, focusedModelId, triggerAutoSave } from '../scene';
+// [doc:adr-269 补充] 原先从 '../scene' 取 modelManager/focusedModelId/triggerAutoSave，
+// 使本文件与装配器 scene.ts 互相引用，成为 12 文件 SCC 的一环。改走窄门面 scene-focus
+// （同属 scene 模块，不新增模块级有向对），装配器因此退出该 SCC。
+import { modelManager, focusedModelId, triggerAutoSave } from '../scene-focus';
 // scene 实例走门面 getScene() 延迟获取，避免与 scene.ts 形成静态循环依赖
 // (scene.ts → proc-motion-bridge.ts → perception.ts → scene.ts)
 // [fix:round15 P1] 走门面而非直接 import env-impl

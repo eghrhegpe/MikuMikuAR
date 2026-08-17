@@ -24,7 +24,8 @@ import { BeatDetector } from '@/motion-algos/beat-detector';
 import { focusedModelId } from '@/core/config';
 // [doc:adr-238] 音频操作经 scene-action-bridge（core/audio 注册）
 import { getSceneAction } from '@/core/scene-action-bridge';
-import { modelManager, focusedMmdModel, focusedModel } from '../scene';
+// [doc:adr-269 补充] 改走窄门面 scene-focus，断开与装配器 scene.ts 的双向引用
+import { modelManager, focusedMmdModel, focusedModel } from '../scene-focus';
 import { onPerceptionModelRemoved } from './perception';
 import { logWarn } from '@/core/logger';
 import { safeDispose } from '@/core/dispose-helpers';

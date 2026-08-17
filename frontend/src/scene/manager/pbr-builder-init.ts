@@ -16,7 +16,7 @@ export async function tryApplyPbrMaterialBuilder(): Promise<void> {
         MmdModelLoader.SharedMaterialBuilder = new PBRMaterialBuilder();
         logWarn(
             'scene',
-            'PBR 模式已启用：MmdModelLoader.SharedMaterialBuilder = PBRMaterialBuilder',
+            'PBR 模式已启用：MmdModelLoader.SharedMaterialBuilder = PBRMaterialBuilder'
         );
     } catch (e) {
         logWarn('scene', 'PBRMaterialBuilder 加载失败，回退 StandardMaterial：', e);

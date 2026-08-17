@@ -25,7 +25,7 @@ const mockInst = {
     vmdLayers: [] as any[],
     vmdData: null as ArrayBuffer | null,
     vmdName: '',
-    meshes: [{ skeleton: { bones: [] } }],
+    meshes: [{ skeleton: { bones: [] as unknown[] } }] as unknown[],
     animationDuration: 0,
 };
 const mockMmdRuntime = {
@@ -115,7 +115,7 @@ vi.mock('babylon-mmd/esm/Loader/vmdLoader', () => ({
         async loadFromBufferAsync(_name: string, _data: ArrayBuffer) {
             return {
                 endFrame: 60,
-                metadata: { camera: null },
+                metadata: { camera: null as unknown },
             };
         }
     },
@@ -146,11 +146,7 @@ vi.mock('../scene/motion/proc-motion-bridge', () => ({
 }));
 
 // ======== 导入被测模块 ========
-import {
-    addVmdLayer,
-    removeVmdLayer,
-    toggleVmdLayer,
-} from '../scene/motion/vmd-layers';
+import { addVmdLayer, removeVmdLayer, toggleVmdLayer } from '../scene/motion/vmd-layers';
 
 /** 构建最小合法 VMD buffer（不同 byteLength 避免去重） */
 function fakeVmdBuffer(extraBytes = 0): ArrayBuffer {

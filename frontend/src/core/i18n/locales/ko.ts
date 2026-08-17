@@ -29,7 +29,8 @@ export const ko: Record<string, string> = {
     'settings.orientationPortrait': '세로',
     'settings.orientationLandscape': '가로',
     'settings.resetAppearance': '외관 초기화',
-    'settings.resetAppearanceConfirm': '외관을 기본값으로 초기화하시겠습니까? 모든 외관 설정이 재설정됩니다',
+    'settings.resetAppearanceConfirm':
+        '외관을 기본값으로 초기화하시겠습니까? 모든 외관 설정이 재설정됩니다',
     'settings.filename': '파일명',
     'settings.library': '라이브러리',
     'settings.performance': '성능',
@@ -1573,11 +1574,13 @@ export const ko: Record<string, string> = {
     'settings.about.update.installLaunched': '설치 시작됨',
     'settings.about.maintenance': '유지보수 도구',
     'settings.about.maintenance.clearExtract': '추출 캐시 지우기',
-    'settings.about.maintenance.clearExtractConfirm': '추출 캐시를 지우시겠습니까? 다음 모델 로드 시 자동으로 다시 생성됩니다.',
+    'settings.about.maintenance.clearExtractConfirm':
+        '추출 캐시를 지우시겠습니까? 다음 모델 로드 시 자동으로 다시 생성됩니다.',
     'settings.about.maintenance.clearThumbnail': '썸네일 캐시 지우기',
     'settings.about.maintenance.clearThumbnailConfirm': '썸네일 캐시를 지우시겠습니까?',
     'settings.about.maintenance.clearAll': '모든 캐시 지우기',
-    'settings.about.maintenance.clearAllConfirm': '모든 캐시를 지우시겠습니까? 이 작업은 되돌릴 수 없습니다.',
+    'settings.about.maintenance.clearAllConfirm':
+        '모든 캐시를 지우시겠습니까? 이 작업은 되돌릴 수 없습니다.',
     'settings.about.maintenance.openExtract': '추출 캐시 디렉터리 열기',
     'settings.about.maintenance.openLogPanel': '로그 패널 열기',
     'settings.about.maintenance.openThumbnail': '썸네일 캐시 디렉터리 열기',

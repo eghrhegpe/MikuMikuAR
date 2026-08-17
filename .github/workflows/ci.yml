@@ -5,19 +5,121 @@ on:
     branches: [main, master]
   pull_request:
     branches: [main, master]
-  # [2026-08] 覆盖率移出 push 门禁：push/PR 跑无插桩 vitest（2 核 runner 上
-  # coverage 插桩独占 ~2 分钟），整体覆盖率由每日 schedule 补跑（含阈值 gate）。
-  schedule:
-    - cron: '17 3 * * *'
+  # [2026-10-19] 项目退坑：每日覆盖率 schedule 已停用。
+  # push/PR 不再跑 coverage；需要补跑覆盖率时手动 dispatch（会带 --coverage，见下方分支判断）。
+  workflow_dispatch:
+  # [2026-10-23] 声明为可复用 workflow：release.yml 在发版前调用本 workflow 充当门禁
+  # （tag 打出去时测试不绿就不打包）。同一份实现，不另写一套发版测试。
+  # 参考兄弟项目 ysm-model-manager/.github/workflows/release.yml:31-35。
+  workflow_call:
+    inputs:
+      # [2026-10-23] 发版门禁用：tag push 的 event.before 通常只含一个提交，
+      # 若按域裁剪会误把大部分 job 跳过 → 门禁名存实亡。发版强制全量跑。
+      force-all:
+        description: 强制全量（发版门禁用：tag diff 只含一个提交，域裁剪会误跳过门禁）
+        type: boolean
+        default: false
 
 permissions:
   contents: read
   actions: read
 
+# [2026-10-23] 并发取消：同一 PR / 同一分支连推只保留最新一轮。
+# 旧 run 的结论已被新 push 作废，排队干烧 runner 分钟纯浪费。
+# main 直推取最新全量（门禁语义：最新 run 通过即绿）。
+# 参考兄弟项目 ysm-model-manager/.github/workflows/ci.yml:36-38。
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
+  # ──────────────────────────────────────────────────────────────
+  # [2026-10-23] 变更域判定（参考 ysm-model-manager/.github/workflows/test.yml:38-124）
+  # GHA 的 job 级 if 拿不到变更文件列表，所以必须由一个 job 先算、其余 job
+  # 经 needs + outputs 消费。
+  #
+  # 三条铁律：
+  #   1. 保守优先 —— 无法归类 / 根级配置 / 依赖清单变更一律置 all=true，全量跑。
+  #      宁可多跑，绝不在「不确定影响面」时静默跳过。
+  #   2. 空变更集必须全量 —— 否则四域全 false ⇒ 所有 job 跳过 ⇒ 「CI 绿」但什么都没跑（假绿）。
+  #   3. 发版 / 手动 dispatch ⇒ 全量（tag diff 只含一个提交，域裁剪会误跳过）。
+  # ──────────────────────────────────────────────────────────────
+  changes:
+    name: Changes — 变更域判定
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      frontend: ${{ steps.detect.outputs.frontend }}
+      go: ${{ steps.detect.outputs.go }}
+      governance: ${{ steps.detect.outputs.governance }}
+      all: ${{ steps.detect.outputs.all }}
+      base: ${{ steps.detect.outputs.base }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: '0' # 要 diff 到 base
+
+      - id: detect
+        env:
+          EVENT: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          FORCE_ALL: ${{ inputs.force-all }}
+        run: |
+          set -euo pipefail
+          out() { echo "$1=$2" >> "$GITHUB_OUTPUT"; }
+          all_on() { out all true; out frontend true; out go true; out governance true; }
+
+          # 手动触发 / 发版门禁 / 显式 force-all ⇒ 全量
+          if [ "${EVENT}" = "workflow_dispatch" ] || [ "${FORCE_ALL}" = "true" ]; then
+            echo "::notice::强制全量（event=${EVENT} force-all=${FORCE_ALL}）"
+            all_on; out base ""; exit 0
+          fi
+
+          # 解析真实基线：push 用 event.before；PR 用 base.sha；都不在则回退 HEAD~1
+          BASE="${BEFORE:-}"
+          [ "${BASE}" = "0000000000000000000000000000000000000000" ] && BASE=""
+          if [ -z "${BASE}" ] && [ -n "${PR_BASE:-}" ]; then BASE="${PR_BASE}"; fi
+          if [ -z "${BASE}" ]; then
+            BASE="$(git rev-parse HEAD~1 2>/dev/null || true)"
+            [ -z "${BASE}" ] && { echo "::notice::无可用基线（首次提交）⇒ 全量"; all_on; out base ""; exit 0; }
+          fi
+          if ! git cat-file -e "${BASE}^{commit}" 2>/dev/null; then
+            echo "::notice::基线 ${BASE} 不在本地（浅克隆/强推）⇒ 全量"; all_on; out base ""; exit 0
+          fi
+
+          CHANGED="$(git diff --name-only "${BASE}...HEAD" 2>/dev/null || true)"
+          if [ -z "${CHANGED}" ]; then
+            echo "::warning::变更集为空 ⇒ 全量（空集跳过所有 job = 假绿）"
+            all_on; out base "$BASE"; exit 0
+          fi
+
+          FE=false; GO=false; GOV=false; ALL=false
+          while IFS= read -r f; do
+            [ -z "$f" ] && continue
+            case "$f" in
+              frontend/*|e2e/*)                                FE=true ;;
+              *.go|go.mod|go.sum|cmd/*|internal/*|app/*)        GO=true ;;
+              scripts/*|tests/*|docs/*|*.md|.githooks/*)        GOV=true ;;
+              *)                                              ALL=true ;; # .github/**、根级 json/yml、依赖清单、无法归类 → 保守全量
+            esac
+          done <<< "$CHANGED"
+
+          out all "$ALL"
+          out frontend "$FE"
+          out go "$GO"
+          out governance "$GOV"
+          out base "$BASE"
+          echo "::notice::域判定 → frontend=$FE go=$GO governance=$GOV all=$ALL (base=$BASE)"
+
   test-frontend:
     name: Frontend — Test & Build
     runs-on: ubuntu-latest
+    # [2026-10-23] 域裁剪：仅前端源码 / 全量场景才跑功能测试（最贵 ~8min，与治理检查拆分后 docs 变更不再白跑）。
+    needs: [changes]
+    if: needs.changes.outputs.frontend == 'true' || needs.changes.outputs.all == 'true'
+    # [2026-10-23] 显式超时：缺省 360min，卡死时静默干烧（本 job 冷跑实测约 7-8min）。
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: frontend
@@ -47,10 +149,10 @@ jobs:
       - name: Type check
         run: npx tsc --noEmit
 
-      # [2026-08] push/PR 不跑 coverage（2 核插桩贵）；schedule 分支补跑。
-      # 分支判断：github.event_name == 'schedule' 时追加 --coverage。
+      # [2026-08] push/PR 不跑 coverage（2 核插桩贵）；schedule/dispatch 分支补跑。
+      # 分支判断：github.event_name 为 schedule 或 workflow_dispatch 时追加 --coverage。
       - name: Run unit tests
-        run: npx vitest run ${{ github.event_name == 'schedule' && '--coverage' || '' }}
+        run: npx vitest run ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && '--coverage' || '' }}
 
       # [ADR-229 §2.4] 快照新鲜度 gate（自 e2e-suite 迁出保留）：vitest 已重生成
       # schema-snapshot.json，比对入库版本——schema 变更未提交新快照 → diff 非空 → CI 红。
@@ -59,8 +161,8 @@ jobs:
         run: git diff --exit-code -- e2e/schema-snapshot.json
 
       - name: Upload coverage report
-        uses: actions/upload-artifact@v5
-        if: github.event_name == 'schedule' # push 不跑 coverage，无产物可传
+        uses: actions/upload-artifact@v6
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' # push 不跑 coverage，无产物可传
         with:
           name: frontend-coverage
           path: frontend/coverage/
@@ -70,18 +172,83 @@ jobs:
         # 已改为非阻断：提供 PR 可见告警（产物归档），不再阻塞 merge；
         # 提交期建议由 .githooks/prepare-commit-msg 非阻断写入 commit message。
         # [2026-08] --suggest：push 不跑 coverage 无产物时优雅跳过（exit 0），
-        # 仅 schedule 补跑后此步才产出真实报告。
+        # 仅 schedule/dispatch 补跑后此步才产出真实报告。
+        # [2026-10-23] 显式 --base：CI 跑在 push 之后，HEAD 与 origin/main 同一提交 ⇒
+        # diff 恒空 ⇒ 门禁恒空跑（假绿）。改用 changes job 解析出的真实基线。
+        # 参考兄弟项目 ysm-model-manager/.github/workflows/test.yml:325-341。
         continue-on-error: true
-        run: node ../scripts/check-diff-coverage.mjs --json --suggest > diff-coverage-report.json || true
+        env:
+          BASE_REF: ${{ needs.changes.outputs.base }}
+        run: |
+          if [ -n "$BASE_REF" ]; then
+            node ../scripts/check-diff-coverage.mjs --json --suggest --base "$BASE_REF" > diff-coverage-report.json || true
+          else
+            node ../scripts/check-diff-coverage.mjs --json --suggest > diff-coverage-report.json || true
+          fi
       - name: Upload diff-coverage report
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: diff-coverage-report
           path: diff-coverage-report.json
 
+      - name: Build
+        # [doc:adr-059/2026-08-01-web-locale-404] 必须走 npm run build:dev（= generate-locale-json && vite build），
+        # 不能裸 npx vite build——locales/*.json 是预构建产物且被 .gitignore 排除，
+        # 裸构建会导致 dist 缺语言包、i18n 全显示 key（同网页版/安卓 buglog 根因）。
+        run: npm run build:dev
+
+      # [2026-10-23] 原 "Upload frontend dist" 已删：唯一消费者是 test-backend，
+      # 而它已改为自建 dist（见下），跨 job 传 artifact 成了无收益的中间环节。
+
+  # ──────────────────────────────────────────────────────────────
+  # [2026-10-23] 治理 / 文档门禁（从 test-frontend 拆出，与功能测试并行）。
+  # 价值：纯前端变更时此 job 与 test-frontend 并行（省关键路径）；
+  #       纯 docs 变更时只跑本 job（省掉 8min 的 vitest 白跑）。
+  # 参考兄弟项目 ysm-model-manager/.github/workflows/test.yml:350-437 的 frontend-gates 拆法。
+  # ──────────────────────────────────────────────────────────────
+  test-governance:
+    name: Frontend — Static Governance & Docs
+    runs-on: ubuntu-latest
+    needs: [changes]
+    if: needs.changes.outputs.frontend == 'true' || needs.changes.outputs.governance == 'true' || needs.changes.outputs.all == 'true'
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: '0'
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          node-version: ${{ vars.NODE_VERSION || '24' }}
+
       - name: Lint
         run: npm run lint
+
+      - name: Format check (prettier)
+        # 根因：格式长期只作 warn——eslint 里 prettier/prettier 是 'warn'，pre-push 无
+        # 格式关卡，于是漂移累积到 184 个文件才在本地手动 check:all 里暴露。
+        # CI 侧改为阻断；口径直接用 package.json 的 format:check（ts/tsx/js/jsx/css/json/md），
+        # 不在此处另写 glob，避免两份范围漂移。
+        # 修复: cd frontend && npx prettier --write "src/**/*.{ts,tsx,css}"
+        run: npm run format:check
+
+      - name: Ratchet gates (px / magic numbers / boolean naming / schema groups)
+        # 棘轮（只减不增）此前只在本地 npm run check:lint 里跑：写死 px 163（预算 163，余量 0）、
+        # 重复魔法数 48 值 / 551 处（预算 551，余量 0）。余量为 0 的棘轮不挂在 CI，
+        # 意味着下一次超预算时没有任何东西会红——同 source-graph 盲区一个形态。
+        run: npm run check:lint
+
+      - name: Dependency audit (production deps)
+        # 生产依赖零容忍：进包的是 @babylonjs/*、wailsio/runtime、fflate 等。
+        # devDependencies 现有 3 个 moderate（vitest 4.1.9 系，需 5.x major 迁移）单独跟踪，
+        # 故用 --omit=dev + moderate：只守生产链，不让 dev 工具链阻塞发版。
+        # 显式 --registry：本地 npm 配置可能指向不支持 audit 端点的镜像（npmmirror 返回 404）。
+        run: npm audit --omit=dev --audit-level=moderate --registry=https://registry.npmjs.org
 
       - name: i18n bundle parity check (strict)
         # ADR-059 §3.5 / ADR-041：翻译 bundle key 奇偶校验。
@@ -95,6 +262,38 @@ jobs:
         # 任何违例即 exit 1 阻塞 CI，防止 Go 端错误 i18n 迁移成果回退。
         # 路径以仓库根为基准，与 cwd 无关。
         run: node ../scripts/goerr-lint.mjs --strict
+
+      - name: Layering gate (ADR-242)
+        # 分层方向守护：R1（算法层 → menus）零容忍；R2/R3（core → menus/scene、
+        # 算法层 → scene）超基线即失败。此前未接入 CI——旧实现的跨行正则在扫描到
+        # frontend/src/shared/dev-hooks.ts 的 `export function` 时会灾难性回溯，
+        # 单线程卡死 >300s。改用 scripts/_lib/import-scan.mjs 的线性状态机后全仓 ~0.3s。
+        # 修复: 按 R1/R2/R3 重构 import，或经评审后 node scripts/check-layering.mjs --update 收紧基线。
+        run: node ../scripts/check-layering.mjs
+
+      - name: Circular gate (ADR-268)
+        # 环门禁：白名单外的新增环即失败（存量白名单只减不增）。
+        # 此前该检查只挂在 scripts/diagnose.mjs 的手动诊断任务里，不在 CI 也不在 pre-push——
+        # 于是 source-graph 解析缺陷修好后同一份源码冒出 265 个白名单外环，闸门红着而链路全绿。
+        # 口径 = 模块加载期依赖（动态 import() 不计入），与 dep:metrics / dep:graph 同源；
+        # 白名单判定用节点集合 key，最短路径改道不再制造假新增。
+        # 修复: 拆掉环上的依赖方向，或人工编辑 scripts/circular-allowlist.json（只减不增）。
+        run: node ../scripts/check-circular.mjs --strict
+
+      - name: Coupling gate (ADR-270)
+        # 结构耦合门禁：环门禁只能拦「反向新增依赖」，模块图成 DAG 后正向新增跨模块
+        # 依赖会静默通过。本检查盯首次出现的有向模块对（新耦合通道）与文件级 SCC
+        # 的覆盖面/最大块，两者都只许收紧。
+        # 修复: 消除新增通道或子系统内部互指；确属有意请人工编辑 docs/.coupling-baseline.json
+        # 并写明理由（使这次放宽在 diff 里可见），而非跑 --update 吸收回归。
+        run: node ../scripts/check-coupling.mjs
+
+      - name: Babylon UMD supply-chain gate (ADR-266)
+        # 生产跑 public/lib 的 vendored UMD，开发/测试跑 node_modules 的 ESM——两条路径
+        # 版本漂移正是「测试全绿、生产黑屏」的温床（体检现场：UMD 9.14.0 vs ESM 9.19.0）。
+        # 校验：UMD 与 devDependency 供应源字节相等、无悬挂 sourceMappingURL、三处版本号一致。
+        # 修复: cd frontend && npm run sync:babylon-lib（从 node_modules 逐字节重建 vendored 文件）。
+        run: node ../scripts/sync-babylon-lib.mjs
 
       - name: Documentation drift check
         # 比对「代码现实」与「架构文档声称」：架构树陈旧引用 / ADR 索引滞后 /
@@ -116,7 +315,9 @@ jobs:
         # 修复: 对应 npm run gen:funcmap / gen:menumap / gen:guide-gap /
         #       gen:knowledge-symbols / gen:tier / gen:status / gen:routes /
         #       gen:adr / gen:knowgraph / gen:ui-entry / gen:knowledge-h1 /
-        #       gen:knowledge-tests 后随 PR 提交生成物。
+        #       gen:knowledge-tests / gen:dep-metrics / dep:graph 后随 PR 提交生成物。
+        # [ADR-268] 耦合台账与依赖图也纳入此组：它们记录的是 frontend/src 的耦合，恰恰在
+        # 前端代码变化时最需要验；而 pre-push 的文档生成物组对「纯 frontend 变更」整体跳过。
         run: |
           node ../scripts/gen-funcmap.mjs --check
           node ../scripts/gen-menu-map.mjs --check
@@ -133,41 +334,74 @@ jobs:
           node ../scripts/gen-ui-entry.mjs --check
           node ../scripts/gen-knowledge-h1.mjs --check
           node ../scripts/gen-knowledge-tests.mjs --check
-
-      - name: Build
-        # [doc:adr-059/2026-08-01-web-locale-404] 必须走 npm run build:dev（= generate-locale-json && vite build），
-        # 不能裸 npx vite build——locales/*.json 是预构建产物且被 .gitignore 排除，
-        # 裸构建会导致 dist 缺语言包、i18n 全显示 key（同网页版/安卓 buglog 根因）。
-        run: npm run build:dev
-
-      - name: Upload frontend dist
-        uses: actions/upload-artifact@v5
-        with:
-          name: frontend-dist
-          path: frontend/dist/
+          # [2026-10-23] novelindex 此前只在 pre-push 组 A 跑 --check，CI 漏接：
+          # docs/novel/index.md 新增或改名后 CI 不会红（与 gen-docs-index 曾漏网同形态）。
+          node ../scripts/gen-novel-index.mjs --check
+          node ../scripts/dep-metrics.mjs --file docs/dep-metrics.md --check
+          node ../scripts/gen-dep-graph.mjs --file docs/dep-graph.md --check
+          # [2026-10-23] 图标固化包同理：lucide/tabler 图标经 gen-icon-bundle 固化进
+          # core/icons-bundle.ts，此前只在 diagnose 的图标检查里验，CI 漏接。
+          node ../scripts/gen-icon-bundle.mjs --check
 
   test-backend:
     name: Backend — Go Test & Build
-    needs: test-frontend
+    # [2026-10-23] 去掉 needs: test-frontend：原串行让后端等前端全套跑完（~5min），
+    # 关键路径翻倍，且失败归因含糊（前端红 → 后端 skipped，看不出后端是否也有问题）。
+    # 本 job 对前端的唯一依赖是 frontend/dist（`//go:embed all:frontend/dist`），
+    # 改为自建（与 release.yml 同口径），两 job 并行。
+    # 代价：多一次 npm ci + vite build（~1.5min）；收益：关键路径省 ~5min。
     runs-on: ubuntu-latest
+    needs: [changes]
+    if: needs.changes.outputs.go == 'true' || needs.changes.outputs.all == 'true'
+    # 显式超时：Go 测试本身秒级，主要成本是 apt 装 GTK/WebKit 与 wails3 冷编译。
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: .
 
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: '0'
 
+      # [2026-10-24] setup-go 一律 cache:false（对齐兄弟项目不变量 + e2e-suite.yml:223 既有实测教训）：
+      # 默认整合包会把 toolchain+GOMODCACHE+GOCACHE 打成单 tar 上传/解压（实测 Windows 解压 94s 纯 I/O 空烧，
+      # post-action 全量 tar 可拖垮 job）。工具链走 runner hostedtoolcache（0s 命中）。Go 模块缓存改下方手工步。
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
           go-version: '1.25.0'
-          cache-dependency-path: go.sum
+          cache: false
 
-      - name: Download frontend dist
-        uses: actions/download-artifact@v5
+      # embed 前置：main.go 的 //go:embed all:frontend/dist 要求 dist 已存在。
+      - name: Setup frontend (embed 前置)
+        uses: ./.github/actions/setup-frontend
         with:
-          name: frontend-dist
-          path: frontend/dist/
+          node-version: ${{ vars.NODE_VERSION || '24' }}
+
+      - name: Build frontend dist (embed 前置)
+        working-directory: frontend
+        # 必须走 build:dev（generate-locale-json && vite build）：locales/*.json 是
+        # 预构建产物且被 .gitignore 排除，裸 vite build 会让 dist 缺语言包。
+        run: npm run build:dev
+
+      # [2026-10-24] apt 缓存两步（移植兄弟项目 playwright-spine 范式）：
+      # ① /var/cache/apt/archives 为 root:root 755，restore 前必须预置 chmod a+rw；
+      # ② path 只收 *.deb——lock/lock.file(0600) 与 partial/(0700) 是 root 专属，
+      #    整目录收进来 tar exit 2 存不进。key 绑本 workflow 的包清单，
+      #    restore-keys 前缀兜底（清单未变即同 key）。命中只免网络下载，解包仍走 apt。
+      - name: Preset apt cache dir perms
+        run: |
+          sudo mkdir -p /var/cache/apt/archives
+          sudo chmod a+rw /var/cache/apt/archives
+
+      - name: Cache apt archives (deb downloads)
+        uses: actions/cache@v5
+        with:
+          path: /var/cache/apt/archives/*.deb
+          key: wails-apt-${{ runner.os }}-${{ hashFiles('.github/workflows/ci.yml') }}
+          restore-keys: |
+            wails-apt-${{ runner.os }}-
 
       - name: Install Linux deps (Wails v3)
         run: |
@@ -183,7 +417,16 @@ jobs:
             libatk1.0-dev \
             libgirepository1.0-dev
 
+      # [2026-10-24] 手工 Go 模块缓存：key 与 cache-warm.yml 完全一致（go-${runner.os}-${hashFiles go.sum}），
+      # 让 cache-warm 的 push:main 预热真正服务日常 CI（此前 test-backend 用 setup-go 独立维度缓存，预热白热）。
+      - name: Cache Go modules
+        uses: actions/cache@v5
+        id: cache-go
+        with:
+          path: ~/go/pkg/mod
+          key: go-${{ runner.os }}-${{ hashFiles('go.sum') }}
       - name: Go mod download
+        if: steps.cache-go.outputs.cache-hit != 'true'
         run: go mod download
 
       - name: Run Go tests
@@ -222,6 +465,13 @@ jobs:
   config-syntax:
     name: Config — Syntax Contract Test
     runs-on: ubuntu-latest
+    # [2026-10-23] 域裁剪：仅 docs/scripts/tests/根级配置/全量场景跑。
+    # 校验对象为根级 wails.json + Taskfile.yml + go.mod（见 tests/test_config_syntax.py），
+    # 纯前端 ts 变更不触发，纯 Go 变更同样需验 go.mod。
+    needs: [changes]
+    if: needs.changes.outputs.go == 'true' || needs.changes.outputs.governance == 'true' || needs.changes.outputs.all == 'true'
+    # [2026-10-23] 显式超时（缺省 360min 会静默干烧）。
+    timeout-minutes: 10
 
     steps:
       - uses: actions/checkout@v5
@@ -259,6 +509,11 @@ jobs:
   scripts-hygiene:
     name: Scripts — Hygiene Gate
     runs-on: ubuntu-latest
+    # [2026-10-23] 域裁剪：仅 docs/scripts/tests/全量场景跑。
+    needs: [changes]
+    if: needs.changes.outputs.governance == 'true' || needs.changes.outputs.all == 'true'
+    # [2026-10-23] 显式超时（缺省 360min 会静默干烧）。
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v5
 
@@ -280,6 +535,11 @@ jobs:
   deadcode-baseline:
     name: Deadcode — Baseline Gate
     runs-on: ubuntu-latest
+    # [2026-10-23] 域裁剪：仅前端源码 / 全量场景跑（死代码扫描只看 frontend/src）。
+    needs: [changes]
+    if: needs.changes.outputs.frontend == 'true' || needs.changes.outputs.all == 'true'
+    # [2026-10-23] 显式超时（缺省 360min 会静默干烧）。
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
       - name: Setup frontend (no npm cache, 与原 setup-node 语义一致)
@@ -302,7 +562,11 @@ jobs:
   version-check:
     name: Version — Consistency
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.base_ref == 'refs/heads/main')
+    # [2026-10-23] 域裁剪：仅前端源码 / 全量场景（package.json 在 frontend 下）。
+    needs: [changes]
+    if: (github.event_name == 'push' || (github.event_name == 'pull_request' && github.base_ref == 'refs/heads/main')) && (needs.changes.outputs.frontend == 'true' || needs.changes.outputs.all == 'true')
+    # [2026-10-23] 显式超时（缺省 360min 会静默干烧）。
+    timeout-minutes: 5
 
     steps:
       - uses: actions/checkout@v5
@@ -330,6 +594,7 @@ jobs:
   ai-mistake-report:
     name: AI — Mistake Tracker Report
     runs-on: ubuntu-latest
+    # [2026-10-23] 本 job 读全量 commit 历史做趋势分析，与文件域无关，保持原触发条件。
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v5
@@ -348,7 +613,95 @@ jobs:
         run: python tests/ai_mistake_tracker.py --limit 300
 
       - name: Upload report
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: ai-mistake-report
           path: ai-mistake-report.json
+
+  # ──────────────────────────────────────────────────────────────
+  # [2026-10-23] 汇总 job（参考 ysm-model-manager/.github/workflows/test.yml:755-848）。
+  # 不 checkout、不装依赖；只渲染结论表。
+  #   - needs 列全 8 个；if: always() 保证上游跳过/失败时仍汇总。
+  #   - unknown 视为「不可信」而非通过（解析失败必须显式红，否则回落 unknown 打印
+  #     「全部通过」= 假绿，test.yml:765-773）。
+  #   - skipped 分「域未命中（预期）」与「上游未过」两种成因呈现，但汇总层自身不判定成败
+  #     （成败由各 job 自身决定，本 job 永远绿色，只做呈现）。
+  # ──────────────────────────────────────────────────────────────
+  summary:
+    name: Summary — 门禁汇总
+    runs-on: ubuntu-latest
+    needs: [changes, test-frontend, test-governance, test-backend, config-syntax, scripts-hygiene, deadcode-baseline, version-check]
+    if: always()
+    timeout-minutes: 5
+    steps:
+      - name: 生成 job 结论表
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+          DOMAINS: ${{ toJSON(needs.changes.outputs) }}
+        run: |
+          python3 - <<'PY'
+          import json, os, sys
+
+          needs = json.loads(os.environ["NEEDS"])
+          domains = json.loads(os.environ["DOMAINS"])
+
+          order = ["test-frontend", "test-governance", "test-backend",
+                   "config-syntax", "scripts-hygiene", "deadcode-baseline",
+                   "version-check"]
+          gated = {
+              "test-frontend":    "changes(frontend) / all",
+              "test-governance":  "changes(frontend|governance) / all",
+              "test-backend":     "changes(go) / all",
+              "config-syntax":    "changes(go|governance) / all",
+              "scripts-hygiene":  "changes(governance) / all",
+              "deadcode-baseline":"changes(frontend) / all",
+              "version-check":    "changes(frontend) / all + push|PR→main",
+          }
+
+          label = {
+              "success":  "✅ 通过",
+              "failure":  "❌ 失败",
+              "cancelled":"⚪ 已取消（被新 push 作废）",
+              "skipped":  "⏭️ 跳过（域未命中，预期行为）",
+          }
+
+          def cause(job):
+              # skipped 成因：如果 changes job 本身失败/取消，则所有门禁都被迫 skipped —— 属上游故障
+              ch = (needs.get("changes") or {}).get("result")
+              if ch not in ("success", None) and (needs.get(job) or {}).get("result") == "skipped":
+                  return "⏭️ 跳过（上游 changes 未过，非域原因）"
+              return label.get((needs.get(job) or {}).get("result") or "unknown",
+                               "❓ " + ((needs.get(job) or {}).get("result") or "unknown"))
+
+          lines = [
+              "## CI 门禁汇总",
+              "",
+              "**变更域**：" + " / ".join(
+                  f"`{k}={domains.get(k)}`" for k in ("frontend", "go", "governance", "all")
+              ),
+              "",
+              "| Job | 结论 | 触发条件 |",
+              "|---|---|---|",
+          ]
+          failed, unknown = [], []
+          for k in order:
+              r = (needs.get(k) or {}).get("result") or "unknown"
+              if r == "unknown":
+                  unknown.append(k)
+              if r == "failure":
+                  failed.append(k)
+              lines.append(f"| `{k}` | {cause(k)} | {gated[k]} |")
+
+          lines += ["", "---"]
+          if unknown:
+              lines.append(f"⚠️ **不可信**：{', '.join('`'+j+'`' for j in unknown)} 结论未知（解析失败），不得视为通过。")
+          if failed:
+              lines.append(f"❌ **失败门禁**：{', '.join('`'+j+'`' for j in failed)}。")
+          else:
+              lines.append("✅ 已运行门禁全部通过（跳过的 job 为域未命中，预期行为）。")
+
+          summary = "\n".join(lines)
+          print(summary)
+          with open(os.environ.get("GITHUB_STEP_SUMMARY", "/dev/stderr"), "a") as fh:
+              fh.write(summary + "\n")
+          PY

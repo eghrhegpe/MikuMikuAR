@@ -6,13 +6,7 @@ import { Texture } from '@babylonjs/core/Materials/Textures/texture';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { LoadOutfitFile, ListSubDirs, readFileBytes, FileExists } from '@/core/wails-bindings';
 import { readTextureWithLRU } from '@/scene/shared/texture-lru';
-import {
-    modelRegistry,
-    OutfitFile,
-    OutfitVariant,
-    OutfitSlot,
-    ModelInstance,
-} from '@/core/config';
+import { modelRegistry, OutfitFile, OutfitVariant, OutfitSlot, ModelInstance } from '@/core/config';
 import { showInfoToast } from '@/core/toast';
 import type { Scene } from '@babylonjs/core/scene';
 import { getBaseName, normPath, getDirPath } from '@/core/path';
@@ -786,11 +780,15 @@ export async function resetOutfit(id: string): Promise<void> {
             if (!orig) {
                 continue;
             }
-            promises.push(_applySlot(sm, 'diffuseTexture', null, orig.diffuse, inst.modelDir, inst));
+            promises.push(
+                _applySlot(sm, 'diffuseTexture', null, orig.diffuse, inst.modelDir, inst)
+            );
             promises.push(_applySlot(sm, 'toonTexture', null, orig.toon, inst.modelDir, inst));
             promises.push(_applySlot(sm, 'sphereTexture', null, orig.spa, inst.modelDir, inst));
             promises.push(_applySlot(sm, 'bumpTexture', null, orig.normal, inst.modelDir, inst));
-            promises.push(_applySlot(sm, 'emissiveTexture', null, orig.emissive, inst.modelDir, inst));
+            promises.push(
+                _applySlot(sm, 'emissiveTexture', null, orig.emissive, inst.modelDir, inst)
+            );
         }
     }
     await Promise.all(promises);

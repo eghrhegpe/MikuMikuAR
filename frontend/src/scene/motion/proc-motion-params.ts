@@ -71,7 +71,11 @@ export function ProcMotionParamsMixin<TBase extends Constructor<ProcMotionContro
                     ...cur,
                     params: {
                         ...cur.params,
-                        [mode]: { ..._defaultParamsFor(mode), ...(cur.params?.[mode] ?? {}), ...patch },
+                        [mode]: {
+                            ..._defaultParamsFor(mode),
+                            ...(cur.params?.[mode] ?? {}),
+                            ...patch,
+                        },
                     },
                 } as ProcMotionConfig;
             }
@@ -90,7 +94,9 @@ export function ProcMotionParamsMixin<TBase extends Constructor<ProcMotionContro
 
         /** 写入顶层字段（mode / 感知层开关），不经过 per-mode params。 */
         private _writeTopLevel(
-            patch: Partial<Pick<ProcMotionState, 'mode' | 'eyeTrackingEnabled' | 'headTrackingEnabled'>>
+            patch: Partial<
+                Pick<ProcMotionState, 'mode' | 'eyeTrackingEnabled' | 'headTrackingEnabled'>
+            >
         ): void {
             const intent = getActiveMotion();
             if (intent) {
@@ -182,7 +188,10 @@ export function ProcMotionParamsMixin<TBase extends Constructor<ProcMotionContro
                 return;
             }
             if (typeof v !== 'boolean') {
-                logWarn('proc-motion', 'setProcMotionBoneToggle: invalid value type, expected boolean');
+                logWarn(
+                    'proc-motion',
+                    'setProcMotionBoneToggle: invalid value type, expected boolean'
+                );
                 return;
             }
             const bt = { ...this._refProcState().params[mode].boneToggles };
@@ -230,7 +239,10 @@ export function ProcMotionParamsMixin<TBase extends Constructor<ProcMotionContro
         }
 
         /** [audit] per-mode：写入指定模式的插值覆写。 */
-        setProcMotionInterpOverride(mode: ProcModeKey, v: ProcMotionParams['interpOverride']): void {
+        setProcMotionInterpOverride(
+            mode: ProcModeKey,
+            v: ProcMotionParams['interpOverride']
+        ): void {
             const valid = ['auto', 'sharp', 'ease-in-out', 'ease-out'] as const;
             if (!valid.includes(v as (typeof valid)[number])) {
                 logWarn('proc-motion', `setProcMotionInterpOverride: invalid value "${v}"`);
@@ -245,7 +257,10 @@ export function ProcMotionParamsMixin<TBase extends Constructor<ProcMotionContro
         /** 设置 BPM 量化开关 */
         setBpmQuantizeEnabled(v: boolean): void {
             if (typeof v !== 'boolean') {
-                logWarn('proc-motion', 'setBpmQuantizeEnabled: invalid value type, expected boolean');
+                logWarn(
+                    'proc-motion',
+                    'setBpmQuantizeEnabled: invalid value type, expected boolean'
+                );
                 return;
             }
             setUIState({ bpmQuantizeEnabled: v });

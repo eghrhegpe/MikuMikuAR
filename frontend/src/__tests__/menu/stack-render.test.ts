@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest';
 import type { SlideMenu } from '../../menus/menu';
-import type { PopupLevel } from '../../core/config';
+import type { PopupLevel, PopupRow } from '../../core/config';
 import { makeTestLevel, makeTestMenu } from '../fixtures/menu';
 import { bundles } from '../../core/i18n/t';
 import { zhCN } from '../../core/i18n/locales/zh-CN';
@@ -252,5 +252,146 @@ describe('SlideMenu — 渲染', () => {
         await new Promise((resolve) => requestAnimationFrame(resolve));
 
         expect((menu as any).focusIndex).toBe(1);
+    });
+});
+
+// ─── 纯 items 层 reRender 走增量 patch（不重建 DOM） ───────────────────
+// _doReRender 的纯 items 分支历史上走 buildPanel 全量重建；现与 updateControls 的
+// itemBuilder 热路径同机制改走 patchPanel：只创建/替换/删除有变化的行，
+// 未变的行保留 DOM 实例、监听器与键盘焦点。
+describe('SlideMenu — 纯 items reRender 增量 patch', () => {
+    let container: HTMLElement;
+    let menu: SlideMenu;
+
+    const row = (target: string, label = target.toUpperCase()): PopupRow =>
+        ({ kind: 'action', label, icon: 'i', target }) as PopupRow;
+
+    beforeEach(() => {
+        const m = makeTestMenu();
+        container = m.container;
+        menu = m.menu;
+    });
+
+    afterEach(() => {
+        menu.dispose();
+        container.remove();
+    });
+
+    /** 等一帧冲刷 reRender 的 rAF 去抖 */
+    const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve));
+
+    it('reRender 保留未变化行的 DOM 实例（不重建面板）', async () => {
+        const level: PopupLevel = { label: 'R', dir: '', items: [row('a'), row('b')] };
+        menu.reset(level);
+        await nextFrame();
+
+        const before = Array.from(container.querySelectorAll<HTMLElement>('.slide-item'));
+        expect(before.length).toBe(2);
+        const listBefore = container.querySelector('.slide-list');
+
+        menu.reRender();
+        await nextFrame();
+
+        const after = Array.from(container.querySelectorAll<HTMLElement>('.slide-item'));
+        // 行数与内容不变
+        expect(after.length).toBe(2);
+        // DOM 实例原样保留（增量 patch 的标志：不是 replaceWith 造的新节点）
+        expect(after[0]).toBe(before[0]);
+        expect(after[1]).toBe(before[1]);
+        // slide-list 容器本身也没被重建
+        expect(container.querySelector('.slide-list')).toBe(listBefore);
+    });
+
+    it('reRender 后新增行被追加、删除行被移除、换 key 的行被替换', async () => {
+        const level: PopupLevel = { label: 'R', dir: '', items: [row('a'), row('b')] };
+        menu.reset(level);
+        await nextFrame();
+        const firstRow = container.querySelectorAll<HTMLElement>('.slide-item')[0]!;
+
+        // a 保留（key 不变）、b → c（key 变）、追加 d
+        level.items = [row('a'), row('c'), row('d')];
+        menu.reRender();
+        await nextFrame();
+
+        const rows = Array.from(container.querySelectorAll<HTMLElement>('.slide-item'));
+        expect(rows.length).toBe(3);
+        // key 未变的行原样保留
+        expect(rows[0]).toBe(firstRow);
+        expect(rows[0]?.dataset.rowKey).toBe('action:a');
+        // key 变化的行被整行替换，新行带新 key
+        expect(rows[1]?.dataset.rowKey).toBe('action:c');
+        expect(rows[1]).not.toBe(firstRow);
+        expect(rows[2]?.dataset.rowKey).toBe('action:d');
+        // 旧 key 的行已不在 DOM 中
+        expect(container.querySelector('[data-row-key="action:b"]')).toBeNull();
+    });
+
+    it('reRender 更新行的可见文本（label 变化）', async () => {
+        const level: PopupLevel = { label: 'R', dir: '', items: [row('a', '旧标签')] };
+        menu.reset(level);
+        await nextFrame();
+        expect(container.querySelector('.slide-label')?.textContent).toBe('旧标签');
+
+        level.items = [row('a', '新标签')];
+        menu.reRender();
+        await nextFrame();
+
+        // key 未变 → 原地刷新文本，不重建 DOM
+        expect(container.querySelector('.slide-label')?.textContent).toBe('新标签');
+        expect(container.querySelectorAll('.slide-item').length).toBe(1);
+    });
+
+    it('divider 分组结构不变时按 card 增量 patch，分组数变化时正确重建', async () => {
+        const level: PopupLevel = {
+            label: 'R',
+            dir: '',
+            items: [row('a'), { kind: 'divider' } as PopupRow, row('b')],
+        };
+        menu.reset(level);
+        await nextFrame();
+        // 初始：两个 lcard 分组
+        expect(container.querySelectorAll('.lcard').length).toBe(2);
+
+        // 组内增行：分组数不变 → 增量 patch，lcard 容器保留
+        const cardBefore = container.querySelectorAll<HTMLElement>('.lcard')[0]!;
+        level.items = [row('a'), row('a2'), { kind: 'divider' } as PopupRow, row('b')];
+        menu.reRender();
+        await nextFrame();
+        expect(container.querySelectorAll('.lcard').length).toBe(2);
+        expect(container.querySelectorAll<HTMLElement>('.lcard')[0]).toBe(cardBefore);
+        expect(container.querySelectorAll('.slide-item').length).toBe(3);
+
+        // 分组数变化（再插一个 divider）→ 回退全量重建，结构仍然正确
+        level.items = [
+            row('a'),
+            row('a2'),
+            { kind: 'divider' } as PopupRow,
+            row('b'),
+            { kind: 'divider' } as PopupRow,
+            row('c'),
+        ];
+        menu.reRender();
+        await nextFrame();
+        expect(container.querySelectorAll('.lcard').length).toBe(3);
+        expect(container.querySelectorAll('.slide-item').length).toBe(4);
+    });
+
+    it('onAfterRender 在增量 patch 路径下只触发一次', async () => {
+        const onAfterRender = vi.fn();
+        const m = makeTestMenu({ handlers: { onAfterRender } });
+        container = m.container;
+        menu = m.menu;
+        const level: PopupLevel = { label: 'R', dir: '', items: [row('a')] };
+        menu.reset(level);
+        await nextFrame();
+        onAfterRender.mockClear();
+
+        level.items = [row('a'), row('b')];
+        menu.reRender();
+        await nextFrame();
+
+        // [fix P2] 契约：buildPanel 异步路径曾因同步+异步双 finalize 重复触发；
+        // 增量路径是同步 patch + 单次 safeFinalize，不得回归成两次。
+        expect(onAfterRender).toHaveBeenCalledTimes(1);
     });
 });

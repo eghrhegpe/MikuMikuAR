@@ -3,12 +3,13 @@
     "target": "ESNext",
     "useDefineForClassFields": true,
     "module": "ESNext",
-    "lib": [
-      "ESNext",
-      "DOM"
-    ],
+    "lib": ["ESNext", "DOM"],
     "moduleResolution": "Bundler",
     "strict": false,
+    "noImplicitAny": true,
+    "alwaysStrict": true,
+    "strictBindCallApply": true,
+    "useUnknownInCatchVariables": true,
     "allowJs": true,
     "sourceMap": true,
     "resolveJsonModule": true,
@@ -28,8 +29,5 @@
       "babylon-mmd/esm/*": ["node_modules/babylon-mmd/esm/*"]
     }
   },
-  "include": [
-    "src",
-    "bindings"
-  ]
+  "include": ["src", "bindings"]
 }

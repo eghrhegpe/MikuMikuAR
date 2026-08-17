@@ -111,9 +111,12 @@ const MAT_PARAM_DEFS: Array<{
 
 // ======== ADR-188: PBR 专属材质参数（metallic / roughness / SSS）========
 
+/** PBR 数值参数键（ADR-274 Stage 1：字面量联合替代 string，索引不再退化成 any） */
+type PbrParamKey = 'metallic' | 'roughness';
+
 /** PBR 专属参数定义（仅 PBRMaterial 可用；StandardMaterial 无此段） */
 const PBR_PARAM_DEFS: Array<{
-    key: string;
+    key: PbrParamKey;
     labelKey: string;
     min: number;
     max: number;
@@ -152,8 +155,11 @@ function _renderPbrParamSliders(container: HTMLElement, id: string, matIndex: nu
 
     _addGroupSeparator(container, t('model-material.pbrGroupTitle'));
 
+    // metallic/roughness 在 PBRMaterial 上都是 number；建显式 Record 视图按字面量键索引，
+    // 取代 string→any 的退化（ADR-274 Stage 1 / TS7053）。
+    const slots = mat as unknown as Record<PbrParamKey, number>;
     for (const def of PBR_PARAM_DEFS) {
-        const currentValue = mat[def.key] ?? 0;
+        const currentValue = slots[def.key] ?? 0;
         addSliderRow(
             container,
             t(def.labelKey),
@@ -162,7 +168,7 @@ function _renderPbrParamSliders(container: HTMLElement, id: string, matIndex: nu
             def.max,
             def.step,
             (v) => {
-                mat[def.key] = v;
+                slots[def.key] = v;
                 mat.markDirty();
             },
             def.icon

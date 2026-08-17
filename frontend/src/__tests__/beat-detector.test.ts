@@ -345,7 +345,9 @@ describe('BeatDetector instance — onBeat callbacks', () => {
 
     it('registers and unregisters callback', () => {
         let calls = 0;
-        const cb = () => { calls++; };
+        const cb = () => {
+            calls++;
+        };
         const unsub = bd.onBeat(cb);
         expect(unsub).toBeInstanceOf(Function);
         unsub();
@@ -355,7 +357,9 @@ describe('BeatDetector instance — onBeat callbacks', () => {
 
     it('onBeat callback is safe when no analyser (update no-ops)', () => {
         let calls = 0;
-        bd.onBeat(() => { calls++; });
+        bd.onBeat(() => {
+            calls++;
+        });
         bd.update(); // no analyser → returns early
         expect(calls).toBe(0);
     });
@@ -394,7 +398,10 @@ describe('BeatDetector.getLevel — additional edge cases', () => {
     it('endBin undefined with startBin > 0', () => {
         const data = new Uint8Array([0, 100, 200, 255]);
         // bins 1-4: (100+200+255)/3/255 ≈ 0.726
-        expect(BeatDetector.getLevel(data, 1, undefined)).toBeCloseTo((100 + 200 + 255) / 3 / 255, 3);
+        expect(BeatDetector.getLevel(data, 1, undefined)).toBeCloseTo(
+            (100 + 200 + 255) / 3 / 255,
+            3
+        );
     });
 
     it('startBin beyond data length returns 0', () => {
@@ -414,7 +421,7 @@ describe('源码缺陷 — 非有限值传播', () => {
         // 第 21 帧出现 NaN，其后 (i=42) 的峰值仍应被检出
         const energies: number[] = [];
         for (let i = 0; i < 60; i++) {
-            energies.push(i === 21 ? NaN : (i % 21 === 0 ? 200 : 20));
+            energies.push(i === 21 ? NaN : i % 21 === 0 ? 200 : 20);
         }
         const beats = BeatDetector.detectBeatsFromEnergies(energies, 1.3, 6);
         // NaN 帧之后的峰值应仍触发 beat
@@ -424,7 +431,7 @@ describe('源码缺陷 — 非有限值传播', () => {
     it('detectBeatsFromEnergies 中 Infinity 样本不污染后续检测', () => {
         const energies: number[] = [];
         for (let i = 0; i < 60; i++) {
-            energies.push(i === 21 ? Infinity : (i % 21 === 0 ? 200 : 20));
+            energies.push(i === 21 ? Infinity : i % 21 === 0 ? 200 : 20);
         }
         const beats = BeatDetector.detectBeatsFromEnergies(energies, 1.3, 6);
         expect(beats.some((b) => b > 21)).toBe(true);
@@ -441,7 +448,10 @@ describe('源码缺陷 — 非有限值传播', () => {
     it('getLevel 对 Infinity endBin 返回 0', () => {
         const data = new Uint8Array([100, 200, 255]);
         // endBin=Infinity 被 clamp 到 data.length，应正常计算而非 NaN
-        expect(BeatDetector.getLevel(data, 0, Infinity)).toBeCloseTo((100 + 200 + 255) / 3 / 255, 3);
+        expect(BeatDetector.getLevel(data, 0, Infinity)).toBeCloseTo(
+            (100 + 200 + 255) / 3 / 255,
+            3
+        );
     });
 
     it('getLevel 对 NaN endBin 不再返回 NaN（视为 length）', () => {

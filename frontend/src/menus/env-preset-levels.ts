@@ -33,7 +33,9 @@ import {
     DeleteEnvPreset,
 } from '../core/wails-bindings';
 
-import { getEnvMenu } from './env-menu';
+// [doc:adr-271] 改从 env-menu-state 取 getEnvMenu：与 env-level-helpers / env-water-levels 同范式。
+// 原从 env-menu 取，而 env-menu 又要 import 本文件的 buildPresetLevel → size=2 环。
+import { getEnvMenu } from './env-menu-state';
 import { presetListContent } from './preset-list-viewer';
 import { getLang } from '../core/i18n/locale';
 

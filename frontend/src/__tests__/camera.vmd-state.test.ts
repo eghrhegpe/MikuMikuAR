@@ -29,6 +29,7 @@ import {
     setScriptedSubMode,
 } from '../scene/camera/camera-state';
 import { setSwitchCameraModeCallback, createVmdCamera } from '../scene/camera/camera-vmd';
+import { registerSceneAction } from '../core/scene-action-bridge';
 
 vi.mock('@babylonjs/core/Cameras/camera', () => ({ Camera: MockCamera }));
 vi.mock('@babylonjs/core/Cameras/arcRotateCamera', () => ({
@@ -60,8 +61,13 @@ vi.mock('babylon-mmd/esm/Runtime/mmdCamera', () => ({ MmdCamera: MockMmdCam }));
 vi.mock('babylon-mmd/esm/Loader/Animation/mmdAnimation', () => ({}));
 vi.mock('@/core/config', () => mockConfigModule());
 vi.mock('@/scene/scene', () => mockSceneModule());
+// [doc:adr-269 补充] camera.ts 的焦点/管线访问器已迁到窄门面 scene-focus
+vi.mock('@/scene/scene-focus', () => mockSceneModule());
 vi.mock('../scene/env/_bridge/env-persist', () => mockEnvPersist());
 vi.mock('../scene/camera/camera', () => mockCameraModule());
+// [doc:adr-269 补充] camera-auto 已改经 scene-action-bridge 取节拍检测器，
+// 真实注册由 proc-motion-bridge 模块副作用完成；此处该模块未加载，须手动注册桩。
+registerSceneAction('getProcBeatDetector', () => mockPBD());
 
 // MockMmdCam 是共享 mock，但缺少真实 MmdCamera/Babylon Node 的 isDisposed()。
 // 在测试内局部补齐，用于覆盖 vmd→orbit→clear/load 的“已 dispose 相机不得二次释放”回归。

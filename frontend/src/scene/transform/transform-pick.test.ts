@@ -30,7 +30,8 @@ const meta = (transformKind: string, transformId: string) => ({ transformKind, t
 
 /** 构造 Node 鸭子对象：metadata + parent 链（isPickable 仅 Mesh 有，测试桩放宽）。 */
 type TestNode = Node & { isPickable?: boolean };
-const node = (metadata: unknown, parent: unknown = null): TestNode => ({ metadata, parent } as TestNode);
+const node = (metadata: unknown, parent: unknown = null): TestNode =>
+    ({ metadata, parent }) as TestNode;
 
 // ═══════════════════════════════════════════════════════
 // getTransformMetadata — 元数据链向上遍历（纯逻辑）

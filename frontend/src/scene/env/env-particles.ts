@@ -2,14 +2,21 @@ import { Color4, Vector3, Texture, GPUParticleSystem, ParticleSystem } from '@ba
 import { EnvState, envState } from '@/core/config';
 import { getWindVector } from '@/core/wind-utils';
 import { logWarn } from '@/core/logger';
-import { observe, type ObserverHandle } from '@/core/observer-handle';
+import { getFrameRegistry } from '@/core/frame-registry';
 import { safeDispose } from '@/core/dispose-helpers';
-import { registerEnvCallback } from './_bridge/env-dispatcher';
+// [doc:adr-269 补充] 观察器挂载改走 dispatcher 请求；涟漪与地面高度直连叶子模块，
+// 不再经 env.ts 门面（那条门面边正是 env 内部 SCC 的成因之一）。
+import { registerEnvCallback, requestEnvObserver } from './_bridge/env-dispatcher';
 import { getEnvKeys } from '@/core/env-state-schema';
-import { ensureEnvUpdateObserver, addRipple, addGroundRipple, getGroundHeightAt } from './env';
+import { addRipple, addGroundRipple } from './env-water-fx';
+import { getGroundHeightAt } from './env-ground';
 import { _envSys, getScene } from './_shared/env-context';
 import { createCanvasTexture } from './_shared/env-texture';
-import { applyWetnessToAllModels, removeWetnessFromAllModels, isWetnessActive } from './env-wetness';
+import {
+    applyWetnessToAllModels,
+    removeWetnessFromAllModels,
+    isWetnessActive,
+} from './env-wetness';
 
 // ======== Particle System ========
 let _currentParticleType: EnvState['particleType'] = 'none';
@@ -28,8 +35,10 @@ const SPLASH_POOL_SIZE = 12; // [doc:adr-160] 增大池容量以支持雨天地�
 let _splashBurstPool: SplashBurst[] = [];
 let _splashPoolReady = false;
 
-// 碰撞检测 observer — 每帧遍历 CPU 粒子，检测地面碰撞
-let _collisionObserver: ObserverHandle | null = null;
+// 粒子两个每帧回调（相机跟随 / 地面碰撞）走 core/frame-registry 场景键共享表
+// （getFrameRegistry），取代原先各自挂一条裸 onBeforeRenderObservable。
+// _particleScene 保留注册时的那张表引用，供 dispose / 重建时摘 key。
+let _particleScene: import('@babylonjs/core').Scene | null = null;
 
 // 湿身效果移至 env-wetness.ts（统一管理材质粗糙度/镜面反射修改）
 // [doc:adr-160] 提供 applyWetnessToAllModels / removeWetnessFromAllModels / isWetnessActive / applyWetnessToInst
@@ -411,7 +420,7 @@ function _getEmitterY(type: string, groundY: number): number {
 }
 
 export function createParticleEmitter(type: EnvState['particleType'], windEnabled: boolean): void {
-    ensureEnvUpdateObserver();
+    requestEnvObserver();
     // 非法 type 在改动任何状态前拦截，避免销毁现有粒子或污染 _currentParticleType
     const cfg = type === 'none' ? undefined : PARTICLE_CONFIGS[type];
     if (type !== 'none' && !cfg) {
@@ -488,7 +497,10 @@ export function createParticleEmitter(type: EnvState['particleType'], windEnable
     }
 
     // 每帧跟随相机（XZ 跟随，Y 按类型策略定位）
-    _envSys.particles.followObserver = observe(scene.onBeforeRenderObservable, () => {
+    // 走 core/frame-registry 场景键共享表（getFrameRegistry）：只读 scene.activeCamera，
+    // 写自己的 emitter，无帧内前序状态依赖。
+    _envSys.particles.followScene = scene;
+    getFrameRegistry(scene).register('env.particles.follow', () => {
         const cam = scene.activeCamera;
         if (!cam) {
             return;
@@ -516,8 +528,8 @@ export function createParticleEmitter(type: EnvState['particleType'], windEnable
 }
 
 export function disposeParticles(keepWetness = false): void {
-    _collisionObserver = safeDispose(_collisionObserver);
-    _envSys.particles.followObserver = safeDispose(_envSys.particles.followObserver);
+    // 两个每帧 key 走 core/frame-registry 场景键共享表，用注册时捕获的 scene 引用摘除
+    _unregisterParticleUpdates();
     _envSys.particles.system = safeDispose(_envSys.particles.system);
     disposeSplash(); // 粒子销毁时同步销毁溅射
     stopFireworkBursts(); // 烟花 burst 清理
@@ -632,17 +644,31 @@ function _gridCellKey(x: number, z: number): number {
     return (cx << 16) | (cz & 0xffff);
 }
 
+/** 摘除粒子两个每帧 key（重建前与 disposeParticles 各调一次）。 */
+function _unregisterParticleUpdates(): void {
+    if (_particleScene) {
+        const reg = getFrameRegistry(_particleScene);
+        reg.unregister('env.particles.follow');
+        reg.unregister('env.particles.collision');
+    }
+    _particleScene = null;
+    _envSys.particles.followScene = null;
+}
+
 /** 启动碰撞检测 — 每帧遍历 CPU 粒子数组，检测地面碰撞 */
 function startCollisionDetection(ps: ParticleSystem, type: EnvState['particleType']): void {
     const scene = getScene();
-    _collisionObserver = safeDispose(_collisionObserver);
+    _unregisterParticleUpdates();
+    _particleScene = scene;
 
     // splash 池仅由 syncSplashState 为 rain/snow 初始化，其他天气不应尝试 spawnSplashAt
     const splashProb = type === 'rain' ? 0.15 : type === 'snow' ? 0.3 : 0;
     const frameSkip = type === 'rain' ? 4 : 2;
     let frameIdx = 0;
 
-    _collisionObserver = observe(scene.onBeforeRenderObservable, () => {
+    // 走 core/frame-registry 场景键共享表（getFrameRegistry）：读 ps.particles /
+    // envState，写粒子 age 与涟漪，无帧内前序状态依赖。
+    getFrameRegistry(scene).register('env.particles.collision', () => {
         const particles = ps.particles;
         if (!particles || particles.length === 0) {
             return;

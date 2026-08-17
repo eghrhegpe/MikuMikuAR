@@ -7,7 +7,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // 模拟 babylon-mmd 动态导入模块
-const mockSharedBuilder = { SharedMaterialBuilder: null };
+const mockSharedBuilder = { SharedMaterialBuilder: null as unknown };
 vi.mock('babylon-mmd/esm/Loader/mmdModelLoader.pure', () => ({
     MmdModelLoader: mockSharedBuilder,
 }));
@@ -42,9 +42,8 @@ describe('tryApplyPbrMaterialBuilder', () => {
             },
         }));
         vi.resetModules();
-        const { tryApplyPbrMaterialBuilder: sut2 } = await import(
-            '../../scene/manager/pbr-builder-init'
-        );
+        const { tryApplyPbrMaterialBuilder: sut2 } =
+            await import('../../scene/manager/pbr-builder-init');
         await expect(sut2()).resolves.toBeUndefined();
         expect(mockSharedBuilder.SharedMaterialBuilder).toBeNull();
     });

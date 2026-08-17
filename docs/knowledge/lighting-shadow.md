@@ -10,10 +10,10 @@ source_files:
 adr: []
 symbols:
   - _addAllMeshesToShadow
-  - _ensureShadow
-  - rebuildShadowCasters
-  - _ensureStageShadow
   - _disposeStageShadow
+  - _ensureShadow
+  - _ensureStageShadow
+  - _rebuildShadowCasters
 invariants:
   - 阴影状态集中于 lightingState，子模块共享
   - rebuildShadowCasters 在模型/道具注册表更新时重新生成阴影投射者列表

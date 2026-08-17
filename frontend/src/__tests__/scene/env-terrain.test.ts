@@ -148,7 +148,11 @@ describe('applyTerrainMaterial — P1 uninstall 守卫', () => {
 
     it('PBRMaterial 旧材质销毁前调用 underwaterFogController.uninstall', () => {
         const spy = vi.spyOn(underwaterFogController, 'uninstall');
-        const ground = MeshBuilder.CreateGround('g', { width: 10, height: 10 }, scene) as GroundMesh;
+        const ground = MeshBuilder.CreateGround(
+            'g',
+            { width: 10, height: 10 },
+            scene
+        ) as GroundMesh;
         ground.material = new PBRMaterial('oldPBR', scene);
 
         applyTerrainMaterial(ground, envState, scene);
@@ -159,7 +163,11 @@ describe('applyTerrainMaterial — P1 uninstall 守卫', () => {
 
     it('StandardMaterial 旧材质销毁前调用 underwaterFogController.uninstall', () => {
         const spy = vi.spyOn(underwaterFogController, 'uninstall');
-        const ground = MeshBuilder.CreateGround('g', { width: 10, height: 10 }, scene) as GroundMesh;
+        const ground = MeshBuilder.CreateGround(
+            'g',
+            { width: 10, height: 10 },
+            scene
+        ) as GroundMesh;
         ground.material = new StandardMaterial('oldStd', scene);
 
         applyTerrainMaterial(ground, envState, scene);
@@ -170,7 +178,11 @@ describe('applyTerrainMaterial — P1 uninstall 守卫', () => {
 
     it('无旧材质时不调用 uninstall', () => {
         const spy = vi.spyOn(underwaterFogController, 'uninstall');
-        const ground = MeshBuilder.CreateGround('g', { width: 10, height: 10 }, scene) as GroundMesh;
+        const ground = MeshBuilder.CreateGround(
+            'g',
+            { width: 10, height: 10 },
+            scene
+        ) as GroundMesh;
 
         applyTerrainMaterial(ground, envState, scene);
 
@@ -201,12 +213,18 @@ describe('createHeightmapGround — onReady 陈旧回调守卫', () => {
         // 复现「旧地形 mesh 被销毁后，异步 onReady 才到达」的竞态。
         let capturedOnReady: ((mesh: GroundMesh) => void) | undefined;
         // mock 签名与上游 CreateGroundFromHeightMap 对齐；仅用于拦截 onReady 触发时机
-        const spy = vi
-            .spyOn(MeshBuilder, 'CreateGroundFromHeightMap')
-            .mockImplementation(((_name: string, _url: string, options: { onReady?: (m: GroundMesh) => void }) => {
-                capturedOnReady = options.onReady;
-                return MeshBuilder.CreateGround('envGround', { width: 10, height: 10 }, scene) as GroundMesh;
-            }) as never);
+        const spy = vi.spyOn(MeshBuilder, 'CreateGroundFromHeightMap').mockImplementation(((
+            _name: string,
+            _url: string,
+            options: { onReady?: (m: GroundMesh) => void }
+        ) => {
+            capturedOnReady = options.onReady;
+            return MeshBuilder.CreateGround(
+                'envGround',
+                { width: 10, height: 10 },
+                scene
+            ) as GroundMesh;
+        }) as never);
 
         const onReady = vi.fn();
         const hg = createHeightmapGround(envState, scene, onReady);
@@ -224,12 +242,18 @@ describe('createHeightmapGround — onReady 陈旧回调守卫', () => {
 
     it('onReady 对存活 mesh 正常触发（修复不误伤正常路径）', () => {
         let capturedOnReady: ((mesh: GroundMesh) => void) | undefined;
-        const spy = vi
-            .spyOn(MeshBuilder, 'CreateGroundFromHeightMap')
-            .mockImplementation(((_name: string, _url: string, options: { onReady?: (m: GroundMesh) => void }) => {
-                capturedOnReady = options.onReady;
-                return MeshBuilder.CreateGround('envGround', { width: 10, height: 10 }, scene) as GroundMesh;
-            }) as never);
+        const spy = vi.spyOn(MeshBuilder, 'CreateGroundFromHeightMap').mockImplementation(((
+            _name: string,
+            _url: string,
+            options: { onReady?: (m: GroundMesh) => void }
+        ) => {
+            capturedOnReady = options.onReady;
+            return MeshBuilder.CreateGround(
+                'envGround',
+                { width: 10, height: 10 },
+                scene
+            ) as GroundMesh;
+        }) as never);
 
         const onReady = vi.fn();
         const hg = createHeightmapGround(envState, scene, onReady);

@@ -12,28 +12,8 @@ scope:
 source_files:
   - frontend/src/scene/motion/motion-modules/registry.ts
 symbols:
-  - BoneConflict
-  - PROC_ACTION_PREFIX
-  - applyMotionModulesToModel
-  - applyProcMotionModulesToModel
-  - claimBones
-  - clearAllModulesForModel
-  - createModule
-  - getAllConflicts
   - getBuiltinModuleDefs
-  - getConflictCount
-  - getModuleConflicts
-  - getModuleDefaultParam
-  - getModuleState
-  - getOwnedBones
-  - getRegisteredModules
   - initMotionModules
-  - registerModule
-  - releaseOwnedBones
-  - setModuleEnabled
-  - setModuleParam
-  - setTargetModel
-  - unregisterModule
 invariants:
   - 模块注册后按 priority 排序执行
   - 每个模块有唯一 name 标识

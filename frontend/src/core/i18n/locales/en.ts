@@ -29,7 +29,8 @@ export const en: Record<string, string> = {
     'settings.orientationPortrait': 'Portrait',
     'settings.orientationLandscape': 'Landscape',
     'settings.resetAppearance': 'Reset Appearance',
-    'settings.resetAppearanceConfirm': 'Reset appearance to defaults? All appearance settings will be restored',
+    'settings.resetAppearanceConfirm':
+        'Reset appearance to defaults? All appearance settings will be restored',
     'settings.filename': 'Filename',
     'settings.library': 'Library',
     'settings.performance': 'Performance',
@@ -1724,7 +1725,8 @@ export const en: Record<string, string> = {
     'settings.about.update.installLaunched': 'Install launched',
     'settings.about.maintenance': 'Maintenance',
     'settings.about.maintenance.clearExtract': 'Clear extract cache',
-    'settings.about.maintenance.clearExtractConfirm': 'Clear extract cache? It will be regenerated on next model load.',
+    'settings.about.maintenance.clearExtractConfirm':
+        'Clear extract cache? It will be regenerated on next model load.',
     'settings.about.maintenance.clearThumbnail': 'Clear thumbnail cache',
     'settings.about.maintenance.clearThumbnailConfirm': 'Clear thumbnail cache?',
     'settings.about.maintenance.clearAll': 'Clear all cache',

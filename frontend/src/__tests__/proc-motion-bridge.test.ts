@@ -8,10 +8,7 @@
 // 使 P2#1 回归能断言生成器被调用（其他文件原用 ArrayBuffer(0) 直返桩，行为等价）。
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import {
-    DEFAULT_PROC_STATE,
-    PROC_MOTION_BONE_CATEGORIES,
-} from '../motion-algos/procedural-motion';
+import { DEFAULT_PROC_STATE, PROC_MOTION_BONE_CATEGORIES } from '../motion-algos/procedural-motion';
 import {
     createProcMockState,
     resetProcMockState,
@@ -29,6 +26,8 @@ const mockState = createProcMockState();
 vi.mock('../core/config', () => mockConfig(mockState));
 vi.mock('@/core/audio', () => mockAudio(mockState));
 vi.mock('../scene/scene', () => mockScene(mockState));
+// [doc:adr-269 补充] perception/camera 的焦点访问器已迁到窄门面 scene-focus
+vi.mock('../scene/scene-focus', () => mockScene(mockState));
 vi.mock('../scene/motion/vmd-layers', () => mockVmdLayers());
 vi.mock('../scene/motion/perception', () => mockPerception(mockState));
 vi.mock('../scene/motion/motion-intent', () => mockMotionIntent(mockState));
@@ -106,7 +105,7 @@ describe('triggerAutoSave interaction', () => {
 // 调用 stopProcMotion() 清空，导致动作1 程序化瞬间失效。判别依据应改为 vmdPath。
 describe('updateProcMotion — 程序化动作保持生效', () => {
     it('不误停焦点模型上 vmdData 非空但 vmdPath 为 null 的程序化动作', async () => {
-        const mmdModel = { morph: { morphs: [] }, runtimeBones: [] };
+        const mmdModel = { morph: { morphs: [] as unknown[] }, runtimeBones: [] as unknown[] };
         const inst: any = { vmdData: new ArrayBuffer(8), vmdPath: null, mmdModel, vmdLayers: [] };
         mockState.focusedModelId = 'm1';
         mockState.focusedMmdModel.mockReturnValue(mmdModel);
@@ -130,7 +129,7 @@ describe('updateProcMotion — 程序化动作保持生效', () => {
     });
 
     it('焦点模型持有用户/场景 VMD（vmdPath 非空）时仍会优先于程序化动作', async () => {
-        const mmdModel = { morph: { morphs: [] }, runtimeBones: [] };
+        const mmdModel = { morph: { morphs: [] as unknown[] }, runtimeBones: [] as unknown[] };
         const inst: any = { vmdData: new ArrayBuffer(8), vmdPath: null, mmdModel, vmdLayers: [] };
         mockState.focusedModelId = 'm1';
         mockState.focusedMmdModel.mockReturnValue(mmdModel);
@@ -159,7 +158,7 @@ afterEach(() => {
 
 describe('P2#1 回归 — updateProcMotion 自动重生成使用 per-model 参数', () => {
     it('per-model procMotion 存在时，自动触发的 idle 生成用该模型参数而非全局默认', async () => {
-        const mmdModel = { morph: { morphs: [] }, runtimeBones: [] };
+        const mmdModel = { morph: { morphs: [] as unknown[] }, runtimeBones: [] as unknown[] };
         const inst: any = {
             vmdData: null,
             vmdPath: null,
@@ -197,7 +196,7 @@ describe('P2#1 回归 — updateProcMotion 自动重生成使用 per-model 参�
 
 describe('P2#2 回归 — autodance BPM 无效时不锁死 _starting', () => {
     it('bpm=0 时第一次生成抛错被吞，恢复有效 BPM 后仍能重新生成', async () => {
-        const mmdModel = { morph: { morphs: [] }, runtimeBones: [] };
+        const mmdModel = { morph: { morphs: [] as unknown[] }, runtimeBones: [] as unknown[] };
         const inst: any = { vmdData: null, vmdPath: null, mmdModel, vmdLayers: [] };
         mockState.focusedModelId = 'm1';
         mockState.focusedMmdModel.mockReturnValue(mmdModel);
@@ -222,12 +221,12 @@ describe('P2#2 回归 — autodance BPM 无效时不锁死 _starting', () => {
 
 describe('P2#3 回归 — per-model 状态多模型并发不互相覆盖', () => {
     it('焦点在 idle/autodance 两模型间切换时，autodance 不被 idle 覆盖而重复重生成', async () => {
-        const mmdModel = { morph: { morphs: [] }, runtimeBones: [] };
+        const mmdModel = { morph: { morphs: [] as unknown[] }, runtimeBones: [] as unknown[] };
         const mkInst = (mode: 'idle' | 'autodance') => ({
-            vmdData: null,
-            vmdPath: null,
+            vmdData: null as ArrayBuffer | null,
+            vmdPath: null as string | null,
             mmdModel,
-            vmdLayers: [],
+            vmdLayers: [] as unknown[],
             procMotion: {
                 mode,
                 bpmQuantizeEnabled: true,
@@ -330,7 +329,9 @@ describe('setProcMotionIntensity', () => {
     });
 
     it('defaults to DEFAULT_PROC_STATE.params.idle.intensity', () => {
-        expect(sut.getProcMotionState().params.idle.intensity).toBe(DEFAULT_PROC_STATE.params.idle.intensity);
+        expect(sut.getProcMotionState().params.idle.intensity).toBe(
+            DEFAULT_PROC_STATE.params.idle.intensity
+        );
     });
 
     it('calls triggerAutoSave', () => {
@@ -363,7 +364,9 @@ describe('setProcMotionSpeed', () => {
     });
 
     it('defaults to DEFAULT_PROC_STATE.params.idle.speed', () => {
-        expect(sut.getProcMotionState().params.idle.speed).toBe(DEFAULT_PROC_STATE.params.idle.speed);
+        expect(sut.getProcMotionState().params.idle.speed).toBe(
+            DEFAULT_PROC_STATE.params.idle.speed
+        );
     });
 
     it('calls triggerAutoSave', () => {
@@ -550,7 +553,9 @@ describe('setProcMotionVpdApplyEnabled', () => {
     });
 
     it('defaults to DEFAULT_PROC_STATE.params.idle.vpdApplyEnabled', () => {
-        expect(sut.getProcMotionState().params.idle.vpdApplyEnabled).toBe(DEFAULT_PROC_STATE.params.idle.vpdApplyEnabled);
+        expect(sut.getProcMotionState().params.idle.vpdApplyEnabled).toBe(
+            DEFAULT_PROC_STATE.params.idle.vpdApplyEnabled
+        );
     });
 
     it('warns and returns for non-boolean value', () => {
@@ -588,7 +593,9 @@ describe('setProcMotionInterpOverride', () => {
     });
 
     it('defaults to DEFAULT_PROC_STATE.params.idle.interpOverride', () => {
-        expect(sut.getProcMotionState().params.idle.interpOverride).toBe(DEFAULT_PROC_STATE.params.idle.interpOverride);
+        expect(sut.getProcMotionState().params.idle.interpOverride).toBe(
+            DEFAULT_PROC_STATE.params.idle.interpOverride
+        );
     });
 
     it('calls triggerAutoSave on success', () => {

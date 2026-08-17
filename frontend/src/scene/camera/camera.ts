@@ -23,7 +23,8 @@ import { clamp } from '@/core/clamp';
 import { debounce } from '@/core/debounce';
 import { deepClone } from '@/core/deep-clone';
 import { logWarn } from '@/core/logger';
-import { focusModel, reattachPipeline } from '../scene';
+// [doc:adr-269 补充] 改走窄门面 scene-focus，断开与装配器 scene.ts 的双向引用
+import { focusModel, reattachPipeline } from '../scene-focus';
 // [doc:adr-238] setARMode 经 scene-action-bridge（ar-scene 注册）
 import { getSceneAction } from '@/core/scene-action-bridge';
 
@@ -93,6 +94,7 @@ import {
     stopSurround,
     startConcert,
     stopConcert,
+    disposeCameraBehaviors,
 } from './camera-behaviors';
 import { stopBoneLock, restoreBoneLockIfEnabled } from './camera-bone-lock';
 import {
@@ -802,6 +804,9 @@ export function disposeCameraSystem(): void {
     stopOrbit();
     stopSurround();
     stopConcert();
+    // 相机四模式的每帧更新合入单一分发表（core/frame-registry）后，
+    // 单例注册表需整体释放，否则 HMR / scene 重建后旧表仍持有本 scene 的 observer。
+    disposeCameraBehaviors();
     stopBoneLock();
     // [fix:round16 P3] 清理 VMD 相机动画引用，避免 dispose 后 _mmdAnimation 驻留 camera-vmd 模块
     clearCameraVmd();
@@ -879,7 +884,10 @@ export { setAutoCameraEnabled, isAutoCameraEnabled, setSyncAxesCallback } from '
 
 // [doc:adr-238] 注册相机 VMD 操作供 scene/motion 经 scene-action-bridge 调用（切断 scene/motion→scene/camera）
 import { registerSceneAction } from '@/core/scene-action-bridge';
-import { loadCameraVmd as _loadCameraVmd, animateCameraVmd as _animateCameraVmd } from './camera-vmd';
+import {
+    loadCameraVmd as _loadCameraVmd,
+    animateCameraVmd as _animateCameraVmd,
+} from './camera-vmd';
 registerSceneAction('animateCameraVmd', (frameTime: number) => _animateCameraVmd(frameTime));
 registerSceneAction('loadCameraVmd', (mmdAnimation: unknown, vmdPath: string, vmdName: string) =>
     _loadCameraVmd(mmdAnimation as Parameters<typeof _loadCameraVmd>[0], vmdPath, vmdName)

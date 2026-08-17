@@ -1,5 +1,6 @@
 // perception-morph.int.test.ts — 微表情 + 唇形同步（2026-08-10 合并 micro-expression + lipsync）
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import type { Camera } from '@babylonjs/core/Cameras/camera';
 
 const mockState = vi.hoisted(() => ({
     focusedModelId: null as string | null,
@@ -13,7 +14,7 @@ const mockState = vi.hoisted(() => ({
             add: vi.fn(() => ({})),
             remove: vi.fn(),
         },
-        activeCamera: null,
+        activeCamera: null as Camera | null,
         isDisposed: false,
     },
     isAudioPlaying: vi.fn(() => false),
@@ -30,6 +31,8 @@ const mockPipeline = vi.hoisted(() => ({
 }));
 
 vi.mock('../../scene/scene', () => sceneModuleFactory(mockState));
+// [doc:adr-269 补充] perception/camera 的焦点访问器已迁到窄门面 scene-focus
+vi.mock('../../scene/scene-focus', () => sceneModuleFactory(mockState));
 vi.mock('../../ar/ar-camera', () => arCameraModuleMock);
 vi.mock('../../core/wails-bindings', () => wailsBindingsModuleMock);
 vi.mock('../../core/i18n/t', () => i18nTModuleMock);

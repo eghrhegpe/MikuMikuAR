@@ -35,7 +35,7 @@ function buildAboutSchema(_getSettingsMenu: () => SettingsMenuHandle): MenuNode[
                 cardContainer(c, (inner) => {
                     addSectionTitle(inner, t('settings.about.versionInfo'));
                     const title = document.createElement('div');
-                    title.style.cssText = 'text-align:center;padding:16px 14px 8px;';
+                    title.style.cssText = 'text-align:center;padding:16px var(--row-pad-x) 8px;';
 
                     const appName = document.createElement('div');
                     appName.style.cssText = 'font-size:15px;font-weight:600;color:var(--text);';
@@ -45,13 +45,13 @@ function buildAboutSchema(_getSettingsMenu: () => SettingsMenuHandle): MenuNode[
                     const appVersion = document.createElement('div');
                     appVersion.dataset.appVersion = '';
                     appVersion.style.cssText =
-                        'font-size:11px;color:var(--text-dim);margin-top:2px;';
+                        'font-size:var(--font-ui-sm);color:var(--text-dim);margin-top:2px;';
                     appVersion.textContent = 'v…';
                     title.appendChild(appVersion);
 
                     const techStack = document.createElement('div');
                     techStack.style.cssText =
-                        'font-size:10px;color:var(--text-dim);margin-top:6px;line-height:1.6;';
+                        'font-size:var(--font-ui-xs);color:var(--text-dim);margin-top:6px;line-height:1.6;';
                     techStack.textContent = 'Wails v3 · Go · Babylon.js 9.x · babylon-mmd';
                     title.appendChild(techStack);
 
@@ -61,7 +61,8 @@ function buildAboutSchema(_getSettingsMenu: () => SettingsMenuHandle): MenuNode[
                             const el = title.querySelector<HTMLElement>('[data-app-version]');
                             if (el) {
                                 // dev 版本不加 v 前缀
-                                el.textContent = info.version === 'dev' ? 'dev' : `v${info.version}`;
+                                el.textContent =
+                                    info.version === 'dev' ? 'dev' : `v${info.version}`;
                             }
                         })
                     );
@@ -112,13 +113,13 @@ function buildAboutSchema(_getSettingsMenu: () => SettingsMenuHandle): MenuNode[
 
                     const updateStatus = document.createElement('div');
                     updateStatus.style.cssText =
-                        'font-size:12px;color:var(--text);padding:4px 14px 8px;';
+                        'font-size:var(--font-hint);color:var(--text);padding:4px var(--row-pad-x) 8px;';
                     updateStatus.textContent = t('settings.about.update.checking');
                     inner.appendChild(updateStatus);
 
                     const updateBtn = document.createElement('button');
                     updateBtn.className = 'btn btn-sm btn-primary';
-                    updateBtn.style.cssText = 'display:none;margin:0 14px 10px;';
+                    updateBtn.style.cssText = 'display:none;margin:0 var(--row-pad-x) 10px;';
                     updateBtn.textContent = t('settings.about.update.goDownload');
                     inner.appendChild(updateBtn);
 
@@ -166,12 +167,17 @@ function buildAboutSchema(_getSettingsMenu: () => SettingsMenuHandle): MenuNode[
                                 updateBtn.style.pointerEvents = 'none';
 
                                 // 注册进度监听器（返回 unsubscribe 函数）
-                                const unsubscribeProgress = events.on('update:downloadProgress', (data) => {
-                                    const d = data as { percent?: number };
-                                    if (typeof d.percent === 'number') {
-                                        updateBtn.textContent = t('settings.about.update.downloading') + ` ${Math.round(d.percent)}%`;
+                                const unsubscribeProgress = events.on(
+                                    'update:downloadProgress',
+                                    (data) => {
+                                        const d = data as { percent?: number };
+                                        if (typeof d.percent === 'number') {
+                                            updateBtn.textContent =
+                                                t('settings.about.update.downloading') +
+                                                ` ${Math.round(d.percent)}%`;
+                                        }
                                     }
-                                });
+                                );
 
                                 try {
                                     if (isDesktopInstall) {

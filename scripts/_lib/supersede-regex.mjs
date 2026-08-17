@@ -61,6 +61,13 @@ export const RE_NEGATED = /(非|不|未|无|没有)\s*\*{0,2}\s*(?:取代|替代
 // [code_review P3] 否定词与动词间同样容忍 markdown 加粗闭合符(`**不**取代 ADR-NNN`)。
 export const RE_NEGATED_CLAIM = /(?:非|不|未|无|没有)\s*\*{0,2}\s*(?:取代|替代|推翻|废弃|废除|退役)\s*了?\s*\[?ADR-(\d+)\]?/;
 
+// ② 目标级「反事实/假设」宣称：情态词「会 / 可能」把断言降格为推演，不是本文对目标 ADR 的取代声明。
+//   [fix 2026-10-23] 实测 ADR-264 正文括注「那会推翻 ADR-228 的既有判断」触发 ② 漏标告警，
+//   阻塞 check:docs / pre-push —— 句子在说「若取消该令牌，会导致与 ADR-228 冲突」，
+//   恰恰是在**尊重** ADR-228，而非取代它。与 RE_NEGATED_CLAIM 同形，按目标编号剔除。
+//   刻意不纳入「将」：「将取代 ADR-NNN」是明确的后续计划，仍属真实宣称。
+export const RE_HYPOTHETICAL_CLAIM = /(?:会|可能)\s*\*{0,2}\s*(?:取代|替代|推翻|废弃|废除|退役)\s*了?\s*\[?ADR-(\d+)\]?/;
+
 // ⑤ 表格弱宣称:行首列为 ADR-NNN、其他列含「本 ADR…(完全)替代/取代/推翻」(跨列自指)
 // 编号含子编号(ADR-061.1),否则 parseFloat 拿到的只是被截断的父编号
 export const RE_TABLE_FIRST_COL = /^\|\s*ADR-(\d+(?:\.\d+)?)/;

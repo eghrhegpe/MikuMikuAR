@@ -526,7 +526,6 @@ export function _waterUpdateCallback(scene: Scene): void {
     m.setInt('uRippleCount', aliveCount);
 }
 
-
 export interface WaterPreset {
     label: string;
     waterColor: [number, number, number];

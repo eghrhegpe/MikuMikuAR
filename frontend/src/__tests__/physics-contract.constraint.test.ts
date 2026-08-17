@@ -139,12 +139,16 @@ describe('WASM 物理契约测试', () => {
                     true
                 );
 
-                expect(() => api.constraintSetLinearLowerLimit(constraint, -1, -2, -1)).not.toThrow();
+                expect(() =>
+                    api.constraintSetLinearLowerLimit(constraint, -1, -2, -1)
+                ).not.toThrow();
                 expect(() => api.constraintSetLinearUpperLimit(constraint, 1, 2, 1)).not.toThrow();
                 expect(() =>
                     api.constraintSetAngularLowerLimit(constraint, -0.5, -1, -0.5)
                 ).not.toThrow();
-                expect(() => api.constraintSetAngularUpperLimit(constraint, 0.5, 1, 0.5)).not.toThrow();
+                expect(() =>
+                    api.constraintSetAngularUpperLimit(constraint, 0.5, 1, 0.5)
+                ).not.toThrow();
             } finally {
                 if (constraint !== undefined) api.destroyConstraint(constraint);
                 if (frameA !== undefined) api.deallocateBuffer(frameA, 64);

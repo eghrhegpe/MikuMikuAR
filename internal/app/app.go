@@ -668,6 +668,13 @@ type EnvState struct {
 
 	TimeOfDayActive bool    `json:"timeOfDayActive"`
 	TimeOfDaySpeed  float64 `json:"timeOfDaySpeed"`
+
+	// presence mask（不入 JSON）：记录本次反序列化载荷中实际出现的字段名。
+	// 由 UnmarshalJSON 填充，供 mergeEnvState 精确判断「哪些字段被显式提供」——
+	// 使合法零值（WaterAnimSpeed=0、GroundLevel=0 等）可持久化，
+	// 且 partial 载荷不会清空未提供的字段（旧实现是全量覆盖，不是合并）。
+	// 与 UIState.present 同构（ADR-253 决策 1 的最终形态：presence mask 而非 *bool 双写）。
+	present map[string]bool
 }
 
 // UnmarshalJSON reads EnvState while tolerating legacy field names renamed in
@@ -677,6 +684,22 @@ type EnvState struct {
 // Old config.json files persisted the legacy keys; without this fallback those
 // settings would silently reset to zero on load. New keys take precedence.
 func (e *EnvState) UnmarshalJSON(data []byte) error {
+	// 先收集载荷中实际出现的字段名（presence mask），供 mergeEnvState 使用。
+	// 与 UIState.UnmarshalJSON 同构（ADR-253）。
+	var keySet map[string]json.RawMessage
+	if err := json.Unmarshal(data, &keySet); err != nil {
+		return err
+	}
+	e.present = make(map[string]bool, len(keySet))
+	for k, raw := range keySet {
+		// [fix] JSON null 语义是「未提供/清空」，不是「显式零值」：跳过 null 值键，
+		// 避免 mergeEnvState 误当显式字段用 Go 零值覆盖 dst 旧配置。
+		if strings.TrimSpace(string(raw)) == "null" {
+			continue
+		}
+		e.present[k] = true
+	}
+
 	type envStateAlias EnvState // avoid recursion
 	aux := struct {
 		*envStateAlias
@@ -696,37 +719,49 @@ func (e *EnvState) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &aux); err != nil {
 		return err
 	}
+	// legacy key 命中时，把对应的新字段标记为「显式提供」——
+	// 否则 mergeEnvState 看到 present 里没有该键就会跳过它，legacy 值会掉在合并之外。
 	if e.IblIntensity == 0 && aux.LegacyEnvIntensity != nil {
 		e.IblIntensity = *aux.LegacyEnvIntensity
+		e.present["iblIntensity"] = true
 	}
 	if e.GlobalBrightness == 0 && aux.LegacyEnvBrightness != nil {
 		e.GlobalBrightness = *aux.LegacyEnvBrightness
+		e.present["globalBrightness"] = true
 	}
 	// ADR-212: boolean fields — only fall back if new key wasn't set (zero value)
 	if !e.ParticleSplashEnabled && aux.LegacyParticleSplash != nil {
 		e.ParticleSplashEnabled = *aux.LegacyParticleSplash
+		e.present["particleSplashEnabled"] = true
 	}
 	if !e.GroundInfiniteEnabled && aux.LegacyGroundInfinite != nil {
 		e.GroundInfiniteEnabled = *aux.LegacyGroundInfinite
+		e.present["groundInfiniteEnabled"] = true
 	}
 	if !e.GroundElevationColoringEnabled && aux.LegacyGroundElevationColoring != nil {
 		e.GroundElevationColoringEnabled = *aux.LegacyGroundElevationColoring
+		e.present["groundElevationColoringEnabled"] = true
 	}
 	if !e.DebugCloudsEnabled && aux.LegacyDebugClouds != nil {
 		e.DebugCloudsEnabled = *aux.LegacyDebugClouds
+		e.present["debugCloudsEnabled"] = true
 	}
 	if !e.CloudEnabled && aux.LegacyCloudsEnabled != nil {
 		e.CloudEnabled = *aux.LegacyCloudsEnabled
+		e.present["cloudEnabled"] = true
 	}
 	if e.PlanarReflectionBlend == 0 && aux.LegacyPlanarReflectBlend != nil {
 		e.PlanarReflectionBlend = *aux.LegacyPlanarReflectBlend
+		e.present["planarReflectionBlend"] = true
 	}
 	// ADR-212 二轮同步: groundVisible→groundVisibleEnabled, waterFlip→waterFlipEnabled
 	if !e.GroundVisibleEnabled && aux.LegacyGroundVisible != nil {
 		e.GroundVisibleEnabled = *aux.LegacyGroundVisible
+		e.present["groundVisibleEnabled"] = true
 	}
 	if !e.WaterFlipEnabled && aux.LegacyWaterFlip != nil {
 		e.WaterFlipEnabled = *aux.LegacyWaterFlip
+		e.present["waterFlipEnabled"] = true
 	}
 	return nil
 }

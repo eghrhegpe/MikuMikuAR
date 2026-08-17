@@ -19,7 +19,9 @@ vi.mock('../core/logger', () => ({
         getAll: () => mockState.entries,
         subscribe: (fn: () => void) => {
             mockState.subscribeFn = fn;
-            return () => { mockState.subscribeFn = null; };
+            return () => {
+                mockState.subscribeFn = null;
+            };
         },
         push: (entry: MockEntry) => {
             mockState.entries.push(entry);
@@ -42,7 +44,12 @@ vi.mock('../core/logger', () => ({
     getConsoleOutput: () => mockState.consoleOutput,
 }));
 
-import { showLogPanel, hideLogPanel, toggleLogPanel, disposeLogPanel } from '../core/debug-log-panel';
+import {
+    showLogPanel,
+    hideLogPanel,
+    toggleLogPanel,
+    disposeLogPanel,
+} from '../core/debug-log-panel';
 
 function panel(): HTMLElement | null {
     return document.querySelector('.debug-log-panel') as HTMLElement | null;
@@ -183,9 +190,7 @@ describe('renderPanel — 过滤与渲染', () => {
     });
 
     it('formatTime 输出 HH:mm:ss.SSS 格式', () => {
-        mockState.entries = [
-            { tag: 'x', level: 'info', message: 'msg', time: fixedTime },
-        ];
+        mockState.entries = [{ tag: 'x', level: 'info', message: 'msg', time: fixedTime }];
         mockState.subscribeFn?.();
         const list = listEl()!;
         const timeMatch = list.textContent!.match(/\d{2}:\d{2}:\d{2}\.\d{3}/);
@@ -241,9 +246,7 @@ describe('renderPanel — 过滤与渲染', () => {
     });
 
     it('filterTag 无匹配时显示「暂无日志」', () => {
-        mockState.entries = [
-            { tag: 'app', level: 'info', message: '[app]', time: fixedTime },
-        ];
+        mockState.entries = [{ tag: 'app', level: 'info', message: '[app]', time: fixedTime }];
         mockState.subscribeFn?.();
         const filter = panel()!.querySelector('[data-role="filter"]') as HTMLInputElement;
         filter.value = 'nonexistent';
@@ -277,12 +280,12 @@ describe('renderPanel — 自动滚动', () => {
         Object.defineProperty(list, 'clientHeight', { value: 200, configurable: true });
         Object.defineProperty(list, 'scrollTop', {
             get: () => scrollTop,
-            set: (v: number) => { scrollTop = v; },
+            set: (v: number) => {
+                scrollTop = v;
+            },
             configurable: true,
         });
-        mockState.entries = [
-            { tag: 'a', level: 'info', message: '[a]', time: fixedTime },
-        ];
+        mockState.entries = [{ tag: 'a', level: 'info', message: '[a]', time: fixedTime }];
         mockState.subscribeFn?.();
         expect(scrollTop).toBe(500);
     });
@@ -295,12 +298,12 @@ describe('renderPanel — 自动滚动', () => {
         Object.defineProperty(list, 'clientHeight', { value: 200, configurable: true });
         Object.defineProperty(list, 'scrollTop', {
             get: () => scrollTop,
-            set: (v: number) => { scrollTop = v; },
+            set: (v: number) => {
+                scrollTop = v;
+            },
             configurable: true,
         });
-        mockState.entries = [
-            { tag: 'a', level: 'info', message: '[a]', time: fixedTime },
-        ];
+        mockState.entries = [{ tag: 'a', level: 'info', message: '[a]', time: fixedTime }];
         mockState.subscribeFn?.();
         expect(scrollTop).toBe(100);
     });
@@ -309,7 +312,10 @@ describe('renderPanel — 自动滚动', () => {
         showLogPanel();
         expect(listEl()!.textContent).toContain('暂无日志');
         mockState.entries.push({
-            tag: 'live', level: 'info', message: '[live] tick', time: Date.now(),
+            tag: 'live',
+            level: 'info',
+            message: '[live] tick',
+            time: Date.now(),
         });
         mockState.subscribeFn?.();
         expect(listEl()!.textContent).not.toContain('暂无日志');
@@ -320,9 +326,7 @@ describe('renderPanel — 自动滚动', () => {
 describe('事件绑定 — 清空 / Console 切换 / 关闭', () => {
     it('点击「清空」按钮调用 clearLogs 并重新渲染', () => {
         showLogPanel();
-        mockState.entries = [
-            { tag: 'a', level: 'info', message: '[a]', time: 1 },
-        ];
+        mockState.entries = [{ tag: 'a', level: 'info', message: '[a]', time: 1 }];
         mockState.subscribeFn?.();
         expect(listEl()!.querySelectorAll('.log-entry').length).toBe(1);
         const clearBtn = panel()!.querySelector('[data-role="clear"]') as HTMLElement;
@@ -433,9 +437,7 @@ describe('window.__logPanel 全局挂载', () => {
     });
 
     it('window.__logPanel.clear 调用后清除缓冲区', () => {
-        mockState.entries = [
-            { tag: 'x', level: 'info', message: '[x]', time: 1 },
-        ];
+        mockState.entries = [{ tag: 'x', level: 'info', message: '[x]', time: 1 }];
         window.__logPanel!.clear();
         expect(mockState.clearLogsCalls).toBe(1);
         expect(mockState.entries).toHaveLength(0);

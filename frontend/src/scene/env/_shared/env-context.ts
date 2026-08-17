@@ -82,7 +82,7 @@ interface EnvSkyResources {
 export const _envSys: {
     sky: EnvSkyResources;
     ground: { mesh: Mesh | null };
-    particles: { system: ParticleSystem | null; followObserver: ObserverHandle | null };
+    particles: { system: ParticleSystem | null; followScene: Scene | null };
     splash: { observer: ObserverHandle | null };
     clouds: {
         postProcess: Mesh | null;
@@ -95,7 +95,7 @@ export const _envSys: {
 } = {
     sky: { skyMesh: null, skyCubeTexture: null, skyDynamicTex: null },
     ground: { mesh: null },
-    particles: { system: null, followObserver: null },
+    particles: { system: null, followScene: null },
     splash: { observer: null },
     clouds: { postProcess: null, postProcess2: null, material: null, texture: null },
     water: { mesh: null, material: null },

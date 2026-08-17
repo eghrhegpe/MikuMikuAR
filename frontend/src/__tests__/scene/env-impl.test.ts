@@ -91,7 +91,12 @@ vi.mock('../../scene/env/env-underwater-fog', () => ({
     underwaterFogController: { reset: _m.underwaterReset },
 }));
 
-import { _envSys, getGroundHeightAt, initEnvImpl, disposeEnvUpdateObserver } from '../../scene/env/env-impl';
+import {
+    _envSys,
+    getGroundHeightAt,
+    initEnvImpl,
+    disposeEnvUpdateObserver,
+} from '../../scene/env/env-impl';
 import { isInitialized, resetEnvContext } from '../../scene/env/_shared/env-context';
 import { envState } from '../../core/config';
 

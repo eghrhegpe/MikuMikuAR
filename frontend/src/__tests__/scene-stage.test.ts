@@ -277,13 +277,15 @@ describe('Stage level', () => {
         setSceneMenu(menu);
         const level = buildStageLevel();
         const container = renderLevel(level);
-        const row = Array.from(container.querySelectorAll('.slide-item')).find(
-            (el) => el.textContent?.includes('主舞台')
+        const row = Array.from(container.querySelectorAll('.slide-item')).find((el) =>
+            el.textContent?.includes('主舞台')
         );
         expect(row).toBeDefined();
         row!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
         expect(mockPush).toHaveBeenCalledTimes(1);
-        const pushedLevel = mockPush.mock.calls[0][0] as ReturnType<typeof buildStageTransformLevel>;
+        const pushedLevel = mockPush.mock.calls[0][0] as ReturnType<
+            typeof buildStageTransformLevel
+        >;
         expect(pushedLevel.label).toContain('主舞台');
         expect(pushedLevel.renderCustom).toBeDefined();
     });
@@ -314,7 +316,7 @@ describe('Stage level', () => {
         const [msg, snap, onRestored] = mockOfferSceneUndo.mock.calls[0] as [
             string,
             string | null,
-            () => void
+            () => void,
         ];
         expect(msg).toBe('✓ 已卸载: 主舞台');
         expect(snap).toBe('snap-1');
@@ -354,7 +356,7 @@ describe('Stage level', () => {
             string,
             string,
             (m: unknown) => boolean,
-            FakeSlideMenu
+            FakeSlideMenu,
         ];
         expect(dir).toBe('/lib/stage');
         expect(label).toBe('加载舞台');
@@ -435,7 +437,7 @@ describe('Stage level', () => {
         const [, , onRestored] = mockOfferSceneUndo.mock.calls[0] as [
             string,
             string | null,
-            () => void
+            () => void,
         ];
         mockReRender.mockClear();
         onRestored();

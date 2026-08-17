@@ -26,7 +26,8 @@ import {
 } from '../core/ui-helpers';
 import { waitForFrame } from '../core/async';
 import { logWarn } from '../core/logger';
-import { getMotionMenu } from './motion-popup';
+// [doc:adr-271] 菜单实例改从状态叶子读取，切断与 motion-popup 的互指
+import { getMotionMenu } from './motion-menu-state';
 import { ArcRotateCamera } from '@babylonjs/core/Cameras/arcRotateCamera';
 import { getRenderState } from '../scene/render/renderer';
 import { getGuideMode, setGuideMode } from '../scene/pose/composition-guide';
@@ -160,7 +161,7 @@ function buildPoseStudioSchema(): MenuNode[] {
                     const presets = getAllPresets();
                     const btnGroup = document.createElement('div');
                     btnGroup.className = 'preset-group';
-                    btnGroup.style.padding = '4px 14px';
+                    btnGroup.style.padding = '4px var(--row-pad-x)';
                     for (const preset of presets) {
                         addPresetChip(
                             btnGroup,
@@ -179,7 +180,7 @@ function buildPoseStudioSchema(): MenuNode[] {
                     inner.appendChild(btnGroup);
 
                     const batchRow = document.createElement('div');
-                    batchRow.style.cssText = 'display:flex;gap:6px;padding:8px 14px;';
+                    batchRow.style.cssText = 'display:flex;gap:6px;padding:8px var(--row-pad-x);';
 
                     addPresetChip(
                         batchRow,
@@ -204,7 +205,7 @@ function buildPoseStudioSchema(): MenuNode[] {
                     const progressEl = document.createElement('div');
                     progressEl.id = 'pose-batch-progress';
                     progressEl.style.cssText =
-                        'font-size:11px;color:var(--text-dim);padding:0 14px 8px;display:none;';
+                        'font-size:var(--font-ui-sm);color:var(--text-dim);padding:0 var(--row-pad-x) 8px;display:none;';
                     inner.appendChild(progressEl);
                 });
             },

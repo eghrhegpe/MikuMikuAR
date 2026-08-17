@@ -12,6 +12,8 @@
  *   node scripts/gen-dep-graph.mjs --check                 # 只检查是否已同步（需配合 --file）
  *
  * 零依赖（仅 node:fs / node:path）。
+ * 边口径：[ADR-268] 只计模块加载期依赖——静态 import / 副作用 import / export-from，
+ *   **不含动态 import()**（惰性求值，不构成加载期耦合）。与 check:circular、dep:metrics 同源。
  * 设计意图：依赖图生成器
  * 退出码：1（失败）
  */
@@ -159,7 +161,9 @@ function main() {
   }
 
   // 1. 扫描文件 + 解析依赖（scope 递归展开依赖，--local-only 限制 scope 内）
-  const { files, graph } = scanSourceGraph(SRC_DIR, { scope, localOnly });
+  // [ADR-268] 与 check:circular / dep:metrics 同口径：动态 import() 不计入（加载期依赖）。
+  // 三处若各用各的尺子，图上有的边、台账上没的边，看图的人会被误导。
+  const { files, graph } = scanSourceGraph(SRC_DIR, { scope, localOnly, includeDynamic: false });
   // [P2 2026-08-08] frontend/src 缺失守卫：子模块未检出/错误 cwd 时 walk 返回 []，
   // 旧实现打印「0 个文件」后 exit 0 输出空图（可能把空图写进文档）。缺失即明确失败。
   if (files.length === 0) {
@@ -172,6 +176,9 @@ function main() {
   }
   console.error(`📄 ${scope ? `scope=${scope}${localOnly ? ' (local-only)' : ''}` : '全部'} → ${files.length} 个文件`);
   const edges = [...graph.entries()].flatMap(([from, deps]) => [...deps].map((to) => [from, to]));
+  // [P2 2026-10-24] 边序同节点序（L63 localeCompare）对齐：graph 插入序=readdir 序，跨 OS 不同
+  //   → Mermaid 边块跨机漂移，--check 本地绿/CI 红（be137da0 实锤）。sort 后方可幂等。
+  edges.sort((a, b) => (a[0] === b[0] ? a[1].localeCompare(b[1]) : a[0].localeCompare(b[0])));
   console.error(`   解析到 ${edges.length} 条依赖边`);
 
   const entries = files;

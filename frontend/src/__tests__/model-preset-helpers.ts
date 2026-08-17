@@ -2,6 +2,7 @@
 // 仅包含纯函数与 setup 函数；vi.mock 调用保留在各拆分文件顶部（vitest 要求顶层 hoist）。
 // 注意：本模块被测试文件 import 后，其 `../scene/motion/playback` / `../core/toast` 等导入
 // 会随测试文件的 vi.mock 一起被替换为 mock（vitest 按测试文件的模块图解析），故 updatePlaybackUI 取到的是 mock。
+import type { ModelInstance } from '../core/config';
 import { vi } from 'vitest';
 import * as sceneModule from '../scene/scene';
 import { updatePlaybackUI } from '../scene/motion/playback';
@@ -130,8 +131,14 @@ export function fakePbrMeshes(count: number): any[] {
         return {
             name,
             position: {
-                x: 0, y: 0, z: 0,
-                set(x: number, y: number, z: number) { this.x = x; this.y = y; this.z = z; },
+                x: 0,
+                y: 0,
+                z: 0,
+                set(x: number, y: number, z: number) {
+                    this.x = x;
+                    this.y = y;
+                    this.z = z;
+                },
             },
             scaling: { setAll() {} },
             rotation: { y: 0 },
@@ -151,9 +158,9 @@ export function createModel(id: string, meshCount = 1, overrides?: Partial<any>)
         modelDir: 'D:/models',
         meshes: fakeMeshes(meshCount),
         rootMesh: fakeMeshes(1)[0],
-        vmdData: null,
+        vmdData: null as ModelInstance['vmdData'],
         vmdName: '',
-        vmdPath: null,
+        vmdPath: null as ModelInstance['vmdPath'],
         animationDuration: 0,
         kind: 'actor',
         visible: true,

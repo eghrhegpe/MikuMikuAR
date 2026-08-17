@@ -17,7 +17,7 @@ const shared = vi.hoisted(() => {
         playsInline: false,
         muted: false,
         style: { transform: '', display: '' },
-        srcObject: null,
+        srcObject: null as unknown,
         videoWidth: 1280,
         videoHeight: 720,
         setAttribute: vi.fn(),
@@ -33,8 +33,8 @@ const shared = vi.hoisted(() => {
     const feedbackStatus = vi.fn();
     const getCachedCapabilities = vi.fn(() => ({ arScope: 'none' }));
     const logWarn = vi.fn();
-    const canvasToBase64 = vi.fn(
-        (_canvas: unknown, _format: string, _quality: number) => Promise.resolve('mock-base64')
+    const canvasToBase64 = vi.fn((_canvas: unknown, _format: string, _quality: number) =>
+        Promise.resolve('mock-base64')
     );
     const registerSceneAction = vi.fn();
     return {
@@ -434,14 +434,7 @@ describe('captureARScreenshot（合成截图）', () => {
             1920,
             1080
         );
-        expect(shared.ctx.drawImage).toHaveBeenNthCalledWith(
-            2,
-            shared.canvas,
-            0,
-            0,
-            1920,
-            1080
-        );
+        expect(shared.ctx.drawImage).toHaveBeenNthCalledWith(2, shared.canvas, 0, 0, 1920, 1080);
     });
 
     it('正常：激活后按高视频裁剪并合成', async () => {

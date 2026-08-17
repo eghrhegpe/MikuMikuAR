@@ -50,7 +50,7 @@ export function safeCallAsync<T>(
 ): Promise<T | undefined> {
     return fn().then(
         (v) => v,
-        (err) => {
+        (err): undefined => {
             logWarn(tag, msg, err);
             return undefined;
         }

@@ -126,7 +126,9 @@ class LoadManager {
         // 仅用于日志关联与 UI 显示，不做哈希唯一性保证。
         // [fix] 随机段用 0x10000 范围 + padStart 保底 4 位：原 Math.random().toString(36).slice(2,6)
         // 在极端值（如 0.5 → '0.i'）下会产出不足 4 位的随机段，破坏 [0-9a-z]{4} 格式契约。
-        const rand = Math.floor(Math.random() * 0x10000).toString(36).padStart(4, '0');
+        const rand = Math.floor(Math.random() * 0x10000)
+            .toString(36)
+            .padStart(4, '0');
         return 'l_' + Date.now().toString(36) + '_' + rand;
     }
 

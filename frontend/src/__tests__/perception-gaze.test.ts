@@ -172,7 +172,7 @@ describe('_applyHeadGazeJS 写入策略', () => {
 
     it('cache.headWorldQ 被维护（首次调用创建）', () => {
         const head = makeHeadBone({ js: true });
-        const cache = { headWorldQ: null, eyeLocalQ: new Map() };
+        const cache = { headWorldQ: null as Quaternion | null, eyeLocalQ: new Map() };
         gazeJs._applyHeadGazeJS(head, new Vector3(5, 1.5, 0), 0.016, cache);
         expect(cache.headWorldQ).not.toBeNull();
         expect(cache.headWorldQ instanceof Quaternion).toBe(true);
@@ -180,7 +180,7 @@ describe('_applyHeadGazeJS 写入策略', () => {
 
     it('cache.headWorldQ 被维护（二次调用复用并更新）', () => {
         const head = makeHeadBone({ js: true });
-        const cache = { headWorldQ: null, eyeLocalQ: new Map() };
+        const cache = { headWorldQ: null as Quaternion | null, eyeLocalQ: new Map() };
         gazeJs._applyHeadGazeJS(head, new Vector3(5, 1.5, 0), 0.016, cache);
         const firstQ = cache.headWorldQ!.clone();
         // 相机位置变到 -X 侧 → finalQ 应不同
@@ -210,7 +210,7 @@ describe('_applyHeadGazeWasm 写入策略', () => {
 
     it('cache.headWorldQ 被维护（与 JS 路径对称）', () => {
         const head = makeHeadBone({ js: false });
-        const cache = { headWorldQ: null, eyeLocalQ: new Map() };
+        const cache = { headWorldQ: null as Quaternion | null, eyeLocalQ: new Map() };
         gazeWasm._applyHeadGazeWasm(head, new Vector3(5, 1.5, 0), 0.016, cache);
         expect(cache.headWorldQ).not.toBeNull();
         expect(cache.headWorldQ instanceof Quaternion).toBe(true);
@@ -290,12 +290,12 @@ describe('lookDir 方向不变量', () => {
         //   - camPos=(0,1.5,-5)：lookDir=(0,0,+5) → +Z 对齐 (0,0,+1) → Identity → finalQ≈Identity
         // 若 lookDir 反向（camPos - bonePos），两个相机位置的旋转结果会对调
         const headPos = makeHeadBone({ js: false });
-        const cachePos = { headWorldQ: null, eyeLocalQ: new Map() };
+        const cachePos = { headWorldQ: null as Quaternion | null, eyeLocalQ: new Map() };
         gazeWasm._applyHeadGazeWasm(headPos, new Vector3(0, 1.5, 5), 0.016, cachePos);
         const anglePos = 2 * Math.acos(Math.min(Math.abs(cachePos.headWorldQ!.w), 1));
 
         const headNeg = makeHeadBone({ js: false });
-        const cacheNeg = { headWorldQ: null, eyeLocalQ: new Map() };
+        const cacheNeg = { headWorldQ: null as Quaternion | null, eyeLocalQ: new Map() };
         gazeWasm._applyHeadGazeWasm(headNeg, new Vector3(0, 1.5, -5), 0.016, cacheNeg);
         const angleNeg = 2 * Math.acos(Math.min(Math.abs(cacheNeg.headWorldQ!.w), 1));
 
@@ -310,11 +310,11 @@ describe('lookDir 方向不变量', () => {
         // camPos=(-5,1.5,0)：lookDir=(5,0,0) → 头部绕 Y 转 -75°（被 clamp）→ q.y < 0
         // 若 lookDir 反向，则两次旋转符号会反过来
         const head1 = makeHeadBone({ js: false });
-        const cache1 = { headWorldQ: null, eyeLocalQ: new Map() };
+        const cache1 = { headWorldQ: null as Quaternion | null, eyeLocalQ: new Map() };
         gazeWasm._applyHeadGazeWasm(head1, new Vector3(5, 1.5, 0), 0.016, cache1);
 
         const head2 = makeHeadBone({ js: false });
-        const cache2 = { headWorldQ: null, eyeLocalQ: new Map() };
+        const cache2 = { headWorldQ: null as Quaternion | null, eyeLocalQ: new Map() };
         gazeWasm._applyHeadGazeWasm(head2, new Vector3(-5, 1.5, 0), 0.016, cache2);
 
         const y1 = cache1.headWorldQ!.y;
@@ -425,7 +425,7 @@ describe('_applyEyeGazeWasm 策略', () => {
 
     it('cache.eyeLocalQ 被维护（首次调用创建）', () => {
         const eye = makeBone({ name: '右目', js: false });
-        const cache = { headWorldQ: null, eyeLocalQ: new Map() };
+        const cache = { headWorldQ: null as Quaternion | null, eyeLocalQ: new Map() };
         gazeWasm._applyEyeGazeWasm([eye], new Vector3(5, 1.5, 0), 0.016, cache);
         const cached = cache.eyeLocalQ.get('右目');
         expect(cached).not.toBeUndefined();

@@ -48,7 +48,6 @@ export interface LightingStateValues {
     sunDisc: Mesh | null;
     stageShadows: Map<string, ShadowGenerator>;
     stageCones: Map<string, LightConeEntry>;
-    coneUpdateHandle: ObserverHandle | null;
     /** [doc:adr-168] 个人灯 tick observer 句柄；disposeLighting 时释放 */
     personalLightTickHandle: ObserverHandle | null;
     /** [doc:adr-168] 舞台灯追光 tick observer 句柄；disposeLighting 时释放（P1 修复：原句柄被丢弃导致泄漏） */
@@ -112,7 +111,6 @@ export const lightingState: LightingStateValues = {
     sunDisc: null,
     stageShadows: new Map<string, ShadowGenerator>(),
     stageCones: new Map<string, LightConeEntry>(),
-    coneUpdateHandle: null,
     personalLightTickHandle: null,
     stageFollowTickHandle: null,
     activeTransitionObs: null,

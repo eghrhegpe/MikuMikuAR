@@ -47,6 +47,39 @@ export function dispatchEnvChange(changed: Set<string> | null, state: EnvState):
     }
 }
 
+// ======== Env Observer Request Registry ========
+// [doc:adr-269 补充] 控制反转（IoC）。
+//
+// 子系统（env-sky / env-clouds / env-particles / env-ground / env-time-of-day）在自己的
+// 创建/应用函数末尾需要「确保 env 每帧 observer 已挂载」。此前它们直接
+// `import { ensureEnvUpdateObserver } from './env'`，形成「子系统 → 调度器」的向上依赖，
+// 让 scene/env 内部 9 个文件互相可达（一个 SCC）。
+//
+// 改为请求式：调度器（env-impl）在模块顶层把挂载函数注册进来，子系统只发请求。
+// dispatcher 本身只依赖 @/core/config，是 env 内部的叶子，不引入任何回边。
+
+const _envObserverHandlers = new Set<() => void>();
+
+/** 调度器注册「确保 observer 已挂载」处理函数（env-impl 在模块顶层调用）。 */
+export function registerEnvObserverHandler(fn: () => void): () => void {
+    _envObserverHandlers.add(fn);
+    return () => {
+        _envObserverHandlers.delete(fn);
+    };
+}
+
+/** 子系统请求确保 env 每帧 observer 已挂载。幂等由处理函数自身保证。
+ *  未注册处理函数时静默跳过（例如测试环境只加载了子系统）。 */
+export function requestEnvObserver(): void {
+    for (const fn of _envObserverHandlers) {
+        try {
+            fn();
+        } catch (e) {
+            console.warn('[env-dispatcher] observer request error:', e);
+        }
+    }
+}
+
 // ======== Scene Tick Callback Registry ========
 // 从 env-context 迁入，使 env-bridge 无需 import env-impl 即可注册 tick 回调。
 

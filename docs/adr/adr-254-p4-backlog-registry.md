@@ -50,6 +50,7 @@
 | B6 | load-manager | `default` 分支未实现 kind 静默 return null | 可抛 `LibraryLoadError` 让调用方统一 catch |
 | B7 | virtual-skirt | dispose `releaseWorldId` 顺序 | 子代理自评 JS 单线程安全、无实际问题 |
 | B8 | mirror-debug | `setMirrorResolution` 经 setEnvState 隐式 autoSave | 与显式 triggerAutoSave 风格不一致但等价 |
+| B9 | scripts/_lib/source-graph | `parseSourceImports` 仍用 `[\s\S]*?` 跨语句正则（可跨语句伪造假导入边；check-circular / dep-graph 的数据源） | 已备好线性扫描器 `scripts/_lib/import-scan.mjs`（ADR-242 门禁在用）；迁移前需做旧 vs 新全量 diff 核对，`check:circular --strict` 是 pre-push 门禁不可裸换 |
 
 ### C 类：文档/测试缺口（已修卡但可继续完善）
 

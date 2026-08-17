@@ -13,6 +13,7 @@ import {
   RE_DEPRECATED_WORD,
   RE_NEGATED,
   RE_NEGATED_CLAIM,
+  RE_HYPOTHETICAL_CLAIM,
   RE_TABLE_FIRST_COL,
   RE_TABLE_VERB,
   RE_TABLE_NEGATED,
@@ -380,6 +381,31 @@ test('RE_NEGATED_CLAIM: matched — **未**替代 ADR-061.1 子编号（与 RE_C
 
 test('RE_NEGATED_CLAIM: not matched — 真实取代宣称不带否定词', () => {
   assert.ok(!RE_NEGATED_CLAIM.test('本 ADR 取代 ADR-200 的相机部分'));
+});
+
+// [fix 2026-10-23] 反事实/假设语气：情态词「会/可能」把断言降格为推演，不是取代声明。
+// 实测 ADR-264「那会推翻 ADR-228 的既有判断」触发 ② 漏标告警，阻塞 check:docs。
+test('RE_HYPOTHETICAL_CLAIM: matched — 那会推翻 ADR-228（捕获 228）', () => {
+  const line = '**推论**：本 ADR 的目标不是「消灭全部 inline px」（那会推翻 ADR-228 的既有判断），而是…';
+  const m = line.match(RE_HYPOTHETICAL_CLAIM);
+  assert.ok(m, '反事实语气应被识别');
+  assert.equal(parseInt(m[1], 10), 228);
+  // 同一行确实同时命中 RE_CLAIM_A —— 这正是需要剔除的原因
+  assert.ok(RE_CLAIM_A.test(line));
+});
+
+test('RE_HYPOTHETICAL_CLAIM: matched — 可能会废弃 ADR-120（加粗与了容忍）', () => {
+  const m = '若砍掉惰性 cache，**可能**会废弃 ADR-120 的增量策略'.match(RE_HYPOTHETICAL_CLAIM);
+  assert.ok(m);
+  assert.equal(parseInt(m[1], 10), 120);
+});
+
+test('RE_HYPOTHETICAL_CLAIM: not matched — 「将取代」是明确的后续计划，仍属真实宣称', () => {
+  assert.ok(!RE_HYPOTHETICAL_CLAIM.test('本 ADR 将取代 ADR-200 的相机部分'));
+});
+
+test('RE_HYPOTHETICAL_CLAIM: not matched — 若无情态词的直陈取代宣称', () => {
+  assert.ok(!RE_HYPOTHETICAL_CLAIM.test('本 ADR 取代 ADR-200 的相机部分'));
 });
 
 // ⑤ 表格弱宣称

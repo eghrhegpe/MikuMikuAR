@@ -75,9 +75,7 @@ export function initPlaybackObservables(
         getSceneAction('animateCameraVmd')?.(runtime.currentTime * 30);
         // updateProcMotion 是 async 函数，在同步回调中 fire-and-forget
         // 添加 .catch 防止未处理的 Promise 拒绝导致静默崩溃
-        updateProcMotion().catch((err: unknown) =>
-            logError('playback', 'updateProcMotion:', err)
-        );
+        updateProcMotion().catch((err: unknown) => logError('playback', 'updateProcMotion:', err));
     });
 
     const playHandle = observe(runtime.onPlayAnimationObservable, () => {
@@ -219,9 +217,7 @@ export function seekFromEvent(e: MouseEvent | PointerEvent): void {
     const targetTime = ratio * duration;
     mmdRuntime
         .seekAnimation(targetTime, true)
-        .catch((err: unknown) =>
-            logError('playback', 'seekAnimation failed:', err)
-        );
+        .catch((err: unknown) => logError('playback', 'seekAnimation failed:', err));
     updatePlaybackUI();
     getSceneAction('syncAudioPlayback')?.(targetTime, isPlaying, duration);
 }

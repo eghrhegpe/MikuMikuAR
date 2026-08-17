@@ -9,13 +9,16 @@ source_files:
   - frontend/src/core/e2e-state-bridge.ts
 adr:
   - ADR-238
+  - ADR-265
 symbols:
-  - setE2EStateReader
-  - getE2EStateReader
   - StateReader
+  - clearE2EStateReader
+  - getE2EStateReader
+  - setE2EStateReader
 invariants:
   - menus/menu-schema 模块加载即注册 getStateValue（setter），core/dev-hooks 经 getter 读取
   - 双方只依赖本叶，不互相 import；menu-schema 不会拖起 dev-hooks 的 scene/outfit 链
+  - 槽机械部分立于 core/bridge-slot createSlot（ADR-265），导出签名不变
 tests: []
 use_when:
   - E2E 状态

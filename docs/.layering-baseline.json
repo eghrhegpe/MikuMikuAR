@@ -1,9 +1,10 @@
 {
   "_comment": "ADR-242 分层反向边基线。仅允许减少，不允许增加。更新: node scripts/check-layering.mjs --update",
-  "generatedAt": "2026-08-06",
+  "generatedAt": "2026-10-23",
   "entries": [
     "core/dev-hooks.ts:scene/manager/model-ops",
     "core/dev-hooks.ts:scene/manager/outfit",
+    "core/dev-hooks.ts:scene/motion/bone-override",
     "core/dev-hooks.ts:scene/physics/wind-physics",
     "core/dev-hooks.ts:scene/render/lighting",
     "core/dev-hooks.ts:scene/render/renderer",

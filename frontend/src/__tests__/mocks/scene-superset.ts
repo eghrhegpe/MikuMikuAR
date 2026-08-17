@@ -34,7 +34,7 @@ export const mockModelManagerBase = () => ({
 export const sceneMockSuperset = (opts: { modelManager?: unknown } = {}) => {
     const mm = opts.modelManager ?? mockModelManagerBase();
     return {
-        focusedModelId: null,
+        focusedModelId: null as string | null,
         get modelManager() {
             return mm;
         },

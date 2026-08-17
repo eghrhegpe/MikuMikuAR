@@ -10,11 +10,8 @@
 
 import { getAudioContext, getSfxEnabled, getFootstepVolume, playSfx } from '@/core/audio-bus';
 import { uiState, envState } from '@/core/state';
-import { setOnFootLand, isFeetAdjustmentRunning, type FootLandEvent } from './feet-adjustment';
-import {
-    startFallbackDetection,
-    stopFallbackDetection,
-} from './footstep-detect-fallback';
+import { setOnFootLand, isFeetAdjustmentEnabled, type FootLandEvent } from './feet-adjustment';
+import { startFallbackDetection, stopFallbackDetection } from './footstep-detect-fallback';
 
 type GroundSfxKind = 'concrete' | 'grass' | 'wood' | 'water' | 'default';
 
@@ -167,9 +164,18 @@ export function startFootstep(scene: import('@babylonjs/core/scene').Scene): voi
 
     setOnFootLand(callback);
 
-    // 若脚部跟随未开启，启动独立降级检测
-    if (!isFeetAdjustmentRunning()) {
-        startFallbackDetection(scene, callback);
+    // [doc:adr-275] 判断依据是"脚部跟随是否真的在解算"，不是"observer 是否注册过"：
+    // 脚部跟随已废弃（每模型 enabled:false），注册过也不会产出任何落地事件。
+    // 若据此跳过降级检测，脚步声开关打开后永远静音。
+    if (!isFeetAdjustmentEnabled()) {
+        startFallbackDetection(scene, (e) => {
+            // 兜底互斥：万一脚部跟随将来重新启用并开始产出事件，降级检测立即让位，
+            // 避免一步两声。
+            if (isFeetAdjustmentEnabled()) {
+                return;
+            }
+            callback(e);
+        });
     }
 }
 

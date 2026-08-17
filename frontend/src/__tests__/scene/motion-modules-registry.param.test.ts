@@ -9,7 +9,11 @@ import {
     mockMotionIntent,
     mockMotionHistory,
 } from './motion-modules-registry-mocks';
-import { makeModel, makeModelWithBones, setActiveMotionWithModules } from './motion-modules-registry-helpers';
+import {
+    makeModel,
+    makeModelWithBones,
+    setActiveMotionWithModules,
+} from './motion-modules-registry-helpers';
 import {
     initMotionModules,
     createModule,
@@ -92,7 +96,9 @@ describe('程序化动作模块配置（proc:actionId 持久化，fix:proc-overr
         expect(state.params.tilt).toBe(10);
         // 状态落到 ModelInstance.procMotionModules.idle（可序列化）
         expect(m1.procMotionModules?.idle).toBeDefined();
-        expect(m1.procMotionModules.idle.find((s: any) => s.id === 'body-posture')?.enabled).toBe(true);
+        expect(m1.procMotionModules.idle.find((s: any) => s.id === 'body-posture')?.enabled).toBe(
+            true
+        );
     });
 
     it('不同 procRole（idle vs autodance）互不串扰', () => {
@@ -214,7 +220,7 @@ describe('程序化动作模块配置（proc:actionId 持久化，fix:proc-overr
                     meta: { labelKey: 'test', defaults: { x: 0 } },
                     priority: 99,
                     managedBones: [],
-                    buildSchema: () => [],
+                    buildSchema: (): unknown[] => [],
                     getState: () => ({ id: 'test-proc-cleanup', enabled: false, params: { x: 0 } }),
                     setState: () => {},
                     setParam: () => {},
@@ -227,7 +233,9 @@ describe('程序化动作模块配置（proc:actionId 持久化，fix:proc-overr
 
         unregisterModule('test-proc-cleanup');
 
-        expect(m1.procMotionModules.idle.some((s: any) => s.id === 'test-proc-cleanup')).toBe(false);
+        expect(m1.procMotionModules.idle.some((s: any) => s.id === 'test-proc-cleanup')).toBe(
+            false
+        );
     });
 });
 

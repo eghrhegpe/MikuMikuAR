@@ -16,7 +16,9 @@ symbols:
   - dispatchEnvChange
   - registerEnvCallback
   - registerEnvDtTickCallback
+  - registerEnvObserverHandler
   - registerSceneTickCallback
+  - requestEnvObserver
   - runEnvDtTickCallbacks
   - runSceneTickCallbacks
 invariants:

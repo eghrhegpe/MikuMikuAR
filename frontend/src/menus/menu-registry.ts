@@ -34,11 +34,7 @@ type RegistryEntry = { builder: () => MenuNode[]; nav?: PanelNav };
 const registry = new Map<string, RegistryEntry>();
 
 /** 注册一个面板的 schema 构建函数（nav 可选，特例面板覆写导航元数据） */
-export function registerSchema(
-    panelId: string,
-    builder: () => MenuNode[],
-    nav?: PanelNav
-): void {
+export function registerSchema(panelId: string, builder: () => MenuNode[], nav?: PanelNav): void {
     if (registry.has(panelId)) {
         if (import.meta.env.DEV) {
             console.warn(`[menu-registry] panelId "${panelId}" 已注册，覆盖`);

@@ -51,6 +51,7 @@
 | `gen-ui-entry.mjs` | 知识卡 UI 入口同步 |
 | `gen-adr-supersede.mjs` | 取代关系审计（五层证据，登记/漏标/废弃/可疑/弱宣称） |
 | `gen-dep-graph.mjs` | 模块依赖图生成 |
+| `dep-metrics.mjs` | 依赖耦合台账（Ca/Ce/I、模块矩阵、残留环，口径同 check:circular） |
 | `gen-guide-gap.mjs` | 用户指南缺口分析 |
 | `fix-adr-format.mjs` | 批量修复 ADR 首部格式（冒号/前缀对齐解析契约） |
 | `fix-adr-dates.mjs` | 为缺日期行的 ADR 补 `> **日期**: yyyy-mm-dd` |
@@ -70,6 +71,7 @@
 | `check-diff-coverage.mjs` | P8-A diff-coverage 门禁 |
 | `check-env-parity.mjs` | EnvState 字段 parity（TS schema ↔ Go bindings） |
 | `check-layering.mjs` | 前端分层依赖方向守护（ADR-242） |
+| `check-magic-numbers.mjs` | 魔法数重复内联棘轮（同值裸写 ≥2 文件计债，BUDGET 只减不增；已接入 frontend `check:lint` 链） |
 | `check-schema-groups.mjs` | env-state-schema group 完整性 |
 | `check-script-hygiene.mjs` | scripts/ 工具脚本卫生检查（四口径） |
 | `comment-checker.mjs` | 注释质量检查（AI 废话/空 JSDoc/TODO 无编号/调试残留） |

@@ -196,10 +196,7 @@ export function refreshMirrorRenderList(): void {
 // ======== 参数设置 API ========
 
 export function setMirrorSize(width: number, height: number): void {
-    setEnvState(
-        { mirrorWidth: Math.max(0.5, width), mirrorHeight: Math.max(0.5, height) },
-        true
-    );
+    setEnvState({ mirrorWidth: Math.max(0.5, width), mirrorHeight: Math.max(0.5, height) }, true);
     triggerAutoSave();
     // pivot 由 bakeTransform 写入顶点，改尺寸需重建
     if (_mirrorMesh) {

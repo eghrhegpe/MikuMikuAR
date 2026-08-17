@@ -36,7 +36,11 @@ const shared = vi.hoisted(() => {
     const envState = { skyMode: 'sun', waterEnabled: false, waterLevel: 0, groundSize: 60 };
     const dom = { canvas: {}, loadingText: { textContent: '' } };
     const modelRegistry = new Map<string, unknown>();
-    let mmdRuntime: unknown = { destroyMmdModel: vi.fn(), setAudioPlayer: vi.fn(), register: vi.fn() };
+    let mmdRuntime: unknown = {
+        destroyMmdModel: vi.fn(),
+        setAudioPlayer: vi.fn(),
+        register: vi.fn(),
+    };
     let focusedModelId: string | null = null;
 
     // 被注入的 AI 快照桥（registerAiSnapshotBridge 捕获）
@@ -119,7 +123,7 @@ const shared = vi.hoisted(() => {
 
         // material
         getMaterialMode: vi.fn(() => 'standard'),
-        getStandardMaterialProxy: vi.fn(() => ({} as unknown)),
+        getStandardMaterialProxy: vi.fn(() => ({}) as unknown),
         tryApplyPbrMaterialBuilder: vi.fn(async () => {}),
 
         // playback / motion
@@ -823,7 +827,9 @@ describe('initScene（场景初始化编排）', () => {
 
 describe('findSceneModelByName（模块级注册动作）', () => {
     function getFindAction(): (name: string) => Promise<unknown> {
-        const cb = shared.sceneActions['findSceneModelByName'] as (name: string) => Promise<unknown>;
+        const cb = shared.sceneActions['findSceneModelByName'] as (
+            name: string
+        ) => Promise<unknown>;
         expect(cb).toBeDefined();
         return cb;
     }
@@ -838,10 +844,7 @@ describe('findSceneModelByName（模块级注册动作）', () => {
         const mm = sceneModule.modelManager as unknown as {
             getAll: ReturnType<typeof vi.fn>;
         };
-        mm.getAll.mockReturnValue([
-            { name: 'Miku' },
-            { name: 'Rin' },
-        ]);
+        mm.getAll.mockReturnValue([{ name: 'Miku' }, { name: 'Rin' }]);
         const cb = getFindAction();
         await expect(cb('miku')).resolves.toEqual({ name: 'Miku' });
         await expect(cb('RIN')).resolves.toEqual({ name: 'Rin' });
@@ -931,7 +934,7 @@ describe('onRemoveModel 回调（模型删除清理）', () => {
         expect(shared.onModelRemoved).toHaveBeenCalledWith('m1');
         expect(shared.detachPersonalLight).toHaveBeenCalledWith('m1');
         expect(
-            (shared.mmdRuntime as { destroyMmdModel: ReturnType<typeof vi.fn> }).destroyMmdModel,
+            (shared.mmdRuntime as { destroyMmdModel: ReturnType<typeof vi.fn> }).destroyMmdModel
         ).toHaveBeenCalled();
     });
 
@@ -940,7 +943,7 @@ describe('onRemoveModel 回调（模型删除清理）', () => {
         shared.modelRegistry.set('m2', { id: 'm2', mmdModel: null });
         onRemove('m2');
         expect(
-            (shared.mmdRuntime as { destroyMmdModel: ReturnType<typeof vi.fn> }).destroyMmdModel,
+            (shared.mmdRuntime as { destroyMmdModel: ReturnType<typeof vi.fn> }).destroyMmdModel
         ).not.toHaveBeenCalled();
     });
 
@@ -1034,10 +1037,16 @@ describe('指针事件回调（水面涟漪 + 拖拽模式）', () => {
         };
         // 相机低于水面
         scene.activeCamera = { globalPosition: { y: -1 } };
-        ripple({ type: 1, pickInfo: { hit: false, ray: { origin: { y: 5 }, direction: { y: -1 } } } });
+        ripple({
+            type: 1,
+            pickInfo: { hit: false, ray: { origin: { y: 5 }, direction: { y: -1 } } },
+        });
         // t<=0（ray 起点在水面下）
         scene.activeCamera = { globalPosition: { y: 10 } };
-        ripple({ type: 1, pickInfo: { hit: false, ray: { origin: { y: -5 }, direction: { y: -1 } } } });
+        ripple({
+            type: 1,
+            pickInfo: { hit: false, ray: { origin: { y: -5 }, direction: { y: -1 } } },
+        });
         // 超出地面范围（hit 计算需要 origin.add / direction.scale）
         ripple({
             type: 1,
@@ -1169,7 +1178,7 @@ describe('_initMotionSubsystems（运动子系统回调）', () => {
         const cb = shared.setWasmIkResolver.mock.calls[0][0] as (
             id: string,
             idx: number,
-            usePhysics: boolean,
+            usePhysics: boolean
         ) => void;
         cb('nope', 0, true);
         shared.modelRegistry.set('m1', { mmdModel: {} });
@@ -1183,7 +1192,7 @@ describe('_initMotionSubsystems（运动子系统回调）', () => {
         const cb = shared.setWasmIkResolver.mock.calls[0][0] as (
             id: string,
             idx: number,
-            usePhysics: boolean,
+            usePhysics: boolean
         ) => void;
         shared.modelRegistry.set('m1', { mmdModel: { bones: [] } });
         shared.getPhysicsImpl.mockReturnValue({ wasmInstance: {} });
@@ -1229,7 +1238,9 @@ describe('initScene 动作编排（attachBeatDetector / tryAutoApplyPreset / loa
         const loadOutfits = vi.fn(() => Promise.resolve());
         shared.sceneActions['loadOutfits'] = loadOutfits;
         await sceneModule.initScene();
-        const cb = (shared.initLoader.mock.calls[0] as unknown[])[5] as (id: string) => Promise<void>;
+        const cb = (shared.initLoader.mock.calls[0] as unknown[])[5] as (
+            id: string
+        ) => Promise<void>;
         await cb('m1');
         expect(loadOutfits).toHaveBeenCalledWith('m1');
     });

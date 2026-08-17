@@ -79,7 +79,16 @@ const m = vi.hoisted(() => {
     class Color4 {
         constructor() {}
     }
-    return { AbstractMesh, Mesh, TransformNode, RenderTargetTexture, FreeCamera, V3, Matrix, Color4 };
+    return {
+        AbstractMesh,
+        Mesh,
+        TransformNode,
+        RenderTargetTexture,
+        FreeCamera,
+        V3,
+        Matrix,
+        Color4,
+    };
 });
 
 vi.mock('@babylonjs/core/Meshes/mesh', () => ({ Mesh: m.Mesh }));
@@ -177,7 +186,10 @@ describe('thumbnail-capture — fix P2 变更行覆盖', () => {
     it('readPixels buffer detach：置 detachFailed 并整体放弃本帧（覆盖 228/229/232/233/234 行）', async () => {
         const { engine, scene } = makeScene();
         // subarray 返回 undefined → flipped.set 抛错进入 catch，模拟 WebGL 竞态 detach
-        engine.readPixels.mockResolvedValue({ length: PIXEL_BYTES, subarray: () => undefined });
+        engine.readPixels.mockResolvedValue({
+            length: PIXEL_BYTES,
+            subarray: (): undefined => undefined,
+        });
 
         await renderInstanceThumbnail(scene, makeInst(), 'k2');
 

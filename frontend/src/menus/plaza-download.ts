@@ -6,7 +6,8 @@ import { setStatus } from '../core/status-bar';
 import { t } from '../core/i18n/t';
 import { showErrorToast } from '../core/toast';
 import { feedbackError, feedbackStatus } from '../core/feedback';
-import { refreshLibrary } from './library';
+// [doc:adr-271] 直连真实定义处，不经 library.ts 入口转发（入口 barrel 会把
+// library 子系统重新卷进 SCC：library.ts → library-setup → nav-actions → plaza-browser → 本文件）
 import { registerShortcuts } from '../core/shortcut-registry';
 import { swallowError } from '../core/async';
 import { safeCallAsync } from '../core/safe-call';
@@ -170,9 +171,13 @@ export function installEventListeners(): void {
                 {
                     label: t('plaza.viewLibrary'),
                     onClick: () =>
-                        safeCallAsync('plaza', 'refresh after plaza download', () =>
-                            refreshLibrary()
-                        ),
+                        safeCallAsync('plaza', 'refresh after plaza download', async () => {
+                            // [doc:adr-271] 按需动态 import：这是用户点「查看库」才触发的一次性刷新，
+                            // 无需在加载期拉 library-setup。该边原为 plaza-download ⇄ library-setup 的环回边
+                            // （library-setup → nav-actions → plaza-browser → plaza-download → library-setup）。
+                            const { refreshLibrary } = await import('./library-setup');
+                            return refreshLibrary();
+                        }),
                 },
             ],
             8000

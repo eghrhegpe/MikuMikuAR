@@ -1,10 +1,16 @@
 // [doc:architecture] Lighting — 预设过渡动画（tween）与预设应用
 // 状态集中于 lightingState，本文件不再持有任何模块级可变状态。
+//
+// tween 的逐帧驱动走 core/frame-registry 的场景键共享表（getFrameRegistry）：
+// 原实现每个活跃 tween 自持一条 `onBeforeRenderObservable.addOnce(tick)` 自续帧，
+// N 个 tween = N 条一次性 observer，且 tick 未包 safeCallVoid——
+// tween 回调抛错会冒泡进 Babylon render loop，污染整帧的其它 observer。
 
 import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { lightingState, type LightingTween } from './lighting-state';
 import { col3FromTriple } from '@/core/color-helpers';
 import { guardNum } from '@/core/guards';
+import { getFrameRegistry } from '@/core/frame-registry';
 import { addStageLight, removeStageLight, setStageLightState } from './lighting-stage';
 import { LIGHTING_PRESETS } from './lighting-presets';
 import { getAllPersonalLights, setPersonalLightState } from './lighting-follow';
@@ -25,22 +31,44 @@ export function _tweenValue(
     onComplete?: () => void
 ): LightingTween {
     const id = ++lightingState.tweenIdCounter;
+    const scene = lightingState.scene;
+    if (!scene) {
+        // 无场景 → 无法逐帧驱动：直接落到终值并结束（不要留在 activeTweens 里空转）
+        onUpdate(to);
+        onComplete?.();
+        return { id, cancel: () => {} };
+    }
+
     let cancelled = false;
     const start = performance.now();
+    const registry = getFrameRegistry(scene);
+    const key = `render.lighting.tween.${id}`;
 
-    const tick = () => {
+    const finish = (): void => {
+        registry.unregister(key);
+        lightingState.activeTweens.delete(id);
+    };
+
+    const tick = (): void => {
         if (cancelled) {
+            finish();
             return;
         }
         const t = Math.min(1, (performance.now() - start) / durationMs);
         const eased = t * (2 - t); // ease-out quad
-        onUpdate(from + (to - from) * eased);
-        if (t >= 1) {
-            lightingState.activeTweens.delete(id);
+        try {
+            onUpdate(from + (to - from) * eased);
+        } catch (err) {
+            // 回调异常：立即终止本 tween（否则它会每帧重复抛错），并照常走 onComplete——
+            // applyLightingPresetFromEnv 的 pendingTweens 靠 onComplete 归零，
+            // 不走则 skipLightAutoSave 永久为 true（自动保存永久失效）。
+            finish();
             onComplete?.();
-        } else {
-            // 未完成时重新注册下一帧
-            lightingState.scene?.onBeforeRenderObservable.addOnce(tick);
+            throw err; // 交由注册表 safeCallVoid 统一记录 + 隔离，不冒泡进 Babylon render loop
+        }
+        if (t >= 1) {
+            finish();
+            onComplete?.();
         }
     };
 
@@ -48,11 +76,11 @@ export function _tweenValue(
         id,
         cancel: () => {
             cancelled = true;
-            lightingState.activeTweens.delete(id);
+            finish();
         },
     };
     lightingState.activeTweens.set(id, tw);
-    lightingState.scene!.onBeforeRenderObservable.addOnce(tick);
+    registry.register(key, tick);
     return tw;
 }
 
@@ -256,7 +284,11 @@ export function applyLightingPresetFromEnv(presetName: string | null): void {
                 );
             }
             if (plOverride.color !== undefined) {
-                const from = new Color3(guardNum(settings.color[0]), guardNum(settings.color[1]), guardNum(settings.color[2]));
+                const from = new Color3(
+                    guardNum(settings.color[0]),
+                    guardNum(settings.color[1]),
+                    guardNum(settings.color[2])
+                );
                 const to = col3FromTriple(plOverride.color);
                 pendingTweens++;
                 _tweenColor3(

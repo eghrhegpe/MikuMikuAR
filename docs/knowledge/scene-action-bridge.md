@@ -9,6 +9,7 @@ source_files:
   - frontend/src/core/scene-action-bridge.ts
 adr:
   - ADR-238
+  - ADR-265
 symbols:
   - registerSceneAction
   - getSceneAction
@@ -17,6 +18,7 @@ invariants:
   - core 持注入点（Map），scene/menus 侧启动时注册，方向单向，禁止 core 反向 import scene
   - 未注册调用只告警一次（_missingWarned），静默返回 undefined，不抛异常
   - 与 ui-action-bridge 同模式：分字段注册，支持各模块独立注册；registerSceneAction 返回 identity-based 注销 token（与 registerUiAction 契约对称，防 HMR 闭包残留）
+  - register/get/warnOnce 机械部分立于 core/bridge-slot createActionBridge（ADR-265），导出签名不变
 tests: []
 use_when:
   - 场景动作

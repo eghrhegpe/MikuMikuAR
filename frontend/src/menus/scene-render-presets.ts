@@ -198,7 +198,7 @@ function buildPresetsSchema(): MenuNode[] {
                     const desc = document.createElement('span');
                     desc.textContent = t(FILTER_PRESET_DESCS[key] || '');
                     desc.style.cssText =
-                        'font-size:9px;color:var(--text-dim);opacity:0.7;white-space:nowrap;line-height:1.2;';
+                        'font-size:var(--font-ui-xs);color:var(--text-dim);opacity:0.7;white-space:nowrap;line-height:1.2;';
                     wrapper.appendChild(desc);
 
                     chipGroup.appendChild(wrapper);

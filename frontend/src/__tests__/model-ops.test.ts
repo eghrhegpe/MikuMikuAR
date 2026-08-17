@@ -4,12 +4,15 @@
 // 7 条 vi.mock + model-ops-mocks 工厂）原在 5 文件重复 5 份，现收敛为一份。
 // 各 describe 用例按原主题分区保留，行为不变。
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import type { Vector3, Quaternion } from '@babylonjs/core/Maths/math.vector';
 import {
     modelOpsShared,
     mockSceneModule,
     mockMaterialState,
     mockEnv,
     mockCameraModule,
+    mockCameraStateModule,
+    mockCameraBoneLockModule,
     mockPlayback,
     mockAudio,
 } from './model-ops-mocks';
@@ -57,6 +60,7 @@ import {
 import * as playbackModule from '../scene/motion/playback';
 import * as materialModule from '../scene/manager/material';
 import * as cameraModule from '../scene/camera/camera';
+import * as cameraStateModule from '../scene/camera/camera-state';
 import * as envModule from '../scene/env/env';
 import * as audioModule from '@/core/audio';
 import { registerSceneAction } from '../core/scene-action-bridge';
@@ -89,11 +93,15 @@ vi.hoisted(() => {
 });
 
 vi.mock('../scene/scene', () => mockSceneModule(modelOpsShared.mockModelManager));
+vi.mock('../scene/scene-context', () => mockSceneModule(modelOpsShared.mockModelManager));
 // 注意：vi.mock 工厂必须直接引用 imported 绑定 modelOpsShared.mockModelManager，
 // 不能引用下方局部 const mockModelManager（vi.mock 被 hoist，工厂求值时局部 const 尚未初始化）。
 vi.mock('../scene/manager/material', () => mockMaterialState());
 vi.mock('../scene/env/env', () => mockEnv());
 vi.mock('../scene/camera/camera', () => mockCameraModule());
+// [doc:adr-269 补充] model-ops 改指 camera 叶子模块，须按真实定义处补 mock
+vi.mock('../scene/camera/camera-state', () => mockCameraStateModule());
+vi.mock('../scene/camera/camera-bone-lock', () => mockCameraBoneLockModule());
 vi.mock('../scene/motion/playback', () => mockPlayback());
 vi.mock('@/core/audio', () => mockAudio());
 vi.mock('@babylonjs/core/Maths/math.vector', async () => {
@@ -113,7 +121,10 @@ const disposeAudio = vi.mocked(audioModule.disposeAudio);
 // 模块副作用完成，此处 core/audio 被 mock 掉，故测试侧手动注册桩，否则调用被静默跳过。
 registerSceneAction('disposeAudio', () => disposeAudio());
 const switchCameraMode = vi.mocked(cameraModule.switchCameraMode);
-const getCameraMode = vi.mocked(cameraModule.getCameraMode);
+// [doc:adr-269 补充] model-ops 现经 scene-action-bridge 调 switchCameraMode（与 disposeAudio 同范式），
+// 真实注册由 camera.ts 模块副作用完成；此处 camera.ts 被 mock 掉，须手动注册桩。
+registerSceneAction('switchCameraMode', (mode: string) => switchCameraMode(mode as any));
+const getCameraMode = vi.mocked(cameraStateModule.getCameraMode);
 
 // ======== focusModel / arrangeModels ========
 describe('focusModel / arrangeModels', () => {
@@ -411,11 +422,17 @@ describe('applyVPDPose', () => {
     it('applies bone transforms and morph weights to a valid model', () => {
         const boneLeftShoulder = {
             name: '左肩',
-            linkedBone: { position: null, rotationQuaternion: null },
+            linkedBone: {
+                position: null as Vector3 | null,
+                rotationQuaternion: null as Quaternion | null,
+            },
         };
         const boneRightShoulder = {
             name: '右肩',
-            linkedBone: { position: null, rotationQuaternion: null },
+            linkedBone: {
+                position: null as Vector3 | null,
+                rotationQuaternion: null as Quaternion | null,
+            },
         };
         const setRuntimeAnim = vi.fn();
 

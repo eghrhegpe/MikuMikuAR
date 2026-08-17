@@ -76,29 +76,29 @@ describe('abort 短路', () => {
 describe('错误包装', () => {
     it('底层 loader 抛错 → 包装为 LibraryLoadError（含 loadId/phase）', async () => {
         __mocks.loadPMXFile.mockRejectedValue(new Error('boom'));
-        await expect(
-            loadManager.load({ kind: 'actor', path: '/a.pmx' })
-        ).rejects.toSatisfy((e: unknown) => {
-            const err = e as LibraryLoadError;
-            return err.name === 'LibraryLoadError' && err.phase === 'parse' && !!err.loadId;
-        });
+        await expect(loadManager.load({ kind: 'actor', path: '/a.pmx' })).rejects.toSatisfy(
+            (e: unknown) => {
+                const err = e as LibraryLoadError;
+                return err.name === 'LibraryLoadError' && err.phase === 'parse' && !!err.loadId;
+            }
+        );
     });
 
     it('LibraryLoadError 透传原始 req（loadId/phase/cause/req 完整快照）', async () => {
         __mocks.loadPMXFile.mockRejectedValue(new Error('boom'));
-        await expect(
-            loadManager.load({ kind: 'actor', path: '/a.pmx' })
-        ).rejects.toSatisfy((e: unknown) => {
-            const err = e as LibraryLoadError;
-            return (
-                err.name === 'LibraryLoadError' &&
-                err.req.kind === 'actor' &&
-                err.req.path === '/a.pmx' &&
-                (err.cause as Error).message === 'boom' &&
-                typeof err.message === 'string' &&
-                err.message.length > 0
-            );
-        });
+        await expect(loadManager.load({ kind: 'actor', path: '/a.pmx' })).rejects.toSatisfy(
+            (e: unknown) => {
+                const err = e as LibraryLoadError;
+                return (
+                    err.name === 'LibraryLoadError' &&
+                    err.req.kind === 'actor' &&
+                    err.req.path === '/a.pmx' &&
+                    (err.cause as Error).message === 'boom' &&
+                    typeof err.message === 'string' &&
+                    err.message.length > 0
+                );
+            }
+        );
     });
 
     it('成功加载后 finally 清空当前加载（getCurrentLoad 返回 null）', async () => {
@@ -121,7 +121,12 @@ describe('kind 分支覆盖', () => {
         });
         expect(handle).toEqual({ id: 'm1', kind: 'stage', name: '测试模型', filePath: '/s.pmx' });
         expect(__mocks.loadPMXFile).toHaveBeenCalledWith(
-            '/s.pmx', true, true, '/lib.zip', 's.pmx', undefined
+            '/s.pmx',
+            true,
+            true,
+            '/lib.zip',
+            's.pmx',
+            undefined
         );
     });
 
@@ -139,7 +144,10 @@ describe('kind 分支覆盖', () => {
     it('camera-vmd 加载成功返回 handle 且透传 signal', async () => {
         __mocks.loadCameraVmdFromPath.mockResolvedValue(undefined);
         const ctrl = new AbortController();
-        const handle = await loadManager.load({ kind: 'camera-vmd', path: '/cam.vmd' }, ctrl.signal);
+        const handle = await loadManager.load(
+            { kind: 'camera-vmd', path: '/cam.vmd' },
+            ctrl.signal
+        );
         expect(handle).toEqual({ id: '', kind: 'camera-vmd', name: 'cam', filePath: '/cam.vmd' });
         expect(__mocks.loadCameraVmdFromPath).toHaveBeenCalledWith('/cam.vmd', ctrl.signal);
     });
@@ -195,7 +203,12 @@ describe('边界与兜底', () => {
                 (e: unknown) => (e as LibraryLoadError).name === 'LibraryLoadError'
             );
             const handle = await p2;
-            expect(handle).toEqual({ id: 'm1', kind: 'actor', name: '测试模型', filePath: '/b.pmx' });
+            expect(handle).toEqual({
+                id: 'm1',
+                kind: 'actor',
+                name: '测试模型',
+                filePath: '/b.pmx',
+            });
         } finally {
             warnSpy.mockRestore();
         }
@@ -231,7 +244,9 @@ describe('边界与兜底', () => {
             ctrl.abort();
             await expect(
                 loadManager.load({ kind: 'actor', path: '/a.pmx' }, ctrl.signal)
-            ).rejects.toSatisfy((e: unknown) => e instanceof DOMException && e.name === 'AbortError');
+            ).rejects.toSatisfy(
+                (e: unknown) => e instanceof DOMException && e.name === 'AbortError'
+            );
         } finally {
             warnSpy.mockRestore();
         }

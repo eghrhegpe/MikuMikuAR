@@ -97,26 +97,30 @@ export function startRenderLoop(): void {
         // [fix:round20 P2] 帧回调异常降级：Babylon _renderLoop 中回调抛错会中断 rAF 重调度链
         // → 渲染循环静默死亡且无恢复。捕获后记一次错误并自停（FPS 时钟同时停止，故障可察觉）。
         try {
-            const _obsBefore = scene.onBeforeRenderObservable.observers
-                ? scene.onBeforeRenderObservable.observers.length
-                : 0;
-            const _rStart = performance.now();
+            // [perf] 观测税：仅「采样帧」（DEV + 每 PERF_SAMPLE_INTERVAL 帧）才做 render 计时 + 观测量读取，
+            // 非采样帧零 instrumentation（生产 DEV=false 整段被常量折叠）。_afterObs 每帧 _frameCounter++，
+            // 故入口帧号 +1 即 render 后帧号，采样判定与原 `_frameCounter % PERF_SAMPLE_INTERVAL === 0` 等价。
+            const _samplePerf =
+                import.meta.env.DEV && (_frameCounter + 1) % PERF_SAMPLE_INTERVAL === 0;
+            const _obsBefore =
+                _samplePerf && scene.onBeforeRenderObservable.observers
+                    ? scene.onBeforeRenderObservable.observers.length
+                    : 0;
+            const _rStart = _samplePerf ? performance.now() : 0;
             scene.render();
-            const _rElapsed = performance.now() - _rStart;
-            const _obsAfter = scene.onBeforeRenderObservable.observers
-                ? scene.onBeforeRenderObservable.observers.length
-                : 0;
-            const _obsDelta = _obsAfter - _obsBefore;
-            // 采样降频 + DEV-only：降低日志噪音（P4）
-            if (
-                _frameCounter % PERF_SAMPLE_INTERVAL === 0 &&
-                (_rElapsed > 30 || (_obsDelta > 0 && _obsAfter > 100)) &&
-                import.meta.env.DEV
-            ) {
-                logWarn(
-                    'perf:render',
-                    `[${formatTimestamp()}] scene.render took ${_rElapsed.toFixed(1)}ms, observers=${_obsBefore}→${_obsAfter} (Δ=${_obsDelta})`
-                );
+            if (_samplePerf) {
+                const _rElapsed = performance.now() - _rStart;
+                const _obsAfter = scene.onBeforeRenderObservable.observers
+                    ? scene.onBeforeRenderObservable.observers.length
+                    : 0;
+                const _obsDelta = _obsAfter - _obsBefore;
+                // 采样降频 + DEV-only：降低日志噪音（P4）
+                if (_rElapsed > 30 || (_obsDelta > 0 && _obsAfter > 100)) {
+                    logWarn(
+                        'perf:render',
+                        `[${formatTimestamp()}] scene.render took ${_rElapsed.toFixed(1)}ms, observers=${_obsBefore}→${_obsAfter} (Δ=${_obsDelta})`
+                    );
+                }
             }
             updatePerformance();
             // 降级系统改了 renderScale 乘数时立即重算 hardwareScalingLevel

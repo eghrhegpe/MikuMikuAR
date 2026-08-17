@@ -65,3 +65,38 @@ describe('SlideMenu — 统一交互守卫 (guard/guardedRun)', () => {
         expect(calls).toEqual([false, true]);
     });
 });
+
+describe('SlideMenu — buildPanel 异常兜底', () => {
+    let menu: SlideMenu;
+    let container: HTMLElement;
+
+    beforeEach(() => {
+        const m = makeTestMenu();
+        menu = m.menu;
+        container = m.container;
+        menu.reset(makeTestLevel('根'));
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+        vi.restoreAllMocks();
+        menu.dispose();
+        container.remove();
+    });
+
+    it('buildPanel reject 时 push 过渡仍恢复（不卡 opacity:0 / transitioning）', async () => {
+        // 覆写 buildPanel 抛异常，模拟特殊菜单（表情/材质）渲染期异常
+        (menu as any).buildPanel = async () => {
+            throw new Error('boom');
+        };
+        menu.push(makeTestLevel('L'));
+        expect((menu as any).transitioning).toBe(true);
+        // 触发淡出 transitionend → onFadeOut → buildPanel reject → catch → 兜底恢复
+        (menu as any).panel.dispatchEvent(new Event('transitionend'));
+        await vi.waitFor(() => {
+            expect((menu as any).transitioning).toBe(false);
+        });
+        expect((menu as any).panel.style.opacity).toBe('1');
+        expect((menu as any).panel.style.transform).toBe('translateX(0)');
+    });
+});

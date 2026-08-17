@@ -1,7 +1,9 @@
 // [doc:adr-059] i18n 语言状态 —— signal + localStorage 持久化（镜像 setMmdRuntimeType）
 // [doc:perf] initI18n 改为异步，预加载当前语言包
 import { reactive, scheduleRefresh } from '../reactivity';
-import { loadLocale } from './t';
+// [doc:adr-271] 改从 bundle-store 取 loadLocale：语言包缓存不依赖语言状态，
+// 原先 locale → t → locale 的 size=2 强连通分量因此断开。
+import { loadLocale } from './bundle-store';
 
 export type LangCode = 'zh-CN' | 'en' | 'ja' | 'ko' | 'zh-TW';
 

@@ -301,4 +301,3 @@ describe('StopFileServer signature', () => {
         expectTypeOf<typeof App.StopFileServer>().parameters.toEqualTypeOf<[string]>();
     });
 });
-

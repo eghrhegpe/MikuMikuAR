@@ -5,6 +5,8 @@
 // 与 e2e-state-bridge 同模式：core 持注入点，UI 层注册，方向单向。
 // 分字段注册（registerUiAction），支持各菜单模块独立注册各自行为。
 
+import { createActionBridge } from './bridge-slot';
+
 export interface UiActions {
     /** 关闭全部弹窗/遮罩（Escape 快捷键） */
     closeAllOverlays: () => void;
@@ -57,7 +59,9 @@ export interface UiActions {
     preloadAutoImportState: () => Promise<void>;
 }
 
-const _uiActions = new Map<keyof UiActions, unknown>();
+// [doc:adr-265] register/get/warnOnce 机械部分收敛至通用原语 core/bridge-slot；
+// 本文件只保留 UiActions 接口（文档价值）与本桥的导出签名（26 个消费文件无感）。
+const _bridge = createActionBridge<UiActions>('ui-action-bridge');
 
 /**
  * 注册单个 UI 行为（menus 侧各模块启动时调用，可重复注册覆盖）。
@@ -66,30 +70,17 @@ const _uiActions = new Map<keyof UiActions, unknown>();
  * 顺序下会删错，导致 bridge 永久缺失、core 侧静默跳过）。
  */
 export function registerUiAction<K extends keyof UiActions>(key: K, fn: UiActions[K]): () => void {
-    _uiActions.set(key, fn);
-    return () => {
-        if (_uiActions.get(key) === fn) {
-            _uiActions.delete(key);
-        }
-    };
+    return _bridge.register(key, fn);
 }
 
 /** 兼容旧调用点：按 key 注销（不区分注册实例，慎用；优先用 registerUiAction 返回的 token）。 */
 export function unregisterUiAction<K extends keyof UiActions>(key: K): void {
-    _uiActions.delete(key);
+    _bridge.unregister(key);
 }
 
-const _missingWarned = new Set<string>();
-
-/** 读取单个 UI 行为（core 侧调用；未注册返回 undefined） */
+/** 读取单个 UI 行为（core 侧调用；未注册一次性告警后返回 undefined，防重构破坏静默跳过） */
 export function getUiAction<K extends keyof UiActions>(key: K): UiActions[K] | undefined {
-    const fn = _uiActions.get(key) as UiActions[K] | undefined;
-    // [doc:adr-238] 缺失注册一次性告警（防重构破坏导致静默跳过）
-    if (!fn && !_missingWarned.has(key)) {
-        _missingWarned.add(key);
-        console.warn(`[ui-action-bridge] '${key}' 未注册——调用将静默跳过`);
-    }
-    return fn;
+    return _bridge.get(key);
 }
 
 // 兼容旧调用点：早期 shortcut-app 曾按集合读取 closeAllOverlays/screenshotCurrent，
@@ -98,10 +89,10 @@ export function getUiAction<K extends keyof UiActions>(key: K): UiActions[K] | u
 export function getUiActions(): UiActions | null {
     const needed: (keyof UiActions)[] = ['closeAllOverlays', 'screenshotCurrent'];
     for (const k of needed) {
-        if (!_uiActions.has(k)) {
+        if (!_bridge.has(k)) {
             return null;
         }
     }
     // 返回普通对象视图而非 Map，保持 getUiActions() 旧调用点的属性访问语义。
-    return Object.fromEntries(_uiActions) as unknown as UiActions;
+    return _bridge.snapshot() as UiActions;
 }

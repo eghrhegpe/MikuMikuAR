@@ -30,7 +30,11 @@ import { ROLE, ARIA_ATTR } from '../core/dom-contract';
 
 export function goKeyAllowsProceed(validation: ReturnType<typeof validateAiConfig>): boolean {
     // [audit:round19] 薄包装：isGo/keyConfigured 来自 diagState，判定语义统一走 core 严格版
-    return coreGoKeyAllowsProceed(validation, diagState.ai?.kind === 'go', !!diagState.goKeyConfigured);
+    return coreGoKeyAllowsProceed(
+        validation,
+        diagState.ai?.kind === 'go',
+        !!diagState.goKeyConfigured
+    );
 }
 
 async function ensureTestModel(): Promise<void> {

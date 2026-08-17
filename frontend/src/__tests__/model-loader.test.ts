@@ -20,7 +20,7 @@ const h = vi.hoisted(() => {
             min: { x: 0, y: 0, z: 0 },
             max: { x: 0, y: 10, z: 0 },
         });
-        skeleton = { bones: [] };
+        skeleton = { bones: [] as unknown[] };
         dispose = vi.fn();
     }
     return {
@@ -40,8 +40,12 @@ const h = vi.hoisted(() => {
 vi.mock('@babylonjs/core/Meshes/mesh', () => ({ Mesh: h.Mesh }));
 vi.mock('@babylonjs/core/Loading/sceneLoader', () => ({ ImportMeshAsync: h.importMeshAsync }));
 vi.mock('babylon-mmd/esm/Runtime/Optimized/mmdWasmModel', () => ({ MmdWasmModel: class {} }));
-vi.mock('../scene/manager/material-proxy-resolver', () => ({ getStandardMaterialProxy: vi.fn(() => ({})) }));
-vi.mock('../scene/manager/thumbnail-capture', () => ({ renderInstanceThumbnail: h.renderInstanceThumbnail }));
+vi.mock('../scene/manager/material-proxy-resolver', () => ({
+    getStandardMaterialProxy: vi.fn(() => ({})),
+}));
+vi.mock('../scene/manager/thumbnail-capture', () => ({
+    renderInstanceThumbnail: h.renderInstanceThumbnail,
+}));
 vi.mock('../scene/manager/thumbnail-key', () => ({ thumbnailBaseKey: vi.fn(() => 'thumb-key') }));
 vi.mock('@/core/feedback', () => ({ feedbackStatus: vi.fn() }));
 vi.mock('@/core/status-bar', () => ({ setStatus: vi.fn() }));
@@ -68,12 +72,16 @@ vi.mock('@/core/scene-action-bridge', () => ({
     unregisterSceneAction: vi.fn(),
     getSceneActions: vi.fn(() => []),
 }));
-vi.mock('@/core/fileservice', () => ({ resolveModelDir: (p: string) => p.replace(/[^\\/]+$/, '') || '/' }));
+vi.mock('@/core/fileservice', () => ({
+    resolveModelDir: (p: string) => p.replace(/[^\\/]+$/, '') || '/',
+}));
 vi.mock('@/core/wails-bindings', () => ({
     readFileBytes: vi.fn(() => new Uint8Array([1, 2, 3])),
     ListDirRecursive: vi.fn(() => Promise.resolve([])),
 }));
-vi.mock('../scene/shared/texture-lru', () => ({ readTextureWithLRU: vi.fn(() => new ArrayBuffer(8)) }));
+vi.mock('../scene/shared/texture-lru', () => ({
+    readTextureWithLRU: vi.fn(() => new ArrayBuffer(8)),
+}));
 vi.mock('../scene/manager/pmx-texture-audit', () => ({
     auditMissingTextures: h.auditMissingTextures,
     parsePmxTexturePaths: h.parsePmxTexturePaths,
@@ -110,7 +118,12 @@ vi.mock('@/core/config', async (importOriginal) => ({
     uiState: {},
 }));
 
-import { initLoader, loadPMXFile, setOnMeshesReady, setOnModelLoaded } from '../scene/manager/model-loader';
+import {
+    initLoader,
+    loadPMXFile,
+    setOnMeshesReady,
+    setOnModelLoaded,
+} from '../scene/manager/model-loader';
 
 function makeModelManager() {
     const store = new Map<string, any>();
@@ -158,7 +171,14 @@ describe('loadPMXFile stage 路径（round15 P2 周边覆盖）', () => {
             ctrl.abort();
             return { meshes: [new h.Mesh()] };
         });
-        const id = await loadPMXFile('/models/m.pmx', true, false, undefined, undefined, ctrl.signal);
+        const id = await loadPMXFile(
+            '/models/m.pmx',
+            true,
+            false,
+            undefined,
+            undefined,
+            ctrl.signal
+        );
         expect(id).toBeNull();
         expect(mm.register).not.toHaveBeenCalled(); // ⇒ 589 新 guard 未触及
     });
@@ -166,7 +186,14 @@ describe('loadPMXFile stage 路径（round15 P2 周边覆盖）', () => {
     it('信号已 abort 于读取阶段：line 473 即 return null，新 guard 不可达', async () => {
         const ctrl = new AbortController();
         ctrl.abort();
-        const id = await loadPMXFile('/models/m.pmx', true, false, undefined, undefined, ctrl.signal);
+        const id = await loadPMXFile(
+            '/models/m.pmx',
+            true,
+            false,
+            undefined,
+            undefined,
+            ctrl.signal
+        );
         expect(id).toBeNull();
         expect(mm.register).not.toHaveBeenCalled();
     });
@@ -261,7 +288,14 @@ describe('loadPMXFile abort Mesh 清理', () => {
             ctrl.abort();
             return { meshes: [mesh1, mesh2] };
         });
-        const id = await loadPMXFile('/models/abort.pmx', true, false, undefined, undefined, ctrl.signal);
+        const id = await loadPMXFile(
+            '/models/abort.pmx',
+            true,
+            false,
+            undefined,
+            undefined,
+            ctrl.signal
+        );
         expect(id).toBeNull();
         expect(mesh1.dispose).toHaveBeenCalledTimes(1);
         expect(mesh2.dispose).toHaveBeenCalledTimes(1);
@@ -337,7 +371,8 @@ describe('_applySceneMotion 分支', () => {
         // 本用例验证 actor 路径正常走通（mm.register + mm.focus），VMD mock 链路由 round-36 登记为 P3。
         const { getSceneAction } = await import('@/core/scene-action-bridge');
         (getSceneAction as any).mockImplementation((key: string) => {
-            if (key === 'getActiveMotion') return () => ({ vmdPath: '/test.vmd', vmdName: 'dance.vmd' });
+            if (key === 'getActiveMotion')
+                return () => ({ vmdPath: '/test.vmd', vmdName: 'dance.vmd' });
             if (key === 'getMotionGen') return () => 0;
             if (key === 'resolveCompatibility') return () => ({ compatible: true });
             return undefined;
@@ -356,7 +391,8 @@ describe('_applySceneMotion 分支', () => {
     it('VMD 不兼容：compatible=false → motionSlots.status=incompatible', async () => {
         const { getSceneAction } = await import('@/core/scene-action-bridge');
         (getSceneAction as any).mockImplementation((key: string) => {
-            if (key === 'getActiveMotion') return () => ({ vmdPath: '/test.vmd', vmdName: 'dance.vmd' });
+            if (key === 'getActiveMotion')
+                return () => ({ vmdPath: '/test.vmd', vmdName: 'dance.vmd' });
             if (key === 'getMotionGen') return () => 0;
             if (key === 'resolveCompatibility') return () => ({ compatible: false });
             return undefined;
@@ -375,7 +411,8 @@ describe('_applySceneMotion 分支', () => {
         let genValue = 0;
         const { getSceneAction } = await import('@/core/scene-action-bridge');
         (getSceneAction as any).mockImplementation((key: string) => {
-            if (key === 'getActiveMotion') return () => ({ vmdPath: '/test.vmd', vmdName: 'dance.vmd' });
+            if (key === 'getActiveMotion')
+                return () => ({ vmdPath: '/test.vmd', vmdName: 'dance.vmd' });
             if (key === 'getMotionGen') {
                 const g = genValue;
                 genValue = 99; // 第二次调用返回不同 generation
@@ -397,7 +434,8 @@ describe('_applySceneMotion 分支', () => {
     it('VMD 加载失败：readFileBytes 抛错 → 降级加载模型', async () => {
         const { getSceneAction } = await import('@/core/scene-action-bridge');
         (getSceneAction as any).mockImplementation((key: string) => {
-            if (key === 'getActiveMotion') return () => ({ vmdPath: '/test.vmd', vmdName: 'dance.vmd' });
+            if (key === 'getActiveMotion')
+                return () => ({ vmdPath: '/test.vmd', vmdName: 'dance.vmd' });
             if (key === 'getMotionGen') return () => 0;
             if (key === 'resolveCompatibility') return () => ({ compatible: true });
             return undefined;
@@ -474,7 +512,9 @@ describe('loadPMXFile 自动取消前一次加载', () => {
         // 使 load1 在 Promise.all 处等待，load2 得以触发 _loadAbortController.abort()
         const { readFileBytes } = await import('@/core/wails-bindings');
         let deferred: (v: any) => void;
-        const deferredPromise = new Promise<any>((r) => { deferred = r; });
+        const deferredPromise = new Promise<any>((r) => {
+            deferred = r;
+        });
         (readFileBytes as any).mockImplementationOnce(() => deferredPromise);
 
         const load1 = loadPMXFile('/models/first.pmx', true);
@@ -581,7 +621,8 @@ describe('_applySceneMotion abort 后清理', () => {
         const { getSceneAction } = await import('@/core/scene-action-bridge');
         let ctrl: AbortController;
         (getSceneAction as any).mockImplementation((key: string) => {
-            if (key === 'getActiveMotion') return () => ({ vmdPath: '/test.vmd', vmdName: 'dance.vmd' });
+            if (key === 'getActiveMotion')
+                return () => ({ vmdPath: '/test.vmd', vmdName: 'dance.vmd' });
             if (key === 'getMotionGen') return () => 0;
             if (key === 'resolveCompatibility') return () => ({ compatible: true });
             return undefined;
@@ -604,7 +645,14 @@ describe('_applySceneMotion abort 后清理', () => {
             return new Uint8Array([1, 2, 3]);
         });
 
-        const id = await loadPMXFile('/models/abort-after-vmd.pmx', false, true, undefined, undefined, ctrl.signal);
+        const id = await loadPMXFile(
+            '/models/abort-after-vmd.pmx',
+            false,
+            true,
+            undefined,
+            undefined,
+            ctrl.signal
+        );
         expect(id).toBeNull();
         // 模型注册后被 abort 清理
         expect(mm.register).toHaveBeenCalledTimes(1);
@@ -627,7 +675,15 @@ describe('preferredId 参数', () => {
 
     it('preferredId 传入时 resolveModelId 返回该值作为模型 id', async () => {
         // mock resolveModelId: preferredId ?? 'gen-id', preferredId 传入应直接返回
-        const id = await loadPMXFile('/models/p.pmx', true, false, undefined, undefined, undefined, 'custom-uuid-123');
+        const id = await loadPMXFile(
+            '/models/p.pmx',
+            true,
+            false,
+            undefined,
+            undefined,
+            undefined,
+            'custom-uuid-123'
+        );
         expect(id).toBe('custom-uuid-123');
     });
 });

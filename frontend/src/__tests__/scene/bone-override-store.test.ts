@@ -251,9 +251,7 @@ describe('BoneOverrideStore (ADR-147 Phase 2)', () => {
 
     it('releaseBones 重复释放幂等且只通知一次', () => {
         const notifications: number[] = [];
-        store.addReleaseListener((_modelId, _moduleId, bones) =>
-            notifications.push(bones.size)
-        );
+        store.addReleaseListener((_modelId, _moduleId, bones) => notifications.push(bones.size));
         store.claimBones('m1', 'A', 1, ['上半身']);
         expect(store.releaseBones('m1', 'A').size).toBe(1);
         expect(store.releaseBones('m1', 'A').size).toBe(0);

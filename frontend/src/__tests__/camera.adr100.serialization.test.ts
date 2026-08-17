@@ -56,6 +56,8 @@ vi.mock('babylon-mmd/esm/Runtime/mmdCamera', () => ({ MmdCamera: MockMmdCam }));
 vi.mock('babylon-mmd/esm/Loader/Animation/mmdAnimation', () => ({}));
 vi.mock('@/core/config', () => mockConfigModule());
 vi.mock('@/scene/scene', () => mockSceneModule());
+// [doc:adr-269 补充] camera.ts 的焦点/管线访问器已迁到窄门面 scene-focus
+vi.mock('@/scene/scene-focus', () => mockSceneModule());
 vi.mock('../scene/env/_bridge/env-persist', () => mockEnvPersist());
 
 let cam: any;

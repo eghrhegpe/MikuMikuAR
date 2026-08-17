@@ -1706,7 +1706,8 @@ export const zhCN: Record<string, string> = {
     'settings.about.update.installLaunched': '已启动安装',
     'settings.about.maintenance': '维护工具',
     'settings.about.maintenance.clearExtract': '清除解压缓存',
-    'settings.about.maintenance.clearExtractConfirm': '确定清理解压缓存？下次加载模型时将自动重新生成。',
+    'settings.about.maintenance.clearExtractConfirm':
+        '确定清理解压缓存？下次加载模型时将自动重新生成。',
     'settings.about.maintenance.clearThumbnail': '清除缩略图缓存',
     'settings.about.maintenance.clearThumbnailConfirm': '确定清除缩略图缓存？',
     'settings.about.maintenance.clearAll': '清除全部缓存',

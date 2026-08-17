@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /**
- * 一键安装 Android 调试版到已连接设备（gradle installDebug + 自动拉起应用）。
+ * android-install.mjs — 一键安装 Android 调试版到已连接设备（gradle installDebug + 自动拉起应用）。
+ * 设计意图：消除「打指令装安卓版」的折腾——设备检查 → installDebug → am start 一条口令。
  * 注意：本脚本只做 gradle 安装，不编前端/Go；全新环境请先跑 android-build.mjs，
  * 否则 installDebug 会打包仓库检入的旧 jniLibs/assets（静默装旧版）。
  * 解决「打指令装安卓版折腾」：仓库根一条口令 → 设备检查 → installDebug → am start。

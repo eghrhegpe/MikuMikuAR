@@ -128,7 +128,12 @@ describe('config pure functions', () => {
         });
 
         it('formats LibraryLoadError with [loadId/phase] prefix', () => {
-            const err = { name: 'LibraryLoadError', loadId: 'lib1', phase: 'scan', cause: 'timeout' };
+            const err = {
+                name: 'LibraryLoadError',
+                loadId: 'lib1',
+                phase: 'scan',
+                cause: 'timeout',
+            };
             const result = formatError(err);
             expect(result).toBe('[lib1/scan] timeout');
         });
@@ -157,7 +162,12 @@ describe('config pure functions', () => {
         });
 
         it('LibraryLoadError with null cause → "[loadId/phase] unknown error"', () => {
-            const err = { name: 'LibraryLoadError', loadId: 'lib3', phase: 'scan', cause: null };
+            const err = {
+                name: 'LibraryLoadError',
+                loadId: 'lib3',
+                phase: 'scan',
+                cause: null as unknown,
+            };
             expect(formatError(err)).toBe('[lib3/scan] unknown error');
         });
 
@@ -204,7 +214,9 @@ describe('config pure functions', () => {
         });
 
         it('sniffs JPEG header', () => {
-            expect(thumbDataUrl('/9j/4AAQSkZJRg==')).toBe('data:image/jpeg;base64,/9j/4AAQSkZJRg==');
+            expect(thumbDataUrl('/9j/4AAQSkZJRg==')).toBe(
+                'data:image/jpeg;base64,/9j/4AAQSkZJRg=='
+            );
         });
 
         it('sniffs WebP header', () => {
@@ -343,7 +355,10 @@ describe('computeLibraryRef', () => {
     });
 
     it('pure function matches case-insensitively (normPath cache may keep first-seen case)', () => {
-        const ref = pureComputeLibraryRef('C:/Users/TEST/MMD/Models/Scene.pmx', 'c:/users/test/mmd');
+        const ref = pureComputeLibraryRef(
+            'C:/Users/TEST/MMD/Models/Scene.pmx',
+            'c:/users/test/mmd'
+        );
         expect(ref).not.toBeNull();
         expect(ref!.toLowerCase()).toBe('models/scene.pmx');
     });

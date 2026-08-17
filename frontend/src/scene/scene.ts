@@ -15,8 +15,8 @@ import '@babylonjs/core/Physics/v2/physicsEngineComponent';
 import { PointerEventTypes } from '@babylonjs/core/Events/pointerEvents';
 import '@babylonjs/core/Particles/webgl2ParticleSystem';
 
-import { RegisterMmdModelLoaders } from 'babylon-mmd/esm/Loader/dynamic';
-import { RegisterDxBmpTextureLoader } from 'babylon-mmd/esm/Loader/registerDxBmpTextureLoader';
+// [doc:adr-273] 加载器 / 材质构建器注册已移到 scene/boot-mmd.ts（plan 的 'mmd-loaders' 步）：
+// 它们与运行时实例无关，只有"必须早于任何一次模型加载"这一条顺序契约。
 // MMD 原生描边：side-effect import，把 getMmdOutlineRenderer() 补丁挂到 Scene.prototype。
 // 之后带描边(edge)标记的 PMX 材质在 renderOutline=true 时会惰性注册描边组件并渲染轮廓线。
 import 'babylon-mmd/esm/Loader/mmdOutlineRenderer';
@@ -38,20 +38,16 @@ import { MmdWasmPhysics } from 'babylon-mmd/esm/Runtime/Optimized/Physics/mmdWas
 import 'babylon-mmd/esm/Runtime/Optimized/Animation/mmdWasmRuntimeModelAnimation';
 // ADR-188: 材质代理解析器（PBR 模式下仍用 MmdStandardMaterialProxy 做运行时 morph，
 //         因 MmdStandardMaterialProxy 仅操作 diffuse/shininess，对 PBRMaterial 也兼容）
-import { getMaterialMode, getStandardMaterialProxy } from './manager/material-proxy-resolver';
-import { tryApplyPbrMaterialBuilder } from './manager/pbr-builder-init';
 import { initWindPhysics, disposeWindPhysics } from '@/scene/physics/wind-physics';
 import { applyGroundCollision } from './physics/ground-collision';
 import { swallowError } from '../core/async';
 import { logWarn } from '../core/logger';
 import { t } from '../core/i18n/t';
-import { MmdRuntimeShared } from 'babylon-mmd/esm/Runtime/mmdRuntimeShared';
 // JS 版 runtime（无 WASM 双缓冲，worldMatrix 覆写可生效）
 import { MmdRuntime } from 'babylon-mmd/esm/Runtime/mmdRuntime';
 import type { IMmdRuntime } from 'babylon-mmd/esm/Runtime/IMmdRuntime';
-import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
-import type { FeetState } from '@/core/types';
-import { createDefaultFeetState } from '@/core/scene-state';
+// [doc:adr-273] 运动子系统的五段接线已移到 scene/boot-motion.ts（各自独立的 plan 步），
+// 类型依赖（IMmdRuntimeBone / FeetState / createDefaultFeetState）随之搬走。
 import { unsubscribeAll } from '@/core/reactivity';
 import 'babylon-mmd/esm/Runtime/Animation/mmdRuntimeModelAnimation';
 // [doc:adr-202] babylon-mmd 1.3.0（-dist）纯/非纯模块拆分：createRuntimeCameraAnimation /
@@ -142,6 +138,16 @@ import { tryAttachGizmoFromPick } from './transform/transform-pick';
 import { isGizmoDragging, detachGizmo } from './transform/transform-adapter';
 import { registerAiSnapshotBridge } from '@/core/ai/scene-snapshot';
 import { detectKtx2Support } from '@/core/gpu-capabilities';
+import { runBootPlan } from './boot-plan';
+import { buildBootPlan, type BootHooks } from './boot-steps';
+import { bootMmdLoaders } from './boot-mmd';
+import {
+    bootBoneOverride,
+    bootFeetAdjustment,
+    bootFootstep,
+    bootMotionModules,
+    bootWasmIkResolver,
+} from './boot-motion';
 
 // Re-export material system (extracted to material.ts for file size)
 export {
@@ -191,6 +197,20 @@ import {
     activateGazeTracking,
 } from './motion/proc-motion-bridge';
 import { triggerAutoSaveImpl } from './scene-serialize';
+// [doc:adr-269] 共享状态槽：engine / scene / modelManager 的定义与 isTestEnv / isHeadless 判定
+// 都在 scene-context.ts（零运行时出边）。本文件负责**创建**它们并经 setter 写入槽。
+// 下面同时 re-export 槽，保持既有 `import { scene } from '../scene/scene'` 的消费者零改动。
+import {
+    engine,
+    scene,
+    modelManager,
+    isHeadless,
+    isTestEnv,
+    setEngine,
+    setScene,
+    setModelManager,
+} from './scene-context';
+export { engine, scene, modelManager, isHeadless } from './scene-context';
 
 // ======== Babylon.js ========
 // alpha:true 让 WebGL drawing buffer 携带 alpha 通道，使 AR 模式下 scene.clearColor
@@ -201,17 +221,10 @@ import { triggerAutoSaveImpl } from './scene-serialize';
 // 迫使每个 transitively 导入 scene.ts 的测试铺设 engine-mock/babylon-classes。
 // 测试态改用引擎无关 Scene（Babylon 官方 offline 模式：new Scene() 不绑定 engine），
 // 并跳过相机初始化，使 scene.ts 可零成本导入。生产路径（MODE !== 'test'）完全不变。
-const _isTestEnv = import.meta.env.MODE === 'test';
-
-// [doc:adr-229] Headless E2E 模式：URL 带 ?e2e=1（vitePage fixture 导航时注入）即走 NullEngine，
-// 不创建 WebGL 上下文，使 app 在 headless 无 GPU 的 CI 也能启动（DOM overlay 为 HTML/CSS，照常渲染）。
-// 视觉断言（__capture/fingerprint）按 ADR-229 §2.3 仅 @webgl（真实 WebView2）跑。
-// _isTestEnv 在前短路：vitest MODE==='test' 永不触发，@webgl 走真实 WebView2 URL 无 ?e2e=1 亦不触发。
-const _isHeadless =
-    !_isTestEnv &&
-    typeof location !== 'undefined' &&
-    new URLSearchParams(location.search).has('e2e');
-export const isHeadless = _isHeadless;
+// [doc:adr-269] isTestEnv / isHeadless 与三个槽（engine / scene / modelManager）已下移到
+// scene-context.ts。理由：本文件是装配器，import 了 47 个子系统与 Babylon 副作用入口；任何只想读
+// 一个 `scene` 的模块此前都必须穿过它，于是被拖进整张场景图。槽的**写入**仍由本文件负责——
+// createEngine() / new Scene() / new ModelManager() 都在下面发生，只是结果存进 scene-context 的槽。
 
 /**
  * 创建渲染引擎。headless 模式返回 NullEngine（无 GPU/WebGL 依赖，纯 DOM 回归可用）；
@@ -219,7 +232,7 @@ export const isHeadless = _isHeadless;
  * 传入 renderingCanvas 以保持相机输入绑定、renderWidth/Height 避免固定 512 视口。
  */
 function createEngine(): Engine {
-    if (_isHeadless) {
+    if (isHeadless) {
         // [doc:adr-229] NullEngine 无 WebGL 依赖；项目既有用法（vmd-evaluator、各 __tests__）均用无参构造，
         // 相机输入经 engine.getInputElement() 取 canvas，Babylon 在 null 时忽略，DOM 回归无需真实交互。
         return new NullEngine();
@@ -231,18 +244,18 @@ function createEngine(): Engine {
     });
 }
 
-export let engine = createEngine();
+setEngine(createEngine());
 // 启用 SDEF 球面变形：改写 engine.createEffect，为含骨骼(mBones)的着色器注入球面变形顶点代码。
 // 须在模型加载前、ShadowGenerator/后处理管线创建前调用，覆盖所有蒙皮材质。
 // 测试态下 engine 为不完整的 mock（无 createEffect），跳过以避免 TypeError；生产路径始终挂载。
 // headless（NullEngine）下 DOM 回归不需要 SDEF 蒙皮注入，且规避 createEffect 意外，同样跳过。
-if (!_isTestEnv && !_isHeadless) {
+if (!isTestEnv && !isHeadless) {
     SdefInjector.OverrideEngineCreateEffect(engine);
 }
 // 扩展渲染组下限至 -2：天空盒(Group -2)先于体积云(Group -1)先于 Group 0（地面/角色）。
 // Babylon 默认 MIN_RENDERINGGROUPS=0 会跳过负数 group，导致负组 mesh 不渲染。
 RenderingManager.MIN_RENDERINGGROUPS = -2;
-export let scene = new Scene(engine);
+setScene(new Scene(engine));
 scene.clearColor = new Color4(0.12, 0.12, 0.16, 1.0);
 
 /** disposeScene() 已调用标志，防止重复释放。 */
@@ -349,8 +362,6 @@ export function disposeScene(): void {
     }
 }
 
-export let modelManager: ModelManager;
-
 /** 播放观察者 dispose 函数，场景销毁时调用以清理 observable。 */
 let _disposePlaybackObservables: (() => void) | null = null;
 
@@ -367,8 +378,8 @@ export const __envDebug = import.meta.env.DEV
     : undefined;
 
 // 相机系统不依赖 MMD runtime，模块顶层初始化（确保渲染循环启动时有 activeCamera）
-// 测试态跳过：无 canvas / 无渲染循环，且降低导入期 DOM 依赖（见 _isTestEnv 注释）
-if (!_isTestEnv) {
+// 测试态跳过：无 canvas / 无渲染循环，且降低导入期 DOM 依赖（见 isTestEnv 注释）
+if (!isTestEnv) {
     initCameraSystem(scene, dom.canvas);
 }
 
@@ -426,63 +437,122 @@ export async function initScene(): Promise<void> {
     }
 }
 
-/** 实际 init 逻辑（抽取为内部函数以便并发守卫包装）。 */
+/**
+ * 实际 init 逻辑（抽取为内部函数以便并发守卫包装）。
+ *
+ * [doc:adr-273] 这里**不再**有任何装配顺序：顺序、步骤间依赖、每步产出都在
+ * `scene/boot-steps.ts` 的 plan 里声明，`runBootPlan()` 逐步核对（缺依赖或
+ * 声明了 provide 却没返回 → 立刻抛 `BootPlanError`，报出步 id 与资源名）。
+ * 本函数只剩三件事：HMR 前置清理、跑 plan、置位标志。
+ */
 async function _doInitScene(): Promise<void> {
     if (_sceneInitialized) {
         await _reinitSceneForHMR();
     }
-    const runtime = await _initMmdRuntime();
-    initLighting(scene, _envSys.shadow, triggerAutoSave);
-    initRenderer(scene, modelRegistry, triggerAutoSave);
-    initEnvFacade(scene, pipeline);
-    const beat = createProcBeatDetector();
-    getSceneAction('attachBeatDetector')?.(beat);
-    _bindSceneEvents(scene);
-    await _injectRuntimeCallbacks(runtime, scene);
-    _initModelManager(scene, runtime, triggerAutoSave, autoFrame);
-    _injectModelCallbacks(modelManager, runtime);
-    // Loader（必须在 modelManager + setTriggerAutoSave 之后）
-    // [doc:adr-238] tryAutoApplyPreset/loadOutfits 经 scene-action-bridge（menus/model-preset + outfit 注册），
-    // 切断 scene→menus 与 scene→outfit 反向依赖。
-    initLoader(
-        scene,
-        runtime,
-        modelManager,
-        refreshWaterRenderList,
-        (id: string) => getSceneAction('tryAutoApplyPreset')?.(id),
-        (id: string) =>
-            getSceneAction('loadOutfits')?.(id)
-                .then(() => {})
-                .catch(() => {
-                    /* loadOutfits 仅用于换装，失败不阻断流程 */
-                }),
-        rebuildOutlineState
-    );
-    _disposePlaybackObservables = initPlaybackObservables(
-        runtime,
-        modelManager,
-        updatePlaybackUI,
-        updateProcMotion,
-        getProcBeatDetector
-    );
-    await _initMotionSubsystems(scene, modelManager);
-    applyEnvState(envState);
-    _updateSunDisc();
-    registerRenderBridge({ engine, setLightState, setRenderState, getLightState, getRenderState });
-    // [doc:adr-196] 注入 AI 快照桥接：getter 惰性读取当前 engine/scene/modelManager，
-    // HMR 重初始化新实例后仍能读到最新值（单向依赖，ai 模块不反向依赖 scene）。
-    registerAiSnapshotBridge({
-        getFps: () => engine.getFps(),
-        getModelCount: () => modelManager?.getAll().length ?? 0,
-        getMeshCount: () => scene.meshes.length,
-        getMaterialCount: () => scene.materials.length,
-        getActiveMotions: () =>
-            scene.animationGroups.filter((ag) => ag.isPlaying).map((ag) => ag.name),
-        getPerformanceMode: () => getPerformanceMode(),
-        getRendererInfo: () => _getRendererInfo(),
-        getKtx2Support: () => detectKtx2Support(),
-    });
+    // 每次 _doInitScene 都新建 plan 与资源表：HMR 重入不会因为"上一轮提供过"而跳过步骤。
+    await runBootPlan(buildBootPlan(_createBootHooks()));
     _sceneInitialized = true;
+}
+
+/**
+ * [doc:adr-273] 装配器 → plan 的接线：每个钩子只做一行转发，具体实现在本文件下半部分。
+ *
+ * 参数只在确有资源流动处声明（runtime / modelManager / beat），其余靠闭包读模块级
+ * 单例——把 state 塞进一个 ctx 反而不如闭包诚实，因为 ctx 的类型又会开始撒谎。
+ */
+function _createBootHooks(): BootHooks {
+    return {
+        initMmdLoaders: () => bootMmdLoaders(),
+        initMmdRuntime: () => _initMmdRuntime(),
+        startWindPhysics: (runtime) => {
+            initWindPhysics(runtime);
+        },
+        applyGroundCollision: () => {
+            applyGroundCollision();
+        },
+        initLighting: () => {
+            initLighting(scene, _envSys.shadow, triggerAutoSave);
+        },
+        initRenderer: () => {
+            initRenderer(scene, modelRegistry, triggerAutoSave);
+        },
+        initEnvFacade: () => {
+            initEnvFacade(scene, pipeline);
+        },
+        createBeatDetector: () => createProcBeatDetector(),
+        attachBeatDetector: (beat) => {
+            getSceneAction('attachBeatDetector')?.(beat);
+        },
+        bindSceneEvents: () => {
+            _bindSceneEvents(scene);
+        },
+        injectRuntimeCallbacks: (runtime) => _injectRuntimeCallbacks(runtime, scene),
+        // 槽在这里被 setModelManager 填充，返回值就是后续步骤拿到的那一个实例。
+        initModelManager: (runtime) => {
+            _initModelManager(scene, runtime, triggerAutoSave, autoFrame);
+            return modelManager;
+        },
+        injectModelCallbacks: (manager, runtime) => {
+            _injectModelCallbacks(manager, runtime);
+        },
+        // [doc:adr-238] tryAutoApplyPreset/loadOutfits 经 scene-action-bridge（menus/model-preset + outfit 注册），
+        // 切断 scene→menus 与 scene→outfit 反向依赖。
+        initLoader: (runtime, manager) => {
+            initLoader(
+                scene,
+                runtime,
+                manager,
+                refreshWaterRenderList,
+                (id: string) => getSceneAction('tryAutoApplyPreset')?.(id),
+                (id: string) =>
+                    getSceneAction('loadOutfits')?.(id)
+                        .then(() => {})
+                        .catch(() => {
+                            /* loadOutfits 仅用于换装，失败不阻断流程 */
+                        }),
+                rebuildOutlineState
+            );
+        },
+        initPlayback: (runtime, manager) => {
+            _disposePlaybackObservables = initPlaybackObservables(
+                runtime,
+                manager,
+                updatePlaybackUI,
+                updateProcMotion,
+                getProcBeatDetector
+            );
+            return _disposePlaybackObservables ?? (() => {});
+        },
+        initFeetAdjustment: () => bootFeetAdjustment(),
+        initFootstep: () => bootFootstep(scene),
+        initBoneOverride: () => bootBoneOverride(scene),
+        initWasmIkResolver: () => bootWasmIkResolver(),
+        initMotionModules: () => bootMotionModules(),
+        applyEnvState: () => {
+            applyEnvState(envState);
+        },
+        updateSunDisc: () => {
+            _updateSunDisc();
+        },
+        registerRenderBridge: () => {
+            registerRenderBridge({ engine, setLightState, setRenderState, getLightState, getRenderState });
+        },
+        // [doc:adr-196] 注入 AI 快照桥接：getter 惰性读取当前 engine/scene/modelManager，
+        // HMR 重初始化新实例后仍能读到最新值（单向依赖，ai 模块不反向依赖 scene）。
+        registerAiBridge: () => {
+            registerAiSnapshotBridge({
+                getFps: () => engine.getFps(),
+                getModelCount: () => modelManager?.getAll().length ?? 0,
+                getMeshCount: () => scene.meshes.length,
+                getMaterialCount: () => scene.materials.length,
+                getActiveMotions: () =>
+                    scene.animationGroups.filter((ag) => ag.isPlaying).map((ag) => ag.name),
+                getPerformanceMode: () => getPerformanceMode(),
+                getRendererInfo: () => _getRendererInfo(),
+                getKtx2Support: () => detectKtx2Support(),
+            });
+        },
+    };
 }
 
 /** HMR 重入时清理上一轮 Scene/Engine 及子模块资源。 */
@@ -490,11 +560,11 @@ async function _reinitSceneForHMR(): Promise<void> {
     disposeScene();
     _sceneDisposed = false;
 
-    engine = createEngine();
-    if (!_isTestEnv && !_isHeadless) {
+    setEngine(createEngine());
+    if (!isTestEnv && !isHeadless) {
         SdefInjector.OverrideEngineCreateEffect(engine);
     }
-    scene = new Scene(engine);
+    setScene(new Scene(engine));
     scene.clearColor = new Color4(0.12, 0.12, 0.16, 1.0);
     initCameraSystem(scene, dom.canvas);
 
@@ -613,7 +683,7 @@ function _initModelManager(
     triggerAutoSave: () => void,
     autoFrame: (center: Vector3, extent: number) => void
 ): void {
-    modelManager = new ModelManager(scene, triggerAutoSave, autoFrame);
+    setModelManager(new ModelManager(scene, triggerAutoSave, autoFrame));
     modelManager.onRemoveModel = (id) => {
         // [fix P1] 模型删除时清理动作历史与合并窗口状态，防止 _historyMap/_mergeMap
         // 条目累积（内存泄漏）及同 ID 复用读到幽灵历史
@@ -695,90 +765,19 @@ function _injectModelCallbacks(modelManager: ModelManager, _runtime: IMmdRuntime
     });
 }
 
-/** 启动运动子系统（脚部跟随 / 脚步声 / 骨骼覆盖 / 程序化动作）。 */
-async function _initMotionSubsystems(scene: Scene, _modelManager: ModelManager): Promise<void> {
-    // 7. 脚部地面跟随系统启动（ADR-085）
-    // [doc:adr-116 重构] 地面跟随降为 always-on 基础设施，不再由动作覆盖模块控制。
-    // 使用默认 FeetState（enabled=true, intensity=1），始终贴地修正。
-    const { startFeetAdjustment } = await import('./motion/feet-adjustment');
-    startFeetAdjustment(
-        (): { id: string; feet: FeetState; runtimeBones: readonly IMmdRuntimeBone[] }[] => {
-            const out: { id: string; feet: FeetState; runtimeBones: readonly IMmdRuntimeBone[] }[] =
-                [];
-            for (const inst of modelRegistry.values()) {
-                const bones = inst.mmdModel?.runtimeBones;
-                if (bones && bones.length > 0) {
-                    // [doc:adr-116 重构] 地面跟随 always-on：enabled=true, intensity=1
-                    out.push({
-                        id: inst.id,
-                        feet: { ...createDefaultFeetState(), enabled: false },
-                        runtimeBones: bones,
-                    });
-                }
-            }
-            return out;
-        }
-    );
-
-    // 7.5 脚步声系统启动（ADR-088）：消费 feet-adjustment 落地事件发声
-    // 必须在 startFeetAdjustment 之后注册（落地事件由脚部跟随产生）
-    const { startFootstep } = await import('./motion/footstep');
-    startFootstep(scene);
-
-    // 8. Bone Override 系统启动
-    // 注册 onBeforeRenderObservable 回调，在动画应用后逐骨骼覆盖
-    const { startBoneOverride } = await import('./motion/bone-override');
-    startBoneOverride(() => {
-        const id = focusedModelId;
-        if (!id) {
-            return [];
-        }
-        const inst = modelRegistry.get(id);
-        return inst?.mmdModel?.runtimeBones ?? [];
-    }, scene);
-
-    // [ADR-202 A-class] WASM IK 重解回调注入
-    // 在 WASM 模式下，applyBoneOverrideIK 通过此回调调用 mmdModelSolveIk 导出重解 IK。
-    // mmdRuntime 是 @/core/config 的 live binding（setMmdRuntime 后即指向当前运行时实例；
-    // HMR 重入时 stopBoneOverride 清除旧 resolver，_initMmdRuntime 设新 mmdRuntime 后重注）。
-    const { setWasmIkResolver } = await import('./motion/bone-override');
-    const { solveIkNative, getPhysicsImpl } = await import('@/core/mmd-adapter');
-    setWasmIkResolver((modelId: string, ikSolverIndex: number, usePhysics: boolean) => {
-        const inst = modelRegistry.get(modelId);
-        if (!inst?.mmdModel) {
-            return;
-        }
-        const impl = getPhysicsImpl(mmdRuntime);
-        if (!impl) {
-            return;
-        }
-        solveIkNative(impl.wasmInstance, inst.mmdModel, ikSolverIndex, usePhysics);
-    });
-
-    // [doc:adr-116] 9. Motion Override Modules 注册（主初始化路径）
-    // 必须在 focusModel 可能被调用之前完成；registry 内 setTargetModel/createModule 也有幂等兜底
-    const { initMotionModules } = await import('./motion/motion-modules/registry');
-    initMotionModules();
-}
+// [doc:adr-273] 运动子系统的五段接线（脚部跟随 / 脚步声 / 骨骼覆盖 / WASM IK 重解 /
+// Motion Override Modules）已移到 `scene/boot-motion.ts`，由 plan 的五个独立步骤调用。
+// 原先那两条只写在注释里的顺序契约（footstep 在 feet 之后、IK 回调在 bone-override 之后）
+// 现在是 `requires` 声明，改错顺序会被 `validateBootPlan()` 在跑第一步之前拦下。
 
 /** 初始化 MMD 运行时（WASM 主路径 / JS 调试路径）。 */
 async function _initMmdRuntime(): Promise<IMmdRuntime> {
-    // 1. MMD 运行时初始化
-    RegisterMmdModelLoaders();
-    RegisterDxBmpTextureLoader();
-    // [ADR-188] 材质模式日志
-    const materialMode = getMaterialMode();
-    logWarn('scene', `MMD 材质模式: ${materialMode}`);
-    MmdRuntimeShared.MaterialProxyConstructor = getStandardMaterialProxy();
-    // [ADR-188] PMX 加载阶段材质构建器切换
-    // 默认 'babylon-mmd/esm/Loader/mmdModelLoader' import 已注册 MmdStandardMaterialBuilder
-    // PBR 模式下需动态导入 PBRMaterialBuilder 覆盖 SharedMaterialBuilder
-    if (materialMode === 'pbr') {
-        await tryApplyPbrMaterialBuilder();
-    }
+    // 1. MMD 运行时实例初始化
+    // [doc:adr-273] 加载器 / 材质构建器注册已在 plan 的 'mmd-loaders' 步完成（scene/boot-mmd.ts），
+    // 那一步与运行时实例无关，只要求"早于任何一次模型加载"；本函数只管实例本身。
     // 运行时切换：默认 WASM（含物理），可在程序化动作菜单切换到 JS 版（调试专用，无物理）
     // JS 版保留作为 gaze 行为对比排查与 WASM 兼容性回退，勿删除
-    const useJsRuntime = getMmdRuntimeType() === 'js' || _isHeadless;
+    const useJsRuntime = getMmdRuntimeType() === 'js' || isHeadless;
     let runtime: IMmdRuntime;
     if (useJsRuntime) {
         runtime = new MmdRuntime(scene, null);
@@ -819,7 +818,7 @@ async function _initMmdRuntime(): Promise<IMmdRuntime> {
         );
         const mmdWasmPhysics = new MmdWasmPhysics(scene);
         runtime = new MmdWasmRuntime(wasmInstance, scene, mmdWasmPhysics);
-        initWindPhysics(runtime);
+        // [doc:adr-273] 风物理已独立成 plan 的 'wind-physics' 步（requires 'mmd-runtime'）
         if (_sceneDisposeObserverHandle) {
             _sceneDisposeObserverHandle.dispose();
         }
@@ -839,8 +838,9 @@ async function _initMmdRuntime(): Promise<IMmdRuntime> {
     runtime.register(scene);
     setMmdRuntime(runtime);
     dom.loadingText.textContent = t('boot.initScene');
-    // [adr:ground] 运行时就绪后还原持久化/默认的地面碰撞状态
-    applyGroundCollision();
+    // [adr:ground][doc:adr-273] 地面碰撞的还原已独立成 plan 的 'ground-collision' 步，
+    // requires 'mmd-runtime' 是真门禁：早于 setMmdRuntime 调用时 getPhysicsImpl() 返回 null，
+    // 函数静默 return —— 地板会不存在，且没有任何日志。
     return runtime;
 }
 

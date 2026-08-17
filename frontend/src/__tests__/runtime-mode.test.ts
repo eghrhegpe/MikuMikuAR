@@ -108,11 +108,14 @@ describe('detectRuntimeMode（探测逻辑）', () => {
         stubDetectGlobals({});
         vi.stubGlobal(
             'navigator',
-            new Proxy({}, {
-                get() {
-                    throw new Error('navigator unavailable');
-                },
-            }),
+            new Proxy(
+                {},
+                {
+                    get() {
+                        throw new Error('navigator unavailable');
+                    },
+                }
+            )
         );
         expect(() => detectRuntimeMode()).not.toThrow();
         expect(detectRuntimeMode().threads).toBe(0);
@@ -148,20 +151,29 @@ describe('persistRuntimeMode / loadPersistedRuntimeMode（round-12 P2#8 防御�
     });
 
     it('合法 JSON 但结构非法（缺字段/字段类型错）→ 降级 null', () => {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ mprBuild: true, coi: true, sab: true, mpr: true }));
+        localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify({ mprBuild: true, coi: true, sab: true, mpr: true })
+        );
         expect(loadPersistedRuntimeMode()).toBeNull();
     });
 
     it('合法 JSON 但 mpr 与能力位不一致 → 降级 null', () => {
         localStorage.setItem(
             STORAGE_KEY,
-            JSON.stringify({ mprBuild: false, coi: true, sab: true, mpr: true, threads: 4 }),
+            JSON.stringify({ mprBuild: false, coi: true, sab: true, mpr: true, threads: 4 })
         );
         expect(loadPersistedRuntimeMode()).toBeNull();
     });
 
     it('persist 收到非法 mode → 不写入 localStorage', () => {
-        persistRuntimeMode({ mprBuild: true, coi: true, sab: true, mpr: false, threads: 4 } as RuntimeMode);
+        persistRuntimeMode({
+            mprBuild: true,
+            coi: true,
+            sab: true,
+            mpr: false,
+            threads: 4,
+        } as RuntimeMode);
         expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
     });
 
@@ -213,7 +225,13 @@ describe('renderRuntimeBadge / setBackendBadge / initRuntimeBadge（渲染与持
         shared.badge.textContent = 'SPR';
         shared.badge.style.color = 'rgba(255,255,255,0.35)';
         shared.badge.title = 'old-title';
-        renderRuntimeBadge({ mprBuild: true, coi: true, sab: true, mpr: false, threads: 4 } as RuntimeMode);
+        renderRuntimeBadge({
+            mprBuild: true,
+            coi: true,
+            sab: true,
+            mpr: false,
+            threads: 4,
+        } as RuntimeMode);
         expect(shared.badge.textContent).toBe('SPR');
         expect(shared.badge.style.color).toBe('rgba(255,255,255,0.35)');
         expect(shared.badge.title).toBe('old-title');
@@ -222,7 +240,7 @@ describe('renderRuntimeBadge / setBackendBadge / initRuntimeBadge（渲染与持
     it('initRuntimeBadge：持久化结构非法时回退当前检测', () => {
         localStorage.setItem(
             STORAGE_KEY,
-            JSON.stringify({ mprBuild: true, coi: true, sab: true, mpr: true }),
+            JSON.stringify({ mprBuild: true, coi: true, sab: true, mpr: true })
         );
         stubDetectGlobals({ hc: 6 });
         initRuntimeBadge();

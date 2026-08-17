@@ -8,7 +8,6 @@ import { SpotLight } from '@babylonjs/core/Lights/spotLight';
 import { DirectionalLight } from '@babylonjs/core/Lights/directionalLight';
 import { lightingState } from './lighting-state';
 import { modelRegistry } from '@/core/config';
-import { rebuildStageLightShadows } from './lighting-stage';
 
 /** 遍历所有模型的 Mesh，加入阴影生成器。 */
 export function _addAllMeshesToShadow(gen: ShadowGenerator | CascadedShadowGenerator): void {
@@ -50,10 +49,14 @@ export function _ensureShadow(): void {
     lightingState.envSysShadow.generator = gen;
 }
 
-/** 当模型/道具注册表更新时，重新生成阴影投射者列表。 */
-export function rebuildShadowCasters(): void {
+/**
+ * 当模型/道具注册表更新时，重新生成阴影投射者列表。
+ * [doc:adr-271] 只做本模块这半（重建 env 阴影生成器的投射者）；舞台灯光阴影那半
+ * 由 ./lighting 的 rebuildShadowCasters() 组合调用。原先在此直接调 stage 的实现，
+ * 构成 stage ⇄ shadow 的 size=2 强连通分量。
+ */
+export function _rebuildShadowCasters(): void {
     _ensureShadow();
-    rebuildStageLightShadows();
 }
 
 export function _ensureStageShadow(id: string): void {

@@ -131,5 +131,4 @@ export class ObserverRegistry {
     get size(): number {
         return this._handles.length;
     }
-
 }

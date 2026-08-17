@@ -108,7 +108,9 @@ function renderFolder(node: MenuNode, container: HTMLElement): (() => void) | un
         headerToggle: node.headerToggle
             ? {
                   value: node.headerToggle.get
-                      ? node.headerToggle.get(getStateValue(node.headerToggle.bind, node.modelId, node.actionId))
+                      ? node.headerToggle.get(
+                            getStateValue(node.headerToggle.bind, node.modelId, node.actionId)
+                        )
                       : !!getStateValue(node.headerToggle.bind, node.modelId, node.actionId),
                   onChange: (v: boolean) => {
                       setStateValue(
@@ -209,16 +211,13 @@ function renderColorSlider(node: MenuNode, container: HTMLElement): void {
     // [audit:round13 P3] 应用 ControlSpec get/set 衍生转换（与 renderToggle 同模式）：
     // 显示值经 ctrl.get 派生（如角度→RGB），回写经 ctrl.set 还原（如 RGB→角度）。
     const raw = getStateValue(ctrl.bind, node.modelId, node.actionId);
-    const value = (
-        ctrl.get ? (ctrl.get(raw) as [number, number, number]) : raw
-    ) as [number, number, number];
+    const value = (ctrl.get ? (ctrl.get(raw) as [number, number, number]) : raw) as [
+        number,
+        number,
+        number,
+    ];
     const onChange = (v: [number, number, number]) => {
-        setStateValue(
-            ctrl.bind,
-            ctrl.set ? ctrl.set(v) : v,
-            node.modelId,
-            node.actionId
-        );
+        setStateValue(ctrl.bind, ctrl.set ? ctrl.set(v) : v, node.modelId, node.actionId);
         ctrl.onChange?.(v);
     };
 

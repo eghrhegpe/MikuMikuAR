@@ -5,8 +5,19 @@
 // 注册时序与 import / await 顺序彻底解耦。
 //
 // 注意：本文件仅定义调度器内核，不持有任何 Babylon 运行时对象，便于纯逻辑单测。
-// 接入 scene.ts（将裸 onBeforeRenderObservable 迁移为 pipeline.register）属 Phase 1 step 2，
-// 需待与 motion-modules/* 写者协调后再动，避免多写者源码碰撞。
+//
+// 接入现状（ADR-263 核实，修正本段旧表述）：管线**已被接入**——唯一驱动 observer
+// 是 `motion/bone-override.ts` 的 `startBoneOverride()` 内那条 `observe(scene.onBeforeRenderObservable,
+// () => getMotionPipeline().runFrame({ scene }))`。因此：
+//  1. 管线回调的排序不再依赖各层自己的注册时刻（stage + order 决定）；
+//  2. 驱动 observer 在**场景初始化末段**创建（`scene/scene.ts:731` `_initMotionSubsystems`
+//     → `startBoneOverride`），晚于 babylon-mmd 在 `scene.ts:434` 挂上的物理求解 observer，
+//     故管线层读到的是本帧骨骼数据——这正是「骨骼写入层」需要的锚点；
+//  3. 代价：管线生命周期**寄生于 bone-override**——bone-override 未启动时，
+//     已 register 的管线层不会被驱动。跨模型复用前需确认这一点。
+//
+// 另见 ADR-263：每帧调度在本仓共有三套机制（本管线 / bone-override 内部 _frameHooks /
+// core/frame-registry 的 PerFrameUpdateRegistry），收口方向是各归其位而非再新增第四套。
 
 import type { Scene } from '@babylonjs/core/scene';
 

@@ -24,11 +24,19 @@ if (typeof localStorage === 'undefined') {
     Object.defineProperty(globalThis, 'localStorage', {
         value: {
             getItem: (k: string) => _store[k] ?? null,
-            setItem: (k: string, v: string) => { _store[k] = v; },
-            removeItem: (k: string) => { delete _store[k]; },
-            clear: () => { for (const k in _store) delete _store[k]; },
+            setItem: (k: string, v: string) => {
+                _store[k] = v;
+            },
+            removeItem: (k: string) => {
+                delete _store[k];
+            },
+            clear: () => {
+                for (const k in _store) delete _store[k];
+            },
             key: (_i: number) => Object.keys(_store)[_i] ?? null,
-            get length() { return Object.keys(_store).length; },
+            get length() {
+                return Object.keys(_store).length;
+            },
         },
         writable: true,
         configurable: true,
@@ -127,8 +135,7 @@ vi.mock('@/core/backend/idb', async () => {
 // 显式绕过 mock 注册表——顶层 import 绑定会被 hoist 提前引用致 TDZ（__vi_import_0__），
 // 且本工厂 mock 的正是 alias 解析到的同一 resolved id，直接 import 会自引用。
 vi.mock('@babylonjs/core/Engines/engine', async () => {
-    const { Engine } = await vi.importActual<typeof import('./mocks/engine-mock')>(
-        './mocks/engine-mock'
-    );
+    const { Engine } =
+        await vi.importActual<typeof import('./mocks/engine-mock')>('./mocks/engine-mock');
     return { Engine };
 });

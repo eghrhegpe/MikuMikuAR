@@ -16,10 +16,18 @@ import {
 const store = new Map<string, string>();
 const localStorageMock = {
     getItem: vi.fn((key: string) => store.get(key) ?? null),
-    setItem: vi.fn((key: string, value: string) => { store.set(key, value); }),
-    removeItem: vi.fn((key: string) => { store.delete(key); }),
-    clear: vi.fn(() => { store.clear(); }),
-    get length() { return store.size; },
+    setItem: vi.fn((key: string, value: string) => {
+        store.set(key, value);
+    }),
+    removeItem: vi.fn((key: string) => {
+        store.delete(key);
+    }),
+    clear: vi.fn(() => {
+        store.clear();
+    }),
+    get length() {
+        return store.size;
+    },
     key: vi.fn((i: number) => [...store.keys()][i] ?? null),
 };
 Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock, configurable: true });
@@ -79,14 +87,17 @@ describe('setMmdRuntime / mmdRuntime', () => {
     });
 
     it('setter updates the exported binding', async () => {
-        const fakeRuntime = { name: 'fake' } as unknown as import('babylon-mmd/esm/Runtime/IMmdRuntime').IMmdRuntime;
+        const fakeRuntime = {
+            name: 'fake',
+        } as unknown as import('babylon-mmd/esm/Runtime/IMmdRuntime').IMmdRuntime;
         setMmdRuntime(fakeRuntime);
         const mod = await import('../core/scene-state');
         expect(mod.mmdRuntime).toBe(fakeRuntime);
     });
 
     it('setter accepts null to clear', async () => {
-        const fakeRuntime = {} as unknown as import('babylon-mmd/esm/Runtime/IMmdRuntime').IMmdRuntime;
+        const fakeRuntime =
+            {} as unknown as import('babylon-mmd/esm/Runtime/IMmdRuntime').IMmdRuntime;
         setMmdRuntime(fakeRuntime);
         setMmdRuntime(null);
         const mod = await import('../core/scene-state');
@@ -150,7 +161,9 @@ describe('setModelRegistry / modelRegistry', () => {
 
     it('setter replaces the registry', async () => {
         const fakeInstance = { id: 'm1' } as unknown as import('../core/types').ModelInstance;
-        const newMap = new Map<string, import('../core/types').ModelInstance>([['m1', fakeInstance]]);
+        const newMap = new Map<string, import('../core/types').ModelInstance>([
+            ['m1', fakeInstance],
+        ]);
         setModelRegistry(newMap);
         const mod = await import('../core/scene-state');
         expect(mod.modelRegistry).toBe(newMap);
@@ -158,7 +171,9 @@ describe('setModelRegistry / modelRegistry', () => {
     });
 
     it('setter accepts empty Map to clear', async () => {
-        const populated = new Map<string, import('../core/types').ModelInstance>([['x', {} as any]]);
+        const populated = new Map<string, import('../core/types').ModelInstance>([
+            ['x', {} as any],
+        ]);
         setModelRegistry(populated);
         setModelRegistry(new Map());
         const mod = await import('../core/scene-state');

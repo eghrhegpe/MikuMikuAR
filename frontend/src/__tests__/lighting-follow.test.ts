@@ -41,7 +41,7 @@ vi.mock('../scene/transform/transform-adapter', () => ({
     getGizmoTargetId: transformMocks.getGizmoTargetId,
 }));
 vi.mock('@/scene/physics/physics-bridge', () => ({
-    getBoneWorldPosition: () => null,
+    getBoneWorldPosition: (): null => null,
 }));
 vi.mock('../scene/render/light-cone', () => ({
     createLightCone: () => mockCone,
@@ -187,12 +187,7 @@ describe('attachPersonalLight — 幂等与守卫', () => {
     it('mmdModel 带腰骨候选时解析 waistName，基准点取骨骼世界坐标而非根节点原点', () => {
         const modelId = 'pl-waist';
         // 构造一个列主序单位矩阵，平移列 (x=30, y=10, z=0) → 即腰骨世界坐标
-        const wm = new Float32Array([
-            1, 0, 0, 0,
-            0, 1, 0, 0,
-            0, 0, 1, 0,
-            30, 10, 0, 1,
-        ]);
+        const wm = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 30, 10, 0, 1]);
         registerModel(modelId, {
             mmdModel: { runtimeBones: [{ name: 'Waist', worldMatrix: wm }] },
         });
@@ -309,7 +304,12 @@ describe('setPersonalLightState / getPersonalLightState', () => {
         attachPersonalLight(modelId, { intensity: 1, color: [1, 1, 1], angle: 0.7, height: 35 });
         const light = findPersonalLight(modelId);
 
-        setPersonalLightState(modelId, { intensity: 2.5, color: [1, 0, 0], angle: 0.3, height: 40 });
+        setPersonalLightState(modelId, {
+            intensity: 2.5,
+            color: [1, 0, 0],
+            angle: 0.3,
+            height: 40,
+        });
         expect(light.intensity).toBe(2.5);
         expect(light.diffuse.r).toBeCloseTo(1, 5);
         expect(light.diffuse.g).toBeCloseTo(0, 5);
@@ -512,12 +512,7 @@ describe('tickStageLightFollow — 舞台灯追光 (ADR-168)', () => {
 
     it('boneName=null 且 mmdModel 匹配腰骨时，缓存 cachedWaistBone 供后续帧复用', () => {
         const modelId = 'st-waist';
-        const wm = new Float32Array([
-            1, 0, 0, 0,
-            0, 1, 0, 0,
-            0, 0, 1, 0,
-            30, 10, 0, 1,
-        ]);
+        const wm = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 30, 10, 0, 1]);
         registerModel(modelId, {
             mmdModel: { runtimeBones: [{ name: 'Waist', worldMatrix: wm }] },
         });

@@ -160,7 +160,11 @@ function _getLightBasePos(model: ModelInstance, waistName: string | null): Vecto
         if (bone) {
             // bone.worldMatrix 平移列（rootMesh 局部系）→ 世界系
             _scratchLightPos.set(bone.worldMatrix[12], bone.worldMatrix[13], bone.worldMatrix[14]);
-            Vector3.TransformCoordinatesToRef(_scratchLightPos, model.rootMesh.getWorldMatrix(), _scratchLightPos);
+            Vector3.TransformCoordinatesToRef(
+                _scratchLightPos,
+                model.rootMesh.getWorldMatrix(),
+                _scratchLightPos
+            );
             return _scratchLightPos.clone();
         }
     }
@@ -208,7 +212,11 @@ export function attachPersonalLight(
         scene
     );
     light.intensity = settings.enabled ? settings.intensity : 0;
-    light.diffuse = new Color3(guardNum(settings.color[0]), guardNum(settings.color[1]), guardNum(settings.color[2]));
+    light.diffuse = new Color3(
+        guardNum(settings.color[0]),
+        guardNum(settings.color[1]),
+        guardNum(settings.color[2])
+    );
     light.specular = new Color3(0.3, 0.3, 0.3);
     light.range = settings.height * 3;
 
@@ -413,7 +421,11 @@ function _ensurePersonalCone(modelId: string): void {
         return;
     }
 
-    const color = new Color3(guardNum(settings.color[0]), guardNum(settings.color[1]), guardNum(settings.color[2]));
+    const color = new Color3(
+        guardNum(settings.color[0]),
+        guardNum(settings.color[1]),
+        guardNum(settings.color[2])
+    );
 
     if (entry.cone) {
         rebuildLightConeGeometry(entry.cone, scene, light, settings.coneLength);

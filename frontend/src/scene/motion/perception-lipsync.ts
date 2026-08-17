@@ -1,7 +1,8 @@
 // [doc:adr-079] 感知层 — Lip-sync（口型同步，从 lipsync-bridge.ts 迁移）
 
-import { getProcBeatDetector } from './proc-motion-bridge';
 // [doc:adr-238] 音频操作经 scene-action-bridge（core/audio 注册）
+// [doc:adr-271] 节拍检测器也走桥（proc-motion-bridge 注册 getProcBeatDetector），
+// 断开 perception-lipsync → proc-motion-bridge 的静态边，拆散 perception 家族 SCC。
 import { getSceneAction } from '@/core/scene-action-bridge';
 import { findLipMorph, findAllLipMorphs, amplitudeToWeight } from '@/motion-algos/lipsync';
 import type { PerceptionState, MmdModelLike, PerceptionTier } from './perception-shared';
@@ -167,9 +168,15 @@ export function _applyLipSync(
     }
 
     // 从 BeatDetector 取频段能量（NaN/Infinity/负数按 0 处理，防止平滑状态被污染后永久失效）
-    const beatDetector = getProcBeatDetector();
-    const lowLevel = _finiteLevel(beatDetector ? beatDetector.getLevel(VOICE_BIN_START, VOICE_BIN_END) : 0);
-    const highLevel = _finiteLevel(beatDetector ? beatDetector.getLevel(HIGH_BIN_START, HIGH_BIN_END) : 0);
+    // [doc:adr-271] 经 scene-action-bridge 取（未注册时按「无 detector」处理）
+    const beatDetector = getSceneAction('getProcBeatDetector')?.() as
+        { getLevel: (start: number, end: number) => number } | null | undefined;
+    const lowLevel = _finiteLevel(
+        beatDetector ? beatDetector.getLevel(VOICE_BIN_START, VOICE_BIN_END) : 0
+    );
+    const highLevel = _finiteLevel(
+        beatDetector ? beatDetector.getLevel(HIGH_BIN_START, HIGH_BIN_END) : 0
+    );
 
     // 低通滤波（音频播放时才平滑，衰减期保留衰减值）
     if (getSceneAction('isAudioPlaying')?.() ?? false) {

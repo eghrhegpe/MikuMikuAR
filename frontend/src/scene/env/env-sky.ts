@@ -18,15 +18,27 @@ import { EnvState, envState } from '@/core/config';
 import { col3FromTriple } from '@/core/color-helpers';
 import { logWarn } from '@/core/logger';
 import { _envSys, getScene, resolveStaticAsset } from './_shared/env-context';
-import { ensureEnvUpdateObserver } from './env';
+// [doc:adr-269 补充] 观察器挂载改走 dispatcher 请求，断开「子系统 → 调度器」向上依赖
+import { requestEnvObserver } from './_bridge/env-dispatcher';
 import { _disposeSunDisc } from '../render/lighting';
-import { observe, type ObserverHandle } from '@/core/observer-handle';
+import { getFrameRegistry } from '@/core/frame-registry';
 import { safeDispose } from '@/core/dispose-helpers';
 
 // ======== Module state ========
 let _lastProceduralSkyKey = '';
 let _lastSkyCubePath: string | null = null; // cube 路径缓存，避免旋转/强度微调时重复从磁盘加载
-let _skyFollowHandle: ObserverHandle | null = null;
+// 天空相机跟随回调走 core/frame-registry 场景键共享表（getFrameRegistry），
+// key 固定 'env.sky.follow'；_skyFollowScene 保留注册时的那张表引用，供
+// 重建/dispose 时摘 key（此时手上往往没有 scene 形参）。
+let _skyFollowScene: Scene | null = null;
+
+/** 摘除天空跟随 key（createSky 重建前与 disposeSky 各调一次）。 */
+function _unregisterSkyFollow(): void {
+    if (_skyFollowScene) {
+        getFrameRegistry(_skyFollowScene).unregister('env.sky.follow');
+    }
+    _skyFollowScene = null;
+}
 let _proceduralEnvTexture: RawCubeTexture | null = null;
 
 /** 天空渐变 canvas 尺寸 */
@@ -243,7 +255,11 @@ function createProceduralSky(state: EnvState): void {
     // 跟随相机，与云层同心（同 center），确保深度测试正确。
     // Y 也跟随：天空盒是钉在眼球上的无限远背景，仅跟 X/Z 时相机抬升/远离
     // 会越过有限球壳边界，露出 clearColor 灰底（俯视天顶 / 转身）。
-    _skyFollowHandle = observe(scene.onBeforeRenderObservable, () => {
+    // 走 core/frame-registry 场景键共享表（getFrameRegistry），取代原先的裸
+    // onBeforeRenderObservable：只读 scene.activeCamera，写自己的 mesh。
+    _unregisterSkyFollow();
+    _skyFollowScene = scene;
+    getFrameRegistry(scene).register('env.sky.follow', () => {
         const cam = scene.activeCamera;
         if (!cam) {
             return;
@@ -378,7 +394,12 @@ function loadSkyCube(path: string, rotationY: number, intensity: number): void {
 
     // 跟随相机，与云层同心（同 center），确保深度测试正确。
     // Y 同步跟随（见 procedural 分支说明），避免高空/远离原点时露灰底。
-    _skyFollowHandle = observe(scene.onBeforeRenderObservable, () => {
+    // 走 core/frame-registry 场景键共享表（getFrameRegistry）：只读 scene.activeCamera，
+    // 写自己的 mesh，无帧内前序状态依赖。两种天空模式（procedural/cubemap）互斥且共用
+    // 同一 key——register 同 key 覆盖，不会叠加。
+    _unregisterSkyFollow();
+    _skyFollowScene = scene;
+    getFrameRegistry(scene).register('env.sky.follow', () => {
         const cam = scene.activeCamera;
         if (!cam) {
             return;
@@ -394,8 +415,8 @@ function loadSkyCube(path: string, rotationY: number, intensity: number): void {
 /** 释放天空盒并移除相机跟随观察者（幂等）。 */
 export function disposeSky(): void {
     const scene = getScene();
-    // 移除相机跟随观察者，避免泄漏
-    _skyFollowHandle = safeDispose(_skyFollowHandle);
+    // 移除相机跟随观察者，避免泄漏（用注册时捕获的 scene 引用摘 key）
+    _unregisterSkyFollow();
     if (_envSys.sky.skyMesh) {
         _envSys.sky.skyMesh.material?.dispose();
         _envSys.sky.skyMesh = safeDispose(_envSys.sky.skyMesh);
@@ -425,7 +446,7 @@ export function disposeSky(): void {
 
 export function applySky(state: EnvState): void {
     const scene = getScene();
-    ensureEnvUpdateObserver();
+    requestEnvObserver();
     if (state.skyMode === 'color') {
         disposeSky();
         scene.clearColor = new Color4(

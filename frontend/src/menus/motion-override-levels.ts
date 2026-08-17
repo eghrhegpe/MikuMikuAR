@@ -11,7 +11,10 @@ import { addEmptyRow, slideRow, addPresetChip, addCardTitle } from '../core/ui-h
 import { addSliderRow, addBoneSelectRow, isIkBone } from '../core/ui-helpers';
 import { createTrailingBtn } from '../core/ui-slide-row';
 import { createIconifyIcon, createIconButton } from '../core/icons';
-import { getMotionMenu, renderModuleToggleList } from './motion-popup';
+// [doc:adr-271] 菜单实例改从状态叶子读取；renderModuleToggleList 直连真实定义处
+// （此前经 motion-popup 转发，是 popup ↔ levels 互指的第二条来源）
+import { getMotionMenu } from './motion-menu-state';
+import { renderModuleToggleList } from './motion-binding-ui';
 import { addDisposableListener, type Disposable } from '../core/dom';
 import { triggerAutoSave, pushUndoSnapshot, offerSceneUndoAndRefresh } from '../scene/scene';
 import type { BoneOverrideEntry, MotionModuleState } from '../core/types';
@@ -124,12 +127,13 @@ export function renderPresetCard(
         if (presets.length === 0) {
             const empty = document.createElement('div');
             empty.style.cssText =
-                'font-size:12px;color:var(--text-dim);text-align:center;padding:16px;';
+                'font-size:var(--font-hint);color:var(--text-dim);text-align:center;padding:16px;';
             empty.textContent = t('motion-preset.noPresets');
             inner.appendChild(empty);
         } else {
             const list = document.createElement('div');
-            list.style.cssText = 'padding:4px 14px 8px;display:flex;flex-direction:column;gap:4px;';
+            list.style.cssText =
+                'padding:4px var(--row-pad-x) 8px;display:flex;flex-direction:column;gap:4px;';
             for (const preset of presets) {
                 const row = document.createElement('div');
                 row.style.cssText =
@@ -138,7 +142,7 @@ export function renderPresetCard(
 
                 const nameSpan = document.createElement('span');
                 nameSpan.style.cssText =
-                    'font-size:12px;color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+                    'font-size:var(--font-hint);color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
                 nameSpan.textContent = preset.name;
                 row.appendChild(nameSpan);
 
@@ -146,7 +150,7 @@ export function renderPresetCard(
                 const applyBtn = document.createElement('button');
                 applyBtn.className = 'slide-action';
                 applyBtn.textContent = t('motion-preset.apply');
-                applyBtn.style.cssText = 'font-size:11px;padding:2px 8px;';
+                applyBtn.style.cssText = 'font-size:var(--font-ui-sm);padding:2px 8px;';
                 applyBtn.addEventListener('click', () => {
                     if (!modelId) {
                         return;
@@ -167,7 +171,7 @@ export function renderPresetCard(
 
                 // 删除按钮
                 const delBtn = createIconButton('lucide:trash-2', t('motion-preset.delete'));
-                delBtn.style.cssText = 'font-size:11px;color:var(--danger);';
+                delBtn.style.cssText = 'font-size:var(--font-ui-sm);color:var(--danger);';
                 delBtn.addEventListener('click', async () => {
                     // [doc:adr] 统一异步守卫：transitioning 期间忽略点击 + await 后 stale 复查
                     const menu = menuRefForPreset;
@@ -288,7 +292,7 @@ export function renderOverrideCard(
 
         // [doc:adr-125 P3] 历史列表下拉按钮
         const historyBtn = createIconButton('lucide:more-vertical', t('motion.override.history'));
-        historyBtn.style.fontSize = '14px';
+        historyBtn.style.fontSize = 'var(--font-title)';
         let historyDropdown: HTMLElement | null = null;
 
         function closeHistoryDropdown(): void {
@@ -330,7 +334,7 @@ export function renderOverrideCard(
                 const realIndex = entries.indexOf(entry);
                 const item = document.createElement('div');
                 item.style.cssText =
-                    'padding:6px 12px;font-size:11px;cursor:pointer;' +
+                    'padding:6px 12px;font-size:var(--font-ui-sm);cursor:pointer;' +
                     'color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
                 if (realIndex === cursor) {
                     item.style.background = 'var(--hover)';
@@ -407,10 +411,15 @@ export function renderOverrideCard(
         inner.appendChild(conflictBanner);
 
         // 模块开关列表
-        renderModuleToggleList(inner, modelId, {
-            initModules: true,
-            onEnter: opts.onEnter,
-        }, actionId);
+        renderModuleToggleList(
+            inner,
+            modelId,
+            {
+                initModules: true,
+                onEnter: opts.onEnter,
+            },
+            actionId
+        );
 
         // [doc:adr-116] 高级骨骼覆盖入口（附激活计数 sublabel，避免被快速滑过）
         const ovCount = modelRegistry.get(modelId)?.boneOverrides?.length ?? 0;
@@ -774,7 +783,7 @@ function buildBoneOverrideSchema(): MenuNode[] {
 
                         const info = document.createElement('span');
                         info.style.flex = '1';
-                        info.style.fontSize = '11px';
+                        info.style.fontSize = 'var(--font-ui-sm)';
                         info.style.opacity = ov.enabled ? '1' : '0.35';
                         // [doc:adr-122 P3] IK 骨骼附加标记
                         const ikTag = isIkBone(ov.boneName) ? ` ${t('motion.ikTag')}` : '';
@@ -890,7 +899,7 @@ function buildBoneOverrideSchema(): MenuNode[] {
                     if (hooks.length === 0) {
                         const empty = document.createElement('div');
                         empty.style.cssText =
-                            'font-size:11px;color:var(--text-dim);padding:8px 4px;text-align:center;';
+                            'font-size:var(--font-ui-sm);color:var(--text-dim);padding:8px 4px;text-align:center;';
                         empty.textContent = t('motion.boneOverride.pipelineEmpty');
                         inner.appendChild(empty);
                         return;
@@ -902,13 +911,12 @@ function buildBoneOverrideSchema(): MenuNode[] {
                     for (const hook of hooks) {
                         const row = document.createElement('div');
                         row.style.cssText =
-                            'display:flex;align-items:center;gap:8px;font-size:11px;';
-
+                            'display:flex;align-items:center;gap:8px;font-size:var(--font-ui-sm);';
                         // order 标签
                         const orderSpan = document.createElement('span');
                         orderSpan.style.cssText =
                             'flex:0 0 36px;font-family:var(--font-mono,monospace);' +
-                            'color:var(--accent);font-weight:bold;font-size:10px;';
+                            'color:var(--accent);font-weight:bold;font-size:var(--font-ui-xs);';
                         // [fix P2] i18n：硬编码中文「序」无法切换语言（2026-07-15 先例）
                         orderSpan.textContent = t('motion.boneOverride.orderPrefix', {
                             n: hook.order,
@@ -923,7 +931,7 @@ function buildBoneOverrideSchema(): MenuNode[] {
 
                         // 箭头指示执行方向
                         const arrow = document.createElement('span');
-                        arrow.style.cssText = 'color:var(--text-dim);font-size:9px;';
+                        arrow.style.cssText = 'color:var(--text-dim);font-size:var(--font-ui-xs);';
                         arrow.textContent = '→';
                         row.appendChild(arrow);
 
@@ -933,7 +941,7 @@ function buildBoneOverrideSchema(): MenuNode[] {
                     // 执行顺序说明
                     const note = document.createElement('div');
                     note.style.cssText =
-                        'font-size:10px;color:var(--text-dim);padding:4px 0 0 12px;line-height:1.4;';
+                        'font-size:var(--font-ui-xs);color:var(--text-dim);padding:4px 0 0 12px;line-height:1.4;';
                     note.textContent = t('motion.boneOverride.pipelineNote');
                     list.appendChild(note);
 

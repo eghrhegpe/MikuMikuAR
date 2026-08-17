@@ -288,7 +288,10 @@ describe('isTouchDevice', () => {
     it('正常：存在 ontouchstart 时判定为触屏', () => {
         Object.defineProperty(window, 'ontouchstart', { value: () => {}, configurable: true });
         vi.stubGlobal('navigator', { maxTouchPoints: 0 });
-        vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: false })));
+        vi.stubGlobal(
+            'matchMedia',
+            vi.fn(() => ({ matches: false }))
+        );
         expect(isTouchDevice()).toBe(true);
     });
 
@@ -296,7 +299,10 @@ describe('isTouchDevice', () => {
         // @ts-ignore 删除 ontouchstart 以隔离 maxTouchPoints 分支
         delete window.ontouchstart;
         vi.stubGlobal('navigator', { maxTouchPoints: 3 });
-        vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: false })));
+        vi.stubGlobal(
+            'matchMedia',
+            vi.fn(() => ({ matches: false }))
+        );
         expect(isTouchDevice()).toBe(true);
     });
 
@@ -304,7 +310,10 @@ describe('isTouchDevice', () => {
         // @ts-ignore 删除 ontouchstart 以隔离 pointer:coarse 分支
         delete window.ontouchstart;
         vi.stubGlobal('navigator', { maxTouchPoints: 0 });
-        vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: true })));
+        vi.stubGlobal(
+            'matchMedia',
+            vi.fn(() => ({ matches: true }))
+        );
         expect(isTouchDevice()).toBe(true);
     });
 
@@ -312,7 +321,10 @@ describe('isTouchDevice', () => {
         // @ts-ignore 删除 ontouchstart 以隔离全不命中分支
         delete window.ontouchstart;
         vi.stubGlobal('navigator', { maxTouchPoints: 0 });
-        vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: false })));
+        vi.stubGlobal(
+            'matchMedia',
+            vi.fn(() => ({ matches: false }))
+        );
         expect(isTouchDevice()).toBe(false);
     });
 });

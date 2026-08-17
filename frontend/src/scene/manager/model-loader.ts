@@ -338,9 +338,14 @@ async function _applySceneMotion(
     };
     const pickedId = slots.primary.sceneMotionId;
     const pickedMotion = pickedId
-        ? ((getSceneAction('getSceneMotions')?.() ?? []).find((m) => (m as { id?: string }).id === pickedId) ?? null)
+        ? ((getSceneAction('getSceneMotions')?.() ?? []).find(
+              (m) => (m as { id?: string }).id === pickedId
+          ) ?? null)
         : null;
-    const activeMotion = (pickedMotion ?? getSceneAction('getActiveMotion')?.()) as { vmdPath?: string; vmdName?: string } | null;
+    const activeMotion = (pickedMotion ?? getSceneAction('getActiveMotion')?.()) as {
+        vmdPath?: string;
+        vmdName?: string;
+    } | null;
     const loadGen = getSceneAction('getMotionGen')?.();
     let appliedVmd = '';
 
@@ -528,11 +533,13 @@ export async function loadPMXFile(
         if (loadedMeshes.length > 0) {
             const _declaredTexturePaths = finalTextureFiles.map((f) => f.relativePath);
             fireAndForget(() =>
-                auditMissingTextures(pmxBytes, _declaredTexturePaths, effectiveSignal).then((missing) => {
-                    for (const name of missing) {
-                        reportResourceWarning(t('resource.textureMissing', { name }));
+                auditMissingTextures(pmxBytes, _declaredTexturePaths, effectiveSignal).then(
+                    (missing) => {
+                        for (const name of missing) {
+                            reportResourceWarning(t('resource.textureMissing', { name }));
+                        }
                     }
-                })
+                )
             );
         }
 
@@ -812,9 +819,7 @@ export async function loadPMXFile(
         }, 0);
         if (!skipAutoApply && _tryAutoApplyPreset) {
             const p = _tryAutoApplyPreset(id);
-            p?.catch?.((err: unknown) =>
-                logWarn('model-loader', 'auto-apply preset:', err)
-            );
+            p?.catch?.((err: unknown) => logWarn('model-loader', 'auto-apply preset:', err));
         }
         // Pre-load outfit file for UI entry availability
         if (_loadOutfits) {

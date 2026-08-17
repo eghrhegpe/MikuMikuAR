@@ -274,14 +274,15 @@ function buildCacheSchema(): MenuNode[] {
                     const statRow = document.createElement('div');
                     statRow.className = 'slide-item';
                     statRow.style.cssText =
-                        'padding:8px 14px;flex-direction:column;align-items:stretch;gap:4px;';
+                        'padding:8px var(--row-pad-x);flex-direction:column;align-items:stretch;gap:4px;';
                     const totalEl = document.createElement('div');
-                    totalEl.style.cssText = 'font-size:13px;color:var(--text);font-weight:500;';
+                    totalEl.style.cssText =
+                        'font-size:var(--font-ui);color:var(--text);font-weight:500;';
                     totalEl.textContent = t('settings.about.cache.counting');
                     statRow.appendChild(totalEl);
                     const detailEl = document.createElement('div');
                     detailEl.style.cssText =
-                        'font-size:10px;color:var(--text-dim);line-height:1.6;font-family:monospace;';
+                        'font-size:var(--font-ui-xs);color:var(--text-dim);line-height:1.6;font-family:monospace;';
                     statRow.appendChild(detailEl);
                     inner.appendChild(statRow);
 
@@ -333,13 +334,13 @@ function buildCacheSchema(): MenuNode[] {
                         t('settings.about.maintenance.clearExtract'),
                         false,
                         () =>
-                            void showConfirm(t('settings.about.maintenance.clearExtractConfirm')).then(
-                                (ok) => {
-                                    if (ok) {
-                                        void executeActionById('settings:set:clearextractcache', {});
-                                    }
+                            void showConfirm(
+                                t('settings.about.maintenance.clearExtractConfirm')
+                            ).then((ok) => {
+                                if (ok) {
+                                    void executeActionById('settings:set:clearextractcache', {});
                                 }
-                            )
+                            })
                     );
                     if (getCachedCapabilities().systemDirOpen) {
                         slideRow(
@@ -364,13 +365,13 @@ function buildCacheSchema(): MenuNode[] {
                         t('settings.about.maintenance.clearThumbnail'),
                         false,
                         () =>
-                            void showConfirm(t('settings.about.maintenance.clearThumbnailConfirm')).then(
-                                (ok) => {
-                                    if (ok) {
-                                        void executeActionById('settings:set:clearthumbnail', {});
-                                    }
+                            void showConfirm(
+                                t('settings.about.maintenance.clearThumbnailConfirm')
+                            ).then((ok) => {
+                                if (ok) {
+                                    void executeActionById('settings:set:clearthumbnail', {});
                                 }
-                            )
+                            })
                     );
                     slideRow(
                         inner,
@@ -600,10 +601,10 @@ function buildSoftwareDetailManagedSchema(
                         addFieldRow(inner, f.label, escapeHtml(f.value));
                     }
                     const argRow = document.createElement('div');
-                    argRow.style.cssText = 'padding:6px 14px;';
+                    argRow.style.cssText = 'padding:6px var(--row-pad-x);';
                     const argLbl = document.createElement('div');
                     argLbl.style.cssText =
-                        'font-size:10px;color:var(--text-dim);margin-bottom:2px;';
+                        'font-size:var(--font-ui-xs);color:var(--text-dim);margin-bottom:2px;';
                     argLbl.textContent = t('settings.software.argsHint');
                     argRow.appendChild(argLbl);
                     const val = document.createElement('div');
@@ -613,7 +614,7 @@ function buildSoftwareDetailManagedSchema(
                     input.type = 'text';
                     input.value = entry.args || '';
                     input.style.cssText =
-                        'width:100%;background:transparent;border:none;color:var(--text);font-size:12px;outline:none;';
+                        'width:100%;background:transparent;border:none;color:var(--text);font-size:var(--font-hint);outline:none;';
                     input.addEventListener('blur', async () => {
                         const r = await tryCatchStatus(async () => {
                             await UpdateCustomSoftware(entry.path, entry.name, input.value);
@@ -669,7 +670,9 @@ function buildSoftwareDetailManagedSchema(
                                     cachedSoftwareEntries = (cachedSoftwareEntries || []).filter(
                                         (e) => e.path !== entry.path
                                     );
-                                    showInfoToast(t('settings.softwareDeleted', { name: entry.name }));
+                                    showInfoToast(
+                                        t('settings.softwareDeleted', { name: entry.name })
+                                    );
                                     if (stale()) {
                                         return;
                                     }
@@ -746,7 +749,9 @@ function buildSoftwareDetailAutoSchema(
                                 }, t('settings.software.convertFailed'));
                                 if (r) {
                                     cachedSoftwareEntries = await ScanSoftwareDir();
-                                    showInfoToast(t('settings.softwareToCustom', { name: entry.name }));
+                                    showInfoToast(
+                                        t('settings.softwareToCustom', { name: entry.name })
+                                    );
                                     if (stale()) {
                                         return;
                                     }

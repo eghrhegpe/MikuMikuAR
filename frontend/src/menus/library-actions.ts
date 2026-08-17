@@ -236,7 +236,11 @@ function startReplaceModel(m: LibraryModel, replaceId: string): void {
                         }
                     }
                 } catch (inheritErr) {
-                    logWarn('library-actions', 'applyInheritedState failed, replaced without inherit', inheritErr);
+                    logWarn(
+                        'library-actions',
+                        'applyInheritedState failed, replaced without inherit',
+                        inheritErr
+                    );
                 }
                 removeModel(replaceId);
                 // [doc:adr-127] 破坏性操作场景级撤销保护
@@ -330,7 +334,11 @@ function loadModelNormal(m: LibraryModel, isStage: boolean): void {
             })
             .catch((err) => {
                 if (isAborted(err)) {
-                    logWarn('library-actions', '加载被取消（abort），静默处理', getBaseName(m.file_path));
+                    logWarn(
+                        'library-actions',
+                        '加载被取消（abort），静默处理',
+                        getBaseName(m.file_path)
+                    );
                     return;
                 }
                 feedbackError('library.modelLoadFailed', getBaseName(m.file_path), err);
@@ -582,7 +590,8 @@ function buildTagsOverviewLevel(): PopupLevel {
 function appendEmptyHint(container: HTMLElement, key: string): void {
     const empty = document.createElement('div');
     empty.className = 'slide-empty';
-    empty.style.cssText = 'padding:24px;text-align:center;color:var(--text-muted);font-size:13px;';
+    empty.style.cssText =
+        'padding:24px;text-align:center;color:var(--text-muted);font-size:var(--font-ui);';
     empty.textContent = t(key);
     container.appendChild(empty);
 }

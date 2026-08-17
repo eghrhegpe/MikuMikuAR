@@ -1,6 +1,6 @@
 import { Scene } from '@babylonjs/core/scene';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
-import { observe, type ObserverHandle } from '@/core/observer-handle';
+import { getFrameRegistry } from '@/core/frame-registry';
 import { safeDispose } from '@/core/dispose-helpers';
 import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { MeshBuilder } from '@babylonjs/core/Meshes/meshBuilder';
@@ -46,7 +46,10 @@ import {
 const WATER_BASE_SIZE = 60; // 水面基准尺寸（世界单位），通过缩放调整最终大小
 
 // ======== 生命周期编排（ADR-239）========
-let _waterUpdateObserver: ObserverHandle | null = null;
+// 水面每帧回调走 core/frame-registry 的**场景键共享表**（getFrameRegistry）：
+// 读 scene.deltaTime / activeCamera / 灯光，写自己的材质 uniform 与涟漪，
+// 无帧内前序状态依赖，可与相机/env 其它子系统共用一张表。
+// _waterScene 保留：dispose 路径需要拿到注册时的那张表摘 key。
 let _waterScene: Scene | null = null;
 
 /** 更新水面网格的位置和缩放（非破坏性）。所有 LOD 层同步变换。 */
@@ -139,11 +142,16 @@ export function createWater(state: EnvState): void {
     _setupMirrorRT(scene, state);
     _applyWaterLOD(scene);
 
-    if (!_waterUpdateObserver) {
+    // 场景更换（HMR / 重建）时旧 scene 的表里还留着 key：先摘干净再注册。
+    // 原实现用 `if (!_waterUpdateObserver)` 做幂等守卫，scene 变化时会漏摘，
+    // 把每帧更新继续打到已废弃的 scene 上。
+    if (_waterScene && _waterScene !== scene) {
+        getFrameRegistry(_waterScene).unregister('env.water.update');
+        _waterScene = null;
+    }
+    if (!_waterScene) {
         _waterScene = scene;
-        _waterUpdateObserver = observe(scene.onBeforeRenderObservable, () =>
-            _waterUpdateCallback(scene)
-        );
+        getFrameRegistry(scene).register('env.water.update', () => _waterUpdateCallback(scene));
     }
 }
 
@@ -171,12 +179,9 @@ export function disposeWater(): void {
     // 焦散纹理由 env-caustics controller 集中管理，env-impl dispose 时统一释放
     // ADR-115 P1: 释放法线细节纹理
     disposeDetailNormalTexture();
-    if (_waterUpdateObserver) {
+    if (_waterScene) {
         // 使用注册时捕获的 scene 引用摘除，避免 getScene() 在 scene 已 dispose 时返回 null 导致漏删
-        if (_waterScene) {
-            _waterUpdateObserver = safeDispose(_waterUpdateObserver);
-        }
-        _waterUpdateObserver = null;
+        getFrameRegistry(_waterScene).unregister('env.water.update');
         _waterScene = null;
     }
     resetUnderwaterFlags();
@@ -204,7 +209,6 @@ export function updateWaterAnimSpeed(speed: number): void {
 
 // ======== Underwater Transition (called by Env Update Observer) ========
 // ======== Water Presets (migrated from env-lighting.ts) =======
-
 
 registerEnvCallback((changed, state) => {
     if (!changed || [...changed].some((k) => _WATER_KEYS.includes(k))) {

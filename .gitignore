@@ -22,6 +22,12 @@ plaza_cache.json
 # Generated locale JSON files (build artifacts from scripts/generate-locale-json.mjs)
 frontend/public/locales/
 
+# 一次性 lint 快照 —— 生成于某次排查，无任何脚本消费，曾把 5.4MB 灌进版本库
+# （2026-10-23 清理）。需要留证据时贴进 issue/PR 正文，不要入库。
+frontend/eslint-stats.json
+frontend/eslint-output.json
+frontend/unused-vars.txt
+
 # Dependencies
 node_modules/
 # 文档站（VitePress，站点根 = docs/）：依赖与构建产物不入库（img/*.png 为构建硬依赖，必须入库）

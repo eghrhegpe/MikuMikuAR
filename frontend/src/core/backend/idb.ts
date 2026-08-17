@@ -122,7 +122,7 @@ export async function idbKeys(store: Store): Promise<string[]> {
 /** 释放连接（页面卸载/切换时调用），与联邦资源配对纪律对齐。 */
 export function closeIDB(): void {
     if (dbPromise) {
-        dbPromise.then((db) => db.close()).catch(() => undefined);
+        dbPromise.then((db) => db.close()).catch((): void => undefined);
         dbPromise = null;
     }
 }

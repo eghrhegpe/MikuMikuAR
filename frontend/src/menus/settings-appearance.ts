@@ -15,6 +15,7 @@ import { showConfirm } from '../core/dialog';
 import { showInfoToast } from '../core/toast';
 import { slideRow, addToggleRow, addSliderRow, addSectionTitle } from '../core/ui-helpers';
 import { swallowError } from '../core/async';
+import { applyUiMotionDom } from '../core/ui-motion';
 import { getCurrentRenderingMenu } from './menu';
 import { t } from '../core/i18n/t';
 import {
@@ -142,7 +143,7 @@ function _renderThemeColorInput(
 
     const card = document.createElement('div');
     card.className = 'card-container accent-input-card';
-    card.style.cssText = 'display:flex;gap:6px;padding:8px 14px;align-items:center;';
+    card.style.cssText = 'display:flex;gap:6px;padding:8px var(--row-pad-x);align-items:center;';
     const input = document.createElement('input');
     input.type = 'text';
     input.placeholder = '#RRGGBB';
@@ -237,7 +238,7 @@ function _renderAnimationControls(
         t('settings.slideAnimation'),
         initialAnim,
         (v) => {
-            document.documentElement.style.setProperty('--ui-animations', v ? '1' : '0');
+            applyUiMotionDom(v);
             swallowError(SetUIAnimations(v));
             getSettingsMenu()?.updateControls();
         },
@@ -355,7 +356,7 @@ function _renderResetButton(
             root.style.setProperty('--accent-rgb', '74, 108, 247');
             root.style.setProperty('--accent-dim', 'rgba(74,108,247,0.2)');
             root.style.setProperty('--font', SETTINGS_FONT_RESTORE['system']);
-            root.style.setProperty('--ui-animations', '1');
+            applyUiMotionDom(true);
             root.style.setProperty('--ui-blur', '0');
             document
                 .querySelectorAll<HTMLElement>('.overlay')

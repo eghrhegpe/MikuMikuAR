@@ -40,7 +40,7 @@ export class GoAiAdapter implements AiService {
             return this._capCache;
         }
         if (!this._capsPromise) {
-            this._refreshCapabilities().catch(() => undefined);
+            this._refreshCapabilities().catch((): void => undefined);
         }
         return {
             available: false,
@@ -258,7 +258,7 @@ export class GoAiAdapter implements AiService {
                 err = `等待响应超时（${Math.round(_FIRST_EVENT_TIMEOUT_MS / 1000)}s 无任何数据）`;
                 done = true;
                 streamActive = false;
-                b.AiCancelStream().catch(() => undefined);
+                b.AiCancelStream().catch((): void => undefined);
                 resolveWaiter?.();
             }
         }, _FIRST_EVENT_TIMEOUT_MS);
@@ -267,7 +267,7 @@ export class GoAiAdapter implements AiService {
             logInfo('ai-stream', `用户中断 abort 耗时=${Date.now() - t0}ms`);
             streamActive = false;
             done = true;
-            b.AiCancelStream().catch(() => undefined);
+            b.AiCancelStream().catch((): void => undefined);
             resolveWaiter?.();
         };
         req.signal?.addEventListener('abort', onAbort);
@@ -356,7 +356,7 @@ export class GoAiAdapter implements AiService {
             unsubToolCall();
             req.signal?.removeEventListener('abort', onAbort);
             if (streamActive) {
-                b.AiCancelStream().catch(() => undefined);
+                b.AiCancelStream().catch((): void => undefined);
             }
         }
 

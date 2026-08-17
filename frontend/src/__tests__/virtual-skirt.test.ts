@@ -1,6 +1,6 @@
 // virtual-skirt 系列合并（build-cleanup/coord/coordspace/dispose/inject/quality/update/waist-cache 8 文件 → 1）
 // [2026-08] 同系列合并以省 isolate 单文件 import 成本（vitest.config 同款先例）。
-// 8 文件结构完全同构：全 node 环境 + 相同 7 条 vi.mock（WASM 物理绑定层 + core/backend）+ 
+// 8 文件结构完全同构：全 node 环境 + 相同 7 条 vi.mock（WASM 物理绑定层 + core/backend）+
 // 共享 virtual-skirt-mocks 工厂 / virtual-skirt-helpers fixture + beforeEach(resetHoisted)，
 // 共享样板原在 8 文件重复 8 份，现收敛为一份。各 describe 按原主题分区保留，行为不变。
 // 例外：coord 分区为纯函数测试（localToWorld/worldDeltaToLocal），原文件即无
@@ -52,16 +52,68 @@ import {
 // 封闭立方体 mesh：每条边被 2 个三角形共享，无 boundary edge → analyzer 判定无裙摆
 function closedCubeMeshData(): { positions: Float32Array; indices: Uint32Array } {
     const positions = new Float32Array([
-        -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, -0.5, 0.5, -0.5, // 背面
-        -0.5, -0.5, 0.5, 0.5, -0.5, 0.5, 0.5, 0.5, 0.5, -0.5, 0.5, 0.5, // 正面
+        -0.5,
+        -0.5,
+        -0.5,
+        0.5,
+        -0.5,
+        -0.5,
+        0.5,
+        0.5,
+        -0.5,
+        -0.5,
+        0.5,
+        -0.5, // 背面
+        -0.5,
+        -0.5,
+        0.5,
+        0.5,
+        -0.5,
+        0.5,
+        0.5,
+        0.5,
+        0.5,
+        -0.5,
+        0.5,
+        0.5, // 正面
     ]);
     const indices = new Uint32Array([
-        0, 2, 1, 0, 3, 2, // 背面
-        4, 5, 6, 4, 6, 7, // 正面
-        0, 7, 3, 0, 4, 7, // 左面
-        1, 2, 6, 1, 6, 5, // 右面
-        0, 5, 1, 0, 4, 5, // 底面
-        3, 7, 6, 3, 6, 2, // 顶面
+        0,
+        2,
+        1,
+        0,
+        3,
+        2, // 背面
+        4,
+        5,
+        6,
+        4,
+        6,
+        7, // 正面
+        0,
+        7,
+        3,
+        0,
+        4,
+        7, // 左面
+        1,
+        2,
+        6,
+        1,
+        6,
+        5, // 右面
+        0,
+        5,
+        1,
+        0,
+        4,
+        5, // 底面
+        3,
+        7,
+        6,
+        3,
+        6,
+        2, // 顶面
     ]);
     return { positions, indices };
 }
@@ -309,10 +361,9 @@ describe('VirtualSkirtController — Phase 2 注入', () => {
     });
 
     it('封闭 mesh（无裙摆边界边）→ build() 返回 false', () => {
-        const model = makeModel(
-            createOpenBottomCylinder(1.0, 2.0, 12, 6),
-            [{ name: 'Waist', worldMatrix: new Float32Array(16) }]
-        );
+        const model = makeModel(createOpenBottomCylinder(1.0, 2.0, 12, 6), [
+            { name: 'Waist', worldMatrix: new Float32Array(16) },
+        ]);
         const cube = closedCubeMeshData();
         const meshAny = model.mesh as unknown as {
             getVerticesData: () => Float32Array;

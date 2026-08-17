@@ -4,7 +4,10 @@
 //   - core/action-defs 的 execute 闭包经本桥调用，不静态 import scene
 // 与 ui-action-bridge 同模式：core 持注入点，scene 层注册，方向单向。
 // 分字段注册（registerSceneAction），支持各场景模块独立注册。
+// [doc:adr-265] register/get/warnOnce 机械部分收敛至通用原语 core/bridge-slot；
+// 本文件只保留 SceneActions 接口（文档价值）与本桥的导出签名（65 个消费文件无感）。
 
+import { createActionBridge } from './bridge-slot';
 import type { OverrideType } from './types';
 
 export interface SceneActions {
@@ -45,11 +48,7 @@ export interface SceneActions {
     /** 推送撤销快照（motion 动作） */
     pushUndoSnapshot: () => unknown;
     /** 场景撤销后刷新（motion 动作） */
-    offerSceneUndoAndRefresh: (
-        label: string,
-        snap: unknown,
-        afterApply?: () => void
-    ) => void;
+    offerSceneUndoAndRefresh: (label: string, snap: unknown, afterApply?: () => void) => void;
     /** 更新播放 UI（motion 动作） */
     updatePlaybackUI: () => void;
     /** 设置程序化动作模式（motion 动作） */
@@ -144,6 +143,12 @@ export interface SceneActions {
     getOverrideType: (boneName: string, modelId?: string) => OverrideType | null;
     /** 挂载节拍检测器（scene 初始化调用），由 core/audio 注册 */
     attachBeatDetector: (detector: unknown) => void;
+    /**
+     * 读取程序化动作节拍检测器（自动相机订阅 beat 用），由 scene/motion/proc-motion-bridge 注册。
+     * [doc:adr-269 补充] 原为 `scene/camera/camera-auto → scene/motion/proc-motion-bridge` 的静态边；
+     * 走桥后断开 scene/camera 与 scene/motion 的互相可达，且不新增模块对。
+     */
+    getProcBeatDetector: () => unknown;
     /** 读取流式播放器（scene 调用），由 core/audio 注册 */
     getStreamPlayer: () => unknown;
     /** 加载换装（scene 初始化调用），由 scene/manager/outfit 注册 */
@@ -162,7 +167,7 @@ export interface SceneActions {
     resumeAudio: () => void;
 }
 
-const _sceneActions = new Map<keyof SceneActions, unknown>();
+const _bridge = createActionBridge<SceneActions>('scene-action-bridge');
 
 /**
  * 注册单个场景操作（scene 侧启动时调用）。
@@ -174,25 +179,10 @@ export function registerSceneAction<K extends keyof SceneActions>(
     key: K,
     fn: SceneActions[K]
 ): () => void {
-    _sceneActions.set(key, fn);
-    return () => {
-        if (_sceneActions.get(key) === fn) {
-            _sceneActions.delete(key);
-        }
-    };
+    return _bridge.register(key, fn);
 }
 
-/** 读取单个场景操作（core/action-defs 侧调用；未注册返回 undefined） */
-const _missingWarned = new Set<string>();
-
-export function getSceneAction<K extends keyof SceneActions>(
-    key: K
-): SceneActions[K] | undefined {
-    const fn = _sceneActions.get(key) as SceneActions[K] | undefined;
-    // [doc:adr-238] 缺失注册一次性告警：防重构破坏导致静默跳过（如 dispose 桥缺失泄漏）。
-    if (!fn && !_missingWarned.has(key)) {
-        _missingWarned.add(key);
-        console.warn(`[scene-action-bridge] '${key}' 未注册——调用将静默跳过`);
-    }
-    return fn;
+/** 读取单个场景操作（core/action-defs 侧调用；未注册一次性告警后返回 undefined） */
+export function getSceneAction<K extends keyof SceneActions>(key: K): SceneActions[K] | undefined {
+    return _bridge.get(key);
 }

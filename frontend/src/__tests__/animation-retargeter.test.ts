@@ -99,9 +99,10 @@ function makeSkeleton(): { dispose: ReturnType<typeof vi.fn> } {
     return { dispose: vi.fn() };
 }
 
-function makeMesh(
-    skeleton: { dispose: ReturnType<typeof vi.fn> } | null
-): { skeleton: unknown; dispose: ReturnType<typeof vi.fn> } {
+function makeMesh(skeleton: { dispose: ReturnType<typeof vi.fn> } | null): {
+    skeleton: unknown;
+    dispose: ReturnType<typeof vi.fn>;
+} {
     return { skeleton, dispose: vi.fn() };
 }
 
@@ -140,7 +141,12 @@ describe('loadAndRetargetAnimation（加载 + 重定向 + 清理）', () => {
         shared.retargetedGroup = retargeted;
         shared.ImportMeshAsync.mockResolvedValue({ meshes: [mesh], animationGroups: [group] });
 
-        const result = await loadAndRetargetAnimation({} as never, 'a.fbx', makeSkeleton() as never, 'mixamo');
+        const result = await loadAndRetargetAnimation(
+            {} as never,
+            'a.fbx',
+            makeSkeleton() as never,
+            'mixamo'
+        );
 
         expect(result).not.toBeNull();
         expect(result!.animationGroup).toBe(retargeted);
@@ -153,19 +159,37 @@ describe('loadAndRetargetAnimation（加载 + 重定向 + 清理）', () => {
 
     it('守卫：ImportMeshAsync 抛错 → 返回 null + loadFailed 反馈', async () => {
         shared.ImportMeshAsync.mockRejectedValue(new Error('load fail'));
-        const result = await loadAndRetargetAnimation({} as any, 'a.fbx', makeSkeleton() as never, 'mixamo');
+        const result = await loadAndRetargetAnimation(
+            {} as any,
+            'a.fbx',
+            makeSkeleton() as never,
+            'mixamo'
+        );
         expect(result).toBeNull();
         expect(shared.logWarn).toHaveBeenCalled();
-        expect(shared.feedbackStatus).toHaveBeenCalledWith('motion.retarget.loadFailed', undefined, false);
+        expect(shared.feedbackStatus).toHaveBeenCalledWith(
+            'motion.retarget.loadFailed',
+            undefined,
+            false
+        );
     });
 
     it('守卫：无动画组 → 返回 null 并清理临时网格', async () => {
         const skeleton = makeSkeleton();
         const mesh = makeMesh(skeleton);
         shared.ImportMeshAsync.mockResolvedValue({ meshes: [mesh], animationGroups: [] });
-        const result = await loadAndRetargetAnimation({} as any, 'a.fbx', makeSkeleton() as never, 'mixamo');
+        const result = await loadAndRetargetAnimation(
+            {} as any,
+            'a.fbx',
+            makeSkeleton() as never,
+            'mixamo'
+        );
         expect(result).toBeNull();
-        expect(shared.feedbackStatus).toHaveBeenCalledWith('motion.retarget.noAnimation', undefined, false);
+        expect(shared.feedbackStatus).toHaveBeenCalledWith(
+            'motion.retarget.noAnimation',
+            undefined,
+            false
+        );
         expect(mesh.dispose).toHaveBeenCalled();
         expect(skeleton.dispose).toHaveBeenCalled();
     });
@@ -174,9 +198,18 @@ describe('loadAndRetargetAnimation（加载 + 重定向 + 清理）', () => {
         const mesh = makeMesh(null);
         const group = makeAnimationGroup();
         shared.ImportMeshAsync.mockResolvedValue({ meshes: [mesh], animationGroups: [group] });
-        const result = await loadAndRetargetAnimation({} as any, 'a.fbx', makeSkeleton() as never, 'mixamo');
+        const result = await loadAndRetargetAnimation(
+            {} as any,
+            'a.fbx',
+            makeSkeleton() as never,
+            'mixamo'
+        );
         expect(result).toBeNull();
-        expect(shared.feedbackStatus).toHaveBeenCalledWith('motion.retarget.noSkeleton', undefined, false);
+        expect(shared.feedbackStatus).toHaveBeenCalledWith(
+            'motion.retarget.noSkeleton',
+            undefined,
+            false
+        );
         expect(mesh.dispose).toHaveBeenCalled();
         expect(group.dispose).toHaveBeenCalled();
     });
@@ -187,9 +220,18 @@ describe('loadAndRetargetAnimation（加载 + 重定向 + 清理）', () => {
         const mesh = makeMesh(skeleton);
         const group = makeAnimationGroup();
         shared.ImportMeshAsync.mockResolvedValue({ meshes: [mesh], animationGroups: [group] });
-        const result = await loadAndRetargetAnimation({} as any, 'a.fbx', makeSkeleton() as never, 'mixamo');
+        const result = await loadAndRetargetAnimation(
+            {} as any,
+            'a.fbx',
+            makeSkeleton() as never,
+            'mixamo'
+        );
         expect(result).toBeNull();
-        expect(shared.feedbackStatus).toHaveBeenCalledWith('motion.retarget.failed', undefined, false);
+        expect(shared.feedbackStatus).toHaveBeenCalledWith(
+            'motion.retarget.failed',
+            undefined,
+            false
+        );
         expect(mesh.dispose).toHaveBeenCalled();
         expect(group.dispose).toHaveBeenCalled();
     });
@@ -202,10 +244,19 @@ describe('loadAndRetargetAnimation（加载 + 重定向 + 清理）', () => {
         const mesh = makeMesh(skeleton);
         const group = makeAnimationGroup();
         shared.ImportMeshAsync.mockResolvedValue({ meshes: [mesh], animationGroups: [group] });
-        const result = await loadAndRetargetAnimation({} as any, 'a.fbx', makeSkeleton() as never, 'mixamo');
+        const result = await loadAndRetargetAnimation(
+            {} as any,
+            'a.fbx',
+            makeSkeleton() as never,
+            'mixamo'
+        );
         expect(result).toBeNull();
         expect(shared.logWarn).toHaveBeenCalled();
-        expect(shared.feedbackStatus).toHaveBeenCalledWith('motion.retarget.failed', undefined, false);
+        expect(shared.feedbackStatus).toHaveBeenCalledWith(
+            'motion.retarget.failed',
+            undefined,
+            false
+        );
         expect(mesh.dispose).toHaveBeenCalled();
         expect(group.dispose).toHaveBeenCalled();
     });
@@ -216,7 +267,13 @@ describe('loadAndRetargetAnimation（加载 + 重定向 + 清理）', () => {
         const group = makeAnimationGroup();
         shared.ImportMeshAsync.mockResolvedValue({ meshes: [mesh], animationGroups: [group] });
         const customMap = { customBone: 'mmdBone' };
-        const result = await loadAndRetargetAnimation({} as any, 'a.fbx', makeSkeleton() as never, 'custom', customMap);
+        const result = await loadAndRetargetAnimation(
+            {} as any,
+            'a.fbx',
+            makeSkeleton() as never,
+            'custom',
+            customMap
+        );
         expect(result).not.toBeNull();
         const inst = shared.retargeterInstances[0];
         expect(inst.setBoneMap).toHaveBeenCalledWith(customMap);
@@ -229,7 +286,12 @@ describe('loadAndRetargetAnimation（加载 + 重定向 + 清理）', () => {
         const mesh = makeMesh(skeleton);
         const group = makeAnimationGroup();
         shared.ImportMeshAsync.mockResolvedValue({ meshes: [mesh], animationGroups: [group] });
-        const result = await loadAndRetargetAnimation({} as never, 'a.vrm', makeSkeleton() as never, 'vrm');
+        const result = await loadAndRetargetAnimation(
+            {} as never,
+            'a.vrm',
+            makeSkeleton() as never,
+            'vrm'
+        );
         expect(result).not.toBeNull();
         const inst = shared.retargeterInstances[0];
         expect(inst.setBoneMap).toHaveBeenCalledWith({ vrmBone: 'mmdBone' });
@@ -254,7 +316,11 @@ describe('loadAndRetargetAnimation（加载 + 重定向 + 清理）', () => {
         const group = makeAnimationGroup();
         shared.ImportMeshAsync.mockResolvedValue({ meshes: [mesh], animationGroups: [group] });
         await loadAndRetargetAnimation({} as never, 'a.fbx', makeSkeleton() as never, 'mixamo');
-        expect(shared.feedbackStatus).toHaveBeenCalledWith('motion.retarget.loading', undefined, false);
+        expect(shared.feedbackStatus).toHaveBeenCalledWith(
+            'motion.retarget.loading',
+            undefined,
+            false
+        );
     });
 
     it('正常：多 mesh 共享同一 skeleton → skeleton 只 dispose 一次', async () => {
@@ -293,7 +359,12 @@ describe('loadAndRetargetAnimation（加载 + 重定向 + 清理）', () => {
         const mesh = makeMesh(skeleton);
         const group = makeAnimationGroup();
         shared.ImportMeshAsync.mockResolvedValue({ meshes: [mesh], animationGroups: [group] });
-        const result = await loadAndRetargetAnimation({} as any, 'a.fbx', makeSkeleton() as never, 'custom');
+        const result = await loadAndRetargetAnimation(
+            {} as any,
+            'a.fbx',
+            makeSkeleton() as never,
+            'custom'
+        );
         expect(result).not.toBeNull();
         const inst = shared.retargeterInstances[0];
         expect(inst.setBoneMap).toHaveBeenCalledWith({ mixBone: 'mmdBone' });
@@ -304,7 +375,13 @@ describe('loadAndRetargetAnimation（加载 + 重定向 + 清理）', () => {
         const mesh = makeMesh(skeleton);
         const group = makeAnimationGroup();
         shared.ImportMeshAsync.mockResolvedValue({ meshes: [mesh], animationGroups: [group] });
-        const result = await loadAndRetargetAnimation({} as any, 'a.fbx', makeSkeleton() as never, 'custom', {});
+        const result = await loadAndRetargetAnimation(
+            {} as any,
+            'a.fbx',
+            makeSkeleton() as never,
+            'custom',
+            {}
+        );
         expect(result).not.toBeNull();
         const inst = shared.retargeterInstances[0];
         // 空映射不得被采用，应回退 mixamo，避免退化空重定向
@@ -316,7 +393,12 @@ describe('loadAndRetargetAnimation（加载 + 重定向 + 清理）', () => {
         const mesh = makeMesh(skeleton);
         const group = makeAnimationGroup();
         shared.ImportMeshAsync.mockResolvedValue({ meshes: [mesh], animationGroups: [group] });
-        const result = await loadAndRetargetAnimation({} as any, 'a.fbx', makeSkeleton() as never, '_unknown_' as never);
+        const result = await loadAndRetargetAnimation(
+            {} as any,
+            'a.fbx',
+            makeSkeleton() as never,
+            '_unknown_' as never
+        );
         expect(result).not.toBeNull();
         const inst = shared.retargeterInstances[0];
         // 未知预设不得导致 setBoneMap(undefined)，应回退 mixamo
@@ -329,15 +411,28 @@ describe('loadAndRetargetAnimation（加载 + 重定向 + 清理）', () => {
         const group = makeAnimationGroup();
         shared.ImportMeshAsync.mockResolvedValue({ meshes: [mesh], animationGroups: [group] });
         await loadAndRetargetAnimation({} as never, 'a.fbx', makeSkeleton() as never, 'mixamo');
-        expect(shared.feedbackStatus).toHaveBeenCalledWith('motion.retarget.retargeting', undefined, false);
+        expect(shared.feedbackStatus).toHaveBeenCalledWith(
+            'motion.retarget.retargeting',
+            undefined,
+            false
+        );
     });
 
     it('守卫：animationGroups 为 undefined → 返回 null 并清理网格', async () => {
         const mesh = makeMesh(makeSkeleton());
         shared.ImportMeshAsync.mockResolvedValue({ meshes: [mesh], animationGroups: undefined });
-        const result = await loadAndRetargetAnimation({} as any, 'a.fbx', makeSkeleton() as never, 'mixamo');
+        const result = await loadAndRetargetAnimation(
+            {} as any,
+            'a.fbx',
+            makeSkeleton() as never,
+            'mixamo'
+        );
         expect(result).toBeNull();
-        expect(shared.feedbackStatus).toHaveBeenCalledWith('motion.retarget.noAnimation', undefined, false);
+        expect(shared.feedbackStatus).toHaveBeenCalledWith(
+            'motion.retarget.noAnimation',
+            undefined,
+            false
+        );
         expect(mesh.dispose).toHaveBeenCalled();
     });
 });

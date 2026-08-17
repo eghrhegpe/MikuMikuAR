@@ -8,12 +8,7 @@ vi.mock('../core/i18n/t', () => ({
     t: (key: string) => key,
 }));
 
-import {
-    showToast,
-    showErrorToast,
-    showInfoToast,
-    _resetToastForTest,
-} from '../core/toast';
+import { showToast, showErrorToast, showInfoToast, _resetToastForTest } from '../core/toast';
 
 function container(): HTMLElement | null {
     return document.getElementById('mmk-toast-container');
@@ -85,7 +80,7 @@ describe('showToast（P2#9 document 守卫 + 渲染）', () => {
 
     it('detail 存在时创建 copy 按钮', () => {
         showToast('标题', '详情');
-        const copyBtn = Array.from(container()!.querySelectorAll("button")).find(
+        const copyBtn = Array.from(container()!.querySelectorAll('button')).find(
             (b) => b.textContent === 'toast.copy'
         );
         expect(copyBtn).toBeTruthy();
@@ -94,7 +89,7 @@ describe('showToast（P2#9 document 守卫 + 渲染）', () => {
     it('action 按钮点击触发 onClick 并移除 toast', () => {
         const onClick = vi.fn();
         showToast('标题', undefined, [{ label: '重试', onClick }]);
-        const btn = Array.from(container()!.querySelectorAll("button")).find(
+        const btn = Array.from(container()!.querySelectorAll('button')).find(
             (b) => b.textContent === '重试'
         );
         btn!.click();
@@ -143,7 +138,7 @@ describe('copy 按钮（clipboard）', () => {
         const writeText = vi.fn().mockResolvedValue(undefined);
         vi.stubGlobal('navigator', { clipboard: { writeText } });
         showToast('标题', '详情');
-        const copyBtn = Array.from(container()!.querySelectorAll("button")).find(
+        const copyBtn = Array.from(container()!.querySelectorAll('button')).find(
             (b) => b.textContent === 'toast.copy'
         )!;
         copyBtn.click();
@@ -159,7 +154,7 @@ describe('copy 按钮（clipboard）', () => {
             clipboard: { writeText: vi.fn().mockRejectedValue(new Error('denied')) },
         });
         showToast('标题', '详情');
-        const copyBtn = Array.from(container()!.querySelectorAll("button")).find(
+        const copyBtn = Array.from(container()!.querySelectorAll('button')).find(
             (b) => b.textContent === 'toast.copy'
         )!;
         copyBtn.click();
@@ -171,11 +166,14 @@ describe('copy 按钮（clipboard）', () => {
     it('await 期间 toast 被移除 → copyBtn 不操作孤儿节点（isConnected 守卫）', async () => {
         let resolveWrite: () => void = () => {};
         const writeText = vi.fn(
-            () => new Promise<void>((res) => { resolveWrite = res; })
+            () =>
+                new Promise<void>((res) => {
+                    resolveWrite = res;
+                })
         );
         vi.stubGlobal('navigator', { clipboard: { writeText } });
         showToast('标题', '详情');
-        const copyBtn = Array.from(container()!.querySelectorAll("button")).find(
+        const copyBtn = Array.from(container()!.querySelectorAll('button')).find(
             (b) => b.textContent === 'toast.copy'
         )!;
         copyBtn.click();

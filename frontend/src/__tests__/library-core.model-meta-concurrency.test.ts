@@ -175,9 +175,7 @@ describe('ensureModelMeta 跨路径并发合并（a4c61729 修复保护）', () 
 
     it('同路径重复触发被 LoadingGuard 去重（单路径内不重复拉取）', async () => {
         const aPath = '/test/root/models/a1.pmx';
-        mockState.allModels = [
-            makeModel({ file_path: aPath, dir: '/test/root/models' }),
-        ];
+        mockState.allModels = [makeModel({ file_path: aPath, dir: '/test/root/models' })];
         const calls: string[][] = [];
         (GetModelMetaBatch as any).mockImplementation((chunk: string[]) => {
             calls.push(chunk);

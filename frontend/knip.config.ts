@@ -26,8 +26,9 @@ const config: KnipConfig = {
   ignoreDependencies: [
     '@babylonjs/loaders',      // Babylon.js auto-loads for PMX/GLB support
     '@iconify/iconify',        // Used by icon system
-    '@preact/signals-core',    // Used by reactivity system
     '@iconify/icons-lucide',   // Dev: icon generation
+    'babylonjs',               // Dev: vendored UMD 供应源，由 scripts/sync-babylon-lib.mjs 拷到 public/lib（ADR-266），非 import
+    'babylonjs-materials',     // 同上（材质 UMD）
     
     'ts-morph',                // Used by root scripts/codemod.mjs (knip can't trace ../scripts)
   ],

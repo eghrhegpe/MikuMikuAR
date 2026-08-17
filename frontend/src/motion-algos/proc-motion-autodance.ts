@@ -15,8 +15,9 @@ import {
     type ProcMotionParams,
 } from './proc-motion-shared';
 
+// [doc:adr-271] buildTrigCache 直连 beat 叶子（bones 不再转发，避免 deadcode）。
+import { buildTrigCache } from './proc-motion-autodance-beat';
 import {
-    buildTrigCache,
     resolveBones,
     genCenterBone,
     genUpperBone,

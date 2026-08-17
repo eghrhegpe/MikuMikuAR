@@ -122,7 +122,7 @@ export async function toggleOverlay(id: string, showFn: () => void): Promise<voi
 let _libPromise: Promise<typeof import('./library') | null> | null = null;
 async function loadLibrary(): Promise<typeof import('./library') | null> {
     if (!_libPromise) {
-        _libPromise = import('./library').catch((err) => {
+        _libPromise = import('./library').catch((err): null => {
             _libPromise = null; // 失败后允许下次点击重试
             logWarn('nav-actions', 'library chunk 加载失败', err);
             return null;
@@ -220,7 +220,10 @@ function installNavBindings(): void {
     const bindBtn = (id: string, el: HTMLButtonElement | null, fn: () => void): void => {
         if (!el) {
             if (import.meta.env.MODE !== 'test') {
-                logWarn('nav-actions', `bindBtn: 按钮 #${id} 缺失，跳过接线——检查 index.html 是否丢失该按钮 id`);
+                logWarn(
+                    'nav-actions',
+                    `bindBtn: 按钮 #${id} 缺失，跳过接线——检查 index.html 是否丢失该按钮 id`
+                );
             }
             return;
         }

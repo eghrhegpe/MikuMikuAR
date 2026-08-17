@@ -26,6 +26,7 @@
 | 函数索引| `docs/function-map.md` | 自动生成带文件:行号，修改后`npm run check:funcmap`|
 | ADR状态| `docs/status.md`| 由`npm run gen:status`生成，改状态只需编辑ADR首部|
 | 架构规范| `docs/architecture.md`| 配合`npm run check:layering`验证分层|
+| 耦合底数/残留环| `npm run dep:metrics`| 台账`docs/dep-metrics.md`（Ca/Ce/I/环），口径同check:circular|
 | 符号消费者| `npm run check:consumers -- <符号>`| 重构前影响面分析|
 | Bug历史| `docs/buglog/`| 只关注🔴未修复/🟡搁置状态|
 | 建议避免 | `git stash push`/`git stash pop`/`git stash apply` 等会改动工作区的操作易丢失未提交改动；`list`/`show` 只读不受限 |

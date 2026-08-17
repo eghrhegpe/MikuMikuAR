@@ -31,6 +31,7 @@ import { resolve, dirname, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from './_lib/parse-args.mjs';
 import { walk } from './_lib/scan-files.mjs';
+import { isTypeOnlyBody, scanImportSpecs } from './_lib/import-scan.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, '..');
@@ -87,25 +88,12 @@ function resolveTarget(spec, fromSrcRel) {
 }
 
 /* ---------- 扫描 ---------- */
-// 跨行 import/export-from、副作用导入、动态 import（与 _lib/source-graph.mjs
-// parseSourceImports 同款模式，消除单行正则漏报「多行 import / await import()」的漂移）。
-// 捕获组1 = from 前文本（用于 type-only 判定），组2 = spec。
-// [P2 2026-08-08] body 限定 `(?:[^;"'`]|\/\/[^\n]*|\/\*[\s\S]*?\*\/)*?`：旧 `[\s\S]*?` 无界 lazy
-// 会跨语句/字符串/注释吞到文件里任意后续 `from '...'`（副作用导入 `import '../app.css'`、
-// `export const X = "..."`、注释里记录的旧路径等都会伪造假导入边）。排除引号/分号/反引号
-// 阻止吸收其他语句；`//` 行注释与 `/* */` 块注释作为可跳过单元放行（否则括号内带注释的
-// 多行 specifier 列表 `{\n  loadScene, // 说明\n}` 会因斜杠被排除而整体匹配失败 →
-// 该 import 边从分层图消失，R1/R2/R3 违规静默漏报（假绿）。`\bfrom` 仍保证语句边界。
-const IMPORT_FROM_RE = /(?:^|\n)\s*(?:\/\/[^\n]*\n)*\s*(?:import|export)\b((?:[^;"'`]|\/\/[^\n]*|\/\*[\s\S]*?\*\/)*?)\bfrom\s+['"]([^'"]+)['"]/gm;
-const IMPORT_SIDE_RE = /(?:^|\n)\s*(?:\/\/[^\n]*\n)*\s*import\s+['"]([^'"]+)['"]/gm;
-const IMPORT_DYNA_RE = /await\s+import\s*\(\s*['"]([^'"]+)['"]\s*\)/gm;
-
-/** from 前文本是否 type-only：`import type …` 或具名项全部带 `type` 前缀（`{ type A, type B }`）。 */
-function isTypeOnlyBody(body) {
-    const b = body.trim();
-    return /^type\b/.test(b)
-        || /^\{\s*(?:type\s+\w+(?:\s+as\s+\w+)?\s*,?\s*)+\}\s*$/.test(b);
-}
+// [P0 2026-10-23] 改用 _lib/import-scan.mjs 的线性状态机扫描。此处原先的三条正则
+// （跨行 from / 副作用 / 动态 import）在「排除字符集 + 可选注释单元」组合下存在
+// 灾难性回溯：frontend/src/shared/dev-hooks.ts 的 `export function …` 一条语句即可
+// 让本脚本单线程卡死 >300s（ADR-242 门禁因此长期未接入 CI）。扫描器的语义覆盖
+// 旧正则的全部形态（多行 specifier 列表、括号内注释、`}` 换行后接 from、await import），
+// 并统一了 type-only 判定。详见该模块头部注释与 import-scan.test.mjs。
 
 const violations = [];
 
@@ -133,13 +121,8 @@ for (const abs of walk(SRC_ROOT, SCAN_OPTS)) {
         violations.push({ rule, from: srcRel, line: lineOf(idx), to: target, fromLayer, toLayer });
     };
 
-    for (const re of [IMPORT_FROM_RE, IMPORT_SIDE_RE, IMPORT_DYNA_RE]) {
-        re.lastIndex = 0;
-        let m;
-        while ((m = re.exec(text)) !== null) {
-            if (re === IMPORT_FROM_RE) visit(m[2], isTypeOnlyBody(m[1]), m.index);
-            else visit(m[1], false, m.index);
-        }
+    for (const { kind, spec, body, index, typeOnly } of scanImportSpecs(text)) {
+        visit(spec, typeOnly === true || (kind === 'from' && isTypeOnlyBody(body)), index);
     }
 }
 

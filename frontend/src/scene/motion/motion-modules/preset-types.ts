@@ -3,7 +3,7 @@
 // MotionPreset / PresetModuleState 类型定义在 core/types.ts（因 ModelInstance 引用）
 
 import type { MotionModuleState, MotionPreset } from '@/core/types';
-import { setModuleEnabled, setModuleParam, createModule } from './registry';
+import { setModuleEnabled, setModuleParam, createModule } from './registry-core';
 
 /** MotionModuleState[] → MotionPreset['modules'] */
 export function modulesToPresetMap(states: MotionModuleState[]): MotionPreset['modules'] {

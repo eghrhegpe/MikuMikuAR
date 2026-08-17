@@ -9,7 +9,7 @@ import { MeshBuilder } from '@babylonjs/core/Meshes/meshBuilder';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { DynamicTexture } from '@babylonjs/core/Materials/Textures/dynamicTexture';
 import { Material } from '@babylonjs/core/Materials/material';
-import { scene } from '../scene';
+import { scene } from '../scene-context';
 // [fix:round15 P1] 走门面而非直接 import env-impl
 import { _envSys } from '../env/env';
 import { setReflectionARSuspended } from '../env/env-reflection';
@@ -23,7 +23,7 @@ import {
     activatePerception,
 } from '../motion/perception';
 import { focusedModelId, modelRegistry } from '@/core/config';
-import { observe, type ObserverHandle } from '@/core/observer-handle';
+import { getFrameRegistry } from '@/core/frame-registry';
 import { safeDispose } from '@/core/dispose-helpers';
 
 // ======== Internal State ========
@@ -37,7 +37,10 @@ let _contactShadow: Mesh | null = null;
 /** 阴影创建时的基准半径，用于每帧按当前 AABB 等比缩放，避免重建 mesh。 */
 let _contactShadowBaseRadius = 1;
 /** 每帧更新阴影的 onBeforeRender 回调句柄。 */
-let _contactShadowHandle: ObserverHandle | null = null;
+// AR 接触阴影每帧回调走 core/frame-registry 场景键共享表（getFrameRegistry），
+// 取代原先挂一条裸 onBeforeRenderObservable。_contactShadowScene 保留注册时的那张
+// 表引用，供 _disposeContactShadow 摘 key。
+let _contactShadowScene: typeof scene | null = null;
 
 // ======== Internal Helpers: AR contact shadow ========
 // AR passthrough 无平面检测，模型悬浮在视频上会显「飘」。
@@ -140,8 +143,9 @@ function _updateContactShadow(): void {
 }
 
 function _disposeContactShadow(): void {
-    if (_contactShadowHandle) {
-        _contactShadowHandle = safeDispose(_contactShadowHandle);
+    if (_contactShadowScene) {
+        getFrameRegistry(_contactShadowScene).unregister('ar.contactShadow');
+        _contactShadowScene = null;
     }
     if (_contactShadow) {
         const mat = _contactShadow.material;
@@ -187,8 +191,11 @@ export async function setARMode(enabled: boolean): Promise<boolean> {
         activatePerception();
         _createContactShadow();
         // 注册每帧更新：使接触阴影跟随聚焦模型的移动/换焦点。
-        if (!_contactShadowHandle) {
-            _contactShadowHandle = observe(scene.onBeforeRenderObservable, _updateContactShadow);
+        // 走 core/frame-registry 场景键共享表；_updateContactShadow 内部
+        // computeWorldMatrix(true) 强制重算，不依赖帧内前序状态。
+        if (!_contactShadowScene) {
+            _contactShadowScene = scene;
+            getFrameRegistry(scene).register('ar.contactShadow', _updateContactShadow);
         }
         // AR 场景无背景平面：挂起全部反射（退出 AR 时恢复）
         setReflectionARSuspended(true);

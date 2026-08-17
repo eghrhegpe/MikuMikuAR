@@ -4,14 +4,47 @@
 //   - scene/motion/motion-modules/{module-base,types} 从本叶引用（不再 import menus）
 // 方向：domain 定义 schema 类型 → UI 渲染，双方都依赖本叶。
 
+import type { EnvStateSchema } from '@/core/env-state-schema';
+import type { UIState } from '@/core/types';
+import type { RenderState } from '@/scene/render/renderer';
+import type { LightState } from '@/scene/render/lighting-stage-types';
+import type { PerceptionState } from '@/scene/motion/perception-shared';
+import type { MotionModuleStatePath } from '@/scene/motion/motion-modules/module-param-keys';
+
+/**
+ * env 状态键（由 `ENV_STATE_SCHEMA` 派生）。
+ * [doc:adr-271] 这一行把「schema 与菜单 bind 必须同步」的镜像耦合交给编译器：
+ * 以前 `bind: 'env.xxx'` 只是字符串，schema 里改名/删键后菜单会静默绑到不存在的路径
+ * （控件点了没反应，但 tsc 与测试都不报）。现在键名错了就是 TS2820。
+ *
+ * 其余前缀同样从各自的 state 类型派生（与 `menus/menu-schema.ts:36` 的 `getStateValue`
+ * 映射一一对应）：env→envState、render→getRenderState()、light→getLightState()、
+ * ui→uiState、perception→getPerceptionState()。全部是 type-only 引用，不产生运行时边。
+ * `motionModule.${moduleId}.${paramKey}` 同样类型化：模块 id 与参数键来自
+ * `motion-modules/module-param-keys.ts` 的分布映射（ADR-272 第二阶段），24 处 bind 全部受检。
+ */
+export type EnvStateKey = keyof EnvStateSchema & string;
+export type RenderStateKey = keyof RenderState & string;
+export type LightStateKey = keyof LightState & string;
+export type UIStateKey = keyof UIState & string;
+
+/**
+ * perception 的**虚拟路径**：`bind` 只是占位符，实际读写由节点的 `get`/`set` 承担，
+ * 状态对象上并不存在这个键（见 `menus/motion-gaze-levels.ts:59-72` 的「全员感知开关」：
+ * get→isAllPerceptionEnabled()、set→enableAllPerception()/disableAllPerception()）。
+ * 列在这里是为了让类型仍然显式记录「哪些是虚拟的」，而不是把整个前缀退回 string。
+ */
+export type PerceptionVirtualKey = 'allEnabled';
+export type PerceptionStateKey = keyof PerceptionState & string;
+
 /** 状态路径：类型化字符串，由解析器按前缀映射到 reactive state 对象 */
 export type StatePath =
-    | `env.${string}`
-    | `render.${string}`
-    | `light.${string}`
-    | `ui.${string}`
-    | `perception.${string}`
-    | `motionModule.${string}`;
+    | `env.${EnvStateKey}`
+    | `render.${RenderStateKey}`
+    | `light.${LightStateKey}`
+    | `ui.${UIStateKey}`
+    | `perception.${PerceptionStateKey | PerceptionVirtualKey}`
+    | MotionModuleStatePath;
 
 export interface ActionMenuCtx {
     /** 通知 toast */

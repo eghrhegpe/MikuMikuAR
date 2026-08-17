@@ -481,8 +481,20 @@ describe('vmd-evaluator: 异常帧号', () => {
         const rotA = Quaternion.FromEulerAngles(0.1, 0, 0);
         const rotB = Quaternion.FromEulerAngles(0.2, 0, 0);
         const frames: BoneKeyFrame[] = [
-            { name: '腕', frame: 10, position: [0, 0, 0], rotation: [rotA.x, rotA.y, rotA.z, rotA.w], interp: INTERP_LINEAR },
-            { name: '腕', frame: 20, position: [0, 0, 0], rotation: [rotB.x, rotB.y, rotB.z, rotB.w], interp: INTERP_LINEAR },
+            {
+                name: '腕',
+                frame: 10,
+                position: [0, 0, 0],
+                rotation: [rotA.x, rotA.y, rotA.z, rotA.w],
+                interp: INTERP_LINEAR,
+            },
+            {
+                name: '腕',
+                frame: 20,
+                position: [0, 0, 0],
+                rotation: [rotB.x, rotB.y, rotB.z, rotB.w],
+                interp: INTERP_LINEAR,
+            },
         ];
         const buf = buildVmd(frames);
         const evaluator = await createVmdEvaluator(buf);
@@ -495,8 +507,20 @@ describe('vmd-evaluator: 异常帧号', () => {
         const rotA = Quaternion.FromEulerAngles(0.1, 0, 0);
         const rotB = Quaternion.FromEulerAngles(0.2, 0, 0);
         const frames: BoneKeyFrame[] = [
-            { name: '腕', frame: 10, position: [0, 0, 0], rotation: [rotA.x, rotA.y, rotA.z, rotA.w], interp: INTERP_LINEAR },
-            { name: '腕', frame: 20, position: [0, 0, 0], rotation: [rotB.x, rotB.y, rotB.z, rotB.w], interp: INTERP_LINEAR },
+            {
+                name: '腕',
+                frame: 10,
+                position: [0, 0, 0],
+                rotation: [rotA.x, rotA.y, rotA.z, rotA.w],
+                interp: INTERP_LINEAR,
+            },
+            {
+                name: '腕',
+                frame: 20,
+                position: [0, 0, 0],
+                rotation: [rotB.x, rotB.y, rotB.z, rotB.w],
+                interp: INTERP_LINEAR,
+            },
         ];
         const buf = buildVmd(frames);
         const evaluator = await createVmdEvaluator(buf);
@@ -510,8 +534,20 @@ describe('vmd-evaluator: 异常帧号', () => {
         const rotA = Quaternion.FromEulerAngles(0.1, 0, 0);
         const rotB = Quaternion.FromEulerAngles(0.2, 0, 0);
         const frames: BoneKeyFrame[] = [
-            { name: '腕', frame: 10, position: [0, 0, 0], rotation: [rotA.x, rotA.y, rotA.z, rotA.w], interp: INTERP_LINEAR },
-            { name: '腕', frame: 20, position: [0, 0, 0], rotation: [rotB.x, rotB.y, rotB.z, rotB.w], interp: INTERP_LINEAR },
+            {
+                name: '腕',
+                frame: 10,
+                position: [0, 0, 0],
+                rotation: [rotA.x, rotA.y, rotA.z, rotA.w],
+                interp: INTERP_LINEAR,
+            },
+            {
+                name: '腕',
+                frame: 20,
+                position: [0, 0, 0],
+                rotation: [rotB.x, rotB.y, rotB.z, rotB.w],
+                interp: INTERP_LINEAR,
+            },
         ];
         const buf = buildVmd(frames);
         const evaluator = await createVmdEvaluator(buf);
@@ -526,8 +562,20 @@ describe('vmd-evaluator: 返回值引用独立性', () => {
         const rotA = Quaternion.Identity();
         const rotB = Quaternion.FromEulerAngles(0.5, 0, 0);
         const frames: BoneKeyFrame[] = [
-            { name: '上半身', frame: 0, position: [0, 0, 0], rotation: [rotA.x, rotA.y, rotA.z, rotA.w], interp: INTERP_LINEAR },
-            { name: '上半身', frame: 10, position: [0, 0, 0], rotation: [rotB.x, rotB.y, rotB.z, rotB.w], interp: INTERP_LINEAR },
+            {
+                name: '上半身',
+                frame: 0,
+                position: [0, 0, 0],
+                rotation: [rotA.x, rotA.y, rotA.z, rotA.w],
+                interp: INTERP_LINEAR,
+            },
+            {
+                name: '上半身',
+                frame: 10,
+                position: [0, 0, 0],
+                rotation: [rotB.x, rotB.y, rotB.z, rotB.w],
+                interp: INTERP_LINEAR,
+            },
         ];
         const buf = buildVmd(frames);
         const evaluator = await createVmdEvaluator(buf);

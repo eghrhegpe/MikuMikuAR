@@ -28,6 +28,8 @@ vi.mock('../scene/env/_bridge/env-dispatcher', () => ({
     clearEnvDtTickCallbacks: vi.fn(),
     runEnvDtTickCallbacks: vi.fn(),
     registerSceneTickCallback: vi.fn(() => vi.fn()),
+    registerEnvObserverHandler: vi.fn(() => vi.fn()),
+    requestEnvObserver: vi.fn(),
     registerEnvCallback: vi.fn((cb: any) => {
         h.registeredCallback = cb;
     }),
@@ -103,7 +105,8 @@ import type { EnvState } from '@/core/types';
 
 // bindings EnvState(skyMode: string) → core EnvState(skyMode 字面量联合)：
 // 两类型字段结构相同，仅枚举字段类型不同，此处仅做类型收窄断言。
-const toCoreEnvState = (s: ReturnType<typeof createMockEnvState>): EnvState => s as unknown as EnvState;
+const toCoreEnvState = (s: ReturnType<typeof createMockEnvState>): EnvState =>
+    s as unknown as EnvState;
 import { initEnvImpl, isInitialized, getScene } from '../scene/env/_shared/env-context';
 import { applyFog, disposeEnvUpdateObserver } from '../scene/env/env-impl';
 import * as mirrorDebug from '../scene/env/mirror-debug';
@@ -183,9 +186,23 @@ describe('env-impl: applyFog', () => {
         expect(sceneMock.fogMode).toBe(0);
     });
     it('exp / exp2 / linear / default 模式', () => {
-        applyFog(toCoreEnvState({ ...createMockEnvState(), fogEnabled: true, fogMode: 'exp', fogDensity: 0.1 }));
+        applyFog(
+            toCoreEnvState({
+                ...createMockEnvState(),
+                fogEnabled: true,
+                fogMode: 'exp',
+                fogDensity: 0.1,
+            })
+        );
         expect(sceneMock.fogMode).toBe(1);
-        applyFog(toCoreEnvState({ ...createMockEnvState(), fogEnabled: true, fogMode: 'exp2', fogDensity: 0.2 }));
+        applyFog(
+            toCoreEnvState({
+                ...createMockEnvState(),
+                fogEnabled: true,
+                fogMode: 'exp2',
+                fogDensity: 0.2,
+            })
+        );
         expect(sceneMock.fogMode).toBe(2);
         applyFog(
             toCoreEnvState({
@@ -197,7 +214,14 @@ describe('env-impl: applyFog', () => {
             })
         );
         expect(sceneMock.fogMode).toBe(3);
-        applyFog(toCoreEnvState({ ...createMockEnvState(), fogEnabled: true, fogMode: 'unknown' as any, fogDensity: 0.3 }));
+        applyFog(
+            toCoreEnvState({
+                ...createMockEnvState(),
+                fogEnabled: true,
+                fogMode: 'unknown' as any,
+                fogDensity: 0.3,
+            })
+        );
         expect(sceneMock.fogMode).toBe(2); // 回退 exp2
     });
 });

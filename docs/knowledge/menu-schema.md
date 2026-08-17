@@ -15,14 +15,20 @@ scope:
 adr:
   - ADR-093
 symbols:
-  - StatePath
   - ActionMenuCtx
-  - MenuKind
   - ControlSpec
+  - EnvStateKey
+  - LightStateKey
+  - MenuKind
   - MenuNode
+  - PerceptionStateKey
+  - PerceptionVirtualKey
+  - RenderStateKey
+  - StatePath
+  - UIStateKey
+  - getBindFn
   - getStateValue
   - setStateValue
-  - getBindFn
 invariants:
   - StatePath 由解析器按前缀映射到 reactive state 对象（env/render/light/ui/perception/motionModule）
   - getStateValue/setStateValue 经 get/set 衍生转换（如 windDirection→角度），避免硬编码转换逻辑散落

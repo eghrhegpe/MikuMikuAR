@@ -1,5 +1,6 @@
 // [doc:adr-071] 感知层 — 视线追踪 JS 路径写入策略
-// 共用骨架见 perception-gaze.ts:_applyHeadGazeCore / _applyEyeGazeCore
+// 共用骨架见 perception-gaze-core.ts:_applyHeadGazeCore / _applyEyeGazeCore
+// [doc:adr-271] 直连 core 叶子：原从 perception-gaze 取会造成 gaze ⇄ 实现模块的 size=3 环。
 // 本文件仅实现 JS 路径的写入差异：改 linkedBone + 调 updateWorldMatrix
 
 import { Quaternion, Matrix } from '@babylonjs/core/Maths/math.vector';
@@ -13,7 +14,7 @@ import {
     _applyEyeGazeCore,
     type HeadGazeWriteStrategy,
     type EyeGazeWriteStrategy,
-} from './perception-gaze';
+} from './perception-gaze-core';
 
 /** JS 路径头部写入策略：改 linkedBone.rotationQuaternion + _updateBoneChain 传播 */
 const _jsHeadStrategy: HeadGazeWriteStrategy = {

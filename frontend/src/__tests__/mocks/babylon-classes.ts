@@ -3,6 +3,11 @@
 // 使用方式：在 vi.mock factory 中通过 require 引用此文件的导出
 
 // ===== Engine =====
+import type { Light } from '@babylonjs/core/Lights/light';
+import type { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
+import type { Scene } from '@babylonjs/core/scene';
+import type { RenderTargetTexture } from '@babylonjs/core/Materials/Textures/renderTargetTexture';
+
 export class MockEngine {
     _features = { trackUbosInFrame: false, doNotHandleContextLost: true };
     _renderLoops: Array<() => void> = [];
@@ -23,7 +28,13 @@ export class MockEngine {
         return 600;
     }
     resize(_forceSetSize?: boolean) {}
-    clear(_color: any, _backBuffer: boolean, _depth: boolean, _stencil?: boolean, _stencilClearValue?: number) {}
+    clear(
+        _color: any,
+        _backBuffer: boolean,
+        _depth: boolean,
+        _stencil?: boolean,
+        _stencilClearValue?: number
+    ) {}
     getClassName() {
         // 真实 Babylon Engine.getClassName() 继承自 ThinEngine，返回 'ThinEngine'
         return 'ThinEngine';
@@ -53,7 +64,7 @@ export class MockScene {
     lights: any[] = [];
     meshes: any[] = [];
     materials: any[] = [];
-    actionManager = null;
+    actionManager: unknown = null;
     metadata: any = null;
     _transformMatrix: any = {};
     activeCamera: any = null;
@@ -115,10 +126,10 @@ export class MockScene {
     }
     attachControl(_attachUp?: boolean, _attachDown?: boolean, _attachMove?: boolean) {}
     detachControl() {}
-    getLightByName(_name: string) {
+    getLightByName(_name: string): Light | null {
         return null;
     }
-    getMeshByName(_name: string) {
+    getMeshByName(_name: string): AbstractMesh | null {
         return null;
     }
     getTransformMatrix() {
@@ -505,7 +516,11 @@ export class MockMaterial {
     getClassName() {
         return 'Material';
     }
-    dispose(_forceDisposeEffect?: boolean, _forceDisposeTextures?: boolean, _notBoundToMesh?: boolean) {}
+    dispose(
+        _forceDisposeEffect?: boolean,
+        _forceDisposeTextures?: boolean,
+        _notBoundToMesh?: boolean
+    ) {}
     clone(_name: string) {
         return this;
     }
@@ -582,7 +597,7 @@ export class MockStandardMaterial {
     getClassName() {
         return 'StandardMaterial';
     }
-    getScene() {
+    getScene(): Scene | null {
         // Material 未挂载到 scene（独立 mock 材质），与 detachSharedTextures 的
         // `if (!scene) return;` 早退契约一致（model-manager.remove 经此路径）。
         return null;
@@ -681,7 +696,7 @@ export class MockShadowGenerator {
         return 'ShadowGenerator';
     }
     addShadowCaster(_mesh: any, _includeDescendants?: boolean) {}
-    getShadowMap() {
+    getShadowMap(): RenderTargetTexture | null {
         return null;
     }
 }
@@ -762,7 +777,7 @@ export class MockPBRMaterial {
     getClassName() {
         return 'PBRMaterial';
     }
-    getScene() {
+    getScene(): Scene | null {
         return null;
     }
     clone(_name: string, ..._args: any[]) {
@@ -782,7 +797,9 @@ export class MockGridMaterial {
 }
 
 // ===== SceneLoader =====
-export const MockImportMeshAsync = async () => ({ meshes: [] });
+export const MockImportMeshAsync = async (): Promise<{ meshes: AbstractMesh[] }> => ({
+    meshes: [],
+});
 
 // ===== 空模块占位（用于 side-effect import）=====
 export const emptyModule = {};

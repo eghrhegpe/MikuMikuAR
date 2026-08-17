@@ -1,7 +1,16 @@
 // @vitest-environment node
 // [doc:adr-101] P1-a 工具函数单测：error & async helpers
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { swallowError, fireAndForget, delay, waitForFrame, makeLazyLoader, LoadingGuard, DebouncedTimer, Abortable } from '../core/async';
+import {
+    swallowError,
+    fireAndForget,
+    delay,
+    waitForFrame,
+    makeLazyLoader,
+    LoadingGuard,
+    DebouncedTimer,
+    Abortable,
+} from '../core/async';
 import { logWarn, logError } from '../core/logger';
 
 // 辅助：等待微任务 + 宏任务各刷新一轮，确保 Promise.catch handler 执行完毕
@@ -189,7 +198,12 @@ describe('ADR-101 P1-a: error & async helpers', () => {
 
         it('并发调用共享同一 Promise，loader 只执行一次', async () => {
             let resolveLoader: (v: string) => void;
-            const loader = vi.fn(() => new Promise<string>((r) => { resolveLoader = r; }));
+            const loader = vi.fn(
+                () =>
+                    new Promise<string>((r) => {
+                        resolveLoader = r;
+                    })
+            );
             const lazy = makeLazyLoader(loader);
             const p1 = lazy();
             const p2 = lazy();
@@ -220,7 +234,9 @@ describe('ADR-101 P1-a: error & async helpers', () => {
         });
 
         it('loader 失败时并发等待者都看到 rejection', async () => {
-            const loader = vi.fn(async () => { throw new Error('fail'); });
+            const loader = vi.fn(async () => {
+                throw new Error('fail');
+            });
             const lazy = makeLazyLoader(loader);
             const p1 = lazy();
             const p2 = lazy();
@@ -355,7 +371,9 @@ describe('ADR-101 P1-a: error & async helpers', () => {
 
         it('fn 抛出异常不破坏 timer 状态', () => {
             const timer = new DebouncedTimer();
-            const throwingFn = vi.fn(() => { throw new Error('boom'); });
+            const throwingFn = vi.fn(() => {
+                throw new Error('boom');
+            });
             timer.schedule(throwingFn, 100);
             expect(() => vi.advanceTimersByTime(100)).toThrow('boom');
             expect(throwingFn).toHaveBeenCalledOnce();

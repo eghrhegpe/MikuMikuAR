@@ -42,7 +42,7 @@ describe('ui-action-bridge register/unregister 契约', () => {
     });
 
     it('unregister → get 返回 undefined（缺失时返回 undefined 契约）', () => {
-        registerUiAction(KEY, (() => 'a'));
+        registerUiAction(KEY, () => 'a');
         unregisterUiAction(KEY);
         expect(getUiAction(KEY)).toBeUndefined();
     });
@@ -64,7 +64,7 @@ describe('ui-action-bridge register/unregister 契约', () => {
     });
 
     it('重复 unregister 安全（幂等）', () => {
-        registerUiAction(KEY, (() => 'a'));
+        registerUiAction(KEY, () => 'a');
         unregisterUiAction(KEY);
         unregisterUiAction(KEY); // 不抛错
         expect(getUiAction(KEY)).toBeUndefined();
@@ -84,7 +84,7 @@ describe('ui-action-bridge register/unregister 契约', () => {
     });
 
     it('unregister 后重新 register 可恢复', () => {
-        registerUiAction(KEY, (() => 'a'));
+        registerUiAction(KEY, () => 'a');
         unregisterUiAction(KEY);
         const fn2 = () => 'b';
         registerUiAction(KEY, fn2);

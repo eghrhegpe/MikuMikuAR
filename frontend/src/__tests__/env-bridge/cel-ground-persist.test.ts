@@ -46,6 +46,7 @@ vi.mock(
 );
 vi.mock('../../scene/render/lighting', async () => (await import('./env-mocks')).lightingModule);
 vi.mock('../../scene/scene', async () => (await import('./env-mocks')).sceneModule);
+vi.mock('../../scene/scene-context', async () => (await import('./env-mocks')).sceneModule);
 vi.mock('../../scene/render/renderer', () => ({
     registerCelGroundCoupling: h.registerCelGroundCoupling,
 }));

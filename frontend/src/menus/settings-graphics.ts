@@ -246,11 +246,7 @@ export function buildEffectsSchema(): MenuNode[] {
                         { value: '4x', label: '4x' },
                         { value: '8x', label: '8x' },
                     ],
-                    rs.msaaSamples > 1
-                        ? `${rs.msaaSamples}x`
-                        : rs.fxaaEnabled
-                          ? 'fxaa'
-                          : 'off',
+                    rs.msaaSamples > 1 ? `${rs.msaaSamples}x` : rs.fxaaEnabled ? 'fxaa' : 'off',
                     (v) => {
                         if (v === 'off') {
                             setRenderState({ fxaaEnabled: false, msaaSamples: 1 });

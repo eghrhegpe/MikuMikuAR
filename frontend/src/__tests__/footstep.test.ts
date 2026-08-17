@@ -13,6 +13,7 @@ const shared = vi.hoisted(() => {
     const playSfx = vi.fn();
     const setOnFootLand = vi.fn();
     const isFeetAdjustmentRunning = vi.fn(() => true);
+    const isFeetAdjustmentEnabled = vi.fn(() => false);
     const startFallbackDetection = vi.fn();
     const stopFallbackDetection = vi.fn();
     const uiState = { footstepEnabled: true };
@@ -29,6 +30,7 @@ const shared = vi.hoisted(() => {
         playSfx,
         setOnFootLand,
         isFeetAdjustmentRunning,
+        isFeetAdjustmentEnabled,
         startFallbackDetection,
         stopFallbackDetection,
         uiState,
@@ -49,17 +51,14 @@ vi.mock('@/core/state', () => ({
 vi.mock('../scene/motion/feet-adjustment', () => ({
     setOnFootLand: shared.setOnFootLand,
     isFeetAdjustmentRunning: shared.isFeetAdjustmentRunning,
+    isFeetAdjustmentEnabled: shared.isFeetAdjustmentEnabled,
 }));
 vi.mock('../scene/motion/footstep-detect-fallback', () => ({
     startFallbackDetection: shared.startFallbackDetection,
     stopFallbackDetection: shared.stopFallbackDetection,
 }));
 
-import {
-    resolveGroundSfxKind,
-    startFootstep,
-    stopFootstep,
-} from '../scene/motion/footstep';
+import { resolveGroundSfxKind, startFootstep, stopFootstep } from '../scene/motion/footstep';
 import type { FootLandEvent } from '../motion-algos/feet-event';
 
 /** 构造一个可用的假 AudioContext（createBuffer 返回可写 Float32Array buffer）。 */
@@ -103,6 +102,7 @@ beforeEach(() => {
     shared.getSfxEnabled.mockReturnValue(true);
     shared.getFootstepVolume.mockReturnValue(0.8);
     shared.isFeetAdjustmentRunning.mockReturnValue(true);
+    shared.isFeetAdjustmentEnabled.mockReturnValue(false);
     shared.envState.waterEnabled = false;
     shared.envState.groundType = 'flat';
     shared.envState.groundStyle = 'color';
@@ -181,19 +181,44 @@ describe('startFootstep / stopFootstep（生命周期）', () => {
         expect(typeof calls[calls.length - 1][0]).toBe('function');
     });
 
-    it('脚部跟随未开启时启动降级检测（传同一回调）', () => {
-        shared.isFeetAdjustmentRunning.mockReturnValue(false);
+    it('脚部跟随未真正启用时启动降级检测（回调包一层互斥闸）', () => {
+        shared.isFeetAdjustmentEnabled.mockReturnValue(false);
         startFootstep(scene as never);
-        const calls = shared.setOnFootLand.mock.calls;
-        const cb = calls[calls.length - 1][0];
+        const cb = shared.setOnFootLand.mock.calls.at(-1)?.[0];
         expect(shared.startFallbackDetection).toHaveBeenCalledTimes(1);
-        expect(shared.startFallbackDetection.mock.calls[0][1]).toBe(cb);
+        const fallbackCb = shared.startFallbackDetection.mock.calls[0][1] as (
+            e: FootLandEvent,
+        ) => void;
+        expect(typeof fallbackCb).toBe('function');
+        expect(fallbackCb).not.toBe(cb); // 包了一层：脚部跟随一旦接管就让位
+        fallbackCb(makeEvent());
+        expect(shared.playSfx).toHaveBeenCalledTimes(1);
     });
 
-    it('脚部跟随已开启时不启动降级检测', () => {
-        shared.isFeetAdjustmentRunning.mockReturnValue(true);
+    it('脚部跟随已真正启用时不启动降级检测', () => {
+        shared.isFeetAdjustmentEnabled.mockReturnValue(true);
         startFootstep(scene as never);
         expect(shared.startFallbackDetection).not.toHaveBeenCalled();
+    });
+
+    // [doc:adr-275] 回归锚点：observer 注册过但没有任何模型启用 → 仍必须启动降级检测
+    it('回归锚点：注册过但无模型启用 → 仍启动降级检测', () => {
+        shared.isFeetAdjustmentRunning.mockReturnValue(true);
+        shared.isFeetAdjustmentEnabled.mockReturnValue(false);
+        startFootstep(scene as never);
+        expect(shared.startFallbackDetection).toHaveBeenCalledTimes(1);
+    });
+
+    // [doc:adr-275] 若脚部跟随将来重新启用并开始产出事件，降级检测让位，避免一步两声
+    it('降级检测回调在脚部跟随接管后让位', () => {
+        shared.isFeetAdjustmentEnabled.mockReturnValue(false);
+        startFootstep(scene as never);
+        const fallbackCb = shared.startFallbackDetection.mock.calls[0][1] as (
+            e: FootLandEvent,
+        ) => void;
+        shared.isFeetAdjustmentEnabled.mockReturnValue(true);
+        fallbackCb(makeEvent());
+        expect(shared.playSfx).not.toHaveBeenCalled();
     });
 
     it('stopFootstep 注销回调 + 停降级检测 + 清空合成缓存', () => {

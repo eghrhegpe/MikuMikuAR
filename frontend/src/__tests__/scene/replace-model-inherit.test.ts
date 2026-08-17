@@ -81,8 +81,12 @@ vi.mock('@/core/state', () => ({
 }));
 vi.mock('../../core/i18n/t', () => ({ t: (k: string) => k }));
 vi.mock('../../scene/scene', () => ({ modelManager: mmState.modelManager }));
+vi.mock('../../scene/scene-context', () => ({ modelManager: mmState.modelManager }));
 vi.mock('../../scene/env/env', () => ({ refreshWaterRenderList: vi.fn() }));
 vi.mock('../../scene/camera/camera', () => cameraState);
+// [doc:adr-269 补充] model-ops 已改指 camera 叶子模块，须按真实定义处补 mock
+vi.mock('../../scene/camera/camera-state', () => cameraState);
+vi.mock('../../scene/camera/camera-bone-lock', () => cameraState);
 vi.mock('../../scene/motion/playback', () => ({ updatePlaybackUI: vi.fn() }));
 vi.mock('@/core/audio', () => ({ disposeAudio: vi.fn() }));
 vi.mock('../../scene/motion/motion-modules/registry', () => ({ setTargetModel: vi.fn() }));
@@ -105,7 +109,7 @@ import type { ModelInstance } from '@/core/types';
 import { modelRegistry } from '../../core/config';
 import { setBoneOverride } from '../../scene/motion/bone-override';
 import { setPersonalLightState, attachPersonalLight } from '../../scene/render/lighting-follow';
-import { setOrbitBoneLock } from '../../scene/camera/camera';
+import { setOrbitBoneLock } from '../../scene/camera/camera-bone-lock';
 
 // 最小可用的 ModelInstance mock
 function makeMockInst(overrides: Partial<ModelInstance> = {}): ModelInstance {

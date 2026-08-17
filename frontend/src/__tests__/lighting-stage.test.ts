@@ -198,9 +198,15 @@ const shared = vi.hoisted(() => {
         }
     }
     const MeshBuilder = {
-        CreateSphere: vi.fn((name: string, _opts: unknown, scene?: unknown) => new Mesh(name, scene)),
+        CreateSphere: vi.fn(
+            (name: string, _opts: unknown, scene?: unknown) => new Mesh(name, scene)
+        ),
         CreateLines: vi.fn(
-            (name: string, opts: { instance?: Mesh } & Record<string, unknown>, scene?: unknown) => {
+            (
+                name: string,
+                opts: { instance?: Mesh } & Record<string, unknown>,
+                scene?: unknown
+            ) => {
                 if (opts?.instance) {
                     return opts.instance;
                 }
@@ -240,7 +246,9 @@ const shared = vi.hoisted(() => {
         coneSoftness: 0.5,
         followTarget: null,
     }));
-    const col3FromTriple = vi.fn((t: readonly number[]) => new Color3(t[0] ?? 0, t[1] ?? 0, t[2] ?? 0));
+    const col3FromTriple = vi.fn(
+        (t: readonly number[]) => new Color3(t[0] ?? 0, t[1] ?? 0, t[2] ?? 0)
+    );
     const logWarn = vi.fn();
     const ensureStageShadow = vi.fn();
     const disposeStageShadow = vi.fn();
@@ -288,12 +296,16 @@ const shared = vi.hoisted(() => {
 // ── Babylon.js 最小假对象（绝不真实例化）──
 vi.mock('@babylonjs/core/Lights/spotLight', () => ({ SpotLight: shared.SpotLight }));
 vi.mock('@babylonjs/core/Lights/pointLight', () => ({ PointLight: shared.PointLight }));
-vi.mock('@babylonjs/core/Lights/directionalLight', () => ({ DirectionalLight: shared.DirectionalLight }));
+vi.mock('@babylonjs/core/Lights/directionalLight', () => ({
+    DirectionalLight: shared.DirectionalLight,
+}));
 vi.mock('@babylonjs/core/Maths/math.vector', () => ({ Vector3: shared.Vec3 }));
 vi.mock('@babylonjs/core/Maths/math.color', () => ({ Color3: shared.Color3 }));
 vi.mock('@babylonjs/core/Meshes/mesh', () => ({ Mesh: shared.Mesh }));
 vi.mock('@babylonjs/core/Meshes/meshBuilder', () => ({ MeshBuilder: shared.MeshBuilder }));
-vi.mock('@babylonjs/core/Materials/standardMaterial', () => ({ StandardMaterial: shared.StandardMaterial }));
+vi.mock('@babylonjs/core/Materials/standardMaterial', () => ({
+    StandardMaterial: shared.StandardMaterial,
+}));
 
 // ── 被测文件依赖（相对测试文件路径）──
 vi.mock('../scene/render/light-cone', () => ({
@@ -498,10 +510,18 @@ describe('_updateIndicator', () => {
     });
 
     it('正常：enabled 时创建指示器并同步位置/缩放/透明度', () => {
-        const entry = makeEntry('spot', { enabled: true, indicatorScale: 2, indicatorOpacity: 0.5 });
+        const entry = makeEntry('spot', {
+            enabled: true,
+            indicatorScale: 2,
+            indicatorOpacity: 0.5,
+        });
         _updateIndicator(entry);
         expect(entry.indicator).not.toBeNull();
-        expect(shared.setTransformMetadata).toHaveBeenCalledWith(entry.indicator, 'light', 'light-1');
+        expect(shared.setTransformMetadata).toHaveBeenCalledWith(
+            entry.indicator,
+            'light',
+            'light-1'
+        );
         expect(entry.indicator!.scaling.x).toBe(2);
         expect((entry.indicator!.material as { alpha: number }).alpha).toBe(0.5);
         expect((entry.indicator as unknown as MockMesh)._enabled).toBe(true);
@@ -916,7 +936,10 @@ describe('loadStageLights', () => {
         delete legacy1.coneIntensity;
         delete legacy1.coneLength;
         delete legacy1.coneSoftness;
-        const legacy3 = { ...shared.defaultStageLightState('light-3', 'b') } as Record<string, unknown>;
+        const legacy3 = { ...shared.defaultStageLightState('light-3', 'b') } as Record<
+            string,
+            unknown
+        >;
         delete legacy3.coneEnabled;
         delete legacy3.coneIntensity;
         delete legacy3.coneLength;

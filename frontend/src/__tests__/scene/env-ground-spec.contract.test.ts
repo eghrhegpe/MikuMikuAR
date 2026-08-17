@@ -44,7 +44,7 @@ vi.mock('../../scene/env/_shared/env-context', () => {
         getScene: () => (globalThis as any).__groundSpecScene as Scene,
         initEnvImpl: () => {},
         isInitialized: () => true,
-        getPipeline: () => null,
+        getPipeline: (): null => null,
         INFINITE_GROUND_SIZE: 2000,
         effectiveGroundSize: (groundSize: number, infiniteEnabled: boolean) =>
             infiniteEnabled ? 2000 : groundSize,
@@ -52,7 +52,7 @@ vi.mock('../../scene/env/_shared/env-context', () => {
 });
 vi.mock('../../scene/env/env', () => ({ ensureEnvUpdateObserver: () => {} }));
 // ADR-151: 避免 env-reflection → renderer → performance → scene 重链
-vi.mock('../../scene/env/env-reflection', () => ({ getPlanarQualityOverride: () => null }));
+vi.mock('../../scene/env/env-reflection', () => ({ getPlanarQualityOverride: (): null => null }));
 // 防御：env-terrain 经 env-ground 间接拉 scene.ts 模块级 new Scene()，单测桩掉
 vi.mock('../../scene/scene', () => ({ scene: {} as unknown as Scene }));
 
@@ -285,7 +285,9 @@ describe('ADR-226 buildGroundMaterialSpec — 单一性与确定性', () => {
         const base = makeState({ groundStyle: 'checker' });
         const keyA = specKey(buildGroundMaterialSpec(base));
         for (const ov of ['scan', 'glowEdge'] as const) {
-            const spec = buildGroundMaterialSpec(makeState({ groundStyle: 'checker', groundOverlay: ov }));
+            const spec = buildGroundMaterialSpec(
+                makeState({ groundStyle: 'checker', groundOverlay: ov })
+            );
             expect(spec.structural.overlay).toBe(ov);
             // canvas 来源：overlay 由 _updateGroundTexture 原地重绘，无需重建几何
             expect(specKey(spec)).toBe(keyA);

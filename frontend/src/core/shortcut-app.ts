@@ -11,9 +11,6 @@ import { focusedModelId } from './state';
 import { getSceneAction } from './scene-action-bridge';
 import { registerShortcuts } from './shortcut-registry';
 
-
-
-
 // ======== Register global shortcuts via ShortcutRegistry ========
 export function registerAppShortcuts(): void {
     registerShortcuts([
@@ -132,7 +129,8 @@ export function registerAppShortcuts(): void {
                 if (!mmdRuntime) {
                     return;
                 }
-                const foc = getSceneAction('focusedModel')?.() as { animationDuration?: number } | undefined;
+                const foc = getSceneAction('focusedModel')?.() as
+                    { animationDuration?: number } | undefined;
                 if (!foc) {
                     return;
                 }
@@ -158,7 +156,8 @@ export function registerAppShortcuts(): void {
                 if (!mmdRuntime) {
                     return;
                 }
-                const foc = getSceneAction('focusedModel')?.() as { animationDuration?: number } | undefined;
+                const foc = getSceneAction('focusedModel')?.() as
+                    { animationDuration?: number } | undefined;
                 if (!foc) {
                     return;
                 }
@@ -194,7 +193,9 @@ export function registerAppShortcuts(): void {
             handler: () => {
                 const modelId = focusedModelId;
                 if (modelId && (getSceneAction('canUndo')?.(modelId) ?? false)) {
-                    getSceneAction('undo')?.(modelId, (snap) => getSceneAction('applyModuleSnapshot')?.(modelId, snap));
+                    getSceneAction('undo')?.(modelId, (snap) =>
+                        getSceneAction('applyModuleSnapshot')?.(modelId, snap)
+                    );
                     setStatus(t('motion.undoApplied'), true);
                     return;
                 }
@@ -237,7 +238,9 @@ export function registerAppShortcuts(): void {
                 if (!modelId || !(getSceneAction('canRedo')?.(modelId) ?? false)) {
                     return;
                 }
-                getSceneAction('redo')?.(modelId, (snap) => getSceneAction('applyModuleSnapshot')?.(modelId, snap));
+                getSceneAction('redo')?.(modelId, (snap) =>
+                    getSceneAction('applyModuleSnapshot')?.(modelId, snap)
+                );
                 setStatus(t('motion.override.redoApplied'), true);
             },
             group: 'shortcuts.group.motionUndoRedo',

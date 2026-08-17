@@ -13,7 +13,14 @@
  *   node scripts/check-circular.mjs --diff <file>     # 与基线对比：标出新增环、已消失环及引入环的新增边
  *
  * 白名单：scripts/circular-allowlist.json 记录「已知架构环」。
+ *   到期语义（处方二）：条目级 expires（过期按新增环阻断）+ 整体级 reviewBy（--strict 复核闹钟，
+ *   --update-allowlist 续期 90 天）。修一个环就收紧一次，到期没动静也会被拦。
  * --strict 模式只对白名单之外的“新增环”exit 1，历史环仅告警。
+ *
+ * [ADR-268 决策 4] 白名单 key = 环的「节点集合」（cycleSetKey），不是路径字符串。
+ *   旧 key 是路径旋转（normalizeCycleKey），与代表环的归并口径（节点集合）不同源：任何边
+ *   变化让最短环改道，同一组节点就从「已知」变成「新增」——2026-10-23 扫描器修好那次，
+ *   234 条条目假漂移就是这么来的。改用节点集合后，环内路径变化不再影响「是否已知」的判定。
  *
  * 归因链路：--edges 看环由哪些 import 边构成；--snapshot/--diff
  * 对比两次扫描，定位「哪条新 import 引入了环」（--diff --strict 按新增环退出码）。
@@ -144,6 +151,19 @@ export function normalizeCycleKey(cycle) {
 }
 
 /**
+ * 环的「节点集合 key」：环由哪些模块构成，与路径顺序无关。
+ *
+ * [ADR-268 决策 4] 这是白名单与代表环归并**共用的唯一口径**。旧实现里代表环按节点集合归并
+ * （representativeCycles）却按路径存白名单（normalizeCycleKey），两把尺子不同源，导致：
+ * 同一组节点的最短环一旦改道（新增一条更短的边），旧 key 就再也匹配不上，环被误报「新增」。
+ * 实测该缺陷在扫描器修好那次一口气造出 234 条假漂移条目。现在 setKey 直接复用归并口径，
+ * 环内路径怎么变都算同一个已知环。
+ */
+export function cycleSetKey(cycle) {
+    return [...new Set(cycle.slice(0, -1))].sort().join('+');
+}
+
+/**
  * 去重循环路径
  */
 export function dedupeCycles(cycles) {
@@ -172,8 +192,7 @@ export function dedupeCycles(cycles) {
 export function representativeCycles(cycles) {
     const bySet = new Map(); // 节点集合 key（排序 join）→ 最短环
     for (const c of cycles) {
-        const body = c.slice(0, -1);
-        const key = [...body].sort().join('+');
+        const key = cycleSetKey(c);
         const existing = bySet.get(key);
         if (!existing || c.length < existing.length) bySet.set(key, c);
     }
@@ -182,24 +201,64 @@ export function representativeCycles(cycles) {
 
 // ── 白名单 ──
 
-function loadAllowlist() {
-    if (!fs.existsSync(ALLOWLIST_PATH)) return new Set();
+/** 复核周期（处方二·锐评依据：白名单只进不出、无到期，等于永久的"暂忍"） */
+const ALLOWLIST_REVIEW_DAYS = 90;
+
+/**
+ * 载入白名单。到期语义（双保险）：
+ *   - 条目级：entry.expires（yyyy-mm-dd）已过 → 不入 keys，对应环按「新增」计 → --strict 阻断，
+ *     逼人工复核（修复删条目，或删 expires 续宽限）。无 expires = 长期豁免（历史存量 grandfather 免扰）。
+ *   - 整体级：reviewBy（复核到期日）已过 → --strict 阻断，即便一条环都没变。到期必须重新走一遍 --update-allowlist。
+ *
+ * keys 一律是 cycleSetKey（节点集合），与 representativeCycles 同源。旧条目只有 `key`（路径），
+ * 载入时现算一次集合 key 兼容——升级不需要先重写白名单文件。
+ */
+export function loadAllowlist() {
+    const empty = { keys: new Set(), expired: [], reviewBy: null, reviewOverdue: false };
+    if (!fs.existsSync(ALLOWLIST_PATH)) return empty;
     try {
         const data = JSON.parse(fs.readFileSync(ALLOWLIST_PATH, 'utf8'));
-        return new Set((data.cycles || []).map(c => c.key));
+        const today = new Date().toISOString().slice(0, 10);
+        const keys = new Set();
+        const expired = [];
+        for (const c of data.cycles || []) {
+            // `set` 是 ADR-268 后的正式字段；`key` 是旧路径口径，转成集合 key 兼容读取
+            const setKey = c.set || cycleSetKey(String(c.key || '').split('→'));
+            if (!setKey) continue;
+            if (c.expires && c.expires < today) expired.push({ ...c, setKey });
+            else keys.add(setKey);
+        }
+        const reviewBy = data.reviewBy || null;
+        return { keys, expired, reviewBy, reviewOverdue: !!(reviewBy && reviewBy < today) };
     } catch (e) {
         console.error(`⚠️  白名单解析失败（${ALLOWLIST_PATH}）：${e.message}`);
-        return new Set();
+        return empty;
     }
 }
 
 function saveAllowlist(cycles) {
+    // 重写时保留人工登记的条目级 expires（复核续期不该顺手抹掉别人设的闹钟）
+    const prevExpires = new Map();
+    try {
+        const old = JSON.parse(fs.readFileSync(ALLOWLIST_PATH, 'utf8'));
+        for (const c of old.cycles || []) {
+            const setKey = c.set || cycleSetKey(String(c.key || '').split('→'));
+            if (c.expires && setKey) prevExpires.set(setKey, c.expires);
+        }
+    } catch { /* 首次写入/解析失败：无既往可保留 */ }
+    const now = new Date();
     const data = {
-        $comment: '已知架构循环依赖白名单。CI (--strict) 只对本清单之外的新增环阻断。修复一个环后请运行 node scripts/check-circular.mjs --update-allowlist 收紧清单。',
-        updatedAt: new Date().toISOString().slice(0, 10),
+        $comment: '已知架构循环依赖白名单（代表环口径）。CI (--strict) 只对本清单之外的新增环阻断。条目可带 expires(yyyy-mm-dd) 到期日，过期按新增环阻断；reviewBy 为整体复核到期日，过期 --strict 阻断——复核后跑 node scripts/check-circular.mjs --update-allowlist 收紧/续期。[ADR-268] 判定口径是 `set`（环的节点集合，与代表环归并同源），`key` 仅作人类可读的路径参考。',
+        updatedAt: now.toISOString().slice(0, 10),
+        reviewBy: new Date(now.getTime() + ALLOWLIST_REVIEW_DAYS * 86400000).toISOString().slice(0, 10),
         cycles: cycles
-            .map(c => ({ key: normalizeCycleKey(c), path: c.join(' → ') }))
-            .sort((a, b) => a.key.localeCompare(b.key)),
+            .map(c => {
+                const set = cycleSetKey(c);
+                const entry = { set, key: normalizeCycleKey(c), path: c.join(' → ') };
+                if (prevExpires.has(set)) entry.expires = prevExpires.get(set);
+                return entry;
+            })
+            .sort((a, b) => a.set.localeCompare(b.set)),
     };
     fs.writeFileSync(ALLOWLIST_PATH, JSON.stringify(data, null, 2) + '\n', 'utf8');
 }
@@ -323,7 +382,13 @@ function diffAgainstSnapshot(snapshotPath, cycles, moduleEdges) {
 // ── 主流程 ──
 
 function main() {
-const { graph: fileGraph } = scanSourceGraph(SRC_DIR, { scope: args.scope });
+// [ADR-268 2026-10-23] 环口径 = 「模块加载期依赖」。动态 import() 惰性求值，永不产生
+// 部分初始化模块的 undefined 绑定（最坏只是挂起），故不计入环；静态/副作用 import 口径不变。
+// 依据：修好 source-graph 的注释吞边/无 await 动态 import 漏检后，本检查对同一份源码报出
+// 265 个「新增环」，量化归因显示 265/265 全部且仅由动态边派生（scene.ts 惰性加载 menus、
+// dev-hooks 惰性加载 scene/motion 等），并连带让白名单 234 条 key 漂移（最短环路径变化）。
+// [ADR-268 决策 4] 那 234 条假漂移的另一半原因是 key 口径本身有缺陷——已由 cycleSetKey 修掉。
+const { graph: fileGraph } = scanSourceGraph(SRC_DIR, { scope: args.scope, includeDynamic: false });
 
 const { moduleGraph, moduleEdges } = buildModuleGraph(fileGraph);
 const rawCycles = detectCycles(moduleGraph);
@@ -338,9 +403,9 @@ if (args['update-allowlist']) {
     // 白名单，任何人可静默吸收新回归（ADR-238 L179 已警示）。现改为：有新增环则拒绝，
     // 仅允许移除已修复环（fixed）收紧清单。判定基于代表环（节点集合口径）。
     const existingAllowlist = loadAllowlist();
-    const currentKeys = new Set(reportCycles.map(normalizeCycleKey));
-    const addedKeys = [...currentKeys].filter((k) => !existingAllowlist.has(k));
-    const fixedKeys = [...existingAllowlist].filter((k) => !currentKeys.has(k));
+    const currentKeys = new Set(reportCycles.map(cycleSetKey));
+    const addedKeys = [...currentKeys].filter((k) => !existingAllowlist.keys.has(k));
+    const fixedKeys = [...existingAllowlist.keys].filter((k) => !currentKeys.has(k));
 
     if (addedKeys.length > 0) {
         console.error(`❌ --update-allowlist 拒绝：检测到 ${addedKeys.length} 个新增环（代表环口径），白名单只允许减少不允许增加：`);
@@ -350,6 +415,12 @@ if (args['update-allowlist']) {
         process.exit(1);
     }
     if (fixedKeys.length === 0) {
+        if (!existingAllowlist.reviewBy || existingAllowlist.reviewOverdue) {
+            // 复核续期：环无增删但到期日缺失/已过 → 重写盖 reviewBy（人确已复核才走到这里）
+            saveAllowlist(reportCycles);
+            console.log(`✅ 白名单已复核，reviewBy 续期 ${ALLOWLIST_REVIEW_DAYS} 天 → ${path.relative(ROOT, ALLOWLIST_PATH)}`);
+            process.exit(0);
+        }
         console.log(`✅ 白名单无需更新（无新增环、无已修复环）`);
         process.exit(0);
     }
@@ -370,13 +441,14 @@ if (args.diff) {
     process.exit(args.strict && hasNew ? 1 : 0);
 }
 
-const allowlist = loadAllowlist();
+const allowlistData = loadAllowlist();
+const allowlist = allowlistData.keys;
 const known = [];
 const added = [];
 for (const cycle of reportCycles) {
-    (allowlist.has(normalizeCycleKey(cycle)) ? known : added).push(cycle);
+    (allowlist.has(cycleSetKey(cycle)) ? known : added).push(cycle);
 }
-const currentKeys = new Set(reportCycles.map(normalizeCycleKey));
+const currentKeys = new Set(reportCycles.map(cycleSetKey));
 const fixedKeys = [...allowlist].filter(k => !currentKeys.has(k));
 
 if (args.json) {
@@ -389,10 +461,14 @@ if (args.json) {
         fixedCount: fixedKeys.length,
         cycles: reportCycles.map(c => ({
             path: c,
+            set: cycleSetKey(c),
             length: c.length - 1,
-            known: allowlist.has(normalizeCycleKey(c)),
+            known: allowlist.has(cycleSetKey(c)),
         })),
         fixed: fixedKeys,
+        allowlistReviewBy: allowlistData.reviewBy,
+        allowlistReviewOverdue: allowlistData.reviewOverdue,
+        allowlistExpiredCount: allowlistData.expired.length,
     }, null, 2));
 } else {
     console.log(`扫描到 ${moduleGraph.size} 个模块`);
@@ -437,10 +513,24 @@ if (args.json) {
             console.log(`  ${k}`);
         }
     }
+    if (allowlistData.expired.length > 0) {
+        console.log(`\n⏰ ${allowlistData.expired.length} 个白名单条目已过期（对应环按新增计，修复代码或删除条目/expires 字段以复核）：`);
+        for (const c of allowlistData.expired.slice(0, 20)) {
+            console.log(`  ${c.key}（到期 ${c.expires}）`);
+        }
+        if (allowlistData.expired.length > 20) console.log(`  …（共 ${allowlistData.expired.length} 个）`);
+    }
+    if (allowlistData.reviewBy) {
+        console.log(`\n📅 白名单复核到期日：${allowlistData.reviewBy}${allowlistData.reviewOverdue ? '（已过期，--strict 阻断；复核后 --update-allowlist 续期）' : ''}`);
+    }
 }
 
-// 退出码：--strict 只对新增环阻断
-if (added.length > 0 && args.strict) {
+// 退出码：--strict 对新增环阻断；白名单整体复核到期（reviewBy 过期）同样阻断——到期必须复核，不许装死
+if ((added.length > 0 || allowlistData.reviewOverdue) && args.strict) {
+    if (allowlistData.reviewOverdue && added.length === 0) {
+        console.error(`❌ --strict 阻断：白名单复核到期日 ${allowlistData.reviewBy} 已过。`);
+        console.error(`   复核 ${allowlist.size} 条已知环（跑 dep-metrics 看数字有无回流），然后 --update-allowlist 续期 90 天。`);
+    }
     process.exit(1);
 }
 }

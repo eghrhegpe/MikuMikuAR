@@ -80,7 +80,9 @@ export function unloadProceduralMotion(id: LoadableProcId): void {
 export function setLoadedProceduralMotions(ids: LoadableProcId[]): void {
     // [fix P2] 过滤非法/过期值：反序列化路径（场景恢复）可能读到旧版含已移除的
     // LoadableProcId（如 'gesture'），直接采纳会让消费方进入未处理分支
-    _loadedProceduralMotions = new Set(ids.filter((x): x is LoadableProcId => ALL_LOADABLE_PROC.includes(x)));
+    _loadedProceduralMotions = new Set(
+        ids.filter((x): x is LoadableProcId => ALL_LOADABLE_PROC.includes(x))
+    );
     _loadedProceduralMotions.add('none');
 }
 

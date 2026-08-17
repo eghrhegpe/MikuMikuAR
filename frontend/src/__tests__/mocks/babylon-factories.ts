@@ -60,14 +60,14 @@ export const mockCamera = () => ({ Camera: MockCamera });
 export const mockMathColor = () => ({
     Color3: MockColor3,
     Color4: MockColor4,
-    TmpColors: { Color3: [] },
+    TmpColors: { Color3: [] as MockColor3[] },
 });
 export const mockMathVector = () => ({
     Vector3: MockVector3,
     Vector2: MockVector2,
     Matrix: MockMatrix,
     Quaternion: MockQuaternion,
-    TmpVectors: { Vector3: [] },
+    TmpVectors: { Vector3: [] as MockVector3[] },
 });
 export const mockStandardMaterial = () => ({ StandardMaterial: MockStandardMaterial });
 export const mockPBRMaterial = () => ({ PBRMaterial: MockPBRMaterial });

@@ -1,12 +1,15 @@
 // [doc:adr-059] 翻译函数 —— 缺失 key 回退链：当前语言 → zh-CN 基准 → key 本身（开发期可见）
 // [doc:perf] 语言包不再静态导入（避免全部打包进主 bundle），改为运行时 fetch JSON。
 // 调用方需在启动时 await loadLocale(getLang()) 预加载当前语言。
+// [doc:adr-271] bundles 已下移到 ./bundle-store（语言包缓存不依赖语言状态），
+// 本文件转发 bundles 以保持既有 `import { bundles } from '.../t'`（20+ 个测试）不变；
+// loadLocale 不转发——它只在 locale.ts 内部使用，转发只会进 deadcode 基线。
 import { getLang } from './locale';
+import { bundles } from './bundle-store';
+
+export { bundles } from './bundle-store';
 
 type Bundle = Record<string, string>;
-
-/** 运行时加载的语言包缓存。生产环境由 fetch 填充，测试环境可直接赋值。 */
-export const bundles: Record<string, Bundle> = {};
 
 /**
  * [doc:adr-059] 当前已补全语言包的语言列表。
@@ -15,28 +18,6 @@ export const bundles: Record<string, Bundle> = {};
  * t() 静默回退中文，造成「切换无效」的误导。
  */
 export const AVAILABLE_LANGS: string[] = ['zh-CN', 'en', 'ja', 'ko', 'zh-TW'];
-
-/**
- * 异步加载指定语言包，从 public/locales/{lang}.json fetch。
- * 幂等：已加载过的语言不会重复 fetch。
- */
-export async function loadLocale(lang: string): Promise<void> {
-    if (bundles[lang]) {
-        return;
-    }
-    try {
-        const resp = await fetch(`${import.meta.env.BASE_URL}locales/${lang}.json`);
-        if (!resp.ok) {
-            console.warn(`[i18n] 加载语言包失败: ${lang} (HTTP ${resp.status})`);
-            bundles[lang] = {};
-            return;
-        }
-        bundles[lang] = await resp.json();
-    } catch (err) {
-        console.warn(`[i18n] 加载语言包失败: ${lang}`, err);
-        bundles[lang] = {};
-    }
-}
 
 /**
  * [doc:adr-059] dev-only 缺失 key 告警去重集合。

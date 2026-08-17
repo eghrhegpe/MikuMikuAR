@@ -221,8 +221,8 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
                         items: [],
                         renderCustom: (container) => {
                             container.style.cssText =
-                                'padding:24px;text-align:center;color:var(--text-muted);font-size:13px;';
-                            container.innerHTML = `<div>${t('library.noRootDir')}</div><div style="font-size:11px;margin-top:8px;color:var(--text-dark);">${t('library.noRootDirHint')}</div>`;
+                                'padding:24px;text-align:center;color:var(--text-muted);font-size:var(--font-ui);';
+                            container.innerHTML = `<div>${t('library.noRootDir')}</div><div style="font-size:var(--font-ui-sm);margin-top:8px;color:var(--text-dark);">${t('library.noRootDirHint')}</div>`;
                         },
                     };
                 }

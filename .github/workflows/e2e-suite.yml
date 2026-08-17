@@ -16,12 +16,10 @@
 
 name: E2E Suite
 
+# [2026-10-19] 项目已退坑：E2E 全面停用，仅保留手动触发（workflow_dispatch）。
+# push / 定时 schedule 触发一律关闭，避免在已停维护的仓库继续烧 CI 分钟数。
 on:
-  push:
-    branches: [main, master]
   workflow_dispatch:
-  schedule:
-    - cron: '0 6 * * 1' # 每周一 06:00 UTC
 
 permissions:
   contents: read
@@ -106,7 +104,7 @@ jobs:
           "
 
       - name: Upload Playwright report
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: playwright-dom-report
@@ -192,7 +190,7 @@ jobs:
           "
 
       - name: Upload Playwright report
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: playwright-overlay-report
@@ -307,7 +305,7 @@ jobs:
           exit $TEST_EXIT
 
       - name: Upload Playwright report
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: playwright-webgl-report
@@ -437,7 +435,7 @@ jobs:
           "
 
       - name: Upload Playwright report
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: playwright-web-report
@@ -524,7 +522,7 @@ jobs:
           "
 
       - name: Upload Playwright report
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: playwright-web-full-report

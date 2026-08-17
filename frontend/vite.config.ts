@@ -15,7 +15,9 @@ export default defineConfig(({ command }) => {
   const isProduction = command === 'build';
 
   // 开发模式下移除 index.html 中的 Babylon UMD script 标签，
-  // 避免冗余加载 8.3MB 的 babylon.js（dev 模式下由 Vite 直接 serve node_modules 的 ES module）
+  // 避免冗余加载 7.8MB 的 babylon.js（dev 模式下由 Vite 直接 serve node_modules 的 ES module）
+  // 生产构建仍走 UMD（见下方 external/globals）；两个 UMD 由 scripts/sync-babylon-lib.mjs
+  // 从 devDependency 的 babylonjs@<同版本> 逐字节同步，`npm run check:babylon-lib` 守护（ADR-266）。
   const removeBabylonScripts = (): any => ({
     name: 'remove-babylon-scripts',
     transformIndexHtml(html: string) {

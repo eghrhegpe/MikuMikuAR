@@ -586,9 +586,7 @@ describe('WASM 物理契约测试', () => {
             const bundle = api.createRigidBodyBundle(listPtr, 1);
 
             api.rigidBodyBundleSetMassProps(bundle, 0, 4.0, 1, 2, 3);
-            const [ix, iy, iz] = readVec3((p) =>
-                api.rigidBodyBundleGetLocalInertia(bundle, 0, p)
-            );
+            const [ix, iy, iz] = readVec3((p) => api.rigidBodyBundleGetLocalInertia(bundle, 0, p));
             expect(ix).toBeCloseTo(1, 4);
             expect(iy).toBeCloseTo(2, 4);
             expect(iz).toBeCloseTo(3, 4);
@@ -604,15 +602,11 @@ describe('WASM 物理契约测试', () => {
             const bundle = api.createRigidBodyBundle(listPtr, 1);
 
             api.rigidBodyBundleApplyCentralForce(bundle, 0, 0, 50, 0);
-            const [, fyBefore] = readVec3((p) =>
-                api.rigidBodyBundleGetTotalForce(bundle, 0, p)
-            );
+            const [, fyBefore] = readVec3((p) => api.rigidBodyBundleGetTotalForce(bundle, 0, p));
             expect(fyBefore).toBeGreaterThan(0);
 
             api.rigidBodyBundleClearForces(bundle, 0);
-            const [, fyAfter] = readVec3((p) =>
-                api.rigidBodyBundleGetTotalForce(bundle, 0, p)
-            );
+            const [, fyAfter] = readVec3((p) => api.rigidBodyBundleGetTotalForce(bundle, 0, p));
             expect(fyAfter).toBeCloseTo(0, 4);
 
             api.destroyRigidBodyBundle(bundle);

@@ -114,7 +114,7 @@ export function mockConfig(s: ReturnType<typeof createProcMockState>) {
         // mock 需提供有效 Map（否则 get 访问 undefined 抛错）。测试模型无 procMotionModules 时静默跳过。
         modelRegistry: new Map(),
         triggerAutoSave: s.triggerAutoSave,
-        setUIState: (..._args: unknown[]) => undefined,
+        setUIState: (..._args: unknown[]): void => undefined,
     };
 }
 

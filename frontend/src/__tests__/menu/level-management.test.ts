@@ -271,7 +271,9 @@ describe('SlideMenu — ADR-065 纯 items 层级语言热刷新', () => {
             label: '根',
             dir: '',
             items: [],
-            renderCustom: (c) => { c.textContent = 'custom'; },
+            renderCustom: (c) => {
+                c.textContent = 'custom';
+            },
             itemBuilder: () => [],
         };
         menu.reset(level);

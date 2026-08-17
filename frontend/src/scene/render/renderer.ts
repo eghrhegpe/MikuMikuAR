@@ -123,12 +123,7 @@ export function initRenderer(
     // [audit:round13 P3] activeCamera 可能为 null（防御）：DefaultRenderingPipeline
     // cameras 参数可选，无 activeCamera 时传空数组，避免 `scene.activeCamera!` 断言抛错
     const activeCam = scene.activeCamera;
-    pipeline = new DefaultRenderingPipeline(
-        'default',
-        true,
-        scene,
-        activeCam ? [activeCam] : []
-    );
+    pipeline = new DefaultRenderingPipeline('default', true, scene, activeCam ? [activeCam] : []);
     pipeline.samples = 1; // MSAA off (performance)
     pipeline.fxaaEnabled = false;
     pipeline.bloomEnabled = false;
@@ -983,8 +978,12 @@ export function isSSRActive(): boolean {
 }
 
 /** 上次 setSSRFromReflection 传入的参数（reattachPipeline 相机切换后重建用，保留用户自定义值）。 */
-let _lastSSRParams: { enabled: boolean; step?: number; strength?: number; thickness?: number } | null =
-    null;
+let _lastSSRParams: {
+    enabled: boolean;
+    step?: number;
+    strength?: number;
+    thickness?: number;
+} | null = null;
 
 /**
  * 反射系统专用 SSR 控制接口（不触发 auto-save）。

@@ -25,7 +25,12 @@ import {
     SHADOW_REBUILD_KEYS,
     CONE_UPDATE_KEYS,
 } from './lighting-state';
-import { _defaultStageLightState, type StageLightState, type StageLightType } from './lighting';
+// [doc:adr-271] 类型与默认值改指 lighting-stage-types 叶子（原从 lighting 取构成 size=4 环）
+import {
+    _defaultStageLightState,
+    type StageLightState,
+    type StageLightType,
+} from './lighting-stage-types';
 import { _ensureStageShadow, _disposeStageShadow } from './lighting-shadow';
 import { col3FromTriple } from '@/core/color-helpers';
 import { logWarn } from '@/core/logger';
@@ -504,8 +509,7 @@ function _applyStageLightParams(entry: StageLightEntry, s: Partial<StageLightSta
             );
             // [fix P2] 零向量守卫：target === position 时 normalize() 产 NaN，
             // 与 _createStageLight（L78）同款兜底——fallback 到朝下
-            light.direction =
-                dir.lengthSquared() < 1e-6 ? new Vector3(0, -1, 0) : dir.normalize();
+            light.direction = dir.lengthSquared() < 1e-6 ? new Vector3(0, -1, 0) : dir.normalize();
         }
     }
     if (s.posX !== undefined || s.posY !== undefined || s.posZ !== undefined) {
@@ -532,8 +536,7 @@ function _applyStageLightParams(entry: StageLightEntry, s: Partial<StageLightSta
                 (s.targetZ ?? state.targetZ) - light.position.z
             );
             // [fix P2] 零向量守卫：与 L501 同款兜底，避免 target === position 时 NaN
-            light.direction =
-                dir.lengthSquared() < 1e-6 ? new Vector3(0, -1, 0) : dir.normalize();
+            light.direction = dir.lengthSquared() < 1e-6 ? new Vector3(0, -1, 0) : dir.normalize();
         }
     }
 

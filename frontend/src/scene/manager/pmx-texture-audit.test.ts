@@ -14,7 +14,9 @@ describe('auditMissingTextures', () => {
     beforeEach(() => vi.clearAllMocks());
 
     it('returns textures absent from the available set (case/separator insensitive)', async () => {
-        (PmxReader as unknown as { ParseAsync: ReturnType<typeof vi.fn> }).ParseAsync.mockResolvedValue({
+        (
+            PmxReader as unknown as { ParseAsync: ReturnType<typeof vi.fn> }
+        ).ParseAsync.mockResolvedValue({
             textures: ['tex/face.png', 'Eye.BMP', 'missing.tga'],
         });
         const missing = await auditMissingTextures(new Uint8Array([1, 2, 3]), [
@@ -25,23 +27,27 @@ describe('auditMissingTextures', () => {
     });
 
     it('returns empty when every declared texture is available', async () => {
-        (PmxReader as unknown as { ParseAsync: ReturnType<typeof vi.fn> }).ParseAsync.mockResolvedValue({
+        (
+            PmxReader as unknown as { ParseAsync: ReturnType<typeof vi.fn> }
+        ).ParseAsync.mockResolvedValue({
             textures: ['a.png', 'sub/b.png'],
         });
         expect(await auditMissingTextures(new Uint8Array([1]), ['a.png', 'sub/b.png'])).toEqual([]);
     });
 
     it('backslashes are normalized before comparison', async () => {
-        (PmxReader as unknown as { ParseAsync: ReturnType<typeof vi.fn> }).ParseAsync.mockResolvedValue({
+        (
+            PmxReader as unknown as { ParseAsync: ReturnType<typeof vi.fn> }
+        ).ParseAsync.mockResolvedValue({
             textures: ['tex\\face.png'],
         });
         expect(await auditMissingTextures(new Uint8Array([1]), ['tex/face.png'])).toEqual([]);
     });
 
     it('never throws: parse failure yields empty list (non-blocking)', async () => {
-        (PmxReader as unknown as { ParseAsync: ReturnType<typeof vi.fn> }).ParseAsync.mockRejectedValue(
-            new Error('corrupt pmx')
-        );
+        (
+            PmxReader as unknown as { ParseAsync: ReturnType<typeof vi.fn> }
+        ).ParseAsync.mockRejectedValue(new Error('corrupt pmx'));
         const missing = await auditMissingTextures(new Uint8Array([1]), ['a.png']);
         expect(missing).toEqual([]);
     });

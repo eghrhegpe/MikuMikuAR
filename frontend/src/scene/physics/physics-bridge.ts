@@ -9,17 +9,15 @@
  * 职责边界：
  *  - 骨骼 READ（锚点跟随）：读取 runtimeBones 的局部矩阵/位置（历史 API 名含 World，实际为 rootMesh 局部系），后端无关。
  *  - auto-fit：从模型尺寸推算挂件几何参数（纯数学，无求解器依赖）。
- *  - PerFrameUpdateRegistry：原 XPBD 在 model-manager 中重复的「每帧 update observer」编排模式抽取。
+ *  - 不在此处：每帧 update 编排（`PerFrameUpdateRegistry` 已上移至 `@/core/frame-registry`，
+ *    它是通用机制，不该寄住在专业模块里）。
  *  - 不在此处：求解器内部的步进/写回（writeBack），因其随后端语义不同，应在具体实现里处理。
  */
 
-import type { Scene } from '@babylonjs/core/scene';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
-import { observe, type ObserverHandle } from '@/core/observer-handle';
 import type { IMmdModel } from 'babylon-mmd/esm/Runtime/IMmdModel';
 import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 import { clamp, clampInt } from '@/core/clamp';
-import { safeCallVoid } from '@/core/safe-call';
 
 // ============================================================================
 // 骨骼 READ 桥（锚点跟随）
@@ -121,105 +119,4 @@ export function autoFitAttachment(
     const segmentsH = clampInt(circumference / density, 6, 64);
     const particleRadius = density * 0.5;
     return { segmentsH, segmentsV, innerRadius, length, particleRadius, particleSpacing: density };
-}
-
-// ============================================================================
-// 每帧 update 编排（抽取自原 XPBD 在 model-manager 中重复的 observer 模式）
-// ============================================================================
-
-export type FrameUpdateFn = (dtSeconds: number) => void;
-
-/**
- * 单一 onBeforeRenderObservable 调度多个按 key 注册的每帧回调。
- * 原 XPBD 的 ensureClothUpdateObserver / ensureRagdollUpdateObserver 是同一模式的副本，
- * 此处统一为可复用的注册表。dt 做了非有限值/后台恢复钳制。
- */
-export class PerFrameUpdateRegistry {
-    private observer: ObserverHandle | null = null;
-    private readonly fns = new Map<string, FrameUpdateFn>();
-    private _disposeHandle: ObserverHandle | null = null;
-    private _disposed = false;
-
-    constructor(private readonly scene: Scene) {
-        // P2-fix: 绑定 scene.onDisposeObservable，scene 销毁时自动清理，
-        // 避免 HMR 重建场景时旧注册表残留 observer 挂在已销毁 scene 上
-        // 防御：部分 mock scene（单测）无 onDisposeObservable，容忍跳过
-        this._bindDisposeHandle();
-    }
-
-    private _bindDisposeHandle(): void {
-        if (this._disposeHandle || !this.scene.onDisposeObservable) {
-            return;
-        }
-        this._disposeHandle = observe(this.scene.onDisposeObservable, () => this.dispose());
-    }
-
-    register(key: string, fn: FrameUpdateFn): void {
-        if (this._disposed) {
-            // 允许 dispose 后重新使用：恢复生命周期绑定，避免新 observer 失去
-            // scene.onDisposeObservable 自动清理而泄漏。
-            this._disposed = false;
-            this._bindDisposeHandle();
-        }
-        this.fns.set(key, fn);
-        this.ensure();
-    }
-
-    unregister(key: string): void {
-        if (this._disposed) {
-            return;
-        }
-        if (!this.fns.delete(key)) {
-            return;
-        }
-        if (this.fns.size === 0) {
-            // [fix P3] 仅停 observer，不释放 _disposeHandle：dispose() 会置 null
-            // onDispose 绑定，导致「unregister 清空 → 再 register」后 scene 销毁时
-            // 自动清理永久丢失。onDispose 生命周期应与 scene 对齐，而非 fns 空否。
-            this._removeObserver();
-        }
-    }
-
-    private _removeObserver(): void {
-        if (this.observer) {
-            this.observer.dispose();
-            this.observer = null;
-        }
-    }
-
-    private ensure(): void {
-        if (this._disposed || this.observer) {
-            return;
-        }
-        this.observer = observe(this.scene.onBeforeRenderObservable, () => {
-            const rawDt = this.scene.deltaTime / 1000; // ms -> s
-            if (!isFinite(rawDt) || rawDt <= 0) {
-                return; // 非有限值 / 非正数：跳过
-            }
-            // 钳制最大步长（50ms），避免后台标签页恢复后极大 dt 导致物理/动画失稳或脱节
-            const dt = Math.min(rawDt, 0.05);
-            // [fix:round16 P2] 快照迭代：防止回调内 register/unregister 修改 Map 导致迭代器行为不确定
-            for (const fn of [...this.fns.values()]) {
-                // dispose 可能在回调内被调用（如 virtual-skirt 自毁）：置位后立即停止
-                // 本帧剩余回调，避免已释放注册表继续调度。
-                if (this._disposed) {
-                    break;
-                }
-                safeCallVoid('PerFrameUpdateRegistry', 'update error', () => fn(dt));
-            }
-        });
-    }
-
-    dispose(): void {
-        if (this._disposed) {
-            return;
-        }
-        this._disposed = true;
-        this._removeObserver();
-        if (this._disposeHandle) {
-            this._disposeHandle.dispose();
-            this._disposeHandle = null;
-        }
-        this.fns.clear();
-    }
 }

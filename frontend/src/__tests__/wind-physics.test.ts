@@ -36,7 +36,11 @@ vi.mock('../core/mmd-adapter', async (importOriginal) => {
     const mockImpl = {
         rigidBodyBundleReferenceCountMap: new Map() as Map<unknown, number>,
         rigidBodyReferenceCountMap: new Map() as Map<unknown, number>,
-        onSyncObservable: { add: vi.fn(() => ({ dispose: vi.fn() })), remove: vi.fn(), hasObservers: () => false },
+        onSyncObservable: {
+            add: vi.fn(() => ({ dispose: vi.fn() })),
+            remove: vi.fn(),
+            hasObservers: () => false,
+        },
     };
     return {
         // getRigidBodyBundleMap / getRigidBodyMap 走真实实现（测试其契约）
@@ -50,7 +54,11 @@ vi.mock('../core/mmd-adapter', async (importOriginal) => {
 });
 
 import { MmdWasmRuntime as MmdWasmRuntimeClass } from 'babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime';
-import { isWindPhysicsActive, initWindPhysics, disposeWindPhysics } from '@/scene/physics/wind-physics';
+import {
+    isWindPhysicsActive,
+    initWindPhysics,
+    disposeWindPhysics,
+} from '@/scene/physics/wind-physics';
 import { getPhysicsImpl, getRigidBodyBundleMap } from '@/core/mmd-adapter';
 
 const mockGetPhysicsImpl = getPhysicsImpl as ReturnType<typeof vi.fn>;
@@ -111,20 +119,26 @@ describe('isWindPhysicsActive', () => {
     });
 
     it('returns true after initWindPhysics with WASM runtime', () => {
-        const runtime = new (MmdWasmRuntimeClass as any)() as InstanceType<typeof MmdWasmRuntimeClass>;
+        const runtime = new (MmdWasmRuntimeClass as any)() as InstanceType<
+            typeof MmdWasmRuntimeClass
+        >;
         initWindPhysics(runtime);
         expect(isWindPhysicsActive()).toBe(true);
     });
 
     it('returns false after disposeWindPhysics clears all', () => {
-        const runtime = new (MmdWasmRuntimeClass as any)() as InstanceType<typeof MmdWasmRuntimeClass>;
+        const runtime = new (MmdWasmRuntimeClass as any)() as InstanceType<
+            typeof MmdWasmRuntimeClass
+        >;
         initWindPhysics(runtime);
         disposeWindPhysics();
         expect(isWindPhysicsActive()).toBe(false);
     });
 
     it('returns false after per-runtime dispose', () => {
-        const runtime = new (MmdWasmRuntimeClass as any)() as InstanceType<typeof MmdWasmRuntimeClass>;
+        const runtime = new (MmdWasmRuntimeClass as any)() as InstanceType<
+            typeof MmdWasmRuntimeClass
+        >;
         initWindPhysics(runtime);
         disposeWindPhysics(runtime);
         expect(isWindPhysicsActive()).toBe(false);
@@ -133,7 +147,9 @@ describe('isWindPhysicsActive', () => {
     it('returns false when WASM runtime registered but impl missing (not subscribed)', () => {
         // impl 缺失时 _trySubscribe 不建立 observer，isWindPhysicsActive 应返回 false
         mockGetPhysicsImpl.mockReturnValueOnce(null);
-        const runtime = new (MmdWasmRuntimeClass as any)() as InstanceType<typeof MmdWasmRuntimeClass>;
+        const runtime = new (MmdWasmRuntimeClass as any)() as InstanceType<
+            typeof MmdWasmRuntimeClass
+        >;
         initWindPhysics(runtime);
         expect(isWindPhysicsActive()).toBe(false);
     });
@@ -147,10 +163,16 @@ describe('_onPhysicsSync 施力路径（经 onSyncObservable._notify() 触发）
         const impl = {
             rigidBodyBundleReferenceCountMap: new Map([[bundle, 0]]),
             rigidBodyReferenceCountMap: new Map(),
-            onSyncObservable: { add: vi.fn(() => ({ dispose: vi.fn() })), remove: vi.fn(), hasObservers: () => false },
+            onSyncObservable: {
+                add: vi.fn(() => ({ dispose: vi.fn() })),
+                remove: vi.fn(),
+                hasObservers: () => false,
+            },
         };
         mockGetPhysicsImpl.mockReturnValue(impl);
-        const runtime = new (MmdWasmRuntimeClass as any)() as InstanceType<typeof MmdWasmRuntimeClass>;
+        const runtime = new (MmdWasmRuntimeClass as any)() as InstanceType<
+            typeof MmdWasmRuntimeClass
+        >;
         initWindPhysics(runtime);
         // 触发 observer 回调 → _onPhysicsSync(impl)
         const call = (impl.onSyncObservable.add as ReturnType<typeof vi.fn>).mock.calls[0];
@@ -176,10 +198,16 @@ describe('_onPhysicsSync 施力路径（经 onSyncObservable._notify() 触发）
                 [makeBundle(3), 1],
             ]),
             rigidBodyReferenceCountMap: new Map(), // 单数刚体为空（联邦当前无 addRigidBody 调用）
-            onSyncObservable: { add: vi.fn(() => ({ dispose: vi.fn() })), remove: vi.fn(), hasObservers: () => false },
+            onSyncObservable: {
+                add: vi.fn(() => ({ dispose: vi.fn() })),
+                remove: vi.fn(),
+                hasObservers: () => false,
+            },
         };
         mockGetPhysicsImpl.mockReturnValue(impl);
-        const runtime = new (MmdWasmRuntimeClass as any)() as InstanceType<typeof MmdWasmRuntimeClass>;
+        const runtime = new (MmdWasmRuntimeClass as any)() as InstanceType<
+            typeof MmdWasmRuntimeClass
+        >;
         initWindPhysics(runtime);
         const call = (impl.onSyncObservable.add as ReturnType<typeof vi.fn>).mock.calls[0];
         (call[0] as () => void)();

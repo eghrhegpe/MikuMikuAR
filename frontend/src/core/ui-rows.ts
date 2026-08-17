@@ -330,7 +330,7 @@ export function addEmptyRow(parent: HTMLElement, text: string, hint?: string): H
         const main = document.createElement('div');
         main.textContent = text;
         const sub = document.createElement('div');
-        sub.style.fontSize = '11px';
+        sub.style.fontSize = 'var(--font-ui-sm)';
         sub.style.opacity = '0.7';
         sub.style.marginTop = '4px';
         sub.textContent = hint;
@@ -511,7 +511,8 @@ export function addWatchDirRow(
     onSelectDir: () => Promise<string | undefined>
 ): void {
     const statusEl = document.createElement('div');
-    statusEl.style.cssText = 'font-size:11px;color:var(--text);padding:4px 14px;';
+    statusEl.style.cssText =
+        'font-size:var(--font-ui-sm);color:var(--text);padding:4px var(--row-pad-x);';
     container.appendChild(statusEl);
 
     const setStatusText = (text: string) => {
@@ -521,14 +522,14 @@ export function addWatchDirRow(
     onRefreshStatus(setStatusText).catch(() => setStatusText(t('settings.paths.watchStopped')));
 
     const dirRow = document.createElement('div');
-    dirRow.style.cssText = 'display:flex;gap:6px;padding:6px 14px;';
+    dirRow.style.cssText = 'display:flex;gap:6px;padding:6px var(--row-pad-x);';
 
     const dirInput = document.createElement('input');
     dirInput.type = 'text';
     dirInput.placeholder = t('settings.paths.watchDirPlaceholder');
     dirInput.readOnly = true;
     dirInput.style.cssText =
-        'flex:1;background:var(--white-08);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:6px 8px;font-size:12px;';
+        'flex:1;background:var(--white-08);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:6px 8px;font-size:var(--font-hint);';
 
     const selectBtn = document.createElement('button');
     selectBtn.type = 'button';

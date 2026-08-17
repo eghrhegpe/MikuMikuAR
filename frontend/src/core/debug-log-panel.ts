@@ -2,7 +2,13 @@
 // 通过 DOM 面板显示日志缓冲区内容，支持过滤和实时更新。
 // 注意：日志面板决策无正式 ADR，勿引用 ADR-248（该编号已被其他决策占用，audit:round18）。
 
-import { getLogBuffer, getConsoleOutput, clearLogs, setConsoleOutput, type LogEntry } from './logger';
+import {
+    getLogBuffer,
+    getConsoleOutput,
+    clearLogs,
+    setConsoleOutput,
+    type LogEntry,
+} from './logger';
 import { escapeHtml } from './escape-html';
 
 let _panel: HTMLElement | null = null;
@@ -39,11 +45,13 @@ function syncConsoleButton(): void {
 
 function renderPanel(): void {
     if (!_panel) return;
-    const entries = getLogBuffer().getAll().filter((e) => {
-        if (LEVEL_ORDER[e.level] < LEVEL_ORDER[_minLevel]) return false;
-        if (_filterTag && !e.tag.toLowerCase().includes(_filterTag.toLowerCase())) return false;
-        return true;
-    });
+    const entries = getLogBuffer()
+        .getAll()
+        .filter((e) => {
+            if (LEVEL_ORDER[e.level] < LEVEL_ORDER[_minLevel]) return false;
+            if (_filterTag && !e.tag.toLowerCase().includes(_filterTag.toLowerCase())) return false;
+            return true;
+        });
 
     const listEl = _panel.querySelector('[data-role="log-list"]');
     if (!listEl) return;
@@ -51,21 +59,24 @@ function renderPanel(): void {
     // 检查用户是否在底部（允许 50px 误差）
     const isNearBottom = listEl.scrollHeight - listEl.scrollTop - listEl.clientHeight < 50;
 
-    const html = entries.map((e) => {
-        const color = LEVEL_COLORS[e.level];
-        const time = formatTime(e.time);
-        // [audit:round18 P2] message 可能含用户可控文本（文件名/错误信息），
-        // innerHTML 拼入前必须转义，防注入。
-        const safeMsg = escapeHtml(e.message);
-        return `<div class="log-entry" style="border-left:3px solid ${color};padding:4px 8px;font-family:monospace;font-size:11px;line-height:1.4;color:#fff;">
+    const html = entries
+        .map((e) => {
+            const color = LEVEL_COLORS[e.level];
+            const time = formatTime(e.time);
+            // [audit:round18 P2] message 可能含用户可控文本（文件名/错误信息），
+            // innerHTML 拼入前必须转义，防注入。
+            const safeMsg = escapeHtml(e.message);
+            return `<div class="log-entry" style="border-left:3px solid ${color};padding:4px 8px;font-family:monospace;font-size:11px;line-height:1.4;color:#fff;">
             <span style="color:#aaa">${time}</span>
             <span style="color:${color};font-weight:bold">[${e.level.toUpperCase()}]</span>
             <span>${safeMsg}</span>
         </div>`;
-    }).join('');
+        })
+        .join('');
 
-    listEl.innerHTML = html || '<div style="color:#666;padding:8px;text-align:center">暂无日志</div>';
-    
+    listEl.innerHTML =
+        html || '<div style="color:#666;padding:8px;text-align:center">暂无日志</div>';
+
     // 只有用户在底部附近时才自动滚动到底部，否则保留用户位置
     if (isNearBottom) {
         listEl.scrollTop = listEl.scrollHeight;

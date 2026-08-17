@@ -18,6 +18,7 @@ import { getCapabilities, resolveBackend } from './backend';
 // [doc:adr-238] 主题纯函数下沉 core/theme，不再经 menus
 import { generateTextColors } from './theme';
 import { SETTINGS_FONT_RESTORE } from './theme';
+import { applyUiMotionDom } from './ui-motion';
 import { initRuntimeBadge, setBackendBadge } from './runtime-mode';
 import { applyHudVisibility, disposeStatusBar } from './status-bar';
 import { hexToRgb, rgbToString } from './color-helpers';
@@ -194,13 +195,15 @@ async function _initRestorePhase(): Promise<void> {
     getSceneAction('applyFrameControl')?.();
     // 启动时自动检查更新（若用户在设置中开启）
     if (uiState.autoUpdateEnabled) {
-        safeCallAsync('init', '', () => CheckForUpdate()).then((r) => {
-            if (r && r.available && r.url) {
-                showUpdateToast(r.latest, r.url, r.downloadUrl || undefined);
-            }
-        }).catch((err) => {
-            console.error('[init] update toast failed:', err);
-        });
+        safeCallAsync('init', '', () => CheckForUpdate())
+            .then((r) => {
+                if (r && r.available && r.url) {
+                    showUpdateToast(r.latest, r.url, r.downloadUrl || undefined);
+                }
+            })
+            .catch((err) => {
+                console.error('[init] update toast failed:', err);
+            });
     }
     // Sync module-level state from persisted envState
     getSceneAction('syncTimeOfDayFromEnv')?.();
@@ -358,7 +361,7 @@ async function restoreUIState(): Promise<void> {
     if (s.fontFamily && SETTINGS_FONT_RESTORE[s.fontFamily]) {
         root.style.setProperty('--font', SETTINGS_FONT_RESTORE[s.fontFamily]);
     }
-    root.style.setProperty('--ui-animations', s.animations === false ? '0' : '1');
+    applyUiMotionDom(s.animations !== false);
     root.style.setProperty('--ui-blur', s.blurBg ? '1' : '0');
     document
         .querySelectorAll<HTMLElement>('.overlay')

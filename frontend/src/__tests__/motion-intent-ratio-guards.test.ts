@@ -44,7 +44,11 @@ describe('resolveCompatibility ratio 兜底', () => {
     });
 
     it('actualBones 为空 → compatible=false，reason 不含 Infinity/NaN', () => {
-        const result = resolveCompatibility([], { source: 'vmd', vmdPath: '/test.vmd', vmdName: 'test', vmdLayers: [] }, ['頭']);
+        const result = resolveCompatibility(
+            [],
+            { source: 'vmd', vmdPath: '/test.vmd', vmdName: 'test', vmdLayers: [] },
+            ['頭']
+        );
         expect(result.compatible).toBe(false);
         expect(result.reason).toContain('无骨骼数据');
     });

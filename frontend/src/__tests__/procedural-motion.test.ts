@@ -13,7 +13,11 @@ import {
     BONE_LARM_CANDIDATES,
     type ProcMotionParams,
 } from '../motion-algos/procedural-motion';
-import { scoreMorph, findBestEmotionMorphs, EMOTION_CANDIDATES } from '../motion-algos/proc-motion-autodance-emotion';
+import {
+    scoreMorph,
+    findBestEmotionMorphs,
+    EMOTION_CANDIDATES,
+} from '../motion-algos/proc-motion-autodance-emotion';
 
 const params: ProcMotionParams = {
     ...DEFAULT_PROC_STATE.params.idle,

@@ -230,6 +230,82 @@ test('gen-dep-graph: 默认输出跑通（frontend/src 存在 → exit 0）', ()
   assert.match(r.stdout, /```mermaid/);
 });
 
+// ── dep-metrics 冒烟（锐评处方一：耦合台账，口径须与门禁同源） ──
+
+test('dep-metrics: 默认台账跑通（含总账/尺子定义 → exit 0）', () => {
+  const r = runScript(path.join(SCRIPTS, 'dep-metrics.mjs'));
+  assert.equal(r.code, 0, `exit=${r.code} stderr=${r.stderr}`);
+  assert.match(r.stdout, /## 1\. 总账/);
+  assert.match(r.stdout, /代表环/);
+  assert.match(r.stdout, /白名单复核到期日/);
+});
+
+test('dep-metrics: --json 可解析且含 totals/modules/cycles，环数与白名单门禁同源', () => {
+  const r = runScript(path.join(SCRIPTS, 'dep-metrics.mjs'), ['--json']);
+  assert.equal(r.code, 0, `exit=${r.code} stderr=${r.stderr}`);
+  const j = JSON.parse(r.stdout);
+  assert.ok(j.totals.files > 0 && j.modules.length > 0, 'totals/modules 非空');
+  assert.ok(Array.isArray(j.cycles) && j.cycles.length > 0, 'cycles 非空');
+  // 口径同源：台账全部代表环都应命中 circular-allowlist（白名单外新增=0，与 --strict 门禁一致）
+  assert.equal(j.totals.cyclesNew, 0, `白名单外环 ${j.totals.cyclesNew} 条——门禁口径漂移或新增环未登记`);
+  // 处方二闹钟已上弦：reviewBy 存在且未过期。此断言变红 ≠ 代码坏了，= 白名单到期该复核了（--update-allowlist 续期）
+  assert.equal(typeof j.totals.allowlistReviewBy, 'string', 'circular-allowlist.json 应设 reviewBy');
+  assert.equal(j.totals.allowlistReviewOverdue, false, '白名单复核到期——跑 node scripts/check-circular.mjs --update-allowlist 复核续期');
+});
+
+// ── 折叠盲区读数（ADR-269 补充：环数不是耦合强度） ──
+
+test('dep-metrics: 环数与文件级支撑分开统计，盲区被量化而非隐藏', () => {
+  const r = runScript(path.join(SCRIPTS, 'dep-metrics.mjs'), ['--json']);
+  assert.equal(r.code, 0, `exit=${r.code} stderr=${r.stderr}`);
+  const j = JSON.parse(r.stdout);
+  const t = j.totals;
+  assert.equal(t.cyclesBacked + t.cyclesArtifact, t.cycles, '支撑数 + 假象数必须等于代表环总数');
+  assert.ok(t.cyclesBacked >= 0 && t.cyclesBacked <= t.cycles, 'cyclesBacked 越界');
+  // 真实模块 SCC 由文件级反推，必须不大于折叠法的读数（折叠只会夸大）
+  assert.ok(t.realModuleSccMax <= t.moduleSccMax, '文件级反推的模块 SCC 不应大于折叠法');
+  assert.ok(Array.isArray(j.realModuleSccs), 'realModuleSccs 应输出');
+  for (const g of j.realModuleSccs) {
+    assert.ok(g.modules.length > 1, 'realModuleSccs 只应包含跨模块分量');
+  }
+});
+
+// ── 生成物同步门禁 --check（ADR-268：台账/依赖图在 CI 与 pre-push 都可验） ──
+
+test('dep-metrics --check: 仓库内台账已同步（漂移即 exit 1）', () => {
+  const r = runScript(path.join(SCRIPTS, 'dep-metrics.mjs'), ['--file', 'docs/dep-metrics.md', '--check']);
+  assert.equal(r.code, 0, `exit=${r.code} stderr=${r.stderr}`);
+  assert.match(r.stdout, /已同步/);
+});
+
+test('gen-dep-graph --check: 仓库内依赖图已同步（漂移即 exit 1）', () => {
+  const r = runScript(path.join(SCRIPTS, 'gen-dep-graph.mjs'), ['--file', 'docs/dep-graph.md', '--check']);
+  assert.equal(r.code, 0, `exit=${r.code} stderr=${r.stderr}`);
+  assert.match(r.stdout, /已同步/);
+});
+
+// ── check-magic-numbers 冒烟（锐评处方四后半：魔法数重复棘轮） ──
+
+test('check-magic-numbers: 报告模式跑通（防空转断言在位 → exit 0）', () => {
+  const r = runScript(path.join(SCRIPTS, 'check-magic-numbers.mjs'));
+  assert.equal(r.code, 0, `exit=${r.code} stderr=${r.stderr}`);
+  assert.match(r.stdout, /魔法数重复内联检查/);
+  assert.match(r.stdout, /棘轮预算 BUDGET=/);
+});
+
+test('check-magic-numbers: --json 台账非空且 HEAD 处棘轮为绿', () => {
+  const r = runScript(path.join(SCRIPTS, 'check-magic-numbers.mjs'), ['--json']);
+  assert.equal(r.code, 0, `exit=${r.code} stderr=${r.stderr}`);
+  const j = JSON.parse(r.stdout);
+  assert.ok(j.scannedFiles >= 300, `扫描文件 ${j.scannedFiles} < 300，疑似目录结构漂移`);
+  assert.ok(j.distinctValues > 0 && j.total > 0, '台账为空 = 扫描器空转，检查失去意义');
+  assert.ok(j.total <= j.budget, `存量 ${j.total} 已超预算 ${j.budget}——BUDGET 需随实测下冻，或真债未还`);
+  // 排序确定性：按出现次数降序
+  for (let i = 1; i < j.repeated.length; i++) {
+    assert.ok(j.repeated[i - 1].occurrences >= j.repeated[i].occurrences, 'repeated 未按 occurrences 降序');
+  }
+});
+
 // ── gen-guide-gap 冒烟（P1 回归：camelCase 面板提取 + 覆盖判定） ──
 
 test('gen-guide-gap: --strict 跑通（34 面板全提取、无缺口 → exit 0）', () => {

@@ -1558,7 +1558,8 @@ export const zhTW: Record<string, string> = {
     'settings.about.update.installLaunched': '已啟動安裝',
     'settings.about.maintenance': '維護工具',
     'settings.about.maintenance.clearExtract': '清除解壓快取',
-    'settings.about.maintenance.clearExtractConfirm': '確定要清理解壓快取嗎？下次載入模型時將自動重新生成。',
+    'settings.about.maintenance.clearExtractConfirm':
+        '確定要清理解壓快取嗎？下次載入模型時將自動重新生成。',
     'settings.about.maintenance.clearThumbnail': '清除縮圖快取',
     'settings.about.maintenance.clearThumbnailConfirm': '確定要清除縮圖快取嗎？',
     'settings.about.maintenance.clearAll': '清除全部快取',
@@ -1701,8 +1702,7 @@ export const zhTW: Record<string, string> = {
     // [doc:adr-116] 動作覆蓋模組化 UI
     'motion.override.title': '動作覆蓋',
     // [audit] 覆蓋/預設按模型儲存，執行時僅套用到目前聚焦的模型
-    'motion.override.nonFocusedHint':
-        '覆蓋與預設按模型儲存，執行時僅對目前聚焦的模型生效。',
+    'motion.override.nonFocusedHint': '覆蓋與預設按模型儲存，執行時僅對目前聚焦的模型生效。',
     'motion.override.enabled': '✓ 已啟用模組',
     'motion.override.disabled': '✕ 已停用模組',
     'motion.override.redoApplied': '✓ 已重做',

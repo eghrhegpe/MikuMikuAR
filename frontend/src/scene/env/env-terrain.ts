@@ -12,7 +12,8 @@ import {
 import { EnvState } from '@/core/config';
 import { createCanvasDataURL, isCacheOwnedTexture } from './_shared/env-texture';
 import { clamp01 } from '@/core/clamp';
-import { _effectiveBumpLevel } from './env-ground';
+// [doc:adr-271] 改从纯函数叶子取：原 import env-ground 构成 size=3 环。
+import { _effectiveBumpLevel } from './_shared/ground-bump';
 import { underwaterFogController } from './env-underwater-fog';
 
 // ======== 确定性值噪声（FBM）========

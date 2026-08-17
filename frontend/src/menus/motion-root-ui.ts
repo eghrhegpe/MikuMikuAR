@@ -35,8 +35,8 @@ import {
 } from '../scene/motion/animation-retargeter';
 import { DEFAULT_MOTION_SLOTS } from './motion-binding-ui';
 import type { ModelMotionSlots } from '@/core/types';
-// 循环依赖安全：getMotionMenu 仅在函数体内调用
-import { getMotionMenu } from './motion-popup';
+// [doc:adr-271] 菜单实例改从状态叶子读取，切断与 motion-popup 的互指
+import { getMotionMenu } from './motion-menu-state';
 
 // ═══════════════════════════════════════════════════════════
 // 根菜单构建
@@ -175,7 +175,9 @@ export function buildMotionRootItems(): PopupRow[] {
                       onClick: () => {
                           // [doc:adr-207] 程序化动作统一进动作详情页（含覆盖/预设/参数），
                           // 与 VMD 共享全部动作功能；传 procId 使未激活时也可查看程序化设置。
-                          getMotionMenu()?.push(buildMotionDetailLevel(undefined, undefined, procId));
+                          getMotionMenu()?.push(
+                              buildMotionDetailLevel(undefined, undefined, procId)
+                          );
                       },
                   },
         });
@@ -420,4 +422,6 @@ export async function importExternalAnimation(
 // [doc:adr-238] 注册动作根 UI 操作供 core/action-defs 经 ui-action-bridge 调用
 import { registerUiAction } from '@/core/ui-action-bridge';
 registerUiAction('buildMotionRootItems', () => buildMotionRootItems());
-registerUiAction('importExternalAnimation', (kind: string) => importExternalAnimation(kind as Parameters<typeof importExternalAnimation>[0]));
+registerUiAction('importExternalAnimation', (kind: string) =>
+    importExternalAnimation(kind as Parameters<typeof importExternalAnimation>[0])
+);

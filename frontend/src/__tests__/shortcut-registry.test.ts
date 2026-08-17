@@ -249,11 +249,7 @@ describe('formatKeyBinding', () => {
 
 describe('registerShortcuts 批量注册', () => {
     it('批量注册多个不冲突的快捷键', () => {
-        registerShortcuts([
-            makeDef('a', 'KeyA'),
-            makeDef('b', 'KeyB'),
-            makeDef('c', 'KeyC'),
-        ]);
+        registerShortcuts([makeDef('a', 'KeyA'), makeDef('b', 'KeyB'), makeDef('c', 'KeyC')]);
         const ids = getAllShortcuts().map((s) => s.id);
         expect(ids).toEqual(['a', 'b', 'c']);
     });

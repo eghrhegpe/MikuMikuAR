@@ -16,15 +16,16 @@ import {
     GetModelPresets,
 } from '@/core/wails-bindings';
 import { listPresets, toPresetMeta } from '../preset-meta';
+import type { PresetMeta } from '../preset-meta';
 
 const env = ListEnvPresets as unknown as ReturnType<typeof vi.fn>;
 const render = GetRenderPresets as unknown as ReturnType<typeof vi.fn>;
 const scene = GetPresetScenes as unknown as ReturnType<typeof vi.fn>;
 const model = GetModelPresets as unknown as ReturnType<typeof vi.fn>;
 
-const fallback = {
+const fallback: PresetMeta = {
     id: '',
-    category: 'env' as const,
+    category: 'env',
     name: '',
     label: '',
     createdAt: undefined,
