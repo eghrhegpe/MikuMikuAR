@@ -104,7 +104,7 @@ jobs:
       - name: Build
         run: .\scripts\build-windows.ps1 -Production
       - name: Upload artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: windows-amd64
           path: dist/*.exe
@@ -197,7 +197,7 @@ jobs:
             -ldflags="-X main.AppVersion=${{ needs.prepare.outputs.version }} -X main.BuildTime=${BUILD_TIME} -X main.CommitHash=${COMMIT_HASH} -s -w" \
             -o "bin/mikumikuar-${{ needs.prepare.outputs.version }}-linux-amd64"
       - name: Upload artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: linux-amd64
           path: bin/mikumikuar-*
@@ -314,7 +314,7 @@ jobs:
           powershell -ExecutionPolicy Bypass -File scripts\build-android.ps1 -Arch arm64
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: android-arm64
           path: dist/*.apk
