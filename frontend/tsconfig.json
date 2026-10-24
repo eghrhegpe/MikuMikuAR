@@ -29,5 +29,5 @@
       "babylon-mmd/esm/*": ["node_modules/babylon-mmd/esm/*"]
     }
   },
-  "include": ["src", "bindings"]
+  "include": ["src", "bindings", "harness"]
 }

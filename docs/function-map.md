@@ -7,9 +7,9 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 140 | 834 |
+| 核心基础设施 | 140 | 835 |
 | 3D 场景 | 137 | 1287 |
-| 菜单 & UI | 77 | 391 |
+| 菜单 & UI | 77 | 392 |
 | 动作算法 | 19 | 138 |
 | 顶层配置 | 1 | 1 |
 
@@ -20,7 +20,7 @@
 | `registerDiagnosticActions()` | `core/action-defs/diagnostic-actions:10` | — |
 | `registerEnvActions()` | `core/action-defs/env-actions:27` | — |
 | `registerLibraryActions()` | `core/action-defs/library-actions-def:7` | — |
-| `registerMotionActions()` | `core/action-defs/motion-actions:89` | — |
+| `registerMotionActions()` | `core/action-defs/motion-actions:91` | — |
 | `registerSceneActions()` | `core/action-defs/scene-actions:7` | — |
 | `registerSettingsActions()` | `core/action-defs/settings-actions:34` | — |
 | `ActionResult()` | `core/action-executor:9` | — |
@@ -100,7 +100,7 @@
 | `toDiagnosticContext()` | `core/ai/error-buffer:305` | — |
 | `uninstallLoggingPatch()` | `core/ai/error-buffer:219` | 卸载 console.error 补丁，恢复原始实现。 |
 | `GoAiAdapter()` | `core/ai/go-adapter:30` | — |
-| `goAiAdapter()` | `core/ai/go-adapter:367` | — |
+| `goAiAdapter()` | `core/ai/go-adapter:379` | — |
 | `goKeyAllowsProceed()` | `core/ai/go-key-allows-proceed:11` | Go 桌面端 key 不可回读，当 isGo=true &amp;&amp; keyConfigured=true 时， missingKey 不应阻止前端发起请求（key 由 Go 后端持有）。 |
 | `resolveAi()` | `core/ai/index:29` | — |
 | `ActionResult()` | `core/ai/intent-dispatcher:4` | — |
@@ -146,7 +146,7 @@
 | `swallowError()` | `core/async:12` | 吞掉 promise 的异常并记录日志（比空 &#96;.catch(() =&gt; {})&#96; 可调试）。 |
 | `waitForFrame()` | `core/async:27` | Promise 包装的等待下一帧。 |
 | `PlaySfxOptions()` | `core/audio-bus:109` | — |
-| `disposeAudioBus()` | `core/audio-bus:192` | 释放总线资源（context 关闭、缓存清空）。 |
+| `disposeAudioBus()` | `core/audio-bus:194` | 释放总线资源（context 关闭、缓存清空）。 |
 | `getAudioContext()` | `core/audio-bus:21` | 惰性创建共享 AudioContext（SFX 总线与未来音效共用）。无支持环境返回 null。 |
 | `getFootstepVolume()` | `core/audio-bus:105` | — |
 | `getSfxEnabled()` | `core/audio-bus:92` | — |
@@ -158,31 +158,31 @@
 | `setSfxEnabled()` | `core/audio-bus:87` | — |
 | `setSfxVolume()` | `core/audio-bus:77` | — |
 | `BeatSink()` | `core/audio:28` | [doc:adr-242] 节拍检测器的结构契约。core 层不得依赖 &#96;motion-algos/beat-detector&#96; 的具体实现类——那会构成 &#96;core → moti |
-| `applyGain()` | `core/audio:608` | — |
-| `attachBeatDetector()` | `core/audio:601` | — |
-| `clearAudio()` | `core/audio:435` | — |
-| `disposeAudio()` | `core/audio:446` | — |
-| `getAudioName()` | `core/audio:550` | — |
-| `getAudioOffset()` | `core/audio:521` | — |
+| `applyGain()` | `core/audio:610` | — |
+| `attachBeatDetector()` | `core/audio:603` | — |
+| `clearAudio()` | `core/audio:437` | — |
+| `disposeAudio()` | `core/audio:448` | — |
+| `getAudioName()` | `core/audio:552` | — |
+| `getAudioOffset()` | `core/audio:523` | — |
 | `getAudioPath()` | `core/audio:412` | — |
-| `getCurrentTime()` | `core/audio:527` | — |
-| `getDuration()` | `core/audio:531` | — |
+| `getCurrentTime()` | `core/audio:529` | — |
+| `getDuration()` | `core/audio:533` | — |
 | `getRepeatModeStr()` | `core/audio:389` | 获取当前重复模式。 |
-| `getStreamPlayer()` | `core/audio:625` | 暴露内部 StreamAudioPlayer 供 scene.ts 调用 MmdRuntime.setAudioPlayer()。 |
-| `getVolume()` | `core/audio:510` | — |
-| `isAudioPlaying()` | `core/audio:546` | — |
+| `getStreamPlayer()` | `core/audio:627` | 暴露内部 StreamAudioPlayer 供 scene.ts 调用 MmdRuntime.setAudioPlayer()。 |
+| `getVolume()` | `core/audio:512` | — |
+| `isAudioPlaying()` | `core/audio:548` | — |
 | `loadAudioFile()` | `core/audio:302` | — |
 | `nextTrack()` | `core/audio:375` | 切换到下一曲。 |
-| `notifyBeatDetectorReset()` | `core/audio:618` | — |
+| `notifyBeatDetectorReset()` | `core/audio:620` | — |
 | `pauseAudio()` | `core/audio:416` | — |
 | `playAudio()` | `core/audio:280` | — |
 | `resumeAudio()` | `core/audio:420` | — |
-| `seekAudio()` | `core/audio:536` | — |
-| `setAudioOffset()` | `core/audio:514` | — |
+| `seekAudio()` | `core/audio:538` | — |
+| `setAudioOffset()` | `core/audio:516` | — |
 | `setRepeatMode()` | `core/audio:384` | 设置重复模式（持久化）。 |
-| `setVolume()` | `core/audio:501` | — |
-| `stopAudio()` | `core/audio:427` | — |
-| `syncAudioPlayback()` | `core/audio:558` | — |
+| `setVolume()` | `core/audio:503` | — |
+| `stopAudio()` | `core/audio:429` | — |
+| `syncAudioPlayback()` | `core/audio:560` | — |
 | `setTriggerAutoSave()` | `core/auto-save:10` | 注册自动保存的实现回调（由 scene-serialize.ts 在初始化时调用）。 |
 | `triggerAutoSave()` | `core/auto-save:15` | 触发自动保存（由动作/菜单/UI 层调用）。 |
 | `clearWebFlag()` | `core/backend/backend-mocks:13` | — |
@@ -332,7 +332,7 @@
 | `canvasToBase64()` | `core/image:13` | 将 Canvas 编码为 base64 字符串（剥离 data:image/...;base64, 前缀）。 |
 | `thumbDataUrl()` | `core/image:64` | Build a data URL from a base64 thumbnail, sniffing PNG/JPEG/WebP from the header. |
 | `toBase64()` | `core/image:54` | Encode a string as base64 (UTF-8 safe). |
-| `bootstrap()` | `core/init:641` | 应用启动入口：接线 dev-hooks / render-loop / events 并启动渲染循环。 |
+| `bootstrap()` | `core/init:649` | 应用启动入口：接线 dev-hooks / render-loop / events 并启动渲染循环。 |
 | `jsonParse()` | `core/json-stringify:12` | Safely parse JSON; returns null on failure instead of throwing. |
 | `jsonStringify()` | `core/json-stringify:5` | Format a value as pretty-printed JSON (2-space indent). |
 | `CATEGORY_DIR()` | `core/library-path:57` | — |
@@ -676,7 +676,7 @@
 | `navGroupSelector()` | `core/ui-nav-item:104` | 读取组行的组内子项 selector（非组行返回 null） |
 | `navHasHorizontalAdjust()` | `core/ui-nav-item:99` | 该行是否声明了 ←→ 水平调值（菜单应让位） |
 | `PresetChipItem()` | `core/ui-preset:15` | 单个预设芯片的描述。 |
-| `addClearRow()` | `core/ui-preset:72` | 渲染一行右对齐的「清除」按钮（统一 cs-btn cs-btn-sm 样式）。 |
+| `addClearRow()` | `core/ui-preset:74` | 渲染一行右对齐的「清除」按钮（统一 cs-btn cs-btn-sm 样式）。 |
 | `buildPresetChipGroup()` | `core/ui-preset:34` | 渲染一组 preset-chip（统一 .preset-group 容器 + addPresetChip 布局）。 |
 | `ResourceItem()` | `core/ui-resource-panel:34` | — |
 | `ResourcePanelHandle()` | `core/ui-resource-panel:55` | — |
@@ -708,7 +708,7 @@
 | `TrailingAction()` | `core/ui-slide-row:11` | — |
 | `createLeadingBtn()` | `core/ui-slide-row:63` | 统一左侧行为区按钮工厂——镜像 createTrailingBtn，但渲染为 21px 透明可点击 &#96;.slide-lead-btn&#96;（复用 .slide-icon 尺寸，非 22 |
 | `createTrailingBtn()` | `core/ui-slide-row:54` | 统一尾部第二动作按钮工厂——供 slideRow 与 menu.ts createRow 共用， 确保两条渲染路径的第二按钮观感与行为一致（22px .slide-add-btn； |
-| `slideRow()` | `core/ui-slide-row:96` | — |
+| `slideRow()` | `core/ui-slide-row:98` | — |
 | `DragSliderController()` | `core/ui-slider-controller:23` | — |
 | `DragSliderOptions()` | `core/ui-slider-controller:8` | — |
 | `activeTimeOfDayPreset()` | `core/ui-state:38` | 当前选中的 time-of-day 预设 key。预设芯片高亮唯一来源，env-menu 顶层与 sky 子菜单共享同一状态。 |
@@ -724,131 +724,132 @@
 | `VirtualGridOptions()` | `core/ui-virtual-grid:6` | — |
 | `createVirtualGrid()` | `core/ui-virtual-grid:34` | — |
 | `generateUuid()` | `core/uuid:8` | 生成 UUID v4 字符串（格式：xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx）。 |
-| `AddCustomSoftware()` | `core/wails-bindings:50` | — |
-| `AddRecentModel()` | `core/wails-bindings:51` | — |
-| `AddTag()` | `core/wails-bindings:52` | — |
-| `BundleScene()` | `core/wails-bindings:53` | — |
-| `CheckForUpdate()` | `core/wails-bindings:54` | — |
-| `CleanOrphanCache()` | `core/wails-bindings:55` | — |
-| `ClearAllCaches()` | `core/wails-bindings:56` | — |
-| `ClearExtractCache()` | `core/wails-bindings:57` | — |
-| `ClearThumbnailCache()` | `core/wails-bindings:58` | — |
-| `ClosePlazaWindow()` | `core/wails-bindings:59` | — |
-| `Config()` | `core/wails-bindings:14` | — |
-| `DeleteEnvPreset()` | `core/wails-bindings:60` | — |
-| `DeleteModelPreset()` | `core/wails-bindings:61` | — |
-| `DeletePresetScene()` | `core/wails-bindings:62` | — |
-| `DownloadAndRunInstaller()` | `core/wails-bindings:64` | — |
-| `DownloadApk()` | `core/wails-bindings:63` | — |
-| `DownloadFromPlaza()` | `core/wails-bindings:65` | — |
+| `AddCustomSoftware()` | `core/wails-bindings:51` | — |
+| `AddRecentModel()` | `core/wails-bindings:52` | — |
+| `AddTag()` | `core/wails-bindings:53` | — |
+| `BundleScene()` | `core/wails-bindings:54` | — |
+| `CheckForUpdate()` | `core/wails-bindings:55` | — |
+| `CleanOrphanCache()` | `core/wails-bindings:56` | — |
+| `ClearAllCaches()` | `core/wails-bindings:57` | — |
+| `ClearExtractCache()` | `core/wails-bindings:58` | — |
+| `ClearThumbnailCache()` | `core/wails-bindings:59` | — |
+| `ClosePlazaWindow()` | `core/wails-bindings:60` | — |
+| `Config()` | `core/wails-bindings:82` | — |
+| `DeleteEnvPreset()` | `core/wails-bindings:61` | — |
+| `DeleteModelPreset()` | `core/wails-bindings:62` | — |
+| `DeletePresetScene()` | `core/wails-bindings:63` | — |
+| `DownloadAndRunInstaller()` | `core/wails-bindings:65` | — |
+| `DownloadApk()` | `core/wails-bindings:64` | — |
+| `DownloadFromPlaza()` | `core/wails-bindings:66` | — |
 | `EnvPresetEntry()` | `core/wails-bindings:14` | — |
 | `EnvState()` | `core/wails-bindings:14` | — |
 | `Events()` | `core/wails-bindings:13` | — |
 | `ExtractResult()` | `core/wails-bindings:14` | — |
-| `ExtractZip()` | `core/wails-bindings:66` | — |
-| `FetchPlazaConfig()` | `core/wails-bindings:67` | — |
-| `FileExists()` | `core/wails-bindings:68` | — |
+| `ExtractZip()` | `core/wails-bindings:67` | — |
+| `FetchPlazaConfig()` | `core/wails-bindings:68` | — |
+| `FileExists()` | `core/wails-bindings:69` | — |
 | `FileInfo()` | `core/wails-bindings:14` | — |
-| `GetAllTags()` | `core/wails-bindings:69` | — |
-| `GetBuildInfo()` | `core/wails-bindings:70` | — |
-| `GetCacheStats()` | `core/wails-bindings:71` | — |
-| `GetCachedPlazaConfig()` | `core/wails-bindings:72` | — |
-| `GetConfig()` | `core/wails-bindings:73` | — |
-| `GetDownloadAutoImport()` | `core/wails-bindings:74` | — |
-| `GetDownloadWatchEnabled()` | `core/wails-bindings:75` | — |
-| `GetDownloadWatchStatus()` | `core/wails-bindings:76` | — |
-| `GetLastBrowseDir()` | `core/wails-bindings:77` | — |
-| `GetLibraryIndex()` | `core/wails-bindings:78` | — |
-| `GetModelMetaBatch()` | `core/wails-bindings:79` | — |
-| `GetModelPresets()` | `core/wails-bindings:80` | — |
-| `GetModelsByTag()` | `core/wails-bindings:81` | — |
-| `GetPresetScenes()` | `core/wails-bindings:82` | — |
-| `GetPresetScenesDir()` | `core/wails-bindings:83` | — |
-| `GetRecentModels()` | `core/wails-bindings:84` | — |
-| `GetRenderPresets()` | `core/wails-bindings:85` | — |
-| `GetStorageMode()` | `core/wails-bindings:86` | — |
-| `GetSystemA11ySettings()` | `core/wails-bindings:87` | — |
-| `GetTagsByModel()` | `core/wails-bindings:88` | — |
-| `GetThumbnail()` | `core/wails-bindings:89` | — |
-| `ImportLocalFile()` | `core/wails-bindings:90` | — |
-| `ImportZip()` | `core/wails-bindings:91` | — |
+| `GetAllTags()` | `core/wails-bindings:70` | — |
+| `GetBuildInfo()` | `core/wails-bindings:71` | — |
+| `GetCacheStats()` | `core/wails-bindings:72` | — |
+| `GetCachedPlazaConfig()` | `core/wails-bindings:73` | — |
+| `GetConfig()` | `core/wails-bindings:74` | — |
+| `GetDownloadAutoImport()` | `core/wails-bindings:89` | — |
+| `GetDownloadWatchEnabled()` | `core/wails-bindings:90` | — |
+| `GetDownloadWatchStatus()` | `core/wails-bindings:91` | — |
+| `GetLastBrowseDir()` | `core/wails-bindings:92` | — |
+| `GetLibraryIndex()` | `core/wails-bindings:93` | — |
+| `GetModelMetaBatch()` | `core/wails-bindings:94` | — |
+| `GetModelPresets()` | `core/wails-bindings:95` | — |
+| `GetModelsByTag()` | `core/wails-bindings:96` | — |
+| `GetPresetScenes()` | `core/wails-bindings:97` | — |
+| `GetPresetScenesDir()` | `core/wails-bindings:98` | — |
+| `GetRecentModels()` | `core/wails-bindings:99` | — |
+| `GetRenderPresets()` | `core/wails-bindings:100` | — |
+| `GetStorageMode()` | `core/wails-bindings:101` | — |
+| `GetSystemA11ySettings()` | `core/wails-bindings:102` | — |
+| `GetTagsByModel()` | `core/wails-bindings:103` | — |
+| `GetThumbnail()` | `core/wails-bindings:104` | — |
+| `ImportLocalFile()` | `core/wails-bindings:105` | — |
+| `ImportZip()` | `core/wails-bindings:106` | — |
 | `InstallResult()` | `core/wails-bindings:14` | — |
-| `IsolateModelDir()` | `core/wails-bindings:92` | — |
-| `LaunchSoftware()` | `core/wails-bindings:93` | — |
-| `ListDirRecursive()` | `core/wails-bindings:94` | — |
-| `ListEnvPresets()` | `core/wails-bindings:95` | — |
-| `ListSubDirs()` | `core/wails-bindings:96` | — |
-| `LoadEnvPreset()` | `core/wails-bindings:97` | — |
-| `LoadLastScene()` | `core/wails-bindings:98` | — |
-| `LoadModelPreset()` | `core/wails-bindings:99` | — |
-| `LoadModelPresetFromLib()` | `core/wails-bindings:100` | — |
-| `LoadOutfitFile()` | `core/wails-bindings:101` | — |
-| `LoadSceneFile()` | `core/wails-bindings:102` | — |
+| `IsolateModelDir()` | `core/wails-bindings:107` | — |
+| `LaunchSoftware()` | `core/wails-bindings:108` | — |
+| `ListDirRecursive()` | `core/wails-bindings:109` | — |
+| `ListEnvPresets()` | `core/wails-bindings:110` | — |
+| `ListSubDirs()` | `core/wails-bindings:111` | — |
+| `LoadEnvPreset()` | `core/wails-bindings:112` | — |
+| `LoadLastScene()` | `core/wails-bindings:113` | — |
+| `LoadModelPreset()` | `core/wails-bindings:114` | — |
+| `LoadModelPresetFromLib()` | `core/wails-bindings:115` | — |
+| `LoadOutfitFile()` | `core/wails-bindings:116` | — |
+| `LoadSceneFile()` | `core/wails-bindings:117` | — |
 | `ModelEntry()` | `core/wails-bindings:14` | — |
 | `ModelMeta()` | `core/wails-bindings:14` | — |
 | `ModelPresetEntry()` | `core/wails-bindings:14` | — |
-| `NavigatePlazaWindow()` | `core/wails-bindings:103` | — |
-| `OpenCacheDir()` | `core/wails-bindings:104` | — |
-| `OpenScreenshotDir()` | `core/wails-bindings:105` | — |
-| `OpenWithSoftware()` | `core/wails-bindings:106` | — |
-| `PlazaGoBack()` | `core/wails-bindings:107` | — |
-| `PlazaGoForward()` | `core/wails-bindings:108` | — |
-| `PlazaReload()` | `core/wails-bindings:109` | — |
-| `PlazaZoomIn()` | `core/wails-bindings:110` | — |
-| `PlazaZoomOut()` | `core/wails-bindings:111` | — |
-| `PlazaZoomReset()` | `core/wails-bindings:112` | — |
-| `ReadTextFile()` | `core/wails-bindings:113` | — |
-| `RemoveCustomSoftware()` | `core/wails-bindings:115` | — |
-| `RemoveTag()` | `core/wails-bindings:116` | — |
+| `NavigatePlazaWindow()` | `core/wails-bindings:118` | — |
+| `OpenCacheDir()` | `core/wails-bindings:119` | — |
+| `OpenScreenshotDir()` | `core/wails-bindings:120` | — |
+| `OpenWithSoftware()` | `core/wails-bindings:121` | — |
+| `PlazaGoBack()` | `core/wails-bindings:122` | — |
+| `PlazaGoForward()` | `core/wails-bindings:123` | — |
+| `PlazaReload()` | `core/wails-bindings:124` | — |
+| `PlazaZoomIn()` | `core/wails-bindings:125` | — |
+| `PlazaZoomOut()` | `core/wails-bindings:126` | — |
+| `PlazaZoomReset()` | `core/wails-bindings:127` | — |
+| `ReadTextFile()` | `core/wails-bindings:128` | — |
+| `RemoveCustomSoftware()` | `core/wails-bindings:130` | — |
+| `RemoveTag()` | `core/wails-bindings:131` | — |
 | `RenderPreset()` | `core/wails-bindings:14` | — |
-| `SaveEnvPresetAuto()` | `core/wails-bindings:117` | — |
-| `SaveLastScene()` | `core/wails-bindings:118` | — |
-| `SaveModelPreset()` | `core/wails-bindings:119` | — |
-| `SaveModelPresetToLibAuto()` | `core/wails-bindings:120` | — |
-| `SavePlazaConfig()` | `core/wails-bindings:121` | — |
-| `SaveRenderPreset()` | `core/wails-bindings:122` | — |
-| `SaveScenePreset()` | `core/wails-bindings:123` | — |
-| `SaveScreenshot()` | `core/wails-bindings:124` | — |
-| `SaveThumbnail()` | `core/wails-bindings:125` | — |
-| `ScanModelDir()` | `core/wails-bindings:126` | — |
-| `ScanSoftwareDir()` | `core/wails-bindings:127` | — |
-| `SelectBundleSaveFile()` | `core/wails-bindings:128` | — |
-| `SelectDir()` | `core/wails-bindings:129` | — |
-| `SelectExeFile()` | `core/wails-bindings:130` | — |
-| `SelectImportFile()` | `core/wails-bindings:131` | — |
-| `SelectPresetOpenFile()` | `core/wails-bindings:132` | — |
-| `SelectPresetSaveFile()` | `core/wails-bindings:133` | — |
-| `SelectRetargetFile()` | `core/wails-bindings:134` | — |
-| `SelectSceneOpenFile()` | `core/wails-bindings:135` | — |
-| `SetBlenderPath()` | `core/wails-bindings:136` | — |
-| `SetDisplayNamePriority()` | `core/wails-bindings:137` | — |
-| `SetDownloadAutoImport()` | `core/wails-bindings:138` | — |
-| `SetDownloadWatchDir()` | `core/wails-bindings:139` | — |
-| `SetDownloadWatchEnabled()` | `core/wails-bindings:140` | — |
-| `SetEnvState()` | `core/wails-bindings:141` | — |
-| `SetLastBrowseDir()` | `core/wails-bindings:142` | — |
-| `SetMMDPath()` | `core/wails-bindings:143` | — |
-| `SetOverridePath()` | `core/wails-bindings:144` | — |
-| `SetPerformanceMode()` | `core/wails-bindings:145` | — |
-| `SetResourceRoot()` | `core/wails-bindings:146` | — |
-| `SetStorageMode()` | `core/wails-bindings:147` | — |
-| `SetUIAccent()` | `core/wails-bindings:148` | — |
-| `SetUIAnimations()` | `core/wails-bindings:149` | — |
-| `SetUIAutoUpdate()` | `core/wails-bindings:150` | — |
-| `SetUIBlurBg()` | `core/wails-bindings:151` | — |
-| `SetUIFontFamily()` | `core/wails-bindings:152` | — |
-| `SetUIPopupWidth()` | `core/wails-bindings:153` | — |
-| `SetUIScale()` | `core/wails-bindings:154` | — |
-| `SetUIState()` | `core/wails-bindings:155` | — |
+| `SaveEnvPresetAuto()` | `core/wails-bindings:132` | — |
+| `SaveLastScene()` | `core/wails-bindings:133` | — |
+| `SaveModelPreset()` | `core/wails-bindings:134` | — |
+| `SaveModelPresetToLibAuto()` | `core/wails-bindings:135` | — |
+| `SavePlazaConfig()` | `core/wails-bindings:136` | — |
+| `SaveRenderPreset()` | `core/wails-bindings:137` | — |
+| `SaveScenePreset()` | `core/wails-bindings:138` | — |
+| `SaveScreenshot()` | `core/wails-bindings:139` | — |
+| `SaveThumbnail()` | `core/wails-bindings:140` | — |
+| `ScanModelDir()` | `core/wails-bindings:141` | — |
+| `ScanSoftwareDir()` | `core/wails-bindings:142` | — |
+| `SelectBundleSaveFile()` | `core/wails-bindings:143` | — |
+| `SelectDir()` | `core/wails-bindings:144` | — |
+| `SelectExeFile()` | `core/wails-bindings:145` | — |
+| `SelectImportFile()` | `core/wails-bindings:146` | — |
+| `SelectPresetOpenFile()` | `core/wails-bindings:147` | — |
+| `SelectPresetSaveFile()` | `core/wails-bindings:148` | — |
+| `SelectRetargetFile()` | `core/wails-bindings:149` | — |
+| `SelectSceneOpenFile()` | `core/wails-bindings:150` | — |
+| `SetBlenderPath()` | `core/wails-bindings:151` | — |
+| `SetDisplayNamePriority()` | `core/wails-bindings:152` | — |
+| `SetDownloadAutoImport()` | `core/wails-bindings:153` | — |
+| `SetDownloadWatchDir()` | `core/wails-bindings:154` | — |
+| `SetDownloadWatchEnabled()` | `core/wails-bindings:155` | — |
+| `SetEnvState()` | `core/wails-bindings:156` | — |
+| `SetLastBrowseDir()` | `core/wails-bindings:157` | — |
+| `SetMMDPath()` | `core/wails-bindings:158` | — |
+| `SetOverridePath()` | `core/wails-bindings:159` | — |
+| `SetPerformanceMode()` | `core/wails-bindings:160` | — |
+| `SetResourceRoot()` | `core/wails-bindings:161` | — |
+| `SetStorageMode()` | `core/wails-bindings:162` | — |
+| `SetUIAccent()` | `core/wails-bindings:163` | — |
+| `SetUIAnimations()` | `core/wails-bindings:164` | — |
+| `SetUIAutoUpdate()` | `core/wails-bindings:165` | — |
+| `SetUIBlurBg()` | `core/wails-bindings:166` | — |
+| `SetUIFontFamily()` | `core/wails-bindings:167` | — |
+| `SetUIPopupWidth()` | `core/wails-bindings:168` | — |
+| `SetUIScale()` | `core/wails-bindings:169` | — |
+| `SetUIState()` | `core/wails-bindings:170` | — |
 | `SoftwareEntry()` | `core/wails-bindings:14` | — |
-| `StartFileServer()` | `core/wails-bindings:156` | — |
-| `StartProxy()` | `core/wails-bindings:157` | — |
-| `StopProxy()` | `core/wails-bindings:158` | — |
+| `StartFileServer()` | `core/wails-bindings:171` | — |
+| `StartProxy()` | `core/wails-bindings:172` | — |
+| `StopProxy()` | `core/wails-bindings:173` | — |
 | `UIState()` | `core/wails-bindings:14` | — |
 | `UpdateCheckResult()` | `core/wails-bindings:14` | — |
-| `UpdateCustomSoftware()` | `core/wails-bindings:159` | — |
-| `WriteTextFile()` | `core/wails-bindings:114` | — |
-| `readFileBytes()` | `core/wails-bindings:44` | 读取文件为 Uint8Array（go：自动解码 Wails v3 base64；browser：IndexedDB/FSA 直读）。 |
+| `UpdateCustomSoftware()` | `core/wails-bindings:174` | — |
+| `WriteTextFile()` | `core/wails-bindings:129` | — |
+| `readFileBytes()` | `core/wails-bindings:45` | 读取文件为 Uint8Array（go：自动解码 Wails v3 base64；browser：IndexedDB/FSA 直读）。 |
+| `requireConfig()` | `core/wails-bindings:82` | [doc:adr-276] 读配置并要求非空。 |
 | `getWindVector()` | `core/wind-utils:35` | 返回当前风矢量（方向 × 速度），风未生效时返回零向量。 |
 | `isWindActive()` | `core/wind-utils:24` | 风向是否生效（windEnabled 且 windSpeed &gt; 0.01，过滤浮点噪声 / 滑条零位残留）。 |
 
@@ -876,11 +877,11 @@
 | `probeWebXR()` | `scene/ar/ar-webxr-probe:255` | 执行 WebXR 支持度探针（非侵入式，不请求 session）。 |
 | `probeWebXRFeatures()` | `scene/ar/ar-webxr-probe:333` | 深度探针：实际创建 immersive-ar session 验证特性可用性。 |
 | `bootMmdLoaders()` | `scene/boot-mmd:25` | 注册 PMX loader、DDS/DxBmp 纹理 loader、材质代理构造器，并按材质模式切换构建器。 |
-| `bootBoneOverride()` | `scene/boot-motion:61` | Bone Override（ADR-116）：注册 onBeforeRender 回调，在动画应用后逐骨骼覆盖。 |
+| `bootBoneOverride()` | `scene/boot-motion:62` | Bone Override（ADR-116）：注册 onBeforeRender 回调，在动画应用后逐骨骼覆盖。 |
 | `bootFeetAdjustment()` | `scene/boot-motion:29` | 脚部地面跟随（ADR-085 / ADR-116）：always-on 基础设施，不再由动作覆盖模块控制。 |
-| `bootFootstep()` | `scene/boot-motion:55` | 脚步声（ADR-088）：消费 feet-adjustment 的落地事件发声。 |
-| `bootMotionModules()` | `scene/boot-motion:104` | Motion Override Modules 注册（ADR-116）：主初始化路径。 |
-| `bootWasmIkResolver()` | `scene/boot-motion:81` | [ADR-202 A-class] WASM IK 重解回调注入。 |
+| `bootFootstep()` | `scene/boot-motion:56` | 脚步声（ADR-088）：消费 feet-adjustment 的落地事件发声。 |
+| `bootMotionModules()` | `scene/boot-motion:111` | Motion Override Modules 注册（ADR-116）：主初始化路径。 |
+| `bootWasmIkResolver()` | `scene/boot-motion:82` | [ADR-202 A-class] WASM IK 重解回调注入。 |
 | `BootDeps()` | `scene/boot-plan:83` | 步骤拿到的依赖表：只含它声明过的键，且值类型由 {@link BootResourceMap} 决定。 |
 | `BootOutputs()` | `scene/boot-plan:86` | 步骤的返回值：必须包含它声明的每一个 &#96;provides&#96; 键（执行器会逐个核对）。 |
 | `BootPlanError()` | `scene/boot-plan:112` | 启动 plan 在启动过程中失败（顺序违约 / 提供缺失）。带上步骤 id 便于定位。 |
@@ -984,70 +985,70 @@
 | `animateCameraVmd()` | `scene/camera/camera-vmd:100` | Animate the VMD camera to a given 30fps frame time. |
 | `clearCameraVmd()` | `scene/camera/camera-vmd:77` | — |
 | `createVmdCamera()` | `scene/camera/camera-vmd:107` | 创建 VMD 相机（若已存在且未销毁则复用）。供 camera.ts switchCameraMode 在 vmd 分支使用。 |
-| `hasCameraAnimationHandle()` | `scene/camera/camera-vmd:126` | VMD 相机动画句柄是否就绪（switchCameraMode 在 vmd 分支前置检查）。 |
+| `hasCameraAnimationHandle()` | `scene/camera/camera-vmd:131` | VMD 相机动画句柄是否就绪（switchCameraMode 在 vmd 分支前置检查）。 |
 | `loadCameraVmd()` | `scene/camera/camera-vmd:37` | Load camera animation from a VMD (MmdAnimation) and create an MmdCamera. |
 | `setSwitchCameraModeCallback()` | `scene/camera/camera-vmd:32` | camera.ts 启动时注入 switchCameraMode 回调。 |
 | `CameraBehavior()` | `scene/camera/camera:321` | — |
 | `CameraControl()` | `scene/camera/camera:299` | — |
 | `CameraMode()` | `scene/camera/camera:272` | — |
-| `CameraPreset()` | `scene/camera/camera:835` | — |
-| `CameraState()` | `scene/camera/camera:604` | — |
+| `CameraPreset()` | `scene/camera/camera:837` | — |
+| `CameraState()` | `scene/camera/camera:606` | — |
 | `ConcertParams()` | `scene/camera/camera:212` | — |
 | `FreeflyParams()` | `scene/camera/camera:199` | — |
 | `LEGACY_MODE_MAP()` | `scene/camera/camera:112` | ADR-100 §6.1 — 旧模式 → 双轴映射（迁移 / shim 共用）。 |
 | `OrbitParams()` | `scene/camera/camera:172` | — |
-| `ScriptedSubMode()` | `scene/camera/camera:835` | — |
+| `ScriptedSubMode()` | `scene/camera/camera:837` | — |
 | `SurroundParams()` | `scene/camera/camera:216` | — |
 | `_syncAxesFromMode()` | `scene/camera/camera:272` | ADR-100：由旧 mode 派生双轴状态。switchCameraMode 提交 _cameraMode 时同步调用，作为唯一写入点。 |
-| `animateCameraVmd()` | `scene/camera/camera:867` | — |
-| `autoFrame()` | `scene/camera/camera:580` | Auto-frame the camera to centre on a bounding box. |
-| `clearCameraVmd()` | `scene/camera/camera:867` | — |
-| `defaultCameraPreset()` | `scene/camera/camera:866` | — |
+| `animateCameraVmd()` | `scene/camera/camera:869` | — |
+| `autoFrame()` | `scene/camera/camera:582` | Auto-frame the camera to centre on a bounding box. |
+| `clearCameraVmd()` | `scene/camera/camera:869` | — |
+| `defaultCameraPreset()` | `scene/camera/camera:868` | — |
 | `deriveLegacyMode()` | `scene/camera/camera:130` | ADR-100 §6.2 — 双轴 → 旧模式反查（getCameraState 降级双写 / shim 内部路由）。 |
-| `disposeCameraSystem()` | `scene/camera/camera:801` | 顶层销毁相机系统（HMR / 页面卸载 / scene 销毁时调用）。幂等。 |
-| `getAutoCameraBeatsPerSwitch()` | `scene/camera/camera:876` | — |
-| `getBoneLockDamping()` | `scene/camera/camera:869` | — |
-| `getCameraBehavior()` | `scene/camera/camera:846` | — |
-| `getCameraControl()` | `scene/camera/camera:846` | — |
-| `getCameraMode()` | `scene/camera/camera:846` | — |
-| `getCameraState()` | `scene/camera/camera:626` | — |
-| `getCameraVmdName()` | `scene/camera/camera:846` | — |
-| `getCameraVmdPath()` | `scene/camera/camera:846` | — |
-| `getConcertParams()` | `scene/camera/camera:846` | — |
-| `getConcertPaused()` | `scene/camera/camera:846` | — |
-| `getCurrentCamera()` | `scene/camera/camera:846` | — |
-| `getFocusedModelBoneNames()` | `scene/camera/camera:869` | — |
-| `getFov()` | `scene/camera/camera:846` | — |
-| `getFreeflyParams()` | `scene/camera/camera:846` | — |
-| `getOrbitBoneLock()` | `scene/camera/camera:869` | — |
-| `getOrbitParams()` | `scene/camera/camera:846` | — |
-| `getScriptedSubMode()` | `scene/camera/camera:846` | — |
-| `getSurroundParams()` | `scene/camera/camera:846` | — |
-| `getSurroundPaused()` | `scene/camera/camera:846` | — |
-| `hasCameraVmd()` | `scene/camera/camera:846` | — |
-| `initCameraSystem()` | `scene/camera/camera:354` | Initialise the camera system and create the default Orbit camera. |
-| `isAutoCameraEnabled()` | `scene/camera/camera:883` | — |
-| `loadCameraVmd()` | `scene/camera/camera:867` | — |
+| `disposeCameraSystem()` | `scene/camera/camera:803` | 顶层销毁相机系统（HMR / 页面卸载 / scene 销毁时调用）。幂等。 |
+| `getAutoCameraBeatsPerSwitch()` | `scene/camera/camera:878` | — |
+| `getBoneLockDamping()` | `scene/camera/camera:871` | — |
+| `getCameraBehavior()` | `scene/camera/camera:848` | — |
+| `getCameraControl()` | `scene/camera/camera:848` | — |
+| `getCameraMode()` | `scene/camera/camera:848` | — |
+| `getCameraState()` | `scene/camera/camera:628` | — |
+| `getCameraVmdName()` | `scene/camera/camera:848` | — |
+| `getCameraVmdPath()` | `scene/camera/camera:848` | — |
+| `getConcertParams()` | `scene/camera/camera:848` | — |
+| `getConcertPaused()` | `scene/camera/camera:848` | — |
+| `getCurrentCamera()` | `scene/camera/camera:848` | — |
+| `getFocusedModelBoneNames()` | `scene/camera/camera:871` | — |
+| `getFov()` | `scene/camera/camera:848` | — |
+| `getFreeflyParams()` | `scene/camera/camera:848` | — |
+| `getOrbitBoneLock()` | `scene/camera/camera:871` | — |
+| `getOrbitParams()` | `scene/camera/camera:848` | — |
+| `getScriptedSubMode()` | `scene/camera/camera:848` | — |
+| `getSurroundParams()` | `scene/camera/camera:848` | — |
+| `getSurroundPaused()` | `scene/camera/camera:848` | — |
+| `hasCameraVmd()` | `scene/camera/camera:848` | — |
+| `initCameraSystem()` | `scene/camera/camera:356` | Initialise the camera system and create the default Orbit camera. |
+| `isAutoCameraEnabled()` | `scene/camera/camera:885` | — |
+| `loadCameraVmd()` | `scene/camera/camera:869` | — |
 | `logCameraAlpha()` | `scene/camera/camera:190` | Log current camera alpha for diagnostics. |
-| `refreshCameraUserSettings()` | `scene/camera/camera:868` | — |
-| `restoreAutoCameraState()` | `scene/camera/camera:876` | — |
-| `setAutoCameraBeatsPerSwitch()` | `scene/camera/camera:876` | — |
-| `setAutoCameraEnabled()` | `scene/camera/camera:883` | — |
-| `setBoneLockDamping()` | `scene/camera/camera:869` | — |
+| `refreshCameraUserSettings()` | `scene/camera/camera:870` | — |
+| `restoreAutoCameraState()` | `scene/camera/camera:878` | — |
+| `setAutoCameraBeatsPerSwitch()` | `scene/camera/camera:878` | — |
+| `setAutoCameraEnabled()` | `scene/camera/camera:885` | — |
+| `setBoneLockDamping()` | `scene/camera/camera:871` | — |
 | `setCameraBehavior()` | `scene/camera/camera:321` | ADR-100 P4 — 直接设置运动行为轴（轴 B，仅 orbit 有效）。 |
 | `setCameraControl()` | `scene/camera/camera:299` | ADR-100 P4 — 直接设置控制方案轴（轴 A）。 |
-| `setCameraPreset()` | `scene/camera/camera:866` | — |
-| `setCameraState()` | `scene/camera/camera:656` | — |
+| `setCameraPreset()` | `scene/camera/camera:868` | — |
+| `setCameraState()` | `scene/camera/camera:658` | — |
 | `setConcertParams()` | `scene/camera/camera:212` | — |
-| `setConcertPaused()` | `scene/camera/camera:846` | — |
+| `setConcertPaused()` | `scene/camera/camera:848` | — |
 | `setFov()` | `scene/camera/camera:344` | — |
 | `setFreeflyParams()` | `scene/camera/camera:199` | — |
-| `setOrbitBoneLock()` | `scene/camera/camera:869` | — |
+| `setOrbitBoneLock()` | `scene/camera/camera:871` | — |
 | `setOrbitParams()` | `scene/camera/camera:172` | — |
 | `setSurroundParams()` | `scene/camera/camera:216` | — |
-| `setSurroundPaused()` | `scene/camera/camera:846` | — |
-| `setSyncAxesCallback()` | `scene/camera/camera:883` | — |
-| `switchCameraMode()` | `scene/camera/camera:375` | Switch to a different camera mode, preserving position as much as possible. |
+| `setSurroundPaused()` | `scene/camera/camera:848` | — |
+| `setSyncAxesCallback()` | `scene/camera/camera:885` | — |
+| `switchCameraMode()` | `scene/camera/camera:377` | Switch to a different camera mode, preserving position as much as possible. |
 | `InvertableArcRotateCameraPointersInput()` | `scene/camera/invertablePointersInput:13` | 可反转 Y 轴的 ArcRotate 相机指针输入。 |
 | `applyEnvStateFacade()` | `scene/env/_bridge/env-bridge:52` | 等同于 scene-env.ts 的 applyEnvState，但避免循环依赖。 |
 | `registerEnvStateMiddleware()` | `scene/env/_bridge/env-bridge:389` | 注册 setEnvState 中间件（供 env-time-of-day/env-gravity 等子模块调用）。 |
@@ -1075,15 +1076,15 @@
 | `publishGroundMesh()` | `scene/env/_bridge/ground-dispatcher:42` | 回写地面 mesh（由 spec 模块在新建/替换地面后调用）。未注册时静默跳过。 |
 | `registerGroundHandlers()` | `scene/env/_bridge/ground-dispatcher:26` | 由 env-ground.ts 在模块求值时注册三个回写实现。 |
 | `requestTerrainReady()` | `scene/env/_bridge/ground-dispatcher:37` | 触发地形就绪监听（由 spec 模块在 terrain 建成后调用）。未注册时静默跳过。 |
-| `INFINITE_GROUND_SIZE()` | `scene/env/_shared/env-context:55` | — |
-| `_envSys()` | `scene/env/_shared/env-context:82` | — |
-| `effectiveGroundSize()` | `scene/env/_shared/env-context:61` | 当前生效的地面尺寸：开启无限地面时为固定大尺寸，否则为 groundSize。 |
-| `getPipeline()` | `scene/env/_shared/env-context:44` | — |
-| `getScene()` | `scene/env/_shared/env-context:33` | 取当前 Babylon 场景；未初始化时抛错（env 子系统内部使用）。 |
-| `initEnvImpl()` | `scene/env/_shared/env-context:19` | — |
-| `isInitialized()` | `scene/env/_shared/env-context:40` | — |
-| `resetEnvContext()` | `scene/env/_shared/env-context:27` | [fix P2] 复位共享上下文引用：disposeEnvUpdateObserver 末尾调用，使 isInitialized() 在 dispose 后返回 false——否则 |
-| `resolveStaticAsset()` | `scene/env/_shared/env-context:66` | — |
+| `INFINITE_GROUND_SIZE()` | `scene/env/_shared/env-context:57` | — |
+| `_envSys()` | `scene/env/_shared/env-context:84` | — |
+| `effectiveGroundSize()` | `scene/env/_shared/env-context:63` | 当前生效的地面尺寸：开启无限地面时为固定大尺寸，否则为 groundSize。 |
+| `getPipeline()` | `scene/env/_shared/env-context:46` | — |
+| `getScene()` | `scene/env/_shared/env-context:35` | 取当前 Babylon 场景；未初始化时抛错（env 子系统内部使用）。 |
+| `initEnvImpl()` | `scene/env/_shared/env-context:21` | [doc:adr-276] pipeline 可空：调用方（scene.ts）的 pipeline 在 initRenderer 之前是 undefined， 存成 null 后由 |
+| `isInitialized()` | `scene/env/_shared/env-context:42` | — |
+| `resetEnvContext()` | `scene/env/_shared/env-context:29` | [fix P2] 复位共享上下文引用：disposeEnvUpdateObserver 末尾调用，使 isInitialized() 在 dispose 后返回 false——否则 |
+| `resolveStaticAsset()` | `scene/env/_shared/env-context:68` | — |
 | `CanvasTextureOptions()` | `scene/env/_shared/env-texture:9` | — |
 | `createCanvasDataURL()` | `scene/env/_shared/env-texture:185` | 统一创建 canvas 并导出 data URL（供 CreateGroundFromHeightMap 等以 URL 为输入的场景， 与 createCanvasTexture |
 | `createCanvasTexture()` | `scene/env/_shared/env-texture:49` | 统一创建 canvas 贴图。优先 DynamicTexture（无 toDataURL PNG 编码开销，ADR-091 §6 方向）； 任意环节失败（含 NullEngine |
@@ -1127,39 +1128,39 @@
 | `createGroundMeshFromSpec()` | `scene/env/env-ground-spec:414` | 创建地面 mesh 并落好材质。Phase 1 已接入：applyGround 非 terrain 重建路径调用本函数。 |
 | `groundSpecNeedsRebuild()` | `scene/env/env-ground-spec:269` | diffSpec 的结构性结论：是否需要重建。 |
 | `specKey()` | `scene/env/env-ground-spec:221` | 稳定 key：仅序列化结构性字段。新增结构性字段自动纳入，无遗漏风险。 |
-| `GROUND_PRESETS()` | `scene/env/env-ground:1402` | — |
+| `GROUND_PRESETS()` | `scene/env/env-ground:1411` | — |
 | `GroundMat()` | `scene/env/env-ground:55` | — |
-| `GroundPreset()` | `scene/env/env-ground:1401` | — |
-| `GroundProceduralKind()` | `scene/env/env-ground:169` | — |
-| `INFINITE_GROUND_SIZE()` | `scene/env/env-ground:571` | — |
-| `_disableGroundRippleTexture()` | `scene/env/env-ground:611` | — |
-| `_effectiveBumpLevel()` | `scene/env/env-ground:135` | — |
-| `_effectiveRoughness()` | `scene/env/env-ground:123` | ADR-114 Phase 2: 反射模糊映射到 roughness 偏移（blur=1 最多增加 0.4）；低质量模式自动关闭 |
-| `_generateGroundTexture()` | `scene/env/env-ground:989` | — |
-| `_getAlbedoColor()` | `scene/env/env-ground:106` | — |
-| `_getAlbedoTex()` | `scene/env/env-ground:93` | — |
-| `_needAlphaBlend()` | `scene/env/env-ground:160` | 判断地面是否需要 alpha blend 渲染（alpha &lt; 1 或边缘淡出）。 |
-| `_setAlbedoColor()` | `scene/env/env-ground:112` | — |
-| `_setAlbedoTex()` | `scene/env/env-ground:99` | — |
-| `_syncAllTextureOffsets()` | `scene/env/env-ground:1206` | — |
-| `_syncGroundEmissive()` | `scene/env/env-ground:1152` | [doc:adr-230] 自发光地屏增量同步：复用 Babylon 内置 emissiveColor/emissiveTexture 通道， 不引入新材质体系。es=0 / 黑 |
-| `_syncGroundNormalTexture()` | `scene/env/env-ground:1234` | — |
-| `_syncGroundRippleTexture()` | `scene/env/env-ground:595` | — |
-| `_syncPbrProperties()` | `scene/env/env-ground:1256` | PBR 增量更新：roughness / metallic / 程序化纹理无需重建材质的属性 |
-| `_syncTextureGroundTexture()` | `scene/env/env-ground:1074` | — |
-| `_updateGroundTexture()` | `scene/env/env-ground:1221` | — |
-| `applyGround()` | `scene/env/env-ground:1273` | — |
-| `applyGroundEdgeFade()` | `scene/env/env-ground:1141` | — |
-| `buildGroundPresetEnvState()` | `scene/env/env-ground:1402` | — |
-| `buildGroundReflection()` | `scene/env/env-ground:727` | — |
-| `clearGroundTexCache()` | `scene/env/env-ground:628` | — |
-| `createGroundMaterial()` | `scene/env/env-ground:137` | — |
-| `disposeGround()` | `scene/env/env-ground:1405` | 释放地面网格、材质与反射资源（幂等）。 |
-| `generateProceduralGroundTextures()` | `scene/env/env-ground:462` | — |
-| `getGroundHeightAt()` | `scene/env/env-ground:760` | — |
-| `setOnGroundChanged()` | `scene/env/env-ground:834` | [doc:adr-271] 原先的 triggerTerrainReady / setGroundMesh / setGroundActualSize 三个导出已删除： env-g |
-| `setOnTerrainReady()` | `scene/env/env-ground:808` | — |
-| `tickGround()` | `scene/env/env-ground:1337` | — |
+| `GroundPreset()` | `scene/env/env-ground:1410` | — |
+| `GroundProceduralKind()` | `scene/env/env-ground:176` | — |
+| `INFINITE_GROUND_SIZE()` | `scene/env/env-ground:578` | — |
+| `_disableGroundRippleTexture()` | `scene/env/env-ground:618` | — |
+| `_effectiveBumpLevel()` | `scene/env/env-ground:142` | — |
+| `_effectiveRoughness()` | `scene/env/env-ground:130` | ADR-114 Phase 2: 反射模糊映射到 roughness 偏移（blur=1 最多增加 0.4）；低质量模式自动关闭 |
+| `_generateGroundTexture()` | `scene/env/env-ground:996` | — |
+| `_getAlbedoColor()` | `scene/env/env-ground:113` | — |
+| `_getAlbedoTex()` | `scene/env/env-ground:100` | — |
+| `_needAlphaBlend()` | `scene/env/env-ground:167` | 判断地面是否需要 alpha blend 渲染（alpha &lt; 1 或边缘淡出）。 |
+| `_setAlbedoColor()` | `scene/env/env-ground:119` | — |
+| `_setAlbedoTex()` | `scene/env/env-ground:106` | — |
+| `_syncAllTextureOffsets()` | `scene/env/env-ground:1215` | — |
+| `_syncGroundEmissive()` | `scene/env/env-ground:1161` | [doc:adr-230] 自发光地屏增量同步：复用 Babylon 内置 emissiveColor/emissiveTexture 通道， 不引入新材质体系。es=0 / 黑 |
+| `_syncGroundNormalTexture()` | `scene/env/env-ground:1243` | — |
+| `_syncGroundRippleTexture()` | `scene/env/env-ground:602` | — |
+| `_syncPbrProperties()` | `scene/env/env-ground:1265` | PBR 增量更新：roughness / metallic / 程序化纹理无需重建材质的属性 |
+| `_syncTextureGroundTexture()` | `scene/env/env-ground:1081` | — |
+| `_updateGroundTexture()` | `scene/env/env-ground:1230` | — |
+| `applyGround()` | `scene/env/env-ground:1282` | — |
+| `applyGroundEdgeFade()` | `scene/env/env-ground:1150` | — |
+| `buildGroundPresetEnvState()` | `scene/env/env-ground:1411` | — |
+| `buildGroundReflection()` | `scene/env/env-ground:734` | — |
+| `clearGroundTexCache()` | `scene/env/env-ground:635` | — |
+| `createGroundMaterial()` | `scene/env/env-ground:144` | — |
+| `disposeGround()` | `scene/env/env-ground:1414` | 释放地面网格、材质与反射资源（幂等）。 |
+| `generateProceduralGroundTextures()` | `scene/env/env-ground:469` | — |
+| `getGroundHeightAt()` | `scene/env/env-ground:767` | — |
+| `setOnGroundChanged()` | `scene/env/env-ground:841` | [doc:adr-271] 原先的 triggerTerrainReady / setGroundMesh / setGroundActualSize 三个导出已删除： env-g |
+| `setOnTerrainReady()` | `scene/env/env-ground:815` | — |
+| `tickGround()` | `scene/env/env-ground:1346` | — |
 | `_envSys()` | `scene/env/env-impl:26` | — |
 | `addGroundRipple()` | `scene/env/env-impl:29` | — |
 | `addRipple()` | `scene/env/env-impl:29` | — |
@@ -1199,16 +1200,16 @@
 | `importCategorizedEnvPreset()` | `scene/env/env-lighting:366` | 从 JSON 字符串反序列化分类预设，失败返回 null。 |
 | `snapshotEnvPresetByCategory()` | `scene/env/env-lighting:332` | 从当前 envState 快照指定类别的字段。数组字段做浅拷贝避免别名。 |
 | `applyWetnessToInst()` | `scene/env/env-particles:45` | — |
-| `applyWindToParticles()` | `scene/env/env-particles:875` | — |
+| `applyWindToParticles()` | `scene/env/env-particles:876` | — |
 | `createParticleEmitter()` | `scene/env/env-particles:422` | — |
-| `disposeParticles()` | `scene/env/env-particles:530` | — |
-| `disposeSplash()` | `scene/env/env-particles:727` | 销毁 splash burst 池 |
-| `getCurrentParticleType()` | `scene/env/env-particles:559` | 获取当前粒子类型（用于 particleEnabled 自动启停） |
+| `disposeParticles()` | `scene/env/env-particles:531` | — |
+| `disposeSplash()` | `scene/env/env-particles:728` | 销毁 splash burst 池 |
+| `getCurrentParticleType()` | `scene/env/env-particles:560` | 获取当前粒子类型（用于 particleEnabled 自动启停） |
 | `isWetnessActive()` | `scene/env/env-particles:45` | — |
-| `syncSplashState()` | `scene/env/env-particles:749` | 溅射开关切换（由 env-impl 检测 particleSplashEnabled 变化时调用） |
-| `updateParticleParams()` | `scene/env/env-particles:900` | 运行时更新粒子参数（密度/大小/速度），响应滑条变化 |
-| `updateParticleTexture()` | `scene/env/env-particles:917` | — |
-| `updateParticleWind()` | `scene/env/env-particles:893` | — |
+| `syncSplashState()` | `scene/env/env-particles:750` | 溅射开关切换（由 env-impl 检测 particleSplashEnabled 变化时调用） |
+| `updateParticleParams()` | `scene/env/env-particles:901` | 运行时更新粒子参数（密度/大小/速度），响应滑条变化 |
+| `updateParticleTexture()` | `scene/env/env-particles:918` | — |
+| `updateParticleWind()` | `scene/env/env-particles:894` | — |
 | `ReflectionMode()` | `scene/env/env-reflection:31` | — |
 | `ResolvedReflectionMode()` | `scene/env/env-reflection:33` | — |
 | `applyReflection()` | `scene/env/env-reflection:425` | 反射子系统统一入口。参考 applySky 模式： 1. |
@@ -1219,9 +1220,9 @@
 | `onModelMeshesReady()` | `scene/env/env-reflection:577` | 模型加载后调用：将 Probe 绑定到新模型的网格。 |
 | `resolveReflectionMode()` | `scene/env/env-reflection:133` | — |
 | `setReflectionARSuspended()` | `scene/env/env-reflection:152` | AR 模式联动：挂起/恢复反射子系统。 |
-| `applySky()` | `scene/env/env-sky:447` | — |
+| `applySky()` | `scene/env/env-sky:448` | — |
 | `clearStarsTexCache()` | `scene/env/env-sky:52` | — |
-| `disposeSky()` | `scene/env/env-sky:416` | 释放天空盒并移除相机跟随观察者（幂等）。 |
+| `disposeSky()` | `scene/env/env-sky:417` | 释放天空盒并移除相机跟随观察者（幂等）。 |
 | `applyTerrainMaterial()` | `scene/env/env-terrain:140` | 地形材质（与其他地面模式一致：纯色或半透明/纹理）。 |
 | `clearTerrainGeneration()` | `scene/env/env-terrain:80` | 测试/场景重置用：清零地形代际计数器。 |
 | `createHeightmapGround()` | `scene/env/env-terrain:89` | 用程序化 FBM 高度图创建可拾取地形网格（CreateGroundFromHeightMap）。 |
@@ -1230,7 +1231,7 @@
 | `hash2()` | `scene/env/env-terrain:23` | — |
 | `valueNoise()` | `scene/env/env-terrain:23` | — |
 | `applyEnvPreset()` | `scene/env/env-time-of-day:173` | — |
-| `applyEnvPresetByCategory()` | `scene/env/env-time-of-day:376` | [adr-120] 按类别应用用户自定义预设。 |
+| `applyEnvPresetByCategory()` | `scene/env/env-time-of-day:380` | [adr-120] 按类别应用用户自定义预设。 |
 | `applyEnvPresetObject()` | `scene/env/env-time-of-day:274` | 应用任意 EnvPreset 对象（支持用户自定义预设）。 |
 | `getEnvSunAngle()` | `scene/env/env-time-of-day:53` | — |
 | `getTimeOfDaySpeed()` | `scene/env/env-time-of-day:144` | — |
@@ -1284,45 +1285,45 @@
 | `refreshWaterRenderList()` | `scene/env/env-water:200` | 刷新水面渲染列表（钩子函数） 当前为空实现，保留作为API接口，未来可能用于： - 更新水的渲染顺序 - 响应场景图形变更（如新增/移除需要水面反射的对象） - 同步水的渲染状态 |
 | `resetCausticsSyncGuard()` | `scene/env/env-water:232` | [fix code_review P2] 复位焦散 config diff guard 内存：dispose 后 causticsController config 回 DEFAU |
 | `updateWaterAnimSpeed()` | `scene/env/env-water:203` | — |
-| `applyWetnessToAllModels()` | `scene/env/env-wetness:86` | 对所有已加载模型应用湿身材质效果（幂等）。 |
-| `applyWetnessToInst()` | `scene/env/env-wetness:134` | — |
-| `isWetnessActive()` | `scene/env/env-wetness:130` | — |
-| `removeWetnessFromAllModels()` | `scene/env/env-wetness:107` | 移除所有模型的湿身材质效果（幂等）。 |
+| `applyWetnessToAllModels()` | `scene/env/env-wetness:92` | 对所有已加载模型应用湿身材质效果（幂等）。 |
+| `applyWetnessToInst()` | `scene/env/env-wetness:140` | — |
+| `isWetnessActive()` | `scene/env/env-wetness:136` | — |
+| `removeWetnessFromAllModels()` | `scene/env/env-wetness:113` | 移除所有模型的湿身材质效果（幂等）。 |
 | `_envSys()` | `scene/env/env:9` | — |
-| `addGroundRipple()` | `scene/env/env:85` | — |
-| `addRipple()` | `scene/env/env:69` | — |
-| `applyEnvState()` | `scene/env/env:144` | — |
-| `applyGround()` | `scene/env/env:45` | — |
-| `applySky()` | `scene/env/env:39` | — |
-| `clearGroundRipples()` | `scene/env/env:95` | — |
-| `clearRipples()` | `scene/env/env:79` | — |
-| `createClouds()` | `scene/env/env:112` | — |
-| `createParticleEmitter()` | `scene/env/env:101` | — |
-| `createWater()` | `scene/env/env:51` | — |
-| `disposeClouds()` | `scene/env/env:116` | — |
+| `addGroundRipple()` | `scene/env/env:87` | — |
+| `addRipple()` | `scene/env/env:71` | — |
+| `applyEnvState()` | `scene/env/env:146` | — |
+| `applyGround()` | `scene/env/env:47` | — |
+| `applySky()` | `scene/env/env:41` | — |
+| `clearGroundRipples()` | `scene/env/env:97` | — |
+| `clearRipples()` | `scene/env/env:81` | — |
+| `createClouds()` | `scene/env/env:114` | — |
+| `createParticleEmitter()` | `scene/env/env:103` | — |
+| `createWater()` | `scene/env/env:53` | — |
+| `disposeClouds()` | `scene/env/env:118` | — |
 | `disposeEnvUpdateObserver()` | `scene/env/env:15` | — |
-| `disposeParticles()` | `scene/env/env:106` | — |
-| `disposeWater()` | `scene/env/env:55` | — |
+| `disposeParticles()` | `scene/env/env:108` | — |
+| `disposeWater()` | `scene/env/env:57` | — |
 | `ensureEnvUpdateObserver()` | `scene/env/env:13` | — |
-| `getGroundHeightAt()` | `scene/env/env:211` | — |
-| `getMirrorInfo()` | `scene/env/env:198` | — |
+| `getGroundHeightAt()` | `scene/env/env:213` | — |
+| `getMirrorInfo()` | `scene/env/env:200` | — |
 | `getScene()` | `scene/env/env:17` | — |
-| `getTimeOfDaySpeed()` | `scene/env/env:134` | — |
-| `initEnvFacade()` | `scene/env/env:33` | — |
-| `isMirrorActive()` | `scene/env/env:198` | — |
-| `isTimeOfDayActive()` | `scene/env/env:130` | — |
-| `refreshMirrorRenderList()` | `scene/env/env:198` | — |
-| `refreshWaterRenderList()` | `scene/env/env:59` | — |
+| `getTimeOfDaySpeed()` | `scene/env/env:136` | — |
+| `initEnvFacade()` | `scene/env/env:35` | [doc:adr-276] pipeline 放宽为可空，与实现一致：未建 pipeline 时 env-context 存 null， 首次 getPipeline() 才抛带上 |
+| `isMirrorActive()` | `scene/env/env:200` | — |
+| `isTimeOfDayActive()` | `scene/env/env:132` | — |
+| `refreshMirrorRenderList()` | `scene/env/env:200` | — |
+| `refreshWaterRenderList()` | `scene/env/env:61` | — |
 | `registerSceneTickCallback()` | `scene/env/env:11` | — |
-| `setMirrorPosition()` | `scene/env/env:198` | — |
-| `setMirrorResolution()` | `scene/env/env:198` | — |
-| `setMirrorRotationY()` | `scene/env/env:198` | — |
-| `setMirrorSize()` | `scene/env/env:198` | — |
-| `setTimeOfDaySpeed()` | `scene/env/env:138` | — |
-| `startTimeOfDay()` | `scene/env/env:122` | — |
-| `stopTimeOfDay()` | `scene/env/env:126` | — |
-| `toggleMirror()` | `scene/env/env:198` | — |
-| `updateWaterAnimSpeed()` | `scene/env/env:63` | — |
+| `setMirrorPosition()` | `scene/env/env:200` | — |
+| `setMirrorResolution()` | `scene/env/env:200` | — |
+| `setMirrorRotationY()` | `scene/env/env:200` | — |
+| `setMirrorSize()` | `scene/env/env:200` | — |
+| `setTimeOfDaySpeed()` | `scene/env/env:140` | — |
+| `startTimeOfDay()` | `scene/env/env:124` | — |
+| `stopTimeOfDay()` | `scene/env/env:128` | — |
+| `toggleMirror()` | `scene/env/env:200` | — |
+| `updateWaterAnimSpeed()` | `scene/env/env:65` | — |
 | `createMirror()` | `scene/env/mirror-debug:78` | 创建镜面道具：竖直平面 + MirrorTexture 反射。 |
 | `disposeMirror()` | `scene/env/mirror-debug:142` | 销毁镜面 |
 | `getMirrorInfo()` | `scene/env/mirror-debug:249` | — |
@@ -1359,32 +1360,32 @@
 | `MaterialCategoryParams()` | `scene/manager/material:37` | — |
 | `MaterialStateManager()` | `scene/manager/material:189` | 材质状态管理器 — 集中管理分类/逐材质/可见性状态，便于测试 mock 和未来扩展。 |
 | `SssMaterial()` | `scene/manager/material:23` | — |
-| `_applyAll()` | `scene/manager/material:628` | [audit:round24 P2] 单个材质应用（PBR/Standard 双分支 + category/per-mat 合并 + DEFAULT 兜底）。 |
+| `_applyAll()` | `scene/manager/material:632` | [audit:round24 P2] 单个材质应用（PBR/Standard 双分支 + category/per-mat 合并 + DEFAULT 兜底）。 |
 | `_capture()` | `scene/manager/material:412` | Per-material category cache. |
-| `_capturePbr()` | `scene/manager/material:460` | PBRMaterial 参数捕获（对应 _capture 的 PBR 版） |
+| `_capturePbr()` | `scene/manager/material:464` | PBRMaterial 参数捕获（对应 _capture 的 PBR 版） |
 | `_catState()` | `scene/manager/material:213` | 材质状态管理器 — 集中管理分类/逐材质/可见性状态，便于测试 mock 和未来扩展。 |
-| `_isPbrMaterial()` | `scene/manager/material:452` | — |
+| `_isPbrMaterial()` | `scene/manager/material:456` | [doc:adr-276] 入参放宽到 Nullable：Babylon 的 mesh.material 就是 Material \| null， 调用点（menus/model-m |
 | `_matEnabled()` | `scene/manager/material:217` | 材质状态管理器 — 集中管理分类/逐材质/可见性状态，便于测试 mock 和未来扩展。 |
 | `_matState()` | `scene/manager/material:215` | 材质状态管理器 — 集中管理分类/逐材质/可见性状态，便于测试 mock 和未来扩展。 |
-| `applyMatState()` | `scene/manager/material:1033` | — |
-| `applyUnlitFallback()` | `scene/manager/material:763` | 光照兜底预设：让模型呈现"伪 unlit"状态，不依赖方向光即可正常显示。 |
-| `disposeModelMaterialState()` | `scene/manager/material:879` | 清理指定模型的全部材质状态（分类 + 逐材质 + 启用标记）。 |
-| `getMatCatGroups()` | `scene/manager/material:692` | — |
-| `getMatCatParams()` | `scene/manager/material:712` | — |
-| `getMatDetailList()` | `scene/manager/material:793` | — |
-| `getMatParams()` | `scene/manager/material:822` | — |
-| `getMatState()` | `scene/manager/material:960` | — |
+| `applyMatState()` | `scene/manager/material:1037` | — |
+| `applyUnlitFallback()` | `scene/manager/material:767` | 光照兜底预设：让模型呈现"伪 unlit"状态，不依赖方向光即可正常显示。 |
+| `disposeModelMaterialState()` | `scene/manager/material:883` | 清理指定模型的全部材质状态（分类 + 逐材质 + 启用标记）。 |
+| `getMatCatGroups()` | `scene/manager/material:696` | — |
+| `getMatCatParams()` | `scene/manager/material:716` | — |
+| `getMatDetailList()` | `scene/manager/material:797` | — |
+| `getMatParams()` | `scene/manager/material:826` | — |
+| `getMatState()` | `scene/manager/material:964` | — |
 | `getMaterialCategory()` | `scene/manager/material:381` | Resolve the display category (皮肤 / 头发 / 眼睛 / 服装 …) for a material or its material name. |
-| `isMatCategoryAllEnabled()` | `scene/manager/material:888` | 检查指定分类的全部材质是否都已启用。 |
-| `isMatEnabled()` | `scene/manager/material:663` | — |
-| `isPbrMaterial()` | `scene/manager/material:457` | — |
-| `resetMatCatParams()` | `scene/manager/material:739` | — |
-| `resetPerMaterialParams()` | `scene/manager/material:954` | 重置所有逐材质覆盖（per-material），保留分类调整（皮肤/头发等）。 |
-| `resetSingleMatParams()` | `scene/manager/material:860` | — |
-| `setMatCatParams()` | `scene/manager/material:724` | — |
-| `setMatCategoryEnabled()` | `scene/manager/material:916` | 按分类批量切换材质可见性。 |
-| `setMatEnabled()` | `scene/manager/material:667` | — |
-| `setMatParams()` | `scene/manager/material:832` | — |
+| `isMatCategoryAllEnabled()` | `scene/manager/material:892` | 检查指定分类的全部材质是否都已启用。 |
+| `isMatEnabled()` | `scene/manager/material:667` | — |
+| `isPbrMaterial()` | `scene/manager/material:461` | — |
+| `resetMatCatParams()` | `scene/manager/material:743` | — |
+| `resetPerMaterialParams()` | `scene/manager/material:958` | 重置所有逐材质覆盖（per-material），保留分类调整（皮肤/头发等）。 |
+| `resetSingleMatParams()` | `scene/manager/material:864` | — |
+| `setMatCatParams()` | `scene/manager/material:728` | — |
+| `setMatCategoryEnabled()` | `scene/manager/material:920` | 按分类批量切换材质可见性。 |
+| `setMatEnabled()` | `scene/manager/material:671` | — |
+| `setMatParams()` | `scene/manager/material:836` | — |
 | `resolveModelId()` | `scene/manager/model-id:9` | 解析模型运行时 id：优先复用存档 uuid（preferredId，由恢复路径传入）， 否则生成稳定 uuid。替代旧实现 &#96;model_${Date.now()}_${Math |
 | `captureThumbnail()` | `scene/manager/model-loader:173` | Captures a screenshot after model load for thumbnail cache. |
 | `initLoader()` | `scene/manager/model-loader:111` | — |
@@ -1538,7 +1539,7 @@
 | `removeSceneMotion()` | `scene/motion/motion-intent:161` | 移除场景库中的某个主动作。 |
 | `replaceDefaultMotion()` | `scene/motion/motion-intent:237` | [adr-169] 原位替换默认动作。 |
 | `resetMotionIntent()` | `scene/motion/motion-intent:113` | [fix P2] 重置广播回调（场景销毁/重建或 HMR 时调用），使 initMotionIntent 可再次注册。 |
-| `resolveCompatibility()` | `scene/motion/motion-intent:333` | 兼容性解析：判断指定模型的骨骼列表是否兼容某 VMD 动作。 |
+| `resolveCompatibility()` | `scene/motion/motion-intent:334` | 兼容性解析：判断指定模型的骨骼列表是否兼容某 VMD 动作。 |
 | `setBroadcastCallback()` | `scene/motion/motion-intent:123` | 测试用例间需 setBroadcastCallback(null) 隔离回调，而 initMotionIntent 的幂等守卫不允许置空。 |
 | `setDefaultMotion()` | `scene/motion/motion-intent:180` | 设置默认动作 id。 |
 | `setLoadedProceduralMotions()` | `scene/motion/motion-intent:80` | 设置已加载集合（用于场景反序列化）。始终保证 'none' 存在。 |
@@ -1652,39 +1653,39 @@
 | `_applyPerceptionForContext()` | `scene/motion/perception-observer:57` | 对单个 context 应用完整感知管线 |
 | `_getActiveContextsByTier()` | `scene/motion/perception-observer:32` | [doc:adr-164] 根据 tier 返回应激活的 context 列表 |
 | `getMediumMaxOthers()` | `scene/motion/perception-observer:27` | 获取 medium 档非焦点模型上限 |
-| `BalanceSwayState()` | `scene/motion/perception-shared:282` | 重心微动增量状态（供 PerceptionContext.lastOffsets.balance 使用） |
+| `BalanceSwayState()` | `scene/motion/perception-shared:284` | 重心微动增量状态（供 PerceptionContext.lastOffsets.balance 使用） |
 | `DEFAULT_PERCEPTION_STATE()` | `scene/motion/perception-shared:47` | — |
 | `Emotion()` | `scene/motion/perception-shared:13` | 情绪类型（微表情驱动） |
-| `GazeCache()` | `scene/motion/perception-shared:294` | Gaze 跨帧缓存：头部存世界 Q，眼部存本地 Q（相对父骨骼，避免头部旋转后缓存过期） |
+| `GazeCache()` | `scene/motion/perception-shared:296` | Gaze 跨帧缓存：头部存世界 Q，眼部存本地 Q（相对父骨骼，避免头部旋转后缓存过期） |
 | `GazeConfig()` | `scene/motion/perception-shared:45` | Gaze 配置类型 |
 | `MeshMetadata()` | `scene/motion/perception-shared:74` | — |
 | `MmdModelLike()` | `scene/motion/perception-shared:79` | MMD 模型最小接口（供 perception 子系统使用，避免 any） |
-| `PerceptionContext()` | `scene/motion/perception-shared:300` | 每模型感知上下文（替代原单例，支持焦点 + pinned 多模型） |
-| `PerceptionPerfMonitor()` | `scene/motion/perception-shared:320` | 感知层性能监控器：三档自动降级 + 手动覆盖 |
-| `PerceptionPool()` | `scene/motion/perception-shared:100` | 单 context 对象池（per-model 隔离，解决全局池覆写污染） |
+| `PerceptionContext()` | `scene/motion/perception-shared:302` | 每模型感知上下文（替代原单例，支持焦点 + pinned 多模型） |
+| `PerceptionPerfMonitor()` | `scene/motion/perception-shared:322` | 感知层性能监控器：三档自动降级 + 手动覆盖 |
+| `PerceptionPool()` | `scene/motion/perception-shared:102` | 单 context 对象池（per-model 隔离，解决全局池覆写污染） |
 | `PerceptionState()` | `scene/motion/perception-shared:15` | — |
-| `PerceptionTier()` | `scene/motion/perception-shared:317` | — |
-| `_createPerceptionPool()` | `scene/motion/perception-shared:110` | 创建单 context 对象池 |
-| `_gazeAlpha()` | `scene/motion/perception-shared:259` | 计算 gaze Slerp alpha（基于 deltaTime 的指数衰减，帧率无关） |
-| `_gazeLog()` | `scene/motion/perception-shared:468` | — |
-| `_incGazeLogFrame()` | `scene/motion/perception-shared:465` | — |
-| `_isWasmRuntime()` | `scene/motion/perception-shared:220` | — |
-| `_m()` | `scene/motion/perception-shared:151` | — |
-| `_propagateChildrenWasm()` | `scene/motion/perception-shared:187` | 递归传播子骨骼 worldMatrix |
-| `_q()` | `scene/motion/perception-shared:161` | — |
-| `_qAngleDeg()` | `scene/motion/perception-shared:477` | 两四元数夹角（度） |
-| `_resetContextPool()` | `scene/motion/perception-shared:133` | 重置当前池的 index（context 切换时重置，避免跨帧累积） |
-| `_setContextPool()` | `scene/motion/perception-shared:128` | 切换到指定 context 的池（进入该 context 感知管线前调用） |
-| `_v3()` | `scene/motion/perception-shared:141` | — |
-| `_writeMatToBuffer()` | `scene/motion/perception-shared:175` | 把 Matrix 写回 Float32Array(16) |
-| `feetDebug()` | `scene/motion/perception-shared:486` | — |
-| `getEyeGazeMaxPitch()` | `scene/motion/perception-shared:245` | 获取眼部跟随最大俯仰角（弧度） |
-| `getEyeGazeMaxYaw()` | `scene/motion/perception-shared:241` | 获取眼部跟随最大偏航角（弧度） |
-| `getEyeGazeSmooth()` | `scene/motion/perception-shared:249` | 获取眼部跟随平滑度 |
-| `getHeadGazeMaxPitch()` | `scene/motion/perception-shared:237` | 获取头部跟随最大俯仰角（弧度） |
-| `getHeadGazeMaxYaw()` | `scene/motion/perception-shared:233` | 获取头部跟随最大偏航角（弧度） |
-| `isWasmRuntime()` | `scene/motion/perception-shared:216` | 判断骨骼是否运行在 WASM runtime（无 updateWorldMatrix 方法）。 |
-| `setGazeAngles()` | `scene/motion/perception-shared:265` | 更新头部跟随角度限位（度→弧度，由 perception.ts setter 调用） |
+| `PerceptionTier()` | `scene/motion/perception-shared:319` | — |
+| `_createPerceptionPool()` | `scene/motion/perception-shared:112` | 创建单 context 对象池 |
+| `_gazeAlpha()` | `scene/motion/perception-shared:261` | 计算 gaze Slerp alpha（基于 deltaTime 的指数衰减，帧率无关） |
+| `_gazeLog()` | `scene/motion/perception-shared:470` | — |
+| `_incGazeLogFrame()` | `scene/motion/perception-shared:467` | — |
+| `_isWasmRuntime()` | `scene/motion/perception-shared:222` | — |
+| `_m()` | `scene/motion/perception-shared:153` | — |
+| `_propagateChildrenWasm()` | `scene/motion/perception-shared:189` | 递归传播子骨骼 worldMatrix |
+| `_q()` | `scene/motion/perception-shared:163` | — |
+| `_qAngleDeg()` | `scene/motion/perception-shared:479` | 两四元数夹角（度） |
+| `_resetContextPool()` | `scene/motion/perception-shared:135` | 重置当前池的 index（context 切换时重置，避免跨帧累积） |
+| `_setContextPool()` | `scene/motion/perception-shared:130` | 切换到指定 context 的池（进入该 context 感知管线前调用） |
+| `_v3()` | `scene/motion/perception-shared:143` | — |
+| `_writeMatToBuffer()` | `scene/motion/perception-shared:177` | 把 Matrix 写回 Float32Array(16) |
+| `feetDebug()` | `scene/motion/perception-shared:488` | — |
+| `getEyeGazeMaxPitch()` | `scene/motion/perception-shared:247` | 获取眼部跟随最大俯仰角（弧度） |
+| `getEyeGazeMaxYaw()` | `scene/motion/perception-shared:243` | 获取眼部跟随最大偏航角（弧度） |
+| `getEyeGazeSmooth()` | `scene/motion/perception-shared:251` | 获取眼部跟随平滑度 |
+| `getHeadGazeMaxPitch()` | `scene/motion/perception-shared:239` | 获取头部跟随最大俯仰角（弧度） |
+| `getHeadGazeMaxYaw()` | `scene/motion/perception-shared:235` | 获取头部跟随最大偏航角（弧度） |
+| `isWasmRuntime()` | `scene/motion/perception-shared:218` | 判断骨骼是否运行在 WASM runtime（无 updateWorldMatrix 方法）。 |
+| `setGazeAngles()` | `scene/motion/perception-shared:267` | 更新头部跟随角度限位（度→弧度，由 perception.ts setter 调用） |
 | `BalanceSwayState()` | `scene/motion/perception:61` | — |
 | `Emotion()` | `scene/motion/perception:61` | — |
 | `GazeConfig()` | `scene/motion/perception:61` | — |
@@ -1774,19 +1775,19 @@
 | `addGazeLayer()` | `scene/motion/vmd-layers:255` | 添加一个视线追踪（gaze）图层。 |
 | `addVmdLayer()` | `scene/motion/vmd-layers:130` | 添加一个 VMD 图层到模型。 |
 | `addVmdLayersFromPaths()` | `scene/motion/vmd-layers:180` | 批量添加 VMD 图层（场景恢复用）。 |
-| `disposeVmdLayerState()` | `scene/motion/vmd-layers:737` | [fix P2] 模型销毁时清理 vmd-layers 模块级 per-model 状态。 |
-| `getVmdLayers()` | `scene/motion/vmd-layers:720` | 获取模型的图层列表 |
-| `rebuildCompositeAnimation()` | `scene/motion/vmd-layers:727` | 触发复合动画重建（程序化/外部修改 vmdData/vmdLayers 后调用）。 |
+| `disposeVmdLayerState()` | `scene/motion/vmd-layers:746` | [fix P2] 模型销毁时清理 vmd-layers 模块级 per-model 状态。 |
+| `getVmdLayers()` | `scene/motion/vmd-layers:729` | 获取模型的图层列表 |
+| `rebuildCompositeAnimation()` | `scene/motion/vmd-layers:736` | 触发复合动画重建（程序化/外部修改 vmdData/vmdLayers 后调用）。 |
 | `removeVmdLayer()` | `scene/motion/vmd-layers:292` | 移除一个 VMD 图层 |
 | `setVmdLayerWeight()` | `scene/motion/vmd-layers:343` | 设置图层权重 |
 | `toggleVmdLayer()` | `scene/motion/vmd-layers:318` | 切换图层启用/禁用 |
 | `VMD_HEADER_MIN()` | `scene/motion/vmd-loader:47` | — |
 | `VMD_SIGNATURE()` | `scene/motion/vmd-loader:46` | — |
 | `isValidVmd()` | `scene/motion/vmd-loader:51` | 验证 ArrayBuffer 是否为合法 VMD 格式：检查签名前缀。 |
-| `loadCameraVmdFromPath()` | `scene/motion/vmd-loader:324` | — |
+| `loadCameraVmdFromPath()` | `scene/motion/vmd-loader:325` | — |
 | `loadVMDFromPath()` | `scene/motion/vmd-loader:192` | — |
 | `loadVMDMotion()` | `scene/motion/vmd-loader:60` | — |
-| `loadVPDPose()` | `scene/motion/vmd-loader:348` | — |
+| `loadVPDPose()` | `scene/motion/vmd-loader:349` | — |
 | `DEFAULT_LAYER_BONE_FILTER()` | `scene/motion/wasm-layers-blender:58` | — |
 | `WasmLayerConfig()` | `scene/motion/wasm-layers-blender:60` | — |
 | `addWasmLayer()` | `scene/motion/wasm-layers-blender:161` | — |
@@ -1868,10 +1869,10 @@
 | `LightingPresetLight()` | `scene/render/lighting-presets:6` | — |
 | `PRESET_NAMES()` | `scene/render/lighting-presets:175` | 预设名称列表（有序） |
 | `_addAllMeshesToShadow()` | `scene/render/lighting-shadow:13` | 遍历所有模型的 Mesh，加入阴影生成器。 |
-| `_disposeStageShadow()` | `scene/render/lighting-shadow:103` | — |
+| `_disposeStageShadow()` | `scene/render/lighting-shadow:107` | — |
 | `_ensureShadow()` | `scene/render/lighting-shadow:24` | — |
-| `_ensureStageShadow()` | `scene/render/lighting-shadow:62` | — |
-| `_rebuildShadowCasters()` | `scene/render/lighting-shadow:58` | 当模型/道具注册表更新时，重新生成阴影投射者列表。 |
+| `_ensureStageShadow()` | `scene/render/lighting-shadow:66` | — |
+| `_rebuildShadowCasters()` | `scene/render/lighting-shadow:62` | 当模型/道具注册表更新时，重新生成阴影投射者列表。 |
 | `LightState()` | `scene/render/lighting-stage-types:14` | 主光/半球光/阴影的「菜单可绑定视图」（&#96;getLightState()&#96; 的返回形状）。 |
 | `StageLightState()` | `scene/render/lighting-stage-types:30` | — |
 | `StageLightType()` | `scene/render/lighting-stage-types:7` | — |
@@ -1940,16 +1941,16 @@
 | `disposeRenderer()` | `scene/render/renderer:141` | 释放渲染管线及相关资源。在场景销毁时调用。 |
 | `getRenderState()` | `scene/render/renderer:181` | — |
 | `initRenderer()` | `scene/render/renderer:114` | — |
-| `isRenderReady()` | `scene/render/renderer:651` | [fix:P1] 渲染管线是否就绪（@dom/e2e 环境无 pipeline/scene 时返回 false，供 UI/测试预检跳过守卫域）。 |
+| `isRenderReady()` | `scene/render/renderer:655` | [fix:P1] 渲染管线是否就绪（@dom/e2e 环境无 pipeline/scene 时返回 false，供 UI/测试预检跳过守卫域）。 |
 | `isRendererReady()` | `scene/render/renderer:136` | 检查渲染器是否已初始化。外部代码在调用 setRenderState 前可先检查。 |
-| `isSSRActive()` | `scene/render/renderer:976` | SSR 管线当前是否激活（供 env-reflection 检查，尊重用户手动关闭）。 |
+| `isSSRActive()` | `scene/render/renderer:980` | SSR 管线当前是否激活（供 env-reflection 检查，尊重用户手动关闭）。 |
 | `pipeline()` | `scene/render/renderer:82` | — |
-| `reattachPipeline()` | `scene/render/renderer:918` | Re-attach the rendering pipeline to the current active camera (call after camera switch). |
-| `rebuildOutlineState()` | `scene/render/renderer:1039` | 当模型注册表更新时，重新应用边缘高亮状态。 |
+| `reattachPipeline()` | `scene/render/renderer:922` | Re-attach the rendering pipeline to the current active camera (call after camera switch). |
+| `rebuildOutlineState()` | `scene/render/renderer:1043` | 当模型注册表更新时，重新应用边缘高亮状态。 |
 | `registerCelGroundCoupling()` | `scene/render/renderer:106` | — |
-| `setRenderState()` | `scene/render/renderer:681` | — |
-| `setSSRFromReflection()` | `scene/render/renderer:992` | 反射系统专用 SSR 控制接口（不触发 auto-save）。 |
-| `transitionRenderState()` | `scene/render/renderer:721` | 平滑过渡渲染状态到目标值，默认 2 秒。 |
+| `setRenderState()` | `scene/render/renderer:685` | — |
+| `setSSRFromReflection()` | `scene/render/renderer:996` | 反射系统专用 SSR 控制接口（不触发 auto-save）。 |
+| `transitionRenderState()` | `scene/render/renderer:725` | 平滑过渡渲染状态到目标值，默认 2 秒。 |
 | `GizmoAttachOptions()` | `scene/render/transform-gizmo:106` | — |
 | `GizmoType()` | `scene/render/transform-gizmo:17` | — |
 | `attachGizmo()` | `scene/render/transform-gizmo:126` | 为指定 Node 激活变换 Gizmo。 |
@@ -1985,63 +1986,63 @@
 | `migratePerceptionData()` | `scene/scene-migrate:46` | 旧存档 perception 格式迁移：PerceptionState → { focused, pinned }。 |
 | `migratePerceptionFromProcMotion()` | `scene/scene-migrate:71` | 旧存档 ProcMotionState → 新版 PerceptionState 迁移。 |
 | `SceneFile()` | `scene/scene-serialize:141` | — |
-| `canUndo()` | `scene/scene-serialize:1312` | — |
+| `canUndo()` | `scene/scene-serialize:1309` | — |
 | `deserializeScene()` | `scene/scene-serialize:972` | Restore scene state from a SceneFile. |
-| `offerSceneUndo()` | `scene/scene-serialize:1356` | 破坏性操作后调用：弹出中性撤销 toast（复用 action-button toast，info 变体）。 |
-| `offerSceneUndoAndRefresh()` | `scene/scene-serialize:1383` | offerSceneUndo 的常见变体：撤销恢复后执行 reRender 回调并统一提示 &#96;undoApplied&#96;。 |
-| `popUndoSnapshot()` | `scene/scene-serialize:1317` | 弹出最近一次撤销快照（LIFO），供全局撤销按钮 / Ctrl+Z 使用。返回快照字符串，无快照时返回 null。 |
-| `pushUndoSnapshot()` | `scene/scene-serialize:1298` | 破坏性操作前调用：抓当前整场景快照压栈（环形，上限 UNDO_LIMIT），返回快照字符串供撤销绑定。 |
+| `offerSceneUndo()` | `scene/scene-serialize:1353` | 破坏性操作后调用：弹出中性撤销 toast（复用 action-button toast，info 变体）。 |
+| `offerSceneUndoAndRefresh()` | `scene/scene-serialize:1380` | offerSceneUndo 的常见变体：撤销恢复后执行 reRender 回调并统一提示 &#96;undoApplied&#96;。 |
+| `popUndoSnapshot()` | `scene/scene-serialize:1314` | 弹出最近一次撤销快照（LIFO），供全局撤销按钮 / Ctrl+Z 使用。返回快照字符串，无快照时返回 null。 |
+| `pushUndoSnapshot()` | `scene/scene-serialize:1295` | 破坏性操作前调用：抓当前整场景快照压栈（环形，上限 UNDO_LIMIT），返回快照字符串供撤销绑定。 |
 | `resolvePathFromRef()` | `scene/scene-serialize:129` | Resolve a file path from either a libraryRef or a raw absolute path. |
-| `restoreUndoSnapshot()` | `scene/scene-serialize:1333` | 恢复特定快照到整场景。返回是否成功恢复。 |
-| `saveSceneImmediate()` | `scene/scene-serialize:1401` | — |
+| `restoreUndoSnapshot()` | `scene/scene-serialize:1330` | 恢复特定快照到整场景。返回是否成功恢复。 |
+| `saveSceneImmediate()` | `scene/scene-serialize:1398` | — |
 | `serializeScene()` | `scene/scene-serialize:497` | 序列化当前场景为 SceneFile（分段容错，单模型失败跳过并记录）。 |
-| `setSuppressAutoSave()` | `scene/scene-serialize:1271` | — |
-| `triggerAutoSaveImpl()` | `scene/scene-serialize:1280` | — |
-| `tryRestoreLastScene()` | `scene/scene-serialize:1540` | — |
+| `setSuppressAutoSave()` | `scene/scene-serialize:1268` | — |
+| `triggerAutoSaveImpl()` | `scene/scene-serialize:1277` | — |
+| `tryRestoreLastScene()` | `scene/scene-serialize:1537` | — |
 | `AlphaCtx()` | `scene/scene:177` | — |
-| `CameraState()` | `scene/scene:918` | — |
+| `CameraState()` | `scene/scene:924` | — |
 | `DEFAULT_MAT_PARAMS()` | `scene/scene:153` | — |
-| `EnvState()` | `scene/scene:881` | — |
-| `LightState()` | `scene/scene:920` | — |
-| `LoadLastScene()` | `scene/scene:919` | — |
+| `EnvState()` | `scene/scene:887` | — |
+| `LightState()` | `scene/scene:926` | — |
+| `LoadLastScene()` | `scene/scene:925` | — |
 | `MaterialCategory()` | `scene/scene:177` | — |
 | `MaterialCategoryParams()` | `scene/scene:177` | — |
-| `ModelInstance()` | `scene/scene:881` | — |
-| `RenderState()` | `scene/scene:921` | — |
-| `SaveLastScene()` | `scene/scene:919` | — |
-| `SaveThumbnail()` | `scene/scene:919` | — |
-| `SetEnvState()` | `scene/scene:919` | — |
-| `StageLightState()` | `scene/scene:920` | — |
+| `ModelInstance()` | `scene/scene:887` | — |
+| `RenderState()` | `scene/scene:927` | — |
+| `SaveLastScene()` | `scene/scene:925` | — |
+| `SaveThumbnail()` | `scene/scene:925` | — |
+| `SetEnvState()` | `scene/scene:925` | — |
+| `StageLightState()` | `scene/scene:926` | — |
 | `__envDebug()` | `scene/scene:372` | — |
 | `_applyAll()` | `scene/scene:153` | — |
 | `_catState()` | `scene/scene:153` | — |
 | `_matEnabled()` | `scene/scene:153` | — |
 | `_matState()` | `scene/scene:153` | — |
-| `animateCameraVmd()` | `scene/scene:904` | — |
-| `applyEnvState()` | `scene/scene:891` | — |
+| `animateCameraVmd()` | `scene/scene:910` | — |
+| `applyEnvState()` | `scene/scene:897` | — |
 | `applyFrameControl()` | `scene/scene:274` | 统一应用帧率控制：帧率限制器开关 + 帧率上限。 |
 | `applyMatSssState()` | `scene/scene:179` | — |
 | `applyMatState()` | `scene/scene:153` | — |
 | `applySss()` | `scene/scene:179` | — |
 | `applyUnlitFallback()` | `scene/scene:153` | — |
-| `autoFrame()` | `scene/scene:904` | — |
-| `autoLoop()` | `scene/scene:862` | — |
-| `canUndo()` | `scene/scene:883` | — |
-| `captureThumbnail()` | `scene/scene:903` | — |
-| `clearCameraVmd()` | `scene/scene:904` | — |
+| `autoFrame()` | `scene/scene:910` | — |
+| `autoLoop()` | `scene/scene:868` | — |
+| `canUndo()` | `scene/scene:889` | — |
+| `captureThumbnail()` | `scene/scene:909` | — |
+| `clearCameraVmd()` | `scene/scene:910` | — |
 | `disposeModelSssState()` | `scene/scene:179` | — |
 | `disposeScene()` | `scene/scene:306` | 级联释放 Scene → Engine 及其所有子资源。 |
-| `dom()` | `scene/scene:862` | — |
+| `dom()` | `scene/scene:868` | — |
 | `engine()` | `scene/scene:213` | — |
-| `envState()` | `scene/scene:862` | — |
+| `envState()` | `scene/scene:868` | — |
 | `focusedMmdModel()` | `scene/scene:390` | — |
 | `focusedModel()` | `scene/scene:390` | — |
-| `focusedModelId()` | `scene/scene:862` | — |
-| `formatTime()` | `scene/scene:862` | — |
-| `getCameraMode()` | `scene/scene:904` | — |
-| `getCameraState()` | `scene/scene:904` | — |
-| `getCameraVmdName()` | `scene/scene:904` | — |
-| `getCameraVmdPath()` | `scene/scene:904` | — |
+| `focusedModelId()` | `scene/scene:868` | — |
+| `formatTime()` | `scene/scene:868` | — |
+| `getCameraMode()` | `scene/scene:910` | — |
+| `getCameraState()` | `scene/scene:910` | — |
+| `getCameraVmdName()` | `scene/scene:910` | — |
+| `getCameraVmdPath()` | `scene/scene:910` | — |
 | `getMatCatGroups()` | `scene/scene:153` | — |
 | `getMatCatParams()` | `scene/scene:153` | — |
 | `getMatDetailList()` | `scene/scene:153` | — |
@@ -2050,56 +2051,56 @@
 | `getMatSssState()` | `scene/scene:179` | — |
 | `getMatState()` | `scene/scene:153` | — |
 | `getMaterialCategory()` | `scene/scene:153` | — |
-| `getScene()` | `scene/scene:848` | — |
-| `hasCameraVmd()` | `scene/scene:904` | — |
-| `initCameraSystem()` | `scene/scene:904` | — |
-| `initLoader()` | `scene/scene:903` | — |
-| `initPlaybackObservables()` | `scene/scene:861` | — |
+| `getScene()` | `scene/scene:854` | — |
+| `hasCameraVmd()` | `scene/scene:910` | — |
+| `initCameraSystem()` | `scene/scene:910` | — |
+| `initLoader()` | `scene/scene:909` | — |
+| `initPlaybackObservables()` | `scene/scene:867` | — |
 | `initScene()` | `scene/scene:426` | 场景初始化入口。首次调用时创建 Scene/Engine/运行时； HMR 重入时先调用 _reinitSceneForHMR() 清理旧资源再重建。 |
 | `isHeadless()` | `scene/scene:213` | — |
 | `isMatCategoryAllEnabled()` | `scene/scene:153` | — |
 | `isMatEnabled()` | `scene/scene:153` | — |
 | `isPbrMaterial()` | `scene/scene:178` | — |
-| `isPlaying()` | `scene/scene:862` | — |
-| `loadCameraVmd()` | `scene/scene:904` | — |
-| `loadCameraVmdFromPath()` | `scene/scene:855` | — |
-| `loadPMXFile()` | `scene/scene:903` | — |
-| `loadVMDFromPath()` | `scene/scene:855` | — |
-| `loadVMDMotion()` | `scene/scene:855` | — |
-| `loadVPDPose()` | `scene/scene:855` | — |
-| `mmdRuntime()` | `scene/scene:862` | — |
+| `isPlaying()` | `scene/scene:868` | — |
+| `loadCameraVmd()` | `scene/scene:910` | — |
+| `loadCameraVmdFromPath()` | `scene/scene:861` | — |
+| `loadPMXFile()` | `scene/scene:909` | — |
+| `loadVMDFromPath()` | `scene/scene:861` | — |
+| `loadVMDMotion()` | `scene/scene:861` | — |
+| `loadVPDPose()` | `scene/scene:861` | — |
+| `mmdRuntime()` | `scene/scene:868` | — |
 | `modelManager()` | `scene/scene:213` | — |
-| `modelRegistry()` | `scene/scene:862` | — |
-| `normPath()` | `scene/scene:882` | — |
-| `offerSceneUndo()` | `scene/scene:883` | — |
-| `offerSceneUndoAndRefresh()` | `scene/scene:883` | — |
-| `popUndoSnapshot()` | `scene/scene:883` | — |
-| `pushUndoSnapshot()` | `scene/scene:883` | — |
+| `modelRegistry()` | `scene/scene:868` | — |
+| `normPath()` | `scene/scene:888` | — |
+| `offerSceneUndo()` | `scene/scene:889` | — |
+| `offerSceneUndoAndRefresh()` | `scene/scene:889` | — |
+| `popUndoSnapshot()` | `scene/scene:889` | — |
+| `pushUndoSnapshot()` | `scene/scene:889` | — |
 | `resetMatCatParams()` | `scene/scene:153` | — |
 | `resetPerMaterialParams()` | `scene/scene:153` | — |
 | `resetSingleMatParams()` | `scene/scene:153` | — |
-| `resolveFileUrl()` | `scene/scene:882` | — |
-| `restoreUndoSnapshot()` | `scene/scene:883` | — |
+| `resolveFileUrl()` | `scene/scene:888` | — |
+| `restoreUndoSnapshot()` | `scene/scene:889` | — |
 | `scene()` | `scene/scene:213` | — |
-| `seekDragging()` | `scene/scene:862` | — |
-| `seekFromEvent()` | `scene/scene:861` | — |
-| `setAutoLoop()` | `scene/scene:862` | — |
-| `setCameraState()` | `scene/scene:904` | — |
-| `setFocusedModelId()` | `scene/scene:862` | — |
-| `setIsPlaying()` | `scene/scene:862` | — |
+| `seekDragging()` | `scene/scene:868` | — |
+| `seekFromEvent()` | `scene/scene:867` | — |
+| `setAutoLoop()` | `scene/scene:868` | — |
+| `setCameraState()` | `scene/scene:910` | — |
+| `setFocusedModelId()` | `scene/scene:868` | — |
+| `setIsPlaying()` | `scene/scene:868` | — |
 | `setMatCatParams()` | `scene/scene:153` | — |
 | `setMatCategoryEnabled()` | `scene/scene:153` | — |
 | `setMatEnabled()` | `scene/scene:153` | — |
 | `setMatParams()` | `scene/scene:153` | — |
 | `setMatSssParams()` | `scene/scene:179` | — |
-| `setMmdRuntime()` | `scene/scene:862` | — |
-| `setModelRegistry()` | `scene/scene:862` | — |
-| `setSeekDragging()` | `scene/scene:862` | — |
-| `setStatus()` | `scene/scene:862` | — |
-| `setTriggerAutoSave()` | `scene/scene:880` | — |
-| `switchCameraMode()` | `scene/scene:904` | — |
-| `triggerAutoSave()` | `scene/scene:880` | — |
-| `updatePlaybackUI()` | `scene/scene:861` | — |
+| `setMmdRuntime()` | `scene/scene:868` | — |
+| `setModelRegistry()` | `scene/scene:868` | — |
+| `setSeekDragging()` | `scene/scene:868` | — |
+| `setStatus()` | `scene/scene:868` | — |
+| `setTriggerAutoSave()` | `scene/scene:886` | — |
+| `switchCameraMode()` | `scene/scene:910` | — |
+| `triggerAutoSave()` | `scene/scene:886` | — |
+| `updatePlaybackUI()` | `scene/scene:867` | — |
 | `ActionMenuCtx()` | `scene/shared/menu-node-types:49` | — |
 | `ControlSpec()` | `scene/shared/menu-node-types:70` | — |
 | `EnvStateKey()` | `scene/shared/menu-node-types:26` | env 状态键（由 &#96;ENV_STATE_SCHEMA&#96; 派生）。 |
@@ -2227,35 +2228,35 @@
 | `getWaterSchema()` | `menus/env-water-levels:31` | 导出 water schema 供 menu-registry 静态分析（ADR-093 元测试） |
 | `buildWindLevel()` | `menus/env-wind-levels:44` | — |
 | `getWindSchema()` | `menus/env-wind-levels:12` | 导出 wind schema 供 menu-registry 静态分析（ADR-093 元测试） |
-| `buildTagDetailLevel()` | `menus/library-actions:737` | — |
-| `buildTagsOverviewLevel()` | `menus/library-actions:737` | — |
-| `findLibraryModelByName()` | `menus/library-actions:737` | 按名称模糊搜索模型（纯查询，不触发加载）。供 ADR-155/197 NL 控制 resolve 使用，避免 resolve 阶段误触发真实加载。 |
-| `findLibraryMotionByName()` | `menus/library-actions:737` | 按名称模糊搜索 VMD 动作（纯查询，不触发替换）。 |
-| `highlightRow()` | `menus/library-actions:737` | — |
-| `importFile()` | `menus/library-actions:692` | — |
-| `importFileByPath()` | `menus/library-actions:647` | — |
-| `onModelRowClick()` | `menus/library-actions:737` | — |
+| `buildTagDetailLevel()` | `menus/library-actions:747` | — |
+| `buildTagsOverviewLevel()` | `menus/library-actions:747` | — |
+| `findLibraryModelByName()` | `menus/library-actions:747` | 按名称模糊搜索模型（纯查询，不触发加载）。供 ADR-155/197 NL 控制 resolve 使用，避免 resolve 阶段误触发真实加载。 |
+| `findLibraryMotionByName()` | `menus/library-actions:747` | 按名称模糊搜索 VMD 动作（纯查询，不触发替换）。 |
+| `highlightRow()` | `menus/library-actions:747` | — |
+| `importFile()` | `menus/library-actions:702` | — |
+| `importFileByPath()` | `menus/library-actions:657` | — |
+| `onModelRowClick()` | `menus/library-actions:747` | — |
 | `prepareModelRestore()` | `menus/library-actions:113` | — |
-| `replaceModel()` | `menus/library-actions:737` | — |
-| `replaceMotion()` | `menus/library-actions:737` | — |
+| `replaceModel()` | `menus/library-actions:747` | — |
+| `replaceMotion()` | `menus/library-actions:747` | — |
 | `makeModelMenu()` | `menus/library-browse:445` | — |
 | `showModelPopup()` | `menus/library-browse:406` | — |
 | `ResourceViewMode()` | `menus/library-core:43` | — |
-| `abortThumbnailStreaming()` | `menus/library-core:317` | [adr-136] 取消当前正在进行的缩略图流式加载批次（如弹窗关闭/重开时调用）。 |
-| `buildLevel()` | `menus/library-core:859` | — |
-| `buildModelFormationLevel()` | `menus/library-core:903` | — |
-| `buildModelRootItems()` | `menus/library-core:938` | — |
-| `buildResourceItemsForDir()` | `menus/library-core:384` | — |
+| `abortThumbnailStreaming()` | `menus/library-core:321` | [adr-136] 取消当前正在进行的缩略图流式加载批次（如弹窗关闭/重开时调用）。 |
+| `buildLevel()` | `menus/library-core:863` | — |
+| `buildModelFormationLevel()` | `menus/library-core:907` | — |
+| `buildModelRootItems()` | `menus/library-core:942` | — |
+| `buildResourceItemsForDir()` | `menus/library-core:388` | — |
 | `computeRestoreSegments()` | `menus/library-core:161` | — |
 | `getPendingMetaGuard()` | `menus/library-core:67` | — |
 | `getRelativePathUnderDir()` | `menus/library-core:83` | — |
 | `getResourceViewMode()` | `menus/library-core:47` | — |
 | `isLeafFlattenDir()` | `menus/library-core:93` | — |
 | `isModelDirTarget()` | `menus/library-core:59` | — |
-| `loadThumbnailsStreaming()` | `menus/library-core:260` | 流式加载缩略图：并发控制，每加载一张立即更新缓存并通知面板刷新， 替代一次性 GetThumbnailBatch 的"全等"模式，实现缩略图逐张出现。 |
-| `modelToResourceItem()` | `menus/library-core:367` | — |
-| `modelToRow()` | `menus/library-core:351` | — |
-| `refreshModelRoot()` | `menus/library-core:1029` | 就地更新模型库根层级数据（刷新已注册的角色列表）。 |
+| `loadThumbnailsStreaming()` | `menus/library-core:264` | 流式加载缩略图：并发控制，每加载一张立即更新缓存并通知面板刷新， 替代一次性 GetThumbnailBatch 的"全等"模式，实现缩略图逐张出现。 |
+| `modelToResourceItem()` | `menus/library-core:371` | — |
+| `modelToRow()` | `menus/library-core:355` | — |
+| `refreshModelRoot()` | `menus/library-core:1033` | 就地更新模型库根层级数据（刷新已注册的角色列表）。 |
 | `resolveDisplayBrowseDir()` | `menus/library-core:140` | [修复] 解析模型在资源库中的"显示目录"——即用户点击该模型时实际看到的层级。 |
 | `setResourceViewMode()` | `menus/library-core:50` | — |
 | `splitSubdirSegments()` | `menus/library-core:73` | — |
@@ -2264,13 +2265,13 @@
 | `LibraryRestoreState()` | `menus/library-session-store:32` | 资源库会话状态：恢复链路（上次浏览位置 + 高亮模型）。 |
 | `LibraryRestoreStatus()` | `menus/library-session-store:17` | [doc:adr-135] P0.3 deferRestore 状态机。 |
 | `librarySessionStore()` | `menus/library-session-store:253` | 单例。 |
-| `initLibrary()` | `menus/library-setup:84` | — |
-| `refreshLibrary()` | `menus/library-setup:451` | — |
-| `reloadConfig()` | `menus/library-setup:373` | — |
-| `rescanAndSync()` | `menus/library-setup:281` | — |
-| `selectOverridePath()` | `menus/library-setup:213` | — |
-| `selectResourceRoot()` | `menus/library-setup:185` | — |
-| `switchStorageMode()` | `menus/library-setup:232` | — |
+| `initLibrary()` | `menus/library-setup:85` | — |
+| `refreshLibrary()` | `menus/library-setup:452` | — |
+| `reloadConfig()` | `menus/library-setup:374` | — |
+| `rescanAndSync()` | `menus/library-setup:282` | — |
+| `selectOverridePath()` | `menus/library-setup:214` | — |
+| `selectResourceRoot()` | `menus/library-setup:186` | — |
+| `switchStorageMode()` | `menus/library-setup:233` | — |
 | `ModelPresetFile()` | `menus/library:10` | — |
 | `applyModelPreset()` | `menus/library:11` | — |
 | `initLibrary()` | `menus/library:8` | — |
@@ -2307,20 +2308,21 @@
 | `getBindFn()` | `menus/menu-schema:132` | 按 StatePath 获取 bind 函数（用于 registerControl 自更新） |
 | `getStateValue()` | `menus/menu-schema:36` | 按 StatePath 获取当前值 |
 | `setStateValue()` | `menus/menu-schema:83` | 按 StatePath 设置值 |
+| `requireModelStack()` | `menus/menu-stack-registry:32` | [doc:adr-276] 取模型菜单栈，未建立则抛名字明确的错误。 |
 | `stackRegistry()` | `menus/menu-stack-registry:8` | — |
 | `SlideMenu()` | `menus/menu:72` | — |
 | `getCurrentRenderingMenu()` | `menus/menu:72` | 获取当前正在渲染的 SlideMenu 实例（供 menus 层控件的自更新注册）。 |
 | `getOpenMenus()` | `menus/menu:80` | 获取所有当前存活的 SlideMenu 实例（已 dispose 的会自动移除，调用方仍需自行判断可见性） |
-| `buildBoneHierarchyLevel()` | `menus/model-detail:1522` | — |
-| `buildModelInfoLevel()` | `menus/model-detail:868` | — |
-| `buildModelLevel()` | `menus/model-detail:627` | — |
-| `buildModelTagsLevel()` | `menus/model-detail:1088` | — |
-| `buildModelToolsLevel()` | `menus/model-detail:577` | [doc:adr-167] 叠加动作次级菜单已移除（ADR-144 per-model overlay 废弃）。 |
-| `buildMorphPreviewLevel()` | `menus/model-detail:1198` | — |
-| `buildMotionSlotLevel()` | `menus/model-detail:436` | 构建动作1（基础）次级菜单：场景库选择 + 已加载动作 + 程序化动作 |
-| `buildOpenWithLevel()` | `menus/model-detail:275` | — |
-| `buildPersonalLightLevel()` | `menus/model-detail:1211` | — |
-| `buildMatRootLevel()` | `menus/model-material:459` | — |
+| `buildBoneHierarchyLevel()` | `menus/model-detail:1525` | — |
+| `buildModelInfoLevel()` | `menus/model-detail:871` | — |
+| `buildModelLevel()` | `menus/model-detail:630` | — |
+| `buildModelTagsLevel()` | `menus/model-detail:1091` | — |
+| `buildModelToolsLevel()` | `menus/model-detail:580` | [doc:adr-167] 叠加动作次级菜单已移除（ADR-144 per-model overlay 废弃）。 |
+| `buildMorphPreviewLevel()` | `menus/model-detail:1201` | — |
+| `buildMotionSlotLevel()` | `menus/model-detail:439` | 构建动作1（基础）次级菜单：场景库选择 + 已加载动作 + 程序化动作 |
+| `buildOpenWithLevel()` | `menus/model-detail:278` | — |
+| `buildPersonalLightLevel()` | `menus/model-detail:1214` | — |
+| `buildMatRootLevel()` | `menus/model-material:461` | — |
 | `ModelPresetEntry()` | `menus/model-preset:37` | — |
 | `ModelPresetFile()` | `menus/model-preset:46` | — |
 | `applyModelPreset()` | `menus/model-preset:127` | — |
@@ -2333,7 +2335,7 @@
 | `applyIntentToModel()` | `menus/motion-binding-ui:137` | — |
 | `buildActionBindingLevel()` | `menus/motion-binding-ui:374` | — |
 | `ensureMotionSlots()` | `menus/motion-binding-ui:126` | [doc:adr-167] 确保 inst.motionSlots 存在并返回（懒初始化；overlay 槽位已移除） |
-| `handleModelAction()` | `menus/motion-binding-ui:394` | 处理 per-model 动作控制指令（pause / reset / pose / loop）。 |
+| `handleModelAction()` | `menus/motion-binding-ui:396` | 处理 per-model 动作控制指令（pause / reset / pose / loop）。 |
 | `initMotionBroadcast()` | `menus/motion-binding-ui:199` | — |
 | `renderModuleToggleList()` | `menus/motion-binding-ui:59` | 渲染动作模块开关列表到指定容器。 |
 | `resetFocusedLayerId()` | `menus/motion-binding-ui:116` | 重置焦点图层 ID（进入动作绑定面板 / 场景级浏览时调用）。 |
@@ -2342,10 +2344,10 @@
 | `disposeAllVirtualSkirts()` | `menus/motion-cloth-levels:68` | 释放全部虚拟裙骨控制器 |
 | `disposeVirtualSkirtForModel()` | `menus/motion-cloth-levels:77` | 释放指定模型的虚拟裙骨控制器（供模型卸载流程调用） |
 | `buildLayerLevel()` | `menus/motion-detail-ui:44` | 单图层次级菜单：启用开关 / 权重滑块 / 删除。 |
-| `buildMotionDetailLevel()` | `menus/motion-detail-ui:361` | [doc:adr-167] 构建动作详情页 level。 |
-| `buildMotionToolsLevel()` | `menus/motion-detail-ui:381` | [doc:adr-170] 动作工具页 level——对齐 buildModelToolsLevel 的「详情 vs 工具」分层： 行点击进详情（图层/覆盖），行尾 setting |
-| `buildPlaybackSpeedLevel()` | `menus/motion-detail-ui:465` | — |
-| `syncPlaybackSpeedToRuntime()` | `menus/motion-detail-ui:433` | 将记忆中的播放速度同步到新的 mmdRuntime 实例（防状态漂移）。 |
+| `buildMotionDetailLevel()` | `menus/motion-detail-ui:366` | [doc:adr-167] 构建动作详情页 level。 |
+| `buildMotionToolsLevel()` | `menus/motion-detail-ui:386` | [doc:adr-170] 动作工具页 level——对齐 buildModelToolsLevel 的「详情 vs 工具」分层： 行点击进详情（图层/覆盖），行尾 setting |
+| `buildPlaybackSpeedLevel()` | `menus/motion-detail-ui:470` | — |
+| `syncPlaybackSpeedToRuntime()` | `menus/motion-detail-ui:438` | 将记忆中的播放速度同步到新的 mmdRuntime 实例（防状态漂移）。 |
 | `buildGazeTrackingLevel()` | `menus/motion-gaze-levels:503` | — |
 | `getGazeSchema()` | `menus/motion-gaze-levels:56` | 导出 gaze schema 供 menu-registry 静态分析（ADR-093 元测试） |
 | `renderPerceptionConflictBanners()` | `menus/motion-gaze-levels:476` | [doc:adr-166 P2-3] 渲染「焦点 + 全部 pinned」模型的感知层冲突 banner。 |
@@ -2380,13 +2382,13 @@
 | `hideMotionPopup()` | `menus/motion-root-ui:303` | — |
 | `importExternalAnimation()` | `menus/motion-root-ui:386` | 外部动作导入：选文件 → 重定向骨骼 → 播放。 |
 | `openProcDetail()` | `menus/motion-root-ui:347` | [doc:adr-207] 行体点击进入程序化统一详情页。 |
-| `buildNavMaps()` | `menus/nav-actions:176` | — |
-| `disposeNavBindings()` | `menus/nav-actions:273` | 卸载导航按钮监听（HMR/dispose 用） |
-| `getNavLabel()` | `menus/nav-actions:338` | 供 core 侧读取导航标签（经桥，不直接 import menus） |
-| `initNavActions()` | `menus/nav-actions:283` | [doc:adr-238] nav-actions 启动入口：安装按钮接线 + 构建导航标签映射。 |
-| `navActions()` | `menus/nav-actions:134` | — |
+| `buildNavMaps()` | `menus/nav-actions:178` | — |
+| `disposeNavBindings()` | `menus/nav-actions:275` | 卸载导航按钮监听（HMR/dispose 用） |
+| `getNavLabel()` | `menus/nav-actions:340` | 供 core 侧读取导航标签（经桥，不直接 import menus） |
+| `initNavActions()` | `menus/nav-actions:285` | [doc:adr-238] nav-actions 启动入口：安装按钮接线 + 构建导航标签映射。 |
+| `navActions()` | `menus/nav-actions:136` | — |
 | `navLabels()` | `menus/nav-actions:25` | — |
-| `toggleOverlay()` | `menus/nav-actions:71` | — |
+| `toggleOverlay()` | `menus/nav-actions:73` | — |
 | `buildOutfitLevel()` | `menus/outfit-ui:158` | — |
 | `buildSiteTabs()` | `menus/plaza-browser:326` | — |
 | `buildToolbar()` | `menus/plaza-browser:711` | — |
@@ -2409,11 +2411,11 @@
 | `showPlaza()` | `menus/plaza-browser:983` | — |
 | `PLAZA_CREATORS()` | `menus/plaza-creators:9` | — |
 | `PlazaCreator()` | `menus/plaza-creators:1` | — |
-| `ensureObserver()` | `menus/plaza-download:190` | — |
+| `ensureObserver()` | `menus/plaza-download:195` | — |
 | `handlePlazaDownload()` | `menus/plaza-download:76` | — |
 | `installDownloadListener()` | `menus/plaza-download:40` | — |
-| `installEventListeners()` | `menus/plaza-download:160` | — |
-| `installShortcuts()` | `menus/plaza-download:112` | — |
+| `installEventListeners()` | `menus/plaza-download:165` | — |
+| `installShortcuts()` | `menus/plaza-download:117` | — |
 | `PLAZA_SITES()` | `menus/plaza-sites:15` | — |
 | `PlazaSite()` | `menus/plaza-sites:1` | — |
 | `GLOBAL_MODE_KEY()` | `menus/plaza-state:14` | — |
@@ -2490,7 +2492,7 @@
 | `buildStageLevel()` | `menus/scene-stage-levels:161` | — |
 | `buildStageTransformLevel()` | `menus/scene-stage-levels:175` | — |
 | `buildStageLightLevel()` | `menus/scene-stage-lights:833` | — |
-| `buildSettingsAboutLevel()` | `menus/settings-about:253` | — |
+| `buildSettingsAboutLevel()` | `menus/settings-about:258` | — |
 | `handleSettingsAction()` | `menus/settings-actions:21` | 全局设置项点击分发：语言切换 + 动作表。settings.ts 的 onItemClick 使用。 |
 | `buildSettingsAppearanceLevel()` | `menus/settings-appearance:514` | — |
 | `buildCameraSchema()` | `menus/settings-controls:29` | — |
@@ -2498,7 +2500,7 @@
 | `buildDiagnosticSchema()` | `menus/settings-diagnostic:417` | — |
 | `buildSettingsDiagnosticLevel()` | `menus/settings-diagnostic:522` | — |
 | `renderDiagnosticPanel()` | `menus/settings-diagnostic:492` | — |
-| `buildSettingsDownloadsLevel()` | `menus/settings-downloads:450` | — |
+| `buildSettingsDownloadsLevel()` | `menus/settings-downloads:451` | — |
 | `buildEffectsSchema()` | `menus/settings-graphics:204` | — |
 | `buildFrameQualitySchema()` | `menus/settings-graphics:102` | — |
 | `buildPhysicsHudSchema()` | `menus/settings-graphics:305` | — |
@@ -2522,12 +2524,12 @@
 | `setDownloadWatchEnabledCached()` | `menus/settings-shared:55` | — |
 | `setTheme()` | `menus/settings-shared:80` | — |
 | `truncatePath()` | `menus/settings-shared:185` | 路径截断显示：超长时保留尾部（用户更关心文件名/末级目录） |
-| `addCustomSoftware()` | `menus/settings-system:441` | — |
-| `buildSettingsSystemLevel()` | `menus/settings-system:815` | — |
-| `buildSoftwareDetailLevel()` | `menus/settings-system:770` | — |
-| `scanSoftwareDir()` | `menus/settings-system:467` | — |
-| `setBlenderPath()` | `menus/settings-system:413` | — |
-| `setMMDPath()` | `menus/settings-system:427` | — |
+| `addCustomSoftware()` | `menus/settings-system:446` | — |
+| `buildSettingsSystemLevel()` | `menus/settings-system:820` | — |
+| `buildSoftwareDetailLevel()` | `menus/settings-system:775` | — |
+| `scanSoftwareDir()` | `menus/settings-system:472` | — |
+| `setBlenderPath()` | `menus/settings-system:418` | — |
+| `setMMDPath()` | `menus/settings-system:432` | — |
 | `SETTINGS()` | `menus/settings-targets:5` | 设置菜单文件夹导航 target（ADR-157 的 7 分类 + downloads = 8 个根区段） |
 | `SETTINGS_ACTION()` | `menus/settings-targets:17` | 设置菜单动作 target（点击后执行操作，不导航） |
 | `SOFTWARE_DETAIL_PREFIX()` | `menus/settings-targets:33` | 动态 target 前缀 —— 用于 &#96;settings:software-detail:&lt;path&gt;&#96; 模式 |
