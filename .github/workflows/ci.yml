@@ -555,6 +555,32 @@ jobs:
         run: cd frontend && node ../scripts/check-deadcode-baseline.mjs
 
   # ============================================================
+  # Assertion — baseline gate (非空断言 / as unknown as / as any / @ts-ignore)
+  # [2026-10-25] ADR-276 决策 5 的 ratchet 从 pre-push 补到 CI：只许降不许升，
+  # 超基线即 fail（脚本本身拒绝 --update 上调，无自动吸收）。
+  # 域裁剪：扫描 frontend/src，故同 deadcode-baseline 只在前端域变更时跑。
+  # ============================================================
+  assertion-baseline:
+    name: Assertion — Baseline Gate
+    runs-on: ubuntu-latest
+    needs: [changes]
+    if: needs.changes.outputs.frontend == 'true' || needs.changes.outputs.all == 'true'
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - name: Setup frontend (no npm cache, 与原 setup-node 语义一致)
+        uses: ./.github/actions/setup-frontend
+        with:
+          node-version: ${{ vars.NODE_VERSION || '24' }}
+          cache: ''
+
+      - name: Assertion baseline check (blocking, no auto-update)
+        # 超基线即 fail。收口后若确实下降，人工跑 --update 收紧基线并单独提交
+        #   cd frontend && node ../scripts/check-assertion-baseline.mjs --update
+        # 并单独提交 docs/.assertion-baseline.json
+        run: cd frontend && node ../scripts/check-assertion-baseline.mjs
+
+  # ============================================================
   # Version — tag vs package.json consistency
   # Ensures that if a tag exists (on PRs to main), the package.json
   # version matches it. Only meaningful on push/pull to main/master.
@@ -630,7 +656,7 @@ jobs:
   summary:
     name: Summary — 门禁汇总
     runs-on: ubuntu-latest
-    needs: [changes, test-frontend, test-governance, test-backend, config-syntax, scripts-hygiene, deadcode-baseline, version-check]
+    needs: [changes, test-frontend, test-governance, test-backend, config-syntax, scripts-hygiene, deadcode-baseline, assertion-baseline, version-check]
     if: always()
     timeout-minutes: 5
     steps:
@@ -647,7 +673,7 @@ jobs:
 
           order = ["test-frontend", "test-governance", "test-backend",
                    "config-syntax", "scripts-hygiene", "deadcode-baseline",
-                   "version-check"]
+                   "assertion-baseline", "version-check"]
           gated = {
               "test-frontend":    "changes(frontend) / all",
               "test-governance":  "changes(frontend|governance) / all",
@@ -655,6 +681,7 @@ jobs:
               "config-syntax":    "changes(go|governance) / all",
               "scripts-hygiene":  "changes(governance) / all",
               "deadcode-baseline":"changes(frontend) / all",
+              "assertion-baseline":"changes(frontend) / all",
               "version-check":    "changes(frontend) / all + push|PR→main",
           }
 

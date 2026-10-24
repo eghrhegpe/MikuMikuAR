@@ -7,6 +7,9 @@ import "testing"
 // 曾因 AiSetLLMConfig 无条件 `c.LLMConfig.AIKey = cfg.AIKey` 导致后续空 key
 // 更新覆盖已存 key，testConnection 报 401 Authorization Not Found。
 func TestAiSetLLMConfig_KeyNotClearedByEmptyUpdate(t *testing.T) {
+	// [buglog:2026-07-17 同类] 隔离 configDir：AiSetLLMConfig 走 updateConfig→writeConfig，
+	// 不隔离会把测试 LLMConfig（假 BaseURL/Model/AIKey）写进用户真实 config.json。
+	testConfigDir(t)
 	a := NewApp("test", "", "")
 
 	// 1. 首次写入完整配置（含 key）
@@ -41,6 +44,7 @@ func TestAiSetLLMConfig_KeyNotClearedByEmptyUpdate(t *testing.T) {
 
 // TestAiSetLLMConfig_KeyUpdatable 确认非空 key 仍可正常更新（守卫不能矫枉过正）。
 func TestAiSetLLMConfig_KeyUpdatable(t *testing.T) {
+	testConfigDir(t) // 同上：避免写用户真实 config.json
 	a := NewApp("test", "", "")
 
 	if err := a.AiSetLLMConfig(LLMConfig{BaseURL: "https://x/v1", Model: "m", AIKey: "old"}); err != nil {

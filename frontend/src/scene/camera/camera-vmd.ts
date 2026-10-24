@@ -54,6 +54,13 @@ export function loadCameraVmd(mmdAnimation: MmdAnimation, vmdPath: string, vmdNa
             scene.removeCamera(_mmdCamera);
             _mmdCamera.dispose();
         }
+        // [audit:fix 2026-09] P2：覆盖前释放旧相机的 WASM 池条目（原置 null 靠 GC finalizer；
+        // 旧实例可能已 dispose，destroyRuntimeAnimation 对之安全）；先捕获旧值防同一 handle 二次销毁
+        const oldCam = _mmdCamera;
+        const oldHandle = _cameraAnimationHandle;
+        if (oldHandle !== null) {
+            oldCam.destroyRuntimeAnimation?.(oldHandle);
+        }
         _mmdCamera = null;
         _cameraAnimationHandle = null;
     }
@@ -88,6 +95,12 @@ export function clearCameraVmd(): void {
                 scene.removeCamera(_mmdCamera);
                 _mmdCamera.dispose();
             }
+            // [audit:fix 2026-09] P2：手动路径同释放 WASM 池条目（已 dispose 实例上调用安全）；?. 防御 mock
+            const oldCam = _mmdCamera;
+            const oldHandle = _cameraAnimationHandle;
+            if (oldHandle !== null) {
+                oldCam.destroyRuntimeAnimation?.(oldHandle);
+            }
         }
         _mmdCamera = null;
         _cameraAnimationHandle = null;
@@ -111,7 +124,19 @@ export function createVmdCamera(): MmdCamera {
     }
     // 旧 MmdCamera 已被销毁（如 vmd→orbit→vmd 切换时 switchCameraMode 对 oldCam 执行了 dispose，
     // 但本模块级引用未置空）：重建相机，并用保留的动画源恢复动画句柄。
+    // [doc:adr-276] getCameraScene 返回 Scene | null（:330），相机必须在场景里注册：
+    // 没有场景就抛错，好过建一台不上场景、永远不渲染的相机。
+    if (!scene) {
+        throw new Error('camera-vmd: 场景未初始化（setCameraScene 之前调用了 createVmdCamera）');
+    }
     const cam = new MmdCamera('mmdCam', new Vector3(0, 10, 0), scene, false);
+    // [audit:fix 2026-09] P2：重建前显式释放旧相机的 WASM 动画池条目（原只置 null 靠 GC finalizer；
+    // 已 dispose 实例上调 destroyRuntimeAnimation 安全——池表不清除）；?. 防御测试 mock 缺此方法
+    const oldCam = _mmdCamera;
+    const oldHandle = _cameraAnimationHandle;
+    if (oldCam && oldHandle !== null) {
+        oldCam.destroyRuntimeAnimation?.(oldHandle);
+    }
     if (_mmdAnimation) {
         _cameraAnimationHandle = cam.createRuntimeAnimation(_mmdAnimation);
         cam.setRuntimeAnimation(_cameraAnimationHandle);

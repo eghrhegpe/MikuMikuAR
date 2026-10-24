@@ -2,7 +2,7 @@
 // 职责: 模型各层级构建（外观/信息/标签/表情/材质）
 
 import { cardContainer, PopupLevel, modelMetaCache, setModelMetaCache, dom } from '../core/config';
-import { stackRegistry } from './menu-stack-registry';
+import { requireBuildLevel, requireModelStack, stackRegistry } from './menu-stack-registry';
 import { computeLibraryRef, getBrowseDir } from '@/core/library-path';
 import { escapeHtml } from '../core/escape-html';
 import { feedbackInfo, feedbackStatus } from '../core/feedback';
@@ -163,7 +163,9 @@ function _applyLoadedMotion(id: string, inst: ModelInstance): void {
     if (isProcVmdActive()) {
         stopProcMotion(id);
     }
-    if (pinned) {
+    // [doc:adr-276] pinned.vmdPath 可空（pin 记录可能残留于 VMD 已被清掉的模型）：等同于无 pin，
+    // 落到下方静态回退分支，而不是拿 null 当路径去 load
+    if (pinned?.vmdPath) {
         const gen = getMotionGen();
         loadManager
             .load({ kind: 'vmd', path: pinned.vmdPath, modelId: id, skipSceneIntent: true })
@@ -208,7 +210,8 @@ function buildOpenWithSchema(id: string): MenuNode[] {
                 void (async () => {
                     let entries: SoftwareEntry[];
                     try {
-                        entries = await ScanSoftwareDir();
+                        // [doc:adr-276] 契约可空（null = 扫描不到外部应用目录），与下方 catch 同义收敛为空列表
+                        entries = (await ScanSoftwareDir()) ?? [];
                     } catch {
                         entries = [];
                     }
@@ -225,7 +228,7 @@ function buildOpenWithSchema(id: string): MenuNode[] {
                         for (const sw of entries) {
                             slideRow(c, softwareKindIcon(sw.kind), sw.name, false, async () => {
                                 const inst = modelManager.get(id);
-                                if (!inst.filePath) {
+                                if (!inst || !inst.filePath) {
                                     feedbackStatus('model-detail.noFilePath', undefined, false);
                                     return;
                                 }
@@ -340,7 +343,7 @@ function buildModelSchema(id: string): MenuNode[] {
                     // [doc:adr-167] per-model overlay 入口已移除（ADR-144 废弃）。
                     // 叠加图层现由场景级动作详情页内 vmdLayers 配置，随动作走。
                     slideRow(c, 'lucide:user', t('motion.poseLibrary'), true, () => {
-                        const level = stackRegistry.buildLevel!(
+                        const level = requireBuildLevel()(
                             getBrowseDir('vpd'),
                             t('motion.poseTo', { name: inst.name }),
                             (m) => m.format === 'vpd',
@@ -353,15 +356,15 @@ function buildModelSchema(id: string): MenuNode[] {
                     addSectionTitle(c, t('model-detail.appearance'));
                     slideRow(c, 'lucide:box', t('model-detail.materialAdjust'), true, () => {
                         const level = buildMatRootLevel(id, inst.name);
-                        stackRegistry.modelStack.push(level);
+                        requireModelStack().push(level);
                     });
                     slideRow(c, 'lucide:smile', t('model-detail.morphPreview'), true, () => {
                         const level = buildMorphPreviewLevel(id);
-                        stackRegistry.modelStack.push(level);
+                        requireModelStack().push(level);
                     });
                     slideRow(c, 'lucide:shirt', t('model-detail.outfitVariant'), true, () => {
                         const level = buildOutfitLevel(id);
-                        stackRegistry.modelStack.push(level);
+                        requireModelStack().push(level);
                     });
 
                     // ── 个人灯光（次级菜单） ──
@@ -374,7 +377,7 @@ function buildModelSchema(id: string): MenuNode[] {
                                 t('model-detail.personalLight'),
                                 true,
                                 () => {
-                                    stackRegistry.modelStack.push(buildPersonalLightLevel(id));
+                                    requireModelStack().push(buildPersonalLightLevel(id));
                                 },
                                 undefined,
                                 undefined,
@@ -1126,7 +1129,7 @@ function buildMorphPreviewSchema(id: string): MenuNode[] {
                         resetModelMorphs(id);
                         c.querySelectorAll('.morph-slider').forEach((el) => {
                             (el as HTMLInputElement).value = '0';
-                            const valLabel = (el as HTMLElement).parentElement.querySelector(
+                            const valLabel = (el as HTMLElement).parentElement?.querySelector(
                                 '.morph-val'
                             );
                             if (valLabel) {

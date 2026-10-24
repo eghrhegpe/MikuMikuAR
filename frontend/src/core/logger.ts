@@ -45,7 +45,14 @@ class LogBuffer {
 
     clear(): void {
         this.buffer = [];
-        this._listeners.forEach((fn) => fn());
+        // [audit:fix 2026-09] clear 与 push 同款的逐监听 try/catch 隔离：单个订阅回调抛错不阻断其余监听器。
+        this._listeners.forEach((fn) => {
+            try {
+                fn();
+            } catch (err) {
+                console.error('[logger] listener error:', err);
+            }
+        });
     }
 
     subscribe(fn: () => void): () => void {

@@ -5,7 +5,7 @@
 // （ai:chunk/ai:done/ai:error、android:* 等）全部收不到，AI 流式永久挂起。
 // 本测试锁定：initRuntimeBridge() 后，events.on 必须命中真实 @wailsio/runtime 的 Events.On。
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 const onSpy = vi.fn(
     (_name: string, _cb: unknown): (() => void) =>
@@ -24,12 +24,20 @@ vi.mock('@wailsio/runtime', () => ({
     Browser: { OpenURL: vi.fn(() => Promise.resolve()) },
 }));
 
+// [adr-219] window.wails 是全局状态：测试前捕获原值，afterEach 恢复，防泄漏到其他测试
+const realWails = (window as { wails?: unknown }).wails;
+
 describe('runtime-bridge — 桌面事件桥接', () => {
     beforeEach(() => {
         vi.resetModules();
         onSpy.mockClear();
         // 桌面路径：isWebPlatform() 依 window.wails 是否存在判定
         (window as { wails?: unknown }).wails = {};
+    });
+
+    // [adr-219] 卫生：恢复 window.wails，避免本文件测试污染同进程其他测试文件
+    afterEach(() => {
+        (window as { wails?: unknown }).wails = realWails;
     });
 
     it('initRuntimeBridge() 后 events.on 命中真实 Wails Events.On（非 no-op）', async () => {

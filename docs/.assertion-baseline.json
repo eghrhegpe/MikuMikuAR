@@ -1,0 +1,547 @@
+{
+  "_comment": "ADR-276 决策 5 的断言 ratchet 基线。totals 只许降不许升；新增非空断言 / as unknown as / as any / @ts-ignore 必须先还掉等量存量。更新: node scripts/check-assertion-baseline.mjs --update（拒绝上调）",
+  "generatedAt": "2026-10-25",
+  "scope": "frontend/src（不含 *.d.ts / *.test.* / *.spec.* / __tests__）",
+  "totals": {
+    "nonNull": 121,
+    "doubleAssert": 85,
+    "asAny": 1,
+    "tsIgnore": 0
+  },
+  "perFile": {
+    "core/ai/error-buffer.ts": {
+      "nonNull": 0,
+      "doubleAssert": 1,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "core/ai/go-adapter.ts": {
+      "nonNull": 1,
+      "doubleAssert": 0,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "core/ai/index.ts": {
+      "nonNull": 0,
+      "doubleAssert": 1,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "core/async.ts": {
+      "nonNull": 1,
+      "doubleAssert": 0,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "core/audio-bus.ts": {
+      "nonNull": 0,
+      "doubleAssert": 1,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "core/audio.ts": {
+      "nonNull": 0,
+      "doubleAssert": 1,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "core/backend/browser-adapter.ts": {
+      "nonNull": 2,
+      "doubleAssert": 1,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "core/backend/go-adapter.ts": {
+      "nonNull": 0,
+      "doubleAssert": 1,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "core/backend/index.ts": {
+      "nonNull": 0,
+      "doubleAssert": 1,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "core/dev-hooks.ts": {
+      "nonNull": 3,
+      "doubleAssert": 6,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "core/dispose-helpers.ts": {
+      "nonNull": 0,
+      "doubleAssert": 1,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "core/dom.ts": {
+      "nonNull": 0,
+      "doubleAssert": 1,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "core/env-state-defaults.ts": {
+      "nonNull": 0,
+      "doubleAssert": 1,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "core/events.ts": {
+      "nonNull": 1,
+      "doubleAssert": 0,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "core/init.ts": {
+      "nonNull": 0,
+      "doubleAssert": 1,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "core/mmd-adapter.ts": {
+      "nonNull": 0,
+      "doubleAssert": 8,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "core/platform.ts": {
+      "nonNull": 0,
+      "doubleAssert": 1,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "core/ui-collapsible.ts": {
+      "nonNull": 2,
+      "doubleAssert": 0,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "core/ui-fullscreen-overlay.ts": {
+      "nonNull": 1,
+      "doubleAssert": 0,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "core/ui-header-toggle.ts": {
+      "nonNull": 1,
+      "doubleAssert": 0,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "core/ui-resource-panel.ts": {
+      "nonNull": 4,
+      "doubleAssert": 0,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "core/ui-rows.ts": {
+      "nonNull": 2,
+      "doubleAssert": 0,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "core/wails-bindings.ts": {
+      "nonNull": 0,
+      "doubleAssert": 1,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "menus/diagnostic-chat.ts": {
+      "nonNull": 3,
+      "doubleAssert": 0,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "menus/diagnostic-session.ts": {
+      "nonNull": 0,
+      "doubleAssert": 2,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "menus/library-browse.ts": {
+      "nonNull": 2,
+      "doubleAssert": 0,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "menus/library-core.ts": {
+      "nonNull": 2,
+      "doubleAssert": 0,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "menus/menu-schema.ts": {
+      "nonNull": 0,
+      "doubleAssert": 5,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "menus/menu.ts": {
+      "nonNull": 4,
+      "doubleAssert": 0,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "menus/model-detail.ts": {
+      "nonNull": 0,
+      "doubleAssert": 1,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "menus/model-material.ts": {
+      "nonNull": 0,
+      "doubleAssert": 1,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "menus/motion-camera-levels.ts": {
+      "nonNull": 3,
+      "doubleAssert": 0,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "menus/motion-cloth-levels.ts": {
+      "nonNull": 0,
+      "doubleAssert": 1,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "menus/motion-detail-ui.ts": {
+      "nonNull": 2,
+      "doubleAssert": 0,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "menus/motion-override-levels.ts": {
+      "nonNull": 1,
+      "doubleAssert": 0,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "menus/plaza-browser.ts": {
+      "nonNull": 1,
+      "doubleAssert": 0,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "menus/plaza-download.ts": {
+      "nonNull": 0,
+      "doubleAssert": 1,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "menus/preset-list-viewer.ts": {
+      "nonNull": 1,
+      "doubleAssert": 0,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "menus/render-menu.ts": {
+      "nonNull": 12,
+      "doubleAssert": 0,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "menus/resource-detail-helpers.ts": {
+      "nonNull": 0,
+      "doubleAssert": 1,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "menus/settings-appearance.ts": {
+      "nonNull": 3,
+      "doubleAssert": 0,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "menus/settings-controls.ts": {
+      "nonNull": 1,
+      "doubleAssert": 0,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "menus/settings-downloads.ts": {
+      "nonNull": 0,
+      "doubleAssert": 1,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "menus/settings-graphics.ts": {
+      "nonNull": 1,
+      "doubleAssert": 0,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "menus/settings-media.ts": {
+      "nonNull": 1,
+      "doubleAssert": 0,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "menus/settings-resources.ts": {
+      "nonNull": 3,
+      "doubleAssert": 0,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "motion-algos/beat-detector.ts": {
+      "nonNull": 3,
+      "doubleAssert": 1,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "motion-algos/proc-motion-shared.ts": {
+      "nonNull": 1,
+      "doubleAssert": 0,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "scene/ar/ar-scene.ts": {
+      "nonNull": 0,
+      "doubleAssert": 1,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "scene/ar/ar-webxr-probe.ts": {
+      "nonNull": 1,
+      "doubleAssert": 1,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "scene/camera/camera.ts": {
+      "nonNull": 0,
+      "doubleAssert": 1,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "scene/env/env-ground.ts": {
+      "nonNull": 4,
+      "doubleAssert": 1,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "scene/env/env-particles.ts": {
+      "nonNull": 3,
+      "doubleAssert": 0,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "scene/env/env-reflection.ts": {
+      "nonNull": 2,
+      "doubleAssert": 3,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "scene/env/env-water-material.ts": {
+      "nonNull": 1,
+      "doubleAssert": 0,
+      "asAny": 1,
+      "tsIgnore": 0
+    },
+    "scene/env/mirror-debug.ts": {
+      "nonNull": 0,
+      "doubleAssert": 2,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "scene/env/planar-reflection.ts": {
+      "nonNull": 2,
+      "doubleAssert": 1,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "scene/env/_bridge/env-persist.ts": {
+      "nonNull": 0,
+      "doubleAssert": 2,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "scene/env/_shared/env-type-helpers.ts": {
+      "nonNull": 0,
+      "doubleAssert": 1,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "scene/manager/material-proxy-resolver.ts": {
+      "nonNull": 0,
+      "doubleAssert": 1,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "scene/manager/material.ts": {
+      "nonNull": 5,
+      "doubleAssert": 0,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "scene/manager/model-loader.ts": {
+      "nonNull": 2,
+      "doubleAssert": 1,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "scene/manager/model-manager.ts": {
+      "nonNull": 2,
+      "doubleAssert": 1,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "scene/manager/model-ops.ts": {
+      "nonNull": 0,
+      "doubleAssert": 3,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "scene/manager/outfit.ts": {
+      "nonNull": 1,
+      "doubleAssert": 1,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "scene/manager/sss-pbr-material.ts": {
+      "nonNull": 0,
+      "doubleAssert": 1,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "scene/manager/thumbnail-capture.ts": {
+      "nonNull": 2,
+      "doubleAssert": 0,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "scene/motion/animation-retargeter.ts": {
+      "nonNull": 1,
+      "doubleAssert": 2,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "scene/motion/bone-override-store.ts": {
+      "nonNull": 6,
+      "doubleAssert": 0,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "scene/motion/bone-override.ts": {
+      "nonNull": 0,
+      "doubleAssert": 1,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "scene/motion/feet-adjustment.ts": {
+      "nonNull": 2,
+      "doubleAssert": 1,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "scene/motion/motion-intent.ts": {
+      "nonNull": 0,
+      "doubleAssert": 2,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "scene/motion/motion-modules/hand-modules.ts": {
+      "nonNull": 0,
+      "doubleAssert": 1,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "scene/motion/perception-shared.ts": {
+      "nonNull": 0,
+      "doubleAssert": 2,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "scene/motion/perception.ts": {
+      "nonNull": 5,
+      "doubleAssert": 0,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "scene/motion/proc-motion-controller.ts": {
+      "nonNull": 2,
+      "doubleAssert": 0,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "scene/motion/wasm-layers-blender.ts": {
+      "nonNull": 1,
+      "doubleAssert": 0,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "scene/physics/skirt-analyzer.ts": {
+      "nonNull": 5,
+      "doubleAssert": 0,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "scene/render/lighting-follow.ts": {
+      "nonNull": 3,
+      "doubleAssert": 1,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "scene/render/lighting-stage.ts": {
+      "nonNull": 0,
+      "doubleAssert": 5,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "scene/render/lighting-sun.ts": {
+      "nonNull": 1,
+      "doubleAssert": 0,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "scene/render/lighting.ts": {
+      "nonNull": 1,
+      "doubleAssert": 0,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "scene/render/quality-profile.ts": {
+      "nonNull": 0,
+      "doubleAssert": 1,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "scene/render/renderer.ts": {
+      "nonNull": 2,
+      "doubleAssert": 0,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "scene/scene-migrate.ts": {
+      "nonNull": 0,
+      "doubleAssert": 1,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "scene/scene-serialize.ts": {
+      "nonNull": 2,
+      "doubleAssert": 5,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "scene/scene.ts": {
+      "nonNull": 0,
+      "doubleAssert": 1,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "scene/shared/texture-lru.ts": {
+      "nonNull": 1,
+      "doubleAssert": 0,
+      "asAny": 0,
+      "tsIgnore": 0
+    },
+    "scene/transform/transform-adapter.ts": {
+      "nonNull": 2,
+      "doubleAssert": 0,
+      "asAny": 0,
+      "tsIgnore": 0
+    }
+  }
+}

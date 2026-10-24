@@ -24,6 +24,10 @@ import type {
     Config,
     UIState,
     EnvState,
+    BuildInfo,
+    SystemA11ySettings,
+    ModelPresetEntry,
+    EnvPresetEntry,
     ModelEntry,
     ModelMeta,
     ExtractResult,
@@ -348,6 +352,8 @@ function _cap(): BackendCapabilities {
     };
 }
 
+// [doc:adr-277] 显式标注返回类型即可，不再 as unknown as UIState：
+// 双重断言曾静音「binding 侧必填字段缺失」——frameCapEnabled 一直是漏的（Go 默认 true）。
 function _defaultUIState(): UIState {
     // 对齐 createMockUIState（__tests__/mocks/binding-factories.ts）+ UIState 接口必填字段
     return {
@@ -363,7 +369,9 @@ function _defaultUIState(): UIState {
         autoCameraEnabled: false,
         autoCameraBeatsPerSwitch: 4,
         autoUpdateEnabled: false,
-    } as unknown as UIState;
+        // 与 Go 侧 UIState.FrameCapEnabled 默认值一致（internal/app/app.go:360，默认 true）
+        frameCapEnabled: true,
+    };
 }
 
 function _defaultConfig(): Config {
@@ -379,6 +387,8 @@ function _defaultConfig(): Config {
             vmd: '',
             audio: '',
             stage: '',
+            // binding 侧 OverridePaths.prop 必填；空串=回退 resource_root/prop（同上各字段语义）
+            prop: '',
             environment: '',
             md_dress: '',
             setting: '',
@@ -393,7 +403,7 @@ function _defaultConfig(): Config {
         custom_software: [],
         tags: {},
         recent_models: [],
-    } as unknown as Config;
+    };
 }
 
 /**
@@ -557,14 +567,23 @@ async function _pickFile(accept?: string): Promise<FileSystemFileHandle | null> 
  * FSA 多文件选择无天然来源标识——不同目录的同名 PMX 在导入时共用裸文件名为 stem，
  * 后缀机制防止 file:/entry:/dir: 键互相覆盖。与 _encModelStem 协同：先解析唯一 stem，
  * 再编码为键安全 token。
+ * reserved（可选）：同批摄入中批内已解析的 stem 同样计为冲突（见 ingestModelFiles），
+ * 单条摄入路径不传，行为不变。
  */
-async function _resolveUniqueStem(baseStem: string): Promise<string> {
+async function _resolveUniqueStem(
+    baseStem: string,
+    reserved?: Set<string>
+): Promise<string> {
     let stem = baseStem;
     let n = 1;
-    while ((await idbGet('models', `entry:${_encModelStem(stem)}`)) !== undefined) {
+    while (
+        (await idbGet('models', `entry:${_encModelStem(stem)}`)) !== undefined ||
+        (reserved?.has(stem) ?? false)
+    ) {
         n++;
         stem = `${baseStem} (${n})`;
     }
+    reserved?.add(stem);
     return stem;
 }
 
@@ -579,15 +598,17 @@ interface _IngestPair {
 }
 
 /** 计算写入键值对（不落库），供单条/批量摄入复用，避免逻辑重复。
- *  [doc:adr-182] 同名冲突检测 + 序号后缀，防止 FSA 多选同名 PMX 覆盖。 */
+ *  [doc:adr-182] 同名冲突检测 + 序号后缀，防止 FSA 多选同名 PMX 覆盖。
+ *  reserved：同批摄入中已解析出的 stem（批量路径透传），单条摄入不传。 */
 async function _buildIngestPairs(
     name: string,
-    bytes: Uint8Array
+    bytes: Uint8Array,
+    reserved?: Set<string>
 ): Promise<{ pairs: [string, unknown][]; loadPath: string }> {
     const lower = name.toLowerCase();
     const baseStem = _stripExt(name);
     if (lower.endsWith('.pmx')) {
-        const pmxStem = await _resolveUniqueStem(baseStem);
+        const pmxStem = await _resolveUniqueStem(baseStem, reserved);
         const encStem = _encModelStem(pmxStem);
         const modelDir = 'web://model';
         const filePath = `${modelDir}/${encStem}`;
@@ -659,9 +680,12 @@ export async function ingestModelBytes(name: string, bytes: Uint8Array): Promise
 export async function ingestModelFiles(
     files: { name: string; bytes: Uint8Array }[]
 ): Promise<number> {
+    // [doc:adr-182] 同批去重：批内已解析的 stem 同样计为冲突（reserved 透传），
+    // 否则同批重复键经 idbBatchSet 写入时 last-wins 会静默覆盖前一条。
+    const reserved = new Set<string>();
     const all: [string, unknown][] = [];
     for (const f of files) {
-        const { pairs } = await _buildIngestPairs(f.name, f.bytes);
+        const { pairs } = await _buildIngestPairs(f.name, f.bytes, reserved);
         all.push(...pairs);
     }
     await idbBatchSet('models', all);
@@ -1376,7 +1400,14 @@ async function _scanRootGuarded(): Promise<void> {
     return _scanningPromise;
 }
 
-export const browserAdapter: BackendService = {
+/** 浏览器侧自有方法：不在 Go 契约内，仅供网页端自用与 data-chain 契约测试。 */
+interface BrowserAdapterExtras {
+    GetUIState(): Promise<UIState>;
+    SetConfig(cfg: Partial<Config>): Promise<void>;
+}
+type BrowserAdapterSelf = BackendService & BrowserAdapterExtras;
+
+export const browserAdapter: BrowserAdapterSelf & ThisType<BrowserAdapterSelf> = {
     kind: 'browser',
     capabilities: _cap,
 
@@ -1492,13 +1523,27 @@ export const browserAdapter: BackendService = {
     async SetStorageMode(_mode: string): Promise<void> {
         // 浏览器固定 web 模式
     },
-    async GetSystemA11ySettings(): Promise<Record<string, unknown>> {
-        return (await idbGet<Record<string, unknown>>('config', 'a11y')) ?? {};
+    async GetSystemA11ySettings(): Promise<SystemA11ySettings> {
+        // [doc:adr-277] 契约是 SystemA11ySettings（两个必填布尔）；缺省给 false 而非 {}，
+        // 让网页端与桌面端读到同一形状（原先的空对象会让下游拿到 undefined）。
+        return (
+            (await idbGet<SystemA11ySettings>('config', 'a11y')) ?? {
+                isDarkMode: false,
+                isHighContrast: false,
+            }
+        );
     },
     // [doc:adr-195] 网页端无真实构建信息：返回固定假值（version/commit='web'）。
     // 调用方应用 `backend.kind === 'browser'` 判断是否为浏览器端，勿用此返回值做版本比较。
-    async GetBuildInfo(): Promise<Record<string, string>> {
-        return { version: 'web', commit: 'web', date: new Date().toISOString() };
+    async GetBuildInfo(): Promise<BuildInfo> {
+        // [doc:adr-277] 契约是 BuildInfo{version,buildTime,commitHash,goVersion}；
+        // 网页端无真实构建信息，保持原有的 'web' 占位（字段名对齐契约，勿再自造 commit/date）。
+        return {
+            version: 'web',
+            buildTime: new Date().toISOString(),
+            commitHash: 'web',
+            goVersion: '',
+        };
     },
     // [doc:adr-195] 网页端无版本更新检查能力：永远返回无更新（available:false，current/latest='web'）。
     // 调用方应优先检查 backend.kind === 'browser' 判断是否应跳过升级提示；勿据此判断版本。
@@ -1783,13 +1828,17 @@ export const browserAdapter: BackendService = {
             await idbDelete('caches', k);
         }
     },
-    async CleanOrphanCache(): Promise<void> {
+    async CleanOrphanCache(): Promise<number> {
+        // [doc:adr-277] 契约返回清理条数（Go 侧同样回报 n），供设置面板提示。
+        let removed = 0;
         for (const k of await idbKeys('caches')) {
             const v = await idbGet('caches', k);
             if (!v) {
                 await idbDelete('caches', k);
+                removed++;
             }
         }
+        return removed;
     },
     async ClearExtractCache(): Promise<void> {
         for (const k of await idbKeys('caches')) {
@@ -1870,7 +1919,8 @@ export const browserAdapter: BackendService = {
     },
     // [doc:adr-195] 网页端无法解析 PMX 文件头，始终返回空对象 {}。
     // 桌面端通过 Go 后端解析 PMX 二进制返回元数据。调用方不应依赖网页端返回非空。
-    async GetModelMetaBatch(_paths: string[]): Promise<Record<string, ModelMeta>> {
+    // [doc:adr-277] 契约参数可为 null（Go 侧 paths 是切片，nil 合法）；网页端恒返回 {}，不读参数。
+    async GetModelMetaBatch(_paths: string[] | null): Promise<Record<string, ModelMeta>> {
         // Web 模式下无法解析 PMX 文件头，返回空。
         // comment 由 loadActor 阶段通过 parsePmxComment 从 PMX 字节提取后填入缓存。
         return {};
@@ -1881,10 +1931,20 @@ export const browserAdapter: BackendService = {
         const name = _stripExt(_baseName(path)) || path;
         await idbSet('presets', `model:${name}`, jsonStr);
     },
-    async GetModelPresets(): Promise<string[]> {
-        return (await idbKeys('presets'))
+    async GetModelPresets(): Promise<ModelPresetEntry[]> {
+        // [doc:adr-277] 契约是 ModelPresetEntry[]（preset-meta.ts 读 m.name/m.updatedAt）。
+        // 原先只回名字 string[]，网页端列表里每个条目的 name 都是 undefined。
+        const names = (await idbKeys('presets'))
             .filter((k) => k.startsWith('model:'))
             .map((k) => k.slice(6));
+        return names.map((name) => ({
+            name,
+            presetName: name,
+            modelName: '',
+            modelRef: '',
+            updatedAt: 0,
+            autoApply: false,
+        }));
     },
     // [doc:adr-176] 对齐 Go 签名：LoadModelPreset(path): string。
     // path 推导 name，返回 JSON string。不存在返回空串（对齐 Go）。
@@ -1981,10 +2041,17 @@ export const browserAdapter: BackendService = {
     async LoadEnvPreset(name: string): Promise<string> {
         return (await idbGet<string>('presets', `env:${name}`)) ?? '';
     },
-    async ListEnvPresets(): Promise<string[]> {
-        return (await idbKeys('presets'))
+    async ListEnvPresets(): Promise<EnvPresetEntry[]> {
+        // [doc:adr-277] 契约是 EnvPresetEntry[]（preset-meta.ts 读 e.name/e.label/e.createdAt）。
+        const names = (await idbKeys('presets'))
             .filter((k) => k.startsWith('env:'))
             .map((k) => k.slice(4));
+        return names.map((name) => ({
+            name,
+            label: name,
+            category: 'env:sky',
+            createdAt: 0,
+        }));
     },
     // [doc:adr-177] 网页端查 IndexedDB key 而非文件系统，经 _resolveIdbKey 映射路径语义。
     // 桌面端 `FileExists` 查真实文件系统。调用方应注意此行为差异。
@@ -2091,7 +2158,7 @@ export const browserAdapter: BackendService = {
     },
     // [doc:adr-177] 网页端读 IndexedDB 而非文件系统（经 _resolveIdbKey 映射）。
     // 桌面端 `ReadTextFile` 读取真实文件。调用方应注意此行为差异。
-    async ReadTextFile(path: string): Promise<string | null> {
+    async ReadTextFile(path: string): Promise<string> {
         // [doc:adr-177] 经 _resolveIdbKey 映射（场景存档 JSON / outfit JSON 等）
         const key = _resolveIdbKey(path);
         const bytes = await idbGet<Uint8Array>('models', key);
@@ -2106,7 +2173,9 @@ export const browserAdapter: BackendService = {
                 return new TextDecoder().decode(alt);
             }
         }
-        return null;
+        // [doc:adr-277] 契约是 Promise<string>（Go 侧读不到就返回错误）；网页端读不到按空串降级，
+        // 与 Go 的"文件不存在"语义最接近的非抛错形态。
+        return '';
     },
     // [doc:adr-177] 网页端写 IndexedDB 而非文件系统（经 _resolveIdbKey 映射）。
     // 桌面端 `WriteTextFile` 写入真实文件。调用方应注意此行为差异。
@@ -2472,7 +2541,37 @@ export const browserAdapter: BackendService = {
     async UpdateCustomSoftware(_path: string, _name: string, _args: string): Promise<void> {
         throw new NotSupportedError('UpdateCustomSoftware');
     },
+    // ============ AI 后端（Go 独占） ============
+    // [doc:adr-277] 这 8 个方法此前**根本没在网页端实现**：旧的双重断言（as unknown as BackendService）
+    // 把「缺方法」和「签名不符」一起掩盖了，网页端一旦走到 AI 功能就是 "xxx is not a function"。
+    // 网页端 AI 走 frontend/src/core/ai 自有路径，后端侧能力按 ADR-176 惯例显式降级。
+    // 返回类型写 Promise<never>：抛错的方法，签名对契约天然兼容，不必为此导入 AI 模型类型。
+    async AiCancelStream(): Promise<never> {
+        throw new NotSupportedError('AiCancelStream');
+    },
+    async AiFetchModels(): Promise<never> {
+        throw new NotSupportedError('AiFetchModels');
+    },
+    async AiGetBackendLogs(_level: string, _limit: number): Promise<never> {
+        throw new NotSupportedError('AiGetBackendLogs');
+    },
+    async AiGetBackendState(): Promise<never> {
+        throw new NotSupportedError('AiGetBackendState');
+    },
+    async AiGetLLMConfig(): Promise<never> {
+        throw new NotSupportedError('AiGetLLMConfig');
+    },
+    async AiSetLLMConfig(_cfg: unknown): Promise<never> {
+        throw new NotSupportedError('AiSetLLMConfig');
+    },
+    async AiStreamChat(_req: unknown): Promise<never> {
+        throw new NotSupportedError('AiStreamChat');
+    },
+    async AiTestLLMConnection(): Promise<never> {
+        throw new NotSupportedError('AiTestLLMConnection');
+    },
     // [doc:adr-176] 注：返回 Promise 而非 CancellablePromise（Wails 专属类型），
     // 运行时调用方仅 await，不调 cancel/cancelOn。签名（参数）已对齐 Go 接口。
-    // 双重断言保留，因 CancellablePromise vs Promise 差异是 Wails 类型固有问题。
-} as unknown as BackendService;
+    // [doc:adr-277] 已无需双重断言：BackendService 把 $CancellablePromise 映射成 Promise（types.ts PlainReturn），
+    // 字面量现在直接满足接口 —— 也正因如此 this 才拿得到类型、多余属性才查得出来。
+};

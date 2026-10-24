@@ -55,17 +55,19 @@ describe('parseActionFromLLM', () => {
         expect(r!.action).toBe('ai:control:toggleGround');
     });
 
-    // ── Priority 3: 正则回退 ──
-    // 注意：P3 正则 `[\s\S]*?\}` 是 lazy 匹配，遇到嵌套对象（params 含 `{...}`）
-    // 时会停在内部第一个 `}` 导致 JSON 不完整，因此 P3 仅对 params 不含嵌套对象的
-    // 场景生效。这不是 bug，是已知 regex 精度限制（见 intent-dispatcher.ts L45 注释）。
+    // ── Priority 3: 括号平衡提取回退 ──
+    // [audit P3] 旧 lazy 正则 `[\s\S]*?\}` 遇嵌套 params 会停在内部第一个 `}` 导致解析失败，
+    // 现改为从 "action" 前的 `{` 做括号平衡提取（_extractBalancedJson，跳过字符串字面量内括号），
+    // 嵌套 params 可完整解析；括号未配对的残缺片段仍返回 null，不完整 JSON 不猜测。
 
-    it('P3: 嵌套 params 对象导致解析失败（已知 regex 精度限制）', () => {
-        // params 含嵌套对象 `{"preset":"night"}` → 第一个 `}` 在内部，不完整 JSON
+    it('P3: 嵌套 params 对象括号平衡提取成功', () => {
+        // params 含嵌套对象 `{"preset":"night"}`：平衡提取得完整 JSON
         const r = parseActionFromLLM(
             '调整环境{"action":"setEnvPreset","params":{"preset":"night"}}请稍等'
         );
-        expect(r).toBeNull();
+        expect(r).not.toBeNull();
+        expect(r!.action).toBe('ai:control:setEnvPreset');
+        expect(r!.params).toEqual({ preset: 'night' });
     });
 
     // ── 完全无匹配 ──
@@ -76,12 +78,22 @@ describe('parseActionFromLLM', () => {
         expect(parseActionFromLLM('   ')).toBeNull();
     });
 
-    it('P2 优先于 P3：P2 失败后 P3 也因嵌套 params 失败', () => {
-        // P2 匹配到 ```json 代码块但内容不是合法 JSON
-        // P3 能匹配到 JSON 但 params 嵌套对象导致解析失败
+    it('P2 优先于 P3：P2 失败后落 P3 括号平衡提取成功', () => {
+        // P2 匹配到 ```json 代码块但内容 {invalid} 不是合法 JSON → 落 P3
+        // P3 从 "action" 前的 `{` 做括号平衡提取，嵌套 params 完整解析
         const text =
             '代码块```json\n{invalid}\n```\n后面有{"action":"loadModel","params":{"name":"miku"}}';
         const r = parseActionFromLLM(text);
+        expect(r).not.toBeNull();
+        expect(r!.action).toBe('ai:control:loadModel');
+        expect(r!.params).toEqual({ name: 'miku' });
+    });
+
+    it('P3: 括号不平衡片段返回 null（防误提取）', () => {
+        // params 对象缺闭合 `}`：平衡提取失败 → null，不完整 JSON 不猜测
+        const r = parseActionFromLLM(
+            '调整{"action":"broken","params":{"name":"miku" 请稍等'
+        );
         expect(r).toBeNull();
     });
 });

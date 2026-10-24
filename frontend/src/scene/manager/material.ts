@@ -435,8 +435,10 @@ export function _capture(mat: Material, mi = 0, origAlpha: number[] = []): void 
 interface _OrigPbr {
     albedo: Color3;
     reflection: Color3;
-    roughness: number;
-    metallic: number;
+    // [doc:adr-276] Babylon 9 的 PBRMaterial 把这三个声明成 Nullable<number>（金属度/粗糙度可缺省，
+    // 透明度模式可由贴图推导）。缓存原值就得按 Nullable 存，否则捕获时只能 as。
+    roughness: number | null;
+    metallic: number | null;
     ambient: Color3;
     emissive: Color3;
     albedoTexLevel: number;
@@ -444,12 +446,14 @@ interface _OrigPbr {
     emissiveTexLevel: number;
     alpha: number;
     /** 捕获时的透明度模式基线（用于区分「本代码切到 ALPHABLEND」与「模型自设 ALPHATEST/ALPHABLEND」） */
-    transparencyMode: number;
+    transparencyMode: number | null;
 }
 
 const _origPbrValues = new WeakMap<PBRMaterial, _OrigPbr>();
 
-export function _isPbrMaterial(mat: Material): mat is PBRMaterial {
+/** [doc:adr-276] 入参放宽到 Nullable：Babylon 的 mesh.material 就是 Material | null，
+ *  调用点（menus/model-material.ts:152）本来就在判空之后，类型守卫不必再让调用方多写一层空判。 */
+export function _isPbrMaterial(mat: Material | null | undefined): mat is PBRMaterial {
     return mat instanceof PBRMaterial;
 }
 

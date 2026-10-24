@@ -10,14 +10,15 @@ source_files:
 adr:
   - ADR-159
 symbols:
-  - lightingState
+  - CONE_UPDATE_KEYS
   - LightingStateValues
-  - StageLightEntry
   - LightingTween
   - SHADOW_REBUILD_KEYS
-  - CONE_UPDATE_KEYS
   - SUN_DISC_DISTANCE
   - SUN_DISC_MIN_INTENSITY
+  - StageLightEntry
+  - lightingState
+  - requireLightingScene
 invariants:
   - 所有灯光子模块（stage/shadow/sun/tween/follow/cone）共享此单例，消除跨文件幽灵状态
   - 属性可变、无绑定重赋值问题，子文件一律通过 lightingState.xxx 访问

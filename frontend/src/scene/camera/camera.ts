@@ -343,8 +343,10 @@ export function setCameraBehavior(behavior: CameraBehavior): void {
 
 export function setFov(v: number): void {
     setFovState(clampFov(v));
-    if (getCurrentCamera()) {
-        getCurrentCamera().fov = getFovState();
+    // [doc:adr-276] 原来 getCurrentCamera() 调两次，判断与使用之间对象可能被换掉
+    const cam = getCurrentCamera();
+    if (cam) {
+        cam.fov = getFovState();
     }
 }
 

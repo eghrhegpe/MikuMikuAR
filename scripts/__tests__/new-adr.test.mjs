@@ -8,7 +8,7 @@
  *   - table 格式状态行插入不破坏表格
  *   - 按号锁文件被占用 → exit 1（并发占号保护）
  *
- * 策略：spawn 真实 CLI（execFileSync），cwd 指向临时目录（含 docs/adr 夹具）。
+ * 策略：spawn 真实 CLI（spawnSync），cwd 指向临时目录（含 docs/adr 夹具）。
  * git ls-tree origin/main 失败自动降级为本地取号；gen-status-index 失败仅 warn，
  * 均不阻断本测试断言。
  *
@@ -19,7 +19,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { execFileSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import test from 'node:test';
 
 const ROOT = path.resolve(new URL('../..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'));
@@ -36,20 +36,20 @@ function makeAdrDir(adrFiles = {}) {
   return { dir, adrDir };
 }
 
-/** spawn new-adr CLI（cwd=临时夹具），返回 { code, stdout, stderr } */
+/**
+ * spawn new-adr CLI（cwd=临时夹具），返回 { code, stdout, stderr }。
+ * 用 spawnSync 而非 execFileSync：后者只在失败时返回 stderr，成功时丢弃，
+ * 导致「exit 0 但 console.warn 提示」的路径（如手工标注保护）无法断言。
+ */
 function runNewAdr(dir, args) {
-  try {
-    const stdout = execFileSync(process.execPath, [SCRIPT, ...args], {
-      cwd: dir, encoding: 'utf8', timeout: 30000,
-    });
-    return { code: 0, stdout, stderr: '' };
-  } catch (e) {
-    return {
-      code: e.status ?? 1,
-      stdout: e.stdout?.toString() ?? '',
-      stderr: e.stderr?.toString() ?? '',
-    };
-  }
+  const r = spawnSync(process.execPath, [SCRIPT, ...args], {
+    cwd: dir, encoding: 'utf8', timeout: 30000,
+  });
+  return {
+    code: r.status ?? 1,
+    stdout: r.stdout ?? '',
+    stderr: r.stderr ?? '',
+  };
 }
 
 function read(adrDir, name) {
@@ -147,3 +147,144 @@ test('--dry-run: 只算号不写文件（exit 0 且零写盘）', () => {
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+// [round-76c #10] 多值 --supersedes 中英文逗号混用（new-adr.mjs:79 按 /[，,]/ split + trim）
+test('--supersedes 多值（全角、半角逗号 + 空格混用）：3 个目标全部标注「被 [ADR-004] 取代」', () => {
+  const mk = (n) => {
+    return '# ADR-' + n + ': 旧决策\n\n> **状态**: ✅ 已采纳\n> **日期**: 2026-01-01\n\n正文。\n';
+  };
+  const { dir, adrDir } = makeAdrDir({
+    'adr-001-old.md': mk('001'),
+    'adr-002-old.md': mk('002'),
+    'adr-003-old.md': mk('003'),
+  });
+  try {
+    const r = runNewAdr(dir, ['新决策', '--slug', 'multi', '--supersedes', 'ADR-001，ADR-002, ADR-003']);
+    assert.equal(r.code, 0, 'exit=' + r.code + ' stderr=' + r.stderr);
+    assert.ok(fs.existsSync(path.join(adrDir, 'adr-004-multi.md')), '应创建 adr-004-multi.md（本地最大 3 → 4）');
+    for (const n of ['001', '002', '003']) {
+      const t = read(adrDir, 'adr-' + n + '-old.md');
+      assert.ok(t.includes('被 [ADR-004](adr-004-multi.md) 取代（new-adr.mjs 自动标注）'), 'adr-' + n + ' 应被标注: ' + t);
+      const marks = t.split('new-adr.mjs 自动标注').length - 1;
+      assert.equal(marks, 1, 'adr-' + n + ' 标注应恰 1 处，实际 ' + marks);
+    }
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+// [round-76c #10] validateSupersedes 失败路径（new-adr.mjs:262-289）：指向不存在 ADR → exit 1、不建文件、不留锁
+test('--supersedes 指向不存在 ADR → exit 1（validateSupersedes fail-closed，不创建新文件、不残留锁）', () => {
+  const { dir, adrDir } = makeAdrDir({ 'adr-001-old.md': BLOCKQUOTE_ADR });
+  try {
+    const r = runNewAdr(dir, ['新决策', '--slug', 'new-one', '--supersedes', 'ADR-999']);
+    assert.equal(r.code, 1, '目标不存在应 exit 1');
+    assert.ok(r.stderr.includes('未找到 adr-999-*'), '应提示文件未找到: ' + r.stderr);
+    assert.ok(r.stderr.includes('校验失败'), '应提示目标校验失败: ' + r.stderr);
+    const files = fs.readdirSync(adrDir).filter((f) => f.startsWith('adr-'));
+    assert.deepEqual(files, ['adr-001-old.md'], '校验失败不得创建新文件');
+    const locks = fs.readdirSync(adrDir).filter((f) => f.includes('.lock'));
+    assert.equal(locks.length, 0, '不得残留锁文件');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('--supersedes 多值含一个不存在 → 整体 exit 1，合法目标不被标注（校验先于落盘）', () => {
+  const { dir, adrDir } = makeAdrDir({ 'adr-001-old.md': BLOCKQUOTE_ADR });
+  try {
+    const r = runNewAdr(dir, ['新决策', '--slug', 'new-one', '--supersedes', 'ADR-001，ADR-999']);
+    assert.equal(r.code, 1, '多值任一失败应整体 exit 1');
+    assert.ok(r.stderr.includes('未找到 adr-999-*'), r.stderr);
+    assert.equal(read(adrDir, 'adr-001-old.md'), BLOCKQUOTE_ADR, '合法目标 ADR-001 不应被标注（无半成品）');
+    assert.ok(!fs.existsSync(path.join(adrDir, 'adr-002-new-one.md')), '不得创建新 ADR 文件');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('--supersedes 无法解析 ref（无数字）→ exit 1 并提示「无法解析」', () => {
+  const { dir, adrDir } = makeAdrDir({ 'adr-001-old.md': BLOCKQUOTE_ADR });
+  try {
+    const r = runNewAdr(dir, ['新决策', '--slug', 'new-one', '--supersedes', 'XYZ']);
+    assert.equal(r.code, 1, '无法解析 ref 应 exit 1');
+    assert.ok(r.stderr.includes('无法解析'), r.stderr);
+    assert.ok(!fs.existsSync(path.join(adrDir, 'adr-002-new-one.md')), '不得创建新 ADR 文件');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+// [round-76c #10] 子编号 ADR-061.1：tPad 保留子号（061.1），不误标父文件 adr-061-*
+test('--supersedes ADR-061.1 子编号：标注落到子号文件，父文件 adr-061-* 不被误标', () => {
+  const sub = '# ADR-061.1: 子编号决策\n\n> **状态**: ✅ 已采纳\n> **日期**: 2026-01-01\n\n正文。\n';
+  const parent = '# ADR-061: 父决策\n\n> **状态**: ✅ 已采纳\n> **日期**: 2026-01-01\n\n正文。\n';
+  const { dir, adrDir } = makeAdrDir({
+    'adr-061.1-sub.md': sub,
+    'adr-061-parent.md': parent,
+  });
+  try {
+    const r = runNewAdr(dir, ['子编号测试', '--slug', 'sub', '--supersedes', 'ADR-061.1']);
+    assert.equal(r.code, 0, 'exit=' + r.code + ' stderr=' + r.stderr);
+    // 本地最大 61（adr-061.1-* 不计入主号）→ next 62
+    const t = read(adrDir, 'adr-061.1-sub.md');
+    assert.ok(t.includes('被 [ADR-062](adr-062-sub.md) 取代（new-adr.mjs 自动标注）'), '子号文件应被标注: ' + t);
+    const p = read(adrDir, 'adr-061-parent.md');
+    assert.ok(!p.includes('取代'), '父文件不应被误标（若截断成 061 会标到父文件）');
+    assert.ok(fs.existsSync(path.join(adrDir, 'adr-062-sub.md')), '应创建新 ADR-062');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+// [round-76c #10] 手工格式保护（new-adr.mjs:334-338）：非工具格式的既有标注不自动覆盖
+test('--supersedes 目标已有手工格式「被 [ADR-005] 取代」标注 → 不自动覆盖（warn 提示人工核对）、exit 0', () => {
+  const manual = '# ADR-001: 旧决策\n\n> **状态**: ✅ 已采纳 ⚠️ 被 [ADR-005] 取代（手工注记）\n> **日期**: 2026-01-01\n\n正文。\n';
+  const { dir, adrDir } = makeAdrDir({ 'adr-001-old.md': manual });
+  try {
+    const r = runNewAdr(dir, ['新决策', '--slug', 'new-one', '--supersedes', 'ADR-001']);
+    assert.equal(r.code, 0, '手工标注保护是 warn 非 error: ' + r.stderr);
+    const t = read(adrDir, 'adr-001-old.md');
+    assert.equal(t, manual, '手工格式标注应原样保留、不得自动覆盖');
+    assert.ok(r.stderr.includes('未自动覆盖') || r.stderr.includes('请人工核对'), '应 warn 提示人工核对: ' + r.stderr);
+    assert.ok(fs.existsSync(path.join(adrDir, 'adr-002-new-one.md')), '新 ADR 文件照常创建');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+// [round-76c #10] --reserve 占号模式：状态强制「规划」+ 占号注释行（覆盖位置参数状态）
+test('--reserve 占号模式：状态强制「规划」+ 占号注释行（覆盖位置参数状态）', () => {
+  const { dir, adrDir } = makeAdrDir({ 'adr-001-old.md': BLOCKQUOTE_ADR });
+  try {
+    const r = runNewAdr(dir, ['占位标题', '副题', '进行中', '--slug', 'reserved', '--reserve']);
+    assert.equal(r.code, 0, 'exit=' + r.code + ' stderr=' + r.stderr);
+    const t = read(adrDir, 'adr-002-reserved.md');
+    assert.ok(t.includes('> **状态**: 规划（'), '状态应强制为「规划」（覆盖位置参数「进行中」）: ' + t);
+    assert.ok(!t.includes('进行中'), '位置参数状态不应残留');
+    assert.ok(t.includes('> **占号**: 本 ADR 为占位立档'), '应含占号注释行: ' + t);
+    assert.ok(r.stdout.includes('占号模式'), 'stdout 应提示占号模式');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+// [round-76c #10] --related 预填「相关文档」行；无 --related 时保留占位注释
+test('--related 预填「相关文档」行；无 --related 时保留占位注释', () => {
+  const { dir, adrDir } = makeAdrDir({});
+  try {
+    const r1 = runNewAdr(dir, ['标题 A', '--slug', 'rel', '--related', 'ADR-113 / scene/env-water.ts']);
+    assert.equal(r1.code, 0, r1.stderr);
+    const t1 = read(adrDir, 'adr-001-rel.md');
+    assert.ok(t1.includes('> ADR-113 / scene/env-water.ts'), '应预填相关文档行: ' + t1);
+    assert.ok(!t1.includes('<!-- 关联的 ADR / 知识卡 / 代码文件 -->'), '预填时不应输出占位注释');
+
+    const r2 = runNewAdr(dir, ['标题 B', '--slug', 'plain']);
+    assert.equal(r2.code, 0, r2.stderr);
+    const t2 = read(adrDir, 'adr-002-plain.md');
+    assert.ok(t2.includes('<!-- 关联的 ADR / 知识卡 / 代码文件 -->'), '非 --related 应保留占位注释: ' + t2);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+

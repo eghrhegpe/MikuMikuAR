@@ -10,6 +10,9 @@ source_files:
 adr:
   - ADR-191
 symbols:
+  - BuildLevelFn
+  - requireBuildLevel
+  - requireModelStack
   - stackRegistry
 invariants:
   - 共享可变单例：modelStack / sceneStackGetter / buildLevel 由 menus 子系统在运行时填充

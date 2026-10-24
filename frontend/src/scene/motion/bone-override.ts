@@ -544,12 +544,17 @@ export function getOverrideType(boneName: string, modelId?: string): OverrideTyp
 }
 
 /** 清除所有骨骼覆盖。 */
+// [audit:fix 2026-09] P2：原实现经 _getOverrideMap(mid).clear()——「查无即建」副作用使清理后 _overrideMaps 反而残留一条空 entry
 export function clearAllOverrides(modelId?: string): void {
     const mid = _resolveModelId(modelId);
     if (!mid) {
         return;
     }
-    _getOverrideMap(mid).clear();
+    const m = _overrideMaps.get(mid);
+    if (m) {
+        m.clear();
+        _overrideMaps.delete(mid);
+    }
 }
 
 // ── IK 位置保护：防止父骨传播覆盖 IK 目标的世界坐标 ──

@@ -107,7 +107,7 @@ test('--help → exit 0', () => {
   assert.match(r.stdout, /link-checker/);
 });
 
-test('--strict 断链 → exit 1；全有效 → exit 0（LINK_CHECK_ROOT 限定 fixture）', () => {
+test('--strict 退出码：全有效 0 / 断链 1 / dancexr-zh 源与 SKIP_DIRS 目标被跳过 0（LINK_CHECK_ROOT 限定 fixture）', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'linkcheck-cli-'));
   try {
     // 全有效 fixture：ok.md → sub/ok.md
@@ -117,6 +117,21 @@ test('--strict 断链 → exit 1；全有效 → exit 0（LINK_CHECK_ROOT 限定
 
     const r1 = runCli(['--strict'], dir);
     assert.equal(r1.code, 0, `全有效应 exit 0: ${r1.stdout} ${r1.stderr}`);
+
+    // [round-77 #5] dancexr-zh 源文件跳过（main() L214）+ SKIP_DIRS 目标链接跳过（P1 2026-10-23, L148-152）：
+    // ① x.md 置于 docs/research/dancexr-zh/（外部参考转储）：整文件被 main() 跳过，其链接从不被检查。
+    //    含指向 SKIP_DIRS 目标（upstream）的链接 + 普通断链；若 L214 回归（dancexr-zh 被扫描），./no-such.md 会被报断链 → exit 1。
+    // ② y.md 为被扫描的普通源，其链接指向 SKIP_DIRS 目标（upstream，目标不存在）：由 P1 L148-152 目标跳过兜住；
+    //    若 P1 回归，该断链会被报告 → exit 1。两者齐备时 strict 应 exit 0。
+    fs.mkdirSync(path.join(dir, 'docs', 'research', 'dancexr-zh'), { recursive: true });
+    fs.writeFileSync(
+      path.join(dir, 'docs', 'research', 'dancexr-zh', 'x.md'),
+      '[upstream 材料](../../upstream/ref.md)\n[普通断链](./no-such.md)\n',
+      'utf8',
+    );
+    fs.writeFileSync(path.join(dir, 'docs', 'research', 'y.md'), '[upstream 材料](../upstream/ref.md)\n', 'utf8');
+    const r3 = runCli(['--strict'], dir);
+    assert.equal(r3.code, 0, `dancexr-zh 源文件与 SKIP_DIRS 目标链接应全部被跳过，strict 应 exit 0: ${r3.stdout} ${r3.stderr}`);
 
     // 含断链 fixture：bad.md → 不存在的目标
     fs.writeFileSync(path.join(dir, 'bad.md'), '[断](./no-such-file.md)\n', 'utf8');
@@ -136,7 +151,8 @@ test('非 UTF-8 文件不崩溃（坏字节替换为 U+FFFD，脚本正常退出
     fs.writeFileSync(path.join(dir, 'ok.md'), '[好](./ok.md)\n', 'utf8');
     const r = runCli(['--strict'], dir);
     // 不应崩溃（无未捕获异常）；exit 0 或 1 均可，但不该是崩溃堆栈
-    assert.notEqual(r.code, null);
+    // [round-77 #4] 原 notEqual(r.code, null) 恒真（runCli 的 code 恒为 number）→ 改断集合 {0,1}（崩溃堆栈由下一行 stderr 检查捕获）
+    assert.ok(r.code === 0 || r.code === 1, `退出码应为 0 或 1: code=${r.code}`);
     assert.ok(!/Error:/.test(r.stderr), `不应有崩溃堆栈: ${r.stderr}`);
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
@@ -144,8 +160,9 @@ test('非 UTF-8 文件不崩溃（坏字节替换为 U+FFFD，脚本正常退出
 });
 
 // ── walkMd（research 收紧回归：SKIP_DIRS 跳过、research 文档纳入） ──
-// 注：dancexr-zh 跳过是 main() 收集层逻辑（非 walkMd 内部），由上方 CLI 用例经
-// LINK_CHECK_ROOT 覆盖验证；此处只测 walkMd 的 SKIP_DIRS 过滤与 research 纳入。
+// 注：dancexr-zh 跳过是 main() 收集层逻辑（link-checker.mjs:214，非 walkMd 内部），
+// 上方 CLI 用例已增 dancexr-zh fixture 经 LINK_CHECK_ROOT 覆盖（含 P1 2026-10-23 SKIP_DIRS 目标链接跳过）；
+// 此处只测 walkMd 的 SKIP_DIRS 过滤与 research 纳入。
 
 test('walkMd: 跳过 SKIP_DIRS，纳入 docs/research 其他文档', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'linkcheck-walk-'));

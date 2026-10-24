@@ -44,4 +44,31 @@ describe('resource-warning-sink', () => {
         vi.advanceTimersByTime(400);
         expect(logWarn).toHaveBeenCalled();
     });
+    it('truncates detail to first 8 items when >8 unique warnings', () => {
+        for (let i = 1; i <= 10; i++) {
+            reportResourceWarning('tex ' + i);
+        }
+        vi.advanceTimersByTime(400);
+        expect(showInfoToast).toHaveBeenCalledTimes(1);
+        const detail = (showInfoToast as ReturnType<typeof vi.fn>).mock.calls[0][1] as string;
+        expect(detail).toContain('tex 8');
+        expect(detail).toContain(' …+2');
+        expect(detail).not.toContain('tex 9');
+    });
+
+    it('showInfoToast throws → silent degrade, logWarn still emitted', () => {
+        vi.mocked(showInfoToast).mockImplementation(() => {
+            throw new Error('toast channel unavailable');
+        });
+        expect(() => {
+            reportResourceWarning('boom');
+            vi.advanceTimersByTime(400);
+        }).not.toThrow();
+        expect(vi.mocked(logWarn)).toHaveBeenCalledWith(
+            'resource-warning',
+            expect.anything(),
+            expect.anything()
+        );
+        vi.mocked(showInfoToast).mockImplementation(() => {});
+    });
 });

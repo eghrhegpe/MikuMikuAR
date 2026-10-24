@@ -247,7 +247,8 @@ export function replaceDefaultMotion(intent: SceneMotionIntent): string {
 
     let newId: string;
     if (existing) {
-        newId = existing.id;
+        // [doc:adr-276] 库内条目的 id 由下方入库路径保证存在；仍用 ?? 兜住类型（等价于断言但落地成值）
+        newId = existing.id ?? genMotionId();
         // 旧默认若非复用项本身，从库中移除
         if (prevId !== null && prevId !== newId) {
             _sceneMotions = _sceneMotions.filter((m) => m.id !== prevId);
@@ -373,7 +374,18 @@ registerSceneAction('replaceDefaultMotion', (opts: Record<string, unknown>) => {
 });
 
 // [doc:adr-238] 注册动作状态读取供 model-loader 经 scene-action-bridge 调用（切断 scene/manager→scene/motion）
-registerSceneAction('getActiveMotion', () => getActiveMotion());
+// [doc:adr-276] bridge 契约（core/scene-action-bridge.ts:135）只暴露 vmdPath/vmdName，
+// 这里显式投影，而不是把整个 SceneMotionIntent 塞进一个更窄的契约里。
+registerSceneAction('getActiveMotion', () => {
+    const motion = getActiveMotion();
+    if (!motion) {
+        return null;
+    }
+    return {
+        vmdPath: motion.vmdPath ?? undefined,
+        vmdName: motion.vmdName ?? undefined,
+    };
+});
 registerSceneAction('getSceneMotions', () => getSceneMotions());
 registerSceneAction('getMotionGen', () => getMotionGen());
 registerSceneAction('resolveCompatibility', (bones: unknown, motion: unknown) =>

@@ -128,6 +128,11 @@ export function migrateProcState(raw: unknown): ProcMotionState {
         const mergeParams = (p?: Partial<ProcMotionParams>): ProcMotionParams => ({
             ..._fallbackParams,
             ...p,
+            // [fix:P3#2] 数值字段过 guardNum，与旧扁平分支 :142-143 对齐：旧实现 
+            // 嵌套分支 ...p 透传不校验，脏存档 params.idle.intensity=NaN 可直穿渲染数学
+            // （proc-motion-idle.ts:29 / autodance.ts:63 无二次防护，NaN×系数=NaN 静默污染骨骼）。
+            intensity: guardNum(p?.intensity, _fallbackParams.intensity),
+            speed: guardNum(p?.speed, _fallbackParams.speed),
             boneToggles: { ..._fallbackParams.boneToggles, ...(p?.boneToggles ?? {}) },
         });
         return {

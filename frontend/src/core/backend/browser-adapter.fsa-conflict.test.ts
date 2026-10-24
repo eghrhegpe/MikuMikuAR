@@ -144,7 +144,7 @@ describe('FSA 多选同名 PMX 冲突检测与序号后缀', () => {
         writeSimulatedImport('miku', 1, pmxBytes1, tex1, 'face.png');
         writeSimulatedImport('miku', 2, pmxBytes2, tex2, 'face.png');
 
-        const lib = await browserAdapter.GetLibraryIndex();
+        const lib = (await browserAdapter.GetLibraryIndex()) ?? [];
         expect(lib.length).toBeGreaterThanOrEqual(2);
 
         const names = lib.map((e) => e.name_jp);
@@ -176,7 +176,7 @@ describe('FSA 多选同名 PMX 冲突检测与序号后缀', () => {
             file_path: 'web://selected-dir/PMX/A/miku.pmx',
         });
 
-        const lib = await browserAdapter.GetLibraryIndex();
+        const lib = (await browserAdapter.GetLibraryIndex()) ?? [];
         expect(lib.length).toBeGreaterThanOrEqual(2);
 
         const manualEntry = lib.find((e) => e.name_jp === 'miku');

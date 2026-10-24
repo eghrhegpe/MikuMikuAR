@@ -271,7 +271,8 @@ async function _applySlot(
     sm: StandardMaterial,
     slot: TextureSlotKey,
     newPath: string | null,
-    origTex: Texture | null,
+    /** 原始纹理：`_origTextures` 的槽位字段是可选的，故 `undefined` 也要接（视同无此槽）。 */
+    origTex: Texture | null | undefined,
     modelDir: string,
     inst: ModelInstance,
     token?: symbol
@@ -680,7 +681,9 @@ async function _applyOutfitVariantCore(id: string, variantName: string): Promise
         if (!origTex) {
             continue;
         }
-        const origParams = inst._origParams.get(mi)!;
+        // [doc:adr-276] _origParams 与 _origTextures 同时采集；缺失时下面两处参数覆写都无法计算
+        // 乘数——旧代码用 `!` 断言绕过检查，真缺时会在 _applyOutfitParams 里读无主对象。
+        const origParams = inst._origParams?.get(mi);
         const cat = getMaterialCategory(sm);
 
         promises.push(
@@ -740,12 +743,12 @@ async function _applyOutfitVariantCore(id: string, variantName: string): Promise
         );
 
         const slotParams = _getParamsFor(variant, sm.name, cat);
-        if (slotParams) {
+        if (slotParams && origParams) {
             _applyOutfitParams(sm, slotParams, origParams);
         }
 
         const tint = _getTintFor(variant, sm.name, cat);
-        if (tint) {
+        if (tint && origParams) {
             _applyOutfitTint(sm, tint, origParams, slotParams?.diffuseMul);
         }
     }

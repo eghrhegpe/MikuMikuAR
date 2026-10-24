@@ -1349,7 +1349,13 @@ export class SlideMenu implements RenderContext {
             }
             pushRenderingContext(this);
             try {
-                const result = await level.renderCustom(list);
+                // [doc:adr-276] renderCustom 在 PopupLevel 上是可选（无自定义渲染的层级不提供），
+                // 走到这里说明该层级本就声明了自定义渲染；缺失时给可读错误，落到下方 catch 的降级行。
+                const renderCustom = level.renderCustom;
+                if (!renderCustom) {
+                    throw new Error('SlideMenu: 该层级未实现 renderCustom');
+                }
+                const result = await renderCustom(list);
                 // [fix P2] seq 守卫：dispose 后挂起的 renderCustom 完成时不得覆盖
                 // _customDispose（可能已被新 build 或 dispose 置空/替换），
                 // 否则其返回的 dispose 会被永久悬挂（observer/virtualGrid 泄漏）。

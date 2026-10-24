@@ -39,8 +39,10 @@ describe('WASM 物理契约测试', () => {
         it('方块落到静态地面上不会穿透（碰撞管线生效）', () => {
             const world = api.createPhysicsWorld();
             // 资源声明提升到 try 外：finally 需引用（try 内 const 块级不可见）
-            let groundShape: number, groundInfo: number, ground: number;
-            let boxShape: number, boxInfo: number, box: number;
+            let groundShape: number | undefined,
+                groundInfo: number | undefined,
+                ground: number | undefined;
+            let boxShape: number | undefined, boxInfo: number | undefined, box: number | undefined;
             try {
                 api.physicsWorldSetGravity(world, 0, -9.8, 0);
 
@@ -86,8 +88,8 @@ describe('WASM 物理契约测试', () => {
         it('两方块碰撞后动量传递（被撞的动起来）', () => {
             const world = api.createPhysicsWorld();
             // 资源声明提升到 try 外：finally 需引用（try 内 const 块级不可见）
-            let shape: number, infoA: number, infoB: number;
-            let bodyA: number, bodyB: number;
+            let shape: number | undefined, infoA: number | undefined, infoB: number | undefined;
+            let bodyA: number | undefined, bodyB: number | undefined;
             try {
                 // 无重力，纯碰撞
                 api.physicsWorldSetGravity(world, 0, 0, 0);
@@ -147,7 +149,7 @@ describe('WASM 物理契约测试', () => {
             // 注意：本用例不验证反弹行为（引擎不响应此字段），后续改引擎时勿误读为契约。
             const world = api.createPhysicsWorld();
             // 资源声明提升到 try 外：finally 需引用（try 内 const 块级不可见）
-            let shape: number, info: number, body: number;
+            let shape: number | undefined, info: number | undefined, body: number | undefined;
             try {
                 shape = api.createBoxShape(1, 1, 1);
                 info = buildRigidBodyInfo(shape, { mass: 1.0, disableDeactivation: true });

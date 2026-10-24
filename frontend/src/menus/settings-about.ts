@@ -58,6 +58,11 @@ function buildAboutSchema(_getSettingsMenu: () => SettingsMenuHandle): MenuNode[
                     inner.appendChild(title);
                     safeCallAsync('settings-about', '', () =>
                         GetBuildInfo().then((info) => {
+                            // [doc:adr-276] 构建信息契约可空（后端未就绪 / 构建期未注入）：
+                            // 此时版本号保持占位文本，比读 undefined.version 崩掉合理。
+                            if (!info) {
+                                return;
+                            }
                             const el = title.querySelector<HTMLElement>('[data-app-version]');
                             if (el) {
                                 // dev 版本不加 v 前缀

@@ -43,7 +43,8 @@ def check_gomod():
         errors.append("MISSING: go.mod")
         return errors
 
-    text = fp.read_text("utf-8", errors="replace")
+    # [round76c #16] read_text 的 errors 形参需 Python ≥3.13；去掉该形参，兼容 3.8+
+    text = fp.read_text(encoding="utf-8")
     lines = text.split("\n")
 
     if not text.startswith("module "):

@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect, afterEach } from 'vitest';
 import { Quaternion } from '@babylonjs/core/Maths/math.vector';
+import { NullEngine } from '@babylonjs/core/Engines/nullEngine';
 import { createVmdEvaluator, shutdownVmdEvaluator } from '../motion-algos/vmd-evaluator';
 import {
     buildVmd,
@@ -8,6 +9,16 @@ import {
     INTERP_EASE_IN_OUT,
     type BoneKeyFrame,
 } from '../motion-algos/vmd-writer';
+
+describe('vmd-evaluator: 解析异常包装', () => {
+    it('[fix:P2 round15#3] 解析失败 reject 带 buffer 规模与原因', async () => {
+        // 头部伪装合法签名（30B 'Vocaloid Motion Data 0002'）但长度 < 帧数据下限：
+        // 走不到 parse，先被 size 守卫拦下——用超长脏数据触发真正的解析异常。
+        const bad = new ArrayBuffer(50);
+        new Uint8Array(bad).fill(0xff); // 全 0xff 头部，签名非法 → 解析器抛错
+        await expect(createVmdEvaluator(bad)).rejects.toThrow(/50 bytes/);
+    });
+});
 
 describe('vmd-evaluator: 空数据兜底', () => {
     it('空 ArrayBuffer 应 reject', async () => {
@@ -428,6 +439,37 @@ describe('vmd-evaluator: shutdownVmdEvaluator', () => {
     it('shutdown 幂等（多次调用不抛错）', () => {
         expect(() => shutdownVmdEvaluator()).not.toThrow();
         expect(() => shutdownVmdEvaluator()).not.toThrow();
+    });
+
+    it('[fix:P2 round15#2] shutdown 释放共享 NullEngine（引擎 dispose 被调用）', async () => {
+        const frames: BoneKeyFrame[] = [
+            { name: '上半身', frame: 0, position: [0, 0, 0], rotation: [0, 0, 0, 1] },
+            { name: '上半身', frame: 10, position: [0, 0, 0], rotation: [0.1, 0, 0, 0.99] },
+        ];
+        const buf = buildVmd(frames);
+        // spy 引擎 dispose（只打桩方法、不换模块绑定，符合 ADR-262 isolate=false 约束）
+        const proto = NullEngine.prototype;
+        const realDispose = proto.dispose;
+        const disposed: NullEngine[] = [];
+        proto.dispose = function (this: NullEngine) {
+            disposed.push(this);
+            return realDispose.call(this);
+        };
+        try {
+            const e = await createVmdEvaluator(buf);
+            e.dispose();
+            // scene.dispose() 只把 scene 从 engine.scenes 摘除，不释放引擎（round-15 P2#2 泄漏路径）
+            expect(disposed.length).toBe(0);
+            shutdownVmdEvaluator();
+            expect(disposed.length).toBe(1);
+            // 重建 evaluator 用全新引擎，再次 shutdown 仍能释放（不回归泄漏）
+            const e2 = await createVmdEvaluator(buf);
+            e2.dispose();
+            shutdownVmdEvaluator();
+            expect(disposed.length).toBe(2);
+        } finally {
+            proto.dispose = realDispose;
+        }
     });
 });
 

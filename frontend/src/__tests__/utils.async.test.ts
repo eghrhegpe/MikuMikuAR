@@ -114,6 +114,17 @@ describe('ADR-101 P1-a: error & async helpers', () => {
             expect(ran).toBe(true);
             expect(spy).not.toHaveBeenCalled();
         });
+
+        it('logs (does not throw) when fn throws synchronously', () => {
+            const spy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+            expect(() =>
+                fireAndForget(() => {
+                    throw new Error('sync boom');
+                })
+            ).not.toThrow();
+            expect(spy).toHaveBeenCalledOnce();
+            expect(spy.mock.calls[0][0]).toBe('[fireAndForget]');
+        });
     });
 
     describe('delay', () => {

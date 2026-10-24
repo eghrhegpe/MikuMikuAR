@@ -1,7 +1,7 @@
 // @vitest-environment node
 // [doc:adr-071] 感知层 — 视线追踪双路径行为契约测试
 // 锁定不变量：
-//   1. _applyGaze 调度入口按 _isWasmRuntime 自动分支到 JS/WASM 路径
+//   1. _applyGaze 调度入口按 isWasmRuntime 自动分支到 JS/WASM 路径
 //   2. JS 路径写 linkedBone.rotationQuaternion，不主动直写 worldMatrix 缓冲区
 //   3. WASM 路径写 worldMatrix 缓冲区（frontBuffer），不写 linkedBone
 //   4. tier='low' / 全禁用 / 无匹配骨骼时安全跳过
@@ -65,7 +65,7 @@ function makeBone(opts: MakeBoneOpts): IMmdRuntimeBone & Partial<MmdRuntimeBoneE
         // JS 路径标志：提供 updateWorldMatrix（空实现，便于观察是否被调用）
         bone.updateWorldMatrix = () => {};
     }
-    // 否则 WASM 路径：不提供 updateWorldMatrix（命中 _isWasmRuntime）
+    // 否则 WASM 路径：不提供 updateWorldMatrix（命中 isWasmRuntime）
     return bone;
 }
 
@@ -233,7 +233,7 @@ describe('_applyHeadGazeWasm 写入策略', () => {
     });
 });
 
-// ── 4. 调度入口自动分支（_isWasmRuntime） ────────────────────────────
+// ── 4. 调度入口自动分支（isWasmRuntime） ────────────────────────────
 
 describe('_applyGaze 调度自动分支', () => {
     it('JS bone（提供 updateWorldMatrix）→ 走 JS 路径：改 linkedBone 不改 worldMatrix', () => {

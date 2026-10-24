@@ -15,7 +15,12 @@ export function swallowError<T>(promise: Promise<T>): void {
 
 /** 启动一个异步操作但不等待，异常由 swallowError 兜底。 */
 export function fireAndForget(fn: () => Promise<void>): void {
-    swallowError(fn());
+    // [audit:fix 2026-09] fn() 同步抛出时原先会逃逸 swallowError 直达调用方
+    try {
+        swallowError(fn());
+    } catch (err) {
+        logWarn('fireAndForget', '', err);
+    }
 }
 
 /** Promise 包装的延迟。 */

@@ -5,7 +5,12 @@ import (
 	"testing"
 )
 
-func TestSafeCall_ExtractZipRecoversFromPanic(t *testing.T) {
+// Simulated-panic coverage for SafeCall/SafeCallVoid: these tests panic
+// intentionally (no real zip extraction involved) to pin the recovery and
+// error-chain behavior. They complement safecall_test.go, which covers the
+// full panic-value matrix (string/error/nil/int/void).
+
+func TestSafeCall_SimulatedPanicRecovers(t *testing.T) {
 	result, err := SafeCall(func() (int, error) {
 		panic("simulated zip panic")
 	})

@@ -99,6 +99,11 @@ export async function handlePlazaDownload(
         if (effectiveSignal.aborted) {
             return;
         }
+        // [doc:adr-276] DownloadFromPlaza 契约可空（null = 下载失败，无结果对象）；
+        // 落到下方 catch 走同一套失败反馈，不静默当成成功。
+        if (!result) {
+            throw new Error('plaza-download: DownloadFromPlaza 返回 null');
+        }
         feedbackStatus('feedback.loadedSuccess', result.fileName, true);
     } catch (e) {
         feedbackError('plaza.downloadFail', filename, e);

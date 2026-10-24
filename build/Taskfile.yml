@@ -218,8 +218,19 @@ tasks:
 
   frontend:dev:npm:
     dir: frontend
+    # --host 127.0.0.1：本机 localhost 可能解析到 ::1（IPv6），而 Wails 3 的
+    # ExternalAssetHandler 代理强制走 IPv4 127.0.0.1；vite 仅绑 IPv6 时代理会被
+    # 「actively refused」，显式钉死 IPv4 回环与代理一致。
+    # while 循环：wails3 dev 的 refresh 不会自动拉起已退出的 background 步骤，
+    # vite 意外崩溃后 dev 前端会永久停摆；退出后 2s 自动重启兜底。
     cmds:
-      - npx vite --port {{.VITE_PORT}} --strictPort
+      - |
+        while true; do
+          npx vite --host 127.0.0.1 --port {{.VITE_PORT}} --strictPort
+          code=$?
+          echo "[dev:frontend] vite exited ($code), restarting in 2s"
+          sleep 2
+        done
 
   frontend:dev:yarn:
     dir: frontend

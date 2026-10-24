@@ -60,9 +60,11 @@ function registerRetargetAction(kind: string, id: string, label: string): void {
 }
 
 /** [doc:adr-238] 菜单栈访问统一经 getUiAction('getMotionMenu')，不再直接 import menus */
+/** [doc:adr-276] 两个成员改为必选：真实 SlideMenu 的 push/getLevel 都是必选方法
+ *  （menus/menu.ts:422 push），标成可选会让 4 处 `?.push(...)` 变成「调用 possibly undefined」。 */
 function _getMotionMenu(): {
-    push?: (l: unknown) => void;
-    getLevel?: (i: number) => unknown;
+    push: (l: unknown) => void;
+    getLevel: (i: number) => unknown;
 } | null {
     return (getUiAction('getMotionMenu')?.() ?? null) as ReturnType<typeof _getMotionMenu>;
 }
@@ -271,7 +273,7 @@ export function registerMotionActions(): void {
                     (getUiAction('buildActionBindingLevel')?.(id) as { items?: unknown[] })
                         ?.items ?? [];
             }
-            (getUiAction('getMotionMenu')?.() as { push?: (l: unknown) => void } | undefined)?.push(
+            (getUiAction('getMotionMenu')?.() as { push: (l: unknown) => void } | undefined)?.push(
                 lvl
             );
         },
@@ -286,7 +288,7 @@ export function registerMotionActions(): void {
         destructive: false,
         uiOnly: true,
         execute: async () => {
-            const level = _buildLevel!(
+            const level = _buildLevel(
                 getUiAction('getBrowseDir')?.('audio') ?? '',
                 t('motion.musicLibrary'),
                 (m) => m.format === 'audio',
@@ -306,7 +308,7 @@ export function registerMotionActions(): void {
         uiOnly: true,
         execute: async () => {
             getUiAction('resetFocusedLayerId')?.();
-            const level = _buildLevel!(
+            const level = _buildLevel(
                 getUiAction('getBrowseDir')?.('vmd') ?? '',
                 t('motion.browseMotionLibrary'),
                 (m) => m.format === 'vmd',
@@ -370,7 +372,7 @@ export function registerMotionActions(): void {
             if (lvl) {
                 lvl.itemBuilder = () => [];
             }
-            (getUiAction('getMotionMenu')?.() as { push?: (l: unknown) => void } | undefined)?.push(
+            (getUiAction('getMotionMenu')?.() as { push: (l: unknown) => void } | undefined)?.push(
                 lvl
             );
         },

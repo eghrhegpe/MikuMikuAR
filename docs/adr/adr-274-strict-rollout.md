@@ -29,7 +29,7 @@
 2. **Stage 1 = `noImplicitAny: true`，顺序是"先清零，后开关，开关单独一个提交"。** 开关只有一行，贵的是清零；开关先落地等于把未完成的债转嫁给所有人。
 3. **清零顺序按"改一处、消多处"排**：mock 基础设施（34 处 / 11 文件）→ 三个重灾单文件（32 处）→ 其余 37 文件（63 处）。
 4. **禁止以 any 换 any。** 不得用显式 `any` / `as any` / `@ts-ignore` 兜底。当前 eslint 里 `@typescript-eslint/no-explicit-any` 是 `warn`（`eslint.config.js:58`），测试段还被 override 关掉（`eslint.config.js:173`），所以这条只能靠 diff review 守——这是本 ADR 承认的弱点（见风险 3）。
-5. **阶梯不预设。** Stage 2 = `strictNullChecks`，实测 386 处（生产 163 / 测试 223；热点 `physics-contract.constraint.test.ts` 37、`backend.data-chain.test.ts` 20、`scene/manager/model-loader.ts` 16、`proc-motion-controller.ts` 13、`outfit.ts` 11）。`strictNullChecks` 无法按目录分片，只能整体翻——所以它必须另立阶段，不在本 ADR 排期。Stage 3 = `strict: true`（实测 454 处，其中生产 230 / 67 文件；`noUnusedLocals` / `noUnusedParameters` / `noImplicitReturns` 仍关），不预设时间。
+5. **阶梯不预设。** Stage 2 = `strictNullChecks`，实测 386 处（生产 163 / 测试 223；热点 `physics-contract.constraint.test.ts` 37、`backend.data-chain.test.ts` 20、`scene/manager/model-loader.ts` 16、`proc-motion-controller.ts` 13、`outfit.ts` 11）。`strictNullChecks` 无法按目录分片，只能整体翻——所以它必须另立阶段，不在本 ADR 排期。Stage 3 = `strict: true`（`noUnusedLocals` / `noUnusedParameters` / `noImplicitReturns` 仍关），已由 ADR-277 于 2026-10-24 落地——真实代价 68 处 / 27 文件，**不是**本文件早期记的 454 处（那个数字是在 `strictNullChecks` 尚未开启时测的，把 null 家族的账一起算了进去，见 ADR-277「先修量尺」）。
 
 ## 备选方案
 
@@ -80,7 +80,7 @@
 
 ## 落地记录（2026-10-24，批 1–4）
 
-- **实测阶梯（同一脚本口径，programFiles=691）**：Stage 1 `noImplicitAny` 129 处 / 48 文件（生产 0）→ Stage 2 +`strictNullChecks` 386 处（生产 163 / 46 文件，测试 223 / 32 文件）→ Stage 3 全 `strict: true` 454 处（生产 230 / 67 文件，测试 224 / 33 文件）。三个数字都由 `strict-ladder-measure.mjs` 现场量出，不是估计；后续阶段按这组基线排期，别再重新猜。
+- **实测阶梯（同一脚本口径，programFiles=691）**：Stage 1 `noImplicitAny` 129 处 / 48 文件（生产 0）→ Stage 2 +`strictNullChecks` 386 处（生产 163 / 46 文件，测试 223 / 32 文件）→ Stage 3 全 `strict: true` 454 处（生产 230 / 67 文件，测试 224 / 33 文件）。前两级由 `strict-ladder-measure.mjs` 现场量出，不是估计。**但 Stage 3 的 454 作废**：Stage 1 + 2 清完后，用修好的影子检查器重测只有 68 处 / 27 文件（ADR-277），差额是「未开 `strictNullChecks` 时把 null 家族一起算了」。教训：阶梯数字必须标明「在哪组选项下测得」。
 - **清零手段（只加标注，零行为改动）**：TS7018 → 属性值 `as X | null` / `[] as unknown[]`；TS7011 → `(): null => null` / `(): unknown[] => []` / `(): void => undefined`；TS7023 / TS7024 → 内层箭头补显式返回类型断环；mock 收紧后消费者冒出的 TS2740 / TS2352 → `as unknown as T` 双层断言一次兜住。全程未新增一个显式 `any`、未用 `@ts-ignore`。
 - **开关落地顺序守住**：开关那一行与 129 处清零同批进入工作区、同一提交落地，中间没有出现「开关在、残留也在」的红灯窗口（批 0 的 2026-10-24 事故不再重演）。
 - **验收**：`tsc --noEmit -p frontend/tsconfig.json` EXIT=0；37 个受影响测试文件 793 用例全绿（`vitest run` 直跑，38s）；改动文件 prettier `--check` 全通过。

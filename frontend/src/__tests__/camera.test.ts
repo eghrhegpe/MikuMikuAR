@@ -125,7 +125,6 @@ const shared = vi.hoisted(() => {
         UniversalCamera: UniversalCamera as any,
         Vector3,
         Scene,
-        sceneObj,
         actions,
         registerSceneAction,
         getSceneAction,
@@ -175,7 +174,10 @@ const shared = vi.hoisted(() => {
         getAutoCameraBeatsPerSwitch,
         uiState,
         modelRegistry,
-        focusedModelId,
+        // [doc:adr-276] 这两个 let 在本工厂内从未赋值，流分析把类型收窄成 null；
+        // 这里显式宽化，否则下面的 shared.sceneObj / shared.focusedModelId 赋值全是 TS2322
+        focusedModelId: focusedModelId as string | null,
+        sceneObj: sceneObj as { activeCamera: unknown; removeCamera: unknown } | null,
     };
 });
 

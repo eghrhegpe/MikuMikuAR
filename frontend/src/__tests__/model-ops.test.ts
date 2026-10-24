@@ -468,17 +468,28 @@ describe('applyVPDPose', () => {
 
         applyVPDPose('m1', bones, morphs);
 
+        // [doc:adr-276] 真类型里 linkedBone.position / rotationQuaternion 可为 null
+        // （本用例正是断言 applyVPDPose 把它们写上），断言一次取别名再取值
+        const leftBone = boneLeftShoulder.linkedBone as unknown as {
+            position: { x: number; y: number; z: number };
+            rotationQuaternion: { x: number; y: number; z: number; w: number };
+        };
+        const rightBone = boneRightShoulder.linkedBone as unknown as {
+            position: { x: number; y: number; z: number };
+            rotationQuaternion: { x: number; y: number; z: number; w: number };
+        };
+
         expect(setRuntimeAnim).toHaveBeenCalledWith(null);
         expect(boneLeftShoulder.linkedBone.position).toBeTruthy();
-        expect(boneLeftShoulder.linkedBone.position.x).toBe(0.1);
-        expect(boneLeftShoulder.linkedBone.position.y).toBe(0.2);
-        expect(boneLeftShoulder.linkedBone.position.z).toBe(0.3);
-        expect(boneLeftShoulder.linkedBone.rotationQuaternion.x).toBe(0);
-        expect(boneLeftShoulder.linkedBone.rotationQuaternion.y).toBe(0.07);
-        expect(boneLeftShoulder.linkedBone.rotationQuaternion.z).toBe(0);
-        expect(boneLeftShoulder.linkedBone.rotationQuaternion.w).toBe(1);
-        expect(boneRightShoulder.linkedBone.position.x).toBe(-0.1);
-        expect(boneRightShoulder.linkedBone.rotationQuaternion.y).toBe(-0.07);
+        expect(leftBone.position.x).toBe(0.1);
+        expect(leftBone.position.y).toBe(0.2);
+        expect(leftBone.position.z).toBe(0.3);
+        expect(leftBone.rotationQuaternion.x).toBe(0);
+        expect(leftBone.rotationQuaternion.y).toBe(0.07);
+        expect(leftBone.rotationQuaternion.z).toBe(0);
+        expect(leftBone.rotationQuaternion.w).toBe(1);
+        expect(rightBone.position.x).toBe(-0.1);
+        expect(rightBone.rotationQuaternion.y).toBe(-0.07);
         expect(mockModelManager.setMorphWeight).toHaveBeenCalledWith('m1', 'あ', 0.8);
         expect(mockModelManager.setMorphWeight).toHaveBeenCalledWith('m1', '笑い', 0.5);
         expect(mockModelManager.setMorphWeight).toHaveBeenCalledTimes(2);
@@ -494,7 +505,7 @@ describe('applyVPDPose', () => {
             },
         ];
         applyVPDPose('m1', unknownBones, []);
-        expect(boneLeftShoulder.linkedBone.position.x).toBe(0.1);
+        expect(leftBone.position.x).toBe(0.1);
         expect(mockModelManager.setMorphWeight).not.toHaveBeenCalled();
     });
 });

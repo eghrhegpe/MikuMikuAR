@@ -10,7 +10,7 @@ import { t } from './i18n/t';
 import { translateGoError } from './i18n/goerr';
 import { registerIconBundle } from './icons-bundle';
 import { initI18n } from './i18n/locale';
-import { GetConfig, CheckForUpdate, GetSystemA11ySettings } from './wails-bindings';
+import { requireConfig, CheckForUpdate, GetSystemA11ySettings } from './wails-bindings';
 import { events, initRuntimeBridge } from './runtime-bridge';
 import type { Unsubscribe } from './runtime-bridge';
 import { isAndroidPlatform, isWebPlatform } from './platform';
@@ -172,10 +172,14 @@ async function _initScenePhase(): Promise<void> {
     console.info('MikuMikuAR initialized');
     // [doc:adr-238] 桥注册守卫：initLibrary 经 menus/library-setup 动态链注册，
     // 未注册时模型库永不初始化（静默失败），此处显式校验。
-    if (!getSceneAction('initLibrary')) {
+    const initLibrary = getSceneAction('initLibrary');
+    if (!initLibrary) {
         console.warn('[init] initLibrary bridge 未注册——模型库可能不会初始化');
+    } else {
+        // [doc:adr-276] 早返回收窄：可选链返回 Promise<void> | undefined，直接喂给 safeCallAsync
+        // 会在桥未注册时对 undefined 调 .then 抛 TypeError——比「不初始化」更糟，所以先判空
+        safeCallAsync('init', 'Library init', () => initLibrary());
     }
-    safeCallAsync('init', 'Library init', () => getSceneAction('initLibrary')?.());
     // [doc:adr-008] 启动时预加载自动导入开关，供 watch:newfile 自动导入分支判定
     fireAndForget(async () => {
         // [doc:adr-238] preloadAutoImportState 经 ui-action-bridge 调用（settings-shared 注册）
@@ -209,7 +213,11 @@ async function _initRestorePhase(): Promise<void> {
     getSceneAction('syncTimeOfDayFromEnv')?.();
     getSceneAction('restoreAutoCameraState')?.();
     // Auto-restore last scene after library + scene init (env already restored above)
-    safeCallAsync('init', 'Auto-restore', () => getSceneAction('tryRestoreLastScene')?.());
+    const tryRestoreLastScene = getSceneAction('tryRestoreLastScene');
+    if (tryRestoreLastScene) {
+        // [doc:adr-276] 同上：桥可选，未注册时跳过，而不是对 undefined 调 .then
+        safeCallAsync('init', 'Auto-restore', () => tryRestoreLastScene());
+    }
 }
 
 async function init(): Promise<void> {
@@ -244,7 +252,7 @@ async function init(): Promise<void> {
 }
 
 async function restoreEnvState(): Promise<void> {
-    const cfg = await GetConfig();
+    const cfg = await requireConfig();
     if (cfg.env) {
         console.info('[env-restore] restoreEnvState: cfg.env 存在，开始恢复环境状态');
         const loaded = cfg.env as unknown as Partial<EnvState>;
@@ -337,7 +345,7 @@ async function restoreEnvState(): Promise<void> {
 }
 
 async function restoreUIState(): Promise<void> {
-    const cfg = await GetConfig();
+    const cfg = await requireConfig();
     const s = cfg.ui_state as UIState | undefined;
     if (!s) {
         return;

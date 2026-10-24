@@ -78,6 +78,24 @@ test('parseArgs unknown flag warns and continues', () => {
   });
   assert.equal(args.strict, true);
   assert.deepEqual(args._, []);
+  // [round-77 #7] unknown 数组契约：未知 flag 收集进 unknown（调用方据此退 1），且落入 unknown 而非 _
+  assert.deepEqual(args.unknown, ['--unknown']);
+});
+
+// ── --help / -h 内置识别（parse-args.mjs L34-37：help=true，不入 unknown/_） ──
+
+test('parseArgs --help sets help=true and does not enter unknown', () => {
+  const args = parseArgs(['--help'], { bools: [], strings: [], defaults: {} });
+  assert.equal(args.help, true);
+  assert.deepEqual(args.unknown, []);
+  assert.deepEqual(args._, []);
+});
+
+test('parseArgs -h sets help=true and does not enter unknown', () => {
+  const args = parseArgs(['-h'], { bools: [], strings: [], defaults: {} });
+  assert.equal(args.help, true);
+  assert.deepEqual(args.unknown, []);
+  assert.deepEqual(args._, []);
 });
 
 // ── -- separator ──

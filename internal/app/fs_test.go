@@ -149,14 +149,16 @@ func TestBasenameFallbackFS_EmptyDir(t *testing.T) {
 }
 
 func TestBasenameFallbackFS_NonExistentRoot(t *testing.T) {
-	// Should not panic; just serve 404s
+	// Nonexistent root: the walk finds nothing, so both the file server and
+	// the basename index are empty → every request 404s without panicking.
 	handler := basenameFallbackFS("/nonexistent/path", nil)
 	req := httptest.NewRequest("GET", "/test.png", nil)
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 
-	// Any status is acceptable as long as it doesn't panic
-	_ = rec.Code
+	if rec.Code != http.StatusNotFound {
+		t.Errorf("status = %d, want 404 for nonexistent root", rec.Code)
+	}
 }
 
 // ======== serveRootDir (Phase A verification) ========
@@ -346,25 +348,22 @@ func TestBasenameFallbackFS_CorruptIndexCollisionWarning(t *testing.T) {
 		logBuf.WriteString(fmt.Sprintf(format, args...))
 	}
 
-	// The corruptIndex should contain an entry for both filenames but the second
-	// collision should produce a warning. We check by requesting the corrupt form
-	// of file2 - if it matched file1, we know the collision was resolved
-	// silently (old behavior). With the fix, file2 should still resolve to file1
-	// but a warning should be logged.
+	// Indexing happens at handler construction (basenameFallbackFS,
+	// zipextract.go): the walk registers each file's corrupt Shift-JIS/GBK
+	// forms; two distinct files sharing one corrupt form trigger the
+	// collision warning (zipextract.go:718, first-seen wins) and the walk
+	// summary records how many files were indexed. No request is needed —
+	// the assertions are on the construction-time logs.
 	_ = basenameFallbackFS(tmp, logFn)
 	logOutput := logBuf.String()
-	// The indexing log should mention corrupt entries
-	if !strings.Contains(logOutput, "corrupt entries") {
-		t.Errorf("expected index log to mention corrupt entries, got: %s", logOutput)
+	if !strings.Contains(logOutput, "FS: indexed 2 files") {
+		t.Errorf("expected index summary for 2 files, got: %s", logOutput)
 	}
-	// The collision warning must be logged (あ vs ア produce the same GBK corrupt string)
+	// The collision warning must be logged (あ vs ア produce the same corrupt string)
 	if !strings.Contains(logOutput, "corruptIndex collision") {
 		t.Errorf("expected 'corruptIndex collision' warning, got: %s", logOutput)
 	}
 }
-
-// Note: since both files might map to different corrupt strings,
-// we just verify the indexing doesn't panic and produces logs.
 
 func startsWith(s, prefix string) bool {
 	return len(s) >= len(prefix) && s[:len(prefix)] == prefix

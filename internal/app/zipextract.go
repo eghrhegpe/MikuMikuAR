@@ -15,6 +15,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 	"unicode/utf8"
 
@@ -80,6 +81,25 @@ func (a *App) ExtractZip(zipPath, innerPath string) (*ExtractResult, error) {
 	})
 }
 
+// [audit:fix 2026-09] 并发调用同一 cacheDir（用户双击 + 缩略图预取）会互相踩缓存目录，
+// App 现有方法级锁均不覆盖此处。改为按 cacheDir 粒度的锁：不同 cacheDir 的并发解压仍互不阻塞。
+var (
+	zipExtractionLocksMu sync.Mutex
+	zipExtractionLocks   = make(map[string]*sync.Mutex)
+)
+
+// zipLockFor 惰性创建并返回指定 cacheDir 的解压互斥锁。
+func zipLockFor(dir string) *sync.Mutex {
+	zipExtractionLocksMu.Lock()
+	defer zipExtractionLocksMu.Unlock()
+	mu, ok := zipExtractionLocks[dir]
+	if !ok {
+		mu = &sync.Mutex{}
+		zipExtractionLocks[dir] = mu
+	}
+	return mu
+}
+
 func (a *App) extractZipUnsafe(zipPath, innerPath string) (result *ExtractResult, retErr error) {
 	const op = "ExtractZip"
 	cacheRoot, err := extractedDir()
@@ -88,6 +108,11 @@ func (a *App) extractZipUnsafe(zipPath, innerPath string) (result *ExtractResult
 	}
 
 	dest := filepath.Join(cacheRoot, zipCacheName(zipPath))
+	// [audit:fix 2026-09] 取 cacheDir 粒度锁，覆盖 cacheHit 早退检查 + 整个 miss 路径（RemoveAll/重解压/写 manifest），
+	// 防止并发解压踩缓存目录
+	mu := zipLockFor(dest)
+	mu.Lock()
+	defer mu.Unlock()
 
 	// Stat source zip
 	srcInfo, err := fileAccessor.Stat(zipPath)
@@ -813,11 +838,17 @@ func basenameFallbackFS(root string, logFn func(string, ...interface{})) http.Ha
 	})
 }
 
+// [audit:fix 2026-09] maxBufferedResponseBytes 是 bufferingResponseWriter 内存缓冲的字节上限：
+// 纹理整段响应（KTX 4K ≈ 64MB）此前无界常驻内存有 OOM 风险；上限取 100MiB（须 ≥ 4K KTX）。
+// 超限即停止缓冲、flush 时以 507 终止并丢弃剩余数据。
+const maxBufferedResponseBytes = 100 << 20 // 100 MiB
+
 // bufferingResponseWriter buffers the entire response so we can inspect
 // the status code before committing. Used by basenameFallbackFS.
 type bufferingResponseWriter struct {
-	code int
-	buf  bytes.Buffer
+	code    int
+	buf     bytes.Buffer
+	aborted bool // [audit:fix 2026-09] 缓冲超限：停止缓冲，flush 以 507 终止
 	http.ResponseWriter
 }
 
@@ -826,8 +857,18 @@ func (w *bufferingResponseWriter) WriteHeader(code int) {
 }
 
 func (w *bufferingResponseWriter) Write(p []byte) (int, error) {
+	if w.aborted {
+		// [audit:fix 2026-09] 超限后丢弃后续全部数据，保持调用方 Write 循环不报错
+		return len(p), nil
+	}
 	if w.code == 0 {
 		w.code = http.StatusOK
+	}
+	// [audit:fix 2026-09] 容量超限即停止缓冲：标记 aborted，flush 将以 507 终止
+	if int64(w.buf.Len())+int64(len(p)) > maxBufferedResponseBytes {
+		w.aborted = true
+		w.code = http.StatusTemporaryRedirect
+		return len(p), nil
 	}
 	return w.buf.Write(p)
 }
@@ -835,11 +876,15 @@ func (w *bufferingResponseWriter) Write(p []byte) (int, error) {
 // flush commits the buffered status + body to the real writer.
 func (w *bufferingResponseWriter) flush() {
 	code := w.code
+	if w.aborted {
+		// [audit:fix 2026-09] 缓冲超限：以 507 终止，不提交任何 body（丢弃剩余数据）
+		code = http.StatusTemporaryRedirect
+	}
 	if code == 0 {
 		code = http.StatusOK
 	}
 	w.ResponseWriter.WriteHeader(code)
-	if w.buf.Len() > 0 {
+	if !w.aborted && w.buf.Len() > 0 {
 		w.ResponseWriter.Write(w.buf.Bytes())
 	}
 }
@@ -892,22 +937,27 @@ func (a *App) StartFileServer(dirPath string) (int, error) {
 // server's Serve goroutine once Shutdown completes. If no server is running
 // for dirPath, it returns an error.
 func (a *App) StopFileServer(dirPath string) error {
+	// [audit:fix 2026-09] 持锁全程、Shutdown 成功后才删 entry：
+	// 原先先 delete 再 Shutdown，失败时留孤儿 server 且 dirPath 永久无法 Stop/Start；
+	// 且 unlock 后的窗口期里 Start 可为同目录建 entry，与本调用的 info 竞态。
 	a.httpSrvMu.Lock()
+	defer a.httpSrvMu.Unlock()
+
 	info, ok := a.httpServers[dirPath]
 	if !ok {
-		a.httpSrvMu.Unlock()
 		return fmt.Errorf("no file server running for %s", dirPath)
 	}
-	delete(a.httpServers, dirPath)
-	a.httpSrvMu.Unlock()
 
 	a.safeLogInfo("StopFileServer: stop port %d for %s", info.port, dirPath)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := info.server.Shutdown(ctx); err != nil {
+		// entry 保留在 map 中，调用方可重试 Stop
 		a.safeLogError("StopFileServer: shutdown error: %v", err)
 		return err
 	}
+
+	delete(a.httpServers, dirPath)
 	return nil
 }

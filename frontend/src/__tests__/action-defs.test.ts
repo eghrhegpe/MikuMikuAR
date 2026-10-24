@@ -304,8 +304,13 @@ describe('action-defs/motion', () => {
 
     it('motion:browse-scene-motions：outcome 回调 onVmdPick / onVmdReplace 刷新根菜单', async () => {
         await getAction('motion:browse-scene-motions')!.execute({});
-        const browseCalls = ui.get('buildBrowseLevel').mock.calls;
-        const browseArg = browseCalls[browseCalls.length - 1][0] as {
+        const buildBrowseLevel = ui.get('buildBrowseLevel');
+        if (!buildBrowseLevel) {
+            throw new Error('buildBrowseLevel 未注册到 action 依赖');
+        }
+        const browseCalls = buildBrowseLevel.mock.calls;
+        // [doc:adr-276] 末项索引可能为空，断言前先取出再断言
+        const browseArg = browseCalls[browseCalls.length - 1]?.[0] as {
             outcome?: {
                 onVmdPick?: (p: string, n: string) => void;
                 onVmdReplace?: (p: string, n: string) => void;

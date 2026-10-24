@@ -93,3 +93,21 @@ describe('migrateProcState（旧扁平 → per-mode 嵌套）', () => {
         expect(s.params.autodance.boneToggles.arm).toBe(true);
     });
 });
+
+describe('migrateProcState（NaN 防护：嵌套分支与扁平分支对称）', () => {
+    it('[fix:P3 round48#2] 嵌套 params.intensity=NaN 回落默认（不直穿渲染数学）', () => {
+        const dirty = {
+            mode: 'idle' as const,
+            params: {
+                idle: { intensity: NaN, speed: 1.5, boneToggles: { ...DEFAULT_PROC_STATE.params.idle.boneToggles } },
+                autodance: { intensity: 0.9, speed: NaN, boneToggles: { ...DEFAULT_PROC_STATE.params.autodance.boneToggles } },
+            },
+        };
+        const s = migrateProcState(dirty);
+        // NaN → 回落 _fallbackParams 默认（0.5 / 1.0），正常值保留
+        expect(s.params.idle.intensity).toBe(0.5);
+        expect(s.params.idle.speed).toBe(1.5);
+        expect(s.params.autodance.intensity).toBe(0.9);
+        expect(s.params.autodance.speed).toBe(1.0);
+    });
+});

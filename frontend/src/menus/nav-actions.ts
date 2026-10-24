@@ -26,8 +26,10 @@ export const navLabels: Record<number, string> = {};
 
 // ======== Nav / overlay helpers ========
 function syncNavAriaExpanded(): void {
+    // [doc:adr-276] 首次渲染前 sceneOverlay 可能还没插入 DOM：此时没有「当前展开的浮层」，
+    // activeType 为 null，下面整批按钮一律 aria-expanded="false"（比原先的 TypeError 更接近意图）。
     const overlay = document.getElementById('sceneOverlay');
-    const activeType = overlay.classList.contains('visible') ? overlay.dataset.popupType : null;
+    const activeType = overlay?.classList.contains('visible') ? overlay.dataset.popupType : null;
 
     document.querySelectorAll<HTMLElement>('[aria-controls]').forEach((btn) => {
         const btnType = btn.dataset.popupType;

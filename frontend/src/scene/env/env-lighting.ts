@@ -3,6 +3,7 @@
 // skyColor → dirDiffuse + dirDirection + hemiIntensity + dirIntensity + exposure
 
 import { clamp01 } from '@/core/clamp';
+import { logWarn } from '@/core/logger';
 import type { EnvState } from '@/core/types';
 
 // ======== deriveLighting 系数常量 ========
@@ -388,21 +389,28 @@ export function importCategorizedEnvPreset(json: string): CategorizedEnvPreset |
             };
         }
         // version 2（旧）：顶层 skyColorTop/Bot/sunAngle/azimuth → 归 sky 类
+        // [audit:fix 2026-09] version 2 兼容放宽：4 分量旧存档（RGBA）取前 3 个 RGB 分量降级，不再整体丢弃
         if (
             Array.isArray(raw.skyColorTop) &&
             Array.isArray(raw.skyColorBot) &&
-            raw.skyColorTop.length === 3 &&
-            raw.skyColorBot.length === 3 &&
+            raw.skyColorTop.length >= 3 &&
+            raw.skyColorBot.length >= 3 &&
             typeof raw.sunAngle === 'number'
         ) {
+            if (raw.skyColorTop.length > 3 || raw.skyColorBot.length > 3) {
+                logWarn(
+                    'env-lighting',
+                    'importCategorizedEnvPreset: version-2 4-tuple skyColor 降级为 RGB（取前 3 分量）'
+                );
+            }
             const azimuth = typeof raw.azimuth === 'number' ? raw.azimuth : DEFAULT_AZIMUTH_DEG;
             return {
                 version: 3,
                 category: 'env:sky',
                 label: raw.label,
                 fields: {
-                    skyColorTop: [...raw.skyColorTop] as [number, number, number],
-                    skyColorBot: [...raw.skyColorBot] as [number, number, number],
+                    skyColorTop: [...raw.skyColorTop].slice(0, 3) as [number, number, number],
+                    skyColorBot: [...raw.skyColorBot].slice(0, 3) as [number, number, number],
                     sunAngle: raw.sunAngle,
                     azimuth,
                 },

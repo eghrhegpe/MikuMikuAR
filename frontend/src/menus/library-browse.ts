@@ -10,7 +10,7 @@ import {
     recentModels,
     libraryRoot,
 } from '../core/config';
-import { stackRegistry } from './menu-stack-registry';
+import { requireModelStack, stackRegistry } from './menu-stack-registry';
 import { normPath, isUnderRoot } from '../core/path';
 import { computeLibraryRef, getBrowseDir } from '@/core/library-path';
 import { closeAllOverlays, getMenuWrapper } from './menu-overlay';
@@ -147,9 +147,7 @@ function deferRestore(menu: SlideMenu, dir: string, seg: string): void {
             librarySessionStore.setPendingAutoExpand(
                 currentPa.length > 1 ? currentPa.slice(1) : null
             );
-            menu.push(
-                buildLevel(nextDir1, seg1, (m) => m.format === 'pmx', stackRegistry.modelStack!, [])
-            );
+            menu.push(buildLevel(nextDir1, seg1, (m) => m.format === 'pmx', menu, []));
             // [doc:adr-135] P0.3: 标记 ready，UI 显示「已展开 X」（短暂提示，2 秒自动消失）
             librarySessionStore.markRestoreReady();
             showInfoToast(t('library.expanded', { dir: seg1 }));
@@ -232,7 +230,7 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
                     browseDir,
                     t('library.title'),
                     (m) => m.format === 'pmx',
-                    stackRegistry.modelStack!,
+                    requireModelStack(),
                     []
                 );
             }
@@ -241,7 +239,7 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
                     row.target,
                     row.label,
                     (m) => m.format === 'pmx',
-                    stackRegistry.modelStack!
+                    requireModelStack()
                 );
             }
             if (row.target === 'models:formation') {
@@ -377,15 +375,7 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
                     librarySessionStore.setPendingAutoExpand(
                         currentPa.length > 1 ? currentPa.slice(1) : null
                     );
-                    menu.push(
-                        buildLevel(
-                            nextDir1,
-                            seg1,
-                            (m) => m.format === 'pmx',
-                            stackRegistry.modelStack!,
-                            []
-                        )
-                    );
+                    menu.push(buildLevel(nextDir1, seg1, (m) => m.format === 'pmx', menu, []));
                 }, 150);
                 librarySessionStore.setRestoreTimer(expandTimer);
                 return;

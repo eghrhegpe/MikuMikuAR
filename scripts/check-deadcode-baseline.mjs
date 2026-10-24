@@ -180,10 +180,28 @@ function showKnipDetails(knipJson) {
             // [P2 2026-08-08] knip JSON 的 duplicates 是数组套数组（symbols.map(convert)），
             // 元素为 [name, line] 二元组——旧 d.name 恒 undefined → 打印 `dup undefined`。
             // 展示取数组首元素作为符号名。
+            // [audit P3 2026-10-25] knip 升级后元素变为符号对 [[{name,line,col,pos},{...}]]，
+            // 需再回退一层取嵌套对象 name/line，否则打印 `dup [object Object]`（门禁计数不受影响，仅人读信息丢失）。
             for (const d of file.duplicates) {
-                const dupName = Array.isArray(d) ? d[0] : d.name;
-                const dupLine = Array.isArray(d) ? d[1] : d.line;
-                rows.push(`  dup     ${String(dupName || "").padEnd(32)} ${dupLine ? `:${dupLine}` : ""}`);
+                let dupName;
+                let dupLine;
+                if (Array.isArray(d)) {
+                    const head = d[0];
+                    if (head && typeof head === 'object' && !Array.isArray(head)) {
+                        // 新形：符号对象数组（[{name,line,col,pos}, ...]）
+                        dupName = head.name;
+                        dupLine = head.line;
+                    } else {
+                        // 旧形：[name, line] 二元组（08-08 修复目标）
+                        dupName = head;
+                        dupLine = d[1];
+                    }
+                } else {
+                    // 最旧形：{name, line} 对象
+                    dupName = d?.name;
+                    dupLine = d?.line;
+                }
+                rows.push(`  dup     ${String(dupName ?? "").padEnd(32)} ${dupLine ? `:${dupLine}` : ""}`);
             }
         }
         if (file.devDependencies?.length) {

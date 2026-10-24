@@ -80,7 +80,9 @@ export interface MmdModelLike {
     runtimeBones: readonly IMmdRuntimeBone[];
     mesh: {
         metadata?: MeshMetadata;
-        morphTargetManager?: MorphTargetManager;
+        /** [doc:adr-276] Babylon 的 Mesh.morphTargetManager 是 Nullable：无目标的模型就是 null，
+         *  写成可选（undefined）会让真实模型类型 RuntimeModel 无法赋给本接口。 */
+        morphTargetManager?: MorphTargetManager | null;
         /** rootMesh 世界矩阵（含 scaling/rotation/translation） */
         getWorldMatrix?(): unknown;
     };
@@ -216,8 +218,6 @@ export function _propagateChildrenWasm(
 export function isWasmRuntime(bone: IMmdRuntimeBone): boolean {
     return !('updateWorldMatrix' in bone);
 }
-// 兼容别名：历史代码用 _isWasmRuntime（带下划线前缀），逐步迁移
-export const _isWasmRuntime = isWasmRuntime;
 
 // ── 感知层可调角度状态（[doc:adr-116] 感知层滑块功能） ──
 // 独立于 PerceptionState（避免 perception-gaze.ts 与 perception.ts 循环依赖）

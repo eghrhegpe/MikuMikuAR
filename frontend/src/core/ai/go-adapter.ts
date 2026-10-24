@@ -189,6 +189,15 @@ export class GoAiAdapter implements AiService {
         let done = false;
         let err: string | null = null;
         let resolveWaiter: (() => void) | null = null;
+        /** [doc:adr-276] 唤醒等待中的消费循环。之所以写成函数而不是就地 resolveWaiter?.()：
+         *  循环体首次穿过时 TS 的线性流分析认为句柄必为 null（唯一赋值在 while 内），
+         *  直接调用会被判成 never 不可调用；函数体的窄化不参与调用点的流分析。 */
+        const wakeWaiter = (): void => {
+            const w = resolveWaiter;
+            if (w) {
+                w();
+            }
+        };
         let streamActive = true;
         // 可观测性：记录首事件到达耗时、累计事件数，便于定位"发出请求后长时间无响应"卡点。
         const t0 = Date.now();
@@ -214,7 +223,7 @@ export class GoAiAdapter implements AiService {
             if (d?.delta) {
                 markFirstEvent('chunk');
                 queue.push({ type: 'text', content: d.delta, reasoning: d.reasoning === 'true' });
-                resolveWaiter?.();
+                wakeWaiter();
             }
         });
         const unsubDone = evt.On('ai:done', () => {
@@ -222,7 +231,7 @@ export class GoAiAdapter implements AiService {
             logInfo('ai-stream', `收到 done 总耗时=${Date.now() - t0}ms 事件数=${eventCount}`);
             done = true;
             streamActive = false;
-            resolveWaiter?.();
+            wakeWaiter();
         });
         const unsubError = evt.On('ai:error', (ev) => {
             const d = ev.data as { error?: string } | undefined;
@@ -231,7 +240,7 @@ export class GoAiAdapter implements AiService {
             logWarn('ai-stream', `收到 error 事件 耗时=${Date.now() - t0}ms: ${err}`);
             done = true;
             streamActive = false;
-            resolveWaiter?.();
+            wakeWaiter();
         });
         const unsubToolCall = evt.On('ai:tool_call', (ev) => {
             const d = ev.data as
@@ -244,7 +253,7 @@ export class GoAiAdapter implements AiService {
                     toolArgs: d.toolArgs ?? '',
                     toolId: d.toolId ?? '',
                 });
-                resolveWaiter?.();
+                wakeWaiter();
             }
         });
 
@@ -259,7 +268,7 @@ export class GoAiAdapter implements AiService {
                 done = true;
                 streamActive = false;
                 b.AiCancelStream().catch((): void => undefined);
-                resolveWaiter?.();
+                wakeWaiter();
             }
         }, _FIRST_EVENT_TIMEOUT_MS);
 
@@ -268,7 +277,7 @@ export class GoAiAdapter implements AiService {
             streamActive = false;
             done = true;
             b.AiCancelStream().catch((): void => undefined);
-            resolveWaiter?.();
+            wakeWaiter();
         };
         req.signal?.addEventListener('abort', onAbort);
 
@@ -283,39 +292,42 @@ export class GoAiAdapter implements AiService {
                       },
                   }))
                 : undefined;
+            // [doc:adr-276] LLMChatRequest.messages 在绑定里声明为可空，而下面日志要读 .length：
+            // 先 map 到局部常量（类型由推导得出），再喂给请求体，避免对契约做断言。
+            const llmMessages = req.messages.map((m) => {
+                if (m.role === 'tool') {
+                    return {
+                        role: m.role,
+                        content: m.content,
+                        tool_call_id: m.tool_call_id,
+                    };
+                }
+                if (m.role === 'assistant' && m.tool_calls) {
+                    return {
+                        role: m.role,
+                        content: m.content,
+                        tool_calls: m.tool_calls.map((tc) => ({
+                            id: tc.id,
+                            type: tc.type,
+                            function: {
+                                name: tc.function.name,
+                                arguments: tc.function.arguments,
+                            },
+                        })),
+                    };
+                }
+                return { role: m.role, content: m.content as string };
+            });
             const llmReq: LLMChatRequest = {
                 model: req.model ?? '',
-                messages: req.messages.map((m) => {
-                    if (m.role === 'tool') {
-                        return {
-                            role: m.role,
-                            content: m.content,
-                            tool_call_id: m.tool_call_id,
-                        };
-                    }
-                    if (m.role === 'assistant' && m.tool_calls) {
-                        return {
-                            role: m.role,
-                            content: m.content,
-                            tool_calls: m.tool_calls.map((tc) => ({
-                                id: tc.id,
-                                type: tc.type,
-                                function: {
-                                    name: tc.function.name,
-                                    arguments: tc.function.arguments,
-                                },
-                            })),
-                        };
-                    }
-                    return { role: m.role, content: m.content as string };
-                }),
+                messages: llmMessages,
                 temperature: req.temperature ?? 0.7,
                 max_tokens: req.maxTokens ?? 2048,
                 ...(tools ? { tools } : {}),
             };
             logInfo(
                 'ai-stream',
-                `发起 AiStreamChat model=${llmReq.model || '(默认)'} 消息数=${llmReq.messages.length} tools=${tools?.length ?? 0}`
+                `发起 AiStreamChat model=${llmReq.model || '(默认)'} 消息数=${llmMessages.length} tools=${tools?.length ?? 0}`
             );
             try {
                 await b.AiStreamChat(llmReq);
@@ -330,7 +342,7 @@ export class GoAiAdapter implements AiService {
                 err = `请求提交失败：${msg}`;
                 done = true;
                 streamActive = false;
-                resolveWaiter?.();
+                wakeWaiter();
             }
 
             while (!done || queue.length > 0) {

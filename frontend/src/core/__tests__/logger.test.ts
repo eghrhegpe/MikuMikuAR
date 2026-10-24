@@ -94,4 +94,39 @@ describe('logger', () => {
             expect(__debugLog.value).toBe(true);
         });
     });
+
+    // [audit:fix 2026-09] round74 diff-coverage 收口：clear() 的逐监听 try/catch 隔离路径
+    describe('监听器异常隔离', () => {
+        it('clear()：抛错监听器不阻断其余监听器', () => {
+            const buffer = getLogBuffer();
+            const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+            const good = vi.fn();
+            const unsubBad = buffer.subscribe(() => {
+                throw new Error('listener-throw');
+            });
+            const unsubGood = buffer.subscribe(good);
+            buffer.clear();
+            expect(good).toHaveBeenCalledTimes(1);
+            expect(errSpy).toHaveBeenCalledWith('[logger] listener error:', expect.any(Error));
+            unsubBad();
+            unsubGood();
+            errSpy.mockRestore();
+        });
+
+        it('push()：抛错监听器不阻断其余监听器', () => {
+            const buffer = getLogBuffer();
+            const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+            const good = vi.fn();
+            const unsubBad = buffer.subscribe(() => {
+                throw new Error('push-throw');
+            });
+            const unsubGood = buffer.subscribe(good);
+            logWarn('iso', 'probe');
+            expect(good).toHaveBeenCalledTimes(1);
+            expect(errSpy).toHaveBeenCalledWith('[logger] listener error:', expect.any(Error));
+            unsubBad();
+            unsubGood();
+            errSpy.mockRestore();
+        });
+    });
 });

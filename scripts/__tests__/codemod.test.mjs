@@ -254,3 +254,94 @@ test('参数校验: 未知命令 / flag 顶位 → exit 1', () => {
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+// ── round-78 #19: 三未测面（ensureImport 合并 / namespace 告警 / grep 字符串提示） ──
+
+test('#19 ensureImport: move 时目标文件同模块已有 import → 合并命名，不新增声明', () => {
+  const dir = makeFixture({
+    'src/math.ts': "import { greet } from './strings';\nexport function call(): string { return greet(); }\n",
+    'src/strings.ts': "export function greet(): string { return 'hi'; }\n",
+    'src/util.ts': "import { capitalize } from './strings';\nexport const K = 1;\n",
+  });
+  try {
+    const r = runCodemod(dir, ['move-function', 'call', 'src/util.ts']);
+    assert.equal(r.code, 0, `exit=${r.code} stderr=${r.stderr} stdout=${r.stdout}`);
+    const util = read(dir, 'src/util.ts');
+    // 合并到既有 './strings' import：同时含 capitalize 与 greet
+    assert.match(util, /import \{[^}]*capitalize[^}]*greet[^}]*\} from '\.\/strings'/);
+    // 只有一条 './strings' 声明（未 addImportDeclaration 重复添加）
+    assert.equal(util.match(/from '\.\/strings'/g)?.length, 1, `应恰 1 条 './strings' import，实际:\n${util}`);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('#19 namespace import: 目标已有同名 `import * as ns` → 直接复用且不重复添加，exit 0', () => {
+  const dir = makeFixture({
+    'src/math.ts': "import * as helper from './helper';\nexport function calc(x: number): number { return helper.f(x); }\n",
+    'src/helper.ts': 'export function f(x: number): number { return x; }\n',
+    'src/util.ts': "import * as helper from './helper';\nexport const K = 1;\n",
+  });
+  try {
+    const r = runCodemod(dir, ['move-function', 'calc', 'src/util.ts']);
+    // 目标已有同名命名空间 import → 直接复用，不重复添加 → exit 0
+    assert.equal(r.code, 0, `exit=${r.code} stderr=${r.stderr} stdout=${r.stdout}`);
+    assert.match(r.stdout, /已有命名空间 import \* as helper/);
+    const util = read(dir, 'src/util.ts');
+    assert.equal(util.match(/from '\.\/helper'/g)?.length, 1, `命名空间 import 不应被重复添加，实际:\n${util}`);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('#19 namespace import: 目标缺少同名 `import * as ns` → exit 1 且磁盘未改动（round79 P1 回归）', () => {
+  const dir = makeFixture({
+    'src/math.ts': "import * as helper from './helper';\nexport function calc(x: number): number { return helper.f(x); }\n",
+    'src/helper.ts': 'export function f(x: number): number { return x; }\n',
+    'src/util.ts': 'export const K = 1;\n', // 无 helper 命名空间 import
+  });
+  try {
+    const r = runCodemod(dir, ['move-function', 'calc', 'src/util.ts']);
+    // 原 bug：只打印「需手动迁移」就 continue，函数体照写 → 两文件被改坏且 exit 1。
+    // 现修复：前置阻断 exit 1，且在 saveSync 之前，磁盘应保持原样。
+    assert.equal(r.code, 1, `应 exit 1，实际 ${r.code}: ${r.stdout} ${r.stderr}`);
+    assert.match(r.stderr, /无法自动迁移/);
+    const math = read(dir, 'src/math.ts');
+    const util = read(dir, 'src/util.ts');
+    assert.match(math, /function calc/, `源文件不应被改坏，实际:\n${math}`);
+    assert.doesNotMatch(util, /function calc/, `目标文件不应被写入，实际:\n${util}`);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+
+test('#19 grep 字符串提示: rename 后旧名仍存于字符串字面量 → 报「未更新的字符串引用」', () => {
+  const dir = makeFixture({
+    'src/math.ts': 'export function add(a: number, b: number): number { return a + b; }\n',
+    'src/app.ts': "import { add } from './math';\nexport const hint = 'use add please';\nexport const v = add(1, 2);\n",
+  });
+  try {
+    const r = runCodemod(dir, ['rename-function', 'add', 'sum']);
+    assert.equal(r.code, 0, `exit=${r.code} stderr=${r.stderr} stdout=${r.stdout}`);
+    // 标识符已改名，字符串 'use add please' 未改 → grep 命中旧名且不含新名
+    assert.match(r.stdout, /可能包含未更新的字符串引用/);
+    assert.match(r.stdout, /use add please/);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('#19 grep 无残留: rename 纯标识符旧名 → 打「grep 未检出旧名残留」', () => {
+  const dir = makeFixture({
+    'src/math.ts': 'export function mul(a: number): number { return a; }\n',
+    'src/app.ts': "import { mul } from './math';\nexport const r = mul(2);\n",
+  });
+  try {
+    const r = runCodemod(dir, ['rename-function', 'mul', 'prod']);
+    assert.equal(r.code, 0, `exit=${r.code} stderr=${r.stderr} stdout=${r.stdout}`);
+    assert.match(r.stdout, /grep 未检出旧名残留/);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

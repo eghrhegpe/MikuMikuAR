@@ -2,9 +2,24 @@
 
 # 代码审核索引
 
-> 审核台账共 **191** 篇：165 篇按日期归档、9 篇轮次记录、17 篇专题审核。每篇记录审核范围、发现与结论。
+> 审核台账共 **203** 篇：177 篇按日期归档、9 篇轮次记录、17 篇专题审核。每篇记录审核范围、发现与结论。
 
 > 汇总视图（执行摘要 / 风险全景 / 改进优先级）见 [审核总索引](./README.md)。
+
+## 2026 年 10 月（12）
+
+- `2026-10-25` [round80：守卫层登记 P1 落地（circular 模块分组 / diff-coverage 真阻断）](./2026-10-25-round80-circular-grouping-diffcoverage-gate.md)
+- `2026-10-25` [Round 79C 架构门禁审计（S3）——check-layering / check-circular / check-diff-coverage](./2026-10-25-round79c-arch-gates.md)
+- `2026-10-25` [Round-79b 审核报告 — codemod.mjs 同类问题深挖 + scan-files / source-graph 审计](./2026-10-25-round79b-codemod-scan.md)
+- `2026-10-25` [round79 守卫层（gate scripts）系统审计 — 修复 6 P1 + 1 P2](./2026-10-25-round79-gate-scripts-p1.md)
+- `2026-10-25` [Round-78 审核报告 — P4-3 ratchet 收紧 + #19/#20 登记项清偿](./2026-10-25-round78-p4-cleanup.md)
+- `2026-10-25` [Round-77 审核报告 — scripts P3/P4 台账批次 + 5dae3abc 顺带审核](./2026-10-25-round77-scripts-p3-batch.md)
+- `2026-10-25` [Round-76c — 测试脚本与 Python 契约测试审核结果](./2026-10-25-round76c-scripts-python.md)
+- `2026-10-25` [功能性审核报告 · round-76b（TS core/backend ×6 + resource-warning-sink ×1 + scene ×7）](./2026-10-25-round76b-ts-backend-scene.md)
+- `2026-10-25` [Round-76a 功能性审核报告 — TS core / core-ai 测试（17 文件）](./2026-10-25-round76a-ts-core-ai.md)
+- `2026-10-25` [Round 75 审核报告 — Go 测试集群（12 文件）](./2026-10-25-round75-go-test-cluster.md)
+- `2026-10-25` [Round 74 审核报告 — preset-meta / action-catalog / dialogue-session](./2026-10-25-round74-preset-meta-action-catalog-dialogue-session.md)
+- `2026-10-24` [健壮性专项体检报告（2026-10-24）：全仓基线 + 静态信号扫描 + 登记债复核](./2026-10-24-robustness-baseline.md)
 
 ## 2026 年 8 月（154）
 

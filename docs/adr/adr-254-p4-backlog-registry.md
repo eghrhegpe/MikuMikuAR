@@ -59,6 +59,7 @@
 | C1 | load-manager 队列并发 + 反序列化恢复分支 | 现有 load-manager.test.ts 覆盖串行/abort/错误包装；并发排队与反序列化恢复两个分支可扩展 |
 | C2 | perception / env-impl 核心编排逻辑直接单测 | `ensureEnvUpdateObserver`/`disposeEnvUpdateObserver` 仅 barrel 间接覆盖 |
 | C3 | env-bridge 中间件链（pre/post-facade 顺序）直接单测 | middleware.int.test.ts 存在但可补「去重后注册」断言 |
+| C4 | wasm-layers-blender import 接线（round-76 P4 迁移）变更行 0% | `_isWasmRuntime` 别名迁移仅改 `isWasmRuntime` 直引 `perception-shared` 的 import 行；模块行为已被 wasm-layers-blender.test.ts / perception-gaze.test.ts 覆盖，仅 import 语句本身未被 diff-coverage 计入——记录不修 |
 
 ### D 类：双源分叉治理池（2026-08-07 全面收口 · 已归档）
 
@@ -96,3 +97,4 @@
 - 2026-08-07：新增 D 类双源分叉治理池（D1~D7）；D1 状态词双源消费端止血已提交（82a42d6e），根治（lib 补词 + gen 接共享模块）派其他 AI。
 - 2026-08-07：D1 根治闭环（ecc6f509）：`STATUS_CATEGORIES.completed` 补「已立」、新增 `classifyStatus` 唯一分类入口 + `BUCKET_TO_CATEGORY`/`DISPLAY_BUCKET_ORDER`；gen-docs-index 删硬编码 `ADR_BUCKETS` 接共享模块；check-adr-status/check-adr-health 改用共享函数。check 与 index 同函数后 adr-019/043/044/133/149 分叉全部消解（统一归已归档），验证 check/health 一致 226/13/11/0、unknown=0、test:scripts 216 全过。
 - 2026-08-07：D2~D7 源码核验——非 mjs 侧 6 项原登记双源均经 `frontend/src` 核实为误登（ADR-095/119/093/022 已落地 + [fix P2]/[doc:adr-121] 收敛），已从待办移除；结合 D1 已由其他 AI 根治（ecc6f509），D 类整体归档。
+- 2026-10-25：round-76 审核（提交 1d92e7d8）P4 债清偿——`_isWasmRuntime` 重复导出迁移（别名删 + perception.ts re-export 移除，knip duplicateExports 1→0）中 `wasm-layers-blender.ts` 仅改 import 接线，pre-push diff-coverage 提示变更行 0%（⏭️ 非阻断）；登记为 C4，随模块下次补测自然推进。

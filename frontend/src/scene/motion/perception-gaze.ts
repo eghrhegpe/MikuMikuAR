@@ -21,7 +21,7 @@ import type {
     PerceptionTier,
     GazeCache,
 } from './perception-shared';
-import { _v3, _isWasmRuntime } from './perception-shared';
+import { _v3, isWasmRuntime } from './perception-shared';
 
 // [doc:adr-271] 骨架在 core 叶子；只转发对外仍有消费者的两个符号
 // （perception.ts 与 perception-gaze.test.ts 从本文件取它们），
@@ -97,7 +97,7 @@ export function _applyGaze(
         return;
     }
 
-    const isWasm = _isWasmRuntime(headRuntime ?? eyeRuntimes[0]);
+    const isWasm = isWasmRuntime(headRuntime ?? eyeRuntimes[0]);
     const gazeTarget = _getGazeTarget(cam, _v3());
 
     // [adr-071] 坐标系对齐：骨骼 worldMatrix 是 rootMesh 局部坐标系（不含 rootMesh scaling），

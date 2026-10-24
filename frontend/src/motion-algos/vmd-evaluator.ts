@@ -271,10 +271,14 @@ class VmdEvaluatorImpl implements VmdEvaluator {
 }
 
 let _sharedScene: Scene | null = null;
+let _sharedEngine: NullEngine | null = null;
 function _getSharedScene(): Scene {
     if (!_sharedScene) {
-        const engine = new NullEngine();
-        _sharedScene = new Scene(engine);
+        // [fix:P2 round15#2] 引擎引用必须存模块级：Scene.dispose() 只把 scene 从
+        // engine.scenes 摘除、不调 engine.dispose()，引擎留在 EngineStore.Instances
+        // 直到进程结束。每次 create→shutdown 循环新增一个泄漏引擎。
+        _sharedEngine = new NullEngine();
+        _sharedScene = new Scene(_sharedEngine);
     }
     return _sharedScene;
 }
@@ -284,14 +288,27 @@ export async function createVmdEvaluator(data: ArrayBuffer): Promise<VmdEvaluato
         throw new Error('VMD buffer too small');
     }
     const loader = new VmdLoader(_getSharedScene());
-    const animation = await loader.loadFromBufferAsync('vmd-evaluator', data);
+    let animation: MmdAnimation;
+    try {
+        animation = await loader.loadFromBufferAsync('vmd-evaluator', data);
+    } catch (err) {
+        // [fix:P2 round15#3] 解析异常包装成带数据规模的上下文再 reject：babylon-mmd 内部
+        // 抛出的错误不带 buffer 信息，调用方（wasm-layers-blender.addWasmLayer）拿到后
+        // 无法区分「VMD 格式坏」与「加载器内部缺陷」。保持 reject 语义不变。
+        throw new Error(`VMD parse failed (${data.byteLength} bytes): ${err instanceof Error ? err.message : String(err)}`, {
+            cause: err,
+        });
+    }
     return new VmdEvaluatorImpl(animation);
 }
 
 /**
- * 释放共享 Scene 资源。
- * 应用关闭时调用，防止 NullEngine 泄漏。
+ * 释放共享 Scene 与 NullEngine。
+ * 应用关闭时调用，防止引擎泄漏（引擎引用存模块级，见 _getSharedScene 注释）。
  */
 export function shutdownVmdEvaluator(): void {
+    // 先 scene 后 engine：scene.dispose() 依赖 engine 仍在（从 engine.scenes 摘除自身），
+    // 反向顺序会让 scene 持有一个已释放引擎的引用。
     _sharedScene = safeDispose(_sharedScene);
+    _sharedEngine = safeDispose(_sharedEngine);
 }

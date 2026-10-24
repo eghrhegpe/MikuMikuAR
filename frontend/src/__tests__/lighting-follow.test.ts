@@ -23,7 +23,7 @@ const mockCone = { material: { setVector3: vi.fn() } };
 // gizmo 拖拽态需在用例内切换 → vi.hoisted 暴露可变 mock
 const transformMocks = vi.hoisted(() => ({
     isGizmoDragging: vi.fn(() => false),
-    getGizmoTargetId: vi.fn(() => null),
+    getGizmoTargetId: vi.fn((): string | null => null),
 }));
 
 vi.mock('../scene/render/performance', () => ({

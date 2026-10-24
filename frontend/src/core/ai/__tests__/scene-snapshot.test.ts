@@ -23,7 +23,8 @@ function makeBridge(overrides?: Partial<SceneSnapshotBridge>): SceneSnapshotBrid
         getActiveMotions: () => [],
         getPerformanceMode: () => 'balanced',
         getRendererInfo: () => ({ vendor: 'Test', renderer: 'Mock' }),
-        getKtx2Support: () => ({ supported: false, preferredFormat: undefined }),
+        // [doc:adr-276] Ktx2PreferredFormat 是 'astc' | 'bc7' | 'etc2' | null，没有 undefined
+        getKtx2Support: () => ({ supported: false, preferredFormat: null }),
         ...overrides,
     };
 }
@@ -63,7 +64,8 @@ describe('formatSceneSnapshot', () => {
         const text = formatSceneSnapshot({
             ...SAMPLE_DATA,
             ktx2Supported: false,
-            ktx2PreferredFormat: undefined,
+            // [doc:adr-276] 该字段类型是 'astc' | 'bc7' | 'etc2' | null，没有 undefined
+            ktx2PreferredFormat: null,
         });
         expect(text).toContain('KTX2: 不支持');
     });
@@ -72,7 +74,8 @@ describe('formatSceneSnapshot', () => {
         const text = formatSceneSnapshot({
             ...SAMPLE_DATA,
             ktx2Supported: true,
-            ktx2PreferredFormat: undefined,
+            // [doc:adr-276] 该字段类型是 'astc' | 'bc7' | 'etc2' | null，没有 undefined
+            ktx2PreferredFormat: null,
         });
         expect(text).toContain('KTX2: 支持(?)');
     });
@@ -135,7 +138,8 @@ describe('captureSceneSnapshot', () => {
         registerAiSnapshotBridge(
             makeBridge({
                 getActiveMotions: () => [],
-                getKtx2Support: () => ({ supported: false, preferredFormat: undefined }),
+                // [doc:adr-276] Ktx2PreferredFormat 是 'astc' | 'bc7' | 'etc2' | null，没有 undefined
+                getKtx2Support: () => ({ supported: false, preferredFormat: null }),
             })
         );
         const text = captureSceneSnapshot();

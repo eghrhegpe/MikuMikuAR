@@ -135,6 +135,7 @@ symbols:
   - UpdateCustomSoftware
   - WriteTextFile
   - readFileBytes
+  - requireConfig
 invariants:
   - 禁止在此新增绕过 resolveBackend 的直连导出（Android 冷启动竞态，ADR-176）
   - go-adapter 直连 @bindings（不经本文件），无循环依赖

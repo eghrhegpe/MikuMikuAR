@@ -166,5 +166,14 @@ func (a *App) RenameMotionPreset(oldName, newName string) error {
 	}
 	oldPath := filepath.Join(dir, cleanOld+".mcpreset.json")
 	newPath := filepath.Join(dir, cleanNew+".mcpreset.json")
+
+	// [audit:fix 2026-09] 前置检查：源不存在 / 目标已存在时给出清晰错误（Windows 上 os.Rename 目标存在即失败）
+	if _, err := os.Stat(oldPath); err != nil {
+		return fmt.Errorf("motion preset %q not found", oldName)
+	}
+	if _, err := os.Stat(newPath); err == nil {
+		return fmt.Errorf("motion preset %q already exists", newName)
+	}
+
 	return os.Rename(oldPath, newPath)
 }

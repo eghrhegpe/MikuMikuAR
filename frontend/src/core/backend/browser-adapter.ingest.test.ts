@@ -58,7 +58,7 @@ describe('[doc:adr-195] 下载文件夹统一摄入：ingestModelFile / ingestMo
         expect(entry.file_path).toBe('web://model/miku');
         expect(entry.kind).toBe('pmx');
 
-        const lib = await browserAdapter.GetLibraryIndex();
+        const lib = (await browserAdapter.GetLibraryIndex()) ?? [];
         const found = lib.find((e) => e.name_jp === 'miku');
         expect(found).toBeDefined();
         expect(found?.dir).toBe('web://model');
@@ -71,7 +71,9 @@ describe('[doc:adr-195] 下载文件夹统一摄入：ingestModelFile / ingestMo
         expect((mem.get('models')?.get('entry:miku') as { kind: string }).kind).toBe('pmx');
     });
 
-    it('ingestModelFiles 批量单事务写入：pmx/vmd/zip 全部落库，且不触发 loadManager.load', async () => {
+    it('ingestModelFiles 批量单事务写入：pmx/vmd/zip 全部落库', async () => {
+        // [ADR-195] 摄入只落库不进场景；loadManager.load 在用户从库加载时惰性触发
+        // （原标题「且不触发 loadManager.load」无对应断言，去承诺）
         const count = await ingestModelFiles([
             { name: 'miku.pmx', bytes: new Uint8Array([1]) },
             { name: 'dance.vmd', bytes: new Uint8Array([2]) },
@@ -99,9 +101,24 @@ describe('[doc:adr-195] 下载文件夹统一摄入：ingestModelFile / ingestMo
         expect(mem.get('models')?.has('file:miku%20(2)')).toBe(true);
         expect(mem.get('models')?.has('entry:miku%20(2)')).toBe(true);
 
-        const lib = await browserAdapter.GetLibraryIndex();
+        const lib = (await browserAdapter.GetLibraryIndex()) ?? [];
         const names = lib.filter((e) => e.name_jp?.startsWith('miku')).map((e) => e.name_jp);
         expect(names).toContain('miku');
         expect(names).toContain('miku (2)');
+    });
+
+    it('ingestModelFiles 同批同名 PMX ×2 → 后入者 (2) 后缀，先入者不被覆盖（ADR-182）', async () => {
+        // [audit P2] 同批同名重复键：_resolveUniqueStem 的 reserved 集兜底，
+        // 后入者拿后缀，先入者 bytes 不被 last-wins 静默覆盖
+        const count = await ingestModelFiles([
+            { name: 'miku.pmx', bytes: new Uint8Array([1]) },
+            { name: 'miku.pmx', bytes: new Uint8Array([2]) },
+        ]);
+
+        expect(count).toBe(2);
+        expect(Array.from(mem.get('models')?.get('file:miku') as Uint8Array)).toEqual([1]);
+        expect(mem.get('models')?.has('file:miku%20(2)')).toBe(true);
+        const e2 = mem.get('models')?.get('entry:miku%20(2)') as { file_path?: string };
+        expect(e2?.file_path).toBe('web://model/miku%20(2)');
     });
 });

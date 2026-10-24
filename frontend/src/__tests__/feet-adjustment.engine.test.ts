@@ -25,9 +25,9 @@ const {
     logWarn,
 } = vi.hoisted(() => ({
     getGroundHeightAt: vi.fn(() => 0),
-    getWasmIkResolver: vi.fn(() => null),
-    getOverride: vi.fn(() => null),
-    getModuleState: vi.fn(() => undefined),
+    getWasmIkResolver: vi.fn((): unknown => null),
+    getOverride: vi.fn((): unknown => null),
+    getModuleState: vi.fn((): unknown => undefined),
     isWasmRuntime: vi.fn(() => false),
     feetDebug: { value: false },
     logWarn: vi.fn(),

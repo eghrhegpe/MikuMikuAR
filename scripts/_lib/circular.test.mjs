@@ -125,20 +125,13 @@ test('Module graph: simple A→B→C linear (no cycle)', () => {
         g.get(rel)?.add(imp.path);
       }
     }
-    const { files, graph } = { files: entries, graph: g };
-    // Build module graph
-    const moduleGraph = new Map();
-    for (const [file, deps] of graph) {
-      const mod = file.split('/')[0];
-      if (!moduleGraph.has(mod)) moduleGraph.set(mod, new Set());
-      for (const d of deps) {
-        const dMod = d.split('/')[0];
-        if (dMod !== mod) moduleGraph.get(mod).add(dMod);
-      }
-    }
-    // A→B, B→C, no cross-module edges → no cycles expected
-    // But since all files in root, they're all in 'root' module → no cross-module deps
-    assert.ok(moduleGraph.size > 0);
+    // [P2 2026-08-06] 去副本直测：生产 buildModuleGraph + detectCycles（此前 inline 建图副本）
+    const { moduleGraph } = buildModuleGraph(g);
+    // [round80 P1] 根目录单层文件 getModule → 'src-root'（不再折叠进 core）；
+    // a→b / b→c 同模块内边被丢弃，跨模块边集合恰为 ∅
+    assert.deepEqual([...moduleGraph.keys()], ['src-root']);
+    assert.deepEqual([...moduleGraph.get('src-root')], []);
+    assert.deepEqual(detectCycles(moduleGraph), []);
   } finally { cleanup(root); }
 });
 
@@ -156,40 +149,13 @@ test('Module graph: simple cross-module cycle A→B→A', () => {
         g.get(rel)?.add(imp.path);
       }
     }
-    const { files, graph } = { files: entries, graph: g };
-
-    const moduleGraph = new Map();
-    for (const [file, deps] of graph) {
-      const parts = file.split('/');
-      const mod = parts.length > 0 ? parts[0] : 'root';
-      if (!moduleGraph.has(mod)) moduleGraph.set(mod, new Set());
-      for (const d of deps) {
-        const dParts = d.split('/');
-        const dMod = dParts.length > 0 ? dParts[0] : 'root';
-        if (dMod !== mod) moduleGraph.get(mod).add(dMod);
-      }
-    }
-
-    // Detect cycles via DFS
-    const cycles = [];
-    const visited = new Set();
-    const inStack = new Set();
-    const pathArr = [];
-    function dfs(node) {
-      if (inStack.has(node)) {
-        const start = pathArr.indexOf(node);
-        if (start !== -1) cycles.push([...pathArr.slice(start), node]);
-        return;
-      }
-      if (visited.has(node)) return;
-      visited.add(node);
-      inStack.add(node);
-      pathArr.push(node);
-      for (const dep of moduleGraph.get(node) || new Set()) dfs(dep);
-      pathArr.pop();
-      inStack.delete(node);
-    }
-    for (const n of moduleGraph.keys()) dfs(n);
+    // [P2 2026-08-06] 去副本直测：生产 buildModuleGraph + detectCycles（此前 inline DFS 副本与生产同缺陷时给假绿）
+    const { moduleGraph } = buildModuleGraph(g);
+    // 具体边集合：跨模块边恰为 a→b 与 b→a 两条
+    assert.deepEqual([...moduleGraph.keys()].sort(), ['a', 'b']);
+    assert.deepEqual([...moduleGraph.get('a')], ['b']);
+    assert.deepEqual([...moduleGraph.get('b')], ['a']);
+    const cycles = detectCycles(moduleGraph);
     assert.equal(cycles.length, 1);
     assert.deepEqual(cycles[0], ['a', 'b', 'a']);
   } finally { cleanup(root); }
@@ -208,22 +174,12 @@ test('Module graph: self-import → no cycle (same module)', () => {
         g.get(rel)?.add(imp.path);
       }
     }
-    const { files, graph } = { files: entries, graph: g };
-
-    const moduleGraph = new Map();
-    for (const [file, deps] of graph) {
-      const parts = file.split('/');
-      const mod = parts.length > 0 ? parts[0] : 'root';
-      if (!moduleGraph.has(mod)) moduleGraph.set(mod, new Set());
-      for (const d of deps) {
-        const dParts = d.split('/');
-        const dMod = dParts.length > 0 ? dParts[0] : 'root';
-        if (dMod !== mod) moduleGraph.get(mod).add(dMod);
-      }
-    }
-    // All in 'mod' module → no cross-module deps → no cycles
-    assert.ok(moduleGraph.size === 1);
-    assert.ok(moduleGraph.get('mod').size === 0);
+    // [P2 2026-08-06] 去副本直测：生产 buildModuleGraph + detectCycles（mod 模块内循环依赖不上跨模块图 → 无环）
+    const { moduleGraph } = buildModuleGraph(g);
+    assert.equal(moduleGraph.size, 1);
+    assert.ok(moduleGraph.has('mod'));
+    assert.equal(moduleGraph.get('mod').size, 0);
+    assert.deepEqual(detectCycles(moduleGraph), []);
   } finally { cleanup(root); }
 });
 
@@ -232,7 +188,7 @@ test('getModule: edge cases（直测生产真身）', () => {
   assert.equal(getModule('scene/physics/index.ts'), 'scene/physics');
   assert.equal(getModule('scene/index.ts'), 'scene');
   assert.equal(getModule('__tests__/test.ts'), 'test');
-  assert.equal(getModule('utils.ts'), 'core');
+  assert.equal(getModule('utils.ts'), 'src-root'); // [round80 P1] 根文件独立成 src-root
   assert.equal(getModule('menus/index.ts'), 'menus');
 });
 
@@ -312,19 +268,11 @@ test('Module graph: isolated module (zero deps) → no edges', () => {
         g.get(rel)?.add(imp.path);
       }
     }
-    const moduleGraph = new Map();
-    for (const [file, deps] of g) {
-      const parts = file.split('/');
-      const mod = parts.length > 0 ? parts[0] : 'root';
-      if (!moduleGraph.has(mod)) moduleGraph.set(mod, new Set());
-      for (const d of deps) {
-        const dParts = d.split('/');
-        const dMod = dParts.length > 0 ? dParts[0] : 'root';
-        if (dMod !== mod) moduleGraph.get(mod).add(dMod);
-      }
-    }
+    // [P2 2026-08-06] 去副本直测：生产 buildModuleGraph + detectCycles（此前 inline 建图副本与生产不同源）
+    const { moduleGraph } = buildModuleGraph(g);
     assert.ok(moduleGraph.has('leaf'));
-    assert.equal(moduleGraph.get('leaf').size, 0);
+    assert.deepEqual([...moduleGraph.get('leaf')], []);
+    assert.deepEqual(detectCycles(moduleGraph), []);
   } finally { cleanup(root); }
 });
 

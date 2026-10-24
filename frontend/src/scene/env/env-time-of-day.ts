@@ -312,17 +312,25 @@ export function applyEnvPresetObject(preset: {
           ];
 
     const startLight = getLightState();
-    const derived = preset.dirDirection
-        ? preset
-        : (() => {
-              const d = deriveLighting(preset.skyColorTop, preset.sunAngle, preset.azimuth ?? -45);
-              return { ...preset, ...d };
-          })();
+    // [doc:adr-276] 原先三元两支对 dirDirection 的可选性不同（预设自带 = 可选，现算 = 必选），
+    // 合并成联合类型后取属性就退化成可选。改成 if/else：预设自带方向时**不重算**光照（保持既有行为，
+    // 见 presets.int.test.ts「skips deriveLighting when dirDirection is provided」），
+    // 缺失时才现算并合并；两支各自持有确定的方向元组，不再需要断言。
+    let derived: typeof preset;
+    let dirDirection: [number, number, number];
+    if (preset.dirDirection) {
+        derived = preset;
+        dirDirection = preset.dirDirection;
+    } else {
+        const computed = deriveLighting(preset.skyColorTop, preset.sunAngle, preset.azimuth ?? -45);
+        derived = { ...preset, ...computed };
+        dirDirection = computed.dirDirection;
+    }
     const targetLight: Partial<LightState> = {
         dirColor: derived.dirDiffuse,
-        dirX: derived.dirDirection[0],
-        dirY: derived.dirDirection[1],
-        dirZ: derived.dirDirection[2],
+        dirX: dirDirection[0],
+        dirY: dirDirection[1],
+        dirZ: dirDirection[2],
         dirIntensity: derived.dirIntensity,
         hemiIntensity: derived.hemiIntensity,
     };

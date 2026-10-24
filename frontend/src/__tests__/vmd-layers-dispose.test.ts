@@ -10,6 +10,16 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+// [audit:fix 2026-09] round74 P2：wasm blender 分支需 mmdRuntime instanceof MmdWasmRuntime，
+// 用 hoisted 类 + holder 让用例可切换运行时类型
+const mockMmdWasmRuntimeClass = vi.hoisted(() => class MockMmdWasmRuntime {});
+const mockRuntimeHolder = vi.hoisted(() => ({
+    mmdRuntime: {
+        seekAnimation: vi.fn().mockResolvedValue(undefined),
+        playAnimation: vi.fn().mockResolvedValue(undefined),
+    },
+}));
+
 // ======== 共享 mock 状态 ========
 const mockDispose = vi.fn();
 const mockCurrentAnimation = { dispose: mockDispose };
@@ -36,7 +46,7 @@ const mockMmdRuntime = {
 // ======== mock 模块 ========
 vi.mock('../core/config', () => ({
     get mmdRuntime() {
-        return mockMmdRuntime;
+        return mockRuntimeHolder.mmdRuntime;
     },
     get modelRegistry() {
         return new Map([['model_1', mockInst]]);
@@ -133,7 +143,7 @@ vi.mock('babylon-mmd/esm/Runtime/Animation/mmdCompositeAnimation', () => ({
 }));
 
 vi.mock('babylon-mmd/esm/Runtime/Optimized/mmdWasmRuntime', () => ({
-    MmdWasmRuntime: class {},
+    MmdWasmRuntime: mockMmdWasmRuntimeClass,
 }));
 
 vi.mock('../scene/motion/wasm-layers-blender', () => ({
@@ -241,5 +251,32 @@ describe('vmd-layers — 旧动画句柄 dispose (composite 路径)', () => {
         expect(dupResult).toBeNull();
         // 重复检测在 rebuild 之前，不应触发 dispose
         expect(mockDispose).not.toHaveBeenCalled();
+    });
+
+    it('blend 失败且 teardown 也抛错时 console.error 记录而非静默（round74 P2）', async () => {
+        // 切换 mmdRuntime 为 MmdWasmRuntime 实例 → 进入 :581 wasm blender 分支；
+        // mock 缺 initWasmLayersBlender → 外层 catch（_tryWasmBlender :710）；
+        // 再让 teardown 抛错 → 覆盖内层 catch（:715-717，[audit:fix 2026-09] 空 catch → 记错）
+        const wasmRt = new mockMmdWasmRuntimeClass() as any;
+        wasmRt.seekAnimation = vi.fn().mockResolvedValue(undefined);
+        wasmRt.playAnimation = vi.fn().mockResolvedValue(undefined);
+        mockRuntimeHolder.mmdRuntime = wasmRt;
+        const { teardownWasmLayersBlender } = await import('../scene/motion/wasm-layers-blender');
+        const teardown = teardownWasmLayersBlender as unknown as {
+            mockImplementationOnce: (fn: () => void) => void;
+        };
+        teardown.mockImplementationOnce(() => {
+            throw new Error('teardown boom');
+        });
+        const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        try {
+            await addVmdLayer(fakeVmdBuffer(2), 'layer3.vmd');
+            expect(spy).toHaveBeenCalledWith(
+                expect.stringContaining('WASM blender teardown failed after blend error'),
+                expect.any(Error),
+            );
+        } finally {
+            spy.mockRestore();
+        }
     });
 });

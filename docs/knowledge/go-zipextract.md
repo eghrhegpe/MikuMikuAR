@@ -42,6 +42,7 @@ symbols:
   - importZipUnsafe
   - isGarbageModelName
   - manifest
+  - maxBufferedResponseBytes
   - maxVPDSize
   - maxZipEntries
   - serveFileWithSizeCheck
@@ -49,6 +50,9 @@ symbols:
   - toCorruptStringShiftJIS
   - truncate
   - zipCacheName
+  - zipExtractionLocks
+  - zipExtractionLocksMu
+  - zipLockFor
 invariants:
   - extractCacheVersion 变更会失效全部解压缓存，升级格式须 bump
   - maxZipEntries=50000 限制解压条目数；expandZipEntries 预检总量防 ZIP 炸弹

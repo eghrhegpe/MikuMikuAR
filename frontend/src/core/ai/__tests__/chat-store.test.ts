@@ -135,6 +135,45 @@ describe('chat-store', () => {
         expect(loaded?.messages).toEqual([]);
     });
 
+    // [audit P3] 旧形状 meta（dialogueMode 引入前仅 mode 字段）：读边界归一化，消费端无需迁移
+    it('旧形状 meta（mode:dialogue）读边界归一化 dialogueMode=true', async () => {
+        await idbSet('chats', 'meta:old-dlg', {
+            id: 'old-dlg',
+            title: '旧形状台词会话',
+            mode: 'dialogue',
+            createdAt: 1,
+            updatedAt: 2,
+        });
+        expect((await loadSession('old-dlg'))?.dialogueMode).toBe(true);
+        const list = await listSessions();
+        expect(list.find((s) => s.id === 'old-dlg')?.dialogueMode).toBe(true);
+    });
+
+    it('旧形状 meta（mode:chat）归一化 dialogueMode=false', async () => {
+        await idbSet('chats', 'meta:old-chat', {
+            id: 'old-chat',
+            title: '旧形状助手会话',
+            mode: 'chat',
+            createdAt: 1,
+            updatedAt: 2,
+        });
+        expect((await loadSession('old-chat'))?.dialogueMode).toBe(false);
+        const list = await listSessions();
+        expect(list.find((s) => s.id === 'old-chat')?.dialogueMode).toBe(false);
+    });
+
+    it('显式 dialogueMode 优先于旧 mode 字段（dialogueMode:true + mode:chat → true）', async () => {
+        await idbSet('chats', 'meta:mixed', {
+            id: 'mixed',
+            title: '混合形状',
+            mode: 'chat',
+            dialogueMode: true,
+            createdAt: 1,
+            updatedAt: 2,
+        });
+        expect((await loadSession('mixed'))?.dialogueMode).toBe(true);
+    });
+
     it('clearActiveId 清除 setActiveId 写入的指针', async () => {
         await setActiveId('sess-1');
         expect(await getActiveId()).toBe('sess-1');

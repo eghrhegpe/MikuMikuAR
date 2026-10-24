@@ -134,6 +134,38 @@ describe('buildToolSchemas', () => {
         const schemas = buildToolSchemas();
         expect(schemas).toHaveLength(1);
     });
+
+    it('boolean/toggle 参数生成 boolean 属性', () => {
+        registerAction({
+            id: 'test:bool',
+            label: '布尔测试',
+            domain: 'scene',
+            params: [
+                { name: 'flag', type: 'boolean' },
+                { name: 'sw', type: 'toggle' },
+            ],
+            execute: () => {},
+        });
+        const schemas = buildToolSchemas();
+        const props = schemas[0].function.parameters.properties;
+        expect(props['flag']).toEqual({ type: 'boolean', description: 'flag' });
+        expect(props['sw']).toEqual({ type: 'boolean', description: 'sw' });
+        expect(schemas[0].function.parameters.required).toEqual(['flag', 'sw']);
+    });
+
+    it('string 参数生成 string 属性', () => {
+        registerAction({
+            id: 'test:str',
+            label: '字符串测试',
+            domain: 'scene',
+            params: [{ name: 'note', type: 'string' }],
+            execute: () => {},
+        });
+        expect(buildToolSchemas()[0].function.parameters.properties['note']).toEqual({
+            type: 'string',
+            description: 'note',
+        });
+    });
 });
 
 describe('buildToolCatalogText', () => {
@@ -211,5 +243,32 @@ describe('buildToolCatalogText', () => {
             execute: () => {},
         });
         expect(buildToolCatalogText()).toContain('name(名称)');
+    });
+
+    it('非 enum/entity 参数显示为 name:type', () => {
+        registerAction({
+            id: 'test:plain',
+            label: '普通参数',
+            domain: 'scene',
+            params: [
+                { name: 'flag', type: 'boolean' },
+                { name: 'note', type: 'string' },
+            ],
+            execute: () => {},
+        });
+        const text = buildToolCatalogText();
+        expect(text).toContain('flag:boolean');
+        expect(text).toContain('note:string');
+    });
+
+    it('enum 同义词显示为 k=v 形式', () => {
+        registerAction({
+            id: 'test:syn',
+            label: '同义词',
+            domain: 'scene',
+            params: [{ name: 'mood', type: 'enum', enum: ['calm'], synonyms: { 平静: 'calm' } }],
+            execute: () => {},
+        });
+        expect(buildToolCatalogText()).toContain('mood(calm; 平静=calm)');
     });
 });

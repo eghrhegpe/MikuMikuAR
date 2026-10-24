@@ -78,7 +78,9 @@ export interface SlideRowExtra {
     /** 自定义右侧 label（key-value 布局用） */
     rightLabel?: string;
     /** 动态图标工厂函数——替代 icon 字符串参数，每次渲染调用 */
-    iconFactory?: () => HTMLElement;
+    // [doc:adr-276] 允许返回 null：createIconifyIcon 在图标未注册/解析失败时返回 null，
+    // 消费侧（:187 `if (el)`）本就在判空，声明不必比实现更严。
+    iconFactory?: () => HTMLElement | null;
     /** key-value 字段行专用：为 true 时不渲染左侧图标占位，避免 21px 空白。addFieldRow 默认开启 */
     hideIcon?: boolean;
     /** sublabel 内联在 label 后（而非右对齐），适合需要 text-overflow 的场景 */

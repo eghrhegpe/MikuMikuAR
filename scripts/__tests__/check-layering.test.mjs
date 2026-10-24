@@ -187,3 +187,123 @@ test('基线缺失 → fail-closed（全部 tracked 边判为 regression，exit 
     fs.rmSync(missing, { force: true });
   }
 });
+// [round-76c #9] R1（algo→menus）/ R3（algo→scene）零用例：fixture 增 2 个违规文件触 R1/R3
+test('R1（algo→menus）零容忍：motion-algos import @/menus → r1 记录 + exit 1（不入库基线）', () => {
+  const dir = makeFixture({
+    'menus/m.ts': 'export const m = 1;\n',
+    'motion-algos/aa.ts': "import { m } from '@/menus/m';\n",
+  });
+  try {
+    const r = runCli(dir, ['--json'], NO_BASELINE);
+    assert.equal(r.code, 1, `R1 应 exit 1: ${r.stdout} ${r.stderr}`);
+    const data = JSON.parse(r.stdout);
+    assert.equal(data.r1.length, 1, JSON.stringify(data.r1));
+    assert.equal(data.r1[0].rule, 'R1');
+    assert.equal(data.r1[0].from, 'motion-algos/aa.ts');
+    assert.equal(data.r1[0].to, 'menus/m');
+    assert.equal(data.r1[0].fromLayer, 'algo');
+    assert.equal(data.r1[0].toLayer, 'menus');
+    assert.equal(data.total, 0, 'R1 不属于 tracked（基线只跟踪 R2/R3）');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('R3（algo→scene）：超基线 exit 1 / 基线含该边 exit 0（tracked 键 motion-algos/aa.ts:scene/s）', () => {
+  const dir = makeFixture({
+    'scene/s.ts': 'export const s = 1;\n',
+    'motion-algos/aa.ts': "import { s } from '@/scene/s';\n",
+  });
+  const baselineFile = path.join(os.tmpdir(), `layering-r3-${process.pid}.json`);
+  try {
+    const fail = runCli(dir, ['--json'], NO_BASELINE);
+    assert.equal(fail.code, 1, '无基线时 R3 边应判 regression');
+    const fdata = JSON.parse(fail.stdout);
+    assert.equal(fdata.regressions.length, 1, JSON.stringify(fdata.regressions));
+    assert.equal(fdata.regressions[0].rule, 'R3');
+    assert.equal(fdata.regressions[0].from, 'motion-algos/aa.ts');
+    assert.equal(fdata.regressions[0].to, 'scene/s');
+    assert.equal(fdata.r1.length, 0, '无 R1 违规');
+
+    fs.writeFileSync(baselineFile, JSON.stringify({ entries: ['motion-algos/aa.ts:scene/s'] }), 'utf8');
+    const ok = runCli(dir, ['--json'], baselineFile);
+    assert.equal(ok.code, 0, `基线含 R3 边应 exit 0: ${ok.stdout} ${ok.stderr}`);
+    const odata = JSON.parse(ok.stdout);
+    assert.equal(odata.regressions.length, 0);
+    assert.equal(odata.fixed.length, 0);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+    fs.rmSync(baselineFile, { force: true });
+  }
+});
+
+// [round-76c #9] 相对 import 解析（check-layering.mjs:82-85）与裸包名跳过（:87）
+test('相对 import 解析：越出 src 根 / 裸包名（@babylonjs、babylon-mmd）→ 不入分层判定', () => {
+  const dir = makeFixture({
+    'scene/s.ts': 'export const s = 1;\n',
+    'core/out.ts': "import { s } from '../../out/s';\nimport * as babylon from '@babylonjs/core';\nimport { loadMMD } from 'babylon-mmd';\n",
+  });
+  try {
+    // 相对 import '../../out/s' 越出 SRC_ROOT → resolveTarget null；裸包名 → null；无任何违规
+    const r = runCli(dir, ['--json'], NO_BASELINE);
+    assert.equal(r.code, 0, `越出根/裸包名不应产生违规: ${r.stdout} ${r.stderr}`);
+    const data = JSON.parse(r.stdout);
+    assert.equal(data.total, 0, JSON.stringify(data));
+    assert.equal(data.regressions.length, 0);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+// [round-76c #9] --update 重写基线（check-layering.mjs:136-145）：基线 diff 断言
+test('--update 重写基线：剔除已消除的旧键、写入当前 tracked 边 + generatedAt/_comment', () => {
+  const dir = makeFixture({
+    'scene/s.ts': 'export const s = 1;\n',
+    'motion-algos/aa.ts': "import { s } from '@/scene/s';\n",
+  });
+  const baselineFile = path.join(os.tmpdir(), `layering-upd-${process.pid}.json`);
+  try {
+    fs.writeFileSync(baselineFile, JSON.stringify({ _comment: 'old', entries: ['core/gone.ts:scene/gone'] }), 'utf8');
+    const upd = runCli(dir, ['--update'], baselineFile);
+    assert.equal(upd.code, 0, `--update 应 exit 0: ${upd.stderr}`);
+    assert.match(upd.stdout, /基线已更新/);
+    const after = JSON.parse(fs.readFileSync(baselineFile, 'utf8'));
+    assert.deepEqual(after.entries, ['motion-algos/aa.ts:scene/s'], '基线 diff：旧键剔除、新键写入');
+    assert.ok(!after.entries.includes('core/gone.ts:scene/gone'), '已消除边应从基线剔除');
+    assert.match(after.generatedAt, /^\d{4}-\d{2}-\d{2}$/, 'generatedAt 为当日日期');
+    assert.match(after._comment, /ADR-242/);
+
+    // 复跑 --json：新基线内 0 regression、0 fixed
+    const chk = runCli(dir, ['--json'], baselineFile);
+    assert.equal(chk.code, 0);
+    const cdata = JSON.parse(chk.stdout);
+    assert.equal(cdata.regressions.length, 0);
+    assert.equal(cdata.fixed.length, 0);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+    fs.rmSync(baselineFile, { force: true });
+  }
+});
+
+test('--update 对 R1 零容忍不豁免：R1 边不入基线，复查仍 exit 1', () => {
+  const dir = makeFixture({
+    'menus/m.ts': 'export const m = 1;\n',
+    'scene/s.ts': 'export const s = 1;\n',
+    'motion-algos/aa.ts': "import { m } from '@/menus/m';\nimport { s } from '@/scene/s';\n",
+  });
+  const baselineFile = path.join(os.tmpdir(), `layering-r1upd-${process.pid}.json`);
+  try {
+    const upd = runCli(dir, ['--update'], baselineFile);
+    assert.equal(upd.code, 0, `--update 本身 exit 0: ${upd.stderr}`);
+    const after = JSON.parse(fs.readFileSync(baselineFile, 'utf8'));
+    assert.deepEqual(after.entries, ['motion-algos/aa.ts:scene/s'], 'R1 边（algo→menus）不得入库基线');
+    const chk = runCli(dir, ['--json'], baselineFile);
+    assert.equal(chk.code, 1, 'R1 零容忍：基线更新后复查仍 exit 1');
+    const cdata = JSON.parse(chk.stdout);
+    assert.equal(cdata.r1.length, 1);
+    assert.equal(cdata.regressions.length, 0, 'R3 边已在基线内');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+    fs.rmSync(baselineFile, { force: true });
+  }
+});
