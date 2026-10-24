@@ -7,7 +7,7 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 140 | 836 |
+| 核心基础设施 | 140 | 837 |
 | 3D 场景 | 137 | 1287 |
 | 菜单 & UI | 77 | 392 |
 | 动作算法 | 19 | 138 |
@@ -226,10 +226,11 @@
 | `getCapabilities()` | `core/backend/index:130` | — |
 | `resolveBackend()` | `core/backend/index:34` | — |
 | `BackendCapabilities()` | `core/backend/types:20` | 三态能力矩阵键（对齐 ADR-176「能力矩阵（三态 × 能力键）」节）。 |
-| `BackendService()` | `core/backend/types:103` | — |
+| `BackendService()` | `core/backend/types:108` | — |
+| `EXCLUDED_FROM_BACKEND()` | `core/backend/types:56` | — |
 | `GoApp()` | `core/backend/types:14` | Go 生成绑定的值类型（函数签名源）。 |
-| `NotSupportedError()` | `core/backend/types:128` | 浏览器侧原生独占能力的统一错误。调用方据 capabilities() 预判或 catch 此错误。 |
-| `assertConfig()` | `core/backend/types:120` | 见上：GetConfig 的唯一 null 通道（桥未就绪）在这里抛出名字明确的错误。 |
+| `NotSupportedError()` | `core/backend/types:133` | 浏览器侧原生独占能力的统一错误。调用方据 capabilities() 预判或 catch 此错误。 |
+| `assertConfig()` | `core/backend/types:125` | 见上：GetConfig 的唯一 null 通道（桥未就绪）在这里抛出名字明确的错误。 |
 | `ActionBridge()` | `core/bridge-slot:12` | 多键动作桥（scene/ui 形态：一个接口表，分字段注册） |
 | `Slot()` | `core/bridge-slot:62` | 单槽注入点（e2e/snapshot 形态：一个实现，模块级 set/get） |
 | `createActionBridge()` | `core/bridge-slot:29` | 创建一个多键动作桥。label 用于缺失注册告警前缀（保持 '[桥名] key 未注册' 格式， 存量日志/文档引用不断链）。 |

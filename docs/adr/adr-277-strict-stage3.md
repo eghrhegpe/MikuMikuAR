@@ -185,7 +185,7 @@ export function assertConfig(cfg: Config | null | undefined): Config {
 2. **契约宽于实现是债，不是安全。** `GetConfig(): Config | null` 让十几处调用点为一个不可能发生的 null 写分支，真正该报错的「桥未就绪」反而被稀释进噪声。收窄契约 + 单点抛错，比到处判空便宜。
 3. **泛型参数放在实例状态上，迟早撞不变型。** `ObserverHandle<T>` 的 T 只用于 `remove(observer)`，把它降级成构造期约束后，类型层面的问题一次消失——**能用闭包表达的东西不要挂在类的泛型上**。
 4. **量尺先于结论。** 影子脚本一个默认值，让「Stage 3 要清 454 处」流传了一个阶段。修脚本才知道真实账单是 68。任何「实测数字」都要能说清测的是哪组选项。
-5. **行为改动必须有测试**（ADR-276 已立此规矩）。本轮 6 处契约对齐里有 4 处是网页端行为变化（`GetModelPresets`/`ListEnvPresets` 从裸名变条目、`CleanOrphanCache` 从 void 变计数、`ReadTextFile` null→`''`），目前只有 `tsc` 兜着。diff-coverage 是「仅建议不阻断」，所以这条债要显式记：**网页端 `browserAdapter` 的契约行为缺测试**，后续补 `browser-adapter.contract.test.ts`。
+5. **行为改动必须有测试**（ADR-276 已立此规矩）。本轮 6 处契约对齐里有 4 处是网页端行为变化（`GetModelPresets`/`ListEnvPresets` 从裸名变条目、`CleanOrphanCache` 从 void 变计数、`ReadTextFile` null→`''`），当时只有 `tsc` 兜着，diff-coverage 报 4.3%（仅建议不阻断）。**补测已在同批完成**：`frontend/src/core/backend/browser-adapter.contract.test.ts`（11 用例 / `@vitest-environment node`）锁三件事——① **契约完整性**：Go 绑定导出的每个函数扣掉排除清单后，网页端必须都有实现（缺一个即红）；② **返回形状**：预设条目、`BuildInfo`、A11y 默认值、清理计数、`ReadTextFile` 空串、`GetModelMetaBatch(null)`；③ **降级形态**：8 个 AI 桩必须抛 `NotSupportedError` 而非 `undefined`。为此把排除清单从「纯类型联合」降级为运行期常量 `EXCLUDED_FROM_BACKEND`（类型仍由它 `Extract` 派生，单一事实源不变）——**清单只有能被测试读到，才防得住「漏写一个没人发现」**。
 
 ## 落地记录（2026-10-24）
 
@@ -198,6 +198,8 @@ export function assertConfig(cfg: Config | null | undefined): Config {
 | 收尾 | **0 处 / 0 文件**（`strict=true` `strictNullChecks=true` `noImplicitAny=true`） | `GetModelMetaBatch` 参数放宽、`model-manager` 迭代器收窄 |
 
 验收：`tsc --noEmit` `EXIT=0`（`strict: true` 已落地后重跑）；全量 `vitest` **263 文件 / 6086 用例全绿**；`prettier --check` 通过；`eslint` 改动文件 0 error（余下 `max-lines`/`complexity` 全为存量 warning）；`check:lint` 与 `knip` 退出 0。
+
+补测：`frontend/src/core/backend/browser-adapter.contract.test.ts` 11 用例，同批 `src/core/backend` 13 文件 / 113 用例全绿（2.22s）——契约行为不再只靠 `tsc` 兜。
 
 环境备注：影子检查器 `frontend/node_modules/.tmp/strict-check.mjs`（用法 `cd frontend && node node_modules/.tmp/strict-check.mjs --strict [路径子串...]`，约 40s）本轮修了默认值 bug；探针文件 `frontend/src/__tmp-thistype.ts` 用完即删——它证明了「有上下文类型时 `ThisType` 与 EPC 都生效，`as unknown as T` 会让整段失去上下文」，而项目级 `tsc`（`noImplicitThis` 关）看不出这个问题，必须在 `--strict` 下跑。
 

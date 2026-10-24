@@ -19,6 +19,7 @@ adr:
 symbols:
   - BackendCapabilities
   - BackendService
+  - EXCLUDED_FROM_BACKEND
   - FsaAuthState
   - GoApp
   - NotSupportedError

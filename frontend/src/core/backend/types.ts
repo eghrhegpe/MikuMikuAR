@@ -50,41 +50,46 @@ export interface BackendCapabilities {
 }
 
 // ④ 零业务调用函数（ADR-176 实证章节清单）—— 从 BackendService 接口排除。
+// [doc:adr-277] 由「纯类型联合」降级为运行期常量：类型仍从它派生（单一事实源不变），
+// 但测试可以据此逐键核对 browser-adapter 是否真的实现了每个契约方法 —— 双重断言时代
+// 有 8 个 AI 方法根本没实现也被掩盖（见 browser-adapter.contract.test.ts）。
+export const EXCLUDED_FROM_BACKEND = [
+    'DeleteRenderPreset',
+    'GetAppVersion',
+    'GetModelMeta',
+    'GetPath',
+    'GetThumbnailBatch',
+    'ListDir',
+    'OpenInBlender',
+    'OpenInMMD',
+    'ReadFileBytes', // 由小写 readFileBytes（base64 解码版）替代
+    'RenameModelPreset',
+    'SaveEnvPreset',
+    'SaveModelPresetToLib',
+    'SaveSceneFile',
+    'SelectAudioFile',
+    'SelectEnvTextureFile',
+    'SelectPMXFile',
+    'SelectVMDMotion',
+    'SelectVPDPose',
+    'SetWailsApp',
+    'StartWatchDir',
+    'StopFileServer',
+    'StopWatchDir',
+    'ToggleFavorite',
+    'DeleteMotionPreset',
+    'GetMotionPresets',
+    'LoadMotionPreset',
+    'LoadMotionPresetFromLib',
+    'RenameMotionPreset',
+    'SaveMotionPreset',
+    'SaveMotionPresetToLib',
+    'SaveMotionPresetToLibAuto',
+    'SelectMotionPresetOpenFile',
+    'SelectMotionPresetSaveFile',
+] as const;
+type _ExcludedCandidate = (typeof EXCLUDED_FROM_BACKEND)[number];
 // 用 Extract<keyof GoApp, ...> 确保仅取 GoApp 实际存在的键，拼写偏差自动忽略。
-type _ExcludedCandidate =
-    | 'DeleteRenderPreset'
-    | 'GetAppVersion'
-    | 'GetModelMeta'
-    | 'GetPath'
-    | 'GetThumbnailBatch'
-    | 'ListDir'
-    | 'OpenInBlender'
-    | 'OpenInMMD'
-    | 'ReadFileBytes' // 由小写 readFileBytes（base64 解码版）替代
-    | 'RenameModelPreset'
-    | 'SaveEnvPreset'
-    | 'SaveModelPresetToLib'
-    | 'SaveSceneFile'
-    | 'SelectAudioFile'
-    | 'SelectEnvTextureFile'
-    | 'SelectPMXFile'
-    | 'SelectVMDMotion'
-    | 'SelectVPDPose'
-    | 'SetWailsApp'
-    | 'StartWatchDir'
-    | 'StopFileServer'
-    | 'StopWatchDir'
-    | 'ToggleFavorite'
-    | 'DeleteMotionPreset'
-    | 'GetMotionPresets'
-    | 'LoadMotionPreset'
-    | 'LoadMotionPresetFromLib'
-    | 'RenameMotionPreset'
-    | 'SaveMotionPreset'
-    | 'SaveMotionPresetToLib'
-    | 'SaveMotionPresetToLibAuto'
-    | 'SelectMotionPresetOpenFile'
-    | 'SelectMotionPresetSaveFile';
 type ExcludedFromBackend = Extract<keyof GoApp, _ExcludedCandidate>;
 
 /**
