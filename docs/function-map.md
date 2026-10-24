@@ -1630,7 +1630,7 @@
 | `_resetBalanceSwayState()` | `scene/motion/perception-balance:38` | 重置增量状态到默认值（每个模型 context 独立持有 balanceState，避免跨模型污染） |
 | `_applyBlinking()` | `scene/motion/perception-blinking:16` | — |
 | `_applyBreathing()` | `scene/motion/perception-breathing:23` | — |
-| `_updateBoneChain()` | `scene/motion/perception-breathing:77` | — |
+| `_updateBoneChain()` | `scene/motion/perception-breathing:86` | — |
 | `_applyMicroExpression()` | `scene/motion/perception-expression:21` | — |
 | `EyeGazeWriteStrategy()` | `scene/motion/perception-gaze-core:163` | 眼部跟随写入策略（JS/WASM 各自实现） |
 | `HeadGazeWriteStrategy()` | `scene/motion/perception-gaze-core:144` | 头部跟随写入策略（JS/WASM 各自实现） |
@@ -2616,34 +2616,34 @@
 | `makeProcPreset()` | `motion-algos/proc-motion-presets:134` | 由当前参数构造自定义预设快照（深拷贝，防与运行时状态共引用） |
 | `removeProcPreset()` | `motion-algos/proc-motion-presets:165` | 按 id 删除自定义预设（返回新数组） |
 | `upsertProcPreset()` | `motion-algos/proc-motion-presets:151` | 增改自定义预设（同 id 覆盖，否则追加；返回新数组） |
-| `BONE_ALLPARENT_CANDIDATES()` | `motion-algos/proc-motion-shared:213` | — |
-| `BONE_ARM_IK_L_CANDIDATES()` | `motion-algos/proc-motion-shared:278` | — |
-| `BONE_ARM_IK_R_CANDIDATES()` | `motion-algos/proc-motion-shared:286` | — |
-| `BONE_CENTER_CANDIDATES()` | `motion-algos/proc-motion-shared:159` | — |
-| `BONE_ELBOW_L_CANDIDATES()` | `motion-algos/proc-motion-shared:188` | — |
-| `BONE_ELBOW_R_CANDIDATES()` | `motion-algos/proc-motion-shared:189` | — |
-| `BONE_GROOVE_CANDIDATES()` | `motion-algos/proc-motion-shared:214` | — |
-| `BONE_HEAD_CANDIDATES()` | `motion-algos/proc-motion-shared:163` | — |
-| `BONE_KNEE_L_CANDIDATES()` | `motion-algos/proc-motion-shared:257` | — |
-| `BONE_KNEE_R_CANDIDATES()` | `motion-algos/proc-motion-shared:265` | — |
-| `BONE_LARM_CANDIDATES()` | `motion-algos/proc-motion-shared:165` | — |
-| `BONE_LEG_IK_L_CANDIDATES()` | `motion-algos/proc-motion-shared:217` | — |
-| `BONE_LEG_IK_R_CANDIDATES()` | `motion-algos/proc-motion-shared:225` | — |
-| `BONE_NECK_CANDIDATES()` | `motion-algos/proc-motion-shared:162` | — |
-| `BONE_RARM_CANDIDATES()` | `motion-algos/proc-motion-shared:174` | — |
-| `BONE_SHOULDER_L_CANDIDATES()` | `motion-algos/proc-motion-shared:191` | — |
-| `BONE_SHOULDER_R_CANDIDATES()` | `motion-algos/proc-motion-shared:201` | — |
-| `BONE_THIGH_L_CANDIDATES()` | `motion-algos/proc-motion-shared:237` | — |
-| `BONE_THIGH_R_CANDIDATES()` | `motion-algos/proc-motion-shared:246` | — |
-| `BONE_UPPER2_CANDIDATES()` | `motion-algos/proc-motion-shared:161` | — |
-| `BONE_UPPER_CANDIDATES()` | `motion-algos/proc-motion-shared:160` | — |
-| `BONE_WAIST_CANDIDATES()` | `motion-algos/proc-motion-shared:212` | — |
-| `BONE_WRIST_L_CANDIDATES()` | `motion-algos/proc-motion-shared:184` | — |
-| `BONE_WRIST_R_CANDIDATES()` | `motion-algos/proc-motion-shared:185` | — |
+| `BONE_ALLPARENT_CANDIDATES()` | `motion-algos/proc-motion-shared:218` | — |
+| `BONE_ARM_IK_L_CANDIDATES()` | `motion-algos/proc-motion-shared:283` | — |
+| `BONE_ARM_IK_R_CANDIDATES()` | `motion-algos/proc-motion-shared:291` | — |
+| `BONE_CENTER_CANDIDATES()` | `motion-algos/proc-motion-shared:164` | — |
+| `BONE_ELBOW_L_CANDIDATES()` | `motion-algos/proc-motion-shared:193` | — |
+| `BONE_ELBOW_R_CANDIDATES()` | `motion-algos/proc-motion-shared:194` | — |
+| `BONE_GROOVE_CANDIDATES()` | `motion-algos/proc-motion-shared:219` | — |
+| `BONE_HEAD_CANDIDATES()` | `motion-algos/proc-motion-shared:168` | — |
+| `BONE_KNEE_L_CANDIDATES()` | `motion-algos/proc-motion-shared:262` | — |
+| `BONE_KNEE_R_CANDIDATES()` | `motion-algos/proc-motion-shared:270` | — |
+| `BONE_LARM_CANDIDATES()` | `motion-algos/proc-motion-shared:170` | — |
+| `BONE_LEG_IK_L_CANDIDATES()` | `motion-algos/proc-motion-shared:222` | — |
+| `BONE_LEG_IK_R_CANDIDATES()` | `motion-algos/proc-motion-shared:230` | — |
+| `BONE_NECK_CANDIDATES()` | `motion-algos/proc-motion-shared:167` | — |
+| `BONE_RARM_CANDIDATES()` | `motion-algos/proc-motion-shared:179` | — |
+| `BONE_SHOULDER_L_CANDIDATES()` | `motion-algos/proc-motion-shared:196` | — |
+| `BONE_SHOULDER_R_CANDIDATES()` | `motion-algos/proc-motion-shared:206` | — |
+| `BONE_THIGH_L_CANDIDATES()` | `motion-algos/proc-motion-shared:242` | — |
+| `BONE_THIGH_R_CANDIDATES()` | `motion-algos/proc-motion-shared:251` | — |
+| `BONE_UPPER2_CANDIDATES()` | `motion-algos/proc-motion-shared:166` | — |
+| `BONE_UPPER_CANDIDATES()` | `motion-algos/proc-motion-shared:165` | — |
+| `BONE_WAIST_CANDIDATES()` | `motion-algos/proc-motion-shared:217` | — |
+| `BONE_WRIST_L_CANDIDATES()` | `motion-algos/proc-motion-shared:189` | — |
+| `BONE_WRIST_R_CANDIDATES()` | `motion-algos/proc-motion-shared:190` | — |
 | `DEFAULT_PROC_STATE()` | `motion-algos/proc-motion-shared:87` | — |
-| `FPS()` | `motion-algos/proc-motion-shared:323` | — |
-| `MAX_FRAMES()` | `motion-algos/proc-motion-shared:324` | — |
-| `MORPH_BLINK_CANDIDATES()` | `motion-algos/proc-motion-shared:310` | — |
+| `FPS()` | `motion-algos/proc-motion-shared:328` | — |
+| `MAX_FRAMES()` | `motion-algos/proc-motion-shared:329` | — |
+| `MORPH_BLINK_CANDIDATES()` | `motion-algos/proc-motion-shared:315` | — |
 | `PROC_MOTION_BONE_CATEGORIES()` | `motion-algos/proc-motion-shared:14` | — |
 | `PROC_VMD_NAME_AUTODANCE()` | `motion-algos/proc-motion-shared:12` | — |
 | `PROC_VMD_NAME_IDLE()` | `motion-algos/proc-motion-shared:11` | — |
@@ -2652,20 +2652,20 @@
 | `ProcMotionMode()` | `motion-algos/proc-motion-shared:6` | — |
 | `ProcMotionParams()` | `motion-algos/proc-motion-shared:37` | [audit] per-mode 可调参数：待机呼吸 / 自动舞蹈 各自独立一套 |
 | `ProcMotionState()` | `motion-algos/proc-motion-shared:46` | — |
-| `clamp1()` | `motion-algos/proc-motion-shared:326` | — |
-| `closingFrame()` | `motion-algos/proc-motion-shared:333` | 循环末尾的 identity 闭合帧（确保动画无缝循环） |
+| `clamp1()` | `motion-algos/proc-motion-shared:331` | — |
+| `closingFrame()` | `motion-algos/proc-motion-shared:338` | 循环末尾的 identity 闭合帧（确保动画无缝循环） |
 | `getProcMotionBoneCategories()` | `motion-algos/proc-motion-shared:32` | — |
-| `matchBone()` | `motion-algos/proc-motion-shared:295` | — |
+| `matchBone()` | `motion-algos/proc-motion-shared:300` | — |
 | `migrateProcState()` | `motion-algos/proc-motion-shared:114` | — |
-| `quatW()` | `motion-algos/proc-motion-shared:329` | 四元数 w 分量：sqrt(max(0, 1 - x² - y² - z²)) |
+| `quatW()` | `motion-algos/proc-motion-shared:334` | 四元数 w 分量：sqrt(max(0, 1 - x² - y² - z²)) |
 | `generateAutoDanceVmd()` | `motion-algos/procedural-motion:3` | — |
 | `generateIdleVmd()` | `motion-algos/procedural-motion:2` | — |
 | `shouldAutoDance()` | `motion-algos/procedural-motion:7` | — |
 | `shouldIdle()` | `motion-algos/procedural-motion:17` | — |
 | `VmdBoneFrame()` | `motion-algos/vmd-evaluator:17` | — |
 | `VmdEvaluator()` | `motion-algos/vmd-evaluator:22` | — |
-| `createVmdEvaluator()` | `motion-algos/vmd-evaluator:282` | — |
-| `shutdownVmdEvaluator()` | `motion-algos/vmd-evaluator:295` | 释放共享 Scene 资源。 |
+| `createVmdEvaluator()` | `motion-algos/vmd-evaluator:286` | — |
+| `shutdownVmdEvaluator()` | `motion-algos/vmd-evaluator:309` | 释放共享 Scene 与 NullEngine。 |
 | `BONE_FRAME_SIZE()` | `motion-algos/vmd-writer:35` | — |
 | `BoneKeyFrame()` | `motion-algos/vmd-writer:9` | — |
 | `INTERP_EASE_IN_OUT()` | `motion-algos/vmd-writer:31` | — |

@@ -214,4 +214,31 @@ describe('_updateBoneChain', () => {
         // 不含 updateWorldMatrix → 不进入递归，不抛异常
         expect(() => sut._updateBoneChain(bone as any)).not.toThrow();
     });
+
+    it('[fix:P3 round15#3] 深度超限截断不爆栈（畸形骨骼链）', () => {
+        // 构造 200 层单向链：旧实现无深度限制会递归爆栈（RangeError），
+        // 新实现 depth>=64 截断。断言「不抛 + 调用次数 ≤ 上限」判别截断生效。
+        let calls = 0;
+        const makeBone = (depth: number): { name: string; updateWorldMatrix: () => void; childBones: unknown[] } => ({
+            name: `b${depth}`,
+            updateWorldMatrix: () => {
+                calls++;
+            },
+            childBones: depth < 200 ? [makeBone(depth + 1)] : ([] as unknown[]),
+        });
+        expect(() => sut._updateBoneChain(makeBone(0) as any)).not.toThrow();
+        // depth 0..64 共 65 次调用（64 截断：第 65 层即 depth=64 的 bone 自身仍更新，
+        // 但其子层 depth=65 不再递归）
+        expect(calls).toBe(65);
+    });
+
+    it('[fix:P3 round15#3] 环状骨骼链不爆栈', () => {
+        // 自引用环：a.childBones = [b], b.childBones = [a]。旧实现无限递归爆栈。
+        const a: Record<string, unknown> = { name: 'a', childBones: [] as unknown[] };
+        const b: Record<string, unknown> = { name: 'b', childBones: [a] as unknown[] };
+        (a.childBones as unknown[]).push(b);
+        a.updateWorldMatrix = () => {};
+        b.updateWorldMatrix = () => {};
+        expect(() => sut._updateBoneChain(a as any)).not.toThrow();
+    });
 });
