@@ -29,6 +29,7 @@ export type {
 
 import type { Config } from '@bindings/mikumikuar/internal/app/models';
 import { resolveBackend } from './backend';
+import { assertConfig } from './backend/types';
 import type { BackendService } from './backend/types';
 
 // ======== backend 代理工厂 ========
@@ -80,11 +81,9 @@ export const GetConfig = _p('GetConfig');
  * 而不是让后面十几处 `cfg.env` / `cfg.resource_root` 各自抛 `Cannot read properties of null`。
  */
 export async function requireConfig(): Promise<Config> {
-    const cfg = await GetConfig();
-    if (!cfg) {
-        throw new Error('wails-bindings: GetConfig 返回 null（后端未就绪？）');
-    }
-    return cfg;
+    // 契约已在 BackendService 层收窄为非空（ADR-277），null 只剩「桥未就绪」一条通道，
+    // 判定与报错统一在 assertConfig 里，此处只做转发。
+    return assertConfig(await GetConfig());
 }
 export const GetDownloadAutoImport = _p('GetDownloadAutoImport');
 export const GetDownloadWatchEnabled = _p('GetDownloadWatchEnabled');

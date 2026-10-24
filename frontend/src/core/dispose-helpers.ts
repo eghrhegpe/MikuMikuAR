@@ -65,7 +65,7 @@ const SHAREABLE_TEXTURE_SLOTS = [
 export function detachSharedTextures(disposing: Set<Material>): void {
     // 显式标注 scene：`.values().next().value` 的 TReturn 默认 any，不锚定就会把
     // materials/filter 回调全染成隐式 any（ADR-274 Stage 1）。
-    const scene: Scene | null = disposing.values().next().value?.getScene();
+    const scene: Scene | null = disposing.values().next().value?.getScene() ?? null;
     if (!scene) {
         return;
     }

@@ -8,6 +8,7 @@
 // - 复用 Go 生成类型，不手改生成物；browser-adapter 据此实现 106 方法。
 
 import type * as GoAppNS from '@bindings/mikumikuar/internal/app/app';
+import type { Config } from '@bindings/mikumikuar/internal/app/models';
 
 /** Go 生成绑定的值类型（函数签名源）。 */
 export type GoApp = typeof GoAppNS;
@@ -90,12 +91,38 @@ type ExcludedFromBackend = Extract<keyof GoApp, _ExcludedCandidate>;
  * 统一后端抽象。go-adapter 透传 Go 全量（含契约测试 139 函数），
  * browser-adapter 实现 106（81 真实 + 8 FSA + 17 降级）。
  */
-export type BackendService = Omit<GoApp, ExcludedFromBackend> & {
+/**
+ * [doc:adr-277] Wails 的 `$CancellablePromise` 只是传输层细节（`.cancel()` / `.cancelOn()` 全仓 0 调用），
+ * 契约只承诺 Promise。抹平它之后 browser-adapter 的对象字面量才能直接满足接口 ——
+ * 舍此只能靠 `as unknown as` 硬断，而硬断会同时关掉 this 的类型与多余属性检查。
+ */
+type PlainReturn<F> = F extends (...args: infer A) => Promise<infer R>
+    ? (...args: A) => Promise<R>
+    : F;
+
+export type BackendService = {
+    [K in Exclude<keyof GoApp, ExcludedFromBackend | 'GetConfig'>]: PlainReturn<GoApp[K]>;
+} & {
     readonly kind: 'go' | 'browser';
     capabilities(): BackendCapabilities;
+    /**
+     * [doc:adr-277] 契约收窄：生成绑定声明的是 `Config | null`（Go 侧返回 `*Config`），
+     * 但 `internal/app/config.go` 在 err == nil 时恒非 nil（:62 兜底 `return &Config{}, nil`）。
+     * 那个 null 从来不存在，却在 strictNullChecks 下逼着几十处调用点各自跟它缠斗；
+     * 收窄到非空后，唯一的 null 通道是「桥未就绪」，由 assertConfig 一处报错。
+     */
+    GetConfig(): Promise<Config>;
     /** Wails v3 base64 透明解码版（替换原生 ReadFileBytes 大写）。 */
     readFileBytes(path: string): Promise<Uint8Array | null>;
 };
+
+/** 见上：GetConfig 的唯一 null 通道（桥未就绪）在这里抛出名字明确的错误。 */
+export function assertConfig(cfg: Config | null | undefined): Config {
+    if (!cfg) {
+        throw new Error('backend: GetConfig 返回 null（后端未就绪？）');
+    }
+    return cfg;
+}
 
 /** 浏览器侧原生独占能力的统一错误。调用方据 capabilities() 预判或 catch 此错误。 */
 export class NotSupportedError extends Error {

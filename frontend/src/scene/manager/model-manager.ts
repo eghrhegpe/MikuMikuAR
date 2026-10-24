@@ -367,8 +367,11 @@ export class ModelManager {
         const wasFocused = configFocusedId === id;
         if (wasFocused) {
             // 焦点模型被删除：焦点切到剩余第一个模型，并对其重新取景（focus 内含 autoFrame + autoSave）。
+            // [doc:adr-277] Map 迭代器的 value 类型含 undefined（空迭代器），收成 string | null。
             const nextId =
-                this.modelRegistry.size > 0 ? this.modelRegistry.keys().next().value : null;
+                this.modelRegistry.size > 0
+                    ? (this.modelRegistry.keys().next().value ?? null)
+                    : null;
             setFocusedModelId(nextId);
             if (nextId) {
                 this.focus(nextId);

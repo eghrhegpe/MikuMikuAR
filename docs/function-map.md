@@ -7,7 +7,7 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 140 | 835 |
+| 核心基础设施 | 140 | 836 |
 | 3D 场景 | 137 | 1287 |
 | 菜单 & UI | 77 | 392 |
 | 动作算法 | 19 | 138 |
@@ -195,22 +195,22 @@
 | `mem()` | `core/backend/browser-adapter-mocks:6` | — |
 | `resetMem()` | `core/backend/browser-adapter-mocks:15` | — |
 | `setStore()` | `core/backend/browser-adapter-mocks:8` | — |
-| `FsaAuthState()` | `core/backend/browser-adapter:898` | — |
-| `browserAdapter()` | `core/backend/browser-adapter:1379` | — |
-| `dismissFsaAuthPrompt()` | `core/backend/browser-adapter:934` | — |
-| `getFsaAuthState()` | `core/backend/browser-adapter:905` | [doc:adr-183] 查询 FSA 根目录授权状态，供 UI 启动引导（不触发任何权限弹窗）。 |
-| `getFsaDownloadAuthState()` | `core/backend/browser-adapter:977` | 查询下载文件夹 FSA 授权状态（不触发权限弹窗），供 UI 引导。 |
-| `getFsaDownloadHandle()` | `core/backend/browser-adapter:1042` | 读取持久化的下载文件夹句柄（供扫描使用），不触发权限弹窗；无句柄返回 null。 |
-| `ingestModelBytes()` | `core/backend/browser-adapter:650` | [doc:adr-195] 写入单文件（名+字节）到资源库，不加载到场景。供下载面板批量摄入复用。 |
-| `ingestModelFile()` | `core/backend/browser-adapter:640` | 写入单个模型/动作文件（File）到 IndexedDB 资源库（file:+entry:），不加载到场景。 |
-| `ingestModelFiles()` | `core/backend/browser-adapter:659` | [doc:adr-195] P3 批量摄入：单事务写入该批次所有 file:/entry: 键，避免逐条 idbSet 并发写竞态。 |
-| `isFsaAuthPromptDismissed()` | `core/backend/browser-adapter:930` | [doc:adr-183] 用户跳过启动授权引导后写入「已跳过」标志，避免纯导入用户每次启动被弹窗骚扰。 |
-| `reauthorizeFsaDownload()` | `core/backend/browser-adapter:1001` | 对持久化的下载文件夹句柄重新请求授权（须用户手势上下文）。成功返回 true。 |
-| `reauthorizeFsaRoot()` | `core/backend/browser-adapter:947` | [doc:adr-183] 对持久化的 FSA 句柄重新请求授权（不重选目录）。 |
-| `resetFsaAuthPromptDismissed()` | `core/backend/browser-adapter:939` | [doc:adr-183] 清除跳过标志：用户手动设置根目录后，后续无根目录启动应重新获得引导机会。 |
-| `selectFsaDownloadDir()` | `core/backend/browser-adapter:1025` | 选择下载文件夹（独立 FSA 句柄），持久化到 _FSA_DOWNLOAD_KEY。 |
-| `setScanProgressCallback()` | `core/backend/browser-adapter:745` | [doc:adr-183] 注册扫描进度回调，供 UI 层节流增量刷新。 |
-| `goAdapter()` | `core/backend/go-adapter:21` | — |
+| `FsaAuthState()` | `core/backend/browser-adapter:902` | — |
+| `browserAdapter()` | `core/backend/browser-adapter:1390` | — |
+| `dismissFsaAuthPrompt()` | `core/backend/browser-adapter:938` | — |
+| `getFsaAuthState()` | `core/backend/browser-adapter:909` | [doc:adr-183] 查询 FSA 根目录授权状态，供 UI 启动引导（不触发任何权限弹窗）。 |
+| `getFsaDownloadAuthState()` | `core/backend/browser-adapter:981` | 查询下载文件夹 FSA 授权状态（不触发权限弹窗），供 UI 引导。 |
+| `getFsaDownloadHandle()` | `core/backend/browser-adapter:1046` | 读取持久化的下载文件夹句柄（供扫描使用），不触发权限弹窗；无句柄返回 null。 |
+| `ingestModelBytes()` | `core/backend/browser-adapter:654` | [doc:adr-195] 写入单文件（名+字节）到资源库，不加载到场景。供下载面板批量摄入复用。 |
+| `ingestModelFile()` | `core/backend/browser-adapter:644` | 写入单个模型/动作文件（File）到 IndexedDB 资源库（file:+entry:），不加载到场景。 |
+| `ingestModelFiles()` | `core/backend/browser-adapter:663` | [doc:adr-195] P3 批量摄入：单事务写入该批次所有 file:/entry: 键，避免逐条 idbSet 并发写竞态。 |
+| `isFsaAuthPromptDismissed()` | `core/backend/browser-adapter:934` | [doc:adr-183] 用户跳过启动授权引导后写入「已跳过」标志，避免纯导入用户每次启动被弹窗骚扰。 |
+| `reauthorizeFsaDownload()` | `core/backend/browser-adapter:1005` | 对持久化的下载文件夹句柄重新请求授权（须用户手势上下文）。成功返回 true。 |
+| `reauthorizeFsaRoot()` | `core/backend/browser-adapter:951` | [doc:adr-183] 对持久化的 FSA 句柄重新请求授权（不重选目录）。 |
+| `resetFsaAuthPromptDismissed()` | `core/backend/browser-adapter:943` | [doc:adr-183] 清除跳过标志：用户手动设置根目录后，后续无根目录启动应重新获得引导机会。 |
+| `selectFsaDownloadDir()` | `core/backend/browser-adapter:1029` | 选择下载文件夹（独立 FSA 句柄），持久化到 _FSA_DOWNLOAD_KEY。 |
+| `setScanProgressCallback()` | `core/backend/browser-adapter:749` | [doc:adr-183] 注册扫描进度回调，供 UI 层节流增量刷新。 |
+| `goAdapter()` | `core/backend/go-adapter:22` | — |
 | `STORES()` | `core/backend/idb:10` | — |
 | `Store()` | `core/backend/idb:24` | — |
 | `WebModelEntry()` | `core/backend/idb:132` | — |
@@ -225,10 +225,11 @@
 | `getCachedCapabilities()` | `core/backend/index:139` | — |
 | `getCapabilities()` | `core/backend/index:130` | — |
 | `resolveBackend()` | `core/backend/index:34` | — |
-| `BackendCapabilities()` | `core/backend/types:19` | 三态能力矩阵键（对齐 ADR-176「能力矩阵（三态 × 能力键）」节）。 |
-| `BackendService()` | `core/backend/types:93` | 统一后端抽象。go-adapter 透传 Go 全量（含契约测试 139 函数）， browser-adapter 实现 106（81 真实 + 8 FSA + 17 降级）。 |
-| `GoApp()` | `core/backend/types:13` | Go 生成绑定的值类型（函数签名源）。 |
-| `NotSupportedError()` | `core/backend/types:101` | 浏览器侧原生独占能力的统一错误。调用方据 capabilities() 预判或 catch 此错误。 |
+| `BackendCapabilities()` | `core/backend/types:20` | 三态能力矩阵键（对齐 ADR-176「能力矩阵（三态 × 能力键）」节）。 |
+| `BackendService()` | `core/backend/types:103` | — |
+| `GoApp()` | `core/backend/types:14` | Go 生成绑定的值类型（函数签名源）。 |
+| `NotSupportedError()` | `core/backend/types:128` | 浏览器侧原生独占能力的统一错误。调用方据 capabilities() 预判或 catch 此错误。 |
+| `assertConfig()` | `core/backend/types:120` | 见上：GetConfig 的唯一 null 通道（桥未就绪）在这里抛出名字明确的错误。 |
 | `ActionBridge()` | `core/bridge-slot:12` | 多键动作桥（scene/ui 形态：一个接口表，分字段注册） |
 | `Slot()` | `core/bridge-slot:62` | 单槽注入点（e2e/snapshot 形态：一个实现，模块级 set/get） |
 | `createActionBridge()` | `core/bridge-slot:29` | 创建一个多键动作桥。label 用于缺失注册告警前缀（保持 '[桥名] key 未注册' 格式， 存量日志/文档引用不断链）。 |
@@ -270,7 +271,7 @@
 | `TOGGLE_INPUT_SELECTOR()` | `core/dom-contract:10` | toggle 的原生输入元素选择器（e2e 需点击/读 checked，故单列一份） |
 | `Disposable()` | `core/dom:67` | — |
 | `DomRefs()` | `core/dom:64` | — |
-| `addDisposableListener()` | `core/dom:75` | 添加事件监听器并返回 Disposable，便于在 dispose 链路中统一释放。 |
+| `addDisposableListener()` | `core/dom:79` | — |
 | `dom()` | `core/dom:13` | — |
 | `handleDropFile()` | `core/drop-import:31` | 处理已落地的路径（桌面绝对路径或浏览器 IndexedDB 键）。 |
 | `handleDroppedFile()` | `core/drop-import:85` | [doc:adr-177] 单个拖入文件落地：桌面走原生 path，浏览器读字节写 IndexedDB。 |
@@ -416,9 +417,9 @@
 | `switchAnimation()` | `core/mmd-adapter:504` | 切换模型当前动画到新动画，并归零运行时全局时钟到第 0 帧。 |
 | `transformWorldToRootLocal()` | `core/mmd-adapter:449` | 把世界坐标系下的点转换到 rootMesh 局部坐标系（固化自 perception-gaze.ts / adr-071）。 |
 | `ObserverHandle()` | `core/observer-handle:31` | 可释放的 Observer 句柄。 |
-| `ObserverRegistry()` | `core/observer-handle:93` | 管理器：收集多个 ObserverHandle，支持一次性 disposeAll()。 |
-| `observe()` | `core/observer-handle:62` | 订阅 Observable 并返回自动管理的句柄。 |
-| `observeOnce()` | `core/observer-handle:76` | 一次性订阅：回调执行后自动移除，等价于 observable.addOnce()。 |
+| `ObserverRegistry()` | `core/observer-handle:96` | 管理器：收集多个 ObserverHandle，支持一次性 disposeAll()。 |
+| `observe()` | `core/observer-handle:65` | 订阅 Observable 并返回自动管理的句柄。 |
+| `observeOnce()` | `core/observer-handle:79` | 一次性订阅：回调执行后自动移除，等价于 observable.addOnce()。 |
 | `orbitInput()` | `core/orbit-state:10` | — |
 | `MIN_ORBIT_DISTANCE()` | `core/orbit:15` | 轨道距离下限：distance&lt;=0 或非有限时钳制到此值，避免塌缩到原点或 NaN。 |
 | `OrbitCoords()` | `core/orbit:5` | — |
@@ -724,132 +725,132 @@
 | `VirtualGridOptions()` | `core/ui-virtual-grid:6` | — |
 | `createVirtualGrid()` | `core/ui-virtual-grid:34` | — |
 | `generateUuid()` | `core/uuid:8` | 生成 UUID v4 字符串（格式：xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx）。 |
-| `AddCustomSoftware()` | `core/wails-bindings:51` | — |
-| `AddRecentModel()` | `core/wails-bindings:52` | — |
-| `AddTag()` | `core/wails-bindings:53` | — |
-| `BundleScene()` | `core/wails-bindings:54` | — |
-| `CheckForUpdate()` | `core/wails-bindings:55` | — |
-| `CleanOrphanCache()` | `core/wails-bindings:56` | — |
-| `ClearAllCaches()` | `core/wails-bindings:57` | — |
-| `ClearExtractCache()` | `core/wails-bindings:58` | — |
-| `ClearThumbnailCache()` | `core/wails-bindings:59` | — |
-| `ClosePlazaWindow()` | `core/wails-bindings:60` | — |
-| `Config()` | `core/wails-bindings:82` | — |
-| `DeleteEnvPreset()` | `core/wails-bindings:61` | — |
-| `DeleteModelPreset()` | `core/wails-bindings:62` | — |
-| `DeletePresetScene()` | `core/wails-bindings:63` | — |
-| `DownloadAndRunInstaller()` | `core/wails-bindings:65` | — |
-| `DownloadApk()` | `core/wails-bindings:64` | — |
-| `DownloadFromPlaza()` | `core/wails-bindings:66` | — |
+| `AddCustomSoftware()` | `core/wails-bindings:52` | — |
+| `AddRecentModel()` | `core/wails-bindings:53` | — |
+| `AddTag()` | `core/wails-bindings:54` | — |
+| `BundleScene()` | `core/wails-bindings:55` | — |
+| `CheckForUpdate()` | `core/wails-bindings:56` | — |
+| `CleanOrphanCache()` | `core/wails-bindings:57` | — |
+| `ClearAllCaches()` | `core/wails-bindings:58` | — |
+| `ClearExtractCache()` | `core/wails-bindings:59` | — |
+| `ClearThumbnailCache()` | `core/wails-bindings:60` | — |
+| `ClosePlazaWindow()` | `core/wails-bindings:61` | — |
+| `Config()` | `core/wails-bindings:83` | — |
+| `DeleteEnvPreset()` | `core/wails-bindings:62` | — |
+| `DeleteModelPreset()` | `core/wails-bindings:63` | — |
+| `DeletePresetScene()` | `core/wails-bindings:64` | — |
+| `DownloadAndRunInstaller()` | `core/wails-bindings:66` | — |
+| `DownloadApk()` | `core/wails-bindings:65` | — |
+| `DownloadFromPlaza()` | `core/wails-bindings:67` | — |
 | `EnvPresetEntry()` | `core/wails-bindings:14` | — |
 | `EnvState()` | `core/wails-bindings:14` | — |
 | `Events()` | `core/wails-bindings:13` | — |
 | `ExtractResult()` | `core/wails-bindings:14` | — |
-| `ExtractZip()` | `core/wails-bindings:67` | — |
-| `FetchPlazaConfig()` | `core/wails-bindings:68` | — |
-| `FileExists()` | `core/wails-bindings:69` | — |
+| `ExtractZip()` | `core/wails-bindings:68` | — |
+| `FetchPlazaConfig()` | `core/wails-bindings:69` | — |
+| `FileExists()` | `core/wails-bindings:70` | — |
 | `FileInfo()` | `core/wails-bindings:14` | — |
-| `GetAllTags()` | `core/wails-bindings:70` | — |
-| `GetBuildInfo()` | `core/wails-bindings:71` | — |
-| `GetCacheStats()` | `core/wails-bindings:72` | — |
-| `GetCachedPlazaConfig()` | `core/wails-bindings:73` | — |
-| `GetConfig()` | `core/wails-bindings:74` | — |
-| `GetDownloadAutoImport()` | `core/wails-bindings:89` | — |
-| `GetDownloadWatchEnabled()` | `core/wails-bindings:90` | — |
-| `GetDownloadWatchStatus()` | `core/wails-bindings:91` | — |
-| `GetLastBrowseDir()` | `core/wails-bindings:92` | — |
-| `GetLibraryIndex()` | `core/wails-bindings:93` | — |
-| `GetModelMetaBatch()` | `core/wails-bindings:94` | — |
-| `GetModelPresets()` | `core/wails-bindings:95` | — |
-| `GetModelsByTag()` | `core/wails-bindings:96` | — |
-| `GetPresetScenes()` | `core/wails-bindings:97` | — |
-| `GetPresetScenesDir()` | `core/wails-bindings:98` | — |
-| `GetRecentModels()` | `core/wails-bindings:99` | — |
-| `GetRenderPresets()` | `core/wails-bindings:100` | — |
-| `GetStorageMode()` | `core/wails-bindings:101` | — |
-| `GetSystemA11ySettings()` | `core/wails-bindings:102` | — |
-| `GetTagsByModel()` | `core/wails-bindings:103` | — |
-| `GetThumbnail()` | `core/wails-bindings:104` | — |
-| `ImportLocalFile()` | `core/wails-bindings:105` | — |
-| `ImportZip()` | `core/wails-bindings:106` | — |
+| `GetAllTags()` | `core/wails-bindings:71` | — |
+| `GetBuildInfo()` | `core/wails-bindings:72` | — |
+| `GetCacheStats()` | `core/wails-bindings:73` | — |
+| `GetCachedPlazaConfig()` | `core/wails-bindings:74` | — |
+| `GetConfig()` | `core/wails-bindings:75` | — |
+| `GetDownloadAutoImport()` | `core/wails-bindings:88` | — |
+| `GetDownloadWatchEnabled()` | `core/wails-bindings:89` | — |
+| `GetDownloadWatchStatus()` | `core/wails-bindings:90` | — |
+| `GetLastBrowseDir()` | `core/wails-bindings:91` | — |
+| `GetLibraryIndex()` | `core/wails-bindings:92` | — |
+| `GetModelMetaBatch()` | `core/wails-bindings:93` | — |
+| `GetModelPresets()` | `core/wails-bindings:94` | — |
+| `GetModelsByTag()` | `core/wails-bindings:95` | — |
+| `GetPresetScenes()` | `core/wails-bindings:96` | — |
+| `GetPresetScenesDir()` | `core/wails-bindings:97` | — |
+| `GetRecentModels()` | `core/wails-bindings:98` | — |
+| `GetRenderPresets()` | `core/wails-bindings:99` | — |
+| `GetStorageMode()` | `core/wails-bindings:100` | — |
+| `GetSystemA11ySettings()` | `core/wails-bindings:101` | — |
+| `GetTagsByModel()` | `core/wails-bindings:102` | — |
+| `GetThumbnail()` | `core/wails-bindings:103` | — |
+| `ImportLocalFile()` | `core/wails-bindings:104` | — |
+| `ImportZip()` | `core/wails-bindings:105` | — |
 | `InstallResult()` | `core/wails-bindings:14` | — |
-| `IsolateModelDir()` | `core/wails-bindings:107` | — |
-| `LaunchSoftware()` | `core/wails-bindings:108` | — |
-| `ListDirRecursive()` | `core/wails-bindings:109` | — |
-| `ListEnvPresets()` | `core/wails-bindings:110` | — |
-| `ListSubDirs()` | `core/wails-bindings:111` | — |
-| `LoadEnvPreset()` | `core/wails-bindings:112` | — |
-| `LoadLastScene()` | `core/wails-bindings:113` | — |
-| `LoadModelPreset()` | `core/wails-bindings:114` | — |
-| `LoadModelPresetFromLib()` | `core/wails-bindings:115` | — |
-| `LoadOutfitFile()` | `core/wails-bindings:116` | — |
-| `LoadSceneFile()` | `core/wails-bindings:117` | — |
+| `IsolateModelDir()` | `core/wails-bindings:106` | — |
+| `LaunchSoftware()` | `core/wails-bindings:107` | — |
+| `ListDirRecursive()` | `core/wails-bindings:108` | — |
+| `ListEnvPresets()` | `core/wails-bindings:109` | — |
+| `ListSubDirs()` | `core/wails-bindings:110` | — |
+| `LoadEnvPreset()` | `core/wails-bindings:111` | — |
+| `LoadLastScene()` | `core/wails-bindings:112` | — |
+| `LoadModelPreset()` | `core/wails-bindings:113` | — |
+| `LoadModelPresetFromLib()` | `core/wails-bindings:114` | — |
+| `LoadOutfitFile()` | `core/wails-bindings:115` | — |
+| `LoadSceneFile()` | `core/wails-bindings:116` | — |
 | `ModelEntry()` | `core/wails-bindings:14` | — |
 | `ModelMeta()` | `core/wails-bindings:14` | — |
 | `ModelPresetEntry()` | `core/wails-bindings:14` | — |
-| `NavigatePlazaWindow()` | `core/wails-bindings:118` | — |
-| `OpenCacheDir()` | `core/wails-bindings:119` | — |
-| `OpenScreenshotDir()` | `core/wails-bindings:120` | — |
-| `OpenWithSoftware()` | `core/wails-bindings:121` | — |
-| `PlazaGoBack()` | `core/wails-bindings:122` | — |
-| `PlazaGoForward()` | `core/wails-bindings:123` | — |
-| `PlazaReload()` | `core/wails-bindings:124` | — |
-| `PlazaZoomIn()` | `core/wails-bindings:125` | — |
-| `PlazaZoomOut()` | `core/wails-bindings:126` | — |
-| `PlazaZoomReset()` | `core/wails-bindings:127` | — |
-| `ReadTextFile()` | `core/wails-bindings:128` | — |
-| `RemoveCustomSoftware()` | `core/wails-bindings:130` | — |
-| `RemoveTag()` | `core/wails-bindings:131` | — |
+| `NavigatePlazaWindow()` | `core/wails-bindings:117` | — |
+| `OpenCacheDir()` | `core/wails-bindings:118` | — |
+| `OpenScreenshotDir()` | `core/wails-bindings:119` | — |
+| `OpenWithSoftware()` | `core/wails-bindings:120` | — |
+| `PlazaGoBack()` | `core/wails-bindings:121` | — |
+| `PlazaGoForward()` | `core/wails-bindings:122` | — |
+| `PlazaReload()` | `core/wails-bindings:123` | — |
+| `PlazaZoomIn()` | `core/wails-bindings:124` | — |
+| `PlazaZoomOut()` | `core/wails-bindings:125` | — |
+| `PlazaZoomReset()` | `core/wails-bindings:126` | — |
+| `ReadTextFile()` | `core/wails-bindings:127` | — |
+| `RemoveCustomSoftware()` | `core/wails-bindings:129` | — |
+| `RemoveTag()` | `core/wails-bindings:130` | — |
 | `RenderPreset()` | `core/wails-bindings:14` | — |
-| `SaveEnvPresetAuto()` | `core/wails-bindings:132` | — |
-| `SaveLastScene()` | `core/wails-bindings:133` | — |
-| `SaveModelPreset()` | `core/wails-bindings:134` | — |
-| `SaveModelPresetToLibAuto()` | `core/wails-bindings:135` | — |
-| `SavePlazaConfig()` | `core/wails-bindings:136` | — |
-| `SaveRenderPreset()` | `core/wails-bindings:137` | — |
-| `SaveScenePreset()` | `core/wails-bindings:138` | — |
-| `SaveScreenshot()` | `core/wails-bindings:139` | — |
-| `SaveThumbnail()` | `core/wails-bindings:140` | — |
-| `ScanModelDir()` | `core/wails-bindings:141` | — |
-| `ScanSoftwareDir()` | `core/wails-bindings:142` | — |
-| `SelectBundleSaveFile()` | `core/wails-bindings:143` | — |
-| `SelectDir()` | `core/wails-bindings:144` | — |
-| `SelectExeFile()` | `core/wails-bindings:145` | — |
-| `SelectImportFile()` | `core/wails-bindings:146` | — |
-| `SelectPresetOpenFile()` | `core/wails-bindings:147` | — |
-| `SelectPresetSaveFile()` | `core/wails-bindings:148` | — |
-| `SelectRetargetFile()` | `core/wails-bindings:149` | — |
-| `SelectSceneOpenFile()` | `core/wails-bindings:150` | — |
-| `SetBlenderPath()` | `core/wails-bindings:151` | — |
-| `SetDisplayNamePriority()` | `core/wails-bindings:152` | — |
-| `SetDownloadAutoImport()` | `core/wails-bindings:153` | — |
-| `SetDownloadWatchDir()` | `core/wails-bindings:154` | — |
-| `SetDownloadWatchEnabled()` | `core/wails-bindings:155` | — |
-| `SetEnvState()` | `core/wails-bindings:156` | — |
-| `SetLastBrowseDir()` | `core/wails-bindings:157` | — |
-| `SetMMDPath()` | `core/wails-bindings:158` | — |
-| `SetOverridePath()` | `core/wails-bindings:159` | — |
-| `SetPerformanceMode()` | `core/wails-bindings:160` | — |
-| `SetResourceRoot()` | `core/wails-bindings:161` | — |
-| `SetStorageMode()` | `core/wails-bindings:162` | — |
-| `SetUIAccent()` | `core/wails-bindings:163` | — |
-| `SetUIAnimations()` | `core/wails-bindings:164` | — |
-| `SetUIAutoUpdate()` | `core/wails-bindings:165` | — |
-| `SetUIBlurBg()` | `core/wails-bindings:166` | — |
-| `SetUIFontFamily()` | `core/wails-bindings:167` | — |
-| `SetUIPopupWidth()` | `core/wails-bindings:168` | — |
-| `SetUIScale()` | `core/wails-bindings:169` | — |
-| `SetUIState()` | `core/wails-bindings:170` | — |
+| `SaveEnvPresetAuto()` | `core/wails-bindings:131` | — |
+| `SaveLastScene()` | `core/wails-bindings:132` | — |
+| `SaveModelPreset()` | `core/wails-bindings:133` | — |
+| `SaveModelPresetToLibAuto()` | `core/wails-bindings:134` | — |
+| `SavePlazaConfig()` | `core/wails-bindings:135` | — |
+| `SaveRenderPreset()` | `core/wails-bindings:136` | — |
+| `SaveScenePreset()` | `core/wails-bindings:137` | — |
+| `SaveScreenshot()` | `core/wails-bindings:138` | — |
+| `SaveThumbnail()` | `core/wails-bindings:139` | — |
+| `ScanModelDir()` | `core/wails-bindings:140` | — |
+| `ScanSoftwareDir()` | `core/wails-bindings:141` | — |
+| `SelectBundleSaveFile()` | `core/wails-bindings:142` | — |
+| `SelectDir()` | `core/wails-bindings:143` | — |
+| `SelectExeFile()` | `core/wails-bindings:144` | — |
+| `SelectImportFile()` | `core/wails-bindings:145` | — |
+| `SelectPresetOpenFile()` | `core/wails-bindings:146` | — |
+| `SelectPresetSaveFile()` | `core/wails-bindings:147` | — |
+| `SelectRetargetFile()` | `core/wails-bindings:148` | — |
+| `SelectSceneOpenFile()` | `core/wails-bindings:149` | — |
+| `SetBlenderPath()` | `core/wails-bindings:150` | — |
+| `SetDisplayNamePriority()` | `core/wails-bindings:151` | — |
+| `SetDownloadAutoImport()` | `core/wails-bindings:152` | — |
+| `SetDownloadWatchDir()` | `core/wails-bindings:153` | — |
+| `SetDownloadWatchEnabled()` | `core/wails-bindings:154` | — |
+| `SetEnvState()` | `core/wails-bindings:155` | — |
+| `SetLastBrowseDir()` | `core/wails-bindings:156` | — |
+| `SetMMDPath()` | `core/wails-bindings:157` | — |
+| `SetOverridePath()` | `core/wails-bindings:158` | — |
+| `SetPerformanceMode()` | `core/wails-bindings:159` | — |
+| `SetResourceRoot()` | `core/wails-bindings:160` | — |
+| `SetStorageMode()` | `core/wails-bindings:161` | — |
+| `SetUIAccent()` | `core/wails-bindings:162` | — |
+| `SetUIAnimations()` | `core/wails-bindings:163` | — |
+| `SetUIAutoUpdate()` | `core/wails-bindings:164` | — |
+| `SetUIBlurBg()` | `core/wails-bindings:165` | — |
+| `SetUIFontFamily()` | `core/wails-bindings:166` | — |
+| `SetUIPopupWidth()` | `core/wails-bindings:167` | — |
+| `SetUIScale()` | `core/wails-bindings:168` | — |
+| `SetUIState()` | `core/wails-bindings:169` | — |
 | `SoftwareEntry()` | `core/wails-bindings:14` | — |
-| `StartFileServer()` | `core/wails-bindings:171` | — |
-| `StartProxy()` | `core/wails-bindings:172` | — |
-| `StopProxy()` | `core/wails-bindings:173` | — |
+| `StartFileServer()` | `core/wails-bindings:170` | — |
+| `StartProxy()` | `core/wails-bindings:171` | — |
+| `StopProxy()` | `core/wails-bindings:172` | — |
 | `UIState()` | `core/wails-bindings:14` | — |
 | `UpdateCheckResult()` | `core/wails-bindings:14` | — |
-| `UpdateCustomSoftware()` | `core/wails-bindings:174` | — |
-| `WriteTextFile()` | `core/wails-bindings:129` | — |
-| `readFileBytes()` | `core/wails-bindings:45` | 读取文件为 Uint8Array（go：自动解码 Wails v3 base64；browser：IndexedDB/FSA 直读）。 |
-| `requireConfig()` | `core/wails-bindings:82` | [doc:adr-276] 读配置并要求非空。 |
+| `UpdateCustomSoftware()` | `core/wails-bindings:173` | — |
+| `WriteTextFile()` | `core/wails-bindings:128` | — |
+| `readFileBytes()` | `core/wails-bindings:46` | 读取文件为 Uint8Array（go：自动解码 Wails v3 base64；browser：IndexedDB/FSA 直读）。 |
+| `requireConfig()` | `core/wails-bindings:83` | [doc:adr-276] 读配置并要求非空。 |
 | `getWindVector()` | `core/wind-utils:35` | 返回当前风矢量（方向 × 速度），风未生效时返回零向量。 |
 | `isWindActive()` | `core/wind-utils:24` | 风向是否生效（windEnabled 且 windSpeed &gt; 0.01，过滤浮点噪声 / 滑条零位残留）。 |
 

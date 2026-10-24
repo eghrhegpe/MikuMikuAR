@@ -29,27 +29,30 @@ import { Observable, Observer, type EventState } from '@babylonjs/core/Misc/obse
  * 幂等：重复调用 dispose() 安全。
  */
 export class ObserverHandle<T = unknown> {
-    private _observable: Observable<T> | null;
-    private _observer: Observer<T> | null;
+    /** 释放动作在构造期固化成闭包，实例不再持有 Observable<T>/Observer<T> 字段。
+     *  [doc:adr-277] 泛型只约束构造期入参，不进入实例类型 —— 否则 Observable<T> 的
+     *  `observers: Observer<T>[]` 会让 ObserverHandle<T> 变成不变型，`ObserverHandle<Scene>`
+     *  再也放不进 `ObserverHandle<unknown>[]`（strictFunctionTypes 下 20 处 TS2322/2345）。
+     *  dispose() 只需要「能移除」这一能力，不需要知道 T。 */
+    private _release: (() => void) | null;
 
     // [audit:round17 P3] 参数声明为可空，与实现/测试的 null 空安全语义一致
     // （dispose() 对 null 引用安全；测试直接 new ObserverHandle(null, null)）。
     constructor(observable: Observable<T> | null, observer: Observer<T> | null) {
-        this._observable = observable;
-        this._observer = observer;
+        this._release = observable && observer ? () => observable.remove(observer) : null;
     }
 
     /** 从 Observable 中移除 observer，然后释放引用。幂等。 */
     dispose(): void {
-        if (this._observable && this._observer) {
-            this._observable.remove(this._observer);
+        const release = this._release;
+        this._release = null;
+        if (release) {
+            release();
         }
-        this._observable = null;
-        this._observer = null;
     }
 
     get isDisposed(): boolean {
-        return this._observer === null;
+        return this._release === null;
     }
 }
 

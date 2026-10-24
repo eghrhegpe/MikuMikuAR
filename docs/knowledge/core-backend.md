@@ -25,6 +25,7 @@ symbols:
   - STORES
   - Store
   - WebModelEntry
+  - assertConfig
   - browserAdapter
   - clearWebFlag
   - closeIDB
