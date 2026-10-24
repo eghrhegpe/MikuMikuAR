@@ -27,7 +27,6 @@ import {
     DEFAULT_PERCEPTION_STATE,
     _writeMatToBuffer,
     _propagateChildrenWasm,
-    _isWasmRuntime,
     _gazeAlpha,
     setGazeAngles,
     PerceptionPerfMonitor,
@@ -62,7 +61,6 @@ export type { Emotion, PerceptionState, GazeConfig, PerceptionContext, BalanceSw
 export {
     _writeMatToBuffer,
     _propagateChildrenWasm,
-    _isWasmRuntime,
     _clampHeadGazeTarget,
     _clampEyeGazeTarget,
     applyGazeWasm,

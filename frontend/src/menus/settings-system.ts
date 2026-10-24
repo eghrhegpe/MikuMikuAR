@@ -288,17 +288,22 @@ function buildCacheSchema(): MenuNode[] {
 
                     const refreshCacheStats = () => {
                         safeCallAsync('system', '', () =>
-                            GetCacheStats().then((s) => {
-                                totalEl.textContent = `${t('settings.about.cache.total')} ${formatBytes(s.totalBytes)}`;
+                            GetCacheStats().then((stats) => {
+                                // [doc:adr-276] 契约可空（null = 后端统计未就绪）：保留「统计中」
+                                // 占位，不渲染半套数字——原先直接读 stats.totalBytes 会抛 TypeError
+                                if (!stats) {
+                                    return;
+                                }
+                                totalEl.textContent = `${t('settings.about.cache.total')} ${formatBytes(stats.totalBytes)}`;
                                 detailEl.textContent = '';
                                 const resourceRow = document.createElement('div');
-                                resourceRow.textContent = `${t('settings.about.cache.resource')}: ${formatBytes(s.resourceBytes)}`;
+                                resourceRow.textContent = `${t('settings.about.cache.resource')}: ${formatBytes(stats.resourceBytes)}`;
                                 detailEl.appendChild(resourceRow);
                                 const extractedRow = document.createElement('div');
-                                extractedRow.textContent = `${t('settings.about.cache.extracted')}: ${formatBytes(s.extractedBytes)} (${s.extractedCount} ${t('common.items')})`;
+                                extractedRow.textContent = `${t('settings.about.cache.extracted')}: ${formatBytes(stats.extractedBytes)} (${stats.extractedCount} ${t('common.items')})`;
                                 detailEl.appendChild(extractedRow);
                                 const thumbRow = document.createElement('div');
-                                thumbRow.textContent = `${t('settings.about.cache.thumbnails')}: ${formatBytes(s.thumbnailBytes)} (${s.thumbnailCount} ${t('common.items')})`;
+                                thumbRow.textContent = `${t('settings.about.cache.thumbnails')}: ${formatBytes(stats.thumbnailBytes)} (${stats.thumbnailCount} ${t('common.items')})`;
                                 detailEl.appendChild(thumbRow);
                             })
                         );

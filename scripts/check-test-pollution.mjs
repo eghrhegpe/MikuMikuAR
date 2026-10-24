@@ -33,7 +33,8 @@ const _FILES = process.argv.slice(2).filter((a) => !a.startsWith('--'));
 const ROOT_DIR = ROOT;
 const FRONTEND_DIR = join(ROOT_DIR, 'frontend');
 const SRC_DIR = join(FRONTEND_DIR, 'src');
-const SETUP_FILE = join(SRC_DIR, '__tests__', 'setup-wails.ts');
+// [fix P2 round79] 加 env 钩子便于契约测试注入 fixture setup（生产默认不变）
+const SETUP_FILE = process.env.TEST_POLLUTION_SETUP || join(SRC_DIR, '__tests__', 'setup-wails.ts');
 
 // ── 收集待检文件（argv 或 stdin 管道） ──
 const argvFiles = _FILES.filter((a) => a.endsWith('.test.ts'));
@@ -70,11 +71,26 @@ const setupContent = readFileSync(SETUP_FILE, 'utf8');
 const setupLines = setupContent.split('\n');
 let m;
 const globalRegex = new RegExp(GLOBAL_MOCK_RE);
+/** [fix P2 round79] idx 是否落在 // 行注释内（L122 的 `vi.mock('.../idb') 覆盖——` 是说明文字，非真注册） */
+function isCommentLine(text, idx) {
+    const ls = text.lastIndexOf('\n', idx - 1) + 1;
+    return text.slice(ls, idx).trim().startsWith('//');
+}
 while ((m = globalRegex.exec(setupContent)) !== null) {
+    if (isCommentLine(setupContent, m.index)) continue; // 注释里的 vi.mock 说明文字不登记
     const rawPath = m[1];
     const lineNum = setupContent.substring(0, m.index).split('\n').length;
     // 提取工厂片段（mock 调用到下一个 vi.mock 或文件末尾）
-    const nextMockIdx = globalRegex.exec(setupContent)?.index ?? setupContent.length;
+    // [fix P2 round79] 原用 globalRegex.exec() 找下界会推进同一全局正则的 lastIndex，
+    // 每轮外层迭代被吞掉一个 match（setup 里偶数位 vi.mock 整条漏登记，工厂边界错位）。
+    // 实测 setup-wails.ts 4 个 vi.mock 只登记 2 个。改：每次迭代用独立正则实例只做一次边界查找，
+    // 且跳过注释行。
+    const boundaryRe = new RegExp(GLOBAL_MOCK_RE);
+    let nextMatch = null;
+    while ((nextMatch = boundaryRe.exec(setupContent.slice(m.index + 1))) !== null) {
+        if (!isCommentLine(setupContent, m.index + 1 + nextMatch.index)) break;
+    }
+    const nextMockIdx = nextMatch ? m.index + 1 + nextMatch.index : setupContent.length;
     const factorySnippet = setupContent.substring(m.index, Math.min(nextMockIdx, m.index + 300));
     const resolvedPath = resolveModulePath(rawPath, SRC_DIR);
     setupMocks.set(resolvedPath, {

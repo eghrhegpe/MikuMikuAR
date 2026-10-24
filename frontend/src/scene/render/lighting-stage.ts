@@ -10,6 +10,7 @@ import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { MeshBuilder } from '@babylonjs/core/Meshes/meshBuilder';
 import type { LinesMesh } from '@babylonjs/core/Meshes/linesMesh';
+import type { Scene } from '@babylonjs/core/scene';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import {
     createLightCone,
@@ -21,6 +22,7 @@ import {
 } from './light-cone';
 import {
     lightingState,
+    requireLightingScene,
     StageLightEntry,
     SHADOW_REBUILD_KEYS,
     CONE_UPDATE_KEYS,
@@ -42,13 +44,16 @@ import {
 } from '../transform/transform-adapter';
 import { setTransformMetadata } from '../transform/transform-pick';
 
-// _createStageLight / _createIndicator / _createDirLine 均仅在 addStageLight
-// 中调用，而 addStageLight 在 scene === null 时 early return，
-// 故此处 scene! 断言安全。
+// [doc:adr-276] 原注释称「_createStageLight 仅在 addStageLight 中调用，而 addStageLight
+// 在 scene === null 时 early return，故 scene! 安全」——该前提不成立：setStageLightState
+// （类型切换）、loadStageLights（反序列化）与 initLighting 内建主光都不检查 scene，
+// 而 disposeLighting 末尾会把 lightingState.scene 置 null。因此改为从这里单点取场景，
+// 未初始化时抛出带模块名的错误，而不是把 null 交给 Babylon 构造函数在引擎内部崩。
 export function _createStageLight(
     type: StageLightType,
     state: StageLightState
 ): SpotLight | PointLight | DirectionalLight {
+    const scene = requireLightingScene();
     const pos = new Vector3(state.posX, state.posY, state.posZ);
     const target = new Vector3(state.targetX, state.targetY, state.targetZ);
     const diffuse = col3FromTriple(state.color);
@@ -61,7 +66,7 @@ export function _createStageLight(
             new Vector3(0, -1, 0),
             state.angle,
             state.exponent,
-            lightingState.scene!
+            scene
         );
         light.intensity = intensity;
         light.diffuse = diffuse;
@@ -70,7 +75,7 @@ export function _createStageLight(
         return light;
     }
     if (type === 'point') {
-        const light = new PointLight(state.id, pos, lightingState.scene!);
+        const light = new PointLight(state.id, pos, scene);
         light.intensity = intensity;
         light.diffuse = diffuse;
         light.specular = new Color3(0.3, 0.3, 0.3);
@@ -85,7 +90,7 @@ export function _createStageLight(
     } else {
         dir.normalize();
     }
-    const light = new DirectionalLight(state.id, dir, lightingState.scene!);
+    const light = new DirectionalLight(state.id, dir, scene);
     light.intensity = intensity;
     light.diffuse = diffuse;
     light.specular = new Color3(0.3, 0.3, 0.3);
@@ -97,13 +102,10 @@ export function _createStageLight(
 
 /** 模块级临时向量（避免 _updateIndicator 拖拽时 60fps 分配临时对象） */
 
-function _createIndicator(): Mesh {
-    const mesh = MeshBuilder.CreateSphere(
-        'lightIndicator',
-        { diameter: 0.5, segments: 8 },
-        lightingState.scene!
-    );
-    const mat = new StandardMaterial('lightIndicatorMat', lightingState.scene!);
+// [doc:adr-276] scene 由 _updateIndicator 传入（它已判空早返回），不再二次断言。
+function _createIndicator(scene: Scene): Mesh {
+    const mesh = MeshBuilder.CreateSphere('lightIndicator', { diameter: 0.5, segments: 8 }, scene);
+    const mat = new StandardMaterial('lightIndicatorMat', scene);
     mat.emissiveColor = new Color3(1, 1, 1);
     mat.disableLighting = true;
     mesh.material = mat;
@@ -111,14 +113,14 @@ function _createIndicator(): Mesh {
     return mesh;
 }
 
-function _createDirLine(): LinesMesh {
+function _createDirLine(scene: Scene): LinesMesh {
     const mesh = MeshBuilder.CreateLines(
         'lightDirLine',
         {
             points: [Vector3.Zero(), new Vector3(0, -2, 0)],
             updatable: true, // 允许后续通过 instance 更新顶点
         },
-        lightingState.scene!
+        scene
     );
     mesh.color = new Color3(1, 1, 0.5);
     mesh.isPickable = false;
@@ -126,7 +128,9 @@ function _createDirLine(): LinesMesh {
 }
 
 export function _updateIndicator(entry: StageLightEntry): void {
-    if (!lightingState.scene) {
+    // 场景已销毁时指示器更新只是无意义的纯装饰操作，静默跳过即可（不抛错）。
+    const scene = lightingState.scene;
+    if (!scene) {
         return;
     }
     const { state, light } = entry;
@@ -134,7 +138,7 @@ export function _updateIndicator(entry: StageLightEntry): void {
     // 更新球体指示器
     if (state.enabled) {
         if (!entry.indicator) {
-            entry.indicator = _createIndicator();
+            entry.indicator = _createIndicator(scene);
             setTransformMetadata(entry.indicator, 'light', state.id);
         }
         entry.indicator.position.copyFrom(light.position);
@@ -142,7 +146,7 @@ export function _updateIndicator(entry: StageLightEntry): void {
         // 防御：material 可能被外部清理（scene 重置 / material cache 清除等），
         // 此时重建而非崩溃。
         if (!entry.indicator.material) {
-            const mat = new StandardMaterial('lightIndicatorMat', lightingState.scene!);
+            const mat = new StandardMaterial('lightIndicatorMat', scene);
             mat.emissiveColor = new Color3(1, 1, 1);
             mat.disableLighting = true;
             entry.indicator.material = mat;
@@ -154,7 +158,7 @@ export function _updateIndicator(entry: StageLightEntry): void {
         // 聚光灯：显示方向线（通过 instance 更新顶点，避免每帧 dispose+rebuild）
         if (state.type === 'spot' && light instanceof SpotLight) {
             if (!entry.dirLine) {
-                entry.dirLine = _createDirLine();
+                entry.dirLine = _createDirLine(scene);
             }
             lightingState.tmpTarget.set(state.targetX, state.targetY, state.targetZ);
             lightingState.tmpTarget.subtractToRef(light.position, lightingState.tmpDir);
@@ -163,7 +167,7 @@ export function _updateIndicator(entry: StageLightEntry): void {
             MeshBuilder.CreateLines(
                 'lightDirLine',
                 { points: [Vector3.Zero(), lightingState.tmpDir], instance: entry.dirLine },
-                lightingState.scene!
+                scene
             );
             entry.dirLine.position.copyFrom(light.position);
             entry.dirLine.setEnabled(true);
@@ -222,6 +226,12 @@ export function getStageLightState(id?: string): StageLightState {
 }
 
 export function setStageLightState(s: Partial<StageLightState>, id?: string): void {
+    // [doc:adr-276] 场景已销毁（disposeLighting 之后仍有菜单/tween 回调进来）时直接放弃：
+    // 类型切换分支会先 dispose 旧灯再建新灯，若在 _createStageLight 里抛错就会留下
+    // 「旧灯已销毁、entry.light 指向废对象」的半截状态，比静默不动更糟。
+    if (!lightingState.scene) {
+        return;
+    }
     const targetId = id ?? s.id ?? lightingState.activeStageLightId;
     if (!targetId) {
         return;
@@ -310,6 +320,10 @@ export function addStageLight(
     if (lightingState.stageLights.size >= MAX_STAGE_LIGHTS) {
         return '';
     }
+    // [doc:adr-276] 无场景时与「已达上限」同样返回空串，不把 null 交给 Babylon。
+    if (!lightingState.scene) {
+        return '';
+    }
     lightingState.stageLightCounter++;
     const id = `light-${lightingState.stageLightCounter}`;
     const defaultNames: Record<StageLightType, string> = {
@@ -352,6 +366,11 @@ export function removeStageLight(id: string): boolean {
 
 /** 批量加载舞台灯（反序列化用），会清空现有灯 */
 export function loadStageLights(states: StageLightState[]): void {
+    // [doc:adr-276] 无场景直接放弃：下面会先清空现有灯再逐盏建模，
+    // 半途抛错会留下「旧灯全没了、新灯没建起来」的空场景。
+    if (!lightingState.scene) {
+        return;
+    }
     // 清空旧灯（含各自的指示器/阴影/光锥）
     for (const [lid, entry] of lightingState.stageLights) {
         _disposeStageLightEntry(lid, entry);

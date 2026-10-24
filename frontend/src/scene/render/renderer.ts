@@ -342,14 +342,18 @@ function _applyRenderState(s: Partial<RenderState>): void {
     }
 
     // Outline — 仅在状态/颜色实际变化时重建（复用 rebuildOutlineState，避免重复遍历逻辑）
-    const outlineChanged = s.outlineEnabled !== undefined;
-    const outlineColorChanged = s.outlineColor !== undefined;
+    // [doc:adr-276] 原先把 `!== undefined` 存成布尔标志，那层信息在取用时已丢失（只能靠 !）；
+    // 直接判值后每个分支自身就带类型收窄。
+    const nextOutlineEnabled = s.outlineEnabled;
+    const nextOutlineColor = s.outlineColor;
+    const outlineChanged = nextOutlineEnabled !== undefined;
+    const outlineColorChanged = nextOutlineColor !== undefined;
 
-    if (outlineChanged) {
-        _outlineEnabled = s.outlineEnabled!;
+    if (nextOutlineEnabled !== undefined) {
+        _outlineEnabled = nextOutlineEnabled;
     }
-    if (outlineColorChanged) {
-        _outlineColor = s.outlineColor;
+    if (nextOutlineColor !== undefined) {
+        _outlineColor = nextOutlineColor;
     }
     if (outlineChanged || outlineColorChanged) {
         // _outlineEnabled/_outlineColor 已更新为新值，rebuildOutlineState 应用完整当前状态

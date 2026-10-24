@@ -19,12 +19,14 @@ adr:
 symbols:
   - BackendCapabilities
   - BackendService
+  - EXCLUDED_FROM_BACKEND
   - FsaAuthState
   - GoApp
   - NotSupportedError
   - STORES
   - Store
   - WebModelEntry
+  - assertConfig
   - browserAdapter
   - clearWebFlag
   - closeIDB

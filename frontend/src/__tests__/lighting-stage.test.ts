@@ -261,7 +261,7 @@ const shared = vi.hoisted(() => {
     const registerTransformAdapter = vi.fn();
     const attachGizmoForKind = vi.fn();
     const isGizmoActive = vi.fn(() => false);
-    const getGizmoTargetId = vi.fn(() => null);
+    const getGizmoTargetId = vi.fn((): string | null => null);
     const setTransformMetadata = vi.fn();
     const triggerAutoSave = vi.fn();
     return {
@@ -430,6 +430,14 @@ afterEach(() => {
 });
 
 describe('_createStageLight（三种灯光类型 + 零向量守卫）', () => {
+    it('守卫：scene 未初始化时抛名字明确的错误（不把 null 交给 Babylon）', () => {
+        lightingState.scene = null;
+        const state = {
+            ...shared.defaultStageLightState('l1', '聚光灯'),
+        } as unknown as StageLightState;
+        expect(() => _createStageLight('spot', state)).toThrow(/lighting-state: scene 未初始化/);
+    });
+
     it('正常：spot 创建 SpotLight 并应用强度/颜色/朝向', () => {
         const state = {
             ...shared.defaultStageLightState('l1', '聚光灯'),
@@ -503,8 +511,10 @@ describe('_createStageLight（三种灯光类型 + 零向量守卫）', () => {
 
 describe('_updateIndicator', () => {
     it('守卫：scene 为 null 时直接返回', () => {
-        lightingState.scene = null;
         const entry = makeEntry('spot', { enabled: true });
+        // 先建 entry 再把 scene 置空：_createStageLight 在无场景时会抛错（见下一条用例），
+        // 本用例要验证的是 _updateIndicator 自身的静默跳过。
+        lightingState.scene = null;
         expect(() => _updateIndicator(entry)).not.toThrow();
         expect(shared.MeshBuilder.CreateSphere).not.toHaveBeenCalled();
     });
@@ -823,8 +833,11 @@ describe('光锥 ensure/dispose（经 setStageLightState 触发）', () => {
 describe('_disposeStageLightEntry', () => {
     it('正常：释放指示器/灯/阴影/光锥', () => {
         const entry = seedEntry('light-1', 'spot', { enabled: true });
+        // [doc:adr-276] StageLightEntry.indicator 的静态类型是 null（mock 简化），
+        // 断言到最小可用结构后赋值，避免 ! 收窄成 never
         entry.indicator = new shared.Mesh('ind') as never;
-        entry.indicator!.material = new shared.StandardMaterial('mat') as never;
+        (entry.indicator as unknown as { material: unknown }).material =
+            new shared.StandardMaterial('mat');
         entry.dirLine = new shared.Mesh('dir') as never;
         lightingState.stageShadows.set('light-1', { dispose: vi.fn() } as never);
         lightingState.stageCones.set('light-1', {
@@ -844,7 +857,7 @@ describe('_disposeStageLightEntry', () => {
     it('正常：indicator 无 material 时不崩溃', () => {
         const entry = seedEntry('light-1', 'spot');
         entry.indicator = new shared.Mesh('ind') as never;
-        entry.indicator!.material = null;
+        (entry.indicator as unknown as { material: unknown }).material = null;
         expect(() => _disposeStageLightEntry('light-1', entry)).not.toThrow();
         expect(entry.indicator).toBeNull();
     });
@@ -874,6 +887,13 @@ describe('addStageLight', () => {
         }
         expect(lightingState.stageLights.size).toBe(6);
         expect(addStageLight()).toBe('');
+    });
+
+    it('守卫：scene 为 null 时返回空串且不建灯（ADR-276 收口）', () => {
+        lightingState.scene = null;
+        expect(addStageLight()).toBe('');
+        expect(lightingState.stageLights.size).toBe(0);
+        expect(lightingState.stageLightCounter).toBe(0);
     });
 });
 
@@ -917,6 +937,14 @@ describe('removeStageLight', () => {
 });
 
 describe('loadStageLights', () => {
+    it('守卫：scene 为 null 时整体放弃，不清空现有灯（ADR-276 收口）', () => {
+        seedEntry('keep-1', 'spot');
+        lightingState.scene = null;
+        loadStageLights([]);
+        // 无场景时若先清空再建模，会留下「旧灯全没了、新灯没建起来」的空场景
+        expect(lightingState.stageLights.has('keep-1')).toBe(true);
+    });
+
     it('正常：空数组时创建默认主光', () => {
         loadStageLights([]);
         expect(lightingState.stageLights.size).toBe(1);

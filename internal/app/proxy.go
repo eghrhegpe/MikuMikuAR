@@ -251,12 +251,28 @@ func plazaDialContext(ctx context.Context, network, addr string) (net.Conn, erro
 	if err != nil {
 		host = addr
 	}
-	// 系统代理连接目标通常是 127.0.0.1，走普通拨号不做 SSRF 拦截
-	if ip := net.ParseIP(host); ip != nil && ip.IsLoopback() {
+	// [audit:fix 2026-09] 字面 loopback IP 直拨仅在系统代理实际启用时放行（http.ProxyFromEnvironment
+	// 读取 HTTP(S)_PROXY 环境变量，见 [doc:sys-proxy]）：此时拨号目标即代理地址（通常 127.0.0.1），
+	// 跳过 SSRF 拦截是安全的。此前无条件放行，未配置系统代理时 http://127.0.0.1 等字面 IP 目标会
+	// 完整绕过 plazaSSRFGuard；现在无系统代理时字面 loopback IP 也按普通 SSRF 目标拒绝。
+	if ip := net.ParseIP(host); ip != nil && ip.IsLoopback() && systemProxyConfigured() {
 		dialer := net.Dialer{}
 		return dialer.DialContext(ctx, network, addr)
 	}
 	return plazaSSRFGuard(ctx, network, addr)
+}
+
+// systemProxyConfigured 报告系统代理（HTTP(S)_PROXY / ALL_PROXY 环境变量，大小写各形式，
+// 与 http.ProxyFromEnvironment 实际读取的变量名一致）当前是否已配置。仅作为
+// plazaDialContext 中「字面 IP 直拨」的门槛：无系统代理时拨号目标即 SSRF 目标本身，
+// 字面 loopback IP 也必须走 plazaSSRFGuard。
+func systemProxyConfigured() bool {
+	for _, k := range []string{"HTTPS_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy", "ALL_PROXY", "all_proxy"} {
+		if os.Getenv(k) != "" {
+			return true
+		}
+	}
+	return false
 }
 
 // isBlockedIP reports whether ip is loopback, link-local, private (RFC1918 /
@@ -972,7 +988,13 @@ func (a *App) handlePlazaUrlPost(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Title string `json:"title"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	// [audit:fix 2026-09] 请求体加 MaxBytesReader 上限，复用 /__plaza_dl__ 的 50MiB 上限防无界 body 拖垮内存
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxPlazaDownloadReqBytes)).Decode(&req); err != nil {
+		var maxErr *http.MaxBytesError
+		if errors.As(err, &maxErr) {
+			http.Error(w, "request body too large", http.StatusRequestEntityTooLarge)
+			return
+		}
 		http.Error(w, "invalid JSON: "+err.Error(), http.StatusBadRequest)
 		return
 	}

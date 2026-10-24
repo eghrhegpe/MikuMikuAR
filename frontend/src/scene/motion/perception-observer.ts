@@ -1,6 +1,6 @@
 // [doc:adr-166] 感知层 observer 与 apply 函数
 // 从 perception.ts 分离，职责：按 tier 筛选 context + 逐 context 运行感知管线
-// 不持有模块级可变状态，全部通过参数注入
+// 不持有模块级可变状态，全部通过参数注入（例外：_perceptionStageErrors 错误节流映射，[audit:fix 2026-09]）
 
 import { _applyBreathing } from './perception-breathing';
 import { _applyBlinking } from './perception-blinking';
@@ -53,6 +53,35 @@ export function _getActiveContextsByTier(
     return result;
 }
 
+// [audit:fix 2026-09] P1 (ADR-248)：7 处 catch 曾逐帧裸 logWarn（stage 持续异常时 7×60/s 刷爆环形日志），
+// 按 bone-override.ts（_overrideApplyDbgFrame%60）/ feet-adjustment.ts（_feetDbgFrame%60）同款帧节流移植：
+// 首个异常帧打一次，之后每 60 帧重复（带累计次数），stage 恢复正常后复位计数。key 为 modelId:stage
+//（frameCounter 是管线级单调计数器，见 perception.ts 的 _frameCounter++；多 context 同帧交错执行，
+// 故按模型隔离，避免一个模型的正常帧复位另一个模型的节流状态）。
+const _perceptionStageErrors = new Map<string, { count: number; lastFrame: number }>();
+
+/** [audit:fix 2026-09] 上报 stage 异常：首帧打一次，60 帧窗口内只累计、不重打 */
+function _reportStageError(modelId: string, stage: string, frameCounter: number, e: unknown): void {
+    const key = modelId + ':' + stage;
+    const st = _perceptionStageErrors.get(key);
+    if (st) {
+        st.count++;
+        if (frameCounter - st.lastFrame < 60) {
+            return;
+        }
+        st.lastFrame = frameCounter;
+        logWarn('perception', `[${stage}] 异常（帧 ${frameCounter}，累计 ${st.count} 次）:`, e);
+    } else {
+        _perceptionStageErrors.set(key, { count: 1, lastFrame: frameCounter });
+        logWarn('perception', `[${stage}] 异常（帧 ${frameCounter}）:`, e);
+    }
+}
+
+/** [audit:fix 2026-09] stage 成功一帧即复位错误累计（各 try 块末尾调用） */
+function _resetStageError(modelId: string, stage: string): void {
+    _perceptionStageErrors.delete(modelId + ':' + stage);
+}
+
 /** 对单个 context 应用完整感知管线 */
 export function _applyPerceptionForContext(
     ctx: PerceptionContext,
@@ -74,16 +103,18 @@ export function _applyPerceptionForContext(
             try {
                 const claimed = owned?.get('perception.breath');
                 _applyBreathing(mmdModel, time, ctx, claimed);
+                _resetStageError(ctx.modelId, 'breathing');
             } catch (e) {
-                logWarn('perception', 'breathing 异常:', e);
+                _reportStageError(ctx.modelId, 'breathing', frameCounter, e);
             }
         }
 
         if (state.blinkEnabled) {
             try {
                 _applyBlinking(mmdModel, time, ctx);
+                _resetStageError(ctx.modelId, 'blinking');
             } catch (e) {
-                logWarn('perception', 'blinking 异常:', e);
+                _reportStageError(ctx.modelId, 'blinking', frameCounter, e);
             }
         }
 
@@ -99,8 +130,9 @@ export function _applyPerceptionForContext(
                         ctx,
                         tier
                     );
+                    _resetStageError(ctx.modelId, 'micro-expression');
                 } catch (e) {
-                    logWarn('perception', 'micro-expression 异常:', e);
+                    _reportStageError(ctx.modelId, 'micro-expression', frameCounter, e);
                 }
             }
         }
@@ -119,24 +151,27 @@ export function _applyPerceptionForContext(
                     waistClaimed,
                     tier
                 );
+                _resetStageError(ctx.modelId, 'balance-sway');
             } catch (e) {
-                logWarn('perception', 'balance-sway 异常:', e);
+                _reportStageError(ctx.modelId, 'balance-sway', frameCounter, e);
             }
         }
 
         if (tier !== 'low') {
             try {
                 _applyLipSync(mmdModel, time, state.lipSyncEnabled, ctx.modelId, state, tier);
+                _resetStageError(ctx.modelId, 'lipsync');
             } catch (e) {
-                logWarn('perception', 'lipsync 异常:', e);
+                _reportStageError(ctx.modelId, 'lipsync', frameCounter, e);
             }
         } else {
             // [fix:round66] 低档不驱动口型，但必须复位已激活的口型 morph，
             // 避免从高/中档切到 low 时口型冻结在最后值。
             try {
                 _applyLipSync(mmdModel, time, false, ctx.modelId, state, tier);
+                _resetStageError(ctx.modelId, 'lipsync-reset');
             } catch (e) {
-                logWarn('perception', 'lipsync 复位异常:', e);
+                _reportStageError(ctx.modelId, 'lipsync-reset', frameCounter, e);
             }
         }
 
@@ -161,8 +196,9 @@ export function _applyPerceptionForContext(
                             tier,
                             ctx.gazeCache
                         );
+                        _resetStageError(ctx.modelId, 'gaze');
                     } catch (e) {
-                        logWarn('perception', 'gaze 异常:', e);
+                        _reportStageError(ctx.modelId, 'gaze', frameCounter, e);
                     }
                 }
             }

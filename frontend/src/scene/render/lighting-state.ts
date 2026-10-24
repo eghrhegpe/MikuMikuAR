@@ -93,6 +93,24 @@ export const SUN_DISC_DISTANCE = 1000;
 /** 太阳圆盘可见的最小方向光强度。低于此值时隐藏。 */
 export const SUN_DISC_MIN_INTENSITY = 0.01;
 
+/**
+ * [doc:adr-276] 取当前场景，未初始化则抛名字明确的错误。
+ *
+ * scene 由 initLighting 注入、由 disposeLighting 置空。读到 null 意味着
+ * 「场景已销毁 / 尚未初始化」时仍有回调或菜单点击在创建舞台灯资源。此前该处
+ * 用 `lightingState.scene!` 把 null 直接交给 Babylon 构造函数，崩溃点落在引擎
+ * 内部（Cannot read properties of null），堆栈不指向真正的时机问题。
+ */
+export function requireLightingScene(): Scene {
+    const scene = lightingState.scene;
+    if (scene === null) {
+        throw new Error(
+            'lighting-state: scene 未初始化（initLighting 之前或 disposeLighting 之后调用？）'
+        );
+    }
+    return scene;
+}
+
 export const lightingState: LightingStateValues = {
     scene: null,
     envSysShadow: null,

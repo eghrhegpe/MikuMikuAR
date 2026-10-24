@@ -23,13 +23,15 @@ test('parseFrontmatter returns null for empty frontmatter', () => {
   assert.equal(parseFrontmatter('---\n---\nbody'), null);
 });
 
-test('parseFrontmatter ignores trailing spaces', () => {
+test('parseFrontmatter 保留行尾空格在块内', () => {
   const text = `---
 name: foo 
 category: env  
 ---
 body`;
-  assert.ok(parseFrontmatter(text));
+  // [round-77 #17] frontmatter.mjs:20 捕获组 ([\s\S]*?) 把行尾空格带进块内（并未 ignore）；断精确块值：
+  // 期望块 = "name: foo·\ncategory: env··"（·=ASCII 空格：foo 后 1 个、env 后 2 个）
+  assert.equal(parseFrontmatter(text), 'name: foo \ncategory: env  ');
 });
 
 // ── getScalar ──

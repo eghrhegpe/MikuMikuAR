@@ -84,6 +84,22 @@ tasks:
       # Default to CGO_ENABLED=0 if not explicitly set
       CGO_ENABLED: '{{.CGO_ENABLED | default "0"}}'
 
+  build:dev:
+    summary: Dev build (no production tag; asset server proxies to vite)
+    # dev 热路径专用：纯 go build，不走全量管线（tidy/bindings/icons/syso/前端
+    # vite build）——dev 下 asset server 代理到 vite dev server，内嵌 dist 不被
+    # 运行时使用，全量重跑是纯浪费（对照 build:native 的 deps 链）。
+    # 改了绑定相关 Go 代码后手动：cd frontend && npm run generate:bindings。
+    deps:
+      - task: check:deps
+    preconditions:
+      - sh: test -d frontend/dist
+        msg: "frontend/dist 不存在（main.go //go:embed all:frontend/dist 需要）；先跑一次 wails3 build DEV=true"
+    cmds:
+      - go build -buildvcs=false -gcflags=all="-l" -o "{{.BIN_DIR}}/{{.APP_NAME}}.exe"
+    env:
+      CGO_ENABLED: "0"
+
   build:native:
     summary: Builds the application using native Go cross-compilation
     internal: true
@@ -233,7 +249,26 @@ tasks:
   run:
     preconditions:
       - sh: test -f "{{.BIN_DIR}}/{{.APP_NAME}}.exe"
-        msg: "Binary not found. Run 'task build' first."
+        msg: "Binary not found. Run 'task build' or 'task build:dev' first."
+      # dev 语境：等 vite dev server 端口就绪（最多 ~9s），避免 exe 抢跑白屏。
+      # 端口取 wails3 dev 注入的 WAILS_VITE_PORT（默认 9245）。
+      # 注意 precondition 只认 sh:（cmd: 是无效键、恒通过）。
+      - sh: |
+          powershell -NoProfile -Command '& {
+            $port = if ($env:WAILS_VITE_PORT) { [int]$env:WAILS_VITE_PORT } else { 9245 };
+            for ($i = 0; $i -lt 30; $i++) {
+              try {
+                $tcp = New-Object System.Net.Sockets.TcpClient;
+                $tcp.Connect("127.0.0.1", $port);
+                $tcp.Close();
+                exit 0;
+              } catch {}
+              Start-Sleep -Milliseconds 300;
+            }
+            Write-Error ("Vite dev server not ready on 127.0.0.1:" + $port);
+            exit 1;
+          }'
+        msg: "Vite dev server not ready on 127.0.0.1:9245 — 先起 common:dev:frontend 再 run"
     cmds:
       - '{{.BIN_DIR}}/{{.APP_NAME}}.exe'
 

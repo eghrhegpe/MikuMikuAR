@@ -321,7 +321,14 @@ export function toDiagnosticContext(options?: { maxBytes?: number }): string {
     for (let i = lines.length - 1; i >= 0; i--) {
         const candidate = result ? `${lines[i]}\n${result}` : lines[i];
         if (candidate.length > maxBytes) {
-            result = `…(已截断较早记录)\n${result}`;
+            if (result) {
+                result = `…(已截断较早记录)\n${result}`;
+            } else {
+                // [audit P2] 最新一条自身超预算：截断该条自身头部纳入，而非整条丢弃
+                // （旧行为 result 为空时只留下截断标记，最新记录完全丢失——诊断上最重要的材料）。
+                const marker = '…(已截断)\n';
+                result = `${marker}${lines[i].slice(0, Math.max(0, maxBytes - marker.length))}`;
+            }
             break;
         }
         result = candidate;

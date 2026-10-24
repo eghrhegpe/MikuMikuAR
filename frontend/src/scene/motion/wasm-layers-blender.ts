@@ -1,5 +1,5 @@
 // [doc:adr-056] WASM 图层混合器 — JS 帧流合并让 WASM 拿到多图层能力
-// 复用 perception.ts 的 _isWasmRuntime / _writeMatToBuffer / _propagateChildrenWasm
+// 复用 perception-shared 的 isWasmRuntime / perception.ts 的 _writeMatToBuffer / _propagateChildrenWasm
 //
 // 职责: 注册为 MotionPipeline vmd-layers 层，在 bone-override 之前执行图层混合。
 // gaze 覆写已由 perception 层统一处理（参见 ADR-071），本模块不再涉及 gaze。
@@ -14,7 +14,8 @@
 import type { Scene } from '@babylonjs/core/scene';
 import { Quaternion, Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { Matrix } from '@babylonjs/core/Maths/math';
-import { _isWasmRuntime, _writeMatToBuffer, _propagateChildrenWasm } from './perception';
+import { _writeMatToBuffer, _propagateChildrenWasm } from './perception';
+import { isWasmRuntime } from './perception-shared';
 import type { MmdRuntimeBoneExtended } from '@/core/types';
 import {
     createVmdEvaluator,
@@ -245,7 +246,7 @@ function _applyLayersBlending(modelId: string): void {
 
     for (const [boneName, entries] of allFrames) {
         const bone = bones.find((b: IMmdRuntimeBone) => b.name === boneName);
-        if (!bone || !_isWasmRuntime(bone)) {
+        if (!bone || !isWasmRuntime(bone)) {
             continue;
         }
 

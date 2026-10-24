@@ -527,3 +527,203 @@ test('Scenario: suspicious signal with negation — should NOT flag', () => {
   assert.ok(RE_DEPRECATED_WORD.test(line));
   assert.ok(RE_NEGATED.test(line)); // negation present
 });
+
+// ── [round-76c #12] 五层优先级组合行为 + 坏日期 error 路径 ──
+// gen-adr-supersede.mjs 的 bucketing 读固定 ADR_DIR（_lib/scan-files.mjs 的 ROOT，无 env 钩子；
+// 生产脚本锁文件制不许改），组合场景在此按「生产判定式」复刻并锁到共享「真身」正则上：
+// 判定式与 gen-adr-supersede.mjs L117-127 / L132-134 / L145-156 / L177-178 / L182-199 / L205-217 逐行对齐。
+
+function supersedeFixture(text) {
+  const { dir, fp } = createTempAdr('adr-combo.md', text);
+  const h = parseAdrHeader(fp);
+  return { dir, h };
+}
+
+test('Combo ①+③ 同状态行: 含「被 ADR-NNN 取代」的废弃行分入 ①，③ 因 !mBy 守卫不分流', () => {
+  const status = '已废弃（被 [ADR-084](adr-084-water.md) 取代）';
+  const mBy = status.match(RE_SUPERSEDED_BY); // 生产 L117
+  assert.ok(mBy, '① 应命中');
+  assert.equal(parseInt(mBy[1], 10), 84);
+  assert.ok(RE_SELF_DEPRECATED.test(status), '③ 同态：状态行开头「已废弃」本身命中');
+  // 生产 L121: (isPartial ? partial : registered).push(entry) → ① registered；
+  // 生产 L125: if (RE_SELF_DEPRECATED.test(meta.status) && !mBy) → !mBy 为 false → ③ 不推
+  assert.ok(!RE_PARTIAL.test(status), '非 ①b 部分推翻');
+  const bucketOf = (st) => {
+    const m = st.match(RE_SUPERSEDED_BY);
+    if (m && parseInt(m[1], 10) !== 77) return RE_PARTIAL.test(st) ? 'partial' : 'registered'; // L119-121
+    if (RE_SELF_DEPRECATED.test(st) && !m) return 'unpointed'; // L125-127
+    return null;
+  };
+  assert.equal(bucketOf(status), 'registered', '同含 ①③ 标记的行整篇入 ① 桶');
+  assert.equal(bucketOf('已废弃'), 'unpointed', '纯 ③ 对照组才入 unpointed');
+  const partialStatus = '已实施（方案 B 全部落地）⚠️ **部分被 ADR-079 推翻**（lifelike/idle 保留定位）';
+  assert.equal(bucketOf(partialStatus), 'partial', '①b 部分限定词把 ① 分流到 partial');
+  const selfMarked = (st) => (RE_SUPERSEDED_BY.test(st) && !RE_PARTIAL.test(st)) // 生产 L177-178
+    || RE_SELF_DEPRECATED.test(st);
+  assert.ok(selfMarked(status), '① 整篇被取代 → ④ 豁免硬标记');
+  assert.ok(!selfMarked(partialStatus), '①b 部分推翻 ≠ ④ 豁免（未被推翻章节仍需体检）');
+  assert.ok(selfMarked('已废弃'), '③ 自身废弃 → ④ 豁免硬标记');
+});
+
+test('parseAdrHeader: bad date format → 日期格式不可识别 error（frontmatter.mjs L169）', () => {
+  const ok = supersedeFixture([
+    '# ADR-450: 坏日期对照',
+    '',
+    '> **状态**: 提案',
+    '> **日期**: 2026-01-01',
+    '',
+    'body...',
+  ].join('\n'));
+  assert.equal(ok.h.error, undefined, '合法 YYYY-MM-DD 不报错');
+  assert.equal(ok.h.date, '2026-01-01');
+  for (const bad of ['2026-1-5', '2026/01/05', '01-05-2026']) {
+    const r = supersedeFixture([
+      '# ADR-450: 坏日期',
+      '',
+      '> **状态**: 提案',
+      '> **日期**: ' + bad,
+      '',
+      'body...',
+    ].join('\n'));
+    assert.equal(r.h.error, '日期格式不可识别：' + bad, 'L169 校验失败须原样回显坏日期');
+    assert.deepEqual(r.h, { error: r.h.error }, 'L166-169 error 分支只返回 {error}，不含部分解析字段');
+    cleanup(r.dir);
+  }
+  cleanup(ok.dir);
+});
+
+test('五层组合夹具：②漏标 / ④豁免 / ①b不豁免 / ⑤表格弱宣称 / 反事实混排 同时判定', () => {
+  const f = {
+    'adr-430-legacy-flow.md': [
+      '# ADR-430: legacy flow',
+      '',
+      '> **状态**: 已废弃',
+      '> **日期**: 2026-03-01',
+      '',
+      '正文留档。',
+    ].join('\n'),
+    'adr-431-new-flow.md': [
+      '# ADR-431: new flow',
+      '',
+      '> **状态**: 已实施（2026-03-02）⚠️ **部分被 ADR-030 推翻**（§2 保留）',
+      '> **日期**: 2026-03-02',
+      '',
+      'ADR-430 已过时，但本 ADR 不推翻 ADR-432。',
+    ].join('\n'),
+    'adr-432-table-claim.md': [
+      '# ADR-432: table claim',
+      '',
+      '> **状态**: 已实施（2026-03-03）',
+      '> **日期**: 2026-03-03',
+      '',
+      '本 ADR 取代了 [ADR-433](adr-433-claimed.md) 的接口部分。',
+      '| ADR-433 | 本ADR完全替代 |',
+      '本 ADR 不取代 ADR-444，但取代 ADR-445。',
+    ].join('\n'),
+    'adr-433-claimed.md': [
+      '# ADR-433: claimed',
+      '',
+      '> **状态**: 已实施（2026-03-04）',
+      '> **日期**: 2026-03-04',
+      '',
+      '正文。',
+    ].join('\n'),
+  };
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'miku-adr-combo-'));
+  for (const [name, text] of Object.entries(f)) fs.writeFileSync(path.join(dir, name), text, 'utf8');
+  try {
+    // ── 复刻生产第二遍判定（gen-adr-supersede.mjs L110-218，逐行对齐） ──
+    const metas = Object.keys(f).sort().map((file) => {
+      const h = parseAdrHeader(path.join(dir, file));
+      assert.equal(h.error, undefined, file + ' 应可解析');
+      return { num: h.num, file, status: h.status, statusLine: h.statusLine };
+    });
+    const numSet = new Set(metas.map((m) => m.num));
+    const lines = metas.map((m) => f[m.file].split('\n'));
+    const RE_CLAIM_A_G = globalOf(RE_CLAIM_A); // 生产 L62-63
+    const RE_CLAIM_B_G = globalOf(RE_CLAIM_B);
+    const unmarked = [];
+    const suspicious = [];
+    const tableClaims = [];
+    metas.forEach((m, idx) => {
+      const mBy = m.status.match(RE_SUPERSEDED_BY); // L117
+      const isPartial = Boolean(mBy) && RE_PARTIAL.test(m.status); // L118
+      const selfMarked = (RE_SUPERSEDED_BY.test(m.status) && !isPartial) // L177-178
+        || RE_SELF_DEPRECATED.test(m.status);
+      const textLines = lines[idx];
+      const headerEnd = m.statusLine >= 0
+        ? Math.min(textLines.length, m.statusLine + 1)
+        : Math.min(textLines.length, 20); // L132-134
+      for (let i = headerEnd; i < textLines.length; i++) {
+        const line = textLines[i];
+        const hypotheticalTargets = new Set(
+          [...line.matchAll(globalOf(RE_HYPOTHETICAL_CLAIM))].map((mm) => parseInt(mm[1], 10))
+        ); // L145-147
+        const negatedTargets = new Set(
+          [...line.matchAll(globalOf(RE_NEGATED_CLAIM))].map((mm) => parseInt(mm[1], 10))
+        ); // L148-150
+        for (const n of hypotheticalTargets) negatedTargets.add(n); // L151
+        const targets = [];
+        for (const mm of line.matchAll(RE_CLAIM_A_G)) targets.push(parseInt(mm[1], 10)); // L155
+        for (const mm of line.matchAll(RE_CLAIM_B_G)) targets.push(parseInt(mm[1], 10)); // L156
+        const claimedThisLine = [];
+        for (const target of targets) { // L159-169
+          if (negatedTargets.has(target)) continue;
+          if (target !== m.num && numSet.has(target)) {
+            claimedThisLine.push(target);
+            const tMeta = metas.find((e) => e.num === target);
+            const tMarked = RE_SUPERSEDED_BY.test(tMeta.status) || RE_SELF_DEPRECATED.test(tMeta.status);
+            if (!tMarked) unmarked.push({ claimedBy: m.num, target });
+          }
+        }
+        if (claimedThisLine.length === 0 && !selfMarked && RE_DEPRECATED_WORD.test(line)) { // L182
+          const others = [...new Set([...line.matchAll(/ADR-(\d+)/g)].map((mm) => parseInt(mm[1], 10)))]
+            .filter((n) => n !== m.num && numSet.has(n) && !negatedTargets.has(n)); // L183-184
+          const anyOtherMarked = others.some((o) => { // L185-190
+            const t = metas.find((e) => e.num === o);
+            return t && (RE_SUPERSEDED_BY.test(t.status)
+              || RE_SELF_DEPRECATED.test(t.status)
+              || RE_DEPRECATED_WORD.test(t.status));
+          });
+          if (!anyOtherMarked) {
+            for (const other of others) { // L191-199
+              const tMeta = metas.find((e) => e.num === other);
+              const tMarked = RE_SUPERSEDED_BY.test(tMeta.status) || RE_SELF_DEPRECATED.test(tMeta.status);
+              if (!tMarked) suspicious.push({ num: m.num, target: other });
+            }
+          }
+        }
+        const mTable = line.match(RE_TABLE_FIRST_COL); // L205
+        if (mTable && RE_TABLE_VERB.test(line) && !RE_TABLE_NEGATED.test(line)) { // L206
+          const target = parseFloat(mTable[1]); // L208
+          if (target !== m.num && numSet.has(target)) {
+            const tMeta = metas.find((e) => e.num === target);
+            const numPat = String(m.num).replace('.', String.fromCharCode(92) + '.'); // L212
+            const alreadyBackMarked = tMeta
+              && new RegExp('ADR-0*' + numPat + '(?!' + String.fromCharCode(92) + 'd)').test(tMeta.status); // L213
+            if (!alreadyBackMarked) tableClaims.push({ num: m.num, target }); // L215
+          }
+        }
+      }
+    });
+    // ② 433 被 432 正文宣称「取代了 [ADR-433]」但 433 状态行未回标 → 唯一漏标
+    assert.deepEqual(unmarked, [{ claimedBy: 432, target: 433 }], '② 漏标恰 1 处（432→433）');
+    // ④ 431 行「ADR-430 已过时」：claimedThisLine 非空（RE_CLAIM_B 抓到 430）→ L182 短路；
+    //    即使扫 ④ 也被 430 的自身废弃硬标记吸收 → 无残漏
+    assert.deepEqual(suspicious, [], '④ 无残漏（②/③ 标记吸收）');
+    // ⑤ 432 表格行首列 ADR-433 + 「本ADR完全替代」（跨列自指：首列是目标、动词列自指本 ADR）且 433 未回标 → 唯一表格弱宣称
+    assert.deepEqual(tableClaims, [{ num: 432, target: 433 }], '⑤ 表格弱宣称恰 1 处');
+    // 目标级剔除：444 被「不取代」否定且不在 numSet → 无 claim；445 不在 numSet → 无 ②
+    assert.ok(!unmarked.some((u) => u.target === 444 || u.target === 445), '不存在编号不构成 ②');
+    // ①b：431 状态行「部分被 ADR-030 推翻」→ 只入 partial 桶，不豁免 ④（selfMarked 判定已在上方对照锁定）
+    assert.equal(bucketProbe(metas.find((e) => e.num === 431).status), 'partial');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+function bucketProbe(status) {
+  const m = status.match(RE_SUPERSEDED_BY);
+  if (m) return RE_PARTIAL.test(status) ? 'partial' : 'registered'; // 生产 L121
+  return null;
+}

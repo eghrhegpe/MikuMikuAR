@@ -72,20 +72,28 @@ export interface Disposable {
  * 添加事件监听器并返回 Disposable，便于在 dispose 链路中统一释放。
  * 与手动 addEventListener/removeEventListener 相比，确保配对不遗漏。
  */
-export function addDisposableListener(
+/** [doc:adr-277] lib.dom 三张事件表取交集：事件名 → 事件对象类型。 */
+type KnownEventMap = HTMLElementEventMap & DocumentEventMap & WindowEventMap;
+type EventOf<K extends string> = K extends keyof KnownEventMap ? KnownEventMap[K] : Event;
+
+export function addDisposableListener<K extends string>(
     el: EventTarget,
-    event: string,
-    handler: EventListenerOrEventListenerObject,
+    event: K,
+    handler: (ev: EventOf<K>) => void,
     options?: AddEventListenerOptions
 ): Disposable {
     // 捕获 add 时的 capture 标志：removeEventListener 只关心 capture，
     // 若直接保存 options 对象引用，调用方在 add 后修改 options.capture
     // 会导致 dispose 时按错误 capture 移除、监听器泄漏。
     const capture = options?.capture ?? false;
-    el.addEventListener(event, handler, options);
+    // [doc:adr-277] handler 的参数类型由事件名决定（KeyboardEvent/TouchEvent…），而 DOM 的
+    // addEventListener 只收 `(evt: Event) => void`——strictFunctionTypes 下参数逆变，
+    // 只能在边界这一处断言收口，否则 11 个调用点要把处理器退化写成 (ev: Event)。
+    const listener = handler as unknown as EventListener;
+    el.addEventListener(event, listener, options);
     return {
         dispose(): void {
-            el.removeEventListener(event, handler, capture);
+            el.removeEventListener(event, listener, capture);
         },
     };
 }

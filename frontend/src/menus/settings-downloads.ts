@@ -156,11 +156,19 @@ async function runDownloadManagerWeb(
     // zip → 写 file:<stem> 后 ImportZip 展开（读 file:<stem>，不加载场景）。
     const modelFiles: { name: string; bytes: Uint8Array }[] = [];
     const zipTasks: { name: string; stem: string; bytes: Uint8Array }[] = [];
+    // [audit P3] 同批去重：_ingestedStems 只做跨批去重，同一次扫描内两个同名文件会
+    // 双双进入任务清单——同名 zip 的键 file:<stem> 由下方 idbSet last-wins 覆盖（静默丢先入者），
+    // 故先入者胜、后入者静默跳过；同名 pmx 由 _resolveUniqueStem reserved 机制保证。
+    const batchSeen = new Set<string>();
     for (const f of files) {
         const lower = f.name.toLowerCase();
         // [doc:adr-195] stem 仅用于 zip 落库键 file:${stem}；去重必须用完整文件名，
         // 否则 miku.pmx 与 miku.vmd 这类同名词对不同扩展名会被误判为重复而静默跳过。
         const stem = f.name.replace(/\.[^.]+$/, '');
+        if (batchSeen.has(f.name)) {
+            continue;
+        }
+        batchSeen.add(f.name);
         if (lower.endsWith('.zip')) {
             if (f.bytes.byteLength > _MAX_ZIP_BYTES) {
                 fail++;
@@ -231,7 +239,8 @@ async function runDownloadManagerLocal(
     }
 
     onProgress(t('downloads.scanning'));
-    const entries = await ListDirRecursive(downloadPath);
+    // [doc:adr-276] 目录读取失败时契约为 null：收敛成空列表，落到下面既有的「没有新文件」反馈。
+    const entries = (await ListDirRecursive(downloadPath)) ?? [];
     const files = entries.filter((e) => _SUPPORTED_RE.test(e.name));
 
     if (files.length === 0) {

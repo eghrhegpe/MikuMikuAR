@@ -30,7 +30,9 @@ const shared = vi.hoisted(() => {
         registerIconBundle: vi.fn(),
         initI18n: vi.fn(async () => {}),
         GetConfig: vi.fn(async () => ({})),
-        CheckForUpdate: vi.fn(async () => null),
+        // [doc:adr-276] 返回类型显式标成 Promise<unknown>：推成 null 字面量后
+        // 各用例的 mockResolvedValue({ available: true, ... }) 会被判「不是 null」
+        CheckForUpdate: vi.fn(async (): Promise<unknown> => null),
         GetSystemA11ySettings: vi.fn(async () => ({ isDarkMode: false, isHighContrast: false })),
         initRuntimeBridge: vi.fn(async () => {}),
         isAndroidPlatform: vi.fn(() => false),
@@ -95,6 +97,9 @@ vi.mock('../core/icons-bundle', () => ({ registerIconBundle: shared.registerIcon
 vi.mock('../core/i18n/locale', () => ({ initI18n: shared.initI18n }));
 vi.mock('../core/wails-bindings', () => ({
     GetConfig: shared.GetConfig,
+    // [doc:adr-276] init 改走 requireConfig（GetConfig 返回 null 时抛错而非静默跳过）；
+    // 测试里委托回同一个 GetConfig mock，各用例的 mockResolvedValue 仍然生效。
+    requireConfig: async () => shared.GetConfig(),
     CheckForUpdate: shared.CheckForUpdate,
     GetSystemA11ySettings: shared.GetSystemA11ySettings,
 }));

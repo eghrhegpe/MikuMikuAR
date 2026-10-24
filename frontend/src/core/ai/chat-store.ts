@@ -13,7 +13,8 @@ import type { ChatMessage } from './types';
 /** 会话模式，值与 settings-diagnostic 的 DiagMode 一致（此处独立定义以免 UI→存储反向依赖）。 */
 /** 会话元信息（供列表展示，不含消息体）。
  *  dialogueMode=true 为台词模式，false 为统一 AI 助手模式。
- *  兼容旧字段 mode（'diagnostic'|'chat'|'control'|'dialogue'），加载时迁移。 */
+ *  [audit P3] 旧会话仅有 legacy mode 字段：读边界统一归一化（_normalizeDialogueMode），
+ *  listSessions/loadSession 返回即带正确 dialogueMode，消费端无需各自迁移。 */
 export interface ChatSession {
     id: string;
     title: string;
@@ -24,6 +25,20 @@ export interface ChatSession {
 
 /** 完整会话（元信息 + 消息数组）。 */
 export type ChatSessionFull = ChatSession & { messages: ChatMessage[] };
+
+/** [audit P3] 旧形状 meta：dialogueMode 引入前的持久化记录没有该字段，可能携带旧 mode 字段。 */
+type _RawChatMeta = Omit<ChatSession, 'dialogueMode'> & {
+    dialogueMode?: boolean;
+    /** @deprecated 旧字段（'diagnostic'|'chat'|'control'|'dialogue'），新版本不再写入 */
+    mode?: string;
+};
+
+/** 读边界归一化 dialogueMode：显式值优先（true/false），旧形状按 legacy mode 推断
+ *  （'dialogue' → 台词模式，其余 → 统一助手）。与 diagnostic-session.ts 本地迁移口径一致，
+ *  现收敛进存储层——新消费端直接读 meta.dialogueMode 即可。 */
+function _normalizeDialogueMode(meta: _RawChatMeta): boolean {
+    return meta.dialogueMode !== undefined ? !!meta.dialogueMode : meta.mode === 'dialogue';
+}
 
 const _META_PREFIX = 'meta:';
 const _MSGS_PREFIX = 'msgs:';
@@ -57,9 +72,9 @@ export async function listSessions(): Promise<ChatSession[]> {
         const metaKeys = keys.filter((k) => k.startsWith(_META_PREFIX));
         const sessions: ChatSession[] = [];
         for (const k of metaKeys) {
-            const meta = await idbGet<ChatSession>('chats', k);
+            const meta = await idbGet<_RawChatMeta>('chats', k);
             if (meta && meta.id) {
-                sessions.push(meta);
+                sessions.push({ ...meta, dialogueMode: _normalizeDialogueMode(meta) });
             }
         }
         sessions.sort((a, b) => b.updatedAt - a.updatedAt);
@@ -72,12 +87,16 @@ export async function listSessions(): Promise<ChatSession[]> {
 /** 加载完整会话（元信息 + 消息）。缺失或损坏返回 undefined。 */
 export async function loadSession(id: string): Promise<ChatSessionFull | undefined> {
     try {
-        const meta = await idbGet<ChatSession>('chats', _metaKey(id));
+        const meta = await idbGet<_RawChatMeta>('chats', _metaKey(id));
         if (!meta || !meta.id) {
             return undefined;
         }
         const messages = (await idbGet<ChatMessage[]>('chats', _msgsKey(id))) ?? [];
-        return { ...meta, messages: Array.isArray(messages) ? messages : [] };
+        return {
+            ...meta,
+            dialogueMode: _normalizeDialogueMode(meta),
+            messages: Array.isArray(messages) ? messages : [],
+        };
     } catch {
         return undefined;
     }

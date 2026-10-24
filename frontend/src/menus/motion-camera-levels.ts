@@ -2,7 +2,7 @@
 // 从 scene-menu.ts 迁移到 motion-popup.ts
 
 import { setStatus, cardContainer } from '../core/config';
-import { stackRegistry } from './menu-stack-registry';
+import { requireBuildLevel } from './menu-stack-registry';
 import type { PopupLevel } from '../core/config';
 import { feedbackInfo, feedbackStatus } from '../core/feedback';
 import { showInfoToast } from '../core/toast';
@@ -245,7 +245,7 @@ function buildCameraSchema(): MenuNode[] {
                         () => {
                             // [doc:adr-131] 通过 outcome.mode='bindCameraVmd' 标识相机 VMD 加载入口，
                             // motionOnItemClick 据此分流到 camera-vmd 加载，避免与场景级动作 VMD 加载混淆。
-                            const level = stackRegistry.buildLevel!(
+                            const level = requireBuildLevel()(
                                 getBrowseDir('vmd'),
                                 t('motion.camVmdLabel'),
                                 (m) => m.format === 'vmd',

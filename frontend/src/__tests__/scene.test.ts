@@ -208,8 +208,9 @@ const shared = vi.hoisted(() => {
         startBoneOverride: vi.fn(),
         stopBoneOverride: vi.fn(),
         setWasmIkResolver: vi.fn(),
+        clearAllOverrides: vi.fn(),
         solveIkNative: vi.fn(),
-        getPhysicsImpl: vi.fn(() => null),
+        getPhysicsImpl: vi.fn((): unknown => null),
         initMotionModules: vi.fn(),
         setSceneRef: vi.fn(),
         syncPlaybackSpeedToRuntime: vi.fn(),
@@ -605,6 +606,7 @@ vi.mock('../scene/motion/bone-override', () => ({
     startBoneOverride: shared.startBoneOverride,
     stopBoneOverride: shared.stopBoneOverride,
     setWasmIkResolver: shared.setWasmIkResolver,
+    clearAllOverrides: shared.clearAllOverrides,
 }));
 vi.mock('../scene/motion/motion-modules/registry', () => ({
     initMotionModules: shared.initMotionModules,

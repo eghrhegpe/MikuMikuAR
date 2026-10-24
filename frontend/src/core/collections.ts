@@ -1,6 +1,9 @@
 // [doc:architecture] Pure collection / cache / promise helpers.
 // Extracted from @/core/utils as part of ADR-191 de-barreling.
 // Zero dependencies: 仅使用原生 JS 类型，禁止 import 应用层模块。
+// [audit:fix 2026-09] 例外：core/logger（自身零依赖叶子，环形日志面板）为批量失败可观测性引入。
+
+import { logWarn } from '@/core/logger';
 
 /** 确保值为数组；非数组则包裹为单元素数组。 */
 export function ensureArray<T>(x: T | T[]): T[] {
@@ -52,13 +55,43 @@ export class Cache<K, V> {
 }
 
 /**
- * 等待全部 promise 结束，仅返回 fulfilled 结果（rejected 被静默丢弃）。
+ * 等待全部 promise 结束，仅返回 fulfilled 结果（rejected 被丢弃，返回值形状不变）。
  * 非 Promise 值会被 Promise.allSettled 当作已 fulfilled 的普通值；同步 throw 的 thenable 也会被收进 rejected。
  * 适用于"批量加载、尽力而为"场景。
+ * [audit:fix 2026-09] 可选 onRejected：传入则逐条回调 (err, index, value)；缺省时保留原静默过滤行为，
+ * 但 rejected>0 时打一条批次 logWarn（数量 + 首个错误摘要），恢复可观测性。
  */
 export async function allSettledFilter<T>(
-    promises: ReadonlyArray<T | PromiseLike<T>>
+    promises: ReadonlyArray<T | PromiseLike<T>>,
+    onRejected?: (err: unknown, index: number, value: unknown) => void
 ): Promise<PromiseFulfilledResult<Awaited<T>>[]> {
     const results = await Promise.allSettled(promises);
+    let rejectedCount = 0;
+    let hasFirst = false;
+    let firstErr: unknown;
+    if (onRejected) {
+        results.forEach((r, i) => {
+            if (r.status === 'rejected') {
+                onRejected(r.reason, i, promises[i]);
+            }
+        });
+    } else {
+        results.forEach((r) => {
+            if (r.status !== 'rejected') {
+                return;
+            }
+            rejectedCount++;
+            if (!hasFirst) {
+                firstErr = r.reason;
+                hasFirst = true;
+            }
+        });
+        if (rejectedCount > 0) {
+            logWarn(
+                'collections',
+                `allSettledFilter: ${rejectedCount}/${results.length} rejected, first: ${String(firstErr)}`
+            );
+        }
+    }
     return results.filter((r): r is PromiseFulfilledResult<Awaited<T>> => r.status === 'fulfilled');
 }

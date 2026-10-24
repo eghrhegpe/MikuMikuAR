@@ -334,8 +334,9 @@ function cmdRenameFunction(oldName, newName) {
   console.log(`📍 定义位置: ${target.sourceFile.getFilePath()} （${target.kind}）`);
   const baseline = snapshotDiagBaseline('rename-function');
   target.node.rename(newName);
-  project.saveSync();
+  // [fix P1 round79] 先校验后写盘：saveSync 在 assertNoNewDiags 之后，校验失败则磁盘未改动
   assertNoNewDiags('rename-function', baseline);
+  project.saveSync();
 
   console.log(`✅ 重命名完成: "${oldName}" → "${newName}"`);
   console.log('   ts-morph 已自动更新所有引用');
@@ -440,7 +441,10 @@ function cmdMoveFunction(funcName, destRelPath) {
   //    收集源文件剩余语句中仍用的标识符
   const remainingNames = new Set();
   for (const topStmt of srcSf.getStatements()) {
-    if (!topStmt.wasRemoved && !topStmt.wasRemoved()) {
+    // [fix P2 round78 #19] 原守卫写反：ts-morph Node 无 wasRemoved，
+    // !topStmt.wasRemoved 恒 true → 下一句必调 wasRemoved() → TypeError。
+    // 触发面 = 源文件含 import 的 move-function（既有 fixture 无 import 故全绿）。
+    if (!topStmt.wasRemoved?.()) {
       collectIdentifiers(topStmt, remainingNames);
     }
   }
@@ -489,9 +493,22 @@ function cmdMoveFunction(funcName, destRelPath) {
   // 4. 向目标文件添加必要 import（去重）
   let addedCount = 0;
   for (const ui of usedImports) {
-    // 跳过 namespace import（在目标文件中可能上下文不同）
+    // [fix P1 round79] namespace import 无法自动迁移：若目标文件没有同名
+    // `import * as <ns> from '<spec>'`，函数体里对 <ns> 的引用会编译失败。原实现只打印
+    // 告警就 continue，会把源/目标两个文件改坏（round78 L443 同族「守卫是打印而非阻断」）。
     if (ui.namespace) {
-      console.log(`   ⚠️  命名空间 import "${ui.moduleSpecifier}" 需手动迁移`);
+      const destHasNs = destSf.getImportDeclarations().some((i) =>
+        i.getModuleSpecifierValue() === ui.moduleSpecifier &&
+        i.getNamespaceImport()?.getText() === ui.namespace
+      );
+      if (!destHasNs) {
+        console.error(
+          `❌ [move-function] 目标文件 ${absDest} 缺少 ` +
+          `import * as ${ui.namespace} from '${ui.moduleSpecifier}'，无法自动迁移（源文件未改动）`
+        );
+        process.exit(1);
+      }
+      console.log(`   ✓ 目标文件已有命名空间 import * as ${ui.namespace}，直接复用`);
       continue;
     }
     ensureImport(
@@ -514,8 +531,9 @@ function cmdMoveFunction(funcName, destRelPath) {
   if (!relDest.startsWith('.')) relDest = './' + relDest;
   srcSf.addStatements(`export { ${funcName} } from '${relDest}';`);
 
-  project.saveSync();
+  // [fix P1 round79] 先校验后写盘（原 saveSync 在前，类型校验失败会把源/目标文件改坏后 exit 1）
   assertNoNewDiags('move-function', baseline);
+  project.saveSync();
 
   console.log(`✅ "${funcName}" 已移至 ${absDest}`);
   console.log(`   源文件 ${srcPath}（已补 re-export，既有导入方无需改动）`);
@@ -575,8 +593,9 @@ function cmdAddParam(funcName, paramSignature, defaultValue) {
     }
   }
 
-  project.saveSync();
+  // [fix P1 round79] 先校验后写盘
   assertNoNewDiags('add-param', baseline);
+  project.saveSync();
 
   console.log(`✅ 参数已添加: "${funcName}" 现在接受 "${paramSignature}"`);
   if (defaultValue) {

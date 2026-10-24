@@ -43,12 +43,14 @@ export function buildPresetChipGroup(
     }
     for (const item of items) {
         const active = item.isActive ? item.isActive() : false;
+        // [doc:adr-276] 闭包不保留属性收窄（item.isActive 是可选属性）：先接到 const，回调里才保住非空
+        const isActive = item.isActive;
         addPresetChip(group, item.label, active, item.onClick, {
             wrap: item.wrap,
-            ...(item.isActive
+            ...(isActive
                 ? {
                       onUpdate: (btn: HTMLButtonElement) =>
-                          btn.classList.toggle('active', item.isActive()),
+                          btn.classList.toggle('active', isActive()),
                   }
                 : {}),
         });

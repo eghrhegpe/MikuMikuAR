@@ -27,7 +27,6 @@ symbols:
   - _gazeAlpha
   - _gazeLog
   - _incGazeLogFrame
-  - _isWasmRuntime
   - _m
   - _propagateChildrenWasm
   - _q

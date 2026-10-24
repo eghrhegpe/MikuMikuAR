@@ -9,6 +9,9 @@
  *   3. 无未捕获错误（stderr 不含 ❌ / Error 崩溃）
  *
  * 刻意不硬编码行号/环数 —— 内容会随重构漂移，冒烟只验证「脚本活着」。
+ * 稳态数值断言一律「动态提取现值 + 阈值/台账比较」，不钉死具体数字
+ * （round76c #3：boolean 字段总数 / 魔法数扫描文件数 / 面板数 三处由硬编码改为现值提取；
+ *  #20：FootLandEvent 定义路径两处由钉死改为 --json 现值 + 结构断言）。
  * 覆盖：check-consumers（含 --json / --snapshot / --diff 快照闭环）
  *        check-circular（含 --edges / --snapshot / --diff 快照闭环）
  *
@@ -42,11 +45,18 @@ function runScript(scriptName, args = []) {
 
 // ── check-consumers 冒烟 ──
 
-test('check-consumers: FootLandEvent 查询跑通且含定义', () => {
+test('check-consumers: 探针符号查询跑通且含定义（定义路径动态取自 --json，round76c #20）', () => {
+  // 探针符号 FootLandEvent 是 ADR-238 台账契约（重命名先触其他门禁）；
+  // 原断言把定义路径 feet-event.ts 也钉死 → 路径漂移即全红。改为 --json definitions 现值比较。
+  const j = runScript(path.join(SCRIPTS, 'check-consumers.mjs'), ['FootLandEvent', '--json']);
+  assert.equal(j.code, 0, `exit=${j.code} stderr=${j.stderr}`);
+  const data = JSON.parse(j.stdout);
+  assert.ok(Array.isArray(data.definitions) && data.definitions.length > 0, 'definitions 应为非空数组');
+  const firstDef = data.definitions[0]; // 形如 "motion-algos/feet-event.ts:9"
   const r = runScript(path.join(SCRIPTS, 'check-consumers.mjs'), ['FootLandEvent']);
   assert.equal(r.code, 0, `exit=${r.code} stderr=${r.stderr}`);
   assert.match(r.stdout, /FootLandEvent/);
-  assert.match(r.stdout, /motion-algos\/feet-event\.ts/); // ADR-238 Phase 1 下沉点
+  assert.ok(r.stdout.includes(firstDef), `text 输出应含 --json 首条定义 ${firstDef}，实际:\n${r.stdout}`);
   assert.doesNotMatch(r.stderr, /Error|❌/);
 });
 
@@ -54,8 +64,12 @@ test('check-consumers: --json 输出合法且含 definitions', () => {
   const r = runScript(path.join(SCRIPTS, 'check-consumers.mjs'), ['FootLandEvent', '--json']);
   assert.equal(r.code, 0);
   const data = JSON.parse(r.stdout);
-  assert.ok(Array.isArray(data.definitions));
-  assert.ok(data.definitions.some((d) => d.includes('feet-event')));
+  assert.ok(Array.isArray(data.definitions) && data.definitions.length > 0);
+  // [round76c #20] 原 .some(includes('feet-event')) 同样钉死路径 → 改结构断言：每条定义须为 "<rel>:<line>" 形态
+  assert.ok(
+    data.definitions.every((d) => /^[^:]+\.\w+:\d+$/.test(d)),
+    `definitions 每条应形如 rel:line，实际: ${JSON.stringify(data.definitions)}`
+  );
 });
 
 test('check-consumers: --snapshot → --diff 闭环自身无变化', () => {
@@ -202,10 +216,15 @@ test('check-boolean-naming: --help 退 0 且含用法（P1 回归：fs 未绑定
   assert.match(r.stdout, /check-boolean-naming/);
 });
 
-test('check-boolean-naming: --strict 跑通（当前 25 布尔字段全合规 → exit 0）', () => {
+test('check-boolean-naming: --strict 跑通（布尔字段全合规 → exit 0）', () => {
   const r = runScript(path.join(SCRIPTS, 'check-boolean-naming.mjs'), ['--strict']);
   assert.equal(r.code, 0, `exit=${r.code} stderr=${r.stderr} stdout=${r.stdout}`);
-  assert.match(r.stdout, /boolean 字段总数: 25|Boolean 字段命名检查/);
+  // [round76c #3] 原 OR 正则 /boolean 字段总数: 25|Boolean 字段命名检查/ 命中标题行即过（断言退化）+ 25 稳态硬编码漂移全红 →
+  // 动态提取「boolean 字段总数: <n>」现值：行在位 + 数值为正 = 脚本健康，不钉死数值。
+  const m = r.stdout.match(/boolean 字段总数: (\d+)/);
+  assert.ok(m, `stdout 应含「boolean 字段总数: <n>」行，实际: ${r.stdout}`);
+  assert.ok(Number(m[1]) > 0, `boolean 字段总数应为正数，实际: ${m[1]}`);
+  assert.match(r.stdout, /Boolean 字段命名检查/);
 });
 
 // ── check-env-parity 冒烟（P1/P2 回归：--help 必崩 + 双空集守卫不误报） ──
@@ -297,7 +316,18 @@ test('check-magic-numbers: --json 台账非空且 HEAD 处棘轮为绿', () => {
   const r = runScript(path.join(SCRIPTS, 'check-magic-numbers.mjs'), ['--json']);
   assert.equal(r.code, 0, `exit=${r.code} stderr=${r.stderr}`);
   const j = JSON.parse(r.stdout);
-  assert.ok(j.scannedFiles >= 300, `扫描文件 ${j.scannedFiles} < 300，疑似目录结构漂移`);
+  // [round76c #3] 原 >=300 稳态硬编码 → 改读台账 docs/dep-metrics.md「模块文件数」现值比较。
+  // 口径：check-magic-numbers 扫 frontend/src 全部 .ts（排除 __tests__/.d.ts/.test.ts），
+  // 与台账「模块文件数」（frontend/src 已解析 import 边文件，测试除外）同域，2026-10-25 实测两者均 377。
+  // 允许 ±10% 漂移余量：台账可能滞后一次 dep:metrics 再生（相邻 dep-metrics --check 用例已断言台账已同步）。
+  const ledgerText = fs.readFileSync(path.join(ROOT, 'docs', 'dep-metrics.md'), 'utf8');
+  const ledgerM = ledgerText.match(/模块文件数 \| (\d+)/);
+  assert.ok(ledgerM, '台账 docs/dep-metrics.md 应含「模块文件数」');
+  const ledgerFiles = Number(ledgerM[1]);
+  assert.ok(
+    Math.abs(j.scannedFiles - ledgerFiles) <= ledgerFiles * 0.1,
+    `扫描文件 ${j.scannedFiles} 偏离台账现值 ${ledgerFiles} 超 ±10%——目录结构漂移或台账未再生（npm run dep:metrics）`
+  );
   assert.ok(j.distinctValues > 0 && j.total > 0, '台账为空 = 扫描器空转，检查失去意义');
   assert.ok(j.total <= j.budget, `存量 ${j.total} 已超预算 ${j.budget}——BUDGET 需随实测下冻，或真债未还`);
   // 排序确定性：按出现次数降序
@@ -308,10 +338,17 @@ test('check-magic-numbers: --json 台账非空且 HEAD 处棘轮为绿', () => {
 
 // ── gen-guide-gap 冒烟（P1 回归：camelCase 面板提取 + 覆盖判定） ──
 
-test('gen-guide-gap: --strict 跑通（34 面板全提取、无缺口 → exit 0）', () => {
+test('gen-guide-gap: --strict 跑通（面板全提取、无缺口 → exit 0）', () => {
   const r = runScript(path.join(SCRIPTS, 'gen-guide-gap.mjs'), ['--strict']);
   assert.equal(r.code, 0, `exit=${r.code} stderr=${r.stderr} stdout=${r.stdout}`);
-  assert.match(r.stdout, /菜单 folder 面板: 34 个/);
+  // [round76c #3] 原硬编码 34 稳态漂移全红 → 漂移阈值断言（面板数无独立台账可读，dep-metrics.md 为耦合台账不含面板口径）。
+  // 口径：「菜单 folder 面板数」= menu-map.md 的 | folder | 行提取出的唯一二级域名（gen-guide-gap 扫描口径）；
+  // 稳态 34（2026-10-25 实测）。阈值 [20, 60]：下限 20≈34×0.6 防提取逻辑崩坏（漏匹配→0/1/个位数）；
+  // 上限 60≈34×1.8 防误扫（如把非 folder 行也计入）。脚本自身对提取不完整已 fail-closed（folderRows 守卫）。
+  const m = r.stdout.match(/菜单 folder 面板: (\d+) 个/);
+  assert.ok(m, `stdout 应含「菜单 folder 面板: <n> 个」行，实际: ${r.stdout}`);
+  const panels = Number(m[1]);
+  assert.ok(panels >= 20 && panels <= 60, `面板数 ${panels} 超出阈值 [20, 60]（稳态 34）——提取漂移或口径变化`);
   assert.match(r.stdout, /所有菜单面板均有 guide 页面覆盖/);
 });
 

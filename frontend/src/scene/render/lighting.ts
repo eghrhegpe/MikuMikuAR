@@ -387,6 +387,8 @@ export function transitionLighting(
         if (onComplete) {
             onComplete();
         }
+        // [audit:fix 2026-09] 早退分支也要清守卫告警去重键，否则下次 guard warn 被吞
+        _clearGuardWarn();
         return true;
     }
     _clearGuardWarn();

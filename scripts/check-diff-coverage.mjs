@@ -202,18 +202,34 @@ export function getChangedLines(file, base, head, uncommitted, renameOld, staged
     }
     // rename 重构：用两点 blob diff 取「旧路径→新路径」的真实最小 hunk，
     // 避免 base...head 三圆点把 rename 当 add 时整文件被判为新增行。
+    // [fix P1 round79] 纯改名（无内容变化）时两点 blob diff 返回空，空也是权威结果：
+    // 原实现 `if (out.size > 0) return out` 让空结果落入下方三圆点兜底，rename 被拆成
+    // A（整文件新增）→ 覆盖率按全文件 + 行算，直接推翻脚本头注释「纯改名自然达标」。
+    // 同时补 git() 失败守卫（原为空结果 → 100% 假绿 fail-open）：与 staged 分支 L195-196 同款。
     if (renameOld) {
-        addLinesFromDiff(out, git(["diff", "--unified=0", `${base}:${renameOld}`, `${head}:${file}`]));
-        if (out.size > 0) return out;
+        const r = git(["diff", "--unified=0", `${base}:${renameOld}`, `${head}:${file}`]);
+        if (r === null) { gitHardFail = true; return out; }
+        addLinesFromDiff(out, r);
+        return out;
     }
-    addLinesFromDiff(out, git(["diff", "--unified=0", "--find-renames=30", `${base}...${head}`, "--", file]));
+    // [fix P1 round79] 以下 git() 调用均补 null 守卫：git() 失败返回 null，addLinesFromDiff 视为
+    // no-op，out 空会被判「无变更行」→ 100% 达标假绿。失败置 gitHardFail 由 L337 调用方收口（exit 2）。
+    const r2 = git(["diff", "--unified=0", "--find-renames=30", `${base}...${head}`, "--", file]);
+    if (r2 === null) { gitHardFail = true; return out; }
+    addLinesFromDiff(out, r2);
     // 兜底：直推 main 时三圆点可能为空
     if (out.size === 0) {
-        addLinesFromDiff(out, git(["diff", "--unified=0", "--find-renames=30", `${head}~1...${head}`, "--", file]));
+        const r3 = git(["diff", "--unified=0", "--find-renames=30", `${head}~1...${head}`, "--", file]);
+        if (r3 === null) { gitHardFail = true; return out; }
+        addLinesFromDiff(out, r3);
     }
     if (uncommitted) {
-        addLinesFromDiff(out, git(["diff", "--unified=0", "--find-renames=30", "--", file]));
-        addLinesFromDiff(out, git(["diff", "--cached", "--unified=0", "--find-renames=30", "--", file]));
+        const r4 = git(["diff", "--unified=0", "--find-renames=30", "--", file]);
+        if (r4 === null) { gitHardFail = true; return out; }
+        addLinesFromDiff(out, r4);
+        const r5 = git(["diff", "--cached", "--unified=0", "--find-renames=30", "--", file]);
+        if (r5 === null) { gitHardFail = true; return out; }
+        addLinesFromDiff(out, r5);
     }
     return out;
 }
@@ -303,7 +319,13 @@ function main() {
     const coveragePath = resolve(args.coverage ?? "coverage/coverage-final.json");
     const base = args.base ?? "origin/main";
     const head = args.head ?? "HEAD";
+    // [fix P1 round79] --threshold 必须 0<x≤100：原实现无校验，--threshold abc → NaN →
+    // pct<NaN 恒 false → 全通过（fail-open，阈值形同虚设）。
     const threshold = Number(args.threshold ?? "60");
+    if (!Number.isFinite(threshold) || threshold <= 0 || threshold > 100) {
+        console.error(`❌ --threshold 必须是 0<x≤100 的数字，实际: ${args.threshold}`);
+        process.exit(1);
+    }
     const uncommitted = Boolean(args.uncommitted);
     const staged = Boolean(args.staged);
     const json = Boolean(args.json);

@@ -154,7 +154,10 @@ func (a *App) ServiceStartup(ctx context.Context, options application.ServiceOpt
 	return nil
 }
 
-// ServiceShutdown implements application.ServiceShutdown interface.
+// SetWailsApp back-fills the *application.App reference (only available
+// after application.New) and runs one-shot startup side effects: installs
+// the dual-write slog handler, then prewarms the plaza WebView2 window.
+// Must be called before wailsApp.Run().
 func (a *App) SetWailsApp(wailsApp *application.App) {
 	a.wailsApp = wailsApp
 
@@ -165,6 +168,7 @@ func (a *App) SetWailsApp(wailsApp *application.App) {
 	a.prewarmPlazaWindow()
 }
 
+// ServiceShutdown implements application.ServiceShutdown interface.
 func (a *App) ServiceShutdown() error {
 	a.watchMu.Lock()
 	if a.watcher != nil {
@@ -905,7 +909,8 @@ func (a *App) getLastDir(cat string) string {
 // Paths under ResourceRoot are stored as relative ("./...") for cross-platform use;
 // paths outside ResourceRoot are stored as absolute (desktop only).
 func (a *App) setLastDir(cat, dir string) {
-	_ = a.updateConfig(func(cfg *Config) {
+	// [audit:fix 2026-09] 不再丢弃 updateConfig 写错误（原先 _ = ...）
+	if err := a.updateConfig(func(cfg *Config) {
 		if cfg.LastDirs == nil {
 			cfg.LastDirs = map[string]string{}
 		}
@@ -923,7 +928,9 @@ func (a *App) setLastDir(cat, dir string) {
 			// Outside ResourceRoot — store absolute path
 			cfg.LastDirs[cat] = filepath.ToSlash(dir)
 		}
-	}, false) // rescan=false: directory memory doesn't trigger model rescan
+	}, false); err != nil { // rescan=false: directory memory doesn't trigger model rescan
+		a.safeLogWarning("setLastDir(%s): updateConfig failed: %v", cat, err)
+	}
 }
 
 // GetLastBrowseDir returns the remembered browse directory for a resource category.

@@ -11,6 +11,7 @@ adr:
   - ADR-141
 symbols:
   - activeTimeOfDayPreset
+  - defaultUIState
   - isAutoLoadCompanionAudioEnabled
   - popupOpen
   - setActiveTimeOfDayPreset

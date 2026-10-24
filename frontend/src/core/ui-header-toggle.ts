@@ -51,9 +51,11 @@ export function createHeaderToggle(config: HeaderToggleConfig): HTMLLabelElement
             config.onChange(input.checked);
         });
     } else if (config.onDisabledClick) {
+        // [doc:adr-276] 闭包不保留属性收窄（config 是可变参数对象）：先接到 const 再进回调
+        const onDisabledClick = config.onDisabledClick;
         toggle.addEventListener('click', (e) => {
             e.stopPropagation();
-            config.onDisabledClick();
+            onDisabledClick();
         });
     }
 

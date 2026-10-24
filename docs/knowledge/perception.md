@@ -28,7 +28,6 @@ symbols:
   - _clampEyeGazeTarget
   - _clampHeadGazeTarget
   - _getGazeResetTick
-  - _isWasmRuntime
   - _propagateChildrenWasm
   - _resetGazeState
   - _writeMatToBuffer

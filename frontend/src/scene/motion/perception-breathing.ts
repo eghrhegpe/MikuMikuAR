@@ -74,11 +74,27 @@ export function _applyBreathing(
     }
 }
 
+/**
+ * [fix:P3 round15#3] 骨骼链世界矩阵更新的深度上限。
+ * 真实 MMD 骨骼树深度 ≤10（见 perception-shared.ts:186 注释），64 留足余量；
+ * 畸形/环状数据（存档损坏或第三方模型）可把递归打成无限链爆栈。
+ * 超限分支只截断传播、不抛错：单帧世界矩阵不更新会由下一帧自愈，
+ * 比整个 observer 抛异常拖垮呼吸模块更优。
+ */
+const _BONE_CHAIN_MAX_DEPTH = 64;
+
 export function _updateBoneChain(bone: IMmdRuntimeBone): void {
+    _updateBoneChainDepth(bone, 0);
+}
+
+function _updateBoneChainDepth(bone: IMmdRuntimeBone, depth: number): void {
     if ('updateWorldMatrix' in bone) {
         (bone as MmdRuntimeBoneExtended).updateWorldMatrix(false, false);
+        if (depth >= _BONE_CHAIN_MAX_DEPTH) {
+            return;
+        }
         for (const child of bone.childBones) {
-            _updateBoneChain(child);
+            _updateBoneChainDepth(child, depth + 1);
         }
     }
 }

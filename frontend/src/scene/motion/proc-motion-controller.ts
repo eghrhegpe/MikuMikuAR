@@ -126,7 +126,10 @@ export class ProcMotionControllerBase {
                 ? (modelManager.get(modelIdOverride)?.mmdModel ?? null)
                 : focusedMmdModel();
         const modelIdAtStart = modelIdOverride ?? focusedModelId ?? null;
-        if (!modelAtStart) {
+        // [doc:adr-276] 早返回收窄：模型存在但没有 id 时，下面所有按 id 记账的路径
+        // （modelManager.get / rebuildCompositeAnimation / _activeModels / _modelProcState）
+        // 都无键可用——旧代码靠 null 一路透传到 TS 外才炸。
+        if (!modelAtStart || modelIdAtStart === null) {
             this._starting = false;
             return;
         }

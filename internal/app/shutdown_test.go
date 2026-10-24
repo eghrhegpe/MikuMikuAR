@@ -4,7 +4,9 @@ import (
 	"context"
 	"net"
 	"net/http"
+	"sync/atomic"
 	"testing"
+	"time"
 )
 
 // ======== shutdown with timeout ========
@@ -30,6 +32,14 @@ func TestShutdown_ClosesHTTPServers(t *testing.T) {
 	}
 	a.httpSrvMu.Unlock()
 
+	// The caller drains the map itself (ServiceShutdown contract); the real
+	// behavior under test is that shutdownServers gracefully shuts down the
+	// underlying http.Server (the old "map is empty" check was tautological
+	// — the test emptied it). The RegisterOnShutdown callback count is the
+	// observable signal that Shutdown reached the server.
+	var shutdowns int32
+	srv.RegisterOnShutdown(func() { atomic.AddInt32(&shutdowns, 1) })
+
 	a.httpSrvMu.Lock()
 	servers := make([]*http.Server, 0, len(a.httpServers))
 	for _, info := range a.httpServers {
@@ -43,11 +53,17 @@ func TestShutdown_ClosesHTTPServers(t *testing.T) {
 		t.Fatalf("shutdownServers returned error: %v", err)
 	}
 
-	a.httpSrvMu.Lock()
-	if len(a.httpServers) != 0 {
-		t.Errorf("expected 0 servers after shutdown, got %d", len(a.httpServers))
+	// [audit:fix] Go's http.Server.Shutdown invokes onShutdown callbacks in
+	// background goroutines (`go f()` in net/http/server.go) and returns
+	// without waiting for them, so the counter may not have advanced yet
+	// when Shutdown returns. Poll briefly instead of asserting immediately.
+	deadline := time.Now().Add(2 * time.Second)
+	for atomic.LoadInt32(&shutdowns) == 0 && time.Now().Before(deadline) {
+		time.Sleep(5 * time.Millisecond)
 	}
-	a.httpSrvMu.Unlock()
+	if n := atomic.LoadInt32(&shutdowns); n != 1 {
+		t.Errorf("expected exactly 1 graceful-shutdown callback, got %d", n)
+	}
 }
 
 func TestShutdown_NoServers(t *testing.T) {

@@ -4,6 +4,7 @@
 import { getCachedCapabilities } from '../core/backend';
 import {
     GetConfig,
+    requireConfig,
     SetResourceRoot,
     SetOverridePath,
     SetStorageMode,
@@ -28,7 +29,7 @@ import {
     setDisplayNamePriority,
     DisplayNamePriority,
 } from '../core/config';
-import { stackRegistry } from './menu-stack-registry';
+import { requireModelStack, stackRegistry } from './menu-stack-registry';
 import { normPath } from '../core/path';
 import { feedbackStatus } from '../core/feedback';
 import { isUnderRoot } from '../core/path';
@@ -85,7 +86,7 @@ export async function initLibrary(): Promise<void> {
     try {
         // [doc:adr-238] nav-actions 模块加载即完成按钮接线 + 标签映射（main.ts side-effect
         // import 本模块→import nav-actions 已拉起），此处无需显式调用 initNavActions。
-        const cfg = await GetConfig();
+        const cfg = await requireConfig();
         let cfgRoot = cfg.resource_root || cfg.library_root || cfg.override_paths?.pmx || '';
         const state = await getFsaAuthState();
 
@@ -497,10 +498,10 @@ export async function refreshLibrary(): Promise<void> {
                 rootDir,
                 t('library.title'),
                 (m) => m.format === 'pmx',
-                stackRegistry.modelStack!,
+                requireModelStack(),
                 []
             );
-            stackRegistry.modelStack!.push(rootLevel);
+            requireModelStack().push(rootLevel);
             restoreBrowsePath(prevPath);
         }
     }

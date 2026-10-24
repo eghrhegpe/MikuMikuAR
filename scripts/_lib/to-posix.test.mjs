@@ -28,10 +28,14 @@ test('toPosix handles empty string and trailing slash', () => {
 
 // ── toNative ──
 
+// [round-77 #18] 按平台写死期望（to-posix.mjs:23 将 / 替换为 path.sep）：
+// 原 split/join 现算期望与实现同构（自证 oracle，只验证可执行、不验证行为）。
+const NATIVE_EXPECTED = path.sep === '\\' ? 'a\\b\\c.ts' : 'a/b/c.ts';
+
 test('toNative converts forward slashes to platform separator', () => {
-  assert.equal(toNative('a/b/c.ts'), 'a/b/c.ts'.split('/').join(path.sep));
+  assert.equal(toNative('a/b/c.ts'), NATIVE_EXPECTED);
 });
 
 test('toNative is inverse of toPosix on the same platform', () => {
-  assert.equal(toNative(toPosix('a\\b\\c.ts')), 'a\\b\\c.ts'.split('\\').join(path.sep));
+  assert.equal(toNative(toPosix('a\\b\\c.ts')), NATIVE_EXPECTED);
 });

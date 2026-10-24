@@ -233,11 +233,27 @@ describe('toDiagnosticContext', () => {
         expect(ctx).toContain('hello');
     });
 
-    it('maxBytes 截断', () => {
+    it('maxBytes 截断：最新一条超预算时截断自身保留（[audit P2] 不再整条丢弃）', () => {
         clearErrors();
         captureError('test', 'a'.repeat(100), null, 'log');
         captureError('test', 'b'.repeat(100), null, 'log');
         const ctx = toDiagnosticContext({ maxBytes: 50 });
-        expect(ctx.length).toBeLessThanOrEqual(100); // 截断后不会超过 maxBytes + 短前缀
+        expect(ctx.length).toBeLessThanOrEqual(50);
+        // 最新记录（'b' 行）自身超预算：截断其自身头部纳入，而非整条丢弃
+        expect(ctx).toContain('b'.repeat(20));
+        // 较早记录（'a' 行）被截断标记替代
+        expect(ctx).not.toContain('a'.repeat(20));
+    });
+
+    it('maxBytes 充足时双条完整保留（不误截）', () => {
+        clearErrors();
+        captureError('latest', 'new', null, 'log');
+        captureError('oldest', 'old', null, 'log');
+        const ctx = toDiagnosticContext({ maxBytes: 60 });
+        expect(ctx).toContain('latest');
+        expect(ctx).toContain('new');
+        expect(ctx).toContain('oldest');
+        expect(ctx).toContain('old');
+        expect(ctx.length).toBeLessThanOrEqual(60);
     });
 });

@@ -19,9 +19,14 @@ const mockState = vi.hoisted(() => ({
     },
     isAudioPlaying: vi.fn(() => false),
     getAudioPath: vi.fn(() => ''),
-    getProcBeatDetector: vi.fn(() => null),
-    findLipMorph: vi.fn(() => null),
-    findAllLipMorphs: vi.fn(() => ({ open: null, close: null, pucker: null, smile: null })),
+    getProcBeatDetector: vi.fn((): unknown => null),
+    findLipMorph: vi.fn((): unknown => null),
+    findAllLipMorphs: vi.fn((): unknown => ({
+        open: null,
+        close: null,
+        pucker: null,
+        smile: null,
+    })),
     amplitudeToWeight: vi.fn(() => 0),
 }));
 const mockPipeline = vi.hoisted(() => ({

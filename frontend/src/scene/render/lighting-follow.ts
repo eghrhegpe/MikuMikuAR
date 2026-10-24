@@ -3,6 +3,7 @@
 // 注册于 initLighting（onBeforeRenderObservable），disposeLighting 时释放。
 
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
+import type { Scene } from '@babylonjs/core/scene';
 import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { SpotLight } from '@babylonjs/core/Lights/spotLight';
 import { ShadowGenerator } from '@babylonjs/core/Lights/Shadows/shadowGenerator';
@@ -220,7 +221,7 @@ export function attachPersonalLight(
     light.specular = new Color3(0.3, 0.3, 0.3);
     light.range = settings.height * 3;
 
-    const indicator = _createPersonalLightIndicator(settings);
+    const indicator = _createPersonalLightIndicator(settings, scene);
     setTransformMetadata(indicator, 'personalLight', modelId);
     indicator.position.copyFrom(startPos);
 
@@ -268,13 +269,15 @@ function _ensurePersonalShadow(modelId: string): void {
     entry.shadowGen = gen;
 }
 
-function _createPersonalLightIndicator(_settings: PersonalLightSettings): Mesh {
+// [doc:adr-276] scene 由调用方传入（attachPersonalLight 已做 null 早返回），
+// 避免本函数重新读 lightingState.scene 再断言一次——那等于「守了又弃」。
+function _createPersonalLightIndicator(_settings: PersonalLightSettings, scene: Scene): Mesh {
     const mesh = MeshBuilder.CreateSphere(
         'personalLightIndicator',
         { diameter: 0.4, segments: 8 },
-        lightingState.scene!
+        scene
     );
-    const mat = new StandardMaterial('personalLightIndicatorMat', lightingState.scene!);
+    const mat = new StandardMaterial('personalLightIndicatorMat', scene);
     mat.emissiveColor = new Color3(1, 0.85, 0.4);
     mat.disableLighting = true;
     mat.alpha = 0.8;

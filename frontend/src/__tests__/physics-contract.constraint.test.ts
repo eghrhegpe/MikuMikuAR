@@ -50,8 +50,15 @@ describe('WASM 物理契约测试', () => {
         it('createGeneric6DofSpringConstraint 返回非零指针', () => {
             const shape = api.createBoxShape(1, 1, 1);
             // 资源声明提升到 try 外：finally 需引用（try 内 const 块级不可见）
-            let anchorInfo: number, bodyInfo: number, anchor: number, body: number;
-            let frameA: number, frameB: number, constraint: number;
+            // [doc:adr-276] 声明即带 undefined：finally 里的空值守卫要靠它表达「可能没分配到」；
+            // 旧写法 `let x: number` 在 strictNullChecks 下是「已声明未赋值」。
+            let anchorInfo: number | undefined;
+            let bodyInfo: number | undefined;
+            let anchor: number | undefined;
+            let body: number | undefined;
+            let frameA: number | undefined;
+            let frameB: number | undefined;
+            let constraint: number | undefined;
             try {
                 anchorInfo = buildRigidBodyInfo(shape, { mass: 0, motionType: 1 }); // Static
                 bodyInfo = buildRigidBodyInfo(shape, { mass: 1.0, disableDeactivation: true });
@@ -85,8 +92,15 @@ describe('WASM 物理契约测试', () => {
 
         it('constraintEnableSpring / constraintSetStiffness / constraintSetDamping 不抛异常', () => {
             const shape = api.createBoxShape(1, 1, 1);
-            let anchorInfo: number, bodyInfo: number, anchor: number, body: number;
-            let frameA: number, frameB: number, constraint: number;
+            // [doc:adr-276] 声明即带 undefined：finally 里的空值守卫要靠它表达「可能没分配到」；
+            // 旧写法 `let x: number` 在 strictNullChecks 下是「已声明未赋值」。
+            let anchorInfo: number | undefined;
+            let bodyInfo: number | undefined;
+            let anchor: number | undefined;
+            let body: number | undefined;
+            let frameA: number | undefined;
+            let frameB: number | undefined;
+            let constraint: number | undefined;
             try {
                 anchorInfo = buildRigidBodyInfo(shape, { mass: 0, motionType: 1 });
                 bodyInfo = buildRigidBodyInfo(shape, { mass: 1.0 });
@@ -104,9 +118,11 @@ describe('WASM 物理契约测试', () => {
                 );
 
                 // 在 Y 轴线性方向启用弹簧（index 0=X, 1=Y, 2=Z linear; 3=AngX, 4=AngY, 5=AngZ）
-                expect(() => api.constraintEnableSpring(constraint, 1, true)).not.toThrow();
-                expect(() => api.constraintSetStiffness(constraint, 1, 100.0)).not.toThrow();
-                expect(() => api.constraintSetDamping(constraint, 1, 10.0)).not.toThrow();
+                // [doc:adr-276] 闭包不做窄化：先取值到 const，回调里才保住非空类型
+                const constraintId = constraint;
+                expect(() => api.constraintEnableSpring(constraintId, 1, true)).not.toThrow();
+                expect(() => api.constraintSetStiffness(constraintId, 1, 100.0)).not.toThrow();
+                expect(() => api.constraintSetDamping(constraintId, 1, 10.0)).not.toThrow();
             } finally {
                 if (constraint !== undefined) api.destroyConstraint(constraint);
                 if (frameA !== undefined) api.deallocateBuffer(frameA, 64);
@@ -121,8 +137,15 @@ describe('WASM 物理契约测试', () => {
 
         it('constraintSetLinearLowerLimit / constraintSetLinearUpperLimit 不抛异常', () => {
             const shape = api.createBoxShape(1, 1, 1);
-            let anchorInfo: number, bodyInfo: number, anchor: number, body: number;
-            let frameA: number, frameB: number, constraint: number;
+            // [doc:adr-276] 声明即带 undefined：finally 里的空值守卫要靠它表达「可能没分配到」；
+            // 旧写法 `let x: number` 在 strictNullChecks 下是「已声明未赋值」。
+            let anchorInfo: number | undefined;
+            let bodyInfo: number | undefined;
+            let anchor: number | undefined;
+            let body: number | undefined;
+            let frameA: number | undefined;
+            let frameB: number | undefined;
+            let constraint: number | undefined;
             try {
                 anchorInfo = buildRigidBodyInfo(shape, { mass: 0, motionType: 1 });
                 bodyInfo = buildRigidBodyInfo(shape, { mass: 1.0 });
@@ -139,15 +162,19 @@ describe('WASM 物理契约测试', () => {
                     true
                 );
 
+                // [doc:adr-276] 闭包不做窄化：先取值到 const，回调里才保住非空类型
+                const constraintId = constraint;
                 expect(() =>
-                    api.constraintSetLinearLowerLimit(constraint, -1, -2, -1)
-                ).not.toThrow();
-                expect(() => api.constraintSetLinearUpperLimit(constraint, 1, 2, 1)).not.toThrow();
-                expect(() =>
-                    api.constraintSetAngularLowerLimit(constraint, -0.5, -1, -0.5)
+                    api.constraintSetLinearLowerLimit(constraintId, -1, -2, -1)
                 ).not.toThrow();
                 expect(() =>
-                    api.constraintSetAngularUpperLimit(constraint, 0.5, 1, 0.5)
+                    api.constraintSetLinearUpperLimit(constraintId, 1, 2, 1)
+                ).not.toThrow();
+                expect(() =>
+                    api.constraintSetAngularLowerLimit(constraintId, -0.5, -1, -0.5)
+                ).not.toThrow();
+                expect(() =>
+                    api.constraintSetAngularUpperLimit(constraintId, 0.5, 1, 0.5)
                 ).not.toThrow();
             } finally {
                 if (constraint !== undefined) api.destroyConstraint(constraint);
@@ -167,8 +194,15 @@ describe('WASM 物理契约测试', () => {
 
             const shape = api.createBoxShape(1, 1, 1);
             // 资源声明提升到 try 外：finally 需引用
-            let anchorInfo: number, bodyInfo: number, anchor: number, body: number;
-            let frameA: number, frameB: number, constraint: number;
+            // [doc:adr-276] 声明即带 undefined：finally 里的空值守卫要靠它表达「可能没分配到」；
+            // 旧写法 `let x: number` 在 strictNullChecks 下是「已声明未赋值」。
+            let anchorInfo: number | undefined;
+            let bodyInfo: number | undefined;
+            let anchor: number | undefined;
+            let body: number | undefined;
+            let frameA: number | undefined;
+            let frameB: number | undefined;
+            let constraint: number | undefined;
             try {
                 // 锚点：静态，位于原点
                 anchorInfo = buildRigidBodyInfo(shape, { mass: 0, motionType: 1 });
@@ -235,8 +269,15 @@ describe('WASM 物理契约测试', () => {
 
         it('destroyConstraint 不抛异常', () => {
             const shape = api.createBoxShape(1, 1, 1);
-            let anchorInfo: number, bodyInfo: number, anchor: number, body: number;
-            let frameA: number, frameB: number, constraint: number;
+            // [doc:adr-276] 声明即带 undefined：finally 里的空值守卫要靠它表达「可能没分配到」；
+            // 旧写法 `let x: number` 在 strictNullChecks 下是「已声明未赋值」。
+            let anchorInfo: number | undefined;
+            let bodyInfo: number | undefined;
+            let anchor: number | undefined;
+            let body: number | undefined;
+            let frameA: number | undefined;
+            let frameB: number | undefined;
+            let constraint: number | undefined;
             try {
                 anchorInfo = buildRigidBodyInfo(shape, { mass: 0, motionType: 1 });
                 bodyInfo = buildRigidBodyInfo(shape, { mass: 1.0 });
@@ -252,7 +293,9 @@ describe('WASM 物理契约测试', () => {
                     frameB,
                     true
                 );
-                expect(() => api.destroyConstraint(constraint)).not.toThrow();
+                // [doc:adr-276] 闭包不做窄化：先取值到 const，回调里才保住非空类型
+                const constraintId = constraint;
+                expect(() => api.destroyConstraint(constraintId)).not.toThrow();
             } finally {
                 if (constraint !== undefined) api.destroyConstraint(constraint);
                 if (frameA !== undefined) api.deallocateBuffer(frameA, 64);

@@ -36,6 +36,7 @@ symbols:
   - proxyWebSocket
   - setCookies
   - ssrfGuardedTransport
+  - systemProxyConfigured
   - wsTunnelMaxDuration
 invariants:
   - 代理目标仅允许用户显式配置的广场域名，防止 Open Proxy；plazaSSRFGuard 拦截私有/环回 IP（isBlockedIP）

@@ -9,6 +9,10 @@ import { browserAdapter } from './browser-adapter';
 describe('ADR-179 更新安装 — browser-adapter 形状', () => {
     it('CheckForUpdate 返回字段与 Go UpdateCheckResult 对齐', async () => {
         const r = await browserAdapter.CheckForUpdate();
+        // [doc:adr-276] 契约可空（Go 侧可能回 null），实现恒定返回结果对象
+        if (!r) {
+            throw new Error('CheckForUpdate 契约要求返回 UpdateCheckResult');
+        }
         // 必含字段（字段名与 Go JSON tag 严格对齐）
         expect(r).toHaveProperty('current');
         expect(r).toHaveProperty('latest');

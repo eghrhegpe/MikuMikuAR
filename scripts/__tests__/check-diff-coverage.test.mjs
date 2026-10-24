@@ -7,6 +7,8 @@ import path from "node:path";
 import {
     addLinesFromDiff,
     parseRenameStatus,
+    detectRenames,
+    getChangedLines,
     statementPctForChangedLines,
     buildSuggestBlock,
 } from "../check-diff-coverage.mjs";
@@ -176,4 +178,175 @@ test("git 失败（base ref 不存在）→ suggest 模式 exit 0 跳过", () =>
     } finally {
         fs.rmSync(cov, { force: true });
     }
+});
+
+// ── [round-76c #8] git 夹具强化：detectRenames / getChangedLines blob-diff / --files / 未知 flag ──
+// 说明：生产 git() 固定于 REPO_ROOT（check-diff-coverage.mjs:38-39 / 69-75），tmpdir 里 git init 的
+// 一次性仓库无法被生产函数触达；故用「提交对象（只读 git 命令）+ tmp coverage 文件 + --files 显式清单」
+// 覆盖同口径行为，全程不向主仓 git 写任何东西。
+
+function makeCoverageFile(key, entry) {
+    const p = path.join(os.tmpdir(), `cov-files-${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2)}.json`);
+    fs.writeFileSync(p, JSON.stringify({ total: { s: {} }, [key]: entry }, null, 2), "utf8");
+    return p;
+}
+
+function tmpCov(name) {
+    const p = path.join(os.tmpdir(), `cov-empty-${process.pid}-${Date.now()}-${name}.json`);
+    fs.writeFileSync(p, "{}", "utf8");
+    return p;
+}
+
+// matchCoverageKey 的绝对路径 key（前缀可伪造，endsWith("/"+rel) 命中即可）
+const TEST_SRC_REL = "frontend/src/zzz/test-src.ts";
+const TEST_SRC_KEY = "C:/fake/repo/" + TEST_SRC_REL;
+const COV_PARTIAL = {
+    statementMap: {
+        0: { start: { line: 1 }, end: { line: 1 } },
+        1: { start: { line: 2 }, end: { line: 2 } },
+        2: { start: { line: 3 }, end: { line: 3 } },
+    },
+    s: { 0: 1, 1: 0, 2: 0 },
+};
+const COV_FULL = { ...COV_PARTIAL, s: { 0: 1, 1: 1, 2: 1 } };
+
+test("--files 显式清单：全文件检查语义（语句全覆盖 → 100%，exit 0）", () => {
+    const cov = makeCoverageFile(TEST_SRC_KEY, COV_FULL);
+    try {
+        const r = runCli(["--files", TEST_SRC_REL, "--base", "HEAD", "--head", "HEAD", "--coverage", cov, "--threshold", "60"]);
+        assert.equal(r.code, 0, `exit=${r.code} stdout=${r.stdout} stderr=${r.stderr}`);
+        assert.match(r.stdout, /全部达标/);
+        assert.match(r.stdout, /100\.0/);
+        assert.doesNotMatch(r.stdout, /\[X\]/);
+    } finally {
+        fs.rmSync(cov, { force: true });
+    }
+});
+
+test("--files 显式清单：部分覆盖 1/3 → 33.3% 阻断 exit 1", () => {
+    const cov = makeCoverageFile(TEST_SRC_KEY, COV_PARTIAL);
+    try {
+        const r = runCli(["--files", TEST_SRC_REL, "--base", "HEAD", "--head", "HEAD", "--coverage", cov, "--threshold", "60"]);
+        assert.equal(r.code, 1, `exit=${r.code} stdout=${r.stdout} stderr=${r.stderr}`);
+        assert.match(r.stdout, /33\.3/);
+        assert.match(r.stdout, /\[X\]/);
+        assert.match(r.stdout + r.stderr, /低于 60%/);
+    } finally {
+        fs.rmSync(cov, { force: true });
+    }
+});
+
+test("--files + --suggest：有缺口仍 exit 0 并输出建议区块", () => {
+    const cov = makeCoverageFile(TEST_SRC_KEY, COV_PARTIAL);
+    try {
+        const r = runCli(["--suggest", "--files", TEST_SRC_REL, "--base", "HEAD", "--head", "HEAD", "--coverage", cov, "--threshold", "60"]);
+        assert.equal(r.code, 0, `exit=${r.code} stdout=${r.stdout} stderr=${r.stderr}`);
+        assert.match(r.stdout, /## 覆盖率建议（非阻断）/);
+        assert.match(r.stdout, /33\.3%/);
+    } finally {
+        fs.rmSync(cov, { force: true });
+    }
+});
+
+test("--files 无覆盖率条目 → 计 0% 缺口（阻断 exit 1）", () => {
+    const cov = tmpCov("no-cov");
+    try {
+        const r = runCli(["--files", "frontend/src/zzz/no-cov.ts", "--base", "HEAD", "--head", "HEAD", "--coverage", cov]);
+        assert.equal(r.code, 1, `exit=${r.code} stdout=${r.stdout} stderr=${r.stderr}`);
+        assert.match(r.stdout, /no-cov\.ts/);
+        assert.match(r.stdout, /0\.0/);
+        assert.match(r.stdout, /\[X\]/);
+    } finally {
+        fs.rmSync(cov, { force: true });
+    }
+});
+
+test("--files isSourceFile 过滤：.test.ts / __tests__ / index.ts / wailsjs / menus / 非src 全排除 → exit 0", () => {
+    const cov = tmpCov("is-src");
+    const filtered = [
+        "frontend/src/zzz/a.test.ts", // .test.ts
+        "frontend/src/__tests__/b.ts", // __tests__/
+        "frontend/src/zzz/index.ts", // /index.ts
+        "frontend/src/wailsjs/generated/c.ts", // wailsjs/
+        "frontend/src/menus/d.ts", // /menus/
+        "backend/e.ts", // 无 src/
+    ].join(",");
+    try {
+        const r = runCli(["--files", filtered, "--base", "HEAD", "--head", "HEAD", "--coverage", cov]);
+        assert.equal(r.code, 0, `exit=${r.code} stdout=${r.stdout} stderr=${r.stderr}`);
+        assert.match(r.stdout, /无改动源码需要检查/);
+    } finally {
+        fs.rmSync(cov, { force: true });
+    }
+});
+
+test("--uncommitted 参数：CLI 接受（阻断 exit ∈ {0,1}，suggest 恒 0；只冒烟契约不断言仓库实际改动）", () => {
+    const cov = tmpCov("uncommitted");
+    try {
+        const r = runCli(["--uncommitted", "--base", "HEAD", "--head", "HEAD", "--coverage", cov]);
+        assert.ok(r.code === 0 || r.code === 1, `exit=${r.code} stdout=${r.stdout} stderr=${r.stderr}`);
+        const s = runCli(["--suggest", "--uncommitted", "--base", "HEAD", "--head", "HEAD", "--coverage", cov]);
+        assert.equal(s.code, 0, `suggest exit=${s.code} stdout=${s.stdout} stderr=${s.stderr}`);
+    } finally {
+        fs.rmSync(cov, { force: true });
+    }
+});
+
+test("未知 flag → exit 1（末尾未知参数不被静默吞掉）", () => {
+    const r = runCli(["--definitely-bogus"]);
+    assert.equal(r.code, 1, `exit=${r.code} stdout=${r.stdout} stderr=${r.stderr}`);
+    assert.match(r.stderr + r.stdout, /未知参数/);
+});
+
+test("--help → exit 0 并打印用法", () => {
+    const r = runCli(["--help"]);
+    assert.equal(r.code, 0, `exit=${r.code} stdout=${r.stdout} stderr=${r.stderr}`);
+    assert.match(r.stdout, /用法/);
+});
+
+// ── detectRenames / getChangedLines：生产函数直测（git 命令只读，不写主仓任何状态）──
+
+test("detectRenames: HEAD...HEAD → 空 Map（无 rename，两兜底路径均成功）", () => {
+    const m = detectRenames("HEAD", "HEAD", false);
+    assert.equal(m.size, 0);
+});
+
+test("detectRenames: base ref 不存在 → fail-closed 返回空 Map 且不抛错", () => {
+    const m = detectRenames("__NO_SUCH_REF_9x__", "HEAD", false);
+    assert.equal(m.size, 0);
+});
+
+test("getChangedLines 非暂存 rename blob-diff 成功路径：两提交对象两点 diff 出真实新文件行号", () => {
+    // HEAD:README.md ↔ HEAD:check-diff-coverage.mjs 两个提交 blob 几乎无公共行，
+    // + 行集合应覆盖新文件（.mjs）的绝大多数行号（只读 git show/diff）
+    const qRel = "scripts/check-diff-coverage.mjs";
+    const qText = execFileSync("git", ["show", `HEAD:${qRel}`], { encoding: "utf8" });
+    const qLines = qText.endsWith("\n") ? qText.split("\n").length - 1 : qText.split("\n").length;
+    const out = getChangedLines(qRel, "HEAD", "HEAD", false, "README.md", false);
+    assert.ok(out.size >= Math.floor(qLines * 0.2), `blob-diff 应取到新文件大部分行，实际 out.size=${out.size}（新文件 ${qLines} 行）`);
+    for (const l of out) {
+        assert.ok(l >= 1 && l <= qLines, `行号应落在新文件行范围内: ${l}`);
+    }
+});
+
+test("getChangedLines 暂存 rename blob-diff fail-closed（:190-199）：旧 blob 不可解析 → 空集且不抛错", () => {
+    // HEAD:zzz/old.ts 不存在 → git() 返回 null → gitHardFail=true 早退空集；
+    // CLI 阻断模式靠 gitHardFail 退 2 兜底（既有 P2-1 用例已锁该 exit 2 链路）
+    const out = getChangedLines("zzz/new.ts", "HEAD", "HEAD", false, "zzz/old.ts", true);
+    assert.equal(out.size, 0);
+});
+
+test("--threshold 非法值 → exit 1（round79 P1：原实现 NaN 恒 false 全通过）", () => {
+    for (const bad of ["abc", "0", "150", "-5"]) {
+        const r = runCli(["--threshold", bad]);
+        assert.equal(r.code, 1, `--threshold ${bad} 应 exit 1，实际 ${r.code}: ${r.stdout} ${r.stderr}`);
+        assert.match(r.stdout + r.stderr, /--threshold/);
+    }
+});
+
+test("--threshold 合法边界 100 → 不因校验早退", () => {
+    // 阈值校验通过后继续走正常流程（此处 coverage 缺失/其他原因退非 0 也属正常），
+    // 关键断言：stderr/stdout 不再报「--threshold 必须是」，即校验未误伤合法输入。
+    const r = runCli(["--threshold", "100", "--files", "scripts/nonexistent-xyz.test.ts"]);
+    assert.doesNotMatch(r.stdout + r.stderr, /--threshold 必须是/);
 });

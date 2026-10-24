@@ -1,6 +1,7 @@
 // @vitest-environment node
 // [doc:adr-204] playback.test.ts 拆分：initPlaybackObservables
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import type { BeatDetector } from '../motion-algos/beat-detector';
 
 // ----- hoisted mocks（vi.mock 工厂引用，不可 export 跨文件，必须内联）-----
 const mockState = vi.hoisted(() => ({
@@ -76,7 +77,8 @@ registerSceneAction('animateCameraVmd', (frameTime: number) => animateCameraVmd(
 describe('initPlaybackObservables', () => {
     const mockUpdateUI = vi.fn();
     const mockUpdateProcMotion = vi.fn().mockResolvedValue(undefined);
-    const mockGetBeatDetector = vi.fn(() => null);
+    // [doc:adr-276] 该 mock 会被当作「返回 BeatDetector | null 的工厂」传入，须给真类型
+    const mockGetBeatDetector = vi.fn((): BeatDetector | null => null);
 
     let dispose: () => void;
 
@@ -138,7 +140,8 @@ describe('initPlaybackObservables', () => {
     });
 
     it('tickHandler updates beat detector when audio is playing and detector exists', () => {
-        const beatDetector = { update: vi.fn() };
+        // [doc:adr-276] 桩只需 update()；mock 的返回类型是真 BeatDetector，故双层断言
+        const beatDetector = { update: vi.fn() } as unknown as BeatDetector;
         mockGetBeatDetector.mockReturnValue(beatDetector);
         isAudioPlaying.mockReturnValue(true);
 
@@ -147,7 +150,8 @@ describe('initPlaybackObservables', () => {
     });
 
     it('tickHandler skips beat detector update when audio is not playing', () => {
-        const beatDetector = { update: vi.fn() };
+        // [doc:adr-276] 桩只需 update()；mock 的返回类型是真 BeatDetector，故双层断言
+        const beatDetector = { update: vi.fn() } as unknown as BeatDetector;
         mockGetBeatDetector.mockReturnValue(beatDetector);
         isAudioPlaying.mockReturnValue(false);
 
@@ -357,7 +361,8 @@ describe('initPlaybackObservables', () => {
     // ---- 盲区补充：isAudioPlaying 场景动作未注册 ----
 
     it('tickHandler skips beat detector when isAudioPlaying scene action unregistered', () => {
-        const beatDetector = { update: vi.fn() };
+        // [doc:adr-276] 桩只需 update()；mock 的返回类型是真 BeatDetector，故双层断言
+        const beatDetector = { update: vi.fn() } as unknown as BeatDetector;
         mockGetBeatDetector.mockReturnValue(beatDetector);
         isAudioPlaying.mockReturnValue(true);
 

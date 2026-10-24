@@ -247,8 +247,9 @@ function _crossfadeTo(player: StreamAudioPlayer): void {
     _fadeTimer = setTimeout(() => {
         _fadeTimer = null;
         // 切换源（已在 _playIndex 中设了 source，但需确保播放）
-        player.play().catch(() => {
-            /* autoplay 拦截 */
+        player.play().catch((err) => {
+            // [audit:fix 2026-09] play() 失败（autoplay 拦截等）原被静默吞掉，补一条 warn 便于观测（非热路径裸调）
+            logWarn('audio', '_crossfadeTo: play() failed', err);
         });
 
         // 渐入（0 → targetVol）
@@ -418,10 +419,12 @@ export function pauseAudio(): void {
 }
 
 export function resumeAudio(): void {
-    if (!streamPlayer) {
+    // [doc:adr-276] 闭包不保留 `if (!streamPlayer)` 的收窄：先取值到 const，回调里才保住非空
+    const player = streamPlayer;
+    if (!player) {
         return;
     }
-    safeCallAsync('audio', 'resumeAudio', () => streamPlayer.play());
+    safeCallAsync('audio', 'resumeAudio', () => player.play());
 }
 
 export function stopAudio(): void {

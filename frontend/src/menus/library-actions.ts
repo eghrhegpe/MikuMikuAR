@@ -14,7 +14,7 @@ import {
 import { computeLibraryRef } from '@/core/library-path';
 import { loadManager } from '../core/load-manager';
 import { closeAllOverlays } from './menu-overlay';
-import { stackRegistry } from './menu-stack-registry';
+import { requireModelStack, stackRegistry } from './menu-stack-registry';
 import {
     removeModel,
     loadVPDPose,
@@ -70,7 +70,9 @@ function refreshModelRootLevel(forceRender = false): void {
 }
 
 // mmku:modelLoaded 事件：模型加载完成后刷新模型库弹窗根级列表
-// 用命名函数 + 模块级引用，支持 HMR 幂等清理
+// [doc:adr-276] 这里原本写着「模块级引用支持 HMR 幂等清理」，并在注册前 `_mmkuDisp?.dispose()`。
+// 但模块级 let 每次重求值都是新的 null，旧监听器不可见——那句 dispose 恒为 no-op
+// （TS 流分析把它收窄成 never 才暴露）。真幂等要把句柄挂 globalThis，本次不做。
 let _mmkuDisp: Disposable | null = null;
 function _onModelLoaded(): void {
     if (librarySessionStore.isReplaceLoading()) {
@@ -88,8 +90,6 @@ function _onModelLoaded(): void {
         })
         .catch((err) => logWarn('library', 'refresh model root list on modelLoaded failed', err));
 }
-// 先移除旧监听器再注册，确保 HMR 重载不重复绑定
-_mmkuDisp?.dispose();
 // node 环境下无 document，跳过注册（测试导入链不再崩溃）
 if (typeof document !== 'undefined') {
     _mmkuDisp = addDisposableListener(document, 'mmku:modelLoaded', _onModelLoaded);
@@ -281,6 +281,11 @@ function startReplaceModel(m: LibraryModel, replaceId: string): void {
         librarySessionStore.setExtracting(m.file_path);
         ExtractZip(m.file_path, m.zip_inner)
             .then((result) => {
+                // [doc:adr-276] ExtractZip 契约可空（null = 解压失败）：此处抛明确错误交给下方
+                // .catch 统一报 library.extractFailed，避免先读 result.cached 抛无名字的 TypeError
+                if (!result) {
+                    throw new Error('library-actions: ExtractZip 返回 null（解压失败）');
+                }
                 // [doc:adr-feedback] 中间步骤走状态栏，避免与后续"模型已替换"toast 叠加
                 feedbackStatus(
                     result.cached ? 'library.cacheHit' : 'library.extracted',
@@ -351,6 +356,11 @@ function loadModelNormal(m: LibraryModel, isStage: boolean): void {
         librarySessionStore.setExtracting(m.file_path);
         ExtractZip(m.file_path, m.zip_inner)
             .then((result) => {
+                // [doc:adr-276] ExtractZip 契约可空（null = 解压失败）：此处抛明确错误交给下方
+                // .catch 统一报 library.extractFailed，避免先读 result.cached 抛无名字的 TypeError
+                if (!result) {
+                    throw new Error('library-actions: ExtractZip 返回 null（解压失败）');
+                }
                 // [doc:adr-feedback] 中间步骤走状态栏，避免与后续 VMD/模型加载 toast 叠加
                 feedbackStatus(
                     result.cached ? 'library.cacheHit' : 'library.extracted',
@@ -556,13 +566,13 @@ function buildTagsOverviewLevel(): PopupLevel {
                     fa.textContent = '>';
                     favRow.appendChild(fa);
                     favRow.addEventListener('click', () =>
-                        stackRegistry.modelStack.push(buildTagDetailLevel('收藏'))
+                        requireModelStack().push(buildTagDetailLevel('收藏'))
                     );
                     c.appendChild(favRow);
 
                     for (const tag of regularTags) {
                         slideRow(c, 'lucide:tag', tag, true, () =>
-                            stackRegistry.modelStack.push(buildTagDetailLevel(tag))
+                            requireModelStack().push(buildTagDetailLevel(tag))
                         );
                     }
                     if (regularTags.length === 0) {
@@ -575,7 +585,7 @@ function buildTagsOverviewLevel(): PopupLevel {
                 cardContainer(container, (c) => {
                     slideRow(c, 'lucide:plus', t('library.newTag'), false, () => {
                         feedbackStatus('library.addTagHint', undefined, false);
-                        stackRegistry.modelStack.pop();
+                        requireModelStack().pop();
                     });
                 });
             } catch (err) {

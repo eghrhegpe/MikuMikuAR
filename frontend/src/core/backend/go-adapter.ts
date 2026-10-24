@@ -5,6 +5,7 @@
 // capabilities() 全开；Wails 生成物由 `wails3 generate bindings -ts` 维护，此处仅消费。
 
 import * as goApp from '@bindings/mikumikuar/internal/app/app';
+import { assertConfig } from './types';
 import type { BackendService, BackendCapabilities } from './types';
 import { isAndroidPlatform } from '../platform';
 import { detectKtx2Support } from '../gpu-capabilities';
@@ -20,6 +21,8 @@ function _decodeBase64(b64: string): Uint8Array {
 
 export const goAdapter: BackendService = {
     ...goApp,
+    // [doc:adr-277] spread 继承的 GetConfig 是 `Config | null`；这里显式覆盖以兑现收窄后的契约
+    GetConfig: async () => assertConfig(await goApp.GetConfig()),
     kind: 'go',
     readFileBytes: async (path: string) => {
         const b64 = await goApp.ReadFileBytes(path);

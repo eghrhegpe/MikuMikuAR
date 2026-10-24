@@ -16,7 +16,9 @@ import { type ObserverHandle } from '@/core/observer-handle';
 let _scene: Scene | null = null;
 let _pipeline: DefaultRenderingPipeline | null = null;
 
-export function initEnvImpl(scene: Scene, pipeline: DefaultRenderingPipeline): void {
+/** [doc:adr-276] pipeline 可空：调用方（scene.ts）的 pipeline 在 initRenderer 之前是 undefined，
+ *  存成 null 后由 getPipeline() 在首次使用时抛出上下文明确的错误。 */
+export function initEnvImpl(scene: Scene, pipeline: DefaultRenderingPipeline | null): void {
     _scene = scene;
     _pipeline = pipeline;
 }

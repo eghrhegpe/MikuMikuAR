@@ -55,7 +55,7 @@ describe('WASM 物理契约测试', () => {
         it('创建刚体 → 施力 → 步进 → 速度非零（物理真的在动）', () => {
             const world = api.createPhysicsWorld();
             // 资源声明提升到 try 外：finally 需引用（try 内 const 块级不可见）
-            let shape: number, infoPtr: number, body: number;
+            let shape: number | undefined, infoPtr: number | undefined, body: number | undefined;
             try {
                 // 2. 创建形状
                 shape = api.createBoxShape(1, 1, 1);
@@ -103,7 +103,7 @@ describe('WASM 物理契约测试', () => {
 
         it('重力影响：无外力情况下刚体在重力作用下下落', () => {
             const world = api.createPhysicsWorld();
-            let shape: number, infoPtr: number, body: number;
+            let shape: number | undefined, infoPtr: number | undefined, body: number | undefined;
             try {
                 api.physicsWorldSetGravity(world, 0, -9.8, 0);
 
@@ -322,7 +322,7 @@ describe('WASM 物理契约测试', () => {
 
         it('rigidBodyApplyTorque 经步进累积出角速度（世界内）', () => {
             const world = api.createPhysicsWorld();
-            let shape: number, infoPtr: number, body: number;
+            let shape: number | undefined, infoPtr: number | undefined, body: number | undefined;
             try {
                 api.physicsWorldSetGravity(world, 0, 0, 0);
                 shape = api.createBoxShape(1, 1, 1);
@@ -335,7 +335,9 @@ describe('WASM 物理契约测试', () => {
                     api.physicsWorldStepSimulation(world, 1 / 60, 1, 1 / 60);
                 }
 
-                const [, , wz] = readVec3((p) => api.rigidBodyGetAngularVelocity(body, p));
+                // [doc:adr-276] 闭包不做窄化：先取值到 const，回调里才保住非空类型
+                const bodyId = body;
+                const [, , wz] = readVec3((p) => api.rigidBodyGetAngularVelocity(bodyId, p));
                 expect(wz).not.toBe(0);
             } finally {
                 // 清理（断言失败也执行，避免 WASM 指针泄漏）；空值守卫防 try 中途抛错
@@ -382,7 +384,7 @@ describe('WASM 物理契约测试', () => {
         it('批量施力后每个刚体都有速度（轻的飘得更多）', () => {
             const world = api.createPhysicsWorld();
             // 资源声明提升到 try 外：finally 需引用（try 内 const 块级不可见）
-            let shape: number, listPtr: number, bundle: number;
+            let shape: number | undefined, listPtr: number | undefined, bundle: number | undefined;
             try {
                 // 无重力，纯粹看风力效果
                 api.physicsWorldSetGravity(world, 0, 0, 0);

@@ -3,7 +3,8 @@
 
 策略：
 1. 先分割代码块（``` / ~~~）和行内代码（`...`），只检查文档正文中的链接。
-2. 匹配标准内联链接 `[text](url)`、引用式 `[text][ref]` + `[ref]: url`。
+2. 匹配标准内联链接 `[text](url)`、引用式 `[text][ref]` + `[ref]: url`；
+   引用式链接按同文件 ref 定义表校验（定义缺失或目标不存在 → 断链告警，informational-only）。
 3. 仅对看起来像路径的 `<url>` 自动链接做校验（有扩展名/路径分隔符特征）。
 4. 外部 URL（http://、https://、mailto:、ftp://）自动跳过。
 
@@ -11,8 +12,8 @@
   python tests/test_markdown_links.py
 
 退出码：
-  0 = 全部有效
-  1 = 存在断裂链接
+  0 = 正常（断链仅告警，不阻断 CI）
+  1 = 文档读取失败
 """
 import re
 import sys
@@ -156,7 +157,9 @@ def main():
     read_err = 0
     for fp in md_files:
         try:
-            contents.append((fp, fp.read_text("utf-8", errors="replace")))
+            # [round76c #16 同源调用点] read_text(errors=) 需 Python ≥3.13；
+            # bytes.decode 等价保留 replace 语义且 3.8+ 兼容。
+            contents.append((fp, fp.read_bytes().decode("utf-8", errors="replace")))
         except Exception as e:
             print(f"[ERROR] {fp}: {e}", file=sys.stderr)
             read_err += 1
@@ -171,11 +174,36 @@ def main():
         cleaned, placeholders = strip_code(raw)
         links = extract_links(cleaned)
 
+        # 引用式定义表（同文件 [ref]: url）：引用式用法需查表校验（round76c #14，
+        # 此前 ref: label 一律 skip → 断掉的引用式链接静默盲区）。
+        # 文档序遍历，首个定义生效（同 CommonMark 语义）；
+        # 定义缺失或目标不存在 → 计入断链 WARNING（informational-only，退出码语义不变）。
+        ref_defs: dict[str, str] = {}
+        for _, ref_label, ref_url in links:
+            if ref_label.startswith("ref:") and ref_url:
+                ref_defs.setdefault(ref_label[4:], ref_url)
+
         for snippet, label, url in links:
             total += 1
 
             if label.startswith("ref:"):
                 skip_ref += 1
+                if url:
+                    # 引用定义 [ref]: url —— 校验定义自身目标（外部 url 跳过，纯锚点不校验）
+                    if not url.startswith(SKIP_PREFIXES):
+                        ref_path = url.split("#")[0].strip()
+                        if ref_path:
+                            # 还原 strip_code 占位符，避免 \x00 残留进路径解析
+                            ref_path = restore_ph(ref_path, placeholders)
+                            if resolve_target(ref_path, fp) is None:
+                                broken.append(
+                                    f"[{fp}] ref definition 'ref:{label[4:]}' target not found: '{ref_path}'"
+                                )
+                elif label[4:] not in ref_defs:
+                    # 引用式用法 [text][ref] —— 同文件无对应 [ref]: url 定义
+                    broken.append(
+                        f"[{fp}] ref link 'ref:{label[4:]}' has no definition in this file"
+                    )
                 continue
 
             if url.startswith(SKIP_PREFIXES):
@@ -194,9 +222,10 @@ def main():
             # 关键：必须传还原后的 path_part（而非原始 url），
             # resolve_target 内部会再 split("#")，传 url 会让还原失效。
             if resolve_target(path_part, fp) is None:
-                ctx = snippet.replace("\n", "\\n")
+                # 打印还原后的 path_part（round76c #15）：原始 url 可能含 \x00CODE{n}\x00
+                # 占位符，终端显为「 CODE43 」类伪码，人读定位困难。
                 broken.append(
-                    f"[{fp}] target not found: '{url}' "
+                    f"[{fp}] target not found: '{path_part}' "
                     f"(label: '{label[:40]}') "
                 )
 

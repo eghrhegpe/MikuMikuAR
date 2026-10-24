@@ -139,6 +139,16 @@ function prevSameLine(text, i) {
     return j >= 0 ? text[j] : '';
 }
 
+/** [fix P1 round79] `=` 前的 import() 是否属于 type alias 声明：`export type T = import('@/x').Y`。
+ * 不能直接把 '=' 加入 TYPE_POSITION_CHARS，否则 `const v = import('@/x')`（运行时）被误豁免。
+ * 回溯到语句起点，检查是否以 (export|declare) type <Name> 收尾。 */
+function isInTypeAlias(text, eqIdx) {
+    let s = eqIdx;
+    while (s >= 0 && !'\n;{}'.includes(text[s])) s--;
+    const stmt = text.slice(s + 1, eqIdx).trim();
+    return /^(?:export\s+|declare\s+)*type\s+\w+$/.test(stmt);
+}
+
 /** 该 `import(` 是否出现在类型位置（`scene: import('x').Scene` / `typeof import('x')`）。 */
 function isTypePosition(text, i) {
     let j = i - 1;
@@ -149,6 +159,7 @@ function isTypePosition(text, i) {
         while (k >= 0 && IDENT_PART.test(text[k])) k--;
         return TYPE_POSITION_WORDS.has(text.slice(k + 1, j + 1));
     }
+    if (text[j] === '=') return isInTypeAlias(text, j);
     return TYPE_POSITION_CHARS.has(text[j]);
 }
 

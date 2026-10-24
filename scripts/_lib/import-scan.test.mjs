@@ -103,6 +103,11 @@ test('类型位置动态 import 标记 typeOnly，表达式位置不标记', () 
     ["const m = await import('./lazy.ts');", false],
     ["const p = import('./lazy.ts').then((m) => m);", false],
     ["if (x) { void import('./lazy.ts'); }", false],
+    // [round79 P1 回归] `=` 前的 import()：type alias 里是类型级（ADR-242），const/let 赋值里是运行时。
+    ["export type T = import('@/menus/a').X;", true],
+    ["export type T =\n  import('@/menus/a').X;", true],
+    ["const v = import('@/menus/a');", false],
+    ["export let x: T = import('@/menus/a');", false],
   ];
   for (const [src, expected] of cases) {
     const hit = scanImportSpecs(src);

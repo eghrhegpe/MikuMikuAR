@@ -43,7 +43,7 @@ export function createBaseInstance(overrides: Record<string, any> = {}) {
         filePath: '/models/test.pmx',
         port: 12345,
         meshes: [] as ModelInstance['meshes'],
-        rootMesh: null as ModelInstance['rootMesh'],
+        rootMesh: null as unknown as ModelInstance['rootMesh'],
         scaling: 1,
         rotationY: 0,
         rotation: [0, 0, 0] as [number, number, number],

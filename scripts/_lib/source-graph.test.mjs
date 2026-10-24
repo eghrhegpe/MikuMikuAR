@@ -384,3 +384,69 @@ test('ignores non-existent import paths gracefully', () => {
     fs.rmSync(fixture.root, { recursive: true, force: true });
   }
 });
+
+// [round-76c #11] EXCLUDE_DIRS/EXCLUDE_FILES（source-graph.mjs L7-8）：__tests__/ 与 .d.ts / .test.ts 不入图
+function createScopedFixture() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'miku-source-graph-'));
+  const srcDir = path.join(root, 'src');
+  fs.mkdirSync(path.join(srcDir, 'scope', '__tests__'), { recursive: true });
+  fs.mkdirSync(path.join(srcDir, 'out'), { recursive: true });
+  fs.writeFileSync(path.join(srcDir, 'scope', 'a.ts'), [
+    "import './b.js';",
+    "import '../out/c.js';",
+  ].join('\n'));
+  fs.writeFileSync(path.join(srcDir, 'scope', 'b.ts'), 'export const b = 1;');
+  fs.writeFileSync(path.join(srcDir, 'out', 'c.ts'), 'export const c = 1;');
+  fs.writeFileSync(path.join(srcDir, 'out', 'keep.ts'), 'export const keep = 1;');
+  fs.writeFileSync(path.join(srcDir, 'scope', '__tests__', 'z.test.ts'), "import '../a.js';");
+  fs.writeFileSync(path.join(srcDir, 'scope', 'types.d.ts'), 'declare const d: string;');
+  return { root, srcDir };
+}
+
+test('excludes __tests__ dirs and .d.ts / .test.ts files from the source graph', () => {
+  const fixture = createScopedFixture();
+  try {
+    const { files, graph } = scanSourceGraph(fixture.srcDir);
+    assert.deepEqual(files.map((f) => f.rel).sort(), [
+      'out/c.ts',
+      'out/keep.ts',
+      'scope/a.ts',
+      'scope/b.ts',
+    ]);
+    assert.equal(graph.has('scope/__tests__/z.test.ts'), false, '__tests__/ 目录不入图');
+    assert.equal(graph.has('scope/types.d.ts'), false, '.d.ts 声明文件不入图');
+    assert.deepEqual([...graph.get('scope/a.ts')].sort(), ['out/c.ts', 'scope/b.ts']);
+  } finally {
+    fs.rmSync(fixture.root, { recursive: true, force: true });
+  }
+});
+
+// [round-76c #11] scanSourceGraph 的 scope/localOnly 分支（source-graph.mjs L109-146 可达集展开）
+test('scope without localOnly expands all reachable deps (out-of-scope included)', () => {
+  const fixture = createScopedFixture();
+  try {
+    const { files, graph } = scanSourceGraph(fixture.srcDir, { scope: 'scope' });
+    assert.deepEqual(files.map((f) => f.rel).sort(), [
+      'out/c.ts',
+      'scope/a.ts',
+      'scope/b.ts',
+    ]);
+    assert.deepEqual([...graph.get('scope/a.ts')].sort(), ['out/c.ts', 'scope/b.ts']);
+    assert.equal(graph.has('out/keep.ts'), false, '不可达文件不入 scope 图');
+  } finally {
+    fs.rmSync(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('scope + localOnly keeps only in-scope nodes and drops out-of-scope deps', () => {
+  const fixture = createScopedFixture();
+  try {
+    const { files, graph } = scanSourceGraph(fixture.srcDir, { scope: 'scope', localOnly: true });
+    assert.deepEqual(files.map((f) => f.rel).sort(), ['scope/a.ts', 'scope/b.ts']);
+    assert.deepEqual([...graph.get('scope/a.ts')], ['scope/b.ts']);
+    assert.deepEqual([...graph.get('scope/b.ts')], []);
+    assert.equal(graph.has('out/c.ts'), false, 'localOnly 滤掉 scope 外依赖');
+  } finally {
+    fs.rmSync(fixture.root, { recursive: true, force: true });
+  }
+});

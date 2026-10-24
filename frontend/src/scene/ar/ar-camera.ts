@@ -338,7 +338,13 @@ function ensureAndroidCameraPermission(): Promise<boolean> {
         timer = setTimeout(() => settle(false), 15000);
         window.__onArcCameraPermission = (granted: boolean) => settle(granted);
         try {
-            w.requestCameraPermission();
+            // [doc:adr-276] 权限桥在 bridge 上是可选成员（未接 AR 的宿主不注册）。
+            // 缺失时显式抛错吃下方 catch 立即 settle(false)，不要写成 ?.()——那会静默等满 15s 超时。
+            const requestCameraPermission = w.requestCameraPermission;
+            if (!requestCameraPermission) {
+                throw new Error('AR: requestCameraPermission 未注册');
+            }
+            requestCameraPermission();
         } catch (err) {
             // [fix P1] 调用抛异常（Go 绑定层错误）：恢复回调并 resolve(false)，
             // 保证 Promise 绝不 reject——startARCamera 的 _starting 由此永不泄漏。

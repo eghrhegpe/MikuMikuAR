@@ -80,6 +80,26 @@ let _onModelLoaded: ((id: string) => void) | null = null;
 let _thumbCaptureGen = 0;
 let _loadAbortController: AbortController | null = null;
 
+/**
+ * [doc:adr-276] 依赖收口：`_modelManager` 由 initLoader 注入，注入前的调用是编程错误。
+ * 这里把「匿名 TypeError: Cannot read properties of null」换成带名字的错误，
+ * 让加载失败时的第一行日志直接指向初始化顺序问题（而不是让人顺着调用栈猜）。
+ */
+function requireModelManager(): import('./model-manager').ModelManager {
+    if (_modelManager === null) {
+        throw new Error('model-loader: ModelManager 未初始化（initLoader 之前被调用）');
+    }
+    return _modelManager;
+}
+
+/** [doc:adr-276] 同上：水渲染列表刷新回调由 initLoader 注入。 */
+function callRefreshWaterRenderList(): void {
+    if (_refreshWaterRenderList === null) {
+        throw new Error('model-loader: refreshWaterRenderList 未初始化（initLoader 之前被调用）');
+    }
+    _refreshWaterRenderList();
+}
+
 export function setOnMeshesReady(fn: (meshes: Mesh[]) => void): void {
     _onMeshesReady = fn;
 }
@@ -168,7 +188,7 @@ export async function captureThumbnail(
             return;
         }
 
-        targetInst = inst ?? _modelManager.focused();
+        targetInst = inst ?? _modelManager.focused() ?? null;
         if (!targetInst || !targetInst.rootMesh) {
             return;
         }
@@ -277,7 +297,7 @@ async function collectTextureFiles(modelDir: string, signal?: AbortSignal): Prom
         let running = 0;
         const tasks = entries
             .filter((e) => TEXTURE_EXTS.test(e.name))
-            .map(async (entry) => {
+            .map(async (entry): Promise<TextureFile | null> => {
                 while (running >= CONCURRENCY) {
                     await new Promise((r) => setTimeout(r, 0)); // yield
                 }
@@ -363,18 +383,25 @@ async function _applySceneMotion(
                     primary: { ...slots.primary, status: 'incompatible' },
                 };
             } else {
-                appliedVmd = activeMotion.vmdName;
+                appliedVmd = activeMotion.vmdName ?? '';
                 try {
                     // 读取 VMD 文件数据，然后加载到模型
                     // 读取后检查 generation：若已过期则丢弃，避免覆盖较新的广播结果
                     const vmdData = await readFileBytes(activeMotion.vmdPath);
-                    if ((getSceneAction('getMotionGen')?.() ?? 0) !== loadGen) {
+                    if (!vmdData) {
+                        logWarn(
+                            'model-loader',
+                            'VMD 读取失败（空数据），模型已保留:',
+                            activeMotion.vmdPath
+                        );
+                        appliedVmd = '';
+                    } else if ((getSceneAction('getMotionGen')?.() ?? 0) !== loadGen) {
                         appliedVmd = '';
                     } else {
                         const { loadVMDMotion } = await import('../motion/vmd-loader');
                         await loadVMDMotion(
                             vmdData.buffer as ArrayBuffer,
-                            activeMotion.vmdName,
+                            activeMotion.vmdName ?? '',
                             inst.id
                         );
                         // [doc:adr-167] 保留 sceneMotionId（由 broadcast 设置）
@@ -411,7 +438,7 @@ async function _applySceneMotion(
     if (effectiveSignal.aborted) {
         try {
             if (registeredId && _modelManager) {
-                _modelManager.remove(registeredId);
+                requireModelManager().remove(registeredId);
             }
         } catch (e) {
             logWarn('model-loader', 'Cleanup after abort:', e);
@@ -593,7 +620,7 @@ export async function loadPMXFile(
                 _origAlpha: meshes.map((m) => m.material?.alpha ?? 1),
             };
             // Register via ModelManager only — it owns the registry
-            _modelManager.register(inst);
+            requireModelManager().register(inst);
             registeredId = id;
             // [fix:round15 P2] Stage 分支注册后 abort 检查，与 Actor 路径（line 719）对称。
             // 若 abort 发生在 register 与 return 之间，清理已注册的 stage 模型避免泄漏。
@@ -602,7 +629,7 @@ export async function loadPMXFile(
             /* v8 ignore start */
             if (effectiveSignal.aborted) {
                 try {
-                    _modelManager.remove(registeredId);
+                    requireModelManager().remove(registeredId);
                 } catch (e) {
                     logWarn('model-loader', 'Stage cleanup after abort:', e);
                 }
@@ -626,8 +653,8 @@ export async function loadPMXFile(
             }
             showInfoToast(t('scene.loader.stageLoaded', { name: displayName }));
             dom.canvas.setAttribute('aria-label', `${t('menu.canvasLabel')}：${displayName}`);
-            _modelManager.arrange();
-            _refreshWaterRenderList();
+            requireModelManager().arrange();
+            callRefreshWaterRenderList();
             rebuildShadowCasters();
             _rebuildOutlineState?.();
             triggerAutoSave();
@@ -721,7 +748,7 @@ export async function loadPMXFile(
             _modelManager && _modelManager.getAll().length > 0
                 ? _modelManager.getAll()[_modelManager.getAll().length - 1]
                 : null;
-        _modelManager.register(inst);
+        requireModelManager().register(inst);
         registeredId = id;
         setTransformMetadata(inst.rootMesh, 'actor', id);
         // [doc:adr-167] 继承上一个角色的槽位1 source/procRole（不继承 pinned 快照）
@@ -746,7 +773,7 @@ export async function loadPMXFile(
             // _modelManager.remove() 内 onRemoveModel 回调（scene.ts:375-394）
             // 已调用 destroyMmdModel，此处不再重复销毁 wasmModel。
             try {
-                _modelManager.remove(registeredId);
+                requireModelManager().remove(registeredId);
             } catch (e) {
                 logWarn('model-loader', 'Cleanup after abort:', e);
             }
@@ -777,7 +804,7 @@ export async function loadPMXFile(
         if (wasmModel instanceof MmdWasmModel) {
             const states = wasmModel.rigidBodyStates;
             if (states) {
-                _modelManager.storeRigidBodyState(id, states);
+                requireModelManager().storeRigidBodyState(id, states);
             }
         }
         setFocusedModelId(id);
@@ -799,15 +826,15 @@ export async function loadPMXFile(
             }
         }
 
-        _modelManager.focus(id, uiState.autoCenterModel);
+        requireModelManager().focus(id, uiState.autoCenterModel);
         showInfoToast(
             appliedVmd
                 ? t('scene.loader.actorLoadedWithVmd', { name: displayName, vmd: appliedVmd })
                 : t('scene.loader.actorLoaded', { name: displayName })
         );
         dom.canvas.setAttribute('aria-label', `${t('menu.canvasLabel')}：${displayName}`);
-        _modelManager.arrange();
-        _refreshWaterRenderList();
+        requireModelManager().arrange();
+        callRefreshWaterRenderList();
         rebuildShadowCasters();
 
         // Auto-capture thumbnail for future popup display
@@ -846,7 +873,7 @@ export async function loadPMXFile(
         }
         if (registeredId && _modelManager) {
             try {
-                _modelManager.remove(registeredId);
+                requireModelManager().remove(registeredId);
             } catch (removeErr) {
                 logWarn('model-loader', 'Cleanup after load failure:', removeErr);
             }

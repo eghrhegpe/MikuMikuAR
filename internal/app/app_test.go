@@ -42,6 +42,7 @@ func TestValidatePresetName(t *testing.T) {
 }
 
 func TestScenePresetDir(t *testing.T) {
+	testConfigDir(t) // 隔离：presetDir 会对 settingDir 做 MkdirAll，不得落真实用户目录
 	a := &App{}
 	dir, err := a.scenePresetDir()
 	if err != nil {

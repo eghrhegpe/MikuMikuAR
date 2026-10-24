@@ -1,0 +1,45 @@
+# Round 79C 架构门禁审计（S3）——check-layering / check-circular / check-diff-coverage
+
+- 日期：2026-10-25
+- 范围：scripts/check-layering.mjs（ADR-242）、scripts/check-circular.mjs（ADR-268）、scripts/check-diff-coverage.mjs（ADR-254）、_lib/import-scan.mjs、_lib/source-graph.mjs、_lib/scan-files.mjs、scripts/dep-metrics.mjs、.githooks/pre-push、frontend/package.json、docs/adr/242*.md
+- 方法：只读源码 + 隔离 fixture（临时目录，事后已清理）+ git 只读/临时仓库复现；未跑任何全量测试、未改生产文件。
+
+## 总体结论
+
+三个门禁脚本的**主路径判定质量是过关的**：check-layering 改用 import-scan 线性状态机后，注释/字符串里的 import、裸包名、import.meta.url、import type、混合 type 前缀、多行 specifier、相对路径、副作用 import、barrel re-export（export {x} from / export * from / export * as ns from）、运行时动态 import 全部按预期分类（fixture 实测），规则引擎 R1/R2/R3 无「绕过」漏洞；check-circular 的 DFS 能正确产出全部简单环（钻石图 3 环无漏报），模块图排除测试文件的口径与 source-graph 一致，白名单过期判定与 dep-metrics 同源；check-diff-coverage 的 hunk 解析、覆盖率键匹配、空变更行→100 的语义都合理。**但存在 6 个真 bug / 逻辑错**，其中 3 个直接破坏「门禁给出正确决策」这一目标：① 纯 rename（git mv 无内容变化）被当成整文件新增行，推翻脚本自述「纯改名自然达标」；② 非 staged 路径 5 处 git() 失败未判 null 未置 gitHardFail，与 staged 分支（round-78 已修）不对称，可产生假绿；③ 分层规则对 export type T = import('@/x').X 这类类型位置动态 import 误判为 R2 违规。另有两处**契约漂移**：check-diff-coverage 自述「不加 --suggest 即阻断、exit 1 拦 push」，但 .githooks/pre-push 实际把非零当提示（仅建议不阻断），脚本默认阻断模式在 push 上从不生效；--threshold 传非法值变成 NaN 时全部通过（fail-open）。check-circular 的入口文件折叠假环（台账自证剔除 src/main.ts 后代表环 551→139）会直接进入门禁判定。建议：本报告 P1 项优先修，P1 契约项二选一明确项目政策后再对齐文档。
+
+## 亮点（4 条）
+
+1. **check-layering 规则引擎主路径无绕过**：fixture 实测 12 类写法全部正确分类（见上），import-scan 线性状态机（_lib/import-scan.mjs）彻底规避了旧正则的灾难性回溯与注释/字符串误判。
+2. **check-layering 的 --json 结构可机器消费**：L151-154 输出 {r1, regressions, fixed, total, baseline}，r1 独立字段化，便于 CI 分别统计新增违规与基线回归。
+3. **check-circular 环检测正确性**：detectCycles 对钻石图产出全部 3 个简单环（a→b→a / a→c→b→a / a→c→a），dedupeCycles 与 representativeCycles 未被误合并；自环虽在 detectCycles 层会产生 [a,a]，但 buildModuleGraph L97 已丢弃 targetModule===sourceModule 的自边，生产不触发。
+4. **fail-closed 已具备的方向**：check-layering 基线损坏会以未捕获异常退 1；check-circular 白名单 JSON.parse 失败退空集合 → 全部环按「新增」判（安全方向）；check-diff-coverage 的 getChangedFiles / detectRenames 主路径、coverage 文件缺失（非 --suggest）、gitHardFail 主分支均已置失败退出码。
+
+## 风险表
+
+| 级别 | 文件:行号 | 问题 | 建议修复 |
+|---|---|---|---|
+| P1 | scripts/check-diff-coverage.mjs:205-209 | **纯 rename 被当整文件新增（假红，推翻设计意图）**。L206 blob diff（git diff base:old head:new）对纯改名（内容不变）返回**空**，而 L207 的 if (out.size > 0) return out 把「空」当成「无数据需兜底」，落入 L209 三圆点 pathspec diff —— rename 被拆成 A，整文件显示为 @@ -0,0 +1,3 @@ 全 + 行，changedLines 变成全文件。git 临时仓库实测：git mv oldname.ts newname.ts 后脚本会判该文件所有 3 行为变更行。这与脚本头注释（L28-29）及 L144-150「纯改名自然达标」直接矛盾，也推翻了 L203-204 的 rename 重构初衷；L402-409 的 rename 失败提示「说明 rename 中新增了未覆盖的真实逻辑」对纯改名是错误归因。 | renameOld 分支改为「git 返回值判空 + 空即权威返回」：先取 r = git(['diff','--unified=0', base+':'+renameOld, head+':'+file])；若 r === null 则（失败：落三圆点兜底并置 gitHardFail），否则 addLinesFromDiff(out, r) 后直接 return out。空 blob diff 是「成功且无变化」，绝不再落三圆点。这样纯改名 out 为空 → statementPctForChangedLines（L271-273 空变更行→100）自然达标。 |
+| P1 | scripts/check-diff-coverage.mjs:206, 209, 212, 215, 216 | **非 staged getChangedLines 的 git() 失败 fail-open（假绿）**。这 5 处 git() 返回 null（git 内部异常）时**均未判 null、未置 gitHardFail**，addLinesFromDiff(null) 直接 return → out 空 → 文件被判「无变更行」→ statementPctForChangedLines 返回 100。而 staged rename 分支 L195-196 已正确判 null 并置 gitHardFail（round-78 修复过），**非 staged 分支漏了同一守卫，属同类不一致**。 | 与 L195-196 对齐：每处先 const r = git([...])；若 r === null 则 gitHardFail = true; return out; 之后再 addLinesFromDiff。注意 L206 修完 P1-1 后 rename 分支已无「空即兜底」需求，两处一起改；L215/L216（uncommitted）也补同守卫。 |
+| P1 | scripts/check-diff-coverage.mjs:306 | **--threshold 非法值 fail-open**。const threshold = Number(args.threshold ?? '60')，若 --threshold abc → NaN，后续 pct < NaN 恒 false → 所有文件通过，闸门静默失效。同理 --threshold 0 直接关闭。 | 解析后校验：if (!Number.isFinite(threshold) || threshold <= 0 || threshold > 100) { console.error('--threshold 须为 (0,100] 的数字'); process.exit(USAGE_ERROR); }，放 L306 之后、L392 使用前。 |
+| P1 | _lib/import-scan.mjs:46（作用于 scripts/check-layering.mjs:124-126） | **类型别名 = 未进 TYPE_POSITION_CHARS，export type T = import('@/menus/a').X 被误判 R2 违规（假红）**。TYPE_POSITION_CHARS={冒号, <, |, &}，type alias 的 = 不在集合内，isTypePosition 对 = import(...) 判为运行时。fixture 实测：export type T = import('@/menus/a').X 与 ... | null 均被报 REG R2 core/dyntype.ts:1 → menus/a（应豁免）；typeof import(...)、接口/函数返回类型位置的 import 均正确豁免。这与 ADR-242「import type 一律豁免」相悖。 | 不能简单把 = 加入 TYPE_POSITION_CHARS（const v = import(...) 也是 =，会造成运行时误豁免）。建议：在 isTypePosition 命中 = 时回溯到当前语句起点，若语句以 type/interface/declare type/export type 开头判类型位置，否则判运行时；或在 parseStatement 内携带「当前语句是否为类型声明」上下文传给动态 import 判定。补 fixture：export type T = import('@/menus/a').X 应豁免、export const v = import('@/menus/a') 应判 R2。 |
+| P1 | frontend/package.json（test:diff-coverage = node ../scripts/check-diff-coverage.mjs，不带 --suggest）+ .githooks/pre-push:588-610 | **脚本自称阻断、钩子实际不阻断（契约漂移）**。脚本头注释写明「默认不加 --suggest = 阻断模式，低于阈值 exit 1 拦 push」，frontend 脚本也未带 --suggest；但 pre-push L589 调 npm run test:diff-coverage 后非零只走 else 分支：echo 明细 + L609-610 note_check（diff-coverage 历史遗留），**不 collect_fail、不阻断 push**，L588 明确注释「仅建议不阻断」。与 AGENTS.md「补测试后 diff-coverage 仍失败 → 先 commit 测试，再 push」暗示的阻断语义相反。 | 二选一并统一文档：① 若政策为「门禁阻断」，则钩子 L609-610 改为 collect_fail "diff-coverage 低于阈值：为新增/修改逻辑补测试"；② 若政策为「仅建议」，则钩子改调 npm run test:diff-coverage -- --suggest（脚本 --suggest 分支 L379-385 永远 exit 0），并同步修正脚本头注释与 frontend/package.json 脚本名（如 test:diff-coverage:suggest），消除「自称阻断实际不阻断」的契约假象。 |
+| P1 | scripts/check-circular.mjs:65-75 + 391（关联 scripts/dep-metrics.mjs 台账） | **入口文件折叠进 core 制造假环，直接进门禁判定（假红）**。getModule 对 src 根文件（如 main.ts）parts.length===1 → 返回 core，于是 core/main.ts→menus/library-setup.ts→core/a.ts 在模块图里被折叠成 core→menus→core 环。fixture 实测确认该假环；dep-metrics.mjs 台账自证「只剔除 core/main.ts 一个文件，代表环 551→139（约 −75%）」，并把环数自述为「只是门禁回归棘轮、非结构事实」。但 check-circular main() **未做入口过滤**，该假环直接进入新增环判定，--strict + 白名单棘轮下任何改动 src 根文件的提交都可能被误阻断，且白名单吸收后不自治。 | 在 main() 建图前剔除入口文件（文件级入度 0 者，或显式排除 src/main.ts 等启动入口），或与 dep-metrics 的 cyclesNoEntry 视图对齐：门禁同时报 cycles 与 cyclesNoEntry，判定仅用剔除入口后的口径，台账口径保持一致。 |
+| P2 | scripts/check-layering.mjs:132, 136-145 | **--update 掩蔽 R1**。L132 tracked = violations.filter(v => v.rule !== 'R1')，L136-145 --update 只写 tracked 并 exit 0。fixture 实测：含 R1 违规时 node scripts/check-layering.mjs --update 退出码 0 且基线只写 core/r2.ts:menus/a，R1 完全未被报告。而 R1 是「零容忍」（ADR-242），正常检查路径 L151/L178 会因 r1.length>0 退 1。 | --update 入口先判 if (r1.length > 0) { console.error('存在 R1 违规（algo→menus），先修复再生成基线'); process.exit(1); }，杜绝维护命令静默吞掉 R1。 |
+| P2 | scripts/check-layering.mjs:134, 142 | **基线写入非原子 + 解析无 try/catch**。L142 writeFileSync(BASELINE_FILE, JSON.stringify(data,null,2)+换行) 直接覆盖生产基线，进程中断（Ctrl-C / 掉电）会写坏文件；L134 JSON.parse(readFileSync(...)) 无 try/catch，基线损坏后下次运行抛未捕获异常退 1 —— 属 fail-closed（不会假绿）但闸门停摆，且报错晦涩。 | 写临时文件 BASELINE_FILE + '.tmp' → renameSync 原子替换；L134 包 try/catch，损坏时 console.error('.layering-baseline.json 损坏，请重跑 --update') 并 exit 1。 |
+| P2 | scripts/check-circular.mjs:65-75 | **getModule 粒度不一致**。scene/b.ts→scene（parts.length===2），scene/camera/foo.ts→scene/camera，即 scene 一级文件自成模块、scene/*/x.ts 各自拆模块；同一概念子域粒度分裂，环数/白名单键对目录深度敏感。 | 统一为 scene 二级目录成模块（scene/b.ts 也归入 scene 模块，或 scene 下所有子路径折叠为 scene/<top>），并在文档明确口径；至少让 dep-metrics 与 check-circular 的模块边界完全一致后再定。 |
+| P2 | scripts/check-circular.mjs:304-328 | findImportLine 用正则 reFrom/reSide/reDyna 匹配 import，仍可能被注释/字符串内的 import 骗到，给出错误行归因。 | 仅影响 --diff 的「在哪一行新增/删除」提示，不参与门禁判定（门禁用 buildModuleGraph/detectCycles）。建议改为复用 _lib/import-scan.mjs 的线性扫描结果取行号，与主扫描同源。 |
+| P3 | scripts/check-diff-coverage.mjs:398 | **pct 格式不一致**。L398 人类表格 toFixed(1) 无 % 后缀，而表头 L393 写「覆盖%」、失败 banner L404 用 %、buildSuggestBlock L280 用 %。 | 表格行补 %：r.pct.toFixed(1) + '%'。 |
+| P3 | scripts/check-circular.mjs（无 env 钩子） | 与 check-layering（LAYERING_SRC / LAYERING_BASELINE 可注入）不同，check-circular 与 check-diff-coverage 均无 env 钩子，无法用 fixture 注入临时仓库/目录，只能靠真实仓库或 import 导出纯函数测试（本次即如此）。 | 为测试性引入可注入的 CIRCULAR_SRC / 白名单路径钩子（与 layering 同风格），或在 _lib 导出纯函数契约上固化测试。 |
+
+> 补充核实（非 bug）：check-diff-coverage 的失败 banner 走 stderr（L403 console.error）而表格走 stdout，但 pre-push L604 的 >COV_LOG 2>&1 + 钩子顶部 exec 1>&2 使两流都进日志，grep [X]|失败|低于|覆盖 可命中，**消费端一致**。check-layering 的 --json 结构 r1 独立，无结构问题。check-circular 的 --strict 在 pre-push L370 已显式传入，npm run check:circular（package.json）也带 --strict，退出码路径正确。
+
+## 验证建议
+
+1. **rename 回归测试**（P1-1）：临时 git 仓库做 git mv 纯改名，断言脚本对该文件判「无变更行 / 100%」；再做 rename + 增删几行的混合 case，断言只判真实 hunk 行。修复后应能过。
+2. **非 staged fail-closed 测试**（P1-2）：mock 使 git() 返回 null（或指向不存在 base 引用），断言非 staged 分支置 gitHardFail 并退 USAGE_ERROR（exit 2），而非静默 exit 0。
+3. **threshold 边界测试**（P1-3）：--threshold abc / --threshold 0 / --threshold 101 均应退 USAGE_ERROR（exit 2），--threshold 60 正常。
+4. **layering 类型位置 fixture**（P1-4）：新增 dyntype.ts 与既有 dyn.ts（运行时 import('@/menus/a') 应判 R2）同目录对拍；断言 export type T = import('@/menus/a').X 豁免、export const v = import('@/menus/a') 判 R2。
+5. **--update 掩蔽 R1 回归**（P2）：fixture 含 R1 违规时 node scripts/check-layering.mjs --update 应退 1 且不改基线。
+6. **契约项决策**（P1-5）：先定项目政策（阻断 or 建议），再改钩子或改脚本 --suggest 调用，并同步 ADR-254 与 AGENTS.md「先 commit 测试再 push」段落，避免三处说法打架。
+7. **假环回归**（P1-6）：在 check-circular 增加剔除入口文件（或 src/main.ts）的开关，对照 dep-metrics 的 cyclesNoEntry 台账数值，确保门禁新增环信号与台账口径一致。

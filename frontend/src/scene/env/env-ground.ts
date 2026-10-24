@@ -62,6 +62,13 @@ interface _GroundMatSnapshot {
 }
 const _groundMatSnapshots = new WeakMap<StandardMaterial, _GroundMatSnapshot>();
 
+/** [doc:adr-276] Babylon 9 把 reflectionFresnelParameters 从 Nullable 收紧成非空 accessor 声明，
+ *  而运行时 setter 仍接受 null（"没有菲涅尔"就是这个状态）。把这一处上游类型谎言收在一个函数里，
+ *  业务代码就不必写 ! 或就地 as。 */
+function _setReflectionFresnel(mat: StandardMaterial, value: FresnelParameters | null): void {
+    mat.reflectionFresnelParameters = value as unknown as FresnelParameters;
+}
+
 function _saveGroundMatOriginal(mat: StandardMaterial): void {
     if (_groundMatSnapshots.has(mat)) {
         return; // 已保存，避免二次保存覆盖原始快照
@@ -77,7 +84,7 @@ function _saveGroundMatOriginal(mat: StandardMaterial): void {
 function _restoreGroundMatOriginal(mat: StandardMaterial): void {
     const snap = _groundMatSnapshots.get(mat);
     if (snap) {
-        mat.reflectionFresnelParameters = snap.fresnel ? new FresnelParameters(snap.fresnel) : null;
+        _setReflectionFresnel(mat, snap.fresnel ? new FresnelParameters(snap.fresnel) : null);
         if (snap.specular) {
             mat.specularColor = snap.specular.clone();
         }
@@ -1092,7 +1099,9 @@ export function _syncTextureGroundTexture(mat: GroundMat, state: EnvState, scene
         dt.uScale = dt.vScale = baseScale;
         _setAlbedoTex(mat, dt);
         _setAlbedoColor(mat, new Color3(1, 1, 1));
-    } else {
+    } else if (dt) {
+        // [doc:adr-276] needCreate=false 但 dt 为 null 属状态不一致（纹理已被 GD 回收），
+        // 此时跳过缩放的写入，而不是对 null 属性赋值崩掉。
         dt.uScale = dt.vScale = baseScale;
     }
     _syncAllTextureOffsets(mat, state);

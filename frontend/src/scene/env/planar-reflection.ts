@@ -135,6 +135,24 @@ export class PlanarReflection {
         return this.enabled;
     }
 
+    /**
+     * [doc:adr-276] mirrorTexture 模式的镜像平面。
+     * 接口里 `getMirrorPlane` 标可选是因为 screenSpace 模式不需要它（两模式共用一份 Config），
+     * 而两处调用点都在 `mode === 'mirrorTexture'` 分支内 —— 分支本身已隐含「该模式必须提供」。
+     * 缺配置时退回「surfaceLevel 高度的水平面」而不是逐帧抛异常打断渲染循环；
+     * 目前唯一生产者（frontend/src/scene/env/env-ground.ts:668）总会提供，此分支属防御。
+     */
+    private _mirrorPlane(state: EnvState, scene: Scene): Plane {
+        const getMirrorPlane = this.cfg.getMirrorPlane;
+        if (getMirrorPlane) {
+            return getMirrorPlane(state, scene);
+        }
+        return Plane.FromPositionAndNormal(
+            new Vector3(0, this.cfg.getSurfaceLevel(state), 0),
+            new Vector3(0, 1, 0)
+        );
+    }
+
     /** 每帧 / 状态变更时调用：根据 state 决策启用、更新或停用。 */
     update(state: EnvState, scene: Scene): void {
         const quality = this.cfg.getQuality(state);
@@ -175,7 +193,7 @@ export class PlanarReflection {
 
         if (this.cfg.mode === 'mirrorTexture') {
             // Babylon 随材质自动渲染 MirrorTexture；此处仅每帧刷新镜像平面（跟随倾斜）
-            (this.rt as MirrorTexture).mirrorPlane = this.cfg.getMirrorPlane(state, scene);
+            (this.rt as MirrorTexture).mirrorPlane = this._mirrorPlane(state, scene);
             if (this.renderListDirty) {
                 this.populateRenderList(scene, state);
                 this.renderListDirty = false;
@@ -253,7 +271,7 @@ export class PlanarReflection {
             const rt = new MirrorTexture(`${this.cfg.name}RT`, resolution, scene, genMips);
             rt.clearColor = new Color4(0, 0, 0, 0);
             rt.refreshRate = skip + 1; // high=1(每帧), medium=2, low=4 — Babylon 按此频率自动重渲染
-            rt.mirrorPlane = this.cfg.getMirrorPlane(state, scene);
+            rt.mirrorPlane = this._mirrorPlane(state, scene);
             // ADR-114 Phase 2: mipmap + 三线性采样驱动反射模糊（PBR roughness 自动选 mip LOD）
             if (genMips) {
                 rt.updateSamplingMode(Texture.TRILINEAR_SAMPLINGMODE);

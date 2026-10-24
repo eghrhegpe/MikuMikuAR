@@ -20,6 +20,38 @@ function _tryParse(text: string): { action: string; params: Record<string, unkno
     }
 }
 
+/** [audit P3] 从 start 处（必须为 '{'）起按括号配对提取完整 JSON 对象，跳过字符串字面量内的括号。
+ *  未配对（片段残缺）返回 null——宁可交回 null，不猜补。 */
+function _extractBalancedJson(text: string, start: number): string | null {
+    let depth = 0;
+    let inString = false;
+    let escaped = false;
+    for (let i = start; i < text.length; i++) {
+        const c = text.charAt(i);
+        if (inString) {
+            if (escaped) {
+                escaped = false;
+            } else if (c === '\\') {
+                escaped = true;
+            } else if (c === '"') {
+                inString = false;
+            }
+            continue;
+        }
+        if (c === '"') {
+            inString = true;
+        } else if (c === '{') {
+            depth++;
+        } else if (c === '}') {
+            depth--;
+            if (depth === 0) {
+                return text.slice(start, i + 1);
+            }
+        }
+    }
+    return null;
+}
+
 export function parseActionFromLLM(text: string): {
     action: string;
     params: Record<string, unknown>;
@@ -40,16 +72,25 @@ export function parseActionFromLLM(text: string): {
             return result;
         }
     }
-
-    // Priority 3: 正则回退 —— 匹配含 action + params 的 JSON 对象
-    const jsonMatch = text.match(/\{[\s\S]*?"action"[\s\S]*?"params"[\s\S]*?\}/);
-    if (jsonMatch) {
-        result = _tryParse(jsonMatch[0]);
-        if (result) {
-            return result;
+    // 优先级 3：正则回退 —— 提取含 action + params 的 JSON 对象
+    // [audit P3] 旧 lazy 正则 /\{[\s\S]*?"action"..."params"[\s\S]*?\}/ 在第一个 '}' 处截断，
+    // 嵌套 params（{"action":...,"params":{"a":1}}）会静默失败（测试曾将其钉死为 null）。
+    // 改为括号平衡提取：定位 "action" 后从前面最近的 '{' 起配对到闭括号（跳过字符串内括号）。
+    const actionIdx = text.indexOf('"action"');
+    if (actionIdx !== -1) {
+        const open = text.lastIndexOf('{', actionIdx);
+        if (open !== -1) {
+            const snippet = _extractBalancedJson(text, open);
+            if (snippet) {
+                result = _tryParse(snippet);
+                if (result) {
+                    return result;
+                }
+            }
         }
     }
 
+    // P1/P2/P3 均未命中 → 无匹配
     return null;
 }
 

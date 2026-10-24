@@ -147,3 +147,6 @@ docs/upstream/
 build/android/app/libs/
 build/android/app/src/main/jniLibs/
 build/android/app/src/main/assets/
+
+# harness 视觉验证截图产物（dev-only，不进版本库）
+frontend/harness/_shots/

@@ -222,7 +222,11 @@ async function ensureModelMeta(pmxPaths: string[]): Promise<void> {
             if (batch) {
                 const merged = new Map(modelMetaCache);
                 for (const [path, meta] of Object.entries(batch)) {
-                    merged.set(path, meta);
+                    // [doc:adr-276] modelMetaCache 的值类型是历史遗留的 `{ comment: string }`（core/library-state.ts:115），
+                    // GetModelMetaBatch 的条目可空；空条目等同「这路径没有元数据」，跳过即可。
+                    if (meta) {
+                        merged.set(path, meta);
+                    }
                 }
                 setModelMetaCache(merged);
             }

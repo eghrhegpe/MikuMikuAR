@@ -61,13 +61,18 @@ if (args.unknown && args.unknown.length) {
 
 /**
  * 将文件路径映射到模块名
+ *
+ * [round80 P1] src 根文件（parts.length===1）独立成 'src-root' 模块，不再折叠进 'core'。
+ * 原实现把根文件并进 core，制造 core↔menus 假环风险（dep-metrics 自证剔除根节点后代表环 551→139）。
  */
 export function getModule(relativePath) {
     const parts = relativePath.split('/');
     if (parts.length === 0) return 'unknown';
     const topDir = parts[0];
     if (topDir === '__tests__') return 'test';
-    if (parts.length === 1) return 'core';
+    // [round80 P1] src 根文件（如 config.ts）不折叠进 core：core 是真实紧耦合模块，
+    // 把无关的根文件并进去，一旦它出现运行时 import 边就会静默膨胀 core 图并制造假环。
+    if (parts.length === 1) return 'src-root';
     if (topDir === 'scene' && parts.length > 2) {
         return `scene/${parts[1]}`;
     }
