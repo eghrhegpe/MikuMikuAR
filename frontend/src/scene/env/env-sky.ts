@@ -342,7 +342,8 @@ function createProceduralEnvTexture(state: EnvState, scene: Scene): void {
 
 function loadSkyCube(path: string, rotationY: number, intensity: number): void {
     const scene = getScene();
-    const ext = path.split('.').pop().toLowerCase();
+    // [doc:adr-276] 无扩展名时 pop() 为 undefined（文件名叫 "sky" 就是这种情况）
+    const ext = (path.split('.').pop() ?? '').toLowerCase();
     const supported = ['hdr', 'dds', 'exr'];
     if (!supported.includes(ext ?? '')) {
         logWarn('sky', `unsupported format .${ext}, falling back to procedural`);

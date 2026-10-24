@@ -757,7 +757,9 @@ export function addBoneSelectRow(
     container: HTMLElement,
     label: string,
     boneNames: readonly string[],
-    currentName: string,
+    // [doc:adr-276] currentName 允许 null：调用方（骨骼锁定未启用时）就是没有当前骨骼，
+    // 与原先 `select.value = null` 运行时被强制成 '' 的行为一致（下面显式 ?? ''）。
+    currentName: string | null,
     onChange: (name: string) => void,
     opts?: BoneSelectOptions
 ): HTMLSelectElement {
@@ -796,7 +798,7 @@ export function addBoneSelectRow(
         }
         boneSelect.appendChild(optGroup);
     }
-    boneSelect.value = currentName;
+    boneSelect.value = currentName ?? '';
     boneSelect.addEventListener('change', () => {
         onChange(boneSelect.value);
     });

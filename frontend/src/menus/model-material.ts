@@ -324,10 +324,12 @@ function buildMatRootSchema(
                                     const detail = detailList.find(
                                         (d) => d.name === matInfo.mat.name
                                     );
-                                    const idx = detail ? detail.index : -1;
-                                    if (idx === -1) {
+                                    // [doc:adr-276] 先收窄 detail 再取 index：原写法用 idx === -1 判空，
+                                    // 后续 `detail.modified` 拿不到收窄（TS 无法从 idx 反推 detail）。
+                                    if (!detail || detail.index === -1) {
                                         continue;
                                     }
+                                    const idx = detail.index;
                                     const matEnabled = isMatEnabled(id, idx);
 
                                     const row = document.createElement('div');

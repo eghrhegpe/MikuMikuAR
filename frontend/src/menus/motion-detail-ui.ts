@@ -234,7 +234,12 @@ function buildMotionDetailSchema(
                                                       ? (procId as import('../motion-algos/procedural-motion').ProcModeKey)
                                                       : (procState.mode as import('../motion-algos/procedural-motion').ProcModeKey);
                                               getMotionMenu()?.push(
-                                                  buildProcToolsLevel(modelId, targetMode)
+                                                  // [doc:adr-276] modelId 此处可能是 null（场景级视图），
+                                                  // 目标函数签名的可选语义用 undefined 表达
+                                                  buildProcToolsLevel(
+                                                      modelId ?? undefined,
+                                                      targetMode
+                                                  )
                                               );
                                           },
                                       }

@@ -72,16 +72,16 @@ npm run check                                          # 确认未新增错误
 ## 二、TypeScript 约定
 
 > 完整编译选项以 `frontend/tsconfig.json` 为唯一真相源，本文件**不复制其状态表**（避免漂移）。
-> ⚠️ **如实记录现状，阶梯已立项**：严格化路线见 `docs/adr/adr-274-strict-rollout.md`（Stage 1 `noImplicitAny` 已落地）。
+> ⚠️ **如实记录现状，阶梯已立项**：严格化路线见 `docs/adr/adr-274-strict-rollout.md`（Stage 1 `noImplicitAny`）与 `docs/adr/adr-276-strict-null-rollout.md`（Stage 2 `strictNullChecks`），两级均已落地。
 
 ### 2.1 当前关键事实（2026-10-24 校准）
-- `strict: false` —— 但 `noImplicitAny: true` **已开启**（ADR-274 Stage 1，2026-10-24）：隐式 any 现在由编译器接管，新代码漏参数类型会直接编译失败。`strictNullChecks` 仍是关的，Stage 2 待排期（实测 386 处）。
+- `strict: false`，但 `noImplicitAny: true` **与** `strictNullChecks: true` 均已开启（ADR-274 Stage 1 / ADR-276 Stage 2，均 2026-10-24）：隐式 any 与空值都由编译器接管——漏参数类型、把 `T | null` 当 `T` 用都会直接编译失败。剩下的 `strict` 家族成员（`strictFunctionTypes` / `strictPropertyInitialization` 等）仍是关的，Stage 3 全 strict 实测 454 处（生产 230 / 67 文件）待排期。
 - 路径别名：`@/*` → `src/*`、`@bindings/*` → `bindings/*`（2026-07-08 添加）。新代码优先使用别名导入。
 - `core/config.ts` 为 barrel re-export；实际实现已拆至 `types.ts` / `state.ts`（内部再拆 `scene-state` / `playback-state` / `library-state` / `ui-state`，ADR-141）/ `dom.ts` / `utils.ts` 等子模块。跨模块共享类型优先放 `core/types.ts`。
 - 项目**没有**集中的 `src/types/` 目录；interface/type 就近放置，跨模块共享类型放 `core/types.ts`。
 
 ### 2.2 写新代码的硬规则
-- **不要新增 `any` 逃生** —— 即使 `strict: false` 允许，新代码仍要避免 `as any` / `@ts-ignore` / `@ts-expect-error`。需要时加注释说明业务理由。注意 `noImplicitAny` 已开，显式 `any` 是唯一还漏得过的口子，别把它当默认解法。
+- **不要新增 `any` 逃生** —— 即使 `strict: false` 允许，新代码仍要避免 `as any` / `@ts-ignore` / `@ts-expect-error`。需要时加注释说明业务理由。注意 `noImplicitAny` 与 `strictNullChecks` 都已开，显式 `any` 与 `!` 是仅剩的两个口子：`any` 让整条链脱检，`!` 会把"可能为 null"伪装成"已确认"（全仓生产侧 143 处存量，ADR-276 决策 5 只记账不翻规则，**新增必须写理由注释**）。
 - **binding 自动生成（禁手写 `bindings/`）** —— `frontend/bindings/` 由 `npm run generate:bindings` 自动产出 .ts 绑定（含 FNV-1a 32-bit method ID，生成器自动算）。新增/删除 Go 方法后重跑生成器即可，禁止手维护 `bindings/` 下 .ts。`src/core/wails-bindings.ts`（model 类型登记 + re-export 聚合）**不归生成器管、保持手维护**。**唯一真陷阱：`-clean` 默认 true 会先清空输出目录** —— 脚本已带 `-d frontend/bindings` 故安全；切勿裸跑 `wails3 generate bindings -dry`（仍会清空默认目录）。TS 侧统一通过 `src/core/wails-bindings.ts` re-export 引入。`app.contract.test.ts` 动态校验导出函数存在性 + FNV-1a ID，仅作生成器输出一致性护栏。
 
 ### 2.3 测试卫生铁律（ADR-219 教训固化，2026-08-01）

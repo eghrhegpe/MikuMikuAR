@@ -85,7 +85,7 @@ describe('FSA 目录扫描嵌套结构（保留目录层级 + 同名不覆盖）
         setWindow({ showDirectoryPicker: async () => root });
         await browserAdapter.SelectDir();
 
-        const models = await browserAdapter.GetLibraryIndex();
+        const models = (await browserAdapter.GetLibraryIndex()) ?? [];
         const byPath = new Map(models.map((m) => [m.file_path, m]));
 
         // 根 pmx → web://selected-dir/PMX（扁平子集仍工作）
@@ -191,7 +191,7 @@ describe('FSA 目录扫描嵌套结构（保留目录层级 + 同名不覆盖）
             size: 1,
             savedAt: Date.now(),
         });
-        const models = await fresh.ScanModelDir();
+        const models = (await fresh.ScanModelDir()) ?? [];
         // 根重扫先清旧：旧平铺 entry 必须消失
         expect(idbStore.get('entry:foo')).toBeUndefined();
         // 新嵌套 entry 来自重扫

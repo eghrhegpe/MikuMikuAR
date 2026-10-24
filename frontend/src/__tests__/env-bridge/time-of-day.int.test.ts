@@ -62,7 +62,7 @@ describe('Time of Day', () => {
         registeredTickCallback = null;
 
         mockRegisterSceneTickCallback.mockImplementation((cb?: () => void) => {
-            registeredTickCallback = cb;
+            registeredTickCallback = cb ?? null;
             return vi.fn();
         });
 

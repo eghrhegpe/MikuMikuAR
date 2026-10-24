@@ -231,7 +231,8 @@ async function runDownloadManagerLocal(
     }
 
     onProgress(t('downloads.scanning'));
-    const entries = await ListDirRecursive(downloadPath);
+    // [doc:adr-276] 目录读取失败时契约为 null：收敛成空列表，落到下面既有的「没有新文件」反馈。
+    const entries = (await ListDirRecursive(downloadPath)) ?? [];
     const files = entries.filter((e) => _SUPPORTED_RE.test(e.name));
 
     if (files.length === 0) {

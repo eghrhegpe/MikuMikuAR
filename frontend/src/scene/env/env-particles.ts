@@ -447,7 +447,8 @@ export function createParticleEmitter(type: EnvState['particleType'], windEnable
     } else if (prevType === 'rain' && type !== 'rain') {
         removeWetnessFromAllModels();
     }
-    if (type === 'none') {
+    // [doc:adr-276] cfg 与 type !== 'none' 是同源判据：合并成一个分支，下面 _applyParticleConfig 才拿到非空 cfg
+    if (type === 'none' || !cfg) {
         return;
     }
 

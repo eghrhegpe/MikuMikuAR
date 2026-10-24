@@ -449,16 +449,18 @@ async function _rebuildCompositeAnimation(modelId: string): Promise<void> {
         return;
     }
 
-    const hasBaseVmd = !!inst.vmdData;
+    // [doc:adr-276] 传数据本身而不是 `!!inst.vmdData` 的布尔副本：调用方与本文件内多处
+    // 都要用这份 ArrayBuffer，布尔判据让下游只能再靠 as/! 把 null 咽下去。
+    const baseVmdData = inst.vmdData;
 
     // 无图层 / 单图层回退路径（不需要 MmdCompositeAnimation 混合）
-    if (vmdEnabledLayers.length === 0 || (vmdEnabledLayers.length === 1 && !hasBaseVmd)) {
-        await _rebuildFallback(modelId, gen, inst, vmdEnabledLayers, hasBaseVmd);
+    if (vmdEnabledLayers.length === 0 || (vmdEnabledLayers.length === 1 && !baseVmdData)) {
+        await _rebuildFallback(modelId, gen, inst, vmdEnabledLayers, baseVmdData);
         return;
     }
 
     // 多动画合成（基础 VMD + 图层）→ WASM blender 或 JS MmdCompositeAnimation
-    await _rebuildComposite(modelId, gen, inst, vmdEnabledLayers, hasBaseVmd, scene);
+    await _rebuildComposite(modelId, gen, inst, vmdEnabledLayers, baseVmdData, scene);
 }
 
 /**
@@ -470,16 +472,16 @@ async function _rebuildFallback(
     gen: number,
     inst: import('../../core/config').ModelInstance,
     vmdEnabledLayers: VmdLayer[],
-    hasBaseVmd: boolean
+    baseVmdData: ArrayBuffer | null
 ): Promise<void> {
     // 没有 VMD 图层 → 回退到单 VMD 模式（如果有 vmdData）
     if (vmdEnabledLayers.length === 0) {
-        if (hasBaseVmd) {
+        if (baseVmdData) {
             const { loadVMDMotion } = await import('./vmd-loader');
             if (_rebuildGenMap.get(modelId) !== gen) {
                 return;
             }
-            await loadVMDMotion(inst.vmdData, inst.vmdName, modelId);
+            await loadVMDMotion(baseVmdData, inst.vmdName, modelId);
         }
         return;
     }
@@ -506,7 +508,7 @@ async function _rebuildComposite(
     gen: number,
     inst: import('../../core/config').ModelInstance,
     vmdEnabledLayers: VmdLayer[],
-    hasBaseVmd: boolean,
+    baseVmdData: ArrayBuffer | null,
     scene: import('@babylonjs/core/scene').Scene
 ): Promise<void> {
     try {
@@ -521,8 +523,8 @@ async function _rebuildComposite(
         let maxEndFrame = 0;
         try {
             // 收集所有待混合的动画条目：基础 VMD（weight=1.0）+ 各启用的 VMD 图层
-            if (hasBaseVmd) {
-                sources.push({ data: inst.vmdData, name: inst.vmdName || 'base', weight: 1.0 });
+            if (baseVmdData) {
+                sources.push({ data: baseVmdData, name: inst.vmdName || 'base', weight: 1.0 });
             }
             for (const layer of vmdEnabledLayers) {
                 sources.push({
@@ -601,12 +603,19 @@ async function _rebuildComposite(
         // 绑定到模型（切换 VMD 图层）：释放旧句柄 + 绑定合成动画 + 归零时钟。
         // 封装于 mmd-adapter PlaybackContract.switchAnimation（见 ADR-192）；
         // 与 loadVMDMotion 的修复对齐（ADR-106 生命周期隔离：仅改时钟，不破坏主视图）。
-        await switchAnimation(mmdRuntime, inst.mmdModel, composite);
+        // [doc:adr-276] mmdRuntime 是 core/scene-state 的模块级 let，跨 await 后收窄失效：
+        // 绑定前重新取一次并接到 const（gen 已校验，取到的仍是同一代运行时）。
+        const runtime = mmdRuntime;
+        const boundModel = inst.mmdModel;
+        if (!runtime || !boundModel) {
+            return;
+        }
+        await switchAnimation(runtime, boundModel, composite);
         // 绑定后确保播放：原本在播放则 seek 后从第 0 帧续播；暂停且开启循环则启动。
         // 与 loadVMDMotion 末尾逻辑对齐（autoLoop 关闭且本就暂停时保持静止，符合预期）。
         if (!isPlaying && autoLoop) {
             try {
-                await mmdRuntime.playAnimation();
+                await runtime.playAnimation();
                 setIsPlaying(true);
             } catch {
                 // 启动播放失败不阻断绑定

@@ -371,9 +371,11 @@ function buildActionBindingSchema(id: string): MenuNode[] {
     ] satisfies MenuNode[];
 }
 
-export function buildActionBindingLevel(id: string): PopupLevel {
-    const inst = modelManager.get(id);
-    if (!inst) {
+export function buildActionBindingLevel(id?: string): PopupLevel {
+    // [doc:adr-276] 经 ui-action-bridge 调用时 id 可能缺省（注册签名是 `id?: string`）；
+    // 缺省等同 get() 取不到模型，返回空层级（与下方 !inst 分支同一出口）。
+    const inst = id ? modelManager.get(id) : undefined;
+    if (!inst || !id) {
         return { label: t('motion.intent.title'), dir: '', items: [] };
     }
     return {
@@ -391,7 +393,12 @@ export function buildActionBindingLevel(id: string): PopupLevel {
 // ═══════════════════════════════════════════════════════════
 
 /** 处理 per-model 动作控制指令（pause / reset / pose / loop）。 */
-export async function handleModelAction(action: string, id: string): Promise<void> {
+export async function handleModelAction(action: string, id?: string): Promise<void> {
+    // [doc:adr-276] 经 ui-action-bridge 调用时 id 可能缺省（注册签名是 `modelId?: string`）；
+    // 缺省即「没有目标模型」，与下面 modelManager.get() 取不到时同为 no-op，这里把意图写明。
+    if (!id) {
+        return;
+    }
     const inst = modelManager.get(id);
     if (!inst) {
         return;
@@ -419,6 +426,9 @@ export async function handleModelAction(action: string, id: string): Promise<voi
             break;
         case 'reset':
             if (inst.mmdModel && mmdRuntime) {
+                // [doc:adr-276] mmdRuntime 是 core/scene-state 的模块级 let：收窄不穿透到 guardedRun 的闭包，
+                // 先接到 const 再进回调（否则回调里的 pauseAnimation 会报 possibly null）。
+                const runtime = mmdRuntime;
                 // [doc:adr] 统一异步守卫：transitioning 期间忽略点击 + await 后 stale 复查
                 const menu = getMotionMenu();
                 await menu?.guardedRun(async (stale) => {
@@ -431,7 +441,7 @@ export async function handleModelAction(action: string, id: string): Promise<voi
                     // [doc:adr-167] 清空整个场景动作库 + 默认动作
                     clearAllSceneMotions();
                     if (isPlaying) {
-                        mmdRuntime.pauseAnimation();
+                        runtime.pauseAnimation();
                         setIsPlaying(false);
                     }
                     updatePlaybackUI();

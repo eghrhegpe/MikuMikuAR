@@ -1,7 +1,7 @@
 // [doc:architecture] Model Preset — 预设序列化/库管理/自动应用
 
 import { modelRegistry, PopupLevel, isPlaying } from '../core/config';
-import { stackRegistry } from './menu-stack-registry';
+import { requireModelStack, stackRegistry } from './menu-stack-registry';
 import { computeLibraryRef } from '@/core/library-path';
 import { escapeHtml } from '../core/escape-html';
 import { feedbackInfo, feedbackStatus } from '../core/feedback';
@@ -352,7 +352,7 @@ export async function savePresetToLibDialog(id: string): Promise<void> {
 }
 
 export function buildPresetListLevel(id: string | null): PopupLevel {
-    const reRender = () => stackRegistry.modelStack.reRender();
+    const reRender = () => requireModelStack().reRender();
     return buildGenericPresetLevel(
         {
             label: t('model-preset.presetLib'),

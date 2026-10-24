@@ -1026,14 +1026,9 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
         if (data.stageLights && data.stageLights.length > 0) {
             loadStageLights(data.stageLights);
         } else if (data.stageLight) {
-            const sl = {
-                id: 'light-1',
-                name: '主光',
-                type: 'spot' as const,
-                range: 50,
-                ...data.stageLight,
-            };
-            loadStageLights([sl]);
+            // [doc:adr-276] 旧格式 stageLight 已是完整 StageLightState：原先在展开前写的
+            // id/name/type/range 默认值永远被展开覆盖（TS2783 报的就是这个），直接透传即可
+            loadStageLights([data.stageLight]);
         }
 
         // --- Procedural Motion ---
@@ -1144,9 +1139,11 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
                 for (const m of data.motion.sceneMotions) {
                     const id = addSceneMotion({
                         id: m.id,
-                        vmdPath: m.vmdPath,
-                        vmdName: m.vmdName,
-                        vmdLayers: m.vmdLayers.map((l) => ({
+                        vmdPath: m.vmdPath ?? null,
+                        vmdName: m.vmdName ?? '',
+                        // [doc:adr-276] 存档字段全可选（新/旧格式共存，见 SceneSnapshot schema）：
+                        // 缺 vmdLayers 只可能来自更早的存档，按「无层」还原
+                        vmdLayers: (m.vmdLayers ?? []).map((l) => ({
                             id: '',
                             kind: l.kind ?? 'vmd',
                             name: l.name,
@@ -1156,7 +1153,7 @@ export async function deserializeScene(data: SceneFile, skipEnv = false): Promis
                             boneFilter: l.boneFilter,
                             enabled: l.enabled ?? true,
                         })),
-                        source: m.source,
+                        source: m.source ?? 'vmd',
                         motionModules: m.motionModules,
                         procMotion: m.procMotion
                             ? (migrateProcState(m.procMotion) as ProcMotionConfig)
@@ -1641,7 +1638,8 @@ registerSceneAction('pushUndoSnapshot', () => pushUndoSnapshot());
 registerSceneAction(
     'offerSceneUndoAndRefresh',
     (label: string, snap: unknown, afterApply?: () => void) => {
-        offerSceneUndoAndRefresh(label, snap as string, afterApply);
+        // [doc:adr-276] 桥参数可选，callee 要求必传回调：缺省补一个空操作，避免 undefined 被当函数调用
+        offerSceneUndoAndRefresh(label, snap as string, afterApply ?? (() => {}));
     }
 );
 

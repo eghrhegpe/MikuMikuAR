@@ -261,7 +261,7 @@ const shared = vi.hoisted(() => {
     const registerTransformAdapter = vi.fn();
     const attachGizmoForKind = vi.fn();
     const isGizmoActive = vi.fn(() => false);
-    const getGizmoTargetId = vi.fn(() => null);
+    const getGizmoTargetId = vi.fn((): string | null => null);
     const setTransformMetadata = vi.fn();
     const triggerAutoSave = vi.fn();
     return {
@@ -823,8 +823,11 @@ describe('光锥 ensure/dispose（经 setStageLightState 触发）', () => {
 describe('_disposeStageLightEntry', () => {
     it('正常：释放指示器/灯/阴影/光锥', () => {
         const entry = seedEntry('light-1', 'spot', { enabled: true });
+        // [doc:adr-276] StageLightEntry.indicator 的静态类型是 null（mock 简化），
+        // 断言到最小可用结构后赋值，避免 ! 收窄成 never
         entry.indicator = new shared.Mesh('ind') as never;
-        entry.indicator!.material = new shared.StandardMaterial('mat') as never;
+        (entry.indicator as unknown as { material: unknown }).material =
+            new shared.StandardMaterial('mat');
         entry.dirLine = new shared.Mesh('dir') as never;
         lightingState.stageShadows.set('light-1', { dispose: vi.fn() } as never);
         lightingState.stageCones.set('light-1', {
@@ -844,7 +847,7 @@ describe('_disposeStageLightEntry', () => {
     it('正常：indicator 无 material 时不崩溃', () => {
         const entry = seedEntry('light-1', 'spot');
         entry.indicator = new shared.Mesh('ind') as never;
-        entry.indicator!.material = null;
+        (entry.indicator as unknown as { material: unknown }).material = null;
         expect(() => _disposeStageLightEntry('light-1', entry)).not.toThrow();
         expect(entry.indicator).toBeNull();
     });

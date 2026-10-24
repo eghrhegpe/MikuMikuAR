@@ -42,7 +42,7 @@
 
 | ADR | 主题 | 状态 |
 |-----|------|------|
-| [ADR-276](./adr-276-strict-null-rollout.md) | 严格模式渐进收敛：Stage 2 打开 strictNullChecks — 362 处空值判断的三批收口与影子清零 | 🔄 部分采纳 |
+| [ADR-276](./adr-276-strict-null-rollout.md) | 严格模式渐进收敛：Stage 2 打开 strictNullChecks — 362 处空值判断的三批收口与影子清零 | ✅ 已采纳 |
 | [ADR-275](./adr-275-feet-adjustment-deprecation-landing-source.md) | 脚部地面跟随即刻废弃的收尾 — 落地事件源以「是否真在解算」为准 | ✅ 已采纳 |
 | [ADR-274](./adr-274-strict-rollout.md) | 严格模式渐进收敛：Stage 1 打开 noImplicitAny — 编译器接管隐式 any，148 处清零的三级阶梯 | ✅ 已采纳 |
 | [ADR-273](./adr-273-scene-boot-plan.md) | 场景启动顺序显式化 — 把装配序列从语句位置变成可校验清单（boot plan） | 🔄 部分采纳 |

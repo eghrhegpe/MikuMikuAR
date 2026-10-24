@@ -22,9 +22,16 @@ const mockState = vi.hoisted(() => ({
     },
     isAudioPlaying: vi.fn(() => false),
     getAudioPath: vi.fn(() => ''),
-    getProcBeatDetector: vi.fn(() => null),
-    findLipMorph: vi.fn(() => null),
-    findAllLipMorphs: vi.fn(() => ({ open: null, close: null, pucker: null, smile: null })),
+    // [doc:adr-276] 返回类型标成 unknown（与 perception-mocks.createMockState 的签名保持一致）：
+    // 推成 null 字面量后，用例里的 mockReturnValue(检测器/口型名/映射表) 都会被判「不是 null」
+    getProcBeatDetector: vi.fn((): unknown => null),
+    findLipMorph: vi.fn((): unknown => null),
+    findAllLipMorphs: vi.fn((): unknown => ({
+        open: null,
+        close: null,
+        pucker: null,
+        smile: null,
+    })),
     amplitudeToWeight: vi.fn(() => 0),
 }));
 const mockPipeline = vi.hoisted(() => ({

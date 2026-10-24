@@ -111,6 +111,11 @@ export function createVmdCamera(): MmdCamera {
     }
     // 旧 MmdCamera 已被销毁（如 vmd→orbit→vmd 切换时 switchCameraMode 对 oldCam 执行了 dispose，
     // 但本模块级引用未置空）：重建相机，并用保留的动画源恢复动画句柄。
+    // [doc:adr-276] getCameraScene 返回 Scene | null（:330），相机必须在场景里注册：
+    // 没有场景就抛错，好过建一台不上场景、永远不渲染的相机。
+    if (!scene) {
+        throw new Error('camera-vmd: 场景未初始化（setCameraScene 之前调用了 createVmdCamera）');
+    }
     const cam = new MmdCamera('mmdCam', new Vector3(0, 10, 0), scene, false);
     if (_mmdAnimation) {
         _cameraAnimationHandle = cam.createRuntimeAnimation(_mmdAnimation);

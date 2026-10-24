@@ -30,7 +30,9 @@ import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 
 // ======== Init (called once by scene.ts) ========
 
-export function initEnvFacade(scene: Scene, pipeline: DefaultRenderingPipeline): void {
+/** [doc:adr-276] pipeline 放宽为可空，与实现一致：未建 pipeline 时 env-context 存 null，
+ *  首次 getPipeline() 才抛带上下文的错误（原先这里谎称非空，null 照样流进去）。 */
+export function initEnvFacade(scene: Scene, pipeline: DefaultRenderingPipeline | null): void {
     impl.initEnvImpl(scene, pipeline);
 }
 

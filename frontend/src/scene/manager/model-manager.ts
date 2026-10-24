@@ -879,7 +879,8 @@ export class ModelManager {
 
     private createBoneOverlay(id: string): void {
         const inst = this.modelRegistry.get(id);
-        if (!inst.mmdModel) {
+        // [doc:adr-276] inst 可空（模型可能在异步创建 overlay 前被移除），与 mmdModel 同属前置条件
+        if (!inst || !inst.mmdModel) {
             return;
         }
         if (this._boneOverlayMap.has(id)) {

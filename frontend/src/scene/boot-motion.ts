@@ -30,7 +30,8 @@ export async function bootFeetAdjustment(): Promise<void> {
     const { startFeetAdjustment } = await import('./motion/feet-adjustment');
     startFeetAdjustment(
         (): { id: string; feet: FeetState; runtimeBones: readonly IMmdRuntimeBone[] }[] => {
-            const out: { id: string; feet: FeetState; runtimeBones: readonly IMmdRuntimeBone[] }[] = [];
+            const out: { id: string; feet: FeetState; runtimeBones: readonly IMmdRuntimeBone[] }[] =
+                [];
             for (const inst of modelRegistry.values()) {
                 const bones = inst.mmdModel?.runtimeBones;
                 if (bones && bones.length > 0) {
@@ -86,7 +87,13 @@ export async function bootWasmIkResolver(): Promise<void> {
         if (!inst?.mmdModel) {
             return;
         }
-        const impl = getPhysicsImpl(mmdRuntime);
+        // [doc:adr-276] mmdRuntime 是模块级 let（core/scene-state），这里必须显式判空：
+        // 物理未初始化时 getPhysicsImpl(null) 只会更晚崩。
+        const runtime = mmdRuntime;
+        if (!runtime) {
+            return;
+        }
+        const impl = getPhysicsImpl(runtime);
         if (!impl) {
             return;
         }

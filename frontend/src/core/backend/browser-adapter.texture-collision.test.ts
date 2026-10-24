@@ -49,7 +49,9 @@ describe('纹理键命名空间（bugfix:tex-stem-collision）', () => {
         expect(bDir).toBe('web://model/B%2Fmiku');
         expect('dir:A%2Fmiku:tex/face.png').not.toBe('dir:B%2Fmiku:tex/face.png');
 
-        const aEntries = await browserAdapter.ListDirRecursive(aDir);
+        // [doc:adr-276] ListDirRecursive 的契约是可空（BackendService 里 Go 侧可能回 null），
+        // browser 适配器实现恒定返回数组；测试按空数组收敛，仍能在契约违反时失败
+        const aEntries = (await browserAdapter.ListDirRecursive(aDir)) ?? [];
         expect(aEntries.map((e) => e.relativePath)).toContain('tex/face.png');
 
         const gotA = await browserAdapter.readFileBytes(`${aDir}/tex/face.png`);
@@ -70,7 +72,7 @@ describe('纹理键命名空间（bugfix:tex-stem-collision）', () => {
         const dir = await browserAdapter.IsolateModelDir('miku.pmx');
         expect(dir).toBe('web://model/miku');
 
-        const entries = await browserAdapter.ListDirRecursive(dir);
+        const entries = (await browserAdapter.ListDirRecursive(dir)) ?? [];
         expect(entries.map((e) => e.relativePath)).toContain('tex/face.png');
 
         const got = await browserAdapter.readFileBytes(`${dir}/tex/face.png`);
@@ -95,6 +97,9 @@ describe('GetCacheStats 真实结构（修复面板 undefined）', () => {
         setStore('caches', { 'extract:x': cacheBytes });
 
         const stats = await browserAdapter.GetCacheStats();
+        if (!stats) {
+            throw new Error('GetCacheStats 契约要求返回 CacheStats');
+        }
 
         expect(stats.extractedBytes).toBe(5);
         expect(stats.extractedCount).toBe(1);
@@ -110,6 +115,9 @@ describe('GetCacheStats 真实结构（修复面板 undefined）', () => {
     it('空库时所有计数与字节为 0，不抛错', async () => {
         resetMem();
         const stats = await browserAdapter.GetCacheStats();
+        if (!stats) {
+            throw new Error('GetCacheStats 契约要求返回 CacheStats');
+        }
         expect(stats.totalBytes).toBe(0);
         expect(stats.resourceCount).toBe(0);
         expect(stats.thumbnailCount).toBe(0);

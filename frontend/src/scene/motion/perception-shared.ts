@@ -80,7 +80,9 @@ export interface MmdModelLike {
     runtimeBones: readonly IMmdRuntimeBone[];
     mesh: {
         metadata?: MeshMetadata;
-        morphTargetManager?: MorphTargetManager;
+        /** [doc:adr-276] Babylon 的 Mesh.morphTargetManager 是 Nullable：无目标的模型就是 null，
+         *  写成可选（undefined）会让真实模型类型 RuntimeModel 无法赋给本接口。 */
+        morphTargetManager?: MorphTargetManager | null;
         /** rootMesh 世界矩阵（含 scaling/rotation/translation） */
         getWorldMatrix?(): unknown;
     };

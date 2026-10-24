@@ -229,7 +229,7 @@ describe('captureInheritedState', () => {
         snap.boneOverrides[0].boneName = '篡改';
         snap.feet.enabled = false;
         expect(inst.boneOverrides[0].boneName).toBe('上半身');
-        expect(inst.feet.enabled).toBe(false);
+        expect(inst.feet?.enabled).toBe(false);
     });
 });
 

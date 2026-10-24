@@ -372,7 +372,7 @@ let _sceneDisposeObserverHandle: ObserverHandle | null = null;
 export const __envDebug = import.meta.env.DEV
     ? () => ({
           clearColor: `rgba(${scene.clearColor.r.toFixed(2)},${scene.clearColor.g.toFixed(2)},${scene.clearColor.b.toFixed(2)},${scene.clearColor.a})`,
-          matType: _envSys.sky.skyMesh.material.getClassName() || 'none',
+          matType: _envSys.sky.skyMesh?.material?.getClassName() || 'none',
           skyMode: envState.skyMode,
       })
     : undefined;
@@ -477,7 +477,8 @@ function _createBootHooks(): BootHooks {
             initRenderer(scene, modelRegistry, triggerAutoSave);
         },
         initEnvFacade: () => {
-            initEnvFacade(scene, pipeline);
+            // [doc:adr-276] pipeline 是 module-level 可变引用（renderer.ts:82），initRenderer 之前为 undefined
+            initEnvFacade(scene, pipeline ?? null);
         },
         createBeatDetector: () => createProcBeatDetector(),
         attachBeatDetector: (beat) => {
@@ -503,13 +504,16 @@ function _createBootHooks(): BootHooks {
                 runtime,
                 manager,
                 refreshWaterRenderList,
-                (id: string) => getSceneAction('tryAutoApplyPreset')?.(id),
+                // [doc:adr-276] 桥可选：未注册时给一个已 resolve 的 Promise，
+                // 而不是把 undefined 交给 initLoader 在 .then 链上炸
+                (id: string) => getSceneAction('tryAutoApplyPreset')?.(id) ?? Promise.resolve(),
+                // [doc:adr-276] 同上：可选链短路时整条 .then/.catch 都不执行，补已 resolve 的 Promise
                 (id: string) =>
                     getSceneAction('loadOutfits')?.(id)
                         .then(() => {})
                         .catch(() => {
                             /* loadOutfits 仅用于换装，失败不阻断流程 */
-                        }),
+                        }) ?? Promise.resolve(),
                 rebuildOutlineState
             );
         },
@@ -535,7 +539,13 @@ function _createBootHooks(): BootHooks {
             _updateSunDisc();
         },
         registerRenderBridge: () => {
-            registerRenderBridge({ engine, setLightState, setRenderState, getLightState, getRenderState });
+            registerRenderBridge({
+                engine,
+                setLightState,
+                setRenderState,
+                getLightState,
+                getRenderState,
+            });
         },
         // [doc:adr-196] 注入 AI 快照桥接：getter 惰性读取当前 engine/scene/modelManager，
         // HMR 重初始化新实例后仍能读到最新值（单向依赖，ai 模块不反向依赖 scene）。
@@ -591,10 +601,12 @@ function _bindSceneEvents(scene: Scene): void {
         if (!envState.waterEnabled) {
             return;
         }
-        if (info.pickInfo.hit) {
+        // [doc:adr-276] pickInfo 可空（点击落在无拾取结果的帧）：无拾取就无从算射线，直接跳过
+        const pickInfo = info.pickInfo;
+        if (!pickInfo || pickInfo.hit) {
             return;
         }
-        const ray = info.pickInfo.ray;
+        const ray = pickInfo.ray;
         if (!ray || ray.direction.y >= 0) {
             return;
         }

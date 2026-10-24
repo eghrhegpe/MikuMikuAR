@@ -12,15 +12,23 @@ import { buildBootPlan, type BootHooks } from '@/scene/boot-steps';
 /** 造一份"会记账"的钩子：记录调用顺序，其余行为最小化（不碰 Babylon）。 */
 function createHooks(): { hooks: BootHooks; calls: string[] } {
     const calls: string[] = [];
-    const record = <T>(name: string, value: T) => () => {
+    const record =
+        <T>(name: string, value: T) =>
+        () => {
+            calls.push(name);
+            return value;
+        };
+    // [doc:adr-276] 异步步钩子签名是 () => Promise<void>，同步 record 返回 undefined 不兼容
+    const recordAsync = (name: string) => async (): Promise<void> => {
         calls.push(name);
-        return value;
     };
-    const runtime = { __tag: 'runtime' } as unknown as Awaited<ReturnType<BootHooks['initMmdRuntime']>>;
+    const runtime = { __tag: 'runtime' } as unknown as Awaited<
+        ReturnType<BootHooks['initMmdRuntime']>
+    >;
     const manager = { __tag: 'manager' } as unknown as ReturnType<BootHooks['initModelManager']>;
     const beat = { __tag: 'beat' } as unknown as ReturnType<BootHooks['createBeatDetector']>;
     const hooks: BootHooks = {
-        initMmdLoaders: record('initMmdLoaders', undefined),
+        initMmdLoaders: recordAsync('initMmdLoaders'),
         initMmdRuntime: async () => {
             calls.push('initMmdRuntime');
             return runtime;
@@ -58,11 +66,11 @@ function createHooks(): { hooks: BootHooks; calls: string[] } {
             calls.push('initPlayback');
             return () => {};
         },
-        initFeetAdjustment: record('initFeetAdjustment', undefined),
-        initFootstep: record('initFootstep', undefined),
-        initBoneOverride: record('initBoneOverride', undefined),
-        initWasmIkResolver: record('initWasmIkResolver', undefined),
-        initMotionModules: record('initMotionModules', undefined),
+        initFeetAdjustment: recordAsync('initFeetAdjustment'),
+        initFootstep: recordAsync('initFootstep'),
+        initBoneOverride: recordAsync('initBoneOverride'),
+        initWasmIkResolver: recordAsync('initWasmIkResolver'),
+        initMotionModules: recordAsync('initMotionModules'),
         applyEnvState: record('applyEnvState', undefined),
         updateSunDisc: record('updateSunDisc', undefined),
         registerRenderBridge: record('registerRenderBridge', undefined),
@@ -160,8 +168,18 @@ describe('validateBootPlan 静态规则', () => {
 
     it('重复 provide 同一资源 → 报错（谁是权威不允许含糊）', () => {
         const plan = [
-            defineBootStep({ id: 'a', requires: [], provides: ['loader'], run: () => ({ loader: undefined }) }),
-            defineBootStep({ id: 'b', requires: [], provides: ['loader'], run: () => ({ loader: undefined }) }),
+            defineBootStep({
+                id: 'a',
+                requires: [],
+                provides: ['loader'],
+                run: () => ({ loader: undefined }),
+            }),
+            defineBootStep({
+                id: 'b',
+                requires: [],
+                provides: ['loader'],
+                run: () => ({ loader: undefined }),
+            }),
         ];
         expect(validateBootPlan(plan).join('\n')).toContain('provided by both "a" and "b"');
     });
@@ -187,7 +205,12 @@ describe('runBootPlan 运行时断言', () => {
         const run = vi.fn(() => ({}));
         const plan: BootStep<BootResource>[] = [
             defineBootStep({ id: 'consumer', requires: ['loader'], provides: [], run }),
-            defineBootStep({ id: 'producer', requires: [], provides: ['loader'], run: () => ({ loader: undefined }) }),
+            defineBootStep({
+                id: 'producer',
+                requires: [],
+                provides: ['loader'],
+                run: () => ({ loader: undefined }),
+            }),
         ];
         await expect(runBootPlan(plan)).rejects.toBeInstanceOf(BootPlanError);
         expect(run).not.toHaveBeenCalled();
@@ -230,7 +253,7 @@ describe('runBootPlan 运行时断言', () => {
             }),
         ];
         await expect(runBootPlan(plan)).rejects.toThrow(
-            /step "loader" \(position 1\) requires "mmd-runtime", but no earlier step provides it/,
+            /step "loader" \(position 1\) requires "mmd-runtime", but no earlier step provides it/
         );
     });
 });

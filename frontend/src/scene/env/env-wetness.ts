@@ -10,16 +10,24 @@ import type { Material } from '@babylonjs/core/Materials/material';
 import type { ModelInstance } from '@/core/types';
 import { modelRegistry } from '@/core/scene-state';
 
-interface _WetnessOrigState {
-    roughness?: number;
-    specularPower?: number;
-    specularR?: number;
-    specularG?: number;
-    specularB?: number;
-    diffuseR?: number;
-    diffuseG?: number;
-    diffuseB?: number;
-}
+/** 湿身前的原始参数基线。[doc:adr-276] 按材质类型写成两支完整记录：
+ *  旧版是「全字段 optional」的扁结构，写入端其实总是成套写，结果恢复端不得不对每个字段
+ *  单独判空（且 r/g/b 只判了 r，是靠写入习惯而不是类型保证的）。换成判别联合后，
+ *  恢复端只按 kind 分流，字段缺失在编译期就不可表达。
+ *  roughness 保留 Babylon 的 Nullable<number>：null = 未设定（交给粗糙度贴图/默认值），
+ *  必须原样记下来才能原样还原。 */
+type _WetnessOrigState =
+    | { kind: 'pbr'; roughness: number | null }
+    | {
+          kind: 'standard';
+          specularPower: number;
+          specularR: number;
+          specularG: number;
+          specularB: number;
+          diffuseR: number;
+          diffuseG: number;
+          diffuseB: number;
+      };
 
 let _wetnessActive = false;
 const _originalMaterialState = new Map<number, _WetnessOrigState>();
@@ -35,10 +43,14 @@ function _applyWetnessToMaterial(mat: Material): void {
         return;
     }
     if (mat instanceof PBRMaterial) {
-        _originalMaterialState.set(mat.uniqueId, { roughness: mat.roughness });
-        mat.roughness = Math.max(WET_ROUGHNESS_MIN, mat.roughness * WET_ROUGHNESS_FACTOR);
+        _originalMaterialState.set(mat.uniqueId, { kind: 'pbr', roughness: mat.roughness });
+        // [doc:adr-276] roughness 为 null 时原实现靠 JS 把 null 强制转 0（→ 落到 MIN 下限），
+        // 这里用 ?? 0 显式复刻同一视觉幅度，不借类型收窄顺手改行为。
+        const baseRoughness = mat.roughness ?? 0;
+        mat.roughness = Math.max(WET_ROUGHNESS_MIN, baseRoughness * WET_ROUGHNESS_FACTOR);
     } else if (mat instanceof StandardMaterial) {
         _originalMaterialState.set(mat.uniqueId, {
+            kind: 'standard',
             specularPower: mat.specularPower,
             specularR: mat.specularColor.r,
             specularG: mat.specularColor.g,
@@ -62,22 +74,16 @@ function _restoreMaterialState(mat: Material): void {
     if (!orig) {
         return;
     }
-    if (mat instanceof PBRMaterial && orig.roughness !== undefined) {
+    if (orig.kind === 'pbr' && mat instanceof PBRMaterial) {
         mat.roughness = orig.roughness;
-    } else if (mat instanceof StandardMaterial) {
-        if (orig.specularPower !== undefined) {
-            mat.specularPower = orig.specularPower;
-        }
-        if (orig.specularR !== undefined) {
-            mat.specularColor.r = orig.specularR;
-            mat.specularColor.g = orig.specularG;
-            mat.specularColor.b = orig.specularB;
-        }
-        if (orig.diffuseR !== undefined) {
-            mat.diffuseColor.r = orig.diffuseR;
-            mat.diffuseColor.g = orig.diffuseG;
-            mat.diffuseColor.b = orig.diffuseB;
-        }
+    } else if (orig.kind === 'standard' && mat instanceof StandardMaterial) {
+        mat.specularPower = orig.specularPower;
+        mat.specularColor.r = orig.specularR;
+        mat.specularColor.g = orig.specularG;
+        mat.specularColor.b = orig.specularB;
+        mat.diffuseColor.r = orig.diffuseR;
+        mat.diffuseColor.g = orig.diffuseG;
+        mat.diffuseColor.b = orig.diffuseB;
     }
     _originalMaterialState.delete(mat.uniqueId);
 }

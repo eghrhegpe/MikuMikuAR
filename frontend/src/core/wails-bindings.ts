@@ -27,6 +27,7 @@ export type {
     UpdateCheckResult,
 } from '@bindings/mikumikuar/internal/app/models';
 
+import type { Config } from '@bindings/mikumikuar/internal/app/models';
 import { resolveBackend } from './backend';
 import type { BackendService } from './backend/types';
 
@@ -71,6 +72,20 @@ export const GetBuildInfo = _p('GetBuildInfo');
 export const GetCacheStats = _p('GetCacheStats');
 export const GetCachedPlazaConfig = _p('GetCachedPlazaConfig');
 export const GetConfig = _p('GetConfig');
+/**
+ * [doc:adr-276] 读配置并要求非空。
+ *
+ * `GetConfig` 的契约是 `Promise<Config | null>`（Go 侧返回 `*Config`），实现恒返回完整默认值。
+ * 初始化与设置面板的读路径若拿到 null，说明后端尚未就绪——在**这里**抛出名字明确的错误，
+ * 而不是让后面十几处 `cfg.env` / `cfg.resource_root` 各自抛 `Cannot read properties of null`。
+ */
+export async function requireConfig(): Promise<Config> {
+    const cfg = await GetConfig();
+    if (!cfg) {
+        throw new Error('wails-bindings: GetConfig 返回 null（后端未就绪？）');
+    }
+    return cfg;
+}
 export const GetDownloadAutoImport = _p('GetDownloadAutoImport');
 export const GetDownloadWatchEnabled = _p('GetDownloadWatchEnabled');
 export const GetDownloadWatchStatus = _p('GetDownloadWatchStatus');

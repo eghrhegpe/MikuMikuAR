@@ -209,7 +209,7 @@ const shared = vi.hoisted(() => {
         stopBoneOverride: vi.fn(),
         setWasmIkResolver: vi.fn(),
         solveIkNative: vi.fn(),
-        getPhysicsImpl: vi.fn(() => null),
+        getPhysicsImpl: vi.fn((): unknown => null),
         initMotionModules: vi.fn(),
         setSceneRef: vi.fn(),
         syncPlaybackSpeedToRuntime: vi.fn(),

@@ -248,7 +248,8 @@ export async function loadVMDFromPath(
             addRecentMotion(path, vmdDisplayName);
 
             // 尝试加载同目录下的同名音频文件
-            const audioTargetId = targetModelId || focusedModelId;
+            // [doc:adr-276] focusedModelId 是 `string | null`，而 companion audio 的形参用 undefined 表达缺省
+            const audioTargetId = targetModelId || focusedModelId || undefined;
             await _tryLoadCompanionAudio(path, path, audioTargetId);
         } catch (err) {
             // 中止（AbortError）不算失败：loadVMDMotion 在 signal 中止时抛此错，

@@ -3,7 +3,8 @@ import { describe, it, expect } from 'vitest';
 import { pruneHistory } from '../menus/diagnostic-chat';
 import type { ChatMessage } from '../core/ai/types';
 
-function msg(role: ChatMessage['role'], content?: string, toolId?: string): ChatMessage {
+// [doc:adr-276] content 允许显式 null（与 ChatMessage.content 的 null 语义一致）
+function msg(role: ChatMessage['role'], content?: string | null, toolId?: string): ChatMessage {
     if (role === 'tool' && toolId) {
         return { role: 'tool', content: content ?? '', tool_call_id: toolId } as ChatMessage;
     }

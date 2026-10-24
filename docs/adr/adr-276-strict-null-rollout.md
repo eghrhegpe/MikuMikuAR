@@ -1,6 +1,6 @@
 # ADR-276: 严格模式渐进收敛：Stage 2 打开 strictNullChecks — 362 处空值判断的三批收口与影子清零
 
-> **状态**: 🔄 部分采纳（2026-10-24）
+> **状态**: ✅ 已采纳（2026-10-24）
 > **日期**: 2026-10-24
 > **前置**：ADR-274（Stage 1 `noImplicitAny`）——本 ADR 是同一阶梯的第二级。ADR-274 决策 5 写下「阶梯不预设，`strictNullChecks` 无法按目录分片，只能整体翻，所以它必须另立阶段」，本文就是那个阶段。
 
@@ -76,7 +76,7 @@ TypeScript 的严格性开关是 **project 级** option，一个 `tsconfig.json`
 
 | 对象 | 改动 |
 |---|---|
-| `frontend/tsconfig.json` | +1 行 `"strictNullChecks": true`（**批 D 才落地**，与清零同提交） |
+| `frontend/tsconfig.json` | +1 行 `"strictNullChecks": true`（**批 D 才落地**，与清零同提交；2026-10-24 已落地） |
 | 生产代码 | 46 文件 / 163 处，按根收口后预计 60–80 个实际改动点 |
 | 测试与 mock | 30 文件 / 199 处，其中 `physics-contract.*` 三个文件 72 处的 TS2454 应收口到夹具初始化 helper |
 | `frontend/eslint.config.js` | **不改**（决策 5：存量 900 处噪声，翻 warn 无意义）；改为每批用 `eslint --rule` 增量计量 |
@@ -96,9 +96,9 @@ TypeScript 的严格性开关是 **project 级** option，一个 `tsconfig.json`
 | 批次 | 范围 | 处数 | 验收 |
 |---|---|---|---|
 | **批 A**（✅ 2026-10-24） | 热点 5 文件：`scene/manager/model-loader.ts`(16)、`scene/motion/proc-motion-controller.ts`(13)、`scene/manager/outfit.ts`(11)、`__tests__/physics-contract.constraint.test.ts`(37)、`core/backend/backend.data-chain.test.ts`(20) | 97 → 0 | 含 3 个收口点；影子 5 文件归零 + 真 tsc EXIT=0 + 5 个测试文件全绿（实测见落地记录） |
-| **批 B** | 生产其余 43 文件（热点见背景） | 123 → 0 | 同上，按根分组：`menus/library-*`、`menus/model-detail`、`scene/scene-serialize`、`scene/env/*` |
-| **批 C** | 测试其余 28 文件（`physics-contract.*` 两个兄弟、`texture-collision`、`model-ops`、`prune-history` 等） | 142 → 0 | 夹具初始化收口到 helper，禁止逐处 `let x!: T` |
-| **批 D** | 打开 `strictNullChecks` + 全量门禁 | 0 | `tsc` EXIT=0；全量 `test:quick`；`check`/`deadcode` 绿 |
+| **批 B**（✅ 2026-10-24） | 生产其余 43 文件（热点见背景） | 123 → 0 | 同上，按根分组：`menus/library-*`、`menus/model-detail`、`scene/scene-serialize`、`scene/env/*` |
+| **批 C**（✅ 2026-10-24） | 测试其余 28 文件（`physics-contract.*` 两个兄弟、`texture-collision`、`model-ops`、`prune-history` 等） | 142 → 0 | 夹具初始化收口到 helper，禁止逐处 `let x!: T` |
+| **批 D**（✅ 2026-10-24） | 打开 `strictNullChecks` + 全量门禁 | 0 | `tsc` EXIT=0；全量 `test:quick`；`check`/`deadcode` 绿 |
 
 ## 落地记录（2026-10-24，批 A 完成）
 
@@ -125,6 +125,57 @@ TypeScript 的严格性开关是 **project 级** option，一个 `tsconfig.json`
 - 基线实测 362 / 76：生产 163 / 46，测试 199 / 30（详见背景）。
 - `!` 断言基线（`eslint --rule` 实测）：生产 145 处 / 57 文件，测试 755 处。批 A 开工时以此为准，收口过程不得净增。
 - 批 A 验证：`model-loader.test.ts` 21 用例 · `outfit.test.ts` + `proc-motion-bridge.test.ts` + `proc-motion-migrate.test.ts` 111 用例 · `physics-contract.constraint.test.ts` 5 用例 · `backend.data-chain.test.ts` 22 用例，全绿；eslint 该批 5 文件 0 error（46 warning 全是既有 `curly`/complexity/max-lines 存量，未新增）。
+
+## 落地记录（2026-10-24，批 B–D 完成）
+
+### 推进曲线（每行都是影子检查器的实测，不是估算）
+
+| 节点 | 合计 | 生产 | 测试与 mock |
+|---|---|---|---|
+| 基线 | 362 / 76 文件 | 163 / 46 | 199 / 30 |
+| 批 A 收尾 | 265 / 71 | 123 / 43 | 142 / 28 |
+| 批 B 前段（两处访问器 + `menus/*` 集群） | 232 / 66 → 173 / 46 | 90 / 38 → 31 / 18 | 142 / 28 |
+| 批 B 收尾 | 生产归零 | 0 / 0 | 140–142 / 26–28 |
+| 批 C 收尾 | **0 / 0** | 0 / 0 | 0 / 0 |
+
+终态 `SUMMARY errors=0 files=0 prod=0/0 test=0/0 programFiles=3951 noImplicitAny=true strictNullChecks=true strict=false`；开关落地后真 `tsc --noEmit -p tsconfig.json` **EXIT 0**。
+
+### 批 B：两个访问器吃掉 20 处，其余是"契约宽于实现"
+
+| 收口点 | 手法 | 消掉 |
+|---|---|---|
+| `menus/menu-stack-registry.ts` 新增 `requireModelStack()` | ① 收口访问器（`stack === null` 就抛"渲染前被点击？"） | `library-actions` / `model-detail` / `model-preset` 8 处 |
+| `core/wails-bindings.ts` 新增 `requireConfig()` | ①（`GetConfig()` 返回 null 就抛"后端未就绪？"） | `menus/library-setup.ts:88` / `core/init.ts:247 :340` |
+| `library-actions.ts` 两处 `ExtractZip().then(...)` | ② 早返回（`!result` 抛错，落进既有 `feedbackError('library.extractFailed')`） | 2 |
+| `menus/model-detail.ts` / `settings-downloads.ts` / `settings-about.ts` | ②③（`?? []`、`if (!inst || !inst.filePath)`、`?.querySelector`） | 12 |
+| `scene/manager/material.ts` `_isPbrMaterial` | ③ 签名放宽（`Material \| null \| undefined`，Babylon 的 `mesh.material` 本就含 null） | `menus/model-material.ts` 2 |
+| `core/ui-rows.ts` / `core/ui-slide-row.ts` | ③ 参数与工厂类型放宽（`string \| null`、`() => HTMLElement \| null`） | `motion-camera-levels` / `outfit-ui` 3 |
+
+### 批 B/C 又暴露的四条根因
+
+3. **可选方法 ≠ 可空对象（TS2722）。** 一半的 TS2722 不是"对象可能是 null"，而是"接口把方法写成可选"。收口两条路：接口的实现本就必选（`SlideMenu.push` 在 `menus/menu.ts:422` 是必选方法）→ 把可选去掉；确实可能缺席（桥未注册）→ 显式抛错落进既有 catch，**不要用 `?.()`**——`ar-camera.ts` 里 `requestCameraPermission?.()` 会让 15s 超时才报错，显式抛错则立刻 settle(false)。
+4. **TS 不能从索引反推容器。** `menus/model-material.ts` 原写 `const idx = detail ? detail.index : -1; if (idx === -1) continue;` 之后 `detail.modified` 仍报 TS18047：`idx` 收窄了，`detail` 没有。必须先判 `!detail` 再取 `idx`。
+5. **模块级 `let` 的每次求值都是新的 null。** `menus/library-actions.ts:74` 的 `let _mmkuDisp: Disposable | null = null` 全文件唯一赋值在 :95，于是 :92 的 `_mmkuDisp?.dispose()` 被流分析判成 `never`（TS2339）——这一行 HMR 幂等清理**从来就是 no-op**。处置：删掉该行并把注释改成"真幂等要把句柄挂 `globalThis`，本次不做"。这是 Stage 2 翻出的第一处死代码。
+6. **`safeCallAsync` 收到 undefined 回调会把整个初始化带崩（真 bug）。** `core/init.ts:175` 原写 `safeCallAsync('init', 'Library init', () => getSceneAction('initLibrary')?.())`：桥未注册时内层返回 undefined，`safeCallAsync`（`core/safe-call.ts:46` 签名 `fn: () => Promise<T>`）里 `fn().then` 抛 TypeError 冒到 `init()` 的 catch，**整个初始化失败**——而代码刚刚 warn 过"桥缺失"。已改为先取函数再判空。这类"静默跳过"的注释与实际行为相反，只有类型系统会逼你看第二眼。
+
+### 批 C：mock 是签名源，改一处要同步全部副本
+
+7. **mock 的返回类型会被 null 字面量锁死。** `vi.fn(() => null)` 推出 `Mock<() => null>`，用例里 `mockReturnValue(x)` 就报 TS2345。收口是给工厂补显式返回类型：`vi.fn((): unknown => null)`。**共享 mock 是签名源**：`__tests__/perception/perception-mocks.ts` 的 `createMockState` 被 5 个 perception 测试文件以同名 hoisted 副本复制（`setupPerceptionTest(mockState: ReturnType<typeof createMockState>)` 把两边钉在一起），改一处必须同步 5 处，否则 `Mock<() => unknown>` 与 `Mock<() => null>` 不兼容。
+8. **闭包与流分析会把未赋值的 `let` 窄化成 `null`。** `__tests__/camera.test.ts` 的 hoisted 工厂 `return { sceneObj, focusedModelId }` 里，这两个 `let` 在工厂内从未赋值，TS 认为它们恒为 `null`，于是下方 `shared.focusedModelId = 'm1'` 报 TS2322。修法是在 return 处显式宽化（`as string | null`），并删掉同名的短属性（否则 TS1117 重复属性）。
+9. **`null` 字面量类型上的 `!` 得到 `never`。** `__tests__/lighting-stage.test.ts` 的 `StageLightEntry.indicator` 静态类型是 `null`，`entry.indicator!.material` 报 TS2339 `Property 'material' does not exist on type 'never'`。`!` 在 `never` 上是无效止痛药，只能 `as unknown as`。
+10. **异步步钩子的类型是 `() => Promise<void>`，同步 recorder 不合法。** `__tests__/scene/boot-plan.test.ts` 的六个 init 步钩子（initMmdLoaders / initFeetAdjustment / initFootstep / initBoneOverride / initWasmIkResolver / initMotionModules）塞的是返回 undefined 的同步 recorder，收口成 `const recordAsync = (name: string) => async (): Promise<void> => { calls.push(name); }`。
+
+### 批 D：开关与清零同批落地
+
+- `frontend/tsconfig.json` 在 `noImplicitAny` 之后加 `"strictNullChecks": true`（`"strict": false` 保留，Stage 3 才翻）。
+- 验收（全部实测）：真 `tsc --noEmit -p tsconfig.json` **EXIT 0**；全量 vitest **263 文件 / 6086 用例全过**（125s）；prettier 改动文件全过（首轮 11 个 offender 已 `--write`）；eslint 79 个改动文件 **0 error**（121 warning 全是既有 `curly`/complexity/max-lines 存量）；`npm run check:lint` EXIT 0；`npm run deadcode`（knip）EXIT 0；`npm run check:docs` EXIT 0（含 `gen:funcmap` 重生成，60 插入 / 60 删除）。
+- `!` 记账终值：生产侧 145 → **143**（新增 0，删掉 2），测试侧未净增。
+
+### 环境
+
+- 影子检查器重建：旧的 `node_modules/.tmp` 被清空过（`npm install --package-lock-only` 之后 `.tmp` 只剩 tsbuildinfo），所以 `strict-ladder-measure.mjs` / `noimplicitany-check.mjs` 都已不在。新脚本 `frontend/node_modules/.tmp/strict-check.mjs` 通过 `ts.getParsedCommandLineOfConfigFile(cfgPath, overrides, host)` 叠加 flag（host 必须含 `readDirectory: ts.sys.readDirectory`，否则 `include` 失效），断言 `noImplicitAny === true` 防误测。**带路径过滤时 SUMMARY 仍报全量 programFiles=3849/3951，errors 只统计过滤结果，且 exit code 恒 0 —— 必须读 SUMMARY 行。**
+- `! ` 断言基线（`eslint --rule` 实测）：生产 145 处 / 57 文件，测试 755 处。
+- 批 A 验证：`model-loader.test.ts` 21 用例 · `outfit.test.ts` + `proc-motion-bridge.test.ts` + `proc-motion-migrate.test.ts` 111 用例 · `physics-contract.constraint.test.ts` 5 用例 · `backend.data-chain.test.ts` 22 用例，全绿。
 
 ## 相关文档
 

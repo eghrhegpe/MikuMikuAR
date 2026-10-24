@@ -14,7 +14,10 @@ const { loadManagerMock, ImportZipMock, ExtractZipMock, idbSetMock, saveModelMoc
     vi.hoisted(() => ({
         loadManagerMock: { load: vi.fn(async () => null) },
         ImportZipMock: vi.fn(async () => undefined),
-        ExtractZipMock: vi.fn(async () => ({ file_path: 'Miku.pmx' })),
+        // [doc:adr-276] 契约可返回 null（zip 缺失/超限），工厂返回类型须含 null
+        ExtractZipMock: vi.fn(async (): Promise<{ file_path: string } | null> => ({
+            file_path: 'Miku.pmx',
+        })),
         idbSetMock: vi.fn(async () => {}),
         saveModelMock: vi.fn(async () => {}),
         setStatusMock: vi.fn(),

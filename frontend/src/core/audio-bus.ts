@@ -147,8 +147,10 @@ export function playSfx(buffer: AudioBuffer, opts: PlaySfxOptions = {}): void {
             });
         return;
     }
+    // [doc:adr-276] getSfxMasterGain() 在 SFX 总线未初始化（音频未解锁）时返回 null：
+    // 没有可接的总线就没有可播的音，直接返回，而不是在 connect(null) 处崩。
     const master = getSfxMasterGain();
-    if (master.gain.value <= 0) {
+    if (!master || master.gain.value <= 0) {
         return;
     }
     const src = ctx.createBufferSource();

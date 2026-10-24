@@ -170,7 +170,7 @@ describe('ADR-177 Phase 2 A4 p2-5：虚拟目录 + 伴生文件加载（续）',
 
             // 全链路：IsolateModelDir + ListDirRecursive + readFileBytes 都能取到正确字节
             const dir = await browserAdapter.IsolateModelDir(result!.file_path);
-            const entries = await browserAdapter.ListDirRecursive(dir);
+            const entries = (await browserAdapter.ListDirRecursive(dir)) ?? [];
             const relPaths = entries.map((e) => e.relativePath);
             expect(relPaths).toContain('tex/face.png');
             expect(relPaths).toContain('tex/body.png');

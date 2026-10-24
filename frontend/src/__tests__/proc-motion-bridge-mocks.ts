@@ -22,8 +22,9 @@ export function createProcMockState() {
         modelManager: {
             get: vi.fn(),
         } as any,
-        focusedMmdModel: vi.fn(() => null),
-        focusedModel: vi.fn(() => null),
+        // [doc:adr-276] 返回类型标宽：用例要 mockReturnValue(模型/实例)
+        focusedMmdModel: vi.fn((): unknown => null),
+        focusedModel: vi.fn((): unknown => null),
         loadVMDMotion: vi.fn().mockResolvedValue(undefined),
         scene: {
             onBeforeRenderObservable: {

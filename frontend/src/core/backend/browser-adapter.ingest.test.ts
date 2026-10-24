@@ -58,7 +58,7 @@ describe('[doc:adr-195] 下载文件夹统一摄入：ingestModelFile / ingestMo
         expect(entry.file_path).toBe('web://model/miku');
         expect(entry.kind).toBe('pmx');
 
-        const lib = await browserAdapter.GetLibraryIndex();
+        const lib = (await browserAdapter.GetLibraryIndex()) ?? [];
         const found = lib.find((e) => e.name_jp === 'miku');
         expect(found).toBeDefined();
         expect(found?.dir).toBe('web://model');
@@ -99,7 +99,7 @@ describe('[doc:adr-195] 下载文件夹统一摄入：ingestModelFile / ingestMo
         expect(mem.get('models')?.has('file:miku%20(2)')).toBe(true);
         expect(mem.get('models')?.has('entry:miku%20(2)')).toBe(true);
 
-        const lib = await browserAdapter.GetLibraryIndex();
+        const lib = (await browserAdapter.GetLibraryIndex()) ?? [];
         const names = lib.filter((e) => e.name_jp?.startsWith('miku')).map((e) => e.name_jp);
         expect(names).toContain('miku');
         expect(names).toContain('miku (2)');

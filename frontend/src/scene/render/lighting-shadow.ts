@@ -34,6 +34,10 @@ export function _ensureShadow(): void {
         return;
     }
 
+    // [doc:adr-276] 方向光未创建就没有投影源：原先这里对 null 建 CSM，会在 Babylon 内部某处才崩
+    if (!lightingState.dirLight) {
+        return;
+    }
     const gen = new CascadedShadowGenerator(lightingState.shadowResolution, lightingState.dirLight);
     gen.numCascades = lightingState.shadowCascades;
     // CSM 仅支持 FILTER_NONE / FILTER_PCF / FILTER_PCSS

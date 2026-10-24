@@ -418,10 +418,12 @@ export function pauseAudio(): void {
 }
 
 export function resumeAudio(): void {
-    if (!streamPlayer) {
+    // [doc:adr-276] 闭包不保留 `if (!streamPlayer)` 的收窄：先取值到 const，回调里才保住非空
+    const player = streamPlayer;
+    if (!player) {
         return;
     }
-    safeCallAsync('audio', 'resumeAudio', () => streamPlayer.play());
+    safeCallAsync('audio', 'resumeAudio', () => player.play());
 }
 
 export function stopAudio(): void {

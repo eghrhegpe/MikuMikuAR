@@ -135,7 +135,7 @@ function makeModelManager() {
             store.delete(id);
         }),
         getAll: vi.fn(() => [...store.values()]),
-        findByFilePath: vi.fn(() => undefined),
+        findByFilePath: vi.fn((): unknown => undefined),
         focus: vi.fn(),
         arrange: vi.fn(),
         focused: vi.fn(() => [...store.values()][0] ?? null),
