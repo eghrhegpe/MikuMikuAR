@@ -30,11 +30,25 @@ dev_mode:
       - "*.go"
     git_ignore: true
   executes:
-    - cmd: wails3 build DEV=true
+    # 1) Go 主二进制 dev 编译（blocking，每次 *.go 变更后由 watcher 重编）。
+    #    走 windows:build:dev：纯 go build，不走全量管线（tidy/bindings/icons/
+    #    syso/前端构建）——dev 下 asset server 代理到 vite dev server，全量重跑
+    #    是纯浪费。注意 main.go //go:embed all:frontend/dist 要求 dist 目录存在
+    #    （全新 clone 先跑一次 wails3 build DEV=true）；改绑定相关 Go 代码后手动
+    #    cd frontend && npm run generate:bindings（AGENTS.md 硬约束）。
+    - name: go-build
+      cmd: wails3 task windows:build:dev
       type: blocking
-    - cmd: wails3 task common:dev:frontend
+    # 2) vite 开发服务器（background，常驻，wails3 dev 退出时杀）。
+    #    崩溃兜底重启在 common:frontend:dev:npm 的循环里。
+    #    delay_next 2000ms：给 Vite 冷启动留缓冲，配合 run 步骤的端口就绪探测。
+    - name: vite-dev
+      cmd: wails3 task common:dev:frontend
       type: background
-    - cmd: wails3 task run
+      delay_next: 2000
+    # 3) 运行应用（primary，*.go 变更时由 watcher 先杀后启）。
+    - name: run-app
+      cmd: wails3 task run
       type: primary
 
 fileAssociations:

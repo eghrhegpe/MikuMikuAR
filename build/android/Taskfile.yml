@@ -7,12 +7,14 @@ vars:
   APP_ID: '{{.APP_ID | default "com.mikumikuar.app"}}'
   MIN_SDK: '21'
   TARGET_SDK: '34'
-  # The emulator runs the host architecture; physical devices are arm64
-  HOST_ARCH:
-    sh: '[ "$(uname -m)" = "x86_64" ] && echo "amd64" || echo "arm64"'
+  # The emulator runs the host architecture; physical devices are arm64.
+  # 用 go-task 内建 {{ARCH}} 替代 POSIX `uname -m`：wails3 内置 shell（mvdan/sh）
+  # 在 Windows PATH 下没有 uname.exe，而顶层动态变量在每个 wails3 task 子进程
+  # 启动时都会求值，uname 写法会给所有任务输出刷 "executable file not found"。
+  # （偏离 upstream build-assets 模板，wails3 update build-assets 时注意保留。）
+  HOST_ARCH: '{{if eq ARCH "amd64"}}amd64{{else}}arm64{{end}}'
   # System-image ABI for the host, used in the "create an AVD" hint below.
-  ANDROID_ABI:
-    sh: '[ "$(uname -m)" = "arm64" ] && echo "arm64-v8a" || echo "x86_64"'
+  ANDROID_ABI: '{{if eq ARCH "arm64"}}arm64-v8a{{else}}x86_64{{end}}'
   # SDK location: $ANDROID_HOME / $ANDROID_SDK_ROOT, else the per-OS default
   # (macOS: ~/Library/Android/sdk, Linux/other: ~/Android/Sdk)
   SDK_ROOT:

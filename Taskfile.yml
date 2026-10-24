@@ -24,6 +24,11 @@ tasks:
     cmds:
       - task: "{{OS}}:build"
 
+  build:dev:
+    summary: Dev build (no production tag; asset server proxies to vite)
+    cmds:
+      - task: "{{OS}}:build:dev"
+
   package:
     summary: Packages a production build of the application
     cmds:
