@@ -154,7 +154,10 @@ func (a *App) ServiceStartup(ctx context.Context, options application.ServiceOpt
 	return nil
 }
 
-// ServiceShutdown implements application.ServiceShutdown interface.
+// SetWailsApp back-fills the *application.App reference (only available
+// after application.New) and runs one-shot startup side effects: installs
+// the dual-write slog handler, then prewarms the plaza WebView2 window.
+// Must be called before wailsApp.Run().
 func (a *App) SetWailsApp(wailsApp *application.App) {
 	a.wailsApp = wailsApp
 
@@ -165,6 +168,7 @@ func (a *App) SetWailsApp(wailsApp *application.App) {
 	a.prewarmPlazaWindow()
 }
 
+// ServiceShutdown implements application.ServiceShutdown interface.
 func (a *App) ServiceShutdown() error {
 	a.watchMu.Lock()
 	if a.watcher != nil {
