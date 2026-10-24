@@ -1386,11 +1386,11 @@
 | `setMatEnabled()` | `scene/manager/material:667` | — |
 | `setMatParams()` | `scene/manager/material:832` | — |
 | `resolveModelId()` | `scene/manager/model-id:9` | 解析模型运行时 id：优先复用存档 uuid（preferredId，由恢复路径传入）， 否则生成稳定 uuid。替代旧实现 &#96;model_${Date.now()}_${Math |
-| `captureThumbnail()` | `scene/manager/model-loader:153` | Captures a screenshot after model load for thumbnail cache. |
-| `initLoader()` | `scene/manager/model-loader:91` | — |
-| `loadPMXFile()` | `scene/manager/model-loader:425` | — |
-| `setOnMeshesReady()` | `scene/manager/model-loader:83` | — |
-| `setOnModelLoaded()` | `scene/manager/model-loader:87` | — |
+| `captureThumbnail()` | `scene/manager/model-loader:173` | Captures a screenshot after model load for thumbnail cache. |
+| `initLoader()` | `scene/manager/model-loader:111` | — |
+| `loadPMXFile()` | `scene/manager/model-loader:452` | — |
+| `setOnMeshesReady()` | `scene/manager/model-loader:103` | — |
+| `setOnModelLoaded()` | `scene/manager/model-loader:107` | — |
 | `FormationType()` | `scene/manager/model-manager:125` | — |
 | `ModelManager()` | `scene/manager/model-manager:193` | — |
 | `getFormationLabels()` | `scene/manager/model-manager:136` | — |
@@ -1438,9 +1438,9 @@
 | `hideMaterials()` | `scene/manager/outfit-overlay:301` | 隐藏指定材质名的 PMX mesh（保存原始可见性用于恢复）。 |
 | `loadOverlay()` | `scene/manager/outfit-overlay:202` | 加载 FBX overlay 并尝试绑定到模型 skeleton。 |
 | `restoreMaterials()` | `scene/manager/outfit-overlay:333` | 恢复被 hideMaterials 隐藏的 PMX mesh 可见性。 |
-| `applyOutfitVariant()` | `scene/manager/outfit:568` | — |
+| `applyOutfitVariant()` | `scene/manager/outfit:569` | — |
 | `loadOutfits()` | `scene/manager/outfit:112` | — |
-| `resetOutfit()` | `scene/manager/outfit:764` | — |
+| `resetOutfit()` | `scene/manager/outfit:767` | — |
 | `setSceneRef()` | `scene/manager/outfit:32` | 由 scene.ts 在场景初始化完成后注入当前 scene 实例 |
 | `tryApplyPbrMaterialBuilder()` | `scene/manager/pbr-builder-init:12` | 动态导入 PBRMaterialBuilder 并覆盖 MmdModelLoader.SharedMaterialBuilder。 |
 | `auditMissingTextures()` | `scene/manager/pmx-texture-audit:46` | 识别 PMX 声明但目录中缺失的纹理。 |

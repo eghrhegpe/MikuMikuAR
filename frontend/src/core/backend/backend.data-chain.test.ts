@@ -6,7 +6,7 @@ import { idbStore, resetIdb } from './backend-mocks';
 vi.mock('./go-adapter', () => ({ goAdapter: {} }));
 
 import { browserAdapter } from './browser-adapter';
-import type { UIState, EnvState } from '@bindings/mikumikuar/internal/app/models';
+import type { Config, UIState, EnvState } from '@bindings/mikumikuar/internal/app/models';
 
 // [doc:adr-177] browser-adapter 扩展方法（Partial 签名便利方法）
 interface BrowserAdapterExt {
@@ -15,6 +15,19 @@ interface BrowserAdapterExt {
     SetEnvState(e: Partial<EnvState>): Promise<void>;
 }
 const ext = browserAdapter as unknown as BrowserAdapterExt;
+
+/**
+ * [doc:adr-276] `BackendService.GetConfig` 在契约上返回 `Config | null`（实现恒非空）。
+ * 测试里把「读到 null」直接当失败——否则下面每条断言都要为它与类型系统缠斗；
+ * 首个抛错点就是 `GetConfig 返回 null`，比 `Cannot read properties of null` 更能指路。
+ */
+async function getConfig(): Promise<Config> {
+    const cfg = await browserAdapter.GetConfig();
+    if (!cfg) {
+        throw new Error('GetConfig 返回 null（预期：首次启动也应返回完整默认值）');
+    }
+    return cfg;
+}
 
 // [doc:adr-177] Phase 2 A4：path 映射 + 默认值 + Delete* + SetEnvState 单源
 describe('ADR-177 Phase 2 A4：browser-adapter 数据链补齐', () => {
@@ -100,7 +113,7 @@ describe('ADR-177 Phase 2 A4：browser-adapter 数据链补齐', () => {
 
     describe('_defaultConfig / _defaultUIState 默认值', () => {
         it('GetConfig 首次启动返回完整默认值（非 {version:1}）', async () => {
-            const cfg = await browserAdapter.GetConfig();
+            const cfg = await getConfig();
             expect(cfg.config_version).toBe(1);
             expect(cfg.ui_state).toBeDefined();
             expect(cfg.ui_state.scale).toBe(1.0);
@@ -121,7 +134,7 @@ describe('ADR-177 Phase 2 A4：browser-adapter 数据链补齐', () => {
 
         it('SetUIState 双写 Config.ui_state + uistate store', async () => {
             await ext.SetUIState({ scale: 1.3 });
-            const cfg = await browserAdapter.GetConfig();
+            const cfg = await getConfig();
             expect(cfg.ui_state.scale).toBe(1.3);
             expect(idbStore.get('state')).toMatchObject({ scale: 1.3 });
         });
@@ -130,9 +143,9 @@ describe('ADR-177 Phase 2 A4：browser-adapter 数据链补齐', () => {
     describe('SetEnvState 单源（Config.env）', () => {
         it('写入 Config.env（非 uistate/envState）', async () => {
             await ext.SetEnvState({ skyMode: 'sunset' });
-            const cfg = await browserAdapter.GetConfig();
+            const cfg = await getConfig();
             expect(cfg.env).toBeDefined();
-            expect(cfg.env.skyMode).toBe('sunset');
+            expect(cfg.env?.skyMode).toBe('sunset');
             // 旧键 uistate/envState 不应存在
             expect(idbStore.has('envState')).toBe(false);
         });
@@ -140,9 +153,9 @@ describe('ADR-177 Phase 2 A4：browser-adapter 数据链补齐', () => {
         it('重复写入合并而非覆盖', async () => {
             await ext.SetEnvState({ skyMode: 'sunset' });
             await ext.SetEnvState({ groundVisibleEnabled: false });
-            const cfg = await browserAdapter.GetConfig();
-            expect(cfg.env.skyMode).toBe('sunset');
-            expect(cfg.env.groundVisibleEnabled).toBe(false);
+            const cfg = await getConfig();
+            expect(cfg.env?.skyMode).toBe('sunset');
+            expect(cfg.env?.groundVisibleEnabled).toBe(false);
         });
     });
 
@@ -177,7 +190,7 @@ describe('ADR-177 Phase 2 A4：browser-adapter 数据链补齐', () => {
             await browserAdapter.SetBlenderPath('C:/blender.exe');
             await browserAdapter.SetMMDPath('C:/mmd.exe');
             await browserAdapter.SetDisplayNamePriority('name_en');
-            const cfg = await browserAdapter.GetConfig();
+            const cfg = await getConfig();
             expect(cfg.blender_path).toBe('C:/blender.exe');
             expect(cfg.mmd_path).toBe('C:/mmd.exe');
             expect(cfg.display_name_priority).toBe('name_en');
@@ -186,7 +199,7 @@ describe('ADR-177 Phase 2 A4：browser-adapter 数据链补齐', () => {
         it('SetOverridePath(category, path) 双参写入 override_paths[category]', async () => {
             await browserAdapter.SetOverridePath('pmx', 'D:/models');
             await browserAdapter.SetOverridePath('vmd', 'D:/motions');
-            const cfg = await browserAdapter.GetConfig();
+            const cfg = await getConfig();
             expect(cfg.override_paths.pmx).toBe('D:/models');
             expect(cfg.override_paths.vmd).toBe('D:/motions');
         });
