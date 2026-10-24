@@ -1,6 +1,8 @@
 // 组件隔离渲染截图探针：生成语言包 → 起 vite dev → 逐面板打开
 // /harness/index.html?c=<name> → 等 body[data-ready=1] → 截图存 harness/_shots/。
-// 用法: node harness/shot.mjs [面板名...]   (无参 = REGISTRY 全量，清单从页面读取)
+// 默认按弹窗范围（#sceneOverlay.visible）裁剪出图，喂大模型评审零黑边浪费；
+// --full 切回全页截图（要看面板在 app 里的摆放位置时用）。
+// 用法: node harness/shot.mjs [--full] [面板名...]   (无参 = REGISTRY 全量，清单从页面读取)
 // 与 e2e 的分工：harness 管「单面板隔离视觉」，e2e 管「全 app 行为回归」（playwright.config.ts）。
 import { spawn, spawnSync } from 'node:child_process';
 import { mkdir } from 'node:fs/promises';
@@ -13,7 +15,9 @@ const root = path.resolve(here, '..'); // frontend/
 const PORT = 5299; // 避开 5173(桌面 dev) / 4174(web preview)；5199 系 ysm-model-manager 同名 harness 在用
 const OUT = path.join(here, '_shots');
 
-const requested = process.argv.slice(2);
+const argv = process.argv.slice(2);
+const wantFull = argv.includes('--full'); // 全页模式：保留面板在 app 中的摆放上下文
+const requested = argv.filter((a) => !a.startsWith('--'));
 // 清单单源：无参时打开 harness 页读 window.__harnessRegistry__（main.ts 挂载），
 // 脚本侧不再抄一份清单，防双源漂移。
 
@@ -121,7 +125,33 @@ for (const name of names) {
     // 等一拍菜单过渡动画/图标网络加载，避免截到入场中间帧。
     await page.waitForTimeout(600);
     const shot = path.join(OUT, `${name}.png`);
-    await page.screenshot({ path: shot, fullPage: true });
+    if (wantFull) {
+        await page.screenshot({ path: shot, fullPage: true });
+    } else {
+        // 弹窗范围裁剪：#sceneOverlay 就是弹窗容器本体（absolute+bottom/left 定位，
+        // app.css「统一弹窗容器」节），尺寸随内容收缩——截它即截面板，零黑边。
+        const overlay = page.locator('#sceneOverlay.visible');
+        const box = await overlay.boundingBox();
+        if (box === null) {
+            console.error(`FAIL ${name}: no visible #sceneOverlay to clip (panel not open?)`);
+            failed += 1;
+            continue;
+        }
+        // 留 12px 呼吸边露出圆角/阴影，越界钳到视口内。
+        const PAD = 12;
+        const vp = page.viewportSize();
+        const x = Math.max(0, box.x - PAD);
+        const y = Math.max(0, box.y - PAD);
+        await page.screenshot({
+            path: shot,
+            clip: {
+                x,
+                y,
+                width: Math.min(box.width + PAD * 2, vp.width - x),
+                height: Math.min(box.height + PAD * 2, vp.height - y),
+            },
+        });
+    }
     console.log(`SHOT ${name} -> ${shot}`);
 }
 

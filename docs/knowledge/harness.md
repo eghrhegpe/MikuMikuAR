@@ -12,7 +12,6 @@ source_files:
 adr:
   - ADR-229
 symbols:
-  - __harnessRegistry__
 invariants:
   - 面板打开只经 navActions 真实链路（toggleOverlay 管 visible/inert/aria），不得手写 visible 类旁路
   - 面板清单单源在 main.ts REGISTRY，shot.mjs 无参运行时从 window.__harnessRegistry__ 读取，禁止在脚本侧抄一份
@@ -33,13 +32,14 @@ use_when:
 
 - `index.html` — 骨架页：index.html body 静态拷贝（去启动诊断/defer 脚本，`#loading` 内联隐藏，不带 `app-booting`）；`<head>` 内联脚本在任何 src 模块求值前锁 `uiLang=zh-CN`（截图确定性）
 - `main.ts` — REGISTRY 面板注册表（library/scene/env/settings/assistant）+ 就绪协议（`body[data-ready=1]` / 失败 `data-error`，轮询 8s 上限 + 双 rAF 落帧）
-- `shot.mjs` — 截图驱动：生成语言包 → 起 vite dev(:5299) → 逐面板开页 → 等就绪 → 截图落 `_shots/`（gitignore，不进版本库）
+- `shot.mjs` — 截图驱动：生成语言包 → 起 vite dev(:5299) → 逐面板开页 → 等就绪 → 截图落 `_shots/`（gitignore，不进版本库）。默认按弹窗范围（`#sceneOverlay.visible` boundingBox + 12px 呼吸边）裁剪，喂大模型评审零黑边；`--full` 切全页（看面板在 app 中的摆放上下文）
 
 ## 对外 API / 入口
 
 ```bash
-cd frontend && node harness/shot.mjs            # 全量 REGISTRY（清单从页面读）
+cd frontend && node harness/shot.mjs            # 全量 REGISTRY（清单从页面读），默认弹窗范围裁剪
 cd frontend && node harness/shot.mjs settings   # 单面板
+cd frontend && node harness/shot.mjs --full     # 全页模式（含 app 摆放上下文）
 ```
 
 - 页面：`/harness/index.html?c=<面板名>`；无参页供 shot.mjs 读清单
