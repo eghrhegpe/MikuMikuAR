@@ -32,6 +32,7 @@ symbols:
   - plazaSource
   - prewarmPlazaWindow
   - readPlazaCache
+  - validateDirectPlazaURL
   - writePlazaCache
 invariants:
   - 广场窗口单实例预热（App 启动时 prewarmPlazaWindow，隐藏创建避免 WebView2 冷启动 1-3s）

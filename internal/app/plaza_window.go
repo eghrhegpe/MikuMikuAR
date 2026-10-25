@@ -2,6 +2,9 @@ package app
 
 import (
 	"fmt"
+	"net"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -23,7 +26,10 @@ const plazaDirectBridgeJS = `(function(){
   var isSameSite = function(u){
     try {
       var a = new URL(u, location.href);
-      return a.origin === location.origin || a.hostname.endsWith('aplaybox.com');
+      // [audit:fix 2026-10] typosquat defense: only the exact apex or a true
+      // subdomain (.aplaybox.com) counts as same-site — evilaplaybox.com must
+      // fall through to the system browser.
+      return a.origin === location.origin || a.hostname === 'aplaybox.com' || a.hostname.endsWith('.aplaybox.com');
     } catch(e){ return false; }
   };
   window.open = function(u){
@@ -139,6 +145,12 @@ func (a *App) NavigatePlazaWindow(targetURL string, direct bool) error {
 	if direct {
 		// [doc:plaza-spa] 直连真实域名：修复独立 API 域 SPA 经代理后 origin
 		// =127.0.0.1:PORT 触发 api CORS 白屏的问题。
+		// [audit:fix 2026-10] 直连不走代理，plazaSSRFGuard 不在请求路径上，
+		// SetURL 前必须自校验（https-only + 拦 IP 字面量 / localhost / .local）。
+		if err := validateDirectPlazaURL(targetURL); err != nil {
+			a.safeLogInfo("NavigatePlazaWindow: direct target %q rejected: %s", targetURL, err)
+			return err
+		}
 		a.plazaWin.SetURL(targetURL)
 		a.plazaWin.SetTitle("模型广场 — " + targetURL)
 		a.plazaWin.Show()
@@ -160,6 +172,44 @@ func (a *App) NavigatePlazaWindow(targetURL string, direct bool) error {
 	a.plazaWin.Focus()
 
 	a.safeLogInfo("NavigatePlazaWindow: %s (via %s)", targetURL, proxyURL)
+	return nil
+}
+
+// [audit:fix 2026-10] validateDirectPlazaURL gates direct-mode plaza targets
+// before SetURL. Direct mode bypasses the reverse proxy, so the SSRF
+// protection that otherwise lives in plazaSSRFGuard (proxy.go) is not on the
+// request path; the target is validated here instead:
+//   - must parse and use the https scheme (http rejected — direct mode targets
+//     real public sites)
+//   - a literal-IP host must pass isBlockedIP (loopback / private / link-local
+//     / unspecified refused; a public IP literal is the user's explicit choice)
+//   - "localhost" and ".local" hostnames are refused (loopback/mDNS aliases
+//     that a literal-IP check would miss)
+// Pure function (no App receiver) so it is unit-testable in isolation; the
+// caller logs a single rejection line via safeLogInfo. Error style matches
+// this file's existing bare fmt.Errorf usage.
+func validateDirectPlazaURL(targetURL string) error {
+	u, err := url.Parse(targetURL)
+	if err != nil {
+		return fmt.Errorf("invalid direct plaza URL %q: %v", targetURL, err)
+	}
+	if strings.ToLower(u.Scheme) != "https" {
+		return fmt.Errorf("direct plaza URL must use https, got scheme %q", u.Scheme)
+	}
+	host := strings.ToLower(u.Hostname())
+	if host == "" {
+		return fmt.Errorf("direct plaza URL %q has no host", targetURL)
+	}
+	if ip := net.ParseIP(host); ip != nil {
+		if isBlockedIP(ip) {
+			return fmt.Errorf("direct plaza URL host %q is a blocked address (loopback/private/link-local)", host)
+		}
+		// 公网 IP 字面量：用户显式目标，放行。
+		return nil
+	}
+	if host == "localhost" || strings.HasSuffix(host, ".local") {
+		return fmt.Errorf("direct plaza URL host %q is a local host name", host)
+	}
 	return nil
 }
 

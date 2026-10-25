@@ -8,11 +8,12 @@ scope:
 source_files:
   - internal/app/ktxencode.go
 symbols:
-  - ktx2Encode
-  - isKtx2SourceExt
-  - guessEncodeMode
   - findToktx
+  - guessEncodeMode
+  - isKtx2SourceExt
+  - ktx2Encode
   - transcodeTexturesInDir
+  - verifyKtx2Magic
 invariants:
   - 依赖外部 toktx 工具链（findToktx 探测），缺失时须优雅跳过而非失败整个加载
   - 转码按扩展名白名单（isKtx2SourceExt）+ 目录批量（transcodeTexturesInDir），只转支持格式

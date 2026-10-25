@@ -9,10 +9,13 @@ source_files:
   - internal/thumbnail/thumbnail.go
 symbols:
   - CacheKey
-  - Save
   - Get
   - GetBatch
+  - Save
   - SaveScreenshot
+  - cacheKeyPath
+  - hashCacheKey
+  - legacyCacheKey
   - readThumb
 invariants:
   - CacheKey 用 SHA-256(modelPath+rootPath) 做键，路径变化必须重算键
