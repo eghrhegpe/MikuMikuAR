@@ -12,6 +12,8 @@ source_files:
   - frontend/src/core/backend/go-adapter.ts
   - frontend/src/core/backend/browser-adapter.ts
   - frontend/src/menus/library-setup.ts
+tests:
+  - frontend/src/__tests__/browser-adapter-lastscene.test.ts
 adr:
   - ADR-017
   - ADR-176

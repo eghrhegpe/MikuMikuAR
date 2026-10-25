@@ -156,7 +156,13 @@ vi.mock('../scene/motion/proc-motion-bridge', () => ({
 }));
 
 // ======== 导入被测模块 ========
-import { addVmdLayer, removeVmdLayer, toggleVmdLayer } from '../scene/motion/vmd-layers';
+import {
+    addVmdLayer,
+    addVmdLayersFromPaths,
+    removeVmdLayer,
+    toggleVmdLayer,
+} from '../scene/motion/vmd-layers';
+import { readFileBytes } from '../core/wails-bindings';
 
 /** 构建最小合法 VMD buffer（不同 byteLength 避免去重） */
 function fakeVmdBuffer(extraBytes = 0): ArrayBuffer {
@@ -273,10 +279,47 @@ describe('vmd-layers — 旧动画句柄 dispose (composite 路径)', () => {
             await addVmdLayer(fakeVmdBuffer(2), 'layer3.vmd');
             expect(spy).toHaveBeenCalledWith(
                 expect.stringContaining('WASM blender teardown failed after blend error'),
-                expect.any(Error),
+                expect.any(Error)
             );
         } finally {
             spy.mockRestore();
         }
+    });
+});
+
+describe('vmd-layers — addVmdLayersFromPaths 批量路径加载 [audit:fix 2026-10]', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        // 清空图层，确保 .some(l => l.path === ...) 不命中
+        mockInst.vmdLayers = [];
+        mockInst.vmdData = null;
+        mockInst.vmdName = '';
+        mockMmdModel.currentAnimation = null as any;
+    });
+
+    it('readFileBytes→toArrayBuffer 链执行（L212-214），返回 addedCount=1 且 inst.vmdLayers 含该层', async () => {
+        // readFileBytes 默认 mockResolvedValue(null)；改为返回实际字节
+        vi.mocked(readFileBytes).mockResolvedValue(new Uint8Array([1, 2, 3]) as any);
+
+        const added = await addVmdLayersFromPaths(
+            [{ path: '/models/test.vmd', weight: 1.0, boneFilter: [] }],
+            'model_1'
+        );
+
+        // L214 toArrayBuffer 已执行 → 层被加入
+        expect(added).toBe(1);
+        expect(mockInst.vmdLayers).toHaveLength(1);
+        expect(mockInst.vmdLayers[0]).toMatchObject({
+            name: 'test',
+            kind: 'vmd',
+            path: '/models/test.vmd',
+            weight: 1.0,
+            enabled: true,
+        });
+        // data 是 ArrayBuffer（toArrayBuffer 输出），非 Uint8Array
+        expect(mockInst.vmdLayers[0].data).toBeInstanceOf(ArrayBuffer);
+        // _rebuildCompositeAnimation 尾部被调 → loadVMDMotion fallback 或 composite 路径
+        // （1 层 + vmdData=null → fallback → loadVMDMotion）
+        expect(mockLoadVMDMotion).toHaveBeenCalled();
     });
 });

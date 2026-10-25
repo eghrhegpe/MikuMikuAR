@@ -11,6 +11,8 @@ source_files:
   - frontend/src/core/ai/browser-adapter.ts
   - frontend/src/core/ai/go-adapter.ts
   - frontend/src/core/ai/go-key-allows-proceed.ts
+tests:
+  - frontend/src/__tests__/browser-adapter-lastscene.test.ts
 adr:
   - ADR-196
   - ADR-176
@@ -40,7 +42,6 @@ invariants:
   - go-adapter 必须动态 import（桌面/安卓路径按需），不得进入纯浏览器 bundle
   - AiService.capabilities() 为同步签名，异步能力回源由 refreshCapabilities 更新缓存
   - 两适配器均实现统一 AiService 契约（streamChat 返回 AsyncIterable<ChatChunk>），双路径对调用方透明
-tests: []
 use_when:
   - AI 诊断助手
   - resolveAi
