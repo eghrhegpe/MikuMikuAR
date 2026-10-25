@@ -101,6 +101,7 @@ export const en: Record<string, string> = {
     'settings.import': '✗ Import settings failed',
     'settings.about.versionInfo': 'Version Info',
     'settings.about.techStack': 'Tech Stack',
+    'settings.about.techStackValue': 'Wails v3 · Go · Babylon.js 9.x · babylon-mmd', // [audit:fix 2026-10]
     'about.readme': 'README',
     'about.knowledge': 'Knowledge Base',
     'about.guide': 'User Guide',

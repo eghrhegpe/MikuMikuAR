@@ -502,6 +502,7 @@ export function renderPerceptionConflictBanners(container: HTMLElement): void {
 
 export function buildGazeTrackingLevel(): PopupLevel {
     const containerRef: HTMLElement[] = [];
+    const disposerRef: [(() => void) | null] = [null]; // [audit:fix 2026-10] 当前 renderMenu 订阅的 disposer
     return {
         label: t('motion.gazeTracking'),
         dir: '',
@@ -513,15 +514,22 @@ export function buildGazeTrackingLevel(): PopupLevel {
                 banner.className = 'conflict-banner';
                 renderPerceptionConflictBanners(banner);
                 c.appendChild(banner);
-                return renderMenu(getGazeSchema(), c);
+                const d = renderMenu(getGazeSchema(), c);
+                disposerRef[0] = d; // [audit:fix 2026-10] 记录 renderMenu disposer，onLangChange 重建前先释放
+                return d;
             });
         },
         onLangChange: () => {
             const c = containerRef[0];
-            if (c) {
-                c.innerHTML = '';
-                renderMenu(getGazeSchema(), c);
-            }
+            if (!c) return;
+            // [audit:fix 2026-10] 先释放旧 renderMenu disposer（防旧滑块/监听器泄漏），清场后重建 banner（与 renderCustom 体一致）
+            disposerRef[0]?.();
+            c.innerHTML = '';
+            const banner = document.createElement('div');
+            banner.className = 'conflict-banner';
+            renderPerceptionConflictBanners(banner);
+            c.appendChild(banner);
+            disposerRef[0] = renderMenu(getGazeSchema(), c);
         },
     };
 }

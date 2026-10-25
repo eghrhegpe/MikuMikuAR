@@ -100,6 +100,7 @@ export const zhCN: Record<string, string> = {
     'settings.import': '✗ 导入设置失败',
     'settings.about.versionInfo': '版本信息',
     'settings.about.techStack': '技术栈',
+    'settings.about.techStackValue': 'Wails v3 · Go · Babylon.js 9.x · babylon-mmd', // [audit:fix 2026-10]
     'about.readme': '项目说明',
     'about.knowledge': '知识库',
     'about.guide': '使用指南',

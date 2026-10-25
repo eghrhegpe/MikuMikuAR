@@ -554,7 +554,8 @@ function buildTagsOverviewLevel(): PopupLevel {
             try {
                 const favRefs = await GetModelsByTag('收藏');
                 const tags = await GetAllTags();
-                const regularTags = tags ? tags.filter((t) => t !== '收藏') : [];
+                // [audit:fix 2026-10] 回调参数 t 遮蔽模块级 i18n t()（library-actions.ts:45），改名 tag；'收藏' 为跨语言数据级常量（Go 侧 favoriteTag 同字面量），勿 i18n 化
+                const regularTags = tags ? tags.filter((tag) => tag !== '收藏') : [];
 
                 cardContainer(container, (c) => {
                     const favRow = document.createElement('div');

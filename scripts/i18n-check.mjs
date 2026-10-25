@@ -163,6 +163,7 @@ const KNOWN_INTENTIONAL = new Set([
     'scene.loader.actorLoadedWithVmd', // 符号 + 占位符模板
     'scene.vmd.loaded', // 符号 + 占位符模板
     'settings.error', // 符号 + 占位符模板
+    'settings.about.techStackValue', // 技术栈名（五语同串）[audit:fix 2026-10]
     'settings.toggleState', // 符号 + 占位符模板
     'ai.config.httpError', // HTTP 错误码模板
     'ai.provider.ollama', // 品牌名

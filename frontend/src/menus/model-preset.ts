@@ -368,7 +368,7 @@ export function buildPresetListLevel(id: string | null): PopupLevel {
                     t('model-preset.deleteFailed')
                 );
                 if (r === undefined) {
-                    throw new Error('delete failed');
+                    throw new Error(t('model-preset.deleteFailed')); // [audit:fix 2026-10] 裸英文串 → i18n 键（同 scene-render-levels 先例；消费方 viewer catch 仅 logWarn）
                 }
                 feedbackInfo('model-preset.deleted', undefined);
             },

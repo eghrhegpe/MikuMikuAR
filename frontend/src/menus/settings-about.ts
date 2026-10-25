@@ -52,7 +52,7 @@ function buildAboutSchema(_getSettingsMenu: () => SettingsMenuHandle): MenuNode[
                     const techStack = document.createElement('div');
                     techStack.style.cssText =
                         'font-size:var(--font-ui-xs);color:var(--text-dim);margin-top:6px;line-height:1.6;';
-                    techStack.textContent = 'Wails v3 · Go · Babylon.js 9.x · babylon-mmd';
+                    techStack.textContent = t('settings.about.techStackValue'); // [audit:fix 2026-10] 裸串改 t()，五语键各包同串
                     title.appendChild(techStack);
 
                     inner.appendChild(title);
@@ -219,12 +219,13 @@ function buildAboutSchema(_getSettingsMenu: () => SettingsMenuHandle): MenuNode[
                                             updateBtn.textContent = t(
                                                 'settings.about.update.installLaunched'
                                             );
+                                            // [audit:fix 2026-10] 10s→60s：Android APK 安装走系统 UI 可能 >10s，10s 后摘除监听会漏 installFailed → 误留「已启动安装」；60s 悬挂可忽略
                                             setTimeout(() => {
                                                 window.removeEventListener(
                                                     'update:installFailed',
                                                     onInstallFailed
                                                 );
-                                            }, 10000);
+                                            }, 60000);
                                         } else {
                                             const errMsg = result?.error || '';
                                             updateBtn.textContent = t(

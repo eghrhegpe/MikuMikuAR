@@ -448,13 +448,18 @@ function buildScreenshotSchema(getSettingsMenu: () => SettingsMenuHandle): MenuN
                         t('settings.screenshot.selectDir'),
                         false,
                         async () => {
-                            const d = await SelectDir();
-                            if (!d) {
-                                return;
+                            try {
+                                const d = await SelectDir();
+                                if (!d) {
+                                    return;
+                                }
+                                setUIState({ screenshotDir: d });
+                                getSettingsMenu()?.reRender();
+                                showInfoToast(t('settings.screenshotDirSet', { dir: d }));
+                            } catch (err) {
+                                // [audit:fix 2026-10] 与 :469-472 OpenScreenshotDir 同构：SelectDir Go 错误 → toast 而非裸 reject
+                                showInfoToast(t('settings.error', { message: translateGoError(err) }));
                             }
-                            setUIState({ screenshotDir: d });
-                            getSettingsMenu()?.reRender();
-                            showInfoToast(t('settings.screenshotDirSet', { dir: d }));
                         },
                         dirSub
                     );

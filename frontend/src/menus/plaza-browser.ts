@@ -309,7 +309,11 @@ export function openInWindow(site: PlazaSite, url?: string): void {
 
 export function getCustomPresets(siteId: string): { label: string; q: string }[] {
     try {
-        return JSON.parse(localStorage.getItem(`miku.plaza.presets.${siteId}`) || '[]');
+        // [audit:fix 2026-10] localStorage 被写入非数组（string/object）时 JSON.parse 成功但调用方 .map 崩，数组校验后兜底 []
+        const raw = localStorage.getItem(`miku.plaza.presets.${siteId}`);
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
     } catch {
         return [];
     }

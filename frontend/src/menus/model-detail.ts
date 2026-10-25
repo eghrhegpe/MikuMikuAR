@@ -250,15 +250,19 @@ function buildOpenWithSchema(id: string): MenuNode[] {
                             () => {
                                 // Pop model stack first so returning from settings shows root level
                                 stackRegistry.modelStack?.popTo(0);
-                                import('./library-core').then((m) => {
-                                    stackRegistry.modelStack?.setLevel(0, {
-                                        label: t('model-detail.model'),
-                                        dir: '',
-                                        items: m.buildModelRootItems(),
-                                    });
-                                    stackRegistry.modelStack?.reRender();
-                                    dom.btnSettings.click();
-                                });
+                                import('./library-core')
+                                    .then((m) => {
+                                        stackRegistry.modelStack?.setLevel(0, {
+                                            label: t('model-detail.model'),
+                                            dir: '',
+                                            items: m.buildModelRootItems(),
+                                        });
+                                        stackRegistry.modelStack?.reRender();
+                                        dom.btnSettings.click();
+                                    })
+                                    .catch((err) =>
+                                        logWarn('model-detail', 'library-core dynamic import failed', err)
+                                    ); // [audit:fix 2026-10] fire-and-forget 动态 import 补 catch（先例 :766）
                             },
                             undefined,
                             undefined,
@@ -618,7 +622,9 @@ export function buildModelToolsLevel(id: string): PopupLevel {
                     menu?.popTo(0);
                     offerSceneUndo(t('settings.unloaded', { name: inst.name }), snap, () => {
                         // 撤销恢复后刷新模型列表，使已恢复的模型可见（就地更新，保留浏览位置）
-                        import('./library-core').then((m) => m.refreshModelRoot());
+                        import('./library-core')
+                            .then((m) => m.refreshModelRoot())
+                            .catch((err) => logWarn('model-detail', 'library-core dynamic import failed', err)); // [audit:fix 2026-10] fire-and-forget 动态 import 补 catch（先例 :766）
                         feedbackInfo('motion.undoApplied', undefined);
                     });
                 });

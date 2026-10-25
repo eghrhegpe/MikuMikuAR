@@ -98,6 +98,7 @@ export const zhTW: Record<string, string> = {
     'settings.import': '✗ 匯入設定失敗',
     'settings.about.versionInfo': '版本資訊',
     'settings.about.techStack': '技術棧',
+    'settings.about.techStackValue': 'Wails v3 · Go · Babylon.js 9.x · babylon-mmd', // [audit:fix 2026-10]
     'about.readme': '專案說明',
     'about.knowledge': '知識庫',
     'about.guide': '使用指南',

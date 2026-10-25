@@ -8,6 +8,7 @@ import { showInfoToast } from '../core/toast';
 import type { PopupLevel } from '../core/config';
 import type { RenderState } from '../scene/scene';
 import { swallowError } from '../core/async';
+import { logWarn } from '../core/logger'; // [audit:fix 2026-10] T3 拒绝分支显式记录（ADR-191 叶导入）
 import { showErrorToast } from '../core/toast';
 import { tryCatchStatus } from '../core/status-helpers';
 import { addModeSlider, slideRow, addPresetChip } from '../core/ui-helpers';
@@ -89,7 +90,7 @@ function _renderScenePresetList(container: HTMLElement, scenes: string[]): void 
                     t('scene.statusDeleteFailed')
                 );
                 if (r === undefined) {
-                    throw Error('delete failed');
+                    throw Error(t('scene.statusDeleteFailed')); // [audit:fix 2026-10] 裸英文串 → i18n 键（消费方 catch 仅 logWarn）
                 }
                 showInfoToast(t('scene.statusDeleted', { name }));
             },
@@ -115,10 +116,16 @@ export function buildPresetScenesLevel(): PopupLevel {
                     'padding:14px;color:var(--text-dim);font-size:var(--font-ui-sm);';
                 c.appendChild(loadingPlaceholder);
                 swallowError(
-                    GetPresetScenes().then((scenes: string[] | null) => {
-                        c.removeChild(loadingPlaceholder);
-                        _renderScenePresetList(c, scenes || []);
-                    })
+                    GetPresetScenes()
+                        .then((scenes: string[] | null) => {
+                            loadingPlaceholder.remove(); // [audit:fix 2026-10] removeChild 面板已关时抛 NotFoundErr；remove() 幂等
+                            _renderScenePresetList(c, scenes || []);
+                        })
+                        .catch((err) => {
+                            // [audit:fix 2026-10] 旧实现 reject 被 swallowError 静默：占位卡死 + 拒绝无声；链尾显式兜底
+                            loadingPlaceholder.remove();
+                            logWarn('scene-render-levels', 'load preset scenes failed', err);
+                        })
                 );
             });
             // 卡片 2：撤销 / 保存场景

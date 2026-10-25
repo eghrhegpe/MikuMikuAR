@@ -99,6 +99,7 @@ export const ja: Record<string, string> = {
     'settings.import': '✗ 設定のインポートに失敗しました',
     'settings.about.versionInfo': 'バージョン情報',
     'settings.about.techStack': '技術スタック',
+    'settings.about.techStackValue': 'Wails v3 · Go · Babylon.js 9.x · babylon-mmd', // [audit:fix 2026-10]
     'about.readme': 'プロジェクト説明',
     'about.knowledge': 'ナレッジベース',
     'about.guide': '使用ガイド',

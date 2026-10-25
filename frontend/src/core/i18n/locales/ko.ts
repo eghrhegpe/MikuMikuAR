@@ -101,6 +101,7 @@ export const ko: Record<string, string> = {
     'settings.import': '✗ 설정 가져오기 실패',
     'settings.about.versionInfo': '버전 정보',
     'settings.about.techStack': '기술 스택',
+    'settings.about.techStackValue': 'Wails v3 · Go · Babylon.js 9.x · babylon-mmd', // [audit:fix 2026-10]
     'about.readme': '프로젝트 설명',
     'about.knowledge': '지식 베이스',
     'about.guide': '사용 가이드',

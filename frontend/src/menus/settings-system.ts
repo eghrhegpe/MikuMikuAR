@@ -36,6 +36,7 @@ import { showInfoToast } from '../core/toast';
 import { safeCallAsync } from '../core/safe-call';
 import { t } from '../core/i18n/t';
 import { translateGoError } from '../core/i18n/goerr';
+import { logWarn } from '../core/logger';
 import { schedulePersistUI } from '../scene/env/_bridge/env-persist';
 import { defaultUIState } from '../core/ui-state';
 import { setPerformanceMode } from '../scene/render/performance';
@@ -136,7 +137,8 @@ function exportSettings(): void {
     document.body.appendChild(a);
     a.click();
     a.remove();
-    URL.revokeObjectURL(url);
+    // [audit:fix 2026-10] 延迟 revoke：等下载任务拿到 blob（WebView2/Chrome 异步下载）
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
     feedbackInfo('settings.exported', undefined);
 }
 
@@ -758,7 +760,12 @@ function buildSoftwareDetailAutoSchema(
                                     return true;
                                 }, t('settings.software.convertFailed'));
                                 if (r) {
-                                    cachedSoftwareEntries = await ScanSoftwareDir();
+                                    try {
+                                        cachedSoftwareEntries = await ScanSoftwareDir();
+                                    } catch (err) {
+                                        // [audit:fix 2026-10] 扫描失败不阻断转化流程；reRender 内部 scanSoftwareDir 有 catch 兜底（:477-484），用户下次进软件卡仍见旧列表
+                                        logWarn('settings-system', 'ScanSoftwareDir failed after convert', err);
+                                    }
                                     showInfoToast(
                                         t('settings.softwareToCustom', { name: entry.name })
                                     );

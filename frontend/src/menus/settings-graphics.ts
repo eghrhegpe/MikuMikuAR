@@ -241,7 +241,7 @@ export function buildEffectsSchema(): MenuNode[] {
                     t('scene.antialiasing'),
                     [
                         { value: 'off', label: t('scene.off') },
-                        { value: 'fxaa', label: 'FXAA' },
+                        { value: 'fxaa', label: t('settings.perf.fxaa') }, // [audit:fix 2026-10] 裸串改 t()（五语键已存在）
                         { value: '2x', label: '2x' },
                         { value: '4x', label: '4x' },
                         { value: '8x', label: '8x' },

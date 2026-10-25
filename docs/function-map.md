@@ -2231,17 +2231,17 @@
 | `getWaterSchema()` | `menus/env-water-levels:31` | 导出 water schema 供 menu-registry 静态分析（ADR-093 元测试） |
 | `buildWindLevel()` | `menus/env-wind-levels:44` | — |
 | `getWindSchema()` | `menus/env-wind-levels:12` | 导出 wind schema 供 menu-registry 静态分析（ADR-093 元测试） |
-| `buildTagDetailLevel()` | `menus/library-actions:761` | — |
-| `buildTagsOverviewLevel()` | `menus/library-actions:761` | — |
-| `findLibraryModelByName()` | `menus/library-actions:761` | 按名称模糊搜索模型（纯查询，不触发加载）。供 ADR-155/197 NL 控制 resolve 使用，避免 resolve 阶段误触发真实加载。 |
-| `findLibraryMotionByName()` | `menus/library-actions:761` | 按名称模糊搜索 VMD 动作（纯查询，不触发替换）。 |
-| `highlightRow()` | `menus/library-actions:761` | — |
-| `importFile()` | `menus/library-actions:716` | — |
-| `importFileByPath()` | `menus/library-actions:671` | — |
-| `onModelRowClick()` | `menus/library-actions:761` | — |
+| `buildTagDetailLevel()` | `menus/library-actions:762` | — |
+| `buildTagsOverviewLevel()` | `menus/library-actions:762` | — |
+| `findLibraryModelByName()` | `menus/library-actions:762` | 按名称模糊搜索模型（纯查询，不触发加载）。供 ADR-155/197 NL 控制 resolve 使用，避免 resolve 阶段误触发真实加载。 |
+| `findLibraryMotionByName()` | `menus/library-actions:762` | 按名称模糊搜索 VMD 动作（纯查询，不触发替换）。 |
+| `highlightRow()` | `menus/library-actions:762` | — |
+| `importFile()` | `menus/library-actions:717` | — |
+| `importFileByPath()` | `menus/library-actions:672` | — |
+| `onModelRowClick()` | `menus/library-actions:762` | — |
 | `prepareModelRestore()` | `menus/library-actions:113` | — |
-| `replaceModel()` | `menus/library-actions:761` | — |
-| `replaceMotion()` | `menus/library-actions:761` | — |
+| `replaceModel()` | `menus/library-actions:762` | — |
+| `replaceMotion()` | `menus/library-actions:762` | — |
 | `makeModelMenu()` | `menus/library-browse:437` | — |
 | `showModelPopup()` | `menus/library-browse:398` | — |
 | `ResourceViewMode()` | `menus/library-core:43` | — |
@@ -2318,15 +2318,15 @@
 | `SlideMenu()` | `menus/menu:72` | — |
 | `getCurrentRenderingMenu()` | `menus/menu:72` | 获取当前正在渲染的 SlideMenu 实例（供 menus 层控件的自更新注册）。 |
 | `getOpenMenus()` | `menus/menu:80` | 获取所有当前存活的 SlideMenu 实例（已 dispose 的会自动移除，调用方仍需自行判断可见性） |
-| `buildBoneHierarchyLevel()` | `menus/model-detail:1525` | — |
-| `buildModelInfoLevel()` | `menus/model-detail:871` | — |
-| `buildModelLevel()` | `menus/model-detail:630` | — |
-| `buildModelTagsLevel()` | `menus/model-detail:1091` | — |
-| `buildModelToolsLevel()` | `menus/model-detail:580` | [doc:adr-167] 叠加动作次级菜单已移除（ADR-144 per-model overlay 废弃）。 |
-| `buildMorphPreviewLevel()` | `menus/model-detail:1201` | — |
-| `buildMotionSlotLevel()` | `menus/model-detail:439` | 构建动作1（基础）次级菜单：场景库选择 + 已加载动作 + 程序化动作 |
-| `buildOpenWithLevel()` | `menus/model-detail:278` | — |
-| `buildPersonalLightLevel()` | `menus/model-detail:1214` | — |
+| `buildBoneHierarchyLevel()` | `menus/model-detail:1531` | — |
+| `buildModelInfoLevel()` | `menus/model-detail:877` | — |
+| `buildModelLevel()` | `menus/model-detail:636` | — |
+| `buildModelTagsLevel()` | `menus/model-detail:1097` | — |
+| `buildModelToolsLevel()` | `menus/model-detail:584` | [doc:adr-167] 叠加动作次级菜单已移除（ADR-144 per-model overlay 废弃）。 |
+| `buildMorphPreviewLevel()` | `menus/model-detail:1207` | — |
+| `buildMotionSlotLevel()` | `menus/model-detail:443` | 构建动作1（基础）次级菜单：场景库选择 + 已加载动作 + 程序化动作 |
+| `buildOpenWithLevel()` | `menus/model-detail:282` | — |
+| `buildPersonalLightLevel()` | `menus/model-detail:1220` | — |
 | `buildMatRootLevel()` | `menus/model-material:461` | — |
 | `ModelPresetEntry()` | `menus/model-preset:37` | — |
 | `ModelPresetFile()` | `menus/model-preset:46` | — |
@@ -2395,8 +2395,8 @@
 | `navLabels()` | `menus/nav-actions:25` | — |
 | `toggleOverlay()` | `menus/nav-actions:73` | — |
 | `buildOutfitLevel()` | `menus/outfit-ui:158` | — |
-| `buildSiteTabs()` | `menus/plaza-browser:326` | — |
-| `buildToolbar()` | `menus/plaza-browser:718` | — |
+| `buildSiteTabs()` | `menus/plaza-browser:330` | — |
+| `buildToolbar()` | `menus/plaza-browser:722` | — |
 | `ensureSitesLoaded()` | `menus/plaza-browser:255` | — |
 | `getCustomPresets()` | `menus/plaza-browser:310` | — |
 | `loadPlazaCache()` | `menus/plaza-browser:157` | 从 Go 用户目录缓存（plaza-cache/creators.json + workshop_sites.json）读取站点 + 创作者。缓存不存在时返回 null。 |
@@ -2407,13 +2407,13 @@
 | `openInWindow()` | `menus/plaza-browser:295` | — |
 | `openSiteByMode()` | `menus/plaza-browser:275` | — |
 | `preserveBuiltinRouting()` | `menus/plaza-browser:248` | — |
-| `renderEmbed()` | `menus/plaza-browser:878` | — |
-| `renderHome()` | `menus/plaza-browser:856` | — |
-| `renderSiteContent()` | `menus/plaza-browser:383` | — |
-| `saveCustomPresets()` | `menus/plaza-browser:318` | — |
+| `renderEmbed()` | `menus/plaza-browser:882` | — |
+| `renderHome()` | `menus/plaza-browser:860` | — |
+| `renderSiteContent()` | `menus/plaza-browser:387` | — |
+| `saveCustomPresets()` | `menus/plaza-browser:322` | — |
 | `savePlazaCache()` | `menus/plaza-browser:196` | 将当前站点 + 创作者持久化到 Go 用户目录缓存（plaza-cache/）。 |
-| `showActionsMenu()` | `menus/plaza-browser:762` | — |
-| `showPlaza()` | `menus/plaza-browser:990` | — |
+| `showActionsMenu()` | `menus/plaza-browser:766` | — |
+| `showPlaza()` | `menus/plaza-browser:994` | — |
 | `PLAZA_CREATORS()` | `menus/plaza-creators:9` | — |
 | `PlazaCreator()` | `menus/plaza-creators:1` | — |
 | `ensureObserver()` | `menus/plaza-download:196` | — |
@@ -2485,10 +2485,10 @@
 | `buildPhysicsDebugLevel()` | `menus/scene-physics-levels:157` | 构建物理调试子页（材质线框/骨骼 — WASM 相关，由模型详情页调用） |
 | `buildPhysicsLevel()` | `menus/scene-physics-levels:39` | 构建 WASM 物理子页（Bullet 骨髁物理 — per-model） |
 | `buildWasmPhysicsLevel()` | `menus/scene-physics-levels:90` | 构建 WASM 物理子页（Bullet 骨髁物理信息 + 全局开关） |
-| `buildPostProcessColorSchema()` | `menus/scene-render-levels:426` | 后处理 schema — 色彩层（色调映射） |
-| `buildPostProcessCoreSchema()` | `menus/scene-render-levels:205` | 后处理 schema — 核心层（高频效果）+ 高级层（光学/环境效果） |
-| `buildPostProcessLevel()` | `menus/scene-render-levels:523` | — |
-| `buildPresetScenesLevel()` | `menus/scene-render-levels:104` | — |
+| `buildPostProcessColorSchema()` | `menus/scene-render-levels:433` | 后处理 schema — 色彩层（色调映射） |
+| `buildPostProcessCoreSchema()` | `menus/scene-render-levels:212` | 后处理 schema — 核心层（高频效果）+ 高级层（光学/环境效果） |
+| `buildPostProcessLevel()` | `menus/scene-render-levels:530` | — |
+| `buildPresetScenesLevel()` | `menus/scene-render-levels:105` | — |
 | `FILTER_PRESET_LABELS()` | `menus/scene-render-presets:149` | — |
 | `USER_FILTER_PRESETS()` | `menus/scene-render-presets:293` | — |
 | `buildPresetsLevel()` | `menus/scene-render-presets:255` | — |
@@ -2497,7 +2497,7 @@
 | `buildStageLevel()` | `menus/scene-stage-levels:161` | — |
 | `buildStageTransformLevel()` | `menus/scene-stage-levels:175` | — |
 | `buildStageLightLevel()` | `menus/scene-stage-lights:833` | — |
-| `buildSettingsAboutLevel()` | `menus/settings-about:258` | — |
+| `buildSettingsAboutLevel()` | `menus/settings-about:259` | — |
 | `handleSettingsAction()` | `menus/settings-actions:35` | 全局设置项点击分发：语言切换 + 动作表。settings.ts 的 onItemClick 使用。 |
 | `buildSettingsAppearanceLevel()` | `menus/settings-appearance:514` | — |
 | `buildCameraSchema()` | `menus/settings-controls:29` | — |
@@ -2511,7 +2511,7 @@
 | `buildPhysicsHudSchema()` | `menus/settings-graphics:305` | — |
 | `buildSettingsGraphicsLevel()` | `menus/settings-graphics:432` | — |
 | `buildSettingsLanguageLevel()` | `menus/settings-language:7` | — |
-| `buildSettingsMediaLevel()` | `menus/settings-media:513` | — |
+| `buildSettingsMediaLevel()` | `menus/settings-media:518` | — |
 | `buildSettingsResourcesLevel()` | `menus/settings-resources:543` | — |
 | `FONT_MAP()` | `menus/settings-shared:147` | — |
 | `SETTINGS_FONT_RESTORE()` | `menus/settings-shared:147` | — |
@@ -2529,12 +2529,12 @@
 | `setDownloadWatchEnabledCached()` | `menus/settings-shared:56` | — |
 | `setTheme()` | `menus/settings-shared:81` | — |
 | `truncatePath()` | `menus/settings-shared:206` | 路径截断显示：超长时保留尾部（用户更关心文件名/末级目录） |
-| `addCustomSoftware()` | `menus/settings-system:451` | — |
-| `buildSettingsSystemLevel()` | `menus/settings-system:825` | — |
-| `buildSoftwareDetailLevel()` | `menus/settings-system:780` | — |
-| `scanSoftwareDir()` | `menus/settings-system:477` | — |
-| `setBlenderPath()` | `menus/settings-system:423` | — |
-| `setMMDPath()` | `menus/settings-system:437` | — |
+| `addCustomSoftware()` | `menus/settings-system:453` | — |
+| `buildSettingsSystemLevel()` | `menus/settings-system:832` | — |
+| `buildSoftwareDetailLevel()` | `menus/settings-system:787` | — |
+| `scanSoftwareDir()` | `menus/settings-system:479` | — |
+| `setBlenderPath()` | `menus/settings-system:425` | — |
+| `setMMDPath()` | `menus/settings-system:439` | — |
 | `SETTINGS()` | `menus/settings-targets:5` | 设置菜单文件夹导航 target（ADR-157 的 7 分类 + downloads = 8 个根区段） |
 | `SETTINGS_ACTION()` | `menus/settings-targets:17` | 设置菜单动作 target（点击后执行操作，不导航） |
 | `SOFTWARE_DETAIL_PREFIX()` | `menus/settings-targets:33` | 动态 target 前缀 —— 用于 &#96;settings:software-detail:&lt;path&gt;&#96; 模式 |
