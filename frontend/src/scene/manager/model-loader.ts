@@ -25,6 +25,7 @@ import { getBaseName } from '@/core/path';
 import { swallowError, fireAndForget } from '@/core/async';
 import { resolveModelId } from './model-id';
 import { logWarn, logError } from '@/core/logger';
+import { toArrayBuffer } from '@/core/array-buffer';
 import { parsePmxComment } from '@/core/pmx-meta';
 // [doc:adr-238] 动作状态读取经 scene-action-bridge（motion-intent 注册）
 import { getSceneAction } from '@/core/scene-action-bridge';
@@ -399,8 +400,9 @@ async function _applySceneMotion(
                         appliedVmd = '';
                     } else {
                         const { loadVMDMotion } = await import('../motion/vmd-loader');
+                        // [audit:fix 2026-10] readFileBytes 视图可能带 byteOffset，安全叶 toArrayBuffer 收口
                         await loadVMDMotion(
-                            vmdData.buffer as ArrayBuffer,
+                            toArrayBuffer(vmdData),
                             activeMotion.vmdName ?? '',
                             inst.id
                         );

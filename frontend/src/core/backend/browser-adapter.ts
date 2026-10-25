@@ -44,6 +44,7 @@ import type { BackendService, BackendCapabilities } from './types';
 import { idbGet, idbSet, idbDelete, idbKeys, idbBatchSet, closeIDB, type Store } from './idb';
 import { detectKtx2Support } from '../gpu-capabilities';
 import { translateGoError } from '../i18n/goerr';
+import { logWarn } from '../logger';
 
 // —— 路径工具函数（消除 6 处 "split + pop + replace" 重复）——
 
@@ -1764,12 +1765,14 @@ export const browserAdapter: BrowserAdapterSelf & ThisType<BrowserAdapterSelf> =
     // 但浏览器端 IndexedDB 事务是异步的——cleanupAndFlushSave 在 beforeunload 里
     // fire-and-forget 时事务可能来不及落盘，最后几秒场景静默丢失。故双写：
     // 主路径 IndexedDB（无 5MB 容量限制）+ localStorage 同步镜像（setItem 同步完成，
-    // beforeunload 场景必落盘）。镜像失败（配额超限等）静默忽略，主路径不受影响。
+    // beforeunload 场景必落盘）。镜像失败（配额超限等）记 warn 观测、不阻断，主路径不受影响。
     async SaveLastScene(jsonStr: string): Promise<void> {
         try {
             localStorage.setItem(LAST_SCENE_MIRROR_KEY, jsonStr);
-        } catch {
-            // 配额超限/不可用：忽略，主路径 IndexedDB 仍写入
+        } catch (err) {
+            // [audit:fix 2026-10] P2① 半修：镜像是 best-effort 兜底（ADR-234 双写），失败仍不影响主路径；
+            // 原静默忽略改为 warn 观测（与 Go setLastDir 收口同款；生命周期路径非帧热路径，ADR-248 不适用）。
+            logWarn('browser-adapter', 'LAST_SCENE 镜像写入失败（配额超限/不可用），镜像兜底不可用', err);
         }
         await idbSet('scenes', 'last_scene', jsonStr);
     },
@@ -1781,7 +1784,9 @@ export const browserAdapter: BrowserAdapterSelf & ThisType<BrowserAdapterSelf> =
         // 回退镜像：上次退出时 IndexedDB 事务可能未完成，镜像保留了最后状态
         try {
             return localStorage.getItem(LAST_SCENE_MIRROR_KEY) ?? '';
-        } catch {
+        } catch (err) {
+            // [audit:fix 2026-10] P2① 半修：主路径已先行返回，此处是最后兜底——读失败仍回落 ''，但静默面改为 warn
+            logWarn('browser-adapter', 'LAST_SCENE 镜像读取失败，回落空场景', err);
             return '';
         }
     },

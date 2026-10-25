@@ -5,6 +5,8 @@
 // 释放：scene.ts disposeRenderer() → clearTextureLRU() 清空。
 
 import { readFileBytes } from '@/core/wails-bindings';
+// [audit:fix 2026-10] zip-entry/DataView 视图安全取 ArrayBuffer（core 叶，替代裸 .buffer 强转）
+import { toArrayBuffer } from '@/core/array-buffer';
 
 interface TextureCacheEntry {
     data: ArrayBuffer;
@@ -78,7 +80,7 @@ export async function readTextureWithLRU(
         if (_textureLRU.size >= TEXTURE_LRU_MAX_ENTRIES) {
             evictOldest();
         }
-        const entry: TextureCacheEntry = { data: data.buffer as ArrayBuffer, lastUsed: Date.now() };
+        const entry: TextureCacheEntry = { data: toArrayBuffer(data), lastUsed: Date.now() }; // [audit:fix 2026-10] 视图安全取 buffer
         _textureLRU.set(key, entry);
         return entry.data;
     })().finally(() => {

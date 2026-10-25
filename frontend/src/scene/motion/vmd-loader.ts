@@ -20,6 +20,8 @@ import { withLoadingIndicator } from '@/core/config';
 import { logWarn } from '@/core/logger';
 import { encodeFileRef } from '@/core/fileservice';
 import { readFileBytes } from '@/core/wails-bindings';
+// [audit:fix 2026-10] zip-entry/DataView 视图安全取 ArrayBuffer（core 叶，替代裸 .buffer 强转）
+import { toArrayBuffer } from '@/core/array-buffer';
 import { t } from '@/core/i18n/t';
 import { feedbackInfo, feedbackStatus } from '@/core/feedback';
 import { switchAnimation } from '@/core/mmd-adapter';
@@ -202,7 +204,7 @@ export async function loadVMDFromPath(
             if (!vmdBytes) {
                 return;
             }
-            const vmdData = vmdBytes.buffer as ArrayBuffer;
+            const vmdData = toArrayBuffer(vmdBytes); // [audit:fix 2026-10] 视图安全取 buffer
             const vmdName = getBaseName(path) || '';
             const vmdDisplayName = vmdName.replace(/\.vmd$/i, '');
 
@@ -330,7 +332,7 @@ export async function loadCameraVmdFromPath(path: string, _signal?: AbortSignal)
             if (!vmdBytes) {
                 return;
             }
-            const vmdData = vmdBytes.buffer as ArrayBuffer;
+            const vmdData = toArrayBuffer(vmdBytes); // [audit:fix 2026-10] 视图安全取 buffer
             const vmdName = getBaseName(path) || '';
 
             const vmdLoader = new VmdLoader(scene);
@@ -358,7 +360,7 @@ export async function loadVPDPose(
             if (!rawBytes) {
                 return;
             }
-            const rawData = rawBytes.buffer as ArrayBuffer;
+            const rawData = toArrayBuffer(rawBytes); // [audit:fix 2026-10] 视图安全取 buffer
             const poseName = getBaseName(path) || '';
 
             // 停掉程序化动作（VPD 姿势不被动画干扰）；[fix:P2] 仅停止目标模型

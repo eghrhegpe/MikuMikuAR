@@ -8,18 +8,12 @@
 // - 解析失败 / 异常一律返回空数组，绝不阻塞模型加载主流程。
 
 import { PmxReader } from 'babylon-mmd/esm/Loader/Parser/pmxReader.js';
+// [audit:fix 2026-10] 本地 _toArrayBuffer 提为 core 叶（ADR-191 具体叶导入）
+import { toArrayBuffer } from '@/core/array-buffer';
 
 /** 规范化纹理路径用于不敏感匹配（与 babylon-mmd ReferenceFileResolver 的 key 构造一致） */
 function _normalizeTexturePath(p: string): string {
     return p.replace(/\\/g, '/').replace(/\/+/g, '/').trim().toUpperCase();
-}
-
-/** 将 Uint8Array 安全地转为 ArrayBuffer 切片（避免 byteOffset/视图长度错位） */
-function _toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
-    if (bytes.byteOffset === 0 && bytes.byteLength === bytes.buffer.byteLength) {
-        return bytes.buffer as ArrayBuffer;
-    }
-    return bytes.slice().buffer as ArrayBuffer;
 }
 
 /**
@@ -30,7 +24,7 @@ function _toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
  */
 export async function parsePmxTexturePaths(pmxBytes: Uint8Array): Promise<string[]> {
     try {
-        const pmx = await PmxReader.ParseAsync(_toArrayBuffer(pmxBytes));
+        const pmx = await PmxReader.ParseAsync(toArrayBuffer(pmxBytes));
         return [...pmx.textures];
     } catch {
         return [];
@@ -52,7 +46,7 @@ export async function auditMissingTextures(
         if (signal?.aborted) {
             return []; // 加载已取消：丢弃审计，避免对新场景误报缺失
         }
-        const pmx = await PmxReader.ParseAsync(_toArrayBuffer(pmxBytes));
+        const pmx = await PmxReader.ParseAsync(toArrayBuffer(pmxBytes));
         if (signal?.aborted) {
             return []; // 解析期间被取消：同样丢弃
         }

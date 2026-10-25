@@ -24,6 +24,7 @@ import { switchAnimation } from '@/core/mmd-adapter';
 import { showInfoToast } from '@/core/toast';
 import { readFileBytes } from '@/core/wails-bindings';
 import { getBaseName } from '@/core/path';
+import { toArrayBuffer } from '@/core/array-buffer';
 import { clamp01 } from '@/core/clamp';
 import { logWarn } from '@/core/logger';
 import { t } from '@/core/i18n/t';
@@ -209,7 +210,8 @@ export async function addVmdLayersFromPaths(
                 logWarn('vmd-layers', 'Failed to read VMD file:', layer.path);
                 continue;
             }
-            const data = vmdData.buffer as ArrayBuffer;
+            // [audit:fix 2026-10] readFileBytes 视图可能带 byteOffset，安全叶 toArrayBuffer 收口
+            const data = toArrayBuffer(vmdData);
             const vmdName = getBaseName(layer.path) || '';
             newLayers.push({
                 data,

@@ -7,7 +7,7 @@
 
 | 模块 | 文件数 | 导出符号数 |
 |------|--------|-----------|
-| 核心基础设施 | 140 | 838 |
+| 核心基础设施 | 141 | 839 |
 | 3D 场景 | 137 | 1286 |
 | 菜单 & UI | 77 | 394 |
 | 动作算法 | 19 | 138 |
@@ -137,6 +137,7 @@
 | `ChatRequest()` | `core/ai/types:46` | 流式聊天请求参数 |
 | `ToolCall()` | `core/ai/types:19` | 工具调用（assistant 消息中） |
 | `ToolSchema()` | `core/ai/types:36` | JSON Schema 工具定义（OpenAI function_calling 格式） |
+| `toArrayBuffer()` | `core/array-buffer:9` | — |
 | `Abortable()` | `core/async:149` | 可复用的 AbortController 封装——abort 后自动重置，使对象可重复使用。 |
 | `DebouncedTimer()` | `core/async:114` | 防抖定时器——封装 setTimeout 的 schedule/cancel 样板。 |
 | `LoadingGuard()` | `core/async:82` | 并发加载守卫——防止同一 key 的异步操作重复触发。 |
@@ -195,21 +196,21 @@
 | `mem()` | `core/backend/browser-adapter-mocks:6` | — |
 | `resetMem()` | `core/backend/browser-adapter-mocks:15` | — |
 | `setStore()` | `core/backend/browser-adapter-mocks:8` | — |
-| `FsaAuthState()` | `core/backend/browser-adapter:922` | — |
-| `browserAdapter()` | `core/backend/browser-adapter:1410` | — |
-| `dismissFsaAuthPrompt()` | `core/backend/browser-adapter:958` | — |
-| `getFsaAuthState()` | `core/backend/browser-adapter:929` | [doc:adr-183] 查询 FSA 根目录授权状态，供 UI 启动引导（不触发任何权限弹窗）。 |
-| `getFsaDownloadAuthState()` | `core/backend/browser-adapter:1001` | 查询下载文件夹 FSA 授权状态（不触发权限弹窗），供 UI 引导。 |
-| `getFsaDownloadHandle()` | `core/backend/browser-adapter:1066` | 读取持久化的下载文件夹句柄（供扫描使用），不触发权限弹窗；无句柄返回 null。 |
-| `ingestModelBytes()` | `core/backend/browser-adapter:671` | [doc:adr-195] 写入单文件（名+字节）到资源库，不加载到场景。供下载面板批量摄入复用。 |
-| `ingestModelFile()` | `core/backend/browser-adapter:661` | 写入单个模型/动作文件（File）到 IndexedDB 资源库（file:+entry:），不加载到场景。 |
-| `ingestModelFiles()` | `core/backend/browser-adapter:680` | [doc:adr-195] P3 批量摄入：单事务写入该批次所有 file:/entry: 键，避免逐条 idbSet 并发写竞态。 |
-| `isFsaAuthPromptDismissed()` | `core/backend/browser-adapter:954` | [doc:adr-183] 用户跳过启动授权引导后写入「已跳过」标志，避免纯导入用户每次启动被弹窗骚扰。 |
-| `reauthorizeFsaDownload()` | `core/backend/browser-adapter:1025` | 对持久化的下载文件夹句柄重新请求授权（须用户手势上下文）。成功返回 true。 |
-| `reauthorizeFsaRoot()` | `core/backend/browser-adapter:971` | [doc:adr-183] 对持久化的 FSA 句柄重新请求授权（不重选目录）。 |
-| `resetFsaAuthPromptDismissed()` | `core/backend/browser-adapter:963` | [doc:adr-183] 清除跳过标志：用户手动设置根目录后，后续无根目录启动应重新获得引导机会。 |
-| `selectFsaDownloadDir()` | `core/backend/browser-adapter:1049` | 选择下载文件夹（独立 FSA 句柄），持久化到 _FSA_DOWNLOAD_KEY。 |
-| `setScanProgressCallback()` | `core/backend/browser-adapter:769` | [doc:adr-183] 注册扫描进度回调，供 UI 层节流增量刷新。 |
+| `FsaAuthState()` | `core/backend/browser-adapter:923` | — |
+| `browserAdapter()` | `core/backend/browser-adapter:1411` | — |
+| `dismissFsaAuthPrompt()` | `core/backend/browser-adapter:959` | — |
+| `getFsaAuthState()` | `core/backend/browser-adapter:930` | [doc:adr-183] 查询 FSA 根目录授权状态，供 UI 启动引导（不触发任何权限弹窗）。 |
+| `getFsaDownloadAuthState()` | `core/backend/browser-adapter:1002` | 查询下载文件夹 FSA 授权状态（不触发权限弹窗），供 UI 引导。 |
+| `getFsaDownloadHandle()` | `core/backend/browser-adapter:1067` | 读取持久化的下载文件夹句柄（供扫描使用），不触发权限弹窗；无句柄返回 null。 |
+| `ingestModelBytes()` | `core/backend/browser-adapter:672` | [doc:adr-195] 写入单文件（名+字节）到资源库，不加载到场景。供下载面板批量摄入复用。 |
+| `ingestModelFile()` | `core/backend/browser-adapter:662` | 写入单个模型/动作文件（File）到 IndexedDB 资源库（file:+entry:），不加载到场景。 |
+| `ingestModelFiles()` | `core/backend/browser-adapter:681` | [doc:adr-195] P3 批量摄入：单事务写入该批次所有 file:/entry: 键，避免逐条 idbSet 并发写竞态。 |
+| `isFsaAuthPromptDismissed()` | `core/backend/browser-adapter:955` | [doc:adr-183] 用户跳过启动授权引导后写入「已跳过」标志，避免纯导入用户每次启动被弹窗骚扰。 |
+| `reauthorizeFsaDownload()` | `core/backend/browser-adapter:1026` | 对持久化的下载文件夹句柄重新请求授权（须用户手势上下文）。成功返回 true。 |
+| `reauthorizeFsaRoot()` | `core/backend/browser-adapter:972` | [doc:adr-183] 对持久化的 FSA 句柄重新请求授权（不重选目录）。 |
+| `resetFsaAuthPromptDismissed()` | `core/backend/browser-adapter:964` | [doc:adr-183] 清除跳过标志：用户手动设置根目录后，后续无根目录启动应重新获得引导机会。 |
+| `selectFsaDownloadDir()` | `core/backend/browser-adapter:1050` | 选择下载文件夹（独立 FSA 句柄），持久化到 _FSA_DOWNLOAD_KEY。 |
+| `setScanProgressCallback()` | `core/backend/browser-adapter:770` | [doc:adr-183] 注册扫描进度回调，供 UI 层节流增量刷新。 |
 | `goAdapter()` | `core/backend/go-adapter:22` | — |
 | `STORES()` | `core/backend/idb:10` | — |
 | `Store()` | `core/backend/idb:24` | — |
@@ -1390,11 +1391,11 @@
 | `setMatEnabled()` | `scene/manager/material:671` | — |
 | `setMatParams()` | `scene/manager/material:836` | — |
 | `resolveModelId()` | `scene/manager/model-id:9` | 解析模型运行时 id：优先复用存档 uuid（preferredId，由恢复路径传入）， 否则生成稳定 uuid。替代旧实现 &#96;model_${Date.now()}_${Math |
-| `captureThumbnail()` | `scene/manager/model-loader:173` | Captures a screenshot after model load for thumbnail cache. |
-| `initLoader()` | `scene/manager/model-loader:111` | — |
-| `loadPMXFile()` | `scene/manager/model-loader:452` | — |
-| `setOnMeshesReady()` | `scene/manager/model-loader:103` | — |
-| `setOnModelLoaded()` | `scene/manager/model-loader:107` | — |
+| `captureThumbnail()` | `scene/manager/model-loader:174` | Captures a screenshot after model load for thumbnail cache. |
+| `initLoader()` | `scene/manager/model-loader:112` | — |
+| `loadPMXFile()` | `scene/manager/model-loader:454` | — |
+| `setOnMeshesReady()` | `scene/manager/model-loader:104` | — |
+| `setOnModelLoaded()` | `scene/manager/model-loader:108` | — |
 | `FormationType()` | `scene/manager/model-manager:125` | — |
 | `ModelManager()` | `scene/manager/model-manager:193` | — |
 | `getFormationLabels()` | `scene/manager/model-manager:136` | — |
@@ -1447,8 +1448,8 @@
 | `resetOutfit()` | `scene/manager/outfit:767` | — |
 | `setSceneRef()` | `scene/manager/outfit:32` | 由 scene.ts 在场景初始化完成后注入当前 scene 实例 |
 | `tryApplyPbrMaterialBuilder()` | `scene/manager/pbr-builder-init:12` | 动态导入 PBRMaterialBuilder 并覆盖 MmdModelLoader.SharedMaterialBuilder。 |
-| `auditMissingTextures()` | `scene/manager/pmx-texture-audit:46` | 识别 PMX 声明但目录中缺失的纹理。 |
-| `parsePmxTexturePaths()` | `scene/manager/pmx-texture-audit:31` | 解析 PMX 声明的纹理路径清单（相对路径，原样保留目录前缀与分隔符）。 |
+| `auditMissingTextures()` | `scene/manager/pmx-texture-audit:40` | 识别 PMX 声明但目录中缺失的纹理。 |
+| `parsePmxTexturePaths()` | `scene/manager/pmx-texture-audit:25` | 解析 PMX 声明的纹理路径清单（相对路径，原样保留目录前缀与分隔符）。 |
 | `SssPBRMaterial()` | `scene/manager/sss-pbr-material:26` | — |
 | `expandFallbackCandidates()` | `scene/manager/texture-fallback:95` | 批量展开 fallback 候选条目（共享 data 引用），并对「候选 vs 真实路径」冲突去重。 |
 | `registerDeclaredAliases()` | `scene/manager/texture-fallback:52` | 按 PMX 声明路径反向注册别名（[fix:decl-alias]）。 |
@@ -1772,23 +1773,23 @@
 | `ProcMotionControllerBase()` | `scene/motion/proc-motion-controller:50` | — |
 | `_clearVmdData()` | `scene/motion/proc-motion-controller:36` | 清除模型上的 vmdData/vmdName（纯工具函数，无状态依赖）。 |
 | `ProcMotionParamsMixin()` | `scene/motion/proc-motion-params:50` | 参数 setter 群 mixin —— 混入 ProcMotionControllerBase。 |
-| `_filterVmdBones()` | `scene/motion/vmd-layers:67` | 过滤 VMD 二进制数据，只保留指定骨骼的关键帧。 |
-| `addGazeLayer()` | `scene/motion/vmd-layers:255` | 添加一个视线追踪（gaze）图层。 |
-| `addVmdLayer()` | `scene/motion/vmd-layers:130` | 添加一个 VMD 图层到模型。 |
-| `addVmdLayersFromPaths()` | `scene/motion/vmd-layers:180` | 批量添加 VMD 图层（场景恢复用）。 |
-| `disposeVmdLayerState()` | `scene/motion/vmd-layers:749` | [fix P2] 模型销毁时清理 vmd-layers 模块级 per-model 状态。 |
-| `getVmdLayers()` | `scene/motion/vmd-layers:732` | 获取模型的图层列表 |
-| `rebuildCompositeAnimation()` | `scene/motion/vmd-layers:739` | 触发复合动画重建（程序化/外部修改 vmdData/vmdLayers 后调用）。 |
-| `removeVmdLayer()` | `scene/motion/vmd-layers:292` | 移除一个 VMD 图层 |
-| `setVmdLayerWeight()` | `scene/motion/vmd-layers:343` | 设置图层权重 |
-| `toggleVmdLayer()` | `scene/motion/vmd-layers:318` | 切换图层启用/禁用 |
-| `VMD_HEADER_MIN()` | `scene/motion/vmd-loader:47` | — |
-| `VMD_SIGNATURE()` | `scene/motion/vmd-loader:46` | — |
-| `isValidVmd()` | `scene/motion/vmd-loader:51` | 验证 ArrayBuffer 是否为合法 VMD 格式：检查签名前缀。 |
-| `loadCameraVmdFromPath()` | `scene/motion/vmd-loader:325` | — |
-| `loadVMDFromPath()` | `scene/motion/vmd-loader:192` | — |
-| `loadVMDMotion()` | `scene/motion/vmd-loader:60` | — |
-| `loadVPDPose()` | `scene/motion/vmd-loader:349` | — |
+| `_filterVmdBones()` | `scene/motion/vmd-layers:68` | 过滤 VMD 二进制数据，只保留指定骨骼的关键帧。 |
+| `addGazeLayer()` | `scene/motion/vmd-layers:257` | 添加一个视线追踪（gaze）图层。 |
+| `addVmdLayer()` | `scene/motion/vmd-layers:131` | 添加一个 VMD 图层到模型。 |
+| `addVmdLayersFromPaths()` | `scene/motion/vmd-layers:181` | 批量添加 VMD 图层（场景恢复用）。 |
+| `disposeVmdLayerState()` | `scene/motion/vmd-layers:751` | [fix P2] 模型销毁时清理 vmd-layers 模块级 per-model 状态。 |
+| `getVmdLayers()` | `scene/motion/vmd-layers:734` | 获取模型的图层列表 |
+| `rebuildCompositeAnimation()` | `scene/motion/vmd-layers:741` | 触发复合动画重建（程序化/外部修改 vmdData/vmdLayers 后调用）。 |
+| `removeVmdLayer()` | `scene/motion/vmd-layers:294` | 移除一个 VMD 图层 |
+| `setVmdLayerWeight()` | `scene/motion/vmd-layers:345` | 设置图层权重 |
+| `toggleVmdLayer()` | `scene/motion/vmd-layers:320` | 切换图层启用/禁用 |
+| `VMD_HEADER_MIN()` | `scene/motion/vmd-loader:49` | — |
+| `VMD_SIGNATURE()` | `scene/motion/vmd-loader:48` | — |
+| `isValidVmd()` | `scene/motion/vmd-loader:53` | 验证 ArrayBuffer 是否为合法 VMD 格式：检查签名前缀。 |
+| `loadCameraVmdFromPath()` | `scene/motion/vmd-loader:327` | — |
+| `loadVMDFromPath()` | `scene/motion/vmd-loader:194` | — |
+| `loadVMDMotion()` | `scene/motion/vmd-loader:62` | — |
+| `loadVPDPose()` | `scene/motion/vmd-loader:351` | — |
 | `DEFAULT_LAYER_BONE_FILTER()` | `scene/motion/wasm-layers-blender:59` | — |
 | `WasmLayerConfig()` | `scene/motion/wasm-layers-blender:61` | — |
 | `addWasmLayer()` | `scene/motion/wasm-layers-blender:162` | — |
@@ -2114,10 +2115,10 @@
 | `RenderStateKey()` | `scene/shared/menu-node-types:27` | — |
 | `StatePath()` | `scene/shared/menu-node-types:41` | 状态路径：类型化字符串，由解析器按前缀映射到 reactive state 对象 |
 | `UIStateKey()` | `scene/shared/menu-node-types:29` | — |
-| `_resetTextureLRUForTest()` | `scene/shared/texture-lru:104` | 仅供测试：重置缓存状态。 |
-| `clearTextureLRU()` | `scene/shared/texture-lru:92` | 清空 LRU 缓存。在 disposeRenderer 中调用，释放所有缓存的纹理 ArrayBuffer。 |
-| `readTextureWithLRU()` | `scene/shared/texture-lru:45` | 带 LRU 缓存的纹理读取。命中直接返回 ArrayBuffer，未命中则 readFileBytes 后缓存。 |
-| `textureLRUSize()` | `scene/shared/texture-lru:99` | 返回当前缓存条目数（供测试使用）。 |
+| `_resetTextureLRUForTest()` | `scene/shared/texture-lru:106` | 仅供测试：重置缓存状态。 |
+| `clearTextureLRU()` | `scene/shared/texture-lru:94` | 清空 LRU 缓存。在 disposeRenderer 中调用，释放所有缓存的纹理 ArrayBuffer。 |
+| `readTextureWithLRU()` | `scene/shared/texture-lru:47` | 带 LRU 缓存的纹理读取。命中直接返回 ArrayBuffer，未命中则 readFileBytes 后缓存。 |
+| `textureLRUSize()` | `scene/shared/texture-lru:101` | 返回当前缓存条目数（供测试使用）。 |
 | `TransformAdapter()` | `scene/transform/transform-adapter:28` | — |
 | `TransformCapability()` | `scene/transform/transform-adapter:26` | — |
 | `attachGizmoForKind()` | `scene/transform/transform-adapter:74` | 统一 Gizmo 入口：替代三个 attachXxxGizmo。 |
