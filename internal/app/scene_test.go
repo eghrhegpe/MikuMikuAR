@@ -55,7 +55,7 @@ func TestSaveSceneFile_SuccessNoWrap(t *testing.T) {
 }
 
 // TestBundleScene_SuccessPath：成功路径走一遍新的 defer f.Close() 日志闭包
-//（Close 出错才会 safeLogWarning；成功时闭包静默返回，不影响 err 判定）。
+// （Close 出错才会 safeLogWarning；成功时闭包静默返回，不影响 err 判定）。
 func TestBundleScene_SuccessPath(t *testing.T) {
 	testConfigDir(t)
 	a := NewApp("test", "", "")

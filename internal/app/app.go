@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 	stdruntime "runtime"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -75,11 +75,11 @@ type App struct {
 	// 模型广场预热窗口（ADR-075 §预热单实例）
 	// App 启动时创建隐藏 WebView2 窗口，用户点击站点时 Show + SetURL，
 	// 避免 NewWithOptions 的 WebView2 冷启动（1–3s → 200ms）。
-	plazaWin             *application.WebviewWindow
-	plazaWinMu           sync.Mutex
-	plazaWinCloseHook    func()       // RegisterHook 返回的 unregister 函数，用于 ServiceShutdown 前置移除
-	lastPlazaNavReport   time.Time // [ADR-087 P3] debounce 300ms
-	plazaDirectMode      atomic.Bool // [doc:plaza-spa] window 模式是否直连真实域名（决定导航完成时注入 window.open 拦截桥）
+	plazaWin           *application.WebviewWindow
+	plazaWinMu         sync.Mutex
+	plazaWinCloseHook  func()      // RegisterHook 返回的 unregister 函数，用于 ServiceShutdown 前置移除
+	lastPlazaNavReport time.Time   // [ADR-087 P3] debounce 300ms
+	plazaDirectMode    atomic.Bool // [doc:plaza-spa] window 模式是否直连真实域名（决定导航完成时注入 window.open 拦截桥）
 }
 
 type httpServerInfo struct {
@@ -317,7 +317,7 @@ type ModelEntry struct {
 	Container string `json:"container"` // "file" | "zip"
 	ZipInner  string `json:"zip_inner"` // Relative path inside zip (only for container=zip)
 	Category  string `json:"category"`  // DanceXR top-level category dir name (empty if none)
-	Source    string `json:"source"` // Source library name (empty for main lib)
+	Source    string `json:"source"`    // Source library name (empty for main lib)
 }
 
 // SoftwareEntry represents an executable found in the software/ directory or user-added.
@@ -357,7 +357,7 @@ type UIState struct {
 
 	// --- 以下字段原为前端会话级，2026-07-07 新增持久化支持 ---
 	FpsLimit              int               `json:"fpsLimit,omitempty"`              // 帧率上限；0=不限
-	FrameCapEnabled        bool              `json:"frameCapEnabled"`                 // 帧率限制器（默认 true）；旧配置使用 "vsync" key 由 UnmarshalJSON 兼容
+	FrameCapEnabled       bool              `json:"frameCapEnabled"`                 // 帧率限制器（默认 true）；旧配置使用 "vsync" key 由 UnmarshalJSON 兼容
 	DefaultPhysicsEnabled bool              `json:"defaultPhysicsEnabled,omitempty"` // 新加载 actor 默认物理开关
 	RenderScale           float64           `json:"renderScale,omitempty"`           // 渲染分辨率缩放；1.0=原生
 	CameraSensitivity     float64           `json:"cameraSensitivity,omitempty"`     // 相机灵敏度倍数；1.0=默认
@@ -365,18 +365,18 @@ type UIState struct {
 	AutoScaleModel        bool              `json:"autoScaleModel,omitempty"`        // 新加载模型自动缩放
 	AutoCenterModel       bool              `json:"autoCenterModel,omitempty"`       // 新加载模型自动居中取景（相机对准模型）
 	MaterialCategoryMap   map[string]string `json:"materialCategoryMap,omitempty"`   // 材质分类映射
-	ResourceViewMode      string                       `json:"resourceViewMode,omitempty"`      // [doc:adr-066] 资源库视图模式："list"|"grid"
+	ResourceViewMode      string            `json:"resourceViewMode,omitempty"`      // [doc:adr-066] 资源库视图模式："list"|"grid"
 
 	// --- 音频设置（持久化，避免重启后重置） ---
-	Volume                 float64                      `json:"volume,omitempty"`                 // 默认音量 0-1
-	AudioOffset            float64                      `json:"audioOffset,omitempty"`            // 音频偏移（秒）
-	BpmQuantizeEnabled     bool                         `json:"bpmQuantizeEnabled,omitempty"`     // BPM 量化开关
-	AutoLoadCompanionAudio bool                         `json:"autoLoadCompanionAudio,omitempty"` // 自动加载伴音
-	SfxEnabled             bool                         `json:"sfxEnabled,omitempty"`             // SFX 开关
-	Ktx2Transcode          bool                         `json:"ktx2Transcode,omitempty"`          // KTX2 转码开关（ADR-189 Phase 3，默认关）
-	SfxVolume              float64                      `json:"sfxVolume,omitempty"`              // SFX 音量 0-1
-	FootstepEnabled        bool                         `json:"footstepEnabled,omitempty"`        // 脚步声开关
-	FootstepVolume         float64                      `json:"footstepVolume,omitempty"`         // 脚步声音量 0-1
+	Volume                 float64 `json:"volume,omitempty"`                 // 默认音量 0-1
+	AudioOffset            float64 `json:"audioOffset,omitempty"`            // 音频偏移（秒）
+	BpmQuantizeEnabled     bool    `json:"bpmQuantizeEnabled,omitempty"`     // BPM 量化开关
+	AutoLoadCompanionAudio bool    `json:"autoLoadCompanionAudio,omitempty"` // 自动加载伴音
+	SfxEnabled             bool    `json:"sfxEnabled,omitempty"`             // SFX 开关
+	Ktx2Transcode          bool    `json:"ktx2Transcode,omitempty"`          // KTX2 转码开关（ADR-189 Phase 3，默认关）
+	SfxVolume              float64 `json:"sfxVolume,omitempty"`              // SFX 音量 0-1
+	FootstepEnabled        bool    `json:"footstepEnabled,omitempty"`        // 脚步声开关
+	FootstepVolume         float64 `json:"footstepVolume,omitempty"`         // 脚步声音量 0-1
 
 	// --- 快捷键自定义绑定 ---
 	KeyBindings map[string]KeyBindingOverride `json:"keyBindings,omitempty"` // 自定义快捷键覆盖
@@ -469,7 +469,7 @@ type Config struct {
 	LibraryRoot              string              `json:"library_root,omitempty"` // 迁移后清空，保留字段用于自动迁移
 	ResourceRoot             string              `json:"resource_root"`          // 总根目录
 	StorageMode              string              `json:"storage_mode"`           // "private" | "shared" (Android only)
-	OverridePaths            OverridePaths       `json:"override_paths"` // 各类型路径覆写
+	OverridePaths            OverridePaths       `json:"override_paths"`         // 各类型路径覆写
 	BlenderPath              string              `json:"blender_path"`
 	DisplayNamePriority      string              `json:"display_name_priority"`                // "name_jp" | "name_en" | "filename"
 	DownloadWatchDir         string              `json:"download_watch_dir"`                   // 监听目录，空则不监听
@@ -502,46 +502,46 @@ type EnvState struct {
 	IblIntensity     float64    `json:"iblIntensity"`
 	GlobalBrightness float64    `json:"globalBrightness"`
 
-	GroundVisibleEnabled  bool       `json:"groundVisibleEnabled"`
-	GroundPreset          string     `json:"groundPreset"`
-	GroundType            string     `json:"groundType"`
-	GroundStyle           string     `json:"groundStyle"`
-	GroundOverlay       string     `json:"groundOverlay"`
-	GroundColor           [3]float64 `json:"groundColor"`
-	GroundAlpha           float64    `json:"groundAlpha"`
-	GroundTexture         string     `json:"groundTexture"`
-	GroundTextureEnabled  bool       `json:"groundTextureEnabled"`
-	GroundTextureScale    float64    `json:"groundTextureScale"`
-	GroundTextureRotation float64    `json:"groundTextureRotation"`
-	GroundGridSize        float64    `json:"groundGridSize"`
-	GroundLineColor       [3]float64 `json:"groundLineColor"`
-	GroundTerrainHeight   float64    `json:"groundTerrainHeight"`
-	GroundTerrainScale    float64    `json:"groundTerrainScale"`
-	GroundTerrainSeed     float64    `json:"groundTerrainSeed"`
-	GroundTerrainOctaves  float64    `json:"groundTerrainOctaves"`
-	GroundPitch           float64    `json:"groundPitch"`
-	GroundRoll            float64    `json:"groundRoll"`
-	GroundScrollSpeedX    float64    `json:"groundScrollSpeedX"`
-	GroundScrollSpeedZ    float64    `json:"groundScrollSpeedZ"`
-	GroundPattern         string     `json:"groundPattern"`
-	GroundReflectionBlend    float64 `json:"groundReflectionBlend"`
-	GroundReflectionQuality string  `json:"groundReflectionQuality"`
-	GroundNormalTexture     string  `json:"groundNormalTexture"`
-	GroundNormalStrength    float64 `json:"groundNormalStrength"`
-	GroundElevationColoringEnabled  bool    `json:"groundElevationColoringEnabled"`
-	GroundPbrEnabled         bool    `json:"groundPbrEnabled"`
-	GroundProceduralTexture  string  `json:"groundProceduralTexture"`
-	GroundProceduralSeed     float64 `json:"groundProceduralSeed"`
-	GroundProceduralScale    float64 `json:"groundProceduralScale"`
-	GroundRoughness          float64 `json:"groundRoughness"`
-	GroundMetallic           float64 `json:"groundMetallic"`
-	GroundInfiniteEnabled           bool    `json:"groundInfiniteEnabled"`
+	GroundVisibleEnabled           bool       `json:"groundVisibleEnabled"`
+	GroundPreset                   string     `json:"groundPreset"`
+	GroundType                     string     `json:"groundType"`
+	GroundStyle                    string     `json:"groundStyle"`
+	GroundOverlay                  string     `json:"groundOverlay"`
+	GroundColor                    [3]float64 `json:"groundColor"`
+	GroundAlpha                    float64    `json:"groundAlpha"`
+	GroundTexture                  string     `json:"groundTexture"`
+	GroundTextureEnabled           bool       `json:"groundTextureEnabled"`
+	GroundTextureScale             float64    `json:"groundTextureScale"`
+	GroundTextureRotation          float64    `json:"groundTextureRotation"`
+	GroundGridSize                 float64    `json:"groundGridSize"`
+	GroundLineColor                [3]float64 `json:"groundLineColor"`
+	GroundTerrainHeight            float64    `json:"groundTerrainHeight"`
+	GroundTerrainScale             float64    `json:"groundTerrainScale"`
+	GroundTerrainSeed              float64    `json:"groundTerrainSeed"`
+	GroundTerrainOctaves           float64    `json:"groundTerrainOctaves"`
+	GroundPitch                    float64    `json:"groundPitch"`
+	GroundRoll                     float64    `json:"groundRoll"`
+	GroundScrollSpeedX             float64    `json:"groundScrollSpeedX"`
+	GroundScrollSpeedZ             float64    `json:"groundScrollSpeedZ"`
+	GroundPattern                  string     `json:"groundPattern"`
+	GroundReflectionBlend          float64    `json:"groundReflectionBlend"`
+	GroundReflectionQuality        string     `json:"groundReflectionQuality"`
+	GroundNormalTexture            string     `json:"groundNormalTexture"`
+	GroundNormalStrength           float64    `json:"groundNormalStrength"`
+	GroundElevationColoringEnabled bool       `json:"groundElevationColoringEnabled"`
+	GroundPbrEnabled               bool       `json:"groundPbrEnabled"`
+	GroundProceduralTexture        string     `json:"groundProceduralTexture"`
+	GroundProceduralSeed           float64    `json:"groundProceduralSeed"`
+	GroundProceduralScale          float64    `json:"groundProceduralScale"`
+	GroundRoughness                float64    `json:"groundRoughness"`
+	GroundMetallic                 float64    `json:"groundMetallic"`
+	GroundInfiniteEnabled          bool       `json:"groundInfiniteEnabled"`
 	// ADR-114 Phase 2: 反射模糊 + 法线扭曲
-	GroundReflectionBlur     float64 `json:"groundReflectionBlur"`
-	GroundReflectionDistort  float64 `json:"groundReflectionDistort"`
-	GroundLevel           float64    `json:"groundLevel"`
-	GroundSize            float64    `json:"groundSize"`
-	GroundEdgeFade        float64    `json:"groundEdgeFade"`
+	GroundReflectionBlur    float64 `json:"groundReflectionBlur"`
+	GroundReflectionDistort float64 `json:"groundReflectionDistort"`
+	GroundLevel             float64 `json:"groundLevel"`
+	GroundSize              float64 `json:"groundSize"`
+	GroundEdgeFade          float64 `json:"groundEdgeFade"`
 	// [doc:adr-230] 自发光地屏：对齐 TS env-state-schema groundEmissive* 组
 	// （值类型即可：默认 [0,0,0] / 0 即关闭，零值=缺省，无指针区分必要）。
 	GroundEmissiveColor      [3]float64 `json:"groundEmissiveColor"`
@@ -558,27 +558,27 @@ type EnvState struct {
 	ParticleEmitRate      float64 `json:"particleEmitRate"`
 	ParticleSize          float64 `json:"particleSize"`
 	ParticleSpeed         float64 `json:"particleSpeed"`
-	ParticleSplashEnabled       bool    `json:"particleSplashEnabled"`
+	ParticleSplashEnabled bool    `json:"particleSplashEnabled"`
 	ParticleCustomTexture string  `json:"particleCustomTexture"`
-	ParticleQuality        string `json:"particleQuality"`
+	ParticleQuality       string  `json:"particleQuality"`
 
-	WaterEnabled         bool       `json:"waterEnabled"`
-	WaterLevel           float64    `json:"waterLevel"`
-	WaterFlipEnabled     bool       `json:"waterFlipEnabled"`
-	WaterColor           [3]float64 `json:"waterColor"`
-	WaterTransparency    float64    `json:"waterTransparency"`
-	WaterWaveHeight      float64    `json:"waterWaveHeight"`
-	BigWaveHeight        float64    `json:"bigWaveHeight"`
-	SmallWaveHeight      float64    `json:"smallWaveHeight"`
-	BigWaveEnabled       bool       `json:"bigWaveEnabled"`
-	SmallWaveEnabled     bool       `json:"smallWaveEnabled"`
-	WaterAnimSpeed       float64    `json:"waterAnimSpeed"`
-	WaterDispersionEnabled bool    `json:"waterDispersionEnabled"`
-	WaterRippleSlots     float64    `json:"waterRippleSlots"`
+	WaterEnabled           bool       `json:"waterEnabled"`
+	WaterLevel             float64    `json:"waterLevel"`
+	WaterFlipEnabled       bool       `json:"waterFlipEnabled"`
+	WaterColor             [3]float64 `json:"waterColor"`
+	WaterTransparency      float64    `json:"waterTransparency"`
+	WaterWaveHeight        float64    `json:"waterWaveHeight"`
+	BigWaveHeight          float64    `json:"bigWaveHeight"`
+	SmallWaveHeight        float64    `json:"smallWaveHeight"`
+	BigWaveEnabled         bool       `json:"bigWaveEnabled"`
+	SmallWaveEnabled       bool       `json:"smallWaveEnabled"`
+	WaterAnimSpeed         float64    `json:"waterAnimSpeed"`
+	WaterDispersionEnabled bool       `json:"waterDispersionEnabled"`
+	WaterRippleSlots       float64    `json:"waterRippleSlots"`
 	// 水面平面反射质量：'high' | 'medium' | 'low' | 'off'
-	ReflectionQuality string  `json:"reflectionQuality"`
+	ReflectionQuality string `json:"reflectionQuality"`
 	// 反射模式：'none' | 'planar' | 'ssr' | 'probe' | 'hybrid'
-	ReflectionMode   string  `json:"reflectionMode"`
+	ReflectionMode string `json:"reflectionMode"`
 	// ADR-115: 平面反射混合度，对应 TS planarReflectionBlend
 	PlanarReflectionBlend float64 `json:"planarReflectionBlend"`
 	// ADR-130 Phase 2.3: 统一质量档位
@@ -605,13 +605,13 @@ type EnvState struct {
 	FresnelAlphaInfluence float64    `json:"fresnelAlphaInfluence"`
 
 	// 泡沫系统（foamEnabled=false 零回归）
-	FoamEnabled        bool       `json:"foamEnabled"`
-	FoamThreshold      float64    `json:"foamThreshold"`
-	FoamIntensity      float64    `json:"foamIntensity"`
-	FoamOpacity        float64    `json:"foamOpacity"`
-	FoamTransitionRange float64   `json:"foamTransitionRange"`
-	FoamColor          [3]float64 `json:"foamColor"`
-	FoamNoiseStrength  float64    `json:"foamNoiseStrength"`
+	FoamEnabled         bool       `json:"foamEnabled"`
+	FoamThreshold       float64    `json:"foamThreshold"`
+	FoamIntensity       float64    `json:"foamIntensity"`
+	FoamOpacity         float64    `json:"foamOpacity"`
+	FoamTransitionRange float64    `json:"foamTransitionRange"`
+	FoamColor           [3]float64 `json:"foamColor"`
+	FoamNoiseStrength   float64    `json:"foamNoiseStrength"`
 
 	// 水面雾效（独立于全局雾）
 	WaterFogColor            [3]float64 `json:"waterFogColor"`
@@ -631,28 +631,28 @@ type EnvState struct {
 	UnderwaterFogMultiplier   float64 `json:"underwaterFogMultiplier"`
 	UnderwaterTintStrength    float64 `json:"underwaterTintStrength"`
 
-	CloudEnabled   bool    `json:"cloudEnabled"`
-	CloudCover      float64 `json:"cloudCover"`
-	CloudScale      float64 `json:"cloudScale"`
-	CloudHeight     float64 `json:"cloudHeight"`
-	CloudThickness  float64 `json:"cloudThickness"`
-	CloudVisibility float64 `json:"cloudVisibility"`
-	CloudGap        float64 `json:"cloudGap"`
-	CloudErosion    float64 `json:"cloudErosion"`
+	CloudEnabled         bool    `json:"cloudEnabled"`
+	CloudCover           float64 `json:"cloudCover"`
+	CloudScale           float64 `json:"cloudScale"`
+	CloudHeight          float64 `json:"cloudHeight"`
+	CloudThickness       float64 `json:"cloudThickness"`
+	CloudVisibility      float64 `json:"cloudVisibility"`
+	CloudGap             float64 `json:"cloudGap"`
+	CloudErosion         float64 `json:"cloudErosion"`
 	CloudWeatherStrength float64 `json:"cloudWeatherStrength"`
-	CloudBacklight  float64 `json:"cloudBacklight"`
-	CloudPowder     float64 `json:"cloudPowder"`
-	CloudQuality    string  `json:"cloudQuality"`
-	DebugCloudsEnabled     bool    `json:"debugCloudsEnabled"`
+	CloudBacklight       float64 `json:"cloudBacklight"`
+	CloudPowder          float64 `json:"cloudPowder"`
+	CloudQuality         string  `json:"cloudQuality"`
+	DebugCloudsEnabled   bool    `json:"debugCloudsEnabled"`
 	// ADR-128/129: 镜面道具开关，对应 TS mirrorEnabled
-	MirrorEnabled   bool    `json:"mirrorEnabled"`
+	MirrorEnabled bool `json:"mirrorEnabled"`
 	// 镜面几何参数（mirror 持久化收口，对齐 TS env-state-schema mirror 组）：
 	// Width/Height/RotationY 用值类型（合法最小 0.5 > 0，零值即缺省，无歧义）；
 	// Position 用指针 + omitempty，区分「旧配置未设置」与「用户真在原点 [0,0,0]」。
-	MirrorWidth     float64    `json:"mirrorWidth"`
-	MirrorHeight    float64    `json:"mirrorHeight"`
+	MirrorWidth     float64     `json:"mirrorWidth"`
+	MirrorHeight    float64     `json:"mirrorHeight"`
 	MirrorPosition  *[3]float64 `json:"mirrorPosition,omitempty"`
-	MirrorRotationY float64    `json:"mirrorRotationY"`
+	MirrorRotationY float64     `json:"mirrorRotationY"`
 
 	FogEnabled bool       `json:"fogEnabled"`
 	FogMode    string     `json:"fogMode"`
@@ -710,15 +710,15 @@ func (e *EnvState) UnmarshalJSON(data []byte) error {
 		LegacyEnvIntensity  *float64 `json:"envIntensity"`
 		LegacyEnvBrightness *float64 `json:"envBrightness"`
 		// ADR-212 legacy keys
-		LegacyParticleSplash        *bool    `json:"particleSplash"`
-		LegacyGroundInfinite        *bool    `json:"groundInfinite"`
-		LegacyGroundElevationColoring *bool  `json:"groundElevationColoring"`
-		LegacyDebugClouds           *bool    `json:"debugClouds"`
-		LegacyCloudsEnabled         *bool    `json:"cloudsEnabled"`
-		LegacyPlanarReflectBlend    *float64 `json:"planarReflectBlend"`
+		LegacyParticleSplash          *bool    `json:"particleSplash"`
+		LegacyGroundInfinite          *bool    `json:"groundInfinite"`
+		LegacyGroundElevationColoring *bool    `json:"groundElevationColoring"`
+		LegacyDebugClouds             *bool    `json:"debugClouds"`
+		LegacyCloudsEnabled           *bool    `json:"cloudsEnabled"`
+		LegacyPlanarReflectBlend      *float64 `json:"planarReflectBlend"`
 		// ADR-212 二轮同步 legacy keys
-		LegacyGroundVisible          *bool `json:"groundVisible"`
-		LegacyWaterFlip              *bool `json:"waterFlip"`
+		LegacyGroundVisible *bool `json:"groundVisible"`
+		LegacyWaterFlip     *bool `json:"waterFlip"`
 	}{envStateAlias: (*envStateAlias)(e)}
 	if err := json.Unmarshal(data, &aux); err != nil {
 		return err
@@ -948,7 +948,7 @@ func (a *App) GetLastBrowseDir(category string) (string, error) {
 // Paths under ResourceRoot are stored as relative (./...) for cross-platform portability;
 // paths outside ResourceRoot are stored as absolute (desktop only).
 func (a *App) SetLastBrowseDir(category, dir string) error {
-	a.setLastDir("browse:" + category, dir)
+	a.setLastDir("browse:"+category, dir)
 	return nil
 }
 
@@ -961,7 +961,7 @@ func (a *App) ensureResourceDirs(cfg *Config) {
 		root = DefaultResourceRoot()
 		cfg.ResourceRoot = root
 	}
-	  defs := []catDef{
+	defs := []catDef{
 		{&cfg.OverridePaths.PMX, "PMX"},
 		{&cfg.OverridePaths.VMD, "VMD"},
 		{&cfg.OverridePaths.Audio, "audio"},

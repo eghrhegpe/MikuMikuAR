@@ -153,11 +153,11 @@ func TestMergeEnvStateMirrorGeometryFields(t *testing.T) {
 	// 否则 config.json 静默丢弃，启动恢复回默认值。
 	pos := [3]float64{2.5, 1.0, 9.5}
 	src := EnvState{
-		SkyMode:        "day",
-		MirrorEnabled:  true,
-		MirrorWidth:    24,
-		MirrorHeight:   12,
-		MirrorPosition: &pos,
+		SkyMode:         "day",
+		MirrorEnabled:   true,
+		MirrorWidth:     24,
+		MirrorHeight:    12,
+		MirrorPosition:  &pos,
 		MirrorRotationY: 0.785,
 	}
 	var dst *EnvState
@@ -422,11 +422,11 @@ func TestMergeEnvStatePresenceMaskPartialNoWipe(t *testing.T) {
 		t.Fatalf("Unmarshal: %v", err)
 	}
 	dst := &EnvState{
-		SkyMode:             "day",
-		WaterEnabled:        true,
+		SkyMode:              "day",
+		WaterEnabled:         true,
 		GroundVisibleEnabled: true,
-		WaterAnimSpeed:      2.5,
-		FogEnabled:          true,
+		WaterAnimSpeed:       2.5,
+		FogEnabled:           true,
 	}
 	mergeEnvState(&dst, src)
 

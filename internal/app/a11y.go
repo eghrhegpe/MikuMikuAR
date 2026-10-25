@@ -5,7 +5,7 @@ package app
 
 // SystemA11ySettings 系统无障碍设置
 type SystemA11ySettings struct {
-	IsDarkMode    bool `json:"isDarkMode"`
+	IsDarkMode     bool `json:"isDarkMode"`
 	IsHighContrast bool `json:"isHighContrast"`
 }
 
@@ -14,7 +14,7 @@ type SystemA11ySettings struct {
 // detectDarkMode/detectHighContrast 由平台特定文件实现。
 func (a *App) GetSystemA11ySettings() SystemA11ySettings {
 	return SystemA11ySettings{
-		IsDarkMode:    detectDarkMode(),
+		IsDarkMode:     detectDarkMode(),
 		IsHighContrast: detectHighContrast(),
 	}
 }

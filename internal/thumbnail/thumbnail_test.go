@@ -217,6 +217,7 @@ func tmpFiles(t *testing.T, thumbDir, hash string) []string {
 	}
 	return names
 }
+
 // shotTmpFiles lists the ".tmp." files left behind by SaveScreenshot writes
 // for a given basename; the tests assert none survive.
 func shotTmpFiles(t *testing.T, dir, filename string) []string {

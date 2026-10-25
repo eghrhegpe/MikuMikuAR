@@ -51,10 +51,10 @@ func detectHighContrast() bool {
 // ======== Registry helpers (Windows only) ========
 
 var (
-	modadvapi32        = syscall.NewLazyDLL("advapi32.dll")
-	procRegOpenKeyExW  = modadvapi32.NewProc("RegOpenKeyExW")
+	modadvapi32          = syscall.NewLazyDLL("advapi32.dll")
+	procRegOpenKeyExW    = modadvapi32.NewProc("RegOpenKeyExW")
 	procRegQueryValueExW = modadvapi32.NewProc("RegQueryValueExW")
-	procRegCloseKey    = modadvapi32.NewProc("RegCloseKey")
+	procRegCloseKey      = modadvapi32.NewProc("RegCloseKey")
 )
 
 const (

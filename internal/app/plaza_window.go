@@ -64,13 +64,13 @@ func (a *App) prewarmPlazaWindow() {
 	defer a.plazaWinMu.Unlock()
 
 	win := a.wailsApp.Window.NewWithOptions(application.WebviewWindowOptions{
-		Name:          "plaza:prewarmed",
-		Title:         "模型广场",
-		URL:           "about:blank",
-		Width:         1200,
-		Height:        800,
-		Hidden:        true,
-		HideOnEscape:  true,
+		Name:         "plaza:prewarmed",
+		Title:        "模型广场",
+		URL:          "about:blank",
+		Width:        1200,
+		Height:       800,
+		Hidden:       true,
+		HideOnEscape: true,
 		Windows: application.WindowsWindow{
 			Theme: application.SystemDefault,
 		},
@@ -185,6 +185,7 @@ func (a *App) NavigatePlazaWindow(targetURL string, direct bool) error {
 //     / unspecified refused; a public IP literal is the user's explicit choice)
 //   - "localhost" and ".local" hostnames are refused (loopback/mDNS aliases
 //     that a literal-IP check would miss)
+//
 // Pure function (no App receiver) so it is unit-testable in isolation; the
 // caller logs a single rejection line via safeLogInfo. Error style matches
 // this file's existing bare fmt.Errorf usage.

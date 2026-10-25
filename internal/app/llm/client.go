@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	neturl "net/url"
 	"net/http"
+	neturl "net/url"
 	"strings"
 	"time"
 
@@ -17,9 +17,9 @@ import (
 )
 
 type ToolCall struct {
-	ID       string         `json:"id"`
-	Type     string         `json:"type"`
-	Function ToolCallFunc   `json:"function"`
+	ID       string       `json:"id"`
+	Type     string       `json:"type"`
+	Function ToolCallFunc `json:"function"`
 }
 
 type ToolCallFunc struct {
@@ -35,11 +35,11 @@ type ChatMessage struct {
 }
 
 type ChatRequest struct {
-	Model       string         `json:"model"`
-	Messages    []ChatMessage  `json:"messages"`
-	Temperature float64        `json:"temperature"`
-	MaxTokens   int            `json:"max_tokens"`
-	Tools       []ToolSchema   `json:"tools,omitempty"`
+	Model       string        `json:"model"`
+	Messages    []ChatMessage `json:"messages"`
+	Temperature float64       `json:"temperature"`
+	MaxTokens   int           `json:"max_tokens"`
+	Tools       []ToolSchema  `json:"tools,omitempty"`
 }
 
 type Config struct {
@@ -215,7 +215,7 @@ func (c *Client) StreamChat(ctx context.Context, req ChatRequest, emit func(Stre
 	type streamChunk struct {
 		Choices []struct {
 			Delta struct {
-				Content   string          `json:"content,omitempty"`
+				Content string `json:"content,omitempty"`
 				// SenseNova 6.7 等推理模型把思考过程放在 reasoning/reasoning_content，
 				// 正式回答仍在 content。二者都需输出，否则纯 reasoning 的 chunk 被丢弃、
 				// 前端收不到任何文本（表现为 status=200 但事件数=1 只有 done）。
