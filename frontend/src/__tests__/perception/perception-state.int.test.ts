@@ -43,7 +43,20 @@ const mockPipeline = vi.hoisted(() => ({
 vi.mock('../../scene/scene', () => sceneModuleFactory(mockState));
 // [doc:adr-269 补充] perception/camera 的焦点访问器已迁到窄门面 scene-focus
 vi.mock('../../scene/scene-focus', () => sceneModuleFactory(mockState));
-vi.mock('../../ar/ar-camera', () => arCameraModuleMock);
+// [fix] 旧 key '../../ar/ar-camera' 解析到不存在的路径（frontend/src/ar/ar-camera）—— 死 mock。
+// 真实模块在 frontend/src/scene/ar/ar-camera；vitest 按 resolved id 匹配，mock key 必须解析到与
+// 源码 import 相同的文件。补上真实模块的具名 value 导出（isARActive 来自 arCameraModuleMock），
+// 避免模块链调用时 undefined 崩溃。
+vi.mock('../../scene/ar/ar-camera', () => ({
+    ...arCameraModuleMock,
+    getARFacing: () => 'user',
+    startARCamera: vi.fn(async () => false),
+    stopARCamera: vi.fn(),
+    switchARCameraFacing: vi.fn(async () => false),
+    setARMirror: vi.fn(),
+    isARMirrored: () => false,
+    captureARScreenshot: vi.fn(async () => ''),
+}));
 vi.mock('../../core/wails-bindings', () => wailsBindingsModuleMock);
 vi.mock('../../core/i18n/t', () => i18nTModuleMock);
 vi.mock('@babylonjs/core/Materials/standardMaterial', () => standardMaterialModuleMock);
@@ -415,5 +428,15 @@ describe('migratePerceptionData', () => {
     it('null/undefined 输入返回 null', () => {
         expect(migratePerceptionData(null)).toBeNull();
         expect(migratePerceptionData(undefined)).toBeNull();
+    });
+});
+// ── mock 生效证据：断言 SUT 链解析到的 ar-camera 模块是本文件 vi.mock 的桩（vi.fn），而非真实单例 ──
+describe('ar-camera mock 生效证据', () => {
+    it('ar-camera 模块导出为本文件的 vi.fn 桩', async () => {
+        const arCam = await import('../../scene/ar/ar-camera');
+        expect(vi.isMockFunction(arCam.startARCamera)).toBe(true);
+        expect(vi.isMockFunction(arCam.stopARCamera)).toBe(true);
+        expect(arCam.isARActive()).toBe(false);
+        expect(arCam.getARFacing()).toBe('user');
     });
 });

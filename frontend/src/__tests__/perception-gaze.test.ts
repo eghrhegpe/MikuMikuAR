@@ -13,8 +13,17 @@ import type { IMmdRuntimeBone } from 'babylon-mmd/esm/Runtime/IMmdRuntimeBone';
 import type { MmdRuntimeBoneExtended } from '../core/types';
 
 // vi.mock 必须在 import SUT 之前；hoisted
-vi.mock('../ar/ar-camera', () => ({
+// [audit:fix 2026-10] 旧 key '../ar/ar-camera' 解析到不存在的 src/ar/ar-camera —— 死 mock；
+// 真实模块在 src/scene/ar/ar-camera。补全具名 value 导出（与 perception/ 四 int 测试同型修法）。
+vi.mock('../scene/ar/ar-camera', () => ({
     isARActive: () => false,
+    getARFacing: () => 'user',
+    startARCamera: vi.fn(async () => false),
+    stopARCamera: vi.fn(),
+    switchARCameraFacing: vi.fn(async () => false),
+    setARMirror: vi.fn(),
+    isARMirrored: () => false,
+    captureARScreenshot: vi.fn(async () => ''),
 }));
 
 type GazeSut = typeof import('../scene/motion/perception-gaze');

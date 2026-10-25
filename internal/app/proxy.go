@@ -150,10 +150,12 @@ var maxPlazaHTMLBody int64 = 64 << 20 // 64 MiB
 // partially written file.
 var maxPlazaDownloadBytes int64 = 1 << 30 // 1 GiB
 
-// maxPlazaDownloadReqBytes caps the JSON body of POST /__plaza_dl__ so a
-// hostile client cannot exhaust memory with an unbounded request body (audit
-// round14 P3: handler previously had no MaxBytesReader). Exceeding it returns 413.
-var maxPlazaDownloadReqBytes int64 = 50 << 20 // 50 MiB
+// maxPlazaReqBytes caps the JSON body of the POST /__plaza_dl__ and
+// /__plaza_url__ handlers so a hostile client cannot exhaust memory with an
+// unbounded request body (audit round14 P3: handler previously had no
+// MaxBytesReader). Exceeding it returns 413. [audit:fix 2026-10] renamed from
+// maxPlazaReqBytes — shared by /__plaza_url__ since round74 批 I.
+var maxPlazaReqBytes int64 = 50 << 20 // 50 MiB
 
 // wsTunnelMaxDuration caps the lifetime of a proxied WebSocket tunnel so a
 // half-open/hung connection cannot leak its goroutine indefinitely. Normal
@@ -412,35 +414,35 @@ func (a *App) StartProxy(target, mode string) (string, error) {
 		rp.FlushInterval = -1
 		baseDirector := rp.Director
 		rp.Director = func(req *http.Request) {
-		baseDirector(req)
-		// 关键：NewSingleHostReverseProxy 默认只改 req.URL.Host，不改 req.Host。
-		// 若不重写，上游收到的 HTTP Host header 仍是 127.0.0.1:PORT，GitHub/Pixiv
-		// 等按 Host 严格路由的站点会直接返回 404。必须同步 req.Host。
-		req.Host = targetURL.Host
-		// [ADR-087 P1/P3] 记录最后转发的目标 URL，供 /__plaza_url__ 查询真实站点地址。
-		// 只更新顶级导航请求（Accept: text/html），避免子资源（CSS/JS/图片）覆盖。
-		// req.URL 已被 baseDirector 修改为上游目标 URL（含路径），直接保存。
-		if req.Header.Get("Accept") != "" && strings.Contains(req.Header.Get("Accept"), "text/html") {
-			sess.mu.Lock()
-			sess.lastForwardedTarget = req.URL.String()
-			sess.mu.Unlock()
+			baseDirector(req)
+			// 关键：NewSingleHostReverseProxy 默认只改 req.URL.Host，不改 req.Host。
+			// 若不重写，上游收到的 HTTP Host header 仍是 127.0.0.1:PORT，GitHub/Pixiv
+			// 等按 Host 严格路由的站点会直接返回 404。必须同步 req.Host。
+			req.Host = targetURL.Host
+			// [ADR-087 P1/P3] 记录最后转发的目标 URL，供 /__plaza_url__ 查询真实站点地址。
+			// 只更新顶级导航请求（Accept: text/html），避免子资源（CSS/JS/图片）覆盖。
+			// req.URL 已被 baseDirector 修改为上游目标 URL（含路径），直接保存。
+			if req.Header.Get("Accept") != "" && strings.Contains(req.Header.Get("Accept"), "text/html") {
+				sess.mu.Lock()
+				sess.lastForwardedTarget = req.URL.String()
+				sess.mu.Unlock()
+			}
+			// 伪装为正常浏览器直连：清理暴露代理的头，补 UA/Referer，降低被反爬拦截概率。
+			req.Header.Del("X-Forwarded-For")
+			req.Header.Set("X-Forwarded-Host", targetURL.Host)
+			if req.Header.Get("User-Agent") == "" {
+				req.Header.Set("User-Agent",
+					"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "+
+						"(KHTML, like Gecko) Chrome/126.0 Safari/537.36")
+			}
+			req.Header.Set("Referer", targetURL.Scheme+"://"+targetURL.Host+"/")
+			// 避免 br/zstd 压缩导致的下游解析异常，只接受 gzip/identity。
+			req.Header.Set("Accept-Encoding", "gzip")
+			// [ADR-077] Cookie 中继：从 jar 中取出目标域的 Cookie 注入请求
+			if cookies := sess.getCookies(targetURL); len(cookies) > 0 {
+				req.Header.Set("Cookie", cookiesToString(cookies))
+			}
 		}
-		// 伪装为正常浏览器直连：清理暴露代理的头，补 UA/Referer，降低被反爬拦截概率。
-		req.Header.Del("X-Forwarded-For")
-		req.Header.Set("X-Forwarded-Host", targetURL.Host)
-		if req.Header.Get("User-Agent") == "" {
-			req.Header.Set("User-Agent",
-				"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "+
-					"(KHTML, like Gecko) Chrome/126.0 Safari/537.36")
-		}
-		req.Header.Set("Referer", targetURL.Scheme+"://"+targetURL.Host+"/")
-		// 避免 br/zstd 压缩导致的下游解析异常，只接受 gzip/identity。
-		req.Header.Set("Accept-Encoding", "gzip")
-		// [ADR-077] Cookie 中继：从 jar 中取出目标域的 Cookie 注入请求
-		if cookies := sess.getCookies(targetURL); len(cookies) > 0 {
-			req.Header.Set("Cookie", cookiesToString(cookies))
-		}
-	}
 		rp.ModifyResponse = func(resp *http.Response) error {
 			// [ADR-077] Cookie 中继：拦截 Set-Cookie 存入 jar
 			if cookies := resp.Cookies(); len(cookies) > 0 {
@@ -968,7 +970,7 @@ func (a *App) handlePlazaDownloadPost(w http.ResponseWriter, r *http.Request) {
 	}
 	// [audit:round14 P3] 用 MaxBytesReader 限制请求体，防止无限制 body 拖垮内存；
 	// 超限返回 413（http.MaxBytesError）。
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxPlazaDownloadReqBytes)).Decode(&req); err != nil {
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxPlazaReqBytes)).Decode(&req); err != nil {
 		var maxErr *http.MaxBytesError
 		if errors.As(err, &maxErr) {
 			http.Error(w, "request body too large", http.StatusRequestEntityTooLarge)
@@ -1013,7 +1015,7 @@ func (a *App) handlePlazaUrlPost(w http.ResponseWriter, r *http.Request) {
 		Title string `json:"title"`
 	}
 	// [audit:fix 2026-09] 请求体加 MaxBytesReader 上限，复用 /__plaza_dl__ 的 50MiB 上限防无界 body 拖垮内存
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxPlazaDownloadReqBytes)).Decode(&req); err != nil {
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxPlazaReqBytes)).Decode(&req); err != nil {
 		var maxErr *http.MaxBytesError
 		if errors.As(err, &maxErr) {
 			http.Error(w, "request body too large", http.StatusRequestEntityTooLarge)
