@@ -193,10 +193,10 @@ func (a *App) extractZipUnsafe(zipPath, innerPath string) (result *ExtractResult
 		// [audit:round14 P1] 解压总量守卫：expandZipEntries 的 2GB 预检只覆盖扫描列表面，
 		// 解压路径若无限流，单个大条目（或大量中等条目）仍可写满磁盘。
 		if zf.UncompressedSize64 > maxZipEntryFileSize {
-			return nil, i18nerr.New("zip.entryTooLarge", fmt.Sprintf("%s: 条目 %s 解压大小 %d 超过上限 %d", op, entryName, zf.UncompressedSize64, maxZipEntryFileSize), map[string]string{"op": op, "entry": entryName})
+			return nil, i18nerr.New("zip.entryTooLarge", fmt.Sprintf("%s: 条目 %s 解压大小 %d 超过上限 %d", op, entryName, zf.UncompressedSize64, maxZipEntryFileSize), map[string]string{"op": op, "entry": entryName, "size": fmt.Sprintf("%d", zf.UncompressedSize64), "limit": fmt.Sprintf("%d", maxZipEntryFileSize)}) // [audit:fix 2026-10] 声明大小预检：大小/上限字节入信封
 		}
 		if totalExtracted+zf.UncompressedSize64 > maxZipTotalBytes {
-			return nil, i18nerr.New("zip.tooLarge", fmt.Sprintf("%s: 累计解压大小 %d 超过上限 %d", op, totalExtracted+zf.UncompressedSize64, maxZipTotalBytes), map[string]string{"op": op})
+			return nil, i18nerr.New("zip.tooLarge", fmt.Sprintf("%s: 累计解压大小 %d 超过上限 %d", op, totalExtracted+zf.UncompressedSize64, maxZipTotalBytes), map[string]string{"op": op, "size": fmt.Sprintf("%d", totalExtracted+zf.UncompressedSize64), "limit": fmt.Sprintf("%d", maxZipTotalBytes)}) // [audit:fix 2026-10] 声明值预检：累计/上限字节入信封
 		}
 
 		// Create parent directories
@@ -230,7 +230,7 @@ func (a *App) extractZipUnsafe(zipPath, innerPath string) (result *ExtractResult
 			_ = os.Remove(targetAbs)
 			if truncated {
 				a.safeLogError("ExtractZip: entry %s 实际解压超限（%d bytes），中止解压", entryName, written)
-				return nil, i18nerr.New("zip.entryTooLarge", fmt.Sprintf("%s: 条目 %s 实际解压超限 %d", op, entryName, written), map[string]string{"op": op, "entry": entryName})
+				return nil, i18nerr.New("zip.entryTooLarge", fmt.Sprintf("%s: 条目 %s 实际解压超限 %d", op, entryName, written), map[string]string{"op": op, "entry": entryName, "size": fmt.Sprintf("%d", written), "limit": fmt.Sprintf("%d", maxZipEntryFileSize)}) // [audit:fix 2026-10] 实际写入/上限字节入信封（written 为 io.Copy 实际统计值）
 			}
 			a.safeLogError("ExtractZip: copy error for %s: %v", entryName, copyErr)
 			return nil, util.WrapErrorf(op, "解压条目失败 "+entryName, copyErr)
@@ -240,7 +240,7 @@ func (a *App) extractZipUnsafe(zipPath, innerPath string) (result *ExtractResult
 		// 失败并清理半解压目录，避免恶意流把磁盘写满（50000 条目 × 500MB ≈ 25TB）。
 		if totalExtracted > maxZipTotalBytes {
 			os.RemoveAll(dest)
-			return nil, i18nerr.New("zip.tooLarge", fmt.Sprintf("%s: 实际累计解压大小 %d 超过上限 %d", op, totalExtracted, maxZipTotalBytes), map[string]string{"op": op})
+			return nil, i18nerr.New("zip.tooLarge", fmt.Sprintf("%s: 实际累计解压大小 %d 超过上限 %d", op, totalExtracted, maxZipTotalBytes), map[string]string{"op": op, "size": fmt.Sprintf("%d", totalExtracted), "limit": fmt.Sprintf("%d", maxZipTotalBytes)}) // [audit:fix 2026-10] 实际累计/上限字节入信封（键名与 :199 声明值预检一致）
 		}
 	}
 

@@ -113,14 +113,15 @@ export async function presetListContent<T>(
                 delBtn.type = 'button';
                 delBtn.textContent = '✕';
                 delBtn.setAttribute('aria-label', t('common.delete'));
-                delBtn.title = '删除';
+                delBtn.title = t('common.delete'); // [audit:fix 2026-10]
                 delBtn.style.cssText =
                     'font-size:var(--font-ui-xs);color:var(--text-dim);cursor:pointer;padding:2px 6px;background:none;border:none;';
                 delBtn.addEventListener('click', async (ev) => {
                     ev.stopPropagation();
                     const msg =
                         config.deleteConfirmText?.(item) ??
-                        `确定删除「${config.getLabel(item)}」？`;
+                        // [audit:fix 2026-10] 裸中文确认串 → 通用 i18n 键 menus.presetDeleteConfirm（5 包同步新增）
+                        t('menus.presetDeleteConfirm', { name: config.getLabel(item) });
                     if (!(await showConfirm(msg))) {
                         return;
                     }

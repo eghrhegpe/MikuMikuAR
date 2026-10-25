@@ -28,6 +28,10 @@ import type { MenuNode } from './menu-schema';
 import { getCachedCapabilities } from '../core/backend';
 
 // ======== 音频核心（音量/偏移/BPM/伴奏/循环） ========
+// [audit:fix 2026-10] P2：media:mute 静音前音量缓存——取消静音恢复原值，
+// 不再固定写 1（音量从 0 跳到 100%）。回退默认 0.7 对齐 defaultUIState.volume（core/ui-state.ts）
+let _preMuteVolume: number | null = null;
+
 function buildAudioCoreSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[] {
     const refresh = () => getSettingsMenu()?.updateControls();
 
@@ -58,9 +62,30 @@ function buildAudioCoreSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNo
             control: {
                 bind: 'ui.volume',
                 get: (v) => (v as number) === 0,
-                set: (muted) => (muted ? 0 : 1),
+                // [audit:fix 2026-10] P2：renderToggle 契约中 set() 先于 onChange 写 uiState，
+                // 故缓存/恢复逻辑放在 set()：静音前缓存 uiState.volume（>0 才缓存），
+                // 取消静音恢复缓存值（缓存丢失/为 0 时回 0.7 默认）
+                set: (muted) => {
+                    if (muted) {
+                        const prev = uiState.volume;
+                        if (typeof prev === 'number' && prev > 0) {
+                            _preMuteVolume = prev;
+                        }
+                        return 0;
+                    }
+                    const prev = _preMuteVolume;
+                    _preMuteVolume = null;
+                    return typeof prev === 'number' && prev > 0 ? prev : 0.7;
+                },
                 onChange: (muted) => {
-                    setVolume(muted ? 0 : 1);
+                    // set() 已写入 uiState；取消静音按写入值恢复（0/非法回 0.7）
+                    setVolume(
+                        muted
+                            ? 0
+                            : typeof uiState.volume === 'number' && uiState.volume > 0
+                              ? uiState.volume
+                              : 0.7
+                    );
                     refresh();
                 },
             },
@@ -318,7 +343,8 @@ function buildScreenshotSchema(getSettingsMenu: () => SettingsMenuHandle): MenuN
             id: 'media:shot-quality',
             kind: 'custom',
             renderCustom: (c) => {
-                cardContainer(c, (inner) => {
+                // [audit:fix 2026-10] P2：return cardContainer(...) 使内层 renderMenu disposer 级联（先例 scene-render-levels）
+                return cardContainer(c, (inner) => {
                     addSectionTitle(
                         inner,
                         t('settings.screenshot.quality'),
@@ -460,7 +486,8 @@ function buildMediaSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
             id: 'media:audio-card',
             kind: 'custom',
             renderCustom: (c) => {
-                cardContainer(c, (inner) => {
+                // [audit:fix 2026-10] P2：return cardContainer(...) 使内层 renderMenu disposer 级联（先例 scene-render-levels）
+                return cardContainer(c, (inner) => {
                     addSectionTitle(inner, t('settings.audio'));
                     return renderMenu(buildAudioCoreSchema(getSettingsMenu), inner);
                 });
@@ -471,7 +498,8 @@ function buildMediaSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
             id: 'media:sfx-card',
             kind: 'custom',
             renderCustom: (c) => {
-                cardContainer(c, (inner) => {
+                // [audit:fix 2026-10] P2：return cardContainer(...) 使内层 renderMenu disposer 级联（先例 scene-render-levels）
+                return cardContainer(c, (inner) => {
                     addSectionTitle(inner, t('settings.sfx.title'));
                     return renderMenu(buildSfxSchema(getSettingsMenu), inner);
                 });

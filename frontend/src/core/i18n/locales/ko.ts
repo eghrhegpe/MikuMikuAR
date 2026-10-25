@@ -227,6 +227,16 @@ export const ko: Record<string, string> = {
     'model-detail.materialAdjust': '재질 조정',
     'model-detail.morphPreview': '모프 미리보기',
     'model-detail.outfitVariant': '텍스처 교체',
+    // ===== [audit:fix 2026-10] outfit.* 의상 패널 (outfit-ui.ts / scene/manager/outfit.ts 참조, 원본 t() 키 5개 언어팩 모두 누락) =====
+    'outfit.variant': '의상 변형',
+    'outfit.modelRemoved': '모델이 제거되었습니다',
+    'outfit.loadConfigFailed': '의상 설정 로드 실패',
+    'outfit.noOutfitsConfig': '이 모델에는 outfits.json이 없습니다. 모델 디렉터리에 outfits.json을 만들면 의상 변형이 활성화됩니다.',
+    'outfit.default': '기본',
+    'outfit.switchFailed': '변형 전환 실패',
+    'outfit.switched': '변형 "{name}"(으)로 전환했습니다',
+    'outfit.resetAll': '전체 초기화',
+    'outfit.resetFailed': '의상 초기화 실패',
     'model-detail.personalLight': '개인 조명',
     'model-detail.personalLightEnabled': '활성화',
     'model-detail.personalLightIntensity': '밝기',
@@ -398,6 +408,13 @@ export const ko: Record<string, string> = {
     'motion.bindingTitle': '모션 바인딩',
     'motion.intent.title': '현재 동작',
     'motion.intent.none': '정적 (동작 없음)',
+    'motion.retarget.loading': '불러오는 중…',
+    'motion.retarget.loadFailed': '애니메이션 파일 불러오기 실패',
+    'motion.retarget.noAnimation': '파일 내 유효한 애니메이션 없음',
+    'motion.retarget.noSkeleton': '애니메이션 파일에서 스켈레톤을 찾을 수 없음',
+    'motion.retarget.retargeting': '리타겟팅 중…',
+    'motion.retarget.failed': '리타겟팅 실패',
+    'motion.retarget.success': '리타겟팅 완료', // [audit:fix 2026-10] round75 FM2 공개 포인트 ①: animation-retargeter.ts의 7개 키가 5개 번들에 모두 부재
     'motion.intent.incompatible': '이 모델은 현재 동작과 호환되지 않음',
     'motion.intent.noGlobalHint': '전역 동작이 없을 때 각 모델은 개별 VMD를 재생합니다',
     'motion.context.pinMotion': '이 동작 고정',
@@ -1874,6 +1891,18 @@ export const ko: Record<string, string> = {
     'goerr.watch.addWatchFailed': '감시 폴더 추가에 실패했습니다.',
     'goerr.zip.tooManyEntries':
         '{op}: 압축 파일 내 파일 수가 {count}개로, 상한 {max}개를 초과했습니다.',
+    // [audit:fix 2026-10] round75 goerr 누락: cache.×4 / zip.entryTooLarge / zip.tooLarge (Go i18nerr.New 파라미터 map 일치)
+    'goerr.cache.invalidDir': '유효하지 않은 캐시 폴더입니다.',
+    'goerr.cache.dirResolveFailed': '캐시 폴더를 가져올 수 없습니다.',
+    'goerr.cache.dirCreateFailed': '캐시 폴더 생성에 실패했습니다.',
+    'goerr.cache.androidNotSupported': 'Android에서는 캐시 폴더를 열 수 없습니다.',
+    'goerr.zip.entryTooLarge': '{op}: 항목 {entry}의 압축 풀기 크기가 상한을 초과했습니다.',
+    'goerr.zip.tooLarge': '{op}: 누적 압축 풀기 크기가 상한을 초과했습니다.',
+    // [audit:fix 2026-10] round75 M2 백엔드 메모: plaza 다운로드 실패가 i18nerr 봉인을 통해 감 (Go i18nerr.New 파라미터 map 일치)
+    'goerr.plaza.downloadFailed': '리소스 다운로드 실패: {url} ({reason})',
+    // [audit:fix 2026-10] round75 menus.* 누락 (preset-list-viewer 삭제 확인 / library-core 라이브러리 루트 제목)
+    'menus.presetDeleteConfirm': '「{name}」을(를) 삭제할까요?',
+    'menus.libraryRoot': '리소스 라이브러리',
     // ===== [doc:adr-196] AI 진단 어시스턴트 =====
     'ai.welcome':
         '안녕하세요! AI 진단 어시스턴트입니다. 오류 및 씬 상태 분석을 도와드립니다. 문제를 설명해주세요.',

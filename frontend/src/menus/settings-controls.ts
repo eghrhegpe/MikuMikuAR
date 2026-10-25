@@ -244,23 +244,56 @@ function buildShortcutsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNo
                                             )
                                                 .then((ok) => {
                                                     if (ok) {
-                                                        resetKeyBinding(conflictId);
-                                                        setKeyBinding(
-                                                            id,
-                                                            e.code,
-                                                            e.ctrlKey,
-                                                            e.shiftKey,
-                                                            e.altKey
-                                                        );
-                                                        setUIState({
-                                                            keyBindings: exportKeyBindings(),
-                                                        });
+                                                        try {
+                                                            resetKeyBinding(conflictId);
+                                                        } catch (err) {
+                                                            logWarn(
+                                                                'settings-controls',
+                                                                'resetKeyBinding failed:',
+                                                                err
+                                                            );
+                                                        }
+                                                        try {
+                                                            setKeyBinding(
+                                                                id,
+                                                                e.code,
+                                                                e.ctrlKey,
+                                                                e.shiftKey,
+                                                                e.altKey
+                                                            );
+                                                        } catch (err) {
+                                                            logWarn(
+                                                                'settings-controls',
+                                                                'setKeyBinding failed:',
+                                                                err
+                                                            );
+                                                        }
+                                                        try {
+                                                            setUIState({
+                                                                keyBindings: exportKeyBindings(),
+                                                            });
+                                                        } catch (err) {
+                                                            logWarn(
+                                                                'settings-controls',
+                                                                'setUIState failed:',
+                                                                err
+                                                            );
+                                                        }
+                                                        // [audit:fix 2026-10] P2：override 接受后 reRender
+                                                        // 刷新行标签（对照非冲突成功路径 L236）
+                                                        getSettingsMenu()?.reRender();
+                                                    } else {
+                                                        // [audit:fix 2026-10] P2：用户拒绝 override → 恢复行显示，
+                                                        // 不再静默放弃（行卡在「按下新组合键」子标签）
+                                                        getSettingsMenu()?.reRender();
                                                     }
                                                 })
                                                 .catch((err) =>
+                                                    // [audit:fix 2026-10] P2：catch 现仅覆盖 showConfirm 自身
+                                                    // rejection；rebind 各操作已分源 try/catch 标注
                                                     logWarn(
                                                         'settings-controls',
-                                                        'setUIState failed:',
+                                                        'showConfirm failed:',
                                                         err
                                                     )
                                                 );
@@ -311,9 +344,12 @@ function buildControlsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNod
             id: 'settings:perf:camera-card',
             kind: 'custom',
             renderCustom: (c) => {
-                cardContainer(c, (inner) => {
+                // [audit:fix 2026-10] P2：return cardContainer(...) —— 内层 renderMenu 返回的级联
+                // disposer 经 cardContainer 透传，外层 renderNode 才能收集（先例 scene-render-levels）；
+                // 内层回调补 return 使 disposer 传递到 cardContainer
+                return cardContainer(c, (inner) => {
                     addSectionTitle(inner, t('settings.controls.camera'));
-                    renderMenu(buildCameraSchema(), inner);
+                    return renderMenu(buildCameraSchema(), inner);
                 });
             },
         },

@@ -70,8 +70,24 @@ export async function loadActiveSession(): Promise<void> {
     }
 }
 
+/**
+ * [audit:fix 2026-10] P1: 同步停止在途流（switchSession / createSession 共用）。
+ * 旧流 runStream 的 finally 稍后执行时会比对发起时的会话快照（见 settings-diagnostic.ts），
+ * 会话已切换则丢弃输出，防 partial 写入新会话成为幽灵消息。
+ */
+function stopStreamingForSessionChange(): void {
+    if (diagState.isStreaming) {
+        diagState.abortController?.abort();
+        diagState.isStreaming = false;
+        diagState.abortController = null;
+    }
+}
+
 /** 由 entry point 调用——通过 callbacks 通知 UI 更新 */
 export async function createSession(): Promise<void> {
+    // [audit:fix 2026-10] P1: 创建新会话前同步停止在途流（复用 switchSession 的 abort 段），
+    // 否则旧流 finally 稍后会把 partial 写入新会话（幽灵消息）。
+    stopStreamingForSessionChange();
     await flushSession();
     diagState.activeSessionId = newSessionId();
     diagState.sessionCreatedAt = Date.now();
@@ -86,11 +102,7 @@ export async function switchSession(id: string): Promise<void> {
     if (id === diagState.activeSessionId) {
         return;
     }
-    if (diagState.isStreaming) {
-        diagState.abortController?.abort();
-        diagState.isStreaming = false;
-        diagState.abortController = null;
-    }
+    stopStreamingForSessionChange();
     await flushSession();
     const session = await loadSession(id);
     if (!session) {

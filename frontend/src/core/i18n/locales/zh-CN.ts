@@ -149,6 +149,16 @@ export const zhCN: Record<string, string> = {
     'model-detail.materialAdjust': '材质调节',
     'model-detail.morphPreview': '表情预览',
     'model-detail.outfitVariant': '替换纹理',
+    // ===== [audit:fix 2026-10] outfit.* 换装面板（outfit-ui.ts / scene/manager/outfit.ts 引用，原 t() 键全 5 包缺失） =====
+    'outfit.variant': '服装变体',
+    'outfit.modelRemoved': '模型已移除',
+    'outfit.loadConfigFailed': '⚠ 加载服装配置失败',
+    'outfit.noOutfitsConfig': '此模型无 outfits.json 配置。在模型所在目录创建 outfits.json 即可启用服装变体。',
+    'outfit.default': '默认',
+    'outfit.switchFailed': '✗ 切换变体失败',
+    'outfit.switched': '✓ 已切换至变体「{name}」',
+    'outfit.resetAll': '重置全部',
+    'outfit.resetFailed': '✗ 重置服装失败',
     'model-detail.personalLight': '个人灯光',
     'model-detail.personalLightEnabled': '启用',
     'model-detail.personalLightIntensity': '亮度',
@@ -236,6 +246,13 @@ export const zhCN: Record<string, string> = {
     'motion.bindingTitle': '动作绑定',
     'motion.intent.title': '场上动作',
     'motion.intent.none': '静态（无动作）',
+    'motion.retarget.loading': '读取中…',
+    'motion.retarget.loadFailed': '动画文件读取失败',
+    'motion.retarget.noAnimation': '文件中无有效动画',
+    'motion.retarget.noSkeleton': '动画文件中未找到骨架',
+    'motion.retarget.retargeting': '重定向中…',
+    'motion.retarget.failed': '重定向失败',
+    'motion.retarget.success': '重定向完成', // [audit:fix 2026-10] round75 FM2 开放点①：animation-retargeter.ts 7 键原 5 包全缺
     'motion.intent.incompatible': '此角色不兼容当前动作',
     'motion.intent.noGlobalHint': '无全局动作时，各角色独立播放各自 VMD',
     'motion.context.pinMotion': '固定此动作',
@@ -1837,6 +1854,18 @@ export const zhCN: Record<string, string> = {
     'goerr.watch.createWatcherFailed': '创建文件监听器失败',
     'goerr.watch.addWatchFailed': '添加监听目录失败',
     'goerr.zip.tooManyEntries': '{op}: 压缩包内文件数 {count} 超过上限 {max}',
+    // [audit:fix 2026-10] round75 goerr 缺口: cache.×4 / zip.entryTooLarge / zip.tooLarge（占位符与 Go i18nerr.New 参数 map 对齐）
+    'goerr.cache.invalidDir': '无效的缓存目录',
+    'goerr.cache.dirResolveFailed': '无法获取缓存目录',
+    'goerr.cache.dirCreateFailed': '创建缓存目录失败',
+    'goerr.cache.androidNotSupported': 'Android 不支持打开缓存目录',
+    'goerr.zip.entryTooLarge': '{op}: 条目 {entry} 解压大小超过上限',
+    'goerr.zip.tooLarge': '{op}: 累计解压大小超过上限',
+    // [audit:fix 2026-10] round75 M2 后端备注: plaza 下载失败走 i18nerr 信封（占位符与 Go i18nerr.New 参数 map 对齐）
+    'goerr.plaza.downloadFailed': '资源下载失败: {url} ({reason})',
+    // [audit:fix 2026-10] round75 menus.* 缺口（preset-list-viewer 删除确认串 / library-core 资源库根标题兜底）
+    'menus.presetDeleteConfirm': '确定删除「{name}」？',
+    'menus.libraryRoot': '资源库',
 
     // ===== [doc:adr-196] AI 诊断助手 =====
     'ai.welcome': '你好！我是 AI 诊断助手，可以帮助你分析错误和场景状态。请描述你遇到的问题。',

@@ -225,6 +225,16 @@ export const ja: Record<string, string> = {
     'model-detail.materialAdjust': 'マテリアル調整',
     'model-detail.morphPreview': 'モーフプレビュー',
     'model-detail.outfitVariant': 'テクスチャ置換',
+    // ===== [audit:fix 2026-10] outfit.* 衣装パネル（outfit-ui.ts / scene/manager/outfit.ts が参照、元 t() キーが 5 言語パック全てに欠落） =====
+    'outfit.variant': '衣装変体',
+    'outfit.modelRemoved': 'モデルが削除されています',
+    'outfit.loadConfigFailed': '衣装設定の読み込みに失敗しました',
+    'outfit.noOutfitsConfig': 'このモデルには outfits.json がありません。モデルのディレクトリに outfits.json を作成すると衣装変体が有効になります。',
+    'outfit.default': 'デフォルト',
+    'outfit.switchFailed': '変体の切り替えに失敗しました',
+    'outfit.switched': '変体「{name}」に切り替えました',
+    'outfit.resetAll': 'すべてリセット',
+    'outfit.resetFailed': '衣装のリセットに失敗しました',
     'model-detail.personalLight': 'パーソナルライト',
     'model-detail.personalLightEnabled': '有効',
     'model-detail.personalLightIntensity': '明るさ',
@@ -396,6 +406,13 @@ export const ja: Record<string, string> = {
     'motion.bindingTitle': 'モーション割当',
     'motion.intent.title': '場上の動作',
     'motion.intent.none': '静止（動作なし）',
+    'motion.retarget.loading': '読み込み中…',
+    'motion.retarget.loadFailed': '動画ファイルの読み込みに失敗しました',
+    'motion.retarget.noAnimation': 'ファイルに有効な動画がありません',
+    'motion.retarget.noSkeleton': '動画ファイルにボーンが見つかりません',
+    'motion.retarget.retargeting': 'リターゲティング中…',
+    'motion.retarget.failed': 'リターゲティングに失敗しました',
+    'motion.retarget.success': 'リターゲティング完了', // [audit:fix 2026-10] round75 FM2 開放点①：animation-retargeter.ts の 7 鍵が 5 パッケージすべてに欠落
     'motion.intent.incompatible': 'このキャラは現在の動作非対応',
     'motion.intent.noGlobalHint': '全体動作がない場合、各キャラは個別に VMD を再生します',
     'motion.context.pinMotion': 'この動作を固定',
@@ -1881,6 +1898,18 @@ export const ja: Record<string, string> = {
     'goerr.watch.addWatchFailed': '監視ディレクトリの追加に失敗しました。',
     'goerr.zip.tooManyEntries':
         '{op}: アーカイブ内のファイル数が {count} 件で、上限の {max} 件を超えています。',
+    // [audit:fix 2026-10] round75 goerr 欠落: cache.×4 / zip.entryTooLarge / zip.tooLarge（Go i18nerr.New のパラメータ map と一致）
+    'goerr.cache.invalidDir': '無効なキャッシュディレクトリです。',
+    'goerr.cache.dirResolveFailed': 'キャッシュディレクトリを取得できません。',
+    'goerr.cache.dirCreateFailed': 'キャッシュディレクトリの作成に失敗しました。',
+    'goerr.cache.androidNotSupported': 'Android ではキャッシュディレクトリを開けません。',
+    'goerr.zip.entryTooLarge': '{op}: エントリ {entry} の展開サイズが上限を超えています。',
+    'goerr.zip.tooLarge': '{op}: 累計展開サイズが上限を超えています。',
+    // [audit:fix 2026-10] round75 M2 後端メモ: plaza ダウンロード失敗は i18nerr 信封を通過（Go i18nerr.New パラメータ map と一致）
+    'goerr.plaza.downloadFailed': 'リソースのダウンロードに失敗しました: {url}（{reason}）',
+    // [audit:fix 2026-10] round75 menus.* 欠落（preset-list-viewer 削除確認 / library-core ライブラリルートの題名）
+    'menus.presetDeleteConfirm': '「{name}」を削除しますか？',
+    'menus.libraryRoot': 'リソースライブラリ',
     // ===== [doc:adr-196] AI診断アシスタント =====
     'ai.welcome':
         'こんにちは！AI診断アシスタントです。エラーやシーンの状態を分析します。問題を説明してください。',

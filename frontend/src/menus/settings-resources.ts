@@ -26,7 +26,10 @@ import { showInfoToast } from '../core/toast';
 // 确保 action 已注册（slideRow 的 executeActionById 绕过旧的 handleSettingsAction 路径）
 import('../core/action-defs/settings-actions')
     .then((m) => m.registerSettingsActions())
-    .catch(() => {});
+    .catch((err) => {
+        // [audit:fix 2026-10] P2：不再静默吞掉注册失败（与 settings-actions._ensureSettingsActions 同一模式）
+        logWarn('resources', 'registerSettingsActions import failed:', err);
+    });
 import {
     slideRow,
     addModeRow,
@@ -467,12 +470,19 @@ function buildWatchSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                     addWatchDirRow(
                         inner,
                         async (setStatusText) => {
-                            const status = await GetDownloadWatchStatus();
-                            setStatusText(
-                                status
-                                    ? t('settings.paths.watching', { dir: status })
-                                    : t('settings.paths.watchStopped')
-                            );
+                            try {
+                                const status = await GetDownloadWatchStatus();
+                                setStatusText(
+                                    status
+                                        ? t('settings.paths.watching', { dir: status })
+                                        : t('settings.paths.watchStopped')
+                                );
+                            } catch (err) {
+                                // [audit:fix 2026-10] P2：状态查询失败不 reject（addWatchDirRow 的点击回填
+                                // 无 catch），logWarn + 状态标记为已停止
+                                logWarn('watch', 'GetDownloadWatchStatus failed', err);
+                                setStatusText(t('settings.paths.watchStopped'));
+                            }
                         },
                         async () => {
                             // ⚠️ 安卓缺陷（待 ADR-194）：同 settings-downloads 的 SelectDir()，安卓会落到 SAF（Storage Access Framework）建树。
@@ -486,12 +496,15 @@ function buildWatchSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNode[]
                                 setDownloadWatchEnabledCached(true);
                                 getSettingsMenu()?.updateControls();
                                 showInfoToast(t('settings.watchDirSet', { dir }));
+                                return dir;
                             } catch (err) {
                                 logWarn('watch', 'SetDownloadWatchDir failed', err);
                                 const reason = translateGoError(err);
                                 showInfoToast(t('settings.watchDirFail', { err: reason }));
+                                // [audit:fix 2026-10] P2：失败分支返回 undefined（占位）——addWatchDirRow 仅对
+                                // truthy dir 写 dirInput.value，避免行显示「已生效」而后端其实未注册该目录
+                                return undefined;
                             }
-                            return dir;
                         }
                     );
                     addToggleRow(

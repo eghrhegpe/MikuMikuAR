@@ -383,7 +383,8 @@ function buildGraphicsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNod
             id: 'settings:graphics:physics-card',
             kind: 'custom',
             renderCustom: (c) => {
-                cardContainer(c, (inner) => {
+                // [audit:fix 2026-10] P2：return cardContainer(...) 使内层 renderMenu disposer 级联（先例 scene-render-levels）
+                return cardContainer(c, (inner) => {
                     addSectionTitle(inner, t('settings.graphics.physicsHud'));
                     return renderMenu(buildPhysicsHudSchema(), inner);
                 });
@@ -394,7 +395,8 @@ function buildGraphicsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNod
             id: 'settings:graphics:preset-card',
             kind: 'custom',
             renderCustom: (c) => {
-                cardContainer(c, (inner) => {
+                // [audit:fix 2026-10] P2：return cardContainer(...) 使内层 renderMenu disposer 级联（先例 scene-render-levels）
+                return cardContainer(c, (inner) => {
                     addSectionTitle(inner, t('settings.graphics.preset'));
                     return renderMenu(buildPresetSchema(getSettingsMenu), inner);
                 });
@@ -405,7 +407,8 @@ function buildGraphicsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNod
             id: 'settings:graphics:frame-card',
             kind: 'custom',
             renderCustom: (c) => {
-                cardContainer(c, (inner) => {
+                // [audit:fix 2026-10] P2：return cardContainer(...) 使内层 renderMenu disposer 级联（先例 scene-render-levels）
+                return cardContainer(c, (inner) => {
                     addSectionTitle(inner, t('settings.graphics.frameQuality'));
                     return renderMenu(buildFrameQualitySchema(), inner);
                 });
@@ -416,7 +419,8 @@ function buildGraphicsSchema(getSettingsMenu: () => SettingsMenuHandle): MenuNod
             id: 'settings:graphics:effects-card',
             kind: 'custom',
             renderCustom: (c) => {
-                cardContainer(c, (inner) => {
+                // [audit:fix 2026-10] P2：return cardContainer(...) 使内层 renderMenu disposer 级联（先例 scene-render-levels）
+                return cardContainer(c, (inner) => {
                     addSectionTitle(inner, t('settings.graphics.effects'));
                     return renderMenu(buildEffectsSchema(), inner);
                 });

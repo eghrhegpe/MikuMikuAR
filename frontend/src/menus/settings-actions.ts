@@ -7,14 +7,28 @@ import { type PopupRow } from '../core/config';
 import { buildSettingsLanguageLevel } from './settings-language';
 import type { SlideMenu } from './menu';
 import { executeActionById } from '../core/action-executor';
+import { logWarn } from '../core/logger';
 
 let _settingsRegistered = false;
+// [audit:fix 2026-10] P2：保存进行中的动态 import，_settingsRegistered 只在 .then 成功时置位；
+// import reject 时复位 flag + logWarn（旧代码 fire-and-forget 后立即置 flag：首点击先于注册落地
+// 静默失败，且 import reject 时 flag 永久 true，后续所有点击都静默失败）
+let _settingsPending: Promise<unknown> | null = null;
 
 function _ensureSettingsActions(): void {
-    if (!_settingsRegistered) {
-        import('../core/action-defs/settings-actions').then((m) => m.registerSettingsActions());
-        _settingsRegistered = true;
+    if (_settingsRegistered || _settingsPending) {
+        return;
     }
+    _settingsPending = import('../core/action-defs/settings-actions')
+        .then((m) => {
+            m.registerSettingsActions();
+            _settingsRegistered = true;
+            _settingsPending = null;
+        })
+        .catch((err) => {
+            _settingsPending = null;
+            logWarn('settings-actions', 'registerSettingsActions import failed:', err);
+        });
 }
 
 /** 全局设置项点击分发：语言切换 + 动作表。settings.ts 的 onItemClick 使用。 */

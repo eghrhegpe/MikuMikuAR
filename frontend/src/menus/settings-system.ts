@@ -37,6 +37,7 @@ import { safeCallAsync } from '../core/safe-call';
 import { t } from '../core/i18n/t';
 import { translateGoError } from '../core/i18n/goerr';
 import { schedulePersistUI } from '../scene/env/_bridge/env-persist';
+import { defaultUIState } from '../core/ui-state';
 import { setPerformanceMode } from '../scene/render/performance';
 import { engine, applyFrameControl } from '../scene/scene';
 import { calcHardwareScaling } from '../core/render-loop';
@@ -202,6 +203,10 @@ function resetAllSettings(getSettingsMenu: () => SlideMenu | null): void {
     for (const k of Object.keys(uiState)) {
         delete (uiState as Record<string, unknown>)[k];
     }
+    // [audit:fix 2026-10] P2：逐键 delete 后 live uiState 为空对象 → 持久化 payload 缺字段，
+    // Go 侧 json merge 保留旧值 → 未镜像字段重启复活。delete 后立即回填默认值，
+    // 使 payload 携带完整默认（非镜像字段保持 undefined，由 _buildUIStatePayload 过滤）。
+    Object.assign(uiState, defaultUIState());
     schedulePersistUI();
     reapplyImportedSettings();
     getSettingsMenu()?.reRender();

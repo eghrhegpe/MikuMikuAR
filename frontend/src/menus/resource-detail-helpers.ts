@@ -241,7 +241,7 @@ export function buildMaterialCard(
     targetStack: SlideMenu | null
 ): void {
     cardContainer(container, (c) => {
-        slideRow(c, 'lucide:palette', '材质调节', true, () => {
+        slideRow(c, 'lucide:palette', t('model-detail.materialAdjust'), true, () => { // [audit:fix 2026-10]
             const level = buildMatRootLevel(handle.id, handle.name, targetStack);
             targetStack?.push(level);
         });

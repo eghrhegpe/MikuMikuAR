@@ -491,7 +491,8 @@ function addListViewToolbar(
     expandBtn.title = t('library.expandPanel');
     expandBtn.style.marginLeft = 'auto';
     expandBtn.addEventListener('click', () => {
-        openResourceFullscreen(items[0]?.label || '资源库', allResourceItems, filter, (m) =>
+        // [audit:fix 2026-10] 裸中文「资源库」兜底 → menus.libraryRoot（5 包同步）
+        openResourceFullscreen(items[0]?.label || t('menus.libraryRoot'), allResourceItems, filter, (m) =>
             onModelRowClick(m)
         );
     });
@@ -726,7 +727,8 @@ function renderGridMode(
         expandBtn.title = t('library.expandPanel');
         expandBtn.style.marginLeft = 'auto';
         expandBtn.addEventListener('click', () => {
-            openResourceFullscreen(items[0]?.label || '资源库', allResourceItems, filter, (m) => {
+            // [audit:fix 2026-10] 裸中文「资源库」兜底 → menus.libraryRoot（5 包同步）
+            openResourceFullscreen(items[0]?.label || t('menus.libraryRoot'), allResourceItems, filter, (m) => {
                 if (m.format === 'vmd') {
                     replaceMotion(m);
                 } else {

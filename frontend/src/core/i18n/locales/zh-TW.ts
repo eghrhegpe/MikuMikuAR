@@ -222,6 +222,16 @@ export const zhTW: Record<string, string> = {
     'model-detail.materialAdjust': '材質調節',
     'model-detail.morphPreview': '表情預覽',
     'model-detail.outfitVariant': '替換紋理',
+    // ===== [audit:fix 2026-10] outfit.* 服裝面板（outfit-ui.ts / scene/manager/outfit.ts 引用，原 t() 鍵全 5 包缺失） =====
+    'outfit.variant': '服裝變體',
+    'outfit.modelRemoved': '模型已移除',
+    'outfit.loadConfigFailed': '⚠ 載入服裝配置失敗',
+    'outfit.noOutfitsConfig': '此模型無 outfits.json 配置。在模型所在目錄建立 outfits.json 即可啟用服裝變體。',
+    'outfit.default': '預設',
+    'outfit.switchFailed': '✗ 切換變體失敗',
+    'outfit.switched': '✓ 已切換至變體「{name}」',
+    'outfit.resetAll': '重置全部',
+    'outfit.resetFailed': '✗ 重置服裝失敗',
     'model-detail.personalLight': '個人燈光',
     'model-detail.personalLightEnabled': '啟用',
     'model-detail.personalLightIntensity': '亮度',
@@ -391,6 +401,13 @@ export const zhTW: Record<string, string> = {
     'motion.bindingTitle': '動作綁定',
     'motion.intent.title': '場上動作',
     'motion.intent.none': '靜態（無動作）',
+    'motion.retarget.loading': '讀取中…',
+    'motion.retarget.loadFailed': '動作檔案讀取失敗',
+    'motion.retarget.noAnimation': '檔案中無有效動作',
+    'motion.retarget.noSkeleton': '動作檔案中未找到骨架',
+    'motion.retarget.retargeting': '重定向中…',
+    'motion.retarget.failed': '重定向失敗',
+    'motion.retarget.success': '重定向完成', // [audit:fix 2026-10] round75 FM2 開放點①：animation-retargeter.ts 的 7 鍵原 5 包全缺
     'motion.intent.incompatible': '此角色不相容目前動作',
     'motion.intent.noGlobalHint': '無全域動作時，各角色獨立播放各自 VMD',
     'motion.context.pinMotion': '固定此動作',
@@ -1839,6 +1856,18 @@ export const zhTW: Record<string, string> = {
     'goerr.watch.createWatcherFailed': '建立檔案監聽器失敗',
     'goerr.watch.addWatchFailed': '加入監聽目錄失敗',
     'goerr.zip.tooManyEntries': '{op}：壓縮包內檔案數 {count} 超過上限 {max}',
+    // [audit:fix 2026-10] round75 goerr 缺口: cache.×4 / zip.entryTooLarge / zip.tooLarge（佔位符與 Go i18nerr.New 參數 map 對齊）
+    'goerr.cache.invalidDir': '無效的快取目錄',
+    'goerr.cache.dirResolveFailed': '無法取得快取目錄',
+    'goerr.cache.dirCreateFailed': '建立快取目錄失敗',
+    'goerr.cache.androidNotSupported': 'Android 不支援開啟快取目錄',
+    'goerr.zip.entryTooLarge': '{op}：條目 {entry} 解壓大小超過上限',
+    'goerr.zip.tooLarge': '{op}：累計解壓大小超過上限',
+    // [audit:fix 2026-10] round75 M2 後端備註: plaza 下載失敗走 i18nerr 信封（佔位符與 Go i18nerr.New 參數 map 對齊）
+    'goerr.plaza.downloadFailed': '資源下載失敗: {url} ({reason})',
+    // [audit:fix 2026-10] round75 menus.* 缺口（preset-list-viewer 刪除確認串 / library-core 資源庫根標題兜底）
+    'menus.presetDeleteConfirm': '確定刪除「{name}」？',
+    'menus.libraryRoot': '資源庫',
 
     // ===== [doc:adr-196] AI 診斷助手 =====
     'ai.welcome': '你好！我是 AI 診斷助手，可以幫助你分析錯誤和場景狀態。請描述你遇到的問題。',

@@ -13,6 +13,7 @@ import { tryCatchStatus } from '../core/status-helpers';
 import { hexToRgb, rgbToString } from '../core/color-helpers';
 import { applyUiMotionDom } from '../core/ui-motion';
 import { t } from '../core/i18n/t';
+import { translateGoError } from '../core/i18n/goerr';
 
 // ======== Auto-import state cache ========
 // buildRootItems 是同步签名，无法内部 await；用模块级缓存 + 启动预加载。
@@ -89,13 +90,32 @@ export async function setTheme(
     const p = (async (): Promise<void> => {
         let current = hex;
         for (;;) {
-            const _r = await tryCatchStatus(() => SetUIAccent(current), t('settings.themeColor'));
+            // [audit:fix 2026-10] P2：SetUIAccent 是 void 绑定（成功时 promise resolve undefined），
+            // tryCatchStatus 的返回值无法区分成功/失败——旧代码以 `_r === undefined` 判失败，成功时也恒命中
+            // 该分支：pending 请求链永不消费，且 finally 统一清 _pendingThemeHex，last-click 静默丢失、
+            // 绑定失败无反馈。改用 onError 回调判定真实失败（用户取消不触发）。
+            let bindingFailed = false;
+            let bindingErr: unknown = null;
+            await tryCatchStatus(() => SetUIAccent(current), t('settings.themeColor'), (err) => {
+                bindingFailed = true;
+                bindingErr = err;
+            });
             const next = _pendingThemeHex;
-            if (_r === undefined || next === null) {
-                if (_r === undefined) {
-                    getSettingsMenu()?.updateControls();
-                    return;
-                }
+            if (bindingFailed) {
+                // 绑定失败：保留最新请求（优先 pending）供下次重试 + 显式失败反馈
+                _pendingThemeHex = next !== null ? next : current;
+                getSettingsMenu()?.updateControls();
+                showInfoToast(
+                    t('settings.error', {
+                        message:
+                            bindingErr !== null
+                                ? translateGoError(bindingErr)
+                                : t('settings.themeColor'),
+                    })
+                );
+                return;
+            }
+            if (next === null) {
                 // 应用最终 DOM（无更新请求时）
                 const root = document.documentElement;
                 const textColors = generateTextColors(current);
@@ -115,7 +135,8 @@ export async function setTheme(
         }
     })().finally(() => {
         _themeInFlight = null;
-        _pendingThemeHex = null;
+        // [audit:fix 2026-10] P2：不再统一清 _pendingThemeHex——绑定失败路径保留的 last-click
+        // 供下次重试；新点击入口的 last-click-wins（_pendingThemeHex = null / = hex）接管
     });
     _themeInFlight = p;
     return p;

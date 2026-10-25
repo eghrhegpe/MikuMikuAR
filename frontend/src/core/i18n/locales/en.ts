@@ -151,6 +151,16 @@ export const en: Record<string, string> = {
     'model-detail.materialAdjust': 'Material',
     'model-detail.morphPreview': 'Morph Preview',
     'model-detail.outfitVariant': 'Replace Textures',
+    // ===== [audit:fix 2026-10] outfit.* outfit panel (referenced by outfit-ui.ts / scene/manager/outfit.ts; keys were missing in all 5 packages) =====
+    'outfit.variant': 'Outfit Variant',
+    'outfit.modelRemoved': 'Model removed',
+    'outfit.loadConfigFailed': 'Failed to load outfit config',
+    'outfit.noOutfitsConfig': 'This model has no outfits.json. Create an outfits.json in the model directory to enable outfit variants.',
+    'outfit.default': 'Default',
+    'outfit.switchFailed': 'Failed to switch variant',
+    'outfit.switched': 'Switched to variant "{name}"',
+    'outfit.resetAll': 'Reset All',
+    'outfit.resetFailed': 'Failed to reset outfit',
     'model-detail.personalLight': 'Personal Light',
     'model-detail.personalLightEnabled': 'Enabled',
     'model-detail.personalLightIntensity': 'Intensity',
@@ -238,6 +248,13 @@ export const en: Record<string, string> = {
     'motion.bindingTitle': 'Motion Binding',
     'motion.intent.title': 'Active Motion',
     'motion.intent.none': 'Static (no motion)',
+    'motion.retarget.loading': 'Loading…',
+    'motion.retarget.loadFailed': 'Failed to load animation file',
+    'motion.retarget.noAnimation': 'No valid animation in file',
+    'motion.retarget.noSkeleton': 'No skeleton found in animation file',
+    'motion.retarget.retargeting': 'Retargeting…',
+    'motion.retarget.failed': 'Retargeting failed',
+    'motion.retarget.success': 'Retargeting complete', // [audit:fix 2026-10] round75 FM2 open point 1: 7 motion.retarget.* keys missing from all 5 bundles
     'motion.intent.incompatible': 'This model is incompatible with the active motion',
     'motion.intent.noGlobalHint':
         'Without a global motion, each model plays its own VMD independently',
@@ -1864,6 +1881,18 @@ export const en: Record<string, string> = {
     'goerr.watch.addWatchFailed': 'Failed to add directory to watcher.',
     'goerr.zip.tooManyEntries':
         '{op}: the archive contains {count} files, exceeding the limit of {max}.',
+    // [audit:fix 2026-10] round75 goerr gap: cache.×4 / zip.entryTooLarge / zip.tooLarge (placeholders aligned with Go i18nerr.New params)
+    'goerr.cache.invalidDir': 'Invalid cache directory.',
+    'goerr.cache.dirResolveFailed': 'Could not resolve the cache directory.',
+    'goerr.cache.dirCreateFailed': 'Failed to create the cache directory.',
+    'goerr.cache.androidNotSupported': 'Opening the cache directory is not supported on Android.',
+    'goerr.zip.entryTooLarge': '{op}: entry {entry} exceeds the size limit when extracted.',
+    'goerr.zip.tooLarge': '{op}: total extracted size exceeds the limit.',
+    // [audit:fix 2026-10] round75 M2 backend note: plaza download failure goes through i18nerr envelope (placeholders aligned with Go i18nerr.New params)
+    'goerr.plaza.downloadFailed': 'Resource download failed: {url} ({reason})',
+    // [audit:fix 2026-10] round75 menus.* gap (preset-list-viewer delete confirm / library-core library root title)
+    'menus.presetDeleteConfirm': 'Delete "{name}"?',
+    'menus.libraryRoot': 'Resource Library',
 
     // ===== [doc:adr-196] AI Diagnostic Assistant =====
     'ai.welcome':

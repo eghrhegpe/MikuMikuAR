@@ -21,8 +21,10 @@ import { addSliderRow, addToggleRow } from '../core/ui-helpers';
  * 增量更新 toggle 行的 DOM 状态（不触发 reRender）。
  * 通过 rowKey 定位行 DOM，翻转 switch 类名。
  */
-function _patchToggle(target: string, newValue: boolean): void {
-    const row = document.querySelector(`[data-row-key="${target}"]`) as HTMLElement | null;
+function _patchToggle(target: string, newValue: boolean, scope: ParentNode): void {
+    // [audit:fix 2026-10] P2：限定到当前卡片面板 DOM（调用方传入 card 的 inner），
+    // 不再全文档 querySelector——跨弹层同名 rowKey 会碰撞（scoped 先例 menu.ts:862/1182）。
+    const row = scope.querySelector(`[data-row-key="${target}"]`) as HTMLElement | null;
     if (!row) {
         return;
     }
@@ -73,7 +75,7 @@ function buildWasmPhysicsSchema(): MenuNode[] {
                         (v) => {
                             setGroundCollisionEnabled(v);
                             refreshSceneRoot();
-                            _patchToggle('wasm:ground', v);
+                            _patchToggle('wasm:ground', v, inner);
                         },
                         'lucide:square',
                         { bind: () => getGroundCollisionEnabled() }
@@ -114,7 +116,7 @@ function buildPhysicsDebugSchema(): MenuNode[] {
                             if (id) {
                                 setModelWireframe(id, v);
                             }
-                            _patchToggle('debug:wireframe', v);
+                            _patchToggle('debug:wireframe', v, inner);
                         },
                         'lucide:square',
                         { bind: () => inst?.wireframe ?? false }
@@ -127,7 +129,7 @@ function buildPhysicsDebugSchema(): MenuNode[] {
                             if (id) {
                                 setModelBoneLinesVis(id, v);
                             }
-                            _patchToggle('debug:bonelines', v);
+                            _patchToggle('debug:bonelines', v, inner);
                         },
                         'lucide:git-branch',
                         { bind: () => inst?.showBoneLines ?? false }
@@ -140,7 +142,7 @@ function buildPhysicsDebugSchema(): MenuNode[] {
                             if (id) {
                                 setModelBoneJointsVis(id, v);
                             }
-                            _patchToggle('debug:bonejoints', v);
+                            _patchToggle('debug:bonejoints', v, inner);
                         },
                         'lucide:circle-dot',
                         { bind: () => inst?.showBoneJoints ?? false }

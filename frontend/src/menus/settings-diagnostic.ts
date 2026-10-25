@@ -124,6 +124,9 @@ async function runStream(opts?: { allowTools?: boolean }): Promise<void> {
     diagState.isStreaming = true;
     updateSendButton();
     diagState.abortController = new AbortController();
+    // [audit:fix 2026-10] P1: 发起流时快照当前会话 id，finally 收尾前与 diagState.activeSessionId
+    // 比对；会话已切换则丢弃本流输出，防 partial 写入新会话（幽灵消息）。
+    const sessionIdAtStreamStart = diagState.activeSessionId;
     showPendingBubble();
     logInfo(
         'ai-stream',
@@ -254,11 +257,19 @@ async function runStream(opts?: { allowTools?: boolean }): Promise<void> {
             interruptMessage = t('ai.errors.apiError', { msg: errMsg });
         }
     } finally {
+        // [audit:fix 2026-10] P1: 防跨会话污染——发起流之后若 activeSessionId 已变化
+        // （switchSession/createSession 切换会话），旧流稍后执行的 finally 会把 partial push /
+        // flushSession 写进新会话产生幽灵消息；快照失配时只丢弃本流输出。
+        // 面板 dispose 不改 activeSessionId（快照仍匹配），不受影响。
+        // [audit:fix 2026-10] 用标志 + 条件包裹而非 finally 内 return（no-unsafe-finally：
+        // finally 里的 return 会吞掉在途异常）。
+
+        const sessionStillActive = sessionIdAtStreamStart === diagState.activeSessionId;
         // 用局部标志判断，而非全局 diagState.isStreaming：
         // continueStream 会在 finalizePendingBatch 末尾 fire-and-forget 触发下一次 runStream，
         // 下一次会把 isStreaming 改回 true；若用全局标志判断，本次 finally 会误判“还在 streaming”，
         // 用本次 fullResponse 二次 push assistant 消息（幽灵消息），并破坏下一次 runStream 的状态。
-        if (!thisStreamDone) {
+        if (sessionStillActive && !thisStreamDone) {
             const handledAsFallback =
                 !streamErrorSeen &&
                 !abortedByUser &&
@@ -422,6 +433,9 @@ export function buildDiagnosticSchema(opts?: { withSessions?: boolean }): MenuNo
             renderCustom: (c) => {
                 const container = document.createElement('div');
                 container.className = 'diag-panel-layout';
+                // [audit:fix 2026-10] P2：嵌套 cardContainer(renderMenu) 的级联 disposer 收集——
+                // 不合成返回则面板关闭时子页 custom 节点清理永不运行（先例 scene-render-levels.ts:529-569 捕获 d1/d2 合成返回）
+                const disposes: (() => void)[] = [];
 
                 const tabBar = document.createElement('div');
                 tabBar.className = 'type-row';
@@ -450,24 +464,27 @@ export function buildDiagnosticSchema(opts?: { withSessions?: boolean }): MenuNo
                 const chatPane = document.createElement('div');
                 chatPane.className = 'diag-tab-pane';
                 if (opts?.withSessions) {
-                    cardContainer(chatPane, (inner) => {
+                    const dSessions = cardContainer(chatPane, (inner) => {
                         addSectionTitle(inner, t('ai.chat.history'));
                         return renderMenu(buildSessionsSchema(), inner);
                     });
+                    if (typeof dSessions === 'function') disposes.push(dSessions);
                 }
-                cardContainer(chatPane, (inner) => {
+                const dChat = cardContainer(chatPane, (inner) => {
                     addSectionTitle(inner, t('ai.chat.title'));
                     return renderMenu(buildChatSchema(), inner);
                 });
+                if (typeof dChat === 'function') disposes.push(dChat);
                 container.appendChild(chatPane);
 
                 const configPane = document.createElement('div');
                 configPane.className = 'diag-tab-pane';
                 configPane.style.display = 'none';
-                cardContainer(configPane, (inner) => {
+                const dConfig = cardContainer(configPane, (inner) => {
                     addSectionTitle(inner, t('ai.config.title'));
                     return renderMenu(buildConfigSchema(), inner);
                 });
+                if (typeof dConfig === 'function') disposes.push(dConfig);
                 container.appendChild(configPane);
                 c.appendChild(container);
 
@@ -483,6 +500,13 @@ export function buildDiagnosticSchema(opts?: { withSessions?: boolean }): MenuNo
                     }
                     chatPane.style.display = tabId === 'diagnostic:chat' ? '' : 'none';
                     configPane.style.display = tabId === 'diagnostic:config' ? '' : 'none';
+                }
+
+                // [audit:fix 2026-10] P2：合成 disposer 返回给 render-menu，面板 dispose 时级联清理子页 custom 节点
+                if (disposes.length > 0) {
+                    return () => {
+                        for (const d of disposes) d();
+                    };
                 }
             },
         },

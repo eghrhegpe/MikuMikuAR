@@ -19,6 +19,7 @@ import (
 	"sync"
 	"time"
 
+	"mikumikuar/internal/i18nerr"
 	"mikumikuar/internal/util"
 )
 
@@ -982,7 +983,14 @@ func (a *App) handlePlazaDownloadPost(w http.ResponseWriter, r *http.Request) {
 	result, err := a.DownloadFromPlaza(req.URL, req.Filename)
 	if err != nil {
 		a.safeLogError("handlePlazaDownloadPost: %v", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		// [audit:fix 2026-10] 失败文本改走 i18nerr 信封（ADR-117 机制：UserError.Error() =
+		// 中文 msg + 换行 + @@GOERR@@ JSON 信封；前端 translateGoError 按哨兵提取 code/params
+		// 翻译，未命中 key 时回退信封内中文 msg）。返回仍保持 500 语义。
+		reason := err.Error()
+		if len(reason) > 200 {
+			reason = reason[:200] + "…"
+		}
+		http.Error(w, i18nerr.New("plaza.downloadFailed", "资源下载失败: "+reason, map[string]string{"url": req.URL, "reason": reason}).Error(), http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")

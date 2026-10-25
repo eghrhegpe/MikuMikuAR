@@ -2182,16 +2182,16 @@
 | `renderPendingAction()` | `menus/diagnostic-control:99` | 渲染待确认操作卡 |
 | `tryQueuePendingAction()` | `menus/diagnostic-control:11` | 将 LLM 文本回退解析的 action 入待确认队列 |
 | `undoLastAction()` | `menus/diagnostic-control:81` | 撤销上一个破坏性动作 |
-| `buildSessionsSchema()` | `menus/diagnostic-session:128` | — |
-| `createSession()` | `menus/diagnostic-session:74` | 由 entry point 调用——通过 callbacks 通知 UI 更新 |
-| `deleteSessionAndAdjust()` | `menus/diagnostic-session:112` | — |
+| `buildSessionsSchema()` | `menus/diagnostic-session:140` | — |
+| `createSession()` | `menus/diagnostic-session:87` | 由 entry point 调用——通过 callbacks 通知 UI 更新 |
+| `deleteSessionAndAdjust()` | `menus/diagnostic-session:124` | — |
 | `doPersistSession()` | `menus/diagnostic-session:19` | — |
 | `flushSession()` | `menus/diagnostic-session:46` | — |
-| `fmtTime()` | `menus/diagnostic-session:211` | — |
+| `fmtTime()` | `menus/diagnostic-session:223` | — |
 | `loadActiveSession()` | `menus/diagnostic-session:51` | — |
-| `renderSessionList()` | `menus/diagnostic-session:143` | — |
+| `renderSessionList()` | `menus/diagnostic-session:155` | — |
 | `schedulePersistSession()` | `menus/diagnostic-session:42` | — |
-| `switchSession()` | `menus/diagnostic-session:85` | — |
+| `switchSession()` | `menus/diagnostic-session:101` | — |
 | `DiagnosticState()` | `menus/diagnostic-state:19` | — |
 | `PendingAction()` | `menus/diagnostic-state:8` | — |
 | `PendingToolResult()` | `menus/diagnostic-state:14` | — |
@@ -2246,9 +2246,9 @@
 | `showModelPopup()` | `menus/library-browse:396` | — |
 | `ResourceViewMode()` | `menus/library-core:43` | — |
 | `abortThumbnailStreaming()` | `menus/library-core:321` | [adr-136] 取消当前正在进行的缩略图流式加载批次（如弹窗关闭/重开时调用）。 |
-| `buildLevel()` | `menus/library-core:863` | — |
-| `buildModelFormationLevel()` | `menus/library-core:907` | — |
-| `buildModelRootItems()` | `menus/library-core:942` | — |
+| `buildLevel()` | `menus/library-core:865` | — |
+| `buildModelFormationLevel()` | `menus/library-core:909` | — |
+| `buildModelRootItems()` | `menus/library-core:944` | — |
 | `buildResourceItemsForDir()` | `menus/library-core:388` | — |
 | `computeRestoreSegments()` | `menus/library-core:161` | — |
 | `getPendingMetaGuard()` | `menus/library-core:67` | — |
@@ -2259,7 +2259,7 @@
 | `loadThumbnailsStreaming()` | `menus/library-core:264` | 流式加载缩略图：并发控制，每加载一张立即更新缓存并通知面板刷新， 替代一次性 GetThumbnailBatch 的"全等"模式，实现缩略图逐张出现。 |
 | `modelToResourceItem()` | `menus/library-core:371` | — |
 | `modelToRow()` | `menus/library-core:355` | — |
-| `refreshModelRoot()` | `menus/library-core:1033` | 就地更新模型库根层级数据（刷新已注册的角色列表）。 |
+| `refreshModelRoot()` | `menus/library-core:1035` | 就地更新模型库根层级数据（刷新已注册的角色列表）。 |
 | `resolveDisplayBrowseDir()` | `menus/library-core:140` | [修复] 解析模型在资源库中的"显示目录"——即用户点击该模型时实际看到的层级。 |
 | `setResourceViewMode()` | `menus/library-core:50` | — |
 | `splitSubdirSegments()` | `menus/library-core:73` | — |
@@ -2381,12 +2381,12 @@
 | `buildProcMotionSchema()` | `menus/motion-procmotion-levels:152` | — |
 | `buildProcToolsLevel()` | `menus/motion-procmotion-levels:420` | [doc:adr-207] 程序化工具栏 level——对齐 ADR-170「详情 vs 工具」分层： 程序化专属参数（预设/强度/速度/骨骼微动/插值）收敛到工具栏， 详情页只保 |
 | `procLabel()` | `menus/motion-procmotion-levels:441` | [doc:adr-207] 程序化动作 ID → 显示名（跨模块复用，避免标签逻辑重复）。 |
-| `buildMotionRootItems()` | `menus/motion-root-ui:51` | — |
-| `buildMotionRootLevel()` | `menus/motion-root-ui:294` | — |
-| `buildRetargetLevel()` | `menus/motion-root-ui:355` | — |
-| `hideMotionPopup()` | `menus/motion-root-ui:303` | — |
-| `importExternalAnimation()` | `menus/motion-root-ui:386` | 外部动作导入：选文件 → 重定向骨骼 → 播放。 |
-| `openProcDetail()` | `menus/motion-root-ui:347` | [doc:adr-207] 行体点击进入程序化统一详情页。 |
+| `buildMotionRootItems()` | `menus/motion-root-ui:53` | — |
+| `buildMotionRootLevel()` | `menus/motion-root-ui:296` | — |
+| `buildRetargetLevel()` | `menus/motion-root-ui:357` | — |
+| `hideMotionPopup()` | `menus/motion-root-ui:305` | — |
+| `importExternalAnimation()` | `menus/motion-root-ui:388` | 外部动作导入：选文件 → 重定向骨骼 → 播放。 |
+| `openProcDetail()` | `menus/motion-root-ui:349` | [doc:adr-207] 行体点击进入程序化统一详情页。 |
 | `buildNavMaps()` | `menus/nav-actions:178` | — |
 | `disposeNavBindings()` | `menus/nav-actions:275` | 卸载导航按钮监听（HMR/dispose 用） |
 | `getNavLabel()` | `menus/nav-actions:340` | 供 core 侧读取导航标签（经桥，不直接 import menus） |
@@ -2396,7 +2396,7 @@
 | `toggleOverlay()` | `menus/nav-actions:73` | — |
 | `buildOutfitLevel()` | `menus/outfit-ui:158` | — |
 | `buildSiteTabs()` | `menus/plaza-browser:326` | — |
-| `buildToolbar()` | `menus/plaza-browser:711` | — |
+| `buildToolbar()` | `menus/plaza-browser:718` | — |
 | `ensureSitesLoaded()` | `menus/plaza-browser:255` | — |
 | `getCustomPresets()` | `menus/plaza-browser:310` | — |
 | `loadPlazaCache()` | `menus/plaza-browser:157` | 从 Go 用户目录缓存（plaza-cache/creators.json + workshop_sites.json）读取站点 + 创作者。缓存不存在时返回 null。 |
@@ -2407,13 +2407,13 @@
 | `openInWindow()` | `menus/plaza-browser:295` | — |
 | `openSiteByMode()` | `menus/plaza-browser:275` | — |
 | `preserveBuiltinRouting()` | `menus/plaza-browser:248` | — |
-| `renderEmbed()` | `menus/plaza-browser:871` | — |
-| `renderHome()` | `menus/plaza-browser:849` | — |
-| `renderSiteContent()` | `menus/plaza-browser:381` | — |
+| `renderEmbed()` | `menus/plaza-browser:878` | — |
+| `renderHome()` | `menus/plaza-browser:856` | — |
+| `renderSiteContent()` | `menus/plaza-browser:383` | — |
 | `saveCustomPresets()` | `menus/plaza-browser:318` | — |
 | `savePlazaCache()` | `menus/plaza-browser:196` | 将当前站点 + 创作者持久化到 Go 用户目录缓存（plaza-cache/）。 |
-| `showActionsMenu()` | `menus/plaza-browser:755` | — |
-| `showPlaza()` | `menus/plaza-browser:983` | — |
+| `showActionsMenu()` | `menus/plaza-browser:762` | — |
+| `showPlaza()` | `menus/plaza-browser:990` | — |
 | `PLAZA_CREATORS()` | `menus/plaza-creators:9` | — |
 | `PlazaCreator()` | `menus/plaza-creators:1` | — |
 | `ensureObserver()` | `menus/plaza-download:195` | — |
@@ -2457,7 +2457,7 @@
 | `_plazaBtn()` | `menus/plaza-thumbnail:6` | — |
 | `_plazaSectionHeader()` | `menus/plaza-thumbnail:24` | — |
 | `PresetListViewerConfig()` | `menus/preset-list-viewer:15` | — |
-| `buildPresetListLevel()` | `menus/preset-list-viewer:157` | 构建完整 PopupLevel（适用于纯预设列表场景，如模型预设） |
+| `buildPresetListLevel()` | `menus/preset-list-viewer:158` | 构建完整 PopupLevel（适用于纯预设列表场景，如模型预设） |
 | `presetListContent()` | `menus/preset-list-viewer:53` | 渲染预设列表内容到现有 container 中。用于混合内容的 PopupLevel（场景预设） |
 | `buildSchemaLevel()` | `menus/render-menu:363` | [doc:P6] 构建一个含增量 i18n 刷新的 schema 层级。 |
 | `renderMenu()` | `menus/render-menu:26` | 渲染一个 MenuNode 树到 container 中。返回 dispose 函数，调用时级联释放所有 renderCustom 资源 |
@@ -2482,9 +2482,9 @@
 | `screenshotBatch()` | `menus/scene-menu:364` | 批量截图所有已加载模型 |
 | `screenshotCurrent()` | `menus/scene-menu:336` | 截图当前焦点模型 |
 | `showSceneMenu()` | `menus/scene-menu:81` | — |
-| `buildPhysicsDebugLevel()` | `menus/scene-physics-levels:155` | 构建物理调试子页（材质线框/骨骼 — WASM 相关，由模型详情页调用） |
-| `buildPhysicsLevel()` | `menus/scene-physics-levels:37` | 构建 WASM 物理子页（Bullet 骨髁物理 — per-model） |
-| `buildWasmPhysicsLevel()` | `menus/scene-physics-levels:88` | 构建 WASM 物理子页（Bullet 骨髁物理信息 + 全局开关） |
+| `buildPhysicsDebugLevel()` | `menus/scene-physics-levels:157` | 构建物理调试子页（材质线框/骨骼 — WASM 相关，由模型详情页调用） |
+| `buildPhysicsLevel()` | `menus/scene-physics-levels:39` | 构建 WASM 物理子页（Bullet 骨髁物理 — per-model） |
+| `buildWasmPhysicsLevel()` | `menus/scene-physics-levels:90` | 构建 WASM 物理子页（Bullet 骨髁物理信息 + 全局开关） |
 | `buildPostProcessColorSchema()` | `menus/scene-render-levels:426` | 后处理 schema — 色彩层（色调映射） |
 | `buildPostProcessCoreSchema()` | `menus/scene-render-levels:205` | 后处理 schema — 核心层（高频效果）+ 高级层（光学/环境效果） |
 | `buildPostProcessLevel()` | `menus/scene-render-levels:523` | — |
@@ -2498,43 +2498,43 @@
 | `buildStageTransformLevel()` | `menus/scene-stage-levels:175` | — |
 | `buildStageLightLevel()` | `menus/scene-stage-lights:833` | — |
 | `buildSettingsAboutLevel()` | `menus/settings-about:258` | — |
-| `handleSettingsAction()` | `menus/settings-actions:21` | 全局设置项点击分发：语言切换 + 动作表。settings.ts 的 onItemClick 使用。 |
+| `handleSettingsAction()` | `menus/settings-actions:35` | 全局设置项点击分发：语言切换 + 动作表。settings.ts 的 onItemClick 使用。 |
 | `buildSettingsAppearanceLevel()` | `menus/settings-appearance:514` | — |
 | `buildCameraSchema()` | `menus/settings-controls:29` | — |
-| `buildSettingsControlsLevel()` | `menus/settings-controls:325` | — |
-| `buildDiagnosticSchema()` | `menus/settings-diagnostic:417` | — |
-| `buildSettingsDiagnosticLevel()` | `menus/settings-diagnostic:522` | — |
-| `renderDiagnosticPanel()` | `menus/settings-diagnostic:492` | — |
+| `buildSettingsControlsLevel()` | `menus/settings-controls:361` | — |
+| `buildDiagnosticSchema()` | `menus/settings-diagnostic:428` | — |
+| `buildSettingsDiagnosticLevel()` | `menus/settings-diagnostic:546` | — |
+| `renderDiagnosticPanel()` | `menus/settings-diagnostic:516` | — |
 | `buildSettingsDownloadsLevel()` | `menus/settings-downloads:459` | — |
 | `buildEffectsSchema()` | `menus/settings-graphics:204` | — |
 | `buildFrameQualitySchema()` | `menus/settings-graphics:102` | — |
 | `buildPhysicsHudSchema()` | `menus/settings-graphics:305` | — |
-| `buildSettingsGraphicsLevel()` | `menus/settings-graphics:428` | — |
+| `buildSettingsGraphicsLevel()` | `menus/settings-graphics:432` | — |
 | `buildSettingsLanguageLevel()` | `menus/settings-language:7` | — |
-| `buildSettingsMediaLevel()` | `menus/settings-media:485` | — |
-| `buildSettingsResourcesLevel()` | `menus/settings-resources:530` | — |
-| `FONT_MAP()` | `menus/settings-shared:126` | — |
-| `SETTINGS_FONT_RESTORE()` | `menus/settings-shared:126` | — |
-| `SettingsMenuHandle()` | `menus/settings-shared:171` | — |
-| `THEME_PRESETS()` | `menus/settings-shared:130` | — |
-| `applyUIAppearanceDom()` | `menus/settings-shared:140` | — |
-| `formatBytes()` | `menus/settings-shared:173` | — |
-| `generateTextColors()` | `menus/settings-shared:126` | — |
-| `getAutoImportCached()` | `menus/settings-shared:30` | — |
-| `getDownloadWatchEnabledCached()` | `menus/settings-shared:51` | — |
-| `preloadAutoImportState()` | `menus/settings-shared:22` | 启动时预加载自动导入开关状态。在 main.ts init 中调用。 |
-| `preloadDownloadWatchState()` | `menus/settings-shared:43` | 启动时预加载下载监听开关状态。在 main.ts init 中调用。 |
-| `setAutoImportCached()` | `menus/settings-shared:34` | — |
-| `setAutoLoadCompanionAudio()` | `menus/settings-shared:63` | — |
-| `setDownloadWatchEnabledCached()` | `menus/settings-shared:55` | — |
-| `setTheme()` | `menus/settings-shared:80` | — |
-| `truncatePath()` | `menus/settings-shared:185` | 路径截断显示：超长时保留尾部（用户更关心文件名/末级目录） |
-| `addCustomSoftware()` | `menus/settings-system:446` | — |
-| `buildSettingsSystemLevel()` | `menus/settings-system:820` | — |
-| `buildSoftwareDetailLevel()` | `menus/settings-system:775` | — |
-| `scanSoftwareDir()` | `menus/settings-system:472` | — |
-| `setBlenderPath()` | `menus/settings-system:418` | — |
-| `setMMDPath()` | `menus/settings-system:432` | — |
+| `buildSettingsMediaLevel()` | `menus/settings-media:513` | — |
+| `buildSettingsResourcesLevel()` | `menus/settings-resources:543` | — |
+| `FONT_MAP()` | `menus/settings-shared:147` | — |
+| `SETTINGS_FONT_RESTORE()` | `menus/settings-shared:147` | — |
+| `SettingsMenuHandle()` | `menus/settings-shared:192` | — |
+| `THEME_PRESETS()` | `menus/settings-shared:151` | — |
+| `applyUIAppearanceDom()` | `menus/settings-shared:161` | — |
+| `formatBytes()` | `menus/settings-shared:194` | — |
+| `generateTextColors()` | `menus/settings-shared:147` | — |
+| `getAutoImportCached()` | `menus/settings-shared:31` | — |
+| `getDownloadWatchEnabledCached()` | `menus/settings-shared:52` | — |
+| `preloadAutoImportState()` | `menus/settings-shared:23` | 启动时预加载自动导入开关状态。在 main.ts init 中调用。 |
+| `preloadDownloadWatchState()` | `menus/settings-shared:44` | 启动时预加载下载监听开关状态。在 main.ts init 中调用。 |
+| `setAutoImportCached()` | `menus/settings-shared:35` | — |
+| `setAutoLoadCompanionAudio()` | `menus/settings-shared:64` | — |
+| `setDownloadWatchEnabledCached()` | `menus/settings-shared:56` | — |
+| `setTheme()` | `menus/settings-shared:81` | — |
+| `truncatePath()` | `menus/settings-shared:206` | 路径截断显示：超长时保留尾部（用户更关心文件名/末级目录） |
+| `addCustomSoftware()` | `menus/settings-system:451` | — |
+| `buildSettingsSystemLevel()` | `menus/settings-system:825` | — |
+| `buildSoftwareDetailLevel()` | `menus/settings-system:780` | — |
+| `scanSoftwareDir()` | `menus/settings-system:477` | — |
+| `setBlenderPath()` | `menus/settings-system:423` | — |
+| `setMMDPath()` | `menus/settings-system:437` | — |
 | `SETTINGS()` | `menus/settings-targets:5` | 设置菜单文件夹导航 target（ADR-157 的 7 分类 + downloads = 8 个根区段） |
 | `SETTINGS_ACTION()` | `menus/settings-targets:17` | 设置菜单动作 target（点击后执行操作，不导航） |
 | `SOFTWARE_DETAIL_PREFIX()` | `menus/settings-targets:33` | 动态 target 前缀 —— 用于 &#96;settings:software-detail:&lt;path&gt;&#96; 模式 |

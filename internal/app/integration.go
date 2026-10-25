@@ -367,7 +367,7 @@ func (a *App) OpenCacheDir(subDir string) error {
 	case "serve":
 		dir, err = serveRootDir()
 	default:
-		return i18nerr.New("cache.invalidDir", "无效的缓存目录: "+subDir)
+		return i18nerr.New("cache.invalidDir", "无效的缓存目录: "+subDir, map[string]string{"subDir": subDir}) // [audit:fix 2026-10] 无效目录名入信封（locale 键无占位符，t() 忽略多余参数）
 	}
 	if err != nil {
 		return i18nerr.New("cache.dirResolveFailed", "无法获取缓存目录")

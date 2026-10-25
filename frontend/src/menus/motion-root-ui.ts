@@ -4,8 +4,9 @@
 
 import type { PopupLevel, PopupRow } from '../core/config';
 import { closeAllOverlays } from './menu-overlay';
-import { feedbackInfo, feedbackStatus } from '../core/feedback';
+import { feedbackError, feedbackInfo, feedbackStatus } from '../core/feedback';
 import { showInfoToast } from '../core/toast';
+import { logWarn } from '../core/logger';
 import {
     modelManager,
     triggerAutoSave,
@@ -32,6 +33,7 @@ import { SelectRetargetFile } from '../core/wails-bindings';
 import {
     loadAndRetargetAnimation,
     playRetargetedAnimation,
+    type RetargetResult,
 } from '../scene/motion/animation-retargeter';
 import { DEFAULT_MOTION_SLOTS } from './motion-binding-ui';
 import type { ModelMotionSlots } from '@/core/types';
@@ -409,8 +411,19 @@ export async function importExternalAnimation(
     }
 
     const scene = mesh.getScene();
-    const result = await loadAndRetargetAnimation(scene, path, mesh.skeleton, preset);
+    let result: RetargetResult | null;
+    try {
+        result = await loadAndRetargetAnimation(scene, path, mesh.skeleton, preset);
+    } catch (err) {
+        // [audit:fix 2026-10] P2：原无 try/catch——retargeter 内部未覆盖的异常会静默吞掉且弹层不关
+        // （对照 L401/L407 的失败反馈模式，补显式反馈）
+        logWarn('motion-root-ui', 'loadAndRetargetAnimation failed:', err);
+        feedbackError('main.importFailed', path, err);
+        return;
+    }
     if (!result) {
+        // [audit:fix 2026-10] P2：静默 return → 显式失败反馈（retargeter 已逐阶段 feedbackStatus）
+        feedbackStatus('main.importFailed', path, false);
         return;
     }
 

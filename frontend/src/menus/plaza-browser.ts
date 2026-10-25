@@ -342,7 +342,8 @@ export function buildSiteTabs(): HTMLElement {
         for (const site of grpSites) {
             const btn = document.createElement('button');
             btn.className = 'plaza-site-tab' + (currentSiteId === site.id ? ' active' : '');
-            btn.innerHTML = `<iconify-icon icon="${site.icon ?? 'lucide:globe'}"></iconify-icon><span>${site.name}</span>`;
+            // [audit:fix 2026-10] P1 XSS: site.icon/site.name 来自远端 plaza 配置（经 normalizeSite），innerHTML 前转义。
+            btn.innerHTML = `<iconify-icon icon="${escapeHtml(site.icon ?? 'lucide:globe')}"></iconify-icon><span>${escapeHtml(site.name)}</span>`;
             btn.onclick = () => {
                 if (currentSiteId === site.id) {
                     return;
@@ -363,7 +364,8 @@ export function buildSiteTabs(): HTMLElement {
         for (const site of others) {
             const btn = document.createElement('button');
             btn.className = 'plaza-site-tab' + (currentSiteId === site.id ? ' active' : '');
-            btn.innerHTML = `<iconify-icon icon="${site.icon ?? 'lucide:globe'}"></iconify-icon><span>${site.name}</span>`;
+            // [audit:fix 2026-10] P1 XSS: site.icon/site.name 来自远端 plaza 配置（经 normalizeSite），innerHTML 前转义。
+            btn.innerHTML = `<iconify-icon icon="${escapeHtml(site.icon ?? 'lucide:globe')}"></iconify-icon><span>${escapeHtml(site.name)}</span>`;
             btn.onclick = () => {
                 if (currentSiteId === site.id) {
                     return;
@@ -485,7 +487,8 @@ export function renderSiteContent(site: PlazaSite): HTMLElement {
         for (const cp of custom) {
             const btn = document.createElement('button');
             btn.className = 'plaza-preset-btn plaza-preset-custom';
-            btn.innerHTML = `<span>${cp.label}</span><iconify-icon icon="lucide:x" class="plaza-preset-del"></iconify-icon>`;
+            // [audit:fix 2026-10] P1 XSS: cp.label 是用户自填的搜索词（localStorage），innerHTML 前转义。
+            btn.innerHTML = `<span>${escapeHtml(cp.label)}</span><iconify-icon icon="lucide:x" class="plaza-preset-del"></iconify-icon>`;
             btn.onclick = (ev) => {
                 if ((ev.target as HTMLElement).closest('.plaza-preset-del')) {
                     const updated = custom.filter((p) => p.label !== cp.label);
@@ -649,9 +652,13 @@ export function renderSiteContent(site: PlazaSite): HTMLElement {
                 const tierBar = cr.tier ? '<div class="plaza-cr-tier-bar"></div>' : '';
                 const fav = isFaved(cr.name) ? '★' : '☆';
                 const tagIcon = tags.find((t) => t.key === cr.tag)?.icon ?? 'lucide:user';
+                // [audit:fix 2026-10] P1 XSS: cr.name（远端创作者配置）头像首字符分支补 escapeHtml，
+                // 与同模板内已转义的 name/desc 一致；data-star 已带 escapeHtml（存量，不动）。
+                // cr.tag/cr.tier 同为未运行时校验的远端数据（plaza-creators.ts 无白名单校验），
+                // 按「全部远端/用户数据串走 escapeHtml」原则在模板位补转义（防属性逃逸注入）。
                 card.innerHTML =
                     tierBar +
-                    `<div class="plaza-cr-header"><div class="plaza-cr-avatar-container"><div class="plaza-cr-avatar-ring${cr.tier ? ` plaza-cr-ring-${cr.tier}` : ''}"></div><div class="plaza-cr-avatar plaza-cr-avatar-fb">${cr.name.charAt(0).toUpperCase()}</div></div><div class="plaza-cr-name-row"><span class="plaza-cr-name">${escapeHtml(cr.name)}</span><span class="plaza-cr-star" data-star="${escapeHtml(cr.name)}">${fav}</span></div></div><div class="plaza-cr-desc">${escapeHtml(cr.desc)}</div><div class="plaza-cr-footer"><span class="plaza-cr-tag plaza-cr-tag-${cr.tag}"><iconify-icon icon="${tagIcon}" width="10" height="10"></iconify-icon><span>${cr.tag}</span></span></div>`;
+                    `<div class="plaza-cr-header"><div class="plaza-cr-avatar-container"><div class="plaza-cr-avatar-ring${cr.tier ? ` plaza-cr-ring-${escapeHtml(cr.tier)}` : ''}"></div><div class="plaza-cr-avatar plaza-cr-avatar-fb">${escapeHtml(cr.name.charAt(0).toUpperCase())}</div></div><div class="plaza-cr-name-row"><span class="plaza-cr-name">${escapeHtml(cr.name)}</span><span class="plaza-cr-star" data-star="${escapeHtml(cr.name)}">${fav}</span></div></div><div class="plaza-cr-desc">${escapeHtml(cr.desc)}</div><div class="plaza-cr-footer"><span class="plaza-cr-tag plaza-cr-tag-${escapeHtml(cr.tag)}"><iconify-icon icon="${tagIcon}" width="10" height="10"></iconify-icon><span>${escapeHtml(cr.tag)}</span></span></div>`;
                 card.addEventListener('click', (e) => {
                     if ((e.target as HTMLElement).closest('.plaza-cr-star')) {
                         return;
