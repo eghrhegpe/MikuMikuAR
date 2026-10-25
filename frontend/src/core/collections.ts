@@ -13,9 +13,9 @@ export function ensureArray<T>(x: T | T[]): T[] {
 /** 按谓词过滤对象键，返回仅含满足条件键值对的新对象。 */
 export function filterKeys<T extends object>(obj: T, pred: (key: keyof T) => boolean): Partial<T> {
     const result: Partial<T> = {};
-    if (obj === null || obj === undefined) {
-        return result;
-    }
+    // [audit:fix 2026-10] 删除 nullish 死分支：T extends object 在类型面不含 null/undefined，
+    // 全仓 grep 无生产调用点向 filterKeys 透传 null/undefined（仅本模块单测曾有 any-cast 用例，已同步删除），
+    // 保留的守卫永远不可达，故删除。
     for (const key of Object.keys(obj) as (keyof T)[]) {
         if (pred(key)) {
             // 使用 defineProperty 而非 result[key] = ...，避免 "__proto__" 等键触发原型 setter 造成原型污染。

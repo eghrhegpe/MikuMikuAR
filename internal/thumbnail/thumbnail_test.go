@@ -217,3 +217,119 @@ func tmpFiles(t *testing.T, thumbDir, hash string) []string {
 	}
 	return names
 }
+// shotTmpFiles lists the ".tmp." files left behind by SaveScreenshot writes
+// for a given basename; the tests assert none survive.
+func shotTmpFiles(t *testing.T, dir, filename string) []string {
+	t.Helper()
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatalf("list %s: %v", dir, err)
+	}
+	var names []string
+	prefix := filepath.Base(filename) + ".tmp."
+	for _, e := range entries {
+		if strings.HasPrefix(e.Name(), prefix) {
+			names = append(names, e.Name())
+		}
+	}
+	return names
+}
+
+// TestSaveScreenshotAtomic verifies [audit:fix 2026-10] SaveScreenshot atomic
+// write semantics: invalid base64 -> error with no file and no tmp residue;
+// valid base64 -> byte-exact file under its basename, its unique tmp renamed
+// away (mirrors Save's atomic pattern).
+func TestSaveScreenshotAtomic(t *testing.T) {
+	dir := t.TempDir()
+	name := "shot.png"
+	// Invalid base64: error and nothing written (no file, no tmp residue).
+	if err := SaveScreenshot(dir, name, "!!!not-base64!!!"); err == nil {
+		t.Fatal("SaveScreenshot accepted invalid base64, want error")
+	}
+	if _, err := os.Stat(filepath.Join(dir, name)); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("file exists after failed SaveScreenshot: %v", err)
+	}
+	if names := shotTmpFiles(t, dir, name); len(names) != 0 {
+		t.Fatalf(".tmp residue after failed SaveScreenshot: %v", names)
+	}
+
+	// Valid base64: byte-exact file under its basename.
+	payload := []byte{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x01, 0x02, 0x03}
+	if err := SaveScreenshot(dir, name, base64.StdEncoding.EncodeToString(payload)); err != nil {
+		t.Fatalf("SaveScreenshot: %v", err)
+	}
+	got, err := os.ReadFile(filepath.Join(dir, name))
+	if err != nil {
+		t.Fatalf("read %s: %v", filepath.Join(dir, name), err)
+	}
+	if !bytes.Equal(got, payload) {
+		t.Fatalf("saved screenshot bytes mismatch: %x", got)
+	}
+	if names := shotTmpFiles(t, dir, name); len(names) != 0 {
+		t.Fatalf(".tmp residue after successful SaveScreenshot: %v", names)
+	}
+}
+
+// TestSaveScreenshotConcurrentSameKey: four goroutines write different PNG
+// payloads to the same dir+filename. No panic, no deterministic EPERM
+// regression; the final file must be byte-identical to one of the four
+// payloads ([audit:fix 2026-10] each SaveScreenshot renames its own unique
+// tmp file, so a torn screenshot can never be cached). Precedent:
+// TestSaveConcurrentSameKey. Run with -race.
+func TestSaveScreenshotConcurrentSameKey(t *testing.T) {
+	dir := t.TempDir()
+	name := "shot.png"
+	payloads := [][]byte{
+		[]byte("png-payload-A"),
+		[]byte("png-payload-B-longer"),
+		[]byte("png-payload-C"),
+		[]byte("png-payload-D"),
+	}
+	const writers = 4
+	errCh := make(chan error, writers)
+	var wg sync.WaitGroup
+	for _, payload := range payloads {
+		wg.Add(1)
+		go func(payload []byte) {
+			defer wg.Done()
+			if err := SaveScreenshot(dir, name, base64.StdEncoding.EncodeToString(payload)); err != nil {
+				errCh <- err
+			}
+		}(payload)
+	}
+	wg.Wait()
+	close(errCh)
+	errs := make([]error, 0, writers)
+	for err := range errCh {
+		errs = append(errs, err)
+	}
+	// [audit:fix 2026-10] A unique tmp file per call eliminates the
+	// shared-handle contention of a fixed ".tmp" name (the EPERM the old
+	// code produced under concurrent same-key writes). On Windows a
+	// destination rename may still transiently lose to a sibling ("file in
+	// use"), which the precedent tolerates. Acceptance: no-panic + a
+	// complete final file; all four failing is a real defect.
+	if len(errs) == writers {
+		t.Fatalf("all %d concurrent SaveScreenshot writes failed: %v", writers, errs)
+	}
+	for _, err := range errs {
+		t.Logf("transient concurrent SaveScreenshot error (tolerated): %v", err)
+	}
+	got, err := os.ReadFile(filepath.Join(dir, name))
+	if err != nil {
+		t.Fatalf("read final screenshot: %v", err)
+	}
+	matched := false
+	for _, payload := range payloads {
+		if bytes.Equal(got, payload) {
+			matched = true
+			break
+		}
+	}
+	if !matched {
+		t.Fatalf("final screenshot (%d bytes) matches none of the concurrent payloads — torn write leaked past rename", len(got))
+	}
+	if names := shotTmpFiles(t, dir, name); len(names) != 0 {
+		t.Fatalf(".tmp residue after concurrent SaveScreenshot: %v", names)
+	}
+}

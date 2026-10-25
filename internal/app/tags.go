@@ -1,5 +1,7 @@
 package app
 
+import "sort"
+
 // ======== Tag System ========
 
 // AddTag adds a tag to a model identified by its libraryRef.
@@ -61,6 +63,8 @@ func (a *App) GetAllTags() []string {
 			}
 		}
 	}
+	// [audit:fix 2026-10] cfg.Tags 是 map，迭代顺序不定 → 返回前排序保证确定性
+	sort.Strings(result)
 	return result
 }
 

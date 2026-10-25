@@ -17,10 +17,13 @@ export function debounce<A extends unknown[]>(
         if (timer !== null) {
             clearTimeout(timer);
         }
+        // [audit:fix 2026-10] NaN 入口归一为 0：setTimeout 本会把 NaN 强转 0ms 立即执行（意外行为）；
+        // 显式收口语义——仅 NaN 视为 0，Infinity 保留「永不执行」的合法语义（负数 setTimeout 本就按 0 处理，不动）。
+        const delay = Number.isNaN(ms) ? 0 : ms;
         timer = setTimeout(() => {
             timer = null;
             fn(...args);
-        }, ms);
+        }, delay);
     };
     debounced.cancel = (): void => {
         if (timer !== null) {

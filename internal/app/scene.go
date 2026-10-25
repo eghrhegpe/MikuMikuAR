@@ -10,20 +10,22 @@ import (
 	"strings"
 
 	"mikumikuar/internal/dialogs"
+	"mikumikuar/internal/util"
 )
 
 // ======== Scene File I/O ========
 
 // SaveSceneFile writes a JSON scene file to the given path.
 func (a *App) SaveSceneFile(jsonStr string, path string) error {
-	return os.WriteFile(path, []byte(jsonStr), 0644)
+	// [audit:fix 2026-10] 裸 os 错误无上下文，包裹（util.WrapError(err==nil) 返回 nil）
+	return util.WrapError("SaveSceneFile", os.WriteFile(path, []byte(jsonStr), 0644))
 }
 
 // LoadSceneFile reads a JSON scene file from the given path.
 func (a *App) LoadSceneFile(path string) (string, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return "", err
+		return "", util.WrapError("LoadSceneFile", err) // [audit:fix 2026-10] 裸 os 错误无上下文，包裹
 	}
 	return string(data), nil
 }
@@ -114,7 +116,13 @@ func (a *App) BundleScene(targetPath string, sceneJSON string, assetPaths []stri
 	if err != nil {
 		return fmt.Errorf("create bundle file: %w", err)
 	}
-	defer f.Close()
+	// [audit:fix 2026-10] 原 defer f.Close() 丢弃 Close 错误（audit 残余）；改为出错时 safeLogWarning 记一行。
+	// 下方 zw.Close() 的显式检错保持不动（defer zw.Close() 仍作泄漏兜底）。
+	defer func() {
+		if cerr := f.Close(); cerr != nil {
+			a.safeLogWarning("[scene] BundleScene: defer f.Close() error: %v", cerr)
+		}
+	}()
 
 	zw := zip.NewWriter(f)
 	defer zw.Close()

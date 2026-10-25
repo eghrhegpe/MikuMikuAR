@@ -4,6 +4,8 @@ import (
 	"encoding/binary"
 	"math"
 	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -183,5 +185,31 @@ func TestParsePMXHeader_TrimsNullsAndSpaces(t *testing.T) {
 	}
 	if meta.NameEn != "Hatsune" {
 		t.Errorf("NameEn = %q, want %q", meta.NameEn, "Hatsune")
+	}
+}
+func TestParsePMXHeader_LargeFile(t *testing.T) {
+	// [audit:fix 2026-10] Behavior for a normal large file (>= 8192 bytes):
+	// the first 8192 bytes are read via io.ReadFull, so early header fields
+	// still parse and no error is returned. The long comment pushes the file
+	// past 8192 bytes, which is exactly the case a single short Read could
+	// once have silently truncated.
+	dir := t.TempDir()
+	path := filepath.Join(dir, "large.pmx")
+	long := strings.Repeat("C", 12000)
+	writeTestPMX(t, path, 1, []string{"NameJp", "NameEn", long, "CommentEn"})
+	if fi, err := os.Stat(path); err != nil {
+		t.Fatalf("stat large file: %v", err)
+	} else if fi.Size() <= 8192 {
+		t.Fatalf("test precondition: file is %d bytes, want > 8192", fi.Size())
+	}
+	meta, err := ParsePMXHeader(path)
+	if err != nil {
+		t.Fatalf("ParsePMXHeader on large file: %v", err)
+	}
+	if meta.NameJp != "NameJp" {
+		t.Errorf("NameJp = %q, want %q", meta.NameJp, "NameJp")
+	}
+	if meta.NameEn != "NameEn" {
+		t.Errorf("NameEn = %q, want %q", meta.NameEn, "NameEn")
 	}
 }

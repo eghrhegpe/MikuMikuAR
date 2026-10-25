@@ -85,28 +85,27 @@ func (a *App) AiStreamChat(req llm.ChatRequest) error {
 		defer func() {
 			if r := recover(); r != nil {
 				a.safeLogError("[ai-stream][go] StreamChat goroutine panic: %v", r)
-				if a.wailsApp != nil {
-					a.wailsApp.Event.Emit("ai:error", map[string]string{"error": fmt.Sprintf("后端处理异常: %v", r)})
-				}
+				a.emitAIEvent("ai:error", map[string]string{"error": fmt.Sprintf("后端处理异常: %v", r)}) // [audit:fix 2026-10] 等价于原内联 nil 守卫
 			}
 		}()
 		eventCount := 0
 		client.StreamChat(ctx, req, func(ev llm.StreamEvent) {
 			eventCount++
+			// [audit:fix 2026-10] 四 case 的 emit 统一走 emitAIEvent（nil 安全）
 			switch ev.Type {
 			case "chunk":
-				a.wailsApp.Event.Emit("ai:chunk", map[string]string{
+				a.emitAIEvent("ai:chunk", map[string]string{
 					"delta":     ev.Delta,
 					"reasoning": boolToStr(ev.Reasoning),
 				})
 			case "done":
 				a.safeLogInfo("[ai-stream][go] StreamChat 完成 事件数=%d", eventCount)
-				a.wailsApp.Event.Emit("ai:done", map[string]string{})
+				a.emitAIEvent("ai:done", map[string]string{})
 			case "error":
 				a.safeLogWarning("[ai-stream][go] StreamChat 错误: %s", ev.Error)
-				a.wailsApp.Event.Emit("ai:error", map[string]string{"error": ev.Error})
+				a.emitAIEvent("ai:error", map[string]string{"error": ev.Error})
 			case "tool_call":
-				a.wailsApp.Event.Emit("ai:tool_call", map[string]string{
+				a.emitAIEvent("ai:tool_call", map[string]string{
 					"toolName": ev.ToolName,
 					"toolArgs": ev.ToolArgs,
 					"toolId":   ev.ToolId,
@@ -124,6 +123,16 @@ func (a *App) AiCancelStream() {
 	if a.llmCancel != nil {
 		a.llmCancel()
 		a.llmCancel = nil
+	}
+}
+
+// emitAIEvent 安全地向前端 emit AI 事件：仅在 wailsApp 非 nil 时 emit
+// （测试或 SetWailsApp 之前 wailsApp 为 nil，直接 Event.Emit 会 panic）。
+// [audit:fix 2026-10] 由 StreamChat goroutine 内四 case 抽出：原先仅 recover 路径有 nil 守卫，
+// 直接 a.wailsApp.Event.Emit 在 wailsApp==nil 时 panic，被 recover 兜住但走错误路径。
+func (a *App) emitAIEvent(name string, payload map[string]string) {
+	if a.wailsApp != nil {
+		a.wailsApp.Event.Emit(name, payload)
 	}
 }
 

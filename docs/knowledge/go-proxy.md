@@ -23,8 +23,8 @@ symbols:
   - isBlockedIP
   - isWebSocketUpgrade
   - maxPlazaDownloadBytes
-  - maxPlazaDownloadReqBytes
   - maxPlazaHTMLBody
+  - maxPlazaReqBytes
   - plazaDialContext
   - plazaDownloadClient
   - plazaInjectScript

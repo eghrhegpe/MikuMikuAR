@@ -81,10 +81,8 @@ describe('ADR-101 P3: pure collection & json helpers', () => {
             expect(keys).toEqual(['x', 'y']);
         });
 
-        it('returns empty object for nullish input', () => {
-            expect(filterKeys(null as unknown as { a: number }, () => true)).toEqual({});
-            expect(filterKeys(undefined as unknown as { a: number }, () => true)).toEqual({});
-        });
+        // [audit:fix 2026-10] 「nullish input」用例已删：filterKeys 的 nullish 守卫分支随死分支一并移除
+        // （全仓无生产调用点透传 null/undefined），原有 any-cast 用例依赖该分支，不再成立。
 
         it('ignores inherited enumerable keys', () => {
             const proto = { inherited: 1 };

@@ -58,6 +58,17 @@ func TestAiSetLLMConfig_KeyUpdatable(t *testing.T) {
 	}
 }
 
+// TestEmitAIEvent_NilWailsAppSafe 守护 audit 修复：wailsApp 为 nil（测试环境 /
+// SetWailsApp 之前）时，StreamChat goroutine 内四 case 的 emit 路径走 emitAIEvent，
+// 不得 panic。修复前 case 直接 a.wailsApp.Event.Emit(...) → nil 时 panic，
+// 被 recover 兜住但走了错误路径（仅 recover 分支 emit 事件）。
+func TestEmitAIEvent_NilWailsAppSafe(t *testing.T) {
+	a := &App{} // wailsApp 为 nil
+	for _, name := range []string{"ai:chunk", "ai:done", "ai:error", "ai:tool_call"} {
+		a.emitAIEvent(name, map[string]string{}) // 不得 panic
+	}
+}
+
 // mustLLMKey 读内部 Config 的 AIKey（getLLMConfig 会剥离 key，不能用于测试断言）。
 func (a *App) mustLLMKey(t *testing.T) string {
 	t.Helper()

@@ -653,10 +653,21 @@ export function bootstrap(): void {
     startRenderLoop();
 
     // Boot the app, then on Android prompt for storage permission if needed.
+    // [audit:fix 2026-10] 调度侧平台门控：非 Android 机不再空转 1.5s 游离定时器
+    // （checkAndroidStoragePermission 入口的 isAndroidPlatform 守卫此前对每次启动都空跑一遍）。
+    // timer id 登记进 _initDisposables（HMR 重跑 init() 的既有幂等清理挂点）：
+    // 1.5s 内再次 bootstrap 时 _initCleanup 清掉上一轮 pending timer；
+    // 该链唯一的生命周期挂点就是 _initDisposables（页面无 unload/pagehide 钩子，
+    // 未新建生命周期机制），且 checkAndroidStoragePermission 经 androidStoragePromptShown
+    // 幂等，旧 timer 即便残留也无副作用。
     init()
         .then(() => {
+            if (!isAndroidPlatform()) {
+                return;
+            }
             // Small delay so the main UI is ready before the permission dialog.
-            setTimeout(checkAndroidStoragePermission, 1500);
+            const androidStorageTimer = setTimeout(checkAndroidStoragePermission, 1500);
+            _initDisposables.push({ dispose: () => clearTimeout(androidStorageTimer) });
         })
         .catch(console.error);
 }

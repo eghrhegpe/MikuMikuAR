@@ -38,6 +38,7 @@ symbols:
   - boolToStr
   - classifyConnectionError
   - deltaToolCall
+  - emitAIEvent
   - fetchModelsFrom
   - getLLMClient
   - getLLMConfig

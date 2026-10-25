@@ -543,6 +543,22 @@ describe('checkAndroidStoragePermission（Android 存储权限）', () => {
         await bootAndSettle();
         expect(request).not.toHaveBeenCalled();
     });
+
+    // [audit:fix 2026-10] 调度侧平台门控：bootstrap 仅在 Android 平台排布 1500ms
+    // 存储权限检查 timer，非 Android 平台零 timer 空转。
+    it('[audit:fix 2026-10] 门控：非 Android 平台不排布 1500ms 权限检查 timer', async () => {
+        const timerSpy = vi.spyOn(globalThis, 'setTimeout');
+        await bootAndSettle();
+        expect(timerSpy).not.toHaveBeenCalled();
+    });
+
+    it('[audit:fix 2026-10] 门控：Android 平台排布 checkAndroidStoragePermission @1500ms', async () => {
+        const timerSpy = vi.spyOn(globalThis, 'setTimeout');
+        shared.isAndroidPlatform.mockReturnValue(true);
+        await bootAndSettle();
+        expect(timerSpy).toHaveBeenCalledTimes(1);
+        expect(timerSpy.mock.calls[0][1]).toBe(1500);
+    });
 });
 
 describe('registerRuntimeEventHandlers（运行时事件订阅）', () => {

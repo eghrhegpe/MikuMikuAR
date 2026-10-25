@@ -151,6 +151,34 @@ func SaveScreenshot(dir string, filename string, base64PNG string) error {
 	}
 	// 路径净化：仅取 basename，防调用方传 ../ 或绝对路径写到目录之外
 	// （前端已做 replace 净化，此处是绑定方法的最后一道防线）。
-	path := filepath.Join(dir, filepath.Base(filename))
-	return os.WriteFile(path, data, 0644)
+	base := filepath.Base(filename)
+	// [audit:fix 2026-10] Atomic write mirroring Save above (commit 06f1adbf
+	// pattern: unique tmp sibling + Chmod + Write + Close + os.Rename + deferred
+	// tmp cleanup). os.WriteFile wrote the .png in place, so a crash or a
+	// concurrent same-key write could cache a torn file. The unique tmp name
+	// (CreateTemp random suffix) removes the deterministic "file in use" (EPERM)
+	// contention on Windows when the same dir+filename is saved concurrently; the
+	// deferred Remove is a no-op after a successful rename.
+	path := filepath.Join(dir, base)
+	tmpFile, err := os.CreateTemp(dir, base+".tmp.")
+	if err != nil {
+		return err
+	}
+	tmpPath := tmpFile.Name()
+	defer func() {
+		os.Remove(tmpPath)
+	}()
+	if err := tmpFile.Chmod(0644); err != nil {
+		tmpFile.Close()
+		os.Remove(tmpPath)
+		return err
+	}
+	if _, err := tmpFile.Write(data); err != nil {
+		tmpFile.Close()
+		return err
+	}
+	if err := tmpFile.Close(); err != nil {
+		return err
+	}
+	return os.Rename(tmpPath, path)
 }

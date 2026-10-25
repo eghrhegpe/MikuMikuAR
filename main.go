@@ -4,6 +4,7 @@ import (
 	"embed"
 	"log"
 	"os"
+	"strconv"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"mikumikuar/internal/app"
@@ -66,8 +67,15 @@ func main() {
 // MMCAR_DEBUG_PORT is set (e.g. by start-e2e.ps1). Returns nil otherwise so the
 // debug port is never exposed in normal/production runs.
 func e2eDebugBrowserArgs() []string {
-	if port := os.Getenv("MMCAR_DEBUG_PORT"); port != "" {
-		return []string{"--remote-debugging-port=" + port}
+	port := os.Getenv("MMCAR_DEBUG_PORT")
+	if port == "" {
+		return nil
 	}
-	return nil
+	// [audit:fix 2026-10] 原实现零校验："99999"/"abc" 等坏值原样透传给 Chromium；
+	// 现仅当 0..65535 的合法端口才下发，否则返回 nil（与 doc comment「未设置时返回 nil」语义一致）。
+	n, err := strconv.Atoi(port)
+	if err != nil || n < 0 || n > 65535 {
+		return nil
+	}
+	return []string{"--remote-debugging-port=" + strconv.Itoa(n)}
 }

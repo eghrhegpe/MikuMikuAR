@@ -42,10 +42,22 @@ func parsePMXHeaderUnsafe(path string) (*PMXMeta, error) {
 
 	// Read first 8192 bytes — enough for the header area including long comments
 	buf := make([]byte, 8192)
-	n, err := f.Read(buf)
-	// EOF 且已读到数据（n>0）属正常：小 PMX <8192 字节正好读完；
-	// 仅真正的 I/O 错误或空文件（读到 0 字节的 EOF）才返回错误。
-	if err != nil && !(errors.Is(err, io.EOF) && n > 0) {
+	n, err := io.ReadFull(f, buf)
+	// [audit:fix 2026-10] io.ReadFull replaces a single f.Read(buf): a lone
+	// Read is not guaranteed to fill the buffer (short reads are legal), so a
+	// short read would silently truncate the header parse. ReadFull retries
+	// until the buffer is full or a real end-of-stream error and can end in
+	// four outcomes, of which only n == 0 (empty file) is fatal; the rest
+	// continue parsing with the real n:
+	//   err == nil                 : buffer full, file >= 8192 bytes — normal.
+	//   err == io.ErrUnexpectedEOF : small file (< 8192) hit EOF early, n > 0 —
+	//                                 keep going, parse buf[:n].
+	//   err == io.EOF && n > 0     : stream ended with a filled buffer — normal
+	//                                 (a regular file of exactly 8192 bytes in
+	//                                 fact surfaces as err == nil; this branch
+	//                                 stays as a defensive guard).
+	//   n == 0                     : empty file — the only fatal outcome.
+	if err != nil && !errors.Is(err, io.ErrUnexpectedEOF) && !(errors.Is(err, io.EOF) && n > 0) {
 		return nil, WrapError(op, fmt.Errorf("read header: %w", err))
 	}
 	meta := parsePMXHeaderBytes(buf[:n])
@@ -91,6 +103,10 @@ func parsePMXHeaderBytes(buf []byte) *PMXMeta {
 		}
 		textLen := int(binary.LittleEndian.Uint32(buf[offset : offset+4]))
 		offset += 4
+		// [audit:fix 2026-10] textLen is an int(uint32): on 64-bit it is always
+		// >= 0, so the `textLen < 0` term is dead there; on a 32-bit platform
+		// int(uint32max) wraps to a negative value, and that term is what keeps
+		// this bound check alive. Do not remove it.
 		if textLen < 0 || offset+textLen > len(buf) {
 			return meta
 		}
