@@ -18,6 +18,7 @@ symbols:
   - SelectDir
   - ToggleFavorite
   - expandZipEntries
+  - favoriteTag
   - formatByCategory
   - mapCategoryKey
   - maxZipEntryCount

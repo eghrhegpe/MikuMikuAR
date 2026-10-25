@@ -36,6 +36,7 @@ symbols:
   - presetFilters
   - retargetFilters
   - sceneFilters
+  - validStartDir
   - vmdFilters
   - vpdFilters
 invariants:

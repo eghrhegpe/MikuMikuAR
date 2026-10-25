@@ -87,7 +87,17 @@ export function clearCameraVmd(): void {
         if (getCameraMode() === 'vmd' && _switchModeCallback) {
             // switchCameraMode('orbit') 已对当前相机（即 MmdCamera）执行
             // detachControl + removeCamera + dispose，此处不能再释放第二次。
+            // [audit:fix 2026-10] P3 G2-② 收口：dispose 相机实例不清除 WASM 池条目
+            // （babylon-mmd 池表按 handle 记账、不随 dispose 清除——createVmdCamera 注释先例），
+            // 每轮 vmd→orbit 切换泄漏 1 条。回调前捕获旧值，回调后显式释放池条目；
+            // 对已 disposed 实例调 destroyRuntimeAnimation 安全（池按 handle 记账，重复释放幂等），
+            // 与手动分支同款语义 + 同款 ?. 防御 mock 缺方法。
+            const oldCam = _mmdCamera;
+            const oldHandle = _cameraAnimationHandle;
             _switchModeCallback('orbit');
+            if (oldHandle !== null) {
+                oldCam.destroyRuntimeAnimation?.(oldHandle);
+            }
         } else {
             // 非 vmd 模式（如 orbit 下预载 VMD 后清除）回调不会处理，手动释放 GPU 资源。
             // 若 _mmdCamera 已在 vmd→orbit 切换中被 switchCameraMode dispose，则跳过二次释放。

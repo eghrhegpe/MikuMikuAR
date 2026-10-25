@@ -12,6 +12,14 @@ import (
 	"mikumikuar/internal/util"
 )
 
+// favoriteTag 是 ToggleFavorite 增删的内置「收藏」tag。
+//
+// 数据级跨语言常量：Go 侧写入该 tag 值，前端按同一字面量匹配/过滤
+//（frontend/src/menus/library-actions.ts:541,543,569、model-detail.ts:915,923,926,1023,1072）。
+// i18n 化前不得改动字面量（改字面量=存档破坏）；任何变更需 Go+前端两侧同步。
+// [audit:fix 2026-10] 「收藏」字面量收敛为包级常量（纯重构，行为不变）。
+const favoriteTag = "收藏"
+
 // SelectDir opens a directory picker dialog.
 // On Android: returns the current resource root directly (Wails v3 does not
 // support directory selection on Android). Users switch storage mode via
@@ -352,13 +360,13 @@ func (a *App) ToggleFavorite(libraryRef string) error {
 				tags := cfg.Tags[ref]
 				hasFav := false
 				for _, t := range tags {
-					if t == "收藏" {
+					if t == favoriteTag {
 						hasFav = true
 						break
 					}
 				}
 				if !hasFav {
-					cfg.Tags[ref] = append(tags, "收藏")
+					cfg.Tags[ref] = append(tags, favoriteTag)
 				}
 			}
 			cfg.Favorites = nil
@@ -370,14 +378,14 @@ func (a *App) ToggleFavorite(libraryRef string) error {
 		found := false
 		filtered := make([]string, 0, len(tags))
 		for _, t := range tags {
-			if t == "收藏" {
+			if t == favoriteTag {
 				found = true
 				continue
 			}
 			filtered = append(filtered, t)
 		}
 		if !found {
-			filtered = append(filtered, "收藏")
+			filtered = append(filtered, favoriteTag)
 		}
 		cfg.Tags[libraryRef] = filtered
 	}, false)

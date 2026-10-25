@@ -8,13 +8,31 @@ import (
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
+// validStartDir reports whether startDir is a non-empty path that currently
+// resolves to an existing filesystem entry.
+//
+// [buglog:2026-07-17 half-fix][audit:fix 2026-10] 先例来自 SelectDir（原 :173-179：
+// startDir 非空且 os.Stat 通过才 SetDirectory，失效时回退系统默认目录，避免
+// GetFileAttributesEx 失败导致对话框打不开）；OpenFile/SaveFile 两处遗留裸
+// SetDirectory(startDir) 为同名缺陷。三处统一走本函数：失效 → 不设目录，
+// 对话框落系统默认（行为不变）。
+func validStartDir(startDir string) bool {
+	if startDir == "" {
+		return false
+	}
+	_, err := os.Stat(startDir)
+	return err == nil
+}
+
 func OpenFile(wailsApp *application.App, title string, filters []application.FileFilter, startDir string) (string, error) {
 	if wailsApp == nil {
 		return "", fmt.Errorf("application not initialized")
 	}
 	dialog := wailsApp.Dialog.OpenFile()
 	dialog.SetTitle(title)
-	if startDir != "" {
+	// [buglog:2026-07-17 half-fix][audit:fix 2026-10] 裸 SetDirectory(startDir) 未验证（2026-07-17 只修了 SelectDir，此为遗留缺陷之一）。
+	// 改走 validStartDir：失效 → 不设目录，对话框落系统默认（避免 GetFileAttributesEx 失败打不开对话框）。
+	if validStartDir(startDir) {
 		dialog.SetDirectory(startDir)
 	}
 	dialog.CanChooseFiles(true)
@@ -138,7 +156,9 @@ func SaveFile(wailsApp *application.App, title, filename string, filters []appli
 		Filename: filename,
 		Filters:  filters,
 	})
-	if startDir != "" {
+	// [buglog:2026-07-17 half-fix][audit:fix 2026-10] 裸 SetDirectory(startDir) 未验证（2026-07-17 只修了 SelectDir，此为遗留缺陷之一）。
+	// 改走 validStartDir：失效 → 不设目录，对话框落系统默认（避免 GetFileAttributesEx 失败打不开对话框）。
+	if validStartDir(startDir) {
 		dialog.SetDirectory(startDir)
 	}
 	path, err := dialog.PromptForSingleSelection()
@@ -172,10 +192,9 @@ func SelectDir(wailsApp *application.App, title, startDir string) (string, error
 	dialog.SetTitle(title)
 	// [buglog:2026-07-17] 起始目录失效时回退到用户主目录，避免 GetFileAttributesEx 失败导致对话框打不开。
 	// 失效场景：测试污染 resource_root、U 盘拔出、网络盘断开等。
-	if startDir != "" {
-		if _, err := os.Stat(startDir); err == nil {
-			dialog.SetDirectory(startDir)
-		}
+	// [buglog:2026-07-17 half-fix][audit:fix 2026-10] 收敛到 validStartDir，与 OpenFile/SaveFile 三处统一（行为不变）：失效 → 不设目录，对话框落系统默认。
+	if validStartDir(startDir) {
+		dialog.SetDirectory(startDir)
 	}
 	dialog.CanChooseDirectories(true)
 	dialog.CanChooseFiles(false)

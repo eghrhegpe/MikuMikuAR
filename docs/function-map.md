@@ -985,10 +985,10 @@
 | `setScriptedSubMode()` | `scene/camera/camera-state:209` | — |
 | `setSurroundPaused()` | `scene/camera/camera-state:257` | — |
 | `setViewMatrixHandle()` | `scene/camera/camera-state:358` | — |
-| `animateCameraVmd()` | `scene/camera/camera-vmd:113` | Animate the VMD camera to a given 30fps frame time. |
+| `animateCameraVmd()` | `scene/camera/camera-vmd:123` | Animate the VMD camera to a given 30fps frame time. |
 | `clearCameraVmd()` | `scene/camera/camera-vmd:84` | — |
-| `createVmdCamera()` | `scene/camera/camera-vmd:120` | 创建 VMD 相机（若已存在且未销毁则复用）。供 camera.ts switchCameraMode 在 vmd 分支使用。 |
-| `hasCameraAnimationHandle()` | `scene/camera/camera-vmd:151` | VMD 相机动画句柄是否就绪（switchCameraMode 在 vmd 分支前置检查）。 |
+| `createVmdCamera()` | `scene/camera/camera-vmd:130` | 创建 VMD 相机（若已存在且未销毁则复用）。供 camera.ts switchCameraMode 在 vmd 分支使用。 |
+| `hasCameraAnimationHandle()` | `scene/camera/camera-vmd:161` | VMD 相机动画句柄是否就绪（switchCameraMode 在 vmd 分支前置检查）。 |
 | `loadCameraVmd()` | `scene/camera/camera-vmd:37` | Load camera animation from a VMD (MmdAnimation) and create an MmdCamera. |
 | `setSwitchCameraModeCallback()` | `scene/camera/camera-vmd:32` | camera.ts 启动时注入 switchCameraMode 回调。 |
 | `CameraBehavior()` | `scene/camera/camera:321` | — |
