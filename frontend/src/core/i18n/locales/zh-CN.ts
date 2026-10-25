@@ -1186,7 +1186,9 @@ export const zhCN: Record<string, string> = {
     'env-preset.applied': '✓ 已应用预设：{label}',
     'env-preset.deleted': '✓ 已删除预设：{label}',
     'env-preset.confirmDelete': '确定删除「{label}」？',
-    'env-preset.saveFailed': '✗ 保存预设失败',
+        'env-preset.save': '✗ 保存预设失败', // [audit:fix 2026-10] feedbackError action (env-preset-levels.ts:137)
+    'feedback.savedSuccess': '✓ 已保存', // [audit:fix 2026-10] feedbackInfo action (env-preset-levels.ts:140)
+'env-preset.saveFailed': '✗ 保存预设失败',
     'env-preset.title': '环境预设',
     'env-preset.sceneMood': '场景氛围',
     'env-preset.stageA': '舞台-A',

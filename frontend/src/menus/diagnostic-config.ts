@@ -279,7 +279,14 @@ export function applyProvider(provider: AiConfigProvider): void {
     }
     diagState.fetchedModels = [];
     void (async () => {
-        await doSaveConfig();
+        try {
+            await doSaveConfig();
+        } catch (err) {
+            // [audit:fix 2026-10] doSaveConfig re-throw（:255），原 void IIFE 无 catch → unhandled rejection 且 refresh 短路；
+            // 失败时 UI 已切 provider 而后端仍旧，记一行日志留痕，refresh 有意不跑（后端未持久化新 provider）
+            logWarn('ai-config', 'applyProvider save failed:', err);
+            return;
+        }
         void refreshCaps();
         void refreshModelList();
     })();
@@ -706,7 +713,15 @@ function renderConfigCard(c: HTMLElement): void {
         modelRefresh.disabled = true;
         modelRefresh.textContent = '\u2026';
         try {
-            await flushAndSave();
+            const saved = await flushAndSave();
+            if (!saved.ok) {
+                // [audit:fix 2026-10] 原忽略 {ok,error}：ok:false 仍 fetchModels + 自动填 model，给用户「已保存」错觉；
+                // 与保存按钮失败路径（:746-753）同款反馈 + captureError
+                statusEl.textContent = `${t('ai.config.saveFailed')}: ${saved.error ?? ''}`;
+                statusEl.style.color = 'var(--danger)';
+                captureError('ai-config', saved.error ?? 'save failed', undefined);
+                return;
+            }
             const models = (await diagState.ai.fetchModels?.()) ?? [];
             diagState.fetchedModels = models;
             populateModelDatalist(models);

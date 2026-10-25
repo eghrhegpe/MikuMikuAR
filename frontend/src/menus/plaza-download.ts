@@ -4,7 +4,7 @@
 import { events } from '../core/runtime-bridge';
 import { setStatus } from '../core/status-bar';
 import { t } from '../core/i18n/t';
-import { showErrorToast } from '../core/toast';
+import { showInfoToast } from '../core/toast';
 import { feedbackError, feedbackStatus } from '../core/feedback';
 // [doc:adr-271] 直连真实定义处，不经 library.ts 入口转发（入口 barrel 会把
 // library 子系统重新卷进 SCC：library.ts → library-setup → nav-actions → plaza-browser → 本文件）
@@ -169,7 +169,8 @@ export function installEventListeners(): void {
     setEventListenersInstalled(true);
     events.on('plaza:downloadComplete', (data) => {
         const d = data as unknown as { fileName: string; size: number };
-        showErrorToast(
+        // [audit:fix 2026-10] 下载成功走 error toast（红色断言语义错误）→ info 变体；8000 保持「查看库」动作可点击时长
+        showInfoToast(
             t('plaza.downloaded', { name: d.fileName, size: (d.size / 1024).toFixed(1) }),
             undefined,
             [

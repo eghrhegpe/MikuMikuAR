@@ -1145,7 +1145,9 @@ export const ko: Record<string, string> = {
     'env-preset.applied': '✓ 프리셋 적용됨: {label}',
     'env-preset.deleted': '✓ 프리셋 삭제됨: {label}',
     'env-preset.confirmDelete': '"{label}"을(를) 삭제하시겠습니까？',
-    'env-preset.saveFailed': '✗ 프리셋 저장 실패',
+        'env-preset.save': '✗ 프리스턽 저장 실패', // [audit:fix 2026-10] feedbackError action
+    'feedback.savedSuccess': '✓ 저장되었습니까까', // [audit:fix 2026-10] feedbackInfo action
+'env-preset.saveFailed': '✗ 프리셋 저장 실패',
     'env-preset.title': '환경 프리셋',
     'env-preset.sceneMood': '씬 무드',
     'env-preset.stageA': '스테이지-A',

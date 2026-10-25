@@ -1147,7 +1147,9 @@ export const ja: Record<string, string> = {
     'env-preset.applied': '✓ プリセットを適用しました: {label}',
     'env-preset.deleted': '✓ プリセットを削除しました: {label}',
     'env-preset.confirmDelete': '「{label}」を削除しますか？',
-    'env-preset.saveFailed': '✗ プリセットの保存に失敗しました',
+        'env-preset.save': '✗ プリストの保存に失敗しましした', // [audit:fix 2026-10] feedbackError action
+    'feedback.savedSuccess': '✓ 保存しましした', // [audit:fix 2026-10] feedbackInfo action
+'env-preset.saveFailed': '✗ プリセットの保存に失敗しました',
     'env-preset.title': '環境プリセット',
     'env-preset.sceneMood': 'シーンムード',
     'env-preset.stageA': 'ステージ-A',

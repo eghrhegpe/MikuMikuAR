@@ -1200,7 +1200,9 @@ export const en: Record<string, string> = {
     'env-preset.applied': '✓ Preset applied: {label}',
     'env-preset.deleted': '✓ Preset deleted: {label}',
     'env-preset.confirmDelete': 'Delete "{label}"?',
-    'env-preset.saveFailed': '✗ Failed to save preset',
+        'env-preset.save': '✗ Failed to save preset', // [audit:fix 2026-10] feedbackError action (env-preset-levels.ts:137)
+    'feedback.savedSuccess': '✓ Saved', // [audit:fix 2026-10] feedbackInfo action (env-preset-levels.ts:140)
+'env-preset.saveFailed': '✗ Failed to save preset',
     'env-preset.title': 'Environment Presets',
     'env-preset.sceneMood': 'Scene Mood',
     'env-preset.stageA': 'Stage A',

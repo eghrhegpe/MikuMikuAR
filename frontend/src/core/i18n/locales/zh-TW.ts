@@ -1130,7 +1130,9 @@ export const zhTW: Record<string, string> = {
     'env-preset.applied': '✓ 已套用預設：{label}',
     'env-preset.deleted': '✓ 已刪除預設：{label}',
     'env-preset.confirmDelete': '確定刪除「{label}」？',
-    'env-preset.saveFailed': '✗ 儲存預設失敗',
+        'env-preset.save': '✗ 儲存預設失敗', // [audit:fix 2026-10] feedbackError action
+    'feedback.savedSuccess': '✓ 已儲存', // [audit:fix 2026-10] feedbackInfo action
+'env-preset.saveFailed': '✗ 儲存預設失敗',
     'env-preset.title': '環境預設',
     'env-preset.sceneMood': '場景氛圍',
     'env-preset.stageA': '舞台-A',

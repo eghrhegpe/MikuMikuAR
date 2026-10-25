@@ -27,7 +27,7 @@ import {
 } from '../core/wails-bindings';
 import { getBaseName, normPath } from '../core/path';
 import { logWarn } from '../core/logger';
-import { showErrorToast } from '../core/toast';
+import { showErrorToast, showInfoToast } from '../core/toast';
 import { tryCatchStatus } from '../core/status-helpers';
 import { jsonStringify } from '../core/json-stringify';
 import { t } from '../core/i18n/t';
@@ -211,7 +211,8 @@ const _presetUndoStack = new Map<string, string>();
 const _autoApplying = new Set<string>();
 
 function showUndoToast(message: string, undoFn: () => void): void {
-    showErrorToast(message, undefined, [{ label: t('toast.undo'), onClick: undoFn }], 8000);
+    // [audit:fix 2026-10] 成功应用 + 撤销动作是中性/成功语义，原走 error 红色断言语义错误 → info 变体（8000 保持撤销可点击时长）
+    showInfoToast(message, undefined, [{ label: t('toast.undo'), onClick: undoFn }], 8000);
 }
 
 export async function tryAutoApplyPreset(id: string): Promise<void> {

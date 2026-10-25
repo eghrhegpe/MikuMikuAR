@@ -2166,13 +2166,13 @@
 | `updateSendButton()` | `menus/diagnostic-chat:381` | 更新发送/停止按钮 |
 | `updateSpeakToggle()` | `menus/diagnostic-chat:364` | 更新朗读开关 UI（不支持时隐藏） |
 | `applyProvider()` | `menus/diagnostic-config:264` | — |
-| `buildConfigSchema()` | `menus/diagnostic-config:478` | — |
+| `buildConfigSchema()` | `menus/diagnostic-config:485` | — |
 | `goKeyAllowsProceed()` | `menus/diagnostic-config:31` | — |
 | `loadInitialConfig()` | `menus/diagnostic-config:78` | — |
 | `persistConfig()` | `menus/diagnostic-config:223` | — |
 | `refreshCaps()` | `menus/diagnostic-config:105` | — |
-| `refreshModelList()` | `menus/diagnostic-config:309` | — |
-| `updateStatusBadge()` | `menus/diagnostic-config:375` | — |
+| `refreshModelList()` | `menus/diagnostic-config:316` | — |
+| `updateStatusBadge()` | `menus/diagnostic-config:382` | — |
 | `advancePendingQueue()` | `menus/diagnostic-control:226` | 推进队列 |
 | `applyPendingAction()` | `menus/diagnostic-control:164` | 应用 pending action |
 | `cancelPendingAction()` | `menus/diagnostic-control:209` | 取消 pending action |
@@ -2231,24 +2231,24 @@
 | `getWaterSchema()` | `menus/env-water-levels:31` | 导出 water schema 供 menu-registry 静态分析（ADR-093 元测试） |
 | `buildWindLevel()` | `menus/env-wind-levels:44` | — |
 | `getWindSchema()` | `menus/env-wind-levels:12` | 导出 wind schema 供 menu-registry 静态分析（ADR-093 元测试） |
-| `buildTagDetailLevel()` | `menus/library-actions:747` | — |
-| `buildTagsOverviewLevel()` | `menus/library-actions:747` | — |
-| `findLibraryModelByName()` | `menus/library-actions:747` | 按名称模糊搜索模型（纯查询，不触发加载）。供 ADR-155/197 NL 控制 resolve 使用，避免 resolve 阶段误触发真实加载。 |
-| `findLibraryMotionByName()` | `menus/library-actions:747` | 按名称模糊搜索 VMD 动作（纯查询，不触发替换）。 |
-| `highlightRow()` | `menus/library-actions:747` | — |
-| `importFile()` | `menus/library-actions:702` | — |
-| `importFileByPath()` | `menus/library-actions:657` | — |
-| `onModelRowClick()` | `menus/library-actions:747` | — |
+| `buildTagDetailLevel()` | `menus/library-actions:761` | — |
+| `buildTagsOverviewLevel()` | `menus/library-actions:761` | — |
+| `findLibraryModelByName()` | `menus/library-actions:761` | 按名称模糊搜索模型（纯查询，不触发加载）。供 ADR-155/197 NL 控制 resolve 使用，避免 resolve 阶段误触发真实加载。 |
+| `findLibraryMotionByName()` | `menus/library-actions:761` | 按名称模糊搜索 VMD 动作（纯查询，不触发替换）。 |
+| `highlightRow()` | `menus/library-actions:761` | — |
+| `importFile()` | `menus/library-actions:716` | — |
+| `importFileByPath()` | `menus/library-actions:671` | — |
+| `onModelRowClick()` | `menus/library-actions:761` | — |
 | `prepareModelRestore()` | `menus/library-actions:113` | — |
-| `replaceModel()` | `menus/library-actions:747` | — |
-| `replaceMotion()` | `menus/library-actions:747` | — |
-| `makeModelMenu()` | `menus/library-browse:435` | — |
-| `showModelPopup()` | `menus/library-browse:396` | — |
+| `replaceModel()` | `menus/library-actions:761` | — |
+| `replaceMotion()` | `menus/library-actions:761` | — |
+| `makeModelMenu()` | `menus/library-browse:437` | — |
+| `showModelPopup()` | `menus/library-browse:398` | — |
 | `ResourceViewMode()` | `menus/library-core:43` | — |
 | `abortThumbnailStreaming()` | `menus/library-core:321` | [adr-136] 取消当前正在进行的缩略图流式加载批次（如弹窗关闭/重开时调用）。 |
-| `buildLevel()` | `menus/library-core:865` | — |
-| `buildModelFormationLevel()` | `menus/library-core:909` | — |
-| `buildModelRootItems()` | `menus/library-core:944` | — |
+| `buildLevel()` | `menus/library-core:867` | — |
+| `buildModelFormationLevel()` | `menus/library-core:911` | — |
+| `buildModelRootItems()` | `menus/library-core:946` | — |
 | `buildResourceItemsForDir()` | `menus/library-core:388` | — |
 | `computeRestoreSegments()` | `menus/library-core:161` | — |
 | `getPendingMetaGuard()` | `menus/library-core:67` | — |
@@ -2259,7 +2259,7 @@
 | `loadThumbnailsStreaming()` | `menus/library-core:264` | 流式加载缩略图：并发控制，每加载一张立即更新缓存并通知面板刷新， 替代一次性 GetThumbnailBatch 的"全等"模式，实现缩略图逐张出现。 |
 | `modelToResourceItem()` | `menus/library-core:371` | — |
 | `modelToRow()` | `menus/library-core:355` | — |
-| `refreshModelRoot()` | `menus/library-core:1035` | 就地更新模型库根层级数据（刷新已注册的角色列表）。 |
+| `refreshModelRoot()` | `menus/library-core:1037` | 就地更新模型库根层级数据（刷新已注册的角色列表）。 |
 | `resolveDisplayBrowseDir()` | `menus/library-core:140` | [修复] 解析模型在资源库中的"显示目录"——即用户点击该模型时实际看到的层级。 |
 | `setResourceViewMode()` | `menus/library-core:50` | — |
 | `splitSubdirSegments()` | `menus/library-core:73` | — |
@@ -2269,7 +2269,7 @@
 | `LibraryRestoreStatus()` | `menus/library-session-store:17` | [doc:adr-135] P0.3 deferRestore 状态机。 |
 | `librarySessionStore()` | `menus/library-session-store:253` | 单例。 |
 | `initLibrary()` | `menus/library-setup:85` | — |
-| `refreshLibrary()` | `menus/library-setup:452` | — |
+| `refreshLibrary()` | `menus/library-setup:453` | — |
 | `reloadConfig()` | `menus/library-setup:374` | — |
 | `rescanAndSync()` | `menus/library-setup:282` | — |
 | `selectOverridePath()` | `menus/library-setup:214` | — |
@@ -2331,11 +2331,11 @@
 | `ModelPresetEntry()` | `menus/model-preset:37` | — |
 | `ModelPresetFile()` | `menus/model-preset:46` | — |
 | `applyModelPreset()` | `menus/model-preset:127` | — |
-| `applyPresetFromLib()` | `menus/model-preset:294` | — |
-| `buildPresetListLevel()` | `menus/model-preset:354` | — |
-| `savePresetToLibDialog()` | `menus/model-preset:338` | — |
+| `applyPresetFromLib()` | `menus/model-preset:295` | — |
+| `buildPresetListLevel()` | `menus/model-preset:355` | — |
+| `savePresetToLibDialog()` | `menus/model-preset:339` | — |
 | `serializeModelPreset()` | `menus/model-preset:80` | — |
-| `tryAutoApplyPreset()` | `menus/model-preset:217` | — |
+| `tryAutoApplyPreset()` | `menus/model-preset:218` | — |
 | `DEFAULT_MOTION_SLOTS()` | `menus/motion-binding-ui:121` | — |
 | `applyIntentToModel()` | `menus/motion-binding-ui:137` | — |
 | `buildActionBindingLevel()` | `menus/motion-binding-ui:374` | — |
@@ -2416,7 +2416,7 @@
 | `showPlaza()` | `menus/plaza-browser:990` | — |
 | `PLAZA_CREATORS()` | `menus/plaza-creators:9` | — |
 | `PlazaCreator()` | `menus/plaza-creators:1` | — |
-| `ensureObserver()` | `menus/plaza-download:195` | — |
+| `ensureObserver()` | `menus/plaza-download:196` | — |
 | `handlePlazaDownload()` | `menus/plaza-download:76` | — |
 | `installDownloadListener()` | `menus/plaza-download:40` | — |
 | `installEventListeners()` | `menus/plaza-download:165` | — |

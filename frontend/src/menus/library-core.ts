@@ -529,12 +529,13 @@ function renderItemsWithRAF(
                     outcome.onVmdPick(item.model.file_path, name);
                     return;
                 }
+                // [audit:fix 2026-10] loadManager.load 失败 reject（load-manager.ts:249-265），原 fire-and-forget 无 catch → unhandled rejection
                 loadManager.load({
                     kind: 'vmd',
                     path: item.model.file_path,
                     modelId: outcome.modelId,
                     skipSceneIntent: true,
-                });
+                }).catch((err) => logWarn('library-core', 'vmd load failed (preview stay)', err));
                 return;
             }
             // [doc:adr-195] 替换模式使用 stay 契约：选中模型时传当前 modelId 替换
@@ -751,12 +752,13 @@ function renderGridMode(
                     const outcome = (targetStack || stackRegistry.modelStack)?.currentLevel
                         ?.outcome;
                     if (outcome?.mode === 'stay') {
+                        // [audit:fix 2026-10] 同 :532 先例——fire-and-forget 补 catch
                         loadManager.load({
                             kind: 'vmd',
                             path: m.file_path,
                             modelId: outcome.modelId,
                             skipSceneIntent: true,
-                        });
+                        }).catch((err) => logWarn('library-core', 'vmd load failed (grid stay)', err));
                         return;
                     }
                     replaceMotion(m);

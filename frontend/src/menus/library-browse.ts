@@ -178,7 +178,8 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
             if (row.target === '__recent__') {
                 const recentMap = new Map<string, number>();
                 recentModels.forEach((ref, i) => recentMap.set(ref, i));
-                const recentModelsList = allModels
+                // [audit:fix 2026-10] allModels nullable (rapid __recent__ entry before init) — (allModels||[]) precedent :66/:118
+                const recentModelsList = (allModels || [])
                     .filter((m) => {
                         const ref = computeLibraryRef(m.file_path);
                         return ref && recentMap.has(ref);
@@ -268,12 +269,13 @@ const makeModelMenu = (container: HTMLElement): SlideMenu => {
                     mode: 'close' as const,
                 };
                 if (row.model.format === 'vmd' && outcome.mode === 'stay') {
+                    // [audit:fix 2026-10] 同 library-core 先例——fire-and-forget 补 catch
                     loadManager.load({
                         kind: 'vmd',
                         path: row.model.file_path,
                         modelId: outcome.modelId,
                         skipSceneIntent: true,
-                    });
+                    }).catch((err) => logWarn('library-browse', 'vmd load failed (row stay)', err));
                     return;
                 }
                 if (outcome.mode === 'stay' && outcome.modelId && row.model.format !== 'vmd') {

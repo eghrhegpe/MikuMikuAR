@@ -194,6 +194,16 @@ function startReplaceModel(m: LibraryModel, replaceId: string): void {
     const ctrl = new AbortController();
     _loadManagerAbortCtrl = ctrl;
     const signal = ctrl.signal;
+    // [audit:fix 2026-10] 统一判定「加载被取消」（快速连点被新选择 abort）——非失败，静默；
+    // 与 loadModelNormal（:324-332）同构，消除 doReplace 链 catch 误报 toast
+    const isAborted = (err: unknown): boolean =>
+        ctrl.signal.aborted ||
+        (err != null && typeof err === 'object' && 'name' in err && err.name === 'AbortError');
+    const clearCtrl = (): void => {
+        if (_loadManagerAbortCtrl === ctrl) {
+            _loadManagerAbortCtrl = null;
+        }
+    };
 
     librarySessionStore.setReplaceLoading(true);
 
@@ -265,14 +275,18 @@ function startReplaceModel(m: LibraryModel, replaceId: string): void {
                 }
             })
             .catch((err) => {
-                feedbackError('library.modelLoadFailed', getBaseName(m.file_path), err);
-                refreshModelRootLevel();
+                if (isAborted(err)) {
+                    // [audit:fix 2026-10] 快速连点被新选择 abort（loadModelNormal :324-332 同款先例）：
+                    // 取消不是失败，静默 logWarn，不弹「加载失败」误报 toast
+                    logWarn('library-actions', 'replace load aborted, silent', err);
+                } else {
+                    feedbackError('library.modelLoadFailed', getBaseName(m.file_path), err);
+                    refreshModelRootLevel();
+                }
             })
             .finally(() => {
                 librarySessionStore.setReplaceLoading(false);
-                if (_loadManagerAbortCtrl === ctrl) {
-                    _loadManagerAbortCtrl = null;
-                }
+                clearCtrl();
             });
     };
 

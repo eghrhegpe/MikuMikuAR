@@ -403,7 +403,8 @@ function hasSubdir(
     filter?: (m: LibraryModel) => boolean
 ): boolean {
     const parent = normPath(parentDir);
-    for (const m of allModels) {
+    // [audit:fix 2026-10] allModels nullable (hasSubdir before scan completes) — precedent library-browse.ts:66/:118
+    for (const m of allModels || []) {
         if (filter && !filter(m)) {
             continue;
         }
