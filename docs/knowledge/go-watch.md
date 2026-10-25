@@ -18,6 +18,7 @@ symbols:
   - StartWatchDir
   - StopWatchDir
   - checkMagicNumber
+  - dirHasPmx
   - ensureDefaultWatchDir
   - flushPending
   - importRarToLibrary

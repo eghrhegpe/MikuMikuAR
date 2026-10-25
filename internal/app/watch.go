@@ -132,10 +132,16 @@ func (a *App) importRarToLibrary(rarPath string) (*ExtractResult, error) {
 	destDir := filepath.Join(pmxDir, rarBase)
 
 	// 已存在则跳过（避免重复解压）
+	// [audit:fix 2026-10] 原条件「目录存在即跳过」过宽：上次解压中断留下的半截
+	// 目录（无 .pmx）会被永久跳过。收紧为「目录存在 且 目录树里能找到至少一个
+	// .pmx」（dirHasPmx：filepath.Walk 深度不限，找到即停）；找不到 .pmx 则不跳过，
+	// 继续重新解压覆盖——rar 条目解压是幂等覆盖写（os.Create 截断重写），安全。
 	if info, err := os.Stat(destDir); err == nil && info.IsDir() {
-		// 检查目录下是否有 .pmx，有则认为已解压过
-		a.safeLogInfo("ImportLocalFile.rar: 已存在（跳过）%s", destDir)
-		return &ExtractResult{FilePath: filepath.ToSlash(destDir), Dir: filepath.ToSlash(destDir)}, nil
+		if dirHasPmx(destDir) {
+			a.safeLogInfo("ImportLocalFile.rar: 已存在（跳过）%s", destDir)
+			return &ExtractResult{FilePath: filepath.ToSlash(destDir), Dir: filepath.ToSlash(destDir)}, nil
+		}
+		a.safeLogWarning("ImportLocalFile.rar: 目录已存在但缺少 .pmx（上次解压可能中断），重新解压覆盖 %s", destDir)
 	}
 
 	if err := os.MkdirAll(destDir, 0o755); err != nil {
@@ -199,6 +205,14 @@ func (a *App) importRarToLibrary(rarPath string) (*ExtractResult, error) {
 		}
 		if _, err := io.Copy(out, rr); err != nil {
 			out.Close()
+			// [audit:fix 2026-10] copy 失败（磁盘满 / rar 流损坏等）原只 Close + continue，
+			// 留下半截文件。对齐 zip 路径（library.go expandZipEntries 失败回滚）清掉部分
+			// 文件；单条目失败不中断整体（与整包读失败才 RemoveAll(destDir) 的分级一致）。
+			if rerr := os.Remove(targetAbs); rerr != nil {
+				a.safeLogWarning("ImportLocalFile.rar: 条目 %s 写入失败，残留文件清理也失败: %v", entryName, rerr)
+			} else {
+				a.safeLogWarning("ImportLocalFile.rar: 条目 %s 写入失败，已清理部分文件", entryName)
+			}
 			continue
 		}
 		out.Close()
@@ -215,6 +229,31 @@ func (a *App) importRarToLibrary(rarPath string) (*ExtractResult, error) {
 	}
 	a.safeLogInfo("ImportLocalFile.rar: %s → %s (%d files)", rarPath, destDir, extractedCount)
 	return &ExtractResult{FilePath: firstPMX, Dir: filepath.ToSlash(destDir)}, nil
+}
+
+// dirHasPmx reports whether at least one .pmx file exists anywhere under dir
+// (filepath.Walk, no depth limit; stops as soon as the first .pmx is found).
+// [audit:fix 2026-10] 供 importRarToLibrary 收紧「已解压」判定：半截解压目录
+// （无 .pmx）不应被当作已完成而永久跳过。
+func dirHasPmx(dir string) bool {
+	found := false
+	_ = filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if found {
+			// 已命中：剪掉剩余子树（对目录 SkipDir；对文件返回 nil 等价）
+			if err == nil && info.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if err != nil {
+			return nil // 不可读子树不影响「是否已有 .pmx」判定
+		}
+		if !info.IsDir() && strings.HasSuffix(strings.ToLower(info.Name()), ".pmx") {
+			found = true
+		}
+		return nil
+	})
+	return found
 }
 
 // StartWatchDir starts fsnotify-based watching on the specified directory.

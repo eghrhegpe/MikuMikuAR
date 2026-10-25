@@ -1267,20 +1267,20 @@
 | `updateGroundRipples()` | `scene/env/env-water-fx:337` | 每帧更新地面涟漪纹理（由 env-ground 的 update observer 驱动） |
 | `updateRipples()` | `scene/env/env-water-fx:172` | 每帧涟漪衰减 + 死亡清理（由材质更新回调驱动；dt&lt;=0 时跳过避免零时距死循环） |
 | `updateUnderwaterTransition()` | `scene/env/env-water-fx:461` | — |
-| `WATER_PRESETS()` | `scene/env/env-water-material:565` | — |
-| `WaterPreset()` | `scene/env/env-water-material:529` | — |
-| `_WATER_KEYS()` | `scene/env/env-water-material:808` | — |
-| `_createWaterMaterial()` | `scene/env/env-water-material:440` | — |
-| `_rebuildWaterMaterial()` | `scene/env/env-water-material:467` | 重建水面材质（切换 PLANAR_REFLECTION define 时必须），保持网格与 LOD 引用一致。 |
-| `_syncWaterUniforms()` | `scene/env/env-water-material:183` | 同步水面材质的全部 uniform 参数（非破坏性，不销毁/重建材质）。 |
-| `_waterUpdateCallback()` | `scene/env/env-water-material:480` | — |
-| `applyWaterPresetToCurrent()` | `scene/env/env-water-material:737` | — |
-| `buildWaterPresetEnvState()` | `scene/env/env-water-material:687` | 预设 → EnvState 完整字段映射（含扩展参数），供 UI chip handler 调用并持久化。 |
-| `disposeDetailNormalTexture()` | `scene/env/env-water-material:74` | 宿主 disposeWater 委托：释放法线细节纹理（ADR-115 P1） |
-| `getWaterPhase()` | `scene/env/env-water-material:678` | 测试/调试用：读取当前累计波相位。 |
-| `resetWaterPhaseState()` | `scene/env/env-water-material:42` | 宿主 disposeWater 委托：重置相位/波速状态 |
-| `setUnderwaterFog()` | `scene/env/env-water-material:163` | 由水下雾控制器同步水下雾参数到水面材质（含材质重建后的恢复由 _syncWaterUniforms 负责）。 |
-| `setWaterWaveSpeed()` | `scene/env/env-water-material:37` | 宿主 updateWaterAnimSpeed 委托：只更新累加速率，相位由每帧 observer 累加（改波速不跳变） |
+| `WATER_PRESETS()` | `scene/env/env-water-material:599` | — |
+| `WaterPreset()` | `scene/env/env-water-material:563` | — |
+| `_WATER_KEYS()` | `scene/env/env-water-material:847` | — |
+| `_createWaterMaterial()` | `scene/env/env-water-material:472` | — |
+| `_rebuildWaterMaterial()` | `scene/env/env-water-material:499` | 重建水面材质（切换 PLANAR_REFLECTION define 时必须），保持网格与 LOD 引用一致。 |
+| `_syncWaterUniforms()` | `scene/env/env-water-material:191` | 同步水面材质的全部 uniform 参数（非破坏性，不销毁/重建材质）。 |
+| `_waterUpdateCallback()` | `scene/env/env-water-material:512` | — |
+| `applyWaterPresetToCurrent()` | `scene/env/env-water-material:774` | — |
+| `buildWaterPresetEnvState()` | `scene/env/env-water-material:721` | 预设 → EnvState 完整字段映射（含扩展参数），供 UI chip handler 调用并持久化。 |
+| `disposeDetailNormalTexture()` | `scene/env/env-water-material:80` | 宿主 disposeWater 委托：释放法线细节纹理（ADR-115 P1） |
+| `getWaterPhase()` | `scene/env/env-water-material:712` | 测试/调试用：读取当前累计波相位。 |
+| `resetWaterPhaseState()` | `scene/env/env-water-material:48` | 宿主 disposeWater 委托：重置相位/波速状态 |
+| `setUnderwaterFog()` | `scene/env/env-water-material:169` | 由水下雾控制器同步水下雾参数到水面材质（含材质重建后的恢复由 _syncWaterUniforms 负责）。 |
+| `setWaterWaveSpeed()` | `scene/env/env-water-material:41` | 宿主 updateWaterAnimSpeed 委托：只更新累加速率，相位由每帧 observer 累加（改波速不跳变） |
 | `_setupMirrorRT()` | `scene/env/env-water-reflect:89` | 初始化/更新水面平面反射：委托给统一引擎（创建 RT、镜像相机、挂载、互斥）。 |
 | `waterReflection()` | `scene/env/env-water-reflect:20` | — |
 | `createWater()` | `scene/env/env-water:79` | 按相机到水面的距离选择 LOD 层级（纯函数，便于单测）。 |
@@ -2677,9 +2677,9 @@
 | `InterpCurve()` | `motion-algos/vmd-writer:24` | — |
 | `MORPH_FRAME_SIZE()` | `motion-algos/vmd-writer:36` | — |
 | `MorphKeyFrame()` | `motion-algos/vmd-writer:17` | — |
-| `buildBoneFrame()` | `motion-algos/vmd-writer:123` | 构建单个骨骼关键帧 (111 bytes)。插值用线性默认值。 |
-| `buildMorphFrame()` | `motion-algos/vmd-writer:165` | 构建单个 morph 关键帧 (23 bytes)。 |
-| `buildVmd()` | `motion-algos/vmd-writer:183` | 构建完整 VMD ArrayBuffer。 |
+| `buildBoneFrame()` | `motion-algos/vmd-writer:133` | 构建单个骨骼关键帧 (111 bytes)。插值用线性默认值。 |
+| `buildMorphFrame()` | `motion-algos/vmd-writer:177` | 构建单个 morph 关键帧 (23 bytes)。 |
+| `buildVmd()` | `motion-algos/vmd-writer:197` | 构建完整 VMD ArrayBuffer。 |
 | `canEncodeName()` | `motion-algos/vmd-writer:108` | 检查名称能否被完整编码为 Shift-JIS（round-trip 无误）。 |
 | `VPDBoneData()` | `motion-algos/vpd-parser:14` | — |
 | `VPDMorphData()` | `motion-algos/vpd-parser:20` | — |

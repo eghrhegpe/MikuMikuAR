@@ -9,6 +9,10 @@ import { DirectionalLight } from '@babylonjs/core/Lights/directionalLight';
 
 import { EnvState, envState } from '@/core/config';
 import { col3FromTriple } from '@/core/color-helpers';
+// [audit:fix 2026-10] round 74 P2：数值 guard 统一出口（core/guards，round16 P2 收敛）。
+// ?? 0 不挡 NaN（只挡 nullish）；guardNum 以 Number.isFinite 拦截 NaN/±Infinity/undefined，
+// 语义对齐 preset-apply 侧 ?? 0 兜底（buglog water-preset-nan-uniform）且更强。
+import { guardNum } from '@/core/guards';
 import { _envSys, effectiveGroundSize } from './_shared/env-context';
 import { createCanvasTexture } from './_shared/env-texture';
 import { causticsController } from './env-caustics';
@@ -35,7 +39,9 @@ let _waterWaveSpeed = 1; // 当前波速，供每帧相位累加使用
 
 /** 宿主 updateWaterAnimSpeed 委托：只更新累加速率，相位由每帧 observer 累加（改波速不跳变） */
 export function setWaterWaveSpeed(speed: number): void {
-    _waterWaveSpeed = speed;
+    // [audit:fix 2026-10] 宿主传入值可能为 NaN（envState.waterAnimSpeed 脏值）：
+    // NaN 会经每帧相位累加污染 wavePhase uniform，入口 guard（NaN → 1，与 _syncWaterUniforms 的 ?? 1 语义一致）
+    _waterWaveSpeed = guardNum(speed, 1);
 }
 
 /** 宿主 disposeWater 委托：重置相位/波速状态 */
@@ -171,8 +177,10 @@ export function setUnderwaterFog(
     if (mat) {
         mat.setFloat('uUnderwater', _underwaterFog.enabled);
         mat.setColor3('uUnderwaterFogColor', _underwaterFog.color);
-        mat.setFloat('uUnderwaterFogStart', start);
-        mat.setFloat('uUnderwaterFogEnd', end);
+        // [audit:fix 2026-10] 现有调用方（env-underwater-fog）传常量 FOG_NEAR_CLEAR/FOG_FAR_OPAQUE，
+        // 此处为未来参数化调用方的防御（NaN/±Infinity 不写入 uUnderwaterFog{Start,End}）
+        mat.setFloat('uUnderwaterFogStart', guardNum(start));
+        mat.setFloat('uUnderwaterFogEnd', guardNum(end));
     }
 }
 
@@ -188,24 +196,29 @@ export function _syncWaterUniforms(state: EnvState, scene: Scene): void {
     }
 
     // ——— 基础参数 ———
-    mat.setFloat('waveHeight', state.waterWaveHeight);
+    // [audit:fix 2026-10] envState 数值字段 NaN/±Infinity → setFloat 静默写 NaN uniform 污染整片材质
+    // （buglog water-preset-nan-uniform 材质写入侧未修），写入点统一 guardNum；opacity 类 NaN→0 正确
+    mat.setFloat('waveHeight', guardNum(state.waterWaveHeight));
     // ADR-115 P4 + ADR-211 Part3：大波受 bigWaveEnabled 门控，关闭时送 0 振幅（水面趋于平静镜面）
+    // [audit:fix 2026-10] ?? 1.0 只挡 undefined，NaN 漏网 → 升级 guardNum（NaN → 1.0，语义不变）
     mat.setFloat(
         'bigWaveHeight',
-        (state.bigWaveEnabled ?? true) ? (state.bigWaveHeight ?? 1.0) : 0
+        (state.bigWaveEnabled ?? true) ? guardNum(state.bigWaveHeight, 1.0) : 0
     );
     // ADR-115 P4 + 功能开关试点：小波受 smallWaveEnabled 门控，关闭时送 0 振幅（水面呈纯净反射面）
     mat.setFloat(
         'smallWaveHeight',
-        (state.smallWaveEnabled ?? true) ? (state.smallWaveHeight ?? 1.0) : 0
+        // [audit:fix 2026-10] 同 bigWaveHeight：?? 1.0 → guardNum
+        (state.smallWaveEnabled ?? true) ? guardNum(state.smallWaveHeight, 1.0) : 0
     );
-    _waterWaveSpeed = (state.waterAnimSpeed ?? 1) * 1.0;
+    // [audit:fix 2026-10] ?? 1 不挡 NaN；NaN 波速经每帧累加污染 wavePhase（guardNum NaN → 1）
+    _waterWaveSpeed = guardNum(state.waterAnimSpeed, 1);
     // wavePhase 由 _waterUpdateCallback 每帧统一写入，此处无需重复赋值
     // ADR-115 二轮增强：色散关系开关（0=旧硬编码 ω 零回归，1=物理色散 ω=sqrt(g·k)）
     mat.setFloat('uDispersionEnabled', state.waterDispersionEnabled ? 1 : 0);
     mat.setColor3('waterColor', col3FromTriple(state.waterColor));
-    mat.setFloat('waterTransparency', state.waterTransparency);
-    mat.setFloat('waterLevel', state.waterLevel);
+    mat.setFloat('waterTransparency', guardNum(state.waterTransparency)); // [audit:fix 2026-10] NaN→0 正确（合法 0 值）
+    mat.setFloat('waterLevel', guardNum(state.waterLevel));
     mat.setInt('uWaterFlip', state.waterFlipEnabled ? 1 : 0);
 
     const hasEnv = !!scene.environmentTexture;
@@ -234,15 +247,17 @@ export function _syncWaterUniforms(state: EnvState, scene: Scene): void {
     const causticTex = causticsController.getTexture(scene);
     mat.setTexture('uCausticTex', causticTex);
     // ADR-211 Part3：焦散受 causticEnabled 门控，关闭时送 0 强度（水底无光斑）
-    mat.setFloat('uCausticIntensity', (state.causticEnabled ?? true) ? state.causticIntensity : 0);
+    // [audit:fix 2026-10] 开启分支的 state.causticIntensity 无 guard，NaN 会直写 uniform
+    mat.setFloat('uCausticIntensity', (state.causticEnabled ?? true) ? guardNum(state.causticIntensity) : 0);
     // 焦散 UV 偏移（联动 causticScrollX/Y，经 causticsController 推 uOffset/vOffset）
-    mat.setVector2('uCausticOffset', _causticOffset.set(causticTex.uOffset, causticTex.vOffset));
+    // [audit:fix 2026-10] 纹理偏移可被 causticScrollX/Y NaN 经 setConfig 污染（env-water.ts:243 未 guard），逐分量 guard
+    mat.setVector2('uCausticOffset', _causticOffset.set(guardNum(causticTex.uOffset), guardNum(causticTex.vOffset)));
 
     // ——— ADR-115 P1: 高频法线扰动层 + Sun Glitter（波浪联动）——
 
     const detailNormalTex = ensureDetailNormalTexture(scene);
     mat.setTexture('uDetailNormalTex', detailNormalTex);
-    mat.setFloat('uDetailNormalStrength', state.waterNormalStrength);
+    mat.setFloat('uDetailNormalStrength', guardNum(state.waterNormalStrength)); // [audit:fix 2026-10]
     // 波纹方格尺度：tile 周期 = 1/tiling 世界单位
     // tiling1=3.0 → 细尺度波纹单元 ≈0.33 单位（60 单位水面重复 180 次）
     // tiling2=6.0 → 高频微纹单元 ≈0.17 单位（重复 360 次）；两层保持 2:1 比例
@@ -250,81 +265,95 @@ export function _syncWaterUniforms(state: EnvState, scene: Scene): void {
     mat.setFloat('uDetailNormalTiling1', 3.0);
     mat.setFloat('uDetailNormalTiling2', 6.0);
     // P2 修复：删除 dead code，改为动态计算速度（与 Gerstner 波相位同步）
-    const waveAnimSpeed = state.waterAnimSpeed ?? 1;
+    // [audit:fix 2026-10] ?? 1 不挡 NaN；NaN 速度会污染下方 uDetailNormalSpeed1/2
+    const waveAnimSpeed = guardNum(state.waterAnimSpeed, 1);
     const [speed1, speed2] = computeDetailNormalSpeeds(waveAnimSpeed);
     mat.setFloat('uDetailNormalSpeed1', speed1);
     mat.setFloat('uDetailNormalSpeed2', speed2);
-    mat.setFloat('uGlintStrength', state.waterGlintStrength);
+    mat.setFloat('uGlintStrength', guardNum(state.waterGlintStrength)); // [audit:fix 2026-10]
     mat.setFloat('uGlintPower', 96);
     mat.setFloat('uGlintScale', 80.0);
     mat.setFloat('uGlintSpeed', 2.0);
 
     // ——— ADR-115 P5: 低频滚动法线层（大尺度滚动光带）——
     mat.setFloat('uLowFreqNormalTiling', 0.04);
-    mat.setFloat('uLowFreqNormalStrength', state.lowFreqNormalStrength ?? 0.15);
+    // [audit:fix 2026-10] ?? 0.15 只挡 undefined，NaN 漏网 → 升级 guardNum（NaN → 0.15）
+    mat.setFloat('uLowFreqNormalStrength', guardNum(state.lowFreqNormalStrength, 0.15));
     mat.setFloat('uLowFreqNormalSpeed', 0.05);
 
     // ——— ADR-115 P3: 地平线淡出 + 天空-水面颜色联动 ———
     // 天空基准色：优先 skyColorBot，fallback waterFogColor
+    // [audit:fix 2026-10] 向量类（Vector3）逐分量 guard：颜色三元组可能带 NaN（预设/持久化脏值）
     const skyBot = state.skyColorBot ?? state.waterFogColor;
-    mat.setVector3('uSkyBlendColor', new Vector3(skyBot[0], skyBot[1], skyBot[2]));
-    mat.setFloat('uSkyColorBlend', state.waterSkyColorBlend ?? 0);
+    mat.setVector3('uSkyBlendColor', new Vector3(guardNum(skyBot[0]), guardNum(skyBot[1]), guardNum(skyBot[2])));
+    // 原 buglog water-preset-nan-uniform 修复 #2 为 ?? 0（只挡 undefined）→ 升级 guardNum 兼挡 NaN
+    mat.setFloat('uSkyColorBlend', guardNum(state.waterSkyColorBlend));
     // 地平线淡出距离按生效地面尺寸自动计算（无限地面时同步推到 2000，与地面延伸对齐）
     const ws = effectiveGroundSize(state.groundSize, state.groundInfiniteEnabled ?? false);
-    mat.setFloat('uHorizonFade', state.waterHorizonFade ?? 0);
-    mat.setFloat('uHorizonStart', ws * 0.7);
-    mat.setFloat('uHorizonEnd', ws * 0.95);
+    // 原 buglog 修复 #3 为 ?? 0 → 升级 guardNum（waterHorizonFade NaN → 0）
+    mat.setFloat('uHorizonFade', guardNum(state.waterHorizonFade));
+    // [audit:fix 2026-10] groundSize NaN → ws NaN → 地平线距离 NaN，对派生值 guard
+    mat.setFloat('uHorizonStart', guardNum(ws * 0.7));
+    mat.setFloat('uHorizonEnd', guardNum(ws * 0.95));
     // 地平线融合色：优先 skyColorBot，fallback waterFogColor
-    mat.setVector3('uHorizonColor', new Vector3(skyBot[0], skyBot[1], skyBot[2]));
+    mat.setVector3('uHorizonColor', new Vector3(guardNum(skyBot[0]), guardNum(skyBot[1]), guardNum(skyBot[2])));
 
     // ——— 高级参数（从 EnvState 读取，持久化）———
-    mat.setFloat('fresnelBias', state.fresnelBias);
-    mat.setFloat('fresnelPower', state.fresnelPower);
-    mat.setFloat('diffuseStrength', state.diffuseStrength);
-    mat.setFloat('ambientStrength', state.ambientStrength);
-    mat.setFloat('rippleNormalStrength', state.rippleNormalStrength);
-    mat.setFloat('rippleGlintStrength', state.rippleGlintStrength);
+    // [audit:fix 2026-10] 高级参数 6 项 envState 直写全部 guard
+    mat.setFloat('fresnelBias', guardNum(state.fresnelBias));
+    mat.setFloat('fresnelPower', guardNum(state.fresnelPower));
+    mat.setFloat('diffuseStrength', guardNum(state.diffuseStrength));
+    mat.setFloat('ambientStrength', guardNum(state.ambientStrength));
+    mat.setFloat('rippleNormalStrength', guardNum(state.rippleNormalStrength));
+    mat.setFloat('rippleGlintStrength', guardNum(state.rippleGlintStrength));
+    // [audit:fix 2026-10] 焦散颜色三元组逐分量 guard
     mat.setVector3(
         'causticColor1',
-        new Vector3(state.causticColor1[0], state.causticColor1[1], state.causticColor1[2])
+        new Vector3(guardNum(state.causticColor1[0]), guardNum(state.causticColor1[1]), guardNum(state.causticColor1[2]))
     );
     mat.setVector3(
         'causticColor2',
-        new Vector3(state.causticColor2[0], state.causticColor2[1], state.causticColor2[2])
+        new Vector3(guardNum(state.causticColor2[0]), guardNum(state.causticColor2[1]), guardNum(state.causticColor2[2]))
     );
-    mat.setFloat('fresnelAlphaInfluence', state.fresnelAlphaInfluence);
+    mat.setFloat('fresnelAlphaInfluence', guardNum(state.fresnelAlphaInfluence)); // [audit:fix 2026-10]
 
     // ——— 泡沫系统（foamEnabled=false 零回归：foamIntensity 送 0，mix 因子为 0）———
     const foamOn = state.foamEnabled ?? false;
-    mat.setFloat('foamThreshold', state.foamThreshold);
-    mat.setFloat('foamIntensity', foamOn ? state.foamIntensity : 0);
-    mat.setFloat('foamOpacity', state.foamOpacity);
-    mat.setFloat('foamTransitionRange', state.foamTransitionRange);
+    // [audit:fix 2026-10] 泡沫系参数 envState 直写全部 guard（NaN → 0；foamOpacity 合法 0 值不受影响）
+    // foamColor 走 col3FromTriple 内部 guardNum（round16 P2 收敛），不重复包裹
+    mat.setFloat('foamThreshold', guardNum(state.foamThreshold));
+    mat.setFloat('foamIntensity', foamOn ? guardNum(state.foamIntensity) : 0);
+    mat.setFloat('foamOpacity', guardNum(state.foamOpacity));
+    mat.setFloat('foamTransitionRange', guardNum(state.foamTransitionRange));
     mat.setColor3('foamColor', col3FromTriple(state.foamColor));
-    mat.setFloat('uFoamNoiseStrength', foamOn ? state.foamNoiseStrength : 0);
+    mat.setFloat('uFoamNoiseStrength', foamOn ? guardNum(state.foamNoiseStrength) : 0);
 
     mat.setColor3('waterFogColor', col3FromTriple(state.waterFogColor));
-    mat.setFloat('waterFogStart', state.waterFogStart);
-    mat.setFloat('waterFogEnd', state.waterFogEnd);
-    mat.setFloat('waterFogOpacityInfluence', state.waterFogOpacityInfluence);
+    // [audit:fix 2026-10] 水雾距离/透明度 envState 直写全部 guard
+    mat.setFloat('waterFogStart', guardNum(state.waterFogStart));
+    mat.setFloat('waterFogEnd', guardNum(state.waterFogEnd));
+    mat.setFloat('waterFogOpacityInfluence', guardNum(state.waterFogOpacityInfluence));
 
     // ——— 水下雾（与 scene.fog 同源；ShaderMaterial 不参与 Babylon fog，需手动注入）———
     // 入水时由 underwaterFogController 调 setUnderwaterFog 改写 _underwaterFog；
     // 此处每帧/重建时兜底写入，保证材质重建后水下雾参数不丢失。
     mat.setFloat('uUnderwater', _underwaterFog.enabled);
     mat.setColor3('uUnderwaterFogColor', _underwaterFog.color);
-    mat.setFloat('uUnderwaterFogStart', _underwaterFog.start);
-    mat.setFloat('uUnderwaterFogEnd', _underwaterFog.end);
+    // [audit:fix 2026-10] _underwaterFog 由 setUnderwaterFog 入口 guard，此处对残留值双保险
+    mat.setFloat('uUnderwaterFogStart', guardNum(_underwaterFog.start));
+    mat.setFloat('uUnderwaterFogEnd', guardNum(_underwaterFog.end));
 
     // ——— 波方向（风向联动）———
+    // [audit:fix 2026-10] windDirection NaN → computeWaveDirs 的 atan2/sin/cos 产出 NaN windDirs
+    // （其零风向回退只挡全 0 不挡 NaN；fx 模块不在锁文件内，写入点 guard）
     const windDirs = computeWaveDirs(state.windDirection);
-    mat.setArray2('uWindDir', windDirs);
+    mat.setArray2('uWindDir', windDirs.map((v) => guardNum(v)));
     // 风速调制波幅度（0 级风时 0.3 倍平静海面，10 级风时 1.8 倍汹涌涌浪）
     // windEnabled 守卫：对齐其他三系统（粒子/Bullet/云）行为，风关则浪静（wind-physics-fix P2）
-    const effectiveWindSpeed = state.windEnabled ? state.windSpeed : 0;
+    const effectiveWindSpeed = state.windEnabled ? guardNum(state.windSpeed) : 0; // [audit:fix 2026-10]
     mat.setFloat('uWindSpeed', effectiveWindSpeed);
     // 细节法线滚动方向：取 Gerstner 主波（第一波）风向
-    mat.setVector3('uDetailWindDir', new Vector3(windDirs[0], windDirs[1], 0));
+    mat.setVector3('uDetailWindDir', new Vector3(guardNum(windDirs[0]), guardNum(windDirs[1]), 0)); // [audit:fix 2026-10]
 
     // ——— 涟漪数组（初始化为空）———
     mat.setArray4('uRipplePosRad', new Array(MAX_RIPPLES * 4).fill(0));
@@ -332,7 +361,8 @@ export function _syncWaterUniforms(state: EnvState, scene: Scene): void {
     mat.setInt('uRippleCount', 0);
 
     // ——— 平面反射（ADR-062）———
-    mat.setFloat('planarReflectionBlend', state.planarReflectionBlend ?? 0.5);
+    // [audit:fix 2026-10] ?? 0.5 只挡 undefined，NaN 漏网 → 升级 guardNum（NaN → 0.5）
+    mat.setFloat('planarReflectionBlend', guardNum(state.planarReflectionBlend, 0.5));
 
     // ——— ADR-222: 水面深度差雾 — 水柱厚度驱动雾效 ——
     const depthMap = (scene as any).depthRenderer?.getDepthMap?.() ?? null;
@@ -341,14 +371,16 @@ export function _syncWaterUniforms(state: EnvState, scene: Scene): void {
     }
     const cam = scene.activeCamera;
     if (cam) {
-        mat.setFloat('cameraNear', cam.minZ ?? 0.01);
-        mat.setFloat('cameraFar', cam.maxZ ?? 10000);
+        // [audit:fix 2026-10] 相机 near/far 可能为 NaN（自定义相机脏值）；?? 不挡 NaN
+        mat.setFloat('cameraNear', guardNum(cam.minZ, 0.01));
+        mat.setFloat('cameraFar', guardNum(cam.maxZ, 10000));
     }
     // 颜色从 waterColor 派生：深蓝青色调
     const wc = col3FromTriple(state.waterColor);
     mat.setColor3('waterDepthFogColor', new Color3(wc.r * 0.4, wc.g * 0.5, wc.b * 0.9));
-    mat.setFloat('waterDepthFogDensity', state.waterDepthFogDensity ?? 0.015);
-    mat.setFloat('waterDepthFogStrength', state.waterDepthFogStrength ?? 1.0);
+    // [audit:fix 2026-10] ?? 只挡 undefined，NaN 漏网 → 升级 guardNum（NaN → 各 fallback）
+    mat.setFloat('waterDepthFogDensity', guardNum(state.waterDepthFogDensity, 0.015));
+    mat.setFloat('waterDepthFogStrength', guardNum(state.waterDepthFogStrength, 1.0));
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -494,9 +526,11 @@ export function _waterUpdateCallback(scene: Scene): void {
     m.setFloat('wavePhase', _waterPhase);
     // 焦散 UV 偏移：每帧由 causticsController 推进的纹理 uOffset/vOffset 提供（联动 causticScrollX/Y）
     const cTex = causticsController.getTexture(scene);
-    m.setVector2('uCausticOffset', _causticOffset.set(cTex.uOffset, cTex.vOffset));
+    // [audit:fix 2026-10] 焦散偏移逐分量 guard（污染源同 _syncWaterUniforms 处注释）
+    m.setVector2('uCausticOffset', _causticOffset.set(guardNum(cTex.uOffset), guardNum(cTex.vOffset)));
     // P2: 每帧同步法线滚动速度（用户调整波速时实时响应）
-    const [speed1, speed2] = computeDetailNormalSpeeds(envState.waterAnimSpeed ?? 1);
+    // [audit:fix 2026-10] ?? 1 不挡 NaN；envState 直读每帧，升级 guardNum
+    const [speed1, speed2] = computeDetailNormalSpeeds(guardNum(envState.waterAnimSpeed, 1));
     m.setFloat('uDetailNormalSpeed1', speed1);
     m.setFloat('uDetailNormalSpeed2', speed2);
     const cam = scene.activeCamera;
@@ -707,10 +741,12 @@ export function buildWaterPresetEnvState(preset: WaterPreset): Partial<EnvState>
         // ADR-115 P3: 地平线淡出 + 天空联动
         // 兜底 0：WATER_PRESETS 当前未定义这两个字段，直接传 undefined 会让
         // _syncWaterUniforms 的 setFloat 写入 NaN，导致真实引擎下水面渲染消失且不可逆。
-        waterHorizonFade: preset.waterHorizonFade ?? 0,
-        waterSkyColorBlend: preset.waterSkyColorBlend ?? 0,
-        // ADR-115 P5: 低频滚动法线层（可选字段，?? 0.15 兜底）
-        lowFreqNormalStrength: preset.lowFreqNormalStrength ?? 0.15,
+        // [audit:fix 2026-10] ?? 0/0.15 只挡 undefined，preset NaN 会透传污染 envState
+        // （buglog 教训「?? 0 兜底必须成对」）→ 升级 guardNum
+        waterHorizonFade: guardNum(preset.waterHorizonFade),
+        waterSkyColorBlend: guardNum(preset.waterSkyColorBlend),
+        // ADR-115 P5: 低频滚动法线层（可选字段，guardNum 0.15 兜底）
+        lowFreqNormalStrength: guardNum(preset.lowFreqNormalStrength, 0.15),
     };
 }
 
@@ -720,17 +756,18 @@ export function buildWaterPresetEnvState(preset: WaterPreset): Partial<EnvState>
 // 保留 `!== undefined` 守卫——preset 为 Partial 预览应用，仅覆盖已定义字段，
 // 不可机械改调 _syncWaterUniforms(state)（会从完整 state 无条件写入并触发 facade 副作用）。
 function applyWaterPresetCoreUniforms(mat: ShaderMaterial, preset: Partial<WaterPreset>): void {
+    // [audit:fix 2026-10] preset 值可能为 NaN（UI 滑条/持久化脏值），写入点 guard
     if (preset.fresnelBias !== undefined) {
-        mat.setFloat('fresnelBias', preset.fresnelBias);
+        mat.setFloat('fresnelBias', guardNum(preset.fresnelBias));
     }
     if (preset.fresnelPower !== undefined) {
-        mat.setFloat('fresnelPower', preset.fresnelPower);
+        mat.setFloat('fresnelPower', guardNum(preset.fresnelPower));
     }
     if (preset.diffuseStrength !== undefined) {
-        mat.setFloat('diffuseStrength', preset.diffuseStrength);
+        mat.setFloat('diffuseStrength', guardNum(preset.diffuseStrength));
     }
     if (preset.ambientStrength !== undefined) {
-        mat.setFloat('ambientStrength', preset.ambientStrength);
+        mat.setFloat('ambientStrength', guardNum(preset.ambientStrength));
     }
 }
 
@@ -742,65 +779,67 @@ export function applyWaterPresetToCurrent(preset: Partial<WaterPreset>): void {
 
     // 应用新增的可调参数（如果预设中有定义）
     applyWaterPresetCoreUniforms(mat, preset);
+    // [audit:fix 2026-10] preset 数值写入点全部 guard（Vector3 逐分量）
     if (preset.rippleNormalStrength !== undefined) {
-        mat.setFloat('rippleNormalStrength', preset.rippleNormalStrength);
+        mat.setFloat('rippleNormalStrength', guardNum(preset.rippleNormalStrength));
     }
     if (preset.rippleGlintStrength !== undefined) {
-        mat.setFloat('rippleGlintStrength', preset.rippleGlintStrength);
+        mat.setFloat('rippleGlintStrength', guardNum(preset.rippleGlintStrength));
     }
     if (preset.causticIntensity !== undefined) {
-        mat.setFloat('uCausticIntensity', preset.causticIntensity);
+        mat.setFloat('uCausticIntensity', guardNum(preset.causticIntensity));
     }
     if (preset.causticColor1 !== undefined) {
         mat.setVector3(
             'causticColor1',
-            new Vector3(preset.causticColor1[0], preset.causticColor1[1], preset.causticColor1[2])
+            new Vector3(guardNum(preset.causticColor1[0]), guardNum(preset.causticColor1[1]), guardNum(preset.causticColor1[2]))
         );
     }
     if (preset.causticColor2 !== undefined) {
         mat.setVector3(
             'causticColor2',
-            new Vector3(preset.causticColor2[0], preset.causticColor2[1], preset.causticColor2[2])
+            new Vector3(guardNum(preset.causticColor2[0]), guardNum(preset.causticColor2[1]), guardNum(preset.causticColor2[2]))
         );
     }
     if (preset.causticScrollX !== undefined) {
-        mat.setFloat('causticScrollX', preset.causticScrollX);
+        mat.setFloat('causticScrollX', guardNum(preset.causticScrollX));
     }
     if (preset.causticScrollY !== undefined) {
-        mat.setFloat('causticScrollY', preset.causticScrollY);
+        mat.setFloat('causticScrollY', guardNum(preset.causticScrollY));
     }
     if (preset.fresnelAlphaInfluence !== undefined) {
-        mat.setFloat('fresnelAlphaInfluence', preset.fresnelAlphaInfluence);
+        mat.setFloat('fresnelAlphaInfluence', guardNum(preset.fresnelAlphaInfluence));
     }
     if (preset.waterFogColor !== undefined) {
         mat.setColor3('waterFogColor', col3FromTriple(preset.waterFogColor));
     }
+    // [audit:fix 2026-10] preset 数值写入点全部 guard（waterFogColor 走 col3FromTriple 内部 guardNum，不重复包裹）
     if (preset.waterFogStart !== undefined) {
-        mat.setFloat('waterFogStart', preset.waterFogStart);
+        mat.setFloat('waterFogStart', guardNum(preset.waterFogStart));
     }
     if (preset.waterFogEnd !== undefined) {
-        mat.setFloat('waterFogEnd', preset.waterFogEnd);
+        mat.setFloat('waterFogEnd', guardNum(preset.waterFogEnd));
     }
     if (preset.waterFogOpacityInfluence !== undefined) {
-        mat.setFloat('waterFogOpacityInfluence', preset.waterFogOpacityInfluence);
+        mat.setFloat('waterFogOpacityInfluence', guardNum(preset.waterFogOpacityInfluence));
     }
     // ADR-115 P1: 法线扰动 + Sun Glitter
     if (preset.waterNormalStrength !== undefined) {
-        mat.setFloat('uDetailNormalStrength', preset.waterNormalStrength);
+        mat.setFloat('uDetailNormalStrength', guardNum(preset.waterNormalStrength));
     }
     if (preset.waterGlintStrength !== undefined) {
-        mat.setFloat('uGlintStrength', preset.waterGlintStrength);
+        mat.setFloat('uGlintStrength', guardNum(preset.waterGlintStrength));
     }
     // ADR-115 P3: 地平线淡出 + 天空联动
     if (preset.waterHorizonFade !== undefined) {
-        mat.setFloat('uHorizonFade', preset.waterHorizonFade);
+        mat.setFloat('uHorizonFade', guardNum(preset.waterHorizonFade));
     }
     if (preset.waterSkyColorBlend !== undefined) {
-        mat.setFloat('uSkyColorBlend', preset.waterSkyColorBlend);
+        mat.setFloat('uSkyColorBlend', guardNum(preset.waterSkyColorBlend));
     }
     // ADR-115 P5: 低频滚动法线层
     if (preset.lowFreqNormalStrength !== undefined) {
-        mat.setFloat('uLowFreqNormalStrength', preset.lowFreqNormalStrength);
+        mat.setFloat('uLowFreqNormalStrength', guardNum(preset.lowFreqNormalStrength));
     }
 }
 

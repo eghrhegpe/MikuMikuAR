@@ -119,6 +119,16 @@ export function canEncodeName(name: string): boolean {
     return roundTrip === name;
 }
 
+// [audit:fix 2026-10] round 74 台账 P2（NaN 半修尾巴）：帧级 float guard。
+// setFloat32 会把 NaN/±Infinity 按位写入 VMD 二进制（NaN 位型 0x7FC00000），
+// loader（vmd-loader.ts:171-173）只 clamp 总时长，不救帧级 NaN → 此处统一归零。
+// 取舍：本文件是低依赖模块、零 logger import（仅 encoding-japanese），guard 静默归零，
+// 与 preset-apply 侧 ?? 0 的静默语义一致；不引入 logWarn 依赖。写路径非热路径，
+// 不涉 ADR-248 帧节流门控。
+function nanSafe(v: number): number {
+    return Number.isFinite(v) ? v : 0;
+}
+
 /** 构建单个骨骼关键帧 (111 bytes)。插值用线性默认值。 */
 export function buildBoneFrame(frame: BoneKeyFrame): ArrayBuffer {
     const buf = new ArrayBuffer(BONE_FRAME_SIZE);
@@ -128,21 +138,23 @@ export function buildBoneFrame(frame: BoneKeyFrame): ArrayBuffer {
     for (let i = 0; i < 15; i++) {
         view.setUint8(off++, nameBytes[i]);
     }
-    view.setUint32(off, frame.frame, true);
+    // [audit:fix 2026-10] NaN/±Inf 帧号归零（setUint32 的 ToUint32(NaN/±Inf)=0 本就等价，显式包裹保一致）
+    view.setUint32(off, nanSafe(frame.frame), true);
     off += 4;
-    view.setFloat32(off, frame.position[0], true);
+    // [audit:fix 2026-10] pos3+rot4 共 7 个 float32 逐值归零，杜绝 NaN 位型进二进制
+    view.setFloat32(off, nanSafe(frame.position[0]), true);
     off += 4;
-    view.setFloat32(off, frame.position[1], true);
+    view.setFloat32(off, nanSafe(frame.position[1]), true);
     off += 4;
-    view.setFloat32(off, frame.position[2], true);
+    view.setFloat32(off, nanSafe(frame.position[2]), true);
     off += 4;
-    view.setFloat32(off, frame.rotation[0], true);
+    view.setFloat32(off, nanSafe(frame.rotation[0]), true);
     off += 4;
-    view.setFloat32(off, frame.rotation[1], true);
+    view.setFloat32(off, nanSafe(frame.rotation[1]), true);
     off += 4;
-    view.setFloat32(off, frame.rotation[2], true);
+    view.setFloat32(off, nanSafe(frame.rotation[2]), true);
     off += 4;
-    view.setFloat32(off, frame.rotation[3], true);
+    view.setFloat32(off, nanSafe(frame.rotation[3]), true);
     off += 4;
     // 64 bytes 插值：16 组 × 4 字节，值域 0-127（VMD 规范）
     // [audit:round48 P1] 字节序必须为 [x1, x2, y1, y2]（先两个 x 控制点再两个 y）：
@@ -170,9 +182,11 @@ export function buildMorphFrame(frame: MorphKeyFrame): ArrayBuffer {
     for (let i = 0; i < 15; i++) {
         view.setUint8(off++, nameBytes[i]);
     }
+    // [audit:fix 2026-10] weight NaN/±Infinity 归零；上方 setUint32(frame.frame) 依 ToUint32 语义
+    // 对 NaN/±Infinity 本地产 +0（ES 7.1.6 step 2），不包裹
     view.setUint32(off, frame.frame, true);
     off += 4;
-    view.setFloat32(off, frame.weight, true);
+    view.setFloat32(off, nanSafe(frame.weight), true);
     off += 4;
     return buf;
 }

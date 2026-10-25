@@ -164,13 +164,18 @@ var wsTunnelMaxDuration = 30 * time.Minute
 // progressReader wraps an io.Reader to emit progress events during DownloadFromPlaza.
 // It reports read bytes every 500ms (throttled) and emits a final completion event.
 // If Content-Length is missing, percent is 0 and only bytes read are reported.
-// [ADR-087 P3] 每次读取时检查 proxy session 是否已废弃（target 切换），
-// 若废弃则返回错误中断流式复制，避免残余碎片文件继续写入。
+// [ADR-087 P3] 检查 proxy session 是否已废弃（target 切换），若废弃则返回错误
+// 中断流式复制，避免残余碎片文件继续写入。
+// [audit:fix 2026-10] 上述 obsolete 检查节流到 500ms 一次（lastCheck，与 lastEmit 同频）：
+// 原先每个 ~32KB chunk 都 Lock/Unlock app.httpSrvMu（app.go 中为 sync.Mutex 而非 RWMutex，
+// StartProxy/StopProxy 等 UI 方法整段持锁），下载流量会拖慢需要同锁的 UI 方法；
+// 节流后 obsolete 触发延迟 ≤500ms 可接受（进度事件本就是 500ms 一拍）。
 type progressReader struct {
 	reader     io.Reader
 	total      int64
 	read       int64
 	lastEmit   time.Time
+	lastCheck  time.Time // [audit:fix 2026-10] obsolete 检查节流锚点（零值 ⇒ 首次 Read 即检查）
 	fileName   string
 	app        *App
 	sessionKey string
@@ -179,11 +184,17 @@ type progressReader struct {
 func (pr *progressReader) Read(p []byte) (int, error) {
 	n, err := pr.reader.Read(p)
 	pr.read += int64(n)
-	// [ADR-087 P3] 流式 obsolete 检查：target 切换时实时中断下载
-	if pr.app != nil && pr.sessionKey != "" {
+	// [ADR-087 P3] 流式 obsolete 检查：target 切换时中断下载。
+	// [audit:fix 2026-10] 节流到 500ms 一次（与 lastEmit 进度节流同频）：原先每个 ~32KB
+	// chunk 都 Lock/Unlock app.httpSrvMu（sync.Mutex，非 RWMutex，见 app.go App 结构体），
+	// 下载流量会持续争抢该锁，拖慢 StartProxy / StopProxy 等需要同锁的 UI 方法；
+	// 节流后 obsolete 触发延迟 ≤500ms，可接受（进度事件本就是 500ms 一拍）。
+	// lastCheck 零值 ⇒ 首次 Read 立即检查，保留原「首个 chunk 即感知废弃」语义。
+	if pr.app != nil && pr.sessionKey != "" && time.Since(pr.lastCheck) > 500*time.Millisecond {
 		pr.app.httpSrvMu.Lock()
 		sess, ok := proxySessions[pr.sessionKey]
 		pr.app.httpSrvMu.Unlock()
+		pr.lastCheck = time.Now()
 		if ok {
 			sess.mu.Lock()
 			obs := sess.obsolete
@@ -446,9 +457,17 @@ func (a *App) StartProxy(target, mode string) (string, error) {
 			if ct := resp.Header.Get("Content-Type"); strings.Contains(ct, "text/html") && resp.Body != nil {
 				// [资源上限] 仅对已知且不超过上限的 HTML 注入脚本；超大响应直接
 				// 透传不注入，避免 io.ReadAll 把整响应读进内存撑爆。
-				if resp.ContentLength > maxPlazaHTMLBody {
-					// [ADR-087 P4] 超上限：保持原始 resp.Body 不变，直接透传。
-					a.safeLogInfo("StartProxy: HTML body too large (%d bytes), skip injection", resp.ContentLength)
+				// [audit:fix 2026-10] chunked / 未知长度（ContentLength == -1）此前会漏进下方
+				// io.ReadAll(io.LimitReader(...)) 分支被静默截断到 maxPlazaHTMLBody，注入点丢失
+				// 后截断 body 被当完整页回传；现在未知长度与「已知超限」同走透传分支。
+				if resp.ContentLength > maxPlazaHTMLBody || resp.ContentLength < 0 {
+					if resp.ContentLength < 0 {
+						// [ADR-087 P4] 未知长度（chunked）：保持原始 resp.Body 不变，直接透传。
+						a.safeLogInfo("StartProxy: HTML body unknown length (chunked), skip injection")
+					} else {
+						// [ADR-087 P4] 超上限：保持原始 resp.Body 不变，直接透传。
+						a.safeLogInfo("StartProxy: HTML body too large (%d bytes), skip injection", resp.ContentLength)
+					}
 				} else {
 					body, err := io.ReadAll(io.LimitReader(resp.Body, maxPlazaHTMLBody))
 					resp.Body.Close()
@@ -477,6 +496,11 @@ func (a *App) StartProxy(target, mode string) (string, error) {
 							resp.Header.Del("Content-Length")
 						} else {
 							resp.Body = io.NopCloser(strings.NewReader(html))
+							// [audit:fix 2026-10] 与 injected 分支对齐：读回后 body 可能短于上游声明
+							// （上游 Content-Length 虚高 / 提前关流），若不同步长度，客户端按原
+							// Content-Length 读取会错乱 / 挂起。
+							resp.ContentLength = int64(len(html))
+							resp.Header.Del("Content-Length")
 						}
 					}
 				}

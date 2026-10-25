@@ -38,7 +38,8 @@ func (a *App) getConfigUnsafe() (*Config, error) {
 	// potentially newer copy written by writeConfig.
 	if data != nil {
 		var bootstrap Config
-		if uErr := json.Unmarshal(data, &bootstrap); uErr == nil {
+		uErr := json.Unmarshal(data, &bootstrap)
+		if uErr == nil {
 			a.finaliseConfig(&bootstrap)
 			if bootstrap.ResourceRoot != "" {
 				sd, sErr := settingDir(&bootstrap)
@@ -46,16 +47,23 @@ func (a *App) getConfigUnsafe() (*Config, error) {
 					settingData, rErr := os.ReadFile(filepath.Join(sd, "config.json"))
 					if rErr == nil {
 						var settingCfg Config
-						if uErr := json.Unmarshal(settingData, &settingCfg); uErr == nil {
+						uErr := json.Unmarshal(settingData, &settingCfg)
+						if uErr == nil {
 							a.finaliseConfig(&settingCfg)
 							return &settingCfg, nil
 						}
+						// [audit:fix 2026-10] 损坏的 setting/ config.json 过去静默回退 bootstrap、零诊断。
+						// 仅加日志；回退语义不变（fall-through）。
+						a.safeLogWarning("getConfigUnsafe: setting config.json 损坏（%v），回退 bootstrap", uErr)
 					}
 				}
 			}
 			// No ResourceRoot or settingDir failed — use bootstrap as-is.
 			return &bootstrap, nil
 		}
+		// [audit:fix 2026-10] 损坏的 bootstrap config.json 过去静默落入 Phase 3 空 Config、无迹可查。
+		// 仅加日志；回退/默认语义不变（仍 fall-through）。
+		a.safeLogError("getConfigUnsafe: bootstrap config.json 损坏（%v），使用空默认配置", uErr)
 	}
 
 	// Phase 3: no valid config anywhere — return empty defaults.
